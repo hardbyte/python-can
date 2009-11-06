@@ -1222,6 +1222,7 @@ class c_kvCallback(c_void_p):
     pass
 
 CALLBACKFUNC = CFUNCTYPE(c_int, c_int)
+NULL_CALLBACK = cast(None, CALLBACKFUNC)
 
 """
 kvStatus CANLIBAPI kvSetNotifyCallback(int hnd, kvCallback_t callback, void* context, unsigned int notifyFlags);
