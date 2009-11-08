@@ -1,7 +1,7 @@
-import ctypes
-import sys
-import types
-import unittest
+import ctypes  #pragma: no cover
+import sys  #pragma: no cover
+import types  #pragma: no cover
+import unittest  #pragma: no cover
 
 sys.path.append("..")
 
@@ -39,79 +39,101 @@ class pycanlib_TestHarness(unittest.TestCase):
             print " this test run has only used virtual channels to verify",
             print " the pycanlib code"
 
+    def tearDown(self):
+        canlib.canUnloadLibrary()
+
     def testREQ_ShallCreateBusObject(self, busType=BUS_TYPE_PHYSICAL):
+        print
         busObject = None
         for _channel in range(0, self.numChannels):
             if (((busType == BUS_TYPE_PHYSICAL) and
               (_channel in self.physicalChannels)) or
               ((busType == BUS_TYPE_VIRTUAL) and
               (_channel in self.virtualChannels))):
-                try:
-                    #default bus object, with defined channel and flags value
-                    #allowing opening of a virtual channel
-                    busObject = CAN.Bus(channel=_channel,
-                      flags=canlib.canOPEN_ACCEPT_VIRTUAL)
-                except CAN.InvalidBusParameterError as e:
-                    print e
+                #default bus object, with defined channel and flags value
+                #allowing opening of a virtual channel
+                busObject = CAN.Bus(channel=_channel,
+                  flags=canlib.canOPEN_ACCEPT_VIRTUAL)
                 self.assert_(busObject != None)
                 self.assert_(busObject.channel == _channel)
 
-    def testREQ_ShallAcceptOnlyLegalChannelNumbers(self,
-                                                   busType=BUS_TYPE_PHYSICAL):
+    def testREQ_ShallAcceptOnlyLegalChannelNumbers(self):
+        print
+        testValues = ["foo"]
         for _channel in xrange(-3, self.numChannels + 5):
-            print _channel
-            if (((busType == BUS_TYPE_PHYSICAL) and
-              (_channel in self.physicalChannels)) or
-              ((busType == BUS_TYPE_VIRTUAL) and
-              (_channel in self.virtualChannels))):
-                e = None
-                busObject = None
-                try:
-                    print "creating"
-                    busObject = CAN.Bus(channel=_channel,
-                      flags=canlib.canOPEN_ACCEPT_VIRTUAL)
-                    print "done"
-                except CAN.InvalidBusParameterError as e:
-                    print e
-                if _channel in range(0, self.numChannels):
-                    self.assert_(busObject != None)
-                    self.assert_(busObject.channel == _channel)
-                else:
-                    self.assert_(busObject == None)
-                    self.assert_(isinstance(e, CAN.InvalidBusParameterError))
-                    self.assert_(e.parameterName == "channel")
-                    self.assert_(e.parameterValue == _channel)
+            testValues.append(_channel)
+        for _channel in testValues:
+            e = None
+            busObject = None
+            try:
+                busObject = CAN.Bus(channel=_channel,
+                  flags=canlib.canOPEN_ACCEPT_VIRTUAL)
+            except Exception as e:
+                print e
+            if _channel in range(0, self.numChannels):
+                self.assert_(busObject != None)
+                self.assert_(busObject.channel == _channel)
+            else:
+                self.assert_(busObject == None)
+                self.assert_(isinstance(e, CAN.InvalidBusParameterError))
+                self.assert_(e.parameterName == "channel")
+                self.assert_(e.parameterValue == _channel)
+
+    def testREQ_ShallAcceptOnlyLegalBusFlags(self,
+                                             busType=BUS_TYPE_PHYSICAL):
+        print
+        testValues = [0.0001, 0.5, -1, 0, 1, 0x0200, 0x03FE, 0x03FF, 0x0400, 0x0401]
+        for _channel in xrange(self.numChannels):
+            for _value in testValues:
+                if (((busType == BUS_TYPE_PHYSICAL) and
+                  (_channel in self.physicalChannels)) or
+                  ((busType == BUS_TYPE_VIRTUAL) and
+                  (_channel in self.virtualChannels))):
+                    busObject = None
+                    try:
+                        _flags = (_value + canlib.canOPEN_ACCEPT_VIRTUAL)
+                        busObject = CAN.Bus(channel=_channel,
+                          flags=_flags)
+                    except Exception as e:
+                        print e
+                    if (isinstance(_flags, types.IntType) and
+                      (_flags in range(0, 0x0400))):
+                        self.assert_(busObject != None)
+                        busObject.flags == _flags
+                    else:
+                        self.assert_(busObject == None)
+                        self.assert_(e.parameterName == "flags")
+                        self.assert_(e.parameterValue == _flags)
 
     def testREQ_ShallAcceptOnlyLegalBusSpeeds(self,
                                               busType=BUS_TYPE_PHYSICAL):
+        print
         for _channel in xrange(self.numChannels):
             if (((busType == BUS_TYPE_PHYSICAL) and
               (_channel in self.physicalChannels)) or
               ((busType == BUS_TYPE_VIRTUAL) and
               (_channel in self.virtualChannels))):
-                for _speed in ["foo", -1, 0, 1, 10**5, 10**6, 10**6+1]:
+                for _speed in ["foo", -1, 0, 1, 10 ** 5, 10 ** 6, 10 ** 6 + 1]:
                     busObject = None
                     try:
                         busObject = CAN.Bus(channel=_channel,
-                          flags=KvaserAPI.canOPEN_VIRTUAL, speed=_speed)
+                          flags=canlib.canOPEN_ACCEPT_VIRTUAL, speed=_speed)
                     except Exception as e:
-                        pass
+                        print e
                     if (isinstance(_speed, types.IntType) and
-                      (_speed in range(10, 10**6+1))):
+                      (_speed in range(10, (10 ** 6) + 1))):
                         self.assert_(busObject != None)
                         self.assert_(busObject.speed == _speed)
                     else:
                         self.assert_(busObject == None)
                         self.assert_(isinstance(e,
                           CAN.InvalidBusParameterError))
-                        self.assert_(e.speed == _speed)
-                    if busObject != None:
-                        busObject.Cleanup()
-#                        del busObject
+                        self.assert_(e.parameterName == "speed")
+                        self.assert_(e.parameterValue == _speed)
 
-    """
     def testREQ_ShallAcceptOnlyLegalSegmentLengths(self,
                                                    busType=BUS_TYPE_PHYSICAL):
+        print
         testValues = ["foo", -1, 0, 5, 8, 9, 10, 11, 12]
         for _channel in xrange(self.numChannels):
             if (((busType == BUS_TYPE_PHYSICAL) and
@@ -123,10 +145,10 @@ class pycanlib_TestHarness(unittest.TestCase):
                         busObject = None
                         try:
                             busObject = CAN.Bus(channel=_channel,
-                              flags=KvaserAPI.canOPEN_VIRTUAL, tseg1=_tseg1,
+                              flags=canlib.canOPEN_ACCEPT_VIRTUAL, tseg1=_tseg1,
                               tseg2=_tseg2)
                         except Exception as e:
-                            pass
+                            print e
                         if (isinstance(_tseg1, types.IntType) and
                           isinstance(_tseg2, types.IntType) and
                           (_tseg1 in range(0, 11)) and
@@ -137,15 +159,19 @@ class pycanlib_TestHarness(unittest.TestCase):
                         else:
                             self.assert_(busObject == None)
                             self.assert_(isinstance(e,
-                              CAN.InvalidSegmentLengthException))
-                            self.assert_(e.tseg1 == _tseg1)
-                            self.assert_(e.tseg2 == _tseg2)
-                        if busObject != None:
-                            busObject.Cleanup()
-#                            del busObject
+                              CAN.InvalidBusParameterError))
+                            if not isinstance(_tseg1, types.IntType) or \
+                              _tseg1 not in range(0, 11):
+                                self.assert_(e.parameterValue == _tseg1)
+                                self.assert_(e.parameterName == "tseg1")
+                            elif not isinstance(_tseg2, types.IntType) or \
+                              _tseg2 not in range(0, 11):
+                                self.assert_(e.parameterValue == _tseg2)
+                                self.assert_(e.parameterName == "tseg2")
 
     def testREQ_ShallAcceptOnlyLegalSyncJumpWidths(self,
                                                    busType=BUS_TYPE_PHYSICAL):
+        print
         testValues = ["foo", 0, 1, 2, 3, 4, 5, 6]
         for _channel in xrange(self.numChannels):
             if (((busType == BUS_TYPE_PHYSICAL) and
@@ -156,22 +182,21 @@ class pycanlib_TestHarness(unittest.TestCase):
                     busObject = None
                     try:
                         busObject = CAN.Bus(channel=_channel,
-                          flags=KvaserAPI.canOPEN_VIRTUAL, sjw=_sjw)
+                                            flags=canlib.canOPEN_ACCEPT_VIRTUAL,
+                                            sjw=_sjw)
                     except Exception as e:
-                        pass
+                        print e
                     if _sjw in range(1, 5):
                         self.assert_(busObject != None)
                         self.assert_(busObject.sjw == _sjw)
                     else:
                         self.assert_(busObject == None)
-                        self.assert_(isinstance(e, CAN.InvalidSJWException))
-                        self.assert_(e.sjw == _sjw)
-                    if busObject != None:
-                        busObject.Cleanup()
-#                        del busObject
+                        self.assert_(e.parameterName == "sjw")
+                        self.assert_(e.parameterValue == _sjw)
 
     def testREQ_ShallAcceptOnlyLegalSamplingPoints(self,
                                                    busType=BUS_TYPE_PHYSICAL):
+        print
         testValues = ["foo", 0, 1, 2, 3, 4]
         for _channel in xrange(self.numChannels):
             if (((busType == BUS_TYPE_PHYSICAL) and
@@ -182,60 +207,64 @@ class pycanlib_TestHarness(unittest.TestCase):
                     busObject = None
                     try:
                         busObject = CAN.Bus(channel=_channel,
-                          flags=KvaserAPI.canOPEN_VIRTUAL, noSamp=_noSamp)
+                          flags=canlib.canOPEN_ACCEPT_VIRTUAL, noSamp=_noSamp)
                     except Exception as e:
-                        pass
+                        print e
                     if _noSamp in [1, 3]:
                         self.assert_(busObject != None)
                         self.assert_(busObject.noSamp == _noSamp)
                     else:
                         self.assert_(busObject == None)
-                        self.assert_(isinstance(e,
-                          CAN.InvalidSamplingPointsException))
-                        self.assert_(e.noSamp == _noSamp)
-                    if busObject != None:
-                        busObject.Cleanup()
-#                        del busObject
+                        self.assert_(e.parameterName == "noSamp")
+                        self.assert_(e.parameterValue == _noSamp)
 
     def testREQ_ShallAllowConnectionToVirtualBus(self):
+        print
         _busType = BUS_TYPE_VIRTUAL
+        sys.stdout.write("\ttestREQ_ShallCreateBusObject")
         self.testREQ_ShallCreateBusObject(busType=_busType)
-        self.testREQ_ShallAcceptOnlyLegalChannelNumbers(busType=_busType)
+        canlib.canUnloadLibrary()
+        canlib.canInitializeLibrary()
+        sys.stdout.write("\ttestREQ_ShallAcceptOnlyLegalBusSpeeds")
         self.testREQ_ShallAcceptOnlyLegalBusSpeeds(busType=_busType)
+        canlib.canUnloadLibrary()
+        canlib.canInitializeLibrary()
+        sys.stdout.write("\ttestREQ_ShallAcceptOnlyLegalSegmentLengths")
         self.testREQ_ShallAcceptOnlyLegalSegmentLengths(busType=_busType)
+        canlib.canUnloadLibrary()
+        canlib.canInitializeLibrary()
+        sys.stdout.write("\ttestREQ_ShallAcceptOnlyLegalSyncJumpWidths")
         self.testREQ_ShallAcceptOnlyLegalSyncJumpWidths(busType=_busType)
+        canlib.canUnloadLibrary()
+        canlib.canInitializeLibrary()
+        sys.stdout.write("\ttestREQ_ShallAcceptOnlyLegalSamplingPoints")
         self.testREQ_ShallAcceptOnlyLegalSamplingPoints(busType=_busType)
+        canlib.canUnloadLibrary()
+        canlib.canInitializeLibrary()
+        sys.stdout.write("\ttestREQ_ShallAllowWritingAndReading")
 #        self.testREQ_ShallAllowWritingAndReading(busType=_busType)
 
     def testREQ_ShallCreateInfoMessageObject(self):
+        print
         messageObject = None
-        try:
-            messageObject = CAN.InfoMessage()
-        except:
-            pass
+        messageObject = CAN.InfoMessage()
         self.assert_(messageObject != None)
         self.assert_("timestamp" in messageObject.__dict__.keys())
         self.assert_(isinstance(messageObject.timestamp, types.IntType))
         self.assert_("infoString" in messageObject.__dict__.keys())
         self.assert_(messageObject.infoString == None)
         messageObject = None
-        try:
-            messageObject = CAN.InfoMessage(infoString="info string")
-        except:
-            pass
+        messageObject = CAN.InfoMessage(infoString="info string")
         self.assert_(messageObject != None)
         self.assert_("timestamp" in messageObject.__dict__.keys())
         self.assert_(isinstance(messageObject.timestamp, types.IntType))
         self.assert_("infoString" in messageObject.__dict__.keys())
         self.assert_(messageObject.infoString == "info string")
-    """
 
     def testREQ_ShallCreateCANMessageObject(self):
+        print
         messageObject = None
-        try:
-            messageObject = CAN.Message()
-        except CAN.InvalidMessageParameterError as e:
-            print e
+        messageObject = CAN.Message()
         self.assert_(messageObject != None)
         self.assert_("timestamp" in messageObject.__dict__.keys())
         self.assert_(isinstance(messageObject.timestamp, types.IntType))
@@ -249,6 +278,7 @@ class pycanlib_TestHarness(unittest.TestCase):
         self.assert_(isinstance(messageObject.flags, types.IntType))
 
     def testREQ_ShallNotAcceptNegativeTimestamps(self):
+        print
         for _timestamp in ["foo", -10, 0, 1, 10, -5, 100]:
             messageObject = None
             try:
@@ -279,6 +309,7 @@ class pycanlib_TestHarness(unittest.TestCase):
                 self.assert_(e.parameterValue == _timestamp)
 
     def testREQ_ShallNotAcceptInvalidDeviceIDs(self):
+        print
         for _deviceID in ["foo", -2, -1, 0, 1, 2, 2 ** 10, (2 ** 11) - 2,
           (2 ** 11) - 1, 2 ** 11, (2 ** 11) + 1]:
             messageObject = None
@@ -298,6 +329,7 @@ class pycanlib_TestHarness(unittest.TestCase):
                 self.assert_(e.parameterValue == _deviceID)
 
     def testREQ_ShallNotAcceptInvalidPayload(self):
+        print
         payloads = []
         #no data - should pass
         payloads.append([])
@@ -354,6 +386,7 @@ class pycanlib_TestHarness(unittest.TestCase):
                 self.assert_(messageObject.data == _payload)
 
     def testREQ_ShallNotAcceptInvalidDLC(self):
+        print
         _testValues = ["foo"]
         for i in xrange(-3, 11):
             _testValues.append(i)
@@ -373,6 +406,7 @@ class pycanlib_TestHarness(unittest.TestCase):
                 self.assert_(e.parameterValue == _dlc)
 
     def testREQ_ShallNotAcceptInvalidFlags(self):
+        print
         _testValues = ["foo", -2, -1, 0, 2 ** 15, (2 ** 16) - 2,
           (2 ** 16) - 1, 2 ** 16, (2 ** 16) + 1]
         for _flags in _testValues:
@@ -380,7 +414,7 @@ class pycanlib_TestHarness(unittest.TestCase):
             try:
                 messageObject = CAN.Message(flags=_flags)
             except CAN.InvalidMessageParameterError as e:
-                pass
+                print e
             if isinstance(_flags, types.IntType) and \
                _flags in range(0, 2 ** 16):
                 self.assert_(messageObject != None)
@@ -392,6 +426,7 @@ class pycanlib_TestHarness(unittest.TestCase):
                 self.assert_(e.parameterValue == _flags)
 
     def testREQ_ShallProvideStringRepresentationOfCANMessage(self):
+        print
         stringRepresentations = []
         messages = []
         messages.append(CAN.Message())
@@ -410,6 +445,7 @@ class pycanlib_TestHarness(unittest.TestCase):
             self.assert_(_msg.__str__() == _stringRep)
 
     def testREQ_ShallProvideStringRepresentationOfInfoMessage(self):
+        print
         stringRepresentations = []
         messages = []
         messages.append(CAN.InfoMessage())
@@ -425,12 +461,13 @@ class pycanlib_TestHarness(unittest.TestCase):
         for _msg, _stringRep in zip(messages, stringRepresentations):
             self.assert_(_msg.__str__() == _stringRep)
 
-"""
+    """
     def testREQ_ShallAllowWritingAndReading(self, busType=BUS_TYPE_PHYSICAL):
+        print
         for _channel in xrange(self.numChannels):
-#            if (((busType == BUS_TYPE_PHYSICAL) and
-#              (_channel in self.physicalChannels)) or
-             if (((busType == BUS_TYPE_VIRTUAL) and
+            if (((busType == BUS_TYPE_PHYSICAL) and
+              (_channel in self.physicalChannels)) or
+              ((busType == BUS_TYPE_VIRTUAL) and
               (_channel in self.virtualChannels))):
                 bus = CAN.Bus(channel=_channel, speed=105263, tseg1=10,
                   tseg2=8, sjw=4, noSamp=1)
@@ -462,6 +499,7 @@ class pycanlib_TestHarness(unittest.TestCase):
                 actualReceivedMessages = []
                 while len(actualReceivedMessages) != len(receivedMessages):
                     if receivedMessage != None:
+                        print receivedMessage
                         if receivedMessage.deviceID == 0x0010:
                             actualReceivedMessages.append(receivedMessage)
                     receivedMessage = bus.Read()
@@ -472,7 +510,7 @@ class pycanlib_TestHarness(unittest.TestCase):
                     self.assert_(expected.data == actual.data)
                     self.assert_(expected.dlc == actual.dlc)
                     self.assert_(expected.flags == actual.flags)
-                del bus
-"""
+    """
+
 if __name__ == "__main__":
     unittest.main()
