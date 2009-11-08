@@ -9,7 +9,7 @@ class pycanlibError(Exception):
     pass
 
 
-class InvalidParameterError(pycanlibException):
+class InvalidParameterError(pycanlibError):
 
     def __init__(self, parameterName, parameterValue, reason):
         self.parameterName = parameterName
