@@ -1,6 +1,6 @@
-import ctypes
-import Queue
-import types
+import ctypes  #pragma: no cover
+import Queue  #pragma: no cover
+import types  #pragma: no cover
 
 import canlib
 import canstat
@@ -148,9 +148,10 @@ class Bus(object):
         if not isinstance(flags, types.IntType):
             raise InvalidBusParameterError("flags", flags,
               "expected int; received %s" % flags.__class__.__name__)
-        if flags not in range(0, 2 ** 16):
+        if flags not in range(0, 0x0400):
             raise InvalidBusParameterError("flags", flags,
-              "flags value must be in range [0, 2**16-1]")
+              "flags value must be in range [0, 0x03FF]")
+        self.flags = flags
         if not isinstance(speed, types.IntType):
             raise InvalidBusParameterError("speed", speed,
               "expected int; received %s" % speed.__class__.__name__)

@@ -1,4 +1,4 @@
-import ctypes
+import ctypes  #pragma: no cover
 
 
 class c_canStatus(ctypes.c_int):
