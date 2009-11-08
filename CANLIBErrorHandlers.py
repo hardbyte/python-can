@@ -1,5 +1,5 @@
-from canlib import canGetErrorText
-from canstat import CANSTATUS_SUCCESS
+import canlib
+import canstat
 
 
 class CANLIBError(Exception):
@@ -18,7 +18,7 @@ class CANLIBError(Exception):
 
 def GetErrorMessage(result):
     errmsg = create_string_buffer(128)
-    canGetErrorText(result, errmsg, len(errmsg))
+    canlib.canGetErrorText(result, errmsg, len(errmsg))
     if type(result) == types.IntType:
         retVal = ("%s (code %d)" % (errmsg.value, result))
     else:
@@ -41,7 +41,8 @@ def CheckStatus(result, function, arguments):
 
 
 def CheckStatusRead(result, function, arguments):
-    if not CANSTATUS_SUCCESS(result) and (result.value != canERR_NOMSG):
+    if not canstat.CANSTATUS_SUCCESS(result) and \
+      (result.value != canERR_NOMSG):
         raise CANLIBError(function, result, arguments)
     else:
         return result
