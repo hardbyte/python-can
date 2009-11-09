@@ -41,7 +41,7 @@ canERR__RESERVED = -33
 
 
 def CANSTATUS_SUCCESS(status):
-    if status.value == canOK:
+    if status == canOK:
         return True
     else:
         return False
