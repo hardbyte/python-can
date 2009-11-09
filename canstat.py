@@ -40,14 +40,14 @@ canERR_NOT_IMPLEMENTED = -32
 canERR__RESERVED = -33
 
 
-def CANSTATUS_SUCCESS(status):  #pragma: no cover
+def CANSTATUS_SUCCESS(status):
     if status.value == canOK:
         return True
     else:
         return False
 
 
-def CANSTATUS_FAILURE(status):  #pragma: no cover
+def CANSTATUS_FAILURE(status):
     return not CANSTATUS_SUCCESS(status)
 
 canEVENT_RX = 32000

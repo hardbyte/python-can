@@ -2,7 +2,7 @@ import canlib
 import canstat
 
 
-class CANLIBError(Exception):#  pragma: no cover
+class CANLIBError(Exception):
 
     def __init__(self, function, errorCode, arguments):
         Exception.__init__(self)
@@ -16,7 +16,7 @@ class CANLIBError(Exception):#  pragma: no cover
           self.arguments))
 
 
-def GetErrorMessage(result):#  pragma: no cover
+def GetErrorMessage(result):
     errmsg = create_string_buffer(128)
     canlib.canGetErrorText(result, errmsg, len(errmsg))
     if type(result) == types.IntType:
@@ -26,21 +26,21 @@ def GetErrorMessage(result):#  pragma: no cover
     return retVal
 
 
-def CheckBusHandleValidity(handle, function, arguments):#  pragma: no cover
+def CheckBusHandleValidity(handle, function, arguments):
     if not is_handle_valid(handle):
         raise CANLIBError(function, handle, arguments)
     else:
         return handle
 
 
-def CheckStatus(result, function, arguments):#  pragma: no cover
+def CheckStatus(result, function, arguments):
     if not CANSTATUS_SUCCESS(result):
         raise CANLIBError(function, result, arguments)
     else:
         return result
 
 
-def CheckStatusRead(result, function, arguments):#  pragma: no cover
+def CheckStatusRead(result, function, arguments):
     if not canstat.CANSTATUS_SUCCESS(result) and \
       (result.value != canERR_NOMSG):
         raise CANLIBError(function, result, arguments)
