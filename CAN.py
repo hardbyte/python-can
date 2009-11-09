@@ -1,6 +1,6 @@
-import ctypes  #pragma: no cover
-import Queue  #pragma: no cover
-import types  #pragma: no cover
+import ctypes
+import Queue
+import types
 
 import canlib
 import canstat
@@ -115,16 +115,16 @@ class InfoMessage(LogMessage):
             return "%s" % LogMessage.__str__(self)
 
 
-def ReadCallback(handle):
-    print "ReadCallback for handle %d" % handle
+#def ReadCallback(handle):
+#    print "ReadCallback for handle %d" % handle
 
 
-def WriteCallback(handle):
-    print "WriteCallback for handle %d" % handle
+#def WriteCallback(handle):
+#    print "WriteCallback for handle %d" % handle
 
 
-READ_CALLBACK = canlib.CALLBACKFUNC(ReadCallback)
-WRITE_CALLBACK = canlib.CALLBACKFUNC(WriteCallback)
+#READ_CALLBACK = canlib.CALLBACKFUNC(ReadCallback)
+#WRITE_CALLBACK = canlib.CALLBACKFUNC(WriteCallback)
 
 
 class Bus(object):
@@ -195,14 +195,13 @@ class Bus(object):
         self.txQueue = Queue.Queue(0)
         canlib.canBusOn(self.readHandle)
         canlib.canBusOn(self.writeHandle)
-        canlib.kvSetNotifyCallback(self.readHandle,
-          READ_CALLBACK, 0, canstat.canNOTIFY_RX)
-        canlib.kvSetNotifyCallback(self.writeHandle,
-          WRITE_CALLBACK, 0, canstat.canNOTIFY_TX)
+#        canlib.kvSetNotifyCallback(self.readHandle, READ_CALLBACK, 0,
+#          canstat.canNOTIFY_RX)
+#        canlib.kvSetNotifyCallback(self.writeHandle, WRITE_CALLBACK, 0,
+#          canstat.canNOTIFY_TX)
 
-    def Write(self, msg):
-        print "write", msg
-        pass
+#    def Write(self, msg):
+#        print "write", msg
 
-    def Read(self):
-        return None
+#    def Read(self):
+#        return None
