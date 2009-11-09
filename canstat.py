@@ -1,4 +1,4 @@
-import ctypes  #pragma: no cover
+import ctypes
 
 
 class c_canStatus(ctypes.c_int):
@@ -40,14 +40,14 @@ canERR_NOT_IMPLEMENTED = -32
 canERR__RESERVED = -33
 
 
-def CANSTATUS_SUCCESS(status):
+def CANSTATUS_SUCCESS(status):  #pragma: no cover
     if status.value == canOK:
         return True
     else:
         return False
 
 
-def CANSTATUS_FAILURE(status):
+def CANSTATUS_FAILURE(status):  #pragma: no cover
     return not CANSTATUS_SUCCESS(status)
 
 canEVENT_RX = 32000
