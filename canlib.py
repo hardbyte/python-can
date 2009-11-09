@@ -10,11 +10,6 @@ if sys.platform == "win32":
 else:
     canlib32 = ctypes.CDLL("libcanlib.so")  #pragma: no cover
 
-
-class c_size_t(ctypes.c_int):
-    pass
-
-
 class c_canHandle(ctypes.c_int):
     pass
 
@@ -229,7 +224,7 @@ canGetNumberOfChannels.errCheck = CANLIBErrorHandlers.CheckStatus
 
 canGetChannelData = canlib32.canGetChannelData
 canGetChannelData.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_void_p,
-                              c_size_t]
+                              ctypes.c_size_t]
 canGetChannelData.resType = canstat.c_canStatus
 canGetChannelData.errCheck = CANLIBErrorHandlers.CheckStatus
 
@@ -576,7 +571,7 @@ class c_canBusStatistics(ctypes.Structure):
       ("overruns", ctypes.c_ulong)]
 
 canGetBusStatistics = canlib32.canGetBusStatistics
-canGetBusStatistics.argtypes = [ctypes.c_int, ctypes.c_void_p, c_size_t]
+canGetBusStatistics.argtypes = [ctypes.c_int, ctypes.c_void_p, ctypes.c_size_t]
 canGetBusStatistics.resType = canstat.c_canStatus
 canGetBusStatistics.errCheck = CANLIBErrorHandlers.CheckStatus
 
@@ -592,7 +587,7 @@ kvAnnounceIdentity.errCheck = CANLIBErrorHandlers.CheckStatus
 
 canGetHandleData = canlib32.canGetHandleData
 canGetHandleData.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_void_p,
-                             c_size_t]
+                             ctypes.c_size_t]
 canGetHandleData.resType = canstat.c_canStatus
 canGetHandleData.errCheck = CANLIBErrorHandlers.CheckStatus
 
@@ -627,7 +622,7 @@ kvTimeDomainResetTime.resType = c_kvStatus
 kvTimeDomainResetTime.errCheck = CANLIBErrorHandlers.CheckStatus
 
 kvTimeDomainGetData = canlib32.kvTimeDomainGetData
-kvTimeDomainGetData.argtypes = [c_kvTimeDomain, ctypes.c_void_p, c_size_t]
+kvTimeDomainGetData.argtypes = [c_kvTimeDomain, ctypes.c_void_p, ctypes.c_size_t]
 kvTimeDomainGetData.resType = c_kvStatus
 kvTimeDomainGetData.errCheck = CANLIBErrorHandlers.CheckStatus
 
@@ -682,7 +677,7 @@ kvReadTimer64.errCheck = CANLIBErrorHandlers.CheckStatus
 
 kvReadDeviceCustomerData = canlib32.kvReadDeviceCustomerData
 kvReadDeviceCustomerData.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_int,
-                                     ctypes.c_void_p, c_size_t]
+                                     ctypes.c_void_p, ctypes.c_size_t]
 kvReadDeviceCustomerData.resType = c_kvStatus
 kvReadDeviceCustomerData.errCheck = CANLIBErrorHandlers.CheckStatus
 
