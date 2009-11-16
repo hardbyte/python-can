@@ -10,6 +10,7 @@ import CANLIBErrorHandlers
 import canstat
 import CAN
 
+
 def setup():
     canlib.canInitializeLibrary()
 
@@ -29,6 +30,7 @@ def testShallNotAcceptInvalidTimestamps():
     for timestamp in ["foo", -5, -1.0, 0.0, 1, 1.0, 2.5, 10000, 10000.2]:
         yield isTimestampValid, timestamp
 
+
 def isTimestampValid(timestamp):
     _msgObject = None
     try:
@@ -40,13 +42,15 @@ def isTimestampValid(timestamp):
     else:
         assert (_msgObject == None)
 
+
 def testShallProvideStringRepresentationOfInfoMessage():
     timestamps = range(0, 10000, 503)
     infoStrings = ["info string 1", "info string 2", "not an info string",
                    "another string", None]
     for timestamp in timestamps:
         for infoString in infoStrings:
-            yield checkInfoMsgStringRep, float(timestamp)/10, infoString
+            yield checkInfoMsgStringRep, (float(timestamp) / 10), infoString
+
 
 def checkInfoMsgStringRep(timestamp, infoString):
     _msgObject = None
@@ -62,6 +66,7 @@ def checkInfoMsgStringRep(timestamp, infoString):
     else:
         assert (_msgObject.__str__() == "%.6f" % timestamp)
 
+
 def testShallCreateCANMessageObject():
     _msgObject = None
     try:
@@ -75,9 +80,11 @@ def testShallCreateCANMessageObject():
     assert ("data" in _msgObject.__dict__.keys())
     assert ("flags" in _msgObject.__dict__.keys())
 
+
 def testShallNotAcceptInvalidDeviceIDs():
-    for deviceID in ["foo", 0, 0.1, 10000, 0x0100, 2**32]:
+    for deviceID in ["foo", 0, 0.1, 10000, 0x0100, 2 ** 32]:
         yield isDeviceIDValid, deviceID
+
 
 def isDeviceIDValid(deviceID):
     _msgObject = None
@@ -85,7 +92,7 @@ def isDeviceIDValid(deviceID):
         _msgObject = CAN.Message(deviceID=deviceID)
     except:
         logging.debug("Exception thrown by CAN.Message", exc_info=True)
-    if isinstance(deviceID, types.IntType) and (deviceID in range(0, 2**11)):
+    if isinstance(deviceID, types.IntType) and (deviceID in range(0, 2 ** 11)):
         assert (_msgObject != None)
     else:
         assert (_msgObject == None)
@@ -101,6 +108,7 @@ def testShallNotAcceptInvalidPayload():
     payloads.append([" ", 0])
     for payload in payloads:
         yield isPayloadValid, payload
+
 
 def isPayloadValid(payload):
     _msgObject = None
@@ -122,12 +130,14 @@ def isPayloadValid(payload):
     else:
         assert (_msgObject == None)
 
+
 def testShallNotAcceptInvalidDLC():
     dlcs = ["foo", 0.25]
     for i in xrange(-2, 10):
         dlcs.append(i)
     for dlc in dlcs:
         yield isDLCValid, dlc
+
 
 def isDLCValid(dlc):
     _msgObject = None
@@ -140,16 +150,18 @@ def isDLCValid(dlc):
     else:
         assert (_msgObject == None)
 
+
 def testShallNotAcceptInvalidFlags():
     flagsValues = ["foo", 0.25]
     for i in xrange(-2, 2):
         flagsValues.append(i)
-    for i in xrange(2**15-2, 2**15+2):
+    for i in xrange(2 ** 15 - 2, 2 ** 15 + 2):
         flagsValues.append(i)
-    for i in xrange(2**16-2, 2**16+2):
+    for i in xrange(2 ** 16 - 2, 2 ** 16 + 2):
         flagsValues.append(i)
     for flagsValue in flagsValues:
         yield areFlagsValid, flagsValue
+
 
 def areFlagsValid(flags):
     _msgObject = None
@@ -157,16 +169,17 @@ def areFlagsValid(flags):
         _msgObject = CAN.Message(flags=flags)
     except:
         logging.debug("Exception thrown by CAN.Message", exc_info=True)
-    if flags in range(0, 2**16):
+    if flags in range(0, 2 ** 16):
         assert (_msgObject != None)
     else:
         assert (_msgObject == None)
+
 
 def testShallProvideStringRepresentationOfCANMessage():
     timestamps = [0.0, 1.23456, 9.9999999999, 1.06]
     dataArrays = [[1], [255], [0xb0, 0x81, 0x50]]
     dlcs = range(0, 9)
-    flagsValues = [0, 1, 2*15, 2*16-1]
+    flagsValues = [0, 1, 2 ** 15, 2 ** 16 - 1]
     deviceIDs = [0x0040, 0x0008, 0x0100]
     testData = []
     for timestamp in timestamps:
@@ -176,6 +189,7 @@ def testShallProvideStringRepresentationOfCANMessage():
                     for deviceID in deviceIDs:
                         yield (checkCANMessageStringRepr, timestamp,
                                dataArray, dlc, flags, deviceID)
+
 
 def checkCANMessageStringRepr(timestamp, dataArray, dlc, flags, deviceID):
     _msgObject = None
@@ -191,6 +205,7 @@ def checkCANMessageStringRepr(timestamp, dataArray, dlc, flags, deviceID):
     logging.debug(expectedStringRep)
     logging.debug(_msgObject.__str__())
     assert (_msgObject.__str__() == expectedStringRep)
+
 
 """
 def testShallCreateBusObject():
@@ -254,6 +269,7 @@ def checkSegmentLengths(tseg1, tseg2):
     else:
         assert (_bus == None)
 """
+
 
 def teardown():
 #    for handle in CAN.readHandleList:
