@@ -29,11 +29,10 @@ class InvalidMessageParameterError(InvalidParameterError):
 
 class LogMessage(object):
 
-    def __init__(self, timestamp=0):
-        if not isinstance(timestamp, (types.IntType, types.FloatType,
-          types.LongType)):
+    def __init__(self, timestamp=0.0):
+        if not isinstance(timestamp, types.FloatType):
             raise InvalidMessageParameterError("timestamp", timestamp,
-              ("expected int, float or long; received '%s'" %
+              ("expected float; received '%s'" %
               timestamp.__class__.__name__))
         if timestamp >= 0:
             self.timestamp = timestamp
@@ -47,7 +46,7 @@ class LogMessage(object):
 
 class Message(LogMessage):
 
-    def __init__(self, deviceID=0, data=[], dlc=0, flags=0, timestamp=0):
+    def __init__(self, deviceID=0, data=[], dlc=0, flags=0, timestamp=0.0):
         LogMessage.__init__(self, timestamp)
         if not isinstance(deviceID, types.IntType):
             raise InvalidMessageParameterError("deviceID", deviceID,
@@ -100,12 +99,12 @@ class Message(LogMessage):
 
 class InfoMessage(LogMessage):
 
-    def __init__(self, timestamp=0, infoString=None):
+    def __init__(self, timestamp=0.0, info=None):
         LogMessage.__init__(self, timestamp)
-        self.infoString = infoString
+        self.info = info
 
     def __str__(self):
-        if self.infoString != None:
-            return ("%s\t%s" % (LogMessage.__str__(self), self.infoString))
+        if self.info != None:
+            return ("%s\t%s" % (LogMessage.__str__(self), self.info))
         else:
             return "%s" % LogMessage.__str__(self)
