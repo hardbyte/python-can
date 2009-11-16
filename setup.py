@@ -19,5 +19,5 @@ if __name__ == "__main__":
     setup(
         name="pycanlib",
         version=GetVersionNumber(),
-        packages=find_packages(),
+        packages=find_packages(exclude=["test"]),
     )
