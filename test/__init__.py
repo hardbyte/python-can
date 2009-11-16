@@ -3,7 +3,7 @@ import sys
 import types
 import unittest
 
-sys.path.append("..")
+sys.path.append("../pycanlib")
 
 import CAN
 import canlib
