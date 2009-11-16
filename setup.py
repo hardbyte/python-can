@@ -4,22 +4,16 @@ from setuptools import setup, find_packages
 
 
 def GetVersionNumber():
-    os.system("hg tip > version.tmp")
-    versionInfoFile = open("version.tmp", "r")
-    infoDict = {}
-    for line in versionInfoFile:
-        line = line.replace("\n", "")
-        print line
-        if ":" in line:
-            (name, value) = line.split(": ")
-            infoDict[name] = value
-    if re.match(infoDict["tag"], "/S./S") != None:
-        retVal = infoDict["tag"]
+    os.system("hg id > id.tmp")
+    tagFile = open("id.tmp", "r")
+    tagLine = tagFile.readline()
+    tag = tagLine.split(" ")[1].replace("\n", "")
+    if tag != "tip":
+        retVal = tag
     else:
-        _changeSet = infoDict["changeset"]
-        retVal = "dev_" + _changeSet[(_changeSet.index(":") + 1):]
-    versionInfoFile.close()
-    os.unlink("version.tmp")
+        retVal = "dev_%s" % tagLine.split(" ")[0]
+    tagFile.close()
+    os.unlink("id.tmp")
     return retVal
 
 if __name__ == "__main__":
