@@ -1,10 +1,12 @@
 import ctypes
+import logging
 import Queue
 import types
 
 import canlib
 import canstat
 
+canModuleLogger = logging.getLogger("pycanlib.CAN")
 
 class pycanlibError(Exception):
     pass
@@ -30,15 +32,24 @@ class InvalidMessageParameterError(InvalidParameterError):
 class LogMessage(object):
 
     def __init__(self, timestamp=0.0):
+        canModuleLogger.debug("Starting LogMessage.__init__ - timestamp %s"
+          % timestamp)
         if not isinstance(timestamp, types.FloatType):
-            raise InvalidMessageParameterError("timestamp", timestamp,
-              ("expected float; received '%s'" %
+            badTimestampError = InvalidMessageParameterError("timestamp",
+              timestamp, ("expected float; received '%s'" %
               timestamp.__class__.__name__))
+            canModuleLogger.debug("LogMessage.__init__: %s" %
+              badTimestampError)
+            raise badTimestampError
         if timestamp >= 0:
             self.timestamp = timestamp
         else:
-            raise InvalidMessageParameterError("timestamp", timestamp,
-              "timestamp value must be positive")
+            badTimestampError = InvalidMessageParameterError("timestamp",
+              timestamp, "timestamp value must be positive")
+            canModuleLogger.debug("LogMessage.__init__: %s" %
+              badTimestampError)
+            raise badTimestampError
+        canModuleLogger.debug("LogMessage.__init__ completed successfully")
 
     def __str__(self):
         return "%.6f" % self.timestamp
