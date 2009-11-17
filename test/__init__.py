@@ -10,6 +10,7 @@ import CANLIBErrorHandlers
 import canstat
 import CAN
 
+testLogger = logging.getLogger("pycanlib.test")
 
 def setup():
     canlib.canInitializeLibrary()
@@ -17,10 +18,7 @@ def setup():
 
 def testShallCreateInfoMessageObject():
     _msgObject = None
-    try:
-        _msgObject = CAN.InfoMessage()
-    except:
-        logging.debug("Exception thrown by CAN.InfoMessage", exc_info=True)
+    _msgObject = CAN.InfoMessage()
     assert (_msgObject != None)
     assert ("timestamp" in _msgObject.__dict__.keys())
     assert ("info" in _msgObject.__dict__.keys())
@@ -35,8 +33,9 @@ def isTimestampValid(timestamp):
     _msgObject = None
     try:
         _msgObject = CAN.InfoMessage(timestamp=timestamp)
-    except:
-        logging.debug("Exception thrown by CAN.InfoMessage", exc_info=True)
+    except Exception as e:
+        testLogger.debug("Exception thrown by CAN.InfoMessage", exc_info=True)
+        testLogger.debug(e.__str__())
     if isinstance(timestamp, types.FloatType) and (timestamp >= 0):
         assert (_msgObject != None)
     else:
@@ -54,10 +53,7 @@ def testShallProvideStringRepresentationOfInfoMessage():
 
 def checkInfoMsgStringRep(timestamp, infoString):
     _msgObject = None
-    try:
-        _msgObject = CAN.InfoMessage(timestamp, infoString)
-    except:
-        logging.debug("Exception thrown by CAN.InfoMessage", exc_info=True)
+    _msgObject = CAN.InfoMessage(timestamp, infoString)
     assert (_msgObject != None)
     assert (_msgObject.timestamp == timestamp)
     assert (_msgObject.info == infoString)
@@ -69,10 +65,7 @@ def checkInfoMsgStringRep(timestamp, infoString):
 
 def testShallCreateCANMessageObject():
     _msgObject = None
-    try:
-        _msgObject = CAN.Message()
-    except:
-        logging.debug("Exception thrown by CAN.Message", exc_info=True)
+    _msgObject = CAN.Message()
     assert (_msgObject != None)
     assert ("timestamp" in _msgObject.__dict__.keys())
     assert ("deviceID" in _msgObject.__dict__.keys())
@@ -90,8 +83,9 @@ def isDeviceIDValid(deviceID):
     _msgObject = None
     try:
         _msgObject = CAN.Message(deviceID=deviceID)
-    except:
-        logging.debug("Exception thrown by CAN.Message", exc_info=True)
+    except Exception as e:
+        testLogger.debug("Exception thrown by CAN.Message", exc_info=True)
+        testLogger.debug(e.__str__())
     if isinstance(deviceID, types.IntType) and (deviceID in range(0, 2 ** 11)):
         assert (_msgObject != None)
     else:
@@ -114,8 +108,9 @@ def isPayloadValid(payload):
     _msgObject = None
     try:
         _msgObject = CAN.Message(data=payload)
-    except:
-        logging.debug("Exception thrown by CAN.Message", exc_info=True)
+    except Exception as e:
+        testLogger.debug("Exception thrown by CAN.Message", exc_info=True)
+        testLogger.debug(e.__str__())
     payloadValid = True
     if len(payload) not in range(0, 9):
         payloadValid = False
@@ -143,8 +138,9 @@ def isDLCValid(dlc):
     _msgObject = None
     try:
         _msgObject = CAN.Message(dlc=dlc)
-    except:
-        logging.debug("Exception thrown by CAN.Message", exc_info=True)
+    except Exception as e:
+        testLogger.debug("Exception thrown by CAN.Message", exc_info=True)
+        testLogger.debug(e.__str__())
     if dlc in range(0, 9):
         assert (_msgObject != None)
     else:
@@ -167,8 +163,9 @@ def areFlagsValid(flags):
     _msgObject = None
     try:
         _msgObject = CAN.Message(flags=flags)
-    except:
-        logging.debug("Exception thrown by CAN.Message", exc_info=True)
+    except Exception as e:
+        testLogger.debug("Exception thrown by CAN.Message", exc_info=True)
+        testLogger.debug(e.__str__())
     if flags in range(0, 2 ** 16):
         assert (_msgObject != None)
     else:
@@ -196,14 +193,13 @@ def checkCANMessageStringRepr(timestamp, dataArray, dlc, flags, deviceID):
     try:
         _msgObject = CAN.Message(deviceID=deviceID, timestamp=timestamp,
                                  data=dataArray, dlc=dlc, flags=flags)
-    except:
-        logging.debug("Exception thrown by CAN.Message", exc_info=True)
+    except Exception as e:
+        testLogger.debug("Exception thrown by CAN.Message", exc_info=True)
+        testLogger.debug(e.__str__())
     assert (_msgObject != None)
     dataString = ("%s" % ' '.join([("%.2x" % byte) for byte in dataArray]))
     expectedStringRep = "%.6f\t%.4x\t%.4x\t%d\t%s" % (timestamp, deviceID,
                                                     flags, dlc, dataString)
-    logging.debug(expectedStringRep)
-    logging.debug(_msgObject.__str__())
     assert (_msgObject.__str__() == expectedStringRep)
 
 
@@ -214,11 +210,11 @@ def testShallCreateBusObject():
     try:
         _bus1 = CAN.Bus()
     except:
-        logging.debug("Exception thrown by CAN.Bus", exc_info=True)
+        testLogger.debug("Exception thrown by CAN.Bus", exc_info=True)
     try:
         _bus2 = CAN.Bus()
     except:
-        logging.debug("Exception thrown by CAN.Bus", exc_info=True)
+        testLogger.debug("Exception thrown by CAN.Bus", exc_info=True)
     assert (_bus1 != None)
     assert (_bus2 != None)
     assert (_bus1.writeHandle == _bus2.writeHandle)
@@ -244,7 +240,7 @@ def checkChannelNumber(channelNumber):
     try:
         _bus = CAN.Bus(channel=channelNumber)
     except:
-        logging.debug("Exception thrown by CAN.Bus", exc_info=True)
+        testLogger.debug("Exception thrown by CAN.Bus", exc_info=True)
     if channelNumber in range(0, numChannels):
         assert (_bus != None)
     else:
@@ -263,7 +259,7 @@ def checkSegmentLengths(tseg1, tseg2):
     try:
         _bus = CAN.Bus(tseg1=tseg1, tseg2=tseg2)
     except:
-        logging.debug("Exception thrown by CAN.Bus", exc_info=True)
+        testLogger.debug("Exception thrown by CAN.Bus", exc_info=True)
     if (tseg1 in range(1, 256)) and (tseg2 in range(0, 256)):
         assert (_bus != None)
     else:
