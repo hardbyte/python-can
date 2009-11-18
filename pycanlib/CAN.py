@@ -1,11 +1,14 @@
+import atexit
 import ctypes
 import logging
 import Queue
+import time
 import types
 
 import canlib
 import canstat
 
+canlib.canInitializeLibrary()
 canModuleLogger = logging.getLogger("pycanlib.CAN")
 
 class pycanlibError(Exception):
@@ -26,6 +29,10 @@ class InvalidParameterError(pycanlibError):
 
 
 class InvalidMessageParameterError(InvalidParameterError):
+    pass
+
+
+class InvalidBusParameterError(InvalidParameterError):
     pass
 
 
@@ -119,3 +126,94 @@ class InfoMessage(LogMessage):
             return ("%s\t%s" % (LogMessage.__str__(self), self.info))
         else:
             return "%s" % LogMessage.__str__(self)
+
+
+readHandleRegistry = {}
+writeHandleRegistry = {}
+
+
+def _ReceiveCallback(handle):
+    readHandleRegistry[handle].ReceiveCallback()
+    return 0
+
+
+RX_CALLBACK = canlib.CALLBACKFUNC(_ReceiveCallback)
+
+
+def _TransmitCallback(handle):
+    writeHandleRegistry[handle].TransmitCallback()
+    return 0
+
+
+TX_CALLBACK = canlib.CALLBACKFUNC(_TransmitCallback)
+
+
+class _Handle(object):
+
+    def __init__(self, channel, flags):
+        _numChannels = ctypes.c_int(0)
+        canlib.canGetNumberOfChannels(ctypes.byref(_numChannels))
+        if channel not in range(0, _numChannels.value):
+            raise InvalidBusParameterError("channel", channel,
+              ("available channels on this system are in the range [0, %d]" %
+              _numChannels.value))
+        if flags & (0xFFFF - canlib.FLAGS_MASK) != 0:
+            raise InvalidBusParameterError("flags", flags,
+              "must contain only the canOPEN_* flags listed in canlib.py")
+        self.flags = flags
+        try:
+            self.canlibHandle = canlib.canOpenChannel(channel, flags)
+        except CANLIBErrorHandlers.CANLIBError as e:
+            if e.errorCode == canstat.canERR_NOTFOUND:
+                raise InvalidBusParameterError("flags", flags,
+                  "no hardware is available that has all these capabilities")
+            else:
+                raise
+        self.listeners = []
+        self.txQueue = Queue.Queue(0)
+        canlib.canBusOn(self.canlibHandle)
+
+    def TransmitCallback(self):
+        print "Transmit callback for handle %d" % self.canlibHandle
+
+    def ReceiveCallback(self):
+        deviceID = ctypes.c_long(0)
+        data = ctypes.create_string_buffer(8)
+        dlc = ctypes.c_uint(0)
+        flags = ctypes.c_uint(0)
+        flags = ctypes.c_uint(0)
+        timestamp = ctypes.c_long(0)
+        canlib.canRead(self.canlibHandle, ctypes.byref(deviceID),
+          ctypes.byref(data), ctypes.byref(dlc), ctypes.byref(flags),
+          ctypes.byref(timestamp))
+        _data = []
+        for char in data:
+            _data.append(ord(char))
+        rxMsg = Message(deviceID.value, _data[:dlc.value], int(dlc.value), int(flags.value), float(timestamp.value)/TIMER_TICKS_PER_SECOND)
+
+def _GetHandle(channelNumber, flags, registry):
+    foundHandle = False
+    handle = None
+    for _key in registry.keys():
+        if (_key == channelNumber) and \
+          (registry[_key].flags == flags):
+            foundHandle = True
+            handle = registry[_key].canlibHandle
+    if not foundHandle:
+        newHandle = _Handle(channelNumber, flags)
+        registry[newHandle.canlibHandle] = newHandle
+        handle = newHandle.canlibHandle
+    if registry == readHandleRegistry:
+        canlib.kvSetNotifyCallback(registry[handle].canlibHandle, RX_CALLBACK, ctypes.c_void_p(None), canstat.canNOTIFY_RX)
+    else:
+        canlib.kvSetNotifyCallback(registry[handle].canlibHandle, TX_CALLBACK, ctypes.c_void_p(None), canstat.canNOTIFY_TX)
+    return registry[handle]
+
+
+@atexit.register
+def Cleanup():
+    for handle in readHandleRegistry.keys():
+        canlib.kvSetNotifyCallback(handle, None, None, canstat.canNOTIFY_RX)
+    for handle in writeHandleRegistry.keys():
+        canlib.kvSetNotifyCallback(handle, None, None, canstat.canNOTIFY_TX)
+    time.sleep(0.5)
