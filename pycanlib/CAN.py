@@ -178,7 +178,13 @@ class _Handle(object):
         canlib.canBusOn(self.canlibHandle)
 
     def TransmitCallback(self):
-        print "Transmit callback for handle %d" % self.canlibHandle
+        try:
+            toSend = self.txQueue.get_nowait()
+        except Queue.Empty:
+            return
+        _dataString = "".join([("%c" % byte) for byte in toSend.data])
+        canlib.canWrite(self.canlibHandle, toSend.deviceID, _dataString,
+          toSend.dlc, toSend.flags)
 
     def ReceiveCallback(self):
         deviceID = ctypes.c_long(0)
