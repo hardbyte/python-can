@@ -15,6 +15,9 @@ class pycanlibError(Exception):
     pass
 
 
+TIMER_TICKS_PER_SECOND = 1000
+
+
 class InvalidParameterError(pycanlibError):
 
     def __init__(self, parameterName, parameterValue, reason):
@@ -169,7 +172,8 @@ class _Handle(object):
                   "no hardware is available that has all these capabilities")
             else:
                 raise
-        self.listeners = []
+        self.listeners = []#real-time response - for emulated devices, etc.
+        self.buses = []#non-real-time response - for test cases, etc.
         self.txQueue = Queue.Queue(0)
         canlib.canBusOn(self.canlibHandle)
 
@@ -189,14 +193,18 @@ class _Handle(object):
         _data = []
         for char in data:
             _data.append(ord(char))
-        rxMsg = Message(deviceID.value, _data[:dlc.value], int(dlc.value), int(flags.value), float(timestamp.value)/TIMER_TICKS_PER_SECOND)
+        rxMsg = Message(deviceID.value, _data[:dlc.value], int(dlc.value),
+          int(flags.value), float(timestamp.value)/TIMER_TICKS_PER_SECOND)
+        for _bus in self.buses:
+            _bus.rxQueue.put_nowait(rxMsg)
+        for _listener in self.listeners:
+            _listener.OnMessageReceived(rxMsg)
 
 def _GetHandle(channelNumber, flags, registry):
     foundHandle = False
     handle = None
     for _key in registry.keys():
-        if (_key == channelNumber) and \
-          (registry[_key].flags == flags):
+        if (_key == channelNumber) and (registry[_key].flags == flags):
             foundHandle = True
             handle = registry[_key].canlibHandle
     if not foundHandle:
@@ -204,9 +212,11 @@ def _GetHandle(channelNumber, flags, registry):
         registry[newHandle.canlibHandle] = newHandle
         handle = newHandle.canlibHandle
     if registry == readHandleRegistry:
-        canlib.kvSetNotifyCallback(registry[handle].canlibHandle, RX_CALLBACK, ctypes.c_void_p(None), canstat.canNOTIFY_RX)
+        canlib.kvSetNotifyCallback(registry[handle].canlibHandle, RX_CALLBACK,
+          ctypes.c_void_p(None), canstat.canNOTIFY_RX)
     else:
-        canlib.kvSetNotifyCallback(registry[handle].canlibHandle, TX_CALLBACK, ctypes.c_void_p(None), canstat.canNOTIFY_TX)
+        canlib.kvSetNotifyCallback(registry[handle].canlibHandle, TX_CALLBACK,
+          ctypes.c_void_p(None), canstat.canNOTIFY_TX)
     return registry[handle]
 
 
@@ -216,4 +226,4 @@ def Cleanup():
         canlib.kvSetNotifyCallback(handle, None, None, canstat.canNOTIFY_RX)
     for handle in writeHandleRegistry.keys():
         canlib.kvSetNotifyCallback(handle, None, None, canstat.canNOTIFY_TX)
-    time.sleep(0.5)
+    time.sleep(0.001)
