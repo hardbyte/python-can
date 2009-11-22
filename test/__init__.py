@@ -2,18 +2,45 @@ import ctypes
 import logging
 import nose
 import sys
+import time
 import types
 
 sys.path.append("../pycanlib")
+
 import canlib
 import CANLIBErrorHandlers
 import canstat
 import CAN
 
+
 testLogger = logging.getLogger("pycanlib.test")
+
 
 def setup():
     canlib.canInitializeLibrary()
+    _numChannels = ctypes.c_int(0)
+    canlib.canGetNumberOfChannels(ctypes.byref(_numChannels))
+    numChannels = _numChannels.value
+    #We need to verify that all of pycanlib's functions operate correctly
+    #on both virtual and physical channels, so we need to find at least one
+    #of each to test with
+    physicalChannels = []
+    virtualChannels = []
+    for _channel in xrange(numChannels):
+        _cardType = ctypes.c_int(0)
+        canlib.canGetChannelData(_channel,
+          canlib.canCHANNELDATA_CARD_TYPE, ctypes.byref(_cardType), 4)
+        if _cardType.value == canlib.canHWTYPE_VIRTUAL:
+            virtualChannels.append(_channel)
+        elif _cardType.value != canlib.canHWTYPE_NONE:
+            physicalChannels.append(_channel)
+    if (len(virtualChannels) == 0):
+        raise Exception("No virtual channels available for testing")
+    elif(len(physicalChannels) == 0):
+        raise Exception("No physical channels available for testing")
+    testLogger.debug("numChannels = %d" % numChannels)
+    testLogger.debug("virtualChannels = %s" % virtualChannels)
+    testLogger.debug("physicalChannels = %s" % physicalChannels)
 
 
 def testShallCreateInfoMessageObject():
@@ -203,7 +230,6 @@ def checkCANMessageStringRepr(timestamp, dataArray, dlc, flags, deviceID):
     assert (_msgObject.__str__() == expectedStringRep)
 
 
-"""
 def testShallCreateBusObject():
     _bus1 = None
     _bus2 = None
@@ -217,65 +243,82 @@ def testShallCreateBusObject():
         testLogger.debug("Exception thrown by CAN.Bus", exc_info=True)
     assert (_bus1 != None)
     assert (_bus2 != None)
-    assert (_bus1.writeHandle == _bus2.writeHandle)
-    assert (_bus1.readHandle == _bus2.readHandle)
+    testLogger.debug("_bus1.writeHandle.canlibHandle = %d" %
+                     _bus1.writeHandle.canlibHandle)
+    testLogger.debug("_bus2.writeHandle.canlibHandle = %d" %
+                     _bus2.writeHandle.canlibHandle)
+    assert (_bus1.writeHandle.canlibHandle == _bus2.writeHandle.canlibHandle)
+    assert (_bus1.readHandle.canlibHandle == _bus2.readHandle.canlibHandle)
 
 
 def testShallAcceptOnlyLegalChannelNumbers():
     _numChannels = ctypes.c_int(0)
     canlib.canGetNumberOfChannels(ctypes.byref(_numChannels))
-    numChannels = _numChannels.value
     channelNumbers = ["foo", 0.25]
-    for i in xrange(-3, numChannels + 3):
+    for i in xrange(-3, _numChannels.value + 3):
         channelNumbers.append(i)
     for channelNumber in channelNumbers:
-        yield checkChannelNumber, channelNumber
+        yield checkChannelNumber, channelNumber, _numChannels.value
 
 
-def checkChannelNumber(channelNumber):
-    _numChannels = ctypes.c_int(0)
-    canlib.canGetNumberOfChannels(ctypes.byref(_numChannels))
-    numChannels = _numChannels.value
+def checkChannelNumber(channelNumber, numChannels):
     _bus = None
     try:
-        _bus = CAN.Bus(channel=channelNumber)
+        _bus = CAN.Bus(channel=channelNumber,
+                       flags=canlib.canOPEN_ACCEPT_VIRTUAL)
     except:
         testLogger.debug("Exception thrown by CAN.Bus", exc_info=True)
     if channelNumber in range(0, numChannels):
         assert (_bus != None)
     else:
+        testLogger.debug("numChannels = %d" % numChannels)
         assert (_bus == None)
 
 
-def testShallAcceptOnlyLegalSegmentLengths():
-    segmentLengths = ["foo", -1, 0, 1, 2, 253, 254, 255, 256, 257]
-    for tseg1 in segmentLengths:
-        for tseg2 in segmentLengths:
-            yield checkSegmentLengths, tseg1, tseg2
+#def testShallAcceptOnlyLegalSegmentLengths():
+#    segmentLengths = ["foo", 0.25]
+#    for i in xrange(-1, 10):
+#        segmentLengths.append(i)
+#    for tseg1 in segmentLengths:
+#        for tseg2 in segmentLengths:
+#            yield checkSegmentLengths, tseg1, tseg2
 
 
-def checkSegmentLengths(tseg1, tseg2):
+#def checkSegmentLengths(tseg1, tseg2):
+#    _bus = None
+#    try:
+#        _bus = CAN.Bus(tseg1=tseg1, tseg2=tseg2)
+#    except:
+#        testLogger.debug("Exception thrown by CAN.Bus", exc_info=True)
+#    if (isinstance(tseg1, types.IntType) and
+#        isinstance(tseg2, types.IntType) and ((tseg1 + tseg2) < 16) and
+#        (tseg1 >= 0) and (tseg2 >= 0)):
+#        assert (_bus != None)
+#    else:
+#        assert (_bus == None)
+
+
+def testShallNotAcceptInvalidBusFlags():
+    _numChannels = ctypes.c_int(0)
+    canlib.canGetNumberOfChannels(ctypes.byref(_numChannels))
+    numChannels = _numChannels.value
+    virtualChannels = []
+    for _channel in xrange(numChannels):
+        _cardType = ctypes.c_int(0)
+        canlib.canGetChannelData(_channel,
+          canlib.canCHANNELDATA_CARD_TYPE, ctypes.byref(_cardType), 4)
+        if _cardType.value == canlib.canHWTYPE_VIRTUAL:
+            virtualChannels.append(_channel)
+    testLogger.debug(virtualChannels)
+    for _channel in virtualChannels:
+        yield openVirtualChannelWithIncorrectFlags, _channel
+
+
+def openVirtualChannelWithIncorrectFlags(channel):
     _bus = None
     try:
-        _bus = CAN.Bus(tseg1=tseg1, tseg2=tseg2)
-    except:
+        _bus = CAN.Bus(channel=channel, flags=0)
+    except CAN.InvalidBusParameterError as e:
         testLogger.debug("Exception thrown by CAN.Bus", exc_info=True)
-    if (tseg1 in range(1, 256)) and (tseg2 in range(0, 256)):
-        assert (_bus != None)
-    else:
-        assert (_bus == None)
-"""
-
-
-def teardown():
-#    for handle in CAN.readHandleList:
-#        if CANLIBErrorHandlers._HandleValid(handle.handle):
-#            canlib.kvSetNotifyCallback(handle.handle, None,
-#                                       ctypes.c_void_p(0), 0)
-#            canlib.canClose(handle.handle)
-#    for handle in CAN.writeHandleList:
-#        if CANLIBErrorHandlers._HandleValid(handle.handle):
-#            canlib.kvSetNotifyCallback(handle.handle, None,
-#                                       ctypes.c_void_p(0), 0)
-#            canlib.canClose(handle.handle)
-    canlib.canUnloadLibrary()
+        testLogger.debug(e)
+    assert (_bus == None)
