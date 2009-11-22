@@ -1,4 +1,5 @@
 import ctypes
+import types
 
 import canlib
 import canstat
@@ -8,13 +9,16 @@ class CANLIBError(Exception):
 
     def __init__(self, function, errorCode, arguments):
         Exception.__init__(self)
-        self.errorCode = errorCode
+        if isinstance(errorCode, types.IntType):
+            self.errorCode = errorCode
+        else:
+            self.errorCode = errorCode.value
         self.functionName = function.__name__
         self.arguments = arguments
 
     def __str__(self):
         return ("CANLIBError: function %s failed - %s - arguments were %s" %
-          (self.functionName, GetErrorMessage(self.errorCode.value),
+          (self.functionName, GetErrorMessage(self.errorCode),
           self.arguments))
 
 
