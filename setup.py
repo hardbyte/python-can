@@ -20,4 +20,5 @@ if __name__ == "__main__":
         name="pycanlib",
         version=GetVersionNumber(),
         packages=find_packages(exclude=["test"]),
+        scripts=["./bin/can_logger.py"],
     )
