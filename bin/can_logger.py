@@ -65,6 +65,11 @@ _logStreamHandler.setFormatter(_logFormatter)
 _logFileHandler.setFormatter(_logFormatter)
 _loggerObj.addHandler(_logStreamHandler)
 _loggerObj.addHandler(_logFileHandler)
+_logStreamHandler2 = logging.StreamHandler()
+_logFormatter2 = logging.Formatter("%(asctime)s %(name)s %(levelname)s %(message)s")
+_logStreamHandler2.setFormatter(_logFormatter2)
+#CAN.canModuleLogger.addHandler(_logStreamHandler2)
+#CAN.canModuleLogger.setLevel(logging.INFO)
 
 while True:
     try:
@@ -76,3 +81,4 @@ while True:
             time.sleep(0.001)
     except KeyboardInterrupt:
         break
+time.sleep(0.1)
