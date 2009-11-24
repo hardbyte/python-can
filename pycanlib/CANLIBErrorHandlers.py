@@ -44,11 +44,3 @@ def CheckStatus(result, function, arguments):
         raise CANLIBError(function, result, arguments)
     else:
         return result
-
-
-def CheckStatusRead(result, function, arguments):
-    if not canstat.CANSTATUS_SUCCESS(result.value) and \
-      (result.value != canstat.canERR_NOMSG):
-        raise CANLIBError(function, result, arguments)
-    else:
-        return result

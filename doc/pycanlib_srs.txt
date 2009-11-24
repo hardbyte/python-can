@@ -4,12 +4,12 @@
 Software Requirements Specification - ``pycanlib``
 ==================================================
 
-Message Objects
-===============
+This document outlines the software requirements for ``pycanlib``, a wrapper
+for the Kvaser CANLIB SDK written in Python.
 
---------------------
-Information Messages
---------------------
+---------------------------
+Information Message Objects
+---------------------------
 
 REQ-ShallCreateInfoMessageObject
 --------------------------------
@@ -21,7 +21,7 @@ containing the information in the message.
 ``[UnitTest]``
 
 REQ-ShallNotAcceptInvalidTimestamps
-------------------------------------
+-----------------------------------
 
 If a timestamp value is passed to the ``pycanlib`` information message
 or CAN message constructors that is not a float or is negative, the constructor
@@ -48,9 +48,9 @@ delimited by a single tab character.
 
 ``[UnitTest]``
 
-------------
-CAN Messages
-------------
+-------------------
+CAN Message Objects
+-------------------
 
 REQ-ShallCreateCANMessageObject
 -------------------------------
@@ -94,8 +94,8 @@ containing the invalid DLC, and the message shall not be created.
 
 ``[UnitTest]``
 
-REQ-ShallNotAcceptInvalidFlags
-------------------------------
+REQ-MessageShallNotAcceptInvalidFlags
+-------------------------------------
 
 The flags field of a CAN message is a 16-bit field, and so accepts integer
 values from 0 to 2\ :sup:`16` - 1. If a flags parameter is passed during
@@ -129,42 +129,6 @@ single tab character.
 
 ``[UnitTest]``
 
-REQ-ShallAllowWritingToBus
---------------------------
-
-The ``pycanlib`` module shall allow the writing of a created CAN message object
-(see REQ-ShallCreateCANMessageObject_) to a created CAN bus (see
-REQ-ShallCreateBusObject_). Writing of objects that are not valid CAN message
-objects shall cause an exception containing the invalid message to be raised,
-and the invalid message shall not be sent.
-
-``[UnitTest]``
-
-REQ-ShallAllowReadingFromBus
-----------------------------
-
-The ``pycanlib`` module shall allow reading of messages received by a CAN bus
-object. The messages read shall be represented as instances of the message
-object defined by ``pycanlib`` (see REQ-ShallCreateCANMessageObject_).
-
-``[UnitTest]``
-
-REQ-MessagesShallBeReadInOrder
-------------------------------
-
-The ``pycanlib`` module shall provide messages read from the CAN bus in the
-order they were received.
-
-``[UnitTest]``
-
-REQ-MessagesShallBeWrittenInOrder
----------------------------------
-
-The ``pycanlib`` module shall write messages to the CAN bus in the order they
-are provided to it.
-
-``[UnitTest]``
-
 REQ-ShallAllowMessageComparison
 -------------------------------
 
@@ -176,28 +140,9 @@ invalid message(s).
 
 ``[UnitTest]``
 
-REQ-ShallAllowReadingOfCANChannelInfo
--------------------------------------
-
-The ``pycanlib`` module shall allow reading of all CAN channel information, as
-defined in the CANLIB SDK documentation for ``canGetChannelData``. If the
-channel requested is not within the range of channels provided by the system or
-is not an integer, ``pycanlib`` shall raise an exception indicating this and
-containing the invalid channel number. Otherwise, ``pycanlib`` shall return an
-object containing the CAN channel information, as defined above.
-
-``[UnitTest]``
-
-REQ-ShallAllowReadingOfCANBusTimer
-----------------------------------
-
-The ``pycanlib`` module shall allow reading of the time elapsed since the CAN
-channel was opened, as recorded by the CAN hardware's bus timer.
-
-``[UnitTest]``
-
+-----------
 Bus Objects
-===========
+-----------
 
 REQ-ShallCreateBusObject
 ------------------------
@@ -211,7 +156,7 @@ SDK.
 REQ-ShallAcceptOnlyLegalChannelNumbers
 --------------------------------------
 
-Legal channel numbers shall be integers in the range [0, m] where m is the
+Legal channel numbers shall be integers in the range [0, n] where n is the
 number of channels available on the system ``pycanlib`` is running on. If,
 during the opening of a CAN bus channel, a channel number is passed that is
 not an integer or is outside this range, ``pycanlib`` shall raise an exception
@@ -232,6 +177,15 @@ the invalid speed value, the channel shall not be opened, and the bus object
 shall not be created.
 
 ``[UnitTest]``
+
+REQ-BusShallNotAcceptInvalidFlags
+---------------------------------
+
+Legal CAN bus flags values are integers in the range [0, 2\ :sup:`16` - 1].
+If, during the opening of a CAN bus channel, a bus speed is passed that is not
+an integer or is not in this range, ``pycanlib`` shall raise an exception
+containing the invalid flags value, the channel shall not be opened, and the
+bus object shall not be created.
 
 REQ-ShallAcceptOnlyLegalSegmentLengths
 --------------------------------------
@@ -275,6 +229,62 @@ REQ-ShallAllowConnectionToVirtualBus
 The ``pycanlib`` module shall allow the opening of a channel to a virtual CAN 
 bus, as well as a physical CAN bus. All requirements listed above regarding bus
 parameters shall apply to virtual bus channels as well as physical bus channels
+
+``[UnitTest]``
+
+REQ-ShallAllowWritingToBus
+--------------------------
+
+The ``pycanlib`` module shall allow the writing of a created CAN message object
+(see REQ-ShallCreateCANMessageObject_) to a created CAN bus (see
+REQ-ShallCreateBusObject_). Writing of objects that are not valid CAN message
+objects shall cause an exception containing the invalid message to be raised,
+and the invalid message shall not be sent.
+
+``[UnitTest]``
+
+REQ-ShallAllowReadingFromBus
+----------------------------
+
+The ``pycanlib`` module shall allow reading of messages received by a CAN bus
+object. The messages read shall be represented as instances of the message
+object defined by ``pycanlib`` (see REQ-ShallCreateCANMessageObject_).
+
+``[UnitTest]``
+
+REQ-MessagesShallBeReadInOrder
+------------------------------
+
+The ``pycanlib`` module shall provide messages read from the CAN bus in the
+order they were received.
+
+``[UnitTest]``
+
+REQ-MessagesShallBeWrittenInOrder
+---------------------------------
+
+The ``pycanlib`` module shall write messages to the CAN bus in the order they
+are provided to it.
+
+``[UnitTest]``
+
+REQ-ShallAllowReadingOfCANChannelInfo
+-------------------------------------
+
+The ``pycanlib`` module shall allow reading of all CAN channel information, as
+defined in the CANLIB SDK documentation for ``canGetChannelData``. If the
+channel requested is not within the range of channels provided by the system or
+is not an integer, ``pycanlib`` shall raise an exception indicating this and
+containing the invalid channel number. Otherwise, ``pycanlib`` shall return an
+object containing the CAN channel information, as defined above.
+
+``[UnitTest]``
+
+REQ-ShallAllowReadingOfCANBusTimer
+----------------------------------
+
+The ``pycanlib`` module shall allow reading of the time elapsed since the CAN
+channel was opened, as recorded by the CAN hardware's bus timer.
 
 ``[UnitTest]``
 

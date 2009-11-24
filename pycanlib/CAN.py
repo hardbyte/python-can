@@ -17,7 +17,8 @@ class pycanlibError(Exception):
     pass
 
 
-TIMER_TICKS_PER_SECOND = 1000
+TIMER_TICKS_PER_SECOND = 1000000
+MICROSECONDS_PER_TIMER_TICK = TIMER_TICKS_PER_SECOND/1000000
 
 
 class InvalidParameterError(pycanlibError):
@@ -180,6 +181,9 @@ class _Handle(object):
         self.listeners = []#real-time response - for emulated devices, etc.
         self.buses = []#non-real-time response - for test cases, etc.
         self.txQueue = Queue.Queue(0)
+        _tmrRes = ctypes.c_long(MICROSECONDS_PER_TIMER_TICK)
+        canlib.canIoCtl(self.canlibHandle, canlib.canIOCTL_SET_TIMER_SCALE,
+          ctypes.byref(_tmrRes), 4)
         canlib.canBusOn(self.canlibHandle)
 
     def TransmitCallback(self):
@@ -192,24 +196,38 @@ class _Handle(object):
           toSend.dlc, toSend.flags)
 
     def ReceiveCallback(self):
+        canlib.kvSetNotifyCallback(self.canlibHandle, None, None,
+          canstat.canNOTIFY_RX)
         deviceID = ctypes.c_long(0)
         data = ctypes.create_string_buffer(8)
         dlc = ctypes.c_uint(0)
         flags = ctypes.c_uint(0)
         flags = ctypes.c_uint(0)
         timestamp = ctypes.c_long(0)
-        canlib.canRead(self.canlibHandle, ctypes.byref(deviceID),
-          ctypes.byref(data), ctypes.byref(dlc), ctypes.byref(flags),
-          ctypes.byref(timestamp))
-        _data = []
-        for char in data:
-            _data.append(ord(char))
-        rxMsg = Message(deviceID.value, _data[:dlc.value], int(dlc.value),
-          int(flags.value), float(timestamp.value) / TIMER_TICKS_PER_SECOND)
-        for _bus in self.buses:
-            _bus.rxQueue.put_nowait(rxMsg)
-        for _listener in self.listeners:
-            _listener.OnMessageReceived(rxMsg)
+        canModuleLogger.info("entering ReceiveCallback while loop")
+        while True:
+            try:
+                canlib.canRead(self.canlibHandle, ctypes.byref(deviceID),
+                  ctypes.byref(data), ctypes.byref(dlc), ctypes.byref(flags),
+                  ctypes.byref(timestamp))
+            except CANLIBErrorHandlers.CANLIBError as e:
+                if e.errorCode == canstat.canERR_NOMSG:
+                    canModuleLogger.info("exiting ReceiveCallback while loop")
+                    break
+                else:
+                    raise
+            _data = []
+#            rxMsg = (deviceID.value, data, dlc.value, flags.value, float(timestamp.value)/TIMER_TICKS_PER_SECOND)
+            for char in data:
+                _data.append(ord(char))
+            rxMsg = Message(deviceID.value, _data[:dlc.value], int(dlc.value),
+              int(flags.value), float(timestamp.value) / TIMER_TICKS_PER_SECOND)
+            for _bus in self.buses:
+                _bus.rxQueue.put_nowait(rxMsg)
+            for _listener in self.listeners:
+                _listener.OnMessageReceived(rxMsg)
+        canlib.kvSetNotifyCallback(self.canlibHandle, RX_CALLBACK,
+          ctypes.c_void_p(None), canstat.canNOTIFY_RX)
 
     def ReadTimer(self):
         return canlib.canReadTimer(self.canlibHandle)
