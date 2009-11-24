@@ -210,8 +210,7 @@ canIoCtl.errcheck = CANLIBErrorHandlers.CheckStatus
 canReadTimer = canlib32.canReadTimer
 canReadTimer.argtypes = [ctypes.c_int]
 canReadTimer.restype = ctypes.c_ulong
-#canReadTimer doesn't return a canstat.c_canStatus value, so it has no error
-#checking
+canReadTimer.errcheck = CANLIBErrorHandlers.CheckStatus
 
 canOpenChannel = canlib32.canOpenChannel
 canOpenChannel.argtypes = [ctypes.c_int, ctypes.c_int]
