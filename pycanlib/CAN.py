@@ -204,7 +204,7 @@ class _Handle(object):
         flags = ctypes.c_uint(0)
         flags = ctypes.c_uint(0)
         timestamp = ctypes.c_long(0)
-        canModuleLogger.info("entering ReceiveCallback while loop")
+        canModuleLogger.debug("Entering _Handle.ReceiveCallback while loop")
         while True:
             try:
                 canlib.canRead(self.canlibHandle, ctypes.byref(deviceID),
@@ -212,12 +212,11 @@ class _Handle(object):
                   ctypes.byref(timestamp))
             except CANLIBErrorHandlers.CANLIBError as e:
                 if e.errorCode == canstat.canERR_NOMSG:
-                    canModuleLogger.info("exiting ReceiveCallback while loop")
+                    canModuleLogger.debug("Leaving _Handle.ReceiveCallback while loop")
                     break
                 else:
                     raise
             _data = []
-#            rxMsg = (deviceID.value, data, dlc.value, flags.value, float(timestamp.value)/TIMER_TICKS_PER_SECOND)
             for char in data:
                 _data.append(ord(char))
             rxMsg = Message(deviceID.value, _data[:dlc.value], int(dlc.value),
@@ -245,12 +244,12 @@ def _GetHandle(channelNumber, flags, registry):
         handle = _Handle(channelNumber, flags)
         registry[handle.canlibHandle] = handle
     if registry == readHandleRegistry:
-        canModuleLogger.info("Setting notify callback for read handle %d" %
+        canModuleLogger.debug("Setting notify callback for read handle %d" %
           handle.canlibHandle)
         canlib.kvSetNotifyCallback(handle.canlibHandle, RX_CALLBACK,
           ctypes.c_void_p(None), canstat.canNOTIFY_RX)
     else:
-        canModuleLogger.info("Setting notify callback for write handle %d" %
+        canModuleLogger.debug("Setting notify callback for write handle %d" %
           handle.canlibHandle)
         canlib.kvSetNotifyCallback(handle.canlibHandle, TX_CALLBACK,
           ctypes.c_void_p(None), canstat.canNOTIFY_TX)
@@ -275,7 +274,7 @@ def _GetHandle(channelNumber, flags, registry):
 class Bus(object):
 
     def __init__(self, channel=0, flags=0, speed=1000000, tseg1=1, tseg2=0,
-                 sjw=1, noSamp=1):
+                 sjw=1, noSamp=1, driverMode=canlib.canDRIVER_NORMAL):
         canModuleLogger.info("Getting read handle for new Bus instance")
         self.readHandle = _GetHandle(channel, flags, readHandleRegistry)
         canModuleLogger.info("Read handle is %d" %
@@ -313,17 +312,23 @@ class Bus(object):
             canlib.canSetBusParams(self.readHandle.canlibHandle, speed, tseg1,
                                    tseg2, sjw, noSamp, 0)
             canlib.canBusOn(self.readHandle.canlibHandle)
-        canlib.canGetBusParams(self.writeHandle.canlibHandle,
-          ctypes.byref(_oldSpeed), ctypes.byref(_oldTseg1),
-          ctypes.byref(_oldTseg2), ctypes.byref(_oldSJW),
-          ctypes.byref(_oldSampleNo), ctypes.byref(_oldSyncMode))
-        if ((speed != _oldSpeed.value) or (tseg1 != _oldTseg1.value) or
-            (tseg2 != _oldTseg2.value) or (sjw != _oldSJW.value) or
-            (noSamp != _oldSampleNo.value)):
-            canlib.canBusOff(self.writeHandle.canlibHandle)
-            canlib.canSetBusParams(self.writeHandle.canlibHandle, speed, tseg1,
-                                   tseg2, sjw, noSamp, 0)
-            canlib.canBusOn(self.writeHandle.canlibHandle)
+        canlib.canSetDriverMode(self.readHandle.canlibHandle, driverMode,
+          canstat.canTRANSCEIVER_RESNET_NA)
+        if driverMode != canlib.canDRIVER_SILENT:
+            canlib.canGetBusParams(self.writeHandle.canlibHandle,
+              ctypes.byref(_oldSpeed), ctypes.byref(_oldTseg1),
+              ctypes.byref(_oldTseg2), ctypes.byref(_oldSJW),
+              ctypes.byref(_oldSampleNo), ctypes.byref(_oldSyncMode))
+            if ((speed != _oldSpeed.value) or (tseg1 != _oldTseg1.value) or
+                (tseg2 != _oldTseg2.value) or (sjw != _oldSJW.value) or
+                (noSamp != _oldSampleNo.value)):
+                canlib.canBusOff(self.writeHandle.canlibHandle)
+                canlib.canSetBusParams(self.writeHandle.canlibHandle, speed, tseg1,
+                                       tseg2, sjw, noSamp, 0)
+                canlib.canBusOn(self.writeHandle.canlibHandle)
+            canlib.canSetDriverMode(self.writeHandle.canlibHandle, driverMode,
+              canstat.canTRANSCEIVER_RESNET_NA)
+        self.driverMode = driverMode
         self.rxQueue = Queue.Queue(0)
         self.timerOffset = self.readHandle.ReadTimer()
         self.readHandle.buses.append(self)
@@ -336,12 +341,19 @@ class Bus(object):
             return None
 
     def Write(self, msg):
-        self.writeHandle.txQueue.put_nowait(msg)
-        _TransmitCallback(self.writeHandle.canlibHandle)
+        if self.driverMode != canlib.canDRIVER_SILENT:
+            self.writeHandle.txQueue.put_nowait(msg)
+            _TransmitCallback(self.writeHandle.canlibHandle)
 
     def ReadTimer(self):
         return (float(self.readHandle.ReadTimer() - self.timerOffset) /
           TIMER_TICKS_PER_SECOND)
+
+    def GetReceiveBufferLevel(self):
+        rxLevel = ctypes.c_int(0)
+        canlib.canIoCtl(self.readHandle.canlibHandle,
+          canlib.canIOCTL_GET_RX_BUFFER_LEVEL, ctypes.byref(rxLevel), 4)
+        return rxLevel.value
 
 
 @atexit.register
