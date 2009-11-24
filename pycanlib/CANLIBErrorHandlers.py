@@ -9,10 +9,7 @@ class CANLIBError(Exception):
 
     def __init__(self, function, errorCode, arguments):
         Exception.__init__(self)
-        if isinstance(errorCode, types.IntType):
-            self.errorCode = errorCode
-        else:
-            self.errorCode = errorCode.value
+        self.errorCode = errorCode
         self.functionName = function.__name__
         self.arguments = arguments
 
@@ -40,7 +37,11 @@ def CheckBusHandleValidity(handle, function, arguments):
 
 
 def CheckStatus(result, function, arguments):
-    if not canstat.CANSTATUS_SUCCESS(result.value):
-        raise CANLIBError(function, result, arguments)
+    if isinstance(result, (types.IntType, types.LongType)):
+        _result = result
+    else:
+        _result = result.value
+    if not canstat.CANSTATUS_SUCCESS(_result):
+        raise CANLIBError(function, _result, arguments)
     else:
         return result

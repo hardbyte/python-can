@@ -1,6 +1,7 @@
 import ctypes
 import logging
 import nose
+import random
 import sys
 import time
 import types
@@ -303,21 +304,38 @@ def testShallNotAcceptInvalidBusFlags():
     canlib.canGetNumberOfChannels(ctypes.byref(_numChannels))
     numChannels = _numChannels.value
     virtualChannels = []
+    physicalChannels = []
     for _channel in xrange(numChannels):
         _cardType = ctypes.c_int(0)
         canlib.canGetChannelData(_channel,
           canlib.canCHANNELDATA_CARD_TYPE, ctypes.byref(_cardType), 4)
         if _cardType.value == canlib.canHWTYPE_VIRTUAL:
             virtualChannels.append(_channel)
+        else:
+            physicalChannels.append(_channel)
     testLogger.debug(virtualChannels)
     for _channel in virtualChannels:
         yield openVirtualChannelWithIncorrectFlags, _channel
+    for _channel in virtualChannels:
+        yield openChannelWithInvalidFlags, _channel
+    for _channel in physicalChannels:
+        yield openChannelWithInvalidFlags, _channel
 
 
 def openVirtualChannelWithIncorrectFlags(channel):
     _bus = None
     try:
         _bus = CAN.Bus(channel=channel, flags=0)
+    except CAN.InvalidBusParameterError as e:
+        testLogger.debug("Exception thrown by CAN.Bus", exc_info=True)
+        testLogger.debug(e)
+    assert (_bus == None)
+
+
+def openChannelWithInvalidFlags(channel):
+    _bus = None
+    try:
+        _bus = CAN.Bus(channel=channel, flags=0xFFFF)
     except CAN.InvalidBusParameterError as e:
         testLogger.debug("Exception thrown by CAN.Bus", exc_info=True)
         testLogger.debug(e)
