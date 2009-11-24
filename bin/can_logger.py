@@ -49,8 +49,7 @@ bus = CAN.Bus(channel=_channel, flags=canlib.canOPEN_ACCEPT_VIRTUAL,
   driverMode=_driverMode)
 
 _loggerObj = logging.getLogger("can_logger")
-#_loggerObj.setLevel(logging.INFO)
-_loggerObj.setLevel(logging.DEBUG)
+_loggerObj.setLevel(logging.INFO)
 _logStreamHandler = logging.StreamHandler()
 _logTimestamp = datetime.datetime.now()
 _dateString = _logTimestamp.strftime("%Y%m%d")
