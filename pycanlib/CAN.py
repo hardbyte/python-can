@@ -185,8 +185,11 @@ class _Handle(object):
         canlib.canIoCtl(self.canlibHandle, canlib.canIOCTL_SET_TIMER_SCALE,
           ctypes.byref(_tmrRes), 4)
         canlib.canBusOn(self.canlibHandle)
+        self.reading = False
+        self.writing = False
 
     def TransmitCallback(self):
+        self.writing = True
         try:
             toSend = self.txQueue.get_nowait()
         except Queue.Empty:
@@ -194,8 +197,10 @@ class _Handle(object):
         _dataString = "".join([("%c" % byte) for byte in toSend.data])
         canlib.canWrite(self.canlibHandle, toSend.deviceID, _dataString,
           toSend.dlc, toSend.flags)
+        self.writing = False
 
     def ReceiveCallback(self):
+        self.reading = True
         canlib.kvSetNotifyCallback(self.canlibHandle, None, None,
           canstat.canNOTIFY_RX)
         deviceID = ctypes.c_long(0)
@@ -219,6 +224,7 @@ class _Handle(object):
             _data = []
             for char in data:
                 _data.append(ord(char))
+            canModuleLogger.debug("Creating new Message object")
             rxMsg = Message(deviceID.value, _data[:dlc.value], int(dlc.value),
               int(flags.value), float(timestamp.value) / TIMER_TICKS_PER_SECOND)
             for _bus in self.buses:
@@ -227,6 +233,7 @@ class _Handle(object):
                 _listener.OnMessageReceived(rxMsg)
         canlib.kvSetNotifyCallback(self.canlibHandle, RX_CALLBACK,
           ctypes.c_void_p(None), canstat.canNOTIFY_RX)
+        self.reading = False
 
     def ReadTimer(self):
         return canlib.canReadTimer(self.canlibHandle)
@@ -358,8 +365,16 @@ class Bus(object):
 
 @atexit.register
 def Cleanup():
+    canModuleLogger.info("Cleaning up...")
     for handle in readHandleRegistry.keys():
+        while readHandleRegistry[handle].reading:
+            pass
+        canModuleLogger.info("Removing read callback for handle %d" % handle)
         canlib.kvSetNotifyCallback(handle, None, None, canstat.canNOTIFY_RX)
     for handle in writeHandleRegistry.keys():
+        while writeHandleRegistry[handle].writing:
+            pass
+        canModuleLogger.info("Removing write callback for handle %d" % handle)
         canlib.kvSetNotifyCallback(handle, None, None, canstat.canNOTIFY_TX)
-    time.sleep(0.001)
+    canModuleLogger.info("Cleanup complete!")
+    time.sleep(0.5)

@@ -41,7 +41,7 @@ canERR__RESERVED = -33
 
 
 def CANSTATUS_SUCCESS(status):
-    return (status == canOK)
+    return (status >= canOK)
 
 canEVENT_RX = 32000
 canEVENT_TX = 32001
