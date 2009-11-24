@@ -340,3 +340,24 @@ def openChannelWithInvalidFlags(channel):
         testLogger.debug("Exception thrown by CAN.Bus", exc_info=True)
         testLogger.debug(e)
     assert (_bus == None)
+
+def testCheckStatus():
+    for _handle in xrange(-100, 100):
+        if (_handle not in CAN.readHandleRegistry.keys()) and \
+          (_handle not in CAN.writeHandleRegistry.keys()):
+            yield operateOnInvalidHandle, _handle
+
+def operateOnInvalidHandle(handle):
+    try:
+        deviceID = ctypes.c_long(0)
+        data = ctypes.create_string_buffer(8)
+        dlc = ctypes.c_uint(0)
+        flags = ctypes.c_uint(0)
+        flags = ctypes.c_uint(0)
+        timestamp = ctypes.c_long(0)
+        canlib.canRead(handle, ctypes.byref(deviceID),
+          ctypes.byref(data), ctypes.byref(dlc), ctypes.byref(flags),
+          ctypes.byref(timestamp))
+    except CANLIBErrorHandlers.CANLIBError as e:
+        testLogger.debug("canRead throws exception", exc_info=True)
+        assert (e.errorCode == canstat.canERR_INVHANDLE)
