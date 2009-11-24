@@ -18,6 +18,8 @@ tex: ${RST_SOURCE_FILES:.txt=.tex}
 %.pdf: %.tex
 	@echo Converting $* to PDF...
 	@pdflatex --quiet $*.tex $@
+	@pdflatex --quiet $*.tex $@
+	@pdflatex --quiet $*.tex $@
 	@echo Done!
 
 clean:
