@@ -9,6 +9,8 @@ import canlib
 import CANLIBErrorHandlers
 import canstat
 
+_format = "%(relativeCreated)d - %(name)s - %(levelname)s - %(message)s"
+logging.basicConfig(format=_format)
 canlib.canInitializeLibrary()
 canModuleLogger = logging.getLogger("pycanlib.CAN")
 handleClassLogger = logging.getLogger("pycanlib.CAN._Handle")
@@ -144,9 +146,12 @@ readHandleRegistry = {}
 writeHandleRegistry = {}
 
 
-def _ReceiveCallback(handle):
+def _ReceiveCallback(handle):#pragma: no cover
+    #called by the callback registered with CANLIB, but coverage can't figure
+    #that out
     canModuleLogger.debug("_ReceiveCallback for handle %d" % handle)
-    readHandleRegistry[handle].ReceiveCallback()
+    if readHandleRegistry[handle] != None:
+        readHandleRegistry[handle].ReceiveCallback()
     return 0
 
 
@@ -155,7 +160,8 @@ RX_CALLBACK = canlib.CALLBACKFUNC(_ReceiveCallback)
 
 def _TransmitCallback(handle):
     canModuleLogger.debug("_TransmitCallback for handle %d" % handle)
-    writeHandleRegistry[handle].TransmitCallback()
+    if writeHandleRegistry[handle] != None:
+        writeHandleRegistry[handle].TransmitCallback()
     return 0
 
 
@@ -182,7 +188,7 @@ class _Handle(object):
             if e.errorCode == canstat.canERR_NOTFOUND:
                 raise InvalidBusParameterError("flags", flags,
                   "no hardware is available that has all these capabilities")
-            else:
+            else:#pragma: no cover
                 raise
         self.listeners = []#real-time response - for emulated devices, etc.
         self.buses = []#non-real-time response - for test cases, etc.
@@ -199,18 +205,29 @@ class _Handle(object):
         self.transmitCallbackEnabled = True
 
     def TransmitCallback(self):
+        handleClassLogger.debug("Transmit buffer level for handle %d: %d" %
+          (self.canlibHandle, self.GetTransmitBufferLevel()))
         if not self.writing and self.transmitCallbackEnabled:
             self.writing = True
             try:
                 toSend = self.txQueue.get_nowait()
-            except Queue.Empty:
+            except Queue.Empty:#pragma: no cover
+                #this part of TransmitCallback executes when CANLIB fires the
+                #transmit callback event for this handle, but coverage isn't
+                #smart enough to figure this out, so it thinks it isn't called
+                #at all
                 return
             _dataString = "".join([("%c" % byte) for byte in toSend.data])
             canlib.canWrite(self.canlibHandle, toSend.deviceID, _dataString,
               toSend.dlc, toSend.flags)
             self.writing = False
 
-    def ReceiveCallback(self):
+    def ReceiveCallback(self):#pragma: no cover
+        #this is called by the callback registered with CANLIB, but because
+        #coverage isn't smart enough to figure this out, it thinks this
+        #function is never called at all
+        handleClassLogger.debug("Receive buffer level for handle %d: %d" %
+          (self.canlibHandle, self.GetReceiveBufferLevel()))
         if not self.reading and self.receiveCallbackEnabled:
             self.reading = True
             deviceID = ctypes.c_long(0)
@@ -245,8 +262,9 @@ class _Handle(object):
                   TIMER_TICKS_PER_SECOND))
                 for _bus in self.buses:
                     _bus.rxQueue.put_nowait(rxMsg)
-                    handleClassLogger.debug("receive queue size: %d" %
-                      _bus.rxQueue.qsize())
+                    _rxQSizeStr = ("receive queue size for bus '%s': %d"
+                      % (_bus.name, _bus.rxQueue.qsize()))
+                    handleClassLogger.debug(_rxQSizeStr)
                 for _listener in self.listeners:
                     _listener.OnMessageReceived(rxMsg)
             canlib.kvSetNotifyCallback(self.canlibHandle, RX_CALLBACK,
@@ -256,7 +274,10 @@ class _Handle(object):
     def ReadTimer(self):
         return canlib.canReadTimer(self.canlibHandle)
 
-    def GetReceiveBufferLevel(self):
+    def GetReceiveBufferLevel(self):#pragma: no cover
+        #this is called by the callback registered with CANLIB, but because
+        #coverage isn't smart enough to figure this out, it thinks this
+        #function is never called at all
         rxLevel = ctypes.c_int(0)
         canlib.canIoCtl(self.canlibHandle,
           canlib.canIOCTL_GET_RX_BUFFER_LEVEL, ctypes.byref(rxLevel), 4)
@@ -293,51 +314,22 @@ def _GetHandle(channelNumber, flags, registry):
     return handle
 
 
-#def _CalculateSegmentLengths(busSpeed, clockFreq):
-#    retVal = []
-#    for prescaler in range(1, 65):#Kvaser Leaf has an 82C250 type
-#                                  #transceiver, which has a prescaler
-#                                  #of 64
-#        btq = clockFreq / busSpeed / 2 / prescaler
-#        if btq >= 4 and btq <= 32:
-#            err = (btq * prescaler) / (btq - 1)
-#            for t1 in range(3, 18):
-#                t2 = btq - t1
-#                if (t1 > t2) and (t2 < 8) and (t2 > 2):
-#                    paramString = "clockFreq = %d, busSpeed = %d,"
-#                    paramString += " tseg1 = %d, tseg2 = %d"
-#                    paramString = paramString %  (clockFreq, busSpeed, t1, t2)
-#                    canModuleLogger.info(paramString)
-#                    retVal.append((t1, t2))
-#    return retVal
-
-#CLOCK_FREQ = 16000000
-
-
 class Bus(object):
 
     def __init__(self, channel=0, flags=0, speed=1000000, tseg1=1, tseg2=0,
-                 sjw=1, noSamp=1, driverMode=canlib.canDRIVER_NORMAL):
-        busClassLogger.info("Getting read handle for new Bus instance")
+                 sjw=1, noSamp=1, driverMode=canlib.canDRIVER_NORMAL,
+                 name="default"):
+        self.name = name
+        busClassLogger.info("Getting read handle for new Bus instance '%s'" %
+          self.name)
         self.readHandle = _GetHandle(channel, flags, readHandleRegistry)
-        busClassLogger.info("Read handle is %d" %
-                             self.readHandle.canlibHandle)
-        busClassLogger.info("Getting write handle for new Bus instance")
+        busClassLogger.info("Read handle for Bus '%s' is %d" %
+                            (self.name, self.readHandle.canlibHandle))
+        busClassLogger.info("Getting write handle for new Bus instance '%s'" %
+                            self.name)
         self.writeHandle = _GetHandle(channel, flags, writeHandleRegistry)
-        busClassLogger.info("Write handle is %s" %
-                             self.writeHandle.canlibHandle)
-#        _segLengths = _CalculateSegmentLengths(speed, CLOCK_FREQ)
-#        _tseg1Vals = []
-#        _tseg2Vals = []
-#        for _segLengthPair in _segLengths:
-#            _tseg1Vals.append(_segLengthPair[0])
-#            _tseg2Vals.append(_segLengthPair[1])
-#        if tseg1 not in _tseg1Vals:
-#            raise InvalidBusParameterError("tseg1", tseg1,
-#              "value must be in set %s" % _tseg1Vals)
-#        if tseg2 not in _tseg2Vals:
-#            raise InvalidBusParameterError("tseg2", tseg2,
-#              "value must be in set %s" % _tseg2Vals)
+        busClassLogger.info("Write handle for Bus '%s' is %s" %
+                            (self.name, self.writeHandle.canlibHandle))
         _oldSpeed = ctypes.c_long(0)
         _oldTseg1 = ctypes.c_uint(0)
         _oldTseg2 = ctypes.c_uint(0)
@@ -380,7 +372,7 @@ class Bus(object):
         try:
             return self.rxQueue.get_nowait()
         except Queue.Empty:
-            busClassLogger.debug("No messages available")
+            busClassLogger.debug("Bus '%s': No messages available" % self.name)
             return None
 
     def Write(self, msg):
@@ -394,18 +386,14 @@ class Bus(object):
 
 
 @atexit.register
-def Cleanup():
+def Cleanup():#pragma: no cover
     canModuleLogger.info("Cleaning up...")
     for handle in readHandleRegistry.keys():
         readHandleRegistry[handle].receiveCallbackEnabled = False
-        while readHandleRegistry[handle].reading:
-            pass
         canModuleLogger.info("Removing read callback for handle %d" % handle)
-        canlib.kvSetNotifyCallback(handle, None, None, canstat.canNOTIFY_RX)
+        canlib.kvSetNotifyCallback(handle, None, None, 0)
     for handle in writeHandleRegistry.keys():
         writeHandleRegistry[handle].transmitCallbackEnabled = False
-        while writeHandleRegistry[handle].writing:
-            pass
         canModuleLogger.info("Removing write callback for handle %d" % handle)
-        canlib.kvSetNotifyCallback(handle, None, None, canstat.canNOTIFY_TX)
+        canlib.kvSetNotifyCallback(handle, None, None, 0)
     canModuleLogger.info("Cleanup complete!")
