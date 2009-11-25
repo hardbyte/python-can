@@ -21,8 +21,8 @@ parser.add_option("-w", "--sjw", dest="sjw", help="CAN bus SJW",
   default="4")
 parser.add_option("-n", "--noSamp", dest="noSamp",
   help="CAN bus sample number", default="1")
-parser.add_option("-d", "--driverMode", dest="driverMode", 
-  help="Mode (silent/normal) for Kvaser CAN bus output driver", 
+parser.add_option("-d", "--driverMode", dest="driverMode",
+  help="Mode (silent/normal) for Kvaser CAN bus output driver",
   default="silent")
 _helpStr = "Base log file name, where log file names are"
 _helpStr += " <base>_<datestamp>_<timestamp>"
@@ -66,10 +66,11 @@ _logFileHandler.setFormatter(_logFormatter)
 _loggerObj.addHandler(_logStreamHandler)
 _loggerObj.addHandler(_logFileHandler)
 _logStreamHandler2 = logging.StreamHandler()
-_logFormatter2 = logging.Formatter("%(asctime)s %(name)s %(levelname)s %(message)s")
+_logFormat = "%(asctime)s %(name)s %(levelname)s %(message)s"
+_logFormatter2 = logging.Formatter(_logFormat)
 _logStreamHandler2.setFormatter(_logFormatter2)
-#CAN.canModuleLogger.addHandler(_logStreamHandler2)
-#CAN.canModuleLogger.setLevel(logging.INFO)
+CAN.canModuleLogger.addHandler(_logStreamHandler2)
+CAN.canModuleLogger.setLevel(logging.WARNING)
 
 while True:
     try:
