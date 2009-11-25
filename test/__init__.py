@@ -361,3 +361,7 @@ def operateOnInvalidHandle(handle):
     except CANLIBErrorHandlers.CANLIBError as e:
         testLogger.debug("canRead throws exception", exc_info=True)
         assert (e.errorCode == canstat.canERR_INVHANDLE)
+        expected = "CANLIBError: function canRead failed -"
+        expected += " Handle is invalid (code -10)"
+        actual = e.__str__()[:len(expected)]
+        assert (expected == actual)
