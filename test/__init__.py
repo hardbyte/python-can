@@ -357,3 +357,69 @@ def operateOnInvalidHandle(handle):
         expected += " Handle is invalid (code -10)"
         actual = e.__str__()[:len(expected)]
         assert (expected == actual)
+
+
+def testReadWrite():
+    _numChannels = ctypes.c_int(0)
+    canlib.canGetNumberOfChannels(ctypes.byref(_numChannels))
+    numChannels = _numChannels.value
+    virtualChannels = []
+    physicalChannels = []
+    for _channel in xrange(numChannels):
+        _cardType = ctypes.c_int(0)
+        canlib.canGetChannelData(_channel,
+          canlib.canCHANNELDATA_CARD_TYPE, ctypes.byref(_cardType), 4)
+        if _cardType.value == canlib.canHWTYPE_VIRTUAL:
+            virtualChannels.append(_channel)
+        else:
+            physicalChannels.append(_channel)
+    testLogger.debug(virtualChannels)
+    for _channel in physicalChannels:
+        yield writeAndReadBack, _channel
+    for _channel in virtualChannels:
+        yield writeAndReadBack, _channel, canlib.canOPEN_ACCEPT_VIRTUAL
+
+
+def writeAndReadBack(busChannel, flags=0):
+    _bus1 = CAN.Bus(channel=busChannel, speed=105263, tseg1=10, tseg2=8,
+                    sjw=4, noSamp=1, flags=flags, name="_bus1")
+    _bus2 = CAN.Bus(channel=busChannel, speed=105263, tseg1=10, tseg2=8,
+                    sjw=4, noSamp=1, flags=flags, name="_bus2")
+    _startTime = _bus1.ReadTimer()
+    _msg1 = CAN.Message(deviceID=0x0010, data=[1, 2, 3], dlc=3, flags=0x02)
+    _bus1.Write(_msg1)
+    rxMsg = None
+    testFailed = True
+    while _bus1.ReadTimer() < (_startTime + 5):
+        tmp = _bus2.Read()
+        if tmp != None:
+            testLogger.debug(tmp)
+            rxMsg = tmp
+            if ((_msg1.deviceID == rxMsg.deviceID) and
+                (_msg1.data == rxMsg.data) and
+                (_msg1.dlc == rxMsg.dlc) and
+                (_msg1.flags == rxMsg.flags)):
+                testLogger.debug("rxMsg matches _msg1")
+                testLogger.debug(rxMsg)
+                testLogger.debug(_msg1)
+                testFailed = False
+                break
+    assert not testFailed
+    _startTime = _bus1.ReadTimer()
+    _bus2.Write(_msg1)
+    rxMsg = None
+    testFailed = True
+    while _bus1.ReadTimer() < (_startTime + 5):
+        tmp = _bus1.Read()
+        if tmp != None:
+            rxMsg = tmp
+            if ((_msg1.deviceID == rxMsg.deviceID) and
+                (_msg1.data == rxMsg.data) and
+                (_msg1.dlc == rxMsg.dlc) and
+                (_msg1.flags == rxMsg.flags)):
+                testLogger.debug("rxMsg matches _msg1")
+                testLogger.debug(rxMsg)
+                testLogger.debug(_msg1)
+                testFailed = False
+                break
+    assert not testFailed
