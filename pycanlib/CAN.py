@@ -17,12 +17,13 @@ logMessageClassLogger = logging.getLogger("pycanlib.CAN.LogMessage")
 messageClassLogger = logging.getLogger("pycanlib.CAN.Message")
 infoMessageClassLogger = logging.getLogger("pycanlib.CAN.InfoMessage")
 
+
 class pycanlibError(Exception):
     pass
 
 
 TIMER_TICKS_PER_SECOND = 1000000
-MICROSECONDS_PER_TIMER_TICK = TIMER_TICKS_PER_SECOND/1000000
+MICROSECONDS_PER_TIMER_TICK = (TIMER_TICKS_PER_SECOND / 1000000)
 
 
 class InvalidParameterError(pycanlibError):
@@ -49,8 +50,8 @@ class InvalidBusParameterError(InvalidParameterError):
 class LogMessage(object):
 
     def __init__(self, timestamp=0.0):
-        logMessageClassLogger.debug("Starting LogMessage.__init__ - timestamp %s"
-          % timestamp)
+        _startMsg = "Starting LogMessage.__init__ - timestamp %s" % timestamp
+        logMessageClassLogger.debug(_startMsg)
         if not isinstance(timestamp, types.FloatType):
             badTimestampError = InvalidMessageParameterError("timestamp",
               timestamp, ("expected float; received '%s'" %
@@ -66,7 +67,8 @@ class LogMessage(object):
             logMessageClassLogger.debug("LogMessage.__init__: %s" %
               badTimestampError)
             raise badTimestampError
-        logMessageClassLogger.debug("LogMessage.__init__ completed successfully")
+        _finishMsg = "LogMessage.__init__ completed successfully"
+        logMessageClassLogger.debug(_finishMsg)
 
     def __str__(self):
         return "%.6f" % self.timestamp
@@ -217,16 +219,20 @@ class _Handle(object):
             flags = ctypes.c_uint(0)
             flags = ctypes.c_uint(0)
             timestamp = ctypes.c_long(0)
-            handleClassLogger.info("Entering _Handle.ReceiveCallback while loop")
+            _loopEntryMsg = "Entering _Handle.ReceiveCallback while loop"
+            handleClassLogger.info(_loopEntryMsg)
             while True:
-                handleClassLogger.debug("RXLEVEL = %d" % self.GetReceiveBufferLevel())
+                handleClassLogger.debug("RXLEVEL = %d" %
+                  self.GetReceiveBufferLevel())
                 try:
                     canlib.canRead(self.canlibHandle, ctypes.byref(deviceID),
-                      ctypes.byref(data), ctypes.byref(dlc), ctypes.byref(flags),
-                      ctypes.byref(timestamp))
+                      ctypes.byref(data), ctypes.byref(dlc),
+                      ctypes.byref(flags), ctypes.byref(timestamp))
                 except CANLIBErrorHandlers.CANLIBError as e:
                     if e.errorCode == canstat.canERR_NOMSG:
-                        handleClassLogger.info("Leaving _Handle.ReceiveCallback while loop")
+                        _loopExitMsg = "Leaving _Handle.ReceiveCallback"
+                        _loopExitMsg += " while loop"
+                        handleClassLogger.info(_loopExitMsg)
                         break
                     else:
                         raise
@@ -234,11 +240,13 @@ class _Handle(object):
                 for char in data:
                     _data.append(ord(char))
                 handleClassLogger.debug("Creating new Message object")
-                rxMsg = Message(deviceID.value, _data[:dlc.value], int(dlc.value),
-                  int(flags.value), float(timestamp.value) / TIMER_TICKS_PER_SECOND)
+                rxMsg = Message(deviceID.value, _data[:dlc.value],
+                  int(dlc.value), int(flags.value), (float(timestamp.value) /
+                  TIMER_TICKS_PER_SECOND))
                 for _bus in self.buses:
                     _bus.rxQueue.put_nowait(rxMsg)
-                    handleClassLogger.debug("receive queue size: %d" % _bus.rxQueue.qsize())
+                    handleClassLogger.debug("receive queue size: %d" %
+                      _bus.rxQueue.qsize())
                 for _listener in self.listeners:
                     _listener.OnMessageReceived(rxMsg)
             canlib.kvSetNotifyCallback(self.canlibHandle, RX_CALLBACK,
@@ -287,18 +295,24 @@ def _GetHandle(channelNumber, flags, registry):
 
 #def _CalculateSegmentLengths(busSpeed, clockFreq):
 #    retVal = []
-#    for prescaler in range(1, 65):#Kvaser Leaf has an 82C250 type transceiver, which has a prescaler of 64
+#    for prescaler in range(1, 65):#Kvaser Leaf has an 82C250 type
+#                                  #transceiver, which has a prescaler
+#                                  #of 64
 #        btq = clockFreq / busSpeed / 2 / prescaler
 #        if btq >= 4 and btq <= 32:
 #            err = (btq * prescaler) / (btq - 1)
 #            for t1 in range(3, 18):
 #                t2 = btq - t1
 #                if (t1 > t2) and (t2 < 8) and (t2 > 2):
-#                    canModuleLogger.info("clockFreq = %d, busSpeed = %d, tseg1 = %d, tseg2 = %d" % (clockFreq, busSpeed, t1, t2))
+#                    paramString = "clockFreq = %d, busSpeed = %d,"
+#                    paramString += " tseg1 = %d, tseg2 = %d"
+#                    paramString = paramString %  (clockFreq, busSpeed, t1, t2)
+#                    canModuleLogger.info(paramString)
 #                    retVal.append((t1, t2))
 #    return retVal
 
 #CLOCK_FREQ = 16000000
+
 
 class Bus(object):
 
@@ -352,8 +366,8 @@ class Bus(object):
                 (tseg2 != _oldTseg2.value) or (sjw != _oldSJW.value) or
                 (noSamp != _oldSampleNo.value)):
                 canlib.canBusOff(self.writeHandle.canlibHandle)
-                canlib.canSetBusParams(self.writeHandle.canlibHandle, speed, tseg1,
-                                       tseg2, sjw, noSamp, 0)
+                canlib.canSetBusParams(self.writeHandle.canlibHandle, speed,
+                                       tseg1, tseg2, sjw, noSamp, 0)
                 canlib.canBusOn(self.writeHandle.canlibHandle)
             canlib.canSetDriverMode(self.writeHandle.canlibHandle, driverMode,
               canstat.canTRANSCEIVER_RESNET_NA)

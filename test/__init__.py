@@ -341,11 +341,13 @@ def openChannelWithInvalidFlags(channel):
         testLogger.debug(e)
     assert (_bus == None)
 
+
 def testCheckStatus():
     for _handle in xrange(-100, 100):
         if (_handle not in CAN.readHandleRegistry.keys()) and \
           (_handle not in CAN.writeHandleRegistry.keys()):
             yield operateOnInvalidHandle, _handle
+
 
 def operateOnInvalidHandle(handle):
     try:
