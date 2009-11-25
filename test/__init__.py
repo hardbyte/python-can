@@ -35,13 +35,13 @@ def setup():
             virtualChannels.append(_channel)
         elif _cardType.value != canlib.canHWTYPE_NONE:
             physicalChannels.append(_channel)
-    if (len(virtualChannels) == 0):
-        raise Exception("No virtual channels available for testing")
-    elif(len(physicalChannels) == 0):
-        raise Exception("No physical channels available for testing")
     testLogger.debug("numChannels = %d" % numChannels)
     testLogger.debug("virtualChannels = %s" % virtualChannels)
     testLogger.debug("physicalChannels = %s" % physicalChannels)
+    if len(virtualChannels) == 0:
+        raise Exception("No virtual channels available for testing")
+    elif len(physicalChannels) == 0:
+        raise Exception("No physical channels available for testing")
 
 
 def testShallCreateInfoMessageObject():
@@ -218,12 +218,8 @@ def testShallProvideStringRepresentationOfCANMessage():
 
 def checkCANMessageStringRepr(timestamp, dataArray, dlc, flags, deviceID):
     _msgObject = None
-    try:
-        _msgObject = CAN.Message(deviceID=deviceID, timestamp=timestamp,
-                                 data=dataArray, dlc=dlc, flags=flags)
-    except Exception as e:
-        testLogger.debug("Exception thrown by CAN.Message", exc_info=True)
-        testLogger.debug(e.__str__())
+    _msgObject = CAN.Message(deviceID=deviceID, timestamp=timestamp,
+                             data=dataArray, dlc=dlc, flags=flags)
     assert (_msgObject != None)
     dataString = ("%s" % ' '.join([("%.2x" % byte) for byte in dataArray]))
     expectedStringRep = "%.6f\t%.4x\t%.4x\t%d\t%s" % (timestamp, deviceID,
@@ -234,14 +230,8 @@ def checkCANMessageStringRepr(timestamp, dataArray, dlc, flags, deviceID):
 def testShallCreateBusObject():
     _bus1 = None
     _bus2 = None
-    try:
-        _bus1 = CAN.Bus()
-    except:
-        testLogger.debug("Exception thrown by CAN.Bus", exc_info=True)
-    try:
-        _bus2 = CAN.Bus()
-    except:
-        testLogger.debug("Exception thrown by CAN.Bus", exc_info=True)
+    _bus1 = CAN.Bus()
+    _bus2 = CAN.Bus()
     assert (_bus1 != None)
     assert (_bus2 != None)
     testLogger.debug("_bus1.writeHandle.canlibHandle = %d" %
