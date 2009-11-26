@@ -53,13 +53,13 @@ class LogMessage(object):
     def __init__(self, timestamp=0.0):
         _startMsg = "Starting LogMessage.__init__ - timestamp %s" % timestamp
         logMessageClassLogger.debug(_startMsg)
-#        if not isinstance(timestamp, types.FloatType):
-#            badTimestampError = InvalidMessageParameterError("timestamp",
-#              timestamp, ("expected float; received '%s'" %
-#              timestamp.__class__.__name__))
-#            logMessageClassLogger.debug("LogMessage.__init__: %s" %
-#              badTimestampError)
-#            raise badTimestampError
+        if not isinstance(timestamp, types.FloatType):
+            badTimestampError = InvalidMessageParameterError("timestamp",
+              timestamp, ("expected float; received '%s'" %
+              timestamp.__class__.__name__))
+            logMessageClassLogger.debug("LogMessage.__init__: %s" %
+              badTimestampError)
+            raise badTimestampError
         if timestamp < 0:
             badTimestampError = InvalidMessageParameterError("timestamp",
               timestamp, "timestamp value must be positive")
@@ -78,39 +78,39 @@ class Message(LogMessage):
 
     def __init__(self, deviceID=0, data=[], dlc=0, flags=0, timestamp=0.0):
         LogMessage.__init__(self, timestamp)
-#        if not isinstance(deviceID, types.IntType):
-#            raise InvalidMessageParameterError("deviceID", deviceID,
-#              ("expected int; received '%s'" %
-#              deviceID.__class__.__name__))
-#        if deviceID not in range(0, 2 ** 11):
-#            raise InvalidMessageParameterError("deviceID", deviceID,
-#              "deviceID must be in range [0, 2**11-1]")
+        if not isinstance(deviceID, types.IntType):
+            raise InvalidMessageParameterError("deviceID", deviceID,
+              ("expected int; received '%s'" %
+              deviceID.__class__.__name__))
+        if deviceID not in range(0, 2 ** 11):
+            raise InvalidMessageParameterError("deviceID", deviceID,
+              "deviceID must be in range [0, 2**11-1]")
         self.deviceID = deviceID
-#        if len(data) not in range(0, 9):
-#            raise InvalidMessageParameterError("data", data,
-#              "data array length must be in range [0, 8]")
-#        for item in data:
-#            if not isinstance(item, types.IntType):
-#                raise InvalidMessageParameterError("data", data,
-#                  ("data array must contain only integers; found '%s'" %
-#                  item.__class__.__name__))
-#            if item not in range(0, 2 ** 8):
-#                raise InvalidMessageParameterError("data", data,
-#                  "data array element values must be in range [0, 2**8-1]")
+        if len(data) not in range(0, 9):
+            raise InvalidMessageParameterError("data", data,
+              "data array length must be in range [0, 8]")
+        for item in data:
+            if not isinstance(item, types.IntType):
+                raise InvalidMessageParameterError("data", data,
+                  ("data array must contain only integers; found '%s'" %
+                  item.__class__.__name__))
+            if item not in range(0, 2 ** 8):
+                raise InvalidMessageParameterError("data", data,
+                  "data array element values must be in range [0, 2**8-1]")
         self.data = data
-#        if not isinstance(dlc, types.IntType):
-#            raise InvalidMessageParameterError("dlc", dlc,
-#              "expected int; received %s" % dlc.__class__.__name__)
-#        if dlc not in range(0, 9):
-#            raise InvalidMessageParameterError("dlc", dlc,
-#              "DLC value must be in range [0, 8]")
+        if not isinstance(dlc, types.IntType):
+            raise InvalidMessageParameterError("dlc", dlc,
+              "expected int; received %s" % dlc.__class__.__name__)
+        if dlc not in range(0, 9):
+            raise InvalidMessageParameterError("dlc", dlc,
+              "DLC value must be in range [0, 8]")
         self.dlc = dlc
-#        if not isinstance(flags, types.IntType):
-#            raise InvalidMessageParameterError("flags", flags,
-#              "expected int; received %s" % flags.__class__.__name__)
-#        if flags not in range(0, 2 ** 16):
-#            raise InvalidMessageParameterError("flags", flags,
-#              "flags value must be in range [0, 2**16-1]")
+        if not isinstance(flags, types.IntType):
+            raise InvalidMessageParameterError("flags", flags,
+              "expected int; received %s" % flags.__class__.__name__)
+        if flags not in range(0, 2 ** 16):
+            raise InvalidMessageParameterError("flags", flags,
+              "flags value must be in range [0, 2**16-1]")
         self.flags = flags
 
     def __str__(self):
@@ -171,14 +171,14 @@ class _Handle(object):
     def __init__(self, channel, flags):
         _numChannels = ctypes.c_int(0)
         canlib.canGetNumberOfChannels(ctypes.byref(_numChannels))
-#        if channel not in range(0, _numChannels.value):
-#            raise InvalidBusParameterError("channel", channel,
-#              ("available channels on this system are in the range [0, %d]" %
-#              _numChannels.value))
+        if channel not in range(0, _numChannels.value):
+            raise InvalidBusParameterError("channel", channel,
+              ("available channels on this system are in the range [0, %d]" %
+              _numChannels.value))
         self.channel = channel
-#        if flags & (0xFFFF - canlib.FLAGS_MASK) != 0:
-#            raise InvalidBusParameterError("flags", flags,
-#              "must contain only the canOPEN_* flags listed in canlib.py")
+        if flags & (0xFFFF - canlib.FLAGS_MASK) != 0:
+            raise InvalidBusParameterError("flags", flags,
+              "must contain only the canOPEN_* flags listed in canlib.py")
         self.flags = flags
         try:
             self.canlibHandle = canlib.canOpenChannel(channel, flags)
@@ -224,8 +224,6 @@ class _Handle(object):
         #this is called by the callback registered with CANLIB, but because
         #coverage isn't smart enough to figure this out, it thinks this
         #function is never called at all
-        handleClassLogger.debug("Receive buffer level for handle %d: %d" %
-          (self.canlibHandle, self.GetReceiveBufferLevel()))
         if not self.reading and self.receiveCallbackEnabled:
             self.reading = True
             deviceID = ctypes.c_long(0)
@@ -235,10 +233,10 @@ class _Handle(object):
             flags = ctypes.c_uint(0)
             timestamp = ctypes.c_long(0)
             _loopEntryMsg = "Entering _Handle.ReceiveCallback while loop"
-            handleClassLogger.info(_loopEntryMsg)
+            handleClassLogger.debug(_loopEntryMsg)
             status = canstat.canOK
             while status == canstat.canOK:
-                handleClassLogger.debug("RXLEVEL = %d" %
+                handleClassLogger.info("RXLEVEL = %d" %
                   self.GetReceiveBufferLevel())
                 status = canlib.canRead(self.canlibHandle,
                   ctypes.byref(deviceID), ctypes.byref(data),
@@ -255,7 +253,7 @@ class _Handle(object):
                     _bus.rxQueue.put_nowait(rxMsg)
                     _rxQSizeStr = ("receive queue size for bus '%s': %d"
                       % (_bus.name, _bus.rxQueue.qsize()))
-                    handleClassLogger.debug(_rxQSizeStr)
+                    handleClassLogger.info(_rxQSizeStr)
                 for _listener in self.listeners:
                     _listener.OnMessageReceived(rxMsg)
             canlib.kvSetNotifyCallback(self.canlibHandle, RX_CALLBACK,
