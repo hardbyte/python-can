@@ -76,7 +76,7 @@ while True:
     try:
         msg = bus.Read()
         if msg != None:
-            _loggerObj.debug("RXLEVEL = %d" % bus.GetReceiveBufferLevel())
+            _loggerObj.debug("RXLEVEL = %d" % bus.readHandle.GetReceiveBufferLevel())
             _loggerObj.info(msg)
         else:
             time.sleep(0.001)
