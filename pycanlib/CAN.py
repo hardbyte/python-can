@@ -238,21 +238,14 @@ class _Handle(object):
             timestamp = ctypes.c_long(0)
             _loopEntryMsg = "Entering _Handle.ReceiveCallback while loop"
             handleClassLogger.info(_loopEntryMsg)
-            while True:
+            status = canstat.canOK
+            while status == canstat.canOK:
                 handleClassLogger.debug("RXLEVEL = %d" %
                   self.GetReceiveBufferLevel())
-                try:
-                    canlib.canRead(self.canlibHandle, ctypes.byref(deviceID),
-                      ctypes.byref(data), ctypes.byref(dlc),
-                      ctypes.byref(flags), ctypes.byref(timestamp))
-                except CANLIBErrorHandlers.CANLIBError as e:
-                    if e.errorCode == canstat.canERR_NOMSG:
-                        _loopExitMsg = "Leaving _Handle.ReceiveCallback"
-                        _loopExitMsg += " while loop"
-                        handleClassLogger.info(_loopExitMsg)
-                        break
-                    else:
-                        raise
+                status = canlib.canRead(self.canlibHandle,
+                  ctypes.byref(deviceID), ctypes.byref(data),
+                  ctypes.byref(dlc), ctypes.byref(flags),
+                  ctypes.byref(timestamp))
                 _data = []
                 for char in data:
                     _data.append(ord(char))
