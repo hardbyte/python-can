@@ -9,9 +9,8 @@ import canlib
 import CANLIBErrorHandlers
 import canstat
 
-_format = "%(relativeCreated)d - %(name)s - %(levelname)s - %(message)s"
-logging.basicConfig(format=_format)
 canlib.canInitializeLibrary()
+
 canModuleLogger = logging.getLogger("pycanlib.CAN")
 handleClassLogger = logging.getLogger("pycanlib.CAN._Handle")
 busClassLogger = logging.getLogger("pycanlib.CAN.Bus")
