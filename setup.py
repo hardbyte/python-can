@@ -20,6 +20,7 @@ if __name__ == "__main__":
     _versionNumberFileName = "./pycanlib/version.txt"
     _versionFile = open(_versionNumberFileName, "w")
     _versionFile.write(_version)
+    _versionFile.close()
     setup(
         name="pycanlib",
         version=_version,

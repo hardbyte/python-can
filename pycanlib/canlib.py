@@ -145,37 +145,37 @@ canRead = canlib32.canRead
 canRead.argtypes = [ctypes.c_int, ctypes.c_void_p, ctypes.c_void_p,
                     ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
 canRead.restype = canstat.c_canStatus
-canRead.errcheck = CANLIBErrorHandlers.CheckStatus
+canRead.errcheck = CANLIBErrorHandlers.CheckStatusRead
 
 canReadWait = canlib32.canReadWait
 canReadWait.argtypes = [ctypes.c_int, ctypes.c_void_p, ctypes.c_void_p,
                         ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
                         ctypes.c_long]
 canReadWait.restype = canstat.c_canStatus
-canReadWait.errcheck = CANLIBErrorHandlers.CheckStatus
+canReadWait.errcheck = CANLIBErrorHandlers.CheckStatusRead
 
 canReadSpecific = canlib32.canReadSpecific
 canReadSpecific.argtypes = [ctypes.c_int, ctypes.c_long, ctypes.c_void_p,
                             ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
 canReadSpecific.restype = canstat.c_canStatus
-canReadSpecific.errcheck = CANLIBErrorHandlers.CheckStatus
+canReadSpecific.errcheck = CANLIBErrorHandlers.CheckStatusRead
 
 canReadSync = canlib32.canReadSync
 canReadSync.argtypes = [ctypes.c_int, ctypes.c_ulong]
 canReadSync.restype = canstat.c_canStatus
-canReadSync.errcheck = CANLIBErrorHandlers.CheckStatus
+canReadSync.errcheck = CANLIBErrorHandlers.CheckStatusRead
 
 canReadSyncSpecific = canlib32.canReadSyncSpecific
 canReadSyncSpecific.argtypes = [ctypes.c_int, ctypes.c_long, ctypes.c_ulong]
 canReadSyncSpecific.restype = canstat.c_canStatus
-canReadSyncSpecific.errcheck = CANLIBErrorHandlers.CheckStatus
+canReadSyncSpecific.errcheck = CANLIBErrorHandlers.CheckStatusRead
 
 canReadSpecificSkip = canlib32.canReadSpecificSkip
 canReadSpecificSkip.argtypes = [ctypes.c_int, ctypes.c_long, ctypes.c_void_p,
                                 ctypes.c_void_p, ctypes.c_void_p,
                                 ctypes.c_void_p]
 canReadSpecificSkip.restype = canstat.c_canStatus
-canReadSpecificSkip.errcheck = CANLIBErrorHandlers.CheckStatus
+canReadSpecificSkip.errcheck = CANLIBErrorHandlers.CheckStatusRead
 
 canSetNotify = canlib32.canSetNotify
 canSetNotify.argtypes = [ctypes.c_int, ctypes.c_void_p, ctypes.c_uint]

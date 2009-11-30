@@ -36,12 +36,26 @@ def CheckBusHandleValidity(handle, function, arguments):
         return handle
 
 
-def CheckStatus(result, function, arguments):
+def _ConvertCANStatusToInt(result):
     if isinstance(result, (types.IntType, types.LongType)):
         _result = result
     else:
         _result = result.value
+    return _result
+
+
+def CheckStatus(result, function, arguments):
+    _result = _ConvertCANStatusToInt(result)
     if not canstat.CANSTATUS_SUCCESS(_result):
+        raise CANLIBError(function, _result, arguments)
+    else:
+        return result
+
+
+def CheckStatusRead(result, function, arguments):
+    _result = _ConvertCANStatusToInt(result)
+    if not canstat.CANSTATUS_SUCCESS(_result) and \
+      (_result != canstat.canERR_NOMSG):
         raise CANLIBError(function, _result, arguments)
     else:
         return result
