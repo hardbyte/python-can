@@ -1,7 +1,9 @@
 import atexit
 import ctypes
 import logging
+import os
 import Queue
+import sys
 import time
 import types
 
@@ -17,6 +19,17 @@ busClassLogger = logging.getLogger("pycanlib.CAN.Bus")
 logMessageClassLogger = logging.getLogger("pycanlib.CAN.LogMessage")
 messageClassLogger = logging.getLogger("pycanlib.CAN.Message")
 infoMessageClassLogger = logging.getLogger("pycanlib.CAN.InfoMessage")
+
+
+
+try:
+    _versionNumberFile = open(os.path.join(os.path.dirname(__file__),
+                              "version.txt"), "r")
+    __version__ = _versionNumberFile.readline()
+    _versionNumberFile.close()
+except IOError as e:
+    print e
+    __version__ = "UNKNOWN"
 
 
 class pycanlibError(Exception):
@@ -278,6 +291,95 @@ class _Handle(object):
           canlib.canIOCTL_GET_TX_BUFFER_LEVEL, ctypes.byref(txLevel), 4)
         return txLevel.value
 
+    def GetDeviceDescription(self):#pragma: no cover
+        MAX_DEVICE_DESCR_LENGTH = 256
+        _buffer = ctypes.create_string_buffer(MAX_DEVICE_DESCR_LENGTH)
+        canlib.canGetChannelData(self.canlibHandle,
+          canlib.canCHANNELDATA_DEVDESCR_ASCII, ctypes.byref(_buffer),
+          ctypes.c_size_t(MAX_DEVICE_DESCR_LENGTH))
+        return _buffer.value
+
+    def GetDeviceManufacturerName(self):
+        MAX_MANUFACTURER_NAME_LENGTH = 256
+        _buffer = ctypes.create_string_buffer(MAX_MANUFACTURER_NAME_LENGTH)
+        canlib.canGetChannelData(self.canlibHandle,
+          canlib.canCHANNELDATA_MFGNAME_ASCII, ctypes.byref(_buffer),
+          ctypes.c_size_t(MAX_MANUFACTURER_NAME_LENGTH))
+        return _buffer.value
+
+    def GetDeviceFirmwareVersion(self):#pragma: no cover
+        LENGTH = 8
+        UCHAR_ARRAY = ctypes.c_ubyte*LENGTH
+        _buffer = UCHAR_ARRAY()
+        canlib.canGetChannelData(self.canlibHandle,
+          canlib.canCHANNELDATA_CARD_FIRMWARE_REV, ctypes.byref(_buffer),
+          ctypes.c_size_t(LENGTH))
+        versionNumber = []
+        for i in [6, 4, 0, 2]:
+            versionNumber.append((_buffer[i + 1] << 8) + _buffer[i])
+        return "%d.%d.%d.%d" % (versionNumber[0], versionNumber[1],
+          versionNumber[2], versionNumber[3])
+
+    def GetDeviceHardwareVersion(self):#pragma: no cover
+        LENGTH = 8
+        UCHAR_ARRAY = ctypes.c_ubyte*LENGTH
+        _buffer = UCHAR_ARRAY()
+        canlib.canGetChannelData(self.canlibHandle,
+          canlib.canCHANNELDATA_CARD_HARDWARE_REV, ctypes.byref(_buffer),
+          ctypes.c_size_t(LENGTH))
+        versionNumber = []
+        for i in [2, 0]:
+            versionNumber.append((_buffer[i + 1] << 8) + _buffer[i])
+        return "%d.%d" % (versionNumber[0], versionNumber[1])
+
+    def GetDeviceCardSerial(self):#pragma: no cover
+        LENGTH = 8
+        UCHAR_ARRAY = ctypes.c_ubyte*LENGTH
+        _buffer = UCHAR_ARRAY()
+        canlib.canGetChannelData(self.canlibHandle,
+          canlib.canCHANNELDATA_CARD_SERIAL_NO, ctypes.byref(_buffer),
+          ctypes.c_size_t(LENGTH))
+        _serialNo = 0
+        for i in xrange(len(_buffer)):
+            _serialNo += (_buffer[i] << (8 * i))
+        return _serialNo
+
+    def GetDeviceTransceiverSerial(self):#pragma: no cover
+        LENGTH = 8
+        UCHAR_ARRAY = ctypes.c_ubyte*LENGTH
+        _buffer = UCHAR_ARRAY()
+        canlib.canGetChannelData(self.canlibHandle,
+          canlib.canCHANNELDATA_TRANS_SERIAL_NO, ctypes.byref(_buffer),
+          ctypes.c_size_t(LENGTH))
+        _serialNo = 0
+        for i in xrange(len(_buffer)):
+            _serialNo += (_buffer[i] << (8 * i))
+        return _serialNo
+
+    def GetDeviceCardNumber(self):#pragma: no cover
+        _buffer = ctypes.c_ulong(0)
+        canlib.canGetChannelData(self.canlibHandle,
+          canlib.canCHANNELDATA_CARD_NUMBER, ctypes.byref(_buffer),
+          ctypes.c_size_t(4))
+        return _buffer.value
+
+    def GetDeviceChannelOnCard(self):#pragma: no cover
+        _buffer = ctypes.c_ulong(0)
+        canlib.canGetChannelData(self.canlibHandle,
+          canlib.canCHANNELDATA_CHAN_NO_ON_CARD, ctypes.byref(_buffer),
+          ctypes.c_size_t(4))
+        return _buffer.value
+
+    def GetDeviceTransceiverType(self):#pragma: no cover
+        _buffer = ctypes.c_ulong(0)
+        canlib.canGetChannelData(self.canlibHandle,
+          canlib.canCHANNELDATA_TRANS_TYPE, ctypes.byref(_buffer),
+          ctypes.c_size_t(4))
+        try:
+            return canstat.canTransceiverTypeStrings[_buffer.value]
+        except KeyError:
+            return "Transceiver type %d is unknown to CANLIB" % _buffer.value
+
 
 def _GetHandle(channelNumber, flags, registry):
     foundHandle = False
@@ -301,6 +403,45 @@ def _GetHandle(channelNumber, flags, registry):
         canlib.kvSetNotifyCallback(handle.canlibHandle, TX_CALLBACK,
           ctypes.c_void_p(None), canstat.canNOTIFY_TX)
     return handle
+
+
+class ChannelInfo(object):#pragma: no cover
+
+    def __init__(self, name, manufacturer, fwVersion, hwVersion, cardSN,
+      transSN, transType, cardNo, channelOnCard):
+        self.name = name
+        self.manufacturer = manufacturer
+        self.fwVersion = fwVersion
+        self.hwVersion = hwVersion
+        self.cardSN = cardSN
+        self.transSN = transSN
+        self.transType = transType
+        self.cardNo = cardNo
+        self.channelOnCard = channelOnCard
+
+    def __str__(self):
+        retVal = "Name: %s\n" % self.name
+        retVal += "Manufacturer: %s\n" % self.manufacturer
+        retVal += "Firmware version: %s\n" % self.fwVersion
+        retVal += "Hardware version: %s\n" % self.hwVersion
+        retVal += "Card serial number: %s\n" % self.cardSN
+        retVal += "Transceiver type: %s\n" % self.transType
+        retVal += "Transceiver serial number: %s\n" % self.transSN
+        retVal += "Card number: %s\n" % self.cardNo
+        retVal += "Channel on card: %s\n" % self.channelOnCard
+        return retVal
+
+
+def GetHostMachineInfo():
+    return {"osType": sys.platform, "pythonVersion": sys.version}
+
+
+def GetCANLIBInfo():
+    _canlibProdVer32 = canlib.canGetVersionEx(canlib.canVERSION_CANLIB32_PRODVER32)
+    _majorVerNo = (_canlibProdVer32 & 0x00FF0000) >> 16
+    _minorVerNo = (_canlibProdVer32 & 0x0000FF00) >> 8
+    _minorVerLetter =  "%c" % (_canlibProdVer32 & 0x000000FF)
+    return "%d.%d%s" % (_majorVerNo, _minorVerNo, _minorVerLetter)
 
 
 class Bus(object):
@@ -372,6 +513,44 @@ class Bus(object):
     def ReadTimer(self):
         return (float(self.readHandle.ReadTimer() - self.timerOffset) /
           TIMER_TICKS_PER_SECOND)
+
+    def _GetDeviceDescription(self):#pragma: no cover
+        return self.readHandle.GetDeviceDescription()
+
+    def _GetDeviceManufacturerName(self):#pragma: no cover
+        return self.readHandle.GetDeviceManufacturerName()
+
+    def _GetDeviceFirmwareVersion(self):#pragma: no cover
+        return self.readHandle.GetDeviceFirmwareVersion()
+
+    def _GetDeviceHardwareVersion(self):#pragma: no cover
+        return self.readHandle.GetDeviceHardwareVersion()
+
+    def _GetDeviceCardSerial(self):#pragma: no cover
+        return self.readHandle.GetDeviceCardSerial()
+
+    def _GetDeviceTransceiverSerial(self):#pragma: no cover
+        return self.readHandle.GetDeviceTransceiverSerial()
+
+    def _GetDeviceCardNumber(self):#pragma: no cover
+        return self.readHandle.GetDeviceCardNumber()
+
+    def _GetDeviceChannelOnCard(self):#pragma: no cover
+        return self.readHandle.GetDeviceChannelOnCard()
+
+    def _GetDeviceTransceiverType(self):#pragma: no cover
+        return self.readHandle.GetDeviceTransceiverType()
+
+    def GetChannelInfo(self):
+        return ChannelInfo(self._GetDeviceDescription(),
+                           self._GetDeviceManufacturerName(),
+                           self._GetDeviceFirmwareVersion(),
+                           self._GetDeviceHardwareVersion(),
+                           self._GetDeviceCardSerial(),
+                           self._GetDeviceTransceiverSerial(),
+                           self._GetDeviceTransceiverType(),
+                           self._GetDeviceCardNumber(),
+                           self._GetDeviceChannelOnCard())
 
 
 @atexit.register
