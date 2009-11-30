@@ -16,9 +16,14 @@ def GetVersionNumber():
     return retVal
 
 if __name__ == "__main__":
+    _version = GetVersionNumber()
+    _versionNumberFileName = "./pycanlib/version.txt"
+    _versionFile = open(_versionNumberFileName, "w")
+    _versionFile.write(_version)
     setup(
         name="pycanlib",
-        version=GetVersionNumber(),
+        version=_version,
         packages=find_packages(exclude=["test"]),
+        package_data = {"pycanlib": ["version.txt"]},
         scripts=["./bin/can_logger.py"],
     )
