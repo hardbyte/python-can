@@ -40,6 +40,43 @@ canERR_NOT_IMPLEMENTED = -32
 canERR__RESERVED = -33
 
 
+canStatusLookupTable = {}
+canStatusLookupTable[canOK] = "canOK"
+canStatusLookupTable[canERR_PARAM] = "canERR_PARAM"
+canStatusLookupTable[canERR_NOMSG] = "canERR_NOMSG"
+canStatusLookupTable[canERR_NOTFOUND] = "canERR_NOTFOUND"
+canStatusLookupTable[canERR_NOMEM] = "canERR_NOMEM"
+canStatusLookupTable[canERR_NOCHANNELS] = "canERR_NOCHANNELS"
+canStatusLookupTable[canERR_RESERVED_3] = "canERR_NOCHANNELS"
+canStatusLookupTable[canERR_TIMEOUT] = "canERR_TIMEOUT"
+canStatusLookupTable[canERR_NOTINITIALIZED] = "canERR_NOTINITIALIZED"
+canStatusLookupTable[canERR_NOHANDLES] = "canERR_NOHANDLES"
+canStatusLookupTable[canERR_INVHANDLE] = "canERR_INVHANDLE"
+canStatusLookupTable[canERR_INIFILE] = "canERR_INIFILE"
+canStatusLookupTable[canERR_DRIVER] = "canERR_DRIVER"
+canStatusLookupTable[canERR_TXBUFOFL] = "canERR_TXBUFOFL"
+canStatusLookupTable[canERR_RESERVED_1] = "canERR_RESERVED_1"
+canStatusLookupTable[canERR_HARDWARE] = "canERR_HARDWARE"
+canStatusLookupTable[canERR_DYNALOAD] = "canERR_DYNALOAD"
+canStatusLookupTable[canERR_DYNALIB] = "canERR_DYNALIB"
+canStatusLookupTable[canERR_DYNAINIT] = "canERR_DYNAINIT"
+canStatusLookupTable[canERR_NOT_SUPPORTED] = "canERR_NOT_SUPPORTED"
+canStatusLookupTable[canERR_RESERVED_5] = "canERR_RESERVED_5"
+canStatusLookupTable[canERR_RESERVED_6] = "canERR_RESERVED_6"
+canStatusLookupTable[canERR_RESERVED_2] = "canERR_RESERVED_2"
+canStatusLookupTable[canERR_DRIVERLOAD] = "canERR_DRIVERLOAD"
+canStatusLookupTable[canERR_DRIVERFAILED] = "canERR_DRIVERFAILED"
+canStatusLookupTable[canERR_NOCONFIGMGR] = "canERR_NOCONFIGMGR"
+canStatusLookupTable[canERR_NOCARD] = "canERR_NOCARD"
+canStatusLookupTable[canERR_RESERVED_7] = "canERR_RESERVED_7"
+canStatusLookupTable[canERR_REGISTRY] = "canERR_REGISTRY"
+canStatusLookupTable[canERR_LICENSE] = "canERR_LICENSE"
+canStatusLookupTable[canERR_INTERNAL] = "canERR_INTERNAL"
+canStatusLookupTable[canERR_NO_ACCESS] = "canERR_NO_ACCESS"
+canStatusLookupTable[canERR_NOT_IMPLEMENTED] = "canERR_NOT_IMPLEMENTED"
+canStatusLookupTable[canERR__RESERVED] = "canERR__RESERVED"
+
+
 def CANSTATUS_SUCCESS(status):
     return (status >= canOK)
 
