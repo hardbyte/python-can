@@ -65,18 +65,14 @@ _logStreamHandler.setFormatter(_logFormatter)
 _logFileHandler.setFormatter(_logFormatter)
 _loggerObj.addHandler(_logStreamHandler)
 _loggerObj.addHandler(_logFileHandler)
-_logStreamHandler2 = logging.StreamHandler()
-_logFormat = "%(asctime)s %(name)s %(levelname)s %(message)s"
-_logFormatter2 = logging.Formatter(_logFormat)
-_logStreamHandler2.setFormatter(_logFormatter2)
-CAN.canModuleLogger.addHandler(_logStreamHandler2)
-CAN.canModuleLogger.setLevel(logging.WARNING)
+_handleClassLogger = logging.getLogger("pycanlib.CAN._Handle")
+_handleClassLogger.setLevel(logging.WARNING)
+_handleClassLogger.addHandler(_logStreamHandler)
 
 while True:
     try:
         msg = bus.Read()
         if msg != None:
-            _loggerObj.debug("RXLEVEL = %d" % bus.GetReceiveBufferLevel())
             _loggerObj.info(msg)
         else:
             time.sleep(0.001)
