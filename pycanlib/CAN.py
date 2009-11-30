@@ -294,7 +294,7 @@ class _Handle(object):
     def GetDeviceDescription(self):#pragma: no cover
         MAX_DEVICE_DESCR_LENGTH = 256
         _buffer = ctypes.create_string_buffer(MAX_DEVICE_DESCR_LENGTH)
-        canlib.canGetChannelData(self.canlibHandle,
+        canlib.canGetChannelData(self.channel,
           canlib.canCHANNELDATA_DEVDESCR_ASCII, ctypes.byref(_buffer),
           ctypes.c_size_t(MAX_DEVICE_DESCR_LENGTH))
         return _buffer.value
@@ -302,7 +302,7 @@ class _Handle(object):
     def GetDeviceManufacturerName(self):
         MAX_MANUFACTURER_NAME_LENGTH = 256
         _buffer = ctypes.create_string_buffer(MAX_MANUFACTURER_NAME_LENGTH)
-        canlib.canGetChannelData(self.canlibHandle,
+        canlib.canGetChannelData(self.channel,
           canlib.canCHANNELDATA_MFGNAME_ASCII, ctypes.byref(_buffer),
           ctypes.c_size_t(MAX_MANUFACTURER_NAME_LENGTH))
         return _buffer.value
@@ -311,7 +311,7 @@ class _Handle(object):
         LENGTH = 8
         UCHAR_ARRAY = ctypes.c_ubyte*LENGTH
         _buffer = UCHAR_ARRAY()
-        canlib.canGetChannelData(self.canlibHandle,
+        canlib.canGetChannelData(self.channel,
           canlib.canCHANNELDATA_CARD_FIRMWARE_REV, ctypes.byref(_buffer),
           ctypes.c_size_t(LENGTH))
         versionNumber = []
@@ -324,7 +324,7 @@ class _Handle(object):
         LENGTH = 8
         UCHAR_ARRAY = ctypes.c_ubyte*LENGTH
         _buffer = UCHAR_ARRAY()
-        canlib.canGetChannelData(self.canlibHandle,
+        canlib.canGetChannelData(self.channel,
           canlib.canCHANNELDATA_CARD_HARDWARE_REV, ctypes.byref(_buffer),
           ctypes.c_size_t(LENGTH))
         versionNumber = []
@@ -336,7 +336,7 @@ class _Handle(object):
         LENGTH = 8
         UCHAR_ARRAY = ctypes.c_ubyte*LENGTH
         _buffer = UCHAR_ARRAY()
-        canlib.canGetChannelData(self.canlibHandle,
+        canlib.canGetChannelData(self.channel,
           canlib.canCHANNELDATA_CARD_SERIAL_NO, ctypes.byref(_buffer),
           ctypes.c_size_t(LENGTH))
         _serialNo = 0
@@ -348,7 +348,7 @@ class _Handle(object):
         LENGTH = 8
         UCHAR_ARRAY = ctypes.c_ubyte*LENGTH
         _buffer = UCHAR_ARRAY()
-        canlib.canGetChannelData(self.canlibHandle,
+        canlib.canGetChannelData(self.channel,
           canlib.canCHANNELDATA_TRANS_SERIAL_NO, ctypes.byref(_buffer),
           ctypes.c_size_t(LENGTH))
         _serialNo = 0
@@ -358,21 +358,21 @@ class _Handle(object):
 
     def GetDeviceCardNumber(self):#pragma: no cover
         _buffer = ctypes.c_ulong(0)
-        canlib.canGetChannelData(self.canlibHandle,
+        canlib.canGetChannelData(self.channel,
           canlib.canCHANNELDATA_CARD_NUMBER, ctypes.byref(_buffer),
           ctypes.c_size_t(4))
         return _buffer.value
 
     def GetDeviceChannelOnCard(self):#pragma: no cover
         _buffer = ctypes.c_ulong(0)
-        canlib.canGetChannelData(self.canlibHandle,
+        canlib.canGetChannelData(self.channel,
           canlib.canCHANNELDATA_CHAN_NO_ON_CARD, ctypes.byref(_buffer),
           ctypes.c_size_t(4))
         return _buffer.value
 
     def GetDeviceTransceiverType(self):#pragma: no cover
         _buffer = ctypes.c_ulong(0)
-        canlib.canGetChannelData(self.canlibHandle,
+        canlib.canGetChannelData(self.channel,
           canlib.canCHANNELDATA_TRANS_TYPE, ctypes.byref(_buffer),
           ctypes.c_size_t(4))
         try:

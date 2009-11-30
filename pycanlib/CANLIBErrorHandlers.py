@@ -14,7 +14,7 @@ class CANLIBError(Exception):
         self.arguments = arguments
 
     def __str__(self):
-        return ("CANLIBError: function %s failed - %s - arguments were %s" %
+        return ("function %s failed - %s - arguments were %s" %
           (self.functionName, GetErrorMessage(self.errorCode),
           self.arguments))
 
