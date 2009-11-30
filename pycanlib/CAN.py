@@ -237,6 +237,8 @@ class _Handle(object):
         #this is called by the callback registered with CANLIB, but because
         #coverage isn't smart enough to figure this out, it thinks this
         #function is never called at all
+        _callbackEntryMsg = "Entering _Handle.ReceiveCallback"
+        handleClassLogger.info(_callbackEntryMsg)
         if not self.reading and self.receiveCallbackEnabled:
             self.reading = True
             deviceID = ctypes.c_long(0)
@@ -245,16 +247,14 @@ class _Handle(object):
             flags = ctypes.c_uint(0)
             flags = ctypes.c_uint(0)
             timestamp = ctypes.c_long(0)
-            _loopEntryMsg = "Entering _Handle.ReceiveCallback while loop"
-            handleClassLogger.debug(_loopEntryMsg)
-            status = canstat.canOK
-            while status == canstat.canOK:
-                handleClassLogger.info("RXLEVEL = %d" %
-                  self.GetReceiveBufferLevel())
+            status = canstat.c_canStatus(canstat.canOK)
+            while True:
                 status = canlib.canRead(self.canlibHandle,
                   ctypes.byref(deviceID), ctypes.byref(data),
                   ctypes.byref(dlc), ctypes.byref(flags),
                   ctypes.byref(timestamp))
+                if status.value != canstat.canOK:
+                    break
                 _data = []
                 for char in data:
                     _data.append(ord(char))
@@ -264,11 +264,12 @@ class _Handle(object):
                   TIMER_TICKS_PER_SECOND))
                 for _bus in self.buses:
                     _bus.rxQueue.put_nowait(rxMsg)
-                    _rxQSizeStr = ("receive queue size for bus '%s': %d"
-                      % (_bus.name, _bus.rxQueue.qsize()))
-                    handleClassLogger.info(_rxQSizeStr)
+                    handleClassLogger.info("RXLEVEL = %6d, receive queue size = %6d" %
+                      (self.GetReceiveBufferLevel(), _bus.rxQueue.qsize()))
                 for _listener in self.listeners:
                     _listener.OnMessageReceived(rxMsg)
+            _callbackExitMessage = "Leaving _Handle.ReceiveCallback - status is %s (%d)" % (canstat.canStatusLookupTable[status.value], status.value)
+            handleClassLogger.info(_callbackExitMessage)
             canlib.kvSetNotifyCallback(self.canlibHandle, RX_CALLBACK,
               ctypes.c_void_p(None), canstat.canNOTIFY_RX)
             self.reading = False

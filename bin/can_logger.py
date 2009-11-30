@@ -65,10 +65,9 @@ _logStreamHandler.setFormatter(_logFormatter)
 _logFileHandler.setFormatter(_logFormatter)
 _loggerObj.addHandler(_logStreamHandler)
 _loggerObj.addHandler(_logFileHandler)
-_handleClassLogger = logging.getLogger("pycanlib.CAN._Handle")
-_handleClassLogger.setLevel(logging.WARNING)
-_handleClassLogger.addHandler(_logStreamHandler)
 
+for line in bus.GetChannelInfo().__str__().split("\n"):
+    _loggerObj.info(line)
 while True:
     try:
         msg = bus.Read()
