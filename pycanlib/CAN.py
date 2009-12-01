@@ -13,6 +13,7 @@ import canstat
 
 canlib.canInitializeLibrary()
 
+
 canModuleLogger = logging.getLogger("pycanlib.CAN")
 handleClassLogger = logging.getLogger("pycanlib.CAN._Handle")
 busClassLogger = logging.getLogger("pycanlib.CAN.Bus")
@@ -21,13 +22,12 @@ messageClassLogger = logging.getLogger("pycanlib.CAN.Message")
 infoMessageClassLogger = logging.getLogger("pycanlib.CAN.InfoMessage")
 
 
-
 try:
     _versionNumberFile = open(os.path.join(os.path.dirname(__file__),
                               "version.txt"), "r")
     __version__ = _versionNumberFile.readline()
     _versionNumberFile.close()
-except IOError as e:
+except IOError as e:#pragma: no cover
     print e
     __version__ = "UNKNOWN"
 
@@ -160,9 +160,10 @@ writeHandleRegistry = {}
 def _ReceiveCallback(handle):#pragma: no cover
     #called by the callback registered with CANLIB, but coverage can't figure
     #that out
-    canModuleLogger.debug("_ReceiveCallback for handle %d" % handle)
+    canModuleLogger.debug("Entering _ReceiveCallback for handle %d" % handle)
     if readHandleRegistry[handle] != None:
         readHandleRegistry[handle].ReceiveCallback()
+    canModuleLogger.debug("Leaving _ReceiveCallback for handle %d" % handle)
     return 0
 
 
@@ -170,9 +171,11 @@ RX_CALLBACK = canlib.CALLBACKFUNC(_ReceiveCallback)
 
 
 def _TransmitCallback(handle):
-    canModuleLogger.debug("_TransmitCallback for handle %d" % handle)
+    canModuleLogger.debug("Entering _TransmitCallback for handle %d" %
+                            handle)
     if writeHandleRegistry[handle] != None:
         writeHandleRegistry[handle].TransmitCallback()
+    canModuleLogger.debug("Leaving _TransmitCallback for handle %d" % handle)
     return 0
 
 
@@ -264,11 +267,14 @@ class _Handle(object):
                   TIMER_TICKS_PER_SECOND))
                 for _bus in self.buses:
                     _bus.rxQueue.put_nowait(rxMsg)
-                    handleClassLogger.info("RXLEVEL = %6d, receive queue size = %6d" %
+                    _rxLevelStr = "RXLEVEL = %6d, receive queue size = %6d"
+                    handleClassLogger.debug(_rxLevelStr %
                       (self.GetReceiveBufferLevel(), _bus.rxQueue.qsize()))
                 for _listener in self.listeners:
                     _listener.OnMessageReceived(rxMsg)
-            _callbackExitMessage = "Leaving _Handle.ReceiveCallback - status is %s (%d)" % (canstat.canStatusLookupTable[status.value], status.value)
+            _exitStr = "Leaving _Handle.ReceiveCallback - status is %s (%d)"
+            _callbackExitMessage = (_exitStr %
+              (canstat.canStatusLookupTable[status.value], status.value))
             handleClassLogger.info(_callbackExitMessage)
             canlib.kvSetNotifyCallback(self.canlibHandle, RX_CALLBACK,
               ctypes.c_void_p(None), canstat.canNOTIFY_RX)
@@ -300,7 +306,7 @@ class _Handle(object):
           ctypes.c_size_t(MAX_DEVICE_DESCR_LENGTH))
         return _buffer.value
 
-    def GetDeviceManufacturerName(self):
+    def GetDeviceManufacturerName(self):#pragma: no cover
         MAX_MANUFACTURER_NAME_LENGTH = 256
         _buffer = ctypes.create_string_buffer(MAX_MANUFACTURER_NAME_LENGTH)
         canlib.canGetChannelData(self.channel,
@@ -310,7 +316,7 @@ class _Handle(object):
 
     def GetDeviceFirmwareVersion(self):#pragma: no cover
         LENGTH = 8
-        UCHAR_ARRAY = ctypes.c_ubyte*LENGTH
+        UCHAR_ARRAY = ctypes.c_ubyte * LENGTH
         _buffer = UCHAR_ARRAY()
         canlib.canGetChannelData(self.channel,
           canlib.canCHANNELDATA_CARD_FIRMWARE_REV, ctypes.byref(_buffer),
@@ -323,7 +329,7 @@ class _Handle(object):
 
     def GetDeviceHardwareVersion(self):#pragma: no cover
         LENGTH = 8
-        UCHAR_ARRAY = ctypes.c_ubyte*LENGTH
+        UCHAR_ARRAY = ctypes.c_ubyte * LENGTH
         _buffer = UCHAR_ARRAY()
         canlib.canGetChannelData(self.channel,
           canlib.canCHANNELDATA_CARD_HARDWARE_REV, ctypes.byref(_buffer),
@@ -335,7 +341,7 @@ class _Handle(object):
 
     def GetDeviceCardSerial(self):#pragma: no cover
         LENGTH = 8
-        UCHAR_ARRAY = ctypes.c_ubyte*LENGTH
+        UCHAR_ARRAY = ctypes.c_ubyte * LENGTH
         _buffer = UCHAR_ARRAY()
         canlib.canGetChannelData(self.channel,
           canlib.canCHANNELDATA_CARD_SERIAL_NO, ctypes.byref(_buffer),
@@ -347,7 +353,7 @@ class _Handle(object):
 
     def GetDeviceTransceiverSerial(self):#pragma: no cover
         LENGTH = 8
-        UCHAR_ARRAY = ctypes.c_ubyte*LENGTH
+        UCHAR_ARRAY = ctypes.c_ubyte * LENGTH
         _buffer = UCHAR_ARRAY()
         canlib.canGetChannelData(self.channel,
           canlib.canCHANNELDATA_TRANS_SERIAL_NO, ctypes.byref(_buffer),
@@ -433,15 +439,16 @@ class ChannelInfo(object):#pragma: no cover
         return retVal
 
 
-def GetHostMachineInfo():
+def GetHostMachineInfo():#pragma: no cover
     return {"osType": sys.platform, "pythonVersion": sys.version}
 
 
-def GetCANLIBInfo():
-    _canlibProdVer32 = canlib.canGetVersionEx(canlib.canVERSION_CANLIB32_PRODVER32)
+def GetCANLIBInfo():#pragma: no cover
+    _canlibProdVer32 = \
+      canlib.canGetVersionEx(canlib.canVERSION_CANLIB32_PRODVER32)
     _majorVerNo = (_canlibProdVer32 & 0x00FF0000) >> 16
     _minorVerNo = (_canlibProdVer32 & 0x0000FF00) >> 8
-    _minorVerLetter =  "%c" % (_canlibProdVer32 & 0x000000FF)
+    _minorVerLetter = "%c" % (_canlibProdVer32 & 0x000000FF)
     return "%d.%d%s" % (_majorVerNo, _minorVerNo, _minorVerLetter)
 
 
@@ -542,7 +549,7 @@ class Bus(object):
     def _GetDeviceTransceiverType(self):#pragma: no cover
         return self.readHandle.GetDeviceTransceiverType()
 
-    def GetChannelInfo(self):
+    def GetChannelInfo(self):#pragma: no cover
         return ChannelInfo(self._GetDeviceDescription(),
                            self._GetDeviceManufacturerName(),
                            self._GetDeviceFirmwareVersion(),
@@ -556,13 +563,15 @@ class Bus(object):
 
 @atexit.register
 def Cleanup():#pragma: no cover
-    canModuleLogger.info("Cleaning up...")
-    for handle in readHandleRegistry.keys():
-        readHandleRegistry[handle].receiveCallbackEnabled = False
-        canModuleLogger.info("Removing read callback for handle %d" % handle)
-        canlib.kvSetNotifyCallback(handle, None, None, 0)
-    for handle in writeHandleRegistry.keys():
-        writeHandleRegistry[handle].transmitCallbackEnabled = False
-        canModuleLogger.info("Removing write callback for handle %d" % handle)
-        canlib.kvSetNotifyCallback(handle, None, None, 0)
-    canModuleLogger.info("Cleanup complete!")
+    for _handle in readHandleRegistry.values():
+        _handle.receiveCallbackEnabled = False
+        while _handle.reading: pass
+    for _handle in writeHandleRegistry.values():
+        _handle.transmitCallbackEnabled = False
+        while _handle.writing: pass
+    for _handleNumber in readHandleRegistry.keys():
+        canlib.kvSetNotifyCallback(_handleNumber, None, None, 0)
+        canlib.canFlushReceiveQueue(_handleNumber)
+    for _handleNumber in writeHandleRegistry.keys():
+        canlib.kvSetNotifyCallback(_handleNumber, None, None, 0)
+        canlib.canFlushTransmitQueue(_handleNumber)
