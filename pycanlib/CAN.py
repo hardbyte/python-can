@@ -428,8 +428,8 @@ class ChannelInfo(object):#pragma: no cover
         self.channelOnCard = channelOnCard
 
     def __str__(self):
-        retVal = "CANLIB Channel: %s\n" % self.channel
-        retVal = "Name: %s\n" % self.name
+        retVal = "CANLIB channel: %s\n" % self.channel
+        retVal += "Name: %s\n" % self.name
         retVal += "Manufacturer: %s\n" % self.manufacturer
         retVal += "Firmware version: %s\n" % self.fwVersion
         retVal += "Hardware version: %s\n" % self.hwVersion
