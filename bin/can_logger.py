@@ -77,7 +77,19 @@ def main(arguments):
     (options, args) = ParseArguments(arguments)
     bus = CreateBusObject(options)
     loggerObj = SetupLogging(options.logFilePath, options.logFileNameBase)
-
+    loggerObj.info("-"*64)
+    loggerObj.info("Host machine info")
+    loggerObj.info("-"*64)
+    loggerObj.info("Machine name: %s" %
+      CAN.GetHostMachineInfo()["machineName"])
+    loggerObj.info("OS: %s" % CAN.GetHostMachineInfo()["osType"])
+    loggerObj.info("Python: %s" % CAN.GetHostMachineInfo()["pythonVersion"])
+    loggerObj.info("CANLIB: %s" % CAN.GetCANLIBInfo())
+    loggerObj.info("pycanlib: %s" % CAN.__version__)
+    loggerObj.info("")
+    loggerObj.info("-"*64)
+    loggerObj.info("Channel info")
+    loggerObj.info("-"*64)
     for line in bus.GetChannelInfo().__str__().split("\n"):
         loggerObj.info(line)
     while True:

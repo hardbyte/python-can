@@ -414,8 +414,9 @@ def _GetHandle(channelNumber, flags, registry):
 
 class ChannelInfo(object):#pragma: no cover
 
-    def __init__(self, name, manufacturer, fwVersion, hwVersion, cardSN,
-      transSN, transType, cardNo, channelOnCard):
+    def __init__(self, channel, name, manufacturer, fwVersion, hwVersion,
+      cardSN, transSN, transType, cardNo, channelOnCard):
+        self.channel = channel
         self.name = name
         self.manufacturer = manufacturer
         self.fwVersion = fwVersion
@@ -427,6 +428,7 @@ class ChannelInfo(object):#pragma: no cover
         self.channelOnCard = channelOnCard
 
     def __str__(self):
+        retVal = "CANLIB Channel: %s\n" % self.channel
         retVal = "Name: %s\n" % self.name
         retVal += "Manufacturer: %s\n" % self.manufacturer
         retVal += "Firmware version: %s\n" % self.fwVersion
@@ -440,7 +442,13 @@ class ChannelInfo(object):#pragma: no cover
 
 
 def GetHostMachineInfo():#pragma: no cover
-    return {"osType": sys.platform, "pythonVersion": sys.version}
+    if sys.platform == "win32":
+        machineName = os.getenv("COMPUTERNAME")
+    else:
+        machineName = os.getenv("HOSTNAME")
+    return {"osType": sys.platform,
+            "pythonVersion": sys.version,
+            "machineName": machineName}
 
 
 def GetCANLIBInfo():#pragma: no cover
@@ -550,7 +558,8 @@ class Bus(object):
         return self.readHandle.GetDeviceTransceiverType()
 
     def GetChannelInfo(self):#pragma: no cover
-        return ChannelInfo(self._GetDeviceDescription(),
+        return ChannelInfo(self.readHandle.channel,
+                           self._GetDeviceDescription(),
                            self._GetDeviceManufacturerName(),
                            self._GetDeviceFirmwareVersion(),
                            self._GetDeviceHardwareVersion(),
