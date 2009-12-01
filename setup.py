@@ -25,6 +25,6 @@ if __name__ == "__main__":
         name="pycanlib",
         version=_version,
         packages=find_packages(exclude=["test"]),
-        package_data = {"pycanlib": ["version.txt"]},
+        package_data={"pycanlib": ["version.txt"]},
         scripts=["./bin/can_logger.py"],
     )
