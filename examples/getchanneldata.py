@@ -4,23 +4,36 @@ import sys
 
 from pycanlib import CAN, canlib
 
-logging.basicConfig(level=logging.WARNING)
+def SetupLogging():
+    loggerObj = logging.getLogger("getchanneldata")
+    loggerObj.setLevel(logging.INFO)
+    _logStreamHandler = logging.StreamHandler()
+    _logFormatter = logging.Formatter("%(message)s")
+    _logStreamHandler.setFormatter(_logFormatter)
+    loggerObj.addHandler(_logStreamHandler)
+    return loggerObj
 
-print "-"*64
-print "Host machine info"
-print "-"*64
-print "OS:", CAN.GetHostMachineInfo()["osType"]
-print "Python:", CAN.GetHostMachineInfo()["pythonVersion"]
-print "CANLIB:", CAN.GetCANLIBInfo()
-print "pycanlib:", CAN.__version__
-print "-"*64
-names = ["foo", "bar", "bork", "baz"]
-buses = {}
-canlib.canInitializeLibrary()
-_numChannels = ctypes.c_int(0)
-canlib.canGetNumberOfChannels(ctypes.byref(_numChannels))
-for channel in xrange(0, _numChannels.value):
-    print "CANLIB channel %d:" % channel
-    buses[channel] = CAN.Bus(channel, canlib.canOPEN_ACCEPT_VIRTUAL, 105263, 10, 8, 4, 1, name=names[channel])
-    print buses[channel].GetChannelInfo()
-    print "-"*64
+def main():
+    _loggerObj = SetupLogging()
+    _loggerObj.info("-"*64)
+    _loggerObj.info("Host machine info")
+    _loggerObj.info("-"*64)
+    _loggerObj.info("OS: %s" % CAN.GetHostMachineInfo()["osType"])
+    _loggerObj.info("Python: %s" % CAN.GetHostMachineInfo()["pythonVersion"])
+    _loggerObj.info("CANLIB: %s" % CAN.GetCANLIBInfo())
+    _loggerObj.info("pycanlib: %s" % CAN.__version__)
+    _loggerObj.info("-"*64)
+    names = ["foo", "bar", "bork", "baz"]
+    buses = {}
+    canlib.canInitializeLibrary()
+    _numChannels = ctypes.c_int(0)
+    canlib.canGetNumberOfChannels(ctypes.byref(_numChannels))
+    for channel in xrange(0, _numChannels.value):
+        _loggerObj.info("CANLIB channel %d:" % channel)
+        buses[channel] = CAN.Bus(channel, canlib.canOPEN_ACCEPT_VIRTUAL, 105263, 10, 8, 4, 1, name=names[channel])
+        for line in buses[channel].GetChannelInfo().__str__().split("\n"):
+            _loggerObj.info(line)
+        _loggerObj.info("-"*64)
+
+if __name__ == "__main__":
+    main()
