@@ -229,6 +229,7 @@ class _Handle(object):
                 #transmit callback event for this handle, but coverage isn't
                 #smart enough to figure this out, so it thinks it isn't called
                 #at all
+                self.writing = False
                 return
             _dataString = "".join([("%c" % byte) for byte in toSend.data])
             canlib.canWrite(self.canlibHandle, toSend.deviceID, _dataString,
@@ -392,6 +393,30 @@ class _Handle(object):
         except KeyError:
             return "Transceiver type %d is unknown to CANLIB" % _buffer.value
 
+    def GetStatistics(self):
+        canlib.canRequestBusStatistics(self.canlibHandle)
+        _statStruct = canlib.c_canBusStatistics()
+        canlib.canGetBusStatistics(self.canlibHandle,
+          ctypes.byref(_statStruct), ctypes.c_uint(28))
+        return BusStatistics(_statStruct.stdData,
+                             _statStruct.stdRemote,
+                             _statStruct.extData,
+                             _statStruct.extRemote,
+                             _statStruct.errFrame,
+                             _statStruct.busLoad,
+                             _statStruct.overruns)
+
+class BusStatistics(object):
+    def __init__(self, stdData, stdRemote, extData, extRemote, errFrame,
+      busLoad, overruns):
+        self.stdData = stdData
+        self.stdRemote = stdRemote
+        self.extData = extData
+        self.extRemote = extRemote
+        self.errFrame = errFrame
+        self.busLoad = float(busLoad)/100
+        self.overruns = overruns
+
 
 def _GetHandle(channelNumber, flags, registry):
     foundHandle = False
@@ -531,8 +556,11 @@ class Bus(object):
         listener.SetBus(self)
 
     def Write(self, msg):
+        busClassLogger.debug("Bus '%s': Entering Write()" % self.name)
         if self.driverMode != canlib.canDRIVER_SILENT:
+            busClassLogger.debug("Bus '%s': writing message %s" % (self.name, msg))
             self.writeHandle.Write(msg)
+        busClassLogger.debug("Bus '%s': Leaving Write()" % self.name)
 
     def ReadTimer(self):
         return (float(self.readHandle.ReadTimer() - self.timerOffset) /
@@ -580,18 +608,30 @@ class Bus(object):
                            self._GetDeviceCardNumber(),
                            self._GetDeviceChannelOnCard())
 
+    def GetStatistics(self):
+        return self.readHandle.GetStatistics()
 
 @atexit.register
 def Cleanup():#pragma: no cover
+    canModuleLogger.info("Waiting for receive callbacks to complete...")
     for _handle in readHandleRegistry.values():
+        canModuleLogger.info("\tHandle %d..." % _handle.canlibHandle)
         _handle.receiveCallbackEnabled = False
         while _handle.reading: pass
+        canModuleLogger.info("\tOK")
+    canModuleLogger.info("Waiting for transmit callbacks to complete...")
     for _handle in writeHandleRegistry.values():
+        canModuleLogger.info("\tHandle %d..." % _handle.canlibHandle)
         _handle.transmitCallbackEnabled = False
         while _handle.writing: pass
+        canModuleLogger.info("\tOK")
+    canModuleLogger.info("Clearing receive callbacks...")
     for _handleNumber in readHandleRegistry.keys():
+        canModuleLogger.info("\tHandle %d" % _handle.canlibHandle)
         canlib.kvSetNotifyCallback(_handleNumber, None, None, 0)
         canlib.canFlushReceiveQueue(_handleNumber)
+    canModuleLogger.info("Clearing transmit callbacks...")
     for _handleNumber in writeHandleRegistry.keys():
+        canModuleLogger.info("\tHandle %d" % _handle.canlibHandle)
         canlib.kvSetNotifyCallback(_handleNumber, None, None, 0)
         canlib.canFlushTransmitQueue(_handleNumber)
