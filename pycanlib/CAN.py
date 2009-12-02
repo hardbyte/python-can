@@ -204,8 +204,7 @@ class _Handle(object):
                   "no hardware is available that has all these capabilities")
             else:#pragma: no cover
                 raise
-        self.listeners = []#real-time response - for emulated devices, etc.
-        self.buses = []#non-real-time response - for test cases, etc.
+        self.listeners = []
         self.txQueue = Queue.Queue(0)
         _tmrRes = ctypes.c_long(MICROSECONDS_PER_TIMER_TICK)
         canlib.canFlushReceiveQueue(self.canlibHandle)
@@ -236,6 +235,12 @@ class _Handle(object):
               toSend.dlc, toSend.flags)
             self.writing = False
 
+    def Write(self, msg):
+        oldSize = self.txQueue.qsize()
+        self.txQueue.put_nowait(msg)
+        if oldSize == 0:
+            self.TransmitCallback()
+
     def ReceiveCallback(self):#pragma: no cover
         #this is called by the callback registered with CANLIB, but because
         #coverage isn't smart enough to figure this out, it thinks this
@@ -265,11 +270,6 @@ class _Handle(object):
                 rxMsg = Message(deviceID.value, _data[:dlc.value],
                   int(dlc.value), int(flags.value), (float(timestamp.value) /
                   TIMER_TICKS_PER_SECOND))
-                for _bus in self.buses:
-                    _bus.rxQueue.put_nowait(rxMsg)
-                    _rxLevelStr = "RXLEVEL = %6d, receive queue size = %6d"
-                    handleClassLogger.debug(_rxLevelStr %
-                      (self.GetReceiveBufferLevel(), _bus.rxQueue.qsize()))
                 for _listener in self.listeners:
                     _listener.OnMessageReceived(rxMsg)
             _exitStr = "Leaving _Handle.ReceiveCallback - status is %s (%d)"
@@ -523,12 +523,14 @@ class Bus(object):
 
     def Write(self, msg):
         if self.driverMode != canlib.canDRIVER_SILENT:
-            self.writeHandle.txQueue.put_nowait(msg)
-            _TransmitCallback(self.writeHandle.canlibHandle)
+            self.writeHandle.Write(msg)
 
     def ReadTimer(self):
         return (float(self.readHandle.ReadTimer() - self.timerOffset) /
           TIMER_TICKS_PER_SECOND)
+
+    def OnMessageReceived(self, msg):
+        self.rxQueue.put_nowait(rxMsg)
 
     def _GetDeviceDescription(self):#pragma: no cover
         return self.readHandle.GetDeviceDescription()
