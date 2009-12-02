@@ -256,13 +256,11 @@ class _Handle(object):
             flags = ctypes.c_uint(0)
             timestamp = ctypes.c_long(0)
             status = canstat.c_canStatus(canstat.canOK)
-            while True:
-                status = canlib.canRead(self.canlibHandle,
-                  ctypes.byref(deviceID), ctypes.byref(data),
-                  ctypes.byref(dlc), ctypes.byref(flags),
-                  ctypes.byref(timestamp))
-                if status.value != canstat.canOK:
-                    break
+            status = canlib.canRead(self.canlibHandle,
+              ctypes.byref(deviceID), ctypes.byref(data),
+              ctypes.byref(dlc), ctypes.byref(flags),
+              ctypes.byref(timestamp))
+            while status.value == canstat.canOK:
                 _data = []
                 for char in data:
                     _data.append(ord(char))
@@ -272,6 +270,10 @@ class _Handle(object):
                   TIMER_TICKS_PER_SECOND))
                 for _listener in self.listeners:
                     _listener.OnMessageReceived(rxMsg)
+                status = canlib.canRead(self.canlibHandle,
+                  ctypes.byref(deviceID), ctypes.byref(data),
+                  ctypes.byref(dlc), ctypes.byref(flags),
+                  ctypes.byref(timestamp))
             _exitStr = "Leaving _Handle.ReceiveCallback - status is %s (%d)"
             _callbackExitMessage = (_exitStr %
               (canstat.canStatusLookupTable[status.value], status.value))
@@ -279,6 +281,9 @@ class _Handle(object):
             canlib.kvSetNotifyCallback(self.canlibHandle, RX_CALLBACK,
               ctypes.c_void_p(None), canstat.canNOTIFY_RX)
             self.reading = False
+
+    def AddListener(self, listener):
+        self.listeners.append(listener)
 
     def ReadTimer(self):
         return canlib.canReadTimer(self.canlibHandle)
@@ -512,7 +517,7 @@ class Bus(object):
         self.driverMode = driverMode
         self.rxQueue = Queue.Queue(0)
         self.timerOffset = self.readHandle.ReadTimer()
-        self.readHandle.buses.append(self)
+        self.readHandle.AddListener(self)
 
     def Read(self):
         try:
@@ -520,6 +525,10 @@ class Bus(object):
         except Queue.Empty:
             busClassLogger.debug("Bus '%s': No messages available" % self.name)
             return None
+
+    def AddListener(self, listener):
+        self.readHandle.AddListener(listener)
+        listener.SetBus(self)
 
     def Write(self, msg):
         if self.driverMode != canlib.canDRIVER_SILENT:
@@ -530,7 +539,7 @@ class Bus(object):
           TIMER_TICKS_PER_SECOND)
 
     def OnMessageReceived(self, msg):
-        self.rxQueue.put_nowait(rxMsg)
+        self.rxQueue.put_nowait(msg)
 
     def _GetDeviceDescription(self):#pragma: no cover
         return self.readHandle.GetDeviceDescription()
