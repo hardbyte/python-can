@@ -6,6 +6,7 @@ import Queue
 import sys
 import time
 import types
+from xml.dom import minidom
 
 import canlib
 import CANLIBErrorHandlers
@@ -86,6 +87,15 @@ class LogMessage(object):
     def __str__(self):
         return "%.6f" % self.timestamp
 
+    def ToXML(self, elementType="log_message"):
+        _document = minidom.Document()
+        retVal = _document.createElement(elementType)
+        timestampElement = _document.createElement("timestamp")
+        timestampTextNode = _document.createTextNode("%s" % self.timestamp)
+        timestampElement.appendChild(timestampTextNode)
+        retVal.appendChild(timestampElement)
+        return retVal
+
 
 class Message(LogMessage):
 
@@ -139,6 +149,31 @@ class Message(LogMessage):
             _fieldStrings.append(" ".join(_dataStrings))
         return "\t".join(_fieldStrings)
 
+    def ToXML(self):
+        _document = minidom.Document()
+        retVal = LogMessage.ToXML(self, "can_message")
+        deviceIDElement = _document.createElement("device_id")
+        deviceIDTextNode = _document.createTextNode("%.4x" % self.deviceID)
+        deviceIDElement.appendChild(deviceIDTextNode)
+        flagsElement = _document.createElement("flags")
+        flagsTextNode = _document.createTextNode("%.4x" % self.flags)
+        flagsElement.appendChild(flagsTextNode)
+        dlcElement = _document.createElement("dlc")
+        dlcTextNode = _document.createTextNode("%d" % self.dlc)
+        dlcElement.appendChild(dlcTextNode)
+        retVal.appendChild(deviceIDElement)
+        retVal.appendChild(flagsElement)
+        retVal.appendChild(dlcElement)
+        if len(self.data) > 0:
+            dataElement = _document.createElement("data")
+            for i in xrange(len(self.data)):
+                dataByteElement = _document.createElement("byte_%d" % i)
+                dataByteTextNode = \
+                  _document.createTextNode("%.2x" % self.data[i])
+                dataByteElement.appendChild(dataByteTextNode)
+                dataElement.appendChild(dataByteElement)
+            retVal.appendChild(dataElement)
+        return retVal
 
 class InfoMessage(LogMessage):
 
@@ -151,6 +186,15 @@ class InfoMessage(LogMessage):
             return ("%s\t%s" % (LogMessage.__str__(self), self.info))
         else:
             return "%s" % LogMessage.__str__(self)
+
+    def ToXML(self):
+        _document = minidom.Document()
+        retVal = LogMessage.ToXML(self, "info_message")
+        _infoStringElement = _document.createElement("info_string")
+        _infoStringTextNode = _document.createTextNode(self.info)
+        _infoStringElement.appendChild(_infoStringTextNode)
+        retVal.appendChild(_infoStringElement)
+        return retVal
 
 
 readHandleRegistry = {}
@@ -470,15 +514,99 @@ class ChannelInfo(object):#pragma: no cover
         retVal += "Channel on card: %s\n" % self.channelOnCard
         return retVal
 
+    def ToXML(self):
+        _document = minidom.Document()
+        retVal = _document.createElement("channel_info")
+        _channelNumberElement = _document.createElement("canlib_channel")
+        _channelNumberText = _document.createTextNode("%d" % self.channel)
+        _channelNumberElement.appendChild(_channelNumberText)
+        retVal.appendChild(_channelNumberElement)
+        _channelNameElement = _document.createElement("device_name")
+        _channelNameText = _document.createTextNode(self.name)
+        _channelNameElement.appendChild(_channelNameText)
+        retVal.appendChild(_channelNameElement)
+        _channelManufacturerElement = _document.createElement("device_manufacturer")
+        _channelManufacturerText = _document.createTextNode(self.manufacturer)
+        _channelManufacturerElement.appendChild(_channelManufacturerText)
+        retVal.appendChild(_channelManufacturerElement)
+        _channelFWVersionElement = _document.createElement("device_firmware_version")
+        _channelFWVersionText = _document.createTextNode(self.fwVersion)
+        _channelFWVersionElement.appendChild(_channelFWVersionText)
+        retVal.appendChild(_channelFWVersionElement)
+        _channelHWVersionElement = _document.createElement("device_hardware_version")
+        _channelHWVersionText = _document.createTextNode(self.hwVersion)
+        _channelHWVersionElement.appendChild(_channelHWVersionText)
+        retVal.appendChild(_channelHWVersionElement)
+        _channelCardSNElement = _document.createElement("device_serial_number")
+        _channelCardSNText = _document.createTextNode("%s" % self.cardSN)
+        _channelCardSNElement.appendChild(_channelCardSNText)
+        retVal.appendChild(_channelCardSNElement)
+        _channelTransceiverTypeElement = _document.createElement("transceiver_type")
+        _channelTransceiverTypeText = _document.createTextNode(self.transType)
+        _channelTransceiverTypeElement.appendChild(_channelTransceiverTypeText)
+        retVal.appendChild(_channelTransceiverTypeElement)
+        _channelTransceiverSNElement = _document.createElement("transceiver_serial_number")
+        _channelTransceiverSNText = _document.createTextNode("%s" % self.transSN)
+        _channelTransceiverSNElement.appendChild(_channelTransceiverSNText)
+        retVal.appendChild(_channelTransceiverSNElement)
+        _channelCardNumberElement = _document.createElement("card_number")
+        _channelCardNumberText = _document.createTextNode("%s" % self.cardNo)
+        _channelCardNumberElement.appendChild(_channelCardNumberText)
+        retVal.appendChild(_channelCardNumberElement)
+        _channelChannelOnCardElement = _document.createElement("card_channel")
+        _channelChannelOnCardText = _document.createTextNode("%s" % self.channelOnCard)
+        _channelChannelOnCardElement.appendChild(_channelChannelOnCardText)
+        retVal.appendChild(_channelChannelOnCardElement)
+        return retVal
+
+
+class MachineInfo(object):
+
+    def __init__(self, machineName, pythonVersion, osType):
+        self.machineName = machineName
+        self.pythonVersion = pythonVersion
+        self.osType = osType
+
+    def __str__(self):
+        retVal = "Machine name: %s\n" % self.machineName
+        retVal += "Python version: %s\n" % self.pythonVersion
+        retVal += "OS: %s\n" % self.osType
+        retVal += "CANLIB: %s\n" % GetCANLIBInfo()
+        retVal += "pycanlib version: %s\n" % __version__
+        return retVal
+
+    def ToXML(self):
+        _document = minidom.Document()
+        retVal = _document.createElement("machine_info")
+        _machineNameElement = _document.createElement("name")
+        _machineNameText = _document.createTextNode(self.machineName)
+        _machineNameElement.appendChild(_machineNameText)
+        retVal.appendChild(_machineNameElement)
+        _machineOSElement = _document.createElement("os")
+        _machineOSText = _document.createTextNode(self.osType)
+        _machineOSElement.appendChild(_machineOSText)
+        retVal.appendChild(_machineOSElement)
+        _machinePythonElement = _document.createElement("python_version")
+        _machinePythonText = _document.createTextNode(self.pythonVersion)
+        _machinePythonElement.appendChild(_machinePythonText)
+        retVal.appendChild(_machinePythonElement)
+        _machineCANLIBElement = _document.createElement("canlib_version")
+        _machineCANLIBText = _document.createTextNode(GetCANLIBInfo())
+        _machineCANLIBElement.appendChild(_machineCANLIBText)
+        retVal.appendChild(_machineCANLIBElement)
+        _machinePycanlibElement = _document.createElement("pycanlib_version")
+        _machinePycanlibText = _document.createTextNode(__version__)
+        _machinePycanlibElement.appendChild(_machinePycanlibText)
+        retVal.appendChild(_machinePycanlibElement)
+        return retVal
 
 def GetHostMachineInfo():#pragma: no cover
     if sys.platform == "win32":
         machineName = os.getenv("COMPUTERNAME")
     else:
         machineName = os.getenv("HOSTNAME")
-    return {"osType": sys.platform,
-            "pythonVersion": sys.version,
-            "machineName": machineName}
+    pythonVersion = sys.version[:sys.version.index(" ")]
+    return MachineInfo(machineName, pythonVersion, sys.platform)
 
 
 def GetCANLIBInfo():#pragma: no cover
@@ -486,7 +614,10 @@ def GetCANLIBInfo():#pragma: no cover
       canlib.canGetVersionEx(canlib.canVERSION_CANLIB32_PRODVER32)
     _majorVerNo = (_canlibProdVer32 & 0x00FF0000) >> 16
     _minorVerNo = (_canlibProdVer32 & 0x0000FF00) >> 8
-    _minorVerLetter = "%c" % (_canlibProdVer32 & 0x000000FF)
+    if (_canlibProdVer32 & 0x000000FF) != 0:
+        _minorVerLetter = "%c" % (_canlibProdVer32 & 0x000000FF)
+    else:
+        _minorVerLetter = ""
     return "%d.%d%s" % (_majorVerNo, _minorVerNo, _minorVerLetter)
 
 

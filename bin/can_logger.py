@@ -6,6 +6,7 @@ import os
 import os.path
 import sys
 import time
+from xml.dom import minidom
 
 from pycanlib import CAN, canlib
 
@@ -65,42 +66,67 @@ def SetupLogging(logFilePath, logFileNameBase):
     if not os.path.isdir(os.path.dirname(fullLogFilePath)):
         os.makedirs(os.path.dirname(fullLogFilePath))
     _logFileHandler = logging.FileHandler(fullLogFilePath, mode="w")
+    xmlLogFilePath = os.path.join(os.path.expanduser("~"),
+      "%s" % logFilePath, "%s_%s_%s.xml" % (logFileNameBase,
+      _dateString, _timeString))
+    xmlFile = open(xmlLogFilePath, "w")
     _logFormatter = logging.Formatter("%(message)s")
     _logStreamHandler.setFormatter(_logFormatter)
     _logFileHandler.setFormatter(_logFormatter)
     loggerObj.addHandler(_logStreamHandler)
     loggerObj.addHandler(_logFileHandler)
-    return loggerObj
+    return loggerObj, xmlFile, _logTimestamp
 
 
 def main(arguments):
     (options, args) = ParseArguments(arguments)
     bus = CreateBusObject(options)
-    loggerObj = SetupLogging(options.logFilePath, options.logFileNameBase)
+    (loggerObj, xmlFile, startTime) = SetupLogging(options.logFilePath, options.logFileNameBase)
     loggerObj.info("-"*64)
     loggerObj.info("Host machine info")
     loggerObj.info("-"*64)
-    loggerObj.info("Machine name: %s" %
-      CAN.GetHostMachineInfo()["machineName"])
-    loggerObj.info("OS: %s" % CAN.GetHostMachineInfo()["osType"])
-    loggerObj.info("Python: %s" % CAN.GetHostMachineInfo()["pythonVersion"])
-    loggerObj.info("CANLIB: %s" % CAN.GetCANLIBInfo())
-    loggerObj.info("pycanlib: %s" % CAN.__version__)
-    loggerObj.info("")
+    hostMachineInfo = CAN.GetHostMachineInfo()
+    for line in hostMachineInfo.__str__().split("\n"):
+        loggerObj.info(line)
     loggerObj.info("-"*64)
     loggerObj.info("Channel info")
     loggerObj.info("-"*64)
-    for line in bus.GetChannelInfo().__str__().split("\n"):
+    channelInfo = bus.GetChannelInfo()
+    for line in channelInfo.__str__().split("\n"):
         loggerObj.info(line)
+    msgList = []
     while True:
         try:
             msg = bus.Read()
             if msg != None:
                 loggerObj.info(msg)
+                msgList.append(msg)
             else:
                 time.sleep(0.001)
         except KeyboardInterrupt:
+            endTime = datetime.datetime.now()
             break
+    _logDoc = minidom.Document()
+    _logElement = _logDoc.createElement("pycanlib_log")
+    _logElement.appendChild(hostMachineInfo.ToXML())
+    _logElement.appendChild(channelInfo.ToXML())
+    _logInfoElement = _logDoc.createElement("log_info")
+    _logStartTimeElement = _logDoc.createElement("log_start_time")
+    _logStartTimeText = _logDoc.createTextNode("%s" % startTime)
+    _logStartTimeElement.appendChild(_logStartTimeText)
+    _logInfoElement.appendChild(_logStartTimeElement)
+    _logEndTimeElement = _logDoc.createElement("log_end_time")
+    _logEndTimeText = _logDoc.createTextNode("%s" % endTime)
+    _logEndTimeElement.appendChild(_logEndTimeText)
+    _logInfoElement.appendChild(_logEndTimeElement)
+    _logElement.appendChild(_logInfoElement)
+    _logMessagesElement = _logDoc.createElement("messages")
+    for _message in msgList:
+        _logMessagesElement.appendChild(_message.ToXML())
+    _logElement.appendChild(_logMessagesElement)
+    _logDoc.appendChild(_logElement)
+    xmlFile.write("%s" % _logDoc.toprettyxml())
+    xmlFile.close()
 
 if __name__ == "__main__":
     main(sys.argv)
