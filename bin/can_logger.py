@@ -106,26 +106,9 @@ def main(arguments):
         except KeyboardInterrupt:
             endTime = datetime.datetime.now()
             break
-    _logDoc = minidom.Document()
-    _logElement = _logDoc.createElement("pycanlib_log")
-    _logElement.appendChild(hostMachineInfo.ToXML())
-    _logElement.appendChild(channelInfo.ToXML())
-    _logInfoElement = _logDoc.createElement("log_info")
-    _logStartTimeElement = _logDoc.createElement("log_start_time")
-    _logStartTimeText = _logDoc.createTextNode("%s" % startTime)
-    _logStartTimeElement.appendChild(_logStartTimeText)
-    _logInfoElement.appendChild(_logStartTimeElement)
-    _logEndTimeElement = _logDoc.createElement("log_end_time")
-    _logEndTimeText = _logDoc.createTextNode("%s" % endTime)
-    _logEndTimeElement.appendChild(_logEndTimeText)
-    _logInfoElement.appendChild(_logEndTimeElement)
-    _logElement.appendChild(_logInfoElement)
-    _logMessagesElement = _logDoc.createElement("messages")
-    for _message in msgList:
-        _logMessagesElement.appendChild(_message.ToXML())
-    _logElement.appendChild(_logMessagesElement)
-    _logDoc.appendChild(_logElement)
-    xmlFile.write("%s" % _logDoc.toprettyxml())
+    xmlTree = CAN.CreateLogXMLTree(hostMachineInfo, channelInfo, startTime,
+      endTime, msgList)
+    xmlFile.write("%s" % xmlTree.toprettyxml())
     xmlFile.close()
 
 if __name__ == "__main__":

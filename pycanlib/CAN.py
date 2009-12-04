@@ -621,6 +621,29 @@ def GetCANLIBInfo():#pragma: no cover
     return "%d.%d%s" % (_majorVerNo, _minorVerNo, _minorVerLetter)
 
 
+def CreateLogXMLTree(hostInfo, channelInfo, startTime, endTime, msgList):
+    retVal = minidom.Document()
+    _logElement = retVal.createElement("pycanlib_log")
+    _logElement.appendChild(hostInfo.ToXML())
+    _logElement.appendChild(channelInfo.ToXML())
+    _logInfoElement = retVal.createElement("log_info")
+    _logStartTimeElement = retVal.createElement("log_start_time")
+    _logStartTimeText = retVal.createTextNode("%s" % startTime)
+    _logStartTimeElement.appendChild(_logStartTimeText)
+    _logInfoElement.appendChild(_logStartTimeElement)
+    _logEndTimeElement = retVal.createElement("log_end_time")
+    _logEndTimeText = retVal.createTextNode("%s" % endTime)
+    _logEndTimeElement.appendChild(_logEndTimeText)
+    _logInfoElement.appendChild(_logEndTimeElement)
+    _logElement.appendChild(_logInfoElement)
+    _logMessagesElement = retVal.createElement("messages")
+    for _message in msgList:
+        _logMessagesElement.appendChild(_message.ToXML())
+    _logElement.appendChild(_logMessagesElement)
+    retVal.appendChild(_logElement)
+    return retVal
+
+
 class Bus(object):
 
     def __init__(self, channel=0, flags=0, speed=1000000, tseg1=1, tseg2=0,
