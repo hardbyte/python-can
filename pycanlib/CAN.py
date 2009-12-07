@@ -109,10 +109,10 @@ class Message(LogMessage):
             raise InvalidMessageParameterError("deviceID", deviceID,
               "deviceID must be in range [0, 2**11-1]")
         self.deviceID = deviceID
-        if len(data) not in range(0, 9):
-            raise InvalidMessageParameterError("data", data,
-              "data array length must be in range [0, 8]")
         if data != None:
+            if len(data) not in range(0, 9):
+                raise InvalidMessageParameterError("data", data,
+                  "data array length must be in range [0, 8]")
             for item in data:
                 if not isinstance(item, types.IntType):
                     raise InvalidMessageParameterError("data", data,
@@ -144,8 +144,9 @@ class Message(LogMessage):
         _fieldStrings.append("%.4x" % self.flags)
         _fieldStrings.append("%d" % self.dlc)
         _dataStrings = []
-        for byte in self.data:
-            _dataStrings.append("%.2x" % byte)
+        if self.data != None:
+            for byte in self.data:
+                _dataStrings.append("%.2x" % byte)
         if len(_dataStrings) > 0:
             _fieldStrings.append(" ".join(_dataStrings))
         return "\t".join(_fieldStrings)
