@@ -99,7 +99,7 @@ class LogMessage(object):
 
 class Message(LogMessage):
 
-    def __init__(self, deviceID=0, data=[], dlc=0, flags=0, timestamp=0.0):
+    def __init__(self, deviceID=0, data=None, dlc=0, flags=0, timestamp=0.0):
         LogMessage.__init__(self, timestamp)
         if not isinstance(deviceID, types.IntType):
             raise InvalidMessageParameterError("deviceID", deviceID,
@@ -112,14 +112,15 @@ class Message(LogMessage):
         if len(data) not in range(0, 9):
             raise InvalidMessageParameterError("data", data,
               "data array length must be in range [0, 8]")
-        for item in data:
-            if not isinstance(item, types.IntType):
-                raise InvalidMessageParameterError("data", data,
-                  ("data array must contain only integers; found '%s'" %
-                  item.__class__.__name__))
-            if item not in range(0, 2 ** 8):
-                raise InvalidMessageParameterError("data", data,
-                  "data array element values must be in range [0, 2**8-1]")
+        if data != None:
+            for item in data:
+                if not isinstance(item, types.IntType):
+                    raise InvalidMessageParameterError("data", data,
+                      ("data array must contain only integers; found '%s'" %
+                      item.__class__.__name__))
+                if item not in range(0, 2 ** 8):
+                    raise InvalidMessageParameterError("data", data,
+                      "data array element values must be in range [0, 2**8-1]")
         self.data = data
         if not isinstance(dlc, types.IntType):
             raise InvalidMessageParameterError("dlc", dlc,
@@ -525,15 +526,18 @@ class ChannelInfo(object):#pragma: no cover
         _channelNameText = _document.createTextNode(self.name)
         _channelNameElement.appendChild(_channelNameText)
         retVal.appendChild(_channelNameElement)
-        _channelManufacturerElement = _document.createElement("device_manufacturer")
+        _channelManufacturerElement = \
+          _document.createElement("device_manufacturer")
         _channelManufacturerText = _document.createTextNode(self.manufacturer)
         _channelManufacturerElement.appendChild(_channelManufacturerText)
         retVal.appendChild(_channelManufacturerElement)
-        _channelFWVersionElement = _document.createElement("device_firmware_version")
+        _channelFWVersionElement = \
+          _document.createElement("device_firmware_version")
         _channelFWVersionText = _document.createTextNode(self.fwVersion)
         _channelFWVersionElement.appendChild(_channelFWVersionText)
         retVal.appendChild(_channelFWVersionElement)
-        _channelHWVersionElement = _document.createElement("device_hardware_version")
+        _channelHWVersionElement = \
+          _document.createElement("device_hardware_version")
         _channelHWVersionText = _document.createTextNode(self.hwVersion)
         _channelHWVersionElement.appendChild(_channelHWVersionText)
         retVal.appendChild(_channelHWVersionElement)
@@ -541,12 +545,15 @@ class ChannelInfo(object):#pragma: no cover
         _channelCardSNText = _document.createTextNode("%s" % self.cardSN)
         _channelCardSNElement.appendChild(_channelCardSNText)
         retVal.appendChild(_channelCardSNElement)
-        _channelTransceiverTypeElement = _document.createElement("transceiver_type")
+        _channelTransceiverTypeElement = \
+          _document.createElement("transceiver_type")
         _channelTransceiverTypeText = _document.createTextNode(self.transType)
         _channelTransceiverTypeElement.appendChild(_channelTransceiverTypeText)
         retVal.appendChild(_channelTransceiverTypeElement)
-        _channelTransceiverSNElement = _document.createElement("transceiver_serial_number")
-        _channelTransceiverSNText = _document.createTextNode("%s" % self.transSN)
+        _channelTransceiverSNElement = \
+          _document.createElement("transceiver_serial_number")
+        _channelTransceiverSNText = \
+          _document.createTextNode("%s" % self.transSN)
         _channelTransceiverSNElement.appendChild(_channelTransceiverSNText)
         retVal.appendChild(_channelTransceiverSNElement)
         _channelCardNumberElement = _document.createElement("card_number")
@@ -554,7 +561,8 @@ class ChannelInfo(object):#pragma: no cover
         _channelCardNumberElement.appendChild(_channelCardNumberText)
         retVal.appendChild(_channelCardNumberElement)
         _channelChannelOnCardElement = _document.createElement("card_channel")
-        _channelChannelOnCardText = _document.createTextNode("%s" % self.channelOnCard)
+        _channelChannelOnCardText = \
+          _document.createTextNode("%s" % self.channelOnCard)
         _channelChannelOnCardElement.appendChild(_channelChannelOnCardText)
         retVal.appendChild(_channelChannelOnCardElement)
         return retVal
@@ -712,7 +720,8 @@ class Bus(object):
     def Write(self, msg):
         busClassLogger.debug("Bus '%s': Entering Write()" % self.name)
         if self.driverMode != canlib.canDRIVER_SILENT:
-            busClassLogger.debug("Bus '%s': writing message %s" % (self.name, msg))
+            busClassLogger.debug("Bus '%s': writing message %s" %
+              (self.name, msg))
             self.writeHandle.Write(msg)
         busClassLogger.debug("Bus '%s': Leaving Write()" % self.name)
 
