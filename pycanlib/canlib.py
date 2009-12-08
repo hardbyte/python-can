@@ -1,7 +1,7 @@
 import ctypes
 import sys
+import types
 
-import CANLIBErrorHandlers
 import canstat
 
 canlibDict = {"win32": (ctypes.WinDLL, "canlib32.dll"),
@@ -10,6 +10,62 @@ canlibDict = {"win32": (ctypes.WinDLL, "canlib32.dll"),
 libraryConstructor = canlibDict[sys.platform][0]
 libraryName = canlibDict[sys.platform][1]
 canlib32 = libraryConstructor(libraryName)
+
+
+class CANLIBError(Exception):
+
+    def __init__(self, function, errorCode, arguments):
+        Exception.__init__(self)
+        self.errorCode = errorCode
+        self.functionName = function.__name__
+        self.arguments = arguments
+
+    def __str__(self):
+        return ("function %s failed - %s - arguments were %s" %
+          (self.functionName, GetErrorMessage(self.errorCode),
+          self.arguments))
+
+
+def GetErrorMessage(result):
+    errmsg = ctypes.create_string_buffer(128)
+    canGetErrorText(result, errmsg, len(errmsg))
+    return ("%s (code %d)" % (errmsg.value, result))
+
+
+def _HandleValid(handle):
+    return (handle >= 0)
+
+
+def CheckBusHandleValidity(handle, function, arguments):
+    if not _HandleValid(handle):
+        raise CANLIBError(function, handle, arguments)
+    else:
+        return handle
+
+
+def _ConvertCANStatusToInt(result):
+    if isinstance(result, (types.IntType, types.LongType)):
+        _result = result
+    else:
+        _result = result.value
+    return _result
+
+
+def CheckStatus(result, function, arguments):
+    _result = _ConvertCANStatusToInt(result)
+    if not canstat.CANSTATUS_SUCCESS(_result):
+        raise CANLIBError(function, _result, arguments)
+    else:
+        return result
+
+
+def CheckStatusRead(result, function, arguments):
+    _result = _ConvertCANStatusToInt(result)
+    if not canstat.CANSTATUS_SUCCESS(_result) and \
+      (_result != canstat.canERR_NOMSG):
+        raise CANLIBError(function, _result, arguments)
+    else:
+        return result
 
 
 class c_canHandle(ctypes.c_int):
@@ -77,123 +133,123 @@ canInitializeLibrary.argtypes = []
 canClose = canlib32.canClose
 canClose.argtypes = [ctypes.c_int]
 canClose.restype = canstat.c_canStatus
-canClose.errcheck = CANLIBErrorHandlers.CheckStatus
+canClose.errcheck = CheckStatus
 
 canBusOn = canlib32.canBusOn
 canBusOn.argtypes = [ctypes.c_int]
 canBusOn.restype = canstat.c_canStatus
-canBusOn.errcheck = CANLIBErrorHandlers.CheckStatus
+canBusOn.errcheck = CheckStatus
 
 canBusOff = canlib32.canBusOff
 canBusOff.argtypes = [ctypes.c_int]
 canBusOff.restype = canstat.c_canStatus
-canBusOff.errcheck = CANLIBErrorHandlers.CheckStatus
+canBusOff.errcheck = CheckStatus
 
 canSetBusParams = canlib32.canSetBusParams
 canSetBusParams.argtypes = [ctypes.c_int, ctypes.c_long, ctypes.c_uint,
                             ctypes.c_uint, ctypes.c_uint, ctypes.c_uint,
                             ctypes.c_uint]
 canSetBusParams.restype = canstat.c_canStatus
-canSetBusParams.errcheck = CANLIBErrorHandlers.CheckStatus
+canSetBusParams.errcheck = CheckStatus
 
 canGetBusParams = canlib32.canGetBusParams
 canGetBusParams.argtypes = [ctypes.c_int, ctypes.c_void_p, ctypes.c_void_p,
                             ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
                             ctypes.c_void_p]
 canGetBusParams.restype = canstat.c_canStatus
-canGetBusParams.errcheck = CANLIBErrorHandlers.CheckStatus
+canGetBusParams.errcheck = CheckStatus
 
 canSetBusOutputControl = canlib32.canSetBusOutputControl
 canSetBusOutputControl.argtypes = [ctypes.c_int, ctypes.c_uint]
 canSetBusOutputControl.restype = canstat.c_canStatus
-canSetBusOutputControl.errcheck = CANLIBErrorHandlers.CheckStatus
+canSetBusOutputControl.errcheck = CheckStatus
 
 canGetBusOutputControl = canlib32.canGetBusOutputControl
 canGetBusOutputControl.argtypes = [ctypes.c_int, ctypes.c_void_p]
 canGetBusOutputControl.restype = canstat.c_canStatus
-canGetBusOutputControl.errcheck = CANLIBErrorHandlers.CheckStatus
+canGetBusOutputControl.errcheck = CheckStatus
 
 canAccept = canlib32.canAccept
 canAccept.argtypes = [ctypes.c_int, ctypes.c_long, ctypes.c_uint]
 canAccept.restype = canstat.c_canStatus
-canAccept.errcheck = CANLIBErrorHandlers.CheckStatus
+canAccept.errcheck = CheckStatus
 
 canReadStatus = canlib32.canReadStatus
 canReadStatus.argtypes = [ctypes.c_int, ctypes.c_void_p]
 canReadStatus.restype = canstat.c_canStatus
-canReadStatus.errcheck = CANLIBErrorHandlers.CheckStatus
+canReadStatus.errcheck = CheckStatus
 
 canReadErrorCounters = canlib32.canReadErrorCounters
 canReadErrorCounters.argtypes = [ctypes.c_int, ctypes.c_void_p,
                                  ctypes.c_void_p, ctypes.c_void_p]
 canReadErrorCounters.restype = canstat.c_canStatus
-canReadErrorCounters.errcheck = CANLIBErrorHandlers.CheckStatus
+canReadErrorCounters.errcheck = CheckStatus
 
 canWrite = canlib32.canWrite
 canWrite.argtypes = [ctypes.c_int, ctypes.c_long, ctypes.c_void_p,
                      ctypes.c_uint, ctypes.c_uint]
 canWrite.restype = canstat.c_canStatus
-canWrite.errcheck = CANLIBErrorHandlers.CheckStatus
+canWrite.errcheck = CheckStatus
 
 canWriteSync = canlib32.canWriteSync
 canWriteSync.argtypes = [ctypes.c_int, ctypes.c_long, ctypes.c_void_p,
                          ctypes.c_uint, ctypes.c_uint]
 canWriteSync.restype = canstat.c_canStatus
-canWriteSync.errcheck = CANLIBErrorHandlers.CheckStatus
+canWriteSync.errcheck = CheckStatus
 
 canRead = canlib32.canRead
 canRead.argtypes = [ctypes.c_int, ctypes.c_void_p, ctypes.c_void_p,
                     ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
 canRead.restype = canstat.c_canStatus
-canRead.errcheck = CANLIBErrorHandlers.CheckStatusRead
+canRead.errcheck = CheckStatusRead
 
 canReadWait = canlib32.canReadWait
 canReadWait.argtypes = [ctypes.c_int, ctypes.c_void_p, ctypes.c_void_p,
                         ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
                         ctypes.c_long]
 canReadWait.restype = canstat.c_canStatus
-canReadWait.errcheck = CANLIBErrorHandlers.CheckStatusRead
+canReadWait.errcheck = CheckStatusRead
 
 canReadSpecific = canlib32.canReadSpecific
 canReadSpecific.argtypes = [ctypes.c_int, ctypes.c_long, ctypes.c_void_p,
                             ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
 canReadSpecific.restype = canstat.c_canStatus
-canReadSpecific.errcheck = CANLIBErrorHandlers.CheckStatusRead
+canReadSpecific.errcheck = CheckStatusRead
 
 canReadSync = canlib32.canReadSync
 canReadSync.argtypes = [ctypes.c_int, ctypes.c_ulong]
 canReadSync.restype = canstat.c_canStatus
-canReadSync.errcheck = CANLIBErrorHandlers.CheckStatusRead
+canReadSync.errcheck = CheckStatusRead
 
 canReadSyncSpecific = canlib32.canReadSyncSpecific
 canReadSyncSpecific.argtypes = [ctypes.c_int, ctypes.c_long, ctypes.c_ulong]
 canReadSyncSpecific.restype = canstat.c_canStatus
-canReadSyncSpecific.errcheck = CANLIBErrorHandlers.CheckStatusRead
+canReadSyncSpecific.errcheck = CheckStatusRead
 
 canReadSpecificSkip = canlib32.canReadSpecificSkip
 canReadSpecificSkip.argtypes = [ctypes.c_int, ctypes.c_long, ctypes.c_void_p,
                                 ctypes.c_void_p, ctypes.c_void_p,
                                 ctypes.c_void_p]
 canReadSpecificSkip.restype = canstat.c_canStatus
-canReadSpecificSkip.errcheck = CANLIBErrorHandlers.CheckStatusRead
+canReadSpecificSkip.errcheck = CheckStatusRead
 
 canSetNotify = canlib32.canSetNotify
 canSetNotify.argtypes = [ctypes.c_int, ctypes.c_void_p, ctypes.c_uint]
 canSetNotify.restype = canstat.c_canStatus
-canSetNotify.errcheck = CANLIBErrorHandlers.CheckStatus
+canSetNotify.errcheck = CheckStatus
 
 canTranslateBaud = canlib32.canTranslateBaud
 canTranslateBaud.argtypes = [ctypes.c_void_p, ctypes.c_void_p,
                              ctypes.c_void_p, ctypes.c_void_p,
                              ctypes.c_void_p, ctypes.c_void_p]
 canTranslateBaud.restype = canstat.c_canStatus
-canTranslateBaud.errcheck = CANLIBErrorHandlers.CheckStatus
+canTranslateBaud.errcheck = CheckStatus
 
 canGetErrorText = canlib32.canGetErrorText
 canGetErrorText.argtypes = [canstat.c_canStatus, ctypes.c_char_p,
                             ctypes.c_uint]
 canGetErrorText.restype = canstat.c_canStatus
-canGetErrorText.errcheck = CANLIBErrorHandlers.CheckStatus
+canGetErrorText.errcheck = CheckStatus
 
 canGetVersion = canlib32.canGetVersion
 canGetVersion.argtypes = []
@@ -205,28 +261,28 @@ canIoCtl = canlib32.canIoCtl
 canIoCtl.argtypes = [ctypes.c_int, ctypes.c_uint, ctypes.c_void_p,
                      ctypes.c_uint]
 canIoCtl.restype = canstat.c_canStatus
-canIoCtl.errcheck = CANLIBErrorHandlers.CheckStatus
+canIoCtl.errcheck = CheckStatus
 
 canReadTimer = canlib32.canReadTimer
 canReadTimer.argtypes = [ctypes.c_int]
 canReadTimer.restype = ctypes.c_ulong
-canReadTimer.errcheck = CANLIBErrorHandlers.CheckStatus
+canReadTimer.errcheck = CheckStatus
 
 canOpenChannel = canlib32.canOpenChannel
 canOpenChannel.argtypes = [ctypes.c_int, ctypes.c_int]
 canOpenChannel.restype = ctypes.c_int
-canOpenChannel.errcheck = CANLIBErrorHandlers.CheckBusHandleValidity
+canOpenChannel.errcheck = CheckBusHandleValidity
 
 canGetNumberOfChannels = canlib32.canGetNumberOfChannels
 canGetNumberOfChannels.argtypes = [ctypes.c_void_p]
 canGetNumberOfChannels.restype = canstat.c_canStatus
-canGetNumberOfChannels.errcheck = CANLIBErrorHandlers.CheckStatus
+canGetNumberOfChannels.errcheck = CheckStatus
 
 canGetChannelData = canlib32.canGetChannelData
 canGetChannelData.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_void_p,
                               ctypes.c_size_t]
 canGetChannelData.restype = canstat.c_canStatus
-canGetChannelData.errcheck = CANLIBErrorHandlers.CheckStatus
+canGetChannelData.errcheck = CheckStatus
 
 canCHANNELDATA_CHANNEL_CAP = 1
 canCHANNELDATA_TRANS_CAP = 2
@@ -325,22 +381,22 @@ class c_canUserIOPortData(ctypes.Structure):
 canWaitForEvent = canlib32.canWaitForEvent
 canWaitForEvent.argtypes = [ctypes.c_int, ctypes.c_ulong]
 canWaitForEvent.restype = canstat.c_canStatus
-canWaitForEvent.errcheck = CANLIBErrorHandlers.CheckStatus
+canWaitForEvent.errcheck = CheckStatus
 
 canSetBusParamsC200 = canlib32.canSetBusParamsC200
 canSetBusParamsC200.argtypes = [ctypes.c_int, ctypes.c_ubyte, ctypes.c_ubyte]
 canSetBusParamsC200.restype = canstat.c_canStatus
-canSetBusParamsC200.errcheck = CANLIBErrorHandlers.CheckStatus
+canSetBusParamsC200.errcheck = CheckStatus
 
 canSetDriverMode = canlib32.canSetDriverMode
 canSetDriverMode.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_int]
 canSetDriverMode.restype = canstat.c_canStatus
-canSetDriverMode.errcheck = CANLIBErrorHandlers.CheckStatus
+canSetDriverMode.errcheck = CheckStatus
 
 canGetDriverMode = canlib32.canGetDriverMode
 canGetDriverMode.argtypes = [ctypes.c_int, ctypes.c_void_p, ctypes.c_void_p]
 canGetDriverMode.restype = canstat.c_canStatus
-canGetDriverMode.errcheck = CANLIBErrorHandlers.CheckStatus
+canGetDriverMode.errcheck = CheckStatus
 
 canVERSION_CANLIB32_VERSION = 0
 canVERSION_CANLIB32_PRODVER = 1
@@ -356,76 +412,76 @@ canGetVersionEx.restype = ctypes.c_uint
 canParamGetCount = canlib32.canParamGetCount
 canParamGetCount.argtypes = []
 canParamGetCount.restype = canstat.c_canStatus
-canParamGetCount.errcheck = CANLIBErrorHandlers.CheckStatus
+canParamGetCount.errcheck = CheckStatus
 
 canParamCommitChanges = canlib32.canParamCommitChanges
 canParamCommitChanges.argtypes = []
 canParamCommitChanges.restype = canstat.c_canStatus
-canParamCommitChanges.errcheck = CANLIBErrorHandlers.CheckStatus
+canParamCommitChanges.errcheck = CheckStatus
 
 canParamDeleteEntry = canlib32.canParamDeleteEntry
 canParamDeleteEntry.argtypes = [ctypes.c_int]
 canParamDeleteEntry.restype = canstat.c_canStatus
-canParamDeleteEntry.errcheck = CANLIBErrorHandlers.CheckStatus
+canParamDeleteEntry.errcheck = CheckStatus
 
 canParamCreateNewEntry = canlib32.canParamCreateNewEntry
 canParamCreateNewEntry.argtypes = []
 canParamCreateNewEntry.restype = canstat.c_canStatus
-canParamCreateNewEntry.errcheck = CANLIBErrorHandlers.CheckStatus
+canParamCreateNewEntry.errcheck = CheckStatus
 
 canParamSwapEntries = canlib32.canParamSwapEntries
 canParamSwapEntries.argtypes = [ctypes.c_int, ctypes.c_int]
 canParamSwapEntries.restype = canstat.c_canStatus
-canParamSwapEntries.errcheck = CANLIBErrorHandlers.CheckStatus
+canParamSwapEntries.errcheck = CheckStatus
 
 canParamGetName = canlib32.canParamGetName
 canParamGetName.argtypes = [ctypes.c_int, ctypes.c_char_p, ctypes.c_int]
 canParamGetName.restype = canstat.c_canStatus
-canParamGetName.errcheck = CANLIBErrorHandlers.CheckStatus
+canParamGetName.errcheck = CheckStatus
 
 
 canParamGetChannelNumber = canlib32.canParamGetChannelNumber
 canParamGetChannelNumber.argtypes = [ctypes.c_int]
 canParamGetChannelNumber.restype = canstat.c_canStatus
-canParamGetChannelNumber.errcheck = CANLIBErrorHandlers.CheckStatus
+canParamGetChannelNumber.errcheck = CheckStatus
 
 canParamGetBusParams = canlib32.canParamGetBusParams
 canParamGetBusParams.argtypes = [ctypes.c_int, ctypes.c_void_p,
                                  ctypes.c_void_p, ctypes.c_void_p,
                                  ctypes.c_void_p, ctypes.c_void_p]
 canParamGetBusParams.restype = canstat.c_canStatus
-canParamGetBusParams.errcheck = CANLIBErrorHandlers.CheckStatus
+canParamGetBusParams.errcheck = CheckStatus
 
 canParamSetName = canlib32.canParamSetName
 canParamSetName.argtypes = [ctypes.c_int, ctypes.c_char_p]
 canParamSetName.restype = canstat.c_canStatus
-canParamSetName.errcheck = CANLIBErrorHandlers.CheckStatus
+canParamSetName.errcheck = CheckStatus
 
 canParamSetChannelNumber = canlib32.canParamSetChannelNumber
 canParamSetChannelNumber.argtypes = [ctypes.c_int, ctypes.c_int]
 canParamSetChannelNumber.restype = canstat.c_canStatus
-canParamSetChannelNumber.errcheck = CANLIBErrorHandlers.CheckStatus
+canParamSetChannelNumber.errcheck = CheckStatus
 
 canParamSetBusParams = canlib32.canParamSetBusParams
 canParamSetBusParams.argtypes = [ctypes.c_int, ctypes.c_long, ctypes.c_uint,
                                  ctypes.c_uint, ctypes.c_uint, ctypes.c_uint]
 canParamSetBusParams.restype = canstat.c_canStatus
-canParamSetBusParams.errcheck = CANLIBErrorHandlers.CheckStatus
+canParamSetBusParams.errcheck = CheckStatus
 
 canParamFindByName = canlib32.canParamFindByName
 canParamFindByName.argtypes = [ctypes.c_char_p]
 canParamFindByName.restype = canstat.c_canStatus
-canParamFindByName.errcheck = CANLIBErrorHandlers.CheckStatus
+canParamFindByName.errcheck = CheckStatus
 
 canObjBufFreeAll = canlib32.canObjBufFreeAll
 canObjBufFreeAll.argtypes = [ctypes.c_int]
 canObjBufFreeAll.restype = canstat.c_canStatus
-canObjBufFreeAll.errcheck = CANLIBErrorHandlers.CheckStatus
+canObjBufFreeAll.errcheck = CheckStatus
 
 canObjBufAllocate = canlib32.canObjBufAllocate
 canObjBufAllocate.argtypes = [ctypes.c_int, ctypes.c_int]
 canObjBufAllocate.restype = canstat.c_canStatus
-canObjBufAllocate.errcheck = CANLIBErrorHandlers.CheckStatus
+canObjBufAllocate.errcheck = CheckStatus
 
 canOBJBUF_TYPE_AUTO_RESPONSE = 0x01
 canOBJBUF_TYPE_PERIODIC_TX = 0x02
@@ -433,51 +489,51 @@ canOBJBUF_TYPE_PERIODIC_TX = 0x02
 canObjBufFree = canlib32.canObjBufFree
 canObjBufFree.argtypes = [ctypes.c_int, ctypes.c_int]
 canObjBufFree.restype = canstat.c_canStatus
-canObjBufFree.errcheck = CANLIBErrorHandlers.CheckStatus
+canObjBufFree.errcheck = CheckStatus
 
 canObjBufWrite = canlib32.canObjBufWrite
 canObjBufWrite.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_int,
                            ctypes.c_void_p, ctypes.c_uint, ctypes.c_uint]
 canObjBufWrite.restype = canstat.c_canStatus
-canObjBufWrite.errcheck = CANLIBErrorHandlers.CheckStatus
+canObjBufWrite.errcheck = CheckStatus
 
 canObjBufSetFilter = canlib32.canObjBufSetFilter
 canObjBufSetFilter.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_uint,
                                ctypes.c_uint]
 canObjBufSetFilter.restype = canstat.c_canStatus
-canObjBufSetFilter.errcheck = CANLIBErrorHandlers.CheckStatus
+canObjBufSetFilter.errcheck = CheckStatus
 
 canObjBufSetFlags = canlib32.canObjBufSetFlags
 canObjBufSetFlags.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_uint]
 canObjBufSetFlags.restype = canstat.c_canStatus
-canObjBufSetFlags.errcheck = CANLIBErrorHandlers.CheckStatus
+canObjBufSetFlags.errcheck = CheckStatus
 
 canOBJBUF_AUTO_RESPONSE_RTR_ONLY = 0x01
 
 canObjBufSetPeriod = canlib32.canObjBufSetPeriod
 canObjBufSetPeriod.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_uint]
 canObjBufSetPeriod.restype = canstat.c_canStatus
-canObjBufSetPeriod.errcheck = CANLIBErrorHandlers.CheckStatus
+canObjBufSetPeriod.errcheck = CheckStatus
 
 canObjBufSetMsgCount = canlib32.canObjBufSetMsgCount
 canObjBufSetMsgCount.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_uint]
 canObjBufSetMsgCount.restype = canstat.c_canStatus
-canObjBufSetMsgCount.errcheck = CANLIBErrorHandlers.CheckStatus
+canObjBufSetMsgCount.errcheck = CheckStatus
 
 canObjBufEnable = canlib32.canObjBufEnable
 canObjBufEnable.argtypes = [ctypes.c_int, ctypes.c_int]
 canObjBufEnable.restype = canstat.c_canStatus
-canObjBufEnable.errcheck = CANLIBErrorHandlers.CheckStatus
+canObjBufEnable.errcheck = CheckStatus
 
 canObjBufDisable = canlib32.canObjBufDisable
 canObjBufDisable.argtypes = [ctypes.c_int, ctypes.c_int]
 canObjBufDisable.restype = canstat.c_canStatus
-canObjBufDisable.errcheck = CANLIBErrorHandlers.CheckStatus
+canObjBufDisable.errcheck = CheckStatus
 
 canObjBufSendBurst = canlib32.canObjBufSendBurst
 canObjBufSendBurst.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_uint]
 canObjBufSendBurst.restype = canstat.c_canStatus
-canObjBufSendBurst.errcheck = CANLIBErrorHandlers.CheckStatus
+canObjBufSendBurst.errcheck = CheckStatus
 
 canVERSION_DONT_ACCEPT_LATER = 0x01
 canVERSION_DONT_ACCEPT_BETAS = 0x02
@@ -492,50 +548,50 @@ canProbeVersion.restype = ctypes.c_bool
 canResetBus = canlib32.canResetBus
 canResetBus.argtypes = [ctypes.c_int]
 canResetBus.restype = canstat.c_canStatus
-canResetBus.errcheck = CANLIBErrorHandlers.CheckStatus
+canResetBus.errcheck = CheckStatus
 
 canWriteWait = canlib32.canWriteWait
 canWriteWait.argtypes = [ctypes.c_int, ctypes.c_long, ctypes.c_void_p,
                          ctypes.c_uint, ctypes.c_uint, ctypes.c_ulong]
 canWriteWait.restype = canstat.c_canStatus
-canWriteWait.errcheck = CANLIBErrorHandlers.CheckStatus
+canWriteWait.errcheck = CheckStatus
 
 canUnloadLibrary = canlib32.canUnloadLibrary
 canUnloadLibrary.argtypes = []
 canUnloadLibrary.restype = canstat.c_canStatus
-canUnloadLibrary.errcheck = CANLIBErrorHandlers.CheckStatus
+canUnloadLibrary.errcheck = CheckStatus
 
 canSetAcceptanceFilter = canlib32.canSetAcceptanceFilter
 canSetAcceptanceFilter.argtypes = [ctypes.c_int, ctypes.c_uint, ctypes.c_uint,
                                    ctypes.c_int]
 canSetAcceptanceFilter.restype = canstat.c_canStatus
-canSetAcceptanceFilter.errcheck = CANLIBErrorHandlers.CheckStatus
+canSetAcceptanceFilter.errcheck = CheckStatus
 
 canFlushReceiveQueue = canlib32.canFlushReceiveQueue
 canFlushReceiveQueue.argtypes = [ctypes.c_int]
 canFlushReceiveQueue.restype = canstat.c_canStatus
-canFlushReceiveQueue.errcheck = CANLIBErrorHandlers.CheckStatus
+canFlushReceiveQueue.errcheck = CheckStatus
 
 canFlushTransmitQueue = canlib32.canFlushTransmitQueue
 canFlushTransmitQueue.argtypes = [ctypes.c_int]
 canFlushTransmitQueue.restype = canstat.c_canStatus
-canFlushTransmitQueue.errcheck = CANLIBErrorHandlers.CheckStatus
+canFlushTransmitQueue.errcheck = CheckStatus
 
 kvGetApplicationMapping = canlib32.kvGetApplicationMapping
 kvGetApplicationMapping.argtypes = [ctypes.c_int, ctypes.c_char_p,
                                     ctypes.c_int, ctypes.c_void_p]
 kvGetApplicationMapping.restype = canstat.c_canStatus
-kvGetApplicationMapping.errcheck = CANLIBErrorHandlers.CheckStatus
+kvGetApplicationMapping.errcheck = CheckStatus
 
 kvBeep = canlib32.kvBeep
 kvBeep.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_uint]
 kvBeep.restype = canstat.c_canStatus
-kvBeep.errcheck = CANLIBErrorHandlers.CheckStatus
+kvBeep.errcheck = CheckStatus
 
 kvSelfTest = canlib32.kvSelfTest
 kvSelfTest.argtypes = [ctypes.c_int, ctypes.c_void_p]
 kvSelfTest.restype = canstat.c_canStatus
-kvSelfTest.errcheck = CANLIBErrorHandlers.CheckStatus
+kvSelfTest.errcheck = CheckStatus
 
 kvLED_ACTION_ALL_LEDS_ON = 0
 kvLED_ACTION_ALL_LEDS_OFF = 1
@@ -551,17 +607,17 @@ kvLED_ACTION_LED_3_OFF = 9
 kvFlashLeds = canlib32.kvFlashLeds
 kvFlashLeds.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_int]
 kvFlashLeds.restype = canstat.c_canStatus
-kvFlashLeds.errcheck = CANLIBErrorHandlers.CheckStatus
+kvFlashLeds.errcheck = CheckStatus
 
 canRequestChipStatus = canlib32.canRequestChipStatus
 canRequestChipStatus.argtypes = [ctypes.c_int]
 canRequestChipStatus.restype = canstat.c_canStatus
-canRequestChipStatus.errcheck = CANLIBErrorHandlers.CheckStatus
+canRequestChipStatus.errcheck = CheckStatus
 
 canRequestBusStatistics = canlib32.canRequestBusStatistics
 canRequestBusStatistics.argtypes = [ctypes.c_int]
 canRequestBusStatistics.restype = canstat.c_canStatus
-canRequestBusStatistics.errcheck = CANLIBErrorHandlers.CheckStatus
+canRequestBusStatistics.errcheck = CheckStatus
 
 
 class c_canBusStatistics(ctypes.Structure):
@@ -573,23 +629,23 @@ class c_canBusStatistics(ctypes.Structure):
 canGetBusStatistics = canlib32.canGetBusStatistics
 canGetBusStatistics.argtypes = [ctypes.c_int, ctypes.c_void_p, ctypes.c_size_t]
 canGetBusStatistics.restype = canstat.c_canStatus
-canGetBusStatistics.errcheck = CANLIBErrorHandlers.CheckStatus
+canGetBusStatistics.errcheck = CheckStatus
 
 canSetBitrate = canlib32.canSetBitrate
 canSetBitrate.argtypes = [ctypes.c_int, ctypes.c_int]
 canSetBitrate.restype = canstat.c_canStatus
-canSetBitrate.errcheck = CANLIBErrorHandlers.CheckStatus
+canSetBitrate.errcheck = CheckStatus
 
 kvAnnounceIdentity = canlib32.kvAnnounceIdentity
 kvAnnounceIdentity.argtypes = [ctypes.c_int, ctypes.c_void_p, ctypes.c_size_t]
 kvAnnounceIdentity.restype = canstat.c_canStatus
-kvAnnounceIdentity.errcheck = CANLIBErrorHandlers.CheckStatus
+kvAnnounceIdentity.errcheck = CheckStatus
 
 canGetHandleData = canlib32.canGetHandleData
 canGetHandleData.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_void_p,
                              ctypes.c_size_t]
 canGetHandleData.restype = canstat.c_canStatus
-canGetHandleData.errcheck = CANLIBErrorHandlers.CheckStatus
+canGetHandleData.errcheck = CheckStatus
 
 
 class c_kvTimeDomain(ctypes.c_void_p):
@@ -609,33 +665,33 @@ class c_kvTimeDomainData(ctypes.Structure):
 kvTimeDomainCreate = canlib32.kvTimeDomainCreate
 kvTimeDomainCreate.argtypes = [c_kvTimeDomain]
 kvTimeDomainCreate.restype = c_kvStatus
-kvTimeDomainCreate.errcheck = CANLIBErrorHandlers.CheckStatus
+kvTimeDomainCreate.errcheck = CheckStatus
 
 kvTimeDomainDelete = canlib32.kvTimeDomainDelete
 kvTimeDomainDelete.argtypes = [c_kvTimeDomain]
 kvTimeDomainDelete.restype = c_kvStatus
-kvTimeDomainDelete.errcheck = CANLIBErrorHandlers.CheckStatus
+kvTimeDomainDelete.errcheck = CheckStatus
 
 kvTimeDomainResetTime = canlib32.kvTimeDomainResetTime
 kvTimeDomainResetTime.argtypes = [c_kvTimeDomain]
 kvTimeDomainResetTime.restype = c_kvStatus
-kvTimeDomainResetTime.errcheck = CANLIBErrorHandlers.CheckStatus
+kvTimeDomainResetTime.errcheck = CheckStatus
 
 kvTimeDomainGetData = canlib32.kvTimeDomainGetData
 kvTimeDomainGetData.argtypes = [c_kvTimeDomain, ctypes.c_void_p,
                                 ctypes.c_size_t]
 kvTimeDomainGetData.restype = c_kvStatus
-kvTimeDomainGetData.errcheck = CANLIBErrorHandlers.CheckStatus
+kvTimeDomainGetData.errcheck = CheckStatus
 
 kvTimeDomainAddHandle = canlib32.kvTimeDomainAddHandle
 kvTimeDomainAddHandle.argtypes = [c_kvTimeDomain, ctypes.c_int]
 kvTimeDomainAddHandle.restype = c_kvStatus
-kvTimeDomainAddHandle.errcheck = CANLIBErrorHandlers.CheckStatus
+kvTimeDomainAddHandle.errcheck = CheckStatus
 
 kvTimeDomainRemoveHandle = canlib32.kvTimeDomainRemoveHandle
 kvTimeDomainRemoveHandle.argtypes = [c_kvTimeDomain, ctypes.c_int]
 kvTimeDomainRemoveHandle.restype = c_kvStatus
-kvTimeDomainRemoveHandle.errcheck = CANLIBErrorHandlers.CheckStatus
+kvTimeDomainRemoveHandle.errcheck = CheckStatus
 
 
 class c_kvCallback(ctypes.c_void_p):
@@ -648,7 +704,7 @@ kvSetNotifyCallback = canlib32.kvSetNotifyCallback
 kvSetNotifyCallback.argtypes = [ctypes.c_int, c_kvCallback, ctypes.c_void_p,
                                 ctypes.c_uint]
 kvSetNotifyCallback.restype = c_kvStatus
-kvSetNotifyCallback.errcheck = CANLIBErrorHandlers.CheckStatus
+kvSetNotifyCallback.errcheck = CheckStatus
 
 kvBUSTYPE_NONE = 0
 kvBUSTYPE_PCI = 1
@@ -665,23 +721,23 @@ kvGetSupportedInterfaceInfo.argtypes = [ctypes.c_int, ctypes.c_char_p,
                                         ctypes.c_int, ctypes.c_void_p,
                                         ctypes.c_void_p]
 kvGetSupportedInterfaceInfo.restype = c_kvStatus
-kvGetSupportedInterfaceInfo.errcheck = CANLIBErrorHandlers.CheckStatus
+kvGetSupportedInterfaceInfo.errcheck = CheckStatus
 
 kvReadTimer = canlib32.kvReadTimer
 kvReadTimer.argtypes = [ctypes.c_int, ctypes.c_void_p]
 kvReadTimer.restype = c_kvStatus
-kvReadTimer.errcheck = CANLIBErrorHandlers.CheckStatus
+kvReadTimer.errcheck = CheckStatus
 
 kvReadTimer64 = canlib32.kvReadTimer64
 kvReadTimer64.argtypes = [ctypes.c_int, ctypes.c_void_p]
 kvReadTimer64.restype = c_kvStatus
-kvReadTimer64.errcheck = CANLIBErrorHandlers.CheckStatus
+kvReadTimer64.errcheck = CheckStatus
 
 kvReadDeviceCustomerData = canlib32.kvReadDeviceCustomerData
 kvReadDeviceCustomerData.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_int,
                                      ctypes.c_void_p, ctypes.c_size_t]
 kvReadDeviceCustomerData.restype = c_kvStatus
-kvReadDeviceCustomerData.errcheck = CANLIBErrorHandlers.CheckStatus
+kvReadDeviceCustomerData.errcheck = CheckStatus
 
 ENVVAR_TYPE_INT = 1
 ENVVAR_TYPE_FLOAT = 2
@@ -694,23 +750,23 @@ class c_kvEnvHandle(ctypes.c_longlong):
 kvScriptStart = canlib32.kvScriptStart
 kvScriptStart.argtypes = [ctypes.c_int, ctypes.c_int]
 kvScriptStart.restype = c_kvStatus
-kvScriptStart.errcheck = CANLIBErrorHandlers.CheckStatus
+kvScriptStart.errcheck = CheckStatus
 
 kvScriptStop = canlib32.kvScriptStop
 kvScriptStop.argtypes = [ctypes.c_int, ctypes.c_int]
 kvScriptStop.restype = c_kvStatus
-kvScriptStop.errcheck = CANLIBErrorHandlers.CheckStatus
+kvScriptStop.errcheck = CheckStatus
 
 kvScriptForceStop = canlib32.kvScriptForceStop
 kvScriptForceStop.argtypes = [ctypes.c_int, ctypes.c_int]
 kvScriptForceStop.restype = c_kvStatus
-kvScriptForceStop.errcheck = CANLIBErrorHandlers.CheckStatus
+kvScriptForceStop.errcheck = CheckStatus
 
 kvScriptSendEvent = canlib32.kvScriptSendEvent
 kvScriptSendEvent.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_int,
                               ctypes.c_int]
 kvScriptSendEvent.restype = c_kvStatus
-kvScriptSendEvent.errcheck = CANLIBErrorHandlers.CheckStatus
+kvScriptSendEvent.errcheck = CheckStatus
 
 kvScriptEnvvarOpen = canlib32.kvScriptEnvvarOpen
 kvScriptEnvvarOpen.argtypes = [ctypes.c_int, ctypes.c_char_p, ctypes.c_int,
@@ -722,63 +778,63 @@ kvScriptEnvvarOpen.restype = c_kvEnvHandle
 kvScriptEnvvarClose = canlib32.kvScriptEnvvarClose
 kvScriptEnvvarClose.argtypes = [c_kvEnvHandle]
 kvScriptEnvvarClose.restype = c_kvStatus
-kvScriptEnvvarClose.errcheck = CANLIBErrorHandlers.CheckStatus
+kvScriptEnvvarClose.errcheck = CheckStatus
 
 kvScriptEnvvarSetInt = canlib32.kvScriptEnvvarSetInt
 kvScriptEnvvarSetInt.argtypes = [c_kvEnvHandle, ctypes.c_int]
 kvScriptEnvvarSetInt.restype = c_kvStatus
-kvScriptEnvvarSetInt.errcheck = CANLIBErrorHandlers.CheckStatus
+kvScriptEnvvarSetInt.errcheck = CheckStatus
 
 kvScriptEnvvarGetInt = canlib32.kvScriptEnvvarGetInt
 kvScriptEnvvarGetInt.argtypes = [c_kvEnvHandle, ctypes.c_void_p]
 kvScriptEnvvarGetInt.restype = c_kvStatus
-kvScriptEnvvarGetInt.errcheck = CANLIBErrorHandlers.CheckStatus
+kvScriptEnvvarGetInt.errcheck = CheckStatus
 
 kvScriptEnvvarSetData = canlib32.kvScriptEnvvarSetData
 kvScriptEnvvarSetData.argtypes = [c_kvEnvHandle, ctypes.c_void_p,
                                   ctypes.c_int, ctypes.c_int]
 kvScriptEnvvarSetData.restype = c_kvStatus
-kvScriptEnvvarSetData.errcheck = CANLIBErrorHandlers.CheckStatus
+kvScriptEnvvarSetData.errcheck = CheckStatus
 
 kvScriptEnvvarGetData = canlib32.kvScriptEnvvarGetData
 kvScriptEnvvarGetData.argtypes = [c_kvEnvHandle, ctypes.c_void_p,
                                   ctypes.c_int, ctypes.c_int]
 kvScriptEnvvarGetData.restype = c_kvStatus
-kvScriptEnvvarGetData.errcheck = CANLIBErrorHandlers.CheckStatus
+kvScriptEnvvarGetData.errcheck = CheckStatus
 
 kvScriptGetMaxEnvvarSize = canlib32.kvScriptGetMaxEnvvarSize
 kvScriptGetMaxEnvvarSize.argtypes = [ctypes.c_int, ctypes.c_void_p]
 kvScriptGetMaxEnvvarSize.restype = c_kvStatus
-kvScriptGetMaxEnvvarSize.errcheck = CANLIBErrorHandlers.CheckStatus
+kvScriptGetMaxEnvvarSize.errcheck = CheckStatus
 
 kvScriptLoadFileOnDevice = canlib32.kvScriptLoadFileOnDevice
 kvScriptLoadFileOnDevice.argtypes = [ctypes.c_int, ctypes.c_int,
                                      ctypes.c_char_p]
 kvScriptLoadFileOnDevice.restype = c_kvStatus
-kvScriptLoadFileOnDevice.errcheck = CANLIBErrorHandlers.CheckStatus
+kvScriptLoadFileOnDevice.errcheck = CheckStatus
 
 kvScriptLoadFile = canlib32.kvScriptLoadFile
 kvScriptLoadFile.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_char_p]
 kvScriptLoadFile.restype = c_kvStatus
-kvScriptLoadFile.errcheck = CANLIBErrorHandlers.CheckStatus
+kvScriptLoadFile.errcheck = CheckStatus
 
 kvFileCopyToDevice = canlib32.kvFileCopyToDevice
 kvFileCopyToDevice.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_char_p]
 kvFileCopyToDevice.restype = c_kvStatus
-kvFileCopyToDevice.errcheck = CANLIBErrorHandlers.CheckStatus
+kvFileCopyToDevice.errcheck = CheckStatus
 
 kvFileCopyFromDevice = canlib32.kvFileCopyFromDevice
 kvFileCopyFromDevice.argtypes = [ctypes.c_int, ctypes.c_char_p,
                                  ctypes.c_char_p]
 kvFileCopyFromDevice.restype = c_kvStatus
-kvFileCopyFromDevice.errcheck = CANLIBErrorHandlers.CheckStatus
+kvFileCopyFromDevice.errcheck = CheckStatus
 
 kvFileDelete = canlib32.kvFileDelete
 kvFileDelete.argtypes = [ctypes.c_int, ctypes.c_char_p]
 kvFileDelete.restype = c_kvStatus
-kvFileDelete.errcheck = CANLIBErrorHandlers.CheckStatus
+kvFileDelete.errcheck = CheckStatus
 
 kvFileGetSystemData = canlib32.kvFileGetSystemData
 kvFileGetSystemData.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_void_p]
 kvFileGetSystemData.restype = c_kvStatus
-kvFileGetSystemData.errcheck = CANLIBErrorHandlers.CheckStatus
+kvFileGetSystemData.errcheck = CheckStatus

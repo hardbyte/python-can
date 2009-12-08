@@ -8,7 +8,7 @@ import time
 import types
 from xml.dom import minidom
 
-from pycanlib import canlib, CANLIBErrorHandlers, canstat
+from pycanlib import canlib, canstat
 
 
 canlib.canInitializeLibrary()
@@ -244,7 +244,7 @@ class _Handle(object):
         self.flags = flags
         try:
             self.canlibHandle = canlib.canOpenChannel(channel, flags)
-        except CANLIBErrorHandlers.CANLIBError as e:
+        except canlib.CANLIBError as e:
             if e.errorCode == canstat.canERR_NOTFOUND:
                 raise InvalidBusParameterError("flags", flags,
                   "no hardware is available that has all these capabilities")
