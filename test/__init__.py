@@ -93,25 +93,25 @@ def testShallCreateCANMessageObject():
     _msgObject = CAN.Message()
     assert (_msgObject != None)
     assert ("timestamp" in _msgObject.__dict__.keys())
-    assert ("deviceID" in _msgObject.__dict__.keys())
+    assert ("device_id" in _msgObject.__dict__.keys())
     assert ("dlc" in _msgObject.__dict__.keys())
     assert ("data" in _msgObject.__dict__.keys())
     assert ("flags" in _msgObject.__dict__.keys())
 
 
 def testShallNotAcceptInvalidDeviceIDs():
-    for deviceID in ["foo", 0, 0.1, 10000, 0x0100, 2 ** 32]:
-        yield isDeviceIDValid, deviceID
+    for device_id in ["foo", 0, 0.1, 10000, 0x0100, 2 ** 32]:
+        yield isDeviceIDValid, device_id
 
 
-def isDeviceIDValid(deviceID):
+def isDeviceIDValid(device_id):
     _msgObject = None
     try:
-        _msgObject = CAN.Message(deviceID=deviceID)
+        _msgObject = CAN.Message(device_id=device_id)
     except Exception as e:
         testLogger.debug("Exception thrown by CAN.Message", exc_info=True)
         testLogger.debug(e.__str__())
-    if isinstance(deviceID, types.IntType) and (deviceID in range(0, 2 ** 11)):
+    if isinstance(device_id, types.IntType) and (device_id in range(0, 2 ** 11)):
         assert (_msgObject != None)
     else:
         assert (_msgObject == None)
@@ -208,18 +208,18 @@ def testShallProvideStringRepresentationOfCANMessage():
         for dataArray in dataArrays:
             for dlc in dlcs:
                 for flags in flagsValues:
-                    for deviceID in deviceIDs:
+                    for device_id in deviceIDs:
                         yield (checkCANMessageStringRepr, timestamp,
-                               dataArray, dlc, flags, deviceID)
+                               dataArray, dlc, flags, device_id)
 
 
-def checkCANMessageStringRepr(timestamp, dataArray, dlc, flags, deviceID):
+def checkCANMessageStringRepr(timestamp, dataArray, dlc, flags, device_id):
     _msgObject = None
-    _msgObject = CAN.Message(deviceID=deviceID, timestamp=timestamp,
+    _msgObject = CAN.Message(device_id=device_id, timestamp=timestamp,
                              data=dataArray, dlc=dlc, flags=flags)
     assert (_msgObject != None)
     dataString = ("%s" % ' '.join([("%.2x" % byte) for byte in dataArray]))
-    expectedStringRep = "%.6f\t%.4x\t%.4x\t%d\t%s" % (timestamp, deviceID,
+    expectedStringRep = "%.6f\t%.4x\t%.4x\t%d\t%s" % (timestamp, device_id,
                                                     flags, dlc, dataString)
     assert (_msgObject.__str__() == expectedStringRep)
 
@@ -334,20 +334,20 @@ def openChannelWithInvalidFlags(channel):
 
 def testCheckStatus():
     for _handle in xrange(-100, 100):
-        if (_handle not in CAN.readHandleRegistry.keys()) and \
-          (_handle not in CAN.writeHandleRegistry.keys()):
+        if (_handle not in CAN.read_handle_registry.keys()) and \
+          (_handle not in CAN.write_handle_registry.keys()):
             yield operateOnInvalidHandle, _handle
 
 
 def operateOnInvalidHandle(handle):
     try:
-        deviceID = ctypes.c_long(0)
+        device_id = ctypes.c_long(0)
         data = ctypes.create_string_buffer(8)
         dlc = ctypes.c_uint(0)
         flags = ctypes.c_uint(0)
         flags = ctypes.c_uint(0)
         timestamp = ctypes.c_long(0)
-        canlib.canRead(handle, ctypes.byref(deviceID),
+        canlib.canRead(handle, ctypes.byref(device_id),
           ctypes.byref(data), ctypes.byref(dlc), ctypes.byref(flags),
           ctypes.byref(timestamp))
     except canlib.CANLIBError as e:
@@ -386,7 +386,7 @@ def writeAndReadBack(busChannel, flags=0):
     _bus2 = CAN.Bus(channel=busChannel, speed=105263, tseg1=10, tseg2=8,
                     sjw=4, noSamp=1, flags=flags, name="_bus2")
     _startTime = _bus1.ReadTimer()
-    _msg1 = CAN.Message(deviceID=0x0010, data=[1, 2, 3], dlc=3, flags=0x02)
+    _msg1 = CAN.Message(device_id=0x0010, data=[1, 2, 3], dlc=3, flags=0x02)
     _bus1.Write(_msg1)
     rxMsg = None
     testFailed = True
@@ -395,7 +395,7 @@ def writeAndReadBack(busChannel, flags=0):
         if tmp != None:
             testLogger.debug(tmp)
             rxMsg = tmp
-            if ((_msg1.deviceID == rxMsg.deviceID) and
+            if ((_msg1.device_id == rxMsg.device_id) and
                 (_msg1.data == rxMsg.data) and
                 (_msg1.dlc == rxMsg.dlc) and
                 (_msg1.flags == rxMsg.flags)):
@@ -413,7 +413,7 @@ def writeAndReadBack(busChannel, flags=0):
         tmp = _bus1.Read()
         if tmp != None:
             rxMsg = tmp
-            if ((_msg1.deviceID == rxMsg.deviceID) and
+            if ((_msg1.device_id == rxMsg.device_id) and
                 (_msg1.data == rxMsg.data) and
                 (_msg1.dlc == rxMsg.dlc) and
                 (_msg1.flags == rxMsg.flags)):
