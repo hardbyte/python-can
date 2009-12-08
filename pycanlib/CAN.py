@@ -9,6 +9,8 @@ import types
 from xml.dom import minidom
 
 from pycanlib import canlib, CANLIBErrorHandlers, canstat
+
+
 canlib.canInitializeLibrary()
 
 
