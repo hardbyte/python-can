@@ -8,10 +8,7 @@ import time
 import types
 from xml.dom import minidom
 
-import canlib
-import CANLIBErrorHandlers
-import canstat
-
+from pycanlib import canlib, CANLIBErrorHandlers, canstat
 canlib.canInitializeLibrary()
 
 
@@ -44,6 +41,7 @@ MICROSECONDS_PER_TIMER_TICK = (TIMER_TICKS_PER_SECOND / 1000000)
 class InvalidParameterError(pycanlibError):
 
     def __init__(self, parameterName, parameterValue, reason):
+        pycanlibError.__init__(self)
         self.parameterName = parameterName
         self.parameterValue = parameterValue
         self.reason = reason

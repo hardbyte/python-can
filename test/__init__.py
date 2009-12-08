@@ -319,6 +319,9 @@ def openVirtualChannelWithIncorrectFlags(channel):
     except CAN.InvalidBusParameterError as e:
         testLogger.debug("Exception thrown by CAN.Bus", exc_info=True)
         testLogger.debug(e)
+    except Exception as e:
+        print type(e)
+        raise e
     assert (_bus == None)
 
 
