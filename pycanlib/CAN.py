@@ -42,16 +42,16 @@ MICROSECONDS_PER_TIMER_TICK = (TIMER_TICKS_PER_SECOND / 1000000)
 
 class InvalidParameterError(PycanlibError):
 
-    def __init__(self, parameterName, parameterValue, reason):
+    def __init__(self, parameter_name, parameter_value, reason):
         PycanlibError.__init__(self)
-        self.parameterName = parameterName
-        self.parameterValue = parameterValue
+        self.parameter_name = parameter_name
+        self.parameter_value = parameter_value
         self.reason = reason
 
     def __str__(self):
         return ("%s: invalid value '%s' for parameter '%s' - %s" %
-          (self.__class__.__name__, self.parameterValue,
-          self.parameterName, self.reason))
+          (self.__class__.__name__, self.parameter_value,
+          self.parameter_name, self.reason))
 
 
 class InvalidMessageParameterError(InvalidParameterError):
@@ -65,62 +65,66 @@ class InvalidBusParameterError(InvalidParameterError):
 class LogMessage(object):
 
     def __init__(self, timestamp=0.0):
-        _startMsg = "Starting LogMessage.__init__ - timestamp %s" % timestamp
-        LOG_MESSAGE_CLASS_LOGGER.debug(_startMsg)
+        _start_msg = ("Starting LogMessage.__init__ - timestamp %s" %
+          timestamp)
+        LOG_MESSAGE_CLASS_LOGGER.debug(_start_msg)
         if not isinstance(timestamp, types.FloatType):
-            badTimestampError = InvalidMessageParameterError("timestamp",
+            _bad_timestamp_error = InvalidMessageParameterError("timestamp",
               timestamp, ("expected float; received '%s'" %
               timestamp.__class__.__name__))
             LOG_MESSAGE_CLASS_LOGGER.debug("LogMessage.__init__: %s" %
-              badTimestampError)
-            raise badTimestampError
+              _bad_timestamp_error)
+            raise _bad_timestamp_error
         if timestamp < 0:
-            badTimestampError = InvalidMessageParameterError("timestamp",
+            _bad_timestamp_error = InvalidMessageParameterError("timestamp",
               timestamp, "timestamp value must be positive")
             LOG_MESSAGE_CLASS_LOGGER.debug("LogMessage.__init__: %s" %
-              badTimestampError)
-            raise badTimestampError
+              _bad_timestamp_error)
+            raise _bad_timestamp_error
         self.timestamp = timestamp
-        _finishMsg = "LogMessage.__init__ completed successfully"
-        LOG_MESSAGE_CLASS_LOGGER.debug(_finishMsg)
+        _finish_msg = "LogMessage.__init__ completed successfully"
+        LOG_MESSAGE_CLASS_LOGGER.debug(_finish_msg)
 
     def __str__(self):
         return "%.6f" % self.timestamp
 
-    def ToXML(self, elementType="log_message"):
+    def to_xml(self, element_type="log_message"):
         _document = minidom.Document()
-        retVal = _document.createElement(elementType)
-        timestampElement = _document.createElement("timestamp")
-        timestampTextNode = _document.createTextNode("%s" % self.timestamp)
-        timestampElement.appendChild(timestampTextNode)
-        retVal.appendChild(timestampElement)
-        return retVal
+        retval = _document.createElement(element_type)
+        _timestamp_element = _document.createElement("timestamp")
+        _timestamp_text_node = _document.createTextNode("%s" %
+          self.timestamp)
+        _timestamp_element.appendChild(_timestamp_text_node)
+        retval.appendChild(_timestamp_element)
+        return retval
 
 
 class Message(LogMessage):
 
-    def __init__(self, deviceID=0, data=None, dlc=0, flags=0, timestamp=0.0):
+    def __init__(self, device_id=0, data=None, dlc=0, flags=0,
+      timestamp=0.0):
+        if data is None:
+            data = []
         LogMessage.__init__(self, timestamp)
-        if not isinstance(deviceID, types.IntType):
-            raise InvalidMessageParameterError("deviceID", deviceID,
+        if not isinstance(device_id, types.IntType):
+            raise InvalidMessageParameterError("device_id", device_id,
               ("expected int; received '%s'" %
-              deviceID.__class__.__name__))
-        if deviceID not in range(0, 2 ** 11):
-            raise InvalidMessageParameterError("deviceID", deviceID,
-              "deviceID must be in range [0, 2**11-1]")
-        self.deviceID = deviceID
-        if data != None:
-            if len(data) not in range(0, 9):
+              device_id.__class__.__name__))
+        if device_id not in range(0, 2 ** 11):
+            raise InvalidMessageParameterError("device_id", device_id,
+              "device_id must be in range [0, 2**11-1]")
+        self.device_id = device_id
+        if len(data) not in range(0, 9):
+            raise InvalidMessageParameterError("data", data,
+              "data array length must be in range [0, 8]")
+        for item in data:
+            if not isinstance(item, types.IntType):
                 raise InvalidMessageParameterError("data", data,
-                  "data array length must be in range [0, 8]")
-            for item in data:
-                if not isinstance(item, types.IntType):
-                    raise InvalidMessageParameterError("data", data,
-                      ("data array must contain only integers; found '%s'" %
-                      item.__class__.__name__))
-                if item not in range(0, 2 ** 8):
-                    raise InvalidMessageParameterError("data", data,
-                      "data array element values must be in range [0, 2**8-1]")
+                  ("data array must contain only integers; found '%s'" %
+                  item.__class__.__name__))
+            if item not in range(0, 2 ** 8):
+                raise InvalidMessageParameterError("data", data,
+                  "data array element values must be in range [0, 2**8-1]")
         self.data = data
         if not isinstance(dlc, types.IntType):
             raise InvalidMessageParameterError("dlc", dlc,
@@ -138,44 +142,44 @@ class Message(LogMessage):
         self.flags = flags
 
     def __str__(self):
-        _fieldStrings = []
-        _fieldStrings.append(LogMessage.__str__(self))
-        _fieldStrings.append("%.4x" % self.deviceID)
-        _fieldStrings.append("%.4x" % self.flags)
-        _fieldStrings.append("%d" % self.dlc)
-        _dataStrings = []
+        _field_strings = []
+        _field_strings.append(LogMessage.__str__(self))
+        _field_strings.append("%.4x" % self.device_id)
+        _field_strings.append("%.4x" % self.flags)
+        _field_strings.append("%d" % self.dlc)
+        _data_strings = []
         if self.data != None:
             for byte in self.data:
-                _dataStrings.append("%.2x" % byte)
-        if len(_dataStrings) > 0:
-            _fieldStrings.append(" ".join(_dataStrings))
-        return "\t".join(_fieldStrings)
+                _data_strings.append("%.2x" % byte)
+        if len(_data_strings) > 0:
+            _field_strings.append(" ".join(_data_strings))
+        return "\t".join(_field_strings)
 
-    def ToXML(self):
+    def to_xml(self, element_type="can_message"):
         _document = minidom.Document()
-        retVal = LogMessage.ToXML(self, "can_message")
-        deviceIDElement = _document.createElement("device_id")
-        deviceIDTextNode = _document.createTextNode("%.4x" % self.deviceID)
-        deviceIDElement.appendChild(deviceIDTextNode)
-        flagsElement = _document.createElement("flags")
-        flagsTextNode = _document.createTextNode("%.4x" % self.flags)
-        flagsElement.appendChild(flagsTextNode)
-        dlcElement = _document.createElement("dlc")
-        dlcTextNode = _document.createTextNode("%d" % self.dlc)
-        dlcElement.appendChild(dlcTextNode)
-        retVal.appendChild(deviceIDElement)
-        retVal.appendChild(flagsElement)
-        retVal.appendChild(dlcElement)
+        retval = LogMessage.to_xml(self, element_type)
+        _device_id_element = _document.createElement("device_id")
+        _device_id_text_node = _document.createTextNode("%.4x" % self.device_id)
+        _device_id_element.appendChild(_device_id_text_node)
+        _flags_element = _document.createElement("flags")
+        _flags_text_node = _document.createTextNode("%.4x" % self.flags)
+        _flags_element.appendChild(_flags_text_node)
+        _dlc_element = _document.createElement("dlc")
+        _dlc_text_node = _document.createTextNode("%d" % self.dlc)
+        _dlc_element.appendChild(_dlc_text_node)
+        retval.appendChild(_device_id_element)
+        retval.appendChild(_flags_element)
+        retval.appendChild(_dlc_element)
         if len(self.data) > 0:
-            dataElement = _document.createElement("data")
+            _data_element = _document.createElement("data")
             for i in xrange(len(self.data)):
-                dataByteElement = _document.createElement("byte_%d" % i)
-                dataByteTextNode = \
+                _data_byte_element = _document.createElement("byte_%d" % i)
+                _data_byte_text_node = \
                   _document.createTextNode("%.2x" % self.data[i])
-                dataByteElement.appendChild(dataByteTextNode)
-                dataElement.appendChild(dataByteElement)
-            retVal.appendChild(dataElement)
-        return retVal
+                _data_byte_element.appendChild(_data_byte_text_node)
+                _data_element.appendChild(_data_byte_element)
+            retval.appendChild(_data_element)
+        return retval
 
 class InfoMessage(LogMessage):
 
@@ -189,26 +193,26 @@ class InfoMessage(LogMessage):
         else:
             return "%s" % LogMessage.__str__(self)
 
-    def ToXML(self):
+    def to_xml(self, element_type="info_message"):
         _document = minidom.Document()
-        retVal = LogMessage.ToXML(self, "info_message")
-        _infoStringElement = _document.createElement("info_string")
-        _infoStringTextNode = _document.createTextNode(self.info)
-        _infoStringElement.appendChild(_infoStringTextNode)
-        retVal.appendChild(_infoStringElement)
-        return retVal
+        retval = LogMessage.to_xml(self, element_type)
+        _info_element = _document.createElement("info")
+        _info_text_node = _document.createTextNode(self.info)
+        _info_element.appendChild(_info_text_node)
+        retval.appendChild(_info_element)
+        return retval
 
 
-readHandleRegistry = {}
-writeHandleRegistry = {}
+read_handle_registry = {}
+write_handle_registry = {}
 
 
 def _ReceiveCallback(handle):#pragma: no cover
     #called by the callback registered with CANLIB, but coverage can't figure
     #that out
     CAN_MODULE_LOGGER.debug("Entering _ReceiveCallback for handle %d" % handle)
-    if readHandleRegistry[handle] != None:
-        readHandleRegistry[handle].ReceiveCallback()
+    if read_handle_registry[handle] != None:
+        read_handle_registry[handle].ReceiveCallback()
     CAN_MODULE_LOGGER.debug("Leaving _ReceiveCallback for handle %d" % handle)
     return 0
 
@@ -219,8 +223,8 @@ RX_CALLBACK = canlib.CALLBACKFUNC(_ReceiveCallback)
 def _TransmitCallback(handle):
     CAN_MODULE_LOGGER.debug("Entering _TransmitCallback for handle %d" %
                             handle)
-    if writeHandleRegistry[handle] != None:
-        writeHandleRegistry[handle].TransmitCallback()
+    if write_handle_registry[handle] != None:
+        write_handle_registry[handle].TransmitCallback()
     CAN_MODULE_LOGGER.debug("Leaving _TransmitCallback for handle %d" % handle)
     return 0
 
@@ -278,7 +282,7 @@ class _Handle(object):
                 self.writing = False
                 return
             _dataString = "".join([("%c" % byte) for byte in toSend.data])
-            canlib.canWrite(self.canlibHandle, toSend.deviceID, _dataString,
+            canlib.canWrite(self.canlibHandle, toSend.device_id, _dataString,
               toSend.dlc, toSend.flags)
             self.writing = False
 
@@ -296,7 +300,7 @@ class _Handle(object):
         HANDLE_CLASS_LOGGER.info(_callbackEntryMsg)
         if not self.reading and self.receiveCallbackEnabled:
             self.reading = True
-            deviceID = ctypes.c_long(0)
+            device_id = ctypes.c_long(0)
             data = ctypes.create_string_buffer(8)
             dlc = ctypes.c_uint(0)
             flags = ctypes.c_uint(0)
@@ -304,7 +308,7 @@ class _Handle(object):
             timestamp = ctypes.c_long(0)
             status = canstat.c_canStatus(canstat.canOK)
             status = canlib.canRead(self.canlibHandle,
-              ctypes.byref(deviceID), ctypes.byref(data),
+              ctypes.byref(device_id), ctypes.byref(data),
               ctypes.byref(dlc), ctypes.byref(flags),
               ctypes.byref(timestamp))
             while status.value == canstat.canOK:
@@ -312,13 +316,13 @@ class _Handle(object):
                 for char in data:
                     _data.append(ord(char))
                 HANDLE_CLASS_LOGGER.debug("Creating new Message object")
-                rxMsg = Message(deviceID.value, _data[:dlc.value],
+                rxMsg = Message(device_id.value, _data[:dlc.value],
                   int(dlc.value), int(flags.value), (float(timestamp.value) /
                   TIMER_TICKS_PER_SECOND))
                 for _listener in self.listeners:
                     _listener.OnMessageReceived(rxMsg)
                 status = canlib.canRead(self.canlibHandle,
-                  ctypes.byref(deviceID), ctypes.byref(data),
+                  ctypes.byref(device_id), ctypes.byref(data),
                   ctypes.byref(dlc), ctypes.byref(flags),
                   ctypes.byref(timestamp))
             _exitStr = "Leaving _Handle.ReceiveCallback - status is %s (%d)"
@@ -475,7 +479,7 @@ def _GetHandle(channelNumber, flags, registry):
     if not foundHandle:
         handle = _Handle(channelNumber, flags)
         registry[handle.canlibHandle] = handle
-    if registry == readHandleRegistry:
+    if registry == read_handle_registry:
         CAN_MODULE_LOGGER.debug("Setting notify callback for read handle %d" %
           handle.canlibHandle)
         canlib.kvSetNotifyCallback(handle.canlibHandle, RX_CALLBACK,
@@ -661,12 +665,12 @@ class Bus(object):
         self.name = name
         BUS_CLASS_LOGGER.info("Getting read handle for new Bus instance '%s'" %
           self.name)
-        self.readHandle = _GetHandle(channel, flags, readHandleRegistry)
+        self.readHandle = _GetHandle(channel, flags, read_handle_registry)
         BUS_CLASS_LOGGER.info("Read handle for Bus '%s' is %d" %
                             (self.name, self.readHandle.canlibHandle))
         BUS_CLASS_LOGGER.info("Getting write handle for new Bus instance '%s'" %
                             self.name)
-        self.writeHandle = _GetHandle(channel, flags, writeHandleRegistry)
+        self.writeHandle = _GetHandle(channel, flags, write_handle_registry)
         BUS_CLASS_LOGGER.info("Write handle for Bus '%s' is %s" %
                             (self.name, self.writeHandle.canlibHandle))
         _oldSpeed = ctypes.c_long(0)
@@ -779,24 +783,24 @@ class Bus(object):
 @atexit.register
 def Cleanup():#pragma: no cover
     CAN_MODULE_LOGGER.info("Waiting for receive callbacks to complete...")
-    for _handle in readHandleRegistry.values():
+    for _handle in read_handle_registry.values():
         CAN_MODULE_LOGGER.info("\tHandle %d..." % _handle.canlibHandle)
         _handle.receiveCallbackEnabled = False
         while _handle.reading: pass
         CAN_MODULE_LOGGER.info("\tOK")
     CAN_MODULE_LOGGER.info("Waiting for transmit callbacks to complete...")
-    for _handle in writeHandleRegistry.values():
+    for _handle in write_handle_registry.values():
         CAN_MODULE_LOGGER.info("\tHandle %d..." % _handle.canlibHandle)
         _handle.transmitCallbackEnabled = False
         while _handle.writing: pass
         CAN_MODULE_LOGGER.info("\tOK")
     CAN_MODULE_LOGGER.info("Clearing receive callbacks...")
-    for _handleNumber in readHandleRegistry.keys():
+    for _handleNumber in read_handle_registry.keys():
         CAN_MODULE_LOGGER.info("\tHandle %d" % _handle.canlibHandle)
         canlib.kvSetNotifyCallback(_handleNumber, None, None, 0)
         canlib.canFlushReceiveQueue(_handleNumber)
     CAN_MODULE_LOGGER.info("Clearing transmit callbacks...")
-    for _handleNumber in writeHandleRegistry.keys():
+    for _handleNumber in write_handle_registry.keys():
         CAN_MODULE_LOGGER.info("\tHandle %d" % _handle.canlibHandle)
         canlib.kvSetNotifyCallback(_handleNumber, None, None, 0)
         canlib.canFlushTransmitQueue(_handleNumber)
