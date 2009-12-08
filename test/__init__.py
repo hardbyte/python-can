@@ -6,12 +6,9 @@ import sys
 import time
 import types
 
-sys.path.append("../pycanlib")
+sys.path.append("..")
 
-import canlib
-import CANLIBErrorHandlers
-import canstat
-import CAN
+from pycanlib import canlib, canstat, CAN
 
 
 testLogger = logging.getLogger("pycanlib.test")
@@ -319,9 +316,9 @@ def openVirtualChannelWithIncorrectFlags(channel):
     except CAN.InvalidBusParameterError as e:
         testLogger.debug("Exception thrown by CAN.Bus", exc_info=True)
         testLogger.debug(e)
-    except Exception as e:
-        print type(e)
-        raise e
+#    except Exception as e:
+#        print type(e)
+#        raise e
     assert (_bus == None)
 
 
@@ -353,7 +350,7 @@ def operateOnInvalidHandle(handle):
         canlib.canRead(handle, ctypes.byref(deviceID),
           ctypes.byref(data), ctypes.byref(dlc), ctypes.byref(flags),
           ctypes.byref(timestamp))
-    except CANLIBErrorHandlers.CANLIBError as e:
+    except canlib.CANLIBError as e:
         testLogger.debug("canRead throws exception", exc_info=True)
         assert (e.errorCode == canstat.canERR_INVHANDLE)
         expected = "function canRead failed -"
