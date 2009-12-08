@@ -14,25 +14,25 @@ from pycanlib import canlib, canstat
 canlib.canInitializeLibrary()
 
 
-canModuleLogger = logging.getLogger("pycanlib.CAN")
-handleClassLogger = logging.getLogger("pycanlib.CAN._Handle")
-busClassLogger = logging.getLogger("pycanlib.CAN.Bus")
-logMessageClassLogger = logging.getLogger("pycanlib.CAN.LogMessage")
-messageClassLogger = logging.getLogger("pycanlib.CAN.Message")
-infoMessageClassLogger = logging.getLogger("pycanlib.CAN.InfoMessage")
+CAN_MODULE_LOGGER = logging.getLogger("pycanlib.CAN")
+HANDLE_CLASS_LOGGER = logging.getLogger("pycanlib.CAN._Handle")
+BUS_CLASS_LOGGER = logging.getLogger("pycanlib.CAN.Bus")
+LOG_MESSAGE_CLASS_LOGGER = logging.getLogger("pycanlib.CAN.LogMessage")
+CAN_MESSAGE_CLASS_LOGGER = logging.getLogger("pycanlib.CAN.Message")
+INFO_MESSAGE_CLASS_LOGGER = logging.getLogger("pycanlib.CAN.InfoMessage")
 
 
 try:
-    _versionNumberFile = open(os.path.join(os.path.dirname(__file__),
+    VERSION_NUMBER_FILE = open(os.path.join(os.path.dirname(__file__),
                               "version.txt"), "r")
-    __version__ = _versionNumberFile.readline()
-    _versionNumberFile.close()
+    __version__ = VERSION_NUMBER_FILE.readline()
+    VERSION_NUMBER_FILE.close()
 except IOError as e:#pragma: no cover
     print e
     __version__ = "UNKNOWN"
 
 
-class pycanlibError(Exception):
+class PycanlibError(Exception):
     pass
 
 
@@ -40,10 +40,10 @@ TIMER_TICKS_PER_SECOND = 1000000
 MICROSECONDS_PER_TIMER_TICK = (TIMER_TICKS_PER_SECOND / 1000000)
 
 
-class InvalidParameterError(pycanlibError):
+class InvalidParameterError(PycanlibError):
 
     def __init__(self, parameterName, parameterValue, reason):
-        pycanlibError.__init__(self)
+        PycanlibError.__init__(self)
         self.parameterName = parameterName
         self.parameterValue = parameterValue
         self.reason = reason
@@ -66,23 +66,23 @@ class LogMessage(object):
 
     def __init__(self, timestamp=0.0):
         _startMsg = "Starting LogMessage.__init__ - timestamp %s" % timestamp
-        logMessageClassLogger.debug(_startMsg)
+        LOG_MESSAGE_CLASS_LOGGER.debug(_startMsg)
         if not isinstance(timestamp, types.FloatType):
             badTimestampError = InvalidMessageParameterError("timestamp",
               timestamp, ("expected float; received '%s'" %
               timestamp.__class__.__name__))
-            logMessageClassLogger.debug("LogMessage.__init__: %s" %
+            LOG_MESSAGE_CLASS_LOGGER.debug("LogMessage.__init__: %s" %
               badTimestampError)
             raise badTimestampError
         if timestamp < 0:
             badTimestampError = InvalidMessageParameterError("timestamp",
               timestamp, "timestamp value must be positive")
-            logMessageClassLogger.debug("LogMessage.__init__: %s" %
+            LOG_MESSAGE_CLASS_LOGGER.debug("LogMessage.__init__: %s" %
               badTimestampError)
             raise badTimestampError
         self.timestamp = timestamp
         _finishMsg = "LogMessage.__init__ completed successfully"
-        logMessageClassLogger.debug(_finishMsg)
+        LOG_MESSAGE_CLASS_LOGGER.debug(_finishMsg)
 
     def __str__(self):
         return "%.6f" % self.timestamp
@@ -206,10 +206,10 @@ writeHandleRegistry = {}
 def _ReceiveCallback(handle):#pragma: no cover
     #called by the callback registered with CANLIB, but coverage can't figure
     #that out
-    canModuleLogger.debug("Entering _ReceiveCallback for handle %d" % handle)
+    CAN_MODULE_LOGGER.debug("Entering _ReceiveCallback for handle %d" % handle)
     if readHandleRegistry[handle] != None:
         readHandleRegistry[handle].ReceiveCallback()
-    canModuleLogger.debug("Leaving _ReceiveCallback for handle %d" % handle)
+    CAN_MODULE_LOGGER.debug("Leaving _ReceiveCallback for handle %d" % handle)
     return 0
 
 
@@ -217,11 +217,11 @@ RX_CALLBACK = canlib.CALLBACKFUNC(_ReceiveCallback)
 
 
 def _TransmitCallback(handle):
-    canModuleLogger.debug("Entering _TransmitCallback for handle %d" %
+    CAN_MODULE_LOGGER.debug("Entering _TransmitCallback for handle %d" %
                             handle)
     if writeHandleRegistry[handle] != None:
         writeHandleRegistry[handle].TransmitCallback()
-    canModuleLogger.debug("Leaving _TransmitCallback for handle %d" % handle)
+    CAN_MODULE_LOGGER.debug("Leaving _TransmitCallback for handle %d" % handle)
     return 0
 
 
@@ -264,7 +264,7 @@ class _Handle(object):
         self.transmitCallbackEnabled = True
 
     def TransmitCallback(self):
-        handleClassLogger.debug("Transmit buffer level for handle %d: %d" %
+        HANDLE_CLASS_LOGGER.debug("Transmit buffer level for handle %d: %d" %
           (self.canlibHandle, self.GetTransmitBufferLevel()))
         if not self.writing and self.transmitCallbackEnabled:
             self.writing = True
@@ -293,7 +293,7 @@ class _Handle(object):
         #coverage isn't smart enough to figure this out, it thinks this
         #function is never called at all
         _callbackEntryMsg = "Entering _Handle.ReceiveCallback"
-        handleClassLogger.info(_callbackEntryMsg)
+        HANDLE_CLASS_LOGGER.info(_callbackEntryMsg)
         if not self.reading and self.receiveCallbackEnabled:
             self.reading = True
             deviceID = ctypes.c_long(0)
@@ -311,7 +311,7 @@ class _Handle(object):
                 _data = []
                 for char in data:
                     _data.append(ord(char))
-                handleClassLogger.debug("Creating new Message object")
+                HANDLE_CLASS_LOGGER.debug("Creating new Message object")
                 rxMsg = Message(deviceID.value, _data[:dlc.value],
                   int(dlc.value), int(flags.value), (float(timestamp.value) /
                   TIMER_TICKS_PER_SECOND))
@@ -324,7 +324,7 @@ class _Handle(object):
             _exitStr = "Leaving _Handle.ReceiveCallback - status is %s (%d)"
             _callbackExitMessage = (_exitStr %
               (canstat.canStatusLookupTable[status.value], status.value))
-            handleClassLogger.info(_callbackExitMessage)
+            HANDLE_CLASS_LOGGER.info(_callbackExitMessage)
             canlib.kvSetNotifyCallback(self.canlibHandle, RX_CALLBACK,
               ctypes.c_void_p(None), canstat.canNOTIFY_RX)
             self.reading = False
@@ -476,12 +476,12 @@ def _GetHandle(channelNumber, flags, registry):
         handle = _Handle(channelNumber, flags)
         registry[handle.canlibHandle] = handle
     if registry == readHandleRegistry:
-        canModuleLogger.debug("Setting notify callback for read handle %d" %
+        CAN_MODULE_LOGGER.debug("Setting notify callback for read handle %d" %
           handle.canlibHandle)
         canlib.kvSetNotifyCallback(handle.canlibHandle, RX_CALLBACK,
           ctypes.c_void_p(None), canstat.canNOTIFY_RX)
     else:
-        canModuleLogger.debug("Setting notify callback for write handle %d" %
+        CAN_MODULE_LOGGER.debug("Setting notify callback for write handle %d" %
           handle.canlibHandle)
         canlib.kvSetNotifyCallback(handle.canlibHandle, TX_CALLBACK,
           ctypes.c_void_p(None), canstat.canNOTIFY_TX)
@@ -659,15 +659,15 @@ class Bus(object):
                  sjw=1, noSamp=1, driverMode=canlib.canDRIVER_NORMAL,
                  name="default"):
         self.name = name
-        busClassLogger.info("Getting read handle for new Bus instance '%s'" %
+        BUS_CLASS_LOGGER.info("Getting read handle for new Bus instance '%s'" %
           self.name)
         self.readHandle = _GetHandle(channel, flags, readHandleRegistry)
-        busClassLogger.info("Read handle for Bus '%s' is %d" %
+        BUS_CLASS_LOGGER.info("Read handle for Bus '%s' is %d" %
                             (self.name, self.readHandle.canlibHandle))
-        busClassLogger.info("Getting write handle for new Bus instance '%s'" %
+        BUS_CLASS_LOGGER.info("Getting write handle for new Bus instance '%s'" %
                             self.name)
         self.writeHandle = _GetHandle(channel, flags, writeHandleRegistry)
-        busClassLogger.info("Write handle for Bus '%s' is %s" %
+        BUS_CLASS_LOGGER.info("Write handle for Bus '%s' is %s" %
                             (self.name, self.writeHandle.canlibHandle))
         _oldSpeed = ctypes.c_long(0)
         _oldTseg1 = ctypes.c_uint(0)
@@ -711,7 +711,8 @@ class Bus(object):
         try:
             return self.rxQueue.get_nowait()
         except Queue.Empty:
-            busClassLogger.debug("Bus '%s': No messages available" % self.name)
+            BUS_CLASS_LOGGER.debug("Bus '%s': No messages available" %
+              self.name)
             return None
 
     def AddListener(self, listener):
@@ -719,12 +720,12 @@ class Bus(object):
         listener.SetBus(self)
 
     def Write(self, msg):
-        busClassLogger.debug("Bus '%s': Entering Write()" % self.name)
+        BUS_CLASS_LOGGER.debug("Bus '%s': Entering Write()" % self.name)
         if self.driverMode != canlib.canDRIVER_SILENT:
-            busClassLogger.debug("Bus '%s': writing message %s" %
+            BUS_CLASS_LOGGER.debug("Bus '%s': writing message %s" %
               (self.name, msg))
             self.writeHandle.Write(msg)
-        busClassLogger.debug("Bus '%s': Leaving Write()" % self.name)
+        BUS_CLASS_LOGGER.debug("Bus '%s': Leaving Write()" % self.name)
 
     def ReadTimer(self):
         return (float(self.readHandle.ReadTimer() - self.timerOffset) /
@@ -777,25 +778,25 @@ class Bus(object):
 
 @atexit.register
 def Cleanup():#pragma: no cover
-    canModuleLogger.info("Waiting for receive callbacks to complete...")
+    CAN_MODULE_LOGGER.info("Waiting for receive callbacks to complete...")
     for _handle in readHandleRegistry.values():
-        canModuleLogger.info("\tHandle %d..." % _handle.canlibHandle)
+        CAN_MODULE_LOGGER.info("\tHandle %d..." % _handle.canlibHandle)
         _handle.receiveCallbackEnabled = False
         while _handle.reading: pass
-        canModuleLogger.info("\tOK")
-    canModuleLogger.info("Waiting for transmit callbacks to complete...")
+        CAN_MODULE_LOGGER.info("\tOK")
+    CAN_MODULE_LOGGER.info("Waiting for transmit callbacks to complete...")
     for _handle in writeHandleRegistry.values():
-        canModuleLogger.info("\tHandle %d..." % _handle.canlibHandle)
+        CAN_MODULE_LOGGER.info("\tHandle %d..." % _handle.canlibHandle)
         _handle.transmitCallbackEnabled = False
         while _handle.writing: pass
-        canModuleLogger.info("\tOK")
-    canModuleLogger.info("Clearing receive callbacks...")
+        CAN_MODULE_LOGGER.info("\tOK")
+    CAN_MODULE_LOGGER.info("Clearing receive callbacks...")
     for _handleNumber in readHandleRegistry.keys():
-        canModuleLogger.info("\tHandle %d" % _handle.canlibHandle)
+        CAN_MODULE_LOGGER.info("\tHandle %d" % _handle.canlibHandle)
         canlib.kvSetNotifyCallback(_handleNumber, None, None, 0)
         canlib.canFlushReceiveQueue(_handleNumber)
-    canModuleLogger.info("Clearing transmit callbacks...")
+    CAN_MODULE_LOGGER.info("Clearing transmit callbacks...")
     for _handleNumber in writeHandleRegistry.keys():
-        canModuleLogger.info("\tHandle %d" % _handle.canlibHandle)
+        CAN_MODULE_LOGGER.info("\tHandle %d" % _handle.canlibHandle)
         canlib.kvSetNotifyCallback(_handleNumber, None, None, 0)
         canlib.canFlushTransmitQueue(_handleNumber)
