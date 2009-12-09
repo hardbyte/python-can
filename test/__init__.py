@@ -231,12 +231,12 @@ def testShallCreateBusObject():
     _bus2 = CAN.Bus()
     assert (_bus1 != None)
     assert (_bus2 != None)
-    testLogger.debug("_bus1.writeHandle.canlibHandle = %d" %
-                     _bus1.writeHandle.canlibHandle)
-    testLogger.debug("_bus2.writeHandle.canlibHandle = %d" %
-                     _bus2.writeHandle.canlibHandle)
-    assert (_bus1.writeHandle.canlibHandle == _bus2.writeHandle.canlibHandle)
-    assert (_bus1.readHandle.canlibHandle == _bus2.readHandle.canlibHandle)
+    testLogger.debug("_bus1._write_handle.get_canlib_handle() = %d" %
+                     _bus1._write_handle.get_canlib_handle())
+    testLogger.debug("_bus2.writeHandle.get_canlib_handle() = %d" %
+                     _bus2._write_handle.get_canlib_handle())
+    assert (_bus1._write_handle.get_canlib_handle() == _bus2._write_handle.get_canlib_handle())
+    assert (_bus1._read_handle.get_canlib_handle() == _bus2._read_handle.get_canlib_handle())
 
 
 def testShallAcceptOnlyLegalChannelNumbers():
@@ -334,8 +334,8 @@ def openChannelWithInvalidFlags(channel):
 
 def testCheckStatus():
     for _handle in xrange(-100, 100):
-        if (_handle not in CAN.read_handle_registry.keys()) and \
-          (_handle not in CAN.write_handle_registry.keys()):
+        if (_handle not in CAN.READ_HANDLE_REGISTRY.keys()) and \
+          (_handle not in CAN.WRITE_HANDLE_REGISTRY.keys()):
             yield operateOnInvalidHandle, _handle
 
 
@@ -382,16 +382,16 @@ def testReadWrite():
 
 def writeAndReadBack(busChannel, flags=0):
     _bus1 = CAN.Bus(channel=busChannel, speed=105263, tseg1=10, tseg2=8,
-                    sjw=4, noSamp=1, flags=flags, name="_bus1")
+                    sjw=4, no_samp=1, flags=flags, name="_bus1")
     _bus2 = CAN.Bus(channel=busChannel, speed=105263, tseg1=10, tseg2=8,
-                    sjw=4, noSamp=1, flags=flags, name="_bus2")
-    _startTime = _bus1.ReadTimer()
+                    sjw=4, no_samp=1, flags=flags, name="_bus2")
+    _startTime = _bus1.read_timer()
     _msg1 = CAN.Message(device_id=0x0010, data=[1, 2, 3], dlc=3, flags=0x02)
-    _bus1.Write(_msg1)
+    _bus1.write(_msg1)
     rxMsg = None
     testFailed = True
-    while _bus1.ReadTimer() < (_startTime + 5):
-        tmp = _bus2.Read()
+    while _bus1.read_timer() < (_startTime + 5):
+        tmp = _bus2.read()
         if tmp != None:
             testLogger.debug(tmp)
             rxMsg = tmp
@@ -405,12 +405,12 @@ def writeAndReadBack(busChannel, flags=0):
                 testFailed = False
                 break
     assert not testFailed
-    _startTime = _bus1.ReadTimer()
-    _bus2.Write(_msg1)
+    _startTime = _bus1.read_timer()
+    _bus2.write(_msg1)
     rxMsg = None
     testFailed = True
-    while _bus1.ReadTimer() < (_startTime + 5):
-        tmp = _bus1.Read()
+    while _bus1.read_timer() < (_startTime + 5):
+        tmp = _bus1.read()
         if tmp != None:
             rxMsg = tmp
             if ((_msg1.device_id == rxMsg.device_id) and
