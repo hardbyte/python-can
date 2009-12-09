@@ -2,7 +2,7 @@ import ctypes
 import sys
 import types
 
-import canstat
+from pycanlib import canstat
 
 canlibDict = {"win32": (ctypes.WinDLL, "canlib32.dll"),
               "posix": (ctypes.CDLL, "libcanlib.so")}
@@ -621,9 +621,9 @@ canRequestBusStatistics.errcheck = CheckStatus
 
 
 class c_canBusStatistics(ctypes.Structure):
-    _fields_ = [("stdData", ctypes.c_ulong), ("stdRemote", ctypes.c_ulong),
-      ("extData", ctypes.c_ulong), ("extRemote", ctypes.c_ulong),
-      ("errFrame", ctypes.c_ulong), ("busLoad", ctypes.c_ulong),
+    _fields_ = [("std_data", ctypes.c_ulong), ("std_remote", ctypes.c_ulong),
+      ("ext_data", ctypes.c_ulong), ("ext_remote", ctypes.c_ulong),
+      ("err_frame", ctypes.c_ulong), ("bus_load", ctypes.c_ulong),
       ("overruns", ctypes.c_ulong)]
 
 canGetBusStatistics = canlib32.canGetBusStatistics
