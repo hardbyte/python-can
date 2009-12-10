@@ -186,11 +186,11 @@ class LogMessage(object):
         
         >>> msg = CAN.LogMessage(timestamp=5.0)
         
-        >>> sys.stdout.write(msg.to_xml().toprettyxml(indent="  "))
+        >>> sys.stdout.write(msg.to_xml().toprettyxml(indent="    "))
         <LogMessage>
-          <timestamp>
-            5.0
-          </timestamp>
+            <timestamp>
+                5.0
+            </timestamp>
         </LogMessage>
         """
         _document = minidom.Document()
@@ -199,14 +199,8 @@ class LogMessage(object):
             _name = _inst_variable
             _value = self.__dict__[_inst_variable]
             _element = _document.createElement(_name)
-            if "to_xml" in _value.__dict__.keys():
-                if "__call__" in _value.__dict__["to_xml"].__dict__.keys():
-                    _text_node = _value.to_xml()#TO-DO: badly named variable - should be called "child_node" or something
-                else:
-                    _text_node = _document.createTextNode("%s" % _value)
-            else:
-                _text_node = _document.createTextNode("%s" % _value)
-            _element.appendChild(_text_node)
+            _content_node = _document.createTextNode("%s" % _value)
+            _element.appendChild(_content_node)
             retval.appendChild(_element)
         return retval
 
@@ -299,16 +293,34 @@ class Message(LogMessage):
 
 
 class InfoMessage(LogMessage):
+    """
+    Class: InfoMessage
+    
+    Subclass of LogMessage representing an information message - basically
+    a timestamped string.
+    
+    Parent class: LogMessage
+    """
 
     def __init__(self, timestamp=0.0, info=None):
+        """
+        Constructor: InfoMessage
+        
+        Parameters:
+            timestamp (optional, default=0.0) - see LogMessage
+            info (optional, default=None) - information contained in this
+              message. May be any Python object - the object will be converted
+              to a string when a string or XML representation of the
+              InfoMessage is created.
+        """
         LogMessage.__init__(self, timestamp)
         self.info = info
 
     def __str__(self):
+        retval = "%s" % LogMessage.__str__(self)
         if self.info != None:
-            return ("%s\t%s" % (LogMessage.__str__(self), self.info))
-        else:
-            return "%s" % LogMessage.__str__(self)
+            retval += ("\t%s" % self.info)
+        return retval
 
 
 READ_HANDLE_REGISTRY = {}
@@ -316,6 +328,17 @@ WRITE_HANDLE_REGISTRY = {}
 
 
 def _receive_callback(handle):#pragma: no cover
+    """
+    Method: _receive_callback
+    
+    This function is called by CANLIB when a message is received on any CAN
+    bus handle opened by pycanlib. It dispatches the event to the CAN._Handle
+    instance associated with the CANLIB handle that generated the event.
+    
+    Parameters:
+    
+        handle - number of the CANLIB handle that generated the event.
+    """
     #called by the callback registered with CANLIB, but coverage can't figure
     #that out
     CAN_MODULE_LOGGER.debug("Entering _receive_callback for handle %d" % handle)
@@ -329,6 +352,18 @@ RX_CALLBACK = canlib.CALLBACKFUNC(_receive_callback)
 
 
 def _transmit_callback(handle):
+    """
+    Method: _transmit_callback
+    
+    This function is called by CANLIB when a transmission on any CAN bus
+    handle opened by pycanlib completes. It dispatches the event to the
+    CAN._Handle instance associated with the CANLIB handle that generated the
+    event.
+    
+    Parameters:
+    
+        handle - number of the CANLIB handle that generated the event.
+    """
     CAN_MODULE_LOGGER.debug("Entering _transmit_callback for handle %d" %
                             handle)
     if WRITE_HANDLE_REGISTRY[handle] != None:
@@ -392,7 +427,8 @@ class _Handle(object):
                 #at all
                 self.writing = False
                 return
-            _payload_string = "".join([("%c" % byte) for byte in _to_send.payload])
+            _byte_strings = [("%c" % byte) for byte in _to_send.payload]
+            _payload_string = "".join(_byte_strings)
             canlib.canWrite(self._canlib_handle, _to_send.device_id,
               _payload_string, _to_send.dlc, _to_send.flags)
             self.writing = False
