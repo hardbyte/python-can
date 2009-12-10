@@ -49,13 +49,14 @@ def CreateBusObject(options):
     elif options.driverMode.lower() == "normal":
         _driverMode = canlib.canDRIVER_NORMAL
     return CAN.Bus(channel=_channel, flags=canlib.canOPEN_ACCEPT_VIRTUAL,
-      speed=_speed, tseg1=_tseg1, tseg2=_tseg2, sjw=_sjw, noSamp=_noSamp,
-      driverMode=_driverMode)
+      speed=_speed, tseg1=_tseg1, tseg2=_tseg2, sjw=_sjw, no_samp=_noSamp,
+      driver_mode=_driverMode)
 
 
 def SetupLogging(logFilePath, logFileNameBase):
     loggerObj = logging.getLogger("can_logger")
     loggerObj.setLevel(logging.INFO)
+#    loggerObj.setLevel(logging.WARNING)
     _logStreamHandler = logging.StreamHandler()
     _logTimestamp = datetime.datetime.now()
     _dateString = _logTimestamp.strftime("%Y%m%d")
@@ -71,10 +72,20 @@ def SetupLogging(logFilePath, logFileNameBase):
       _dateString, _timeString))
     xmlFile = open(xmlLogFilePath, "w")
     _logFormatter = logging.Formatter("%(message)s")
+#    _logFormatter = logging.Formatter("%(name)s - %(asctime)s - %(levelname)s - %(message)s")
     _logStreamHandler.setFormatter(_logFormatter)
     _logFileHandler.setFormatter(_logFormatter)
     loggerObj.addHandler(_logStreamHandler)
     loggerObj.addHandler(_logFileHandler)
+    handleLogger = logging.getLogger("pycanlib.CAN._Handle")
+    handleLogger.setLevel(logging.DEBUG)
+#    handleLogger.addHandler(_logStreamHandler)
+#    busLogger = logging.getLogger("pycanlib.CAN.Bus")
+#    busLogger.setLevel(logging.DEBUG)
+#    busLogger.addHandler(_logStreamHandler)
+#    messageLogger = logging.getLogger("pycanlib.CAN.Message")
+#    messageLogger.setLevel(logging.DEBUG)
+#    messageLogger.addHandler(_logStreamHandler)
     return loggerObj, xmlFile, _logTimestamp
 
 
@@ -85,19 +96,19 @@ def main(arguments):
     loggerObj.info("-"*64)
     loggerObj.info("Host machine info")
     loggerObj.info("-"*64)
-    hostMachineInfo = CAN.GetHostMachineInfo()
+    hostMachineInfo = CAN.get_host_machine_info()
     for line in hostMachineInfo.__str__().split("\n"):
         loggerObj.info(line)
     loggerObj.info("-"*64)
     loggerObj.info("Channel info")
     loggerObj.info("-"*64)
-    channelInfo = bus.GetChannelInfo()
+    channelInfo = bus.get_channel_info()
     for line in channelInfo.__str__().split("\n"):
         loggerObj.info(line)
     msgList = []
     while True:
         try:
-            msg = bus.Read()
+            msg = bus.read()
             if msg != None:
                 loggerObj.info(msg)
                 msgList.append(msg)
@@ -106,10 +117,6 @@ def main(arguments):
         except KeyboardInterrupt:
             endTime = datetime.datetime.now()
             break
-    xmlTree = CAN.CreateLogXMLTree(hostMachineInfo, channelInfo, startTime,
-      endTime, msgList)
-    xmlFile.write("%s" % xmlTree.toprettyxml())
-    xmlFile.close()
 
 if __name__ == "__main__":
     main(sys.argv)
