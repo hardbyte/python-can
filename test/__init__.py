@@ -61,7 +61,7 @@ def isTimestampValid(timestamp):
     except Exception as e:
         testLogger.debug("Exception thrown by CAN.InfoMessage", exc_info=True)
         testLogger.debug(e.__str__())
-    if isinstance(timestamp, types.FloatType) and (timestamp >= 0):
+    if isinstance(timestamp, (types.FloatType, types.IntType)) and (timestamp >= 0):
         assert (_msgObject != None)
     else:
         assert (_msgObject == None)
@@ -95,7 +95,7 @@ def testShallCreateCANMessageObject():
     assert ("timestamp" in _msgObject.__dict__.keys())
     assert ("device_id" in _msgObject.__dict__.keys())
     assert ("dlc" in _msgObject.__dict__.keys())
-    assert ("data" in _msgObject.__dict__.keys())
+    assert ("payload" in _msgObject.__dict__.keys())
     assert ("flags" in _msgObject.__dict__.keys())
 
 
@@ -132,7 +132,7 @@ def testShallNotAcceptInvalidPayload():
 def isPayloadValid(payload):
     _msgObject = None
     try:
-        _msgObject = CAN.Message(data=payload)
+        _msgObject = CAN.Message(payload=payload)
     except Exception as e:
         testLogger.debug("Exception thrown by CAN.Message", exc_info=True)
         testLogger.debug(e.__str__())
@@ -146,7 +146,7 @@ def isPayloadValid(payload):
             payloadValid = False
     if payloadValid:
         assert (_msgObject != None)
-        assert (_msgObject.data == payload)
+        assert (_msgObject.payload == payload)
     else:
         assert (_msgObject == None)
 
@@ -216,7 +216,7 @@ def testShallProvideStringRepresentationOfCANMessage():
 def checkCANMessageStringRepr(timestamp, dataArray, dlc, flags, device_id):
     _msgObject = None
     _msgObject = CAN.Message(device_id=device_id, timestamp=timestamp,
-                             data=dataArray, dlc=dlc, flags=flags)
+                             payload=dataArray, dlc=dlc, flags=flags)
     assert (_msgObject != None)
     dataString = ("%s" % ' '.join([("%.2x" % byte) for byte in dataArray]))
     expectedStringRep = "%.6f\t%.4x\t%.4x\t%d\t%s" % (timestamp, device_id,
@@ -352,7 +352,7 @@ def operateOnInvalidHandle(handle):
           ctypes.byref(timestamp))
     except canlib.CANLIBError as e:
         testLogger.debug("canRead throws exception", exc_info=True)
-        assert (e.errorCode == canstat.canERR_INVHANDLE)
+        assert (e.error_code == canstat.canERR_INVHANDLE)
         expected = "function canRead failed -"
         expected += " Handle is invalid (code -10)"
         actual = e.__str__()[:len(expected)]
@@ -386,7 +386,7 @@ def writeAndReadBack(busChannel, flags=0):
     _bus2 = CAN.Bus(channel=busChannel, speed=105263, tseg1=10, tseg2=8,
                     sjw=4, no_samp=1, flags=flags, name="_bus2")
     _startTime = _bus1.read_timer()
-    _msg1 = CAN.Message(device_id=0x0010, data=[1, 2, 3], dlc=3, flags=0x02)
+    _msg1 = CAN.Message(device_id=0x0010, payload=[1, 2, 3], dlc=3, flags=0x02)
     _bus1.write(_msg1)
     rxMsg = None
     testFailed = True
@@ -396,7 +396,7 @@ def writeAndReadBack(busChannel, flags=0):
             testLogger.debug(tmp)
             rxMsg = tmp
             if ((_msg1.device_id == rxMsg.device_id) and
-                (_msg1.data == rxMsg.data) and
+                (_msg1.payload == rxMsg.payload) and
                 (_msg1.dlc == rxMsg.dlc) and
                 (_msg1.flags == rxMsg.flags)):
                 testLogger.debug("rxMsg matches _msg1")
@@ -414,7 +414,7 @@ def writeAndReadBack(busChannel, flags=0):
         if tmp != None:
             rxMsg = tmp
             if ((_msg1.device_id == rxMsg.device_id) and
-                (_msg1.data == rxMsg.data) and
+                (_msg1.payload == rxMsg.payload) and
                 (_msg1.dlc == rxMsg.dlc) and
                 (_msg1.flags == rxMsg.flags)):
                 testLogger.debug("rxMsg matches _msg1")

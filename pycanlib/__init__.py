@@ -27,6 +27,14 @@ class NullHandler(logging.Handler):
         
         Function called by the logging library when a logger that this handler
         is associated with receives a message to be logged.
+        
+        Parameters:
+        
+            record - the message to be emitted
+        
+        Returns:
+        
+            Nothing
         """
         pass
 
