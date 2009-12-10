@@ -913,7 +913,7 @@ def _cleanup():#pragma: no cover
         canlib.canFlushReceiveQueue(_handle_number)
     CAN_MODULE_LOGGER.info("Clearing transmit callbacks...")
     for _handle_number in WRITE_HANDLE_REGISTRY.keys():
-        _handle = READ_HANDLE_REGISTRY[_handle_number]
+        _handle = WRITE_HANDLE_REGISTRY[_handle_number]
         CAN_MODULE_LOGGER.info("\tHandle %d" % _handle.get_canlib_handle())
         canlib.kvSetNotifyCallback(_handle_number, None, None, 0)
         canlib.canFlushTransmitQueue(_handle_number)
