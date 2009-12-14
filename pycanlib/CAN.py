@@ -11,6 +11,7 @@ import logging
 import os
 import Queue
 import sys
+import time
 import types
 from xml.dom import minidom
 
@@ -744,7 +745,8 @@ class _Handle(object):
         has been opened on (out of all the cards present in the system). See
         the doctest below for an example of usage for this function.
         
-        Example (where CANLIB channel 0 is opened on the system's CANLIB card 1):
+        Example (where CANLIB channel 0 is opened on the system's CANLIB
+        card 1):
         
         >>> from pycanlib import CAN; \
             print CAN._Handle(0, 0).get_device_card_number()
@@ -757,6 +759,22 @@ class _Handle(object):
         return _buffer.value
 
     def get_device_channel_on_card(self):#pragma: no cover
+        """
+        Method: get_device_channel_on_card
+        
+        Returns: For cards which have multiple physical CAN interfaces (like
+        the Kvaser USBCAN II), this returns the number of the interface this
+        channel has been opened on. For cards with only one physical CAN
+        interface (like the Kvaser Leaf Light HS), it will always return 0.
+        See the doctest below for an example of usage for this function.
+        
+        Example (where CANLIB channel 0 is opened on a Kvaser Leaf Light HS
+        device, which has only one physical CAN interface):
+        
+        >>> from pycanlib import CAN; \
+            print CAN._Handle(0, 0).get_device_channel_on_card()
+        0
+        """
         _buffer = ctypes.c_ulong(0)
         canlib.canGetChannelData(self.channel,
           canlib.canCHANNELDATA_CHAN_NO_ON_CARD, ctypes.byref(_buffer),
@@ -764,6 +782,21 @@ class _Handle(object):
         return _buffer.value
 
     def get_device_transceiver_type(self):#pragma: no cover
+        """
+        Method: get_device_transceiver_type
+        
+        Returns: the type of transceiver attached to the card this channel has
+        been opened on. If this transceiver type is not known to CANLIB (a
+        list of known transceiver types is provided in canstat.py), this
+        function returns a message indicating this.
+        
+        Example (where CANLIB channel 0 is opened on a Kvaser Leaf Light HS
+        device, which has an 82C251 transceiver):
+        
+        >>> from pycanlib import CAN; \
+            print CAN._Handle(0, 0).get_device_transceiver_type()
+        82C251
+        """
         _buffer = ctypes.c_ulong(0)
         canlib.canGetChannelData(self.channel,
           canlib.canCHANNELDATA_TRANS_TYPE, ctypes.byref(_buffer),
@@ -774,6 +807,21 @@ class _Handle(object):
             return "Transceiver type %d is unknown to CANLIB" % _buffer.value
 
     def get_statistics(self):
+        """
+        Method: get_statistics
+        
+        Returns: a BusStatistics instance containing the statistics collected
+        for this bus handle from the time it was opened. See the BusStatistics
+        class documentation for more information about the specific statistics
+        available.
+        
+        Example:
+        
+        >>> from pycanlib import CAN; \
+            _stats = CAN._Handle(0, 0).get_statistics(); \
+            print type(_stats)
+        <class 'pycanlib.CAN.BusStatistics'>
+        """
         canlib.canRequestBusStatistics(self._canlib_handle)
         _stat_struct = canlib.c_canBusStatistics()
         canlib.canGetBusStatistics(self._canlib_handle,
@@ -787,8 +835,33 @@ class _Handle(object):
                              _stat_struct.overruns)
 
 class BusStatistics(object):
+    """
+    Class: BusStatistics
+    
+    Container class for the statistics collected by CANLIB for each handle it
+    maintains.
+    
+    Parent class: object
+    """
     def __init__(self, std_data, std_remote, ext_data, ext_remote, err_frame,
       bus_load, overruns):
+        """
+        Constructor: BusStatistics
+        
+        Parameters:
+            std_data: the number of standard (CAN 2.0A, 11-bit arbitration
+              field) data messages received by this handle
+            std_remote: the number of standard (CAN 2.0A, 11-bit arbitration
+              field) remote messages received by this handle
+            ext_data: the number of extended (CAN 2.0B, 29-bit arbitration
+              field) data messages received by this handle
+            ext_remote: the number of extended (CAN 2.0B, 29-bit arbitration
+              field) remote messages received by this handle
+            err_frame: the number of error frames received by this handle
+            bus_load: the traffic load on the bus this handle is connected to
+              (represented as an integer between 0 and 10000, where 0 = 0.00%
+              and 10000 = 100.00%)
+        """
         self.std_data = std_data
         self.std_remote = std_remote
         self.ext_data = ext_data
@@ -1122,28 +1195,13 @@ class Bus(object):
 
 @atexit.register
 def _cleanup():#pragma: no cover
-    CAN_MODULE_LOGGER.info("Waiting for receive callbacks to complete...")
-    for _handle in READ_HANDLE_REGISTRY.values():
-        canlib.canFlushReceiveQueue(_handle.get_canlib_handle())
-        CAN_MODULE_LOGGER.info("\tHandle %d..." % _handle.get_canlib_handle())
+    for (_handle_number, _handle) in READ_HANDLE_REGISTRY.items():
         _handle.receiveCallbackEnabled = False
         while _handle.reading:
-            pass
-        CAN_MODULE_LOGGER.info("\tOK")
-    CAN_MODULE_LOGGER.info("Waiting for transmit callbacks to complete...")
-    for _handle in WRITE_HANDLE_REGISTRY.values():
-        CAN_MODULE_LOGGER.info("\tHandle %d..." % _handle.get_canlib_handle())
+            canlib.canFlushReceiveQueue(_handle_number)
+        canlib.kvSetNotifyCallback(_handle_number, None, None, 0)
+    for (_handle_number, _handle) in WRITE_HANDLE_REGISTRY.items():
         _handle.transmitCallbackEnabled = False
         while _handle.writing:
-            canlib.canFlushTransmitQueue(_handle.get_canlib_handle())
-        CAN_MODULE_LOGGER.info("\tOK")
-    CAN_MODULE_LOGGER.info("Clearing receive callbacks...")
-    for _handle_number in READ_HANDLE_REGISTRY.keys():
-        _handle = READ_HANDLE_REGISTRY[_handle_number]
-        CAN_MODULE_LOGGER.info("\tHandle %d" % _handle.get_canlib_handle())
-        canlib.kvSetNotifyCallback(_handle_number, None, None, 0)
-    CAN_MODULE_LOGGER.info("Clearing transmit callbacks...")
-    for _handle_number in WRITE_HANDLE_REGISTRY.keys():
-        _handle = WRITE_HANDLE_REGISTRY[_handle_number]
-        CAN_MODULE_LOGGER.info("\tHandle %d" % _handle.get_canlib_handle())
+            canlib.canFlushTransmitQueue(_handle_number)
         canlib.kvSetNotifyCallback(_handle_number, None, None, 0)
