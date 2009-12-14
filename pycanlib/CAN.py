@@ -482,7 +482,7 @@ class _Handle(object):
             Nothing
         """
         _old_size = self.tx_queue.qsize()
-        if isinstance(msg, CAN.Message):
+        if isinstance(msg, Message):
             self.tx_queue.put_nowait(msg)
             if _old_size == 0:
                 self.transmit_callback()
@@ -710,6 +710,23 @@ class _Handle(object):
         return _serial_number
 
     def get_device_transceiver_serial(self):#pragma: no cover
+        """
+        Method: get_device_transceiver_serial
+        
+        Returns: an integer representing the serial number of the CAN
+        transceiver of the device the channel has been opened on. If the
+        transceiver of the device the channel has been opened on does not
+        have a serial number, this function returns 0. Note that this is *not*
+        the serial number of the card. See the doctest below for an example of
+        usage for this function.
+        
+        Example (with a Kvaser Leaf Light HS - which has no separate
+        transceiver - as CANLIB channel 0):
+        
+        >>> from pycanlib import CAN; \
+            print CAN._Handle(0, 0).get_device_transceiver_serial()
+        0
+        """
         _buffer = TRANS_SN_ARRAY()
         canlib.canGetChannelData(self.channel,
           canlib.canCHANNELDATA_TRANS_SERIAL_NO, ctypes.byref(_buffer),
@@ -720,6 +737,19 @@ class _Handle(object):
         return serial_number
 
     def get_device_card_number(self):#pragma: no cover
+        """
+        Method: get_device_card_number
+        
+        Returns: an integer representing the number of the card the channel
+        has been opened on (out of all the cards present in the system). See
+        the doctest below for an example of usage for this function.
+        
+        Example (where CANLIB channel 0 is opened on the system's CANLIB card 1):
+        
+        >>> from pycanlib import CAN; \
+            print CAN._Handle(0, 0).get_device_card_number()
+        1
+        """
         _buffer = ctypes.c_ulong(0)
         canlib.canGetChannelData(self.channel,
           canlib.canCHANNELDATA_CARD_NUMBER, ctypes.byref(_buffer),
@@ -1094,6 +1124,7 @@ class Bus(object):
 def _cleanup():#pragma: no cover
     CAN_MODULE_LOGGER.info("Waiting for receive callbacks to complete...")
     for _handle in READ_HANDLE_REGISTRY.values():
+        canlib.canFlushReceiveQueue(_handle.get_canlib_handle())
         CAN_MODULE_LOGGER.info("\tHandle %d..." % _handle.get_canlib_handle())
         _handle.receiveCallbackEnabled = False
         while _handle.reading:
@@ -1104,17 +1135,15 @@ def _cleanup():#pragma: no cover
         CAN_MODULE_LOGGER.info("\tHandle %d..." % _handle.get_canlib_handle())
         _handle.transmitCallbackEnabled = False
         while _handle.writing:
-            pass
+            canlib.canFlushTransmitQueue(_handle.get_canlib_handle())
         CAN_MODULE_LOGGER.info("\tOK")
     CAN_MODULE_LOGGER.info("Clearing receive callbacks...")
     for _handle_number in READ_HANDLE_REGISTRY.keys():
         _handle = READ_HANDLE_REGISTRY[_handle_number]
         CAN_MODULE_LOGGER.info("\tHandle %d" % _handle.get_canlib_handle())
         canlib.kvSetNotifyCallback(_handle_number, None, None, 0)
-        canlib.canFlushReceiveQueue(_handle_number)
     CAN_MODULE_LOGGER.info("Clearing transmit callbacks...")
     for _handle_number in WRITE_HANDLE_REGISTRY.keys():
         _handle = WRITE_HANDLE_REGISTRY[_handle_number]
         CAN_MODULE_LOGGER.info("\tHandle %d" % _handle.get_canlib_handle())
         canlib.kvSetNotifyCallback(_handle_number, None, None, 0)
-        canlib.canFlushTransmitQueue(_handle_number)
