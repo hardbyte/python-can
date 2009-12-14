@@ -117,6 +117,9 @@ def main(arguments):
         except KeyboardInterrupt:
             endTime = datetime.datetime.now()
             break
+    log_xml_tree = CAN.create_log_xml_tree(hostMachineInfo, channelInfo, startTime, endTime, msgList)
+    xmlFile.write("%s" % log_xml_tree.toprettyxml())
+    xmlFile.close()
 
 if __name__ == "__main__":
     main(sys.argv)
