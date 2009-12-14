@@ -180,18 +180,15 @@ class LogMessage(object):
         
         Example:
         
-        >>> from pycanlib import CAN
-        
-        >>> import sys
-        
-        >>> msg = CAN.LogMessage(timestamp=5.0)
-        
-        >>> sys.stdout.write(msg.to_xml().toprettyxml(indent="    "))
+        >>> from pycanlib import CAN; \
+            msg = CAN.LogMessage(timestamp=5.0); \
+            print msg.to_xml().toprettyxml(indent="    ")
         <LogMessage>
             <timestamp>
                 5.0
             </timestamp>
         </LogMessage>
+        <BLANKLINE>
         """
         _document = minidom.Document()
         retval = _document.createElement(self.__class__.__name__)
@@ -376,8 +373,30 @@ TX_CALLBACK = canlib.CALLBACKFUNC(_transmit_callback)
 
 
 class _Handle(object):
+    """
+    Class: _Handle
+    
+    Class that represents a CANLIB CAN bus handle (the result of opening a
+    CAN channel).
+    
+    Parent class: object
+    """
 
     def __init__(self, channel, flags):
+        """
+        Constructor: _Handle
+        
+        Parameters:
+            channel - number of the CANLIB channel number this handle will
+              refer to.
+            flags - flags passed to CANLIB when the handle is opened. See the
+              CANLIB SDK documentation for canOpenChannel for more
+              information.
+        
+        **TO-DO**: "flags" breaks the abstraction provided by _Handle - change
+        it to a set of booleans representing properties that better fit the
+        level of abstraction provided by _Handle
+        """
         _num_channels = ctypes.c_int(0)
         canlib.canGetNumberOfChannels(ctypes.byref(_num_channels))
         if channel not in range(0, _num_channels.value):
@@ -411,9 +430,23 @@ class _Handle(object):
         self.transmit_callback_enabled = True
 
     def get_canlib_handle(self):
+        """
+        Method: get_canlib_handle
+        
+        Returns the integer index into CANLIB's table of CAN handles for this
+        _Handle object.
+        
+        **TO-DO**: remove this - it breaks the abstraction of Handle
+        """
         return self._canlib_handle
 
     def transmit_callback(self):
+        """
+        Method: transmit_callback
+        
+        Method called by _transmit_callback to service a "transmission
+        complete" event for this _Handle object.
+        """
         HANDLE_CLASS_LOGGER.debug("Transmit buffer level for handle %d: %d" %
           (self._canlib_handle, self.get_transmit_buffer_level()))
         if not self.writing and self.transmit_callback_enabled:
@@ -434,12 +467,33 @@ class _Handle(object):
             self.writing = False
 
     def write(self, msg):
+        """
+        Method: write
+        
+        Method called to write a message to the CANLIB handle represented by
+        this _Handle object.
+        
+        Parameters:
+        
+            msg - message to write. This must be an instance of CAN.Message
+        
+        Returns:
+        
+            Nothing
+        """
         _old_size = self.tx_queue.qsize()
-        self.tx_queue.put_nowait(msg)
-        if _old_size == 0:
-            self.transmit_callback()
+        if isinstance(msg, CAN.Message):
+            self.tx_queue.put_nowait(msg)
+            if _old_size == 0:
+                self.transmit_callback()
 
     def receive_callback(self):#pragma: no cover
+        """
+        Method: receive_callback
+        
+        Method called by _receive_callback to service a "new message received"
+        event for this _Handle object.
+        """
         #this is called by the callback registered with CANLIB, but because
         #coverage isn't smart enough to figure this out, it thinks this
         #function is never called at all
@@ -479,12 +533,41 @@ class _Handle(object):
             self.reading = False
 
     def add_listener(self, listener):
+        """
+        Method: add_listener
+        
+        This method adds a listener to this _Handle object - that is, an
+        object that needs to be notified when a new message is received by
+        this _Handle.
+        
+        Parameters:
+        
+            listener - listener to append. May be any Python object, provided
+            it has an on_message_received message, taking only a CAN.Message
+            object as a parameter.
+        """
         self.listeners.append(listener)
 
     def read_timer(self):
+        """
+        Method: read_timer
+        
+        This method reads the CAN bus timer for this handle.
+        
+        Returns:
+        
+            Time elapsed since this handle was opened, in CANLIB timer ticks.
+        """
         return canlib.canReadTimer(self._canlib_handle)
 
     def get_receive_buffer_level(self):#pragma: no cover
+        """
+        Method: get_receive_buffer_level
+        
+        Returns:
+        
+            Number of messages in the CANLIB receive buffer for this handle.
+        """
         #this is called by the callback registered with CANLIB, but because
         #coverage isn't smart enough to figure this out, it thinks this
         #function is never called at all
@@ -494,12 +577,33 @@ class _Handle(object):
         return rx_level.value
 
     def get_transmit_buffer_level(self):
+        """
+        Method: get_transmit_buffer_level
+        
+        Returns:
+        
+            Number of messages in the CANLIB transmit buffer for this handle.
+        """
         tx_level = ctypes.c_int(0)
         canlib.canIoCtl(self._canlib_handle,
           canlib.canIOCTL_GET_TX_BUFFER_LEVEL, ctypes.byref(tx_level), 4)
         return tx_level.value
 
     def get_device_description(self):#pragma: no cover
+        """
+        Method: get_device_description
+        
+        Returns: a string representation of the name of the CAN device the
+          channel has been opened on. See the doctest below for an example of
+          usage for this function.
+        
+        Example (with a Kvaser Leaf Light HS device as CANLIB channel 0):
+        
+        >>> from pycanlib import CAN; \
+            print CAN._Handle(0, 0).get_device_description();
+        Kvaser Leaf Light HS
+        """
+        
         _buffer = ctypes.create_string_buffer(MAX_DEVICE_DESCR_LENGTH)
         canlib.canGetChannelData(self.channel,
           canlib.canCHANNELDATA_DEVDESCR_ASCII, ctypes.byref(_buffer),
@@ -507,6 +611,19 @@ class _Handle(object):
         return _buffer.value
 
     def get_device_manufacturer_name(self):#pragma: no cover
+        """
+        Method: get_device_manufacturer_name
+        
+        Returns: a string representation of the name of the manufacturer of
+        the CAN device the channel has been opened on. See the doctest below
+        for an example of usage for this function.
+        
+        Example (with a Kvaser device as CANLIB channel 0):
+        
+        >>> from pycanlib import CAN; \
+            print CAN._Handle(0, 0).get_device_manufacturer_name();
+        Kvaser AB
+        """
         _buffer = ctypes.create_string_buffer(MAX_MANUFACTURER_NAME_LENGTH)
         canlib.canGetChannelData(self.channel,
           canlib.canCHANNELDATA_MFGNAME_ASCII, ctypes.byref(_buffer),
@@ -514,6 +631,22 @@ class _Handle(object):
         return _buffer.value
 
     def get_device_firmware_version(self):#pragma: no cover
+        """
+        Method: get_device_firmware_version
+        
+        Returns: a string representation of the firmware version running on
+        the CAN device the channel has been opened on, in the format w.x.y.z,
+        where w is the major revision number, x the minor revision number, y
+        the release number, and z the build number. See the doctest below for
+        an example of usage for this function.
+        
+        Example (with a Kvaser Leaf Light HS running firmware version 2.0.50.0
+        as CANLIB channel 0):
+        
+        >>> from pycanlib import CAN; \
+            print CAN._Handle(0, 0).get_device_firmware_version();
+        2.0.50.0
+        """
         _buffer = FW_VERSION_ARRAY()
         canlib.canGetChannelData(self.channel,
           canlib.canCHANNELDATA_CARD_FIRMWARE_REV, ctypes.byref(_buffer),
@@ -525,6 +658,21 @@ class _Handle(object):
           _version_number[2], _version_number[3])
 
     def get_device_hardware_version(self):#pragma: no cover
+        """
+        Method: get_device_hardware_version
+        
+        Returns: a string representation of the hardware revision of the CAN
+        device the channel has been opened on, in the format x.y, where x is
+        the major revision number, and y is the minor revision number. See the
+        doctest below for an example of usage for this function.
+        
+        Example (with a hardware version 1.0 Kvaser Leaf Light HS as CANLIB
+        channel 0):
+        
+        >>> from pycanlib import CAN; \
+            print CAN._Handle(0, 0).get_device_hardware_version()
+        1.0
+        """
         _buffer = HW_VERSION_ARRAY()
         canlib.canGetChannelData(self.channel,
           canlib.canCHANNELDATA_CARD_HARDWARE_REV, ctypes.byref(_buffer),
@@ -535,6 +683,23 @@ class _Handle(object):
         return "%d.%d" % (_version_number[0], _version_number[1])
 
     def get_device_card_serial(self):#pragma: no cover
+        """
+        Method: get_device_card_serial
+        
+        Returns: an integer representing the serial number of the CAN
+        *card* (not transceiver) the channel has been opened on. Note that
+        this is the serial number of the card. If your device has a separate
+        transceiver, this will have a separate serial number, which can be
+        accessed using _Handle.get_device_transceiver_serial(). See the doctest below
+        for an example of usage for this function.
+        
+        Example (with a Kvaser Leaf Light HS with serial number 15198 as CANLIB
+        channel 0):
+        
+        >>> from pycanlib import CAN; \
+            print CAN._Handle(0, 0).get_device_card_serial()
+        15198
+        """
         _buffer = CARD_SN_ARRAY()
         canlib.canGetChannelData(self.channel,
           canlib.canCHANNELDATA_CARD_SERIAL_NO, ctypes.byref(_buffer),
