@@ -18,9 +18,9 @@ def main():
     _loggerObj.info("-"*64)
     _loggerObj.info("Host machine info")
     _loggerObj.info("-"*64)
-    _loggerObj.info("OS: %s" % CAN.GetHostMachineInfo()["osType"])
-    _loggerObj.info("Python: %s" % CAN.GetHostMachineInfo()["pythonVersion"])
-    _loggerObj.info("CANLIB: %s" % CAN.GetCANLIBInfo())
+    _loggerObj.info("OS: %s" % CAN.get_host_machine_info().os_type)
+    _loggerObj.info("Python: %s" % CAN.get_host_machine_info().python_version)
+    _loggerObj.info("CANLIB: %s" % CAN.get_canlib_info())
     _loggerObj.info("pycanlib: %s" % CAN.__version__)
     _loggerObj.info("-"*64)
     names = ["foo", "bar", "bork", "baz"]
@@ -31,7 +31,7 @@ def main():
     for channel in xrange(0, _numChannels.value):
         _loggerObj.info("CANLIB channel %d:" % channel)
         buses[channel] = CAN.Bus(channel, canlib.canOPEN_ACCEPT_VIRTUAL, 105263, 10, 8, 4, 1, name=names[channel])
-        for line in buses[channel].GetChannelInfo().__str__().split("\n"):
+        for line in buses[channel].get_channel_info().__str__().split("\n"):
             _loggerObj.info(line)
         _loggerObj.info("-"*64)
 
