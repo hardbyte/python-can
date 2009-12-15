@@ -26,6 +26,14 @@ BUS_CLASS_LOGGER = logging.getLogger("pycanlib.CAN.Bus")
 LOG_MESSAGE_CLASS_LOGGER = logging.getLogger("pycanlib.CAN.LogMessage")
 CAN_MESSAGE_CLASS_LOGGER = logging.getLogger("pycanlib.CAN.Message")
 INFO_MESSAGE_CLASS_LOGGER = logging.getLogger("pycanlib.CAN.InfoMessage")
+XML_OBJECT_CLASS_LOGGER = logging.getLogger("pycanlib.CAN.XMLObject")
+
+XML_OBJECT_CLASS_LOGGER.setLevel(logging.WARNING)
+XML_OBJECT_CLASS_LOGGER.addHandler(logging.StreamHandler())
+LOG_MESSAGE_CLASS_LOGGER.setLevel(logging.WARNING)
+LOG_MESSAGE_CLASS_LOGGER.addHandler(logging.StreamHandler())
+CAN_MESSAGE_CLASS_LOGGER.setLevel(logging.WARNING)
+CAN_MESSAGE_CLASS_LOGGER.addHandler(logging.StreamHandler())
 
 MAX_DEVICE_DESCR_LENGTH = 256
 MAX_MANUFACTURER_NAME_LENGTH = 256
@@ -129,6 +137,30 @@ class XMLObject(object):
     Parent class: object
     """
 
+    def __init__(self, xml=None):
+        """
+        Constructor: XMLObject
+        
+        Parameters:
+            xml: XML fragment used to construct this object. Consists of a
+            single top-level block containing many lower level blocks, each
+            containing one of the object's instance variables. These instance
+            variables must be string representations of basic Python types
+            (int, string, float, etc.).
+        """
+        if xml is not None:
+            if xml.nodeName != self.__class__.__name__:
+                raise InvalidMessageParameterError("xml", xml,
+                  ("XML fragment does not represent an object of type %s" %
+                  self.__class__.__name__))
+            for _child_node in xml.childNodes:
+                _var_name = _child_node.nodeName
+                _var_value = _child_node.childNodes[0].nodeValue
+                try:
+                    self.__dict__[_var_name] = eval(_var_value)
+                except NameError:
+                    self.__dict__[_var_name] = _var_value
+
     def to_xml(self):
         """
         Method: to_xml
@@ -160,11 +192,10 @@ class XMLObject(object):
         """
         _document = minidom.Document()
         retval = _document.createElement(self.__class__.__name__)
-        for _inst_variable in self.__dict__.keys():
-            _name = _inst_variable
-            _value = self.__dict__[_inst_variable]
-            _element = _document.createElement(_name)
-            _content_node = _document.createTextNode("%s" % _value)
+        XML_OBJECT_CLASS_LOGGER.debug("in XMLObject.to_xml() - %s" % self.__dict__)
+        for (_var_name, _var_value) in self.__dict__.items():
+            _element = _document.createElement(_var_name)
+            _content_node = _document.createTextNode("%s" % _var_value)
             _element.appendChild(_content_node)
             retval.appendChild(_element)
         return retval
@@ -180,34 +211,38 @@ class LogMessage(XMLObject):
     Parent class: XMLObject
     """
 
-    def __init__(self, timestamp=0.0):
+    def __init__(self, xml=None, timestamp=0.0):
         """
         Constructor: LogMessage
 
         Parameters:
 
+            xml (optional, default=None) - XML fragment used to reconstruct
+              an instance of LogMessage.
             timestamp (optional, default=0.0) - message timestamp (in
               seconds). Must be a non-negative float or int, otherwise an
               InvalidMessageParameterError is thrown.
         """
-        XMLObject.__init__(self)
         _start_msg = ("Starting LogMessage.__init__ - timestamp %s" %
           timestamp)
         LOG_MESSAGE_CLASS_LOGGER.debug(_start_msg)
-        if not isinstance(timestamp, (types.FloatType, types.IntType)):
-            _bad_timestamp_error = InvalidMessageParameterError("timestamp",
-              timestamp, ("expected float or int; received '%s'" %
-              timestamp.__class__.__name__))
-            LOG_MESSAGE_CLASS_LOGGER.debug("LogMessage.__init__: %s" %
-              _bad_timestamp_error)
-            raise _bad_timestamp_error
-        if timestamp < 0:
-            _bad_timestamp_error = InvalidMessageParameterError("timestamp",
-              timestamp, "timestamp value must be positive")
-            LOG_MESSAGE_CLASS_LOGGER.debug("LogMessage.__init__: %s" %
-              _bad_timestamp_error)
-            raise _bad_timestamp_error
-        self.timestamp = timestamp
+        XMLObject.__init__(self, xml)
+        LOG_MESSAGE_CLASS_LOGGER.debug("in LogMessage.__init__ - %s" % self.__dict__)
+        if xml is None:
+            if not isinstance(timestamp, (types.FloatType, types.IntType)):
+                _bad_timestamp_error = InvalidMessageParameterError("timestamp",
+                  timestamp, ("expected float or int; received '%s'" %
+                  timestamp.__class__.__name__))
+                LOG_MESSAGE_CLASS_LOGGER.debug("LogMessage.__init__: %s" %
+                  _bad_timestamp_error)
+                raise _bad_timestamp_error
+            if timestamp < 0:
+                _bad_timestamp_error = InvalidMessageParameterError("timestamp",
+                  timestamp, "timestamp value must be positive")
+                LOG_MESSAGE_CLASS_LOGGER.debug("LogMessage.__init__: %s" %
+                  _bad_timestamp_error)
+                raise _bad_timestamp_error
+            self.timestamp = timestamp
         _finish_msg = "LogMessage.__init__ completed successfully"
         LOG_MESSAGE_CLASS_LOGGER.debug(_finish_msg)
 
@@ -224,7 +259,7 @@ class Message(LogMessage):
     Parent class: LogMessage
     """
 
-    def __init__(self, device_id=0, payload=None, dlc=0, flags=0,
+    def __init__(self, xml=None, device_id=0, payload=None, dlc=0, flags=0,
       timestamp=0.0):
         """
         Constructor: Message
@@ -251,41 +286,43 @@ class Message(LogMessage):
         """
         if payload is None:
             payload = []
-        LogMessage.__init__(self, timestamp)
-        if not isinstance(device_id, types.IntType):
-            raise InvalidMessageParameterError("device_id", device_id,
-              ("expected int; received '%s'" %
-              device_id.__class__.__name__))
-        if device_id not in range(0, 2 ** 11):
-            raise InvalidMessageParameterError("device_id", device_id,
-              "device_id must be in range [0, 2**11-1]")
-        self.device_id = device_id
-        if len(payload) not in range(0, 9):
-            raise InvalidMessageParameterError("payload", payload,
-              "payload array length must be in range [0, 8]")
-        for item in payload:
-            if not isinstance(item, types.IntType):
+        LogMessage.__init__(self, xml, timestamp)
+        if xml is None:
+            CAN_MESSAGE_CLASS_LOGGER.debug("in Message.__init__ - %s" % self.__dict__)
+            if not isinstance(device_id, types.IntType):
+                raise InvalidMessageParameterError("device_id", device_id,
+                  ("expected int; received '%s'" %
+                  device_id.__class__.__name__))
+            if device_id not in range(0, 2 ** 11):
+                raise InvalidMessageParameterError("device_id", device_id,
+                  "device_id must be in range [0, 2**11-1]")
+            self.device_id = device_id
+            if len(payload) not in range(0, 9):
                 raise InvalidMessageParameterError("payload", payload,
-                  ("payload array must contain only integers; found '%s'" %
-                  item.__class__.__name__))
-            if item not in range(0, 2 ** 8):
-                raise InvalidMessageParameterError("payload", payload,
-                  "payload array element values must be in range [0, 2**8-1]")
-        self.payload = payload
-        if not isinstance(dlc, types.IntType):
-            raise InvalidMessageParameterError("dlc", dlc,
-              "expected int; received %s" % dlc.__class__.__name__)
-        if dlc not in range(0, 9):
-            raise InvalidMessageParameterError("dlc", dlc,
-              "DLC value must be in range [0, 8]")
-        self.dlc = dlc
-        if not isinstance(flags, types.IntType):
-            raise InvalidMessageParameterError("flags", flags,
-              "expected int; received %s" % flags.__class__.__name__)
-        if flags not in range(0, 2 ** 16):
-            raise InvalidMessageParameterError("flags", flags,
-              "flags value must be in range [0, 2**16-1]")
-        self.flags = flags
+                  "payload array length must be in range [0, 8]")
+            for item in payload:
+                if not isinstance(item, types.IntType):
+                    raise InvalidMessageParameterError("payload", payload,
+                      ("payload array must contain only integers; found '%s'" %
+                      item.__class__.__name__))
+                if item not in range(0, 2 ** 8):
+                    raise InvalidMessageParameterError("payload", payload,
+                      "payload array element values must be in range [0, 2**8-1]")
+            self.payload = payload
+            if not isinstance(dlc, types.IntType):
+                raise InvalidMessageParameterError("dlc", dlc,
+                  "expected int; received %s" % dlc.__class__.__name__)
+            if dlc not in range(0, 9):
+                raise InvalidMessageParameterError("dlc", dlc,
+                  "DLC value must be in range [0, 8]")
+            self.dlc = dlc
+            if not isinstance(flags, types.IntType):
+                raise InvalidMessageParameterError("flags", flags,
+                  "expected int; received %s" % flags.__class__.__name__)
+            if flags not in range(0, 2 ** 16):
+                raise InvalidMessageParameterError("flags", flags,
+                  "flags value must be in range [0, 2**16-1]")
+            self.flags = flags
 
     def __str__(self):
         _field_strings = []
@@ -312,7 +349,7 @@ class InfoMessage(LogMessage):
     Parent class: LogMessage
     """
 
-    def __init__(self, timestamp=0.0, info=None):
+    def __init__(self, xml=None, timestamp=0.0, info=None):
         """
         Constructor: InfoMessage
 
@@ -323,8 +360,9 @@ class InfoMessage(LogMessage):
               to a string when a string or XML representation of the
               InfoMessage is created.
         """
-        LogMessage.__init__(self, timestamp)
-        self.info = info
+        LogMessage.__init__(self, xml, timestamp)
+        if xml is None:
+            self.info = info
 
     def __str__(self):
         retval = "%s" % LogMessage.__str__(self)
@@ -854,8 +892,8 @@ class BusStatistics(XMLObject):
 
     Parent class: XMLObject
     """
-    def __init__(self, std_data, std_remote, ext_data, ext_remote, err_frame,
-      bus_load, overruns):
+    def __init__(self, xml=None, std_data=0, std_remote=0, ext_data=0,
+      ext_remote=0, err_frame=0, bus_load=0, overruns=0):
         """
         Constructor: BusStatistics
 
@@ -935,8 +973,9 @@ class ChannelInfo(XMLObject):#pragma: no cover
     Parent class: XMLObject
     """
 
-    def __init__(self, channel, name, manufacturer, fw_version, hw_version,
-      card_serial, trans_serial, trans_type, card_number, channel_on_card):
+    def __init__(self, xml=None, channel=0, name="", manufacturer="",
+      fw_version="", hw_version="", card_serial=0, trans_serial=0,
+      trans_type="", card_number=0, channel_on_card=0):
         """
         Constructor: ChannelInfo
 
@@ -959,17 +998,18 @@ class ChannelInfo(XMLObject):#pragma: no cover
             channel_on_card: card channel that this CANLIB channel is opened
               on
         """
-        XMLObject.__init__(self)
-        self.channel = channel
-        self.name = name
-        self.manufacturer = manufacturer
-        self.fw_version = fw_version
-        self.hw_version = hw_version
-        self.card_serial = card_serial
-        self.trans_serial = trans_serial
-        self.trans_type = trans_type
-        self.card_number = card_number
-        self.channel_on_card = channel_on_card
+        XMLObject.__init__(self, xml)
+        if xml is None:
+            self.channel = channel
+            self.name = name
+            self.manufacturer = manufacturer
+            self.fw_version = fw_version
+            self.hw_version = hw_version
+            self.card_serial = card_serial
+            self.trans_serial = trans_serial
+            self.trans_type = trans_type
+            self.card_number = card_number
+            self.channel_on_card = channel_on_card
 
     def __str__(self):
         retval = "CANLIB channel: %s\n" % self.channel
@@ -994,7 +1034,7 @@ class MachineInfo(XMLObject):
     Parent class: XMLObject
     """
 
-    def __init__(self, machine_name, python_version, os_type):
+    def __init__(self, xml=None, machine_name="", python_version="", os_type=""):
         """
         Constructor: MachineInfo
 
@@ -1004,12 +1044,13 @@ class MachineInfo(XMLObject):
               installed on
             os_type: type of OS pycanlib is running on
         """
-        XMLObject.__init__(self)
-        self.machine_name = machine_name
-        self.python_version = python_version
-        self.os_type = os_type
-        self.canlib_version = get_canlib_info()
-        self.pycanlib_version = __version__
+        XMLObject.__init__(self, xml)
+        if xml is None:
+            self.machine_name = machine_name
+            self.python_version = python_version
+            self.os_type = os_type
+            self.canlib_version = get_canlib_info()
+            self.pycanlib_version = __version__
 
     def __str__(self):
         retval = "Machine name: %s\n" % self.machine_name
