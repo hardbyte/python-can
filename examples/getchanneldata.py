@@ -29,7 +29,6 @@ def main():
     _numChannels = ctypes.c_int(0)
     canlib.canGetNumberOfChannels(ctypes.byref(_numChannels))
     for channel in xrange(0, _numChannels.value):
-        _loggerObj.info("CANLIB channel %d:" % channel)
         buses[channel] = CAN.Bus(channel, canlib.canOPEN_ACCEPT_VIRTUAL, 105263, 10, 8, 4, 1, name=names[channel])
         for line in buses[channel].get_channel_info().__str__().split("\n"):
             _loggerObj.info(line)
