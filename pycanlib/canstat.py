@@ -1,7 +1,21 @@
+"""
+File: canstat.py
+
+This file is the canstat.h file from the CANLIB SDK translated into Python
+using the ctypes package.
+"""
+
 import ctypes
 
 
 class c_canStatus(ctypes.c_int):
+    """
+    Class: c_canStatus
+    
+    Representation of CANLIB's canStatus type.
+    
+    Parent class: ctypes.c_int
+    """
     pass
 
 canOK = 0
@@ -78,6 +92,19 @@ canStatusLookupTable[canERR__RESERVED] = "canERR__RESERVED"
 
 
 def CANSTATUS_SUCCESS(status):
+    """
+    Method: CANSTATUS_SUCCESS
+    
+    Determines if a given status value indicates a successful operation or
+    not.
+    
+    Parameters:
+        status: the status value to be checked
+    
+    Returns:
+        True if the status value indicates a successful operation, False if it
+        does not.
+    """
     return (status >= canOK)
 
 canEVENT_RX = 32000
