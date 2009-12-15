@@ -28,13 +28,6 @@ CAN_MESSAGE_CLASS_LOGGER = logging.getLogger("pycanlib.CAN.Message")
 INFO_MESSAGE_CLASS_LOGGER = logging.getLogger("pycanlib.CAN.InfoMessage")
 XML_OBJECT_CLASS_LOGGER = logging.getLogger("pycanlib.CAN.XMLObject")
 
-XML_OBJECT_CLASS_LOGGER.setLevel(logging.WARNING)
-XML_OBJECT_CLASS_LOGGER.addHandler(logging.StreamHandler())
-LOG_MESSAGE_CLASS_LOGGER.setLevel(logging.WARNING)
-LOG_MESSAGE_CLASS_LOGGER.addHandler(logging.StreamHandler())
-CAN_MESSAGE_CLASS_LOGGER.setLevel(logging.WARNING)
-CAN_MESSAGE_CLASS_LOGGER.addHandler(logging.StreamHandler())
-
 MAX_DEVICE_DESCR_LENGTH = 256
 MAX_MANUFACTURER_NAME_LENGTH = 256
 MAX_FW_VERSION_LENGTH = 8
@@ -159,6 +152,8 @@ class XMLObject(object):
                 try:
                     self.__dict__[_var_name] = eval(_var_value)
                 except NameError:
+                    self.__dict__[_var_name] = _var_value
+                except SyntaxError:
                     self.__dict__[_var_name] = _var_value
 
     def to_xml(self):
@@ -566,9 +561,12 @@ class _Handle(object):
                 for _char in _data:
                     _data_array.append(ord(_char))
                 HANDLE_CLASS_LOGGER.debug("Creating new Message object")
-                _rx_msg = Message(_device_id.value, _data_array[:_dlc.value],
-                  int(_dlc.value), int(_flags.value), (float(_timestamp.value) /
-                  TIMER_TICKS_PER_SECOND))
+                _rx_msg = Message(device_id=_device_id.value,
+                                  payload=_data_array[:_dlc.value],
+                                  dlc=int(_dlc.value),
+                                  flags=int(_flags.value),
+                                  timestamp = (float(_timestamp.value) /
+                                    TIMER_TICKS_PER_SECOND))
                 for _listener in self.listeners:
                     _listener.on_message_received(_rx_msg)
                 _status = canlib.canRead(self._canlib_handle,
@@ -1012,7 +1010,11 @@ class ChannelInfo(XMLObject):#pragma: no cover
             self.channel_on_card = channel_on_card
 
     def __str__(self):
-        retval = "CANLIB channel: %s\n" % self.channel
+        retval = "-"*len("Channel Info")
+        retval += "\nChannel Info\n"
+        retval += "-"*len("Channel Info")
+        retval += "\n"
+        retval += "CANLIB channel: %s\n" % self.channel
         retval += "Name: %s\n" % self.name
         retval += "Manufacturer: %s\n" % self.manufacturer
         retval += "Firmware version: %s\n" % self.fw_version
@@ -1022,6 +1024,7 @@ class ChannelInfo(XMLObject):#pragma: no cover
         retval += "Transceiver serial number: %s\n" % self.trans_serial
         retval += "Card number: %s\n" % self.card_number
         retval += "Channel on card: %s\n" % self.channel_on_card
+        retval += "\n"
         return retval
 
 
@@ -1053,11 +1056,16 @@ class MachineInfo(XMLObject):
             self.pycanlib_version = __version__
 
     def __str__(self):
-        retval = "Machine name: %s\n" % self.machine_name
+        retval = "-"*len("Machine Info")
+        retval += "\nMachine Info\n"
+        retval += "-"*len("Machine Info")
+        retval += "\n"
+        retval += "Machine name: %s\n" % self.machine_name
         retval += "Python: %s\n" % self.python_version
         retval += "OS: %s\n" % self.os_type
         retval += "CANLIB: %s\n" % self.canlib_version
         retval += "pycanlib: %s\n" % self.pycanlib_version
+        retval += "\n"
         return retval
 
 
@@ -1069,11 +1077,13 @@ def get_host_machine_info():#pragma: no cover
     machine running pycanlib.
     """
     if sys.platform == "win32":
-        machine_name = os.getenv("COMPUTERNAME")
+        _machine_name = os.getenv("COMPUTERNAME")
     else:
-        machine_name = os.getenv("HOSTNAME")
-    python_version = sys.version[:sys.version.index(" ")]
-    return MachineInfo(machine_name, python_version, sys.platform)
+        _machine_name = os.getenv("HOSTNAME")
+    _python_version = sys.version[:sys.version.index(" ")]
+    return MachineInfo(machine_name=_machine_name,
+                       python_version=_python_version,
+                       os_type=sys.platform)
 
 
 def get_canlib_info():#pragma: no cover
@@ -1380,7 +1390,8 @@ class Bus(object):
         Returns: a ChannelInfo object containing the information about the
         CAN channel this Bus object is connected to.
         """
-        return ChannelInfo(self._read_handle.channel,
+        return ChannelInfo(None,
+                           self._read_handle.channel,
                            self._get_device_description(),
                            self._get_device_manufacturer_name(),
                            self._get_device_firmware_version(),

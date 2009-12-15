@@ -78,7 +78,7 @@ def testShallProvideStringRepresentationOfInfoMessage():
 
 def checkInfoMsgStringRep(timestamp, infoString):
     _msgObject = None
-    _msgObject = CAN.InfoMessage(timestamp, infoString)
+    _msgObject = CAN.InfoMessage(timestamp=timestamp, info=infoString)
     assert (_msgObject != None)
     assert (_msgObject.timestamp == timestamp)
     assert (_msgObject.info == infoString)
