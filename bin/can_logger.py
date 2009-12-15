@@ -78,7 +78,6 @@ def SetupLogging(logFilePath, logFileNameBase):
     _logStreamHandler2.setFormatter(_logFormatter2)
     _logFileHandler.setFormatter(_logFormatter)
     loggerObj.addHandler(_logStreamHandler)
-    loggerObj.addHandler(_logFileHandler)
     handleLogger = logging.getLogger("pycanlib.CAN._Handle")
     handleLogger.setLevel(logging.WARNING)
     handleLogger.addHandler(_logStreamHandler2)
