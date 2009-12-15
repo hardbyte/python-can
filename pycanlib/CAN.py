@@ -11,7 +11,6 @@ import logging
 import os
 import Queue
 import sys
-import time
 import types
 from xml.dom import minidom
 
@@ -119,54 +118,22 @@ class InvalidBusParameterError(InvalidParameterError):
     pass
 
 
-class LogMessage(object):
+class XMLObject(object):
     """
-    Class: LogMessage
+    Class: XMLObject
     
-    Superclass for all loggable messages produced by either pycanlib or any
-    higher level protocol libraries built on top of it.
+    Superclass for all pycanlib entities that have an XML representation.
+    This class provides a method which converts an arbitrary object into
+    XML format.
     
     Parent class: object
     """
-
-    def __init__(self, timestamp=0.0):
-        """
-        Constructor: LogMessage
-        
-        Parameters:
-        
-            timestamp (optional, default=0.0) - message timestamp (in
-              seconds). Must be a non-negative float or int, otherwise an
-              InvalidMessageParameterError is thrown.
-        """
-        _start_msg = ("Starting LogMessage.__init__ - timestamp %s" %
-          timestamp)
-        LOG_MESSAGE_CLASS_LOGGER.debug(_start_msg)
-        if not isinstance(timestamp, (types.FloatType, types.IntType)):
-            _bad_timestamp_error = InvalidMessageParameterError("timestamp",
-              timestamp, ("expected float or int; received '%s'" %
-              timestamp.__class__.__name__))
-            LOG_MESSAGE_CLASS_LOGGER.debug("LogMessage.__init__: %s" %
-              _bad_timestamp_error)
-            raise _bad_timestamp_error
-        if timestamp < 0:
-            _bad_timestamp_error = InvalidMessageParameterError("timestamp",
-              timestamp, "timestamp value must be positive")
-            LOG_MESSAGE_CLASS_LOGGER.debug("LogMessage.__init__: %s" %
-              _bad_timestamp_error)
-            raise _bad_timestamp_error
-        self.timestamp = timestamp
-        _finish_msg = "LogMessage.__init__ completed successfully"
-        LOG_MESSAGE_CLASS_LOGGER.debug(_finish_msg)
-
-    def __str__(self):
-        return "%.6f" % self.timestamp
 
     def to_xml(self):
         """
         Method: to_xml
         
-        Produces an XML representation of this instance of LogMessage (or any
+        Produces an XML representation of this instance of XMLObject (or any
         of its subclasses). See below for an example of the XML produced by
         this function.
         
@@ -201,6 +168,51 @@ class LogMessage(object):
             _element.appendChild(_content_node)
             retval.appendChild(_element)
         return retval
+
+
+class LogMessage(XMLObject):
+    """
+    Class: LogMessage
+    
+    Superclass for all loggable messages produced by either pycanlib or any
+    higher level protocol libraries built on top of it.
+    
+    Parent class: XMLObject
+    """
+
+    def __init__(self, timestamp=0.0):
+        """
+        Constructor: LogMessage
+        
+        Parameters:
+        
+            timestamp (optional, default=0.0) - message timestamp (in
+              seconds). Must be a non-negative float or int, otherwise an
+              InvalidMessageParameterError is thrown.
+        """
+        XMLObject.__init__(self)
+        _start_msg = ("Starting LogMessage.__init__ - timestamp %s" %
+          timestamp)
+        LOG_MESSAGE_CLASS_LOGGER.debug(_start_msg)
+        if not isinstance(timestamp, (types.FloatType, types.IntType)):
+            _bad_timestamp_error = InvalidMessageParameterError("timestamp",
+              timestamp, ("expected float or int; received '%s'" %
+              timestamp.__class__.__name__))
+            LOG_MESSAGE_CLASS_LOGGER.debug("LogMessage.__init__: %s" %
+              _bad_timestamp_error)
+            raise _bad_timestamp_error
+        if timestamp < 0:
+            _bad_timestamp_error = InvalidMessageParameterError("timestamp",
+              timestamp, "timestamp value must be positive")
+            LOG_MESSAGE_CLASS_LOGGER.debug("LogMessage.__init__: %s" %
+              _bad_timestamp_error)
+            raise _bad_timestamp_error
+        self.timestamp = timestamp
+        _finish_msg = "LogMessage.__init__ completed successfully"
+        LOG_MESSAGE_CLASS_LOGGER.debug(_finish_msg)
+
+    def __str__(self):
+        return "%.6f" % self.timestamp
 
 
 class Message(LogMessage):
@@ -834,14 +846,14 @@ class _Handle(object):
                              _stat_struct.bus_load,
                              _stat_struct.overruns)
 
-class BusStatistics(object):
+class BusStatistics(XMLObject):
     """
     Class: BusStatistics
     
     Container class for the statistics collected by CANLIB for each handle it
     maintains.
     
-    Parent class: object
+    Parent class: XMLObject
     """
     def __init__(self, std_data, std_remote, ext_data, ext_remote, err_frame,
       bus_load, overruns):
@@ -862,6 +874,7 @@ class BusStatistics(object):
               (represented as an integer between 0 and 10000, where 0 = 0.00%
               and 10000 = 100.00%)
         """
+        XMLObject.__init__(self)
         self.std_data = std_data
         self.std_remote = std_remote
         self.ext_data = ext_data
@@ -872,6 +885,24 @@ class BusStatistics(object):
 
 
 def _get_handle(channel_number, flags, registry):
+    """
+    Method: _get_handle
+    
+    This function gets a handle with the given channel number from the given
+    handle registry, if a channel with the given flags value is available. If
+    one is not available, a new handle is created using the passed channel
+    number and flags values, and registered in the given handle registry.
+    
+    Parameters:
+        channel_number: the CANLIB channel number of the handle to be retrieved.
+        flags: the flags value used to open the handle to be retrieved.
+        registry: the registry the handle is to be retrieved from (either
+          READ_HANDLE_REGISTRY or WRITE_HANDLE_REGISTRY)
+    
+    Returns:
+        A CAN._Handle object representing a CANLIB handle to the given channel,
+        with the given flags value, registered in the given handle registry.
+    """
     _found_handle = False
     handle = None
     for _key in registry.keys():
@@ -895,10 +926,41 @@ def _get_handle(channel_number, flags, registry):
     return handle
 
 
-class ChannelInfo(object):#pragma: no cover
+class ChannelInfo(XMLObject):#pragma: no cover
+    """
+    Class: ChannelInfo
+    
+    This is a container class for information about a specific channel's
+    hardware - firmware version, serial number(s), hardware version, etc.
+    
+    Parent class: XMLObject
+    """
 
     def __init__(self, channel, name, manufacturer, fw_version, hw_version,
       card_serial, trans_serial, trans_type, card_number, channel_on_card):
+        """
+        Constructor: ChannelInfo
+        
+        Parameters:
+            channel: CANLIB channel number
+            name: name of the device the channel is opened on
+            manufacturer: manufacturer of the device the channel is opened on
+            fw_version: firmware version installed on the device the channel
+              is opened on
+            hw_version: hardware version of the device the channel is opened
+              on
+            card_serial: serial number of the *card* the channel is opened on
+            trans_serial: serial number of the *transceiver* this channel
+               uses to connect to the bus (if this transceiver has a serial
+               number)
+            trans_type: string name of the type of transceiver this channel
+              uses to connect to the bus
+            card_number: number of the card the channel is opened on in the
+              computer
+            channel_on_card: card channel that this CANLIB channel is opened
+              on
+        """
+        XMLObject.__init__(self)
         self.channel = channel
         self.name = name
         self.manufacturer = manufacturer
@@ -923,109 +985,47 @@ class ChannelInfo(object):#pragma: no cover
         retval += "Channel on card: %s\n" % self.channel_on_card
         return retval
 
-    def to_xml(self):
-        _document = minidom.Document()
-        retval = _document.createElement("channel_info")
-        _channel_number_element = _document.createElement("canlib_channel")
-        _channel_number_text = _document.createTextNode("%d" % self.channel)
-        _channel_number_element.appendChild(_channel_number_text)
-        retval.appendChild(_channel_number_element)
-        _channel_name_element = _document.createElement("device_name")
-        _channel_name_text = _document.createTextNode(self.name)
-        _channel_name_element.appendChild(_channel_name_text)
-        retval.appendChild(_channel_name_element)
-        _channel_manufacturer_element = \
-          _document.createElement("device_manufacturer")
-        _channel_manufacturer_text = _document.createTextNode(self.manufacturer)
-        _channel_manufacturer_element.appendChild(_channel_manufacturer_text)
-        retval.appendChild(_channel_manufacturer_element)
-        _channel_fw_version_element = \
-          _document.createElement("device_firmware_version")
-        _channel_fw_version_text = _document.createTextNode(self.fw_version)
-        _channel_fw_version_element.appendChild(_channel_fw_version_text)
-        retval.appendChild(_channel_fw_version_element)
-        _channel_hw_version_element = \
-          _document.createElement("device_hardware_version")
-        _channel_hw_version_text = _document.createTextNode(self.hw_version)
-        _channel_hw_version_element.appendChild(_channel_hw_version_text)
-        retval.appendChild(_channel_hw_version_element)
-        _channel_card_serial_element = \
-          _document.createElement("device_serial_number")
-        _channel_card_serial_text = _document.createTextNode("%s" %
-          self.card_serial)
-        _channel_card_serial_element.appendChild(_channel_card_serial_text)
-        retval.appendChild(_channel_card_serial_element)
-        _channel_trans_type_element = \
-          _document.createElement("transceiver_type")
-        _channel_trans_type_text = \
-          _document.createTextNode(self.trans_type)
-        _channel_trans_type_element.appendChild(
-          _channel_trans_type_text)
-        retval.appendChild(_channel_trans_type_element)
-        _channel_trans_serial_element = \
-          _document.createElement("transceiver_serial_number")
-        _channel_trans_serial_text = \
-          _document.createTextNode("%s" % self.trans_serial)
-        _channel_trans_serial_element.appendChild(
-          _channel_trans_serial_text)
-        retval.appendChild(_channel_trans_serial_element)
-        _channel_card_number_element = _document.createElement("card_number")
-        _channel_card_number_text = _document.createTextNode("%s" %
-          self.card_number)
-        _channel_card_number_element.appendChild(_channel_card_number_text)
-        retval.appendChild(_channel_card_number_element)
-        _channel_number_on_card_element = \
-          _document.createElement("card_channel")
-        _channel_number_on_card_text = \
-          _document.createTextNode("%s" % self.channel_on_card)
-        _channel_number_on_card_element.appendChild(
-          _channel_number_on_card_text)
-        retval.appendChild(_channel_number_on_card_element)
-        return retval
 
-
-class MachineInfo(object):
+class MachineInfo(XMLObject):
+    """
+    Class: MachineInfo
+    
+    Container class for information about the machine pycanlib is running on
+    
+    Parent class: XMLObject
+    """
 
     def __init__(self, machine_name, python_version, os_type):
+        """
+        Constructor: MachineInfo
+        
+        Parameters:
+            machine_name: name of the machine pycanlib is running on
+            python_version: version of the Python installation pycanlib is
+              installed on
+            os_type: type of OS pycanlib is running on
+        """
+        XMLObject.__init__(self)
         self.machine_name = machine_name
         self.python_version = python_version
         self.os_type = os_type
 
     def __str__(self):
         retval = "Machine name: %s\n" % self.machine_name
-        retval += "Python version: %s\n" % self.python_version
+        retval += "Python: %s\n" % self.python_version
         retval += "OS: %s\n" % self.os_type
         retval += "CANLIB: %s\n" % get_canlib_info()
-        retval += "pycanlib version: %s\n" % __version__
+        retval += "pycanlib: %s\n" % __version__
         return retval
 
-    def to_xml(self):
-        _document = minidom.Document()
-        retval = _document.createElement("machine_info")
-        _machine_name_element = _document.createElement("name")
-        _machine_name_text = _document.createTextNode(self.machine_name)
-        _machine_name_element.appendChild(_machine_name_text)
-        retval.appendChild(_machine_name_element)
-        _machine_os_element = _document.createElement("os")
-        _machine_os_text = _document.createTextNode(self.os_type)
-        _machine_os_element.appendChild(_machine_os_text)
-        retval.appendChild(_machine_os_element)
-        _machine_python_element = _document.createElement("python_version")
-        _machine_python_text = _document.createTextNode(self.python_version)
-        _machine_python_element.appendChild(_machine_python_text)
-        retval.appendChild(_machine_python_element)
-        _machine_canlib_element = _document.createElement("canlib_version")
-        _machine_canlib_text = _document.createTextNode(get_canlib_info())
-        _machine_canlib_element.appendChild(_machine_canlib_text)
-        retval.appendChild(_machine_canlib_element)
-        _machine_pycanlib_element = \
-          _document.createElement("pycanlib_version")
-        _machine_pycanlib_text = _document.createTextNode(__version__)
-        _machine_pycanlib_element.appendChild(_machine_pycanlib_text)
-        retval.appendChild(_machine_pycanlib_element)
-        return retval
 
 def get_host_machine_info():#pragma: no cover
+    """
+    Method: get_host_machine_info
+    
+    Returns: a MachineInfo object containing information about the host
+    machine running pycanlib.
+    """
     if sys.platform == "win32":
         machine_name = os.getenv("COMPUTERNAME")
     else:
@@ -1035,6 +1035,12 @@ def get_host_machine_info():#pragma: no cover
 
 
 def get_canlib_info():#pragma: no cover
+    """
+    Method: get_canlib_info
+    
+    Returns the version of the CANLIB SDK installed on the host machine, as
+    a string.
+    """
     _canlib_prod_ver_32 = \
       canlib.canGetVersionEx(canlib.canVERSION_CANLIB32_PRODVER32)
     _major_ver_no = (_canlib_prod_ver_32 & 0x00FF0000) >> 16
@@ -1048,6 +1054,25 @@ def get_canlib_info():#pragma: no cover
 
 def create_log_xml_tree(host_info, channel_info, start_time, end_time,
   msg_list):
+    """
+    Method: create_log_xml_tree
+    
+    Given a list of messages, information about the host machine and CANLIB
+    channel, and a log start and end time, this function creates an XML tree
+    representing all of this data.
+    
+    Parameters:
+        host_info: a MachineInfo object containing information about the host
+          machine
+        channel_info: a ChannelInfo object containing information about the
+          CANLIB channel messages were recorded on
+        start_time: a datetime.datetime object (e.g. from
+          datetime.datetime.now()) representing the time logging was started
+        end_time: a datetime.datetime object (e.g. from
+          datetime.datetime.now()) representing the time logging ended
+        msg_list: a list of the CAN.Message objects, representing the messages
+          logged on the channel provided between start_time and end_time
+    """
     retval = minidom.Document()
     _log_element = retval.createElement("pycanlib_log")
     _log_element.appendChild(host_info.to_xml())
@@ -1071,10 +1096,38 @@ def create_log_xml_tree(host_info, channel_info, start_time, end_time,
 
 
 class Bus(object):
+    """
+    Class: Bus
+    
+    Class representing a connection to a CAN bus using CANLIB.
+    
+    Parent class: object
+    """
 
     def __init__(self, channel=0, flags=0, speed=1000000, tseg1=1, tseg2=0,
                  sjw=1, no_samp=1, driver_mode=canlib.canDRIVER_NORMAL,
                  name="default"):
+        """
+        Constructor: Bus
+        
+        Parameters:
+            channel: CANLIB channel the Bus object is to connect to
+            flags: flags passed to canOpenChannel when the channel is opened
+            speed: bit rate of the channel to be opened
+            tseg1: length of tseg1 (in time quanta). See the CAN bus
+              specification for the meaning of this parameter
+            tseg2: length of tseg2 (in time quanta). See the CAN bus
+              specification for the meaning of this parameter
+            sjw: synchronisation jump width. See the CAN bus specification
+              for the meaning of this parameter
+            no_samp: number of samples taken by the CAN hardware to determine
+              the level of a bit
+            driver_mode: mode the CAN device output driver is set to. See the
+              CANLIB documentation for canSetBusOutputControl for more
+              information about this parameter.
+            name: name for this bus object - used to distinguish log messages
+              from different bus objects
+        """
         self.name = name
         BUS_CLASS_LOGGER.info("Getting read handle for new Bus instance '%s'" %
           self.name)
@@ -1125,6 +1178,13 @@ class Bus(object):
         self._read_handle.add_listener(self)
 
     def read(self):
+        """
+        Method: read
+        
+        Returns: a CAN.Message object representing the CAN message at the head
+        of this Bus object's receive queue. If no messages are available, None
+        is returned.
+        """
         try:
             return self.rx_queue.get_nowait()
         except Queue.Empty:
@@ -1133,10 +1193,29 @@ class Bus(object):
             return None
 
     def add_listener(self, listener):
+        """
+        Method: add_listener
+        
+        Adds a listener object to this bus. This listener object will then be
+        notified immediately (via its on_message_received method) when new
+        messages are received by the bus.
+        """
         self._read_handle.add_listener(listener)
         listener.set_write_bus(self)
 
     def write(self, msg):
+        """
+        Method: write
+        
+        Writes a CAN.Message object to the CAN bus.
+        
+        *Note:* this function does not guarantee that the message has been
+        sent when it terminates!
+        
+        Parameters:
+            msg: the message to be written. Must be an instance of
+            CAN.Message or one of its subclasses.
+        """
         BUS_CLASS_LOGGER.debug("Bus '%s': Entering Write()" % self.name)
         if self.driver_mode != canlib.canDRIVER_SILENT:
             BUS_CLASS_LOGGER.debug("Bus '%s': writing message %s" %
@@ -1145,40 +1224,120 @@ class Bus(object):
         BUS_CLASS_LOGGER.debug("Bus '%s': Leaving Write()" % self.name)
 
     def read_timer(self):
+        """
+        Method: read_timer
+        
+        Reads the CAN bus timer maintained by the device used to connect to
+        the bus.
+        
+        Returns:
+            A floating point value representing the number of seconds since
+            this Bus object was created and connected to the CAN bus.
+        """
         return (float(self._read_handle.read_timer() - self.timer_offset) /
           TIMER_TICKS_PER_SECOND)
 
     def on_message_received(self, msg):
+        """
+        Method: on_message_received
+        
+        Method called by _Handle to notify this Bus object that it has
+        received new messages.
+        
+        Parameters:
+            msg: the received message. Must be an instance of CAN.Message or
+            one of its subclasses.
+        """
         self.rx_queue.put_nowait(msg)
 
     def _get_device_description(self):#pragma: no cover
+        """
+        Method: _get_device_description
+        
+        Returns: the description of the device this Bus object uses to
+        connect to the CAN bus.
+        """
         return self._read_handle.get_device_description()
 
     def _get_device_manufacturer_name(self):#pragma: no cover
+        """
+        Method: _get_device_manufacturer_name
+        
+        Returns: the name of the manufacturer of the device this Bus object
+        uses to connect to the CAN bus.
+        """
         return self._read_handle.get_device_manufacturer_name()
 
     def _get_device_firmware_version(self):#pragma: no cover
+        """
+        Method: _get_device_firmware_version
+        
+        Returns: the firmware version running on the device this Bus object
+        uses to connect to the CAN bus.
+        """
         return self._read_handle.get_device_firmware_version()
 
     def _get_device_hardware_version(self):#pragma: no cover
+        """
+        Method: _get_device_hardware_version
+        
+        Returns: the hardware version of the device this Bus object uses to
+        connect to the CAN bus.
+        """
         return self._read_handle.get_device_hardware_version()
 
     def _get_device_card_serial(self):#pragma: no cover
+        """
+        Method: _get_device_card_serial
+        
+        Returns: the *card* serial number of the device this Bus object uses
+        to connect to the CAN bus.
+        """
         return self._read_handle.get_device_card_serial()
 
     def _get_device_transceiver_serial(self):#pragma: no cover
+        """
+        Method: _get_device_transceiver_serial
+        
+        Returns: the *transceiver* serial number of the device this Bus object
+        uses to connect to the CAN bus.
+        """
         return self._read_handle.get_device_transceiver_serial()
 
     def _get_device_card_number(self):#pragma: no cover
+        """
+        Method: _get_device_card_number
+        
+        Returns: the card number of the device this Bus object uses to connect
+        to the CAN bus.
+        """
         return self._read_handle.get_device_card_number()
 
     def _get_device_channel_on_card(self):#pragma: no cover
+        """
+        Method: _get_device_channel_on_card
+        
+        Returns: The channel on the card used by this Bus object to connect
+        to the CAN bus.
+        """
         return self._read_handle.get_device_channel_on_card()
 
     def _get_device_transceiver_type(self):#pragma: no cover
+        """
+        Method: _get_device_transceiver_type
+        
+        Returns: The type of transceiver connected to the device used by this
+        Bus object to connect to the CAN bus.
+        """
         return self._read_handle.get_device_transceiver_type()
 
     def get_channel_info(self):#pragma: no cover
+        """
+        Method: get_channel_info
+        
+        Returns: a ChannelInfo object containing the information about the
+        CAN channel this Bus object is connected to.
+        """
         return ChannelInfo(self._read_handle.channel,
                            self._get_device_description(),
                            self._get_device_manufacturer_name(),
@@ -1191,10 +1350,22 @@ class Bus(object):
                            self._get_device_channel_on_card())
 
     def get_statistics(self):
+        """
+        Method: get_statistics
+        
+        Returns: a BusStatistics object containing the statistics collected
+        for the CANLIB channel this Bus object is connected to.
+        """
         return self._read_handle.get_statistics()
 
 @atexit.register
 def _cleanup():#pragma: no cover
+    """
+    Method: _cleanup
+    
+    Called when the Python interpreter unloads pycanlib, and used to safely
+    stop the callbacks associated with CANLIB handles opened by pycanlib.
+    """
     for (_handle_number, _handle) in READ_HANDLE_REGISTRY.items():
         _handle.receiveCallbackEnabled = False
         while _handle.reading:

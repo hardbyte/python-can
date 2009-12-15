@@ -1,3 +1,13 @@
+"""
+File: canlib.py
+
+This file is the canlib.h file from the CANLIB SDK translated into Python
+using the ctypes package, and containing some improved error handling
+(functions throw exceptions containing error information instead of returning
+error codes).
+"""
+
+
 import ctypes
 import sys
 import types
@@ -5,6 +15,12 @@ import types
 from pycanlib import canstat
 
 def _get_canlib():
+    """
+    Method: _get_canlib
+    
+    Returns: an object representing the CANLIB driver library, depending on the
+    operating system pycanlib is running on.
+    """
     canlib_dict = {"win32": (ctypes.WinDLL, "canlib32.dll"),
                   "posix": (ctypes.CDLL, "libcanlib.so")}
 
@@ -14,6 +30,13 @@ def _get_canlib():
 
 
 class CANLIBError(Exception):
+    """
+    Class: CANLIBError
+    
+    Object used to represent errors indicated by a CANLIB functions.
+    
+    Parent class: Exception
+    """
 
     def __init__(self, function, error_code, arguments):
         Exception.__init__(self)
@@ -28,16 +51,54 @@ class CANLIBError(Exception):
 
 
 def _get_error_message(result):
+    """
+    Method: _get_error_message
+    
+    Gets the error message associated with a particular error code.
+    
+    Parameters:
+        result: the result code to be interpreted
+    
+    Returns: a string representation of the error message associated with the
+    passed error code.
+    """
     errmsg = ctypes.create_string_buffer(128)
     canGetErrorText(result, errmsg, len(errmsg))
     return ("%s (code %d)" % (errmsg.value, result))
 
 
 def _handle_is_valid(handle):
+    """
+    Method: _handle_is_valid
+    
+    Used to determine if a handle is valid
+    
+    Parameters:
+        handle: handle to be tested
+    
+    Returns:
+        True if the handle is valid, False if it is not.
+    """
     return (handle >= 0)
 
 
 def _check_bus_handle_validity(handle, function, arguments):
+    """
+    Method: _check_bus_handle_validity
+    
+    Utility function called by CANLIB functions that return a bus handle
+    to determine validity of the handle. If the passed handle is not valid,
+    a CANLIBError exception containing details of the function called and
+    arguments passed to the function is thrown.
+    
+    Parameters:
+        handle: the handle returned from the CANLIB function called
+        function: the CANLIB function called
+        arguments: the arguments passed to the CANLIB function called
+    
+    Returns:
+        The handle being tested, provided it is valid.
+    """
     if not _handle_is_valid(handle):
         raise CANLIBError(function, handle, arguments)
     else:
@@ -45,6 +106,19 @@ def _check_bus_handle_validity(handle, function, arguments):
 
 
 def _convert_can_status_to_int(result):
+    """
+    Method: _convert_can_status_to_int
+    
+    Ensures that the type of a CAN status return value from a function is
+    converted from a ctypes type to a pure Python type.
+    
+    Parameters:
+        result: the status value to be converted
+    
+    Returns:
+        The converted status value (if a conversion was necessary) or the
+        original status value (if a conversion was unnecessary).
+    """
     if isinstance(result, (types.IntType, types.LongType)):
         _result = result
     else:
@@ -53,6 +127,17 @@ def _convert_can_status_to_int(result):
 
 
 def _check_status(result, function, arguments):
+    """
+    Method: _check_status
+    
+    Used to check the return value from CANLIB functions. This version of
+    _check_status interprets canERR_NOMSG as an error.
+    
+    Parameters:
+        result: the result returned from the CANLIB function called.
+        function: the CANLIB function called.
+        arguments: the arguments passed to the CANLIB function called.
+    """
     _result = _convert_can_status_to_int(result)
     if not canstat.CANSTATUS_SUCCESS(_result):
         raise CANLIBError(function, _result, arguments)
@@ -61,6 +146,17 @@ def _check_status(result, function, arguments):
 
 
 def _check_status_read(result, function, arguments):
+    """
+    Method: _check_status_read
+    
+    Used to check the return value from CANLIB functions. This version of
+    _check_status does not interpret canERR_NOMSG as an error.
+    
+    Parameters:
+        result: the result returned from the CANLIB function called.
+        function: the CANLIB function called.
+        arguments: the arguments passed to the CANLIB function called.
+    """
     _result = _convert_can_status_to_int(result)
     if not canstat.CANSTATUS_SUCCESS(_result) and \
       (_result != canstat.canERR_NOMSG):
@@ -70,6 +166,13 @@ def _check_status_read(result, function, arguments):
 
 
 class c_canHandle(ctypes.c_int):
+    """
+    Class: c_canHandle
+    
+    Class representing a CAN handle.
+    
+    Parent class: ctypes.c_int
+    """
     pass
 
 canINVALID_HANDLE = -1
@@ -377,6 +480,13 @@ canIOCTL_SET_BUSON_TIME_AUTO_RESET = 30
 
 
 class c_canUserIOPortData(ctypes.Structure):
+    """
+    Class: c_canUserIOPortData
+    
+    Representation of the CANLIB canUserIoPortData structure.
+    
+    Parent class: ctypes.Structure
+    """
     _fields_ = [("portNo", ctypes.c_uint), ("portValue", ctypes.c_uint)]
 
 canWaitForEvent = _get_canlib().canWaitForEvent
@@ -622,6 +732,13 @@ canRequestBusStatistics.errcheck = _check_status
 
 
 class c_canBusStatistics(ctypes.Structure):
+    """
+    Class: c_canBusStatistics
+    
+    Representation of the CANLIB canBusStatistics class.
+    
+    Parent class: ctypes.Structure
+    """
     _fields_ = [("std_data", ctypes.c_ulong), ("std_remote", ctypes.c_ulong),
       ("ext_data", ctypes.c_ulong), ("ext_remote", ctypes.c_ulong),
       ("err_frame", ctypes.c_ulong), ("bus_load", ctypes.c_ulong),
@@ -650,14 +767,35 @@ canGetHandleData.errcheck = _check_status
 
 
 class c_kvTimeDomain(ctypes.c_void_p):
+    """
+    Class: c_kvTimeDomain
+    
+    Representation of CANLIB's kvTimeDomain class
+    
+    Parent class: ctypes.c_void_p
+    """
     pass
 
 
 class c_kvStatus(canstat.c_canStatus):
+    """
+    Class: c_kvStatus
+    
+    Representation of CANLIB's kvStatus class
+    
+    Parent class: canstat.c_canStatus
+    """
     pass
 
 
 class c_kvTimeDomainData(ctypes.Structure):
+    """
+    Class: c_kvTimeDomainData
+    
+    Representation of CANLIB's kvTimeDomainData class
+    
+    Parent class: ctypes.Structure
+    """
     _fields_ = [("nMagiSyncGroups", ctypes.c_int),
                 ("nMagiSyncedMembers", ctypes.c_int),
                 ("nNonMagiSyncCards", ctypes.c_int),
@@ -696,6 +834,13 @@ kvTimeDomainRemoveHandle.errcheck = _check_status
 
 
 class c_kvCallback(ctypes.c_void_p):
+    """
+    Class: c_kvCallback
+    
+    Representation of CANLIB's kvCallback class
+    
+    Parent class: ctypes.c_void_p
+    """
     pass
 
 CALLBACKFUNC = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_int)
@@ -746,6 +891,13 @@ ENVVAR_TYPE_STRING = 3
 
 
 class c_kvEnvHandle(ctypes.c_longlong):
+    """
+    Class: c_kvEnvHandle
+    
+    Representation of CANLIB's kvEnvHandle class
+    
+    Parent class: ctypes.c_longlong
+    """
     pass
 
 kvScriptStart = _get_canlib().kvScriptStart
