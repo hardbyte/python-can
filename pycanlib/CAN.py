@@ -1009,13 +1009,15 @@ class MachineInfo(XMLObject):
         self.machine_name = machine_name
         self.python_version = python_version
         self.os_type = os_type
+        self.canlib_version = get_canlib_info()
+        self.pycanlib_version = __version__
 
     def __str__(self):
         retval = "Machine name: %s\n" % self.machine_name
         retval += "Python: %s\n" % self.python_version
         retval += "OS: %s\n" % self.os_type
-        retval += "CANLIB: %s\n" % get_canlib_info()
-        retval += "pycanlib: %s\n" % __version__
+        retval += "CANLIB: %s\n" % self.canlib_version
+        retval += "pycanlib: %s\n" % self.pycanlib_version
         return retval
 
 
