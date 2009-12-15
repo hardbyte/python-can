@@ -72,7 +72,8 @@ def SetupLogging(logFilePath, logFileNameBase):
       _dateString, _timeString))
     xmlFile = open(xmlLogFilePath, "w")
     _logFormatter = logging.Formatter("%(message)s")
-    _logFormatter2 = logging.Formatter("%(name)s - %(asctime)s - %(levelname)s - %(message)s")
+    _formatString = "%(name)s - %(asctime)s - %(levelname)s - %(message)s"
+    _logFormatter2 = logging.Formatter(_formatString)
     _logStreamHandler.setFormatter(_logFormatter)
     _logStreamHandler2.setFormatter(_logFormatter2)
     _logFileHandler.setFormatter(_logFormatter)
@@ -93,16 +94,17 @@ def SetupLogging(logFilePath, logFileNameBase):
 def main(arguments):
     (options, args) = ParseArguments(arguments)
     bus = CreateBusObject(options)
-    (loggerObj, xmlFile, startTime) = SetupLogging(options.logFilePath, options.logFileNameBase)
-    loggerObj.info("-"*64)
+    (loggerObj, xmlFile, startTime) = SetupLogging(options.logFilePath,
+      options.logFileNameBase)
+    loggerObj.info("-" * 64)
     loggerObj.info("Host machine info")
-    loggerObj.info("-"*64)
+    loggerObj.info("-" * 64)
     hostMachineInfo = CAN.get_host_machine_info()
     for line in hostMachineInfo.__str__().split("\n"):
         loggerObj.info(line)
-    loggerObj.info("-"*64)
+    loggerObj.info("-" * 64)
     loggerObj.info("Channel info")
-    loggerObj.info("-"*64)
+    loggerObj.info("-" * 64)
     channelInfo = bus.get_channel_info()
     for line in channelInfo.__str__().split("\n"):
         loggerObj.info(line)
@@ -118,7 +120,8 @@ def main(arguments):
         except KeyboardInterrupt:
             endTime = datetime.datetime.now()
             break
-    log_xml_tree = CAN.create_log_xml_tree(hostMachineInfo, channelInfo, startTime, endTime, msgList)
+    log_xml_tree = CAN.create_log_xml_tree(hostMachineInfo, channelInfo,
+      startTime, endTime, msgList)
     xmlFile.write("%s" % log_xml_tree.toprettyxml())
     xmlFile.close()
 
