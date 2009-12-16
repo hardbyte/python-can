@@ -21,13 +21,14 @@ def _get_canlib():
     Returns: an object representing the CANLIB driver library, depending on the
     operating system pycanlib is running on.
     """
-    canlib_dict = {"win32": (ctypes.WinDLL, "canlib32.dll"),
-                  "posix": (ctypes.CDLL, "libcanlib.so")}
-
-    library_constructor = canlib_dict[sys.platform][0]
-    library_name = canlib_dict[sys.platform][1]
-    return library_constructor(library_name)
-
+    if sys.platform == "cli":#for IronPython
+        return ctypes.cdll.canlib32
+    else:
+        canlib_dict = {"win32": (ctypes.WinDLL, "canlib32.dll"),
+                      "posix": (ctypes.CDLL, "libcanlib.so")}
+        library_constructor = canlib_dict[sys.platform][0]
+        library_name = canlib_dict[sys.platform][1]
+        return library_constructor(library_name)
 
 class CANLIBError(Exception):
     """
@@ -843,8 +844,16 @@ class c_kvCallback(ctypes.c_void_p):
     """
     pass
 
+#if sys.platform == "cli":
+#    #IronPython being different again for the sake of it
+#    CALLBACKFUNC = ctypes.CFUNCTYPE(canstat.c_canStatus, ctypes.c_int, ctypes.c_int)
+#else:
 CALLBACKFUNC = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_int)
-NULL_CALLBACK = ctypes.cast(None, CALLBACKFUNC)
+if sys.platform == "cli":
+    NULL_CALLBACK = ctypes.byref(None)
+else:
+    NULL_CALLBACK = ctypes.cast(None, CALLBACKFUNC)
+
 
 kvSetNotifyCallback = _get_canlib().kvSetNotifyCallback
 kvSetNotifyCallback.argtypes = [ctypes.c_int, c_kvCallback, ctypes.c_void_p,

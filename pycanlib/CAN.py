@@ -380,7 +380,8 @@ class MessageList(object):
     can't handle this properly (yet - **TO-DO**).
     """
 
-    def __init__(self, xml=None, messages=[], filter_criteria=None):
+    def __init__(self, xml=None, messages=[], filter_criteria=None,
+      message_type="CAN"):
         """
         Constructor: MessageList
         
@@ -393,10 +394,14 @@ class MessageList(object):
               to the messages in this MessageList. **TO-DO:** define this
               better, probably in terms of message types and device IDs
               included and excluded
+            message_type (optional, default="CAN"): type of messages contained in
+              this list. May be either "CAN", for a simple CAN protocol, or the name
+              of any CAN-based higher level protocol.
         """
         if xml is None:
             self.messages = messages
             self.filter_criteria = filter_criteria
+            self.message_type = message_type
         else:
             if xml.nodeName != self.__class__.__name__:
                 raise InvalidMessageParameterError("xml", xml,
@@ -413,6 +418,8 @@ class MessageList(object):
         retval += "\nMessage List\n"
         retval += "-"*len("Message List")
         retval += "\n"
+        retval += "Filter criteria: %s" % self.filter_criteria
+        retval += "Message type: %s" % self.message_type
         for _msg in self.messages:
             retval += "%s\n" % _msg
         return retval
@@ -425,6 +432,11 @@ class MessageList(object):
           self.filter_criteria)
         _filter_criteria_element.appendChild(_filter_criteria_node)
         retval.appendChild(_filter_criteria_element)
+        _message_type_element = _document.createElement("message_type")
+        _message_type_node = _document.createTextNode("%s" %
+          self.message_type)
+        _message_type_element.appendChild(_message_type_node)
+        retval.appendChild(_message_type_element)
         _message_list_element = _document.createElement("messages")
         for _msg in self.messages:
             _message_list_element.appendChild(_msg.to_xml())
