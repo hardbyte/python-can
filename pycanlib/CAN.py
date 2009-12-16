@@ -420,15 +420,15 @@ class MessageList(object):
     def to_xml(self):
         _document = minidom.Document()
         retval = _document.createElement(self.__class__.__name__)
-        _message_list_element = _document.createElement("messages")
-        for _msg in self.messages:
-            _message_list_element.appendChild(_msg.to_xml())
-        retval.appendChild(_message_list_element)
         _filter_criteria_element = _document.createElement("filter_criteria")
         _filter_criteria_node = _document.createTextNode("%s" %
           self.filter_criteria)
         _filter_criteria_element.appendChild(_filter_criteria_node)
         retval.appendChild(_filter_criteria_element)
+        _message_list_element = _document.createElement("messages")
+        for _msg in self.messages:
+            _message_list_element.appendChild(_msg.to_xml())
+        retval.appendChild(_message_list_element)
         return retval
 
 

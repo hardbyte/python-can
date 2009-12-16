@@ -64,6 +64,8 @@ def SetupLogging(logFilePath, logFileNameBase):
     xmlLogFilePath = os.path.join(os.path.expanduser("~"),
       "%s" % logFilePath, "%s_%s_%s.xml" % (logFileNameBase,
       _dateString, _timeString))
+    if not os.path.exists(os.path.dirname(xmlLogFilePath)):
+        os.makedirs(os.path.dirname(xmlLogFilePath))
     xmlFile = open(xmlLogFilePath, "w")
     _logFormatter = logging.Formatter("%(message)s")
     _formatString = "%(name)s - %(asctime)s - %(levelname)s - %(message)s"
