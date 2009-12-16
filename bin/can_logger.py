@@ -61,12 +61,6 @@ def SetupLogging(logFilePath, logFileNameBase):
     _logTimestamp = datetime.datetime.now()
     _dateString = _logTimestamp.strftime("%Y%m%d")
     _timeString = _logTimestamp.strftime("%H%M%S")
-    fullLogFilePath = os.path.join(os.path.expanduser("~"),
-      "%s" % logFilePath, "%s_%s_%s.log" % (logFileNameBase,
-      _dateString, _timeString))
-    if not os.path.isdir(os.path.dirname(fullLogFilePath)):
-        os.makedirs(os.path.dirname(fullLogFilePath))
-    _logFileHandler = logging.FileHandler(fullLogFilePath, mode="w")
     xmlLogFilePath = os.path.join(os.path.expanduser("~"),
       "%s" % logFilePath, "%s_%s_%s.xml" % (logFileNameBase,
       _dateString, _timeString))
@@ -76,7 +70,6 @@ def SetupLogging(logFilePath, logFileNameBase):
     _logFormatter2 = logging.Formatter(_formatString)
     _logStreamHandler.setFormatter(_logFormatter)
     _logStreamHandler2.setFormatter(_logFormatter2)
-    _logFileHandler.setFormatter(_logFormatter)
     loggerObj.addHandler(_logStreamHandler)
     handleLogger = logging.getLogger("pycanlib.CAN._Handle")
     handleLogger.setLevel(logging.WARNING)
