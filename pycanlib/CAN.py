@@ -151,6 +151,11 @@ class XMLObject(object):
                     self.__dict__[_attr_name] = eval(_attr_val)
                 except (NameError, SyntaxError):
                     self.__dict__[_attr_name] = _attr_val
+            if len(xml.childNodes) > 0:
+                if self.__class__.__name__ is "MessageList":
+                    self.messages = []
+                    for _node in xml.childNodes:
+                        self.messages.append(Message(_node))
 
     def to_xml(self):
         """
@@ -183,9 +188,15 @@ class XMLObject(object):
         """
         _document = minidom.Document()
         retval = _document.createElement(self.__class__.__name__)
-        XML_OBJECT_CLASS_LOGGER.debug("in XMLObject.to_xml() - %s" % self.__dict__)
+        XML_OBJECT_CLASS_LOGGER.debug("in XMLObject.to_xml() - %s" %
+          self.__dict__)
         for (_var_name, _var_value) in self.__dict__.items():
-            retval.setAttribute(_var_name, "%s" % _var_value)
+            if (self.__class__.__name__ is "MessageList") and (_var_name
+              is "messages"):
+                for _message in _var_value:
+                    retval.appendChild(_message.to_xml())
+            else:
+                retval.setAttribute(_var_name, "%s" % _var_value)
         return retval
 
 
@@ -359,7 +370,7 @@ class InfoMessage(LogMessage):
         return retval
 
 
-class MessageList(object):
+class MessageList(XMLObject):
     """
     Class: MessageList
     
@@ -393,48 +404,29 @@ class MessageList(object):
             name (optional, default="default"): name of this message list, used to
               distinguish between message lists in XML and TDV log files
         """
+        XMLObject.__init__(self, xml)
         if xml is None:
             self.messages = messages
             self.filter_criteria = filter_criteria
             self.message_type = message_type
             self.name = name
-        else:
-            if xml.nodeName != self.__class__.__name__:
-                raise InvalidMessageParameterError("xml", xml,
-                  ("XML fragment does not represent an object of type %s" %
-                  self.__class__.__name__))
-            else:
-                self.filter_criteria = xml.getAttribute("filter_criteria")
-                self.message_type = xml.getAttribute("message_type")
-                self.name = xml.getAttribute("name")
-                self.messages = []
-                _msg_element = xml.getElementsByTagName("messages")[0]
-                for _msg in _msg_element.getElementsByTagName("Message"):
-                    self.messages.append(Message(xml=_msg))
+            self.start_timestamp = self.messages[0].timestamp
+            self.end_timestamp = self.messages[len(self.messages)-1].timestamp
 
     def __str__(self):
         _header_str = "Message List '%s'"
-        _header_str += " (filter criteria = '%s', message type = '%s')"
-        _header_str = _header_str % (self.name, self.filter_criteria,
-          self.message_type)
+        _header_str = _header_str % self.name
         retval = "-"*len(_header_str)
         retval += "\n%s\n" % _header_str
         retval += "-"*len(_header_str)
         retval += "\n"
+        retval += "Applied filters: %s\n" % self.filter_criteria
+        retval += "Message type: %s\n" % self.message_type
+        retval += "Start timestamp = %f\n" % self.start_timestamp
+        retval += "End timestamp = %f\n" % self.end_timestamp
         for _msg in self.messages:
             retval += "%s\n" % _msg
         return retval
-
-    def to_xml(self):
-        _document = minidom.Document()
-        retval = _document.createElement(self.__class__.__name__)
-        for (_var_name, _var_value) in self.__dict__.items():
-            if _var_name is not "messages":
-                retval.setAttribute(_var_name, "%s" % _var_value)
-        for _msg in self.messages:
-            retval.appendChild(_msg.to_xml())
-        return retval
-
 
 READ_HANDLE_REGISTRY = {}
 WRITE_HANDLE_REGISTRY = {}
@@ -1108,8 +1100,8 @@ class LogInfo(XMLObject):
     """
 
     def __init__(self, xml=None, log_start_time=None, log_end_time=None,
-      original_file_name="default_file_name.log",
-      test_location="default test location", tester_name="default tester name"):
+      original_file_name="default.xml",
+      test_location="default", tester_name="default"):
         XMLObject.__init__(self, xml)
         if xml is None:
             self.log_start_time = log_start_time
