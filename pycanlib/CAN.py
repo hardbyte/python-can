@@ -377,11 +377,7 @@ class MessageList(XMLObject):
     Class representing a list of messages. This class is used to define the
     filter criteria applied to a given section of a CAN traffic log.
     
-    Parent class: object
-    
-    **Note:** MessageList is not a subclass of XMLObject because it contains a
-    list of messages, which are themselves subclasses of XMLObject. XMLObject
-    can't handle this properly (yet - **TO-DO**).
+    Parent class: XMLObject
     """
 
     def __init__(self, xml=None, messages=[], filter_criteria=None,
