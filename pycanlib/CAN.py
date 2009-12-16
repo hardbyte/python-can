@@ -146,15 +146,11 @@ class XMLObject(object):
                 raise InvalidMessageParameterError("xml", xml,
                   ("XML fragment does not represent an object of type %s" %
                   self.__class__.__name__))
-            for _child_node in xml.childNodes:
-                _var_name = _child_node.nodeName
-                _var_value = _child_node.childNodes[0].nodeValue
+            for (_attr_name, _attr_val) in xml.attributes.items():
                 try:
-                    self.__dict__[_var_name] = eval(_var_value)
-                except NameError:
-                    self.__dict__[_var_name] = _var_value
-                except SyntaxError:
-                    self.__dict__[_var_name] = _var_value
+                    self.__dict__[_attr_name] = eval(_attr_val)
+                except (NameError, SyntaxError):
+                    self.__dict__[_attr_name] = _attr_val
 
     def to_xml(self):
         """
@@ -189,10 +185,7 @@ class XMLObject(object):
         retval = _document.createElement(self.__class__.__name__)
         XML_OBJECT_CLASS_LOGGER.debug("in XMLObject.to_xml() - %s" % self.__dict__)
         for (_var_name, _var_value) in self.__dict__.items():
-            _element = _document.createElement(_var_name)
-            _content_node = _document.createTextNode("%s" % _var_value)
-            _element.appendChild(_content_node)
-            retval.appendChild(_element)
+            retval.setAttribute(_var_name, "%s" % _var_value)
         return retval
 
 
@@ -381,7 +374,7 @@ class MessageList(object):
     """
 
     def __init__(self, xml=None, messages=[], filter_criteria=None,
-      message_type="CAN"):
+      message_type="CAN", name="default"):
         """
         Constructor: MessageList
         
@@ -397,29 +390,37 @@ class MessageList(object):
             message_type (optional, default="CAN"): type of messages contained in
               this list. May be either "CAN", for a simple CAN protocol, or the name
               of any CAN-based higher level protocol.
+            name (optional, default="default"): name of this message list, used to
+              distinguish between message lists in XML and TDV log files
         """
         if xml is None:
             self.messages = messages
             self.filter_criteria = filter_criteria
             self.message_type = message_type
+            self.name = name
         else:
             if xml.nodeName != self.__class__.__name__:
                 raise InvalidMessageParameterError("xml", xml,
                   ("XML fragment does not represent an object of type %s" %
                   self.__class__.__name__))
             else:
+                self.filter_criteria = xml.getAttribute("filter_criteria")
+                self.message_type = xml.getAttribute("message_type")
+                self.name = xml.getAttribute("name")
                 self.messages = []
                 _msg_element = xml.getElementsByTagName("messages")[0]
                 for _msg in _msg_element.getElementsByTagName("Message"):
                     self.messages.append(Message(xml=_msg))
 
     def __str__(self):
-        retval = "-"*len("Message List")
-        retval += "\nMessage List\n"
-        retval += "-"*len("Message List")
+        _header_str = "Message List '%s'"
+        _header_str += " (filter criteria = '%s', message type = '%s')"
+        _header_str = _header_str % (self.name, self.filter_criteria,
+          self.message_type)
+        retval = "-"*len(_header_str)
+        retval += "\n%s\n" % _header_str
+        retval += "-"*len(_header_str)
         retval += "\n"
-        retval += "Filter criteria: %s" % self.filter_criteria
-        retval += "Message type: %s" % self.message_type
         for _msg in self.messages:
             retval += "%s\n" % _msg
         return retval
@@ -427,20 +428,11 @@ class MessageList(object):
     def to_xml(self):
         _document = minidom.Document()
         retval = _document.createElement(self.__class__.__name__)
-        _filter_criteria_element = _document.createElement("filter_criteria")
-        _filter_criteria_node = _document.createTextNode("%s" %
-          self.filter_criteria)
-        _filter_criteria_element.appendChild(_filter_criteria_node)
-        retval.appendChild(_filter_criteria_element)
-        _message_type_element = _document.createElement("message_type")
-        _message_type_node = _document.createTextNode("%s" %
-          self.message_type)
-        _message_type_element.appendChild(_message_type_node)
-        retval.appendChild(_message_type_element)
-        _message_list_element = _document.createElement("messages")
+        for (_var_name, _var_value) in self.__dict__.items():
+            if _var_name is not "messages":
+                retval.setAttribute(_var_name, "%s" % _var_value)
         for _msg in self.messages:
-            _message_list_element.appendChild(_msg.to_xml())
-        retval.appendChild(_message_list_element)
+            retval.appendChild(_msg.to_xml())
         return retval
 
 
@@ -1133,7 +1125,7 @@ class LogInfo(XMLObject):
         retval += "\n"
         retval += "Start time: %s\n" % self.log_start_time
         retval += "End time: %s\n" % self.log_end_time
-        retval += "Original file name: %s\n" % self.original_file_name
+        retval += "Original XML file name: %s\n" % self.original_file_name
         retval += "Test Location: %s\n" % self.test_location
         retval += "Tester name: %s\n" % self.tester_name
         retval += "\n"
