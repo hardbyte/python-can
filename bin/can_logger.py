@@ -80,23 +80,17 @@ def SetupLogging(logFilePath, logFileNameBase):
     messageLogger = logging.getLogger("pycanlib.CAN.Message")
     messageLogger.setLevel(logging.WARNING)
     messageLogger.addHandler(_logStreamHandler2)
-    return loggerObj, xmlFile, _logTimestamp
+    return loggerObj, xmlFile, _logTimestamp, os.path.basename(xmlLogFilePath)
 
 
 def main(arguments):
     (options, args) = ParseArguments(arguments)
     bus = CreateBusObject(options)
-    (loggerObj, xmlFile, startTime) = SetupLogging(options.logFilePath,
+    (loggerObj, xmlFile, startTime, xmlFileName) = SetupLogging(options.logFilePath,
       options.logFileNameBase)
-    loggerObj.info("-" * 64)
-    loggerObj.info("Host machine info")
-    loggerObj.info("-" * 64)
     hostMachineInfo = CAN.get_host_machine_info()
     for line in hostMachineInfo.__str__().split("\n"):
         loggerObj.info(line)
-    loggerObj.info("-" * 64)
-    loggerObj.info("Channel info")
-    loggerObj.info("-" * 64)
     channelInfo = bus.get_channel_info()
     for line in channelInfo.__str__().split("\n"):
         loggerObj.info(line)
@@ -112,8 +106,11 @@ def main(arguments):
         except KeyboardInterrupt:
             endTime = datetime.datetime.now()
             break
-    log_xml_tree = CAN.create_log_xml_tree(hostMachineInfo, channelInfo,
-      startTime, endTime, msgList)
+    logInfo = CAN.LogInfo(log_start_time=startTime,
+      log_end_time=datetime.datetime.now(), original_file_name=xmlFileName,
+      tester_name=os.getenv("USERNAME"))
+    log_xml_tree = CAN.create_log_xml_tree(hostMachineInfo, logInfo,
+      channelInfo, [CAN.MessageList(messages=msgList)])
     xmlFile.write("%s" % log_xml_tree.toprettyxml())
     xmlFile.close()
 

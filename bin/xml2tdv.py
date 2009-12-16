@@ -11,13 +11,19 @@ def _convert_xml_to_tdv(xml_doc):
         _machine_info = xml_doc.getElementsByTagName("MachineInfo")[0]
         retval += "%s" % CAN.MachineInfo(xml=_machine_info)
     else:
-        raise Exception("Log documents must have exactly one MachineInfo element")
+        raise Exception("Logs must have exactly one MachineInfo element")
+    if len(xml_doc.getElementsByTagName("LogInfo")) == 1:
+        _log_info = xml_doc.getElementsByTagName("LogInfo")[0]
+        retval += "%s" % CAN.LogInfo(xml=_log_info)
+    else:
+        raise Exception("Logs must have exactly one LogInfo element")
     if len(xml_doc.getElementsByTagName("ChannelInfo")) == 1:
         _channel_info = xml_doc.getElementsByTagName("ChannelInfo")[0]
         retval += "%s" % CAN.ChannelInfo(xml=_channel_info)
     else:
-        raise Exception("Log documents must have exactly one ChannelInfo element")
-    retval += "\n".join([CAN.Message(xml=_msg).__str__() for _msg in xml_doc.getElementsByTagName("Message")])
+        raise Exception("Logs must have exactly one ChannelInfo element")
+    for _msg_list in xml_doc.getElementsByTagName("MessageList"):
+        retval += "%s" % CAN.MessageList(xml=_msg_list)
     return retval
 
 

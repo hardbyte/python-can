@@ -366,6 +366,72 @@ class InfoMessage(LogMessage):
         return retval
 
 
+class MessageList(object):
+    """
+    Class: MessageList
+    
+    Class representing a list of messages. This class is used to define the
+    filter criteria applied to a given section of a CAN traffic log.
+    
+    Parent class: object
+    
+    **Note:** MessageList is not a subclass of XMLObject because it contains a
+    list of messages, which are themselves subclasses of XMLObject. XMLObject
+    can't handle this properly (yet - **TO-DO**).
+    """
+
+    def __init__(self, xml=None, messages=[], filter_criteria=None):
+        """
+        Constructor: MessageList
+        
+        Parameters:
+            xml (optional, default=None): XML fragment used to reconstruct
+              this MessageList object.
+            messages (optional, default=[]): list of CAN.Message objects to be
+              included in this MessageList object.
+            filter_criteria (optional, default=None): filter criteria applied
+              to the messages in this MessageList. **TO-DO:** define this
+              better, probably in terms of message types and device IDs
+              included and excluded
+        """
+        if xml is None:
+            self.messages = messages
+            self.filter_criteria = filter_criteria
+        else:
+            if xml.nodeName != self.__class__.__name__:
+                raise InvalidMessageParameterError("xml", xml,
+                  ("XML fragment does not represent an object of type %s" %
+                  self.__class__.__name__))
+            else:
+                self.messages = []
+                _msg_element = xml.getElementsByTagName("messages")[0]
+                for _msg in _msg_element.getElementsByTagName("Message"):
+                    self.messages.append(Message(xml=_msg))
+
+    def __str__(self):
+        retval = "-"*len("Message List")
+        retval += "\nMessage List\n"
+        retval += "-"*len("Message List")
+        retval += "\n"
+        for _msg in self.messages:
+            retval += "%s\n" % _msg
+        return retval
+
+    def to_xml(self):
+        _document = minidom.Document()
+        retval = _document.createElement(self.__class__.__name__)
+        _message_list_element = _document.createElement("messages")
+        for _msg in self.messages:
+            _message_list_element.appendChild(_msg.to_xml())
+        retval.appendChild(_message_list_element)
+        _filter_criteria_element = _document.createElement("filter_criteria")
+        _filter_criteria_node = _document.createTextNode("%s" %
+          self.filter_criteria)
+        _filter_criteria_element.appendChild(_filter_criteria_node)
+        retval.appendChild(_filter_criteria_element)
+        return retval
+
+
 READ_HANDLE_REGISTRY = {}
 WRITE_HANDLE_REGISTRY = {}
 
@@ -1028,6 +1094,40 @@ class ChannelInfo(XMLObject):#pragma: no cover
         return retval
 
 
+class LogInfo(XMLObject):
+    """
+    Class: LogInfo
+
+    Container class for information about a message log
+
+    Parent class: XMLObject
+    """
+
+    def __init__(self, xml=None, log_start_time=None, log_end_time=None,
+      original_file_name="default_file_name.log",
+      test_location="default test location", tester_name="default tester name"):
+        XMLObject.__init__(self, xml)
+        if xml is None:
+            self.log_start_time = log_start_time
+            self.log_end_time = log_end_time
+            self.original_file_name = original_file_name
+            self.test_location = test_location
+            self.tester_name = tester_name
+
+    def __str__(self):
+        retval = "-"*len("Log Info")
+        retval += "\nLog Info\n"
+        retval += "-"*len("Log Info")
+        retval += "\n"
+        retval += "Start time: %s\n" % self.log_start_time
+        retval += "End time: %s\n" % self.log_end_time
+        retval += "Original file name: %s\n" % self.original_file_name
+        retval += "Test Location: %s\n" % self.test_location
+        retval += "Tester name: %s\n" % self.tester_name
+        retval += "\n"
+        return retval
+
+
 class MachineInfo(XMLObject):
     """
     Class: MachineInfo
@@ -1104,45 +1204,32 @@ def get_canlib_info():#pragma: no cover
     return "%d.%d%s" % (_major_ver_no, _minor_ver_no, _minor_ver_letter)
 
 
-def create_log_xml_tree(host_info, channel_info, start_time, end_time,
-  msg_list):
+def create_log_xml_tree(host_info, log_info, channel_info, msg_lists):
     """
     Method: create_log_xml_tree
 
     Given a list of messages, information about the host machine and CANLIB
-    channel, and a log start and end time, this function creates an XML tree
-    representing all of this data.
+    channel, and information about the log itself (such as start and end
+    time, test location, etc.), this function creates an XML tree representing
+    all of this data.
     
     Parameters:
         host_info: a MachineInfo object containing information about the host
           machine
+        log_info: a LogInfo object containing information about the log file
         channel_info: a ChannelInfo object containing information about the
           CANLIB channel messages were recorded on
-        start_time: a datetime.datetime object (e.g. from
-          datetime.datetime.now()) representing the time logging was started
-        end_time: a datetime.datetime object (e.g. from
-          datetime.datetime.now()) representing the time logging ended
-        msg_list: a list of the CAN.Message objects, representing the messages
-          logged on the channel provided between start_time and end_time
+        msg_lists: a list of CAN.MessageList objects, representing lists of the
+          messages logged on the channel provided between start_time and
+          end_time. See CAN.MessageList for more information.
     """
     retval = minidom.Document()
     _log_element = retval.createElement("pycanlib_log")
     _log_element.appendChild(host_info.to_xml())
+    _log_element.appendChild(log_info.to_xml())
     _log_element.appendChild(channel_info.to_xml())
-    _log_info_element = retval.createElement("log_info")
-    _log_start_time_element = retval.createElement("log_start_time")
-    _log_start_time_text = retval.createTextNode("%s" % start_time)
-    _log_start_time_element.appendChild(_log_start_time_text)
-    _log_info_element.appendChild(_log_start_time_element)
-    _log_end_time_element = retval.createElement("log_end_time")
-    _log_end_time_text = retval.createTextNode("%s" % end_time)
-    _log_end_time_element.appendChild(_log_end_time_text)
-    _log_info_element.appendChild(_log_end_time_element)
-    _log_element.appendChild(_log_info_element)
-    _log_messages_element = retval.createElement("messages")
-    for _message in msg_list:
-        _log_messages_element.appendChild(_message.to_xml())
-    _log_element.appendChild(_log_messages_element)
+    for _msg_list in msg_lists:
+        _log_element.appendChild(_msg_list.to_xml())
     retval.appendChild(_log_element)
     return retval
 
