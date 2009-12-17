@@ -21,20 +21,21 @@ def _get_canlib():
     Returns: an object representing the CANLIB driver library, depending on the
     operating system pycanlib is running on.
     """
-    if sys.platform == "cli":#for IronPython
-        return ctypes.cdll.canlib32
-    else:
-        canlib_dict = {"win32": (ctypes.WinDLL, "canlib32.dll"),
-                      "posix": (ctypes.CDLL, "libcanlib.so")}
-        library_constructor = canlib_dict[sys.platform][0]
-        library_name = canlib_dict[sys.platform][1]
-        return library_constructor(library_name)
+    #win32 = CPython on Windows
+    #cli = IronPython on Windows
+    #posix = CPython on *nix
+    canlib_dict = {"win32": (ctypes.WinDLL, "canlib32.dll"),
+                  "cli": (ctypes.CDLL, "canlib32.dll"),
+                  "posix": (ctypes.CDLL, "libcanlib.so")}
+    library_constructor = canlib_dict[sys.platform][0]
+    library_name = canlib_dict[sys.platform][1]
+    return library_constructor(library_name)
 
 class CANLIBError(Exception):
     """
     Class: CANLIBError
     
-    Object used to represent errors indicated by a CANLIB functions.
+    Object used to represent errors indicated by CANLIB functions.
     
     Parent class: Exception
     """
