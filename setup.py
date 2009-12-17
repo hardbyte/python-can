@@ -27,5 +27,6 @@ if __name__ == "__main__":
         packages=find_packages(exclude=["test"]),
         package_data={"pycanlib": ["version.txt"]},
         scripts=["./bin/can_logger.py", "./bin/xml2tdv.py",
+          "./bin/ipy_profile_pycanlib.py",
           "./examples/getchanneldata.py"],
     )
