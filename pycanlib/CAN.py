@@ -44,7 +44,7 @@ try:
                               "version.txt"), "r")
     __version__ = VERSION_NUMBER_FILE.readline()
     VERSION_NUMBER_FILE.close()
-except IOError as read_error:#pragma: no cover
+except IOError as read_error:
     print read_error
     __version__ = "UNKNOWN"
 
@@ -428,7 +428,7 @@ READ_HANDLE_REGISTRY = {}
 WRITE_HANDLE_REGISTRY = {}
 
 
-def _receive_callback(handle):#pragma: no cover
+def _receive_callback(handle):
     """
     Method: _receive_callback
 
@@ -518,7 +518,7 @@ class _Handle(object):
             if open_channel_error.error_code == canstat.canERR_NOTFOUND:
                 raise InvalidBusParameterError("flags", flags,
                   "no hardware is available that has all these capabilities")
-            else:#pragma: no cover
+            else:
                 raise open_channel_error
         self.listeners = []
         self.tx_queue = Queue.Queue(0)
@@ -557,7 +557,7 @@ class _Handle(object):
             self.writing = True
             try:
                 _to_send = self.tx_queue.get_nowait()
-            except Queue.Empty:#pragma: no cover
+            except Queue.Empty:
                 #this part of transmit_callback executes when CANLIB fires the
                 #transmit callback event for this handle, but coverage isn't
                 #smart enough to figure this out, so it thinks it isn't called
@@ -591,7 +591,7 @@ class _Handle(object):
             if _old_size == 0:
                 self.transmit_callback()
 
-    def receive_callback(self):#pragma: no cover
+    def receive_callback(self):
         """
         Method: receive_callback
 
@@ -667,7 +667,7 @@ class _Handle(object):
         """
         return canlib.canReadTimer(self._canlib_handle)
 
-    def get_receive_buffer_level(self):#pragma: no cover
+    def get_receive_buffer_level(self):
         """
         Method: get_receive_buffer_level
 
@@ -696,7 +696,7 @@ class _Handle(object):
           canlib.canIOCTL_GET_TX_BUFFER_LEVEL, ctypes.byref(tx_level), 4)
         return tx_level.value
 
-    def get_device_description(self):#pragma: no cover
+    def get_device_description(self):
         """
         Method: get_device_description
 
@@ -716,7 +716,7 @@ class _Handle(object):
           ctypes.c_size_t(MAX_DEVICE_DESCR_LENGTH))
         return _buffer.value
 
-    def get_device_manufacturer_name(self):#pragma: no cover
+    def get_device_manufacturer_name(self):
         """
         Method: get_device_manufacturer_name
 
@@ -736,7 +736,7 @@ class _Handle(object):
           ctypes.c_size_t(MAX_MANUFACTURER_NAME_LENGTH))
         return _buffer.value
 
-    def get_device_firmware_version(self):#pragma: no cover
+    def get_device_firmware_version(self):
         """
         Method: get_device_firmware_version
 
@@ -763,7 +763,7 @@ class _Handle(object):
         return "%d.%d.%d.%d" % (_version_number[0], _version_number[1],
           _version_number[2], _version_number[3])
 
-    def get_device_hardware_version(self):#pragma: no cover
+    def get_device_hardware_version(self):
         """
         Method: get_device_hardware_version
 
@@ -788,7 +788,7 @@ class _Handle(object):
             _version_number.append((_buffer[i + 1] << 8) + _buffer[i])
         return "%d.%d" % (_version_number[0], _version_number[1])
 
-    def get_device_card_serial(self):#pragma: no cover
+    def get_device_card_serial(self):
         """
         Method: get_device_card_serial
 
@@ -815,7 +815,7 @@ class _Handle(object):
             _serial_number += (_buffer[i] << (8 * i))
         return _serial_number
 
-    def get_device_transceiver_serial(self):#pragma: no cover
+    def get_device_transceiver_serial(self):
         """
         Method: get_device_transceiver_serial
 
@@ -842,7 +842,7 @@ class _Handle(object):
             serial_number += (_buffer[i] << (8 * i))
         return serial_number
 
-    def get_device_card_number(self):#pragma: no cover
+    def get_device_card_number(self):
         """
         Method: get_device_card_number
 
@@ -863,7 +863,7 @@ class _Handle(object):
           ctypes.c_size_t(4))
         return _buffer.value
 
-    def get_device_channel_on_card(self):#pragma: no cover
+    def get_device_channel_on_card(self):
         """
         Method: get_device_channel_on_card
 
@@ -886,7 +886,7 @@ class _Handle(object):
           ctypes.c_size_t(4))
         return _buffer.value
 
-    def get_device_transceiver_type(self):#pragma: no cover
+    def get_device_transceiver_type(self):
         """
         Method: get_device_transceiver_type
         
@@ -1019,7 +1019,7 @@ def _get_handle(channel_number, flags, registry):
     return handle
 
 
-class ChannelInfo(XMLObject):#pragma: no cover
+class ChannelInfo(XMLObject):
     """
     Class: ChannelInfo
 
@@ -1161,7 +1161,7 @@ class MachineInfo(XMLObject):
         return retval
 
 
-def get_host_machine_info():#pragma: no cover
+def get_host_machine_info():
     """
     Method: get_host_machine_info
 
@@ -1178,7 +1178,7 @@ def get_host_machine_info():#pragma: no cover
                        os_type=sys.platform)
 
 
-def get_canlib_info():#pragma: no cover
+def get_canlib_info():
     """
     Method: get_canlib_info
 
@@ -1381,7 +1381,7 @@ class Bus(object):
         """
         self.rx_queue.put_nowait(msg)
 
-    def _get_device_description(self):#pragma: no cover
+    def _get_device_description(self):
         """
         Method: _get_device_description
 
@@ -1390,7 +1390,7 @@ class Bus(object):
         """
         return self._read_handle.get_device_description()
 
-    def _get_device_manufacturer_name(self):#pragma: no cover
+    def _get_device_manufacturer_name(self):
         """
         Method: _get_device_manufacturer_name
 
@@ -1399,7 +1399,7 @@ class Bus(object):
         """
         return self._read_handle.get_device_manufacturer_name()
 
-    def _get_device_firmware_version(self):#pragma: no cover
+    def _get_device_firmware_version(self):
         """
         Method: _get_device_firmware_version
 
@@ -1408,7 +1408,7 @@ class Bus(object):
         """
         return self._read_handle.get_device_firmware_version()
 
-    def _get_device_hardware_version(self):#pragma: no cover
+    def _get_device_hardware_version(self):
         """
         Method: _get_device_hardware_version
 
@@ -1417,7 +1417,7 @@ class Bus(object):
         """
         return self._read_handle.get_device_hardware_version()
 
-    def _get_device_card_serial(self):#pragma: no cover
+    def _get_device_card_serial(self):
         """
         Method: _get_device_card_serial
 
@@ -1426,7 +1426,7 @@ class Bus(object):
         """
         return self._read_handle.get_device_card_serial()
 
-    def _get_device_transceiver_serial(self):#pragma: no cover
+    def _get_device_transceiver_serial(self):
         """
         Method: _get_device_transceiver_serial
 
@@ -1435,7 +1435,7 @@ class Bus(object):
         """
         return self._read_handle.get_device_transceiver_serial()
 
-    def _get_device_card_number(self):#pragma: no cover
+    def _get_device_card_number(self):
         """
         Method: _get_device_card_number
 
@@ -1444,7 +1444,7 @@ class Bus(object):
         """
         return self._read_handle.get_device_card_number()
 
-    def _get_device_channel_on_card(self):#pragma: no cover
+    def _get_device_channel_on_card(self):
         """
         Method: _get_device_channel_on_card
 
@@ -1453,7 +1453,7 @@ class Bus(object):
         """
         return self._read_handle.get_device_channel_on_card()
 
-    def _get_device_transceiver_type(self):#pragma: no cover
+    def _get_device_transceiver_type(self):
         """
         Method: _get_device_transceiver_type
 
@@ -1462,7 +1462,7 @@ class Bus(object):
         """
         return self._read_handle.get_device_transceiver_type()
 
-    def get_channel_info(self):#pragma: no cover
+    def get_channel_info(self):
         """
         Method: get_channel_info
 
@@ -1491,7 +1491,7 @@ class Bus(object):
         return self._read_handle.get_statistics()
 
 @atexit.register
-def _cleanup():#pragma: no cover
+def _cleanup():
     """
     Method: _cleanup
 
