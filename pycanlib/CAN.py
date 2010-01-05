@@ -40,12 +40,13 @@ MAX_TRANS_SN_LENGTH = 8
 TRANS_SN_ARRAY = ctypes.c_ubyte * MAX_TRANS_SN_LENGTH
 
 try:
+    CAN_MODULE_LOGGER.debug("Opening version.txt file to determine pycanlib version number")
     VERSION_NUMBER_FILE = open(os.path.join(os.path.dirname(__file__),
                               "version.txt"), "r")
     __version__ = VERSION_NUMBER_FILE.readline()
     VERSION_NUMBER_FILE.close()
-except IOError as read_error:
-    print read_error
+except IOError:
+    CAN_MODULE_LOGGER.error("Failed to get version information", exc_info=True)
     __version__ = "UNKNOWN"
 
 
@@ -401,13 +402,19 @@ class MessageList(XMLObject):
               distinguish between message lists in XML and TDV log files
         """
         XMLObject.__init__(self, xml)
+        if "messages" not in self.__dict__.keys():
+            self.messages = []
         if xml is None:
             self.messages = messages
             self.filter_criteria = filter_criteria
             self.message_type = message_type
             self.name = name
-            self.start_timestamp = self.messages[0].timestamp
-            self.end_timestamp = self.messages[len(self.messages)-1].timestamp
+            if len(self.messages) > 0:
+                self.start_timestamp = self.messages[0].timestamp
+                self.end_timestamp = self.messages[len(self.messages)-1].timestamp
+            else:
+                self.start_timestamp = 0
+                self.end_timestamp = 0
 
     def __str__(self):
         _header_str = "Message List '%s'"
@@ -465,11 +472,16 @@ def _transmit_callback(handle):
 
         handle - number of the CANLIB handle that generated the event.
     """
-    CAN_MODULE_LOGGER.debug("Entering _transmit_callback for handle %d" %
-                            handle)
-    if WRITE_HANDLE_REGISTRY[handle] != None:
-        WRITE_HANDLE_REGISTRY[handle].transmit_callback()
-    CAN_MODULE_LOGGER.debug("Leaving _transmit_callback for handle %d" % handle)
+    if handle in WRITE_HANDLE_REGISTRY.keys():
+        CAN_MODULE_LOGGER.debug("Entering _transmit_callback for handle %d" %
+                                handle)
+        if WRITE_HANDLE_REGISTRY[handle] != None:
+            WRITE_HANDLE_REGISTRY[handle].transmit_callback()
+        CAN_MODULE_LOGGER.debug("Leaving _transmit_callback for handle %d" % handle)
+    else:
+        _warn_msg = "Received transmit callback event for handle %d" % handle
+        _warn_msg += ", which is unknown to pycanlib"
+        CAN_MODULE_LOGGER.warning(_warn_msg)
     return 0
 
 
