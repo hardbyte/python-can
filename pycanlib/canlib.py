@@ -845,15 +845,8 @@ class c_kvCallback(ctypes.c_void_p):
     """
     pass
 
-#if sys.platform == "cli":
-#    #IronPython being different again for the sake of it
-#    CALLBACKFUNC = ctypes.CFUNCTYPE(canstat.c_canStatus, ctypes.c_int, ctypes.c_int)
-#else:
 CALLBACKFUNC = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_int)
-if sys.platform == "cli":
-    NULL_CALLBACK = ctypes.byref(None)
-else:
-    NULL_CALLBACK = ctypes.cast(None, CALLBACKFUNC)
+NULL_CALLBACK = ctypes.cast(None, CALLBACKFUNC)
 
 
 kvSetNotifyCallback = _get_canlib().kvSetNotifyCallback
