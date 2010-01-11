@@ -11,6 +11,20 @@ from xml.dom import minidom
 from pycanlib import CAN, canlib
 
 
+class _CANLoggerListener(object):
+
+    def __init__(self, logger_obj):
+        self.msg_list = []
+        self._logger_obj = logger_obj
+
+    def on_message_received(self, msg):
+        self._logger_obj.info(msg)
+        self.msg_list.append(msg)
+
+    def set_write_bus(self, bus):
+        pass
+
+
 def ParseArguments(arguments):
     parser = OptionParser(" ".join(arguments[1:]))
     parser.add_option("-c", "--channel", dest="channel",
@@ -90,6 +104,8 @@ def main(arguments):
     bus = CreateBusObject(options)
     (loggerObj, xmlFile, startTime, xmlFileName) = SetupLogging(options.logFilePath,
       options.logFileNameBase)
+    _logger_listener = _CANLoggerListener(loggerObj)
+    bus.add_listener(_logger_listener)
     hostMachineInfo = CAN.get_host_machine_info()
     for line in hostMachineInfo.__str__().split("\n"):
         loggerObj.info(line)
@@ -97,23 +113,22 @@ def main(arguments):
     for line in channelInfo.__str__().split("\n"):
         loggerObj.info(line)
     msgList = []
-    while True:
-        try:
-            msg = bus.read()
-            if msg != None:
-                loggerObj.info(msg)
-                msgList.append(msg)
-            else:
-                time.sleep(0.001)
-        except KeyboardInterrupt:
-            endTime = datetime.datetime.now()
-            break
+    i = 0
+    try:
+        while True:
+            time.sleep(0.001)
+    except KeyboardInterrupt:
+        bus.remove_listener(_logger_listener)
+        endTime = datetime.datetime.now()
     logInfo = CAN.LogInfo(log_start_time=startTime,
       log_end_time=datetime.datetime.now(), original_file_name=xmlFileName,
       tester_name=os.getenv("USERNAME"))
+    import pycallgraph
+    pycallgraph.start_trace()
     log_xml_tree = CAN.create_log_xml_tree(hostMachineInfo, logInfo,
-      channelInfo, [CAN.MessageList(messages=msgList)])
+      channelInfo, [CAN.MessageList(messages=_logger_listener.msg_list)])
     xmlFile.write("%s" % log_xml_tree.toprettyxml())
+    pycallgraph.make_dot_graph("can_logger_call_graph.png")
     xmlFile.close()
 
 if __name__ == "__main__":
