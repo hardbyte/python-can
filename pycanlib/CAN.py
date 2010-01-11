@@ -293,9 +293,13 @@ class Message(LogMessage):
                 raise InvalidMessageParameterError("device_id", device_id,
                   ("expected int; received '%s'" %
                   device_id.__class__.__name__))
-            if (device_id < 0) or device_id > ((2 ** 11) - 1):
+            if flags & canstat.canMSG_EXT:
+                _max_id_val = ((2 ** 29) - 1)#identifiers are 29 bits long
+            else:
+                _max_id_val = ((2 ** 11) - 1)#identifiers are 11 bits long
+            if (device_id < 0) or device_id > _max_id_val:
                 raise InvalidMessageParameterError("device_id", device_id,
-                  "device_id must be in range [0, 2**11-1]")
+                  "device_id must be in range [0, %d]" % _max_id_val)
             self.device_id = device_id
             if len(payload) > 8:
                 raise InvalidMessageParameterError("payload", payload,
@@ -327,7 +331,10 @@ class Message(LogMessage):
     def __str__(self):
         _field_strings = []
         _field_strings.append(LogMessage.__str__(self))
-        _field_strings.append("%.4x" % self.device_id)
+        if self.flags & canstat.canMSG_EXT:
+            _field_strings.append("%.8x" % self.device_id)
+        else:
+            _field_strings.append("%.4x" % self.device_id)
         _field_strings.append("%.4x" % self.flags)
         _field_strings.append("%d" % self.dlc)
         _data_strings = []
