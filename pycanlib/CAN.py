@@ -172,7 +172,7 @@ class XMLObject(object):
 
         Returns:
 
-            XML element representing this instance of LogMessage (or one of
+            XML element representing this instance of XMLObject (or one of
             its subclasses)
 
         Example:
@@ -293,11 +293,11 @@ class Message(LogMessage):
                 raise InvalidMessageParameterError("device_id", device_id,
                   ("expected int; received '%s'" %
                   device_id.__class__.__name__))
-            if device_id not in range(0, 2 ** 11):
+            if (device_id < 0) or device_id > ((2 ** 11) - 1):
                 raise InvalidMessageParameterError("device_id", device_id,
                   "device_id must be in range [0, 2**11-1]")
             self.device_id = device_id
-            if len(payload) not in range(0, 9):
+            if len(payload) > 8:
                 raise InvalidMessageParameterError("payload", payload,
                   "payload array length must be in range [0, 8]")
             for item in payload:
@@ -305,21 +305,21 @@ class Message(LogMessage):
                     raise InvalidMessageParameterError("payload", payload,
                       ("payload array must contain only integers; found '%s'" %
                       item.__class__.__name__))
-                if item not in range(0, 2 ** 8):
+                if (item < 0) or (item > ((2 ** 8) - 1)):
                     raise InvalidMessageParameterError("payload", payload,
                       "payload array element values must be in range [0, 2**8-1]")
             self.payload = payload
             if not isinstance(dlc, types.IntType):
                 raise InvalidMessageParameterError("dlc", dlc,
                   "expected int; received %s" % dlc.__class__.__name__)
-            if dlc not in range(0, 9):
+            if (dlc < 0) or (dlc > 8):
                 raise InvalidMessageParameterError("dlc", dlc,
                   "DLC value must be in range [0, 8]")
             self.dlc = dlc
             if not isinstance(flags, types.IntType):
                 raise InvalidMessageParameterError("flags", flags,
                   "expected int; received %s" % flags.__class__.__name__)
-            if flags not in range(0, 2 ** 16):
+            if (flags < 0) or (flags > ((2 ** 16) - 1)):
                 raise InvalidMessageParameterError("flags", flags,
                   "flags value must be in range [0, 2**16-1]")
             self.flags = flags
@@ -515,7 +515,7 @@ class _Handle(object):
         """
         _num_channels = ctypes.c_int(0)
         canlib.canGetNumberOfChannels(ctypes.byref(_num_channels))
-        if channel not in range(0, _num_channels.value):
+        if (channel < 0) or (channel > (_num_channels.value - 1)):
             raise InvalidBusParameterError("channel", channel,
               ("available channels on this system are in the range [0, %d]" %
               _num_channels.value))
@@ -627,9 +627,7 @@ class _Handle(object):
               ctypes.byref(_dlc), ctypes.byref(_flags),
               ctypes.byref(_timestamp))
             while _status.value == canstat.canOK:
-                _data_array = []
-                for _char in _data:
-                    _data_array.append(ord(_char))
+                _data_array = map(ord, _data)
                 HANDLE_CLASS_LOGGER.debug("Creating new Message object")
                 _rx_msg = Message(device_id=_device_id.value,
                                   payload=_data_array[:_dlc.value],
@@ -666,6 +664,20 @@ class _Handle(object):
             object as a parameter.
         """
         self.listeners.append(listener)
+
+    def remove_listener(self, listener):
+        """
+        Method: remove_listener
+
+        This method removes an existing listener from this _Handle object's
+        list of listener objects.
+
+        Parameters:
+
+            listener - listener to remove. Must already exist in this _Handle
+            object's list of listener objects.
+        """
+        self.listeners.remove(listener)
 
     def read_timer(self):
         """
@@ -1346,6 +1358,20 @@ class Bus(object):
         self._read_handle.add_listener(listener)
         listener.set_write_bus(self)
 
+    def remove_listener(self, listener):
+        """
+        Method: remove_listener
+
+        This method removes an existing listener from this _Handle object's
+        list of listener objects.
+
+        Parameters:
+
+            listener - listener to remove. Must have already been added to
+            this Bus object's list of listeners.
+        """
+        self._read_handle.remove_listener(listener)
+
     def write(self, msg):
         """
         Method: write
@@ -1501,6 +1527,7 @@ class Bus(object):
         for the CANLIB channel this Bus object is connected to.
         """
         return self._read_handle.get_statistics()
+
 
 @atexit.register
 def _cleanup():
