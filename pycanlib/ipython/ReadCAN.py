@@ -8,7 +8,7 @@ CAN traffic from a Kvaser CAN device.
 import ipipe
 import sys, time
 
-from pycanlib import CAN
+from pycanlib import CAN, canlib
 
 class ReadCAN(ipipe.Table):
     """
@@ -27,7 +27,8 @@ class ReadCAN(ipipe.Table):
         """
         ipipe.Table.__init__(None)
         self.bus = CAN.Bus(channel=channel, speed=speed, tseg1=tseg1, 
-          tseg2=tseg2, sjw=sjw, no_samp=no_samp)
+          tseg2=tseg2, sjw=sjw, no_samp=no_samp,
+          flags=canlib.canOPEN_ACCEPT_VIRTUAL)
 
     def __iter__(self):
         """Method: __iter__
