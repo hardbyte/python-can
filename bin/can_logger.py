@@ -4,6 +4,13 @@ import logging.handlers
 from optparse import OptionParser
 import os
 import os.path
+pycallgraphAvailable = True
+try:
+    import pycallgraph
+except ImportError:
+    print "Cannot import pycallgraph - call graphing function",
+    print "will not be available"
+    pycallgraphAvailable = False
 import sys
 import time
 from xml.dom import minidom
@@ -42,6 +49,9 @@ def ParseArguments(arguments):
     parser.add_option("-d", "--driverMode", dest="driverMode",
       help="Mode (silent/normal) for Kvaser CAN bus output driver",
       default="silent")
+    helpStr = "Generate call graph for this run of %s" % arguments[0]
+    parser.add_option("-g", "--callGraph", action="store_true",
+      default=False, dest="generateCallGraph", help=helpStr)
     _helpStr = "Base log file name, where log file names are"
     _helpStr += " <base>_<datestamp>_<timestamp>"
     parser.add_option("-l", "--logFileNameBase", dest="logFileNameBase",
@@ -123,12 +133,13 @@ def main(arguments):
     logInfo = CAN.LogInfo(log_start_time=startTime,
       log_end_time=datetime.datetime.now(), original_file_name=xmlFileName,
       tester_name=os.getenv("USERNAME"))
-    import pycallgraph
-    pycallgraph.start_trace()
+    if options.generateCallGraph and pycallgraphAvailable:
+        pycallgraph.start_trace()
     log_xml_tree = CAN.create_log_xml_tree(hostMachineInfo, logInfo,
       channelInfo, [CAN.MessageList(messages=_logger_listener.msg_list)])
     xmlFile.write("%s" % log_xml_tree.toprettyxml())
-    pycallgraph.make_dot_graph("can_logger_call_graph.png")
+    if options.generateCallGraph and pycallgraphAvailable:
+        pycallgraph.make_dot_graph("can_logger_call_graph.png")
     xmlFile.close()
 
 if __name__ == "__main__":
