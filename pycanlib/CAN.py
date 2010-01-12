@@ -998,7 +998,7 @@ class BusStatistics(XMLObject):
               (represented as an integer between 0 and 10000, where 0 = 0.00%
               and 10000 = 100.00%)
         """
-        XMLObject.__init__(self)
+        XMLObject.__init__(self, xml)
         self.std_data = std_data
         self.std_remote = std_remote
         self.ext_data = ext_data
@@ -1006,6 +1006,16 @@ class BusStatistics(XMLObject):
         self.err_frame = err_frame
         self.bus_load = float(bus_load)/100
         self.overruns = overruns
+
+    def __str__(self):
+        retval = "Standard data frames received: %d\n" % self.std_data
+        retval += "Standard remote frames received: %d\n" % self.std_remote
+        retval += "Extended data frames received: %d\n" % self.ext_data
+        retval += "Extended remote frames received: %d\n" % self.ext_remote
+        retval += "Error frames received: %d\n" % self.err_frame
+        retval += "Bus traffic load: %f%%\n" % self.bus_load
+        retval += "Overruns: %d\n" % self.overruns
+        return retval
 
 
 def _get_handle(channel_number, flags, registry):
