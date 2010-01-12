@@ -243,6 +243,20 @@ class LogMessage(XMLObject):
                   _bad_timestamp_error)
                 raise _bad_timestamp_error
             self.timestamp = timestamp
+        else:
+            if not isinstance(self.timestamp, (types.FloatType, types.IntType)):
+                _bad_timestamp_error = InvalidMessageParameterError("timestamp",
+                  self.timestamp, ("expected float or int; received '%s'" %
+                  self.timestamp.__class__.__name__))
+                LOG_MESSAGE_CLASS_LOGGER.debug("LogMessage.__init__: %s" %
+                  _bad_timestamp_error)
+                raise _bad_timestamp_error
+            if timestamp < 0:
+                _bad_timestamp_error = InvalidMessageParameterError("timestamp",
+                  self.timestamp, "timestamp value must be positive")
+                LOG_MESSAGE_CLASS_LOGGER.debug("LogMessage.__init__: %s" %
+                  _bad_timestamp_error)
+                raise _bad_timestamp_error
         _finish_msg = "LogMessage.__init__ completed successfully"
         LOG_MESSAGE_CLASS_LOGGER.debug(_finish_msg)
 
@@ -327,6 +341,41 @@ class Message(LogMessage):
                 raise InvalidMessageParameterError("flags", flags,
                   "flags value must be in range [0, 2**16-1]")
             self.flags = flags
+        else:
+            if not isinstance(self.device_id, types.IntType):
+                raise InvalidMessageParameterError("device_id", self.device_id,
+                  ("expected int; received '%s'" %
+                  self.device_id.__class__.__name__))
+            if flags & canstat.canMSG_EXT:
+                _max_id_val = ((2 ** 29) - 1)#identifiers are 29 bits long
+            else:
+                _max_id_val = ((2 ** 11) - 1)#identifiers are 11 bits long
+            if (self.device_id < 0) or (self.device_id > _max_id_val):
+                raise InvalidMessageParameterError("device_id", self.device_id,
+                  "device_id must be in range [0, %d]" % _max_id_val)
+            if len(payload) > 8:
+                raise InvalidMessageParameterError("payload", payload,
+                  "payload array length must be in range [0, 8]")
+            for item in self.payload:
+                if not isinstance(item, types.IntType):
+                    raise InvalidMessageParameterError("payload", self.payload,
+                      ("payload array must contain only integers; found '%s'" %
+                      item.__class__.__name__))
+                if (item < 0) or (item > ((2 ** 8) - 1)):
+                    raise InvalidMessageParameterError("payload", self.payload,
+                      "payload array element values must be in range [0, 2**8-1]")
+            if not isinstance(self.dlc, types.IntType):
+                raise InvalidMessageParameterError("dlc", self.dlc,
+                  "expected int; received %s" % self.dlc.__class__.__name__)
+            if (self.dlc < 0) or (self.dlc > 8):
+                raise InvalidMessageParameterError("dlc", self.dlc,
+                  "DLC value must be in range [0, 8]")
+            if not isinstance(self.flags, types.IntType):
+                raise InvalidMessageParameterError("flags", self.flags,
+                  "expected int; received %s" % flags.__class__.__name__)
+            if (self.flags < 0) or (self.flags > ((2 ** 16) - 1)):
+                raise InvalidMessageParameterError("flags", self.flags,
+                  "flags value must be in range [0, 2**16-1]")
 
     def __str__(self):
         _field_strings = []
