@@ -962,13 +962,13 @@ class _Handle(object):
         _stat_struct = canlib.c_canBusStatistics()
         canlib.canGetBusStatistics(self._canlib_handle,
           ctypes.byref(_stat_struct), ctypes.c_uint(28))
-        return BusStatistics(_stat_struct.std_data,
-                             _stat_struct.std_remote,
-                             _stat_struct.ext_data,
-                             _stat_struct.ext_remote,
-                             _stat_struct.err_frame,
-                             _stat_struct.bus_load,
-                             _stat_struct.overruns)
+        return BusStatistics(std_data=_stat_struct.std_data,
+                             std_remote=_stat_struct.std_remote,
+                             ext_data=_stat_struct.ext_data,
+                             ext_remote=_stat_struct.ext_remote,
+                             err_frame=_stat_struct.err_frame,
+                             bus_load=_stat_struct.bus_load,
+                             overruns=_stat_struct.overruns)
 
 class BusStatistics(XMLObject):
     """
