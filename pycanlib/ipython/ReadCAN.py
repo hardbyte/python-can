@@ -27,8 +27,8 @@ class ReadCAN(ipipe.Table):
         """
         ipipe.Table.__init__(None)
         self.bus = CAN.Bus(channel=channel, speed=speed, tseg1=tseg1, 
-          tseg2=tseg2, sjw=sjw, no_samp=no_samp,
-          flags=canlib.canOPEN_ACCEPT_VIRTUAL)
+          tseg2=tseg2, sjw=sjw, no_samp=no_samp)
+        self.bus.enable_callback()
 
     def __iter__(self):
         """Method: __iter__
@@ -44,4 +44,5 @@ class ReadCAN(ipipe.Table):
                 else:
                     time.sleep(0.001)
             except KeyboardInterrupt:
+                self.bus.shutdown()
                 break
