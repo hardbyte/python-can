@@ -303,18 +303,7 @@ class Bus(object):
     def buffer_overruns(self):
         return self.__get_bus_statistics().overruns
 
-    @property
-    def device_info(self):
-        return DeviceInfo(self.__get_device_description(),
-                          self.__get_device_manufacturer_name(),
-                          self.__get_device_firmware_version(),
-                          self.__get_device_hardware_version(),
-                          self.__get_device_card_number(),
-                          self.__get_device_card_channel(),
-                          self.__get_device_card_serial(),
-                          self.__get_device_transceiver_serial(),
-                          self.__get_device_transceiver_type())
-
+########### Device information (read only) ############
     @property
     def device_description(self):
         _buffer = ctypes.create_string_buffer(MAX_DEVICE_DESCR_LENGTH)
@@ -498,13 +487,13 @@ class Bus(object):
         if msg_type == canlib.ACCEPTANCE_FILTER_TYPE_STD:
             self.__std_acceptance_code = value[0]
             self.__std_acceptance_mask = value[1]
-            canlib.canSetAcceptanceFilter(self.__handle, self.std_acceptance_code,
-              self.std_acceptance_mask, msg_type)
+            canlib.canSetAcceptanceFilter(self.__handle, self.std_acceptance_filter[0],
+              self.std_acceptance_filter[1], msg_type)
         else:
             self.__ext_acceptance_code = value[0]
             self.__ext_acceptance_mask = value[1]
-            canlib.canSetAcceptanceFilter(self.__handle, self.ext_acceptance_code,
-              self.ext_acceptance_mask, msg_type)
+            canlib.canSetAcceptanceFilter(self.__handle, self.ext_acceptance_filter[0],
+              self.ext_acceptance_filter[1], msg_type)
 
     def __update_bus_parameters(self):
         try:
