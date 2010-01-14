@@ -144,6 +144,7 @@ class Bus(object):
             self.__ctypes_callback = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_int, ctypes.c_void_p, ctypes.c_int)(self.__callback)
         canlib.canBusOn(self.__handle)
 
+############# Bus parameters (read/write) #############
     @property
     def channel(self):
         return self.__channel
@@ -278,6 +279,7 @@ class Bus(object):
     def ext_acceptance_filter(self, value):
         self.__set_acceptance_filter(value, canlib.ACCEPTANCE_FILTER_TYPE_EXT)
 
+############# Bus statistics (read only) ##############
     @property
     def bus_time(self):
         return (canlib.canReadTimer(self.__handle) / 100000.0)
@@ -301,6 +303,107 @@ class Bus(object):
     def buffer_overruns(self):
         return self.__get_bus_statistics().overruns
 
+    @property
+    def device_info(self):
+        return DeviceInfo(self.__get_device_description(),
+                          self.__get_device_manufacturer_name(),
+                          self.__get_device_firmware_version(),
+                          self.__get_device_hardware_version(),
+                          self.__get_device_card_number(),
+                          self.__get_device_card_channel(),
+                          self.__get_device_card_serial(),
+                          self.__get_device_transceiver_serial(),
+                          self.__get_device_transceiver_type())
+
+    @property
+    def device_description(self):
+        _buffer = ctypes.create_string_buffer(MAX_DEVICE_DESCR_LENGTH)
+        canlib.canGetChannelData(self.channel,
+          canlib.canCHANNELDATA_DEVDESCR_ASCII, ctypes.byref(_buffer),
+          ctypes.c_size_t(MAX_DEVICE_DESCR_LENGTH))
+        return _buffer.value
+
+    @property
+    def manufacturer_name(self):
+        _buffer = ctypes.create_string_buffer(MAX_MANUFACTURER_NAME_LENGTH)
+        canlib.canGetChannelData(self.channel,
+          canlib.canCHANNELDATA_MFGNAME_ASCII, ctypes.byref(_buffer),
+          ctypes.c_size_t(MAX_MANUFACTURER_NAME_LENGTH))
+        return _buffer.value
+
+    @property
+    def firmware_version(self):
+        _buffer = FW_VERSION_ARRAY()
+        canlib.canGetChannelData(self.channel,
+          canlib.canCHANNELDATA_CARD_FIRMWARE_REV, ctypes.byref(_buffer),
+          ctypes.c_size_t(MAX_FW_VERSION_LENGTH))
+        _version_number = []
+        for i in [6, 4, 0, 2]:
+            _version_number.append((_buffer[i + 1] << 8) + _buffer[i])
+        return "%d.%d.%d.%d" % (_version_number[0], _version_number[1],
+          _version_number[2], _version_number[3])
+
+    @property
+    def hardware_version(self):
+        _buffer = HW_VERSION_ARRAY()
+        canlib.canGetChannelData(self.channel,
+          canlib.canCHANNELDATA_CARD_HARDWARE_REV, ctypes.byref(_buffer),
+          ctypes.c_size_t(MAX_HW_VERSION_LENGTH))
+        _version_number = []
+        for i in [2, 0]:
+            _version_number.append((_buffer[i + 1] << 8) + _buffer[i])
+        return "%d.%d" % (_version_number[0], _version_number[1])
+
+    @property
+    def card_serial(self):
+        _buffer = CARD_SN_ARRAY()
+        canlib.canGetChannelData(self.channel,
+          canlib.canCHANNELDATA_CARD_SERIAL_NO, ctypes.byref(_buffer),
+          ctypes.c_size_t(MAX_CARD_SN_LENGTH))
+        _serial_number = 0
+        for i in xrange(len(_buffer)):
+            _serial_number += (_buffer[i] << (8 * i))
+        return _serial_number
+
+    @property
+    def transceiver_serial(self):
+        _buffer = TRANS_SN_ARRAY()
+        canlib.canGetChannelData(self.channel,
+          canlib.canCHANNELDATA_TRANS_SERIAL_NO, ctypes.byref(_buffer),
+          ctypes.c_size_t(MAX_TRANS_SN_LENGTH))
+        serial_number = 0
+        for i in xrange(len(_buffer)):
+            serial_number += (_buffer[i] << (8 * i))
+        return serial_number
+
+    @property
+    def card_number(self):
+        _buffer = ctypes.c_ulong(0)
+        canlib.canGetChannelData(self.channel,
+          canlib.canCHANNELDATA_CARD_NUMBER, ctypes.byref(_buffer),
+          ctypes.c_size_t(4))
+        return _buffer.value
+
+    @property
+    def card_channel(self):
+        _buffer = ctypes.c_ulong(0)
+        canlib.canGetChannelData(self.channel,
+          canlib.canCHANNELDATA_CHAN_NO_ON_CARD, ctypes.byref(_buffer),
+          ctypes.c_size_t(4))
+        return _buffer.value
+
+    @property
+    def transceiver_type(self):
+        _buffer = ctypes.c_ulong(0)
+        canlib.canGetChannelData(self.channel,
+          canlib.canCHANNELDATA_TRANS_TYPE, ctypes.byref(_buffer),
+          ctypes.c_size_t(4))
+        try:
+            return canstat.canTransceiverTypeStrings[_buffer.value]
+        except KeyError:
+            return "Transceiver type %d is unknown to CANLIB" % _buffer.value
+
+################### Public functions ##################
     def read(self):
         try:
             return self.__rx_queue.get_nowait()
@@ -350,6 +453,7 @@ class Bus(object):
         time.sleep(0.05)
         canlib.canClose(self.__handle)
 
+################## Private functions ##################
     def __get_bus_statistics(self):
         canlib.canRequestBusStatistics(self.__handle)
         _stats = canlib.c_canBusStatistics()
@@ -394,11 +498,13 @@ class Bus(object):
         if msg_type == canlib.ACCEPTANCE_FILTER_TYPE_STD:
             self.__std_acceptance_code = value[0]
             self.__std_acceptance_mask = value[1]
+            canlib.canSetAcceptanceFilter(self.__handle, self.std_acceptance_code,
+              self.std_acceptance_mask, msg_type)
         else:
             self.__ext_acceptance_code = value[0]
             self.__ext_acceptance_mask = value[1]
-        canlib.canSetAcceptanceFilter(self.__handle, value[0], value[1],
-          msg_type)
+            canlib.canSetAcceptanceFilter(self.__handle, self.ext_acceptance_code,
+              self.ext_acceptance_mask, msg_type)
 
     def __update_bus_parameters(self):
         try:
@@ -451,7 +557,7 @@ class Bus(object):
         canlib.canReadStatus(self.__handle, ctypes.byref(_stat_flags))
         if _stat_flags.value != self.__old_stat_flags:
             for _listener in self.__listeners:
-                _listener.on_status_change(timestamp, _stat_flags.value)
+                _listener.on_status_change(timestamp, _stat_flags.value, self.__old_stat_flags)
             self.__old_stat_flags = _stat_flags.value
 
     def __callback(self, hnd, context, event):
@@ -470,5 +576,5 @@ class Listener(object):
     def on_message_received(self, msg):
         pass
 
-    def on_status_change(self, timestamp, new_status):
+    def on_status_change(self, timestamp, new_status, old_status):
         pass
