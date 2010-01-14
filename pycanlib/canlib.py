@@ -674,6 +674,9 @@ canUnloadLibrary.argtypes = []
 canUnloadLibrary.restype = canstat.c_canStatus
 canUnloadLibrary.errcheck = _check_status
 
+ACCEPTANCE_FILTER_TYPE_STD = 0
+ACCEPTANCE_FILTER_TYPE_EXT = 1
+
 canSetAcceptanceFilter = _get_canlib().canSetAcceptanceFilter
 canSetAcceptanceFilter.argtypes = [ctypes.c_int, ctypes.c_uint, ctypes.c_uint,
                                    ctypes.c_int]
@@ -743,7 +746,7 @@ class c_canBusStatistics(ctypes.Structure):
     """
     _fields_ = [("std_data", ctypes.c_ulong), ("std_remote", ctypes.c_ulong),
       ("ext_data", ctypes.c_ulong), ("ext_remote", ctypes.c_ulong),
-      ("err_frame", ctypes.c_ulong), ("bus_load", ctypes.c_ulong),
+      ("error_frames", ctypes.c_ulong), ("bus_load", ctypes.c_ulong),
       ("overruns", ctypes.c_ulong)]
 
 canGetBusStatistics = _get_canlib().canGetBusStatistics
