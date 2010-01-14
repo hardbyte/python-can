@@ -18,7 +18,7 @@ from xml.dom import minidom
 from pycanlib import CAN, canlib
 
 
-class _CANLoggerListener(object):
+class _CANLoggerListener(CAN.Listener):
 
     def __init__(self, logger_obj):
         self.msg_list = []
@@ -27,9 +27,6 @@ class _CANLoggerListener(object):
     def on_message_received(self, msg):
         self._logger_obj.info(msg)
         self.msg_list.append(msg)
-
-    def set_write_bus(self, bus):
-        pass
 
 
 def ParseArguments(arguments):
@@ -46,12 +43,6 @@ def ParseArguments(arguments):
       default="4")
     parser.add_option("-n", "--noSamp", dest="noSamp",
       help="CAN bus sample number", default="1")
-    parser.add_option("-d", "--driverMode", dest="driverMode",
-      help="Mode (silent/normal) for Kvaser CAN bus output driver",
-      default="silent")
-    helpStr = "Generate call graph for this run of %s" % arguments[0]
-    parser.add_option("-g", "--callGraph", action="store_true",
-      default=False, dest="generateCallGraph", help=helpStr)
     _helpStr = "Base log file name, where log file names are"
     _helpStr += " <base>_<datestamp>_<timestamp>"
     parser.add_option("-l", "--logFileNameBase", dest="logFileNameBase",
@@ -68,13 +59,8 @@ def CreateBusObject(options):
     _tseg2 = int(options.tseg2)
     _sjw = int(options.sjw)
     _noSamp = int(options.noSamp)
-    if options.driverMode.lower() == "silent":
-        _driverMode = canlib.canDRIVER_SILENT
-    elif options.driverMode.lower() == "normal":
-        _driverMode = canlib.canDRIVER_NORMAL
-    return CAN.Bus(channel=_channel, flags=canlib.canOPEN_ACCEPT_VIRTUAL,
-      speed=_speed, tseg1=_tseg1, tseg2=_tseg2, sjw=_sjw, no_samp=_noSamp,
-      driver_mode=_driverMode)
+    return CAN.Bus(channel=_channel, speed=_speed, tseg1=_tseg1,
+      tseg2=_tseg2, sjw=_sjw, no_samp=_noSamp)
 
 
 def SetupLogging(logFilePath, logFileNameBase):
@@ -85,12 +71,12 @@ def SetupLogging(logFilePath, logFileNameBase):
     _logTimestamp = datetime.datetime.now()
     _dateString = _logTimestamp.strftime("%Y%m%d")
     _timeString = _logTimestamp.strftime("%H%M%S")
-    xmlLogFilePath = os.path.join(os.path.expanduser("~"),
-      "%s" % logFilePath, "%s_%s_%s.xml" % (logFileNameBase,
+    logFilePath = os.path.join(os.path.expanduser("~"),
+      "%s" % logFilePath, "%s_%s_%s.log" % (logFileNameBase,
       _dateString, _timeString))
-    if not os.path.exists(os.path.dirname(xmlLogFilePath)):
-        os.makedirs(os.path.dirname(xmlLogFilePath))
-    xmlFile = open(xmlLogFilePath, "w")
+    if not os.path.exists(os.path.dirname(logFilePath)):
+        os.makedirs(os.path.dirname(logFilePath))
+    logFile = open(logFilePath, "w")
     _logFormatter = logging.Formatter("%(message)s")
     _formatString = "%(name)s - %(asctime)s - %(levelname)s - %(message)s"
     _logFormatter2 = logging.Formatter(_formatString)
@@ -106,41 +92,25 @@ def SetupLogging(logFilePath, logFileNameBase):
     messageLogger = logging.getLogger("pycanlib.CAN.Message")
     messageLogger.setLevel(logging.WARNING)
     messageLogger.addHandler(_logStreamHandler2)
-    return loggerObj, xmlFile, _logTimestamp, os.path.basename(xmlLogFilePath)
+    return loggerObj, logFile, os.path.basename(logFilePath)
 
 
 def main(arguments):
     (options, args) = ParseArguments(arguments)
     bus = CreateBusObject(options)
-    (loggerObj, xmlFile, startTime, xmlFileName) = SetupLogging(options.logFilePath,
+    (loggerObj, logFile, xmlFileName) = SetupLogging(options.logFilePath,
       options.logFileNameBase)
     _logger_listener = _CANLoggerListener(loggerObj)
     bus.add_listener(_logger_listener)
-    hostMachineInfo = CAN.get_host_machine_info()
-    for line in hostMachineInfo.__str__().split("\n"):
-        loggerObj.info(line)
-    channelInfo = bus.get_channel_info()
-    for line in channelInfo.__str__().split("\n"):
-        loggerObj.info(line)
-    msgList = []
     i = 0
     try:
+        bus.enable_callback()
         while True:
             time.sleep(0.001)
     except KeyboardInterrupt:
-        bus.remove_listener(_logger_listener)
-        endTime = datetime.datetime.now()
-    logInfo = CAN.LogInfo(log_start_time=startTime,
-      log_end_time=datetime.datetime.now(), original_file_name=xmlFileName,
-      tester_name=os.getenv("USERNAME"))
-    if options.generateCallGraph and pycallgraphAvailable:
-        pycallgraph.start_trace()
-    log_xml_tree = CAN.create_log_xml_tree(hostMachineInfo, logInfo,
-      channelInfo, [CAN.MessageList(messages=_logger_listener.msg_list)])
-    xmlFile.write("%s" % log_xml_tree.toprettyxml())
-    if options.generateCallGraph and pycallgraphAvailable:
-        pycallgraph.make_dot_graph("can_logger_call_graph.png")
-    xmlFile.close()
+        bus.shutdown()
+    for _msg in _logger_listener.msg_list:
+        logFile.write("%s\n" % _msg.__str__())
 
 if __name__ == "__main__":
     main(sys.argv)
