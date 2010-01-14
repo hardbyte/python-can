@@ -98,7 +98,7 @@ def SetupLogging(logFilePath, logFileNameBase):
 def main(arguments):
     (options, args) = ParseArguments(arguments)
     bus = CreateBusObject(options)
-    (loggerObj, logFile, xmlFileName) = SetupLogging(options.logFilePath,
+    (loggerObj, logFile, fileName) = SetupLogging(options.logFilePath,
       options.logFileNameBase)
     _logger_listener = _CANLoggerListener(loggerObj)
     bus.add_listener(_logger_listener)
