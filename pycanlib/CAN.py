@@ -122,18 +122,6 @@ class Message(object):
         return "\t".join(_field_strings)
 
 
-class StandardMessage(Message):
-    def __init__(self, timestamp=0.0, arb_id=0, data=[], dlc=0):
-        Message.__init__(self, timestamp=timestamp, arb_id=arb_id, data=data,
-          dlc=dlc, flags=canstat.canMSG_STD)
-
-
-class ExtendedMessage(Message):
-    def __init__(self, timestamp=0.0, arb_id=0, data=[], dlc=0):
-        Message.__init__(self, timestamp=timestamp, arb_id=arb_id, data=data,
-          dlc=dlc, flags=canstat.canMSG_EXT)
-
-
 class Bus(object):
 
     def __init__(self, channel, speed, tseg1, tseg2, sjw, no_samp,
@@ -151,9 +139,11 @@ class Bus(object):
         self.__listeners = []
         self.__old_stat_flags = 0
         if sys.platform == "win32":
-            self.__ctypes_callback = ctypes.WINFUNCTYPE(ctypes.c_int, ctypes.c_int, ctypes.c_void_p, ctypes.c_int)(self.__callback)
+            self.__ctypes_callback = ctypes.WINFUNCTYPE(ctypes.c_int,
+              ctypes.c_int, ctypes.c_void_p, ctypes.c_int)(self.__callback)
         elif sys.platform == "posix":
-            self.__ctypes_callback = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_int, ctypes.c_void_p, ctypes.c_int)(self.__callback)
+            self.__ctypes_callback = ctypes.CFUNCTYPE(ctypes.c_int,
+              ctypes.c_int, ctypes.c_void_p, ctypes.c_int)(self.__callback)
         canlib.canBusOn(self.__handle)
 
 ############# Bus parameters (read/write) #############
