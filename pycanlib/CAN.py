@@ -122,6 +122,18 @@ class Message(object):
         return "\t".join(_field_strings)
 
 
+class StandardMessage(Message):
+    def __init__(self, timestamp=0.0, arb_id=0, data=[], dlc=0):
+        Message.__init__(self, timestamp=timestamp, arb_id=arb_id, data=data,
+          dlc=dlc, flags=canstat.canMSG_STD)
+
+
+class ExtendedMessage(Message):
+    def __init__(self, timestamp=0.0, arb_id=0, data=[], dlc=0):
+        Message.__init__(self, timestamp=timestamp, arb_id=arb_id, data=data,
+          dlc=dlc, flags=canstat.canMSG_EXT)
+
+
 class Bus(object):
 
     def __init__(self, channel, speed, tseg1, tseg2, sjw, no_samp,
@@ -505,6 +517,14 @@ class Bus(object):
             pass
 
     def __rx_callback(self):
+        _rx_msg = self.__get_message()
+        while _rx_msg != None:
+            for _listener in self.__listeners:
+                _listener.on_message_received(_rx_msg)
+            self.__rx_queue.put_nowait(_rx_msg)
+            _rx_msg = self.__get_message()
+
+    def __get_message(self):
         _arb_id = ctypes.c_long(0)
         _data = ctypes.create_string_buffer(8)
         _dlc = ctypes.c_uint(0)
@@ -514,7 +534,7 @@ class Bus(object):
           ctypes.byref(_arb_id), ctypes.byref(_data),
           ctypes.byref(_dlc), ctypes.byref(_flags),
           ctypes.byref(_timestamp))
-        while _status.value == canstat.canOK:
+        if _status.value == canstat.canOK:
             _data_array = map(ord, _data)
             _rx_msg = Message(arb_id=_arb_id.value,
                               data=_data_array[:_dlc.value],
@@ -522,13 +542,9 @@ class Bus(object):
                               flags=int(_flags.value),
                               timestamp = (float(_timestamp.value) /
                                 1000))
-            for _listener in self.__listeners:
-                _listener.on_message_received(_rx_msg)
-            self.__rx_queue.put_nowait(_rx_msg)
-            _status = canlib.canRead(self.__handle,
-              ctypes.byref(_arb_id), ctypes.byref(_data),
-              ctypes.byref(_dlc), ctypes.byref(_flags),
-              ctypes.byref(_timestamp))
+            return _rx_msg
+        else:
+            return None
 
     def __tx_callback(self):
         try:
