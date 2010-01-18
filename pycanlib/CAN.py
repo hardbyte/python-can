@@ -521,6 +521,7 @@ class Bus(object):
           canstat.canNOTIFY_NONE)
 
     def shutdown(self):
+        self.disable_callback()
         canlib.canBusOff(self.__handle)
         time.sleep(0.05)
         canlib.canClose(self.__handle)
@@ -588,12 +589,14 @@ class Bus(object):
             pass
 
     def __rx_callback(self):
-        _rx_msg = self.__get_message()
-        while _rx_msg != None:
-            for _listener in self.__listeners:
-                _listener.on_message_received(_rx_msg)
-            self.__rx_queue.put_nowait(_rx_msg)
+        while True:
             _rx_msg = self.__get_message()
+            if _rx_msg is None:
+                break
+            else:
+                for _listener in self.__listeners:
+                    _listener.on_message_received(_rx_msg)
+                self.__rx_queue.put_nowait(_rx_msg)
 
     def __get_message(self):
         _arb_id = ctypes.c_long(0)
