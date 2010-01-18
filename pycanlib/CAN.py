@@ -8,13 +8,30 @@ import sys
 import time
 import types
 
+def get_version_number():
+    os.system("hg id > id.tmp")
+    tagFile = open("id.tmp", "r")
+    tagLine = tagFile.readline()
+    tag = tagLine.split(" ")[1].replace("\n", "")
+    if tag != "tip":
+        retVal = tag
+    else:
+        retVal = "dev_%s" % tagLine.split(" ")[0]
+    tagFile.close()
+    os.unlink("id.tmp")
+    return retVal
+
 try:
-    VERSION_NUMBER_FILE = open(os.path.join(os.path.dirname(__file__),
-                              "version.txt"), "r")
-    __version__ = VERSION_NUMBER_FILE.readline()
-    VERSION_NUMBER_FILE.close()
-except IOError:
-    __version__ = "UNKNOWN"
+    __version__ = get_version_number()
+except Exception as e:
+    print e
+    try:
+        VERSION_NUMBER_FILE = open(os.path.join(os.path.dirname(__file__),
+                                  "version.txt"), "r")
+        __version__ = VERSION_NUMBER_FILE.readline()
+        VERSION_NUMBER_FILE.close()
+    except IOError:
+        __version__ = "UNKNOWN"
 
 canlib.canInitializeLibrary()
 
