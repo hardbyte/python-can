@@ -46,3 +46,7 @@ class ReadCAN(ipipe.Table):
             except KeyboardInterrupt:
                 self.bus.shutdown()
                 break
+            except:
+                self.bus.shutdown()
+                break
+
