@@ -250,8 +250,12 @@ class MessageList(object):
             if not isinstance(_msg, self.message_type):
                 raise TypeError("messages[%d] is not of type %s" % (index, self.message_type))
         self.__messages = value
-        self.__start_timestamp = value[0].timestamp
-        self.__end_timestamp = value[-1].timestamp
+        if len(value) > 0:
+            self.__start_timestamp = value[0].timestamp
+            self.__end_timestamp = value[-1].timestamp
+        else:
+            self.__start_timestamp = 0
+            self.__end_timestamp = 0
 
     @property
     def filter_criteria(self):
