@@ -8,11 +8,25 @@ import types
 
 canlib.canInitializeLibrary()
 
+ID_TYPE_EXT = True
+ID_TYPE_STD = False
+
+REMOTE_FRAME = True
+DATA_FRAME = False
+
+WAKEUP_MSG = True
+
+ERROR_FRAME = True
+
 class Message(object):
 
-    def __init__(self, timestamp=0.0, flags=0, arb_id=0, data=[], dlc=0):
+    def __init__(self, timestamp=0.0, is_remote_frame=False, id_type=ID_TYPE_STD,
+      is_wakeup=False, is_err_frame=False, arb_id=0, data=[], dlc=0):
         self.timestamp = timestamp
-        self.flags = flags
+        self.is_remote_frame = is_remote_frame
+        self.id_type = id_type
+        self.is_wakeup = is_wakeup
+        self.is_err_frame = is_err_frame
         self.arbitration_id = arb_id
         self.data = data
         self.dlc = dlc
@@ -30,6 +44,76 @@ class Message(object):
             raise ValueError("timestamp (%s) < 0")
         else:
             self.__timestamp = value
+
+    @property
+    def is_remote_frame(self):
+        try:
+            return self.flags & canstat.canMSG_RTR
+        except AttributeError:
+            return DATA_FRAME
+
+    @is_remote_frame.setter
+    def is_remote_frame(self, value):
+        if value not in (REMOTE_FRAME, DATA_FRAME):
+            raise ValueError("is_remote_frame not in %s" % ((REMOTE_FRAME, DATA_FRAME),))
+        self.flags &= (0xFFFF - canstat.canMSG_RTR)
+        self.flags |= (value * canstat.canMSG_RTR)
+        
+    @property
+    def id_type(self):
+        try:
+            if self.flags & canstat.canMSG_EXT:
+                return ID_TYPE_EXT
+            elif self.flags & canstat.canMSG_STD:
+                return ID_TYPE_STD
+        except AttributeError:
+            return ID_TYPE_STD
+
+    @id_type.setter
+    def id_type(self, value):
+        if value not in (ID_TYPE_EXT, ID_TYPE_STD):
+            raise ValueError("id_type not in %s" % ((ID_TYPE_EXT, ID_TYPE_STD),))
+        self.flags &= (0xFFFF - (canstat.canMSG_STD | canstat.canMSG_EXT))
+        if value == ID_TYPE_EXT:
+            self.flags |= canstat.canMSG_EXT
+        else:
+            self.flags |= canstat.canMSG_STD
+
+    @property
+    def is_wakeup(self):
+        try:
+            if self.flags & canstat.canMSG_WAKEUP:
+                return WAKEUP_MSG
+            else:
+                return not WAKEUP_MSG
+        except AttributeError:
+            return not WAKEUP_MSG
+
+    @is_wakeup.setter
+    def is_wakeup(self, value):
+        if value not in (WAKEUP_MSG, not WAKEUP_MSG):
+            raise ValueError("is_wakeup not in %s" % ((WAKEUP_MSG, not WAKEUP_MSG),))
+        self.flags &= (0xFFFF - canstat.canMSG_WAKEUP)
+        if value == WAKEUP_MSG:
+            self.flags |= canstat.canMSG_WAKEUP
+
+    @property
+    def is_error_frame(self):
+        try:
+            if self.flags & canstat.canMSG_ERROR_FRAME:
+                return ERROR_FRAME
+            else:
+                return not ERROR_FRAME
+        except AttributeError:
+            return not ERROR_FRAME
+
+    @is_error_frame.setter
+    def is_error_frame(self, value):
+        if value not in (ERROR_FRAME, not ERROR_FRAME):
+            raise ValueError("is_wakeup not in %s" % ((ERROR_FRAME, not ERROR_FRAME),))
+        self.flags &= (0xFFFF - canstat.canMSG_ERROR_FRAME)
+        if value == ERROR_FRAME:
+            self.flags |= canstat.canMSG_ERROR_FRAME
 
     @property
     def arbitration_id(self):
@@ -91,18 +175,20 @@ class Message(object):
 
     @property
     def flags(self):
-        return self.__flags
+        try:
+            return self.__flags
+        except AttributeError:
+            return 0
 
     @flags.setter
     def flags(self, value):
         if not isinstance(value, types.IntType):
             raise TypeError("flags (%s) is not of type 'int'" % value)
-        elif value < 0:
-            raise ValueError("flags (%s) < 0" % value)
-        elif value > 0xFFFF:
-            raise ValueError("flags (%s) > 0xFFFF" % value)
-        else:
-            self.__flags = value
+        if (value & (0xFFFF - canstat.canMSG_MASK)) != 0:
+            raise ValueError("flags (%s) must be a combination of the canMSG_* values listed in canstat.py" % value)
+        if (value & canstat.canMSG_EXT) and (value & canstat.canMSG_STD):
+            raise ValueError("a message can't be both standard (11-bit id) and extended (29-bit id)")
+        self.__flags = value
 
     def __str__(self):
         _field_strings = []
@@ -138,15 +224,10 @@ class Bus(object):
         self.__tx_queue = Queue.Queue(0)
         self.__listeners = []
         self.__old_stat_flags = 0
-        if sys.platform == "win32":
-            self.__ctypes_callback = ctypes.WINFUNCTYPE(ctypes.c_int,
-              ctypes.c_int, ctypes.c_void_p, ctypes.c_int)(self.__callback)
-        elif sys.platform == "posix":
-            self.__ctypes_callback = ctypes.CFUNCTYPE(ctypes.c_int,
-              ctypes.c_int, ctypes.c_void_p, ctypes.c_int)(self.__callback)
+        self.__ctypes_callback = canlib.callback_dict[sys.platform](self.__callback)
         canlib.canBusOn(self.__handle)
 
-############# Bus parameters (read/write) #############
+    ############# Bus parameters (read/write) #############
     @property
     def channel(self):
         return self.__channel
@@ -281,7 +362,7 @@ class Bus(object):
     def ext_acceptance_filter(self, value):
         self.__set_acceptance_filter(value, canlib.ACCEPTANCE_FILTER_TYPE_EXT)
 
-############# Bus statistics (read only) ##############
+    ############# Bus statistics (read only) ##############
     @property
     def bus_time(self):
         return (canlib.canReadTimer(self.__handle) / 100000.0)
@@ -305,7 +386,7 @@ class Bus(object):
     def buffer_overruns(self):
         return self.__get_bus_statistics().overruns
 
-########### Device information (read only) ############
+    ########### Device information (read only) ############
     @property
     def device_description(self):
         _buffer = ctypes.create_string_buffer(MAX_DEVICE_DESCR_LENGTH)
@@ -394,7 +475,7 @@ class Bus(object):
         except KeyError:
             return "Transceiver type %d is unknown to CANLIB" % _buffer.value
 
-################### Public functions ##################
+    ################### Public functions ##################
     def read(self):
         try:
             return self.__rx_queue.get_nowait()
@@ -444,7 +525,7 @@ class Bus(object):
         time.sleep(0.05)
         canlib.canClose(self.__handle)
 
-################## Private functions ##################
+    ################## Private functions ##################
     def __get_bus_statistics(self):
         canlib.canRequestBusStatistics(self.__handle)
         _stats = canlib.c_canBusStatistics()
@@ -529,9 +610,9 @@ class Bus(object):
             _rx_msg = Message(arb_id=_arb_id.value,
                               data=_data_array[:_dlc.value],
                               dlc=int(_dlc.value),
-                              flags=int(_flags.value),
                               timestamp = (float(_timestamp.value) /
                                 1000))
+            _rx_msg.flags = int(_flags.value) & canstat.canMSG_MASK
             return _rx_msg
         else:
             return None
