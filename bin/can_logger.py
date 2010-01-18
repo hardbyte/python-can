@@ -69,7 +69,7 @@ def SetupLogging(logFilePath, logFileNameBase):
       _dateString, _timeString))
     if not os.path.exists(os.path.dirname(logFilePath)):
         os.makedirs(os.path.dirname(logFilePath))
-    logFile = open(logFilePath, "w")
+    logFile = open(logFilePath, "wb")
     _logFormatter = logging.Formatter("%(message)s")
     _formatString = "%(name)s - %(asctime)s - %(levelname)s - %(message)s"
     _logFormatter2 = logging.Formatter(_formatString)
