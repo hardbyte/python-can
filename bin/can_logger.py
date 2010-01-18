@@ -1,19 +1,12 @@
+import cPickle
 import datetime
 import logging
 import logging.handlers
 from optparse import OptionParser
 import os
 import os.path
-pycallgraphAvailable = True
-try:
-    import pycallgraph
-except ImportError:
-    print "Cannot import pycallgraph - call graphing function",
-    print "will not be available"
-    pycallgraphAvailable = False
 import sys
 import time
-from xml.dom import minidom
 
 from pycanlib import CAN, canlib
 
@@ -72,7 +65,7 @@ def SetupLogging(logFilePath, logFileNameBase):
     _dateString = _logTimestamp.strftime("%Y%m%d")
     _timeString = _logTimestamp.strftime("%H%M%S")
     logFilePath = os.path.join(os.path.expanduser("~"),
-      "%s" % logFilePath, "%s_%s_%s.log" % (logFileNameBase,
+      "%s" % logFilePath, "%s_%s_%s.dat" % (logFileNameBase,
       _dateString, _timeString))
     if not os.path.exists(os.path.dirname(logFilePath)):
         os.makedirs(os.path.dirname(logFilePath))
@@ -102,15 +95,14 @@ def main(arguments):
       options.logFileNameBase)
     _logger_listener = _CANLoggerListener(loggerObj)
     bus.add_listener(_logger_listener)
-    i = 0
     try:
         bus.enable_callback()
         while True:
             time.sleep(0.001)
     except KeyboardInterrupt:
         bus.shutdown()
-    for _msg in _logger_listener.msg_list:
-        logFile.write("%s\n" % _msg.__str__())
+    cPickle.dump(_logger_listener.msg_list, logFile)
+    logFile.close()
 
 if __name__ == "__main__":
     main(sys.argv)
