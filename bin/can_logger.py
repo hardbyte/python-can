@@ -61,9 +61,9 @@ def SetupLogging(logFilePath, logFileNameBase):
     loggerObj.setLevel(logging.INFO)
     _logStreamHandler = logging.StreamHandler()
     _logStreamHandler2 = logging.StreamHandler()
-    _logTimestamp = datetime.datetime.now()
-    _dateString = _logTimestamp.strftime("%Y%m%d")
-    _timeString = _logTimestamp.strftime("%H%M%S")
+    logTimestamp = datetime.datetime.now()
+    _dateString = logTimestamp.strftime("%Y%m%d")
+    _timeString = logTimestamp.strftime("%H%M%S")
     logFilePath = os.path.join(os.path.expanduser("~"),
       "%s" % logFilePath, "%s_%s_%s.dat" % (logFileNameBase,
       _dateString, _timeString))
@@ -85,13 +85,13 @@ def SetupLogging(logFilePath, logFileNameBase):
     messageLogger = logging.getLogger("pycanlib.CAN.Message")
     messageLogger.setLevel(logging.WARNING)
     messageLogger.addHandler(_logStreamHandler2)
-    return loggerObj, logFile, os.path.basename(logFilePath)
+    return loggerObj, logFile, os.path.basename(logFilePath), logTimestamp
 
 
 def main(arguments):
     (options, args) = ParseArguments(arguments)
     bus = CreateBusObject(options)
-    (loggerObj, logFile, fileName) = SetupLogging(options.logFilePath,
+    (loggerObj, logFile, fileName, logStartTime) = SetupLogging(options.logFilePath,
       options.logFileNameBase)
     _logger_listener = _CANLoggerListener(loggerObj)
     bus.add_listener(_logger_listener)
@@ -101,7 +101,18 @@ def main(arguments):
             time.sleep(0.001)
     except KeyboardInterrupt:
         bus.shutdown()
-    cPickle.dump(_logger_listener.msg_list, logFile)
+    _log_info = CAN.LogInfo(log_start_time=logStartTime,
+                            log_end_time=datetime.datetime.now(),
+                            original_file_name=fileName,
+                            tester_name=os.getenv("USERNAME"))
+    _channel_info = bus.channel_info
+    _machine_info = CAN.get_host_machine_info()
+    _message_lists = [CAN.MessageList(messages=_logger_listener.msg_list)]
+    _log_obj = CAN.Log(log_info=_log_info,
+                       channel_info=_channel_info,
+                       machine_info=_machine_info,
+                       message_lists=_message_lists)
+    cPickle.dump(_log_obj, logFile)
     logFile.close()
 
 if __name__ == "__main__":
