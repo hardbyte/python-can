@@ -31,6 +31,12 @@ def _get_canlib():
     library_name = canlib_dict[sys.platform][1]
     return library_constructor(library_name)
 
+
+callback_dict = {"win32": ctypes.WINFUNCTYPE(ctypes.c_int, ctypes.c_int, ctypes.c_void_p, ctypes.c_int),
+                 "cli": ctypes.WINFUNCTYPE(ctypes.c_int, ctypes.c_int, ctypes.c_void_p, ctypes.c_int),
+                 "posix": ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_int, ctypes.c_void_p, ctypes.c_int)}
+
+
 class CANLIBError(Exception):
     """
     Class: CANLIBError
