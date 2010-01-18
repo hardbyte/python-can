@@ -604,10 +604,13 @@ class Bus(object):
             return None
 
     def write(self, msg):
+        if not isinstance(msg, Message):
+            raise TypeError("message argument to Bus.write is not of type %s" % Message)
         self.__tx_queue.put_nowait()
         self.__tx_callback()
 
     def clear_queues(self):
+        self.disable_callback()
         while True:
             try:
                 self.__rx_queue.get_nowait()
@@ -620,6 +623,7 @@ class Bus(object):
                 break
         canlib.canFlushTransmitQueue(self.__handle)
         canlib.canFlushReceiveQueue(self.__handle)
+        self.enable_callback()
 
     def add_listener(self, listener):
         if not isinstance(listener, Listener):
@@ -731,9 +735,14 @@ class Bus(object):
           ctypes.byref(_timestamp))
         if _status.value == canstat.canOK:
             _data_array = map(ord, _data)
+            if int(_flags.value) & canstat.canMSG_EXT:
+                _id_type = ID_TYPE_EXT
+            else:
+                _id_type = ID_TYPE_STD
             _rx_msg = Message(arb_id=_arb_id.value,
                               data=_data_array[:_dlc.value],
                               dlc=int(_dlc.value),
+                              id_type=_id_type,
                               timestamp = (float(_timestamp.value) /
                                 1000000))
             _rx_msg.flags = int(_flags.value) & canstat.canMSG_MASK
