@@ -363,6 +363,7 @@ class Bus(object):
             self.__channel = value
             self.__handle = canlib.canOpenChannel(value,
               canlib.canOPEN_ACCEPT_VIRTUAL)
+            canlib.canIoCtl(self.__handle, canlib.canIOCTL_SET_TIMER_SCALE, ctypes.byref(ctypes.c_long(1)), 4)
             self.__update_bus_parameters()
             canlib.canBusOn(self.__handle)
 
@@ -474,7 +475,7 @@ class Bus(object):
     ############# Bus statistics (read only) ##############
     @property
     def bus_time(self):
-        return (canlib.canReadTimer(self.__handle) / 100000.0)
+        return (canlib.canReadTimer(self.__handle) / 1000000.0)
 
     @property
     def bus_load(self):
@@ -734,7 +735,7 @@ class Bus(object):
                               data=_data_array[:_dlc.value],
                               dlc=int(_dlc.value),
                               timestamp = (float(_timestamp.value) /
-                                1000))
+                                1000000))
             _rx_msg.flags = int(_flags.value) & canstat.canMSG_MASK
             return _rx_msg
         else:
