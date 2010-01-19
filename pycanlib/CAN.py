@@ -975,7 +975,7 @@ class LogInfo(object):
     @log_start_time.setter
     def log_start_time(self, value):
         if not isinstance(value, (datetime.datetime, types.NoneType)):
-            raise TypeError("log_end_time is not of type 'datetime.datetime' or 'NoneType'")
+            raise TypeError("log_start_time is not of type 'datetime.datetime' or 'NoneType'")
         try:
             if self.log_end_time < value:
                 raise ValueError("log start time is after log end time")
@@ -1168,8 +1168,8 @@ class Log(object):
 
     @channel_info.setter
     def channel_info(self, value):
-        if not isinstance(value, ChannelInfo):
-            raise TypeError("channel_info is not of type 'ChannelInfo'")
+        if not isinstance(value, (ChannelInfo, types.NoneType)):
+            raise TypeError("channel_info is not of type 'ChannelInfo' or 'NoneType'")
         self.__channel_info = value
 
     @property
@@ -1199,7 +1199,8 @@ class Log(object):
         retval = ""
         retval += "%s" % self.machine_info
         retval += "%s" % self.log_info
-        retval += "%s" % self.channel_info
+        if self.channel_info != None:
+            retval += "%s" % self.channel_info
         for _list in self.message_lists:
             retval += "%s" % _list
         return retval
