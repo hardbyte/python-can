@@ -9,6 +9,8 @@ import time
 import types
 
 def get_version_number():
+    _current_dir = os.getcwd()
+    os.chdir(os.path.dirname(canlib.__file__))
     os.system("hg id > id.tmp")
     tagFile = open("id.tmp", "r")
     tagLine = tagFile.readline()
@@ -19,6 +21,7 @@ def get_version_number():
         retVal = "dev_%s" % tagLine.split(" ")[0]
     tagFile.close()
     os.unlink("id.tmp")
+    os.chdir(_current_dir)
     return retVal
 
 try:
