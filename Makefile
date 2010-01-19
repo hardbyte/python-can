@@ -1,3 +1,4 @@
 clean:
-	rm -rf *.pyc
-	rm version.txt
+	-rm pycanlib/*.pyc
+	-rm pycanlib/ipython/*.pyc
+	-rm pycanlib/version.txt
