@@ -10,7 +10,7 @@ import types
 
 def get_version_number():
     _current_dir = os.getcwd()
-    os.chdir(os.path.dirname(canlib.__file__))
+    os.chdir(os.path.dirname(__file__))
     os.system("hg id > id.tmp")
     tagFile = open("id.tmp", "r")
     tagLine = tagFile.readline()
@@ -1111,7 +1111,6 @@ class MachineInfo(object):
         retval += "OS: %s\n" % self.os_type
         retval += "CANLIB: %s\n" % self.canlib_version
         retval += "pycanlib: %s\n" % self.pycanlib_version
-        retval += "\n"
         return retval
 
 
