@@ -1049,7 +1049,11 @@ class MachineInfo(object):
         self.python_version = python_version
         self.os_type = os_type
         self.canlib_version = get_canlib_info()
-        self.pycanlib_version = __version__
+        self.module_versions = {}
+        for (_modname, _mod) in sys.modules.items():
+            if _mod != None:
+                if "__version__" in _mod.__dict__.keys():
+                    self.module_versions[_modname] = _mod.__version__
 
     @property
     def machine_name(self):
@@ -1092,25 +1096,27 @@ class MachineInfo(object):
         self.__canlib_version = value
 
     @property
-    def pycanlib_version(self):
-        return self.__pycanlib_version
+    def module_versions(self):
+        return self.__module_versions
 
-    @pycanlib_version.setter
-    def pycanlib_version(self, value):
-        if not isinstance(value, types.StringType):
-            raise TypeError("pycanlib_version is not of type 'str'")
-        self.__pycanlib_version = value
+    @module_versions.setter
+    def module_versions(self, value):
+        if not isinstance(value, types.DictType):
+            raise TypeError("module_versions is not of type 'dict'")
+        self.__module_versions = value
 
     def __str__(self):
-        retval = "-"*len("Machine Info")
+        retval = "-" * len("Machine Info")
         retval += "\nMachine Info\n"
-        retval += "-"*len("Machine Info")
+        retval += "-" * len("Machine Info")
         retval += "\n"
         retval += "Machine name: %s\n" % self.machine_name
         retval += "Python: %s\n" % self.python_version
         retval += "OS: %s\n" % self.os_type
         retval += "CANLIB: %s\n" % self.canlib_version
-        retval += "pycanlib: %s\n" % self.pycanlib_version
+        retval += "Loaded Python module versions:\n"
+        for _mod in sorted(self.module_versions.keys()):
+            retval += "\t%s: %s\n" % (_mod, self.module_versions[_mod])
         return retval
 
 
