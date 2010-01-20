@@ -8,33 +8,33 @@ import sys
 import time
 import types
 
-def get_version_number():
+def get_version_number(filename):
     _current_dir = os.getcwd()
-    os.chdir(os.path.dirname(__file__))
-    os.system("hg id > id.tmp")
-    tagFile = open("id.tmp", "r")
-    tagLine = tagFile.readline()
-    tag = tagLine.split(" ")[1].replace("\n", "")
-    if tag != "tip":
-        retVal = tag
-    else:
-        retVal = "dev_%s" % tagLine.split(" ")[0]
-    tagFile.close()
-    os.unlink("id.tmp")
-    os.chdir(_current_dir)
-    return retVal
-
-try:
-    __version__ = get_version_number()
-except Exception as e:
-    print e
+    os.chdir(os.path.dirname(filename))
     try:
-        VERSION_NUMBER_FILE = open(os.path.join(os.path.dirname(__file__),
-                                  "version.txt"), "r")
-        __version__ = VERSION_NUMBER_FILE.readline()
-        VERSION_NUMBER_FILE.close()
-    except IOError:
-        __version__ = "UNKNOWN"
+        os.system("hg id > id.tmp")
+        tagFile = open("id.tmp", "r")
+        tagLine = tagFile.readline()
+        tag = tagLine.split(" ")[1].replace("\n", "")
+        if tag != "tip":
+            retval = tag
+        else:
+            retval = "dev_%s" % tagLine.split(" ")[0]
+        tagFile.close()
+        os.unlink("id.tmp")
+        os.chdir(_current_dir)
+    except Exception as e:
+        print e
+        try:
+            VERSION_NUMBER_FILE = open(os.path.join(os.path.dirname(filename),
+                                      "version.txt"), "r")
+            retval =  VERSION_NUMBER_FILE.readline()
+            VERSION_NUMBER_FILE.close()
+        except IOError:
+            retval = "UNKNOWN"
+    return retval
+
+__version__ = get_version_number(__file__)
 
 canlib.canInitializeLibrary()
 
@@ -953,7 +953,6 @@ class ChannelInfo(object):
         retval += "Transceiver serial number: %s\n" % self.trans_serial
         retval += "Card number: %s\n" % self.card_number
         retval += "Channel on card: %s\n" % self.channel_on_card
-        retval += "\n"
         return retval
 
 
@@ -1038,7 +1037,6 @@ class LogInfo(object):
         retval += "Original DAT file name: %s\n" % self.original_file_name
         retval += "Test Location: %s\n" % self.test_location
         retval += "Tester name: %s\n" % self.tester_name
-        retval += "\n"
         return retval
 
 
@@ -1202,10 +1200,10 @@ class Log(object):
 
     def __str__(self):
         retval = ""
-        retval += "%s" % self.machine_info
-        retval += "%s" % self.log_info
+        retval += "%s\n" % self.machine_info
+        retval += "%s\n" % self.log_info
         if self.channel_info != None:
-            retval += "%s" % self.channel_info
+            retval += "%s\n" % self.channel_info
         for _list in self.message_lists:
             retval += "%s" % _list
         return retval
