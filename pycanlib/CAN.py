@@ -1042,10 +1042,12 @@ class LogInfo(object):
 
 class MachineInfo(object):
 
-    def __init__(self, machine_name="", python_version="", os_type=""):
+    def __init__(self, machine_name="", python_version="", os_type="",
+      os_name=""):
         self.machine_name = machine_name
         self.python_version = python_version
         self.os_type = os_type
+        self.os_name = os_name
         self.canlib_version = get_canlib_info()
         self.module_versions = {}
         for (_modname, _mod) in sys.modules.items():
@@ -1084,6 +1086,23 @@ class MachineInfo(object):
         self.__os_type = value
 
     @property
+    def os_name(self):
+        try:
+            return self.__os_name
+        except AttributeError:
+            return "unknown"
+
+    @os_name.setter
+    def os_name(self, value):
+        if value == "":
+            _value = "unknown"
+        else:
+            _value = value
+        if not isinstance(_value, types.StringType):
+            raise TypeError("os_name is not of type 'str'")
+        self.__os_name = _value
+
+    @property
     def canlib_version(self):
         return self.__canlib_version
 
@@ -1110,7 +1129,8 @@ class MachineInfo(object):
         retval += "\n"
         retval += "Machine name: %s\n" % self.machine_name
         retval += "Python: %s\n" % self.python_version
-        retval += "OS: %s\n" % self.os_type
+        retval += "OS type: %s\n" % self.os_type
+        retval += "OS name: %s\n" % self.os_name
         retval += "CANLIB: %s\n" % self.canlib_version
         retval += "Loaded Python module versions:\n"
         for _mod in sorted(self.module_versions.keys()):
@@ -1126,7 +1146,8 @@ def get_host_machine_info():
     _python_version = sys.version[:sys.version.index(" ")]
     return MachineInfo(machine_name=_machine_name,
                        python_version=_python_version,
-                       os_type=sys.platform)
+                       os_type=sys.platform,
+                       os_name=os.name)
 
 
 def get_canlib_info():
