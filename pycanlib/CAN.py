@@ -1,4 +1,4 @@
-from pycanlib import canlib, canstat
+from pycanlib import canlib, canstat, InputValidation
 
 import ctypes
 import datetime
@@ -60,13 +60,13 @@ TRANS_SN_ARRAY = ctypes.c_ubyte * MAX_TRANS_SN_LENGTH
 
 class Message(object):
 
-    def __init__(self, timestamp=0.0, is_remote_frame=False, id_type=ID_TYPE_STD, is_wakeup=False, is_err_frame=False, arb_id=0, data=[], dlc=0):
+    def __init__(self, timestamp=0.0, is_remote_frame=False, id_type=ID_TYPE_STD, is_wakeup=False, is_error_frame=False, arbitration_id=0, data=[], dlc=0):
         self.timestamp = timestamp
         self.is_remote_frame = is_remote_frame
         self.id_type = id_type
         self.is_wakeup = is_wakeup
-        self.is_err_frame = is_err_frame
-        self.arbitration_id = arb_id
+        self.is_err_frame = is_error_frame
+        self.arbitration_id = arbitration_id
         self.data = data
         self.dlc = dlc
 
@@ -76,12 +76,9 @@ class Message(object):
 
     @timestamp.setter
     def timestamp(self, value):
-        if not isinstance(value, types.FloatType):
-            raise TypeError("timestamp (type %s) is not of type 'float'" % type(value))
-        elif value < 0:
-            raise ValueError("timestamp (%s) < 0")
-        else:
-            self.__timestamp = value
+        InputValidation.verify_parameter_type("@timestamp.setter", "timestamp", value, (types.FloatType,))
+        InputValidation.verify_parameter_min_value("@timestamp.setter", "timestamp", value, 0)
+        self.__timestamp = value
 
     @property
     def is_remote_frame(self):
@@ -92,8 +89,7 @@ class Message(object):
 
     @is_remote_frame.setter
     def is_remote_frame(self, value):
-        if value not in (REMOTE_FRAME, DATA_FRAME):
-            raise ValueError("is_remote_frame not in %s" % ((REMOTE_FRAME, DATA_FRAME),))
+        InputValidation.verify_parameter_range("@is_remote_frame.setter", "is_remote_frame", value, (REMOTE_FRAME, DATA_FRAME))
         self.flags &= (0xFFFF - canstat.canMSG_RTR)
         self.flags |= (value * canstat.canMSG_RTR)
         
@@ -109,8 +105,7 @@ class Message(object):
 
     @id_type.setter
     def id_type(self, value):
-        if value not in (ID_TYPE_EXT, ID_TYPE_STD):
-            raise ValueError("id_type not in %s" % ((ID_TYPE_EXT, ID_TYPE_STD),))
+        InputValidation.verify_parameter_range("@id_type.setter", "id_type", value, (ID_TYPE_EXT, ID_TYPE_STD))
         self.flags &= (0xFFFF - (canstat.canMSG_STD | canstat.canMSG_EXT))
         if value == ID_TYPE_EXT:
             self.flags |= canstat.canMSG_EXT
@@ -129,8 +124,7 @@ class Message(object):
 
     @is_wakeup.setter
     def is_wakeup(self, value):
-        if value not in (WAKEUP_MSG, not WAKEUP_MSG):
-            raise ValueError("is_wakeup not in %s" % ((WAKEUP_MSG, not WAKEUP_MSG),))
+        InputValidation.verify_parameter_range("@is_wakeup.setter", "is_wakeup", value, (WAKEUP_MSG, not WAKEUP_MSG))
         self.flags &= (0xFFFF - canstat.canMSG_WAKEUP)
         if value == WAKEUP_MSG:
             self.flags |= canstat.canMSG_WAKEUP
@@ -147,8 +141,7 @@ class Message(object):
 
     @is_error_frame.setter
     def is_error_frame(self, value):
-        if value not in (ERROR_FRAME, not ERROR_FRAME):
-            raise ValueError("is_wakeup not in %s" % ((ERROR_FRAME, not ERROR_FRAME),))
+        InputValidation.verify_parameter_range("@is_error_frame.setter", "is_error_frame", value, (ERROR_FRAME, not ERROR_FRAME))
         self.flags &= (0xFFFF - canstat.canMSG_ERROR_FRAME)
         if value == ERROR_FRAME:
             self.flags |= canstat.canMSG_ERROR_FRAME
@@ -159,19 +152,13 @@ class Message(object):
 
     @arbitration_id.setter
     def arbitration_id(self, value):
+        InputValidation.verify_parameter_type("@arbitration_id.setter", "arbitration_id", value, (types.IntType, types.LongType))
+        InputValidation.verify_parameter_min_value("@arbitration_id.setter", "arbitration_id", value, 0)
         if self.flags & canstat.canMSG_EXT:
-            _max_id_value = ((2 ** 29) - 1)
+            InputValidation.verify_parameter_max_value("@arbitration_id.setter", "arbitration_id", value, ((2 ** 29) - 1))
         else:
-            _max_id_value = ((2 ** 11) - 1)
-        if not isinstance(value, (types.LongType, types.IntType)):
-            raise TypeError("arbitration_id (type %s) is not of type 'long'or type 'int'" % type(value))
-        if value < 0:
-            raise ValueError("arbitration_id (%s) < 0" % value)
-        elif value > _max_id_value:
-            _err_str = "arbitration_id (%s) > %d"
-            raise ValueError(_err_str % (value, _max_id_value))
-        else:
-            self.__arbitration_id = value
+            InputValidation.verify_parameter_max_value("@arbitration_id.setter", "arbitration_id", value, ((2 ** 11) - 1))
+        self.__arbitration_id = value
 
     @property
     def data(self):
@@ -179,16 +166,11 @@ class Message(object):
 
     @data.setter
     def data(self, value):
-        if not isinstance(value, types.ListType):
-            raise TypeError("data (%s) is not of type 'list'" % type(value))
-        else:
-            for (_index, _item) in enumerate(value):
-                if not isinstance(_item, types.IntType):
-                    raise TypeError("data[%d] (%s) is not of type 'int'" % (_index, _item))
-                elif _item < 0:
-                    raise ValueError("data[%d] (%s) < 0" % (_index, _item))
-                elif _item > 255:
-                    raise ValueError("data[%d] (%s) > 255" % (_index, _item))
+        InputValidation.verify_parameter_type("@data.setter", "data", value, (types.ListType,))
+        for (_index, _item) in enumerate(value):
+            InputValidation.verify_parameter_type("@data.setter", ("data[%d]" % _index), _item, (types.IntType,))
+            InputValidation.verify_parameter_min_value("@data.setter", ("data[%d]" % _index), _item, 0)
+            InputValidation.verify_parameter_max_value("@data.setter", ("data[%d]" % _index), _item, 255)
         self.__data = value
 
     @property
@@ -197,14 +179,10 @@ class Message(object):
 
     @dlc.setter
     def dlc(self, value):
-        if not isinstance(value, types.IntType):
-            raise TypeError("dlc (%s) is not of type 'int'" % value)
-        elif value < 0:
-            raise ValueError("dlc (%s) < 0" % value)
-        elif value > 8:
-            raise ValueError("dlc (%s) > 8" % value)
-        else:
-            self.__dlc = value
+        InputValidation.verify_parameter_type("@dlc.setter", "dlc", value, (types.IntType,))
+        InputValidation.verify_parameter_min_value("@dlc.setter", "dlc", value, 0)
+        InputValidation.verify_parameter_max_value("@dlc.setter", "dlc", value, 8)
+        self.__dlc = value
 
     @property
     def flags(self):
@@ -215,12 +193,11 @@ class Message(object):
 
     @flags.setter
     def flags(self, value):
-        if not isinstance(value, types.IntType):
-            raise TypeError("flags (%s) is not of type 'int'" % value)
+        InputValidation.verify_parameter_type("@flags.setter", "flags", value, (types.IntType,))
         if (value & (0xFFFF - canstat.canMSG_MASK)) != 0:
-            raise ValueError("flags (%s) must be a combination of the canMSG_* values listed in canstat.py" % value)
+            raise InputValidation.ParameterValueError("flags (%s) must be a combination of the canMSG_* values listed in canstat.py" % value)
         if (value & canstat.canMSG_EXT) and (value & canstat.canMSG_STD):
-            raise ValueError("a message can't be both standard (11-bit id) and extended (29-bit id)")
+            raise InputValidation.ParameterValueError("a message can't be both standard (11-bit id) and extended (29-bit id)")
         self.__flags = value
 
     def __str__(self):
@@ -255,11 +232,9 @@ class MessageList(object):
 
     @messages.setter
     def messages(self, value):
-        if not isinstance(value, types.ListType):
-            raise TypeError("messages is not of type 'list'")
-        for (index, _msg) in enumerate(value):
-            if not isinstance(_msg, self.message_type):
-                raise TypeError("messages[%d] is not of type %s" % (index, self.message_type))
+        InputValidation.verify_parameter_type("@messages.setter", "messages", value, (types.ListType,))
+        for (_index, _msg) in enumerate(value):
+            InputValidation.verify_parameter_type("@messages.setter", "messages[%d]" % _index, _msg, (self.message_type,))
         self.__messages = value
         if len(value) > 0:
             self.__start_timestamp = value[0].timestamp
@@ -274,9 +249,9 @@ class MessageList(object):
 
     @filter_criteria.setter
     def filter_criteria(self, value):
-        if not isinstance(value, types.StringType):
-            raise TypeError("filter_criteria is not of type 'str'")
-        self.__filter_criteria = eval(value)
+        InputValidation.verify_parameter_type("@filter_criteria.setter", "filter_criteria", value, (types.StringType,))
+        #we don't evaluate the filter criteria yet as they will depend on the message being tested, which isn't defined right now - the code that uses filter_criteria will have to evaluate the expression itself
+        self.__filter_criteria = value
 
     @property
     def message_type(self):
@@ -287,8 +262,7 @@ class MessageList(object):
 
     @message_type.setter
     def message_type(self, value):
-        if not isinstance(value, types.TypeType):
-            raise TypeError("message_type is not a class")
+        InputValidation.verify_parameter_type("@message_type.setter", "message_type", value, (types.TypeType,))
         self.__message_type = value
 
     @property
@@ -297,8 +271,7 @@ class MessageList(object):
 
     @name.setter
     def name(self, value):
-        if not isinstance(value, types.StringType):
-            raise TypeError("name is not of type 'str'")
+        InputValidation.verify_parameter_type("@name.setter", "name", value, (types.StringType,))
         self.__name = value
 
     @property
