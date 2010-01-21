@@ -1,8 +1,3 @@
-"""
-File: ipy_profile_pycanlib.py
-
-This file is the ipython profile used to load pycanlib ipython extensions.
-"""
 import IPython.ipapi
 import pycanlib.ipython
 
