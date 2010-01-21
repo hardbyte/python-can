@@ -26,8 +26,7 @@ def get_version_number(filename):
     except Exception as e:
         print e
         try:
-            VERSION_NUMBER_FILE = open(os.path.join(os.path.dirname(filename),
-                                      "version.txt"), "r")
+            VERSION_NUMBER_FILE = open(os.path.join(os.path.dirname(filename), "version.txt"), "r")
             retval =  VERSION_NUMBER_FILE.readline()
             VERSION_NUMBER_FILE.close()
         except IOError:
@@ -61,8 +60,7 @@ TRANS_SN_ARRAY = ctypes.c_ubyte * MAX_TRANS_SN_LENGTH
 
 class Message(object):
 
-    def __init__(self, timestamp=0.0, is_remote_frame=False, id_type=ID_TYPE_STD,
-      is_wakeup=False, is_err_frame=False, arb_id=0, data=[], dlc=0):
+    def __init__(self, timestamp=0.0, is_remote_frame=False, id_type=ID_TYPE_STD, is_wakeup=False, is_err_frame=False, arb_id=0, data=[], dlc=0):
         self.timestamp = timestamp
         self.is_remote_frame = is_remote_frame
         self.id_type = id_type
@@ -79,8 +77,7 @@ class Message(object):
     @timestamp.setter
     def timestamp(self, value):
         if not isinstance(value, types.FloatType):
-            raise TypeError("timestamp (type %s) is not of type 'float'" %
-              type(value))
+            raise TypeError("timestamp (type %s) is not of type 'float'" % type(value))
         elif value < 0:
             raise ValueError("timestamp (%s) < 0")
         else:
@@ -167,9 +164,7 @@ class Message(object):
         else:
             _max_id_value = ((2 ** 11) - 1)
         if not isinstance(value, (types.LongType, types.IntType)):
-            _err_str = "arbitration_id (type %s) is not of type 'long'"
-            _err_str += " or type 'int'"
-            raise TypeError(_err_str % type(value))
+            raise TypeError("arbitration_id (type %s) is not of type 'long'or type 'int'" % type(value))
         if value < 0:
             raise ValueError("arbitration_id (%s) < 0" % value)
         elif value > _max_id_value:
@@ -189,14 +184,11 @@ class Message(object):
         else:
             for (_index, _item) in enumerate(value):
                 if not isinstance(_item, types.IntType):
-                    _err_str = "data[%d] (%s) is not of type 'int'"
-                    raise TypeError(_err_str % (_index, _item))
+                    raise TypeError("data[%d] (%s) is not of type 'int'" % (_index, _item))
                 elif _item < 0:
-                    _err_str = "data[%d] (%s) < 0"
-                    raise ValueError(_err_str % (_index, _item))
+                    raise ValueError("data[%d] (%s) < 0" % (_index, _item))
                 elif _item > 255:
-                    _err_str = "data[%d] (%s) > 255"
-                    raise ValueError(_err_str % (_index, _item))
+                    raise ValueError("data[%d] (%s) > 255" % (_index, _item))
         self.__data = value
 
     @property
@@ -251,8 +243,7 @@ class Message(object):
 
 class MessageList(object):
 
-    def __init__(self, messages=[], filter_criteria="True",
-      message_type=Message, name="default"):
+    def __init__(self, messages=[], filter_criteria="True", message_type=Message, name="default"):
         self.messages = messages
         self.filter_criteria = filter_criteria
         self.message_type = message_type
@@ -339,8 +330,7 @@ class MessageList(object):
 
 class Bus(object):
 
-    def __init__(self, channel, speed, tseg1, tseg2, sjw, no_samp,
-      std_acceptance_filter=(0, 0), ext_acceptance_filter=(0, 0)):
+    def __init__(self, channel, speed, tseg1, tseg2, sjw, no_samp, std_acceptance_filter=(0, 0), ext_acceptance_filter=(0, 0)):
         self.channel = channel
         self.speed = speed
         self.tseg1 = tseg1
@@ -366,23 +356,18 @@ class Bus(object):
         _num_channels = ctypes.c_int(0)
         canlib.canGetNumberOfChannels(ctypes.byref(_num_channels))
         if not isinstance(value, types.IntType):
-            _err_str = "channel (%s) is not of type 'int'"
-            raise TypeError(_err_str % type(value))
+            raise TypeError("channel (%s) is not of type 'int'" % type(value))
         elif value < 0:
-            _err_str = "channel (%s) < 0"
-            raise ValueError(_err_str % value)
+            raise ValueError("channel (%s) < 0" % value)
         elif value > (_num_channels.value - 1):
-            _err_str = "channel (%s) > %d"
-            raise ValueError(_err_str % (value, _num_channels.value))
+            raise ValueError("channel (%s) > %d" % (value, _num_channels.value))
         else:
             if "__handle" in self.__dict__:
                 canlib.canBusOff(self.__handle)
-                canlib.kvSetNotifyCallback(self.__handle, ctypes.c_void_p(0),
-                  ctypes.c_void_p(0), 0)
+                canlib.kvSetNotifyCallback(self.__handle, ctypes.c_void_p(0), ctypes.c_void_p(0), 0)
                 canlib.canClose(self.__handle)
             self.__channel = value
-            self.__handle = canlib.canOpenChannel(value,
-              canlib.canOPEN_ACCEPT_VIRTUAL)
+            self.__handle = canlib.canOpenChannel(value, canlib.canOPEN_ACCEPT_VIRTUAL)
             canlib.canIoCtl(self.__handle, canlib.canIOCTL_SET_TIMER_SCALE, ctypes.byref(ctypes.c_long(1)), 4)
             self.__update_bus_parameters()
             canlib.canBusOn(self.__handle)
@@ -394,14 +379,11 @@ class Bus(object):
     @speed.setter
     def speed(self, value):
         if not isinstance(value, (types.IntType, types.LongType)):
-            _err_str = "speed (%s) is not of type 'int' or type 'long'"
-            raise TypeError(_err_str % value)
+            raise TypeError("speed (%s) is not of type 'int' or type 'long'" % value)
         elif value < 0:
-            _err_str = "speed (%s) < 0"
-            raise ValueError(_err_str % value)
+            raise ValueError("speed (%s) < 0" % value)
         elif value > 1000000:
-            _err_str = "speed (%s) > 1000000"
-            raise ValueError(_err_str % value)
+            raise ValueError("speed (%s) > 1000000" % value)
         else:
             self.__speed = value
             self.__update_bus_parameters()
@@ -413,14 +395,11 @@ class Bus(object):
     @tseg1.setter
     def tseg1(self, value):
         if not isinstance(value, (types.IntType)):
-            _err_str = "tseg1 (%s) is not of type 'int'"
-            raise TypeError(_err_str % value)
+            raise TypeError("tseg1 (%s) is not of type 'int'" % value)
         elif value < 0:
-            _err_str = "tseg1 (%s) < 0"
-            raise ValueError(_err_str % value)
+            raise ValueError("tseg1 (%s) < 0" % value)
         elif value > 255:
-            _err_str = "tseg1 (%s) > 255"
-            raise ValueError(_err_str % value)
+            raise ValueError("tseg1 (%s) > 255" % value)
         else:
             self.__tseg1 = value
             self.__update_bus_parameters()
@@ -432,14 +411,11 @@ class Bus(object):
     @tseg2.setter
     def tseg2(self, value):
         if not isinstance(value, (types.IntType)):
-            _err_str = "tseg2 (%s) is not of type 'int'"
-            raise TypeError(_err_str % value)
+            raise TypeError("tseg2 (%s) is not of type 'int'" % value)
         elif value < 0:
-            _err_str = "tseg2 (%s) < 0"
-            raise ValueError(_err_str % value)
+            raise ValueError("tseg2 (%s) < 0" % value)
         elif value > 255:
-            _err_str = "tseg2 (%s) > 255"
-            raise ValueError(_err_str % value)
+            raise ValueError("tseg2 (%s) > 255" % value)
         else:
             self.__tseg2 = value
             self.__update_bus_parameters()
@@ -451,11 +427,9 @@ class Bus(object):
     @sjw.setter
     def sjw(self, value):
         if not isinstance(value, types.IntType):
-            _err_str = "sjw (%s) is not of type 'int'"
-            raise TypeError(_err_str % value)
+            raise TypeError("sjw (%s) is not of type 'int'" % value)
         elif value not in [1, 2, 3, 4]:
-            _err_str = "sjw (%s) is not 1, 2, 3 or 4"
-            raise ValueError(_err_str % value)
+            raise ValueError("sjw (%s) is not 1, 2, 3 or 4" % value)
         else:
             self.__sjw = value
             self.__update_bus_parameters()
@@ -467,11 +441,9 @@ class Bus(object):
     @no_samp.setter
     def no_samp(self, value):
         if not isinstance(value, types.IntType):
-            _err_str = "no_samp (%s) is not of type 'int'"
-            raise TypeError(_err_str % value)
+            raise TypeError("no_samp (%s) is not of type 'int'" % value)
         elif value not in [1, 3]:
-            _err_str = "sjw (%s) is not 1 or 3"
-            raise ValueError(_err_str % value)
+            raise ValueError("sjw (%s) is not 1 or 3" % value)
         else:
             self.__no_samp = value
             self.__update_bus_parameters()
@@ -520,37 +492,28 @@ class Bus(object):
     @property
     def device_description(self):
         _buffer = ctypes.create_string_buffer(MAX_DEVICE_DESCR_LENGTH)
-        canlib.canGetChannelData(self.channel,
-          canlib.canCHANNELDATA_DEVDESCR_ASCII, ctypes.byref(_buffer),
-          ctypes.c_size_t(MAX_DEVICE_DESCR_LENGTH))
+        canlib.canGetChannelData(self.channel, canlib.canCHANNELDATA_DEVDESCR_ASCII, ctypes.byref(_buffer), ctypes.c_size_t(MAX_DEVICE_DESCR_LENGTH))
         return _buffer.value
 
     @property
     def manufacturer_name(self):
         _buffer = ctypes.create_string_buffer(MAX_MANUFACTURER_NAME_LENGTH)
-        canlib.canGetChannelData(self.channel,
-          canlib.canCHANNELDATA_MFGNAME_ASCII, ctypes.byref(_buffer),
-          ctypes.c_size_t(MAX_MANUFACTURER_NAME_LENGTH))
+        canlib.canGetChannelData(self.channel, canlib.canCHANNELDATA_MFGNAME_ASCII, ctypes.byref(_buffer), ctypes.c_size_t(MAX_MANUFACTURER_NAME_LENGTH))
         return _buffer.value
 
     @property
     def firmware_version(self):
         _buffer = FW_VERSION_ARRAY()
-        canlib.canGetChannelData(self.channel,
-          canlib.canCHANNELDATA_CARD_FIRMWARE_REV, ctypes.byref(_buffer),
-          ctypes.c_size_t(MAX_FW_VERSION_LENGTH))
+        canlib.canGetChannelData(self.channel, canlib.canCHANNELDATA_CARD_FIRMWARE_REV, ctypes.byref(_buffer), ctypes.c_size_t(MAX_FW_VERSION_LENGTH))
         _version_number = []
         for i in [6, 4, 0, 2]:
             _version_number.append((_buffer[i + 1] << 8) + _buffer[i])
-        return "%d.%d.%d.%d" % (_version_number[0], _version_number[1],
-          _version_number[2], _version_number[3])
+        return "%d.%d.%d.%d" % (_version_number[0], _version_number[1], _version_number[2], _version_number[3])
 
     @property
     def hardware_version(self):
         _buffer = HW_VERSION_ARRAY()
-        canlib.canGetChannelData(self.channel,
-          canlib.canCHANNELDATA_CARD_HARDWARE_REV, ctypes.byref(_buffer),
-          ctypes.c_size_t(MAX_HW_VERSION_LENGTH))
+        canlib.canGetChannelData(self.channel, canlib.canCHANNELDATA_CARD_HARDWARE_REV, ctypes.byref(_buffer), ctypes.c_size_t(MAX_HW_VERSION_LENGTH))
         _version_number = []
         for i in [2, 0]:
             _version_number.append((_buffer[i + 1] << 8) + _buffer[i])
@@ -559,9 +522,7 @@ class Bus(object):
     @property
     def card_serial(self):
         _buffer = CARD_SN_ARRAY()
-        canlib.canGetChannelData(self.channel,
-          canlib.canCHANNELDATA_CARD_SERIAL_NO, ctypes.byref(_buffer),
-          ctypes.c_size_t(MAX_CARD_SN_LENGTH))
+        canlib.canGetChannelData(self.channel, canlib.canCHANNELDATA_CARD_SERIAL_NO, ctypes.byref(_buffer), ctypes.c_size_t(MAX_CARD_SN_LENGTH))
         _serial_number = 0
         for i in xrange(len(_buffer)):
             _serial_number += (_buffer[i] << (8 * i))
@@ -570,9 +531,7 @@ class Bus(object):
     @property
     def transceiver_serial(self):
         _buffer = TRANS_SN_ARRAY()
-        canlib.canGetChannelData(self.channel,
-          canlib.canCHANNELDATA_TRANS_SERIAL_NO, ctypes.byref(_buffer),
-          ctypes.c_size_t(MAX_TRANS_SN_LENGTH))
+        canlib.canGetChannelData(self.channel, canlib.canCHANNELDATA_TRANS_SERIAL_NO, ctypes.byref(_buffer), ctypes.c_size_t(MAX_TRANS_SN_LENGTH))
         serial_number = 0
         for i in xrange(len(_buffer)):
             serial_number += (_buffer[i] << (8 * i))
@@ -581,40 +540,25 @@ class Bus(object):
     @property
     def card_number(self):
         _buffer = ctypes.c_ulong(0)
-        canlib.canGetChannelData(self.channel,
-          canlib.canCHANNELDATA_CARD_NUMBER, ctypes.byref(_buffer),
-          ctypes.c_size_t(4))
+        canlib.canGetChannelData(self.channel, canlib.canCHANNELDATA_CARD_NUMBER, ctypes.byref(_buffer), ctypes.c_size_t(4))
         return _buffer.value
 
     @property
     def card_channel(self):
         _buffer = ctypes.c_ulong(0)
-        canlib.canGetChannelData(self.channel,
-          canlib.canCHANNELDATA_CHAN_NO_ON_CARD, ctypes.byref(_buffer),
-          ctypes.c_size_t(4))
+        canlib.canGetChannelData(self.channel, canlib.canCHANNELDATA_CHAN_NO_ON_CARD, ctypes.byref(_buffer), ctypes.c_size_t(4))
         return _buffer.value
 
     @property
     def transceiver_type(self):
         _buffer = ctypes.c_ulong(0)
-        canlib.canGetChannelData(self.channel,
-          canlib.canCHANNELDATA_TRANS_TYPE, ctypes.byref(_buffer),
-          ctypes.c_size_t(4))
+        canlib.canGetChannelData(self.channel, canlib.canCHANNELDATA_TRANS_TYPE, ctypes.byref(_buffer), ctypes.c_size_t(4))
         retval = _buffer.value
         return retval
 
     @property
     def channel_info(self):
-        return ChannelInfo(channel=self.channel,
-                           name=self.device_description,
-                           manufacturer=self.manufacturer_name,
-                           fw_version=self.firmware_version,
-                           hw_version=self.hardware_version,
-                           card_serial=self.card_serial,
-                           trans_serial=self.transceiver_serial,
-                           trans_type=self.transceiver_type,
-                           card_number=self.card_number,
-                           channel_on_card=self.card_channel)
+        return ChannelInfo(channel=self.channel, name=self.device_description, manufacturer=self.manufacturer_name, fw_version=self.firmware_version, hw_version=self.hardware_version, card_serial=self.card_serial, trans_serial=self.transceiver_serial, trans_type=self.transceiver_type, card_number=self.card_number, channel_on_card=self.card_channel)
 
     ################### Public functions ##################
     def read(self):
@@ -647,23 +591,18 @@ class Bus(object):
 
     def add_listener(self, listener):
         if not isinstance(listener, Listener):
-            _err_str = "listener to be added (type %s) should be of type"
-            _err_str += " 'Listener'"
-            raise TypeError(_err_str % type(listener))
+            raise TypeError("listener to be added (type %s) should be of type 'Listener'" % type(listener))
         else:
             self.__listeners.append(listener)
 
     def remove_listener(self, listener):
-        if listener in self.__listeners:
-            self.__listeners.remove(listener)
+        self.__listeners.remove(listener)
 
     def enable_callback(self):
-        canlib.kvSetNotifyCallback(self.__handle, self.__ctypes_callback, None,
-          canstat.canNOTIFY_ALL)
+        canlib.kvSetNotifyCallback(self.__handle, self.__ctypes_callback, None, canstat.canNOTIFY_ALL)
 
     def disable_callback(self):
-        canlib.kvSetNotifyCallback(self.__handle, self.__ctypes_callback, None,
-          canstat.canNOTIFY_NONE)
+        canlib.kvSetNotifyCallback(self.__handle, self.__ctypes_callback, None, canstat.canNOTIFY_NONE)
 
     def shutdown(self):
         self.disable_callback()
@@ -675,8 +614,7 @@ class Bus(object):
     def __get_bus_statistics(self):
         canlib.canRequestBusStatistics(self.__handle)
         _stats = canlib.c_canBusStatistics()
-        canlib.canGetBusStatistics(self.__handle, ctypes.byref(_stats),
-          ctypes.c_uint(28))
+        canlib.canGetBusStatistics(self.__handle, ctypes.byref(_stats), ctypes.c_uint(28))
         return _stats
 
     def __set_acceptance_filter(self, value, msg_type):
@@ -685,50 +623,36 @@ class Bus(object):
         elif msg_type == canlib.ACCEPTANCE_FILTER_TYPE_EXT:
             _max_value = ((2 ** 29) - 1)
         else:
-            _err_str = "msg_type (%d) should be either"
-            _err_str += " ACCEPTANCE_FILTER_TYPE_STD or"
-            _err_str += " ACCEPTANCE_FILTER_TYPE_EXT"
-            raise ValueError(_err_str % value)
+            raise ValueError("msg_type (%d) should be either ACCEPTANCE_FILTER_TYPE_STD or ACCEPTANCE_FILTER_TYPE_EXT" % value)
         if not isinstance(value, types.TupleType):
-            _err_str = "acceptance_filter (%s) is not a tuple"
-            raise TypeError(_err_str % value)
+            raise TypeError("acceptance_filter (%s) is not a tuple" % value)
         if len(value) != 2:
-            _err_str = "acceptance_filter contains %d elements (should be 2)"
-            raise IndexError(_err_str % len(value))
+            raise IndexError("acceptance_filter contains %d elements (should be 2)" % len(value))
         if not isinstance(value[0], (types.IntType, types.LongType)):
-            _err_str = "acceptance code (%s) is not of type 'int' or 'long'"
-            raise TypeError(_err_str % value)
+            raise TypeError("acceptance code (%s) is not of type 'int' or 'long'" % value)
         if not isinstance(value[1], (types.IntType, types.LongType)):
-            _err_str = "acceptance mask (%s) is not of type 'int' or 'long'"
-            raise TypeError(_err_str % value)
+            raise TypeError("acceptance mask (%s) is not of type 'int' or 'long'" % value)
         if value[0] < 0:
-            _err_str = "acceptance code (%s) < 0"
-            raise ValueError(_err_str % value)
+            raise ValueError("acceptance code (%s) < 0" % value)
         if value[0] > _max_value:
-            _err_str = "acceptance code (%s) > %d" % (value[0], _max_value)
-            raise ValueError(_err_str % value)
+            raise ValueError("acceptance code (%s) > %d" % (value[0], _max_value))
         if value[1] < 0:
-            _err_str = "acceptance mask (%s) < 0"
-            raise ValueError(_err_str % value)
+            raise ValueError("acceptance mask (%s) < 0" % value)
         if value[1] > _max_value:
-            _err_str = "acceptance mask (%s) > %d" % (value[1], _max_value)
-            raise ValueError(_err_str % value)
+            raise ValueError("acceptance mask (%s) > %d" % (value[1], _max_value))
         if msg_type == canlib.ACCEPTANCE_FILTER_TYPE_STD:
             self.__std_acceptance_code = value[0]
             self.__std_acceptance_mask = value[1]
-            canlib.canSetAcceptanceFilter(self.__handle, self.std_acceptance_filter[0],
-              self.std_acceptance_filter[1], msg_type)
+            canlib.canSetAcceptanceFilter(self.__handle, self.std_acceptance_filter[0], self.std_acceptance_filter[1], msg_type)
         else:
             self.__ext_acceptance_code = value[0]
             self.__ext_acceptance_mask = value[1]
-            canlib.canSetAcceptanceFilter(self.__handle, self.ext_acceptance_filter[0],
-              self.ext_acceptance_filter[1], msg_type)
+            canlib.canSetAcceptanceFilter(self.__handle, self.ext_acceptance_filter[0], self.ext_acceptance_filter[1], msg_type)
 
     def __update_bus_parameters(self):
         try:
             canlib.canBusOff(self.__handle)
-            canlib.canSetBusParams(self.__handle, self.speed, self.tseg1,
-              self.tseg2, self.sjw, self.no_samp, 0)
+            canlib.canSetBusParams(self.__handle, self.speed, self.tseg1, self.tseg2, self.sjw, self.no_samp, 0)
             canlib.canBusOn(self.__handle)
         except AttributeError:
             pass
@@ -749,22 +673,14 @@ class Bus(object):
         _dlc = ctypes.c_uint(0)
         _flags = ctypes.c_uint(0)
         _timestamp = ctypes.c_long(0)
-        _status = canlib.canRead(self.__handle,
-          ctypes.byref(_arb_id), ctypes.byref(_data),
-          ctypes.byref(_dlc), ctypes.byref(_flags),
-          ctypes.byref(_timestamp))
+        _status = canlib.canRead(self.__handle, ctypes.byref(_arb_id), ctypes.byref(_data), ctypes.byref(_dlc), ctypes.byref(_flags), ctypes.byref(_timestamp))
         if _status.value == canstat.canOK:
             _data_array = map(ord, _data)
             if int(_flags.value) & canstat.canMSG_EXT:
                 _id_type = ID_TYPE_EXT
             else:
                 _id_type = ID_TYPE_STD
-            _rx_msg = Message(arb_id=_arb_id.value,
-                              data=_data_array[:_dlc.value],
-                              dlc=int(_dlc.value),
-                              id_type=_id_type,
-                              timestamp = (float(_timestamp.value) /
-                                1000000))
+            _rx_msg = Message(arb_id=_arb_id.value, data=_data_array[:_dlc.value], dlc=int(_dlc.value), id_type=_id_type, timestamp = (float(_timestamp.value) / 1000000))
             _rx_msg.flags = int(_flags.value) & canstat.canMSG_MASK
             return _rx_msg
         else:
@@ -775,10 +691,7 @@ class Bus(object):
             _to_send = self.__tx_queue.get_nowait()
         except Queue.Empty:
             return
-        _byte_strings = [("%c" % byte) for byte in _to_send.payload]
-        _data_string = "".join(_byte_strings)
-        canlib.canWrite(self._canlib_handle, _to_send.device_id,
-          _data_string, _to_send.dlc, _to_send.flags)
+        canlib.canWrite(self._canlib_handle, _to_send.device_id, "".join([("%c" % byte) for byte in _to_send.payload]), _to_send.dlc, _to_send.flags)
 
     def __status_callback(self, timestamp):
         canlib.canRequestChipStatus(self.__handle)
@@ -811,9 +724,7 @@ class Listener(object):
 
 class ChannelInfo(object):
 
-    def __init__(self, channel=0, name="", manufacturer="",
-      fw_version="", hw_version="", card_serial=0, trans_serial=0,
-      trans_type="", card_number=0, channel_on_card=0):
+    def __init__(self, channel=0, name="", manufacturer="", fw_version="", hw_version="", card_serial=0, trans_serial=0, trans_type="", card_number=0, channel_on_card=0):
         self.channel = channel
         self.name = name
         self.manufacturer = manufacturer
@@ -958,9 +869,7 @@ class ChannelInfo(object):
 
 class LogInfo(object):
 
-    def __init__(self, log_start_time=None, log_end_time=None,
-      original_file_name="default.dat", test_location="default",
-      tester_name="default"):
+    def __init__(self, log_start_time=None, log_end_time=None, original_file_name="default.dat", test_location="default", tester_name="default"):
         self.log_start_time = log_start_time
         self.log_end_time = log_end_time
         self.original_file_name = original_file_name
@@ -1042,8 +951,7 @@ class LogInfo(object):
 
 class MachineInfo(object):
 
-    def __init__(self, machine_name="", python_version="", os_type="",
-      os_name=""):
+    def __init__(self, machine_name="", python_version="", os_type="", os_name=""):
         self.machine_name = machine_name
         self.python_version = python_version
         self.os_type = os_type
@@ -1144,10 +1052,7 @@ def get_host_machine_info():
     else:
         _machine_name = os.getenv("HOSTNAME")
     _python_version = sys.version[:sys.version.index(" ")]
-    return MachineInfo(machine_name=_machine_name,
-                       python_version=_python_version,
-                       os_type=sys.platform,
-                       os_name=os.name)
+    return MachineInfo(machine_name=_machine_name, python_version=_python_version, os_type=sys.platform, os_name=os.name)
 
 
 def get_canlib_info():
