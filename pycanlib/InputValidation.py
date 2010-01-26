@@ -27,3 +27,10 @@ def verify_parameter_min_value(function, parameter_name, parameter_value, min_va
 def verify_parameter_max_value(function, parameter_name, parameter_value, max_value):
     if parameter_value > max_value:
         raise ParameterRangeError("%s - Value of parameter '%s' (%s) is greater than %s" % (function, parameter_name, parameter_value, max_value))
+
+def verify_parameter_value_in_set(function, parameter_name, parameter_value, allowable_set):
+    if parameter_value not in allowable_set:
+        raise ParameterValueError("%s - Value of parameter '%s' (%s) not in set %s" % (function, parameter_name, parameter_value, allowable_set))
+
+def verify_parameter_value_equal_to(function, parameter_name, parameter_value, allowable_value):
+    verify_parameter_value_in_set(function, parameter_name, parameter_value, [allowable_value])
