@@ -69,6 +69,7 @@ class Message(object):
         self.arbitration_id = arbitration_id
         self.data = data
         self.dlc = dlc
+        self.info_string = ""
 
     @property
     def timestamp(self):
@@ -216,6 +217,15 @@ class Message(object):
         if len(_data_strings) > 0:
             _field_strings.append(" ".join(_data_strings))
         return "\t".join(_field_strings)
+
+    @property
+    def info_string(self):
+        return self.__info_string
+
+    @info_string.setter
+    def info_string(self, value):
+        InputValidation.verify_parameter_type("@info_string.setter", "info_string", value, (types.StringType,))
+        self.__info_string = value
 
 
 class MessageList(object):
