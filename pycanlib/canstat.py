@@ -1,21 +1,7 @@
-"""
-File: canstat.py
-
-This file is the canstat.h file from the CANLIB SDK translated into Python
-using the ctypes package.
-"""
-
 import ctypes
 
 
 class c_canStatus(ctypes.c_int):
-    """
-    Class: c_canStatus
-    
-    Representation of CANLIB's canStatus type.
-    
-    Parent class: ctypes.c_int
-    """
     pass
 
 canOK = 0
@@ -92,19 +78,6 @@ canStatusLookupTable[canERR__RESERVED] = "canERR__RESERVED"
 
 
 def CANSTATUS_SUCCESS(status):
-    """
-    Method: CANSTATUS_SUCCESS
-    
-    Determines if a given status value indicates a successful operation or
-    not.
-    
-    Parameters:
-        status: the status value to be checked
-    
-    Returns:
-        True if the status value indicates a successful operation, False if it
-        does not.
-    """
     return (status >= canOK)
 
 canEVENT_RX = 32000
@@ -119,8 +92,7 @@ canNOTIFY_TX = 0x0002
 canNOTIFY_ERROR = 0x0004
 canNOTIFY_STATUS = 0x0008
 canNOTIFY_ENVVAR = 0x0010
-canNOTIFY_ALL = (canNOTIFY_RX | canNOTIFY_TX | canNOTIFY_ERROR |
-  canNOTIFY_STATUS | canNOTIFY_ENVVAR)
+canNOTIFY_ALL = (canNOTIFY_RX | canNOTIFY_TX | canNOTIFY_ERROR | canNOTIFY_STATUS | canNOTIFY_ENVVAR)
 
 canSTAT_ERROR_PASSIVE = 0x00000001
 canSTAT_BUS_OFF = 0x00000002
@@ -210,40 +182,25 @@ canTransceiverTypeStrings[canTRANSCEIVER_TYPE_UNKNOWN] = "Unknown/undefined"
 canTransceiverTypeStrings[canTRANSCEIVER_TYPE_251] = "82C251"
 canTransceiverTypeStrings[canTRANSCEIVER_TYPE_252] = "82C252/TJA1053/TJA1054"
 canTransceiverTypeStrings[canTRANSCEIVER_TYPE_DNOPTO] = "Optoisolated 82C251"
-canTransceiverTypeStrings[canTRANSCEIVER_TYPE_W210] = \
-  "canTRANSCEIVER_TYPE_W210"
+canTransceiverTypeStrings[canTRANSCEIVER_TYPE_W210] = "canTRANSCEIVER_TYPE_W210"
 canTransceiverTypeStrings[canTRANSCEIVER_TYPE_SWC_PROTO] = "AU5790 prototype"
 canTransceiverTypeStrings[canTRANSCEIVER_TYPE_SWC] = "AU5790"
 canTransceiverTypeStrings[canTRANSCEIVER_TYPE_EVA] = "canTRANSCEIVER_TYPE_EVA"
-canTransceiverTypeStrings[canTRANSCEIVER_TYPE_FIBER] = \
-  "82C251 with fibre extension"
-canTransceiverTypeStrings[canTRANSCEIVER_TYPE_K251] = \
-  "canTRANSCEIVER_TYPE_K251"
+canTransceiverTypeStrings[canTRANSCEIVER_TYPE_FIBER] = "82C251 with fibre extension"
+canTransceiverTypeStrings[canTRANSCEIVER_TYPE_K251] = "canTRANSCEIVER_TYPE_K251"
 canTransceiverTypeStrings[canTRANSCEIVER_TYPE_K] = "canTRANSCEIVER_TYPE_K"
-canTransceiverTypeStrings[canTRANSCEIVER_TYPE_1054_OPTO] = \
-  "TJA1054 optical isolation"
-canTransceiverTypeStrings[canTRANSCEIVER_TYPE_SWC_OPTO] = \
-  "AU5790 optical isolation"
-canTransceiverTypeStrings[canTRANSCEIVER_TYPE_TT] = \
-  "B10011S Truck-And-Trailer"
+canTransceiverTypeStrings[canTRANSCEIVER_TYPE_1054_OPTO] = "TJA1054 optical isolation"
+canTransceiverTypeStrings[canTRANSCEIVER_TYPE_SWC_OPTO] = "AU5790 optical isolation"
+canTransceiverTypeStrings[canTRANSCEIVER_TYPE_TT] = "B10011S Truck-And-Trailer"
 canTransceiverTypeStrings[canTRANSCEIVER_TYPE_1050] = "TJA1050"
-canTransceiverTypeStrings[canTRANSCEIVER_TYPE_1050_OPTO] = \
-  "TJA1050 optical isolation"
+canTransceiverTypeStrings[canTRANSCEIVER_TYPE_1050_OPTO] = "TJA1050 optical isolation"
 canTransceiverTypeStrings[canTRANSCEIVER_TYPE_1041] = "TJA1041"
-canTransceiverTypeStrings[canTRANSCEIVER_TYPE_1041_OPTO] = \
-  "TJA1041 optical isolation"
-canTransceiverTypeStrings[canTRANSCEIVER_TYPE_RS485] = \
-  "canTRANSCEIVER_TYPE_RS485"
+canTransceiverTypeStrings[canTRANSCEIVER_TYPE_1041_OPTO] = "TJA1041 optical isolation"
+canTransceiverTypeStrings[canTRANSCEIVER_TYPE_RS485] = "canTRANSCEIVER_TYPE_RS485"
 canTransceiverTypeStrings[canTRANSCEIVER_TYPE_LIN] = "LIN"
-canTransceiverTypeStrings[canTRANSCEIVER_TYPE_KONE] = \
-  "canTRANSCEIVER_TYPE_KONE"
-canTransceiverTypeStrings[canTRANSCEIVER_TYPE_LINX_LIN] = \
-  "canTRANSCEIVER_TYPE_LINX_LIN"
-canTransceiverTypeStrings[canTRANSCEIVER_TYPE_LINX_J1708] = \
-  "canTRANSCEIVER_TYPE_LINX_J170"
-canTransceiverTypeStrings[canTRANSCEIVER_TYPE_LINX_K] = \
-  "canTRANSCEIVER_TYPE_LINX_K"
-canTransceiverTypeStrings[canTRANSCEIVER_TYPE_LINX_SWC] = \
-  "canTRANSCEIVER_TYPE_LINX_SWC"
-canTransceiverTypeStrings[canTRANSCEIVER_TYPE_LINX_LS] = \
-  "canTRANSCEIVER_TYPE_LINX_LS"
+canTransceiverTypeStrings[canTRANSCEIVER_TYPE_KONE] = "canTRANSCEIVER_TYPE_KONE"
+canTransceiverTypeStrings[canTRANSCEIVER_TYPE_LINX_LIN] = "canTRANSCEIVER_TYPE_LINX_LIN"
+canTransceiverTypeStrings[canTRANSCEIVER_TYPE_LINX_J1708] = "canTRANSCEIVER_TYPE_LINX_J170"
+canTransceiverTypeStrings[canTRANSCEIVER_TYPE_LINX_K] = "canTRANSCEIVER_TYPE_LINX_K"
+canTransceiverTypeStrings[canTRANSCEIVER_TYPE_LINX_SWC] = "canTRANSCEIVER_TYPE_LINX_SWC"
+canTransceiverTypeStrings[canTRANSCEIVER_TYPE_LINX_LS] = "canTRANSCEIVER_TYPE_LINX_LS"

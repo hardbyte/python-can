@@ -328,22 +328,18 @@ class Bus(object):
     def channel(self, value):
         _num_channels = ctypes.c_int(0)
         canlib.canGetNumberOfChannels(ctypes.byref(_num_channels))
-        if not isinstance(value, types.IntType):
-            raise TypeError("channel (%s) is not of type 'int'" % type(value))
-        elif value < 0:
-            raise ValueError("channel (%s) < 0" % value)
-        elif value > (_num_channels.value - 1):
-            raise ValueError("channel (%s) > %d" % (value, _num_channels.value))
-        else:
-            if "__handle" in self.__dict__:
-                canlib.canBusOff(self.__handle)
-                canlib.kvSetNotifyCallback(self.__handle, ctypes.c_void_p(0), ctypes.c_void_p(0), 0)
-                canlib.canClose(self.__handle)
-            self.__channel = value
-            self.__handle = canlib.canOpenChannel(value, canlib.canOPEN_ACCEPT_VIRTUAL)
-            canlib.canIoCtl(self.__handle, canlib.canIOCTL_SET_TIMER_SCALE, ctypes.byref(ctypes.c_long(1)), 4)
-            self.__update_bus_parameters()
-            canlib.canBusOn(self.__handle)
+        InputValidation.verify_parameter_type("@channel.setter", "channel", value, (types.IntType,))
+        InputValidation.verify_parameter_min_value("@channel.setter", "channel", value, 0)
+        InputValidation.verify_parameter_max_value("@channel.setter", "channel", value, _num_channels.value)
+        if "__handle" in self.__dict__:
+            canlib.canBusOff(self.__handle)
+            canlib.kvSetNotifyCallback(self.__handle, ctypes.c_void_p(0), ctypes.c_void_p(0), 0)
+            canlib.canClose(self.__handle)
+        self.__channel = value
+        self.__handle = canlib.canOpenChannel(value, canlib.canOPEN_ACCEPT_VIRTUAL)
+        canlib.canIoCtl(self.__handle, canlib.canIOCTL_SET_TIMER_SCALE, ctypes.byref(ctypes.c_long(1)), 4)
+        self.__update_bus_parameters()
+        canlib.canBusOn(self.__handle)
 
     @property
     def speed(self):
@@ -351,15 +347,11 @@ class Bus(object):
 
     @speed.setter
     def speed(self, value):
-        if not isinstance(value, (types.IntType, types.LongType)):
-            raise TypeError("speed (%s) is not of type 'int' or type 'long'" % value)
-        elif value < 0:
-            raise ValueError("speed (%s) < 0" % value)
-        elif value > 1000000:
-            raise ValueError("speed (%s) > 1000000" % value)
-        else:
-            self.__speed = value
-            self.__update_bus_parameters()
+        InputValidation.verify_parameter_type("@speed.setter", "speed", value, (types.IntType,))
+        InputValidation.verify_parameter_min_value("@speed.setter", "speed", value, 0)
+        InputValidation.verify_parameter_max_value("@speed.setter", "speed", value, 1000000)
+        self.__speed = value
+        self.__update_bus_parameters()
 
     @property
     def tseg1(self):
@@ -367,15 +359,11 @@ class Bus(object):
 
     @tseg1.setter
     def tseg1(self, value):
-        if not isinstance(value, (types.IntType)):
-            raise TypeError("tseg1 (%s) is not of type 'int'" % value)
-        elif value < 0:
-            raise ValueError("tseg1 (%s) < 0" % value)
-        elif value > 255:
-            raise ValueError("tseg1 (%s) > 255" % value)
-        else:
-            self.__tseg1 = value
-            self.__update_bus_parameters()
+        InputValidation.verify_parameter_type("@tseg1.setter", "tseg1", value, (types.IntType,))
+        InputValidation.verify_parameter_min_value("@tseg1.setter", "tseg1", value, 0)
+        InputValidation.verify_parameter_max_value("@tseg1.setter", "tseg1", value, 255)
+        self.__tseg1 = value
+        self.__update_bus_parameters()
 
     @property
     def tseg2(self):
@@ -383,15 +371,11 @@ class Bus(object):
 
     @tseg2.setter
     def tseg2(self, value):
-        if not isinstance(value, (types.IntType)):
-            raise TypeError("tseg2 (%s) is not of type 'int'" % value)
-        elif value < 0:
-            raise ValueError("tseg2 (%s) < 0" % value)
-        elif value > 255:
-            raise ValueError("tseg2 (%s) > 255" % value)
-        else:
-            self.__tseg2 = value
-            self.__update_bus_parameters()
+        InputValidation.verify_parameter_type("@tseg2.setter", "tseg2", value, (types.IntType,))
+        InputValidation.verify_parameter_min_value("@tseg2.setter", "tseg2", value, 0)
+        InputValidation.verify_parameter_max_value("@tseg2.setter", "tseg2", value, 255)
+        self.__tseg2 = value
+        self.__update_bus_parameters()
 
     @property
     def sjw(self):
@@ -399,13 +383,10 @@ class Bus(object):
 
     @sjw.setter
     def sjw(self, value):
-        if not isinstance(value, types.IntType):
-            raise TypeError("sjw (%s) is not of type 'int'" % value)
-        elif value not in [1, 2, 3, 4]:
-            raise ValueError("sjw (%s) is not 1, 2, 3 or 4" % value)
-        else:
-            self.__sjw = value
-            self.__update_bus_parameters()
+        InputValidation.verify_parameter_type("@sjw.setter", "sjw", value, (types.IntType,))
+        InputValidation.verify_parameter_value_in_set("@sjw.setter", "sjw", value, [1, 2, 3, 4])
+        self.__sjw = value
+        self.__update_bus_parameters()
 
     @property
     def no_samp(self):
@@ -413,13 +394,10 @@ class Bus(object):
 
     @no_samp.setter
     def no_samp(self, value):
-        if not isinstance(value, types.IntType):
-            raise TypeError("no_samp (%s) is not of type 'int'" % value)
-        elif value not in [1, 3]:
-            raise ValueError("sjw (%s) is not 1 or 3" % value)
-        else:
-            self.__no_samp = value
-            self.__update_bus_parameters()
+        InputValidation.verify_parameter_type("@no_samp.setter", "no_samp", value, (types.IntType,))
+        InputValidation.verify_parameter_value_in_set("@no_samp.setter", "no_samp", value, [1, 3])
+        self.__no_samp = value
+        self.__update_bus_parameters()
 
     @property
     def std_acceptance_filter(self):
@@ -427,6 +405,14 @@ class Bus(object):
 
     @std_acceptance_filter.setter
     def std_acceptance_filter(self, value):
+        InputValidation.verify_parameter_type("@std_acceptance_filter.setter", "std_acceptance_filter", value, (types.TupleType,))
+        InputValidation.verify_parameter_value_equal_to("@std_acceptance_filter.setter", "len(std_acceptance_filter)", len(value), 2)
+        InputValidation.verify_parameter_type("@std_acceptance_filter.setter", "std_acceptance_code", value[0], (types.IntType,))
+        InputValidation.verify_parameter_type("@std_acceptance_filter.setter", "std_acceptance_mask", value[1], (types.IntType,))
+        InputValidation.verify_parameter_min_value("@std_acceptance_filter.setter", "std_acceptance_code", value[0], 0)
+        InputValidation.verify_parameter_min_value("@std_acceptance_filter.setter", "std_acceptance_mask", value[1], 0)
+        InputValidation.verify_parameter_max_value("@std_acceptance_filter.setter", "std_acceptance_code", value[0], ((2 ** 11) - 1))
+        InputValidation.verify_parameter_max_value("@std_acceptance_filter.setter", "std_acceptance_mask", value[1], ((2 ** 11) - 1))
         self.__set_acceptance_filter(value, canlib.ACCEPTANCE_FILTER_TYPE_STD)
 
     @property
@@ -435,6 +421,14 @@ class Bus(object):
 
     @ext_acceptance_filter.setter
     def ext_acceptance_filter(self, value):
+        InputValidation.verify_parameter_type("@ext_acceptance_filter.setter", "ext_acceptance_filter", value, (types.TupleType,))
+        InputValidation.verify_parameter_value_equal_to("@ext_acceptance_filter.setter", "len(ext_acceptance_filter)", len(value), 2)
+        InputValidation.verify_parameter_type("@ext_acceptance_filter.setter", "ext_acceptance_code", value[0], (types.IntType,))
+        InputValidation.verify_parameter_type("@ext_acceptance_filter.setter", "ext_acceptance_mask", value[1], (types.IntType,))
+        InputValidation.verify_parameter_min_value("@ext_acceptance_filter.setter", "ext_acceptance_code", value[0], 0)
+        InputValidation.verify_parameter_min_value("@ext_acceptance_filter.setter", "ext_acceptance_mask", value[1], 0)
+        InputValidation.verify_parameter_max_value("@ext_acceptance_filter.setter", "ext_acceptance_code", value[0], ((2 ** 29) - 1))
+        InputValidation.verify_parameter_max_value("@ext_acceptance_filter.setter", "ext_acceptance_mask", value[1], ((2 ** 29) - 1))
         self.__set_acceptance_filter(value, canlib.ACCEPTANCE_FILTER_TYPE_EXT)
 
     ############# Bus statistics (read only) ##############
@@ -541,8 +535,7 @@ class Bus(object):
             return None
 
     def write(self, msg):
-        if not isinstance(msg, Message):
-            raise TypeError("message argument to Bus.write is not of type %s" % Message)
+        InputValidation.verify_parameter_type("write", "msg", msg, (Message,))
         self.__tx_queue.put_nowait()
         self.__tx_callback()
 
@@ -563,10 +556,8 @@ class Bus(object):
         self.enable_callback()
 
     def add_listener(self, listener):
-        if not isinstance(listener, Listener):
-            raise TypeError("listener to be added (type %s) should be of type 'Listener'" % type(listener))
-        else:
-            self.__listeners.append(listener)
+        InputValidation.verify_parameter_type("add_listener", "listener", listener, (Listener,))
+        self.__listeners.append(listener)
 
     def remove_listener(self, listener):
         self.__listeners.remove(listener)
@@ -591,28 +582,7 @@ class Bus(object):
         return _stats
 
     def __set_acceptance_filter(self, value, msg_type):
-        if msg_type == canlib.ACCEPTANCE_FILTER_TYPE_STD:
-            _max_value = ((2 ** 11) - 1)
-        elif msg_type == canlib.ACCEPTANCE_FILTER_TYPE_EXT:
-            _max_value = ((2 ** 29) - 1)
-        else:
-            raise ValueError("msg_type (%d) should be either ACCEPTANCE_FILTER_TYPE_STD or ACCEPTANCE_FILTER_TYPE_EXT" % value)
-        if not isinstance(value, types.TupleType):
-            raise TypeError("acceptance_filter (%s) is not a tuple" % value)
-        if len(value) != 2:
-            raise IndexError("acceptance_filter contains %d elements (should be 2)" % len(value))
-        if not isinstance(value[0], (types.IntType, types.LongType)):
-            raise TypeError("acceptance code (%s) is not of type 'int' or 'long'" % value)
-        if not isinstance(value[1], (types.IntType, types.LongType)):
-            raise TypeError("acceptance mask (%s) is not of type 'int' or 'long'" % value)
-        if value[0] < 0:
-            raise ValueError("acceptance code (%s) < 0" % value)
-        if value[0] > _max_value:
-            raise ValueError("acceptance code (%s) > %d" % (value[0], _max_value))
-        if value[1] < 0:
-            raise ValueError("acceptance mask (%s) < 0" % value)
-        if value[1] > _max_value:
-            raise ValueError("acceptance mask (%s) > %d" % (value[1], _max_value))
+        InputValidation.verify_parameter_value_in_set("__set_acceptance_filter", "msg_type", msg_type, [canlib.ACCEPTANCE_FILTER_TYPE_STD, canlib.ACCEPTANCE_FILTER_TYPE_EXT])
         if msg_type == canlib.ACCEPTANCE_FILTER_TYPE_STD:
             self.__std_acceptance_code = value[0]
             self.__std_acceptance_mask = value[1]
@@ -715,10 +685,8 @@ class ChannelInfo(object):
 
     @channel.setter
     def channel(self, value):
-        if not isinstance(value, types.IntType):
-            raise TypeError("channel is not of type 'int'")
-        if value < 0:
-            raise ValueError("channel < 0")
+        InputValidation.verify_parameter_type("@channel.setter", "channel", value, (types.IntType,))
+        InputValidation.verify_parameter_min_value("@channel.setter", "channel", value, 0)
         self.__channel = value
 
     @property
@@ -727,8 +695,7 @@ class ChannelInfo(object):
 
     @name.setter
     def name(self, value):
-        if not isinstance(value, types.StringType):
-            raise TypeError("name is not of type 'str'")
+        InputValidation.verify_parameter_type("@name.setter", "name", value, (types.StringType,))
         self.__name = value
 
     @property
@@ -737,8 +704,7 @@ class ChannelInfo(object):
 
     @manufacturer.setter
     def manufacturer(self, value):
-        if not isinstance(value, types.StringType):
-            raise TypeError("manufacturer is not of type 'str'")
+        InputValidation.verify_parameter_type("@manufacturer.setter", "manufacturer", value, (types.StringType,))
         self.__manufacturer = value
 
     @property
@@ -747,8 +713,7 @@ class ChannelInfo(object):
 
     @fw_version.setter
     def fw_version(self, value):
-        if not isinstance(value, types.StringType):
-            raise TypeError("fw_version is not of type 'str'")
+        InputValidation.verify_parameter_type("@fw_version.setter", "fw_version", value, (types.StringType,))
         self.__fw_version = value
 
     @property
@@ -757,8 +722,7 @@ class ChannelInfo(object):
 
     @hw_version.setter
     def hw_version(self, value):
-        if not isinstance(value, types.StringType):
-            raise TypeError("hw_version is not of type 'str'")
+        InputValidation.verify_parameter_type("@hw_version.setter", "hw_version", value, (types.StringType,))
         self.__hw_version = value
 
     @property
@@ -767,10 +731,8 @@ class ChannelInfo(object):
 
     @card_serial.setter
     def card_serial(self, value):
-        if not isinstance(value, types.IntType):
-            raise TypeError("card_serial is not of type 'int'")
-        if value < 0:
-            raise ValueError("card_serial < 0")
+        InputValidation.verify_parameter_type("@card_serial.setter", "card_serial", value, (types.IntType,))
+        InputValidation.verify_parameter_min_value("@card_serial.setter", "card_serial", value, 0)
         self.__card_serial = value
 
     @property
@@ -779,10 +741,8 @@ class ChannelInfo(object):
 
     @trans_serial.setter
     def trans_serial(self, value):
-        if not isinstance(value, types.IntType):
-            raise TypeError("trans_serial is not of type 'int'")
-        if value < 0:
-            raise ValueError("trans_serial < 0")
+        InputValidation.verify_parameter_type("@trans_serial.setter", "trans_serial", value, (types.IntType,))
+        InputValidation.verify_parameter_min_value("@trans_serial.setter", "trans_serial", value, 0)
         self.__trans_serial = value
 
     @property
@@ -791,10 +751,8 @@ class ChannelInfo(object):
 
     @trans_type.setter
     def trans_type(self, value):
-        if not isinstance(value, types.LongType):
-            raise TypeError("trans_type (type %s) is not of type 'long'" % type(value))
-        if value not in canstat.canTransceiverTypeStrings.keys():
-            raise ValueError("trans_type not known to CANLIB")
+        InputValidation.verify_parameter_type("@trans_type.setter", "trans_type", value, (types.LongType,))
+        InputValidation.verify_parameter_value_in_set("@trans_type.setter", "trans_type", value, canstat.canTransceiverTypeStrings.keys())
         self.__trans_type = value
 
     @property
@@ -803,10 +761,8 @@ class ChannelInfo(object):
 
     @card_number.setter
     def card_number(self, value):
-        if not isinstance(value, types.LongType):
-            raise TypeError("card_number is not of type 'long'")
-        if value < 0:
-            raise ValueError("card_number < 0")
+        InputValidation.verify_parameter_type("@card_number.setter", "card_number", value, (types.LongType,))
+        InputValidation.verify_parameter_min_value("@card_number.setter", "card_number", value, 0)
         self.__card_number = value
 
     @property
@@ -815,10 +771,8 @@ class ChannelInfo(object):
 
     @channel_on_card.setter
     def channel_on_card(self, value):
-        if not isinstance(value, types.LongType):
-            raise TypeError("channel_on_card is not of type 'long'")
-        if value < 0:
-            raise ValueError("channel_on_card < 0")
+        InputValidation.verify_parameter_type("@channel_on_card.setter", "channel_on_card", value, (types.LongType,))
+        InputValidation.verify_parameter_min_value("@channel_on_card.setter", "channel_on_card", value, 0)
         self.__channel_on_card = value
 
 
@@ -855,8 +809,7 @@ class LogInfo(object):
 
     @log_start_time.setter
     def log_start_time(self, value):
-        if not isinstance(value, (datetime.datetime, types.NoneType)):
-            raise TypeError("log_start_time is not of type 'datetime.datetime' or 'NoneType'")
+        InputValidation.verify_parameter_type("@log_start_time.setter", "log_start_time", value, (datetime.datetime, types.NoneType))
         try:
             if self.log_end_time < value:
                 raise ValueError("log start time is after log end time")
@@ -870,8 +823,7 @@ class LogInfo(object):
 
     @log_end_time.setter
     def log_end_time(self, value):
-        if not isinstance(value, (datetime.datetime, types.NoneType)):
-            raise TypeError("log_end_time is not of type 'datetime.datetime' or 'NoneType'")
+        InputValidation.verify_parameter_type("@log_end_time.setter", "log_end_time", value, (datetime.datetime, types.NoneType))
         try:
             if self.log_start_time > value:
                 raise ValueError("log end time is before log start time")
@@ -885,8 +837,7 @@ class LogInfo(object):
 
     @original_file_name.setter
     def original_file_name(self, value):
-        if not isinstance(value, types.StringType):
-            raise ValueError("original_file_name is not of type 'str'")
+        InputValidation.verify_parameter_type("@original_file_name.setter", "original_file_name", value, (types.StringType,))
         self.__original_file_name = value
 
     @property
@@ -895,8 +846,7 @@ class LogInfo(object):
 
     @test_location.setter
     def test_location(self, value):
-        if not isinstance(value, types.StringType):
-            raise ValueError("test_location is not of type 'str'")
+        InputValidation.verify_parameter_type("@test_location.setter", "test_location", value, (types.StringType,))
         self.__test_location = value
 
     @property
@@ -905,8 +855,7 @@ class LogInfo(object):
 
     @tester_name.setter
     def tester_name(self, value):
-        if not isinstance(value, types.StringType):
-            raise ValueError("tester_name is not of type 'str'")
+        InputValidation.verify_parameter_type("@tester_name.setter", "tester_name", value, (types.StringType,))
         self.__tester_name = value
 
     def __str__(self):
@@ -942,8 +891,7 @@ class MachineInfo(object):
 
     @machine_name.setter
     def machine_name(self, value):
-        if not isinstance(value, types.StringType):
-            raise TypeError("machine_name is not of type 'str'")
+        InputValidation.verify_parameter_type("@machine_name.setter", "machine_name", value, (types.StringType,))
         self.__machine_name = value
 
     @property
@@ -952,8 +900,7 @@ class MachineInfo(object):
 
     @python_version.setter
     def python_version(self, value):
-        if not isinstance(value, types.StringType):
-            raise TypeError("python_version is not of type 'str'")
+        InputValidation.verify_parameter_type("@python_version.setter", "python_version", value, (types.StringType,))
         self.__python_version = value
 
     @property
@@ -962,8 +909,7 @@ class MachineInfo(object):
 
     @os_type.setter
     def os_type(self, value):
-        if not isinstance(value, types.StringType):
-            raise TypeError("os_type is not of type 'str'")
+        InputValidation.verify_parameter_type("@os_type.setter", "os_type", value, (types.StringType,))
         self.__os_type = value
 
     @property
@@ -979,8 +925,7 @@ class MachineInfo(object):
             _value = "unknown"
         else:
             _value = value
-        if not isinstance(_value, types.StringType):
-            raise TypeError("os_name is not of type 'str'")
+        InputValidation.verify_parameter_type("@os_name.setter", "os_name", value, (types.StringType,))
         self.__os_name = _value
 
     @property
@@ -989,8 +934,7 @@ class MachineInfo(object):
 
     @canlib_version.setter
     def canlib_version(self, value):
-        if not isinstance(value, types.StringType):
-            raise TypeError("canlib_version is not of type 'str'")
+        InputValidation.verify_parameter_type("@canlib_version.setter", "canlib_version", value, (types.StringType,))
         self.__canlib_version = value
 
     @property
@@ -999,6 +943,7 @@ class MachineInfo(object):
 
     @module_versions.setter
     def module_versions(self, value):
+        InputValidation.verify_parameter_type("@module_versions.setter", "module_versions", value, (types.DictType,))
         if not isinstance(value, types.DictType):
             raise TypeError("module_versions is not of type 'dict'")
         self.__module_versions = value
@@ -1060,8 +1005,7 @@ class Log(object):
 
     @log_info.setter
     def log_info(self, value):
-        if not isinstance(value, LogInfo):
-            raise TypeError("log_info is not of type 'LogInfo'")
+        InputValidation.verify_parameter_type("@log_info.setter", "log_info", value, (LogInfo,))
         self.__log_info = value
 
     @property
@@ -1070,8 +1014,7 @@ class Log(object):
 
     @channel_info.setter
     def channel_info(self, value):
-        if not isinstance(value, (ChannelInfo, types.NoneType)):
-            raise TypeError("channel_info is not of type 'ChannelInfo' or 'NoneType'")
+        InputValidation.verify_parameter_type("@channel_info.setter", "channel_info", value, (ChannelInfo, types.NoneType))
         self.__channel_info = value
 
     @property
@@ -1080,8 +1023,7 @@ class Log(object):
 
     @machine_info.setter
     def machine_info(self, value):
-        if not isinstance(value, MachineInfo):
-            raise TypeError("machine_info is not of type 'MachineInfo'")
+        InputValidation.verify_parameter_type("@machine_info.setter", "machine_info", value, (MachineInfo,))
         self.__machine_info = value
 
     @property
@@ -1090,11 +1032,9 @@ class Log(object):
 
     @message_lists.setter
     def message_lists(self, value):
-        if not isinstance(value, types.ListType):
-            raise TypeError("message_lists is not of type 'list'")
+        InputValidation.verify_parameter_type("@message_lists.setter", "message_lists", value, (types.ListType,))
         for (_index, _value) in enumerate(value):
-            if not isinstance(_value, MessageList):
-                raise TypeError("message_lists[%d] is not of type MessageList" % _index)
+            InputValidation.verify_parameter_type("@message_lists.setter", ("message_lists[%d]" % _index), _value, (MessageList,))
         self. __message_lists = value
 
     def __str__(self):
