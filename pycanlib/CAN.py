@@ -8,7 +8,7 @@ import sys
 import time
 import types
 
-def get_version_number(filename):
+def get_version_number(filename):#pragma: no cover
     _current_dir = os.getcwd()
     os.chdir(os.path.dirname(filename))
     try:
@@ -90,10 +90,10 @@ class Message(object):
 
     @is_remote_frame.setter
     def is_remote_frame(self, value):
-        InputValidation.verify_parameter_range("@is_remote_frame.setter", "is_remote_frame", value, (REMOTE_FRAME, DATA_FRAME))
+        InputValidation.verify_parameter_type("@is_remote_frame.setter", "is_remote_frame", value, (types.BooleanType,))
         self.flags &= (0xFFFF - canstat.canMSG_RTR)
         self.flags |= (value * canstat.canMSG_RTR)
-        
+
     @property
     def id_type(self):
         try:
@@ -106,7 +106,7 @@ class Message(object):
 
     @id_type.setter
     def id_type(self, value):
-        InputValidation.verify_parameter_range("@id_type.setter", "id_type", value, (ID_TYPE_EXT, ID_TYPE_STD))
+        InputValidation.verify_parameter_type("@id_type.setter", "id_type", value, (types.BooleanType,))
         self.flags &= (0xFFFF - (canstat.canMSG_STD | canstat.canMSG_EXT))
         if value == ID_TYPE_EXT:
             self.flags |= canstat.canMSG_EXT
@@ -119,13 +119,13 @@ class Message(object):
             if self.flags & canstat.canMSG_WAKEUP:
                 return WAKEUP_MSG
             else:
-                return not WAKEUP_MSG
+                return (not WAKEUP_MSG)
         except AttributeError:
             return not WAKEUP_MSG
 
     @is_wakeup.setter
     def is_wakeup(self, value):
-        InputValidation.verify_parameter_range("@is_wakeup.setter", "is_wakeup", value, (WAKEUP_MSG, not WAKEUP_MSG))
+        InputValidation.verify_parameter_type("@is_wakeup.setter", "is_wakeup", value, (types.BooleanType,))
         self.flags &= (0xFFFF - canstat.canMSG_WAKEUP)
         if value == WAKEUP_MSG:
             self.flags |= canstat.canMSG_WAKEUP
@@ -142,7 +142,7 @@ class Message(object):
 
     @is_error_frame.setter
     def is_error_frame(self, value):
-        InputValidation.verify_parameter_range("@is_error_frame.setter", "is_error_frame", value, (ERROR_FRAME, not ERROR_FRAME))
+        InputValidation.verify_parameter_type("@is_error_frame.setter", "is_error_frame", value, (types.BooleanType,))
         self.flags &= (0xFFFF - canstat.canMSG_ERROR_FRAME)
         if value == ERROR_FRAME:
             self.flags |= canstat.canMSG_ERROR_FRAME
