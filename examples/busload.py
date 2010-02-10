@@ -24,7 +24,7 @@ def CreateBusObject(options):
     _tseg2 = int(options.tseg2)
     _sjw = int(options.sjw)
     _noSamp = int(options.noSamp)
-    return CAN.Bus(channel=_channel, flags=canlib.canOPEN_ACCEPT_VIRTUAL, speed=_speed, tseg1=_tseg1, tseg2=_tseg2, sjw=_sjw, no_samp=_noSamp)
+    return CAN.Bus(channel=_channel, speed=_speed, tseg1=_tseg1, tseg2=_tseg2, sjw=_sjw, no_samp=_noSamp)
 
 def main(arguments):
     (options, args) = ParseArguments(arguments)
@@ -33,7 +33,7 @@ def main(arguments):
     try:
         while True:
             time.sleep(_refreshInterval)
-            print "Bus load = %f%%" % bus.get_statistics().bus_load
+            print "Bus load = %f%%" % bus.bus_load
     except KeyboardInterrupt:
         pass
 
