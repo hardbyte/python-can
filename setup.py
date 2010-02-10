@@ -12,4 +12,4 @@ if __name__ == "__main__":
     _versionFile = open(_versionNumberFileName, "w")
     _versionFile.write(_version)
     _versionFile.close()
-    setup( name="pycanlib", version=_version, packages=find_packages(exclude=["test"]), package_data={"pycanlib": ["version.txt"]}, scripts=["./bin/can_logger.py", "./bin/xml2tdv.py", "./bin/dat2tdv.py", "./bin/ipy_profile_pycanlib.py", "./examples/getchanneldata.py"])
+    setup( name="pycanlib", version=_version, packages=find_packages(exclude=["test"]), package_data={"pycanlib": ["version.txt"]}, scripts=["./bin/can_logger.py", "./bin/xml2tdv.py", "./bin/dat2tdv.py", "./bin/ipy_profile_pycanlib.py", "./examples/getchanneldata.py", "./examples/busload.py"])

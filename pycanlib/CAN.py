@@ -8,7 +8,7 @@ import sys
 import time
 import types
 
-def get_version_number(filename):#pragma: no cover
+def get_version_number(filename):
     _current_dir = os.getcwd()
     os.chdir(os.path.dirname(filename))
     try:
@@ -984,12 +984,6 @@ def get_host_machine_info():
 
 
 def get_canlib_info():
-    """
-    Method: get_canlib_info
-
-    Returns the version of the CANLIB SDK installed on the host machine, as
-    a string.
-    """
     _canlib_prod_ver_32 = \
       canlib.canGetVersionEx(canlib.canVERSION_CANLIB32_PRODVER32)
     _major_ver_no = (_canlib_prod_ver_32 & 0x00FF0000) >> 16

@@ -23,14 +23,13 @@ def main():
     _loggerObj.info("CANLIB: %s" % CAN.get_canlib_info())
     _loggerObj.info("pycanlib: %s" % CAN.__version__)
     _loggerObj.info("-"*64)
-    names = ["foo", "bar", "bork", "baz"]
     buses = {}
     canlib.canInitializeLibrary()
     _numChannels = ctypes.c_int(0)
     canlib.canGetNumberOfChannels(ctypes.byref(_numChannels))
     for channel in xrange(0, _numChannels.value):
-        buses[channel] = CAN.Bus(channel, canlib.canOPEN_ACCEPT_VIRTUAL, 105263, 10, 8, 4, 1, name=names[channel])
-        for line in buses[channel].get_channel_info().__str__().split("\n"):
+        buses[channel] = CAN.Bus(channel, 1000000, 4, 3, 1, 3)
+        for line in buses[channel].channel_info.__str__().split("\n"):
             _loggerObj.info(line)
         _loggerObj.info("-"*64)
 
