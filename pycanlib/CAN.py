@@ -633,7 +633,7 @@ class Bus(object):
                 _id_type = ID_TYPE_EXT
             else:
                 _id_type = ID_TYPE_STD
-            _rx_msg = Message(arb_id=_arb_id.value, data=_data_array[:_dlc.value], dlc=int(_dlc.value), id_type=_id_type, timestamp = (float(_timestamp.value) / 1000000))
+            _rx_msg = Message(arbitration_id=_arb_id.value, data=_data_array[:_dlc.value], dlc=int(_dlc.value), id_type=_id_type, timestamp = (float(_timestamp.value) / 1000000))
             _rx_msg.flags = int(_flags.value) & canstat.canMSG_MASK
             return _rx_msg
         else:
