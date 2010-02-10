@@ -65,7 +65,7 @@ class Message(object):
         self.is_remote_frame = is_remote_frame
         self.id_type = id_type
         self.is_wakeup = is_wakeup
-        self.is_err_frame = is_error_frame
+        self.is_error_frame = is_error_frame
         self.arbitration_id = arbitration_id
         self.data = data
         self.dlc = dlc
@@ -83,10 +83,7 @@ class Message(object):
 
     @property
     def is_remote_frame(self):
-        try:
-            return self.flags & canstat.canMSG_RTR
-        except AttributeError:
-            return DATA_FRAME
+        return self.flags & canstat.canMSG_RTR
 
     @is_remote_frame.setter
     def is_remote_frame(self, value):
@@ -96,12 +93,9 @@ class Message(object):
 
     @property
     def id_type(self):
-        try:
-            if self.flags & canstat.canMSG_EXT:
-                return ID_TYPE_EXT
-            elif self.flags & canstat.canMSG_STD:
-                return ID_TYPE_STD
-        except AttributeError:
+        if self.flags & canstat.canMSG_EXT:
+            return ID_TYPE_EXT
+        elif self.flags & canstat.canMSG_STD:
             return ID_TYPE_STD
 
     @id_type.setter
@@ -115,12 +109,9 @@ class Message(object):
 
     @property
     def is_wakeup(self):
-        try:
-            if self.flags & canstat.canMSG_WAKEUP:
-                return WAKEUP_MSG
-            else:
-                return (not WAKEUP_MSG)
-        except AttributeError:
+        if self.flags & canstat.canMSG_WAKEUP:
+            return WAKEUP_MSG
+        else:
             return not WAKEUP_MSG
 
     @is_wakeup.setter
@@ -132,12 +123,9 @@ class Message(object):
 
     @property
     def is_error_frame(self):
-        try:
-            if self.flags & canstat.canMSG_ERROR_FRAME:
-                return ERROR_FRAME
-            else:
-                return not ERROR_FRAME
-        except AttributeError:
+        if self.flags & canstat.canMSG_ERROR_FRAME:
+            return ERROR_FRAME
+        else:
             return not ERROR_FRAME
 
     @is_error_frame.setter
@@ -155,7 +143,7 @@ class Message(object):
     def arbitration_id(self, value):
         InputValidation.verify_parameter_type("@arbitration_id.setter", "arbitration_id", value, (types.IntType, types.LongType))
         InputValidation.verify_parameter_min_value("@arbitration_id.setter", "arbitration_id", value, 0)
-        if self.flags & canstat.canMSG_EXT:
+        if self.id_type == ID_TYPE_EXT:
             InputValidation.verify_parameter_max_value("@arbitration_id.setter", "arbitration_id", value, ((2 ** 29) - 1))
         else:
             InputValidation.verify_parameter_max_value("@arbitration_id.setter", "arbitration_id", value, ((2 ** 11) - 1))

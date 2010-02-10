@@ -11,23 +11,6 @@ def setup():
     _num_channels = ctypes.c_int(0)
     canlib.canGetNumberOfChannels(ctypes.byref(_num_channels))
     _num_channels = _num_channels.value
-    #We need to verify that all of pycanlib's functions operate correctly
-    #on both virtual and physical channels, so we need to find at least one
-    #of each to test with
-    _physical_channels = []
-    _virtual_channels = []
-    for _channel in xrange(_num_channels):
-        _card_type = ctypes.c_int(0)
-        canlib.canGetChannelData(_channel,
-          canlib.canCHANNELDATA_CARD_TYPE, ctypes.byref(_card_type), 4)
-        if _card_type.value == canlib.canHWTYPE_VIRTUAL:
-            _virtual_channels.append(_channel)
-        elif _card_type.value != canlib.canHWTYPE_NONE:
-            _physical_channels.append(_channel)
-    if len(_virtual_channels) == 0:
-        raise Exception("No virtual channels available for testing")
-    elif len(_physical_channels) == 0:
-        raise Exception("No physical channels available for testing")
 
 def testShallNotAcceptInvalidTimestamps():
     for _timestamp in ["foo", -5, -1.0, 0.0, 1, 1.0, 2.5, 10000, 10000.2, True, False]:
@@ -108,10 +91,8 @@ def __isErrorFrameFlagValid(flag):
     except Exception as e:
         _test_logger.debug("Exception thrown by CAN.Message", exc_info=True)
     if (flag in (CAN.ERROR_FRAME, (not CAN.ERROR_FRAME))) and isinstance(flag, types.BooleanType):
-        print _msg_object
         assert (_msg_object is not None)
         assert _msg_object.is_error_frame == flag
     else:
         print _msg_object
         assert (_msg_object is None)
-
