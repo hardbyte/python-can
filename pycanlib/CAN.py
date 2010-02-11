@@ -8,9 +8,34 @@ import sys
 import time
 import types
 
-def get_version_number(filename):
+def get_version_number(repo_path):
+    """
+    get_version_number
+    
+    Retrieves the version number of this pycanlib, first attempting to find
+    the version number given the Mercurial changeset label, and falling back
+    to a file containing this information if no Mercurial installation is
+    available or the installation directory is not a Mercurial repository.
+    
+    Inputs:
+        repo_path - path to the repository to get version information for. The
+        directory must exist.
+    
+    Returns:
+        A string containing the version number of the repository.
+    
+    Example:
+        >>> from pycanlib import CAN
+        >>> import os
+        >>> CAN.__version__ == CAN.get_version_number(os.path.dirname(CAN.__file__)) #doctest: +ELLIPSIS
+        True
+    """
     _current_dir = os.getcwd()
-    os.chdir(os.path.dirname(filename))
+    if repo_path == "":
+        _repo_path = os.path.join(".", repo_path)
+    else:
+        _repo_path = repo_path
+    os.chdir(_repo_path)
     try:
         os.system("hg id > id.tmp")
         tagFile = open("id.tmp", "r")
@@ -26,19 +51,22 @@ def get_version_number(filename):
     except Exception as e:
         print e
         try:
-            VERSION_NUMBER_FILE = open(os.path.join(os.path.dirname(filename), "version.txt"), "r")
+            VERSION_NUMBER_FILE = open(os.path.join(_repo_path, "version.txt"), "r")
             retval =  VERSION_NUMBER_FILE.readline()
             VERSION_NUMBER_FILE.close()
         except IOError:
             retval = "UNKNOWN"
     return retval
 
-__version__ = get_version_number(__file__)
+__version__ = get_version_number(os.path.dirname(__file__))
 
 canlib.canInitializeLibrary()
 
-ID_TYPE_EXT = True
-ID_TYPE_STD = False
+ID_TYPE_EXTENDED = True
+ID_TYPE_STANDARD = False
+
+ID_TYPE_29_BIT = ID_TYPE_EXTENDED
+ID_TYPE_11_BIT = ID_TYPE_STANDARD
 
 REMOTE_FRAME = True
 DATA_FRAME = False
@@ -60,7 +88,7 @@ TRANS_SN_ARRAY = ctypes.c_ubyte * MAX_TRANS_SN_LENGTH
 
 class Message(object):
 
-    def __init__(self, timestamp=0.0, is_remote_frame=False, id_type=ID_TYPE_STD, is_wakeup=False, is_error_frame=False, arbitration_id=0, data=[], dlc=0):
+    def __init__(self, timestamp=0.0, is_remote_frame=False, id_type=ID_TYPE_STANDARD, is_wakeup=False, is_error_frame=False, arbitration_id=0, data=[], dlc=0):
         self.timestamp = timestamp
         self.is_remote_frame = is_remote_frame
         self.id_type = id_type
@@ -94,15 +122,15 @@ class Message(object):
     @property
     def id_type(self):
         if self.flags & canstat.canMSG_EXT:
-            return ID_TYPE_EXT
+            return ID_TYPE_EXTENDED
         elif self.flags & canstat.canMSG_STD:
-            return ID_TYPE_STD
+            return ID_TYPE_STANDARD
 
     @id_type.setter
     def id_type(self, value):
         InputValidation.verify_parameter_type("@id_type.setter", "id_type", value, types.BooleanType)
         self.flags &= (0xFFFF - (canstat.canMSG_STD | canstat.canMSG_EXT))
-        if value == ID_TYPE_EXT:
+        if value == ID_TYPE_EXTENDED:
             self.flags |= canstat.canMSG_EXT
         else:
             self.flags |= canstat.canMSG_STD
@@ -143,7 +171,7 @@ class Message(object):
     def arbitration_id(self, value):
         InputValidation.verify_parameter_type("@arbitration_id.setter", "arbitration_id", value, types.IntType)
         InputValidation.verify_parameter_min_value("@arbitration_id.setter", "arbitration_id", value, 0)
-        if self.id_type == ID_TYPE_EXT:
+        if self.id_type == ID_TYPE_EXTENDED:
             InputValidation.verify_parameter_max_value("@arbitration_id.setter", "arbitration_id", value, ((2 ** 29) - 1))
         else:
             InputValidation.verify_parameter_max_value("@arbitration_id.setter", "arbitration_id", value, ((2 ** 11) - 1))
@@ -618,9 +646,9 @@ class Bus(object):
         if _status.value == canstat.canOK:
             _data_array = map(ord, _data)
             if int(_flags.value) & canstat.canMSG_EXT:
-                _id_type = ID_TYPE_EXT
+                _id_type = ID_TYPE_EXTENDED
             else:
-                _id_type = ID_TYPE_STD
+                _id_type = ID_TYPE_STANDARD
             _rx_msg = Message(arbitration_id=_arb_id.value, data=_data_array[:_dlc.value], dlc=int(_dlc.value), id_type=_id_type, timestamp = (float(_timestamp.value) / 1000000))
             _rx_msg.flags = int(_flags.value) & canstat.canMSG_MASK
             return _rx_msg
