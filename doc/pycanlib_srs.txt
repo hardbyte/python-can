@@ -13,21 +13,21 @@ CAN Message Objects
 REQ-ShallCreateCANMessageObject
 -------------------------------
 
-The ``pycanlib`` module shall allow the creation of a Python object representing a CAN message, which consists of a timestamp, an arbitration ID, a DLC value (which defines the number of data bytes in the message), an array of data bytes, and flags indicating the arbitration ID length (11-bit or 29-bit), the frame type (data or remote, wakeup or non-wakeup, error or non-error).
+The ``pycanlib`` module shall allow the creation of a Python object representing a CAN message, which consists of a timestamp, an arbitration ID, a DLC value (which defines the number of data bytes in the message), an array of data bytes, and flags indicating the arbitration ID length (11-bit or 29-bit), the frame type (data or remote, wakeup or non-wakeup, error or non-error). All of these parameters shall have default values, so that it is possible to create a CAN message without specifying any of them.
 
 ``[UnitTest]``
 
 REQ-ShallNotAcceptInvalidTimestamps
 -----------------------------------
 
-If a timestamp value is passed to the ``pycanlib`` information message or CAN message constructors that is not a floating point number or is negative, the constructor shall raise an exception containing the invalid timestamp, and the message shall not be created. If the timestamp is greater than or equal to zero and is a float, a valid message object shall be created.
+If a timestamp value is passed to the ``pycanlib`` information message or CAN message constructors that is not a floating point number or is negative, the constructor shall raise an exception containing the invalid timestamp, and the message shall not be created. Otherwise, a valid message object shall be created.
 
 ``[UnitTest]``
 
-REQ-ShallNotAcceptInvalidDeviceIDs
-----------------------------------
+REQ-ShallNotAcceptInvalidArbitrationIDs
+---------------------------------------
 
-CAN device IDs are ll bits in length for standard messages and 29 bits in length for extended messages. If a device ID parameter is passed during initialisation of a CAN message object that is not an integer or is greater than 2\ :sup:`11` - 1 for a standard message or 2\ :sup:`29` - 1 for an extended message, ``pycanlib`` shall raise an exception containing the invalid device ID, and the message object shall not be created.
+CAN arbitration IDs are ll bits in length for standard messages and 29 bits in length for extended messages. If an arbitration ID parameter is passed during initialisation of a CAN message object that is not an integer or is greater than 2\ :sup:`11` - 1 for a standard message or 2\ :sup:`29` - 1 for an extended message, ``pycanlib`` shall raise an exception containing the invalid arbitration ID, and the message object shall not be created.
 
 ``[UnitTest]``
 
