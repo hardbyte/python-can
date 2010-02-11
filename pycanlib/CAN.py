@@ -23,12 +23,6 @@ def get_version_number(repo_path):
     
     Returns:
         A string containing the version number of the repository.
-    
-    Example:
-        >>> from pycanlib import CAN
-        >>> import os
-        >>> CAN.__version__ == CAN.get_version_number(os.path.dirname(CAN.__file__)) #doctest: +ELLIPSIS
-        True
     """
     _current_dir = os.getcwd()
     if repo_path == "":
@@ -87,8 +81,79 @@ MAX_TRANS_SN_LENGTH = 8
 TRANS_SN_ARRAY = ctypes.c_ubyte * MAX_TRANS_SN_LENGTH
 
 class Message(object):
+    """
+    Message
+    
+    Class representing CAN messages.
+    
+    Parent class: object
+    """
 
-    def __init__(self, timestamp=0.0, is_remote_frame=False, id_type=ID_TYPE_STANDARD, is_wakeup=False, is_error_frame=False, arbitration_id=0, data=[], dlc=0):
+    def __init__(self, timestamp=0.0, is_remote_frame=False, id_type=ID_TYPE_11_BIT, is_wakeup=(not WAKEUP_MSG), is_error_frame=(not ERROR_FRAME), arbitration_id=0, data=[], dlc=0, info_string=""):
+        """
+        Message.__init__
+        
+        Constructor for Message.
+        
+        Inputs:
+            timestamp (optional, default=0.0): Floating point number
+              representing the timestamp attached to this message (in
+              seconds). Legal values are floating point numbers greater
+              than or equal to 0.0.
+            is_remote_frame (optional, default=False): Boolean indicating
+              whether this message is a remote frame or a data frame. Legal
+              values are REMOTE_FRAME or DATA_FRAME.
+            id_type (optional, default=ID_TYPE_STANDARD): Boolean indicating
+              the length of this message's arbitration ID field. Legal values
+              are ID_TYPE_11_BIT and ID_TYPE_29_BIT.
+            is_wakeup (optional, default=(not WAKEUP_MSG)): Boolean indicating
+              whether this message is a wakeup message or not.
+            is_error_frame (optional, default=(not ERROR_FRAME)): Boolean
+              indicating whether this message is an error frame or not.
+            arbitration_id (optional, default=0): Arbitration ID of this
+              message. Legal values are greater than 0 and less than 2**11 (for
+              messages with an 11-bit arbitration ID), or less than 2**29 (for
+              messages with a 29-bit arbitration ID)
+            data (optional, default=[]): Data contained in this message. Legal
+              values are lists of between 0 and 8 integers, where each integer
+              has a value between 0 and 255.
+            dlc (optional, default=0): DLC of this message. Legal values are
+              integers between 0 and 8.
+            info_string (optional, default=""): Information string to be
+              attached to this message.
+        
+        Returns:
+            A Message object.
+        
+        Examples:
+            >>> from pycanlib import CAN
+            >>> test1 = CAN.Message()
+            >>> test1.timestamp
+            0.0
+            >>> test1.is_remote_frame
+            False
+            >>> test1.id_type == CAN.ID_TYPE_11_BIT
+            True
+            >>> test1.is_wakeup == (not CAN.WAKEUP_MSG)
+            True
+            >>> test1.is_error_frame == (not CAN.ERROR_FRAME)
+            True
+            >>> test1.arbitration_id
+            0
+            >>> test1.data
+            []
+            >>> test1.dlc
+            0
+            >>> test2 = CAN.Message(arbitration_id=1234, id_type=CAN.ID_TYPE_29_BIT, dlc=3, data=[0, 1, 2])
+            >>> test2.arbitration_id
+            1234
+            >>> test2.id_type == CAN.ID_TYPE_29_BIT
+            True
+            >>> test2.dlc
+            3
+            >>> test2.data
+            [0, 1, 2]
+        """
         self.timestamp = timestamp
         self.is_remote_frame = is_remote_frame
         self.id_type = id_type
@@ -97,7 +162,7 @@ class Message(object):
         self.arbitration_id = arbitration_id
         self.data = data
         self.dlc = dlc
-        self.info_string = ""
+        self.info_string = info_string
 
     @property
     def timestamp(self):
@@ -111,7 +176,10 @@ class Message(object):
 
     @property
     def is_remote_frame(self):
-        return self.flags & canstat.canMSG_RTR
+        if self.flags & canstat.canMSG_RTR:
+            return REMOTE_FRAME
+        else:
+            return not REMOTE_FRAME
 
     @is_remote_frame.setter
     def is_remote_frame(self, value):
@@ -208,6 +276,15 @@ class Message(object):
         except AttributeError:
             return 0
 
+    @property
+    def info_string(self):
+        return self.__info_string
+
+    @info_string.setter
+    def info_string(self, value):
+        InputValidation.verify_parameter_type("@info_string.setter", "info_string", value, types.StringType)
+        self.__info_string = value
+
     @flags.setter
     def flags(self, value):
         InputValidation.verify_parameter_type("@flags.setter", "flags", value, types.IntType)
@@ -218,12 +295,29 @@ class Message(object):
         self.__flags = value
 
     def __str__(self):
+        """
+        Message.__str__
+        
+        Inputs:
+            None
+        
+        Returns:
+            String representation of a Message object.
+        
+        Examples:
+            >>> test1 = Message()
+            >>> print test1.__str__() #doctest: +NORMALIZE_WHITESPACE
+            0.000000        0000        0002    0    
+            >>> test2 = Message(arbitration_id=1234, id_type=ID_TYPE_29_BIT, dlc=3, data=[0, 1, 2])
+            >>> print test2.__str__() #doctest: +NORMALIZE_WHITESPACE
+            0.000000    000004d2        0004    3       00 01 02    
+        """
         _field_strings = []
         _field_strings.append("%.6f" % self.timestamp)
         if self.flags & canstat.canMSG_EXT:
             _field_strings.append("%.8x" % self.arbitration_id)
         else:
-            _field_strings.append("%.4x" % self.arbitration_id)
+            _field_strings.append("    %.4x" % self.arbitration_id)
         _field_strings.append("%.4x" % self.flags)
         _field_strings.append("%d" % self.dlc)
         _data_strings = []
@@ -232,21 +326,52 @@ class Message(object):
                 _data_strings.append("%.2x" % byte)
         if len(_data_strings) > 0:
             _field_strings.append(" ".join(_data_strings))
+        _field_strings.append(self.info_string)
         return "\t".join(_field_strings)
-
-    @property
-    def info_string(self):
-        return self.__info_string
-
-    @info_string.setter
-    def info_string(self, value):
-        InputValidation.verify_parameter_type("@info_string.setter", "info_string", value, types.StringType)
-        self.__info_string = value
 
 
 class MessageList(object):
+    """
+    MessageList
+    
+    A class representing a list of CAN messages.
+    
+    Parent class: object
+    """
 
     def __init__(self, messages=[], filter_criteria="True", message_type=Message, name="default"):
+        """
+        MessageList.__init__
+        
+        Constructor for MessageList.
+        
+        Parameters:
+            messages (optional, default=[]): List of messages to be contained
+              in this MessageList. Must be a list of 0 or more Message objects.
+            filter_criteria (optional, default='True'): Filter criteria applied
+              to this message list.
+            message_type (optional, default=Message): Type of the messages
+              stored in this list.
+            name (optional, default="default"): Name for this list of messages.
+        
+        Returns:
+            A MessageList object.
+            
+        Examples:
+            >>> from pycanlib import CAN
+            >>> test1 = CAN.MessageList()
+            >>> test1.messages
+            []
+            >>> test2 = CAN.MessageList(messages=[CAN.Message(), CAN.Message(arbitration_id=1234, timestamp=0.1), CAN.Message(arbitration_id=5678, timestamp=0.2, id_type=CAN.ID_TYPE_29_BIT)])
+            >>> test2.messages #doctest:+ELLIPSIS
+            [<pycanlib.CAN.Message object at ...>, <pycanlib.CAN.Message object at ...>, <pycanlib.CAN.Message object at ...>]
+            >>> test2.filter_criteria
+            'True'
+            >>> test2.message_type
+            <class 'pycanlib.CAN.Message'>
+            >>> test2.name
+            'default'
+        """
         self.messages = messages
         self.filter_criteria = filter_criteria
         self.message_type = message_type

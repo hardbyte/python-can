@@ -7,7 +7,7 @@ sys.path.append(".")
 from pycanlib import CAN
 
 if __name__ == "__main__":
-    _version = CAN.get_version_number(__file__)
+    _version = CAN.get_version_number(os.path.dirname(__file__))
     _versionNumberFileName = "./pycanlib/version.txt"
     _versionFile = open(_versionNumberFileName, "w")
     _versionFile.write(_version)
