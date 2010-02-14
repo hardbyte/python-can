@@ -68,7 +68,7 @@ def testREQ_ShallCreateCANMessageObject():
     _message = CAN.Message()
     assert _message.timestamp == 0.0
     assert _message.is_remote_frame == False
-    assert _message.id_type == CAN.ID_TYPE_STD
+    assert _message.id_type == CAN.ID_TYPE_STANDARD
     assert _message.is_wakeup == False
     assert _message.is_error_frame == False
     assert _message.arbitration_id == 0
@@ -98,13 +98,13 @@ def __verify_invalid_timestamp_response(timestamp):
 
 def testREQ_ShallNotAcceptInvalidArbitrationIDs():
     for _arbitration_id in VALID_STANDARD_ARBITRATION_IDS:
-        yield __verify_invalid_arbitration_id_response, _arbitration_id, CAN.ID_TYPE_STD
+        yield __verify_invalid_arbitration_id_response, _arbitration_id, CAN.ID_TYPE_STANDARD
     for _arbitration_id in INVALID_STANDARD_ARBITRATION_IDS:
-        yield __verify_invalid_arbitration_id_response, _arbitration_id, CAN.ID_TYPE_STD
+        yield __verify_invalid_arbitration_id_response, _arbitration_id, CAN.ID_TYPE_STANDARD
     for _arbitration_id in VALID_EXTENDED_ARBITRATION_IDS:
-        yield __verify_invalid_arbitration_id_response, _arbitration_id, CAN.ID_TYPE_STD
+        yield __verify_invalid_arbitration_id_response, _arbitration_id, CAN.ID_TYPE_STANDARD
     for _arbitration_id in INVALID_EXTENDED_ARBITRATION_IDS:
-        yield __verify_invalid_arbitration_id_response, _arbitration_id, CAN.ID_TYPE_STD
+        yield __verify_invalid_arbitration_id_response, _arbitration_id, CAN.ID_TYPE_STANDARD
 
 def __verify_invalid_arbitration_id_response(arbitration_id, arbitration_id_type):
     _message = None
@@ -113,7 +113,7 @@ def __verify_invalid_arbitration_id_response(arbitration_id, arbitration_id_type
         _message = CAN.Message(id_type=arbitration_id_type, arbitration_id=arbitration_id)
     except InputValidation.pycanlibError as _exception:
         pass
-    if arbitration_id_type == CAN.ID_TYPE_STD:
+    if arbitration_id_type == CAN.ID_TYPE_STANDARD:
         _acceptable_ids = VALID_STANDARD_ARBITRATION_IDS
     else:
         _acceptable_ids = VALID_EXTENDED_ARBITRATION_IDS

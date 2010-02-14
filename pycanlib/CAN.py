@@ -126,17 +126,16 @@ class Message(object):
             A Message object.
         
         Examples:
-            >>> from pycanlib import CAN
-            >>> test1 = CAN.Message()
+            >>> test1 = Message()
             >>> test1.timestamp
             0.0
             >>> test1.is_remote_frame
             False
-            >>> test1.id_type == CAN.ID_TYPE_11_BIT
+            >>> test1.id_type == ID_TYPE_11_BIT
             True
-            >>> test1.is_wakeup == (not CAN.WAKEUP_MSG)
+            >>> test1.is_wakeup == (not WAKEUP_MSG)
             True
-            >>> test1.is_error_frame == (not CAN.ERROR_FRAME)
+            >>> test1.is_error_frame == (not ERROR_FRAME)
             True
             >>> test1.arbitration_id
             0
@@ -144,10 +143,10 @@ class Message(object):
             []
             >>> test1.dlc
             0
-            >>> test2 = CAN.Message(arbitration_id=1234, id_type=CAN.ID_TYPE_29_BIT, dlc=3, data=[0, 1, 2])
+            >>> test2 = Message(arbitration_id=1234, id_type=ID_TYPE_29_BIT, dlc=3, data=[0, 1, 2])
             >>> test2.arbitration_id
             1234
-            >>> test2.id_type == CAN.ID_TYPE_29_BIT
+            >>> test2.id_type == ID_TYPE_29_BIT
             True
             >>> test2.dlc
             3
@@ -358,11 +357,10 @@ class MessageList(object):
             A MessageList object.
             
         Examples:
-            >>> from pycanlib import CAN
-            >>> test1 = CAN.MessageList()
+            >>> test1 = MessageList()
             >>> test1.messages
             []
-            >>> test2 = CAN.MessageList(messages=[CAN.Message(), CAN.Message(arbitration_id=1234, timestamp=0.1), CAN.Message(arbitration_id=5678, timestamp=0.2, id_type=CAN.ID_TYPE_29_BIT)])
+            >>> test2 = MessageList(messages=[Message(), Message(arbitration_id=1234, timestamp=0.1), Message(arbitration_id=5678, timestamp=0.2, id_type=ID_TYPE_29_BIT)])
             >>> test2.messages #doctest:+ELLIPSIS
             [<pycanlib.CAN.Message object at ...>, <pycanlib.CAN.Message object at ...>, <pycanlib.CAN.Message object at ...>]
             >>> test2.filter_criteria
