@@ -20,8 +20,6 @@ class ReadCAN(ipipe.Table):
                 else:
                     time.sleep(0.001)
             except KeyboardInterrupt:
-                self.bus.shutdown()
                 break
-            except:
+            finally:
                 self.bus.shutdown()
-                break
