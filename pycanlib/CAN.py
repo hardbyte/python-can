@@ -3,6 +3,7 @@ from pycanlib import canlib, canstat, InputValidation
 import ctypes
 import datetime
 import os
+import platform
 import Queue
 import sys
 import time
@@ -325,7 +326,8 @@ class Message(object):
                 _data_strings.append("%.2x" % byte)
         if len(_data_strings) > 0:
             _field_strings.append(" ".join(_data_strings))
-        _field_strings.append(self.info_string)
+        if len(self.info_string) > 0:
+            _field_strings.append(self.info_string)
         return "\t".join(_field_strings)
 
 
@@ -438,7 +440,7 @@ class MessageList(object):
         retval += "\n%s\n" % _header_str
         retval += "-"*len(_header_str)
         retval += "\n"
-        if self.filter_criteria == True:
+        if self.filter_criteria == "True":
             retval += "Applied filters: None\n"
         else:
             retval += "Applied filters: %s\n" % self.filter_criteria
@@ -570,7 +572,7 @@ class Bus(object):
 
     @ext_acceptance_filter.setter
     def ext_acceptance_filter(self, value):
-        InputValidation.verify_parameter_type("@ext_acceptance_filter.setter", "ext_acceptance_filter", value, types.TupleTyp)
+        InputValidation.verify_parameter_type("@ext_acceptance_filter.setter", "ext_acceptance_filter", value, types.TupleType)
         InputValidation.verify_parameter_value_equal_to("@ext_acceptance_filter.setter", "len(ext_acceptance_filter)", len(value), 2)
         InputValidation.verify_parameter_type("@ext_acceptance_filter.setter", "ext_acceptance_code", value[0], types.IntType)
         InputValidation.verify_parameter_type("@ext_acceptance_filter.setter", "ext_acceptance_mask", value[1], types.IntType)
@@ -1022,11 +1024,10 @@ class LogInfo(object):
 
 class MachineInfo(object):
 
-    def __init__(self, machine_name="", python_version="", os_type="", os_name=""):
+    def __init__(self, machine_name="", python_version="", platform_info=""):
         self.machine_name = machine_name
         self.python_version = python_version
-        self.os_type = os_type
-        self.os_name = os_name
+        self.platform_info = platform_info
         self.canlib_version = get_canlib_info()
         self.module_versions = {}
         for (_modname, _mod) in sys.modules.items():
@@ -1053,29 +1054,13 @@ class MachineInfo(object):
         self.__python_version = value
 
     @property
-    def os_type(self):
-        return self.__os_type
+    def platform_info(self):
+        return self.__platform_info
 
-    @os_type.setter
-    def os_type(self, value):
-        InputValidation.verify_parameter_type("@os_type.setter", "os_type", value, types.StringType)
-        self.__os_type = value
-
-    @property
-    def os_name(self):
-        try:
-            return self.__os_name
-        except AttributeError:
-            return "unknown"
-
-    @os_name.setter
-    def os_name(self, value):
-        if value == "":
-            _value = "unknown"
-        else:
-            _value = value
-        InputValidation.verify_parameter_type("@os_name.setter", "os_name", value, types.StringType)
-        self.__os_name = _value
+    @platform_info.setter
+    def platform_info(self, value):
+        InputValidation.verify_parameter_type("@platform_info.setter", "platform_info", value, types.StringType)
+        self.__platform_info = value
 
     @property
     def canlib_version(self):
@@ -1102,8 +1087,7 @@ class MachineInfo(object):
         retval += "\n"
         retval += "Machine name: %s\n" % self.machine_name
         retval += "Python: %s\n" % self.python_version
-        retval += "OS type: %s\n" % self.os_type
-        retval += "OS name: %s\n" % self.os_name
+        retval += "OS: %s\n" % self.platform_info
         retval += "CANLIB: %s\n" % self.canlib_version
         retval += "Loaded Python module versions:\n"
         for _mod in sorted(self.module_versions.keys()):
@@ -1116,8 +1100,9 @@ def get_host_machine_info():
         _machine_name = os.getenv("COMPUTERNAME")
     else:
         _machine_name = os.getenv("HOSTNAME")
+    _platform_info = platform.platform()
     _python_version = sys.version[:sys.version.index(" ")]
-    return MachineInfo(machine_name=_machine_name, python_version=_python_version, os_type=sys.platform, os_name=os.name)
+    return MachineInfo(machine_name=_machine_name, python_version=_python_version, platform_info=_platform_info)
 
 
 def get_canlib_info():
