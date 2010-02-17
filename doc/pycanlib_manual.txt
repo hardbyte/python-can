@@ -1,0 +1,151 @@
+Introduction
+------------
+
+This document is a reference for users of the pycanlib Python wrapper for Kvaser's CANLIB SDK. It provides an overview of each of the classes provided in this module, and examples of their usage.
+
+This document assumes some familiarity with the CAN protocol, and readers who have not read the `Bosch CAN specification`_ are advised to do so before reading this document.
+
+CAN.Message
+-----------
+
+CAN.Message is the class pycanlib uses to represent CAN messages. Instantiating a CAN message (with default values for arbitration ID, flags, DLC, and data) is done as follows:
+
+>>> from pycanlib import CAN
+>>> test = CAN.Message()
+>>> print test
+0.000000        0000    0002    0
+
+The fields in the printed message are (in this order): timestamp, arbitration ID, flags, dlc, and data - data is not shown here because the default value of the data parameter is ``[]``, an empty list. Note that the flags field is represented as a four-digit hexadecimal number, the arbitration ID field as either a four-digit or eight-digit hexadecimal number depending on the length of the arbitration ID (11-bit or 29-bit), and that each of the bytes in the data field (when present) are represented as two-digit hexadecimal numbers. The following sections describe each of the parameters to the CAN.Message constructor.
+
+Timestamp
+.........
+
+The timestamp field in a CAN message is a floating point number representing the message timestamp in seconds, to six decimal places (microsecond precision). The timestamp parameter to the CAN.Message constructor takes a non-negative floating point number, and its default value is 0. The effect of this parameter, and the result of attempting to set an invalid timestamp, is shown below:
+
+>>> test_legal_timestamp = CAN.Message(timestamp=1.0)
+>>> print test_legal_timestamp
+1.000000        0000    0002    0
+>>> test_illegal_timestamp1 = CAN.Message(timestamp=1)
+Traceback (most recent call last):
+ ...
+ParameterTypeError: Bad parameter 'timestamp' (1, type <type 'int'>) to function '@timestamp.setter' - reason 'Not one of the allowable types <type 'float'>'
+>>> test_illegal_timestamp2 = CAN.Message(timestamp=-1.0)
+Traceback (most recent call last):
+ ...
+ParameterRangeError: ParameterRangeError: Bad parameter 'timestamp' (-1.0, type <type 'float'>) to function '@timestamp.setter' - reason 'Value less than minimum of 0'
+
+Arbitration ID
+..............
+
+The arbitration ID field in a CAN message may be either 11 bits (standard addressing, CAN 2.0A) or 29 bits (extended addressing, CAN 2.0B) in length, and pycanlib supports this by providing an id_type parameter to the CAN.Message constructor. This parameter takes one of the values ``CAN.ID_TYPE_STANDARD`` (11-bit, default value) or ``CAN.ID_TYPE_EXTENDED`` (29-bit). The effect of this parameter is shown below:
+
+>>> test_std_id = CAN.Message(id_type=CAN.ID_TYPE_STANDARD)
+>>> print test_std_id
+0.000000        0000    0002    0
+>>> test_ext_id = CAN.Message(id_type=CAN.ID_TYPE_EXTENDED)
+>>> print test_ext_id
+0.000000    00000000    0004    0
+
+The arbitration ID parameter itself can take an integer between 0 and the maximum value allowed by the id_type parameter passed to the CAN.Message constructor (either 2\ :sup:`11` - 1 for 11-bit IDs, or 2\ :sup:`29` - 1 for 29-bit IDs). The effect of this parameter, and the result of attempting to set an invalid ID, is shown below:
+
+>>> test_std_id_2 = CAN.Message(id_type=CAN.ID_TYPE_STANDARD, arbitration_id=100)
+>>> print test_std_id_2
+0.000000        0064    0002    0
+>>> test_std_id_3 = CAN.Message(id_type=CAN.ID_TYPE_STANDARD, arbitration_id=2048)
+Traceback (most recent call last):
+ ...
+ParameterRangeError: Bad parameter 'arbitration_id' (4096, type <type 'int'>) to function '@arbitration_id.setter' - reason 'Value greater than maximum of 2047'
+>>> test_std_id_4 = CAN.Message(id_type=CAN.ID_TYPE_STANDARD, arbitration_id=-1)
+Traceback (most recent call last):
+ ...
+ParameterRangeError: Bad parameter 'arbitration_id' (-1, type <type 'int'>) to function '@arbitration_id.setter' - reason 'Value less than minimum of 0'
+>>> test_ext_id_2 = CAN.Message(id_type=CAN.ID_TYPE_EXTENDED, arbitration_id=2048)
+>>> print test_ext_id_2
+0.000000    00000800    0004    0
+>>> test_ext_id_3 = CAN.Message(id_type=CAN.ID_TYPE_EXTENDED, arbitration_id=536870912)
+Traceback (most recent call last):
+ ...
+ParameterRangeError: Bad parameter 'arbitration_id' (536870912, type <type 'int'>) to function '@arbitration_id.setter' - reason 'Value greater than maximum of 536870911'
+>>> test_ext_id_4 = CAN.Message(id_type=CAN.ID_TYPE_EXTENDED, arbitration_id=-1)
+Traceback (most recent call last):
+ ...
+ParameterRangeError: Bad parameter 'arbitration_id' (-1, type <type 'int'>) to function '@arbitration_id.setter' - reason 'Value less than minimum of 0'
+
+Flags
+.....
+
+The flags parameter of a CAN message cannot be set directly in the constructor (however it is a property of a CAN.Message object which may be set after the object is instantiated). Instead, the constructor provides access to each of the parameters represented in the flags parameter, and these are detailed below.
+
+is_remote_frame
+```````````````
+
+This parameter indicates if the message is a remote frame or a data frame, and modifies the bit in the CAN message's flags field indicating this. It takes a value of either CAN.DATA_FRAME (default) or CAN.REMOTE_FRAME.
+
+id_type
+```````
+
+This parameter controls the length of this CAN message's arbitration ID field. It is covered in the `Arbitration ID`_ section of this document.
+
+is_wakeup
+`````````
+
+This parameter indicates if the message is a wakeup message or not, and modifies the bit in the CAN message's flags field indicating this. It takes a value of either CAN.WAKEUP_MSG or (not CAN.WAKEUP_MSG) (default).
+
+is_error_frame
+``````````````
+
+This parameter indicates if the message is an error frame or not, and modifies the bit in the CAN message's flags field indicating this. It takes a value of either CAN.ERROR_FRAME or (not CAN.ERROR_FRAME) (default).
+
+DLC
+...
+
+The DLC parameter of a CAN message is an integer between 0 and 8. Its purpose varies depending on the frame type - for data frames it represents the amount of data contained in the message, in remote frames it represents the amount of data being requested from the device the message is addressed to. The effect of this parameter, and the result of attempting to set an invalid DLC, is shown below:
+
+>>> test_legal_dlc_1 = CAN.Message(dlc=1)
+>>> print test_legal_dlc_1
+0.000000        0000    0002    1
+>>> test_legal_dlc_2 = CAN.Message(dlc=5)
+>>> print test_legal_dlc_2
+0.000000        0000    0002    5
+>>> test_illegal_dlc_1 = CAN.Message(dlc=-1)
+Traceback (most recent call last):
+ ...
+ParameterRangeError: ParameterRangeError: Bad parameter 'dlc' (-1, type <type 'int'>) to function '@dlc.setter' - reason 'Value less than minimum of 0'
+>>> test_illegal_dlc_2 = CAN.Message(dlc=9)
+Traceback (most recent call last):
+ ...
+ParameterRangeError: ParameterRangeError: Bad parameter 'dlc' (-1, type <type 'int'>) to function '@dlc.setter' - reason 'Value greater than maximum of 8'
+
+Note that the DLC value does not necessarily define the number of bytes of data in a packet.
+
+Data
+....
+
+The data parameter of a CAN message is an array of between 0 and 8 integers, each with a value of between 0 and 255. The effect of this parameter, and the result of attempting to set an invalid data array, is shown below:
+
+>>> test_legal_data = CAN.Message(dlc=3, data=[1, 2, 3])
+>>> print test_legal_data
+0.000000        0000    0002    3    01 02 03
+>>> test_illegal_data_1 = CAN.Message(dlc=3, data=[1000, 2, 30])
+Traceback (most recent call last):
+ ...
+ParameterRangeError: ParameterRangeError: Bad parameter 'data[0]' (1000, type <type 'int'>) to function '@data.setter' - reason 'Value greater than maximum of 255'
+>>> test_illegal_data_2 = CAN.Message(dlc=3, data=[100, -5, 30])
+Traceback (most recent call last):
+ ...
+ParameterRangeError: ParameterRangeError: Bad parameter 'data[1]' (-5, type <type 'int'>) to function '@data.setter' - reason 'Value less than minimum of 0'
+
+CAN.MessageList
+---------------
+CAN.Bus
+-------
+CAN.Listener
+------------
+CAN.LogInfo
+-----------
+CAN.MachineInfo
+---------------
+CAN.Log
+-------
+
+.. _`Bosch CAN Specification`: http://www.semiconductors.bosch.de/pdf/can2spec.pdf
