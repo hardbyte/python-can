@@ -10,12 +10,24 @@ def _get_canlib():
     _library_name = _canlib_dict[sys.platform][1]
     return _library_constructor(_library_name)
 
+def _get_canlib_version_string():
+    try:
+        canlib_version = _get_canlib().canGetVersionEx(2)
+        canlib_major_version = ((canlib_version & 0x00FF0000) >> 16)
+        canlib_minor_version = ((canlib_version & 0x0000FF00) >> 8)
+        canlib_version_letter = ("%c" % (canlib_version & 0x000000FF))
+        retval = "%d.%d%s" % (canlib_major_version, canlib_minor_version, canlib_version_letter)
+    except Exception as e:
+        print "Can't determine CANLIB version - %s" % e.msg
+        retval = "<unknown>"
+    return retval
+
 def _get_canlib_function(func_name):
     _canlib_dll_handle = _get_canlib()
     try:
         retval = eval("_get_canlib().%s" % func_name)
     except AttributeError:
-        sys.stderr.write("Couldn't find function '%s' in library %s" % (func_name, _canlib_dll_handle))
+        sys.stderr.write("Couldn't find function '%s' - this is CANLIB %s\n" % (func_name, _get_canlib_version_string()))
         retval = None
     return retval
 
