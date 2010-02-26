@@ -687,7 +687,7 @@ class Bus(object):
 
     def write(self, msg):
         InputValidation.verify_parameter_type("write", "msg", msg, Message)
-        self.__tx_queue.put_nowait()
+        self.__tx_queue.put_nowait(msg)
         self.__tx_callback()
 
     def clear_queues(self):
@@ -785,7 +785,7 @@ class Bus(object):
             _to_send = self.__tx_queue.get_nowait()
         except Queue.Empty:
             return
-        canlib.canWrite(self._canlib_handle, _to_send.device_id, "".join([("%c" % byte) for byte in _to_send.payload]), _to_send.dlc, _to_send.flags)
+        canlib.canWrite(self.__handle, _to_send.arbitration_id, "".join([("%c" % byte) for byte in _to_send.data]), _to_send.dlc, _to_send.flags)
 
     def __status_callback(self, timestamp):
         canlib.canRequestChipStatus(self.__handle)
