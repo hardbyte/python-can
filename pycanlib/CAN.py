@@ -810,10 +810,10 @@ class Bus(object):
 class Listener(object):
 
     def on_message_received(self, msg):
-        pass
+        raise NotImplementedError("%s has not implemented on_message_received" % self.__class__.__name__)
 
     def on_status_change(self, timestamp, new_status, old_status):
-        pass
+        raise NotImplementedError("%s has not implemented on_status_change" % self.__class__.__name__)
 
 
 class ChannelInfo(object):
