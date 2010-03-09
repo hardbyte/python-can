@@ -2,6 +2,7 @@ from pycanlib import canlib, canstat, InputValidation
 
 import ctypes
 import datetime
+import subprocess
 import os
 import platform
 import Queue
@@ -9,48 +10,19 @@ import sys
 import time
 import types
 
+
 def get_version_number(repo_path):
-    """
-    get_version_number
-    
-    Retrieves the version number of this pycanlib, first attempting to find
-    the version number given the Mercurial changeset label, and falling back
-    to a file containing this information if no Mercurial installation is
-    available or the installation directory is not a Mercurial repository.
-    
-    Inputs:
-        repo_path - path to the repository to get version information for. The
-        directory must exist.
-    
-    Returns:
-        A string containing the version number of the repository.
-    """
     _current_dir = os.getcwd()
-    if repo_path == "":
-        _repo_path = os.path.join(".", repo_path)
-    else:
-        _repo_path = repo_path
-    os.chdir(_repo_path)
+    os.chdir(repo_path)
     try:
-        os.system("hg id > id.tmp")
-        tagFile = open("id.tmp", "r")
-        tagLine = tagFile.readline()
-        tag = tagLine.split(" ")[1].replace("\n", "")
-        if tag != "tip":
-            retval = tag
-        else:
-            retval = "dev_%s" % tagLine.split(" ")[0]
-        tagFile.close()
-        os.unlink("id.tmp")
+        _hg_process = subprocess.Popen(args="hg id", stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (_stdout_output, _stderr_output) = _hg_process.communicate()
+        retval = _stdout_output.split(" ")[0]
+    except:
+        _version_file = open("../version.txt")
+        retval = _version_file.readline().replace("\n", "")
+    finally:
         os.chdir(_current_dir)
-    except Exception as e:
-        print e
-        try:
-            VERSION_NUMBER_FILE = open(os.path.join(_repo_path, "version.txt"), "r")
-            retval =  VERSION_NUMBER_FILE.readline()
-            VERSION_NUMBER_FILE.close()
-        except IOError:
-            retval = "UNKNOWN"
     return retval
 
 __version__ = get_version_number(os.path.dirname(__file__))

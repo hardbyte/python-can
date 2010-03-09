@@ -15,14 +15,7 @@ def SetupLogging():
 
 def main():
     _loggerObj = SetupLogging()
-    _loggerObj.info("-"*64)
-    _loggerObj.info("Host machine info")
-    _loggerObj.info("-"*64)
-    _loggerObj.info("OS: %s" % CAN.get_host_machine_info().os_type)
-    _loggerObj.info("Python: %s" % CAN.get_host_machine_info().python_version)
-    _loggerObj.info("CANLIB: %s" % CAN.get_canlib_info())
-    _loggerObj.info("pycanlib: %s" % CAN.__version__)
-    _loggerObj.info("-"*64)
+    [_loggerObj.info(_line) for _line in CAN.get_host_machine_info().__str__().split("\n")]
     buses = {}
     canlib.canInitializeLibrary()
     _numChannels = ctypes.c_int(0)
@@ -31,7 +24,6 @@ def main():
         buses[channel] = CAN.Bus(channel, 1000000, 4, 3, 1, 3)
         for line in buses[channel].channel_info.__str__().split("\n"):
             _loggerObj.info(line)
-        _loggerObj.info("-"*64)
 
 if __name__ == "__main__":
     main()
