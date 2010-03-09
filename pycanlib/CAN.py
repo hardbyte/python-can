@@ -2,7 +2,6 @@ from pycanlib import canlib, canstat, InputValidation
 
 import ctypes
 import datetime
-import subprocess
 import os
 import platform
 import Queue
@@ -10,22 +9,14 @@ import sys
 import time
 import types
 
+__version__ = "UNKNOWN"
 
-def get_version_number(repo_path):
-    _current_dir = os.getcwd()
-    os.chdir(repo_path)
-    try:
-        _hg_process = subprocess.Popen(args="hg id", stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        (_stdout_output, _stderr_output) = _hg_process.communicate()
-        retval = _stdout_output.split(" ")[0]
-    except:
-        _version_file = open("../version.txt")
-        retval = _version_file.readline().replace("\n", "")
-    finally:
-        os.chdir(_current_dir)
-    return retval
-
-__version__ = get_version_number(os.path.dirname(__file__))
+try:
+    import hgversionutils
+    __version__ = hgversionutils.get_version_number(os.path.dirname(__file__))
+except ImportError:
+    with open(os.path.join(os.path.dirname(__file__), "version.txt"), "r") as _version_file:
+        __version__ = _version_file.readline().replace("\n", "")
 
 canlib.canInitializeLibrary()
 

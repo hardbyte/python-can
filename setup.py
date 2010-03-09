@@ -2,12 +2,10 @@ import os
 from setuptools import setup, find_packages
 import sys
 
-sys.path.append(".")
-
-from pycanlib import CAN
+import hgversionutils
 
 if __name__ == "__main__":
-    _version = CAN.get_version_number(os.path.dirname(__file__))
+    _version = hgversionutils.get_version_number(os.path.dirname(__file__))
     _versionNumberFileName = "./pycanlib/version.txt"
     _versionFile = open(_versionNumberFileName, "w")
     _versionFile.write(_version)
