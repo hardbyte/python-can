@@ -9,8 +9,6 @@ import sys
 import time
 import types
 
-__version__ = "UNKNOWN"
-
 try:
     import hgversionutils
     __version__ = hgversionutils.get_version_number(os.path.join(os.path.dirname(__file__), ".."))
