@@ -13,7 +13,7 @@ __version__ = "UNKNOWN"
 
 try:
     import hgversionutils
-    __version__ = hgversionutils.get_version_number(os.path.dirname(__file__))
+    __version__ = hgversionutils.get_version_number(os.path.join(os.path.dirname(__file__), ".."))
 except ImportError:
     with open(os.path.join(os.path.dirname(__file__), "version.txt"), "r") as _version_file:
         __version__ = _version_file.readline().replace("\n", "")
