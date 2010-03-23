@@ -43,78 +43,8 @@ MAX_TRANS_SN_LENGTH = 8
 TRANS_SN_ARRAY = ctypes.c_ubyte * MAX_TRANS_SN_LENGTH
 
 class Message(object):
-    """
-    Message
-    
-    Class representing CAN messages.
-    
-    Parent class: object
-    """
 
     def __init__(self, timestamp=0.0, is_remote_frame=False, id_type=ID_TYPE_11_BIT, is_wakeup=(not WAKEUP_MSG), is_error_frame=(not ERROR_FRAME), arbitration_id=0, data=[], dlc=0, info_string=""):
-        """
-        Message.__init__
-        
-        Constructor for Message.
-        
-        Inputs:
-            timestamp (optional, default=0.0): Floating point number
-              representing the timestamp attached to this message (in
-              seconds). Legal values are floating point numbers greater
-              than or equal to 0.0.
-            is_remote_frame (optional, default=False): Boolean indicating
-              whether this message is a remote frame or a data frame. Legal
-              values are REMOTE_FRAME or DATA_FRAME.
-            id_type (optional, default=ID_TYPE_STANDARD): Boolean indicating
-              the length of this message's arbitration ID field. Legal values
-              are ID_TYPE_11_BIT and ID_TYPE_29_BIT.
-            is_wakeup (optional, default=(not WAKEUP_MSG)): Boolean indicating
-              whether this message is a wakeup message or not.
-            is_error_frame (optional, default=(not ERROR_FRAME)): Boolean
-              indicating whether this message is an error frame or not.
-            arbitration_id (optional, default=0): Arbitration ID of this
-              message. Legal values are greater than 0 and less than 2**11 (for
-              messages with an 11-bit arbitration ID), or less than 2**29 (for
-              messages with a 29-bit arbitration ID)
-            data (optional, default=[]): Data contained in this message. Legal
-              values are lists of between 0 and 8 integers, where each integer
-              has a value between 0 and 255.
-            dlc (optional, default=0): DLC of this message. Legal values are
-              integers between 0 and 8.
-            info_string (optional, default=""): Information string to be
-              attached to this message.
-        
-        Returns:
-            A Message object.
-        
-        Examples:
-            >>> test1 = Message()
-            >>> test1.timestamp
-            0.0
-            >>> test1.is_remote_frame
-            False
-            >>> test1.id_type == ID_TYPE_11_BIT
-            True
-            >>> test1.is_wakeup == (not WAKEUP_MSG)
-            True
-            >>> test1.is_error_frame == (not ERROR_FRAME)
-            True
-            >>> test1.arbitration_id
-            0
-            >>> test1.data
-            []
-            >>> test1.dlc
-            0
-            >>> test2 = Message(arbitration_id=1234, id_type=ID_TYPE_29_BIT, dlc=3, data=[0, 1, 2])
-            >>> test2.arbitration_id
-            1234
-            >>> test2.id_type == ID_TYPE_29_BIT
-            True
-            >>> test2.dlc
-            3
-            >>> test2.data
-            [0, 1, 2]
-        """
         self.timestamp = timestamp
         self.is_remote_frame = is_remote_frame
         self.id_type = id_type
@@ -255,24 +185,20 @@ class Message(object):
         InputValidation.verify_parameter_type("@info_string.setter", "info_string", value, types.StringType)
         self.__info_string = value
 
+    def check_equality(self, other, fields):
+        InputValidation.verify_parameter_type("check_equality", "other", other, Message)
+        InputValidation.verify_parameter_type("check_equality", "fields", fields, types.ListType)
+        for (_index, _field) in fields:
+            InputValidation.verify_parameter_type("check_equality", ("fields[%d]" % _index), _field, types.StringType)
+        retval = True
+        for _field in fields:
+            if (_field in self.__dict__.keys()) and (_field in other.__dict__.keys()):
+                if self.__dict__[_field] != other.__dict__[_field]:
+                    retval = False
+            else:
+                retval = False
+
     def __str__(self):
-        """
-        Message.__str__
-        
-        Inputs:
-            None
-        
-        Returns:
-            String representation of a Message object.
-        
-        Examples:
-            >>> test1 = Message()
-            >>> print test1.__str__() #doctest: +NORMALIZE_WHITESPACE
-            0.000000        0000        0002    0    
-            >>> test2 = Message(arbitration_id=1234, id_type=ID_TYPE_29_BIT, dlc=3, data=[0, 1, 2])
-            >>> print test2.__str__() #doctest: +NORMALIZE_WHITESPACE
-            0.000000    000004d2        0004    3       00 01 02    
-        """
         _field_strings = []
         _field_strings.append("%.6f" % self.timestamp)
         if self.flags & canstat.canMSG_EXT:
@@ -293,46 +219,8 @@ class Message(object):
 
 
 class MessageList(object):
-    """
-    MessageList
-    
-    A class representing a list of CAN messages.
-    
-    Parent class: object
-    """
 
     def __init__(self, messages=[], filter_criteria="True", message_type=Message, name="default"):
-        """
-        MessageList.__init__
-        
-        Constructor for MessageList.
-        
-        Parameters:
-            messages (optional, default=[]): List of messages to be contained
-              in this MessageList. Must be a list of 0 or more Message objects.
-            filter_criteria (optional, default='True'): Filter criteria applied
-              to this message list.
-            message_type (optional, default=Message): Type of the messages
-              stored in this list.
-            name (optional, default="default"): Name for this list of messages.
-        
-        Returns:
-            A MessageList object.
-            
-        Examples:
-            >>> test1 = MessageList()
-            >>> test1.messages
-            []
-            >>> test2 = MessageList(messages=[Message(), Message(arbitration_id=1234, timestamp=0.1), Message(arbitration_id=5678, timestamp=0.2, id_type=ID_TYPE_29_BIT)])
-            >>> test2.messages #doctest:+ELLIPSIS
-            [<pycanlib.CAN.Message object at ...>, <pycanlib.CAN.Message object at ...>, <pycanlib.CAN.Message object at ...>]
-            >>> test2.filter_criteria
-            'True'
-            >>> test2.message_type
-            <class 'pycanlib.CAN.Message'>
-            >>> test2.name
-            'default'
-        """
         self.messages = messages
         self.filter_criteria = filter_criteria
         self.message_type = message_type
@@ -432,7 +320,6 @@ class Bus(object):
         canlib.canBusOn(self.__read_handle)
         canlib.canBusOn(self.__write_handle)
 
-    ############# Bus parameters (read/write) #############
     @property
     def channel(self):
         return self.__channel
@@ -547,7 +434,6 @@ class Bus(object):
         InputValidation.verify_parameter_max_value("@ext_acceptance_filter.setter", "ext_acceptance_mask", value[1], ((2 ** 29) - 1))
         self.__set_acceptance_filter(value, canlib.ACCEPTANCE_FILTER_TYPE_EXT)
 
-    ############# Bus statistics (read only) ##############
     @property
     def bus_time(self):
         return (canlib.canReadTimer(self.__read_handle) / 1000000.0)
@@ -571,7 +457,6 @@ class Bus(object):
     def buffer_overruns(self):
         return self.__get_bus_statistics().overruns
 
-    ########### Device information (read only) ############
     @property
     def device_description(self):
         _buffer = ctypes.create_string_buffer(MAX_DEVICE_DESCR_LENGTH)
@@ -643,7 +528,6 @@ class Bus(object):
     def channel_info(self):
         return ChannelInfo(channel=self.channel, name=self.device_description, manufacturer=self.manufacturer_name, fw_version=self.firmware_version, hw_version=self.hardware_version, card_serial=self.card_serial, trans_serial=self.transceiver_serial, trans_type=self.transceiver_type, card_number=self.card_number, channel_on_card=self.card_channel)
 
-    ################### Public functions ##################
     def read(self):
         try:
             return self.__rx_queue.get_nowait()
@@ -696,7 +580,6 @@ class Bus(object):
         canlib.canClose(self.__read_handle)
         canlib.canClose(self.__write_handle)
 
-    ################## Private functions ##################
     def __get_bus_statistics(self):
         canlib.canRequestBusStatistics(self.__read_handle)
         _stats = canlib.c_canBusStatistics()
@@ -1082,8 +965,7 @@ def get_host_machine_info():
 
 
 def get_canlib_info():
-    _canlib_prod_ver_32 = \
-      canlib.canGetVersionEx(canlib.canVERSION_CANLIB32_PRODVER32)
+    _canlib_prod_ver_32 = canlib.canGetVersionEx(canlib.canVERSION_CANLIB32_PRODVER32)
     _major_ver_no = (_canlib_prod_ver_32 & 0x00FF0000) >> 16
     _minor_ver_no = (_canlib_prod_ver_32 & 0x0000FF00) >> 8
     if (_canlib_prod_ver_32 & 0x000000FF) != 0:
