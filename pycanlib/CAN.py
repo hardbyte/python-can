@@ -649,7 +649,7 @@ class Bus(object):
     def __status_callback(self, timestamp):
         canlib.canRequestChipStatus(self.__read_handle)
         _stat_flags = ctypes.c_long(0)
-        canlib.canReadStatus(self.__handle, ctypes.byref(_stat_flags))
+        canlib.canReadStatus(self.__read_handle, ctypes.byref(_stat_flags))
         if _stat_flags.value != self.__old_stat_flags:
             for _listener in self.__listeners:
                 _listener.on_status_change(timestamp, _stat_flags.value, self.__old_stat_flags)
