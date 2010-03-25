@@ -1,22 +1,4 @@
-"""
-Module: pycanlib/ipython
-
-This module provides ipython/ipipe support for pycanlib. This file contains
-the method used to import the ipython/ipipe pycanlib support classes into 
-ipython.
-"""
-
 def doIPythonImports(ip_engine):
-    """
-    Method: doIPythonImports
-    
-    This function is called by the startup script for the ipython pycanlib 
-    profile, and imports the ipython pycanlib support files into the ipython 
-    scripting engine.
-    
-    Inputs:
-        ip_engine: the ipython scripting engine.
-    """
     ip_engine.ex("print 'Importing ipipe library...'")
     ip_engine.ex("from ipipe import *")
     ip_engine.ex("print 'Importing pycanlib IPython extensions...'")
