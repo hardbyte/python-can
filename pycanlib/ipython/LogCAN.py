@@ -1,7 +1,7 @@
 import cPickle
 import datetime
 import ipipe
-import os.path
+import os
 
 from pycanlib import CAN
 
@@ -11,13 +11,13 @@ class LogCAN(ipipe.Display):
         ipipe.Display.__init__(self, input)
         self.logStartTime = datetime.datetime.now()
         _timestamp = self.logStartTime.__str__().replace("-", "")
-        _timestamp = _timestamp.replace(" ", "").replace(":", "").replace(".", "")
+        _timestamp = _timestamp.replace(" ", "_").replace(":", "").replace(".", "")
         _userdir = os.path.expanduser("~")
         _path = os.path.join(_userdir, "LogCAN")
-        _tdvfilename = "LogCAN-%s.log" % _timestamp
-        _datfilename = "LogCAN-%s.dat" % _timestamp
-        if not os.path.exists(os.path.dirname(_path)):
-            os.makedirs(os.path.dirname(_path))
+        _tdvfilename = "LogCAN_%s.log" % _timestamp
+        _datfilename = "LogCAN_%s.dat" % _timestamp
+        if not os.path.exists(_path):
+            os.makedirs(_path)
         self.datlogfile = open(os.path.join(_path, _datfilename), "w")
         self.tdvlogfile = open(os.path.join(_path, _tdvfilename), "w")
         self.datfilename = _datfilename
