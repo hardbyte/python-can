@@ -1,10 +1,6 @@
 import cPickle
-import os.path
+import os
 from optparse import OptionParser
-import sys
-
-from pycanlib import CAN
-
 
 if __name__ == "__main__":
     _parser = OptionParser()
