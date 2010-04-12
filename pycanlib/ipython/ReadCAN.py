@@ -2,7 +2,7 @@ import ipipe
 import Queue
 import time
 
-from pycanlib import CAN, canlib
+from pycanlib import CAN
 
 class CANReader(CAN.Listener):
     def __init__(self):
