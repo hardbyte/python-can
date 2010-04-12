@@ -4,7 +4,6 @@ import ctypes
 import datetime
 import os
 import platform
-import Queue
 import sys
 import time
 import types
@@ -195,8 +194,10 @@ class Message(object):
             if (_field in self.__dict__.keys()) and (_field in other.__dict__.keys()):
                 if self.__dict__[_field] != other.__dict__[_field]:
                     retval = False
+                    break
             else:
                 retval = False
+                break
 
     def __str__(self):
         _field_strings = []
@@ -312,8 +313,6 @@ class Bus(object):
         self.no_samp = no_samp
         self.std_acceptance_filter = std_acceptance_filter
         self.ext_acceptance_filter = ext_acceptance_filter
-        self.__rx_queue = Queue.Queue(0)
-        self.__tx_queue = Queue.Queue(0)
         self.__listeners = []
         self.__old_stat_flags = 0
         self.__ctypes_callback = canlib.callback_dict[sys.platform](self.__callback)
@@ -331,10 +330,14 @@ class Bus(object):
         InputValidation.verify_parameter_type("@channel.setter", "channel", value, types.IntType)
         InputValidation.verify_parameter_min_value("@channel.setter", "channel", value, 0)
         InputValidation.verify_parameter_max_value("@channel.setter", "channel", value, _num_channels.value)
-        if "__handle" in self.__dict__:
-            canlib.canBusOff(self.__handle)
-            canlib.kvSetNotifyCallback(self.__handle, ctypes.c_void_p(0), ctypes.c_void_p(0), 0)
-            canlib.canClose(self.__handle)
+        if "__read_handle" in self.__dict__:
+            canlib.canBusOff(self.__read_handle)
+            canlib.kvSetNotifyCallback(self.__read_handle, ctypes.c_void_p(0), ctypes.c_void_p(0), 0)
+            canlib.canClose(self.__read_handle)
+        if "__write_handle" in self.__dict__:
+            canlib.canBusOff(self.__write_handle)
+            canlib.kvSetNotifyCallback(self.__write_handle, ctypes.c_void_p(0), ctypes.c_void_p(0), 0)
+            canlib.canClose(self.__write_handle)
         self.__channel = value
         self.__read_handle = canlib.canOpenChannel(value, canlib.canOPEN_ACCEPT_VIRTUAL)
         self.__write_handle = canlib.canOpenChannel(value, canlib.canOPEN_ACCEPT_VIRTUAL)
@@ -536,26 +539,11 @@ class Bus(object):
 
     def write(self, msg):
         InputValidation.verify_parameter_type("write", "msg", msg, Message)
-        self.__tx_queue.put_nowait(msg)
-        self.__tx_callback()
+        canlib.canWrite(self.__write_handle, msg.arbitration_id, "".join([("%c" % byte) for byte in msg.data]), msg.dlc, msg.flags)
 
     def clear_queues(self):
-        self.disable_callback()
-        while True:
-            try:
-                self.__rx_queue.get_nowait()
-            except Queue.Empty:
-                break
-        while True:
-            try:
-                self.__tx_queue.get_nowait()
-            except Queue.Empty:
-                break
-        canlib.canFlushTransmitQueue(self.__read_handle)
         canlib.canFlushReceiveQueue(self.__read_handle)
         canlib.canFlushTransmitQueue(self.__write_handle)
-        canlib.canFlushReceiveQueue(self.__write_handle)
-        self.enable_callback()
 
     def add_listener(self, listener):
         InputValidation.verify_parameter_type("add_listener", "listener", listener, Listener)
@@ -565,12 +553,10 @@ class Bus(object):
         self.__listeners.remove(listener)
 
     def enable_callback(self):
-        canlib.kvSetNotifyCallback(self.__read_handle, self.__ctypes_callback, None, canstat.canNOTIFY_ALL)
-        canlib.kvSetNotifyCallback(self.__write_handle, self.__ctypes_callback, None, (canstat.canNOTIFY_ALL - canstat.canNOTIFY_STATUS))
+        canlib.kvSetNotifyCallback(self.__read_handle, self.__ctypes_callback, None, canstat.canNOTIFY_RX + canstat.canNOTIFY_STATUS)
 
     def disable_callback(self):
         canlib.kvSetNotifyCallback(self.__read_handle, self.__ctypes_callback, None, canstat.canNOTIFY_NONE)
-        canlib.kvSetNotifyCallback(self.__write_handle, self.__ctypes_callback, None, canstat.canNOTIFY_NONE)
 
     def shutdown(self):
         self.disable_callback()
@@ -618,7 +604,6 @@ class Bus(object):
             else:
                 for _listener in self.__listeners:
                     _listener.on_message_received(_rx_msg)
-                self.__rx_queue.put_nowait(_rx_msg)
 
     def __get_message(self):
         _arb_id = ctypes.c_long(0)
@@ -639,13 +624,6 @@ class Bus(object):
         else:
             return None
 
-    def __tx_callback(self):
-        try:
-            _to_send = self.__tx_queue.get_nowait()
-        except Queue.Empty:
-            return
-        canlib.canWrite(self.__write_handle, _to_send.arbitration_id, "".join([("%c" % byte) for byte in _to_send.data]), _to_send.dlc, _to_send.flags)
-
     def __status_callback(self, timestamp):
         canlib.canRequestChipStatus(self.__read_handle)
         _stat_flags = ctypes.c_long(0)
@@ -658,8 +636,6 @@ class Bus(object):
     def __callback(self, hnd, context, event):
         if event == canstat.canNOTIFY_RX:
             self.__rx_callback()
-        elif event == canstat.canNOTIFY_TX:
-            self.__tx_callback()
         elif event == canstat.canNOTIFY_STATUS:
             _timestamp = canlib.canReadTimer(self.__read_handle)
             self.__status_callback(_timestamp)
