@@ -43,7 +43,7 @@ TRANS_SN_ARRAY = ctypes.c_ubyte * MAX_TRANS_SN_LENGTH
 
 class Message(object):
 
-    def __init__(self, timestamp=0.0, is_remote_frame=False, id_type=ID_TYPE_11_BIT, is_wakeup=(not WAKEUP_MSG), is_error_frame=(not ERROR_FRAME), arbitration_id=0, data=[], dlc=0, info_string=""):
+    def __init__(self, timestamp=0.0, is_remote_frame=False, id_type=ID_TYPE_11_BIT, is_wakeup=(not WAKEUP_MSG), is_error_frame=(not ERROR_FRAME), arbitration_id=0, data=[], dlc=0, info_strings=[]):
         self.timestamp = timestamp
         self.is_remote_frame = is_remote_frame
         self.id_type = id_type
@@ -52,7 +52,7 @@ class Message(object):
         self.arbitration_id = arbitration_id
         self.data = data
         self.dlc = dlc
-        self.info_string = info_string
+        self.info_strings = info_strings
 
     @property
     def timestamp(self):
@@ -176,13 +176,15 @@ class Message(object):
         self.__flags = value
 
     @property
-    def info_string(self):
-        return self.__info_string
+    def info_strings(self):
+        return self.__info_strings
 
-    @info_string.setter
-    def info_string(self, value):
-        InputValidation.verify_parameter_type("@info_string.setter", "info_string", value, types.StringType)
-        self.__info_string = value
+    @info_strings.setter
+    def info_strings(self, value):
+        InputValidation.verify_parameter_type("@info_strings.setter", "info_strings", value, types.ListType)
+        for (_index, _string) in enumerate(value):
+            InputValidation.verify_parameter_type("@info_strings.setter", "info_strings[%d]" % _index, _string, types.StringType)
+        self.__info_strings = value
 
     def check_equality(self, other, fields):
         InputValidation.verify_parameter_type("check_equality", "other", other, Message)
@@ -214,9 +216,9 @@ class Message(object):
                 _data_strings.append("%.2x" % byte)
         if len(_data_strings) > 0:
             _field_strings.append(" ".join(_data_strings))
-        if len(self.info_string) > 0:
-            _field_strings.append(self.info_string)
-        return "\t".join(_field_strings)
+        _current_length = len("    ".join(_field_strings))
+        _field_strings.append(("\n" + (" " * (_current_length + 4))).join(self.info_strings))
+        return "    ".join(_field_strings)
 
 
 class MessageList(object):
