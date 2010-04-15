@@ -1,6 +1,6 @@
 import types
 
-class pycanlibError(Exception):
+class InputValidationError(Exception):
     def __init__(self, parameter_name, parameter_value, function_name, reason):
         self.__parameter_name = parameter_name
         self.__parameter_value = parameter_value
@@ -26,13 +26,13 @@ class pycanlibError(Exception):
     def __str__(self):
         return "%s: Bad parameter '%s' (%s, type %s) to function '%s' - reason '%s'" % (self.__class__.__name__, self.parameter_name, self.parameter_value, type(self.parameter_value), self.function_name, self.reason)
 
-class ParameterTypeError(pycanlibError):
+class ParameterTypeError(InputValidationError):
     pass
 
-class ParameterRangeError(pycanlibError):
+class ParameterRangeError(InputValidationError):
     pass
 
-class ParameterValueError(pycanlibError):
+class ParameterValueError(InputValidationError):
     pass
 
 def verify_parameter_type(function, parameter_name, parameter_value, allowable_types):
