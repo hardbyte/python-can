@@ -286,11 +286,9 @@ class MessageList(object):
         return self.__end_timestamp
 
     def __str__(self):
-        _header_str = "Message List '%s'"
-        _header_str = _header_str % self.name
-        retval = "-"*len(_header_str)
-        retval += "\n%s\n" % _header_str
-        retval += "-"*len(_header_str)
+        retval = "-"*len("\nMessage List '%s'\n" % self.name)
+        retval += "\nMessage List '%s'\n" % self.name
+        retval += "-"*len("\nMessage List '%s'\n" % self.name)
         retval += "\n"
         if self.filter_criteria == "True":
             retval += "Applied filters: None\n"
