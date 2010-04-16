@@ -45,8 +45,8 @@ class Message(object):
 
     def __init__(self, timestamp=0.0, is_remote_frame=False, id_type=ID_TYPE_11_BIT, is_wakeup=(not WAKEUP_MSG), is_error_frame=(not ERROR_FRAME), arbitration_id=0, data=[], dlc=0, info_strings=[]):
         self.timestamp = timestamp
-        self.is_remote_frame = is_remote_frame
         self.id_type = id_type
+        self.is_remote_frame = is_remote_frame
         self.is_wakeup = is_wakeup
         self.is_error_frame = is_error_frame
         self.arbitration_id = arbitration_id
@@ -87,7 +87,8 @@ class Message(object):
     @id_type.setter
     def id_type(self, value):
         InputValidation.verify_parameter_type("CAN.Message.id_type.setter", "id_type", value, types.BooleanType)
-        self.flags &= (0xFFFF - (canstat.canMSG_STD | canstat.canMSG_EXT))
+        if (self.flags & (0xFFFF - (canstat.canMSG_STD | canstat.canMSG_EXT))) != 0:
+            self.flags &= (0xFFFF - (canstat.canMSG_STD | canstat.canMSG_EXT))
         if value == ID_TYPE_EXTENDED:
             self.flags |= canstat.canMSG_EXT
         else:
@@ -213,7 +214,7 @@ class Message(object):
             for byte in self.data:
                 _data_strings.append("%.2x" % byte)
         if len(_data_strings) > 0:
-            _field_strings.append(" ".join(_data_strings))
+            _field_strings.append(" ".join(_data_strings).ljust(24, " "))
         _current_length = len("    ".join(_field_strings))
         _field_strings.append(("\n" + (" " * (_current_length + 4))).join(self.info_strings))
         return "    ".join(_field_strings)
