@@ -10,16 +10,12 @@ class LogCAN(ipipe.Display):
     def __init__(self, input=None):
         ipipe.Display.__init__(self, input)
         self.logStartTime = datetime.datetime.now()
-        _timestamp = self.logStartTime.__str__().replace("-", "")
-        _timestamp = _timestamp.replace(" ", "_").replace(":", "").replace(".", "")
+        _timestamp = self.logStartTime.strftime("%Y%m%d_%H%M%S")
         _userdir = os.path.expanduser("~")
         _path = os.path.join(_userdir, "LogCAN")
-        _tdvfilename = "LogCAN_%s.log" % _timestamp
         _datfilename = "LogCAN_%s.dat" % _timestamp
         if not os.path.exists(_path):
             os.makedirs(_path)
-        self.datlogfile = open(os.path.join(_path, _datfilename), "w")
-        self.tdvlogfile = open(os.path.join(_path, _tdvfilename), "w")
         self.datfilename = _datfilename
         self.msglist = []
 
@@ -41,7 +37,5 @@ class LogCAN(ipipe.Display):
                            channel_info=None,
                            machine_info=_machine_info,
                            message_lists=_message_lists)
-        cPickle.dump(_log_obj, self.datlogfile)
-        self.datlogfile.close()
-        self.tdvlogfile.write("%s" % _log_obj)
-        self.tdvlogfile.close()
+        with open(os.path.join(_path, self.datfilename), "w") as _datfile:
+            cPickle.dump(_log_obj, _datfile)
