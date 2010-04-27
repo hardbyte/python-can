@@ -202,7 +202,7 @@ class Message(object):
 
     def __str__(self):
         _field_strings = []
-        _field_strings.append("%.6f" % self.timestamp)
+        _field_strings.append("%15.6f" % self.timestamp)
         if self.flags & canstat.canMSG_EXT:
             _field_strings.append("%.8x" % self.arbitration_id)
         else:
