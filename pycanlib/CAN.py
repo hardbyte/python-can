@@ -170,8 +170,8 @@ class Message(object):
     @flags.setter
     def flags(self, value):
         InputValidation.verify_parameter_type("CAN.Message.flags.setter", "flags", value, types.IntType)
-        InputValidation.verify_parameter_value_equal_to("CAN.Message.flags.setter", "(flags & (0xFFFF - canstat.canMSG_MASK))", (value & (0xFFFF - canstat.canMSG_MASK)), 0)
-        InputValidation.verify_parameter_value_in_set("CAN.Message.flags.setter", "(flags & (canstat.canMSG_EXT + canstat.canMSG_STD))", (value & (canstat.canMSG_EXT + canstat.canMSG_STD)), (canstat.canMSG_EXT, canstat.canMSG_STD))
+#        InputValidation.verify_parameter_value_equal_to("CAN.Message.flags.setter", "(flags & (0xFFFF - canstat.canMSG_MASK))", (value & (0xFFFF - canstat.canMSG_MASK)), 0)
+#        InputValidation.verify_parameter_value_in_set("CAN.Message.flags.setter", "(flags & (canstat.canMSG_EXT + canstat.canMSG_STD))", (value & (canstat.canMSG_EXT + canstat.canMSG_STD)), (canstat.canMSG_EXT, canstat.canMSG_STD))
         self.__flags = value
 
     @property
