@@ -223,10 +223,9 @@ class Message(object):
 
 class MessageList(object):
 
-    def __init__(self, messages=[], filter_criteria="True", message_type=Message, name="default"):
+    def __init__(self, messages=[], filter_criteria="True", name="default"):
         self.messages = messages
         self.filter_criteria = filter_criteria
-        self.message_type = message_type
         self.name = name
 
     @property
@@ -237,7 +236,7 @@ class MessageList(object):
     def messages(self, value):
         InputValidation.verify_parameter_type("CAN.MessageList.messages.setter", "messages", value, types.ListType)
         for (_index, _msg) in enumerate(value):
-            InputValidation.verify_parameter_type("CAN.MessageList.messages.setter", "messages[%d]" % _index, _msg, self.message_type)
+            InputValidation.verify_parameter_type("CAN.MessageList.messages.setter", "messages[%d]" % _index, _msg, Message)
         self.__messages = value
         if len(value) > 0:
             self.__start_timestamp = value[0].timestamp
@@ -254,18 +253,6 @@ class MessageList(object):
     def filter_criteria(self, value):
         InputValidation.verify_parameter_type("CAN.MessageList.filter_criteria.setter", "filter_criteria", value, types.StringType)
         self.__filter_criteria = value
-
-    @property
-    def message_type(self):
-        try:
-            return self.__message_type
-        except AttributeError:
-            return Message
-
-    @message_type.setter
-    def message_type(self, value):
-        InputValidation.verify_parameter_type("CAN.MessageList.message_type.setter", "message_type", value, types.TypeType)
-        self.__message_type = value
 
     @property
     def name(self):
@@ -293,7 +280,6 @@ class MessageList(object):
             retval += "Applied filters: None\n"
         else:
             retval += "Applied filters: %s\n" % self.filter_criteria
-        retval += "Message type: %s\n" % self.message_type
         retval += "Start timestamp = %f\n" % self.start_timestamp
         retval += "End timestamp = %f\n" % self.end_timestamp
         for _msg in self.messages:
