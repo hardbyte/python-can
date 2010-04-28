@@ -11,6 +11,9 @@ class CANReader(CAN.Listener):
     def on_message_received(self, msg):
         self.__msg_queue.put_nowait(msg)
 
+    def on_status_change(self, timestamp, old_status, new_status):
+        pass
+
     def get_message(self):
         try:
             return self.__msg_queue.get(timeout=1)
