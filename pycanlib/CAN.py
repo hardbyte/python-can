@@ -188,17 +188,18 @@ class Message(object):
     def check_equality(self, other, fields):
         InputValidation.verify_parameter_type("CAN.Message.check_equality", "other", other, Message)
         InputValidation.verify_parameter_type("CAN.Message.check_equality", "fields", fields, types.ListType)
-        for (_index, _field) in fields:
+        for (_index, _field) in enumerate(fields):
             InputValidation.verify_parameter_type("CAN.Message.check_equality", ("fields[%d]" % _index), _field, types.StringType)
         retval = True
         for _field in fields:
-            if (_field in self.__dict__.keys()) and (_field in other.__dict__.keys()):
-                if self.__dict__[_field] != other.__dict__[_field]:
+            try:
+                if eval("self.%s" % _field) != eval("other.%s" % _field):
                     retval = False
                     break
-            else:
+            except AttributeError:
                 retval = False
                 break
+        return retval
 
     def __str__(self):
         _field_strings = []
