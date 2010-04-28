@@ -253,7 +253,6 @@ class MessageList(object):
     @filter_criteria.setter
     def filter_criteria(self, value):
         InputValidation.verify_parameter_type("CAN.MessageList.filter_criteria.setter", "filter_criteria", value, types.StringType)
-        #we don't evaluate the filter criteria yet as they will depend on the message being tested, which isn't defined right now - the code that uses filter_criteria will have to evaluate the expression itself
         self.__filter_criteria = value
 
     @property
@@ -524,8 +523,7 @@ class Bus(object):
     def transceiver_type(self):
         _buffer = ctypes.c_ulong(0)
         canlib.canGetChannelData(self.channel, canlib.canCHANNELDATA_TRANS_TYPE, ctypes.byref(_buffer), ctypes.c_size_t(4))
-        retval = _buffer.value
-        return retval
+        return _buffer.value
 
     @property
     def channel_info(self):
