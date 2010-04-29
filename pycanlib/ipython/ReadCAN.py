@@ -1,6 +1,5 @@
 import ipipe
 import Queue
-import time
 
 from pycanlib import CAN
 
