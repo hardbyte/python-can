@@ -936,6 +936,9 @@ def get_canlib_info():
         _minor_ver_letter = ""
     return "%d.%d%s" % (_major_ver_no, _minor_ver_no, _minor_ver_letter)
 
+LOG_FORMAT_DAT = 0
+LOG_FORMAT_TDV = 1
+
 class Log(object):
 
     def __init__(self, log_info, channel_info, machine_info, message_lists=[]):
@@ -991,3 +994,29 @@ class Log(object):
         for _list in self.message_lists:
             retval += "%s" % _list
         return retval
+
+    def write_to_file(self, format=LOG_FORMAT_DAT, name=None, path=None):
+        InputValidation.verify_parameter_value_in_set("CAN.Log.write_to_file", "format", format, (LOG_FORMAT_DAT, LOG_FORMAT_TDV))
+        InputValidation.verify_parameter_type("CAN.Log.write_to_file", "name", name, (types.NoneType, types.StringType))
+        InputValidation.verify_parameter_type("CAN.Log.write_to_file", "path", path, (types.NoneType, types.StringType))
+        if name != None:
+            InputValidation.verify_parameter_min_value("CAN.Log.write_to_file", "len(name)", len(name), 1)
+        if path != None:
+            InputValidation.verify_parameter_min_value("CAN.Log.write_to_file", "len(path)", len(path), 1)
+        if name == None:
+            _name = self.log_info.original_file_name
+        else:
+            _name = name
+        if path == None:
+            _path = os.path.expanduser("~/CAN_bus_logs/")
+        else:
+            _path = path
+        _path = os.path.join(_path, _name)
+        if not os.path.exists(os.path.dirname(_path)):
+            os.makedirs(os.path.dirname(_path))
+        if format == LOG_FORMAT_DAT:
+            with open(_path, "wb") as _log_file:
+                cPickle.dump(self, _log_file)
+        else format == LOG_FORMAT_TDV:
+            with open(_path, "w") as _log_file:
+                _log_file.write("%s\n" % self)
