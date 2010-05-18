@@ -42,6 +42,9 @@ CARD_SN_ARRAY = ctypes.c_ubyte * MAX_CARD_SN_LENGTH
 MAX_TRANS_SN_LENGTH = 8
 TRANS_SN_ARRAY = ctypes.c_ubyte * MAX_TRANS_SN_LENGTH
 
+LOG_FORMAT_DAT = 0
+LOG_FORMAT_TDV = 1
+
 class Message(object):
 
     def __init__(self, timestamp=0.0, is_remote_frame=False, id_type=ID_TYPE_11_BIT, is_wakeup=(not WAKEUP_MSG), is_error_frame=(not ERROR_FRAME), arbitration_id=0, data=[], dlc=0, info_strings=[]):
@@ -221,7 +224,6 @@ class Message(object):
         _field_strings.append(("\n" + (" " * (_current_length + 4))).join(self.info_strings))
         return "    ".join(_field_strings)
 
-
 class MessageList(object):
 
     def __init__(self, messages=[], filter_criteria="True", name="default"):
@@ -286,7 +288,6 @@ class MessageList(object):
         for _msg in self.messages:
             retval += "%s\n" % _msg
         return retval
-
 
 class Bus(object):
 
@@ -638,10 +639,88 @@ class BufferedReader(Listener):
     def on_status_change(self, timestamp, old_status, new_status):
         pass
 
-    def get_message(self):
+    def get_message(self, timeout=1):
         try:
-            return self.__msg_queue.get(timeout=1)
+            return self.__msg_queue.get(timeout=timeout)
         except Queue.Empty:
+            return None
+
+class SoftwareAcceptanceFilter(Listener):
+    def __init__(self, std_acceptance_code=0, std_acceptance_mask=0, ext_acceptance_code=0, ext_acceptance_mask=0):
+        self.std_acceptance_code = std_acceptance_code
+        self.std_acceptance_mask = std_acceptance_mask
+        self.ext_acceptance_code = ext_acceptance_code
+        self.ext_acceptance_mask = ext_acceptance_mask
+        self.__listeners = []
+
+    @property
+    def std_acceptance_code(self):
+        return self.__std_acceptance_code
+
+    @std_acceptance_code.setter
+    def std_acceptance_code(self, value):
+        InputValidation.verify_parameter_type("CAN.SoftwareAcceptanceFilter.std_acceptance_code.setter", "std_acceptance_code", value, types.IntType)
+        InputValidation.verify_parameter_min_value("CAN.SoftwareAcceptanceFilter.std_acceptance_code.setter", "std_acceptance_code", value, 0)
+        InputValidation.verify_parameter_max_value("CAN.SoftwareAcceptanceFilter.std_acceptance_code.setter", "std_acceptance_code", value, ((2 ** 11) - 1))
+
+    @property
+    def std_acceptance_mask(self):
+        return self.__std_acceptance_mask
+
+    @std_acceptance_mask.setter
+    def std_acceptance_mask(self, value):
+        InputValidation.verify_parameter_type("CAN.SoftwareAcceptanceFilter.std_acceptance_mask.setter", "std_acceptance_mask", value, types.IntType)
+        InputValidation.verify_parameter_min_value("CAN.SoftwareAcceptanceFilter.std_acceptance_mask.setter", "std_acceptance_mask", value, 0)
+        InputValidation.verify_parameter_max_value("CAN.SoftwareAcceptanceFilter.std_acceptance_mask.setter", "std_acceptance_mask", value, ((2 ** 11) - 1))
+
+    @property
+    def ext_acceptance_code(self):
+        return self.__ext_acceptance_code
+
+    @ext_acceptance_code.setter
+    def ext_acceptance_code(self, value):
+        InputValidation.verify_parameter_type("CAN.SoftwareAcceptanceFilter.ext_acceptance_code.setter", "ext_acceptance_code", value, types.IntType)
+        InputValidation.verify_parameter_min_value("CAN.SoftwareAcceptanceFilter.ext_acceptance_code.setter", "ext_acceptance_code", value, 0)
+        InputValidation.verify_parameter_max_value("CAN.SoftwareAcceptanceFilter.ext_acceptance_code.setter", "ext_acceptance_code", value, ((2 ** 29) - 1))
+
+    @property
+    def ext_acceptance_mask(self):
+        return self.__ext_acceptance_mask
+
+    @ext_acceptance_mask.setter
+    def ext_acceptance_mask(self, value):
+        InputValidation.verify_parameter_type("CAN.SoftwareAcceptanceFilter.ext_acceptance_mask.setter", "ext_acceptance_mask", value, types.IntType)
+        InputValidation.verify_parameter_min_value("CAN.SoftwareAcceptanceFilter.ext_acceptance_mask.setter", "ext_acceptance_mask", value, 0)
+        InputValidation.verify_parameter_max_value("CAN.SoftwareAcceptanceFilter.ext_acceptance_mask.setter", "ext_acceptance_mask", value, ((2 ** 29) - 1))
+
+    def on_message_received(self, msg):
+        if msg.id_type == ID_TYPE_EXTENDED:
+            _mask = self.ext_acceptance_mask
+            _code = self.ext_acceptance_code
+        else:
+            _mask = self.std_acceptance_mask
+            _code = self.std_acceptance_code
+        if (msg.arbitration_id & _mask) ^ _code:
+            for _listener in self.__listeners:
+                _listener.on_message_received(msg)
+
+    def add_listener(self, listener):
+        InputValidation.verify_parameter_type("CAN.SoftwareAcceptanceFilter.add_listener", "listener", listener, Listener)
+        self.__listeners.append(listener)
+
+    def remove_listener(self, listener):
+        self.__listeners.remove(listener)
+
+    def filter_message(self, msg):
+        if msg.id_type == ID_TYPE_EXTENDED:
+            _mask = self.ext_acceptance_mask
+            _code = self.ext_acceptance_code
+        else:
+            _mask = self.std_acceptance_mask
+            _code = self.std_acceptance_code
+        if (msg.arbitration_id & _mask) ^ _code:
+            return msg
+        else:
             return None
 
 class ChannelInfo(object):
@@ -935,9 +1014,6 @@ def get_canlib_info():
     else:
         _minor_ver_letter = ""
     return "%d.%d%s" % (_major_ver_no, _minor_ver_no, _minor_ver_letter)
-
-LOG_FORMAT_DAT = 0
-LOG_FORMAT_TDV = 1
 
 class Log(object):
 
