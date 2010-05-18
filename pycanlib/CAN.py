@@ -4,6 +4,7 @@ import ctypes
 import datetime
 import os
 import platform
+import Queue
 import sys
 import time
 import types
@@ -515,12 +516,6 @@ class Bus(object):
     def channel_info(self):
         return ChannelInfo(channel=self.channel, name=self.device_description, manufacturer=self.manufacturer_name, fw_version=self.firmware_version, hw_version=self.hardware_version, card_serial=self.card_serial, trans_serial=self.transceiver_serial, trans_type=self.transceiver_type, card_number=self.card_number, channel_on_card=self.card_channel)
 
-    def read(self):
-        try:
-            return self.__rx_queue.get_nowait()
-        except Queue.Empty:
-            return None
-
     def write(self, msg):
         InputValidation.verify_parameter_type("CAN.Bus.write", "msg", msg, Message)
         canlib.canWrite(self.__write_handle, msg.arbitration_id, "".join([("%c" % byte) for byte in msg.data]), msg.dlc, msg.flags)
@@ -633,6 +628,21 @@ class Listener(object):
     def on_status_change(self, timestamp, new_status, old_status):
         raise NotImplementedError("%s has not implemented on_status_change" % self.__class__.__name__)
 
+class BufferedReader(Listener):
+    def __init__(self):
+        self.__msg_queue = Queue.Queue(0)
+
+    def on_message_received(self, msg):
+        self.__msg_queue.put_nowait(msg)
+
+    def on_status_change(self, timestamp, old_status, new_status):
+        pass
+
+    def get_message(self):
+        try:
+            return self.__msg_queue.get(timeout=1)
+        except Queue.Empty:
+            return None
 
 class ChannelInfo(object):
 

@@ -3,19 +3,8 @@ import datetime
 import logging
 import optparse
 import os
-import time
 
 from pycanlib import CAN
-
-class _CANLoggerListener(CAN.Listener):
-
-    def __init__(self, logger):
-        self.msg_list = []
-        self.__logger = logger
-
-    def on_message_received(self, msg):
-        self.__logger.info(msg)
-        self.msg_list.append(msg)
 
 if __name__ == "__main__":
     _parser = optparse.OptionParser()
@@ -30,6 +19,7 @@ if __name__ == "__main__":
     (_options, _args) = _parser.parse_args()
     _bus = CAN.Bus(channel=_options.channel, speed=_options.speed, tseg1=_options.tseg1, tseg2=_options.tseg2, sjw=_options.sjw, no_samp=_options.no_samp)
     _logger = logging.getLogger("can_logger")
+    _message_list = []
     _logger.setLevel(logging.INFO)
     _log_handler = logging.StreamHandler()
     _log_formatter = logging.Formatter("%(message)s")
@@ -42,17 +32,19 @@ if __name__ == "__main__":
     _file_name = os.path.basename(_log_file_path)
     if not os.path.exists(os.path.dirname(_log_file_path)):
         os.makedirs(os.path.dirname(_log_file_path))
-    _log_file = open(_log_file_path, "wb")
-    _logger_listener = _CANLoggerListener(_logger)
-    _bus.add_listener(_logger_listener)
+    _listener = _CAN.BufferedReader()
+    _bus.add_listener(_listener)
     try:
         _bus.enable_callback()
         while True:
-            time.sleep(0.001)
+            _msg = _listener.get_message()
+            if _msg != None:
+                _logger.info(_msg)
+                _message_list.append(_msg)
     except KeyboardInterrupt:
         pass
     finally:
         _bus.shutdown()
-    _log_obj = CAN.Log(log_info=CAN.LogInfo(log_start_time=_log_start_time, log_end_time=datetime.datetime.now(), original_file_name=_file_name, tester_name=os.getenv("USERNAME")), channel_info=_bus.channel_info, machine_info=CAN.get_host_machine_info(), message_lists=[CAN.MessageList(messages=_logger_listener.msg_list)])
-    cPickle.dump(_log_obj, _log_file)
-    _log_file.close()
+    _log_obj = CAN.Log(log_info=CAN.LogInfo(log_start_time=_log_start_time, log_end_time=datetime.datetime.now(), original_file_name=_file_name, tester_name=os.getenv("USERNAME")), channel_info=_bus.channel_info, machine_info=CAN.get_host_machine_info(), message_lists=[CAN.MessageList(messages=_message_list)])
+    with open(_log_file_path, "wb") as _log_file:
+        cPickle.dump(_log_obj, _log_file)
