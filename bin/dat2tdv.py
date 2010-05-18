@@ -2,6 +2,8 @@ import cPickle
 import os
 from optparse import OptionParser
 
+from pycanlib import CAN
+
 if __name__ == "__main__":
     _parser = OptionParser()
     _parser.add_option("-i", "--inputFile", dest="input_file", help="DAT file to decode")

@@ -1017,6 +1017,6 @@ class Log(object):
         if format == LOG_FORMAT_DAT:
             with open(_path, "wb") as _log_file:
                 cPickle.dump(self, _log_file)
-        else format == LOG_FORMAT_TDV:
+        else:
             with open(_path, "w") as _log_file:
                 _log_file.write("%s\n" % self)
