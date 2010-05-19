@@ -274,6 +274,16 @@ class MessageList(object):
     def end_timestamp(self):
         return self.__end_timestamp
 
+    @property
+    def filtered_messages(self):
+        retval = []
+        for msg in self.messages:
+            try:
+                if eval(self.filter_criteria):
+                    retval.append(msg)
+            except AttributeError:
+                pass
+
     def __str__(self):
         retval = "-"*len("\nMessage List '%s'\n" % self.name)
         retval += "\nMessage List '%s'\n" % self.name
