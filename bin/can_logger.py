@@ -1,6 +1,5 @@
 import cPickle
 import datetime
-import logging
 import optparse
 import os
 
@@ -18,15 +17,8 @@ if __name__ == "__main__":
     _parser.add_option("-p", "--log_file_path", dest="log_file_path", help="Log file path", default="can_logger")
     (_options, _args) = _parser.parse_args()
     _bus = CAN.Bus(channel=_options.channel, speed=_options.speed, tseg1=_options.tseg1, tseg2=_options.tseg2, sjw=_options.sjw, no_samp=_options.no_samp)
-    _logger = logging.getLogger("can_logger")
     _message_list = []
-    _logger.setLevel(logging.INFO)
-    _log_handler = logging.StreamHandler()
-    _log_formatter = logging.Formatter("%(message)s")
-    _log_handler.setFormatter(_log_formatter)
-    _logger.addHandler(_log_handler)
-    _log_timestamp = datetime.datetime.now()
-    _log_start_time = _log_timestamp
+    _log_start_time = datetime.datetime.now()
     _timestamp_string = _log_timestamp.strftime("%Y%m%d_%H%M%S")
     _log_file_path = os.path.join(os.path.expanduser("~"), "%s" % _options.log_file_path, "%s_%s.dat" % (_options.log_file_name_base, _timestamp_string))
     _file_name = os.path.basename(_log_file_path)
@@ -39,7 +31,7 @@ if __name__ == "__main__":
         while True:
             _msg = _listener.get_message()
             if _msg != None:
-                _logger.info(_msg)
+                print _msg
                 _message_list.append(_msg)
     except KeyboardInterrupt:
         pass
