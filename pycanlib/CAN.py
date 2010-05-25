@@ -672,6 +672,7 @@ class SoftwareAcceptanceFilter(Listener):
         InputValidation.verify_parameter_type("CAN.SoftwareAcceptanceFilter.std_acceptance_code.setter", "std_acceptance_code", value, types.IntType)
         InputValidation.verify_parameter_min_value("CAN.SoftwareAcceptanceFilter.std_acceptance_code.setter", "std_acceptance_code", value, 0)
         InputValidation.verify_parameter_max_value("CAN.SoftwareAcceptanceFilter.std_acceptance_code.setter", "std_acceptance_code", value, ((2 ** 11) - 1))
+        self.__std_acceptance_code = value
 
     @property
     def std_acceptance_mask(self):
@@ -682,6 +683,7 @@ class SoftwareAcceptanceFilter(Listener):
         InputValidation.verify_parameter_type("CAN.SoftwareAcceptanceFilter.std_acceptance_mask.setter", "std_acceptance_mask", value, types.IntType)
         InputValidation.verify_parameter_min_value("CAN.SoftwareAcceptanceFilter.std_acceptance_mask.setter", "std_acceptance_mask", value, 0)
         InputValidation.verify_parameter_max_value("CAN.SoftwareAcceptanceFilter.std_acceptance_mask.setter", "std_acceptance_mask", value, ((2 ** 11) - 1))
+        self.__std_acceptance_mask = value
 
     @property
     def ext_acceptance_code(self):
@@ -692,6 +694,7 @@ class SoftwareAcceptanceFilter(Listener):
         InputValidation.verify_parameter_type("CAN.SoftwareAcceptanceFilter.ext_acceptance_code.setter", "ext_acceptance_code", value, types.IntType)
         InputValidation.verify_parameter_min_value("CAN.SoftwareAcceptanceFilter.ext_acceptance_code.setter", "ext_acceptance_code", value, 0)
         InputValidation.verify_parameter_max_value("CAN.SoftwareAcceptanceFilter.ext_acceptance_code.setter", "ext_acceptance_code", value, ((2 ** 29) - 1))
+        self.__ext_acceptance_code = value
 
     @property
     def ext_acceptance_mask(self):
@@ -702,15 +705,11 @@ class SoftwareAcceptanceFilter(Listener):
         InputValidation.verify_parameter_type("CAN.SoftwareAcceptanceFilter.ext_acceptance_mask.setter", "ext_acceptance_mask", value, types.IntType)
         InputValidation.verify_parameter_min_value("CAN.SoftwareAcceptanceFilter.ext_acceptance_mask.setter", "ext_acceptance_mask", value, 0)
         InputValidation.verify_parameter_max_value("CAN.SoftwareAcceptanceFilter.ext_acceptance_mask.setter", "ext_acceptance_mask", value, ((2 ** 29) - 1))
+        self.__ext_acceptance_mask = value
 
     def on_message_received(self, msg):
-        if msg.id_type == ID_TYPE_EXTENDED:
-            _mask = self.ext_acceptance_mask
-            _code = self.ext_acceptance_code
-        else:
-            _mask = self.std_acceptance_mask
-            _code = self.std_acceptance_code
-        if (msg.arbitration_id & _mask) ^ _code:
+        _msg = self.filter_message(msg)
+        if _msg != None:
             for _listener in self.__listeners:
                 _listener.on_message_received(msg)
 
