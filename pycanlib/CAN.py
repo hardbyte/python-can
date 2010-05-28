@@ -727,7 +727,7 @@ class SoftwareAcceptanceFilter(Listener):
         else:
             _mask = self.std_acceptance_mask
             _code = self.std_acceptance_code
-        if (msg.arbitration_id & _mask) ^ _code:
+        if not ((msg.arbitration_id & _mask) ^ _code):
             return msg
         else:
             return None
