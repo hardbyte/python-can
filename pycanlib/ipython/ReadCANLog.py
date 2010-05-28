@@ -11,8 +11,8 @@ class ReadCANLog(ipipe.Table):
             _log = cPickle.load(_infile)
         self.__messages = []
         for _msg_list in _log.message_lists:
-            for _msg in _msg_list:
-                messages.append(_msg)
+            for _msg in _msg_list.messages:
+                self.__messages.append(_msg)
 
     def __iter__(self):
         for _msg in self.__messages:
