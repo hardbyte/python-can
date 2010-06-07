@@ -3,7 +3,7 @@ import ipipe
 
 from pycanlib import CAN
 
-class ReadCANLog(ipipe.Table):
+class ReadLog(ipipe.Table):
 
     def __init__(self, filename):
         ipipe.Table.__init__(None)

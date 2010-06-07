@@ -1,5 +1,6 @@
 from pycanlib import canlib, canstat, InputValidation
 
+import cPickle
 import ctypes
 import datetime
 import os
