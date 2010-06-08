@@ -1,4 +1,3 @@
-import cPickle
 import ipipe
 
 from pycanlib import CAN
