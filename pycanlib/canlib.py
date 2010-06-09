@@ -5,10 +5,10 @@ import types
 from pycanlib import canstat
 
 def _get_canlib():
-    _canlib_dict = {"win32": (ctypes.windll.LoadLibrary, "canlib32"), "posix": (ctypes.cdll.LoadLibrary, "libcanlib.so")}
-    _library_constructor = _canlib_dict[sys.platform][0]
-    _library_name = _canlib_dict[sys.platform][1]
-    return _library_constructor(_library_name)
+    if sys.platform == "win32":
+        return ctypes.windll.LoadLibrary("canlib32")
+    else:
+        return ctypes.cdll.LoadLibrary("libcanlib.so")
 
 def _get_canlib_function(func_name, argtypes=None, restype=None, errcheck=None):
     retval = None
