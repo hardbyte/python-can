@@ -7,6 +7,7 @@ import os
 import platform
 import Queue
 import sys
+import threading
 import time
 import types
 
@@ -302,20 +303,20 @@ class MessageList(object):
 
 class Bus(object):
 
-    def __init__(self, channel, speed, tseg1, tseg2, sjw, no_samp, std_acceptance_filter=(0, 0), ext_acceptance_filter=(0, 0)):
+    def __init__(self, channel, speed, tseg1, tseg2, sjw, no_samp):
         self.channel = channel
         self.speed = speed
         self.tseg1 = tseg1
         self.tseg2 = tseg2
         self.sjw = sjw
         self.no_samp = no_samp
-        self.std_acceptance_filter = std_acceptance_filter
-        self.ext_acceptance_filter = ext_acceptance_filter
         self.__listeners = []
         self.__old_stat_flags = 0
-        self.__ctypes_callback = canlib.callback_dict[sys.platform](self.__callback)
+        self.__read_thread = threading.Thread(target=self.__read_process)
+        self.__read_thread.daemon = True
         canlib.canBusOn(self.__read_handle)
         canlib.canBusOn(self.__write_handle)
+        self.__read_thread.start()
 
     @property
     def channel(self):
@@ -328,14 +329,7 @@ class Bus(object):
         InputValidation.verify_parameter_type("CAN.Bus.channel.setter", "channel", value, types.IntType)
         InputValidation.verify_parameter_min_value("CAN.Bus.channel.setter", "channel", value, 0)
         InputValidation.verify_parameter_max_value("CAN.Bus.channel.setter", "channel", value, _num_channels.value)
-        if "__read_handle" in self.__dict__:
-            canlib.canBusOff(self.__read_handle)
-            canlib.kvSetNotifyCallback(self.__read_handle, ctypes.c_void_p(0), ctypes.c_void_p(0), 0)
-            canlib.canClose(self.__read_handle)
-        if "__write_handle" in self.__dict__:
-            canlib.canBusOff(self.__write_handle)
-            canlib.kvSetNotifyCallback(self.__write_handle, ctypes.c_void_p(0), ctypes.c_void_p(0), 0)
-            canlib.canClose(self.__write_handle)
+        self.__recycle_can_bus_handles()
         self.__channel = value
         self.__read_handle = canlib.canOpenChannel(value, canlib.canOPEN_ACCEPT_VIRTUAL)
         self.__write_handle = canlib.canOpenChannel(value, canlib.canOPEN_ACCEPT_VIRTUAL)
@@ -344,6 +338,14 @@ class Bus(object):
         self.__update_bus_parameters()
         canlib.canBusOn(self.__read_handle)
         canlib.canBusOn(self.__write_handle)
+
+    def __recycle_can_bus_handles(self):
+        if "__read_handle" in self.__dict__:
+            canlib.canBusOff(self.__read_handle)
+            canlib.canClose(self.__read_handle)
+        if "__write_handle" in self.__dict__:
+            canlib.canBusOff(self.__write_handle)
+            canlib.canClose(self.__write_handle)
 
     @property
     def speed(self):
@@ -402,38 +404,6 @@ class Bus(object):
         InputValidation.verify_parameter_value_in_set("CAN.Bus.no_samp.setter", "no_samp", value, [1, 3])
         self.__no_samp = value
         self.__update_bus_parameters()
-
-    @property
-    def std_acceptance_filter(self):
-        return (self.__std_acceptance_code, self.__std_acceptance_mask)
-
-    @std_acceptance_filter.setter
-    def std_acceptance_filter(self, value):
-        InputValidation.verify_parameter_type("CAN.Bus.std_acceptance_filter.setter", "std_acceptance_filter", value, types.TupleType)
-        InputValidation.verify_parameter_value_equal_to("CAN.Bus.std_acceptance_filter.setter", "len(std_acceptance_filter)", len(value), 2)
-        InputValidation.verify_parameter_type("CAN.Bus.std_acceptance_filter.setter", "std_acceptance_code", value[0], types.IntType)
-        InputValidation.verify_parameter_type("CAN.Bus.std_acceptance_filter.setter", "std_acceptance_mask", value[1], types.IntType)
-        InputValidation.verify_parameter_min_value("CAN.Bus.std_acceptance_filter.setter", "std_acceptance_code", value[0], 0)
-        InputValidation.verify_parameter_min_value("CAN.Bus.std_acceptance_filter.setter", "std_acceptance_mask", value[1], 0)
-        InputValidation.verify_parameter_max_value("CAN.Bus.std_acceptance_filter.setter", "std_acceptance_code", value[0], ((2 ** 11) - 1))
-        InputValidation.verify_parameter_max_value("CAN.Bus.std_acceptance_filter.setter", "std_acceptance_mask", value[1], ((2 ** 11) - 1))
-        self.__set_acceptance_filter(value, canlib.ACCEPTANCE_FILTER_TYPE_STD)
-
-    @property
-    def ext_acceptance_filter(self):
-        return (self.__ext_acceptance_code, self.__ext_acceptance_mask)
-
-    @ext_acceptance_filter.setter
-    def ext_acceptance_filter(self, value):
-        InputValidation.verify_parameter_type("CAN.Bus.ext_acceptance_filter.setter", "ext_acceptance_filter", value, types.TupleType)
-        InputValidation.verify_parameter_value_equal_to("CAN.Bus.ext_acceptance_filter.setter", "len(ext_acceptance_filter)", len(value), 2)
-        InputValidation.verify_parameter_type("CAN.Bus.ext_acceptance_filter.setter", "ext_acceptance_code", value[0], types.IntType)
-        InputValidation.verify_parameter_type("CAN.Bus.ext_acceptance_filter.setter", "ext_acceptance_mask", value[1], types.IntType)
-        InputValidation.verify_parameter_min_value("CAN.Bus.ext_acceptance_filter.setter", "ext_acceptance_code", value[0], 0)
-        InputValidation.verify_parameter_min_value("CAN.Bus.ext_acceptance_filter.setter", "ext_acceptance_mask", value[1], 0)
-        InputValidation.verify_parameter_max_value("CAN.Bus.ext_acceptance_filter.setter", "ext_acceptance_code", value[0], ((2 ** 29) - 1))
-        InputValidation.verify_parameter_max_value("CAN.Bus.ext_acceptance_filter.setter", "ext_acceptance_mask", value[1], ((2 ** 29) - 1))
-        self.__set_acceptance_filter(value, canlib.ACCEPTANCE_FILTER_TYPE_EXT)
 
     @property
     def bus_time(self):
@@ -543,19 +513,11 @@ class Bus(object):
     def remove_listener(self, listener):
         self.__listeners.remove(listener)
 
-    def enable_callback(self):
-        canlib.kvSetNotifyCallback(self.__read_handle, self.__ctypes_callback, None, canstat.canNOTIFY_RX + canstat.canNOTIFY_STATUS)
-
-    def disable_callback(self):
-        canlib.kvSetNotifyCallback(self.__read_handle, self.__ctypes_callback, None, canstat.canNOTIFY_NONE)
-
-    def shutdown(self):
-        self.disable_callback()
-        canlib.canBusOff(self.__read_handle)
-        canlib.canBusOff(self.__write_handle)
-        time.sleep(0.05)
-        canlib.canClose(self.__read_handle)
-        canlib.canClose(self.__write_handle)
+#    def shutdown(self):
+#        canlib.canBusOff(self.__read_handle)
+#        canlib.canBusOff(self.__write_handle)
+#        canlib.canClose(self.__read_handle)
+#        canlib.canClose(self.__write_handle)
 
     def __get_bus_statistics(self):
         canlib.canRequestBusStatistics(self.__read_handle)
@@ -563,35 +525,21 @@ class Bus(object):
         canlib.canGetBusStatistics(self.__read_handle, ctypes.byref(_stats), ctypes.c_uint(28))
         return _stats
 
-    def __set_acceptance_filter(self, value, msg_type):
-        InputValidation.verify_parameter_value_in_set("CAN.Bus.__set_acceptance_filter", "msg_type", msg_type, [canlib.ACCEPTANCE_FILTER_TYPE_STD, canlib.ACCEPTANCE_FILTER_TYPE_EXT])
-        if msg_type == canlib.ACCEPTANCE_FILTER_TYPE_STD:
-            self.__std_acceptance_code = value[0]
-            self.__std_acceptance_mask = value[1]
-            canlib.canSetAcceptanceFilter(self.__read_handle, self.std_acceptance_filter[0], self.std_acceptance_filter[1], msg_type)
-            canlib.canSetAcceptanceFilter(self.__write_handle, self.std_acceptance_filter[0], self.std_acceptance_filter[1], msg_type)
-        else:
-            self.__ext_acceptance_code = value[0]
-            self.__ext_acceptance_mask = value[1]
-            canlib.canSetAcceptanceFilter(self.__read_handle, self.ext_acceptance_filter[0], self.ext_acceptance_filter[1], msg_type)
-            canlib.canSetAcceptanceFilter(self.__write_handle, self.ext_acceptance_filter[0], self.ext_acceptance_filter[1], msg_type)
-
     def __update_bus_parameters(self):
-        try:
+        if "__read_handle" in self.__dict__.keys():
             canlib.canBusOff(self.__read_handle)
-            canlib.canBusOff(self.__write_handle)
             canlib.canSetBusParams(self.__read_handle, self.speed, self.tseg1, self.tseg2, self.sjw, self.no_samp, 0)
-            canlib.canSetBusParams(self.__write_handle, self.speed, self.tseg1, self.tseg2, self.sjw, self.no_samp, 0)
             canlib.canBusOn(self.__read_handle)
+        if "__write_handle" in self.__dict__.keys():
+            canlib.canBusOff(self.__write_handle)
+            canlib.canSetBusParams(self.__write_handle, self.speed, self.tseg1, self.tseg2, self.sjw, self.no_samp, 0)
             canlib.canBusOn(self.__write_handle)
-        except AttributeError:
-            pass
 
-    def __rx_callback(self):
+    def __read_process(self):
         while True:
             _rx_msg = self.__get_message()
             if _rx_msg is None:
-                break
+                pass
             else:
                 for _listener in self.__listeners:
                     _listener.on_message_received(_rx_msg)
@@ -602,7 +550,7 @@ class Bus(object):
         _dlc = ctypes.c_uint(0)
         _flags = ctypes.c_uint(0)
         _timestamp = ctypes.c_long(0)
-        _status = canlib.canRead(self.__read_handle, ctypes.byref(_arb_id), ctypes.byref(_data), ctypes.byref(_dlc), ctypes.byref(_flags), ctypes.byref(_timestamp))
+        _status = canlib.canReadWait(self.__read_handle, ctypes.byref(_arb_id), ctypes.byref(_data), ctypes.byref(_dlc), ctypes.byref(_flags), ctypes.byref(_timestamp), 500)
         if _status.value == canstat.canOK:
             _data_array = map(ord, _data)
             if int(_flags.value) & canstat.canMSG_EXT:
@@ -614,23 +562,6 @@ class Bus(object):
             return _rx_msg
         else:
             return None
-
-    def __status_callback(self, timestamp):
-        canlib.canRequestChipStatus(self.__read_handle)
-        _stat_flags = ctypes.c_long(0)
-        canlib.canReadStatus(self.__read_handle, ctypes.byref(_stat_flags))
-        if _stat_flags.value != self.__old_stat_flags:
-            for _listener in self.__listeners:
-                _listener.on_status_change(timestamp, _stat_flags.value, self.__old_stat_flags)
-            self.__old_stat_flags = _stat_flags.value
-
-    def __callback(self, hnd, context, event):
-        if event == canstat.canNOTIFY_RX:
-            self.__rx_callback()
-        elif event == canstat.canNOTIFY_STATUS:
-            _timestamp = canlib.canReadTimer(self.__read_handle)
-            self.__status_callback(_timestamp)
-        return 0
 
 class Listener(object):
 

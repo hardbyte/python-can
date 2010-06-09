@@ -10,7 +10,6 @@ class ReadCAN(ipipe.Table):
         self.__bus = CAN.Bus(channel=channel, speed=speed, tseg1=tseg1, tseg2=tseg2, sjw=sjw, no_samp=no_samp)
         self.__reader = CAN.BufferedReader()
         self.__bus.add_listener(self.__reader)
-        self.__bus.enable_callback()
 
     def __iter__(self):
         try:
@@ -20,5 +19,3 @@ class ReadCAN(ipipe.Table):
                     yield _msg
         except KeyboardInterrupt:
             pass
-        finally:
-            self.__bus.shutdown()
