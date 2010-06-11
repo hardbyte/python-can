@@ -24,7 +24,7 @@ class InputValidationError(Exception):
         return self.__reason
 
     def __str__(self):
-        return "%s: Bad parameter '%s' (%s, type %s) to function '%s' - reason '%s'" % (self.__class__.__name__, self.parameter_name, self.parameter_value, type(self.parameter_value), self.function_name, self.reason)
+        return "Bad parameter '%s' (%s, type %s) to function '%s' - reason '%s'" % (self.parameter_name, self.parameter_value, type(self.parameter_value), self.function_name, self.reason)
 
 class ParameterTypeError(InputValidationError):
     pass
