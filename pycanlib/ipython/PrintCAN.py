@@ -1,4 +1,5 @@
 import ipipe
+import time
 
 from pycanlib import CAN
 
@@ -9,8 +10,8 @@ class PrintCAN(ipipe.Display):
 
     def display(self):
         print
-        for item in ipipe.xiter(self.input):
-            try:
+        try:
+            for item in ipipe.xiter(self.input):
                 print item
-            except KeyboardInterrupt:
-                break
+        except KeyboardInterrupt:
+            time.sleep(1)
