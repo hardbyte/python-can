@@ -19,7 +19,7 @@ if __name__ == "__main__":
     _bus = CAN.Bus(channel=_options.channel, speed=_options.speed, tseg1=_options.tseg1, tseg2=_options.tseg2, sjw=_options.sjw, no_samp=_options.no_samp)
     _message_list = []
     _log_start_time = datetime.datetime.now()
-    _timestamp_string = _log_timestamp.strftime("%Y%m%d_%H%M%S")
+    _timestamp_string = _log_start_time.strftime("%Y%m%d_%H%M%S")
     _log_file_path = os.path.join(os.path.expanduser("~"), "%s" % _options.log_file_path, "%s_%s.dat" % (_options.log_file_name_base, _timestamp_string))
     _file_name = os.path.basename(_log_file_path)
     if not os.path.exists(os.path.dirname(_log_file_path)):
