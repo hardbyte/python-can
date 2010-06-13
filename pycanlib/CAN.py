@@ -348,10 +348,8 @@ class Bus(object):
             else:
                 for _listener in self.__listeners:
                     _listener.on_message_received(_rx_msg)
-        print "closing read handle"
         canlib.canBusOff(self.__read_handle)
         canlib.canClose(self.__read_handle)
-        print "read handle closed"
 
     def __get_message(self):
         _arb_id = ctypes.c_long(0)
@@ -366,7 +364,7 @@ class Bus(object):
                 _id_type = ID_TYPE_EXTENDED
             else:
                 _id_type = ID_TYPE_STANDARD
-            _rx_msg = Message(arbitration_id=_arb_id.value, data=_data_array[:_dlc.value], dlc=int(_dlc.value), id_type=_id_type, timestamp = (float(_timestamp.value - self.__timer_offset) / 1000000))
+            _rx_msg = Message(arbitration_id=_arb_id.value, data=_data_array[:_dlc.value], dlc=int(_dlc.value), id_type=_id_type, timestamp=(float(_timestamp.value - self.__timer_offset) / 1000000))
             _rx_msg.flags = int(_flags.value) & canstat.canMSG_MASK
             return _rx_msg
         else:
@@ -381,10 +379,8 @@ class Bus(object):
                 pass
             if _tx_msg != None:
                 canlib.canWriteWait(self.__write_handle, _tx_msg.arbitration_id, "".join([("%c" % byte) for byte in _tx_msg.data]), _tx_msg.dlc, _tx_msg.flags, 5000)
-        print "closing write handle"
         canlib.canBusOff(self.__write_handle)
         canlib.canClose(self.__write_handle)
-        print "write handle closed"
 
     def write(self, msg):
         InputValidation.verify_parameter_type("CAN.Bus.write", "msg", msg, Message)
@@ -399,7 +395,6 @@ class Bus(object):
 
     def shutdown(self):
         self.__threads_running = False
-        time.sleep(10)
 
 class Listener(object):
 
