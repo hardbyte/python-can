@@ -53,9 +53,9 @@ TRANS_SN_ARRAY = ctypes.c_ubyte * MAX_TRANS_SN_LENGTH
 
 def get_host_machine_info():
     if sys.platform == "win32":
-        _machine_name = os.getenv("COMPUTERNAME", value="<unknown>")
+        _machine_name = "%s" % os.getenv("COMPUTERNAME")
     else:
-        _machine_name = os.getenv("HOSTNAME", value="<unknown>")
+        _machine_name = "%s" % os.getenv("HOSTNAME")
     _platform_info = platform.platform()
     _python_version = sys.version[:sys.version.index(" ")]
     return MachineInfo(machine_name=_machine_name, python_version=_python_version, platform_info=_platform_info)
@@ -248,9 +248,9 @@ class MessageList(object):
     def __init__(self, messages=[], filter_criteria="True", name="default"):
         self.messages = messages
         InputValidation.verify_parameter_type("CAN.MessageList.__init__", "filter_criteria", filter_criteria, types.StringType)
-        self.__filter_criteria = value
+        self.__filter_criteria = filter_criteria
         InputValidation.verify_parameter_type("CAN.MessageList.__init__", "name", name, types.StringType)
-        self.__name = value
+        self.__name = name
 
     @property
     def messages(self):
@@ -274,14 +274,14 @@ class MessageList(object):
     @property
     def start_timestamp(self):
         if len(self.messages) > 0:
-            return self.messages[0]
+            return self.messages[0].timestamp
         else:
             return 0
 
     @property
     def end_timestamp(self):
         if len(self.messages) > 0:
-            return self.messages[-1]
+            return self.messages[-1].timestamp
         else:
             return 0
 
@@ -398,7 +398,7 @@ class MachineInfo(object):
         self.machine_name = machine_name
         self.python_version = python_version
         self.platform_info = platform_info
-        self.canlib_version = get_canlib_info()
+        self.canlib_version = get_canlib_version()
         self.module_versions = {}
         for (_modname, _mod) in sys.modules.items():
             if _mod != None:

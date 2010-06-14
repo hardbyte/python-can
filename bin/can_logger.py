@@ -8,7 +8,7 @@ from pycanlib import CAN
 if __name__ == "__main__":
     _parser = optparse.OptionParser()
     _parser.add_option("-c", "--channel", type="int", dest="channel", help="CAN channel number", default="0")
-    _parser.add_option("-s", "--speed", type="int", dest="speed", help="CAN bus speed", default="105263")
+    _parser.add_option("-b", "--bitrate", type="int", dest="bitrate", help="CAN bus bitrate", default="105263")
     _parser.add_option("-t", "--tseg1", type="int", dest="tseg1", help="CAN bus tseg1", default="10")
     _parser.add_option("-u", "--tseg2", type="int", dest="tseg2", help="CAN bus tseg2", default="8")
     _parser.add_option("-w", "--sjw", type="int", dest="sjw", help="CAN bus SJW", default="4")
@@ -16,7 +16,7 @@ if __name__ == "__main__":
     _parser.add_option("-l", "--log_file_name_base", dest="log_file_name_base", help="Base log file name, where log file names are <base>_<datestamp>_<timestamp>", default="can_logger")
     _parser.add_option("-p", "--log_file_path", dest="log_file_path", help="Log file path", default="can_logger")
     (_options, _args) = _parser.parse_args()
-    _bus = CAN.Bus(channel=_options.channel, speed=_options.speed, tseg1=_options.tseg1, tseg2=_options.tseg2, sjw=_options.sjw, no_samp=_options.no_samp)
+    _bus = CAN.Bus(channel=_options.channel, bitrate=_options.bitrate, tseg1=_options.tseg1, tseg2=_options.tseg2, sjw=_options.sjw, no_samp=_options.no_samp)
     _message_list = []
     _log_start_time = datetime.datetime.now()
     _timestamp_string = _log_start_time.strftime("%Y%m%d_%H%M%S")
@@ -24,10 +24,9 @@ if __name__ == "__main__":
     _file_name = os.path.basename(_log_file_path)
     if not os.path.exists(os.path.dirname(_log_file_path)):
         os.makedirs(os.path.dirname(_log_file_path))
-    _listener = _CAN.BufferedReader()
+    _listener = CAN.BufferedReader()
     _bus.add_listener(_listener)
     try:
-        _bus.enable_callback()
         while True:
             _msg = _listener.get_message()
             if _msg != None:
