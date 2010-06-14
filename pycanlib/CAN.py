@@ -768,6 +768,7 @@ class BufferedReader(Listener):
             return None
 
 class AcceptanceFilter(Listener):
+
     def __init__(self, std_acceptance_code=0, ext_acceptance_code=0, std_acceptance_mask=STD_ACCEPTANCE_MASK_ALL_BITS, ext_acceptance_mask=EXT_ACCEPTANCE_MASK_ALL_BITS):
         self.std_acceptance_code = std_acceptance_code
         self.std_acceptance_mask = std_acceptance_mask
