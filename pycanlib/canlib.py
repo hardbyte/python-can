@@ -10,11 +10,15 @@ else:
     __canlib = ctypes.cdll.LoadLibrary("libcanlib.so")
 
 def __get_canlib_function(func_name, argtypes=None, restype=None, errcheck=None):
-    retval = eval("__canlib.%s" % func_name)
-    retval.argtypes = argtypes
-    retval.restype = restype
-    retval.errcheck = errcheck
-    return retval
+    try:
+        retval = eval("__canlib.%s" % func_name)
+    except AttributeError:
+        return None
+    else:
+        retval.argtypes = argtypes
+        retval.restype = restype
+        retval.errcheck = errcheck
+        return retval
 
 class CANLIBError(Exception):
 
@@ -136,3 +140,88 @@ canIOCTL_CLEAR_ERROR_COUNTERS = 5
 canIOCTL_SET_TIMER_SCALE = 6
 canIOCTL_SET_TXACK = 7
 canIoCtl = __get_canlib_function("canIoCtl", argtypes=[ctypes.c_int, ctypes.c_uint, ctypes.c_void_p, ctypes.c_uint], restype=canstat.c_canStatus, errcheck=__check_status)
+
+canGetVersion = __get_canlib_function("canGetVersion", restype=ctypes.c_short, errcheck=__check_status)
+
+canTRANSCEIVER_TYPE_UNKNOWN = 0
+canTRANSCEIVER_TYPE_251 = 1
+canTRANSCEIVER_TYPE_252 = 2
+canTRANSCEIVER_TYPE_DNOPTO = 3
+canTRANSCEIVER_TYPE_W210 = 4
+canTRANSCEIVER_TYPE_SWC_PROTO = 5
+canTRANSCEIVER_TYPE_SWC = 6
+canTRANSCEIVER_TYPE_EVA = 7
+canTRANSCEIVER_TYPE_FIBER = 8
+canTRANSCEIVER_TYPE_K251 = 9
+canTRANSCEIVER_TYPE_K = 10
+canTRANSCEIVER_TYPE_1054_OPTO = 11
+canTRANSCEIVER_TYPE_SWC_OPTO = 12
+canTRANSCEIVER_TYPE_TT = 13
+canTRANSCEIVER_TYPE_1050 = 14
+canTRANSCEIVER_TYPE_1050_OPTO = 15
+canTRANSCEIVER_TYPE_1041 = 16
+canTRANSCEIVER_TYPE_1041_OPTO = 17
+canTRANSCEIVER_TYPE_RS485 = 18
+canTRANSCEIVER_TYPE_LIN = 19
+canTRANSCEIVER_TYPE_KONE = 20
+canTRANSCEIVER_TYPE_LINX_LIN = 64
+canTRANSCEIVER_TYPE_LINX_J1708 = 66
+canTRANSCEIVER_TYPE_LINX_K = 68
+canTRANSCEIVER_TYPE_LINX_SWC = 70
+canTRANSCEIVER_TYPE_LINX_LS = 72
+
+canTransceiverTypeStrings = {canTRANSCEIVER_TYPE_UNKNOWN: "<unknown>",
+                             canTRANSCEIVER_TYPE_251: "82C251",
+                             canTRANSCEIVER_TYPE_252: "82C252/TJA1053/TJA1054",
+                             canTRANSCEIVER_TYPE_DNOPTO: "Optoisolated 82C251",
+                             canTRANSCEIVER_TYPE_W210: "W210",
+                             canTRANSCEIVER_TYPE_SWC_PROTO: "AU5790 prototype",
+                             canTRANSCEIVER_TYPE_SWC: "AU5790",
+                             canTRANSCEIVER_TYPE_EVA: "EVA",
+                             canTRANSCEIVER_TYPE_FIBER: "82C251 with fibre extension",
+                             canTRANSCEIVER_TYPE_K251: "K251",
+                             canTRANSCEIVER_TYPE_K: "K",
+                             canTRANSCEIVER_TYPE_1054_OPTO: "TJA1054 optical isolation",
+                             canTRANSCEIVER_TYPE_SWC_OPTO: "AU5790 optical isolation",
+                             canTRANSCEIVER_TYPE_TT: "B10011S Truck-And-Trailer",
+                             canTRANSCEIVER_TYPE_1050: "TJA1050",
+                             canTRANSCEIVER_TYPE_1050_OPTO: "TJA1050 optical isolation",
+                             canTRANSCEIVER_TYPE_1041: "TJA1041",
+                             canTRANSCEIVER_TYPE_1041_OPTO: "TJA1041 optical isolation",
+                             canTRANSCEIVER_TYPE_RS485: "RS485",
+                             canTRANSCEIVER_TYPE_LIN: "LIN",
+                             canTRANSCEIVER_TYPE_KONE: "KONE",
+                             canTRANSCEIVER_TYPE_LINX_LIN: "LINX_LIN",
+                             canTRANSCEIVER_TYPE_LINX_J1708: "LINX_J1708",
+                             canTRANSCEIVER_TYPE_LINX_K: "LINX_K",
+                             canTRANSCEIVER_TYPE_LINX_SWC: "LINX_SWC",
+                             canTRANSCEIVER_TYPE_LINX_LS: "LINX_LS"}
+
+canCHANNELDATA_CHANNEL_CAP = 1
+canCHANNELDATA_TRANS_CAP = 2
+canCHANNELDATA_CHANNEL_FLAGS = 3
+canCHANNELDATA_CARD_TYPE = 4
+canCHANNELDATA_CARD_NUMBER = 5
+canCHANNELDATA_CHAN_NO_ON_CARD = 6
+canCHANNELDATA_CARD_SERIAL_NO = 7
+canCHANNELDATA_TRANS_SERIAL_NO = 8
+canCHANNELDATA_CARD_FIRMWARE_REV = 9
+canCHANNELDATA_CARD_HARDWARE_REV = 10
+canCHANNELDATA_CARD_UPC_NO = 11
+canCHANNELDATA_TRANS_UPC_NO = 12
+canCHANNELDATA_CHANNEL_NAME = 13
+canCHANNELDATA_DLL_FILE_VERSION = 14
+canCHANNELDATA_DLL_PRODUCT_VERSION = 15
+canCHANNELDATA_DLL_FILETYPE = 16
+canCHANNELDATA_TRANS_TYPE = 17
+canCHANNELDATA_DEVICE_PHYSICAL_POSITION = 18
+canCHANNELDATA_UI_NUMBER = 19
+canCHANNELDATA_TIMESYNC_ENABLED = 20
+canCHANNELDATA_DRIVER_FILE_VERSION = 21
+canCHANNELDATA_DRIVER_PRODUCT_VERSION = 22
+canCHANNELDATA_MFGNAME_UNICODE = 23
+canCHANNELDATA_MFGNAME_ASCII = 24
+canCHANNELDATA_DEVDESCR_UNICODE = 25
+canCHANNELDATA_DEVDESCR_ASCII = 26
+canCHANNELDATA_DRIVER_NAME = 27
+canGetChannelData = __get_canlib_function("canGetChannelData", argtypes=[ctypes.c_int, ctypes.c_int, ctypes.c_void_p, ctypes.c_size_t], restype=canstat.c_canStatus, errcheck=__check_status)
