@@ -36,6 +36,6 @@ if __name__ == "__main__":
         pass
     finally:
         _bus.shutdown()
-    _log_obj = CAN.Log(log_info=CAN.LogInfo(log_start_time=_log_start_time, log_end_time=datetime.datetime.now(), original_file_name=_file_name, tester_name=os.getenv("USERNAME")), channel_info=_bus.channel_info, machine_info=CAN.get_host_machine_info(), message_lists=[CAN.MessageList(messages=_message_list)])
+    _log_obj = CAN.Log(log_info=CAN.LogInfo(log_start_time=_log_start_time, log_end_time=datetime.datetime.now(), original_file_name=_file_name, tester_name=("%s" % os.getenv("USERNAME"))), channel_info=_bus.channel_info, machine_info=CAN.get_host_machine_info(), message_lists=[CAN.MessageList(messages=_message_list)])
     with open(_log_file_path, "wb") as _log_file:
         cPickle.dump(_log_obj, _log_file)
