@@ -466,86 +466,113 @@ class MachineInfo(object):
 
 class ChannelInfo(object):
 
-    def __init__(self, channel):
-        _numchannels = ctypes.c_int(0)
-        canlib.canGetNumberOfChannels(ctypes.byref(_numchannels))
-        InputValidation.verify_parameter_type("CAN.ChannelInfo.__init__", "channel", channel, types.IntType)
-        InputValidation.verify_parameter_min_value("CAN.ChannelInfo.__init__", "channel", channel, 0)
-        InputValidation.verify_parameter_max_value("CAN.ChannelInfo.__init__", "channel", channel, (_numchannels.value - 1))
-        self.__channel = channel
+    def __init__(self, channel, device_description, manufacturer_name, firmware_version, hardware_version, card_serial, transceiver_serial, transceiver_type, card_number, channel_on_card):
+        self.channel = channel
+        self.device_description = device_description
+        self.manufacturer_name = manufacturer_name
+        self.firmware_version = firmware_version
+        self.hardware_version = hardware_version
+        self.card_serial = card_serial
+        self.transceiver_serial = transceiver_serial
+        self.transceiver_type = transceiver_type
+        self.card_number = card_number
+        self.channel_on_card = channel_on_card
 
     @property
     def channel(self):
         return self.__channel
 
+    @channel.setter
+    def channel(self, value):
+        InputValidation.verify_parameter_type("CAN.ChannelInfo.channel.setter", "channel", value, types.IntType)
+        InputValidation.verify_parameter_min_value("CAN.ChannelInfo.channel.setter", "channel", value, 0)
+        self.__channel = value
+
     @property
     def device_description(self):
-        _buffer = ctypes.create_string_buffer(MAX_DEVICE_DESCR_LENGTH)
-        canlib.canGetChannelData(self.channel, canlib.canCHANNELDATA_DEVDESCR_ASCII, ctypes.byref(_buffer), ctypes.c_size_t(MAX_DEVICE_DESCR_LENGTH))
-        return _buffer.value
+        return self.__device_description
+
+    @device_description.setter
+    def device_description(self, value):
+        InputValidation.verify_parameter_type("CAN.ChannelInfo.device_description.setter", "device_description", value, types.StringType)
+        self.__device_description = value
 
     @property
     def manufacturer_name(self):
-        _buffer = ctypes.create_string_buffer(MAX_MANUFACTURER_NAME_LENGTH)
-        canlib.canGetChannelData(self.channel, canlib.canCHANNELDATA_MFGNAME_ASCII, ctypes.byref(_buffer), ctypes.c_size_t(MAX_MANUFACTURER_NAME_LENGTH))
-        return _buffer.value
+        return self.__manufacturer_name
+
+    @manufacturer_name.setter
+    def manufacturer_name(self, value):
+        InputValidation.verify_parameter_type("CAN.ChannelInfo.manufacturer_name.setter", "manufacturer_name", value, types.StringType)
+        self.__manufacturer_name = value
 
     @property
     def firmware_version(self):
-        _buffer = FW_VERSION_ARRAY()
-        canlib.canGetChannelData(self.channel, canlib.canCHANNELDATA_CARD_FIRMWARE_REV, ctypes.byref(_buffer), ctypes.c_size_t(MAX_FW_VERSION_LENGTH))
-        _version_number = []
-        for i in [6, 4, 0, 2]:
-            _version_number.append((_buffer[i + 1] << 8) + _buffer[i])
-        return "%d.%d.%d.%d" % (_version_number[0], _version_number[1], _version_number[2], _version_number[3])
+        return self.__firmware_version
+
+    @firmware_version.setter
+    def firmware_version(self, value):
+        InputValidation.verify_parameter_type("CAN.ChannelInfo.firmware_version.setter", "firmware_version", value, types.StringType)
+        self.__firmware_version = value
 
     @property
     def hardware_version(self):
-        _buffer = HW_VERSION_ARRAY()
-        canlib.canGetChannelData(self.channel, canlib.canCHANNELDATA_CARD_HARDWARE_REV, ctypes.byref(_buffer), ctypes.c_size_t(MAX_HW_VERSION_LENGTH))
-        _version_number = []
-        for i in [2, 0]:
-            _version_number.append((_buffer[i + 1] << 8) + _buffer[i])
-        return "%d.%d" % (_version_number[0], _version_number[1])
+        return self.__hardware_version
+
+    @hardware_version.setter
+    def hardware_version(self, value):
+        InputValidation.verify_parameter_type("CAN.ChannelInfo.hardware_version.setter", "hardware_version", value, types.StringType)
+        self.__hardware_version = value
 
     @property
     def card_serial(self):
-        _buffer = CARD_SN_ARRAY()
-        canlib.canGetChannelData(self.channel, canlib.canCHANNELDATA_CARD_SERIAL_NO, ctypes.byref(_buffer), ctypes.c_size_t(MAX_CARD_SN_LENGTH))
-        _serial_number = 0
-        for i in xrange(len(_buffer)):
-            _serial_number += (_buffer[i] << (8 * i))
-        return _serial_number
+        return self.__card_serial
+
+    @card_serial.setter
+    def card_serial(self, value):
+        InputValidation.verify_parameter_type("CAN.ChannelInfo.card_serial.setter", "card_serial", value, types.IntType)
+        InputValidation.verify_parameter_min_value("CAN.ChannelInfo.card_serial.setter", "card_serial", value, 0)
+        self.__card_serial = value
 
     @property
     def transceiver_serial(self):
-        _buffer = TRANS_SN_ARRAY()
-        canlib.canGetChannelData(self.channel, canlib.canCHANNELDATA_TRANS_SERIAL_NO, ctypes.byref(_buffer), ctypes.c_size_t(MAX_TRANS_SN_LENGTH))
-        serial_number = 0
-        for i in xrange(len(_buffer)):
-            serial_number += (_buffer[i] << (8 * i))
-        return serial_number
+        return self.__transceiver_serial
+
+    @transceiver_serial.setter
+    def transceiver_serial(self, value):
+        InputValidation.verify_parameter_type("CAN.ChannelInfo.transceiver_serial.setter", "transceiver_serial", value, types.IntType)
+        InputValidation.verify_parameter_min_value("CAN.ChannelInfo.transceiver_serial.setter", "transceiver_serial", value, 0)
+        self.__transceiver_serial = value
 
     @property
     def transceiver_type(self):
-        _buffer = ctypes.c_ulong(0)
-        canlib.canGetChannelData(self.channel, canlib.canCHANNELDATA_TRANS_TYPE, ctypes.byref(_buffer), ctypes.c_size_t(4))
-        try:
-            return canlib.canTransceiverTypeStrings[_buffer.value]
-        except KeyError:
-            return "Unknown (%d)" % _buffer.value
+        return self.__transceiver_type
+
+    @transceiver_type.setter
+    def transceiver_type(self, value):
+        InputValidation.verify_parameter_type("CAN.ChannelInfo.transceiver_type.setter", "transceiver_type", value, types.LongType)
+        InputValidation.verify_parameter_min_value("CAN.ChannelInfo.transceiver_type.setter", "transceiver_type", value, 0)
+        self.__transceiver_type = value
 
     @property
     def card_number(self):
-        _buffer = ctypes.c_ulong(0)
-        canlib.canGetChannelData(self.channel, canlib.canCHANNELDATA_CARD_NUMBER, ctypes.byref(_buffer), ctypes.c_size_t(4))
-        return _buffer.value
+        return self.__card_number
+
+    @card_number.setter
+    def card_number(self, value):
+        InputValidation.verify_parameter_type("CAN.ChannelInfo.card_number.setter", "card_number", value, types.LongType)
+        InputValidation.verify_parameter_min_value("CAN.ChannelInfo.card_number.setter", "card_number", value, 0)
+        self.__card_number = value
 
     @property
     def channel_on_card(self):
-        _buffer = ctypes.c_ulong(0)
-        canlib.canGetChannelData(self.channel, canlib.canCHANNELDATA_CHAN_NO_ON_CARD, ctypes.byref(_buffer), ctypes.c_size_t(4))
-        return _buffer.value
+        return self.__channel_on_card
+
+    @channel_on_card.setter
+    def channel_on_card(self, value):
+        InputValidation.verify_parameter_type("CAN.ChannelInfo.channel_on_card.setter", "channel_on_card", value, types.LongType)
+        InputValidation.verify_parameter_min_value("CAN.ChannelInfo.channel_on_card.setter", "channel_on_card", value, 0)
+        self.__channel_on_card = value
 
     def __str__(self):
         retval = "-"*len("Channel Info")
@@ -558,7 +585,7 @@ class ChannelInfo(object):
         retval += "Firmware version: %s\n" % self.firmware_version
         retval += "Hardware version: %s\n" % self.hardware_version
         retval += "Card serial number: %s\n" % self.card_serial
-        retval += "Transceiver type: %s\n" % self.transceiver_type
+        retval += "Transceiver type: %d (%s)\n" % (self.transceiver_type, canlib.lookup_transceiver_type(self.transceiver_type))
         retval += "Transceiver serial number: %s\n" % self.transceiver_serial
         retval += "Card number: %s\n" % self.card_number
         retval += "Channel on card: %s\n" % self.channel_on_card
@@ -646,7 +673,7 @@ class Bus(object):
         InputValidation.verify_parameter_type("CAN.Bus.__init__", "channel", channel, types.IntType)
         InputValidation.verify_parameter_min_value("CAN.Bus.__init__", "channel", channel, 0)
         InputValidation.verify_parameter_max_value("CAN.Bus.__init__", "channel", channel, _num_channels.value)
-        self.__channel_info = ChannelInfo(channel)
+        self.__channel_info = get_channel_info(channel)
         InputValidation.verify_parameter_type("CAN.Bus.__init__", "bitrate", bitrate, types.IntType)
         InputValidation.verify_parameter_min_value("CAN.Bus.__init__", "bitrate", bitrate, 0)
         InputValidation.verify_parameter_max_value("CAN.Bus.__init__", "bitrate", bitrate, 1000000)
@@ -747,6 +774,39 @@ class Bus(object):
 
     def shutdown(self):
         self.__threads_running = False
+
+def get_channel_info(channel):
+    _device_description_buffer = ctypes.create_string_buffer(MAX_DEVICE_DESCR_LENGTH)
+    canlib.canGetChannelData(channel, canlib.canCHANNELDATA_DEVDESCR_ASCII, ctypes.byref(_device_description_buffer), ctypes.c_size_t(MAX_DEVICE_DESCR_LENGTH))
+    _manufacturer_name_buffer = ctypes.create_string_buffer(MAX_MANUFACTURER_NAME_LENGTH)
+    canlib.canGetChannelData(channel, canlib.canCHANNELDATA_MFGNAME_ASCII, ctypes.byref(_manufacturer_name_buffer), ctypes.c_size_t(MAX_MANUFACTURER_NAME_LENGTH))
+    _firmware_version_buffer = FW_VERSION_ARRAY()
+    canlib.canGetChannelData(channel, canlib.canCHANNELDATA_CARD_FIRMWARE_REV, ctypes.byref(_firmware_version_buffer), ctypes.c_size_t(MAX_FW_VERSION_LENGTH))
+    _firmware_version_number = []
+    for i in [6, 4, 0, 2]:
+        _firmware_version_number.append((_firmware_version_buffer[i + 1] << 8) + _firmware_version_buffer[i])
+    _hardware_version_buffer = HW_VERSION_ARRAY()
+    canlib.canGetChannelData(channel, canlib.canCHANNELDATA_CARD_HARDWARE_REV, ctypes.byref(_hardware_version_buffer), ctypes.c_size_t(MAX_HW_VERSION_LENGTH))
+    _hardware_version_number = []
+    for i in [2, 0]:
+        _hardware_version_number.append((_hardware_version_buffer[i + 1] << 8) + _hardware_version_buffer[i])
+    _card_serial_number_buffer = CARD_SN_ARRAY()
+    canlib.canGetChannelData(channel, canlib.canCHANNELDATA_CARD_SERIAL_NO, ctypes.byref(_card_serial_number_buffer), ctypes.c_size_t(MAX_CARD_SN_LENGTH))
+    _card_serial_number = 0
+    for i in xrange(len(_card_serial_number_buffer)):
+        _card_serial_number += (_card_serial_number_buffer[i] << (8 * i))
+    _transceiver_serial_number_buffer = TRANS_SN_ARRAY()
+    canlib.canGetChannelData(channel, canlib.canCHANNELDATA_TRANS_SERIAL_NO, ctypes.byref(_transceiver_serial_number_buffer), ctypes.c_size_t(MAX_TRANS_SN_LENGTH))
+    _transceiver_serial_number = 0
+    for i in xrange(len(_transceiver_serial_number_buffer)):
+        _transceiver_serial_number += (_transceiver_serial_number_buffer[i] << (8 * i))
+    _transceiver_type_buffer = ctypes.c_ulong(0)
+    canlib.canGetChannelData(channel, canlib.canCHANNELDATA_TRANS_TYPE, ctypes.byref(_transceiver_type_buffer), ctypes.c_size_t(4))
+    _card_number_buffer = ctypes.c_ulong(0)
+    canlib.canGetChannelData(channel, canlib.canCHANNELDATA_CARD_NUMBER, ctypes.byref(_card_number_buffer), ctypes.c_size_t(4))
+    _channel_on_card_buffer = ctypes.c_ulong(0)
+    canlib.canGetChannelData(channel, canlib.canCHANNELDATA_CHAN_NO_ON_CARD, ctypes.byref(_channel_on_card_buffer), ctypes.c_size_t(4))
+    return ChannelInfo(channel, _device_description_buffer.value, _manufacturer_name_buffer.value, ".".join("%d" % _num for _num in _firmware_version_number), ".".join("%d" % _num for _num in _hardware_version_number), _card_serial_number, _transceiver_serial_number, _transceiver_type_buffer.value, _card_number_buffer.value, _channel_on_card_buffer.value)
 
 class Listener(object):
 

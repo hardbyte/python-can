@@ -197,6 +197,12 @@ canTransceiverTypeStrings = {canTRANSCEIVER_TYPE_UNKNOWN: "<unknown>",
                              canTRANSCEIVER_TYPE_LINX_SWC: "LINX_SWC",
                              canTRANSCEIVER_TYPE_LINX_LS: "LINX_LS"}
 
+def lookup_transceiver_type(type):
+    try:
+        return canTransceiverTypeStrings[type]
+    except KeyError:
+        return "<unknown>"
+
 canCHANNELDATA_CHANNEL_CAP = 1
 canCHANNELDATA_TRANS_CAP = 2
 canCHANNELDATA_CHANNEL_FLAGS = 3
