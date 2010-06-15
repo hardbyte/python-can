@@ -724,7 +724,9 @@ class Bus(object):
         InputValidation.verify_parameter_type("CAN.Bus.__init__", "no_samp", no_samp, types.IntType)
         InputValidation.verify_parameter_value_in_set("CAN.Bus.__init__", "no_samp", no_samp, [1, 3])
         self.__read_handle = canlib.canOpenChannel(channel, canlib.canOPEN_ACCEPT_VIRTUAL)
+        canlib.canIoCtl(self.__read_handle, canlib.canIOCTL_SET_TIMER_SCALE, ctypes.byref(ctypes.c_long(1)), 4)
         _offset = ctypes.c_uint(0)
+        canlib.canReadTimer(self.__read_handle, ctypes.byref(_offset))
         self.__timer_offset = _offset.value
         canlib.canIoCtl(self.__read_handle, canlib.canIOCTL_SET_TIMER_SCALE, ctypes.byref(ctypes.c_long(1)), 4)
         canlib.canSetBusParams(self.__read_handle, bitrate, tseg1, tseg2, sjw, no_samp, 0)
