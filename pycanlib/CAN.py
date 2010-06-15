@@ -64,6 +64,44 @@ def get_canlib_version():
     _version = canlib.canGetVersion()
     return "%d.%d" % ((_version & 0xFF00 >> 8), (_version & 0x00FF))
 
+def get_channel_info(channel):
+    _device_description_buffer = ctypes.create_string_buffer(MAX_DEVICE_DESCR_LENGTH)
+    _manufacturer_name_buffer = ctypes.create_string_buffer(MAX_MANUFACTURER_NAME_LENGTH)
+    _firmware_version_buffer = FW_VERSION_ARRAY()
+    _hardware_version_buffer = HW_VERSION_ARRAY()
+    _card_serial_number_buffer = CARD_SN_ARRAY()
+    _transceiver_serial_number_buffer = TRANS_SN_ARRAY()
+    _transceiver_type_buffer = ctypes.c_ulong(0)
+    _card_number_buffer = ctypes.c_ulong(0)
+    _channel_on_card_buffer = ctypes.c_ulong(0)
+    if sys.platform == "win32":
+        canlib.canGetChannelData(channel, canlib.canCHANNELDATA_DEVDESCR_ASCII, ctypes.byref(_device_description_buffer), ctypes.c_size_t(MAX_DEVICE_DESCR_LENGTH))
+        canlib.canGetChannelData(channel, canlib.canCHANNELDATA_MFGNAME_ASCII, ctypes.byref(_manufacturer_name_buffer), ctypes.c_size_t(MAX_MANUFACTURER_NAME_LENGTH))
+        canlib.canGetChannelData(channel, canlib.canCHANNELDATA_CARD_FIRMWARE_REV, ctypes.byref(_firmware_version_buffer), ctypes.c_size_t(MAX_FW_VERSION_LENGTH))
+        canlib.canGetChannelData(channel, canlib.canCHANNELDATA_CARD_HARDWARE_REV, ctypes.byref(_hardware_version_buffer), ctypes.c_size_t(MAX_HW_VERSION_LENGTH))
+        canlib.canGetChannelData(channel, canlib.canCHANNELDATA_CARD_SERIAL_NO, ctypes.byref(_card_serial_number_buffer), ctypes.c_size_t(MAX_CARD_SN_LENGTH))
+        canlib.canGetChannelData(channel, canlib.canCHANNELDATA_TRANS_SERIAL_NO, ctypes.byref(_transceiver_serial_number_buffer), ctypes.c_size_t(MAX_TRANS_SN_LENGTH))
+        canlib.canGetChannelData(channel, canlib.canCHANNELDATA_TRANS_TYPE, ctypes.byref(_transceiver_type_buffer), ctypes.c_size_t(4))
+        canlib.canGetChannelData(channel, canlib.canCHANNELDATA_CARD_NUMBER, ctypes.byref(_card_number_buffer), ctypes.c_size_t(4))
+        canlib.canGetChannelData(channel, canlib.canCHANNELDATA_CHAN_NO_ON_CARD, ctypes.byref(_channel_on_card_buffer), ctypes.c_size_t(4))
+    else:
+        sys.stderr.write("WARNING: channel information is not available on this system, as canGetChannelInfo is not implemented correctly...\n")
+        _device_description_buffer.value = "<unimplemented>"
+        _manufacturer_name_buffer.value = "<unimplemented>"
+    _firmware_version_number = []
+    for i in [6, 4, 0, 2]:
+        _firmware_version_number.append((_firmware_version_buffer[i + 1] << 8) + _firmware_version_buffer[i])
+    _hardware_version_number = []
+    for i in [2, 0]:
+        _hardware_version_number.append((_hardware_version_buffer[i + 1] << 8) + _hardware_version_buffer[i])
+    _card_serial_number = 0
+    for i in xrange(len(_card_serial_number_buffer)):
+        _card_serial_number += (_card_serial_number_buffer[i] << (8 * i))
+    _transceiver_serial_number = 0
+    for i in xrange(len(_transceiver_serial_number_buffer)):
+        _transceiver_serial_number += (_transceiver_serial_number_buffer[i] << (8 * i))
+    return ChannelInfo(channel, _device_description_buffer.value, _manufacturer_name_buffer.value, ".".join("%d" % _num for _num in _firmware_version_number), ".".join("%d" % _num for _num in _hardware_version_number), _card_serial_number, _transceiver_serial_number, _transceiver_type_buffer.value, _card_number_buffer.value, _channel_on_card_buffer.value)
+
 class Message(object):
 
     def __init__(self, timestamp=0.0, is_remote_frame=False, id_type=ID_TYPE_11_BIT, is_wakeup=(not WAKEUP_MSG), is_error_frame=(not ERROR_FRAME), arbitration_id=0, data=[], dlc=0, info_strings=[]):
@@ -774,39 +812,6 @@ class Bus(object):
 
     def shutdown(self):
         self.__threads_running = False
-
-def get_channel_info(channel):
-    _device_description_buffer = ctypes.create_string_buffer(MAX_DEVICE_DESCR_LENGTH)
-    canlib.canGetChannelData(channel, canlib.canCHANNELDATA_DEVDESCR_ASCII, ctypes.byref(_device_description_buffer), ctypes.c_size_t(MAX_DEVICE_DESCR_LENGTH))
-    _manufacturer_name_buffer = ctypes.create_string_buffer(MAX_MANUFACTURER_NAME_LENGTH)
-    canlib.canGetChannelData(channel, canlib.canCHANNELDATA_MFGNAME_ASCII, ctypes.byref(_manufacturer_name_buffer), ctypes.c_size_t(MAX_MANUFACTURER_NAME_LENGTH))
-    _firmware_version_buffer = FW_VERSION_ARRAY()
-    canlib.canGetChannelData(channel, canlib.canCHANNELDATA_CARD_FIRMWARE_REV, ctypes.byref(_firmware_version_buffer), ctypes.c_size_t(MAX_FW_VERSION_LENGTH))
-    _firmware_version_number = []
-    for i in [6, 4, 0, 2]:
-        _firmware_version_number.append((_firmware_version_buffer[i + 1] << 8) + _firmware_version_buffer[i])
-    _hardware_version_buffer = HW_VERSION_ARRAY()
-    canlib.canGetChannelData(channel, canlib.canCHANNELDATA_CARD_HARDWARE_REV, ctypes.byref(_hardware_version_buffer), ctypes.c_size_t(MAX_HW_VERSION_LENGTH))
-    _hardware_version_number = []
-    for i in [2, 0]:
-        _hardware_version_number.append((_hardware_version_buffer[i + 1] << 8) + _hardware_version_buffer[i])
-    _card_serial_number_buffer = CARD_SN_ARRAY()
-    canlib.canGetChannelData(channel, canlib.canCHANNELDATA_CARD_SERIAL_NO, ctypes.byref(_card_serial_number_buffer), ctypes.c_size_t(MAX_CARD_SN_LENGTH))
-    _card_serial_number = 0
-    for i in xrange(len(_card_serial_number_buffer)):
-        _card_serial_number += (_card_serial_number_buffer[i] << (8 * i))
-    _transceiver_serial_number_buffer = TRANS_SN_ARRAY()
-    canlib.canGetChannelData(channel, canlib.canCHANNELDATA_TRANS_SERIAL_NO, ctypes.byref(_transceiver_serial_number_buffer), ctypes.c_size_t(MAX_TRANS_SN_LENGTH))
-    _transceiver_serial_number = 0
-    for i in xrange(len(_transceiver_serial_number_buffer)):
-        _transceiver_serial_number += (_transceiver_serial_number_buffer[i] << (8 * i))
-    _transceiver_type_buffer = ctypes.c_ulong(0)
-    canlib.canGetChannelData(channel, canlib.canCHANNELDATA_TRANS_TYPE, ctypes.byref(_transceiver_type_buffer), ctypes.c_size_t(4))
-    _card_number_buffer = ctypes.c_ulong(0)
-    canlib.canGetChannelData(channel, canlib.canCHANNELDATA_CARD_NUMBER, ctypes.byref(_card_number_buffer), ctypes.c_size_t(4))
-    _channel_on_card_buffer = ctypes.c_ulong(0)
-    canlib.canGetChannelData(channel, canlib.canCHANNELDATA_CHAN_NO_ON_CARD, ctypes.byref(_channel_on_card_buffer), ctypes.c_size_t(4))
-    return ChannelInfo(channel, _device_description_buffer.value, _manufacturer_name_buffer.value, ".".join("%d" % _num for _num in _firmware_version_number), ".".join("%d" % _num for _num in _hardware_version_number), _card_serial_number, _transceiver_serial_number, _transceiver_type_buffer.value, _card_number_buffer.value, _channel_on_card_buffer.value)
 
 class Listener(object):
 
