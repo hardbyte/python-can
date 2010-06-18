@@ -170,7 +170,7 @@ canTRANSCEIVER_TYPE_LINX_K = 68
 canTRANSCEIVER_TYPE_LINX_SWC = 70
 canTRANSCEIVER_TYPE_LINX_LS = 72
 
-canTransceiverTypeStrings = {canTRANSCEIVER_TYPE_UNKNOWN: "<unknown>",
+canTransceiverTypeStrings = {canTRANSCEIVER_TYPE_UNKNOWN: "unknown",
                              canTRANSCEIVER_TYPE_251: "82C251",
                              canTRANSCEIVER_TYPE_252: "82C252/TJA1053/TJA1054",
                              canTRANSCEIVER_TYPE_DNOPTO: "Optoisolated 82C251",
@@ -201,7 +201,7 @@ def lookup_transceiver_type(type):
     try:
         return canTransceiverTypeStrings[type]
     except KeyError:
-        return "<unknown>"
+        return "unknown"
 
 canCHANNELDATA_CHANNEL_CAP = 1
 canCHANNELDATA_TRANS_CAP = 2
