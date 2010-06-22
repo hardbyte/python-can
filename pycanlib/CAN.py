@@ -232,7 +232,7 @@ class Message(object):
     def flags(self, value):
         InputValidation.verify_parameter_type("CAN.Message.flags.setter", "flags", value, types.IntType)
         InputValidation.verify_parameter_value_equal_to("CAN.Message.flags.setter", "(flags & (0xFFFF - canstat.canMSG_MASK))", (value & (0xFFFF - canstat.canMSG_MASK)), 0)
-        InputValidation.verify_parameter_value_in_set("CAN.Message.flags.setter", "(flags & (canstat.canMSG_EXT + canstat.canMSG_STD + canstat.canMSG_ERROR_FRAME))", (value & (canstat.canMSG_EXT + canstat.canMSG_STD + canstat.canMSG_ERROR_FRAME)), (canstat.canMSG_EXT, canstat.canMSG_STD, canstat.canMSG_ERROR_FRAME))
+        InputValidation.verify_parameter_value_in_set("CAN.Message.flags.setter", "(flags & (canstat.canMSG_EXT + canstat.canMSG_STD + canstat.canMSG_ERROR_FRAME))", (value & (canstat.canMSG_EXT + canstat.canMSG_STD + canstat.canMSG_ERROR_FRAME)), (canstat.canMSG_EXT, canstat.canMSG_STD, canstat.canMSG_ERROR_FRAME, canstat.canMSG_EXT+canstat.canMSG_ERROR_FRAME, canstat.canMSG_STD+canstat.canMSG_ERROR_FRAME))
         self.__flags = value
 
     @property
@@ -725,10 +725,6 @@ class Bus(object):
         InputValidation.verify_parameter_value_in_set("CAN.Bus.__init__", "no_samp", no_samp, [1, 3])
         self.__read_handle = canlib.canOpenChannel(channel, canlib.canOPEN_ACCEPT_VIRTUAL)
         canlib.canIoCtl(self.__read_handle, canlib.canIOCTL_SET_TIMER_SCALE, ctypes.byref(ctypes.c_long(1)), 4)
-        _offset = ctypes.c_uint(0)
-        canlib.canReadTimer(self.__read_handle, ctypes.byref(_offset))
-        self.__timer_offset = _offset.value
-        canlib.canIoCtl(self.__read_handle, canlib.canIOCTL_SET_TIMER_SCALE, ctypes.byref(ctypes.c_long(1)), 4)
         canlib.canSetBusParams(self.__read_handle, bitrate, tseg1, tseg2, sjw, no_samp, 0)
         if driver_mode == DRIVER_MODE_SILENT:
             canlib.canSetBusOutputControl(self.__read_handle, canlib.canDRIVER_SILENT)
@@ -753,7 +749,7 @@ class Bus(object):
     def bus_time(self):
         _time = ctypes.c_uint(0)
         canlib.canReadTimer(self.__read_handle, ctypes.byref(_time))
-        return ((_time.value - self.__timer_offset) / 1000000.0)
+        return (float(_time.value) / 1000000.0)
 
     @property
     def channel_info(self):
@@ -783,7 +779,7 @@ class Bus(object):
                 _id_type = ID_TYPE_EXTENDED
             else:
                 _id_type = ID_TYPE_STANDARD
-            _rx_msg = Message(arbitration_id=_arb_id.value, data=_data_array[:_dlc.value], dlc=int(_dlc.value), id_type=_id_type, timestamp=(float(_timestamp.value - self.__timer_offset) / 1000000))
+            _rx_msg = Message(arbitration_id=_arb_id.value, data=_data_array[:_dlc.value], dlc=int(_dlc.value), id_type=_id_type, timestamp=(float(_timestamp.value) / 1000000))
             _rx_msg.flags = int(_flags.value) & canstat.canMSG_MASK
             return _rx_msg
         else:
@@ -793,11 +789,11 @@ class Bus(object):
         while self.__threads_running:
             _tx_msg = None
             try:
-                _tx_msg = self.__tx_queue.get(timeout=0.1)
+                _tx_msg = self.__tx_queue.get(timeout=0.5)
             except Queue.Empty:
                 pass
             if _tx_msg != None:
-                canlib.canWriteWait(self.__write_handle, _tx_msg.arbitration_id, "".join([("%c" % byte) for byte in _tx_msg.data]), _tx_msg.dlc, _tx_msg.flags, 5000)
+                canlib.canWriteWait(self.__write_handle, _tx_msg.arbitration_id, "".join([("%c" % byte) for byte in _tx_msg.data]), _tx_msg.dlc, _tx_msg.flags, 50000)
         canlib.canBusOff(self.__write_handle)
         canlib.canClose(self.__write_handle)
 
@@ -830,7 +826,7 @@ class BufferedReader(Listener):
 
     def get_message(self):
         try:
-            return self.__buffer.get_nowait()
+            return self.__buffer.get(timeout=0.5)
         except Queue.Empty:
             return None
 
