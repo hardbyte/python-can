@@ -83,11 +83,11 @@ else:
     __canReadTimer_func_name = "canReadTimer"
 canReadTimer = __get_canlib_function(__canReadTimer_func_name, argtypes=[c_canHandle, ctypes.c_void_p], restype=canstat.c_canStatus, errcheck=__check_status)
 
-canBusOff = __get_canlib_function("canBusOff", argtypes=[ctypes.c_int], restype=canstat.c_canStatus, errcheck=__check_status)
+canBusOff = __get_canlib_function("canBusOff", argtypes=[c_canHandle], restype=canstat.c_canStatus, errcheck=__check_status)
 
-canBusOn = __get_canlib_function("canBusOn", argtypes=[ctypes.c_int], restype=canstat.c_canStatus, errcheck=__check_status)
+canBusOn = __get_canlib_function("canBusOn", argtypes=[c_canHandle], restype=canstat.c_canStatus, errcheck=__check_status)
 
-canClose = __get_canlib_function("canClose", argtypes=[ctypes.c_int], restype=canstat.c_canStatus, errcheck=__check_status)
+canClose = __get_canlib_function("canClose", argtypes=[c_canHandle], restype=canstat.c_canStatus, errcheck=__check_status)
 
 canOPEN_EXCLUSIVE = 0x0008
 canOPEN_REQUIRE_EXTENDED = 0x0010
@@ -97,19 +97,19 @@ canOPEN_REQUIRE_INIT_ACCESS = 0x0080
 canOPEN_NO_INIT_ACCESS = 0x0100
 canOPEN_ACCEPT_LARGE_DLC = 0x0200
 FLAGS_MASK = (canOPEN_EXCLUSIVE | canOPEN_REQUIRE_EXTENDED | canOPEN_ACCEPT_VIRTUAL | canOPEN_OVERRIDE_EXCLUSIVE | canOPEN_REQUIRE_INIT_ACCESS | canOPEN_NO_INIT_ACCESS | canOPEN_ACCEPT_LARGE_DLC)
-canOpenChannel = __get_canlib_function("canOpenChannel", argtypes=[ctypes.c_int, ctypes.c_int], restype=ctypes.c_int, errcheck=__check_bus_handle_validity)
+canOpenChannel = __get_canlib_function("canOpenChannel", argtypes=[ctypes.c_int, ctypes.c_int], restype=c_canHandle, errcheck=__check_bus_handle_validity)
 
-canSetBusParams = __get_canlib_function("canSetBusParams", argtypes=[ctypes.c_int, ctypes.c_long, ctypes.c_uint, ctypes.c_uint, ctypes.c_uint, ctypes.c_uint, ctypes.c_uint], restype=canstat.c_canStatus, errcheck=__check_status)
+canSetBusParams = __get_canlib_function("canSetBusParams", argtypes=[c_canHandle, ctypes.c_long, ctypes.c_uint, ctypes.c_uint, ctypes.c_uint, ctypes.c_uint, ctypes.c_uint], restype=canstat.c_canStatus, errcheck=__check_status)
 
 canDRIVER_NORMAL = 4
 canDRIVER_SILENT = 1
 canDRIVER_SELFRECEPTION = 8
 canDRIVER_OFF = 0
-canSetBusOutputControl = __get_canlib_function("canSetBusOutputControl", argtypes=[ctypes.c_int, ctypes.c_uint], restype=canstat.c_canStatus, errcheck=__check_status)
+canSetBusOutputControl = __get_canlib_function("canSetBusOutputControl", argtypes=[c_canHandle, ctypes.c_uint], restype=canstat.c_canStatus, errcheck=__check_status)
 
-canReadWait = __get_canlib_function("canReadWait", argtypes=[ctypes.c_int, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_long], restype=canstat.c_canStatus, errcheck=__check_status_read)
+canReadWait = __get_canlib_function("canReadWait", argtypes=[c_canHandle, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_long], restype=canstat.c_canStatus, errcheck=__check_status_read)
 
-canWriteWait = __get_canlib_function("canWriteWait", argtypes=[ctypes.c_int, ctypes.c_long, ctypes.c_void_p, ctypes.c_uint, ctypes.c_uint, ctypes.c_ulong], restype=canstat.c_canStatus, errcheck=__check_status)
+canWriteWait = __get_canlib_function("canWriteWait", argtypes=[c_canHandle, ctypes.c_long, ctypes.c_void_p, ctypes.c_uint, ctypes.c_uint, ctypes.c_ulong], restype=canstat.c_canStatus, errcheck=__check_status)
 
 canIOCTL_GET_RX_BUFFER_LEVEL = 8
 canIOCTL_GET_TX_BUFFER_LEVEL = 9
@@ -139,7 +139,7 @@ canIOCTL_PREFER_STD = 2
 canIOCTL_CLEAR_ERROR_COUNTERS = 5
 canIOCTL_SET_TIMER_SCALE = 6
 canIOCTL_SET_TXACK = 7
-canIoCtl = __get_canlib_function("canIoCtl", argtypes=[ctypes.c_int, ctypes.c_uint, ctypes.c_void_p, ctypes.c_uint], restype=canstat.c_canStatus, errcheck=__check_status)
+canIoCtl = __get_canlib_function("canIoCtl", argtypes=[c_canHandle, ctypes.c_uint, ctypes.c_void_p, ctypes.c_uint], restype=canstat.c_canStatus, errcheck=__check_status)
 
 canGetVersion = __get_canlib_function("canGetVersion", restype=ctypes.c_short, errcheck=__check_status)
 
@@ -230,4 +230,4 @@ canCHANNELDATA_MFGNAME_ASCII = 24
 canCHANNELDATA_DEVDESCR_UNICODE = 25
 canCHANNELDATA_DEVDESCR_ASCII = 26
 canCHANNELDATA_DRIVER_NAME = 27
-canGetChannelData = __get_canlib_function("canGetChannelData", argtypes=[ctypes.c_int, ctypes.c_int, ctypes.c_void_p, ctypes.c_size_t], restype=canstat.c_canStatus, errcheck=__check_status)
+canGetChannelData = __get_canlib_function("canGetChannelData", argtypes=[c_canHandle, ctypes.c_int, ctypes.c_void_p, ctypes.c_size_t], restype=canstat.c_canStatus, errcheck=__check_status)
