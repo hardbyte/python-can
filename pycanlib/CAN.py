@@ -266,9 +266,10 @@ class Message(object):
         _field_strings = []
         _field_strings.append("%15.6f" % self.timestamp)
         if self.flags & canstat.canMSG_EXT:
-            _field_strings.append("%.8x" % self.arbitration_id)
+            _arbitration_id_string = "%.8x" % self.arbitration_id
         else:
-            _field_strings.append("    %.4x" % self.arbitration_id)
+            _arbitration_id_string = "%.4x" % self.arbitration_id
+        _field_strings.append(_arbitration_id_string.rjust(8, " "))
         _field_strings.append("%.4x" % self.flags)
         _field_strings.append("%d" % self.dlc)
         _data_strings = []
