@@ -20,4 +20,4 @@ class ReadCAN(ipipe.Table):
                     yield _msg
         except KeyboardInterrupt:
             self.__bus.shutdown()
-            time.sleep(1)
+
