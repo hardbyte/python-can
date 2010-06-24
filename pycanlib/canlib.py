@@ -44,6 +44,9 @@ def __convert_can_status_to_int(result):
     return _result
 
 def __check_status(result, function, arguments):
+    if sys.platform == "linux2":
+        if function.__name__ == "canSetBusParams":#DEBUG
+            return result#DEBUG
     _result = __convert_can_status_to_int(result)
     if not canstat.CANSTATUS_SUCCESS(_result):
         raise CANLIBError(function, _result, arguments)
