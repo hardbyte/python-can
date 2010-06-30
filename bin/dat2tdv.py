@@ -1,7 +1,7 @@
 """
 dat2tdv.py: part of pycanlib, converts pickled (*.dat) log files generated
-by can_logger.py and the WriteLog ipython utility to human-readable TDV
-format.
+by can_logger.py and the WriteLog ipython utility to human-readable
+tab-delimited values (TDV) format.
 
 Copyright (C) 2010 Dynamic Controls
 
