@@ -1,3 +1,34 @@
+"""
+busload.py: an example script illustrating access to the bus
+load measurement taken by the CAN device.
+
+Copyright (C) 2010 Dynamic Controls
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+Contact details
+---------------
+
+Postal address:
+    Dynamic Controls
+    17 Print Place
+    Addington
+    Christchurch 8024
+    New Zealand
+
+E-mail: bpowell AT dynamiccontrols DOT com
+"""
 import optparse
 import sys
 import time
@@ -7,12 +38,12 @@ from pycanlib import CAN, canlib
 
 def _parse_arguments(arguments):
     _parser = optparse.OptionParser(" ".join(arguments[1:]))
-    _parser.add_option("-c", "--channel", dest="channel", help="CAN channel number", default="0")
-    _parser.add_option("-s", "--speed", dest="speed", help="CAN bus speed", default="105263")
-    _parser.add_option("-t", "--tseg1", dest="tseg1", help="CAN bus tseg1", default="10")
-    _parser.add_option("-u", "--tseg2", dest="tseg2", help="CAN bus tseg2", default="8")
-    _parser.add_option("-w", "--sjw", dest="sjw", help="CAN bus SJW", default="4")
-    _parser.add_option("-n", "--noSamp", dest="no_samp", help="CAN bus sample number", default="1")
+    _parser.add_option("-c", "--channel", dest="channel", help="CAN channel number")
+    _parser.add_option("-s", "--speed", dest="speed", help="CAN bus speed")
+    _parser.add_option("-t", "--tseg1", dest="tseg1", help="CAN bus tseg1")
+    _parser.add_option("-u", "--tseg2", dest="tseg2", help="CAN bus tseg2")
+    _parser.add_option("-w", "--sjw", dest="sjw", help="CAN bus SJW")
+    _parser.add_option("-n", "--noSamp", dest="no_samp", help="CAN bus sample number")
     _parser.add_option("-r", "--refreshInterval", dest="refresh_interval", help="Display refresh interval (seconds)", default=1)
     return _parser.parse_args()
 
