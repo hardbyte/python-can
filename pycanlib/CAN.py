@@ -77,6 +77,7 @@ def get_channel_info(channel):
     canlib.canGetChannelData(channel, canlib.canCHANNELDATA_CARD_FIRMWARE_REV, ctypes.byref(_firmware_version_buffer), ctypes.c_size_t(MAX_FW_VERSION_LENGTH))
     canlib.canGetChannelData(channel, canlib.canCHANNELDATA_CHAN_NO_ON_CARD, ctypes.byref(_channel_on_card_buffer), ctypes.c_size_t(4))
     canlib.canGetChannelData(channel, canlib.canCHANNELDATA_CARD_SERIAL_NO, ctypes.byref(_card_serial_number_buffer), ctypes.c_size_t(MAX_CARD_SN_LENGTH))
+    #HACK
     if sys.platform == "win32":
         canlib.canGetChannelData(channel, canlib.canCHANNELDATA_DEVDESCR_ASCII, ctypes.byref(_device_description_buffer), ctypes.c_size_t(MAX_DEVICE_DESCR_LENGTH))
         canlib.canGetChannelData(channel, canlib.canCHANNELDATA_MFGNAME_ASCII, ctypes.byref(_manufacturer_name_buffer), ctypes.c_size_t(MAX_MANUFACTURER_NAME_LENGTH))
@@ -88,6 +89,7 @@ def get_channel_info(channel):
         sys.stderr.write("WARNING: not all channel information is not available on this system, as canGetChannelInfo is not implemented completely...\n")
         _device_description_buffer.value = "<unimplemented>"
         _manufacturer_name_buffer.value = "<unimplemented>"
+    #/HACK
     _firmware_version_number = []
     for i in [6, 4, 0, 2]:
         _firmware_version_number.append((_firmware_version_buffer[i + 1] << 8) + _firmware_version_buffer[i])
