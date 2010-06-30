@@ -5,6 +5,8 @@ This document is a reference for users of the pycanlib Python wrapper for Kvaser
 
 This document assumes some familiarity with the CAN protocol, and readers who have not read the `Bosch CAN specification`_ are advised to do so before reading this document.
 
+Note that this document is unfinished, and out of date.
+
 CAN.Message
 -----------
 
