@@ -38,8 +38,17 @@ if __name__ == "__main__":
     try:
         import hgversionutils
     except ImportError:
-        _version = "0.5"
+        _version = "unknown"
     else:
         _version = hgversionutils.get_version_number(os.path.dirname(__file__))
         hgversionutils.write_version_number_file(os.path.join(os.path.dirname(__file__), "pycanlib"))
-    setup(name="pycanlib", version=_version, packages=find_packages(exclude=["test"]), package_data={"pycanlib": ["version.txt"]}, scripts=["./bin/can_logger.py", "./bin/dat2tdv.py", "./bin/ipy_profile_pycanlib.py", "./examples/getchanneldata.py", "./examples/busload.py"])
+    setup(name="pycanlib",
+          version=_version,
+          packages=find_packages(exclude=["test"]),
+          author="Ben Powell",
+          author_email="bpowell AT dynamiccontrols DOT com",
+          description="Python wrapper for Kvaser's CANLIB SDK",
+          license="GPL v3",
+          keywords="CAN Kvaser CANLIB",
+          package_data={"pycanlib": ["version.txt"], "": ["CONTRIBUTORS.txt", "LICENSE.txt"], "doc": ["*.*"]},
+          scripts=["./bin/can_logger.py", "./bin/dat2tdv.py", "./bin/ipy_profile_pycanlib.py", "./examples/getchanneldata.py", "./examples/busload.py"])
