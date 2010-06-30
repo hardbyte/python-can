@@ -2,6 +2,8 @@ import cPickle
 import datetime
 import optparse
 import os
+import sys
+import time
 
 from pycanlib import CAN
 
@@ -33,9 +35,10 @@ if __name__ == "__main__":
                 print _msg
                 _message_list.append(_msg)
     except KeyboardInterrupt:
-        pass
+        sys.stdout.write("\r")
     finally:
         _bus.shutdown()
+    time.sleep(0.5)
     _log_obj = CAN.Log(log_info=CAN.LogInfo(log_start_time=_log_start_time, log_end_time=datetime.datetime.now(), original_file_name=_file_name, tester_name=("%s" % os.getenv("USERNAME"))), channel_info=_bus.channel_info, machine_info=CAN.get_host_machine_info(), message_lists=[CAN.MessageList(messages=_message_list)])
     with open(_log_file_path, "wb") as _log_file:
         cPickle.dump(_log_obj, _log_file)

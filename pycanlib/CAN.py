@@ -726,6 +726,11 @@ class Bus(object):
         InputValidation.verify_parameter_value_in_set("CAN.Bus.__init__", "no_samp", no_samp, [1, 3])
         self.__read_handle = canlib.canOpenChannel(channel, canlib.canOPEN_ACCEPT_VIRTUAL)
         canlib.canIoCtl(self.__read_handle, canlib.canIOCTL_SET_TIMER_SCALE, ctypes.byref(ctypes.c_long(1)), 4)
+        if sys.platform != "win32":
+            _timer = ctypes.c_long(0)
+            canlib.canReadTimer(self.__read_handle, ctypes.byref(_timer))
+            print "timer value is", _timer.value
+            self.__timer_offset = _timer.value
         canlib.canSetBusParams(self.__read_handle, bitrate, tseg1, tseg2, sjw, no_samp, 0)
         if driver_mode == DRIVER_MODE_SILENT:
             canlib.canSetBusOutputControl(self.__read_handle, canlib.canDRIVER_SILENT)
@@ -750,7 +755,10 @@ class Bus(object):
     def bus_time(self):
         _time = ctypes.c_uint(0)
         canlib.canReadTimer(self.__read_handle, ctypes.byref(_time))
-        return (float(_time.value) / 1000000.0)
+        if sys.platform == "win32":
+            return (float(_time.value) / 1000000)
+        else:
+            return (float(_time.value - self.__timer_offset) / 1000000)
 
     @property
     def channel_info(self):
@@ -780,7 +788,11 @@ class Bus(object):
                 _id_type = ID_TYPE_EXTENDED
             else:
                 _id_type = ID_TYPE_STANDARD
-            _rx_msg = Message(arbitration_id=_arb_id.value, data=_data_array[:_dlc.value], dlc=int(_dlc.value), id_type=_id_type, timestamp=(float(_timestamp.value) / 1000000))
+            if sys.platform == "win32":
+                _msg_timestamp = (float(_timestamp.value) / 1000000)
+            else:
+                _msg_timestamp = (float(_timestamp.value - self.__timer_offset) / 1000000)
+            _rx_msg = Message(arbitration_id=_arb_id.value, data=_data_array[:_dlc.value], dlc=int(_dlc.value), id_type=_id_type, timestamp=_msg_timestamp)
             _rx_msg.flags = int(_flags.value) & canstat.canMSG_MASK
             return _rx_msg
         else:
