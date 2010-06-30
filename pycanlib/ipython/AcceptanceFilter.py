@@ -28,7 +28,8 @@ Postal address:
     New Zealand
 
 E-mail: bpowell AT dynamiccontrols DOT com
-"""import ipipe
+"""
+import ipipe
 
 from pycanlib import CAN
 
