@@ -74,18 +74,18 @@ def get_channel_info(channel):
     _transceiver_type_buffer = ctypes.c_ulong(0)
     _card_number_buffer = ctypes.c_ulong(0)
     _channel_on_card_buffer = ctypes.c_ulong(0)
+    canlib.canGetChannelData(channel, canlib.canCHANNELDATA_CARD_FIRMWARE_REV, ctypes.byref(_firmware_version_buffer), ctypes.c_size_t(MAX_FW_VERSION_LENGTH))
+    canlib.canGetChannelData(channel, canlib.canCHANNELDATA_CHAN_NO_ON_CARD, ctypes.byref(_channel_on_card_buffer), ctypes.c_size_t(4))
+    canlib.canGetChannelData(channel, canlib.canCHANNELDATA_CARD_SERIAL_NO, ctypes.byref(_card_serial_number_buffer), ctypes.c_size_t(MAX_CARD_SN_LENGTH))
     if sys.platform == "win32":
         canlib.canGetChannelData(channel, canlib.canCHANNELDATA_DEVDESCR_ASCII, ctypes.byref(_device_description_buffer), ctypes.c_size_t(MAX_DEVICE_DESCR_LENGTH))
         canlib.canGetChannelData(channel, canlib.canCHANNELDATA_MFGNAME_ASCII, ctypes.byref(_manufacturer_name_buffer), ctypes.c_size_t(MAX_MANUFACTURER_NAME_LENGTH))
-        canlib.canGetChannelData(channel, canlib.canCHANNELDATA_CARD_FIRMWARE_REV, ctypes.byref(_firmware_version_buffer), ctypes.c_size_t(MAX_FW_VERSION_LENGTH))
         canlib.canGetChannelData(channel, canlib.canCHANNELDATA_CARD_HARDWARE_REV, ctypes.byref(_hardware_version_buffer), ctypes.c_size_t(MAX_HW_VERSION_LENGTH))
-        canlib.canGetChannelData(channel, canlib.canCHANNELDATA_CARD_SERIAL_NO, ctypes.byref(_card_serial_number_buffer), ctypes.c_size_t(MAX_CARD_SN_LENGTH))
         canlib.canGetChannelData(channel, canlib.canCHANNELDATA_TRANS_SERIAL_NO, ctypes.byref(_transceiver_serial_number_buffer), ctypes.c_size_t(MAX_TRANS_SN_LENGTH))
         canlib.canGetChannelData(channel, canlib.canCHANNELDATA_TRANS_TYPE, ctypes.byref(_transceiver_type_buffer), ctypes.c_size_t(4))
         canlib.canGetChannelData(channel, canlib.canCHANNELDATA_CARD_NUMBER, ctypes.byref(_card_number_buffer), ctypes.c_size_t(4))
-        canlib.canGetChannelData(channel, canlib.canCHANNELDATA_CHAN_NO_ON_CARD, ctypes.byref(_channel_on_card_buffer), ctypes.c_size_t(4))
     else:
-        sys.stderr.write("WARNING: channel information is not available on this system, as canGetChannelInfo is not implemented correctly...\n")
+        sys.stderr.write("WARNING: not all channel information is not available on this system, as canGetChannelInfo is not implemented completely...\n")
         _device_description_buffer.value = "<unimplemented>"
         _manufacturer_name_buffer.value = "<unimplemented>"
     _firmware_version_number = []
