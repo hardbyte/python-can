@@ -51,4 +51,4 @@ if __name__ == "__main__":
           license="GPL v3",
           keywords="CAN Kvaser CANLIB",
           package_data={"pycanlib": ["version.txt"], "": ["CONTRIBUTORS.txt", "LICENSE.txt"], "doc": ["*.*"]},
-          scripts=["./bin/can_logger.py", "./bin/dat2tdv.py", "./bin/ipy_profile_pycanlib.py", "./examples/getchanneldata.py", "./examples/busload.py"])
+          scripts=["./bin/can_logger.py", "./bin/dat2tdv.py", "./bin/ipy_profile_pycanlib.py"])
