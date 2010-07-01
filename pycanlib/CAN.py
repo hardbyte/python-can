@@ -761,7 +761,7 @@ class Bus(object):
         self.__read_handle = canlib.canOpenChannel(channel, canlib.canOPEN_ACCEPT_VIRTUAL)
         canlib.canIoCtl(self.__read_handle, canlib.canIOCTL_SET_TIMER_SCALE, ctypes.byref(ctypes.c_long(1)), 4)
         if sys.platform != "win32":
-            _timer = ctypes.c_long(0)
+            _timer = ctypes.c_ulong(0)
             canlib.canReadTimer(self.__read_handle, ctypes.byref(_timer))
             self.__timer_offset = _timer.value
         canlib.canSetBusParams(self.__read_handle, bitrate, tseg1, tseg2, sjw, no_samp, 0)
@@ -786,7 +786,7 @@ class Bus(object):
 
     @property
     def bus_time(self):
-        _time = ctypes.c_uint(0)
+        _time = ctypes.c_ulong(0)
         canlib.canReadTimer(self.__read_handle, ctypes.byref(_time))
         if sys.platform == "win32":
             return (float(_time.value) / 1000000)
@@ -813,7 +813,7 @@ class Bus(object):
         _data = ctypes.create_string_buffer(8)
         _dlc = ctypes.c_uint(0)
         _flags = ctypes.c_uint(0)
-        _timestamp = ctypes.c_long(0)
+        _timestamp = ctypes.c_ulong(0)
         _status = canlib.canReadWait(self.__read_handle, ctypes.byref(_arb_id), ctypes.byref(_data), ctypes.byref(_dlc), ctypes.byref(_flags), ctypes.byref(_timestamp), 50000)
         if _status.value == canstat.canOK:
             _data_array = map(ord, _data)
