@@ -953,3 +953,7 @@ class AcceptanceFilter(Listener):
             return msg
         else:
             return None
+
+class MessagePrinter(Listener):
+    def on_message_received(self, msg):
+        print msg
