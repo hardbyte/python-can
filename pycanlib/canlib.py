@@ -262,4 +262,4 @@ canCHANNELDATA_MFGNAME_ASCII = 24
 canCHANNELDATA_DEVDESCR_UNICODE = 25
 canCHANNELDATA_DEVDESCR_ASCII = 26
 canCHANNELDATA_DRIVER_NAME = 27
-canGetChannelData = __get_canlib_function("canGetChannelData", argtypes=[c_canHandle, ctypes.c_int, ctypes.c_void_p, ctypes.c_size_t], restype=canstat.c_canStatus, errcheck=__check_status)
+canGetChannelData = __get_canlib_function("canGetChannelData", argtypes=[ctypes.c_int, ctypes.c_int, ctypes.c_void_p, ctypes.c_size_t], restype=canstat.c_canStatus, errcheck=__check_status)
