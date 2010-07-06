@@ -119,7 +119,7 @@ def get_channel_info(channel):
         canlib.canGetChannelData(channel, canlib.canCHANNELDATA_TRANS_TYPE, ctypes.byref(_transceiver_type_buffer), ctypes.c_size_t(4))
         canlib.canGetChannelData(channel, canlib.canCHANNELDATA_CARD_NUMBER, ctypes.byref(_card_number_buffer), ctypes.c_size_t(4))
     else:
-        sys.stderr.write("WARNING: not all channel information is not available on this system, as canGetChannelInfo is not implemented completely; canCHANNELDATA_DEVDESCR_ASCII has been approximated by canCHANNELDATA_CHANNEL_NAME\n")
+#        sys.stderr.write("WARNING: not all channel information is not available on this system, as canGetChannelInfo is not implemented completely; canCHANNELDATA_DEVDESCR_ASCII has been approximated by canCHANNELDATA_CHANNEL_NAME\n")
         canlib.canGetChannelData(channel, canlib.canCHANNELDATA_CHANNEL_NAME, ctypes.byref(_device_description_buffer), ctypes.c_size_t(MAX_DEVICE_DESCR_LENGTH))
         _manufacturer_name_buffer.value = "<unimplemented>"
     #/HACK
@@ -182,6 +182,7 @@ class Message(object):
 
     @id_type.setter
     def id_type(self, value):
+
         InputValidation.verify_parameter_type("CAN.Message.id_type.setter", "id_type", value, types.BooleanType)
         if (self.flags & (0xFFFF - (canstat.canMSG_STD | canstat.canMSG_EXT))) != 0:
             self.flags &= (0xFFFF - (canstat.canMSG_STD | canstat.canMSG_EXT))
@@ -869,7 +870,7 @@ def get_canlib_channel_from_url(url):
     canlib.canGetNumberOfChannels(ctypes.byref(_num_channels))
     for channel in xrange(_num_channels.value):
         _bus = Bus(channel=channel, bitrate=1000000, tseg1=4, tseg2=3, sjw=1, no_samp=1)
-        if (_type == "leaf" and (string.find(string.lower(_bus.channel_info.device_description), "leaf") != -1)) or (_type == "usbcanii" and (string.find(string.lower(_bus.channel_info.device_description), "usbcan ii") != -1)):
+        if (_type == "leaf" and (string.find(string.lower(_bus.channel_info.device_description), "leaf") != -1)) or (_type == "usbcanii" and ((string.find(string.lower(_bus.channel_info.device_description), "usbcan ii") != -1) or (string.find(string.lower(_bus.channel_info.device_description), "usbcanii") != -1))):
             if (_bus.channel_info.card_serial, _bus.channel_info.channel_on_card) == (_serial, _channel):
                 _bus.shutdown()
                 return channel
@@ -976,12 +977,3 @@ class MessagePrinter(Listener):
     def on_message_received(self, msg):
         print msg
 
-if __name__ == "__main__":
-    print "Kvaser Leaf S/N 15198 channel 0 is at CANLIB channel", get_canlib_channel_from_url("leaf://15198/0")
-    print "Kvaser Leaf S/N 15198 channel 1 is at CANLIB channel", get_canlib_channel_from_url("leaf://15198/1")
-    print "Kvaser Leaf S/N 15057 channel 0 is at CANLIB channel", get_canlib_channel_from_url("leaf://15057/0")
-    print "Kvaser Leaf S/N 15057 channel 1 is at CANLIB channel", get_canlib_channel_from_url("leaf://15057/1")
-    print "Kvaser USBcan II S/N 12717 channel 0 is at CANLIB channel", get_canlib_channel_from_url("usbcanii://12717/0")
-    print "Kvaser USBcan II S/N 12717 channel 1 is at CANLIB channel", get_canlib_channel_from_url("usbcanii://12717/1")
-    print "Kvaser USBcan II S/N 12717 channel 2 is at CANLIB channel", get_canlib_channel_from_url("usbcanii://12717/2")
-    print "Kvaser USBcan II S/N 12717 channel 3 is at CANLIB channel", get_canlib_channel_from_url("usbcanii://12717/3")
