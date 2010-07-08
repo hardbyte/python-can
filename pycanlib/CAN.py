@@ -137,6 +137,9 @@ def get_channel_info(channel):
         _transceiver_serial_number += (_transceiver_serial_number_buffer[i] << (8 * i))
     return ChannelInfo(channel, _device_description_buffer.value, _manufacturer_name_buffer.value, ".".join("%d" % _num for _num in _firmware_version_number), ".".join("%d" % _num for _num in _hardware_version_number), _card_serial_number, _transceiver_serial_number, _transceiver_type_buffer.value, _card_number_buffer.value, _channel_on_card_buffer.value)
 
+class ChannelNotFoundError(Exception):
+    pass
+
 class Message(object):
 
     def __init__(self, timestamp=0.0, is_remote_frame=False, id_type=ID_TYPE_11_BIT, is_wakeup=(not WAKEUP_MSG), is_error_frame=(not ERROR_FRAME), arbitration_id=0, data=[], dlc=0, info_strings=[]):
@@ -745,10 +748,16 @@ class Bus(object):
     def __init__(self, channel, bitrate, tseg1, tseg2, sjw, no_samp, driver_mode=DRIVER_MODE_NORMAL):
         _num_channels = ctypes.c_int(0)
         canlib.canGetNumberOfChannels(ctypes.byref(_num_channels))
-        InputValidation.verify_parameter_type("CAN.Bus.__init__", "channel", channel, types.IntType)
-        InputValidation.verify_parameter_min_value("CAN.Bus.__init__", "channel", channel, 0)
-        InputValidation.verify_parameter_max_value("CAN.Bus.__init__", "channel", channel, _num_channels.value)
-        self.__channel_info = get_channel_info(channel)
+        InputValidation.verify_parameter_type("CAN.Bus.__init__", "channel", channel, (types.IntType, types.StringType))
+        if type(channel) == types.StringType:
+            _channel = get_canlib_channel_from_url(channel)
+            if _channel == None:
+                raise ChannelNotFoundError(channel)
+        else:
+            _channel = channel
+        InputValidation.verify_parameter_min_value("CAN.Bus.__init__", "channel", _channel, 0)
+        InputValidation.verify_parameter_max_value("CAN.Bus.__init__", "channel", _channel, _num_channels.value)
+        self.__channel_info = get_channel_info(_channel)
         InputValidation.verify_parameter_type("CAN.Bus.__init__", "bitrate", bitrate, types.IntType)
         InputValidation.verify_parameter_min_value("CAN.Bus.__init__", "bitrate", bitrate, 0)
         InputValidation.verify_parameter_max_value("CAN.Bus.__init__", "bitrate", bitrate, 1000000)
@@ -760,7 +769,7 @@ class Bus(object):
         InputValidation.verify_parameter_max_value("CAN.Bus.__init__", "tseg2", tseg2, 255)
         InputValidation.verify_parameter_type("CAN.Bus.__init__", "no_samp", no_samp, types.IntType)
         InputValidation.verify_parameter_value_in_set("CAN.Bus.__init__", "no_samp", no_samp, [1, 3])
-        self.__read_handle = canlib.canOpenChannel(channel, canlib.canOPEN_ACCEPT_VIRTUAL)
+        self.__read_handle = canlib.canOpenChannel(_channel, canlib.canOPEN_ACCEPT_VIRTUAL)
         canlib.canIoCtl(self.__read_handle, canlib.canIOCTL_SET_TIMER_SCALE, ctypes.byref(ctypes.c_long(1)), 4)
         if sys.platform != "win32":
             _timer = ctypes.c_ulong(0)
@@ -770,7 +779,7 @@ class Bus(object):
         if driver_mode == DRIVER_MODE_SILENT:
             canlib.canSetBusOutputControl(self.__read_handle, canlib.canDRIVER_SILENT)
         canlib.canBusOn(self.__read_handle)
-        self.__write_handle = canlib.canOpenChannel(channel, canlib.canOPEN_ACCEPT_VIRTUAL)
+        self.__write_handle = canlib.canOpenChannel(_channel, canlib.canOPEN_ACCEPT_VIRTUAL)
         canlib.canIoCtl(self.__write_handle, canlib.canIOCTL_SET_TIMER_SCALE, ctypes.byref(ctypes.c_long(1)), 4)
         canlib.canSetBusParams(self.__write_handle, bitrate, tseg1, tseg2, sjw, no_samp, 0)
         if driver_mode == DRIVER_MODE_SILENT:
