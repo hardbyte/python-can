@@ -59,7 +59,7 @@ if __name__ == "__main__":
     if not os.path.exists(os.path.dirname(_log_file_path)):
         os.makedirs(os.path.dirname(_log_file_path))
     _listener = CAN.BufferedReader()
-    _bus.add_listener(_listener)
+    _bus.listeners.append(_listener)
     try:
         while True:
             _msg = _listener.get_message()

@@ -796,6 +796,17 @@ class Bus(object):
         self.__write_thread.start()
 
     @property
+    def listeners(self):
+        return self.__listeners
+
+    @listeners.setter
+    def listeners(self, value):
+        InputValidation.verify_parameter_type("CAN.Bus.listeners.setter", "listeners", value, types.ListType)
+        for (_index, _listener) in enumerate(value):
+            InputValidation.verify_parameter_type("CAN.Bus.listeners.setter", "listeners[%d]" % _index, _listener, Listener)
+        self.__listeners = value
+
+    @property
     def bus_time(self):
         _time = ctypes.c_ulong(0)
         canlib.canReadTimer(self.__read_handle, ctypes.byref(_time))
@@ -814,7 +825,7 @@ class Bus(object):
             if _rx_msg is None:
                 pass
             else:
-                for _listener in self.__listeners:
+                for _listener in self.listeners:
                     _listener.on_message_received(_rx_msg)
         canlib.canBusOff(self.__read_handle)
         canlib.canClose(self.__read_handle)
@@ -857,13 +868,6 @@ class Bus(object):
     def write(self, msg):
         InputValidation.verify_parameter_type("CAN.Bus.write", "msg", msg, Message)
         self.__tx_queue.put_nowait(msg)
-
-    def add_listener(self, listener):
-        InputValidation.verify_parameter_type("CAN.Bus.add_listener", "listener", listener, Listener)
-        self.__listeners.append(listener)
-
-    def remove_listener(self, listener):
-        self.__listeners.remove(listener)
 
     def shutdown(self):
         self.__threads_running = False
