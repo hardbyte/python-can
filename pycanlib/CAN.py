@@ -244,7 +244,7 @@ class Message(object):
     def data(self, value):
         InputValidation.verify_parameter_type("CAN.Message.data.setter", "data", value, types.ListType)
         for (_index, _item) in enumerate(value):
-            InputValidation.verify_parameter_type("CAN.Message.data.setter", ("data[%d]" % _index), _item, types.IntType)
+            InputValidation.verify_parameter_type("CAN.Message.data.setter", ("data[%d]" % _index), _item, (types.IntType, types.LongType))
             InputValidation.verify_parameter_min_value("CAN.Message.data.setter", ("data[%d]" % _index), _item, 0)
             InputValidation.verify_parameter_max_value("CAN.Message.data.setter", ("data[%d]" % _index), _item, 255)
         self.__data = value
