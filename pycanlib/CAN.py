@@ -71,7 +71,10 @@ DRIVER_MODE_SILENT = False
 DRIVER_MODE_NORMAL = (not DRIVER_MODE_SILENT)
 
 STD_ACCEPTANCE_MASK_ALL_BITS = (2**11 - 1)
+MAX_11_BIT_ID = STD_ACCEPTANCE_MASK_ALL_BITS
+
 EXT_ACCEPTANCE_MASK_ALL_BITS = (2**29 - 1)
+MAX_29_BIT_ID = EXT_ACCEPTANCE_MASK_ALL_BITS
 
 MAX_DEVICE_DESCR_LENGTH = 256
 MAX_MANUFACTURER_NAME_LENGTH = 256
@@ -142,16 +145,22 @@ class ChannelNotFoundError(Exception):
 
 class Message(object):
 
-    def __init__(self, timestamp=0.0, is_remote_frame=False, id_type=ID_TYPE_11_BIT, is_wakeup=(not WAKEUP_MSG), is_error_frame=(not ERROR_FRAME), arbitration_id=0, data=[], dlc=0, info_strings=[]):
+    def __init__(self, timestamp=0.0, is_remote_frame=False, id_type=ID_TYPE_11_BIT, is_wakeup=(not WAKEUP_MSG), is_error_frame=(not ERROR_FRAME), arbitration_id=0, data=None, dlc=0, info_strings=None):
         self.timestamp = timestamp
         self.id_type = id_type
         self.is_remote_frame = is_remote_frame
         self.is_wakeup = is_wakeup
         self.is_error_frame = is_error_frame
         self.arbitration_id = arbitration_id
-        self.data = data
+        if data is None:
+            self.data = []
+        else:
+            self.data = data
         self.dlc = dlc
-        self.info_strings = info_strings
+        if info_strings is None:
+            self.info_strings = []
+        else:
+            self.info_strings = info_strings
 
     @property
     def timestamp(self):
