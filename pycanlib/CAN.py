@@ -194,14 +194,12 @@ class Message(object):
 
     @id_type.setter
     def id_type(self, value):
-
         InputValidation.verify_parameter_type("CAN.Message.id_type.setter", "id_type", value, types.BooleanType)
-        if (self.flags & (0xFFFF - (canstat.canMSG_STD | canstat.canMSG_EXT))) != 0:
-            self.flags &= (0xFFFF - (canstat.canMSG_STD | canstat.canMSG_EXT))
+        _new_flags = self.flags & (0xFFFF - (canstat.canMSG_STD | canstat.canMSG_EXT))
         if value == ID_TYPE_EXTENDED:
-            self.flags |= canstat.canMSG_EXT
+            self.flags = (_new_flags | canstat.canMSG_EXT)
         else:
-            self.flags |= canstat.canMSG_STD
+            self.flags = (_new_flags | canstat.canMSG_STD)
 
     @property
     def is_wakeup(self):
