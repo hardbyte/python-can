@@ -324,8 +324,11 @@ class Message(object):
                 _data_strings.append("%.2x" % byte)
         if len(_data_strings) > 0:
             _field_strings.append(" ".join(_data_strings).ljust(24, " "))
+        else:
+            _field_strings.append(" "*24)
         _current_length = len("    ".join(_field_strings))
-        _field_strings.append(("\n" + (" " * (_current_length + 4))).join(self.info_strings))
+        if len(self.info_strings) > 0:
+            _field_strings.append(("\n" + (" " * (_current_length + 4))).join(self.info_strings))
         return "    ".join(_field_strings)
 
 class MessageList(object):
