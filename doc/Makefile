@@ -38,9 +38,9 @@ RMDIR = rmdir /S /Q
 
 pdf: ${RST_SOURCE_FILES:.txt=.pdf}
 tex: ${RST_SOURCE_FILES:.txt=.tex}
+html: ${RST_SOURCE_FILES:.txt=.html}
 
 %.tex: %.txt
-	@echo $(RST_SOURCE_FILES)
 	@echo Converting $* to TeX...
 	@python C:\Python26\Scripts\rst2latex.py $*.txt $@ --stylesheet=dcl_srs_stylesheet.sty
 	@echo Done!
@@ -50,6 +50,11 @@ tex: ${RST_SOURCE_FILES:.txt=.tex}
 	@pdflatex --quiet $*.tex $@
 	@pdflatex --quiet $*.tex $@
 	@pdflatex --quiet $*.tex $@
+	@echo Done!
+
+%.html: %.txt
+	@echo Converting $* to HTML...
+	@python C:\Python26\Scripts\rst2html.py $*.txt $@
 	@echo Done!
 
 clean:
