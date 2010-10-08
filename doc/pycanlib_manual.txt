@@ -542,4 +542,4 @@ CAN.Log
 -------
 
 .. _`Bosch CAN Specification`: http://www.semiconductors.bosch.de/pdf/can2spec.pdf
-.. _`Restructured Text`: http://docutils.sourceforge.net/rst.html
+.. _`reStructuredText`: http://docutils.sourceforge.net/rst.html
