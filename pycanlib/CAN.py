@@ -32,7 +32,6 @@ E-mail: bpowell AT dynamiccontrols DOT com
 """
 from pycanlib import canlib, canstat, InputValidation
 
-import copy
 import cPickle
 import ctypes
 import datetime
@@ -377,8 +376,7 @@ class MessageList(object):
     @property
     def filtered_messages(self):
         if self.filter_criteria != "True":
-            _filter_criteria = copy.deepcopy(self.filter_criteria)
-            _filter_criteria = _filter_criteria.replace("CAN.", "")
+            _filter_criteria = self.filter_criteria.replace("CAN.", "")
             retval = []
             for message in self.messages:
                 try:
