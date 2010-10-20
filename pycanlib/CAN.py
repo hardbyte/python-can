@@ -348,7 +348,8 @@ class MessageList(object):
     def messages(self, value):
         InputValidation.verify_parameter_type("CAN.MessageList.messages.setter", "messages", value, types.ListType)
         for (_index, _msg) in enumerate(value):
-            InputValidation.verify_parameter_type("CAN.MessageList.messages.setter", "messages[%d]" % _index, _msg, Message)
+            if not issubclass(type(_msg), Message):
+                InputValidation.verify_parameter_type("CAN.MessageList.messages.setter", "messages[%d]" % _index, _msg, Message)
         self.__messages = value
 
     @property
