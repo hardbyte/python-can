@@ -403,9 +403,10 @@ have not read the `Bosch CAN specification`_ are advised to do so before
 reading this document.
 
 This document contains Python doctests. To execute these, run
-``python -m doctest pycanlib_manual.txt``.
+``python -m doctest pycanlib_manual.txt``, or ``make clean test`` on a system
+with make installed.
 
-This document is written in `reStructuredText`_, and requires Docutils
+This document is written in `reStructuredText`_, and requires Docutils to be 
 installed to produce output formats like HTML and ODT.
 
 CAN.Message
@@ -623,8 +624,35 @@ End timestamp = 1.000000
        1.000000        0000    0002    0                            
 <BLANKLINE>
 
+messages
+........
+
+The messages property (which may be set at instantiation, but may be written
+to afterward) contains the messages listed in this MessageList object. The
+objects included in the list must be instances of CAN.Message or one of its
+subclasses::
+
+>>> test_bad_message_list = CAN.MessageList(messages = [test, "1", "foo", 5])
+Traceback (most recent call last):
+    ...
+ParameterTypeError: Bad parameter 'messages[1]' (1, type <type 'str'>) to function 'CAN.MessageList.messages.setter' - reason 'Not one of the allowable types <class 'pycanlib.CAN.Message'>'
+
+filter_criteria
+................
+
+The filter_criteria property (which may be set at instantiation, but is
+read-only thereafter) is a string containing executable Python code
+representing the criteria by which the MessageList object will decide to
+include the message in its filtered_messages property or not. It must either:
+
+ - evaluate to True, including the message in filtered_messages
+ - evaluate to False, excluding the message from filtered_messages
+ - raise an AttributeError (in the case where a message does not contain a
+   property referenced by the filter criteria), which excludes the message from
+   filtered_messages
+
 Note that the filter criteria are not applied to the messages displayed in the
-message list in this form. The content of the message list filtered according
+message list by default. The content of the message list filtered according
 to the filter criteria is made available via the MessageList property
 filtered_messages::
 
@@ -637,12 +665,101 @@ filtered_messages::
        0.000000        0000    0002    0                            
        1.000000        0000    0002    0                            
 
+Accessing the filtered_messages property (which is read-only) should not affect
+the contents of the list overall, as shown below::
+
+>>> print test_message_list_1
+--------------------------------
+Message List 'CAN 2.0B messages'
+--------------------------------
+Applied filters: message.id_type == CAN.ID_TYPE_29_BIT
+Start timestamp = 0.000000
+End timestamp = 1.000000
+       0.000000        0000    0002    0                            
+       0.000000        0000    0002    5    01 02 03 04 05          
+       0.000000        0000    0002    0                            
+       0.000000    00000000    0004    0                            
+       1.000000        0000    0002    0                            
+<BLANKLINE>
+
+>>> print test_message_list_2
+--------------------------------
+Message List 'CAN 2.0A messages'
+--------------------------------
+Applied filters: message.id_type == CAN.ID_TYPE_11_BIT
+Start timestamp = 0.000000
+End timestamp = 1.000000
+       0.000000        0000    0002    0                            
+       0.000000        0000    0002    5    01 02 03 04 05          
+       0.000000        0000    0002    0                            
+       0.000000    00000000    0004    0                            
+       1.000000        0000    0002    0                            
+<BLANKLINE>
+
+name
+....
+
+The name parameter to the MessageList constructor is the name used to identify
+this particular MessageList within a larger collection of MessageLists
+(sometimes called a log). While names *should* be unique for maximum
+usefulness, uniqueness of a particular MessageList's name within a log is not
+checked.
+
 CAN.Bus
 -------
+
+The CAN.Bus class, as the name suggests, provides an abstraction of a CAN bus.
+Writing to the bus is done by calling the write method and passing a
+CAN.Message object. As the bus is event-driven, it has no "read" method, but
+instead has a "listeners" property, which is a list of `CAN.Listener`_
+subclasses that receive notifications when new messages arrive (which
+include the new message itself).
+
 CAN.Listener
 ------------
+
+The Listener class is an "abstract" class (such that Python has that concept)
+which forms the base class for any objects which wish to register to receive
+notifications of new messages on the bus. It provides a single method
+(on_message_received), which takes a single parameter (the message received
+from the bus), and is called by the CAN.Bus object(s) that the Listener is
+registered with whenever they receive a new message. Subclasses of Listener
+that do not override this method (that is, implement an on_message_received
+of their own without calling CAN.Listener's version) will cause
+NotImplementedError to be thrown when a message is received on the CAN bus.
+
+CAN.BufferedReader
+------------------
+
+The BufferedReader class is a subclass of CAN.Listener which implements a
+"message buffer": that is, when a BufferedReader instance is notified of a
+new message it pushes it into a queue of messages waiting to be serviced.
+The BufferedReader class provides a get_message method, which attempts to
+retrieve the latest message received by the instance. If no message is
+available it blocks for 0.5 seconds or until a message is received (whichever
+is shorter), and returns the message if there is one, or None if there is not.
+
+CAN.MessagePrinter
+------------------
+
+The MessagePrinter class is a subclass of CAN.Listener which simply prints
+any messages it receives to the terminal.
+
+CAN.AcceptanceFilter
+--------------------
+
+The AcceptanceFilter class is a subclass of CAN.Listener which implements the
+CAN "acceptance filter" rules in software. It in turn has its own list of
+listeners, which receive only the messages matching its defined "acceptance
+filter" rules.
+
 CAN.LogInfo
 -----------
+
+The LogInfo class provides storage of information about a CAN traffic log,
+including data like the time of day at log start and end, the name of the
+tester who recorded the log, and the name of the original log file.
+
 CAN.MachineInfo
 ---------------
 CAN.Log
