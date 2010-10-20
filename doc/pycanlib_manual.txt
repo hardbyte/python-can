@@ -449,11 +449,11 @@ to set an invalid timestamp, is shown below.
 >>> test_illegal_timestamp1 = CAN.Message(timestamp=1)
 Traceback (most recent call last):
     ...
-ParameterTypeError: Bad parameter 'timestamp' (1, type <type 'int'>) to function '@timestamp.setter' - reason 'Not one of the allowable types <type 'float'>'
+ParameterTypeError: Bad parameter 'timestamp' (1, type <type 'int'>) to function 'CAN.Message.timestamp.setter' - reason 'Not one of the allowable types <type 'float'>'
 >>> test_illegal_timestamp2 = CAN.Message(timestamp=-1.0)
 Traceback (most recent call last):
     ...
-ParameterRangeError: ParameterRangeError: Bad parameter 'timestamp' (-1.0, type <type 'float'>) to function '@timestamp.setter' - reason 'Value less than minimum of 0'
+ParameterRangeError: Bad parameter 'timestamp' (-1.0, type <type 'float'>) to function 'CAN.Message.timestamp.setter' - reason 'Value less than minimum of 0'
 
 Arbitration ID
 ..............
@@ -471,6 +471,36 @@ maximum value allowed by the id_type parameter passed to the CAN.Message
 constructor (either 2\ :sup:`11` - 1 for 11-bit IDs, or 2\ :sup:`29` - 1 for
 29-bit IDs). The effect of this parameter, and the result of attempting to set
 an invalid ID, is shown below.
+
+>>> test_std_id = CAN.Message(id_type=CAN.ID_TYPE_STANDARD)
+>>> print test_std_id
+       0.000000        0000    0002    0                            
+>>> test_ext_id = CAN.Message(id_type=CAN.ID_TYPE_EXTENDED)
+>>> print test_ext_id
+       0.000000    00000000    0004    0                            
+
+>>> test_std_id_2 = CAN.Message(id_type=CAN.ID_TYPE_STANDARD, arbitration_id=100)
+>>> print test_std_id_2
+       0.000000        0064    0002    0                            
+>>> test_std_id_3 = CAN.Message(id_type=CAN.ID_TYPE_STANDARD, arbitration_id=2048)
+Traceback (most recent call last):
+    ...
+ParameterRangeError: Bad parameter 'arbitration_id' (2048, type <type 'int'>) to function 'CAN.Message.arbitration_id.setter' - reason 'Value greater than maximum of 2047'
+>>> test_std_id_4 = CAN.Message(id_type=CAN.ID_TYPE_STANDARD, arbitration_id=-1)
+Traceback (most recent call last):
+    ...
+ParameterRangeError: Bad parameter 'arbitration_id' (-1, type <type 'int'>) to function 'CAN.Message.arbitration_id.setter' - reason 'Value less than minimum of 0'
+>>> test_ext_id_2 = CAN.Message(id_type=CAN.ID_TYPE_EXTENDED, arbitration_id=2048)
+>>> print test_ext_id_2
+       0.000000    00000800    0004    0                            
+>>> test_ext_id_3 = CAN.Message(id_type=CAN.ID_TYPE_EXTENDED, arbitration_id=536870912)
+Traceback (most recent call last):
+    ...
+ParameterRangeError: Bad parameter 'arbitration_id' (536870912, type <type 'int'>) to function 'CAN.Message.arbitration_id.setter' - reason 'Value greater than maximum of 536870911'
+>>> test_ext_id_4 = CAN.Message(id_type=CAN.ID_TYPE_EXTENDED, arbitration_id=-1)
+Traceback (most recent call last):
+    ...
+ParameterRangeError: Bad parameter 'arbitration_id' (-1, type <type 'int'>) to function 'CAN.Message.arbitration_id.setter' - reason 'Value less than minimum of 0'
 
 Flags
 .....
@@ -518,6 +548,21 @@ data being requested from the device the message is addressed to. The effect of
 this parameter, and the result of attempting to set an invalid DLC, is shown
 below.
 
+>>> test_legal_dlc_1 = CAN.Message(dlc=1)
+>>> print test_legal_dlc_1
+       0.000000        0000    0002    1                            
+>>> test_legal_dlc_2 = CAN.Message(dlc=5)
+>>> print test_legal_dlc_2
+       0.000000        0000    0002    5                            
+>>> test_illegal_dlc_1 = CAN.Message(dlc=-1)
+Traceback (most recent call last):
+    ...
+ParameterRangeError: Bad parameter 'dlc' (-1, type <type 'int'>) to function 'CAN.Message.dlc.setter' - reason 'Value less than minimum of 0'
+>>> test_illegal_dlc_2 = CAN.Message(dlc=9)
+Traceback (most recent call last):
+    ...
+ParameterRangeError: Bad parameter 'dlc' (9, type <type 'int'>) to function 'CAN.Message.dlc.setter' - reason 'Value greater than maximum of 8'
+
 Note that the DLC value does not necessarily define the number of bytes of data
 in a packet.
 
@@ -527,6 +572,18 @@ Data
 The data parameter of a CAN message is an array of between 0 and 8 integers,
 each with a value of between 0 and 255. The effect of this parameter, and the
 result of attempting to set an invalid data array, is shown below.
+
+>>> test_legal_data = CAN.Message(dlc=3, data=[1, 2, 3])
+>>> print test_legal_data
+       0.000000        0000    0002    3    01 02 03                
+>>> test_illegal_data_1 = CAN.Message(dlc=3, data=[1000, 2, 30])
+Traceback (most recent call last):
+    ...
+ParameterRangeError: Bad parameter 'data[0]' (1000, type <type 'int'>) to function 'CAN.Message.data.setter' - reason 'Value greater than maximum of 255'
+>>> test_illegal_data_2 = CAN.Message(dlc=3, data=[100, -5, 30])
+Traceback (most recent call last):
+    ...
+ParameterRangeError: Bad parameter 'data[1]' (-5, type <type 'int'>) to function 'CAN.Message.data.setter' - reason 'Value less than minimum of 0'
 
 CAN.MessageList
 ---------------
