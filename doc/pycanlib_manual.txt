@@ -587,6 +587,56 @@ ParameterRangeError: Bad parameter 'data[1]' (-5, type <type 'int'>) to function
 
 CAN.MessageList
 ---------------
+
+CAN.MessageList is the class pycanlib uses to represent lists of CAN messages.
+Instantiating a MessageList object, with a list of messages, a list name, and a
+set of filter criteria which may be applied to the messages in the list, is done
+as follows::
+
+>>> test_message_list_1 = CAN.MessageList(messages=[test, test2, test_std_id, test_ext_id, test_legal_timestamp], filter_criteria="message.id_type == CAN.ID_TYPE_29_BIT", name="CAN 2.0B messages")
+>>> print test_message_list_1
+--------------------------------
+Message List 'CAN 2.0B messages'
+--------------------------------
+Applied filters: message.id_type == CAN.ID_TYPE_29_BIT
+Start timestamp = 0.000000
+End timestamp = 1.000000
+       0.000000        0000    0002    0                            
+       0.000000        0000    0002    5    01 02 03 04 05          
+       0.000000        0000    0002    0                            
+       0.000000    00000000    0004    0                            
+       1.000000        0000    0002    0                            
+<BLANKLINE>
+
+>>> test_message_list_2 = CAN.MessageList(messages=[test, test2, test_std_id, test_ext_id, test_legal_timestamp], filter_criteria="message.id_type == CAN.ID_TYPE_11_BIT", name="CAN 2.0A messages")
+>>> print test_message_list_2
+--------------------------------
+Message List 'CAN 2.0A messages'
+--------------------------------
+Applied filters: message.id_type == CAN.ID_TYPE_11_BIT
+Start timestamp = 0.000000
+End timestamp = 1.000000
+       0.000000        0000    0002    0                            
+       0.000000        0000    0002    5    01 02 03 04 05          
+       0.000000        0000    0002    0                            
+       0.000000    00000000    0004    0                            
+       1.000000        0000    0002    0                            
+<BLANKLINE>
+
+Note that the filter criteria are not applied to the messages displayed in the
+message list in this form. The content of the message list filtered according
+to the filter criteria is made available via the MessageList property
+filtered_messages::
+
+>>> for _msg in test_message_list_1.filtered_messages: print _msg
+       0.000000    00000000    0004    0                            
+
+>>> for _msg in test_message_list_2.filtered_messages: print _msg
+       0.000000        0000    0002    0                            
+       0.000000        0000    0002    5    01 02 03 04 05          
+       0.000000        0000    0002    0                            
+       1.000000        0000    0002    0                            
+
 CAN.Bus
 -------
 CAN.Listener

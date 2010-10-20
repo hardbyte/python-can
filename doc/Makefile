@@ -39,6 +39,7 @@ RMDIR = rmdir /S /Q
 pdf: ${RST_SOURCE_FILES:.txt=.pdf}
 tex: ${RST_SOURCE_FILES:.txt=.tex}
 html: ${RST_SOURCE_FILES:.txt=.html}
+test: ${RST_SOURCE_FILES:.txt=.test}
 
 %.tex: %.txt
 	@echo Converting $* to TeX...
@@ -65,4 +66,10 @@ clean:
 	@echo Cleaning up output files...
 	-@$(RM) *.pdf
 	-@$(RM) *.tex
+	-@$(RM) *.test
 	@echo Done!
+
+%.test: %.txt
+	@python -m doctest -v $*.txt
+	@echo "tested OK" > $@
+

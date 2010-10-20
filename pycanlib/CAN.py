@@ -32,6 +32,7 @@ E-mail: bpowell AT dynamiccontrols DOT com
 """
 from pycanlib import canlib, canstat, InputValidation
 
+import copy
 import cPickle
 import ctypes
 import datetime
@@ -375,18 +376,24 @@ class MessageList(object):
 
     @property
     def filtered_messages(self):
-        retval = []
-        for message in self.messages:
-            try:
-                if eval(self.filter_criteria):
-                    retval.append(message)
-            except AttributeError:
-                pass
+        if self.filter_criteria != "True":
+            _filter_criteria = copy.deepcopy(self.filter_criteria)
+            _filter_criteria = _filter_criteria.replace("CAN.", "")
+            retval = []
+            for message in self.messages:
+                try:
+                    if eval(_filter_criteria):
+                        retval.append(message)
+                except AttributeError:
+                    pass
+            return retval
+        else:
+            return self.messages
 
     def __str__(self):
-        retval = "-"*len("\nMessage List '%s'\n" % self.name)
+        retval = "-"*len("Message List '%s'" % self.name)
         retval += "\nMessage List '%s'\n" % self.name
-        retval += "-"*len("\nMessage List '%s'\n" % self.name)
+        retval += "-"*len("Message List '%s'" % self.name)
         retval += "\n"
         if self.filter_criteria == "True":
             retval += "Applied filters: None\n"
@@ -999,4 +1006,3 @@ class AcceptanceFilter(Listener):
 class MessagePrinter(Listener):
     def on_message_received(self, msg):
         print msg
-
