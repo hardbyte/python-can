@@ -97,8 +97,18 @@ def get_host_machine_info():
     return MachineInfo(machine_name=_machine_name, python_version=_python_version, platform_info=_platform_info)
 
 def get_canlib_version():
-    _version = canlib.canGetVersion()
-    return "%d.%d" % (((_version & 0xFF00) >> 8), (_version & 0x00FF))
+    if sys.platform == "win32":
+        _version = canlib.canGetVersionEx(canlib.canVERSION_CANLIB32_PRODVER32)
+        _major = ((_version & 0xFFFF0000) >> 16)
+        _minor = ((_version & 0x0000FF00) >> 8)
+        _letter = (_version & 0x000000FF)
+        if _letter == 0:
+            return "%d.%d" % (_major, _minor)
+        else:
+            return "%d.%d%s" % (_major, _minor, "%c" % _letter)
+    else:
+        _version = canlib.canGetVersion()
+        return "%d.%d" % (((_version & 0xFF00) >> 8), (_version & 0x00FF))
 
 def get_channel_info(channel):
     _device_description_buffer = ctypes.create_string_buffer(MAX_DEVICE_DESCR_LENGTH)
