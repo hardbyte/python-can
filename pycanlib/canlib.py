@@ -174,6 +174,12 @@ canIOCTL_SET_TXACK = 7
 canIoCtl = __get_canlib_function("canIoCtl", argtypes=[c_canHandle, ctypes.c_uint, ctypes.c_void_p, ctypes.c_uint], restype=canstat.c_canStatus, errcheck=__check_status)
 
 canGetVersion = __get_canlib_function("canGetVersion", restype=ctypes.c_short, errcheck=__check_status)
+if sys.platform == "win32":
+    canGetVersionEx = __get_canlib_function("canGetVersionEx", argtypes=[ctypes.c_uint], restype=ctypes.c_uint, errcheck=__check_status)
+    canVERSION_CANLIB32_VERSION = 0
+    canVERSION_CANLIB32_PRODVER = 1
+    canVERSION_CANLIB32_PRODVER32 = 2
+    canVERSION_CANLIB32_BETA = 3
 
 canTRANSCEIVER_TYPE_UNKNOWN = 0
 canTRANSCEIVER_TYPE_251 = 1
