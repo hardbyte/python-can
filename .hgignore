@@ -1,0 +1,6 @@
+syntax: glob
+build/
+dist/
+pycanlib.egg-info/
+version.txt
+*.pyc
