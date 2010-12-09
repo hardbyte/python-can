@@ -895,7 +895,7 @@ class Bus(object):
         _dlc = ctypes.c_uint(0)
         _flags = ctypes.c_uint(0)
         _timestamp = ctypes.c_ulong(0)
-        _status = canlib.canReadWait(self.__read_handle, ctypes.byref(_arb_id), ctypes.byref(_data), ctypes.byref(_dlc), ctypes.byref(_flags), ctypes.byref(_timestamp), 500)
+        _status = canlib.canReadWait(self.__read_handle, ctypes.byref(_arb_id), ctypes.byref(_data), ctypes.byref(_dlc), ctypes.byref(_flags), ctypes.byref(_timestamp), 5)
         if _status.value == canstat.canOK:
             _data_array = map(ord, _data)
             if int(_flags.value) & canstat.canMSG_EXT:
@@ -920,7 +920,7 @@ class Bus(object):
             except Queue.Empty:
                 pass
             if _tx_msg != None:
-                canlib.canWriteWait(self.__write_handle, _tx_msg.arbitration_id, "".join([("%c" % byte) for byte in _tx_msg.data]), _tx_msg.dlc, _tx_msg.flags, 500)
+                canlib.canWriteWait(self.__write_handle, _tx_msg.arbitration_id, "".join([("%c" % byte) for byte in _tx_msg.data]), _tx_msg.dlc, _tx_msg.flags, 5)
         canlib.canBusOff(self.__write_handle)
         canlib.canClose(self.__write_handle)
 
