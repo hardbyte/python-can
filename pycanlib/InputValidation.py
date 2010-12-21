@@ -69,6 +69,13 @@ class ParameterValueError(InputValidationError):
 def verify_parameter_type(function, parameter_name, parameter_value, allowable_types):
     if not isinstance(parameter_value, allowable_types):
         raise ParameterTypeError(parameter_name, parameter_value, function, ("Not one of the allowable types %s" % (allowable_types,)))
+    return True
+
+def verify_parameter_list_type(function, parameter_name, list_parameter_value, allowable_types):
+    if not isinstance(list_parameter_value, list):
+        raise ParameterTypeError(parameter_name, list_parameter_value, function, ("Not a list"))
+    else:
+        return all(verify_parameter_type(function, parameter_name+'[%d]'%i, obj, allowable_types) for (i, obj) in enumerate(list_parameter_value))
 
 def verify_parameter_range(function, parameter_name, parameter_value, allowable_range):
     if parameter_value not in allowable_range:

@@ -393,6 +393,7 @@ class MessageList(object):
     @messages.setter
     def messages(self, value):
         InputValidation.verify_parameter_type("CAN.MessageList.messages.setter", "messages", value, types.ListType)
+        InputValidation.verify_parameter_list_type('CAN.MessageList.messages.setter', 'messages', value, Message)
         self.__messages = value
 
     @property
