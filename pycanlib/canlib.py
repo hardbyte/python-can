@@ -43,7 +43,7 @@ else:
 
 def __get_canlib_function(func_name, argtypes=None, restype=None, errcheck=None):
     try:
-        retval = eval("__canlib.%s" % func_name)
+        retval = getattr(__canlib, func_name)
     except AttributeError:
         return None
     else:
