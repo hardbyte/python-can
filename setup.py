@@ -45,7 +45,8 @@ else:
 setup(
     name="pycanlib",
     version=_version,
-    packages=find_packages(exclude=["test"]) + find_packages(where='bin'),
+    packages=find_packages(exclude=["test"]),
+    py_modules = ['ipy_profile_pycanlib'],
     author="Ben Powell",
     author_email="bpowell AT dynamiccontrols DOT com",
     description="Python wrapper for Kvaser's CANLIB SDK",
