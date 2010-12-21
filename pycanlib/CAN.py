@@ -341,6 +341,42 @@ class Message(object):
             _field_strings.append(("\n" + (" " * (_current_length + 4))).join(self.info_strings))
         return "    ".join(_field_strings)
 
+class TimestampMessage(object):
+    def __init__(self, timestamp=0.0, info_strings=None):
+        self.timestamp = timestamp
+        if info_strings is not None:
+            self.info_strings = info_strings
+        else:
+            self.info_strings = []
+
+    @property
+    def timestamp(self):
+        return self.__timestamp
+
+    @timestamp.setter
+    def timestamp(self, value):
+        InputValidation.verify_parameter_min_value("CAN.TimestampMessage.timestamp.setter", "timestamp", value, 0)
+        self.__timestamp = float(value)
+
+    @property
+    def info_strings(self):
+        return self.__info_strings
+
+    @info_strings.setter
+    def info_strings(self, value):
+        self.__info_strings = value
+
+    def check_equality(self, other, fields):
+        return False
+
+    def __str__(self):
+        if len(self.info_strings) > 0:
+            retval = "%15.6f    " % self.timestamp
+            retval += ("\n"+" "*len("%15.6f    " % self.timestamp)).join(self.info_strings)
+        else:
+            retval = ""
+        return retval
+
 class MessageList(object):
 
     def __init__(self, messages=[], filter_criteria="True", name="default"):
@@ -859,7 +895,7 @@ class Bus(object):
         _dlc = ctypes.c_uint(0)
         _flags = ctypes.c_uint(0)
         _timestamp = ctypes.c_ulong(0)
-        _status = canlib.canReadWait(self.__read_handle, ctypes.byref(_arb_id), ctypes.byref(_data), ctypes.byref(_dlc), ctypes.byref(_flags), ctypes.byref(_timestamp), 50000)
+        _status = canlib.canReadWait(self.__read_handle, ctypes.byref(_arb_id), ctypes.byref(_data), ctypes.byref(_dlc), ctypes.byref(_flags), ctypes.byref(_timestamp), 5)
         if _status.value == canstat.canOK:
             _data_array = map(ord, _data)
             if int(_flags.value) & canstat.canMSG_EXT:
@@ -874,7 +910,7 @@ class Bus(object):
             _rx_msg.flags = int(_flags.value) & canstat.canMSG_MASK
             return _rx_msg
         else:
-            return None
+            return TimestampMessage(timestamp=self.bus_time)
 
     def __write_process(self):
         while self.__threads_running:
@@ -884,7 +920,7 @@ class Bus(object):
             except Queue.Empty:
                 pass
             if _tx_msg != None:
-                canlib.canWriteWait(self.__write_handle, _tx_msg.arbitration_id, "".join([("%c" % byte) for byte in _tx_msg.data]), _tx_msg.dlc, _tx_msg.flags, 50000)
+                canlib.canWriteWait(self.__write_handle, _tx_msg.arbitration_id, "".join([("%c" % byte) for byte in _tx_msg.data]), _tx_msg.dlc, _tx_msg.flags, 5)
         canlib.canBusOff(self.__write_handle)
         canlib.canClose(self.__write_handle)
 
