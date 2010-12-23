@@ -1,0 +1,65 @@
+Virtual Can on Linux
+====================
+
+Running kvvirtualcan successfully appears to require slight differences from
+running on windows or with the hardware. Read and Write functions need to use
+seperate channels on the same bus. For example writing on channel 0 while monitoring
+channel 0 will not work. Writing on channel 0 while monitoring channel 1 does.
+
+>>> import platform
+>>> if platform.system() == "windows":
+...     from ctypes import windll, c_uint8, pointer, c_int
+...     canlib = windll.canlib32
+... else:
+...     from ctypes import cdll, c_uint8, pointer, c_int
+...     canlib = cdll.LoadLibrary('libcanlib.so')
+
+
+>>> canlib.canInitializeLibrary()
+0
+>>> bus = canlib.canOpenChannel(0, 0x20)
+>>> canlib.canBusOn(bus)
+0
+
+Create a message type to store the data:
+
+>>> MsgDataType = c_uint8 * 8
+
+Create a message and add the data to the message
+
+>>> msg = MsgDataType()
+>>> msg[0:5] = map(ord, 'hello')
+
+Create a channel handle to receive messages
+
+>>> bus2 = canlib.canOpenChannel(1, 0x20)
+>>> canlib.canBusOn(bus2)
+0
+
+Here are the variables to receive the message..
+
+>>> rx_msg = MsgDataType()
+>>> rx_id = c_int()
+>>> rx_dlc = c_int()
+>>> rx_flags = c_int()
+>>> rx_time = c_int()
+
+Send the message on the bus
+
+>>> canlib.canWrite(bus, 100, pointer(msg), 8, 4)
+0
+
+Actually receive the message. Note this wouldn't work if you use `bus` instead of
+`bus2` (at least on Ubuntu without a kvaiser...)
+
+>>> canlib.canRead(c_int(bus2), pointer(rx_id), pointer(rx_msg), pointer(rx_dlc), pointer(rx_flags), pointer(rx_time))
+0
+
+Decode and print the message...
+
+>>> print "Rx id =", rx_id.value
+Rx id = 100
+
+>>> map(chr, rx_msg)
+['h', 'e', 'l', 'l', 'o', '\x00', '\x00', '\x00']
+

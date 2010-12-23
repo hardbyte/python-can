@@ -32,7 +32,10 @@ E-mail: bpowell AT dynamiccontrols DOT com
 """
 import ctypes
 import sys
-import types
+import logging
+
+LOG_FILENAME = None # to log to std.err
+logging.basicConfig(filename=LOG_FILENAME, level=logging.INFO)
 
 from pycanlib import canstat
 
@@ -42,11 +45,15 @@ else:
     __canlib = ctypes.cdll.LoadLibrary("libcanlib.so")
 
 def __get_canlib_function(func_name, argtypes=None, restype=None, errcheck=None):
+    logging.debug('Wrapping function "%s"' % func_name)
     try:
         retval = getattr(__canlib, func_name)
+        logging.debug('Function found in library')
     except AttributeError:
-        return None
+        logging.warning('Function not found in library')
     else:
+        logging.debug('Result type is: %s' % type(restype))
+        logging.debug('Error check function is: %s' % errcheck)
         retval.argtypes = argtypes
         retval.restype = restype
         retval.errcheck = errcheck
@@ -69,7 +76,7 @@ class CANLIBError(Exception):
         return ("%s (code %d)" % (errmsg.value, self.error_code))
 
 def __convert_can_status_to_int(result):
-    if isinstance(result, (types.IntType, types.LongType)):
+    if isinstance(result, (int, long)):
         _result = result
     else:
         _result = result.value
@@ -78,6 +85,7 @@ def __convert_can_status_to_int(result):
 def __check_status(result, function, arguments):
     _result = __convert_can_status_to_int(result)
     if not canstat.CANSTATUS_SUCCESS(_result):
+        logging.debug('Detected error while checking CAN status')
         raise CANLIBError(function, _result, arguments)
     else:
         return result
@@ -85,6 +93,7 @@ def __check_status(result, function, arguments):
 def __check_status_read(result, function, arguments):
     _result = __convert_can_status_to_int(result)
     if not canstat.CANSTATUS_SUCCESS(_result) and (_result != canstat.canERR_NOMSG):
+        logging.debug('Detected error in __check_status_read')
         raise CANLIBError(function, _result, arguments)
     else:
         return result
