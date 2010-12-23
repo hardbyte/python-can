@@ -27,7 +27,7 @@
 #
 #E-mail: bpowell AT dynamiccontrols DOT com
 
-RST_SOURCE_FILES = pycanlib_srs.txt pycanlib_manual.txt
+RST_SOURCE_FILES = pycanlib_srs.txt pycanlib_manual.txt virtual.txt
 
 # Windows:
 #RST2LATEX = python C:\Python26\Scripts\rst2latex.py
