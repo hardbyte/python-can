@@ -7,7 +7,7 @@ seperate channels on the same bus. For example writing on channel 0 while monito
 channel 0 will not work. Writing on channel 0 while monitoring channel 1 does.
 
 >>> import platform
->>> if platform.system() == "windows":
+>>> if platform.system() == "Windows":
 ...     from ctypes import windll, c_uint8, pointer, c_int
 ...     canlib = windll.canlib32
 ... else:
