@@ -844,8 +844,13 @@ class Bus(object):
         Bit of a hack, on linux using kvvirtualcan module it seems you must read
         and write on seperate channels of the same bus.
         '''
-        if platform.system() == "Linux":
-            _channel += 1
+        # todo use can.get channel data and CARD_TYPE should be 2 for virtual channel
+        # Doesn't seem to work.... (result is 1?)
+        #hardware_type = ctypes.c_int(0)
+        #canlib.canGetChannelData(_channel, canlib.canCHANNELDATA_CARD_TYPE, ctypes.byref(hardware_type), 2)
+        #print hardware_type.value
+        if platform.system() == "Linux" and "virtual" in str(self.__channel_info).lower():
+            _channel = (_channel + 1) % _num_channels.value
         
         self.__write_handle = canlib.canOpenChannel(_channel, canlib.canOPEN_ACCEPT_VIRTUAL)
         canlib.canIoCtl(self.__write_handle, canlib.canIOCTL_SET_TIMER_SCALE, ctypes.byref(ctypes.c_long(1)), 4)
