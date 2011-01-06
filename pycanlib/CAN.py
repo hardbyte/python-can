@@ -379,7 +379,8 @@ class TimestampMessage(object):
 
 class MessageList(object):
 
-    def __init__(self, messages=[], filter_criteria="True", name="default"):
+    def __init__(self, messages=[], filter_criteria="True", name="default", valid_message_types=(Message)):
+        self.valid_message_types = valid_message_types
         self.messages = messages
         InputValidation.verify_parameter_type("CAN.MessageList.__init__", "filter_criteria", filter_criteria, types.StringType)
         self.__filter_criteria = filter_criteria
@@ -393,7 +394,7 @@ class MessageList(object):
     @messages.setter
     def messages(self, value):
         InputValidation.verify_parameter_type("CAN.MessageList.messages.setter", "messages", value, types.ListType)
-        InputValidation.verify_parameter_list_type('CAN.MessageList.messages.setter', 'messages', value, Message)
+        InputValidation.verify_parameter_list_type('CAN.MessageList.messages.setter', 'messages', value, self.valid_message_types)
         self.__messages = value
 
     @property
