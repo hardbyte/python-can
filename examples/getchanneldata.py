@@ -45,3 +45,5 @@ if __name__ == "__main__":
         print _bus.channel_info
         _bus.shutdown()
 
+
+time.sleep(1)
