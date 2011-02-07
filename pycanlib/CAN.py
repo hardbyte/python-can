@@ -856,10 +856,10 @@ class Bus(object):
         canlib.canIoCtl(self.__write_handle, canlib.canIOCTL_SET_TIMER_SCALE, ctypes.byref(ctypes.c_long(1)), 4)
         canlib.canSetBusParams(self.__write_handle, bitrate, tseg1, tseg2, sjw, no_samp, 0)
 
-        if driver_mode == DRIVER_MODE_SILENT:
-            canlib.canSetBusOutputControl(self.__read_handle, canlib.canDRIVER_SILENT)
-            canlib.canSetBusOutputControl(self.__write_handle, canlib.canDRIVER_SILENT)
-
+        __driver_mode = canlib.canDRIVER_SILENT if driver_mode == DRIVER_MODE_SILENT else canlib.canDRIVER_NORMAL
+        canlib.canSetBusOutputControl(self.__read_handle, __driver_mode)
+        canlib.canSetBusOutputControl(self.__write_handle, __driver_mode)
+        
         canlib.canBusOn(self.__write_handle)
         self.__listeners = []
         self.__tx_queue = Queue.Queue(0)
