@@ -833,10 +833,6 @@ class Bus(object):
 
         self.__read_handle = canlib.canOpenChannel(_channel, canlib.canOPEN_ACCEPT_VIRTUAL)
         canlib.canIoCtl(self.__read_handle, canlib.canIOCTL_SET_TIMER_SCALE, ctypes.byref(ctypes.c_long(1)), 4)
-        if sys.platform != "win32":
-            _timer = ctypes.c_ulong(0)
-            canlib.canReadTimer(self.__read_handle, ctypes.byref(_timer))
-            self.__timer_offset = _timer.value
         canlib.canSetBusParams(self.__read_handle, bitrate, tseg1, tseg2, sjw, no_samp, 0)
         canlib.canBusOn(self.__read_handle)
 
@@ -886,10 +882,7 @@ class Bus(object):
     def bus_time(self):
         _time = ctypes.c_ulong(0)
         canlib.canReadTimer(self.__read_handle, ctypes.byref(_time))
-        if sys.platform == "win32":
-            return (float(_time.value) / 1000000)
-        else:
-            return (float(_time.value - self.__timer_offset) / 1000000)
+        return (float(_time.value) / 1000000)
 
     @property
     def channel_info(self):
@@ -918,10 +911,7 @@ class Bus(object):
                 _id_type = ID_TYPE_EXTENDED
             else:
                 _id_type = ID_TYPE_STANDARD
-            if sys.platform == "win32":
-                _msg_timestamp = (float(_timestamp.value) / 1000000)
-            else:
-                _msg_timestamp = (float(_timestamp.value - self.__timer_offset) / 1000000)
+            _msg_timestamp = (float(_timestamp.value) / 1000000)
             _rx_msg = Message(arbitration_id=_arb_id.value, data=_data_array[:_dlc.value], dlc=int(_dlc.value), id_type=_id_type, timestamp=_msg_timestamp)
             _rx_msg.flags = int(_flags.value) & canstat.canMSG_MASK
             return _rx_msg
