@@ -849,6 +849,7 @@ class Bus(object):
         self.__threads_running = True
         self.__read_thread.start()
         self.__write_thread.start()
+        self.__timer_offset = None;
 
     @property
     def listeners(self):
@@ -862,14 +863,18 @@ class Bus(object):
         self.__listeners = value
 
     @property
-    def bus_time(self):
-        _time = ctypes.c_ulong(0)
-        canlib.canReadTimer(self.__read_handle, ctypes.byref(_time))
-        return (float(_time.value) / 1000000)
-
-    @property
     def channel_info(self):
         return self.__channel_info
+    
+    def __convert_timestamp(self, value):
+        if self.__timer_offset is None: #Use the current value if the offset has not been set yet
+            self.__timer_offset = value
+        
+        if value < self.__timer_offset: #Check for overflow
+            value += 0xFFFFFFFF
+            assert value > self.__timer_offset, 'CAN Timestamp overflowed and was not a 32 bit number.'
+        
+        return (float(value - self.__timer_offset) / 1000000) #Convert from us into seconds
 
     def __read_process(self):
         while self.__threads_running:
@@ -895,12 +900,12 @@ class Bus(object):
                 _id_type = ID_TYPE_EXTENDED
             else:
                 _id_type = ID_TYPE_STANDARD
-            _msg_timestamp = (float(_timestamp.value) / 1000000)
+            _msg_timestamp = self.__convert_timestamp(_timestamp.value)
             _rx_msg = Message(arbitration_id=_arb_id.value, data=_data_array[:_dlc.value], dlc=int(_dlc.value), id_type=_id_type, timestamp=_msg_timestamp)
             _rx_msg.flags = int(_flags.value) & canstat.canMSG_MASK
             return _rx_msg
         else:
-            return TimestampMessage(timestamp=self.bus_time)
+            return TimestampMessage(timestamp=0)
 
     def __write_process(self):
         while self.__threads_running:
