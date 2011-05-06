@@ -919,6 +919,15 @@ class Bus(object):
         canlib.canBusOff(self.__write_handle)
         canlib.canClose(self.__write_handle)
 
+    def write_for_period(self, messageGapInSeconds, totalPeriodInSeconds, message):
+        _startTime = time.time()
+        while (time.time() - _startTime) < totalPeriodInSeconds:
+            self.write(message)
+            
+            _startOfPause = time.time()
+            while (time.time() - _startOfPause) < messageGapInSeconds and (time.time() - _startTime) < totalPeriodInSeconds:
+                time.sleep(0.001)
+
     def write(self, msg):
         InputValidation.verify_parameter_type("CAN.Bus.write", "msg", msg, Message)
         self.__tx_queue.put_nowait(msg)
