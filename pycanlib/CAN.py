@@ -872,7 +872,7 @@ class Bus(object):
         
         if value < self.__timer_offset: #Check for overflow
             value += 0xFFFFFFFF
-            assert value > self.__timer_offset, 'CAN Timestamp overflowed and was not a 32 bit number.'
+            assert value > self.__timer_offset, 'CAN Timestamp overflowed and was not a 32 bit number. The timer offset was ' + str(self.__timer_offset) 
         
         return (float(value - self.__timer_offset) / 1000000) #Convert from us into seconds
 
