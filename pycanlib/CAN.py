@@ -871,8 +871,15 @@ class Bus(object):
             self.__timer_offset = value
         
         if value < self.__timer_offset: #Check for overflow
-            value += 0xFFFFFFFF
-            assert value > self.__timer_offset, 'CAN Timestamp overflowed and was not a 32 bit number. The timer offset was ' + str(self.__timer_offset) 
+            MAX_32BIT = 0xFFFFFFFF # The maximum value that the timer reaches on a 32-bit machine
+            MAX_64BIT = 0x9FFFFFFFF # The maximum value that the timer reaches on a 64-bit machine
+            if ctypes.sizeof(ctypes.c_long) == 8:
+                value += MAX_64BIT
+            elif ctypes.sizeof(ctypes.c_long) == 4:
+                value += MAX_32BIT
+            else:
+                assert False, 'Unknown platform. Expected a long to be 4 or 8 bytes long but it was %i bytes.' % ctypes.sizeof(ctypes.c_long)
+            assert value > self.__timer_offset, 'CAN Timestamp overflowed. The timer offset was ' + str(self.__timer_offset) 
         
         return (float(value - self.__timer_offset) / 1000000) #Convert from us into seconds
 
