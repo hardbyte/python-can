@@ -27,35 +27,42 @@
 #
 #E-mail: bpowell AT dynamiccontrols DOT com
 
-RST_SOURCE_FILES = pycanlib_srs.txt pycanlib_manual.txt
+RST_SOURCE_FILES = pycanlib_srs.txt pycanlib_manual.txt virtual.txt
+
+# Windows:
+#RST2LATEX = python C:\Python26\Scripts\rst2latex.py
+#RST2HTML = python C:\Python26\Scripts\rst2html.py
+#RM = del /Q
+#RMDIR = rmdir /S /Q
+
+# GNU/Linux:
+RST2LATEX = rst2latex
+RST2HTML = rst2html
+RM = rm -f
+RMDIR = rm -f
 
 all: pdf
-
-RM = del /Q
-RMDIR = rmdir /S /Q
-#RM = rm -f
-#RMDIR = rm -f
-
 pdf: ${RST_SOURCE_FILES:.txt=.pdf}
 tex: ${RST_SOURCE_FILES:.txt=.tex}
 html: ${RST_SOURCE_FILES:.txt=.html}
-test: ${RST_SOURCE_FILES:.txt=.test}
+
+test: clean ${RST_SOURCE_FILES:.txt=.test}
 
 %.tex: %.txt
 	@echo Converting $* to TeX...
-	@python C:\Python26\Scripts\rst2latex.py $*.txt $@ --stylesheet=dcl_srs_stylesheet.sty
+	@$(RST2LATEX) $*.txt $@ --stylesheet=stylesheet.sty
 	@echo Done!
 
 %.pdf: %.tex
 	@echo Converting $* to PDF...
-	@pdflatex --quiet $*.tex $@
-	@pdflatex --quiet $*.tex $@
-	@pdflatex --quiet $*.tex $@
+	@pdflatex $*.tex $@
+	@pdflatex $*.tex $@
+	@pdflatex $*.tex $@
 	@echo Done!
 
 %.html: %.txt
 	@echo Converting $* to HTML...
-	@python C:\Python26\Scripts\rst2html.py $*.txt $@
+	@$(RST2HTML) $*.txt $@
 	@echo Done!
 
 clean:
@@ -72,4 +79,3 @@ clean:
 %.test: %.txt
 	@python -m doctest -v $*.txt
 	@echo "tested OK" > $@
-
