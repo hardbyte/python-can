@@ -866,6 +866,7 @@ class Bus(object):
         self.__threads_running = True
         self.__read_thread.start()
         self.__write_thread.start()
+        self.__timer_offset = None;
 
     @property
     def listeners(self):
@@ -887,6 +888,23 @@ class Bus(object):
     @property
     def channel_info(self):
         return self.__channel_info
+    
+    def __convert_timestamp(self, value):
+        if self.__timer_offset is None: #Use the current value if the offset has not been set yet
+            self.__timer_offset = value
+        
+        if value < self.__timer_offset: #Check for overflow
+            MAX_32BIT = 0xFFFFFFFF # The maximum value that the timer reaches on a 32-bit machine
+            MAX_64BIT = 0x9FFFFFFFF # The maximum value that the timer reaches on a 64-bit machine
+            if ctypes.sizeof(ctypes.c_long) == 8:
+                value += MAX_64BIT
+            elif ctypes.sizeof(ctypes.c_long) == 4:
+                value += MAX_32BIT
+            else:
+                assert False, 'Unknown platform. Expected a long to be 4 or 8 bytes long but it was %i bytes.' % ctypes.sizeof(ctypes.c_long)
+            assert value > self.__timer_offset, 'CAN Timestamp overflowed. The timer offset was ' + str(self.__timer_offset) 
+        
+        return (float(value - self.__timer_offset) / 1000000) #Convert from us into seconds
 
     def __read_process(self):
         while self.__threads_running:
@@ -911,12 +929,12 @@ class Bus(object):
                 _id_type = ID_TYPE_EXTENDED
             else:
                 _id_type = ID_TYPE_STANDARD
-            _msg_timestamp = (float(_timestamp.value) / 1000000)
+            _msg_timestamp = self.__convert_timestamp(_timestamp.value)
             _rx_msg = Message(arbitration_id=_arb_id.value, data=_data_array[:_dlc.value], dlc=int(_dlc.value), id_type=_id_type, timestamp=_msg_timestamp)
             _rx_msg.flags = int(_flags.value) & canstat.canMSG_MASK
             return _rx_msg
         else:
-            return TimestampMessage(timestamp=self.bus_time)
+            return TimestampMessage(timestamp=0)
 
     def __write_process(self):
         while self.__threads_running:
@@ -929,6 +947,15 @@ class Bus(object):
                 canlib.canWriteWait(self.__write_handle, _tx_msg.arbitration_id, "".join([("%c" % byte) for byte in _tx_msg.data]), _tx_msg.dlc, _tx_msg.flags, 5)
         canlib.canBusOff(self.__write_handle)
         canlib.canClose(self.__write_handle)
+
+    def write_for_period(self, messageGapInSeconds, totalPeriodInSeconds, message):
+        _startTime = time.time()
+        while (time.time() - _startTime) < totalPeriodInSeconds:
+            self.write(message)
+            
+            _startOfPause = time.time()
+            while (time.time() - _startOfPause) < messageGapInSeconds and (time.time() - _startTime) < totalPeriodInSeconds:
+                time.sleep(0.001)
 
     def write(self, msg):
         InputValidation.verify_parameter_type("CAN.Bus.write", "msg", msg, Message)
