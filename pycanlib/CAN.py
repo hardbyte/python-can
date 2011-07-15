@@ -379,7 +379,8 @@ class TimestampMessage(object):
 
 class MessageList(object):
 
-    def __init__(self, messages=[], filter_criteria="True", name="default"):
+    def __init__(self, messages=[], filter_criteria="True", name="default", valid_message_types=(Message)):
+        self.valid_message_types = valid_message_types
         self.messages = messages
         InputValidation.verify_parameter_type("CAN.MessageList.__init__", "filter_criteria", filter_criteria, types.StringType)
         self.__filter_criteria = filter_criteria
@@ -393,6 +394,7 @@ class MessageList(object):
     @messages.setter
     def messages(self, value):
         InputValidation.verify_parameter_type("CAN.MessageList.messages.setter", "messages", value, types.ListType)
+        InputValidation.verify_parameter_list_type('CAN.MessageList.messages.setter', 'messages', value, self.valid_message_types)
         self.__messages = value
 
     @property
@@ -807,10 +809,10 @@ class Bus(object):
     def __init__(self, channel, bitrate, tseg1, tseg2, sjw, no_samp, driver_mode=DRIVER_MODE_NORMAL):
         _num_channels = ctypes.c_int(0)
         canlib.canGetNumberOfChannels(ctypes.byref(_num_channels))
-        InputValidation.verify_parameter_type("CAN.Bus.__init__", "channel", channel, (types.IntType, types.StringType))
-        if type(channel) == types.StringType:
+        InputValidation.verify_parameter_type("CAN.Bus.__init__", "channel", channel, (int, str))
+        if type(channel) == str:
             _channel = get_canlib_channel_from_url(channel)
-            if _channel == None:
+            if _channel is None:
                 raise ChannelNotFoundError(channel)
         else:
             _channel = channel
@@ -828,17 +830,32 @@ class Bus(object):
         InputValidation.verify_parameter_max_value("CAN.Bus.__init__", "tseg2", tseg2, 255)
         InputValidation.verify_parameter_type("CAN.Bus.__init__", "no_samp", no_samp, types.IntType)
         InputValidation.verify_parameter_value_in_set("CAN.Bus.__init__", "no_samp", no_samp, [1, 3])
+
         self.__read_handle = canlib.canOpenChannel(_channel, canlib.canOPEN_ACCEPT_VIRTUAL)
         canlib.canIoCtl(self.__read_handle, canlib.canIOCTL_SET_TIMER_SCALE, ctypes.byref(ctypes.c_long(1)), 4)
         canlib.canSetBusParams(self.__read_handle, bitrate, tseg1, tseg2, sjw, no_samp, 0)
-        if driver_mode == DRIVER_MODE_SILENT:
-            canlib.canSetBusOutputControl(self.__read_handle, canlib.canDRIVER_SILENT)
         canlib.canBusOn(self.__read_handle)
+
+        '''
+        Bit of a hack, on linux using kvvirtualcan module it seems you must read
+        and write on seperate channels of the same bus.
+        '''
+        # todo use can.get channel data and CARD_TYPE should be 2 for virtual channel
+        # Doesn't seem to work.... (result is 1?)
+        #hardware_type = ctypes.c_int(0)
+        #canlib.canGetChannelData(_channel, canlib.canCHANNELDATA_CARD_TYPE, ctypes.byref(hardware_type), 2)
+        #print hardware_type.value
+        if platform.system() == "Linux" and "virtual" in str(self.__channel_info).lower():
+            _channel = (_channel + 1) % _num_channels.value
+        
         self.__write_handle = canlib.canOpenChannel(_channel, canlib.canOPEN_ACCEPT_VIRTUAL)
         canlib.canIoCtl(self.__write_handle, canlib.canIOCTL_SET_TIMER_SCALE, ctypes.byref(ctypes.c_long(1)), 4)
         canlib.canSetBusParams(self.__write_handle, bitrate, tseg1, tseg2, sjw, no_samp, 0)
-        if driver_mode == DRIVER_MODE_SILENT:
-            canlib.canSetBusOutputControl(self.__read_handle, canlib.canDRIVER_SILENT)
+
+        __driver_mode = canlib.canDRIVER_SILENT if driver_mode == DRIVER_MODE_SILENT else canlib.canDRIVER_NORMAL
+        canlib.canSetBusOutputControl(self.__read_handle, __driver_mode)
+        canlib.canSetBusOutputControl(self.__write_handle, __driver_mode)
+        
         canlib.canBusOn(self.__write_handle)
         self.__listeners = []
         self.__tx_queue = Queue.Queue(0)
@@ -886,9 +903,7 @@ class Bus(object):
     def __read_process(self):
         while self.__threads_running:
             _rx_msg = self.__get_message()
-            if _rx_msg is None:
-                pass
-            else:
+            if _rx_msg is not None:
                 for _listener in self.listeners:
                     _listener.on_message_received(_rx_msg)
         canlib.canBusOff(self.__read_handle)
@@ -901,6 +916,7 @@ class Bus(object):
         _flags = ctypes.c_uint(0)
         _timestamp = ctypes.c_ulong(0)
         _status = canlib.canReadWait(self.__read_handle, ctypes.byref(_arb_id), ctypes.byref(_data), ctypes.byref(_dlc), ctypes.byref(_flags), ctypes.byref(_timestamp), 5)
+        
         if _status.value == canstat.canOK:
             _data_array = map(ord, _data)
             if int(_flags.value) & canstat.canMSG_EXT:
