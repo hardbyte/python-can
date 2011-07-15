@@ -64,9 +64,6 @@ DATA_FRAME = False
 WAKEUP_MSG = True
 ERROR_FRAME = True
 
-LOG_FORMAT_DAT = 0
-LOG_FORMAT_TDV = 1
-
 DRIVER_MODE_SILENT = False
 DRIVER_MODE_NORMAL = (not DRIVER_MODE_SILENT)
 
@@ -155,7 +152,7 @@ class ChannelNotFoundError(Exception):
 
 class Message(object):
 
-    def __init__(self, timestamp=0.0, is_remote_frame=False, id_type=ID_TYPE_11_BIT, is_wakeup=(not WAKEUP_MSG), is_error_frame=(not ERROR_FRAME), arbitration_id=0, data=None, dlc=0, info_strings=None):
+    def __init__(self, timestamp=0.0, is_remote_frame=False, id_type=ID_TYPE_11_BIT, is_wakeup=False, is_error_frame=False, arbitration_id=0, data=None, dlc=0, info_strings=None):
         self.timestamp = timestamp
         self.id_type = id_type
         self.is_remote_frame = is_remote_frame
@@ -379,31 +376,15 @@ class TimestampMessage(object):
 
 class MessageList(object):
 
-    def __init__(self, messages=[], filter_criteria="True", name="default", valid_message_types=(Message)):
+    def __init__(self, messages=None, filter_criteria="True", name="default", valid_message_types=(Message)):
         self.valid_message_types = valid_message_types
+        if messages is None: messages = []
         self.messages = messages
-        InputValidation.verify_parameter_type("CAN.MessageList.__init__", "filter_criteria", filter_criteria, types.StringType)
-        self.__filter_criteria = filter_criteria
-        InputValidation.verify_parameter_type("CAN.MessageList.__init__", "name", name, types.StringType)
-        self.__name = name
+        self.filter_criteria = filter_criteria
+        self.name = name
 
-    @property
-    def messages(self):
-        return self.__messages
-
-    @messages.setter
-    def messages(self, value):
-        InputValidation.verify_parameter_type("CAN.MessageList.messages.setter", "messages", value, types.ListType)
-        InputValidation.verify_parameter_list_type('CAN.MessageList.messages.setter', 'messages', value, self.valid_message_types)
-        self.__messages = value
-
-    @property
-    def filter_criteria(self):
-        return self.__filter_criteria
-
-    @property
-    def name(self):
-        return self.__name
+    def __iter__(self):
+        return (m for m in self.messages)
 
     @property
     def start_timestamp(self):
@@ -445,55 +426,22 @@ class MessageList(object):
             retval += "Applied filters: %s\n" % self.filter_criteria
         retval += "Start timestamp = %f\n" % self.start_timestamp
         retval += "End timestamp = %f\n" % self.end_timestamp
-        for _msg in self.messages:
-            retval += "%s\n" % _msg
+        for msg in self.messages:
+            retval += "%s\n" % msg
         return retval
 
 class Log(object):
+    """
+    An Log object contains information about the CAN channel, the machine information
+    and contains a record of the messages and errors.
+    """
 
-    def __init__(self, log_info, channel_info, machine_info, message_lists=[]):
+    def __init__(self, log_info, channel_info, machine_info, message_lists=None):
         self.log_info = log_info
         self.channel_info = channel_info
         self.machine_info = machine_info
+        if message_lists is None: message_lists = []
         self.message_lists = message_lists
-
-    @property
-    def log_info(self):
-        return self.__log_info
-
-    @log_info.setter
-    def log_info(self, value):
-        InputValidation.verify_parameter_type("CAN.Log.log_info.setter", "log_info", value, LogInfo)
-        self.__log_info = value
-
-    @property
-    def channel_info(self):
-        return self.__channel_info
-
-    @channel_info.setter
-    def channel_info(self, value):
-        InputValidation.verify_parameter_type("CAN.Log.channel_info.setter", "channel_info", value, (ChannelInfo, types.NoneType))
-        self.__channel_info = value
-
-    @property
-    def machine_info(self):
-        return self.__machine_info
-
-    @machine_info.setter
-    def machine_info(self, value):
-        InputValidation.verify_parameter_type("CAN.Log.machine_info.setter", "machine_info", value, MachineInfo)
-        self.__machine_info = value
-
-    @property
-    def message_lists(self):
-        return self.__message_lists
-
-    @message_lists.setter
-    def message_lists(self, value):
-        InputValidation.verify_parameter_type("CAN.Log.message_lists.setter", "message_lists", value, types.ListType)
-        for (_index, _value) in enumerate(value):
-            InputValidation.verify_parameter_type("CAN.Log.message_lists.setter", ("message_lists[%d]" % _index), _value, MessageList)
-        self. __message_lists = value
 
     def __str__(self):
         retval = ""
@@ -505,32 +453,45 @@ class Log(object):
             retval += "%s" % _list
         return retval
 
-    def write_to_file(self, format=LOG_FORMAT_DAT, name=None, path=None):
-        InputValidation.verify_parameter_value_in_set("CAN.Log.write_to_file", "format", format, (LOG_FORMAT_DAT, LOG_FORMAT_TDV))
-        InputValidation.verify_parameter_type("CAN.Log.write_to_file", "name", name, (types.NoneType, types.StringType))
-        InputValidation.verify_parameter_type("CAN.Log.write_to_file", "path", path, (types.NoneType, types.StringType))
-        if name != None:
-            InputValidation.verify_parameter_min_value("CAN.Log.write_to_file", "len(name)", len(name), 1)
-        if path != None:
-            InputValidation.verify_parameter_min_value("CAN.Log.write_to_file", "len(path)", len(path), 1)
-        if name == None:
-            _name = self.log_info.original_file_name
-        else:
-            _name = name
-        if path == None:
-            _path = os.path.expanduser("~/CAN_bus_logs/")
-        else:
-            _path = path
-        _path = os.path.join(_path, _name)
-        if not os.path.exists(os.path.dirname(_path)):
-            os.makedirs(os.path.dirname(_path))
-        if format == LOG_FORMAT_DAT:
-            with open(_path, "wb") as _log_file:
-                cPickle.dump(self, _log_file)
-        else:
-            with open(_path, "w") as _log_file:
-                _log_file.write("%s\n" % self)
+    def write_to_file(self, filename, dat=False, csv=False, txt=True):
+        """
+        Export this Log to a file. 
+        
+        Will use format of extension according to
+            .csv    create a csv file
+            .txt    create a text file
+            .dat    create a pickle dump of this object
+        
+        The export type can also be explicitly be given in this method's
+        parameters - only the first one will be use.
+            
+        """
+        if filename is None:
+            path = os.path.expanduser("~/CAN_bus_logs/")
+            name = self.log_info.original_file_name
+            filename = os.path.join(path, name)
+        
+        if not os.path.exists(os.path.dirname(filename)):
+            os.makedirs(os.path.dirname(filename))
+        
+        _, ext = os.path.splitext(filename)
+        
+        if dat or ext == '.dat':
+            with open(filename, "wb") as bin_file:
+                cPickle.dump(self, bin_file)
+        
+        elif csv or ext == '.csv':
+            from csv import writer
+            with open(filename, "wb") as csv_file:
+                csv_writer = writer(csv_file)
+                for message_list in self.message_lists:
+                    csv_writer.writerows(str(m).split() for m in message_list)
 
+        elif txt or ext == '.txt':
+            with open(filename, "wt") as txt_file:
+                txt_file.write("%s\n" % self)
+        
+        
 class MachineInfo(object):
 
     def __init__(self, machine_name="", python_version="", platform_info=""):
@@ -738,59 +699,6 @@ class LogInfo(object):
         self.original_file_name = original_file_name
         self.test_location = test_location
         self.tester_name = tester_name
-
-    @property
-    def log_start_time(self):
-        return self.__log_start_time
-
-    @log_start_time.setter
-    def log_start_time(self, value):
-        InputValidation.verify_parameter_type("CAN.LogInfo.log_start_time.setter", "log_start_time", value, (datetime.datetime, types.NoneType))
-        try:
-            InputValidation.verify_parameter_max_value("CAN.LogInfo.log_start_time.setter", "log_start_time", value, self.log_end_time)
-        except AttributeError:
-            pass
-        self.__log_start_time = value
-
-    @property
-    def log_end_time(self):
-        return self.__log_end_time
-
-    @log_end_time.setter
-    def log_end_time(self, value):
-        InputValidation.verify_parameter_type("CAN.LogInfo.log_end_time.setter", "log_end_time", value, (datetime.datetime, types.NoneType))
-        try:
-            InputValidation.verify_parameter_min_value("CAN.LogInfo.log_end_time.setter", "log_end_time", value, self.log_start_time)
-        except AttributeError:
-            pass
-        self.__log_end_time = value
-
-    @property
-    def original_file_name(self):
-        return self.__original_file_name
-
-    @original_file_name.setter
-    def original_file_name(self, value):
-        InputValidation.verify_parameter_type("CAN.LogInfo.original_file_name.setter", "original_file_name", value, types.StringType)
-        self.__original_file_name = value
-
-    @property
-    def test_location(self):
-        return self.__test_location
-
-    @test_location.setter
-    def test_location(self, value):
-        InputValidation.verify_parameter_type("CAN.LogInfo.test_location.setter", "test_location", value, types.StringType)
-        self.__test_location = value
-
-    @property
-    def tester_name(self):
-        return self.__tester_name
-
-    @tester_name.setter
-    def tester_name(self, value):
-        InputValidation.verify_parameter_type("CAN.LogInfo.tester_name.setter", "tester_name", value, types.StringType)
-        self.__tester_name = value
 
     def __str__(self):
         retval = "-"*len("Log Info")
