@@ -28,3 +28,6 @@ Postal address:
 
 E-mail: bpowell AT dynamiccontrols DOT com
 """
+from CAN import Bus, BufferedReader, Message, MessageList
+from CAN import Log, Listener, TimestampMessage
+from CAN import MachineInfo, ChannelInfo
