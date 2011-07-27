@@ -152,7 +152,10 @@ class ChannelNotFoundError(Exception):
 
 class Message(object):
 
-    def __init__(self, timestamp=0.0, is_remote_frame=False, id_type=ID_TYPE_11_BIT, is_wakeup=False, is_error_frame=False, arbitration_id=0, data=None, dlc=0, info_strings=None):
+    def __init__(self, timestamp=0.0, is_remote_frame=False, 
+                 id_type=ID_TYPE_11_BIT, is_wakeup=False, 
+                 is_error_frame=False, arbitration_id=0, 
+                 data=None, dlc=0, info_strings=None):
         self.timestamp = timestamp
         self.id_type = id_type
         self.is_remote_frame = is_remote_frame
@@ -336,7 +339,7 @@ class Message(object):
         _current_length = len("    ".join(_field_strings))
         if len(self.info_strings) > 0:
             _field_strings.append(("\n" + (" " * (_current_length + 4))).join(self.info_strings))
-        return "    ".join(_field_strings)
+        return "    ".join(_field_strings).strip()
 
 class TimestampMessage(object):
     def __init__(self, timestamp=0.0, info_strings=None):
@@ -376,8 +379,7 @@ class TimestampMessage(object):
 
 class MessageList(object):
 
-    def __init__(self, messages=None, filter_criteria="True", name="default", valid_message_types=(Message)):
-        self.valid_message_types = valid_message_types
+    def __init__(self, messages=None, filter_criteria="True", name="default"):
         if messages is None: messages = []
         self.messages = messages
         self.filter_criteria = filter_criteria
@@ -432,7 +434,7 @@ class MessageList(object):
 
 class Log(object):
     """
-    An Log object contains information about the CAN channel, the machine information
+    A Log object contains information about the CAN channel, the machine information
     and contains a record of the messages and errors.
     """
 
@@ -715,8 +717,9 @@ class LogInfo(object):
 class Bus(object):
 
     def __init__(self, channel, bitrate, tseg1, tseg2, sjw, no_samp, driver_mode=DRIVER_MODE_NORMAL):
-        _num_channels = ctypes.c_int(0)
-        canlib.canGetNumberOfChannels(ctypes.byref(_num_channels))
+        num_channels = ctypes.c_int(0)
+        canlib.canGetNumberOfChannels(ctypes.byref(num_channels))
+        num_channels = int(num_channels.value)
         InputValidation.verify_parameter_type("CAN.Bus.__init__", "channel", channel, (int, str))
         if type(channel) == str:
             _channel = get_canlib_channel_from_url(channel)
@@ -725,8 +728,8 @@ class Bus(object):
         else:
             _channel = channel
         InputValidation.verify_parameter_min_value("CAN.Bus.__init__", "channel", _channel, 0)
-        InputValidation.verify_parameter_max_value("CAN.Bus.__init__", "channel", _channel, _num_channels.value)
-        self.__channel_info = get_channel_info(_channel)
+        InputValidation.verify_parameter_max_value("CAN.Bus.__init__", "channel", _channel, num_channels)
+        self.channel_info = get_channel_info(_channel)
         InputValidation.verify_parameter_type("CAN.Bus.__init__", "bitrate", bitrate, types.IntType)
         InputValidation.verify_parameter_min_value("CAN.Bus.__init__", "bitrate", bitrate, 0)
         InputValidation.verify_parameter_max_value("CAN.Bus.__init__", "bitrate", bitrate, 1000000)
@@ -774,7 +777,7 @@ class Bus(object):
         self.__threads_running = True
         self.__read_thread.start()
         self.__write_thread.start()
-        self.__timer_offset = None;
+        self.__timer_offset = None
 
     @property
     def listeners(self):
@@ -783,16 +786,12 @@ class Bus(object):
     @listeners.setter
     def listeners(self, value):
         InputValidation.verify_parameter_type("CAN.Bus.listeners.setter", "listeners", value, types.ListType)
-        for (_index, _listener) in enumerate(value):
-            InputValidation.verify_parameter_type("CAN.Bus.listeners.setter", "listeners[%d]" % _index, _listener, Listener)
+        for (index, listener) in enumerate(value):
+            InputValidation.verify_parameter_type("CAN.Bus.listeners.setter", "listeners[%d]" % index, listener, Listener)
         self.__listeners = value
-
-    @property
-    def channel_info(self):
-        return self.__channel_info
     
     def __convert_timestamp(self, value):
-        if self.__timer_offset is None: #Use the current value if the offset has not been set yet
+        if not hasattr(self, '__timer_offset'): #Use the current value if the offset has not been set yet
             self.__timer_offset = value
         
         if value < self.__timer_offset: #Check for overflow
@@ -884,7 +883,6 @@ def get_canlib_channel_from_url(url):
         _bus.shutdown()
 
 class Listener(object):
-
     def on_message_received(self, msg):
         raise NotImplementedError("%s has not implemented on_message_received" % self.__class__.__name__)
 
