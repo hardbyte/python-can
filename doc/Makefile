@@ -38,6 +38,7 @@ RST_SOURCE_FILES = pycanlib_srs.txt pycanlib_manual.txt virtual.txt
 # GNU/Linux:
 RST2LATEX = rst2latex
 RST2HTML = rst2html
+LATEX2PDF = xelatex
 RM = rm -f
 RMDIR = rm -f
 
@@ -55,9 +56,9 @@ test: clean ${RST_SOURCE_FILES:.txt=.test}
 
 %.pdf: %.tex
 	@echo Converting $* to PDF...
-	@pdflatex $*.tex $@
-	@pdflatex $*.tex $@
-	@pdflatex $*.tex $@
+	$(LATEX2PDF) $*.tex $@
+	$(LATEX2PDF) $*.tex $@
+	$(LATEX2PDF) $*.tex $@
 	@echo Done!
 
 %.html: %.txt
@@ -70,10 +71,12 @@ clean:
 	-@$(RM) *.aux
 	-@$(RM) *.out
 	-@$(RM) *.log
+	-@$(RM) *.toc
 	@echo Cleaning up output files...
 	-@$(RM) *.pdf
 	-@$(RM) *.tex
 	-@$(RM) *.test
+	-@$(RM) *.html
 	@echo Done!
 
 %.test: %.txt
