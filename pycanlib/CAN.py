@@ -782,7 +782,7 @@ class Bus(object):
         self.__threads_running = True
         self.__read_thread.start()
         self.__write_thread.start()
-        self.__timer_offset = None
+        self.timer_offset = None
 
     @property
     def listeners(self):
@@ -796,10 +796,10 @@ class Bus(object):
         self.__listeners = value
     
     def __convert_timestamp(self, value):
-        if not hasattr(self, '__timer_offset'): #Use the current value if the offset has not been set yet
-            self.__timer_offset = value
+        if self.timer_offset is None: #Use the current value if the offset has not been set yet
+            self.timer_offset = value
         
-        if value < self.__timer_offset: #Check for overflow
+        if value < self.timer_offset: #Check for overflow
             MAX_32BIT = 0xFFFFFFFF # The maximum value that the timer reaches on a 32-bit machine
             MAX_64BIT = 0x9FFFFFFFF # The maximum value that the timer reaches on a 64-bit machine
             if ctypes.sizeof(ctypes.c_long) == 8:
@@ -808,9 +808,9 @@ class Bus(object):
                 value += MAX_32BIT
             else:
                 assert False, 'Unknown platform. Expected a long to be 4 or 8 bytes long but it was %i bytes.' % ctypes.sizeof(ctypes.c_long)
-            assert value > self.__timer_offset, 'CAN Timestamp overflowed. The timer offset was ' + str(self.__timer_offset) 
+            assert value > self.timer_offset, 'CAN Timestamp overflowed. The timer offset was ' + str(self.timer_offset) 
         
-        return (float(value - self.__timer_offset) / 1000000) #Convert from us into seconds
+        return (float(value - self.timer_offset) / 1000000) #Convert from us into seconds
 
     def __read_process(self):
         """
