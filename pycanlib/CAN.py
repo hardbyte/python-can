@@ -755,7 +755,7 @@ class Bus(object):
         and write on separate channels of the same bus.
         '''
         
-        if platform.system() == "Linux" and "virtual" in str(self.__channel_info).lower():
+        if platform.system() == "Linux" and "virtual" in str(self.channel_info).lower():
             for chan in range(num_channels):
                 c = (chan + 1) % num_channels
                 channel_info = get_channel_info(c)
