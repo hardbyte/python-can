@@ -742,32 +742,37 @@ class Bus(object):
         InputValidation.verify_parameter_type("CAN.Bus.__init__", "no_samp", no_samp, types.IntType)
         InputValidation.verify_parameter_value_in_set("CAN.Bus.__init__", "no_samp", no_samp, [1, 3])
 
+        self.writing_event = threading.Event()
+        self.done_writing = threading.Condition()
+
         self.__read_handle = canlib.canOpenChannel(_channel, canlib.canOPEN_ACCEPT_VIRTUAL)
         canlib.canIoCtl(self.__read_handle, canlib.canIOCTL_SET_TIMER_SCALE, ctypes.byref(ctypes.c_long(1)), 4)
         canlib.canSetBusParams(self.__read_handle, bitrate, tseg1, tseg2, sjw, no_samp, 0)
-        canlib.canBusOn(self.__read_handle)
+        
 
         '''
         Bit of a hack, on linux using kvvirtualcan module it seems you must read
-        and write on seperate channels of the same bus.
+        and write on separate channels of the same bus.
         '''
-        # todo use can.get channel data and CARD_TYPE should be 2 for virtual channel
-        # Doesn't seem to work.... (result is 1?)
-        #hardware_type = ctypes.c_int(0)
-        #canlib.canGetChannelData(_channel, canlib.canCHANNELDATA_CARD_TYPE, ctypes.byref(hardware_type), 2)
-        #print hardware_type.value
-        if platform.system() == "Linux" and "virtual" in str(self.__channel_info).lower():
-            _channel = (_channel + 1) % _num_channels.value
         
-        self.__write_handle = canlib.canOpenChannel(_channel, canlib.canOPEN_ACCEPT_VIRTUAL)
-        canlib.canIoCtl(self.__write_handle, canlib.canIOCTL_SET_TIMER_SCALE, ctypes.byref(ctypes.c_long(1)), 4)
-        canlib.canSetBusParams(self.__write_handle, bitrate, tseg1, tseg2, sjw, no_samp, 0)
+        if platform.system() == "Linux" and "virtual" in str(self.__channel_info).lower():
+            for chan in range(num_channels):
+                c = (chan + 1) % num_channels
+                channel_info = get_channel_info(c)
+                if "virtual" in str(channel_info).lower() and c != _channel:
+                    self.__write_handle = canlib.canOpenChannel(c, canlib.canOPEN_ACCEPT_VIRTUAL)
+                    canlib.canBusOn(self.__read_handle)
+                    break
+        else:
+            # Normally we don't require separate handles to the bus
+            self.__write_handle = self.__read_handle
 
         __driver_mode = canlib.canDRIVER_SILENT if driver_mode == DRIVER_MODE_SILENT else canlib.canDRIVER_NORMAL
-        canlib.canSetBusOutputControl(self.__read_handle, __driver_mode)
+        
         canlib.canSetBusOutputControl(self.__write_handle, __driver_mode)
         
         canlib.canBusOn(self.__write_handle)
+        
         self.__listeners = []
         self.__tx_queue = Queue.Queue(0)
         self.__read_thread = threading.Thread(target=self.__read_process)
@@ -808,32 +813,56 @@ class Bus(object):
         return (float(value - self.__timer_offset) / 1000000) #Convert from us into seconds
 
     def __read_process(self):
+        """
+        The consumer thread.
+        Note: gets overwritten by J1939.Bus
+        """
         while self.__threads_running:
-            _rx_msg = self.__get_message()
-            if _rx_msg is not None:
-                for _listener in self.listeners:
-                    _listener.on_message_received(_rx_msg)
-        canlib.canBusOff(self.__read_handle)
-        canlib.canClose(self.__read_handle)
+            rx_msg = self.__get_message()
+            
+            if rx_msg is not None:
+                for listener in self.listeners:
+                    listener.on_message_received(rx_msg)
 
     def __get_message(self):
-        _arb_id = ctypes.c_long(0)
-        _data = ctypes.create_string_buffer(8)
-        _dlc = ctypes.c_uint(0)
-        _flags = ctypes.c_uint(0)
-        _timestamp = ctypes.c_ulong(0)
-        _status = canlib.canReadWait(self.__read_handle, ctypes.byref(_arb_id), ctypes.byref(_data), ctypes.byref(_dlc), ctypes.byref(_flags), ctypes.byref(_timestamp), 5)
+        arb_id = ctypes.c_long(0)
+        data = ctypes.create_string_buffer(8)
+        dlc = ctypes.c_uint(0)
+        flags = ctypes.c_uint(0)
+        timestamp = ctypes.c_ulong(0)
         
-        if _status.value == canstat.canOK:
-            _data_array = map(ord, _data)
-            if int(_flags.value) & canstat.canMSG_EXT:
-                _id_type = ID_TYPE_EXTENDED
+        self.done_writing.acquire()
+        
+        while self.writing_event.is_set():
+                # rx thread waiting to let tx have a go...
+                self.done_writing.wait()
+        
+        status = canlib.canReadWait(self.__read_handle, 
+                                     ctypes.byref(arb_id), 
+                                     ctypes.byref(data), 
+                                     ctypes.byref(dlc), 
+                                     ctypes.byref(flags), 
+                                     ctypes.byref(timestamp),
+                                     1  # This is a 1 ms blocking read
+                                     )
+        # Don't want to keep the done_writing condition's Lock
+        self.done_writing.release()
+
+        
+        if status.value == canstat.canOK:
+            data_array = map(ord, data)
+            if int(flags.value) & canstat.canMSG_EXT:
+                id_type = ID_TYPE_EXTENDED
             else:
-                _id_type = ID_TYPE_STANDARD
-            _msg_timestamp = self.__convert_timestamp(_timestamp.value)
-            _rx_msg = Message(arbitration_id=_arb_id.value, data=_data_array[:_dlc.value], dlc=int(_dlc.value), id_type=_id_type, timestamp=_msg_timestamp)
-            _rx_msg.flags = int(_flags.value) & canstat.canMSG_MASK
-            return _rx_msg
+                id_type = ID_TYPE_STANDARD
+            msg_timestamp = self.__convert_timestamp(timestamp.value)
+            rx_msg = Message(arbitration_id=arb_id.value, 
+                             data=data_array[:dlc.value],
+                             dlc=int(dlc.value), 
+                             id_type=id_type, 
+                             timestamp=msg_timestamp)
+            rx_msg.flags = int(flags.value) & canstat.canMSG_MASK
+            return rx_msg
         else:
             return TimestampMessage(timestamp=0)
 
@@ -841,13 +870,25 @@ class Bus(object):
         while self.__threads_running:
             _tx_msg = None
             try:
-                _tx_msg = self.__tx_queue.get(timeout=0.5)
+                _tx_msg = self.__tx_queue.get(timeout=0.005)
             except Queue.Empty:
                 pass
             if _tx_msg != None:
-                canlib.canWriteWait(self.__write_handle, _tx_msg.arbitration_id, "".join([("%c" % byte) for byte in _tx_msg.data]), _tx_msg.dlc, _tx_msg.flags, 5)
-        canlib.canBusOff(self.__write_handle)
-        canlib.canClose(self.__write_handle)
+                # Tell the rx thread to give up the can handle
+                # because we have a message to write to the bus
+                self.writing_event.set()
+                # Acquire a lock that the rx thread has started waiting on
+                with self.done_writing:
+                    canlib.canWriteWait(self.__write_handle,
+                                        _tx_msg.arbitration_id,
+                                        "".join([("%c" % byte) for byte in _tx_msg.data]),
+                                         _tx_msg.dlc,
+                                         _tx_msg.flags,
+                                         5)
+
+                    self.writing_event.clear()
+                    # Tell the rx thread it can start again
+                    self.done_writing.notify()
 
     def write_for_period(self, messageGapInSeconds, totalPeriodInSeconds, message):
         _startTime = time.time()
@@ -864,6 +905,8 @@ class Bus(object):
 
     def shutdown(self):
         self.__threads_running = False
+        canlib.canBusOff(self.__write_handle)
+        canlib.canClose(self.__write_handle)
 
 def get_canlib_channel_from_url(url):
     InputValidation.verify_parameter_type("get_canlib_channel_from_url", "url", url, types.StringType)
