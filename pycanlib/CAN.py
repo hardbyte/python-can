@@ -716,7 +716,8 @@ class LogInfo(object):
 
 class Bus(object):
 
-    def __init__(self, channel, bitrate, tseg1, tseg2, sjw, no_samp, driver_mode=DRIVER_MODE_NORMAL):
+    def __init__(self, channel, bitrate, tseg1, tseg2, sjw, no_samp, driver_mode=DRIVER_MODE_NORMAL, single_handle=False):
+        
         num_channels = ctypes.c_int(0)
         canlib.canGetNumberOfChannels(ctypes.byref(num_channels))
         num_channels = int(num_channels.value)
@@ -763,9 +764,11 @@ class Bus(object):
                     self.__write_handle = canlib.canOpenChannel(c, canlib.canOPEN_ACCEPT_VIRTUAL)
                     canlib.canBusOn(self.__read_handle)
                     break
-        else:
-            # Normally we don't require separate handles to the bus
+        elif single_handle:
+            # We don't require separate handles to the bus
             self.__write_handle = self.__read_handle
+        else:
+            self.__write_handle = canlib.canOpenChannel(_channel, canlib.canOPEN_ACCEPT_VIRTUAL)
 
         __driver_mode = canlib.canDRIVER_SILENT if driver_mode == DRIVER_MODE_SILENT else canlib.canDRIVER_NORMAL
         
