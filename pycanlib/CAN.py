@@ -717,7 +717,7 @@ class LogInfo(object):
 class Bus(object):
 
     def __init__(self, channel, bitrate, tseg1, tseg2, sjw, no_samp, driver_mode=DRIVER_MODE_NORMAL, single_handle=False):
-        
+        self.single_handle = single_handle
         num_channels = ctypes.c_int(0)
         canlib.canGetNumberOfChannels(ctypes.byref(num_channels))
         num_channels = int(num_channels.value)
@@ -764,7 +764,7 @@ class Bus(object):
                     self.__write_handle = canlib.canOpenChannel(c, canlib.canOPEN_ACCEPT_VIRTUAL)
                     canlib.canBusOn(self.__read_handle)
                     break
-        elif single_handle:
+        elif self.single_handle:
             # We don't require separate handles to the bus
             self.__write_handle = self.__read_handle
         else:
@@ -834,11 +834,12 @@ class Bus(object):
         flags = ctypes.c_uint(0)
         timestamp = ctypes.c_ulong(0)
         
-        self.done_writing.acquire()
-        
-        while self.writing_event.is_set():
-                # rx thread waiting to let tx have a go...
-                self.done_writing.wait()
+        if self.single_handle:
+            self.done_writing.acquire()
+            
+            while self.writing_event.is_set():
+                    # rx thread waiting to let tx have a go...
+                    self.done_writing.wait()
         
         status = canlib.canReadWait(self.__read_handle, 
                                      ctypes.byref(arb_id), 
@@ -848,8 +849,9 @@ class Bus(object):
                                      ctypes.byref(timestamp),
                                      1  # This is a 1 ms blocking read
                                      )
-        # Don't want to keep the done_writing condition's Lock
-        self.done_writing.release()
+        if self.single_handle:
+            # Don't want to keep the done_writing condition's Lock
+            self.done_writing.release()
 
         
         if status.value == canstat.canOK:
@@ -877,21 +879,24 @@ class Bus(object):
             except Queue.Empty:
                 pass
             if _tx_msg != None:
-                # Tell the rx thread to give up the can handle
-                # because we have a message to write to the bus
-                self.writing_event.set()
-                # Acquire a lock that the rx thread has started waiting on
-                with self.done_writing:
-                    canlib.canWriteWait(self.__write_handle,
+                if self.single_handle:
+                    # Tell the rx thread to give up the can handle
+                    # because we have a message to write to the bus
+                    self.writing_event.set()
+                    # Acquire a lock that the rx thread has started waiting on
+                    self.done_writing.acquire()
+                
+                canlib.canWriteWait(self.__write_handle,
                                         _tx_msg.arbitration_id,
                                         "".join([("%c" % byte) for byte in _tx_msg.data]),
                                          _tx_msg.dlc,
                                          _tx_msg.flags,
                                          5)
-
+                if self.single_handle:
                     self.writing_event.clear()
                     # Tell the rx thread it can start again
                     self.done_writing.notify()
+                    self.done_writing.release()
 
     def write_for_period(self, messageGapInSeconds, totalPeriodInSeconds, message):
         _startTime = time.time()
