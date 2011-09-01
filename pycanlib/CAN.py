@@ -32,6 +32,7 @@ E-mail: bpowell AT dynamiccontrols DOT com
 """
 from pycanlib import canlib, canstat, InputValidation
 
+import logging
 import cPickle
 import ctypes
 import datetime
@@ -43,6 +44,9 @@ import sys
 import threading
 import time
 import types
+
+log = logging.getLogger('CAN')
+log.setLevel(logging.DEBUG)
 
 try:
     import hgversionutils
@@ -717,10 +721,12 @@ class LogInfo(object):
 class Bus(object):
 
     def __init__(self, channel, bitrate, tseg1, tseg2, sjw, no_samp, driver_mode=DRIVER_MODE_NORMAL, single_handle=False):
+        log.debug('Initialising bus instance')
         self.single_handle = single_handle
         num_channels = ctypes.c_int(0)
         canlib.canGetNumberOfChannels(ctypes.byref(num_channels))
         num_channels = int(num_channels.value)
+        log.debug('Found %d available channels' % num_channels)
         InputValidation.verify_parameter_type("CAN.Bus.__init__", "channel", channel, (int, str))
         if type(channel) == str:
             _channel = get_canlib_channel_from_url(channel)
@@ -730,7 +736,9 @@ class Bus(object):
             _channel = channel
         InputValidation.verify_parameter_min_value("CAN.Bus.__init__", "channel", _channel, 0)
         InputValidation.verify_parameter_max_value("CAN.Bus.__init__", "channel", _channel, num_channels)
+
         self.channel_info = get_channel_info(_channel)
+        log.info('Channel information:\n%s' % str(self.channel_info))
         InputValidation.verify_parameter_type("CAN.Bus.__init__", "bitrate", bitrate, types.IntType)
         InputValidation.verify_parameter_min_value("CAN.Bus.__init__", "bitrate", bitrate, 0)
         InputValidation.verify_parameter_max_value("CAN.Bus.__init__", "bitrate", bitrate, 1000000)
@@ -746,34 +754,39 @@ class Bus(object):
         self.writing_event = threading.Event()
         self.done_writing = threading.Condition()
 
+        log.debug('Creating read handle to bus channel: %s' % _channel)
         self.__read_handle = canlib.canOpenChannel(_channel, canlib.canOPEN_ACCEPT_VIRTUAL)
         canlib.canIoCtl(self.__read_handle, canlib.canIOCTL_SET_TIMER_SCALE, ctypes.byref(ctypes.c_long(1)), 4)
         canlib.canSetBusParams(self.__read_handle, bitrate, tseg1, tseg2, sjw, no_samp, 0)
-        
 
+        
         '''
         Bit of a hack, on linux using kvvirtualcan module it seems you must read
         and write on separate channels of the same bus.
         '''
         
         if platform.system() == "Linux" and "virtual" in str(self.channel_info).lower():
+            log.debug('Detected virtual channel on linux')
             for chan in range(num_channels):
                 c = (chan + 1) % num_channels
                 channel_info = get_channel_info(c)
                 if "virtual" in str(channel_info).lower() and c != _channel:
+                    log.info('Creating seperate TX handle on channel: %s' % c)
                     self.__write_handle = canlib.canOpenChannel(c, canlib.canOPEN_ACCEPT_VIRTUAL)
+                    log.info('Going bus on RX handle')
                     canlib.canBusOn(self.__read_handle)
                     break
         elif self.single_handle:
-            # We don't require separate handles to the bus
+            log.debug("We don't require separate handles to the bus")
             self.__write_handle = self.__read_handle
         else:
+            log.debug('Creating seperate handle for TX on channel: %s' % _channel)
             self.__write_handle = canlib.canOpenChannel(_channel, canlib.canOPEN_ACCEPT_VIRTUAL)
 
         __driver_mode = canlib.canDRIVER_SILENT if driver_mode == DRIVER_MODE_SILENT else canlib.canDRIVER_NORMAL
         
         canlib.canSetBusOutputControl(self.__write_handle, __driver_mode)
-        
+        log.debug('Going bus on TX handle')
         canlib.canBusOn(self.__write_handle)
         
         self.__listeners = []
@@ -820,10 +833,12 @@ class Bus(object):
         The consumer thread.
         Note: gets overwritten by J1939.Bus
         """
+        log.info('Read process starting')
         while self.__threads_running:
             rx_msg = self.__get_message()
             
             if rx_msg is not None:
+                print 'CAN.py got msg: ', rx_msg
                 for listener in self.listeners:
                     listener.on_message_received(rx_msg)
 
@@ -835,12 +850,14 @@ class Bus(object):
         timestamp = ctypes.c_ulong(0)
         
         if self.single_handle:
+            log.debug('Acquiring "done_writing" lock')
             self.done_writing.acquire()
             
             while self.writing_event.is_set():
-                    # rx thread waiting to let tx have a go...
-                    self.done_writing.wait()
-        
+                log.debug('rx thread waiting to let tx have a go...')
+                self.done_writing.wait()
+
+        log.debug('Reading for 1ms on handle: %s' % self.__read_handle)
         status = canlib.canReadWait(self.__read_handle, 
                                      ctypes.byref(arb_id), 
                                      ctypes.byref(data), 
@@ -855,6 +872,7 @@ class Bus(object):
 
         
         if status.value == canstat.canOK:
+            log.debug('read complete -> status OK')
             data_array = map(ord, data)
             if int(flags.value) & canstat.canMSG_EXT:
                 id_type = ID_TYPE_EXTENDED
@@ -869,6 +887,7 @@ class Bus(object):
             rx_msg.flags = int(flags.value) & canstat.canMSG_MASK
             return rx_msg
         else:
+            #log.debug('read complete -> status not okay')
             return TimestampMessage(timestamp=0)
 
     def __write_process(self):
