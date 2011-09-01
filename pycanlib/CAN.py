@@ -46,7 +46,7 @@ import time
 import types
 
 log = logging.getLogger('CAN')
-log.setLevel(logging.DEBUG)
+log.setLevel(logging.WARNING)
 
 try:
     import hgversionutils
@@ -776,12 +776,14 @@ class Bus(object):
                     log.info('Going bus on RX handle')
                     canlib.canBusOn(self.__read_handle)
                     break
-        elif self.single_handle:
+
+        if self.single_handle:
             log.debug("We don't require separate handles to the bus")
             self.__write_handle = self.__read_handle
         else:
             log.debug('Creating seperate handle for TX on channel: %s' % _channel)
             self.__write_handle = canlib.canOpenChannel(_channel, canlib.canOPEN_ACCEPT_VIRTUAL)
+            canlib.canBusOn(self.__read_handle)
 
         __driver_mode = canlib.canDRIVER_SILENT if driver_mode == DRIVER_MODE_SILENT else canlib.canDRIVER_NORMAL
         
@@ -838,7 +840,7 @@ class Bus(object):
             rx_msg = self.__get_message()
             
             if rx_msg is not None:
-                print 'CAN.py got msg: ', rx_msg
+                log.debug("Got msg: %s" % rx_msg)
                 for listener in self.listeners:
                     listener.on_message_received(rx_msg)
 
@@ -857,7 +859,7 @@ class Bus(object):
                 log.debug('rx thread waiting to let tx have a go...')
                 self.done_writing.wait()
 
-        log.debug('Reading for 1ms on handle: %s' % self.__read_handle)
+        #log.debug('Reading for 1ms on handle: %s' % self.__read_handle)
         status = canlib.canReadWait(self.__read_handle, 
                                      ctypes.byref(arb_id), 
                                      ctypes.byref(data), 
