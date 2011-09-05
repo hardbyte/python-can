@@ -814,7 +814,7 @@ class Bus(object):
         self.__listeners = value
     
     def __convert_timestamp(self, value):
-        if self.timer_offset is None: #Use the current value if the offset has not been set yet
+        if not hasattr(self, 'timer_offset') or self.timer_offset is None: #Use the current value if the offset has not been set yet
             self.timer_offset = value
         
         if value < self.timer_offset: #Check for overflow
