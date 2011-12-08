@@ -1,41 +1,16 @@
 """
-canlib.py: contains Python equivalents of the function and constant
+Contains Python equivalents of the function and constant
 definitions in CANLIB's canlib.h, with some supporting functionality
 specific to Python.
 
 Copyright (C) 2010 Dynamic Controls
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-Contact details
----------------
-
-Postal address:
-    Dynamic Controls
-    17 Print Place
-    Addington
-    Christchurch 8024
-    New Zealand
-
-E-mail: bpowell AT dynamiccontrols DOT com
 """
 import ctypes
 import sys
 import logging
 
-LOG_FILENAME = None # to log to std.err
-logging.basicConfig(filename=LOG_FILENAME, level=logging.INFO)
+log = logging.getLogger('CANLIB')
+log.setLevel(logging.WARNING)
 
 from pycanlib import canstat
 
@@ -45,15 +20,15 @@ else:
     __canlib = ctypes.cdll.LoadLibrary("libcanlib.so")
 
 def __get_canlib_function(func_name, argtypes=None, restype=None, errcheck=None):
-    logging.debug('Wrapping function "%s"' % func_name)
+    log.debug('Wrapping function "%s"' % func_name)
     try:
         retval = getattr(__canlib, func_name)
-        logging.debug('Function found in library')
+        log.debug('Function found in library')
     except AttributeError:
         logging.warning('Function not found in library')
     else:
-        logging.debug('Result type is: %s' % type(restype))
-        logging.debug('Error check function is: %s' % errcheck)
+        log.debug('Result type is: %s' % type(restype))
+        log.debug('Error check function is: %s' % errcheck)
         retval.argtypes = argtypes
         retval.restype = restype
         retval.errcheck = errcheck
@@ -85,7 +60,7 @@ def __convert_can_status_to_int(result):
 def __check_status(result, function, arguments):
     _result = __convert_can_status_to_int(result)
     if not canstat.CANSTATUS_SUCCESS(_result):
-        logging.debug('Detected error while checking CAN status')
+        log.debug('Detected error while checking CAN status')
         raise CANLIBError(function, _result, arguments)
     else:
         return result
@@ -93,7 +68,7 @@ def __check_status(result, function, arguments):
 def __check_status_read(result, function, arguments):
     _result = __convert_can_status_to_int(result)
     if not canstat.CANSTATUS_SUCCESS(_result) and (_result != canstat.canERR_NOMSG):
-        logging.debug('Detected error in __check_status_read')
+        log.debug('Detected error in __check_status_read')
         raise CANLIBError(function, _result, arguments)
     else:
         return result

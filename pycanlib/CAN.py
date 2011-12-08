@@ -4,31 +4,6 @@ the major classes in the library, which form abstractions of the
 functionality provided by CANLIB.
 
 Copyright (C) 2010 Dynamic Controls
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-Contact details
----------------
-
-Postal address:
-    Dynamic Controls
-    17 Print Place
-    Addington
-    Christchurch 8024
-    New Zealand
-
-E-mail: bpowell AT dynamiccontrols DOT com
 """
 from pycanlib import canlib, canstat, InputValidation
 
@@ -48,6 +23,8 @@ import types
 log = logging.getLogger('CAN')
 log.setLevel(logging.WARNING)
 
+log.debug("Loading CAN.py")
+
 try:
     import hgversionutils
     __version__ = hgversionutils.get_version_number(os.path.join(os.path.dirname(__file__), ".."))
@@ -55,7 +32,9 @@ except ImportError:
     with open(os.path.join(os.path.dirname(__file__), "version.txt"), "r") as _version_file:
         __version__ = _version_file.readline().replace("\n", "")
 
+log.debug("Initializing CAN library")
 canlib.canInitializeLibrary()
+log.debug("CAN library initialized")
 
 ID_TYPE_EXTENDED = True
 ID_TYPE_STANDARD = False
@@ -89,13 +68,14 @@ MAX_TRANS_SN_LENGTH = 8
 TRANS_SN_ARRAY = ctypes.c_ubyte * MAX_TRANS_SN_LENGTH
 
 def get_host_machine_info():
+    log.debug("Getting host machine info")
     if sys.platform == "win32":
-        _machine_name = "%s" % os.getenv("COMPUTERNAME")
+        machine_name = "%s" % os.getenv("COMPUTERNAME")
     else:
-        _machine_name = "%s" % os.getenv("HOSTNAME")
-    _platform_info = platform.platform()
-    _python_version = sys.version[:sys.version.index(" ")]
-    return MachineInfo(machine_name=_machine_name, python_version=_python_version, platform_info=_platform_info)
+        machine_name = "%s" % os.getenv("HOSTNAME")
+    platform_info = platform.platform()
+    python_version = sys.version[:sys.version.index(" ")]
+    return MachineInfo(machine_name, python_version, platform_info)
 
 def get_canlib_version():
     if sys.platform == "win32":
@@ -792,7 +772,8 @@ class Bus(object):
         canlib.canBusOn(self.__write_handle)
         
         self.__listeners = []
-        self.__tx_queue = Queue.Queue(0)
+        import multiprocessing
+        self.__tx_queue = multiprocessing.Queue(0)
         self.__read_thread = threading.Thread(target=self.__read_process)
         self.__write_thread = threading.Thread(target=self.__write_process)
         self.__read_thread.daemon = True
