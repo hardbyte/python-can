@@ -87,6 +87,7 @@ def __check_bus_handle_validity(handle, function, arguments):
     else:
         return handle
 
+
 canInitializeLibrary = __get_canlib_function("canInitializeLibrary", argtypes=[], restype=canstat.c_canStatus, errcheck=__check_status)
 
 canGetErrorText = __get_canlib_function("canGetErrorText", argtypes=[canstat.c_canStatus, ctypes.c_char_p, ctypes.c_uint], restype=canstat.c_canStatus, errcheck=__check_status)
