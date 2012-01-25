@@ -5,7 +5,7 @@ functionality provided by CANLIB.
 
 Copyright (C) 2010 Dynamic Controls
 """
-from pycanlib import canstat, InputValidation #canlib
+from pycanlib import canstat
 
 import ctypes
 import logging
@@ -23,22 +23,22 @@ import types
 import argparse 
 
 
-socketcanlib = ctypes.cdll.LoadLibrary("/home/rose/Documents/Csocketstuff/newPycanlib/libcsocketCAN.so")
+socketcanlib = ctypes.cdll.LoadLibrary("/home/rose/Documents/Csocketstuff/newPycanlib/build/lib.linux-i686-2.7/unusedname.so")
 
-CAN_RAW = 		1
-CAN_BCM = 		2
-MSK_ARBID = 	0x1FFFFFFF
-MSK_FLAGS = 	0xE0000000
+CAN_RAW =       1
+CAN_BCM =       2
+MSK_ARBID =     0x1FFFFFFF
+MSK_FLAGS =     0xE0000000
 
 #Extended flag is in the same place for pycan and socketcan
-EXTFLG = 		0x0004
+EXTFLG =        0x0004
 
-SKT_ERRFLG 	= 	0x0001
-SKT_RTRFLG	= 	0x0002
+SKT_ERRFLG  =   0x0001
+SKT_RTRFLG  =   0x0002
 
-PYCAN_ERRFLG = 	0x0020
-PYCAN_STDFLG = 	0x0002
-PYCAN_RTRFLG = 	0x0001
+PYCAN_ERRFLG =  0x0020
+PYCAN_STDFLG =  0x0002
+PYCAN_RTRFLG =  0x0001
 
 logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger('CAN')
@@ -53,7 +53,6 @@ except ImportError:
         __version__ = _version_file.readline().replace("\n", "")
 
 log.debug("Initializing CAN library")
-#canlib.canInitializeLibrary()
 log.debug("CAN library initialized")
 
 ID_TYPE_EXTENDED = True
@@ -89,12 +88,12 @@ TRANS_SN_ARRAY = ctypes.c_ubyte * MAX_TRANS_SN_LENGTH
 
 # Sets the level of messages that are displayed. Default is 'Warning'
 def set_logging_level(level):
-	if level == 2:
-		log.setLevel(logging.DEBUG)
-	elif level == 1:
-		log.setLevel(logging.INFO)
-	else:
-		log.setLevel(logging.WARNING)
+    if level == 2:
+        log.setLevel(logging.DEBUG)
+    elif level == 1:
+        log.setLevel(logging.INFO)
+    else:
+        log.setLevel(logging.WARNING)
 
 def get_host_machine_info():
     log.debug("Getting host machine info")
@@ -111,47 +110,47 @@ class ChannelNotFoundError(Exception):
 
 
 class Message (object) :
-	def __init__(self, timestamp = 0, is_remote_frame = False, id_type = ID_TYPE_11_BIT,
-					is_wakeup = False, is_error_frame = False, arbitration_id = 0, data = None, 
-					dlc = 0, info_strings = None ):
-		self.timestamp = timestamp
-		self.id_type = id_type
-		self.is_remote_frame = is_remote_frame
-		self.is_wakeup = is_wakeup
-		self.is_error_frame = is_error_frame
-		self.arbitration_id = arbitration_id
-		if data is None:
-			self.data = []
-		else:
-			self.data = data
-		self.dlc = dlc
-		if info_strings is None:
-			self.info_strings = []
-		else:
-			self.info_strings = info_strings
-	
-	def __str__(self):
-		_field_strings = []
-		_field_strings.append("%15.6f" % self.timestamp)
-		if self.flags & canstat.canMSG_EXT:
-			_arbitration_id_string = "%.8x" % self.arbitration_id
-		else:
-			_arbitration_id_string = "%.4x" % self.arbitration_id
-		_field_strings.append(_arbitration_id_string.rjust(8, " "))
-		_field_strings.append("%.4x" % self.flags)
-		_field_strings.append("%d" % self.dlc)
-		_data_strings = []
-		if self.data != None:
-			for byte in self.data:
-				_data_strings.append("%.2x" % byte)
-		if len(_data_strings) > 0:
-			_field_strings.append(" ".join(_data_strings).ljust(24, " "))
-		else:
-			_field_strings.append(" "*24)
-		_current_length = len("    ".join(_field_strings))
-		if len(self.info_strings) > 0:
-			_field_strings.append(("\n" + (" " * (_current_length + 4))).join(self.info_strings))
-		return "    ".join(_field_strings).strip()
+    def __init__(self, timestamp = 0, is_remote_frame = False, id_type = ID_TYPE_11_BIT,
+                    is_wakeup = False, is_error_frame = False, arbitration_id = 0, data = None, 
+                    dlc = 0, info_strings = None ):
+        self.timestamp = timestamp
+        self.id_type = id_type
+        self.is_remote_frame = is_remote_frame
+        self.is_wakeup = is_wakeup
+        self.is_error_frame = is_error_frame
+        self.arbitration_id = arbitration_id
+        if data is None:
+            self.data = []
+        else:
+            self.data = data
+        self.dlc = dlc
+        if info_strings is None:
+            self.info_strings = []
+        else:
+            self.info_strings = info_strings
+    
+    def __str__(self):
+        _field_strings = []
+        _field_strings.append("%15.6f" % self.timestamp)
+        if self.flags & canstat.canMSG_EXT:
+            _arbitration_id_string = "%.8x" % self.arbitration_id
+        else:
+            _arbitration_id_string = "%.4x" % self.arbitration_id
+        _field_strings.append(_arbitration_id_string.rjust(8, " "))
+        _field_strings.append("%.4x" % self.flags)
+        _field_strings.append("%d" % self.dlc)
+        _data_strings = []
+        if self.data != None:
+            for byte in self.data:
+                _data_strings.append("%.2x" % byte)
+        if len(_data_strings) > 0:
+            _field_strings.append(" ".join(_data_strings).ljust(24, " "))
+        else:
+            _field_strings.append(" "*24)
+        _current_length = len("    ".join(_field_strings))
+        if len(self.info_strings) > 0:
+            _field_strings.append(("\n" + (" " * (_current_length + 4))).join(self.info_strings))
+        return "    ".join(_field_strings).strip()
 
 
 class TimestampMessage(object):
@@ -168,7 +167,6 @@ class TimestampMessage(object):
 
     @timestamp.setter
     def timestamp(self, value):
-        InputValidation.verify_parameter_min_value("CAN.TimestampMessage.timestamp.setter", "timestamp", value, 0)
         self.__timestamp = float(value)
 
     @property
@@ -326,7 +324,6 @@ class MachineInfo(object):
 
     @machine_name.setter
     def machine_name(self, value):
-        InputValidation.verify_parameter_type("CAN.LogInfo.machine_name.setter", "machine_name", value, types.StringType)
         self.__machine_name = value
 
     @property
@@ -335,7 +332,6 @@ class MachineInfo(object):
 
     @python_version.setter
     def python_version(self, value):
-        InputValidation.verify_parameter_type("CAN.LogInfo.python_version.setter", "python_version", value, types.StringType)
         self.__python_version = value
 
     @property
@@ -344,7 +340,6 @@ class MachineInfo(object):
 
     @platform_info.setter
     def platform_info(self, value):
-        InputValidation.verify_parameter_type("CAN.LogInfo.platform_info.setter", "platform_info", value, types.StringType)
         self.__platform_info = value
 
     @property
@@ -353,7 +348,6 @@ class MachineInfo(object):
 
     @canlib_version.setter
     def canlib_version(self, value):
-        InputValidation.verify_parameter_type("CAN.LogInfo.canlib_version.setter", "canlib_version", value, types.StringType)
         self.__canlib_version = value
 
     @property
@@ -362,7 +356,6 @@ class MachineInfo(object):
 
     @module_versions.setter
     def module_versions(self, value):
-        InputValidation.verify_parameter_type("CAN.LogInfo.module_versions.setter", "module_versions", value, types.DictType)
         self.__module_versions = value
 
     def __str__(self):
@@ -399,8 +392,6 @@ class ChannelInfo(object):
 
     @channel.setter
     def channel(self, value):
-        InputValidation.verify_parameter_type("CAN.ChannelInfo.channel.setter", "channel", value, types.IntType)
-        InputValidation.verify_parameter_min_value("CAN.ChannelInfo.channel.setter", "channel", value, 0)
         self.__channel = value
 
     @property
@@ -409,7 +400,6 @@ class ChannelInfo(object):
 
     @device_description.setter
     def device_description(self, value):
-        InputValidation.verify_parameter_type("CAN.ChannelInfo.device_description.setter", "device_description", value, types.StringType)
         self.__device_description = value
 
     @property
@@ -418,7 +408,6 @@ class ChannelInfo(object):
 
     @manufacturer_name.setter
     def manufacturer_name(self, value):
-        InputValidation.verify_parameter_type("CAN.ChannelInfo.manufacturer_name.setter", "manufacturer_name", value, types.StringType)
         self.__manufacturer_name = value
 
     @property
@@ -427,7 +416,6 @@ class ChannelInfo(object):
 
     @firmware_version.setter
     def firmware_version(self, value):
-        InputValidation.verify_parameter_type("CAN.ChannelInfo.firmware_version.setter", "firmware_version", value, types.StringType)
         self.__firmware_version = value
 
     @property
@@ -436,7 +424,6 @@ class ChannelInfo(object):
 
     @hardware_version.setter
     def hardware_version(self, value):
-        InputValidation.verify_parameter_type("CAN.ChannelInfo.hardware_version.setter", "hardware_version", value, types.StringType)
         self.__hardware_version = value
 
     @property
@@ -445,8 +432,6 @@ class ChannelInfo(object):
 
     @card_serial.setter
     def card_serial(self, value):
-        InputValidation.verify_parameter_type("CAN.ChannelInfo.card_serial.setter", "card_serial", value, types.IntType)
-        InputValidation.verify_parameter_min_value("CAN.ChannelInfo.card_serial.setter", "card_serial", value, 0)
         self.__card_serial = value
 
     @property
@@ -455,8 +440,6 @@ class ChannelInfo(object):
 
     @transceiver_serial.setter
     def transceiver_serial(self, value):
-        InputValidation.verify_parameter_type("CAN.ChannelInfo.transceiver_serial.setter", "transceiver_serial", value, types.IntType)
-        InputValidation.verify_parameter_min_value("CAN.ChannelInfo.transceiver_serial.setter", "transceiver_serial", value, 0)
         self.__transceiver_serial = value
 
     @property
@@ -465,8 +448,6 @@ class ChannelInfo(object):
 
     @transceiver_type.setter
     def transceiver_type(self, value):
-        InputValidation.verify_parameter_type("CAN.ChannelInfo.transceiver_type.setter", "transceiver_type", value, types.LongType)
-        InputValidation.verify_parameter_min_value("CAN.ChannelInfo.transceiver_type.setter", "transceiver_type", value, 0)
         self.__transceiver_type = value
 
     @property
@@ -475,8 +456,6 @@ class ChannelInfo(object):
 
     @card_number.setter
     def card_number(self, value):
-        InputValidation.verify_parameter_type("CAN.ChannelInfo.card_number.setter", "card_number", value, types.LongType)
-        InputValidation.verify_parameter_min_value("CAN.ChannelInfo.card_number.setter", "card_number", value, 0)
         self.__card_number = value
 
     @property
@@ -485,8 +464,6 @@ class ChannelInfo(object):
 
     @channel_on_card.setter
     def channel_on_card(self, value):
-        InputValidation.verify_parameter_type("CAN.ChannelInfo.channel_on_card.setter", "channel_on_card", value, types.LongType)
-        InputValidation.verify_parameter_min_value("CAN.ChannelInfo.channel_on_card.setter", "channel_on_card", value, 0)
         self.__channel_on_card = value
 
     def __str__(self):
@@ -529,88 +506,92 @@ class LogInfo(object):
 
 class Bus(object):
 
-	
-	def __init__(self, channel, bitrate, tseg1, tseg2, sjw, no_samp, 
-				driver_mode = DRIVER_MODE_NORMAL, single_handle = False):
-		self.socketID = socketcanlib.createSocket(CAN_RAW)
-		socketcanlib.bindSocket(self.socketID, 0)
-		
-		self.__listeners = []
-		import multiprocessing
-		self.__tx_queue = multiprocessing.Queue(0)
-		self.__read_thread = threading.Thread(target=self.__read_process)
-		#self.__write_thread = threading.Thread(target=self.__write_process)
-		self.__read_thread.daemon = True
-		#self.__write_thread.daemon = True
-		self.__threads_running = True
-		log.debug("starting the read process thread")
-		self.__read_thread.start()
-		#self.__write_thread.start()
-		self.timer_offset = None
-	
-	def __convert_timestamp (self, value):
-		# Got rid of the overflow check that was in the old code, which seemed to
-		# be quite specific to the Kvaser
-		return (float(value) / 1000000)
-		
-	def __get_message(self):
-		log.debug( "i'm trying to fetch a msg")
-		rx_msg = Message()
 
-		canID = ctypes.c_ulong(0)
-		rawData = ctypes.create_string_buffer(8)
-		dlc = ctypes.c_uint(0)
-		timestamp = ctypes.c_ulong(0)
+    def __init__(self, channel, bitrate, tseg1, tseg2, sjw, no_samp, 
+                driver_mode = DRIVER_MODE_NORMAL, single_handle = False):
+        self.socketID = socketcanlib.createSocket(CAN_RAW)
+        socketcanlib.bindSocket(self.socketID, 0)
+        
+        # TO DO:
+        #socketcanlib.setBusParams(self.socketID, bitrate, tseg1, tseg2, sjw, no_samp)
+        
+        self.__listeners = []
+        import multiprocessing
+        self.__tx_queue = multiprocessing.Queue(0)
+        self.__read_thread = threading.Thread(target=self.__read_process)
+        #self.__write_thread = threading.Thread(target=self.__write_process)
+        self.__read_thread.daemon = True
+        #self.__write_thread.daemon = True
+        self.__threads_running = True
+        log.debug("starting the read process thread")
+        self.__read_thread.start()
+        #self.__write_thread.start()
+        self.timer_offset = None
 
-		# Make this return some sorta error checking thing later
-		socketcanlib.capturePacket(self.socketID, ctypes.byref(canID), ctypes.byref(rawData), ctypes.byref(dlc), ctypes.byref(timestamp))
-		
-		log.debug("I've got a message")
-		
-		arbitration_id = canID.value & MSK_ARBID
-		
-		# Flags: EXT, RTR, ERR
-		flags = (canID.value & MSK_FLAGS) >> 29
+    def __convert_timestamp (self, value):
+        # Got rid of the overflow check that was in the old code, which seemed to
+        # be quite specific to the Kvaser
+        return (float(value) / 1000000)
 
-		# To keep flags consistent with pycanlib, their positions need to be switched around
-		flags = (flags | PYCAN_ERRFLG) & ~(SKT_ERRFLG) if flags & SKT_ERRFLG else flags 
-		flags = (flags | PYCAN_RTRFLG) & ~(SKT_RTRFLG) if flags & SKT_RTRFLG else flags
-		flags = (flags | PYCAN_STDFLG) & ~(EXTFLG) if not(flags & EXTFLG) else flags
+    def __get_message(self):
 
-		if flags & SKT_ERRFLG:
-			id_type = ID_TYPE_EXTENDED
-		else:
-			id_type = ID_TYPE_STANDARD
-		
-		rx_msg.arbitration_id = arbitration_id
-		rx_msg.dlc = dlc.value
-		rx_msg.flags = flags
-		data = [ord(num) for num in rawData]
-		rx_msg.data = data[:rx_msg.dlc]
-		rx_msg.timestamp = self.__convert_timestamp(timestamp.value)
-			
-		return rx_msg
+        
+        rx_msg = Message()
+
+        canID = ctypes.c_ulong(0)
+        rawData = ctypes.create_string_buffer(8)
+        dlc = ctypes.c_uint(0)
+        timestamp = ctypes.c_ulong(0)
+        
+        log.debug("I'm about to try to get a msg")
+
+        # Make this return some sorta error checking thing later
+        socketcanlib.capturePacket(self.socketID, ctypes.byref(canID), ctypes.byref(rawData), ctypes.byref(dlc), ctypes.byref(timestamp))
+
+        log.debug("I've got a message")
+
+        arbitration_id = canID.value & MSK_ARBID
+
+        # Flags: EXT, RTR, ERR
+        flags = (canID.value & MSK_FLAGS) >> 29
+
+        # To keep flags consistent with pycanlib, their positions need to be switched around
+        flags = (flags | PYCAN_ERRFLG) & ~(SKT_ERRFLG) if flags & SKT_ERRFLG else flags 
+        flags = (flags | PYCAN_RTRFLG) & ~(SKT_RTRFLG) if flags & SKT_RTRFLG else flags
+        flags = (flags | PYCAN_STDFLG) & ~(EXTFLG) if not(flags & EXTFLG) else flags
+
+        if flags & EXTFLG:
+            rx_msg.id_type = ID_TYPE_EXTENDED
+            log.debug("CAN: Extended")
+        else:
+            rx_msg.id_type = ID_TYPE_STANDARD
+            log.debug("CAN: Standard")
+
+        rx_msg.arbitration_id = arbitration_id
+        rx_msg.dlc = dlc.value
+        rx_msg.flags = flags
+        data = [ord(num) for num in rawData]
+        rx_msg.data = data[:rx_msg.dlc]
+        rx_msg.timestamp = self.__convert_timestamp(timestamp.value)
+        return rx_msg
 
 
 
-	def __read_process(self):
-			while(self.__threads_running):
-				rx_msg = self.__get_message()
-				log.debug("Got msg: %s" % rx_msg)
-				for listener in self.listeners:
-					listener.on_message_received(rx_msg)
-	
-	@property
-	def listeners(self):
-		return self.__listeners
-	
-	@listeners.setter	
-	def listeners(self, value):
-		InputValidation.verify_parameter_type("CAN.Bus.listeners.setter", "listeners", value, types.ListType)
-		for (index, listener) in enumerate (value):
-			InputValidation.verify_parameter_type("CAN.Bus.listeners.setter", "listeners[d]" % index, listener, Listener)
-		self.__listeners = value
-		
+    def __read_process(self):
+            while(self.__threads_running):
+                rx_msg = self.__get_message()
+                log.debug("Got msg: %s" % rx_msg)
+                for listener in self.listeners:
+                    listener.on_message_received(rx_msg)
+
+    @property
+    def listeners(self):
+        return self.__listeners
+
+    @listeners.setter   
+    def listeners(self, value):
+        self.__listeners = value
+        
 
 class Listener(object):
     def on_message_received(self, msg):
@@ -619,7 +600,7 @@ class Listener(object):
 class BufferedReader(Listener):
 
     def __init__(self):
-		self.__buffer = Queue.Queue(0)
+        self.__buffer = Queue.Queue(0)
 
     def on_message_received(self, msg):
         self.__buffer.put_nowait(msg)
@@ -645,9 +626,6 @@ class AcceptanceFilter(Listener):
 
     @std_acceptance_code.setter
     def std_acceptance_code(self, value):
-        InputValidation.verify_parameter_type("CAN.AcceptanceFilter.std_acceptance_code.setter", "std_acceptance_code", value, types.IntType)
-        InputValidation.verify_parameter_min_value("CAN.AcceptanceFilter.std_acceptance_code.setter", "std_acceptance_code", value, 0)
-        InputValidation.verify_parameter_max_value("CAN.AcceptanceFilter.std_acceptance_code.setter", "std_acceptance_code", value, ((2 ** 11) - 1))
         self.__std_acceptance_code = value
 
     @property
@@ -656,9 +634,6 @@ class AcceptanceFilter(Listener):
 
     @std_acceptance_mask.setter
     def std_acceptance_mask(self, value):
-        InputValidation.verify_parameter_type("CAN.AcceptanceFilter.std_acceptance_mask.setter", "std_acceptance_mask", value, types.IntType)
-        InputValidation.verify_parameter_min_value("CAN.AcceptanceFilter.std_acceptance_mask.setter", "std_acceptance_mask", value, 0)
-        InputValidation.verify_parameter_max_value("CAN.AcceptanceFilter.std_acceptance_mask.setter", "std_acceptance_mask", value, ((2 ** 11) - 1))
         self.__std_acceptance_mask = value
 
     @property
@@ -667,9 +642,6 @@ class AcceptanceFilter(Listener):
 
     @ext_acceptance_code.setter
     def ext_acceptance_code(self, value):
-        InputValidation.verify_parameter_type("CAN.AcceptanceFilter.ext_acceptance_code.setter", "ext_acceptance_code", value, types.IntType)
-        InputValidation.verify_parameter_min_value("CAN.AcceptanceFilter.ext_acceptance_code.setter", "ext_acceptance_code", value, 0)
-        InputValidation.verify_parameter_max_value("CAN.AcceptanceFilter.ext_acceptance_code.setter", "ext_acceptance_code", value, ((2 ** 29) - 1))
         self.__ext_acceptance_code = value
 
     @property
@@ -678,9 +650,6 @@ class AcceptanceFilter(Listener):
 
     @ext_acceptance_mask.setter
     def ext_acceptance_mask(self, value):
-        InputValidation.verify_parameter_type("CAN.AcceptanceFilter.ext_acceptance_mask.setter", "ext_acceptance_mask", value, types.IntType)
-        InputValidation.verify_parameter_min_value("CAN.AcceptanceFilter.ext_acceptance_mask.setter", "ext_acceptance_mask", value, 0)
-        InputValidation.verify_parameter_max_value("CAN.AcceptanceFilter.ext_acceptance_mask.setter", "ext_acceptance_mask", value, ((2 ** 29) - 1))
         self.__ext_acceptance_mask = value
 
     def on_message_received(self, msg):
@@ -690,7 +659,6 @@ class AcceptanceFilter(Listener):
                 _listener.on_message_received(msg)
 
     def add_listener(self, listener):
-        InputValidation.verify_parameter_type("CAN.AcceptanceFilter.add_listener", "listener", listener, Listener)
         self.__listeners.append(listener)
 
     def remove_listener(self, listener):
