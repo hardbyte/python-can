@@ -31,7 +31,7 @@ Postal address:
 E-mail: bpowell AT dynamiccontrols DOT com
 """
 import os
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages, Extension
 
 
 try:
@@ -41,6 +41,7 @@ except ImportError:
 else:
     _version = hgversionutils.get_version_number(os.path.dirname(__file__))
     hgversionutils.write_version_number_file(os.path.join(os.path.dirname(__file__), "pycanlib"))
+
 
 setup(
     name="pycanlib",
