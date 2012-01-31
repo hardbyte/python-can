@@ -21,9 +21,7 @@ import threading
 import time
 import types
 import argparse 
-
-
-socketcanlib = ctypes.cdll.LoadLibrary("/home/rose/Documents/Csocketstuff/newPycanlib/build/lib.linux-i686-2.7/unusedname.so")
+import socketcanlib
 
 CAN_RAW =       1
 CAN_BCM =       2
@@ -510,7 +508,7 @@ class Bus(object):
     def __init__(self, channel, bitrate, tseg1, tseg2, sjw, no_samp, 
                 driver_mode = DRIVER_MODE_NORMAL, single_handle = False):
         self.socketID = socketcanlib.createSocket(CAN_RAW)
-        socketcanlib.bindSocket(self.socketID, 0)
+        socketcanlib.bindSocket(self.socketID)
         
         # TO DO:
         #socketcanlib.setBusParams(self.socketID, bitrate, tseg1, tseg2, sjw, no_samp)
@@ -534,26 +532,20 @@ class Bus(object):
         return (float(value) / 1000000)
 
     def __get_message(self):
-
         
         rx_msg = Message()
 
-        canID = ctypes.c_ulong(0)
-        rawData = ctypes.create_string_buffer(8)
-        dlc = ctypes.c_uint(0)
-        timestamp = ctypes.c_ulong(0)
-        
         log.debug("I'm about to try to get a msg")
 
         # Make this return some sorta error checking thing later
-        socketcanlib.capturePacket(self.socketID, ctypes.byref(canID), ctypes.byref(rawData), ctypes.byref(dlc), ctypes.byref(timestamp))
+        packet = socketcanlib.capturePacket(self.socketID)
 
         log.debug("I've got a message")
 
-        arbitration_id = canID.value & MSK_ARBID
+        arbitration_id = packet['CAN ID'] & MSK_ARBID
 
         # Flags: EXT, RTR, ERR
-        flags = (canID.value & MSK_FLAGS) >> 29
+        flags = (packet['CAN ID'] & MSK_FLAGS) >> 29
 
         # To keep flags consistent with pycanlib, their positions need to be switched around
         flags = (flags | PYCAN_ERRFLG) & ~(SKT_ERRFLG) if flags & SKT_ERRFLG else flags 
@@ -568,11 +560,11 @@ class Bus(object):
             log.debug("CAN: Standard")
 
         rx_msg.arbitration_id = arbitration_id
-        rx_msg.dlc = dlc.value
+        rx_msg.dlc = packet['DLC']
         rx_msg.flags = flags
-        data = [ord(num) for num in rawData]
-        rx_msg.data = data[:rx_msg.dlc]
-        rx_msg.timestamp = self.__convert_timestamp(timestamp.value)
+        rx_msg.data = packet['Data']
+        rx_msg.timestamp = self.__convert_timestamp(packet['Timestamp'])
+        
         return rx_msg
 
 
