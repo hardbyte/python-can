@@ -23,6 +23,10 @@ import types
 import argparse 
 import socketcanlib
 
+# This canMSG_EXT variable was the only variable being used from the file canstat.py, 
+# which has been removed
+canMSG_EXT = 0x0004
+
 CAN_RAW =       1
 CAN_BCM =       2
 MSK_ARBID =     0x1FFFFFFF
@@ -130,7 +134,7 @@ class Message (object) :
     def __str__(self):
         _field_strings = []
         _field_strings.append("%15.6f" % self.timestamp)
-        if self.flags & canstat.canMSG_EXT:
+        if self.flags & canMSG_EXT:
             _arbitration_id_string = "%.8x" % self.arbitration_id
         else:
             _arbitration_id_string = "%.4x" % self.arbitration_id

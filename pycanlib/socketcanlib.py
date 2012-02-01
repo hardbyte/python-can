@@ -11,7 +11,7 @@ PF_CAN  =       29
 SOCK_RAW =      3
 SOCK_DGRAM =    2
 AF_CAN =        PF_CAN
-SIOCGIFINDEX =  0x8933 # was ctypes.c_uint64
+SIOCGIFINDEX =  0x8933 
 SIOCGSTAMP =    0x8906
 
 start_sec = 0
@@ -124,7 +124,10 @@ def capturePacket(socketID):
     time = TIME_VALUE()
     
     # Fetching the Arb ID, DLC and Data
-    libc.read(socketID, ctypes.byref(frame), sys.getsizeof(frame))
+    bytesRead = libc.read(socketID, ctypes.byref(frame), sys.getsizeof(frame))
+    
+    # Fetching the timestamp
+    error = libc.ioctl(socketID, SIOCGSTAMP, ctypes.byref(time));
     
     packet['CAN ID'] = frame.can_id
     packet['DLC'] = frame.can_dlc
@@ -137,8 +140,6 @@ def capturePacket(socketID):
 
     packet['Data'] = data
     
-    # Fetching the timestamp
-    error = libc.ioctl(socketID, SIOCGSTAMP, ctypes.byref(time));
     
     global start_sec
     global start_usec
