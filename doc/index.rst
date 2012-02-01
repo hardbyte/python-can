@@ -15,3 +15,12 @@ Contents:
    overview
 
 
+.. include:: ../INSTALL.txt
+
+.. _Python: http://www.python.org
+.. _Setuptools: http://pypi.python.org/pypi/setuptools
+.. _Pip: http://pip.openplans.org/
+.. _easy_install: http://peak.telecommunity.com/DevCenter/EasyInstall
+.. _IPython: http://ipython.scipy.org
+.. _Mercurial: http://mercurial.selenic.com
+.. _TortoiseHG: http://tortoisehg.bitbucket.org/
