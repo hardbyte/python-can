@@ -71,17 +71,29 @@ class TIME_VALUE(ctypes.Structure):
                 ("tv_usec", ctypes.c_ulong)]
 
 
-# Creates a CAN socket
-#
-# Socket can be BCM or RAW depending on input
-# RAW socket needs to be bound
-# BCM socket needs to be connected
-# I am not sure how BCM sockets are used. 
-#
-# Returns:  0           if protocol is invalid
-#           -1          if socket is not created successfully
-#           socketID    if created successfully
 def createSocket(canProtocol):
+    '''
+    This function creates a CAN socket. The socket can be BCM or RAW 
+    depending on input. 
+    
+    The RAW socket needs to be bound to an interface.
+    The BCM socket needs to be connected to an interface - this
+    is not yet implemented. 
+    
+    Args:
+        +-----------+---------------------------------------------------------+
+        |canProtocol|The protocol to use for the CAN socket, either RAW or BCM|
+        +-----------+---------------------------------------------------------+
+    
+    Returns:   
+        +-----------+----------------------------+
+        | 0         |protocol invalid            |
+        +-----------+----------------------------+
+        | -1        |socket creation unsuccessful|
+        +-----------+----------------------------+
+        | socketID  |  successful creation       |
+        +-----------+----------------------------+
+    '''
     if canProtocol == CAN_RAW:
         socketID = libc.socket(PF_CAN, SOCK_RAW, CAN_RAW)
     elif canProtocol == CAN_BCM:
@@ -91,11 +103,23 @@ def createSocket(canProtocol):
     return socketID
 
 
-# Binds a RAW CAN socket
-#
-# Returns:  0   if successful 
-#           -1  if unsuccessful
 def bindSocket(socketID):
+    '''
+    Binds the given socket to the can0 interface. 
+    
+    Args:
+        +-----------+---------------------------------+
+        | socketID  |The ID of the socket to be bound |
+        +-----------+---------------------------------+
+        
+    
+    Returns:   
+        +-----------+----------------------------+
+        | 0         |protocol invalid            |
+        +-----------+----------------------------+
+        | -1        |socket creation unsuccessful|
+        +-----------+----------------------------+
+    '''
     socketID = ctypes.c_int(socketID)
     
     ifr = IFREQ('can0')
@@ -109,15 +133,27 @@ def bindSocket(socketID):
     return error
 
 
-# Captures a packet of CAN data from the socket specified.
-#
-# Returns:  A dictionary with the following fields:
-#           CAN ID
-#           DLC
-#           Data
-#           Timestamp
+
 def capturePacket(socketID):
+    '''
+    Captures a packet of data from the given socket. 
     
+    Args: 
+        socketID: The socket to read from
+    
+    Returns:
+        A dictionary with the following keys:
+            +-----------+----------------------------+
+            | 'CAN ID'  |int                         |
+            +-----------+----------------------------+
+            | 'DLC'     |int                         |
+            +-----------+----------------------------+
+            | 'Data'    |list                        |
+            +-----------+----------------------------+
+            |'Timestamp'| float                      |
+            +-----------+----------------------------+
+   
+    '''
     packet = {}
     
     frame = CAN_FRAME()
@@ -144,10 +180,13 @@ def capturePacket(socketID):
     global start_sec
     global start_usec
     
+    # Recording the time when the first packet is retreived, to start 
+    # the timestamping from zero 
     if ( start_sec == 0) and ( start_usec == 0):
          start_sec = time.tv_sec;
          start_usec = time.tv_usec;
     
+    # Converting the time to microseconds
     timestamp = ((time.tv_usec - start_usec) + SEC_USEC*(time.tv_sec - start_sec))
     
     packet['Timestamp'] = timestamp

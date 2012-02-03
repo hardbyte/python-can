@@ -1,23 +1,22 @@
-Installing pycanlib
-===================
+Installation
+--------------------
 
 This document assumes a workstation set up for development using Mercurial
 (i.e. Mercurial installed and set up correctly, with an SSH key for the user
 doing the install). Python 2.6 or later must be installed as well.
 
-1. Install Leaf Kernel Module
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. warning::
 
-    Sorry there is no socketcan support on *windows*!
+    Sorry there is **no socketcan support on windows**! All instructions
+    below are for linux users.
 
-Linux
-`````
+1. Install Leaf Kernel Module
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-#. Make sure your system is set up for kernel compilation has header
+#. Make sure your system is set up for kernel compilation, and has header
    packages installed.
-#. Obtain the leaf kernal module source from:
+#. Obtain the leaf kernel module source from:
     hg clone hg.sw/pdixon/leaf-socketcan
 #. Do ``sudo make install`` to build and install the drivers.
 
@@ -26,19 +25,16 @@ Linux
 
 Do ``sudo aptitude install python-setuptools`` to install setuptools.
 
-3. (OPTIONAL) Install hgversionutils
-~~~~~~~~~~~~~~~~~~~~~~~~~
+3. Install hgversionutils (OPTIONAL) 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 1. Do ``hg clone ssh://hg.sw/user/bpowell/hgversionutils`` to clone the
    hgversionutils source to your machine.
 2. Do ``sudo python2.6 setup.py install`` to install this package (the cloned
    repository may be deleted after the package is installed).
 
-3. Install pycanlib
-~~~~~~~~~~~~~~~~~~~~
-
-Linux
-`````
+3. Install pycanlib-socketcan
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 1. Do ``hg clone ssh://hg.sw/user/rose/pycanlib-socketcan`` to clone the pycanlib
    source to your machine.
@@ -48,24 +44,13 @@ Linux
    reinstall pycanlib). Note that the cloned repo should *not* be deleted after
    this step!
 
-4. (OPTIONAL) Install IPython
+4. Install IPython (OPTIONAL) 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 IPython is an extended command interpreter for Python, offering syntax
 colouring and tab-completion, among many other features. The pycanlib package
 includes some utilities that can be used to manipulate CAN traffic streams
 using the ipython interface.
-
-Windows XP
-``````````
-
-Copy \\nz2ks32ch\Public\Install\Python\ipython-0.10.win32-setup.exe to your
-machine, execute it, and follow the on-screen instructions to install
-IPython.
-
-
-Linux
-`````
 
 Do ``sudo aptitude install ipython`` to install IPython.
 
@@ -82,3 +67,13 @@ command line. You should see something like the following::
             WriteLog...
             AcceptanceFilter...
             ExtractTimeslice...
+
+Documentation
+-------------
+
+The documentation for pycanlib-socketcan has been generated with Sphinx. 
+Sphinx can be installed by running
+
+``sudo apt-get install sphinxbase-utils`` and
+
+``sudo apt-get install python-sphinx``
