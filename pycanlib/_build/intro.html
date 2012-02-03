@@ -23,7 +23,7 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="pycanlib-leaf v1 documentation" href="index.html" />
-    <link rel="next" title="Code Overview" href="overview.html" />
+    <link rel="next" title="Overview" href="overview.html" />
     <link rel="prev" title="pycanlib-leaf" href="index.html" /> 
   </head>
   <body>
@@ -34,7 +34,7 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="overview.html" title="Code Overview"
+          <a href="overview.html" title="Overview"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="index.html" title="pycanlib-leaf"
@@ -52,7 +52,7 @@
 <h1>Introduction and Installation<a class="headerlink" href="#introduction-and-installation" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="background">
 <h2>Background<a class="headerlink" href="#background" title="Permalink to this headline">¶</a></h2>
-<p>The pycanlib-leaf library is built upon the leaf-socketcan driver written
+<p>The pycanlib-socketcan library is built upon the leaf-socketcan driver written
 by Phil Dixon (<a class="reference external" href="mailto:pdixon&#37;&#52;&#48;dynamiccontrols&#46;com">pdixon<span>&#64;</span>dynamiccontrols<span>&#46;</span>com</a>). This driver replaces the functionality of the current Kvaser
 provided driver and API, libcanlib. The purpose of the switch is to:</p>
 <ul class="simple">
@@ -66,19 +66,20 @@ before it can be added at the pycanlib-leaf level.</p>
 <p>pycanlib-leaf is completely compatible with py1939lib and pyunidrivelib.</p>
 <p>For those familiar with pycanlib, the main change to it has been the replacement
 of canlib.py with socketcanlib.py. Also InputValidation has been removed.</p>
+<p>The Python &#8216;socket&#8217; module will contain support for SocketCAN in version 3.3.</p>
 </div>
 <div class="section" id="installation">
 <h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
 <p>As SocketCAN is necessary for this software, it <strong>will not run on Windows</strong>.</p>
-<div class="section" id="changing-from-pycanlib-to-pycanlib-leaf">
-<h3>Changing from pycanlib to pycanlib-leaf<a class="headerlink" href="#changing-from-pycanlib-to-pycanlib-leaf" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="changing-from-pycanlib-to-pycanlib-socketcan">
+<h3>Changing from pycanlib to pycanlib-socketcan<a class="headerlink" href="#changing-from-pycanlib-to-pycanlib-socketcan" title="Permalink to this headline">¶</a></h3>
 <ul>
 <li><p class="first">Uninstall libcanlib</p>
 </li>
 <li><p class="first">Obtain Phil&#8217;s leaf driver. Follow the readme in there.</p>
 <p><tt class="docutils literal"><span class="pre">hg</span> <span class="pre">clone</span> <span class="pre">ssh://hg.sw/user/pdixon/leaf-socketcan</span></tt></p>
 </li>
-<li><p class="first">Get pycanlib-leaf</p>
+<li><p class="first">Get pycanlib-socketcan</p>
 </li>
 </ul>
 </div>
@@ -104,7 +105,7 @@ of canlib.py with socketcanlib.py. Also InputValidation has been removed.</p>
 <li><p class="first">Obtain Phil&#8217;s leaf driver. Follow the readme in there.</p>
 <p><tt class="docutils literal"><span class="pre">hg</span> <span class="pre">clone</span> <span class="pre">ssh://hg.sw/user/pdixon/leaf-socketcan</span></tt></p>
 </li>
-<li><p class="first">Get pycanlib-leaf</p>
+<li><p class="first">Get pycanlib-socketcan</p>
 </li>
 </ul>
 </div>
@@ -122,7 +123,7 @@ of canlib.py with socketcanlib.py. Also InputValidation has been removed.</p>
 <li><a class="reference internal" href="#">Introduction and Installation</a><ul>
 <li><a class="reference internal" href="#background">Background</a></li>
 <li><a class="reference internal" href="#installation">Installation</a><ul>
-<li><a class="reference internal" href="#changing-from-pycanlib-to-pycanlib-leaf">Changing from pycanlib to pycanlib-leaf</a></li>
+<li><a class="reference internal" href="#changing-from-pycanlib-to-pycanlib-socketcan">Changing from pycanlib to pycanlib-socketcan</a></li>
 <li><a class="reference internal" href="#starting-from-scratch">Starting from scratch</a></li>
 </ul>
 </li>
@@ -135,7 +136,7 @@ of canlib.py with socketcanlib.py. Also InputValidation has been removed.</p>
                         title="previous chapter">pycanlib-leaf</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="overview.html"
-                        title="next chapter">Code Overview</a></p>
+                        title="next chapter">Overview</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/intro.txt"
@@ -165,7 +166,7 @@ of canlib.py with socketcanlib.py. Also InputValidation has been removed.</p>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="overview.html" title="Code Overview"
+          <a href="overview.html" title="Overview"
              >next</a> |</li>
         <li class="right" >
           <a href="index.html" title="pycanlib-leaf"

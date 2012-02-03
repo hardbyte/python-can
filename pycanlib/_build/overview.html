@@ -7,7 +7,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Code Overview &mdash; pycanlib-leaf v1 documentation</title>
+    <title>Overview &mdash; pycanlib-leaf v1 documentation</title>
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
@@ -44,20 +44,66 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="code-overview">
-<h1>Code Overview<a class="headerlink" href="#code-overview" title="Permalink to this headline">¶</a></h1>
-<p>The modules in pycanlib-leaf are:</p>
+  <div class="section" id="overview">
+<h1>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="code-structure">
+<h2>Code Structure<a class="headerlink" href="#code-structure" title="Permalink to this headline">¶</a></h2>
+<p>The modules in pycanlib-socketcan are:</p>
 <table border="1" class="docutils">
 <colgroup>
 <col width="24%" />
 <col width="76%" />
 </colgroup>
+<thead valign="bottom">
+<tr><th class="head">Module</th>
+<th class="head">Description</th>
+</tr>
+</thead>
 <tbody valign="top">
-<tr><td>Module</td>
-<td>Description</td>
+<tr><td>CAN.py</td>
+<td>Contains modules to emulate a CAN system, such as a
+CAN bus, messages, time stamps, read/write streams
+and listeners.</td>
+</tr>
+<tr><td>socketcanlib.py</td>
+<td>Wraps libc, which contains linux SocketCAN. This is
+used to create CAN sockets and read from them.</td>
 </tr>
 </tbody>
 </table>
+</div>
+<div class="section" id="differences-from-pycanlib">
+<h2>Differences from pycanlib<a class="headerlink" href="#differences-from-pycanlib" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="26%" />
+<col width="74%" />
+</colgroup>
+<thead valign="bottom">
+<tr><th class="head">Module</th>
+<th class="head">Modifications</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td>CAN.py</td>
+<td>Major changes to Message and Bus. Removal of all
+references to InputValidation.</td>
+</tr>
+<tr><td>socketcanlib.py</td>
+<td>Replaces canlib</td>
+</tr>
+<tr><td>canlib.py</td>
+<td>Removed</td>
+</tr>
+<tr><td>InputValidation.py</td>
+<td>Removed</td>
+</tr>
+<tr><td>can_logger.py</td>
+<td>A lot of input flags are no longer supported</td>
+</tr>
+</tbody>
+</table>
+</div>
 </div>
 
 
@@ -66,6 +112,15 @@
       </div>
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Overview</a><ul>
+<li><a class="reference internal" href="#code-structure">Code Structure</a></li>
+<li><a class="reference internal" href="#differences-from-pycanlib">Differences from pycanlib</a></li>
+</ul>
+</li>
+</ul>
+
   <h4>Previous topic</h4>
   <p class="topless"><a href="intro.html"
                         title="previous chapter">Introduction and Installation</a></p>

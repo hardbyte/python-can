@@ -6,7 +6,7 @@ to a file on disk.
 Copyright (C) 2010 Dynamic Controls
 """
 
-import cPickle
+#import cPickle
 import datetime
 import argparse
 import os
@@ -47,7 +47,7 @@ if __name__ == "__main__":
         while True:
             msg = listener.get_message()
             if msg is not None and str(msg) != "":
-                print msg
+                print (msg)
                 message_list.append(msg)
     except KeyboardInterrupt:
         pass

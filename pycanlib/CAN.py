@@ -5,7 +5,7 @@ functionality provided by CANLIB.
 
 Copyright (C) 2010 Dynamic Controls
 """
-from pycanlib import canstat
+#from pycanlib import canstat
 
 import ctypes
 import logging
@@ -109,6 +109,10 @@ def get_host_machine_info():
 
 class ChannelNotFoundError(Exception):
     pass
+    
+    
+def test():
+    print ("hello")
 
 
 class Message (object) :
@@ -313,7 +317,7 @@ class MachineInfo(object):
         self.machine_name = machine_name
         self.python_version = python_version
         self.platform_info = platform_info
-        self.canlib_version = get_canlib_version()
+        #self.canlib_version = get_canlib_version()
         self.module_versions = {}
         for (_modname, _mod) in sys.modules.items():
             if _mod != None:
@@ -344,13 +348,13 @@ class MachineInfo(object):
     def platform_info(self, value):
         self.__platform_info = value
 
-    @property
-    def canlib_version(self):
-        return self.__canlib_version
+    #~ @property
+    #~ def canlib_version(self):
+        #~ return self.__canlib_version
 
-    @canlib_version.setter
-    def canlib_version(self, value):
-        self.__canlib_version = value
+    #~ @canlib_version.setter
+    #~ def canlib_version(self, value):
+        #~ self.__canlib_version = value
 
     @property
     def module_versions(self):
@@ -368,7 +372,7 @@ class MachineInfo(object):
         retval += "Machine name: %s\n" % self.machine_name
         retval += "Python: %s\n" % self.python_version
         retval += "OS: %s\n" % self.platform_info
-        retval += "CANLIB: %s\n" % self.canlib_version
+        #~ retval += "CANLIB: %s\n" % self.canlib_version
         retval += "Loaded Python module versions:\n"
         for _mod in sorted(self.module_versions.keys()):
             retval += "\t%s: %s\n" % (_mod, self.module_versions[_mod])
@@ -473,13 +477,13 @@ class ChannelInfo(object):
         retval += "\nChannel Info\n"
         retval += "-"*len("Channel Info")
         retval += "\n"
-        retval += "CANLIB channel: %s\n" % self.channel
+        #~ retval += "CANLIB channel: %s\n" % self.channel
         retval += "Device Description: '%s'\n" % self.device_description
         retval += "Manufacturer Name: '%s'\n" % self.manufacturer_name
         retval += "Firmware version: %s\n" % self.firmware_version
         retval += "Hardware version: %s\n" % self.hardware_version
         retval += "Card serial number: %s\n" % self.card_serial
-        retval += "Transceiver type: %d (%s)\n" % (self.transceiver_type, canlib.lookup_transceiver_type(self.transceiver_type))
+        #~ retval += "Transceiver type: %d (%s)\n" % (self.transceiver_type, canlib.lookup_transceiver_type(self.transceiver_type))
         retval += "Transceiver serial number: %s\n" % self.transceiver_serial
         retval += "Card number: %s\n" % self.card_number
         retval += "Channel on card: %s\n" % self.channel_on_card
@@ -674,4 +678,4 @@ class AcceptanceFilter(Listener):
 
 class MessagePrinter(Listener):
     def on_message_received(self, msg):
-        print msg
+        print (msg)

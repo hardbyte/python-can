@@ -4,7 +4,7 @@ Introduction and Installation
 Background
 ----------
 
-The pycanlib-leaf library is built upon the leaf-socketcan driver written
+The pycanlib-socketcan library is built upon the leaf-socketcan driver written
 by Phil Dixon (pdixon@dynamiccontrols.com). This driver replaces the functionality of the current Kvaser
 provided driver and API, libcanlib. The purpose of the switch is to:
 
@@ -21,12 +21,14 @@ pycanlib-leaf is completely compatible with py1939lib and pyunidrivelib.
 For those familiar with pycanlib, the main change to it has been the replacement
 of canlib.py with socketcanlib.py. Also InputValidation has been removed.  
 
+The Python 'socket' module will contain support for SocketCAN in version 3.3. 
+
 Installation
 ------------
 
 As SocketCAN is necessary for this software, it **will not run on Windows**.
 
-Changing from pycanlib to pycanlib-leaf
+Changing from pycanlib to pycanlib-socketcan
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 *   Uninstall libcanlib
@@ -34,7 +36,7 @@ Changing from pycanlib to pycanlib-leaf
 *   Obtain Phil's leaf driver. Follow the readme in there. 
 
     ``hg clone ssh://hg.sw/user/pdixon/leaf-socketcan``
-*   Get pycanlib-leaf
+*   Get pycanlib-socketcan
 
 
 Starting from scratch
@@ -60,4 +62,4 @@ Once your computer's set up you should:
 *   Obtain Phil's leaf driver. Follow the readme in there. 
 
     ``hg clone ssh://hg.sw/user/pdixon/leaf-socketcan``
-*   Get pycanlib-leaf
+*   Get pycanlib-socketcan

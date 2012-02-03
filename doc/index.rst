@@ -3,7 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-pycanlib-leaf
+pycanlib-socketcan
 =============
 
 Contents:
@@ -13,9 +13,10 @@ Contents:
    
    intro
    overview
+   socketcanlib
+   can
 
 
-.. include:: ../INSTALL.txt
 
 .. _Python: http://www.python.org
 .. _Setuptools: http://pypi.python.org/pypi/setuptools
