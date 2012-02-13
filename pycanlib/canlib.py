@@ -22,7 +22,7 @@ else:
 def __get_canlib_function(func_name, argtypes=None, restype=None, errcheck=None):
     log.debug('Wrapping function "%s"' % func_name)
     try:
-        retval = getattr(__canlib, func_name)
+        retval = getattr(__canlib, func_name)# e.g. canlib.canBusOn
         log.debug('Function found in library')
     except AttributeError:
         logging.warning('Function not found in library')
@@ -42,13 +42,13 @@ class CANLIBError(Exception):
         self.function = function
         self.arguments = arguments
 
-    def __str__(self):
-        return ("function %s failed - %s - arguments were %s" % (self.function.__name__, self.__get_error_message(), self.arguments))
+    def __repr__(self):
+        return "function %s failed - %s - arguments were %s" % (self.function.__name__, self.__get_error_message(), self.arguments)
 
     def __get_error_message(self):
         errmsg = ctypes.create_string_buffer(128)
         canGetErrorText(self.error_code, errmsg, len(errmsg))
-        return ("%s (code %d)" % (errmsg.value, self.error_code))
+        return "%s (code %d)" % (errmsg.value, self.error_code)
 
 def __convert_can_status_to_int(result):
     if isinstance(result, (int, long)):

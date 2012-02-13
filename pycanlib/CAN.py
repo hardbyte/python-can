@@ -21,7 +21,6 @@ import time
 import types
 
 log = logging.getLogger('CAN')
-log.setLevel(logging.WARNING)
 
 log.debug("Loading CAN.py")
 
@@ -155,6 +154,8 @@ class Message(object):
             self.info_strings = []
         else:
             self.info_strings = info_strings
+            
+        log.debug('Created new message {}'.format(self))
 
     @property
     def timestamp(self):
@@ -371,6 +372,12 @@ class MessageList(object):
 
     def __iter__(self):
         return (m for m in self.messages)
+
+    def __getitem__(self, index):
+        return self.messages[index]
+
+    def __len__(self):
+        return len(self.messages)
 
     @property
     def start_timestamp(self):
@@ -833,11 +840,11 @@ class Bus(object):
         timestamp = ctypes.c_ulong(0)
         
         if self.single_handle:
-            log.debug('Acquiring "done_writing" lock')
+            log.log(9, 'Rx thread acquiring "done_writing" lock')
             self.done_writing.acquire()
             
             while self.writing_event.is_set():
-                log.debug('rx thread waiting to let tx have a go...')
+                log.log(9, 'rx thread waiting to let tx have a go...')
                 self.done_writing.wait()
 
         #log.debug('Reading for 1ms on handle: %s' % self.__read_handle)
@@ -855,7 +862,7 @@ class Bus(object):
 
         
         if status.value == canstat.canOK:
-            log.debug('read complete -> status OK')
+            log.log(9, 'read complete -> status OK')
             data_array = map(ord, data)
             if int(flags.value) & canstat.canMSG_EXT:
                 id_type = ID_TYPE_EXTENDED
@@ -868,6 +875,7 @@ class Bus(object):
                              id_type=id_type, 
                              timestamp=msg_timestamp)
             rx_msg.flags = int(flags.value) & canstat.canMSG_MASK
+            log.info('Got message: %s' % rx_msg)
             return rx_msg
         else:
             #log.debug('read complete -> status not okay')
@@ -894,6 +902,7 @@ class Bus(object):
                                          _tx_msg.dlc,
                                          _tx_msg.flags,
                                          5)
+                log.debug("We just wrote a message")
                 if self.single_handle:
                     self.writing_event.clear()
                     # Tell the rx thread it can start again
