@@ -870,7 +870,7 @@ class Bus(object):
     def write(self, msg):
         ''''
         :param msg: A Message object to write to bus.
-        ''''
+        '''
         self.__tx_queue.put_nowait(msg)
 
     def shutdown(self):
