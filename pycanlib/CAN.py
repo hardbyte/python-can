@@ -5,15 +5,15 @@ functionality provided by CANLIB.
 
 Copyright (C) 2010 Dynamic Controls
 """
-from pycanlib import canlib, canstat, InputValidation
+from pycanlib import canlib, canstat
 
 import logging
-import cPickle
+import cPickle as pickle
 import ctypes
 import datetime
 import os
 import platform
-import Queue
+import Queue as queue
 import string
 import sys
 import threading
@@ -163,8 +163,6 @@ class Message(object):
 
     @timestamp.setter
     def timestamp(self, value):
-        InputValidation.verify_parameter_type("CAN.Message.timestamp.setter", "timestamp", value, types.FloatType)
-        InputValidation.verify_parameter_min_value("CAN.Message.timestamp.setter", "timestamp", value, 0)
         self.__timestamp = value
 
     @property
@@ -176,7 +174,6 @@ class Message(object):
 
     @is_remote_frame.setter
     def is_remote_frame(self, value):
-        InputValidation.verify_parameter_type("CAN.Message.is_remote_frame.setter", "is_remote_frame", value, types.BooleanType)
         self.flags &= (0xFFFF - canstat.canMSG_RTR)
         self.flags |= (value * canstat.canMSG_RTR)
 
@@ -189,7 +186,6 @@ class Message(object):
 
     @id_type.setter
     def id_type(self, value):
-        InputValidation.verify_parameter_type("CAN.Message.id_type.setter", "id_type", value, types.BooleanType)
         _new_flags = self.flags & (0xFFFF - (canstat.canMSG_STD | canstat.canMSG_EXT))
         if value == ID_TYPE_EXTENDED:
             self.flags = (_new_flags | canstat.canMSG_EXT)
@@ -205,7 +201,6 @@ class Message(object):
 
     @is_wakeup.setter
     def is_wakeup(self, value):
-        InputValidation.verify_parameter_type("CAN.Message.is_wakeup.setter", "is_wakeup", value, types.BooleanType)
         self.flags &= (0xFFFF - canstat.canMSG_WAKEUP)
         if value == WAKEUP_MSG:
             self.flags |= canstat.canMSG_WAKEUP
@@ -219,7 +214,6 @@ class Message(object):
 
     @is_error_frame.setter
     def is_error_frame(self, value):
-        InputValidation.verify_parameter_type("CAN.Message.is_error_frame.setter", "is_error_frame", value, types.BooleanType)
         self.flags &= (0xFFFF - canstat.canMSG_ERROR_FRAME)
         if value == ERROR_FRAME:
             self.flags |= canstat.canMSG_ERROR_FRAME
@@ -230,12 +224,6 @@ class Message(object):
 
     @arbitration_id.setter
     def arbitration_id(self, value):
-        InputValidation.verify_parameter_type("CAN.Message.arbitration_id.setter", "arbitration_id", value, types.IntType)
-        InputValidation.verify_parameter_min_value("CAN.Message.arbitration_id.setter", "arbitration_id", value, 0)
-        if self.id_type == ID_TYPE_EXTENDED:
-            InputValidation.verify_parameter_max_value("CAN.Message.arbitration_id.setter", "arbitration_id", value, ((2 ** 29) - 1))
-        else:
-            InputValidation.verify_parameter_max_value("CAN.Message.arbitration_id.setter", "arbitration_id", value, ((2 ** 11) - 1))
         self.__arbitration_id = value
 
     @property
@@ -244,11 +232,6 @@ class Message(object):
 
     @data.setter
     def data(self, value):
-        InputValidation.verify_parameter_type("CAN.Message.data.setter", "data", value, types.ListType)
-        for (_index, _item) in enumerate(value):
-            InputValidation.verify_parameter_type("CAN.Message.data.setter", ("data[%d]" % _index), _item, (types.IntType, types.LongType))
-            InputValidation.verify_parameter_min_value("CAN.Message.data.setter", ("data[%d]" % _index), _item, 0)
-            InputValidation.verify_parameter_max_value("CAN.Message.data.setter", ("data[%d]" % _index), _item, 255)
         self.__data = value
 
     @property
@@ -257,9 +240,6 @@ class Message(object):
 
     @dlc.setter
     def dlc(self, value):
-        InputValidation.verify_parameter_type("CAN.Message.dlc.setter", "dlc", value, types.IntType)
-        InputValidation.verify_parameter_min_value("CAN.Message.dlc.setter", "dlc", value, 0)
-        InputValidation.verify_parameter_max_value("CAN.Message.dlc.setter", "dlc", value, 8)
         self.__dlc = value
 
     @property
@@ -271,9 +251,6 @@ class Message(object):
 
     @flags.setter
     def flags(self, value):
-        InputValidation.verify_parameter_type("CAN.Message.flags.setter", "flags", value, types.IntType)
-        InputValidation.verify_parameter_value_equal_to("CAN.Message.flags.setter", "(flags & (0xFFFF - canstat.canMSG_MASK))", (value & (0xFFFF - canstat.canMSG_MASK)), 0)
-        InputValidation.verify_parameter_value_in_set("CAN.Message.flags.setter", "(flags & (canstat.canMSG_EXT + canstat.canMSG_STD + canstat.canMSG_ERROR_FRAME))", (value & (canstat.canMSG_EXT + canstat.canMSG_STD + canstat.canMSG_ERROR_FRAME)), (canstat.canMSG_EXT, canstat.canMSG_STD, canstat.canMSG_ERROR_FRAME, canstat.canMSG_EXT+canstat.canMSG_ERROR_FRAME, canstat.canMSG_STD+canstat.canMSG_ERROR_FRAME))
         self.__flags = value
 
     @property
@@ -282,16 +259,9 @@ class Message(object):
 
     @info_strings.setter
     def info_strings(self, value):
-        InputValidation.verify_parameter_type("CAN.Message.info_strings.setter", "info_strings", value, types.ListType)
-        for (_index, _string) in enumerate(value):
-            InputValidation.verify_parameter_type("CAN.Message.info_strings.setter", "info_strings[%d]" % _index, _string, types.StringType)
         self.__info_strings = value
 
     def check_equality(self, other, fields):
-        InputValidation.verify_parameter_type("CAN.Message.check_equality", "other", other, Message)
-        InputValidation.verify_parameter_type("CAN.Message.check_equality", "fields", fields, types.ListType)
-        for (_index, _field) in enumerate(fields):
-            InputValidation.verify_parameter_type("CAN.Message.check_equality", ("fields[%d]" % _index), _field, types.StringType)
         retval = True
         for _field in fields:
             try:
@@ -340,7 +310,6 @@ class TimestampMessage(object):
 
     @timestamp.setter
     def timestamp(self, value):
-        InputValidation.verify_parameter_min_value("CAN.TimestampMessage.timestamp.setter", "timestamp", value, 0)
         self.__timestamp = float(value)
 
     @property
@@ -471,7 +440,7 @@ class Log(object):
         
         if dat or ext == '.dat':
             with open(filename, "wb") as bin_file:
-                cPickle.dump(self, bin_file)
+                pickle.dump(self, bin_file)
         
         elif csv or ext == '.csv':
             from csv import writer
@@ -504,7 +473,6 @@ class MachineInfo(object):
 
     @machine_name.setter
     def machine_name(self, value):
-        InputValidation.verify_parameter_type("CAN.LogInfo.machine_name.setter", "machine_name", value, types.StringType)
         self.__machine_name = value
 
     @property
@@ -513,7 +481,6 @@ class MachineInfo(object):
 
     @python_version.setter
     def python_version(self, value):
-        InputValidation.verify_parameter_type("CAN.LogInfo.python_version.setter", "python_version", value, types.StringType)
         self.__python_version = value
 
     @property
@@ -522,7 +489,6 @@ class MachineInfo(object):
 
     @platform_info.setter
     def platform_info(self, value):
-        InputValidation.verify_parameter_type("CAN.LogInfo.platform_info.setter", "platform_info", value, types.StringType)
         self.__platform_info = value
 
     @property
@@ -531,7 +497,6 @@ class MachineInfo(object):
 
     @canlib_version.setter
     def canlib_version(self, value):
-        InputValidation.verify_parameter_type("CAN.LogInfo.canlib_version.setter", "canlib_version", value, types.StringType)
         self.__canlib_version = value
 
     @property
@@ -540,7 +505,6 @@ class MachineInfo(object):
 
     @module_versions.setter
     def module_versions(self, value):
-        InputValidation.verify_parameter_type("CAN.LogInfo.module_versions.setter", "module_versions", value, types.DictType)
         self.__module_versions = value
 
     def __str__(self):
@@ -577,8 +541,6 @@ class ChannelInfo(object):
 
     @channel.setter
     def channel(self, value):
-        InputValidation.verify_parameter_type("CAN.ChannelInfo.channel.setter", "channel", value, types.IntType)
-        InputValidation.verify_parameter_min_value("CAN.ChannelInfo.channel.setter", "channel", value, 0)
         self.__channel = value
 
     @property
@@ -587,7 +549,6 @@ class ChannelInfo(object):
 
     @device_description.setter
     def device_description(self, value):
-        InputValidation.verify_parameter_type("CAN.ChannelInfo.device_description.setter", "device_description", value, types.StringType)
         self.__device_description = value
 
     @property
@@ -596,7 +557,6 @@ class ChannelInfo(object):
 
     @manufacturer_name.setter
     def manufacturer_name(self, value):
-        InputValidation.verify_parameter_type("CAN.ChannelInfo.manufacturer_name.setter", "manufacturer_name", value, types.StringType)
         self.__manufacturer_name = value
 
     @property
@@ -605,7 +565,6 @@ class ChannelInfo(object):
 
     @firmware_version.setter
     def firmware_version(self, value):
-        InputValidation.verify_parameter_type("CAN.ChannelInfo.firmware_version.setter", "firmware_version", value, types.StringType)
         self.__firmware_version = value
 
     @property
@@ -614,7 +573,6 @@ class ChannelInfo(object):
 
     @hardware_version.setter
     def hardware_version(self, value):
-        InputValidation.verify_parameter_type("CAN.ChannelInfo.hardware_version.setter", "hardware_version", value, types.StringType)
         self.__hardware_version = value
 
     @property
@@ -623,8 +581,6 @@ class ChannelInfo(object):
 
     @card_serial.setter
     def card_serial(self, value):
-        InputValidation.verify_parameter_type("CAN.ChannelInfo.card_serial.setter", "card_serial", value, types.IntType)
-        InputValidation.verify_parameter_min_value("CAN.ChannelInfo.card_serial.setter", "card_serial", value, 0)
         self.__card_serial = value
 
     @property
@@ -633,8 +589,6 @@ class ChannelInfo(object):
 
     @transceiver_serial.setter
     def transceiver_serial(self, value):
-        InputValidation.verify_parameter_type("CAN.ChannelInfo.transceiver_serial.setter", "transceiver_serial", value, types.IntType)
-        InputValidation.verify_parameter_min_value("CAN.ChannelInfo.transceiver_serial.setter", "transceiver_serial", value, 0)
         self.__transceiver_serial = value
 
     @property
@@ -643,8 +597,6 @@ class ChannelInfo(object):
 
     @transceiver_type.setter
     def transceiver_type(self, value):
-        InputValidation.verify_parameter_type("CAN.ChannelInfo.transceiver_type.setter", "transceiver_type", value, types.LongType)
-        InputValidation.verify_parameter_min_value("CAN.ChannelInfo.transceiver_type.setter", "transceiver_type", value, 0)
         self.__transceiver_type = value
 
     @property
@@ -653,8 +605,6 @@ class ChannelInfo(object):
 
     @card_number.setter
     def card_number(self, value):
-        InputValidation.verify_parameter_type("CAN.ChannelInfo.card_number.setter", "card_number", value, types.LongType)
-        InputValidation.verify_parameter_min_value("CAN.ChannelInfo.card_number.setter", "card_number", value, 0)
         self.__card_number = value
 
     @property
@@ -663,8 +613,6 @@ class ChannelInfo(object):
 
     @channel_on_card.setter
     def channel_on_card(self, value):
-        InputValidation.verify_parameter_type("CAN.ChannelInfo.channel_on_card.setter", "channel_on_card", value, types.LongType)
-        InputValidation.verify_parameter_min_value("CAN.ChannelInfo.channel_on_card.setter", "channel_on_card", value, 0)
         self.__channel_on_card = value
 
     def __str__(self):
@@ -714,29 +662,16 @@ class Bus(object):
         canlib.canGetNumberOfChannels(ctypes.byref(num_channels))
         num_channels = int(num_channels.value)
         log.debug('Found %d available channels' % num_channels)
-        InputValidation.verify_parameter_type("CAN.Bus.__init__", "channel", channel, (int, str))
+
         if type(channel) == str:
             _channel = get_canlib_channel_from_url(channel)
             if _channel is None:
                 raise ChannelNotFoundError(channel)
         else:
             _channel = channel
-        InputValidation.verify_parameter_min_value("CAN.Bus.__init__", "channel", _channel, 0)
-        InputValidation.verify_parameter_max_value("CAN.Bus.__init__", "channel", _channel, num_channels)
 
         self.channel_info = get_channel_info(_channel)
         log.info('Channel information:\n%s' % str(self.channel_info))
-        InputValidation.verify_parameter_type("CAN.Bus.__init__", "bitrate", bitrate, types.IntType)
-        InputValidation.verify_parameter_min_value("CAN.Bus.__init__", "bitrate", bitrate, 0)
-        InputValidation.verify_parameter_max_value("CAN.Bus.__init__", "bitrate", bitrate, 1000000)
-        InputValidation.verify_parameter_type("CAN.Bus.__init__", "tseg1", tseg1, types.IntType)
-        InputValidation.verify_parameter_min_value("CAN.Bus.__init__", "tseg1", tseg1, 0)
-        InputValidation.verify_parameter_max_value("CAN.Bus.__init__", "tseg1", tseg1, 255)
-        InputValidation.verify_parameter_type("CAN.Bus.__init__", "tseg2", tseg2, types.IntType)
-        InputValidation.verify_parameter_min_value("CAN.Bus.__init__", "tseg2", tseg2, 0)
-        InputValidation.verify_parameter_max_value("CAN.Bus.__init__", "tseg2", tseg2, 255)
-        InputValidation.verify_parameter_type("CAN.Bus.__init__", "no_samp", no_samp, types.IntType)
-        InputValidation.verify_parameter_value_in_set("CAN.Bus.__init__", "no_samp", no_samp, [1, 3])
 
         self.writing_event = threading.Event()
         self.done_writing = threading.Condition()
@@ -779,8 +714,7 @@ class Bus(object):
         canlib.canBusOn(self.__write_handle)
         
         self.__listeners = []
-        import multiprocessing
-        self.__tx_queue = multiprocessing.Queue(0)
+        self.__tx_queue = queue.Queue(0)
         self.__read_thread = threading.Thread(target=self.__read_process)
         self.__write_thread = threading.Thread(target=self.__write_process)
         self.__read_thread.daemon = True
@@ -796,16 +730,13 @@ class Bus(object):
 
     @listeners.setter
     def listeners(self, value):
-        InputValidation.verify_parameter_type("CAN.Bus.listeners.setter", "listeners", value, types.ListType)
-        for (index, listener) in enumerate(value):
-            InputValidation.verify_parameter_type("CAN.Bus.listeners.setter", "listeners[%d]" % index, listener, Listener)
         self.__listeners = value
     
     def __convert_timestamp(self, value):
         if not hasattr(self, 'timer_offset') or self.timer_offset is None: #Use the current value if the offset has not been set yet
             self.timer_offset = value
         
-        if value < self.timer_offset: #Check for overflow
+        if value < self.timer_offset: # Check for overflow
             MAX_32BIT = 0xFFFFFFFF # The maximum value that the timer reaches on a 32-bit machine
             MAX_64BIT = 0x9FFFFFFFF # The maximum value that the timer reaches on a 64-bit machine
             if ctypes.sizeof(ctypes.c_long) == 8:
@@ -816,7 +747,7 @@ class Bus(object):
                 assert False, 'Unknown platform. Expected a long to be 4 or 8 bytes long but it was %i bytes.' % ctypes.sizeof(ctypes.c_long)
             assert value > self.timer_offset, 'CAN Timestamp overflowed. The timer offset was ' + str(self.timer_offset) 
         
-        return (float(value - self.timer_offset) / 1000000) #Convert from us into seconds
+        return (float(value - self.timer_offset) / 1000000) # Convert from us into seconds
 
     def __read_process(self):
         """
@@ -828,11 +759,17 @@ class Bus(object):
             rx_msg = self.__get_message()
             
             if rx_msg is not None:
-                log.debug("Got msg: %s" % rx_msg)
+
                 for listener in self.listeners:
                     listener.on_message_received(rx_msg)
 
     def __get_message(self):
+        '''
+        Read a message from kvaiser device.
+        
+        In single handle mode this blocks the sending of messages for up to 1ms
+        before releasing the lock.
+        '''
         arb_id = ctypes.c_long(0)
         data = ctypes.create_string_buffer(8)
         dlc = ctypes.c_uint(0)
@@ -840,11 +777,12 @@ class Bus(object):
         timestamp = ctypes.c_ulong(0)
         
         if self.single_handle:
-            log.log(9, 'Rx thread acquiring "done_writing" lock')
+            
             self.done_writing.acquire()
             
             while self.writing_event.is_set():
-                log.log(9, 'rx thread waiting to let tx have a go...')
+                # releases the underlying lock, and then blocks until it is awakened 
+                # by a notify() from the tx thread. Once awakened it re-acquires the lock
                 self.done_writing.wait()
 
         #log.debug('Reading for 1ms on handle: %s' % self.__read_handle)
@@ -862,7 +800,7 @@ class Bus(object):
 
         
         if status.value == canstat.canOK:
-            log.log(9, 'read complete -> status OK')
+            #log.log(9, 'read complete -> status OK')
             data_array = map(ord, data)
             if int(flags.value) & canstat.canMSG_EXT:
                 id_type = ID_TYPE_EXTENDED
@@ -875,7 +813,7 @@ class Bus(object):
                              id_type=id_type, 
                              timestamp=msg_timestamp)
             rx_msg.flags = int(flags.value) & canstat.canMSG_MASK
-            log.info('Got message: %s' % rx_msg)
+            #log.info('Got message: %s' % rx_msg)
             return rx_msg
         else:
             #log.debug('read complete -> status not okay')
@@ -883,31 +821,42 @@ class Bus(object):
 
     def __write_process(self):
         while self.__threads_running:
-            _tx_msg = None
+            tx_msg = None
+            have_lock = False
             try:
-                _tx_msg = self.__tx_queue.get(timeout=0.005)
-            except Queue.Empty:
+                if self.single_handle:
+                    if not self.__tx_queue.empty():
+                        # Tell the rx thread to give up the can handle
+                        # because we have a message to write to the bus
+                        self.writing_event.set()
+                        # Acquire a lock that the rx thread has started waiting on
+                        self.done_writing.acquire()
+                        have_lock = True
+                    else:
+                        raise queue.Empty('')
+                    
+                while not self.__tx_queue.empty():
+                    tx_msg = self.__tx_queue.get(timeout=0.05)
+                    if tx_msg is not None:
+                        self.__put_message(tx_msg)
+                        
+            except queue.Empty:
                 pass
-            if _tx_msg != None:
-                if self.single_handle:
-                    # Tell the rx thread to give up the can handle
-                    # because we have a message to write to the bus
-                    self.writing_event.set()
-                    # Acquire a lock that the rx thread has started waiting on
-                    self.done_writing.acquire()
-                
-                canlib.canWriteWait(self.__write_handle,
-                                        _tx_msg.arbitration_id,
-                                        "".join([("%c" % byte) for byte in _tx_msg.data]),
-                                         _tx_msg.dlc,
-                                         _tx_msg.flags,
-                                         5)
-                log.debug("We just wrote a message")
-                if self.single_handle:
-                    self.writing_event.clear()
-                    # Tell the rx thread it can start again
-                    self.done_writing.notify()
-                    self.done_writing.release()
+            if self.single_handle and have_lock:
+                self.writing_event.clear()
+                # Tell the rx thread it can start again
+                self.done_writing.notify()
+                self.done_writing.release()
+                have_lock = False
+            
+
+    def __put_message(self, tx_msg):
+        canlib.canWriteWait(self.__write_handle,
+                            tx_msg.arbitration_id,
+                            "".join([("%c" % byte) for byte in tx_msg.data]),
+                             tx_msg.dlc,
+                             tx_msg.flags,
+                             5)
 
     def write_for_period(self, messageGapInSeconds, totalPeriodInSeconds, message):
         _startTime = time.time()
@@ -919,7 +868,9 @@ class Bus(object):
                 time.sleep(0.001)
 
     def write(self, msg):
-        InputValidation.verify_parameter_type("CAN.Bus.write", "msg", msg, Message)
+        ''''
+        :param msg: A Message object to write to bus.
+        ''''
         self.__tx_queue.put_nowait(msg)
 
     def shutdown(self):
@@ -928,12 +879,10 @@ class Bus(object):
         canlib.canClose(self.__write_handle)
 
 def get_canlib_channel_from_url(url):
-    InputValidation.verify_parameter_type("get_canlib_channel_from_url", "url", url, types.StringType)
     (_type, _remainder) = url.split("://")
     (_serial, _channel) = _remainder.split("/")
     _serial = int(_serial)
     _channel = int(_channel)
-    InputValidation.verify_parameter_value_in_set("get_canlib_channel_from_url", "url.type", string.lower(_type), ("leaf", "usbcanii"))
     _num_channels = ctypes.c_int(0)
     canlib.canGetNumberOfChannels(ctypes.byref(_num_channels))
     for channel in xrange(_num_channels.value):
@@ -951,7 +900,7 @@ class Listener(object):
 class BufferedReader(Listener):
 
     def __init__(self):
-        self.__buffer = Queue.Queue(0)
+        self.__buffer = queue.Queue(0)
 
     def on_message_received(self, msg):
         self.__buffer.put_nowait(msg)
@@ -959,7 +908,7 @@ class BufferedReader(Listener):
     def get_message(self):
         try:
             return self.__buffer.get(timeout=0.5)
-        except Queue.Empty:
+        except queue.Empty:
             return None
 
 class AcceptanceFilter(Listener):
@@ -977,9 +926,6 @@ class AcceptanceFilter(Listener):
 
     @std_acceptance_code.setter
     def std_acceptance_code(self, value):
-        InputValidation.verify_parameter_type("CAN.AcceptanceFilter.std_acceptance_code.setter", "std_acceptance_code", value, types.IntType)
-        InputValidation.verify_parameter_min_value("CAN.AcceptanceFilter.std_acceptance_code.setter", "std_acceptance_code", value, 0)
-        InputValidation.verify_parameter_max_value("CAN.AcceptanceFilter.std_acceptance_code.setter", "std_acceptance_code", value, ((2 ** 11) - 1))
         self.__std_acceptance_code = value
 
     @property
@@ -988,9 +934,6 @@ class AcceptanceFilter(Listener):
 
     @std_acceptance_mask.setter
     def std_acceptance_mask(self, value):
-        InputValidation.verify_parameter_type("CAN.AcceptanceFilter.std_acceptance_mask.setter", "std_acceptance_mask", value, types.IntType)
-        InputValidation.verify_parameter_min_value("CAN.AcceptanceFilter.std_acceptance_mask.setter", "std_acceptance_mask", value, 0)
-        InputValidation.verify_parameter_max_value("CAN.AcceptanceFilter.std_acceptance_mask.setter", "std_acceptance_mask", value, ((2 ** 11) - 1))
         self.__std_acceptance_mask = value
 
     @property
@@ -999,9 +942,6 @@ class AcceptanceFilter(Listener):
 
     @ext_acceptance_code.setter
     def ext_acceptance_code(self, value):
-        InputValidation.verify_parameter_type("CAN.AcceptanceFilter.ext_acceptance_code.setter", "ext_acceptance_code", value, types.IntType)
-        InputValidation.verify_parameter_min_value("CAN.AcceptanceFilter.ext_acceptance_code.setter", "ext_acceptance_code", value, 0)
-        InputValidation.verify_parameter_max_value("CAN.AcceptanceFilter.ext_acceptance_code.setter", "ext_acceptance_code", value, ((2 ** 29) - 1))
         self.__ext_acceptance_code = value
 
     @property
@@ -1010,9 +950,6 @@ class AcceptanceFilter(Listener):
 
     @ext_acceptance_mask.setter
     def ext_acceptance_mask(self, value):
-        InputValidation.verify_parameter_type("CAN.AcceptanceFilter.ext_acceptance_mask.setter", "ext_acceptance_mask", value, types.IntType)
-        InputValidation.verify_parameter_min_value("CAN.AcceptanceFilter.ext_acceptance_mask.setter", "ext_acceptance_mask", value, 0)
-        InputValidation.verify_parameter_max_value("CAN.AcceptanceFilter.ext_acceptance_mask.setter", "ext_acceptance_mask", value, ((2 ** 29) - 1))
         self.__ext_acceptance_mask = value
 
     def on_message_received(self, msg):
@@ -1022,7 +959,6 @@ class AcceptanceFilter(Listener):
                 _listener.on_message_received(msg)
 
     def add_listener(self, listener):
-        InputValidation.verify_parameter_type("CAN.AcceptanceFilter.add_listener", "listener", listener, Listener)
         self.__listeners.append(listener)
 
     def remove_listener(self, listener):
