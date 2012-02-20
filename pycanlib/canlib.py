@@ -42,7 +42,7 @@ class CANLIBError(Exception):
         self.function = function
         self.arguments = arguments
 
-    def __repr__(self):
+    def __str__(self):
         return "function %s failed - %s - arguments were %s" % (self.function.__name__, self.__get_error_message(), self.arguments)
 
     def __get_error_message(self):
