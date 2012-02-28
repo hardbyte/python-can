@@ -722,7 +722,14 @@ class Bus(object):
         self.__threads_running = True
         self.__read_thread.start()
         self.__write_thread.start()
-        self.timer_offset = None
+        self.timer_offset = None # Used to zero the timestamps from the first message
+        
+        '''
+        Approximate offset between time.time() and CAN timestamps (~2ms accuracy)
+        There will always be some lag between when the message is on the bus to when it reaches python
+        Allow messages to be on the bus for a while before reading this value so it has a chance to correct itself'''
+        self.pc_time_offset = None
+
 
     @property
     def listeners(self):
@@ -735,6 +742,7 @@ class Bus(object):
     def __convert_timestamp(self, value):
         if not hasattr(self, 'timer_offset') or self.timer_offset is None: #Use the current value if the offset has not been set yet
             self.timer_offset = value
+            self.pc_time_offset = time.time()
         
         if value < self.timer_offset: # Check for overflow
             MAX_32BIT = 0xFFFFFFFF # The maximum value that the timer reaches on a 32-bit machine
@@ -747,7 +755,11 @@ class Bus(object):
                 assert False, 'Unknown platform. Expected a long to be 4 or 8 bytes long but it was %i bytes.' % ctypes.sizeof(ctypes.c_long)
             assert value > self.timer_offset, 'CAN Timestamp overflowed. The timer offset was ' + str(self.timer_offset) 
         
-        return (float(value - self.timer_offset) / 1000000) # Convert from us into seconds
+        timestamp = (float(value - self.timer_offset) / 1000000) # Convert from us into seconds
+        lag = (time.time() - self.pc_time_offset) - timestamp 
+        if lag < 0: # If we see a timestamp that is quicker than the ever before, update the offset
+            self.pc_time_offset += lag
+        return timestamp
 
     def __read_process(self):
         """
