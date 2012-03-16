@@ -654,8 +654,35 @@ class LogInfo(object):
         return retval
 
 class Bus(object):
-
-    def __init__(self, channel, bitrate, tseg1, tseg2, sjw, no_samp, driver_mode=DRIVER_MODE_NORMAL, single_handle=False):
+    '''
+    The CAN Bus Object.
+    '''
+    def __init__(self,
+                 channel,
+                 bitrate,
+                 tseg1,
+                 tseg2,
+                 sjw,
+                 no_samp,
+                 driver_mode=DRIVER_MODE_NORMAL,
+                 single_handle=False):
+        '''
+        @param channel
+            The Channel id to create this bus with.
+        @param bitrate
+            Bitrate of channel in bit/s
+        @param driver_mode
+            Silent or normal.
+        @param single_handle
+            If True the bus is created with one handle shared between both writing and reading.
+        
+        TODO - rename these to be clearer, document what they do.
+        @param tseg1
+        @param tseg2
+        @param sjw
+        @param no_samp
+        
+        '''
         log.debug('Initialising bus instance')
         self.single_handle = single_handle
         num_channels = ctypes.c_int(0)
@@ -672,16 +699,16 @@ class Bus(object):
 
         self.channel_info = get_channel_info(_channel)
         log.info('Channel information:\n%s' % str(self.channel_info))
-
-        self.writing_event = threading.Event()
-        self.done_writing = threading.Condition()
+        
+        if self.single_handle:
+            self.writing_event = threading.Event()
+            self.done_writing = threading.Condition()
 
         log.debug('Creating read handle to bus channel: %s' % _channel)
         self.__read_handle = canlib.canOpenChannel(_channel, canlib.canOPEN_ACCEPT_VIRTUAL)
         canlib.canIoCtl(self.__read_handle, canlib.canIOCTL_SET_TIMER_SCALE, ctypes.byref(ctypes.c_long(1)), 4)
         canlib.canSetBusParams(self.__read_handle, bitrate, tseg1, tseg2, sjw, no_samp, 0)
 
-        
         '''
         Bit of a hack, on linux using kvvirtualcan module it seems you must read
         and write on separate channels of the same bus.
@@ -693,35 +720,34 @@ class Bus(object):
                 c = (chan + 1) % num_channels
                 channel_info = get_channel_info(c)
                 if "virtual" in str(channel_info).lower() and c != _channel:
-                    log.info('Creating seperate TX handle on channel: %s' % c)
+                    log.info('Creating separate TX handle on channel: %s' % c)
                     self.__write_handle = canlib.canOpenChannel(c, canlib.canOPEN_ACCEPT_VIRTUAL)
                     log.info('Going bus on RX handle')
                     canlib.canBusOn(self.__read_handle)
                     break
-
+        
         if self.single_handle:
             log.debug("We don't require separate handles to the bus")
             self.__write_handle = self.__read_handle
         else:
-            log.debug('Creating seperate handle for TX on channel: %s' % _channel)
+            log.debug('Creating separate handle for TX on channel: %s' % _channel)
             self.__write_handle = canlib.canOpenChannel(_channel, canlib.canOPEN_ACCEPT_VIRTUAL)
             canlib.canBusOn(self.__read_handle)
 
-        __driver_mode = canlib.canDRIVER_SILENT if driver_mode == DRIVER_MODE_SILENT else canlib.canDRIVER_NORMAL
-        
-        canlib.canSetBusOutputControl(self.__write_handle, __driver_mode)
+        can_driver_mode = canlib.canDRIVER_SILENT if driver_mode == DRIVER_MODE_SILENT else canlib.canDRIVER_NORMAL
+        canlib.canSetBusOutputControl(self.__write_handle, can_driver_mode)
         log.debug('Going bus on TX handle')
         canlib.canBusOn(self.__write_handle)
-        
         self.__listeners = []
         self.__tx_queue = queue.Queue(0)
-        self.__read_thread = threading.Thread(target=self.__read_process)
-        self.__write_thread = threading.Thread(target=self.__write_process)
-        self.__read_thread.daemon = True
-        self.__write_thread.daemon = True
         self.__threads_running = True
+        if not driver_mode == DRIVER_MODE_SILENT:
+            self.__write_thread = threading.Thread(target=self.__write_process)
+            self.__write_thread.daemon = True
+            self.__write_thread.start()
+        self.__read_thread = threading.Thread(target=self.__read_process)
+        self.__read_thread.daemon = True
         self.__read_thread.start()
-        self.__write_thread.start()
         self.timer_offset = None # Used to zero the timestamps from the first message
         
         '''
@@ -766,12 +792,10 @@ class Bus(object):
         The consumer thread.
         Note: gets overwritten by J1939.Bus
         """
-        log.info('Read process starting')
+        log.info('Read process starting in CAN.py')
         while self.__threads_running:
             rx_msg = self.__get_message()
-            
             if rx_msg is not None:
-
                 for listener in self.listeners:
                     listener.on_message_received(rx_msg)
 
@@ -881,7 +905,7 @@ class Bus(object):
 
     def write(self, msg):
         ''''
-        :param msg: A Message object to write to bus.
+        @param msg A Message object to write to bus.
         '''
         self.__tx_queue.put_nowait(msg)
 
@@ -897,7 +921,7 @@ def get_canlib_channel_from_url(url):
     _channel = int(_channel)
     _num_channels = ctypes.c_int(0)
     canlib.canGetNumberOfChannels(ctypes.byref(_num_channels))
-    for channel in xrange(_num_channels.value):
+    for channel in range(_num_channels.value):
         _bus = Bus(channel=channel, bitrate=1000000, tseg1=4, tseg2=3, sjw=1, no_samp=1)
         if (_type == "leaf" and (string.find(string.lower(_bus.channel_info.device_description), "leaf") != -1)) or (_type == "usbcanii" and ((string.find(string.lower(_bus.channel_info.device_description), "usbcan ii") != -1) or (string.find(string.lower(_bus.channel_info.device_description), "usbcanii") != -1))):
             if (_bus.channel_info.card_serial, _bus.channel_info.channel_on_card) == (_serial, _channel):
