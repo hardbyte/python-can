@@ -2,7 +2,7 @@ import ctypes
 import socket
 import sys
 import logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger('socketcanlib')
 
 log.debug("Loading libc with ctypes...")
