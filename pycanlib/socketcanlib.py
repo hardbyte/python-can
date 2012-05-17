@@ -1,7 +1,11 @@
 import ctypes
 import socket
 import sys
+import logging
+logging.basicConfig(level=logging.DEBUG)
+log = logging.getLogger('socketcanlib')
 
+log.debug("Loading libc with ctypes...")
 libc = ctypes.cdll.LoadLibrary("libc.so.6")
 
 # Some of these constants are defined in the python socket library
@@ -46,7 +50,7 @@ class SOCKADDR_CAN(ctypes.Structure):
 # The two fields in this struct were originally unions.
 # See /usr/include/net/if.h for original struct
 class IFREQ(ctypes.Structure):
-    _fields_ = [("ifr_name", (ctypes.c_char)*16),
+    _fields_ = [("ifr_name", ctypes.c_wchar_p),
                 ("ifr_ifindex", ctypes.c_int)]
 
 
@@ -71,7 +75,7 @@ class TIME_VALUE(ctypes.Structure):
                 ("tv_usec", ctypes.c_ulong)]
 
 
-def createSocket(canProtocol):
+def createSocket(canProtocol=CAN_RAW):
     '''
     This function creates a CAN socket. The socket can be BCM or RAW 
     depending on input. 
@@ -112,7 +116,6 @@ def bindSocket(socketID):
         | socketID  |The ID of the socket to be bound |
         +-----------+---------------------------------+
         
-    
     Returns:   
         +-----------+----------------------------+
         | 0         |protocol invalid            |
@@ -120,19 +123,30 @@ def bindSocket(socketID):
         | -1        |socket creation unsuccessful|
         +-----------+----------------------------+
     '''
+    log.debug('Binding socket with id {}'.format(socketID))
     socketID = ctypes.c_int(socketID)
     
-    ifr = IFREQ('can0')
+    ifr = IFREQ()
+    ifr.ifr_name = 'can0'
+    log.debug('calling ioctl SIOCGIFINDEX')
+    # ifr.ifr_ifindex gets filled with that device's index
     libc.ioctl(socketID, SIOCGIFINDEX, ctypes.byref(ifr))
+    log.info('ifr.ifr_ifindex: {}'.format(ifr.ifr_ifindex))
     
+    # select the CAN interface and bind the socket to it
     addr = SOCKADDR_CAN(AF_CAN, ifr.ifr_ifindex)
-    
-    # The size of addr struct is 72 in python, but 16 in C??? 
-    error = libc.bind(socketID, ctypes.byref(addr), sys.getsizeof(addr))
+
+    error = libc.bind(socketID, ctypes.byref(addr), ctypes.sizeof(addr))
     
     return error
 
-
+def sendPacket(sockedID):
+    frame = CAN_FRAME()
+    frame.can_id = 0x123
+    frame.data = "foo"
+    frame.can_dlc = len(frame.data)
+    
+    bytes_sent = libc.write(socketID, ctypes.byref(frame), ctypes.sizeof(frame))
 
 def capturePacket(socketID):
     '''
@@ -176,7 +190,7 @@ def capturePacket(socketID):
 
     packet['Data'] = data
     
-    
+    # todo remove me
     global start_sec
     global start_usec
     
@@ -194,3 +208,8 @@ def capturePacket(socketID):
     return packet
 
 
+if __name__ == "__main__":
+    socket_id = createSocket(CAN_RAW)
+    print("Created socket (id = {})".format(socket_id))
+    print(bindSocket(socket_id))
+    

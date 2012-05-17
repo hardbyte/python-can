@@ -6,13 +6,12 @@ to a file on disk.
 Copyright (C) 2010 Dynamic Controls
 """
 
-#import cPickle
 import datetime
 import argparse
 import os
 import sys
 import time
-
+import pickle
 from pycanlib import CAN
 
 if __name__ == "__main__":
@@ -33,16 +32,25 @@ if __name__ == "__main__":
     levelInt = levelStr.count('v')
     CAN.set_logging_level(levelInt)
     
-    bus = CAN.Bus(channel=results.channel, bitrate=results.bitrate, tseg1=results.tseg1, tseg2=results.tseg2, sjw=results.sjw, no_samp=results.no_samp)
+    bus = CAN.Bus(channel=results.channel, 
+                  bitrate=results.bitrate, 
+                  tseg1=results.tseg1, 
+                  tseg2=results.tseg2, 
+                  sjw=results.sjw, 
+                  no_samp=results.no_samp)
     message_list = []
     log_start_time = datetime.datetime.now()
     timestamp_string = log_start_time.strftime("%Y%m%d_%H%M%S")
-    log_file_path = os.path.join(os.path.expanduser("~"), "%s" % results.log_file_path, "%s_%s.dat" % (results.log_file_name_base,  timestamp_string))
+    log_file_path = os.path.join(
+        os.path.expanduser("~"), 
+        "%s" % results.log_file_path, 
+        "%s_%s.dat" % (results.log_file_name_base,  timestamp_string))
     file_name = os.path.basename(log_file_path)
     if not os.path.exists(os.path.dirname(log_file_path)):
         os.makedirs(os.path.dirname(log_file_path))
     listener = CAN.BufferedReader()
     bus.listeners.append(listener)
+    print('Can Logger')
     try:
         while True:
             msg = listener.get_message()
@@ -54,7 +62,14 @@ if __name__ == "__main__":
     finally:
         bus.shutdown()
     time.sleep(0.5)
-    log_obj = CAN.Log(log_info=CAN.LogInfo(log_start_time=log_start_time, log_end_time=datetime.datetime.now(), original_file_name=file_name, tester_name=("%s" % os.getenv("USERNAME"))), channel_info=bus.channel_info, machine_info=CAN.get_host_machine_info(), message_lists=[CAN.MessageList(messages=message_list)])
+    log_obj = CAN.Log(
+        log_info=CAN.LogInfo(log_start_time=log_start_time, 
+                             log_end_time=datetime.datetime.now(), 
+                             original_file_name=file_name, 
+                             tester_name=("%s" % os.getenv("USERNAME"))), 
+        channel_info=bus.channel_info, 
+        machine_info=CAN.get_host_machine_info(), 
+        message_lists=[CAN.MessageList(messages=message_list)]
+    )
     with open(log_file_path, "wb") as log_file:
-        cPickle.dump(log_obj, log_file)
-
+        pickle.dump(log_obj, log_file)

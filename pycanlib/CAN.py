@@ -5,23 +5,25 @@ functionality provided by CANLIB.
 
 Copyright (C) 2010 Dynamic Controls
 """
-#from pycanlib import canstat
 
 import ctypes
 import logging
-import cPickle
+import pickle
 import datetime
 import ctypes
 import os
 import platform
-import Queue
+try:
+    import queue
+except ImportError:
+    import Queue as queue
 import string
 import sys
 import threading
 import time
 import types
 import argparse 
-import socketcanlib
+from pycanlib import socketcanlib
 
 # This canMSG_EXT variable was the only variable being used from the file canstat.py, 
 # which has been removed
@@ -46,16 +48,6 @@ logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger('CAN')
 
 log.debug("Loading CAN.py")
-
-try:
-    import hgversionutils
-    __version__ = hgversionutils.get_version_number(os.path.join(os.path.dirname(__file__), ".."))
-except ImportError:
-    with open(os.path.join(os.path.dirname(__file__), "version.txt"), "r") as _version_file:
-        __version__ = _version_file.readline().replace("\n", "")
-
-log.debug("Initializing CAN library")
-log.debug("CAN library initialized")
 
 ID_TYPE_EXTENDED = True
 ID_TYPE_STANDARD = False
@@ -297,7 +289,7 @@ class Log(object):
         
         if dat or ext == '.dat':
             with open(filename, "wb") as bin_file:
-                cPickle.dump(self, bin_file)
+                pickle.dump(self, bin_file)
         
         elif csv or ext == '.csv':
             from csv import writer
@@ -511,8 +503,7 @@ class LogInfo(object):
         return retval
 
 class Bus(object):
-
-
+    channel_info = "socketcan channel"
     def __init__(self, channel, bitrate, tseg1, tseg2, sjw, no_samp, 
                 driver_mode = DRIVER_MODE_NORMAL, single_handle = False):
         self.socketID = socketcanlib.createSocket(CAN_RAW)
@@ -535,8 +526,6 @@ class Bus(object):
         self.timer_offset = None
 
     def __convert_timestamp (self, value):
-        # Got rid of the overflow check that was in the old code, which seemed to
-        # be quite specific to the Kvaser
         return (float(value) / 1000000)
 
     def __get_message(self):
@@ -545,7 +534,7 @@ class Bus(object):
 
         log.debug("I'm about to try to get a msg")
 
-        # Make this return some sorta error checking thing later
+        # todo error checking...?
         packet = socketcanlib.capturePacket(self.socketID)
 
         log.debug("I've got a message")
@@ -575,8 +564,6 @@ class Bus(object):
         
         return rx_msg
 
-
-
     def __read_process(self):
             while(self.__threads_running):
                 rx_msg = self.__get_message()
@@ -591,7 +578,11 @@ class Bus(object):
     @listeners.setter   
     def listeners(self, value):
         self.__listeners = value
+    
+    def shutdown(self):
+        self.__threads_running = False
         
+        # Todo any shutdown stuff for the socketcanlib?
 
 class Listener(object):
     def on_message_received(self, msg):
@@ -600,7 +591,7 @@ class Listener(object):
 class BufferedReader(Listener):
 
     def __init__(self):
-        self.__buffer = Queue.Queue(0)
+        self.__buffer = queue.Queue(0)
 
     def on_message_received(self, msg):
         self.__buffer.put_nowait(msg)
@@ -608,7 +599,7 @@ class BufferedReader(Listener):
     def get_message(self):
         try:
             return self.__buffer.get(timeout=0.5)
-        except Queue.Empty:
+        except queue.Empty:
             return None
 
 class AcceptanceFilter(Listener):
