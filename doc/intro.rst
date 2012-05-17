@@ -16,12 +16,12 @@ Currently, CAN messages can be received but not sent. The implementation
 of this functionality needs to be completed in the leaf-socketcan driver
 before it can be added at the pycanlib-leaf level. 
 
-pycanlib-leaf is completely compatible with py1939lib and pyunidrivelib. 
+pycanlib-socketcan is completely compatible with py1939lib and pyunidrivelib. 
 
 For those familiar with pycanlib, the main change to it has been the replacement
 of canlib.py with socketcanlib.py. Also InputValidation has been removed.  
 
-The Python 'socket' module will contain support for SocketCAN in version 3.3. 
+The Python 'socket' module contains support for SocketCAN in version 3.3. 
 
 .. include:: ../README.txt
 
