@@ -1,215 +1,122 @@
-import ctypes
+"""
+This implementation is for versions of Python that do not have native
+can socket support. It works by wrapping libc calls for Python.
+"""
+
 import socket
+import struct
 import sys
 import logging
-logging.basicConfig(level=logging.WARNING)
-log = logging.getLogger('socketcanlib')
+logging.basicConfig(level=logging.DEBUG)
+log = logging.getLogger('pycan')
 
-log.debug("Loading libc with ctypes...")
-libc = ctypes.cdll.LoadLibrary("libc.so.6")
-
-# Some of these constants are defined in the python socket library
-CAN_RAW =       1
-CAN_BCM =       2
-PF_CAN  =       29
-SOCK_RAW =      3
-SOCK_DGRAM =    2
-AF_CAN =        PF_CAN
-SIOCGIFINDEX =  0x8933 
-SIOCGSTAMP =    0x8906
-
-start_sec = 0
-start_usec = 0
-SEC_USEC = 1000000
-
-# See /usr/include/i386-linux-gnu/bits/socket.h for original struct
-class SOCKADDR(ctypes.Structure):
-    _fields_ = [("sa_family", ctypes.c_uint16),
-                ("sa_data", (ctypes.c_char)*14) ]
+log.debug("Loading native socket can implementation")
 
 
-# This struct is only used within the SOCKADDR_CAN struct
-class TP(ctypes.Structure):
-    _fields_ = [("rx_id", ctypes.c_uint32),
-                ("tx_id", ctypes.c_uint32)]
+can_frame_fmt = "=IB3x8s"
+can_frame_size = struct.calcsize(can_frame_fmt)
+
+def build_can_frame(can_id, data):
+    can_dlc = len(data)
+    data = data.ljust(8, b'\x00')
+    return struct.pack(can_frame_fmt, can_id, can_dlc, data)
+
+def dissect_can_frame(frame):
+    can_id, can_dlc, data = struct.unpack(can_frame_fmt, frame)
+    return (can_id, can_dlc, data[:can_dlc])
 
 
-# This struct is only used within the SOCKADDR_CAN struct
-class ADDR_INFO(ctypes.Union):
-    # This union is to future proof for future can address information
-    _fields_ = [("tp", TP)]
+def createSocket(canProtocol=socket.CAN_RAW):
+    '''Creates a CAN socket. The socket can be BCM or RAW. The socket will
+    be returned unbound to any inteface.
 
+    :param int canProtocol:
+        The protocol to use for the CAN socket, either:
+         * socket.CAN_RAW
+         * socket.CAN_BCM.
 
-# See /usr/include/linux/can.h for original struct
-class SOCKADDR_CAN(ctypes.Structure):
-    _fields_ = [("can_family", ctypes.c_uint16),
-                ("can_ifindex", ctypes.c_int),
-                ("can_addr", ADDR_INFO)]
-
-
-# The two fields in this struct were originally unions.
-# See /usr/include/net/if.h for original struct
-class IFREQ(ctypes.Structure):
-    _fields_ = [("ifr_name", ctypes.c_wchar_p),
-                ("ifr_ifindex", ctypes.c_int)]
-
-
-# See /usr/include/linux/can.h for original struct
-#
-# The data field actually only contains 8 bytes of data, not 11. 
-# The linux socketcan module aligns the start of the data to an 8 byte 
-# boundary, so there are 3 empty bytes between the DLC and the data. 
-#
-# I couldn't find a similar function in Python that did this, so am 
-# saving the three empty bytes as part of the data, and getting rid 
-# of them later. See the capturePacket function further down for this. 
-class CAN_FRAME(ctypes.Structure):
-    _fields_ = [("can_id", ctypes.c_uint32, 32),
-                ("can_dlc", ctypes.c_uint8, 8),
-                ("data", (ctypes.c_uint8)*11)]
-
-
-# See usr/include/linux/time.h for original struct
-class TIME_VALUE(ctypes.Structure):
-    _fields_ = [("tv_sec", ctypes.c_ulong),
-                ("tv_usec", ctypes.c_ulong)]
-
-
-def createSocket(canProtocol=CAN_RAW):
+    :return:
+        -1 - socket creation unsuccessful
+        socketID - successful creation
     '''
-    This function creates a CAN socket. The socket can be BCM or RAW 
-    depending on input. 
-    
-    The RAW socket needs to be bound to an interface.
-    The BCM socket needs to be connected to an interface - this
-    is not yet implemented. 
-    
-    Args:
-        +-----------+---------------------------------------------------------+
-        |canProtocol|The protocol to use for the CAN socket, either RAW or BCM|
-        +-----------+---------------------------------------------------------+
-    
-    Returns:   
-        +-----------+----------------------------+
-        | 0         |protocol invalid            |
-        +-----------+----------------------------+
-        | -1        |socket creation unsuccessful|
-        +-----------+----------------------------+
-        | socketID  |  successful creation       |
-        +-----------+----------------------------+
-    '''
-    if canProtocol == CAN_RAW:
-        socketID = libc.socket(PF_CAN, SOCK_RAW, CAN_RAW)
-    elif canProtocol == CAN_BCM:
-        socketID = libc.socket(PF_CAN, SOCK_DGRAM, CAN_BCM)
-    else:
-        socketID = 0
-    return socketID
+    if canProtocol == socket.CAN_RAW:
+        sock = socket.socket(socket.PF_CAN, socket.SOCK_RAW, socket.CAN_RAW)
+    elif canProtocol == socket.CAN_BCM:
+        sock = socket.socket(socket.PF_CAN, socket.SOCK_DGRAM, socket.CAN_BCM)
+    log.info('Created a socket')
+    return sock
 
 
-def bindSocket(socketID):
+def bindSocket(sock, channel='can0'):
     '''
-    Binds the given socket to the can0 interface. 
-    
-    Args:
-        +-----------+---------------------------------+
-        | socketID  |The ID of the socket to be bound |
-        +-----------+---------------------------------+
-        
-    Returns:   
-        +-----------+----------------------------+
-        | 0         |protocol invalid            |
-        +-----------+----------------------------+
-        | -1        |socket creation unsuccessful|
-        +-----------+----------------------------+
-    '''
-    log.debug('Binding socket with id {}'.format(socketID))
-    socketID = ctypes.c_int(socketID)
-    
-    ifr = IFREQ()
-    ifr.ifr_name = 'can0'
-    log.debug('calling ioctl SIOCGIFINDEX')
-    # ifr.ifr_ifindex gets filled with that device's index
-    libc.ioctl(socketID, SIOCGIFINDEX, ctypes.byref(ifr))
-    log.info('ifr.ifr_ifindex: {}'.format(ifr.ifr_ifindex))
-    
-    # select the CAN interface and bind the socket to it
-    addr = SOCKADDR_CAN(AF_CAN, ifr.ifr_ifindex)
+    Binds the given socket to the given interface.
 
-    error = libc.bind(socketID, ctypes.byref(addr), ctypes.sizeof(addr))
-    
-    return error
+    :param socket.Socket socketID:
+        The ID of the socket to be bound
 
-def sendPacket(sockedID):
-    frame = CAN_FRAME()
-    frame.can_id = 0x123
-    frame.data = "foo"
-    frame.can_dlc = len(frame.data)
-    
-    bytes_sent = libc.write(socketID, ctypes.byref(frame), ctypes.sizeof(frame))
+    :return:
 
-def capturePacket(socketID):
     '''
-    Captures a packet of data from the given socket. 
-    
-    Args: 
-        socketID: The socket to read from
-    
-    Returns:
-        A dictionary with the following keys:
-            +-----------+----------------------------+
-            | 'CAN ID'  |int                         |
-            +-----------+----------------------------+
-            | 'DLC'     |int                         |
-            +-----------+----------------------------+
-            | 'Data'    |list                        |
-            +-----------+----------------------------+
-            |'Timestamp'| float                      |
-            +-----------+----------------------------+
-   
+    log.debug('Binding socket to channel={}'.format(channel))
+    sock.bind((channel,))
+
+
+def capturePacket(sock):
     '''
-    packet = {}
+    Captures a packet of data from the given socket.
+    :param sock:
+        The socket to read a packet from.
     
-    frame = CAN_FRAME()
-    time = TIME_VALUE()
+    :return: A dictionary with the following keys:
+        'CAN ID',
+        'DLC'
+        'Data' 
+        'Timestamp'
+    '''
     
     # Fetching the Arb ID, DLC and Data
-    bytesRead = libc.read(socketID, ctypes.byref(frame), sys.getsizeof(frame))
+    cf, addr = sock.recvfrom(can_frame_size)
     
-    # Fetching the timestamp
-    error = libc.ioctl(socketID, SIOCGSTAMP, ctypes.byref(time));
+    can_id, can_dlc, data = dissect_can_frame(cf)
+    print('Received: can_id=%x, can_dlc=%x, data=%s' % (can_id, can_dlc, data))
     
-    packet['CAN ID'] = frame.can_id
-    packet['DLC'] = frame.can_dlc
+    # Fetching the timestamp - TODO
+    #error = libc.ioctl(socketID, SIOCGSTAMP, ctypes.byref(time));
     
-    # The first 3 elements in the data array are discarded (as they are 
-    # empty) and the rest (actual data) saved into a list. 
-    data = []
-    for i in range(3, frame.can_dlc + 3):
-        data.append(frame.data[i])
-
-    packet['Data'] = data
-    
-    # todo remove me
-    global start_sec
-    global start_usec
-    
-    # Recording the time when the first packet is retreived, to start 
-    # the timestamping from zero 
-    if ( start_sec == 0) and ( start_usec == 0):
-         start_sec = time.tv_sec;
-         start_usec = time.tv_usec;
-    
-    # Converting the time to microseconds
-    timestamp = ((time.tv_usec - start_usec) + SEC_USEC*(time.tv_sec - start_sec))
-    
-    packet['Timestamp'] = timestamp
-
-    return packet
-
+    # The first 3 elements in the data array are discarded (as they are
+    # empty) and the rest (actual data) saved into a list. TODO why????
+    #data = []
+    #for i in range(3, can_dlc + 3):
+    #    data.append(data[i])
+    return {
+        'CAN ID': can_id,
+        'DLC': can_dlc,
+        'Data': data,
+        'Timestamp': 0.0,
+    }
 
 if __name__ == "__main__":
-    socket_id = createSocket(CAN_RAW)
-    print("Created socket (id = {})".format(socket_id))
-    print(bindSocket(socket_id))
+    '''Create two sockets on vcan0 to test send and receive
+    If you want to try it out (just for fun :-), you can do the following:
+        modprobe vcan
+        ip link add dev vcan0 type vcan
+        ifconfig vcan0 up
+    '''
+
+    def receiver():
+        receiver_socket = createSocket()
+        bindSocket(receiver_socket, 'vcan0')
+        print("Receiver is waiting for a message...")
+        print("Receiver got: ", capturePacket(receiver_socket))
+
+    def sender():
+        sender_socket = createSocket()
+        bindSocket(sender_socket, 'vcan0')
+        sender_socket.send(build_can_frame(0x01, b'\x01\x02\x03'))
+        print("Sender sent a message.")
+
+    import threading
+    threading.Thread(target=receiver).start()
+    
+    threading.Thread(target=sender).start()
     

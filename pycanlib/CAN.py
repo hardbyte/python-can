@@ -23,7 +23,7 @@ import threading
 import time
 import types
 import argparse 
-from pycanlib import socketcanlib
+import socketcanlib
 
 # This canMSG_EXT variable was the only variable being used from the file canstat.py, 
 # which has been removed
@@ -101,10 +101,6 @@ def get_host_machine_info():
 
 class ChannelNotFoundError(Exception):
     pass
-    
-    
-def test():
-    print ("hello")
 
 
 class Message (object) :
@@ -506,10 +502,11 @@ class Bus(object):
     channel_info = "socketcan channel"
     def __init__(self, channel, bitrate, tseg1, tseg2, sjw, no_samp, 
                 driver_mode = DRIVER_MODE_NORMAL, single_handle = False):
+
         self.socketID = socketcanlib.createSocket(CAN_RAW)
-        socketcanlib.bindSocket(self.socketID)
+        socketcanlib.bindSocket(self.socketID, channel)
         
-        # TO DO:
+        # TODO:
         #socketcanlib.setBusParams(self.socketID, bitrate, tseg1, tseg2, sjw, no_samp)
         
         self.__listeners = []

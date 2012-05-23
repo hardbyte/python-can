@@ -16,7 +16,7 @@ from pycanlib import CAN
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="A logging system for CAN signals")
-    parser.add_argument("-c", "--channel", type=int, dest="channel", help="CAN channel number", default=0)
+    parser.add_argument("-c", "--channel", type=str, dest="channel", help="CAN channel number", default='can0')
     parser.add_argument("-b", "--bitrate", type=int, dest="bitrate", help="CAN bus bitrate", default=1000000)
     parser.add_argument("-t", "--tseg1", type=int, dest="tseg1", help="CAN bus tseg1", default=4)
     parser.add_argument("-u", "--tseg2", type=int, dest="tseg2", help="CAN bus tseg2", default=3)
