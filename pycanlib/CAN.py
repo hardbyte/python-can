@@ -756,6 +756,11 @@ class Bus(object):
         Allow messages to be on the bus for a while before reading this value so it has a chance to correct itself'''
         self.pc_time_offset = None
 
+    def flush_tx_buffer(self):
+        '''
+        Flushes the transmit buffer on the Kvaser
+        '''
+        canlib.canIoCtl(self.__write_handle, canlib.canIOCTL_FLUSH_TX_BUFFER, 0, 0)
 
     @property
     def listeners(self):
