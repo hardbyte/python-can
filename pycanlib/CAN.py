@@ -9,17 +9,11 @@ Copyright (C) 2010 Dynamic Controls
 import ctypes
 import logging
 import pickle
-import datetime
-import ctypes
 import os
 import platform
 import queue
-import string
 import sys
 import threading
-import time
-import types
-import argparse 
 import socketcanlib
 import multiprocessing
 

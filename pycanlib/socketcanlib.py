@@ -1,6 +1,6 @@
 """
-This implementation is for versions of Python that do not have native
-can socket support. It works by wrapping libc calls for Python.
+This implementation is for versions of Python that have native
+can socket support.
 """
 
 import socket
@@ -97,7 +97,8 @@ def capturePacket(sock):
 
 if __name__ == "__main__":
     '''Create two sockets on vcan0 to test send and receive
-    If you want to try it out (just for fun :-), you can do the following:
+    
+    If you want to try it out you can do the following:
         modprobe vcan
         ip link add dev vcan0 type vcan
         ifconfig vcan0 up
