@@ -13,10 +13,7 @@ import datetime
 import ctypes
 import os
 import platform
-try:
-    import queue
-except ImportError:
-    import Queue as queue
+import Queue as queue
 import string
 import sys
 import threading
@@ -24,6 +21,7 @@ import time
 import types
 import argparse 
 import socketcanlib
+import multiprocessing
 
 # This canMSG_EXT variable was the only variable being used from the file canstat.py, 
 # which has been removed
@@ -104,9 +102,9 @@ class ChannelNotFoundError(Exception):
 
 
 class Message (object) :
-    def __init__(self, timestamp = 0, is_remote_frame = False, id_type = ID_TYPE_11_BIT,
-                    is_wakeup = False, is_error_frame = False, arbitration_id = 0, data = None, 
-                    dlc = 0, info_strings = None ):
+    def __init__(self, timestamp=0, is_remote_frame=False, id_type=ID_TYPE_11_BIT,
+                 is_wakeup=False, is_error_frame=False, arbitration_id=0, data=None, 
+                 dlc=0, info_strings=None):
         self.timestamp = timestamp
         self.id_type = id_type
         self.is_remote_frame = is_remote_frame
@@ -192,6 +190,12 @@ class MessageList(object):
 
     def __iter__(self):
         return (m for m in self.messages)
+
+    def __getitem__(self, index):
+        return self.messages[index]
+
+    def __len__(self):
+        return len(self.messages)
 
     @property
     def start_timestamp(self):
@@ -305,52 +309,12 @@ class MachineInfo(object):
         self.machine_name = machine_name
         self.python_version = python_version
         self.platform_info = platform_info
-        #self.canlib_version = get_canlib_version()
+        self.canlib_version = get_canlib_version()
         self.module_versions = {}
-        for (_modname, _mod) in sys.modules.items():
-            if _mod != None:
-                if "__version__" in _mod.__dict__.keys():
-                    self.module_versions[_modname] = _mod.__version__
-
-    @property
-    def machine_name(self):
-        return self.__machine_name
-
-    @machine_name.setter
-    def machine_name(self, value):
-        self.__machine_name = value
-
-    @property
-    def python_version(self):
-        return self.__python_version
-
-    @python_version.setter
-    def python_version(self, value):
-        self.__python_version = value
-
-    @property
-    def platform_info(self):
-        return self.__platform_info
-
-    @platform_info.setter
-    def platform_info(self, value):
-        self.__platform_info = value
-
-    #~ @property
-    #~ def canlib_version(self):
-        #~ return self.__canlib_version
-
-    #~ @canlib_version.setter
-    #~ def canlib_version(self, value):
-        #~ self.__canlib_version = value
-
-    @property
-    def module_versions(self):
-        return self.__module_versions
-
-    @module_versions.setter
-    def module_versions(self, value):
-        self.__module_versions = value
+        for (modname,_mod) in sys.modules.items():
+            if mod != None:
+                if "__version__" in mod.__dict__.keys():
+                    self.module_versions[_modname] = mod.__version__
 
     def __str__(self):
         retval = "-" * len("Machine Info")
@@ -360,10 +324,10 @@ class MachineInfo(object):
         retval += "Machine name: %s\n" % self.machine_name
         retval += "Python: %s\n" % self.python_version
         retval += "OS: %s\n" % self.platform_info
-        #~ retval += "CANLIB: %s\n" % self.canlib_version
+        retval += "CANLIB: %s\n" % self.canlib_version
         retval += "Loaded Python module versions:\n"
-        for _mod in sorted(self.module_versions.keys()):
-            retval += "\t%s: %s\n" % (_mod, self.module_versions[_mod])
+        for mod in sorted(self.module_versions.keys()):
+            retval += "\t%s: %s\n" % (mod, self.module_versions[_mod])
         return retval
 
 class ChannelInfo(object):
@@ -465,13 +429,13 @@ class ChannelInfo(object):
         retval += "\nChannel Info\n"
         retval += "-"*len("Channel Info")
         retval += "\n"
-        #~ retval += "CANLIB channel: %s\n" % self.channel
+        retval += "CANLIB channel: %s\n" % self.channel
         retval += "Device Description: '%s'\n" % self.device_description
         retval += "Manufacturer Name: '%s'\n" % self.manufacturer_name
         retval += "Firmware version: %s\n" % self.firmware_version
         retval += "Hardware version: %s\n" % self.hardware_version
         retval += "Card serial number: %s\n" % self.card_serial
-        #~ retval += "Transceiver type: %d (%s)\n" % (self.transceiver_type, canlib.lookup_transceiver_type(self.transceiver_type))
+        retval += "Transceiver type: %d (%s)\n" % (self.transceiver_type, canlib.lookup_transceiver_type(self.transceiver_type))
         retval += "Transceiver serial number: %s\n" % self.transceiver_serial
         retval += "Card number: %s\n" % self.card_number
         retval += "Channel on card: %s\n" % self.channel_on_card
@@ -510,7 +474,6 @@ class Bus(object):
         #socketcanlib.setBusParams(self.socketID, bitrate, tseg1, tseg2, sjw, no_samp)
         
         self.__listeners = []
-        import multiprocessing
         self.__tx_queue = multiprocessing.Queue(0)
         self.__read_thread = threading.Thread(target=self.__read_process)
         #self.__write_thread = threading.Thread(target=self.__write_process)
@@ -666,4 +629,4 @@ class AcceptanceFilter(Listener):
 
 class MessagePrinter(Listener):
     def on_message_received(self, msg):
-        print (msg)
+        print msg
