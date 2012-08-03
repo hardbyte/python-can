@@ -1,0 +1,413 @@
+.. _candoc:
+
+Documentation: CAN.py
+======================
+
+Much of this documentation is taken from Ben Powell's pycanlib manual, and
+has been editied to incorporate the newer additions. 
+
+CAN.Message
+-----------
+
+CAN.Message is the class pycanlib uses to represent CAN messages. Instantiating
+a CAN message (with default values for arbitration ID, flags, DLC, and data) is
+done as follows:
+
+    >>> from pycanlib import CAN
+    >>> test = CAN.Message()
+    >>> print test
+    0.000000        0000    0002    0
+    >>> test2 = CAN.Message(data=[1,2,3,4,5], dlc=5)
+    >>> print test2
+    0.000000        0000    0002    5    01 02 03 04 05
+
+The fields in the printed message are (in this order): timestamp, arbitration
+ID, flags, dlc, and data. The flags field is represented as a four-digit
+hexadecimal number, the arbitration ID field as either a four-digit or
+eight-digit hexadecimal number depending on the length of the arbitration ID
+(11-bit or 29-bit), and that each of the bytes in the data field (when present)
+are represented as two-digit hexadecimal numbers. The following sections
+describe each of the parameters to the CAN.Message constructor.
+
+Timestamp
+.........
+
+The timestamp field in a CAN message is a floating point number representing
+the message timestamp in seconds, to six decimal places. 
+
+The timestamp is retrieved through ioctls, and is either stamped from when the
+Kvaser receives the message or when the kernel receives it - this is unclear at 
+the moment (ask Phil). 
+
+
+
+Arbitration ID
+..............
+
+The arbitration ID field in a CAN message may be either 11 bits (standard
+addressing, CAN 2.0A) or 29 bits (extended addressing, CAN 2.0B) in length, and
+``pycanlib`` supports this by providing an id_type parameter to the CAN.Message
+constructor. This parameter takes one of the values ``CAN.ID_TYPE_STANDARD``
+(11-bit, default value) or ``CAN.ID_TYPE_EXTENDED`` (29-bit). The effect of
+this parameter, and the result of attempting to set an invalid ID type, is
+shown below.
+
+The arbitration ID parameter itself can take an integer between 0 and the
+maximum value allowed by the id_type parameter passed to the CAN.Message
+constructor (either 2\ :sup:`11` - 1 for 11-bit IDs, or 2\ :sup:`29` - 1 for
+29-bit IDs). The effect of this parameter, and the result of attempting to set
+an invalid ID, is shown below.
+
+    >>> test_std_id = CAN.Message(id_type=CAN.ID_TYPE_STANDARD)
+    >>> print test_std_id
+    0.000000        0000    0002    0
+    >>> test_ext_id = CAN.Message(id_type=CAN.ID_TYPE_EXTENDED)
+    >>> print test_ext_id
+    0.000000    00000000    0004    0
+    
+    >>> test_std_id_2 = CAN.Message(id_type=CAN.ID_TYPE_STANDARD, arbitration_id=100)
+    >>> print test_std_id_2
+    0.000000        0064    0002    0
+    
+    >>> test_std_id_3 = CAN.Message(id_type=CAN.ID_TYPE_STANDARD, arbitration_id=2048)
+    Traceback (most recent call last):
+        ...
+    ParameterRangeError: Bad parameter 'arbitration_id'
+    with value: 2048
+    of type: <type 'int'>
+    passed to function 'CAN.Message.arbitration_id.setter'
+    Reason: 'Value greater than maximum of 2047'
+
+    >>> test_std_id_4 = CAN.Message(id_type=CAN.ID_TYPE_STANDARD, arbitration_id=-1)
+    Traceback (most recent call last):
+        ...
+    ParameterRangeError: Bad parameter 'arbitration_id'
+    with value: -1
+    of type: <type 'int'>
+    passed to function 'CAN.Message.arbitration_id.setter'
+    Reason: 'Value less than minimum of 0'
+
+    >>> test_ext_id_2 = CAN.Message(id_type=CAN.ID_TYPE_EXTENDED, arbitration_id=2048)
+    >>> print test_ext_id_2
+    0.000000    00000800    0004    0
+    >>> test_ext_id_3 = CAN.Message(id_type=CAN.ID_TYPE_EXTENDED, arbitration_id=536870912)
+    Traceback (most recent call last):
+        ...
+    ParameterRangeError: Bad parameter 'arbitration_id'
+    with value: 536870912
+    of type: <type 'int'>
+    passed to function 'CAN.Message.arbitration_id.setter'
+    Reason: 'Value greater than maximum of 536870911'
+
+    >>> test_ext_id_4 = CAN.Message(id_type=CAN.ID_TYPE_EXTENDED, arbitration_id=-1)
+    Traceback (most recent call last):
+        ...
+    ParameterRangeError: Bad parameter 'arbitration_id'
+    with value: -1
+    of type: <type 'int'>
+    passed to function 'CAN.Message.arbitration_id.setter'
+    Reason: 'Value less than minimum of 0'
+
+
+Flags
+.....
+
+The flags parameter of a CAN message cannot be set directly in the constructor
+(however it is a property of a `CAN.Message`_ object which may be set after the
+object is instantiated). Instead, the constructor provides access to each of
+the parameters represented in the flags parameter, and these are detailed
+below.
+
+is_remote_frame
+```````````````
+
+This parameter indicates if the message is a remote frame or a data frame, and
+modifies the bit in the CAN message's flags field indicating this. It takes a
+value of either ``CAN.DATA_FRAME`` (default) or ``CAN.REMOTE_FRAME``.
+
+id_type
+```````
+
+This parameter controls the length of this CAN message's arbitration ID field.
+It is covered in the `Arbitration ID`_ section of this document.
+
+is_wakeup
+`````````
+
+This parameter indicates if the message is a wakeup message or not, and modifies
+the bit in the CAN message's flags field indicating this. It takes a value of
+either ``CAN.WAKEUP_MSG`` or ``not CAN.WAKEUP_MSG`` (default).
+
+is_error_frame
+``````````````
+
+This parameter indicates if the message is an error frame or not, and modifies
+the bit in the CAN message's flags field indicating this. It takes a value of
+either ``CAN.ERROR_FRAME`` or ``not CAN.ERROR_FRAME`` (default).
+
+DLC
+...
+
+The DLC parameter of a CAN message is an integer between 0 and 8. Its purpose
+varies depending on the frame type - for data frames it represents the amount
+of data contained in the message, in remote frames it represents the amount of
+data being requested from the device the message is addressed to. The effect of
+this parameter, and the result of attempting to set an invalid DLC, is shown
+below.
+
+    >>> test_legal_dlc_1 = CAN.Message(dlc=1)
+    >>> print test_legal_dlc_1
+    0.000000        0000    0002    1
+    >>> test_legal_dlc_2 = CAN.Message(dlc=5)
+    >>> print test_legal_dlc_2
+    0.000000        0000    0002    5
+    >>> test_illegal_dlc_1 = CAN.Message(dlc=-1)
+    Traceback (most recent call last):
+        ...
+    ParameterRangeError: Bad parameter 'dlc'
+    with value: -1
+    of type: <type 'int'>
+    passed to function 'CAN.Message.dlc.setter'
+    Reason: 'Value less than minimum of 0'
+
+    >>> test_illegal_dlc_2 = CAN.Message(dlc=9)
+    Traceback (most recent call last):
+        ...
+    ParameterRangeError: Bad parameter 'dlc'
+    with value: 9
+    of type: <type 'int'>
+    passed to function 'CAN.Message.dlc.setter'
+    Reason: 'Value greater than maximum of 8'
+
+Note that the DLC value does not necessarily define the number of bytes of data
+in a packet.
+
+Data
+....
+
+The data parameter of a CAN message is an array of between 0 and 8 integers,
+each with a value of between 0 and 255. The effect of this parameter, and the
+result of attempting to set an invalid data array, is shown below.
+
+    >>> test_legal_data = CAN.Message(dlc=3, data=[1, 2, 3])
+    >>> print test_legal_data
+    0.000000        0000    0002    3    01 02 03
+    >>> test_illegal_data_1 = CAN.Message(dlc=3, data=[1000, 2, 30])
+    Traceback (most recent call last):
+        ...
+    ParameterRangeError: Bad parameter 'data[0]'
+    with value: 1000
+    of type: <type 'int'>
+    passed to function 'CAN.Message.data.setter'
+    Reason: 'Value greater than maximum of 255'
+
+    >>> test_illegal_data_2 = CAN.Message(dlc=3, data=[100, -5, 30])
+    Traceback (most recent call last):
+        ...
+    ParameterRangeError: Bad parameter 'data[1]'
+    with value: -5
+    of type: <type 'int'>
+    passed to function 'CAN.Message.data.setter'
+    Reason: 'Value less than minimum of 0'
+
+CAN.MessageList
+---------------
+
+CAN.MessageList is the class pycanlib uses to represent lists of CAN messages.
+Instantiating a MessageList object, with a list of messages, a list name, and a
+set of filter criteria which may be applied to the messages in the list, is done
+as follows::
+
+    >>> test_message_list_1 = CAN.MessageList(messages=[test, test2, test_std_id, test_ext_id, test_legal_timestamp], filter_criteria="message.id_type == CAN.ID_TYPE_29_BIT", name="CAN 2.0B messages")
+    >>> print test_message_list_1
+    --------------------------------
+    Message List 'CAN 2.0B messages'
+    --------------------------------
+    Applied filters: message.id_type == CAN.ID_TYPE_29_BIT
+    Start timestamp = 0.000000
+    End timestamp = 1.000000
+    0.000000        0000    0002    0
+    0.000000        0000    0002    5    01 02 03 04 05
+    0.000000        0000    0002    0
+    0.000000    00000000    0004    0
+    1.000000        0000    0002    0
+    <BLANKLINE>
+
+    >>> test_message_list_2 = CAN.MessageList(messages=[test, test2, test_std_id, test_ext_id, test_legal_timestamp], filter_criteria="message.id_type == CAN.ID_TYPE_11_BIT", name="CAN 2.0A messages")
+    >>> print test_message_list_2
+    --------------------------------
+    Message List 'CAN 2.0A messages'
+    --------------------------------
+    Applied filters: message.id_type == CAN.ID_TYPE_11_BIT
+    Start timestamp = 0.000000
+    End timestamp = 1.000000
+    0.000000        0000    0002    0
+    0.000000        0000    0002    5    01 02 03 04 05
+    0.000000        0000    0002    0
+    0.000000    00000000    0004    0
+    1.000000        0000    0002    0
+    <BLANKLINE>
+
+messages
+........
+
+The messages attribute (which may be set at instantiation, but may be written
+to afterward) contains the messages listed in this MessageList object.
+
+filter_criteria
+...............
+
+The filter_criteria attribute (which may be set at instantiation, but is
+read-only thereafter) is a ``str`` containing executable Python code
+representing the criteria by which the `CAN.MessageList`_ object will decide to
+include the message in its filtered_messages property or not. It must either:
+
+ - evaluate to True, including the message in filtered_messages.
+ - evaluate to False, excluding the message from filtered_messages.
+ - raise an AttributeError (in the case where a message does not contain a
+   property referenced by the filter criteria), which excludes the message from
+   filtered_messages.
+
+Note that the filter criteria are not applied to the messages displayed in the
+message list by default. The content of the message list filtered according
+to the filter criteria is made available via the `MessageList` property
+`filtered_messages`::
+
+    >>> for _msg in test_message_list_1.filtered_messages: print _msg
+    0.000000    00000000    0004    0
+
+    >>> for _msg in test_message_list_2.filtered_messages: print _msg
+    0.000000        0000    0002    0
+    0.000000        0000    0002    5    01 02 03 04 05
+    0.000000        0000    0002    0
+    1.000000        0000    0002    0
+
+    Accessing the filtered_messages property (which is read-only) should not affect
+    the contents of the list overall, as shown below::
+
+    >>> print test_message_list_1
+    --------------------------------
+    Message List 'CAN 2.0B messages'
+    --------------------------------
+    Applied filters: message.id_type == CAN.ID_TYPE_29_BIT
+    Start timestamp = 0.000000
+    End timestamp = 1.000000
+    0.000000        0000    0002    0
+    0.000000        0000    0002    5    01 02 03 04 05
+    0.000000        0000    0002    0
+    0.000000    00000000    0004    0
+    1.000000        0000    0002    0
+    <BLANKLINE>
+
+    >>> print test_message_list_2
+    --------------------------------
+    Message List 'CAN 2.0A messages'
+    --------------------------------
+    Applied filters: message.id_type == CAN.ID_TYPE_11_BIT
+    Start timestamp = 0.000000
+    End timestamp = 1.000000
+    0.000000        0000    0002    0
+    0.000000        0000    0002    5    01 02 03 04 05
+    0.000000        0000    0002    0
+    0.000000    00000000    0004    0
+    1.000000        0000    0002    0
+    <BLANKLINE>
+
+name
+....
+
+The name parameter to the MessageList constructor is the name used to identify
+this particular MessageList within a larger collection of MessageLists
+(sometimes called a log). While names *should* be unique for maximum
+usefulness, uniqueness of a particular MessageList's name within a log is not
+checked.
+
+CAN.Bus
+-------
+
+The `CAN.Bus` class, as the name suggests, provides an abstraction of a CAN bus.
+Writing to the bus is done by calling the write method and passing a
+`CAN.Message`_ object. As the bus is event-driven, it has no "read" method, but
+instead has a "listeners" property, which is a list of `CAN.Listener`_
+subclasses that receive notifications when new messages arrive (which
+include the new message itself).
+
+The bus can provide a wrapper around a physical CAN Bus using a Kvaser, or
+it can wrap a virtual CAN Bus.
+
+Currently, the write functionalities of the CAN bus are disabled as they 
+are not implemented by the leaf-socketcan driver. 
+
+Concurrent Design
+.................
+
+A `CAN.Bus`_ object with a physical CAN Bus has one bus handle which is shared
+by the read and write daemon threads. The access is protected with the
+``writing_event`` *Event* and the ``done_writing`` *Condition*.
+
+The read thread acquires ``done_writing`` and while ``writing_event`` is set
+blocks waiting on the ``done_writing`` Condition. A 1ms blocking read is carried
+out before ``done_writing`` is released.
+
+The write thread blocks for 5ms on a queue (to allow the thread to stop). If
+a message was received it *sets* the writing_event to tell the read thread
+that a message in waiting to be sent. The ``done_writing`` is acquired for
+the actual write, the writing_event is cleared and the ``done_writing`` event
+is notified to start the read thread again.
+
+.. warning:: Any objects inheriting from ``CAN.Bus`` should *not* directly
+        use the canlib handle(/s).
+
+
+CAN.Listener
+------------
+
+The Listener class is an "abstract" class (such that Python has that concept)
+which forms the base class for any objects which wish to register to receive
+notifications of new messages on the bus. It provides a single method
+(on_message_received), which takes a single parameter (the message received
+from the bus), and is called by the CAN.Bus object(s) that the Listener is
+registered with whenever they receive a new message. Subclasses of Listener
+that do not override this method (that is, implement an on_message_received
+of their own without calling CAN.Listener's version) will cause
+NotImplementedError to be thrown when a message is received on the CAN bus.
+
+CAN.BufferedReader
+------------------
+
+The BufferedReader class is a subclass of `CAN.Listener`_ which implements a
+"message buffer": that is, when a BufferedReader instance is notified of a
+new message it pushes it into a queue of messages waiting to be serviced.
+The BufferedReader class provides a get_message method, which attempts to
+retrieve the latest message received by the instance. If no message is
+available it blocks for 0.5 seconds or until a message is received (whichever
+is shorter), and returns the message if there is one, or None if there is not.
+
+CAN.MessagePrinter
+------------------
+
+The MessagePrinter class is a subclass of `CAN.Listener`_ which simply prints
+any messages it receives to the terminal.
+
+CAN.AcceptanceFilter
+--------------------
+
+The AcceptanceFilter class is a subclass of `CAN.Listener`_ which implements the
+CAN "acceptance filter" rules in software. It in turn has its own list of
+listeners, which receive only the messages matching its defined "acceptance
+filter" rules.
+
+CAN.LogInfo
+-----------
+
+The LogInfo class provides storage of information about a CAN traffic log,
+including data like the time of day at log start and end, the name of the
+tester who recorded the log, and the name of the original log file.
+
+
+CAN.Log
+-------
+
+A Log object contains information about the CAN channel, the machine information
+and contains a record of the messages and errors.
+
