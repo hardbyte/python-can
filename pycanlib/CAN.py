@@ -13,7 +13,7 @@ import datetime
 import ctypes
 import os
 import platform
-import Queue as queue
+import queue
 import string
 import sys
 import threading
@@ -27,20 +27,20 @@ import multiprocessing
 # which has been removed
 canMSG_EXT = 0x0004
 
-CAN_RAW =       1
-CAN_BCM =       2
-MSK_ARBID =     0x1FFFFFFF
-MSK_FLAGS =     0xE0000000
+CAN_RAW = 1
+CAN_BCM = 2
+MSK_ARBID = 0x1FFFFFFF
+MSK_FLAGS = 0xE0000000
 
-#Extended flag is in the same place for pycan and socketcan
-EXTFLG =        0x0004
+# Extended flag is in the same place for pycan and socketcan
+EXTFLG = 0x0004
 
-SKT_ERRFLG  =   0x0001
-SKT_RTRFLG  =   0x0002
+SKT_ERRFLG = 0x0001
+SKT_RTRFLG = 0x0002
 
-PYCAN_ERRFLG =  0x0020
-PYCAN_STDFLG =  0x0002
-PYCAN_RTRFLG =  0x0001
+PYCAN_ERRFLG = 0x0020
+PYCAN_STDFLG = 0x0002
+PYCAN_RTRFLG = 0x0001
 
 logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger('CAN')
@@ -629,4 +629,4 @@ class AcceptanceFilter(Listener):
 
 class MessagePrinter(Listener):
     def on_message_received(self, msg):
-        print msg
+        print(msg)
