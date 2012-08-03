@@ -1,0 +1,225 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>pycanlib-leaf &mdash; pycanlib-leaf v1 documentation</title>
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="pycanlib-leaf v1 documentation" href="#" />
+    <link rel="next" title="Introduction and Installation" href="intro.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="intro.html" title="Introduction and Installation"
+             accesskey="N">next</a> |</li>
+        <li><a href="#">pycanlib-leaf v1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="pycanlib-leaf">
+<h1>pycanlib-leaf<a class="headerlink" href="#pycanlib-leaf" title="Permalink to this headline">¶</a></h1>
+<p>Contents:</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction and Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#background">Background</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#installation">Installation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="overview.html#code-structure">Code Structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="overview.html#differences-from-pycanlib">Differences from pycanlib</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="installing-pycanlib">
+<h1>Installing pycanlib<a class="headerlink" href="#installing-pycanlib" title="Permalink to this headline">¶</a></h1>
+<p>This document assumes a workstation set up for development using Mercurial
+(i.e. Mercurial installed and set up correctly, with an SSH key for the user
+doing the install). Python 2.6 or later must be installed as well.</p>
+<div class="section" id="install-leaf-kernel-module">
+<h2>1. Install Leaf Kernel Module<a class="headerlink" href="#install-leaf-kernel-module" title="Permalink to this headline">¶</a></h2>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Sorry there is no socketcan support on <em>windows</em>!</p>
+</div>
+<div class="section" id="linux">
+<h3>Linux<a class="headerlink" href="#linux" title="Permalink to this headline">¶</a></h3>
+<ol class="arabic">
+<li><p class="first">Make sure your system is set up for kernel compilation has header
+packages installed.</p>
+</li>
+<li><dl class="first docutils">
+<dt>Obtain the leaf kernal module source from:</dt>
+<dd><p class="first last">hg clone hg.sw/pdixon/leaf-socketcan</p>
+</dd>
+</dl>
+</li>
+<li><p class="first">Do <tt class="docutils literal"><span class="pre">sudo</span> <span class="pre">make</span> <span class="pre">install</span></tt> to build and install the drivers.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="section" id="install-python-setuptools">
+<h2>2. Install Python setuptools<a class="headerlink" href="#install-python-setuptools" title="Permalink to this headline">¶</a></h2>
+<p>Do <tt class="docutils literal"><span class="pre">sudo</span> <span class="pre">aptitude</span> <span class="pre">install</span> <span class="pre">python-setuptools</span></tt> to install setuptools.</p>
+</div>
+<div class="section" id="optional-install-hgversionutils">
+<h2>3. (OPTIONAL) Install hgversionutils<a class="headerlink" href="#optional-install-hgversionutils" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic simple">
+<li>Do <tt class="docutils literal"><span class="pre">hg</span> <span class="pre">clone</span> <span class="pre">ssh://hg.sw/user/bpowell/hgversionutils</span></tt> to clone the
+hgversionutils source to your machine.</li>
+<li>Do <tt class="docutils literal"><span class="pre">sudo</span> <span class="pre">python2.6</span> <span class="pre">setup.py</span> <span class="pre">install</span></tt> to install this package (the cloned
+repository may be deleted after the package is installed).</li>
+</ol>
+</div>
+<div class="section" id="install-pycanlib">
+<h2>3. Install pycanlib<a class="headerlink" href="#install-pycanlib" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id1">
+<h3>Linux<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<ol class="arabic simple">
+<li>Do <tt class="docutils literal"><span class="pre">hg</span> <span class="pre">clone</span> <span class="pre">ssh://hg.sw/user/rose/pycanlib-socketcan</span></tt> to clone the pycanlib
+source to your machine.</li>
+<li>Do <tt class="docutils literal"><span class="pre">sudo</span> <span class="pre">python</span> <span class="pre">setup.py</span> <span class="pre">develop</span></tt> to do a &#8220;development&#8221; install of this
+package to your machine (this allows you to pull later updates of the
+pycanlib source from the Mercurial repo and use them without having to
+reinstall pycanlib). Note that the cloned repo should <em>not</em> be deleted after
+this step!</li>
+</ol>
+</div>
+</div>
+<div class="section" id="optional-install-ipython">
+<h2>4. (OPTIONAL) Install IPython<a class="headerlink" href="#optional-install-ipython" title="Permalink to this headline">¶</a></h2>
+<p>IPython is an extended command interpreter for Python, offering syntax
+colouring and tab-completion, among many other features. The pycanlib package
+includes some utilities that can be used to manipulate CAN traffic streams
+using the ipython interface.</p>
+<div class="section" id="windows-xp">
+<h3>Windows XP<a class="headerlink" href="#windows-xp" title="Permalink to this headline">¶</a></h3>
+<p>Copy \nz2ks32chPublicInstallPythonipython-0.10.win32-setup.exe to your
+machine, execute it, and follow the on-screen instructions to install
+IPython.</p>
+</div>
+<div class="section" id="id2">
+<h3>Linux<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<p>Do <tt class="docutils literal"><span class="pre">sudo</span> <span class="pre">aptitude</span> <span class="pre">install</span> <span class="pre">ipython</span></tt> to install IPython.</p>
+<p>To check that the install worked, enter <tt class="docutils literal"><span class="pre">ipython</span> <span class="pre">-p</span> <span class="pre">pycanlib</span></tt> on the
+command line. You should see something like the following:</p>
+<div class="highlight-python"><pre>Importing ipipe library...
+Importing pycanlib IPython extensions...
+        ReadCAN...
+        WriteCAN...
+        PrintCAN...
+        ReadLog...
+        WriteLog...
+        AcceptanceFilter...
+        ExtractTimeslice...</pre>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="#">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">pycanlib-leaf</a><ul>
+</ul>
+</li>
+<li><a class="reference internal" href="#installing-pycanlib">Installing pycanlib</a><ul>
+<li><a class="reference internal" href="#install-leaf-kernel-module">1. Install Leaf Kernel Module</a><ul>
+<li><a class="reference internal" href="#linux">Linux</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#install-python-setuptools">2. Install Python setuptools</a></li>
+<li><a class="reference internal" href="#optional-install-hgversionutils">3. (OPTIONAL) Install hgversionutils</a></li>
+<li><a class="reference internal" href="#install-pycanlib">3. Install pycanlib</a><ul>
+<li><a class="reference internal" href="#id1">Linux</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#optional-install-ipython">4. (OPTIONAL) Install IPython</a><ul>
+<li><a class="reference internal" href="#windows-xp">Windows XP</a></li>
+<li><a class="reference internal" href="#id2">Linux</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Next topic</h4>
+  <p class="topless"><a href="intro.html"
+                        title="next chapter">Introduction and Installation</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/index.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="intro.html" title="Introduction and Installation"
+             >next</a> |</li>
+        <li><a href="#">pycanlib-leaf v1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Rose Lu.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+    </div>
+  </body>
+</html>

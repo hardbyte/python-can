@@ -33,7 +33,7 @@ import ipipe
 import Queue
 import time
 
-from pycanlib import CAN, canlib
+from pycanlib import CAN #, canlib
 
 class ReadCAN(ipipe.Table):
 
