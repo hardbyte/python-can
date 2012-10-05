@@ -5,8 +5,10 @@ Background
 ----------
 
 The pycanlib-socketcan library is built upon the leaf-socketcan driver written
-by Phil Dixon (pdixon@dynamiccontrols.com). This driver replaces the functionality of the current Kvaser
-provided driver and API, libcanlib. The purpose of the switch is to:
+by Phil Dixon (pdixon@dynamiccontrols.com). This driver replaces the 
+functionality of the current Kvaser provided driver and API, libcanlib.
+
+The purpose of the switch is to:
 
 *   Utilise SocketCAN, which is part of the standard system utilities of Linux.  
     A lot of other CAN related applications are built upon SocketCAN. 

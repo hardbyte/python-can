@@ -1,17 +1,16 @@
 #!/usr/bin/env python
 """
-can_logger.py: part of pycanlib, logs CAN traffic to the terminal and
-to a file on disk.
+can_logger.py logs CAN traffic to the terminal and to a file on disk.
 
-Copyright (C) 2010 Dynamic Controls
+Dynamic Controls 2010
 """
 
 import datetime
 import argparse
 import os
-import sys
 import time
 import pickle
+
 from pycanlib import CAN
 
 if __name__ == "__main__":
