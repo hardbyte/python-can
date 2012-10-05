@@ -1,5 +1,6 @@
-Phillip Dixon <pdixon AT dynamiccontrols DOT com>
-Geert Linders <glinders AT dynamiccontrols DOT com>
-Ben Powell <bpowell AT dynamiccontrols DOT com>
+Ben Powell
+Phillip Dixon <pdixon@dynamiccontrols.com>
+Geert Linders <glinders@dynamiccontrols.com>
 Brian Thorne <bthorne@dynamiccontrols.com>
 Rose Lu <rlu@dynamiccontrols.com>
+Mark Catley <mcatley@dynamiccontrols.com>

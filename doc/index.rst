@@ -3,8 +3,10 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-pycanlib-socketcan
-=============
+python-can
+==========
+
+.. todo: Lots of work todo!
 
 Contents:
 
@@ -15,6 +17,10 @@ Contents:
    overview
    socketcanlib
    can
+
+
+
+
 
 
 
