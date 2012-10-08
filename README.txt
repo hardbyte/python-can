@@ -20,7 +20,7 @@ support for them.
 GNU/Linux dependencies
 ----------------------
 
-Reasonably modern Linux Kernels (3.2+) have an implementation of ``socketcan``.
+Reasonably modern Linux Kernels (2.6.25+) have an implementation of ``socketcan``.
 This version of python-can uses that interface via ctypes.
 
 .. todo::
@@ -31,7 +31,7 @@ Windows dependencies
 
 To install `python-can` using the Kvaser CANLib SDK as the backend:
 
-#. Install Python 2.x
+#. Install Python 2.x+
 
     `Python Downloads <http://python.org/download/>`_.
 

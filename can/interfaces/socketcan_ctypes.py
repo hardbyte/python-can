@@ -6,7 +6,7 @@ from ..constants import *
 from ..bus import BusABC
 
 logging.basicConfig(level=logging.WARNING)
-log = logging.getLogger('socketcan')
+log = logging.getLogger('can.socketcan_ctypes')
 
 
 class Bus(BusABC):
@@ -29,7 +29,6 @@ class Bus(BusABC):
         @param single_handle
             If True the bus is created with one handle shared between both writing and reading.
         
-        TODO - rename these to be clearer, document what they do.
         @param tseg1
         @param tseg2
         @param sjw
@@ -40,9 +39,6 @@ class Bus(BusABC):
         socketcanlib.bindSocket(self.socketID)
         
         # TODO: setBusParams
-        #socketcanlib.setBusParams(self.socketID, bitrate, tseg1, tseg2, sjw, no_samp)
-        
-        self.listeners = []
         
         self.__read_thread = threading.Thread(target=self.__read_process)
         self.__read_thread.daemon = True

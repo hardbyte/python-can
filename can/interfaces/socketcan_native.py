@@ -2,15 +2,16 @@
 
 """
 This implementation is for versions of Python that have native
-can socket support.
+can socket support: >3.3
 """
 
 import socket
 import struct
 import sys
 import logging
+
 logging.basicConfig(level=logging.DEBUG)
-log = logging.getLogger('pycan')
+log = logging.getLogger('can.socketcan_native')
 
 log.debug("Loading native socket can implementation")
 
