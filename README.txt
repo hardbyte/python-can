@@ -1,63 +1,73 @@
 Installation
-------------
+============
 
-This document assumes a workstation set up for development using Mercurial
-(i.e. Mercurial installed and set up correctly, with an SSH key for the user
-doing the install). Python 2.6 or later must be installed as well.
+A Controller Area Networking interface is required for `python-can` to do
+anything useful. The two primary interfaces are `socketcan` on GNU/Linux 
+and Kvaser's CANLib SDK for Windows (and Linux).
+
+The interface is selected at install time with a configuration script.
+
+You can choose which backends to enable by setting the flags in setup.cfg, but
+the default is to automatically detect your installed interfaces and build 
+support for them.  
+
+.. warning:: 
+	If you later find that you did not have an interface installed when you 
+	built python-can, but now want it, you will need to install the interface
+	and rebuild.
 
 
-.. warning::
+GNU/Linux dependencies
+----------------------
 
-    Sorry there is **no socketcan support on windows**! All instructions
-    below are for linux users.
+Reasonably modern Linux Kernels (3.2+) have an implementation of ``socketcan``.
+This version of python-can uses that interface via ctypes.
 
-1. Install Leaf Kernel Module
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. todo::
+    Are there any dependencies for linux?
 
-#. Make sure your system is set up for kernel compilation, and has header
-   packages installed.
-#. Obtain the leaf kernel module source from:
-    hg clone hg.sw/pdixon/leaf-socketcan
-#. Do ``sudo make install`` to build and install the drivers.
+Windows dependencies
+--------------------
 
-2. Install Python setuptools
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+To install `python-can` using the Kvaser CANLib SDK as the backend:
 
-Do ``sudo aptitude install python-setuptools`` to install setuptools.
+#. Install Python 2.x
 
-3. Install hgversionutils (OPTIONAL) 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    `Python Downloads <http://python.org/download/>`_.
 
-1. Do ``hg clone ssh://hg.sw/user/bpowell/hgversionutils`` to clone the
-   hgversionutils source to your machine.
-2. Do ``sudo python2.6 setup.py install`` to install this package (the cloned
-   repository may be deleted after the package is installed).
+#. Install Kvaser's CANLib
 
-3. Install pycanlib-socketcan
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Download and install the Windows Kvaser drivers from
+    `Download page <http://www.kvaser.com/en/downloads.html>`_.
+ 
 
-1. Do ``hg clone ssh://hg.sw/user/rose/pycanlib-socketcan`` to clone the pycanlib
-   source to your machine.
-2. Do ``sudo python setup.py develop`` to do a "development" install of this
-   package to your machine (this allows you to pull later updates of the
-   pycanlib source from the Mercurial repo and use them without having to
-   reinstall pycanlib). Note that the cloned repo should *not* be deleted after
-   this step!
+.. note:: 
+    Test that Kvaser's own tools work!
 
-Documentation
--------------
 
-The documentation for pycanlib-socketcan has been generated with Sphinx. 
-Sphinx can be installed by running
+Install python-can
+-------------------
 
-``sudo apt-get install sphinxbase-utils`` and
+Two options, install normally with:
 
-``sudo apt-get install python-sphinx``
+    ``python setup.py install``
 
-The documentation can then be generated with
+Or to do a "development" install of this package to your machine (this allows 
+you to pull later updates of the source from the Mercurial repository and
+use them without having to reinstall). Note that the cloned repo should 
+*not* be deleted after this step!:
 
-``python setup.py build_sphinx``
+    ``python setup.py develop``
 
-Basic Usage
------------
+.. note::
+    On linux you will probably need sudo rights. 
 
+
+Generating Documentation
+------------------------
+
+The documentation for python-can has been generated with Sphinx. 
+
+With sphinx installed the documentation can be generated with
+
+    ``python setup.py build_sphinx``

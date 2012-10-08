@@ -1,22 +1,135 @@
-import ctypes
-import socket
+
 import sys
+import ctypes
 import logging
+from ..constants import *
+from ..bus import BusABC
+
 logging.basicConfig(level=logging.WARNING)
-log = logging.getLogger('socketcanlib')
+log = logging.getLogger('socketcan')
+
+
+class Bus(BusABC):
+    def __init__(self,
+                 channel,
+                 bitrate,
+                 tseg1,
+                 tseg2,
+                 sjw,
+                 no_samp,
+                 driver_mode=DRIVER_MODE_NORMAL,
+                 single_handle=False):
+        """
+        @param channel
+            The Channel id to create this bus with.
+        @param bitrate
+            Bitrate of channel in bit/s
+        @param driver_mode
+            Silent or normal.
+        @param single_handle
+            If True the bus is created with one handle shared between both writing and reading.
+        
+        TODO - rename these to be clearer, document what they do.
+        @param tseg1
+        @param tseg2
+        @param sjw
+        @param no_samp
+        """    
+
+        self.socketID = socketcanlib.createSocket(CAN_RAW)
+        socketcanlib.bindSocket(self.socketID)
+        
+        # TODO: setBusParams
+        #socketcanlib.setBusParams(self.socketID, bitrate, tseg1, tseg2, sjw, no_samp)
+        
+        self.listeners = []
+        
+        self.__read_thread = threading.Thread(target=self.__read_process)
+        self.__read_thread.daemon = True
+        
+        # TODO: add writing capability back!
+        #self.__tx_queue = multiprocessing.Queue(0)
+        #self.__write_thread = threading.Thread(target=self.__write_process)
+        #self.__write_thread.daemon = True
+
+        self.__threads_running = True
+        log.debug("starting the read process thread")
+        self.__read_thread.start()
+        #self.__write_thread.start()
+        
+        # Used to zero the timestamps from the first message
+        self.timer_offset = None
+        
+        '''
+        Approximate offset between time.time() and CAN timestamps (~2ms accuracy)
+        There will always be some lag between when the message is on the bus to when it reaches python
+        Allow messages to be on the bus for a while before reading this value so it has a chance to correct itself'''
+        self.pc_time_offset = None
+
+    def __convert_timestamp (self, value):
+        if self.timer_offset is None:
+            # Use the current value if the offset has not been set yet
+            self.timer_offset = value
+            self.pc_time_offset = time.time()
+            
+        timestamp = (float(value - self.timer_offset) / 1000000) # Convert from us into seconds
+        lag = (time.time() - self.pc_time_offset) - timestamp 
+        if lag < 0: # If we see a timestamp that is quicker than the ever before, update the offset
+            self.pc_time_offset += lag
+        return timestamp
+        
+    def __get_message(self):
+        
+        rx_msg = Message()
+
+        log.debug("I'm about to try to get a msg")
+
+        # todo error checking...?
+        packet = socketcanlib.capturePacket(self.socketID)
+
+        log.debug("I've got a message")
+
+        arbitration_id = packet['CAN ID'] & MSK_ARBID
+
+        # Flags: EXT, RTR, ERR
+        flags = (packet['CAN ID'] & MSK_FLAGS) >> 29
+
+        # To keep flags consistent with pycanlib, their positions need to be switched around
+        flags = (flags | PYCAN_ERRFLG) & ~(SKT_ERRFLG) if flags & SKT_ERRFLG else flags 
+        flags = (flags | PYCAN_RTRFLG) & ~(SKT_RTRFLG) if flags & SKT_RTRFLG else flags
+        flags = (flags | PYCAN_STDFLG) & ~(EXTFLG) if not(flags & EXTFLG) else flags
+
+        if flags & EXTFLG:
+            rx_msg.id_type = ID_TYPE_EXTENDED
+            log.debug("CAN: Extended")
+        else:
+            rx_msg.id_type = ID_TYPE_STANDARD
+            log.debug("CAN: Standard")
+
+        rx_msg.arbitration_id = arbitration_id
+        rx_msg.dlc = packet['DLC']
+        rx_msg.flags = flags
+        rx_msg.data = packet['Data']
+        rx_msg.timestamp = self.__convert_timestamp(packet['Timestamp'])
+        
+        return rx_msg
+
+    def __read_process(self):
+            while(self.__threads_running):
+                rx_msg = self.__get_message()
+                log.debug("Got msg: %s" % rx_msg)
+                for listener in self.listeners:
+                    listener.on_message_received(rx_msg)
+    
+    def shutdown(self):
+        self.__threads_running = False
+        
+        # TODO: any shutdown stuff for the socketcanlib?
 
 log.debug("Loading libc with ctypes...")
 libc = ctypes.cdll.LoadLibrary("libc.so.6")
 
-# Some of these constants are defined in the python socket library
-CAN_RAW =       1
-CAN_BCM =       2
-PF_CAN  =       29
-SOCK_RAW =      3
-SOCK_DGRAM =    2
-AF_CAN =        PF_CAN
-SIOCGIFINDEX =  0x8933 
-SIOCGSTAMP =    0x8906
+
 
 start_sec = 0
 start_usec = 0
