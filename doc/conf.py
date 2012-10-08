@@ -23,10 +23,20 @@ sys.path.insert(0, os.path.abspath('..'))
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.doctest',
+              'sphinx.ext.extlinks',
+              'sphinx.ext.todo',
               'sphinx.ext.intersphinx',
               'sphinx.ext.coverage', 
               'sphinx.ext.viewcode', 
               'sphinx.ext.graphviz']
+
+# Now, you can use the alias name as a new role, e.g. :issue:`123`.
+extlinks = {
+    'issue': ('https://bitbucket.org/hardbyte/python-can/issue/%s/', 'issue '),
+}
+
+#If this is True, todo and todolist produce output, else they produce nothing. The default is False.
+todo_include_todos = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

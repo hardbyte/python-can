@@ -1,16 +1,21 @@
 """
-Contains the functionality used to create installer packages
-for pycanlib, as well as installing it from source. It requires the
-setuptools package to be installed.
+python-can requires the setuptools package to be installed.
 """
 from setuptools import setup
 
 __version__ = 1.0
+
+# TODO
+# This dict will be updated as we try to select the best option during
+# the build process. However, values in setup.cfg will be used, if
+# defined.
+rc = {'backend':'socketcan'}
+
 setup(
     name="python-can",
     version=__version__,
     packages=['can'],
-    author=["Ben Powell", "Brian Thorne", "Rose Lu"],
+    author="Brian Thorne",
     author_email="bthorne@dynamiccontrols.com",
     description="Controller Area Network interface module for Python",
     license="LGPL v3",
@@ -20,5 +25,5 @@ setup(
         "doc": ["*.*"]
         },
 
-    scripts=["./bin/can_logger.py", "./bin/dat2tdv.py"],
+    scripts=["./bin/can_logger.py", "./bin/can_printer.py"],
     )

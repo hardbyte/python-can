@@ -1,7 +1,7 @@
 .. _sockdoc:
 
-Documentation: socketcanlib.py
-=================================
+SocketCAN ctypes wrapper
+========================
 
 socketcanlib is a ctypes wrapper class around libc. It contains replications
 of constants and structures found in various linux header files. With 
@@ -11,14 +11,14 @@ in the python socket module.
 createSocket
 -------------
 
-.. autofunction:: pycanlib.socketcanlib.createSocket
+.. autofunction:: can.interfaces.socketcan_ctypes.createSocket
 
 bindSocket
 -----------
 
-.. autofunction:: pycanlib.socketcanlib.bindSocket
+.. autofunction:: can.interfaces.socketcan_ctypes.bindSocket
 
 capturePacket
 --------------
 
-.. autofunction:: pycanlib.socketcanlib.capturePacket
+.. autofunction:: can.interfaces.socketcan_ctypes.capturePacket

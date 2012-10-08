@@ -1,27 +1,36 @@
-.. pycanlib-leaf documentation master file, created by
-   sphinx-quickstart on Tue Jan 31 17:02:08 2012.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 python-can
 ==========
 
-.. todo: Lots of work todo!
+`python-can` is a library for interacting with a controller area network.
+
 
 Contents:
 
 .. toctree::
    :maxdepth: 2
    
-   intro
+   install
+   
+   api
+   
    overview
-   socketcanlib
-   can
+   history
+
+
+Known Bugs
+~~~~~~~~~~
+
+*Windows*
+    - Not tested recently.
+
+*Linux*
+    - More than one virtual channel don't seem to work on linux.
 
 
 
+.. admonition:: Documentation generated
 
-
+    |today|
 
 
 .. _Python: http://www.python.org
