@@ -235,8 +235,8 @@ if sys.platform == "win32":
 
 
 def lookup_transceiver_type(typename):
-    if typename in canTransceiverTypeStrings:
-        return canTransceiverTypeStrings[typename]
+    if typename in canstat.canTransceiverTypeStrings:
+        return canstat.canTransceiverTypeStrings[typename]
     else:
         log.warning("Unknown transceiver type - add to list?")
         return "unknown"
@@ -254,9 +254,10 @@ canGetChannelData = __get_canlib_function("canGetChannelData",
 DRIVER_MODE_SILENT = False
 DRIVER_MODE_NORMAL = (not DRIVER_MODE_SILENT)
 
+
 class Bus(BusABC):
     '''
-    The CAN Bus Object.
+    The CAN Bus implemented for the Kvaser interface.
     '''
     def __init__(self,
                  channel,
@@ -268,18 +269,19 @@ class Bus(BusABC):
                  driver_mode=DRIVER_MODE_NORMAL,
                  single_handle=False):
         '''
-        @param channel
+        @param int channel
             The Channel id to create this bus with.
         @param bitrate
             Bitrate of channel in bit/s
-        @param driver_mode
-            Silent or normal.
-        @param single_handle
-            If True the bus is created with one handle shared between both writing and reading.
         @param tseg1
         @param tseg2
         @param sjw
         @param no_samp
+        @param driver_mode
+            Silent or normal.
+        @param single_handle
+            If True the bus is created with one handle shared between both writing and reading.
+
         
         '''
         log.debug('Initialising bus instance')
@@ -302,7 +304,7 @@ class Bus(BusABC):
 
         log.debug('Creating read handle to bus channel: %s' % _channel)
         self.__read_handle = canOpenChannel(_channel, canOPEN_ACCEPT_VIRTUAL)
-        canIoCtl(self.__read_handle, canIOCTL_SET_TIMER_SCALE, ctypes.byref(ctypes.c_long(1)), 4)
+        canIoCtl(self.__read_handle, canstat.canIOCTL_SET_TIMER_SCALE, ctypes.byref(ctypes.c_long(1)), 4)
         canSetBusParams(self.__read_handle, bitrate, tseg1, tseg2, sjw, no_samp, 0)
 
         '''
@@ -330,7 +332,7 @@ class Bus(BusABC):
             self.__write_handle = canOpenChannel(_channel, canOPEN_ACCEPT_VIRTUAL)
             canBusOn(self.__read_handle)
 
-        can_driver_mode = canDRIVER_SILENT if driver_mode == DRIVER_MODE_SILENT else canDRIVER_NORMAL
+        can_driver_mode = canstat.canDRIVER_SILENT if driver_mode == DRIVER_MODE_SILENT else canstat.canDRIVER_NORMAL
         canSetBusOutputControl(self.__write_handle, can_driver_mode)
         log.debug('Going bus on TX handle')
         canBusOn(self.__write_handle)
@@ -359,7 +361,7 @@ class Bus(BusABC):
         '''
         Flushes the transmit buffer on the Kvaser
         '''
-        canIoCtl(self.__write_handle, canIOCTL_FLUSH_TX_BUFFER, 0, 0)
+        canIoCtl(self.__write_handle, canstat.canIOCTL_FLUSH_TX_BUFFER, 0, 0)
     
     
     def __convert_timestamp(self, value):

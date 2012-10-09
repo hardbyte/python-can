@@ -30,12 +30,23 @@ class Message(object):
     def __str__(self):
         field_strings = []
         field_strings.append("%15.6f" % self.timestamp)
-        if self.flags & canMSG_EXT:
+        if self.id_type:
+            # Extended arbitrationID
             arbitration_id_string = "%.8x" % self.arbitration_id
         else:
             arbitration_id_string = "%.4x" % self.arbitration_id
         field_strings.append(arbitration_id_string.rjust(8, " "))
-        field_strings.append("%.4x" % self.flags)
+        
+        flag_string = "".join(map(str, map(int, 
+                                  [self.is_remote_frame,
+                                   self.id_type,
+                                   self.is_wakeup,
+                                   self.is_error_frame,
+                                   ]))
+                              )
+        
+        field_strings.append(flag_string)
+        
         field_strings.append("%d" % self.dlc)
         data_strings = []
         if self.data != None:

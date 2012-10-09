@@ -13,6 +13,10 @@ class BusABC(object):
     
     """
     
+    
+    def __init__(self, *args, **kwargs):
+        pass
+    
     # list of callbacks which will be passed Message instances.
     listeners = []
     
@@ -21,7 +25,7 @@ class BusABC(object):
     
     @abc.abstractmethod
     def write(self, msg):
-       pass
+        pass 
 
 
     def write_for_period(self, messageGapInSeconds, totalPeriodInSeconds, message):

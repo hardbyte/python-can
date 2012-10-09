@@ -2,41 +2,39 @@
 import sys
 import ctypes
 import logging
-from ..constants import *
-from ..bus import BusABC
+import threading
+import time
 
-logging.basicConfig(level=logging.WARNING)
+from ..constants import *   #CAN_RAW
+from ..bus import BusABC
+from ..message import Message
+
+# Set up logging
+logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger('can.socketcan_ctypes')
 
 
 class Bus(BusABC):
+    """
+    An implementation of the can.Bus for SocketCAN using ctypes.
+    """
+    
     def __init__(self,
                  channel,
-                 bitrate,
-                 tseg1,
-                 tseg2,
-                 sjw,
-                 no_samp,
-                 driver_mode=DRIVER_MODE_NORMAL,
-                 single_handle=False):
+                 *args, **kwargs):
         """
-        @param channel
-            The Channel id to create this bus with.
-        @param bitrate
-            Bitrate of channel in bit/s
-        @param driver_mode
-            Silent or normal.
+        @param str channel
+            The can interface name to create this bus on. An example channel
+            would be 'vcan0'.
+        
         @param single_handle
             If True the bus is created with one handle shared between both writing and reading.
-        
-        @param tseg1
-        @param tseg2
-        @param sjw
-        @param no_samp
         """    
 
-        self.socketID = socketcanlib.createSocket(CAN_RAW)
-        socketcanlib.bindSocket(self.socketID)
+        self.socketID = createSocket()
+        log.debug("Result of createSocket was {}".format(self.socketID))
+        
+        bindSocket(self.socketID, channel)
         
         # TODO: setBusParams
         
@@ -49,6 +47,7 @@ class Bus(BusABC):
         #self.__write_thread.daemon = True
 
         self.__threads_running = True
+        
         log.debug("starting the read process thread")
         self.__read_thread.start()
         #self.__write_thread.start()
@@ -58,8 +57,11 @@ class Bus(BusABC):
         
         '''
         Approximate offset between time.time() and CAN timestamps (~2ms accuracy)
-        There will always be some lag between when the message is on the bus to when it reaches python
-        Allow messages to be on the bus for a while before reading this value so it has a chance to correct itself'''
+        There will always be some lag between when the message is on the bus to 
+        when it reaches Python.
+        Allow messages to be on the bus for a while before reading this value so 
+        it has a chance to correct itself.
+        '''
         self.pc_time_offset = None
 
     def __convert_timestamp (self, value):
@@ -67,10 +69,12 @@ class Bus(BusABC):
             # Use the current value if the offset has not been set yet
             self.timer_offset = value
             self.pc_time_offset = time.time()
-            
-        timestamp = (float(value - self.timer_offset) / 1000000) # Convert from us into seconds
+        
+        # Convert from us into seconds
+        timestamp = (float(value - self.timer_offset) / 1000000) 
         lag = (time.time() - self.pc_time_offset) - timestamp 
-        if lag < 0: # If we see a timestamp that is quicker than the ever before, update the offset
+        if lag < 0: 
+            # If we see a timestamp that is quicker than the ever before, update the offset
             self.pc_time_offset += lag
         return timestamp
         
@@ -78,10 +82,10 @@ class Bus(BusABC):
         
         rx_msg = Message()
 
-        log.debug("I'm about to try to get a msg")
+        log.debug("Trying to read a msg")
 
-        # todo error checking...?
-        packet = socketcanlib.capturePacket(self.socketID)
+        # TODO error checking...?
+        packet = capturePacket(self.socketID)
 
         log.debug("I've got a message")
 
@@ -119,8 +123,13 @@ class Bus(BusABC):
     
     def shutdown(self):
         self.__threads_running = False
+        self.__read_thread.join(2)
         
         # TODO: any shutdown stuff for the socketcanlib?
+
+    def write(self, message):
+        log.warning("This backend doesn't correctly write messages (yet)")
+        sendPacket(self.sockedID)
 
 log.debug("Loading libc with ctypes...")
 libc = ctypes.cdll.LoadLibrary("libc.so.6")
@@ -184,19 +193,12 @@ class TIME_VALUE(ctypes.Structure):
                 ("tv_usec", ctypes.c_ulong)]
 
 
-def createSocket(canProtocol=CAN_RAW):
+def createSocket():
     '''
-    This function creates a CAN socket. The socket can be BCM or RAW 
-    depending on input. 
+    This function creates a RAW CAN socket. 
     
-    The RAW socket needs to be bound to an interface.
-    The BCM socket needs to be connected to an interface - this
-    is not yet implemented. 
-    
-    Args:
-        +-----------+---------------------------------------------------------+
-        |canProtocol|The protocol to use for the CAN socket, either RAW or BCM|
-        +-----------+---------------------------------------------------------+
+    The socket returned needs to be bound to an interface by calling
+    :func:`bindSocket`.
     
     Returns:   
         +-----------+----------------------------+
@@ -207,6 +209,7 @@ def createSocket(canProtocol=CAN_RAW):
         | socketID  |  successful creation       |
         +-----------+----------------------------+
     '''
+    canProtocol = CAN_RAW
     if canProtocol == CAN_RAW:
         socketID = libc.socket(PF_CAN, SOCK_RAW, CAN_RAW)
     elif canProtocol == CAN_BCM:
@@ -216,15 +219,16 @@ def createSocket(canProtocol=CAN_RAW):
     return socketID
 
 
-def bindSocket(socketID):
+def bindSocket(socketID, channel_name):
     '''
-    Binds the given socket to the can0 interface. 
+    Binds the given socket to the given interface. 
     
-    Args:
-        +-----------+---------------------------------+
-        | socketID  |The ID of the socket to be bound |
-        +-----------+---------------------------------+
-        
+    :param int socketID:
+            The ID of the socket to be bound
+
+    :args str channel_name:
+        The interface name to find and bind.
+    
     Returns:   
         +-----------+----------------------------+
         | 0         |protocol invalid            |
@@ -236,7 +240,7 @@ def bindSocket(socketID):
     socketID = ctypes.c_int(socketID)
     
     ifr = IFREQ()
-    ifr.ifr_name = 'can0'
+    ifr.ifr_name = channel_name
     log.debug('calling ioctl SIOCGIFINDEX')
     # ifr.ifr_ifindex gets filled with that device's index
     libc.ioctl(socketID, SIOCGIFINDEX, ctypes.byref(ifr))
@@ -246,16 +250,19 @@ def bindSocket(socketID):
     addr = SOCKADDR_CAN(AF_CAN, ifr.ifr_ifindex)
 
     error = libc.bind(socketID, ctypes.byref(addr), ctypes.sizeof(addr))
+    log.debug('bind returned: {}'.format(error))
     
     return error
 
-def sendPacket(sockedID):
+def sendPacket(socketID):
     frame = CAN_FRAME()
     frame.can_id = 0x123
     frame.data = "foo"
     frame.can_dlc = len(frame.data)
     
     bytes_sent = libc.write(socketID, ctypes.byref(frame), ctypes.sizeof(frame))
+    
+    return bytes_sent
 
 def capturePacket(socketID):
     '''

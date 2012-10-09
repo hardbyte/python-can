@@ -7,14 +7,8 @@ Copyright (C) 2010 Dynamic Controls
 """
 
 import logging
-import os
-import sys
-import platform
-import pickle
-import ctypes
 import Queue as queue
-import threading
-import time
+
 
 logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger('CAN')
@@ -47,14 +41,14 @@ class Listener(object):
 class BufferedReader(Listener):
 
     def __init__(self):
-        self.__buffer = queue.Queue(0)
+        self.buffer = queue.Queue(0)
 
     def on_message_received(self, msg):
-        self.__buffer.put_nowait(msg)
+        self.buffer.put(msg)
 
     def get_message(self):
         try:
-            return self.__buffer.get(timeout=0.5)
+            return self.buffer.get(timeout=0.5)
         except queue.Empty:
             return None
 

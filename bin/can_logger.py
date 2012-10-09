@@ -15,12 +15,16 @@ import can
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Log CAN traffic, printing messages to stdout")
     
-    parser.add_argument("-c", "--channel", type=int, dest="channel", 
-                        help="""If the CAN interface supports multiple channels""", default=0)
-                        
+    parser.add_argument("-c", "--channel", type=str, dest="channel", 
+                        help="""
+                        If the CAN interface supports multiple channels, select which one
+                        you are after here. For example on linux this might be vcan0 or can1
+                        """, default='0')
+    
+    # TODO: Not all backends will support these options...
     parser.add_argument("-b", "--bitrate", type=int, dest="bitrate", 
                         help="CAN bus bitrate", default=1000000)
-                        
+    
     parser.add_argument("--tseg1", type=int, dest="tseg1", 
                         help="CAN bus tseg1", default=4)
                         
@@ -38,6 +42,7 @@ if __name__ == "__main__":
 
                                 Three samples should only be used for relatively slow baudrates.""", 
                         default=1)
+    
     
     parser.add_argument("-f", "--file_name", dest="log_file",
                         help="Path and base log file name, where log file names are <base>_<datestamp>_<timestamp>.<ext>",
