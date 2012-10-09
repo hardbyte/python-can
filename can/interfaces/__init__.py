@@ -3,7 +3,8 @@
 Interfaces contain low level implementations that interact with CAN hardware.
 """
 
-interface = 'canlib' # or socketcan_ctypes, socketcan_native
+# TODO for now the backend is set here...
+interface = 'socketcan_ctypes' # 'canlib' # or socketcan_ctypes, socketcan_native
 
 
 if interface == 'canlib':
