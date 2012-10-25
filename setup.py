@@ -20,7 +20,7 @@ setup(
     author_email="bthorne@dynamiccontrols.com",
     description="Controller Area Network interface module for Python",
     license="LGPL v3",
-    
+    use_2to3 = True,
     package_data={
         "": ["CONTRIBUTORS.txt", "LICENSE.txt"],
         "doc": ["*.*"]
