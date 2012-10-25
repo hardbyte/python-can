@@ -1,9 +1,16 @@
-Installation
-============
+The **C**ontroller **A**rea **N**etwork is a bus standard designed to 
+allow microcontrollers and devices to communicate with each other. It 
+has priority based bus arbitration, reliable deterministic 
+communication. It is used in cars, trucks, wheelchairs... [wikipedia][1] 
+has more info.
+
+# python-can
+
+## Installation
 
 A Controller Area Networking interface is required for `python-can` to do
 anything useful. The two primary interfaces are `socketcan` on GNU/Linux 
-and Kvaser's CANLib SDK for Windows (and Linux).
+and [Kvaser][1]'s CANLib SDK for Windows (and Linux).
 
 The interface is selected at install time with a configuration script.
 
@@ -12,22 +19,20 @@ the default is to automatically detect your installed interfaces and build
 support for them.  
 
 .. warning:: 
-	If you later find that you did not have an interface installed when you 
-	built python-can, but now want it, you will need to install the interface
-	and rebuild.
+    If you later find that you did not have an interface installed when you 
+    built python-can, but now want it, you will need to install the interface
+    and rebuild.
 
 
-GNU/Linux dependencies
-----------------------
+### GNU/Linux dependencies
 
-Reasonably modern Linux Kernels (2.6.25+) have an implementation of ``socketcan``.
-This version of python-can uses that interface via ctypes.
+Reasonably modern Linux Kernels (2.6.25+) have an implementation of 
+``socketcan``. This version of python-can uses that interface via ctypes.
 
 .. todo::
     Are there any dependencies for linux?
 
-Windows dependencies
---------------------
+### Windows dependencies
 
 To install `python-can` using the Kvaser CANLib SDK as the backend:
 
@@ -45,8 +50,7 @@ To install `python-can` using the Kvaser CANLib SDK as the backend:
     Test that Kvaser's own tools work!
 
 
-Install python-can
--------------------
+## Install python-can
 
 Two options, install normally with:
 
@@ -63,11 +67,15 @@ use them without having to reinstall). Note that the cloned repo should
     On linux you will probably need sudo rights. 
 
 
-Generating Documentation
-------------------------
+## Generating Documentation
 
 The documentation for python-can has been generated with Sphinx. 
 
 With sphinx installed the documentation can be generated with
 
     ``python setup.py build_sphinx``
+    
+    
+[1]: http://en.wikipedia.org/wiki/CAN_bus
+[2]: http://www.kvaser.com
+[3]: http://www.brownhat.org/docs/socketcan/llcf-api.html
