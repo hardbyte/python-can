@@ -17,15 +17,3 @@ The modules in ``python-can`` are:
 |:doc:`message.py <\message>`|Contains the interface independent Message object.    |
 +----------------------------+------------------------------------------------------+
 
-
-CAN Interface Modules
----------------------
-
-Found under ``can.interfaces`` are the implementations for each backend:
-
-.. toctree::
-   :maxdepth: 1
-   
-   socketcan_ctypes
-   socketcan_native
-   

@@ -5,7 +5,7 @@ class Message(object):
     Represents a CAN message.
     """
     
-    def __init__(self, timestamp=0.0, is_remote_frame=False, extended_id=False,
+    def __init__(self, timestamp=0.0, is_remote_frame=False, extended_id=True,
                  is_wakeup=False, is_error_frame=False, arbitration_id=0, 
                  dlc=None, data=None):
 

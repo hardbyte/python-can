@@ -16,7 +16,7 @@ log = logging.getLogger('can.socketcan_ctypes')
 
 class Bus(BusABC):
     """
-    An implementation of the :class:`can.Bus` for SocketCAN using ctypes.
+    An implementation of the :class:`can.bus.BusABC` for SocketCAN using :mod:`ctypes`.
     """
     
     def __init__(self,

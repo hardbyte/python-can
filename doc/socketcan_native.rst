@@ -6,6 +6,13 @@ Python 3.3 added support for socketcan for linux systems.
 The socketcan_native interface directly uses Python's socket module to 
 access SocketCAN on linux.
 
+
+Bus
+---
+
+.. autoclass:: can.interfaces.socketcan_native.Bus
+
+
 createSocket
 -------------
 

@@ -4,7 +4,7 @@ Interfaces contain low level implementations that interact with CAN hardware.
 """
 import can
 
-if can.rc['interface'] == 'canlib':
+if can.rc['interface'] == 'kvaser':
     from can.interfaces.canlib import *
 elif can.rc['interface'] == 'socketcan_ctypes':
     from can.interfaces.socketcan_ctypes import *
