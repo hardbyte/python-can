@@ -13,6 +13,9 @@ The bus can provide a wrapper around a physical CAN Bus using a Kvaser, or
 it can wrap a virtual CAN Bus.
 
 
+.. autoclass:: can.bus.BusABC
+
+
 Concurrent Design
 .................
 
@@ -34,3 +37,15 @@ is notified to start the read thread again.
         use the interface handle(/s).
 
 
+CAN Interface Modules
+---------------------
+
+Found under ``can.interfaces`` are the implementations for each backend:
+
+.. toctree::
+   :maxdepth: 1
+   
+   socketcan_ctypes
+   socketcan_native
+   kvaser
+   

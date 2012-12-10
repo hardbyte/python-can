@@ -31,7 +31,6 @@ if sys.platform == "win32":
 else:
     __canlib = ctypes.cdll.LoadLibrary("libcanlib.so")
 
-
 def __get_canlib_function(func_name, argtypes=None, restype=None, errcheck=None):
     log.debug('Wrapping function "%s"' % func_name)
     try:
@@ -94,7 +93,8 @@ class Message(Message):
 
 
 def __convert_can_status_to_int(result):
-    if isinstance(result, (int, long)):
+    log.debug("converting can status to int {} ({})".format(result, type(result)))
+    if isinstance(result, int):
         return result
     else:
         return result.value
@@ -122,13 +122,15 @@ class c_canHandle(ctypes.c_int):
 canINVALID_HANDLE = -1
 
 def __handle_is_valid(handle):
-    return (handle > canINVALID_HANDLE)
+    return (handle.value > canINVALID_HANDLE)
+
 
 def __check_bus_handle_validity(handle, function, arguments):
     if not __handle_is_valid(handle):
         raise CANLIBError(function, handle, arguments)
     else:
         return handle
+
 
 canInitializeLibrary = __get_canlib_function("canInitializeLibrary", 
                                              argtypes=[], 
@@ -140,6 +142,7 @@ canGetErrorText = __get_canlib_function("canGetErrorText",
                                         restype=canstat.c_canStatus, 
                                         errcheck=__check_status)
 
+# TODO wrap this type of function to provide a more Pythonic API
 canGetNumberOfChannels = __get_canlib_function("canGetNumberOfChannels", 
                                                argtypes=[ctypes.c_void_p], 
                                                restype=canstat.c_canStatus, 
@@ -176,10 +179,12 @@ canOPEN_OVERRIDE_EXCLUSIVE = 0x0040
 canOPEN_REQUIRE_INIT_ACCESS = 0x0080
 canOPEN_NO_INIT_ACCESS = 0x0100
 canOPEN_ACCEPT_LARGE_DLC = 0x0200
+
 FLAGS_MASK = (canOPEN_EXCLUSIVE | canOPEN_REQUIRE_EXTENDED | 
               canOPEN_ACCEPT_VIRTUAL | canOPEN_OVERRIDE_EXCLUSIVE | 
               canOPEN_REQUIRE_INIT_ACCESS | canOPEN_NO_INIT_ACCESS | 
               canOPEN_ACCEPT_LARGE_DLC)
+
 canOpenChannel = __get_canlib_function("canOpenChannel",
                                        argtypes=[ctypes.c_int, ctypes.c_int], 
                                        restype=c_canHandle, 
@@ -250,8 +255,9 @@ canGetChannelData = __get_canlib_function("canGetChannelData",
                                           restype=canstat.c_canStatus, 
                                           errcheck=__check_status)
 
+
 DRIVER_MODE_SILENT = False
-DRIVER_MODE_NORMAL = (not DRIVER_MODE_SILENT)
+DRIVER_MODE_NORMAL = True
 
 
 class Bus(BusABC):
@@ -268,23 +274,27 @@ class Bus(BusABC):
                  driver_mode=DRIVER_MODE_NORMAL,
                  single_handle=False):
         '''
-        @param int channel
+        :param int channel:
             The Channel id to create this bus with.
-        @param bitrate
+        :param int bitrate:
             Bitrate of channel in bit/s
-        @param tseg1
-        @param tseg2
-        @param sjw
-        @param no_samp
-        @param driver_mode
-            Silent or normal.
-        @param single_handle
-            If True the bus is created with one handle shared between both writing and reading.
-
+        :param int tseg1:
+        :param int tseg2:
+        :param int sjw:
+            Synchronisation Jump Width decides the maximum number of time quanta
+            that the controller can resynchronise every bit.
+        :param no_samp:
+            Some CAN controllers can also sample each bit three times.
+            In this case, the bit will be sampled three quanta in a row, 
+            with the last sample being taken in the edge between TSEG1 and TSEG2.
+            Three samples should only be used for relatively slow baudrates.
         
+        :param bool driver_mode:
+            Silent or normal.       
         '''
         log.debug('Initialising bus instance')
         self.single_handle = single_handle
+        
         num_channels = ctypes.c_int(0)
         canGetNumberOfChannels(ctypes.byref(num_channels))
         num_channels = int(num_channels.value)
@@ -295,26 +305,24 @@ class Bus(BusABC):
             self.done_writing = threading.Condition()
 
         log.debug('Creating read handle to bus channel: %s' % channel)
-        self.__read_handle = canOpenChannel(channel, canOPEN_ACCEPT_VIRTUAL)
-        canIoCtl(self.__read_handle, canstat.canIOCTL_SET_TIMER_SCALE, ctypes.byref(ctypes.c_long(1)), 4)
-        canSetBusParams(self.__read_handle, bitrate, tseg1, tseg2, sjw, no_samp, 0)
+        channel = int(channel)
+        self._read_handle = canOpenChannel(channel, canOPEN_ACCEPT_VIRTUAL)
+        canIoCtl(self._read_handle, canstat.canIOCTL_SET_TIMER_SCALE, ctypes.byref(ctypes.c_long(1)), 4)
+        canSetBusParams(self._read_handle, bitrate, tseg1, tseg2, sjw, no_samp, 0)
         
         if self.single_handle:
             log.debug("We don't require separate handles to the bus")
-            self.__write_handle = self.__read_handle
+            self._write_handle = self._read_handle
         else:
             log.debug('Creating separate handle for TX on channel: %s' % channel)
-            self.__write_handle = canOpenChannel(channel, canOPEN_ACCEPT_VIRTUAL)
-            canBusOn(self.__read_handle)
+            self._write_handle = canOpenChannel(channel, canOPEN_ACCEPT_VIRTUAL)
+            canBusOn(self._read_handle)
 
         can_driver_mode = canstat.canDRIVER_SILENT if driver_mode == DRIVER_MODE_SILENT else canstat.canDRIVER_NORMAL
-        canSetBusOutputControl(self.__write_handle, can_driver_mode)
+        canSetBusOutputControl(self._write_handle, can_driver_mode)
         log.debug('Going bus on TX handle')
-        canBusOn(self.__write_handle)
-        self.listeners = []
+        canBusOn(self._write_handle)
         
-        self.__tx_queue = queue.Queue(0)
-        self.__threads_running = True
         if driver_mode == DRIVER_MODE_SILENT:
             self.__write_process = lambda: None
         
@@ -334,7 +342,7 @@ class Bus(BusABC):
         '''
         Flushes the transmit buffer on the Kvaser
         '''
-        canIoCtl(self.__write_handle, canstat.canIOCTL_FLUSH_TX_BUFFER, 0, 0)
+        canIoCtl(self._write_handle, canstat.canIOCTL_FLUSH_TX_BUFFER, 0, 0)
     
     
     def __convert_timestamp(self, value):
@@ -363,7 +371,7 @@ class Bus(BusABC):
         return timestamp
 
 
-    def __get_message(self):
+    def _get_message(self):
         '''
         Read a message from kvaser device.
         
@@ -375,9 +383,10 @@ class Bus(BusABC):
         dlc = ctypes.c_uint(0)
         flags = ctypes.c_uint(0)
         timestamp = ctypes.c_ulong(0)
+        timeout = 1000
         
         if self.single_handle:
-            
+            timeout = 1
             self.done_writing.acquire()
             
             while self.writing_event.is_set():
@@ -385,39 +394,39 @@ class Bus(BusABC):
                 # by a notify() from the tx thread. Once awakened it re-acquires the lock
                 self.done_writing.wait()
 
-        #log.debug('Reading for 1ms on handle: %s' % self.__read_handle)
-        status = canReadWait(self.__read_handle, 
+        log.log(9, 'Reading for 1ms on handle: %s' % self._read_handle)
+        status = canReadWait(self._read_handle, 
                                      ctypes.byref(arb_id), 
                                      ctypes.byref(data), 
                                      ctypes.byref(dlc), 
                                      ctypes.byref(flags), 
                                      ctypes.byref(timestamp),
-                                     1  # This is a 1 ms blocking read
+                                     timeout  # This is an X ms blocking read
                                      )
         if self.single_handle:
             # Don't want to keep the done_writing condition's Lock
             self.done_writing.release()
 
         
-        if status.value == canstat.canOK:
-            #log.log(9, 'read complete -> status OK')
-            data_array = map(ord, data)
+        if status == canstat.canOK:
+            log.debug('read complete -> status OK')
+            data_array = list(map(ord, data))
             is_extended = int(flags.value) & canstat.canMSG_EXT
             msg_timestamp = self.__convert_timestamp(timestamp.value)
             rx_msg = Message(arbitration_id=arb_id.value, 
                              data=data_array[:dlc.value],
-                             dlc=int(dlc.value), 
+                             dlc=dlc.value, 
                              extended_id=is_extended, 
                              timestamp=msg_timestamp)
             rx_msg.flags = int(flags.value) & canstat.canMSG_MASK
-            #log.info('Got message: %s' % rx_msg)
+            log.info('Got message: %s' % rx_msg)
             return rx_msg
         else:
             log.debug('read complete -> status not okay')
     
     
-    def __put_message(self, tx_msg):
-        canWriteWait(self.__write_handle,
+    def _put_message(self, tx_msg):
+        canWriteWait(self._write_handle,
                             tx_msg.arbitration_id,
                             "".join([("%c" % byte) for byte in tx_msg.data]),
                              tx_msg.dlc,
@@ -425,18 +434,8 @@ class Bus(BusABC):
                              5)
 
 
-    def write_for_period(self, messageGapInSeconds, totalPeriodInSeconds, message):
-        _startTime = time.time()
-        while (time.time() - _startTime) < totalPeriodInSeconds:
-            self.write(message)
-            
-            _startOfPause = time.time()
-            while (time.time() - _startOfPause) < messageGapInSeconds and (time.time() - _startTime) < totalPeriodInSeconds:
-                time.sleep(0.001)
-
-
 
     def shutdown(self):
         self.__threads_running = False
-        canBusOff(self.__write_handle)
-        canClose(self.__write_handle)
+        canBusOff(self._write_handle)
+        canClose(self._write_handle)

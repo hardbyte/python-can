@@ -72,7 +72,7 @@ if __name__ == "__main__":
         while True:
             msg = listener.get_message()
             if msg is not None and str(msg) != "":
-                print (msg)
+                print(msg)
                 
     except KeyboardInterrupt:
         pass

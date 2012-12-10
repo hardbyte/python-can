@@ -27,7 +27,7 @@ class BusABC(object):
         # list of callback functions which will be passed Message instances.
         self.listeners = []
         
-        # buffer for messages to be written
+        # buffer for messages to be written to the bus
         self._tx_queue = queue.Queue()
         
         self._threads_running = threading.Event()
@@ -44,7 +44,11 @@ class BusABC(object):
 
     @abc.abstractmethod
     def _get_message(self, timeout=None):
-        """Must return a :class:`can.Message` object. Ideally blocking but may return None."""
+        """Block waiting for a message from the Bus.  
+        
+        :return:
+            None on timeout or a :class:`can.Message` object.
+        """
     
     
     @abc.abstractmethod
@@ -53,6 +57,8 @@ class BusABC(object):
         
         :param :class:`can.Message` msg:
         
+        :raise :class:`can.CanError`:
+            if the message could not be written.
         """
     
     
@@ -83,7 +89,7 @@ class BusABC(object):
                         raise queue.Empty('')
                     
                 while not self._tx_queue.empty():
-                    tx_msg = self._tx_queue.get(timeout=0.5)
+                    tx_msg = self._tx_queue.get(timeout=None)
                     if tx_msg is not None:
                         self._put_message(tx_msg)
                         
@@ -106,17 +112,34 @@ class BusABC(object):
             rx_msg = self._get_message()
             
             if rx_msg is not None:
-                print(rx_msg)
                 for callback in self.listeners:
                     callback(rx_msg)
 
 
-    def write_for_period(self, gap, total_time, message):
+    def write_for_period(self, interval, total_time, message, block=True):
         """This method should be overridden by CAN interfaces
         which can set up periodic message sending tasks.
+        
+        :param float interval:
+            Interval in seconds between sending messages.
+        
+        :param float total_time:
+            Time in seconds to keep sending this message for.
+            
+        :param :class:`can.Message` message:
+            The message to send periodically.
         """
-        # TODO: high level python version of this
-
+        def periodic_sender():
+            start_time = time.time()
+            while (time.time() - start_time) < total_time:
+                self.write(message)
+                time.sleep(interval)
+        if block:
+            return periodic_sender()
+        else:
+            t = threading.Thread(target=periodic_sender)
+            t.start()
+            
 
     def flush_tx_buffer(self):
         pass
