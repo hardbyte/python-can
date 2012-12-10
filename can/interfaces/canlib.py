@@ -12,23 +12,24 @@ import time
 import logging
 import platform
 import threading
-import Queue as queue
+try:
+    import queue as queue
+except ImportError:
+    import Queue as queue
 import ctypes
 
 log = logging.getLogger('can.canlib')
 log.setLevel(logging.WARNING)
 
-from .. import CANError
-import canlib_constants as canstat
+from .. import CanError
+from . import canlib_constants as canstat
 from ..bus import BusABC
 from ..message import Message
-from ..constants import *
 
 if sys.platform == "win32":
     __canlib = ctypes.windll.LoadLibrary("canlib32")
 else:
     __canlib = ctypes.cdll.LoadLibrary("libcanlib.so")
-
 
 
 def __get_canlib_function(func_name, argtypes=None, restype=None, errcheck=None):
@@ -48,7 +49,7 @@ def __get_canlib_function(func_name, argtypes=None, restype=None, errcheck=None)
         return retval
 
 
-class CANLIBError(CANError):
+class CANLIBError(CanError):
     """
     Try to display errors that occur within the wrapped C library nicely.
     """
@@ -106,12 +107,14 @@ def __check_status(result, function, arguments):
         raise CANLIBError(function, result, arguments)
     return result
 
+
 def __check_status_read(result, function, arguments):
     result = __convert_can_status_to_int(result)
     if not canstat.CANSTATUS_SUCCESS(result) and result != canstat.canERR_NOMSG:
         log.debug('Detected error in which checking status read')
         raise CANLIBError(function, result, arguments)
     return result
+
 
 class c_canHandle(ctypes.c_int):
     pass
@@ -231,16 +234,12 @@ if sys.platform == "win32":
 
 
 
-
-
-
 def lookup_transceiver_type(typename):
     if typename in canstat.canTransceiverTypeStrings:
         return canstat.canTransceiverTypeStrings[typename]
     else:
         log.warning("Unknown transceiver type - add to list?")
         return "unknown"
-
 
 
 canGetChannelData = __get_canlib_function("canGetChannelData", 
@@ -290,46 +289,22 @@ class Bus(BusABC):
         canGetNumberOfChannels(ctypes.byref(num_channels))
         num_channels = int(num_channels.value)
         log.debug('Found %d available channels' % num_channels)
-
-        if type(channel) == str:
-            _channel = get_canlib_channel_from_url(channel)
-            if _channel is None:
-                raise ChannelNotFoundError(channel)
-        else:
-            _channel = channel
         
         if self.single_handle:
             self.writing_event = threading.Event()
             self.done_writing = threading.Condition()
 
-        log.debug('Creating read handle to bus channel: %s' % _channel)
-        self.__read_handle = canOpenChannel(_channel, canOPEN_ACCEPT_VIRTUAL)
+        log.debug('Creating read handle to bus channel: %s' % channel)
+        self.__read_handle = canOpenChannel(channel, canOPEN_ACCEPT_VIRTUAL)
         canIoCtl(self.__read_handle, canstat.canIOCTL_SET_TIMER_SCALE, ctypes.byref(ctypes.c_long(1)), 4)
         canSetBusParams(self.__read_handle, bitrate, tseg1, tseg2, sjw, no_samp, 0)
-
-        '''
-        Bit of a hack, on linux using kvvirtualcan module it seems you must read
-        and write on separate channels of the same bus.
-        '''
-        
-        if platform.system() == "Linux" and "virtual" in str(self.channel_info).lower():
-            log.debug('Detected virtual channel on linux')
-            for chan in range(num_channels):
-                c = (chan + 1) % num_channels
-                channel_info = get_channel_info(c)
-                if "virtual" in str(channel_info).lower() and c != _channel:
-                    log.info('Creating separate TX handle on channel: %s' % c)
-                    self.__write_handle = canOpenChannel(c, canOPEN_ACCEPT_VIRTUAL)
-                    log.info('Going bus on RX handle')
-                    canBusOn(self.__read_handle)
-                    break
         
         if self.single_handle:
             log.debug("We don't require separate handles to the bus")
             self.__write_handle = self.__read_handle
         else:
-            log.debug('Creating separate handle for TX on channel: %s' % _channel)
-            self.__write_handle = canOpenChannel(_channel, canOPEN_ACCEPT_VIRTUAL)
+            log.debug('Creating separate handle for TX on channel: %s' % channel)
+            self.__write_handle = canOpenChannel(channel, canOPEN_ACCEPT_VIRTUAL)
             canBusOn(self.__read_handle)
 
         can_driver_mode = canstat.canDRIVER_SILENT if driver_mode == DRIVER_MODE_SILENT else canstat.canDRIVER_NORMAL
@@ -340,22 +315,20 @@ class Bus(BusABC):
         
         self.__tx_queue = queue.Queue(0)
         self.__threads_running = True
-        if not driver_mode == DRIVER_MODE_SILENT:
-            self.__write_thread = threading.Thread(target=self.__write_process)
-            self.__write_thread.daemon = True
-            self.__write_thread.start()
-        self.__read_thread = threading.Thread(target=self.__read_process)
-        self.__read_thread.daemon = True
-        self.__read_thread.start()
+        if driver_mode == DRIVER_MODE_SILENT:
+            self.__write_process = lambda: None
+        
         self.timer_offset = None # Used to zero the timestamps from the first message
         
         '''
         Approximate offset between time.time() and CAN timestamps (~2ms accuracy)
         There will always be some lag between when the message is on the bus to 
-        when it reaches python. Allow messages to be on the bus for a while before
-        reading this value so it has a chance to correct itself'''
+        when it reaches Python. Allow messages to be on the bus for a while before
+        reading this value so it has a chance to correct itself
+        '''
         self.pc_time_offset = None
 
+        super(Bus, self).__init__()
 
     def flush_tx_buffer(self):
         '''
@@ -378,31 +351,21 @@ class Bus(BusABC):
             elif ctypes.sizeof(ctypes.c_long) == 4:
                 value += MAX_32BIT
             else:
-                assert False, 'Unknown platform. Expected a long to be 4 or 8 bytes long but it was %i bytes.' % ctypes.sizeof(ctypes.c_long)
-            assert value > self.timer_offset, 'CAN Timestamp overflowed. The timer offset was ' + str(self.timer_offset) 
+                raise CanError('Unknown platform. Expected a long to be 4 or 8 bytes long but it was %i bytes.' % ctypes.sizeof(ctypes.c_long))
+            if value <= self.timer_offset:
+                raise OverflowError('CAN timestamp overflowed. The timer offset was ' + str(self.timer_offset))
         
         timestamp = (float(value - self.timer_offset) / 1000000) # Convert from us into seconds
         lag = (time.time() - self.pc_time_offset) - timestamp 
-        if lag < 0: # If we see a timestamp that is quicker than the ever before, update the offset
+        if lag < 0:
+            # If we see a timestamp that is quicker than the ever before, update the offset
             self.pc_time_offset += lag
         return timestamp
 
 
-    def __read_process(self):
-        """
-        The consumer thread.
-        """
-        log.info('Read process starting in canlib')
-        while self.__threads_running:
-            rx_msg = self.__get_message()
-            if rx_msg is not None:
-                for listener in self.listeners:
-                    listener.on_message_received(rx_msg)
-
-
     def __get_message(self):
         '''
-        Read a message from kvaiser device.
+        Read a message from kvaser device.
         
         In single handle mode this blocks the sending of messages for up to 1ms
         before releasing the lock.
@@ -451,39 +414,8 @@ class Bus(BusABC):
             return rx_msg
         else:
             log.debug('read complete -> status not okay')
-            
-
-    def __write_process(self):
-        while self.__threads_running:
-            tx_msg = None
-            have_lock = False
-            try:
-                if self.single_handle:
-                    if not self.__tx_queue.empty():
-                        # Tell the rx thread to give up the can handle
-                        # because we have a message to write to the bus
-                        self.writing_event.set()
-                        # Acquire a lock that the rx thread has started waiting on
-                        self.done_writing.acquire()
-                        have_lock = True
-                    else:
-                        raise queue.Empty('')
-                    
-                while not self.__tx_queue.empty():
-                    tx_msg = self.__tx_queue.get(timeout=0.05)
-                    if tx_msg is not None:
-                        self.__put_message(tx_msg)
-                        
-            except queue.Empty:
-                pass
-            if self.single_handle and have_lock:
-                self.writing_event.clear()
-                # Tell the rx thread it can start again
-                self.done_writing.notify()
-                self.done_writing.release()
-                have_lock = False
-            
-
+    
+    
     def __put_message(self, tx_msg):
         canWriteWait(self.__write_handle,
                             tx_msg.arbitration_id,
@@ -503,11 +435,6 @@ class Bus(BusABC):
                 time.sleep(0.001)
 
 
-    def write(self, msg):
-        ''''
-        @param msg A Message object to write to bus.
-        '''
-        self.__tx_queue.put_nowait(msg)
 
     def shutdown(self):
         self.__threads_running = False

@@ -1,6 +1,10 @@
 """
 python-can requires the setuptools package to be installed.
 """
+
+from distribute_setup import use_setuptools
+use_setuptools()
+
 from setuptools import setup
 
 __version__ = 1.1
@@ -20,7 +24,6 @@ setup(
     author_email="bthorne@dynamiccontrols.com",
     description="Controller Area Network interface module for Python",
     license="LGPL v3",
-    use_2to3 = True,
     package_data={
         "": ["CONTRIBUTORS.txt", "LICENSE.txt"],
         "doc": ["*.*"]

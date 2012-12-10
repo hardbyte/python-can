@@ -18,7 +18,3 @@ Python 3
 
 The Python 'socket' module contains support for SocketCAN in version 3.3. 
 
-A branch exists which moves the socketcan support from ctypes to native 
-Python.
-
-

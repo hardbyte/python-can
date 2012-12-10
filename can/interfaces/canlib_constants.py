@@ -1,5 +1,5 @@
 """
-canstat.py: contains Python equivalents of the function and constant
+Contains Python equivalents of the function and constant
 definitions in CANLIB's canstat.h, with some supporting functionality
 specific to Python.
 
@@ -121,31 +121,31 @@ canTRANSCEIVER_TYPE_LINX_LS = 72
 
 canTransceiverTypeStrings = {
     canTRANSCEIVER_TYPE_UNKNOWN: "unknown",
-     canTRANSCEIVER_TYPE_251: "82C251",
-     canTRANSCEIVER_TYPE_252: "82C252/TJA1053/TJA1054",
-     canTRANSCEIVER_TYPE_DNOPTO: "Optoisolated 82C251",
-     canTRANSCEIVER_TYPE_W210: "W210",
-     canTRANSCEIVER_TYPE_SWC_PROTO: "AU5790 prototype",
-     canTRANSCEIVER_TYPE_SWC: "AU5790",
-     canTRANSCEIVER_TYPE_EVA: "EVA",
-     canTRANSCEIVER_TYPE_FIBER: "82C251 with fibre extension",
-     canTRANSCEIVER_TYPE_K251: "K251",
-     canTRANSCEIVER_TYPE_K: "K",
-     canTRANSCEIVER_TYPE_1054_OPTO: "TJA1054 optical isolation",
-     canTRANSCEIVER_TYPE_SWC_OPTO: "AU5790 optical isolation",
-     canTRANSCEIVER_TYPE_TT: "B10011S Truck-And-Trailer",
-     canTRANSCEIVER_TYPE_1050: "TJA1050",
-     canTRANSCEIVER_TYPE_1050_OPTO: "TJA1050 optical isolation",
-     canTRANSCEIVER_TYPE_1041: "TJA1041",
-     canTRANSCEIVER_TYPE_1041_OPTO: "TJA1041 optical isolation",
-     canTRANSCEIVER_TYPE_RS485: "RS485",
-     canTRANSCEIVER_TYPE_LIN: "LIN",
-     canTRANSCEIVER_TYPE_KONE: "KONE",
-     canTRANSCEIVER_TYPE_LINX_LIN: "LINX_LIN",
-     canTRANSCEIVER_TYPE_LINX_J1708: "LINX_J1708",
-     canTRANSCEIVER_TYPE_LINX_K: "LINX_K",
-     canTRANSCEIVER_TYPE_LINX_SWC: "LINX_SWC",
-     canTRANSCEIVER_TYPE_LINX_LS: "LINX_LS"
+    canTRANSCEIVER_TYPE_251: "82C251",
+    canTRANSCEIVER_TYPE_252: "82C252/TJA1053/TJA1054",
+    canTRANSCEIVER_TYPE_DNOPTO: "Optoisolated 82C251",
+    canTRANSCEIVER_TYPE_W210: "W210",
+    canTRANSCEIVER_TYPE_SWC_PROTO: "AU5790 prototype",
+    canTRANSCEIVER_TYPE_SWC: "AU5790",
+    canTRANSCEIVER_TYPE_EVA: "EVA",
+    canTRANSCEIVER_TYPE_FIBER: "82C251 with fibre extension",
+    canTRANSCEIVER_TYPE_K251: "K251",
+    canTRANSCEIVER_TYPE_K: "K",
+    canTRANSCEIVER_TYPE_1054_OPTO: "TJA1054 optical isolation",
+    canTRANSCEIVER_TYPE_SWC_OPTO: "AU5790 optical isolation",
+    canTRANSCEIVER_TYPE_TT: "B10011S Truck-And-Trailer",
+    canTRANSCEIVER_TYPE_1050: "TJA1050",
+    canTRANSCEIVER_TYPE_1050_OPTO: "TJA1050 optical isolation",
+    canTRANSCEIVER_TYPE_1041: "TJA1041",
+    canTRANSCEIVER_TYPE_1041_OPTO: "TJA1041 optical isolation",
+    canTRANSCEIVER_TYPE_RS485: "RS485",
+    canTRANSCEIVER_TYPE_LIN: "LIN",
+    canTRANSCEIVER_TYPE_KONE: "KONE",
+    canTRANSCEIVER_TYPE_LINX_LIN: "LINX_LIN",
+    canTRANSCEIVER_TYPE_LINX_J1708: "LINX_J1708",
+    canTRANSCEIVER_TYPE_LINX_K: "LINX_K",
+    canTRANSCEIVER_TYPE_LINX_SWC: "LINX_SWC",
+    canTRANSCEIVER_TYPE_LINX_LS: "LINX_LS"
 }
 
 canDRIVER_NORMAL = 4

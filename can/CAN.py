@@ -7,7 +7,10 @@ Copyright (C) 2010 Dynamic Controls
 """
 
 import logging
-import Queue as queue
+try:
+    import queue
+except ImportError:
+    import Queue as queue
 
 
 logging.basicConfig(level=logging.WARNING)
@@ -15,20 +18,22 @@ log = logging.getLogger('CAN')
 
 log.debug("Loading python-can")
 
-from constants import *
-from interfaces import *
 
-
-# Sets the level of messages that are displayed. Default is 'Warning'
 def set_logging_level(level_name=None):
-    """
-    Given 'critical', 'error', 'warning', 'info', 'debug', 'subdebug'
-    Set the logging level for python-can
+    """Set the logging level for python-can.
+    Expects one of: 'critical', 'error', 'warning', 'info', 'debug', 'subdebug'
     """
     try:
         log.setLevel(getattr(logging, level_name.upper()))
     except:
         log.setLevel(logging.DEBUG)
+
+
+def use(backend=None):
+    """
+    
+    """
+    pass
 
 
 class Listener(object):
@@ -37,6 +42,10 @@ class Listener(object):
             "{} has not implemented on_message_received".format(
                 self.__class__.__name__)
             )
+    
+    def __call__(self, msg):
+        return self.on_message_received(msg)
+
 
 class BufferedReader(Listener):
 
@@ -52,12 +61,13 @@ class BufferedReader(Listener):
         except queue.Empty:
             return None
 
-class MessagePrinter(Listener):
+
+class Printer(Listener):
     def on_message_received(self, msg):
         print(msg)
 
 
-class MessageCSVWriter(Listener):
+class CSVWriter(Listener):
     def __init__(self, filename):
         self.csv_file = open(filename, 'wt')
         
@@ -71,3 +81,15 @@ class MessageCSVWriter(Listener):
                         msg.dlc, 
                         msg.data])
         self.csv_file.write(row + '\n')
+
+    def __del__(self):
+        self.csv_file.close()
+        super(CSVWriter, self).__del__()
+
+
+class SqliteWriter(Listener):
+    def __init__(self, filename):
+        self.db_file = open(filename, 'wt')
+
+        # create table structure
+        raise NotImplementedError("TODO")

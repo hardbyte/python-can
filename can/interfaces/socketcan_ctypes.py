@@ -5,7 +5,7 @@ import logging
 import threading
 import time
 
-from ..constants import *   #CAN_RAW
+from can.interfaces.socketcan_constants import *   #CAN_RAW
 from ..bus import BusABC
 from ..message import Message
 
@@ -16,42 +16,24 @@ log = logging.getLogger('can.socketcan_ctypes')
 
 class Bus(BusABC):
     """
-    An implementation of the can.Bus for SocketCAN using ctypes.
+    An implementation of the :class:`can.Bus` for SocketCAN using ctypes.
     """
     
     def __init__(self,
                  channel,
                  *args, **kwargs):
         """
-        @param str channel
-            The can interface name to create this bus on. An example channel
+        :param str channel:
+            The can interface name with which to create this bus. An example channel
             would be 'vcan0'.
-        
-        @param single_handle
-            If True the bus is created with one handle shared between both writing and reading.
         """    
 
         self.socketID = createSocket()
+        
         log.debug("Result of createSocket was {}".format(self.socketID))
         
         bindSocket(self.socketID, channel)
-        
-        # TODO: setBusParams
-        
-        self.__read_thread = threading.Thread(target=self.__read_process)
-        self.__read_thread.daemon = True
-        
-        # TODO: add writing capability back!
-        #self.__tx_queue = multiprocessing.Queue(0)
-        #self.__write_thread = threading.Thread(target=self.__write_process)
-        #self.__write_thread.daemon = True
 
-        self.__threads_running = True
-        
-        log.debug("starting the read process thread")
-        self.__read_thread.start()
-        #self.__write_thread.start()
-        
         # Used to zero the timestamps from the first message
         self.timer_offset = None
         
@@ -63,7 +45,10 @@ class Bus(BusABC):
         it has a chance to correct itself.
         '''
         self.pc_time_offset = None
-
+        
+        super(Bus, self).__init__(*args, **kwargs)
+        
+        
     def __convert_timestamp (self, value):
         if self.timer_offset is None:
             # Use the current value if the offset has not been set yet
@@ -78,7 +63,7 @@ class Bus(BusABC):
             self.pc_time_offset += lag
         return timestamp
         
-    def __get_message(self):
+    def _get_message(self):
         
         rx_msg = Message()
 
@@ -113,28 +98,15 @@ class Bus(BusABC):
         rx_msg.timestamp = self.__convert_timestamp(packet['Timestamp'])
         
         return rx_msg
-
-    def __read_process(self):
-            while(self.__threads_running):
-                rx_msg = self.__get_message()
-                log.debug("Got msg: %s" % rx_msg)
-                for listener in self.listeners:
-                    listener.on_message_received(rx_msg)
     
-    def shutdown(self):
-        self.__threads_running = False
-        self.__read_thread.join(2)
-        
-        # TODO: any shutdown stuff for the socketcanlib?
 
-    def write(self, message):
-        log.warning("This backend doesn't correctly write messages (yet)")
+    def _put_message(self, message):
+        # TODO: add writing capability back!
         sendPacket(self.sockedID)
+
 
 log.debug("Loading libc with ctypes...")
 libc = ctypes.cdll.LoadLibrary("libc.so.6")
-
-
 
 start_sec = 0
 start_usec = 0
@@ -224,7 +196,7 @@ def bindSocket(socketID, channel_name):
     Binds the given socket to the given interface. 
     
     :param int socketID:
-            The ID of the socket to be bound
+        The ID of the socket to be bound
 
     :args str channel_name:
         The interface name to find and bind.

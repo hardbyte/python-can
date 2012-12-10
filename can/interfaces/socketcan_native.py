@@ -15,6 +15,14 @@ log = logging.getLogger('can.socketcan_native')
 
 log.debug("Loading native socket can implementation")
 
+try:
+    socket.CAN_RAW
+except:
+    log.warning("Python 3.3 or later required to use native socketcan")
+
+from can import Message
+from can.interfaces.socketcan_constants import *   #CAN_RAW
+from ..bus import BusABC
 
 can_frame_fmt = "=IB3x8s"
 can_frame_size = struct.calcsize(can_frame_fmt)
@@ -29,22 +37,24 @@ def dissect_can_frame(frame):
     return (can_id, can_dlc, data[:can_dlc])
 
 
-def createSocket(canProtocol=socket.CAN_RAW):
+def createSocket(can_protocol=None):
     '''Creates a CAN socket. The socket can be BCM or RAW. The socket will
-    be returned unbound to any inteface.
+    be returned unbound to any interface.
 
-    :param int canProtocol:
+    :param int can_protocol:
         The protocol to use for the CAN socket, either:
          * socket.CAN_RAW
          * socket.CAN_BCM.
 
     :return:
-        -1 - socket creation unsuccessful
-        socketID - successful creation
+        * -1 if socket creation unsuccessful
+        * socketID - successful creation
     '''
-    if canProtocol == socket.CAN_RAW:
+    if can_protocol is None:
+        can_protocol = socket.CAN_RAW
+    if can_protocol == socket.CAN_RAW:
         sock = socket.socket(socket.PF_CAN, socket.SOCK_RAW, socket.CAN_RAW)
-    elif canProtocol == socket.CAN_BCM:
+    elif can_protocol == socket.CAN_BCM:
         sock = socket.socket(socket.PF_CAN, socket.SOCK_DGRAM, socket.CAN_BCM)
     log.info('Created a socket')
     return sock
@@ -54,11 +64,10 @@ def bindSocket(sock, channel='can0'):
     '''
     Binds the given socket to the given interface.
 
-    :param socket.Socket socketID:
+    :param Socket socketID:
         The ID of the socket to be bound
-
-    :return:
-
+    :raise:
+        :class:`OSError` if the specified interface isn't found.
     '''
     log.debug('Binding socket to channel={}'.format(channel))
     sock.bind((channel,))
@@ -67,7 +76,8 @@ def bindSocket(sock, channel='can0'):
 def capturePacket(sock):
     '''
     Captures a packet of data from the given socket.
-    :param sock:
+    
+    :param socket sock:
         The socket to read a packet from.
     
     :return: A dictionary with the following keys:
@@ -97,6 +107,56 @@ def capturePacket(sock):
         'Data': data,
         'Timestamp': 0.0,
     }
+
+class Bus(BusABC):
+    channel_info = "native socketcan channel"
+    
+    def __init__(self, channel, *args, **kwargs):
+
+        self.socketID = createSocket(CAN_RAW)
+        bindSocket(self.socketID, channel)
+
+        super(Bus, self).__init__(*args, **kwargs)
+
+    def __convert_timestamp (self, value):
+        return (float(value) / 1000000)
+
+    def _get_message(self):
+        
+        rx_msg = Message()
+
+        log.debug("about to try to get a msg")
+
+        # TODO error checking...?
+        packet = capturePacket(self.socketID)
+
+        log.debug("I've got a message")
+
+        arbitration_id = packet['CAN ID'] & MSK_ARBID
+
+        # Flags: EXT, RTR, ERR
+        flags = (packet['CAN ID'] & MSK_FLAGS) >> 29
+
+        # To keep flags consistent with pycanlib, their positions need to be switched around
+        flags = (flags | PYCAN_ERRFLG) & ~(SKT_ERRFLG) if flags & SKT_ERRFLG else flags 
+        flags = (flags | PYCAN_RTRFLG) & ~(SKT_RTRFLG) if flags & SKT_RTRFLG else flags
+        flags = (flags | PYCAN_STDFLG) & ~(EXTFLG) if not(flags & EXTFLG) else flags
+
+        if flags & EXTFLG:
+            rx_msg.id_type = ID_TYPE_EXTENDED
+            log.debug("CAN: Extended")
+        else:
+            rx_msg.id_type = ID_TYPE_STANDARD
+            log.debug("CAN: Standard")
+
+        rx_msg.arbitration_id = arbitration_id
+        rx_msg.dlc = packet['DLC']
+        rx_msg.flags = flags
+        rx_msg.data = packet['Data']
+        rx_msg.timestamp = self.__convert_timestamp(packet['Timestamp'])
+        
+        return rx_msg
+
 
 if __name__ == "__main__":
     '''Create two sockets on vcan0 to test send and receive
