@@ -10,44 +10,28 @@ has more info.
 
 A Controller Area Networking interface is required for `python-can` to do
 anything useful. The two primary interfaces are `socketcan` on GNU/Linux 
-and [Kvaser][1]'s CANLib SDK for Windows (and Linux).
+and [Kvaser][1]'s CANLib SDK for Windows (also available on Linux).
 
-The interface is selected at install time with a configuration script.
-
-You can choose which backends to enable by setting the flags in setup.cfg, but
-the default is to automatically detect your installed interfaces and build 
-support for them.  
-
-.. warning:: 
-    If you later find that you did not have an interface installed when you 
-    built python-can, but now want it, you will need to install the interface
-    and rebuild.
-
+The default interface can be selected at install time with a configuration
+script. Alternatively, before creating a **bus** object call `can.use`.
 
 ### GNU/Linux dependencies
 
-Reasonably modern Linux Kernels (2.6.25+) have an implementation of 
-``socketcan``. This version of python-can uses that interface via ctypes.
-
-.. todo::
-    Are there any dependencies for linux?
+Reasonably modern Linux Kernels (2.6.25 or newer) have an implementation of 
+``socketcan``. This version of python-can will directly use socketcan
+if Python 3.3 or greater is installed, otherwise that interface is 
+used via ctypes.
 
 ### Windows dependencies
 
 To install `python-can` using the Kvaser CANLib SDK as the backend:
 
-#. Install Python 2.x+
+1. Install the [latest stable release of Python][4].
 
-    `Python Downloads <http://python.org/download/>`_.
+2. Install [Kvaser's latest Windows CANLib drivers][5].
 
-#. Install Kvaser's CANLib
-
-    Download and install the Windows Kvaser drivers from
-    `Download page <http://www.kvaser.com/en/downloads.html>`_.
- 
-
-.. note:: 
-    Test that Kvaser's own tools work!
+3. Test that Kvaser's own tools work to ensure the driver is properly 
+installed and that the hardware is working.
 
 
 ## Install python-can
@@ -57,14 +41,12 @@ Two options, install normally with:
     ``python setup.py install``
 
 Or to do a "development" install of this package to your machine (this allows 
-you to pull later updates of the source from the Mercurial repository and
-use them without having to reinstall). Note that the cloned repo should 
-*not* be deleted after this step!:
+you to make changes locally or pull updates from the Mercurial repository and
+use them without having to reinstall):
 
-    ``python setup.py develop``
+    python setup.py develop
 
-.. note::
-    On linux you will probably need sudo rights. 
+On linux you will probably need sudo rights. 
 
 
 ## Generating Documentation
@@ -79,3 +61,5 @@ With sphinx installed the documentation can be generated with
 [1]: http://en.wikipedia.org/wiki/CAN_bus
 [2]: http://www.kvaser.com
 [3]: http://www.brownhat.org/docs/socketcan/llcf-api.html
+[4]: http://python.org/download/
+[5]: http://www.kvaser.com/en/downloads.html

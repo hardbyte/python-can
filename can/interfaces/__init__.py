@@ -2,14 +2,19 @@
 """
 Interfaces contain low level implementations that interact with CAN hardware.
 """
+import can
 
-# TODO for now the backend is set here...
-interface = 'socketcan_ctypes' # 'canlib' # or socketcan_ctypes, socketcan_native
-
-
-if interface == 'canlib':
-    from canlib import *
-elif interface == 'socketcan_ctypes':
-    from socketcan_ctypes import *
+if can.rc['interface'] == 'canlib':
+    from can.interfaces.canlib import *
+elif can.rc['interface'] == 'socketcan_ctypes':
+    from can.interfaces.socketcan_ctypes import *
+elif can.rc['interface'] == 'socketcan_native':
+    from can.interfaces.socketcan_native import *
+elif can.rc['interface'] == 'socketcan':
+    # try both
+    try:
+        from can.interfaces.socketcan_native import *
+    except:
+        from can.interfaces.socketcan_ctypes import *
 else:
-    from socketcan_native import *
+    raise ImportError("CAN interface not found")

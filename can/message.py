@@ -1,4 +1,4 @@
-from constants import *
+
 
 class Message(object):
     """
@@ -55,7 +55,7 @@ class Message(object):
         if len(data_strings) > 0:
             field_strings.append(" ".join(data_strings).ljust(24, " "))
         else:
-            field_strings.append(" "*24)
+            field_strings.append(" " * 24)
         
         return "    ".join(field_strings).strip()
 
