@@ -19,6 +19,6 @@ from can.CAN import BufferedReader, Listener, set_logging_level
 from can.message import Message
 
 # Interface can be kvaser, socketcan, socketcan_ctypes, socketcan_native, serial
-rc = {'interface': 'kvaser'}
+rc = {'interface': 'serial'}
 from can.interfaces import Bus
 

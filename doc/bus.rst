@@ -48,4 +48,4 @@ Found under ``can.interfaces`` are the implementations for each backend:
    socketcan_ctypes
    socketcan_native
    kvaser
-   
+   serial

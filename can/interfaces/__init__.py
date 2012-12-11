@@ -16,5 +16,7 @@ elif can.rc['interface'] == 'socketcan':
         from can.interfaces.socketcan_native import *
     except:
         from can.interfaces.socketcan_ctypes import *
+elif can.rc['interface'] == 'serial':
+    from can.interfaces.serial_can import *
 else:
     raise ImportError("CAN interface not found")
