@@ -17,8 +17,12 @@ class CanError(IOError):
 
 from can.CAN import BufferedReader, Listener, set_logging_level
 from can.message import Message
+from can.bus import BusABC
 
 # Interface can be kvaser, socketcan, socketcan_ctypes, socketcan_native, serial
-rc = {'interface': 'serial'}
-from can.interfaces import Bus
+rc = {
+      'default-interface': 'kvaser',
+      'interface': 'kvaser'
+      }
+
 

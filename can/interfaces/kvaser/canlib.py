@@ -21,10 +21,9 @@ import ctypes
 log = logging.getLogger('can.canlib')
 log.setLevel(logging.WARNING)
 
-from .. import CanError
-from . import canlib_constants as canstat
-from ..bus import BusABC
-from ..message import Message
+from can import CanError, BusABC, Message
+from . import constants as canstat
+
 
 if sys.platform == "win32":
     __canlib = ctypes.windll.LoadLibrary("canlib32")
