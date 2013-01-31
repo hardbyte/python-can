@@ -33,35 +33,10 @@ class Bus(BusABC):
         log.debug("Result of createSocket was {}".format(self.socketID))
         
         bindSocket(self.socketID, channel)
-
-        # Used to zero the timestamps from the first message
-        self.timer_offset = None
-        
-        '''
-        Approximate offset between time.time() and CAN timestamps (~2ms accuracy)
-        There will always be some lag between when the message is on the bus to 
-        when it reaches Python.
-        Allow messages to be on the bus for a while before reading this value so 
-        it has a chance to correct itself.
-        '''
-        self.pc_time_offset = None
         
         super(Bus, self).__init__(*args, **kwargs)
         
-        
-    def __convert_timestamp (self, value):
-        if self.timer_offset is None:
-            # Use the current value if the offset has not been set yet
-            self.timer_offset = value
-            self.pc_time_offset = time.time()
-        
-        # Convert from us into seconds
-        timestamp = (float(value - self.timer_offset) / 1000000) 
-        lag = (time.time() - self.pc_time_offset) - timestamp 
-        if lag < 0: 
-            # If we see a timestamp that is quicker than the ever before, update the offset
-            self.pc_time_offset += lag
-        return timestamp
+
         
     def _get_message(self):
         
@@ -69,7 +44,6 @@ class Bus(BusABC):
 
         log.debug("Trying to read a msg")
 
-        # TODO error checking...?
         packet = capturePacket(self.socketID)
 
         log.debug("I've got a message")
@@ -95,14 +69,13 @@ class Bus(BusABC):
         rx_msg.dlc = packet['DLC']
         rx_msg.flags = flags
         rx_msg.data = packet['Data']
-        rx_msg.timestamp = self.__convert_timestamp(packet['Timestamp'])
+        rx_msg.timestamp = packet['Timestamp']
         
         return rx_msg
     
 
     def _put_message(self, message):
-        # TODO: add writing capability back!
-        sendPacket(self.sockedID)
+        sendPacket(self.sockedID, message)
 
 
 log.debug("Loading libc with ctypes...")
@@ -165,7 +138,7 @@ class TIME_VALUE(ctypes.Structure):
                 ("tv_usec", ctypes.c_ulong)]
 
 
-def createSocket():
+def createSocket(protocol=CAN_RAW):
     '''
     This function creates a RAW CAN socket. 
     
@@ -181,10 +154,9 @@ def createSocket():
         | socketID  |  successful creation       |
         +-----------+----------------------------+
     '''
-    canProtocol = CAN_RAW
-    if canProtocol == CAN_RAW:
+    if protocol == CAN_RAW:
         socketID = libc.socket(PF_CAN, SOCK_RAW, CAN_RAW)
-    elif canProtocol == CAN_BCM:
+    elif protocol == CAN_BCM:
         socketID = libc.socket(PF_CAN, SOCK_DGRAM, CAN_BCM)
     else:
         socketID = 0
@@ -198,10 +170,10 @@ def bindSocket(socketID, channel_name):
     :param int socketID:
         The ID of the socket to be bound
 
-    :args str channel_name:
+    :param str channel_name:
         The interface name to find and bind.
     
-    Returns:   
+    :return The error code from the bind call.
         +-----------+----------------------------+
         | 0         |protocol invalid            |
         +-----------+----------------------------+
@@ -226,7 +198,8 @@ def bindSocket(socketID, channel_name):
     
     return error
 
-def sendPacket(socketID):
+def sendPacket(socketID, message):
+    raise NotImplementedError()
     frame = CAN_FRAME()
     frame.can_id = 0x123
     frame.data = "foo"
@@ -240,20 +213,21 @@ def capturePacket(socketID):
     '''
     Captures a packet of data from the given socket. 
     
-    Args: 
-        socketID: The socket to read from
+
+    :param int socketID:
+        The socket to read from
     
-    Returns:
+    :return:
         A dictionary with the following keys:
-            +-----------+----------------------------+
-            | 'CAN ID'  |int                         |
-            +-----------+----------------------------+
-            | 'DLC'     |int                         |
-            +-----------+----------------------------+
-            | 'Data'    |list                        |
-            +-----------+----------------------------+
-            |'Timestamp'| float                      |
-            +-----------+----------------------------+
+        +-----------+----------------------------+
+        | 'CAN ID'  |int                         |
+        +-----------+----------------------------+
+        | 'DLC'     |int                         |
+        +-----------+----------------------------+
+        | 'Data'    |list                        |
+        +-----------+----------------------------+
+        |'Timestamp'| float                      |
+        +-----------+----------------------------+
    
     '''
     packet = {}
@@ -262,14 +236,15 @@ def capturePacket(socketID):
     time = TIME_VALUE()
     
     # Fetching the Arb ID, DLC and Data
-    bytesRead = libc.read(socketID, ctypes.byref(frame), sys.getsizeof(frame))
-    
+    bytes_read = libc.read(socketID, ctypes.byref(frame), sys.getsizeof(frame))
+
     # Fetching the timestamp
-    error = libc.ioctl(socketID, SIOCGSTAMP, ctypes.byref(time));
+    error = libc.ioctl(socketID, SIOCGSTAMP, ctypes.byref(time))
     
     packet['CAN ID'] = frame.can_id
     packet['DLC'] = frame.can_dlc
-    
+
+    # TODO WHAT?
     # The first 3 elements in the data array are discarded (as they are 
     # empty) and the rest (actual data) saved into a list. 
     data = []
@@ -277,19 +252,8 @@ def capturePacket(socketID):
         data.append(frame.data[i])
 
     packet['Data'] = data
-    
-    # todo remove me
-    global start_sec
-    global start_usec
-    
-    # Recording the time when the first packet is retreived, to start 
-    # the timestamping from zero 
-    if ( start_sec == 0) and ( start_usec == 0):
-         start_sec = time.tv_sec;
-         start_usec = time.tv_usec;
-    
-    # Converting the time to microseconds
-    timestamp = ((time.tv_usec - start_usec) + SEC_USEC*(time.tv_sec - start_sec))
+
+    timestamp = time.tv_sec + (time.tv_usec/1000000)
     
     packet['Timestamp'] = timestamp
 

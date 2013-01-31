@@ -1,1 +1,1 @@
-from canlib import *
+from .canlib import *

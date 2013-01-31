@@ -46,7 +46,7 @@ use them without having to reinstall):
 
     python setup.py develop
 
-On linux you will probably need sudo rights. 
+On linux you will need sudo rights. 
 
 
 ## Generating Documentation

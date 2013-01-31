@@ -1,9 +1,9 @@
 from can import Message
 
-from can.protocols.j1939.arbitrationid import ArbitrationID
-from can.protocols.j1939.constants import pgn_strings
-from can.protocols.j1939.decoders import pgn_decoders
-from can.protocols.j1939.nodename import NodeName
+from .arbitrationid import ArbitrationID
+from .constants import pgn_strings
+#from .decoders import pgn_decoders
+from .nodename import NodeName
 
 
 class PDU(object):
@@ -13,12 +13,13 @@ class PDU(object):
             Bus time in seconds.
         :param :class:`can.protocols.j1939.ArbitrationID` arbitration_id:
         :param bytearray|list data:
+
         """
-        if arbitration_id == None:
+        if arbitration_id is None:
             arbitration_id = ArbitrationID()
-        if data == None:
+        if data is None:
             data = []
-        if info_strings == None:
+        if info_strings is None:
             info_strings = []
         self.timestamp = timestamp
         self.arbitration_id = arbitration_id
@@ -67,7 +68,7 @@ class PDU(object):
 
     def _check_data(self, value):
         assert len(value) <= 1785, 'Too much data to fit in a j1939 CAN message. Got {0} bytes'.format(length)
-        if length > 0:
+        if len(value) > 0:
             assert min(value) >= 0, 'Data values must be between 0 and 255'
             assert max(value) <= 255, 'Data values must be between 0 and 255'
         return value

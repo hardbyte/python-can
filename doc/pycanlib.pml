@@ -1,3 +1,5 @@
+/* This promela model was used to verify the concurrent design of the bus object. */
+
 bool lock = false;
 
 inline enterMon() {
