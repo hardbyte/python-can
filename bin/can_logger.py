@@ -7,6 +7,7 @@ Dynamic Controls 2010
 
 import datetime
 import argparse
+import time
 
 import can
 from can import interfaces
@@ -15,10 +16,12 @@ if __name__ == "__main__":
     
     parser = argparse.ArgumentParser(description="Log CAN traffic, printing messages to stdout")
 
+
     parser.add_argument("-f", "--file_name", dest="log_file",
                         help="""Path and base log filename, extension can be .txt, .csv, .db, .npz""",
-                        default="can_logger")    
-    
+                        default=None)
+
+    # TODO support this again
     parser.add_argument("-v", action="count", dest="verbosity", 
                         help='''How much information do you want to see at the command line? 
                         You can add several of these e.g., -vv is DEBUG''', default=2)
@@ -27,11 +30,14 @@ if __name__ == "__main__":
     interfaces._add_subparsers(parser)
 
     results = parser.parse_args()
-    
+    filename = results.log_file
     can.rc['interface'] = results.interface
     verbosity = results.verbosity
-    
-    filename = results.log_file
+    if results.interface == "socketcan" and results.socketcan_interface != 'auto':
+        can.rc['interface'] = results.interface + "_" + results.socketcan_interface
+
+    # Assume that the desired interface deals with all command line arguments
+    # in the Bus initializer.
     # Don't want to pass on the arguments we have dealt with at this level
     del results.log_file
     del results.verbosity
@@ -46,15 +52,14 @@ if __name__ == "__main__":
 
     log_start_time = datetime.datetime.now()
     
-    listener = can.BufferedReader()
-    bus.listeners.append(listener)
-    
+    listener = can.CAN.Printer(filename)
     print('Can Logger (Started on {})\n'.format(log_start_time))
+    bus.listeners.append(listener)
+
     try:
-        while True:
-            msg = listener.get_message()
-            if msg is not None and str(msg) != "":
-                print(msg)
+        while  bus._threads_running:
+            # TODO detect if the bus thread has died
+            time.sleep(0.5)
                 
     except KeyboardInterrupt:
         pass

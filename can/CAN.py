@@ -33,7 +33,7 @@ def use(backend=None):
     """
     
     """
-    pass
+    raise NotImplementedError
 
 
 class Listener(object):
@@ -63,9 +63,18 @@ class BufferedReader(Listener):
 
 
 class Printer(Listener):
-    def on_message_received(self, msg):
-        print(msg)
+    def __init__(self, output_file=None):
+        if output_file is not None:
+            output_file = open(output_file, 'wt')
+        self.output_file = output_file
 
+    def on_message_received(self, msg):
+        print(msg, file=self.output_file)
+
+    def __del__(self):
+        if self.output_file:
+            self.output_file.write('\n')
+            self.output_file.close()
 
 class CSVWriter(Listener):
     def __init__(self, filename):
@@ -92,4 +101,8 @@ class SqliteWriter(Listener):
         self.db_file = open(filename, 'wt')
 
         # create table structure
+        raise NotImplementedError("TODO")
+
+    def on_message_received(self, msg):
+        # add row
         raise NotImplementedError("TODO")

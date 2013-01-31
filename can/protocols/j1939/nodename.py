@@ -1,4 +1,5 @@
-from constants import j1939_industry_groups
+from .constants import j1939_industry_groups
+
 
 class NodeName(object):
     def __init__(self, value=0):
@@ -158,8 +159,9 @@ class NodeName(object):
         '''
         A list of ints between 0 and (2 ** 8) - 1
         
-        TODO: use python's builtin bytes type
+
         '''
+        # TODO use python's builtin bytes type
         self.value = int("".join("%.2X" % _byte for _byte in value), 16)
 
     def __str__(self):

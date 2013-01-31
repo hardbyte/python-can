@@ -6,7 +6,8 @@ SocketCAN ctypes wrapper
 socketcanlib is a ctypes wrapper class around libc. It contains replications
 of constants and structures found in various linux header files. With 
 Python 3.3, much of the functionaity of this library is likely to be 
-in the python socket module.
+available natively in the python socket module.
+
 
 Bus
 ---

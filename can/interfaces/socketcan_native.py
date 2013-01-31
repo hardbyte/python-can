@@ -6,6 +6,7 @@ can socket support: >3.3
 """
 
 import socket
+import fcntl
 import struct
 import sys
 import logging
@@ -18,7 +19,7 @@ log.debug("Loading native socket can implementation")
 try:
     socket.CAN_RAW
 except:
-    log.warning("Python 3.3 or later required to use native socketcan")
+    log.error("Python 3.3 or later required to use native socketcan")
 
 from can import Message
 from can.interfaces.socketcan_constants import *   #CAN_RAW
@@ -57,6 +58,7 @@ def createSocket(can_protocol=None):
     elif can_protocol == socket.CAN_BCM:
         sock = socket.socket(socket.PF_CAN, socket.SOCK_DGRAM, socket.CAN_BCM)
     log.info('Created a socket')
+
     return sock
 
 
@@ -91,21 +93,20 @@ def capturePacket(sock):
     cf, addr = sock.recvfrom(can_frame_size)
     
     can_id, can_dlc, data = dissect_can_frame(cf)
-    print('Received: can_id=%x, can_dlc=%x, data=%s' % (can_id, can_dlc, data))
+    log.debug('Received: can_id=%x, can_dlc=%x, data=%s' % (can_id, can_dlc, data))
     
-    # Fetching the timestamp - TODO
-    #error = libc.ioctl(socketID, SIOCGSTAMP, ctypes.byref(time));
-    
-    # The first 3 elements in the data array are discarded (as they are
-    # empty) and the rest (actual data) saved into a list. TODO why????
-    #data = []
-    #for i in range(3, can_dlc + 3):
-    #    data.append(data[i])
+    # Fetching the timestamp
+    binary_structure = "@LL"
+    res = fcntl.ioctl(sock, SIOCGSTAMP, struct.pack(binary_structure, 0, 0))
+
+    seconds, microseconds = struct.unpack(binary_structure, res)
+    timestamp = seconds + microseconds/1000000
+
     return {
         'CAN ID': can_id,
         'DLC': can_dlc,
         'Data': data,
-        'Timestamp': 0.0,
+        'Timestamp': timestamp,
     }
 
 class Bus(BusABC):
@@ -118,22 +119,17 @@ class Bus(BusABC):
 
         super(Bus, self).__init__(*args, **kwargs)
 
-    def __convert_timestamp (self, value):
-        return (float(value) / 1000000)
 
     def _get_message(self):
         
         rx_msg = Message()
 
-        log.debug("about to try to get a msg")
-
-        # TODO error checking...?
+        # TODO socketcan error checking...?
         packet = capturePacket(self.socketID)
-
-        log.debug("I've got a message")
 
         arbitration_id = packet['CAN ID'] & MSK_ARBID
 
+        # TODO flags could just be boolean attributes?
         # Flags: EXT, RTR, ERR
         flags = (packet['CAN ID'] & MSK_FLAGS) >> 29
 
@@ -153,7 +149,7 @@ class Bus(BusABC):
         rx_msg.dlc = packet['DLC']
         rx_msg.flags = flags
         rx_msg.data = packet['Data']
-        rx_msg.timestamp = self.__convert_timestamp(packet['Timestamp'])
+        rx_msg.timestamp = packet['Timestamp']
         
         return rx_msg
 
