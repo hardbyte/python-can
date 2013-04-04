@@ -1,13 +1,16 @@
 Library API
 ===========
 
-The main two objects are the :class:`~can.Bus` and the :class:`~can.Message`.
+The main objects are the :class:`~can.Bus` and the :class:`~can.Message`.
+The concept of a CAN interface is also required.
+
 
 .. toctree::
    :maxdepth: 1
    
    bus
    message
+   interfaces
 
 
 Listener

@@ -1,6 +1,10 @@
 Developers Overview
 ===================
 
+Explore the code on bitbucket:
+https://bitbucket.org/hardbyte/python-can
+
+
 Code Structure
 --------------
 

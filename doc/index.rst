@@ -3,6 +3,12 @@ python-can
 
 `python-can` is a library for interacting with a controller area network.
 
+The **Controller Area Network** is a bus standard designed to
+allow embedded devices to communicate with each other. It
+has priority based bus arbitration, reliable deterministic
+communication. It is used in cars, trucks, wheelchairs and more.
+
+
 
 Contents:
 

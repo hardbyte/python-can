@@ -18,6 +18,7 @@ The default interface can be selected at install time with a configuration
 script. Alternatively, before creating a **bus** object the global `can.rc`
 dictionary can be modified:
 
+    :::python
     # Interface can be kvaser, socketcan, socketcan_ctypes, socketcan_native, serial
     rc = {
           'default-interface': 'kvaser',
@@ -48,7 +49,7 @@ installed and that the hardware is working.
 
 Two options, install normally with:
 
-    ``python setup.py install``
+    python setup.py install
 
 Or to do a "development" install of this package to your machine (this allows 
 you to make changes locally or pull updates from the Mercurial repository and
@@ -59,13 +60,17 @@ use them without having to reinstall):
 On linux you will need sudo rights. 
 
 
-## Generating Documentation
+## Documentation
 
-The documentation for python-can has been generated with Sphinx. 
+The documentation for python-can has been generated with Sphinx they can be viewed online at
+[python-can.readthedocs.org][6]
 
-With sphinx installed the documentation can be generated with
 
-    ``python setup.py build_sphinx``
+### Generation
+
+With sphinx installed the documentation can be generated with:
+
+    python setup.py build_sphinx
     
     
 [1]: http://en.wikipedia.org/wiki/CAN_bus
@@ -73,3 +78,4 @@ With sphinx installed the documentation can be generated with
 [3]: http://www.brownhat.org/docs/socketcan/llcf-api.html
 [4]: http://python.org/download/
 [5]: http://www.kvaser.com/en/downloads.html
+[6]: https://python-can.readthedocs.org/en/latest/
