@@ -50,9 +50,9 @@ class NodeName(object):
 
     @industry_group.setter
     def industry_group(self, value):
-        '''
+        """
         Value should be in j1939_industry_groups
-        '''
+        """
         assert value in j1939_industry_groups
         self.__industry_group = value
 
@@ -62,9 +62,9 @@ class NodeName(object):
 
     @vehicle_system_instance.setter
     def vehicle_system_instance(self, value):
-        '''
+        """
         An int between 0 and 15.
-        '''
+        """
         self.__vehicle_system_instance = value
 
     @property
@@ -73,9 +73,9 @@ class NodeName(object):
 
     @vehicle_system.setter
     def vehicle_system(self, value):
-        '''
+        """
         An int between 0 and (2 ** 7) - 1.
-        '''
+        """
         self.__vehicle_system = value
 
     @property
@@ -92,9 +92,9 @@ class NodeName(object):
 
     @function.setter
     def function(self, value):
-        '''
+        """
         An int between 0 and (2 ** 8) - 1
-        '''
+        """
         self.__function = value
 
     @property
@@ -103,9 +103,9 @@ class NodeName(object):
 
     @function_instance.setter
     def function_instance(self, value):
-        '''
+        """
         Int between 0 and (2 ** 5) - 1
-        '''
+        """
         self.__function_instance = value
 
     @property
@@ -114,9 +114,9 @@ class NodeName(object):
 
     @ecu_instance.setter
     def ecu_instance(self, value):
-        '''
+        """
         Int between 0 and (2 ** 3) - 1
-        '''
+        """
         self.__ecu_instance = value
 
     @property
@@ -125,9 +125,9 @@ class NodeName(object):
 
     @manufacturer_code.setter
     def manufacturer_code(self, value):
-        '''
+        """
         Int between 0 and (2 ** 11) - 1
-        '''
+        """
         self.__manufacturer_code = value
 
     @property
@@ -136,31 +136,30 @@ class NodeName(object):
 
     @identity_number.setter
     def identity_number(self, value):
-        '''
+        """
         Int between 0 and (2 ** 21) - 1
-        '''
+        """
         self.__identity_number = value
 
     @property
     def bytes(self):
-        retval = []
-        retval.append((self.value & (0xFF << 56)) >> 56)
-        retval.append((self.value & (0xFF << 48)) >> 48)
-        retval.append((self.value & (0xFF << 40)) >> 40)
-        retval.append((self.value & (0xFF << 32)) >> 32)
-        retval.append((self.value & (0xFF << 24)) >> 24)
-        retval.append((self.value & (0xFF << 16)) >> 16)
-        retval.append((self.value & (0xFF << 8)) >> 8)
-        retval.append(self.value & 0xFF)
-        return retval
+        return [
+            (self.value & (0xFF << 56)) >> 56,
+            (self.value & (0xFF << 48)) >> 48,
+            (self.value & (0xFF << 40)) >> 40,
+            (self.value & (0xFF << 32)) >> 32,
+            (self.value & (0xFF << 24)) >> 24,
+            (self.value & (0xFF << 16)) >> 16,
+            (self.value & (0xFF << 8)) >> 8,
+            (self.value & 0xFF)
+        ]
 
     @bytes.setter
     def bytes(self, value):
-        '''
+        """
         A list of ints between 0 and (2 ** 8) - 1
-        
 
-        '''
+        """
         # TODO use python's builtin bytes type
         self.value = int("".join("%.2X" % _byte for _byte in value), 16)
 

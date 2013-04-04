@@ -1,19 +1,29 @@
 The **C**ontroller **A**rea **N**etwork is a bus standard designed to 
 allow microcontrollers and devices to communicate with each other. It 
 has priority based bus arbitration, reliable deterministic 
-communication. It is used in cars, trucks, wheelchairs... [wikipedia][1] 
-has more info.
+communication. It is used in cars, trucks, wheelchairs and more. See
+[wikipedia][1] for more info.
 
 # python-can
+
+This module provides controller area network support for [Python][4].
 
 ## Installation
 
 A Controller Area Networking interface is required for `python-can` to do
 anything useful. The two primary interfaces are `socketcan` on GNU/Linux 
-and [Kvaser][1]'s CANLib SDK for Windows (also available on Linux).
+and [Kvaser][2]'s CANLib SDK for Windows (also available on Linux).
 
 The default interface can be selected at install time with a configuration
-script. Alternatively, before creating a **bus** object call `can.use`.
+script. Alternatively, before creating a **bus** object the global `can.rc`
+dictionary can be modified:
+
+    # Interface can be kvaser, socketcan, socketcan_ctypes, socketcan_native, serial
+    rc = {
+          'default-interface': 'kvaser',
+          'interface': 'kvaser'
+          }
+
 
 ### GNU/Linux dependencies
 

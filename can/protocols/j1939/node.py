@@ -38,9 +38,7 @@ class Node(Listener):
         self.address_list = address_list
         self._pdu_type = pdu_type
         self._current_address_index = 0
-        self.known_node_addresses = {}
-        self.known_node_addresses[self.node_name.value] = ADDRESS_UNCLAIMED
-
+        self.known_node_addresses = {self.node_name.value: ADDRESS_UNCLAIMED}
 
     @property
     def address(self):
@@ -101,7 +99,7 @@ class Node(Listener):
 
 
     def send_parameter_group(self, pgn, data, destination_device_name=None):
-        '''
+        """
         :param int pgn:
             should be between [0, (2 ** 18) - 1]
         :param list data:
@@ -109,14 +107,14 @@ class Node(Listener):
             Each element should be a int between 0 and 255
         :param destination_device_name:
             Should be None, or an int between 0 and (2 ** 64) - 1
-        '''
+        """
         # if we are *allowed* to send data
         if self.known_node_addresses[self.node_name.value] not in (ADDRESS_UNCLAIMED, DESTINATION_ADDRESS_NULL):
             pdu = self._pdu_type()
             pdu.arbitration_id.pgn.value = pgn
             pdu.arbitration_id.source_address = self.known_node_addresses[self.node_name.value]
             if pdu.arbitration_id.pgn.is_destination_specific:
-                if destination_device_name != None:
+                if destination_device_name is not None:
                     pdu.arbitration_id.pgn.pdu_specific = self.known_node_addresses[destination_device_name]
                     if pdu.arbitration_id.pgn.pdu_specific == DESTINATION_ADDRESS_NULL:
                         raise InaccessibleDestinationError

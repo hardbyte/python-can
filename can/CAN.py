@@ -25,18 +25,12 @@ def set_logging_level(level_name=None):
     """
     try:
         log.setLevel(getattr(logging, level_name.upper()))
-    except:
+    except AttributeError:
         log.setLevel(logging.DEBUG)
 
 
-def use(backend=None):
-    """
-    
-    """
-    raise NotImplementedError
-
-
 class Listener(object):
+
     def on_message_received(self, msg):
         raise NotImplementedError(
             "{} has not implemented on_message_received".format(
@@ -51,6 +45,7 @@ class BufferedReader(Listener):
 
     def __init__(self):
         self.buffer = queue.Queue(0)
+
 
     def on_message_received(self, msg):
         self.buffer.put(msg)

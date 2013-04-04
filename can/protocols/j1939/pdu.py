@@ -1,12 +1,17 @@
 from can import Message
 
 from .arbitrationid import ArbitrationID
-from .constants import pgn_strings
+from .constants import pgn_strings, PGN_AC_ADDRESS_CLAIMED
 #from .decoders import pgn_decoders
 from .nodename import NodeName
 
 
 class PDU(object):
+    """
+    A PDU is a higher level abstraction of a CAN message.
+    J1939 ensures that long messages are taken care of.
+    """
+
     def __init__(self, timestamp=0.0, arbitration_id=None, data=None, info_strings=None):
         """
         :param float timestamp:
@@ -28,7 +33,7 @@ class PDU(object):
    
         
     def __eq__(self, other):
-        ''' Returns True if the pgn, data, source and destination are the same'''
+        """Returns True if the pgn, data, source and destination are the same"""
         if other is None:
             return False
         if self.pgn != other.pgn:
@@ -51,28 +56,24 @@ class PDU(object):
 
     @property
     def destination(self):
-        ''' Destination address of the message'''
+        """Destination address of the message"""
         return self.arbitration_id.destination_address
-    
-    
+
     @property
     def source(self):
-        ''' Source address of the message'''
+        """Source address of the message"""
         return self.arbitration_id.source_address
-    
-    
+
     @property
     def is_address_claim(self):
-        return self.pgn == PGN.ADDRESS_CLAIMED
-
+        return self.pgn == PGN_AC_ADDRESS_CLAIMED
 
     def _check_data(self, value):
-        assert len(value) <= 1785, 'Too much data to fit in a j1939 CAN message. Got {0} bytes'.format(length)
+        assert len(value) <= 1785, 'Too much data to fit in a j1939 CAN message. Got {0} bytes'.format(len(value))
         if len(value) > 0:
             assert min(value) >= 0, 'Data values must be between 0 and 255'
             assert max(value) <= 255, 'Data values must be between 0 and 255'
         return value
-
 
     def data_segments(self, segment_length=8):
         retval = []
@@ -80,12 +81,11 @@ class PDU(object):
             retval.append(self.data[i:i+min(segment_length, (len(self.data) - i))])
         return retval
 
-
     def check_equality(self, other, fields, debug=False):
-        '''
+        """
         :param :class:`~can.protocols.j1939.PDU` other:
         :param list[str] fields:
-        '''
+        """
         if debug:
             self.info_strings.append("check_equality starting")
         retval = True
@@ -115,12 +115,12 @@ class PDU(object):
 
 
     def __str__(self):
-        field_strings = []
-        field_strings.append("%15.6f" % self.timestamp)
-        field_strings.append("%s" % self.arbitration_id)
+        field_strings = ["%15.6f" % self.timestamp,
+                         "%s" % self.arbitration_id]
         data_segments = []
         for (segment, info_string) in zip(self.data_segments(segment_length=8), 
-                                          self.breakdown)[:min(len(self.data_segments(segment_length=8)), len(self.breakdown))]:
+                                          self.breakdown)[:min(len(self.data_segments(segment_length=8)),
+                                                               len(self.breakdown))]:
             data_segments.append("%s%s" % ((" ".join("%.2x" % _byte for _byte in segment)).ljust(24), info_string))
         
         if len(self.data_segments(segment_length=8)) >= len(self.breakdown):
@@ -136,4 +136,4 @@ class PDU(object):
             retval += (("\n" + " " * 19).join(self.info_strings))
         return retval
 
-    
+

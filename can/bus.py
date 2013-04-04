@@ -2,6 +2,7 @@
 
 import abc
 import threading
+import time
 try:
     import queue
 except ImportError:
@@ -63,10 +64,10 @@ class BusABC(object):
     
     
     def write(self, msg):
-        ''''
+        """
         :param :class:`can.Message` msg:
             A Message object to write to bus.
-        '''
+        """
         self._tx_queue.put_nowait(msg)
     
     
@@ -76,7 +77,7 @@ class BusABC(object):
             tx_msg = None
             have_lock = False
             try:
-                # TODO
+                # TODO investigate threading problems?
                 if False and self.single_handle:
                     if not self._tx_queue.empty():
                         # Tell the rx thread to give up the can handle

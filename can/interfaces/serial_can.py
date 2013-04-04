@@ -30,13 +30,13 @@ class Bus(BusABC):
     def _put_message(self, msg):
         raise NotImplementedError("This serial interface doesn't support transmit.")
 
-    def _get_message(self):
+    def _get_message(self, timeout=None):
         
         try:
             # ser.read can return an empty string ''
             # or raise a SerialException
             rx_byte = self.ser.read()
-        except SerialException:
+        except serial.SerialException:
             return None
         
         if len(rx_byte) and ord(rx_byte) == 0xAA:
