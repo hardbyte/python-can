@@ -1,11 +1,12 @@
-import datetime
 import argparse
 
 import can
 can.rc['interface'] = 'socketcan_native'
+
 from can import interfaces
 from can.interfaces import interface
 from can.protocols import j1939
+
 b = j1939.Bus(channel='vcan0')
 
 if __name__ == "__main__":

@@ -28,8 +28,7 @@ class Message(object):
 
     
     def __str__(self):
-        field_strings = []
-        field_strings.append("%15.6f" % self.timestamp)
+        field_strings = ["%15.6f" % self.timestamp]
         if self.id_type:
             # Extended arbitrationID
             arbitration_id_string = "%.8x" % self.arbitration_id
@@ -49,7 +48,7 @@ class Message(object):
         
         field_strings.append("%d" % self.dlc)
         data_strings = []
-        if self.data != None:
+        if self.data is not None:
             for byte in self.data:
                 data_strings.append("%.2x" % byte)
         if len(data_strings) > 0:

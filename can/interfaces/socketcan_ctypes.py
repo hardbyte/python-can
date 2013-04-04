@@ -2,8 +2,7 @@
 import sys
 import ctypes
 import logging
-import threading
-import time
+
 
 from can.interfaces.socketcan_constants import *   #CAN_RAW
 from ..bus import BusABC
@@ -38,7 +37,7 @@ class Bus(BusABC):
         
 
         
-    def _get_message(self):
+    def _get_message(self, timeout=None):
         
         rx_msg = Message()
 
@@ -139,13 +138,13 @@ class TIME_VALUE(ctypes.Structure):
 
 
 def createSocket(protocol=CAN_RAW):
-    '''
-    This function creates a RAW CAN socket. 
-    
+    """
+    This function creates a RAW CAN socket.
+
     The socket returned needs to be bound to an interface by calling
     :func:`bindSocket`.
-    
-    Returns:   
+
+    Returns:
         +-----------+----------------------------+
         | 0         |protocol invalid            |
         +-----------+----------------------------+
@@ -153,7 +152,7 @@ def createSocket(protocol=CAN_RAW):
         +-----------+----------------------------+
         | socketID  |  successful creation       |
         +-----------+----------------------------+
-    '''
+    """
     if protocol == CAN_RAW:
         socketID = libc.socket(PF_CAN, SOCK_RAW, CAN_RAW)
     elif protocol == CAN_BCM:
@@ -164,22 +163,22 @@ def createSocket(protocol=CAN_RAW):
 
 
 def bindSocket(socketID, channel_name):
-    '''
-    Binds the given socket to the given interface. 
-    
+    """
+    Binds the given socket to the given interface.
+
     :param int socketID:
         The ID of the socket to be bound
 
     :param str channel_name:
         The interface name to find and bind.
-    
+
     :return The error code from the bind call.
         +-----------+----------------------------+
         | 0         |protocol invalid            |
         +-----------+----------------------------+
         | -1        |socket creation unsuccessful|
         +-----------+----------------------------+
-    '''
+    """
     log.debug('Binding socket with id {}'.format(socketID))
     socketID = ctypes.c_int(socketID)
     
@@ -200,6 +199,7 @@ def bindSocket(socketID, channel_name):
 
 def sendPacket(socketID, message):
     raise NotImplementedError()
+    # TODO
     frame = CAN_FRAME()
     frame.can_id = 0x123
     frame.data = "foo"
@@ -210,13 +210,13 @@ def sendPacket(socketID, message):
     return bytes_sent
 
 def capturePacket(socketID):
-    '''
-    Captures a packet of data from the given socket. 
-    
+    """
+    Captures a packet of data from the given socket.
+
 
     :param int socketID:
         The socket to read from
-    
+
     :return:
         A dictionary with the following keys:
         +-----------+----------------------------+
@@ -228,8 +228,8 @@ def capturePacket(socketID):
         +-----------+----------------------------+
         |'Timestamp'| float                      |
         +-----------+----------------------------+
-   
-    '''
+
+    """
     packet = {}
     
     frame = CAN_FRAME()
@@ -253,7 +253,7 @@ def capturePacket(socketID):
 
     packet['Data'] = data
 
-    timestamp = time.tv_sec + (time.tv_usec/1000000)
+    timestamp = time.tv_sec + (time.tv_usec / 1000000)
     
     packet['Timestamp'] = timestamp
 

@@ -13,7 +13,7 @@ class ArbitrationID(object):
         :param int source_address:
             Between 0 and 255.
         """
-        if pgn == None:
+        if pgn is None:
             pgn = PGN()
         self.priority = priority
         self.pgn = pgn
@@ -27,9 +27,9 @@ class ArbitrationID(object):
 
     @can_id.setter
     def can_id(self, value):
-        '''
+        """
         Int between 0 and (2**29) - 1
-        '''
+        """
         self.priority = (value & 0x1C000000) >> 26
         self.pgn.value = (value & 0x03FFFF00) >> 8
         self.source_address = value & 0x000000FF
@@ -42,7 +42,7 @@ class ArbitrationID(object):
             return None
 
     def __str__(self):
-        if self.destination_address != None:
+        if self.destination_address is not None:
             retval = "PRI=%d PGN=%6s DST=0x%.2x SRC=0x%.2x" % (self.priority, self.pgn, self.destination_address, self.source_address)
         else:
             retval = "PRI=%d PGN=%6s          SRC=0x%.2x" % (self.priority, self.pgn, self.source_address)

@@ -8,7 +8,6 @@ can socket support: >3.3
 import socket
 import fcntl
 import struct
-import sys
 import logging
 
 logging.basicConfig(level=logging.DEBUG)
@@ -39,7 +38,7 @@ def dissect_can_frame(frame):
 
 
 def createSocket(can_protocol=None):
-    '''Creates a CAN socket. The socket can be BCM or RAW. The socket will
+    """Creates a CAN socket. The socket can be BCM or RAW. The socket will
     be returned unbound to any interface.
 
     :param int can_protocol:
@@ -50,44 +49,47 @@ def createSocket(can_protocol=None):
     :return:
         * -1 if socket creation unsuccessful
         * socketID - successful creation
-    '''
-    if can_protocol is None:
+    """
+    if can_protocol is None or can_protocol == socket.CAN_RAW:
         can_protocol = socket.CAN_RAW
-    if can_protocol == socket.CAN_RAW:
-        sock = socket.socket(socket.PF_CAN, socket.SOCK_RAW, socket.CAN_RAW)
+        socket_type = socket.SOCK_RAW
     elif can_protocol == socket.CAN_BCM:
-        sock = socket.socket(socket.PF_CAN, socket.SOCK_DGRAM, socket.CAN_BCM)
+        can_protocol = socket.CAN_BCM
+        socket_type = socket.SOCK_DGRAM
+
+    sock = socket.socket(socket.PF_CAN, socket_type, can_protocol)
+
     log.info('Created a socket')
 
     return sock
 
 
 def bindSocket(sock, channel='can0'):
-    '''
+    """
     Binds the given socket to the given interface.
 
     :param Socket socketID:
         The ID of the socket to be bound
     :raise:
         :class:`OSError` if the specified interface isn't found.
-    '''
+    """
     log.debug('Binding socket to channel={}'.format(channel))
     sock.bind((channel,))
 
 
 def capturePacket(sock):
-    '''
+    """
     Captures a packet of data from the given socket.
-    
+
     :param socket sock:
         The socket to read a packet from.
-    
+
     :return: A dictionary with the following keys:
         'CAN ID',
         'DLC'
-        'Data' 
+        'Data'
         'Timestamp'
-    '''
+    """
     
     # Fetching the Arb ID, DLC and Data
     cf, addr = sock.recvfrom(can_frame_size)
@@ -120,7 +122,7 @@ class Bus(BusABC):
         super(Bus, self).__init__(*args, **kwargs)
 
 
-    def _get_message(self):
+    def _get_message(self, timeout=None):
         
         rx_msg = Message()
 
@@ -155,13 +157,13 @@ class Bus(BusABC):
 
 
 if __name__ == "__main__":
-    '''Create two sockets on vcan0 to test send and receive
-    
-    If you want to try it out you can do the following:
-        modprobe vcan
-        ip link add dev vcan0 type vcan
-        ifconfig vcan0 up
-    '''
+    # Create two sockets on vcan0 to test send and receive
+    #
+    # If you want to try it out you can do the following:
+    #
+    #     modprobe vcan
+    #     ip link add dev vcan0 type vcan
+    #     ifconfig vcan0 up
 
     def receiver():
         receiver_socket = createSocket()

@@ -260,9 +260,9 @@ DRIVER_MODE_NORMAL = True
 
 
 class Bus(BusABC):
-    '''
+    """
     The CAN Bus implemented for the Kvaser interface.
-    '''
+    """
     def __init__(self,
                  channel,
                  bitrate,
@@ -272,7 +272,7 @@ class Bus(BusABC):
                  no_samp,
                  driver_mode=DRIVER_MODE_NORMAL,
                  single_handle=False):
-        '''
+        """
         :param int channel:
             The Channel id to create this bus with.
         :param int bitrate:
@@ -284,13 +284,13 @@ class Bus(BusABC):
             that the controller can resynchronise every bit.
         :param no_samp:
             Some CAN controllers can also sample each bit three times.
-            In this case, the bit will be sampled three quanta in a row, 
+            In this case, the bit will be sampled three quanta in a row,
             with the last sample being taken in the edge between TSEG1 and TSEG2.
             Three samples should only be used for relatively slow baudrates.
-        
+
         :param bool driver_mode:
-            Silent or normal.       
-        '''
+            Silent or normal.
+        """
         log.debug('Initialising bus instance')
         self.single_handle = single_handle
         
@@ -338,9 +338,9 @@ class Bus(BusABC):
         super(Bus, self).__init__()
 
     def flush_tx_buffer(self):
-        '''
+        """
         Flushes the transmit buffer on the Kvaser
-        '''
+        """
         canIoCtl(self._write_handle, canstat.canIOCTL_FLUSH_TX_BUFFER, 0, 0)
     
     
@@ -370,13 +370,13 @@ class Bus(BusABC):
         return timestamp
 
 
-    def _get_message(self):
-        '''
+    def _get_message(self, timeout=None):
+        """
         Read a message from kvaser device.
-        
+
         In single handle mode this blocks the sending of messages for up to 1ms
         before releasing the lock.
-        '''
+        """
         arb_id = ctypes.c_long(0)
         data = ctypes.create_string_buffer(8)
         dlc = ctypes.c_uint(0)

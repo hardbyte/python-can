@@ -23,6 +23,7 @@ that do not override this method (that is, implement an on_message_received
 of their own without calling CAN.Listener's version) will cause
 NotImplementedError to be thrown when a message is received on the CAN bus.
 
+
 BufferedReader
 --------------
 
@@ -34,11 +35,13 @@ retrieve the latest message received by the instance. If no message is
 available it blocks for 0.5 seconds or until a message is received (whichever
 is shorter), and returns the message if there is one, or None if there is not.
 
+
 MessagePrinter
 --------------
 
 The MessagePrinter class is a subclass of `Listener`_ which simply prints
 any messages it receives to the terminal.
+
 
 AcceptanceFilter
 ----------------
@@ -47,6 +50,7 @@ The AcceptanceFilter class is a subclass of `Listener`_ which implements the
 CAN "acceptance filter" rules in software. It in turn has its own list of
 listeners, which receive only the messages matching its defined "acceptance
 filter" rules.
+
 
 LogInfo
 -------
@@ -57,7 +61,7 @@ tester who recorded the log, and the name of the original log file.
 
 
 Log
----
+----
 
 A Log object contains information about the CAN channel, the machine information
 and contains a record of the messages and errors.

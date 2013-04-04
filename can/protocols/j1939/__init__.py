@@ -23,9 +23,10 @@ from . import constants
 from .node import Node
 from .arbitrationid import ArbitrationID
 
+
 class Bus(RawCanBus):
     """
-    A CAN Bus that obeys the J1939 Protocol.
+    A CAN Bus that implements the J1939 Protocol.
 
     """
     def __init__(self, pdu_type=PDU, *args, **kwargs):
@@ -55,7 +56,8 @@ class Bus(RawCanBus):
             for i, segment in enumerate(pdu.data_segments(segment_length=7)):
                 arbitration_id = copy.deepcopy(pdu.arbitration_id)
                 arbitration_id.pgn.value = constants.PGN_TP_DATA_TRANSFER
-                if pdu.arbitration_id.pgn.is_destination_specific and pdu.arbitration_id.destination_address != constants.DESTINATION_ADDRESS_GLOBAL:
+                if pdu.arbitration_id.pgn.is_destination_specific and \
+                            pdu.arbitration_id.destination_address != constants.DESTINATION_ADDRESS_GLOBAL:
                     arbitration_id.pgn.pdu_specific = pdu.arbitration_id.pgn.pdu_specific
                 else:
                     arbitration_id.pgn.pdu_specific = constants.DESTINATION_ADDRESS_GLOBAL
@@ -65,7 +67,8 @@ class Bus(RawCanBus):
                                   data=([i+1]+segment))
                 messages.append(message)
 
-            if pdu.arbitration_id.pgn.is_destination_specific and pdu.arbitration_id.destination_address != constants.DESTINATION_ADDRESS_GLOBAL:
+            if pdu.arbitration_id.pgn.is_destination_specific and \
+                            pdu.arbitration_id.destination_address != constants.DESTINATION_ADDRESS_GLOBAL:
                 destination_address = pdu.arbitration_id.pgn.pdu_specific
                 if pdu.arbitration_id.source_address in self._incomplete_transmitted_pdus:
                     if destination_address in self._incomplete_transmitted_pdus[pdu.arbitration_id.source_address]:
@@ -88,9 +91,21 @@ class Bus(RawCanBus):
             pgn_middle = ((temp_pgn.value & 0x00FF00) >> 8)
             pgn_lsb = (temp_pgn.value & 0x0000FF)
 
-            if pdu.arbitration_id.pgn.is_destination_specific and pdu.arbitration_id.destination_address != constants.DESTINATION_ADDRESS_GLOBAL:
-                rts_msg = Message(extended_id=True, arbitration_id=rts_arbitration_id.can_id, data=[constants.CM_MSG_TYPE_RTS, pdu_length_msb, pdu_length_lsb, len(messages), 0xFF, pgn_lsb, pgn_middle, pgn_msb], dlc=8)
-                super(Bus, self)._put_message(rts_msg) # send request to send
+            if pdu.arbitration_id.pgn.is_destination_specific and \
+                            pdu.arbitration_id.destination_address != constants.DESTINATION_ADDRESS_GLOBAL:
+                # send request to send
+                rts_msg = Message(extended_id=True,
+                                  arbitration_id=rts_arbitration_id.can_id,
+                                  data=[constants.CM_MSG_TYPE_RTS,
+                                        pdu_length_msb,
+                                        pdu_length_lsb,
+                                        len(messages),
+                                        0xFF,
+                                        pgn_lsb,
+                                        pgn_middle,
+                                        pgn_msb],
+                                  dlc=8)
+                super(Bus, self)._put_message(rts_msg)
             else:
                 rts_arbitration_id.pgn.pdu_specific = constants.DESTINATION_ADDRESS_GLOBAL
                 bam_msg = Message(extended_id=True,
@@ -159,43 +174,54 @@ class Bus(RawCanBus):
 
 
     def _data_transfer_handler(self, msg):
-        if msg.arbitration_id.source_address in self._incomplete_received_pdus:
-            if msg.arbitration_id.pgn.pdu_specific in self._incomplete_received_pdus[msg.arbitration_id.source_address]:
-                self._incomplete_received_pdus[msg.arbitration_id.source_address][msg.arbitration_id.pgn.pdu_specific].data.extend(msg.data[1:])
-                if len(self._incomplete_received_pdus[msg.arbitration_id.source_address][msg.arbitration_id.pgn.pdu_specific].data) >= self.__incomplete_received_pdu_lengths[msg.arbitration_id.source_address][msg.arbitration_id.pgn.pdu_specific]["total"]:
-                    if msg.arbitration_id.pgn.pdu_specific == constants.DESTINATION_ADDRESS_GLOBAL:
+        msg_source = msg.arbitration_id.source_address
+        pdu_specific = msg.arbitration_id.pgn.pdu_specific
+
+        if msg_source in self._incomplete_received_pdus:
+
+            if pdu_specific in self._incomplete_received_pdus[msg_source]:
+                self._incomplete_received_pdus[msg_source][pdu_specific].data.extend(msg.data[1:])
+                total = self.__incomplete_received_pdu_lengths[msg_source][pdu_specific]["total"]
+                if len(self._incomplete_received_pdus[msg_source][pdu_specific].data) >= total:
+                    if pdu_specific == constants.DESTINATION_ADDRESS_GLOBAL:
                         # Looks strange but makes sense - in the absence of explicit flow control,
                         # the last CAN packet in a long message *is* the end of message acknowledgement
                         return self._process_eom_ack(msg)
 
                     # Find a Node object so we can search its list of known node addresses for this node
                     # so we can find if we are responsible for sending the EOM ACK message
-                    send_ack = False
-                    for listener in self.listeners:
-                        if isinstance(listener, Node):
-                            if listener.address == msg.arbitration_id.pgn.pdu_specific or msg.arbitration_id.pgn.pdu_specific in listener.address_list:
-                                send_ack = True
+                    send_ack = any(True for l in self.listeners
+                                   if isinstance(l, Node) and (l.address == pdu_specific or
+                                                               pdu_specific in l.address_list))
                     if send_ack:
                         eom_ack = self._pdu_type()
                         eom_ack.arbitration_id.pgn.value = constants.PGN_TP_CONNECTION_MANAGEMENT
-                        eom_ack.arbitration_id.pgn.pdu_specific = msg.arbitration_id.source_address
-                        eom_ack.arbitration_id.source_address = msg.arbitration_id.pgn.pdu_specific
-                        total_length = self._incomplete_received_pdu_lengths[msg.arbitration_id.source_address][msg.arbitration_id.pgn.pdu_specific]["total"]
-                        _num_packages = self._incomplete_received_pdu_lengths[msg.arbitration_id.source_address][msg.arbitration_id.pgn.pdu_specific]["num_packages"]
-                        pgn = self._incomplete_received_pdus[msg.arbitration_id.source_address][msg.arbitration_id.pgn.pdu_specific].arbitration_id.pgn
+                        eom_ack.arbitration_id.pgn.pdu_specific = msg_source
+                        eom_ack.arbitration_id.source_address = pdu_specific
+                        total_length = self._incomplete_received_pdu_lengths[msg_source][pdu_specific]["total"]
+                        _num_packages = self._incomplete_received_pdu_lengths[msg_source][pdu_specific]["num_packages"]
+                        pgn = self._incomplete_received_pdus[msg_source][pdu_specific].arbitration_id.pgn
                         pgn_msb = ((pgn.value & 0xFF0000) >> 16)
                         _pgn_middle = ((pgn.value & 0x00FF00) >> 8)
                         _pgn_lsb = 0
-                        eom_ack.data = [constants.CM_MSG_TYPE_EOM_ACK, total_length%256, total_length/256, _num_packages, 0xFF, _pgn_lsb, _pgn_middle, pgn_msb]
+
+                        div, mod = divmod(total_length, 256)
+                        eom_ack.data = [constants.CM_MSG_TYPE_EOM_ACK,
+                                        mod, #total_length % 256,
+                                        div, #total_length / 256,
+                                        _num_packages,
+                                        0xFF,
+                                        _pgn_lsb,
+                                        _pgn_middle,
+                                        pgn_msb]
                         super(Bus, self)._put_message(eom_ack)
 
-
-    def __process_rts(self, msg):
+    def _process_rts(self, msg):
         if msg.arbitration_id.source_address not in self._incomplete_received_pdus:
             self._incomplete_received_pdus[msg.arbitration_id.source_address] = {}
             self._incomplete_received_pdu_lengths[msg.arbitration_id.source_address] = {}
 
-        # Delete any previous messages that where not finished correctly
+        # Delete any previous messages that were not finished correctly
         if msg.arbitration_id.pgn.pdu_specific in self._incomplete_received_pdus[msg.arbitration_id.source_address]:
             del self._incomplete_received_pdus[msg.arbitration_id.source_address][msg.arbitration_id.pgn.pdu_specific]
             del self._incomplete_received_pdu_lengths[msg.arbitration_id.source_address][msg.arbitration_id.pgn.pdu_specific]
@@ -289,7 +315,7 @@ class Bus(RawCanBus):
                 _msg = self._long_message_segment_queue.get(timeout=0.1)
             except Empty:
                 pass
-            if _msg != None:
+            if _msg is not None:
                 super(Bus, self).write(_msg)
             time.sleep(self._long_message_segment_interval)
 
