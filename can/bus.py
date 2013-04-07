@@ -3,6 +3,8 @@
 import abc
 import threading
 import time
+import logging
+logger = logging.getLogger(__name__)
 try:
     import queue
 except ImportError:
@@ -61,7 +63,7 @@ class BusABC(object):
         :raise :class:`can.CanError`:
             if the message could not be written.
         """
-    
+        raise NotImplementedError("Trying to write to a readonly bus")
     
     def write(self, msg):
         """
@@ -69,15 +71,16 @@ class BusABC(object):
             A Message object to write to bus.
         """
         self._tx_queue.put_nowait(msg)
+        logger.debug("Message added to transmit queue")
     
     
     def tx_thread(self):
         #TODO. Single handle still required? Blocking is essential.
-        while False and self._threads_running.is_set():
+        while self._threads_running.is_set():
             tx_msg = None
             have_lock = False
             try:
-                # TODO investigate threading problems?
+                # TODO 2 investigate threading problems?
                 if False and self.single_handle:
                     if not self._tx_queue.empty():
                         # Tell the rx thread to give up the can handle
@@ -96,7 +99,8 @@ class BusABC(object):
                         
             except queue.Empty:
                 pass
-            # TODO
+
+            # TODO #2 threading investigation
             if False and self.single_handle and have_lock:
                 self.writing_event.clear()
                 # Tell the rx thread it can start again

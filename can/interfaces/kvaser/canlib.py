@@ -433,7 +433,6 @@ class Bus(BusABC):
                              5)
 
 
-
     def shutdown(self):
         self.__threads_running = False
         canBusOff(self._write_handle)
