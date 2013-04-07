@@ -10,9 +10,7 @@ import fcntl
 import struct
 import logging
 
-logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger('can.socketcan_native')
-
 log.debug("Loading native socket can implementation")
 
 try:
@@ -116,8 +114,8 @@ class Bus(BusABC):
     
     def __init__(self, channel, *args, **kwargs):
 
-        self.socketID = createSocket(CAN_RAW)
-        bindSocket(self.socketID, channel)
+        self.socket = createSocket(CAN_RAW)
+        bindSocket(self.socket, channel)
 
         super(Bus, self).__init__(*args, **kwargs)
 
@@ -127,7 +125,7 @@ class Bus(BusABC):
         rx_msg = Message()
 
         # TODO socketcan error checking...?
-        packet = capturePacket(self.socketID)
+        packet = capturePacket(self.socket)
 
         arbitration_id = packet['CAN ID'] & MSK_ARBID
 
@@ -155,6 +153,11 @@ class Bus(BusABC):
         
         return rx_msg
 
+    def _put_message(self, message):
+        log.debug("We've been asked to write a message to the bus")
+
+        self.socket.send(build_can_frame(message.arbitration_id, message.data))
+
 
 if __name__ == "__main__":
     # Create two sockets on vcan0 to test send and receive
@@ -164,22 +167,26 @@ if __name__ == "__main__":
     #     modprobe vcan
     #     ip link add dev vcan0 type vcan
     #     ifconfig vcan0 up
+    log.setLevel(logging.DEBUG)
 
-    def receiver():
+    def receiver(e):
         receiver_socket = createSocket()
         bindSocket(receiver_socket, 'vcan0')
         print("Receiver is waiting for a message...")
+        e.set()
         print("Receiver got: ", capturePacket(receiver_socket))
 
-    def sender():
+
+    def sender(e):
+        e.wait()
         sender_socket = createSocket()
         bindSocket(sender_socket, 'vcan0')
         sender_socket.send(build_can_frame(0x01, b'\x01\x02\x03'))
         print("Sender sent a message.")
 
     import threading
-    threading.Thread(target=receiver).start()
-    
-    threading.Thread(target=sender).start()
+    e = threading.Event()
+    threading.Thread(target=receiver, args=(e,)).start()
+    threading.Thread(target=sender, args=(e,)).start()
     
 
