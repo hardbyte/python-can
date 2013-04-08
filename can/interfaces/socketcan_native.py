@@ -11,6 +11,7 @@ import struct
 import logging
 
 log = logging.getLogger('can.socketcan_native')
+log.setLevel(logging.DEBUG)
 log.debug("Loading native socket can implementation")
 
 try:
@@ -25,10 +26,25 @@ from ..bus import BusABC
 can_frame_fmt = "=IB3x8s"
 can_frame_size = struct.calcsize(can_frame_fmt)
 
+""" CAN frame packing/unpacking (see 'struct can_frame' in <linux/can.h>)
+/**
+ * struct can_frame - basic CAN frame structure
+ * @can_id:  the CAN ID of the frame and CAN_*_FLAG flags, see above.
+ * @can_dlc: the data length field of the CAN frame
+ * @data:    the CAN frame payload.
+ */
+struct can_frame {
+    canid_t can_id;  /* 32 bit CAN_ID + EFF/RTR/ERR flags */
+    __u8    can_dlc; /* data length code: 0 .. 8 */
+    __u8    data[8] __attribute__((aligned(8)));
+};
+"""
+
 def build_can_frame(can_id, data):
     can_dlc = len(data)
     data = data.ljust(8, b'\x00')
     return struct.pack(can_frame_fmt, can_id, can_dlc, data)
+
 
 def dissect_can_frame(frame):
     can_id, can_dlc, data = struct.unpack(can_frame_fmt, frame)
@@ -109,6 +125,7 @@ def capturePacket(sock):
         'Timestamp': timestamp,
     }
 
+
 class Bus(BusABC):
     channel_info = "native socketcan channel"
     
@@ -118,7 +135,6 @@ class Bus(BusABC):
         bindSocket(self.socket, channel)
 
         super(Bus, self).__init__(*args, **kwargs)
-
 
     def _get_message(self, timeout=None):
         
@@ -155,8 +171,14 @@ class Bus(BusABC):
 
     def _put_message(self, message):
         log.debug("We've been asked to write a message to the bus")
+        arbitration_id = message.arbitration_id
+        if message.id_type:
+            log.error("Got asked to send an extended id type message (don't know how to deal with that yet)")
 
-        self.socket.send(build_can_frame(message.arbitration_id, message.data))
+
+        # TODO need to add flags...
+
+        self.socket.send(build_can_frame(arbitration_id, message.data))
 
 
 if __name__ == "__main__":

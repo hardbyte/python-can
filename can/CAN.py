@@ -71,7 +71,9 @@ class Printer(Listener):
             self.output_file.write('\n')
             self.output_file.close()
 
+
 class CSVWriter(Listener):
+
     def __init__(self, filename):
         self.csv_file = open(filename, 'wt')
         
@@ -92,6 +94,7 @@ class CSVWriter(Listener):
 
 
 class SqliteWriter(Listener):
+
     def __init__(self, filename):
         self.db_file = open(filename, 'wt')
 

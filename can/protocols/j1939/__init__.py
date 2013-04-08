@@ -5,6 +5,7 @@ http://en.wikipedia.org/wiki/J1939
 """
 
 import threading
+import logging
 try:
     from queue import Queue, Empty
 except ImportError:
@@ -19,17 +20,33 @@ from ...interfaces.interface import Bus as RawCanBus
 
 # Import our new message type
 from .pdu import PDU
+from ... import BusABC
 from . import constants
 from .node import Node
 from .arbitrationid import ArbitrationID
 
 
-class Bus(RawCanBus):
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+class Bus(BusABC):
     """
     A CAN Bus that implements the J1939 Protocol.
 
+    Note _get_message will still be implemented by the bus abstraction layer, the
+    j1939 handlers will be listening to the can.Bus.
+
+    Use composition of RawCanBus, might be nicer?
+
     """
+
+    channel_info = "j1939 bus"
+
     def __init__(self, pdu_type=PDU, *args, **kwargs):
+        logger.debug("Creating a new j1939 bus")
+
+        self.rx_can_message_queue = Queue()
+        super().__init__()
         self._pdu_type = pdu_type
         self._long_message_throttler = threading.Thread(target=self._throttler_function)
         self._incomplete_received_pdus = {}
@@ -37,12 +54,48 @@ class Bus(RawCanBus):
         self._incomplete_transmitted_pdus = {}
         self._long_message_segment_queue = Queue(0)
         self._long_message_segment_interval = constants.LONG_MESSAGE_SEGMENT_TRANSMISSION_INTERVAL
-        
-        super(Bus, self).__init__(*args, **kwargs)
-        
+
+        logger.debug("Creating a new can bus")
+        self.can_bus = RawCanBus(*args, **kwargs)
+        self.can_bus.listeners.append(self.rx_can_message_queue.put)
+
         self._long_message_throttler.start()
 
+
+    def _get_message(self, timeout=None):
+        logger.debug("Waiting for new message")
+        m =  self.rx_can_message_queue.get()
+        rx_pdu = None
+
+        if isinstance(m, Message):
+            logger.debug('Got a Message: %s' % m)
+            if m.id_type:
+                # Extended ID
+                # Only J1939 messages (i.e. 29-bit IDs) should go further than this point.
+                # Non-J1939 systems can co-exist with J1939 systems, but J1939 doesn't care
+                # about the content of their messages.
+                logger.info('Message is j1939 msg')
+                rx_pdu = self._process_incoming_message(m)
+            else:
+                logger.info("Received non J1939 message (ignoring)")
+
+            # TODO: Decide what to do with CAN errors
+            if m.is_error_frame:
+                logger.warning("Appears we got an error frame!")
+
+                #rx_error = CANError(timestamp=m.timestamp)
+                # if rx_error is not None:
+                #     logger.info('Sending error "%s" to registered listeners.' % rx_error)
+                #     for listener in self.listeners:
+                #         if hasattr(listener, 'on_error_received'):
+                #             listener.on_error_received(rx_error)
+
+        # Return to BusABC where it will get fed to any listeners
+        return rx_pdu
+
+
     def _put_message(self, msg):
+        logger.debug("Put message called")
         messages = []
         if len(msg.data) > 8:
             # Making a copy of the PDU so that the original
@@ -105,7 +158,7 @@ class Bus(RawCanBus):
                                         pgn_middle,
                                         pgn_msb],
                                   dlc=8)
-                super(Bus, self)._put_message(rts_msg)
+                self.can_bus._put_message(rts_msg)
             else:
                 rts_arbitration_id.pgn.pdu_specific = constants.DESTINATION_ADDRESS_GLOBAL
                 bam_msg = Message(extended_id=True,
@@ -119,7 +172,7 @@ class Bus(RawCanBus):
                                         pgn_msb],
                                   dlc=8)
                 # send BAM
-                super(Bus, self)._put_message(bam_msg)
+                self.can_bus._put_message(bam_msg)
 
                 for message in messages:
                     # send data messages - no flow control, so no need to wait
@@ -131,12 +184,14 @@ class Bus(RawCanBus):
                                   dlc=len(msg.data),
                                   data=msg.data)
 
-            super(Bus, self)._put_message(can_message)
+            self.can_bus._put_message(can_message)
 
 
 
 
     def _process_incoming_message(self, msg):
+        logger.debug("Processing incoming message")
+        logging.debug(msg)
         arbitration_id = ArbitrationID()
         arbitration_id.can_id = msg.arbitration_id
         if arbitration_id.pgn.is_destination_specific:
@@ -151,6 +206,7 @@ class Bus(RawCanBus):
             retval = self._data_transfer_handler(pdu)
         else:
             retval = pdu
+
         return retval
 
     def _connection_management_handler(self, msg):
@@ -214,7 +270,7 @@ class Bus(RawCanBus):
                                         _pgn_lsb,
                                         _pgn_middle,
                                         pgn_msb]
-                        super(Bus, self)._put_message(eom_ack)
+                        self.can_bus._put_message(eom_ack)
 
     def _process_rts(self, msg):
         if msg.arbitration_id.source_address not in self._incomplete_received_pdus:
@@ -259,7 +315,7 @@ class Bus(RawCanBus):
                         cts_msg = Message(extended_id=True, arbitration_id=_cts_arbitration_id.can_id, data=_data, dlc=8)
 
                         # send clear to send
-                        super(Bus, self)._put_message(cts_msg)
+                        self.can_bus._put_message(cts_msg)
                         return
 
     def _process_cts(self, msg):
@@ -273,7 +329,7 @@ class Bus(RawCanBus):
                     if self._long_message_segment_interval > 0:
                         self._long_message_segment_queue.put_nowait(_msg)
                     else:
-                        super(Bus, self)._put_message(_msg)
+                        self.can_bus._put_message(_msg)
 
     def _process_eom_ack(self, msg):
         if (msg.arbitration_id.pgn.value - msg.arbitration_id.pgn.pdu_specific) == constants.PGN_TP_DATA_TRANSFER:
@@ -316,7 +372,7 @@ class Bus(RawCanBus):
             except Empty:
                 pass
             if _msg is not None:
-                super(Bus, self).write(_msg)
+                self.can_bus.write(_msg)
             time.sleep(self._long_message_segment_interval)
 
     @property
