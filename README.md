@@ -8,6 +8,40 @@ communication. It is used in cars, trucks, wheelchairs and more. See
 
 This module provides controller area network support for [Python][4].
 
+## Quickstart
+
+On linux to create a virtual can interface using socketcan run the following:
+
+    :::bash
+    sudo modprobe vcan
+    sudo ip link add dev vcan0 type vcan
+    sudo ifconfig vcan0 up
+
+`ifconfig` should reveal a new vcan0 interface. Fire up wireshark and watch this new interface.
+
+Then spam your new bus:
+
+    :::python
+    import time
+    import can
+    can.rc['interface'] = 'socketcan_native'
+    from can.interfaces.interface import Bus
+    can_interface = 'vcan0'
+
+    def producer(id):
+        """:param id: Spam the bus with messages including the data id."""
+        bus = Bus(can_interface)
+        for i in range(10):
+            msg = can.Message(arbitration_id=0xc0ffee, data=[id, i, 0, 1, 3, 1, 4, 1], extended_id=False)
+            bus.write(msg)
+        # Issue #3: Need to keep running to ensure the writing threads stay alive. ?
+        time.sleep(1)
+
+    producer(10)
+
+
+![Wireshark Screenshot][7]
+
 ## Installation
 
 A Controller Area Networking interface is required for `python-can` to do
@@ -79,3 +113,4 @@ With sphinx installed the documentation can be generated with:
 [4]: http://python.org/download/
 [5]: http://www.kvaser.com/en/downloads.html
 [6]: https://python-can.readthedocs.org/en/latest/
+[7]: http://cdn.bitbucket.org/hardbyte/python-can/downloads/wireshark.png

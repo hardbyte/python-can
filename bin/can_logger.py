@@ -52,7 +52,7 @@ if __name__ == "__main__":
 
     log_start_time = datetime.datetime.now()
     
-    listener = can.CAN.Printer(filename)
+    listener = can.Printer(filename)
     print('Can Logger (Started on {})\n'.format(log_start_time))
     bus.listeners.append(listener)
 

@@ -17,7 +17,7 @@ log = logging.getLogger('CAN')
 class CanError(IOError):
     pass
 
-from can.CAN import BufferedReader, Listener, set_logging_level
+from can.CAN import BufferedReader, Listener, Printer, set_logging_level
 from can.message import Message
 from can.bus import BusABC
 

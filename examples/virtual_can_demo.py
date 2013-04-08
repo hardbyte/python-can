@@ -16,8 +16,8 @@ def producer(id):
     """:param id: Spam the bus with messages including the data id."""
 
     bus = Bus(can_interface)
-    for i in range(16):
-        msg = can.Message(data=[id, i])
+    for i in range(1):
+        msg = can.Message(arbitration_id=0x0cf02200, data=[id, i, 0, 1, 3, 1, 4, 1])
         bus.write(msg)
     # TODO Issue #3: Need to keep running to ensure the writing threads stay alive. ?
     time.sleep(1)
@@ -25,5 +25,5 @@ def producer(id):
 if __name__ == "__main__":
     #logging.getLogger('').setLevel(logging.DEBUG)
     with concurrent.futures.ProcessPoolExecutor(max_workers=4) as executor:
-        executor.map(producer, range(10))
+        executor.map(producer, range(1))
 
