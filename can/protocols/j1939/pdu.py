@@ -118,6 +118,8 @@ class PDU(object):
         field_strings = ["%15.6f" % self.timestamp,
                          "%s" % self.arbitration_id]
         data_segments = []
+        return "TODO FIX DISPLAY STR of j1939.pdu " + str(list(map(hex, self.data)))
+
         for (segment, info_string) in zip(self.data_segments(segment_length=8), 
                                           self.breakdown)[:min(len(self.data_segments(segment_length=8)),
                                                                len(self.breakdown))]:

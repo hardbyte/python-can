@@ -39,6 +39,7 @@ Then spam your new bus:
 
     producer(10)
 
+With debugging turned right up this looks something like this:
 
 ![Wireshark Screenshot][7]
 

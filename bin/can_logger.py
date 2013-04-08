@@ -51,13 +51,20 @@ if __name__ == "__main__":
     bus = Bus(**results.__dict__)
 
     log_start_time = datetime.datetime.now()
-    
-    listener = can.Printer(filename)
+
+    # TODO could use this iterator api but need to deal with rx thread better
+    # I'll explicitly iterate over the incoming messages, so kill the rx thread
+    bus._running.clear()
     print('Can Logger (Started on {})\n'.format(log_start_time))
+    for msg in bus:
+        print(msg)
+
+"""
+    listener = can.Printer(filename)
     bus.listeners.append(listener)
 
     try:
-        while  bus._threads_running:
+        while  bus._running:
             # TODO detect if the bus thread has died
             time.sleep(0.5)
                 
@@ -65,4 +72,4 @@ if __name__ == "__main__":
         pass
     finally:
         bus.shutdown()
-    
+"""

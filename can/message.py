@@ -7,14 +7,13 @@ class Message(object):
     """
     
     def __init__(self, timestamp=0.0, is_remote_frame=False, extended_id=True,
-                 is_wakeup=False, is_error_frame=False, arbitration_id=0, 
+                 is_error_frame=False, arbitration_id=0,
                  dlc=None, data=None):
 
         self.timestamp = timestamp
         self.id_type = extended_id
 
         self.is_remote_frame = is_remote_frame
-        self.is_wakeup = is_wakeup
         self.is_error_frame = is_error_frame
         self.arbitration_id = arbitration_id
         
@@ -26,7 +25,6 @@ class Message(object):
             self.dlc = len(data)
         else:
             self.dlc = dlc
-
     
     def __str__(self):
         field_strings = ["%15.6f" % self.timestamp]
@@ -40,7 +38,6 @@ class Message(object):
         flag_string = "".join(map(str, map(int, 
                                   [self.is_remote_frame,
                                    self.id_type,
-                                   self.is_wakeup,
                                    self.is_error_frame,
                                    ]))
                               )

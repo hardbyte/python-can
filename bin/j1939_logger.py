@@ -11,11 +11,20 @@ bus = j1939.Bus(channel='vcan0')
 log_start_time = datetime.datetime.now()
 print('can.j1939 Logger (Started on {})\n'.format(log_start_time))
 
+
+# I'll explicitly iterate over the incoming messages, so kill the rx thread
+bus._running.clear()
+
+for msg in bus:
+    print(msg)
+
+"""
+
 listener = can.Printer(None)
 bus.listeners.append(listener)
 
 try:
-    while  bus._threads_running:
+    while  bus._running:
         # TODO detect if the bus thread has died
         time.sleep(0.5)
 
@@ -38,3 +47,5 @@ if False and __name__ == "__main__":
     from can.protocols import j1939
 
     bus = Bus(**results.__dict__)
+
+"""

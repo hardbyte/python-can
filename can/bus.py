@@ -14,17 +14,28 @@ except ImportError:
 class BusABC(object):
     """CAN Bus Abstract Base Class
 
+    External API:
+
+        * write(message)
+            Transmit message to CAN bus.
+
+        * channel_info
+            str attribute describing underlying bus
+
+        * listeners
+            list of callables to process received messages
+
     Concrete implementations must implement the following methods:
         * _get_message
         * _put_message
         
-    As well as setting the channel_info attribute to a string describing the
+    As well as setting the `channel_info` attribute to a string describing the
     interface.
     
     """
     
     # a string describing the channel
-    channel_info = 'unknown'    
+    channel_info = 'unknown'
        
     def __init__(self, *args, **kwargs):
         # list of callback functions which will be passed Message instances.
@@ -33,12 +44,8 @@ class BusABC(object):
         # buffer for messages to be written to the bus
         self._tx_queue = queue.Queue()
         
-        self._threads_running = threading.Event()
-        self._threads_running.set()
-        
-        self._write_thread = threading.Thread(target=self.tx_thread)
-        self._write_thread.daemon = True
-        self._write_thread.start()
+        self._running = threading.Event()
+        self._running.set()
         
         self._read_thread = threading.Thread(target=self.rx_thread)
         self._read_thread.daemon = True
@@ -52,74 +59,51 @@ class BusABC(object):
         :return:
             None on timeout or a :class:`can.Message` object.
         """
-    
-    
+        raise NotImplementedError("Trying to read from a write only bus?")
+
     @abc.abstractmethod
     def _put_message(self, msg):
         """Override this method to enable the transmit path.
-        
+
         :param :class:`can.Message` msg:
-        
+
         :raise :class:`can.CanError`:
             if the message could not be written.
         """
-        raise NotImplementedError("Trying to write to a readonly bus")
+        raise NotImplementedError("Trying to write to a readonly bus?")
+
+    def __iter__(self):
+        """Allow iteration on messages as they are received.
+
+            >>> for msg in bus:
+            ...     print(msg)
+
+
+        :yields: :class:`can.Message` msg objects.
+        """
+        while True:
+            yield self._get_message()
+        logger.debug("done iterating over bus messages")
     
+
     def write(self, msg):
         """
         :param :class:`can.Message` msg:
             A Message object to write to bus.
         """
-        self._tx_queue.put_nowait(msg)
+        self._put_message(msg)
         logger.debug("Message added to transmit queue")
-    
-    
-    def tx_thread(self):
-        #TODO. Single handle still required? Blocking is essential.
-        while self._threads_running.is_set():
-            tx_msg = None
-            have_lock = False
-            try:
-                # TODO 2 investigate threading problems?
-                if False and self.single_handle:
-                    if not self._tx_queue.empty():
-                        # Tell the rx thread to give up the can handle
-                        # because we have a message to write to the bus
-                        self.writing_event.set()
-                        # Acquire a lock that the rx thread has started waiting on
-                        self.done_writing.acquire()
-                        have_lock = True
-                    else:
-                        raise queue.Empty('')
-                    
-                while not self._tx_queue.empty():
-                    tx_msg = self._tx_queue.get(timeout=None)
-                    if tx_msg is not None:
-                        self._put_message(tx_msg)
-                        
-            except queue.Empty:
-                pass
 
-            # TODO #2 threading investigation
-            if False and self.single_handle and have_lock:
-                self.writing_event.clear()
-                # Tell the rx thread it can start again
-                self.done_writing.notify()
-                self.done_writing.release()
-                have_lock = False
-
-    
     def rx_thread(self):
         """
         The consumer thread.
         """
-        while self._threads_running.is_set():
+        while self._running.is_set():
             rx_msg = self._get_message()
             
             if rx_msg is not None:
                 for callback in self.listeners:
                     callback(rx_msg)
-
 
     def write_for_period(self, interval, total_time, message, block=True):
         """This method should be overridden by CAN interfaces
@@ -144,14 +128,13 @@ class BusABC(object):
         else:
             t = threading.Thread(target=periodic_sender)
             t.start()
-            
 
     def flush_tx_buffer(self):
         pass
 
-
     def shutdown(self):
-        self._threads_running.clear()
+        self.flush_tx_buffer()
+        self._running.clear()
 
 
     __metaclass__ = abc.ABCMeta

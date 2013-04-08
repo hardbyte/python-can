@@ -27,17 +27,11 @@ from .arbitrationid import ArbitrationID
 
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+#logger.setLevel(logging.DEBUG)
 
 class Bus(BusABC):
     """
     A CAN Bus that implements the J1939 Protocol.
-
-    Note _get_message will still be implemented by the bus abstraction layer, the
-    j1939 handlers will be listening to the can.Bus.
-
-    Use composition of RawCanBus, might be nicer?
-
     """
 
     channel_info = "j1939 bus"
@@ -61,10 +55,10 @@ class Bus(BusABC):
 
         self._long_message_throttler.start()
 
-
     def _get_message(self, timeout=None):
         logger.debug("Waiting for new message")
-        m =  self.rx_can_message_queue.get()
+        m = self.rx_can_message_queue.get(timeout=timeout)
+
         rx_pdu = None
 
         if isinstance(m, Message):
@@ -92,7 +86,6 @@ class Bus(BusABC):
 
         # Return to BusABC where it will get fed to any listeners
         return rx_pdu
-
 
     def _put_message(self, msg):
         logger.debug("Put message called")
@@ -186,9 +179,6 @@ class Bus(BusABC):
 
             self.can_bus._put_message(can_message)
 
-
-
-
     def _process_incoming_message(self, msg):
         logger.debug("Processing incoming message")
         logging.debug(msg)
@@ -227,7 +217,6 @@ class Bus(BusABC):
             retval = self._process_abort(msg)
 
         return retval
-
 
     def _data_transfer_handler(self, msg):
         msg_source = msg.arbitration_id.source_address
@@ -365,7 +354,7 @@ class Bus(BusABC):
                 del self._incomplete_received_pdus[msg.arbitration_id.pgn.pdu_specific][msg.arbitration_id.source_address]
 
     def _throttler_function(self):
-        while self._threads_running:
+        while self._running:
             _msg = None
             try:
                 _msg = self._long_message_segment_queue.get(timeout=0.1)
