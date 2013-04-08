@@ -9,9 +9,10 @@ import socket
 import fcntl
 import struct
 import logging
+from collections import namedtuple
 
 log = logging.getLogger('can.socketcan_native')
-log.setLevel(logging.DEBUG)
+#log.setLevel(logging.DEBUG)
 log.debug("Loading native socket can implementation")
 
 try:
@@ -90,6 +91,15 @@ def bindSocket(sock, channel='can0'):
     log.debug('Binding socket to channel={}'.format(channel))
     sock.bind((channel,))
 
+_CanPacket = namedtuple('_CanPacket',
+                        ['timestamp',
+                         'arbitration_id',
+                         'is_error_frame',
+                         'is_extended_frame_format',
+                         'is_remote_transmission_request',
+                         'dlc',
+                         'data'])
+
 
 def capturePacket(sock):
     """
@@ -98,13 +108,15 @@ def capturePacket(sock):
     :param socket sock:
         The socket to read a packet from.
 
-    :return: A dictionary with the following keys:
-        'CAN ID',
-        'DLC'
-        'Data'
-        'Timestamp'
+    :return: A namedtuple with the following fields:
+         * timestamp
+         * arbitration_id
+         * is_extended_frame_format
+         * is_remote_transmission_request
+         * is_error_frame
+         * dlc
+         * data
     """
-    
     # Fetching the Arb ID, DLC and Data
     cf, addr = sock.recvfrom(can_frame_size)
     
@@ -116,67 +128,64 @@ def capturePacket(sock):
     res = fcntl.ioctl(sock, SIOCGSTAMP, struct.pack(binary_structure, 0, 0))
 
     seconds, microseconds = struct.unpack(binary_structure, res)
-    timestamp = seconds + microseconds/1000000
+    timestamp = seconds + microseconds / 1000000
 
-    return {
-        'CAN ID': can_id,
-        'DLC': can_dlc,
-        'Data': data,
-        'Timestamp': timestamp,
-    }
+    # EXT, RTR, ERR flags -> boolean attributes
+    #   /* special address description flags for the CAN_ID */
+    #   #define CAN_EFF_FLAG 0x80000000U /* EFF/SFF is set in the MSB */
+    #   #define CAN_RTR_FLAG 0x40000000U /* remote transmission request */
+    #   #define CAN_ERR_FLAG 0x20000000U /* error frame */
+    CAN_EFF_FLAG = bool(can_id & 0x80000000)
+    CAN_RTR_FLAG = bool(can_id & 0x40000000)
+    CAN_ERR_FLAG = bool(can_id & 0x20000000)
+
+    if CAN_EFF_FLAG:
+        log.debug("CAN: Extended")
+        # TODO does this depend on SFF or EFF?
+        arbitration_id = can_id & 0x1FFFFFFF
+    else:
+        log.debug("CAN: Standard")
+        arbitration_id = can_id & 0x000007FF
+
+    return _CanPacket(timestamp, arbitration_id, CAN_ERR_FLAG, CAN_EFF_FLAG, CAN_RTR_FLAG, can_dlc, data)
 
 
 class Bus(BusABC):
     channel_info = "native socketcan channel"
     
     def __init__(self, channel, *args, **kwargs):
-
         self.socket = createSocket(CAN_RAW)
         bindSocket(self.socket, channel)
-
         super(Bus, self).__init__(*args, **kwargs)
 
     def _get_message(self, timeout=None):
-        
-        rx_msg = Message()
 
         # TODO socketcan error checking...?
         packet = capturePacket(self.socket)
 
-        arbitration_id = packet['CAN ID'] & MSK_ARBID
+        rx_msg = Message(timestamp=packet.timestamp,
+                         arbitration_id=packet.arbitration_id,
+                         extended_id=packet.is_extended_frame_format,
+                         is_remote_frame=packet.is_remote_transmission_request,
+                         is_error_frame=packet.is_error_frame,
+                         dlc=packet.dlc,
+                         data=packet.data
+                         )
 
-        # TODO flags could just be boolean attributes?
-        # Flags: EXT, RTR, ERR
-        flags = (packet['CAN ID'] & MSK_FLAGS) >> 29
-
-        # To keep flags consistent with pycanlib, their positions need to be switched around
-        flags = (flags | PYCAN_ERRFLG) & ~(SKT_ERRFLG) if flags & SKT_ERRFLG else flags 
-        flags = (flags | PYCAN_RTRFLG) & ~(SKT_RTRFLG) if flags & SKT_RTRFLG else flags
-        flags = (flags | PYCAN_STDFLG) & ~(EXTFLG) if not(flags & EXTFLG) else flags
-
-        if flags & EXTFLG:
-            rx_msg.id_type = ID_TYPE_EXTENDED
-            log.debug("CAN: Extended")
-        else:
-            rx_msg.id_type = ID_TYPE_STANDARD
-            log.debug("CAN: Standard")
-
-        rx_msg.arbitration_id = arbitration_id
-        rx_msg.dlc = packet['DLC']
-        rx_msg.flags = flags
-        rx_msg.data = packet['Data']
-        rx_msg.timestamp = packet['Timestamp']
-        
         return rx_msg
 
     def _put_message(self, message):
         log.debug("We've been asked to write a message to the bus")
         arbitration_id = message.arbitration_id
         if message.id_type:
-            log.error("Got asked to send an extended id type message (don't know how to deal with that yet)")
-
-
-        # TODO need to add flags...
+            log.debug("sending an extended id type message")
+            arbitration_id |= 0x80000000
+        if message.is_remote_frame:
+            log.debug("requesting a remote frame")
+            arbitration_id |= 0x40000000
+        if message.is_error_frame:
+            log.debug("sending error frame")
+            arbitration_id |= 0x20000000
 
         self.socket.send(build_can_frame(arbitration_id, message.data))
 
@@ -197,7 +206,6 @@ if __name__ == "__main__":
         print("Receiver is waiting for a message...")
         e.set()
         print("Receiver got: ", capturePacket(receiver_socket))
-
 
     def sender(e):
         e.wait()
