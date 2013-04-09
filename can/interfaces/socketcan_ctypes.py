@@ -17,7 +17,8 @@ class Bus(BusABC):
     """
     An implementation of the :class:`can.bus.BusABC` for SocketCAN using :mod:`ctypes`.
     """
-    
+    channel_info = "ctypes socketcan channel"
+
     def __init__(self,
                  channel,
                  *args, **kwargs):
@@ -27,11 +28,11 @@ class Bus(BusABC):
             would be 'vcan0'.
         """    
 
-        self.socketID = createSocket()
+        self.socket = createSocket()
         
-        log.debug("Result of createSocket was {}".format(self.socketID))
+        log.debug("Result of createSocket was {}".format(self.socket))
         
-        bindSocket(self.socketID, channel)
+        bindSocket(self.socket, channel)
         
         super(Bus, self).__init__(*args, **kwargs)
         
@@ -43,7 +44,7 @@ class Bus(BusABC):
 
         log.debug("Trying to read a msg")
 
-        packet = capturePacket(self.socketID)
+        packet = capturePacket(self.socket)
 
         log.debug("I've got a message")
 
@@ -74,7 +75,7 @@ class Bus(BusABC):
     
 
     def _put_message(self, message):
-        sendPacket(self.sockedID, message)
+        sendPacket(self.socket, message)
 
 
 log.debug("Loading libc with ctypes...")
@@ -197,15 +198,29 @@ def bindSocket(socketID, channel_name):
     
     return error
 
-def sendPacket(socketID, message):
-    raise NotImplementedError()
-    # TODO
+def sendPacket(socket, message):
+
+    arbitration_id = message.arbitration_id
+    if message.id_type:
+        log.debug("sending an extended id type message")
+        arbitration_id |= 0x80000000
+    if message.is_remote_frame:
+        log.debug("requesting a remote frame")
+        arbitration_id |= 0x40000000
+    if message.is_error_frame:
+        log.debug("sending error frame")
+        arbitration_id |= 0x20000000
+    log.debug("Data: {}".format(message.data))
+
+    ctypes_data = (ctypes.c_ubyte * len(message.data))(*[ctypes.c_ubyte(ord(c)) for c in message.data])
     frame = CAN_FRAME()
-    frame.can_id = 0x123
-    frame.data = "foo"
-    frame.can_dlc = len(frame.data)
-    
-    bytes_sent = libc.write(socketID, ctypes.byref(frame), ctypes.sizeof(frame))
+    frame.can_id = arbitration_id
+    frame.data = ctypes_data
+    frame.can_dlc = len(message.data)
+
+    bytes_sent = libc.write(socket,
+                            ctypes.byref(frame),
+                            ctypes.sizeof(frame))
     
     return bytes_sent
 

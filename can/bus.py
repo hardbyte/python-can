@@ -84,7 +84,6 @@ class BusABC(object):
         while True:
             yield self._get_message()
         logger.debug("done iterating over bus messages")
-    
 
     def write(self, msg):
         """
