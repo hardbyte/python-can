@@ -27,7 +27,7 @@ setup(
     package_data={
         "": ["CONTRIBUTORS.txt", "LICENSE.txt"],
         "doc": ["*.*"]
-        },
+    },
 
     scripts=["./bin/can_logger.py", "./bin/can_printer.py"],
-    )
+)

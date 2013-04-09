@@ -16,7 +16,7 @@ class Message(object):
         self.is_remote_frame = is_remote_frame
         self.is_error_frame = is_error_frame
         self.arbitration_id = arbitration_id
-        
+        logger.debug("creating a new Message object")
         if data is None:
             data = []
         self.data = bytearray(data)

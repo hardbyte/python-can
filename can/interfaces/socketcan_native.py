@@ -90,6 +90,7 @@ def bindSocket(sock, channel='can0'):
     """
     log.debug('Binding socket to channel={}'.format(channel))
     sock.bind((channel,))
+    log.debug('Bound socket.')
 
 _CanPacket = namedtuple('_CanPacket',
                         ['timestamp',
@@ -154,9 +155,17 @@ class Bus(BusABC):
     channel_info = "native socketcan channel"
     
     def __init__(self, channel, *args, **kwargs):
+        """
+        :param str channel:
+            The can interface name with which to create this bus. An example channel
+            would be 'vcan0'.
+        """
         self.socket = createSocket(CAN_RAW)
         bindSocket(self.socket, channel)
         super(Bus, self).__init__(*args, **kwargs)
+
+    def __del__(self):
+        self.socket.close()
 
     def _get_message(self, timeout=None):
 
@@ -186,6 +195,8 @@ class Bus(BusABC):
         if message.is_error_frame:
             log.debug("sending error frame")
             arbitration_id |= 0x20000000
+        l = log.getChild("tx")
+        l.debug("sending: {}".format(message))
 
         self.socket.send(build_can_frame(arbitration_id, message.data))
 
