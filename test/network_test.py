@@ -42,7 +42,6 @@ class ControllerAreaNetworkTestCase(unittest.TestCase):
 
     def producer(self):
         self.client_bus = Bus(can_interface)
-        self.client_bus._running.clear()
         for i in range(self.num_messages):
             m = can.Message(
                 arbitration_id=self.ids[i],

@@ -17,10 +17,16 @@ class Message(object):
         self.is_error_frame = is_error_frame
         self.arbitration_id = arbitration_id
         logger.debug("creating a new Message object")
+
+        #if isinstance(data, list):
+        #    data = bytes(data)
+
         if data is None:
             data = []
-        self.data = bytearray(data)
-        
+        try:
+            self.data = bytearray(data)
+        except:
+            print(data, type(data))
         if dlc is None:
             self.dlc = len(data)
         else:

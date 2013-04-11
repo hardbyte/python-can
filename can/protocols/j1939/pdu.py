@@ -1,10 +1,11 @@
+import logging
 from can import Message
 
 from .arbitrationid import ArbitrationID
 from .constants import pgn_strings, PGN_AC_ADDRESS_CLAIMED
-#from .decoders import pgn_decoders
 from .nodename import NodeName
 
+logger = logging.getLogger(__name__)
 
 class PDU(object):
     """
@@ -17,11 +18,13 @@ class PDU(object):
         :param float timestamp:
             Bus time in seconds.
         :param :class:`can.protocols.j1939.ArbitrationID` arbitration_id:
-        :param bytearray|list data:
 
+        :param bytes/bytearray/list data:
+            With length up to 1785.
         """
         if arbitration_id is None:
             arbitration_id = ArbitrationID()
+        assert isinstance(arbitration_id, ArbitrationID)
         if data is None:
             data = []
         if info_strings is None:
@@ -86,22 +89,21 @@ class PDU(object):
         :param :class:`~can.protocols.j1939.PDU` other:
         :param list[str] fields:
         """
-        if debug:
-            self.info_strings.append("check_equality starting")
+
+        logger.debug("check_equality starting")
+
         retval = True
         for field in fields:
             try:
                 own_value = getattr(self, field)
             except AttributeError:
-                if debug:
-                    self.info_strings.append("'%s' not found in 'self'" % field)
+                logger.warning("'%s' not found in 'self'" % field)
                 return False
                 
             try:
                 other_value = getattr(other, field)
             except AttributeError:
-                if debug:
-                    self.info_strings.append("'%s' not found in 'other'" % field)
+                logger.debug("'%s' not found in 'other'" % field)
                 return False
                 
             if debug:
@@ -109,8 +111,7 @@ class PDU(object):
             if own_value != other_value:
                 return False
                 
-        if debug:
-            self.info_strings.append("Messages match")
+        logger.debug("Messages match")
         return retval
 
 

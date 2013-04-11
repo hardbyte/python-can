@@ -20,6 +20,7 @@ from ...interfaces.interface import Bus as RawCanBus
 
 # Import our new message type
 from .pdu import PDU
+from .pgn import PGN
 from ... import BusABC
 from . import constants
 from .node import Node
@@ -43,10 +44,14 @@ class Bus(BusABC):
         super().__init__()
         self._pdu_type = pdu_type
         self._long_message_throttler = threading.Thread(target=self._throttler_function)
+        #self._long_message_throttler.daemon = True
+
         self._incomplete_received_pdus = {}
         self._incomplete_received_pdu_lengths = {}
         self._incomplete_transmitted_pdus = {}
         self._long_message_segment_queue = Queue(0)
+
+        # This appears to be the sleep time...? TODO maybe delete
         self._long_message_segment_interval = constants.LONG_MESSAGE_SEGMENT_TRANSMISSION_INTERVAL
 
         logger.debug("Creating a new can bus")
@@ -94,10 +99,13 @@ class Bus(BusABC):
             # Making a copy of the PDU so that the original
             # is not altered by the data padding.
             pdu = copy.deepcopy(msg)
-            pdu_length_msb = len(pdu.data) % 256
-            pdu_length_lsb = len(pdu.data) / 256
+
+            #pdu_length_msb = len(pdu.data) % 256
+            #pdu_length_lsb = len(pdu.data) // 256
+            pdu_length_lsb, pdu_length_msb = divmod(len(pdu.data), 256)
+
             while len(pdu.data) % 7 != 0:
-                pdu.data.append(0xFF)
+                pdu.data += b'\xFF'
 
             for i, segment in enumerate(pdu.data_segments(segment_length=7)):
                 arbitration_id = copy.deepcopy(pdu.arbitration_id)
@@ -107,10 +115,11 @@ class Bus(BusABC):
                     arbitration_id.pgn.pdu_specific = pdu.arbitration_id.pgn.pdu_specific
                 else:
                     arbitration_id.pgn.pdu_specific = constants.DESTINATION_ADDRESS_GLOBAL
+
                 message = Message(arbitration_id=arbitration_id.can_id,
                                   extended_id=True,
                                   dlc=(len(segment)+1),
-                                  data=([i+1]+segment))
+                                  data=(bytes([i+1])+segment))
                 messages.append(message)
 
             if pdu.arbitration_id.pgn.is_destination_specific and \
@@ -118,7 +127,7 @@ class Bus(BusABC):
                 destination_address = pdu.arbitration_id.pgn.pdu_specific
                 if pdu.arbitration_id.source_address in self._incomplete_transmitted_pdus:
                     if destination_address in self._incomplete_transmitted_pdus[pdu.arbitration_id.source_address]:
-                        print("WARNING: Duplicate transmission of PDU:\n{}".format(pdu))
+                        logger.warning("Duplicate transmission of PDU:\n{}".format(pdu))
                 else:
                     self._incomplete_transmitted_pdus[pdu.arbitration_id.source_address] = {}
                 self._incomplete_transmitted_pdus[pdu.arbitration_id.source_address][destination_address] = messages
@@ -138,7 +147,7 @@ class Bus(BusABC):
             pgn_lsb = (temp_pgn.value & 0x0000FF)
 
             if pdu.arbitration_id.pgn.is_destination_specific and \
-                            pdu.arbitration_id.destination_address != constants.DESTINATION_ADDRESS_GLOBAL:
+               pdu.arbitration_id.destination_address != constants.DESTINATION_ADDRESS_GLOBAL:
                 # send request to send
                 rts_msg = Message(extended_id=True,
                                   arbitration_id=rts_arbitration_id.can_id,
@@ -354,7 +363,7 @@ class Bus(BusABC):
                 del self._incomplete_received_pdus[msg.arbitration_id.pgn.pdu_specific][msg.arbitration_id.source_address]
 
     def _throttler_function(self):
-        while self._running:
+        while self._running.is_set():
             _msg = None
             try:
                 _msg = self._long_message_segment_queue.get(timeout=0.1)

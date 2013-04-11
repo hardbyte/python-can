@@ -32,6 +32,11 @@ class PGN(object):
         self.pdu_format = (value & 0x00FF00) >> 8
         self.pdu_specific = value & 0x0000FF
 
+    @staticmethod
+    def from_value(value):
+        pgn = PGN()
+        pgn.value = value
+        return pgn
 
     def __str__(self):
         retval = ""
