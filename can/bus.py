@@ -49,6 +49,7 @@ class BusABC(object):
         
         self._read_thread = threading.Thread(target=self.rx_thread)
         self._read_thread.daemon = True
+
         self._read_thread.start()
     
 

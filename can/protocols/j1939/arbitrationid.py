@@ -7,7 +7,7 @@ class ArbitrationID(object):
         :param int priority:
             Between 0 and 7, where 0 is highest priority.
         
-        :param :class:`can.protocols.j1939.PGN` pgn:
+        :param :class:`can.protocols.j1939.PGN`/int pgn:
             The parameter group number.
         
         :param int source_address:
@@ -15,6 +15,10 @@ class ArbitrationID(object):
         """
         if pgn is None:
             pgn = PGN()
+        if isinstance(pgn, int):
+            pgn = PGN.from_value(pgn)
+
+        assert isinstance(pgn, PGN)
         self.priority = priority
         self.pgn = pgn
         self.source_address = source_address
