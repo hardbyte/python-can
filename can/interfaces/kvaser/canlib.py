@@ -24,11 +24,15 @@ log.setLevel(logging.WARNING)
 from can import CanError, BusABC, Message
 from . import constants as canstat
 
+try:
+    if sys.platform == "win32":
+        __canlib = ctypes.windll.LoadLibrary("canlib32")
+    else:
+        __canlib = ctypes.cdll.LoadLibrary("libcanlib.so")
+except OSError:
+    logging.warning("Kvaser canlib is unavailable.")
+    __canlib = None
 
-if sys.platform == "win32":
-    __canlib = ctypes.windll.LoadLibrary("canlib32")
-else:
-    __canlib = ctypes.cdll.LoadLibrary("libcanlib.so")
 
 def __get_canlib_function(func_name, argtypes=None, restype=None, errcheck=None):
     log.debug('Wrapping function "%s"' % func_name)
@@ -37,7 +41,7 @@ def __get_canlib_function(func_name, argtypes=None, restype=None, errcheck=None)
         retval = getattr(__canlib, func_name)
         log.debug('Function found in library')
     except AttributeError:
-        logging.warning('Function not found in library')
+        logging.debug('Function not found in library')
     else:
         log.debug('Result type is: %s' % type(restype))
         log.debug('Error check function is: %s' % errcheck)
