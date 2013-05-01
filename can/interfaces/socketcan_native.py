@@ -197,8 +197,10 @@ class Bus(BusABC):
             arbitration_id |= 0x20000000
         l = log.getChild("tx")
         l.debug("sending: {}".format(message))
-
-        self.socket.send(build_can_frame(arbitration_id, message.data))
+        try:
+            self.socket.send(build_can_frame(arbitration_id, message.data))
+        except OsError as e:
+            print("Failed to send: {}".format(message))
 
 
 if __name__ == "__main__":
