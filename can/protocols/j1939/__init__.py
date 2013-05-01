@@ -18,6 +18,8 @@ from ...message import Message
 # By this stage the can.rc should have been set up
 from ...interfaces.interface import Bus as RawCanBus
 
+from ...notifier import Notifier
+
 # Import our new message type
 from .pdu import PDU
 from .pgn import PGN
@@ -56,11 +58,11 @@ class Bus(BusABC):
 
         logger.debug("Creating a new can bus")
         self.can_bus = RawCanBus(*args, **kwargs)
-        self.can_bus.listeners.append(self.rx_can_message_queue.put)
+        self.can_notifier = Notifier(self.can_bus, [self.rx_can_message_queue.put])
 
         self._long_message_throttler.start()
 
-    def _get_message(self, timeout=None):
+    def recv(self, timeout=None):
         logger.debug("Waiting for new message")
         m = self.rx_can_message_queue.get(timeout=timeout)
 
@@ -92,7 +94,7 @@ class Bus(BusABC):
         # Return to BusABC where it will get fed to any listeners
         return rx_pdu
 
-    def _put_message(self, msg):
+    def send(self, msg):
         logger.debug("Put message called")
         messages = []
         if len(msg.data) > 8:
@@ -100,8 +102,6 @@ class Bus(BusABC):
             # is not altered by the data padding.
             pdu = copy.deepcopy(msg)
 
-            #pdu_length_msb = len(pdu.data) % 256
-            #pdu_length_lsb = len(pdu.data) // 256
             pdu_length_lsb, pdu_length_msb = divmod(len(pdu.data), 256)
 
             while len(pdu.data) % 7 != 0:
@@ -160,7 +160,7 @@ class Bus(BusABC):
                                         pgn_middle,
                                         pgn_msb],
                                   dlc=8)
-                self.can_bus._put_message(rts_msg)
+                self.can_bus.send(rts_msg)
             else:
                 rts_arbitration_id.pgn.pdu_specific = constants.DESTINATION_ADDRESS_GLOBAL
                 bam_msg = Message(extended_id=True,
@@ -174,7 +174,7 @@ class Bus(BusABC):
                                         pgn_msb],
                                   dlc=8)
                 # send BAM
-                self.can_bus._put_message(bam_msg)
+                self.can_bus.send(bam_msg)
 
                 for message in messages:
                     # send data messages - no flow control, so no need to wait
@@ -186,7 +186,7 @@ class Bus(BusABC):
                                   dlc=len(msg.data),
                                   data=msg.data)
 
-            self.can_bus._put_message(can_message)
+            self.can_bus.send(can_message)
 
     def _process_incoming_message(self, msg):
         logger.debug("Processing incoming message")
@@ -268,7 +268,7 @@ class Bus(BusABC):
                                         _pgn_lsb,
                                         _pgn_middle,
                                         pgn_msb]
-                        self.can_bus._put_message(eom_ack)
+                        self.can_bus.send(eom_ack)
 
     def _process_rts(self, msg):
         if msg.arbitration_id.source_address not in self._incomplete_received_pdus:
@@ -313,7 +313,7 @@ class Bus(BusABC):
                         cts_msg = Message(extended_id=True, arbitration_id=_cts_arbitration_id.can_id, data=_data, dlc=8)
 
                         # send clear to send
-                        self.can_bus._put_message(cts_msg)
+                        self.can_bus.send(cts_msg)
                         return
 
     def _process_cts(self, msg):
@@ -327,7 +327,7 @@ class Bus(BusABC):
                     if self._long_message_segment_interval > 0:
                         self._long_message_segment_queue.put_nowait(_msg)
                     else:
-                        self.can_bus._put_message(_msg)
+                        self.can_bus.send(_msg)
 
     def _process_eom_ack(self, msg):
         if (msg.arbitration_id.pgn.value - msg.arbitration_id.pgn.pdu_specific) == constants.PGN_TP_DATA_TRANSFER:
@@ -370,7 +370,7 @@ class Bus(BusABC):
             except Empty:
                 pass
             if _msg is not None:
-                self.can_bus.write(_msg)
+                self.can_bus.send(_msg)
             time.sleep(self._long_message_segment_interval)
 
     @property

@@ -20,6 +20,7 @@ class CanError(IOError):
 from can.CAN import BufferedReader, Listener, Printer, set_logging_level
 from can.message import Message
 from can.bus import BusABC
+from can.notifier import Notifier
 
 # Interface can be kvaser, socketcan, socketcan_ctypes, socketcan_native, serial
 rc = {
