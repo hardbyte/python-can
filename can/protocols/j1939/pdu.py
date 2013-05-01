@@ -7,6 +7,7 @@ from .nodename import NodeName
 
 logger = logging.getLogger(__name__)
 
+
 class PDU(object):
     """
     A PDU is a higher level abstraction of a CAN message.
@@ -33,8 +34,7 @@ class PDU(object):
         self.arbitration_id = arbitration_id
         self.data = self._check_data(data)
         self.info_strings = info_strings
-   
-        
+
     def __eq__(self, other):
         """Returns True if the pgn, data, source and destination are the same"""
         if other is None:
@@ -116,27 +116,12 @@ class PDU(object):
 
 
     def __str__(self):
-        field_strings = ["%15.6f" % self.timestamp,
-                         "%s" % self.arbitration_id]
-        data_segments = []
-        return "TODO FIX DISPLAY STR of j1939.pdu " + str(list(map(hex, self.data)))
+        """
 
-        for (segment, info_string) in zip(self.data_segments(segment_length=8), 
-                                          self.breakdown)[:min(len(self.data_segments(segment_length=8)),
-                                                               len(self.breakdown))]:
-            data_segments.append("%s%s" % ((" ".join("%.2x" % _byte for _byte in segment)).ljust(24), info_string))
-        
-        if len(self.data_segments(segment_length=8)) >= len(self.breakdown):
-            for segment in self.data_segments(segment_length=8)[len(self.breakdown):]:
-                data_segments.append("%s" % (" ".join("%.2x" % _byte for _byte in segment)).ljust(24))
-        else:
-            for info_string in self.breakdown[len(self.data_segments(segment_length=8)):]:
-                data_segments.append((" " * 24 + info_string))
-        retval = "    ".join(field_strings) + "    "
-        retval += ("\n" + " "*len(retval)).join(data_segments)
-        if len(self.info_strings) > 0:
-            retval += ("\n" + " " * 19)
-            retval += (("\n" + " " * 19).join(self.info_strings))
-        return retval
+        :return: A string representation of this message.
 
+        """
+        # TODO group this into 8 bytes per line and line them up...
+        data_string = " ".join("{:02d}".format(byte) for byte in self.data)
+        return "{s.timestamp:15.6f}    {s.arbitration_id}    {data}".format(s=self, data=data_string)
 

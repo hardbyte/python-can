@@ -30,7 +30,7 @@ from .arbitrationid import ArbitrationID
 
 
 logger = logging.getLogger(__name__)
-#logger.setLevel(logging.DEBUG)
+
 
 class Bus(BusABC):
     """
@@ -111,7 +111,7 @@ class Bus(BusABC):
                 arbitration_id = copy.deepcopy(pdu.arbitration_id)
                 arbitration_id.pgn.value = constants.PGN_TP_DATA_TRANSFER
                 if pdu.arbitration_id.pgn.is_destination_specific and \
-                            pdu.arbitration_id.destination_address != constants.DESTINATION_ADDRESS_GLOBAL:
+                        pdu.arbitration_id.destination_address != constants.DESTINATION_ADDRESS_GLOBAL:
                     arbitration_id.pgn.pdu_specific = pdu.arbitration_id.pgn.pdu_specific
                 else:
                     arbitration_id.pgn.pdu_specific = constants.DESTINATION_ADDRESS_GLOBAL
@@ -123,7 +123,7 @@ class Bus(BusABC):
                 messages.append(message)
 
             if pdu.arbitration_id.pgn.is_destination_specific and \
-                            pdu.arbitration_id.destination_address != constants.DESTINATION_ADDRESS_GLOBAL:
+                    pdu.arbitration_id.destination_address != constants.DESTINATION_ADDRESS_GLOBAL:
                 destination_address = pdu.arbitration_id.pgn.pdu_specific
                 if pdu.arbitration_id.source_address in self._incomplete_transmitted_pdus:
                     if destination_address in self._incomplete_transmitted_pdus[pdu.arbitration_id.source_address]:
@@ -187,6 +187,11 @@ class Bus(BusABC):
                                   data=msg.data)
 
             self.can_bus.send(can_message)
+
+    def shutdown(self):
+        self.can_notifier.running.clear()
+        self.can_bus.shutdown()
+        super().shutdown()
 
     def _process_incoming_message(self, msg):
         logger.debug("Processing incoming message")
@@ -363,7 +368,7 @@ class Bus(BusABC):
                 del self._incomplete_received_pdus[msg.arbitration_id.pgn.pdu_specific][msg.arbitration_id.source_address]
 
     def _throttler_function(self):
-        while self._running.is_set():
+        while self.can_notifier.running.is_set():
             _msg = None
             try:
                 _msg = self._long_message_segment_queue.get(timeout=0.1)

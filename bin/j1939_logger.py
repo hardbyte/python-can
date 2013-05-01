@@ -11,41 +11,5 @@ bus = j1939.Bus(channel='can0')
 log_start_time = datetime.datetime.now()
 print('can.j1939 Logger (Started on {})\n'.format(log_start_time))
 
-
-# I'll explicitly iterate over the incoming messages, so kill the rx thread
-bus._running.clear()
-
 for msg in bus:
     print(msg)
-
-"""
-
-listener = can.Printer(None)
-bus.listeners.append(listener)
-
-try:
-    while  bus._running:
-        # TODO detect if the bus thread has died
-        time.sleep(0.5)
-
-except KeyboardInterrupt:
-    pass
-finally:
-    bus.shutdown()
-
-
-
-# TODO get going with all interfaces and arguments...
-if False and __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Log CAN traffic, printing messages to stdout")
-    
-    interfaces._add_subparsers(parser)
-    results = parser.parse_args()
-    can.rc['interface'] = results.interface
-    
-    from can.interfaces.interface import *
-    from can.protocols import j1939
-
-    bus = Bus(**results.__dict__)
-
-"""

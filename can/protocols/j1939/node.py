@@ -57,7 +57,7 @@ class Node(Listener):
         claimed_address_pdu.arbitration_id.source_address = address        
         claimed_address_pdu.data = self.node_name.bytes
         self.known_node_addresses[self.node_name.value] = address
-        self.bus.write(claimed_address_pdu)
+        self.bus.send(claimed_address_pdu)
 
 
     def on_message_received(self, pdu):
