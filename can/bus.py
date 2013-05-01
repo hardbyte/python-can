@@ -70,7 +70,6 @@ class BusABC(object):
 
     def shutdown(self):
         self.flush_tx_buffer()
-        self._running.clear()
 
 
     __metaclass__ = abc.ABCMeta

@@ -4,6 +4,7 @@ try:
 except ImportError:
     import Queue as queue
 
+
 class Notifier(object):
 
     def __init__(self, bus, listeners):
@@ -22,5 +23,5 @@ class Notifier(object):
         while self.running.is_set():
             msg = self.bus.recv()
             if msg is not None:
-                for callback in listeners:
+                for callback in self.listeners:
                     callback(msg)

@@ -193,14 +193,14 @@ class Bus(BusABC):
             log.debug("requesting a remote frame")
             arbitration_id |= 0x40000000
         if message.is_error_frame:
-            log.debug("sending error frame")
+            log.warning("Trying to send an error frame - this won't work")
             arbitration_id |= 0x20000000
         l = log.getChild("tx")
         l.debug("sending: {}".format(message))
         try:
             self.socket.send(build_can_frame(arbitration_id, message.data))
-        except OsError as e:
-            print("Failed to send: {}".format(message))
+        except OSError:
+            l.warning("Failed to send: {}".format(message))
 
 
 if __name__ == "__main__":
