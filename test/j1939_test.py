@@ -76,8 +76,6 @@ class J1939BusTest(unittest.TestCase):
     def testCreateBus(self):
         self.bus = j1939.Bus(channel=can_interface)
 
-        self.bus.shutdown()
-
 
 class NetworkJ1939Test(unittest.TestCase):
     """
@@ -97,7 +95,7 @@ class NetworkJ1939Test(unittest.TestCase):
         m = j1939.PDU(arbitration_id=arbitration_id, data=b'abc123')
 
         logging.debug("writing message: {}".format(m))
-        self.bus.write(m)
+        self.bus.send(m)
         logging.debug("message written")
 
 
