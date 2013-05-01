@@ -5,7 +5,7 @@ python-can requires the setuptools package to be installed.
 from distribute_setup import use_setuptools
 use_setuptools()
 
-from setuptools import setup
+from setuptools import setup, find_packages
 
 __version__ = 1.1
 
@@ -19,7 +19,7 @@ setup(
     name="python-can",
     url="https://bitbucket.org/hardbyte/python-can",
     version=__version__,
-    packages=['can'],
+    packages=find_packages(),
     author="Brian Thorne",
     author_email="bthorne@dynamiccontrols.com",
     description="Controller Area Network interface module for Python",
@@ -29,5 +29,5 @@ setup(
         "doc": ["*.*"]
     },
 
-    scripts=["./bin/can_logger.py", "./bin/can_printer.py"],
+    scripts=["./bin/can_logger.py", "./bin/can_printer.py", './bin/j1939_logger.py'],
 )

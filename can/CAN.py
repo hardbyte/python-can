@@ -64,12 +64,7 @@ class Printer(Listener):
         self.output_file = output_file
 
     def on_message_received(self, msg):
-        #print(msg, file=self.output_file)
-
-        if self.output_file is not None:
-            self.output_file.write(msg)
-        else:
-            print(msg)
+        print(msg, file=self.output_file)
 
     def __del__(self):
         if self.output_file:
