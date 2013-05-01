@@ -51,10 +51,8 @@ class ControllerAreaNetworkTestCase(unittest.TestCase):
                 data=self.data[i]
             )
             logging.debug("writing message: {}".format(m))
-            self.client_bus.write(m)
+            self.client_bus.send(m)
             logging.debug("message written")
-        self.client_bus.flush_tx_buffer()
-        self.client_bus.shutdown()
 
     def testProducer(self):
         """Verify that we can send arbitrary messages on the bus"""

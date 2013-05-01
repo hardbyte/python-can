@@ -162,12 +162,12 @@ class Bus(BusABC):
         """
         self.socket = createSocket(CAN_RAW)
         bindSocket(self.socket, channel)
-        super(Bus, self).__init__(*args, **kwargs)
+        super().__init__()
 
     def __del__(self):
         self.socket.close()
 
-    def _get_message(self, timeout=None):
+    def recv(self, timeout=None):
 
         # TODO socketcan error checking...?
         packet = capturePacket(self.socket)
@@ -183,7 +183,7 @@ class Bus(BusABC):
 
         return rx_msg
 
-    def _put_message(self, message):
+    def send(self, message):
         log.debug("We've been asked to write a message to the bus")
         arbitration_id = message.arbitration_id
         if message.id_type:
