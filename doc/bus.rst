@@ -1,39 +1,31 @@
 Bus
 ---
 
-The `Bus` class, as the name suggests, provides an abstraction of a CAN bus.
-Writing to the bus is done by calling the :meth:`~can.Bus.write` method and
-passing :class:`~can.Message` objects. 
-
-As the bus is event-driven, it has no "read" method, but instead has 
-`listeners`, which is a list of :class:`~can.Listener` subclasses that receive
-notifications when new messages arrive (which include the new message itself).
-
+The :class:`~can.Bus` class, as the name suggests, provides an abstraction of a CAN bus.
 The bus can provide a wrapper around a physical CAN Bus using a Kvaser, or
 it can wrap a virtual CAN Bus.
 
+Transmitting
+''''''''''''
+
+Writing to the bus is done by calling the :meth:`~can.Bus.send` method and
+passing a :class:`~can.Message` object.
+
+Receiving
+'''''''''
+
+Reading from the bus is achieved by either calling the :meth:`~can.Bus.recv` method or
+by directly iterating over the bus::
+
+    for msg in bus:
+        print(msg.data)
+
+Alternatively the :class:`~can.Listener` api can be used, which is a list of :class:`~can.Listener`
+subclasses that receive notifications when new messages arrive.
+
+API
+''''
 
 .. autoclass:: can.bus.BusABC
-
-
-Concurrent Design
-.................
-
-A :class:`~can.Bus` object with a physical CAN Bus has one bus handle which is shared
-by the read and write daemon threads. The access is protected with the
-``writing_event`` *Event* and the ``done_writing`` *Condition*.
-
-The read thread acquires ``done_writing`` and while ``writing_event`` is set
-blocks waiting on the ``done_writing`` Condition. A 1ms blocking read is carried
-out before ``done_writing`` is released.
-
-The write thread blocks for 5ms on a queue (to allow the thread to stop). If
-a message was received it *sets* the writing_event to tell the read thread
-that a message in waiting to be sent. The ``done_writing`` is acquired for
-the actual write, the writing_event is cleared and the ``done_writing`` event
-is notified to start the read thread again.
-
-.. warning:: Any objects inheriting from `Bus`_ should *not* directly
-        use the interface handle(/s).
-
+    :members:
 

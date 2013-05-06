@@ -17,7 +17,13 @@ On linux to create a virtual can interface using socketcan run the following:
     sudo ip link add dev vcan0 type vcan
     sudo ifconfig vcan0 up
 
-`ifconfig` should reveal a new vcan0 interface. Fire up wireshark and watch this new interface.
+`can0` should be substituted for `vcan` if you are using real hardware.
+
+    :::bash
+    ifconfig
+
+should reveal a new `vcan0` interface. Fire up wireshark and watch this
+new interface.
 
 Then spam your new bus:
 
@@ -43,6 +49,13 @@ With debugging turned right up this looks something like this:
 
 ![Wireshark Screenshot][7]
 
+The process to follow bus traffic is even easier:
+
+    :::python
+    for message in Bus(can_interface):
+        print(message)
+
+
 ## Installation
 
 A Controller Area Networking interface is required for `python-can` to do
@@ -65,7 +78,7 @@ dictionary can be modified:
 
 Reasonably modern Linux Kernels (2.6.25 or newer) have an implementation of 
 ``socketcan``. This version of python-can will directly use socketcan
-if Python 3.3 or greater is installed, otherwise that interface is 
+if called with Python 3.3 or greater, otherwise that interface is
 used via ctypes.
 
 ### Windows dependencies

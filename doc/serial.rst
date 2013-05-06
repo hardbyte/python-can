@@ -1,4 +1,4 @@
-.. _sockdoc:
+.. _serial:
 
 CAN over Serial
 ===============
