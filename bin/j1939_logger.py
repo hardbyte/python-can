@@ -11,5 +11,10 @@ bus = j1939.Bus(channel='can0')
 log_start_time = datetime.datetime.now()
 print('can.j1939 Logger (Started on {})\n'.format(log_start_time))
 
-for msg in bus:
-    print(msg)
+try:
+    for msg in bus:
+        msg.timestamp -= log_start_time.timestamp()
+        print(msg)
+except KeyboardInterrupt:
+    bus.shutdown()
+    print()

@@ -27,6 +27,7 @@ def set_logging_level(level_name=None):
         log.setLevel(getattr(logging, level_name.upper()))
     except AttributeError:
         log.setLevel(logging.DEBUG)
+    log.debug("Logging set to {}".format(level_name))
 
 
 class Listener(object):
@@ -60,6 +61,7 @@ class BufferedReader(Listener):
 class Printer(Listener):
     def __init__(self, output_file=None):
         if output_file is not None:
+            log.info("Creating log file '{}' ".format(output_file))
             output_file = open(output_file, 'wt')
         self.output_file = output_file
 
@@ -67,8 +69,8 @@ class Printer(Listener):
         print(msg, file=self.output_file)
 
     def __del__(self):
+        print("\n", file=self.output_file)
         if self.output_file:
-            self.output_file.write('\n')
             self.output_file.close()
 
 
