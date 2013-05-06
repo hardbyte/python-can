@@ -24,7 +24,7 @@ from can.notifier import Notifier
 
 # Interface can be kvaser, socketcan, socketcan_ctypes, socketcan_native, serial
 rc = {
-      'default-interface': 'kvaser',
-      'interface': 'kvaser'
+      'default-interface': 'socketcan',
+      'interface': 'socketcan'
       }
 

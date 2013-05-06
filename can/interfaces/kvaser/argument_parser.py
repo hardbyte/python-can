@@ -3,7 +3,7 @@ def add_to_parser(parser):
     parser.add_argument("-c", "--channel", type=str, dest="channel", 
                         help="""
                         If the CAN interface supports multiple channels, select which one
-                        you are after here. For example on linux this might be vcan0 or can1
+                        you are after here. For example on linux this might be 1
                         """, default='0')
     
     parser.add_argument("-b", "--bitrate", type=int, dest="bitrate", 
