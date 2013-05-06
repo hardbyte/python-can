@@ -8,6 +8,12 @@ except ImportError:
 class Notifier(object):
 
     def __init__(self, bus, listeners):
+        """Manages the distribution of **Messages** from a given bus to a
+        list of listeners.
+
+        :param bus: The :class:`~can.Bus` to listen too.
+        :param listeners: An iterable of :class:`Listeners`
+        """
         self.listeners = listeners
         self.bus = bus
 

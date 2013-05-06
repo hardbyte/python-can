@@ -2,23 +2,11 @@
 
 import abc
 import logging
-import queue
 
 logger = logging.getLogger(__name__)
 
 class BusABC(object):
     """CAN Bus Abstract Base Class
-
-    External API:
-
-        * send(message)
-            Transmit message to CAN bus.
-
-        * recv()
-            Blocks until a message is available from the bus.
-
-        * channel_info
-            str attribute describing underlying bus
 
     Concrete implementations must implement the following methods:
         * send
@@ -29,7 +17,7 @@ class BusABC(object):
     
     """
     
-    # a string describing the channel
+    #: a string describing the underlying bus channel
     channel_info = 'unknown'
 
     @abc.abstractmethod
@@ -43,11 +31,12 @@ class BusABC(object):
 
     @abc.abstractmethod
     def send(self, msg):
-        """Override this method to enable the transmit path.
+        """Transmit a message to CAN bus.
+        Override this method to enable the transmit path.
 
-        :param :class:`can.Message` msg:
+        :param msg: A :class:`can.Message` object.
 
-        :raise :class:`can.CanError`:
+        :raise: :class:`can.CanError`
             if the message could not be written.
         """
         raise NotImplementedError("Trying to write to a readonly bus?")
@@ -66,6 +55,9 @@ class BusABC(object):
         logger.debug("done iterating over bus messages")
 
     def flush_tx_buffer(self):
+        """Used for CAN backends which need to flush their transmit buffer.
+
+        """
         pass
 
     def shutdown(self):
