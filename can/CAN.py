@@ -47,13 +47,12 @@ class BufferedReader(Listener):
     def __init__(self):
         self.buffer = queue.Queue(0)
 
-
     def on_message_received(self, msg):
         self.buffer.put(msg)
 
     def get_message(self, timeout=0.5):
         try:
-            return self.buffer.get(timeout)
+            return self.buffer.get(block=True, timeout=timeout)
         except queue.Empty:
             return None
 
