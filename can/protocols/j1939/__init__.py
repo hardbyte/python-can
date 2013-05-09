@@ -95,7 +95,6 @@ class Bus(BusABC):
         return rx_pdu
 
     def send(self, msg):
-        logger.debug("Put message called")
         messages = []
         if len(msg.data) > 8:
             # Making a copy of the PDU so that the original
@@ -240,7 +239,7 @@ class Bus(BusABC):
 
             if pdu_specific in self._incomplete_received_pdus[msg_source]:
                 self._incomplete_received_pdus[msg_source][pdu_specific].data.extend(msg.data[1:])
-                total = self.__incomplete_received_pdu_lengths[msg_source][pdu_specific]["total"]
+                total = self._incomplete_received_pdu_lengths[msg_source][pdu_specific]["total"]
                 if len(self._incomplete_received_pdus[msg_source][pdu_specific].data) >= total:
                     if pdu_specific == constants.DESTINATION_ADDRESS_GLOBAL:
                         # Looks strange but makes sense - in the absence of explicit flow control,
@@ -249,7 +248,7 @@ class Bus(BusABC):
 
                     # Find a Node object so we can search its list of known node addresses for this node
                     # so we can find if we are responsible for sending the EOM ACK message
-                    send_ack = any(True for l in self.listeners
+                    send_ack = any(True for l in self.can_notifier.listeners
                                    if isinstance(l, Node) and (l.address == pdu_specific or
                                                                pdu_specific in l.address_list))
                     if send_ack:
@@ -305,7 +304,7 @@ class Bus(BusABC):
         self._incomplete_received_pdu_lengths[msg.arbitration_id.source_address][msg.arbitration_id.pgn.pdu_specific] = {"total": _message_size, "chunk": 255, "num_packages": msg.data[3], }
 
         if msg.data[0] != constants.CM_MSG_TYPE_BAM:
-            for _listener in self.listeners:
+            for _listener in self.can_notifier.listeners:
                 if isinstance(_listener, Node):
                     # find a Node object so we can search its list of known node addresses
                     # for this node - if we find it we are responsible for sending the CTS message

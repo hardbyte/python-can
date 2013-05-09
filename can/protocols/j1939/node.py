@@ -9,15 +9,17 @@ from can.protocols.j1939.pdu import PDU
 from can.protocols.j1939.nodename import NodeName
 
 
-
 class J1939Error(CanError):
     pass
+
 
 class DuplicateTransmissionError(J1939Error):
     pass
 
+
 class InaccessibleDestinationError(J1939Error):
     pass
+
 
 class Node(Listener):
     """
@@ -44,10 +46,8 @@ class Node(Listener):
     def address(self):
         return self.known_node_addresses[self.node_name.value]
 
-
     def start_address_claim(self):
         self.claim_address(self.address_list[self._current_address_index])
-
 
     def claim_address(self, address):
         claimed_address_pdu = self._pdu_type()
@@ -58,7 +58,6 @@ class Node(Listener):
         claimed_address_pdu.data = self.node_name.bytes
         self.known_node_addresses[self.node_name.value] = address
         self.bus.send(claimed_address_pdu)
-
 
     def on_message_received(self, pdu):
         if pdu.pgn == PGN_AC_ADDRESS_CLAIMED:
@@ -96,7 +95,6 @@ class Node(Listener):
             if pdu.destination in (self.address, DESTINATION_ADDRESS_GLOBAL):
                 if pgn == PGN_AC_ADDRESS_CLAIMED:
                     self.claim_address(self.known_node_addresses[self.node_name.value])
-
 
     def send_parameter_group(self, pgn, data, destination_device_name=None):
         """
