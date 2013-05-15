@@ -8,24 +8,81 @@ communication. It is used in cars, trucks, wheelchairs and more. See
 
 This module provides controller area network support for [Python][4].
 
-## Quickstart
+## Socketcan Quickstart
 
-On linux to create a virtual can interface using socketcan run the following:
+The full documentation for socketcan can be found in the kernel docs at
+[networking/can.txt][8]. The CAN network driver provides a generic 
+interface to setup, configure and monitor CAN devices. To configure 
+bit-timing parameters use the program `ip`.
+
+### The virtual CAN driver (vcan)
+
+The virtual CAN interfaces allow the transmission and reception of CAN 
+frames without real CAN controller hardware. Virtual CAN network devices
+are usually named 'vcanX', like vcan0 vcan1 vcan2.
+
+To create a virtual can interface using socketcan run the following:
 
     :::bash
     sudo modprobe vcan
+    # Create a vcan network interface with a specific name
     sudo ip link add dev vcan0 type vcan
     sudo ifconfig vcan0 up
 
+
+### Real Device
 `can0` should be substituted for `vcan` if you are using real hardware.
+Setting the bitrate can also be done at the same time, for example to 
+enable an existing `can0` interface with a bitrate of 1MB:
+
+    :::bash
+    sudo ip link set can0 up type can bitrate 1000000
+
+#### CAN Errors
+
+A device may enter the "bus-off" state if too much errors occurred on
+the CAN bus. Then no more messages are received or sent. An automatic
+bus-off recovery can be enabled by setting the "restart-ms" to a
+non-zero value, e.g.:
+
+    :::bash
+    sudo ip link set canX type can restart-ms 100
+
+Alternatively, the application may realize the "bus-off" condition
+by monitoring CAN error frames and do a restart when appropriate with
+the command:
+
+    :::bash
+    ip link set canX type can restart
+
+Note that a restart will also create a CAN error frame.
+
+### List network interfaces
+
+To reveal the newly created `can0` or a `vcan0` interface:
 
     :::bash
     ifconfig
 
-should reveal a new `vcan0` interface. Fire up wireshark and watch this
-new interface.
+### Display CAN statistics
 
-Then spam your new bus:
+    :::bash
+    ip -details -statistics link show vcan0
+
+  
+### Network Interface Removal
+
+To remove the network interface:
+
+    :::bash
+    sudo ip link del vcan0
+
+## Wireshark
+
+Wireshark supports socketcan and can be used to debug *python-can* messages. Fire it
+up and watch your new interface.
+
+To spam a bus:
 
     :::python
     import time
@@ -128,3 +185,4 @@ With sphinx installed the documentation can be generated with:
 [5]: http://www.kvaser.com/en/downloads.html
 [6]: https://python-can.readthedocs.org/en/latest/
 [7]: http://cdn.bitbucket.org/hardbyte/python-can/downloads/wireshark.png
+[8]: https://www.kernel.org/doc/Documentation/networking/can.txt
