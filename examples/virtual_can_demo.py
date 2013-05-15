@@ -18,7 +18,7 @@ def producer(id):
     bus = Bus(can_interface)
     for i in range(16):
         msg = can.Message(arbitration_id=0x0cf02200, data=[id, i, 0, 1, 3, 1, 4, 1])
-        bus.write(msg)
+        bus.send(msg)
     # TODO Issue #3: Need to keep running to ensure the writing threads stay alive. ?
     time.sleep(2)
 
