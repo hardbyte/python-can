@@ -31,9 +31,9 @@ To create a virtual can interface using socketcan run the following:
 
 
 ### Real Device
-`can0` should be substituted for `vcan` if you are using real hardware.
-Setting the bitrate can also be done at the same time, for example to 
-enable an existing `can0` interface with a bitrate of 1MB:
+`vcan` should be substituted for `can` and `vcan0` should be substituted for 
+`can0` if you are using real hardware. Setting the bitrate can also be done at
+the same time, for example to enable an existing `can0` interface with a bitrate of 1MB:
 
     :::bash
     sudo ip link set can0 up type can bitrate 1000000
