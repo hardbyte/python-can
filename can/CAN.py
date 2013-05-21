@@ -63,12 +63,17 @@ class Printer(Listener):
             log.info("Creating log file '{}' ".format(output_file))
             output_file = open(output_file, 'wt')
         self.output_file = output_file
+        
 
     def on_message_received(self, msg):
-        print(msg, file=self.output_file)
+        if self.output_file is not None:
+            self.output_file.write(str(msg)+"\n")
+            
+        else:
+            print(msg)
 
     def __del__(self):
-        print("\n", file=self.output_file)
+        self.output_file.write("\n")
         if self.output_file:
             self.output_file.close()
 

@@ -43,7 +43,8 @@ class Bus(BusABC):
         logger.debug("Creating a new j1939 bus")
 
         self.rx_can_message_queue = Queue()
-        super().__init__()
+        
+        super(Bus, self).__init__()
         self._pdu_type = pdu_type
         self._long_message_throttler = threading.Thread(target=self._throttler_function)
         #self._long_message_throttler.daemon = True
@@ -190,7 +191,7 @@ class Bus(BusABC):
     def shutdown(self):
         self.can_notifier.running.clear()
         self.can_bus.shutdown()
-        super().shutdown()
+        super(Bus, self).shutdown()
 
     def _process_incoming_message(self, msg):
         logger.debug("Processing incoming message")
