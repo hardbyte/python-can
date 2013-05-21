@@ -31,15 +31,15 @@ class Bus(BusABC):
         self.socket = createSocket()
         
         log.debug("Result of createSocket was {}".format(self.socket))
-        
         bindSocket(self.socket, channel)
+        
+        
         
         super(Bus, self).__init__(*args, **kwargs)
         
 
         
-    def _get_message(self, timeout=None):
-        
+    def recv(self, timeout=None):
         rx_msg = Message()
 
         log.debug("Trying to read a msg")
@@ -74,7 +74,7 @@ class Bus(BusABC):
         return rx_msg
     
 
-    def _put_message(self, message):
+    def send(self, msg):
         sendPacket(self.socket, message)
 
 
@@ -160,6 +160,7 @@ def createSocket(protocol=CAN_RAW):
         socketID = libc.socket(PF_CAN, SOCK_DGRAM, CAN_BCM)
     else:
         socketID = 0
+        
     return socketID
 
 
