@@ -2,9 +2,6 @@
 python-can requires the setuptools package to be installed.
 """
 
-from distribute_setup import use_setuptools
-use_setuptools()
-
 from setuptools import setup, find_packages
 
 __version__ = 1.1
