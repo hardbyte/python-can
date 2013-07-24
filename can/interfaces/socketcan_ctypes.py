@@ -75,7 +75,7 @@ class Bus(BusABC):
     
 
     def send(self, msg):
-        sendPacket(self.socket, message)
+        sendPacket(self.socket, msg)
 
 
 log.debug("Loading libc with ctypes...")
