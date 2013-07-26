@@ -31,12 +31,11 @@ class Bus(BusABC):
         self.socket = createSocket()
         
         log.debug("Result of createSocket was {}".format(self.socket))
-        bindSocket(self.socket, channel)
-        
-        
-        
+        error = bindSocket(self.socket, channel)
+
+
+
         super(Bus, self).__init__(*args, **kwargs)
-        
 
         
     def recv(self, timeout=None):
@@ -112,8 +111,9 @@ class SOCKADDR_CAN(ctypes.Structure):
 
 # The two fields in this struct were originally unions.
 # See /usr/include/net/if.h for original struct
+# The ifr_name seems to need to be different for Python3 and Python2
 class IFREQ(ctypes.Structure):
-    _fields_ = [("ifr_name", ctypes.c_wchar_p),
+    _fields_ = [("ifr_name", ctypes.c_char*16),
                 ("ifr_ifindex", ctypes.c_int)]
 
 
@@ -129,7 +129,8 @@ class IFREQ(ctypes.Structure):
 class CAN_FRAME(ctypes.Structure):
     _fields_ = [("can_id", ctypes.c_uint32, 32),
                 ("can_dlc", ctypes.c_uint8, 8),
-                ("data", (ctypes.c_uint8)*11)]
+                ("padding", ctypes.c_uint8, 3),
+                ("data", (ctypes.c_uint8) * 8)]
 
 
 # See usr/include/linux/time.h for original struct
@@ -181,11 +182,11 @@ def bindSocket(socketID, channel_name):
         | -1        |socket creation unsuccessful|
         +-----------+----------------------------+
     """
-    log.debug('Binding socket with id {}'.format(socketID))
+    log.debug('Binding socket with id {} to channel {}'.format(socketID, channel_name))
     socketID = ctypes.c_int(socketID)
     
     ifr = IFREQ()
-    ifr.ifr_name = channel_name
+    ifr.ifr_name = channel_name.encode('ascii')
     log.debug('calling ioctl SIOCGIFINDEX')
     # ifr.ifr_ifindex gets filled with that device's index
     libc.ioctl(socketID, SIOCGIFINDEX, ctypes.byref(ifr))
@@ -195,9 +196,13 @@ def bindSocket(socketID, channel_name):
     addr = SOCKADDR_CAN(AF_CAN, ifr.ifr_ifindex)
 
     error = libc.bind(socketID, ctypes.byref(addr), ctypes.sizeof(addr))
+
+    if error < 0:
+        log.error("Couldn't bind socket")
     log.debug('bind returned: {}'.format(error))
-    
+
     return error
+
 
 def sendPacket(socket, message):
 
@@ -213,7 +218,9 @@ def sendPacket(socket, message):
         arbitration_id |= 0x20000000
     log.debug("Data: {}".format(message.data))
 
-    ctypes_data = (ctypes.c_ubyte * len(message.data))(*[ctypes.c_ubyte(ord(c)) for c in message.data])
+    mtype = (ctypes.c_ubyte * (len(message.data)))
+    ctypes_data = mtype.from_buffer(message.data)
+
     frame = CAN_FRAME()
     frame.can_id = arbitration_id
     frame.data = ctypes_data
@@ -224,6 +231,7 @@ def sendPacket(socket, message):
                             ctypes.sizeof(frame))
     
     return bytes_sent
+
 
 def capturePacket(socketID):
     """
@@ -280,4 +288,4 @@ if __name__ == "__main__":
     socket_id = createSocket(CAN_RAW)
     print("Created socket (id = {})".format(socket_id))
     print(bindSocket(socket_id))
-    
+

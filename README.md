@@ -96,7 +96,7 @@ To spam a bus:
         bus = Bus(can_interface)
         for i in range(10):
             msg = can.Message(arbitration_id=0xc0ffee, data=[id, i, 0, 1, 3, 1, 4, 1], extended_id=False)
-            bus.write(msg)
+            bus.send(msg)
         # Issue #3: Need to keep running to ensure the writing threads stay alive. ?
         time.sleep(1)
 
