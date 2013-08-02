@@ -8,9 +8,12 @@ __version__ = 1.1
 
 # TODO
 # This dict will be updated as we try to select the best option during
-# the build process. However, values in setup.cfg will be used, if
+# the build process. However, eventually values in setup.cfg will be used, if
 # defined.
-rc = {'backend': 'socketcan'}
+import can
+can.rc['interface'] = 'socketcan'
+import logging
+logging.basicConfig(level=logging.WARNING)
 
 setup(
     name="python-can",

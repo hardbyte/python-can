@@ -9,12 +9,11 @@ import time
 
 
 import can
-can.rc['interface'] = 'socketcan_native'
 from can.interfaces.interface import Bus
 can_interface = 'vcan0'
 
 import logging
-logging.getLogger(__file__).setLevel(logging.DEBUG)
+logging.getLogger(__file__).setLevel(logging.WARNING)
 
 # make a random bool:
 rbool = lambda: bool(round(random.random()))
@@ -39,8 +38,9 @@ class ControllerAreaNetworkTestCase(unittest.TestCase):
                        for a in range(random.randrange(9))])
                 for b in range(num_messages))
 
-    def producer(self):
+    def producer(self, ready_event):
         self.client_bus = Bus(can_interface)
+        ready_event.wait()
         for i in range(self.num_messages):
             m = can.Message(
                 arbitration_id=self.ids[i],
@@ -60,12 +60,23 @@ class ControllerAreaNetworkTestCase(unittest.TestCase):
 
     def testProducerConsumer(self):
         logging.debug("testing producer/consumer")
+        ready = threading.Event()
         self.server_bus = Bus(can_interface)
 
-        t = threading.Thread(target=self.producer)
+        t = threading.Thread(target=self.producer, args=(ready,))
         t.start()
-
+        
+        # TODO Ensure there are no messages on the bus
+        #while True:
+        #    m = self.server_bus.recv(timeout=0.05)
+        #    if m == None: 
+        #        print("No messages... lets go")
+        #        break
+        #    else:
+        #        print("received message...")
+        ready.set()
         for i, msg in enumerate(self.server_bus):
+            
             self.assertEqual(msg.is_error_frame, self.error_flags[i])
             self.assertEqual(msg.is_remote_frame, self.remote_flags[i])
             self.assertEqual(msg.id_type, self.extended_flags[i])

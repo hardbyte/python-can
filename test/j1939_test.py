@@ -8,7 +8,6 @@ import random
 
 
 import can
-can.rc['interface'] = 'socketcan_native'
 from can.interfaces.interface import Bus
 
 can_interface = 'vcan0'
@@ -85,7 +84,7 @@ class NetworkJ1939Test(unittest.TestCase):
     """
 
     def setUp(self):
-        super().setUp()
+        super(NetworkJ1939Test, self).setUp()
         self.bus = j1939.Bus(channel=can_interface)
 
     def tearDown(self):
