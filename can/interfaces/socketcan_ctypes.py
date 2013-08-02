@@ -1,17 +1,18 @@
-
+from __future__ import print_function
 import sys
 import ctypes
 import logging
+import select
 
+from ctypes.util import find_library
 
 from can.interfaces.socketcan_constants import *   #CAN_RAW
 from ..bus import BusABC
 from ..message import Message
 
 # Set up logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger('can.socketcan_ctypes')
-
 
 class Bus(BusABC):
     """
@@ -32,9 +33,6 @@ class Bus(BusABC):
         
         log.debug("Result of createSocket was {}".format(self.socket))
         error = bindSocket(self.socket, channel)
-
-
-
         super(Bus, self).__init__(*args, **kwargs)
 
         
@@ -43,7 +41,11 @@ class Bus(BusABC):
 
         log.debug("Trying to read a msg")
 
-        packet = capturePacket(self.socket)
+        if timeout is None or len( select.select([socketID], [], [], timeout=timeout)[0]) > 0:
+            packet = capturePacket(self.socket)
+        else:
+            # socket wasn't readable
+            return None
 
         log.debug("I've got a message")
 
@@ -78,7 +80,8 @@ class Bus(BusABC):
 
 
 log.debug("Loading libc with ctypes...")
-libc = ctypes.cdll.LoadLibrary("libc.so.6")
+#libc = ctypes.cdll.LoadLibrary("libc.so.6")
+libc = ctypes.cdll.LoadLibrary(find_library("c"))
 
 start_sec = 0
 start_usec = 0
@@ -111,26 +114,28 @@ class SOCKADDR_CAN(ctypes.Structure):
 
 # The two fields in this struct were originally unions.
 # See /usr/include/net/if.h for original struct
-# The ifr_name seems to need to be different for Python3 and Python2
 class IFREQ(ctypes.Structure):
     _fields_ = [("ifr_name", ctypes.c_char*16),
                 ("ifr_ifindex", ctypes.c_int)]
 
 
+# Aligns the data field to an 8 byte boundary
+# Removed because pypy's ctypes can't seem to handle the anonymous inner field
+#class _AnonDataField(ctypes.Structure):
+#    _pack_ = 8
+#    _fields_ = [("data", (ctypes.c_uint8)*8)]
+
 # See /usr/include/linux/can.h for original struct
-#
-# The data field actually only contains 8 bytes of data, not 11. 
-# The linux socketcan module aligns the start of the data to an 8 byte 
-# boundary, so there are 3 empty bytes between the DLC and the data. 
-#
-# I couldn't find a similar function in Python that did this, so am 
-# saving the three empty bytes as part of the data, and getting rid 
-# of them later. See the capturePacket function further down for this. 
+# The 32bit can id is directly followed by the 8bit data link count
+# The data field is aligned on an 8 byte boundary, hence the padding.
 class CAN_FRAME(ctypes.Structure):
-    _fields_ = [("can_id", ctypes.c_uint32, 32),
-                ("can_dlc", ctypes.c_uint8, 8),
-                ("padding", ctypes.c_uint8, 3),
-                ("data", (ctypes.c_uint8) * 8)]
+    #_anonymous_ = ("u",)
+    _fields_ = [("can_id", ctypes.c_uint32),
+                ("can_dlc", ctypes.c_uint8),
+                #("u", _AnonDataField)
+                ("padding", ctypes.c_ubyte*3),
+                ("data", ctypes.c_uint8*8)
+                ]
 
 
 # See usr/include/linux/time.h for original struct
@@ -203,9 +208,7 @@ def bindSocket(socketID, channel_name):
 
     return error
 
-
 def sendPacket(socket, message):
-
     arbitration_id = message.arbitration_id
     if message.id_type:
         log.debug("sending an extended id type message")
@@ -217,19 +220,29 @@ def sendPacket(socket, message):
         log.debug("sending error frame")
         arbitration_id |= 0x20000000
     log.debug("Data: {}".format(message.data))
-
-    mtype = (ctypes.c_ubyte * (len(message.data)))
-    ctypes_data = mtype.from_buffer(message.data)
-
+    log.debug("type: {}".format(type(message.data)))
+    
+    # TODO could see what is the fastest way to do this
+    #mtype = (ctypes.c_uint8 * 8 )
+    #ctypes_data = mtype.from_buffer_copy( message.data + bytearray([0] * (8 - len(message.data))))
+    # Also need to understand the extended frame format
+    #assert len(message.data) <= 8, type(message.data)
     frame = CAN_FRAME()
     frame.can_id = arbitration_id
-    frame.data = ctypes_data
     frame.can_dlc = len(message.data)
-
+    
+    for i in range(len(message.data)):
+        frame.data[i] = message.data[i]
+    #frame.data = ctypes_data
+    
+    log.debug("sizeof frame: {}".format(ctypes.sizeof(frame)))
     bytes_sent = libc.write(socket,
                             ctypes.byref(frame),
                             ctypes.sizeof(frame))
-    
+    if bytes_sent == -1:
+        logging.error("Error sending frame :-/")
+        
+    #print("Bytes sent: ", bytes_sent)
     return bytes_sent
 
 
@@ -237,20 +250,19 @@ def capturePacket(socketID):
     """
     Captures a packet of data from the given socket.
 
-
     :param int socketID:
         The socket to read from
 
     :return:
         A dictionary with the following keys:
         +-----------+----------------------------+
-        | 'CAN ID'  |int                         |
+        | 'CAN ID'  |  int                       |
         +-----------+----------------------------+
-        | 'DLC'     |int                         |
+        | 'DLC'     |  int                       |
         +-----------+----------------------------+
-        | 'Data'    |list                        |
+        | 'Data'    |  list                      |
         +-----------+----------------------------+
-        |'Timestamp'| float                      |
+        |'Timestamp'|   float                    |
         +-----------+----------------------------+
 
     """
@@ -267,15 +279,7 @@ def capturePacket(socketID):
     
     packet['CAN ID'] = frame.can_id
     packet['DLC'] = frame.can_dlc
-
-    # TODO WHAT?
-    # The first 3 elements in the data array are discarded (as they are 
-    # empty) and the rest (actual data) saved into a list. 
-    data = []
-    for i in range(3, frame.can_dlc + 3):
-        data.append(frame.data[i])
-
-    packet['Data'] = data
+    packet["Data"] = [frame.data[i] for i in range(frame.can_dlc)]
 
     timestamp = time.tv_sec + (time.tv_usec / 1000000)
     

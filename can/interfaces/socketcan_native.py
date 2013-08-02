@@ -19,6 +19,7 @@ try:
     socket.CAN_RAW
 except:
     log.error("Python 3.3 or later required to use native socketcan")
+    raise Exception("You might need to upgraed your Python or use another backend!")
 
 from can import Message
 from can.interfaces.socketcan_constants import *   #CAN_RAW
