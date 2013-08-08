@@ -5,6 +5,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class BusABC(object):
     """CAN Bus Abstract Base Class
 

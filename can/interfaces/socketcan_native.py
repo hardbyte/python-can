@@ -28,21 +28,21 @@ from ..bus import BusABC
 can_frame_fmt = "=IB3x8s"
 can_frame_size = struct.calcsize(can_frame_fmt)
 
-""" CAN frame packing/unpacking (see 'struct can_frame' in <linux/can.h>)
-/**
- * struct can_frame - basic CAN frame structure
- * @can_id:  the CAN ID of the frame and CAN_*_FLAG flags, see above.
- * @can_dlc: the data length field of the CAN frame
- * @data:    the CAN frame payload.
- */
-struct can_frame {
-    canid_t can_id;  /* 32 bit CAN_ID + EFF/RTR/ERR flags */
-    __u8    can_dlc; /* data length code: 0 .. 8 */
-    __u8    data[8] __attribute__((aligned(8)));
-};
-"""
 
 def build_can_frame(can_id, data):
+    """ CAN frame packing/unpacking (see 'struct can_frame' in <linux/can.h>)
+    /**
+     * struct can_frame - basic CAN frame structure
+     * @can_id:  the CAN ID of the frame and CAN_*_FLAG flags, see above.
+     * @can_dlc: the data length field of the CAN frame
+     * @data:    the CAN frame payload.
+     */
+    struct can_frame {
+        canid_t can_id;  /* 32 bit CAN_ID + EFF/RTR/ERR flags */
+        __u8    can_dlc; /* data length code: 0 .. 8 */
+        __u8    data[8] __attribute__((aligned(8)));
+    };
+    """
     can_dlc = len(data)
     data = data.ljust(8, b'\x00')
     return struct.pack(can_frame_fmt, can_id, can_dlc, data)
@@ -160,8 +160,25 @@ class Bus(BusABC):
         :param str channel:
             The can interface name with which to create this bus. An example channel
             would be 'vcan0'.
+
+        :param list can_filters:
+            A dictionary containing a "can_id" and a "can_mask"
         """
         self.socket = createSocket(CAN_RAW)
+
+        # Add any socket options such as can frame filters
+        if 'can_filters' in kwargs and len(kwargs['can_filters']) > 0:
+            log.debug("Creating a filtered can bus")
+            can_filter_fmt = "={}I".format(2 * len(kwargs['can_filters']))
+            filter_data = []
+            for can_filter in kwargs['can_filters']:
+                filter_data.append(can_filter['can_id'])
+                filter_data.append(can_filter['can_mask'])
+
+            self.socket.setsockopt(socket.SOL_CAN_RAW,
+                                   socket.CAN_RAW_FILTER,
+                                   struct.pack(can_filter_fmt, *filter_data),
+                                   )
         bindSocket(self.socket, channel)
         super().__init__()
 
