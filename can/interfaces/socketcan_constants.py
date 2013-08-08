@@ -7,6 +7,7 @@ canMSG_EXT = 0x0004
 
 CAN_RAW =       1
 CAN_BCM =       2
+
 MSK_ARBID =     0x1FFFFFFF
 MSK_FLAGS =     0xE0000000
 

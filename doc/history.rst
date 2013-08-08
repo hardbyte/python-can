@@ -6,9 +6,10 @@ Background
 
 Dynamic Controls has been using and maintaining this library since 2009.
 Originally written by Ben Powell as a thin wrapper around the Kvaser SDK
-to support the leaf device. Maintenance was taken over by Brian Thorne.
+to support the leaf device. Maintenance was taken over by Brian Thorne in
+2010.
 
-Support for linux socketcan was added by Rose Lu as a summer coding
+Original support for linux socketcan was added by Rose Lu as a summer coding
 project in 2011.
 
 The socketcan interface was helped immensely by Phil Dixon who wrote a 
@@ -25,4 +26,5 @@ in 2013.
 BCM
 ----
 
-From Python 3.4 BCM is natively supported so this will be integrated.
+From Python 3.4 BCM is natively supported so this will be integrated when
+Python 3.4 is more widespread.

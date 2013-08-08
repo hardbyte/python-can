@@ -4,6 +4,14 @@ can_logger.py logs CAN traffic to the terminal and to a file on disk.
 
     can_logger.py can0
 
+See candump in the can-utils package for a C implementation.
+Efficient filtering has been implemented for the socketcan backend.
+For example the command
+
+    can_logger.py can0 F03000:FFF000
+
+Will filter for can frames with a can_id containing XXF03XXX.
+
 Dynamic Controls 2010
 """
 
@@ -17,7 +25,6 @@ from can import interfaces
 if __name__ == "__main__":
     
     parser = argparse.ArgumentParser(description="Log CAN traffic, printing messages to stdout or to a given file")
-
 
     parser.add_argument("-f", "--file_name", dest="log_file",
                         help="""Path and base log filename, extension can be .txt, .csv, .db, .npz""",
@@ -36,6 +43,11 @@ if __name__ == "__main__":
     For example with the serial interface the channel might be a rfcomm device: /dev/rfcomm0
     Other channel examples are: can0, vcan0''')
 
+    parser.add_argument('filter', help='''Comma separated filters can be specified for the given CAN interface:
+        <can_id>:<can_mask> (matches when <received_can_id> & mask == can_id & mask)
+        <can_id>~<can_mask> (matches when <received_can_id> & mask != can_id & mask)
+    ''', nargs=argparse.REMAINDER)
+
     results = parser.parse_args()
 
     if results.interface is not None:
@@ -48,7 +60,20 @@ if __name__ == "__main__":
 
     from can.interfaces.interface import *
 
-    bus = Bus(results.channel)
+    can_filters = []
+    if len(results.filter) > 0:
+        print('we have filter/s', results.filter)
+        for filt in results.filter:
+            if ':' in filt:
+                _ = filt.split(":")
+                can_id, can_mask = int(_[0], base=16), int(_[1], base=16)
+            elif "~" in filt:
+                can_id, can_mask = filt.split("~")
+                can_id = int(can_id, base=16) | 0x20000000    # CAN_INV_FILTER
+                can_mask = int(can_mask, base=16) & socket.CAN_ERR_FLAG
+            can_filters.append({"can_id": can_id, "can_mask": can_mask})
+
+    bus = Bus(results.channel, can_filters=can_filters)
     print('Can Logger (Started on {})\n'.format(datetime.datetime.now()))
     notifier = can.Notifier(bus, [can.Printer(results.log_file)])
 

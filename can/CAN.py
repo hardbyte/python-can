@@ -63,7 +63,6 @@ class Printer(Listener):
             log.info("Creating log file '{}' ".format(output_file))
             output_file = open(output_file, 'wt')
         self.output_file = output_file
-        
 
     def on_message_received(self, msg):
         if self.output_file is not None:
