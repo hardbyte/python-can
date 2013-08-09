@@ -35,6 +35,15 @@ logger = logging.getLogger(__name__)
 class Bus(BusABC):
     """
     A CAN Bus that implements the J1939 Protocol.
+
+    :param list j1939_filters:
+        a list of dictionaries that specify filters that messages must
+        match to be received by this Bus. Messages can match any of the
+        filters.
+
+        Options are:
+
+        * :pgn: An integer PGN to show
     """
 
     channel_info = "j1939 bus"
@@ -56,6 +65,34 @@ class Bus(BusABC):
 
         # This appears to be the sleep time...? TODO maybe delete
         self._long_message_segment_interval = constants.LONG_MESSAGE_SEGMENT_TRANSMISSION_INTERVAL
+
+        # Convert J1939 filters into Raw Can filters
+
+        if 'j1939_filters' in kwargs:
+            filters = kwargs.pop('j1939_filters')
+            logger.debug("Got filters: {}".format(filters))
+            can_filters = []
+            for filt in filters:
+                can_id, can_mask = 0, 0
+                if 'pgn' in filt:
+                    can_id = filt['pgn'] << 8
+                    # The pgn needs to be left shifted by 8 to ignore the CAN_ID's source address
+                    # Look at most significant 4 bits to determine destination specific
+                    if can_id & 0xF00000 == 0xF00000:
+                        logging.info("PDU2 (broadcast message)")
+                        can_mask = 0xFFFF00
+                    else:
+                        logging.info("PDU1 (p2p)")
+                        can_mask = 0xFF0000
+                if 'source' in filt:
+                    # filter by source
+                    can_mask |= 0xFF
+                    can_id |= filt['source']
+                    print("added source", filt)
+
+                logger.info("Adding CAN ID filter: {:0x}:{:0x}".format(can_id, can_mask))
+                can_filters.append({"can_id": can_id, "can_mask": can_mask})
+            kwargs['can_filters'] = can_filters
 
         logger.debug("Creating a new can bus")
         self.can_bus = RawCanBus(*args, **kwargs)
