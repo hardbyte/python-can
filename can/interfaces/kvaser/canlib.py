@@ -21,7 +21,8 @@ import ctypes
 log = logging.getLogger('can.canlib')
 log.setLevel(logging.WARNING)
 
-from can import CanError, BusABC, Message
+from can import CanError, BusABC
+from can import Message as MessageBase
 from can.interfaces.kvaser import constants as canstat
 
 try:
@@ -78,7 +79,7 @@ class ChannelNotFoundError(CANLIBError):
     pass
 
 
-class Message(Message):
+class Message(MessageBase):
     """
     The canlib sdk requires the flags to be calculated so we extend Message.
     """
@@ -444,11 +445,11 @@ class Bus(BusABC):
     
     def send(self, tx_msg):
         canWriteWait(self._write_handle,
-                            tx_msg.arbitration_id,
-                            "".join([("%c" % byte) for byte in tx_msg.data]),
-                             tx_msg.dlc,
-                             tx_msg.flags,
-                             5)
+                     tx_msg.arbitration_id,
+                     "".join([("%c" % byte) for byte in tx_msg.data]),
+                     tx_msg.dlc,
+                     tx_msg.flags,
+                     5)
 
 
     def shutdown(self):
