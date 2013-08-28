@@ -19,16 +19,17 @@ except ImportError:
 import ctypes
 
 log = logging.getLogger('can.canlib')
-log.setLevel(logging.WARNING)
+log.setLevel(logging.DEBUG)
 
 from can import CanError, BusABC, Message
-from . import constants as canstat
+from can.interfaces.kvaser import constants as canstat
 
 try:
     if sys.platform == "win32":
         __canlib = ctypes.windll.LoadLibrary("canlib32")
     else:
         __canlib = ctypes.cdll.LoadLibrary("libcanlib.so")
+    logging.info("loaded kvaser's CAN library")
 except OSError:
     logging.warning("Kvaser canlib is unavailable.")
     __canlib = None
@@ -41,10 +42,10 @@ def __get_canlib_function(func_name, argtypes=None, restype=None, errcheck=None)
         retval = getattr(__canlib, func_name)
         log.debug('Function found in library')
     except AttributeError:
-        logging.debug('Function not found in library')
+        logging.warning('Function was not found in library')
     else:
         log.debug('Result type is: %s' % type(restype))
-        log.debug('Error check function is: %s' % errcheck)
+        #log.debug('Error check function is: %s' % errcheck)
         retval.argtypes = argtypes
         retval.restype = restype
         retval.errcheck = errcheck
@@ -88,8 +89,6 @@ class Message(Message):
         self.flags &= (0xFFFF - canstat.canMSG_RTR)
         self.flags |= (self.is_remote_frame * canstat.canMSG_RTR)
         self.flags &= (0xFFFF - canstat.canMSG_WAKEUP)
-        if self.is_wakeup:
-            self.flags |= canstat.canMSG_WAKEUP
         self.flags &= (0xFFFF - canstat.canMSG_ERROR_FRAME)
         if self.is_error_frame:
             self.flags |= canstat.canMSG_ERROR_FRAME
@@ -240,7 +239,9 @@ if sys.platform == "win32":
                                             restype=ctypes.c_uint, 
                                             errcheck=__check_status)
 
-
+log.debug("Initializing Kvaser CAN library")
+canInitializeLibrary()
+log.debug("CAN library initialized")
 
 def lookup_transceiver_type(typename):
     if typename in canstat.canTransceiverTypeStrings:
@@ -267,18 +268,14 @@ class Bus(BusABC):
     """
     The CAN Bus implemented for the Kvaser interface.
     """
-    def __init__(self,
-                 channel,
-                 bitrate,
-                 tseg1,
-                 tseg2,
-                 sjw,
-                 no_samp,
-                 driver_mode=DRIVER_MODE_NORMAL,
-                 single_handle=False):
+    def __init__(self, channel, can_filters=None, **config):
         """
         :param int channel:
             The Channel id to create this bus with.
+        
+        Backend Configuration
+        ---------------------
+        
         :param int bitrate:
             Bitrate of channel in bit/s
         :param int tseg1:
@@ -295,21 +292,34 @@ class Bus(BusABC):
         :param bool driver_mode:
             Silent or normal.
         """
+        log.info("CAN Filters: {}".format(can_filters))
+        log.info("Got configuration of: {}".format(config))
+        bitrate = config.get('bitrate', 1000000)
+        tseg1 = config.get('tseg1', 4)
+        tseg2 = config.get('tseg2', 3)
+        sjw = config.get('sjw', 1)
+        no_samp = config.get('no_samp', 1)
+        driver_mode = config.get('driver_mode', DRIVER_MODE_NORMAL)
+        single_handle = config.get('single_handle', False)
+        
+        if can_filters is not None and len(can_filters):
+            log.warning("The canlib backend doesn't support filters yet...")
         log.debug('Initialising bus instance')
         self.single_handle = single_handle
         
         num_channels = ctypes.c_int(0)
-        canGetNumberOfChannels(ctypes.byref(num_channels))
+        res = canGetNumberOfChannels(ctypes.byref(num_channels))
+        log.debug("Res: {}".format(res))
         num_channels = int(num_channels.value)
-        log.debug('Found %d available channels' % num_channels)
+        log.info('Found %d available channels' % num_channels)
         
         if self.single_handle:
             self.writing_event = threading.Event()
             self.done_writing = threading.Condition()
 
         log.debug('Creating read handle to bus channel: %s' % channel)
-        channel = int(channel)
-        self._read_handle = canOpenChannel(channel, canOPEN_ACCEPT_VIRTUAL)
+        channel = ctypes.c_int(0)
+        self._read_handle = canOpenChannel(0, canOPEN_ACCEPT_VIRTUAL)
         canIoCtl(self._read_handle, canstat.canIOCTL_SET_TIMER_SCALE, ctypes.byref(ctypes.c_long(1)), 4)
         canSetBusParams(self._read_handle, bitrate, tseg1, tseg2, sjw, no_samp, 0)
         
@@ -374,7 +384,7 @@ class Bus(BusABC):
         return timestamp
 
 
-    def _get_message(self, timeout=None):
+    def recv(self, timeout=None):
         """
         Read a message from kvaser device.
 
@@ -428,7 +438,7 @@ class Bus(BusABC):
             log.debug('read complete -> status not okay')
     
     
-    def _put_message(self, tx_msg):
+    def send(self, tx_msg):
         canWriteWait(self._write_handle,
                             tx_msg.arbitration_id,
                             "".join([("%c" % byte) for byte in tx_msg.data]),

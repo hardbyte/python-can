@@ -20,6 +20,20 @@ class BusABC(object):
     
     #: a string describing the underlying bus channel
     channel_info = 'unknown'
+    
+    @abc.abstractmethod
+    def __init__(self, channel=None, can_filters=None, **config):
+        """
+        :param channel:
+            The can interface identifier. Expected type is backend dependant.
+
+        :param list can_filters:
+            A list of dictionaries containing a "can_id" and a "can_mask".
+        
+        :param dict config:
+            Any backend dependent configurations are passed in this dictionary
+        """
+        
 
     @abc.abstractmethod
     def recv(self, timeout=None):

@@ -155,7 +155,7 @@ def capturePacket(sock):
 class Bus(BusABC):
     channel_info = "native socketcan channel"
     
-    def __init__(self, channel, *args, **kwargs):
+    def __init__(self, channel, **kwargs):
         """
         :param str channel:
             The can interface name with which to create this bus. An example channel
