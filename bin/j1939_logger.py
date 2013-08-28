@@ -1,5 +1,5 @@
 import argparse
-import time
+import datetime
 import textwrap
 import json
 
@@ -99,12 +99,11 @@ if __name__ == "__main__":
         #print("Loaded filters from file: ", filters)
 
     bus = j1939.Bus(channel='can0', j1939_filters=filters)
-    log_start_time = time.time()
+    log_start_time = datetime.datetime.now()
     print('can.j1939 logger started on {}\n'.format(log_start_time))
 
     try:
         for msg in bus:
-            msg.timestamp -= log_start_time
             print(msg)
     except KeyboardInterrupt:
         bus.shutdown()
