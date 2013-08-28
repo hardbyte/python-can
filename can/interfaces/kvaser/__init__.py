@@ -1,1 +1,1 @@
-from .canlib import *
+from can.interfaces.kvaser.canlib import *

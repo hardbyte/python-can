@@ -18,8 +18,8 @@ log.debug("Loading native socket can implementation")
 try:
     socket.CAN_RAW
 except:
-    log.error("Python 3.3 or later required to use native socketcan")
-    raise Exception("You might need to upgraed your Python or use another backend!")
+    log.error("Note Python 3.3 or later is required to use native socketcan")
+
 
 from can import Message
 from can.interfaces.socketcan_constants import *   #CAN_RAW
