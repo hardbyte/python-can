@@ -7,8 +7,8 @@ E.g. over bluetooth with "/dev/rfcomm0"
 
 import serial
 
-from ..bus import BusABC
-from ..message import Message
+from can.bus import BusABC
+from can.message import Message
 
 class Bus(BusABC):
 
