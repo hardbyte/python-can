@@ -19,7 +19,7 @@ except ImportError:
 import ctypes
 
 log = logging.getLogger('can.canlib')
-log.setLevel(logging.DEBUG)
+log.setLevel(logging.WARNING)
 
 from can import CanError, BusABC, Message
 from can.interfaces.kvaser import constants as canstat
