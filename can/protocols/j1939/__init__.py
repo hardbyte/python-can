@@ -13,20 +13,20 @@ except ImportError:
 import time
 import copy
 
-from ...message import Message
+from can.message import Message
 
 # By this stage the can.rc should have been set up
-from ...interfaces.interface import Bus as RawCanBus
+from can.interfaces.interface import Bus as RawCanBus
 
-from ...notifier import Notifier
+from can.notifier import Notifier
 
 # Import our new message type
-from .pdu import PDU
-from .pgn import PGN
-from ... import BusABC
-from . import constants
-from .node import Node
-from .arbitrationid import ArbitrationID
+from can.protocols.j1939.pdu import PDU
+from can.protocols.j1939.pgn import PGN
+from can.bus import BusABC
+from can.protocols.j1939 import constants
+from can.protocols.j1939.node import Node
+from can.protocols.j1939.arbitrationid import ArbitrationID
 
 
 logger = logging.getLogger(__name__)
