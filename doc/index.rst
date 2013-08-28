@@ -8,9 +8,10 @@ devices to communicate with each other. It has priority based bus arbitration,
 reliable deterministic communication. It is used in cars, trucks, wheelchairs
 and more.
 
-This example shows the socketcan backend in action - sending one message.
+This example shows the socketcan backend in action - sending one message:
 
-.. literalinclude:: examples/send_one.py
+
+.. literalinclude:: /examples/send_one.py
     :language: python
     :emphasize-lines: 10-15
     :linenos:
