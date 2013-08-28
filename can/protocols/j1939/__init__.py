@@ -13,9 +13,8 @@ except ImportError:
 import time
 import copy
 
-from can.message import Message
-
 # By this stage the can.rc should have been set up
+from can.interfaces.interface import Message
 from can.interfaces.interface import Bus as RawCanBus
 
 from can.notifier import Notifier
