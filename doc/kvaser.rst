@@ -7,7 +7,7 @@ Kvaser's CANLIB
 Bus
 ---
 
-.. autoclass:: can.interfaces.canlib.Bus
+.. autoclass:: can.interfaces.kvaser.canlib.Bus
 
 
 Internals

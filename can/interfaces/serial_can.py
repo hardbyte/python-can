@@ -5,7 +5,15 @@ E.g. over bluetooth with "/dev/rfcomm0"
 
 """
 
-import serial
+import logging
+
+logger = logging.getLogger(__name__)
+
+try:
+    import serial
+except ImportError:
+    logger.error("You won't be able to use the serial can backend without the serial module installed!")
+    serial = None
 
 from can.bus import BusABC
 from can.message import Message

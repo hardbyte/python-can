@@ -9,7 +9,7 @@ register to receive notifications of new messages on the bus. A Listener can
 be used in two ways; the default is to **call** the Listener with a new
 message, or by calling the method **on_message_received**.
 
-Listeners are registered with `Notifier`_ object(s) which ensure they are
+Listeners are registered with :ref:`notifier` object(s) which ensure they are
 notified whenever a new message is received.
 
 Subclasses of Listener that do not override **on_message_received** will cause
@@ -23,7 +23,7 @@ the CAN bus.
 BufferedReader
 --------------
 
-.. autoclass:: can.BufferefReader
+.. autoclass:: can.BufferedReader
     :members:
 
 

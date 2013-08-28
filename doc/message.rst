@@ -110,3 +110,7 @@ with length between 0 and 8.
     >>> m = can.Message(data=[3])
     >>> m.data
     bytearray(b'\x03')
+
+
+.. autoclass:: can.Message
+    :members:
