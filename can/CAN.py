@@ -43,7 +43,12 @@ class Listener(object):
 
 
 class BufferedReader(Listener):
-
+    """
+    A BufferedReader is a subclass of :class:`~can.Listener` which implements a
+    **message buffer**: that is, when the :class:`can.BufferedReader` instance is
+    notified of a new message it pushes it into a queue of messages waiting to 
+    be serviced.    
+    """
     def __init__(self):
         self.buffer = queue.Queue(0)
 
@@ -51,6 +56,11 @@ class BufferedReader(Listener):
         self.buffer.put(msg)
 
     def get_message(self, timeout=0.5):
+        """
+        Attempts to retrieve the latest message received by the instance. If no message is
+        available it blocks for 0.5 seconds or until a message is received (whichever
+        is shorter), and returns the message if there is one, or None if there is not.
+        """
         try:
             return self.buffer.get(block=True, timeout=timeout)
         except queue.Empty:
@@ -58,6 +68,13 @@ class BufferedReader(Listener):
 
 
 class Printer(Listener):
+    """
+    The Printer class is a subclass of :class:`~can.Listener` which simply prints
+    any messages it receives to the terminal. 
+    
+    :param output_file: An optional file to "print" to.
+    """
+    
     def __init__(self, output_file=None):
         if output_file is not None:
             log.info("Creating log file '{}' ".format(output_file))
@@ -67,7 +84,6 @@ class Printer(Listener):
     def on_message_received(self, msg):
         if self.output_file is not None:
             self.output_file.write(str(msg)+"\n")
-            
         else:
             print(msg)
 
@@ -78,6 +94,10 @@ class Printer(Listener):
 
 
 class CSVWriter(Listener):
+    """Writes a comma separated text file of 
+    timestamp, arbitrationid, flags, dlc, data
+    for each messages received.
+    """
 
     def __init__(self, filename):
         self.csv_file = open(filename, 'wt')
@@ -99,6 +119,7 @@ class CSVWriter(Listener):
 
 
 class SqliteWriter(Listener):
+    """TODO"""
 
     def __init__(self, filename):
         self.db_file = open(filename, 'wt')

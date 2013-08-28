@@ -238,10 +238,13 @@ if sys.platform == "win32":
                                             argtypes=[ctypes.c_uint], 
                                             restype=ctypes.c_uint, 
                                             errcheck=__check_status)
-
-log.debug("Initializing Kvaser CAN library")
-canInitializeLibrary()
-log.debug("CAN library initialized")
+def init_kvaser_library():
+    try:
+        log.debug("Initializing Kvaser CAN library")
+        canInitializeLibrary()
+        log.debug("CAN library initialized")
+    except:
+        logging.warning("Kvaser canlib is unavailable.")
 
 def lookup_transceiver_type(typename):
     if typename in canstat.canTransceiverTypeStrings:
@@ -359,6 +362,7 @@ class Bus(BusABC):
     
     
     def __convert_timestamp(self, value):
+        # The kvaser seems to zero times
         # Use the current value if the offset has not been set yet
         if not hasattr(self, 'timer_offset') or self.timer_offset is None: 
             self.timer_offset = value
@@ -451,3 +455,7 @@ class Bus(BusABC):
         self.__threads_running = False
         canBusOff(self._write_handle)
         canClose(self._write_handle)
+
+
+init_kvaser_library()
+

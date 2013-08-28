@@ -99,7 +99,6 @@ exclude_patterns = ['_build']
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
 
-
 # Include documentation from both the class level and __init__
 autoclass_content = "both"
 
