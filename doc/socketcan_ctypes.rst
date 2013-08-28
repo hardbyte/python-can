@@ -1,5 +1,3 @@
-.. _sockdoc:
-
 SocketCAN ctypes wrapper
 ========================
 
