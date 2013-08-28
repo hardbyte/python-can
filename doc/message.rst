@@ -1,7 +1,7 @@
 Message
 =======
 
-:class:`~can.Message` is the class used to represent CAN messages. Instantiating
+The :class:`~can.Message` object is used to represent CAN messages. Instantiating
 a CAN message (with default values for timestamp, arbitration ID, flags, and 
 data) is done as follows:
 
@@ -13,19 +13,25 @@ data) is done as follows:
     >>> print test2
     0.000000        0000    0002    5    01 02 03 04 05
 
-The fields in the printed message are (in order): timestamp, arbitration ID, 
-flags, dlc, and data. The flags field is represented as a four-digit 
-hexadecimal number. The arbitration ID field as either a four or eight digit 
-hexadecimal number depending on the length of the arbitration ID (11-bit or 
-29-bit). Each of the bytes in the data field (when present) are represented as
-two-digit hexadecimal numbers. The following sections describe each of the 
-parameters to the Message constructor.
+The fields in the printed message are (in order): 
+- timestamp, 
+- arbitration ID, 
+- flags, 
+- dlc, 
+- and data. 
+
+The flags field is represented as a four-digit hexadecimal number. The arbitration
+ID field as either a four or eight digit hexadecimal number depending on the length 
+of the arbitration ID (11-bit or 29-bit). Each of the bytes in the data field (when
+present) are represented as two-digit hexadecimal numbers. The following sections 
+describe each of the parameters to the Message constructor.
 
 Timestamp
 ---------
 
-The timestamp field in a CAN message is a floating point number representing
-the message timestamp in seconds, to six decimal places. 
+The timestamp field in a CAN message is a floating point number representing when
+the message was received since the epoch in seconds. Where possible this will be
+timestamped in hardware.
 
 
 Arbitration ID
@@ -39,8 +45,7 @@ Message constructor. The effect of this parameter is shown below.
 The arbitration ID parameter itself can take an integer between 0 and the
 maximum value allowed by the extended_id parameter passed to the Message
 constructor (either 2\ :sup:`11` - 1 for 11-bit IDs, or 2\ :sup:`29` - 1 for
-29-bit IDs). The effect of this parameter, and the result of attempting to set
-an invalid ID, is shown below.
+29-bit identifiers).
 
     >>> print Message(extended_id=False)
     0.000000        0000    0002    0
@@ -64,28 +69,22 @@ id_type
 This parameter controls the length of this CAN message's arbitration ID field.
 It is covered in the `Arbitration ID`_ section of this document.
 
-is_wakeup
----------
-
-This parameter indicates if the message is a wakeup message or not, and modifies
-the bit in the CAN message's flags field indicating this.
 
 is_error_frame
 --------------
 
-This parameter indicates if the message is an error frame or not, and modifies
-the bit in the CAN message's flags field indicating this.
+This boolean parameter indicates if the message is an error frame or not.
 
 DLC
 ---
 
-The DLC parameter of a CAN message is an integer between 0 and 8. Its purpose
-varies depending on the frame type - for data frames it represents the amount
-of data contained in the message, in remote frames it represents the amount of
-data being requested from the device the message is addressed to. 
+The :abbr:`DLC (Data Link Count)` parameter of a CAN message is an integer
+between 0 and 8. Its purpose varies depending on the frame type - for data
+frames it represents the amount of data contained in the message, in remote
+frames it represents the amount of data being requested from the device the
+message is addressed to.
 
 The default behaviour is to use the length of the data passed in.
-The effect of this parameter is shown below.
 
     >>> print Message(dlc=1)
     0.000000        0000    0002    1
@@ -93,17 +92,21 @@ The effect of this parameter is shown below.
     0.000000        0000    0002    5
 
 .. note::
-    that the DLC value does not necessarily define the number of bytes of data
+    The DLC value does not necessarily define the number of bytes of data
     in a packet.
 
 
 Data
 ----
 
-The data parameter of a CAN message is a **bytearray** with length between 0 and 8.
-The effect of this parameter is shown below.
+The data parameter of a CAN message is a **bytearray** (or list of ints) 
+with length between 0 and 8.
 
     >>> example_data = bytearray([1,2,3])
     >>> print Message(data=example_data)
-    0.000000        0000    0002    3    01 02 03
-
+    0.000000    00000000    0002    3    01 02 03
+    >>> print can.Message(data=[2,2])
+    0.000000    00000000    010    2    02 02
+    >>> m = can.Message(data=[3])
+    >>> m.data
+    bytearray(b'\x03')

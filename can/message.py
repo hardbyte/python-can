@@ -8,8 +8,7 @@ class Message(object):
     """
     
     def __init__(self, timestamp=0.0, is_remote_frame=False, extended_id=True,
-                 is_error_frame=False, arbitration_id=0,
-                 dlc=None, data=None):
+                 is_error_frame=False, arbitration_id=0, dlc=None, data=None):
 
         self.timestamp = timestamp
         self.id_type = extended_id
@@ -32,6 +31,7 @@ class Message(object):
             self.dlc = len(data)
         else:
             self.dlc = dlc
+        assert self.dlc <= 8, "data link count must be less than or equal to 8"
     
     def __str__(self):
         field_strings = ["%15.6f" % self.timestamp]

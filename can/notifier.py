@@ -12,7 +12,7 @@ class Notifier(object):
         list of listeners.
 
         :param bus: The :class:`~can.Bus` to listen too.
-        :param listeners: An iterable of :class:`Listeners`
+        :param listeners: An iterable of :class:`~can.Listeners`
         """
         self.listeners = listeners
         self.bus = bus

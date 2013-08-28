@@ -17,6 +17,8 @@ Contents:
    
    install
    
+   bin
+   
    api
    
    overview

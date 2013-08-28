@@ -11,7 +11,7 @@ __version__ = 1.1
 # the build process. However, eventually values in setup.cfg will be used, if
 # defined.
 import can
-can.rc['interface'] = 'socketcan'
+can.rc['interface'] = 'kvaser'
 import logging
 logging.basicConfig(level=logging.WARNING)
 
