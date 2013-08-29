@@ -208,6 +208,16 @@ canSetBusOutputControl = __get_canlib_function("canSetBusOutputControl",
                                                restype=canstat.c_canStatus, 
                                                errcheck=__check_status)
 
+canSetAcceptanceFilter = __get_canlib_function("canSetAcceptanceFilter",
+                                                argtypes=[
+                                                    c_canHandle,
+                                                    ctypes.c_uint,
+                                                    ctypes.c_uint,
+                                                    ctypes.c_int
+                                                    ],
+                                                restype=canstat.c_canStatus,
+                                                errcheck=__check_status)
+                                               
 canReadWait = __get_canlib_function("canReadWait", 
                                     argtypes=[c_canHandle, ctypes.c_void_p,
                                               ctypes.c_void_p, ctypes.c_void_p,
@@ -305,9 +315,7 @@ class Bus(BusABC):
         no_samp = config.get('no_samp', 1)
         driver_mode = config.get('driver_mode', DRIVER_MODE_NORMAL)
         single_handle = config.get('single_handle', False)
-        
-        if can_filters is not None and len(can_filters):
-            log.warning("The canlib backend doesn't support filters yet...")
+            
         log.debug('Initialising bus instance')
         self.single_handle = single_handle
         
@@ -322,10 +330,20 @@ class Bus(BusABC):
             self.done_writing = threading.Condition()
 
         log.debug('Creating read handle to bus channel: %s' % channel)
+        log.warning('TODO: using channel 0 unconditionally for now')
         channel = ctypes.c_int(0)
         self._read_handle = canOpenChannel(0, canOPEN_ACCEPT_VIRTUAL)
         canIoCtl(self._read_handle, canstat.canIOCTL_SET_TIMER_SCALE, ctypes.byref(ctypes.c_long(1)), 4)
         canSetBusParams(self._read_handle, bitrate, tseg1, tseg2, sjw, no_samp, 0)
+        
+        if can_filters is not None and len(can_filters):
+            log.warning("The kvaser canlib backend is filtering messages")
+            code, mask = 0, 0
+            for can_filter in can_filters:
+                code |= can_filter['can_id']
+                mask |= can_filter['can_mask']
+            log.warning("Filtering on: {}  {}".format(code, mask))
+            canSetAcceptanceFilter(self._read_handle, code, mask, 1)
         
         if self.single_handle:
             log.debug("We don't require separate handles to the bus")
