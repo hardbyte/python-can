@@ -87,6 +87,7 @@ class Message(MessageBase):
     def __init__(self, *args, **kwargs):
         super(Message, self).__init__(*args, **kwargs)
         self.flags = 0
+        self.flags |= (self.id_type * canstat.canMSG_EXT)
         self.flags &= (0xFFFF - canstat.canMSG_RTR)
         self.flags |= (self.is_remote_frame * canstat.canMSG_RTR)
         self.flags &= (0xFFFF - canstat.canMSG_WAKEUP)
@@ -227,9 +228,13 @@ canReadWait = __get_canlib_function("canReadWait",
                                     errcheck=__check_status_read)
 
 canWriteWait = __get_canlib_function("canWriteWait", 
-                                     argtypes=[c_canHandle, ctypes.c_long,
-                                               ctypes.c_void_p, ctypes.c_uint,
-                                               ctypes.c_uint, ctypes.c_ulong],
+                                     argtypes=[
+                                        c_canHandle, 
+                                        ctypes.c_long,
+                                        ctypes.c_void_p, 
+                                        ctypes.c_uint,
+                                        ctypes.c_uint, 
+                                        ctypes.c_ulong],
                                      restype=canstat.c_canStatus, 
                                      errcheck=__check_status)
 
@@ -454,7 +459,6 @@ class Bus(BusABC):
                              dlc=dlc.value, 
                              extended_id=is_extended, 
                              timestamp=msg_timestamp)
-            rx_msg.flags = int(flags.value) & canstat.canMSG_MASK
             log.info('Got message: %s' % rx_msg)
             return rx_msg
         else:
@@ -462,9 +466,13 @@ class Bus(BusABC):
     
     
     def send(self, tx_msg):
+        #log.debug("Writing a message: {}".format(tx_msg))
+        buf = ctypes.create_string_buffer(tx_msg.dlc)
+        for i, byte in enumerate(tx_msg.data):
+            buf[i] = byte
         canWriteWait(self._write_handle,
                      tx_msg.arbitration_id,
-                     "".join([("%c" % byte) for byte in tx_msg.data]),
+                     ctypes.byref(buf),
                      tx_msg.dlc,
                      tx_msg.flags,
                      5)
