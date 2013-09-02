@@ -67,7 +67,7 @@ class Bus(BusABC):
 
         # Convert J1939 filters into Raw Can filters
 
-        if 'j1939_filters' in kwargs:
+        if 'j1939_filters' in kwargs and kwargs['j1939_filters'] is not None:
             filters = kwargs.pop('j1939_filters')
             logger.debug("Got filters: {}".format(filters))
             can_filters = []
