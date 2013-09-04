@@ -156,7 +156,7 @@ class Bus(BusABC):
                 message = Message(arbitration_id=arbitration_id.can_id,
                                   extended_id=True,
                                   dlc=(len(segment)+1),
-                                  data=(bytes([i+1])+segment))
+                                  data=(bytearray([i+1])+segment))
                 messages.append(message)
 
             if pdu.arbitration_id.pgn.is_destination_specific and \
