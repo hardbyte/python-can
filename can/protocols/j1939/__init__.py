@@ -137,6 +137,7 @@ class Bus(BusABC):
             # Making a copy of the PDU so that the original
             # is not altered by the data padding.
             pdu = copy.deepcopy(msg)
+            pdu.data = bytearray(pdu.data)
 
             pdu_length_lsb, pdu_length_msb = divmod(len(pdu.data), 256)
 
