@@ -467,7 +467,7 @@ class Bus(BusABC):
     
     def send(self, tx_msg):
         #log.debug("Writing a message: {}".format(tx_msg))
-        ArrayConstructor = ctypes.c_int * tx_msg.dlc
+        ArrayConstructor = ctypes.c_byte * tx_msg.dlc
         buf = ArrayConstructor(*tx_msg.data)
         canWriteWait(self._write_handle,
                      tx_msg.arbitration_id,
