@@ -152,6 +152,8 @@ installed and that the hardware is working.
 
 ## Install python-can
 
+You may need to install [pip][9]?
+
 Two options, install normally with:
 
     python setup.py install
@@ -186,3 +188,4 @@ With sphinx installed the documentation can be generated with:
 [6]: https://python-can.readthedocs.org/en/latest/
 [7]: http://cdn.bitbucket.org/hardbyte/python-can/downloads/wireshark.png
 [8]: https://www.kernel.org/doc/Documentation/networking/can.txt
+[9]: http://www.pip-installer.org/en/latest/installing.html
