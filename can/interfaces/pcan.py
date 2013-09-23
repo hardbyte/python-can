@@ -2,8 +2,6 @@
 Enable basic can over a PCAN USB device.
 
 """
-HAS_UPTIME = True
-
 import logging
 
 from PCANBasic import *
@@ -13,11 +11,13 @@ logger = logging.getLogger(__name__)
 from can.bus import BusABC
 from can.message import Message
 
+boottimeEpoch = 0
 try:
-    from uptime import boottime
+    import uptime
     import datetime
+    boottimeEpoch = (uptime.boottime() - datetime.datetime.utcfromtimestamp(0)).total_seconds()
 except:
-    HAS_UPTIME = False
+    boottimeEpoch = 0
 
 # Set up logging
 logging.basicConfig(level=logging.WARNING)
@@ -101,9 +101,7 @@ class Bus(BusABC):
         rx_msg.dlc = theMsg.LEN
         #rx_msg.flags = flags
         rx_msg.data = theMsg.DATA
-        rx_msg.timestamp = (itsTimeStamp.micros + (1000 * itsTimeStamp.millis)) / (1000.0 * 1000.0)
-        if HAS_UPTIME:
-            rx_msg.timestamp += (boottime() - datetime.datetime.utcfromtimestamp(0)).total_seconds()
+        rx_msg.timestamp = boottimeEpoch + ( (itsTimeStamp.micros + (1000 * itsTimeStamp.millis)) / (1000.0 * 1000.0) )
 
         return rx_msg
 
