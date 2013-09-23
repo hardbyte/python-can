@@ -2,6 +2,7 @@
 Enable basic can over a PCAN USB device.
 
 """
+HAS_UPTIME = True
 
 import logging
 
@@ -11,6 +12,12 @@ logger = logging.getLogger(__name__)
 
 from can.bus import BusABC
 from can.message import Message
+
+try:
+    from uptime import boottime
+    import datetime
+except:
+    HAS_UPTIME = False
 
 # Set up logging
 logging.basicConfig(level=logging.WARNING)
@@ -35,7 +42,7 @@ class Bus(BusABC):
         interrupt = 11
 
         self.m_objPCANBasic = PCANBasic()
-        self.m_PcanHandle = PCAN_USBBUS1
+        self.m_PcanHandle = globals()[channel]
 
         result = self.m_objPCANBasic.Initialize(self.m_PcanHandle, baudrate, hwtype, ioport, interrupt)
 
@@ -62,8 +69,10 @@ class Bus(BusABC):
         log.debug("Trying to read a msg")
 
         result = self.m_objPCANBasic.Read(self.m_PcanHandle)
-        if result[0] != PCAN_ERROR_OK:
+        if result[0] == PCAN_ERROR_QRCVEMPTY or result[0] == PCAN_ERROR_BUSLIGHT or result[0] == PCAN_ERROR_BUSHEAVY:
             return None
+        elif result[0] != PCAN_ERROR_OK:
+            raise Exception(self.GetFormattedError(result[0]))
 
         theMsg = result[1]
         itsTimeStamp = result[2]
@@ -93,6 +102,8 @@ class Bus(BusABC):
         #rx_msg.flags = flags
         rx_msg.data = theMsg.DATA
         rx_msg.timestamp = (itsTimeStamp.micros + (1000 * itsTimeStamp.millis)) / (1000.0 * 1000.0)
+        if HAS_UPTIME:
+            rx_msg.timestamp += (boottime() - datetime.datetime.utcfromtimestamp(0)).total_seconds()
 
         return rx_msg
 
