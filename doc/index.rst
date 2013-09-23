@@ -1,0 +1,55 @@
+python-can
+==========
+
+`python-can` is a library for interacting with a controller area network.
+
+The **Controller Area Network** is a bus standard designed to allow embedded
+devices to communicate with each other. It has priority based bus arbitration,
+reliable deterministic communication. It is used in cars, trucks, wheelchairs
+and more.
+
+This example shows the socketcan backend in action - sending one message:
+
+
+.. literalinclude:: ../examples/send_one.py
+    :language: python
+    :emphasize-lines: 7-12
+    :linenos:
+
+
+Contents:
+
+.. toctree::
+   :maxdepth: 2
+   
+   install
+   
+   bin
+   
+   api
+
+   bcm
+
+   overview
+   history
+
+
+Known Bugs
+~~~~~~~~~~
+
+See the project `bug tracker`_ on bitbucket. Patches and pull requests very welcome!
+
+
+.. admonition:: Documentation generated
+
+    |today|
+
+
+.. _Python: http://www.python.org
+.. _Setuptools: http://pypi.python.org/pypi/setuptools
+.. _Pip: http://pip.openplans.org/
+.. _easy_install: http://peak.telecommunity.com/DevCenter/EasyInstall
+.. _IPython: http://ipython.scipy.org
+.. _Mercurial: http://mercurial.selenic.com
+.. _TortoiseHG: http://tortoisehg.bitbucket.org/
+.. _bug tracker: https://bitbucket.org/hardbyte/python-can/issues
