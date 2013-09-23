@@ -11,9 +11,9 @@ and more.
 This example shows the socketcan backend in action - sending one message:
 
 
-.. literalinclude:: /examples/send_one.py
+.. literalinclude:: ../examples/send_one.py
     :language: python
-    :emphasize-lines: 10-15
+    :emphasize-lines: 7-12
     :linenos:
 
 
@@ -27,7 +27,9 @@ Contents:
    bin
    
    api
-   
+
+   bcm
+
    overview
    history
 
@@ -35,12 +37,7 @@ Contents:
 Known Bugs
 ~~~~~~~~~~
 
-*Windows*
-    - Not tested recently.
-
-*Linux*
-    - More than one virtual channel don't seem to work on linux.
-
+See the project `bug tracker`_ on bitbucket. Patches and pull requests very welcome!
 
 
 .. admonition:: Documentation generated
@@ -55,3 +52,4 @@ Known Bugs
 .. _IPython: http://ipython.scipy.org
 .. _Mercurial: http://mercurial.selenic.com
 .. _TortoiseHG: http://tortoisehg.bitbucket.org/
+.. _bug tracker: https://bitbucket.org/hardbyte/python-can/issues

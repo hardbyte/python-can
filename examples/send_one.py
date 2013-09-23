@@ -1,10 +1,7 @@
-import logging
-
-logging.basicConfig(level=logging.INFO)
 import can
 can.rc['interface'] = 'socketcan_ctypes'
-
 from can.interfaces.interface import Bus
+
 
 def main():
     can_interface = 'vcan0'

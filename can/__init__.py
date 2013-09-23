@@ -21,6 +21,7 @@ from can.CAN import BufferedReader, Listener, Printer, CSVWriter, SqliteWriter, 
 from can.message import Message
 from can.bus import BusABC
 from can.notifier import Notifier
+from can.broadcastmanager import send_periodic, CyclicSendTaskABC, MultiRateCyclicSendTaskABC
 
 # Interface can be kvaser, socketcan, socketcan_ctypes, socketcan_native, serial
 rc = {

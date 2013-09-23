@@ -2,7 +2,7 @@
 
 """
 This implementation is for versions of Python that have native
-can socket support: >3.3
+can socket and can bcm socket support: >3.4
 """
 
 import socket
@@ -24,6 +24,8 @@ except:
 from can import Message
 from can.interfaces.socketcan_constants import *   #CAN_RAW
 from ..bus import BusABC
+
+from ..broadcastmanager import CyclicSendTaskABC
 
 can_frame_fmt = "=IB3x8s"
 can_frame_size = struct.calcsize(can_frame_fmt)
@@ -48,9 +50,112 @@ def build_can_frame(can_id, data):
     return struct.pack(can_frame_fmt, can_id, can_dlc, data)
 
 
+def build_bcm_header(opcode, flags, count, ival1_seconds, ival1_usec, ival2_seconds, ival2_usec, can_id, nframes):
+    # == Must use native not standard types for packing ==
+    # struct bcm_msg_head {
+    #     __u32 opcode; -> I
+    #     __u32 flags;  -> I
+    #     __u32 count;  -> I
+    #     struct timeval ival1, ival2; ->  llll ...
+    #     canid_t can_id; -> I
+    #     __u32 nframes; -> I
+    bcm_cmd_msg_fmt = "@IIIllllII"
+
+    return struct.pack(bcm_cmd_msg_fmt,
+                       opcode,
+                       flags,
+                       count,
+                       ival1_seconds,
+                       ival1_usec,
+                       ival2_seconds,
+                       ival2_usec,
+                       can_id,
+                       nframes)
+
+
+def build_bcm_tx_delete_header(can_id):
+    opcode = CAN_BCM_TX_DELETE
+    return build_bcm_header(opcode, 0, 0, 0, 0, 0, 0, can_id, 1)
+
+
+def build_bcm_transmit_header(can_id, count, initial_period, subsequent_period):
+    opcode = CAN_BCM_TX_SETUP
+
+    flags = SETTIMER | STARTTIMER
+
+    if initial_period > 0:
+        # Note `TX_COUNTEVT` creates the message TX_EXPIRED when count expires
+        flags |= TX_COUNTEVT
+
+    def split_time(value):
+        """Given seconds as a float, return whole seconds and microseconds"""
+        seconds = int(value)
+        microseconds = int(1e6 * (value - seconds))
+        return seconds, microseconds
+
+    ival1_seconds, ival1_usec = split_time(initial_period)
+    ival2_seconds, ival2_usec = split_time(subsequent_period)
+    nframes = 1
+
+    return build_bcm_header(opcode, flags, count, ival1_seconds, ival1_usec, ival2_seconds, ival2_usec, can_id, nframes)
+
+
 def dissect_can_frame(frame):
     can_id, can_dlc, data = struct.unpack(can_frame_fmt, frame)
     return (can_id, can_dlc, data[:can_dlc])
+
+
+def create_bcm_socket(channel):
+    """create a broadcast manager socket and connect to the given interface"""
+    try:
+        s = socket.socket(socket.PF_CAN, socket.SOCK_DGRAM, socket.CAN_BCM)
+    except AttributeError:
+        raise SystemExit("To use BCM sockets you need Python3.4 or higher")
+    try:
+        s.connect((channel,))
+    except OSError as e:
+        log.error("Couldn't connect a broadcast manager socket")
+        raise e
+    return s
+
+
+class CyclicSendTask(CyclicSendTaskABC):
+
+    def __init__(self, channel, message, period):
+        """
+
+        :param channel: The name of the CAN channel to connect to.
+        :param message: The message to be sent periodically.
+        :param period: The rate in seconds at which to send the message.
+        """
+        super().__init__(channel, message, period)
+        self.bcm_socket = create_bcm_socket(channel)
+        self._tx_setup(message)
+
+    def _tx_setup(self, message):
+        # Create a low level packed frame to pass to the kernel
+        header = build_bcm_transmit_header(self.can_id, 0, 0.0, self.period)
+        frame = build_can_frame(self.can_id, message.data)
+        log.info("Sending BCM command")
+        self.bcm_socket.send(header + frame)
+
+    def stop(self):
+        """Send a TX_DELETE message to cancel this task.
+
+        This will delete the entry for the transmission of the CAN-message
+        with the specified can_id CAN identifier. The message length for the command
+        TX_DELETE is {[bcm_msg_head]} (only the header).
+        """
+        try:
+            self.bcm_socket.send(build_bcm_tx_delete_header(self.can_id))
+        except:
+            pass
+
+    def modify_data(self, message):
+        """Update the contents of this periodically sent message.
+        """
+        assert message.arbitration_id == self.can_id, "You cannot modify the can identifier"
+        self._tx_setup(message)
 
 
 def createSocket(can_protocol=None):
@@ -162,7 +267,7 @@ class Bus(BusABC):
             would be 'vcan0'.
 
         :param list can_filters:
-            A dictionary containing a "can_id" and a "can_mask"
+            A list of dictionaries, each containing a "can_id" and a "can_mask".
         """
         self.socket = createSocket(CAN_RAW)
 
@@ -187,7 +292,6 @@ class Bus(BusABC):
 
     def recv(self, timeout=None):
 
-        # TODO socketcan error checking...?
         packet = capturePacket(self.socket)
 
         rx_msg = Message(timestamp=packet.timestamp,

@@ -1,5 +1,5 @@
-SocketCAN in Native Python
-==========================
+SocketCAN (python)
+==================
 
 Python 3.3 added support for socketcan for linux systems.
 

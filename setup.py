@@ -4,7 +4,7 @@ python-can requires the setuptools package to be installed.
 
 from setuptools import setup, find_packages
 
-__version__ = 1.2
+__version__ = 1.3
 
 # TODO
 # This dict will be updated as we try to select the best option during

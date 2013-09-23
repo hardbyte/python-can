@@ -5,6 +5,28 @@ Defines CAN constants.
 
 canMSG_EXT = 0x0004
 
+# BCM opcodes
+CAN_BCM_TX_SETUP = 1
+CAN_BCM_TX_DELETE = 2
+
+CAN_BCM_TX_EXPIRED = 9
+
+CAN_BCM_RX_TIMEOUT = 11
+
+
+# BCM flags
+SETTIMER            = 0x0001
+STARTTIMER          = 0x0002
+TX_COUNTEVT         = 0x0004
+TX_ANNOUNCE         = 0x0008
+TX_CP_CAN_ID        = 0x0010
+RX_FILTER_ID        = 0x0020
+RX_CHECK_DLC        = 0x0040
+RX_NO_AUTOTIMER     = 0x0080
+RX_ANNOUNCE_RESUME  = 0x0100
+TX_RESET_MULTI_IDX  = 0x0200
+RX_RTR_FRAME        = 0x0400
+
 CAN_RAW =       1
 CAN_BCM =       2
 
