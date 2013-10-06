@@ -16,7 +16,6 @@ class Message(object):
         self.is_remote_frame = is_remote_frame
         self.is_error_frame = is_error_frame
         self.arbitration_id = arbitration_id
-        logger.debug("creating a new Message object")
 
         #if isinstance(data, list):
         #    data = bytes(data)
@@ -26,12 +25,13 @@ class Message(object):
         try:
             self.data = bytearray(data)
         except:
-            print(data, type(data))
+            logger.error("Couldn't create message from {} ({})".format(data, type(data)))
         if dlc is None:
             self.dlc = len(data)
         else:
             self.dlc = dlc
-        assert self.dlc <= 8, "data link count must be less than or equal to 8"
+
+        assert self.dlc <= 8, "data link count was {} but it must be less than or equal to 8".format(self.dlc)
     
     def __str__(self):
         field_strings = ["%15.6f" % self.timestamp]

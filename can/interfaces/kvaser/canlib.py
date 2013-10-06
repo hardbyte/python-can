@@ -10,7 +10,6 @@ Copyright (C) 2010 Dynamic Controls
 import sys
 import time
 import logging
-import platform
 import threading
 try:
     import queue as queue

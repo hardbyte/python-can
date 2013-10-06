@@ -21,4 +21,3 @@ elif can.rc['interface'] == 'serial':
     from can.interfaces.serial_can import *
 else:
     raise ImportError("CAN interface not found")
-    

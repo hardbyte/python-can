@@ -7,9 +7,9 @@ import select
 from ctypes.util import find_library
 
 from can.interfaces.socketcan_constants import *   #CAN_RAW
-from ..bus import BusABC
-from ..message import Message
-from ..broadcastmanager import CyclicSendTaskABC, MultiRateCyclicSendTaskABC
+from can.bus import BusABC
+from can.message import Message
+from can.broadcastmanager import CyclicSendTaskABC, MultiRateCyclicSendTaskABC
 
 # Set up logging
 log = logging.getLogger('can.socketcan_ctypes')
@@ -38,14 +38,15 @@ class Bus(BusABC):
         super(Bus, self).__init__(*args, **kwargs)
 
     def recv(self, timeout=None):
-        rx_msg = Message()
+
 
         log.debug("Trying to read a msg")
 
-        if timeout is None or len( select.select([self.socket], [], [], timeout=timeout)[0]) > 0:
+        if timeout is None or len(select.select([self.socket],
+                [], [], timeout)[0]) > 0:
             packet = capturePacket(self.socket)
         else:
-            # socket wasn't readable
+            # socket wasn't readable or timeout occurred
             return None
 
         log.debug("Receiving a message")
@@ -55,24 +56,16 @@ class Bus(BusABC):
         # Flags: EXT, RTR, ERR
         flags = (packet['CAN ID'] & MSK_FLAGS) >> 29
 
-        # To keep flags consistent with pycanlib, their positions need to be switched around
-        flags = (flags | PYCAN_ERRFLG) & ~(SKT_ERRFLG) if flags & SKT_ERRFLG else flags 
-        flags = (flags | PYCAN_RTRFLG) & ~(SKT_RTRFLG) if flags & SKT_RTRFLG else flags
-        flags = (flags | PYCAN_STDFLG) & ~(EXTFLG) if not(flags & EXTFLG) else flags
+        rx_msg = Message(
+            timestamp=packet['Timestamp'],
+            is_remote_frame=bool(flags & SKT_RTRFLG),
+            extended_id=bool(flags & EXTFLG),
+            is_error_frame=bool(flags & SKT_ERRFLG),
+            arbitration_id=arbitration_id,
+            dlc=packet['DLC'],
+            data=packet['Data']
+        )
 
-        if flags & EXTFLG:
-            rx_msg.id_type = ID_TYPE_EXTENDED
-            log.debug("CAN: Extended")
-        else:
-            rx_msg.id_type = ID_TYPE_STANDARD
-            log.debug("CAN: Standard")
-
-        rx_msg.arbitration_id = arbitration_id
-        rx_msg.dlc = packet['DLC']
-        rx_msg.flags = flags
-        rx_msg.data = packet['Data']
-        rx_msg.timestamp = packet['Timestamp']
-        
         return rx_msg
 
     def send(self, msg):
