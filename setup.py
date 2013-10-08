@@ -15,8 +15,9 @@ setup(
     version=__version__,
     packages=find_packages(),
     author="Brian Thorne",
-    author_email="bthorne@dynamiccontrols.com",
+    author_email="hardbyte@gmail.com",
     description="Controller Area Network interface module for Python",
+    long_description=open('README.md').read(),
     license="LGPL v3",
     package_data={
         "": ["CONTRIBUTORS.txt", "LICENSE.txt"],
