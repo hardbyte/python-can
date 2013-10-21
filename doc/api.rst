@@ -10,8 +10,8 @@ A form of CAN interface is also required.
    
    bus
    message
-   interfaces
    listeners
+   bcm
 
 
 .. _notifier:

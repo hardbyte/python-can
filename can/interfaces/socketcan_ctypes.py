@@ -6,14 +6,15 @@ import select
 
 from ctypes.util import find_library
 
+import can
 from can.interfaces.socketcan_constants import *   #CAN_RAW
 from can.bus import BusABC
 from can.message import Message
 from can.broadcastmanager import CyclicSendTaskABC, MultiRateCyclicSendTaskABC
 
 # Set up logging
-log = logging.getLogger('can.socketcan_ctypes')
-log.setLevel(logging.WARNING)
+log = logging.getLogger('can.socketcan.ctypes')
+log.info("Loading socketcan ctypes backend")
 
 
 class Bus(BusABC):
@@ -23,7 +24,7 @@ class Bus(BusABC):
     channel_info = "ctypes socketcan channel"
 
     def __init__(self,
-                 channel,
+                 channel=can.rc['channel'],
                  *args, **kwargs):
         """
         :param str channel:
@@ -38,7 +39,6 @@ class Bus(BusABC):
         super(Bus, self).__init__(*args, **kwargs)
 
     def recv(self, timeout=None):
-
 
         log.debug("Trying to read a msg")
 
@@ -241,6 +241,7 @@ def connectSocket(socketID, channel_name):
 
     return error
 
+
 def _build_can_frame(message):
     log.debug("Packing a can frame")
     arbitration_id = message.arbitration_id
@@ -312,7 +313,7 @@ def capturePacket(socketID):
     packet['DLC'] = frame.can_dlc
     packet["Data"] = [frame.data[i] for i in range(frame.can_dlc)]
 
-    timestamp = time.tv_sec + (time.tv_usec / 1000000)
+    timestamp = time.tv_sec + (time.tv_usec / 1000000.0)
     
     packet['Timestamp'] = timestamp
 

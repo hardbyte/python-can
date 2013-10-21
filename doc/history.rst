@@ -23,8 +23,9 @@ The Python 'socket' module contains support for SocketCAN in version 3.3.
 This library started targeting Python 3 as it was released as open source
 in 2013.
 
-BCM
-----
+Broadcast Connection Manager
+----------------------------
 
-From Python 3.4 BCM is natively supported so this will be integrated when
-Python 3.4 is more widespread.
+From Python 3.4 BCM is natively supported so the plan is to integrate natively
+when Python 3.4 is more widespread. For now BCM is possible with the socketcan
+ctypes backend.

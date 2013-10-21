@@ -1,11 +1,12 @@
 Scripts
 =======
 
+The following scripts are installed along with python-can.
+
 can_logger.py
 -------------
 
-Command line help (--help):
-
+Command line help (``--help``)::
 
     usage: can_logger.py [-h] [-f LOG_FILE] [-v] [-i {socketcan,kvaser,serial}]
                          channel ...
@@ -37,7 +38,7 @@ Command line help (--help):
 j1939_logger.py
 ---------------
 
-command line help (--help):
+command line help (``--help``)::
 
     usage: j1939_logger.py [-h] [-v] [-i {socketcan,kvaser,serial}]
                            [--pgn PGN | --source SOURCE | --filter FILTER]

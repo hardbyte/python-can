@@ -5,34 +5,41 @@ python-can
 
 The **Controller Area Network** is a bus standard designed to allow embedded
 devices to communicate with each other. It has priority based bus arbitration,
-reliable deterministic communication. It is used in cars, trucks, wheelchairs
-and more.
-
-This example shows the socketcan backend in action - sending one message:
-
-
-.. literalinclude:: ../examples/send_one.py
-    :language: python
-    :emphasize-lines: 7-12
-    :linenos:
+reliable deterministic communication. It is used in cars, trucks, boats,
+wheelchairs and more.
 
 
 Contents:
 
 .. toctree::
    :maxdepth: 2
-   
-   install
-   
-   bin
-   
+
+   interfaces
    api
-
-   bcm
-
+   protocols
+   bin
    overview
    history
 
+
+Example
+~~~~~~~
+
+This example shows the library in action - sending one message:
+
+
+.. literalinclude:: ../examples/send_one.py
+    :language: python
+    :linenos:
+
+
+
+Installation and Quickstart
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+See the readme included with the source code.
+
+https://bitbucket.org/hardbyte/python-can
 
 Known Bugs
 ~~~~~~~~~~

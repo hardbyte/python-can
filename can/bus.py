@@ -2,7 +2,6 @@
 
 import abc
 import logging
-
 logger = logging.getLogger(__name__)
 
 
@@ -68,7 +67,9 @@ class BusABC(object):
         :yields: :class:`can.Message` msg objects.
         """
         while True:
-            yield self.recv()
+            m = self.recv(timeout=1.0)
+            if m is not None:
+                yield m
         logger.debug("done iterating over bus messages")
 
     def flush_tx_buffer(self):

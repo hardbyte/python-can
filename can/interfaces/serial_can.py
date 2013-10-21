@@ -7,7 +7,7 @@ E.g. over bluetooth with "/dev/rfcomm0"
 
 import logging
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('can.serial')
 
 try:
     import serial
@@ -17,6 +17,7 @@ except ImportError:
 
 from can.bus import BusABC
 from can.message import Message
+
 
 class Bus(BusABC):
 

@@ -5,7 +5,6 @@ import json
 
 import can
 
-
 def parse_arguments():
     parser = argparse.ArgumentParser(
         description="Log J1939 traffic, printing messages to stdout or to a given file",
@@ -18,11 +17,6 @@ def parse_arguments():
                         help='''
     How much information do you want to see at the command line?
     You can add several of these e.g., -vv is DEBUG''', default=2)
-
-    parser.add_argument("-i", "--interface", dest="interface",
-                        help='''Which backend do you want to use?''',
-                        default=can.rc['default-interface'],
-                        choices=('socketcan', 'kvaser', 'serial'))
 
     filter_group = parser.add_mutually_exclusive_group()
     filter_group.add_argument('--pgn',
@@ -58,7 +52,7 @@ def parse_arguments():
 
 
     '''))
-    parser.add_argument('channel',
+    parser.add_argument('-c', '--channel', default=can.rc['channel'],
                         help=textwrap.dedent('''
     Most backend interfaces require some sort of channel. For example with the serial
     interface the channel might be a rfcomm device: /dev/rfcomm0
@@ -70,9 +64,6 @@ def parse_arguments():
 if __name__ == "__main__":
 
     args = parse_arguments()
-
-    if args.interface is not None:
-        can.rc['interface'] = args.interface
 
     verbosity = args.verbosity
     logging_level_name = ['critical', 'error', 'warning', 'info', 'debug', 'subdebug'][min(5, verbosity)]

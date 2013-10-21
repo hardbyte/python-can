@@ -101,7 +101,10 @@ class Bus(BusABC):
 
     def recv(self, timeout=None):
         logger.debug("Waiting for new message")
-        m = self.rx_can_message_queue.get(timeout=timeout)
+        try:
+            m = self.rx_can_message_queue.get(timeout=timeout)
+        except Empty:
+            return
 
         rx_pdu = None
 

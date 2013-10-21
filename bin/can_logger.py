@@ -14,13 +14,12 @@ Will filter for can frames with a can_id containing XXF03XXX.
 
 Dynamic Controls 2010
 """
-
+from __future__ import print_function
 import datetime
 import argparse
 import time
 
 import can
-from can import interfaces
 
 if __name__ == "__main__":
     
@@ -33,32 +32,22 @@ if __name__ == "__main__":
     parser.add_argument("-v", action="count", dest="verbosity", 
                         help='''How much information do you want to see at the command line? 
                         You can add several of these e.g., -vv is DEBUG''', default=2)
-
-    parser.add_argument("-i", "--interface", dest="interface",
-                        help='''Which backend do you want to use?''',
-                        default=can.rc['default-interface'],
-                        choices=('socketcan', 'kvaser', 'serial'))
     
-    parser.add_argument('channel', help='''Most backend interfaces require some sort of channel.
+    parser.add_argument('-c', '--channel', help='''Most backend interfaces require some sort of channel.
     For example with the serial interface the channel might be a rfcomm device: /dev/rfcomm0
-    Other channel examples are: can0, vcan0''')
+    Other channel examples are: can0, vcan0''', default=can.rc['channel'])
 
-    parser.add_argument('filter', help='''Comma separated filters can be specified for the given CAN interface:
+    parser.add_argument('--filter', help='''Comma separated filters can be specified for the given CAN interface:
         <can_id>:<can_mask> (matches when <received_can_id> & mask == can_id & mask)
         <can_id>~<can_mask> (matches when <received_can_id> & mask != can_id & mask)
-    ''', nargs=argparse.REMAINDER)
+    ''', nargs=argparse.REMAINDER, default='')
 
     results = parser.parse_args()
-
-    if results.interface is not None:
-        can.rc['interface'] = results.interface
 
     verbosity = results.verbosity
 
     logging_level_name = ['critical', 'error', 'warning', 'info', 'debug', 'subdebug'][min(5, verbosity)]
     can.set_logging_level(logging_level_name)
-
-    from can.interfaces.interface import *
 
     can_filters = []
     if len(results.filter) > 0:
@@ -73,7 +62,7 @@ if __name__ == "__main__":
                 can_mask = int(can_mask, base=16) & socket.CAN_ERR_FLAG
             can_filters.append({"can_id": can_id, "can_mask": can_mask})
 
-    bus = Bus(results.channel, can_filters=can_filters)
+    bus = can.interface.Bus(results.channel, can_filters=can_filters)
     print('Can Logger (Started on {})\n'.format(datetime.datetime.now()))
     notifier = can.Notifier(bus, [can.Printer(results.log_file)])
 

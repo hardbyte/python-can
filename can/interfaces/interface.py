@@ -1,9 +1,4 @@
-import logging
-logging.getLogger(__file__)
-
 import can
-
-logging.debug("RC: {}".format(can.rc))
 
 if can.rc['interface'] == 'kvaser':
     from can.interfaces.kvaser import *
