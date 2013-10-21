@@ -19,7 +19,9 @@ A method to do this is to create a configuration file called `can.conf`,
 
 A Controller Area Networking interface is required for `python-can` to do
 anything useful. The two primary interfaces are `socketcan` on GNU/Linux 
-and [Kvaser][2]'s CANLib SDK for Windows (also available on Linux).
+and [Kvaser][2]'s CANLib SDK for Windows (also available on Linux). A 
+third interface available for Windows is [Peak-System][8]'s 
+PCAN-Basic API.
 
 Alternatively, before creating a **bus** object the global `can.rc`
 dictionary can be modified:
@@ -50,8 +52,28 @@ To install `python-can` using the Kvaser CANLib SDK as the backend:
 3. Test that Kvaser's own tools work to ensure the driver is properly 
 installed and that the hardware is working.
 
+To use the PCAN-Basic API as the backend (which has only been tested with 
+Python 2.7):
+
+1. Download the latest version of the [PCAN-Basic API][9].
+
+2. Extract PCANBasic.dll from the Win32 subfolder of the archive or the x64 
+subfolder depending on whether you have a 32-bit or 64-bit installation of 
+Python.
+
+3. Copy PCANBasic.dll into the working directory where you will be running 
+your python script.  There is probably a way to install the dll properly, 
+but I'm not certain how to do that.
+
+Note that PCANBasic API timestamps count seconds from system startup.  To 
+convert these to epoch times, the uptime library is used.  If it is not 
+available, the times are returned as number of seconds from system startup. 
+To install the uptime library, run `pip install uptime`.
+
 
 ## Install python-can
+
+You may need to install [pip][7] first.
 
 Two options, install normally with:
 
@@ -85,3 +107,6 @@ With sphinx installed the documentation can be generated with:
 [4]: http://python.org/download/
 [5]: http://www.kvaser.com/en/downloads.html
 [6]: https://python-can.readthedocs.org/en/latest/
+[7]: http://www.pip-installer.org/en/latest/installing.html
+[8]: http://www.peak-system.com/
+[9]: http://www.peak-system.com/Downloads.76.0.html?
