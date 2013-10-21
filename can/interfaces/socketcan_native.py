@@ -11,7 +11,7 @@ import struct
 import logging
 from collections import namedtuple
 
-log = logging.getLogger('can.socketcan_native')
+log = logging.getLogger('can.socketcan.native')
 #log.setLevel(logging.DEBUG)
 log.debug("Loading native socket can implementation")
 

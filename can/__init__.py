@@ -9,9 +9,7 @@ Modules include:
 
 """
 import logging
-
-logging.basicConfig(level=logging.WARNING)
-log = logging.getLogger('CAN')
+log = logging.getLogger('can')
 
 
 class CanError(IOError):
@@ -22,10 +20,11 @@ from can.message import Message
 from can.bus import BusABC
 from can.notifier import Notifier
 from can.broadcastmanager import send_periodic, CyclicSendTaskABC, MultiRateCyclicSendTaskABC
+from can.util import load_config
 
-# Interface can be kvaser, socketcan, socketcan_ctypes, socketcan_native, serial
-rc = {
-      'default-interface': 'socketcan',
-      'interface': 'socketcan'
-      }
+log.debug("Loading can configuration")
+rc = load_config()
+log.debug("RC: {}".format(rc))
+
+from can.interfaces import interface
 

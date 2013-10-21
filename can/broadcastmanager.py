@@ -9,7 +9,6 @@ import abc
 import logging
 
 log = logging.getLogger('can.bcm')
-log.setLevel(logging.INFO)
 log.debug("Loading base broadcast manager functionality")
 
 

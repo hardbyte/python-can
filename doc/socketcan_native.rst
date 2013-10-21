@@ -25,19 +25,22 @@ Bus
 .. autoclass:: can.interfaces.socketcan_native.Bus
 
 
+Internals
+---------
+
 createSocket
--------------
+~~~~~~~~~~~~
 
 .. autofunction:: can.interfaces.socketcan_native.createSocket
 
 
 bindSocket
------------
+~~~~~~~~~~
 
 .. autofunction:: can.interfaces.socketcan_native.bindSocket
 
 
 capturePacket
---------------
+~~~~~~~~~~~~~
 
 .. autofunction:: can.interfaces.socketcan_native.capturePacket

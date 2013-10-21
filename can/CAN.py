@@ -13,9 +13,7 @@ except ImportError:
     import Queue as queue
 
 
-logging.basicConfig(level=logging.WARNING)
-log = logging.getLogger('CAN')
-
+log = logging.getLogger('can')
 log.debug("Loading python-can")
 
 
@@ -28,6 +26,8 @@ def set_logging_level(level_name=None):
     except AttributeError:
         log.setLevel(logging.DEBUG)
     log.debug("Logging set to {}".format(level_name))
+
+    logging.basicConfig()
 
 
 class Listener(object):
