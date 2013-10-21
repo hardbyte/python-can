@@ -6,8 +6,8 @@ Background
 
 Dynamic Controls has been using and maintaining this library since 2009.
 Originally written by Ben Powell as a thin wrapper around the Kvaser SDK
-to support the leaf device. Maintenance was taken over by Brian Thorne in
-2010.
+to support the leaf device. Maintenance was taken over and the project was
+open sourced by Brian Thorne in 2010.
 
 Original support for linux socketcan was added by Rose Lu as a summer coding
 project in 2011.
@@ -15,6 +15,7 @@ project in 2011.
 The socketcan interface was helped immensely by Phil Dixon who wrote a 
 leaf-socketcan driver for Linux.
 
+The pcan interface was contributed by Albert Bloomfield in 2013.
 
 Python 3
 --------
