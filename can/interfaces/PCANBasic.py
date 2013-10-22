@@ -10,7 +10,7 @@
 #  Author : Keneth Wagner
 #  Last change: 27.08.2013 Wagner
 #
-#  Language: Python 2.6
+#  Language: Python 2.6+
 #  ------------------------------------------------------------------
 #
 #  Copyright (C) 1999-2013  PEAK-System Technik GmbH, Darmstadt
@@ -19,8 +19,9 @@
 
 # Module Imports
 #
-from ctypes import *
 from __future__ import print_function
+from ctypes import *
+
 
 #///////////////////////////////////////////////////////////
 # Type definitions
