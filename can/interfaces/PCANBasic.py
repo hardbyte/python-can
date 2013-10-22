@@ -20,6 +20,7 @@
 # Module Imports
 #
 from ctypes import *
+from __future__ import print_function
 
 #///////////////////////////////////////////////////////////
 # Type definitions
@@ -241,7 +242,7 @@ class PCANBasic:
         #     
         self.__m_dllBasic = windll.LoadLibrary("PCANBasic")
         if self.__m_dllBasic == None:
-            print "Exception: The PCAN-Basic DLL couldn't be loaded!"
+            print("Exception: The PCAN-Basic DLL couldn't be loaded!")
 
     # Initializes a PCAN Channel
     #
@@ -270,7 +271,7 @@ class PCANBasic:
             res = self.__m_dllBasic.CAN_Initialize(Channel,Btr0Btr1,HwType,IOPort,Interrupt)
             return TPCANStatus(res)
         except:
-            print "Exception on PCANBasic.Initialize"
+            print("Exception on PCANBasic.Initialize")
             raise
         
     #  Uninitializes one or all PCAN Channels initialized by CAN_Initialize
@@ -295,7 +296,7 @@ class PCANBasic:
             res = self.__m_dllBasic.CAN_Uninitialize(Channel)
             return TPCANStatus(res)
         except:
-            print "Exception on PCANBasic.Uninitialize"
+            print("Exception on PCANBasic.Uninitialize")
             raise
 
     #  Resets the receive and transmit queues of the PCAN Channel
@@ -320,7 +321,7 @@ class PCANBasic:
             res = self.__m_dllBasic.CAN_Reset(Channel)
             return TPCANStatus(res)
         except:
-            print "Exception on PCANBasic.Reset"
+            print("Exception on PCANBasic.Reset")
             raise
             
     #  Gets the current status of a PCAN Channel
@@ -342,7 +343,7 @@ class PCANBasic:
             res = self.__m_dllBasic.CAN_GetStatus(Channel)
             return TPCANStatus(res)
         except:
-            print "Exception on PCANBasic.GetStatus"
+            print("Exception on PCANBasic.GetStatus")
             raise
 
     # Reads a CAN message from the receive queue of a PCAN Channel
@@ -374,7 +375,7 @@ class PCANBasic:
             res = self.__m_dllBasic.CAN_Read(Channel,byref(msg),byref(timestamp))
             return TPCANStatus(res),msg,timestamp
         except:
-            print "Exception on PCANBasic.Read"
+            print("Exception on PCANBasic.Read")
             raise           
 
     # Transmits a CAN message 
@@ -398,7 +399,7 @@ class PCANBasic:
             res = self.__m_dllBasic.CAN_Write(Channel,byref(MessageBuffer))
             return TPCANStatus(res)
         except:
-            print "Exception on PCANBasic.Write"
+            print("Exception on PCANBasic.Write")
             raise
 
     # Configures the reception filter 
@@ -431,7 +432,7 @@ class PCANBasic:
             res = self.__m_dllBasic.CAN_FilterMessages(Channel,FromID,ToID,Mode)
             return TPCANStatus(res)
         except:
-            print "Exception on PCANBasic.FilterMessages"
+            print("Exception on PCANBasic.FilterMessages")
             raise
 
     # Retrieves a PCAN Channel value 
@@ -469,7 +470,7 @@ class PCANBasic:
             res = self.__m_dllBasic.CAN_GetValue(Channel,Parameter,byref(mybuffer),sizeof(mybuffer))
             return TPCANStatus(res),mybuffer.value
         except:
-            print "Exception on PCANBasic.GetValue"
+            print("Exception on PCANBasic.GetValue")
             raise            
 
     # Returns a descriptive text of a given TPCANStatus
@@ -509,7 +510,7 @@ class PCANBasic:
             res = self.__m_dllBasic.CAN_SetValue(Channel,Parameter,byref(mybuffer),sizeof(mybuffer))
             return TPCANStatus(res)
         except:
-            print "Exception on PCANBasic.SetValue"
+            print("Exception on PCANBasic.SetValue")
             raise
 
     def GetErrorText(
@@ -542,7 +543,7 @@ class PCANBasic:
             res = self.__m_dllBasic.CAN_GetErrorText(Error,Language,byref(mybuffer))
             return TPCANStatus(res),mybuffer.value
         except:
-            print "Exception on PCANBasic.GetErrorText"
+            print("Exception on PCANBasic.GetErrorText")
             raise            
 
 
