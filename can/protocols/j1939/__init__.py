@@ -26,6 +26,7 @@ from can.protocols.j1939.pgn import PGN
 from can.bus import BusABC
 from can.protocols.j1939 import constants
 from can.protocols.j1939.node import Node
+from can.protocols.j1939.nodename import NodeName
 from can.protocols.j1939.arbitrationid import ArbitrationID
 
 
@@ -100,6 +101,7 @@ class Bus(BusABC):
 
     def recv(self, timeout=None):
         logger.debug("Waiting for new message")
+        logger.debug("Timeout is {}".format(timeout))
         try:
             m = self.rx_can_message_queue.get(timeout=timeout)
         except Empty:

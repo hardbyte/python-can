@@ -21,9 +21,9 @@ class NodeName(object):
 
     @value.setter
     def value(self, value):
-        '''
+        """
         Value should be a number between [0, (2 ** 64) - 1]
-        '''
+        """
         self.identity_number = value & ((2 ** 21) - 1)
         self.manufacturer_code = (value >> 21) & ((2 ** 11) - 1)
         self.ecu_instance = (value >> 32) & ((2 ** 3) - 1)
