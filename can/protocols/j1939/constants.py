@@ -1,5 +1,3 @@
-
-
 # transport protocol PGNs
 PGN_TP_CONNECTION_MANAGEMENT = 0xec00
 PGN_TP_DATA_TRANSFER = 0xeb00

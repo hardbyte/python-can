@@ -6,6 +6,7 @@ http://en.wikipedia.org/wiki/J1939
 
 import threading
 import logging
+
 try:
     from queue import Queue, Empty
 except ImportError:
@@ -51,7 +52,7 @@ class Bus(BusABC):
         logger.debug("Creating a new j1939 bus")
 
         self.rx_can_message_queue = Queue()
-        
+
         super(Bus, self).__init__()
         self._pdu_type = pdu_type
         self._long_message_throttler = threading.Thread(target=self._throttler_function)
@@ -149,19 +150,19 @@ class Bus(BusABC):
                 arbitration_id = copy.deepcopy(pdu.arbitration_id)
                 arbitration_id.pgn.value = constants.PGN_TP_DATA_TRANSFER
                 if pdu.arbitration_id.pgn.is_destination_specific and \
-                        pdu.arbitration_id.destination_address != constants.DESTINATION_ADDRESS_GLOBAL:
+                                pdu.arbitration_id.destination_address != constants.DESTINATION_ADDRESS_GLOBAL:
                     arbitration_id.pgn.pdu_specific = pdu.arbitration_id.pgn.pdu_specific
                 else:
                     arbitration_id.pgn.pdu_specific = constants.DESTINATION_ADDRESS_GLOBAL
 
                 message = Message(arbitration_id=arbitration_id.can_id,
                                   extended_id=True,
-                                  dlc=(len(segment)+1),
-                                  data=(bytearray([i+1])+segment))
+                                  dlc=(len(segment) + 1),
+                                  data=(bytearray([i + 1]) + segment))
                 messages.append(message)
 
             if pdu.arbitration_id.pgn.is_destination_specific and \
-                    pdu.arbitration_id.destination_address != constants.DESTINATION_ADDRESS_GLOBAL:
+                            pdu.arbitration_id.destination_address != constants.DESTINATION_ADDRESS_GLOBAL:
                 destination_address = pdu.arbitration_id.pgn.pdu_specific
                 if pdu.arbitration_id.source_address in self._incomplete_transmitted_pdus:
                     if destination_address in self._incomplete_transmitted_pdus[pdu.arbitration_id.source_address]:
@@ -185,7 +186,7 @@ class Bus(BusABC):
             pgn_lsb = (temp_pgn.value & 0x0000FF)
 
             if pdu.arbitration_id.pgn.is_destination_specific and \
-               pdu.arbitration_id.destination_address != constants.DESTINATION_ADDRESS_GLOBAL:
+                            pdu.arbitration_id.destination_address != constants.DESTINATION_ADDRESS_GLOBAL:
                 # send request to send
                 rts_msg = Message(extended_id=True,
                                   arbitration_id=rts_arbitration_id.can_id,
@@ -305,16 +306,16 @@ class Bus(BusABC):
 
                         div, mod = divmod(total_length, 256)
                         can_message = Message(arbitration_id=arbitration_id.can_id,
-                                        extended_id=True,
-                                        dlc=8,
-                                        data=[constants.CM_MSG_TYPE_EOM_ACK,
-                                                mod, #total_length % 256,
-                                                div, #total_length / 256,
-                                                _num_packages,
-                                                0xFF,
-                                                _pgn_lsb,
-                                                _pgn_middle,
-                                                pgn_msb])
+                                              extended_id=True,
+                                              dlc=8,
+                                              data=[constants.CM_MSG_TYPE_EOM_ACK,
+                                                    mod, #total_length % 256,
+                                                    div, #total_length / 256,
+                                                    _num_packages,
+                                                    0xFF,
+                                                    _pgn_lsb,
+                                                    _pgn_middle,
+                                                    pgn_msb])
                         self.can_bus.send(can_message)
 
                     return self._process_eom_ack(msg)
@@ -327,26 +328,42 @@ class Bus(BusABC):
         # Delete any previous messages that were not finished correctly
         if msg.arbitration_id.pgn.pdu_specific in self._incomplete_received_pdus[msg.arbitration_id.source_address]:
             del self._incomplete_received_pdus[msg.arbitration_id.source_address][msg.arbitration_id.pgn.pdu_specific]
-            del self._incomplete_received_pdu_lengths[msg.arbitration_id.source_address][msg.arbitration_id.pgn.pdu_specific]
+            del self._incomplete_received_pdu_lengths[msg.arbitration_id.source_address][
+                msg.arbitration_id.pgn.pdu_specific]
 
         if msg.data[0] == constants.CM_MSG_TYPE_BAM:
             self._incomplete_received_pdus[msg.arbitration_id.source_address][0xFF] = self._pdu_type()
-            self._incomplete_received_pdus[msg.arbitration_id.source_address][0xFF].arbitration_id.pgn.value = int(("%.2X%.2X%.2X" % (msg.data[7], msg.data[6], msg.data[5])), 16)
-            if self._incomplete_received_pdus[msg.arbitration_id.source_address][0xFF].arbitration_id.pgn.is_destination_specific:
-                self._incomplete_received_pdus[msg.arbitration_id.source_address][0xFF].arbitration_id.pgn.pdu_specific = msg.arbitration_id.pgn.pdu_specific
-            self._incomplete_received_pdus[msg.arbitration_id.source_address][0xFF].arbitration_id.source_address = msg.arbitration_id.source_address
+            self._incomplete_received_pdus[msg.arbitration_id.source_address][0xFF].arbitration_id.pgn.value = int(
+                ("%.2X%.2X%.2X" % (msg.data[7], msg.data[6], msg.data[5])), 16)
+            if self._incomplete_received_pdus[msg.arbitration_id.source_address][
+                0xFF].arbitration_id.pgn.is_destination_specific:
+                self._incomplete_received_pdus[msg.arbitration_id.source_address][
+                    0xFF].arbitration_id.pgn.pdu_specific = msg.arbitration_id.pgn.pdu_specific
+            self._incomplete_received_pdus[msg.arbitration_id.source_address][
+                0xFF].arbitration_id.source_address = msg.arbitration_id.source_address
             self._incomplete_received_pdus[msg.arbitration_id.source_address][0xFF].data = []
             _message_size = int("%.2X%.2X" % (msg.data[2], msg.data[1]), 16)
-            self._incomplete_received_pdu_lengths[msg.arbitration_id.source_address][0xFF] = {"total": _message_size, "chunk": 255, "num_packages": msg.data[3], }
+            self._incomplete_received_pdu_lengths[msg.arbitration_id.source_address][0xFF] = {"total": _message_size,
+                                                                                              "chunk": 255,
+                                                                                              "num_packages": msg.data[
+                                                                                                  3], }
         else:
-            self._incomplete_received_pdus[msg.arbitration_id.source_address][msg.arbitration_id.pgn.pdu_specific] = self._pdu_type()
-            self._incomplete_received_pdus[msg.arbitration_id.source_address][msg.arbitration_id.pgn.pdu_specific].arbitration_id.pgn.value = int(("%.2X%.2X%.2X" % (msg.data[7], msg.data[6], msg.data[5])), 16)
-            if self._incomplete_received_pdus[msg.arbitration_id.source_address][msg.arbitration_id.pgn.pdu_specific].arbitration_id.pgn.is_destination_specific:
-                self._incomplete_received_pdus[msg.arbitration_id.source_address][msg.arbitration_id.pgn.pdu_specific].arbitration_id.pgn.pdu_specific = msg.arbitration_id.pgn.pdu_specific
-            self._incomplete_received_pdus[msg.arbitration_id.source_address][msg.arbitration_id.pgn.pdu_specific].arbitration_id.source_address = msg.arbitration_id.source_address
-            self._incomplete_received_pdus[msg.arbitration_id.source_address][msg.arbitration_id.pgn.pdu_specific].data = []
+            self._incomplete_received_pdus[msg.arbitration_id.source_address][
+                msg.arbitration_id.pgn.pdu_specific] = self._pdu_type()
+            self._incomplete_received_pdus[msg.arbitration_id.source_address][
+                msg.arbitration_id.pgn.pdu_specific].arbitration_id.pgn.value = int(
+                ("%.2X%.2X%.2X" % (msg.data[7], msg.data[6], msg.data[5])), 16)
+            if self._incomplete_received_pdus[msg.arbitration_id.source_address][
+                msg.arbitration_id.pgn.pdu_specific].arbitration_id.pgn.is_destination_specific:
+                self._incomplete_received_pdus[msg.arbitration_id.source_address][
+                    msg.arbitration_id.pgn.pdu_specific].arbitration_id.pgn.pdu_specific = msg.arbitration_id.pgn.pdu_specific
+            self._incomplete_received_pdus[msg.arbitration_id.source_address][
+                msg.arbitration_id.pgn.pdu_specific].arbitration_id.source_address = msg.arbitration_id.source_address
+            self._incomplete_received_pdus[msg.arbitration_id.source_address][
+                msg.arbitration_id.pgn.pdu_specific].data = []
         _message_size = int("%.2X%.2X" % (msg.data[2], msg.data[1]), 16)
-        self._incomplete_received_pdu_lengths[msg.arbitration_id.source_address][msg.arbitration_id.pgn.pdu_specific] = {"total": _message_size, "chunk": 255, "num_packages": msg.data[3], }
+        self._incomplete_received_pdu_lengths[msg.arbitration_id.source_address][
+            msg.arbitration_id.pgn.pdu_specific] = {"total": _message_size, "chunk": 255, "num_packages": msg.data[3], }
 
         if msg.data[0] != constants.CM_MSG_TYPE_BAM:
             for _listener in self.j1939_notifier.listeners:
@@ -359,7 +376,8 @@ class Bus(BusABC):
                         _cts_arbitration_id.pgn.pdu_specific = msg.arbitration_id.source_address
                         _data = [0x11, msg.data[4], 0x01, 0xFF, 0xFF]
                         _data.extend(msg.data[5:])
-                        cts_msg = Message(extended_id=True, arbitration_id=_cts_arbitration_id.can_id, data=_data, dlc=8)
+                        cts_msg = Message(extended_id=True, arbitration_id=_cts_arbitration_id.can_id, data=_data,
+                                          dlc=8)
 
                         # send clear to send
                         self.can_bus.send(cts_msg)
@@ -367,36 +385,51 @@ class Bus(BusABC):
 
     def _process_cts(self, msg):
         if msg.arbitration_id.pgn.pdu_specific in self._incomplete_transmitted_pdus:
-            if msg.arbitration_id.source_address in self._incomplete_transmitted_pdus[msg.arbitration_id.pgn.pdu_specific]:
+            if msg.arbitration_id.source_address in self._incomplete_transmitted_pdus[
+                msg.arbitration_id.pgn.pdu_specific]:
                 # Next packet number in CTS message (Packet numbers start at 1 not 0)
                 start_index = msg.data[2] - 1
                 # Using total number of packets in CTS message
                 end_index = start_index + msg.data[1]
-                for _msg in self._incomplete_transmitted_pdus[msg.arbitration_id.pgn.pdu_specific][msg.arbitration_id.source_address][start_index:end_index]:
+                for _msg in self._incomplete_transmitted_pdus[msg.arbitration_id.pgn.pdu_specific][
+                                msg.arbitration_id.source_address][start_index:end_index]:
                     self.can_bus.send(_msg)
 
     def _process_eom_ack(self, msg):
         if (msg.arbitration_id.pgn.value - msg.arbitration_id.pgn.pdu_specific) == constants.PGN_TP_DATA_TRANSFER:
-            self._incomplete_received_pdus[msg.arbitration_id.source_address][msg.arbitration_id.pgn.pdu_specific].timestamp = msg.timestamp
-            retval = copy.deepcopy(self._incomplete_received_pdus[msg.arbitration_id.source_address][msg.arbitration_id.pgn.pdu_specific])
-            retval.data = retval.data[:self._incomplete_received_pdu_lengths[msg.arbitration_id.source_address][msg.arbitration_id.pgn.pdu_specific]["total"]]
+            self._incomplete_received_pdus[msg.arbitration_id.source_address][
+                msg.arbitration_id.pgn.pdu_specific].timestamp = msg.timestamp
+            retval = copy.deepcopy(
+                self._incomplete_received_pdus[msg.arbitration_id.source_address][msg.arbitration_id.pgn.pdu_specific])
+            retval.data = retval.data[:self._incomplete_received_pdu_lengths[msg.arbitration_id.source_address][
+                msg.arbitration_id.pgn.pdu_specific]["total"]]
             del self._incomplete_received_pdus[msg.arbitration_id.source_address][msg.arbitration_id.pgn.pdu_specific]
-            del self._incomplete_received_pdu_lengths[msg.arbitration_id.source_address][msg.arbitration_id.pgn.pdu_specific]
+            del self._incomplete_received_pdu_lengths[msg.arbitration_id.source_address][
+                msg.arbitration_id.pgn.pdu_specific]
         else:
             if msg.arbitration_id.pgn.pdu_specific in self._incomplete_received_pdus:
-                if msg.arbitration_id.source_address in self._incomplete_received_pdus[msg.arbitration_id.pgn.pdu_specific]:
-                    self._incomplete_received_pdus[msg.arbitration_id.pgn.pdu_specific][msg.arbitration_id.source_address].timestamp = msg.timestamp
-                    retval = copy.deepcopy(self._incomplete_received_pdus[msg.arbitration_id.pgn.pdu_specific][msg.arbitration_id.source_address])
-                    retval.data = retval.data[:self._incomplete_received_pdu_lengths[msg.arbitration_id.pgn.pdu_specific][msg.arbitration_id.source_address]["total"]]
-                    del self._incomplete_received_pdus[msg.arbitration_id.pgn.pdu_specific][msg.arbitration_id.source_address]
-                    del self._incomplete_received_pdu_lengths[msg.arbitration_id.pgn.pdu_specific][msg.arbitration_id.source_address]
+                if msg.arbitration_id.source_address in self._incomplete_received_pdus[
+                    msg.arbitration_id.pgn.pdu_specific]:
+                    self._incomplete_received_pdus[msg.arbitration_id.pgn.pdu_specific][
+                        msg.arbitration_id.source_address].timestamp = msg.timestamp
+                    retval = copy.deepcopy(self._incomplete_received_pdus[msg.arbitration_id.pgn.pdu_specific][
+                        msg.arbitration_id.source_address])
+                    retval.data = retval.data[:
+                    self._incomplete_received_pdu_lengths[msg.arbitration_id.pgn.pdu_specific][
+                        msg.arbitration_id.source_address]["total"]]
+                    del self._incomplete_received_pdus[msg.arbitration_id.pgn.pdu_specific][
+                        msg.arbitration_id.source_address]
+                    del self._incomplete_received_pdu_lengths[msg.arbitration_id.pgn.pdu_specific][
+                        msg.arbitration_id.source_address]
                 else:
                     retval = None
             else:
                 retval = None
             if msg.arbitration_id.pgn.pdu_specific in self._incomplete_transmitted_pdus:
-                if msg.arbitration_id.source_address in self._incomplete_transmitted_pdus[msg.arbitration_id.pgn.pdu_specific]:
-                    del self._incomplete_transmitted_pdus[msg.arbitration_id.pgn.pdu_specific][msg.arbitration_id.source_address]
+                if msg.arbitration_id.source_address in self._incomplete_transmitted_pdus[
+                    msg.arbitration_id.pgn.pdu_specific]:
+                    del self._incomplete_transmitted_pdus[msg.arbitration_id.pgn.pdu_specific][
+                        msg.arbitration_id.source_address]
 
         return retval
 
@@ -406,7 +439,8 @@ class Bus(BusABC):
     def _process_abort(self, msg):
         if msg.arbitration_id.pgn.pdu_specific in self._incomplete_received_pdus:
             if msg.source in self._incomplete_received_pdus[msg.arbitration_id.pgn.pdu_specific]:
-                del self._incomplete_received_pdus[msg.arbitration_id.pgn.pdu_specific][msg.arbitration_id.source_address]
+                del self._incomplete_received_pdus[msg.arbitration_id.pgn.pdu_specific][
+                    msg.arbitration_id.source_address]
 
     def _throttler_function(self):
         while self.can_notifier.running.is_set():

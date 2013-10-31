@@ -45,8 +45,8 @@ class PDU(object):
         if self.destination != other.destination:
             return False
         return True
-    
-    
+
+
     @property
     def pgn(self):
         if self.arbitration_id.pgn.is_destination_specific:
@@ -91,7 +91,7 @@ class PDU(object):
     def data_segments(self, segment_length=8):
         retval = []
         for i in range(0, len(self.data), segment_length):
-            retval.append(self.data[i:i+min(segment_length, (len(self.data) - i))])
+            retval.append(self.data[i:i + min(segment_length, (len(self.data) - i))])
         return retval
 
     def check_equality(self, other, fields, debug=False):
@@ -109,18 +109,18 @@ class PDU(object):
             except AttributeError:
                 logger.warning("'%s' not found in 'self'" % field)
                 return False
-                
+
             try:
                 other_value = getattr(other, field)
             except AttributeError:
                 logger.debug("'%s' not found in 'other'" % field)
                 return False
-                
+
             if debug:
                 self.info_strings.append("%s: %s, %s" % (field, own_value, other_value))
             if own_value != other_value:
                 return False
-                
+
         logger.debug("Messages match")
         return retval
 

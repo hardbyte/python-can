@@ -54,7 +54,8 @@ class ArbitrationID(object):
 
     def __str__(self):
         if self.destination_address is not None:
-            retval = "PRI=%d PGN=%6s DST=0x%.2x SRC=0x%.2x" % (self.priority, self.pgn, self.destination_address, self.source_address)
+            retval = "PRI=%d PGN=%6s DST=0x%.2x SRC=0x%.2x" % (
+            self.priority, self.pgn, self.destination_address, self.source_address)
         else:
             retval = "PRI=%d PGN=%6s          SRC=0x%.2x" % (self.priority, self.pgn, self.source_address)
         return retval
