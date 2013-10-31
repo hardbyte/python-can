@@ -62,9 +62,6 @@ class Bus(BusABC):
         self._incomplete_transmitted_pdus = {}
         self._long_message_segment_queue = Queue(0)
 
-        # This appears to be the sleep time...? TODO maybe delete
-        self._long_message_segment_interval = constants.LONG_MESSAGE_SEGMENT_TRANSMISSION_INTERVAL
-
         # Convert J1939 filters into Raw Can filters
 
         if 'j1939_filters' in kwargs and kwargs['j1939_filters'] is not None:
@@ -87,7 +84,7 @@ class Bus(BusABC):
                     # filter by source
                     can_mask |= 0xFF
                     can_id |= filt['source']
-                    print("added source", filt)
+                    logger.info("added source", filt)
 
                 logger.info("Adding CAN ID filter: {:0x}:{:0x}".format(can_id, can_mask))
                 can_filters.append({"can_id": can_id, "can_mask": can_mask})
@@ -96,6 +93,7 @@ class Bus(BusABC):
         logger.debug("Creating a new can bus")
         self.can_bus = RawCanBus(*args, **kwargs)
         self.can_notifier = Notifier(self.can_bus, [self.rx_can_message_queue.put])
+        self.j1939_notifier = Notifier(self, [])
 
         self._long_message_throttler.start()
 
@@ -231,6 +229,7 @@ class Bus(BusABC):
     def shutdown(self):
         self.can_notifier.running.clear()
         self.can_bus.shutdown()
+        self.j1939_notifier.running.clear()
         super(Bus, self).shutdown()
 
     def _process_incoming_message(self, msg):
@@ -289,14 +288,14 @@ class Bus(BusABC):
 
                     # Find a Node object so we can search its list of known node addresses for this node
                     # so we can find if we are responsible for sending the EOM ACK message
-                    send_ack = any(True for l in self.can_notifier.listeners
+                    send_ack = any(True for l in self.j1939_notifier.listeners
                                    if isinstance(l, Node) and (l.address == pdu_specific or
                                                                pdu_specific in l.address_list))
                     if send_ack:
-                        eom_ack = self._pdu_type()
-                        eom_ack.arbitration_id.pgn.value = constants.PGN_TP_CONNECTION_MANAGEMENT
-                        eom_ack.arbitration_id.pgn.pdu_specific = msg_source
-                        eom_ack.arbitration_id.source_address = pdu_specific
+                        arbitration_id = ArbitrationID()
+                        arbitration_id.pgn.value = constants.PGN_TP_CONNECTION_MANAGEMENT
+                        arbitration_id.pgn.pdu_specific = msg_source
+                        arbitration_id.source_address = pdu_specific
                         total_length = self._incomplete_received_pdu_lengths[msg_source][pdu_specific]["total"]
                         _num_packages = self._incomplete_received_pdu_lengths[msg_source][pdu_specific]["num_packages"]
                         pgn = self._incomplete_received_pdus[msg_source][pdu_specific].arbitration_id.pgn
@@ -305,15 +304,20 @@ class Bus(BusABC):
                         _pgn_lsb = 0
 
                         div, mod = divmod(total_length, 256)
-                        eom_ack.data = [constants.CM_MSG_TYPE_EOM_ACK,
-                                        mod, #total_length % 256,
-                                        div, #total_length / 256,
-                                        _num_packages,
-                                        0xFF,
-                                        _pgn_lsb,
-                                        _pgn_middle,
-                                        pgn_msb]
-                        self.can_bus.send(eom_ack)
+                        can_message = Message(arbitration_id=arbitration_id.can_id,
+                                        extended_id=True,
+                                        dlc=8,
+                                        data=[constants.CM_MSG_TYPE_EOM_ACK,
+                                                mod, #total_length % 256,
+                                                div, #total_length / 256,
+                                                _num_packages,
+                                                0xFF,
+                                                _pgn_lsb,
+                                                _pgn_middle,
+                                                pgn_msb])
+                        self.can_bus.send(can_message)
+
+                    return self._process_eom_ack(msg)
 
     def _process_rts(self, msg):
         if msg.arbitration_id.source_address not in self._incomplete_received_pdus:
@@ -345,7 +349,7 @@ class Bus(BusABC):
         self._incomplete_received_pdu_lengths[msg.arbitration_id.source_address][msg.arbitration_id.pgn.pdu_specific] = {"total": _message_size, "chunk": 255, "num_packages": msg.data[3], }
 
         if msg.data[0] != constants.CM_MSG_TYPE_BAM:
-            for _listener in self.can_notifier.listeners:
+            for _listener in self.j1939_notifier.listeners:
                 if isinstance(_listener, Node):
                     # find a Node object so we can search its list of known node addresses
                     # for this node - if we find it we are responsible for sending the CTS message
@@ -369,10 +373,7 @@ class Bus(BusABC):
                 # Using total number of packets in CTS message
                 end_index = start_index + msg.data[1]
                 for _msg in self._incomplete_transmitted_pdus[msg.arbitration_id.pgn.pdu_specific][msg.arbitration_id.source_address][start_index:end_index]:
-                    if self._long_message_segment_interval > 0:
-                        self._long_message_segment_queue.put_nowait(_msg)
-                    else:
-                        self.can_bus.send(_msg)
+                    self.can_bus.send(_msg)
 
     def _process_eom_ack(self, msg):
         if (msg.arbitration_id.pgn.value - msg.arbitration_id.pgn.pdu_specific) == constants.PGN_TP_DATA_TRANSFER:
@@ -416,7 +417,6 @@ class Bus(BusABC):
                 pass
             if _msg is not None:
                 self.can_bus.send(_msg)
-            time.sleep(self._long_message_segment_interval)
 
     @property
     def transmissions_in_progress(self):

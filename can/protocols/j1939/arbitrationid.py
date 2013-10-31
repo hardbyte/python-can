@@ -13,12 +13,6 @@ class ArbitrationID(object):
         :param int source_address:
             Between 0 and 255.
         """
-        if pgn is None:
-            pgn = PGN()
-        if isinstance(pgn, int):
-            pgn = PGN.from_value(pgn)
-
-        assert isinstance(pgn, PGN)
         self.priority = priority
         self.pgn = pgn
         self.source_address = source_address
@@ -44,6 +38,19 @@ class ArbitrationID(object):
             return self.pgn.pdu_specific
         else:
             return None
+
+    @property
+    def pgn(self):
+        return self._pgn
+
+    @pgn.setter
+    def pgn(self, other):
+        if other is None:
+            self._pgn = PGN()
+        elif not isinstance(other, PGN):
+            self._pgn = PGN.from_value(other)
+        else:
+            self._pgn = other
 
     def __str__(self):
         if self.destination_address is not None:
