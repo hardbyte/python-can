@@ -23,9 +23,6 @@ class PDU(object):
         :param bytes/bytearray/list data:
             With length up to 1785.
         """
-        if arbitration_id is None:
-            arbitration_id = ArbitrationID()
-        assert isinstance(arbitration_id, ArbitrationID)
         if data is None:
             data = []
         if info_strings is None:
@@ -70,6 +67,19 @@ class PDU(object):
     @property
     def is_address_claim(self):
         return self.pgn == PGN_AC_ADDRESS_CLAIMED
+
+    @property
+    def arbitration_id(self):
+        return self._arbitration_id
+
+    @arbitration_id.setter
+    def arbitration_id(self, other):
+        if other is None:
+            self._arbitration_id = ArbitrationID()
+        elif not isinstance(other, ArbitrationID):
+            self._arbitration_id = ArbitrationID(other)
+        else:
+            self._arbitration_id = other
 
     def _check_data(self, value):
         assert len(value) <= 1785, 'Too much data to fit in a j1939 CAN message. Got {0} bytes'.format(len(value))
