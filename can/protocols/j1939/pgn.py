@@ -1,5 +1,4 @@
 class PGN(object):
-
     def __init__(self, reserved_flag=False, data_page_flag=False, pdu_format=0, pdu_specific=0):
         self.reserved_flag = reserved_flag
         self.data_page_flag = data_page_flag

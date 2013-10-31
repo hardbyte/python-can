@@ -1,7 +1,7 @@
 import logging
+
 log = logging.getLogger('py1939.node')
 log.info('Loading J1939 node')
-
 
 from can import Listener, CanError
 from can.protocols.j1939.constants import *
@@ -34,6 +34,7 @@ class Node(Listener):
     :param pdu_type:
         The pdu class to use when returning messages. 
     """
+
     def __init__(self, bus, name, address_list, pdu_type=PDU):
         self.bus = bus
         self.node_name = name
@@ -54,7 +55,7 @@ class Node(Listener):
         claimed_address_pdu.arbitration_id.pgn.value = PGN_AC_ADDRESS_CLAIMED
         claimed_address_pdu.arbitration_id.priority = 4
         claimed_address_pdu.arbitration_id.pgn.pdu_specific = 0xff
-        claimed_address_pdu.arbitration_id.source_address = address        
+        claimed_address_pdu.arbitration_id.source_address = address
         claimed_address_pdu.data = self.node_name.bytes
         self.known_node_addresses[self.node_name.value] = address
         self.bus.send(claimed_address_pdu)
