@@ -25,6 +25,7 @@ class Bus(BusABC):
 
     def __init__(self,
                  channel=can.rc['channel'],
+                 receive_own_messages=False,
                  *args, **kwargs):
         """
         :param str channel:
@@ -36,6 +37,10 @@ class Bus(BusABC):
         
         log.debug("Result of createSocket was {}".format(self.socket))
         error = bindSocket(self.socket, channel)
+
+        if receive_own_messages:
+            error1 = recv_own_msgs(self.socket)
+
         super(Bus, self).__init__(*args, **kwargs)
 
     def recv(self, timeout=None):
@@ -241,6 +246,14 @@ def connectSocket(socketID, channel_name):
 
     return error
 
+def recv_own_msgs(socket_id):
+    setting = ctypes.c_int(1)
+    error = libc.setsockopt(socket_id, SOL_CAN_RAW, CAN_RAW_RECV_OWN_MSGS, ctypes.byref(setting), ctypes.sizeof(setting))
+
+    if error < 0:
+        log.error("Couldn't set recv own msgs")
+
+    return error
 
 def _build_can_frame(message):
     log.debug("Packing a can frame")
