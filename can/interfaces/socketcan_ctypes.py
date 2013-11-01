@@ -273,7 +273,7 @@ def sendPacket(socket, message):
     frame = _build_can_frame(message)
     bytes_sent = libc.write(socket, ctypes.byref(frame), ctypes.sizeof(frame))
     if bytes_sent == -1:
-        logging.error("Error sending frame :-/")
+        logging.debug("Error sending frame :-/")
 
     return bytes_sent
 
@@ -384,7 +384,7 @@ class CyclicSendTask(SocketCanCtypesBCMBase, CyclicSendTaskABC):
         log.info("Sending BCM TX_SETUP command")
         bytes_sent = libc.send(self.bcm_socket, ctypes.byref(frame), ctypes.sizeof(frame))
         if bytes_sent == -1:
-            logging.error("Error sending frame :-/")
+            logging.debug("Error sending frame :-/")
 
     def start(self):
         self._tx_setup()
@@ -411,7 +411,7 @@ class CyclicSendTask(SocketCanCtypesBCMBase, CyclicSendTaskABC):
 
         bytes_sent = libc.send(self.bcm_socket, ctypes.byref(frame), ctypes.sizeof(frame))
         if bytes_sent == -1:
-            logging.warning("Error sending frame to stop cyclic message:-/")
+            logging.debug("Error sending frame to stop cyclic message:-/")
 
     def modify_data(self, message):
         """Update the contents of this periodically sent message.
@@ -447,7 +447,7 @@ class MultiRateCyclicSendTask(CyclicSendTask):
         log.info("Sending BCM TX_SETUP command")
         bytes_sent = libc.send(self.bcm_socket, ctypes.byref(frame), ctypes.sizeof(frame))
         if bytes_sent == -1:
-            logging.error("Error sending frame :-/")
+            logging.debug("Error sending frame :-/")
 
 if __name__ == "__main__":
     socket_id = createSocket(CAN_RAW)
