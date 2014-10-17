@@ -74,7 +74,7 @@ class ControllerAreaNetworkTestCase(unittest.TestCase):
 
         t = threading.Thread(target=self.producer, args=(ready, msg_read))
         t.start()
-        
+
         # Ensure there are no messages on the bus
         while True:
             m = self.server_bus.recv(timeout=0.5)

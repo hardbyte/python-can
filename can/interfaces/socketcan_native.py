@@ -226,10 +226,10 @@ def capturePacket(sock):
     """
     # Fetching the Arb ID, DLC and Data
     cf, addr = sock.recvfrom(can_frame_size)
-    
+
     can_id, can_dlc, data = dissect_can_frame(cf)
     log.debug('Received: can_id=%x, can_dlc=%x, data=%s' % (can_id, can_dlc, data))
-    
+
     # Fetching the timestamp
     binary_structure = "@LL"
     res = fcntl.ioctl(sock, SIOCGSTAMP, struct.pack(binary_structure, 0, 0))
@@ -259,7 +259,7 @@ def capturePacket(sock):
 
 class Bus(BusABC):
     channel_info = "native socketcan channel"
-    
+
     def __init__(self, channel, **kwargs):
         """
         :param str channel:
@@ -353,5 +353,5 @@ if __name__ == "__main__":
     e = threading.Event()
     threading.Thread(target=receiver, args=(e,)).start()
     threading.Thread(target=sender, args=(e,)).start()
-    
+
 

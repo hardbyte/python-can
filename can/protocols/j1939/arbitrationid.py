@@ -6,10 +6,10 @@ class ArbitrationID(object):
         """
         :param int priority:
             Between 0 and 7, where 0 is highest priority.
-        
+
         :param :class:`can.protocols.j1939.PGN`/int pgn:
             The parameter group number.
-        
+
         :param int source_address:
             Between 0 and 255.
         """

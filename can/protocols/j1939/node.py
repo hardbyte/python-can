@@ -24,15 +24,15 @@ class InaccessibleDestinationError(J1939Error):
 class Node(Listener):
     """
     A j1939.Node will claim an address when it sees a j1939 address claim
-    and after address claim send any messages with its source address. 
-    
+    and after address claim send any messages with its source address.
+
     :param :class:`can.Bus` bus:
     :param :class:`can.protocols.j1939.NodeName` name:
     :param list(int) address_list:
         A list of potential addresses that this Node will use when claiming
         an address.
     :param pdu_type:
-        The pdu class to use when returning messages. 
+        The pdu class to use when returning messages.
     """
 
     def __init__(self, bus, name, address_list, pdu_type=PDU):
