@@ -207,7 +207,10 @@ PCAN_TYPE_DNG_SJA_EPP    = TPCANType(0x06)  # PCAN-Dongle EPP SJA1000
 
 # Represents a PCAN message
 #
+
+
 class TPCANMsg (Structure):
+
     """
     Represents a PCAN message
     """
@@ -219,7 +222,10 @@ class TPCANMsg (Structure):
 # Represents a timestamp of a received PCAN message
 # Total Microseconds = micros + 1000 * millis + 0xFFFFFFFF * 1000 * millis_overflow
 #
+
+
 class TPCANTimestamp (Structure):
+
     """
     Represents a timestamp of a received PCAN message
     Total Microseconds = micros + 1000 * millis + 0xFFFFFFFF * 1000 * millis_overflow
@@ -234,10 +240,14 @@ class TPCANTimestamp (Structure):
 
 # PCAN-Basic API class implementation
 #
+
+
 class PCANBasic:
+
     """
       PCAN-Basic API class implementation
     """
+
     def __init__(self):
         # Loads the PCANBasic.dll
         #
@@ -254,7 +264,6 @@ class PCANBasic:
         HwType = TPCANType(0),
         IOPort = c_uint(0),
         Interrupt = c_ushort(0)):
-
         """
           Initializes a PCAN Channel
 
@@ -280,7 +289,6 @@ class PCANBasic:
     def Uninitialize(
         self,
         Channel):
-
         """
           Uninitializes one or all PCAN Channels initialized by CAN_Initialize
 
@@ -305,7 +313,6 @@ class PCANBasic:
     def Reset(
         self,
         Channel):
-
         """
           Resets the receive and transmit queues of the PCAN Channel
 
@@ -330,7 +337,6 @@ class PCANBasic:
     def GetStatus(
         self,
         Channel):
-
         """
           Gets the current status of a PCAN Channel
 
@@ -352,7 +358,6 @@ class PCANBasic:
     def Read(
         self,
         Channel):
-
         """
           Reads a CAN message from the receive queue of a PCAN Channel
 
@@ -385,7 +390,6 @@ class PCANBasic:
         self,
         Channel,
         MessageBuffer):
-
         """
           Transmits a CAN message
 
@@ -411,7 +415,6 @@ class PCANBasic:
         FromID,
         ToID,
         Mode):
-
         """
           Configures the reception filter
 
@@ -442,7 +445,6 @@ class PCANBasic:
         self,
         Channel,
         Parameter):
-
         """
           Retrieves a PCAN Channel value
 
@@ -482,7 +484,6 @@ class PCANBasic:
         Channel,
         Parameter,
         Buffer):
-
         """
           Returns a descriptive text of a given TPCANStatus error
           code, in any desired language
@@ -518,7 +519,6 @@ class PCANBasic:
         self,
         Error,
         Language = 0):
-
         """
           Configures or sets a PCAN Channel value
 
@@ -546,36 +546,3 @@ class PCANBasic:
         except:
             print("Exception on PCANBasic.GetErrorText")
             raise
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

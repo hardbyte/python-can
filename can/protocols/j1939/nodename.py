@@ -2,6 +2,7 @@ from .constants import j1939_industry_groups
 
 
 class NodeName(object):
+
     def __init__(self, value=0):
         self.value = value
 
@@ -168,4 +169,3 @@ class NodeName(object):
 
     def __repr__(self):
         return self.__str__()
-

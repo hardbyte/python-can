@@ -65,7 +65,5 @@ class Bus(BusABC):
             else:
                 return None
 
-
         else:
             return None
-

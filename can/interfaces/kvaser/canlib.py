@@ -53,6 +53,7 @@ def __get_canlib_function(func_name, argtypes=None, restype=None, errcheck=None)
 
 
 class CANLIBError(CanError):
+
     """
     Try to display errors that occur within the wrapped C library nicely.
     """
@@ -79,6 +80,7 @@ class ChannelNotFoundError(CANLIBError):
 
 
 class Message(MessageBase):
+
     """
     The canlib sdk requires the flags to be calculated so we extend Message.
     """
@@ -123,6 +125,7 @@ class c_canHandle(ctypes.c_int):
     pass
 
 canINVALID_HANDLE = -1
+
 
 def __handle_is_valid(handle):
     return (handle.value > canINVALID_HANDLE)
@@ -253,6 +256,8 @@ if sys.platform == "win32":
                                             argtypes=[ctypes.c_uint],
                                             restype=ctypes.c_uint,
                                             errcheck=__check_status)
+
+
 def init_kvaser_library():
     try:
         log.debug("Initializing Kvaser CAN library")
@@ -260,6 +265,7 @@ def init_kvaser_library():
         log.debug("CAN library initialized")
     except:
         logging.warning("Kvaser canlib is unavailable.")
+
 
 def lookup_transceiver_type(typename):
     if typename in canstat.canTransceiverTypeStrings:
@@ -283,9 +289,11 @@ DRIVER_MODE_NORMAL = True
 
 
 class Bus(BusABC):
+
     """
     The CAN Bus implemented for the Kvaser interface.
     """
+
     def __init__(self, channel, can_filters=None, **config):
         """
         :param int channel:
@@ -383,7 +391,6 @@ class Bus(BusABC):
         """
         canIoCtl(self._write_handle, canstat.canIOCTL_FLUSH_TX_BUFFER, 0, 0)
 
-
     def __convert_timestamp(self, value):
         # The kvaser seems to zero times
         # Use the current value if the offset has not been set yet
@@ -409,7 +416,6 @@ class Bus(BusABC):
             # If we see a timestamp that is quicker than the ever before, update the offset
             self.pc_time_offset += lag
         return timestamp
-
 
     def recv(self, timeout=None):
         """
@@ -447,7 +453,6 @@ class Bus(BusABC):
             # Don't want to keep the done_writing condition's Lock
             self.done_writing.release()
 
-
         if status == canstat.canOK:
             log.debug('read complete -> status OK')
             data_array = list(map(ord, data))
@@ -463,7 +468,6 @@ class Bus(BusABC):
         else:
             log.debug('read complete -> status not okay')
 
-
     def send(self, tx_msg):
         #log.debug("Writing a message: {}".format(tx_msg))
         ArrayConstructor = ctypes.c_byte * tx_msg.dlc
@@ -475,7 +479,6 @@ class Bus(BusABC):
                      tx_msg.flags,
                      5)
 
-
     def shutdown(self):
         self.__threads_running = False
         canBusOff(self._write_handle)
@@ -483,4 +486,3 @@ class Bus(BusABC):
 
 
 init_kvaser_library()
-

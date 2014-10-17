@@ -56,6 +56,7 @@ class CyclicSendTaskABC(CyclicTask):
 
 
 class MultiRateCyclicSendTaskABC(CyclicSendTaskABC):
+
     """Exposes more of the full power of the TX_SETUP opcode.
 
     Transmits a message `count` times at `initial_period` then
@@ -72,4 +73,3 @@ def send_periodic(channel, message, period):
 
     """
     return can.interfaces.interface.CyclicSendTask(channel, message, period)
-

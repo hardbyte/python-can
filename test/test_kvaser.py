@@ -27,7 +27,6 @@ class KvaserTest(unittest.TestCase):
             canlib.canSetBusOutputControl = Mock()
             canlib.canWriteWait = Mock()
 
-
             b = interface.Bus(0)
 
             canlib.canGetNumberOfChannels.assert_called_once()

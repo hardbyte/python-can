@@ -8,6 +8,7 @@ Copyright (C) 2010 Dynamic Controls
 """
 import ctypes
 
+
 class c_canStatus(ctypes.c_int):
     pass
 

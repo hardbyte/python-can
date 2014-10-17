@@ -19,6 +19,7 @@ from can.interfaces.socketcan_ctypes import *
 
 
 class ControllerAreaNetworkTestCase(unittest.TestCase):
+
     """
     This test ensures that what messages go in to the bus is what comes out.
     It relies on a vcan0 interface.
@@ -57,7 +58,6 @@ class ControllerAreaNetworkTestCase(unittest.TestCase):
             msg_read.wait()
             msg_read.clear()
             self.client_bus.send(m)
-
 
     def _testProducer(self):
         """Verify that we can send arbitrary messages on the bus"""

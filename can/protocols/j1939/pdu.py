@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 class PDU(object):
+
     """
     A PDU is a higher level abstraction of a CAN message.
     J1939 ensures that long messages are taken care of.
@@ -45,7 +46,6 @@ class PDU(object):
         if self.destination != other.destination:
             return False
         return True
-
 
     @property
     def pgn(self):
@@ -124,7 +124,6 @@ class PDU(object):
         logger.debug("Messages match")
         return retval
 
-
     def __str__(self):
         """
 
@@ -134,4 +133,3 @@ class PDU(object):
         # TODO group this into 8 bytes per line and line them up...
         data_string = " ".join("{:02d}".format(byte) for byte in self.data)
         return "{s.timestamp:15.6f}    {s.arbitration_id}    {data}".format(s=self, data=data_string)
-

@@ -6,6 +6,7 @@ logger = logging.getLogger(__name__)
 
 
 class BusABC(object):
+
     """CAN Bus Abstract Base Class
 
     Concrete implementations must implement the following methods:
@@ -34,7 +35,6 @@ class BusABC(object):
         :param dict config:
             Any backend dependent configurations are passed in this dictionary
         """
-
 
     @abc.abstractmethod
     def recv(self, timeout=None):
@@ -80,6 +80,5 @@ class BusABC(object):
 
     def shutdown(self):
         self.flush_tx_buffer()
-
 
     __metaclass__ = abc.ABCMeta
