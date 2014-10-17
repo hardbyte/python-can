@@ -37,7 +37,7 @@ class Listener(object):
             "{} has not implemented on_message_received".format(
                 self.__class__.__name__)
             )
-    
+
     def __call__(self, msg):
         return self.on_message_received(msg)
 
@@ -46,8 +46,8 @@ class BufferedReader(Listener):
     """
     A BufferedReader is a subclass of :class:`~can.Listener` which implements a
     **message buffer**: that is, when the :class:`can.BufferedReader` instance is
-    notified of a new message it pushes it into a queue of messages waiting to 
-    be serviced.    
+    notified of a new message it pushes it into a queue of messages waiting to
+    be serviced.
     """
     def __init__(self):
         self.buffer = queue.Queue(0)
@@ -70,11 +70,11 @@ class BufferedReader(Listener):
 class Printer(Listener):
     """
     The Printer class is a subclass of :class:`~can.Listener` which simply prints
-    any messages it receives to the terminal. 
-    
+    any messages it receives to the terminal.
+
     :param output_file: An optional file to "print" to.
     """
-    
+
     def __init__(self, output_file=None):
         if output_file is not None:
             log.info("Creating log file '{}' ".format(output_file))
@@ -94,22 +94,22 @@ class Printer(Listener):
 
 
 class CSVWriter(Listener):
-    """Writes a comma separated text file of 
+    """Writes a comma separated text file of
     timestamp, arbitrationid, flags, dlc, data
     for each messages received.
     """
 
     def __init__(self, filename):
         self.csv_file = open(filename, 'wt')
-        
+
         # Write a header row
         self.csv_file.write("timestamp, arbitrationid, flags, dlc, data")
 
     def on_message_received(self, msg):
-        row = ','.join([msg.timestamp, 
-                        msg.arbitration_id, 
-                        msg.flags, 
-                        msg.dlc, 
+        row = ','.join([msg.timestamp,
+                        msg.arbitration_id,
+                        msg.flags,
+                        msg.dlc,
                         msg.data])
         self.csv_file.write(row + '\n')
 

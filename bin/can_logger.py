@@ -22,17 +22,17 @@ import time
 import can
 
 if __name__ == "__main__":
-    
+
     parser = argparse.ArgumentParser(description="Log CAN traffic, printing messages to stdout or to a given file")
 
     parser.add_argument("-f", "--file_name", dest="log_file",
                         help="""Path and base log filename, extension can be .txt, .csv, .db, .npz""",
                         default=None)
 
-    parser.add_argument("-v", action="count", dest="verbosity", 
-                        help='''How much information do you want to see at the command line? 
+    parser.add_argument("-v", action="count", dest="verbosity",
+                        help='''How much information do you want to see at the command line?
                         You can add several of these e.g., -vv is DEBUG''', default=2)
-    
+
     parser.add_argument('-c', '--channel', help='''Most backend interfaces require some sort of channel.
     For example with the serial interface the channel might be a rfcomm device: /dev/rfcomm0
     Other channel examples are: can0, vcan0''', default=can.rc['channel'])

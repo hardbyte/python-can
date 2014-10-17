@@ -1,5 +1,5 @@
 """
-A protocol redefines Bus and Message. 
+A protocol redefines Bus and Message.
 """
 
 #import j1939

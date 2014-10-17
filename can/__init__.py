@@ -4,7 +4,7 @@ can is an object-orient Controller Area Network interface module.
 Modules include:
 
     :mod:`can.message`
-        defines the :class:`~can.Message` class which is the 
+        defines the :class:`~can.Message` class which is the
         lowest level of OO access to the library.
 
 """
@@ -27,4 +27,3 @@ rc = load_config()
 log.debug("RC: {}".format(rc))
 
 from can.interfaces import interface
-

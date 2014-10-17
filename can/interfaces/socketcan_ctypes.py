@@ -31,10 +31,10 @@ class Bus(BusABC):
         :param str channel:
             The can interface name with which to create this bus. An example channel
             would be 'vcan0'.
-        """    
+        """
 
         self.socket = createSocket()
-        
+
         log.debug("Result of createSocket was {}".format(self.socket))
         error = bindSocket(self.socket, channel)
 
@@ -171,7 +171,7 @@ def createSocket(protocol=CAN_RAW):
         socketID = libc.socket(PF_CAN, SOCK_DGRAM, CAN_BCM)
     else:
         socketID = -1
-        
+
     return socketID
 
 
@@ -194,14 +194,14 @@ def bindSocket(socketID, channel_name):
     """
     log.debug('Binding socket with id {} to channel {}'.format(socketID, channel_name))
     socketID = ctypes.c_int(socketID)
-    
+
     ifr = IFREQ()
     ifr.ifr_name = channel_name.encode('ascii')
     log.debug('calling ioctl SIOCGIFINDEX')
     # ifr.ifr_ifindex gets filled with that device's index
     libc.ioctl(socketID, SIOCGIFINDEX, ctypes.byref(ifr))
     log.info('ifr.ifr_ifindex: {}'.format(ifr.ifr_ifindex))
-    
+
     # select the CAN interface and bind the socket to it
     addr = SOCKADDR_CAN(AF_CAN, ifr.ifr_ifindex)
 
@@ -312,22 +312,22 @@ def capturePacket(socketID):
 
     """
     packet = {}
-    
+
     frame = CAN_FRAME()
     time = TIME_VALUE()
-    
+
     # Fetching the Arb ID, DLC and Data
     bytes_read = libc.read(socketID, ctypes.byref(frame), sys.getsizeof(frame))
 
     # Fetching the timestamp
     error = libc.ioctl(socketID, SIOCGSTAMP, ctypes.byref(time))
-    
+
     packet['CAN ID'] = frame.can_id
     packet['DLC'] = frame.can_dlc
     packet["Data"] = [frame.data[i] for i in range(frame.can_dlc)]
 
     timestamp = time.tv_sec + (time.tv_usec / 1000000.0)
-    
+
     packet['Timestamp'] = timestamp
 
     return packet

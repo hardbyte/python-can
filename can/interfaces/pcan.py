@@ -27,7 +27,7 @@ class Bus(BusABC):
 
     def __init__(self, channel, *args, **kwargs):
         """A PCAN USB interface to CAN.
-        
+
         :param str channel:
             The can interface name.  An example would be PCAN_USBBUS1
         """
@@ -48,7 +48,7 @@ class Bus(BusABC):
 
         if result != PCAN_ERROR_OK:
             raise Exception(self.GetFormattedError(result))
-            
+
         super(Bus, self).__init__(*args, **kwargs)
 
     def GetFormattedError(self, error):
@@ -62,7 +62,7 @@ class Bus(BusABC):
             return "An error occurred. Error-code's text ({0:X}h) couldn't be retrieved".format(error)
         else:
             return stsReturn[1]
-    
+
     def recv(self, timeout=None):
         rx_msg = Message()
 
@@ -80,7 +80,7 @@ class Bus(BusABC):
         log.debug("I've got a message")
 
         arbitration_id = theMsg.ID
-        
+
         bIsRTR = (theMsg.MSGTYPE & PCAN_MESSAGE_RTR.value) == PCAN_MESSAGE_RTR.value
         bIsExt = (theMsg.MSGTYPE & PCAN_MESSAGE_EXTENDED.value) == PCAN_MESSAGE_EXTENDED.value
 
@@ -133,4 +133,4 @@ class Bus(BusABC):
         result = self.m_objPCANBasic.Write(self.m_PcanHandle, CANMsg)
 
         if result != PCAN_ERROR_OK:
-            logging.error("Error sending frame :-/ " + self.GetFormattedError(result))            
+            logging.error("Error sending frame :-/ " + self.GetFormattedError(result))

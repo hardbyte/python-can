@@ -11,15 +11,15 @@ class BusABC(object):
     Concrete implementations must implement the following methods:
         * send
         * recv
-        
+
     As well as setting the `channel_info` attribute to a string describing the
     interface.
-    
+
     """
-    
+
     #: a string describing the underlying bus channel
     channel_info = 'unknown'
-    
+
     @abc.abstractmethod
     def __init__(self, channel=None, can_filters=None, **config):
         """
@@ -30,16 +30,16 @@ class BusABC(object):
             A list of dictionaries each containing a "can_id" and a "can_mask".
 
             >>> [{"can_id": 0x11, "can_mask": 0x21}]
-        
+
         :param dict config:
             Any backend dependent configurations are passed in this dictionary
         """
-        
+
 
     @abc.abstractmethod
     def recv(self, timeout=None):
-        """Block waiting for a message from the Bus.  
-        
+        """Block waiting for a message from the Bus.
+
         :return:
             None on timeout or a :class:`can.Message` object.
         """

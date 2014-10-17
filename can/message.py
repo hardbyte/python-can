@@ -6,7 +6,7 @@ class Message(object):
     """
     Represents a CAN message.
     """
-    
+
     def __init__(self, timestamp=0.0, is_remote_frame=False, extended_id=True,
                  is_error_frame=False, arbitration_id=0, dlc=None, data=None):
 
@@ -32,7 +32,7 @@ class Message(object):
             self.dlc = dlc
 
         assert self.dlc <= 8, "data link count was {} but it must be less than or equal to 8".format(self.dlc)
-    
+
     def __str__(self):
         field_strings = ["%15.6f" % self.timestamp]
         if self.id_type:
@@ -41,16 +41,16 @@ class Message(object):
         else:
             arbitration_id_string = "%.4x" % self.arbitration_id
         field_strings.append(arbitration_id_string.rjust(8, " "))
-        
-        flag_string = "".join(map(str, map(int, 
+
+        flag_string = "".join(map(str, map(int,
                                   [self.is_remote_frame,
                                    self.id_type,
                                    self.is_error_frame,
                                    ]))
                               )
-        
+
         field_strings.append(flag_string)
-        
+
         field_strings.append("%d" % self.dlc)
         data_strings = []
         if self.data is not None:
@@ -60,6 +60,6 @@ class Message(object):
             field_strings.append(" ".join(data_strings).ljust(24, " "))
         else:
             field_strings.append(" " * 24)
-        
+
         return "    ".join(field_strings).strip()
 
