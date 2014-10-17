@@ -24,7 +24,7 @@ class BusABC(object):
     def __init__(self, channel=None, can_filters=None, **config):
         """
         :param channel:
-            The can interface identifier. Expected type is backend dependant.
+            The can interface identifier. Expected type is backend dependent.
 
         :param list can_filters:
             A list of dictionaries each containing a "can_id" and a "can_mask".

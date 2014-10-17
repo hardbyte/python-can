@@ -146,7 +146,7 @@ PCAN_FILTER_CLOSE        = int(0x00)  # The PCAN filter is closed. No messages w
 PCAN_FILTER_OPEN         = int(0x01)  # The PCAN filter is fully opened. All messages will be received
 PCAN_FILTER_CUSTOM       = int(0x02)  # The PCAN filter is custom configured. Only registered messages will be received
 PCAN_CHANNEL_UNAVAILABLE = int(0x00)  # The PCAN-Channel handle is illegal, or its associated hadware is not available
-PCAN_CHANNEL_AVAILABLE   = int(0x01)  # The PCAN-Channel handle is available to be connected (Plug&Play Hardware: it means futhermore that the hardware is plugged-in)
+PCAN_CHANNEL_AVAILABLE   = int(0x01)  # The PCAN-Channel handle is available to be connected (Plug&Play Hardware: it means furthermore that the hardware is plugged-in)
 PCAN_CHANNEL_OCCUPIED    = int(0x02)  # The PCAN-Channel handle is valid, and is already being used
 
 LOG_FUNCTION_DEFAULT     = int(0x00)   # Logs system exceptions / errors
