@@ -26,4 +26,3 @@ def add_to_parser(parser):
 
                                 Three samples should only be used for relatively slow baudrates.""",
                         default=1)
-

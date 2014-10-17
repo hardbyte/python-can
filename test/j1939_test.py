@@ -77,12 +77,14 @@ class StaticJ1939Test(unittest.TestCase):
 
 
 class J1939BusTest(unittest.TestCase):
+
     def testCreateBus(self):
         self.bus = j1939.Bus(channel=can_interface)
         self.bus.shutdown()
 
 
 class NetworkJ1939Test(unittest.TestCase):
+
     """
 
     """
@@ -111,7 +113,6 @@ class NetworkJ1939Test(unittest.TestCase):
             sleep(0.050)
             self.bus.send(m)
 
-
     def testReceivingLongMessage(self):
         node = j1939.Node(self.bus, j1939.NodeName(0), [0x42, 0x01])
 
@@ -129,7 +130,6 @@ class NetworkJ1939Test(unittest.TestCase):
             # send a long message
             self.bus.send(m_out)
             attempts += 1
-
 
         self.assertIsNotNone(m_in, 'Should receive messages on can bus when sending long message')
         self.assertIsInstance(m_in, j1939.PDU)

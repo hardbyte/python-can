@@ -3,6 +3,7 @@ logger = logging.getLogger(__name__)
 
 
 class Message(object):
+
     """
     Represents a CAN message.
     """
@@ -62,4 +63,3 @@ class Message(object):
             field_strings.append(" " * 24)
 
         return "    ".join(field_strings).strip()
-

@@ -5,6 +5,7 @@ import json
 
 import can
 
+
 def parse_arguments():
     parser = argparse.ArgumentParser(
         description="Log J1939 traffic, printing messages to stdout or to a given file",

@@ -2,6 +2,7 @@ from can.protocols.j1939.pgn import PGN
 
 
 class ArbitrationID(object):
+
     def __init__(self, priority=7, pgn=None, source_address=0):
         """
         :param int priority:
@@ -17,11 +18,9 @@ class ArbitrationID(object):
         self.pgn = pgn
         self.source_address = source_address
 
-
     @property
     def can_id(self):
         return (self.source_address + (self.pgn.value << 8) + (self.priority << 26))
-
 
     @can_id.setter
     def can_id(self, value):
@@ -59,4 +58,3 @@ class ArbitrationID(object):
         else:
             retval = "PRI=%d PGN=%6s          SRC=0x%.2x" % (self.priority, self.pgn, self.source_address)
         return retval
-

@@ -193,6 +193,7 @@ htmlhelp_basename = 'python-can'
 
 
 class Mock(object):
+
     def __init__(self, *args, **kwargs):
         pass
 

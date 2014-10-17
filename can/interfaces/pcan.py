@@ -23,6 +23,7 @@ except:
 logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger('can.pcan')
 
+
 class Bus(BusABC):
 
     def __init__(self, channel, *args, **kwargs):
@@ -86,7 +87,6 @@ class Bus(BusABC):
 
         # Flags: EXT, RTR, ERR
         #flags = (PYCAN_RTRFLG if bIsRTR else 0) | (PYCAN_STDFLG if not bIsExt else 0)
-
 
         if bIsExt:
             #rx_msg.id_type = ID_TYPE_EXTENDED

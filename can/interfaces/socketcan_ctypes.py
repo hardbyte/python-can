@@ -18,6 +18,7 @@ log.info("Loading socketcan ctypes backend")
 
 
 class Bus(BusABC):
+
     """
     An implementation of the :class:`can.bus.BusABC` for SocketCAN using :mod:`ctypes`.
     """
@@ -246,6 +247,7 @@ def connectSocket(socketID, channel_name):
 
     return error
 
+
 def recv_own_msgs(socket_id):
     setting = ctypes.c_int(1)
     error = libc.setsockopt(socket_id, SOL_CAN_RAW, CAN_RAW_RECV_OWN_MSGS, ctypes.byref(setting), ctypes.sizeof(setting))
@@ -254,6 +256,7 @@ def recv_own_msgs(socket_id):
         log.error("Couldn't set recv own msgs")
 
     return error
+
 
 def _build_can_frame(message):
     log.debug("Packing a can frame")
@@ -354,7 +357,9 @@ def _create_bcm_frame(opcode, flags, count, ival1_seconds, ival1_usec, ival2_sec
 
 
 class SocketCanCtypesBCMBase(object):
+
     """Mixin to add a BCM socket"""
+
     def __init__(self, channel, *args, **kwargs):
         log.debug("Creating bcm socket on channel '{}'".format(channel))
         # Set up the bcm socket using ctypes
@@ -435,6 +440,7 @@ class CyclicSendTask(SocketCanCtypesBCMBase, CyclicSendTaskABC):
 
 
 class MultiRateCyclicSendTask(CyclicSendTask):
+
     """Exposes more of the full power of the TX_SETUP opcode.
 
     Transmits a message `count` times at `initial_period` then
@@ -466,4 +472,3 @@ if __name__ == "__main__":
     socket_id = createSocket(CAN_RAW)
     print("Created socket (id = {})".format(socket_id))
     print(bindSocket(socket_id))
-

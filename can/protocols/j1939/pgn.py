@@ -1,10 +1,10 @@
 class PGN(object):
+
     def __init__(self, reserved_flag=False, data_page_flag=False, pdu_format=0, pdu_specific=0):
         self.reserved_flag = reserved_flag
         self.data_page_flag = data_page_flag
         self.pdu_format = pdu_format
         self.pdu_specific = pdu_specific
-
 
     @property
     def is_pdu1(self):
@@ -22,7 +22,6 @@ class PGN(object):
     def value(self):
         _pgn_flags_byte = ((self.reserved_flag << 1) + self.data_page_flag)
         return int("%.2x%.2x%.2x" % (_pgn_flags_byte, self.pdu_format, self.pdu_specific), 16)
-
 
     @value.setter
     def value(self, value):

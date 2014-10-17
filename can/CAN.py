@@ -43,12 +43,14 @@ class Listener(object):
 
 
 class BufferedReader(Listener):
+
     """
     A BufferedReader is a subclass of :class:`~can.Listener` which implements a
     **message buffer**: that is, when the :class:`can.BufferedReader` instance is
     notified of a new message it pushes it into a queue of messages waiting to
     be serviced.
     """
+
     def __init__(self):
         self.buffer = queue.Queue(0)
 
@@ -68,6 +70,7 @@ class BufferedReader(Listener):
 
 
 class Printer(Listener):
+
     """
     The Printer class is a subclass of :class:`~can.Listener` which simply prints
     any messages it receives to the terminal.
@@ -94,6 +97,7 @@ class Printer(Listener):
 
 
 class CSVWriter(Listener):
+
     """Writes a comma separated text file of
     timestamp, arbitrationid, flags, dlc, data
     for each messages received.
@@ -119,6 +123,7 @@ class CSVWriter(Listener):
 
 
 class SqliteWriter(Listener):
+
     """TODO"""
 
     def __init__(self, filename):

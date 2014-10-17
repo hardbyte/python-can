@@ -22,6 +22,7 @@ class InaccessibleDestinationError(J1939Error):
 
 
 class Node(Listener):
+
     """
     A j1939.Node will claim an address when it sees a j1939 address claim
     and after address claim send any messages with its source address.

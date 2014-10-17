@@ -34,6 +34,7 @@ logger = logging.getLogger(__name__)
 
 
 class Bus(BusABC):
+
     """
     A CAN Bus that implements the J1939 Protocol.
 
