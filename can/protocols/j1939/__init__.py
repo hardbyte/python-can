@@ -153,7 +153,7 @@ class Bus(BusABC):
                 arbitration_id = copy.deepcopy(pdu.arbitration_id)
                 arbitration_id.pgn.value = constants.PGN_TP_DATA_TRANSFER
                 if pdu.arbitration_id.pgn.is_destination_specific and \
-                                pdu.arbitration_id.destination_address != constants.DESTINATION_ADDRESS_GLOBAL:
+                   pdu.arbitration_id.destination_address != constants.DESTINATION_ADDRESS_GLOBAL:
                     arbitration_id.pgn.pdu_specific = pdu.arbitration_id.pgn.pdu_specific
                 else:
                     arbitration_id.pgn.pdu_specific = constants.DESTINATION_ADDRESS_GLOBAL
@@ -165,7 +165,7 @@ class Bus(BusABC):
                 messages.append(message)
 
             if pdu.arbitration_id.pgn.is_destination_specific and \
-                            pdu.arbitration_id.destination_address != constants.DESTINATION_ADDRESS_GLOBAL:
+               pdu.arbitration_id.destination_address != constants.DESTINATION_ADDRESS_GLOBAL:
                 destination_address = pdu.arbitration_id.pgn.pdu_specific
                 if pdu.arbitration_id.source_address in self._incomplete_transmitted_pdus:
                     if destination_address in self._incomplete_transmitted_pdus[pdu.arbitration_id.source_address]:
@@ -189,7 +189,7 @@ class Bus(BusABC):
             pgn_lsb = (temp_pgn.value & 0x0000FF)
 
             if pdu.arbitration_id.pgn.is_destination_specific and \
-                            pdu.arbitration_id.destination_address != constants.DESTINATION_ADDRESS_GLOBAL:
+               pdu.arbitration_id.destination_address != constants.DESTINATION_ADDRESS_GLOBAL:
                 # send request to send
                 rts_msg = Message(extended_id=True,
                                   arbitration_id=rts_arbitration_id.can_id,
@@ -339,7 +339,7 @@ class Bus(BusABC):
             self._incomplete_received_pdus[msg.arbitration_id.source_address][0xFF].arbitration_id.pgn.value = int(
                 ("%.2X%.2X%.2X" % (msg.data[7], msg.data[6], msg.data[5])), 16)
             if self._incomplete_received_pdus[msg.arbitration_id.source_address][
-                0xFF].arbitration_id.pgn.is_destination_specific:
+                    0xFF].arbitration_id.pgn.is_destination_specific:
                 self._incomplete_received_pdus[msg.arbitration_id.source_address][
                     0xFF].arbitration_id.pgn.pdu_specific = msg.arbitration_id.pgn.pdu_specific
             self._incomplete_received_pdus[msg.arbitration_id.source_address][
@@ -357,7 +357,7 @@ class Bus(BusABC):
                 msg.arbitration_id.pgn.pdu_specific].arbitration_id.pgn.value = int(
                 ("%.2X%.2X%.2X" % (msg.data[7], msg.data[6], msg.data[5])), 16)
             if self._incomplete_received_pdus[msg.arbitration_id.source_address][
-                msg.arbitration_id.pgn.pdu_specific].arbitration_id.pgn.is_destination_specific:
+                    msg.arbitration_id.pgn.pdu_specific].arbitration_id.pgn.is_destination_specific:
                 self._incomplete_received_pdus[msg.arbitration_id.source_address][
                     msg.arbitration_id.pgn.pdu_specific].arbitration_id.pgn.pdu_specific = msg.arbitration_id.pgn.pdu_specific
             self._incomplete_received_pdus[msg.arbitration_id.source_address][
@@ -389,13 +389,13 @@ class Bus(BusABC):
     def _process_cts(self, msg):
         if msg.arbitration_id.pgn.pdu_specific in self._incomplete_transmitted_pdus:
             if msg.arbitration_id.source_address in self._incomplete_transmitted_pdus[
-                msg.arbitration_id.pgn.pdu_specific]:
+                    msg.arbitration_id.pgn.pdu_specific]:
                 # Next packet number in CTS message (Packet numbers start at 1 not 0)
                 start_index = msg.data[2] - 1
                 # Using total number of packets in CTS message
                 end_index = start_index + msg.data[1]
                 for _msg in self._incomplete_transmitted_pdus[msg.arbitration_id.pgn.pdu_specific][
-                                msg.arbitration_id.source_address][start_index:end_index]:
+                        msg.arbitration_id.source_address][start_index:end_index]:
                     self.can_bus.send(_msg)
 
     def _process_eom_ack(self, msg):
@@ -412,14 +412,14 @@ class Bus(BusABC):
         else:
             if msg.arbitration_id.pgn.pdu_specific in self._incomplete_received_pdus:
                 if msg.arbitration_id.source_address in self._incomplete_received_pdus[
-                    msg.arbitration_id.pgn.pdu_specific]:
+                        msg.arbitration_id.pgn.pdu_specific]:
                     self._incomplete_received_pdus[msg.arbitration_id.pgn.pdu_specific][
                         msg.arbitration_id.source_address].timestamp = msg.timestamp
                     retval = copy.deepcopy(self._incomplete_received_pdus[msg.arbitration_id.pgn.pdu_specific][
                         msg.arbitration_id.source_address])
                     retval.data = retval.data[:
-                    self._incomplete_received_pdu_lengths[msg.arbitration_id.pgn.pdu_specific][
-                        msg.arbitration_id.source_address]["total"]]
+                                              self._incomplete_received_pdu_lengths[msg.arbitration_id.pgn.pdu_specific][
+                                                  msg.arbitration_id.source_address]["total"]]
                     del self._incomplete_received_pdus[msg.arbitration_id.pgn.pdu_specific][
                         msg.arbitration_id.source_address]
                     del self._incomplete_received_pdu_lengths[msg.arbitration_id.pgn.pdu_specific][
@@ -430,7 +430,7 @@ class Bus(BusABC):
                 retval = None
             if msg.arbitration_id.pgn.pdu_specific in self._incomplete_transmitted_pdus:
                 if msg.arbitration_id.source_address in self._incomplete_transmitted_pdus[
-                    msg.arbitration_id.pgn.pdu_specific]:
+                        msg.arbitration_id.pgn.pdu_specific]:
                     del self._incomplete_transmitted_pdus[msg.arbitration_id.pgn.pdu_specific][
                         msg.arbitration_id.source_address]
 
