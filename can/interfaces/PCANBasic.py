@@ -60,9 +60,9 @@ PCAN_PCIBUS2             = TPCANHandle(0x42)  # PCAN-PCI interface, channel 2
 PCAN_PCIBUS3             = TPCANHandle(0x43)  # PCAN-PCI interface, channel 3
 PCAN_PCIBUS4             = TPCANHandle(0x44)  # PCAN-PCI interface, channel 4
 PCAN_PCIBUS5             = TPCANHandle(0x45)  # PCAN-PCI interface, channel 5
-PCAN_PCIBUS6	         = TPCANHandle(0x46)  # PCAN-PCI interface, channel 6
-PCAN_PCIBUS7	         = TPCANHandle(0x47)  # PCAN-PCI interface, channel 7
-PCAN_PCIBUS8	         = TPCANHandle(0x48)  # PCAN-PCI interface, channel 8
+PCAN_PCIBUS6             = TPCANHandle(0x46)  # PCAN-PCI interface, channel 6
+PCAN_PCIBUS7             = TPCANHandle(0x47)  # PCAN-PCI interface, channel 7
+PCAN_PCIBUS8             = TPCANHandle(0x48)  # PCAN-PCI interface, channel 8
 
 PCAN_USBBUS1             = TPCANHandle(0x51)  # PCAN-USB interface, channel 1
 PCAN_USBBUS2             = TPCANHandle(0x52)  # PCAN-USB interface, channel 2
@@ -209,15 +209,15 @@ PCAN_TYPE_DNG_SJA_EPP    = TPCANType(0x06)  # PCAN-Dongle EPP SJA1000
 #
 
 
-class TPCANMsg (Structure):
+class TPCANMsg(Structure):
 
     """
     Represents a PCAN message
     """
-    _fields_ = [ ("ID",      c_ulong),          # 11/29-bit message identifier
-                 ("MSGTYPE", TPCANMessageType), # Type of the message
-                 ("LEN",     c_ubyte),          # Data Length Code of the message (0..8)
-                 ("DATA",    c_ubyte * 8) ]     # Data of the message (DATA[0]..DATA[7])
+    _fields_ = [("ID", c_ulong),               # 11/29-bit message identifier
+                ("MSGTYPE", TPCANMessageType), # Type of the message
+                ("LEN", c_ubyte),              # Data Length Code of the message (0..8)
+                ("DATA", c_ubyte * 8)]         # Data of the message (DATA[0]..DATA[7])
 
 # Represents a timestamp of a received PCAN message
 # Total Microseconds = micros + 1000 * millis + 0xFFFFFFFF * 1000 * millis_overflow
@@ -230,9 +230,9 @@ class TPCANTimestamp (Structure):
     Represents a timestamp of a received PCAN message
     Total Microseconds = micros + 1000 * millis + 0xFFFFFFFF * 1000 * millis_overflow
     """
-    _fields_ = [ ("millis", c_ulong),           # Base-value: milliseconds: 0.. 2^32-1
-                 ("millis_overflow", c_ushort), # Roll-arounds of millis
-                 ("micros", c_ushort) ]         # Microseconds: 0..999
+    _fields_ = [("millis", c_ulong),           # Base-value: milliseconds: 0.. 2^32-1
+                ("millis_overflow", c_ushort), # Roll-arounds of millis
+                ("micros", c_ushort)]          # Microseconds: 0..999
 
 #///////////////////////////////////////////////////////////
 # PCAN-Basic API function declarations
@@ -257,13 +257,12 @@ class PCANBasic:
 
     # Initializes a PCAN Channel
     #
-    def Initialize(
-        self,
-        Channel,
-        Btr0Btr1,
-        HwType = TPCANType(0),
-        IOPort = c_uint(0),
-        Interrupt = c_ushort(0)):
+    def Initialize(self,
+                   Channel,
+                   Btr0Btr1,
+                   HwType=TPCANType(0),
+                   IOPort=c_uint(0),
+                   Interrupt=c_ushort(0)):
         """
           Initializes a PCAN Channel
 
@@ -278,7 +277,7 @@ class PCANBasic:
           A TPCANStatus error code
         """
         try:
-            res = self.__m_dllBasic.CAN_Initialize(Channel,Btr0Btr1,HwType,IOPort,Interrupt)
+            res = self.__m_dllBasic.CAN_Initialize(Channel, Btr0Btr1, HwType, IOPort, Interrupt)
             return TPCANStatus(res)
         except:
             print("Exception on PCANBasic.Initialize")
@@ -286,9 +285,8 @@ class PCANBasic:
 
     #  Uninitializes one or all PCAN Channels initialized by CAN_Initialize
     #
-    def Uninitialize(
-        self,
-        Channel):
+    def Uninitialize(self,
+                     Channel):
         """
           Uninitializes one or all PCAN Channels initialized by CAN_Initialize
 
@@ -310,9 +308,8 @@ class PCANBasic:
 
     #  Resets the receive and transmit queues of the PCAN Channel
     #
-    def Reset(
-        self,
-        Channel):
+    def Reset(self,
+              Channel):
         """
           Resets the receive and transmit queues of the PCAN Channel
 
@@ -334,9 +331,8 @@ class PCANBasic:
 
     #  Gets the current status of a PCAN Channel
     #
-    def GetStatus(
-        self,
-        Channel):
+    def GetStatus(self,
+                  Channel):
         """
           Gets the current status of a PCAN Channel
 
@@ -355,9 +351,8 @@ class PCANBasic:
 
     # Reads a CAN message from the receive queue of a PCAN Channel
     #
-    def Read(
-        self,
-        Channel):
+    def Read(self,
+             Channel):
         """
           Reads a CAN message from the receive queue of a PCAN Channel
 
@@ -378,18 +373,17 @@ class PCANBasic:
         try:
             msg = TPCANMsg()
             timestamp = TPCANTimestamp()
-            res = self.__m_dllBasic.CAN_Read(Channel,byref(msg),byref(timestamp))
-            return TPCANStatus(res),msg,timestamp
+            res = self.__m_dllBasic.CAN_Read(Channel, byref(msg), byref(timestamp))
+            return TPCANStatus(res), msg, timestamp
         except:
             print("Exception on PCANBasic.Read")
             raise
 
     # Transmits a CAN message
     #
-    def Write(
-        self,
-        Channel,
-        MessageBuffer):
+    def Write(self,
+              Channel,
+              MessageBuffer):
         """
           Transmits a CAN message
 
@@ -401,7 +395,7 @@ class PCANBasic:
           A TPCANStatus error code
         """
         try:
-            res = self.__m_dllBasic.CAN_Write(Channel,byref(MessageBuffer))
+            res = self.__m_dllBasic.CAN_Write(Channel, byref(MessageBuffer))
             return TPCANStatus(res)
         except:
             print("Exception on PCANBasic.Write")
@@ -409,12 +403,11 @@ class PCANBasic:
 
     # Configures the reception filter
     #
-    def FilterMessages(
-        self,
-        Channel,
-        FromID,
-        ToID,
-        Mode):
+    def FilterMessages(self,
+                       Channel,
+                       FromID,
+                       ToID,
+                       Mode):
         """
           Configures the reception filter
 
@@ -433,7 +426,7 @@ class PCANBasic:
           A TPCANStatus error code
         """
         try:
-            res = self.__m_dllBasic.CAN_FilterMessages(Channel,FromID,ToID,Mode)
+            res = self.__m_dllBasic.CAN_FilterMessages(Channel, FromID, ToID, Mode)
             return TPCANStatus(res)
         except:
             print("Exception on PCANBasic.FilterMessages")
@@ -441,10 +434,9 @@ class PCANBasic:
 
     # Retrieves a PCAN Channel value
     #
-    def GetValue(
-        self,
-        Channel,
-        Parameter):
+    def GetValue(self,
+                 Channel,
+                 Parameter):
         """
           Retrieves a PCAN Channel value
 
@@ -470,8 +462,8 @@ class PCANBasic:
             else:
                 mybuffer = c_int(0)
 
-            res = self.__m_dllBasic.CAN_GetValue(Channel,Parameter,byref(mybuffer),sizeof(mybuffer))
-            return TPCANStatus(res),mybuffer.value
+            res = self.__m_dllBasic.CAN_GetValue(Channel, Parameter, byref(mybuffer), sizeof(mybuffer))
+            return TPCANStatus(res), mybuffer.value
         except:
             print("Exception on PCANBasic.GetValue")
             raise
@@ -479,11 +471,10 @@ class PCANBasic:
     # Returns a descriptive text of a given TPCANStatus
     # error code, in any desired language
     #
-    def SetValue(
-        self,
-        Channel,
-        Parameter,
-        Buffer):
+    def SetValue(self,
+                 Channel,
+                 Parameter,
+                 Buffer):
         """
           Returns a descriptive text of a given TPCANStatus error
           code, in any desired language
@@ -509,16 +500,15 @@ class PCANBasic:
                 mybuffer = c_int(0)
 
             mybuffer.value = Buffer
-            res = self.__m_dllBasic.CAN_SetValue(Channel,Parameter,byref(mybuffer),sizeof(mybuffer))
+            res = self.__m_dllBasic.CAN_SetValue(Channel, Parameter, byref(mybuffer), sizeof(mybuffer))
             return TPCANStatus(res)
         except:
             print("Exception on PCANBasic.SetValue")
             raise
 
-    def GetErrorText(
-        self,
-        Error,
-        Language = 0):
+    def GetErrorText(self,
+                     Error,
+                     Language=0):
         """
           Configures or sets a PCAN Channel value
 
@@ -541,8 +531,8 @@ class PCANBasic:
         """
         try:
             mybuffer = create_string_buffer(256)
-            res = self.__m_dllBasic.CAN_GetErrorText(Error,Language,byref(mybuffer))
-            return TPCANStatus(res),mybuffer.value
+            res = self.__m_dllBasic.CAN_GetErrorText(Error, Language, byref(mybuffer))
+            return TPCANStatus(res), mybuffer.value
         except:
             print("Exception on PCANBasic.GetErrorText")
             raise

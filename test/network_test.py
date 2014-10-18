@@ -38,7 +38,7 @@ class ControllerAreaNetworkTestCase(unittest.TestCase):
 
     ids = list(range(num_messages))
     data = list(bytearray([random.randrange(0, 2 ** 8 - 1)
-                       for a in range(random.randrange(9))])
+                           for a in range(random.randrange(9))])
                 for b in range(num_messages))
 
     def producer(self, ready_event, msg_read):

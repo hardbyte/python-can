@@ -49,7 +49,7 @@ class Bus(BusABC):
         log.debug("Trying to read a msg")
 
         if timeout is None or len(select.select([self.socket],
-                [], [], timeout)[0]) > 0:
+                                                [], [], timeout)[0]) > 0:
             packet = capturePacket(self.socket)
         else:
             # socket wasn't readable or timeout occurred
@@ -89,7 +89,7 @@ SEC_USEC = 1000000
 class SOCKADDR(ctypes.Structure):
     # See /usr/include/i386-linux-gnu/bits/socket.h for original struct
     _fields_ = [("sa_family", ctypes.c_uint16),
-                ("sa_data", (ctypes.c_char)*14) ]
+                ("sa_data", (ctypes.c_char)*14)]
 
 
 class TP(ctypes.Structure):
@@ -415,17 +415,18 @@ class CyclicSendTask(SocketCanCtypesBCMBase, CyclicSendTaskABC):
         TX_DELETE is {[bcm_msg_head]} (only the header).
         """
 
-        frame = _create_bcm_frame(opcode=CAN_BCM_TX_DELETE,
-                                  flags=0,
-                                  count=0,
-                                  ival1_seconds=0,
-                                  ival1_usec=0,
-                                  ival2_seconds=0,
-                                  ival2_usec=0,
-                                  can_id=self.can_id,
-                                  nframes=0,
-                                  msg_frame=CAN_FRAME()
-                                )
+        frame = _create_bcm_frame(
+            opcode=CAN_BCM_TX_DELETE,
+            flags=0,
+            count=0,
+            ival1_seconds=0,
+            ival1_usec=0,
+            ival2_seconds=0,
+            ival2_usec=0,
+            can_id=self.can_id,
+            nframes=0,
+            msg_frame=CAN_FRAME()
+        )
 
         bytes_sent = libc.send(self.bcm_socket, ctypes.byref(frame), ctypes.sizeof(frame))
         if bytes_sent == -1:

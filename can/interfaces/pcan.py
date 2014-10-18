@@ -101,7 +101,7 @@ class Bus(BusABC):
         rx_msg.dlc = theMsg.LEN
         #rx_msg.flags = flags
         rx_msg.data = theMsg.DATA
-        rx_msg.timestamp = boottimeEpoch + ( (itsTimeStamp.micros + (1000 * itsTimeStamp.millis)) / (1000.0 * 1000.0) )
+        rx_msg.timestamp = boottimeEpoch + ((itsTimeStamp.micros + (1000 * itsTimeStamp.millis)) / (1000.0 * 1000.0))
 
         return rx_msg
 

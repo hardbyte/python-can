@@ -212,14 +212,14 @@ canSetBusOutputControl = __get_canlib_function("canSetBusOutputControl",
                                                errcheck=__check_status)
 
 canSetAcceptanceFilter = __get_canlib_function("canSetAcceptanceFilter",
-                                                argtypes=[
-                                                    c_canHandle,
-                                                    ctypes.c_uint,
-                                                    ctypes.c_uint,
-                                                    ctypes.c_int
-                                                    ],
-                                                restype=canstat.c_canStatus,
-                                                errcheck=__check_status)
+                                               argtypes=[
+                                                   c_canHandle,
+                                                   ctypes.c_uint,
+                                                   ctypes.c_uint,
+                                                   ctypes.c_int
+                                               ],
+                                               restype=canstat.c_canStatus,
+                                               errcheck=__check_status)
 
 canReadWait = __get_canlib_function("canReadWait",
                                     argtypes=[c_canHandle, ctypes.c_void_p,
@@ -231,12 +231,12 @@ canReadWait = __get_canlib_function("canReadWait",
 
 canWriteWait = __get_canlib_function("canWriteWait",
                                      argtypes=[
-                                        c_canHandle,
-                                        ctypes.c_long,
-                                        ctypes.c_void_p,
-                                        ctypes.c_uint,
-                                        ctypes.c_uint,
-                                        ctypes.c_ulong],
+                                         c_canHandle,
+                                         ctypes.c_long,
+                                         ctypes.c_void_p,
+                                         ctypes.c_uint,
+                                         ctypes.c_uint,
+                                         ctypes.c_ulong],
                                      restype=canstat.c_canStatus,
                                      errcheck=__check_status)
 
@@ -441,14 +441,15 @@ class Bus(BusABC):
                 self.done_writing.wait()
 
         log.log(9, 'Reading for 1ms on handle: %s' % self._read_handle)
-        status = canReadWait(self._read_handle,
-                                     ctypes.byref(arb_id),
-                                     ctypes.byref(data),
-                                     ctypes.byref(dlc),
-                                     ctypes.byref(flags),
-                                     ctypes.byref(timestamp),
-                                     timeout  # This is an X ms blocking read
-                                     )
+        status = canReadWait(
+            self._read_handle,
+            ctypes.byref(arb_id),
+            ctypes.byref(data),
+            ctypes.byref(dlc),
+            ctypes.byref(flags),
+            ctypes.byref(timestamp),
+            timeout  # This is an X ms blocking read
+        )
         if self.single_handle:
             # Don't want to keep the done_writing condition's Lock
             self.done_writing.release()
