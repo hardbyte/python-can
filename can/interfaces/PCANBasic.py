@@ -252,7 +252,7 @@ class PCANBasic:
         # Loads the PCANBasic.dll
         #
         self.__m_dllBasic = windll.LoadLibrary("PCANBasic")
-        if self.__m_dllBasic == None:
+        if self.__m_dllBasic is None:
             print("Exception: The PCAN-Basic DLL couldn't be loaded!")
 
     # Initializes a PCAN Channel
