@@ -1,12 +1,3 @@
-#  PCANBasic.py
-#
-#  ~~~~~~~~~~~~
-#
-#  PCAN-Basic API
-#
-#  ~~~~~~~~~~~~
-#
-#  ------------------------------------------------------------------
 #  Author : Keneth Wagner
 #  Copyright (C) 1999-2013  PEAK-System Technik GmbH, Darmstadt
 #  more Info at http://www.peak-system.com
