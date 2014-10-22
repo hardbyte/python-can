@@ -8,17 +8,9 @@
 #
 #  ------------------------------------------------------------------
 #  Author : Keneth Wagner
-#  Last change: 27.08.2013 Wagner
-#
-#  Language: Python 2.6+
-#  ------------------------------------------------------------------
-#
 #  Copyright (C) 1999-2013  PEAK-System Technik GmbH, Darmstadt
 #  more Info at http://www.peak-system.com
-#
 
-# Module Imports
-#
 from __future__ import print_function
 from ctypes import *
 
@@ -205,9 +197,6 @@ PCAN_TYPE_DNG_EPP        = TPCANType(0x03)  # PCAN-Dongle EPP 82C200
 PCAN_TYPE_DNG_SJA        = TPCANType(0x05)  # PCAN-Dongle SJA1000
 PCAN_TYPE_DNG_SJA_EPP    = TPCANType(0x06)  # PCAN-Dongle EPP SJA1000
 
-# Represents a PCAN message
-#
-
 
 class TPCANMsg(Structure):
 
@@ -218,10 +207,6 @@ class TPCANMsg(Structure):
                 ("MSGTYPE", TPCANMessageType),  # Type of the message
                 ("LEN", c_ubyte),               # Data Length Code of the message (0..8)
                 ("DATA", c_ubyte * 8)]          # Data of the message (DATA[0]..DATA[7])
-
-# Represents a timestamp of a received PCAN message
-# Total Microseconds = micros + 1000 * millis + 0xFFFFFFFF * 1000 * millis_overflow
-#
 
 
 class TPCANTimestamp (Structure):
@@ -234,13 +219,10 @@ class TPCANTimestamp (Structure):
                 ("millis_overflow", c_ushort),  # Roll-arounds of millis
                 ("micros", c_ushort)]           # Microseconds: 0..999
 
+
 # ///////////////////////////////////////////////////////////
 # PCAN-Basic API function declarations
 # ///////////////////////////////////////////////////////////
-
-# PCAN-Basic API class implementation
-#
-
 
 class PCANBasic:
 
@@ -255,8 +237,6 @@ class PCANBasic:
         if self.__m_dllBasic is None:
             print("Exception: The PCAN-Basic DLL couldn't be loaded!")
 
-    # Initializes a PCAN Channel
-    #
     def Initialize(self,
                    Channel,
                    Btr0Btr1,
@@ -283,8 +263,6 @@ class PCANBasic:
             print("Exception on PCANBasic.Initialize")
             raise
 
-    #  Uninitializes one or all PCAN Channels initialized by CAN_Initialize
-    #
     def Uninitialize(self,
                      Channel):
         """
@@ -306,8 +284,6 @@ class PCANBasic:
             print("Exception on PCANBasic.Uninitialize")
             raise
 
-    #  Resets the receive and transmit queues of the PCAN Channel
-    #
     def Reset(self,
               Channel):
         """
@@ -329,8 +305,6 @@ class PCANBasic:
             print("Exception on PCANBasic.Reset")
             raise
 
-    #  Gets the current status of a PCAN Channel
-    #
     def GetStatus(self,
                   Channel):
         """
@@ -349,8 +323,6 @@ class PCANBasic:
             print("Exception on PCANBasic.GetStatus")
             raise
 
-    # Reads a CAN message from the receive queue of a PCAN Channel
-    #
     def Read(self,
              Channel):
         """
@@ -379,8 +351,6 @@ class PCANBasic:
             print("Exception on PCANBasic.Read")
             raise
 
-    # Transmits a CAN message
-    #
     def Write(self,
               Channel,
               MessageBuffer):
@@ -401,8 +371,6 @@ class PCANBasic:
             print("Exception on PCANBasic.Write")
             raise
 
-    # Configures the reception filter
-    #
     def FilterMessages(self,
                        Channel,
                        FromID,
@@ -432,8 +400,6 @@ class PCANBasic:
             print("Exception on PCANBasic.FilterMessages")
             raise
 
-    # Retrieves a PCAN Channel value
-    #
     def GetValue(self,
                  Channel,
                  Parameter):
@@ -468,9 +434,6 @@ class PCANBasic:
             print("Exception on PCANBasic.GetValue")
             raise
 
-    # Returns a descriptive text of a given TPCANStatus
-    # error code, in any desired language
-    #
     def SetValue(self,
                  Channel,
                  Parameter,
