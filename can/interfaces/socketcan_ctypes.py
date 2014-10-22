@@ -7,7 +7,7 @@ import select
 from ctypes.util import find_library
 
 import can
-from can.interfaces.socketcan_constants import *   #CAN_RAW
+from can.interfaces.socketcan_constants import *  # CAN_RAW
 from can.bus import BusABC
 from can.message import Message
 from can.broadcastmanager import CyclicSendTaskABC, MultiRateCyclicSendTaskABC
