@@ -35,13 +35,14 @@ extlinks = {
     'issue': ('https://bitbucket.org/hardbyte/python-can/issue/%s/', 'issue '),
 }
 
-#If this is True, todo and todolist produce output, else they produce nothing. The default is False.
+# If this is True, todo and todolist produce output, else they produce nothing.
+# The default is False.
 todo_include_todos = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
-graphviz_output_format = 'png'#'svg'
+graphviz_output_format = 'png'  # 'svg'
 
 # The suffix of source filenames.
 source_suffix = '.rst'
@@ -80,7 +81,7 @@ release = '1.4'
 # directories to ignore when looking for source files.
 exclude_patterns = ['_build']
 
-# The reST default role (used for this markup: `text`) to use for all documents.
+# The reST default role (used for this markup: `text`) to use for all documents
 #default_role = None
 
 # If true, '()' will be appended to :func: etc. cross-reference text.
@@ -112,7 +113,7 @@ intersphinx_cache_limit = -1
 # Include todos in the output
 todo_include_todos = True
 
-# -- Options for HTML output ---------------------------------------------------
+# -- Options for HTML output --------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.

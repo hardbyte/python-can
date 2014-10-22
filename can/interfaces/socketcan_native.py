@@ -22,7 +22,7 @@ except:
 
 
 from can import Message
-from can.interfaces.socketcan_constants import *   #CAN_RAW
+from can.interfaces.socketcan_constants import *  # CAN_RAW
 from ..bus import BusABC
 
 from ..broadcastmanager import CyclicSendTaskABC

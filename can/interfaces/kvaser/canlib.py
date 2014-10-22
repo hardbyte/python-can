@@ -373,7 +373,7 @@ class Bus(BusABC):
         if driver_mode == DRIVER_MODE_SILENT:
             self.__write_process = lambda: None
 
-        self.timer_offset = None # Used to zero the timestamps from the first message
+        self.timer_offset = None  # Used to zero the timestamps from the first message
 
         '''
         Approximate offset between time.time() and CAN timestamps (~2ms accuracy)
@@ -398,9 +398,9 @@ class Bus(BusABC):
             self.timer_offset = value
             self.pc_time_offset = time.time()
 
-        if value < self.timer_offset: # Check for overflow
-            MAX_32BIT = 0xFFFFFFFF # The maximum value that the timer reaches on a 32-bit machine
-            MAX_64BIT = 0x9FFFFFFFF # The maximum value that the timer reaches on a 64-bit machine
+        if value < self.timer_offset:  # Check for overflow
+            MAX_32BIT = 0xFFFFFFFF  # The maximum value that the timer reaches on a 32-bit machine
+            MAX_64BIT = 0x9FFFFFFFF  # The maximum value that the timer reaches on a 64-bit machine
             if ctypes.sizeof(ctypes.c_long) == 8:
                 value += MAX_64BIT
             elif ctypes.sizeof(ctypes.c_long) == 4:
@@ -410,7 +410,7 @@ class Bus(BusABC):
             if value <= self.timer_offset:
                 raise OverflowError('CAN timestamp overflowed. The timer offset was ' + str(self.timer_offset))
 
-        timestamp = (float(value - self.timer_offset) / 1000000) # Convert from us into seconds
+        timestamp = (float(value - self.timer_offset) / 1000000)  # Convert from us into seconds
         lag = (time.time() - self.pc_time_offset) - timestamp
         if lag < 0:
             # If we see a timestamp that is quicker than the ever before, update the offset

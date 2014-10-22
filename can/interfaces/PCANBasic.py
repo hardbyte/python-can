@@ -23,9 +23,9 @@ from __future__ import print_function
 from ctypes import *
 
 
-#///////////////////////////////////////////////////////////
+# ///////////////////////////////////////////////////////////
 # Type definitions
-#///////////////////////////////////////////////////////////
+# ///////////////////////////////////////////////////////////
 
 TPCANHandle            = c_ubyte  # Represents a PCAN hardware channel handle
 TPCANStatus            = int      # Represents a PCAN status/error code
@@ -34,11 +34,11 @@ TPCANDevice            = c_ubyte  # Represents a PCAN device
 TPCANMessageType       = c_ubyte  # Represents the type of a PCAN message
 TPCANType              = c_ubyte  # Represents the type of PCAN hardware to be initialized
 TPCANMode              = c_ubyte  # Represents a PCAN filter mode
-TPCANBaudrate          = c_ushort # Represents a PCAN Baud rate register value
+TPCANBaudrate          = c_ushort  # Represents a PCAN Baud rate register value
 
-#///////////////////////////////////////////////////////////
+# ///////////////////////////////////////////////////////////
 # Value definitions
-#///////////////////////////////////////////////////////////
+# ///////////////////////////////////////////////////////////
 
 # Currently defined and supported PCAN channels
 #
@@ -84,7 +84,7 @@ PCAN_ERROR_OVERRUN       = TPCANStatus(0x00002)  # CAN controller was read too l
 PCAN_ERROR_BUSLIGHT      = TPCANStatus(0x00004)  # Bus error: an error counter reached the 'light' limit
 PCAN_ERROR_BUSHEAVY      = TPCANStatus(0x00008)  # Bus error: an error counter reached the 'heavy' limit
 PCAN_ERROR_BUSOFF        = TPCANStatus(0x00010)  # Bus error: the CAN controller is in bus-off state
-PCAN_ERROR_ANYBUSERR     = TPCANStatus(PCAN_ERROR_BUSLIGHT | PCAN_ERROR_BUSHEAVY | PCAN_ERROR_BUSOFF) # Mask for all bus errors
+PCAN_ERROR_ANYBUSERR     = TPCANStatus(PCAN_ERROR_BUSLIGHT | PCAN_ERROR_BUSHEAVY | PCAN_ERROR_BUSOFF)  # Mask for all bus errors
 PCAN_ERROR_QRCVEMPTY     = TPCANStatus(0x00020)  # Receive queue is empty
 PCAN_ERROR_QOVERRUN      = TPCANStatus(0x00040)  # Receive queue was read too late
 PCAN_ERROR_QXMTFULL      = TPCANStatus(0x00080)  # Transmit queue is full
@@ -95,7 +95,7 @@ PCAN_ERROR_NETINUSE      = TPCANStatus(0x00800)  # A Client is already connected
 PCAN_ERROR_ILLHW         = TPCANStatus(0x01400)  # Hardware handle is invalid
 PCAN_ERROR_ILLNET        = TPCANStatus(0x01800)  # Net handle is invalid
 PCAN_ERROR_ILLCLIENT     = TPCANStatus(0x01C00)  # Client handle is invalid
-PCAN_ERROR_ILLHANDLE     = TPCANStatus(PCAN_ERROR_ILLHW | PCAN_ERROR_ILLNET | PCAN_ERROR_ILLCLIENT) # Mask for all handle errors
+PCAN_ERROR_ILLHANDLE     = TPCANStatus(PCAN_ERROR_ILLHW | PCAN_ERROR_ILLNET | PCAN_ERROR_ILLCLIENT)  # Mask for all handle errors
 PCAN_ERROR_RESOURCE      = TPCANStatus(0x02000)  # Resource (FIFO, Client, timeout) cannot be created
 PCAN_ERROR_ILLPARAMTYPE  = TPCANStatus(0x04000)  # Invalid parameter
 PCAN_ERROR_ILLPARAMVAL   = TPCANStatus(0x08000)  # Invalid parameter value
@@ -155,7 +155,7 @@ LOG_FUNCTION_PARAMETERS  = int(0x02)   # Logs the parameters passed to the PCAN-
 LOG_FUNCTION_LEAVE       = int(0x04)   # Logs the exits from the PCAN-Basic API functions
 LOG_FUNCTION_WRITE       = int(0x08)   # Logs the CAN messages passed to the CAN_Write function
 LOG_FUNCTION_READ        = int(0x10)   # Logs the CAN messages received within the CAN_Read function
-LOG_FUNCTION_ALL         = int(0xFFFF) # Logs all possible information within the PCAN-Basic API functions
+LOG_FUNCTION_ALL         = int(0xFFFF)  # Logs all possible information within the PCAN-Basic API functions
 
 TRACE_FILE_SINGLE        = int(0x00)   # A single file is written until it size reaches PAN_TRACE_SIZE
 TRACE_FILE_SEGMENTED     = int(0x01)   # Traced data is distributed in several files with size PAN_TRACE_SIZE
@@ -180,20 +180,20 @@ PCAN_MODE_EXTENDED       = PCAN_MESSAGE_EXTENDED
 # Take a look at www.peak-system.com for our free software "BAUDTOOL"
 # to calculate the BTROBTR1 register for every baudrate and sample point.
 #
-PCAN_BAUD_1M             = TPCANBaudrate(0x0014) #   1 MBit/s
-PCAN_BAUD_800K           = TPCANBaudrate(0x0016) # 800 kBit/s
-PCAN_BAUD_500K           = TPCANBaudrate(0x001C) # 500 kBit/s
-PCAN_BAUD_250K           = TPCANBaudrate(0x011C) # 250 kBit/s
-PCAN_BAUD_125K           = TPCANBaudrate(0x031C) # 125 kBit/s
-PCAN_BAUD_100K           = TPCANBaudrate(0x432F) # 100 kBit/s
-PCAN_BAUD_95K            = TPCANBaudrate(0xC34E) #  95,238 kBit/s
-PCAN_BAUD_83K            = TPCANBaudrate(0x852B) #  83,333 kBit/s
-PCAN_BAUD_50K            = TPCANBaudrate(0x472F) #  50 kBit/s
-PCAN_BAUD_47K            = TPCANBaudrate(0x1414) #  47,619 kBit/s
-PCAN_BAUD_33K            = TPCANBaudrate(0x8B2F) #  33,333 kBit/s
-PCAN_BAUD_20K            = TPCANBaudrate(0x532F) #  20 kBit/s
-PCAN_BAUD_10K            = TPCANBaudrate(0x672F) #  10 kBit/s
-PCAN_BAUD_5K             = TPCANBaudrate(0x7F7F) #   5 kBit/s
+PCAN_BAUD_1M             = TPCANBaudrate(0x0014)  # 1 MBit/s
+PCAN_BAUD_800K           = TPCANBaudrate(0x0016)  # 800 kBit/s
+PCAN_BAUD_500K           = TPCANBaudrate(0x001C)  # 500 kBit/s
+PCAN_BAUD_250K           = TPCANBaudrate(0x011C)  # 250 kBit/s
+PCAN_BAUD_125K           = TPCANBaudrate(0x031C)  # 125 kBit/s
+PCAN_BAUD_100K           = TPCANBaudrate(0x432F)  # 100 kBit/s
+PCAN_BAUD_95K            = TPCANBaudrate(0xC34E)  # 95,238 kBit/s
+PCAN_BAUD_83K            = TPCANBaudrate(0x852B)  # 83,333 kBit/s
+PCAN_BAUD_50K            = TPCANBaudrate(0x472F)  # 50 kBit/s
+PCAN_BAUD_47K            = TPCANBaudrate(0x1414)  # 47,619 kBit/s
+PCAN_BAUD_33K            = TPCANBaudrate(0x8B2F)  # 33,333 kBit/s
+PCAN_BAUD_20K            = TPCANBaudrate(0x532F)  # 20 kBit/s
+PCAN_BAUD_10K            = TPCANBaudrate(0x672F)  # 10 kBit/s
+PCAN_BAUD_5K             = TPCANBaudrate(0x7F7F)  # 5 kBit/s
 
 # Supported No-Plug-And-Play Hardware types
 #
@@ -214,10 +214,10 @@ class TPCANMsg(Structure):
     """
     Represents a PCAN message
     """
-    _fields_ = [("ID", c_ulong),               # 11/29-bit message identifier
-                ("MSGTYPE", TPCANMessageType), # Type of the message
-                ("LEN", c_ubyte),              # Data Length Code of the message (0..8)
-                ("DATA", c_ubyte * 8)]         # Data of the message (DATA[0]..DATA[7])
+    _fields_ = [("ID", c_ulong),                # 11/29-bit message identifier
+                ("MSGTYPE", TPCANMessageType),  # Type of the message
+                ("LEN", c_ubyte),               # Data Length Code of the message (0..8)
+                ("DATA", c_ubyte * 8)]          # Data of the message (DATA[0]..DATA[7])
 
 # Represents a timestamp of a received PCAN message
 # Total Microseconds = micros + 1000 * millis + 0xFFFFFFFF * 1000 * millis_overflow
@@ -230,13 +230,13 @@ class TPCANTimestamp (Structure):
     Represents a timestamp of a received PCAN message
     Total Microseconds = micros + 1000 * millis + 0xFFFFFFFF * 1000 * millis_overflow
     """
-    _fields_ = [("millis", c_ulong),           # Base-value: milliseconds: 0.. 2^32-1
-                ("millis_overflow", c_ushort), # Roll-arounds of millis
-                ("micros", c_ushort)]          # Microseconds: 0..999
+    _fields_ = [("millis", c_ulong),            # Base-value: milliseconds: 0.. 2^32-1
+                ("millis_overflow", c_ushort),  # Roll-arounds of millis
+                ("micros", c_ushort)]           # Microseconds: 0..999
 
-#///////////////////////////////////////////////////////////
+# ///////////////////////////////////////////////////////////
 # PCAN-Basic API function declarations
-#///////////////////////////////////////////////////////////
+# ///////////////////////////////////////////////////////////
 
 # PCAN-Basic API class implementation
 #
