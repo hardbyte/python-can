@@ -7,10 +7,10 @@ data) is done as follows:
 
     >>> from can import Message
     >>> test = Message()
-    >>> print test
+    >>> print(test)
     0.000000        0000    0002    0
     >>> test2 = Message(data=[1,2,3,4,5])
-    >>> print test2
+    >>> print(test2)
     0.000000        0000    0002    5    01 02 03 04 05
 
 The fields in the printed message are (in order): 
@@ -47,13 +47,13 @@ maximum value allowed by the extended_id parameter passed to the Message
 constructor (either 2\ :sup:`11` - 1 for 11-bit IDs, or 2\ :sup:`29` - 1 for
 29-bit identifiers).
 
-    >>> print Message(extended_id=False)
+    >>> print(Message(extended_id=False))
     0.000000        0000    0002    0
 
-    >>> print Message(extended_id=True)
+    >>> print(Message(extended_id=True))
     0.000000    00000000    0004    0
     
-    >>> print Message(extended_id=False, arbitration_id=100)
+    >>> print(Message(extended_id=False, arbitration_id=100))
     0.000000        0064    0002    0
 
 
@@ -86,9 +86,9 @@ message is addressed to.
 
 The default behaviour is to use the length of the data passed in.
 
-    >>> print Message(dlc=1)
+    >>> print(Message(dlc=1))
     0.000000        0000    0002    1
-    >>> print Message(dlc=5)
+    >>> print(Message(dlc=5))
     0.000000        0000    0002    5
 
 .. note::
@@ -103,9 +103,9 @@ The data parameter of a CAN message is a **bytearray** (or list of ints)
 with length between 0 and 8.
 
     >>> example_data = bytearray([1,2,3])
-    >>> print Message(data=example_data)
+    >>> print(Message(data=example_data))
     0.000000    00000000    0002    3    01 02 03
-    >>> print can.Message(data=[2,2])
+    >>> print(can.Message(data=[2,2]))
     0.000000    00000000    010    2    02 02
     >>> m = can.Message(data=[3])
     >>> m.data
