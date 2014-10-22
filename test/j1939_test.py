@@ -126,7 +126,8 @@ class NetworkJ1939Test(unittest.TestCase):
         attempts = 0
         while attempts < 5:
             m_in = otherbus.recv(timeout=0.5)
-            if m_in is not None: break
+            if m_in is not None:
+                break
             # send a long message
             self.bus.send(m_out)
             attempts += 1
