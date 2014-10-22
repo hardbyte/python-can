@@ -5,6 +5,7 @@ functionality provided by each CAN interface.
 
 Copyright (C) 2010 Dynamic Controls
 """
+from __future__ import print_function
 
 import logging
 try:
