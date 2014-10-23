@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.INFO)
 import can
 can.rc['interface'] = 'socketcan_ctypes'
 
-from can.interfaces.interface import *
+from can.interfaces.interface import Message, MultiRateCyclicSendTask
 
 
 def test_simple_periodic_send():
