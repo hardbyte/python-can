@@ -367,7 +367,7 @@ class SocketCanCtypesBCMBase(object):
         log.debug("Created bcm socket (un-connected fd={})".format(self.bcm_socket))
         connectSocket(self.bcm_socket, channel)
         log.debug("Connected bcm socket")
-        super().__init__(channel, *args, **kwargs)
+        super(SocketCanCtypesBCMBase, self).__init__(channel, *args, **kwargs)
 
 
 class CyclicSendTask(SocketCanCtypesBCMBase, CyclicSendTaskABC):
@@ -379,7 +379,7 @@ class CyclicSendTask(SocketCanCtypesBCMBase, CyclicSendTaskABC):
         :param message: The message to be sent periodically.
         :param period: The rate in seconds at which to send the message.
         """
-        super().__init__(channel, message, period)
+        super(CyclicSendTask, self).__init__(channel, message, period)
         self.message = message
         # Send the bcm message with opcode TX_SETUP to start the cyclic transmit
         self._tx_setup()
@@ -449,7 +449,7 @@ class MultiRateCyclicSendTask(CyclicSendTask):
     """
 
     def __init__(self, channel, message, count, initial_period, subsequent_period):
-        super().__init__(channel, message, subsequent_period)
+        super(MultiRateCyclicSendTask, self).__init__(channel, message, subsequent_period)
 
         msg_frame = _build_can_frame(message)
 

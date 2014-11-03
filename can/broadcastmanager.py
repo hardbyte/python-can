@@ -64,7 +64,7 @@ class MultiRateCyclicSendTaskABC(CyclicSendTaskABC):
     """
 
     def __init__(self, channel, message, count, initial_period, subsequent_period):
-        super().__init__(channel, message, subsequent_period)
+        super(MultiRateCyclicSendTaskABC, self).__init__(channel, message, subsequent_period)
 
 
 def send_periodic(channel, message, period):
