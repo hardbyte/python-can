@@ -288,7 +288,7 @@ DRIVER_MODE_SILENT = False
 DRIVER_MODE_NORMAL = True
 
 
-class Bus(BusABC):
+class KvaserBus(BusABC):
 
     """
     The CAN Bus implemented for the Kvaser interface.
@@ -383,7 +383,7 @@ class Bus(BusABC):
         '''
         self.pc_time_offset = None
 
-        super(Bus, self).__init__()
+        super(KvaserBus, self).__init__()
 
     def flush_tx_buffer(self):
         """

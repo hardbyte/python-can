@@ -11,6 +11,7 @@ Modules include:
 import logging
 log = logging.getLogger('can')
 
+rc = dict(channel=0)
 
 class CanError(IOError):
     pass
@@ -20,10 +21,4 @@ from can.message import Message
 from can.bus import BusABC
 from can.notifier import Notifier
 from can.broadcastmanager import send_periodic, CyclicSendTaskABC, MultiRateCyclicSendTaskABC
-from can.util import load_config
-
-log.debug("Loading can configuration")
-rc = load_config()
-log.debug("RC: {}".format(rc))
-
 from can.interfaces import interface

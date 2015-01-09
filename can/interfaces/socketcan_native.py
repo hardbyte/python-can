@@ -128,7 +128,7 @@ class CyclicSendTask(CyclicSendTaskABC):
         :param message: The message to be sent periodically.
         :param period: The rate in seconds at which to send the message.
         """
-        super().__init__(channel, message, period)
+        super(CyclicSendTask,self).__init__(channel, message, period)
         self.bcm_socket = create_bcm_socket(channel)
         self._tx_setup(message)
 
@@ -257,7 +257,7 @@ def capturePacket(sock):
     return _CanPacket(timestamp, arbitration_id, CAN_ERR_FLAG, CAN_EFF_FLAG, CAN_RTR_FLAG, can_dlc, data)
 
 
-class Bus(BusABC):
+class SocketscanNative_Bus(BusABC):
     channel_info = "native socketcan channel"
 
     def __init__(self, channel, **kwargs):
@@ -285,7 +285,7 @@ class Bus(BusABC):
                                    struct.pack(can_filter_fmt, *filter_data),
                                    )
         bindSocket(self.socket, channel)
-        super().__init__()
+        super(SocketscanNative_Bus, self).__init__()
 
     def __del__(self):
         self.socket.close()

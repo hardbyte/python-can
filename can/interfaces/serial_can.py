@@ -19,7 +19,7 @@ from can.bus import BusABC
 from can.message import Message
 
 
-class Bus(BusABC):
+class SerialBus(BusABC):
 
     def __init__(self, channel, *args, **kwargs):
         """A serial interface to CAN.
@@ -34,7 +34,7 @@ class Bus(BusABC):
 
             # Note: Some serial port implementations don't care about the baud rate
             self.ser = serial.Serial(channel, baudrate=115200, timeout=0.1)
-        super(Bus, self).__init__(*args, **kwargs)
+        super(SerialBus, self).__init__(*args, **kwargs)
 
     def _put_message(self, msg):
         raise NotImplementedError("This serial interface doesn't support transmit.")

@@ -17,7 +17,7 @@ log = logging.getLogger('can.socketcan.ctypes')
 log.info("Loading socketcan ctypes backend")
 
 
-class Bus(BusABC):
+class SocketscanCtypes_Bus(BusABC):
 
     """
     An implementation of the :class:`can.bus.BusABC` for SocketCAN using :mod:`ctypes`.
@@ -42,7 +42,7 @@ class Bus(BusABC):
         if receive_own_messages:
             error1 = recv_own_msgs(self.socket)
 
-        super(Bus, self).__init__(*args, **kwargs)
+        super(SocketscanCtypes_Bus, self).__init__(*args, **kwargs)
 
     def recv(self, timeout=None):
 

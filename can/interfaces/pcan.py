@@ -23,7 +23,7 @@ logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger('can.pcan')
 
 
-class Bus(BusABC):
+class PcanBus(BusABC):
 
     def __init__(self, channel, *args, **kwargs):
         """A PCAN USB interface to CAN.
@@ -49,7 +49,7 @@ class Bus(BusABC):
         if result != PCAN_ERROR_OK:
             raise Exception(self.GetFormattedError(result))
 
-        super(Bus, self).__init__(*args, **kwargs)
+        super(PcanBus, self).__init__(*args, **kwargs)
 
     def GetFormattedError(self, error):
         # Gets the text using the GetErrorText API function
