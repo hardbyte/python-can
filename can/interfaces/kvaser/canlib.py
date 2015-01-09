@@ -320,7 +320,7 @@ class KvaserBus(BusABC):
         """
         log.info("CAN Filters: {}".format(can_filters))
         log.info("Got configuration of: {}".format(config))
-        bitrate = config.get('bitrate', 1000000)
+        bitrate = config.get('bitrate', 500000)
         tseg1 = config.get('tseg1', 4)
         tseg2 = config.get('tseg2', 3)
         sjw = config.get('sjw', 1)
@@ -342,9 +342,9 @@ class KvaserBus(BusABC):
             self.done_writing = threading.Condition()
 
         log.debug('Creating read handle to bus channel: %s' % channel)
-        log.warning('TODO: using channel 0 unconditionally for now')
-        channel = ctypes.c_int(0)
-        self._read_handle = canOpenChannel(0, canOPEN_ACCEPT_VIRTUAL)
+        #log.warning('TODO: using channel 0 unconditionally for now')
+        #channel = ctypes.c_int(0)
+        self._read_handle = canOpenChannel(channel, canOPEN_ACCEPT_VIRTUAL)
         canIoCtl(self._read_handle, canstat.canIOCTL_SET_TIMER_SCALE, ctypes.byref(ctypes.c_long(1)), 4)
         canSetBusParams(self._read_handle, bitrate, tseg1, tseg2, sjw, no_samp, 0)
 

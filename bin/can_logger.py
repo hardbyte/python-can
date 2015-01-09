@@ -37,6 +37,8 @@ if __name__ == "__main__":
     For example with the serial interface the channel might be a rfcomm device: /dev/rfcomm0
     Other channel examples are: can0, vcan0''', default=can.rc['channel'])
 
+    parser.add_argument('-i', '--interface', dest="interface",help='''Which backend do you want to use?''',default='kvaser',choices=('kvaser','socketscan','pcan','serial'))
+
     parser.add_argument('--filter', help='''Comma separated filters can be specified for the given CAN interface:
         <can_id>:<can_mask> (matches when <received_can_id> & mask == can_id & mask)
         <can_id>~<can_mask> (matches when <received_can_id> & mask != can_id & mask)
@@ -62,7 +64,7 @@ if __name__ == "__main__":
                 can_mask = int(can_mask, base=16) & socket.CAN_ERR_FLAG
             can_filters.append({"can_id": can_id, "can_mask": can_mask})
 
-    bus = can.interface.Bus(results.channel, can_filters=can_filters)
+    bus = can.interface.Bus(results.channel, bustype=results.interface, can_filters=can_filters)
     print('Can Logger (Started on {})\n'.format(datetime.datetime.now()))
     notifier = can.Notifier(bus, [can.Printer(results.log_file)])
 

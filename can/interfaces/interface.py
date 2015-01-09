@@ -14,7 +14,7 @@ except ImportError:
 '''
 class Bus(object):
     @classmethod
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, other, channel, *args, **kwargs):
         if 'bustype' in kwargs:
             if kwargs['bustype'] == 'kvaser':
                 can.rc['interface'] = 'kvaser'
@@ -37,6 +37,7 @@ class Bus(object):
                 cls = PcanBus
             else:
                 raise NotImplementedError('Invalid CAN Bus Type.')
+            del kwargs['bustype']
         else:
             can.rc = load_config()
 
@@ -53,5 +54,5 @@ class Bus(object):
         else:
             raise NotImplementedError("CAN Interface Not Found")
 
-        return cls(*args, **kwargs)
+        return cls(channel, **kwargs)
 
