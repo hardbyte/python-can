@@ -10,12 +10,11 @@ except ImportError:
     from can.interfaces.socketcan_ctypes import *
 
 ''' This will only read the configuration file if used in the old style of initialization,
-    otherwise it uses the bustype keyword arguement to specify the type of can bus.  
+    otherwise it uses the bustype keyword arguement to specify the type of can bus.
 '''
 class Bus(object):
     @classmethod
     def __new__(cls, *args, **kwargs):
-        print cls
         if 'bustype' in kwargs:
             if kwargs['bustype'] == 'kvaser':
                 can.rc['interface'] = 'kvaser'
@@ -54,6 +53,5 @@ class Bus(object):
         else:
             raise NotImplementedError("CAN Interface Not Found")
 
-        print cls
         return cls(*args, **kwargs)
 
