@@ -9,10 +9,13 @@ try:
 except ImportError:
     from can.interfaces.socketcan_ctypes import *
 
-''' This will only read the configuration file if used in the old style of initialization,
-    otherwise it uses the bustype keyword arguement to specify the type of can bus.
-'''
+
 class Bus(object):
+    """
+    Instantiates a CAN Bus of the given `bustype`, falls back to reading a
+    configuration file from default locations.
+    """
+
     @classmethod
     def __new__(cls, other, channel, *args, **kwargs):
         if 'bustype' in kwargs:
