@@ -342,8 +342,6 @@ class KvaserBus(BusABC):
             self.done_writing = threading.Condition()
 
         log.debug('Creating read handle to bus channel: %s' % channel)
-        #log.warning('TODO: using channel 0 unconditionally for now')
-        #channel = ctypes.c_int(0)
         self._read_handle = canOpenChannel(channel, canOPEN_ACCEPT_VIRTUAL)
         canIoCtl(self._read_handle, canstat.canIOCTL_SET_TIMER_SCALE, ctypes.byref(ctypes.c_long(1)), 4)
         canSetBusParams(self._read_handle, bitrate, tseg1, tseg2, sjw, no_samp, 0)
