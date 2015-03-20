@@ -75,7 +75,7 @@ class SocketscanCtypes_Bus(BusABC):
         return rx_msg
 
     def send(self, msg):
-        sendPacket(self.socket, msg)
+        return sendPacket(self.socket, msg)
 
 
 log.debug("Loading libc with ctypes...")
