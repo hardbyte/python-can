@@ -19,6 +19,7 @@ try:
     socket.CAN_RAW
 except:
     log.error("Note Python 3.3 or later is required to use native socketcan")
+    raise ImportError()
 
 
 from can import Message
