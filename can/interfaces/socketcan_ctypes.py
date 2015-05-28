@@ -320,7 +320,7 @@ def capturePacket(socketID):
     time = TIME_VALUE()
 
     # Fetching the Arb ID, DLC and Data
-    bytes_read = libc.read(socketID, ctypes.byref(frame), sys.getsizeof(frame))
+    bytes_read = libc.read(socketID, ctypes.byref(frame), ctypes.sizeof(frame))
 
     # Fetching the timestamp
     error = libc.ioctl(socketID, SIOCGSTAMP, ctypes.byref(time))
