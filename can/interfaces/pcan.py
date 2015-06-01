@@ -126,8 +126,8 @@ class PcanBus(BusABC):
             for i in range(CANMsg.LEN):
                 CANMsg.DATA[i] = msg.data[i]
 
-        log.debug("Data: {}".format(msg.data))
-        log.debug("type: {}".format(type(msg.data)))
+        log.debug("Data: %s", msg.data)
+        log.debug("Type: %s", type(msg.data))
 
         result = self.m_objPCANBasic.Write(self.m_PcanHandle, CANMsg)
 
