@@ -278,8 +278,7 @@ def _build_can_frame(message):
     frame.can_id = arbitration_id
     frame.can_dlc = len(message.data)
 
-    for i in range(len(message.data)):
-        frame.data[i] = message.data[i]
+    frame.data[:] = message.data
 
     log.debug("sizeof frame: {}".format(ctypes.sizeof(frame)))
     return frame
