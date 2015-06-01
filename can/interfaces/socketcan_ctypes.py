@@ -36,7 +36,7 @@ class SocketscanCtypes_Bus(BusABC):
 
         self.socket = createSocket()
 
-        log.debug("Result of createSocket was {}".format(self.socket))
+        log.debug("Result of createSocket was %d", self.socket)
         error = bindSocket(self.socket, channel)
 
         if receive_own_messages:
@@ -193,7 +193,7 @@ def bindSocket(socketID, channel_name):
         | -1        |socket creation unsuccessful|
         +-----------+----------------------------+
     """
-    log.debug('Binding socket with id {} to channel {}'.format(socketID, channel_name))
+    log.debug('Binding socket with id %d to channel %s', socketID, channel_name)
     socketID = ctypes.c_int(socketID)
 
     ifr = IFREQ()
@@ -201,7 +201,7 @@ def bindSocket(socketID, channel_name):
     log.debug('calling ioctl SIOCGIFINDEX')
     # ifr.ifr_ifindex gets filled with that device's index
     libc.ioctl(socketID, SIOCGIFINDEX, ctypes.byref(ifr))
-    log.info('ifr.ifr_ifindex: {}'.format(ifr.ifr_ifindex))
+    log.info('ifr.ifr_ifindex: %d', ifr.ifr_ifindex)
 
     # select the CAN interface and bind the socket to it
     addr = SOCKADDR_CAN(AF_CAN, ifr.ifr_ifindex)
@@ -210,7 +210,7 @@ def bindSocket(socketID, channel_name):
 
     if error < 0:
         log.error("Couldn't bind socket")
-    log.debug('bind returned: {}'.format(error))
+    log.debug('bind returned: %d', error)
 
     return error
 
@@ -226,7 +226,7 @@ def connectSocket(socketID, channel_name):
 
     :return The error code from the bind call.
     """
-    log.debug('Connecting socket with id {} to channel {}'.format(socketID, channel_name))
+    log.debug('Connecting socket with id %d to channel %s', socketID, channel_name)
     socketID = ctypes.c_int(socketID)
 
     ifr = IFREQ()
@@ -234,7 +234,7 @@ def connectSocket(socketID, channel_name):
     log.debug('calling ioctl SIOCGIFINDEX')
     # ifr.ifr_ifindex gets filled with that device's index
     libc.ioctl(socketID, SIOCGIFINDEX, ctypes.byref(ifr))
-    log.info('ifr.ifr_ifindex: {}'.format(ifr.ifr_ifindex))
+    log.info('ifr.ifr_ifindex: %d', ifr.ifr_ifindex)
 
     # select the CAN interface and bind the socket to it
     addr = SOCKADDR_CAN(AF_CAN, ifr.ifr_ifindex)
@@ -243,7 +243,7 @@ def connectSocket(socketID, channel_name):
 
     if error < 0:
         log.error("Couldn't connect socket")
-    log.debug('connect returned: {}'.format(error))
+    log.debug('connect returned: %d', error)
 
     return error
 
@@ -270,8 +270,8 @@ def _build_can_frame(message):
     if message.is_error_frame:
         log.debug("sending error frame")
         arbitration_id |= 0x20000000
-    log.debug("Data: {}".format(message.data))
-    log.debug("type: {}".format(type(message.data)))
+    log.debug("Data: %s", message.data)
+    log.debug("Type: %s", type(message.data))
 
     # TODO need to understand the extended frame format
     frame = CAN_FRAME()
@@ -280,7 +280,7 @@ def _build_can_frame(message):
 
     frame.data[:] = message.data
 
-    log.debug("sizeof frame: {}".format(ctypes.sizeof(frame)))
+    log.debug("sizeof frame: %d", ctypes.sizeof(frame))
     return frame
 
 
@@ -360,10 +360,10 @@ class SocketCanCtypesBCMBase(object):
     """Mixin to add a BCM socket"""
 
     def __init__(self, channel, *args, **kwargs):
-        log.debug("Creating bcm socket on channel '{}'".format(channel))
+        log.debug("Creating bcm socket on channel '%s'", channel)
         # Set up the bcm socket using ctypes
         self.bcm_socket = createSocket(protocol=CAN_BCM)
-        log.debug("Created bcm socket (un-connected fd={})".format(self.bcm_socket))
+        log.debug("Created bcm socket (un-connected fd=%d)", self.bcm_socket)
         connectSocket(self.bcm_socket, channel)
         log.debug("Connected bcm socket")
         super(SocketCanCtypesBCMBase, self).__init__(channel, *args, **kwargs)
