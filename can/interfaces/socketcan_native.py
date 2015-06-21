@@ -226,7 +226,14 @@ def capturePacket(sock):
          * data
     """
     # Fetching the Arb ID, DLC and Data
-    cf, addr = sock.recvfrom(can_frame_size)
+    try:
+        cf, addr = sock.recvfrom(can_frame_size)
+    except BlockingIOError:
+        log.debug('Captured no data, socket in non-blocking mode.')
+        return None
+    except socket.timeout:
+        log.debug('Captured no data, socket read timed out.')
+        return None
 
     can_id, can_dlc, data = dissect_can_frame(cf)
     log.debug('Received: can_id=%x, can_dlc=%x, data=%s' % (can_id, can_dlc, data))
@@ -293,7 +300,13 @@ class SocketscanNative_Bus(BusABC):
 
     def recv(self, timeout=None):
 
+        if timeout is not None:
+            self.socket.settimeout(timeout)
+
         packet = capturePacket(self.socket)
+
+        if packet is None:
+            return None
 
         rx_msg = Message(timestamp=packet.timestamp,
                          arbitration_id=packet.arbitration_id,
