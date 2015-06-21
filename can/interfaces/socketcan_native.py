@@ -195,7 +195,7 @@ def bindSocket(sock, channel='can0'):
     :raise:
         :class:`OSError` if the specified interface isn't found.
     """
-    log.debug('Binding socket to channel={}'.format(channel))
+    log.debug('Binding socket to channel=%s', channel)
     sock.bind((channel,))
     log.debug('Bound socket.')
 
@@ -236,7 +236,7 @@ def capturePacket(sock):
         return None
 
     can_id, can_dlc, data = dissect_can_frame(cf)
-    log.debug('Received: can_id=%x, can_dlc=%x, data=%s' % (can_id, can_dlc, data))
+    log.debug('Received: can_id=%x, can_dlc=%x, data=%s', can_id, can_dlc, data)
 
     # Fetching the timestamp
     binary_structure = "@LL"
@@ -332,11 +332,11 @@ class SocketscanNative_Bus(BusABC):
             log.warning("Trying to send an error frame - this won't work")
             arbitration_id |= 0x20000000
         l = log.getChild("tx")
-        l.debug("sending: {}".format(message))
+        l.debug("sending: %s", message)
         try:
             self.socket.send(build_can_frame(arbitration_id, message.data))
         except OSError:
-            l.warning("Failed to send: {}".format(message))
+            l.warning("Failed to send: %s", message)
 
 
 if __name__ == "__main__":
