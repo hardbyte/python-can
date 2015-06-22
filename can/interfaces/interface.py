@@ -1,14 +1,6 @@
 import can
 from can.util import load_config
 
-from can.interfaces.kvaser import *
-from can.interfaces.serial_can import *
-from can.interfaces.pcan import *
-try:
-    from can.interfaces.socketcan_native import *
-except ImportError:
-    from can.interfaces.socketcan_ctypes import *
-
 
 class Bus(object):
     """
@@ -21,7 +13,6 @@ class Bus(object):
         if 'bustype' in kwargs:
             if kwargs['bustype'] == 'kvaser':
                 can.rc['interface'] = 'kvaser'
-                cls = KvaserBus
             elif kwargs['bustype'] == 'socketcan_ctypes':
                 can.rc['interface'] = 'socketcan_ctypes'
             elif kwargs['bustype'] == 'socketcan_native':
@@ -32,12 +23,10 @@ class Bus(object):
                     can.rc['interface'] = 'socketcan_native'
                 except ImportError:
                     can.rc['interface'] = 'socketcan_ctypes'
-            elif kwargs['bustype'] =='serial':
+            elif kwargs['bustype'] == 'serial':
                 can.rc['interface'] = 'serial'
-                cls = SerialBus
-            elif kwargs['bustype'] =='pcan':
+            elif kwargs['bustype'] == 'pcan':
                 can.rc['interface'] = 'pcan'
-                cls = PcanBus
             else:
                 raise NotImplementedError('Invalid CAN Bus Type.')
             del kwargs['bustype']
@@ -45,17 +34,21 @@ class Bus(object):
             can.rc = load_config()
 
         if can.rc['interface'] == 'kvaser':
+            from can.interfaces.kvaser import KvaserBus
             cls = KvaserBus
         elif can.rc['interface'] == 'socketcan_ctypes':
+            from can.interfaces.socketcan_ctypes import SocketscanCtypes_Bus
             cls = SocketscanCtypes_Bus
         elif can.rc['interface'] == 'socketcan_native':
+            from can.interfaces.socketcan_native import SocketscanNative_Bus
             cls = SocketscanNative_Bus
-        elif can.rc['interface'] =='serial':
+        elif can.rc['interface'] == 'serial':
+            from can.interfaces.serial_can import SerialBus
             cls = SerialBus
-        elif can.rc['interface'] =='pcan':
+        elif can.rc['interface'] == 'pcan':
+            from can.interfaces.pcan import PcanBus
             cls = PcanBus
         else:
             raise NotImplementedError("CAN Interface Not Found")
 
         return cls(channel, **kwargs)
-
