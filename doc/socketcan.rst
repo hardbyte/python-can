@@ -137,3 +137,57 @@ The process to follow bus traffic is even easier:
     for message in Bus(can_interface):
         print(message)
 
+Reading and Timeouts
+--------------------
+
+Reading a single CAN message off of the bus is simple with the ``bus.recv()``
+function:
+
+.. code-block:: python
+
+    import can
+
+    can_interface = 'vcan0'
+    bus = can.interface.Bus(can_interface, bustype='socketcan_native')
+    message = bus.recv()
+
+By default, this performs a blocking read, which means ``bus.recv()`` won't
+return until a CAN message shows up on the socket. You can set a timeout in one
+of two ways:
+
+.. code-block:: python
+
+    timeout = 1.0  # [seconds]
+    bus.socket.settimeout(timeout)
+
+    message = bus.recv()
+
+    if message is None:
+        print('Timeout occurred, no message.')
+
+Now, all subsequent ``bus.recv()`` commands will return ``None`` if there
+aren't any messages on the socket after one second. You can also set the
+timeout when running the ``bus.recv()`` function:
+
+.. code-block:: python
+
+    message = bus.recv(5.0)  # Timeout after 5 seconds.
+
+    if message is None:
+        print('Timeout occurred, no message.')
+
+Keep in mind that once you set the timeout with ``bus.recv(timeout)``, that
+same timeout parameter will stay set until you manually change it. As an
+example, the following three commands all exit after a one second timeout:
+
+.. code-block:: python
+
+    message = bus.recv(1.0)
+    message = bus.recv()
+    message = bus.recv()
+
+If you set the timeout to ``0.0``, the read will be executed as non-blocking,
+which means ``bus.recv()`` will return immediately, either with a ``Message``
+object or ``None``, depending on whether data was available on the socket.
+
+To return the bus to blocking mode, run ``bus.socket.settimeout(None)``.
