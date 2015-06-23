@@ -10,6 +10,7 @@ import fcntl
 import struct
 import logging
 from collections import namedtuple
+import select
 
 log = logging.getLogger('can.socketcan.native')
 #log.setLevel(logging.DEBUG)
@@ -300,12 +301,16 @@ class SocketscanNative_Bus(BusABC):
 
     def recv(self, timeout=None):
 
-        if timeout is not None:
-            self.socket.settimeout(timeout)
+        if timeout is None or len(select.select([self.socket],
+                                                [], [], timeout)[0]) > 0:
+            packet = capturePacket(self.socket)
 
-        packet = capturePacket(self.socket)
-
-        if packet is None:
+            # The capturePacket function can return None if
+            # self.socket.settimeout has been called.
+            if packet is None:
+                return None
+        else:
+            # socket wasn't readable or timeout occurred
             return None
 
         rx_msg = Message(timestamp=packet.timestamp,
