@@ -5,3 +5,4 @@ dist/
 pycanlib.egg-info/
 version.txt
 *.pyc
+*.sw[p|o]
