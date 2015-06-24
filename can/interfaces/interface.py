@@ -30,15 +30,12 @@ class Bus(object):
                         msg = 'Bad linux release {}'.format(rel_string)
                         raise Exception(msg)
                     rel_num = [int(i) for i in rel_string[:m.end()].split('.')]
-                    print('rel_num {}'.format(rel_num))
                     if (rel_num >= [2, 6, 25]):
                         # Check Python version: SocketCAN was added in 3.3
                         py_ver = [sys.version_info[0], sys.version_info[1]]
                         if (py_ver >= [3, 3]):
-                            print('python >= 3.3')
                             can.rc['interface'] = 'socketcan_native'
                         else:
-                            print('python < 3.3')
                             can.rc['interface'] = 'socketcan_ctypes'
                     else:
                         msg = 'SocketCAN not available under Linux {}'.format(
