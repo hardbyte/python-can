@@ -14,10 +14,9 @@ logging.getLogger(__file__).setLevel(logging.WARNING)
 # make a random bool:
 rbool = lambda: bool(round(random.random()))
 
-can_interface = 'vcan0'
+channel = 'vcan0'
 import can
 can.rc['interface'] = 'socketcan_ctypes'
-from can.interfaces.socketcan_ctypes import Bus, Message
 
 
 class ControllerAreaNetworkTestCase(unittest.TestCase):
@@ -44,10 +43,10 @@ class ControllerAreaNetworkTestCase(unittest.TestCase):
                 for b in range(num_messages))
 
     def producer(self, ready_event, msg_read):
-        self.client_bus = Bus(can_interface)
+        self.client_bus = can.interface.Bus(channel=channel)
         ready_event.wait()
         for i in range(self.num_messages):
-            m = Message(
+            m = can.Message(
                 arbitration_id=self.ids[i],
                 is_remote_frame=self.remote_flags[i],
                 is_error_frame=self.error_flags[i],
@@ -72,7 +71,7 @@ class ControllerAreaNetworkTestCase(unittest.TestCase):
         ready = threading.Event()
         msg_read = threading.Event()
 
-        self.server_bus = Bus(can_interface)
+        self.server_bus = can.interface.Bus(channel=channel)
 
         t = threading.Thread(target=self.producer, args=(ready, msg_read))
         t.start()
