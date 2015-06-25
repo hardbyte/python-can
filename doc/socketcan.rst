@@ -50,6 +50,18 @@ existing ``can0`` interface with a bitrate of 1MB:
 
     sudo ip link set can0 up type can bitrate 1000000
 
+Send Test Message
+^^^^^^^^^^^^^^^^^
+
+The `can-utils <https://github.com/linux-can/can-utils>`_ library for linux
+includes a script `cansend` which is useful to send known payloads. For
+example to send a message on `vcan0`:
+
+ .. code-block:: bash
+
+    cansend vcan0 123#DEADBEEF
+
+
 CAN Errors
 ^^^^^^^^^^
 
@@ -109,13 +121,13 @@ To spam a bus:
 
     import time
     import can
-    can.rc['interface'] = 'socketcan_native'
-    from can.interfaces.interface import Bus
-    can_interface = 'vcan0'
+
+    bustype = 'socketcan_native'
+    channel = 'vcan0'
 
     def producer(id):
         """:param id: Spam the bus with messages including the data id."""
-        bus = Bus(can_interface)
+        bus = can.interface.Bus(channel=channel, bustype=bustype)
         for i in range(10):
             msg = can.Message(arbitration_id=0xc0ffee, data=[id, i, 0, 1, 3, 1, 4, 1], extended_id=False)
             bus.send(msg)
