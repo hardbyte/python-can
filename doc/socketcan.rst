@@ -36,7 +36,7 @@ To create a virtual can interface using socketcan run the following:
     sudo modprobe vcan
     # Create a vcan network interface with a specific name
     sudo ip link add dev vcan0 type vcan
-    sudo ifconfig vcan0 up
+    sudo ip link set vcan0 up
 
 Real Device
 ~~~~~~~~~~~
