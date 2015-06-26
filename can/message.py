@@ -3,7 +3,6 @@ logger = logging.getLogger(__name__)
 
 
 class Message(object):
-
     """
     Represents a CAN message.
     """
