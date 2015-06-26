@@ -1,5 +1,5 @@
 import can
-from can.util import load_config
+from can.util import load_config, choose_socketcan_implementation
 
 
 class Bus(object):
@@ -9,52 +9,21 @@ class Bus(object):
     """
 
     @classmethod
-    def __new__(cls, other, channel, *args, **kwargs):
+    def __new__(cls, other, channel=can.rc['channel'], *args, **kwargs):
+
         if 'bustype' in kwargs:
-            if kwargs['bustype'] == 'kvaser':
-                can.rc['interface'] = 'kvaser'
-            elif kwargs['bustype'] == 'socketcan_ctypes':
-                can.rc['interface'] = 'socketcan_ctypes'
-            elif kwargs['bustype'] == 'socketcan_native':
-                can.rc['interface'] = 'socketcan_native'
-            elif kwargs['bustype'] == 'socketcan':
-                # Check OS: SocketCAN is available only under Linux
-                import sys
-                if sys.platform.startswith('linux'):
-                    # Check release: SocketCAN was added to Linux 2.6.25
-                    import platform
-                    import re
-                    rel_string = platform.release()
-                    m = re.match('\d+\.\d+\.\d', rel_string)
-                    if m is None:
-                        msg = 'Bad linux release {}'.format(rel_string)
-                        raise Exception(msg)
-                    rel_num = [int(i) for i in rel_string[:m.end()].split('.')]
-                    if (rel_num >= [2, 6, 25]):
-                        # Check Python version: SocketCAN was added in 3.3
-                        py_ver = [sys.version_info[0], sys.version_info[1]]
-                        if (py_ver >= [3, 3]):
-                            can.rc['interface'] = 'socketcan_native'
-                        else:
-                            can.rc['interface'] = 'socketcan_ctypes'
-                    else:
-                        msg = 'SocketCAN not available under Linux {}'.format(
-                                rel_string)
-                        raise Exception(msg)
-                else:
-                    msg = 'SocketCAN not available under {}'.format(
-                        sys.platform)
-                    raise Exception(msg)
-            elif kwargs['bustype'] == 'serial':
-                can.rc['interface'] = 'serial'
-            elif kwargs['bustype'] == 'pcan':
-                can.rc['interface'] = 'pcan'
-            else:
-                raise NotImplementedError('Invalid CAN Bus Type.')
+            can.rc['interface'] = kwargs['bustypte']
             del kwargs['bustype']
         else:
             can.rc = load_config()
 
+        if can.rc['interface'] not in set(['kvaser', 'serial', 'pcan', 'socketcan_native', 'socketcan_ctypes', 'socketcan']):
+            raise NotImplementedError('Invalid CAN Bus Type - {}'.format(can.rc['interface']))
+
+        if can.rc['interface'] == 'socketcan':
+            can.rc['interface'] = choose_socketcan_implementation()
+
+        # Import the correct backend
         if can.rc['interface'] == 'kvaser':
             from can.interfaces.kvaser import KvaserBus
             cls = KvaserBus
