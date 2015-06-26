@@ -7,8 +7,10 @@ try:
 except ImportError:
     from ConfigParser import SafeConfigParser as ConfigParser
 import os
-import platform
 import os.path
+import sys
+import platform
+import re
 
 
 REQUIRED_KEYS = [
@@ -110,6 +112,34 @@ def load_config(path=None):
             config[key] = None
 
     return config
+
+def choose_socketcan_implementation():
+    """Set the best version of SocketCAN for this system.
+
+    :param config: The can.rc configuration dictionary
+    :raises Exception: If the system doesn't support SocketCAN
+    """
+    # Check OS: SocketCAN is available only under Linux
+    if not sys.platform.startswith('linux'):
+        msg = 'SocketCAN not available under {}'.format(
+            sys.platform)
+        raise Exception(msg)
+    else:
+        # Check release: SocketCAN was added to Linux 2.6.25
+        rel_string = platform.release()
+        m = re.match('\d+\.\d+\.\d', rel_string)
+        if m is None:
+            msg = 'Bad linux release {}'.format(rel_string)
+            raise Exception(msg)
+        rel_num = [int(i) for i in rel_string[:m.end()].split('.')]
+        if (rel_num >= [2, 6, 25]):
+            # Check Python version: SocketCAN was added in 3.3
+            return 'socketcan_native' if sys.version_info >= (3, 3) else 'socketcan_ctypes'
+        else:
+            msg = 'SocketCAN not available under Linux {}'.format(
+                    rel_string)
+            raise Exception(msg)
+
 
 if __name__ == "__main__":
     print("Searching for configuration named:")
