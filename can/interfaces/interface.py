@@ -15,7 +15,7 @@ class Bus(object):
         can.rc = load_config()
 
         if 'bustype' in kwargs:
-            can.rc['interface'] = kwargs['bustypte']
+            can.rc['interface'] = kwargs['bustype']
             del kwargs['bustype']
 
         if can.rc['interface'] not in set(['kvaser', 'serial', 'pcan', 'socketcan_native', 'socketcan_ctypes', 'socketcan']):
