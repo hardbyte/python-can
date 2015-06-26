@@ -18,7 +18,7 @@ except ImportError:
 import ctypes
 
 log = logging.getLogger('can.canlib')
-log.setLevel(logging.WARNING)
+log.setLevel(logging.ERROR)
 
 from can import CanError, BusABC
 from can import Message as MessageBase
@@ -29,9 +29,9 @@ try:
         __canlib = ctypes.windll.LoadLibrary("canlib32")
     else:
         __canlib = ctypes.cdll.LoadLibrary("libcanlib.so")
-    logging.info("loaded kvaser's CAN library")
+    log.info("loaded kvaser's CAN library")
 except OSError:
-    logging.warning("Kvaser canlib is unavailable.")
+    log.warning("Kvaser canlib is unavailable.")
     __canlib = None
 
 
@@ -42,7 +42,7 @@ def __get_canlib_function(func_name, argtypes=None, restype=None, errcheck=None)
         retval = getattr(__canlib, func_name)
         log.debug('Function found in library')
     except AttributeError:
-        logging.warning('Function was not found in library')
+        log.warning('Function was not found in library')
     else:
         log.debug('Result type is: %s' % type(restype))
         #log.debug('Error check function is: %s' % errcheck)
@@ -80,7 +80,6 @@ class ChannelNotFoundError(CANLIBError):
 
 
 class Message(MessageBase):
-
     """
     The canlib sdk requires the flags to be calculated so we extend Message.
     """
@@ -264,7 +263,7 @@ def init_kvaser_library():
         canInitializeLibrary()
         log.debug("CAN library initialized")
     except:
-        logging.warning("Kvaser canlib is unavailable.")
+        log.warning("Kvaser canlib is unavailable.")
 
 
 def lookup_transceiver_type(typename):
@@ -289,7 +288,6 @@ DRIVER_MODE_NORMAL = True
 
 
 class KvaserBus(BusABC):
-
     """
     The CAN Bus implemented for the Kvaser interface.
     """
