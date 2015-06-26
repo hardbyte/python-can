@@ -9,13 +9,14 @@ class Bus(object):
     """
 
     @classmethod
-    def __new__(cls, other, channel=can.rc['channel'], *args, **kwargs):
+    def __new__(cls, other, channel=None, *args, **kwargs):
+
+        # Load defaults
+        can.rc = load_config()
 
         if 'bustype' in kwargs:
             can.rc['interface'] = kwargs['bustypte']
             del kwargs['bustype']
-        else:
-            can.rc = load_config()
 
         if can.rc['interface'] not in set(['kvaser', 'serial', 'pcan', 'socketcan_native', 'socketcan_ctypes', 'socketcan']):
             raise NotImplementedError('Invalid CAN Bus Type - {}'.format(can.rc['interface']))
@@ -42,4 +43,6 @@ class Bus(object):
         else:
             raise NotImplementedError("CAN Interface Not Found")
 
+        if channel is None:
+            channel = can.rc['channel']
         return cls(channel, **kwargs)
