@@ -15,7 +15,8 @@ class KvaserTest(unittest.TestCase):
     def test_bus_creation(self):
 
         with patch.dict('sys.modules', ctypes=ctypes):
-
+            import can
+            can.rc['interface'] = 'kvaser'
             from can.interfaces import kvaser as interface
             from can.interfaces.kvaser import canlib
 
@@ -27,8 +28,8 @@ class KvaserTest(unittest.TestCase):
             canlib.canSetBusOutputControl = Mock()
             canlib.canWriteWait = Mock()
 
-            b = interface.Bus(0)
-
+            b = can.interface.Bus(channel=0, bustype='kvaser')
+            assert isinstance(b, canlib.KvaserBus)
             canlib.canGetNumberOfChannels.assert_called_once()
             canlib.canBusOn.assert_called_once()
 
