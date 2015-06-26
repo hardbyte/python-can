@@ -1,3 +1,5 @@
+#This wrapper is for windows or direct access via CANAL API.  Socket CAN is recommended under Unix/Linux systems
+
 from ctypes import *
 from struct import *
 #import collections
