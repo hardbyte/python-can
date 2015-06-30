@@ -21,19 +21,10 @@ filter = c_ulong
 #msg(flags = c_ulong, obid = c_ulong, id = c_ulong, sizeData = c_char, data = dataRaw, timestamp = c_ulong)
 
 
-typedef struct structCanalStatistics {
-    unsigned long cntReceiveFrames;             // # of receive frames
-    unsigned long cntTransmitFrames;            // # of transmitted frames
-    unsigned long cntReceiveData;               // # of received data bytes
-    unsigned long cntTransmitData;              // # of transmitted data bytes	
-    unsigned long cntOverruns;                  // # of overruns
-    unsigned long cntBusWarnings;               // # of bys warnings
-    unsigned long cntBusOff;                    // # of bus off's
-} canalStatistics;
 
 class CanalStatistics(Structure):
 
-	_fields_ = [('ReceiveFrams', c_ulong,
+	_fields_ = [('ReceiveFrams', c_ulong),
 		('TransmistFrams', c_ulong),
 		('ReceiveData', c_ulong),
 		('TransmitData', c_ulong),
@@ -176,25 +167,4 @@ class usb2can:
 	
 	
 	
-	
-	
-	
-	
-	
-	
 
-#CanalBlockingSend
-#CanalReceive
-#CanalBlockingReceive
-#CanalDataAvailable
-#canalGetStatus
-#CanalGetStatistics
-#CanalSetFilter
-#CanalSetMask
-#CanalSetBaudrate
-#CanalGetVersion
-#CanalGetDLLVerion
-#CanalGetVendorString
-
-
-#CANALMSG

@@ -41,11 +41,11 @@ class Bus(object):
             from can.interfaces.pcan import PcanBus
             cls = PcanBus
 		#adding statement for usb2can
-		elif can.rc['interface'] == 'usb2can':
-			from can.interfaces.usb2can import Usb2canBus
-			cls = Usb2canBus
+        elif can.rc['interface'] == 'usb2can':
+            from can.interfaces.usb2can import Usb2canBus
+            cls = Usb2canBus
 		#end of change
-		else:
+        else:
             raise NotImplementedError("CAN Interface Not Found")
 
         if channel is None:
