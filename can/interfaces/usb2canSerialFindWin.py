@@ -16,18 +16,40 @@ strComputer = "."
 objWMIService = win32com.client.Dispatch("WbemScripting.SWbemLocator")
 objSWbemServices = objWMIService.ConnectServer(strComputer,"root\cimv2")
 colItems = objSWbemServices.ExecQuery("SELECT * FROM Win32_USBControllerDevice")
-for objItem in colItems:
-    if objItem.AccessState != None:
-        print "AccessState:" + ` objItem.AccessState`
-    if objItem.Antecedent != None:
-        print "Antecedent:" + ` objItem.Antecedent`
-    if objItem.Dependent != None:
-        print "Dependent:" + ` objItem.Dependent`
-    if objItem.NegotiatedDataWidth != None:
-        print "NegotiatedDataWidth:" + ` objItem.NegotiatedDataWidth`
-    if objItem.NegotiatedSpeed != None:
-        print "NegotiatedSpeed:" + ` objItem.NegotiatedSpeed`
-    if objItem.NumberOfHardResets != None:
-        print "NumberOfHardResets:" + ` objItem.NumberOfHardResets`
-    if objItem.NumberOfSoftResets != None:
-        print "NumberOfSoftResets:" + ` objItem.NumberOfSoftResets`
+
+
+#for objItem in colItems:
+    #if objItem.AccessState != None:
+    #    print "AccessState:" + ` objItem.AccessState`
+    #if objItem.Antecedent != None:
+    #    print "Antecedent:" + ` objItem.Antecedent`
+    #statement to list devices
+    #if objItem.Dependent != None:
+    #   print "Dependent:" + ` objItem.Dependent`
+    #if objItem.NegotiatedDataWidth != None:
+    #    print "NegotiatedDataWidth:" + ` objItem.NegotiatedDataWidth`
+    #if objItem.NegotiatedSpeed != None:
+    #    print "NegotiatedSpeed:" + ` objItem.NegotiatedSpeed`
+    #if objItem.NumberOfHardResets != None:
+    #    print "NumberOfHardResets:" + ` objItem.NumberOfHardResets`
+    #if objItem.NumberOfSoftResets != None:
+    #    print "NumberOfSoftResets:" + ` objItem.NumberOfSoftResets`
+
+	
+def serial ():
+	for objItem in colItems:
+		string = objItem.Dependent
+		#find based on beginning of serial
+		if "ED" in string:
+			#print "Dependent:" + ` objItem.Dependent`
+			string = string[len(string) - 9:len(string) - 1]
+			
+			return string
+'''	
+		#find the serial based on ID	
+		if "ID_1234" in string:
+			#print "Dependent:" + ` objItem.Dependent`
+			string = string[len(string) - 9:len(string) - 2]
+			print string
+			return string
+'''

@@ -1,59 +1,31 @@
 #this interface is for windows only, otherwise use socketCAN
 
 import logging
+import ctypes
 
 logger = logging.getLogger(__name__)
 
-from can.interfaces.usb2can import *
+#from can.interfaces.usb2can import *
+from usb2can import *
 from can.bus import BusABC
 from can.message import Message
+#from can.usb2canSerialFindWin import serial
+from usb2canSerialFindWin import serial
 
+enableFlags = c_ulong
+#enable status messages
+enableFlags = 0x00000008
 
-#code to handle finding devices
+#call function to get serial number
+serial = serial()
+#test statement to check serial number
+#print serial
 
-import win32com.client
-def WMIDateStringToDate(dtmDate):
-    strDateTime = ""
-    if (dtmDate[4] == 0):
-        strDateTime = dtmDate[5] + '/'
-    else:
-        strDateTime = dtmDate[4] + dtmDate[5] + '/'
-    if (dtmDate[6] == 0):
-        strDateTime = strDateTime + dtmDate[7] + '/'
-    else:
-        strDateTime = strDateTime + dtmDate[6] + dtmDate[7] + '/'
-        strDateTime = strDateTime + dtmDate[0] + dtmDate[1] + dtmDate[2] + dtmDate[3] + " " + dtmDate[8] + dtmDate[9] + ":" + dtmDate[10] + dtmDate[11] +':' + dtmDate[12] + dtmDate[13]
-    return strDateTime
-
-strComputer = "."
-objWMIService = win32com.client.Dispatch("WbemScripting.SWbemLocator")
-objSWbemServices = objWMIService.ConnectServer(strComputer,"root\cimv2")
-colItems = objSWbemServices.ExecQuery("SELECT * FROM Win32_USBControllerDevice")
-for objItem in colItems:
-    if objItem.AccessState != None:
-        print "AccessState:" + ` objItem.AccessState`
-    if objItem.Antecedent != None:
-        print "Antecedent:" + ` objItem.Antecedent`
-    if objItem.Dependent != None:
-        print "Dependent:" + ` objItem.Dependent`
-    if objItem.NegotiatedDataWidth != None:
-        print "NegotiatedDataWidth:" + ` objItem.NegotiatedDataWidth`
-    if objItem.NegotiatedSpeed != None:
-        print "NegotiatedSpeed:" + ` objItem.NegotiatedSpeed`
-    if objItem.NumberOfHardResets != None:
-        print "NumberOfHardResets:" + ` objItem.NumberOfHardResets`
-    if objItem.NumberOfSoftResets != None:
-        print "NumberOfSoftResets:" + ` objItem.NumberOfSoftResets`
+#set default to 500 kbps
+baudrate = '500'
 
 
 
-
-
-
-
-
-
-#end of device finding code
 
 boottimeEpoch = 0
 try:
@@ -63,18 +35,49 @@ try:
 except:
     boottimeEpoch = 0
 
+	
+#logic to convert from native python type to converted ctypes.  Using a tuple
+j = tuple(int(z,16) for z in data)
+converted = (c_ubyte * 8) (*j)
+#initalize the message object, send object
+message = CanalMsg(80000000, 0, 11, 8, converted, boottimeEpoch)	
+	
+	
 # Set up logging
 logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger('can.usb2can')
 
-
+def setString (baudrate = '500'):
+	
+	
+	config = serial + '; ' + baudrate
+	
+	retrun config
+	
+	
 
 class Usb2canBus(BusABC):
 	
 	def __init__(self, channel, *args, **kwargs):
 	
-		#default to 500kb/s
-		baudrate = 500
+		
+		#start connection to the device, returns device ID aka "handle"
+		connectString = setString()
+		device = can.CanalOpen(connectString, enableFlags)
 		
 		
-	def send(self, msg)
+		
+	def send(self, msg):
+		test = 0
+		
+	def rx (self):
+		test = 0
+		
+	def error(self):
+		test = 0
+	
+	def close(self):
+		status = can.CanalClose(device)
+		#Print Error code, debug
+		#print status
+		
