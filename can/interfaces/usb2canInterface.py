@@ -17,7 +17,7 @@ enableFlags = c_ulong
 enableFlags = 0x00000008
 
 #call function to get serial number
-serial = serial()
+#serial = serial()
 #test statement to check serial number
 #print serial
 
@@ -40,37 +40,67 @@ except:
 j = tuple(int(z,16) for z in data)
 converted = (c_ubyte * 8) (*j)
 #initalize the message object, send object
-message = CanalMsg(80000000, 0, 11, 8, converted, boottimeEpoch)	
-	
+messagetx = CanalMsg(80000000, 0, 11, 8, converted, boottimeEpoch)	
+messagerx = CanalMsg(00000000, 0, 11, 8, converted, boottimeEpoch)	
 	
 # Set up logging
 logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger('can.usb2can')
 
-def setString (baudrate = '500'):
+def setString (deviceID, baudrate = '500'):
 	
 	
 	config = serial + '; ' + baudrate
 	
 	retrun config
 	
+def messageConvertTX(msg):
 	
+	#binary for flags, transmit bit set to 1
+	bits = 80000000
+	
+	if msg.errorframe == true:
+		bits = bits | 1 << 2
+
+	if msg.remoteframe == true:
+		bits = bits | 1 << 1
+	
+	
+	if msg.extendedID == true:
+		bits = bits | 1 << 0
+	
+	
+	messagetx.flag = bits
+	messagetx.sizeData = msg.dlc
+	messagetx.data = msg.data
+	messagetx.timestamp = boottimeEpoch
+	
+	return messagetx
+	
+def messageConvertRX(messagerx):
+	
+	
+	return msgrx
 
 class Usb2canBus(BusABC):
 	
 	def __init__(self, channel, *args, **kwargs):
 	
-		
-		#start connection to the device, returns device ID aka "handle"
-		connectString = setString()
-		device = can.CanalOpen(connectString, enableFlags)
-		
+	if 'ED' in kwargs:
+		location = kwargs.find('ED', beg = 0 end = len(kwargs))
+		deviceID = kwargs[location : (location + 7)
+		connector = setString(deviceID)
+	else:	
+		deviceID = serial()
+		connector = setString(deviceID, '500')
 		
 		
 	def send(self, msg):
-		test = 0
 		
-	def rx (self):
+		
+		
+		
+	def recv (self, timeout=None):
 		test = 0
 		
 	def error(self):
