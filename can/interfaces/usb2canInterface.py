@@ -194,9 +194,8 @@ class Usb2canBus(BusABC):
 		
 	def error(self):
 		test = 0
-''' implementation of a close function to shut down the device safely	
-	def close(self):
+#implementation of a close function to shut down the device safely	
+	def shutdown(self):
 		status = can.CanalClose(device)
 		#Print Error code, debug
 		#print status
-'''		
