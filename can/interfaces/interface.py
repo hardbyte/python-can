@@ -42,7 +42,7 @@ class Bus(object):
             cls = PcanBus
 		#adding statement for usb2can
         elif can.rc['interface'] == 'usb2can':
-            from can.interfaces.usb2can import Usb2canBus
+            import can.interfaces.usb2can
             cls = Usb2canBus
 		#end of change
         else:
