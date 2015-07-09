@@ -14,17 +14,7 @@ from usb2canSerialFindWin import serial
 
 enableFlags = c_ulong
 #enable status messages
-enableFlags = 0x00000008
-
-#call function to get serial number
-#serial = serial()
-#test statement to check serial number
-#print serial
-
-#set default to 500 kbps
-#baudrate = '500'
-
-
+enableFlags
 
 
 boottimeEpoch = 0
@@ -35,13 +25,6 @@ try:
 except:
     boottimeEpoch = 0
 
-	
-#logic to convert from native python type to converted ctypes.  Using a tuple
-j = tuple(int(z,16) for z in data)
-converted = (c_ubyte * 8) (*j)
-#initalize the message object, send object
-messagerx = CanalMsg(00000000, 0, 11, 8, converted, boottimeEpoch)	
-	
 # Set up logging
 logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger('can.usb2can')
@@ -57,11 +40,19 @@ def setString (deviceID, baudrate = '500'):
 def testBit(number, offset):
 	mask = 1 << offset
 	return(number & mask)
+
+#logic to convert from native python type to converted ctypes.  Using a tuple
+def dataConvert(data)
+	j = tuple(int(z,16) for z in data)
+	converted = (c_ubyte * 8) (*j)
+	return converted
 	
 def messageConvertTX(msg):
 	
 	#binary for flags, transmit bit set to 1
 	bits = 80000000
+	
+	converted = dataConvert('00000000')
 	
 	messagetx = CanalMsg(bits, 0, 11, 8, converted, boottimeEpoch)
 	
@@ -87,6 +78,7 @@ def messageConvertTX(msg):
 	
 def messageConvertRX(messagerx):
 	
+	converted = dataConvert('00000000')
 	bits = messagerx.flag
 	
 	if testBit(bits, 0) != 0:
@@ -118,6 +110,18 @@ class Usb2canBus(BusABC):
 	
 	can = usb2can()
 	
+	enableFlags = c_ulong
+	
+	#set flags on the connection
+	if '0x0000000' in kwargs:
+		location = kwargs.find('0x0000000', beg = 0 end = len(kwargs))
+		enableFlags = kwargs[location : (location + 10)
+	else:
+		enableFlags = 0x00000008
+	
+	
+	
+	#code to get the serial number of the device
 	if 'ED' in kwargs:
 		location = kwargs.find('ED', beg = 0 end = len(kwargs))
 		deviceID = kwargs[location : (location + 7)
@@ -125,17 +129,56 @@ class Usb2canBus(BusABC):
 		
 		#code to add baudrate
 		
-		connector = setString(deviceID, baudrate)
+		#connector = setString(deviceID, baudrate)
 	else:	
 		deviceID = serial()
-		connector = setString(deviceID, baudrate)
+		#baudrate = 500
+		#connector = setString(deviceID, baudrate)
 	
+	#set baudrate
+	
+	if 'baud' in kwargs:
+		location = kwargs.find('baud', beg = 0 end = len(kwargs))
+		br = kwargs[location + 4 : (location + 1)
+		#logic to figure out what the different baud settings mean
+		if br == 25:
+			baudrate = 250
+		elif br == 5c:
+			baudrate = 500
+		elif br == 12:
+			baudrate = 125
+		elif br == 8c:
+			baudrate = 800
+		elif br == 1c:
+			baudrate = 100	
+		elif br == 05:
+			baudrate = 5
+		elif br == 10:
+			baudrate = 10
+		elif br == 20:
+			baudrate = 20
+		elif br == 33:
+			baudrate = 33
+		elif br == 47:
+			baudrate = 47
+		elif br == 50:
+			baudrate = 50
+		elif br == 83:
+			baudrate = 83
+		elif br == 95:
+			baudrate = 95
+		elif br == 1k:
+			baudrate = 1000	
+	else
+		baudrate = 500
+		
+	connector = setString(deviceID, baudrate)
 	handle = can.CanalOpen(connector, enableFlags)
 		
 	def send(self, msg):
 		
 		tx = messagveConvertTX(msg)
-		can.CanalSend(handle, byref(msg))
+		can.CanalSend(handle, byref(tx))
 		
 		#enable debug mode
 		#debug = can.CanalSend(handle, byref(msg))
@@ -144,15 +187,16 @@ class Usb2canBus(BusABC):
 		
 	def recv (self, timeout=None):
 		
+		messagerx = CanalMsg(00000000, 0, 11, 8, converted, boottimeEpoch)
 		can.CanalReceive(handle, byref(messagerx))
 		rx = messageConvertRX(messagerx)
 		return rx
 		
 	def error(self):
 		test = 0
-	
+''' implementation of a close function to shut down the device safely	
 	def close(self):
 		status = can.CanalClose(device)
 		#Print Error code, debug
 		#print status
-		
+'''		
