@@ -18,7 +18,7 @@ class Bus(object):
             can.rc['interface'] = kwargs['bustype']
             del kwargs['bustype']
 
-        if can.rc['interface'] not in set(['kvaser', 'serial', 'pcan', 'socketcan_native', 'socketcan_ctypes', 'socketcan']):
+        if can.rc['interface'] not in set(['kvaser', 'serial', 'pcan', 'socketcan_native', 'socketcan_ctypes', 'socketcan', 'usb2can']):
             raise NotImplementedError('Invalid CAN Bus Type - {}'.format(can.rc['interface']))
 
         if can.rc['interface'] == 'socketcan':
@@ -42,7 +42,7 @@ class Bus(object):
             cls = PcanBus
 		#adding statement for usb2can
         elif can.rc['interface'] == 'usb2can':
-            import can.interfaces.usb2can
+            from can.interfaces.usb2canInterface import Usb2canBus
             cls = Usb2canBus
 		#end of change
         else:

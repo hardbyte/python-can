@@ -31,7 +31,7 @@ msg = CanalMsg(80000000, 0, 11, 8, converted, counter)
 can = usb2can ()
 #returns device ID
 device = can.CanalOpen(testString, testFlag)
-
+   
 
 
 bool = True
