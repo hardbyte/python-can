@@ -68,7 +68,7 @@ class BufferedReader(Listener):
             return self.buffer.get(block=True, timeout=timeout)
         except queue.Empty:
             return None
-
+ 
 
 class Printer(Listener):
 
