@@ -3,6 +3,8 @@
 import logging
 import ctypes
 
+
+
 logger = logging.getLogger(__name__)
 
 #from can.interfaces.usb2can import *
@@ -12,9 +14,6 @@ from can.message import Message
 #from can.usb2canSerialFindWin import serial
 from usb2canSerialFindWin import serial
 
-#enableFlags = c_ulong
-#enable status messages
-#enableFlags
 
 
 boottimeEpoch = 0
@@ -54,10 +53,16 @@ def messageConvertTX(msg):
 	#binary for flags, transmit bit set to 1
 	bits = 80000000
 	
-	converted = dataConvert('00000000')
-	
-	
-	messagetx = CanalMsg(bits, 0, 11, 8, converted, int(boottimeEpoch))
+	#converted = dataConvert('00000000')
+	length = c_ubyte
+	length = len(msg.data)
+	if length < 8:
+		padding = 8 - length
+		
+		while padding is not 0:
+			msg.data.append(0)
+			padding = padding - 1
+		
 	
 	if msg.is_error_frame == True:
 		bits = bits | 1 << 2
@@ -71,20 +76,13 @@ def messageConvertTX(msg):
 		bits = bits | 1 << 0
 	
 	
-	messagetx.flag = bits
-	messagetx.id = msg.arbitration_id
-	messagetx.sizeData = msg.dlc
+	temp = bytearray(msg.data)
+	rawBytes = (ctypes.c_uint8 * 8).from_buffer_copy(temp)
 	
-	ba = bytearray(msg.data)
-	ba_len = len(msg.data)
-
 	
-	rawBytes = (ctypes.c_uint8 * ba_len).from_buffer_copy(ba)
-	#rawBytes = (ctypes.c_ubyte * 8).from_buffer(msg.data)
-	#raw_bytes = cast(msg.data, POINTER
-	messagetx.data = rawBytes
+	messagetx = CanalMsg(bits, 0, msg.arbitration_id, length, rawBytes, int(boottimeEpoch))
 	
-	messagetx.timestamp = int(boottimeEpoch)
+		
 	
 	return messagetx
 	
@@ -219,10 +217,7 @@ class Usb2canBus(BusABC):
 		
 		return rx	
 		
-	def error(self):
-		test = 0
+
 #implementation of a close function to shut down the device safely	
 	def shutdown(self):
-		status = self.can.CanalClose(device)
-		#Print Error code, debug
-		#print status
+		status = self.can.CanalClose(self.handle)
