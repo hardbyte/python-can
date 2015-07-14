@@ -1,0 +1,50 @@
+#python-can test program to test an interface
+
+import can
+from can.interfaces.interface import Bus
+import threading
+from binascii import hexlify
+
+can.rc['interface'] = 'usb2can'
+
+
+#channel = None, can_filters=None ,
+
+usb2can = can.interface.Bus(bustype = 'usb2can', serial = 'ED000200', flags = 0x00000008, baud = "5c")
+
+'''
+m = can.Message(
+                arbitration_id=self.ids[i],
+                is_remote_frame=self.remote_flags[i],
+                is_error_frame=self.error_flags[i],
+                extended_id=self.extended_flags[i],
+                data=self.data[i]
+            )
+'''
+
+msg = can.Message(timestamp=0.0, is_remote_frame=False, extended_id=True, is_error_frame=False, arbitration_id=0, dlc=None, data=[0,1,2,3,4,5,6,7])			
+			
+			
+#usb2can.send(msg)
+
+
+
+rx = usb2can.recv(timeout=None)
+counter = 0
+while True:
+	rx = usb2can.recv(timeout=None)
+	print (counter)
+	print ('\n')
+	print ('\n')
+	print str(hexlify(rx.data))
+	print ('\n')
+	print rx.timestamp
+	print ('\n')
+	print rx.is_remote_frame
+	print ('\n')
+	print rx.is_error_frame
+	print ('\n')
+	print rx.id_type
+	print ('\n')
+	print rx.dlc
+	counter = counter + 1
