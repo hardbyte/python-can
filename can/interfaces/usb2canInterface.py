@@ -12,9 +12,9 @@ from can.message import Message
 #from can.usb2canSerialFindWin import serial
 from usb2canSerialFindWin import serial
 
-enableFlags = c_ulong
+#enableFlags = c_ulong
 #enable status messages
-enableFlags
+#enableFlags
 
 
 boottimeEpoch = 0
@@ -47,7 +47,8 @@ def dataConvert(data):
 	j = tuple(int(z,16) for z in data)
 	converted = (c_ubyte * 8) (*j)
 	return converted
-	
+
+#TODO issue with data being zeros or anything other than 8 must be fixed
 def messageConvertTX(msg):
 	
 	#binary for flags, transmit bit set to 1
@@ -55,25 +56,35 @@ def messageConvertTX(msg):
 	
 	converted = dataConvert('00000000')
 	
-	messagetx = CanalMsg(bits, 0, 11, 8, converted, boottimeEpoch)
 	
-	if msg.is_error_frame == true:
+	messagetx = CanalMsg(bits, 0, 11, 8, converted, int(boottimeEpoch))
+	
+	if msg.is_error_frame == True:
 		bits = bits | 1 << 2
 	
 	
-	if msg.is_remote_frame == true:
+	if msg.is_remote_frame == True:
 		bits = bits | 1 << 1
 	
 	
-	if msg.extended_id == true:
+	if msg.id_type == True:
 		bits = bits | 1 << 0
 	
 	
 	messagetx.flag = bits
 	messagetx.id = msg.arbitration_id
 	messagetx.sizeData = msg.dlc
-	messagetx.data = msg.data
-	messagetx.timestamp = boottimeEpoch
+	
+	ba = bytearray(msg.data)
+	ba_len = len(msg.data)
+
+	
+	rawBytes = (ctypes.c_uint8 * ba_len).from_buffer_copy(ba)
+	#rawBytes = (ctypes.c_ubyte * 8).from_buffer(msg.data)
+	#raw_bytes = cast(msg.data, POINTER
+	messagetx.data = rawBytes
+	
+	messagetx.timestamp = int(boottimeEpoch)
 	
 	return messagetx
 	
@@ -82,24 +93,29 @@ def messageConvertRX(messagerx):
 	converted = dataConvert('00000000')
 	bits = messagerx.flag
 	
+	msgrx = Message()
+	
 	if testBit(bits, 0) != 0:
-		msgrx.extended_id = true
+		msgrx.id_type = True
 	else:
-		msgrx.extended_id = false
+		msgrx.id_type = False
 	
 	if testBit(bits, 1) != 0:
-		msgrx.is_remote_frame = true
+		msgrx.is_remote_frame = True
 	else:
-		msgrx.is_remote_frame = false
+		msgrx.is_remote_frame = False
 	
 	if testBit(bits, 2) != 0:
-		msgrx.is_error_frame = true
+		msgrx.is_error_frame = True
 	else:
-		msgrx.is_error_frame = false
+		msgrx.is_error_frame = False
 	
 	msgrx.arbitration_id = messagerx.id
 	msgrx.dlc = messagerx.sizeData
-	msgrx.data = messagerx.data
+	
+	
+	msgrx.data = bytearray(messagerx.data)
+	
 	msgrx.timestamp = boottimeEpoch
 	
 	
@@ -107,9 +123,11 @@ def messageConvertRX(messagerx):
 
 class Usb2canBus(BusABC):
 	
+	#can = usb2can()
+	
 	def __init__(self, channel, *args, **kwargs):
 	
-		can = usb2can()
+		self.can = usb2can()
 	
 		enableFlags = c_ulong
 	
@@ -173,13 +191,13 @@ class Usb2canBus(BusABC):
 		
 		connector = setString(deviceID, baudrate)
 		
-		handle = can.CanalOpen(connector, enableFlags)
+		self.handle = self.can.CanalOpen(connector, enableFlags)
 		
 		
 	def send(self, msg):
 		
 		tx = messageConvertTX(msg)
-		can.CanalSend(handle, byref(tx))
+		self.can.CanalSend(self.handle, byref(tx))
 		
 		#enable debug mode
 		#debug = can.CanalSend(handle, byref(msg))
@@ -188,15 +206,23 @@ class Usb2canBus(BusABC):
 		
 	def recv (self, timeout=None):
 		
-		messagerx = CanalMsg(00000000, 0, 11, 8, converted, boottimeEpoch)
-		can.CanalReceive(handle, byref(messagerx))
-		rx = messageConvertRX(messagerx)
-		return rx
+		status = 1
+		converted = dataConvert('00000000')
+		messagerx = CanalMsg(00000000, 0, 11, 8, converted, int(boottimeEpoch))
+		
+		while status != 0:
+		
+			if status != 0:
+				status = self.can.CanalReceive(self.handle, byref(messagerx))
+				rx = messageConvertRX(messagerx)
+				
+		
+		return rx	
 		
 	def error(self):
 		test = 0
 #implementation of a close function to shut down the device safely	
 	def shutdown(self):
-		status = can.CanalClose(device)
+		status = self.can.CanalClose(device)
 		#Print Error code, debug
 		#print status
