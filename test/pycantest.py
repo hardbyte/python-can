@@ -22,10 +22,10 @@ m = can.Message(
             )
 '''
 
-msg = can.Message(timestamp=0.0, is_remote_frame=False, extended_id=True, is_error_frame=False, arbitration_id=0, dlc=None, data=[0,1,2,3,4,5,6,7])			
+msg = can.Message(timestamp=0.0, is_remote_frame=False, extended_id=True, is_error_frame=False, arbitration_id=0, dlc=None, data=[0,1,2,3])			
 			
 			
-#usb2can.send(msg)
+usb2can.send(msg)
 
 
 
