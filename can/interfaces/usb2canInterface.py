@@ -27,7 +27,7 @@ except:
 # Set up logging
 logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger('can.usb2can')
-
+#setup the string for the device
 def setString (deviceID, baudrate = '500'):
 	
 	
@@ -85,7 +85,7 @@ def messageConvertTX(msg):
 		
 	
 	return messagetx
-	
+#convert the message from the CANAL type to pythoncan type	
 def messageConvertRX(messagerx):
 	
 	converted = dataConvert('00000000')
@@ -118,7 +118,7 @@ def messageConvertRX(messagerx):
 	
 	
 	return msgrx
-
+#interface functions
 class Usb2canBus(BusABC):
 	
 	#can = usb2can()
@@ -191,7 +191,7 @@ class Usb2canBus(BusABC):
 		
 		self.handle = self.can.CanalOpen(connector, enableFlags)
 		
-		
+	#send a message	
 	def send(self, msg):
 		
 		tx = messageConvertTX(msg)
@@ -201,7 +201,7 @@ class Usb2canBus(BusABC):
 		#debug = can.CanalSend(handle, byref(msg))
 		#return debug
 		
-		
+	#recieve a message	
 	def recv (self, timeout=None):
 		
 		status = 1
