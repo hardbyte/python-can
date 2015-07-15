@@ -10,7 +10,7 @@ can.rc['interface'] = 'usb2can'
 
 #channel = None, can_filters=None ,
 
-usb2can = can.interface.Bus(bustype = 'usb2can', serial = 'ED000200', flags = 0x00000008, baud = "5c")
+usb2can = can.interface.Bus(bustype = 'usb2can', serial = 'ED000200', flags = 0x00000008, baud = "500")
 
 '''
 m = can.Message(
