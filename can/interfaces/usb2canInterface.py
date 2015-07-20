@@ -155,35 +155,11 @@ class Usb2canBus(BusABC):
 		if 'baud' in kwargs:
 			
 			br = kwargs["baud"]
-			#logic to figure out what the different baud settings mean
-			if br == "250":
-				baudrate = 250
-			elif br == "500":
-				baudrate = 500
-			elif br == "125":
-				baudrate = 125
-			elif br == "800":
-				baudrate = 800
-			elif br == "100":
-				baudrate = 100	
-			elif br == "05":
-				baudrate = 5
-			elif br == "10":
-				baudrate = 10
-			elif br == "20":
-				baudrate = 20
-			elif br == "33":
-				baudrate = 33
-			elif br == "47":
-				baudrate = 47
-			elif br == "50":
-				baudrate = 50
-			elif br == "83":
-				baudrate = 83
-			elif br == "95":
-				baudrate = 95
-			elif br == "1000":
-				baudrate = 1000	
+			
+			#set custom baud rate (ex:500000 bitrate must be 500)
+			baudrate = int(br)
+			
+		#set default value		
 		else:
 			baudrate = 500
 		
