@@ -12,13 +12,7 @@ handle = c_long
 timeout = c_ulong
 filter = c_ulong
 
-#attempted to use namedtuples, cannot name types of variables easily
-#dataRaw = c_char
-#dataRaw = c_char
 
-#msg = collections.namedtuple('CanalMsg', ['flags', 'obid', 'id', 'sizeDaa', 'data', 'timestamp'])
-
-#msg(flags = c_ulong, obid = c_ulong, id = c_ulong, sizeData = c_char, data = dataRaw, timestamp = c_ulong)
 
 
 
@@ -45,7 +39,7 @@ class CanalStatus(Structure):
 class CanalMsg(Structure):
 	
 	
-	_fields_ = [('flag', c_ulong), 
+	_fields_ = [('flags', c_ulong), 
 		('obid', c_ulong), 
 		('id', c_ulong), 
 		('sizeData', c_ubyte), 

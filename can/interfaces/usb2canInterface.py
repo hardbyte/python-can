@@ -51,9 +51,34 @@ def dataConvert(data):
 def messageConvertTX(msg):
 	
 	#binary for flags, transmit bit set to 1
-	bits = 80000000
 	
-	#converted = dataConvert('00000000')
+	#should auto initalize for me
+	#rawBytes = dataConvert([0,0,0,0,0,0,0,0])
+	#rawBytes = dataConvert('00000000')
+	
+	#messagetx = CanalMsg(bits, 0, msg.arbitration_id, len(msg.data), rawBytes, 0)
+	
+	messagetx = CanalMsg()
+	
+	length = len(msg.data)
+	messagetx.sizeData = length
+	
+	messagetx.id = msg.arbitration_id
+	
+	'''
+	temp = bytearray(msg.data)
+	rawBytes = (ctypes.c_uint8 * 8).from_buffer_copy(temp)
+	'''
+	for i in range(length)):
+		messagetx.data[i] = msg.data[i]
+	
+	'''
+	temp = bytearray(msg.data)
+	messagetx.data = (ctypes.c_uint8 * 8).from_buffer_copy(temp)
+	'''
+	
+	
+	'''
 	length = c_ubyte
 	length = len(msg.data)
 	if length < 8:
@@ -63,24 +88,26 @@ def messageConvertTX(msg):
 			msg.data.append(0)
 			padding = padding - 1
 		
+	'''
+	messagetx.flags = 80000000
 	
 	if msg.is_error_frame == True:
-		bits = bits | 1 << 2
+		messagetx.flags = messagetx.flags | 1 << 2
 	
 	
 	if msg.is_remote_frame == True:
-		bits = bits | 1 << 1
+		messagetx.flags = messagetx.flags | 1 << 1
 	
 	
 	if msg.id_type == True:
-		bits = bits | 1 << 0
+		messagetx.flags = messagetx.flags | 1 << 0
 	
-	
+	'''
 	temp = bytearray(msg.data)
 	rawBytes = (ctypes.c_uint8 * 8).from_buffer_copy(temp)
-	
-	
-	messagetx = CanalMsg(bits, 0, msg.arbitration_id, length, rawBytes, int(boottimeEpoch))
+	'''
+	#old message tx for if while loop.
+	#messagetx = CanalMsg(bits, 0, msg.arbitration_id, length, rawBytes, 0)
 	
 		
 	
@@ -88,8 +115,9 @@ def messageConvertTX(msg):
 #convert the message from the CANAL type to pythoncan type	
 def messageConvertRX(messagerx):
 	
-	converted = dataConvert('00000000')
-	bits = messagerx.flag
+	#converted = dataConvert('00000000')
+	#flag is from Canal device
+	bits = messagerx.flags
 	
 	msgrx = Message()
 	
@@ -114,7 +142,7 @@ def messageConvertRX(messagerx):
 	
 	msgrx.data = bytearray(messagerx.data)
 	
-	msgrx.timestamp = boottimeEpoch
+	msgrx.timestamp = messagerx.timestamp
 	
 	
 	return msgrx
@@ -157,6 +185,7 @@ class Usb2canBus(BusABC):
 			br = kwargs["baud"]
 			
 			#set custom baud rate (ex:500000 bitrate must be 500)
+			#max rate is 1000 kbps
 			baudrate = int(br)
 			
 		#set default value		
@@ -181,8 +210,9 @@ class Usb2canBus(BusABC):
 	def recv (self, timeout=None):
 		
 		status = 1
-		converted = dataConvert('00000000')
-		messagerx = CanalMsg(00000000, 0, 11, 8, converted, int(boottimeEpoch))
+		#converted = dataConvert('00000000')
+		#messagerx = CanalMsg(00000000, 0, 11, 8, converted, int(boottimeEpoch))
+		messagerx = CanalMsg()
 		
 		while status != 0:
 		
