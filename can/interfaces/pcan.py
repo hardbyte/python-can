@@ -158,3 +158,7 @@ class PcanBus(BusABC):
 
         if result != PCAN_ERROR_OK:
             logging.error("Error sending frame :-/ " + self.GetFormattedError(result))
+
+
+    def shutdown(self):
+        self.m_objPCANBasic.Uninitialize(self.m_PcanHandle)
