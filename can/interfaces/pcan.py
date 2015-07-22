@@ -23,6 +23,22 @@ logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger('can.pcan')
 
 
+pcan_bitrate_objs = {1000000 : PCAN_BAUD_1M,
+                      800000 : PCAN_BAUD_800K,
+                      500000 : PCAN_BAUD_500K,
+                      250000 : PCAN_BAUD_250K,
+                      125000 : PCAN_BAUD_125K,
+                      100000 : PCAN_BAUD_100K,
+                       95000 : PCAN_BAUD_95K,
+                       83000 : PCAN_BAUD_83K,
+                       50000 : PCAN_BAUD_50K,
+                       47000 : PCAN_BAUD_47K,
+                       33000 : PCAN_BAUD_33K,
+                       20000 : PCAN_BAUD_20K,
+                       10000 : PCAN_BAUD_10K,
+                        5000 : PCAN_BAUD_5K}
+
+
 class PcanBus(BusABC):
 
     def __init__(self, channel, *args, **kwargs):
@@ -30,13 +46,22 @@ class PcanBus(BusABC):
 
         :param str channel:
             The can interface name.  An example would be PCAN_USBBUS1
+            
+        Backend Configuration
+        ---------------------
+            
+        :param int bitrate:
+            Bitrate of channel in bit/s
+            
         """
         if channel == '':
             raise TypeError("Must specify a PCAN channel.")
         else:
             self.channel_info = channel
 
-        baudrate = PCAN_BAUD_500K
+        bitrate = kwargs.get('bitrate', 500000)
+        pcan_bitrate = pcan_bitrate_objs.get(bitrate, PCAN_BAUD_500K)
+        
         hwtype = PCAN_TYPE_ISA
         ioport = 0x02A0
         interrupt = 11
@@ -44,7 +69,7 @@ class PcanBus(BusABC):
         self.m_objPCANBasic = PCANBasic()
         self.m_PcanHandle = globals()[channel]
 
-        result = self.m_objPCANBasic.Initialize(self.m_PcanHandle, baudrate, hwtype, ioport, interrupt)
+        result = self.m_objPCANBasic.Initialize(self.m_PcanHandle, pcan_bitrate, hwtype, ioport, interrupt)
 
         if result != PCAN_ERROR_OK:
             raise Exception(self.GetFormattedError(result))
