@@ -12,6 +12,10 @@ handle = c_long
 timeout = c_ulong
 filter = c_ulong
 
+#flags mappings
+IS_ERROR_FRAME = 4
+IS_REMOTE_FRAME = 2
+IS_ID_TYPE = 1
 
 
 
