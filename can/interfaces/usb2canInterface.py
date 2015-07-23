@@ -77,12 +77,6 @@ def message_convert_rx(messagerx):
 	ERROR_FRAME = bool(messagerx.flags & IS_ERROR_FRAME)
 	
 	
-	#msgrx.arbitration_id = messagerx.id
-	#msgrx.dlc = messagerx.sizeData
-	
-	
-	#msgrx.data = bytearray(messagerx.data)
-	#emulate like line 316 on socketcan native
 	msgrx = Message(timestamp=messagerx.timestamp, 
 					is_remote_frame=REMOTE_FRAME,
 					extended_id=ID_TYPE, 
@@ -98,7 +92,7 @@ def message_convert_rx(messagerx):
 #interface functions
 class Usb2canBus(BusABC):
 	
-	#can = usb2can()
+	
 	
 	def __init__(self, channel, *args, **kwargs):
 	
