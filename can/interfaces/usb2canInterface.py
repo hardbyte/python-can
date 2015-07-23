@@ -36,28 +36,9 @@ def set_string (deviceID, baudrate = '500'):
 	
 	return (config)
 
-#returns 2*offset if the bit is set to 1, returns zero if bit is set to zero	
-'''
-def testBit(number, offset):
-	mask = 1 << offset
-	return(number & mask)
-
-#logic to convert from native python type to converted ctypes.  Using a tuple
-def dataConvert(data):
-	j = tuple(int(z,16) for z in data)
-	converted = (c_ubyte * 8) (*j)
-	return converted
-'''
 #TODO issue with data being zeros or anything other than 8 must be fixed
 def message_convert_tx(msg):
 	
-	#binary for flags, transmit bit set to 1
-	
-	#should auto initalize for me
-	#rawBytes = dataConvert([0,0,0,0,0,0,0,0])
-	#rawBytes = dataConvert('00000000')
-	
-	#messagetx = CanalMsg(bits, 0, msg.arbitration_id, len(msg.data), rawBytes, 0)
 	
 	messagetx = CanalMsg()
 	
@@ -66,93 +47,36 @@ def message_convert_tx(msg):
 	
 	messagetx.id = msg.arbitration_id
 	
-	'''
-	temp = bytearray(msg.data)
-	rawBytes = (ctypes.c_uint8 * 8).from_buffer_copy(temp)
-	'''
-	for i in range(length)):
+
+	for i in range(length):
 		messagetx.data[i] = msg.data[i]
 	
-	'''
-	temp = bytearray(msg.data)
-	messagetx.data = (ctypes.c_uint8 * 8).from_buffer_copy(temp)
-	'''
 	
 	
-	'''
-	length = c_ubyte
-	length = len(msg.data)
-	if length < 8:
-		padding = 8 - length
-		
-		while padding is not 0:
-			msg.data.append(0)
-			padding = padding - 1
-		
-	'''
 	messagetx.flags = 80000000
 	
 	if msg.is_error_frame:
-		#messagetx.flags = messagetx.flags + IS_ERROR_FRAME
 		messagetx.flags |= IS_ERROR_FRAME
-		#messagetx.flags = messagetx.flags | 1 << 2
 	
 	
 	if msg.is_remote_frame:
-		#messagetx.flags = messagetx.flags + IS_REMOTE_FRAME
 		messagetx.flags |= IS_REMOTE_FRAME
-		#messagetx.flags = messagetx.flags | 1 << 1
 	
 	
 	if msg.id_type:
-		#messagetx.flags = messagetx.flags + IS_ID_TYPE
 		messagetx.flags |= IS_ID_TYPE
-		#messagetx.flags = messagetx.flags | 1 << 0
-	
-	'''
-	temp = bytearray(msg.data)
-	rawBytes = (ctypes.c_uint8 * 8).from_buffer_copy(temp)
-	'''
-	#old message tx for if while loop.
-	#messagetx = CanalMsg(bits, 0, msg.arbitration_id, length, rawBytes, 0)
-	
-		
+				
 	
 	return messagetx
 #convert the message from the CANAL type to pythoncan type	
 def message_convert_rx(messagerx):
 	
-	#converted = dataConvert('00000000')
-	#flag is from Canal device
-	#bits = messagerx.flags
-	
-	#msgrx = Message()
-	
-	#isErrorFrame = bool(can_id & 0x80000000)
-	#isRemoteFrame
-	#idType
 	
 	ID_TYPE = bool(messagerx.flags & IS_ID_TYPE)
 	REMOTE_FRAME = bool(messagerx.flags & IS_REMOTE_FRAME)
 	ERROR_FRAME = bool(messagerx.flags & IS_ERROR_FRAME)
 	
 	
-	'''
-	if testBit(bits, 0) != 0:
-		msgrx.id_type = True
-	else:
-		msgrx.id_type = False
-	
-	if testBit(bits, 1) != 0:
-		msgrx.is_remote_frame = True
-	else:
-		msgrx.is_remote_frame = False
-	
-	if testBit(bits, 2) != 0:
-		msgrx.is_error_frame = True
-	else:
-		msgrx.is_error_frame = False
-	'''
 	#msgrx.arbitration_id = messagerx.id
 	#msgrx.dlc = messagerx.sizeData
 	
@@ -196,12 +120,9 @@ class Usb2canBus(BusABC):
 			
 			deviceID = kwargs["serial"]
 			
-		
-			#connector = setString(deviceID, baudrate)
 		else:	
 			deviceID = serial()
-			#baudrate = 500
-			#connector = setString(deviceID, baudrate)
+			
 	
 		#set baudrate
 	
@@ -227,24 +148,21 @@ class Usb2canBus(BusABC):
 		tx = message_convert_tx(msg)
 		self.can.CanalSend(self.handle, byref(tx))
 		
-		#enable debug mode
-		#debug = can.CanalSend(handle, byref(msg))
-		#return debug
-		
 	#recieve a message	
 	def recv (self, timeout=None):
 		
-		status = 1
-		#converted = dataConvert('00000000')
-		#messagerx = CanalMsg(00000000, 0, 11, 8, converted, int(boottimeEpoch))
 		messagerx = CanalMsg()
 		
-		while status != 0:
+		if timeout is None:
+			status = self.can.CanalReceive(self.handle, byref(messagerx))
+			rx = message_convert_rx(messagerx)
 		
-			if status != 0:
-				status = self.can.CanalReceive(self.handle, byref(messagerx))
-				rx = message_convert_rx(messagerx)
-				
+		else:
+			time = c_ulong
+			time = timeout
+			status = self.can.CanalBlockingReceive(self.handle, byref(messagerx),time)
+			rx = message_convert_rx(messagerx)
+					
 		
 		return rx	
 		
