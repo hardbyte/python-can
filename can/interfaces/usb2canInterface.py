@@ -28,7 +28,7 @@ except:
 logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger('can.usb2can')
 #setup the string for the device
-def setString (deviceID, baudrate = '500'):
+def set_string (deviceID, baudrate = '500'):
 	
 	
 	#config = deviceID + '; ' + baudrate
@@ -37,6 +37,7 @@ def setString (deviceID, baudrate = '500'):
 	return (config)
 
 #returns 2*offset if the bit is set to 1, returns zero if bit is set to zero	
+'''
 def testBit(number, offset):
 	mask = 1 << offset
 	return(number & mask)
@@ -46,9 +47,9 @@ def dataConvert(data):
 	j = tuple(int(z,16) for z in data)
 	converted = (c_ubyte * 8) (*j)
 	return converted
-
+'''
 #TODO issue with data being zeros or anything other than 8 must be fixed
-def messageConvertTX(msg):
+def message_convert_tx(msg):
 	
 	#binary for flags, transmit bit set to 1
 	
@@ -91,16 +92,22 @@ def messageConvertTX(msg):
 	'''
 	messagetx.flags = 80000000
 	
-	if msg.is_error_frame == True:
-		messagetx.flags = messagetx.flags | 1 << 2
+	if msg.is_error_frame:
+		#messagetx.flags = messagetx.flags + IS_ERROR_FRAME
+		messagetx.flags |= IS_ERROR_FRAME
+		#messagetx.flags = messagetx.flags | 1 << 2
 	
 	
-	if msg.is_remote_frame == True:
-		messagetx.flags = messagetx.flags | 1 << 1
+	if msg.is_remote_frame:
+		#messagetx.flags = messagetx.flags + IS_REMOTE_FRAME
+		messagetx.flags |= IS_REMOTE_FRAME
+		#messagetx.flags = messagetx.flags | 1 << 1
 	
 	
-	if msg.id_type == True:
-		messagetx.flags = messagetx.flags | 1 << 0
+	if msg.id_type:
+		#messagetx.flags = messagetx.flags + IS_ID_TYPE
+		messagetx.flags |= IS_ID_TYPE
+		#messagetx.flags = messagetx.flags | 1 << 0
 	
 	'''
 	temp = bytearray(msg.data)
@@ -113,14 +120,24 @@ def messageConvertTX(msg):
 	
 	return messagetx
 #convert the message from the CANAL type to pythoncan type	
-def messageConvertRX(messagerx):
+def message_convert_rx(messagerx):
 	
 	#converted = dataConvert('00000000')
 	#flag is from Canal device
-	bits = messagerx.flags
+	#bits = messagerx.flags
 	
-	msgrx = Message()
+	#msgrx = Message()
 	
+	#isErrorFrame = bool(can_id & 0x80000000)
+	#isRemoteFrame
+	#idType
+	
+	ID_TYPE = bool(messagerx.flags & IS_ID_TYPE)
+	REMOTE_FRAME = bool(messagerx.flags & IS_REMOTE_FRAME)
+	ERROR_FRAME = bool(messagerx.flags & IS_ERROR_FRAME)
+	
+	
+	'''
 	if testBit(bits, 0) != 0:
 		msgrx.id_type = True
 	else:
@@ -135,15 +152,23 @@ def messageConvertRX(messagerx):
 		msgrx.is_error_frame = True
 	else:
 		msgrx.is_error_frame = False
+	'''
+	#msgrx.arbitration_id = messagerx.id
+	#msgrx.dlc = messagerx.sizeData
 	
-	msgrx.arbitration_id = messagerx.id
-	msgrx.dlc = messagerx.sizeData
 	
+	#msgrx.data = bytearray(messagerx.data)
+	#emulate like line 316 on socketcan native
+	msgrx = Message(timestamp=messagerx.timestamp, 
+					is_remote_frame=REMOTE_FRAME,
+					extended_id=ID_TYPE, 
+					is_error_frame=ERROR_FRAME, 
+					arbitration_id=messagerx.id, 
+					dlc=messagerx.sizeData, 
+					data=messagerx.data
+					)
 	
-	msgrx.data = bytearray(messagerx.data)
-	
-	msgrx.timestamp = messagerx.timestamp
-	
+		
 	
 	return msgrx
 #interface functions
@@ -155,14 +180,14 @@ class Usb2canBus(BusABC):
 	
 		self.can = usb2can()
 	
-		enableFlags = c_ulong
+		enable_flags = c_ulong
 	
 		#set flags on the connection
 		if 'flags' in kwargs:
-			enableFlags = kwargs["flags"]
+			enable_flags = kwargs["flags"]
 			
 		else:
-			enableFlags = 0x00000008
+			enable_flags = 0x00000008
 	
 	
 	
@@ -192,14 +217,14 @@ class Usb2canBus(BusABC):
 		else:
 			baudrate = 500
 		
-		connector = setString(deviceID, baudrate)
+		connector = set_string(deviceID, baudrate)
 		
-		self.handle = self.can.CanalOpen(connector, enableFlags)
+		self.handle = self.can.CanalOpen(connector, enable_flags)
 		
 	#send a message	
 	def send(self, msg):
 		
-		tx = messageConvertTX(msg)
+		tx = message_convert_tx(msg)
 		self.can.CanalSend(self.handle, byref(tx))
 		
 		#enable debug mode
@@ -218,7 +243,7 @@ class Usb2canBus(BusABC):
 		
 			if status != 0:
 				status = self.can.CanalReceive(self.handle, byref(messagerx))
-				rx = messageConvertRX(messagerx)
+				rx = message_convert_rx(messagerx)
 				
 		
 		return rx	
