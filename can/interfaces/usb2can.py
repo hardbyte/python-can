@@ -2,8 +2,9 @@
 
 from ctypes import *
 from struct import *
+import logging
 #import collections
-
+logging.basicConfig(filename='can2usb.log',level=logging.DEBUG)
 #type definitions
 
 flags = c_ulong
@@ -58,7 +59,7 @@ class usb2can:
 		self.__m_dllBasic = windll.LoadLibrary("usb2can.dll")
 		
 		if self.__m_dllBasic == None:
-			print "DLL cannot be loaded"
+			logging.warning('DLL failed to load')
 	
 
 
@@ -68,28 +69,28 @@ class usb2can:
 			res = self.__m_dllBasic.CanalOpen(pConfigureStr, flags)
 			return res
 		except:
-			print "Could not open"
+			logging.warning('Failed to open')
 			raise
 	def CanalClose(self, handle):
 		try:
 			res = self.__m_dllBasic.CanalClose(handle)
 			return res
 		except:
-			print "could not close port"
+			logging.warning('Failed to close')
 			raise
 	def CanalSend(self, handle, msg):
 		try:	
 			res = self.__m_dllBasic.CanalSend(handle, msg)
 			return res
 		except:
-			print "sending error"
+			logging.warning('Sending error')
 			raise
 	def CanalReceive(self, handle, msg):
 		try:	
 			res = self.__m_dllBasic.CanalReceive(handle, msg)
 			return res
 		except:
-			print "Receive Error"
+			logging.warning('Receive error')
 			raise		
 		
 	def CanalBlockingSend(self, handle, msg, timeout):
@@ -97,7 +98,7 @@ class usb2can:
 			res = self.__m_dllBasic.CanalBlockingSend(handle, msg, timeout)
 			return res
 		except:
-			print "sending error"
+			logging.warning('Blocking send error')
 			raise		
 	
 	def CanalBlockingReceive(self, handle, msg, timeout):
@@ -105,7 +106,7 @@ class usb2can:
 			res = self.__m_dllBasic.CanalBlockingReceive(handle, msg, timeout)
 			return res
 		except:
-			print "receive Error"
+			logging.warning('Blocking Receive Failed')
 			raise		
 		
 	def CanalGetStatus(self, handle, CanalStatus):
@@ -113,7 +114,7 @@ class usb2can:
 			res = self.__m_dllBasic.CanalGetStatus(handle, CanalStatus)
 			return res
 		except:
-			print "failed to get status"
+			logging.warning('Get status failed')
 			raise
 	
 	
@@ -124,7 +125,7 @@ class usb2can:
 			res = self.__m_dllBasic.CanalGetStatistics(handle, CanalStatistics)
 			return res
 		except:
-			print "sending error"
+			logging.warning('Get Statistics failed')
 			raise
 	
 	
@@ -136,7 +137,7 @@ class usb2can:
 			res = self.__m_dllBasic.CanalGetVersion()
 			return res
 		except:
-			print "sending error"
+			logging.warning('Failed to get version info')
 			raise
 	
 	
@@ -148,7 +149,7 @@ class usb2can:
 			res = self.__m_dllBasic.CanalGetDllVersion()
 			return res
 		except:
-			print "sending error"
+			logging.warning('Failed to get DLL version')
 			raise
 	
 	
@@ -160,7 +161,7 @@ class usb2can:
 			res = self.__m_dllBasic.CanalGetVendorString()
 			return res
 		except:
-			print "sending error"
+			logging.warning('Failed to get vendor string')
 			raise	
 	
 	
