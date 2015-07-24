@@ -29,22 +29,26 @@ usb2can.send(msg)
 
 
 
-rx = usb2can.recv(timeout=None)
+
 counter = 0
-while True:
+
+while counter is 0:
 	rx = usb2can.recv(timeout=None)
-	print (counter)
-	print ('\n')
-	print ('\n')
-	print str(hexlify(rx.data))
-	print ('\n')
-	print rx.timestamp
-	print ('\n')
-	print rx.is_remote_frame
-	print ('\n')
-	print rx.is_error_frame
-	print ('\n')
-	print rx.id_type
-	print ('\n')
-	print rx.dlc
-	counter = counter + 1
+	if rx is None:
+		n = 5
+		
+	else:
+		print ('\n')
+		print ('\n')
+		print str(hexlify(rx.data))
+		print ('\n')
+		print rx.timestamp
+		print ('\n')
+		print rx.is_remote_frame
+		print ('\n')
+		print rx.is_error_frame
+		print ('\n')
+		print rx.id_type
+		print ('\n')
+		print rx.dlc
+		
