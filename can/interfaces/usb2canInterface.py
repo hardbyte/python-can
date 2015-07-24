@@ -5,7 +5,8 @@ import ctypes
 
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('can.usb2can')
+
 
 #from can.interfaces.usb2can import *
 from usb2can import *
@@ -149,16 +150,23 @@ class Usb2canBus(BusABC):
 		
 		if timeout is None:
 			status = self.can.CanalReceive(self.handle, byref(messagerx))
-			rx = message_convert_rx(messagerx)
-		
+			
+			
+				
+			
 		else:
 			time = c_ulong
 			time = timeout
 			status = self.can.CanalBlockingReceive(self.handle, byref(messagerx),time)
+			
+		if status is 0:
 			rx = message_convert_rx(messagerx)
-					
+		else:
+			logger.error('Canal Error %s', status)
+			rx = None
 		
 		return rx	
+			
 		
 
 #implementation of a close function to shut down the device safely	
