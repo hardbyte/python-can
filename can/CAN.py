@@ -8,11 +8,11 @@ Copyright (C) 2010 Dynamic Controls
 from __future__ import print_function
 
 import logging
+
 try:
     import queue
 except ImportError:
     import Queue as queue
-
 
 log = logging.getLogger('can')
 log.debug("Loading python-can")
@@ -32,19 +32,17 @@ def set_logging_level(level_name=None):
 
 
 class Listener(object):
-
     def on_message_received(self, msg):
         raise NotImplementedError(
             "{} has not implemented on_message_received".format(
                 self.__class__.__name__)
-            )
+        )
 
     def __call__(self, msg):
         return self.on_message_received(msg)
 
 
 class BufferedReader(Listener):
-
     """
     A BufferedReader is a subclass of :class:`~can.Listener` which implements a
     **message buffer**: that is, when the :class:`can.BufferedReader` instance is
@@ -68,10 +66,9 @@ class BufferedReader(Listener):
             return self.buffer.get(block=True, timeout=timeout)
         except queue.Empty:
             return None
- 
+
 
 class Printer(Listener):
-
     """
     The Printer class is a subclass of :class:`~can.Listener` which simply prints
     any messages it receives to the terminal.
@@ -87,7 +84,7 @@ class Printer(Listener):
 
     def on_message_received(self, msg):
         if self.output_file is not None:
-            self.output_file.write(str(msg)+"\n")
+            self.output_file.write(str(msg) + "\n")
         else:
             print(msg)
 
@@ -98,7 +95,6 @@ class Printer(Listener):
 
 
 class CSVWriter(Listener):
-
     """Writes a comma separated text file of
     timestamp, arbitrationid, flags, dlc, data
     for each messages received.
@@ -124,7 +120,6 @@ class CSVWriter(Listener):
 
 
 class SqliteWriter(Listener):
-
     """TODO"""
 
     def __init__(self, filename):

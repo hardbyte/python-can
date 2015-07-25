@@ -1,6 +1,8 @@
 import can
 from can.util import load_config, choose_socketcan_implementation
 
+VALID_INTERFACES = set(['kvaser', 'serial', 'pcan', 'socketcan_native',
+                                'socketcan_ctypes', 'socketcan', 'usb2can'])
 
 class Bus(object):
     """
@@ -18,7 +20,8 @@ class Bus(object):
             can.rc['interface'] = kwargs['bustype']
             del kwargs['bustype']
 
-        if can.rc['interface'] not in set(['kvaser', 'serial', 'pcan', 'socketcan_native', 'socketcan_ctypes', 'socketcan', 'usb2can']):
+
+        if can.rc['interface'] not in VALID_INTERFACES:
             raise NotImplementedError('Invalid CAN Bus Type - {}'.format(can.rc['interface']))
 
         if can.rc['interface'] == 'socketcan':
@@ -40,11 +43,9 @@ class Bus(object):
         elif can.rc['interface'] == 'pcan':
             from can.interfaces.pcan import PcanBus
             cls = PcanBus
-		#adding statement for usb2can
         elif can.rc['interface'] == 'usb2can':
             from can.interfaces.usb2canInterface import Usb2canBus
             cls = Usb2canBus
-		#end of change
         else:
             raise NotImplementedError("CAN Interface Not Found")
 
