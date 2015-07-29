@@ -70,7 +70,7 @@ def message_convert_rx(messagerx):
                     is_error_frame=ERROR_FRAME,
                     arbitration_id=messagerx.id,
                     dlc=messagerx.sizeData,
-                    data=messagerx.data
+                    data=messagerx.data[:messagerx.sizeData]
                     )
 
     return msgrx
