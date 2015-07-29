@@ -17,6 +17,8 @@ leaf-socketcan driver for Linux.
 
 The pcan interface was contributed by Albert Bloomfield in 2013.
 
+The usb2can interface was contributed by Joshua Villyard in 2015
+
 Python 3
 --------
 
