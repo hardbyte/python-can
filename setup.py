@@ -17,7 +17,7 @@ setup(
     author="Brian Thorne",
     author_email="hardbyte@gmail.com",
     description="Controller Area Network interface module for Python",
-    long_description=open('README.md').read(),
+    long_description=open('README').read(),
     license="LGPL v3",
     package_data={
         "": ["CONTRIBUTORS.txt", "LICENSE.txt"],
