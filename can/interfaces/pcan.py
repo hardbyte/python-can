@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 from can.interfaces.PCANBasic import *
 from can.bus import BusABC
 from can.message import Message
+import time
 
 boottimeEpoch = 0
 try:
@@ -89,15 +90,26 @@ class PcanBus(BusABC):
             return stsReturn[1]
 
     def recv(self, timeout=None):
+        start_time = time.perf_counter()
+
+        if timeout is None:
+            timeout = 0
+
         rx_msg = Message()
 
         log.debug("Trying to read a msg")
 
-        result = self.m_objPCANBasic.Read(self.m_PcanHandle)
-        if result[0] == PCAN_ERROR_QRCVEMPTY or result[0] == PCAN_ERROR_BUSLIGHT or result[0] == PCAN_ERROR_BUSHEAVY:
-            return None
-        elif result[0] != PCAN_ERROR_OK:
-            raise Exception(self.GetFormattedError(result[0]))
+        result = None
+        while result is None:
+            result = self.m_objPCANBasic.Read(self.m_PcanHandle)
+            if result[0] == PCAN_ERROR_QRCVEMPTY or result[0] == PCAN_ERROR_BUSLIGHT or result[0] == PCAN_ERROR_BUSHEAVY:
+                if time.perf_counter() - start_time >= timeout:
+                    return None
+                else:
+                    result = None
+                    time.sleep(0.001)
+            elif result[0] != PCAN_ERROR_OK:
+                raise Exception(self.GetFormattedError(result[0]))
 
         theMsg = result[1]
         itsTimeStamp = result[2]

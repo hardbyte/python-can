@@ -68,7 +68,7 @@ if __name__ == "__main__":
 
     bus = can.interface.Bus(results.channel, bustype=results.interface, can_filters=can_filters)
     print('Can Logger (Started on {})\n'.format(datetime.datetime.now()))
-    notifier = can.Notifier(bus, [can.Printer(results.log_file)])
+    notifier = can.Notifier(bus, [can.Printer(results.log_file)], timeout=0.1)
 
     try:
         while True:
