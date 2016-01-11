@@ -1,7 +1,7 @@
 python-can
 ==========
 
-| |release|   | |docs|  | |build| |
+|release| |docs|  |build| 
 
 .. |release| image:: https://img.shields.io/pypi/v/python-can.svg
    :target: https://pypi.python.org/pypi/python-can/
