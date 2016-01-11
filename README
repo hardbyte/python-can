@@ -1,9 +1,19 @@
 python-can
 ==========
 
-.. image:: https://img.shields.io/pypi/v/python-can.svg
-    :target: https://pypi.python.org/pypi/python-can/
-    :alt: Latest Version
+| |release|   | |docs|  | |build| |
+
+.. |release| image:: https://img.shields.io/pypi/v/python-can.svg
+   :target: https://pypi.python.org/pypi/python-can/
+   :alt: Latest Version
+
+.. |docs| image:: https://readthedocs.org/projects/python-can/badge/?version=latest
+   :target: http://python-can.readthedocs.org/en/latest/?badge=latest
+   :alt: Documentation Status
+                
+.. |build| image:: https://drone.io/bitbucket.org/hardbyte/python-can/status.png
+   :target: https://drone.io/bitbucket.org/hardbyte/python-can/latest
+   :alt: CI Server
 
 
 The **C**\ ontroller **A**\ rea **N**\ etwork is a bus standard designed
