@@ -111,6 +111,9 @@ def load_config(path=None):
         if key not in config:
             config[key] = None
 
+    if config['interface'] == 'socketcan':
+        config['interface'] = choose_socketcan_implementation()
+
     return config
 
 def choose_socketcan_implementation():
