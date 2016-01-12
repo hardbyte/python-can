@@ -65,7 +65,7 @@ example to send a message on `vcan0`:
 CAN Errors
 ^^^^^^^^^^
 
-A device may enter the "bus-off" state if too much errors occurred on
+A device may enter the "bus-off" state if too many errors occurred on
 the CAN bus. Then no more messages are received or sent. An automatic
 bus-off recovery can be enabled by setting the "restart-ms" to a
 non-zero value, e.g.:
