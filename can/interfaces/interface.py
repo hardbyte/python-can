@@ -22,7 +22,7 @@ class Bus(object):
             if can.rc['interface'] == 'socketcan':
                 can.rc['interface'] = choose_socketcan_implementation()
 
-        if 'interface' not in can.rc or 'channel' not in can.rc:
+        if 'interface' not in can.rc or 'channel' not in can.rc or can.rc['interface'] is None:
             can.log.debug("Loading default configuration")
             # Load defaults
             can.rc = load_config()
