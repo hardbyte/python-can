@@ -34,12 +34,13 @@ if __name__ == "__main__":
                         You can add several of these e.g., -vv is DEBUG''', default=2)
 
     parser.add_argument('-c', '--channel', help='''Most backend interfaces require some sort of channel.
-    For example with the serial interface the channel might be a rfcomm device: /dev/rfcomm0
-    Other channel examples are: can0, vcan0''', default=can.rc['channel'])
+    For example with the serial interface the channel might be a rfcomm device: "/dev/rfcomm0"
+    With the socketcan interfaces valid channel examples include: "can0", "vcan0"''', default=can.rc['channel'])
 
-    parser.add_argument('-i', '--interface', dest="interface", help='''Which backend do you want to use?''',
-                        default='kvaser', choices=('kvaser', 'socketcan', 'socketcan_ctypes',
-                                                   'socketcan_native', 'pcan', 'serial'))
+    parser.add_argument('-i', '--interface', dest="interface",
+                        help='''Specify the backend CAN interface to use. If left blank,
+                        fall back to reading from configuration files.''',
+                        choices=can.interface.VALID_INTERFACES)
 
     parser.add_argument('--filter', help='''Comma separated filters can be specified for the given CAN interface:
         <can_id>:<can_mask> (matches when <received_can_id> & mask == can_id & mask)
