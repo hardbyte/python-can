@@ -133,6 +133,7 @@ class CyclicSendTask(CyclicSendTaskABC):
         super(CyclicSendTask,self).__init__(channel, message, period)
         self.bcm_socket = create_bcm_socket(channel)
         self._tx_setup(message)
+        self.message = message
 
     def _tx_setup(self, message):
         # Create a low level packed frame to pass to the kernel
@@ -158,6 +159,11 @@ class CyclicSendTask(CyclicSendTaskABC):
         """
         assert message.arbitration_id == self.can_id, "You cannot modify the can identifier"
         self._tx_setup(message)
+        self.message
+
+
+    def start(self):
+        self._tx_setup(self.message)
 
 
 def createSocket(can_protocol=None):
