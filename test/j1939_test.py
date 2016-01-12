@@ -11,7 +11,6 @@ import random
 
 
 import can
-from can.interfaces.interface import Bus
 
 can_interface = 'vcan0'
 from can.protocols import j1939
@@ -73,8 +72,8 @@ class StaticJ1939Test(unittest.TestCase):
 
     def testTooLongAMessage(self):
         data = bytes([random.randrange(0, 2 ** 8 - 1) for b in range(1786)])
-        self.assertRaises(j1939.PDU, kwargs={'arbitration_id': self.arbitration_id, 'data': data})
-
+        with self.assertRaises(AssertionError):
+            j1939.PDU(arbitration_id=self.arbitration_id, data=data)
 
 class J1939BusTest(unittest.TestCase):
 
@@ -92,6 +91,8 @@ class NetworkJ1939Test(unittest.TestCase):
     def setUp(self):
         super(NetworkJ1939Test, self).setUp()
         self.bus = j1939.Bus(channel=can_interface)
+        while self.bus.recv(timeout=0.1) is not None:
+            pass
 
     def tearDown(self):
         sleep(0.2)
@@ -114,29 +115,37 @@ class NetworkJ1939Test(unittest.TestCase):
             self.bus.send(m)
 
     def testReceivingLongMessage(self):
-        node = j1939.Node(self.bus, j1939.NodeName(0), [0x42, 0x01])
 
-        data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+        data = [1, 2, 3, 4, 5, 6, 7, 8]
         pgn = j1939.PGN(reserved_flag=True, pdu_specific=j1939.constants.DESTINATION_ADDRESS_GLOBAL)
         arbitration_id = j1939.ArbitrationID(pgn=pgn, source_address=0x01)
         m_out = j1939.PDU(arbitration_id=arbitration_id, data=data)
 
         otherbus = j1939.Bus(channel=can_interface)
 
-        attempts = 0
-        while attempts < 5:
-            m_in = otherbus.recv(timeout=0.5)
-            if m_in is not None:
-                break
-            # send a long message
-            self.bus.send(m_out)
-            attempts += 1
+        # The otherbus might miss messages if we send them before its receive
+        # thread is running, so we wait here
+        sleep(0.50)
 
-        self.assertIsNotNone(m_in, 'Should receive messages on can bus when sending long message')
-        self.assertIsInstance(m_in, j1939.PDU)
-        self.assertListEqual(m_in.data, m_out.data)
+        node = j1939.Node(otherbus, j1939.NodeName(0), [0x42, 0x01])
 
-        otherbus.shutdown()
+        try:
+            attempts = 0
+            while attempts < 3:
+                m_in = otherbus.recv(timeout=2)
+                if m_in is not None:
+                    break
+
+                # send a long message
+                self.bus.send(m_out)
+                attempts += 1
+
+            self.assertIsNotNone(m_in, 'Should receive sent messages on J1939 Bus')
+            self.assertIsInstance(m_in, j1939.PDU)
+            self.assertListEqual(m_in.data, m_out.data)
+
+        finally:
+            otherbus.shutdown()
 
 
 if __name__ == "__main__":

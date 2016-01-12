@@ -253,7 +253,7 @@ class Bus(BusABC):
             retval = self._data_transfer_handler(pdu)
         else:
             retval = pdu
-
+        logging.debug(retval)
         return retval
 
     def _connection_management_handler(self, msg):
