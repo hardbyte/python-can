@@ -19,7 +19,7 @@ import can
 channel = 'vcan0'
 can.rc['interface'] = 'socketcan_ctypes'
 
-unittest.skipIf(can.rc['interface'] is not None, "Need a CAN interface")
+unittest.skipIf('interface' not in can.rc, "Need a CAN interface")
 class ControllerAreaNetworkTestCase(unittest.TestCase):
     """
     This test ensures that what messages go in to the bus is what comes out.
