@@ -299,6 +299,12 @@ class SocketscanNative_Bus(BusABC):
                                    socket.CAN_RAW_FILTER,
                                    struct.pack(can_filter_fmt, *filter_data),
                                    )
+        if channel is None:
+            # We know we are socketcan, a channel "should" have
+            # been given but we can assume "can0"
+            log.warn("Channel not given. Falling back to using 'can0'")
+            channel = 'can0'
+
         bindSocket(self.socket, channel)
         super(SocketscanNative_Bus, self).__init__()
 

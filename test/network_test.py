@@ -17,9 +17,9 @@ rbool = lambda: bool(round(random.random()))
 import can
 
 channel = 'vcan0'
-can.rc['interface'] = 'socketcan_ctypes'
+#can.rc['interface'] = 'socketcan_ctypes'
 
-unittest.skipIf('interface' not in can.rc, "Need a CAN interface")
+@unittest.skipIf('interface' not in can.rc, "Need a CAN interface")
 class ControllerAreaNetworkTestCase(unittest.TestCase):
     """
     This test ensures that what messages go in to the bus is what comes out.
@@ -66,6 +66,8 @@ class ControllerAreaNetworkTestCase(unittest.TestCase):
         logging.debug("testing producer alone")
         self.producer()
         logging.debug("producer test complete")
+
+
 
     def testProducerConsumer(self):
         logging.debug("testing producer/consumer")
