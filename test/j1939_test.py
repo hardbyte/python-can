@@ -13,6 +13,7 @@ import random
 import can
 
 can_interface = 'vcan0'
+#can.rc['interface'] = 'socketcan_ctypes'
 from can.protocols import j1939
 
 import logging
