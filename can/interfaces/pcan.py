@@ -3,6 +3,7 @@ Enable basic can over a PCAN USB device.
 
 """
 import logging
+import sys
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +19,13 @@ try:
     boottimeEpoch = (uptime.boottime() - datetime.datetime.utcfromtimestamp(0)).total_seconds()
 except:
     boottimeEpoch = 0
+
+if sys.version_info >= (3, 3):
+    # new in 3.3
+    timeout_clock = time.perf_counter
+else:
+    # deprecated in 3.3
+    timeout_clock = time.clock
 
 # Set up logging
 logging.basicConfig(level=logging.WARNING)
@@ -90,7 +98,7 @@ class PcanBus(BusABC):
             return stsReturn[1]
 
     def recv(self, timeout=None):
-        start_time = time.perf_counter()
+        start_time = timeout_clock()
 
         if timeout is None:
             timeout = 0
@@ -103,7 +111,7 @@ class PcanBus(BusABC):
         while result is None:
             result = self.m_objPCANBasic.Read(self.m_PcanHandle)
             if result[0] == PCAN_ERROR_QRCVEMPTY or result[0] == PCAN_ERROR_BUSLIGHT or result[0] == PCAN_ERROR_BUSHEAVY:
-                if time.perf_counter() - start_time >= timeout:
+                if timeout_clock() - start_time >= timeout:
                     return None
                 else:
                     result = None
