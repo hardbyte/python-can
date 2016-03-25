@@ -297,6 +297,11 @@ class KvaserBus(BusABC):
         :param int channel:
             The Channel id to create this bus with.
 
+        :param list can_filters:
+            A list of dictionaries each containing a "can_id" and a "can_mask".
+
+            >>> [{"can_id": 0x11, "can_mask": 0x21}]
+
         Backend Configuration
         ---------------------
 
