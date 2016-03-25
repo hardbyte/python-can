@@ -336,24 +336,24 @@ class SocketscanNative_Bus(BusABC):
 
         return rx_msg
 
-    def send(self, message):
+    def send(self, msg):
         log.debug("We've been asked to write a message to the bus")
-        arbitration_id = message.arbitration_id
-        if message.id_type:
+        arbitration_id = msg.arbitration_id
+        if msg.id_type:
             log.debug("sending an extended id type message")
             arbitration_id |= 0x80000000
-        if message.is_remote_frame:
+        if msg.is_remote_frame:
             log.debug("requesting a remote frame")
             arbitration_id |= 0x40000000
-        if message.is_error_frame:
+        if msg.is_error_frame:
             log.warning("Trying to send an error frame - this won't work")
             arbitration_id |= 0x20000000
         l = log.getChild("tx")
-        l.debug("sending: %s", message)
+        l.debug("sending: %s", msg)
         try:
-            self.socket.send(build_can_frame(arbitration_id, message.data))
+            self.socket.send(build_can_frame(arbitration_id, msg.data))
         except OSError:
-            l.warning("Failed to send: %s", message)
+            l.warning("Failed to send: %s", msg)
 
 
 if __name__ == "__main__":
