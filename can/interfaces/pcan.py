@@ -3,12 +3,14 @@ Enable basic can over a PCAN USB device.
 
 """
 import logging
+import sys
 
 logger = logging.getLogger(__name__)
 
 from can.interfaces.PCANBasic import *
 from can.bus import BusABC
 from can.message import Message
+import time
 
 boottimeEpoch = 0
 try:
@@ -17,6 +19,13 @@ try:
     boottimeEpoch = (uptime.boottime() - datetime.datetime.utcfromtimestamp(0)).total_seconds()
 except:
     boottimeEpoch = 0
+
+if sys.version_info >= (3, 3):
+    # new in 3.3
+    timeout_clock = time.perf_counter
+else:
+    # deprecated in 3.3
+    timeout_clock = time.clock
 
 # Set up logging
 logging.basicConfig(level=logging.WARNING)
@@ -89,15 +98,26 @@ class PcanBus(BusABC):
             return stsReturn[1]
 
     def recv(self, timeout=None):
+        start_time = timeout_clock()
+
+        if timeout is None:
+            timeout = 0
+
         rx_msg = Message()
 
         log.debug("Trying to read a msg")
 
-        result = self.m_objPCANBasic.Read(self.m_PcanHandle)
-        if result[0] == PCAN_ERROR_QRCVEMPTY or result[0] == PCAN_ERROR_BUSLIGHT or result[0] == PCAN_ERROR_BUSHEAVY:
-            return None
-        elif result[0] != PCAN_ERROR_OK:
-            raise Exception(self.GetFormattedError(result[0]))
+        result = None
+        while result is None:
+            result = self.m_objPCANBasic.Read(self.m_PcanHandle)
+            if result[0] == PCAN_ERROR_QRCVEMPTY or result[0] == PCAN_ERROR_BUSLIGHT or result[0] == PCAN_ERROR_BUSHEAVY:
+                if timeout_clock() - start_time >= timeout:
+                    return None
+                else:
+                    result = None
+                    time.sleep(0.001)
+            elif result[0] != PCAN_ERROR_OK:
+                raise Exception(self.GetFormattedError(result[0]))
 
         theMsg = result[1]
         itsTimeStamp = result[2]
@@ -159,6 +179,8 @@ class PcanBus(BusABC):
         if result != PCAN_ERROR_OK:
             logging.error("Error sending frame :-/ " + self.GetFormattedError(result))
 
+    def flash(self, flash):
+        self.m_objPCANBasic.SetValue(self.channel_info, PCAN_CHANNEL_IDENTIFYING, bool(flash))
 
     def shutdown(self):
         self.m_objPCANBasic.Uninitialize(self.m_PcanHandle)
