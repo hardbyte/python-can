@@ -180,6 +180,7 @@ class PcanBus(BusABC):
             logging.error("Error sending frame :-/ " + self.GetFormattedError(result))
 
     def flash(self, flash):
+        """Turn on or off flashing of the device's LED for physical identification purposes."""
         self.m_objPCANBasic.SetValue(self.channel_info, PCAN_CHANNEL_IDENTIFYING, bool(flash))
 
     def shutdown(self):
