@@ -91,11 +91,31 @@ class PcanBus(BusABC):
         # a text describing the current error is returned.
         #
         #return error
+
+        def bits(n):
+            while n:
+                b = n & (~n+1)
+                yield b
+                n ^= b
+
         stsReturn = self.m_objPCANBasic.GetErrorText(error, 0)
         if stsReturn[0] != PCAN_ERROR_OK:
-            return "An error occurred. Error-code's text ({0:X}h) couldn't be retrieved".format(error)
+            strings = []
+
+            for b in bits(error):
+                stsReturn = self.m_objPCANBasic.GetErrorText(b, 0)
+                if stsReturn[0] != PCAN_ERROR_OK:
+                    text = "An error occurred. Error-code's text ({0:X}h) couldn't be retrieved".format(error)
+                else:
+                    text = stsReturn[1].decode('utf-8')
+
+                strings.append(text)
+
+            complete_text = '\n'.join(strings)
         else:
-            return stsReturn[1].decode('utf-8')
+            complete_text = stsReturn[1].decode('utf-8')
+
+        return complete_text
 
     def recv(self, timeout=None):
         start_time = timeout_clock()
