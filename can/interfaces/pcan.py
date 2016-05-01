@@ -95,7 +95,7 @@ class PcanBus(BusABC):
         if stsReturn[0] != PCAN_ERROR_OK:
             return "An error occurred. Error-code's text ({0:X}h) couldn't be retrieved".format(error)
         else:
-            return str(stsReturn[1])
+            return stsReturn[1].decode('utf-8')
 
     def recv(self, timeout=None):
         start_time = timeout_clock()
