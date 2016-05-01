@@ -297,6 +297,11 @@ class KvaserBus(BusABC):
         :param int channel:
             The Channel id to create this bus with.
 
+        :param list can_filters:
+            A list of dictionaries each containing a "can_id" and a "can_mask".
+
+            >>> [{"can_id": 0x11, "can_mask": 0x21}]
+
         Backend Configuration
         ---------------------
 
@@ -465,15 +470,15 @@ class KvaserBus(BusABC):
         else:
             log.debug('read complete -> status not okay')
 
-    def send(self, tx_msg):
-        #log.debug("Writing a message: {}".format(tx_msg))
-        ArrayConstructor = ctypes.c_byte * tx_msg.dlc
-        buf = ArrayConstructor(*tx_msg.data)
+    def send(self, msg):
+        #log.debug("Writing a message: {}".format(msg))
+        ArrayConstructor = ctypes.c_byte * msg.dlc
+        buf = ArrayConstructor(*msg.data)
         canWriteWait(self._write_handle,
-                     tx_msg.arbitration_id,
+                     msg.arbitration_id,
                      ctypes.byref(buf),
-                     tx_msg.dlc,
-                     tx_msg.flags,
+                     msg.dlc,
+                     msg.flags,
                      5)
 
     def shutdown(self):

@@ -1,6 +1,10 @@
 """
 SAE J1939 vehicle bus standard.
 
+SAE J1939 defines a higher layer protocol on CAN.
+It implements a more sophisticated addressing scheme
+and extends the maximum packet size above 8 bytes.
+
 http://en.wikipedia.org/wiki/J1939
 """
 
@@ -253,7 +257,7 @@ class Bus(BusABC):
             retval = self._data_transfer_handler(pdu)
         else:
             retval = pdu
-
+        logging.debug(retval)
         return retval
 
     def _connection_management_handler(self, msg):

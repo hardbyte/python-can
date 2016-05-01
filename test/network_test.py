@@ -14,16 +14,17 @@ logging.getLogger(__file__).setLevel(logging.WARNING)
 # make a random bool:
 rbool = lambda: bool(round(random.random()))
 
-channel = 'vcan0'
 import can
-can.rc['interface'] = 'socketcan_ctypes'
 
+channel = 'vcan0'
+#can.rc['interface'] = 'socketcan_ctypes'
 
+@unittest.skipIf('interface' not in can.rc, "Need a CAN interface")
 class ControllerAreaNetworkTestCase(unittest.TestCase):
-
     """
     This test ensures that what messages go in to the bus is what comes out.
-    It relies on a vcan0 interface.
+
+    Requires a can interface.
 
     To ensure that hardware and/or software message priority queues don't
     effect the test, messages are sent one at a time.
@@ -65,6 +66,8 @@ class ControllerAreaNetworkTestCase(unittest.TestCase):
         logging.debug("testing producer alone")
         self.producer()
         logging.debug("producer test complete")
+
+
 
     def testProducerConsumer(self):
         logging.debug("testing producer/consumer")

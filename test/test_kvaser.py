@@ -7,7 +7,10 @@ import ctypes
 
 import unittest
 
-from mock import patch, MagicMock, Mock
+try:
+    from unittest.mock import Mock, patch
+except ImportError:
+    from mock import patch, Mock
 
 
 class KvaserTest(unittest.TestCase):
@@ -30,8 +33,8 @@ class KvaserTest(unittest.TestCase):
 
             b = can.interface.Bus(channel=0, bustype='kvaser')
             assert isinstance(b, canlib.KvaserBus)
-            canlib.canGetNumberOfChannels.assert_called_once()
-            canlib.canBusOn.assert_called_once()
+            assert canlib.canGetNumberOfChannels.called
+            assert canlib.canBusOn.called
 
             msg = interface.Message(
                 arbitration_id=0xc0ffee,
@@ -40,7 +43,7 @@ class KvaserTest(unittest.TestCase):
 
             b.send(msg)
 
-            canlib.canWriteWait.assert_called_once()
+            assert canlib.canWriteWait.called
 
 
 if __name__ == '__main__':

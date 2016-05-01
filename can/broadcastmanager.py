@@ -72,4 +72,4 @@ def send_periodic(channel, message, period):
     Send a message every `period` seconds on the given channel.
 
     """
-    return can.interfaces.interface.CyclicSendTask(channel, message, period)
+    return can.interface.CyclicSendTask(channel, message, period)
