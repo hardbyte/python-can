@@ -117,6 +117,16 @@ class PcanBus(BusABC):
 
         return complete_text
 
+    def StatusOk(self):
+        status = self.m_objPCANBasic.GetStatus(self.channel_info)
+
+        return status == PCAN_ERROR_OK
+
+    def Reset(self):
+        status = self.m_objPCANBasic.Reset(self.channel_info)
+
+        return status == PCAN_ERROR_OK
+
     def recv(self, timeout=None):
         start_time = timeout_clock()
 
