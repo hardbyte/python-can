@@ -196,8 +196,12 @@ class PcanBus(BusABC):
 
         result = self.m_objPCANBasic.Write(self.m_PcanHandle, CANMsg)
 
-        if result != PCAN_ERROR_OK:
+        sent = result == PCAN_ERROR_OK
+
+        if not sent:
             logging.error("Error sending frame :-/ " + self.GetFormattedError(result))
+
+        return sent
 
     def flash(self, flash):
         """Turn on or off flashing of the device's LED for physical identification purposes."""
