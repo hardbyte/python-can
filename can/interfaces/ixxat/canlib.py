@@ -21,8 +21,8 @@ try:
     if sys.platform == "win32":
         __canlib = ctypes.windll.LoadLibrary("vcinpl")
     else:
-        raise ImportError("IXXAT VCI is only available on win32 systems. Use socketcan on Linux systems")
-    log.info("loaded IXXAT CAN library")
+        raise ImportError("IXXAT VCI is only available on Windows systems. Use socketcan on Linux systems")
+    log.info("Loaded IXXAT CAN library")
 except OSError as e:
     raise ImportError("IXXAT vcinpl.dll is unavailable: {}".format(e))
 
@@ -195,7 +195,7 @@ class IXXATBus(BusABC):
         channel = int(channel)
 
         if (bitrate not in self.CHANNEL_BITRATES[0]):
-            raise VCIError("Invalid bitrate {}".format(bitrate))
+            raise ValueError("Invalid bitrate {}".format(bitrate))
 
         self._device_handle = structures.HANDLE()
         self._device_info = structures.VCIDEVICEINFO()
