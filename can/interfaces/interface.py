@@ -3,7 +3,7 @@ from can.util import load_config, choose_socketcan_implementation
 from can.broadcastmanager import CyclicSendTaskABC, MultiRateCyclicSendTaskABC
 
 VALID_INTERFACES = set(['kvaser', 'serial', 'pcan', 'socketcan_native',
-                                'socketcan_ctypes', 'socketcan', 'usb2can'])
+                        'socketcan_ctypes', 'socketcan', 'usb2can', 'ixxat'])
 
 
 class Bus(object):
@@ -49,6 +49,9 @@ class Bus(object):
         elif can.rc['interface'] == 'usb2can':
             from can.interfaces.usb2canInterface import Usb2canBus
             cls = Usb2canBus
+        elif can.rc['interface'] == 'ixxat':
+            from can.interfaces.ixxat import IXXATBus
+            cls = IXXATBus
         else:
             raise NotImplementedError("CAN Interface Not Found")
 
