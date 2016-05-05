@@ -118,6 +118,8 @@ canChannelReadMessage = __get_canlib_function("canChannelReadMessage", argtypes=
 canChannelPeekMessage = __get_canlib_function("canChannelPeekMessage", argtypes=[structures.HANDLE, structures.PCANMSG], restype=ctypes.c_long, errcheck=__check_status)
 #HRESULT canChannelWaitTxEvent (HANDLE hChannel UINT32 dwMsTimeout );
 canChannelWaitTxEvent = __get_canlib_function("canChannelWaitTxEvent", argtypes=[structures.HANDLE, ctypes.c_uint32], restype=ctypes.c_long, errcheck=__check_status)
+#HRESULT canChannelWaitRxEvent (HANDLE hChannel, UINT32 dwMsTimeout );
+canChannelWaitRxEvent = __get_canlib_function("canChannelWaitRxEvent", argtypes=[structures.HANDLE, ctypes.c_uint32], restype=ctypes.c_long, errcheck=__check_status)
 #HRESULT canChannelPostMessage (HANDLE hChannel, PCANMSG pCanMsg );
 canChannelPostMessage = __get_canlib_function("canChannelPostMessage", argtypes=[structures.HANDLE, structures.PCANMSG], restype=ctypes.c_long, errcheck=__check_status)
 
@@ -223,7 +225,8 @@ class IXXATBus(BusABC):
 
         log.info("Initializing channel {} in shared mode, {} rx buffers, {} tx buffers".format(channel, rxFifoSize, txFifoSize))
         canChannelOpen(self._device_handle, channel, constants.FALSE, ctypes.byref(self._channel_handle))
-        canChannelInitialize(self._channel_handle, rxFifoSize, rxFifoSize, txFifoSize, txFifoSize)
+        # Signal TX/RX events when at least one frame has been handled
+        canChannelInitialize(self._channel_handle, rxFifoSize, 1, txFifoSize, 1)
         canChannelActivate(self._channel_handle, constants.TRUE)
 
         log.info("Initializing control {} bitrate {}".format(channel, bitrate))
@@ -237,6 +240,16 @@ class IXXATBus(BusABC):
         canControlGetCaps(self._control_handle, ctypes.byref(self._channel_capabilities))
         # Start the CAN controller. Messages will be forwarded to the channel
         canControlStart(self._control_handle, constants.TRUE)
+
+        # Usually you get back 3 messages like "CAN initialized" ecc...
+        # Filter them out with low timeout
+        while (True):
+            try:
+                canChannelWaitRxEvent(self._channel_handle, 0)
+            except VCITimeout:
+                break
+            else:
+                canChannelReadMessage(self._channel_handle, 0, ctypes.byref(self._message))
 
         # TODO: filter messages
 
@@ -263,7 +276,6 @@ class IXXATBus(BusABC):
         if (timeout is None):
             timeout = constants.INFINITE
 
-        log.debug('Recv()ing message with timeout {}'.format(timeout))
         tm = None
         if (not timeout):
             try:
@@ -282,15 +294,21 @@ class IXXATBus(BusABC):
             t0 = time.perf_counter()
             t1 = t0 + (float(timeout)/1000)
             while (time.perf_counter() <= t1):
+                # Wait until at least one frame is in the buffer
                 try:
-                    canChannelReadMessage(self._channel_handle, timeout, ctypes.byref(self._message))
+                    canChannelWaitRxEvent(self._channel_handle, timeout)
                 except VCITimeout:
+                    log.debug('canChannelWaitRxEvent timed out after {}ms'.format(timeout))
                     return None
+
+                canChannelReadMessage(self._channel_handle, 0, ctypes.byref(self._message))
 
                 # See if we got a data or info/error messages
                 if (self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_DATA):
                     tm = time.perf_counter()
                     break
+
+                log.debug('Ignored non-data message')
 
         if (not tm):
             # Timed out / can message type is not DATA
@@ -313,7 +331,7 @@ class IXXATBus(BusABC):
         log.debug("Sending message: {}".format(msg))
 
         # This system is not designed to be very efficient
-        ctypes.memset(self._message, 0, ctypes.sizeof(structures.CANMSG))
+        ctypes.memset(ctypes.byref(self._message), 0, ctypes.sizeof(structures.CANMSG))
         self._message.uMsgInfo.Bits.type = constants.CAN_MSGTYPE_DATA
         self._message.uMsgInfo.Bits.rtr = 1 if msg.is_remote_frame else 0
         self._message.uMsgInfo.Bits.ext = 1 if msg.id_type else 0
