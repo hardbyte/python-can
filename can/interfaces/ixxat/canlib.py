@@ -263,6 +263,14 @@ class IXXATBus(BusABC):
 
         super(IXXATBus, self).__init__()
 
+    def _inWaiting(self):
+        try:
+            canChannelWaitRxEvent(self._channel_handle, 0)
+        except VCITimeout:
+            return 0
+        else:
+            return 1
+
     def flush_tx_buffer(self):
         " Flushes the transmit buffer on the IXXAT "
         # TODO: no timeout?
@@ -292,16 +300,24 @@ class IXXATBus(BusABC):
                     tm = time.perf_counter()
         else:
             t0 = time.perf_counter()
-            t1 = t0 + (float(timeout)/1000)
-            while (time.perf_counter() <= t1):
+            elapsed_ms = 0
+            remaining_ms = 0
+            while (elapsed_ms <= timeout):
+                elapsed_ms = int((time.perf_counter() - t0) * 1000)
+                remaining_ms = timeout - elapsed_ms
                 # Wait until at least one frame is in the buffer
                 try:
-                    canChannelWaitRxEvent(self._channel_handle, timeout)
+                    canChannelWaitRxEvent(self._channel_handle, remaining_ms)
                 except VCITimeout:
-                    log.debug('canChannelWaitRxEvent timed out after {}ms'.format(timeout))
+                    log.debug('canChannelWaitRxEvent timed out after {}ms'.format(remaining_ms))
                     return None
 
-                canChannelReadMessage(self._channel_handle, 0, ctypes.byref(self._message))
+                # In theory we should be fine with a 0 timeout since the rxEvent was already
+                # set but I've seen timeouts appearing here and there
+                try:
+                    canChannelReadMessage(self._channel_handle, 0, ctypes.byref(self._message))
+                except VCITimeout:
+                    continue
 
                 # See if we got a data or info/error messages
                 if (self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_DATA):
