@@ -21,15 +21,18 @@ class Message(object):
         #    data = bytes(data)
 
         if data is None:
-            data = []
-        try:
-            self.data = bytearray(data)
-        except TypeError:
-            logger.error("Couldn't create message from %r (%r)", data, type(data))
-        if dlc is None:
-            self.dlc = len(data)
+            self.data = bytearray()
+            self.dlc = 0
         else:
-            self.dlc = dlc
+            try:
+                self.data = bytearray(data)
+            except TypeError:
+                logger.error("Couldn't create message from %r (%r)", data, type(data))
+
+            if dlc is None:
+                self.dlc = len(data)
+            else:
+                self.dlc = dlc
 
         assert self.dlc <= 8, "data link count was {} but it must be less than or equal to 8".format(self.dlc)
 
@@ -66,5 +69,11 @@ class Message(object):
             field_strings.append(" ".join(data_strings).ljust(24, " "))
         else:
             field_strings.append(" " * 24)
+
+        if (self.data is not None):
+            try:
+                field_strings.append("'{}'".format(self.data.decode('utf-8')))
+            except UnicodeError as e:
+                pass
 
         return "    ".join(field_strings).strip()
