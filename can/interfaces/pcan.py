@@ -88,7 +88,9 @@ class PcanBus(BusABC):
     def GetFormattedError(self, error):
         # Gets the text using the GetErrorText API function
         # If the function success, the translated error is returned. If it fails,
-        # a text describing the current error is returned.
+        # a text describing the current error is returned.  Multiple errors may
+        # be present in which case their individual messages are included in the
+        # return string, one line per error.
         #
         #return error
 
@@ -118,11 +120,15 @@ class PcanBus(BusABC):
         return complete_text
 
     def StatusOk(self):
+        # Query the PCAN driver for bus status.
+
         status = self.m_objPCANBasic.GetStatus(self.channel_info)
 
         return status == PCAN_ERROR_OK
 
     def Reset(self):
+        # Command the PCAN driver to reset the bus after an error.
+
         status = self.m_objPCANBasic.Reset(self.channel_info)
 
         return status == PCAN_ERROR_OK
