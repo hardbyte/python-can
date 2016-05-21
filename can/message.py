@@ -34,13 +34,13 @@ class Message(object):
         assert self.dlc <= 8, "data link count was {} but it must be less than or equal to 8".format(self.dlc)
 
     def __str__(self):
-        field_strings = ["%15.6f" % self.timestamp]
+        field_strings = ["Timestamp: {0:15.6f}".format(self.timestamp)]
         if self.id_type:
             # Extended arbitrationID
-            arbitration_id_string = "%.8x" % self.arbitration_id
+            arbitration_id_string = "ID: {0:08x}".format(self.arbitration_id)
         else:
-            arbitration_id_string = "%.4x" % self.arbitration_id
-        field_strings.append(arbitration_id_string.rjust(8, " "))
+            arbitration_id_string = "ID: {0:04x}".format(self.arbitration_id)
+        field_strings.append(arbitration_id_string.rjust(12, " "))
 
         flag_string = "".join(
             map(
@@ -57,11 +57,11 @@ class Message(object):
 
         field_strings.append(flag_string)
 
-        field_strings.append("%d" % self.dlc)
+        field_strings.append("DLC: {0:d}".format(self.dlc))
         data_strings = []
         if self.data is not None:
-            for byte in self.data:
-                data_strings.append("%.2x" % byte)
+            for index in range(0, self.dlc):
+                data_strings.append("{0:02x}".format(self.data[index]))
         if len(data_strings) > 0:
             field_strings.append(" ".join(data_strings).ljust(24, " "))
         else:

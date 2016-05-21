@@ -157,7 +157,11 @@ def createSocket(protocol=CAN_RAW):
     The socket returned needs to be bound to an interface by calling
     :func:`bindSocket`.
 
-    Returns:
+    :param int protocol:
+        The type of the socket to be bound. Valid values
+        include CAN_RAW and CAN_BCM
+
+    :return:
         +-----------+----------------------------+
         | 0         |protocol invalid            |
         +-----------+----------------------------+
@@ -186,12 +190,14 @@ def bindSocket(socketID, channel_name):
     :param str channel_name:
         The interface name to find and bind.
 
-    :return The error code from the bind call.
-        +-----------+----------------------------+
-        | 0         |protocol invalid            |
-        +-----------+----------------------------+
-        | -1        |socket creation unsuccessful|
-        +-----------+----------------------------+
+    :return:
+        The error code from the bind call.
+
+        +----+----------------------------+
+        | 0  |protocol invalid            |
+        +----+----------------------------+
+        | -1 |socket creation unsuccessful|
+        +----+----------------------------+
     """
     log.debug('Binding socket with id %d to channel %s', socketID, channel_name)
     socketID = ctypes.c_int(socketID)
@@ -224,7 +230,8 @@ def connectSocket(socketID, channel_name):
     :param str channel_name:
         The interface name to find and bind.
 
-    :return The error code from the bind call.
+    :return:
+        The error code from the bind call.
     """
     log.debug('Connecting socket with id %d to channel %s', socketID, channel_name)
     socketID = ctypes.c_int(socketID)
@@ -302,15 +309,11 @@ def capturePacket(socketID):
 
     :return:
         A dictionary with the following keys:
-        +-----------+----------------------------+
-        | 'CAN ID'  |  int                       |
-        +-----------+----------------------------+
-        | 'DLC'     |  int                       |
-        +-----------+----------------------------+
-        | 'Data'    |  list                      |
-        +-----------+----------------------------+
-        |'Timestamp'|   float                    |
-        +-----------+----------------------------+
+
+        - `"CAN ID"`    (int)
+        - `"DLC"`       (int)
+        - `"Data"`      (list)
+        - `"Timestamp"` (float)
 
     """
     packet = {}
