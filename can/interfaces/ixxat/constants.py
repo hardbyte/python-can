@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+"""
+Ctypes wrapper module for IXXAT Virtual CAN Interface V3 on win32 systems
+Copyright (C) 2016 Giuseppe Corbelli
+"""
 
 FALSE   = 0
 TRUE    = 1
@@ -127,3 +131,12 @@ CAN_MSGTYPE_TIMERST = 6
 CAN_INFO_START  = 1
 CAN_INFO_STOP   = 2
 CAN_INFO_RESET  = 3
+
+# Information supplied in the abData[0] field of info frames
+# (CANMSGINFO.Bytes.bType = CAN_MSGTYPE_ERROR).
+CAN_ERROR_STUFF = 1 # stuff error
+CAN_ERROR_FORM  = 2 # form error
+CAN_ERROR_ACK   = 3 # acknowledgment error
+CAN_ERROR_BIT   = 4 # bit error
+CAN_ERROR_CRC   = 6 # CRC error
+CAN_ERROR_OTHER = 7 # other (unspecified) error
