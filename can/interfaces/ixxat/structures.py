@@ -1,9 +1,14 @@
 # -*- coding: utf-8 -*-
+"""
+Ctypes wrapper module for IXXAT Virtual CAN Interface V3 on win32 systems
+Copyright (C) 2016 Giuseppe Corbelli
+"""
 
 import ctypes
 
 class HANDLE(ctypes.c_void_p):
     pass
+
 PHANDLE = ctypes.POINTER(HANDLE)
 
 class LUID(ctypes.Structure):
