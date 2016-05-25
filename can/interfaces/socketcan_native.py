@@ -107,18 +107,6 @@ def dissect_can_frame(frame):
     return (can_id, can_dlc, data[:can_dlc])
 
 
-def create_bcm_socket(channel):
-    """create a broadcast manager socket and connect to the given interface"""
-    try:
-        s = socket.socket(socket.PF_CAN, socket.SOCK_DGRAM, socket.CAN_BCM)
-    except AttributeError:
-        raise SystemExit("To use BCM sockets you need Python3.4 or higher")
-    try:
-        s.connect((channel,))
-    except OSError as e:
-        log.error("Couldn't connect a broadcast manager socket")
-        raise e
-    return s
 
 
 class CyclicSendTask(CyclicSendTaskABC):
@@ -134,6 +122,18 @@ class CyclicSendTask(CyclicSendTaskABC):
         self.bcm_socket = create_bcm_socket(channel)
         self._tx_setup(message)
         self.message = message
+    def create_bcm_socket(channel):
+        """create a broadcast manager socket and connect to the given interface"""
+        try:
+            s = socket.socket(socket.PF_CAN, socket.SOCK_DGRAM, socket.CAN_BCM)
+        except AttributeError:
+            raise SystemExit("To use BCM sockets you need Python3.4 or higher")
+        try:
+            s.connect((channel,))
+        except OSError as e:
+            log.error("Couldn't connect a broadcast manager socket")
+            raise e
+        return s
 
     def _tx_setup(self, message):
         # Create a low level packed frame to pass to the kernel
