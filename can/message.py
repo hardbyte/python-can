@@ -70,7 +70,7 @@ class Message(object):
         else:
             field_strings.append(" " * 24)
 
-        if (self.data is not None):
+        if (self.data is not None) and (self.data.isalnum()):
             try:
                 field_strings.append("'{}'".format(self.data.decode('utf-8')))
             except UnicodeError as e:
