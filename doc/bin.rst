@@ -8,7 +8,7 @@ can_logger.py
 
 Command line help (``--help``)::
 
-    usage: can_logger.py [-h] [-f LOG_FILE] [-v] [-i {socketcan,kvaser,serial}]
+    usage: can_logger.py [-h] [-f LOG_FILE] [-v] [-i {socketcan,kvaser,serial,ixxat}]
                          channel ...
 
     Log CAN traffic, printing messages to stdout or to a given file
@@ -31,7 +31,7 @@ Command line help (``--help``)::
                             .csv, .db, .npz
       -v                    How much information do you want to see at the command
                             line? You can add several of these e.g., -vv is DEBUG
-      -i {socketcan,kvaser,serial}, --interface {socketcan,kvaser,serial}
+      -i {socketcan,kvaser,serial,ixxat}, --interface {socketcan,kvaser,serial,ixxat}
                             Which backend do you want to use?
 
 
