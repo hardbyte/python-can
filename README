@@ -29,8 +29,16 @@ Configuration File
 ------------------
 
 In order to use this library a CAN interface needs to be specified. A
-method to do this is to create a configuration file called ``can.conf``,
-``~/.canrc`` or ``can.ini``.
+method to do this is to create a configuration file.
+On Linux systems the config file is searched in the following paths:
+
+1. ``/etc/can.conf``
+2. ``$HOME/.can``
+3. ``$HOME/.canrc``
+
+On Windows systems the config file is searched in the following paths:
+1. ``can.ini`` (current working directory)
+2. ``$APPDATA/can.ini``
 
 The configuration file sets the default interface and channel:
 
@@ -69,6 +77,13 @@ pcan
 ~~~~
 
 `Peak-System <http://www.peak-system.com/>`__'s PCAN-Basic API.
+
+IXXAT
+~~~~~
+
+`IXXAT <http://www.ixxat.com/>`__'s Virtual CAN Interface V3 SDK ONLY on Windows.
+The Linux ECI SDK is currently unsupported.
+On Linux some devices are supported with socketcan.
 
 Installation
 ------------
@@ -119,6 +134,20 @@ Note that PCANBasic API timestamps count seconds from system startup. To
 convert these to epoch times, the uptime library is used. If it is not
 available, the times are returned as number of seconds from system
 startup. To install the uptime library, run ``pip install uptime``.
+
+IXXAT
+~~~~~
+
+To install ``python-can`` using the IXXAT VCI V3 SDK as the backend:
+
+1. Install the `latest stable release of
+   Python <http://python.org/download/>`__.
+
+2. Install `IXXAT's latest Windows VCI V3 SDK
+   drivers <http://www.ixxat.com/support/file-and-documents-download/drivers/vci-v3-driver-download>`__.
+
+3. Test that IXXAT's own tools (i.e. MiniMon) work to ensure the driver 
+   is properly installed and that the hardware is working.
 
 Install python-can
 ------------------
