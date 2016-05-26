@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Ctypes wrapper module for IXXAT Virtual CAN Interface V3 on win32 systems
-Copyright (C) 2016 Giuseppe Corbelli
+Copyright (C) 2016 Giuseppe Corbelli <giuseppe.corbelli@weightpack.com>
 """
 
 import binascii
@@ -26,7 +26,6 @@ log = logging.getLogger('can.ixxat')
 # main ctypes instance
 if sys.platform == "win32":
     _canlib = CLibrary("vcinpl")
-    _canlib.vciInitialize()
 else:
     raise ImportError("IXXAT VCI is only available on Windows systems. Use socketcan on Linux systems")
 
@@ -37,7 +36,8 @@ def __check_status(result, function, arguments):
         result = ctypes.c_ulong(result).value
 
     if (result == constants.VCI_E_TIMEOUT):
-        raise VCITimeout("Function {} timed out".format(function.__name__))
+        sys.stderr.write ("Check stat {} {} {}\n".format(result, function, arguments))
+        raise VCITimeout("Function {} timed out".format(function._name))
     elif (result == constants.VCI_E_NO_MORE_ITEMS):
         raise StopIteration()
     elif (result != constants.VCI_OK):
@@ -45,7 +45,7 @@ def __check_status(result, function, arguments):
 
     return result
 
-# Map all required symbols --------------------------------------------------
+# Map all required symbols and initialize library ---------------------------
 #HRESULT VCIAPI vciInitialize ( void );
 _canlib.map_symbol("vciInitialize", ctypes.c_long, (), __check_status)
 
@@ -97,6 +97,11 @@ _canlib.map_symbol("canControlStart", ctypes.c_long, (HANDLE, ctypes.c_long), __
 _canlib.map_symbol("canControlGetStatus", ctypes.c_long, (HANDLE, structures.PCANLINESTATUS), __check_status)
 #EXTERN_C HRESULT VCIAPI canControlGetCaps( IN  HANDLE           hCanCtl, OUT PCANCAPABILITIES pCanCaps );
 _canlib.map_symbol("canControlGetCaps", ctypes.c_long, (HANDLE, structures.PCANCAPABILITIES), __check_status)
+
+try:
+    _canlib.vciInitialize()
+except Exception as e:
+    raise ImportError("Could not initialize IXXAT VCI library: {}".format(e))
 # ---------------------------------------------------------------------------
 
 
@@ -114,6 +119,7 @@ CAN_ERROR_MESSAGES = {
     constants.CAN_ERROR_CRC: "CAN CRC error",
     constants.CAN_ERROR_OTHER: "Other (unknown) CAN error",
 }
+#----------------------------------------------------------------------------
 
 
 class IXXATBus(BusABC):
@@ -350,4 +356,3 @@ class IXXATBus(BusABC):
         _canlib.canControlStart(self._control_handle, constants.FALSE)
         _canlib.canControlClose(self._control_handle)
         _canlib.vciDeviceClose(self._device_handle)
-
