@@ -9,5 +9,7 @@ Found under ``can.interfaces`` are the implementations for each backend:
     socketcan
     kvaser
     serial
+    ixxat
+
 
 These interfaces define the low level interface to the physical controller area network.
