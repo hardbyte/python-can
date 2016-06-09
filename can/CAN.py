@@ -32,6 +32,7 @@ def set_logging_level(level_name=None):
 
 
 class Listener(object):
+
     def on_message_received(self, msg):
         raise NotImplementedError(
             "{} has not implemented on_message_received".format(

@@ -53,18 +53,22 @@ class PcanBus(BusABC):
     def __init__(self, channel, *args, **kwargs):
         """A PCAN USB interface to CAN.
 
+        On top of the usual :class:`~can.Bus` methods provided,
+        the PCAN interface includes the `flash()` and `status()` methods.
+
         :param str channel:
-            The can interface name.  An example would be PCAN_USBBUS1
+            The can interface name. An example would be PCAN_USBBUS1
             
         Backend Configuration
         ---------------------
             
         :param int bitrate:
-            Bitrate of channel in bit/s
+            Bitrate of channel in bit/s.
+            Default is 500 Kbs
             
         """
-        if channel == '':
-            raise TypeError("Must specify a PCAN channel.")
+        if channel is None or channel == '':
+            raise ArgumentError("Must specify a PCAN channel")
         else:
             self.channel_info = channel
 
@@ -81,21 +85,66 @@ class PcanBus(BusABC):
         result = self.m_objPCANBasic.Initialize(self.m_PcanHandle, pcan_bitrate, hwtype, ioport, interrupt)
 
         if result != PCAN_ERROR_OK:
-            raise Exception(self.GetFormattedError(result))
+            # TODO throw a specific exception.
+            raise Exception(self._get_formatted_error(result))
 
         super(PcanBus, self).__init__(*args, **kwargs)
 
-    def GetFormattedError(self, error):
-        # Gets the text using the GetErrorText API function
-        # If the function success, the translated error is returned. If it fails,
-        # a text describing the current error is returned.
-        #
-        #return error
+    def _get_formatted_error(self, error):
+        """
+        Gets the text using the GetErrorText API function
+        If the function succeeds, the translated error is returned. If it fails,
+        a text describing the current error is returned.  Multiple errors may
+        be present in which case their individual messages are included in the
+        return string, one line per error.
+        """
+
+        def bits(n):
+            while n:
+                b = n & (~n+1)
+                yield b
+                n ^= b
+
         stsReturn = self.m_objPCANBasic.GetErrorText(error, 0)
         if stsReturn[0] != PCAN_ERROR_OK:
-            return "An error occurred. Error-code's text ({0:X}h) couldn't be retrieved".format(error)
+            strings = []
+
+            for b in bits(error):
+                stsReturn = self.m_objPCANBasic.GetErrorText(b, 0)
+                if stsReturn[0] != PCAN_ERROR_OK:
+                    text = "An error occurred. Error-code's text ({0:X}h) couldn't be retrieved".format(error)
+                else:
+                    text = stsReturn[1].decode('utf-8')
+
+                strings.append(text)
+
+            complete_text = '\n'.join(strings)
         else:
-            return stsReturn[1]
+            complete_text = stsReturn[1].decode('utf-8')
+
+        return complete_text
+
+    def status(self):
+        """
+        Query the PCAN bus status.
+
+        :return: The status code. See values in pcan_constants.py
+        """
+        return self.m_objPCANBasic.GetStatus(self.channel_info)
+
+    def status_is_ok(self):
+        """
+        Convenience method to check that the bus status is OK
+        """
+        status = self.status()
+        return status == PCAN_ERROR_OK
+
+    def reset(self):
+        # Command the PCAN driver to reset the bus after an error.
+
+        status = self.m_objPCANBasic.Reset(self.channel_info)
+
+        return status == PCAN_ERROR_OK
 
     def recv(self, timeout=None):
         start_time = timeout_clock()
@@ -117,12 +166,12 @@ class PcanBus(BusABC):
                     result = None
                     time.sleep(0.001)
             elif result[0] != PCAN_ERROR_OK:
-                raise Exception(self.GetFormattedError(result[0]))
+                raise Exception(self._get_formatted_error(result[0]))
 
         theMsg = result[1]
         itsTimeStamp = result[2]
 
-        log.debug("I've got a message")
+        log.debug("Received a message")
 
         arbitration_id = theMsg.ID
 
@@ -176,10 +225,18 @@ class PcanBus(BusABC):
 
         result = self.m_objPCANBasic.Write(self.m_PcanHandle, CANMsg)
 
-        if result != PCAN_ERROR_OK:
-            logging.error("Error sending frame :-/ " + self.GetFormattedError(result))
+        sent = result == PCAN_ERROR_OK
+
+        if not sent:
+            logging.warning("Failed to send: " + self._get_formatted_error(result))
+
+        return sent
 
     def flash(self, flash):
+        """
+        Turn on or off flashing of the device's LED for physical
+        identification purposes.
+        """
         self.m_objPCANBasic.SetValue(self.channel_info, PCAN_CHANNEL_IDENTIFYING, bool(flash))
 
     def shutdown(self):
