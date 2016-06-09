@@ -140,3 +140,7 @@ CAN_ERROR_ACK   = 3 # acknowledgment error
 CAN_ERROR_BIT   = 4 # bit error
 CAN_ERROR_CRC   = 6 # CRC error
 CAN_ERROR_OTHER = 7 # other (unspecified) error
+
+# acceptance code and mask to reject all CAN IDs
+CAN_ACC_MASK_NONE   = 0xFFFFFFFF
+CAN_ACC_CODE_NONE   = 0x80000000
