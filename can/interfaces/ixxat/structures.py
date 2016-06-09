@@ -6,11 +6,6 @@ Copyright (C) 2016 Giuseppe Corbelli <giuseppe.corbelli@weightpack.com>
 
 import ctypes
 
-class HANDLE(ctypes.c_void_p):
-    pass
-
-PHANDLE = ctypes.POINTER(HANDLE)
-
 class LUID(ctypes.Structure):
     _fields_ = [
         ("LowPart", ctypes.c_ulong),
