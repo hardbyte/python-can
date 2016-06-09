@@ -1,5 +1,6 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
+" Common ctypes utils "
 
 import binascii
 import ctypes
@@ -13,6 +14,19 @@ __all__ = ['CLibrary', 'HANDLE', 'PHANDLE']
 
 class LibraryMixin:
     def map_symbol(self, func_name, restype=None, argtypes=(), errcheck=None):
+        """ 
+        Map and return a symbol (function) from a C library. A reference to the
+        mapped symbol is also held in the instance
+
+        :param str func_name:
+            symbol_name
+        :param ctypes.c_* restype:
+            function result type (i.e. ctypes.c_ulong...), defaults to void
+        :param tuple(ctypes.c_* ... ) argtypes:
+            argument types, defaults to no args
+        :param callable errcheck:
+            optional error checking function, see ctypes docs for _FuncPtr
+        """
         if (argtypes):
             prototype = self.function_type(restype, *argtypes)
         else:
@@ -33,6 +47,8 @@ class LibraryMixin:
 
 
 class CLibrary_Win32(ctypes.WinDLL, LibraryMixin):
+    " Basic ctypes.WinDLL derived class + LibraryMixin "
+
     def __init__(self, library_or_path):
         if (isinstance(library_or_path, str)):
             super().__init__(library_or_path)
@@ -45,7 +61,7 @@ class CLibrary_Win32(ctypes.WinDLL, LibraryMixin):
 
 
 class CLibrary_Unix(ctypes.CDLL, LibraryMixin):
-    FUNCTYPE = ctypes.CFUNCTYPE
+    " Basic ctypes.CDLL derived class + LibraryMixin "
 
     def __init__(self, library_or_path):
         if (isinstance(library_or_path, str)):
