@@ -15,3 +15,4 @@ Tynan McAuley
 Bruno Pennati
 Jack Jester-Weinstein
 Joshua Villyard
+Giuseppe Corbelli <giuseppe.corbelli@weightpack.com>
