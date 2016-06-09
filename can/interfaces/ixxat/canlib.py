@@ -36,7 +36,6 @@ def __check_status(result, function, arguments):
         result = ctypes.c_ulong(result).value
 
     if (result == constants.VCI_E_TIMEOUT):
-        sys.stderr.write ("Check stat {} {} {}\n".format(result, function, arguments))
         raise VCITimeout("Function {} timed out".format(function._name))
     elif (result == constants.VCI_E_NO_MORE_ITEMS):
         raise StopIteration()
@@ -97,6 +96,12 @@ _canlib.map_symbol("canControlStart", ctypes.c_long, (HANDLE, ctypes.c_long), __
 _canlib.map_symbol("canControlGetStatus", ctypes.c_long, (HANDLE, structures.PCANLINESTATUS), __check_status)
 #EXTERN_C HRESULT VCIAPI canControlGetCaps( IN  HANDLE           hCanCtl, OUT PCANCAPABILITIES pCanCaps );
 _canlib.map_symbol("canControlGetCaps", ctypes.c_long, (HANDLE, structures.PCANCAPABILITIES), __check_status)
+#EXTERN_C HRESULT VCIAPI canControlSetAccFilter( IN HANDLE hCanCtl, IN BOOL   fExtend, IN UINT32 dwCode, IN UINT32 dwMask );
+_canlib.map_symbol("canControlSetAccFilter", ctypes.c_long, (HANDLE, ctypes.c_int, ctypes.c_uint32, ctypes.c_uint32), __check_status)
+#EXTERN_C HRESULT canControlAddFilterIds (HANDLE hControl, BOOL fExtended, UINT32 dwCode, UINT32 dwMask);
+_canlib.map_symbol("canControlAddFilterIds", ctypes.c_long, (HANDLE, ctypes.c_int, ctypes.c_uint32, ctypes.c_uint32), __check_status)
+#EXTERN_C HRESULT canControlRemFilterIds (HANDLE hControl, BOOL fExtendend, UINT32 dwCode, UINT32 dwMask );
+_canlib.map_symbol("canControlRemFilterIds", ctypes.c_long, (HANDLE, ctypes.c_int, ctypes.c_uint32, ctypes.c_uint32), __check_status)
 
 try:
     _canlib.vciInitialize()
@@ -221,6 +226,20 @@ class IXXATBus(BusABC):
             self.CHANNEL_BITRATES[1][bitrate]
         )
         _canlib.canControlGetCaps(self._control_handle, ctypes.byref(self._channel_capabilities))
+        
+        # Setup filters before starting the channel
+        if can_filters is not None and len(can_filters):
+            log.info("The IXXAT VCI backend is filtering messages")
+            # Disable every message coming in
+            _canlib.canControlSetAccFilter(self._control_handle, 1 if extended else 0, constants.CAN_ACC_CODE_NONE, constants.CAN_ACC_MASK_NONE)
+            for can_filter in can_filters:
+                # Whitelist
+                code = int(can_filter['can_id'])
+                mask = int(can_filter['can_mask'])
+                _canlib.canControlAddFilterIds(self._control_handle, 1 if extended else 0, code, mask)
+                rtr = (code & 0x01) and (mask & 0x01)
+                log.info("Accepting ID:{}  MASK:{} RTR:{}".format(code>>1, mask>>1, "YES" if rtr else "NO"))
+
         # Start the CAN controller. Messages will be forwarded to the channel
         _canlib.canControlStart(self._control_handle, constants.TRUE)
 
@@ -233,16 +252,6 @@ class IXXATBus(BusABC):
                 break
             else:
                 _canlib.canChannelReadMessage(self._channel_handle, 0, ctypes.byref(self._message))
-
-        # TODO: filter messages
-
-        #~ if can_filters is not None and len(can_filters):
-            #~ log.warning("The ixxat VCI backend is filtering messages")
-            #~ code, mask = 0, 0
-            #~ for can_filter in can_filters:
-                #~ code |= can_filter['can_id']
-                #~ mask |= can_filter['can_mask']
-            #~ log.warning("Filtering on: {}  {}".format(code, mask))
 
         super(IXXATBus, self).__init__()
 
