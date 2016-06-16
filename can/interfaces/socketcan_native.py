@@ -29,6 +29,11 @@ from ..bus import BusABC
 
 from ..broadcastmanager import CyclicSendTaskABC
 
+# struct module defines a binary packing format:
+# https://docs.python.org/3/library/struct.html#struct-format-strings
+# The 32bit can id is directly followed by the 8bit data link count
+# The data field is aligned on an 8 byte boundary, hence we add padding
+# which aligns the data field to an 8 byte boundary.
 can_frame_fmt = "=IB3x8s"
 can_frame_size = struct.calcsize(can_frame_fmt)
 
