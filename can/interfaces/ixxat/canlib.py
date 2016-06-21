@@ -173,8 +173,8 @@ class IXXATBus(BusABC):
         :param int bitrate
             Channel bitrate in bit/s
         """
-        log.info("CAN Filters: {}".format(can_filters))
-        log.info("Got configuration of: {}".format(config))
+        log.info("CAN Filters: %s", can_filters)
+        log.info("Got configuration of: %s", config)
         # Configuration options
         bitrate = config.get('bitrate', 500000)
         UniqueHardwareId = config.get('UniqueHardwareId', None)
@@ -196,7 +196,7 @@ class IXXATBus(BusABC):
         self._payload = (ctypes.c_byte * 8)()
 
         # Search for supplied device
-        log.info("Searching for unique HW ID {}".format(UniqueHardwareId))
+        log.info("Searching for unique HW ID %s", UniqueHardwareId)
         _canlib.vciEnumDeviceOpen(ctypes.byref(self._device_handle))
         while True:
             try:
@@ -209,15 +209,15 @@ class IXXATBus(BusABC):
                     break
         _canlib.vciEnumDeviceClose(self._device_handle)
         _canlib.vciDeviceOpen(ctypes.byref(self._device_info.VciObjectId), ctypes.byref(self._device_handle))
-        log.info("Using unique HW ID {}".format(self._device_info.UniqueHardwareId.AsChar))
+        log.info("Using unique HW ID %s", self._device_info.UniqueHardwareId.AsChar)
 
-        log.info("Initializing channel {} in shared mode, {} rx buffers, {} tx buffers".format(channel, rxFifoSize, txFifoSize))
+        log.info("Initializing channel %d in shared mode, %d rx buffers, %d tx buffers", channel, rxFifoSize, txFifoSize)
         _canlib.canChannelOpen(self._device_handle, channel, constants.FALSE, ctypes.byref(self._channel_handle))
         # Signal TX/RX events when at least one frame has been handled
         _canlib.canChannelInitialize(self._channel_handle, rxFifoSize, 1, txFifoSize, 1)
         _canlib.canChannelActivate(self._channel_handle, constants.TRUE)
 
-        log.info("Initializing control {} bitrate {}".format(channel, bitrate))
+        log.info("Initializing control %d bitrate %d", channel, bitrate)
         _canlib.canControlOpen(self._device_handle, channel, ctypes.byref(self._control_handle))
         _canlib.canControlInitialize(
             self._control_handle,
@@ -245,7 +245,7 @@ class IXXATBus(BusABC):
                 mask = int(can_filter['can_mask'])
                 _canlib.canControlAddFilterIds(self._control_handle, 1 if extended else 0, code, mask)
                 rtr = (code & 0x01) and (mask & 0x01)
-                log.info("Accepting ID:{}  MASK:{} RTR:{}".format(code>>1, mask>>1, "YES" if rtr else "NO"))
+                log.info("Accepting ID:%d  MASK:%d RTR:%s", code>>1, mask>>1, "YES" if rtr else "NO")
 
         # Start the CAN controller. Messages will be forwarded to the channel
         _canlib.canControlStart(self._control_handle, constants.TRUE)
@@ -309,7 +309,7 @@ class IXXATBus(BusABC):
                 try:
                     _canlib.canChannelWaitRxEvent(self._channel_handle, remaining_ms)
                 except VCITimeout:
-                    log.debug('canChannelWaitRxEvent timed out after {}ms'.format(remaining_ms))
+                    log.debug('canChannelWaitRxEvent timed out after %dms', remaining_ms)
                     return None
 
                 # In theory we should be fine with a 0 timeout since the rxEvent was already
@@ -349,11 +349,11 @@ class IXXATBus(BusABC):
             self._message.abData
         )
 
-        log.debug('Recv()ed message {}'.format(rx_msg))
+        log.debug('Recv()ed message %s', rx_msg)
         return rx_msg
 
     def send(self, msg):
-        log.debug("Sending message: {}".format(msg))
+        log.debug("Sending message: %s", msg)
 
         # This system is not designed to be very efficient
         ctypes.memset(ctypes.byref(self._message), 0, ctypes.sizeof(structures.CANMSG))
