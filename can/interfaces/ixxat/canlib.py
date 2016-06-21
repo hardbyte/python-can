@@ -226,7 +226,14 @@ class IXXATBus(BusABC):
             self.CHANNEL_BITRATES[1][bitrate]
         )
         _canlib.canControlGetCaps(self._control_handle, ctypes.byref(self._channel_capabilities))
-        
+        # With receive messages, this field contains the relative reception time of
+        # the message in ticks. The resolution of a tick can be calculated from the fields
+        # dwClockFreq and dwTscDivisor of the structure  CANCAPABILITIES in accor-
+        # dance with the following formula:
+        # Resolution [s] = dwTscDivisor / dwClockFreq
+        # Reversed the terms, so that we have the number of ticks in a second
+        self._tick_resolution =  self._channel_capabilities.dwClockFreq / self._channel_capabilities.dwTscDivisor
+
         # Setup filters before starting the channel
         if can_filters is not None and len(can_filters):
             log.info("The IXXAT VCI backend is filtering messages")
@@ -271,13 +278,13 @@ class IXXATBus(BusABC):
     def recv(self, timeout=None):
         " Read a message from IXXAT device. "
 
-        # TODO: is the timestamp management enough?
         # TODO: handling CAN error messages?
         if (timeout is None):
             timeout = constants.INFINITE
 
         tm = None
-        if (not timeout):
+        if (timeout == 0):
+            # Peek without waiting
             try:
                 _canlib.canChannelPeekMessage(self._channel_handle, ctypes.byref(self._message))
             except VCITimeout:
@@ -291,6 +298,7 @@ class IXXATBus(BusABC):
                 if (self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_DATA):
                     tm = time.perf_counter()
         else:
+            # Wait if no message available
             t0 = time.perf_counter()
             elapsed_ms = 0
             remaining_ms = 0
@@ -329,8 +337,10 @@ class IXXATBus(BusABC):
             # Timed out / can message type is not DATA
             return None
 
+        # The _message.dwTime is a 32bit tick value and will overrun,
+        # so expect to see the value restarting from 0
         rx_msg = Message(
-            tm,
+            self._message.dwTime / self._tick_resolution,  # Relative time in s
             True if self._message.uMsgInfo.Bits.rtr else False,
             True if self._message.uMsgInfo.Bits.ext else False,
             False,
@@ -339,7 +349,7 @@ class IXXATBus(BusABC):
             self._message.abData
         )
 
-        log.debug('Recv()ed message  {}'.format(rx_msg))
+        log.debug('Recv()ed message {}'.format(rx_msg))
         return rx_msg
 
     def send(self, msg):
