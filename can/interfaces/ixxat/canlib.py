@@ -25,9 +25,16 @@ log = logging.getLogger('can.ixxat')
 
 # main ctypes instance
 if sys.platform == "win32":
-    _canlib = CLibrary("vcinpl")
+    try:
+        _canlib = CLibrary("vcinpl")
+    except Exception as e:
+        log.warning("Cannot load IXXAT vcinpl library: %s", e)
+        _canlib = None
 else:
-    raise ImportError("IXXAT VCI is only available on Windows systems. Use socketcan on Linux systems")
+    # Will not work on other systems, but have it importable anyway for
+    # tests/sphinx
+    log.warning("IXXAT VCI library does not work on %s platform", sys.platform)
+    _canlib = None
 
 
 def __check_status(result, function, arguments):
@@ -44,69 +51,71 @@ def __check_status(result, function, arguments):
 
     return result
 
-# Map all required symbols and initialize library ---------------------------
-#HRESULT VCIAPI vciInitialize ( void );
-_canlib.map_symbol("vciInitialize", ctypes.c_long, (), __check_status)
-
-#void VCIAPI vciFormatError (HRESULT hrError, PCHAR pszText, UINT32 dwsize);
-_canlib.map_symbol("vciFormatError", None, (ctypes.HRESULT, ctypes.c_char_p, ctypes.c_uint32))
-
-# HRESULT VCIAPI vciEnumDeviceOpen( OUT PHANDLE hEnum );
-_canlib.map_symbol("vciEnumDeviceOpen", ctypes.c_long, (PHANDLE,), __check_status)
-# HRESULT VCIAPI vciEnumDeviceClose ( IN HANDLE hEnum );
-_canlib.map_symbol("vciEnumDeviceClose", ctypes.c_long, (HANDLE,), __check_status)
-# HRESULT VCIAPI vciEnumDeviceNext( IN  HANDLE hEnum, OUT PVCIDEVICEINFO pInfo );
-_canlib.map_symbol("vciEnumDeviceNext", ctypes.c_long, (HANDLE, structures.PVCIDEVICEINFO), __check_status)
-
-# HRESULT VCIAPI vciDeviceOpen( IN  REFVCIID rVciid, OUT PHANDLE  phDevice );
-_canlib.map_symbol("vciDeviceOpen", ctypes.c_long, (structures.PVCIID, PHANDLE), __check_status)
-# HRESULT vciDeviceClose( HANDLE hDevice )
-_canlib.map_symbol("vciDeviceClose", ctypes.c_long, (HANDLE,), __check_status)
-
-# HRESULT VCIAPI canChannelOpen( IN  HANDLE  hDevice, IN  UINT32  dwCanNo, IN  BOOL    fExclusive, OUT PHANDLE phCanChn );
-_canlib.map_symbol("canChannelOpen", ctypes.c_long, (HANDLE, ctypes.c_uint32, ctypes.c_long, PHANDLE), __check_status)
-# EXTERN_C HRESULT VCIAPI canChannelInitialize( IN HANDLE hCanChn, IN UINT16 wRxFifoSize, IN UINT16 wRxThreshold, IN UINT16 wTxFifoSize, IN UINT16 wTxThreshold );
-_canlib.map_symbol("canChannelInitialize", ctypes.c_long, (HANDLE, ctypes.c_uint16, ctypes.c_uint16, ctypes.c_uint16, ctypes.c_uint16), __check_status)
-# EXTERN_C HRESULT VCIAPI canChannelActivate( IN HANDLE hCanChn, IN BOOL   fEnable );
-_canlib.map_symbol("canChannelActivate", ctypes.c_long, (HANDLE, ctypes.c_long), __check_status)
-# HRESULT canChannelClose( HANDLE hChannel )
-_canlib.map_symbol("canChannelClose", ctypes.c_long, (HANDLE, ), __check_status)
-#EXTERN_C HRESULT VCIAPI canChannelReadMessage( IN  HANDLE  hCanChn, IN  UINT32  dwMsTimeout, OUT PCANMSG pCanMsg );
-_canlib.map_symbol("canChannelReadMessage", ctypes.c_long, (HANDLE, ctypes.c_uint32, structures.PCANMSG), __check_status)
-#HRESULT canChannelPeekMessage(HANDLE hChannel,PCANMSG pCanMsg );
-_canlib.map_symbol("canChannelPeekMessage", ctypes.c_long, (HANDLE, structures.PCANMSG), __check_status)
-#HRESULT canChannelWaitTxEvent (HANDLE hChannel UINT32 dwMsTimeout );
-_canlib.map_symbol("canChannelWaitTxEvent", ctypes.c_long, (HANDLE, ctypes.c_uint32), __check_status)
-#HRESULT canChannelWaitRxEvent (HANDLE hChannel, UINT32 dwMsTimeout );
-_canlib.map_symbol("canChannelWaitRxEvent", ctypes.c_long, (HANDLE, ctypes.c_uint32), __check_status)
-#HRESULT canChannelPostMessage (HANDLE hChannel, PCANMSG pCanMsg );
-_canlib.map_symbol("canChannelPostMessage", ctypes.c_long, (HANDLE, structures.PCANMSG), __check_status)
-
-#EXTERN_C HRESULT VCIAPI canControlOpen( IN  HANDLE  hDevice, IN  UINT32  dwCanNo, OUT PHANDLE phCanCtl );
-_canlib.map_symbol("canControlOpen", ctypes.c_long, (HANDLE, ctypes.c_uint32, PHANDLE), __check_status)
-#EXTERN_C HRESULT VCIAPI canControlInitialize( IN HANDLE hCanCtl, IN UINT8  bMode, IN UINT8  bBtr0, IN UINT8  bBtr1 );
-_canlib.map_symbol("canControlInitialize", ctypes.c_long, (HANDLE, ctypes.c_uint8, ctypes.c_uint8, ctypes.c_uint8), __check_status)
-#EXTERN_C HRESULT VCIAPI canControlClose( IN HANDLE hCanCtl );
-_canlib.map_symbol("canControlClose", ctypes.c_long, (HANDLE,), __check_status)
-#EXTERN_C HRESULT VCIAPI canControlReset( IN HANDLE hCanCtl );
-_canlib.map_symbol("canControlReset", ctypes.c_long, (HANDLE,), __check_status)
-#EXTERN_C HRESULT VCIAPI canControlStart( IN HANDLE hCanCtl, IN BOOL   fStart );
-_canlib.map_symbol("canControlStart", ctypes.c_long, (HANDLE, ctypes.c_long), __check_status)
-#EXTERN_C HRESULT VCIAPI canControlGetStatus( IN  HANDLE         hCanCtl, OUT PCANLINESTATUS pStatus );
-_canlib.map_symbol("canControlGetStatus", ctypes.c_long, (HANDLE, structures.PCANLINESTATUS), __check_status)
-#EXTERN_C HRESULT VCIAPI canControlGetCaps( IN  HANDLE           hCanCtl, OUT PCANCAPABILITIES pCanCaps );
-_canlib.map_symbol("canControlGetCaps", ctypes.c_long, (HANDLE, structures.PCANCAPABILITIES), __check_status)
-#EXTERN_C HRESULT VCIAPI canControlSetAccFilter( IN HANDLE hCanCtl, IN BOOL   fExtend, IN UINT32 dwCode, IN UINT32 dwMask );
-_canlib.map_symbol("canControlSetAccFilter", ctypes.c_long, (HANDLE, ctypes.c_int, ctypes.c_uint32, ctypes.c_uint32), __check_status)
-#EXTERN_C HRESULT canControlAddFilterIds (HANDLE hControl, BOOL fExtended, UINT32 dwCode, UINT32 dwMask);
-_canlib.map_symbol("canControlAddFilterIds", ctypes.c_long, (HANDLE, ctypes.c_int, ctypes.c_uint32, ctypes.c_uint32), __check_status)
-#EXTERN_C HRESULT canControlRemFilterIds (HANDLE hControl, BOOL fExtendend, UINT32 dwCode, UINT32 dwMask );
-_canlib.map_symbol("canControlRemFilterIds", ctypes.c_long, (HANDLE, ctypes.c_int, ctypes.c_uint32, ctypes.c_uint32), __check_status)
-
 try:
+    # Map all required symbols and initialize library ---------------------------
+    #HRESULT VCIAPI vciInitialize ( void );
+    _canlib.map_symbol("vciInitialize", ctypes.c_long, (), __check_status)
+
+    #void VCIAPI vciFormatError (HRESULT hrError, PCHAR pszText, UINT32 dwsize);
+    _canlib.map_symbol("vciFormatError", None, (ctypes.HRESULT, ctypes.c_char_p, ctypes.c_uint32))
+
+    # HRESULT VCIAPI vciEnumDeviceOpen( OUT PHANDLE hEnum );
+    _canlib.map_symbol("vciEnumDeviceOpen", ctypes.c_long, (PHANDLE,), __check_status)
+    # HRESULT VCIAPI vciEnumDeviceClose ( IN HANDLE hEnum );
+    _canlib.map_symbol("vciEnumDeviceClose", ctypes.c_long, (HANDLE,), __check_status)
+    # HRESULT VCIAPI vciEnumDeviceNext( IN  HANDLE hEnum, OUT PVCIDEVICEINFO pInfo );
+    _canlib.map_symbol("vciEnumDeviceNext", ctypes.c_long, (HANDLE, structures.PVCIDEVICEINFO), __check_status)
+
+    # HRESULT VCIAPI vciDeviceOpen( IN  REFVCIID rVciid, OUT PHANDLE  phDevice );
+    _canlib.map_symbol("vciDeviceOpen", ctypes.c_long, (structures.PVCIID, PHANDLE), __check_status)
+    # HRESULT vciDeviceClose( HANDLE hDevice )
+    _canlib.map_symbol("vciDeviceClose", ctypes.c_long, (HANDLE,), __check_status)
+
+    # HRESULT VCIAPI canChannelOpen( IN  HANDLE  hDevice, IN  UINT32  dwCanNo, IN  BOOL    fExclusive, OUT PHANDLE phCanChn );
+    _canlib.map_symbol("canChannelOpen", ctypes.c_long, (HANDLE, ctypes.c_uint32, ctypes.c_long, PHANDLE), __check_status)
+    # EXTERN_C HRESULT VCIAPI canChannelInitialize( IN HANDLE hCanChn, IN UINT16 wRxFifoSize, IN UINT16 wRxThreshold, IN UINT16 wTxFifoSize, IN UINT16 wTxThreshold );
+    _canlib.map_symbol("canChannelInitialize", ctypes.c_long, (HANDLE, ctypes.c_uint16, ctypes.c_uint16, ctypes.c_uint16, ctypes.c_uint16), __check_status)
+    # EXTERN_C HRESULT VCIAPI canChannelActivate( IN HANDLE hCanChn, IN BOOL   fEnable );
+    _canlib.map_symbol("canChannelActivate", ctypes.c_long, (HANDLE, ctypes.c_long), __check_status)
+    # HRESULT canChannelClose( HANDLE hChannel )
+    _canlib.map_symbol("canChannelClose", ctypes.c_long, (HANDLE, ), __check_status)
+    #EXTERN_C HRESULT VCIAPI canChannelReadMessage( IN  HANDLE  hCanChn, IN  UINT32  dwMsTimeout, OUT PCANMSG pCanMsg );
+    _canlib.map_symbol("canChannelReadMessage", ctypes.c_long, (HANDLE, ctypes.c_uint32, structures.PCANMSG), __check_status)
+    #HRESULT canChannelPeekMessage(HANDLE hChannel,PCANMSG pCanMsg );
+    _canlib.map_symbol("canChannelPeekMessage", ctypes.c_long, (HANDLE, structures.PCANMSG), __check_status)
+    #HRESULT canChannelWaitTxEvent (HANDLE hChannel UINT32 dwMsTimeout );
+    _canlib.map_symbol("canChannelWaitTxEvent", ctypes.c_long, (HANDLE, ctypes.c_uint32), __check_status)
+    #HRESULT canChannelWaitRxEvent (HANDLE hChannel, UINT32 dwMsTimeout );
+    _canlib.map_symbol("canChannelWaitRxEvent", ctypes.c_long, (HANDLE, ctypes.c_uint32), __check_status)
+    #HRESULT canChannelPostMessage (HANDLE hChannel, PCANMSG pCanMsg );
+    _canlib.map_symbol("canChannelPostMessage", ctypes.c_long, (HANDLE, structures.PCANMSG), __check_status)
+
+    #EXTERN_C HRESULT VCIAPI canControlOpen( IN  HANDLE  hDevice, IN  UINT32  dwCanNo, OUT PHANDLE phCanCtl );
+    _canlib.map_symbol("canControlOpen", ctypes.c_long, (HANDLE, ctypes.c_uint32, PHANDLE), __check_status)
+    #EXTERN_C HRESULT VCIAPI canControlInitialize( IN HANDLE hCanCtl, IN UINT8  bMode, IN UINT8  bBtr0, IN UINT8  bBtr1 );
+    _canlib.map_symbol("canControlInitialize", ctypes.c_long, (HANDLE, ctypes.c_uint8, ctypes.c_uint8, ctypes.c_uint8), __check_status)
+    #EXTERN_C HRESULT VCIAPI canControlClose( IN HANDLE hCanCtl );
+    _canlib.map_symbol("canControlClose", ctypes.c_long, (HANDLE,), __check_status)
+    #EXTERN_C HRESULT VCIAPI canControlReset( IN HANDLE hCanCtl );
+    _canlib.map_symbol("canControlReset", ctypes.c_long, (HANDLE,), __check_status)
+    #EXTERN_C HRESULT VCIAPI canControlStart( IN HANDLE hCanCtl, IN BOOL   fStart );
+    _canlib.map_symbol("canControlStart", ctypes.c_long, (HANDLE, ctypes.c_long), __check_status)
+    #EXTERN_C HRESULT VCIAPI canControlGetStatus( IN  HANDLE         hCanCtl, OUT PCANLINESTATUS pStatus );
+    _canlib.map_symbol("canControlGetStatus", ctypes.c_long, (HANDLE, structures.PCANLINESTATUS), __check_status)
+    #EXTERN_C HRESULT VCIAPI canControlGetCaps( IN  HANDLE           hCanCtl, OUT PCANCAPABILITIES pCanCaps );
+    _canlib.map_symbol("canControlGetCaps", ctypes.c_long, (HANDLE, structures.PCANCAPABILITIES), __check_status)
+    #EXTERN_C HRESULT VCIAPI canControlSetAccFilter( IN HANDLE hCanCtl, IN BOOL   fExtend, IN UINT32 dwCode, IN UINT32 dwMask );
+    _canlib.map_symbol("canControlSetAccFilter", ctypes.c_long, (HANDLE, ctypes.c_int, ctypes.c_uint32, ctypes.c_uint32), __check_status)
+    #EXTERN_C HRESULT canControlAddFilterIds (HANDLE hControl, BOOL fExtended, UINT32 dwCode, UINT32 dwMask);
+    _canlib.map_symbol("canControlAddFilterIds", ctypes.c_long, (HANDLE, ctypes.c_int, ctypes.c_uint32, ctypes.c_uint32), __check_status)
+    #EXTERN_C HRESULT canControlRemFilterIds (HANDLE hControl, BOOL fExtendend, UINT32 dwCode, UINT32 dwMask );
+    _canlib.map_symbol("canControlRemFilterIds", ctypes.c_long, (HANDLE, ctypes.c_int, ctypes.c_uint32, ctypes.c_uint32), __check_status)
     _canlib.vciInitialize()
+except AttributeError:
+    # In case _canlib == None meaning we're not on win32/no lib found
+    pass
 except Exception as e:
-    raise ImportError("Could not initialize IXXAT VCI library: {}".format(e))
+    log.warning("Could not initialize IXXAT VCI library: %s", e)
 # ---------------------------------------------------------------------------
 
 
@@ -173,6 +182,8 @@ class IXXATBus(BusABC):
         :param int bitrate
             Channel bitrate in bit/s
         """
+        if (_canlib is None):
+            raise ImportError("The IXXAT VCI library has not been initialized. Check the logs for more details.")
         log.info("CAN Filters: %s", can_filters)
         log.info("Got configuration of: %s", config)
         # Configuration options
