@@ -22,6 +22,10 @@ __all__ = ["VCITimeout", "VCIError", "VCIDeviceNotFoundError", "IXXATBus"]
 
 log = logging.getLogger('can.ixxat')
 
+if (sys.version_info.major == 2):
+    _timer_function = time.clock
+elif (sys.version_info.major == 3):
+    _timer_function = time.perf_counter
 
 # main ctypes instance
 if sys.platform == "win32":
@@ -307,14 +311,14 @@ class IXXATBus(BusABC):
                     raise e
             else:
                 if (self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_DATA):
-                    tm = time.perf_counter()
+                    tm = _timer_function()
         else:
             # Wait if no message available
-            t0 = time.perf_counter()
+            t0 = _timer_function()
             elapsed_ms = 0
             remaining_ms = 0
             while (elapsed_ms <= timeout):
-                elapsed_ms = int((time.perf_counter() - t0) * 1000)
+                elapsed_ms = int((_timer_function() - t0) * 1000)
                 remaining_ms = timeout - elapsed_ms
                 # Wait until at least one frame is in the buffer
                 try:
@@ -332,7 +336,7 @@ class IXXATBus(BusABC):
 
                 # See if we got a data or info/error messages
                 if (self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_DATA):
-                    tm = time.perf_counter()
+                    tm = _timer_function()
                     break
 
                 elif (self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_INFO):
