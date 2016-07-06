@@ -14,7 +14,7 @@ __all__ = ['CLibrary', 'HANDLE', 'PHANDLE']
 
 class LibraryMixin:
     def map_symbol(self, func_name, restype=None, argtypes=(), errcheck=None):
-        """ 
+        """
         Map and return a symbol (function) from a C library. A reference to the
         mapped symbol is also held in the instance
 
@@ -51,9 +51,9 @@ class CLibrary_Win32(ctypes.WinDLL, LibraryMixin):
 
     def __init__(self, library_or_path):
         if (isinstance(library_or_path, str)):
-            super().__init__(library_or_path)
+            super(CLibrary_Win32, self).__init__(library_or_path)
         else:
-            super().__init__(library_or_path._name, library_or_path._handle)
+            super(CLibrary_Win32, self).__init__(library_or_path._name, library_or_path._handle)
 
     @property
     def function_type(self):
@@ -65,9 +65,9 @@ class CLibrary_Unix(ctypes.CDLL, LibraryMixin):
 
     def __init__(self, library_or_path):
         if (isinstance(library_or_path, str)):
-            super().__init__(library_or_path)
+            super(CLibrary_Unix, self).__init__(library_or_path)
         else:
-            super().__init__(library_or_path._name, library_or_path._handle)
+            super(CLibrary_Unix, self).__init__(library_or_path._name, library_or_path._handle)
 
     @property
     def function_type(self):
