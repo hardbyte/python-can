@@ -22,7 +22,7 @@ class VCIError(CanError):
     _ERROR_BUFFER = ctypes.create_string_buffer(constants.VCI_MAX_ERRSTRLEN)
 
     def __init__(self, function, HRESULT, arguments):
-        super().__init__()
+        super(VCIError, self).__init__()
         self.HRESULT = HRESULT
         self.function = function
         self.arguments = arguments
