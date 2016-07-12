@@ -4,7 +4,7 @@ python-can requires the setuptools package to be installed.
 
 from setuptools import setup, find_packages
 
-__version__ = "1.4.3"
+__version__ = "1.5.0"
 
 import logging
 logging.basicConfig(level=logging.WARNING)
