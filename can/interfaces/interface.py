@@ -3,7 +3,7 @@ from can.util import load_config, choose_socketcan_implementation
 from can.broadcastmanager import CyclicSendTaskABC, MultiRateCyclicSendTaskABC
 
 VALID_INTERFACES = set(['kvaser', 'serial', 'pcan', 'socketcan_native',
-                                'socketcan_ctypes', 'socketcan', 'usb2can'])
+                        'socketcan_ctypes', 'socketcan', 'usb2can', 'ixxat'])
 
 
 class Bus(object):
@@ -31,26 +31,30 @@ class Bus(object):
             raise NotImplementedError('Invalid CAN Bus Type - {}'.format(can.rc['interface']))
 
         # Import the correct Bus backend
-        if can.rc['interface'] == 'kvaser':
+        interface = can.rc['interface']
+        if interface == 'kvaser':
             from can.interfaces.kvaser import KvaserBus
             cls = KvaserBus
-        elif can.rc['interface'] == 'socketcan_ctypes':
+        elif interface == 'socketcan_ctypes':
             from can.interfaces.socketcan_ctypes import SocketscanCtypes_Bus
             cls = SocketscanCtypes_Bus
-        elif can.rc['interface'] == 'socketcan_native':
+        elif interface == 'socketcan_native':
             from can.interfaces.socketcan_native import SocketscanNative_Bus
             cls = SocketscanNative_Bus
-        elif can.rc['interface'] == 'serial':
+        elif interface == 'serial':
             from can.interfaces.serial_can import SerialBus
             cls = SerialBus
-        elif can.rc['interface'] == 'pcan':
+        elif interface == 'pcan':
             from can.interfaces.pcan import PcanBus
             cls = PcanBus
-        elif can.rc['interface'] == 'usb2can':
+        elif interface == 'usb2can':
             from can.interfaces.usb2canInterface import Usb2canBus
             cls = Usb2canBus
+        elif interface == 'ixxat':
+            from can.interfaces.ixxat import IXXATBus
+            cls = IXXATBus
         else:
-            raise NotImplementedError("CAN Interface Not Found")
+            raise NotImplementedError("CAN interface '{}' not supported".format(interface))
 
         if channel is None:
             channel = can.rc['channel']
