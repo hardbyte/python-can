@@ -8,8 +8,12 @@ and extends the maximum packet size above 8 bytes.
 http://en.wikipedia.org/wiki/J1939
 """
 
+import warnings
+warnings.warn("The j1939 protocol is going to be removed from python-can", DeprecationWarning)
+
 import threading
 import logging
+
 
 try:
     from queue import Queue, Empty
