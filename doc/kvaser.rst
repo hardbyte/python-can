@@ -1,4 +1,4 @@
-.. _sockdoc:
+.. _kvaserdoc:
 
 Kvaser's CANLIB
 ===============
