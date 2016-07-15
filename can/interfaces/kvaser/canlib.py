@@ -287,6 +287,17 @@ DRIVER_MODE_SILENT = False
 DRIVER_MODE_NORMAL = True
 
 
+BITRATE_OBJS = {1000000 : canstat.canBITRATE_1M,
+                 500000 : canstat.canBITRATE_500K,
+                 250000 : canstat.canBITRATE_250K,
+                 125000 : canstat.canBITRATE_125K,
+                 100000 : canstat.canBITRATE_100K,
+                  83000 : canstat.canBITRATE_83K,
+                  62000 : canstat.canBITRATE_62K,
+                  50000 : canstat.canBITRATE_50K,
+                  10000 : canstat.canBITRATE_10K}
+
+
 class KvaserBus(BusABC):
     """
     The CAN Bus implemented for the Kvaser interface.
@@ -330,6 +341,9 @@ class KvaserBus(BusABC):
         no_samp = config.get('no_samp', 1)
         driver_mode = config.get('driver_mode', DRIVER_MODE_NORMAL)
         single_handle = config.get('single_handle', False)
+
+        if 'tseg1' not in config and bitrate in BITRATE_OBJS:
+            bitrate = BITRATE_OBJS[bitrate]
 
         log.debug('Initialising bus instance')
         self.single_handle = single_handle
