@@ -319,7 +319,13 @@ class KvaserBus(BusABC):
         :param int bitrate:
             Bitrate of channel in bit/s
         :param int tseg1:
+            Time segment 1, that is, the number of quanta from (but not including)
+            the Sync Segment to the sampling point.
+            If this parameter is not given, the Kvaser driver will try to choose
+            all bit timing parameters from a set of defaults.
         :param int tseg2:
+            Time segment 2, that is, the number of quanta from the sampling
+            point to the end of the bit.
         :param int sjw:
             Synchronisation Jump Width decides the maximum number of time quanta
             that the controller can resynchronise every bit.
