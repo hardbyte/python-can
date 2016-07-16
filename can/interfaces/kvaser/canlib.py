@@ -313,8 +313,8 @@ class KvaserBus(BusABC):
 
             >>> [{"can_id": 0x11, "can_mask": 0x21}]
 
+
         Backend Configuration
-        ---------------------
 
         :param int bitrate:
             Bitrate of channel in bit/s
@@ -327,16 +327,20 @@ class KvaserBus(BusABC):
             Time segment 2, that is, the number of quanta from the sampling
             point to the end of the bit.
         :param int sjw:
-            Synchronisation Jump Width decides the maximum number of time quanta
+            The Synchronisation Jump Width. Decides the maximum number of time quanta
             that the controller can resynchronise every bit.
-        :param no_samp:
-            Some CAN controllers can also sample each bit three times.
+        :param int no_samp:
+            Either 1 or 3. Some CAN controllers can also sample each bit three times.
             In this case, the bit will be sampled three quanta in a row,
             with the last sample being taken in the edge between TSEG1 and TSEG2.
             Three samples should only be used for relatively slow baudrates.
 
         :param bool driver_mode:
             Silent or normal.
+
+        :param bool single_handle:
+            Use one Kvaser CANLIB bus handle for both reading and writing. Note recv
+            timeouts will be ignored in single handle mode.
         """
         log.info("CAN Filters: {}".format(can_filters))
         log.info("Got configuration of: {}".format(config))
@@ -390,9 +394,6 @@ class KvaserBus(BusABC):
         canSetBusOutputControl(self._write_handle, can_driver_mode)
         log.debug('Going bus on TX handle')
         canBusOn(self._write_handle)
-
-        if driver_mode == DRIVER_MODE_SILENT:
-            self.__write_process = lambda: None
 
         self.timer_offset = None  # Used to zero the timestamps from the first message
 
