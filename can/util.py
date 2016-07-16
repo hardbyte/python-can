@@ -29,7 +29,7 @@ if platform.system() == "Linux":
             '~/.canrc'
         ]
     )
-elif platform.system() == "Windows":
+elif platform.system() == "Windows" or platform.python_implementation() == "IronPython":
     CONFIG_FILES.extend(
         [
             'can.ini',
