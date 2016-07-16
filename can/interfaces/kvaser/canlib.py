@@ -430,7 +430,7 @@ class KvaserBus(BusABC):
         dlc = ctypes.c_uint(0)
         flags = ctypes.c_uint(0)
         timestamp = ctypes.c_ulong(0)
-        timeout = 1000
+        timeout = int(timeout * 1000) if timeout else 0
 
         if self.single_handle:
             timeout = 1
@@ -441,7 +441,7 @@ class KvaserBus(BusABC):
                 # by a notify() from the tx thread. Once awakened it re-acquires the lock
                 self.done_writing.wait()
 
-        log.log(9, 'Reading for 1ms on handle: %s' % self._read_handle)
+        log.log(9, 'Reading for %d ms on handle: %s' % (timeout, self._read_handle))
         status = canReadWait(
             self._read_handle,
             ctypes.byref(arb_id),
