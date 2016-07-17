@@ -73,6 +73,9 @@ class BusABC(object):
                 yield m
         logger.debug("done iterating over bus messages")
 
+    def __del__(self):
+        self.shutdown()
+
     def flush_tx_buffer(self):
         """Used for CAN backends which need to flush their transmit buffer.
 
