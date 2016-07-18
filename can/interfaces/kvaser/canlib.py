@@ -504,6 +504,9 @@ class KvaserBus(BusABC):
 
     def shutdown(self):
         self.__threads_running = False
+        if not self.single_handle:
+            canBusOff(self._read_handle)
+            canClose(self._read_handle)
         canBusOff(self._write_handle)
         canClose(self._write_handle)
 
