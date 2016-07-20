@@ -10,10 +10,6 @@ Copyright (C) 2010 Dynamic Controls
 import sys
 import time
 import logging
-try:
-    import queue as queue
-except ImportError:
-    import Queue as queue
 import ctypes
 
 log = logging.getLogger('can.canlib')
@@ -77,10 +73,6 @@ class CANLIBError(CanError):
         errmsg = ctypes.create_string_buffer(128)
         canGetErrorText(self.error_code, errmsg, len(errmsg))
         return "%s (code %d)" % (errmsg.value, self.error_code)
-
-
-class ChannelNotFoundError(CANLIBError):
-    pass
 
 
 def __convert_can_status_to_int(result):
@@ -240,14 +232,6 @@ def init_kvaser_library():
         log.warning("Kvaser canlib is unavailable.")
 
 
-def lookup_transceiver_type(typename):
-    if typename in canstat.canTransceiverTypeStrings:
-        return canstat.canTransceiverTypeStrings[typename]
-    else:
-        log.warning("Unknown transceiver type - add to list?")
-        return "unknown"
-
-
 canGetChannelData = __get_canlib_function("canGetChannelData",
                                           argtypes=[ctypes.c_int,
                                                     ctypes.c_int,
@@ -386,7 +370,7 @@ class KvaserBus(BusABC):
         self.pc_time_offset = None
 
         super(KvaserBus, self).__init__()
-    
+
     def get_channel_info(self):
         name = ctypes.create_string_buffer(80)
         canGetChannelData(self._write_handle,
@@ -397,7 +381,7 @@ class KvaserBus(BusABC):
         canGetChannelData(self._write_handle,
                           canstat.canCHANNELDATA_CHAN_NO_ON_CARD,
                           ctypes.byref(buf), ctypes.sizeof(buf))
-        return '%s (channel %d)' % (name.value, buf[0])
+        return '%s (channel %d)' % (name.value.decode(), buf[0])
 
     def flush_tx_buffer(self):
         """
