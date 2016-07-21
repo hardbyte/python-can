@@ -172,18 +172,9 @@ repository and use them without having to reinstall):
 
 On linux you will need ``sudo`` rights.
 
-Documentation
--------------
+Documentation and Help
+----------------------
 
-The documentation for python-can has been generated with Sphinx they can
-be viewed online at
-`python-can.readthedocs.org <https://python-can.readthedocs.org/en/latest/>`__
-
-Generation
-~~~~~~~~~~
-
-With sphinx installed the documentation can be generated locally with:
-
-::
-
-    python setup.py build_sphinx
+- The Sphinx documentation for python-can can be viewed online at `python-can.readthedocs.org <https://python-can.readthedocs.org/en/latest/>`__
+- Questions can be found on `StackOverflow <https://stackoverflow.com/questions/tagged/can+python>`__ (tagged with python+can)
+- `Google groups mailing list <https://groups.google.com/forum/#!forum/python-can>`__
