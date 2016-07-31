@@ -35,7 +35,11 @@ except OSError:
     __canlib = None
 
 
-def __get_canlib_function(func_name, argtypes=None, restype=None, errcheck=None):
+def _unimplemented_function(*args):
+    raise NotImplementedError('This function is not implemented in canlib')
+
+
+def __get_canlib_function(func_name, argtypes=[], restype=None, errcheck=None):
     log.debug('Wrapping function "%s"' % func_name)
     try:
         # e.g. canlib.canBusOn
@@ -43,6 +47,7 @@ def __get_canlib_function(func_name, argtypes=None, restype=None, errcheck=None)
         log.debug('"%s" found in library', func_name)
     except AttributeError:
         log.warning('"%s" was not found in library', func_name)
+        return _unimplemented_function
     else:
         log.debug('Result type is: %s' % type(restype))
         #log.debug('Error check function is: %s' % errcheck)
@@ -116,10 +121,7 @@ def __check_bus_handle_validity(handle, function, arguments):
         return handle
 
 
-canInitializeLibrary = __get_canlib_function("canInitializeLibrary",
-                                             argtypes=[],
-                                             restype=canstat.c_canStatus,
-                                             errcheck=__check_status)
+canInitializeLibrary = __get_canlib_function("canInitializeLibrary")
 
 canGetErrorText = __get_canlib_function("canGetErrorText",
                                         argtypes=[canstat.c_canStatus, ctypes.c_char_p, ctypes.c_uint],
@@ -216,6 +218,12 @@ canGetVersion = __get_canlib_function("canGetVersion",
                                       restype=ctypes.c_short,
                                       errcheck=__check_status)
 
+kvFlashLeds = __get_canlib_function("kvFlashLeds",
+                                    argtypes=[c_canHandle, ctypes.c_int,
+                                              ctypes.c_int],
+                                    restype=ctypes.c_short,
+                                    errcheck=__check_status)
+
 if sys.platform == "win32":
     canGetVersionEx = __get_canlib_function("canGetVersionEx",
                                             argtypes=[ctypes.c_uint],
@@ -229,7 +237,7 @@ def init_kvaser_library():
         canInitializeLibrary()
         log.debug("CAN library initialized")
     except:
-        log.warning("Kvaser canlib is unavailable.")
+        log.warning("Kvaser canlib could not be initialized.")
 
 
 canGetChannelData = __get_canlib_function("canGetChannelData",
@@ -297,16 +305,16 @@ class KvaserBus(BusABC):
             Silent or normal.
 
         :param bool single_handle:
-            Use one Kvaser CANLIB bus handle for both reading and writing. Note recv
-            timeouts will be ignored in single handle mode.
+            Use one Kvaser CANLIB bus handle for both reading and writing.
+            This can be set if reading and/or writing is done from one thread.
         """
         log.info("CAN Filters: {}".format(can_filters))
         log.info("Got configuration of: {}".format(config))
         bitrate = config.get('bitrate', 500000)
-        tseg1 = config.get('tseg1', 4)
-        tseg2 = config.get('tseg2', 3)
-        sjw = config.get('sjw', 1)
-        no_samp = config.get('no_samp', 1)
+        tseg1 = config.get('tseg1', 0)
+        tseg2 = config.get('tseg2', 0)
+        sjw = config.get('sjw', 0)
+        no_samp = config.get('no_samp', 0)
         driver_mode = config.get('driver_mode', DRIVER_MODE_NORMAL)
         single_handle = config.get('single_handle', False)
 
@@ -326,6 +334,11 @@ class KvaserBus(BusABC):
         log.debug("Res: {}".format(res))
         num_channels = int(num_channels.value)
         log.info('Found %d available channels' % num_channels)
+        for idx in range(num_channels):
+            channel_info = get_channel_info(idx)
+            log.info('%d: %s', idx, channel_info)
+            if idx == channel:
+                self.channel_info = channel_info
 
         log.debug('Creating read handle to bus channel: %s' % channel)
         self._read_handle = canOpenChannel(channel, canstat.canOPEN_ACCEPT_VIRTUAL)
@@ -342,6 +355,7 @@ class KvaserBus(BusABC):
                 code |= can_filter['can_id']
                 mask |= can_filter['can_mask']
             log.info("Filtering on: {}  {}".format(code, mask))
+            canSetAcceptanceFilter(self._read_handle, code, mask, 0)
             canSetAcceptanceFilter(self._read_handle, code, mask, 1)
 
         if self.single_handle:
@@ -357,8 +371,6 @@ class KvaserBus(BusABC):
         log.debug('Going bus on TX handle')
         canBusOn(self._write_handle)
 
-        self.channel_info = self.get_channel_info()
-
         self.timer_offset = None  # Used to zero the timestamps from the first message
 
         '''
@@ -370,18 +382,6 @@ class KvaserBus(BusABC):
         self.pc_time_offset = None
 
         super(KvaserBus, self).__init__()
-
-    def get_channel_info(self):
-        name = ctypes.create_string_buffer(80)
-        canGetChannelData(self._write_handle,
-                          canstat.canCHANNELDATA_DEVDESCR_ASCII,
-                          ctypes.byref(name), ctypes.sizeof(name))
-        buf_type = ctypes.c_uint * 1
-        buf = buf_type()
-        canGetChannelData(self._write_handle,
-                          canstat.canCHANNELDATA_CHAN_NO_ON_CARD,
-                          ctypes.byref(buf), ctypes.sizeof(buf))
-        return '%s (channel %d)' % (name.value.decode(), buf[0])
 
     def flush_tx_buffer(self):
         """
@@ -454,7 +454,7 @@ class KvaserBus(BusABC):
                              is_remote_frame=is_remote_frame,
                              timestamp=msg_timestamp)
             rx_msg.flags = flags
-            rx_msg.raw_timestamp = timestamp.value
+            rx_msg.raw_timestamp = timestamp.value / (1000000.0 / TIMESTAMP_RESOLUTION)
             log.debug('Got message: %s' % rx_msg)
             return rx_msg
         else:
@@ -463,9 +463,7 @@ class KvaserBus(BusABC):
 
     def send(self, msg):
         #log.debug("Writing a message: {}".format(msg))
-        flags = 0
-        if msg.id_type:
-            flags |= canstat.canMSG_EXT
+        flags = canstat.canMSG_EXT if msg.id_type else canstat.canMSG_STD
         if msg.is_remote_frame:
             flags |= canstat.canMSG_RTR
         if msg.is_error_frame:
@@ -479,12 +477,46 @@ class KvaserBus(BusABC):
                      flags,
                      5)
 
+    def flash(self, flash=True):
+        """
+        Turn on or off flashing of the device's LED for physical
+        identification purposes.
+        """
+        if flash:
+            action = canstat.kvLED_ACTION_ALL_LEDS_ON
+        else:
+            action = canstat.kvLED_ACTION_ALL_LEDS_OFF
+
+        try:
+            kvFlashLeds(self._read_handle, action, 30000)
+        except (CANLIBError, NotImplementedError) as e:
+            log.error('Could not flash LEDs (%s)', e)
+
     def shutdown(self):
         if not self.single_handle:
             canBusOff(self._read_handle)
             canClose(self._read_handle)
         canBusOff(self._write_handle)
         canClose(self._write_handle)
+
+
+def get_channel_info(channel):
+    name = ctypes.create_string_buffer(80)
+    serial = ctypes.c_uint64()
+    number = ctypes.c_uint()
+
+    canGetChannelData(channel,
+                      canstat.canCHANNELDATA_DEVDESCR_ASCII,
+                      ctypes.byref(name), ctypes.sizeof(name))
+    canGetChannelData(channel,
+                      canstat.canCHANNELDATA_CARD_SERIAL_NO,
+                      ctypes.byref(serial), ctypes.sizeof(serial))
+    canGetChannelData(channel,
+                      canstat.canCHANNELDATA_CHAN_NO_ON_CARD,
+                      ctypes.byref(number), ctypes.sizeof(number))
+
+    return '%s, S/N %d (#%d)' % (
+        name.value.decode(), serial.value, number.value + 1)
 
 
 init_kvaser_library()
