@@ -34,14 +34,20 @@ class KvaserTest(unittest.TestCase):
         self.bus = can.interface.Bus(channel=0, bustype='kvaser')
 
     def tearDown(self):
-        self.bus.shutdown()
-        self.bus = None
+        if self.bus:
+            self.bus.shutdown()
+            self.bus = None
 
     def test_bus_creation(self):
         self.assertIsInstance(self.bus, canlib.KvaserBus)
         self.assertTrue(canlib.canGetNumberOfChannels.called)
         self.assertTrue(canlib.canOpenChannel.called)
         self.assertTrue(canlib.canBusOn.called)
+
+    def test_bus_shutdown(self):
+        self.bus.shutdown()
+        self.assertTrue(canlib.canBusOff.called)
+        self.assertTrue(canlib.canClose.called)
 
     def test_send_extended(self):
         msg = can.Message(
@@ -66,7 +72,7 @@ class KvaserTest(unittest.TestCase):
 
         self.assertEqual(self.msg['arb_id'], 0x321)
         self.assertEqual(self.msg['dlc'], 2)
-        self.assertEqual(self.msg['flags'], 0)
+        self.assertEqual(self.msg['flags'], constants.canMSG_STD)
         self.assertSequenceEqual(self.msg['data'], [50, 51])
 
     def test_recv_no_message(self):
@@ -83,7 +89,7 @@ class KvaserTest(unittest.TestCase):
         self.assertEqual(msg.arbitration_id, 0xc0ffef)
         self.assertEqual(msg.dlc, 8)
         self.assertEqual(msg.id_type, True)
-        self.assertEqual(msg.data, self.msg_in_cue.data)
+        self.assertSequenceEqual(msg.data, self.msg_in_cue.data)
         self.assertTrue(now - 1 < msg.timestamp < now + 1)
 
     def test_recv_standard(self):
@@ -114,6 +120,8 @@ class KvaserTest(unittest.TestCase):
         flags_temp = 0
         if self.msg_in_cue.id_type:
             flags_temp |= constants.canMSG_EXT
+        else:
+            flags_temp |= constants.canMSG_STD
         if self.msg_in_cue.is_remote_frame:
             flags_temp |= constants.canMSG_RTR
         if self.msg_in_cue.is_error_frame:
