@@ -30,7 +30,7 @@ class Message(object):
                 logger.error("Couldn't create message from %r (%r)", data, type(data))
 
             if dlc is None:
-                self.dlc = len(data)
+                self.dlc = len(self.data)
             else:
                 self.dlc = dlc
 
