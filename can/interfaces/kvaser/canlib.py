@@ -53,7 +53,8 @@ def __get_canlib_function(func_name, argtypes=[], restype=None, errcheck=None):
         #log.debug('Error check function is: %s' % errcheck)
         retval.argtypes = argtypes
         retval.restype = restype
-        retval.errcheck = errcheck
+        if errcheck:
+            retval.errcheck = errcheck
         return retval
 
 
