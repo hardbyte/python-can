@@ -77,3 +77,23 @@ class Message(object):
                 pass
 
         return "    ".join(field_strings).strip()
+
+    def __repr__(self):
+        data = ["{:#02x}".format(byte) for byte in self.data]
+        args = ["timestamp={}".format(self.timestamp),
+                "is_remote_frame={}".format(self.is_remote_frame),
+                "extended_id={}".format(self.id_type),
+                "is_error_frame={}".format(self.is_error_frame),
+                "arbitration_id={:#x}".format(self.arbitration_id),
+                "dlc={}".format(self.dlc),
+                "data=[{}]".format(", ".join(data))]
+        return "can.Message({})".format(", ".join(args))
+
+    def __eq__(self, other):
+        return (self.arbitration_id == other.arbitration_id and
+                #self.timestamp == other.timestamp and
+                self.id_type == other.id_type and
+                self.dlc == other.dlc and
+                self.data == other.data and
+                self.is_remote_frame == other.is_remote_frame and
+                self.is_error_frame == other.is_error_frame)
