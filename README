@@ -85,6 +85,13 @@ IXXAT
 The Linux ECI SDK is currently unsupported.
 On Linux some devices are supported with socketcan.
 
+virtual
+~~~~~~~
+
+A virtual CAN bus that can be used for automatic tests. Any Bus instances
+connecting to the same channel (in the same python program) will get each
+others messages.
+
 Installation
 ------------
 
