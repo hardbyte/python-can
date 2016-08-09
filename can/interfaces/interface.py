@@ -3,7 +3,8 @@ from can.util import load_config, choose_socketcan_implementation
 from can.broadcastmanager import CyclicSendTaskABC, MultiRateCyclicSendTaskABC
 
 VALID_INTERFACES = set(['kvaser', 'serial', 'pcan', 'socketcan_native',
-                        'socketcan_ctypes', 'socketcan', 'usb2can', 'ixxat'])
+                        'socketcan_ctypes', 'socketcan', 'usb2can', 'ixxat',
+                        'virtual'])
 
 
 class Bus(object):
