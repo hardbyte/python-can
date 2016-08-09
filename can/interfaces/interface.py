@@ -53,6 +53,9 @@ class Bus(object):
         elif interface == 'ixxat':
             from can.interfaces.ixxat import IXXATBus
             cls = IXXATBus
+        elif interface == 'virtual':
+            from can.interfaces.virtual import VirtualBus
+            cls = VirtualBus
         else:
             raise NotImplementedError("CAN interface '{}' not supported".format(interface))
 
