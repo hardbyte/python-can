@@ -1,11 +1,6 @@
 Message
 =======
 
-.. warning::
-
-    Check the backend specific documentation for additional fields or differences.
-
-
 .. module:: can
 
 .. autoclass:: Message
