@@ -47,7 +47,8 @@ class Bus(object):
         if can.rc['interface'] == 'kvaser':
             cls = KvaserBus
         elif can.rc['interface'] == 'socketcan_ctypes':
-            cls = SocketscanCtypes_Bus
+            from can.interfaces.socketcan_ctypes import SocketcanCtypes_Bus
+            cls = SocketcanCtypes_Bus
         elif can.rc['interface'] == 'socketcan_native':
             cls = SocketscanNative_Bus
         elif can.rc['interface'] =='serial':
