@@ -12,6 +12,7 @@ class Message(object):
 
         self.timestamp = timestamp
         self.id_type = extended_id
+        self.is_extended_id = extended_id
 
         self.is_remote_frame = is_remote_frame
         self.is_error_frame = is_error_frame
@@ -76,3 +77,6 @@ class Message(object):
                 pass
 
         return "    ".join(field_strings).strip()
+
+    def __len__(self):
+        return len(self.data)
