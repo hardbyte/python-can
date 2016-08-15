@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 from can.interfaces.PCANBasic import *
 from can.bus import BusABC
 from can.message import Message
+from can import CanError
 import time
 
 boottimeEpoch = 0
@@ -173,13 +174,8 @@ class PcanBus(BusABC):
 
         log.debug("Received a message")
 
-        arbitration_id = theMsg.ID
-
         bIsRTR = (theMsg.MSGTYPE & PCAN_MESSAGE_RTR.value) == PCAN_MESSAGE_RTR.value
         bIsExt = (theMsg.MSGTYPE & PCAN_MESSAGE_EXTENDED.value) == PCAN_MESSAGE_EXTENDED.value
-
-        # Flags: EXT, RTR, ERR
-        #flags = (PYCAN_RTRFLG if bIsRTR else 0) | (PYCAN_STDFLG if not bIsExt else 0)
 
         if bIsExt:
             #rx_msg.id_type = ID_TYPE_EXTENDED
@@ -188,13 +184,15 @@ class PcanBus(BusABC):
             #rx_msg.id_type = ID_TYPE_STANDARD
             log.debug("CAN: Standard")
 
-        rx_msg.arbitration_id = arbitration_id
-        rx_msg.id_type = bIsExt
-        rx_msg.is_remote_frame = bIsRTR
-        rx_msg.dlc = theMsg.LEN
-        #rx_msg.flags = flags
-        rx_msg.data = theMsg.DATA
-        rx_msg.timestamp = boottimeEpoch + ((itsTimeStamp.micros + (1000 * itsTimeStamp.millis)) / (1000.0 * 1000.0))
+        dlc = theMsg.LEN
+        timestamp = boottimeEpoch + ((itsTimeStamp.micros + (1000 * itsTimeStamp.millis)) / (1000.0 * 1000.0))
+
+        rx_msg = Message(timestamp=timestamp,
+                         arbitration_id=theMsg.ID,
+                         extended_id=bIsExt,
+                         is_remote_frame=bIsRTR,
+                         dlc=dlc,
+                         data=theMsg.DATA[:dlc])
 
         return rx_msg
 
@@ -224,13 +222,8 @@ class PcanBus(BusABC):
         log.debug("Type: %s", type(msg.data))
 
         result = self.m_objPCANBasic.Write(self.m_PcanHandle, CANMsg)
-
-        sent = result == PCAN_ERROR_OK
-
-        if not sent:
-            logging.warning("Failed to send: " + self._get_formatted_error(result))
-
-        return sent
+        if result != PCAN_ERROR_OK:
+            raise CanError("Failed to send: " + self._get_formatted_error(result))
 
     def flash(self, flash):
         """
