@@ -18,10 +18,10 @@ log.info("Loading socketcan ctypes backend")
 
 
 class SocketscanCtypes_Bus(BusABC):
-
     """
     An implementation of the :class:`can.bus.BusABC` for SocketCAN using :mod:`ctypes`.
     """
+
     channel_info = "ctypes socketcan channel"
 
     def __init__(self,
