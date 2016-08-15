@@ -313,7 +313,7 @@ class SocketscanNative_Bus(BusABC):
         bindSocket(self.socket, channel)
         super(SocketscanNative_Bus, self).__init__()
 
-    def __del__(self):
+    def shutdown(self):
         self.socket.close()
 
     def recv(self, timeout=None):
