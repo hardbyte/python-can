@@ -257,7 +257,7 @@ def capturePacket(sock):
     return _CanPacket(timestamp, arbitration_id, CAN_ERR_FLAG, CAN_EFF_FLAG, CAN_RTR_FLAG, can_dlc, data)
 
 
-class SocketscanNative_Bus(BusABC):
+class SocketcanNative_Bus(BusABC):
     channel_info = "native socketcan channel"
 
     def __init__(self, channel, **kwargs):
@@ -277,7 +277,7 @@ class SocketscanNative_Bus(BusABC):
             self.set_filters(kwargs['can_filters'])
 
         bindSocket(self.socket, channel)
-        super(SocketscanNative_Bus, self).__init__()
+        super(SocketcanNative_Bus, self).__init__()
 
     def __del__(self):
         self.socket.close()

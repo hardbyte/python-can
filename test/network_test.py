@@ -17,7 +17,8 @@ rbool = lambda: bool(round(random.random()))
 can_interface = 'vcan0'
 import can
 can.rc['interface'] = 'socketcan_ctypes'
-from can.interfaces.socketcan_ctypes import Bus, Message
+from can.interfaces.socketcan_ctypes import Message
+from can.interfaces.socketcan_ctypes import SocketcanCtypes_Bus as Bus
 
 
 class ControllerAreaNetworkTestCase(unittest.TestCase):
