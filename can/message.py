@@ -4,7 +4,7 @@ logger = logging.getLogger(__name__)
 
 class Message(object):
     """
-    Represents a CAN message.
+    The :class:`~can.Message` object is used to represent CAN messages for both sending and receiving.
     """
 
     def __init__(self, timestamp=0.0, is_remote_frame=False, extended_id=True,
@@ -22,17 +22,16 @@ class Message(object):
 
         if data is None:
             self.data = bytearray()
-            self.dlc = 0
         else:
             try:
                 self.data = bytearray(data)
             except TypeError:
                 logger.error("Couldn't create message from %r (%r)", data, type(data))
 
-            if dlc is None:
-                self.dlc = len(self.data)
-            else:
-                self.dlc = dlc
+        if dlc is None:
+            self.dlc = len(self.data)
+        else:
+            self.dlc = dlc
 
         assert self.dlc <= 8, "data link count was {} but it must be less than or equal to 8".format(self.dlc)
 
