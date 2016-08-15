@@ -3,12 +3,10 @@
 CAN over Serial
 ===============
 
-
 Bus
 ---
 
-.. autoclass:: can.interfaces.serial_can.Bus
-
+.. autoclass:: can.interfaces.serial.serial_can.SerialBus
 
 Internals
 ---------
