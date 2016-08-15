@@ -73,6 +73,22 @@ class BusABC(object):
                 yield m
         logger.debug("done iterating over bus messages")
 
+    @abc.abstractmethod
+    def set_filters(self, can_filters=None):
+        """Apply filtering to all messages received by this Bus.
+
+        Calling without passing any filters will reset the applied filters.
+
+        :param list can_filters:
+            A list of dictionaries each containing a "can_id" and a "can_mask".
+
+            >>> [{"can_id": 0x11, "can_mask": 0x21}]
+
+            A filter matches, when ``<received_can_id> & can_mask == can_id & can_mask``
+
+        """
+        raise NotImplementedError("Trying to set_filters on unsupported bus")
+
     def flush_tx_buffer(self):
         """Used for CAN backends which need to flush their transmit buffer.
 
