@@ -59,14 +59,14 @@ class PcanBus(BusABC):
 
         :param str channel:
             The can interface name. An example would be PCAN_USBBUS1
-            
+
         Backend Configuration
         ---------------------
-            
+
         :param int bitrate:
             Bitrate of channel in bit/s.
             Default is 500 Kbs
-            
+
         """
         if channel is None or channel == '':
             raise ArgumentError("Must specify a PCAN channel")
@@ -75,7 +75,7 @@ class PcanBus(BusABC):
 
         bitrate = kwargs.get('bitrate', 500000)
         pcan_bitrate = pcan_bitrate_objs.get(bitrate, PCAN_BAUD_500K)
-        
+
         hwtype = PCAN_TYPE_ISA
         ioport = 0x02A0
         interrupt = 11
@@ -86,8 +86,7 @@ class PcanBus(BusABC):
         result = self.m_objPCANBasic.Initialize(self.m_PcanHandle, pcan_bitrate, hwtype, ioport, interrupt)
 
         if result != PCAN_ERROR_OK:
-            # TODO throw a specific exception.
-            raise Exception(self._get_formatted_error(result))
+            raise PcanError(self._get_formatted_error(result))
 
         super(PcanBus, self).__init__(*args, **kwargs)
 
@@ -167,7 +166,7 @@ class PcanBus(BusABC):
                     result = None
                     time.sleep(0.001)
             elif result[0] != PCAN_ERROR_OK:
-                raise Exception(self._get_formatted_error(result[0]))
+                raise PcanError(self._get_formatted_error(result[0]))
 
         theMsg = result[1]
         itsTimeStamp = result[2]
@@ -212,7 +211,7 @@ class PcanBus(BusABC):
 
         # if a remote frame will be sent, data bytes are not important.
         if msg.is_remote_frame:
-            CANMsg.MSGTYPE = msgType | PCAN_MESSAGE_RTR
+            CANMsg.MSGTYPE = msgType.value | PCAN_MESSAGE_RTR.value
         else:
             # copy data
             for i in range(CANMsg.LEN):
@@ -223,7 +222,7 @@ class PcanBus(BusABC):
 
         result = self.m_objPCANBasic.Write(self.m_PcanHandle, CANMsg)
         if result != PCAN_ERROR_OK:
-            raise CanError("Failed to send: " + self._get_formatted_error(result))
+            raise PcanError("Failed to send: " + self._get_formatted_error(result))
 
     def flash(self, flash):
         """
@@ -234,3 +233,7 @@ class PcanBus(BusABC):
 
     def shutdown(self):
         self.m_objPCANBasic.Uninitialize(self.m_PcanHandle)
+
+
+class PcanError(CanError):
+    pass
