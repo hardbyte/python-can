@@ -1,6 +1,6 @@
 import can
-from can.util import load_config, choose_socketcan_implementation
 from can.broadcastmanager import CyclicSendTaskABC, MultiRateCyclicSendTaskABC
+from can.util import load_config, choose_socketcan_implementation
 
 VALID_INTERFACES = set(['kvaser', 'serial', 'pcan', 'socketcan_native',
                         'socketcan_ctypes', 'socketcan', 'usb2can', 'ixxat'])
@@ -42,7 +42,7 @@ class Bus(object):
             from can.interfaces.socketcan_native import SocketscanNative_Bus
             cls = SocketscanNative_Bus
         elif interface == 'serial':
-            from can.interfaces.serial_can import SerialBus
+            from can.interfaces.serial.serial_can import SerialBus
             cls = SerialBus
         elif interface == 'pcan':
             from can.interfaces.pcan import PcanBus
