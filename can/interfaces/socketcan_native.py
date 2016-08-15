@@ -274,16 +274,8 @@ class SocketscanNative_Bus(BusABC):
         # Add any socket options such as can frame filters
         if 'can_filters' in kwargs and len(kwargs['can_filters']) > 0:
             log.debug("Creating a filtered can bus")
-            can_filter_fmt = "={}I".format(2 * len(kwargs['can_filters']))
-            filter_data = []
-            for can_filter in kwargs['can_filters']:
-                filter_data.append(can_filter['can_id'])
-                filter_data.append(can_filter['can_mask'])
+            self.set_filters(kwargs['can_filters'])
 
-            self.socket.setsockopt(socket.SOL_CAN_RAW,
-                                   socket.CAN_RAW_FILTER,
-                                   struct.pack(can_filter_fmt, *filter_data),
-                                   )
         bindSocket(self.socket, channel)
         super(SocketscanNative_Bus, self).__init__()
 
@@ -323,6 +315,26 @@ class SocketscanNative_Bus(BusABC):
             self.socket.send(build_can_frame(arbitration_id, message.data))
         except OSError:
             l.warning("Failed to send: {}".format(message))
+
+
+    def set_filters(self, can_filters=None):
+        if can_filters is None:
+            # Pass all messages
+            can_filters=[{
+                'can_id': 0,
+                'can_mask': 0
+            }]
+
+        can_filter_fmt = "={}I".format(2 * len(can_filters))
+        filter_data = []
+        for can_filter in can_filters:
+            filter_data.append(can_filter['can_id'])
+            filter_data.append(can_filter['can_mask'])
+
+        self.socket.setsockopt(socket.SOL_CAN_RAW,
+                               socket.CAN_RAW_FILTER,
+                               struct.pack(can_filter_fmt, *filter_data)
+                               )
 
 
 if __name__ == "__main__":
