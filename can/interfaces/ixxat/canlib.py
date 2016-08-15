@@ -141,7 +141,8 @@ CAN_ERROR_MESSAGES = {
 
 
 class IXXATBus(BusABC):
-    " The CAN Bus implemented for the IXXAT interface. "
+    """The CAN Bus implemented for the IXXAT interface.
+    """
 
     CHANNEL_BITRATES = {
         0: {
@@ -178,12 +179,10 @@ class IXXATBus(BusABC):
 
             >>> [{"can_id": 0x11, "can_mask": 0x21}]
 
-        Backend Configuration
-        ---------------------
-
         :param int UniqueHardwareId:
             UniqueHardwareId to connect (optional, will use the first found if not supplied)
-        :param int bitrate
+
+        :param int bitrate:
             Channel bitrate in bit/s
         """
         if (_canlib is None):
