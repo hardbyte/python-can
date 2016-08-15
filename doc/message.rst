@@ -148,12 +148,5 @@ Message
         The flags field is represented as a four-digit hexadecimal number. The arbitration
         ID field as either a four or eight digit hexadecimal number depending on the length
         of the arbitration ID (11-bit or 29-bit). Each of the bytes in the data field (when
-        present) are represented as two-digit hexadecimal numbers. The following sections
-        describe each of the parameters to the Message constructor.
-
-
-
-
-
-
+        present) are represented as two-digit hexadecimal numbers.
 
