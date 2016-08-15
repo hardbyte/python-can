@@ -4,7 +4,7 @@ import can
 
 
 def main():
-    bus = can.interface.Bus()
+    bus = can.interface.Bus(bustype='socketcan', channel='vcan0')
     msg = can.Message(arbitration_id=0xc0ffee,
                       data=[0, 25, 0, 1, 3, 1, 4, 1],
                       extended_id=False)
