@@ -32,7 +32,7 @@ Message
         The arbitration ID can take an int between 0 and the
         maximum value allowed depending on the is_extended_id flag
         (either 2\ :sup:`11` - 1 for 11-bit IDs, or
-         2\ :sup:`29` - 1 for 29-bit identifiers).
+        2\ :sup:`29` - 1 for 29-bit identifiers).
 
             >>> print(Message(extended_id=False, arbitration_id=100))
             Timestamp:        0.000000        ID: 0064    000    DLC: 0
@@ -84,7 +84,7 @@ Message
 
         :type: bool
 
-        This flag controls the size of the :meth:`~can.Message.arbitration_id` field.
+        This flag controls the size of the :attr:`~can.Message.arbitration_id` field.
 
         >>> print(Message(extended_id=False))
         Timestamp:        0.000000        ID: 0000    000    DLC: 0
