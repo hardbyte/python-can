@@ -50,7 +50,7 @@ class Bus(object):
             from can.interfaces.socketcan_ctypes import SocketcanCtypes_Bus
             cls = SocketcanCtypes_Bus
         elif can.rc['interface'] == 'socketcan_native':
-            cls = SocketscanNative_Bus
+            cls = SocketcanNative_Bus
         elif can.rc['interface'] =='serial':
             cls = SerialBus
         elif can.rc['interface'] =='pcan':
