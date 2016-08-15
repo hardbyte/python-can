@@ -427,7 +427,11 @@ class KvaserBus(BusABC):
         dlc = ctypes.c_uint(0)
         flags = ctypes.c_uint(0)
         timestamp = ctypes.c_ulong(0)
-        timeout = 1000
+
+        if timeout is None:
+            # Set infinite timeout
+            # http://www.kvaser.com/canlib-webhelp/group___c_a_n.html#ga2edd785a87cc16b49ece8969cad71e5b
+            timeout = 0xFFFFFFFF
 
         if self.single_handle:
             timeout = 1
