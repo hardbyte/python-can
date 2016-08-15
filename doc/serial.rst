@@ -13,4 +13,4 @@ Bus
 Internals
 ---------
 
-#TODO: Implement and document serial interface.
+.. TODO:: Implement and document serial interface.
