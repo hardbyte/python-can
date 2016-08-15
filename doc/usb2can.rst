@@ -4,7 +4,7 @@ USB2CAN Interface
 OVERVIEW
 --------
 
-The USB2CAN is a cheep CAN interface based on an ARM7 chip (STR750FV2).  Currently there is support for this device on both Linux and Windows though slightly different methods.
+The USB2CAN is a cheap CAN interface based on an ARM7 chip (STR750FV2).  Currently there is support for this device on both Linux and Windows though slightly different methods.
 
 LINUX SUPPORT
 -------------
