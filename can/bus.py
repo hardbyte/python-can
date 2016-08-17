@@ -73,7 +73,6 @@ class BusABC(object):
                 yield m
         logger.debug("done iterating over bus messages")
 
-    @abc.abstractmethod
     def set_filters(self, can_filters=None):
         """Apply filtering to all messages received by this Bus.
 
