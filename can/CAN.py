@@ -8,6 +8,8 @@ Copyright (C) 2010 Dynamic Controls
 from __future__ import print_function
 
 import logging
+from datetime import datetime
+import time
 
 try:
     import queue
@@ -132,3 +134,46 @@ class SqliteWriter(Listener):
     def on_message_received(self, msg):
         # add row
         raise NotImplementedError("TODO")
+
+
+class ASCWriter(Listener):
+    """Logs CAN data to an ASCII log file (.asc)"""
+
+    LOG_STRING = "{time: 9.4f} {channel}  {id:<15} Rx   d {dlc} {data}\n"
+
+    def __init__(self, filename):
+        now = datetime.now().strftime("%a %b %m %I:%M:%S %p %Y")
+        self.start = time.time()
+        self.log_file = open(filename, "w")
+        self.log_file.write("date %s\n" % now)
+        self.log_file.write("base hex  timestamps absolute\n")
+        self.log_file.write("internal events logged\n")
+        self.log_file.write("Begin Triggerblock %s\n" % now)
+        self.log_file.write("   0.0000 Start of measurement\n")
+
+    def __del__(self):
+        self.stop()
+
+    def stop(self):
+        """Stops logging and closes the file."""
+        if self.log_file:
+            self.log_file.write("End TriggerBlock\n")
+            self.log_file.close()
+            self.log_file = None
+
+    def on_message_received(self, msg):
+        data = ["{:02X}".format(byte) for byte in msg.data]
+        arb_id = "{:X}".format(msg.arbitration_id)
+        if msg.id_type:
+            arb_id = arb_id + "x"
+        timestamp = msg.timestamp
+        if timestamp >= self.start:
+            timestamp -= self.start
+
+        line = self.LOG_STRING.format(time=timestamp,
+                                      channel=1,
+                                      id=arb_id,
+                                      dlc=msg.dlc,
+                                      data=" ".join(data))
+        if self.log_file:
+            self.log_file.write(line)
