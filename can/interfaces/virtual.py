@@ -41,7 +41,7 @@ class VirtualBus(BusABC):
 
     def recv(self, timeout=None):
         try:
-            msg = self.queue.get(block=bool(timeout), timeout=timeout)
+            msg = self.queue.get(block=True, timeout=timeout)
         except queue.Empty:
             return None
 
