@@ -27,6 +27,14 @@ class Notifier(object):
 
         self._reader.start()
 
+    def __del__(self):
+        self.stop()
+
+    def stop(self):
+        self.running.clear()
+        if self.timeout is not None:
+            self._reader.join(self.timeout + 0.1)
+
     def rx_thread(self):
         while self.running.is_set():
             msg = self.bus.recv(self.timeout)
