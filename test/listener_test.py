@@ -41,6 +41,7 @@ class ListenerTest(unittest.TestCase):
     def testLogger(self):
         self.assertIsInstance(can.Logger("test.asc"), can.ASCWriter)
         self.assertIsInstance(can.Logger("test.csv"), can.CSVWriter)
+        self.assertIsInstance(can.Logger("test.db"), can.SqliteWriter)
         self.assertIsInstance(can.Logger("test.txt"), can.Printer)
 
     def testBufferedListenerReceives(self):

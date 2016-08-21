@@ -78,15 +78,20 @@ class Logger(object):
     The format is determined from the file format which can be one of:
       * .asc: :class:`can.ASCWriter`
       * .csv: :class:`can.CSVWriter`
+      * .db: :class:`can.SqliteWriter`
       * other: :class:`can.Printer`
     """
 
     @classmethod
     def __new__(cls, other, filename):
-        if filename.endswith(".asc"):
+        if not filename:
+            return Printer()
+        elif filename.endswith(".asc"):
             return ASCWriter(filename)
         elif filename.endswith(".csv"):
             return CSVWriter(filename)
+        elif filename.endswith(".db"):
+            return SqliteWriter(filename)
         else:
             return Printer(filename)
 
