@@ -1,12 +1,5 @@
 from time import sleep
 import unittest
-import threading
-from sys import version_info
-
-try:
-    import queue
-except ImportError:
-    import Queue as queue
 import random
 
 
@@ -44,6 +37,11 @@ class ListenerTest(unittest.TestCase):
         notifier = can.Notifier(self.bus, [a_listener], 0.1)
         notifier.stop()
         self.assertIn(a_listener, notifier.listeners)
+
+    def testLogger(self):
+        self.assertIsInstance(can.Logger("test.asc"), can.ASCWriter)
+        self.assertIsInstance(can.Logger("test.csv"), can.CSVWriter)
+        self.assertIsInstance(can.Logger("test.txt"), can.Printer)
 
     def testBufferedListenerReceives(self):
         a_listener = can.BufferedReader()

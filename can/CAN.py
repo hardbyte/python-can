@@ -71,6 +71,26 @@ class BufferedReader(Listener):
             return None
 
 
+class Logger(object):
+    """
+    Logs CAN messages to a file.
+
+    The format is determined from the file format which can be one of:
+      * .asc: :class:`can.ASCWriter`
+      * .csv: :class:`can.CSVWriter`
+      * other: :class:`can.Printer`
+    """
+
+    @classmethod
+    def __new__(cls, other, filename):
+        if filename.endswith(".asc"):
+            return ASCWriter(filename)
+        elif filename.endswith(".csv"):
+            return CSVWriter(filename)
+        else:
+            return Printer(filename)
+
+
 class Printer(Listener):
     """
     The Printer class is a subclass of :class:`~can.Listener` which simply prints
