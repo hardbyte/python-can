@@ -27,6 +27,13 @@ BufferedReader
     :members:
 
 
+Logger
+------
+
+.. autoclass:: can.Logger
+    :members:
+
+
 Printer
 -------
 
