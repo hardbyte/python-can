@@ -26,6 +26,7 @@ class KvaserTest(unittest.TestCase):
         canlib.canClose = Mock()
         canlib.canSetBusOutputControl = Mock()
         canlib.canGetChannelData = Mock()
+        canlib.canSetAcceptanceFilter = Mock()
         canlib.canWriteWait = self.canWriteWait
         canlib.canReadWait = self.canReadWait
 
@@ -48,6 +49,55 @@ class KvaserTest(unittest.TestCase):
         self.bus.shutdown()
         self.assertTrue(canlib.canBusOff.called)
         self.assertTrue(canlib.canClose.called)
+
+    def test_filter_setup(self):
+        # No filter in constructor
+        expected_args = [
+            ((0, 0, 0, 0),),       # Disable filtering STD
+            ((0, 0, 0, 1),),       # Disable filtering EXT
+        ]
+        self.assertEqual(canlib.canSetAcceptanceFilter.call_args_list,
+                         expected_args)
+
+        # One filter, will be handled by canlib
+        canlib.canSetAcceptanceFilter.reset_mock()
+        self.bus.set_filters([
+            {'can_id': 0x8, 'can_mask': 0xff}
+        ])
+        expected_args = [
+            ((0, 0x8, 0xff, 0),),       # Enable filtering STD
+            ((0, 0x8, 0xff, 1),),       # Enable filtering EXT
+        ]
+        self.assertEqual(canlib.canSetAcceptanceFilter.call_args_list,
+                         expected_args)
+
+        # Multiple filters, will be handled in Python
+        canlib.canSetAcceptanceFilter.reset_mock()
+        multiple_filters = [
+            {'can_id': 0x8, 'can_mask': 0xff},
+            {'can_id': 0x9, 'can_mask': 0xff}
+        ]
+        self.bus.set_filters(multiple_filters)
+        expected_args = [
+            ((0, 0, 0, 0),),       # Disable filtering STD
+            ((0, 0, 0, 1),),       # Disable filtering EXT
+        ]
+        self.assertEqual(canlib.canSetAcceptanceFilter.call_args_list,
+                         expected_args)
+        self.assertEqual(self.bus.sw_filters, multiple_filters)
+
+    def test_sw_filtering(self):
+        self.bus.set_filters([
+            {'can_id': 0x8, 'can_mask': 0xff},
+            {'can_id': 0x9, 'can_mask': 0xffff}
+        ])
+        self.assertTrue(self.bus._is_filter_match(0x8))
+        self.assertTrue(self.bus._is_filter_match(0x9))
+        self.assertTrue(self.bus._is_filter_match(0x108))
+        self.assertTrue(self.bus._is_filter_match(0x10009))
+        self.assertFalse(self.bus._is_filter_match(0x10))
+        self.assertFalse(self.bus._is_filter_match(0x0))
+        self.assertFalse(self.bus._is_filter_match(0x109))
 
     def test_send_extended(self):
         msg = can.Message(

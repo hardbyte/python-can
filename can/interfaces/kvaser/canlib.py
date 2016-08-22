@@ -349,15 +349,8 @@ class KvaserBus(BusABC):
                  4)
         canSetBusParams(self._read_handle, bitrate, tseg1, tseg2, sjw, no_samp, 0)
 
-        if can_filters is not None and len(can_filters):
-            log.info("The kvaser canlib backend is filtering messages")
-            code, mask = 0, 0
-            for can_filter in can_filters:
-                code |= can_filter['can_id']
-                mask |= can_filter['can_mask']
-            log.info("Filtering on: {}  {}".format(code, mask))
-            canSetAcceptanceFilter(self._read_handle, code, mask, 0)
-            canSetAcceptanceFilter(self._read_handle, code, mask, 1)
+        self.sw_filters = []
+        self.set_filters(can_filters)
 
         if self.single_handle:
             log.debug("We don't require separate handles to the bus")
@@ -383,6 +376,44 @@ class KvaserBus(BusABC):
         self.pc_time_offset = None
 
         super(KvaserBus, self).__init__()
+
+    def set_filters(self, can_filters=None):
+        """Apply filtering to all messages received by this Bus.
+
+        Calling without passing any filters will reset the applied filters.
+
+        Since Kvaser only supports setting one filter per handle, the filtering
+        will be done in the :meth:`recv` if more than one filter is requested.
+
+        :param list can_filters:
+            A list of dictionaries each containing a "can_id" and a "can_mask".
+
+            >>> [{"can_id": 0x11, "can_mask": 0x21}]
+
+            A filter matches, when ``<received_can_id> & can_mask == can_id & can_mask``
+        """
+        if not can_filters:
+            # Disable all filters
+            self.sw_filters = []
+            canSetAcceptanceFilter(self._read_handle, 0, 0, 0)
+            canSetAcceptanceFilter(self._read_handle, 0, 0, 1)
+        elif len(can_filters) == 1:
+            # Standard messages
+            canSetAcceptanceFilter(self._read_handle,
+                                   can_filters[0]['can_id'],
+                                   can_filters[0]['can_mask'],
+                                   0)
+            # Extended messages
+            canSetAcceptanceFilter(self._read_handle,
+                                   can_filters[0]['can_id'],
+                                   can_filters[0]['can_mask'],
+                                   1)
+            self.sw_filters = []
+        elif len(can_filters) > 1:
+            self.sw_filters = can_filters
+            # Disable HW filtering
+            canSetAcceptanceFilter(self._read_handle, 0, 0, 0)
+            canSetAcceptanceFilter(self._read_handle, 0, 0, 1)
 
     def flush_tx_buffer(self):
         """
@@ -417,6 +448,26 @@ class KvaserBus(BusABC):
             self.pc_time_offset += lag
         return timestamp
 
+    def _is_filter_match(self, arb_id):
+        """
+        If SW filtering is used, checks if the `arb_id` matches any of
+        the filters setup.
+
+        :param int arb_id:
+            CAN ID to check against.
+
+        :return:
+            True if `arb_id` matches any filters
+            (or if SW filtering is not used).
+        """
+        if not self.sw_filters:
+            # Filtering done on HW or driver level
+            return True
+        for can_filter in self.sw_filters:
+            if not (arb_id ^ can_filter['can_id']) & can_filter['can_mask']:
+                return True
+        return False
+
     def recv(self, timeout=None):
         """
         Read a message from kvaser device.
@@ -441,6 +492,8 @@ class KvaserBus(BusABC):
 
         if status == canstat.canOK:
             log.debug('read complete -> status OK')
+            if not self._is_filter_match(arb_id.value):
+                return None
             data_array = data.raw
             flags = flags.value
             is_extended = bool(flags & canstat.canMSG_EXT)
