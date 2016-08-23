@@ -25,6 +25,7 @@ logger.setLevel(logging.DEBUG)
 # Channels are lists of queues, one for each connection
 channels = {}
 
+
 class VirtualBus(BusABC):
     """Virtual CAN bus using an internal message queue for testing."""
 

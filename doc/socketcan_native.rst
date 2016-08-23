@@ -22,7 +22,7 @@ https://www.kernel.org/doc/Documentation/networking/can.txt
 Bus
 ---
 
-.. autoclass:: can.interfaces.socketcan_native.Bus
+.. autoclass:: can.interfaces.socketcan_native.SocketscanNative_Bus
 
 
 Internals

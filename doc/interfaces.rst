@@ -11,6 +11,7 @@ Found under ``can.interfaces`` are the implementations for each backend:
     serial
     ixxat
     pcan
+    usb2can
     virtual
 
 These interfaces define the low level interface to the physical controller area network.

@@ -8,6 +8,10 @@ Copyright (C) 2010 Dynamic Controls
 from __future__ import print_function
 
 import logging
+from datetime import datetime
+import time
+import base64
+import sqlite3
 
 try:
     import queue
@@ -42,6 +46,11 @@ class Listener(object):
     def __call__(self, msg):
         return self.on_message_received(msg)
 
+    def stop(self):
+        """
+        Override to cleanup any open resources.
+        """
+
 
 class BufferedReader(Listener):
     """
@@ -60,13 +69,41 @@ class BufferedReader(Listener):
     def get_message(self, timeout=0.5):
         """
         Attempts to retrieve the latest message received by the instance. If no message is
-        available it blocks for 0.5 seconds or until a message is received (whichever
-        is shorter), and returns the message if there is one, or None if there is not.
+        available it blocks for given timeout or until a message is received (whichever
+        is shorter),
+
+        :param float timeout: The number of seconds to wait for a new message.
+        :return: the :class:`~can.Message` if there is one, or None if there is not.
         """
         try:
             return self.buffer.get(block=True, timeout=timeout)
         except queue.Empty:
             return None
+
+
+class Logger(object):
+    """
+    Logs CAN messages to a file.
+
+    The format is determined from the file format which can be one of:
+      * .asc: :class:`can.ASCWriter`
+      * .csv: :class:`can.CSVWriter`
+      * .db: :class:`can.SqliteWriter`
+      * other: :class:`can.Printer`
+    """
+
+    @classmethod
+    def __new__(cls, other, filename):
+        if not filename:
+            return Printer()
+        elif filename.endswith(".asc"):
+            return ASCWriter(filename)
+        elif filename.endswith(".csv"):
+            return CSVWriter(filename)
+        elif filename.endswith(".db"):
+            return SqliteWriter(filename)
+        else:
+            return Printer(filename)
 
 
 class Printer(Listener):
@@ -89,9 +126,9 @@ class Printer(Listener):
         else:
             print(msg)
 
-    def __del__(self):
-        self.output_file.write("\n")
+    def stop(self):
         if self.output_file:
+            self.output_file.write("\n")
             self.output_file.close()
 
 
@@ -105,30 +142,125 @@ class CSVWriter(Listener):
         self.csv_file = open(filename, 'wt')
 
         # Write a header row
-        self.csv_file.write("timestamp, arbitrationid, flags, dlc, data")
+        self.csv_file.write("timestamp, arbitration id, extended, remote, error, dlc, data\n")
 
     def on_message_received(self, msg):
-        row = ','.join([msg.timestamp,
-                        msg.arbitration_id,
-                        msg.flags,
-                        msg.dlc,
-                        msg.data])
+        row = ','.join([
+            str(msg.timestamp),
+            hex(msg.arbitration_id),
+            '1' if msg.id_type else '0',
+            '1' if msg.is_remote_frame else '0',
+            '1' if msg.is_error_frame else '0',
+            str(msg.dlc),
+            base64.b64encode(msg.data).decode('utf8')
+            ])
         self.csv_file.write(row + '\n')
 
-    def __del__(self):
+    def stop(self):
+        self.csv_file.flush()
         self.csv_file.close()
-        super(CSVWriter, self).__del__()
 
 
 class SqliteWriter(Listener):
-    """TODO"""
+    """Logs received CAN data to a simple SQL database.
+
+    The sqlite database may already exist, otherwise it will
+    be created when the first message arrives.
+    """
+
+    insert_msg_template = '''
+        INSERT INTO messages VALUES
+        (?, ?, ?, ?, ?, ?, ?)
+        '''
 
     def __init__(self, filename):
-        self.db_file = open(filename, 'wt')
+        self.db_fn = filename
+        self.db_setup = False
+
+    def _create_db(self):
+        # Note you can't share sqlite3 connections between threads
+        # hence we setup the db here.
+        log.info("Creating sqlite db")
+        self.conn = sqlite3.connect(self.db_fn)
+        c = self.conn.cursor()
 
         # create table structure
-        raise NotImplementedError("TODO")
+        c.execute('''
+        CREATE TABLE IF NOT EXISTS messages
+        (
+          ts REAL,
+          arbitration_id INTEGER,
+          extended INTEGER,
+          remote INTEGER,
+          error INTEGER,
+          dlc INTEGER,
+          data BLOB
+        )
+        ''')
+        self.conn.commit()
+
+        self.db_setup = True
 
     def on_message_received(self, msg):
-        # add row
-        raise NotImplementedError("TODO")
+        if not self.db_setup:
+            self._create_db()
+
+        # add row to db
+        row_data = (
+            msg.timestamp,
+            msg.arbitration_id,
+            msg.id_type,
+            msg.is_remote_frame,
+            msg.is_error_frame,
+            msg.dlc,
+            msg.data
+        )
+        c = self.conn.cursor()
+        c.execute(SqliteWriter.insert_msg_template, row_data)
+
+        self.conn.commit()
+
+    def stop(self):
+        if self.db_setup:
+            self.conn.commit()
+            self.conn.close()
+
+
+class ASCWriter(Listener):
+    """Logs CAN data to an ASCII log file (.asc)"""
+
+    LOG_STRING = "{time: 9.4f} {channel}  {id:<15} Rx   d {dlc} {data}\n"
+
+    def __init__(self, filename):
+        now = datetime.now().strftime("%a %b %m %I:%M:%S %p %Y")
+        self.start = time.time()
+        self.log_file = open(filename, "w")
+        self.log_file.write("date %s\n" % now)
+        self.log_file.write("base hex  timestamps absolute\n")
+        self.log_file.write("internal events logged\n")
+        self.log_file.write("Begin Triggerblock %s\n" % now)
+        self.log_file.write("   0.0000 Start of measurement\n")
+
+    def stop(self):
+        """Stops logging and closes the file."""
+        if self.log_file:
+            self.log_file.write("End TriggerBlock\n")
+            self.log_file.close()
+            self.log_file = None
+
+    def on_message_received(self, msg):
+        data = ["{:02X}".format(byte) for byte in msg.data]
+        arb_id = "{:X}".format(msg.arbitration_id)
+        if msg.id_type:
+            arb_id = arb_id + "x"
+        timestamp = msg.timestamp
+        if timestamp >= self.start:
+            timestamp -= self.start
+
+        line = self.LOG_STRING.format(time=timestamp,
+                                      channel=1,
+                                      id=arb_id,
+                                      dlc=msg.dlc,
+                                      data=" ".join(data))
+        if self.log_file:
+            self.log_file.write(line)
