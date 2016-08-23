@@ -11,7 +11,7 @@ class Notifier(object):
         """Manages the distribution of **Messages** from a given bus to a
         list of listeners.
 
-        :param bus: The :class:`~can.Bus` to listen too.
+        :param bus: The :ref:`bus` to listen too.
         :param listeners: An iterable of :class:`~can.Listeners`
         :param timeout: An optional maximum number of seconds to wait for any message.
         """
@@ -27,10 +27,9 @@ class Notifier(object):
 
         self._reader.start()
 
-    def __del__(self):
-        self.stop()
-
     def stop(self):
+        """Stop notifying Listeners when new :class:`~can.Message` objects arrive
+         and call :meth:`~can.Listener.stop` on each Listener."""
         self.running.clear()
         if self.timeout is not None:
             self._reader.join(self.timeout + 0.1)
@@ -41,3 +40,6 @@ class Notifier(object):
             if msg is not None:
                 for callback in self.listeners:
                     callback(msg)
+
+        for listener in self.listeners:
+            listener.stop()

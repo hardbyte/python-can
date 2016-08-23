@@ -10,6 +10,7 @@ from __future__ import print_function
 import logging
 from datetime import datetime
 import time
+import base64
 
 try:
     import queue
@@ -43,6 +44,11 @@ class Listener(object):
 
     def __call__(self, msg):
         return self.on_message_received(msg)
+
+    def stop(self):
+        """
+        Override to cleanup any open resources.
+        """
 
 
 class BufferedReader(Listener):
@@ -116,9 +122,9 @@ class Printer(Listener):
         else:
             print(msg)
 
-    def __del__(self):
-        self.output_file.write("\n")
+    def stop(self):
         if self.output_file:
+            self.output_file.write("\n")
             self.output_file.close()
 
 
@@ -132,19 +138,23 @@ class CSVWriter(Listener):
         self.csv_file = open(filename, 'wt')
 
         # Write a header row
-        self.csv_file.write("timestamp, arbitrationid, flags, dlc, data")
+        self.csv_file.write("timestamp, arbitration id, extended, remote, error, dlc, data\n")
 
     def on_message_received(self, msg):
-        row = ','.join([msg.timestamp,
-                        msg.arbitration_id,
-                        msg.flags,
-                        msg.dlc,
-                        msg.data])
+        row = ','.join([
+            str(msg.timestamp),
+            hex(msg.arbitration_id),
+            '1' if msg.id_type else '0',
+            '1' if msg.is_remote_frame else '0',
+            '1' if msg.is_error_frame else '0',
+            str(msg.dlc),
+            base64.b64encode(msg.data).decode('utf8')
+            ])
         self.csv_file.write(row + '\n')
 
-    def __del__(self):
+    def stop(self):
+        self.csv_file.flush()
         self.csv_file.close()
-        super(CSVWriter, self).__del__()
 
 
 class SqliteWriter(Listener):
@@ -175,9 +185,6 @@ class ASCWriter(Listener):
         self.log_file.write("internal events logged\n")
         self.log_file.write("Begin Triggerblock %s\n" % now)
         self.log_file.write("   0.0000 Start of measurement\n")
-
-    def __del__(self):
-        self.stop()
 
     def stop(self):
         """Stops logging and closes the file."""
