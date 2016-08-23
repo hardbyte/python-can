@@ -68,8 +68,11 @@ class BufferedReader(Listener):
     def get_message(self, timeout=0.5):
         """
         Attempts to retrieve the latest message received by the instance. If no message is
-        available it blocks for 0.5 seconds or until a message is received (whichever
-        is shorter), and returns the message if there is one, or None if there is not.
+        available it blocks for given timeout or until a message is received (whichever
+        is shorter),
+
+        :param float timeout: The number of seconds to wait for a new message.
+        :return: the :class:`~can.Message` if there is one, or None if there is not.
         """
         try:
             return self.buffer.get(block=True, timeout=timeout)

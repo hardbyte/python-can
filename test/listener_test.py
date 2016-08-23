@@ -46,11 +46,9 @@ class ListenerTest(unittest.TestCase):
 
     def testBufferedListenerReceives(self):
         a_listener = can.BufferedReader()
-        notifier = can.Notifier(self.bus, [a_listener], 0.1)
-        self.bus.send(generate_message(0xDADADA))
+        a_listener(generate_message(0xDADADA))
         m = a_listener.get_message(0.2)
         self.assertIsNotNone(m)
-        notifier.stop()
 
     def testAscListener(self):
         a_listener = can.ASCWriter("test.asc")
