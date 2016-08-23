@@ -11,6 +11,7 @@ import logging
 from datetime import datetime
 import time
 import base64
+import sqlite3
 
 try:
     import queue
@@ -161,17 +162,68 @@ class CSVWriter(Listener):
 
 
 class SqliteWriter(Listener):
-    """TODO"""
+    """Logs received CAN data to a simple SQL database.
+
+    The sqlite database may already exist, otherwise it will
+    be created when the first message arrives.
+    """
+
+    insert_msg_template = '''
+        INSERT INTO messages VALUES
+        (?, ?, ?, ?, ?, ?, ?)
+        '''
 
     def __init__(self, filename):
-        self.db_file = open(filename, 'wt')
+        self.db_fn = filename
+        self.db_setup = False
+
+    def _create_db(self):
+        # Note you can't share sqlite3 connections between threads
+        # hence we setup the db here.
+        log.info("Creating sqlite db")
+        self.conn = sqlite3.connect(self.db_fn)
+        c = self.conn.cursor()
 
         # create table structure
-        raise NotImplementedError("TODO")
+        c.execute('''
+        CREATE TABLE IF NOT EXISTS messages
+        (
+          ts REAL,
+          arbitration_id INTEGER,
+          extended INTEGER,
+          remote INTEGER,
+          error INTEGER,
+          dlc INTEGER,
+          data BLOB
+        )
+        ''')
+        self.conn.commit()
+
+        self.db_setup = True
 
     def on_message_received(self, msg):
-        # add row
-        raise NotImplementedError("TODO")
+        if not self.db_setup:
+            self._create_db()
+
+        # add row to db
+        row_data = (
+            msg.timestamp,
+            msg.arbitration_id,
+            msg.id_type,
+            msg.is_remote_frame,
+            msg.is_error_frame,
+            msg.dlc,
+            msg.data
+        )
+        c = self.conn.cursor()
+        c.execute(SqliteWriter.insert_msg_template, row_data)
+
+        self.conn.commit()
+
+    def stop(self):
+        if self.db_setup:
+            self.conn.commit()
+            self.conn.close()
 
 
 class ASCWriter(Listener):

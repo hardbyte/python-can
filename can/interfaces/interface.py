@@ -10,6 +10,9 @@ class Bus(object):
     """
     Instantiates a CAN Bus of the given `bustype`, falls back to reading a
     configuration file from default locations.
+
+    :raises: NotImplementedError if the bustype isn't recognized
+
     """
 
     @classmethod

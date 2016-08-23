@@ -1,11 +1,12 @@
 from time import sleep
 import unittest
 import random
-
+import logging
+import tempfile
 
 import can
 
-import logging
+
 logging.getLogger("").setLevel(logging.DEBUG)
 
 
@@ -49,6 +50,19 @@ class ListenerTest(unittest.TestCase):
         a_listener(generate_message(0xDADADA))
         m = a_listener.get_message(0.2)
         self.assertIsNotNone(m)
+
+    def testSQLWriterReceives(self):
+        f = tempfile.NamedTemporaryFile('w')
+        a_listener = can.SqliteWriter(f.name)
+        a_listener(generate_message(0xDADADA))
+        a_listener.stop()
+
+        import sqlite3
+        con = sqlite3.connect(f.name)
+        c = con.cursor()
+        c.execute("select * from messages")
+        msg = c.fetchone()
+        assert msg[1] == 0xDADADA
 
     def testAscListener(self):
         a_listener = can.ASCWriter("test.asc")
