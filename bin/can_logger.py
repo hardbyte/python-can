@@ -27,7 +27,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Log CAN traffic, printing messages to stdout or to a given file")
 
     parser.add_argument("-f", "--file_name", dest="log_file",
-                        help="""Path and base log filename, extension can be .txt, .csv, .db, .npz""",
+                        help="""Path and base log filename, extension can be .txt, .asc, .csv, .db, .npz""",
                         default=None)
 
     parser.add_argument("-v", action="count", dest="verbosity",
@@ -70,10 +70,12 @@ if __name__ == "__main__":
 
     bus = can.interface.Bus(results.channel, bustype=results.interface, can_filters=can_filters)
     print('Can Logger (Started on {})\n'.format(datetime.datetime.now()))
-    notifier = can.Notifier(bus, [can.Printer(results.log_file)], timeout=0.1)
+    logger = can.Logger(results.log_file)
+    notifier = can.Notifier(bus, [logger], timeout=0.1)
 
     try:
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
         bus.shutdown()
+        notifier.stop()
