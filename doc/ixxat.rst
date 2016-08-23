@@ -7,7 +7,9 @@ IXXAT Virtual CAN Interface
 Bus
 ---
 
-.. autoclass:: can.interfaces.ixxat.canlib.Bus
+.. autoclass:: can.interfaces.ixxat.Bus
+
+.. autoclass:: can.interfaces.ixxat.canlib.IXXATBus
 
 
 Internals

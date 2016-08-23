@@ -46,7 +46,12 @@ class LibraryMixin:
         return symbol
 
 
-class CLibrary_Win32(ctypes.WinDLL, LibraryMixin):
+try:
+    _LibBase = ctypes.WinDLL
+except AttributeError:
+    _LibBase = ctypes.CDLL
+
+class CLibrary_Win32(_LibBase, LibraryMixin):
     " Basic ctypes.WinDLL derived class + LibraryMixin "
 
     def __init__(self, library_or_path):

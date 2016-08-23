@@ -17,7 +17,7 @@ rbool = lambda: bool(round(random.random()))
 import can
 
 channel = 'vcan0'
-#can.rc['interface'] = 'socketcan_ctypes'
+can.rc['interface'] = 'virtual'
 
 @unittest.skipIf('interface' not in can.rc, "Need a CAN interface")
 class ControllerAreaNetworkTestCase(unittest.TestCase):
@@ -55,19 +55,21 @@ class ControllerAreaNetworkTestCase(unittest.TestCase):
                 data=self.data[i]
             )
             logging.debug("writing message: {}".format(m))
-            #logging.debug("DATA: {}".format(self.data[i]))
-            # Don't send until the other thread is ready
-            msg_read.wait()
-            msg_read.clear()
+            if msg_read is not None:
+                # Don't send until the other thread is ready
+                msg_read.wait()
+                msg_read.clear()
+
             self.client_bus.send(m)
 
-    def _testProducer(self):
+    def testProducer(self):
         """Verify that we can send arbitrary messages on the bus"""
         logging.debug("testing producer alone")
-        self.producer()
+        ready = threading.Event()
+        ready.set()
+        self.producer(ready, None)
+
         logging.debug("producer test complete")
-
-
 
     def testProducerConsumer(self):
         logging.debug("testing producer/consumer")
