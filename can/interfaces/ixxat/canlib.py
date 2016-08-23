@@ -240,13 +240,13 @@ class IXXATBus(BusABC):
             self.CHANNEL_BITRATES[1][bitrate]
         )
         _canlib.canControlGetCaps(self._control_handle, ctypes.byref(self._channel_capabilities))
+        
         # With receive messages, this field contains the relative reception time of
         # the message in ticks. The resolution of a tick can be calculated from the fields
-        # dwClockFreq and dwTscDivisor of the structure  CANCAPABILITIES in accor-
-        # dance with the following formula:
-        # Resolution [s] = dwTscDivisor / dwClockFreq
-        # Reversed the terms, so that we have the number of ticks in a second
-        self._tick_resolution =  self._channel_capabilities.dwClockFreq / self._channel_capabilities.dwTscDivisor
+        # dwClockFreq and dwTscDivisor of the structure  CANCAPABILITIES in accordance with the following formula:
+        # frequency [1/s] = dwClockFreq / dwTscDivisor
+        # We explicitly cast to float for Python 2.x users
+        self._tick_resolution =  float(self._channel_capabilities.dwClockFreq / self._channel_capabilities.dwTscDivisor)
 
         # Setup filters before starting the channel
         if can_filters is not None and len(can_filters):

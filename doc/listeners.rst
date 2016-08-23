@@ -27,6 +27,13 @@ BufferedReader
     :members:
 
 
+Logger
+------
+
+.. autoclass:: can.Logger
+    :members:
+
+
 Printer
 -------
 
@@ -44,4 +51,13 @@ These Listeners simply create csv and sql files with the messages received.
     :members:
 
 .. autoclass:: can.SqliteWriter
+    :members:
+
+
+ASCWriter
+---------
+
+Logs CAN data to an ASCII log file.
+
+.. autoclass:: can.ASCWriter
     :members:
