@@ -1,4 +1,4 @@
-.. _can.bus:
+.. _bus:
 
 Bus
 ---
