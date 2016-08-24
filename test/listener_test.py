@@ -5,7 +5,8 @@ import logging
 import tempfile
 
 import can
-
+channel = 'vcan0'
+can.rc['interface'] = 'virtual'
 
 logging.getLogger("").setLevel(logging.DEBUG)
 
