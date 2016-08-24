@@ -126,7 +126,15 @@ def create_bcm_socket(channel):
     return s
 
 
-class CyclicSendTask(CyclicSendTaskABC):
+class SocketCanBCMBase(object):
+    """Mixin to add a BCM socket"""
+
+    def __init__(self, channel, *args, **kwargs):
+        self.bcm_socket = create_bcm_socket(channel)
+        super(SocketCanBCMBase, self).__init__(channel, *args, **kwargs)
+
+
+class CyclicSendTask(SocketCanBCMBase, CyclicSendTaskABC):
 
     def __init__(self, channel, message, period):
         """
@@ -135,8 +143,7 @@ class CyclicSendTask(CyclicSendTaskABC):
         :param message: The message to be sent periodically.
         :param period: The rate in seconds at which to send the message.
         """
-        super(CyclicSendTask,self).__init__(channel, message, period)
-        self.bcm_socket = create_bcm_socket(channel)
+        super(CyclicSendTask, self).__init__(channel, message, period)
         self._tx_setup(message)
         self.message = message
 
@@ -167,6 +174,29 @@ class CyclicSendTask(CyclicSendTaskABC):
 
     def start(self):
         self._tx_setup(self.message)
+
+
+class MultiRateCyclicSendTask(CyclicSendTask):
+
+    """Exposes more of the full power of the TX_SETUP opcode.
+
+    Transmits a message `count` times at `initial_period` then
+    continues to transmit message at `subsequent_period`.
+    """
+
+    def __init__(self, channel, message, count, initial_period, subsequent_period):
+        super(MultiRateCyclicSendTask, self).__init__(channel, message, subsequent_period)
+
+        # Create a low level packed frame to pass to the kernel
+        frame = build_can_frame(self.can_id, message.data)
+        header = build_bcm_transmit_header(
+            self.can_id,
+            count,
+            initial_period,
+            subsequent_period)
+
+        log.info("Sending BCM TX_SETUP command")
+        self.bcm_socket.send(header + frame)
 
 
 def createSocket(can_protocol=None):
