@@ -22,9 +22,6 @@ class CyclicTask(object):
         """Once stopped a task can be restarted"""
         raise NotImplementedError()
 
-    def __del__(self):
-        self.stop()
-
 
 class CyclicSendTaskABC(CyclicTask):
 
