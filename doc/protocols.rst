@@ -4,9 +4,7 @@ Protocols
 The :mod:`~can.protocols.j1939` protocol is the only CAN protocol that is currently
 implemented.
 
+.. warning::
 
-.. toctree::
-   :maxdepth: 2
-
-   j1939
+   Protocols are being removed in the next major release.
 

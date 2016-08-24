@@ -4,7 +4,7 @@ python-can requires the setuptools package to be installed.
 
 from setuptools import setup, find_packages
 
-__version__ = 1.4
+__version__ = "1.5.1"
 
 import logging
 logging.basicConfig(level=logging.WARNING)
@@ -17,7 +17,7 @@ setup(
     author="Brian Thorne",
     author_email="hardbyte@gmail.com",
     description="Controller Area Network interface module for Python",
-    long_description=open('README.md').read(),
+    long_description=open('README').read(),
     license="LGPL v3",
     package_data={
         "": ["CONTRIBUTORS.txt", "LICENSE.txt"],

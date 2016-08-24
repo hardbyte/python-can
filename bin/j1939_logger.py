@@ -10,31 +10,41 @@ import can
 
 def parse_arguments():
     parser = argparse.ArgumentParser(
-        description="Log J1939 traffic, printing messages to stdout or to a given file",
-        epilog="""Pull requests welcome!
+        description=textwrap.dedent("""\
+        Log J1939 traffic, printing messages to stdout or to a given file.
+
+        Values for SOURCE and PGN can be provided as either hex or decimals.
+        e.g. 0xEE00 or 60928
+
+        The interface or channel can also be loaded from
+        a configuration file - see the README for detail.
+        """),
+        epilog="""Pull requests and issues
         https://bitbucket.org/hardbyte/python-can""",
         formatter_class=argparse.RawTextHelpFormatter
     )
 
     parser.add_argument("-v", action="count", dest="verbosity",
-                        help='''
+                        help=textwrap.dedent('''\
+    command line verbosity
     How much information do you want to see at the command line?
-    You can add several of these e.g., -vv is DEBUG''', default=2)
+    You can add several of these e.g., -vv is DEBUG'''), default=2)
 
     filter_group = parser.add_mutually_exclusive_group()
     filter_group.add_argument('--pgn',
-                              help=textwrap.dedent('''
-    Only listen for messages with given Parameter Group Number (PGN).
-    Can be used more than once. Give either hex 0xEE00 or decimal 60928'''), action="append")
+                              help=textwrap.dedent('''\
+    Filter messages with given Parameter Group Number (PGN).
+    Can be passed multiple times. Only messages that match will
+    be logged.'''), action="append")
 
-    filter_group.add_argument('--source', help=textwrap.dedent('''
+    filter_group.add_argument('--source', help=textwrap.dedent('''\
     Only listen for messages from the given Source address
-    Can be used more than once. Give either hex 0x0E or decimal.'''), action="append")
+    Can be used more than once.'''), action="append")
 
     filter_group.add_argument('--filter',
                               type=argparse.FileType('r'),
-                              help=textwrap.dedent('''
-    A json file with more complicated filtering rules.
+                              help=textwrap.dedent('''\
+    Provide a json file with filtering rules.
 
     An example file that subscribes to all messages from SRC=0
     and two particular PGNs from SRC=1:
@@ -53,13 +63,27 @@ def parse_arguments():
       }
     ]
 
-
     '''))
-    parser.add_argument('-c', '--channel', default=can.rc['channel'],
-                        help=textwrap.dedent('''
-    Most backend interfaces require some sort of channel. For example with the serial
-    interface the channel might be a rfcomm device: /dev/rfcomm0
-    Other channel examples are: can0, vcan0'''))
+
+    parser.add_argument('-c', '--channel',
+                        help=textwrap.dedent('''\
+    Most backend interfaces require some sort of channel.
+    For example with the serial interface the channel might be a rfcomm device: "/dev/rfcomm0"
+    With the socketcan interfaces valid channel examples include: "can0", "vcan0".
+
+    Alternatively the CAN_CHANNEL environment variable can be set.
+    '''))
+
+    parser.add_argument('-i', '--interface', dest="interface",
+                        #choices=can.interface.VALID_INTERFACES,
+                        help=textwrap.dedent('''\
+    Specify the backend CAN interface to use.
+
+    Valid choices:
+        {}
+
+    Alternatively the CAN_INTERFACE environment variable can be set.
+    '''.format(can.interface.VALID_INTERFACES)))
 
     return parser.parse_args()
 
@@ -92,7 +116,7 @@ if __name__ == "__main__":
         filters = json.load(args.filter)
         #print("Loaded filters from file: ", filters)
 
-    bus = j1939.Bus(channel='can0', j1939_filters=filters)
+    bus = j1939.Bus(channel=args.channel, bustype=args.interface, j1939_filters=filters)
     log_start_time = datetime.datetime.now()
     print('can.j1939 logger started on {}\n'.format(log_start_time))
 

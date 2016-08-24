@@ -14,18 +14,18 @@ logging.getLogger(__file__).setLevel(logging.WARNING)
 # make a random bool:
 rbool = lambda: bool(round(random.random()))
 
-can_interface = 'vcan0'
 import can
-can.rc['interface'] = 'socketcan_ctypes'
-from can.interfaces.socketcan_ctypes import Message
-from can.interfaces.socketcan_ctypes import SocketcanCtypes_Bus as Bus
+
+channel = 'vcan0'
+can.rc['interface'] = 'virtual'
 
 
+@unittest.skipIf('interface' not in can.rc, "Need a CAN interface")
 class ControllerAreaNetworkTestCase(unittest.TestCase):
-
     """
     This test ensures that what messages go in to the bus is what comes out.
-    It relies on a vcan0 interface.
+
+    Requires a can interface.
 
     To ensure that hardware and/or software message priority queues don't
     effect the test, messages are sent one at a time.
@@ -45,10 +45,10 @@ class ControllerAreaNetworkTestCase(unittest.TestCase):
                 for b in range(num_messages))
 
     def producer(self, ready_event, msg_read):
-        self.client_bus = Bus(can_interface)
+        self.client_bus = can.interface.Bus(channel=channel)
         ready_event.wait()
         for i in range(self.num_messages):
-            m = Message(
+            m = can.Message(
                 arbitration_id=self.ids[i],
                 is_remote_frame=self.remote_flags[i],
                 is_error_frame=self.error_flags[i],
@@ -56,16 +56,20 @@ class ControllerAreaNetworkTestCase(unittest.TestCase):
                 data=self.data[i]
             )
             logging.debug("writing message: {}".format(m))
-            #logging.debug("DATA: {}".format(self.data[i]))
-            # Don't send until the other thread is ready
-            msg_read.wait()
-            msg_read.clear()
+            if msg_read is not None:
+                # Don't send until the other thread is ready
+                msg_read.wait()
+                msg_read.clear()
+
             self.client_bus.send(m)
 
-    def _testProducer(self):
+    def testProducer(self):
         """Verify that we can send arbitrary messages on the bus"""
         logging.debug("testing producer alone")
-        self.producer()
+        ready = threading.Event()
+        ready.set()
+        self.producer(ready, None)
+
         logging.debug("producer test complete")
 
     def testProducerConsumer(self):
@@ -73,7 +77,7 @@ class ControllerAreaNetworkTestCase(unittest.TestCase):
         ready = threading.Event()
         msg_read = threading.Event()
 
-        self.server_bus = Bus(can_interface)
+        self.server_bus = can.interface.Bus(channel=channel)
 
         t = threading.Thread(target=self.producer, args=(ready, msg_read))
         t.start()

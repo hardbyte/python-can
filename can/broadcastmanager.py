@@ -22,9 +22,6 @@ class CyclicTask(object):
         """Once stopped a task can be restarted"""
         raise NotImplementedError()
 
-    def __del__(self):
-        self.stop()
-
 
 class CyclicSendTaskABC(CyclicTask):
 
@@ -72,4 +69,4 @@ def send_periodic(channel, message, period):
     Send a message every `period` seconds on the given channel.
 
     """
-    return can.interfaces.interface.CyclicSendTask(channel, message, period)
+    return can.interface.CyclicSendTask(channel, message, period)

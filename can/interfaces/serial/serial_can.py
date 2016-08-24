@@ -36,10 +36,10 @@ class SerialBus(BusABC):
             self.ser = serial.Serial(channel, baudrate=115200, timeout=0.1)
         super(SerialBus, self).__init__(*args, **kwargs)
 
-    def _put_message(self, msg):
+    def send(self, msg):
         raise NotImplementedError("This serial interface doesn't support transmit.")
 
-    def _get_message(self, timeout=None):
+    def recv(self, timeout=None):
 
         try:
             # ser.read can return an empty string ''

@@ -10,6 +10,7 @@ import fcntl
 import struct
 import logging
 from collections import namedtuple
+import select
 
 log = logging.getLogger('can.socketcan.native')
 #log.setLevel(logging.DEBUG)
@@ -19,6 +20,7 @@ try:
     socket.CAN_RAW
 except:
     log.error("Note Python 3.3 or later is required to use native socketcan")
+    raise ImportError()
 
 
 from can import Message
@@ -27,6 +29,11 @@ from ..bus import BusABC
 
 from ..broadcastmanager import CyclicSendTaskABC
 
+# struct module defines a binary packing format:
+# https://docs.python.org/3/library/struct.html#struct-format-strings
+# The 32bit can id is directly followed by the 8bit data link count
+# The data field is aligned on an 8 byte boundary, hence we add padding
+# which aligns the data field to an 8 byte boundary.
 can_frame_fmt = "=IB3x8s"
 can_frame_size = struct.calcsize(can_frame_fmt)
 
@@ -119,7 +126,15 @@ def create_bcm_socket(channel):
     return s
 
 
-class CyclicSendTask(CyclicSendTaskABC):
+class SocketCanBCMBase(object):
+    """Mixin to add a BCM socket"""
+
+    def __init__(self, channel, *args, **kwargs):
+        self.bcm_socket = create_bcm_socket(channel)
+        super(SocketCanBCMBase, self).__init__(channel, *args, **kwargs)
+
+
+class CyclicSendTask(SocketCanBCMBase, CyclicSendTaskABC):
 
     def __init__(self, channel, message, period):
         """
@@ -128,9 +143,9 @@ class CyclicSendTask(CyclicSendTaskABC):
         :param message: The message to be sent periodically.
         :param period: The rate in seconds at which to send the message.
         """
-        super(CyclicSendTask,self).__init__(channel, message, period)
-        self.bcm_socket = create_bcm_socket(channel)
+        super(CyclicSendTask, self).__init__(channel, message, period)
         self._tx_setup(message)
+        self.message = message
 
     def _tx_setup(self, message):
         # Create a low level packed frame to pass to the kernel
@@ -156,6 +171,32 @@ class CyclicSendTask(CyclicSendTaskABC):
         """
         assert message.arbitration_id == self.can_id, "You cannot modify the can identifier"
         self._tx_setup(message)
+
+    def start(self):
+        self._tx_setup(self.message)
+
+
+class MultiRateCyclicSendTask(CyclicSendTask):
+
+    """Exposes more of the full power of the TX_SETUP opcode.
+
+    Transmits a message `count` times at `initial_period` then
+    continues to transmit message at `subsequent_period`.
+    """
+
+    def __init__(self, channel, message, count, initial_period, subsequent_period):
+        super(MultiRateCyclicSendTask, self).__init__(channel, message, subsequent_period)
+
+        # Create a low level packed frame to pass to the kernel
+        frame = build_can_frame(self.can_id, message.data)
+        header = build_bcm_transmit_header(
+            self.can_id,
+            count,
+            initial_period,
+            subsequent_period)
+
+        log.info("Sending BCM TX_SETUP command")
+        self.bcm_socket.send(header + frame)
 
 
 def createSocket(can_protocol=None):
@@ -194,7 +235,7 @@ def bindSocket(sock, channel='can0'):
     :raise:
         :class:`OSError` if the specified interface isn't found.
     """
-    log.debug('Binding socket to channel={}'.format(channel))
+    log.debug('Binding socket to channel=%s', channel)
     sock.bind((channel,))
     log.debug('Bound socket.')
 
@@ -225,10 +266,17 @@ def capturePacket(sock):
          * data
     """
     # Fetching the Arb ID, DLC and Data
-    cf, addr = sock.recvfrom(can_frame_size)
+    try:
+        cf, addr = sock.recvfrom(can_frame_size)
+    except BlockingIOError:
+        log.debug('Captured no data, socket in non-blocking mode.')
+        return None
+    except socket.timeout:
+        log.debug('Captured no data, socket read timed out.')
+        return None
 
     can_id, can_dlc, data = dissect_can_frame(cf)
-    log.debug('Received: can_id=%x, can_dlc=%x, data=%s' % (can_id, can_dlc, data))
+    log.debug('Received: can_id=%x, can_dlc=%x, data=%s', can_id, can_dlc, data)
 
     # Fetching the timestamp
     binary_structure = "@LL"
@@ -279,12 +327,22 @@ class SocketcanNative_Bus(BusABC):
         bindSocket(self.socket, channel)
         super(SocketcanNative_Bus, self).__init__()
 
-    def __del__(self):
+    def shutdown(self):
         self.socket.close()
 
     def recv(self, timeout=None):
 
-        packet = capturePacket(self.socket)
+        if timeout is None or len(select.select([self.socket],
+                                                [], [], timeout)[0]) > 0:
+            packet = capturePacket(self.socket)
+
+            # The capturePacket function can return None if
+            # self.socket.settimeout has been called.
+            if packet is None:
+                return None
+        else:
+            # socket wasn't readable or timeout occurred
+            return None
 
         rx_msg = Message(timestamp=packet.timestamp,
                          arbitration_id=packet.arbitration_id,
@@ -297,24 +355,24 @@ class SocketcanNative_Bus(BusABC):
 
         return rx_msg
 
-    def send(self, message):
+    def send(self, msg):
         log.debug("We've been asked to write a message to the bus")
-        arbitration_id = message.arbitration_id
-        if message.id_type:
+        arbitration_id = msg.arbitration_id
+        if msg.id_type:
             log.debug("sending an extended id type message")
             arbitration_id |= 0x80000000
-        if message.is_remote_frame:
+        if msg.is_remote_frame:
             log.debug("requesting a remote frame")
             arbitration_id |= 0x40000000
-        if message.is_error_frame:
+        if msg.is_error_frame:
             log.warning("Trying to send an error frame - this won't work")
             arbitration_id |= 0x20000000
         l = log.getChild("tx")
-        l.debug("sending: {}".format(message))
+        l.debug("sending: %s", msg)
         try:
-            self.socket.send(build_can_frame(arbitration_id, message.data))
+            self.socket.send(build_can_frame(arbitration_id, msg.data))
         except OSError:
-            l.warning("Failed to send: {}".format(message))
+            l.warning("Failed to send: %s", msg)
 
 
     def set_filters(self, can_filters=None):

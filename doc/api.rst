@@ -1,8 +1,12 @@
 Library API
 ===========
 
-The main objects are the :class:`~can.Bus` and the :class:`~can.Message`.
+The main objects are the :class:`~can.BusABC` and the :class:`~can.Message`.
 A form of CAN interface is also required.
+
+.. hint::
+
+    Check the backend specific documentation for any implementation specific details.
 
 
 .. toctree::

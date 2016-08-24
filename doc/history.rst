@@ -17,16 +17,21 @@ leaf-socketcan driver for Linux.
 
 The pcan interface was contributed by Albert Bloomfield in 2013.
 
+The usb2can interface was contributed by Joshua Villyard in 2015
+
+The IXXAT VCI interface was contributed by Giuseppe Corbelli and funded
+by Weightpack in 2016
+
+
 Python 3
 --------
 
-The Python 'socket' module contains support for SocketCAN in version 3.3.
-This library started targeting Python 3 as it was released as open source
-in 2013.
+The Python 'socket' module contains support for SocketCAN from version 3.3.
+This library has supported Python 3 from initial open source release in
+2013.
 
 Broadcast Connection Manager
 ----------------------------
 
-From Python 3.4 BCM is natively supported so the plan is to integrate natively
-when Python 3.4 is more widespread. For now BCM is possible with the socketcan
+From Python 3.4 BCM is natively supported, BCM is also possible with the socketcan
 ctypes backend.

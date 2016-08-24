@@ -33,6 +33,8 @@ class BusABC(object):
 
             >>> [{"can_id": 0x11, "can_mask": 0x21}]
 
+            A filter matches, when ``<received_can_id> & can_mask == can_id & can_mask``
+
         :param dict config:
             Any backend dependent configurations are passed in this dictionary
         """
@@ -95,6 +97,10 @@ class BusABC(object):
         pass
 
     def shutdown(self):
+        """
+        Called to carry out any interface specific cleanup required
+        in shutting down a bus.
+        """
         self.flush_tx_buffer()
 
     __metaclass__ = abc.ABCMeta
