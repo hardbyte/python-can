@@ -36,7 +36,7 @@ To create a virtual can interface using socketcan run the following:
     sudo modprobe vcan
     # Create a vcan network interface with a specific name
     sudo ip link add dev vcan0 type vcan
-    sudo ifconfig vcan0 up
+    sudo ip link set vcan0 up
 
 Real Device
 ~~~~~~~~~~~
@@ -50,10 +50,22 @@ existing ``can0`` interface with a bitrate of 1MB:
 
     sudo ip link set can0 up type can bitrate 1000000
 
+Send Test Message
+^^^^^^^^^^^^^^^^^
+
+The `can-utils <https://github.com/linux-can/can-utils>`_ library for linux
+includes a script `cansend` which is useful to send known payloads. For
+example to send a message on `vcan0`:
+
+ .. code-block:: bash
+
+    cansend vcan0 123#DEADBEEF
+
+
 CAN Errors
 ^^^^^^^^^^
 
-A device may enter the "bus-off" state if too much errors occurred on
+A device may enter the "bus-off" state if too many errors occurred on
 the CAN bus. Then no more messages are received or sent. An automatic
 bus-off recovery can be enabled by setting the "restart-ms" to a
 non-zero value, e.g.:
@@ -109,13 +121,13 @@ To spam a bus:
 
     import time
     import can
-    can.rc['interface'] = 'socketcan_native'
-    from can.interfaces.interface import Bus
-    can_interface = 'vcan0'
+
+    bustype = 'socketcan_native'
+    channel = 'vcan0'
 
     def producer(id):
         """:param id: Spam the bus with messages including the data id."""
-        bus = Bus(can_interface)
+        bus = can.interface.Bus(channel=channel, bustype=bustype)
         for i in range(10):
             msg = can.Message(arbitration_id=0xc0ffee, data=[id, i, 0, 1, 3, 1, 4, 1], extended_id=False)
             bus.send(msg)
@@ -137,3 +149,31 @@ The process to follow bus traffic is even easier:
     for message in Bus(can_interface):
         print(message)
 
+Reading and Timeouts
+--------------------
+
+Reading a single CAN message off of the bus is simple with the ``bus.recv()``
+function:
+
+.. code-block:: python
+
+    import can
+
+    can_interface = 'vcan0'
+    bus = can.interface.Bus(can_interface, bustype='socketcan_native')
+    message = bus.recv()
+
+By default, this performs a blocking read, which means ``bus.recv()`` won't
+return until a CAN message shows up on the socket. You can optionally perform a
+blocking read with a timeout like this:
+
+.. code-block:: python
+
+    message = bus.recv(1.0)  # Timeout in seconds.
+
+    if message is None:
+        print('Timeout occurred, no message.')
+
+If you set the timeout to ``0.0``, the read will be executed as non-blocking,
+which means ``bus.recv(0.0)`` will return immediately, either with a ``Message``
+object or ``None``, depending on whether data was available on the socket.
