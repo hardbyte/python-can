@@ -392,28 +392,24 @@ class KvaserBus(BusABC):
 
             A filter matches, when ``<received_can_id> & can_mask == can_id & can_mask``
         """
+        can_id = 0
+        can_mask = 0
+
         if not can_filters:
-            # Disable all filters
+            log.info('Filtering has been disabled')
             self.sw_filters = []
-            canSetAcceptanceFilter(self._read_handle, 0, 0, 0)
-            canSetAcceptanceFilter(self._read_handle, 0, 0, 1)
         elif len(can_filters) == 1:
-            # Standard messages
-            canSetAcceptanceFilter(self._read_handle,
-                                   can_filters[0]['can_id'],
-                                   can_filters[0]['can_mask'],
-                                   0)
-            # Extended messages
-            canSetAcceptanceFilter(self._read_handle,
-                                   can_filters[0]['can_id'],
-                                   can_filters[0]['can_mask'],
-                                   1)
+            can_id = can_filters[0]['can_id']
+            can_mask = can_filters[0]['can_mask']
+            log.info('canlib is filtering on ID 0x%X, mask 0x%X', can_id, can_mask)
             self.sw_filters = []
         elif len(can_filters) > 1:
+            log.info('Filtering is handled in Python')
             self.sw_filters = can_filters
-            # Disable HW filtering
-            canSetAcceptanceFilter(self._read_handle, 0, 0, 0)
-            canSetAcceptanceFilter(self._read_handle, 0, 0, 1)
+
+        # Set filters for both std and ext IDs
+        for ext in (0, 1):
+            canSetAcceptanceFilter(self._read_handle, can_id, can_mask, ext)
 
     def flush_tx_buffer(self):
         """
@@ -461,7 +457,7 @@ class KvaserBus(BusABC):
             (or if SW filtering is not used).
         """
         if not self.sw_filters:
-            # Filtering done on HW or driver level
+            # Filtering done on HW or driver level or no filtering
             return True
         for can_filter in self.sw_filters:
             if not (arb_id ^ can_filter['can_id']) & can_filter['can_mask']:
