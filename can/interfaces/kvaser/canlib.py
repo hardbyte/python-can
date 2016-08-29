@@ -71,14 +71,13 @@ class CANLIBError(CanError):
         self.arguments = arguments
 
     def __str__(self):
-        return "function %s failed - %s - arguments were %s" % (self.function.__name__,
-                                                                self.__get_error_message(),
-                                                                self.arguments)
+        return "Function %s failed - %s" % (self.function.__name__,
+                                            self.__get_error_message())
 
     def __get_error_message(self):
         errmsg = ctypes.create_string_buffer(128)
         canGetErrorText(self.error_code, errmsg, len(errmsg))
-        return "%s (code %d)" % (errmsg.value, self.error_code)
+        return errmsg.value.decode("ascii")
 
 
 def __convert_can_status_to_int(result):
@@ -117,7 +116,8 @@ def __handle_is_valid(handle):
 
 def __check_bus_handle_validity(handle, function, arguments):
     if not __handle_is_valid(handle):
-        raise CANLIBError(function, handle, arguments)
+        result = __convert_can_status_to_int(handle)
+        raise CANLIBError(function, result, arguments)
     else:
         return handle
 
