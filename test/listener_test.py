@@ -67,17 +67,16 @@ class ListenerTest(unittest.TestCase):
 
     def testAscListener(self):
         a_listener = can.ASCWriter("test.asc")
-        notifier = can.Notifier(self.bus, [a_listener], 0.1)
         msg = can.Message(extended_id=True,
+                          timestamp=a_listener.started + 0.5,
                           arbitration_id=0xabcdef,
                           data=[1, 2, 3, 4, 5, 6, 7, 8])
-        self.bus.send(msg)
-        sleep(0.5)
+        a_listener(msg)
         msg = can.Message(extended_id=False,
+                          timestamp=a_listener.started + 1,
                           arbitration_id=0x123,
                           data=[0xff, 0xff])
-        self.bus.send(msg)
-        notifier.stop()
+        a_listener(msg)
         a_listener.stop()
         with open("test.asc") as f:
             print("Output from ASCWriter:")

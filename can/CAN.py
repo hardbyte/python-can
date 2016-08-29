@@ -233,7 +233,7 @@ class ASCWriter(Listener):
 
     def __init__(self, filename):
         now = datetime.now().strftime("%a %b %m %I:%M:%S %p %Y")
-        self.start = time.time()
+        self.started = time.time()
         self.log_file = open(filename, "w")
         self.log_file.write("date %s\n" % now)
         self.log_file.write("base hex  timestamps absolute\n")
@@ -254,8 +254,8 @@ class ASCWriter(Listener):
         if msg.id_type:
             arb_id = arb_id + "x"
         timestamp = msg.timestamp
-        if timestamp >= self.start:
-            timestamp -= self.start
+        if timestamp >= self.started:
+            timestamp -= self.started
 
         line = self.LOG_STRING.format(time=timestamp,
                                       channel=1,
