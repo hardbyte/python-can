@@ -57,7 +57,11 @@ These Listeners simply create csv and sql files with the messages received.
 ASCWriter
 ---------
 
-Logs CAN data to an ASCII log file.
+Logs CAN data to an ASCII log file compatible with other CAN tools such as
+Vector CANalyzer/CANoe and other.
+Since no official specification exists for the format, it has been reverse-
+engineered from existing log files. One description of the format can be found `here
+<http://zone.ni.com/reference/en-XX/help/370859J-01/dlgcanconverter/dlgcanconverter/canconverter_ascii_logfiles/>`_.
 
 .. autoclass:: can.ASCWriter
     :members:
