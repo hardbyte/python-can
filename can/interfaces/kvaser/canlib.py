@@ -349,9 +349,6 @@ class KvaserBus(BusABC):
                  4)
         canSetBusParams(self._read_handle, bitrate, tseg1, tseg2, sjw, no_samp, 0)
 
-        self.sw_filters = []
-        self.set_filters(can_filters)
-
         if self.single_handle:
             log.debug("We don't require separate handles to the bus")
             self._write_handle = self._read_handle
@@ -359,6 +356,9 @@ class KvaserBus(BusABC):
             log.debug('Creating separate handle for TX on channel: %s' % channel)
             self._write_handle = canOpenChannel(channel, canstat.canOPEN_ACCEPT_VIRTUAL)
             canBusOn(self._read_handle)
+
+        self.sw_filters = []
+        self.set_filters(can_filters)
 
         can_driver_mode = canstat.canDRIVER_SILENT if driver_mode == DRIVER_MODE_SILENT else canstat.canDRIVER_NORMAL
         canSetBusOutputControl(self._write_handle, can_driver_mode)
@@ -407,9 +407,10 @@ class KvaserBus(BusABC):
             log.info('Filtering is handled in Python')
             self.sw_filters = can_filters
 
-        # Set filters for both std and ext IDs
-        for ext in (0, 1):
-            canSetAcceptanceFilter(self._read_handle, can_id, can_mask, ext)
+        # Set same filter for both handles as well as standard and extended IDs
+        for handle in (self._read_handle, self._write_handle):
+            for ext in (0, 1):
+                canSetAcceptanceFilter(handle, can_id, can_mask, ext)
 
     def flush_tx_buffer(self):
         """

@@ -53,8 +53,10 @@ class KvaserTest(unittest.TestCase):
     def test_filter_setup(self):
         # No filter in constructor
         expected_args = [
-            ((0, 0, 0, 0),),       # Disable filtering STD
-            ((0, 0, 0, 1),),       # Disable filtering EXT
+            ((0, 0, 0, 0),),       # Disable filtering STD on read handle
+            ((0, 0, 0, 1),),       # Disable filtering EXT on read handle
+            ((0, 0, 0, 0),),       # Disable filtering STD on write handle
+            ((0, 0, 0, 1),),       # Disable filtering EXT on write handle
         ]
         self.assertEqual(canlib.canSetAcceptanceFilter.call_args_list,
                          expected_args)
@@ -65,8 +67,10 @@ class KvaserTest(unittest.TestCase):
             {'can_id': 0x8, 'can_mask': 0xff}
         ])
         expected_args = [
-            ((0, 0x8, 0xff, 0),),       # Enable filtering STD
-            ((0, 0x8, 0xff, 1),),       # Enable filtering EXT
+            ((0, 0x8, 0xff, 0),),       # Enable filtering STD on read handle
+            ((0, 0x8, 0xff, 1),),       # Enable filtering EXT on read handle
+            ((0, 0x8, 0xff, 0),),       # Enable filtering STD on write handle
+            ((0, 0x8, 0xff, 1),),       # Enable filtering EXT on write handle
         ]
         self.assertEqual(canlib.canSetAcceptanceFilter.call_args_list,
                          expected_args)
@@ -79,8 +83,10 @@ class KvaserTest(unittest.TestCase):
         ]
         self.bus.set_filters(multiple_filters)
         expected_args = [
-            ((0, 0, 0, 0),),       # Disable filtering STD
-            ((0, 0, 0, 1),),       # Disable filtering EXT
+            ((0, 0, 0, 0),),       # Disable filtering STD on read handle
+            ((0, 0, 0, 1),),       # Disable filtering EXT on read handle
+            ((0, 0, 0, 0),),       # Disable filtering STD on write handle
+            ((0, 0, 0, 1),),       # Disable filtering EXT on write handle
         ]
         self.assertEqual(canlib.canSetAcceptanceFilter.call_args_list,
                          expected_args)
