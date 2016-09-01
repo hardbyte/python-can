@@ -22,11 +22,15 @@ API
     :members:
     :special-members: __iter__
 
+.. autoclass:: can.interfaces.interface.Bus
+    :members:
+    :special-members: __iter__
+
 
 Transmitting
 ''''''''''''
 
-Writing to the bus is done by calling the :meth:`~can.Bus.send` method and
+Writing to the bus is done by calling the :meth:`~can.BusABC.send()` method and
 passing a :class:`~can.Message` object.
 
 Receiving

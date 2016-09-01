@@ -11,14 +11,18 @@ class Bus(object):
     """
     Instantiates a CAN Bus of the given `bustype`, falls back to reading a
     configuration file from default locations.
-
-    :raises: NotImplementedError if the bustype isn't recognized
-
     """
 
     @classmethod
     def __new__(cls, other, channel=None, *args, **kwargs):
+        """
+        Takes the same arguments as :class:`can.BusABC` with the addition of:
 
+        :param kwargs:
+            Should contain a bustype key with a valid interface name.
+
+        :raises: NotImplementedError if the bustype isn't recognized
+        """
         if 'bustype' in kwargs:
             can.rc['interface'] = kwargs['bustype']
             del kwargs['bustype']

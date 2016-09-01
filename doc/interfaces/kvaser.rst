@@ -3,6 +3,8 @@
 Kvaser's CANLIB
 ===============
 
+`Kvaser <http://www.kvaser.com>`__'s CANLib SDK for Windows (also available on
+Linux).
 
 Bus
 ---
