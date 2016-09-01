@@ -1,5 +1,5 @@
 Developer's Overview
-===================
+====================
 
 Explore the source code on bitbucket:
 https://bitbucket.org/hardbyte/python-can

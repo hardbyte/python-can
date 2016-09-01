@@ -10,7 +10,7 @@ A form of CAN interface is also required.
 
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    
    bus
    message

@@ -1,12 +1,37 @@
 python-can
 ==========
 
-`python-can` is a library for interacting with a controller area network.
 
-The **Controller Area Network** is a bus standard designed to allow embedded
-devices to communicate with each other. It has priority based bus arbitration,
-reliable deterministic communication. It is used in cars, trucks, boats,
-wheelchairs and more.
+The **python-can** library provides controller area network support for
+`Python <http://python.org/download/>`__, providing common abstractions to
+different hardware devices, and a suite of utilities for sending and receiving
+messages on a can bus.
+
+**python-can** runs any where Python runs; from high powered computers
+with commercial `can to usb` devices right down to low powered devices running
+linux such as a BeagleBone or RaspberryPi.
+
+More concretely, some example uses of the library:
+
+- Passively logging what occurs on a can bus. For example monitoring a
+  commercial vehicle using its **OBD-II** port.
+
+- Testing of hardware that interacts via can. Modules found in
+  modern cars, motocycles, boats, and even wheelchairs have had components tested
+  from Python using this library.
+
+- Prototyping new hardware modules or software algorithms in-the-loop. Easily
+  interact with an existing bus.
+
+- Creating virtual modules to prototype can bus communication.
+
+
+Brief example of the library in action: connecting to a can bus, creating and sending a message:
+
+
+.. literalinclude:: ../examples/send_one.py
+    :language: python
+    :linenos:
 
 
 Contents:
@@ -14,23 +39,14 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
-   interfaces
+   installation
+   configuration
    api
+   interfaces
    protocols
    bin
    overview
    history
-
-
-Example
-~~~~~~~
-
-This example shows the library in action - sending one message:
-
-
-.. literalinclude:: ../examples/send_one.py
-    :language: python
-    :linenos:
 
 
 
@@ -40,6 +56,7 @@ Installation and Quickstart
 See the readme included with the source code.
 
 https://bitbucket.org/hardbyte/python-can
+
 
 Known Bugs
 ~~~~~~~~~~

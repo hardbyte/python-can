@@ -5,6 +5,8 @@ logger = logging.getLogger(__name__)
 class Message(object):
     """
     The :class:`~can.Message` object is used to represent CAN messages for both sending and receiving.
+
+    Messages can use extended identifiers, be remote or error frames, and contain data.
     """
 
     def __init__(self, timestamp=0.0, is_remote_frame=False, extended_id=True,
