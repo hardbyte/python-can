@@ -482,7 +482,7 @@ class KvaserBus(BusABC):
                      ctypes.byref(buf),
                      msg.dlc,
                      flags,
-                     5)
+                     10)
 
     def flash(self, flash=True):
         """
