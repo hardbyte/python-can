@@ -11,7 +11,7 @@ available natively in the Python socket module.
 Bus
 ----
 
-.. autoclass:: can.interfaces.socketcan_ctypes.SocketscanCtypes_Bus
+.. autoclass:: can.interfaces.socketcan_ctypes.SocketcanCtypes_Bus
 
 
 
