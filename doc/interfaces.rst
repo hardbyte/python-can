@@ -1,17 +1,30 @@
 CAN Interface Modules
 ---------------------
 
-Found under ``can.interfaces`` are the implementations for each backend:
+**python-can** hides the low-level, device-specific interfaces to controller
+area network adapters in interface dependant modules. However as each hardware
+device is different, you should carefully go through your interface's
+documentation.
 
-.. toctree::
-    :maxdepth: 1
+The interfaces currently available are:
 
-    socketcan
-    kvaser
-    serial
-    ixxat
-    pcan
-    usb2can
-    virtual
++---------------------+-------------------------------------+
+| Name                | Documentation                       |
++=====================+=====================================+
+| ``"socketcan"``     | :doc:`interfaces/socketcan`         |
++---------------------+-------------------------------------+
+| ``"kvaser"``        | :doc:`interfaces/kvaser`            |
++---------------------+-------------------------------------+
+| ``"serial"``        | :doc:`interfaces/serial`            |
++---------------------+-------------------------------------+
+| ``"ixxat"``         | :doc:`interfaces/ixxat`             |
++---------------------+-------------------------------------+
+| ``"pcan"``          | :doc:`interfaces/pcan`              |
++---------------------+-------------------------------------+
+| ``"usb2can"``       | :doc:`interfaces/usb2can`           |
++---------------------+-------------------------------------+
+| ``"virtual"``       | :doc:`interfaces/virtual`           |
++---------------------+-------------------------------------+
 
-These interfaces define the low level interface to the physical controller area network.
+The `Interface Name` is used in :doc:`configuration`.
+

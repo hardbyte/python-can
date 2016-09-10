@@ -11,7 +11,8 @@ with Python 2 and 3, and one written for future versions of Python3 which featur
     socketcan_ctypes
     socketcan_native
 
-Unless you're running Python3.4 or higher the recommended backend is :doc:`socketcan_ctypes <socketcan_ctypes>`.
+
+Unless you're running Python3.3 or lower the recommended backend is :doc:`socketcan_native <socketcan_native>`.
 
 Socketcan Quickstart
 --------------------
@@ -57,7 +58,7 @@ The `can-utils <https://github.com/linux-can/can-utils>`_ library for linux
 includes a script `cansend` which is useful to send known payloads. For
 example to send a message on `vcan0`:
 
- .. code-block:: bash
+.. code-block:: bash
 
     cansend vcan0 123#DEADBEEF
 
@@ -138,7 +139,7 @@ To spam a bus:
 
 With debugging turned right up this looks something like this:
 
-.. image:: images/wireshark.png
+.. image:: ../images/wireshark.png
     :width: 100%
 
 

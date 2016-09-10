@@ -4,7 +4,9 @@ Virtual
 The virtual interface can be used as a way to write OS and driver independent
 tests.
 
-Bus instances connecting to the same channel will share the same messages.
+A virtual CAN bus that can be used for automatic tests. Any Bus instances
+connecting to the same channel (in the same python program) will get each
+others messages.
 
 
 .. code-block:: python

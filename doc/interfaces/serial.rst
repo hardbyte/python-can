@@ -3,6 +3,9 @@
 CAN over Serial
 ===============
 
+A text based interface. For example use over bluetooth with
+``/dev/rfcomm0``
+
 Bus
 ---
 
