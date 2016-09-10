@@ -21,6 +21,8 @@ Creating a Release
 - Create a temporary virtual environment. Run ``python setup.py install`` and ``python setup.py test``
 - Create and upload the distribution: ``python setup.py sdist bdist_wheel upload --sign``
 - In a new virtual env check that the package can be installed with pip: ``pip install python-can``
+- Create a new tag in the repository.
+
 
 Code Structure
 --------------
