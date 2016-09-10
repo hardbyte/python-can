@@ -7,6 +7,9 @@ PCAN Basic API
 
     This ``PCAN`` documentation is a work in progress. Feedback and revisions are most welcome!
 
+
+Interface to `Peak-System <http://www.peak-system.com/>`__'s PCAN-Basic API.
+
 Configuration
 -------------
 
