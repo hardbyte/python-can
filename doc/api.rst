@@ -18,6 +18,14 @@ A form of CAN interface is also required.
    bcm
 
 
+
+Utilities
+---------
+
+.. automodule:: can.util
+    :members:
+
+
 .. _notifier:
    
 Notifier
