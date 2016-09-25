@@ -5,8 +5,8 @@ Developer's Overview
 Contributing
 ------------
 
-Contribute to source code, documentation, examples and report issues on bitbucket:
-https://bitbucket.org/hardbyte/python-can
+Contribute to source code, documentation, examples and report issues:
+https://github.com/hardbyte/python-can
 
 
 Creating a Release

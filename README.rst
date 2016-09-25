@@ -11,8 +11,8 @@ python-can
    :target: http://python-can.readthedocs.org/en/latest/?badge=latest
    :alt: Documentation Status
                 
-.. |build| image:: https://drone.io/bitbucket.org/hardbyte/python-can/status.png
-   :target: https://drone.io/bitbucket.org/hardbyte/python-can/latest
+.. |build| image:: https://drone.io/github.com/hardbyte/python-can/status.png
+   :target: https://drone.io/github.com/hardbyte/python-can/latest
    :alt: CI Server
 
 
@@ -36,7 +36,7 @@ Discussion
 ----------
 
 If you run into bugs, you can file them in our
-`issue tracker <https://bitbucket.org/hardbyte/python-can/issues>`__.
+`issue tracker <https://github.com/hardbyte/python-can/issues>`__.
 
 There is also a `python-can <https://groups.google.com/forum/#!forum/python-can>`__
 mailing list for development discussion.

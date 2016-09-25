@@ -39,7 +39,7 @@ extensions = ['sphinx.ext.autodoc',
 
 # Now, you can use the alias name as a new role, e.g. :issue:`123`.
 extlinks = {
-    'issue': ('https://bitbucket.org/hardbyte/python-can/issue/%s/', 'issue '),
+    'issue': ('https://github.com/hardbyte/python-can/issues/%s/', 'issue '),
 }
 
 # If this is True, todo and todolist produce output, else they produce nothing.

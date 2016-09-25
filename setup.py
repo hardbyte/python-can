@@ -11,7 +11,7 @@ logging.basicConfig(level=logging.WARNING)
 
 setup(
     name="python-can",
-    url="https://bitbucket.org/hardbyte/python-can",
+    url="https://github.com/hardbyte/python-can",
     version=__version__,
     packages=find_packages(),
     author="Brian Thorne",

@@ -48,19 +48,10 @@ Contents:
    history
 
 
-
-Installation and Quickstart
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-See the readme included with the source code.
-
-https://bitbucket.org/hardbyte/python-can
-
-
 Known Bugs
 ~~~~~~~~~~
 
-See the project `bug tracker`_ on bitbucket. Patches and pull requests very welcome!
+See the project `bug tracker`_ on github. Patches and pull requests very welcome!
 
 
 .. admonition:: Documentation generated
@@ -73,6 +64,4 @@ See the project `bug tracker`_ on bitbucket. Patches and pull requests very welc
 .. _Pip: http://pip.openplans.org/
 .. _easy_install: http://peak.telecommunity.com/DevCenter/EasyInstall
 .. _IPython: http://ipython.scipy.org
-.. _Mercurial: http://mercurial.selenic.com
-.. _TortoiseHG: http://tortoisehg.bitbucket.org/
-.. _bug tracker: https://bitbucket.org/hardbyte/python-can/issues
+.. _bug tracker: https://github.com/hardbyte/python-can/issues
