@@ -19,169 +19,30 @@ python-can
 The **C**\ ontroller **A**\ rea **N**\ etwork is a bus standard designed
 to allow microcontrollers and devices to communicate with each other. It
 has priority based bus arbitration, reliable deterministic
-communication. It is used in cars, trucks, wheelchairs and more. See
-`wikipedia <http://en.wikipedia.org/wiki/CAN_bus>`__ for more info.
+communication. It is used in cars, trucks, boats, wheelchairs and more.
 
-This module provides controller area network support for
-`Python <http://python.org/download/>`__.
+The ``can`` package provides controller area network support for
+Python developers; providing `common abstractions to
+different hardware devices`, and a suite of utilities for sending and receiving
+messages on a can bus.
 
-Configuration File
-------------------
+The library supports Python 2.7, Python 3.3+ and runs on Mac, Linux and Windows.
 
-In order to use this library a CAN interface needs to be specified. A
-method to do this is to create a configuration file.
-On Linux systems the config file is searched in the following paths:
+You can find more information in the documentation, online at
+`python-can.readthedocs.org <https://python-can.readthedocs.org/en/stable/>`__.
 
-1. ``/etc/can.conf``
-2. ``$HOME/.can``
-3. ``$HOME/.canrc``
 
-On Windows systems the config file is searched in the following paths:
-1. ``can.ini`` (current working directory)
-2. ``$APPDATA/can.ini``
-
-The configuration file sets the default interface and channel:
-
-::
-
-    [default]
-    interface = <the name of the interface to use>
-    channel = <the channel to use by default>
-
-Interfaces
+Discussion
 ----------
 
-The interface available are:
+If you run into bugs, you can file them in our
+`issue tracker <https://bitbucket.org/hardbyte/python-can/issues>`__.
 
-kvaser
-~~~~~~
+There is also a `python-can <https://groups.google.com/forum/#!forum/python-can>`__
+mailing list for development discussion.
 
-`Kvaser <http://www.kvaser.com>`__'s CANLib SDK for Windows (also
-available on Linux)
+`Stackoverflow <https://stackoverflow.com/questions/tagged/can+python>`__ has several
+questions and answers tagged with ``python+can``.
 
-socketcan
-~~~~~~~~~
-
-On linux the socketcan interface is exposed via either:
-
--  socketcan\_ctypes
--  socketcan\_native
-
-serial
-~~~~~~
-
-A text based interface. For example use over bluetooth with
-``/dev/rfcomm0``
-
-pcan
-~~~~
-
-`Peak-System <http://www.peak-system.com/>`__'s PCAN-Basic API.
-
-IXXAT
-~~~~~
-
-`IXXAT <http://www.ixxat.com/>`__'s Virtual CAN Interface V3 SDK ONLY on Windows.
-The Linux ECI SDK is currently unsupported.
-On Linux some devices are supported with socketcan.
-
-virtual
-~~~~~~~
-
-A virtual CAN bus that can be used for automatic tests. Any Bus instances
-connecting to the same channel (in the same python program) will get each
-others messages.
-
-Installation
-------------
-
-GNU/Linux dependencies
-----------------------
-
-Reasonably modern Linux Kernels (2.6.25 or newer) have an implementation
-of ``socketcan``. This version of python-can will directly use socketcan
-if called with Python 3.3 or greater, otherwise that interface is used
-via ctypes.
-
-Windows dependencies
---------------------
-
-Kvaser
-~~~~~~
-
-To install ``python-can`` using the Kvaser CANLib SDK as the backend:
-
-1. Install the `latest stable release of
-   Python <http://python.org/download/>`__.
-
-2. Install `Kvaser's latest Windows CANLib
-   drivers <http://www.kvaser.com/en/downloads.html>`__.
-
-3. Test that Kvaser's own tools work to ensure the driver is properly
-   installed and that the hardware is working.
-
-PCAN
-~~~~
-
-To use the PCAN-Basic API as the backend (which has only been tested
-with Python 2.7):
-
-1. Download the latest version of the `PCAN-Basic
-   API <http://www.peak-system.com/Downloads.76.0.html?>`__.
-
-2. Extract ``PCANBasic.dll`` from the Win32 subfolder of the archive or
-   the x64 subfolder depending on whether you have a 32-bit or 64-bit
-   installation of Python.
-
-3. Copy ``PCANBasic.dll`` into the working directory where you will be
-   running your python script. There is probably a way to install the
-   dll properly, but I'm not certain how to do that.
-
-Note that PCANBasic API timestamps count seconds from system startup. To
-convert these to epoch times, the uptime library is used. If it is not
-available, the times are returned as number of seconds from system
-startup. To install the uptime library, run ``pip install uptime``.
-
-IXXAT
-~~~~~
-
-To install ``python-can`` using the IXXAT VCI V3 SDK as the backend:
-
-1. Install the `latest stable release of
-   Python <http://python.org/download/>`__.
-
-2. Install `IXXAT's latest Windows VCI V3 SDK
-   drivers <http://www.ixxat.com/support/file-and-documents-download/drivers/vci-v3-driver-download>`__.
-
-3. Test that IXXAT's own tools (i.e. MiniMon) work to ensure the driver 
-   is properly installed and that the hardware is working.
-
-Install python-can
-------------------
-
-You may need to install
-`pip <http://www.pip-installer.org/en/latest/installing.html>`__ and
-`setuptools <https://pypi.python.org/pypi/setuptools>`__ first.
-
-Two options, install normally with:
-
-::
-
-    python setup.py install
-
-Or to do a "development" install of this package to your machine (this
-allows you to make changes locally or pull updates from the Mercurial
-repository and use them without having to reinstall):
-
-::
-
-    python setup.py develop
-
-On linux you will need ``sudo`` rights.
-
-Documentation and Help
-----------------------
-
-- The Sphinx documentation for python-can can be viewed online at `python-can.readthedocs.org <https://python-can.readthedocs.org/en/latest/>`__
-- Questions can be found on `StackOverflow <https://stackoverflow.com/questions/tagged/can+python>`__ (tagged with python+can)
-- `Google groups mailing list <https://groups.google.com/forum/#!forum/python-can>`__
+Wherever we interact, we strive to follow the
+`Python Community Code of Conduct <https://www.python.org/psf/codeofconduct/>`__.

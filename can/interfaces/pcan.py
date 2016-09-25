@@ -60,9 +60,6 @@ class PcanBus(BusABC):
         :param str channel:
             The can interface name. An example would be PCAN_USBBUS1
 
-        Backend Configuration
-        ---------------------
-
         :param int bitrate:
             Bitrate of channel in bit/s.
             Default is 500 Kbs

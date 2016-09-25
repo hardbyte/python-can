@@ -6,21 +6,25 @@ can socket and can bcm socket support: >3.4
 """
 
 import socket
-import fcntl
 import struct
 import logging
 from collections import namedtuple
 import select
+
 
 log = logging.getLogger('can.socketcan.native')
 #log.setLevel(logging.DEBUG)
 log.debug("Loading native socket can implementation")
 
 try:
+    import fcntl
+except ImportError:
+    log.warning("fcntl not available on this platform")
+
+try:
     socket.CAN_RAW
 except:
-    log.error("Note Python 3.3 or later is required to use native socketcan")
-    raise ImportError()
+    log.debug("CAN_* properties not found in socket module. These are required to use native socketcan")
 
 
 from can import Message

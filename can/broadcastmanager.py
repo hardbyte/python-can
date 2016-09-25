@@ -47,8 +47,8 @@ class CyclicSendTaskABC(CyclicTask):
         """Update the contents of this periodically sent message without altering
         the timing.
 
-        :param message: The :class:`~can.Message` with new :attr:`Message.data`. Note it must have the same
-        :attr:`Message.arbitration_id`.
+        :param message: The :class:`~can.Message` with new :attr:`Message.data`.
+            Note it must have the same :attr:`~can.Message.arbitration_id`.
         """
 
 

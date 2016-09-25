@@ -4,6 +4,14 @@ IXXAT Virtual CAN Interface
 ===========================
 
 
+Interface to `IXXAT <http://www.ixxat.com/>`__ Virtual CAN Interface V3 SDK. Works on Windows.
+
+
+.. note::
+
+    The Linux ECI SDK is currently unsupported, however on Linux some devices are supported with :doc:`socketcan`.
+
+
 Bus
 ---
 

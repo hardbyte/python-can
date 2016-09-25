@@ -43,6 +43,8 @@ class BusABC(object):
     def recv(self, timeout=None):
         """Block waiting for a message from the Bus.
 
+        :param float timeout: Seconds to wait for a message.
+
         :return:
             None on timeout or a :class:`can.Message` object.
         """
@@ -91,7 +93,7 @@ class BusABC(object):
         raise NotImplementedError("Trying to set_filters on unsupported bus")
 
     def flush_tx_buffer(self):
-        """Used for CAN backends which need to flush their transmit buffer.
+        """Used for CAN interfaces which need to flush their transmit buffer.
 
         """
         pass
