@@ -43,7 +43,6 @@ Contents:
    configuration
    api
    interfaces
-   protocols
    bin
    development
    history

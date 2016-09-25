@@ -24,7 +24,7 @@ setup(
         "doc": ["*.*"]
     },
 
-    scripts=["./bin/can_logger.py", './bin/j1939_logger.py'],
+    scripts=["./bin/can_logger.py"],
 
     # Tests can be run using `python setup.py test`
     test_suite="nose.collector",
