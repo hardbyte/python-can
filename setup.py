@@ -2,11 +2,11 @@
 python-can requires the setuptools package to be installed.
 """
 
+import logging
 from setuptools import setup, find_packages
 
-__version__ = "1.5.1"
+__version__ = "2.0.0-alpha.1"
 
-import logging
 logging.basicConfig(level=logging.WARNING)
 
 setup(
@@ -17,7 +17,7 @@ setup(
     author="Brian Thorne",
     author_email="hardbyte@gmail.com",
     description="Controller Area Network interface module for Python",
-    long_description=open('README').read(),
+    long_description=open('README.rst').read(),
     license="LGPL v3",
     package_data={
         "": ["CONTRIBUTORS.txt", "LICENSE.txt"],
