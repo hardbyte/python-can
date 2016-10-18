@@ -278,6 +278,10 @@ def capturePacket(sock):
     except socket.timeout:
         log.debug('Captured no data, socket read timed out.')
         return None
+    except OSError:
+        # something bad happened (e.g. the interface went down)
+        log.exception("Captured no data.")
+        return None
 
     can_id, can_dlc, data = dissect_can_frame(cf)
     log.debug('Received: can_id=%x, can_dlc=%x, data=%s', can_id, can_dlc, data)
@@ -335,9 +339,16 @@ class SocketcanNative_Bus(BusABC):
         self.socket.close()
 
     def recv(self, timeout=None):
+        data_ready = True
+        try:
+            if timeout is not None:
+                data_ready = len(select.select([self.socket],[], [], timeout)[0]) > 0
+        except OSError:
+            # something bad happened (e.g. the interface went down)
+            log.exception("Error while waiting for timeout")
+            return None
 
-        if timeout is None or len(select.select([self.socket],
-                                                [], [], timeout)[0]) > 0:
+        if data_ready:
             packet = capturePacket(self.socket)
 
             # The capturePacket function can return None if
