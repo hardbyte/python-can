@@ -342,7 +342,7 @@ class SocketcanNative_Bus(BusABC):
         data_ready = True
         try:
             if timeout is not None:
-                data_ready = len(select.select([self.socket],[], [], timeout)[0]) > 0
+                data_ready = len(select.select([self.socket], [], [], timeout)[0]) > 0
         except OSError:
             # something bad happened (e.g. the interface went down)
             log.exception("Error while waiting for timeout")
@@ -350,7 +350,6 @@ class SocketcanNative_Bus(BusABC):
 
         if data_ready:
             packet = capturePacket(self.socket)
-
             # The capturePacket function can return None if
             # self.socket.settimeout has been called.
             if packet is None:
