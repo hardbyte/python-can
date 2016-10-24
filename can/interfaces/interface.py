@@ -4,7 +4,7 @@ from can.util import load_config, choose_socketcan_implementation
 
 VALID_INTERFACES = set(['kvaser', 'serial', 'pcan', 'socketcan_native',
                         'socketcan_ctypes', 'socketcan', 'usb2can', 'ixxat',
-                        'virtual'])
+                        'nican', 'virtual'])
 
 
 class Bus(object):
@@ -61,6 +61,9 @@ class Bus(object):
         elif interface == 'ixxat':
             from can.interfaces.ixxat import IXXATBus
             cls = IXXATBus
+        elif interface == 'nican':
+            from can.interfaces.nican import NicanBus
+            cls = NicanBus
         elif interface == 'virtual':
             from can.interfaces.virtual import VirtualBus
             cls = VirtualBus
