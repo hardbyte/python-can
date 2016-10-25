@@ -1,22 +1,20 @@
 """
 NI-CAN interface module.
 
-http://www.ni.com/pdf/manuals/370289c.pdf
-https://github.com/buendiya/NicanPython
+Implementation references:
+* http://www.ni.com/pdf/manuals/370289c.pdf
+* https://github.com/buendiya/NicanPython
 """
-
-import sys
-import time
 import logging
 import ctypes
 
 from can import CanError, BusABC, Message
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 NC_SUCCESS = 0
 NC_ERR_TIMEOUT = 1
+TIMEOUT_ERROR_CODE = -1074388991
 
 # NCTYPE_OPCODE values
 NC_OP_START = 0x80000001
@@ -25,7 +23,6 @@ NC_OP_RESET = 0x8000003
 
 NC_FRMTYPE_REMOTE = 1
 NC_FRMTYPE_COMM_ERR = 2
-TIMEOUT_ERROR_CODE = -1074388991
 
 # NCTYPE State
 NC_ST_READ_AVAIL = 0x00000001
@@ -68,17 +65,16 @@ class TxMessageStruct(ctypes.Structure):
 
 
 def check_status(result, function, arguments):
-    if result == NC_SUCCESS:
-        pass
-    elif result > 0:
-        print(get_error_message(result))
+    if result > 0:
+        logger.warning(get_error_message(result))
     elif result < 0:
         raise NicanError(function, result, arguments)
     return result
 
 
 def get_error_message(status_code):
-    errmsg = ctypes.create_string_buffer(1024)
+    """Convert status code to descriptive string."""
+    errmsg = ctypes.create_string_buffer(300)
     nican.ncStatusToString(status_code, len(errmsg), errmsg)
     return errmsg.value.decode("ascii")
 
@@ -86,7 +82,7 @@ def get_error_message(status_code):
 try:
     nican = ctypes.windll.LoadLibrary("nican")
 except OSError as e:
-    logger.error(e)
+    logger.error("Failed to load NI-CAN driver: %s", e)
 else:
     nican.ncConfig.argtypes = [
         ctypes.c_char_p, ctypes.c_ulong, ctypes.c_void_p, ctypes.c_void_p]
@@ -105,8 +101,27 @@ else:
 
 
 class NicanBus(BusABC):
+    """
+    The CAN Bus implemented for the NI-CAN interface.
+    """
 
     def __init__(self, channel, **kwargs):
+        """
+        :param str channel:
+            Name of the object to open (e.g. 'CAN0')
+
+        :param list can_filters:
+            A list of dictionaries each containing a "can_id" and a "can_mask".
+            Must only contain one filter!
+
+            >>> [{"can_id": 0x11, "can_mask": 0x21}]
+
+        :param int read_queue:
+            Length of read queue (default 150).
+
+        :param int write_queue:
+            Length of write queue (default 2).
+        """
         self.channel_info = "NI-CAN: " + channel
         if not isinstance(channel, bytes):
             channel = channel.encode()
@@ -122,8 +137,8 @@ class NicanBus(BusABC):
         if not can_filters:
             logger.info("Filtering has been disabled")
         elif len(can_filters) == 1:
-            can_id = can_filters[0]['can_id']
-            can_mask = can_filters[0]['can_mask']
+            can_id = can_filters[0]["can_id"]
+            can_mask = can_filters[0]["can_mask"]
             logger.info("Filtering on ID 0x%X, mask 0x%X", can_id, can_mask)
             config[NC_ATTR_CAN_COMP_STD] = can_id
             config[NC_ATTR_CAN_MASK_STD] = can_mask
@@ -145,6 +160,19 @@ class NicanBus(BusABC):
         nican.ncOpenObject(channel, ctypes.byref(self.handle))
 
     def recv(self, timeout=None):
+        """
+        Read a message from NI-CAN.
+
+        :param float timeout:
+            Max time to wait in seconds or None if infinite.
+
+        :returns:
+            The CAN message or None if timeout.
+        :rtype: can.Message
+
+        :raises can.interface.nican.NicanError:
+            If reception fails.
+        """
         state = ctypes.c_ulong()
         timeout = 0xFFFFFFFF if timeout is None else int(timeout * 1000)
         try:
@@ -173,6 +201,15 @@ class NicanBus(BusABC):
         return msg
 
     def send(self, msg):
+        """
+        Send a message to NI-CAN.
+
+        :param can.Message msg:
+            Message to send.
+
+        :raises can.interface.nican.NicanError:
+            If transmission fails.
+        """
         arb_id = msg.arbitration_id
         if msg.id_type:
             arb_id |= NC_FL_CAN_ARBID_XTD
@@ -187,15 +224,20 @@ class NicanBus(BusABC):
             self.handle, NC_ST_WRITE_SUCCESS, 10, ctypes.byref(state))
 
     def shutdown(self):
+        """Close object."""
         nican.ncCloseObject(self.handle)
 
 
 class NicanError(CanError):
+    """Error from NI-CAN driver."""
 
     def __init__(self, function, error_code, arguments):
         super(NicanError, self).__init__()
+        #: Status code
         self.error_code = error_code
+        #: Function that failed
         self.function = function
+        #: Arguments passed to function
         self.arguments = arguments
 
     def __str__(self):
