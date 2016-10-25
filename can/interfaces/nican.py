@@ -16,7 +16,8 @@ NC_SUCCESS = 0
 NC_ERR_TIMEOUT = 1
 TIMEOUT_ERROR_CODE = -1074388991
 
-# NCTYPE_OPCODE values
+NC_DURATION_INFINITE = 0xFFFFFFFF
+
 NC_OP_START = 0x80000001
 NC_OP_STOP = 0x80000002
 NC_OP_RESET = 0x8000003
@@ -24,7 +25,6 @@ NC_OP_RESET = 0x8000003
 NC_FRMTYPE_REMOTE = 1
 NC_FRMTYPE_COMM_ERR = 2
 
-# NCTYPE State
 NC_ST_READ_AVAIL = 0x00000001
 NC_ST_WRITE_SUCCESS = 0x00000002
 NC_ST_ERROR = 0x00000010
@@ -81,7 +81,7 @@ def get_error_message(status_code):
 
 try:
     nican = ctypes.windll.LoadLibrary("nican")
-except OSError as e:
+except Exception as e:
     logger.error("Failed to load NI-CAN driver: %s", e)
 else:
     nican.ncConfig.argtypes = [
@@ -121,6 +121,9 @@ class NicanBus(BusABC):
 
         :param int write_queue:
             Length of write queue (default 2).
+
+        :raises can.interfaces.nican.NicanError:
+            If starting communication fails.
         """
         self.channel_info = "NI-CAN: " + channel
         if not isinstance(channel, bytes):
@@ -170,11 +173,15 @@ class NicanBus(BusABC):
             The CAN message or None if timeout.
         :rtype: can.Message
 
-        :raises can.interface.nican.NicanError:
+        :raises can.interfaces.nican.NicanError:
             If reception fails.
         """
+        if timeout is None:
+            timeout = NC_DURATION_INFINITE
+        else:
+            timeout = int(timeout * 1000)
+
         state = ctypes.c_ulong()
-        timeout = 0xFFFFFFFF if timeout is None else int(timeout * 1000)
         try:
             nican.ncWaitForState(
                 self.handle, NC_ST_READ_AVAIL, timeout, ctypes.byref(state))
@@ -207,7 +214,7 @@ class NicanBus(BusABC):
         :param can.Message msg:
             Message to send.
 
-        :raises can.interface.nican.NicanError:
+        :raises can.interfaces.nican.NicanError:
             If transmission fails.
         """
         arb_id = msg.arbitration_id
