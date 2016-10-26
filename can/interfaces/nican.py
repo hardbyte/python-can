@@ -36,10 +36,10 @@ NC_ATTR_READ_Q_LEN = 0x80000013
 NC_ATTR_WRITE_Q_LEN = 0x80000014
 NC_ATTR_CAN_COMP_STD = 0x80010001
 NC_ATTR_CAN_MASK_STD = 0x80010002
-NC_CAN_MASK_STD_DONTCARE = 0x00000000
 NC_ATTR_CAN_COMP_XTD = 0x80010003
 NC_ATTR_CAN_MASK_XTD = 0x80010004
-NC_CAN_MASK_XTD_DONTCARE = 0x00000000
+NC_ATTR_LOG_COMM_ERRS = 0x8001000A
+
 NC_FL_CAN_ARBID_XTD = 0x20000000
 
 
@@ -90,6 +90,7 @@ else:
     nican.ncOpenObject.argtypes = [ctypes.c_char_p, ctypes.c_void_p]
     nican.ncOpenObject.errcheck = check_status
     nican.ncCloseObject.errcheck = check_status
+    nican.ncAction.argtypes = [ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong]
     nican.ncAction.errcheck = check_status
     nican.ncRead.errcheck = check_status
     nican.ncWrite.errcheck = check_status
@@ -110,6 +111,9 @@ class NicanBus(BusABC):
         :param str channel:
             Name of the object to open (e.g. 'CAN0')
 
+        :param int bitrate:
+            Bitrate in bits/s
+
         :param list can_filters:
             A list of dictionaries each containing a "can_id" and a "can_mask".
             Must only contain one filter!
@@ -117,20 +121,25 @@ class NicanBus(BusABC):
             >>> [{"can_id": 0x11, "can_mask": 0x21}]
 
         :param int read_queue:
-            Length of read queue (default 150).
+            Length of read queue
 
         :param int write_queue:
-            Length of write queue (default 2).
+            Length of write queue
+
+        :param bool log_errors:
+            If True, communication errors will appear as CAN messages with
+            ``is_error_frame`` set to True and ``arbitration_id`` will identify
+            the error (default True)
 
         :raises can.interfaces.nican.NicanError:
-            If starting communication fails.
+            If starting communication fails
         """
         self.channel_info = "NI-CAN: " + channel
         if not isinstance(channel, bytes):
             channel = channel.encode()
 
         config = {
-            NC_ATTR_START_ON_OPEN: 1,
+            NC_ATTR_START_ON_OPEN: True,
             NC_ATTR_CAN_COMP_STD: 0,
             NC_ATTR_CAN_MASK_STD: 0,
             NC_ATTR_CAN_COMP_XTD: 0,
@@ -152,8 +161,12 @@ class NicanBus(BusABC):
 
         if "bitrate" in kwargs:
             config[NC_ATTR_BAUD_RATE] = kwargs["bitrate"]
-        config[NC_ATTR_READ_Q_LEN] = kwargs.get("read_queue", 150)
-        config[NC_ATTR_WRITE_Q_LEN] = kwargs.get("write_queue", 2)
+        if "read_queue" in kwargs:
+            config[NC_ATTR_READ_Q_LEN] = kwargs["read_queue"]
+        if "write_queue" in kwargs:
+            config[NC_ATTR_WRITE_Q_LEN] = kwargs["write_queue"]
+        config[NC_ATTR_LOG_COMM_ERRS] = kwargs.get("log_errors", True)
+
         AttrList = ctypes.c_ulong * len(config)
         nican.ncConfig(channel,
                        len(config),
@@ -167,14 +180,14 @@ class NicanBus(BusABC):
         Read a message from NI-CAN.
 
         :param float timeout:
-            Max time to wait in seconds or None if infinite.
+            Max time to wait in seconds or None if infinite
 
         :returns:
-            The CAN message or None if timeout.
+            The CAN message or None if timeout
         :rtype: can.Message
 
         :raises can.interfaces.nican.NicanError:
-            If reception fails.
+            If reception fails
         """
         if timeout is None:
             timeout = NC_DURATION_INFINITE
@@ -195,14 +208,18 @@ class NicanBus(BusABC):
         nican.ncRead(self.handle, ctypes.sizeof(raw_msg), ctypes.byref(raw_msg))
         # http://stackoverflow.com/questions/6161776/convert-windows-filetime-to-second-in-unix-linux
         timestamp = raw_msg.timestamp / 10000000.0 - 11644473600
-        frame_type = raw_msg.frame_type
+        is_remote_frame = bool(raw_msg.frame_type & NC_FRMTYPE_REMOTE)
+        is_error_frame = bool(raw_msg.frame_type & NC_FRMTYPE_COMM_ERR)
+        is_extended = bool(raw_msg.arb_id & NC_FL_CAN_ARBID_XTD)
         arb_id = raw_msg.arb_id
+        if not is_error_frame:
+            arb_id &= 0x1FFFFFFF
         dlc = raw_msg.dlc
         msg = Message(timestamp=timestamp,
-                      is_remote_frame=bool(frame_type & NC_FRMTYPE_REMOTE),
-                      is_error_frame=bool(frame_type & NC_FRMTYPE_COMM_ERR),
-                      extended_id=bool(arb_id & NC_FL_CAN_ARBID_XTD),
-                      arbitration_id=arb_id & 0x1FFFFFFF,
+                      is_remote_frame=is_remote_frame,
+                      is_error_frame=is_error_frame,
+                      extended_id=is_extended,
+                      arbitration_id=arb_id,
                       dlc=dlc,
                       data=raw_msg.data[:dlc])
         return msg
@@ -212,10 +229,10 @@ class NicanBus(BusABC):
         Send a message to NI-CAN.
 
         :param can.Message msg:
-            Message to send.
+            Message to send
 
         :raises can.interfaces.nican.NicanError:
-            If transmission fails.
+            If transmission fails
         """
         arb_id = msg.arbitration_id
         if msg.id_type:
@@ -229,6 +246,12 @@ class NicanBus(BusABC):
         state = ctypes.c_ulong()
         nican.ncWaitForState(
             self.handle, NC_ST_WRITE_SUCCESS, 10, ctypes.byref(state))
+
+    def flush_tx_buffer(self):
+        """
+        Resets the CAN chip which includes clearing receive and transmit queues.
+        """
+        nican.ncAction(self.handle, NC_OP_RESET, 0)
 
     def shutdown(self):
         """Close object."""
