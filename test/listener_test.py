@@ -66,7 +66,8 @@ class ListenerTest(unittest.TestCase):
         assert msg[1] == 0xDADADA
 
     def testAscListener(self):
-        a_listener = can.ASCWriter("test.asc")
+        a_listener = can.ASCWriter("test.asc", channel=2)
+        a_listener.log_event("This is some comment")
         msg = can.Message(extended_id=True,
                           timestamp=a_listener.started + 0.5,
                           arbitration_id=0xabcdef,
