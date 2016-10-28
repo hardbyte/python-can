@@ -8,6 +8,7 @@ Copyright (C) 2010 Dynamic Controls
 from __future__ import print_function
 
 import logging
+import sys
 from datetime import datetime
 import time
 import base64
@@ -17,6 +18,10 @@ try:
     import queue
 except ImportError:
     import Queue as queue
+
+
+if sys.version_info > (3,):
+    buffer = memoryview
 
 log = logging.getLogger('can')
 log.debug("Loading python-can")
@@ -213,7 +218,7 @@ class SqliteWriter(Listener):
             msg.is_remote_frame,
             msg.is_error_frame,
             msg.dlc,
-            msg.data
+            buffer(msg.data)
         )
         c = self.conn.cursor()
         c.execute(SqliteWriter.insert_msg_template, row_data)
