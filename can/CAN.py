@@ -18,6 +18,12 @@ try:
 except ImportError:
     import Queue as queue
 
+try:
+    msg2buf = buffer
+except NameError:
+    # in Py3 there is no buffer(), so we use an identity function
+    msg2buf = lambda x: x
+
 log = logging.getLogger('can')
 log.debug("Loading python-can")
 
@@ -213,7 +219,7 @@ class SqliteWriter(Listener):
             msg.is_remote_frame,
             msg.is_error_frame,
             msg.dlc,
-            msg.data
+            msg2buf(msg.data),
         )
         c = self.conn.cursor()
         c.execute(SqliteWriter.insert_msg_template, row_data)
