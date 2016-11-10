@@ -20,7 +20,7 @@ NC_DURATION_INFINITE = 0xFFFFFFFF
 
 NC_OP_START = 0x80000001
 NC_OP_STOP = 0x80000002
-NC_OP_RESET = 0x8000003
+NC_OP_RESET = 0x80000003
 
 NC_FRMTYPE_REMOTE = 1
 NC_FRMTYPE_COMM_ERR = 2
@@ -152,6 +152,7 @@ class NicanBus(BusABC):
             can_id = can_filters[0]["can_id"]
             can_mask = can_filters[0]["can_mask"]
             logger.info("Filtering on ID 0x%X, mask 0x%X", can_id, can_mask)
+            # This did not filter out anything when tested but I don't know why
             config[NC_ATTR_CAN_COMP_STD] = can_id
             config[NC_ATTR_CAN_MASK_STD] = can_mask
             config[NC_ATTR_CAN_COMP_XTD] = can_id
@@ -232,7 +233,8 @@ class NicanBus(BusABC):
             Message to send
 
         :raises can.interfaces.nican.NicanError:
-            If transmission fails
+            If writing to transmit buffer fails.
+            It does not wait for message to be ACKed currently.
         """
         arb_id = msg.arbitration_id
         if msg.id_type:
@@ -243,9 +245,14 @@ class NicanBus(BusABC):
                                   CanData(*msg.data))
         nican.ncWrite(
             self.handle, ctypes.sizeof(raw_msg), ctypes.byref(raw_msg))
-        state = ctypes.c_ulong()
-        nican.ncWaitForState(
-            self.handle, NC_ST_WRITE_SUCCESS, 10, ctypes.byref(state))
+
+        # ncWaitForState can not be called here if the recv() method is called
+        # from a different thread, which is a very common use case.
+        # Maybe it is possible to use ncCreateNotification instead but seems a
+        # bit overkill at the moment.
+        #state = ctypes.c_ulong()
+        #nican.ncWaitForState(
+        #    self.handle, NC_ST_WRITE_SUCCESS, 10, ctypes.byref(state))
 
     def flush_tx_buffer(self):
         """
