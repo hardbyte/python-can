@@ -209,8 +209,8 @@ class NicanBus(BusABC):
         nican.ncRead(self.handle, ctypes.sizeof(raw_msg), ctypes.byref(raw_msg))
         # http://stackoverflow.com/questions/6161776/convert-windows-filetime-to-second-in-unix-linux
         timestamp = raw_msg.timestamp / 10000000.0 - 11644473600
-        is_remote_frame = bool(raw_msg.frame_type & NC_FRMTYPE_REMOTE)
-        is_error_frame = bool(raw_msg.frame_type & NC_FRMTYPE_COMM_ERR)
+        is_remote_frame = raw_msg.frame_type == NC_FRMTYPE_REMOTE
+        is_error_frame = raw_msg.frame_type == NC_FRMTYPE_COMM_ERR
         is_extended = bool(raw_msg.arb_id & NC_FL_CAN_ARBID_XTD)
         arb_id = raw_msg.arb_id
         if not is_error_frame:
