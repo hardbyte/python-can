@@ -4,11 +4,15 @@ NI-CAN
 This interface adds support for CAN controllers by `National Instruments`_.
 
 
-Message filtering
------------------
+.. warning::
 
-It seems like only one filter can be used per channel so if more than one is
-specified then the filtering will be disabled.
+    NI-CAN only seems to support 32-bit architectures so if the driver can't
+    be loaded on a 64-bit Python, try using a 32-bit version instead.
+
+
+.. warning::
+
+    CAN filtering has not been tested throughly and may not work as expected.
 
 
 Bus

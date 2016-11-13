@@ -116,7 +116,6 @@ class NicanBus(BusABC):
 
         :param list can_filters:
             A list of dictionaries each containing a "can_id" and a "can_mask".
-            Must only contain one filter!
 
             >>> [{"can_id": 0x11, "can_mask": 0x21}]
 
@@ -138,41 +137,44 @@ class NicanBus(BusABC):
         if not isinstance(channel, bytes):
             channel = channel.encode()
 
-        config = {
-            NC_ATTR_START_ON_OPEN: True,
-            NC_ATTR_CAN_COMP_STD: 0,
-            NC_ATTR_CAN_MASK_STD: 0,
-            NC_ATTR_CAN_COMP_XTD: 0,
-            NC_ATTR_CAN_MASK_XTD: 0,
-        }
+        config = [
+            (NC_ATTR_START_ON_OPEN, True),
+            (NC_ATTR_LOG_COMM_ERRS, kwargs.get("log_errors", True))
+        ]
+
         can_filters = kwargs.get("can_filters")
         if not can_filters:
             logger.info("Filtering has been disabled")
-        elif len(can_filters) == 1:
-            can_id = can_filters[0]["can_id"]
-            can_mask = can_filters[0]["can_mask"]
-            logger.info("Filtering on ID 0x%X, mask 0x%X", can_id, can_mask)
-            # This did not filter out anything when tested but I don't know why
-            config[NC_ATTR_CAN_COMP_STD] = can_id
-            config[NC_ATTR_CAN_MASK_STD] = can_mask
-            config[NC_ATTR_CAN_COMP_XTD] = can_id
-            config[NC_ATTR_CAN_MASK_XTD] = can_mask
+            config.append((NC_ATTR_CAN_COMP_STD, 0))
+            config.append((NC_ATTR_CAN_MASK_STD, 0))
+            config.append((NC_ATTR_CAN_COMP_XTD, 0))
+            config.append((NC_ATTR_CAN_MASK_XTD, 0))
         else:
-            logger.warning("Only one filter is supported")
+            for can_filter in can_filters:
+                can_id = can_filter["can_id"]
+                can_mask = can_filter["can_mask"]
+                logger.info("Filtering on ID 0x%X, mask 0x%X", can_id, can_mask)
+                # This did not filter out anything when tested but I don't know why
+                config.append((NC_ATTR_CAN_COMP_STD, can_id))
+                config.append((NC_ATTR_CAN_MASK_STD, can_mask))
+                config.append((NC_ATTR_CAN_COMP_XTD, can_id))
+                config.append((NC_ATTR_CAN_MASK_XTD, can_mask))
 
         if "bitrate" in kwargs:
-            config[NC_ATTR_BAUD_RATE] = kwargs["bitrate"]
+            config.append((NC_ATTR_BAUD_RATE, kwargs["bitrate"]))
         if "read_queue" in kwargs:
-            config[NC_ATTR_READ_Q_LEN] = kwargs["read_queue"]
+            config.append((NC_ATTR_READ_Q_LEN, kwargs["read_queue"]))
         if "write_queue" in kwargs:
-            config[NC_ATTR_WRITE_Q_LEN] = kwargs["write_queue"]
-        config[NC_ATTR_LOG_COMM_ERRS] = kwargs.get("log_errors", True)
+            config.append((NC_ATTR_WRITE_Q_LEN, kwargs["write_queue"]))
 
         AttrList = ctypes.c_ulong * len(config)
+        attr_id_list = AttrList(*(row[0] for row in config))
+        attr_value_list = AttrList(*(row[1] for row in config))
         nican.ncConfig(channel,
                        len(config),
-                       ctypes.byref(AttrList(*config.keys())),
-                       ctypes.byref(AttrList(*config.values())))
+                       ctypes.byref(attr_id_list),
+                       ctypes.byref(attr_value_list),
+
         self.handle = ctypes.c_ulong()
         nican.ncOpenObject(channel, ctypes.byref(self.handle))
 
