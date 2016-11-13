@@ -145,20 +145,23 @@ class NicanBus(BusABC):
         can_filters = kwargs.get("can_filters")
         if not can_filters:
             logger.info("Filtering has been disabled")
-            config.append((NC_ATTR_CAN_COMP_STD, 0))
-            config.append((NC_ATTR_CAN_MASK_STD, 0))
-            config.append((NC_ATTR_CAN_COMP_XTD, 0))
-            config.append((NC_ATTR_CAN_MASK_XTD, 0))
+            config.extend([
+                (NC_ATTR_CAN_COMP_STD, 0),
+                (NC_ATTR_CAN_MASK_STD, 0),
+                (NC_ATTR_CAN_COMP_XTD, 0),
+                (NC_ATTR_CAN_MASK_XTD, 0)
+            ])
         else:
             for can_filter in can_filters:
                 can_id = can_filter["can_id"]
                 can_mask = can_filter["can_mask"]
                 logger.info("Filtering on ID 0x%X, mask 0x%X", can_id, can_mask)
-                # This did not filter out anything when tested but I don't know why
-                config.append((NC_ATTR_CAN_COMP_STD, can_id))
-                config.append((NC_ATTR_CAN_MASK_STD, can_mask))
-                config.append((NC_ATTR_CAN_COMP_XTD, can_id))
-                config.append((NC_ATTR_CAN_MASK_XTD, can_mask))
+                config.extend([
+                    (NC_ATTR_CAN_COMP_STD, can_id),
+                    (NC_ATTR_CAN_MASK_STD, can_mask),
+                    (NC_ATTR_CAN_COMP_XTD, can_id | NC_FL_CAN_ARBID_XTD),
+                    (NC_ATTR_CAN_MASK_XTD, can_mask)
+                ])
 
         if "bitrate" in kwargs:
             config.append((NC_ATTR_BAUD_RATE, kwargs["bitrate"]))
