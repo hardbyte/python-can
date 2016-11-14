@@ -176,7 +176,7 @@ class NicanBus(BusABC):
         nican.ncConfig(channel,
                        len(config),
                        ctypes.byref(attr_id_list),
-                       ctypes.byref(attr_value_list),
+                       ctypes.byref(attr_value_list))
 
         self.handle = ctypes.c_ulong()
         nican.ncOpenObject(channel, ctypes.byref(self.handle))
