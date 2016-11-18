@@ -71,6 +71,14 @@ To install ``python-can`` using the IXXAT VCI V3 SDK as the backend:
 2. Test that IXXAT's own tools (i.e. MiniMon) work to ensure the driver
    is properly installed and that the hardware is working.
 
+NI-CAN
+~~~~~~
+
+Download and install the NI-CAN drivers from
+`National Instruments <http://www.ni.com/downloads/ni-drivers/>`__.
+
+Currently the driver only supports 32-bit Python on Windows.
+
 
 Installing python-can in development mode
 -----------------------------------------
