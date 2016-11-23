@@ -24,7 +24,7 @@ if sys.version_info > (3,):
     buffer = memoryview
 
 log = logging.getLogger('can')
-log.debug("Loading python-can")
+#log.debug("Loading python-can")
 
 
 def set_logging_level(level_name=None):
