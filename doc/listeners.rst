@@ -30,6 +30,9 @@ BufferedReader
 Logger
 ------
 
+The :class:`can.Logger` uses the following :class:`can.Listener` types to
+create *.asc*, *.csv* and *.db* files with the messages received.
+
 .. autoclass:: can.Logger
     :members:
 
@@ -41,14 +44,15 @@ Printer
     :members:
 
 
-
-CSVWriter & SqliteWriter
-------------------------
-
-These Listeners simply create csv and sql files with the messages received.
+CSVWriter
+---------
 
 .. autoclass:: can.CSVWriter
     :members:
+
+
+SqliteWriter
+------------
 
 .. autoclass:: can.SqliteWriter
     :members:

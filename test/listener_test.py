@@ -41,10 +41,15 @@ class ListenerTest(unittest.TestCase):
         self.assertIn(a_listener, notifier.listeners)
 
     def testLogger(self):
-        self.assertIsInstance(can.Logger("test.asc"), can.ASCWriter)
-        self.assertIsInstance(can.Logger("test.csv"), can.CSVWriter)
-        self.assertIsInstance(can.Logger("test.db"), can.SqliteWriter)
-        self.assertIsInstance(can.Logger("test.txt"), can.Printer)
+        def test_filetype_to_instance(extension, klass):
+            can_logger = can.Logger("test.{}".format(extension))
+            self.assertIsInstance(can_logger, klass)
+            can_logger.stop()
+
+        test_filetype_to_instance('asc', can.ASCWriter)
+        test_filetype_to_instance("csv", can.CSVWriter)
+        test_filetype_to_instance("db", can.SqliteWriter)
+        test_filetype_to_instance("txt", can.Printer)
 
     def testBufferedListenerReceives(self):
         a_listener = can.BufferedReader()
@@ -56,6 +61,8 @@ class ListenerTest(unittest.TestCase):
         f = tempfile.NamedTemporaryFile('w')
         a_listener = can.SqliteWriter(f.name)
         a_listener(generate_message(0xDADADA))
+        # Small delay so we don't stop before we actually block trying to read
+        sleep(0.5)
         a_listener.stop()
 
         import sqlite3
@@ -63,7 +70,41 @@ class ListenerTest(unittest.TestCase):
         c = con.cursor()
         c.execute("select * from messages")
         msg = c.fetchone()
+        con.close()
         assert msg[1] == 0xDADADA
+
+
+    def testSQLWriterWritesToSameFile(self):
+        f = tempfile.NamedTemporaryFile('w')
+
+        first_listener = can.SqliteWriter(f.name)
+        first_listener(generate_message(0x01))
+
+        sleep(1.0)
+        first_listener.stop()
+
+        second_listener = can.SqliteWriter(f.name)
+        second_listener(generate_message(0x02))
+
+        sleep(1.0)
+        second_listener.stop()
+
+        import sqlite3
+        con = sqlite3.connect(f.name)
+
+        with con:
+            c = con.cursor()
+
+            c.execute("select COUNT() from messages")
+            self.assertEqual(2, c.fetchone()[0])
+
+            c.execute("select * from messages")
+            msg1 = c.fetchone()
+            msg2 = c.fetchone()
+
+        assert msg1[1] == 0x01
+        assert msg2[1] == 0x02
+
 
     def testAscListener(self):
         a_listener = can.ASCWriter("test.asc", channel=2)
