@@ -17,6 +17,7 @@ The available interfaces are:
    interfaces/ixxat
    interfaces/pcan
    interfaces/usb2can
+   interfaces/nican
    interfaces/virtual
 
 

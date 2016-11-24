@@ -8,6 +8,7 @@ Copyright (C) 2010 Dynamic Controls
 from __future__ import print_function
 
 import logging
+import sys
 import threading
 from datetime import datetime
 import time
@@ -18,6 +19,10 @@ try:
     import queue
 except ImportError:
     import Queue as queue
+
+
+if sys.version_info > (3,):
+    buffer = memoryview
 
 log = logging.getLogger('can')
 log.debug("Loading python-can")
@@ -230,7 +235,7 @@ class SqliteWriter(BufferedReader):
                     m.is_remote_frame,
                     m.is_error_frame,
                     m.dlc,
-                    m.data
+                    buffer(m.data)
                 ))
                 m = self.get_message(SqliteWriter.GET_MESSAGE_TIMEOUT)
 
@@ -260,23 +265,32 @@ class ASCWriter(Listener):
     """Logs CAN data to an ASCII log file (.asc)"""
 
     LOG_STRING = "{time: 9.4f} {channel}  {id:<15} Rx   d {dlc} {data}\n"
+    EVENT_STRING = "{time: 9.4f} {message}\n"
 
-    def __init__(self, filename):
+    def __init__(self, filename, channel=1):
         now = datetime.now().strftime("%a %b %m %I:%M:%S %p %Y")
+        self.channel = channel
         self.started = time.time()
         self.log_file = open(filename, "w")
         self.log_file.write("date %s\n" % now)
         self.log_file.write("base hex  timestamps absolute\n")
         self.log_file.write("internal events logged\n")
         self.log_file.write("Begin Triggerblock %s\n" % now)
-        self.log_file.write("   0.0000 Start of measurement\n")
+        self.log_event("Start of measurement")
 
     def stop(self):
         """Stops logging and closes the file."""
-        if self.log_file:
+        if self.log_file is not None:
             self.log_file.write("End TriggerBlock\n")
             self.log_file.close()
             self.log_file = None
+
+    def log_event(self, message):
+        """Add an arbitrary message to the log file."""
+        timestamp = time.time() - self.started
+        line = self.EVENT_STRING.format(time=timestamp, message=message)
+        if self.log_file is not None:
+            self.log_file.write(line)
 
     def on_message_received(self, msg):
         data = ["{:02X}".format(byte) for byte in msg.data]
@@ -288,9 +302,9 @@ class ASCWriter(Listener):
             timestamp -= self.started
 
         line = self.LOG_STRING.format(time=timestamp,
-                                      channel=1,
+                                      channel=self.channel,
                                       id=arb_id,
                                       dlc=msg.dlc,
                                       data=" ".join(data))
-        if self.log_file:
+        if self.log_file is not None:
             self.log_file.write(line)

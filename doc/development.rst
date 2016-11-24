@@ -12,7 +12,7 @@ https://github.com/hardbyte/python-can
 Creating a Release
 ------------------
 
-- Release from the ``default`` branch.
+- Release from the ``master`` branch.
 - Update the library version in ``setup.py`` and in ``doc/conf.py`` using `semantic versioning <http://semver.org>`__.
 - Run all tests and examples against available hardware.
 - Update `CONTRIBUTORS.txt` with any new contributors.
@@ -21,6 +21,7 @@ Creating a Release
 - Create and upload the distribution: ``python setup.py sdist bdist_wheel upload --sign``
 - In a new virtual env check that the package can be installed with pip: ``pip install python-can``
 - Create a new tag in the repository.
+- Check the release on PyPi and github.
 
 
 Code Structure
