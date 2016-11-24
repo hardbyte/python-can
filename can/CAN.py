@@ -179,7 +179,7 @@ class SqliteWriter(BufferedReader):
         (?, ?, ?, ?, ?, ?, ?)
         '''
 
-    GET_MESSAGE_TIMEOUT = 2
+    GET_MESSAGE_TIMEOUT = 0.25
     MAX_TIME_BETWEEN_WRITES = 5
 
     def __init__(self, filename):

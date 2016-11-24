@@ -41,10 +41,15 @@ class ListenerTest(unittest.TestCase):
         self.assertIn(a_listener, notifier.listeners)
 
     def testLogger(self):
-        self.assertIsInstance(can.Logger("test.asc"), can.ASCWriter)
-        self.assertIsInstance(can.Logger("test.csv"), can.CSVWriter)
-        self.assertIsInstance(can.Logger("test.db"), can.SqliteWriter)
-        self.assertIsInstance(can.Logger("test.txt"), can.Printer)
+        def test_filetype_to_instance(extension, klass):
+            can_logger = can.Logger("test.{}".format(extension))
+            self.assertIsInstance(can_logger, klass)
+            can_logger.stop()
+
+        test_filetype_to_instance('asc', can.ASCWriter)
+        test_filetype_to_instance("csv", can.CSVWriter)
+        test_filetype_to_instance("db", can.SqliteWriter)
+        test_filetype_to_instance("txt", can.Printer)
 
     def testBufferedListenerReceives(self):
         a_listener = can.BufferedReader()
@@ -65,6 +70,7 @@ class ListenerTest(unittest.TestCase):
         c = con.cursor()
         c.execute("select * from messages")
         msg = c.fetchone()
+        con.close()
         assert msg[1] == 0xDADADA
 
     def testAscListener(self):
