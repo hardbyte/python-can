@@ -73,6 +73,39 @@ class ListenerTest(unittest.TestCase):
         con.close()
         assert msg[1] == 0xDADADA
 
+
+    def testSQLWriterWritesToSameFile(self):
+        f = tempfile.NamedTemporaryFile('w')
+
+        first_listener = can.SqliteWriter(f.name)
+        first_listener(generate_message(0x01))
+
+        sleep(1.0)
+        first_listener.stop()
+
+        second_listener = can.SqliteWriter(f.name)
+        second_listener(generate_message(0x02))
+
+        sleep(1.0)
+        second_listener.stop()
+
+        import sqlite3
+        con = sqlite3.connect(f.name)
+
+        with con:
+            c = con.cursor()
+
+            c.execute("select COUNT() from messages")
+            self.assertEqual(2, c.fetchone()[0])
+
+            c.execute("select * from messages")
+            msg1 = c.fetchone()
+            msg2 = c.fetchone()
+
+        assert msg1[1] == 0x01
+        assert msg2[1] == 0x02
+
+
     def testAscListener(self):
         a_listener = can.ASCWriter("test.asc", channel=2)
         a_listener.log_event("This is some comment")
