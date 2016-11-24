@@ -249,16 +249,15 @@ class SqliteWriter(BufferedReader):
                     self.conn.executemany(SqliteWriter.insert_msg_template, messages)
                     num_frames += len(messages)
                     last_write = time.time()
+
+        if self.db_setup:
+            self.conn.close()
         log.info("Stopped sqlite writer after writing %s messages", num_frames)
 
     def stop(self):
         self.stop_running_event.set()
         log.debug("Stopping sqlite writer")
         self.writer_thread.join()
-
-        if self.db_setup:
-            # self.conn.commit()
-            self.conn.close()
 
 
 class ASCWriter(Listener):
