@@ -56,6 +56,8 @@ class ListenerTest(unittest.TestCase):
         f = tempfile.NamedTemporaryFile('w')
         a_listener = can.SqliteWriter(f.name)
         a_listener(generate_message(0xDADADA))
+        # Small delay so we don't stop before we actually block trying to read
+        sleep(0.1)
         a_listener.stop()
 
         import sqlite3
