@@ -180,12 +180,14 @@ class SqliteWriter(BufferedReader):
         '''
 
     GET_MESSAGE_TIMEOUT = 0.25
+    """Number of seconds to wait for messages from internal queue"""
+
     MAX_TIME_BETWEEN_WRITES = 5
+    """Maximum number of seconds to wait between writes to the database"""
 
     def __init__(self, filename):
         super(SqliteWriter, self).__init__()
         self.db_fn = filename
-        self.db_setup = False
         self.stop_running_event = threading.Event()
         self.writer_thread = threading.Thread(target=self.db_writer_thread)
         self.writer_thread.start()
@@ -217,14 +219,12 @@ class SqliteWriter(BufferedReader):
     def db_writer_thread(self):
         num_frames = 0
         last_write = time.time()
-
-        if not self.db_setup:
-            self._create_db()
+        self._create_db()
 
         while not self.stop_running_event.is_set():
             messages = []
 
-            m = self.get_message(SqliteWriter.GET_MESSAGE_TIMEOUT)
+            m = self.get_message(self.GET_MESSAGE_TIMEOUT)
             while m is not None:
                 log.debug("sqlitewriter buffering message")
 
@@ -237,9 +237,9 @@ class SqliteWriter(BufferedReader):
                     m.dlc,
                     buffer(m.data)
                 ))
-                m = self.get_message(SqliteWriter.GET_MESSAGE_TIMEOUT)
+                m = self.get_message(self.GET_MESSAGE_TIMEOUT)
 
-                if time.time() - last_write > SqliteWriter.MAX_TIME_BETWEEN_WRITES:
+                if time.time() - last_write > self.MAX_TIME_BETWEEN_WRITES:
                     log.debug("Max timeout between writes reached")
                     break
 
@@ -250,8 +250,7 @@ class SqliteWriter(BufferedReader):
                     num_frames += len(messages)
                     last_write = time.time()
 
-        if self.db_setup:
-            self.conn.close()
+        self.conn.close()
         log.info("Stopped sqlite writer after writing %s messages", num_frames)
 
     def stop(self):
