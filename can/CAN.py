@@ -304,7 +304,6 @@ class ASCWriter(Listener):
         arb_id = "{:X}".format(msg.arbitration_id)
         if msg.id_type:
             arb_id = arb_id + "x"
-        dtype = "r" if msg.is_remote_frame else "d {}".format(msg.dlc)
         timestamp = msg.timestamp
         if timestamp >= self.started:
             timestamp -= self.started
