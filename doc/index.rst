@@ -1,31 +1,32 @@
 python-can
 ==========
 
-`python-can` is a library for interacting with a controller area network.
 
-The **Controller Area Network** is a bus standard designed to allow embedded
-devices to communicate with each other. It has priority based bus arbitration,
-reliable deterministic communication. It is used in cars, trucks, boats,
-wheelchairs and more.
+The **python-can** library provides controller area network support for
+`Python <http://python.org/download/>`__, providing common abstractions to
+different hardware devices, and a suite of utilities for sending and receiving
+messages on a can bus.
+
+**python-can** runs any where Python runs; from high powered computers
+with commercial `can to usb` devices right down to low powered devices running
+linux such as a BeagleBone or RaspberryPi.
+
+More concretely, some example uses of the library:
+
+- Passively logging what occurs on a can bus. For example monitoring a
+  commercial vehicle using its **OBD-II** port.
+
+- Testing of hardware that interacts via can. Modules found in
+  modern cars, motocycles, boats, and even wheelchairs have had components tested
+  from Python using this library.
+
+- Prototyping new hardware modules or software algorithms in-the-loop. Easily
+  interact with an existing bus.
+
+- Creating virtual modules to prototype can bus communication.
 
 
-Contents:
-
-.. toctree::
-   :maxdepth: 2
-
-   interfaces
-   api
-   protocols
-   bin
-   overview
-   history
-
-
-Example
-~~~~~~~
-
-This example shows the library in action - sending one message:
+Brief example of the library in action: connecting to a can bus, creating and sending a message:
 
 
 .. literalinclude:: ../examples/send_one.py
@@ -33,18 +34,24 @@ This example shows the library in action - sending one message:
     :linenos:
 
 
+Contents:
 
-Installation and Quickstart
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. toctree::
+   :maxdepth: 2
 
-See the readme included with the source code.
+   installation
+   configuration
+   api
+   interfaces
+   bin
+   development
+   history
 
-https://bitbucket.org/hardbyte/python-can
 
 Known Bugs
 ~~~~~~~~~~
 
-See the project `bug tracker`_ on bitbucket. Patches and pull requests very welcome!
+See the project `bug tracker`_ on github. Patches and pull requests very welcome!
 
 
 .. admonition:: Documentation generated
@@ -57,6 +64,4 @@ See the project `bug tracker`_ on bitbucket. Patches and pull requests very welc
 .. _Pip: http://pip.openplans.org/
 .. _easy_install: http://peak.telecommunity.com/DevCenter/EasyInstall
 .. _IPython: http://ipython.scipy.org
-.. _Mercurial: http://mercurial.selenic.com
-.. _TortoiseHG: http://tortoisehg.bitbucket.org/
-.. _bug tracker: https://bitbucket.org/hardbyte/python-can/issues
+.. _bug tracker: https://github.com/hardbyte/python-can/issues

@@ -6,21 +6,25 @@ can socket and can bcm socket support: >3.4
 """
 
 import socket
-import fcntl
 import struct
 import logging
 from collections import namedtuple
 import select
+
 
 log = logging.getLogger('can.socketcan.native')
 #log.setLevel(logging.DEBUG)
 log.debug("Loading native socket can implementation")
 
 try:
+    import fcntl
+except ImportError:
+    log.warning("fcntl not available on this platform")
+
+try:
     socket.CAN_RAW
 except:
-    log.error("Note Python 3.3 or later is required to use native socketcan")
-    raise ImportError()
+    log.debug("CAN_* properties not found in socket module. These are required to use native socketcan")
 
 
 from can import Message
@@ -29,6 +33,11 @@ from ..bus import BusABC
 
 from ..broadcastmanager import CyclicSendTaskABC
 
+# struct module defines a binary packing format:
+# https://docs.python.org/3/library/struct.html#struct-format-strings
+# The 32bit can id is directly followed by the 8bit data link count
+# The data field is aligned on an 8 byte boundary, hence we add padding
+# which aligns the data field to an 8 byte boundary.
 can_frame_fmt = "=IB3x8s"
 can_frame_size = struct.calcsize(can_frame_fmt)
 
@@ -107,9 +116,29 @@ def dissect_can_frame(frame):
     return (can_id, can_dlc, data[:can_dlc])
 
 
+def create_bcm_socket(channel):
+    """create a broadcast manager socket and connect to the given interface"""
+    try:
+        s = socket.socket(socket.PF_CAN, socket.SOCK_DGRAM, socket.CAN_BCM)
+    except AttributeError:
+        raise SystemExit("To use BCM sockets you need Python3.4 or higher")
+    try:
+        s.connect((channel,))
+    except OSError as e:
+        log.error("Couldn't connect a broadcast manager socket")
+        raise e
+    return s
 
 
-class CyclicSendTask(CyclicSendTaskABC):
+class SocketCanBCMBase(object):
+    """Mixin to add a BCM socket"""
+
+    def __init__(self, channel, *args, **kwargs):
+        self.bcm_socket = create_bcm_socket(channel)
+        super(SocketCanBCMBase, self).__init__(channel, *args, **kwargs)
+
+
+class CyclicSendTask(SocketCanBCMBase, CyclicSendTaskABC):
 
     def __init__(self, channel, message, period):
         """
@@ -118,22 +147,9 @@ class CyclicSendTask(CyclicSendTaskABC):
         :param message: The message to be sent periodically.
         :param period: The rate in seconds at which to send the message.
         """
-        super(CyclicSendTask,self).__init__(channel, message, period)
-        self.bcm_socket = create_bcm_socket(channel)
+        super(CyclicSendTask, self).__init__(channel, message, period)
         self._tx_setup(message)
         self.message = message
-    def create_bcm_socket(channel):
-        """create a broadcast manager socket and connect to the given interface"""
-        try:
-            s = socket.socket(socket.PF_CAN, socket.SOCK_DGRAM, socket.CAN_BCM)
-        except AttributeError:
-            raise SystemExit("To use BCM sockets you need Python3.4 or higher")
-        try:
-            s.connect((channel,))
-        except OSError as e:
-            log.error("Couldn't connect a broadcast manager socket")
-            raise e
-        return s
 
     def _tx_setup(self, message):
         # Create a low level packed frame to pass to the kernel
@@ -159,11 +175,32 @@ class CyclicSendTask(CyclicSendTaskABC):
         """
         assert message.arbitration_id == self.can_id, "You cannot modify the can identifier"
         self._tx_setup(message)
-        self.message
-
 
     def start(self):
         self._tx_setup(self.message)
+
+
+class MultiRateCyclicSendTask(CyclicSendTask):
+
+    """Exposes more of the full power of the TX_SETUP opcode.
+
+    Transmits a message `count` times at `initial_period` then
+    continues to transmit message at `subsequent_period`.
+    """
+
+    def __init__(self, channel, message, count, initial_period, subsequent_period):
+        super(MultiRateCyclicSendTask, self).__init__(channel, message, subsequent_period)
+
+        # Create a low level packed frame to pass to the kernel
+        frame = build_can_frame(self.can_id, message.data)
+        header = build_bcm_transmit_header(
+            self.can_id,
+            count,
+            initial_period,
+            subsequent_period)
+
+        log.info("Sending BCM TX_SETUP command")
+        self.bcm_socket.send(header + frame)
 
 
 def createSocket(can_protocol=None):
@@ -241,6 +278,10 @@ def capturePacket(sock):
     except socket.timeout:
         log.debug('Captured no data, socket read timed out.')
         return None
+    except OSError:
+        # something bad happened (e.g. the interface went down)
+        log.exception("Captured no data.")
+        return None
 
     can_id, can_dlc, data = dissect_can_frame(cf)
     log.debug('Received: can_id=%x, can_dlc=%x, data=%s', can_id, can_dlc, data)
@@ -272,7 +313,7 @@ def capturePacket(sock):
     return _CanPacket(timestamp, arbitration_id, CAN_ERR_FLAG, CAN_EFF_FLAG, CAN_RTR_FLAG, can_dlc, data)
 
 
-class SocketscanNative_Bus(BusABC):
+class SocketcanNative_Bus(BusABC):
     channel_info = "native socketcan channel"
 
     def __init__(self, channel, **kwargs):
@@ -289,34 +330,26 @@ class SocketscanNative_Bus(BusABC):
         # Add any socket options such as can frame filters
         if 'can_filters' in kwargs and len(kwargs['can_filters']) > 0:
             log.debug("Creating a filtered can bus")
-            can_filter_fmt = "={}I".format(2 * len(kwargs['can_filters']))
-            filter_data = []
-            for can_filter in kwargs['can_filters']:
-                filter_data.append(can_filter['can_id'])
-                filter_data.append(can_filter['can_mask'])
-
-            self.socket.setsockopt(socket.SOL_CAN_RAW,
-                                   socket.CAN_RAW_FILTER,
-                                   struct.pack(can_filter_fmt, *filter_data),
-                                   )
-        if channel is None:
-            # We know we are socketcan, a channel "should" have
-            # been given but we can assume "can0"
-            log.warn("Channel not given. Falling back to using 'can0'")
-            channel = 'can0'
+            self.set_filters(kwargs['can_filters'])
 
         bindSocket(self.socket, channel)
-        super(SocketscanNative_Bus, self).__init__()
+        super(SocketcanNative_Bus, self).__init__()
 
-    def __del__(self):
+    def shutdown(self):
         self.socket.close()
 
     def recv(self, timeout=None):
+        data_ready = True
+        try:
+            if timeout is not None:
+                data_ready = len(select.select([self.socket], [], [], timeout)[0]) > 0
+        except OSError:
+            # something bad happened (e.g. the interface went down)
+            log.exception("Error while waiting for timeout")
+            return None
 
-        if timeout is None or len(select.select([self.socket],
-                                                [], [], timeout)[0]) > 0:
+        if data_ready:
             packet = capturePacket(self.socket)
-
             # The capturePacket function can return None if
             # self.socket.settimeout has been called.
             if packet is None:
@@ -354,6 +387,26 @@ class SocketscanNative_Bus(BusABC):
             self.socket.send(build_can_frame(arbitration_id, msg.data))
         except OSError:
             l.warning("Failed to send: %s", msg)
+
+
+    def set_filters(self, can_filters=None):
+        if can_filters is None:
+            # Pass all messages
+            can_filters=[{
+                'can_id': 0,
+                'can_mask': 0
+            }]
+
+        can_filter_fmt = "={}I".format(2 * len(can_filters))
+        filter_data = []
+        for can_filter in can_filters:
+            filter_data.append(can_filter['can_id'])
+            filter_data.append(can_filter['can_mask'])
+
+        self.socket.setsockopt(socket.SOL_CAN_RAW,
+                               socket.CAN_RAW_FILTER,
+                               struct.pack(can_filter_fmt, *filter_data)
+                               )
 
 
 if __name__ == "__main__":

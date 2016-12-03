@@ -2,9 +2,6 @@
 
 import logging
 
-logger = logging.getLogger('can.usb2can')
-
-
 from can.bus import BusABC
 from can.message import Message
 from can.interfaces.usb2can import *
@@ -93,21 +90,17 @@ class Usb2canBus(BusABC):
 
         # code to get the serial number of the device
         if 'serial' in kwargs:
-
             deviceID = kwargs["serial"]
-
         else:
             deviceID = serial()
 
-        # set baudrate
-        if 'baud' in kwargs:
+        # set baudrate in kb/s from bitrate
+        # (eg:500000 bitrate must be 500)
+        if 'bitrate' in kwargs:
+            br = kwargs["bitrate"]
 
-            br = kwargs["baud"]
-
-            # set custom baud rate (ex:500000 bitrate must be 500)
             # max rate is 1000 kbps
-            baudrate = int(br)
-
+            baudrate = max(1000, int(br/1000))
         # set default value
         else:
             baudrate = 500
@@ -136,7 +129,7 @@ class Usb2canBus(BusABC):
         if status is 0:
             rx = message_convert_rx(messagerx)
         else:
-            logger.error('Canal Error %s', status)
+            log.error('Canal Error %s', status)
             rx = None
 
         return rx

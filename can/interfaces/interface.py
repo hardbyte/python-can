@@ -1,9 +1,10 @@
 import can
-from can.util import load_config, choose_socketcan_implementation
 from can.broadcastmanager import CyclicSendTaskABC, MultiRateCyclicSendTaskABC
+from can.util import load_config, choose_socketcan_implementation
 
 VALID_INTERFACES = set(['kvaser', 'serial', 'pcan', 'socketcan_native',
-                        'socketcan_ctypes', 'socketcan', 'usb2can', 'ixxat'])
+                        'socketcan_ctypes', 'socketcan', 'usb2can', 'ixxat',
+                        'nican', 'virtual'])
 
 
 class Bus(object):
@@ -14,7 +15,14 @@ class Bus(object):
 
     @classmethod
     def __new__(cls, other, channel=None, *args, **kwargs):
+        """
+        Takes the same arguments as :class:`can.BusABC` with the addition of:
 
+        :param kwargs:
+            Should contain a bustype key with a valid interface name.
+
+        :raises: NotImplementedError if the bustype isn't recognized
+        """
         if 'bustype' in kwargs:
             can.rc['interface'] = kwargs['bustype']
             del kwargs['bustype']
@@ -36,13 +44,13 @@ class Bus(object):
             from can.interfaces.kvaser import KvaserBus
             cls = KvaserBus
         elif interface == 'socketcan_ctypes':
-            from can.interfaces.socketcan_ctypes import SocketscanCtypes_Bus
-            cls = SocketscanCtypes_Bus
+            from can.interfaces.socketcan_ctypes import SocketcanCtypes_Bus
+            cls = SocketcanCtypes_Bus
         elif interface == 'socketcan_native':
-            from can.interfaces.socketcan_native import SocketscanNative_Bus
-            cls = SocketscanNative_Bus
+            from can.interfaces.socketcan_native import SocketcanNative_Bus
+            cls = SocketcanNative_Bus
         elif interface == 'serial':
-            from can.interfaces.serial_can import SerialBus
+            from can.interfaces.serial.serial_can import SerialBus
             cls = SerialBus
         elif interface == 'pcan':
             from can.interfaces.pcan import PcanBus
@@ -53,6 +61,12 @@ class Bus(object):
         elif interface == 'ixxat':
             from can.interfaces.ixxat import IXXATBus
             cls = IXXATBus
+        elif interface == 'nican':
+            from can.interfaces.nican import NicanBus
+            cls = NicanBus
+        elif interface == 'virtual':
+            from can.interfaces.virtual import VirtualBus
+            cls = VirtualBus
         else:
             raise NotImplementedError("CAN interface '{}' not supported".format(interface))
 

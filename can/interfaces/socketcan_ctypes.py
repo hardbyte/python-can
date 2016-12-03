@@ -17,11 +17,24 @@ log = logging.getLogger('can.socketcan.ctypes')
 log.info("Loading socketcan ctypes backend")
 
 
-class SocketscanCtypes_Bus(BusABC):
+if not sys.platform.startswith("win32"):
+    libc = ctypes.cdll.LoadLibrary(find_library("c"))
+    log.info("Loading libc with ctypes")
+else:
+    log.warning("libc is unavailable")
+    libc = None
 
+
+start_sec = 0
+start_usec = 0
+SEC_USEC = 1000000
+
+
+class SocketcanCtypes_Bus(BusABC):
     """
     An implementation of the :class:`can.bus.BusABC` for SocketCAN using :mod:`ctypes`.
     """
+
     channel_info = "ctypes socketcan channel"
 
     def __init__(self,
@@ -42,7 +55,7 @@ class SocketscanCtypes_Bus(BusABC):
         if receive_own_messages:
             error1 = recv_own_msgs(self.socket)
 
-        super(SocketscanCtypes_Bus, self).__init__(*args, **kwargs)
+        super(SocketcanCtypes_Bus, self).__init__(*args, **kwargs)
 
     def recv(self, timeout=None):
 
@@ -76,14 +89,6 @@ class SocketscanCtypes_Bus(BusABC):
 
     def send(self, msg):
         return sendPacket(self.socket, msg)
-
-
-log.debug("Loading libc with ctypes...")
-libc = ctypes.cdll.LoadLibrary(find_library("c"))
-
-start_sec = 0
-start_usec = 0
-SEC_USEC = 1000000
 
 
 class SOCKADDR(ctypes.Structure):
@@ -471,7 +476,3 @@ class MultiRateCyclicSendTask(CyclicSendTask):
         if bytes_sent == -1:
             logging.debug("Error sending frame :-/")
 
-if __name__ == "__main__":
-    socket_id = createSocket(CAN_RAW)
-    print("Created socket (id = {})".format(socket_id))
-    print(bindSocket(socket_id))

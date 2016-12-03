@@ -4,16 +4,21 @@ History and Roadmap
 Background
 ----------
 
-Dynamic Controls has been using and maintaining this library since 2009.
+Originally written at `Dynamic Controls <https://dynamiccontrols.com>`__
+for internal use testing and prototyping wheelchair components.
+
+Maintenance was taken over and the project was open sourced by Brian Thorne in 2010.
+
+
+Acknowledgements
+----------------
+
 Originally written by Ben Powell as a thin wrapper around the Kvaser SDK
-to support the leaf device. Maintenance was taken over and the project was
-open sourced by Brian Thorne in 2010.
+to support the leaf device.
 
-Original support for linux socketcan was added by Rose Lu as a summer coding
-project in 2011.
-
-The socketcan interface was helped immensely by Phil Dixon who wrote a 
-leaf-socketcan driver for Linux.
+Support for linux socketcan was added by Rose Lu as a summer coding
+project in 2011. The socketcan interface was helped immensely by Phil Dixon
+who wrote a leaf-socketcan driver for Linux.
 
 The pcan interface was contributed by Albert Bloomfield in 2013.
 
@@ -22,16 +27,10 @@ The usb2can interface was contributed by Joshua Villyard in 2015
 The IXXAT VCI interface was contributed by Giuseppe Corbelli and funded
 by Weightpack in 2016
 
-Python 3
---------
 
-The Python 'socket' module contains support for SocketCAN in version 3.3.
-This library started targeting Python 3 as it was released as open source
-in 2013.
+Support for CAN within Python
+-----------------------------
 
-Broadcast Connection Manager
-----------------------------
+The 'socket' module contains support for SocketCAN from Python 3.3.
 
-From Python 3.4 BCM is natively supported so the plan is to integrate natively
-when Python 3.4 is more widespread. For now BCM is possible with the socketcan
-ctypes backend.
+From Python 3.4 broadcast management commands are natively supported.

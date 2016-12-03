@@ -33,6 +33,8 @@ class BusABC(object):
 
             >>> [{"can_id": 0x11, "can_mask": 0x21}]
 
+            A filter matches, when ``<received_can_id> & can_mask == can_id & can_mask``
+
         :param dict config:
             Any backend dependent configurations are passed in this dictionary
         """
@@ -40,6 +42,8 @@ class BusABC(object):
     @abc.abstractmethod
     def recv(self, timeout=None):
         """Block waiting for a message from the Bus.
+
+        :param float timeout: Seconds to wait for a message.
 
         :return:
             None on timeout or a :class:`can.Message` object.
@@ -73,13 +77,32 @@ class BusABC(object):
                 yield m
         logger.debug("done iterating over bus messages")
 
+    def set_filters(self, can_filters=None):
+        """Apply filtering to all messages received by this Bus.
+
+        Calling without passing any filters will reset the applied filters.
+
+        :param list can_filters:
+            A list of dictionaries each containing a "can_id" and a "can_mask".
+
+            >>> [{"can_id": 0x11, "can_mask": 0x21}]
+
+            A filter matches, when ``<received_can_id> & can_mask == can_id & can_mask``
+
+        """
+        raise NotImplementedError("Trying to set_filters on unsupported bus")
+
     def flush_tx_buffer(self):
-        """Used for CAN backends which need to flush their transmit buffer.
+        """Used for CAN interfaces which need to flush their transmit buffer.
 
         """
         pass
 
     def shutdown(self):
+        """
+        Called to carry out any interface specific cleanup required
+        in shutting down a bus.
+        """
         self.flush_tx_buffer()
 
     __metaclass__ = abc.ABCMeta

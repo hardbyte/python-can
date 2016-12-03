@@ -29,7 +29,7 @@ if platform.system() == "Linux":
             '~/.canrc'
         ]
     )
-elif platform.system() == "Windows":
+elif platform.system() == "Windows" or platform.python_implementation() == "IronPython":
     CONFIG_FILES.extend(
         [
             'can.ini',
@@ -97,7 +97,7 @@ def load_config(path=None):
     The returned dictionary may look like this::
 
         {
-            'interface': '<python-can backend interface to use',
+            'interface': 'python-can backend interface to use',
             'channel': 'default channel to use',
         }
 
@@ -115,6 +115,7 @@ def load_config(path=None):
         config['interface'] = choose_socketcan_implementation()
 
     return config
+
 
 def choose_socketcan_implementation():
     """Set the best version of SocketCAN for this system.

@@ -1,8 +1,0 @@
-syntax: glob
-build/
-dist/
-.idea/
-pycanlib.egg-info/
-version.txt
-*.pyc
-*.sw[p|o]

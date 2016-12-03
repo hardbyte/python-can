@@ -4,10 +4,39 @@ IXXAT Virtual CAN Interface
 ===========================
 
 
+Interface to `IXXAT <http://www.ixxat.com/>`__ Virtual CAN Interface V3 SDK. Works on Windows.
+
+
+.. note::
+
+    The Linux ECI SDK is currently unsupported, however on Linux some devices are supported with :doc:`socketcan`.
+
+
 Bus
 ---
 
-.. autoclass:: can.interfaces.ixxat.canlib.Bus
+.. autoclass:: can.interfaces.ixxat.Bus
+
+.. autoclass:: can.interfaces.ixxat.canlib.IXXATBus
+
+
+Configuration file
+------------------
+The simplest configuration file would be::
+
+    [default]
+    interface = ixxat
+    channel = 0
+
+Python-can will search for the first IXXAT device available and open the first channel.
+``interface`` and ``channel`` parameters are interpreted by frontend ``can.interfaces.interface``
+module, while the following parameters are optional and are interpreted by IXXAT implementation.
+
+* ``bitrate`` (default 500000) Channel bitrate
+* ``UniqueHardwareId`` (default first device) Unique hardware ID of the IXXAT device
+* ``rxFifoSize`` (default 16) Number of RX mailboxes
+* ``txFifoSize`` (default 16) Number of TX mailboxes
+* ``extended`` (default False) Allow usage of extended IDs
 
 
 Internals
