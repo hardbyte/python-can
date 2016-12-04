@@ -15,6 +15,8 @@ import time
 import base64
 import sqlite3
 
+from can.message import Message
+
 try:
     import queue
 except ImportError:
@@ -56,6 +58,19 @@ class Listener(object):
         """
         Override to cleanup any open resources.
         """
+
+class RedirectReader(Listener):
+    """
+    A RedirectReader sends all received messages
+    to another Bus.
+
+    """
+
+    def __init__(self, bus):
+        self.bus = bus
+
+    def on_message_received(self, msg):
+        self.bus.send(msg)
 
 
 class BufferedReader(Listener):
@@ -110,6 +125,99 @@ class Logger(object):
             return SqliteWriter(filename)
         else:
             return Printer(filename)
+
+
+class LogReader(object):
+    """
+    Replay logged CAN messages from a file.
+
+    The format is determined from the file format which can be one of:
+      * .asc: :class:`can.ASCWriter`
+      * .csv: :class:`can.CSVWriter`
+      * .db: :class:`can.SqliteWriter`
+
+    Options:
+
+    - Ignore timestamps
+    - Minimum time between messages
+    - Skip periods of inactivity greater than X
+
+    """
+
+    @classmethod
+    def __new__(cls, other, filename):
+        if filename.endswith(".asc"):
+            raise NotImplemented
+        #     return ASCReader(filename)
+        if filename.endswith(".csv"):
+            raise NotImplemented
+        #     return CSVReader(filename)
+        if filename.endswith(".db"):
+            return SqliteReader(filename)
+
+
+class MessageSync:
+
+    def __init__(self, messages, timestamps=True, gap=0.0001, skip=60):
+        """
+
+        :param messages: An iterable of :class:`can.Message` instances.
+        :param timestamps: Use the messages' timestamps.
+        :param gap: Minimum time between sent messages
+        :param skip: Skip periods of inactivity greater than this.
+        """
+        self.raw_messages = messages
+        self.timestamps = timestamps
+        self.gap = gap
+        self.skip = skip
+
+    def __iter__(self):
+        log.debug("Iterating over messages at real speed")
+        playback_start_time = time.time()
+        recorded_start_time = None
+
+        for m in self.raw_messages:
+            if recorded_start_time is None:
+                recorded_start_time = m.timestamp
+
+            if self.timestamps:
+                # Work out the correct wait time
+                now = time.time()
+                current_offset = now - playback_start_time
+                recorded_offset_from_start = m.timestamp - recorded_start_time
+                remaining_gap = recorded_offset_from_start - current_offset
+
+                sleep_period = max(self.gap, min(self.skip, remaining_gap))
+            else:
+                sleep_period = self.gap
+
+            time.sleep(sleep_period)
+            yield m
+
+
+class SqliteReader:
+    def __init__(self, filename):
+        log.debug("Starting sqlitereader with {}".format(filename))
+        conn = sqlite3.connect(filename)
+
+        self.c = conn.cursor()
+        self.c.execute("SELECT ts FROM messages LIMIT 1")
+
+        self.recorded_start_time = self.c.fetchone()[0]
+
+        self.recorded_start_datetime = datetime.fromtimestamp(self.recorded_start_time)
+
+    @staticmethod
+    def create_frame_from_db_tuple(frame_data):
+        ts, id, is_extended, is_remote, is_error, dlc, data = frame_data
+        return Message(
+            ts, is_remote, is_extended, is_error, id, dlc, data
+        )
+
+    def __iter__(self):
+        log.debug("Iterating through messages from sql db")
+        for frame_data in self.c.execute("SELECT * FROM messages"):
+            yield SqliteReader.create_frame_from_db_tuple(frame_data)
 
 
 class Printer(Listener):
