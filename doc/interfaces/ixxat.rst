@@ -20,6 +20,25 @@ Bus
 .. autoclass:: can.interfaces.ixxat.canlib.IXXATBus
 
 
+Configuration file
+------------------
+The simplest configuration file would be::
+
+    [default]
+    interface = ixxat
+    channel = 0
+
+Python-can will search for the first IXXAT device available and open the first channel.
+``interface`` and ``channel`` parameters are interpreted by frontend ``can.interfaces.interface``
+module, while the following parameters are optional and are interpreted by IXXAT implementation.
+
+* ``bitrate`` (default 500000) Channel bitrate
+* ``UniqueHardwareId`` (default first device) Unique hardware ID of the IXXAT device
+* ``rxFifoSize`` (default 16) Number of RX mailboxes
+* ``txFifoSize`` (default 16) Number of TX mailboxes
+* ``extended`` (default False) Allow usage of extended IDs
+
+
 Internals
 ---------
 
