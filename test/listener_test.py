@@ -5,7 +5,6 @@ import logging
 import tempfile
 
 import can
-from CAN import SqliteReader
 
 channel = 'vcan0'
 can.rc['interface'] = 'virtual'
@@ -26,6 +25,7 @@ class ListenerImportTest(unittest.TestCase):
         assert hasattr(can, 'BufferedReader')
         assert hasattr(can, 'Notifier')
         assert hasattr(can, 'ASCWriter')
+        assert hasattr(can, 'SqlReader')
 
 
 class BusTest(unittest.TestCase):
@@ -139,7 +139,7 @@ class FileReaderTest(BusTest):
         sleep(0.5)
         a_listener.stop()
 
-        reader = SqliteReader(f.name)
+        reader = can.SqlReader(f.name)
 
         ms = []
         for m in reader:

@@ -10,7 +10,7 @@ import datetime
 import argparse
 
 import can
-from CAN import LogReader, MessageSync
+from can.util import MessageSync
 
 if __name__ == "__main__":
 
@@ -55,7 +55,7 @@ if __name__ == "__main__":
 
     bus = can.interface.Bus(results.channel, bustype=results.interface)
 
-    player = LogReader(results.infile)
+    player = can.LogReader(results.infile)
 
     in_sync = MessageSync(player, timestamps=True, skip=results.skip)
 
