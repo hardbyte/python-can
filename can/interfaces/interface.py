@@ -4,7 +4,7 @@ from can.util import load_config, choose_socketcan_implementation
 
 VALID_INTERFACES = set(['kvaser', 'serial', 'pcan', 'socketcan_native',
                         'socketcan_ctypes', 'socketcan', 'usb2can', 'ixxat',
-                        'nican', 'virtual'])
+                        'nican', 'remote', 'virtual'])
 
 
 class Bus(object):
@@ -64,6 +64,9 @@ class Bus(object):
         elif interface == 'nican':
             from can.interfaces.nican import NicanBus
             cls = NicanBus
+        elif interface == 'remote':
+            from can.interfaces.remote import RemoteBus
+            cls = RemoteBus
         elif interface == 'virtual':
             from can.interfaces.virtual import VirtualBus
             cls = VirtualBus
@@ -96,6 +99,9 @@ class CyclicSendTask(CyclicSendTaskABC):
         elif can.rc['interface'] == 'socketcan_native':
             from can.interfaces.socketcan_native import CyclicSendTask as _nativeCyclicSendTask
             cls = _nativeCyclicSendTask
+        elif can.rc['interface'] == 'remote':
+            from can.interfaces.remote import CyclicSendTask as _remoteCyclicSendTask
+            cls = _remoteCyclicSendTask
         else:
             can.log.info("Current CAN interface doesn't support CyclicSendTask")
 
