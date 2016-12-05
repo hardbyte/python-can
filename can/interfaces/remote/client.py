@@ -61,6 +61,8 @@ class RemoteBus(can.bus.BusABC):
         self.send_condition = threading.Condition()
         self.send_successful = False
 
+        self.send_timeout = config.get('send_timeout', None)
+
         self.conn = connection.Connection()
         #: Socket connection to the server
         self.socket = create_connection(channel)
@@ -146,8 +148,10 @@ class RemoteBus(can.bus.BusABC):
         with self.send_condition:
             self.conn.send_event(events.CanMessage(msg))
             self.socket.sendall(self.conn.next_data())
+            if not self.send_timeout:
+                return
             self.send_successful = False
-            self.send_condition.wait(2)
+            self.send_condition.wait(self.send_timeout)
 
         if not self.send_successful:
             raise CanRemoteError('Transmission to CAN failed')
