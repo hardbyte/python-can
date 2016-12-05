@@ -22,10 +22,10 @@ __all__ = ["VCITimeout", "VCIError", "VCIDeviceNotFoundError", "IXXATBus"]
 
 log = logging.getLogger('can.ixxat')
 
-if (sys.version_info.major == 2):
-    _timer_function = time.clock
-elif (sys.version_info.major == 3):
+if ((sys.version_info.major == 3) and (sys.version_info.minor >= 3)):
     _timer_function = time.perf_counter
+else:
+    _timer_function = time.clock
 
 # main ctypes instance
 if sys.platform == "win32":
