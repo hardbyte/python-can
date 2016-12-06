@@ -59,16 +59,14 @@ if __name__ == "__main__":
 
     in_sync = MessageSync(player, timestamps=True, skip=results.skip)
 
-
     print('Can LogReader (Started on {})'.format(
         datetime.datetime.now()))
-    print('Replaying data from {}'.format(
-        player.recorded_start_datetime))
 
     try:
         for m in in_sync:
             bus.send(m)
-
     except KeyboardInterrupt:
+        pass
+    finally:
         bus.shutdown()
 

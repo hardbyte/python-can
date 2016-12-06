@@ -59,6 +59,7 @@ class Listener(object):
         Override to cleanup any open resources.
         """
 
+
 class RedirectReader(Listener):
     """
     A RedirectReader sends all received messages
@@ -164,11 +165,7 @@ class SqlReader:
         conn = sqlite3.connect(filename)
 
         self.c = conn.cursor()
-        self.c.execute("SELECT ts FROM messages LIMIT 1")
 
-        self.recorded_start_time = self.c.fetchone()[0]
-
-        self.recorded_start_datetime = datetime.fromtimestamp(self.recorded_start_time)
 
     @staticmethod
     def create_frame_from_db_tuple(frame_data):
