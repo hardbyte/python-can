@@ -1,5 +1,5 @@
 # This wrapper is for windows or direct access via CANAL API.  Socket CAN is recommended under Unix/Linux systems
-
+import can
 from ctypes import *
 from struct import *
 import logging
@@ -81,7 +81,7 @@ class usb2can:
             return res
         except:
             logging.warning('Sending error')
-            raise
+            raise can.CanError("Failed to transmit frame")
 
     def CanalReceive(self, handle, msg):
         try:

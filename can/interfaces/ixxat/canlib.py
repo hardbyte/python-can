@@ -22,7 +22,7 @@ __all__ = ["VCITimeout", "VCIError", "VCIDeviceNotFoundError", "IXXATBus"]
 
 log = logging.getLogger('can.ixxat')
 
-if sys.version_info > (3, 3):
+if ((sys.version_info.major == 3) and (sys.version_info.minor >= 3)):
     _timer_function = time.perf_counter
 else:
     _timer_function = time.clock
@@ -210,14 +210,19 @@ class IXXATBus(BusABC):
         self._payload = (ctypes.c_byte * 8)()
 
         # Search for supplied device
-        log.info("Searching for unique HW ID %s", UniqueHardwareId)
+        if (UniqueHardwareId is None):
+            log.info("Searching for first available device")
+        else:
+            log.info("Searching for unique HW ID %s", UniqueHardwareId)
         _canlib.vciEnumDeviceOpen(ctypes.byref(self._device_handle))
         while True:
             try:
                 _canlib.vciEnumDeviceNext(self._device_handle, ctypes.byref(self._device_info))
             except StopIteration:
-                # TODO: better error message
-                raise VCIDeviceNotFoundError("Unique HW ID {} not found".format(UniqueHardwareId))
+                if (UniqueHardwareId is None):
+                    raise VCIDeviceNotFoundError("No IXXAT device(s) connected or device(s) in use by other process(es).")
+                else:
+                    raise VCIDeviceNotFoundError("Unique HW ID {} not connected or not available.".format(UniqueHardwareId))
             else:
                 if (UniqueHardwareId is None) or (self._device_info.UniqueHardwareId.AsChar == bytes(UniqueHardwareId, 'ascii')):
                     break
@@ -240,7 +245,7 @@ class IXXATBus(BusABC):
             self.CHANNEL_BITRATES[1][bitrate]
         )
         _canlib.canControlGetCaps(self._control_handle, ctypes.byref(self._channel_capabilities))
-        
+
         # With receive messages, this field contains the relative reception time of
         # the message in ticks. The resolution of a tick can be calculated from the fields
         # dwClockFreq and dwTscDivisor of the structure  CANCAPABILITIES in accordance with the following formula:

@@ -13,8 +13,7 @@ import select
 
 
 log = logging.getLogger('can.socketcan.native')
-#log.setLevel(logging.DEBUG)
-log.debug("Loading native socket can implementation")
+log.info("Loading socketcan native backend")
 
 try:
     import fcntl
@@ -26,8 +25,9 @@ try:
 except:
     log.debug("CAN_* properties not found in socket module. These are required to use native socketcan")
 
+import can
 
-from can import Message
+from can.message import Message
 from can.interfaces.socketcan_constants import *  # CAN_RAW
 from ..bus import BusABC
 
@@ -387,7 +387,7 @@ class SocketcanNative_Bus(BusABC):
             self.socket.send(build_can_frame(arbitration_id, msg.data))
         except OSError:
             l.warning("Failed to send: %s", msg)
-
+            raise can.CanError("can.socketcan.native failed to transmit")
 
     def set_filters(self, can_filters=None):
         if can_filters is None:

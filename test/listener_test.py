@@ -124,8 +124,18 @@ class ListenerTest(BusTest):
                           arbitration_id=0x123,
                           data=[0xff, 0xff])
         a_listener(msg)
+        msg = can.Message(extended_id=True,
+                          timestamp=a_listener.started + 1.5,
+                          is_remote_frame=True,
+                          dlc=8,
+                          arbitration_id=0xabcdef)
+        a_listener(msg)
+        msg = can.Message(is_error_frame=True,
+                          timestamp=a_listener.started + 1.6,
+                          arbitration_id=0xabcdef)
+        a_listener(msg)
         a_listener.stop()
-        with open("test.asc") as f:
+        with open("test.asc", "r") as f:
             print("Output from ASCWriter:")
             print(f.read())
 
