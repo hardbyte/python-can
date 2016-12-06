@@ -77,23 +77,21 @@ class ClientBusConnection(object):
         self.stop_event = threading.Event()
 
         event = self._next_event()
-        if not isinstance(event, events.BusRequest):
+        if isinstance(event, events.BusRequest):
+            self._start_bus(event)
+        elif isinstance(event, events.PeriodicMessageStart):
+            self._start_periodic_transmit(event)
+        else:
             raise RemoteServerError('Handshake error')
 
+    def _start_bus(self, bus_event):
         #: Bitrate requested by client
-        self.bitrate = event.bitrate
+        self.bitrate = bus_event.bitrate
 
-        if event.version != can.interfaces.remote.PROTOCOL_VERSION:
+        if bus_event.version != can.interfaces.remote.PROTOCOL_VERSION:
             raise RemoteServerError('Protocol version mismatch (%d != %d)' % (
-                event.version, can.interfaces.remote.PROTOCOL_VERSION))
+                bus_event.version, can.interfaces.remote.PROTOCOL_VERSION))
 
-        self._start_bus()
-
-        self.receive_thread = threading.Thread(target=self._receive_from_client)
-        self.receive_thread.daemon = True
-        self.receive_thread.start()
-
-    def _start_bus(self):
         filter_event = self._next_event()
         if not isinstance(filter_event, events.FilterConfig):
             raise RemoteServerError('Handshake error')
@@ -105,21 +103,20 @@ class ClientBusConnection(object):
                                      can_filters=self.can_filters,
                                      **self.server.config)
         logger.info("Connected to bus '%s'", self.bus.channel_info)
-
-        # Send channel_info to client
         self.send_event(events.BusResponse(self.bus.channel_info))
 
-        self.send_thread = threading.Thread(target=self._send_to_client)
+        self.receive_thread = threading.Thread(
+            target=self._receive_from_client, name='Receive from client')
+        self.receive_thread.daemon = True
+        self.receive_thread.start()
+        self.send_thread = threading.Thread(target=self._send_to_client,
+                                            name='Send to client')
         self.send_thread.daemon = True
         self.send_thread.start()
 
-    def _start_periodic_transmit(self):
-        start_event = self._next_event()
-        if not isinstance(start_event, events.PeriodicMessageStart):
-            raise RemoteServerError('Handshake error')
-
+    def _start_periodic_transmit(self, start_event):
         #: Cyclic send task
-        self.task = can.interface.CyclicSendTask(self.server.channel,
+        self.task = can.interface.CyclicSendTask(self.server.config['channel'],
                                                  start_event.msg,
                                                  start_event.period)
 
@@ -153,7 +150,9 @@ class ClientBusConnection(object):
         # Remove itself from the server's list of clients
         self.server.clients.remove(self)
         self.stop_event.set()
+        self.send_thread.join(1.0)
         with self.lock:
+            self.socket.shutdown(socket.SHUT_WR)
             self.socket.close()
             self.socket = None
 
@@ -161,7 +160,7 @@ class ClientBusConnection(object):
         """Continuously read CAN messages and send to client."""
         while not self.stop_event.is_set():
             try:
-                msg = self.bus.recv(1.0)
+                msg = self.bus.recv(0.5)
             except can.CanError as e:
                 logger.error(e)
                 self.send_event(events.RemoteException(e))
@@ -171,11 +170,8 @@ class ClientBusConnection(object):
                 logger.log(9, 'Received from CAN:\n%s', msg)
                 self.send_event(events.CanMessage(msg))
 
-        # If there are no clients left, disconnect from CAN
-        # and stop thread
         logger.info('Disconnecting from CAN bus')
         self.bus.shutdown()
-        self.bus = None
 
     def send_msg(self, msg):
         """Send a CAN message to the bus."""

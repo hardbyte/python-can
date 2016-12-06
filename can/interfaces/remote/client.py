@@ -82,7 +82,8 @@ class RemoteBus(can.bus.BusABC):
         self.channel_info = '%s on %s' % (event.channel_info, channel)
 
         self.queue = queue.Queue(MAX_BUFFER_LENGTH)
-        self._reader = threading.Thread(target=self._receive_from_server)
+        self._reader = threading.Thread(target=self._receive_from_server,
+                                        name='Socket thread')
         self._reader.daemon = True
         self._reader.start()
 
@@ -134,6 +135,13 @@ class RemoteBus(can.bus.BusABC):
                 break
 
     def recv(self, timeout=None):
+        """Block waiting for a message from the Bus.
+
+        :param float timeout: Seconds to wait for a message.
+
+        :return:
+            None on timeout or a :class:`can.Message` object.
+        """
         try:
             item = self.queue.get(block=True, timeout=timeout)
         except queue.Empty:
@@ -145,6 +153,13 @@ class RemoteBus(can.bus.BusABC):
         return item
 
     def send(self, msg):
+        """Transmit a message to CAN bus.
+
+        :param can.Message msg: A Message object.
+
+        :raise can.CanError:
+            If the message could not be written.
+        """
         with self.send_condition:
             self.conn.send_event(events.CanMessage(msg))
             self.socket.sendall(self.conn.next_data())
@@ -161,7 +176,7 @@ class RemoteBus(can.bus.BusABC):
         # Give threads a chance to finish up
         self.socket.shutdown(socket.SHUT_WR)
         self.stop_event.set()
-        self._reader.join(0.5)
+        self._reader.join(1.5)
         self.socket.close()
         logger.debug('Network connection closed')
 
