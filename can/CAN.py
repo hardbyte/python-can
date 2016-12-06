@@ -15,6 +15,8 @@ import time
 import base64
 import sqlite3
 
+from can.message import Message
+
 try:
     import queue
 except ImportError:
@@ -56,6 +58,20 @@ class Listener(object):
         """
         Override to cleanup any open resources.
         """
+
+
+class RedirectReader(Listener):
+    """
+    A RedirectReader sends all received messages
+    to another Bus.
+
+    """
+
+    def __init__(self, bus):
+        self.bus = bus
+
+    def on_message_received(self, msg):
+        self.bus.send(msg)
 
 
 class BufferedReader(Listener):
@@ -110,6 +126,58 @@ class Logger(object):
             return SqliteWriter(filename)
         else:
             return Printer(filename)
+
+
+class LogReader(object):
+    """
+    Replay logged CAN messages from a file.
+
+    The format is determined from the file format which can be one of:
+      * .asc
+      * .csv
+      * .db
+
+    Exposes a simple iterator interface, to use simply:
+
+        >>> for m in LogReader(my_file):
+        ...     print(m)
+
+    Note there are no time delays, if you want to reproduce
+    the measured delays between messages look at the
+    :class:`can.util.MessageSync` class.
+    """
+
+    @classmethod
+    def __new__(cls, other, filename):
+        if filename.endswith(".asc"):
+            raise NotImplemented
+        #     return ASCReader(filename)
+        if filename.endswith(".csv"):
+            raise NotImplemented
+        #     return CSVReader(filename)
+        if filename.endswith(".db"):
+            return SqlReader(filename)
+
+
+class SqlReader:
+    def __init__(self, filename):
+        log.debug("Starting sqlreader with {}".format(filename))
+        conn = sqlite3.connect(filename)
+
+        self.c = conn.cursor()
+
+
+    @staticmethod
+    def create_frame_from_db_tuple(frame_data):
+        ts, id, is_extended, is_remote, is_error, dlc, data = frame_data
+        return Message(
+            ts, is_remote, is_extended, is_error, id, dlc, data
+        )
+
+    def __iter__(self):
+        log.debug("Iterating through messages from sql db")
+        for frame_data in self.c.execute("SELECT * FROM messages"):
+            yield SqlReader.create_frame_from_db_tuple(frame_data)
 
 
 class Printer(Listener):
