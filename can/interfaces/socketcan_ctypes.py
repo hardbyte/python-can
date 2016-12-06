@@ -88,7 +88,13 @@ class SocketcanCtypes_Bus(BusABC):
         return rx_msg
 
     def send(self, msg):
-        return sendPacket(self.socket, msg)
+        frame = _build_can_frame(msg)
+        bytes_sent = libc.write(self.socket, ctypes.byref(frame), ctypes.sizeof(frame))
+        if bytes_sent == -1:
+            logging.debug("Error sending frame :-/")
+            raise can.CanError("can.socketcan.ctypes failed to transmit")
+
+        logging.debug("Frame transmitted with %s bytes", bytes_sent)
 
 
 class SOCKADDR(ctypes.Structure):
@@ -294,15 +300,6 @@ def _build_can_frame(message):
 
     log.debug("sizeof frame: %d", ctypes.sizeof(frame))
     return frame
-
-
-def sendPacket(socket, message):
-    frame = _build_can_frame(message)
-    bytes_sent = libc.write(socket, ctypes.byref(frame), ctypes.sizeof(frame))
-    if bytes_sent == -1:
-        logging.debug("Error sending frame :-/")
-
-    return bytes_sent
 
 
 def capturePacket(socketID):
