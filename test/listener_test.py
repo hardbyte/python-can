@@ -5,6 +5,7 @@ import logging
 import tempfile
 
 import can
+
 channel = 'vcan0'
 can.rc['interface'] = 'virtual'
 
@@ -24,15 +25,19 @@ class ListenerImportTest(unittest.TestCase):
         assert hasattr(can, 'BufferedReader')
         assert hasattr(can, 'Notifier')
         assert hasattr(can, 'ASCWriter')
+        assert hasattr(can, 'SqlReader')
 
 
-class ListenerTest(unittest.TestCase):
+class BusTest(unittest.TestCase):
 
     def setUp(self):
         self.bus = can.interface.Bus()
 
     def tearDown(self):
         self.bus.shutdown()
+
+
+class ListenerTest(BusTest):
 
     def testBasicListenerCanBeAddedToNotifier(self):
         a_listener = can.Listener()
@@ -134,6 +139,24 @@ class ListenerTest(unittest.TestCase):
             print("Output from ASCWriter:")
             print(f.read())
 
+
+class FileReaderTest(BusTest):
+
+    def test_sql_reader(self):
+        f = tempfile.NamedTemporaryFile('w')
+        a_listener = can.SqliteWriter(f.name)
+        a_listener(generate_message(0xDADADA))
+        sleep(0.5)
+        a_listener.stop()
+
+        reader = can.SqlReader(f.name)
+
+        ms = []
+        for m in reader:
+            ms.append(m)
+
+        self.assertEqual(len(ms), 1)
+        self.assertEqual(0xDADADA, ms[0].arbitration_id)
 
 if __name__ == '__main__':
     unittest.main()
