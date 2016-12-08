@@ -1,9 +1,12 @@
 import logging
 import socket
+try:
+    import socketserver
+except ImportError:
+    import SocketServer as socketserver
 import threading
 import select
 import can
-#from can.interfaces import remote
 from can.interfaces.remote import events
 from can.interfaces.remote import connection
 
@@ -11,7 +14,7 @@ from can.interfaces.remote import connection
 logger = logging.getLogger(__name__)
 
 
-class RemoteServer(object):
+class RemoteServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     """Server for CAN communication."""
 
     def __init__(self, port=None, **config):
@@ -23,55 +26,31 @@ class RemoteServer(object):
         :param str bustype:
             CAN interface to use.
         """
-        self.port = port or can.interfaces.remote.DEFAULT_PORT
+        address = ('0.0.0.0', port or can.interfaces.remote.DEFAULT_PORT)
         self.config = config
-
         #: List of :class:`can.interfaces.remote.server.ClientBusConnection`
         #: instances
         self.clients = []
-
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        socketserver.TCPServer.__init__(self, address, ClientBusConnection)
 
     def start(self):
-        """Start listening for incoming clients."""
-        self.socket.bind(('', self.port))
-        self.socket.listen(5)
-        logger.info('Listening on port %d...', self.port)
-
-        while True:
-            try:
-                conn, address = self.socket.accept()
-            except KeyboardInterrupt:
-                break
-
-            logger.info('Got connection from %s', address)
-            try:
-                client = ClientBusConnection(conn, self)
-            except RemoteServerError as e:
-                logger.error(e)
-                conn.close()
-            else:
-                self.clients.append(client)
-
-        self.shutdown()
-
-    def shutdown(self):
-        self.socket.close()
+        self.serve_forever()
 
 
-class ClientBusConnection(object):
+class ClientBusConnection(socketserver.BaseRequestHandler):
     """A client connection on the server."""
 
-    def __init__(self, conn, server):
+    def handle(self):
         """
         :param conn:
             A socket object to the client.
         :param server:
             The :class:`RemoteServer` object that received the connection.
         """
+        # Register with the server
+        self.server.clients.append(self)
         #: Socket connection to client
-        self.socket = conn
-        self.server = server
+        self.socket = self.request
         self.conn = connection.Connection()
         # Threads will finish up when this is set
         self.stop_event = threading.Event()
@@ -106,14 +85,11 @@ class ClientBusConnection(object):
         self.conn.send_event(events.BusResponse(self.bus.channel_info))
         self.socket.sendall(self.conn.next_data())
 
-        self.receive_thread = threading.Thread(
-            target=self._receive_from_client, name='Receive from client')
-        self.receive_thread.daemon = True
-        self.receive_thread.start()
         self.send_thread = threading.Thread(target=self._send_to_client,
                                             name='Send to client')
         self.send_thread.daemon = True
         self.send_thread.start()
+        self._receive_from_client()
 
     def _start_periodic_transmit(self, start_event):
         #: Cyclic send task
