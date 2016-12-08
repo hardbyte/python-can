@@ -111,6 +111,8 @@ class RemoteBus(can.bus.BusABC):
         """Close socket connection."""
         # Give threads a chance to finish up
         self.socket.shutdown(socket.SHUT_WR)
+        while not isinstance(self._next_event(1), events.ConnectionClosed):
+            pass
         self.socket.close()
         logger.debug('Network connection closed')
 
