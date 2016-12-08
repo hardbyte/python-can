@@ -216,12 +216,6 @@ class RemoteBusTestCase(unittest.TestCase):
         msg_received = self.remote_bus.recv(0.1)
         self.assertIsNone(msg_received)
 
-    def _test_send_failure(self):
-        self.server.clients[-1].bus.send = raise_error
-        msg = can.Message()
-        with self.assertRaisesRegexp(can.CanError, 'Transmission to CAN failed'):
-            self.remote_bus.send(msg)
-
     def test_recv_failure(self):
         self.server.clients[-1].bus.recv = raise_error
         with self.assertRaisesRegexp(can.CanError, 'This is some error'):

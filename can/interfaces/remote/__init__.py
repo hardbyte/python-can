@@ -1,4 +1,4 @@
-from .client import RemoteBus, CyclicSendTask
+from .client import RemoteBus, CyclicSendTask, CanRemoteError
 from .server import RemoteServer
 
 

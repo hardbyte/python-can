@@ -49,6 +49,7 @@ Internals
 The client uses a standard Bus class to connect to the server.
 
 .. autoclass:: can.interfaces.remote.RemoteBus
+.. autoexception:: can.interfaces.remote.CanRemoteError
 
 The server uses the following classes to implement the connections.
 

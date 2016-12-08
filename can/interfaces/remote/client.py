@@ -23,16 +23,7 @@ def create_connection(address):
 
 
 class RemoteBus(can.bus.BusABC):
-    """CAN bus over a network connection bridge.
-
-    A background thread is started to handle all incoming traffic from the
-    server. Messages are placed in a queue which `recv()` reads from.
-    Up to 16384 messages can be buffered until old messages are discarded.
-
-    When `send()` is called, the message is transmitted directly to the server
-    and then blocks until a confirmation has been received that the message
-    was transmitted to the CAN bus successfully.
-    """
+    """CAN bus over a network connection bridge."""
 
     def __init__(self, channel, can_filters=None, **config):
         """
@@ -74,7 +65,8 @@ class RemoteBus(can.bus.BusABC):
     def _next_event(self, timeout=None):
         """Block until a new event has been received.
 
-        :return: Next event in queue
+        :param float timeout: Max time in seconds to wait.
+        :return: Next event received from socket (or None if timeout)
         """
         event = self.conn.next_event()
         while event is None:
@@ -91,21 +83,28 @@ class RemoteBus(can.bus.BusABC):
         :param float timeout: Seconds to wait for a message.
 
         :return:
-            None on timeout or a :class:`can.Message` object.
+            None on timeout or a Message object.
+        :rtype: can.Message
         """
         event = self._next_event(timeout)
         if isinstance(event, events.CanMessage):
             return event.msg
         elif isinstance(event, events.RemoteException):
             raise event.exc
+        return None
 
     def send(self, msg):
         """Transmit a message to CAN bus.
 
         :param can.Message msg: A Message object.
+        :raises can.interfaces.remote.CanRemoteError:
+            On failed transmission to socket.
         """
         self.conn.send_event(events.CanMessage(msg))
-        self.socket.sendall(self.conn.next_data())
+        try:
+            self.socket.sendall(self.conn.next_data())
+        except OSError as e:
+            raise CanRemoteError(str(e))
 
     def shutdown(self):
         """Close socket connection."""
@@ -156,4 +155,4 @@ class CyclicSendTask(can.broadcastmanager.CyclicSendTaskABC):
 
 
 class CanRemoteError(can.CanError):
-    pass
+    """An error occurred on socket connection or on the remote end."""
