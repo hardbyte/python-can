@@ -1,6 +1,6 @@
 import logging
 import socket
-import threading
+import select
 try:
     import queue as queue
 except ImportError:
@@ -11,10 +11,6 @@ from can.interfaces.remote import connection
 
 
 logger = logging.getLogger(__name__)
-
-
-#: Max number of messages that can be buffered if `recv()` is not called
-MAX_BUFFER_LENGTH = 16384
 
 
 def create_connection(address):
@@ -55,14 +51,6 @@ class RemoteBus(can.bus.BusABC):
 
         Any other backend specific configuration will be silently ignored.
         """
-        # Event to stop background thread
-        self.stop_event = threading.Event()
-        # Condition for when a message has been sent or failed
-        self.send_condition = threading.Condition()
-        self.send_successful = False
-
-        self.send_timeout = config.get('send_timeout', None)
-
         self.conn = connection.Connection()
         #: Socket connection to the server
         self.socket = create_connection(channel)
@@ -76,63 +64,26 @@ class RemoteBus(can.bus.BusABC):
         self.conn.send_event(filter_conf)
         self.socket.sendall(self.conn.next_data())
 
-        event = self._next_event()
+        event = self._next_event(5)
         if not isinstance(event, events.BusResponse):
             raise CanRemoteError('Handshake error')
         self.channel_info = '%s on %s' % (event.channel_info, channel)
 
-        self.queue = queue.Queue(MAX_BUFFER_LENGTH)
-        self._reader = threading.Thread(target=self._receive_from_server,
-                                        name='Socket thread')
-        self._reader.daemon = True
-        self._reader.start()
-
         self.channel = channel
 
-    def _next_event(self):
+    def _next_event(self, timeout=None):
         """Block until a new event has been received.
 
         :return: Next event in queue
         """
         event = self.conn.next_event()
         while event is None:
+            if timeout is not None and not select.select([self.socket], [], [], timeout)[0]:
+                return None
             data = self.socket.recv(256)
             self.conn.receive_data(data)
             event = self.conn.next_event()
         return event
-
-    def _receive_from_server(self):
-        """Continuously receive data from server."""
-        while not self.stop_event.is_set():
-            event = self._next_event()
-            if isinstance(event, events.CanMessage):
-                self._put(event.msg)
-            elif isinstance(event, events.RemoteException):
-                self._put(event.exc)
-            elif isinstance(event, events.TransmitSuccess):
-                with self.send_condition:
-                    self.send_successful = True
-                    self.send_condition.notify_all()
-            elif isinstance(event, events.TransmitFail):
-                with self.send_condition:
-                    self.send_successful = False
-                    self.send_condition.notify_all()
-            elif isinstance(event, events.ConnectionClosed):
-                break
-
-    def _put(self, item):
-        """Add message or exception to receive queue.
-
-        If queue is full, remove the oldest item.
-        """
-        while True:
-            try:
-                self.queue.put(item, block=False)
-            except queue.Full:
-                # Remove the oldest item and try again
-                self.queue.get()
-            else:
-                break
 
     def recv(self, timeout=None):
         """Block waiting for a message from the Bus.
@@ -142,46 +93,26 @@ class RemoteBus(can.bus.BusABC):
         :return:
             None on timeout or a :class:`can.Message` object.
         """
-        try:
-            item = self.queue.get(block=True, timeout=timeout)
-        except queue.Empty:
-            return None
-
-        if isinstance(item, Exception):
-            raise item
-
-        return item
+        event = self._next_event(timeout)
+        if isinstance(event, events.CanMessage):
+            return event.msg
+        elif isinstance(event, events.RemoteException):
+            raise event.exc
 
     def send(self, msg):
         """Transmit a message to CAN bus.
 
         :param can.Message msg: A Message object.
-
-        :raise can.CanError:
-            If the message could not be written.
         """
-        with self.send_condition:
-            self.conn.send_event(events.CanMessage(msg))
-            self.socket.sendall(self.conn.next_data())
-            if not self.send_timeout:
-                return
-            self.send_successful = False
-            self.send_condition.wait(self.send_timeout)
-
-        if not self.send_successful:
-            raise CanRemoteError('Transmission to CAN failed')
+        self.conn.send_event(events.CanMessage(msg))
+        self.socket.sendall(self.conn.next_data())
 
     def shutdown(self):
         """Close socket connection."""
         # Give threads a chance to finish up
         self.socket.shutdown(socket.SHUT_WR)
-        self.stop_event.set()
-        self._reader.join(1.5)
         self.socket.close()
         logger.debug('Network connection closed')
-
-    def __del__(self):
-        self.stop_event.set()
 
 
 class CyclicSendTask(can.broadcastmanager.CyclicSendTaskABC):

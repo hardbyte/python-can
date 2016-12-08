@@ -212,6 +212,10 @@ class RemoteBusTestCase(unittest.TestCase):
         self.assertIsNotNone(msg_received)
         self.assertEqual(msg_received, empty_msg)
 
+        # Test timeout
+        msg_received = self.remote_bus.recv(0.1)
+        self.assertIsNone(msg_received)
+
     def _test_send_failure(self):
         self.server.clients[-1].bus.send = raise_error
         msg = can.Message()
