@@ -73,8 +73,7 @@ class ClientBusConnection(object):
         self.socket = conn
         self.server = server
         self.conn = connection.Connection()
-        # Prevent threads to send data simultaneously
-        self.lock = threading.Lock()
+        # Threads will finish up when this is set
         self.stop_event = threading.Event()
 
         event = self._next_event()
@@ -166,10 +165,9 @@ class ClientBusConnection(object):
         self.server.clients.remove(self)
         self.stop_event.set()
         self.send_thread.join(1.0)
-        with self.lock:
-            self.socket.shutdown(socket.SHUT_WR)
-            self.socket.close()
-            self.socket = None
+        self.socket.shutdown(socket.SHUT_WR)
+        self.socket.close()
+        self.socket = None
 
     def _send_to_client(self):
         """Continuously read CAN messages and send to client."""
@@ -185,7 +183,7 @@ class ClientBusConnection(object):
                 self.conn.send_event(event)
                 if isinstance(event, events.RemoteException):
                     # An exception while reading from CAN is probably a serious
-                    # error so we stop everything
+                    # error so we should stop everything
                     self.stop_event.set()
                     break
                 event = self._next_event_from_bus(0)

@@ -158,6 +158,8 @@ class RemoteBusTestCase(unittest.TestCase):
         server_thread.daemon = True
         server_thread.start()
         cls.server = server
+        # Wait for server to be properly started
+        time.sleep(0.1)
 
     def setUp(self):
         # Connect to remote bus on localhost
