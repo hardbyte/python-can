@@ -206,15 +206,18 @@ class RemoteBusTestCase(unittest.TestCase):
         self.assertEqual(msg2_on_remote, ext_msg)
 
     def test_recv(self):
+        msg = can.Message(arbitration_id=0x123, data=[8, 7, 6, 5, 4, 3, 2, 1])
         empty_msg = can.Message()
+        self.real_bus.send(msg)
         self.real_bus.send(empty_msg)
-        msg_received = self.remote_bus.recv(2)
-        self.assertIsNotNone(msg_received)
-        self.assertEqual(msg_received, empty_msg)
-
-        # Test timeout
-        msg_received = self.remote_bus.recv(0.1)
-        self.assertIsNone(msg_received)
+        first_received = self.remote_bus.recv(0.1)
+        second_received = self.remote_bus.recv(0.1)
+        third_received = self.remote_bus.recv(0.1)
+        self.assertIsNotNone(first_received)
+        self.assertEqual(first_received, msg)
+        self.assertIsNotNone(second_received)
+        self.assertEqual(second_received, empty_msg)
+        self.assertIsNone(third_received)
 
     def test_recv_failure(self):
         self.server.clients[-1].bus.recv = raise_error

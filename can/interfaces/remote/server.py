@@ -1,6 +1,7 @@
 import logging
 import socket
 import threading
+import select
 import can
 #from can.interfaces import remote
 from can.interfaces.remote import events
@@ -103,7 +104,8 @@ class ClientBusConnection(object):
                                      can_filters=self.can_filters,
                                      **self.server.config)
         logger.info("Connected to bus '%s'", self.bus.channel_info)
-        self.send_event(events.BusResponse(self.bus.channel_info))
+        self.conn.send_event(events.BusResponse(self.bus.channel_info))
+        self.socket.sendall(self.conn.next_data())
 
         self.receive_thread = threading.Thread(
             target=self._receive_from_client, name='Receive from client')
@@ -130,6 +132,19 @@ class ClientBusConnection(object):
             self.conn.receive_data(self.socket.recv(256))
             event = self.conn.next_event()
         return event
+
+    def _next_event_from_bus(self, timeout=None):
+        """Block until a new a CAN message is received or an exception occurrs.
+
+        :return: An event
+        """
+        try:
+            msg = self.bus.recv(timeout)
+        except can.CanError as e:
+            logger.error(e)
+            return events.RemoteException(e)
+        else:
+            return None if msg is None else events.CanMessage(msg)
 
     def _receive_from_client(self):
         """Continuously read events from socket and send messages on CAN bus."""
@@ -159,16 +174,26 @@ class ClientBusConnection(object):
     def _send_to_client(self):
         """Continuously read CAN messages and send to client."""
         while not self.stop_event.is_set():
-            try:
-                msg = self.bus.recv(0.5)
-            except can.CanError as e:
-                logger.error(e)
-                self.send_event(events.RemoteException(e))
-                break
+            # Wait for an event on CAN (max 0.5 seconds)
+            event = self._next_event_from_bus(0.5)
 
-            if msg is not None:
-                logger.log(9, 'Received from CAN:\n%s', msg)
-                self.send_event(events.CanMessage(msg))
+            # Wait for client to be ready for new messages (max 0.5 seconds)
+            select.select([], [self.socket], [], 0.5)
+
+            # Read all CAN events to buffer
+            while event is not None:
+                self.conn.send_event(event)
+                if isinstance(event, events.RemoteException):
+                    # An exception while reading from CAN is probably a serious
+                    # error so we stop everything
+                    self.stop_event.set()
+                    break
+                event = self._next_event_from_bus(0)
+
+            # Send all data at once if there is any
+            data = self.conn.next_data()
+            if data:
+                self.socket.sendall(data)
 
         logger.info('Disconnecting from CAN bus')
         self.bus.shutdown()
@@ -177,17 +202,9 @@ class ClientBusConnection(object):
         """Send a CAN message to the bus."""
         try:
             self.bus.send(msg)
-        except can.CanError:
-            self.send_event(events.TransmitFail())
-        else:
-            self.send_event(events.TransmitSuccess())
-
-    def send_event(self, event):
-        """Send an event to the client."""
-        if self.socket:
-            with self.lock:
-                self.conn.send_event(event)
-                self.socket.sendall(self.conn.next_data())
+        except can.CanError as e:
+            logger.error(str(e))
+            self.conn.send_event(events.TransmitFail())
 
 
 class RemoteServerError(Exception):
