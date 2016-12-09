@@ -153,13 +153,18 @@ class RemoteBusTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        server = can.interfaces.remote.RemoteServer(54700, channel='unittest', bustype='virtual')
-        server_thread = threading.Thread(target=server.start, name='Server thread')
+        server = can.interfaces.remote.RemoteServer(
+            '127.0.0.1', 54700, channel='unittest', bustype='virtual')
+        server_thread = threading.Thread(target=server.serve_forever, name='Server thread')
         server_thread.daemon = True
         server_thread.start()
         cls.server = server
         # Wait for server to be properly started
         time.sleep(0.1)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.server.shutdown()
 
     def setUp(self):
         # Connect to remote bus on localhost

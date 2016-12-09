@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 import logging
-FORMAT = '%(asctime)-15s %(message)s'
-logging.basicConfig(format=FORMAT)
+logging.basicConfig(format='%(asctime)-15s %(message)s')
 import argparse
 import can
 from can.interfaces import remote
 
-if __name__ == "__main__":
+
+def main():
     parser = argparse.ArgumentParser(description="Remote CAN server")
 
     parser.add_argument('-v', action='count', dest="verbosity",
@@ -22,6 +22,10 @@ if __name__ == "__main__":
                         fall back to reading from configuration files.''',
                         choices=can.interface.VALID_INTERFACES)
 
+    parser.add_argument('-H', '--host',
+                        help='''Host to listen to (default 0.0.0.0).''',
+                        default='0.0.0.0')
+
     parser.add_argument('-p', '--port', type=int,
                         help='''TCP port to listen on (default %d).''' % remote.DEFAULT_PORT,
                         default=remote.DEFAULT_PORT)
@@ -32,7 +36,12 @@ if __name__ == "__main__":
     logging_level_name = ['critical', 'error', 'warning', 'info', 'debug', 'subdebug'][min(5, verbosity)]
     can.set_logging_level(logging_level_name)
 
-    server = remote.RemoteServer(results.port,
+    server = remote.RemoteServer(results.host,
+                                 results.port,
                                  channel=results.channel,
                                  bustype=results.interface)
-    server.start()
+    server.serve_forever()
+
+
+if __name__ == "__main__":
+    main()

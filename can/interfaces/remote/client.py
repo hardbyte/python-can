@@ -1,10 +1,6 @@
 import logging
 import socket
 import select
-try:
-    import queue as queue
-except ImportError:
-    import Queue as queue
 import can
 from can.interfaces.remote import events
 from can.interfaces.remote import connection

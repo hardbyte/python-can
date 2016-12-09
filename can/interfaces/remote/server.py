@@ -8,7 +8,6 @@ import threading
 import select
 import can
 from can.interfaces.remote import events
-from can.interfaces.remote import connection
 
 
 logger = logging.getLogger(__name__)
@@ -17,8 +16,10 @@ logger = logging.getLogger(__name__)
 class RemoteServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     """Server for CAN communication."""
 
-    def __init__(self, port=None, **config):
+    def __init__(self, host='0.0.0.0', port=None, **config):
         """
+        :param str host:
+            Address to listen to.
         :param int port:
             Network port to listen to.
         :param channel:
@@ -26,32 +27,23 @@ class RemoteServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
         :param str bustype:
             CAN interface to use.
         """
-        address = ('0.0.0.0', port or can.interfaces.remote.DEFAULT_PORT)
+        address = (host, port or can.interfaces.remote.DEFAULT_PORT)
         self.config = config
         #: List of :class:`can.interfaces.remote.server.ClientBusConnection`
         #: instances
         self.clients = []
         socketserver.TCPServer.__init__(self, address, ClientBusConnection)
 
-    def start(self):
-        self.serve_forever()
-
 
 class ClientBusConnection(socketserver.BaseRequestHandler):
     """A client connection on the server."""
 
     def handle(self):
-        """
-        :param conn:
-            A socket object to the client.
-        :param server:
-            The :class:`RemoteServer` object that received the connection.
-        """
         # Register with the server
         self.server.clients.append(self)
         #: Socket connection to client
         self.socket = self.request
-        self.conn = connection.Connection()
+        self.conn = can.interfaces.remote.connection.Connection()
         # Threads will finish up when this is set
         self.stop_event = threading.Event()
 
@@ -183,8 +175,3 @@ class ClientBusConnection(socketserver.BaseRequestHandler):
 
 class RemoteServerError(Exception):
     pass
-
-
-if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
-    RemoteServer(bustype='kvaser', channel=0).start()

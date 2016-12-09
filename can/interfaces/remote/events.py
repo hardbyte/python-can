@@ -24,6 +24,7 @@ class BaseEvent(object):
 
         :return:
             Bytestring representing the event data.
+        :rtype: bytes
         """
         return b''
 
@@ -31,14 +32,14 @@ class BaseEvent(object):
     def from_buffer(cls, buf):
         """Parse the data and return a new event.
 
-        :param buf:
+        :param bytes buf:
             Bytestring representing the event data.
 
         :return:
-            Number of bytes actually processed.
+            Event decoded from buffer.
 
-        :raise: :class:`can.interfaces.remote.events.NeedMoreDataError`
-            if not enough data exists.
+        :raise can.interfaces.remote.events.NeedMoreDataError:
+            If not enough data exists.
         """
         return cls()
 
@@ -169,8 +170,8 @@ class CanMessage(BaseEvent):
 
     def __init__(self, msg):
         """
-        :param msg:
-            A :class:`can.Message` instance.
+        :param can.Message msg:
+            A Message object.
         """
         #: A :class:`can.Message` instance.
         self.msg = msg
@@ -240,6 +241,10 @@ class RemoteException(BaseEvent):
     EVENT_ID = 6
 
     def __init__(self, exc):
+        """
+        :param Exception exc:
+            The exception to send.
+        """
         #: The exception
         self.exc = exc
 
@@ -287,8 +292,10 @@ class PeriodicMessageStart(BaseEvent):
 
     def __init__(self, msg, period):
         """
-        :param msg:
-            A :class:`can.Message` instance.
+        :param can.Message msg:
+            A Message object.
+        :param float period:
+            Period of message in seconds.
         """
         #: A :class:`can.Message` instance.
         self.msg = msg
@@ -335,6 +342,10 @@ class PeriodicMessageStop(BaseEvent):
     _STRUCT = struct.Struct('>l')
 
     def __init__(self, arbitration_id):
+        """
+        :param int arbitration_id:
+            The CAN-ID of the message to stop sending.
+        """
         #: The arbitration ID of the message to stop transmitting
         self.arbitration_id = arbitration_id
 

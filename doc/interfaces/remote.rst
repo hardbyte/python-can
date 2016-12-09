@@ -54,6 +54,16 @@ The client uses a standard Bus class to connect to the server.
 The server uses the following classes to implement the connections.
 
 .. autoclass:: can.interfaces.remote.RemoteServer
+
+   .. method:: serve_forever
+
+      Start listening for incoming connections.
+
+   .. method:: shutdown
+
+      Stop the server.
+
+
 .. autoclass:: can.interfaces.remote.server.ClientBusConnection
 
 Protocol
