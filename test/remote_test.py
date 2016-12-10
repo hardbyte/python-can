@@ -183,7 +183,7 @@ class RemoteBusTestCase(unittest.TestCase):
     def test_initialization(self):
         self.assertEqual(self.remote_bus.channel_info,
                          '%s on 127.0.0.1:54700' % self.real_bus.channel_info)
-        self.assertEqual(self.server.clients[-1].bitrate, 125000)
+        self.assertEqual(self.server.clients[-1].config["bitrate"], 125000)
 
         # Test to create a new bus with filters
         can_filters = [
@@ -196,8 +196,8 @@ class RemoteBusTestCase(unittest.TestCase):
                                 can_filters=can_filters)
         # Wait some time so that self.server.clients is updated
         time.sleep(0.1)
-        self.assertEqual(self.server.clients[-1].can_filters, can_filters)
-        self.assertEqual(self.server.clients[-1].bitrate, 1000000)
+        self.assertEqual(self.server.clients[-1].config["can_filters"], can_filters)
+        self.assertEqual(self.server.clients[-1].config["bitrate"], 1000000)
         bus.shutdown()
 
     def test_send(self):

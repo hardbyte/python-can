@@ -4,6 +4,10 @@ Remote
 The remote interface works as a networked bridge between the computer running
 the application and the computer owning the physical CAN interface.
 
+Multiple clients may connect to the same server simultaneously. Each client
+will create its own bus instance on the server, so this must be supported by the
+real interface.
+
 Server
 ------
 
@@ -41,7 +45,13 @@ Alternatively in a .canrc file::
 
     [default]
     interface = remote
-    channel = myhostname
+    channel = myhostname:54701
+
+
+The can_logger.py script could be started like this::
+
+    $ can_logger.py -i remote -c myhostname:54701
+
 
 Internals
 ---------
@@ -69,13 +79,13 @@ The server uses the following classes to implement the connections.
 Protocol
 ~~~~~~~~
 
-The protocol is a stream of events over a network socket.
+The protocol is a stream of events over a TCP socket.
 Each event starts with one byte that represents the event id, followed by
 event specific data of arbitrary length in big-endian byte order.
 
-The client start with sending a :class:`can.interfaces.remote.events.BusRequest`
-followed by a :class:`can.interfaces.remote.events.FilterConfig`.
-The server will reply with a :class:`can.interfaces.remote.events.BusResponse`.
+The client start with sending a :class:`~can.interfaces.remote.events.BusRequest`
+followed by a :class:`~can.interfaces.remote.events.FilterConfig`.
+The server will reply with a :class:`~can.interfaces.remote.events.BusResponse`.
 
 Each event class inherits from the base event class:
 
@@ -87,8 +97,6 @@ The available events that can occurr and their specification is listed below:
 .. autoclass:: can.interfaces.remote.events.BusResponse
 .. autoclass:: can.interfaces.remote.events.CanMessage
 .. autoclass:: can.interfaces.remote.events.TransmitSuccess
-.. autoclass:: can.interfaces.remote.events.TransmitFail
 .. autoclass:: can.interfaces.remote.events.RemoteException
-.. autoclass:: can.interfaces.remote.events.PeriodicMessageStart
 .. autoclass:: can.interfaces.remote.events.FilterConfig
 .. autoclass:: can.interfaces.remote.events.ConnectionClosed

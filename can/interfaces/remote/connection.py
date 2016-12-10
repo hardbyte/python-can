@@ -86,6 +86,13 @@ class Connection(object):
         del self._recv_buf[:1+len(event)]
         return event
 
+    def data_ready(self):
+        """Check if there is data to transmit.
+
+        :rtype: bool
+        """
+        return len(self._send_buf) > 0
+
     def __iter__(self):
         """Allow iteration on events in the buffer.
 

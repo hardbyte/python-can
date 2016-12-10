@@ -26,6 +26,8 @@ class RemoteServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
             The can interface identifier. Expected type is backend dependent.
         :param str bustype:
             CAN interface to use.
+        :param int bitrate:
+            Forced bitrate in bits/s.
         """
         address = (host, port or can.interfaces.remote.DEFAULT_PORT)
         self.config = config
@@ -33,6 +35,7 @@ class RemoteServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
         #: instances
         self.clients = []
         socketserver.TCPServer.__init__(self, address, ClientBusConnection)
+        logger.info("Server listening on %s:%d", address[0], address[1])
 
 
 class ClientBusConnection(socketserver.BaseRequestHandler):
@@ -56,26 +59,30 @@ class ClientBusConnection(socketserver.BaseRequestHandler):
             raise RemoteServerError('Handshake error')
 
     def _start_bus(self, bus_event):
-        #: Bitrate requested by client
-        self.bitrate = bus_event.bitrate
+        config = dict(self.server.config)
+        self.config = config
 
         if bus_event.version != can.interfaces.remote.PROTOCOL_VERSION:
             raise RemoteServerError('Protocol version mismatch (%d != %d)' % (
                 bus_event.version, can.interfaces.remote.PROTOCOL_VERSION))
 
+        config.setdefault("bitrate", bus_event.bitrate)
+
         filter_event = self._next_event()
         if not isinstance(filter_event, events.FilterConfig):
             raise RemoteServerError('Handshake error')
-        #: CAN filters requested by client
-        self.can_filters = filter_event.can_filters
+        config["can_filters"] = filter_event.can_filters
 
-        #: A :class:`can.interface.Bus` object
-        self.bus = can.interface.Bus(bitrate=self.bitrate,
-                                     can_filters=self.can_filters,
-                                     **self.server.config)
-        logger.info("Connected to bus '%s'", self.bus.channel_info)
-        self.conn.send_event(events.BusResponse(self.bus.channel_info))
-        self.socket.sendall(self.conn.next_data())
+        try:
+            self.bus = can.interface.Bus(**config)
+        except Exception as e:
+            self.conn.send_event(events.RemoteException(e))
+            raise
+        else:
+            logger.info("Connected to bus '%s'", self.bus.channel_info)
+            self.conn.send_event(events.BusResponse(self.bus.channel_info))
+        finally:
+            self.socket.sendall(self.conn.next_data())
 
         self.send_thread = threading.Thread(target=self._send_to_client,
                                             name='Send to client')
@@ -143,8 +150,8 @@ class ClientBusConnection(socketserver.BaseRequestHandler):
             # Wait for an event on CAN (max 0.5 seconds)
             event = self._next_event_from_bus(0.5)
 
-            # Wait for client to be ready for new messages (max 0.5 seconds)
-            select.select([], [self.socket], [], 0.5)
+            # Wait for client to be ready for new messages (max 2 seconds)
+            client_ready = len(select.select([], [self.socket], [], 2)[1]) > 0
 
             # Read all CAN events to buffer
             while event is not None:
@@ -157,9 +164,8 @@ class ClientBusConnection(socketserver.BaseRequestHandler):
                 event = self._next_event_from_bus(0)
 
             # Send all data at once if there is any
-            data = self.conn.next_data()
-            if data:
-                self.socket.sendall(data)
+            if self.conn.data_ready() and client_ready:
+                self.socket.sendall(self.conn.next_data())
 
         logger.info('Disconnecting from CAN bus')
         self.bus.shutdown()
