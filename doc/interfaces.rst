@@ -18,6 +18,7 @@ The available interfaces are:
    interfaces/pcan
    interfaces/usb2can
    interfaces/nican
+   interfaces/remote
    interfaces/virtual
 
 

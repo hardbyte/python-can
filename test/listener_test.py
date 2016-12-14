@@ -63,7 +63,8 @@ class ListenerTest(BusTest):
         self.assertIsNotNone(m)
 
     def testSQLWriterReceives(self):
-        f = tempfile.NamedTemporaryFile('w')
+        f = tempfile.NamedTemporaryFile('w', delete=False)
+        f.close()
         a_listener = can.SqliteWriter(f.name)
         a_listener(generate_message(0xDADADA))
         # Small delay so we don't stop before we actually block trying to read
@@ -80,7 +81,8 @@ class ListenerTest(BusTest):
 
 
     def testSQLWriterWritesToSameFile(self):
-        f = tempfile.NamedTemporaryFile('w')
+        f = tempfile.NamedTemporaryFile('w', delete=False)
+        f.close()
 
         first_listener = can.SqliteWriter(f.name)
         first_listener(generate_message(0x01))
@@ -143,7 +145,8 @@ class ListenerTest(BusTest):
 class FileReaderTest(BusTest):
 
     def test_sql_reader(self):
-        f = tempfile.NamedTemporaryFile('w')
+        f = tempfile.NamedTemporaryFile('w', delete=False)
+        f.close()
         a_listener = can.SqliteWriter(f.name)
         a_listener(generate_message(0xDADADA))
         sleep(0.5)

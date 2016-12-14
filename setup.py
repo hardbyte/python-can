@@ -26,7 +26,8 @@ setup(
 
     scripts=[
         "./bin/can_logger.py",
-        "./bin/can_player.py"
+        "./bin/can_player.py",
+        "./bin/can_server.py"
     ],
 
     # Tests can be run using `python setup.py test`
