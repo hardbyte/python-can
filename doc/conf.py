@@ -42,6 +42,10 @@ extlinks = {
     'issue': ('https://github.com/hardbyte/python-can/issues/%s/', 'issue '),
 }
 
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/2/', None),
+}
+
 # If this is True, todo and todolist produce output, else they produce nothing.
 # The default is False.
 todo_include_todos = True
