@@ -6,6 +6,7 @@ Copyright (C) 2016 Giuseppe Corbelli <giuseppe.corbelli@weightpack.com>
 
 import binascii
 import ctypes
+import functools
 import logging
 import sys
 import time
@@ -16,9 +17,10 @@ from can.interfaces.ixxat import constants, structures
 
 from can.ctypesutil import CLibrary, HANDLE, PHANDLE
 
+from .constants import VCI_MAX_ERRSTRLEN
 from .exceptions import *
 
-__all__ = ["VCITimeout", "VCIError", "VCIDeviceNotFoundError", "IXXATBus"]
+__all__ = ["VCITimeout", "VCIError", "VCIDeviceNotFoundError", "IXXATBus", "vciFormatError"]
 
 log = logging.getLogger('can.ixxat')
 
@@ -26,6 +28,9 @@ if ((sys.version_info.major == 3) and (sys.version_info.minor >= 3)):
     _timer_function = time.perf_counter
 else:
     _timer_function = time.clock
+
+# Hack to have vciFormatError as a free function, see below
+vciFormatError = None
 
 # main ctypes instance
 if sys.platform == "win32":
@@ -40,6 +45,25 @@ else:
     log.warning("IXXAT VCI library does not work on %s platform", sys.platform)
     _canlib = None
 
+def __vciFormatErrorExtended(library_instance, function, HRESULT, arguments):
+    """ Format a VCI error and attach failed function, decoded HRESULT and arguments
+        @TODO: make sure we don't generate another exception
+    """
+    buf = ctypes.create_string_buffer(VCI_MAX_ERRSTRLEN)
+    ctypes.memset(buf, 0, VCI_MAX_ERRSTRLEN)
+    library_instance.vciFormatError(HRESULT, buf, VCI_MAX_ERRSTRLEN)
+    return "function {} failed - {} - arguments were {}".format(
+        function._name, buf.value.decode('utf-8'), arguments
+    )
+
+def __vciFormatError(library_instance, function, HRESULT):
+    """ Format a VCI error and attach failed function and decoded HRESULT
+        @TODO: make sure we don't generate another exception
+    """
+    buf = ctypes.create_string_buffer(VCI_MAX_ERRSTRLEN)
+    ctypes.memset(buf, 0, VCI_MAX_ERRSTRLEN)
+    library_instance.vciFormatError(HRESULT, buf, VCI_MAX_ERRSTRLEN)
+    return "function {} failed ({})".format(function._name, buf.value.decode('utf-8'))
 
 def __check_status(result, function, arguments):
     if isinstance(result, int):
@@ -48,10 +72,12 @@ def __check_status(result, function, arguments):
 
     if (result == constants.VCI_E_TIMEOUT):
         raise VCITimeout("Function {} timed out".format(function._name))
+    elif (result == constants.VCI_E_RXQUEUE_EMPTY):
+        raise VCIRxQueueEmptyError()
     elif (result == constants.VCI_E_NO_MORE_ITEMS):
         raise StopIteration()
     elif (result != constants.VCI_OK):
-        raise VCIError(function, result, arguments)
+        raise VCIError(vciFormatError(function, result))
 
     return result
 
@@ -62,6 +88,8 @@ try:
 
     #void VCIAPI vciFormatError (HRESULT hrError, PCHAR pszText, UINT32 dwsize);
     _canlib.map_symbol("vciFormatError", None, (ctypes.HRESULT, ctypes.c_char_p, ctypes.c_uint32))
+    # Hack to have vciFormatError as a free function
+    vciFormatError = functools.partial(__vciFormatError, _canlib)
 
     # HRESULT VCIAPI vciEnumDeviceOpen( OUT PHANDLE hEnum );
     _canlib.map_symbol("vciEnumDeviceOpen", ctypes.c_long, (PHANDLE,), __check_status)
@@ -308,11 +336,10 @@ class IXXATBus(BusABC):
                 _canlib.canChannelPeekMessage(self._channel_handle, ctypes.byref(self._message))
             except VCITimeout:
                 return None
+            except VCIRxQueueEmptyError:
+                return None
             except VCIError as e:
-                if (e.HRESULT == constants.VCI_E_RXQUEUE_EMPTY):
-                    return None
-                else:
-                    raise e
+                raise e
             else:
                 if (self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_DATA):
                     tm = _timer_function()
