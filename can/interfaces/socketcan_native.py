@@ -153,7 +153,7 @@ class CyclicSendTask(SocketCanBCMBase, CyclicSendTaskABC):
 
     def _tx_setup(self, message):
         # Create a low level packed frame to pass to the kernel
-        if message.id_type:
+        if message.is_extended_id:
             log.debug("sending an extended id type message")
             self.can_id |= CAN_EFF_FLAG
         if message.is_remote_frame:
