@@ -10,7 +10,7 @@ rc = dict(channel=0)
 class CanError(IOError):
     pass
 
-from can.CAN import BufferedReader, Listener, Logger, Printer, CSVWriter, SqliteWriter, ASCWriter, set_logging_level
+from can.CAN import BufferedReader, Listener, Logger, Printer, CSVWriter, SqliteWriter, ASCWriter, LogReader, SqlReader, set_logging_level
 from can.message import Message
 from can.bus import BusABC
 from can.notifier import Notifier

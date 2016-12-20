@@ -35,4 +35,29 @@ Command line help (``--help``)::
                             Which backend do you want to use?
 
 
+can_server.py
+-------------
+
+Command line help (``--help``)::
+
+      usage: can_server.py [-h] [-v] [-c CHANNEL]
+                          [-i {pcan,remote,ixxat,socketcan_ctypes,virtual,usb2can,nican,serial,kvaser,socketcan,socketcan_native}]
+                          [-p PORT]
+
+      Remote CAN server
+
+      optional arguments:
+        -h, --help            show this help message and exit
+        -v                    How much information do you want to see at the command
+                              line? You can add several of these e.g., -vv is DEBUG
+        -c CHANNEL, --channel CHANNEL
+                              Most backend interfaces require some sort of channel.
+                              For example with the serial interface the channel
+                              might be a rfcomm device: "/dev/rfcomm0" With the
+                              socketcan interfaces valid channel examples include:
+                              "can0", "vcan0"
+        -i {pcan,remote,ixxat,socketcan_ctypes,virtual,usb2can,nican,serial,kvaser,socketcan,socketcan_native}, --interface {pcan,remote,ixxat,socketcan_ctypes,virtual,usb2can,nican,serial,kvaser,socketcan,socketcan_native}
+                              Specify the backend CAN interface to use. If left
+                              blank, fall back to reading from configuration files.
+        -p PORT, --port PORT  TCP port to listen on (default 54701).
 

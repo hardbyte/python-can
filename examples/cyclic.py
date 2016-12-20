@@ -14,14 +14,21 @@ import time
 import can
 logging.basicConfig(level=logging.INFO)
 
-
 channel = 'vcan0'
-
 
 
 def test_simple_periodic_send():
     print("Starting to send a message every 200ms. Initial data is zeros")
-    msg = can.Message(arbitration_id=0x0cf02200, data=[0, 0, 0, 0, 0, 0])
+    msg = can.Message(arbitration_id=0x123, data=[0, 0, 0, 0, 0, 0], extended_id=False)
+    task = can.send_periodic('vcan0', msg, 0.20)
+    time.sleep(2)
+    task.stop()
+    print("stopped cyclic send")
+
+
+def test_extended_periodic_send():
+    print("Starting to send a message every 200ms. Initial data is zeros")
+    msg = can.Message(arbitration_id=0x12345678, data=[0, 0, 0, 0, 0, 0], extended_id=True)
     task = can.send_periodic('vcan0', msg, 0.20)
     time.sleep(2)
     task.stop()
@@ -82,6 +89,8 @@ if __name__ == "__main__":
         can.rc['interface'] = interface
 
         test_simple_periodic_send()
+
+        test_extended_periodic_send()
 
         test_periodic_send_with_modifying_data()
 

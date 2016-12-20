@@ -110,7 +110,6 @@ class Usb2canBus(BusABC):
         self.handle = self.can.CanalOpen(connector, enable_flags)
 
     def send(self, msg):
-
         tx = message_convert_tx(msg)
         self.can.CanalSend(self.handle, byref(tx))
 

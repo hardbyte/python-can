@@ -13,8 +13,7 @@ import select
 
 
 log = logging.getLogger('can.socketcan.native')
-#log.setLevel(logging.DEBUG)
-log.debug("Loading native socket can implementation")
+log.info("Loading socketcan native backend")
 
 try:
     import fcntl
@@ -26,9 +25,10 @@ try:
 except:
     log.debug("CAN_* properties not found in socket module. These are required to use native socketcan")
 
+import can
 
-from can import Message
-from can.interfaces.socketcan_constants import *  # CAN_RAW
+from can.message import Message
+from can.interfaces.socketcan_constants import *  # CAN_RAW, CAN_*_FLAG
 from ..bus import BusABC
 
 from ..broadcastmanager import CyclicSendTaskABC
@@ -130,6 +130,20 @@ def create_bcm_socket(channel):
     return s
 
 
+def _add_flags_to_can_id(message):
+    can_id = message.arbitration_id
+    if message.is_extended_id:
+        log.debug("sending an extended id type message")
+        can_id |= CAN_EFF_FLAG
+    if message.is_remote_frame:
+        log.debug("requesting a remote frame")
+        can_id |= CAN_RTR_FLAG
+    if message.is_error_frame:
+        log.debug("sending error frame")
+        can_id |= CAN_ERR_FLAG
+
+    return can_id
+
 class SocketCanBCMBase(object):
     """Mixin to add a BCM socket"""
 
@@ -153,8 +167,9 @@ class CyclicSendTask(SocketCanBCMBase, CyclicSendTaskABC):
 
     def _tx_setup(self, message):
         # Create a low level packed frame to pass to the kernel
-        header = build_bcm_transmit_header(self.can_id, 0, 0.0, self.period)
-        frame = build_can_frame(self.can_id, message.data)
+        can_id = _add_flags_to_can_id(message)
+        header = build_bcm_transmit_header(can_id, 0, 0.0, self.period)
+        frame = build_can_frame(can_id, message.data)
         log.info("Sending BCM command")
         self.bcm_socket.send(header + frame)
 
@@ -387,7 +402,7 @@ class SocketcanNative_Bus(BusABC):
             self.socket.send(build_can_frame(arbitration_id, msg.data))
         except OSError:
             l.warning("Failed to send: %s", msg)
-
+            raise can.CanError("can.socketcan.native failed to transmit")
 
     def set_filters(self, can_filters=None):
         if can_filters is None:
