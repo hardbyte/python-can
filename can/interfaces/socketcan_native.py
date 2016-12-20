@@ -28,7 +28,7 @@ except:
 import can
 
 from can.message import Message
-from can.interfaces.socketcan_constants import *  # CAN_RAW
+from can.interfaces.socketcan_constants import *  # CAN_RAW, CAN_*_FLAG
 from ..bus import BusABC
 
 from ..broadcastmanager import CyclicSendTaskABC
@@ -153,6 +153,16 @@ class CyclicSendTask(SocketCanBCMBase, CyclicSendTaskABC):
 
     def _tx_setup(self, message):
         # Create a low level packed frame to pass to the kernel
+        if message.id_type:
+            log.debug("sending an extended id type message")
+            self.can_id |= CAN_EFF_FLAG
+        if message.is_remote_frame:
+            log.debug("requesting a remote frame")
+            self.can_id |= CAN_RTR_FLAG
+        if message.is_error_frame:
+            log.debug("sending error frame")
+            self.can_id |= CAN_ERR_FLAG
+
         header = build_bcm_transmit_header(self.can_id, 0, 0.0, self.period)
         frame = build_can_frame(self.can_id, message.data)
         log.info("Sending BCM command")
