@@ -44,10 +44,10 @@ class Bus(object):
             from can.interfaces.kvaser import KvaserBus
             cls = KvaserBus
         elif interface == 'socketcan_ctypes':
-            from can.interfaces.socketcan_ctypes import SocketcanCtypes_Bus
+            from can.interfaces.socketcan import SocketcanCtypes_Bus
             cls = SocketcanCtypes_Bus
         elif interface == 'socketcan_native':
-            from can.interfaces.socketcan_native import SocketcanNative_Bus
+            from can.interfaces.socketcan import SocketcanNative_Bus
             cls = SocketcanNative_Bus
         elif interface == 'serial':
             from can.interfaces.serial.serial_can import SerialBus
@@ -56,7 +56,7 @@ class Bus(object):
             from can.interfaces.pcan import PcanBus
             cls = PcanBus
         elif interface == 'usb2can':
-            from can.interfaces.usb2canInterface import Usb2canBus
+            from can.interfaces.usb2can.usb2canInterface import Usb2canBus
             cls = Usb2canBus
         elif interface == 'ixxat':
             from can.interfaces.ixxat import IXXATBus
@@ -94,10 +94,10 @@ class CyclicSendTask(CyclicSendTaskABC):
 
         # Import the correct implementation of CyclicSendTask
         if can.rc['interface'] == 'socketcan_ctypes':
-            from can.interfaces.socketcan_ctypes import CyclicSendTask as _ctypesCyclicSendTask
+            from can.interfaces.socketcan.socketcan_ctypes import CyclicSendTask as _ctypesCyclicSendTask
             cls = _ctypesCyclicSendTask
         elif can.rc['interface'] == 'socketcan_native':
-            from can.interfaces.socketcan_native import CyclicSendTask as _nativeCyclicSendTask
+            from can.interfaces.socketcan.socketcan_native import CyclicSendTask as _nativeCyclicSendTask
             cls = _nativeCyclicSendTask
         # CyclicSendTask has not been fully implemented on remote interface yet.
         # Waiting for issue #80 which will change the API to make it easier for
@@ -127,10 +127,10 @@ class MultiRateCyclicSendTask(MultiRateCyclicSendTaskABC):
 
         # Import the correct implementation of CyclicSendTask
         if can.rc['interface'] == 'socketcan_ctypes':
-            from can.interfaces.socketcan_ctypes import MultiRateCyclicSendTask as _ctypesMultiRateCyclicSendTask
+            from can.interfaces.socketcan.socketcan_ctypes import MultiRateCyclicSendTask as _ctypesMultiRateCyclicSendTask
             cls = _ctypesMultiRateCyclicSendTask
         elif can.rc['interface'] == 'socketcan_native':
-            from can.interfaces.socketcan_native import MultiRateCyclicSendTask as _nativeMultiRateCyclicSendTask
+            from can.interfaces.socketcan.socketcan_native import MultiRateCyclicSendTask as _nativeMultiRateCyclicSendTask
             cls = _nativeMultiRateCyclicSendTask
         else:
             can.log.info("Current CAN interface doesn't support CyclicSendTask")
