@@ -2,9 +2,9 @@
 
 import logging
 
-from can.bus import BusABC
+from can import BusABC, Message
 from can.interfaces.usb2can.usb2canSerialFindWin import serial
-from can.message import Message
+from can.interfaces.usb2can.usb2can import *
 
 bootTimeEpoch = 0
 try:
@@ -20,12 +20,12 @@ logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger('can.usb2can')
 
 
-# setup the string for the device
 def set_string(deviceID, baudrate='500'):
-    # config = deviceID + '; ' + baudrate
-    config = "%s; %s" % (deviceID, baudrate)
+    """setup the string for the device
 
-    return (config)
+    config = deviceID + '; ' + baudrate
+    """
+    return "%s; %s" % (deviceID, baudrate)
 
 
 # TODO: Issue 36 with data being zeros or anything other than 8 must be fixed

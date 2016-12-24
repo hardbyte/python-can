@@ -56,7 +56,7 @@ class Bus(object):
             from can.interfaces.pcan import PcanBus
             cls = PcanBus
         elif interface == 'usb2can':
-            from can.interfaces.usb2can.usb2canInterface import Usb2canBus
+            from can.interfaces.usb2can import Usb2canBus
             cls = Usb2canBus
         elif interface == 'ixxat':
             from can.interfaces.ixxat import IXXATBus
