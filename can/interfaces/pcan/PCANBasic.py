@@ -3,9 +3,8 @@
 #  more Info at http://www.peak-system.com
 
 import logging
-from ctypes import *
 
-from can.interfaces.pcan_constants import *
+from can.interfaces.pcan.pcan_constants import *
 
 log = logging.getLogger('can.pcan')
 log.setLevel(logging.INFO)
