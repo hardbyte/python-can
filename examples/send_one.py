@@ -1,6 +1,6 @@
 from __future__ import print_function
-
 import can
+
 
 def send_one():
     bus = can.interface.Bus()
