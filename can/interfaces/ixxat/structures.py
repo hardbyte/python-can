@@ -13,12 +13,14 @@ class LUID(ctypes.Structure):
     ]
 PLUID = ctypes.POINTER(LUID)
 
+
 class VCIID(ctypes.Union):
     _fields_ = [
         ("AsLuid", LUID),
         ("AsInt64", ctypes.c_int64),
     ]
 PVCIID = ctypes.POINTER(VCIID)
+
 
 class GUID(ctypes.Structure):
     _fields_ = [
@@ -27,6 +29,7 @@ class GUID(ctypes.Structure):
         ("Data3", ctypes.c_short),
         ("Data4", ctypes.c_char * 8),
     ]
+
 
 class VCIDEVICEINFO(ctypes.Structure):
     class UniqueHardwareId(ctypes.Union):
@@ -49,6 +52,7 @@ class VCIDEVICEINFO(ctypes.Structure):
         ("Manufacturer", ctypes.c_char * 126),
         ("DriverReleaseVersion", ctypes.c_uint16),
     ]
+
     def __str__(self):
         return "Mfg: {}, Dev: {} HW: {}.{}.{}.{} Drv: {}.{}.{}.{}".format(
             self.Manufacturer,
@@ -63,6 +67,7 @@ class VCIDEVICEINFO(ctypes.Structure):
             self.DriverBuildVersion
         )
 PVCIDEVICEINFO = ctypes.POINTER(VCIDEVICEINFO)
+
 
 class CANLINESTATUS(ctypes.Structure):
     _fields_ = [
@@ -85,6 +90,7 @@ class CANCHANSTATUS(ctypes.Structure):
     ]
 PCANCHANSTATUS = ctypes.POINTER(CANCHANSTATUS)
 
+
 class CANCAPABILITIES(ctypes.Structure):
     _fields_ = [
         ("wCtrlType", ctypes.c_uint16),
@@ -98,6 +104,7 @@ class CANCAPABILITIES(ctypes.Structure):
         ("dwDtxMaxTicks", ctypes.c_uint32)
     ]
 PCANCAPABILITIES = ctypes.POINTER(CANCAPABILITIES)
+
 
 class CANMSGINFO(ctypes.Union):
     class Bytes(ctypes.Structure):
@@ -127,6 +134,7 @@ class CANMSGINFO(ctypes.Union):
         ("Bits", Bits)
     ]
 PCANMSGINFO = ctypes.POINTER(CANMSGINFO)
+
 
 class CANMSG(ctypes.Structure):
     _fields_ = [
