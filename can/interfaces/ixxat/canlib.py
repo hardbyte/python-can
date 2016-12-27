@@ -47,18 +47,33 @@ else:
 
 def __vciFormatErrorExtended(library_instance, function, HRESULT, arguments):
     """ Format a VCI error and attach failed function, decoded HRESULT and arguments
-        @TODO: make sure we don't generate another exception
+        :param CLibrary library_instance:
+            Mapped instance of IXXAT vcinpl library
+        :param callable function:
+            Failed function
+        :param HRESULT HRESULT:
+            HRESULT returned by vcinpl call
+        :param arguments:
+            Arbitrary arguments tuple
+        :return:
+            Formatted string
     """
-    buf = ctypes.create_string_buffer(VCI_MAX_ERRSTRLEN)
-    ctypes.memset(buf, 0, VCI_MAX_ERRSTRLEN)
-    library_instance.vciFormatError(HRESULT, buf, VCI_MAX_ERRSTRLEN)
-    return "function {} failed - {} - arguments were {}".format(
-        function._name, buf.value.decode('utf-8'), arguments
+    #TODO: make sure we don't generate another exception
+    return "{} - arguments were {}".format(
+        __vciFormatError(library_instance, function, HRESULT)
+        arguments
     )
 
 def __vciFormatError(library_instance, function, HRESULT):
     """ Format a VCI error and attach failed function and decoded HRESULT
-        @TODO: make sure we don't generate another exception
+        :param CLibrary library_instance:
+            Mapped instance of IXXAT vcinpl library
+        :param callable function:
+            Failed function
+        :param HRESULT HRESULT:
+            HRESULT returned by vcinpl call
+        :return:
+            Formatted string
     """
     buf = ctypes.create_string_buffer(VCI_MAX_ERRSTRLEN)
     ctypes.memset(buf, 0, VCI_MAX_ERRSTRLEN)
@@ -318,12 +333,12 @@ class IXXATBus(BusABC):
             return 1
 
     def flush_tx_buffer(self):
-        " Flushes the transmit buffer on the IXXAT "
+        """ Flushes the transmit buffer on the IXXAT """
         # TODO: no timeout?
         _canlib.canChannelWaitTxEvent(self._channel_handle, constants.INFINITE)
 
     def recv(self, timeout=None):
-        " Read a message from IXXAT device. "
+        """ Read a message from IXXAT device. """
 
         # TODO: handling CAN error messages?
         if (timeout is None):
@@ -338,8 +353,6 @@ class IXXATBus(BusABC):
                 return None
             except VCIRxQueueEmptyError:
                 return None
-            except VCIError as e:
-                raise e
             else:
                 if (self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_DATA):
                     tm = _timer_function()
