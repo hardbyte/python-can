@@ -3,7 +3,6 @@
 import logging
 
 from can import BusABC, Message
-from can.interfaces.usb2can.usb2canSerialFindWin import serial
 from can.interfaces.usb2can.usb2can import *
 
 bootTimeEpoch = 0
@@ -16,7 +15,6 @@ except:
     bootTimeEpoch = 0
 
 # Set up logging
-logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger('can.usb2can')
 
 
@@ -91,6 +89,7 @@ class Usb2canBus(BusABC):
         if 'serial' in kwargs:
             deviceID = kwargs["serial"]
         else:
+            from can.interfaces.usb2can.usb2canSerialFindWin import serial
             deviceID = serial()
 
         # set baudrate in kb/s from bitrate

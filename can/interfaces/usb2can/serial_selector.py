@@ -1,7 +1,9 @@
+import logging
 try:
     import win32com.client
 except ImportError:
-    print("win32com client module required")
+    logging.warning("win32com.client module required for usb2can")
+    raise
 
 
 def WMIDateStringToDate(dtmDate):
@@ -19,13 +21,12 @@ def WMIDateStringToDate(dtmDate):
     return strDateTime
 
 
-strComputer = "."
-objWMIService = win32com.client.Dispatch("WbemScripting.SWbemLocator")
-objSWbemServices = objWMIService.ConnectServer(strComputer, "root\cimv2")
-colItems = objSWbemServices.ExecQuery("SELECT * FROM Win32_USBControllerDevice")
-
-
 def serial():
+    strComputer = "."
+    objWMIService = win32com.client.Dispatch("WbemScripting.SWbemLocator")
+    objSWbemServices = objWMIService.ConnectServer(strComputer, "root\cimv2")
+    colItems = objSWbemServices.ExecQuery("SELECT * FROM Win32_USBControllerDevice")
+
     for objItem in colItems:
         string = objItem.Dependent
         # find based on beginning of serial

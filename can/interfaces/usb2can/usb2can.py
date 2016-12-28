@@ -3,8 +3,6 @@ import can
 from ctypes import *
 from struct import *
 import logging
-# import collections
-logging.basicConfig(filename='can2usb.log', level=logging.DEBUG)
 # type definitions
 
 flags = c_ulong
