@@ -1,7 +1,9 @@
 """
 Vector can interface module.
 Use VectorCan.pyd to access to the vector hardware, no need other dll or lib,
-but only work on python3 and 32 bit.
+but only work on python3 32 bit.
+you can get the VectorCan.pyd  file from:https://github.com/sgnes/BoostVXL.git
+if you have any problem with this, sgnes0514@gmail.com.
 """
 import logging
 import sys
