@@ -60,7 +60,7 @@ def __vciFormatErrorExtended(library_instance, function, HRESULT, arguments):
     """
     #TODO: make sure we don't generate another exception
     return "{} - arguments were {}".format(
-        __vciFormatError(library_instance, function, HRESULT)
+        __vciFormatError(library_instance, function, HRESULT),
         arguments
     )
 
@@ -81,6 +81,21 @@ def __vciFormatError(library_instance, function, HRESULT):
     return "function {} failed ({})".format(function._name, buf.value.decode('utf-8'))
 
 def __check_status(result, function, arguments):
+    """ Check the result of a vcinpl function call and raise appropriate exception
+        in case of an error. Used as errcheck function when mapping C functions
+        with ctypes.
+        :param result:
+            Function call numeric result
+        :param callable function:
+            Called function
+        :param arguments:
+            Arbitrary arguments tuple
+        :raise:
+            :class:VCITimeout
+            :class:VCIRxQueueEmptyError
+            :class:StopIteration
+            :class:VCIError
+    """
     if isinstance(result, int):
         # Real return value is an unsigned long
         result = ctypes.c_ulong(result).value
