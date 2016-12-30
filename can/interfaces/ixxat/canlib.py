@@ -78,7 +78,7 @@ def __vciFormatError(library_instance, function, HRESULT):
     buf = ctypes.create_string_buffer(VCI_MAX_ERRSTRLEN)
     ctypes.memset(buf, 0, VCI_MAX_ERRSTRLEN)
     library_instance.vciFormatError(HRESULT, buf, VCI_MAX_ERRSTRLEN)
-    return "function {} failed ({})".format(function._name, buf.value.decode('utf-8'))
+    return "function {} failed ({})".format(function._name, buf.value.decode('utf-8', 'replace'))
 
 def __check_status(result, function, arguments):
     """ Check the result of a vcinpl function call and raise appropriate exception
