@@ -62,6 +62,18 @@ class BusABC(object):
         """
         raise NotImplementedError("Trying to write to a readonly bus?")
 
+    def send_periodic(self, msg, period, duration=None):
+        """Start sending a message at a given period on this bus.
+
+        :param msg:
+        :param period:
+        :param float duration:
+            The duration to keep sending this message at given rate. If
+            no duration is provided, the task will continue indefinitely.
+        :return: A started :class:`can.CyclicTask` instance
+        """
+        raise NotImplementedError("TODO")
+
     def __iter__(self):
         """Allow iteration on messages as they are received.
 

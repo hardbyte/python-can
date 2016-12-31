@@ -81,7 +81,7 @@ class Bus(object):
 class CyclicSendTask(CyclicSendTaskABC):
 
     @classmethod
-    def __new__(cls, other, channel, *args, **kwargs):
+    def __new__(cls, other, bus, *args, **kwargs):
 
         # If can.rc doesn't look valid: load default
         if 'interface' not in can.rc or 'channel' not in can.rc:
@@ -108,7 +108,7 @@ class CyclicSendTask(CyclicSendTaskABC):
         else:
             can.log.info("Current CAN interface doesn't support CyclicSendTask")
 
-        return cls(channel, *args, **kwargs)
+        return cls(bus, *args, **kwargs)
 
 
 class MultiRateCyclicSendTask(MultiRateCyclicSendTaskABC):

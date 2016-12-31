@@ -12,22 +12,10 @@ log = logging.getLogger('can.bcm')
 log.debug("Loading base broadcast manager functionality")
 
 
-class CyclicTask(object):
+class CyclicSendTaskABC(object):
 
-    def stop(self):
-        """Cancel the periodic task"""
-        raise NotImplementedError()
-
-    def start(self):
-        """Once stopped a task can be restarted"""
-        raise NotImplementedError()
-
-
-class CyclicSendTaskABC(CyclicTask):
-
-    def __init__(self, channel, message, period):
+    def __init__(self, message, period):
         """
-        :param str channel: The name of the CAN channel to connect to.
         :param message: The :class:`can.Message` to be sent periodically.
         :param float period: The rate in seconds at which to send the message.
         """
@@ -36,11 +24,17 @@ class CyclicSendTaskABC(CyclicTask):
 
     @abc.abstractmethod
     def stop(self):
-        """Send a TX_DELETE message to the broadcast manager to cancel this task.
-
-        This will delete the entry for the transmission of the CAN message
-        specified.
+        """Cancel this periodic task.
         """
+
+    @abc.abstractmethod
+    def start(self):
+        """Restart a stopped periodic task.
+        """
+
+
+class ModifiableCyclicTaskABC(CyclicSendTaskABC):
+    """Adds support for modifying a periodic message"""
 
     @abc.abstractmethod
     def modify_data(self, message):
@@ -48,12 +42,10 @@ class CyclicSendTaskABC(CyclicTask):
         the timing.
 
         :param message: The :class:`~can.Message` with new :attr:`Message.data`.
-            Note it must have the same :attr:`~can.Message.arbitration_id`.
         """
 
 
 class MultiRateCyclicSendTaskABC(CyclicSendTaskABC):
-
     """Exposes more of the full power of the TX_SETUP opcode.
 
     Transmits a message `count` times at `initial_period` then
@@ -64,9 +56,9 @@ class MultiRateCyclicSendTaskABC(CyclicSendTaskABC):
         super(MultiRateCyclicSendTaskABC, self).__init__(channel, message, subsequent_period)
 
 
-def send_periodic(channel, message, period):
+def send_periodic(bus, message, period):
     """
     Send a message every `period` seconds on the given channel.
 
     """
-    return can.interface.CyclicSendTask(channel, message, period)
+    return can.interface.CyclicSendTask(bus, message, period)
