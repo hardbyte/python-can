@@ -25,7 +25,7 @@ The pcan interface was contributed by Albert Bloomfield in 2013.
 The usb2can interface was contributed by Joshua Villyard in 2015
 
 The IXXAT VCI interface was contributed by Giuseppe Corbelli and funded
-by Weightpack in 2016
+by `Weightpack <http://www.weightpack.com>`__ in 2016
 
 
 Support for CAN within Python
