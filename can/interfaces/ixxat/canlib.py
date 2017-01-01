@@ -28,6 +28,9 @@ if ((sys.version_info.major == 3) and (sys.version_info.minor >= 3)):
 else:
     _timer_function = time.clock
 
+# Hack to have vciFormatError as a free function, see below
+vciFormatError = None
+
 # main ctypes instance
 _canlib = None
 if sys.platform == "win32":
