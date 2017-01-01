@@ -1,16 +1,16 @@
 from __future__ import print_function
-import sys
+
 import ctypes
 import logging
 import select
-
+import sys
 from ctypes.util import find_library
 
 import can
-from can.interfaces.socketcan_constants import *  # CAN_RAW
+from can.broadcastmanager import CyclicSendTaskABC
 from can.bus import BusABC
 from can.message import Message
-from can.broadcastmanager import CyclicSendTaskABC, MultiRateCyclicSendTaskABC
+from can.interfaces.socketcan.socketcan_constants import *  # CAN_RAW
 
 # Set up logging
 log = logging.getLogger('can.socketcan.ctypes')

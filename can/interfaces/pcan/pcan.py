@@ -5,9 +5,7 @@ Enable basic can over a PCAN USB device.
 import logging
 import sys
 
-logger = logging.getLogger(__name__)
-
-from can.interfaces.PCANBasic import *
+from can.interfaces.pcan.PCANBasic import *
 from can.bus import BusABC
 from can.message import Message
 from can import CanError

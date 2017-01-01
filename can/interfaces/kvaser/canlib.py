@@ -12,13 +12,11 @@ import time
 import logging
 import ctypes
 
-log = logging.getLogger('can.canlib')
-log.setLevel(logging.INFO)
-
 from can import CanError, BusABC
 from can import Message
 from can.interfaces.kvaser import constants as canstat
 
+log = logging.getLogger('can.kvaser')
 
 # Resolution in us
 TIMESTAMP_RESOLUTION = 10

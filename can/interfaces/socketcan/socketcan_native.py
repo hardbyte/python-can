@@ -5,12 +5,11 @@ This implementation is for versions of Python that have native
 can socket and can bcm socket support: >3.4
 """
 
+import logging
+import select
 import socket
 import struct
-import logging
 from collections import namedtuple
-import select
-
 
 log = logging.getLogger('can.socketcan.native')
 log.info("Loading socketcan native backend")
@@ -27,11 +26,10 @@ except:
 
 import can
 
-from can.message import Message
-from can.interfaces.socketcan_constants import *  # CAN_RAW, CAN_*_FLAG
-from ..bus import BusABC
+from can.interfaces.socketcan.socketcan_constants import *  # CAN_RAW, CAN_*_FLAG
+from can import Message, BusABC
 
-from ..broadcastmanager import CyclicSendTaskABC
+from can.broadcastmanager import CyclicSendTaskABC
 
 # struct module defines a binary packing format:
 # https://docs.python.org/3/library/struct.html#struct-format-strings

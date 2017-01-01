@@ -8,6 +8,7 @@ from can import CanError
 
 __all__ = ['VCITimeout', 'VCIError', 'VCIRxQueueEmptyError', 'VCIDeviceNotFoundError']
 
+
 class VCITimeout(CanError):
     """ Wraps the VCI_E_TIMEOUT error """
     pass
