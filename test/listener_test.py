@@ -12,6 +12,21 @@ can.rc['interface'] = 'virtual'
 logging.getLogger("").setLevel(logging.DEBUG)
 
 
+# List of messages of different types that can be used in tests
+TEST_MESSAGES = [
+    can.Message(
+        arbitration_id=0xDADADA, extended_id=True, is_remote_frame=False,
+        timestamp=1483389464.165,
+        data=[1, 2, 3, 4, 5, 6, 7, 8]),
+    can.Message(
+        arbitration_id=0x123, extended_id=False, is_remote_frame=False,
+        timestamp=1483389464.365,
+        data=[254, 255]),
+    can.Message(
+        arbitration_id=0x768, extended_id=False, is_remote_frame=True,
+        timestamp=1483389466.165),
+]
+
 def generate_message(arbitration_id):
     data = [random.randrange(0, 2 ** 8 - 1) for b in range(8)]
     m = can.Message(arbitration_id=arbitration_id, data=data, extended_id=False)
@@ -52,6 +67,7 @@ class ListenerTest(BusTest):
             can_logger.stop()
 
         test_filetype_to_instance('asc', can.ASCWriter)
+        test_filetype_to_instance("blf", can.BLFWriter)
         test_filetype_to_instance("csv", can.CSVWriter)
         test_filetype_to_instance("db", can.SqliteWriter)
         test_filetype_to_instance("txt", can.Printer)
@@ -160,6 +176,21 @@ class FileReaderTest(BusTest):
 
         self.assertEqual(len(ms), 1)
         self.assertEqual(0xDADADA, ms[0].arbitration_id)
+
+
+class BLFTest(unittest.TestCase):
+
+    def test_reader_writer(self):
+        writer = can.BLFWriter("test.blf")
+        for msg in TEST_MESSAGES:
+            writer(msg)
+        writer.stop()
+
+        messages = list(can.BLFReader("test.blf"))
+        for msg1, msg2 in zip(messages, TEST_MESSAGES):
+            self.assertEqual(msg1, msg2)
+            self.assertAlmostEqual(msg1.timestamp, msg2.timestamp)
+
 
 if __name__ == '__main__':
     unittest.main()
