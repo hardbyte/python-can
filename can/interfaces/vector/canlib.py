@@ -8,15 +8,22 @@ Authors: Julien Grave <grave.jul@gmail.com>
 import ctypes
 import logging
 import re
+import sys
 
 # Import Modules
 # ==============
-import vxlapi
 from can import BusABC, Message
 
 # Define Module Logger
 # ====================
 LOG = logging.getLogger('can.vector')
+
+# Import safely Vector API module for Travis tests
+if sys.platform == 'win32':
+    import vxlapi
+else:
+    LOG.warning('Vector API does not work on %s platform', sys.platform)
+    vxlapi = None
 
 # Define Module Constants
 # =======================
@@ -36,6 +43,8 @@ class VectorBus(BusABC):
         :param list channel:
             The channel indexes to create this bus with.
         """
+        if vxlapi is None:
+            raise ImportError("The Vector API has not been loaded")
         if isinstance(channel, (list, tuple)):
             self.channel = channel
         else:
