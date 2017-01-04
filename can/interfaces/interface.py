@@ -1,10 +1,11 @@
 import can
 from can.broadcastmanager import CyclicSendTaskABC, MultiRateCyclicSendTaskABC
-from can.util import load_config, choose_socketcan_implementation
+from can.util import choose_socketcan_implementation, load_config
 
-VALID_INTERFACES = set(['kvaser', 'serial', 'pcan', 'socketcan_native',
-                        'socketcan_ctypes', 'socketcan', 'usb2can', 'ixxat',
-                        'nican', 'remote', 'virtual'])
+VALID_INTERFACES = set([
+    'kvaser', 'serial', 'pcan', 'socketcan_native', 'socketcan_ctypes',
+    'socketcan', 'usb2can', 'ixxat', 'nican', 'remote', 'virtual', 'vector'
+])
 
 
 class Bus(object):
@@ -35,13 +36,15 @@ class Bus(object):
             if kw in kwargs:
                 can.rc[kw] = kwargs[kw]
 
-        if 'interface' not in can.rc or 'channel' not in can.rc or can.rc['interface'] is None:
+        if 'interface' not in can.rc or 'channel' not in can.rc or can.rc[
+                'interface'] is None:
             can.log.debug("Loading default configuration")
             # Load defaults
             can.rc = load_config()
 
         if can.rc['interface'] not in VALID_INTERFACES:
-            raise NotImplementedError('Invalid CAN Bus Type - {}'.format(can.rc['interface']))
+            raise NotImplementedError('Invalid CAN Bus Type - {}'.format(
+                can.rc['interface']))
 
         # Import the correct Bus backend
         interface = can.rc['interface']
@@ -75,8 +78,12 @@ class Bus(object):
         elif interface == 'virtual':
             from can.interfaces.virtual import VirtualBus
             cls = VirtualBus
+        elif interface == 'vector':
+            from can.interfaces.vector import VectorBus
+            cls = VectorBus
         else:
-            raise NotImplementedError("CAN interface '{}' not supported".format(interface))
+            raise NotImplementedError(
+                "CAN interface '{}' not supported".format(interface))
 
         if channel is None:
             channel = can.rc['channel']
@@ -84,7 +91,6 @@ class Bus(object):
 
 
 class CyclicSendTask(CyclicSendTaskABC):
-
     @classmethod
     def __new__(cls, other, channel, *args, **kwargs):
 
@@ -95,7 +101,8 @@ class CyclicSendTask(CyclicSendTaskABC):
 
         print(can.rc)
         if can.rc['interface'] not in VALID_INTERFACES:
-            raise NotImplementedError('Invalid CAN Bus Type - {}'.format(can.rc['interface']))
+            raise NotImplementedError('Invalid CAN Bus Type - {}'.format(
+                can.rc['interface']))
 
         # Import the correct implementation of CyclicSendTask
         if can.rc['interface'] == 'socketcan_ctypes':
@@ -111,13 +118,13 @@ class CyclicSendTask(CyclicSendTaskABC):
         #    from can.interfaces.remote import CyclicSendTask as _remoteCyclicSendTask
         #    cls = _remoteCyclicSendTask
         else:
-            can.log.info("Current CAN interface doesn't support CyclicSendTask")
+            can.log.info(
+                "Current CAN interface doesn't support CyclicSendTask")
 
         return cls(channel, *args, **kwargs)
 
 
 class MultiRateCyclicSendTask(MultiRateCyclicSendTaskABC):
-
     @classmethod
     def __new__(cls, other, channel, *args, **kwargs):
 
@@ -128,7 +135,8 @@ class MultiRateCyclicSendTask(MultiRateCyclicSendTaskABC):
 
         print(can.rc)
         if can.rc['interface'] not in VALID_INTERFACES:
-            raise NotImplementedError('Invalid CAN Bus Type - {}'.format(can.rc['interface']))
+            raise NotImplementedError('Invalid CAN Bus Type - {}'.format(
+                can.rc['interface']))
 
         # Import the correct implementation of CyclicSendTask
         if can.rc['interface'] == 'socketcan_ctypes':
@@ -138,6 +146,7 @@ class MultiRateCyclicSendTask(MultiRateCyclicSendTaskABC):
             from can.interfaces.socketcan.socketcan_native import MultiRateCyclicSendTask as _nativeMultiRateCyclicSendTask
             cls = _nativeMultiRateCyclicSendTask
         else:
-            can.log.info("Current CAN interface doesn't support CyclicSendTask")
+            can.log.info(
+                "Current CAN interface doesn't support CyclicSendTask")
 
         return cls(channel, *args, **kwargs)
