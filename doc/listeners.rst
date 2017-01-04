@@ -77,7 +77,7 @@ BLF (Binary Logging Format)
 Implements support for BLF (Binary Logging Format) which is a proprietary
 CAN log format from Vector Informatik GmbH.
 
-No specification is available.
+The data is stored in a compressed format which makes it very compact.
 
 .. autoclass:: can.BLFWriter
     :members:

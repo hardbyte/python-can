@@ -2,11 +2,12 @@
 Implements support for BLF (Binary Logging Format) which is a proprietary
 CAN log format from Vector Informatik GmbH.
 
-No offical specification is available. The file starts with a 144 byte header.
-It contains some info that is not known until the log has stopped so it will
-have to be written last. The rest is one or more "log containers" which consists
-of a header and some zlib compressed data, usually up to 128 kB of uncompressed
-data each. This data contains the actual CAN messages.
+No offical specification is available. The implementation is based on the works
+by Toby Lorenz (https://bitbucket.org/tobylorenz/vector_blf).
+The file starts with a header. The rest is one or more "log containers"
+which consists of a header and some zlib compressed data, usually up to 128 kB
+of uncompressed data each. This data contains the actual CAN messages and other
+objects types.
 """
 import logging
 import struct
@@ -20,26 +21,37 @@ from can.CAN import Listener
 
 logger = logging.getLogger(__name__)
 
+# 0 = unknown, 2 = CANoe
+APPLICATION_ID = 0
 
-APPLICATION_ID = 5
-HEADER_SIZE = 144
-# File header consists of:
+# Header must be 144 bytes in total
 # signature ("LOGG"), header size,
 # application ID, application major, application minor, application build,
 # bin log major, bin log minor, bin log build, bin log patch,
 # file size, uncompressed size, count of objects, count of objects read,
 # time start (SYSTEMTIME), time stop (SYSTEMTIME)
-FILE_HEADER_STRUCT = struct.Struct("<4sLBBBBBBBBQQLL8H8H")
-# signature ("LOBJ"), header size, header version (1), object size, object type,
-# flags, object version, size uncompressed/timestamp
-OBJ_HEADER_STRUCT = struct.Struct("<4sHHLLL2xHQ")
-# channel, flags, dlc, arbitration id, data
-CAN_STRUCT = struct.Struct("<HBBL8s")
+FILE_HEADER_STRUCT = struct.Struct("<4sLBBBBBBBBQQLL8H8H72x")
 
-LOG_CONTAINER = 10
+# signature ("LOBJ"), header size, header version (1), object size, object type,
+# flags, object version, size uncompressed or timestamp
+OBJ_HEADER_STRUCT = struct.Struct("<4sHHLLL2xHQ")
+
+# channel, flags, dlc, arbitration id, data
+CAN_MSG_STRUCT = struct.Struct("<HBBL8s")
+
+# channel, length
+CAN_ERROR_STRUCT = struct.Struct("<HH4x")
+
+# commented event type, text length in bytes
+EVENT_COMMENT_STRUCT = struct.Struct("<LL8x")
+
 CAN_MESSAGE = 1
+CAN_ERROR = 2
+LOG_CONTAINER = 10
+EVENT_COMMENT = 92
+
 CAN_MSG_EXT = 0x80000000
-REMOTE_FLAG = 0x1
+REMOTE_FLAG = 0x80
 
 
 def timestamp_to_systemtime(timestamp):
@@ -62,8 +74,8 @@ class BLFReader(object):
 
     def __init__(self, filename):
         self.fp = open(filename, "rb")
-        data = self.fp.read(HEADER_SIZE)
-        header = FILE_HEADER_STRUCT.unpack_from(data)
+        data = self.fp.read(FILE_HEADER_STRUCT.size)
+        header = FILE_HEADER_STRUCT.unpack(data)
         #print(header)
         assert header[0] == b"LOGG", "Unknown file format"
         self.start_timestamp = systemtime_to_timestamp(header[14:22])
@@ -73,17 +85,21 @@ class BLFReader(object):
         while True:
             data = self.fp.read(OBJ_HEADER_STRUCT.size)
             if not data:
+                # EOF
                 break
             header = OBJ_HEADER_STRUCT.unpack(data)
             #print(header)
             assert header[0] == b"LOBJ", "Parse error"
             obj_type = header[4]
+            obj_data_size = header[3] - OBJ_HEADER_STRUCT.size
+            obj_data = self.fp.read(obj_data_size)
+            # Read padding bytes
+            self.fp.read(obj_data_size % 4)
             if obj_type == LOG_CONTAINER:
-                compressed_size = header[3] - OBJ_HEADER_STRUCT.size
                 uncompressed_size = header[7]
-                compressed_data = self.fp.read(compressed_size)
-                data = zlib.decompress(compressed_data, 15, uncompressed_size)
-                data = tail + data
+                data = zlib.decompress(obj_data, 15, uncompressed_size)
+                if tail:
+                    data = tail + data
                 pos = 0
                 while pos + OBJ_HEADER_STRUCT.size < len(data):
                     header = OBJ_HEADER_STRUCT.unpack(
@@ -94,32 +110,45 @@ class BLFReader(object):
                     if pos + obj_size > len(data):
                         # Object continues in next log container
                         break
+                    obj_data = data[pos + OBJ_HEADER_STRUCT.size:pos + obj_size]
                     obj_type = header[4]
+                    timestamp = header[7] / 1000000000.0 + self.start_timestamp
                     if obj_type == CAN_MESSAGE:
-                        timestamp = header[7] / 1000000000.0 + self.start_timestamp
-                        channel, flags, dlc, can_id, can_data = CAN_STRUCT.unpack(
-                            data[pos + OBJ_HEADER_STRUCT.size:pos + obj_size])
-                        yield Message(timestamp=timestamp,
+                        (channel, flags, dlc, can_id,
+                         can_data) = CAN_MSG_STRUCT.unpack(obj_data)
+                        msg = Message(timestamp=timestamp,
                                       arbitration_id=can_id & 0x1FFFFFFF,
                                       extended_id=bool(can_id & CAN_MSG_EXT),
                                       is_remote_frame=bool(flags & REMOTE_FLAG),
                                       dlc=dlc,
                                       data=can_data[:dlc])
+                        msg.channel = channel
+                        yield msg
+                    elif obj_type == CAN_ERROR:
+                        channel, length = CAN_ERROR_STRUCT.unpack(obj_data)
+                        msg = Message(timestamp=timestamp, is_error_frame=True)
+                        msg.channel = channel
+                        yield msg
+                    elif obj_type == EVENT_COMMENT:
+                        text = obj_data[EVENT_COMMENT_STRUCT.size:]
+                        try:
+                            # Only works on Windows
+                            text = text.decode("mbcs")
+                        except LookupError:
+                            text = text.decode("ascii")
+                        #print(obj_data[0])
+                        print(text)
                     pos += obj_size
                     # Add padding bytes
                     pos += obj_size % 4
                 # Save remaing data that could not be processed
                 tail = data[pos:]
-                if compressed_size % 4:
-                    self.fp.read(compressed_size % 4)
         self.fp.close()
 
 
 class BLFWriter(Listener):
     """
     Logs CAN data to a Binary Logging File compatible with Vector's tools.
-
-    The data is stored in a compressed format which makes it very compact.
     """
 
     #: Max log container size of uncompressed data
@@ -132,11 +161,11 @@ class BLFWriter(Listener):
         self.fp = open(filename, "w+b")
         self.channel = channel
         # Header will be written after log is done
-        self.fp.write(b"\x00" * HEADER_SIZE)
+        self.fp.write(b"\x00" * FILE_HEADER_STRUCT.size)
         self.cache = []
         self.cache_size = 0
         self.count_of_objects = 0
-        self.uncompressed_size = HEADER_SIZE
+        self.uncompressed_size = FILE_HEADER_STRUCT.size
         self.start_timestamp = None
         self.stop_timestamp = None
 
@@ -145,18 +174,49 @@ class BLFWriter(Listener):
             self.start_timestamp = msg.timestamp
         self.stop_timestamp = msg.timestamp
         timestamp = int((msg.timestamp - self.start_timestamp) * 1000000000)
+        if not msg.is_error_frame:
+            obj_size = OBJ_HEADER_STRUCT.size + CAN_MSG_STRUCT.size
+            header = OBJ_HEADER_STRUCT.pack(
+                b"LOBJ", OBJ_HEADER_STRUCT.size, 1, obj_size, CAN_MESSAGE,
+                2, 0, timestamp)
+            flags = REMOTE_FLAG if msg.is_remote_frame else 0
+            arb_id = msg.arbitration_id
+            if msg.id_type:
+                arb_id |= CAN_MSG_EXT
+            data = CAN_MSG_STRUCT.pack(self.channel, flags, msg.dlc, arb_id,
+                                       bytes(msg.data))
+        else:
+            obj_size = OBJ_HEADER_STRUCT.size + CAN_ERROR_STRUCT.size
+            header = OBJ_HEADER_STRUCT.pack(
+                b"LOBJ", OBJ_HEADER_STRUCT.size, 1, obj_size, CAN_ERROR,
+                2, 0, timestamp)
+            data = CAN_ERROR_STRUCT.pack(self.channel, 0)
+        self._add_data(header + data)
+
+    def log_event(self, message, timestamp=None):
+        """Add an arbitrary message to the log file."""
+        if timestamp is None:
+            timestamp = time.time()
+        if self.start_timestamp is None:
+            self.start_timestamp = timestamp
+        self.stop_timestamp = timestamp
+        try:
+            # Only works on Windows
+            text = message.encode("mbcs")
+        except LookupError:
+            text = message.encode("ascii")
+        timestamp = int((timestamp - self.start_timestamp) * 1000000000)
+        obj_size = OBJ_HEADER_STRUCT.size + EVENT_COMMENT_STRUCT.size + len(text)
         header = OBJ_HEADER_STRUCT.pack(
-            b"LOBJ", 32, 1, OBJ_HEADER_STRUCT.size + CAN_STRUCT.size,
-            CAN_MESSAGE, 2, 0, timestamp)
-        flags = REMOTE_FLAG if msg.is_remote_frame else 0
-        arb_id = msg.arbitration_id
-        if msg.id_type:
-            arb_id |= CAN_MSG_EXT
-        data = CAN_STRUCT.pack(self.channel, flags, msg.dlc, arb_id,
-                               bytes(msg.data))
-        self.cache.append(header)
+            b"LOBJ", OBJ_HEADER_STRUCT.size, 1, obj_size, EVENT_COMMENT,
+            2, 0, timestamp)
+        # TODO: What should we use for commented event type?
+        data = EVENT_COMMENT_STRUCT.pack(0, len(text))
+        self._add_data(header + data + text)
+
+    def _add_data(self, data):
         self.cache.append(data)
-        self.cache_size += OBJ_HEADER_STRUCT.size + CAN_STRUCT.size
+        self.cache_size += len(data)
         self.count_of_objects += 1
         if self.cache_size >= self.MAX_CACHE_SIZE:
             self._flush()
@@ -176,8 +236,7 @@ class BLFWriter(Listener):
                                         self.COMPRESSION_LEVEL)
         obj_size = OBJ_HEADER_STRUCT.size + len(compressed_data)
         header = OBJ_HEADER_STRUCT.pack(
-            b"LOBJ", 16, 1, obj_size,
-            LOG_CONTAINER, 2, 0, len(uncompressed_data))
+            b"LOBJ", 16, 1, obj_size, LOG_CONTAINER, 2, 0, len(uncompressed_data))
         self.fp.write(header)
         self.fp.write(compressed_data)
         # Write padding bytes
@@ -185,9 +244,11 @@ class BLFWriter(Listener):
         self.uncompressed_size += len(uncompressed_data) + OBJ_HEADER_STRUCT.size
 
     def stop(self):
+        """Stops logging and closes the file."""
         self._flush()
         # Write header
-        header = [b"LOGG", HEADER_SIZE, APPLICATION_ID, 0, 0, 0, 1, 1, 8, 0]
+        header = [b"LOGG", FILE_HEADER_STRUCT.size,
+                  APPLICATION_ID, 0, 0, 0, 1, 1, 8, 0]
         # TODO: What is "count of objects read"? Set to 0 for now
         header.extend([self.fp.tell(), self.uncompressed_size,
                        self.count_of_objects, 0])

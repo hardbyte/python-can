@@ -25,6 +25,7 @@ TEST_MESSAGES = [
     can.Message(
         arbitration_id=0x768, extended_id=False, is_remote_frame=True,
         timestamp=1483389466.165),
+    can.Message(is_error_frame=True, timestamp=1483389466.170),
 ]
 
 def generate_message(arbitration_id):
@@ -184,6 +185,7 @@ class BLFTest(unittest.TestCase):
         writer = can.BLFWriter("test.blf")
         for msg in TEST_MESSAGES:
             writer(msg)
+        writer.log_event("Log stops here", TEST_MESSAGES[-1].timestamp + 1)
         writer.stop()
 
         messages = list(can.BLFReader("test.blf"))
