@@ -22,7 +22,7 @@ from can.CAN import Listener
 logger = logging.getLogger(__name__)
 
 # 0 = unknown, 2 = CANoe
-APPLICATION_ID = 0
+APPLICATION_ID = 5
 
 # Header must be 144 bytes in total
 # signature ("LOGG"), header size,
@@ -42,13 +42,15 @@ CAN_MSG_STRUCT = struct.Struct("<HBBL8s")
 # channel, length
 CAN_ERROR_STRUCT = struct.Struct("<HH4x")
 
-# commented event type, text length in bytes
-EVENT_COMMENT_STRUCT = struct.Struct("<LL8x")
+# commented event type, foreground color, background color, relocatable,
+# group name length, marker name length, description length
+GLOBAL_MARKER_STRUCT = struct.Struct("<LLL3xBLLL12x")
+
 
 CAN_MESSAGE = 1
 CAN_ERROR = 2
 LOG_CONTAINER = 10
-EVENT_COMMENT = 92
+GLOBAL_MARKER = 96
 
 CAN_MSG_EXT = 0x80000000
 REMOTE_FLAG = 0x80
@@ -61,10 +63,13 @@ def timestamp_to_systemtime(timestamp):
 
 
 def systemtime_to_timestamp(systemtime):
-    t = datetime.datetime(
-        systemtime[0], systemtime[1], systemtime[3],
-        systemtime[4], systemtime[5], systemtime[6], systemtime[7] * 1000)
-    return time.mktime(t.timetuple()) + systemtime[7] / 1000.0
+    try:
+        t = datetime.datetime(
+            systemtime[0], systemtime[1], systemtime[3],
+            systemtime[4], systemtime[5], systemtime[6], systemtime[7] * 1000)
+        return time.mktime(t.timetuple()) + systemtime[7] / 1000.0
+    except ValueError:
+        return 0
 
 
 class BLFReader(object):
@@ -129,15 +134,6 @@ class BLFReader(object):
                         msg = Message(timestamp=timestamp, is_error_frame=True)
                         msg.channel = channel
                         yield msg
-                    elif obj_type == EVENT_COMMENT:
-                        text = obj_data[EVENT_COMMENT_STRUCT.size:]
-                        try:
-                            # Only works on Windows
-                            text = text.decode("mbcs")
-                        except LookupError:
-                            text = text.decode("ascii")
-                        #print(obj_data[0])
-                        print(text)
                     pos += obj_size
                     # Add padding bytes
                     pos += obj_size % 4
@@ -158,7 +154,7 @@ class BLFWriter(Listener):
     COMPRESSION_LEVEL = 7
 
     def __init__(self, filename, channel=1):
-        self.fp = open(filename, "w+b")
+        self.fp = open(filename, "wb")
         self.channel = channel
         # Header will be written after log is done
         self.fp.write(b"\x00" * FILE_HEADER_STRUCT.size)
@@ -206,15 +202,20 @@ class BLFWriter(Listener):
         except LookupError:
             text = message.encode("ascii")
         timestamp = int((timestamp - self.start_timestamp) * 1000000000)
-        obj_size = OBJ_HEADER_STRUCT.size + EVENT_COMMENT_STRUCT.size + len(text)
+        comment = b"Added by python-can"
+        marker = b"python-can"
+        obj_size = (OBJ_HEADER_STRUCT.size + GLOBAL_MARKER_STRUCT.size +
+                    len(text) + len(marker) + len(comment))
         header = OBJ_HEADER_STRUCT.pack(
-            b"LOBJ", OBJ_HEADER_STRUCT.size, 1, obj_size, EVENT_COMMENT,
+            b"LOBJ", OBJ_HEADER_STRUCT.size, 1, obj_size, GLOBAL_MARKER,
             2, 0, timestamp)
-        # TODO: What should we use for commented event type?
-        data = EVENT_COMMENT_STRUCT.pack(0, len(text))
-        self._add_data(header + data + text)
+        data = GLOBAL_MARKER_STRUCT.pack(
+            0, 0xFFFFFF, 0xFF3300, 0, len(text), len(marker), len(comment))
+        self._add_data(header + data + text + marker + comment)
 
     def _add_data(self, data):
+        if len(data) % 4:
+            data = data + b"\x00" * (len(data) % 4)
         self.cache.append(data)
         self.cache_size += len(data)
         self.count_of_objects += 1
@@ -246,15 +247,17 @@ class BLFWriter(Listener):
     def stop(self):
         """Stops logging and closes the file."""
         self._flush()
-        # Write header
+        filesize = self.fp.tell()
+        self.fp.close()
+
+        # Write header in the beginning of the file
         header = [b"LOGG", FILE_HEADER_STRUCT.size,
-                  APPLICATION_ID, 0, 0, 0, 1, 1, 8, 0]
+                  APPLICATION_ID, 0, 0, 0, 2, 6, 8, 1]
         # TODO: What is "count of objects read"? Set to 0 for now
-        header.extend([self.fp.tell(), self.uncompressed_size,
+        header.extend([filesize, self.uncompressed_size,
                        self.count_of_objects, 0])
         now = time.time()
         header.extend(timestamp_to_systemtime(self.start_timestamp or now))
         header.extend(timestamp_to_systemtime(self.stop_timestamp or now))
-        self.fp.seek(0)
-        self.fp.write(FILE_HEADER_STRUCT.pack(*header))
-        self.fp.close()
+        with open(self.fp.name, "r+b") as f:
+            f.write(FILE_HEADER_STRUCT.pack(*header))

@@ -182,13 +182,15 @@ class FileReaderTest(BusTest):
 class BLFTest(unittest.TestCase):
 
     def test_reader_writer(self):
-        writer = can.BLFWriter("test.blf")
+        writer = can.BLFWriter("testlog.blf")
         for msg in TEST_MESSAGES:
             writer(msg)
         writer.log_event("Log stops here", TEST_MESSAGES[-1].timestamp + 1)
+        writer.log_event("Another comment", TEST_MESSAGES[-1].timestamp + 2)
         writer.stop()
 
-        messages = list(can.BLFReader("test.blf"))
+        messages = list(can.BLFReader("testlog.blf"))
+        self.assertEqual(len(messages), len(TEST_MESSAGES))
         for msg1, msg2 in zip(messages, TEST_MESSAGES):
             self.assertEqual(msg1, msg2)
             self.assertAlmostEqual(msg1.timestamp, msg2.timestamp)
