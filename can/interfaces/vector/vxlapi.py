@@ -32,6 +32,7 @@ if sys.platform == 'win32':
             LOG.error('Cannot load Dynamic XL Driver Library (vxlapi.dll)')
 else:
     LOG.error('This library is only availabe for Windows')
+    exit(1)
 
 # Bus types
 XL_BUS_TYPE_NONE = 0x00000000
