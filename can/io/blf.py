@@ -59,7 +59,7 @@ REMOTE_FLAG = 0x80
 def timestamp_to_systemtime(timestamp):
     t = datetime.datetime.fromtimestamp(timestamp)
     return (t.year, t.month, t.isoweekday() % 7, t.day,
-            t.hour, t.minute, t.second, t.microsecond // 1000)
+            t.hour, t.minute, t.second, int(round(t.microsecond / 1000.0)))
 
 
 def systemtime_to_timestamp(systemtime):
