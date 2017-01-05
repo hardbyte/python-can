@@ -142,7 +142,7 @@ class VectorBus(BusABC):
         message_count = ctypes.c_uint(1)
         xl_event = vxlapi.XLevent()
         xl_event.tag = ctypes.c_ubyte(vxlapi.XL_TRANSMIT_MSG.value)
-        xl_event.timeStamp = vxlapi.XLuint64(msg.timestamp)
+        xl_event.timeStamp = vxlapi.XLuint64(long(msg.timestamp))
         xl_event.tagData.msg.id = ctypes.c_ulong(msg.arbitration_id)
         xl_event.tagData.msg.dlc = ctypes.c_ushort(msg.dlc)
         xl_event.tagData.msg.flags = ctypes.c_ushort(0)
