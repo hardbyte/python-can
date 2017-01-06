@@ -4,6 +4,7 @@ import ctypes
 import logging
 import select
 import sys
+import struct
 from ctypes.util import find_library
 
 import can
@@ -50,6 +51,23 @@ class SocketcanCtypes_Bus(BusABC):
         self.socket = createSocket()
 
         log.debug("Result of createSocket was %d", self.socket)
+        
+        # Add any socket options such as can frame filters
+        if 'can_filters' in kwargs and len(kwargs['can_filters']) > 0:
+            log.debug("Creating a filtered can bus")
+            can_filter_fmt = "={}I".format(2 * len(kwargs['can_filters']))
+            filter_data = []
+            for can_filter in kwargs['can_filters']:
+                filter_data.append(can_filter['can_id'])
+                filter_data.append(can_filter['can_mask'])
+
+            res = libc.setsockopt(self.socket, SOL_CAN_RAW,
+                CAN_RAW_FILTER, struct.pack(can_filter_fmt, *filter_data),
+                4*2*len(kwargs['can_filters'])
+                )
+            if res != 0:
+                print(str(res))
+        
         error = bindSocket(self.socket, channel)
 
         if receive_own_messages:
@@ -57,6 +75,32 @@ class SocketcanCtypes_Bus(BusABC):
 
         super(SocketcanCtypes_Bus, self).__init__(*args, **kwargs)
 
+    def set_filters(self, can_filters=None):
+        """Apply filtering to all messages received by this Bus.
+
+        Calling without passing any filters will reset the applied filters.
+
+        :param list can_filters:
+            A list of dictionaries each containing a "can_id" and a "can_mask".
+
+            >>> [{"can_id": 0x11, "can_mask": 0x21}]
+
+            A filter matches, when ``<received_can_id> & can_mask == can_id & can_mask``
+
+        """
+        if can_filters is not None and len(can_filters) > 0:
+            can_filter_fmt = "={}I".format(2 * len(can_filters))
+            filter_data = []
+            for can_filter in can_filters:
+                filter_data.append(can_filter['can_id'])
+                filter_data.append(can_filter['can_mask'])
+            res = libc.setsockopt(self.socket, SOL_CAN_RAW,
+                CAN_RAW_FILTER, struct.pack(can_filter_fmt, *filter_data),
+                4*2*len(kwargs['can_filters'])
+                )
+            if res != 0:
+                print(str(res))
+    
     def recv(self, timeout=None):
 
         log.debug("Trying to read a msg")
