@@ -3,6 +3,7 @@ import unittest
 import random
 import logging
 import tempfile
+import os.path
 
 import can
 
@@ -181,15 +182,29 @@ class FileReaderTest(BusTest):
 
 class BLFTest(unittest.TestCase):
 
+    def test_reader(self):
+        logfile = os.path.join(os.path.dirname(__file__), "data", "logfile.blf")
+        messages = list(can.BLFReader(logfile))
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(messages[0],
+                         can.Message(
+                             extended_id=False,
+                             arbitration_id=0x64,
+                             data=[0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8]))
+
     def test_reader_writer(self):
-        writer = can.BLFWriter("testlog.blf")
+        f = tempfile.NamedTemporaryFile('w', delete=False)
+        f.close()
+        filename = f.name
+
+        writer = can.BLFWriter(filename)
         for msg in TEST_MESSAGES:
             writer(msg)
-        writer.log_event("Log stops here", TEST_MESSAGES[-1].timestamp + 1)
+        writer.log_event("One comment which should be attached to last message")
         writer.log_event("Another comment", TEST_MESSAGES[-1].timestamp + 2)
         writer.stop()
 
-        messages = list(can.BLFReader("testlog.blf"))
+        messages = list(can.BLFReader(filename))
         self.assertEqual(len(messages), len(TEST_MESSAGES))
         for msg1, msg2 in zip(messages, TEST_MESSAGES):
             self.assertEqual(msg1, msg2)

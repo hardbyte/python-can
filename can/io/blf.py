@@ -2,14 +2,14 @@
 Implements support for BLF (Binary Logging Format) which is a proprietary
 CAN log format from Vector Informatik GmbH.
 
-No offical specification is available. The implementation is based on the works
-by Toby Lorenz (https://bitbucket.org/tobylorenz/vector_blf).
+No official specification of the binary logging format is available.
+This implementation is based on Toby Lorenz' C++ library "Vector BLF" which is
+licenced under GPLv3. https://bitbucket.org/tobylorenz/vector_blf.
 The file starts with a header. The rest is one or more "log containers"
 which consists of a header and some zlib compressed data, usually up to 128 kB
 of uncompressed data each. This data contains the actual CAN messages and other
 objects types.
 """
-import logging
 import struct
 import zlib
 import datetime
@@ -18,8 +18,6 @@ import time
 from can.message import Message
 from can.CAN import Listener
 
-
-logger = logging.getLogger(__name__)
 
 # 0 = unknown, 2 = CANoe
 APPLICATION_ID = 5
@@ -57,6 +55,9 @@ REMOTE_FLAG = 0x80
 
 
 def timestamp_to_systemtime(timestamp):
+    if timestamp is None or timestamp < 631152000:
+        # Probably not a Unix timestamp
+        return (0, 0, 0, 0, 0, 0, 0, 0)
     t = datetime.datetime.fromtimestamp(timestamp)
     return (t.year, t.month, t.isoweekday() % 7, t.day,
             t.hour, t.minute, t.second, int(round(t.microsecond / 1000.0)))
@@ -75,6 +76,9 @@ def systemtime_to_timestamp(systemtime):
 class BLFReader(object):
     """
     Iterator of CAN messages from a Binary Logging File.
+
+    Only CAN messages and error frames are supported. Other object types are
+    silently ignored.
     """
 
     def __init__(self, filename):
@@ -189,18 +193,25 @@ class BLFWriter(Listener):
             data = CAN_ERROR_STRUCT.pack(self.channel, 0)
         self._add_data(header + data)
 
-    def log_event(self, message, timestamp=None):
-        """Add an arbitrary message to the log file."""
+    def log_event(self, text, timestamp=None):
+        """Add an arbitrary message to the log file as a global marker.
+
+        :param str text:
+            The group name of the marker.
+        :param float timestamp:
+            Absolute timestamp in Unix timestamp format. If not given, the
+            marker will be placed along the last message.
+        """
         if timestamp is None:
-            timestamp = time.time()
+            timestamp = self.stop_timestamp
         if self.start_timestamp is None:
             self.start_timestamp = timestamp
         self.stop_timestamp = timestamp
         try:
             # Only works on Windows
-            text = message.encode("mbcs")
+            text = text.encode("mbcs")
         except LookupError:
-            text = message.encode("ascii")
+            text = text.encode("ascii")
         timestamp = int((timestamp - self.start_timestamp) * 1000000000)
         comment = b"Added by python-can"
         marker = b"python-can"
@@ -241,7 +252,7 @@ class BLFWriter(Listener):
         self.fp.write(header)
         self.fp.write(compressed_data)
         # Write padding bytes
-        self.fp.write(b"\x00" * (len(compressed_data) % 4))
+        self.fp.write(b"\x00" * (obj_size % 4))
         self.uncompressed_size += len(uncompressed_data) + OBJ_HEADER_STRUCT.size
 
     def stop(self):
@@ -253,11 +264,10 @@ class BLFWriter(Listener):
         # Write header in the beginning of the file
         header = [b"LOGG", FILE_HEADER_STRUCT.size,
                   APPLICATION_ID, 0, 0, 0, 2, 6, 8, 1]
-        # TODO: What is "count of objects read"? Set to 0 for now
+        # The meaning of "count of objects read" is unknown
         header.extend([filesize, self.uncompressed_size,
                        self.count_of_objects, 0])
-        now = time.time()
-        header.extend(timestamp_to_systemtime(self.start_timestamp or now))
-        header.extend(timestamp_to_systemtime(self.stop_timestamp or now))
+        header.extend(timestamp_to_systemtime(self.start_timestamp))
+        header.extend(timestamp_to_systemtime(self.stop_timestamp))
         with open(self.fp.name, "r+b") as f:
             f.write(FILE_HEADER_STRUCT.pack(*header))
