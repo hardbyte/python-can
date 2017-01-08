@@ -83,6 +83,7 @@ class SocketcanCtypes_Bus(BusABC):
                               CAN_RAW_FILTER,
                               filter_struct, len(filter_struct)
                              )
+        # TODO Is this serious enough to raise a CanError exception?
         if res != 0:
             log.error('Setting filters failed: ' + str(res))
     
