@@ -16,4 +16,4 @@ def parseCanFilters(can_filters=None):
   for can_filter in can_filters:
     filter_data.append(can_filter['can_id'])
     filter_data.append(can_filter['can_mask'])
-return struct.pack(can_filter_fmt, *filter_data)
+  return struct.pack(can_filter_fmt, *filter_data)
