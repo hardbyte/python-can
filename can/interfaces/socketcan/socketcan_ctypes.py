@@ -77,14 +77,13 @@ class SocketcanCtypes_Bus(BusABC):
             A filter matches, when ``<received_can_id> & can_mask == can_id & can_mask``
 
         """
-        if can_filters is not None and len(can_filters) > 0:
-            can_filter_fmt, filter_data = parseCanFilters(can_filters)
-            res = libc.setsockopt(self.socket, SOL_CAN_RAW,
-                CAN_RAW_FILTER, struct.pack(can_filter_fmt, *filter_data),
-                len(filter_data)*ctypes.sizeof(ctypes.c_uint32)
-                )
-            if res != 0:
-                log.debug('Setting filters failed: ' + str(res))
+        can_filter_fmt, filter_data = parseCanFilters(can_filters)
+        res = libc.setsockopt(self.socket, SOL_CAN_RAW,
+                              CAN_RAW_FILTER, struct.pack(can_filter_fmt, *filter_data),
+                              len(filter_data)*ctypes.sizeof(ctypes.c_uint32)
+                             )
+        if res != 0:
+            log.debug('Setting filters failed: ' + str(res))
     
     def recv(self, timeout=None):
 
