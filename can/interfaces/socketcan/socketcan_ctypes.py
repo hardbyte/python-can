@@ -12,6 +12,7 @@ from can.broadcastmanager import CyclicSendTaskABC
 from can.bus import BusABC
 from can.message import Message
 from can.interfaces.socketcan.socketcan_constants import *  # CAN_RAW
+from can.interfaces.socketcan.socketcan_common import * # parseCanFilters
 
 # Set up logging
 log = logging.getLogger('can.socketcan.ctypes')
@@ -77,13 +78,12 @@ class SocketcanCtypes_Bus(BusABC):
             A filter matches, when ``<received_can_id> & can_mask == can_id & can_mask``
 
         """
-        can_filter_fmt, filter_data = parseCanFilters(can_filters)
-        res = libc.setsockopt(self.socket, SOL_CAN_RAW,
-                              CAN_RAW_FILTER, struct.pack(can_filter_fmt, *filter_data),
-                              len(filter_data)*ctypes.sizeof(ctypes.c_uint32)
+       filter_struct = parseCanFilters(can_filters)
+        res = libc.setsockopt(self.socket, SOL_CAN_RAW, CAN_RAW_FILTER,
+                              filter_struct, len(filter_struct)
                              )
         if res != 0:
-            log.debug('Setting filters failed: ' + str(res))
+            log.error('Setting filters failed: ' + str(res))
     
     def recv(self, timeout=None):
 
