@@ -55,7 +55,7 @@ class SocketcanCtypes_Bus(BusABC):
         # Add any socket options such as can frame filters
         if 'can_filters' in kwargs and len(kwargs['can_filters']) > 0:
             log.debug("Creating a filtered can bus")
-            set_filters(kwargs['can_filters'])
+            self.set_filters(kwargs['can_filters'])
         
         error = bindSocket(self.socket, channel)
 
