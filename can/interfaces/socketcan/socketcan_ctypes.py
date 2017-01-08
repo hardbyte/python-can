@@ -77,7 +77,7 @@ class SocketcanCtypes_Bus(BusABC):
             A filter matches, when ``<received_can_id> & can_mask == can_id & can_mask``
 
         """
-        filter_struct = parseCanFilters(can_filters)
+        filter_struct = pack_filters(can_filters)
         res = libc.setsockopt(self.socket,
                               SOL_CAN_RAW,
                               CAN_RAW_FILTER,

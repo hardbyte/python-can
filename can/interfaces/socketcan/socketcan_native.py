@@ -404,7 +404,7 @@ class SocketcanNative_Bus(BusABC):
             raise can.CanError("can.socketcan.native failed to transmit")
 
     def set_filters(self, can_filters=None):
-        filter_struct = parseCanFilters(can_filters)
+        filter_struct = pack_filters(can_filters)
         self.socket.setsockopt(socket.SOL_CAN_RAW,
                                socket.CAN_RAW_FILTER,
                                filter_struct
