@@ -55,18 +55,7 @@ class SocketcanCtypes_Bus(BusABC):
         # Add any socket options such as can frame filters
         if 'can_filters' in kwargs and len(kwargs['can_filters']) > 0:
             log.debug("Creating a filtered can bus")
-            can_filter_fmt = "={}I".format(2 * len(kwargs['can_filters']))
-            filter_data = []
-            for can_filter in kwargs['can_filters']:
-                filter_data.append(can_filter['can_id'])
-                filter_data.append(can_filter['can_mask'])
-
-            res = libc.setsockopt(self.socket, SOL_CAN_RAW,
-                CAN_RAW_FILTER, struct.pack(can_filter_fmt, *filter_data),
-                4*2*len(kwargs['can_filters'])
-                )
-            if res != 0:
-                print(str(res))
+            set_filters(kwargs['can_filters'])
         
         error = bindSocket(self.socket, channel)
 
@@ -96,7 +85,7 @@ class SocketcanCtypes_Bus(BusABC):
                 filter_data.append(can_filter['can_mask'])
             res = libc.setsockopt(self.socket, SOL_CAN_RAW,
                 CAN_RAW_FILTER, struct.pack(can_filter_fmt, *filter_data),
-                4*2*len(kwargs['can_filters'])
+                4*2*len(can_filters)
                 )
             if res != 0:
                 print(str(res))
