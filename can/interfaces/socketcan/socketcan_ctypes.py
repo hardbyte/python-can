@@ -4,7 +4,6 @@ import ctypes
 import logging
 import select
 import sys
-import struct
 from ctypes.util import find_library
 
 import can
