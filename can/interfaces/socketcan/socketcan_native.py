@@ -27,6 +27,7 @@ except:
 import can
 
 from can.interfaces.socketcan.socketcan_constants import *  # CAN_RAW, CAN_*_FLAG
+from can.interfaces.socketcan.socketcan_common import * # parseCanFilters
 from can import Message, BusABC
 
 from can.broadcastmanager import CyclicSendTaskABC
@@ -403,10 +404,10 @@ class SocketcanNative_Bus(BusABC):
             raise can.CanError("can.socketcan.native failed to transmit")
 
     def set_filters(self, can_filters=None):
-        can_filter_fmt, filter_data = parseCanFilters(can_filters)
+        filter_struct = parseCanFilters(can_filters)
         self.socket.setsockopt(socket.SOL_CAN_RAW,
                                socket.CAN_RAW_FILTER,
-                               struct.pack(can_filter_fmt, *filter_data)
+                               filter_struct
                                )
 
 
