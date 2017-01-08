@@ -81,3 +81,10 @@ MAX_11_BIT_ID = STD_ACCEPTANCE_MASK_ALL_BITS
 
 EXT_ACCEPTANCE_MASK_ALL_BITS = (2**29 - 1)
 MAX_29_BIT_ID = EXT_ACCEPTANCE_MASK_ALL_BITS
+
+def parseCanFilters(can_filters = {}):
+  can_filter_fmt = "={}I".format(2 * len(can_filters))
+  filter_data = []
+  for can_filter in can_filters:
+    filter_data.append(can_filter['can_id'])
+    filter_data.append(can_filter['can_mask'])
