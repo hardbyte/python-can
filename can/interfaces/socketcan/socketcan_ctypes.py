@@ -85,7 +85,7 @@ class SocketcanCtypes_Bus(BusABC):
                 filter_data.append(can_filter['can_mask'])
             res = libc.setsockopt(self.socket, SOL_CAN_RAW,
                 CAN_RAW_FILTER, struct.pack(can_filter_fmt, *filter_data),
-                4*2*len(can_filters)
+                len(filter_data)*ctypes.sizeof(ctypes.c_uint32)
                 )
             if res != 0:
                 print(str(res))
