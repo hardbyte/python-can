@@ -11,6 +11,7 @@ from can.broadcastmanager import CyclicSendTaskABC
 from can.bus import BusABC
 from can.message import Message
 from can.interfaces.socketcan.socketcan_constants import *  # CAN_RAW
+from can.interfaces.socketcan.socketcan_common import * # parseCanFilters
 
 # Set up logging
 log = logging.getLogger('can.socketcan.ctypes')
@@ -50,6 +51,12 @@ class SocketcanCtypes_Bus(BusABC):
         self.socket = createSocket()
 
         log.debug("Result of createSocket was %d", self.socket)
+        
+        # Add any socket options such as can frame filters
+        if 'can_filters' in kwargs and len(kwargs['can_filters']) > 0:
+            log.debug("Creating a filtered can bus")
+            self.set_filters(kwargs['can_filters'])
+        
         error = bindSocket(self.socket, channel)
 
         if receive_own_messages:
@@ -57,6 +64,29 @@ class SocketcanCtypes_Bus(BusABC):
 
         super(SocketcanCtypes_Bus, self).__init__(*args, **kwargs)
 
+    def set_filters(self, can_filters=None):
+        """Apply filtering to all messages received by this Bus.
+
+        Calling without passing any filters will reset the applied filters.
+
+        :param list can_filters:
+            A list of dictionaries each containing a "can_id" and a "can_mask".
+
+            >>> [{"can_id": 0x11, "can_mask": 0x21}]
+
+            A filter matches, when ``<received_can_id> & can_mask == can_id & can_mask``
+
+        """
+        filter_struct = parseCanFilters(can_filters)
+        res = libc.setsockopt(self.socket,
+                              SOL_CAN_RAW,
+                              CAN_RAW_FILTER,
+                              filter_struct, len(filter_struct)
+                             )
+        # TODO Is this serious enough to raise a CanError exception?
+        if res != 0:
+            log.error('Setting filters failed: ' + str(res))
+    
     def recv(self, timeout=None):
 
         log.debug("Trying to read a msg")
