@@ -2,6 +2,7 @@
 """
 Defines common socketcan functions.
 """
+import struct
 
 def parseCanFilters(can_filters=None):
   if can_filters is None:
