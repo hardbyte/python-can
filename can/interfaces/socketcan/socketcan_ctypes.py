@@ -78,17 +78,13 @@ class SocketcanCtypes_Bus(BusABC):
 
         """
         if can_filters is not None and len(can_filters) > 0:
-            can_filter_fmt = "={}I".format(2 * len(can_filters))
-            filter_data = []
-            for can_filter in can_filters:
-                filter_data.append(can_filter['can_id'])
-                filter_data.append(can_filter['can_mask'])
+            can_filter_fmt, filter_data = parseCanFilters(can_filters)
             res = libc.setsockopt(self.socket, SOL_CAN_RAW,
                 CAN_RAW_FILTER, struct.pack(can_filter_fmt, *filter_data),
                 len(filter_data)*ctypes.sizeof(ctypes.c_uint32)
                 )
             if res != 0:
-                print(str(res))
+                log.debug('Setting filters failed: ' + str(res))
     
     def recv(self, timeout=None):
 
