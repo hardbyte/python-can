@@ -14,4 +14,3 @@ import logging
 
 log = logging.getLogger('can')
 log.info("Loading python-can via the old CAN api")
-

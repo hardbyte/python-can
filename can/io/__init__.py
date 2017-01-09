@@ -4,6 +4,7 @@ and Writers based off the file extension.
 """
 
 from .asc import ASCWriter
+from .blf import BLFReader, BLFWriter
 from .csv import CSVWriter
 from .sqlite import SqlReader, SqliteWriter
 from .stdout import Printer
@@ -15,6 +16,7 @@ class Logger(object):
 
     The format is determined from the file format which can be one of:
       * .asc: :class:`can.ASCWriter`
+      * .blf :class:`can.BLFWriter`
       * .csv: :class:`can.CSVWriter`
       * .db: :class:`can.SqliteWriter`
       * other: :class:`can.Printer`
@@ -30,6 +32,8 @@ class Logger(object):
             return Printer()
         elif filename.endswith(".asc"):
             return ASCWriter(filename)
+        elif filename.endswith(".blf"):
+            return BLFWriter(filename)
         elif filename.endswith(".csv"):
             return CSVWriter(filename)
         elif filename.endswith(".db"):
@@ -44,6 +48,7 @@ class LogReader(object):
 
     The format is determined from the file format which can be one of:
       * .asc
+      * .blf
       * .csv
       * .db
 
@@ -62,6 +67,8 @@ class LogReader(object):
         if filename.endswith(".asc"):
             raise NotImplemented
         #     return ASCReader(filename)
+        if filename.endswith(".blf"):
+            return BLFReader(filename)
         if filename.endswith(".csv"):
             raise NotImplemented
         #     return CSVReader(filename)

@@ -11,10 +11,14 @@ class CanError(IOError):
     pass
 
 from can.listener import Listener, BufferedReader, RedirectReader
-from can.io import Logger, Printer, CSVWriter, SqliteWriter, ASCWriter, LogReader, SqlReader
+
+from can.io import Logger, Printer, LogReader
+from can.io import ASCWriter
+from can.io import BLFReader, BLFWriter
+from can.io import CSVWriter
+from can.io import SqliteWriter, SqlReader
 
 from can.util import set_logging_level
-
 
 from can.message import Message
 from can.bus import BusABC
