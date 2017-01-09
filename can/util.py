@@ -189,16 +189,16 @@ class MessageSync:
 
 
 def set_logging_level(level_name=None):
-    """Set the logging level for python-can.
+    """Set the logging level for the "can" logger.
     Expects one of: 'critical', 'error', 'warning', 'info', 'debug', 'subdebug'
     """
-    try:
-        log.setLevel(getattr(logging, level_name.upper()))
-    except AttributeError:
-        log.setLevel(logging.DEBUG)
-    log.debug("Logging set to {}".format(level_name))
+    can_logger = logging.getLogger('can')
 
-    logging.basicConfig()
+    try:
+        can_logger.setLevel(getattr(logging, level_name.upper()))
+    except AttributeError:
+        can_logger.setLevel(logging.DEBUG)
+    log.debug("Logging set to {}".format(level_name))
 
 
 if __name__ == "__main__":
