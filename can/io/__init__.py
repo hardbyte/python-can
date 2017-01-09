@@ -5,7 +5,7 @@ and Writers based off the file extension.
 
 from .asc import ASCWriter
 from .csv import CSVWriter
-from .sql import SqlReader, SqliteWriter
+from .sqlite import SqlReader, SqliteWriter
 from .stdout import Printer
 
 
