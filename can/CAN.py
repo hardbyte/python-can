@@ -60,6 +60,9 @@ class Listener(object):
         """
 
 
+from can.io.blf import BLFReader, BLFWriter
+
+
 class RedirectReader(Listener):
     """
     A RedirectReader sends all received messages
@@ -109,6 +112,7 @@ class Logger(object):
 
     The format is determined from the file format which can be one of:
       * .asc: :class:`can.ASCWriter`
+      * .blf: :class:`can.BLFWriter`
       * .csv: :class:`can.CSVWriter`
       * .db: :class:`can.SqliteWriter`
       * other: :class:`can.Printer`
@@ -120,6 +124,8 @@ class Logger(object):
             return Printer()
         elif filename.endswith(".asc"):
             return ASCWriter(filename)
+        elif filename.endswith(".blf"):
+            return BLFWriter(filename)
         elif filename.endswith(".csv"):
             return CSVWriter(filename)
         elif filename.endswith(".db"):
@@ -134,6 +140,7 @@ class LogReader(object):
 
     The format is determined from the file format which can be one of:
       * .asc
+      * .blf
       * .csv
       * .db
 
@@ -152,6 +159,8 @@ class LogReader(object):
         if filename.endswith(".asc"):
             raise NotImplemented
         #     return ASCReader(filename)
+        if filename.endswith(".blf"):
+            return BLFReader(filename)
         if filename.endswith(".csv"):
             raise NotImplemented
         #     return CSVReader(filename)
