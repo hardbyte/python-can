@@ -3,6 +3,7 @@
 #  more Info at http://www.peak-system.com
 
 import logging
+import platform
 
 from can.interfaces.pcan.pcan_constants import *
 
@@ -41,10 +42,14 @@ class PCANBasic:
     """
 
     def __init__(self):
-        """Loads the PCANBasic.dll"""
-        self.__m_dllBasic = windll.LoadLibrary("PCANBasic")
-        if self.__m_dllBasic is None:
-            log.warning("The PCAN-Basic DLL couldn't be loaded!")
+        # Loads the PCANBasic.dll
+        #     
+        if platform.system() == 'Windows':
+            self.__m_dllBasic = windll.LoadLibrary("PCANBasic")
+        else:
+            self.__m_dllBasic = cdll.LoadLibrary("libpcanbasic.so")
+        if self.__m_dllBasic == None:
+            print ("Exception: The PCAN-Basic DLL couldn't be loaded!")
 
     def Initialize(self,
                    Channel,
