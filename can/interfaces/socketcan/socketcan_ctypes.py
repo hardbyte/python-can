@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 import ctypes
+import threading
 import logging
 import select
 import sys
@@ -48,6 +49,7 @@ class SocketcanCtypes_Bus(BusABC):
         """
 
         self.socket = createSocket()
+        self.channel = channel
 
         log.debug("Result of createSocket was %d", self.socket)
         error = bindSocket(self.socket, channel)
@@ -95,6 +97,14 @@ class SocketcanCtypes_Bus(BusABC):
             raise can.CanError("can.socketcan.ctypes failed to transmit")
 
         logging.debug("Frame transmitted with %s bytes", bytes_sent)
+
+    def send_periodic(self, msg, period, duration=None):
+        task = CyclicSendTask(self.channel, msg, period)
+
+        if duration is not None:
+            threading.Timer(duration, task.stop).start()
+
+        return task
 
 
 class SOCKADDR(ctypes.Structure):
@@ -361,7 +371,6 @@ def _create_bcm_frame(opcode, flags, count, ival1_seconds, ival1_usec, ival2_sec
 
 
 class SocketCanCtypesBCMBase(object):
-
     """Mixin to add a BCM socket"""
 
     def __init__(self, channel, *args, **kwargs):
@@ -371,7 +380,7 @@ class SocketCanCtypesBCMBase(object):
         log.debug("Created bcm socket (un-connected fd=%d)", self.bcm_socket)
         connectSocket(self.bcm_socket, channel)
         log.debug("Connected bcm socket")
-        super(SocketCanCtypesBCMBase, self).__init__(channel, *args, **kwargs)
+        super(SocketCanCtypesBCMBase, self).__init__(*args, **kwargs)
 
 
 class CyclicSendTask(SocketCanCtypesBCMBase, CyclicSendTaskABC):

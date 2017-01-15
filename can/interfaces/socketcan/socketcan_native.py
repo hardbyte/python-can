@@ -7,6 +7,7 @@ can socket and can bcm socket support: >3.4
 
 import logging
 import select
+import threading
 import socket
 import struct
 from collections import namedtuple
@@ -142,12 +143,13 @@ def _add_flags_to_can_id(message):
 
     return can_id
 
+
 class SocketCanBCMBase(object):
     """Mixin to add a BCM socket"""
 
     def __init__(self, channel, *args, **kwargs):
         self.bcm_socket = create_bcm_socket(channel)
-        super(SocketCanBCMBase, self).__init__(channel, *args, **kwargs)
+        super(SocketCanBCMBase, self).__init__(*args, **kwargs)
 
 
 class CyclicSendTask(SocketCanBCMBase, CyclicSendTaskABC):
@@ -168,7 +170,7 @@ class CyclicSendTask(SocketCanBCMBase, CyclicSendTaskABC):
         can_id = _add_flags_to_can_id(message)
         header = build_bcm_transmit_header(can_id, 0, 0.0, self.period)
         frame = build_can_frame(can_id, message.data)
-        log.info("Sending BCM command")
+        log.debug("Sending BCM command")
         self.bcm_socket.send(header + frame)
 
     def stop(self):
@@ -178,6 +180,7 @@ class CyclicSendTask(SocketCanBCMBase, CyclicSendTaskABC):
         with the specified can_id CAN identifier. The message length for the command
         TX_DELETE is {[bcm_msg_head]} (only the header).
         """
+        log.debug("Stopping periodic task")
         try:
             self.bcm_socket.send(build_bcm_tx_delete_header(self.can_id))
         except:
@@ -185,6 +188,8 @@ class CyclicSendTask(SocketCanBCMBase, CyclicSendTaskABC):
 
     def modify_data(self, message):
         """Update the contents of this periodically sent message.
+
+        Note the Message must have the same :attr:`~can.Message.arbitration_id`.
         """
         assert message.arbitration_id == self.can_id, "You cannot modify the can identifier"
         self._tx_setup(message)
@@ -194,7 +199,6 @@ class CyclicSendTask(SocketCanBCMBase, CyclicSendTaskABC):
 
 
 class MultiRateCyclicSendTask(CyclicSendTask):
-
     """Exposes more of the full power of the TX_SETUP opcode.
 
     Transmits a message `count` times at `initial_period` then
@@ -339,6 +343,7 @@ class SocketcanNative_Bus(BusABC):
             A list of dictionaries, each containing a "can_id" and a "can_mask".
         """
         self.socket = createSocket(CAN_RAW)
+        self.channel = channel
 
         # Add any socket options such as can frame filters
         if 'can_filters' in kwargs and len(kwargs['can_filters']) > 0:
@@ -401,6 +406,15 @@ class SocketcanNative_Bus(BusABC):
         except OSError:
             l.warning("Failed to send: %s", msg)
             raise can.CanError("can.socketcan.native failed to transmit")
+
+    def send_periodic(self, msg, period, duration=None):
+        task = CyclicSendTask(self.channel, msg, period)
+
+        if duration is not None:
+            stop_timer = threading.Timer(duration, task.stop)
+            stop_timer.start()
+
+        return task
 
     def set_filters(self, can_filters=None):
         if can_filters is None:
