@@ -4,8 +4,8 @@ Ctypes wrapper module for IXXAT Virtual CAN Interface V3 on win32 systems
 Copyright (C) 2016 Giuseppe Corbelli <giuseppe.corbelli@weightpack.com>
 """
 
-import binascii
 import ctypes
+import functools
 import logging
 import sys
 import time
@@ -16,9 +16,10 @@ from can.interfaces.ixxat import constants, structures
 
 from can.ctypesutil import CLibrary, HANDLE, PHANDLE
 
+from .constants import VCI_MAX_ERRSTRLEN
 from .exceptions import *
 
-__all__ = ["VCITimeout", "VCIError", "VCIDeviceNotFoundError", "IXXATBus"]
+__all__ = ["VCITimeout", "VCIError", "VCIDeviceNotFoundError", "IXXATBus", "vciFormatError"]
 
 log = logging.getLogger('can.ixxat')
 
@@ -27,31 +28,88 @@ if ((sys.version_info.major == 3) and (sys.version_info.minor >= 3)):
 else:
     _timer_function = time.clock
 
+# Hack to have vciFormatError as a free function, see below
+vciFormatError = None
+
 # main ctypes instance
+_canlib = None
 if sys.platform == "win32":
     try:
         _canlib = CLibrary("vcinpl")
     except Exception as e:
         log.warning("Cannot load IXXAT vcinpl library: %s", e)
-        _canlib = None
 else:
     # Will not work on other systems, but have it importable anyway for
     # tests/sphinx
     log.warning("IXXAT VCI library does not work on %s platform", sys.platform)
-    _canlib = None
+
+
+def __vciFormatErrorExtended(library_instance, function, HRESULT, arguments):
+    """ Format a VCI error and attach failed function, decoded HRESULT and arguments
+        :param CLibrary library_instance:
+            Mapped instance of IXXAT vcinpl library
+        :param callable function:
+            Failed function
+        :param HRESULT HRESULT:
+            HRESULT returned by vcinpl call
+        :param arguments:
+            Arbitrary arguments tuple
+        :return:
+            Formatted string
+    """
+    #TODO: make sure we don't generate another exception
+    return "{} - arguments were {}".format(
+        __vciFormatError(library_instance, function, HRESULT),
+        arguments
+    )
+
+
+def __vciFormatError(library_instance, function, HRESULT):
+    """ Format a VCI error and attach failed function and decoded HRESULT
+        :param CLibrary library_instance:
+            Mapped instance of IXXAT vcinpl library
+        :param callable function:
+            Failed function
+        :param HRESULT HRESULT:
+            HRESULT returned by vcinpl call
+        :return:
+            Formatted string
+    """
+    buf = ctypes.create_string_buffer(VCI_MAX_ERRSTRLEN)
+    ctypes.memset(buf, 0, VCI_MAX_ERRSTRLEN)
+    library_instance.vciFormatError(HRESULT, buf, VCI_MAX_ERRSTRLEN)
+    return "function {} failed ({})".format(function._name, buf.value.decode('utf-8', 'replace'))
 
 
 def __check_status(result, function, arguments):
+    """
+    Check the result of a vcinpl function call and raise appropriate exception
+    in case of an error. Used as errcheck function when mapping C functions
+    with ctypes.
+        :param result:
+            Function call numeric result
+        :param callable function:
+            Called function
+        :param arguments:
+            Arbitrary arguments tuple
+        :raise:
+            :class:VCITimeout
+            :class:VCIRxQueueEmptyError
+            :class:StopIteration
+            :class:VCIError
+    """
     if isinstance(result, int):
         # Real return value is an unsigned long
         result = ctypes.c_ulong(result).value
 
-    if (result == constants.VCI_E_TIMEOUT):
+    if result == constants.VCI_E_TIMEOUT:
         raise VCITimeout("Function {} timed out".format(function._name))
-    elif (result == constants.VCI_E_NO_MORE_ITEMS):
+    elif result == constants.VCI_E_RXQUEUE_EMPTY:
+        raise VCIRxQueueEmptyError()
+    elif result == constants.VCI_E_NO_MORE_ITEMS:
         raise StopIteration()
-    elif (result != constants.VCI_OK):
-        raise VCIError(function, result, arguments)
+    elif result != constants.VCI_OK:
+        raise VCIError(vciFormatError(function, result))
 
     return result
 
@@ -62,6 +120,8 @@ try:
 
     #void VCIAPI vciFormatError (HRESULT hrError, PCHAR pszText, UINT32 dwsize);
     _canlib.map_symbol("vciFormatError", None, (ctypes.HRESULT, ctypes.c_char_p, ctypes.c_uint32))
+    # Hack to have vciFormatError as a free function
+    vciFormatError = functools.partial(__vciFormatError, _canlib)
 
     # HRESULT VCIAPI vciEnumDeviceOpen( OUT PHANDLE hEnum );
     _canlib.map_symbol("vciEnumDeviceOpen", ctypes.c_long, (PHANDLE,), __check_status)
@@ -126,7 +186,7 @@ except Exception as e:
 CAN_INFO_MESSAGES = {
     constants.CAN_INFO_START: "CAN started",
     constants.CAN_INFO_STOP: "CAN stopped",
-    constants.CAN_INFO_RESET:"CAN resetted",
+    constants.CAN_INFO_RESET: "CAN reset",
 }
 
 CAN_ERROR_MESSAGES = {
@@ -185,7 +245,7 @@ class IXXATBus(BusABC):
         :param int bitrate:
             Channel bitrate in bit/s
         """
-        if (_canlib is None):
+        if _canlib is None:
             raise ImportError("The IXXAT VCI library has not been initialized. Check the logs for more details.")
         log.info("CAN Filters: %s", can_filters)
         log.info("Got configuration of: %s", config)
@@ -210,7 +270,7 @@ class IXXATBus(BusABC):
         self._payload = (ctypes.c_byte * 8)()
 
         # Search for supplied device
-        if (UniqueHardwareId is None):
+        if UniqueHardwareId is None:
             log.info("Searching for first available device")
         else:
             log.info("Searching for unique HW ID %s", UniqueHardwareId)
@@ -257,7 +317,10 @@ class IXXATBus(BusABC):
         if can_filters is not None and len(can_filters):
             log.info("The IXXAT VCI backend is filtering messages")
             # Disable every message coming in
-            _canlib.canControlSetAccFilter(self._control_handle, 1 if extended else 0, constants.CAN_ACC_CODE_NONE, constants.CAN_ACC_MASK_NONE)
+            _canlib.canControlSetAccFilter(self._control_handle,
+                                           1 if extended else 0,
+                                           constants.CAN_ACC_CODE_NONE,
+                                           constants.CAN_ACC_MASK_NONE)
             for can_filter in can_filters:
                 # Whitelist
                 code = int(can_filter['can_id'])
@@ -271,7 +334,7 @@ class IXXATBus(BusABC):
 
         # Usually you get back 3 messages like "CAN initialized" ecc...
         # Filter them out with low timeout
-        while (True):
+        while True:
             try:
                 _canlib.canChannelWaitRxEvent(self._channel_handle, 0)
             except VCITimeout:
@@ -290,38 +353,35 @@ class IXXATBus(BusABC):
             return 1
 
     def flush_tx_buffer(self):
-        " Flushes the transmit buffer on the IXXAT "
-        # TODO: no timeout?
+        """ Flushes the transmit buffer on the IXXAT """
+        # TODO #64: no timeout?
         _canlib.canChannelWaitTxEvent(self._channel_handle, constants.INFINITE)
 
     def recv(self, timeout=None):
-        " Read a message from IXXAT device. "
+        """ Read a message from IXXAT device. """
 
         # TODO: handling CAN error messages?
-        if (timeout is None):
+        if timeout is None:
             timeout = constants.INFINITE
 
         tm = None
-        if (timeout == 0):
+        if timeout == 0:
             # Peek without waiting
             try:
                 _canlib.canChannelPeekMessage(self._channel_handle, ctypes.byref(self._message))
             except VCITimeout:
                 return None
-            except VCIError as e:
-                if (e.HRESULT == constants.VCI_E_RXQUEUE_EMPTY):
-                    return None
-                else:
-                    raise e
+            except VCIRxQueueEmptyError:
+                return None
             else:
-                if (self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_DATA):
+                if self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_DATA:
                     tm = _timer_function()
         else:
             # Wait if no message available
             t0 = _timer_function()
             elapsed_ms = 0
             remaining_ms = 0
-            while (elapsed_ms <= timeout):
+            while elapsed_ms <= timeout:
                 elapsed_ms = int((_timer_function() - t0) * 1000)
                 remaining_ms = timeout - elapsed_ms
                 # Wait until at least one frame is in the buffer
@@ -339,20 +399,22 @@ class IXXATBus(BusABC):
                     continue
 
                 # See if we got a data or info/error messages
-                if (self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_DATA):
+                if self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_DATA:
                     tm = _timer_function()
                     break
 
-                elif (self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_INFO):
+                elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_INFO:
                     log.info(CAN_INFO_MESSAGES.get(self._message.abData[0], "Unknown CAN info message code {}".format(self._message.abData[0])))
 
-                elif (self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_ERROR):
+                elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_ERROR:
                     log.warning(CAN_ERROR_MESSAGES.get(self._message.abData[0], "Unknown CAN error message code {}".format(self._message.abData[0])))
 
-                elif (self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_TIMEOVR):
+                elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_TIMEOVR:
                     pass
+                else:
+                    log.warn("Unexpected message info type")
 
-        if (not tm):
+        if not tm:
             # Timed out / can message type is not DATA
             return None
 
@@ -380,7 +442,7 @@ class IXXATBus(BusABC):
         self._message.uMsgInfo.Bits.rtr = 1 if msg.is_remote_frame else 0
         self._message.uMsgInfo.Bits.ext = 1 if msg.id_type else 0
         self._message.dwMsgId = msg.arbitration_id
-        if (msg.dlc):
+        if msg.dlc:
             self._message.uMsgInfo.Bits.dlc = msg.dlc
             adapter = (ctypes.c_uint8 * msg.dlc).from_buffer(msg.data)
             ctypes.memmove(self._message.abData, adapter, msg.dlc)

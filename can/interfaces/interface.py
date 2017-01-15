@@ -30,6 +30,11 @@ class Bus(object):
             if can.rc['interface'] == 'socketcan':
                 can.rc['interface'] = choose_socketcan_implementation()
 
+        # Update can.rc from kwargs
+        for kw in ('interface', 'bitrate'):
+            if kw in kwargs:
+                can.rc[kw] = kwargs[kw]
+
         if 'interface' not in can.rc or 'channel' not in can.rc or can.rc['interface'] is None:
             can.log.debug("Loading default configuration")
             # Load defaults

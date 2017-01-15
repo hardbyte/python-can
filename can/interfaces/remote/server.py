@@ -42,8 +42,6 @@ class ClientBusConnection(socketserver.BaseRequestHandler):
     """A client connection on the server."""
 
     def handle(self):
-        # Register with the server
-        self.server.clients.append(self)
         #: Socket connection to client
         self.socket = self.request
         self.conn = can.interfaces.remote.connection.Connection()
@@ -81,6 +79,8 @@ class ClientBusConnection(socketserver.BaseRequestHandler):
         else:
             logger.info("Connected to bus '%s'", self.bus.channel_info)
             self.conn.send_event(events.BusResponse(self.bus.channel_info))
+            # Register with the server
+            self.server.clients.append(self)
         finally:
             self.socket.sendall(self.conn.next_data())
 

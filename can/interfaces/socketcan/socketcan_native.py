@@ -28,6 +28,7 @@ except:
 import can
 
 from can.interfaces.socketcan.socketcan_constants import *  # CAN_RAW, CAN_*_FLAG
+from can.interfaces.socketcan.socketcan_common import * # parseCanFilters
 from can import Message, BusABC
 
 from can.broadcastmanager import CyclicSendTaskABC
@@ -417,22 +418,10 @@ class SocketcanNative_Bus(BusABC):
         return task
 
     def set_filters(self, can_filters=None):
-        if can_filters is None:
-            # Pass all messages
-            can_filters=[{
-                'can_id': 0,
-                'can_mask': 0
-            }]
-
-        can_filter_fmt = "={}I".format(2 * len(can_filters))
-        filter_data = []
-        for can_filter in can_filters:
-            filter_data.append(can_filter['can_id'])
-            filter_data.append(can_filter['can_mask'])
-
+        filter_struct = pack_filters(can_filters)
         self.socket.setsockopt(socket.SOL_CAN_RAW,
                                socket.CAN_RAW_FILTER,
-                               struct.pack(can_filter_fmt, *filter_data)
+                               filter_struct
                                )
 
 
