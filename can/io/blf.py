@@ -170,28 +170,17 @@ class BLFWriter(Listener):
         self.stop_timestamp = None
 
     def on_message_received(self, msg):
-        if self.start_timestamp is None:
-            self.start_timestamp = msg.timestamp
-        self.stop_timestamp = msg.timestamp
-        timestamp = int((msg.timestamp - self.start_timestamp) * 1000000000)
         if not msg.is_error_frame:
-            obj_size = OBJ_HEADER_STRUCT.size + CAN_MSG_STRUCT.size
-            header = OBJ_HEADER_STRUCT.pack(
-                b"LOBJ", OBJ_HEADER_STRUCT.size, 1, obj_size, CAN_MESSAGE,
-                2, 0, timestamp)
             flags = REMOTE_FLAG if msg.is_remote_frame else 0
             arb_id = msg.arbitration_id
             if msg.id_type:
                 arb_id |= CAN_MSG_EXT
             data = CAN_MSG_STRUCT.pack(self.channel, flags, msg.dlc, arb_id,
                                        bytes(msg.data))
+            self._add_object(CAN_MESSAGE, data, msg.timestamp)
         else:
-            obj_size = OBJ_HEADER_STRUCT.size + CAN_ERROR_STRUCT.size
-            header = OBJ_HEADER_STRUCT.pack(
-                b"LOBJ", OBJ_HEADER_STRUCT.size, 1, obj_size, CAN_ERROR,
-                2, 0, timestamp)
             data = CAN_ERROR_STRUCT.pack(self.channel, 0)
-        self._add_data(header + data)
+            self._add_object(CAN_ERROR, data, msg.timestamp)
 
     def log_event(self, text, timestamp=None):
         """Add an arbitrary message to the log file as a global marker.
@@ -202,33 +191,33 @@ class BLFWriter(Listener):
             Absolute timestamp in Unix timestamp format. If not given, the
             marker will be placed along the last message.
         """
-        if timestamp is None:
-            timestamp = self.stop_timestamp
-        if self.start_timestamp is None:
-            self.start_timestamp = timestamp
-        self.stop_timestamp = timestamp
         try:
             # Only works on Windows
             text = text.encode("mbcs")
         except LookupError:
             text = text.encode("ascii")
-        timestamp = int((timestamp - self.start_timestamp) * 1000000000)
         comment = b"Added by python-can"
         marker = b"python-can"
-        obj_size = (OBJ_HEADER_STRUCT.size + GLOBAL_MARKER_STRUCT.size +
-                    len(text) + len(marker) + len(comment))
-        header = OBJ_HEADER_STRUCT.pack(
-            b"LOBJ", OBJ_HEADER_STRUCT.size, 1, obj_size, GLOBAL_MARKER,
-            2, 0, timestamp)
         data = GLOBAL_MARKER_STRUCT.pack(
             0, 0xFFFFFF, 0xFF3300, 0, len(text), len(marker), len(comment))
-        self._add_data(header + data + text + marker + comment)
+        self._add_object(GLOBAL_MARKER, data + text + marker + comment, timestamp)
 
-    def _add_data(self, data):
-        if len(data) % 4:
-            data = data + b"\x00" * (len(data) % 4)
+    def _add_object(self, obj_type, data, timestamp=None):
+        if timestamp is None:
+            timestamp = self.stop_timestamp or time.time()
+        if self.start_timestamp is None:
+            self.start_timestamp = timestamp
+        self.stop_timestamp = timestamp
+        timestamp = int((timestamp - self.start_timestamp) * 1000000000)
+        obj_size = OBJ_HEADER_STRUCT.size + len(data)
+        header = OBJ_HEADER_STRUCT.pack(
+            b"LOBJ", OBJ_HEADER_STRUCT.size, 1, obj_size, obj_type,
+            2, 0, max(timestamp, 0))
+        self.cache.append(header)
         self.cache.append(data)
-        self.cache_size += len(data)
+        padding_size = len(data) % 4
+        self.cache.append(b"\x00" * padding_size)
+        self.cache_size += obj_size + padding_size
         self.count_of_objects += 1
         if self.cache_size >= self.MAX_CACHE_SIZE:
             self._flush()
