@@ -7,8 +7,8 @@ python-can
    :target: https://pypi.python.org/pypi/python-can/
    :alt: Latest Version
 
-.. |docs| image:: https://readthedocs.org/projects/python-can/badge/?version=latest
-   :target: http://python-can.readthedocs.org/en/latest/?badge=latest
+.. |docs| image:: https://readthedocs.org/projects/python-can/badge/?version=stable
+   :target: https://python-can.readthedocs.io/en/stable/
    :alt: Documentation Status
                 
 .. |build| image:: https://travis-ci.org/hardbyte/python-can.svg?branch=master
