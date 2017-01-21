@@ -3,8 +3,10 @@ import can
 from ctypes import *
 from struct import *
 import logging
-# type definitions
 
+log = logging.getLogger('can.usb2can')
+
+# type definitions
 flags = c_ulong
 pConfigureStr = c_char_p
 handle = c_long
@@ -47,100 +49,102 @@ class CanalMsg(Structure):
                 ('timestamp', c_ulong)]
 
 
-msg = CanalMsg
+class Usb2CanAbstractionLayer:
+    """A low level wrapper around the usb2can library.
 
+    Documentation: http://www.8devices.com/media/products/usb2can/downloads/CANAL_API.pdf
 
-class usb2can:
+    """
     def __init__(self):
         self.__m_dllBasic = windll.LoadLibrary("usb2can.dll")
 
-        if self.__m_dllBasic == None:
-            logging.warning('DLL failed to load')
+        if self.__m_dllBasic is None:
+            log.warning('DLL failed to load')
 
-    def CanalOpen(self, pConfigureStr, flags):
+    def open(self, pConfigureStr, flags):
         try:
             res = self.__m_dllBasic.CanalOpen(pConfigureStr, flags)
             return res
         except:
-            logging.warning('Failed to open')
+            log.warning('Failed to open')
             raise
 
-    def CanalClose(self, handle):
+    def close(self, handle):
         try:
             res = self.__m_dllBasic.CanalClose(handle)
             return res
         except:
-            logging.warning('Failed to close')
+            log.warning('Failed to close')
             raise
 
-    def CanalSend(self, handle, msg):
+    def send(self, handle, msg):
         try:
             res = self.__m_dllBasic.CanalSend(handle, msg)
             return res
         except:
-            logging.warning('Sending error')
+            log.warning('Sending error')
             raise can.CanError("Failed to transmit frame")
 
-    def CanalReceive(self, handle, msg):
+    def receive(self, handle, msg):
         try:
             res = self.__m_dllBasic.CanalReceive(handle, msg)
             return res
         except:
-            logging.warning('Receive error')
+            log.warning('Receive error')
             raise
 
-    def CanalBlockingSend(self, handle, msg, timeout):
+    def blocking_send(self, handle, msg, timeout):
         try:
             res = self.__m_dllBasic.CanalBlockingSend(handle, msg, timeout)
             return res
         except:
-            logging.warning('Blocking send error')
+            log.warning('Blocking send error')
             raise
 
-    def CanalBlockingReceive(self, handle, msg, timeout):
+    def blocking_receive(self, handle, msg, timeout):
         try:
             res = self.__m_dllBasic.CanalBlockingReceive(handle, msg, timeout)
             return res
         except:
-            logging.warning('Blocking Receive Failed')
+            log.warning('Blocking Receive Failed')
             raise
 
-    def CanalGetStatus(self, handle, CanalStatus):
+    def get_status(self, handle, CanalStatus):
         try:
             res = self.__m_dllBasic.CanalGetStatus(handle, CanalStatus)
             return res
         except:
-            logging.warning('Get status failed')
+            log.warning('Get status failed')
             raise
 
-    def CanalGetStatistics(self, handle, CanalStatistics):
+    def get_statistics(self, handle, CanalStatistics):
         try:
             res = self.__m_dllBasic.CanalGetStatistics(handle, CanalStatistics)
             return res
         except:
-            logging.warning('Get Statistics failed')
+            log.warning('Get Statistics failed')
             raise
 
-    def CanalGetVersion(self):
+    def get_version(self):
         try:
             res = self.__m_dllBasic.CanalGetVersion()
             return res
         except:
-            logging.warning('Failed to get version info')
+            log.warning('Failed to get version info')
             raise
 
-    def CanalGetDllVersion(self):
+    def get_library_version(self):
         try:
             res = self.__m_dllBasic.CanalGetDllVersion()
             return res
         except:
-            logging.warning('Failed to get DLL version')
+            log.warning('Failed to get DLL version')
             raise
 
-    def CanalGetVendorString(self):
+    def get_vendor_string(self):
         try:
             res = self.__m_dllBasic.CanalGetVendorString()
             return res
         except:
-            logging.warning('Failed to get vendor string')
+            log.warning('Failed to get vendor string')
             raise

@@ -15,9 +15,8 @@ Interface to `IXXAT <http://www.ixxat.com/>`__ Virtual CAN Interface V3 SDK. Wor
 Bus
 ---
 
-.. autoclass:: can.interfaces.ixxat.Bus
+.. autoclass:: can.interfaces.ixxat.IXXATBus
 
-.. autoclass:: can.interfaces.ixxat.canlib.IXXATBus
 
 
 Configuration file
@@ -42,7 +41,7 @@ module, while the following parameters are optional and are interpreted by IXXAT
 Internals
 ---------
 
-The IXXAT :class:`~can.Bus` object is a farly straightforward interface
+The IXXAT :class:`~can.BusABC` object is a farly straightforward interface
 to the IXXAT VCI library. It can open a specific device ID or use the
 first one found.
 

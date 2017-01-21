@@ -3,7 +3,7 @@
 import logging
 
 from can import BusABC, Message
-from can.interfaces.usb2can.usb2can import *
+from can.interfaces.usb2can.usb2canabstractionlayer import *
 
 bootTimeEpoch = 0
 try:
@@ -18,7 +18,7 @@ except:
 log = logging.getLogger('can.usb2can')
 
 
-def set_string(deviceID, baudrate='500'):
+def format_connection_string(deviceID, baudrate='500'):
     """setup the string for the device
 
     config = deviceID + '; ' + baudrate
@@ -70,13 +70,27 @@ def message_convert_rx(messagerx):
     return msgrx
 
 
-# interface functions
 class Usb2canBus(BusABC):
+    """Interface to a USB2CAN Bus.
+
+    Note the USB2CAN interface doesn't implement set_filters, or flush_tx_buffer methods.
+
+    :param str channel:
+        The device's serial number. If not provided, Windows Management Instrumentation
+        will be used to identify the first such device. The *kwarg* `serial` may also be
+        used.
+
+    :param int bitrate:
+        Bitrate of channel in bit/s. Values will be limited to a maximum of 1000 Kb/s.
+        Default is 500 Kbs
+
+    :param int flags:
+        Flags to directly pass to open function of the usb2can abstraction layer.
+    """
+
     def __init__(self, channel, *args, **kwargs):
 
-        self.can = usb2can()
-
-        enable_flags = c_ulong
+        self.can = Usb2CanAbstractionLayer()
 
         # set flags on the connection
         if 'flags' in kwargs:
@@ -88,6 +102,8 @@ class Usb2canBus(BusABC):
         # code to get the serial number of the device
         if 'serial' in kwargs:
             deviceID = kwargs["serial"]
+        elif channel is not None:
+            deviceID = channel
         else:
             from can.interfaces.usb2can.usb2canSerialFindWin import serial
             deviceID = serial()
@@ -103,25 +119,25 @@ class Usb2canBus(BusABC):
         else:
             baudrate = 500
 
-        connector = set_string(deviceID, baudrate)
+        connector = format_connection_string(deviceID, baudrate)
 
-        self.handle = self.can.CanalOpen(connector, enable_flags)
+        self.handle = self.can.open(connector, enable_flags)
 
     def send(self, msg):
         tx = message_convert_tx(msg)
-        self.can.CanalSend(self.handle, byref(tx))
+        self.can.send(self.handle, byref(tx))
 
     def recv(self, timeout=None):
 
         messagerx = CanalMsg()
 
         if timeout is None:
-            status = self.can.CanalReceive(self.handle, byref(messagerx))
+            status = self.can.receive(self.handle, byref(messagerx))
 
         else:
             time = c_ulong
             time = timeout
-            status = self.can.CanalBlockingReceive(self.handle, byref(messagerx), time)
+            status = self.can.blocking_receive(self.handle, byref(messagerx), time)
 
         if status is 0:
             rx = message_convert_rx(messagerx)
@@ -133,4 +149,4 @@ class Usb2canBus(BusABC):
 
     def shutdown(self):
         """Shut down the device safely"""
-        status = self.can.CanalClose(self.handle)
+        status = self.can.close(self.handle)
