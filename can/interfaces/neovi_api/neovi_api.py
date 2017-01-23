@@ -11,20 +11,36 @@ Implementation references:
 
 import logging
 
+import sys
+
+logger = logging.getLogger(__name__)
+
 try:
     from queue import Queue, Empty
 except ImportError:
     from Queue import Queue, Empty
 
-from neovi import neodevice
-from neovi import neovi
-from neovi.structures import icsSpyMessage
+try:
+    from neovi import neodevice
+    from neovi import neovi
+    from neovi.structures import icsSpyMessage
+except ImportError:
+    print
+
+if sys.platform == "win32":
+    try:
+        from neovi import neodevice
+        from neovi import neovi
+        from neovi.structures import icsSpyMessage
+    except ImportError as e:
+        logger.warning("Cannot load pyneovi: %s", e)
+else:
+    # Will not work on other systems, but have it importable anyway for
+    # tests/sphinx
+    logger.warning("pyneovi library does not work on %s platform", sys.platform)
 
 from can import Message
 from can.bus import BusABC
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 def neo_device_name(device_type):
