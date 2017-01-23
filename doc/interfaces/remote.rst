@@ -17,11 +17,16 @@ servers must be started on different ports.
 
 Start a server using default interface and channel::
 
-    $ can_server.py
+    $ canserver
 
 Specify interface, channel and port number explicitly::
 
-    $ can_server.py --interface kvaser --channel 0 --port 54702
+    $ canserver --interface kvaser --channel 0 --port 54702
+
+It can also be started as a module::
+
+    $ python -m can.interfaces.remote
+
 
 Client
 ------
@@ -65,14 +70,21 @@ The server uses the following classes to implement the connections.
 
 .. autoclass:: can.interfaces.remote.RemoteServer
 
-   .. method:: serve_forever
+   .. method:: serve_forever(poll_interval=0.5)
 
       Start listening for incoming connections.
 
    .. method:: shutdown
 
-      Stop the server.
+      Stops the serve_forever loop.
 
+      Blocks until the loop has finished. This must be called while
+      serve_forever() is running in another thread, or it will
+      deadlock.
+
+   .. method:: server_close
+
+      Clean-up the server.
 
 .. autoclass:: can.interfaces.remote.server.ClientBusConnection
 
