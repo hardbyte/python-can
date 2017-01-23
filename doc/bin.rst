@@ -35,14 +35,14 @@ Command line help (``--help``)::
                             Which backend do you want to use?
 
 
-can_server.py
--------------
+canserver
+---------
 
 Command line help (``--help``)::
 
-      usage: can_server.py [-h] [-v] [-c CHANNEL]
-                          [-i {pcan,remote,ixxat,socketcan_ctypes,virtual,usb2can,nican,serial,kvaser,socketcan,socketcan_native}]
-                          [-p PORT]
+      usage: canserver [-h] [-v] [-c CHANNEL]
+                      [-i {pcan,remote,ixxat,socketcan_ctypes,virtual,usb2can,nican,serial,kvaser,socketcan,socketcan_native}]
+                      [-b BITRATE] [-H HOST] [-p PORT]
 
       Remote CAN server
 
@@ -55,9 +55,15 @@ Command line help (``--help``)::
                               For example with the serial interface the channel
                               might be a rfcomm device: "/dev/rfcomm0" With the
                               socketcan interfaces valid channel examples include:
-                              "can0", "vcan0"
+                              "can0", "vcan0". The server will only serve this
+                              channel. Start additional servers at different ports
+                              to share more channels.
         -i {pcan,remote,ixxat,socketcan_ctypes,virtual,usb2can,nican,serial,kvaser,socketcan,socketcan_native}, --interface {pcan,remote,ixxat,socketcan_ctypes,virtual,usb2can,nican,serial,kvaser,socketcan,socketcan_native}
                               Specify the backend CAN interface to use. If left
                               blank, fall back to reading from configuration files.
+        -b BITRATE, --bitrate BITRATE
+                              Force to use a specific bitrate. This will override
+                              any requested bitrate by the clients.
+        -H HOST, --host HOST  Host to listen to (default 0.0.0.0).
         -p PORT, --port PORT  TCP port to listen on (default 54701).
 

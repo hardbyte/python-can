@@ -26,9 +26,11 @@ setup(
 
     scripts=[
         "./bin/can_logger.py",
-        "./bin/can_player.py",
-        "./bin/can_server.py"
+        "./bin/can_player.py"
     ],
+    entry_points={"console_scripts": [
+        "canserver = can.interfaces.remote.__main__:main"
+    ]},
 
     # Tests can be run using `python setup.py test`
     test_suite="nose.collector",
