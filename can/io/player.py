@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-can_player.py replays CAN traffic saved with can_logger.py back
+player.py replays CAN traffic saved with logger.py back
 to a CAN bus.
 
 Similar to canplayer in the can-utils package.
@@ -11,9 +11,40 @@ import argparse
 
 import can
 from can.util import MessageSync
+from .blf import BLFReader
+from .sqlite import SqlReader
 
-if __name__ == "__main__":
 
+class LogReader(object):
+    """
+    Replay logged CAN messages from a file.
+
+    The format is determined from the file format which can be one of:
+      * .asc
+      * .blf
+      * .csv
+      * .db
+
+    Exposes a simple iterator interface, to use simply:
+
+        >>> for m in LogReader(my_file):
+        ...     print(m)
+
+    Note there are no time delays, if you want to reproduce
+    the measured delays between messages look at the
+    :class:`can.util.MessageSync` class.
+    """
+
+    @classmethod
+    def __new__(cls, other, filename):
+        if filename.endswith(".blf"):
+            return BLFReader(filename)
+        if filename.endswith(".db"):
+            return SqlReader(filename)
+        raise NotImplementedError("No read support for this log format")
+
+
+def main():
     parser = argparse.ArgumentParser(description="Replay CAN traffic")
 
     parser.add_argument("-f", "--file_name", dest="log_file",
@@ -55,7 +86,7 @@ if __name__ == "__main__":
 
     bus = can.interface.Bus(results.channel, bustype=results.interface)
 
-    player = can.LogReader(results.infile)
+    player = LogReader(results.infile)
 
     in_sync = MessageSync(player, timestamps=True, skip=results.skip)
 
@@ -70,3 +101,6 @@ if __name__ == "__main__":
     finally:
         bus.shutdown()
 
+
+if __name__ == "__main__":
+    main()
