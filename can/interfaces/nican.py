@@ -230,7 +230,7 @@ class NicanBus(BusABC):
                       data=raw_msg.data[:dlc])
         return msg
 
-    def send(self, msg):
+    def send(self, msg, timeout=None):
         """
         Send a message to NI-CAN.
 
@@ -257,7 +257,7 @@ class NicanBus(BusABC):
         # bit overkill at the moment.
         #state = ctypes.c_ulong()
         #nican.ncWaitForState(
-        #    self.handle, NC_ST_WRITE_SUCCESS, 10, ctypes.byref(state))
+        #    self.handle, NC_ST_WRITE_SUCCESS, int(timeout * 1000), ctypes.byref(state))
 
     def flush_tx_buffer(self):
         """

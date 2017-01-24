@@ -50,11 +50,14 @@ class BusABC(object):
         raise NotImplementedError("Trying to read from a write only bus?")
 
     @abc.abstractmethod
-    def send(self, msg):
+    def send(self, msg, timeout=None):
         """Transmit a message to CAN bus.
         Override this method to enable the transmit path.
 
         :param msg: A :class:`can.Message` object.
+        :param float timeout:
+            If given, wait for message to be ACK:ed.
+            Might not be supported by the interface.
 
         :raise: :class:`can.CanError`
             if the message could not be written.

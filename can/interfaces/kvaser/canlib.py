@@ -195,17 +195,20 @@ canReadWait = __get_canlib_function("canReadWait",
                                     restype=canstat.c_canStatus,
                                     errcheck=__check_status_read)
 
-canWriteWait = __get_canlib_function("canWriteWait",
-                                     argtypes=[
-                                         c_canHandle,
-                                         ctypes.c_long,
-                                         ctypes.c_void_p,
-                                         ctypes.c_uint,
-                                         ctypes.c_uint,
-                                         ctypes.c_ulong],
+canWrite = __get_canlib_function("canWrite",
+                                 argtypes=[
+                                     c_canHandle,
+                                     ctypes.c_long,
+                                     ctypes.c_void_p,
+                                     ctypes.c_uint,
+                                     ctypes.c_uint],
+                                 restype=canstat.c_canStatus,
+                                 errcheck=__check_status)
+
+canWriteSync = __get_canlib_function("canWriteSync",
+                                     argtypes=[c_canHandle, ctypes.c_ulong],
                                      restype=canstat.c_canStatus,
                                      errcheck=__check_status)
-
 
 canIoCtl = __get_canlib_function("canIoCtl",
                                  argtypes=[c_canHandle, ctypes.c_uint,
@@ -516,7 +519,7 @@ class KvaserBus(BusABC):
             #log.debug('read complete -> status not okay')
             return None
 
-    def send(self, msg):
+    def send(self, msg, timeout=None):
         #log.debug("Writing a message: {}".format(msg))
         flags = canstat.canMSG_EXT if msg.id_type else canstat.canMSG_STD
         if msg.is_remote_frame:
@@ -525,12 +528,13 @@ class KvaserBus(BusABC):
             flags |= canstat.canMSG_ERROR_FRAME
         ArrayConstructor = ctypes.c_byte * msg.dlc
         buf = ArrayConstructor(*msg.data)
-        canWriteWait(self._write_handle,
-                     msg.arbitration_id,
-                     ctypes.byref(buf),
-                     msg.dlc,
-                     flags,
-                     10)
+        canWrite(self._write_handle,
+                 msg.arbitration_id,
+                 ctypes.byref(buf),
+                 msg.dlc,
+                 flags)
+        if timeout:
+            canWriteSync(self._write_handle, int(timeout * 1000))
 
     def flash(self, flash=True):
         """
