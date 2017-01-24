@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 """
-can_logger.py logs CAN traffic to the terminal and to a file on disk.
+logger.py logs CAN traffic to the terminal and to a file on disk.
 
-    can_logger.py can0
+    logger.py can0
 
 See candump in the can-utils package for a C implementation.
 Efficient filtering has been implemented for the socketcan backend.
 For example the command
 
-    can_logger.py can0 F03000:FFF000
+    logger.py can0 F03000:FFF000
 
 Will filter for can frames with a can_id containing XXF03XXX.
 
@@ -22,8 +22,46 @@ import socket
 
 import can
 
-if __name__ == "__main__":
+from .asc import ASCWriter
+from .blf import BLFWriter
+from .csv import CSVWriter
+from .sqlite import SqliteWriter
+from .stdout import Printer
 
+
+class Logger(object):
+    """
+    Logs CAN messages to a file.
+
+    The format is determined from the file format which can be one of:
+      * .asc: :class:`can.ASCWriter`
+      * .blf :class:`can.BLFWriter`
+      * .csv: :class:`can.CSVWriter`
+      * .db: :class:`can.SqliteWriter`
+      * other: :class:`can.Printer`
+
+    Note this class itself is just a dispatcher,
+    an object that inherits from Listener will
+    be created when instantiating this class.
+    """
+
+    @classmethod
+    def __new__(cls, other, filename):
+        if not filename:
+            return Printer()
+        elif filename.endswith(".asc"):
+            return ASCWriter(filename)
+        elif filename.endswith(".blf"):
+            return BLFWriter(filename)
+        elif filename.endswith(".csv"):
+            return CSVWriter(filename)
+        elif filename.endswith(".db"):
+            return SqliteWriter(filename)
+        else:
+            return Printer(filename)
+
+
+def main():
     parser = argparse.ArgumentParser(description="Log CAN traffic, printing messages to stdout or to a given file")
 
     parser.add_argument("-f", "--file_name", dest="log_file",
@@ -70,7 +108,7 @@ if __name__ == "__main__":
 
     bus = can.interface.Bus(results.channel, bustype=results.interface, can_filters=can_filters)
     print('Can Logger (Started on {})\n'.format(datetime.datetime.now()))
-    logger = can.Logger(results.log_file)
+    logger = Logger(results.log_file)
     notifier = can.Notifier(bus, [logger], timeout=0.1)
 
     try:
@@ -79,3 +117,6 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         bus.shutdown()
         notifier.stop()
+
+if __name__ == "__main__":
+    main()
