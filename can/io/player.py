@@ -10,7 +10,6 @@ import datetime
 import argparse
 
 import can
-from can.util import MessageSync
 from .blf import BLFReader
 from .sqlite import SqlReader
 
@@ -44,6 +43,45 @@ class LogReader(object):
         raise NotImplementedError("No read support for this log format")
 
 
+class MessageSync(object):
+
+    def __init__(self, messages, timestamps=True, gap=0.0001, skip=60):
+        """
+
+        :param messages: An iterable of :class:`can.Message` instances.
+        :param timestamps: Use the messages' timestamps.
+        :param gap: Minimum time between sent messages
+        :param skip: Skip periods of inactivity greater than this.
+        """
+        self.raw_messages = messages
+        self.timestamps = timestamps
+        self.gap = gap
+        self.skip = skip
+
+    def __iter__(self):
+        log.debug("Iterating over messages at real speed")
+        playback_start_time = time.time()
+        recorded_start_time = None
+
+        for m in self.raw_messages:
+            if recorded_start_time is None:
+                recorded_start_time = m.timestamp
+
+            if self.timestamps:
+                # Work out the correct wait time
+                now = time.time()
+                current_offset = now - playback_start_time
+                recorded_offset_from_start = m.timestamp - recorded_start_time
+                remaining_gap = recorded_offset_from_start - current_offset
+
+                sleep_period = max(self.gap, min(self.skip, remaining_gap))
+            else:
+                sleep_period = self.gap
+
+            time.sleep(sleep_period)
+            yield m
+
+
 def main():
     parser = argparse.ArgumentParser(description="Replay CAN traffic")
 
@@ -65,6 +103,9 @@ def main():
                         fall back to reading from configuration files.''',
                         choices=can.interface.VALID_INTERFACES)
 
+    parser.add_argument('-b', '--bitrate', type=int,
+                        help='''Bitrate to use for the CAN bus.''')
+
     parser.add_argument('--ignore-timestamps', dest='timestamps',
                         help='''Ignore timestamps (send all frames immediately with minimum gap between
     frames)''', action='store_false')
@@ -84,7 +125,12 @@ def main():
     logging_level_name = ['critical', 'error', 'warning', 'info', 'debug', 'subdebug'][min(5, verbosity)]
     can.set_logging_level(logging_level_name)
 
-    bus = can.interface.Bus(results.channel, bustype=results.interface)
+    config = {}
+    if results.interface:
+        config["bustype"] = results.interface
+    if results.bitrate:
+        config["bitrate"] = results.bitrate
+    bus = can.interface.Bus(results.channel, **config)
 
     player = LogReader(results.infile)
 

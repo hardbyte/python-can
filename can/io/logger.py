@@ -86,6 +86,9 @@ def main():
         <can_id>~<can_mask> (matches when <received_can_id> & mask != can_id & mask)
     ''', nargs=argparse.REMAINDER, default='')
 
+    parser.add_argument('-b', '--bitrate', type=int,
+                        help='''Bitrate to use for the CAN bus.''')
+
     results = parser.parse_args()
 
     verbosity = results.verbosity
@@ -106,17 +109,25 @@ def main():
                 can_mask = int(can_mask, base=16) & socket.CAN_ERR_FLAG
             can_filters.append({"can_id": can_id, "can_mask": can_mask})
 
-    bus = can.interface.Bus(results.channel, bustype=results.interface, can_filters=can_filters)
+    config = {"can_filters": can_filters}
+    if results.interface:
+        config["bustype"] = results.interface
+    if results.bitrate:
+        config["bitrate"] = results.bitrate
+    bus = can.interface.Bus(results.channel, **config)
     print('Can Logger (Started on {})\n'.format(datetime.datetime.now()))
     logger = Logger(results.log_file)
-    notifier = can.Notifier(bus, [logger], timeout=0.1)
 
     try:
         while True:
-            time.sleep(1)
+            msg = bus.recv(1)
+            if msg is not None:
+                logger(msg)
     except KeyboardInterrupt:
+        pass
+    finally:
         bus.shutdown()
-        notifier.stop()
+        logger.stop()
 
 if __name__ == "__main__":
     main()

@@ -149,45 +149,6 @@ def choose_socketcan_implementation():
             raise Exception(msg)
 
 
-class MessageSync:
-
-    def __init__(self, messages, timestamps=True, gap=0.0001, skip=60):
-        """
-
-        :param messages: An iterable of :class:`can.Message` instances.
-        :param timestamps: Use the messages' timestamps.
-        :param gap: Minimum time between sent messages
-        :param skip: Skip periods of inactivity greater than this.
-        """
-        self.raw_messages = messages
-        self.timestamps = timestamps
-        self.gap = gap
-        self.skip = skip
-
-    def __iter__(self):
-        log.debug("Iterating over messages at real speed")
-        playback_start_time = time.time()
-        recorded_start_time = None
-
-        for m in self.raw_messages:
-            if recorded_start_time is None:
-                recorded_start_time = m.timestamp
-
-            if self.timestamps:
-                # Work out the correct wait time
-                now = time.time()
-                current_offset = now - playback_start_time
-                recorded_offset_from_start = m.timestamp - recorded_start_time
-                remaining_gap = recorded_offset_from_start - current_offset
-
-                sleep_period = max(self.gap, min(self.skip, remaining_gap))
-            else:
-                sleep_period = self.gap
-
-            time.sleep(sleep_period)
-            yield m
-
-
 def set_logging_level(level_name=None):
     """Set the logging level for the "can" logger.
     Expects one of: 'critical', 'error', 'warning', 'info', 'debug', 'subdebug'
