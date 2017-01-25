@@ -131,16 +131,18 @@ class Usb2canBus(BusABC):
 
         messagerx = CanalMsg()
 
-        if timeout is None:
+        if timeout == 0:
             status = self.can.receive(self.handle, byref(messagerx))
 
         else:
-            time = c_ulong
-            time = timeout
+            time = 0 if timeout is None else int(timeout * 1000)
             status = self.can.blocking_receive(self.handle, byref(messagerx), time)
 
-        if status is 0:
+        if status == 0:
             rx = message_convert_rx(messagerx)
+        elif status == 19 or status == 32:
+            # CANAL_ERROR_RCV_EMPTY or CANAL_ERROR_TIMEOUT
+            rx = None
         else:
             log.error('Canal Error %s', status)
             rx = None
