@@ -105,7 +105,7 @@ class Usb2canBus(BusABC):
         elif channel is not None:
             deviceID = channel
         else:
-            from can.interfaces.usb2can.usb2canSerialFindWin import serial
+            from can.interfaces.usb2can.serial_selector import serial
             deviceID = serial()
 
         # set baudrate in kb/s from bitrate
