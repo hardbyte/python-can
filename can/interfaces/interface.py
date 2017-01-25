@@ -27,9 +27,6 @@ class Bus(object):
             can.rc['interface'] = kwargs['bustype']
             del kwargs['bustype']
 
-            if can.rc['interface'] == 'socketcan':
-                can.rc['interface'] = choose_socketcan_implementation()
-
         # Update can.rc from kwargs
         for kw in ('interface', 'bitrate'):
             if kw in kwargs:
@@ -39,6 +36,9 @@ class Bus(object):
             can.log.debug("Loading default configuration")
             # Load defaults
             can.rc = load_config()
+
+        if can.rc['interface'] == 'socketcan':
+            can.rc['interface'] = choose_socketcan_implementation()
 
         if can.rc['interface'] not in VALID_INTERFACES:
             raise NotImplementedError('Invalid CAN Bus Type - {}'.format(can.rc['interface']))
