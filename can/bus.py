@@ -73,8 +73,15 @@ class BusABC(object):
         :param float duration:
             The duration to keep sending this message at given rate. If
             no duration is provided, the task will continue indefinitely.
+
         :return: A started task instance
         :rtype: can.CyclicSendTaskABC
+
+            Note the duration before the message stops being sent may not
+            be exactly the same as the duration specified by the user. In
+            general the message will be sent at the given rate until at
+            least *duration* seconds.
+
         """
         return ThreadBasedCyclicSendTask(self, msg, period, duration)
 
