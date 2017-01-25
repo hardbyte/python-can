@@ -167,7 +167,7 @@ class FileReaderTest(BusTest):
         f.close()
         a_listener = can.SqliteWriter(f.name)
         a_listener(generate_message(0xDADADA))
-        sleep(0.5)
+        sleep(0.1)
         a_listener.stop()
 
         reader = can.SqlReader(f.name)
