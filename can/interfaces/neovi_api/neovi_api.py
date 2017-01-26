@@ -138,26 +138,27 @@ class NeoVIBus(BusABC):
         logging.info("%s not matching" % arb_id)
         return False
 
+    def _ics_msg_to_message(self, ics_msg):
+        return Message(
+            timestamp=(
+                self._time_scaling[1] * ics_msg.TimeHardware2 +
+                self._time_scaling[0] * ics_msg.TimeHardware
+            ),
+            arbitration_id=ics_msg.ArbIDOrHeader,
+            data=ics_msg.Data,
+            dlc=ics_msg.NumberBytesData,
+            extended_id=bool(ics_msg.StatusBitField & SPY_STATUS_XTD_FRAME),
+            is_remote_frame=bool(ics_msg.StatusBitField & SPY_STATUS_REMOTE_FRAME),
+        )
+
     def recv(self, timeout=None):
-        msg = None
         try:
-            while msg is None:
-                ics_msg = self.rx_buffer.get(block=True, timeout=timeout)
-                if ics_msg.NetworkID == self.network and self._is_filter_match(ics_msg.ArbIDOrHeader):
-                    msg = Message(
-                        timestamp=(
-                            self._time_scaling[1] * ics_msg.TimeHardware2 +
-                            self._time_scaling[0] * ics_msg.TimeHardware
-                        ),
-                        arbitration_id=ics_msg.ArbIDOrHeader,
-                        data=ics_msg.Data,
-                        dlc=ics_msg.NumberBytesData,
-                        extended_id=bool(ics_msg.StatusBitField & SPY_STATUS_XTD_FRAME),
-                        is_remote_frame=bool(ics_msg.StatusBitField & SPY_STATUS_REMOTE_FRAME),
-                    )
+            ics_msg = self.rx_buffer.get(block=True, timeout=timeout)
         except Empty:
             pass
-        return msg
+        else:
+            if ics_msg.NetworkID == self.network and self._is_filter_match(ics_msg.ArbIDOrHeader):
+                return self._ics_msg_to_message(ics_msg)
 
     def send(self, msg):
         data = tuple(msg.data)
