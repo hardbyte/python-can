@@ -202,6 +202,18 @@ class IXXATBus(BusABC):
     """The CAN Bus implemented for the IXXAT interface.
     """
 
+    TX_FIFO_EVENT_THRESHOLD = 1
+    """ The transmit event is triggered when the
+    number of free entries in the tx buffer reaches or exceeds the number
+    specified here
+    """
+
+    RX_FIFO_EVENT_THRESHOLD = 1
+    """ The receive event is triggered when the
+    number of messages in the rx buffer reaches or exceeds the number
+    specified here
+    """
+
     CHANNEL_BITRATES = {
         0: {
             10000: constants.CAN_BT0_10KB,
@@ -248,16 +260,16 @@ class IXXATBus(BusABC):
         log.info("CAN Filters: %s", can_filters)
         log.info("Got configuration of: %s", config)
         # Configuration options
-        bitrate = config.get('bitrate', 500000)
-        UniqueHardwareId = config.get('UniqueHardwareId', None)
-        rxFifoSize = config.get('rxFifoSize', 16)
-        txFifoSize = config.get('txFifoSize', 16)
-        extended = config.get('extended', False)
+        self._bitrate = config.get('bitrate', 500000)
+        self._UniqueHardwareId = config.get('UniqueHardwareId', None)
+        self._rxFifoSize = config.get('rxFifoSize', 16)
+        self._txFifoSize = config.get('txFifoSize', 16)
+        self._extended = config.get('extended', False)
         # Usually comes as a string from the config file
-        channel = int(channel)
+        self._channel = int(channel)
 
-        if (bitrate not in self.CHANNEL_BITRATES[0]):
-            raise ValueError("Invalid bitrate {}".format(bitrate))
+        if (self._bitrate not in self.CHANNEL_BITRATES[0]):
+            raise ValueError("Invalid bitrate {}".format(self._bitrate))
 
         self._device_handle = HANDLE()
         self._device_info = structures.VCIDEVICEINFO()
@@ -268,39 +280,39 @@ class IXXATBus(BusABC):
         self._payload = (ctypes.c_byte * 8)()
 
         # Search for supplied device
-        if (UniqueHardwareId is None):
+        if (self._UniqueHardwareId is None):
             log.info("Searching for first available device")
         else:
-            log.info("Searching for unique HW ID %s", UniqueHardwareId)
+            log.info("Searching for unique HW ID %s", self._UniqueHardwareId)
         _canlib.vciEnumDeviceOpen(ctypes.byref(self._device_handle))
         while True:
             try:
                 _canlib.vciEnumDeviceNext(self._device_handle, ctypes.byref(self._device_info))
             except StopIteration:
-                if (UniqueHardwareId is None):
+                if (self._UniqueHardwareId is None):
                     raise VCIDeviceNotFoundError("No IXXAT device(s) connected or device(s) in use by other process(es).")
                 else:
-                    raise VCIDeviceNotFoundError("Unique HW ID {} not connected or not available.".format(UniqueHardwareId))
+                    raise VCIDeviceNotFoundError("Unique HW ID {} not connected or not available.".format(self._UniqueHardwareId))
             else:
-                if (UniqueHardwareId is None) or (self._device_info.UniqueHardwareId.AsChar == bytes(UniqueHardwareId, 'ascii')):
+                if (self._UniqueHardwareId is None) or (self._device_info.UniqueHardwareId.AsChar == bytes(self._UniqueHardwareId, 'ascii')):
                     break
         _canlib.vciEnumDeviceClose(self._device_handle)
         _canlib.vciDeviceOpen(ctypes.byref(self._device_info.VciObjectId), ctypes.byref(self._device_handle))
         log.info("Using unique HW ID %s", self._device_info.UniqueHardwareId.AsChar)
 
-        log.info("Initializing channel %d in shared mode, %d rx buffers, %d tx buffers", channel, rxFifoSize, txFifoSize)
-        _canlib.canChannelOpen(self._device_handle, channel, constants.FALSE, ctypes.byref(self._channel_handle))
+        log.info("Initializing channel %d in shared mode, %d rx buffers, %d tx buffers", self._channel, self._rxFifoSize, self._txFifoSize)
+        _canlib.canChannelOpen(self._device_handle, self._channel, constants.FALSE, ctypes.byref(self._channel_handle))
         # Signal TX/RX events when at least one frame has been handled
-        _canlib.canChannelInitialize(self._channel_handle, rxFifoSize, 1, txFifoSize, 1)
+        _canlib.canChannelInitialize(self._channel_handle, self._rxFifoSize, self.RX_FIFO_EVENT_THRESHOLD, self._txFifoSize, self.TX_FIFO_EVENT_THRESHOLD)
         _canlib.canChannelActivate(self._channel_handle, constants.TRUE)
 
-        log.info("Initializing control %d bitrate %d", channel, bitrate)
-        _canlib.canControlOpen(self._device_handle, channel, ctypes.byref(self._control_handle))
+        log.info("Initializing control %d bitrate %d", self._channel, self._bitrate)
+        _canlib.canControlOpen(self._device_handle, self._channel, ctypes.byref(self._control_handle))
         _canlib.canControlInitialize(
             self._control_handle,
-            constants.CAN_OPMODE_STANDARD|constants.CAN_OPMODE_EXTENDED|constants.CAN_OPMODE_ERRFRAME if extended else constants.CAN_OPMODE_STANDARD|constants.CAN_OPMODE_ERRFRAME,
-            self.CHANNEL_BITRATES[0][bitrate],
-            self.CHANNEL_BITRATES[1][bitrate]
+            constants.CAN_OPMODE_STANDARD|constants.CAN_OPMODE_EXTENDED|constants.CAN_OPMODE_ERRFRAME if self._extended else constants.CAN_OPMODE_STANDARD|constants.CAN_OPMODE_ERRFRAME,
+            self.CHANNEL_BITRATES[0][self._bitrate],
+            self.CHANNEL_BITRATES[1][self._bitrate]
         )
         _canlib.canControlGetCaps(self._control_handle, ctypes.byref(self._channel_capabilities))
 
@@ -315,12 +327,12 @@ class IXXATBus(BusABC):
         if can_filters is not None and len(can_filters):
             log.info("The IXXAT VCI backend is filtering messages")
             # Disable every message coming in
-            _canlib.canControlSetAccFilter(self._control_handle, 1 if extended else 0, constants.CAN_ACC_CODE_NONE, constants.CAN_ACC_MASK_NONE)
+            _canlib.canControlSetAccFilter(self._control_handle, 1 if self._extended else 0, constants.CAN_ACC_CODE_NONE, constants.CAN_ACC_MASK_NONE)
             for can_filter in can_filters:
                 # Whitelist
                 code = int(can_filter['can_id'])
                 mask = int(can_filter['can_mask'])
-                _canlib.canControlAddFilterIds(self._control_handle, 1 if extended else 0, code, mask)
+                _canlib.canControlAddFilterIds(self._control_handle, 1 if self._extended else 0, code, mask)
                 rtr = (code & 0x01) and (mask & 0x01)
                 log.info("Accepting ID:%d  MASK:%d RTR:%s", code>>1, mask>>1, "YES" if rtr else "NO")
 
@@ -348,9 +360,13 @@ class IXXATBus(BusABC):
             return 1
 
     def flush_tx_buffer(self):
-        """ Flushes the transmit buffer on the IXXAT """
-        # TODO: no timeout?
-        _canlib.canChannelWaitTxEvent(self._channel_handle, constants.INFINITE)
+        """ Discards everything in transmit buffer on the IXXAT """
+        # TODO: this is not really tested
+        _canlib.canChannelClose(self._channel_handle)
+        _canlib.canChannelOpen(self._device_handle, self._channel, constants.FALSE, ctypes.byref(self._channel_handle))
+        # Signal TX/RX events when at least one frame has been handled
+        _canlib.canChannelInitialize(self._channel_handle, self._rxFifoSize, self.RX_FIFO_EVENT_THRESHOLD, self._txFifoSize, self.TX_FIFO_EVENT_THRESHOLD)
+        _canlib.canChannelActivate(self._channel_handle, constants.TRUE)
 
     def recv(self, timeout=None):
         """ Read a message from IXXAT device. """
