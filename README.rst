@@ -1,18 +1,18 @@
 python-can
 ==========
 
-|release| |docs|  |build| 
+|release| |docs| |build|
 
 .. |release| image:: https://img.shields.io/pypi/v/python-can.svg
    :target: https://pypi.python.org/pypi/python-can/
    :alt: Latest Version
 
-.. |docs| image:: https://readthedocs.org/projects/python-can/badge/?version=latest
-   :target: http://python-can.readthedocs.org/en/latest/?badge=latest
+.. |docs| image:: https://readthedocs.org/projects/python-can/badge/?version=stable
+   :target: https://python-can.readthedocs.io/en/stable/
    :alt: Documentation Status
                 
-.. |build| image:: https://drone.io/github.com/hardbyte/python-can/status.png
-   :target: https://drone.io/github.com/hardbyte/python-can/latest
+.. |build| image:: https://travis-ci.org/hardbyte/python-can.svg?branch=master
+   :target: https://travis-ci.org/hardbyte/python-can
    :alt: CI Server
 
 

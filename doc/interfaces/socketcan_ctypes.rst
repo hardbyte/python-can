@@ -11,7 +11,7 @@ available natively in the Python socket module.
 Bus
 ----
 
-.. autoclass:: can.interfaces.socketcan_ctypes.SocketcanCtypes_Bus
+.. autoclass:: can.interfaces.socketcan.SocketcanCtypes_Bus
 
 
 
@@ -30,7 +30,7 @@ An example that uses the send_periodic is included in ``python-can/examples/cycl
 
 The object returned can be used to halt, alter or cancel the periodic message task.
 
-.. autoclass:: can.interfaces.socketcan_ctypes.CyclicSendTask
+.. autoclass:: can.interfaces.socketcan.socketcan_ctypes.CyclicSendTask
 
 
 Internals
@@ -39,19 +39,19 @@ Internals
 createSocket
 ~~~~~~~~~~~~
 
-.. autofunction:: can.interfaces.socketcan_ctypes.createSocket
+.. autofunction:: can.interfaces.socketcan.socketcan_ctypes.createSocket
 
 
 bindSocket
 ~~~~~~~~~~
 
-.. autofunction:: can.interfaces.socketcan_ctypes.bindSocket
+.. autofunction:: can.interfaces.socketcan.socketcan_ctypes.bindSocket
 
 connectSocket
 
-.. autofunction:: can.interfaces.socketcan_ctypes.connectSocket
+.. autofunction:: can.interfaces.socketcan.socketcan_ctypes.connectSocket
 
 capturePacket
 ~~~~~~~~~~~~~
 
-.. autofunction:: can.interfaces.socketcan_ctypes.capturePacket
+.. autofunction:: can.interfaces.socketcan.socketcan_ctypes.capturePacket

@@ -3,6 +3,7 @@ import unittest
 import random
 import logging
 import tempfile
+import os.path
 
 import can
 
@@ -11,6 +12,22 @@ can.rc['interface'] = 'virtual'
 
 logging.getLogger("").setLevel(logging.DEBUG)
 
+
+# List of messages of different types that can be used in tests
+TEST_MESSAGES = [
+    can.Message(
+        arbitration_id=0xDADADA, extended_id=True, is_remote_frame=False,
+        timestamp=1483389464.165,
+        data=[1, 2, 3, 4, 5, 6, 7, 8]),
+    can.Message(
+        arbitration_id=0x123, extended_id=False, is_remote_frame=False,
+        timestamp=1483389464.365,
+        data=[254, 255]),
+    can.Message(
+        arbitration_id=0x768, extended_id=False, is_remote_frame=True,
+        timestamp=1483389466.165),
+    can.Message(is_error_frame=True, timestamp=1483389466.170),
+]
 
 def generate_message(arbitration_id):
     data = [random.randrange(0, 2 ** 8 - 1) for b in range(8)]
@@ -52,6 +69,7 @@ class ListenerTest(BusTest):
             can_logger.stop()
 
         test_filetype_to_instance('asc', can.ASCWriter)
+        test_filetype_to_instance("blf", can.BLFWriter)
         test_filetype_to_instance("csv", can.CSVWriter)
         test_filetype_to_instance("db", can.SqliteWriter)
         test_filetype_to_instance("txt", can.Printer)
@@ -149,7 +167,7 @@ class FileReaderTest(BusTest):
         f.close()
         a_listener = can.SqliteWriter(f.name)
         a_listener(generate_message(0xDADADA))
-        sleep(0.5)
+        sleep(0.1)
         a_listener.stop()
 
         reader = can.SqlReader(f.name)
@@ -160,6 +178,38 @@ class FileReaderTest(BusTest):
 
         self.assertEqual(len(ms), 1)
         self.assertEqual(0xDADADA, ms[0].arbitration_id)
+
+
+class BLFTest(unittest.TestCase):
+
+    def test_reader(self):
+        logfile = os.path.join(os.path.dirname(__file__), "data", "logfile.blf")
+        messages = list(can.BLFReader(logfile))
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(messages[0],
+                         can.Message(
+                             extended_id=False,
+                             arbitration_id=0x64,
+                             data=[0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8]))
+
+    def test_reader_writer(self):
+        f = tempfile.NamedTemporaryFile('w', delete=False)
+        f.close()
+        filename = f.name
+
+        writer = can.BLFWriter(filename)
+        for msg in TEST_MESSAGES:
+            writer(msg)
+        writer.log_event("One comment which should be attached to last message")
+        writer.log_event("Another comment", TEST_MESSAGES[-1].timestamp + 2)
+        writer.stop()
+
+        messages = list(can.BLFReader(filename))
+        self.assertEqual(len(messages), len(TEST_MESSAGES))
+        for msg1, msg2 in zip(messages, TEST_MESSAGES):
+            self.assertEqual(msg1, msg2)
+            self.assertAlmostEqual(msg1.timestamp, msg2.timestamp)
+
 
 if __name__ == '__main__':
     unittest.main()

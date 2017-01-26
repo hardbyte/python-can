@@ -22,7 +22,7 @@ https://www.kernel.org/doc/Documentation/networking/can.txt
 Bus
 ---
 
-.. autoclass:: can.interfaces.socketcan_native.SocketcanNative_Bus
+.. autoclass:: can.interfaces.socketcan.SocketcanNative_Bus
 
 
 Internals
@@ -31,16 +31,16 @@ Internals
 createSocket
 ~~~~~~~~~~~~
 
-.. autofunction:: can.interfaces.socketcan_native.createSocket
+.. autofunction:: can.interfaces.socketcan.socketcan_native.createSocket
 
 
 bindSocket
 ~~~~~~~~~~
 
-.. autofunction:: can.interfaces.socketcan_native.bindSocket
+.. autofunction:: can.interfaces.socketcan.socketcan_native.bindSocket
 
 
 capturePacket
 ~~~~~~~~~~~~~
 
-.. autofunction:: can.interfaces.socketcan_native.capturePacket
+.. autofunction:: can.interfaces.socketcan.socketcan_native.capturePacket

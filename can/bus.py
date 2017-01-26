@@ -7,7 +7,6 @@ logger = logging.getLogger(__name__)
 
 
 class BusABC(object):
-
     """CAN Bus Abstract Base Class
 
     Concrete implementations must implement the following methods:

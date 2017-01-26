@@ -52,6 +52,8 @@ class RemoteBus(can.bus.BusABC):
         self.socket.sendall(self.conn.next_data())
 
         event = self._next_event(5)
+        if isinstance(event, events.RemoteException):
+            raise event.exc
         if not isinstance(event, events.BusResponse):
             raise CanRemoteError('Handshake error')
         self.channel_info = '%s on %s' % (event.channel_info, channel)

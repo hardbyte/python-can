@@ -12,13 +12,11 @@ import time
 import logging
 import ctypes
 
-log = logging.getLogger('can.canlib')
-log.setLevel(logging.INFO)
-
 from can import CanError, BusABC
 from can import Message
 from can.interfaces.kvaser import constants as canstat
 
+log = logging.getLogger('can.kvaser')
 
 # Resolution in us
 TIMESTAMP_RESOLUTION = 10
@@ -40,16 +38,16 @@ def _unimplemented_function(*args):
 
 
 def __get_canlib_function(func_name, argtypes=[], restype=None, errcheck=None):
-    log.debug('Wrapping function "%s"' % func_name)
+    #log.debug('Wrapping function "%s"' % func_name)
     try:
         # e.g. canlib.canBusOn
         retval = getattr(__canlib, func_name)
-        log.debug('"%s" found in library', func_name)
+        #log.debug('"%s" found in library', func_name)
     except AttributeError:
         log.warning('"%s" was not found in library', func_name)
         return _unimplemented_function
     else:
-        log.debug('Result type is: %s' % type(restype))
+        #log.debug('Result type is: %s' % type(restype))
         #log.debug('Error check function is: %s' % errcheck)
         retval.argtypes = argtypes
         retval.restype = restype
@@ -81,7 +79,7 @@ class CANLIBError(CanError):
 
 
 def __convert_can_status_to_int(result):
-    log.debug("converting can status to int {} ({})".format(result, type(result)))
+    #log.debug("converting can status to int {} ({})".format(result, type(result)))
     if isinstance(result, int):
         return result
     else:
@@ -91,7 +89,7 @@ def __convert_can_status_to_int(result):
 def __check_status(result, function, arguments):
     result = __convert_can_status_to_int(result)
     if not canstat.CANSTATUS_SUCCESS(result):
-        log.debug('Detected error while checking CAN status')
+        #log.debug('Detected error while checking CAN status')
         raise CANLIBError(function, result, arguments)
     return result
 
@@ -99,7 +97,7 @@ def __check_status(result, function, arguments):
 def __check_status_read(result, function, arguments):
     result = __convert_can_status_to_int(result)
     if not canstat.CANSTATUS_SUCCESS(result) and result != canstat.canERR_NOMSG:
-        log.debug('Detected error in which checking status read')
+        #log.debug('Detected error in which checking status read')
         raise CANLIBError(function, result, arguments)
     return result
 
@@ -332,7 +330,7 @@ class KvaserBus(BusABC):
 
         num_channels = ctypes.c_int(0)
         res = canGetNumberOfChannels(ctypes.byref(num_channels))
-        log.debug("Res: {}".format(res))
+        #log.debug("Res: {}".format(res))
         num_channels = int(num_channels.value)
         log.info('Found %d available channels' % num_channels)
         for idx in range(num_channels):
@@ -494,7 +492,7 @@ class KvaserBus(BusABC):
         )
 
         if status == canstat.canOK:
-            log.debug('read complete -> status OK')
+            #log.debug('read complete -> status OK')
             if not self._is_filter_match(arb_id.value):
                 return None
             data_array = data.raw
@@ -512,10 +510,10 @@ class KvaserBus(BusABC):
                              timestamp=msg_timestamp)
             rx_msg.flags = flags
             rx_msg.raw_timestamp = timestamp.value / (1000000.0 / TIMESTAMP_RESOLUTION)
-            log.debug('Got message: %s' % rx_msg)
+            #log.debug('Got message: %s' % rx_msg)
             return rx_msg
         else:
-            log.debug('read complete -> status not okay')
+            #log.debug('read complete -> status not okay')
             return None
 
     def send(self, msg):
