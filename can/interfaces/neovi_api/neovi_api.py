@@ -198,3 +198,7 @@ class NeoVIBus(BusABC):
                 can_id = can_filter["can_id"]
                 can_mask = can_filter["can_mask"]
                 logger.info("Filtering on ID 0x%X, mask 0x%X", can_id, can_mask)
+
+
+if __name__ == '__main__':
+    print 0 | SPY_STATUS_XTD_FRAME if False else 0
