@@ -96,7 +96,8 @@ class Message(object):
         return "can.Message({})".format(", ".join(args))
 
     def __eq__(self, other):
-        return (self.arbitration_id == other.arbitration_id and
+        return (isinstance(other, self.__class__) and
+                self.arbitration_id == other.arbitration_id and
                 #self.timestamp == other.timestamp and
                 self.id_type == other.id_type and
                 self.dlc == other.dlc and
