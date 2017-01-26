@@ -162,11 +162,15 @@ class NeoVIBus(BusABC):
 
     def send(self, msg):
         data = tuple(msg.data)
+        flags = SPY_STATUS_XTD_FRAME if msg.is_extended_id else 0
+        if msg.is_remote_frame:
+            flags |= SPY_STATUS_REMOTE_FRAME
+
         ics_msg = icsSpyMessage()
         ics_msg.ArbIDOrHeader = msg.arbitration_id
         ics_msg.NumberBytesData = len(data)
         ics_msg.Data = data
-        ics_msg.StatusBitField = 0
+        ics_msg.StatusBitField = flags
         ics_msg.StatusBitField2 = 0
         ics_msg.DescriptionID = self.device.tx_id
         self.device.tx_id += 1
