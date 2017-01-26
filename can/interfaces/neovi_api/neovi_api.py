@@ -20,13 +20,6 @@ try:
 except ImportError:
     from Queue import Queue, Empty
 
-try:
-    from neovi import neodevice
-    from neovi import neovi
-    from neovi.structures import icsSpyMessage
-except ImportError:
-    print
-
 if sys.platform == "win32":
     try:
         from neovi import neodevice
@@ -41,6 +34,25 @@ else:
 
 from can import Message
 from can.bus import BusABC
+
+
+SPY_STATUS_XTD_FRAME = 0x04
+SPY_STATUS_REMOTE_FRAME = 0x08
+
+
+# For the neoVI hardware, TimeHardware2 is more significant than TimeHardware.
+# The resolution of TimeHardware is 1.6us and and TimeHardware2 is 104.8576 ms.
+# To calculate the time of the message in seconds use the following formula:
+# "Timestamp (sec) = TimeHardware2* 0.1048576 + TimeHardware * 0.0000016".
+NEOVI_TIMEHARDWARE_SCALING = 0.0000016
+NEOVI_TIMEHARDWARE2_SCALING = 0.1048576
+
+# For the neoVI PRO or ValueCAN hardware, TimeHardware2 is more significant than TimeHardware.
+# The resolution of TimeHardware is 1.0us and and TimeHardware2 is 65.536 ms.
+# To calculate the time of the message in seconds use the following formula:
+# "Timestamp (sec) = TimeHardware2* 0.065536 + TimeHardware * 0.000001".
+VALUECAN_TIMEHARDWARE_SCALING = 0.000001
+VALUECAN_TIMEHARDWARE2_SCALING = 0.065536
 
 
 def neo_device_name(device_type):
@@ -80,6 +92,11 @@ class NeoVIBus(BusABC):
         self.channel_info = '%s %s on channel %s' % (
             neo_device_name(self.device.get_type()), self.device.device.SerialNumber, channel
         )
+
+        if self.device.get_type() in [neovi.NEODEVICE_DW_VCAN]:
+            self._time_scaling = (VALUECAN_TIMEHARDWARE_SCALING, VALUECAN_TIMEHARDWARE2_SCALING)
+        else:
+            self._time_scaling = (NEOVI_TIMEHARDWARE_SCALING, NEOVI_TIMEHARDWARE2_SCALING)
 
         self.sw_filters = None
         self.set_filters(can_filters)
@@ -128,9 +145,15 @@ class NeoVIBus(BusABC):
                 ics_msg = self.rx_buffer.get(block=True, timeout=timeout)
                 if ics_msg.NetworkID == self.network and self._is_filter_match(ics_msg.ArbIDOrHeader):
                     msg = Message(
-                        timestamp=ics_msg.TimeHardware,
+                        timestamp=(
+                            self._time_scaling[1] * ics_msg.TimeHardware2 +
+                            self._time_scaling[0] * ics_msg.TimeHardware
+                        ),
                         arbitration_id=ics_msg.ArbIDOrHeader,
-                        data=ics_msg.Data
+                        data=ics_msg.Data,
+                        dlc=ics_msg.NumberBytesData,
+                        extended_id=bool(ics_msg.StatusBitField & SPY_STATUS_XTD_FRAME),
+                        is_remote_frame=bool(ics_msg.StatusBitField & SPY_STATUS_REMOTE_FRAME),
                     )
         except Empty:
             pass
