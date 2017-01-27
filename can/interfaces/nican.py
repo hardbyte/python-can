@@ -74,7 +74,7 @@ def check_status(result, function, arguments):
 
 def get_error_message(status_code):
     """Convert status code to descriptive string."""
-    errmsg = ctypes.create_string_buffer(300)
+    errmsg = ctypes.create_string_buffer(1024)
     nican.ncStatusToString(status_code, len(errmsg), errmsg)
     return errmsg.value.decode("ascii")
 
@@ -106,7 +106,8 @@ class NicanBus(BusABC):
     The CAN Bus implemented for the NI-CAN interface.
     """
 
-    def __init__(self, channel, **kwargs):
+    def __init__(self, channel, can_filters=None, bitrate=None, log_errors=True,
+                 **kwargs):
         """
         :param str channel:
             Name of the object to open (e.g. 'CAN0')
@@ -118,12 +119,6 @@ class NicanBus(BusABC):
             A list of dictionaries each containing a "can_id" and a "can_mask".
 
             >>> [{"can_id": 0x11, "can_mask": 0x21}]
-
-        :param int read_queue:
-            Length of read queue
-
-        :param int write_queue:
-            Length of write queue
 
         :param bool log_errors:
             If True, communication errors will appear as CAN messages with
@@ -139,10 +134,9 @@ class NicanBus(BusABC):
 
         config = [
             (NC_ATTR_START_ON_OPEN, True),
-            (NC_ATTR_LOG_COMM_ERRS, kwargs.get("log_errors", True))
+            (NC_ATTR_LOG_COMM_ERRS, log_errors)
         ]
 
-        can_filters = kwargs.get("can_filters")
         if not can_filters:
             logger.info("Filtering has been disabled")
             config.extend([
@@ -163,12 +157,8 @@ class NicanBus(BusABC):
                     (NC_ATTR_CAN_MASK_XTD, can_mask)
                 ])
 
-        if "bitrate" in kwargs:
-            config.append((NC_ATTR_BAUD_RATE, kwargs["bitrate"]))
-        if "read_queue" in kwargs:
-            config.append((NC_ATTR_READ_Q_LEN, kwargs["read_queue"]))
-        if "write_queue" in kwargs:
-            config.append((NC_ATTR_WRITE_Q_LEN, kwargs["write_queue"]))
+        if bitrate:
+            config.append((NC_ATTR_BAUD_RATE, bitrate))
 
         AttrList = ctypes.c_ulong * len(config)
         attr_id_list = AttrList(*(row[0] for row in config))
