@@ -15,7 +15,7 @@ except ImportError:
 
 
 class KvaserTest(unittest.TestCase):
-    
+
     def setUp(self):
         canlib.canGetNumberOfChannels = Mock(return_value=1)
         canlib.canOpenChannel = Mock(return_value=0)
@@ -27,7 +27,8 @@ class KvaserTest(unittest.TestCase):
         canlib.canSetBusOutputControl = Mock()
         canlib.canGetChannelData = Mock()
         canlib.canSetAcceptanceFilter = Mock()
-        canlib.canWriteWait = self.canWriteWait
+        canlib.canWriteSync = Mock()
+        canlib.canWrite = self.canWrite
         canlib.canReadWait = self.canReadWait
 
         self.msg = {}
@@ -160,7 +161,7 @@ class KvaserTest(unittest.TestCase):
         self.assertEqual(msg.id_type, False)
         self.assertSequenceEqual(msg.data, [100, 101])
 
-    def canWriteWait(self, handle, arb_id, buf, dlc, flags, timeout):
+    def canWrite(self, handle, arb_id, buf, dlc, flags):
         self.msg['arb_id'] = arb_id
         self.msg['dlc'] = dlc
         self.msg['flags'] = flags

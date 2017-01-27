@@ -195,17 +195,20 @@ canReadWait = __get_canlib_function("canReadWait",
                                     restype=canstat.c_canStatus,
                                     errcheck=__check_status_read)
 
-canWriteWait = __get_canlib_function("canWriteWait",
-                                     argtypes=[
-                                         c_canHandle,
-                                         ctypes.c_long,
-                                         ctypes.c_void_p,
-                                         ctypes.c_uint,
-                                         ctypes.c_uint,
-                                         ctypes.c_ulong],
+canWrite = __get_canlib_function("canWrite",
+                                 argtypes=[
+                                     c_canHandle,
+                                     ctypes.c_long,
+                                     ctypes.c_void_p,
+                                     ctypes.c_uint,
+                                     ctypes.c_uint],
+                                 restype=canstat.c_canStatus,
+                                 errcheck=__check_status)
+
+canWriteSync = __get_canlib_function("canWriteSync",
+                                     argtypes=[c_canHandle, ctypes.c_ulong],
                                      restype=canstat.c_canStatus,
                                      errcheck=__check_status)
-
 
 canIoCtl = __get_canlib_function("canIoCtl",
                                  argtypes=[c_canHandle, ctypes.c_uint,
@@ -411,8 +414,7 @@ class KvaserBus(BusABC):
                 canSetAcceptanceFilter(handle, can_id, can_mask, ext)
 
     def flush_tx_buffer(self):
-        """
-        Flushes the transmit buffer on the Kvaser
+        """ Wipeout the transmit buffer on the Kvaser.
         """
         canIoCtl(self._write_handle, canstat.canIOCTL_FLUSH_TX_BUFFER, 0, 0)
 
@@ -516,7 +518,7 @@ class KvaserBus(BusABC):
             #log.debug('read complete -> status not okay')
             return None
 
-    def send(self, msg):
+    def send(self, msg, timeout=None):
         #log.debug("Writing a message: {}".format(msg))
         flags = canstat.canMSG_EXT if msg.id_type else canstat.canMSG_STD
         if msg.is_remote_frame:
@@ -525,12 +527,13 @@ class KvaserBus(BusABC):
             flags |= canstat.canMSG_ERROR_FRAME
         ArrayConstructor = ctypes.c_byte * msg.dlc
         buf = ArrayConstructor(*msg.data)
-        canWriteWait(self._write_handle,
-                     msg.arbitration_id,
-                     ctypes.byref(buf),
-                     msg.dlc,
-                     flags,
-                     10)
+        canWrite(self._write_handle,
+                 msg.arbitration_id,
+                 ctypes.byref(buf),
+                 msg.dlc,
+                 flags)
+        if timeout:
+            canWriteSync(self._write_handle, int(timeout * 1000))
 
     def flash(self, flash=True):
         """
@@ -548,6 +551,12 @@ class KvaserBus(BusABC):
             log.error('Could not flash LEDs (%s)', e)
 
     def shutdown(self):
+        # Wait for transmit queue to be cleared
+        try:
+            canWriteSync(self._write_handle, 100)
+        except CANLIBError as e:
+            log.warning("There may be messages in the transmit queue that could "
+                        "not be transmitted before going bus off (%s)", e)
         if not self.single_handle:
             canBusOff(self._read_handle)
             canClose(self._read_handle)
@@ -571,7 +580,7 @@ def get_channel_info(channel):
                       ctypes.byref(number), ctypes.sizeof(number))
 
     return '%s, S/N %d (#%d)' % (
-        name.value.decode(), serial.value, number.value + 1)
+        name.value.decode("ascii"), serial.value, number.value + 1)
 
 
 init_kvaser_library()

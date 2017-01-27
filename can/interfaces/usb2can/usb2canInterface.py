@@ -123,9 +123,12 @@ class Usb2canBus(BusABC):
 
         self.handle = self.can.open(connector, enable_flags)
 
-    def send(self, msg):
+    def send(self, msg, timeout=None):
         tx = message_convert_tx(msg)
-        self.can.send(self.handle, byref(tx))
+        if timeout:
+            self.can.blocking_send(self.handle, byref(tx), int(timeout * 1000))
+        else:
+            self.can.send(self.handle, byref(tx))
 
     def recv(self, timeout=None):
 
