@@ -552,6 +552,12 @@ class KvaserBus(BusABC):
             log.error('Could not flash LEDs (%s)', e)
 
     def shutdown(self):
+        # Wait for transmit queue to be cleared
+        try:
+            canWriteSync(self._write_handle, 100)
+        except CANLIBError as e:
+            log.warning("There may be messages in the transmit queue that could "
+                        "not be transmitted before going bus off (%s)", e)
         if not self.single_handle:
             canBusOff(self._read_handle)
             canClose(self._read_handle)
@@ -575,7 +581,7 @@ def get_channel_info(channel):
                       ctypes.byref(number), ctypes.sizeof(number))
 
     return '%s, S/N %d (#%d)' % (
-        name.value.decode(), serial.value, number.value + 1)
+        name.value.decode("ascii"), serial.value, number.value + 1)
 
 
 init_kvaser_library()

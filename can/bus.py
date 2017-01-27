@@ -56,8 +56,9 @@ class BusABC(object):
 
         :param msg: A :class:`can.Message` object.
         :param float timeout:
-            If given, wait for message to be ACK:ed.
-            Might not be supported by the interface.
+            If > 0, wait up to this many seconds for message to be ACK:ed.
+            If timeout is exceeded, an exception will be raised.
+            Might not be supported by all interfaces.
 
         :raise: :class:`can.CanError`
             if the message could not be written.
