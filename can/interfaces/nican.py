@@ -82,6 +82,7 @@ def get_error_message(status_code):
 try:
     nican = ctypes.windll.LoadLibrary("nican")
 except Exception as e:
+    nican = None
     logger.error("Failed to load NI-CAN driver: %s", e)
 else:
     nican.ncConfig.argtypes = [
@@ -128,6 +129,10 @@ class NicanBus(BusABC):
         :raises can.interfaces.nican.NicanError:
             If starting communication fails
         """
+        if nican is None:
+            raise ImportError("The NI-CAN driver could not be loaded. "
+                              "Check that you are using 32-bit Python on Windows.")
+
         self.channel_info = "NI-CAN: " + channel
         if not isinstance(channel, bytes):
             channel = channel.encode()
