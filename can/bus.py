@@ -92,8 +92,7 @@ class BusABC(object):
         raise NotImplementedError("Trying to set_filters on unsupported bus")
 
     def flush_tx_buffer(self):
-        """Used for CAN interfaces which need to flush their transmit buffer.
-
+        """Discard every message that may be queued in the output buffer(s).
         """
         pass
 
