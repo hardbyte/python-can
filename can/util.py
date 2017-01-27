@@ -4,6 +4,10 @@ Utilities and configuration file parsing.
 """
 
 import time
+
+import can
+from can.interfaces import VALID_INTERFACES
+
 try:
     from configparser import ConfigParser
 except ImportError:
@@ -199,6 +203,18 @@ def set_logging_level(level_name=None):
     except AttributeError:
         can_logger.setLevel(logging.DEBUG)
     log.debug("Logging set to {}".format(level_name))
+
+
+def check_global_config():
+    # If can.rc doesn't look valid: load default
+    if 'interface' not in can.rc or can.rc['interface'] is None or 'channel' not in can.rc:
+        can.log.debug("Loading default configuration")
+        can.rc = load_config()
+    can.log.debug(can.rc)
+    if can.rc['interface'] not in VALID_INTERFACES:
+        raise NotImplementedError('Invalid CAN Bus Type - {}'.format(can.rc['interface']))
+    if can.rc['interface'] == 'socketcan':
+        can.rc['interface'] = choose_socketcan_implementation()
 
 
 if __name__ == "__main__":

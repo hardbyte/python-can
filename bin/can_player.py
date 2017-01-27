@@ -32,7 +32,7 @@ if __name__ == "__main__":
     parser.add_argument('-i', '--interface', dest="interface",
                         help='''Specify the backend CAN interface to use. If left blank,
                         fall back to reading from configuration files.''',
-                        choices=can.interface.VALID_INTERFACES)
+                        choices=can.VALID_INTERFACES)
 
     parser.add_argument('--ignore-timestamps', dest='timestamps',
                         help='''Ignore timestamps (send all frames immediately with minimum gap between
