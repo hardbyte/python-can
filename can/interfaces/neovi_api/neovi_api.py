@@ -47,10 +47,10 @@ SPY_STATUS_REMOTE_FRAME = 0x08
 NEOVI_TIMEHARDWARE_SCALING = 0.0000016
 NEOVI_TIMEHARDWARE2_SCALING = 0.1048576
 
-# For the neoVI PRO or ValueCAN hardware, TimeHardware2 is more significant than TimeHardware.
-# The resolution of TimeHardware is 1.0us and and TimeHardware2 is 65.536 ms.
-# To calculate the time of the message in seconds use the following formula:
-# "Timestamp (sec) = TimeHardware2* 0.065536 + TimeHardware * 0.000001".
+# For the neoVI PRO or ValueCAN hardware, TimeHardware2 is more significant than
+# TimeHardware. The resolution of TimeHardware is 1.0us and and TimeHardware2 is
+# 65.536 ms. To calculate the time of the message in seconds use the following
+# formula: "Timestamp (sec) = TimeHardware2* 0.065536 + TimeHardware * 0.000001"
 VALUECAN_TIMEHARDWARE_SCALING = 0.000001
 VALUECAN_TIMEHARDWARE2_SCALING = 0.065536
 
@@ -90,13 +90,17 @@ class NeoVIBus(BusABC):
         self.device = neodevice.find_devices(type_filter)[0]
         self.device.open()
         self.channel_info = '%s %s on channel %s' % (
-            neo_device_name(self.device.get_type()), self.device.device.SerialNumber, channel
+            neo_device_name(self.device.get_type()),
+            self.device.device.SerialNumber,
+            channel
         )
 
         if self.device.get_type() in [neovi.NEODEVICE_DW_VCAN]:
-            self._time_scaling = (VALUECAN_TIMEHARDWARE_SCALING, VALUECAN_TIMEHARDWARE2_SCALING)
+            self._time_scaling = (VALUECAN_TIMEHARDWARE_SCALING,
+                                  VALUECAN_TIMEHARDWARE2_SCALING)
         else:
-            self._time_scaling = (NEOVI_TIMEHARDWARE_SCALING, NEOVI_TIMEHARDWARE2_SCALING)
+            self._time_scaling = (NEOVI_TIMEHARDWARE_SCALING,
+                                  NEOVI_TIMEHARDWARE2_SCALING)
 
         self.sw_filters = None
         self.set_filters(can_filters)
@@ -147,8 +151,10 @@ class NeoVIBus(BusABC):
             arbitration_id=ics_msg.ArbIDOrHeader,
             data=ics_msg.Data,
             dlc=ics_msg.NumberBytesData,
-            extended_id=bool(ics_msg.StatusBitField & SPY_STATUS_XTD_FRAME),
-            is_remote_frame=bool(ics_msg.StatusBitField & SPY_STATUS_REMOTE_FRAME),
+            extended_id=bool(ics_msg.StatusBitField &
+                             SPY_STATUS_XTD_FRAME),
+            is_remote_frame=bool(ics_msg.StatusBitField &
+                                 SPY_STATUS_REMOTE_FRAME),
         )
 
     def recv(self, timeout=None):
@@ -157,7 +163,8 @@ class NeoVIBus(BusABC):
         except Empty:
             pass
         else:
-            if ics_msg.NetworkID == self.network and self._is_filter_match(ics_msg.ArbIDOrHeader):
+            if ics_msg.NetworkID == self.network and \
+                    self._is_filter_match(ics_msg.ArbIDOrHeader):
                 return self._ics_msg_to_message(ics_msg)
 
     def send(self, msg):
@@ -186,7 +193,8 @@ class NeoVIBus(BusABC):
 
             >>> [{"can_id": 0x11, "can_mask": 0x21}]
 
-            A filter matches, when ``<received_can_id> & can_mask == can_id & can_mask``
+            A filter matches, when
+            ``<received_can_id> & can_mask == can_id & can_mask``
 
         """
         self.sw_filters = can_filters
