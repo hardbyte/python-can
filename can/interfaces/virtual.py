@@ -12,7 +12,7 @@ echoed back to the same bus.
 import logging
 import time
 try:
-    import queue as queue
+    import queue
 except ImportError:
     import Queue as queue
 from can.bus import BusABC
@@ -49,7 +49,7 @@ class VirtualBus(BusABC):
         logger.log(9, 'Received message:\n%s', msg)
         return msg
 
-    def send(self, msg):
+    def send(self, msg, timeout=None):
         msg.timestamp = time.time()
         # Add message to all listening on this channel
         for bus_queue in self.channel:

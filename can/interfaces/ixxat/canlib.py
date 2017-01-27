@@ -153,6 +153,8 @@ try:
     _canlib.map_symbol("canChannelWaitRxEvent", ctypes.c_long, (HANDLE, ctypes.c_uint32), __check_status)
     #HRESULT canChannelPostMessage (HANDLE hChannel, PCANMSG pCanMsg );
     _canlib.map_symbol("canChannelPostMessage", ctypes.c_long, (HANDLE, structures.PCANMSG), __check_status)
+    #HRESULT canChannelSendMessage (HANDLE hChannel, UINT32 dwMsTimeout, PCANMSG pCanMsg );
+    _canlib.map_symbol("canChannelSendMessage", ctypes.c_long, (HANDLE, ctypes.c_uint32, structures.PCANMSG), __check_status)
 
     #EXTERN_C HRESULT VCIAPI canControlOpen( IN  HANDLE  hDevice, IN  UINT32  dwCanNo, OUT PHANDLE phCanCtl );
     _canlib.map_symbol("canControlOpen", ctypes.c_long, (HANDLE, ctypes.c_uint32, PHANDLE), __check_status)
@@ -433,7 +435,7 @@ class IXXATBus(BusABC):
         log.debug('Recv()ed message %s', rx_msg)
         return rx_msg
 
-    def send(self, msg):
+    def send(self, msg, timeout=None):
         log.debug("Sending message: %s", msg)
 
         # This system is not designed to be very efficient
@@ -447,9 +449,11 @@ class IXXATBus(BusABC):
             adapter = (ctypes.c_uint8 * msg.dlc).from_buffer(msg.data)
             ctypes.memmove(self._message.abData, adapter, msg.dlc)
 
-        # This does not block but may raise if TX fifo is full
-        # if you prefer a blocking call use canChannelSendMessage
-        _canlib.canChannelPostMessage (self._channel_handle, self._message)
+        if timeout:
+            _canlib.canChannelSendMessage(
+                self._channel_handle, int(timeout * 1000), self._message)
+        else:
+            _canlib.canChannelPostMessage(self._channel_handle, self._message)
 
     def shutdown(self):
         _canlib.canChannelClose(self._channel_handle)
