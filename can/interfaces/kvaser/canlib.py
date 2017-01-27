@@ -411,8 +411,7 @@ class KvaserBus(BusABC):
                 canSetAcceptanceFilter(handle, can_id, can_mask, ext)
 
     def flush_tx_buffer(self):
-        """
-        Flushes the transmit buffer on the Kvaser
+        """ Wipeout the transmit buffer on the Kvaser.
         """
         canIoCtl(self._write_handle, canstat.canIOCTL_FLUSH_TX_BUFFER, 0, 0)
 
