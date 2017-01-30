@@ -32,8 +32,8 @@ else:
     timeout_clock = time.clock
 
 # Set up logging
-logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger('can.pcan')
+log.setLevel(logging.WARNING)
 
 
 pcan_bitrate_objs = {1000000 : PCAN_BAUD_1M,
