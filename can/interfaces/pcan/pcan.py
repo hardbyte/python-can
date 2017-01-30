@@ -19,6 +19,11 @@ try:
 except:
     boottimeEpoch = 0
 
+try:
+    import win32event
+except ImportError:
+    win32event = None
+
 if sys.version_info >= (3, 3):
     # new in 3.3
     timeout_clock = time.perf_counter
@@ -83,6 +88,13 @@ class PcanBus(BusABC):
         if result != PCAN_ERROR_OK:
             raise PcanError(self._get_formatted_error(result))
 
+        if win32event:
+            self._recv_event = win32event.CreateEvent(None, 0, 0, None)
+            result = self.m_objPCANBasic.SetValue(
+                self.m_PcanHandle, PCAN_RECEIVE_EVENT, self._recv_event)
+            if result != PCAN_ERROR_OK:
+                raise PcanError(self._get_formatted_error(result))
+
         super(PcanBus, self).__init__(*args, **kwargs)
 
     def _get_formatted_error(self, error):
@@ -144,9 +156,6 @@ class PcanBus(BusABC):
     def recv(self, timeout=None):
         start_time = timeout_clock()
 
-        if timeout is None:
-            timeout = 0
-
         rx_msg = Message()
 
         log.debug("Trying to read a msg")
@@ -155,7 +164,13 @@ class PcanBus(BusABC):
         while result is None:
             result = self.m_objPCANBasic.Read(self.m_PcanHandle)
             if result[0] == PCAN_ERROR_QRCVEMPTY or result[0] == PCAN_ERROR_BUSLIGHT or result[0] == PCAN_ERROR_BUSHEAVY:
-                if timeout_clock() - start_time >= timeout:
+                if win32event:
+                    result = None
+                    _timeout = int(timeout * 1000) if timeout is not None else win32event.INFINITE
+                    val = win32event.WaitForSingleObject(self._recv_event, _timeout)
+                    if val != win32event.WAIT_OBJECT_0:
+                        return None
+                elif timeout_clock() - start_time >= timeout:
                     return None
                 else:
                     result = None
