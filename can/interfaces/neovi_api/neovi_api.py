@@ -135,7 +135,7 @@ class NeoVIBus(BusABC):
                     self._is_filter_match(ics_msg.ArbIDOrHeader):
                 return self._ics_msg_to_message(ics_msg)
 
-    def send(self, msg):
+    def send(self, msg, timeout=None):
         data = tuple(msg.data)
         flags = SPY_STATUS_XTD_FRAME if msg.is_extended_id else 0
         if msg.is_remote_frame:
