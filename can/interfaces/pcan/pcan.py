@@ -154,9 +154,15 @@ class PcanBus(BusABC):
         return status == PCAN_ERROR_OK
 
     def recv(self, timeout=None):
-        start_time = timeout_clock()
-
-        rx_msg = Message()
+        if win32event:
+            # We will utilize events for the timeout handling
+            timeout_ms = int(timeout * 1000) if timeout is not None else win32event.INFINITE
+        elif timeout is not None:
+            # Calculate max time
+            end_time = timeout_clock() + timeout
+        else:
+            # Skip timeout handling
+            end_time = 0
 
         log.debug("Trying to read a msg")
 
@@ -166,11 +172,10 @@ class PcanBus(BusABC):
             if result[0] == PCAN_ERROR_QRCVEMPTY:
                 if win32event:
                     result = None
-                    _timeout = int(timeout * 1000) if timeout is not None else win32event.INFINITE
-                    val = win32event.WaitForSingleObject(self._recv_event, _timeout)
+                    val = win32event.WaitForSingleObject(self._recv_event, timeout_ms)
                     if val != win32event.WAIT_OBJECT_0:
                         return None
-                elif timeout_clock() - start_time >= timeout:
+                elif timeout_clock() >= end_time:
                     return None
                 else:
                     result = None
