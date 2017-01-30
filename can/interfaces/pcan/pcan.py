@@ -163,7 +163,7 @@ class PcanBus(BusABC):
         result = None
         while result is None:
             result = self.m_objPCANBasic.Read(self.m_PcanHandle)
-            if result[0] == PCAN_ERROR_QRCVEMPTY or result[0] == PCAN_ERROR_BUSLIGHT or result[0] == PCAN_ERROR_BUSHEAVY:
+            if result[0] == PCAN_ERROR_QRCVEMPTY:
                 if win32event:
                     result = None
                     _timeout = int(timeout * 1000) if timeout is not None else win32event.INFINITE
@@ -175,6 +175,9 @@ class PcanBus(BusABC):
                 else:
                     result = None
                     time.sleep(0.001)
+            elif result[0] & (PCAN_ERROR_BUSLIGHT | PCAN_ERROR_BUSHEAVY):
+                log.warning(self._get_formatted_error(result[0]))
+                return None
             elif result[0] != PCAN_ERROR_OK:
                 raise PcanError(self._get_formatted_error(result[0]))
 
