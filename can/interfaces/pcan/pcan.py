@@ -19,6 +19,11 @@ try:
 except:
     boottimeEpoch = 0
 
+try:
+    import win32event
+except ImportError:
+    win32event = None
+
 if sys.version_info >= (3, 3):
     # new in 3.3
     timeout_clock = time.perf_counter
@@ -27,7 +32,6 @@ else:
     timeout_clock = time.clock
 
 # Set up logging
-logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger('can.pcan')
 
 
@@ -82,6 +86,13 @@ class PcanBus(BusABC):
 
         if result != PCAN_ERROR_OK:
             raise PcanError(self._get_formatted_error(result))
+
+        if win32event is not None:
+            self._recv_event = win32event.CreateEvent(None, 0, 0, None)
+            result = self.m_objPCANBasic.SetValue(
+                self.m_PcanHandle, PCAN_RECEIVE_EVENT, self._recv_event)
+            if result != PCAN_ERROR_OK:
+                raise PcanError(self._get_formatted_error(result))
 
         super(PcanBus, self).__init__(*args, **kwargs)
 
@@ -142,24 +153,35 @@ class PcanBus(BusABC):
         return status == PCAN_ERROR_OK
 
     def recv(self, timeout=None):
-        start_time = timeout_clock()
-
-        if timeout is None:
-            timeout = 0
-
-        rx_msg = Message()
+        if win32event is not None:
+            # We will utilize events for the timeout handling
+            timeout_ms = int(timeout * 1000) if timeout is not None else win32event.INFINITE
+        elif timeout is not None:
+            # Calculate max time
+            end_time = timeout_clock() + timeout
+        else:
+            # Skip timeout handling
+            end_time = 0
 
         log.debug("Trying to read a msg")
 
         result = None
         while result is None:
             result = self.m_objPCANBasic.Read(self.m_PcanHandle)
-            if result[0] == PCAN_ERROR_QRCVEMPTY or result[0] == PCAN_ERROR_BUSLIGHT or result[0] == PCAN_ERROR_BUSHEAVY:
-                if timeout_clock() - start_time >= timeout:
+            if result[0] == PCAN_ERROR_QRCVEMPTY:
+                if win32event is not None:
+                    result = None
+                    val = win32event.WaitForSingleObject(self._recv_event, timeout_ms)
+                    if val != win32event.WAIT_OBJECT_0:
+                        return None
+                elif timeout_clock() >= end_time:
                     return None
                 else:
                     result = None
                     time.sleep(0.001)
+            elif result[0] & (PCAN_ERROR_BUSLIGHT | PCAN_ERROR_BUSHEAVY):
+                log.warning(self._get_formatted_error(result[0]))
+                return None
             elif result[0] != PCAN_ERROR_OK:
                 raise PcanError(self._get_formatted_error(result[0]))
 
