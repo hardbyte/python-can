@@ -4,7 +4,7 @@ can is an object-orient Controller Area Network interface module.
 import logging
 log = logging.getLogger('can')
 
-rc = dict(channel=0)
+rc = dict()
 
 
 class CanError(IOError):

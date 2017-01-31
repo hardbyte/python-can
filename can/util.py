@@ -92,37 +92,74 @@ def load_environment_config():
     )
 
 
-def load_config(path=None):
+def load_config(path=None, config=None):
     """
     Returns a dict with configuration details which is loaded from (in this order):
 
-    * Environment variables CAN_INTERFACE, CAN_CHANNEL
-    * Config files ``/etc/can.conf`` or ``~/.can`` or ``~/.canrc``
+    - config
+    - can.rc
+    - Environment variables CAN_INTERFACE, CAN_CHANNEL
+    - Config files ``/etc/can.conf`` or ``~/.can`` or ``~/.canrc``
       where the latter may add or replace values of the former.
 
-    Interface can be kvaser, socketcan, socketcan_ctypes, socketcan_native, serial
+    Interface can be any of the strings from ``can.VALID_INTERFACES`` for example:
+    kvaser, socketcan, pcan, usb2can, ixxat, nican, remote, virtual.
 
-    The returned dictionary may look like this::
+    .. note::
 
-        {
-            'interface': 'python-can backend interface to use',
-            'channel': 'default channel to use',
-        }
+        If you pass ``"socketcan"`` this automatically selects between the
+        native and ctypes version.
 
-    :param path: Optional path to config file.
+    :param path:
+        Optional path to config file.
+    :param config:
+        A dict which may set the 'interface', and/or the 'channel', or neither.
+
+    :return:
+        A config dictionary that should contain 'interface' & 'channel'::
+
+            {
+                'interface': 'python-can backend interface to use',
+                'channel': 'default channel to use',
+            }
+
+        Note ``None`` will be used if all the options are exhausted without
+        finding a value.
     """
-    config = load_file_config(path)
-    config.update(load_environment_config())
+
+
+    system_config = {}
+    configs = [
+        config,
+        can.rc,
+        load_environment_config,
+        lambda: load_file_config(path)
+    ]
+
+    # Slightly complex here to only search for the file config if required
+    for cfg in configs:
+        if callable(cfg):
+            cfg = cfg()
+        for key in REQUIRED_KEYS:
+            if key not in system_config and key in cfg and cfg[key] is not None:
+                system_config[key] = cfg[key]
+
+        if all(k in system_config for k in REQUIRED_KEYS):
+            break
 
     # substitute None for all values not found
     for key in REQUIRED_KEYS:
-        if key not in config:
-            config[key] = None
+        if key not in system_config:
+            system_config[key] = None
 
-    if config['interface'] == 'socketcan':
-        config['interface'] = choose_socketcan_implementation()
+    if system_config['interface'] == 'socketcan':
+        system_config['interface'] = choose_socketcan_implementation()
 
-    return config
+    if system_config['interface'] not in VALID_INTERFACES:
+        raise NotImplementedError('Invalid CAN Bus Type - {}'.format(can.rc['interface']))
+
+    can.log.debug("can config: {}".format(system_config))
+    return system_config
 
 
 def choose_socketcan_implementation():
@@ -164,18 +201,6 @@ def set_logging_level(level_name=None):
     except AttributeError:
         can_logger.setLevel(logging.DEBUG)
     log.debug("Logging set to {}".format(level_name))
-
-
-def check_global_config():
-    # If can.rc doesn't look valid: load default
-    if 'interface' not in can.rc or can.rc['interface'] is None or 'channel' not in can.rc:
-        can.log.debug("Loading default configuration")
-        can.rc = load_config()
-    can.log.debug(can.rc)
-    if can.rc['interface'] not in VALID_INTERFACES:
-        raise NotImplementedError('Invalid CAN Bus Type - {}'.format(can.rc['interface']))
-    if can.rc['interface'] == 'socketcan':
-        can.rc['interface'] = choose_socketcan_implementation()
 
 
 if __name__ == "__main__":
