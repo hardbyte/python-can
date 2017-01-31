@@ -33,7 +33,6 @@ else:
 
 # Set up logging
 log = logging.getLogger('can.pcan')
-log.setLevel(logging.WARNING)
 
 
 pcan_bitrate_objs = {1000000 : PCAN_BAUD_1M,
@@ -88,7 +87,7 @@ class PcanBus(BusABC):
         if result != PCAN_ERROR_OK:
             raise PcanError(self._get_formatted_error(result))
 
-        if win32event:
+        if win32event is not None:
             self._recv_event = win32event.CreateEvent(None, 0, 0, None)
             result = self.m_objPCANBasic.SetValue(
                 self.m_PcanHandle, PCAN_RECEIVE_EVENT, self._recv_event)
@@ -154,7 +153,7 @@ class PcanBus(BusABC):
         return status == PCAN_ERROR_OK
 
     def recv(self, timeout=None):
-        if win32event:
+        if win32event is not None:
             # We will utilize events for the timeout handling
             timeout_ms = int(timeout * 1000) if timeout is not None else win32event.INFINITE
         elif timeout is not None:
@@ -170,7 +169,7 @@ class PcanBus(BusABC):
         while result is None:
             result = self.m_objPCANBasic.Read(self.m_PcanHandle)
             if result[0] == PCAN_ERROR_QRCVEMPTY:
-                if win32event:
+                if win32event is not None:
                     result = None
                     val = win32event.WaitForSingleObject(self._recv_event, timeout_ms)
                     if val != win32event.WAIT_OBJECT_0:
