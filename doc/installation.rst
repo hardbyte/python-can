@@ -79,6 +79,11 @@ Download and install the NI-CAN drivers from
 
 Currently the driver only supports 32-bit Python on Windows.
 
+neoVI
+~~~~~
+
+See :doc:`interfaces/neovi`.
+
 
 Installing python-can in development mode
 -----------------------------------------

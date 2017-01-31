@@ -4,7 +4,7 @@ import argparse
 import can
 from can.interfaces import remote
 
-logging.basicConfig(format='%(asctime)-15s %(message)s')
+logging.basicConfig(format='%(asctime)-15s %(message)s', level=logging.INFO)
 
 
 def main():
@@ -57,7 +57,7 @@ def main():
     except KeyboardInterrupt:
         pass
     logging.info("Closing server")
-    server.shutdown()
+    server.server_close()
 
 
 if __name__ == "__main__":

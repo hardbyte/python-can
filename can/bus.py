@@ -50,11 +50,15 @@ class BusABC(object):
         raise NotImplementedError("Trying to read from a write only bus?")
 
     @abc.abstractmethod
-    def send(self, msg):
+    def send(self, msg, timeout=None):
         """Transmit a message to CAN bus.
         Override this method to enable the transmit path.
 
         :param msg: A :class:`can.Message` object.
+        :param float timeout:
+            If > 0, wait up to this many seconds for message to be ACK:ed.
+            If timeout is exceeded, an exception will be raised.
+            Might not be supported by all interfaces.
 
         :raise: :class:`can.CanError`
             if the message could not be written.
@@ -92,8 +96,7 @@ class BusABC(object):
         raise NotImplementedError("Trying to set_filters on unsupported bus")
 
     def flush_tx_buffer(self):
-        """Used for CAN interfaces which need to flush their transmit buffer.
-
+        """Discard every message that may be queued in the output buffer(s).
         """
         pass
 

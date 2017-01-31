@@ -91,7 +91,7 @@ class RemoteBus(can.bus.BusABC):
             raise event.exc
         return None
 
-    def send(self, msg):
+    def send(self, msg, timeout=None):
         """Transmit a message to CAN bus.
 
         :param can.Message msg: A Message object.

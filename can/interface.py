@@ -62,6 +62,9 @@ class Bus(object):
         elif interface == 'virtual':
             from can.interfaces.virtual import VirtualBus
             cls = VirtualBus
+        elif interface == 'neovi':
+            from can.interfaces.neovi_api import NeoVIBus
+            cls = NeoVIBus
         else:
             raise NotImplementedError("CAN interface '{}' not supported".format(interface))
 
@@ -114,5 +117,3 @@ class MultiRateCyclicSendTask(MultiRateCyclicSendTaskABC):
             can.log.info("Current CAN interface doesn't support CyclicSendTask")
 
         return cls(channel, *args, **kwargs)
-
-

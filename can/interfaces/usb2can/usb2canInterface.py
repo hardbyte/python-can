@@ -105,7 +105,7 @@ class Usb2canBus(BusABC):
         elif channel is not None:
             deviceID = channel
         else:
-            from can.interfaces.usb2can.usb2canSerialFindWin import serial
+            from can.interfaces.usb2can.serial_selector import serial
             deviceID = serial()
 
         # set baudrate in kb/s from bitrate
@@ -123,24 +123,29 @@ class Usb2canBus(BusABC):
 
         self.handle = self.can.open(connector, enable_flags)
 
-    def send(self, msg):
+    def send(self, msg, timeout=None):
         tx = message_convert_tx(msg)
-        self.can.send(self.handle, byref(tx))
+        if timeout:
+            self.can.blocking_send(self.handle, byref(tx), int(timeout * 1000))
+        else:
+            self.can.send(self.handle, byref(tx))
 
     def recv(self, timeout=None):
 
         messagerx = CanalMsg()
 
-        if timeout is None:
+        if timeout == 0:
             status = self.can.receive(self.handle, byref(messagerx))
 
         else:
-            time = c_ulong
-            time = timeout
+            time = 0 if timeout is None else int(timeout * 1000)
             status = self.can.blocking_receive(self.handle, byref(messagerx), time)
 
-        if status is 0:
+        if status == 0:
             rx = message_convert_rx(messagerx)
+        elif status == 19 or status == 32:
+            # CANAL_ERROR_RCV_EMPTY or CANAL_ERROR_TIMEOUT
+            rx = None
         else:
             log.error('Canal Error %s', status)
             rx = None
