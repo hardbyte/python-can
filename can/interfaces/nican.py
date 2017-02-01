@@ -5,8 +5,9 @@ Implementation references:
 * http://www.ni.com/pdf/manuals/370289c.pdf
 * https://github.com/buendiya/NicanPython
 """
-import logging
 import ctypes
+import logging
+import sys
 
 from can import CanError, BusABC, Message
 
@@ -79,28 +80,31 @@ def get_error_message(status_code):
     return errmsg.value.decode("ascii")
 
 
-try:
-    nican = ctypes.windll.LoadLibrary("nican")
-except Exception as e:
-    nican = None
-    logger.error("Failed to load NI-CAN driver: %s", e)
+if sys.platform == "win32":
+    try:
+        nican = ctypes.windll.LoadLibrary("nican")
+    except Exception as e:
+        nican = None
+        logger.error("Failed to load NI-CAN driver: %s", e)
+    else:
+        nican.ncConfig.argtypes = [
+            ctypes.c_char_p, ctypes.c_ulong, ctypes.c_void_p, ctypes.c_void_p]
+        nican.ncConfig.errcheck = check_status
+        nican.ncOpenObject.argtypes = [ctypes.c_char_p, ctypes.c_void_p]
+        nican.ncOpenObject.errcheck = check_status
+        nican.ncCloseObject.errcheck = check_status
+        nican.ncAction.argtypes = [ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong]
+        nican.ncAction.errcheck = check_status
+        nican.ncRead.errcheck = check_status
+        nican.ncWrite.errcheck = check_status
+        nican.ncWaitForState.argtypes = [
+            ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_void_p]
+        nican.ncWaitForState.errcheck = check_status
+        nican.ncStatusToString.argtypes = [
+            ctypes.c_int, ctypes.c_uint, ctypes.c_char_p]
 else:
-    nican.ncConfig.argtypes = [
-        ctypes.c_char_p, ctypes.c_ulong, ctypes.c_void_p, ctypes.c_void_p]
-    nican.ncConfig.errcheck = check_status
-    nican.ncOpenObject.argtypes = [ctypes.c_char_p, ctypes.c_void_p]
-    nican.ncOpenObject.errcheck = check_status
-    nican.ncCloseObject.errcheck = check_status
-    nican.ncAction.argtypes = [ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong]
-    nican.ncAction.errcheck = check_status
-    nican.ncRead.errcheck = check_status
-    nican.ncWrite.errcheck = check_status
-    nican.ncWaitForState.argtypes = [
-        ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_void_p]
-    nican.ncWaitForState.errcheck = check_status
-    nican.ncStatusToString.argtypes = [
-        ctypes.c_int, ctypes.c_uint, ctypes.c_char_p]
-
+    nican = None
+    logger.warning("NI-CAN interface is only available on Windows systems")
 
 class NicanBus(BusABC):
     """
