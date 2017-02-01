@@ -1,10 +1,6 @@
 import can
 from can.broadcastmanager import CyclicSendTaskABC, MultiRateCyclicSendTaskABC
-from can.util import load_config, choose_socketcan_implementation
-
-VALID_INTERFACES = set(['kvaser', 'serial', 'pcan', 'socketcan_native',
-                        'socketcan_ctypes', 'socketcan', 'usb2can', 'ixxat',
-                        'nican', 'remote', 'virtual', 'neovi'])
+from can.util import load_config
 
 
 class Bus(object):
@@ -21,30 +17,25 @@ class Bus(object):
         :param kwargs:
             Should contain a bustype key with a valid interface name.
 
-        :raises: NotImplementedError if the bustype isn't recognized
+        :raises:
+            NotImplementedError if the bustype isn't recognized
+        :raises:
+            ValueError if the bustype or channel isn't either passed as an argument
+            or set in the can.rc config.
+
         """
+        config = load_config(config={
+            'interface': kwargs.get('bustype'),
+            'channel': channel
+        })
+
         if 'bustype' in kwargs:
-            can.rc['interface'] = kwargs['bustype']
+            # remove the bustype so it doesn't get passed to the backend
             del kwargs['bustype']
-
-            if can.rc['interface'] == 'socketcan':
-                can.rc['interface'] = choose_socketcan_implementation()
-
-        # Update can.rc from kwargs
-        for kw in ('interface', 'bitrate'):
-            if kw in kwargs:
-                can.rc[kw] = kwargs[kw]
-
-        if 'interface' not in can.rc or 'channel' not in can.rc or can.rc['interface'] is None:
-            can.log.debug("Loading default configuration")
-            # Load defaults
-            can.rc = load_config()
-
-        if can.rc['interface'] not in VALID_INTERFACES:
-            raise NotImplementedError('Invalid CAN Bus Type - {}'.format(can.rc['interface']))
+        interface = config['interface']
+        channel = config['channel']
 
         # Import the correct Bus backend
-        interface = can.rc['interface']
         if interface == 'kvaser':
             from can.interfaces.kvaser import KvaserBus
             cls = KvaserBus
@@ -81,8 +72,6 @@ class Bus(object):
         else:
             raise NotImplementedError("CAN interface '{}' not supported".format(interface))
 
-        if channel is None:
-            channel = can.rc['channel']
         return cls(channel, **kwargs)
 
 
@@ -91,20 +80,13 @@ class CyclicSendTask(CyclicSendTaskABC):
     @classmethod
     def __new__(cls, other, channel, *args, **kwargs):
 
-        # If can.rc doesn't look valid: load default
-        if 'interface' not in can.rc or 'channel' not in can.rc:
-            can.log.debug("Loading default configuration")
-            can.rc = load_config()
-
-        print(can.rc)
-        if can.rc['interface'] not in VALID_INTERFACES:
-            raise NotImplementedError('Invalid CAN Bus Type - {}'.format(can.rc['interface']))
+        config = load_config(config={'channel': channel})
 
         # Import the correct implementation of CyclicSendTask
-        if can.rc['interface'] == 'socketcan_ctypes':
+        if config['interface'] == 'socketcan_ctypes':
             from can.interfaces.socketcan.socketcan_ctypes import CyclicSendTask as _ctypesCyclicSendTask
             cls = _ctypesCyclicSendTask
-        elif can.rc['interface'] == 'socketcan_native':
+        elif config['interface'] == 'socketcan_native':
             from can.interfaces.socketcan.socketcan_native import CyclicSendTask as _nativeCyclicSendTask
             cls = _nativeCyclicSendTask
         # CyclicSendTask has not been fully implemented on remote interface yet.
@@ -114,9 +96,9 @@ class CyclicSendTask(CyclicSendTaskABC):
         #    from can.interfaces.remote import CyclicSendTask as _remoteCyclicSendTask
         #    cls = _remoteCyclicSendTask
         else:
-            can.log.info("Current CAN interface doesn't support CyclicSendTask")
+            raise can.CanError("Current CAN interface doesn't support CyclicSendTask")
 
-        return cls(channel, *args, **kwargs)
+        return cls(config['channel'], *args, **kwargs)
 
 
 class MultiRateCyclicSendTask(MultiRateCyclicSendTaskABC):
@@ -124,23 +106,16 @@ class MultiRateCyclicSendTask(MultiRateCyclicSendTaskABC):
     @classmethod
     def __new__(cls, other, channel, *args, **kwargs):
 
-        # If can.rc doesn't look valid: load default
-        if 'interface' not in can.rc or 'channel' not in can.rc:
-            can.log.debug("Loading default configuration")
-            can.rc = load_config()
-
-        print(can.rc)
-        if can.rc['interface'] not in VALID_INTERFACES:
-            raise NotImplementedError('Invalid CAN Bus Type - {}'.format(can.rc['interface']))
+        config = load_config(config={'channel': channel})
 
         # Import the correct implementation of CyclicSendTask
-        if can.rc['interface'] == 'socketcan_ctypes':
+        if config['interface'] == 'socketcan_ctypes':
             from can.interfaces.socketcan.socketcan_ctypes import MultiRateCyclicSendTask as _ctypesMultiRateCyclicSendTask
             cls = _ctypesMultiRateCyclicSendTask
-        elif can.rc['interface'] == 'socketcan_native':
+        elif config['interface'] == 'socketcan_native':
             from can.interfaces.socketcan.socketcan_native import MultiRateCyclicSendTask as _nativeMultiRateCyclicSendTask
             cls = _nativeMultiRateCyclicSendTask
         else:
             can.log.info("Current CAN interface doesn't support CyclicSendTask")
 
-        return cls(channel, *args, **kwargs)
+        return cls(config['channel'], *args, **kwargs)
