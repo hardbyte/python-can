@@ -1,7 +1,23 @@
 import can
+import importlib
+
 from can.broadcastmanager import CyclicSendTaskABC, MultiRateCyclicSendTaskABC
 from can.util import load_config
 
+# interface_name => (module, classname)
+BACKENDS = {
+    'kvaser':           ('can.interfaces.kvaser', 'KvaserBus'),
+    'socketcan_ctypes': ('can.interfaces.socketcan', 'SocketcanCtypes_Bus'),
+    'socketcan_native': ('can.interfaces.socketcan', 'SocketcanNative_Bus'),
+    'serial':           ('can.interfaces.serial.serial_can', 'SerialBus'),
+    'pcan':             ('can.interfaces.pcan', 'PcanBus'),
+    'usb2can':          ('can.interfaces.usb2can', 'Usb2canBus'),
+    'ixxat':            ('can.interfaces.ixxat', 'IXXATBus'),
+    'nican':            ('can.interfaces.nican', 'NicanBus'),
+    'remote':           ('can.interfaces.remote', 'RemoteBus'),
+    'virtual':          ('can.interfaces.virtual', 'VirtualBus'),
+    'neovi':            ('can.interfaces.neovi_api', 'NeoVIBus')
+}
 
 class Bus(object):
     """
@@ -36,41 +52,25 @@ class Bus(object):
         channel = config['channel']
 
         # Import the correct Bus backend
-        if interface == 'kvaser':
-            from can.interfaces.kvaser import KvaserBus
-            cls = KvaserBus
-        elif interface == 'socketcan_ctypes':
-            from can.interfaces.socketcan import SocketcanCtypes_Bus
-            cls = SocketcanCtypes_Bus
-        elif interface == 'socketcan_native':
-            from can.interfaces.socketcan import SocketcanNative_Bus
-            cls = SocketcanNative_Bus
-        elif interface == 'serial':
-            from can.interfaces.serial.serial_can import SerialBus
-            cls = SerialBus
-        elif interface == 'pcan':
-            from can.interfaces.pcan import PcanBus
-            cls = PcanBus
-        elif interface == 'usb2can':
-            from can.interfaces.usb2can import Usb2canBus
-            cls = Usb2canBus
-        elif interface == 'ixxat':
-            from can.interfaces.ixxat import IXXATBus
-            cls = IXXATBus
-        elif interface == 'nican':
-            from can.interfaces.nican import NicanBus
-            cls = NicanBus
-        elif interface == 'remote':
-            from can.interfaces.remote import RemoteBus
-            cls = RemoteBus
-        elif interface == 'virtual':
-            from can.interfaces.virtual import VirtualBus
-            cls = VirtualBus
-        elif interface == 'neovi':
-            from can.interfaces.neovi_api import NeoVIBus
-            cls = NeoVIBus
-        else:
+        try:
+            (module_name, class_name) = BACKENDS[interface]
+        except KeyError:
             raise NotImplementedError("CAN interface '{}' not supported".format(interface))
+
+        try:
+            module = importlib.import_module(module_name)
+        except Exception as e:
+            raise ImportError(
+                "Cannot import module {} for CAN interface '{}': {}".format(module_name, interface, e)
+            )
+        try:
+            cls = getattr(module, class_name)
+        except Exception as e:
+            raise ImportError(
+                "Cannot import class {} from module {} for CAN interface '{}': {}".format(
+                    class_name, module_name, interface, e
+                )
+            )
 
         return cls(channel, **kwargs)
 
