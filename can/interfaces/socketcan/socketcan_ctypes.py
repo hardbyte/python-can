@@ -8,7 +8,7 @@ import sys
 from ctypes.util import find_library
 
 import can
-from can.broadcastmanager import CyclicSendTaskABC
+from can.broadcastmanager import CyclicSendTaskABC, RestartableCyclicTaskABC, ModifiableCyclicTaskABC
 from can.bus import BusABC
 from can.message import Message
 from can.interfaces.socketcan.socketcan_constants import *  # CAN_RAW
@@ -413,7 +413,7 @@ class SocketCanCtypesBCMBase(object):
         super(SocketCanCtypesBCMBase, self).__init__(*args, **kwargs)
 
 
-class CyclicSendTask(SocketCanCtypesBCMBase, CyclicSendTaskABC):
+class CyclicSendTask(SocketCanCtypesBCMBase, RestartableCyclicTaskABC, ModifiableCyclicTaskABC):
 
     def __init__(self, channel, message, period):
         """
