@@ -119,133 +119,136 @@ def __check_bus_handle_validity(handle, function, arguments):
     else:
         return handle
 
+if __canlib is not None:
+    canInitializeLibrary = __get_canlib_function("canInitializeLibrary")
 
-canInitializeLibrary = __get_canlib_function("canInitializeLibrary")
+    canGetErrorText = __get_canlib_function("canGetErrorText",
+                                            argtypes=[canstat.c_canStatus, ctypes.c_char_p, ctypes.c_uint],
+                                            restype=canstat.c_canStatus,
+                                            errcheck=__check_status)
 
-canGetErrorText = __get_canlib_function("canGetErrorText",
-                                        argtypes=[canstat.c_canStatus, ctypes.c_char_p, ctypes.c_uint],
-                                        restype=canstat.c_canStatus,
-                                        errcheck=__check_status)
+    # TODO wrap this type of function to provide a more Pythonic API
+    canGetNumberOfChannels = __get_canlib_function("canGetNumberOfChannels",
+                                                   argtypes=[ctypes.c_void_p],
+                                                   restype=canstat.c_canStatus,
+                                                   errcheck=__check_status)
 
-# TODO wrap this type of function to provide a more Pythonic API
-canGetNumberOfChannels = __get_canlib_function("canGetNumberOfChannels",
-                                               argtypes=[ctypes.c_void_p],
-                                               restype=canstat.c_canStatus,
-                                               errcheck=__check_status)
+    if sys.platform == "win32":
+        __canReadTimer_func_name = "kvReadTimer"
+    else:
+        __canReadTimer_func_name = "canReadTimer"
+    canReadTimer = __get_canlib_function(__canReadTimer_func_name,
+                                         argtypes=[c_canHandle, ctypes.c_void_p],
+                                         restype=canstat.c_canStatus,
+                                         errcheck=__check_status)
 
-if sys.platform == "win32":
-    __canReadTimer_func_name = "kvReadTimer"
-else:
-    __canReadTimer_func_name = "canReadTimer"
-canReadTimer = __get_canlib_function(__canReadTimer_func_name,
-                                     argtypes=[c_canHandle, ctypes.c_void_p],
+    canBusOff = __get_canlib_function("canBusOff",
+                                      argtypes=[c_canHandle],
+                                      restype=canstat.c_canStatus,
+                                      errcheck=__check_status)
+
+    canBusOn = __get_canlib_function("canBusOn",
+                                     argtypes=[c_canHandle],
                                      restype=canstat.c_canStatus,
                                      errcheck=__check_status)
 
-canBusOff = __get_canlib_function("canBusOff",
-                                  argtypes=[c_canHandle],
-                                  restype=canstat.c_canStatus,
-                                  errcheck=__check_status)
+    canClose = __get_canlib_function("canClose",
+                                     argtypes=[c_canHandle],
+                                     restype=canstat.c_canStatus,
+                                     errcheck=__check_status)
 
-canBusOn = __get_canlib_function("canBusOn",
-                                 argtypes=[c_canHandle],
-                                 restype=canstat.c_canStatus,
-                                 errcheck=__check_status)
+    canOpenChannel = __get_canlib_function("canOpenChannel",
+                                           argtypes=[ctypes.c_int, ctypes.c_int],
+                                           restype=c_canHandle,
+                                           errcheck=__check_bus_handle_validity)
 
-canClose = __get_canlib_function("canClose",
-                                 argtypes=[c_canHandle],
-                                 restype=canstat.c_canStatus,
-                                 errcheck=__check_status)
+    canSetBusParams = __get_canlib_function("canSetBusParams",
+                                            argtypes=[c_canHandle, ctypes.c_long,
+                                                      ctypes.c_uint, ctypes.c_uint,
+                                                      ctypes.c_uint, ctypes.c_uint,
+                                                      ctypes.c_uint],
+                                            restype=canstat.c_canStatus,
+                                            errcheck=__check_status)
 
-canOpenChannel = __get_canlib_function("canOpenChannel",
-                                       argtypes=[ctypes.c_int, ctypes.c_int],
-                                       restype=c_canHandle,
-                                       errcheck=__check_bus_handle_validity)
 
-canSetBusParams = __get_canlib_function("canSetBusParams",
-                                        argtypes=[c_canHandle, ctypes.c_long,
-                                                  ctypes.c_uint, ctypes.c_uint,
-                                                  ctypes.c_uint, ctypes.c_uint,
-                                                  ctypes.c_uint],
+    canSetBusOutputControl = __get_canlib_function("canSetBusOutputControl",
+                                                   argtypes=[c_canHandle,
+                                                             ctypes.c_uint],
+                                                   restype=canstat.c_canStatus,
+                                                   errcheck=__check_status)
+
+    canSetAcceptanceFilter = __get_canlib_function("canSetAcceptanceFilter",
+                                                   argtypes=[
+                                                       c_canHandle,
+                                                       ctypes.c_uint,
+                                                       ctypes.c_uint,
+                                                       ctypes.c_int
+                                                   ],
+                                                   restype=canstat.c_canStatus,
+                                                   errcheck=__check_status)
+
+    canReadWait = __get_canlib_function("canReadWait",
+                                        argtypes=[c_canHandle, ctypes.c_void_p,
+                                                  ctypes.c_void_p, ctypes.c_void_p,
+                                                  ctypes.c_void_p, ctypes.c_void_p,
+                                                  ctypes.c_long],
                                         restype=canstat.c_canStatus,
-                                        errcheck=__check_status)
+                                        errcheck=__check_status_read)
 
-
-canSetBusOutputControl = __get_canlib_function("canSetBusOutputControl",
-                                               argtypes=[c_canHandle,
-                                                         ctypes.c_uint],
-                                               restype=canstat.c_canStatus,
-                                               errcheck=__check_status)
-
-canSetAcceptanceFilter = __get_canlib_function("canSetAcceptanceFilter",
-                                               argtypes=[
-                                                   c_canHandle,
-                                                   ctypes.c_uint,
-                                                   ctypes.c_uint,
-                                                   ctypes.c_int
-                                               ],
-                                               restype=canstat.c_canStatus,
-                                               errcheck=__check_status)
-
-canReadWait = __get_canlib_function("canReadWait",
-                                    argtypes=[c_canHandle, ctypes.c_void_p,
-                                              ctypes.c_void_p, ctypes.c_void_p,
-                                              ctypes.c_void_p, ctypes.c_void_p,
-                                              ctypes.c_long],
-                                    restype=canstat.c_canStatus,
-                                    errcheck=__check_status_read)
-
-canWriteWait = __get_canlib_function("canWriteWait",
+    canWrite = __get_canlib_function("canWrite",
                                      argtypes=[
                                          c_canHandle,
                                          ctypes.c_long,
                                          ctypes.c_void_p,
                                          ctypes.c_uint,
-                                         ctypes.c_uint,
-                                         ctypes.c_ulong],
+                                         ctypes.c_uint],
                                      restype=canstat.c_canStatus,
                                      errcheck=__check_status)
 
+    canWriteSync = __get_canlib_function("canWriteSync",
+                                         argtypes=[c_canHandle, ctypes.c_ulong],
+                                         restype=canstat.c_canStatus,
+                                         errcheck=__check_status)
 
-canIoCtl = __get_canlib_function("canIoCtl",
-                                 argtypes=[c_canHandle, ctypes.c_uint,
-                                           ctypes.c_void_p, ctypes.c_uint],
-                                 restype=canstat.c_canStatus,
-                                 errcheck=__check_status)
+    canIoCtl = __get_canlib_function("canIoCtl",
+                                     argtypes=[c_canHandle, ctypes.c_uint,
+                                               ctypes.c_void_p, ctypes.c_uint],
+                                     restype=canstat.c_canStatus,
+                                     errcheck=__check_status)
 
-canGetVersion = __get_canlib_function("canGetVersion",
-                                      restype=ctypes.c_short,
-                                      errcheck=__check_status)
+    canGetVersion = __get_canlib_function("canGetVersion",
+                                          restype=ctypes.c_short,
+                                          errcheck=__check_status)
 
-kvFlashLeds = __get_canlib_function("kvFlashLeds",
-                                    argtypes=[c_canHandle, ctypes.c_int,
-                                              ctypes.c_int],
-                                    restype=ctypes.c_short,
-                                    errcheck=__check_status)
+    kvFlashLeds = __get_canlib_function("kvFlashLeds",
+                                        argtypes=[c_canHandle, ctypes.c_int,
+                                                  ctypes.c_int],
+                                        restype=ctypes.c_short,
+                                        errcheck=__check_status)
 
-if sys.platform == "win32":
-    canGetVersionEx = __get_canlib_function("canGetVersionEx",
-                                            argtypes=[ctypes.c_uint],
-                                            restype=ctypes.c_uint,
-                                            errcheck=__check_status)
+    if sys.platform == "win32":
+        canGetVersionEx = __get_canlib_function("canGetVersionEx",
+                                                argtypes=[ctypes.c_uint],
+                                                restype=ctypes.c_uint,
+                                                errcheck=__check_status)
 
-
-def init_kvaser_library():
-    try:
-        log.debug("Initializing Kvaser CAN library")
-        canInitializeLibrary()
-        log.debug("CAN library initialized")
-    except:
-        log.warning("Kvaser canlib could not be initialized.")
-
-
-canGetChannelData = __get_canlib_function("canGetChannelData",
+    canGetChannelData = __get_canlib_function("canGetChannelData",
                                           argtypes=[ctypes.c_int,
                                                     ctypes.c_int,
                                                     ctypes.c_void_p,
                                                     ctypes.c_size_t],
                                           restype=canstat.c_canStatus,
                                           errcheck=__check_status)
+
+
+def init_kvaser_library():
+    if __canlib is not None:
+        try:
+            log.debug("Initializing Kvaser CAN library")
+            canInitializeLibrary()
+            log.debug("CAN library initialized")
+        except:
+            log.warning("Kvaser canlib could not be initialized.")
 
 
 DRIVER_MODE_SILENT = False
@@ -515,7 +518,7 @@ class KvaserBus(BusABC):
             #log.debug('read complete -> status not okay')
             return None
 
-    def send(self, msg):
+    def send(self, msg, timeout=None):
         #log.debug("Writing a message: {}".format(msg))
         flags = canstat.canMSG_EXT if msg.id_type else canstat.canMSG_STD
         if msg.is_remote_frame:
@@ -524,12 +527,13 @@ class KvaserBus(BusABC):
             flags |= canstat.canMSG_ERROR_FRAME
         ArrayConstructor = ctypes.c_byte * msg.dlc
         buf = ArrayConstructor(*msg.data)
-        canWriteWait(self._write_handle,
-                     msg.arbitration_id,
-                     ctypes.byref(buf),
-                     msg.dlc,
-                     flags,
-                     10)
+        canWrite(self._write_handle,
+                 msg.arbitration_id,
+                 ctypes.byref(buf),
+                 msg.dlc,
+                 flags)
+        if timeout:
+            canWriteSync(self._write_handle, int(timeout * 1000))
 
     def flash(self, flash=True):
         """
@@ -547,6 +551,12 @@ class KvaserBus(BusABC):
             log.error('Could not flash LEDs (%s)', e)
 
     def shutdown(self):
+        # Wait for transmit queue to be cleared
+        try:
+            canWriteSync(self._write_handle, 100)
+        except CANLIBError as e:
+            log.warning("There may be messages in the transmit queue that could "
+                        "not be transmitted before going bus off (%s)", e)
         if not self.single_handle:
             canBusOff(self._read_handle)
             canClose(self._read_handle)
@@ -570,7 +580,7 @@ def get_channel_info(channel):
                       ctypes.byref(number), ctypes.sizeof(number))
 
     return '%s, S/N %d (#%d)' % (
-        name.value.decode(), serial.value, number.value + 1)
+        name.value.decode("ascii"), serial.value, number.value + 1)
 
 
 init_kvaser_library()

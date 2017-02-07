@@ -39,7 +39,7 @@ class SocketcanCtypes_Bus(BusABC):
     channel_info = "ctypes socketcan channel"
 
     def __init__(self,
-                 channel=can.rc['channel'],
+                 channel=0,
                  receive_own_messages=False,
                  *args, **kwargs):
         """
@@ -51,12 +51,12 @@ class SocketcanCtypes_Bus(BusABC):
         self.socket = createSocket()
 
         log.debug("Result of createSocket was %d", self.socket)
-        
+
         # Add any socket options such as can frame filters
         if 'can_filters' in kwargs and len(kwargs['can_filters']) > 0:
             log.debug("Creating a filtered can bus")
             self.set_filters(kwargs['can_filters'])
-        
+
         error = bindSocket(self.socket, channel)
 
         if receive_own_messages:
@@ -86,7 +86,7 @@ class SocketcanCtypes_Bus(BusABC):
         # TODO Is this serious enough to raise a CanError exception?
         if res != 0:
             log.error('Setting filters failed: ' + str(res))
-    
+
     def recv(self, timeout=None):
 
         log.debug("Trying to read a msg")
@@ -117,7 +117,7 @@ class SocketcanCtypes_Bus(BusABC):
 
         return rx_msg
 
-    def send(self, msg):
+    def send(self, msg, timeout=None):
         frame = _build_can_frame(msg)
         bytes_sent = libc.write(self.socket, ctypes.byref(frame), ctypes.sizeof(frame))
         if bytes_sent == -1:
