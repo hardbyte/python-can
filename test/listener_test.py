@@ -4,6 +4,7 @@ import random
 import logging
 import tempfile
 import os.path
+import sqlite3
 
 import can
 
@@ -29,8 +30,9 @@ TEST_MESSAGES = [
     can.Message(is_error_frame=True, timestamp=1483389466.170),
 ]
 
+
 def generate_message(arbitration_id):
-    data = [random.randrange(0, 2 ** 8 - 1) for b in range(8)]
+    data = [random.randrange(0, 2 ** 8 - 1) for _ in range(8)]
     m = can.Message(arbitration_id=arbitration_id, data=data, extended_id=False)
     return m
 
@@ -89,14 +91,12 @@ class ListenerTest(BusTest):
         sleep(0.5)
         a_listener.stop()
 
-        import sqlite3
         con = sqlite3.connect(f.name)
         c = con.cursor()
         c.execute("select * from messages")
         msg = c.fetchone()
         con.close()
-        assert msg[1] == 0xDADADA
-
+        self.assertEqual(msg[1], 0xDADADA)
 
     def testSQLWriterWritesToSameFile(self):
         f = tempfile.NamedTemporaryFile('w', delete=False)
@@ -114,7 +114,6 @@ class ListenerTest(BusTest):
         sleep(1.0)
         second_listener.stop()
 
-        import sqlite3
         con = sqlite3.connect(f.name)
 
         with con:
@@ -156,8 +155,11 @@ class ListenerTest(BusTest):
         a_listener(msg)
         a_listener.stop()
         with open("test.asc", "r") as f:
-            print("Output from ASCWriter:")
-            print(f.read())
+            output_contents = f.read()
+
+        self.assertTrue('This is some comment' in output_contents)
+        print("Output from ASCWriter:")
+        print(output_contents)
 
 
 class FileReaderTest(BusTest):
@@ -167,7 +169,10 @@ class FileReaderTest(BusTest):
         f.close()
         a_listener = can.SqliteWriter(f.name)
         a_listener(generate_message(0xDADADA))
-        sleep(0.1)
+
+        sleep(2 * a_listener.GET_MESSAGE_TIMEOUT)
+        while not a_listener.buffer.empty():
+            sleep(0.1)
         a_listener.stop()
 
         reader = can.SqlReader(f.name)
