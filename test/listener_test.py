@@ -105,13 +105,14 @@ class ListenerTest(BusTest):
         first_listener = can.SqliteWriter(f.name)
         first_listener(generate_message(0x01))
 
-        sleep(1.0)
+        sleep(first_listener.MAX_TIME_BETWEEN_WRITES)
         first_listener.stop()
 
         second_listener = can.SqliteWriter(f.name)
         second_listener(generate_message(0x02))
 
-        sleep(1.0)
+        sleep(second_listener.MAX_TIME_BETWEEN_WRITES)
+
         second_listener.stop()
 
         con = sqlite3.connect(f.name)
@@ -170,7 +171,7 @@ class FileReaderTest(BusTest):
         a_listener = can.SqliteWriter(f.name)
         a_listener(generate_message(0xDADADA))
 
-        sleep(2 * a_listener.GET_MESSAGE_TIMEOUT)
+        sleep(a_listener.MAX_TIME_BETWEEN_WRITES)
         while not a_listener.buffer.empty():
             sleep(0.1)
         a_listener.stop()
