@@ -104,11 +104,12 @@ class SqliteWriter(BufferedReader):
                     m.dlc,
                     buffer(m.data)
                 ))
-                m = self.get_message(self.GET_MESSAGE_TIMEOUT)
 
                 if time.time() - last_write > self.MAX_TIME_BETWEEN_WRITES:
                     log.debug("Max timeout between writes reached")
                     break
+
+                m = self.get_message(self.GET_MESSAGE_TIMEOUT)
 
             if len(messages) > 0:
                 with self.conn:
