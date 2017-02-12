@@ -67,18 +67,16 @@ class BusABC(object):
         """Start sending a message at a given period on this bus.
 
         :param can.Message msg:
+            Message to transmit
         :param float period:
+            Period in seconds between each message
         :param float duration:
             The duration to keep sending this message at given rate. If
             no duration is provided, the task will continue indefinitely.
         :return: A started task instance
         :rtype: can.CyclicSendTaskABC
         """
-        if not hasattr(self, "cyclic_manager"):
-            self.cyclic_manager = ThreadBasedCyclicSendManager(self.send)
-        task = ThreadBasedCyclicSendTask(msg, period, duration)
-        self.cyclic_manager.add_task(task)
-        return task
+        return ThreadBasedCyclicSendTask(self, msg, period, duration)
 
     def __iter__(self):
         """Allow iteration on messages as they are received.

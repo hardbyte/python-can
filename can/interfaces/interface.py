@@ -104,14 +104,12 @@ class CyclicSendTask(CyclicSendTaskABC):
         elif can.rc['interface'] == 'socketcan_native':
             from can.interfaces.socketcan.socketcan_native import CyclicSendTask as _nativeCyclicSendTask
             cls = _nativeCyclicSendTask
-        # CyclicSendTask has not been fully implemented on remote interface yet.
-        # Waiting for issue #80 which will change the API to make it easier for
-        # interfaces other than socketcan to implement it
-        #elif can.rc['interface'] == 'remote':
-        #    from can.interfaces.remote import CyclicSendTask as _remoteCyclicSendTask
-        #    cls = _remoteCyclicSendTask
+        elif can.rc['interface'] == 'remote':
+            from can.interfaces.remote import CyclicSendTask as _remoteCyclicSendTask
+            cls = _remoteCyclicSendTask
         else:
-            can.log.info("Current CAN interface doesn't support CyclicSendTask")
+            from can.broadcastmanager import ThreadBasedCyclicSendTask
+            cls = ThreadBasedCyclicSendTask
 
         return cls(bus, *args, **kwargs)
 

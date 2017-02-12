@@ -122,16 +122,25 @@ class ThreadBasedCyclicSendManager(object):
 
 
 class ThreadBasedCyclicSendTask(ModifiableCyclicTaskABC,
-                                LimitedDurationCyclicSendTaskABC):
+                                LimitedDurationCyclicSendTaskABC,
+                                RestartableCyclicTaskABC):
     """Fallback cyclic send task using thread."""
 
-    def __init__(self, message, period, duration=None):
+    def __init__(self, bus, message, period, duration=None):
         super(ThreadBasedCyclicSendTask, self).__init__(message, period, duration)
+        if not hasattr(bus, "cyclic_manager"):
+            bus.cyclic_manager = ThreadBasedCyclicSendManager(bus.send)
+        self.bus = bus
         self.stopped = False
         self.end_time = time.time() + duration if duration else None
+        self.start()
 
     def stop(self):
         self.stopped = True
+
+    def start(self):
+        self.stopped = False
+        self.bus.cyclic_manager.add_task(self)
 
 
 def send_periodic(bus, message, period):
