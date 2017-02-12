@@ -65,14 +65,21 @@ The server uses the following classes to implement the connections.
 
 .. autoclass:: can.interfaces.remote.RemoteServer
 
-   .. method:: serve_forever
+   .. method:: serve_forever(poll_interval=0.5)
 
       Start listening for incoming connections.
 
    .. method:: shutdown
 
-      Stop the server.
+      Stops the serve_forever loop.
 
+      Blocks until the loop has finished. This must be called while
+      serve_forever() is running in another thread, or it will
+      deadlock.
+
+   .. method:: server_close
+
+      Clean-up the server.
 
 .. autoclass:: can.interfaces.remote.server.ClientBusConnection
 
@@ -99,4 +106,6 @@ The available events that can occurr and their specification is listed below:
 .. autoclass:: can.interfaces.remote.events.TransmitSuccess
 .. autoclass:: can.interfaces.remote.events.RemoteException
 .. autoclass:: can.interfaces.remote.events.FilterConfig
+.. autoclass:: can.interfaces.remote.events.PeriodicMessageStart
+.. autoclass:: can.interfaces.remote.events.PeriodicMessageStop
 .. autoclass:: can.interfaces.remote.events.ConnectionClosed
