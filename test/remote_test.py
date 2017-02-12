@@ -82,11 +82,12 @@ class EventsTestCase(unittest.TestCase):
         msg = can.Message(0x123,
                           extended_id=False,
                           data=[1, 2, 3, 4, 5, 6, 7, 8])
-        event1 = events.PeriodicMessageStart(msg, 0.01)
+        event1 = events.PeriodicMessageStart(msg, 0.01, 10)
         buf = event1.encode()
         event2 = events.PeriodicMessageStart.from_buffer(buf)
         self.assertEqual(event1, event2)
         self.assertAlmostEqual(event1.period, event2.period)
+        self.assertAlmostEqual(event1.duration, event2.duration)
         self.assertEqual(len(event2), len(buf))
 
 
@@ -177,8 +178,8 @@ class RemoteBusTestCase(unittest.TestCase):
         time.sleep(0.1)
 
     def tearDown(self):
-        self.remote_bus.shutdown()
         self.real_bus.shutdown()
+        self.remote_bus.shutdown()
 
     def test_initialization(self):
         self.assertEqual(self.remote_bus.channel_info,
@@ -231,13 +232,20 @@ class RemoteBusTestCase(unittest.TestCase):
         with self.assertRaisesRegexp(can.CanError, 'This is some error'):
             self.remote_bus.recv(5)
 
-    def _test_cyclic(self):
-        can.rc['interface'] = 'remote'
-        can.rc['channel'] = '127.0.0.1:54700'
-        msg = can.Message(arbitration_id=0xabcdef,
-                          data=[1, 2, 3, 4, 5, 6, 7, 8])
-        task = can.interfaces.remote.CyclicSendTask('127.0.0.1:54700', msg, 0.1)
-        time.sleep(3)
+    def test_cyclic(self):
+        test_msg = can.Message(arbitration_id=0xabcdef,
+                               data=[1, 2, 3, 4, 5, 6, 7, 8])
+        task = self.remote_bus.send_periodic(test_msg, 0.01)
+        time.sleep(2)
+        task.stop()
+        msgs = []
+        msg = self.real_bus.recv(0)
+        while msg is not None:
+            msg = self.real_bus.recv(0)
+            if msg is not None:
+                msgs.append(msg)
+        self.assertTrue(150 < len(msgs) < 220)
+        self.assertEqual(msgs[0], test_msg)
 
 
 if __name__ == '__main__':

@@ -273,7 +273,9 @@ class PeriodicMessageStart(BaseEvent):
     +--------+-------+--------------------------------------------------------+
     | Byte   | Type  | Contents                                               |
     +========+=======+========================================================+
-    | 0 - 7  | F64   | Period (s)                                             |
+    | 0 - 3  | U32   | Period (ms)                                            |
+    +--------+-------+--------------------------------------------------------+
+    | 4 - 7  | U32   | Duration (ms)                                          |
     +--------+-------+--------------------------------------------------------+
     | 8 - 11 | U32   | Arbitration ID                                         |
     +--------+-------+--------------------------------------------------------+
@@ -288,9 +290,9 @@ class PeriodicMessageStart(BaseEvent):
     #: Event ID
     EVENT_ID = 7
 
-    _STRUCT = struct.Struct('>dlBB8s')
+    _STRUCT = struct.Struct('>lllBB8s')
 
-    def __init__(self, msg, period):
+    def __init__(self, msg, period, duration=None):
         """
         :param can.Message msg:
             A Message object.
@@ -300,9 +302,12 @@ class PeriodicMessageStart(BaseEvent):
         #: A :class:`can.Message` instance.
         self.msg = msg
         self.period = period
+        self.duration = duration
 
     def encode(self):
-        buf = self._STRUCT.pack(self.period,
+        duration = int(self.duration * 1000) if self.duration is not None else 0
+        buf = self._STRUCT.pack(int(self.period * 1000),
+                                duration,
                                 self.msg.arbitration_id,
                                 self.msg.dlc,
                                 self.msg.id_type,
@@ -312,7 +317,8 @@ class PeriodicMessageStart(BaseEvent):
     @classmethod
     def from_buffer(cls, buf):
         try:
-            period, arb_id, dlc, extended, data = cls._STRUCT.unpack_from(buf)
+            (period, duration, arb_id, dlc, extended,
+             data) = cls._STRUCT.unpack_from(buf)
         except struct.error:
             raise NeedMoreDataError()
 
@@ -320,7 +326,8 @@ class PeriodicMessageStart(BaseEvent):
                           extended_id=extended,
                           dlc=dlc,
                           data=data[:dlc])
-        return cls(msg, period)
+        duration = duration / 1000.0 if duration > 0 else None
+        return cls(msg, period / 1000.0, duration)
 
     def __len__(self):
         return self._STRUCT.size
@@ -362,31 +369,6 @@ class PeriodicMessageStop(BaseEvent):
 
     def __len__(self):
         return self._STRUCT.size
-
-
-class PeriodicMessageUpdate(CanMessage):
-    """Stop periodic transmission of a message.
-
-    +--------+-------+--------------------------------------------------------+
-    | Byte   | Type  | Contents                                               |
-    +========+=======+========================================================+
-    | 0 - 7  |       | Reserved                                               |
-    +--------+-------+--------------------------------------------------------+
-    | 8 - 11 | U32   | Arbitration ID                                         |
-    +--------+-------+--------------------------------------------------------+
-    | 12     | U8    | DLC                                                    |
-    +--------+-------+--------------------------------------------------------+
-    | 13     | U8    | Flags:                                                 |
-    |        |       |  - Bit 0: Extended ID                                  |
-    |        |       |  - Bit 1: Remote frame                                 |
-    |        |       |  - Bit 2: Error frame                                  |
-    +--------+-------+--------------------------------------------------------+
-    | 14 - 21| U8    | Data padded to an 8 byte array                         |
-    +--------+-------+--------------------------------------------------------+
-    """
-
-    #: Event ID
-    EVENT_ID = 9
 
 
 class FilterConfig(BaseEvent):
