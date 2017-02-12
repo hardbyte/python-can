@@ -3,6 +3,7 @@ from __future__ import print_function
 
 import abc
 import logging
+from can.broadcastmanager import ThreadBasedCyclicSendManager, ThreadBasedCyclicSendTask
 logger = logging.getLogger(__name__)
 
 
@@ -65,14 +66,19 @@ class BusABC(object):
     def send_periodic(self, msg, period, duration=None):
         """Start sending a message at a given period on this bus.
 
-        :param msg:
-        :param period:
+        :param can.Message msg:
+        :param float period:
         :param float duration:
             The duration to keep sending this message at given rate. If
             no duration is provided, the task will continue indefinitely.
-        :return: A started :class:`can.CyclicTask` instance
+        :return: A started task instance
+        :rtype: can.CyclicSendTaskABC
         """
-        raise NotImplementedError("TODO")
+        if not hasattr(self, "cyclic_manager"):
+            self.cyclic_manager = ThreadBasedCyclicSendManager(self.send)
+        task = ThreadBasedCyclicSendTask(msg, period, duration)
+        self.cyclic_manager.add_task(task)
+        return task
 
     def __iter__(self):
         """Allow iteration on messages as they are received.
