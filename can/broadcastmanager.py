@@ -93,7 +93,8 @@ class ThreadBasedCyclicSendManager(object):
 
     def __init__(self, send):
         """
-        :param send: A callable function to transmit one :class:`can.Message`.
+        :param send:
+            A callable function to transmit one :class:`can.Message`.
         """
         self.send = send
         self.scheduler = sched.scheduler(time.time, time.sleep)
@@ -102,23 +103,25 @@ class ThreadBasedCyclicSendManager(object):
     def add_task(self, task):
         """Add task to be transmitted periodically.
 
-        :param can.broadcastmanager.SimpleCyclicSendTask: Task to schedule
+        :param can.broadcastmanager.ThreadBasedCyclicSendTask task:
+            Task to schedule
         """
-        self._schedule_task(task, 0)
+        self._schedule_task(task)
         if self.thread is None or not self.thread.is_alive():
             self.thread = threading.Thread(target=self.scheduler.run)
             self.thread.daemon = True
             self.thread.start()
 
-    def _schedule_task(self, task, delay):
-        self.scheduler.enter(delay, task.message.arbitration_id,
-                             self._transmit, (task, ))
+    def _schedule_task(self, task):
+        self.scheduler.enterabs(task.next_time, task.message.arbitration_id,
+                                self._transmit, (task, ))
 
     def _transmit(self, task):
         if not task.stopped and (task.end_time is None or
                                  time.time() <= task.end_time):
-            self._schedule_task(task, task.period)
             self.send(task.message)
+            task.next_time += task.period
+            self._schedule_task(task)
 
 
 class ThreadBasedCyclicSendTask(ModifiableCyclicTaskABC,
@@ -132,6 +135,7 @@ class ThreadBasedCyclicSendTask(ModifiableCyclicTaskABC,
             bus.cyclic_manager = ThreadBasedCyclicSendManager(bus.send)
         self.bus = bus
         self.stopped = False
+        self.next_time = time.time()
         self.end_time = time.time() + duration if duration else None
         self.start()
 

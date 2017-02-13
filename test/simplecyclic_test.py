@@ -18,7 +18,7 @@ class SimpleCyclicSendTaskTest(unittest.TestCase):
         print(size)
         # About 100 messages should have been transmitted. Some overhead will
         # make it less though
-        self.assertTrue(75 < size < 110)
+        self.assertTrue(90 < size < 110)
         last_msg = bus.recv()
         self.assertEqual(last_msg, msg)
 
