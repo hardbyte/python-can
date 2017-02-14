@@ -54,8 +54,10 @@ def load_file_config(path=None):
         interface = socketcan
         channel = can0
 
-    :param path: path to config file. If not specified, several sensible
-    default locations are tried depending on platform.
+    :param path:
+        path to config file. If not specified, several sensible
+        default locations are tried depending on platform.
+
     """
     config = ConfigParser()
     if path is None:

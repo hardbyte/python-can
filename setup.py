@@ -1,18 +1,21 @@
 """
 python-can requires the setuptools package to be installed.
 """
-
+import re
 import logging
 from setuptools import setup, find_packages
 
-__version__ = "2.0.0-alpha.1"
+with open('can/__init__.py', 'r') as fd:
+    version = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
+                        fd.read(), re.MULTILINE).group(1)
+
 
 logging.basicConfig(level=logging.WARNING)
 
 setup(
     name="python-can",
     url="https://github.com/hardbyte/python-can",
-    version=__version__,
+    version=version,
     packages=find_packages(),
     author="Brian Thorne",
     author_email="hardbyte@gmail.com",
