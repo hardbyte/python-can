@@ -20,9 +20,19 @@ except:
     boottimeEpoch = 0
 
 try:
-    import win32event
+    # Try builtin Python 3 Windows API
+    from _overlapped import CreateEvent
+    from _winapi import WaitForSingleObject, WAIT_OBJECT_0, INFINITE
+    HAS_EVENTS = True
 except ImportError:
-    win32event = None
+    try:
+        # Try pywin32 package
+        from win32event import CreateEvent
+        from win32event import WaitForSingleObject, WAIT_OBJECT_0, INFINITE
+        HAS_EVENTS = True
+    except ImportError:
+        # Use polling instead
+        HAS_EVENTS = False
 
 if sys.version_info >= (3, 3):
     # new in 3.3
@@ -87,8 +97,8 @@ class PcanBus(BusABC):
         if result != PCAN_ERROR_OK:
             raise PcanError(self._get_formatted_error(result))
 
-        if win32event is not None:
-            self._recv_event = win32event.CreateEvent(None, 0, 0, None)
+        if HAS_EVENTS:
+            self._recv_event = CreateEvent(None, 0, 0, None)
             result = self.m_objPCANBasic.SetValue(
                 self.m_PcanHandle, PCAN_RECEIVE_EVENT, self._recv_event)
             if result != PCAN_ERROR_OK:
@@ -153,15 +163,12 @@ class PcanBus(BusABC):
         return status == PCAN_ERROR_OK
 
     def recv(self, timeout=None):
-        if win32event is not None:
+        if HAS_EVENTS:
             # We will utilize events for the timeout handling
-            timeout_ms = int(timeout * 1000) if timeout is not None else win32event.INFINITE
+            timeout_ms = int(timeout * 1000) if timeout is not None else INFINITE
         elif timeout is not None:
             # Calculate max time
             end_time = timeout_clock() + timeout
-        else:
-            # Skip timeout handling
-            end_time = 0
 
         log.debug("Trying to read a msg")
 
@@ -169,12 +176,12 @@ class PcanBus(BusABC):
         while result is None:
             result = self.m_objPCANBasic.Read(self.m_PcanHandle)
             if result[0] == PCAN_ERROR_QRCVEMPTY:
-                if win32event is not None:
+                if HAS_EVENTS:
                     result = None
-                    val = win32event.WaitForSingleObject(self._recv_event, timeout_ms)
-                    if val != win32event.WAIT_OBJECT_0:
+                    val = WaitForSingleObject(self._recv_event, timeout_ms)
+                    if val != WAIT_OBJECT_0:
                         return None
-                elif timeout_clock() >= end_time:
+                elif timeout is not None and timeout_clock() >= end_time:
                     return None
                 else:
                     result = None
