@@ -39,6 +39,24 @@ class SqliteWriter(BufferedReader):
 
     The sqlite database may already exist, otherwise it will
     be created when the first message arrives.
+
+    Messages are internally buffered and written to the SQL file in a background
+    thread.
+
+    .. note::
+
+        When the listener's :meth:`~SqliteWriter.stop` method is called the
+        thread writing to the sql file will continue to receive and internally
+        buffer messages if they continue to arrive before the
+        :attr:`~SqliteWriter.GET_MESSAGE_TIMEOUT`.
+
+        If the :attr:`~SqliteWriter.GET_MESSAGE_TIMEOUT` expires before a message
+        is received, the internal buffer is written out to the sql file.
+
+        However if the bus is still saturated with messages, the Listener
+        will continue receiving until the :attr:`~SqliteWriter.MAX_TIME_BETWEEN_WRITES`
+        timeout is reached.
+
     """
 
     insert_msg_template = '''
@@ -104,11 +122,12 @@ class SqliteWriter(BufferedReader):
                     m.dlc,
                     buffer(m.data)
                 ))
-                m = self.get_message(self.GET_MESSAGE_TIMEOUT)
 
                 if time.time() - last_write > self.MAX_TIME_BETWEEN_WRITES:
                     log.debug("Max timeout between writes reached")
                     break
+
+                m = self.get_message(self.GET_MESSAGE_TIMEOUT)
 
             if len(messages) > 0:
                 with self.conn:

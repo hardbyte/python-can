@@ -7,11 +7,15 @@ Similar to canplayer in the can-utils package.
 """
 from __future__ import print_function
 import datetime
+import time
 import argparse
+import logging
 
 import can
 from .blf import BLFReader
 from .sqlite import SqlReader
+
+log = logging.getLogger('can.io.player')
 
 
 class LogReader(object):
@@ -101,7 +105,7 @@ def main():
     parser.add_argument('-i', '--interface', dest="interface",
                         help='''Specify the backend CAN interface to use. If left blank,
                         fall back to reading from configuration files.''',
-                        choices=can.interface.VALID_INTERFACES)
+                        choices=can.VALID_INTERFACES)
 
     parser.add_argument('-b', '--bitrate', type=int,
                         help='''Bitrate to use for the CAN bus.''')
@@ -115,7 +119,7 @@ def main():
                         help='''<s> skip gaps greater than 's' seconds''')
 
     parser.add_argument('infile', metavar='input-file', type=str,
-                        help='The file to replay. Supported types: .db')
+                        help='The file to replay. Supported types: .db, .blf')
 
     results = parser.parse_args()
 
@@ -141,6 +145,8 @@ def main():
 
     try:
         for m in in_sync:
+            if verbosity >= 3:
+                print(m)
             bus.send(m)
     except KeyboardInterrupt:
         pass

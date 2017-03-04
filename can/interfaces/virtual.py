@@ -19,7 +19,7 @@ from can.bus import BusABC
 
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+#logger.setLevel(logging.DEBUG)
 
 
 # Channels are lists of queues, one for each connection

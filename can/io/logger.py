@@ -79,7 +79,7 @@ def main():
     parser.add_argument('-i', '--interface', dest="interface",
                         help='''Specify the backend CAN interface to use. If left blank,
                         fall back to reading from configuration files.''',
-                        choices=can.interface.VALID_INTERFACES)
+                        choices=can.VALID_INTERFACES)
 
     parser.add_argument('--filter', help='''Comma separated filters can be specified for the given CAN interface:
         <can_id>:<can_mask> (matches when <received_can_id> & mask == can_id & mask)

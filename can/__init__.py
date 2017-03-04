@@ -2,9 +2,12 @@
 can is an object-orient Controller Area Network interface module.
 """
 import logging
+
+__version__ = "2.0.0-alpha.2"
+
 log = logging.getLogger('can')
 
-rc = dict(channel=0)
+rc = dict()
 
 
 class CanError(IOError):
@@ -24,4 +27,5 @@ from can.message import Message
 from can.bus import BusABC
 from can.notifier import Notifier
 from can.broadcastmanager import send_periodic, CyclicSendTaskABC, MultiRateCyclicSendTaskABC
-from can.interfaces import interface
+from can.interfaces import VALID_INTERFACES
+from . import interface

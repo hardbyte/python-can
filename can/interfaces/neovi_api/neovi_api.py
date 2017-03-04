@@ -11,26 +11,19 @@ Implementation references:
 
 import logging
 
-import sys
-
 logger = logging.getLogger(__name__)
 
 try:
-    from queue import Queue, Empty
+    import queue
 except ImportError:
-    from Queue import Queue, Empty
+    import Queue as queue
 
-if sys.platform == "win32":
-    try:
-        from neovi import neodevice
-        from neovi import neovi
-        from neovi.structures import icsSpyMessage
-    except ImportError as e:
-        logger.warning("Cannot load pyneovi: %s", e)
-else:
-    # Will not work on other systems, but have it importable anyway for
-    # tests/sphinx
-    logger.warning("pyneovi library does not work on %s platform", sys.platform)
+try:
+    from neovi import neodevice
+    from neovi import neovi
+    from neovi.structures import icsSpyMessage
+except ImportError as e:
+    logger.warning("Cannot load pyneovi: %s", e)
 
 from can import Message
 from can.bus import BusABC
@@ -38,21 +31,6 @@ from can.bus import BusABC
 
 SPY_STATUS_XTD_FRAME = 0x04
 SPY_STATUS_REMOTE_FRAME = 0x08
-
-
-# For the neoVI hardware, TimeHardware2 is more significant than TimeHardware.
-# The resolution of TimeHardware is 1.6us and and TimeHardware2 is 104.8576 ms.
-# To calculate the time of the message in seconds use the following formula:
-# "Timestamp (sec) = TimeHardware2* 0.1048576 + TimeHardware * 0.0000016".
-NEOVI_TIMEHARDWARE_SCALING = 0.0000016
-NEOVI_TIMEHARDWARE2_SCALING = 0.1048576
-
-# For the neoVI PRO or ValueCAN hardware, TimeHardware2 is more significant than
-# TimeHardware. The resolution of TimeHardware is 1.0us and and TimeHardware2 is
-# 65.536 ms. To calculate the time of the message in seconds use the following
-# formula: "Timestamp (sec) = TimeHardware2* 0.065536 + TimeHardware * 0.000001"
-VALUECAN_TIMEHARDWARE_SCALING = 0.000001
-VALUECAN_TIMEHARDWARE2_SCALING = 0.065536
 
 
 def neo_device_name(device_type):
@@ -95,16 +73,9 @@ class NeoVIBus(BusABC):
             channel
         )
 
-        if self.device.get_type() in [neovi.NEODEVICE_DW_VCAN]:
-            self._time_scaling = (VALUECAN_TIMEHARDWARE_SCALING,
-                                  VALUECAN_TIMEHARDWARE2_SCALING)
-        else:
-            self._time_scaling = (NEOVI_TIMEHARDWARE_SCALING,
-                                  NEOVI_TIMEHARDWARE2_SCALING)
-
         self.sw_filters = None
         self.set_filters(can_filters)
-        self.rx_buffer = Queue()
+        self.rx_buffer = queue.Queue()
 
         self.network = int(channel) if channel is not None else None
         self.device.subscribe_to(self._rx_buffer, network=self.network)
@@ -144,10 +115,7 @@ class NeoVIBus(BusABC):
 
     def _ics_msg_to_message(self, ics_msg):
         return Message(
-            timestamp=(
-                self._time_scaling[1] * ics_msg.TimeHardware2 +
-                self._time_scaling[0] * ics_msg.TimeHardware
-            ),
+            timestamp=neovi.GetTimeStampForMsg(self.device.handle, ics_msg)[1],
             arbitration_id=ics_msg.ArbIDOrHeader,
             data=ics_msg.Data,
             dlc=ics_msg.NumberBytesData,
@@ -160,14 +128,14 @@ class NeoVIBus(BusABC):
     def recv(self, timeout=None):
         try:
             ics_msg = self.rx_buffer.get(block=True, timeout=timeout)
-        except Empty:
+        except queue.Empty:
             pass
         else:
             if ics_msg.NetworkID == self.network and \
                     self._is_filter_match(ics_msg.ArbIDOrHeader):
                 return self._ics_msg_to_message(ics_msg)
 
-    def send(self, msg):
+    def send(self, msg, timeout=None):
         data = tuple(msg.data)
         flags = SPY_STATUS_XTD_FRAME if msg.is_extended_id else 0
         if msg.is_remote_frame:
