@@ -30,7 +30,8 @@ class Message(object):
             try:
                 self.data = bytearray(data)
             except TypeError:
-                logger.error("Couldn't create message from %r (%r)", data, type(data))
+                err = "Couldn't create message from {} ({})".format(data, type(data))
+                raise TypeError(err)
 
         if dlc is None:
             self.dlc = len(self.data)
