@@ -178,7 +178,7 @@ def choose_socketcan_implementation():
     else:
         # Check release: SocketCAN was added to Linux 2.6.25
         rel_string = platform.release()
-        m = re.match('\d+\.\d+\.\d', rel_string)
+        m = re.match(r'\d+\.\d+\.\d', rel_string)
         if m is None:
             msg = 'Bad linux release {}'.format(rel_string)
             raise Exception(msg)
