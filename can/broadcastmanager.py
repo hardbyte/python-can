@@ -117,9 +117,9 @@ class ThreadBasedCyclicSendManager(object):
                                 self._transmit, (task, ))
 
     def _transmit(self, task):
+        self.send(task.message)
         if not task.stopped and (task.end_time is None or
                                  time.time() <= task.end_time):
-            self.send(task.message)
             task.next_time += task.period
             self._schedule_task(task)
 
@@ -134,9 +134,9 @@ class ThreadBasedCyclicSendTask(ModifiableCyclicTaskABC,
         if not hasattr(bus, "cyclic_manager"):
             bus.cyclic_manager = ThreadBasedCyclicSendManager(bus.send)
         self.bus = bus
-        self.stopped = False
+        self.stopped = True
         self.next_time = time.time()
-        self.end_time = time.time() + duration if duration else None
+        self.end_time = time.time() + duration - period if duration else None
         self.start()
 
     def stop(self):
