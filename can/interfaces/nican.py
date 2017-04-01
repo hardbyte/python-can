@@ -159,12 +159,16 @@ class NicanBus(BusABC):
                 can_id = can_filter["can_id"]
                 can_mask = can_filter["can_mask"]
                 logger.info("Filtering on ID 0x%X, mask 0x%X", can_id, can_mask)
-                config.extend([
-                    (NC_ATTR_CAN_COMP_STD, can_id),
-                    (NC_ATTR_CAN_MASK_STD, can_mask),
-                    (NC_ATTR_CAN_COMP_XTD, can_id | NC_FL_CAN_ARBID_XTD),
-                    (NC_ATTR_CAN_MASK_XTD, can_mask)
-                ])
+                if can_filter.get("extended"):
+                    config.extend([
+                        (NC_ATTR_CAN_COMP_XTD, can_id | NC_FL_CAN_ARBID_XTD),
+                        (NC_ATTR_CAN_MASK_XTD, can_mask)
+                    ])
+                else:
+                    config.extend([
+                        (NC_ATTR_CAN_COMP_STD, can_id),
+                        (NC_ATTR_CAN_MASK_STD, can_mask),
+                    ])
 
         if bitrate:
             config.append((NC_ATTR_BAUD_RATE, bitrate))

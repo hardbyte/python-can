@@ -28,9 +28,10 @@ class BusABC(object):
             The can interface identifier. Expected type is backend dependent.
 
         :param list can_filters:
-            A list of dictionaries each containing a "can_id" and a "can_mask".
+            A list of dictionaries each containing a "can_id", a "can_mask",
+            and an "extended" key.
 
-            >>> [{"can_id": 0x11, "can_mask": 0x21}]
+            >>> [{"can_id": 0x11, "can_mask": 0x21, "extended": False}]
 
             A filter matches, when ``<received_can_id> & can_mask == can_id & can_mask``
 

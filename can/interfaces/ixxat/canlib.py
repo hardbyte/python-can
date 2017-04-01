@@ -256,7 +256,6 @@ class IXXATBus(BusABC):
         UniqueHardwareId = config.get('UniqueHardwareId', None)
         rxFifoSize = config.get('rxFifoSize', 16)
         txFifoSize = config.get('txFifoSize', 16)
-        extended = config.get('extended', False)
         # Usually comes as a string from the config file
         channel = int(channel)
 
@@ -319,14 +318,16 @@ class IXXATBus(BusABC):
         if can_filters is not None and len(can_filters):
             log.info("The IXXAT VCI backend is filtering messages")
             # Disable every message coming in
-            _canlib.canControlSetAccFilter(self._control_handle,
-                                           1 if extended else 0,
-                                           constants.CAN_ACC_CODE_NONE,
-                                           constants.CAN_ACC_MASK_NONE)
+            for extended in (0, 1):
+                _canlib.canControlSetAccFilter(self._control_handle,
+                                               extended,
+                                               constants.CAN_ACC_CODE_NONE,
+                                               constants.CAN_ACC_MASK_NONE)
             for can_filter in can_filters:
                 # Whitelist
                 code = int(can_filter['can_id'])
                 mask = int(can_filter['can_mask'])
+                extended = can_filter.get('extended', False)
                 _canlib.canControlAddFilterIds(self._control_handle, 1 if extended else 0, code, mask)
                 rtr = (code & 0x01) and (mask & 0x01)
                 log.info("Accepting ID:%d  MASK:%d RTR:%s", code>>1, mask>>1, "YES" if rtr else "NO")
