@@ -65,12 +65,10 @@ class KvaserTest(unittest.TestCase):
         # One filter, will be handled by canlib
         canlib.canSetAcceptanceFilter.reset_mock()
         self.bus.set_filters([
-            {'can_id': 0x8, 'can_mask': 0xff}
+            {'can_id': 0x8, 'can_mask': 0xff, 'extended': True}
         ])
         expected_args = [
-            ((0, 0x8, 0xff, 0),),       # Enable filtering STD on read handle
             ((0, 0x8, 0xff, 1),),       # Enable filtering EXT on read handle
-            ((0, 0x8, 0xff, 0),),       # Enable filtering STD on write handle
             ((0, 0x8, 0xff, 1),),       # Enable filtering EXT on write handle
         ]
         self.assertEqual(canlib.canSetAcceptanceFilter.call_args_list,
@@ -91,20 +89,6 @@ class KvaserTest(unittest.TestCase):
         ]
         self.assertEqual(canlib.canSetAcceptanceFilter.call_args_list,
                          expected_args)
-        self.assertEqual(self.bus.sw_filters, multiple_filters)
-
-    def test_sw_filtering(self):
-        self.bus.set_filters([
-            {'can_id': 0x8, 'can_mask': 0xff},
-            {'can_id': 0x9, 'can_mask': 0xffff}
-        ])
-        self.assertTrue(self.bus._is_filter_match(0x8))
-        self.assertTrue(self.bus._is_filter_match(0x9))
-        self.assertTrue(self.bus._is_filter_match(0x108))
-        self.assertTrue(self.bus._is_filter_match(0x10009))
-        self.assertFalse(self.bus._is_filter_match(0x10))
-        self.assertFalse(self.bus._is_filter_match(0x0))
-        self.assertFalse(self.bus._is_filter_match(0x109))
 
     def test_send_extended(self):
         msg = can.Message(

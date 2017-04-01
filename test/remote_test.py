@@ -49,8 +49,8 @@ class EventsTestCase(unittest.TestCase):
 
     def test_filter_config(self):
         event1 = events.FilterConfig([
-            {'can_id': 0x123, 'can_mask': 0xFFF},
-            {'can_id': 0x001, 'can_mask': 0x00F}
+            {'can_id': 0x1FFFFFFF, 'can_mask': 0x1FFFFFFF, 'extended': True},
+            {'can_id': 0x001, 'can_mask': 0x00F, 'extended': False}
         ])
         buf = event1.encode()
         event2 = events.FilterConfig.from_buffer(buf)
@@ -187,8 +187,8 @@ class RemoteBusTestCase(unittest.TestCase):
 
         # Test to create a new bus with filters
         can_filters = [
-            {'can_id': 0x12, 'can_mask': 0xFF},
-            {'can_id': 0x13, 'can_mask': 0xFF}
+            {'can_id': 0x12, 'can_mask': 0xFF, 'extended': False},
+            {'can_id': 0x13, 'can_mask': 0xFF, 'extended': True}
         ]
         bus = can.interface.Bus('127.0.0.1:54700',
                                 bustype='remote',

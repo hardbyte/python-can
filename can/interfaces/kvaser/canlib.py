@@ -358,7 +358,6 @@ class KvaserBus(BusABC):
             self._write_handle = canOpenChannel(channel, canstat.canOPEN_ACCEPT_VIRTUAL)
             canBusOn(self._read_handle)
 
-        self.sw_filters = []
         self.set_filters(can_filters)
 
         can_driver_mode = canstat.canDRIVER_SILENT if driver_mode == DRIVER_MODE_SILENT else canstat.canDRIVER_NORMAL
@@ -393,25 +392,19 @@ class KvaserBus(BusABC):
 
             A filter matches, when ``<received_can_id> & can_mask == can_id & can_mask``
         """
-        can_id = 0
-        can_mask = 0
-
-        if not can_filters:
-            log.info('Filtering has been disabled')
-            self.sw_filters = []
-        elif len(can_filters) == 1:
+        if can_filters and len(can_filters) == 1:
             can_id = can_filters[0]['can_id']
             can_mask = can_filters[0]['can_mask']
+            extended = 1 if can_filters[0].get('extended') else 0
             log.info('canlib is filtering on ID 0x%X, mask 0x%X', can_id, can_mask)
-            self.sw_filters = []
-        elif len(can_filters) > 1:
-            log.info('Filtering is handled in Python')
-            self.sw_filters = can_filters
+            for handle in (self._read_handle, self._write_handle):
+                canSetAcceptanceFilter(handle, can_id, can_mask, extended)
+        else:
+            log.info('Hardware filtering has been disabled')
+            for handle in (self._read_handle, self._write_handle):
+                for extended in (0, 1):
+                    canSetAcceptanceFilter(handle, 0, 0, extended)
 
-        # Set same filter for both handles as well as standard and extended IDs
-        for handle in (self._read_handle, self._write_handle):
-            for ext in (0, 1):
-                canSetAcceptanceFilter(handle, can_id, can_mask, ext)
 
     def flush_tx_buffer(self):
         """ Wipeout the transmit buffer on the Kvaser.
@@ -445,26 +438,6 @@ class KvaserBus(BusABC):
             self.pc_time_offset += lag
         return timestamp
 
-    def _is_filter_match(self, arb_id):
-        """
-        If SW filtering is used, checks if the `arb_id` matches any of
-        the filters setup.
-
-        :param int arb_id:
-            CAN ID to check against.
-
-        :return:
-            True if `arb_id` matches any filters
-            (or if SW filtering is not used).
-        """
-        if not self.sw_filters:
-            # Filtering done on HW or driver level or no filtering
-            return True
-        for can_filter in self.sw_filters:
-            if not (arb_id ^ can_filter['can_id']) & can_filter['can_mask']:
-                return True
-        return False
-
     def recv(self, timeout=None):
         """
         Read a message from kvaser device.
@@ -495,8 +468,6 @@ class KvaserBus(BusABC):
 
         if status == canstat.canOK:
             #log.debug('read complete -> status OK')
-            if not self._is_filter_match(arb_id.value):
-                return None
             data_array = data.raw
             flags = flags.value
             is_extended = bool(flags & canstat.canMSG_EXT)
