@@ -39,7 +39,7 @@ class SocketcanCtypes_Bus(BusABC):
     channel_info = "ctypes socketcan channel"
 
     def __init__(self,
-                 channel=0,
+                 channel='vcan0',
                  receive_own_messages=False,
                  *args, **kwargs):
         """
