@@ -42,6 +42,9 @@ class ClientBusConnection(socketserver.BaseRequestHandler):
     """A client connection on the server."""
 
     def handle(self):
+        # Disable Nagle algorithm for better real-time performance
+        self.request.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+
         #: Socket connection to client
         self.socket = self.request
         self.conn = can.interfaces.remote.connection.Connection()
