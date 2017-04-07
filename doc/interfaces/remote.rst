@@ -17,11 +17,16 @@ servers must be started on different ports.
 
 Start a server using default interface and channel::
 
-    $ can_server.py
+    $ canserver
 
 Specify interface, channel and port number explicitly::
 
-    $ can_server.py --interface kvaser --channel 0 --port 54702
+    $ canserver --interface kvaser --channel 0 --port 54702
+
+It can also be started as a module::
+
+    $ python -m can.interfaces.remote
+
 
 Client
 ------

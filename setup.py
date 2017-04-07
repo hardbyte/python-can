@@ -1,18 +1,21 @@
 """
 python-can requires the setuptools package to be installed.
 """
-
+import re
 import logging
 from setuptools import setup, find_packages
 
-__version__ = "2.0.0-alpha.1"
+with open('can/__init__.py', 'r') as fd:
+    version = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
+                        fd.read(), re.MULTILINE).group(1)
+
 
 logging.basicConfig(level=logging.WARNING)
 
 setup(
     name="python-can",
     url="https://github.com/hardbyte/python-can",
-    version=__version__,
+    version=version,
     packages=find_packages(),
     author="Brian Thorne",
     author_email="hardbyte@gmail.com",
@@ -23,12 +26,11 @@ setup(
         "": ["CONTRIBUTORS.txt", "LICENSE.txt"],
         "doc": ["*.*"]
     },
-
-    scripts=[
-        "./bin/can_logger.py",
-        "./bin/can_player.py",
-        "./bin/can_server.py"
-    ],
+    entry_points={"console_scripts": [
+        "canlogger = can.io.logger:main",
+        "canplayer = can.io.player:main",
+        "canserver = can.interfaces.remote.__main__:main"
+    ]},
 
     # Tests can be run using `python setup.py test`
     test_suite="nose.collector",

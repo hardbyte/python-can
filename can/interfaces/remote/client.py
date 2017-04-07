@@ -41,6 +41,8 @@ class RemoteBus(can.bus.BusABC):
         self.conn = connection.Connection()
         #: Socket connection to the server
         self.socket = create_connection(channel)
+        # Disable Nagle algorithm for better real-time performance
+        self.socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
 
         # Send handshake with protocol version and requested bitrate
         bitrate = config.get('bitrate', 500000)

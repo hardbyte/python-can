@@ -153,6 +153,8 @@ try:
     _canlib.map_symbol("canChannelWaitRxEvent", ctypes.c_long, (HANDLE, ctypes.c_uint32), __check_status)
     #HRESULT canChannelPostMessage (HANDLE hChannel, PCANMSG pCanMsg );
     _canlib.map_symbol("canChannelPostMessage", ctypes.c_long, (HANDLE, structures.PCANMSG), __check_status)
+    #HRESULT canChannelSendMessage (HANDLE hChannel, UINT32 dwMsTimeout, PCANMSG pCanMsg );
+    _canlib.map_symbol("canChannelSendMessage", ctypes.c_long, (HANDLE, ctypes.c_uint32, structures.PCANMSG), __check_status)
 
     #EXTERN_C HRESULT VCIAPI canControlOpen( IN  HANDLE  hDevice, IN  UINT32  dwCanNo, OUT PHANDLE phCanCtl );
     _canlib.map_symbol("canControlOpen", ctypes.c_long, (HANDLE, ctypes.c_uint32, PHANDLE), __check_status)
@@ -254,7 +256,6 @@ class IXXATBus(BusABC):
         UniqueHardwareId = config.get('UniqueHardwareId', None)
         rxFifoSize = config.get('rxFifoSize', 16)
         txFifoSize = config.get('txFifoSize', 16)
-        extended = config.get('extended', False)
         # Usually comes as a string from the config file
         channel = int(channel)
 
@@ -317,14 +318,16 @@ class IXXATBus(BusABC):
         if can_filters is not None and len(can_filters):
             log.info("The IXXAT VCI backend is filtering messages")
             # Disable every message coming in
-            _canlib.canControlSetAccFilter(self._control_handle,
-                                           1 if extended else 0,
-                                           constants.CAN_ACC_CODE_NONE,
-                                           constants.CAN_ACC_MASK_NONE)
+            for extended in (0, 1):
+                _canlib.canControlSetAccFilter(self._control_handle,
+                                               extended,
+                                               constants.CAN_ACC_CODE_NONE,
+                                               constants.CAN_ACC_MASK_NONE)
             for can_filter in can_filters:
                 # Whitelist
                 code = int(can_filter['can_id'])
                 mask = int(can_filter['can_mask'])
+                extended = can_filter.get('extended', False)
                 _canlib.canControlAddFilterIds(self._control_handle, 1 if extended else 0, code, mask)
                 rtr = (code & 0x01) and (mask & 0x01)
                 log.info("Accepting ID:%d  MASK:%d RTR:%s", code>>1, mask>>1, "YES" if rtr else "NO")
@@ -433,7 +436,7 @@ class IXXATBus(BusABC):
         log.debug('Recv()ed message %s', rx_msg)
         return rx_msg
 
-    def send(self, msg):
+    def send(self, msg, timeout=None):
         log.debug("Sending message: %s", msg)
 
         # This system is not designed to be very efficient
@@ -447,9 +450,11 @@ class IXXATBus(BusABC):
             adapter = (ctypes.c_uint8 * msg.dlc).from_buffer(msg.data)
             ctypes.memmove(self._message.abData, adapter, msg.dlc)
 
-        # This does not block but may raise if TX fifo is full
-        # if you prefer a blocking call use canChannelSendMessage
-        _canlib.canChannelPostMessage (self._channel_handle, self._message)
+        if timeout:
+            _canlib.canChannelSendMessage(
+                self._channel_handle, int(timeout * 1000), self._message)
+        else:
+            _canlib.canChannelPostMessage(self._channel_handle, self._message)
 
     def shutdown(self):
         _canlib.canChannelClose(self._channel_handle)

@@ -22,7 +22,7 @@ API
     :members:
     :special-members: __iter__
 
-.. autoclass:: can.interfaces.interface.Bus
+.. autoclass:: can.interface.Bus
     :members:
     :special-members: __iter__
 

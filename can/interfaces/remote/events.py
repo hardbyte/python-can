@@ -379,7 +379,7 @@ class FilterConfig(BaseEvent):
     +========+=======+========================================================+
     | 0      | U8    | Number of filters                                      |
     +--------+-------+--------------------------------------------------------+
-    | 1 - 4  | U32   | CAN ID for filter 1                                    |
+    | 1 - 4  | U32   | CAN ID for filter 1 (bit 31 set if extended)           |
     +--------+-------+--------------------------------------------------------+
     | 5 - 8  | U32   | CAN mask for filter 1                                  |
     +--------+-------+--------------------------------------------------------+
@@ -407,8 +407,11 @@ class FilterConfig(BaseEvent):
     def encode(self):
         data = [struct.pack('B', len(self.can_filters))]
         for can_filter in self.can_filters:
+            can_id = can_filter['can_id']
+            if can_filter.get('extended'):
+                can_id |= 0x80000000
             filter_data = self._STRUCT.pack(
-                can_filter['can_id'], can_filter['can_mask'])
+                can_id, can_filter['can_mask'])
             data.append(filter_data)
         return b''.join(data)
 
@@ -420,7 +423,11 @@ class FilterConfig(BaseEvent):
             for i in range(nof_filters):
                 offset = 1 + i * cls._STRUCT.size
                 can_id, can_mask = cls._STRUCT.unpack_from(buf, offset)
-                can_filters.append({'can_id': can_id, 'can_mask': can_mask})
+                extended = bool(can_id & 0x80000000)
+                can_filters.append({
+                    'can_id': can_id & 0x1FFFFFFF,
+                    'can_mask': can_mask,
+                    'extended': extended})
         except struct.error:
             raise NeedMoreDataError()
 

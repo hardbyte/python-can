@@ -424,7 +424,7 @@ class SocketcanNative_Bus(BusABC):
 
         return rx_msg
 
-    def send(self, msg):
+    def send(self, msg, timeout=None):
         log.debug("We've been asked to write a message to the bus")
         arbitration_id = msg.arbitration_id
         if msg.id_type:

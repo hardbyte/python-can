@@ -3,6 +3,6 @@ from .server import RemoteServer
 
 
 # If the protocol changes, increase this number
-PROTOCOL_VERSION = 4
+PROTOCOL_VERSION = 5
 
 DEFAULT_PORT = 54701

@@ -5,8 +5,9 @@ Implementation references:
 * http://www.ni.com/pdf/manuals/370289c.pdf
 * https://github.com/buendiya/NicanPython
 """
-import logging
 import ctypes
+import logging
+import sys
 
 from can import CanError, BusABC, Message
 
@@ -74,39 +75,44 @@ def check_status(result, function, arguments):
 
 def get_error_message(status_code):
     """Convert status code to descriptive string."""
-    errmsg = ctypes.create_string_buffer(300)
+    errmsg = ctypes.create_string_buffer(1024)
     nican.ncStatusToString(status_code, len(errmsg), errmsg)
     return errmsg.value.decode("ascii")
 
 
-try:
-    nican = ctypes.windll.LoadLibrary("nican")
-except Exception as e:
-    logger.error("Failed to load NI-CAN driver: %s", e)
+if sys.platform == "win32":
+    try:
+        nican = ctypes.windll.LoadLibrary("nican")
+    except Exception as e:
+        nican = None
+        logger.error("Failed to load NI-CAN driver: %s", e)
+    else:
+        nican.ncConfig.argtypes = [
+            ctypes.c_char_p, ctypes.c_ulong, ctypes.c_void_p, ctypes.c_void_p]
+        nican.ncConfig.errcheck = check_status
+        nican.ncOpenObject.argtypes = [ctypes.c_char_p, ctypes.c_void_p]
+        nican.ncOpenObject.errcheck = check_status
+        nican.ncCloseObject.errcheck = check_status
+        nican.ncAction.argtypes = [ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong]
+        nican.ncAction.errcheck = check_status
+        nican.ncRead.errcheck = check_status
+        nican.ncWrite.errcheck = check_status
+        nican.ncWaitForState.argtypes = [
+            ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_void_p]
+        nican.ncWaitForState.errcheck = check_status
+        nican.ncStatusToString.argtypes = [
+            ctypes.c_int, ctypes.c_uint, ctypes.c_char_p]
 else:
-    nican.ncConfig.argtypes = [
-        ctypes.c_char_p, ctypes.c_ulong, ctypes.c_void_p, ctypes.c_void_p]
-    nican.ncConfig.errcheck = check_status
-    nican.ncOpenObject.argtypes = [ctypes.c_char_p, ctypes.c_void_p]
-    nican.ncOpenObject.errcheck = check_status
-    nican.ncCloseObject.errcheck = check_status
-    nican.ncAction.argtypes = [ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong]
-    nican.ncAction.errcheck = check_status
-    nican.ncRead.errcheck = check_status
-    nican.ncWrite.errcheck = check_status
-    nican.ncWaitForState.argtypes = [
-        ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_void_p]
-    nican.ncWaitForState.errcheck = check_status
-    nican.ncStatusToString.argtypes = [
-        ctypes.c_int, ctypes.c_uint, ctypes.c_char_p]
-
+    nican = None
+    logger.warning("NI-CAN interface is only available on Windows systems")
 
 class NicanBus(BusABC):
     """
     The CAN Bus implemented for the NI-CAN interface.
     """
 
-    def __init__(self, channel, **kwargs):
+    def __init__(self, channel, can_filters=None, bitrate=None, log_errors=True,
+                 **kwargs):
         """
         :param str channel:
             Name of the object to open (e.g. 'CAN0')
@@ -119,12 +125,6 @@ class NicanBus(BusABC):
 
             >>> [{"can_id": 0x11, "can_mask": 0x21}]
 
-        :param int read_queue:
-            Length of read queue
-
-        :param int write_queue:
-            Length of write queue
-
         :param bool log_errors:
             If True, communication errors will appear as CAN messages with
             ``is_error_frame`` set to True and ``arbitration_id`` will identify
@@ -133,16 +133,19 @@ class NicanBus(BusABC):
         :raises can.interfaces.nican.NicanError:
             If starting communication fails
         """
+        if nican is None:
+            raise ImportError("The NI-CAN driver could not be loaded. "
+                              "Check that you are using 32-bit Python on Windows.")
+
         self.channel_info = "NI-CAN: " + channel
         if not isinstance(channel, bytes):
             channel = channel.encode()
 
         config = [
             (NC_ATTR_START_ON_OPEN, True),
-            (NC_ATTR_LOG_COMM_ERRS, kwargs.get("log_errors", True))
+            (NC_ATTR_LOG_COMM_ERRS, log_errors)
         ]
 
-        can_filters = kwargs.get("can_filters")
         if not can_filters:
             logger.info("Filtering has been disabled")
             config.extend([
@@ -156,19 +159,19 @@ class NicanBus(BusABC):
                 can_id = can_filter["can_id"]
                 can_mask = can_filter["can_mask"]
                 logger.info("Filtering on ID 0x%X, mask 0x%X", can_id, can_mask)
-                config.extend([
-                    (NC_ATTR_CAN_COMP_STD, can_id),
-                    (NC_ATTR_CAN_MASK_STD, can_mask),
-                    (NC_ATTR_CAN_COMP_XTD, can_id | NC_FL_CAN_ARBID_XTD),
-                    (NC_ATTR_CAN_MASK_XTD, can_mask)
-                ])
+                if can_filter.get("extended"):
+                    config.extend([
+                        (NC_ATTR_CAN_COMP_XTD, can_id | NC_FL_CAN_ARBID_XTD),
+                        (NC_ATTR_CAN_MASK_XTD, can_mask)
+                    ])
+                else:
+                    config.extend([
+                        (NC_ATTR_CAN_COMP_STD, can_id),
+                        (NC_ATTR_CAN_MASK_STD, can_mask),
+                    ])
 
-        if "bitrate" in kwargs:
-            config.append((NC_ATTR_BAUD_RATE, kwargs["bitrate"]))
-        if "read_queue" in kwargs:
-            config.append((NC_ATTR_READ_Q_LEN, kwargs["read_queue"]))
-        if "write_queue" in kwargs:
-            config.append((NC_ATTR_WRITE_Q_LEN, kwargs["write_queue"]))
+        if bitrate:
+            config.append((NC_ATTR_BAUD_RATE, bitrate))
 
         AttrList = ctypes.c_ulong * len(config)
         attr_id_list = AttrList(*(row[0] for row in config))
@@ -230,7 +233,7 @@ class NicanBus(BusABC):
                       data=raw_msg.data[:dlc])
         return msg
 
-    def send(self, msg):
+    def send(self, msg, timeout=None):
         """
         Send a message to NI-CAN.
 
@@ -257,7 +260,7 @@ class NicanBus(BusABC):
         # bit overkill at the moment.
         #state = ctypes.c_ulong()
         #nican.ncWaitForState(
-        #    self.handle, NC_ST_WRITE_SUCCESS, 10, ctypes.byref(state))
+        #    self.handle, NC_ST_WRITE_SUCCESS, int(timeout * 1000), ctypes.byref(state))
 
     def flush_tx_buffer(self):
         """

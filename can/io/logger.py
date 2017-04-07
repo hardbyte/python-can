@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 """
-can_logger.py logs CAN traffic to the terminal and to a file on disk.
+logger.py logs CAN traffic to the terminal and to a file on disk.
 
-    can_logger.py can0
+    logger.py can0
 
 See candump in the can-utils package for a C implementation.
 Efficient filtering has been implemented for the socketcan backend.
 For example the command
 
-    can_logger.py can0 F03000:FFF000
+    logger.py can0 F03000:FFF000
 
 Will filter for can frames with a can_id containing XXF03XXX.
 
@@ -22,8 +22,46 @@ import socket
 
 import can
 
-if __name__ == "__main__":
+from .asc import ASCWriter
+from .blf import BLFWriter
+from .csv import CSVWriter
+from .sqlite import SqliteWriter
+from .stdout import Printer
 
+
+class Logger(object):
+    """
+    Logs CAN messages to a file.
+
+    The format is determined from the file format which can be one of:
+      * .asc: :class:`can.ASCWriter`
+      * .blf :class:`can.BLFWriter`
+      * .csv: :class:`can.CSVWriter`
+      * .db: :class:`can.SqliteWriter`
+      * other: :class:`can.Printer`
+
+    Note this class itself is just a dispatcher,
+    an object that inherits from Listener will
+    be created when instantiating this class.
+    """
+
+    @classmethod
+    def __new__(cls, other, filename):
+        if not filename:
+            return Printer()
+        elif filename.endswith(".asc"):
+            return ASCWriter(filename)
+        elif filename.endswith(".blf"):
+            return BLFWriter(filename)
+        elif filename.endswith(".csv"):
+            return CSVWriter(filename)
+        elif filename.endswith(".db"):
+            return SqliteWriter(filename)
+        else:
+            return Printer(filename)
+
+
+def main():
     parser = argparse.ArgumentParser(description="Log CAN traffic, printing messages to stdout or to a given file")
 
     parser.add_argument("-f", "--file_name", dest="log_file",
@@ -41,12 +79,15 @@ if __name__ == "__main__":
     parser.add_argument('-i', '--interface', dest="interface",
                         help='''Specify the backend CAN interface to use. If left blank,
                         fall back to reading from configuration files.''',
-                        choices=can.interface.VALID_INTERFACES)
+                        choices=can.VALID_INTERFACES)
 
     parser.add_argument('--filter', help='''Comma separated filters can be specified for the given CAN interface:
         <can_id>:<can_mask> (matches when <received_can_id> & mask == can_id & mask)
         <can_id>~<can_mask> (matches when <received_can_id> & mask != can_id & mask)
     ''', nargs=argparse.REMAINDER, default='')
+
+    parser.add_argument('-b', '--bitrate', type=int,
+                        help='''Bitrate to use for the CAN bus.''')
 
     results = parser.parse_args()
 
@@ -68,14 +109,25 @@ if __name__ == "__main__":
                 can_mask = int(can_mask, base=16) & socket.CAN_ERR_FLAG
             can_filters.append({"can_id": can_id, "can_mask": can_mask})
 
-    bus = can.interface.Bus(results.channel, bustype=results.interface, can_filters=can_filters)
+    config = {"can_filters": can_filters}
+    if results.interface:
+        config["bustype"] = results.interface
+    if results.bitrate:
+        config["bitrate"] = results.bitrate
+    bus = can.interface.Bus(results.channel, **config)
     print('Can Logger (Started on {})\n'.format(datetime.datetime.now()))
-    logger = can.Logger(results.log_file)
-    notifier = can.Notifier(bus, [logger], timeout=0.1)
+    logger = Logger(results.log_file)
 
     try:
         while True:
-            time.sleep(1)
+            msg = bus.recv(1)
+            if msg is not None:
+                logger(msg)
     except KeyboardInterrupt:
+        pass
+    finally:
         bus.shutdown()
-        notifier.stop()
+        logger.stop()
+
+if __name__ == "__main__":
+    main()

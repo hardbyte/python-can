@@ -30,7 +30,8 @@ class Message(object):
             try:
                 self.data = bytearray(data)
             except TypeError:
-                logger.error("Couldn't create message from %r (%r)", data, type(data))
+                err = "Couldn't create message from {} ({})".format(data, type(data))
+                raise TypeError(err)
 
         if dlc is None:
             self.dlc = len(self.data)
@@ -96,7 +97,8 @@ class Message(object):
         return "can.Message({})".format(", ".join(args))
 
     def __eq__(self, other):
-        return (self.arbitration_id == other.arbitration_id and
+        return (isinstance(other, self.__class__) and
+                self.arbitration_id == other.arbitration_id and
                 #self.timestamp == other.timestamp and
                 self.id_type == other.id_type and
                 self.dlc == other.dlc and

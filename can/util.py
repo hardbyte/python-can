@@ -4,6 +4,10 @@ Utilities and configuration file parsing.
 """
 
 import time
+
+import can
+from can.interfaces import VALID_INTERFACES
+
 try:
     from configparser import ConfigParser
 except ImportError:
@@ -50,8 +54,10 @@ def load_file_config(path=None):
         interface = socketcan
         channel = can0
 
-    :param path: path to config file. If not specified, several sensible
-    default locations are tried depending on platform.
+    :param path:
+        path to config file. If not specified, several sensible
+        default locations are tried depending on platform.
+
     """
     config = ConfigParser()
     if path is None:
@@ -88,37 +94,74 @@ def load_environment_config():
     )
 
 
-def load_config(path=None):
+def load_config(path=None, config=None):
     """
     Returns a dict with configuration details which is loaded from (in this order):
 
-    * Environment variables CAN_INTERFACE, CAN_CHANNEL
-    * Config files ``/etc/can.conf`` or ``~/.can`` or ``~/.canrc``
+    - config
+    - can.rc
+    - Environment variables CAN_INTERFACE, CAN_CHANNEL
+    - Config files ``/etc/can.conf`` or ``~/.can`` or ``~/.canrc``
       where the latter may add or replace values of the former.
 
-    Interface can be kvaser, socketcan, socketcan_ctypes, socketcan_native, serial
+    Interface can be any of the strings from ``can.VALID_INTERFACES`` for example:
+    kvaser, socketcan, pcan, usb2can, ixxat, nican, remote, virtual.
 
-    The returned dictionary may look like this::
+    .. note::
 
-        {
-            'interface': 'python-can backend interface to use',
-            'channel': 'default channel to use',
-        }
+        If you pass ``"socketcan"`` this automatically selects between the
+        native and ctypes version.
 
-    :param path: Optional path to config file.
+    :param path:
+        Optional path to config file.
+    :param config:
+        A dict which may set the 'interface', and/or the 'channel', or neither.
+
+    :return:
+        A config dictionary that should contain 'interface' & 'channel'::
+
+            {
+                'interface': 'python-can backend interface to use',
+                'channel': 'default channel to use',
+            }
+
+        Note ``None`` will be used if all the options are exhausted without
+        finding a value.
     """
-    config = load_file_config(path)
-    config.update(load_environment_config())
+
+
+    system_config = {}
+    configs = [
+        config,
+        can.rc,
+        load_environment_config,
+        lambda: load_file_config(path)
+    ]
+
+    # Slightly complex here to only search for the file config if required
+    for cfg in configs:
+        if callable(cfg):
+            cfg = cfg()
+        for key in REQUIRED_KEYS:
+            if key not in system_config and key in cfg and cfg[key] is not None:
+                system_config[key] = cfg[key]
+
+        if all(k in system_config for k in REQUIRED_KEYS):
+            break
 
     # substitute None for all values not found
     for key in REQUIRED_KEYS:
-        if key not in config:
-            config[key] = None
+        if key not in system_config:
+            system_config[key] = None
 
-    if config['interface'] == 'socketcan':
-        config['interface'] = choose_socketcan_implementation()
+    if system_config['interface'] == 'socketcan':
+        system_config['interface'] = choose_socketcan_implementation()
 
-    return config
+    if system_config['interface'] not in VALID_INTERFACES:
+        raise NotImplementedError('Invalid CAN Bus Type - {}'.format(can.rc['interface']))
+
+    can.log.debug("can config: {}".format(system_config))
+    return system_config
 
 
 def choose_socketcan_implementation():
@@ -135,7 +178,7 @@ def choose_socketcan_implementation():
     else:
         # Check release: SocketCAN was added to Linux 2.6.25
         rel_string = platform.release()
-        m = re.match('\d+\.\d+\.\d', rel_string)
+        m = re.match(r'\d+\.\d+\.\d', rel_string)
         if m is None:
             msg = 'Bad linux release {}'.format(rel_string)
             raise Exception(msg)
@@ -147,45 +190,6 @@ def choose_socketcan_implementation():
             msg = 'SocketCAN not available under Linux {}'.format(
                     rel_string)
             raise Exception(msg)
-
-
-class MessageSync:
-
-    def __init__(self, messages, timestamps=True, gap=0.0001, skip=60):
-        """
-
-        :param messages: An iterable of :class:`can.Message` instances.
-        :param timestamps: Use the messages' timestamps.
-        :param gap: Minimum time between sent messages
-        :param skip: Skip periods of inactivity greater than this.
-        """
-        self.raw_messages = messages
-        self.timestamps = timestamps
-        self.gap = gap
-        self.skip = skip
-
-    def __iter__(self):
-        log.debug("Iterating over messages at real speed")
-        playback_start_time = time.time()
-        recorded_start_time = None
-
-        for m in self.raw_messages:
-            if recorded_start_time is None:
-                recorded_start_time = m.timestamp
-
-            if self.timestamps:
-                # Work out the correct wait time
-                now = time.time()
-                current_offset = now - playback_start_time
-                recorded_offset_from_start = m.timestamp - recorded_start_time
-                remaining_gap = recorded_offset_from_start - current_offset
-
-                sleep_period = max(self.gap, min(self.skip, remaining_gap))
-            else:
-                sleep_period = self.gap
-
-            time.sleep(sleep_period)
-            yield m
 
 
 def set_logging_level(level_name=None):

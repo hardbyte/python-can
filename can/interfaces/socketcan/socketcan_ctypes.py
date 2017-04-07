@@ -40,7 +40,7 @@ class SocketcanCtypes_Bus(BusABC):
     channel_info = "ctypes socketcan channel"
 
     def __init__(self,
-                 channel=can.rc['channel'],
+                 channel='vcan0',
                  receive_own_messages=False,
                  *args, **kwargs):
         """
@@ -119,7 +119,7 @@ class SocketcanCtypes_Bus(BusABC):
 
         return rx_msg
 
-    def send(self, msg):
+    def send(self, msg, timeout=None):
         frame = _build_can_frame(msg)
         bytes_sent = libc.write(self.socket, ctypes.byref(frame), ctypes.sizeof(frame))
         if bytes_sent == -1:

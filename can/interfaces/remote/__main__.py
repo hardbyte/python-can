@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 import logging
-logging.basicConfig(format='%(asctime)-15s %(message)s')
 import argparse
 import can
 from can.interfaces import remote
+
+logging.basicConfig(format='%(asctime)-15s %(message)s', level=logging.INFO)
 
 
 def main():
@@ -22,7 +23,7 @@ def main():
     parser.add_argument('-i', '--interface',
                         help='''Specify the backend CAN interface to use. If left blank,
                         fall back to reading from configuration files.''',
-                        choices=can.interface.VALID_INTERFACES)
+                        choices=can.VALID_INTERFACES)
 
     parser.add_argument('-b', '--bitrate', type=int,
                         help='''Force to use a specific bitrate.
@@ -56,7 +57,7 @@ def main():
     except KeyboardInterrupt:
         pass
     logging.info("Closing server")
-    server.shutdown()
+    server.server_close()
 
 
 if __name__ == "__main__":
