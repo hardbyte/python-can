@@ -42,6 +42,9 @@ class ClientBusConnection(socketserver.BaseRequestHandler):
     """A client connection on the server."""
 
     def setup(self):
+        # Disable Nagle algorithm for better real-time performance
+        self.request.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+
         self.config = dict(self.server.config)
         self.bus = None
         self.conn = can.interfaces.remote.connection.Connection()
@@ -55,12 +58,6 @@ class ClientBusConnection(socketserver.BaseRequestHandler):
         self.server.clients.append(self)
 
     def handle(self):
-        # Disable Nagle algorithm for better real-time performance
-        self.request.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-
-        #: Socket connection to client
-        self.socket = self.request
-
         event = self._next_event()
         if isinstance(event, events.BusRequest):
             self._start_bus(event)
@@ -154,14 +151,13 @@ class ClientBusConnection(socketserver.BaseRequestHandler):
             elif isinstance(event, events.PeriodicMessageStop):
                 self.send_tasks[event.arbitration_id].stop()
 
-        logger.info('Closing connection to %s', self.socket.getpeername())
+        logger.info('Closing connection to %s', self.request.getpeername())
         # Remove itself from the server's list of clients
         self.server.clients.remove(self)
         self.stop_event.set()
         self.send_thread.join(1.0)
-        self.socket.shutdown(socket.SHUT_WR)
-        self.socket.close()
-        self.socket = None
+        self.request.shutdown(socket.SHUT_WR)
+        self.request.close()
 
     def _send_to_client(self):
         """Continuously read CAN messages and send to client."""
