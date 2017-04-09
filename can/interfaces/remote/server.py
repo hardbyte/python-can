@@ -58,17 +58,9 @@ class ClientBusConnection(socketserver.BaseRequestHandler):
         self.server.clients.append(self)
 
     def handle(self):
-        event = self._next_event()
-        if isinstance(event, events.BusRequest):
-            self._start_bus(event)
-        elif isinstance(event, events.PeriodicMessageStart):
-            self._start_periodic_transmit(event)
-        else:
+        bus_event = self._next_event()
+        if not isinstance(bus_event, events.BusRequest):
             raise RemoteServerError('Handshake error')
-
-    def _start_bus(self, bus_event):
-        config = dict(self.server.config)
-        self.config = config
 
         if bus_event.version != can.interfaces.remote.PROTOCOL_VERSION:
             raise RemoteServerError('Protocol version mismatch (%d != %d)' % (
@@ -94,17 +86,16 @@ class ClientBusConnection(socketserver.BaseRequestHandler):
         finally:
             self.request.sendall(self.conn.next_data())
 
-        self.send_thread = threading.Thread(target=self._send_to_client,
-                                            name='Send to client')
-        self.send_thread.daemon = True
         self.send_thread.start()
         self._receive_from_client()
 
-    def _start_periodic_transmit(self, start_event):
-        #: Cyclic send task
-        self.task = can.interface.CyclicSendTask(self.server.config['channel'],
-                                                 start_event.msg,
-                                                 start_event.period)
+    def finish(self):
+        logger.info("Closing connection to %s", self.request.getpeername())
+        # Remove itself from the server's list of clients
+        self.server.clients.remove(self)
+        self.stop_event.set()
+        if self.send_thread.is_alive():
+            self.send_thread.join(3)
 
     def _next_event(self):
         """Block until a new event has been received.
@@ -150,14 +141,6 @@ class ClientBusConnection(socketserver.BaseRequestHandler):
                     self.send_tasks[event.msg.arbitration_id] = task
             elif isinstance(event, events.PeriodicMessageStop):
                 self.send_tasks[event.arbitration_id].stop()
-
-        logger.info('Closing connection to %s', self.request.getpeername())
-        # Remove itself from the server's list of clients
-        self.server.clients.remove(self)
-        self.stop_event.set()
-        self.send_thread.join(1.0)
-        self.request.shutdown(socket.SHUT_WR)
-        self.request.close()
 
     def _send_to_client(self):
         """Continuously read CAN messages and send to client."""
