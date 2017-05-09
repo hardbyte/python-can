@@ -21,7 +21,7 @@ def WMIDateStringToDate(dtmDate):
     return strDateTime
 
 
-def serial():
+def serial(serialMatcher = "PID_6001"):
     strComputer = "."
     objWMIService = win32com.client.Dispatch("WbemScripting.SWbemLocator")
     objSWbemServices = objWMIService.ConnectServer(strComputer, "root\cimv2")
@@ -30,7 +30,7 @@ def serial():
     for objItem in colItems:
         string = objItem.Dependent
         # find based on beginning of serial
-        if "ED" in string:
+        if serialMatcher in string:
             # print "Dependent:" + ` objItem.Dependent`
             string = string[len(string) - 9:len(string) - 1]
 
