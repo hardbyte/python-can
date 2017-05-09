@@ -60,6 +60,8 @@ class CanalWrapper:
 
     def open(self, pConfigureStr, flags):
         try:
+            # unicode is not good
+            pConfigureStr = pConfigureStr.encode('ascii', 'ignore')
             res = self.__m_dllBasic.CanalOpen(pConfigureStr, flags)
             return res
         except:

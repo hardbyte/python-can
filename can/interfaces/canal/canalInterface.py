@@ -87,6 +87,12 @@ class CanalBus(BusABC):
         Bitrate of channel in bit/s. Values will be limited to a maximum of 1000 Kb/s.
         Default is 500 Kbs
 
+    :param str serial (optional)
+        device serial to use for the CANAL open call
+    
+    :param str serialMatcher (optional)
+        search string for automatic detection of the device serial
+
     :param int flags:
         Flags to directly pass to open function of the CANAL abstraction layer.
     """
@@ -114,8 +120,12 @@ class CanalBus(BusABC):
         elif channel is not None:
             deviceID = channel
         else:
+            # autodetect device
             from can.interfaces.canal.serial_selector import serial
-            deviceID = serial()
+            if 'serialMatcher' in kwargs:
+                deviceID = serial(kwargs["serialMatcher"])
+            else:
+                deviceID = serial()
 
         # set baudrate in kb/s from bitrate
         # (eg:500000 bitrate must be 500)
