@@ -35,3 +35,5 @@ def serial(serialMatcher = "PID_6001"):
             string = string[len(string) - 9:len(string) - 1]
 
             return string
+
+    return None

@@ -127,6 +127,9 @@ class CanalBus(BusABC):
             else:
                 deviceID = serial()
 
+            if not deviceID:
+                raise can.CanError("Device ID could not be autodetected")
+
         # set baudrate in kb/s from bitrate
         # (eg:500000 bitrate must be 500)
         if 'bitrate' in kwargs:
@@ -141,6 +144,8 @@ class CanalBus(BusABC):
         connector = format_connection_string(deviceID, baudrate)
 
         self.handle = self.can.open(connector, enable_flags)
+        # print "ostemad"
+
 
     def send(self, msg, timeout=None):
         tx = message_convert_tx(msg)

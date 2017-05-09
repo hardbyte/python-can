@@ -63,6 +63,8 @@ class CanalWrapper:
             # unicode is not good
             pConfigureStr = pConfigureStr.encode('ascii', 'ignore')
             res = self.__m_dllBasic.CanalOpen(pConfigureStr, flags)
+            if res == 0:
+                raise can.CanError("CanalOpen failed, configure string: " + pConfigureStr)
             return res
         except:
             log.warning('Failed to open')
