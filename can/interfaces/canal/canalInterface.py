@@ -130,6 +130,8 @@ class CanalBus(BusABC):
             if not deviceID:
                 raise can.CanError("Device ID could not be autodetected")
 
+        self.channel_info = "CANAL device " + deviceID
+
         # set baudrate in kb/s from bitrate
         # (eg:500000 bitrate must be 500)
         if 'bitrate' in kwargs:
