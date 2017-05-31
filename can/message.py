@@ -66,7 +66,7 @@ class Message(object):
         field_strings.append("DLC: {0:d}".format(self.dlc))
         data_strings = []
         if self.data is not None:
-            for index in range(0, self.dlc):
+            for index in range(0, min(self.dlc, len(self.data))):
                 data_strings.append("{0:02x}".format(self.data[index]))
         if len(data_strings) > 0:
             field_strings.append(" ".join(data_strings).ljust(24, " "))
