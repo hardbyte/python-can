@@ -1,0 +1,27 @@
+from time import sleep
+import unittest
+import logging
+import can
+
+logging.getLogger(__file__).setLevel(logging.DEBUG)
+
+
+class SimpleCyclicSendTaskTest(unittest.TestCase):
+
+    def test_cycle_time(self):
+        msg = can.Message(extended_id=False, arbitration_id=0x100, data=[0,1,2,3,4,5,6,7])
+        bus = can.interface.Bus(bustype='virtual')
+        task = bus.send_periodic(msg, 0.01, 1)
+        self.assertIsInstance(task, can.broadcastmanager.CyclicSendTaskABC)
+        sleep(1.5)
+        size = bus.queue.qsize()
+        print(size)
+        # About 100 messages should have been transmitted. Some overhead will
+        # make it less though
+        self.assertTrue(90 < size < 110)
+        last_msg = bus.recv()
+        self.assertEqual(last_msg, msg)
+
+
+if __name__ == '__main__':
+    unittest.main()

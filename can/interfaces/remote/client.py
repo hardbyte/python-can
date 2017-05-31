@@ -91,6 +91,8 @@ class RemoteBus(can.bus.BusABC):
             return event.msg
         elif isinstance(event, events.RemoteException):
             raise event.exc
+        elif isinstance(event, events.ConnectionClosed):
+            raise CanRemoteError("Server closed connection unexpectedly")
         return None
 
     def send(self, msg, timeout=None):
@@ -100,15 +102,22 @@ class RemoteBus(can.bus.BusABC):
         :raises can.interfaces.remote.CanRemoteError:
             On failed transmission to socket.
         """
-        self.conn.send_event(events.CanMessage(msg))
+        self.send_event(events.CanMessage(msg))
+
+    def send_event(self, event):
+        self.conn.send_event(event)
         try:
             self.socket.sendall(self.conn.next_data())
         except OSError as e:
             raise CanRemoteError(str(e))
 
+    def send_periodic(self, message, period, duration=None):
+        return CyclicSendTask(self, message, period, duration)
+
     def shutdown(self):
         """Close socket connection."""
         # Give threads a chance to finish up
+        logger.debug('Closing connection to server')
         self.socket.shutdown(socket.SHUT_WR)
         while not isinstance(self._next_event(1), events.ConnectionClosed):
             pass
@@ -116,42 +125,33 @@ class RemoteBus(can.bus.BusABC):
         logger.debug('Network connection closed')
 
 
-class CyclicSendTask(can.broadcastmanager.CyclicSendTaskABC):
+class CyclicSendTask(can.broadcastmanager.LimitedDurationCyclicSendTaskABC,
+                     can.broadcastmanager.RestartableCyclicTaskABC,
+                     can.broadcastmanager.ModifiableCyclicTaskABC):
 
-    def __init__(self, channel, message, period):
+    def __init__(self, bus, message, period, duration=None):
         """
-        :param channel: The name of the CAN channel to connect to.
+        :param bus: The remote connection to use.
         :param message: The message to be sent periodically.
         :param period: The rate in seconds at which to send the message.
         """
-        super(CyclicSendTask, self).__init__(channel, message, period)
-        self.message = message
-        self.period = period
-        self.socket = create_connection(channel)
-        self.conn = connection.Connection()
+        self.bus = bus
+        super(CyclicSendTask, self).__init__(message, period, duration)
         self.start()
 
-    def __del__(self):
-        self.stop()
-        self.socket.close()
-
     def start(self):
-        self._send_event(
-            events.PeriodicMessageStart(self.message, self.period))
+        self.bus.send_event(
+            events.PeriodicMessageStart(self.message, self.period, self.duration))
 
     def stop(self):
-        self._send_event(
+        self.bus.send_event(
             events.PeriodicMessageStop(self.message.arbitration_id))
 
     def modify_data(self, message):
         assert message.arbitration_id == self.message.arbitration_id
-        self._send_event(
-            events.PeriodicMessageUpdate(
-                self.message.arbitration_id, message.data))
-
-    def _send_event(self, event):
-        self.conn.send_event(event)
-        self.socket.sendall(self.conn.next_data())
+        self.message = message
+        event = events.PeriodicMessageStart(self.message, self.period)
+        self.bus.send_event(event)
 
 
 class CanRemoteError(can.CanError):

@@ -3,6 +3,7 @@ from __future__ import print_function
 
 import abc
 import logging
+from can.broadcastmanager import ThreadBasedCyclicSendManager, ThreadBasedCyclicSendTask
 logger = logging.getLogger(__name__)
 
 
@@ -65,6 +66,28 @@ class BusABC(object):
             if the message could not be written.
         """
         raise NotImplementedError("Trying to write to a readonly bus?")
+
+    def send_periodic(self, msg, period, duration=None):
+        """Start sending a message at a given period on this bus.
+
+        :param can.Message msg:
+            Message to transmit
+        :param float period:
+            Period in seconds between each message
+        :param float duration:
+            The duration to keep sending this message at given rate. If
+            no duration is provided, the task will continue indefinitely.
+
+        :return: A started task instance
+        :rtype: can.CyclicSendTaskABC
+
+            Note the duration before the message stops being sent may not
+            be exactly the same as the duration specified by the user. In
+            general the message will be sent at the given rate until at
+            least *duration* seconds.
+
+        """
+        return ThreadBasedCyclicSendTask(self, msg, period, duration)
 
     def __iter__(self):
         """Allow iteration on messages as they are received.

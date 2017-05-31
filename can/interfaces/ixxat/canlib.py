@@ -440,21 +440,21 @@ class IXXATBus(BusABC):
         log.debug("Sending message: %s", msg)
 
         # This system is not designed to be very efficient
-        ctypes.memset(ctypes.byref(self._message), 0, ctypes.sizeof(structures.CANMSG))
-        self._message.uMsgInfo.Bits.type = constants.CAN_MSGTYPE_DATA
-        self._message.uMsgInfo.Bits.rtr = 1 if msg.is_remote_frame else 0
-        self._message.uMsgInfo.Bits.ext = 1 if msg.id_type else 0
-        self._message.dwMsgId = msg.arbitration_id
+        message = structures.CANMSG()
+        message.uMsgInfo.Bits.type = constants.CAN_MSGTYPE_DATA
+        message.uMsgInfo.Bits.rtr = 1 if msg.is_remote_frame else 0
+        message.uMsgInfo.Bits.ext = 1 if msg.id_type else 0
+        message.dwMsgId = msg.arbitration_id
         if msg.dlc:
-            self._message.uMsgInfo.Bits.dlc = msg.dlc
+            message.uMsgInfo.Bits.dlc = msg.dlc
             adapter = (ctypes.c_uint8 * msg.dlc).from_buffer(msg.data)
-            ctypes.memmove(self._message.abData, adapter, msg.dlc)
+            ctypes.memmove(message.abData, adapter, msg.dlc)
 
         if timeout:
             _canlib.canChannelSendMessage(
-                self._channel_handle, int(timeout * 1000), self._message)
+                self._channel_handle, int(timeout * 1000), message)
         else:
-            _canlib.canChannelPostMessage(self._channel_handle, self._message)
+            _canlib.canChannelPostMessage(self._channel_handle, message)
 
     def shutdown(self):
         _canlib.canChannelClose(self._channel_handle)

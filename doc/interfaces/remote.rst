@@ -111,4 +111,6 @@ The available events that can occurr and their specification is listed below:
 .. autoclass:: can.interfaces.remote.events.TransmitSuccess
 .. autoclass:: can.interfaces.remote.events.RemoteException
 .. autoclass:: can.interfaces.remote.events.FilterConfig
+.. autoclass:: can.interfaces.remote.events.PeriodicMessageStart
+.. autoclass:: can.interfaces.remote.events.PeriodicMessageStop
 .. autoclass:: can.interfaces.remote.events.ConnectionClosed
