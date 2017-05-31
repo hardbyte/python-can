@@ -28,12 +28,14 @@ Configuration File
 
 On Linux systems the config file is searched in the following paths:
 
-1. ``/etc/can.conf``
-2. ``$HOME/.can``
-3. ``$HOME/.canrc``
+1. ``~/can.conf``
+2. ``/etc/can.conf``
+3. ``$HOME/.can``
+4. ``$HOME/.canrc``
 
 On Windows systems the config file is searched in the following paths:
 
+1. ``~/can.conf``
 1. ``can.ini`` (current working directory)
 2. ``$APPDATA/can.ini``
 
