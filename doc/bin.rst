@@ -1,12 +1,12 @@
 Scripts
 =======
 
-The following scripts are installed along with python-can.
+The following modules are callable from python-can.
 
-canlogger
----------
+can.logger
+----------
 
-Command line help (``canlogger --help`` or ``python -m can.io.logger --help``)::
+Command line help (``python -m can.logger --help``)::
 
     usage: canlogger [-h] [-f LOG_FILE] [-v] [-c CHANNEL]
                     [-i {pcan,remote,ixxat,socketcan_ctypes,virtual,usb2can,nican,serial,kvaser,socketcan,socketcan_native}]
@@ -37,10 +37,10 @@ Command line help (``canlogger --help`` or ``python -m can.io.logger --help``)::
                             mask != can_id & mask)
 
 
-canplayer
----------
+can.player
+----------
 
-Command line help (``canplayer --help`` or ``python -m can.io.player --help``)::
+Command line help (``python -m can.player --help``)::
 
     usage: canplayer [-h] [-f LOG_FILE] [-v] [-c CHANNEL]
                     [-i {pcan,remote,ixxat,socketcan_ctypes,virtual,usb2can,nican,serial,kvaser,socketcan,socketcan_native}]
@@ -75,10 +75,10 @@ Command line help (``canplayer --help`` or ``python -m can.io.player --help``)::
 
 
 
-canserver
----------
+can.server
+----------
 
-Command line help (``canserver --help`` or ``python -m can.interfaces.remote --help``)::
+Command line help (``python -m can.server --help``)::
 
       usage: canserver [-h] [-v] [-c CHANNEL]
                       [-i {pcan,remote,ixxat,socketcan_ctypes,virtual,usb2can,nican,serial,kvaser,socketcan,socketcan_native}]

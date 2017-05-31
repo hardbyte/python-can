@@ -26,12 +26,6 @@ setup(
         "": ["CONTRIBUTORS.txt", "LICENSE.txt"],
         "doc": ["*.*"]
     },
-    entry_points={"console_scripts": [
-        "canlogger = can.io.logger:main",
-        "canplayer = can.io.player:main",
-        "canserver = can.interfaces.remote.__main__:main"
-    ]},
-
     # Tests can be run using `python setup.py test`
     test_suite="nose.collector",
     tests_require=['mock', 'nose']
