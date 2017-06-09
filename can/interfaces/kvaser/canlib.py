@@ -400,8 +400,8 @@ class KvaserBus(BusABC):
             try:
                 for handle in (self._read_handle, self._write_handle):
                     canSetAcceptanceFilter(handle, can_id, can_mask, extended)
-            except NotImplementedError:
-                log.warning('Filtering is not supported')
+            except (NotImplementedError, CANLIBError) as e:
+                log.error('Filtering is not supported - %s', e)
             else:
                 log.info('canlib is filtering on ID 0x%X, mask 0x%X', can_id, can_mask)
 
@@ -411,7 +411,7 @@ class KvaserBus(BusABC):
                 for handle in (self._read_handle, self._write_handle):
                     for extended in (0, 1):
                         canSetAcceptanceFilter(handle, 0, 0, extended)
-            except NotImplementedError:
+            except (NotImplementedError, CANLIBError):
                 pass
 
     def flush_tx_buffer(self):
