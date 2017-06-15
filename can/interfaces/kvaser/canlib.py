@@ -375,7 +375,7 @@ class KvaserBus(BusABC):
         '''
         self.pc_time_offset = None
 
-        super(KvaserBus, self).__init__()
+        super(KvaserBus, self).__init__(**config)
 
     def set_filters(self, can_filters=None):
         """Apply filtering to all messages received by this Bus.

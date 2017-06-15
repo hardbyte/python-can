@@ -345,7 +345,7 @@ class IXXATBus(BusABC):
             else:
                 _canlib.canChannelReadMessage(self._channel_handle, 0, ctypes.byref(self._message))
 
-        super(IXXATBus, self).__init__()
+        super(IXXATBus, self).__init__(**config)
 
     def _inWaiting(self):
         try:

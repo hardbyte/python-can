@@ -72,6 +72,7 @@ class NeoVIBus(BusABC):
 
         self.network = int(channel) if channel is not None else None
         self.device.subscribe_to(self._rx_buffer, network=self.network)
+        super(NeoVIBus, self).__init__(**config)
 
     def __del__(self):
         self.shutdown()

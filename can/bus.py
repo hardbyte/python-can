@@ -3,6 +3,12 @@ from __future__ import print_function
 
 import abc
 import logging
+import textwrap
+try:
+    import asyncio
+    from concurrent.futures import ThreadPoolExecutor
+except ImportError:
+    asyncio = None
 from can.broadcastmanager import ThreadBasedCyclicSendManager, ThreadBasedCyclicSendTask
 logger = logging.getLogger(__name__)
 
@@ -23,7 +29,7 @@ class BusABC(object):
     channel_info = 'unknown'
 
     @abc.abstractmethod
-    def __init__(self, channel=None, can_filters=None, **config):
+    def __init__(self, channel=None, can_filters=None, loop=None, **config):
         """
         :param channel:
             The can interface identifier. Expected type is backend dependent.
@@ -39,6 +45,17 @@ class BusABC(object):
         :param dict config:
             Any backend dependent configurations are passed in this dictionary
         """
+        if asyncio is not None:
+            # Create a thread pool for passing of the blocking recv() call to
+            self._executor = ThreadPoolExecutor(max_workers=1)
+            if loop is None:
+                try:
+                    self._loop = asyncio.get_event_loop()
+                except:
+                    # We are probably in a thread
+                    pass
+            else:
+                self._loop = loop
 
     @abc.abstractmethod
     def recv(self, timeout=None):
@@ -66,6 +83,42 @@ class BusABC(object):
             if the message could not be written.
         """
         raise NotImplementedError("Trying to write to a readonly bus?")
+
+    if asyncio is not None:
+        exec(textwrap.dedent("""
+        @asyncio.coroutine
+        def async_recv(self):
+            '''Wait for a message from the bus.
+
+            :return: A message object
+            :rtype: can.Message
+
+            This is a coroutine.
+            '''
+            msg = self.recv(0)
+            while msg is None:
+                # Call recv() from the thread with timeout to avoid freezeing
+                msg = yield from self._loop.run_in_executor(
+                    self._executor, self.recv, 1)
+            return msg
+        """))
+
+        @asyncio.coroutine
+        def async_send(self, msg):
+            """Transmit a message to CAN bus.
+
+            :param can.Message msg:
+                Message to be sent
+
+            This is a coroutine.
+            """
+            self.send(msg)
+
+        def __aiter__(self):
+            return self
+
+        def __anext__(self):
+            return self.async_recv()
 
     def send_periodic(self, msg, period, duration=None):
         """Start sending a message at a given period on this bus.

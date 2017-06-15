@@ -35,7 +35,8 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.intersphinx',
               'sphinx.ext.coverage',
               'sphinx.ext.viewcode',
-              'sphinx.ext.graphviz']
+              'sphinx.ext.graphviz',
+              'sphinxcontrib.asyncio']
 
 # Now, you can use the alias name as a new role, e.g. :issue:`123`.
 extlinks = {
@@ -43,7 +44,7 @@ extlinks = {
 }
 
 intersphinx_mapping = {
-    'python': ('https://docs.python.org/2/', None),
+    'python': ('https://docs.python.org/3/', None),
 }
 
 # If this is True, todo and todolist produce output, else they produce nothing.

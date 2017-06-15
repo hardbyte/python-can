@@ -184,6 +184,8 @@ class NicanBus(BusABC):
         self.handle = ctypes.c_ulong()
         nican.ncOpenObject(channel, ctypes.byref(self.handle))
 
+        super(NicanBus, self).__init__(**kwargs)
+
     def recv(self, timeout=None):
         """
         Read a message from NI-CAN.
