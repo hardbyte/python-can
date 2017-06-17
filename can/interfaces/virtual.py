@@ -5,8 +5,7 @@ This module implements an OS and hardware independent
 virtual CAN interface for testing purposes.
 
 Any VirtualBus instances connecting to the same channel
-will get the same messages. Sent messages will also be
-echoed back to the same bus.
+will get the same messages.
 """
 
 import logging
@@ -53,7 +52,8 @@ class VirtualBus(BusABC):
         msg.timestamp = time.time()
         # Add message to all listening on this channel
         for bus_queue in self.channel:
-            bus_queue.put(msg)
+            if bus_queue != self.queue:
+                bus_queue.put(msg)
         logger.log(9, 'Transmitted message:\n%s', msg)
 
     def shutdown(self):
