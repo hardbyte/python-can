@@ -60,6 +60,10 @@ class SocketcanCtypes_Bus(BusABC):
             self.set_filters(kwargs['can_filters'])
 
         error = bindSocket(self.socket, channel)
+        if error < 0:
+            m = u'bindSocket failed for channel {} with error {}'.format(
+                    channel, error)
+            raise can.CanError(m)
 
         if receive_own_messages:
             error1 = recv_own_msgs(self.socket)
@@ -257,7 +261,10 @@ def bindSocket(socketID, channel_name):
     ifr.ifr_name = channel_name.encode('ascii')
     log.debug('calling ioctl SIOCGIFINDEX')
     # ifr.ifr_ifindex gets filled with that device's index
-    libc.ioctl(socketID, SIOCGIFINDEX, ctypes.byref(ifr))
+    ret = libc.ioctl(socketID, SIOCGIFINDEX, ctypes.byref(ifr))
+    if ret < 0:
+        m = u'Failure while getting "{}" interface index.'.format(channel_name)
+        raise can.CanError(m)
     log.info('ifr.ifr_ifindex: %d', ifr.ifr_ifindex)
 
     # select the CAN interface and bind the socket to it
