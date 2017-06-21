@@ -370,12 +370,13 @@ def capturePacket(sock):
 class SocketcanNative_Bus(BusABC):
     channel_info = "native socketcan channel"
 
-    def __init__(self, channel, **kwargs):
+    def __init__(self, channel, receive_own_messages=False, **kwargs):
         """
         :param str channel:
             The can interface name with which to create this bus. An example channel
             would be 'vcan0'.
-
+        :param bool receive_own_messages:
+            If messages transmitted should also be received back.
         :param list can_filters:
             A list of dictionaries, each containing a "can_id" and a "can_mask".
         """
@@ -386,6 +387,12 @@ class SocketcanNative_Bus(BusABC):
         if 'can_filters' in kwargs and len(kwargs['can_filters']) > 0:
             log.debug("Creating a filtered can bus")
             self.set_filters(kwargs['can_filters'])
+        try:
+            self.socket.setsockopt(socket.SOL_CAN_RAW,
+                                   socket.CAN_RAW_RECV_OWN_MSGS,
+                                   struct.pack('i', receive_own_messages))
+        except Exception as e:
+            log.error("Could not receive own messages (%s)", e)
 
         bindSocket(self.socket, channel)
         super(SocketcanNative_Bus, self).__init__()

@@ -309,6 +309,11 @@ class KvaserBus(BusABC):
         :param bool single_handle:
             Use one Kvaser CANLIB bus handle for both reading and writing.
             This can be set if reading and/or writing is done from one thread.
+        :param bool receive_own_messages:
+            If messages transmitted should also be received back.
+            Only works if single_handle is also False.
+            If you want to receive messages from other applications on the same
+            computer, set this to True or set single_handle to True.
         """
         log.info("CAN Filters: {}".format(can_filters))
         log.info("Got configuration of: {}".format(config))
@@ -319,6 +324,7 @@ class KvaserBus(BusABC):
         no_samp = config.get('no_samp', 0)
         driver_mode = config.get('driver_mode', DRIVER_MODE_NORMAL)
         single_handle = config.get('single_handle', False)
+        receive_own_messages = config.get('receive_own_messages', False)
 
         try:
             channel = int(channel)
@@ -349,6 +355,15 @@ class KvaserBus(BusABC):
                  ctypes.byref(ctypes.c_long(TIMESTAMP_RESOLUTION)),
                  4)
         canSetBusParams(self._read_handle, bitrate, tseg1, tseg2, sjw, no_samp, 0)
+
+        # By default, use local echo if single handle is used (see #160)
+        local_echo = single_handle or receive_own_messages
+        if receive_own_messages and single_handle:
+            log.warning("receive_own_messages only works if single_handle is False")
+        canIoCtl(self._read_handle,
+                 canstat.canIOCTL_SET_LOCAL_TXECHO,
+                 ctypes.byref(ctypes.c_byte(local_echo)),
+                 1)
 
         if self.single_handle:
             log.debug("We don't require separate handles to the bus")

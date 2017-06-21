@@ -23,5 +23,5 @@ def pack_filters(can_filters=None):
         if can_filter.get('extended'):
             can_id |= CAN_EFF_FLAG
         filter_data.append(can_id)
-        filter_data.append(can_filter['can_mask'])
+        filter_data.append(can_filter['can_mask'] | CAN_EFF_FLAG)
     return struct.pack(can_filter_fmt, *filter_data)

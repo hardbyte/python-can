@@ -56,7 +56,7 @@ def main():
     logging_level_name = ['critical', 'error', 'warning', 'info', 'debug', 'subdebug'][min(5, verbosity)]
     can.set_logging_level(logging_level_name)
 
-    config = {}
+    config = {"single_handle": True}
     if results.interface:
         config["bustype"] = results.interface
     if results.bitrate:

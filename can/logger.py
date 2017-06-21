@@ -71,7 +71,7 @@ def main():
                 can_mask = int(can_mask, base=16) & socket.CAN_ERR_FLAG
             can_filters.append({"can_id": can_id, "can_mask": can_mask})
 
-    config = {"can_filters": can_filters}
+    config = {"can_filters": can_filters, "single_handle": True}
     if results.interface:
         config["bustype"] = results.interface
     if results.bitrate:
