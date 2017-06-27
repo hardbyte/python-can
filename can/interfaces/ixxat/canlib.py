@@ -328,9 +328,11 @@ class IXXATBus(BusABC):
                 code = int(can_filter['can_id'])
                 mask = int(can_filter['can_mask'])
                 extended = can_filter.get('extended', False)
-                _canlib.canControlAddFilterIds(self._control_handle, 1 if extended else 0, code, mask)
-                rtr = (code & 0x01) and (mask & 0x01)
-                log.info("Accepting ID:%d  MASK:%d RTR:%s", code>>1, mask>>1, "YES" if rtr else "NO")
+                _canlib.canControlAddFilterIds(self._control_handle,
+                                               1 if extended else 0,
+                                               code << 1,
+                                               mask << 1)
+                log.info("Accepting ID: 0x%X MASK: 0x%X", code, mask)
 
         # Start the CAN controller. Messages will be forwarded to the channel
         _canlib.canControlStart(self._control_handle, constants.TRUE)
