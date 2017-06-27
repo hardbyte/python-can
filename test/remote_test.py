@@ -50,7 +50,8 @@ class EventsTestCase(unittest.TestCase):
     def test_filter_config(self):
         event1 = events.FilterConfig([
             {'can_id': 0x1FFFFFFF, 'can_mask': 0x1FFFFFFF, 'extended': True},
-            {'can_id': 0x001, 'can_mask': 0x00F, 'extended': False}
+            {'can_id': 0x001, 'can_mask': 0x00F, 'extended': False},
+            {'can_id': 0x001, 'can_mask': 0x00F}
         ])
         buf = event1.encode()
         event2 = events.FilterConfig.from_buffer(buf)

@@ -15,6 +15,8 @@ import can
 
 logger = logging.getLogger(__name__)
 
+EXTENDED_BIT = 0x80000000
+
 
 class BaseEvent(object):
     """Events should inherit this class."""
@@ -381,7 +383,7 @@ class FilterConfig(BaseEvent):
     +--------+-------+--------------------------------------------------------+
     | 1 - 4  | U32   | CAN ID for filter 1 (bit 31 set if extended)           |
     +--------+-------+--------------------------------------------------------+
-    | 5 - 8  | U32   | CAN mask for filter 1                                  |
+    | 5 - 8  | U32   | CAN mask for filter 1 (bit 31 set if extended or std)  |
     +--------+-------+--------------------------------------------------------+
     | 9 - 12 | U32   | CAN ID for filter 2                                    |
     +--------+-------+--------------------------------------------------------+
@@ -408,10 +410,12 @@ class FilterConfig(BaseEvent):
         data = [struct.pack('B', len(self.can_filters))]
         for can_filter in self.can_filters:
             can_id = can_filter['can_id']
-            if can_filter.get('extended'):
-                can_id |= 0x80000000
-            filter_data = self._STRUCT.pack(
-                can_id, can_filter['can_mask'])
+            can_mask = can_filter['can_mask']
+            if 'extended' in can_filter:
+                can_mask |= EXTENDED_BIT
+                if can_filter['extended']:
+                    can_id |= EXTENDED_BIT
+            filter_data = self._STRUCT.pack(can_id, can_mask)
             data.append(filter_data)
         return b''.join(data)
 
@@ -423,11 +427,13 @@ class FilterConfig(BaseEvent):
             for i in range(nof_filters):
                 offset = 1 + i * cls._STRUCT.size
                 can_id, can_mask = cls._STRUCT.unpack_from(buf, offset)
-                extended = bool(can_id & 0x80000000)
-                can_filters.append({
+                can_filter = {
                     'can_id': can_id & 0x1FFFFFFF,
-                    'can_mask': can_mask,
-                    'extended': extended})
+                    'can_mask': can_mask & 0x1FFFFFFF
+                }
+                if can_mask & EXTENDED_BIT:
+                    can_filter['extended'] = bool(can_id & EXTENDED_BIT)
+                can_filters.append(can_filter)
         except struct.error:
             raise NeedMoreDataError()
 
