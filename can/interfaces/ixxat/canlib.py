@@ -432,7 +432,7 @@ class IXXATBus(BusABC):
             False,
             self._message.dwMsgId,
             self._message.uMsgInfo.Bits.dlc,
-            self._message.abData
+            self._message.abData[:self._message.uMsgInfo.Bits.dlc]
         )
 
         log.debug('Recv()ed message %s', rx_msg)

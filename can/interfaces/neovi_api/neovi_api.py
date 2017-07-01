@@ -88,7 +88,7 @@ class NeoVIBus(BusABC):
         return Message(
             timestamp=neovi.GetTimeStampForMsg(self.device.handle, ics_msg)[1],
             arbitration_id=ics_msg.ArbIDOrHeader,
-            data=ics_msg.Data,
+            data=ics_msg.Data[:ics_msg.NumberBytesData],
             dlc=ics_msg.NumberBytesData,
             extended_id=bool(ics_msg.StatusBitField &
                              SPY_STATUS_XTD_FRAME),
