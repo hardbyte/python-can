@@ -18,6 +18,7 @@ the **interface** and **channel** before importing from ``can.interfaces``.
     import can
     can.rc['interface'] = 'socketcan'
     can.rc['channel'] = 'vcan0'
+    can.rc['bitrate'] = 500000
     from can.interfaces.interface import Bus
 
     bus = Bus()
@@ -46,6 +47,7 @@ The configuration file sets the default interface and channel:
     [default]
     interface = <the name of the interface to use>
     channel = <the channel to use by default>
+    bitrate = <the bitrate in bits/s to use by default>
 
 
 Environment Variables
@@ -55,6 +57,7 @@ Configuration can be pulled from these environmental variables:
 
     * CAN_INTERFACE
     * CAN_CHANNEL
+    * CAN_BITRATE
 
 
 Interface Names

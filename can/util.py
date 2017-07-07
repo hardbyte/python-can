@@ -71,7 +71,6 @@ def load_file_config(path=None):
     return dict(
         (key, val)
         for key, val in config.items('default')
-        if key in REQUIRED_KEYS
     )
 
 
@@ -81,11 +80,13 @@ def load_environment_config():
 
     * CAN_INTERFACE
     * CAN_CHANNEL
+    * CAN_BITRATE
 
     """
     mapper = {
         'interface': 'CAN_INTERFACE',
         'channel': 'CAN_CHANNEL',
+        'bitrate': 'CAN_BITRATE',
     }
     return dict(
         (key, os.environ.get(val))
@@ -100,7 +101,7 @@ def load_config(path=None, config=None):
 
     - config
     - can.rc
-    - Environment variables CAN_INTERFACE, CAN_CHANNEL
+    - Environment variables CAN_INTERFACE, CAN_CHANNEL, CAN_BITRATE
     - Config files ``/etc/can.conf`` or ``~/.can`` or ``~/.canrc``
       where the latter may add or replace values of the former.
 
@@ -128,7 +129,8 @@ def load_config(path=None, config=None):
         Note ``None`` will be used if all the options are exhausted without
         finding a value.
     """
-
+    if config is None:
+        config = {}
 
     system_config = {}
     configs = [
@@ -142,12 +144,9 @@ def load_config(path=None, config=None):
     for cfg in configs:
         if callable(cfg):
             cfg = cfg()
-        for key in REQUIRED_KEYS:
+        for key in cfg:
             if key not in system_config and key in cfg and cfg[key] is not None:
                 system_config[key] = cfg[key]
-
-        if all(k in system_config for k in REQUIRED_KEYS):
-            break
 
     # substitute None for all values not found
     for key in REQUIRED_KEYS:
@@ -159,6 +158,9 @@ def load_config(path=None, config=None):
 
     if system_config['interface'] not in VALID_INTERFACES:
         raise NotImplementedError('Invalid CAN Bus Type - {}'.format(can.rc['interface']))
+
+    if 'bitrate' in system_config:
+        system_config['bitrate'] = int(system_config['bitrate'])
 
     can.log.debug("can config: {}".format(system_config))
     return system_config
