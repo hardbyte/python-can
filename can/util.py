@@ -145,7 +145,7 @@ def load_config(path=None, config=None):
         if callable(cfg):
             cfg = cfg()
         for key in cfg:
-            if key not in system_config and key in cfg and cfg[key] is not None:
+            if key not in system_config and cfg[key] is not None:
                 system_config[key] = cfg[key]
 
     # substitute None for all values not found
