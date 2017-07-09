@@ -1,81 +1,26 @@
 import logging
-import socket
-import select
 import can
-from can.interfaces.remote import events
-from can.interfaces.remote import connection
+from .protocol import RemoteProtocolBase, RemoteError
+from .websocket import WebSocket, WebsocketClosed
 
 
 logger = logging.getLogger(__name__)
 
 
-def create_connection(address):
-    address = address.split(':')
-    if len(address) >= 2:
-        address = (address[0], int(address[1]))
-    else:
-        address = (address[0], can.interfaces.remote.DEFAULT_PORT)
-    return socket.create_connection(address)
-
-
 class RemoteBus(can.bus.BusABC):
     """CAN bus over a network connection bridge."""
 
-    def __init__(self, channel, can_filters=None, **config):
+    def __init__(self, channel, **config):
         """
         :param str channel:
-            Address of server as host:port (port may be omitted).
-
-        :param list can_filters:
-            A list of dictionaries each containing a "can_id" and a "can_mask".
-
-            >>> [{"can_id": 0x11, "can_mask": 0x21}]
-
-            The filters are handed to the actual CAN interface on the server.
-
-        :param int bitrate:
-            Bitrate in bits/s to use on CAN bus. May be ignored by the interface.
-
-        Any other backend specific configuration will be silently ignored.
+            Address of server as ws://host:port/path.
         """
-        self.conn = connection.Connection()
-        #: Socket connection to the server
-        self.socket = create_connection(channel)
-        # Disable Nagle algorithm for better real-time performance
-        self.socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-
-        # Send handshake with protocol version and requested bitrate
-        bitrate = config.get('bitrate', 500000)
-        bus_req = events.BusRequest(can.interfaces.remote.PROTOCOL_VERSION,
-                                    bitrate)
-        filter_conf = events.FilterConfig(can_filters)
-        self.conn.send_event(bus_req)
-        self.conn.send_event(filter_conf)
-        self.socket.sendall(self.conn.next_data())
-
-        event = self._next_event(5)
-        if isinstance(event, events.RemoteException):
-            raise event.exc
-        if not isinstance(event, events.BusResponse):
-            raise CanRemoteError('Handshake error')
-        self.channel_info = '%s on %s' % (event.channel_info, channel)
-
+        url = channel if "://" in channel else "ws://" + channel
+        websocket = WebSocket(url, ["can.binary+json.v1", "can.json.v1"])
+        self.socket = websocket.socket
+        self.protocol = RemoteClientProtocol(config, websocket)
+        self.channel_info = self.protocol.channel_info
         self.channel = channel
-
-    def _next_event(self, timeout=None):
-        """Block until a new event has been received.
-
-        :param float timeout: Max time in seconds to wait.
-        :return: Next event received from socket (or None if timeout)
-        """
-        event = self.conn.next_event()
-        while event is None:
-            if timeout is not None and not select.select([self.socket], [], [], timeout)[0]:
-                return None
-            data = self.socket.recv(256)
-            self.conn.receive_data(data)
-            event = self.conn.next_event()
-        return event
 
     def recv(self, timeout=None):
         """Block waiting for a message from the Bus.
@@ -85,44 +30,85 @@ class RemoteBus(can.bus.BusABC):
         :return:
             None on timeout or a Message object.
         :rtype: can.Message
+        :raises can.interfaces.remote.protocol.RemoteError:
         """
-        event = self._next_event(timeout)
-        if isinstance(event, events.CanMessage):
-            return event.msg
-        elif isinstance(event, events.RemoteException):
-            raise event.exc
-        elif isinstance(event, events.ConnectionClosed):
-            raise CanRemoteError("Server closed connection unexpectedly")
+        event = self.protocol.recv(timeout)
+        if isinstance(event, can.Message):
+            return event
         return None
 
     def send(self, msg, timeout=None):
         """Transmit a message to CAN bus.
 
         :param can.Message msg: A Message object.
-        :raises can.interfaces.remote.CanRemoteError:
-            On failed transmission to socket.
         """
-        self.send_event(events.CanMessage(msg))
-
-    def send_event(self, event):
-        self.conn.send_event(event)
-        try:
-            self.socket.sendall(self.conn.next_data())
-        except OSError as e:
-            raise CanRemoteError(str(e))
+        self.protocol.send_msg(msg)
 
     def send_periodic(self, message, period, duration=None):
+        """Start sending a message at a given period on the remote bus.
+
+        :param can.Message msg:
+            Message to transmit
+        :param float period:
+            Period in seconds between each message
+        :param float duration:
+            The duration to keep sending this message at given rate. If
+            no duration is provided, the task will continue indefinitely.
+
+        :return: A started task instance
+        """
         return CyclicSendTask(self, message, period, duration)
 
     def shutdown(self):
         """Close socket connection."""
         # Give threads a chance to finish up
         logger.debug('Closing connection to server')
-        self.socket.shutdown(socket.SHUT_WR)
-        while not isinstance(self._next_event(1), events.ConnectionClosed):
-            pass
+        self.protocol.close()
+        while True:
+            try:
+                self.protocol.recv(1)
+            except WebsocketClosed:
+                break
+            except RemoteError:
+                pass
         self.socket.close()
         logger.debug('Network connection closed')
+
+
+class RemoteClientProtocol(RemoteProtocolBase):
+
+    def __init__(self, config, websocket):
+        super(RemoteClientProtocol, self).__init__(websocket)
+        self.send_bus_request(config)
+        event = self.recv(5)
+        if event is None:
+            raise RemoteError("No response from server")
+        if event.get("type") != "bus_response":
+            raise RemoteError("Invalid response from server")
+        self.channel_info = '%s on %s' % (
+            event["payload"]["channel_info"], websocket.url)
+
+    def send_bus_request(self, config):
+        self.send("bus_request", {"config": config})
+
+    def send_periodic_start(self, msg, period, duration):
+        msg_payload = {
+            "arbitration_id": msg.arbitration_id,
+            "extended_id": msg.id_type,
+            "is_remote_frame": msg.is_remote_frame,
+            "is_error_frame": msg.is_error_frame,
+            "dlc": msg.dlc,
+            "data": list(msg.data),
+        }
+        payload = {
+            "period": period,
+            "duration": duration,
+            "msg": msg_payload
+        }
+        self.send("periodic_start", payload)
+
+    def send_periodic_stop(self, arbitration_id):
+        self.send("periodic_stop", arbitration_id)
 
 
 class CyclicSendTask(can.broadcastmanager.LimitedDurationCyclicSendTaskABC,
@@ -140,19 +126,16 @@ class CyclicSendTask(can.broadcastmanager.LimitedDurationCyclicSendTaskABC,
         self.start()
 
     def start(self):
-        self.bus.send_event(
-            events.PeriodicMessageStart(self.message, self.period, self.duration))
+        self.bus.protocol.send_periodic_start(self.message,
+                                              self.period,
+                                              self.duration)
 
     def stop(self):
-        self.bus.send_event(
-            events.PeriodicMessageStop(self.message.arbitration_id))
+        self.bus.protocol.send_periodic_stop(self.message.arbitration_id)
 
     def modify_data(self, message):
         assert message.arbitration_id == self.message.arbitration_id
         self.message = message
-        event = events.PeriodicMessageStart(self.message, self.period)
-        self.bus.send_event(event)
-
-
-class CanRemoteError(can.CanError):
-    """An error occurred on socket connection or on the remote end."""
+        self.bus.protocol.send_periodic_start(self.message,
+                                              self.period,
+                                              self.duration)

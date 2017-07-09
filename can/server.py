@@ -4,7 +4,8 @@ import argparse
 import can
 from can.interfaces import remote
 
-logging.basicConfig(format='%(asctime)-15s %(message)s', level=logging.INFO)
+logging.basicConfig(format='%(asctime)-15s %(message)s', level=logging.DEBUG)
+can.set_logging_level("DEBUG")
 
 
 def main():

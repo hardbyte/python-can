@@ -23,6 +23,10 @@ setup(
     long_description=open('README.rst').read(),
     license="LGPL v3",
     package_data={
+        "can": [
+            "interfaces/remote/web/index.html",
+            "interfaces/remote/web/assets/*"
+        ],
         "": ["CONTRIBUTORS.txt", "LICENSE.txt"],
         "doc": ["*.*"]
     },

@@ -1,0 +1,114 @@
+<!DOCTYPE HTML>
+<html lang="en">
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>python-can remote interface</title>
+    </head>
+    <body>
+        <div id="app" class="container-fluid" v-bind:class="{connected: connected}">
+            <div class="row top">
+                <div class="col-sm-9">
+                    <h1>python-can</h1>
+                    <div class="btn-group" role="group">
+                        <button type="button" @click="connect" :disabled="connected" class="btn btn-default">
+                            <span class="glyphicon glyphicon-play" aria-hidden="true"></span>
+                        </button>
+                        <button type="button" @click="disconnect" :disabled="!connected" class="btn btn-default">
+                            <span class="glyphicon glyphicon-stop" aria-hidden="true"></span>
+                        </button>
+                        <button type="button" @click="showConfig = !showConfig" class="btn btn-default">
+                            <span class="glyphicon glyphicon-cog" aria-hidden="true"></span>
+                        </button>
+                    </div>
+                    <div class="btn-group" role="group">
+                        <button type="button" @click="clear" class="btn btn-default">
+                            <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
+                        </button>
+                        <button type="button" @click="absoluteTime = !absoluteTime" class="btn btn-default">
+                            <span class="glyphicon glyphicon-time" aria-hidden="true"></span>
+                        </button>
+                        <!--
+                        <button type="button" @click="allMessages = !allMessages" class="btn btn-default">
+                            <span class="glyphicon glyphicon-list" aria-hidden="true"></span>
+                        </button>
+                        -->
+                    </div>
+                </div>
+                <div class="bus-name col-sm-3">
+                    {{ channelInfo }}<br>
+                    {{ url }}
+                </div>
+            </div>
+
+            <form v-show="showConfig">
+                <fieldset :disabled="connected">
+                    <div class="form-group">
+                        <label for="url" class="control-label">URL</label>
+                        <input v-model="url" type="url" id="url" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="bitrate" class="control-label">Bitrate</label>
+                        <select v-model="bitrate" id="bitrate" class="form-control">
+                            <option>125000</option>
+                            <option>250000</option>
+                            <option>500000</option>
+                            <option>1000000</option>
+                        </select>
+                    </div>
+                </fieldset>
+            </form>
+
+            <div v-if="error" class="alert alert-danger" role="alert">
+                {{ error }}
+            </div>
+
+            <table class="trace table table-condensed table-hover">
+                <thead>
+                    <tr>
+                        <th class="timestamp">
+                            <template v-if="absoluteTime">Timestamp</template>
+                            <template v-else>Period</template>
+                            <a href="#" @click.prevent="sortByTime" class="glyphicon glyphicon-sort-by-order" aria-hidden="true"></span>
+                        </th>
+                        <th class="can-id">
+                            CAN ID
+                            <a href="#" @click.prevent="sortById" class="glyphicon glyphicon-sort-by-order" aria-hidden="true"></span>
+                        </th>
+                        <th class="dlc">DLC</th>
+                        <th class="data">Data</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="msg in messages" v-bind:class="{danger: msg.is_error_frame}">
+                        <td class="timestamp">
+                            <template v-if="absoluteTime">
+                                {{ msg.timestamp.toFixed(4) }}
+                            </template>
+                            <template v-else>
+                                {{ msg.delta_time.toFixed(4) }}
+                            </template>
+                        </td>
+                        <td class="can-id">
+                            {{ msg.arbitration_id.toString(16).toUpperCase() }}<template v-if="msg.extended_id">x</template>
+                        </td>
+                        <td class="dlc">
+                            {{ msg.dlc }}
+                        </td>
+                        <td class="data">
+                            <template v-if="msg.is_error_frame">
+                                Error frame
+                            </template>
+                            <template v-else-if="msg.is_remote_frame">
+                                Remote frame
+                            </template>
+                            <template v-else>
+                                {{ msg.data | formatData }}
+                            </template>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <script src="assets/bundle.js"></script>
+    </body>
+</html>

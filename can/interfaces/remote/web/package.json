@@ -1,0 +1,28 @@
+{
+  "name": "python-can-remote-interface",
+  "description": "python-can remote web interface",
+  "version": "1.0.0",
+  "author": "Christian Sandberg <christiansandberg@me.com>",
+  "private": true,
+  "scripts": {
+    "dev": "cross-env NODE_ENV=development webpack-dev-server --open --hot",
+    "build": "cross-env NODE_ENV=production webpack --progress --hide-modules"
+  },
+  "dependencies": {
+    "bootstrap": "^3.3.7",
+    "lodash": "^4.17.4",
+    "python-can-remote": "^0.2.0",
+    "vue": "^2.3.3"
+  },
+  "devDependencies": {
+    "compression-webpack-plugin": "^1.0.0",
+    "cross-env": "^5.0.1",
+    "css-loader": "^0.28.4",
+    "file-loader": "^0.11.2",
+    "style-loader": "^0.18.2",
+    "vue-loader": "^13.0.2",
+    "vue-template-compiler": "^2.3.3",
+    "webpack": "^3.4.1",
+    "webpack-dev-server": "^2.4.5"
+  }
+}
