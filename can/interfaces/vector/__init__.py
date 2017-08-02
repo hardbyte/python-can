@@ -1,1 +1,2 @@
-from can.interfaces.vector.canlib import VectorBus
+from .canlib import VectorBus
+from .vxlapi import VectorError

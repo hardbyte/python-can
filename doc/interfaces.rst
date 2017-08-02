@@ -19,6 +19,7 @@ The available interfaces are:
    interfaces/usb2can
    interfaces/nican
    interfaces/neovi
+   interfaces/vector
    interfaces/remote
    interfaces/virtual
 

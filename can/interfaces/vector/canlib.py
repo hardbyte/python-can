@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 """
 Ctypes wrapper module for Vector CAN Interface on win32/win64 systems
-Authors: Julien Grave <grave.jul@gmail.com>
+Authors: Julien Grave <grave.jul@gmail.com>, Christian Sandberg
 """
 # Import Standard Python Modules
 # ==============================
 import ctypes
 import logging
-import re
 import sys
+import time
 
 # Import Modules
 # ==============
@@ -20,43 +20,46 @@ LOG = logging.getLogger('can.vector')
 
 # Import safely Vector API module for Travis tests
 if sys.platform == 'win32':
-    import vxlapi
+    from . import vxlapi
 else:
     LOG.warning('Vector API does not work on %s platform', sys.platform)
     vxlapi = None
-
-# Define Module Constants
-# =======================
-RX_MSG_RE = re.compile(
-    r'^RX_MSG c=(?P<channel>\d+), t=(?P<timestamp>\d+), (id=(?P<id>[\d\w]+) l=(?P<dlc>\d+)|type=(?P<type>\d+)),\s+(?P<data>[\d\w_]+)(?: (?P<flag>[\d\w]+))? tid=(?P<tid>\d+)$'
-).match
-CHIP_STATE_RE = re.compile(
-    r'^CHIP_STATE c=(?P<channel>\d+), t=(?P<timestamp>\d+), busStatus=\s?(?P<busStatus>\w+), txErrCnt=(?P<txErrCnt>\d+), rxErrCnt=(?P<rxErrCnt>\d+)$'
-).match
 
 
 class VectorBus(BusABC):
     """The CAN Bus implemented for the Vector interface."""
 
-    def __init__(self, channel, can_filters=None, **config):
+    def __init__(self, channel, can_filters=None, poll_interval=0.005,
+                 app_name="CANalyzer", **config):
         """
         :param list channel:
             The channel indexes to create this bus with.
+            Can also be a single integer or a comma separated string.
+        :param float poll_interval:
+            Poll interval in seconds.
+        :param str app_name:
+            Name of application in Hardware Config.
         """
         if vxlapi is None:
             raise ImportError("The Vector API has not been loaded")
+        self.poll_interval = poll_interval
         if isinstance(channel, (list, tuple)):
             self.channel = channel
+        elif isinstance(channel, int):
+            self.channel = [channel]
         else:
-            raise ValueError('channel must be a list of integers')
-        xl_status = self._driver_init()
-        if xl_status.value == vxlapi.XL_SUCCESS:
-            xl_status = self._go_on_bus()
-        if xl_status.value != vxlapi.XL_SUCCESS:
+            # Assume comma separated string of channels
+            self.channel = [int(channel) for channel in channel.split(',')]
+        self._app_name = app_name.encode()
+        self._driver_init(can_filters)
+        try:
+            self._go_on_bus()
+        except vxlapi.VectorError:
             self.shutdown()
+            raise
         super(VectorBus, self).__init__()
 
-    def _driver_init(self):
+    def _driver_init(self, can_filters):
         xl_status = vxlapi.open_driver()
         LOG.debug('Open Driver: Status: %d', xl_status.value)
         if xl_status.value == vxlapi.XL_SUCCESS:
@@ -68,6 +71,7 @@ class VectorBus(BusABC):
                 hw_index = ctypes.c_uint(0)
                 hw_channel = ctypes.c_uint(0)
                 xl_status = vxlapi.get_appl_config(
+                    app_name=self._app_name,
                     app_channel=app_channel,
                     hw_type=hw_type,
                     hw_index=hw_index,
@@ -91,65 +95,80 @@ class VectorBus(BusABC):
             access_mask = self.mask
             permission_mask = self.mask
             xl_status = vxlapi.open_port(
+                user_name=self._app_name,
                 port_handle=self.port_handle,
                 access_mask=access_mask,
                 permission_mask=permission_mask)
             LOG.debug(
                 'Open Port: PortHandle: %d, PermissionMask: %s, Status: %d',
                 self.port_handle.value, permission_mask.value, xl_status.value)
+            self.set_filters(can_filters)
         return xl_status
 
     def _go_on_bus(self):
-        xl_status = vxlapi.activate_channel(
+        vxlapi.activate_channel(
             port_handle=self.port_handle, access_mask=self.mask)
-        return xl_status
+
+    def set_filters(self, can_filters=None):
+        if can_filters:
+            # Only one filter per ID type allowed
+            if len(can_filters) == 1 or (
+                    len(can_filters) == 2 and
+                    can_filters[0].get("extended") != can_filters[1].get("extended")):
+                for can_filter in can_filters:
+                    try:
+                        vxlapi.can_set_channel_acceptance(
+                            self.port_handle, self.mask,
+                            can_filter["can_id"], can_filter["can_mask"],
+                            vxlapi.XL_CAN_EXT if can_filter.get("extended") else vxlapi.XL_CAN_STD)
+                    except vxlapi.VectorError as exc:
+                        LOG.warning("Could not set filters: %s", exc)
+            else:
+                LOG.warning("Only one filter per extended or standard ID allowed")
 
     def recv(self, timeout=None):
-        event_count = ctypes.c_uint(1)
-        event_list = vxlapi.XLevent(0)
-        xl_status = vxlapi.receive(self.port_handle, event_count, event_list)
-        if xl_status.value != vxlapi.XL_ERR_QUEUE_IS_EMPTY:
-            if xl_status.value != vxlapi.XL_SUCCESS:
-                err_string = vxlapi.get_error_string(xl_status)
-                LOG.debug(err_string.value)
-            else:
-                ev_string = vxlapi.get_event_string(event_list)
-                if event_list.tag == vxlapi.XL_RECEIVE_MSG.value:
-                    can_msg = RX_MSG_RE(ev_string.value)
-                    if can_msg.group('id') is not None:
-                        rx_msg = Message(
-                            timestamp=long(can_msg.group('timestamp')),
-                            arbitration_id=long(can_msg.group('id'), 16),
-                            dlc=int(can_msg.group('dlc')),
-                            data=can_msg.group('data'))
-                        return rx_msg
-                    elif can_msg.group('data') == 'ERROR_FRAME':
-                        rx_msg = Message(
-                            timestamp=long(can_msg.group('timestamp')),
-                            is_error_frame=True,
-                            arbitration_id=long(can_msg.group('type')))
-                        return rx_msg
-                    else:
-                        return ev_string.value
-                elif event_list.tag == vxlapi.XL_CHIP_STATE.value:
-                    can_msg = CHIP_STATE_RE(ev_string.value)
-                    return ev_string.value
-                else:
-                    return ev_string.value
-        return None
+        end_time = time.time() + timeout if timeout is not None else None
+        event = vxlapi.XLevent(0)
+        while True:
+            event_count = ctypes.c_uint(1)
+            try:
+                vxlapi.receive(self.port_handle, event_count, event)
+            except vxlapi.VectorError as exc:
+                if exc.status != vxlapi.XL_ERR_QUEUE_IS_EMPTY:
+                    raise
+            if event.tag == vxlapi.XL_RECEIVE_MSG.value:
+                msg_id = event.tagData.msg.id
+                dlc = event.tagData.msg.dlc
+                flags = event.tagData.msg.flags
+                return Message(
+                    timestamp=event.timeStamp / 1000000000.0,
+                    arbitration_id=msg_id & 0x1FFFFFFF,
+                    extended_id=bool(msg_id & vxlapi.XL_CAN_EXT_MSG_ID),
+                    is_remote_frame=bool(flags & vxlapi.XL_CAN_MSG_FLAG_REMOTE_FRAME),
+                    is_error_frame=bool(flags & vxlapi.XL_CAN_MSG_FLAG_ERROR_FRAME),
+                    dlc=dlc,
+                    data=event.tagData.msg.data[:dlc])
+            if end_time is not None and time.time() > end_time:
+                return None
+            time.sleep(self.poll_interval)
 
-    def send(self, msg):
+    def send(self, msg, timeout=None):
         message_count = ctypes.c_uint(1)
+        msg_id = msg.arbitration_id
+        if msg.id_type:
+            msg_id |= vxlapi.XL_CAN_EXT_MSG_ID
+        flags = 0
+        if msg.is_remote_frame:
+            flags |= vxlapi.XL_CAN_MSG_FLAG_REMOTE_FRAME
         xl_event = vxlapi.XLevent()
-        xl_event.tag = ctypes.c_ubyte(vxlapi.XL_TRANSMIT_MSG.value)
-        xl_event.timeStamp = vxlapi.XLuint64(long(msg.timestamp))
-        xl_event.tagData.msg.id = ctypes.c_ulong(msg.arbitration_id)
-        xl_event.tagData.msg.dlc = ctypes.c_ushort(msg.dlc)
-        xl_event.tagData.msg.flags = ctypes.c_ushort(0)
-        for idx in range(0, msg.dlc):
-            xl_event.tagData.msg.data[idx] = ctypes.c_ubyte(msg.data[idx])
-        vxlapi.can_transmit(self.port_handle, self.mask, message_count,
-                            xl_event)
+        xl_event.tag = vxlapi.XL_TRANSMIT_MSG.value
+        xl_event.tagData.msg.id = msg_id
+        xl_event.tagData.msg.dlc = msg.dlc
+        xl_event.tagData.msg.flags = flags
+        for idx, value in enumerate(msg.data):
+            xl_event.tagData.msg.data[idx] = value
+        xl_status = vxlapi.can_transmit(
+            self.port_handle, self.mask, message_count, xl_event)
 
     def shutdown(self):
         vxlapi.deactivate_channel(self.port_handle, self.mask)
