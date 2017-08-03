@@ -12,7 +12,8 @@ logger = logging.getLogger('can.serial')
 try:
     import serial
 except ImportError:
-    logger.error("You won't be able to use the serial can backend without the serial module installed!")
+    logger.error("You won't be able to use the serial can backend without the "
+                 "serial module installed!")
     serial = None
 
 from can.bus import BusABC
@@ -37,10 +38,14 @@ class SerialBus(BusABC):
         super(SerialBus, self).__init__(*args, **kwargs)
 
     def send(self, msg, timeout=None):
-        raise NotImplementedError("This serial interface doesn't support transmit.")
+        timestamp = msg.timestamp.to_bytes(4, byteorder='little')
+        a_id = msg.arbitration_id.to_bytes(4, byteorder='little')
+        dlc = msg.dlc.to_bytes(1, byteorder='little')
+        byte_msg = bytes([0xAA]) + timestamp + dlc + a_id + msg.data + \
+                   bytes([0xBB])
+        self.ser.write(byte_msg)
 
     def recv(self, timeout=None):
-
         try:
             # ser.read can return an empty string ''
             # or raise a SerialException
@@ -61,7 +66,8 @@ class SerialBus(BusABC):
             rxd_byte = ord(self.ser.read())
             if rxd_byte == 0xBB:
                 # received message data okay
-                return Message(timestamp=timestamp, arbitration_id=arb_id, dlc=dlc, data=data)
+                return Message(timestamp=timestamp, arbitration_id=arb_id,
+                               dlc=dlc, data=data)
             else:
                 return None
 
