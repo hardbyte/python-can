@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 import can
 import importlib
 
@@ -18,6 +20,7 @@ BACKENDS = {
     'virtual':          ('can.interfaces.virtual', 'VirtualBus'),
     'neovi':            ('can.interfaces.neovi_api', 'NeoVIBus')
 }
+
 
 class Bus(object):
     """

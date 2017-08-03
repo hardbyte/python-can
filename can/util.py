@@ -2,8 +2,7 @@
 """
 Utilities and configuration file parsing.
 """
-
-import time
+from __future__ import absolute_import
 
 import can
 from can.interfaces import VALID_INTERFACES
