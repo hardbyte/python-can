@@ -50,11 +50,11 @@ class SerialBus(BusABC):
 
         if len(rx_byte) and ord(rx_byte) == 0xAA:
             s = bytearray(self.ser.read(4))
-            timestamp = s[0] + (s[1] << 8) + (s[2] << 16) + (s[3] << 24)
+            timestamp = int.from_bytes(s, byteorder='little', signed=False)
             dlc = ord(self.ser.read())
 
             s = bytearray(self.ser.read(4))
-            arb_id = s[0] + (s[1] << 8) + (s[2] << 16) + (s[3] << 24)
+            arb_id = int.from_bytes(s, byteorder='little', signed=False)
 
             data = self.ser.read(dlc)
 
