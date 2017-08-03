@@ -1,9 +1,12 @@
 """
 Enable basic can over a serial device.
 
-E.g. over bluetooth with "/dev/rfcomm0"
+E.g. over bluetooth with "/dev/rfcomm0" or with Arduino "/dev/ttyACM0"
 
 """
+# TODO write documentation for serial specification
+# TODO add class and function documentation
+# TODO link to arduino example
 
 import logging
 
@@ -32,10 +35,14 @@ class SerialBus(BusABC):
             raise TypeError("Must specify a serial port.")
         else:
             self.channel_info = "Serial interface: " + channel
-
+            bitrate = kwargs.get('bitrate', 115200)
+            timeout = kwargs.get('timeout', 0.1)
             # Note: Some serial port implementations don't care about the baud rate
-            self.ser = serial.Serial(channel, baudrate=115200, timeout=0.1)
+            self.ser = serial.Serial(channel, baudrate=bitrate, timeouttimeout=timeout)
         super(SerialBus, self).__init__(*args, **kwargs)
+
+    def shutdown(self):
+        self.ser.close()
 
     def send(self, msg, timeout=None):
         timestamp = msg.timestamp.to_bytes(4, byteorder='little')
