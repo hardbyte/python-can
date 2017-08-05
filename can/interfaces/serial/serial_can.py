@@ -26,6 +26,9 @@ from can.message import Message
 
 
 class SerialBus(BusABC):
+    """
+    Enable basic can communication over a serial device.
+    """
 
     def __init__(self, channel, *args, **kwargs):
         """
