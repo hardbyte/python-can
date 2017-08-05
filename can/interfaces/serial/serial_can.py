@@ -5,8 +5,9 @@ Enable basic can over a serial device.
 E.g. over bluetooth with "/dev/rfcomm0" or with Arduino "/dev/ttyACM0".
 
 """
-# TODO add function documentation
 # TODO implement test cases
+# TODO implement timeout for send and receive
+# TODO implement cyclic send
 
 import logging
 
@@ -50,9 +51,28 @@ class SerialBus(BusABC):
         super(SerialBus, self).__init__(*args, **kwargs)
 
     def shutdown(self):
+        """
+        Close the serial interface.
+        """
         self.ser.close()
 
     def send(self, msg, timeout=None):
+        """
+        Send a message over the serial device.
+
+        :param can.Message msg:
+            Message to send.
+
+            .. note:: Flags like extended_id, is_remote_frame and is_error_frame
+                      will be ignored.
+
+            .. note:: If the timestamp a float value it will be convert to an
+                      integer.
+
+        :param timeout:
+            This parameter will be ignored. The timeout value of the channel is
+            used.
+        """
         if isinstance(msg.timestamp, float):
             msg.timestamp = int(msg.timestamp)
         timestamp = msg.timestamp.to_bytes(4, byteorder='little')
@@ -63,6 +83,22 @@ class SerialBus(BusABC):
         self.ser.write(byte_msg)
 
     def recv(self, timeout=None):
+        """
+        Read a message from the serial device.
+
+        :param timeout:
+            This parameter will be ignored. The timeout value of the channel is
+            used.
+        :returns:
+            Received message.
+
+            .. note:: Flags like extended_id, is_remote_frame and is_error_frame
+              will not be set over this function, the flags in the return
+              message are the default values.
+
+        :rtype:
+            can.Message
+        """
         try:
             # ser.read can return an empty string ''
             # or raise a SerialException
