@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Enable basic can over a serial device.
+Enable basic can communication over a serial device.
 
-E.g. over bluetooth with "/dev/rfcomm0" or with Arduino "/dev/ttyACM0".
+E.g. over bluetooth with "/dev/rfcomm0" or with Arduino "/dev/ttyACM0" on Linux
+or "COM3" on Windows systems.
 
 """
 # TODO implement test cases
