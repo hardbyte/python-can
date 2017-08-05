@@ -1,6 +1,8 @@
 """
 can is an object-orient Controller Area Network interface module.
 """
+from __future__ import absolute_import
+
 import logging
 
 __version__ = "2.0.0-alpha.2"

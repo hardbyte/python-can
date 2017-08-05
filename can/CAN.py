@@ -4,6 +4,7 @@ implementations of all the major classes in the library, now
 however all functionality has been refactored out. This api
 is left intact for version 2.0 to aide with migration.
 """
+from __future__ import absolute_import
 
 from can.message import Message
 from can.listener import Listener, BufferedReader, RedirectReader
