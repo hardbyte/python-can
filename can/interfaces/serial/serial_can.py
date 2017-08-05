@@ -1,13 +1,13 @@
+# -*- coding: utf-8 -*-
 """
 Enable basic can over a serial device.
 
-E.g. over bluetooth with "/dev/rfcomm0" or with Arduino "/dev/ttyACM0"
+E.g. over bluetooth with "/dev/rfcomm0" or with Arduino "/dev/ttyACM0".
 
 """
-# TODO write documentation for serial specification
-# TODO add class and function documentation
-# TODO link to arduino example
-# TODO normal and extended id
+# TODO add function documentation
+# TODO implement test cases
+# TODO timestamp float check
 
 import logging
 
@@ -27,18 +27,26 @@ from can.message import Message
 class SerialBus(BusABC):
 
     def __init__(self, channel, *args, **kwargs):
-        """A serial interface to CAN.
-
-        :param str channel:
-            The serial device to open.
         """
+        :param str channel:
+            The serial device to open. For example "/dev/ttyACM0" or "/dev/tty0"
+            on Linux or "COM3" on Windows systems.
+        :param int bitrate:
+            Bit rate of the serial device in bit/s (default 115200).
+
+            .. note:: Some serial port implementations don't care about the bit
+                      rate.
+
+        :param float timeout:
+            Timeout for the serial device in seconds (default 0.1).
+        """
+
         if channel == '':
             raise TypeError("Must specify a serial port.")
         else:
             self.channel_info = "Serial interface: " + channel
             bitrate = kwargs.get('bitrate', 115200)
             timeout = kwargs.get('timeout', 0.1)
-            # Note: Some serial port implementations don't care about the baud rate
             self.ser = serial.Serial(channel, baudrate=bitrate, timeout=timeout)
         super(SerialBus, self).__init__(*args, **kwargs)
 
