@@ -7,6 +7,7 @@ E.g. over bluetooth with "/dev/rfcomm0" or with Arduino "/dev/ttyACM0"
 # TODO write documentation for serial specification
 # TODO add class and function documentation
 # TODO link to arduino example
+# TODO normal and extended id
 
 import logging
 
@@ -38,7 +39,7 @@ class SerialBus(BusABC):
             bitrate = kwargs.get('bitrate', 115200)
             timeout = kwargs.get('timeout', 0.1)
             # Note: Some serial port implementations don't care about the baud rate
-            self.ser = serial.Serial(channel, baudrate=bitrate, timeouttimeout=timeout)
+            self.ser = serial.Serial(channel, baudrate=bitrate, timeout=timeout)
         super(SerialBus, self).__init__(*args, **kwargs)
 
     def shutdown(self):
