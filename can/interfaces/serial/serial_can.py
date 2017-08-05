@@ -7,7 +7,6 @@ E.g. over bluetooth with "/dev/rfcomm0" or with Arduino "/dev/ttyACM0".
 """
 # TODO add function documentation
 # TODO implement test cases
-# TODO timestamp float check
 
 import logging
 
@@ -54,6 +53,8 @@ class SerialBus(BusABC):
         self.ser.close()
 
     def send(self, msg, timeout=None):
+        if isinstance(msg.timestamp, float):
+            msg.timestamp = int(msg.timestamp)
         timestamp = msg.timestamp.to_bytes(4, byteorder='little')
         a_id = msg.arbitration_id.to_bytes(4, byteorder='little')
         dlc = msg.dlc.to_bytes(1, byteorder='little')
