@@ -3,10 +3,17 @@
 CAN over Serial
 ===============
 A text based interface. For example use over bluetooth with
-``/dev/rfcomm0`` or with Arduino ``/dev/ttyACM0``
+``/dev/rfcomm0`` or with Arduino ``/dev/ttyACM0``. The interface is a simple
+implementation that is primarily intended for recording CAN traces.
+To demonstrate the interface, the Arduino Sketch arduino-python-can-serial-demo_
+can be used.
 
-[arduino-serial-hex-sniffer](https://github.com/boris-wenzlaff/arduino-serial-hex-sniffer)
-[arduino-python-can-serial-demo](https://github.com/boris-wenzlaff/arduino-python-can-serial-demo)
+.. _arduino-python-can-serial-demo: https://github.com/boris-wenzlaff/arduino-python-can-serial-demo
+
+.. note::
+    The properties extended_id, is_remote_frame and is_error_frame
+    from the class can.Message are not in use. This interface will not
+    send or receive flags for this properties.
 
 Bus
 ---
@@ -19,7 +26,7 @@ The frame that will be send and receive over the serial interface consists of
 six parts. The start and the stop byte for the frame, the timestamp, DLC,
 arbitration ID and the payload. Only the payload has a variable length of bytes
 (0 - 8 bytes), the other parts are fix. Both, the timestamp and the arbitration
-ID will be interpreted as 4 byte unsigned integers. The DLC is a also a unsigned
+ID will be interpreted as 4 byte unsigned integers. The DLC is also a unsigned
 integer with a length of 1 byte.
 
 Serial frame format
@@ -39,8 +46,7 @@ Serial frame format
 Examples of serial frames
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-CAN message with 8 byte payload
-"""""""""""""""""""""""""""""""
+.. rubric:: CAN message with 8 byte payload
 
 +----------------+-----------------------------------------+
 | CAN message                                              |
@@ -58,8 +64,7 @@ CAN message with 8 byte payload
 | 0xAA           | 0x66 0x73 0x00 0x00 | 0x08 | 0x01 0x00 0x00 0x00 | 0x11 0x22 0x33 0x44 0x55 0x66 0x77 0x88 | 0xBB         |
 +----------------+---------------------+------+---------------------+-----------------------------------------+--------------+
 
-CAN message with 1 byte payload
-"""""""""""""""""""""""""""""""
+.. rubric:: CAN message with 1 byte payload
 
 +----------------+---------+
 | CAN message              |
@@ -77,8 +82,7 @@ CAN message with 1 byte payload
 | 0xAA           | 0x66 0x73 0x00 0x00 | 0x01 | 0x01 0x00 0x00 0x00 | 0x11    | 0xBB         |
 +----------------+---------------------+------+---------------------+---------+--------------+
 
-CAN message with 0 byte payload
-"""""""""""""""""""""""""""""""
+.. rubric:: CAN message with 0 byte payload
 
 +----------------+---------+
 | CAN message              |
