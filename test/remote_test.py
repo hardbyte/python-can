@@ -4,11 +4,37 @@ import unittest
 import threading
 import time
 import platform
+import os
 import can
-from can.interfaces.remote import client
-import logging
+from can.interfaces.remote.websocket import WebSocket, WebsocketClosed
 
-logging.basicConfig(level=logging.DEBUG)
+
+class WebSocketTestCase(unittest.TestCase):
+
+    @unittest.skipIf("CI" in os.environ, "Only executed manually if needed")
+    def test_echo_server(self):
+        ws = WebSocket("ws://echo.websocket.org/")
+
+        msg = u"This is a short message"
+        ws.send(msg)
+        self.assertTrue(ws.wait(5))
+        self.assertEqual(ws.read(), msg)
+
+        msg = u"This is a long message" * 10
+        ws.send(msg)
+        self.assertTrue(ws.wait(5))
+        self.assertEqual(ws.read(), msg)
+
+        msg = bytearray(b"This is a binary message")
+        ws.send(msg)
+        self.assertTrue(ws.wait(5))
+        self.assertEqual(ws.read(), msg)
+
+        ws.close(1001, "Thanks for your help!")
+        with self.assertRaises(WebsocketClosed) as cm:
+            ws.read()
+        self.assertEqual(cm.exception.code, 1001)
+        self.assertEqual(cm.exception.reason, "Thanks for your help!")
 
 
 def raise_error(msg):

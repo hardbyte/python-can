@@ -50,19 +50,23 @@ class WebSocket(object):
             An already established socket by a server
         """
         self.url = url
-        self.protocol = protocols
+        self.protocol = None
         self.socket = sock
         # Use masking if we are a WebSocket client
         self.mask = sock is None
         self.closed = False
+        self._ssl = False
         self._send_lock = threading.Lock()
         if sock is None:
             self.connect(protocols, headers)
+        else:
+            self.protocol = protocols
 
     def connect(self, protocols, headers=None):
         o = urlparse(self.url, scheme="ws")
         if o.scheme == "wss":
             conn = HTTPSConnection(o.netloc)
+            self._ssl = True
         else:
             conn = HTTPConnection(o.netloc)
         if headers is None:
@@ -79,8 +83,13 @@ class WebSocket(object):
             headers["Sec-WebSocket-Protocol"] = ",".join(protocols)
         conn.request("GET", o.path, headers=headers)
         res = conn.getresponse()
-        LOGGER.debug("Server response headers:\n%s", res.getheaders())
+        LOGGER.debug("Server response headers:\n%s", res.msg)
+        assert res.status == 101, "Unexpected response status"
+        assert res.getheader("Upgrade").lower() == "websocket"
+        assert res.getheader("Sec-WebSocket-Accept") == get_accept_key(key)
         self.protocol = res.getheader("Sec-WebSocket-Protocol")
+        if protocols:
+            assert self.protocol in protocols, "Unsupported protocol"
         self.socket = conn.sock
 
     def _read_exactly(self, n):
@@ -115,7 +124,7 @@ class WebSocket(object):
                 data[i] = b ^ mask[i % 4]
         return opcode, data
 
-    def send_frame(self, opcode, data):
+    def send_frame(self, opcode, data=b""):
         length = len(data)
         payload = bytearray(2)
         payload[0] = opcode | 0x80
@@ -159,13 +168,15 @@ class WebSocket(object):
                 self.send_frame(PONG, data)
             elif opcode == CLOSE:
                 if not data:
+                    status = 1000
+                    reason = ""
                     self.close()
-                    raise WebsocketClosed(1000, "")
                 else:
                     status, = struct.unpack_from(">H", data)
                     reason = data[2:].decode("utf-8")
                     self.close(status, reason)
-                    raise WebsocketClosed(status, reason)
+                self.socket.close()
+                raise WebsocketClosed(status, reason)
 
     def send(self, obj):
         """Send a message.
@@ -179,15 +190,20 @@ class WebSocket(object):
         else:
             self.send_frame(TEXT, obj.encode("utf-8"))
 
-    def close(self, status=1000, reason=""):
+    def close(self, status=None, reason=""):
         """Close connection."""
         if not self.closed:
-            try:
+            if status:
                 payload = struct.pack(">H", status) + reason.encode("utf-8")
+            else:
+                payload = b""
+            try:
                 self.send_frame(CLOSE, payload)
             finally:
                 with self._send_lock:
-                    self.socket.shutdown(socket.SHUT_WR)
+                    # SSL does not support half-close connections
+                    if not self._ssl:
+                        self.socket.shutdown(socket.SHUT_WR)
                     self.closed = True
 
 

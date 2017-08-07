@@ -71,7 +71,6 @@ class RemoteBus(can.bus.BusABC):
                 break
             except RemoteError:
                 pass
-        self.socket.close()
         logger.debug('Network connection closed')
 
 
