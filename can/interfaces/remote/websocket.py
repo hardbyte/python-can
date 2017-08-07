@@ -170,11 +170,10 @@ class WebSocket(object):
                 if not data:
                     status = 1000
                     reason = ""
-                    self.close()
                 else:
                     status, = struct.unpack_from(">H", data)
                     reason = data[2:].decode("utf-8")
-                    self.close(status, reason)
+                self.close(status, reason)
                 self.socket.close()
                 raise WebsocketClosed(status, reason)
 
