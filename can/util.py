@@ -2,6 +2,7 @@
 """
 Utilities and configuration file parsing.
 """
+from __future__ import absolute_import
 
 from pluggy import PluginManager
 
