@@ -162,10 +162,7 @@ def load_config(path=None, config=None):
         )
     elif len(get_pluginmanager().pythoncan_interface(
             interface=system_config['interface'])):
-        can.log.debug(
-            "interface {} in a plugin".format(
-                system_config['interface'])
-        )
+        can.log.debug("interface {} in a plugin".format(system_config['interface']))
     else:
         raise NotImplementedError('Invalid CAN Bus Type - {}'.format(system_config['interface']))
 
