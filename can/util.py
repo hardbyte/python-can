@@ -161,7 +161,7 @@ def load_config(path=None, config=None):
         can.log.debug(
             "interface {} in VALID_INTERFACES".format(system_config['interface'])
         )
-    elif len(get_pluginmanager().pythoncan_interface(
+    elif len(get_pluginmanager().hook.pythoncan_interface(
             interface=system_config['interface'])):
         can.log.debug("interface {} in a plugin".format(system_config['interface']))
     else:
