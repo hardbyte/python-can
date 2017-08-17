@@ -41,7 +41,7 @@ def main():
                         help='''Ignore timestamps (send all frames immediately with minimum gap between
     frames)''', action='store_false')
 
-    parser.add_argument('-g', '--gap', type=float, help='''<ms> minimum time between replayed frames''')
+    parser.add_argument('-g', '--gap', type=float, help='''<s> minimum time between replayed frames''')
     parser.add_argument('-s', '--skip', type=float, default=60*60*24,
                         help='''<s> skip gaps greater than 's' seconds''')
 
@@ -65,7 +65,8 @@ def main():
 
     player = LogReader(results.infile)
 
-    in_sync = MessageSync(player, timestamps=True, skip=results.skip)
+    in_sync = MessageSync(player, timestamps=results.timestamps,
+                          gap=gap, skip=results.skip)
 
     print('Can LogReader (Started on {})'.format(
         datetime.datetime.now()))
