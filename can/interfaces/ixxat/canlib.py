@@ -301,7 +301,7 @@ class IXXATBus(BusABC):
         _canlib.canControlOpen(self._device_handle, channel, ctypes.byref(self._control_handle))
         _canlib.canControlInitialize(
             self._control_handle,
-            constants.CAN_OPMODE_STANDARD|constants.CAN_OPMODE_EXTENDED|constants.CAN_OPMODE_ERRFRAME if extended else constants.CAN_OPMODE_STANDARD|constants.CAN_OPMODE_ERRFRAME,
+            constants.CAN_OPMODE_STANDARD|constants.CAN_OPMODE_EXTENDED|constants.CAN_OPMODE_ERRFRAME,
             self.CHANNEL_BITRATES[0][bitrate],
             self.CHANNEL_BITRATES[1][bitrate]
         )
