@@ -155,7 +155,7 @@ class BLFWriter(Listener):
     MAX_CACHE_SIZE = 0x20000
 
     #: ZLIB compression level
-    COMPRESSION_LEVEL = 7
+    COMPRESSION_LEVEL = 9
 
     def __init__(self, filename, channel=1):
         self.fp = open(filename, "wb")
