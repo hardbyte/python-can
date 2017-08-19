@@ -14,8 +14,8 @@ logger = logging.getLogger('can.serial')
 try:
     import serial
 except ImportError:
-    logger.error("You won't be able to use the serial can backend without the "
-                 "serial module installed!")
+    logger.warning("You won't be able to use the serial can backend without "
+                   "the serial module installed!")
     serial = None
 
 from can.bus import BusABC
