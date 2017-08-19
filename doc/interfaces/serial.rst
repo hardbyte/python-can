@@ -19,12 +19,12 @@ Bus
 
 Internals
 ---------
-The frame that will be send and receive over the serial interface consists of
+The frames that will be sent and received over the serial interface consist of
 six parts. The start and the stop byte for the frame, the timestamp, DLC,
-arbitration ID and the payload. Only the payload has a variable length of bytes
-(0 - 8 bytes), the other parts are fix. Both, the timestamp and the arbitration
-ID will be interpreted as 4 byte unsigned integers. The DLC is also a unsigned
-integer with a length of 1 byte.
+arbitration ID and the payload. The payload has a variable length of between
+0 and 8 bytes, the other parts are fixed. Both, the timestamp and the
+arbitration ID will be interpreted as 4 byte unsigned integers. The DLC is
+also an unsigned integer with a length of 1 byte.
 
 Serial frame format
 ^^^^^^^^^^^^^^^^^^^
