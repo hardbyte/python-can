@@ -9,7 +9,7 @@ recording CAN traces.
 
 .. note::
     The properties extended_id, is_remote_frame and is_error_frame
-    from the class can.Message are not in use. This interface will not
+    from the class can.Message are not in use. These interface will not
     send or receive flags for this properties.
 
 Bus
