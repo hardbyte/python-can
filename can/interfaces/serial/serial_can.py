@@ -43,7 +43,7 @@ class SerialBus(BusABC):
         """
 
         if channel == '':
-            raise TypeError("Must specify a serial port.")
+            raise ValueError("Must specify a serial port.")
         else:
             self.channel_info = "Serial interface: " + channel
             bitrate = kwargs.get('bitrate', 115200)
