@@ -2,13 +2,10 @@
 
 CAN over Serial
 ===============
-A text based interface. For example use over bluetooth with
-``/dev/rfcomm0`` or with Arduino ``/dev/ttyACM0``. The interface is a simple
-implementation that is primarily intended for recording CAN traces.
-To demonstrate the interface, the Arduino Sketch arduino-python-can-serial-demo_
-can be used.
-
-.. _arduino-python-can-serial-demo: https://github.com/boris-wenzlaff/arduino-python-can-serial-demo
+A text based interface. For example use over serial ports like
+``/dev/ttyS1`` or ``/dev/ttyUSB0`` on Linux machines or ``COM1`` on Windows.
+The interface is a simple implementation that has been used for
+recording CAN traces.
 
 .. note::
     The properties extended_id, is_remote_frame and is_error_frame
