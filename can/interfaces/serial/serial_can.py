@@ -6,9 +6,6 @@ E.g. over bluetooth with "/dev/rfcomm0" or with Arduino "/dev/ttyACM0" on Linux
 or "COM3" on Windows systems.
 
 """
-# TODO implement test cases
-# TODO implement timeout for send and receive
-# TODO implement cyclic send
 
 import logging
 
