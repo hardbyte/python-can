@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Enable basic can communication over a serial device.
-
-E.g. over bluetooth with "/dev/rfcomm0" or with Arduino "/dev/ttyACM0" on Linux
-or "COM3" on Windows systems.
+A text based interface. For example use over serial ports like
+"/dev/ttyS1" or "/dev/ttyUSB0" on Linux machines or "COM1" on Windows.
+The interface is a simple implementation that has been used for
+recording CAN traces.
 
 """
 
@@ -30,12 +30,12 @@ class SerialBus(BusABC):
     def __init__(self, channel, *args, **kwargs):
         """
         :param str channel:
-            The serial device to open. For example "/dev/ttyACM0" or "/dev/tty0"
-            on Linux or "COM3" on Windows systems.
-        :param int bitrate:
-            Bit rate of the serial device in bit/s (default 115200).
+            The serial device to open. For example "/dev/ttyS1" or
+            "/dev/ttyUSB0" on Linux or "COM1" on Windows systems.
+        :param int baudrate:
+            Baud rate of the serial device in bit/s (default 115200).
 
-            .. note:: Some serial port implementations don't care about the bit
+            .. note:: Some serial port implementations don't care about the baud
                       rate.
 
         :param float timeout:
@@ -46,9 +46,10 @@ class SerialBus(BusABC):
             raise ValueError("Must specify a serial port.")
         else:
             self.channel_info = "Serial interface: " + channel
-            bitrate = kwargs.get('bitrate', 115200)
+            baudrate = kwargs.get('baudrate', 115200)
             timeout = kwargs.get('timeout', 0.1)
-            self.ser = serial.Serial(channel, baudrate=bitrate, timeout=timeout)
+            self.ser = serial.Serial(channel, baudrate=baudrate, 
+                                     timeout=timeout)
         super(SerialBus, self).__init__(*args, **kwargs)
 
     def shutdown(self):
