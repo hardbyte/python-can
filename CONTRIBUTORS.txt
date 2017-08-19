@@ -17,3 +17,4 @@ Jack Jester-Weinstein
 Joshua Villyard
 Giuseppe Corbelli <giuseppe.corbelli@weightpack.com>
 Christian Sandberg
+Boris Wenzlaff
