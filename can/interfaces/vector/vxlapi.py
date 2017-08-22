@@ -18,8 +18,8 @@ LOG = logging.getLogger(__name__)
 # Vector XL API Definitions
 # =========================
 # Load Windows DLL
+_xlapi_dll = None
 if sys.platform == 'win32':
-    _xlapi_dll = None
     architecture = platform.architecture()[0]
     try:
         if architecture == '64bit':
@@ -32,8 +32,7 @@ if sys.platform == 'win32':
         else:
             LOG.error('Cannot load Dynamic XL Driver Library (vxlapi.dll)')
 else:
-    LOG.error('This library is only availabe for Windows')
-    exit(1)
+    LOG.warning('This library is only availabe for Windows')
 
 # Bus types
 XL_BUS_TYPE_NONE = 0x00000000
@@ -591,269 +590,270 @@ def check_status(result, function, arguments):
 # Functions calls
 # ===============
 
-# xlOpenDriver();
-xlOpenDriver = _xlapi_dll.xlOpenDriver
-xlOpenDriver.argtypes = []
-xlOpenDriver.restype = XLstatus
-xlOpenDriver.errcheck = check_status
-
-
-def open_driver():
-    xl_status = XLstatus(xlOpenDriver())
-    return xl_status
+if _xlapi_dll is not None:
+    # xlOpenDriver();
+    xlOpenDriver = _xlapi_dll.xlOpenDriver
+    xlOpenDriver.argtypes = []
+    xlOpenDriver.restype = XLstatus
+    xlOpenDriver.errcheck = check_status
+
+
+    def open_driver():
+        xl_status = XLstatus(xlOpenDriver())
+        return xl_status
 
 
-# xlCloseDriver();
-xlCloseDriver = _xlapi_dll.xlCloseDriver
-xlCloseDriver.argtypes = []
-xlCloseDriver.restype = XLstatus
-xlCloseDriver.errcheck = check_status
-
+    # xlCloseDriver();
+    xlCloseDriver = _xlapi_dll.xlCloseDriver
+    xlCloseDriver.argtypes = []
+    xlCloseDriver.restype = XLstatus
+    xlCloseDriver.errcheck = check_status
+
 
-def close_driver():
-    xl_status = XLstatus(xlCloseDriver())
-    return xl_status
-
-
-# xlGetApplConfig();
-xlGetApplConfig = _xlapi_dll.xlGetApplConfig
-xlGetApplConfig.argtypes = [
-    ctypes.c_char_p, ctypes.c_uint, ctypes.POINTER(ctypes.c_uint),
-    ctypes.POINTER(ctypes.c_uint), ctypes.POINTER(ctypes.c_uint), ctypes.c_uint
-]
-xlGetApplConfig.restype = XLstatus
-xlGetApplConfig.errcheck = check_status
-
-
-def get_appl_config(app_name=b'xlCANcontrol',
-                    app_channel=ctypes.c_uint(0),
-                    hw_type=ctypes.c_uint(0),
-                    hw_index=ctypes.c_uint(0),
-                    hw_channel=ctypes.c_uint(0),
-                    bus_type=ctypes.c_uint(XL_BUS_TYPE_CAN)):
-    xl_status = XLstatus(
-        xlGetApplConfig(app_name, app_channel,
-                        ctypes.byref(hw_type),
-                        ctypes.byref(hw_index),
-                        ctypes.byref(hw_channel), bus_type))
-    return xl_status
-
-
-# xlSetApplConfig();
-xlSetApplConfig = _xlapi_dll.xlSetApplConfig
-xlSetApplConfig.argtypes = [
-    ctypes.c_char_p, ctypes.c_uint, ctypes.c_uint, ctypes.c_uint,
-    ctypes.c_uint, ctypes.c_uint
-]
-xlSetApplConfig.restype = XLstatus
-xlSetApplConfig.errcheck = check_status
-
-
-def set_appl_config(app_name, app_channel, hw_type, hw_index, hw_channel,
-                    bus_type):
-    xl_status = XLstatus(
-        xlSetApplConfig(app_name, app_channel, hw_type, hw_index, hw_channel,
-                        bus_type))
-    return xl_status
-
-
-# xlGetDriverConfig();
-xlGetDriverConfig = _xlapi_dll.xlGetDriverConfig
-xlGetDriverConfig.argtypes = [ctypes.POINTER(XLdriverConfig)]
-xlGetDriverConfig.restype = XLstatus
-xlGetDriverConfig.errcheck = check_status
-
-
-def get_driver_config(driver_config):
-    xl_status = XLstatus(xlGetDriverConfig(ctypes.byref(driver_config)))
-    return xl_status
+    def close_driver():
+        xl_status = XLstatus(xlCloseDriver())
+        return xl_status
+
+
+    # xlGetApplConfig();
+    xlGetApplConfig = _xlapi_dll.xlGetApplConfig
+    xlGetApplConfig.argtypes = [
+        ctypes.c_char_p, ctypes.c_uint, ctypes.POINTER(ctypes.c_uint),
+        ctypes.POINTER(ctypes.c_uint), ctypes.POINTER(ctypes.c_uint), ctypes.c_uint
+    ]
+    xlGetApplConfig.restype = XLstatus
+    xlGetApplConfig.errcheck = check_status
+
+
+    def get_appl_config(app_name=b'xlCANcontrol',
+                        app_channel=ctypes.c_uint(0),
+                        hw_type=ctypes.c_uint(0),
+                        hw_index=ctypes.c_uint(0),
+                        hw_channel=ctypes.c_uint(0),
+                        bus_type=ctypes.c_uint(XL_BUS_TYPE_CAN)):
+        xl_status = XLstatus(
+            xlGetApplConfig(app_name, app_channel,
+                            ctypes.byref(hw_type),
+                            ctypes.byref(hw_index),
+                            ctypes.byref(hw_channel), bus_type))
+        return xl_status
+
+
+    # xlSetApplConfig();
+    xlSetApplConfig = _xlapi_dll.xlSetApplConfig
+    xlSetApplConfig.argtypes = [
+        ctypes.c_char_p, ctypes.c_uint, ctypes.c_uint, ctypes.c_uint,
+        ctypes.c_uint, ctypes.c_uint
+    ]
+    xlSetApplConfig.restype = XLstatus
+    xlSetApplConfig.errcheck = check_status
+
+
+    def set_appl_config(app_name, app_channel, hw_type, hw_index, hw_channel,
+                        bus_type):
+        xl_status = XLstatus(
+            xlSetApplConfig(app_name, app_channel, hw_type, hw_index, hw_channel,
+                            bus_type))
+        return xl_status
+
+
+    # xlGetDriverConfig();
+    xlGetDriverConfig = _xlapi_dll.xlGetDriverConfig
+    xlGetDriverConfig.argtypes = [ctypes.POINTER(XLdriverConfig)]
+    xlGetDriverConfig.restype = XLstatus
+    xlGetDriverConfig.errcheck = check_status
+
+
+    def get_driver_config(driver_config):
+        xl_status = XLstatus(xlGetDriverConfig(ctypes.byref(driver_config)))
+        return xl_status
+
+
+    # xlGetChannelIndex();
+    xlGetChannelIndex = _xlapi_dll.xlGetChannelIndex
+    xlGetChannelIndex.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_int]
+    xlGetChannelIndex.restype = ctypes.c_int
+
+
+    def get_channel_index(hw_type=ctypes.c_int(XL_HWTYPE_CANCASEXL),
+                        hw_index=ctypes.c_int(0),
+                        hw_channel=ctypes.c_int(0)):
+        hw_type = ctypes.c_int(hw_type)
+        hw_index = ctypes.c_int(hw_index)
+        hw_channel = ctypes.c_int(hw_channel)
+        channel_index = ctypes.c_int(
+            xlGetChannelIndex(hw_type, hw_index, hw_channel))
+        return channel_index
+
+
+    # xlGetChannelMask();
+    xlGetChannelMask = _xlapi_dll.xlGetChannelMask
+    xlGetChannelMask.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_int]
+    xlGetChannelMask.restype = XLaccess
 
-
-# xlGetChannelIndex();
-xlGetChannelIndex = _xlapi_dll.xlGetChannelIndex
-xlGetChannelIndex.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_int]
-xlGetChannelIndex.restype = ctypes.c_int
-
-
-def get_channel_index(hw_type=ctypes.c_int(XL_HWTYPE_CANCASEXL),
-                      hw_index=ctypes.c_int(0),
-                      hw_channel=ctypes.c_int(0)):
-    hw_type = ctypes.c_int(hw_type)
-    hw_index = ctypes.c_int(hw_index)
-    hw_channel = ctypes.c_int(hw_channel)
-    channel_index = ctypes.c_int(
-        xlGetChannelIndex(hw_type, hw_index, hw_channel))
-    return channel_index
-
-
-# xlGetChannelMask();
-xlGetChannelMask = _xlapi_dll.xlGetChannelMask
-xlGetChannelMask.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_int]
-xlGetChannelMask.restype = XLaccess
 
+    def get_channel_mask(hw_type=ctypes.c_int(XL_HWTYPE_CANCASEXL),
+                        hw_index=ctypes.c_int(0),
+                        hw_channel=ctypes.c_int(0)):
+        channel_mask = XLaccess(xlGetChannelMask(hw_type, hw_index, hw_channel))
+        return channel_mask
 
-def get_channel_mask(hw_type=ctypes.c_int(XL_HWTYPE_CANCASEXL),
-                     hw_index=ctypes.c_int(0),
-                     hw_channel=ctypes.c_int(0)):
-    channel_mask = XLaccess(xlGetChannelMask(hw_type, hw_index, hw_channel))
-    return channel_mask
 
+    # xlOpenPort();
+    xlOpenPort = _xlapi_dll.xlOpenPort
+    xlOpenPort.argtypes = [
+        ctypes.POINTER(XLportHandle), ctypes.c_char_p, XLaccess,
+        ctypes.POINTER(XLaccess), ctypes.c_uint, ctypes.c_uint, ctypes.c_uint
+    ]
+    xlOpenPort.restype = XLstatus
+    xlOpenPort.errcheck = check_status
 
-# xlOpenPort();
-xlOpenPort = _xlapi_dll.xlOpenPort
-xlOpenPort.argtypes = [
-    ctypes.POINTER(XLportHandle), ctypes.c_char_p, XLaccess,
-    ctypes.POINTER(XLaccess), ctypes.c_uint, ctypes.c_uint, ctypes.c_uint
-]
-xlOpenPort.restype = XLstatus
-xlOpenPort.errcheck = check_status
 
+    def open_port(port_handle,
+                access_mask,
+                permission_mask,
+                user_name=b'xlCANcontrol',
+                rx_queue_size=ctypes.c_uint(256),
+                xl_interface_version=ctypes.c_uint(XL_INTERFACE_VERSION),
+                bus_type=ctypes.c_uint(XL_BUS_TYPE_CAN)):
+        xl_status = XLstatus(
+            xlOpenPort(
+                ctypes.byref(port_handle), user_name, access_mask,
+                ctypes.byref(permission_mask), rx_queue_size, xl_interface_version,
+                bus_type))
+        return xl_status
 
-def open_port(port_handle,
-              access_mask,
-              permission_mask,
-              user_name=b'xlCANcontrol',
-              rx_queue_size=ctypes.c_uint(256),
-              xl_interface_version=ctypes.c_uint(XL_INTERFACE_VERSION),
-              bus_type=ctypes.c_uint(XL_BUS_TYPE_CAN)):
-    xl_status = XLstatus(
-        xlOpenPort(
-            ctypes.byref(port_handle), user_name, access_mask,
-            ctypes.byref(permission_mask), rx_queue_size, xl_interface_version,
-            bus_type))
-    return xl_status
 
+    # xlClosePort();
+    xlClosePort = _xlapi_dll.xlClosePort
+    xlClosePort.argtypes = [XLportHandle]
+    xlClosePort.restype = XLstatus
+    xlClosePort.errcheck = check_status
 
-# xlClosePort();
-xlClosePort = _xlapi_dll.xlClosePort
-xlClosePort.argtypes = [XLportHandle]
-xlClosePort.restype = XLstatus
-xlClosePort.errcheck = check_status
 
+    def close_port(port_handle):
+        xl_status = XLstatus(xlClosePort(port_handle))
+        return xl_status
 
-def close_port(port_handle):
-    xl_status = XLstatus(xlClosePort(port_handle))
-    return xl_status
 
+    # xlActivateChannel();
+    xlActivateChannel = _xlapi_dll.xlActivateChannel
+    xlActivateChannel.argtypes = [
+        XLportHandle, XLaccess, ctypes.c_uint, ctypes.c_uint
+    ]
+    xlActivateChannel.restype = XLstatus
+    xlActivateChannel.errcheck = check_status
 
-# xlActivateChannel();
-xlActivateChannel = _xlapi_dll.xlActivateChannel
-xlActivateChannel.argtypes = [
-    XLportHandle, XLaccess, ctypes.c_uint, ctypes.c_uint
-]
-xlActivateChannel.restype = XLstatus
-xlActivateChannel.errcheck = check_status
 
+    def activate_channel(port_handle,
+                        access_mask,
+                        bus_type=ctypes.c_uint(XL_BUS_TYPE_CAN),
+                        flags=ctypes.c_uint(XL_ACTIVATE_RESET_CLOCK)):
+        xl_status = XLstatus(
+            xlActivateChannel(port_handle, access_mask, bus_type, flags))
+        return xl_status
 
-def activate_channel(port_handle,
-                     access_mask,
-                     bus_type=ctypes.c_uint(XL_BUS_TYPE_CAN),
-                     flags=ctypes.c_uint(XL_ACTIVATE_RESET_CLOCK)):
-    xl_status = XLstatus(
-        xlActivateChannel(port_handle, access_mask, bus_type, flags))
-    return xl_status
 
+    # xlDeactivateChannel();
+    xlDeactivateChannel = _xlapi_dll.xlDeactivateChannel
+    xlDeactivateChannel.argtypes = [XLportHandle, XLaccess]
+    xlDeactivateChannel.restype = XLstatus
+    xlDeactivateChannel.errcheck = check_status
 
-# xlDeactivateChannel();
-xlDeactivateChannel = _xlapi_dll.xlDeactivateChannel
-xlDeactivateChannel.argtypes = [XLportHandle, XLaccess]
-xlDeactivateChannel.restype = XLstatus
-xlDeactivateChannel.errcheck = check_status
 
+    def deactivate_channel(port_handle, access_mask):
+        xl_status = XLstatus(xlDeactivateChannel(port_handle, access_mask))
+        return xl_status
 
-def deactivate_channel(port_handle, access_mask):
-    xl_status = XLstatus(xlDeactivateChannel(port_handle, access_mask))
-    return xl_status
 
+    # xlReceive();
+    xlReceive = _xlapi_dll.xlReceive
+    xlReceive.argtypes = [
+        XLportHandle, ctypes.POINTER(ctypes.c_uint), ctypes.POINTER(XLevent)
+    ]
+    xlReceive.restype = XLstatus
+    xlReceive.errcheck = check_status
 
-# xlReceive();
-xlReceive = _xlapi_dll.xlReceive
-xlReceive.argtypes = [
-    XLportHandle, ctypes.POINTER(ctypes.c_uint), ctypes.POINTER(XLevent)
-]
-xlReceive.restype = XLstatus
-xlReceive.errcheck = check_status
 
+    def receive(port_handle, event_count, event_list):
+        xl_status = XLstatus(
+            xlReceive(port_handle,
+                    ctypes.byref(event_count), ctypes.byref(event_list)))
+        return xl_status
 
-def receive(port_handle, event_count, event_list):
-    xl_status = XLstatus(
-        xlReceive(port_handle,
-                  ctypes.byref(event_count), ctypes.byref(event_list)))
-    return xl_status
 
+    # xlGetEventString();
+    xlGetEventString = _xlapi_dll.xlGetEventString
+    xlGetEventString.argtypes = [ctypes.POINTER(XLevent)]
+    xlGetEventString.restype = XLstringType
 
-# xlGetEventString();
-xlGetEventString = _xlapi_dll.xlGetEventString
-xlGetEventString.argtypes = [ctypes.POINTER(XLevent)]
-xlGetEventString.restype = XLstringType
 
+    def get_event_string(ev):
+        string = XLstringType(xlGetEventString(ctypes.byref(ev)))
+        return string
 
-def get_event_string(ev):
-    string = XLstringType(xlGetEventString(ctypes.byref(ev)))
-    return string
 
+    # xlGetErrorString();
+    xlGetErrorString = _xlapi_dll.xlGetErrorString
+    xlGetErrorString.argtypes = [XLstatus]
+    xlGetErrorString.restype = ctypes.c_char_p
 
-# xlGetErrorString();
-xlGetErrorString = _xlapi_dll.xlGetErrorString
-xlGetErrorString.argtypes = [XLstatus]
-xlGetErrorString.restype = ctypes.c_char_p
 
+    def get_error_string(err):
+        return xlGetErrorString(err).decode("ascii")
 
-def get_error_string(err):
-    return xlGetErrorString(err).decode("ascii")
 
+    # xlCanSetChannelBitrate();
+    xlCanSetChannelBitrate = _xlapi_dll.xlCanSetChannelBitrate
+    xlCanSetChannelBitrate.argtypes = [XLportHandle, XLaccess, ctypes.c_ulong]
+    xlCanSetChannelBitrate.restype = XLstatus
+    xlCanSetChannelBitrate.errcheck = check_status
 
-# xlCanSetChannelBitrate();
-xlCanSetChannelBitrate = _xlapi_dll.xlCanSetChannelBitrate
-xlCanSetChannelBitrate.argtypes = [XLportHandle, XLaccess, ctypes.c_ulong]
-xlCanSetChannelBitrate.restype = XLstatus
-xlCanSetChannelBitrate.errcheck = check_status
 
+    def can_set_channel_bitrate(port_handle, access_mask, bitrate):
+        xl_status = XLstatus(
+            xlCanSetChannelBitrate(port_handle, access_mask, bitrate))
+        return xl_status
 
-def can_set_channel_bitrate(port_handle, access_mask, bitrate):
-    xl_status = XLstatus(
-        xlCanSetChannelBitrate(port_handle, access_mask, bitrate))
-    return xl_status
 
+    # xlCanTransmit();
+    xlCanTransmit = _xlapi_dll.xlCanTransmit
+    xlCanTransmit.argtypes = [
+        XLportHandle, XLaccess, ctypes.POINTER(ctypes.c_uint), ctypes.c_void_p
+    ]
+    xlCanTransmit.restype = XLstatus
+    xlCanTransmit.errcheck = check_status
 
-# xlCanTransmit();
-xlCanTransmit = _xlapi_dll.xlCanTransmit
-xlCanTransmit.argtypes = [
-    XLportHandle, XLaccess, ctypes.POINTER(ctypes.c_uint), ctypes.c_void_p
-]
-xlCanTransmit.restype = XLstatus
-xlCanTransmit.errcheck = check_status
 
+    def can_transmit(port_handle, access_mask, message_count, messages):
+        xl_status = XLstatus(
+            xlCanTransmit(port_handle, access_mask,
+                        ctypes.byref(message_count), ctypes.byref(messages)))
+        return xl_status
 
-def can_transmit(port_handle, access_mask, message_count, messages):
-    xl_status = XLstatus(
-        xlCanTransmit(port_handle, access_mask,
-                      ctypes.byref(message_count), ctypes.byref(messages)))
-    return xl_status
 
+    # xlCanSetChannelAcceptance();
+    xlCanSetChannelAcceptance = _xlapi_dll.xlCanSetChannelAcceptance
+    xlCanSetChannelAcceptance.argtypes = [
+        XLportHandle, XLaccess, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_uint]
+    xlCanSetChannelAcceptance.restype = XLstatus
+    xlCanSetChannelAcceptance.errcheck = check_status
 
-# xlCanSetChannelAcceptance();
-xlCanSetChannelAcceptance = _xlapi_dll.xlCanSetChannelAcceptance
-xlCanSetChannelAcceptance.argtypes = [
-    XLportHandle, XLaccess, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_uint]
-xlCanSetChannelAcceptance.restype = XLstatus
-xlCanSetChannelAcceptance.errcheck = check_status
 
+    def can_set_channel_acceptance(port_handle, access_mask, code, mask, id_range):
+        xl_status = XLstatus(
+            xlCanSetChannelAcceptance(port_handle, access_mask, code, mask, id_range))
+        return xl_status
 
-def can_set_channel_acceptance(port_handle, access_mask, code, mask, id_range):
-    xl_status = XLstatus(
-        xlCanSetChannelAcceptance(port_handle, access_mask, code, mask, id_range))
-    return xl_status
 
+    # xlCanResetAcceptance();
+    xlCanResetAcceptance = _xlapi_dll.xlCanResetAcceptance
+    xlCanResetAcceptance.argtypes = [XLportHandle, XLaccess, ctypes.c_uint]
+    xlCanResetAcceptance.restype = XLstatus
+    xlCanResetAcceptance.errcheck = check_status
 
-# xlCanResetAcceptance();
-xlCanResetAcceptance = _xlapi_dll.xlCanResetAcceptance
-xlCanResetAcceptance.argtypes = [XLportHandle, XLaccess, ctypes.c_uint]
-xlCanResetAcceptance.restype = XLstatus
-xlCanResetAcceptance.errcheck = check_status
 
-
-def can_reset_acceptance(port_handle, access_mask, id_range):
-    xl_status = XLstatus(
-        xlCanResetAcceptance(port_handle, access_mask, id_range))
-    return xl_status
+    def can_reset_acceptance(port_handle, access_mask, id_range):
+        xl_status = XLstatus(
+            xlCanResetAcceptance(port_handle, access_mask, id_range))
+        return xl_status
