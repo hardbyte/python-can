@@ -18,7 +18,8 @@ BACKENDS = {
     'nican':            ('can.interfaces.nican', 'NicanBus'),
     'remote':           ('can.interfaces.remote', 'RemoteBus'),
     'virtual':          ('can.interfaces.virtual', 'VirtualBus'),
-    'neovi':            ('can.interfaces.neovi_api', 'NeoVIBus')
+    'neovi':            ('can.interfaces.neovi_api', 'NeoVIBus'),
+    'vector':           ('can.interfaces.vector', 'VectorBus')
 }
 
 
