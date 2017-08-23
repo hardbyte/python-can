@@ -368,6 +368,8 @@ class IXXATBus(BusABC):
         # TODO: handling CAN error messages?
         if timeout is None:
             timeout = constants.INFINITE
+        else:
+            timeout = int(timeout * 1000)
 
         tm = None
         if timeout == 0:
@@ -449,8 +451,8 @@ class IXXATBus(BusABC):
         message.dwMsgId = msg.arbitration_id
         if msg.dlc:
             message.uMsgInfo.Bits.dlc = msg.dlc
-            adapter = (ctypes.c_uint8 * msg.dlc).from_buffer(msg.data)
-            ctypes.memmove(message.abData, adapter, msg.dlc)
+            adapter = (ctypes.c_uint8 * len(msg.data)).from_buffer(msg.data)
+            ctypes.memmove(message.abData, adapter, len(msg.data))
 
         if timeout:
             _canlib.canChannelSendMessage(
