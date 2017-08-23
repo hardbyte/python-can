@@ -100,7 +100,8 @@ class ControllerAreaNetworkTestCase(unittest.TestCase):
             logging.debug("Received message {} with data: {}".format(i, msg.data))
 
             self.assertEqual(msg.id_type, self.extended_flags[i])
-            self.assertEqual(msg.data, self.data[i])
+            if not msg.is_remote_frame:
+                self.assertEqual(msg.data, self.data[i])
             self.assertEqual(msg.arbitration_id, self.ids[i])
 
             self.assertEqual(msg.is_error_frame, self.error_flags[i])
