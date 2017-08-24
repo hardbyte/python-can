@@ -20,6 +20,7 @@ The available interfaces are:
    interfaces/nican
    interfaces/iscan
    interfaces/neovi
+   interfaces/vector
    interfaces/remote
    interfaces/virtual
 
