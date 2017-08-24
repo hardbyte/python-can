@@ -8,7 +8,7 @@ Authors: Julien Grave <grave.jul@gmail.com>, Christian Sandberg
 import ctypes
 import logging
 import platform
-from can import CanError
+from .exceptions import VectorError
 
 # Define Module Logger
 # ====================
@@ -17,12 +17,8 @@ LOG = logging.getLogger(__name__)
 # Vector XL API Definitions
 # =========================
 # Load Windows DLL
-_xlapi_dll = None
-dll_name = 'vxlapi64' if platform.architecture()[0] == '64bit' else 'vxlapi'
-try:
-    _xlapi_dll = ctypes.windll.LoadLibrary(dll_name)
-except OSError:
-    raise ImportError('Cannot load Dynamic XL Driver Library')
+DLL_NAME = 'vxlapi64' if platform.architecture()[0] == '64bit' else 'vxlapi'
+_xlapi_dll = ctypes.windll.LoadLibrary(DLL_NAME)
 
 XL_BUS_TYPE_CAN = 0x00000001
 
@@ -73,20 +69,9 @@ XL_INVALID_PORTHANDLE = (-1)
 XLportHandle = ctypes.c_long
 
 
-class VectorError(CanError):
-
-    def __init__(self, function, error_code):
-        self.function = function
-        self.error_code = error_code
-
-    def __str__(self):
-        error_string = xlGetErrorString(self.error_code).decode()
-        return "Function %s failed: %s" % (self.function.__name__, error_string)
-
-
 def check_status(result, function, arguments):
     if result > 0:
-        raise VectorError(function, result)
+        raise VectorError(result, xlGetErrorString(result).decode())
     return result
 
 

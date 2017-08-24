@@ -13,21 +13,18 @@ import time
 # Import Modules
 # ==============
 from can import BusABC, Message
+from .exceptions import VectorError
 
 # Define Module Logger
 # ====================
 LOG = logging.getLogger(__name__)
 
 # Import safely Vector API module for Travis tests
-if sys.platform == 'win32':
-    try:
-        from . import vxlapi
-    except Exception as exc:
-        LOG.error('Could not import vxlapi: %s', exc)
-        vxlapi = None
-else:
-    LOG.warning('Vector API does not work on %s platform', sys.platform)
-    vxlapi = None
+vxlapi = None
+try:
+    from . import vxlapi
+except Exception as exc:
+    LOG.warning('Could not import vxlapi: %s', exc)
 
 
 class VectorBus(BusABC):
@@ -93,7 +90,7 @@ class VectorBus(BusABC):
         try:
             vxlapi.xlActivateChannel(self.port_handle, self.mask,
                                      vxlapi.XL_BUS_TYPE_CAN, 0)
-        except vxlapi.VectorError:
+        except VectorError:
             self.shutdown()
             raise
         # Calculate time offset for absolute timestamps
@@ -114,7 +111,7 @@ class VectorBus(BusABC):
                             self.port_handle, self.mask,
                             can_filter["can_id"], can_filter["can_mask"],
                             vxlapi.XL_CAN_EXT if can_filter.get("extended") else vxlapi.XL_CAN_STD)
-                    except vxlapi.VectorError as exc:
+                    except VectorError as exc:
                         LOG.warning("Could not set filters: %s", exc)
             else:
                 LOG.warning("Only one filter per extended or standard ID allowed")
@@ -126,7 +123,7 @@ class VectorBus(BusABC):
             event_count = ctypes.c_uint(1)
             try:
                 vxlapi.xlReceive(self.port_handle, event_count, event)
-            except vxlapi.VectorError as exc:
+            except VectorError as exc:
                 if exc.error_code != vxlapi.XL_ERR_QUEUE_IS_EMPTY:
                     raise
             else:
