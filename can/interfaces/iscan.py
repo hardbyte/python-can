@@ -31,7 +31,8 @@ def check_status(result, function, arguments):
 try:
     iscan = ctypes.cdll.LoadLibrary("iscandrv")
 except Exception as e:
-    logger.error("Failed to load IS-CAN driver: %s", e)
+    iscan = None
+    logger.warning("Failed to load IS-CAN driver: %s", e)
 else:
     iscan.isCAN_DeviceInitEx.argtypes = [ctypes.c_ubyte, ctypes.c_ubyte]
     iscan.isCAN_DeviceInitEx.errcheck = check_status
@@ -60,7 +61,7 @@ class IscanBus(BusABC):
         1000000: 9
     }
 
-    def __init__(self, channel, bitrate=500000, poll_interval=0.005, **kwargs):
+    def __init__(self, channel, bitrate=500000, poll_interval=0.01, **kwargs):
         """
         :param int channel:
             Device number
@@ -69,6 +70,8 @@ class IscanBus(BusABC):
         :param float poll_interval:
             Poll interval in seconds when reading messages
         """
+        if iscan is None:
+            raise ImportError("Could not load isCAN driver")
         self.channel = ctypes.c_ubyte(int(channel))
         self.channel_info = "IS-CAN: %s" % channel
         if bitrate not in self.BAUDRATES:
