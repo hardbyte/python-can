@@ -11,11 +11,19 @@ Interface to `IXXAT <http://www.ixxat.com/>`__ Virtual CAN Interface V3 SDK. Wor
 
     The Linux ECI SDK is currently unsupported, however on Linux some devices are supported with :doc:`socketcan`.
 
+The :meth:`~can.interfaces.ixxat.IXXATBus.send_periodic` method is supported
+natively through the on-board cyclic transmit list.
+The only limitation is that when using the
+:meth:`~can.interfaces.ixxat.canlib.CyclicSendTask.modify_data` method, the message needs
+to be removed and re-added which will cause a glitch in the periodicity.
+
 
 Bus
 ---
 
 .. autoclass:: can.interfaces.ixxat.IXXATBus
+
+.. autoclass:: can.interfaces.ixxat.canlib.CyclicSendTask
 
 
 
