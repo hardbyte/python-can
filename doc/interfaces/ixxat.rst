@@ -13,9 +13,8 @@ Interface to `IXXAT <http://www.ixxat.com/>`__ Virtual CAN Interface V3 SDK. Wor
 
 The :meth:`~can.interfaces.ixxat.IXXATBus.send_periodic` method is supported
 natively through the on-board cyclic transmit list.
-The only limitation is that when using the
-:meth:`~can.interfaces.ixxat.canlib.CyclicSendTask.modify_data` method, the message needs
-to be removed and re-added which will cause a glitch in the periodicity.
+Modifying cyclic messages is not possible. You will need to stop it, then
+start a new periodic message.
 
 
 Bus
