@@ -13,7 +13,7 @@ Creating a Release
 ------------------
 
 - Release from the ``master`` branch.
-- Update the library version in ``setup.py`` and in ``doc/conf.py`` using `semantic versioning <http://semver.org>`__.
+- Update the library version in ``__init__.py`` using `semantic versioning <http://semver.org>`__.
 - Run all tests and examples against available hardware.
 - Update `CONTRIBUTORS.txt` with any new contributors.
 - Sanity check that documentation has stayed inline with code. For large changes update ``doc/history.rst``
