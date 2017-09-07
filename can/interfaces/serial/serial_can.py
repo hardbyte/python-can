@@ -8,6 +8,7 @@ recording CAN traces.
 """
 
 import logging
+import struct
 
 logger = logging.getLogger('can.serial')
 
@@ -77,9 +78,16 @@ class SerialBus(BusABC):
         """
         if isinstance(msg.timestamp, float):
             msg.timestamp = int(msg.timestamp)
-        timestamp = msg.timestamp.to_bytes(4, byteorder='little')
-        a_id = msg.arbitration_id.to_bytes(4, byteorder='little')
-        dlc = msg.dlc.to_bytes(1, byteorder='little')
+        try:
+            timestamp = struct.pack('<I', msg.timestamp)
+        except Exception:
+            raise ValueError('Timestamp is out of range')
+        try:
+            a_id = struct.pack('<I', msg.arbitration_id)
+        except Exception:
+            raise ValueError('Arbitration Id is out of range')
+        # dlc = msg.dlc.to_bytes(1, byteorder='little')
+        dlc = struct.pack('<B', msg.dlc)
         byte_msg = bytes([0xAA]) + timestamp + dlc + a_id + msg.data + \
                    bytes([0xBB])
         self.ser.write(byte_msg)
@@ -110,11 +118,11 @@ class SerialBus(BusABC):
 
         if len(rx_byte) and ord(rx_byte) == 0xAA:
             s = bytearray(self.ser.read(4))
-            timestamp = int.from_bytes(s, byteorder='little', signed=False)
+            timestamp = (struct.unpack('<I', s))[0]
             dlc = ord(self.ser.read())
 
             s = bytearray(self.ser.read(4))
-            arb_id = int.from_bytes(s, byteorder='little', signed=False)
+            arb_id = (struct.unpack('<I', s))[0]
 
             data = self.ser.read(dlc)
 

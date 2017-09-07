@@ -125,10 +125,10 @@ class SimpleSerialTest(unittest.TestCase):
 
     def test_rx_tx_max_timestamp_error(self):
         """
-        Tests for an exception with an out of bound timestamp (max + 1)
+        Tests for an exception with an out of range timestamp (max + 1)
         """
         msg = can.Message(timestamp=0xFFFFFFFF+1)
-        self.assertRaises(OverflowError, self.bus.send, msg)
+        self.assertRaises(ValueError, self.bus.send, msg)
 
     def test_rx_tx_min_timestamp(self):
         """
@@ -141,10 +141,10 @@ class SimpleSerialTest(unittest.TestCase):
 
     def test_rx_tx_min_timestamp_error(self):
         """
-        Tests for an exception with an out of bound timestamp (min - 1)
+        Tests for an exception with an out of range timestamp (min - 1)
         """
         msg = can.Message(timestamp=-1)
-        self.assertRaises(OverflowError, self.bus.send, msg)
+        self.assertRaises(ValueError, self.bus.send, msg)
 
 
 if __name__ == '__main__':
