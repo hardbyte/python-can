@@ -3,10 +3,18 @@
 This example sends every second a messages over the serial interface and also 
 receives incoming messages.
 
-Expects a /dev/ttyACM0 interface:
+python3 -m examples.serial_com
 
-    python3 -m examples.serial_com
+Expects two serial ports (/dev/ttyS10 and /dev/ttyS11) connected to each other:
+    Linux:
+    To connect two ports use socat.
+    sudo apt-get install socat
+    sudo socat PTY,link=/dev/ttyS10 PTY,link=/dev/ttyS11
 
+    Windows:
+    This example was not tested on Windows. To create and connect virtual
+    ports on Windows, the following software can be used:
+        com0com: http://com0com.sourceforge.net/
 """
 
 import time
@@ -38,15 +46,17 @@ def receive(bus, stop_event):
     print("Stopped receiving messages")
 
 if __name__ == "__main__":
-    bus = can.interface.Bus(bustype='serial', channel='/dev/ttyACM0')
+    server = can.interface.Bus(bustype='serial', channel='/dev/ttyS10')
+    client = can.interface.Bus(bustype='serial', channel='/dev/ttyS11')
+
     tx_msg = can.Message(arbitration_id=0x01, data=[0x11, 0x22, 0x33, 0x44,
                                                     0x55, 0x66, 0x77, 0x88])
 
     # Thread for sending and receiving messages
     stop_event = threading.Event()
-    t_send_cyclic = threading.Thread(target=send_cyclic, args=(bus, tx_msg,
+    t_send_cyclic = threading.Thread(target=send_cyclic, args=(server, tx_msg,
                                                                stop_event))
-    t_receive = threading.Thread(target=receive, args=(bus, stop_event))
+    t_receive = threading.Thread(target=receive, args=(client, stop_event))
     t_receive.start()
     t_send_cyclic.start()
 
@@ -57,5 +67,6 @@ if __name__ == "__main__":
         pass
 
     stop_event.set()
-    bus.shutdown()
+    server.shutdown()
+    client.shutdown()
     print("Stopped script")
