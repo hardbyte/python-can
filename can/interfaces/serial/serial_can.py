@@ -86,17 +86,24 @@ class SerialBus(BusABC):
             a_id = struct.pack('<I', msg.arbitration_id)
         except Exception:
             raise ValueError('Arbitration Id is out of range')
-        # dlc = msg.dlc.to_bytes(1, byteorder='little')
-        dlc = struct.pack('<B', msg.dlc)
-        byte_msg = bytes([0xAA]) + timestamp + dlc + a_id + msg.data + \
-                   bytes([0xBB])
+        byte_msg = bytearray()
+        byte_msg.append(0xAA)
+        for i in range(0, 4):
+            byte_msg.append(timestamp[i])
+        byte_msg.append(msg.dlc)
+        for i in range(0, 4):
+            byte_msg.append(a_id[i])
+        for i in range(0, msg.dlc):
+            byte_msg.append(msg.data[i])
+        byte_msg.append(0xBB)
         self.ser.write(byte_msg)
 
     def recv(self, timeout=None):
         """
         Read a message from the serial device.
 
-        :param timeout:
+        :param timeout:        # byte_msg = bytes([0xAA]) + timestamp + dlc + a_id + msg.data + \
+                 #   bytes([0xBB])
             This parameter will be ignored. The timeout value of the channel is
             used.
         :returns:
