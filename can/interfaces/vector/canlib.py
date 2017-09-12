@@ -75,7 +75,11 @@ class VectorBus(BusABC):
             LOG.debug('Channel %d, Type: %d, Mask: %d',
                       hw_channel.value, hw_type.value, mask)
             self.mask |= mask
+
         permission_mask = vxlapi.XLaccess()
+        # Set mask to request channel init permission if needed
+        if bitrate:
+            permission_mask.value = self.mask
         vxlapi.xlOpenPort(self.port_handle, self._app_name, self.mask,
                           permission_mask, rx_queue_size,
                           vxlapi.XL_INTERFACE_VERSION, vxlapi.XL_BUS_TYPE_CAN)
