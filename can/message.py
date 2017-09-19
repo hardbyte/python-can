@@ -20,9 +20,8 @@ class Message(object):
         self.is_error_frame = is_error_frame
         self.arbitration_id = arbitration_id
 
-        if data is None:
+        if data is None or is_remote_frame:
             self.data = bytearray()
-            self.dlc = 0
         elif isinstance(data, bytearray):
             self.data = data
         else:

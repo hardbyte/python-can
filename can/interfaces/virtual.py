@@ -50,7 +50,8 @@ class VirtualBus(BusABC):
         return msg
 
     def send(self, msg, timeout=None):
-        msg.timestamp = time.time()
+        if not msg.timestamp:
+            msg.timestamp = time.time()
         # Add message to all listening on this channel
         for bus_queue in self.channel:
             if bus_queue != self.queue or self.receive_own_messages:

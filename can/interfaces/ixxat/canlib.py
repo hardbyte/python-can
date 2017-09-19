@@ -301,7 +301,7 @@ class IXXATBus(BusABC):
         _canlib.canControlOpen(self._device_handle, channel, ctypes.byref(self._control_handle))
         _canlib.canControlInitialize(
             self._control_handle,
-            constants.CAN_OPMODE_STANDARD|constants.CAN_OPMODE_EXTENDED|constants.CAN_OPMODE_ERRFRAME if extended else constants.CAN_OPMODE_STANDARD|constants.CAN_OPMODE_ERRFRAME,
+            constants.CAN_OPMODE_STANDARD|constants.CAN_OPMODE_EXTENDED|constants.CAN_OPMODE_ERRFRAME,
             self.CHANNEL_BITRATES[0][bitrate],
             self.CHANNEL_BITRATES[1][bitrate]
         )
@@ -368,6 +368,8 @@ class IXXATBus(BusABC):
         # TODO: handling CAN error messages?
         if timeout is None:
             timeout = constants.INFINITE
+        else:
+            timeout = int(timeout * 1000)
 
         tm = None
         if timeout == 0:
@@ -449,8 +451,8 @@ class IXXATBus(BusABC):
         message.dwMsgId = msg.arbitration_id
         if msg.dlc:
             message.uMsgInfo.Bits.dlc = msg.dlc
-            adapter = (ctypes.c_uint8 * msg.dlc).from_buffer(msg.data)
-            ctypes.memmove(message.abData, adapter, msg.dlc)
+            adapter = (ctypes.c_uint8 * len(msg.data)).from_buffer(msg.data)
+            ctypes.memmove(message.abData, adapter, len(msg.data))
 
         if timeout:
             _canlib.canChannelSendMessage(

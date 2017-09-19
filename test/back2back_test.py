@@ -1,4 +1,5 @@
 import unittest
+import time
 
 import can
 
@@ -30,22 +31,43 @@ class Back2BackTestCase(unittest.TestCase):
         self.bus1.shutdown()
         self.bus2.shutdown()
 
+    def _check_received_message(self, recv_msg, sent_msg):
+        self.assertIsNotNone(recv_msg,
+                             "No message was received on %s" % INTERFACE_2)
+        self.assertEqual(recv_msg.arbitration_id, sent_msg.arbitration_id)
+        self.assertEqual(recv_msg.id_type, sent_msg.id_type)
+        self.assertEqual(recv_msg.is_remote_frame, sent_msg.is_remote_frame)
+        self.assertEqual(recv_msg.is_error_frame, sent_msg.is_error_frame)
+        self.assertEqual(recv_msg.dlc, sent_msg.dlc)
+        if not sent_msg.is_remote_frame:
+            self.assertSequenceEqual(recv_msg.data, sent_msg.data)
+
     def _send_and_receive(self, msg):
         # Send with bus 1, receive with bus 2
         self.bus1.send(msg)
         recv_msg = self.bus2.recv(TIMEOUT)
-        self.assertIsNotNone(recv_msg,
-                             "No message was received on %s" % INTERFACE_2)
-        self.assertEqual(recv_msg, msg)
+        self._check_received_message(recv_msg, msg)
+        # Some buses may receive their own messages. Remove it from the queue
+        self.bus1.recv(0)
 
         # Send with bus 2, receive with bus 1
         # Add 1 to arbitration ID to make it a different message
         msg.arbitration_id += 1
         self.bus2.send(msg)
         recv_msg = self.bus1.recv(TIMEOUT)
-        self.assertIsNotNone(recv_msg,
-                             "No message was received on %s" % INTERFACE_1)
-        self.assertEqual(recv_msg, msg)
+        self._check_received_message(recv_msg, msg)
+
+    def test_no_message(self):
+        self.assertIsNone(self.bus1.recv(0.1))
+
+    def test_timestamp(self):
+        self.bus2.send(can.Message())
+        recv_msg1 = self.bus1.recv(TIMEOUT)
+        time.sleep(1)
+        self.bus2.send(can.Message())
+        recv_msg2 = self.bus1.recv(TIMEOUT)
+        delta_time = recv_msg2.timestamp - recv_msg1.timestamp
+        self.assertTrue(0.95 < delta_time < 1.05)
 
     def test_standard_message(self):
         msg = can.Message(extended_id=False,
