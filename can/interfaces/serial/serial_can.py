@@ -9,6 +9,8 @@ recording CAN traces.
 
 import logging
 import struct
+from can.bus import BusABC
+from can.message import Message
 
 logger = logging.getLogger('can.serial')
 
@@ -18,9 +20,6 @@ except ImportError:
     logger.warning("You won't be able to use the serial can backend without "
                    "the serial module installed!")
     serial = None
-
-from can.bus import BusABC
-from can.message import Message
 
 
 class SerialBus(BusABC):
