@@ -9,7 +9,7 @@ from __future__ import absolute_import
 from can.message import Message
 from can.listener import Listener, BufferedReader, RedirectReader
 from can.util import set_logging_level
-from can.io import *
+from can.formated_io import *
 
 import logging
 

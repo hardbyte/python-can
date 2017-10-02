@@ -11,7 +11,7 @@ BACKENDS = {
     'kvaser':           ('can.interfaces.kvaser', 'KvaserBus'),
     'socketcan_ctypes': ('can.interfaces.socketcan', 'SocketcanCtypes_Bus'),
     'socketcan_native': ('can.interfaces.socketcan', 'SocketcanNative_Bus'),
-    'serial':           ('can.interfaces.serial.serial_can', 'SerialBus'),
+    'basic_serial':     ('can.interfaces.basic_serial.serial_can', 'SerialBus'),
     'pcan':             ('can.interfaces.pcan', 'PcanBus'),
     'usb2can':          ('can.interfaces.usb2can', 'Usb2canBus'),
     'ixxat':            ('can.interfaces.ixxat', 'IXXATBus'),
@@ -20,7 +20,8 @@ BACKENDS = {
     'remote':           ('can.interfaces.remote', 'RemoteBus'),
     'virtual':          ('can.interfaces.virtual', 'VirtualBus'),
     'neovi':            ('can.interfaces.neovi_api', 'NeoVIBus'),
-    'vector':           ('can.interfaces.vector', 'VectorBus')
+    'vector':           ('can.interfaces.vector', 'VectorBus'),
+    'slcan':            ('can.interfaces.slcan', 'slcanBus')
 }
 
 
