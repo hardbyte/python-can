@@ -1,7 +1,7 @@
 from can.listener import Listener
 import logging
 
-log = logging.getLogger('can.io.stdout')
+log = logging.getLogger('can.formated_io.stdout')
 
 
 class Printer(Listener):

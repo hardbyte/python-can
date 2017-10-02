@@ -5,7 +5,7 @@ import logging
 from .blf import BLFReader
 from .sqlite import SqlReader
 
-log = logging.getLogger('can.io.player')
+log = logging.getLogger('can.formated_io.player')
 
 
 class LogReader(object):
