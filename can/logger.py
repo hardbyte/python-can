@@ -20,7 +20,7 @@ import argparse
 import socket
 
 import can
-from can.io.logger import Logger
+from can.formated_io.logger import Logger
 
 
 def main():
@@ -35,7 +35,7 @@ def main():
                         You can add several of these e.g., -vv is DEBUG''', default=2)
 
     parser.add_argument('-c', '--channel', help='''Most backend interfaces require some sort of channel.
-    For example with the serial interface the channel might be a rfcomm device: "/dev/rfcomm0"
+    For example with the basic_serial interface the channel might be a rfcomm device: "/dev/rfcomm0"
     With the socketcan interfaces valid channel examples include: "can0", "vcan0"''')
 
     parser.add_argument('-i', '--interface', dest="interface",

@@ -7,12 +7,12 @@ E.g. over bluetooth with "/dev/rfcomm0"
 
 import logging
 
-logger = logging.getLogger('can.serial')
+logger = logging.getLogger('can.basic_serial')
 
 try:
     import serial
 except ImportError:
-    logger.error("You won't be able to use the serial can backend without the serial module installed!")
+    logger.error("You won't be able to use the basic_serial can backend without the basic_serial module installed!")
     serial = None
 
 from can.bus import BusABC
@@ -22,22 +22,22 @@ from can.message import Message
 class SerialBus(BusABC):
 
     def __init__(self, channel, *args, **kwargs):
-        """A serial interface to CAN.
+        """A basic_serial interface to CAN.
 
         :param str channel:
-            The serial device to open.
+            The basic_serial device to open.
         """
         if channel == '':
-            raise TypeError("Must specify a serial port.")
+            raise TypeError("Must specify a basic_serial port.")
         else:
             self.channel_info = "Serial interface: " + channel
 
-            # Note: Some serial port implementations don't care about the baud rate
+            # Note: Some basic_serial port implementations don't care about the baud rate
             self.ser = serial.Serial(channel, baudrate=115200, timeout=0.1)
         super(SerialBus, self).__init__(*args, **kwargs)
 
     def send(self, msg, timeout=None):
-        raise NotImplementedError("This serial interface doesn't support transmit.")
+        raise NotImplementedError("This basic_serial interface doesn't support transmit.")
 
     def recv(self, timeout=None):
 
