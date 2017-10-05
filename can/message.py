@@ -83,6 +83,12 @@ class Message(object):
     def __len__(self):
         return len(self.data)
 
+    def __bool__(self):
+        return True
+
+    def __nonzero__(self):
+        return self.__bool__()
+
     def __repr__(self):
         data = ["{:#02x}".format(byte) for byte in self.data]
         args = ["timestamp={}".format(self.timestamp),
