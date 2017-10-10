@@ -15,7 +15,7 @@ def main():
                         You can add several of these e.g., -vv is DEBUG''', default=3)
 
     parser.add_argument('-c', '--channel', help='''Most backend interfaces require some sort of channel.
-    For example with the basic_serial interface the channel might be a rfcomm device: "/dev/rfcomm0"
+    For example with the serial interface the channel might be a rfcomm device: "/dev/rfcomm0"
     With the socketcan interfaces valid channel examples include: "can0", "vcan0".
     The server will only serve this channel. Start additional servers at different
     ports to share more channels.''')
