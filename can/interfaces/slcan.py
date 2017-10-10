@@ -2,6 +2,7 @@
 Interface for slcan compatible interfaces (win32/linux).
 (Linux could use slcand/socketcan also).
 """
+from __future__ import absolute_import
 
 import serial
 import io
@@ -32,9 +33,9 @@ class slcanBus(BusABC):
     def __init__(self, channel, ttyBaudrate=115200, timeout=1, bitrate=None, poll_interval=0.01 , **kwargs):
         """
         :param string channel:
-            port of underlying basic_serial or usb device (e.g. /dev/ttyUSB0, COM8, ...)
+            port of underlying serial or usb device (e.g. /dev/ttyUSB0, COM8, ...)
         :param int ttyBaudrate:
-            baudrate of underlying basic_serial or usb device
+            baudrate of underlying serial or usb device
         :param int bitrate:
             Bitrate in bits/s
         :param float poll_interval:

@@ -76,8 +76,8 @@ class Usb2canBus(BusABC):
     Note the USB2CAN interface doesn't implement set_filters, or flush_tx_buffer methods.
 
     :param str channel:
-        The device's basic_serial number. If not provided, Windows Management Instrumentation
-        will be used to identify the first such device. The *kwarg* `basic_serial` may also be
+        The device's serial number. If not provided, Windows Management Instrumentation
+        will be used to identify the first such device. The *kwarg* `serial` may also be
         used.
 
     :param int bitrate:
@@ -99,9 +99,9 @@ class Usb2canBus(BusABC):
         else:
             enable_flags = 0x00000008
 
-        # code to get the basic_serial number of the device
-        if 'basic_serial' in kwargs:
-            deviceID = kwargs["basic_serial"]
+        # code to get the serial number of the device
+        if 'serial' in kwargs:
+            deviceID = kwargs["serial"]
         elif channel is not None:
             deviceID = channel
         else:

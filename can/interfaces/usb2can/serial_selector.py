@@ -29,7 +29,7 @@ def serial():
 
     for objItem in colItems:
         string = objItem.Dependent
-        # find based on beginning of basic_serial
+        # find based on beginning of serial
         if "ED" in string:
             # print "Dependent:" + ` objItem.Dependent`
             string = string[len(string) - 9:len(string) - 1]

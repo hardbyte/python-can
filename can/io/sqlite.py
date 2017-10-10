@@ -7,7 +7,7 @@ import threading
 import sqlite3
 import logging
 
-log = logging.getLogger('can.formated_io.sql')
+log = logging.getLogger('can.io.sql')
 
 if sys.version_info > (3,):
     buffer = memoryview
