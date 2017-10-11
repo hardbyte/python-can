@@ -30,7 +30,7 @@ class slcanBus(BusABC):
         self.write("C")
 
 
-    def __init__(self, channel, ttyBaudrate=115200, timeout=1, bitrate=None, poll_interval=0.01 , **kwargs):
+    def __init__(self, channel, ttyBaudrate=115200, timeout=1, bitrate=None , **kwargs):
         """
         :param string channel:
             port of underlying serial or usb device (e.g. /dev/ttyUSB0, COM8, ...)
@@ -49,8 +49,6 @@ class slcanBus(BusABC):
             raise TypeError("Must specify a serial port.")
         if '@' in channel:
             (channel, ttyBaudrate) = channel.split('@')
-
-        self.poll_interval = poll_interval
 
         self.serialPortOrig = serial.Serial(channel, baudrate=ttyBaudrate, timeout=timeout)
         self.serialPort = io.TextIOWrapper(io.BufferedRWPair(self.serialPortOrig, self.serialPortOrig, 1),
@@ -92,27 +90,27 @@ class slcanBus(BusABC):
         canId = None
         remote = False
         frame = []
-        str = self.serialPort.readline()
-        if str is None or len(str) == 0:
+        readStr = self.serialPort.readline()
+        if readStr is None or len(readStr) == 0:
             return None
         else:
-            if str[0] == 'T':  # entended frame
-                canId = int(str[1:9], 16)
-                dlc = int(str[9])
+            if readStr[0] == 'T':  # entended frame
+                canId = int(readStr[1:9], 16)
+                dlc = int(readStr[9])
                 extended = True
                 for i in range(0, dlc):
-                    frame.append(int(str[10 + i * 2:12 + i * 2], 16))
-            elif str[0] == 't':  # normal frame
-                canId = int(str[1:4], 16)
-                dlc = int(str[4])
+                    frame.append(int(readStr[10 + i * 2:12 + i * 2], 16))
+            elif readStr[0] == 't':  # normal frame
+                canId = int(readStr[1:4], 16)
+                dlc = int(readStr[4])
                 for i in range(0, dlc):
-                    frame.append(int(str[5 + i * 2:7 + i * 2], 16))
+                    frame.append(int(readStr[5 + i * 2:7 + i * 2], 16))
                 extended = False
-            elif str[0] == 'r':  # remote frame
-                canId = int(str[1:4], 16)
+            elif readStr[0] == 'r':  # remote frame
+                canId = int(readStr[1:4], 16)
                 remote = True
-            elif str[0] == 'R':  # remote extended frame
-                canId = int(str[1:9], 16)
+            elif readStr[0] == 'R':  # remote extended frame
+                canId = int(readStr[1:9], 16)
                 extended = True
                 remote = True
 
@@ -128,12 +126,12 @@ class slcanBus(BusABC):
 
     def send(self, msg, timeout=None):
         if bool(msg.is_remote_frame):
-            if bool(msg.is_extended_id):
+            if msg.is_extended_id:
                 sendStr = "R%08X0" % (msg.arbitration_id)
             else:
                 sendStr = "r%03X0" % (msg.arbitration_id)
         else:
-            if bool(msg.is_extended_id):
+            if msg.is_extended_id:
                 sendStr = "T%08X%d" % (msg.arbitration_id, msg.dlc)
             else:
                 sendStr = "t%03X%d" % (msg.arbitration_id, msg.dlc)
