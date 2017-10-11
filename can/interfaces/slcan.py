@@ -125,7 +125,7 @@ class slcanBus(BusABC):
                 return None
 
     def send(self, msg, timeout=None):
-        if bool(msg.is_remote_frame):
+        if msg.is_remote_frame:
             if msg.is_extended_id:
                 sendStr = "R%08X0" % (msg.arbitration_id)
             else:
