@@ -1,6 +1,11 @@
 import logging
 import socket
 import select
+import textwrap
+try:
+    import asyncio
+except ImportError:
+    asyncio = None
 import can
 from can.interfaces.remote import events
 from can.interfaces.remote import connection
@@ -41,6 +46,7 @@ class RemoteBus(can.bus.BusABC):
         self.conn = connection.Connection()
         #: Socket connection to the server
         self.socket = create_connection(channel)
+        self.socket.setblocking(False)
         # Disable Nagle algorithm for better real-time performance
         self.socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
 
@@ -49,9 +55,9 @@ class RemoteBus(can.bus.BusABC):
         bus_req = events.BusRequest(can.interfaces.remote.PROTOCOL_VERSION,
                                     bitrate)
         filter_conf = events.FilterConfig(can_filters)
-        self.conn.send_event(bus_req)
-        self.conn.send_event(filter_conf)
-        self.socket.sendall(self.conn.next_data())
+        self.send_event(bus_req)
+        self.send_event(filter_conf)
+        self.sendall()
 
         event = self._next_event(5)
         if isinstance(event, events.RemoteException):
@@ -62,6 +68,8 @@ class RemoteBus(can.bus.BusABC):
 
         self.channel = channel
 
+        super(RemoteBus, self).__init__(**config)
+
     def _next_event(self, timeout=None):
         """Block until a new event has been received.
 
@@ -70,7 +78,7 @@ class RemoteBus(can.bus.BusABC):
         """
         event = self.conn.next_event()
         while event is None:
-            if timeout is not None and not select.select([self.socket], [], [], timeout)[0]:
+            if not select.select([self.socket], [], [], timeout)[0]:
                 return None
             data = self.socket.recv(256)
             self.conn.receive_data(data)
@@ -87,13 +95,7 @@ class RemoteBus(can.bus.BusABC):
         :rtype: can.Message
         """
         event = self._next_event(timeout)
-        if isinstance(event, events.CanMessage):
-            return event.msg
-        elif isinstance(event, events.RemoteException):
-            raise event.exc
-        elif isinstance(event, events.ConnectionClosed):
-            raise CanRemoteError("Server closed connection unexpectedly")
-        return None
+        return _event_to_message(event)
 
     def send(self, msg, timeout=None):
         """Transmit a message to CAN bus.
@@ -103,9 +105,28 @@ class RemoteBus(can.bus.BusABC):
             On failed transmission to socket.
         """
         self.send_event(events.CanMessage(msg))
+        self.sendall()
+
+    if asyncio is not None:
+        exec(textwrap.dedent("""
+        @asyncio.coroutine
+        def async_recv(self):
+            event = self.conn.next_event()
+            while event is None:
+                data = yield from self._loop.sock_recv(self.socket, 256)
+                self.conn.receive_data(data)
+                event = self.conn.next_event()
+            return _event_to_message(event)
+        """))
+
+        def async_send(self, msg):
+            self.send_event(events.CanMessage(msg))
+            return self._loop.sock_sendall(self.socket, self.conn.next_data())
 
     def send_event(self, event):
         self.conn.send_event(event)
+
+    def sendall(self):
         try:
             self.socket.sendall(self.conn.next_data())
         except OSError as e:
@@ -142,17 +163,29 @@ class CyclicSendTask(can.broadcastmanager.LimitedDurationCyclicSendTaskABC,
     def start(self):
         self.bus.send_event(
             events.PeriodicMessageStart(self.message, self.period, self.duration))
+        self.bus.sendall()
 
     def stop(self):
         self.bus.send_event(
             events.PeriodicMessageStop(self.message.arbitration_id))
+        self.bus.sendall()
 
     def modify_data(self, message):
         assert message.arbitration_id == self.message.arbitration_id
         self.message = message
         event = events.PeriodicMessageStart(self.message, self.period)
         self.bus.send_event(event)
+        self.bus.sendall()
 
 
 class CanRemoteError(can.CanError):
     """An error occurred on socket connection or on the remote end."""
+
+
+def _event_to_message(event):
+    if isinstance(event, events.CanMessage):
+        return event.msg
+    elif isinstance(event, events.RemoteException):
+        raise event.exc
+    elif isinstance(event, events.ConnectionClosed):
+        raise CanRemoteError("Server closed connection unexpectedly")

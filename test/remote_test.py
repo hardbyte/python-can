@@ -3,6 +3,10 @@
 import unittest
 import threading
 import time
+try:
+    import asyncio
+except ImportError:
+    asyncio = None
 import can
 from can.interfaces.remote import events
 from can.interfaces.remote import connection
@@ -247,6 +251,22 @@ class RemoteBusTestCase(unittest.TestCase):
                 msgs.append(msg)
         self.assertTrue(150 < len(msgs) < 220)
         self.assertEqual(msgs[0], test_msg)
+
+    @unittest.skipIf(asyncio is None, "Python >=3.3 required")
+    def test_async(self):
+        loop = asyncio.get_event_loop()
+        # Test recv
+        msg1 = can.Message(arbitration_id=0x123)
+        self.real_bus.send(msg1)
+        msg2 = loop.run_until_complete(self.remote_bus.async_recv())
+        self.assertEqual(msg2, msg1)
+        # Test send
+        msg3 = can.Message(arbitration_id=0x456)
+        loop.run_until_complete(self.remote_bus.async_send(msg3))
+        # Skip msg1
+        self.real_bus.recv(0)
+        msg4 = self.real_bus.recv(1)
+        self.assertEqual(msg4, msg3)
 
 
 if __name__ == '__main__':

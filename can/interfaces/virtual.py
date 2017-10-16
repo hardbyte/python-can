@@ -40,6 +40,8 @@ class VirtualBus(BusABC):
         self.channel = channels[channel]
         self.channel.append(self.queue)
 
+        super(VirtualBus, self).__init__(**config)
+
     def recv(self, timeout=None):
         try:
             msg = self.queue.get(block=True, timeout=timeout)

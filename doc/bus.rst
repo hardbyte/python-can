@@ -44,3 +44,18 @@ by directly iterating over the bus::
 
 Alternatively the :class:`~can.Listener` api can be used, which is a list of :class:`~can.Listener`
 subclasses that receive notifications when new messages arrive.
+
+Asynchronous API
+''''''''''''''''
+
+It is also possible to use the :mod:`asyncio` module in Python 3 to write
+asynchronous code instead of using blocking operations.
+Asynchronous alternatives to :meth:`~can.BusABC.recv` and
+:meth:`~can.BusABC.send` are available as :meth:`~can.BusABC.async_recv`
+and :meth:`~can.BusABC.async_send`.
+
+Here are some examples:
+
+.. literalinclude:: ../examples/async.py
+    :language: python
+    :linenos:

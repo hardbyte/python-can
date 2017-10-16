@@ -10,6 +10,11 @@ import select
 import threading
 import socket
 import struct
+try:
+    import asyncio
+except ImportError:
+    asyncio = None
+import textwrap
 from collections import namedtuple
 
 import errno
@@ -118,6 +123,17 @@ def build_bcm_transmit_header(can_id, count, initial_period, subsequent_period):
 def dissect_can_frame(frame):
     can_id, can_dlc, data = struct.unpack(can_frame_fmt, frame)
     return can_id, can_dlc, data[:can_dlc]
+
+
+def convert_packet_to_message(packet):
+    return Message(timestamp=packet.timestamp,
+                   arbitration_id=packet.arbitration_id,
+                   extended_id=packet.is_extended_frame_format,
+                   is_remote_frame=packet.is_remote_transmission_request,
+                   is_error_frame=packet.is_error_frame,
+                   dlc=packet.dlc,
+                   data=packet.data
+                   )
 
 
 def create_bcm_socket(channel):
@@ -278,6 +294,7 @@ def createSocket(can_protocol=None):
         socket_type = socket.SOCK_DGRAM
 
     sock = socket.socket(socket.PF_CAN, socket_type, can_protocol)
+    sock.setblocking(False)
 
     log.info('Created a socket')
 
@@ -307,7 +324,7 @@ _CanPacket = namedtuple('_CanPacket',
                          'data'])
 
 
-def capturePacket(sock):
+def capturePacket(sock, cf=None):
     """
     Captures a packet of data from the given socket.
 
@@ -323,19 +340,20 @@ def capturePacket(sock):
          * dlc
          * data
     """
-    # Fetching the Arb ID, DLC and Data
-    try:
-        cf, addr = sock.recvfrom(can_frame_size)
-    except BlockingIOError:
-        log.debug('Captured no data, socket in non-blocking mode.')
-        return None
-    except socket.timeout:
-        log.debug('Captured no data, socket read timed out.')
-        return None
-    except OSError:
-        # something bad happened (e.g. the interface went down)
-        log.exception("Captured no data.")
-        return None
+    if cf is None:
+        # Fetching the Arb ID, DLC and Data
+        try:
+            cf = sock.recv(can_frame_size)
+        except BlockingIOError:
+            log.debug('Captured no data, socket in non-blocking mode.')
+            return None
+        except socket.timeout:
+            log.debug('Captured no data, socket read timed out.')
+            return None
+        except OSError:
+            # something bad happened (e.g. the interface went down)
+            log.exception("Captured no data.")
+            return None
 
     can_id, can_dlc, data = dissect_can_frame(cf)
     log.debug('Received: can_id=%x, can_dlc=%x, data=%s', can_id, can_dlc, data)
@@ -395,7 +413,7 @@ class SocketcanNative_Bus(BusABC):
             log.error("Could not receive own messages (%s)", e)
 
         bindSocket(self.socket, channel)
-        super(SocketcanNative_Bus, self).__init__()
+        super(SocketcanNative_Bus, self).__init__(**kwargs)
 
     def shutdown(self):
         self.socket.close()
@@ -403,8 +421,7 @@ class SocketcanNative_Bus(BusABC):
     def recv(self, timeout=None):
         data_ready = True
         try:
-            if timeout is not None:
-                data_ready = len(select.select([self.socket], [], [], timeout)[0]) > 0
+            data_ready = len(select.select([self.socket], [], [], timeout)[0]) > 0
         except OSError:
             # something bad happened (e.g. the interface went down)
             log.exception("Error while waiting for timeout")
@@ -420,29 +437,13 @@ class SocketcanNative_Bus(BusABC):
             # socket wasn't readable or timeout occurred
             return None
 
-        rx_msg = Message(timestamp=packet.timestamp,
-                         arbitration_id=packet.arbitration_id,
-                         extended_id=packet.is_extended_frame_format,
-                         is_remote_frame=packet.is_remote_transmission_request,
-                         is_error_frame=packet.is_error_frame,
-                         dlc=packet.dlc,
-                         data=packet.data
-                         )
+        rx_msg = convert_packet_to_message(packet)
 
         return rx_msg
 
     def send(self, msg, timeout=None):
         log.debug("We've been asked to write a message to the bus")
-        arbitration_id = msg.arbitration_id
-        if msg.id_type:
-            log.debug("sending an extended id type message")
-            arbitration_id |= 0x80000000
-        if msg.is_remote_frame:
-            log.debug("requesting a remote frame")
-            arbitration_id |= 0x40000000
-        if msg.is_error_frame:
-            log.warning("Trying to send an error frame - this won't work")
-            arbitration_id |= 0x20000000
+        arbitration_id = _add_flags_to_can_id(msg)
         l = log.getChild("tx")
         l.debug("sending: %s", msg)
         try:
@@ -450,6 +451,20 @@ class SocketcanNative_Bus(BusABC):
         except OSError:
             l.warning("Failed to send: %s", msg)
             raise can.CanError("can.socketcan.native failed to transmit")
+
+    if asyncio is not None:
+        exec(textwrap.dedent("""
+        @asyncio.coroutine
+        def async_recv(self):
+            cf = yield from self._loop.sock_recv(self.socket, can_frame_size)
+            packet = capturePacket(self.socket, cf)
+            return convert_packet_to_message(packet)
+        """))
+
+        def async_send(self, msg):
+            arbitration_id = _add_flags_to_can_id(msg)
+            data = build_can_frame(arbitration_id, msg.data)
+            return self._loop.sock_sendall(self.socket, data)
 
     def send_periodic(self, msg, period, duration=None):
         task = CyclicSendTask(self.channel, msg, period)
