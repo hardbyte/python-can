@@ -40,7 +40,7 @@ bindSocket
 .. autofunction:: can.interfaces.socketcan.socketcan_native.bindSocket
 
 
-capturePacket
+captureMessage
 ~~~~~~~~~~~~~
 
-.. autofunction:: can.interfaces.socketcan.socketcan_native.capturePacket
+.. autofunction:: can.interfaces.socketcan.socketcan_native.captureMessage

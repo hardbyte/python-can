@@ -10,7 +10,6 @@ import select
 import threading
 import socket
 import struct
-from collections import namedtuple
 
 import errno
 
@@ -297,31 +296,15 @@ def bindSocket(sock, channel='can0'):
     sock.bind((channel,))
     log.debug('Bound socket.')
 
-_CanPacket = namedtuple('_CanPacket',
-                        ['timestamp',
-                         'arbitration_id',
-                         'is_error_frame',
-                         'is_extended_frame_format',
-                         'is_remote_transmission_request',
-                         'dlc',
-                         'data'])
 
-
-def capturePacket(sock):
+def captureMessage(sock):
     """
-    Captures a packet of data from the given socket.
+    Captures a message from given socket.
 
     :param socket sock:
-        The socket to read a packet from.
+        The socket to read a message from.
 
-    :return: A namedtuple with the following fields:
-         * timestamp
-         * arbitration_id
-         * is_extended_frame_format
-         * is_remote_transmission_request
-         * is_error_frame
-         * dlc
-         * data
+    :return: The received message, or None on failure.
     """
     # Fetching the Arb ID, DLC and Data
     try:
@@ -352,11 +335,11 @@ def capturePacket(sock):
     #   #define CAN_EFF_FLAG 0x80000000U /* EFF/SFF is set in the MSB */
     #   #define CAN_RTR_FLAG 0x40000000U /* remote transmission request */
     #   #define CAN_ERR_FLAG 0x20000000U /* error frame */
-    CAN_EFF_FLAG = bool(can_id & 0x80000000)
-    CAN_RTR_FLAG = bool(can_id & 0x40000000)
-    CAN_ERR_FLAG = bool(can_id & 0x20000000)
+    is_extended_frame_format = bool(can_id & 0x80000000)
+    is_remote_transmission_request = bool(can_id & 0x40000000)
+    is_error_frame = bool(can_id & 0x20000000)
 
-    if CAN_EFF_FLAG:
+    if is_extended_frame_format:
         log.debug("CAN: Extended")
         # TODO does this depend on SFF or EFF?
         arbitration_id = can_id & 0x1FFFFFFF
@@ -364,7 +347,13 @@ def capturePacket(sock):
         log.debug("CAN: Standard")
         arbitration_id = can_id & 0x000007FF
 
-    return _CanPacket(timestamp, arbitration_id, CAN_ERR_FLAG, CAN_EFF_FLAG, CAN_RTR_FLAG, can_dlc, data)
+    return Message(timestamp=timestamp,
+                   arbitration_id=arbitration_id,
+                   extended_id=is_extended_frame_format,
+                   is_remote_frame=is_remote_transmission_request,
+                   is_error_frame=is_error_frame,
+                   dlc=can_dlc,
+                   data=data)
 
 
 class SocketcanNative_Bus(BusABC):
@@ -411,25 +400,10 @@ class SocketcanNative_Bus(BusABC):
             return None
 
         if data_ready:
-            packet = capturePacket(self.socket)
-            # The capturePacket function can return None if
-            # self.socket.settimeout has been called.
-            if packet is None:
-                return None
+            return captureMessage(self.socket)
         else:
             # socket wasn't readable or timeout occurred
             return None
-
-        rx_msg = Message(timestamp=packet.timestamp,
-                         arbitration_id=packet.arbitration_id,
-                         extended_id=packet.is_extended_frame_format,
-                         is_remote_frame=packet.is_remote_transmission_request,
-                         is_error_frame=packet.is_error_frame,
-                         dlc=packet.dlc,
-                         data=packet.data
-                         )
-
-        return rx_msg
 
     def send(self, msg, timeout=None):
         log.debug("We've been asked to write a message to the bus")
@@ -483,7 +457,7 @@ if __name__ == "__main__":
         bindSocket(receiver_socket, 'vcan0')
         print("Receiver is waiting for a message...")
         e.set()
-        print("Receiver got: ", capturePacket(receiver_socket))
+        print("Receiver got: ", captureMessage(receiver_socket))
 
     def sender(e):
         e.wait()
