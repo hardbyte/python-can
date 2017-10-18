@@ -5,7 +5,7 @@ and Writers based off the file extension.
 
 from .logger import Logger
 from .player import LogReader
-from .asc import ASCWriter
+from .asc import ASCWriter, ASCReader
 from .blf import BLFReader, BLFWriter
 from .csv import CSVWriter
 from .sqlite import SqlReader, SqliteWriter

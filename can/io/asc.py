@@ -1,7 +1,49 @@
 from can.listener import Listener
+from can.message import Message
 
 from datetime import datetime
 import time
+CAN_MSG_EXT = 0x80000000
+
+
+class ASCReader(object):
+    """
+    Iterator of CAN messages from a ASC Logging File.
+
+    Only CAN messages are supported (no Errorframes).
+    """
+
+    def __init__(self, filename):
+        self.fp = open(filename, "r")
+
+    def __iter__(self):
+        for line in self.fp:
+            temp = line.strip()
+            if len(temp) > 0:
+                if temp[0].isdigit():
+                    lineArray = temp.split()
+                    if lineArray[1].isdigit() and lineArray[2] != "Statistic:":
+                        time = float(lineArray[0])
+                        channel = lineArray[1]
+                        can_id = int(lineArray[2],16)
+                        frameType = lineArray[4]
+                        if frameType == 'r' or frameType == 'R':
+                            msg = Message(timestamp=time,
+                                        arbitration_id=can_id & 0x1FFFFFFF,
+                                        extended_id=bool(can_id & CAN_MSG_EXT),
+                                        is_remote_frame=True)
+                        else:
+                            dlc = int(lineArray[5])
+                            frame = bytearray()
+                            for byte in lineArray[6:6 + dlc]:
+                                frame.append(int(byte,16))
+                            msg = Message(timestamp=time,
+                                        arbitration_id=can_id & 0x1FFFFFFF,
+                                        extended_id=bool(can_id & CAN_MSG_EXT),
+                                        is_remote_frame=False,
+                                        dlc=dlc,
+                                        data=frame)
+                        yield msg
 
 
 class ASCWriter(Listener):
