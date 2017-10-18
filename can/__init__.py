@@ -34,5 +34,6 @@ from . import interface
 from can.broadcastmanager import send_periodic, \
     CyclicSendTaskABC, \
     LimitedDurationCyclicSendTaskABC, \
+    ModifiableCyclicTaskABC, \
     MultiRateCyclicSendTaskABC, \
     RestartableCyclicTaskABC
