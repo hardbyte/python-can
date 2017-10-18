@@ -3,7 +3,7 @@ from .blf import BLFWriter
 from .csv import CSVWriter
 from .sqlite import SqliteWriter
 from .stdout import Printer
-
+from .log import canutilsLogWriter
 
 class Logger(object):
     """
@@ -27,6 +27,8 @@ class Logger(object):
             return Printer()
         elif filename.endswith(".asc"):
             return ASCWriter(filename)
+        elif filename.endswith(".log"):
+            return canutilsLogWriter(filename)
         elif filename.endswith(".blf"):
             return BLFWriter(filename)
         elif filename.endswith(".csv"):
