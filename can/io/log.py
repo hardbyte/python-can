@@ -32,7 +32,7 @@ class canutilsLogReader(object):
                 canId = int(canId, 16)
                 dlc = len(data) / 2
                 dataBin = bytearray()
-                for i in range(0, dlc):
+                for i in range(0, int(dlc)):
                     dataBin.append(int(data[i * 2:(i + 1) * 2], 16))
 
                 if dlc == 0:

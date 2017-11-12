@@ -224,9 +224,8 @@ class canutilsLog(unittest.TestCase):
         f = tempfile.NamedTemporaryFile('w', delete=False)
         f.close()
         filename = f.name
-
-        print filename
         writer = can.canutilsLogWriter(filename)
+
         for msg in TEST_MESSAGES:
             writer(msg)
         writer.stop()
