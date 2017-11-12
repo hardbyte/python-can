@@ -4,7 +4,7 @@ import time
 from can.message import Message
 
 CAN_MSG_EXT = 0x80000000
-CAN_ERR_FLAG = 0x2000000
+CAN_ERR_FLAG = 0x20000000
 CAN_ERR_BUSERROR = 0x00000080
 CAN_ERR_DLC = 8
 
@@ -30,15 +30,20 @@ class canutilsLogReader(object):
                 else:
                     isExtended = False
                 canId = int(canId, 16)
-                dlc = len(data) / 2
-                dataBin = bytearray()
-                for i in range(0, int(dlc)):
-                    dataBin.append(int(data[i * 2:(i + 1) * 2], 16))
-
-                if dlc == 0:
+                if len(data) > 0 and (data[0] == "R" or data[0] == "r"):
                     isRemoteFrame = True
+                    if len(data) > 1:
+                        dlc = int(data[1:])
+                    else:
+                        dlc = 0
                 else:
                     isRemoteFrame = False
+
+                    dlc = len(data) / 2
+                    dataBin = bytearray()
+                    for i in range(0, int(dlc)):
+                        dataBin.append(int(data[i * 2:(i + 1) * 2], 16))
+
 
                 if canId & CAN_ERR_FLAG and canId & CAN_ERR_BUSERROR:
                     msg = Message(timestamp=timestamp, is_error_frame=True)
@@ -75,12 +80,16 @@ class canutilsLogWriter(Listener):
         if self.log_file is not None:
             if msg.is_remote_frame:
                 data = []
+                if msg.is_extended_id:
+                    self.log_file.write("(%f) vcan0 %08X#R\n" % (msg.timestamp, msg.arbitration_id ))
+                else:
+                    self.log_file.write("(%f) vcan0 %03X#R\n" % (msg.timestamp, msg.arbitration_id ))
             else:
                 data = ["{:02X}".format(byte) for byte in msg.data]
-            if msg.is_extended_id:
-                self.log_file.write("(%f) vcan0 %08X#%s\n" % (msg.timestamp, msg.arbitration_id, "".join(data)))
-            else:
-                self.log_file.write("(%f) vcan0 %03X#%s\n" % (msg.timestamp, msg.arbitration_id, "".join(data)))
+                if msg.is_extended_id:
+                    self.log_file.write("(%f) vcan0 %08X#%s\n" % (msg.timestamp, msg.arbitration_id, "".join(data)))
+                else:
+                    self.log_file.write("(%f) vcan0 %03X#%s\n" % (msg.timestamp, msg.arbitration_id, "".join(data)))
 
 
 
