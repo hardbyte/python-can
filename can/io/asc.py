@@ -25,12 +25,17 @@ class ASCReader(object):
                     if lineArray[1].isdigit() and lineArray[2] != "Statistic:":
                         time = float(lineArray[0])
                         channel = lineArray[1]
-                        can_id = int(lineArray[2],16)
+                        if lineArray[2].endswith("x") or lineArray[2].endswith("X"):
+                            isExtended = True
+                            can_id = int(lineArray[2][0:-1], 16)
+                        else:
+                            isExtended = False
+                            can_id = int(lineArray[2],16)
                         frameType = lineArray[4]
                         if frameType == 'r' or frameType == 'R':
                             msg = Message(timestamp=time,
                                         arbitration_id=can_id & 0x1FFFFFFF,
-                                        extended_id=bool(can_id & CAN_MSG_EXT),
+                                        extended_id=isExtended,
                                         is_remote_frame=True)
                         else:
                             dlc = int(lineArray[5])
@@ -39,7 +44,7 @@ class ASCReader(object):
                                 frame.append(int(byte,16))
                             msg = Message(timestamp=time,
                                         arbitration_id=can_id & 0x1FFFFFFF,
-                                        extended_id=bool(can_id & CAN_MSG_EXT),
+                                        extended_id=isExtended,
                                         is_remote_frame=False,
                                         dlc=dlc,
                                         data=frame)

@@ -23,6 +23,10 @@ class canutilsLogReader(object):
                 (timestamp, bus, frame) = temp.split()
                 timestamp = float(timestamp[1:-1])
                 (canId, data) = frame.split("#")
+                if len(canId) > 3:
+                    isExtended = True
+                else:
+                    isExtended = False
                 canId = int(canId, 16)
                 dlc = len(data) / 2
                 dataBin = bytearray()
@@ -30,7 +34,7 @@ class canutilsLogReader(object):
                     dataBin.append(int(data[i * 2:(i + 1) * 2], 16))
 
                 msg = Message(timestamp=timestamp, arbitration_id=canId & 0x1FFFFFFF,
-                              extended_id=bool(canId & CAN_MSG_EXT), is_remote_frame=False, dlc=dlc, data=dataBin)
+                              extended_id=isExtended, is_remote_frame=False, dlc=dlc, data=dataBin)
                 yield msg
 
 
