@@ -4,7 +4,9 @@ import time
 from can.message import Message
 
 CAN_MSG_EXT = 0x80000000
-
+CAN_ERR_FLAG = 0x2000000
+CAN_ERR_BUSERROR = 0x00000080
+CAN_ERR_DLC = 8
 
 class canutilsLogReader(object):
     """
@@ -33,8 +35,16 @@ class canutilsLogReader(object):
                 for i in range(0, dlc):
                     dataBin.append(int(data[i * 2:(i + 1) * 2], 16))
 
-                msg = Message(timestamp=timestamp, arbitration_id=canId & 0x1FFFFFFF,
-                              extended_id=isExtended, is_remote_frame=False, dlc=dlc, data=dataBin)
+                if dlc == 0:
+                    isRemoteFrame = True
+                else:
+                    isRemoteFrame = False
+
+                if canId & CAN_ERR_FLAG and canId & CAN_ERR_BUSERROR:
+                    msg = Message(timestamp=timestamp, is_error_frame=True)
+                else:
+                    msg = Message(timestamp=timestamp, arbitration_id=canId & 0x1FFFFFFF,
+                              extended_id=isExtended, is_remote_frame=isRemoteFrame, dlc=dlc, data=dataBin)
                 yield msg
 
 
@@ -55,6 +65,7 @@ class canutilsLogWriter(Listener):
 
     def on_message_received(self, msg):
         if msg.is_error_frame:
+            self.log_file.write("(%f) vcan0 %08X#0000000000000000\n" % (msg.timestamp, CAN_ERR_FLAG | CAN_ERR_BUSERROR, ))
             return
 
         timestamp = msg.timestamp
@@ -67,9 +78,9 @@ class canutilsLogWriter(Listener):
             else:
                 data = ["{:02X}".format(byte) for byte in msg.data]
             if msg.is_extended_id:
-                self.log_file.write("(%f)\tvcan0\t%07X#%s\n" % (msg.timestamp, msg.arbitration_id, "".join(data)))
+                self.log_file.write("(%f) vcan0 %08X#%s\n" % (msg.timestamp, msg.arbitration_id, "".join(data)))
             else:
-                self.log_file.write("(%f)\tvcan0\t%03X#%s\n" % (msg.timestamp, msg.arbitration_id, "".join(data)))
+                self.log_file.write("(%f) vcan0 %03X#%s\n" % (msg.timestamp, msg.arbitration_id, "".join(data)))
 
 
 

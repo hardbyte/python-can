@@ -44,6 +44,7 @@ class ListenerImportTest(unittest.TestCase):
         assert hasattr(can, 'BufferedReader')
         assert hasattr(can, 'Notifier')
         assert hasattr(can, 'ASCWriter')
+        assert hasattr(can, 'canutilsLogWriter')
         assert hasattr(can, 'SqlReader')
 
 
@@ -71,6 +72,7 @@ class ListenerTest(BusTest):
             can_logger.stop()
 
         test_filetype_to_instance('asc', can.ASCWriter)
+        test_filetype_to_instance('log', can.canutilsLogWriter)
         test_filetype_to_instance("blf", can.BLFWriter)
         test_filetype_to_instance("csv", can.CSVWriter)
         test_filetype_to_instance("db", can.SqliteWriter)
@@ -211,6 +213,43 @@ class BLFTest(unittest.TestCase):
         writer.stop()
 
         messages = list(can.BLFReader(filename))
+        self.assertEqual(len(messages), len(TEST_MESSAGES))
+        for msg1, msg2 in zip(messages, TEST_MESSAGES):
+            self.assertEqual(msg1, msg2)
+            self.assertAlmostEqual(msg1.timestamp, msg2.timestamp)
+
+class canutilsLog(unittest.TestCase):
+
+    def test_reader_writer(self):
+        f = tempfile.NamedTemporaryFile('w', delete=False)
+        f.close()
+        filename = f.name
+
+        print filename
+        writer = can.canutilsLogWriter(filename)
+        for msg in TEST_MESSAGES:
+            writer(msg)
+        writer.stop()
+
+        messages = list(can.canutilsLogReader(filename))
+        self.assertEqual(len(messages), len(TEST_MESSAGES))
+        for msg1, msg2 in zip(messages, TEST_MESSAGES):
+            self.assertEqual(msg1, msg2)
+            self.assertAlmostEqual(msg1.timestamp, msg2.timestamp)
+
+class ascFileFormat(unittest.TestCase):
+
+    def test_reader_writer(self):
+        f = tempfile.NamedTemporaryFile('w', delete=False)
+        f.close()
+        filename = f.name
+
+        writer = can.ASCWriter(filename)
+        for msg in TEST_MESSAGES:
+            writer(msg)
+        writer.stop()
+
+        messages = list(can.ASCReader(filename))
         self.assertEqual(len(messages), len(TEST_MESSAGES))
         for msg1, msg2 in zip(messages, TEST_MESSAGES):
             self.assertEqual(msg1, msg2)

@@ -22,6 +22,11 @@ class ASCReader(object):
             if len(temp) > 0:
                 if temp[0].isdigit():
                     lineArray = temp.split()
+                    if lineArray[2] == "ErrorFrame":
+                        time = float(lineArray[0])
+                        msg = Message(timestamp=time, is_error_frame=True)
+                        yield msg
+                        continue
                     if lineArray[1].isdigit() and lineArray[2] != "Statistic:":
                         time = float(lineArray[0])
                         channel = lineArray[1]
@@ -77,14 +82,17 @@ class ASCWriter(Listener):
 
     def log_event(self, message, timestamp=None):
         """Add an arbitrary message to the log file."""
-        timestamp = (timestamp or time.time()) - self.started
+        timestamp = (timestamp or time.time())
+        if timestamp >= self.started:
+            timestamp -= self.started
+
         line = self.EVENT_STRING.format(time=timestamp, message=message)
         if self.log_file is not None:
             self.log_file.write(line)
 
     def on_message_received(self, msg):
         if msg.is_error_frame:
-            self.log_event("ErrorFrame", msg.timestamp)
+            self.log_event("{} ErrorFrame".format(self.channel), msg.timestamp)
             return
 
         if msg.is_remote_frame:
