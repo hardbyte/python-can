@@ -40,7 +40,7 @@ elif platform.system() == "Windows" or platform.python_implementation() == "Iron
     CONFIG_FILES.extend(
         [
             'can.ini',
-            os.path.join(os.getenv('APPDATA'), 'can.ini')
+            os.path.join(os.getenv('APPDATA', ''), 'can.ini')
         ]
     )
 
