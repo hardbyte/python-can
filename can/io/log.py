@@ -12,7 +12,8 @@ class CanutilsLogReader(object):
     """
     Iterator of CAN messages from a .log Logging File (candump -L).
 
-    Only CAN messages are supported (no Errorframes).
+    .log-format looks like this:
+    (0.0) vcan0 001#8d00100100820100
     """
 
     def __init__(self, filename):

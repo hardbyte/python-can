@@ -15,44 +15,50 @@ class ASCReader(object):
         self.fp = open(filename, "r")
 
     def __iter__(self):
+        def extractCanId(strCanId):
+            if strCanId[-1:].lower() == "x":
+                isExtended = True
+                can_id = int(strCanId[0:-1], 16)
+            else:
+                isExtended = False
+                can_id = int(strCanId, 16)
+            return (can_id, isExtended)
+
         for line in self.fp:
             temp = line.strip()
             if len(temp) == 0 or not temp[0].isdigit():
                 continue
-            lineArray = temp.split()
-            if lineArray[2] == "ErrorFrame":
-                time = float(lineArray[0])
+            (time, channel, dummy) =  temp.split(None,2) # , frameType, dlc, frameData
+
+            time = float(time)
+            if dummy.strip()[0:10] == "ErrorFrame":
+                time = float(time)
                 msg = Message(timestamp=time, is_error_frame=True)
                 yield msg
                 continue
-            if not lineArray[1].isdigit() or lineArray[2] == "Statistic:":
+            if not channel.isdigit() or dummy.strip()[0:10] == "Statistic:":
                 continue
-            time = float(lineArray[0])
-            channel = lineArray[1]
-            if lineArray[2].endswith("x") or lineArray[2].endswith("X"):
-                isExtended = True
-                can_id = int(lineArray[2][0:-1], 16)
-            else:
-                isExtended = False
-                can_id = int(lineArray[2],16)
-            frameType = lineArray[4]
-            if frameType == 'r' or frameType == 'R':
+            if dummy[-1:].lower() == "r":
+                (canId, _) = dummy.split(None, 1)
                 msg = Message(timestamp=time,
-                            arbitration_id=can_id & CAN_ID_MASK,
-                            extended_id=isExtended,
-                            is_remote_frame=True)
+                              arbitration_id=extractCanId(canId)[0] & CAN_ID_MASK,
+                              extended_id=extractCanId(canId)[1],
+                              is_remote_frame=True)
+                yield msg
             else:
-                dlc = int(lineArray[5])
+                (canId, direction,_,dlc,data) = dummy.split(None,4)
+
+                dlc = int(dlc)
                 frame = bytearray()
-                for byte in lineArray[6:6 + dlc]:
+                for byte in data.split():
                     frame.append(int(byte,16))
                 msg = Message(timestamp=time,
-                            arbitration_id=can_id & CAN_ID_MASK,
-                            extended_id=isExtended,
+                            arbitration_id=extractCanId(canId)[0] & CAN_ID_MASK,
+                            extended_id=extractCanId(canId)[1],
                             is_remote_frame=False,
                             dlc=dlc,
                             data=frame)
-            yield msg
+                yield msg
 
 
 class ASCWriter(Listener):
