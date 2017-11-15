@@ -3,7 +3,7 @@ import time
 import logging
 
 from .asc import ASCReader
-from .log import canutilsLogReader
+from .log import CanutilsLogReader
 from .blf import BLFReader
 from .sqlite import SqlReader
 
@@ -39,7 +39,7 @@ class LogReader(object):
         if filename.endswith(".asc"):
             return ASCReader(filename)
         if filename.endswith(".log"):
-            return canutilsLogReader(filename)
+            return CanutilsLogReader(filename)
         
         raise NotImplementedError("No read support for this log format")
 
