@@ -50,7 +50,8 @@ class ASCReader(object):
 
                 dlc = int(dlc)
                 frame = bytearray()
-                for byte in data.split():
+                data = data.split()
+                for byte in data[0:dlc]:
                     frame.append(int(byte,16))
                 msg = Message(timestamp=time,
                             arbitration_id=extractCanId(canId)[0] & CAN_ID_MASK,
