@@ -34,12 +34,14 @@ XL_TRANSMIT_MSG = 10
 XL_CAN_EXT_MSG_ID = 0x80000000
 XL_CAN_MSG_FLAG_ERROR_FRAME = 0x01
 XL_CAN_MSG_FLAG_REMOTE_FRAME = 0x10
+XL_CAN_MSG_FLAG_TX_COMPLETED = 0x40
 
 XL_CAN_STD = 1
 XL_CAN_EXT = 2
 
 XLuint64 = ctypes.c_ulonglong
 XLaccess = XLuint64
+XLhandle = ctypes.c_void_p
 
 MAX_MSG_LEN = 8
 
@@ -75,7 +77,7 @@ XLportHandle = ctypes.c_long
 
 def check_status(result, function, arguments):
     if result > 0:
-        raise VectorError(result, xlGetErrorString(result).decode())
+        raise VectorError(result, xlGetErrorString(result).decode(), function.__name__)
     return result
 
 
@@ -122,6 +124,19 @@ xlClosePort = _xlapi_dll.xlClosePort
 xlClosePort.argtypes = [XLportHandle]
 xlClosePort.restype = XLstatus
 xlClosePort.errcheck = check_status
+
+xlSetNotification = _xlapi_dll.xlSetNotification
+xlSetNotification.argtypes = [XLportHandle, ctypes.POINTER(XLhandle),
+                              ctypes.c_int]
+xlSetNotification.restype = XLstatus
+xlSetNotification.errcheck = check_status
+
+xlCanSetChannelMode = _xlapi_dll.xlCanSetChannelMode
+xlCanSetChannelMode.argtypes = [
+    XLportHandle, XLaccess, ctypes.c_int, ctypes.c_int
+]
+xlCanSetChannelMode.restype = XLstatus
+xlCanSetChannelMode.errcheck = check_status
 
 xlActivateChannel = _xlapi_dll.xlActivateChannel
 xlActivateChannel.argtypes = [

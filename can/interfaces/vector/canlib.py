@@ -14,6 +14,19 @@ import logging
 import sys
 import time
 
+try:
+    # Try builtin Python 3 Windows API
+    from _winapi import WaitForSingleObject, INFINITE
+    HAS_EVENTS = True
+except ImportError:
+    try:
+        # Try pywin32 package
+        from win32event import WaitForSingleObject, INFINITE
+        HAS_EVENTS = True
+    except ImportError:
+        # Use polling instead
+        HAS_EVENTS = False
+
 # Import Modules
 # ==============
 from can import BusABC, Message
@@ -35,6 +48,7 @@ class VectorBus(BusABC):
     """The CAN Bus implemented for the Vector interface."""
 
     def __init__(self, channel, can_filters=None, poll_interval=0.01,
+                 receive_own_messages=False,
                  bitrate=None, rx_queue_size=256, app_name="CANalyzer", **config):
         """
         :param list channel:
@@ -92,19 +106,33 @@ class VectorBus(BusABC):
             self.port_handle.value, permission_mask.value)
         if bitrate:
             if permission_mask.value != self.mask:
-                LOG.warning('Can not set bitrate since no init access')
+                LOG.info('Can not set bitrate since no init access')
             vxlapi.xlCanSetChannelBitrate(self.port_handle, permission_mask, bitrate)
+
+        # Enable/disable TX receipts
+        tx_receipts = 1 if receive_own_messages else 0
+        vxlapi.xlCanSetChannelMode(self.port_handle, self.mask, tx_receipts, 0)
+
+        if HAS_EVENTS:
+            self.event_handle = vxlapi.XLhandle()
+            vxlapi.xlSetNotification(self.port_handle, self.event_handle, 1)
+        else:
+            LOG.info('Install pywin32 to avoid polling')
+
         self.set_filters(can_filters)
+
         try:
             vxlapi.xlActivateChannel(self.port_handle, self.mask,
                                      vxlapi.XL_BUS_TYPE_CAN, 0)
         except VectorError:
             self.shutdown()
             raise
+
         # Calculate time offset for absolute timestamps
         offset = vxlapi.XLuint64()
         vxlapi.xlGetSyncTime(self.port_handle, offset)
-        self._time_offset = time.time() - offset.value / 1000000000.0
+        self._time_offset = time.time() - offset.value * 1e-9
+
         super(VectorBus, self).__init__()
 
     def set_filters(self, can_filters=None):
@@ -127,8 +155,9 @@ class VectorBus(BusABC):
     def recv(self, timeout=None):
         end_time = time.time() + timeout if timeout is not None else None
         event = vxlapi.XLevent(0)
+        event_count = ctypes.c_uint()
         while True:
-            event_count = ctypes.c_uint(1)
+            event_count.value = 1
             try:
                 vxlapi.xlReceive(self.port_handle, event_count, event)
             except VectorError as exc:
@@ -139,7 +168,7 @@ class VectorBus(BusABC):
                     msg_id = event.tagData.msg.id
                     dlc = event.tagData.msg.dlc
                     flags = event.tagData.msg.flags
-                    timestamp = event.timeStamp / 1000000000.0
+                    timestamp = event.timeStamp * 1e-9
                     msg = Message(
                         timestamp=timestamp + self._time_offset,
                         arbitration_id=msg_id & 0x1FFFFFFF,
@@ -150,9 +179,21 @@ class VectorBus(BusABC):
                         data=event.tagData.msg.data[:dlc],
                         channel=event.chanIndex)
                     return msg
+
             if end_time is not None and time.time() > end_time:
                 return None
-            time.sleep(self.poll_interval)
+
+            if HAS_EVENTS:
+                # Wait for receive event to occur
+                if timeout is None:
+                    time_left_ms = INFINITE
+                else:
+                    time_left = end_time - time.time()
+                    time_left_ms = max(0, int(time_left * 1000))
+                WaitForSingleObject(self.event_handle.value, time_left_ms)
+            else:
+                # Wait a short time until we try again
+                time.sleep(self.poll_interval)
 
     def send(self, msg, timeout=None):
         message_count = ctypes.c_uint(1)
