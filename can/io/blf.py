@@ -16,7 +16,7 @@ import datetime
 import time
 
 from can.message import Message
-from can.CAN import Listener
+from can.listener import Listener
 
 
 # 0 = unknown, 2 = CANoe
