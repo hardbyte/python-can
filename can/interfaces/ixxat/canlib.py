@@ -388,62 +388,56 @@ class IXXATBus(BusABC):
         """ Read a message from IXXAT device. """
 
         # TODO: handling CAN error messages?
-        if timeout is None:
-            timeout = constants.INFINITE
-        else:
-            timeout = int(timeout * 1000)
+        data_received = False
 
-        tm = None
         if timeout == 0:
             # Peek without waiting
             try:
                 _canlib.canChannelPeekMessage(self._channel_handle, ctypes.byref(self._message))
-            except VCITimeout:
-                return None
-            except VCIRxQueueEmptyError:
+            except (VCITimeout, VCIRxQueueEmptyError):
                 return None
             else:
                 if self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_DATA:
-                    tm = _timer_function()
+                    data_received = True
         else:
             # Wait if no message available
-            t0 = _timer_function()
-            elapsed_ms = 0
-            remaining_ms = 0
-            while elapsed_ms <= timeout:
-                elapsed_ms = int((_timer_function() - t0) * 1000)
-                remaining_ms = timeout - elapsed_ms
-                # Wait until at least one frame is in the buffer
+            if timeout is None or timeout < 0:
+                remaining_ms = constants.INFINITE
+                t0 = None
+            else:
+                timeout_ms = int(timeout * 1000)
+                remaining_ms = timeout_ms
+                t0 = _timer_function()
+
+            while True:
                 try:
-                    _canlib.canChannelWaitRxEvent(self._channel_handle, remaining_ms)
-                except VCITimeout:
-                    log.debug('canChannelWaitRxEvent timed out after %dms', remaining_ms)
-                    return None
-
-                # In theory we should be fine with a 0 timeout since the rxEvent was already
-                # set but I've seen timeouts appearing here and there
-                try:
-                    _canlib.canChannelReadMessage(self._channel_handle, 0, ctypes.byref(self._message))
-                except VCITimeout:
-                    continue
-
-                # See if we got a data or info/error messages
-                if self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_DATA:
-                    tm = _timer_function()
-                    break
-
-                elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_INFO:
-                    log.info(CAN_INFO_MESSAGES.get(self._message.abData[0], "Unknown CAN info message code {}".format(self._message.abData[0])))
-
-                elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_ERROR:
-                    log.warning(CAN_ERROR_MESSAGES.get(self._message.abData[0], "Unknown CAN error message code {}".format(self._message.abData[0])))
-
-                elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_TIMEOVR:
+                    _canlib.canChannelReadMessage(self._channel_handle, remaining_ms, ctypes.byref(self._message))
+                except (VCITimeout, VCIRxQueueEmptyError):
+                    # Ignore the 2 errors, the timeout is handled manually with the _timer_function()
                     pass
                 else:
-                    log.warn("Unexpected message info type")
+                    # See if we got a data or info/error messages
+                    if self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_DATA:
+                        data_received = True
+                        break
 
-        if not tm:
+                    elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_INFO:
+                        log.info(CAN_INFO_MESSAGES.get(self._message.abData[0], "Unknown CAN info message code {}".format(self._message.abData[0])))
+
+                    elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_ERROR:
+                        log.warning(CAN_ERROR_MESSAGES.get(self._message.abData[0], "Unknown CAN error message code {}".format(self._message.abData[0])))
+
+                    elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_TIMEOVR:
+                        pass
+                    else:
+                        log.warn("Unexpected message info type")
+
+                if t0 is not None:
+                    remaining_ms = timeout_ms - int((_timer_function() - t0) * 1000)
+                    if remaining_ms < 0:
+                        break
+
+        if not data_received:
             # Timed out / can message type is not DATA
             return None
 
