@@ -360,14 +360,12 @@ class IXXATBus(BusABC):
         self.channel = channel
 
         # Usually you get back 3 messages like "CAN initialized" ecc...
-        # Filter them out with low timeout
-        while True:
+        # Clear the FIFO by filter them out with low timeout
+        for i in range(rxFifoSize):
             try:
-                _canlib.canChannelWaitRxEvent(self._channel_handle, 0)
-            except VCITimeout:
-                break
-            else:
                 _canlib.canChannelReadMessage(self._channel_handle, 0, ctypes.byref(self._message))
+            except (VCITimeout, VCIRxQueueEmptyError):
+                break
 
         super(IXXATBus, self).__init__()
 
