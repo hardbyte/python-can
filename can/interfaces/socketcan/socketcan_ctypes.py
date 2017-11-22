@@ -125,6 +125,9 @@ class SocketcanCtypes_Bus(BusABC):
 
     def send(self, msg, timeout=None):
         frame = _build_can_frame(msg)
+        if timeout:
+            # Wait for write availability. write will fail below on timeout
+            select.select([], [self.socket], [], timeout)
         bytes_sent = libc.write(self.socket, ctypes.byref(frame), ctypes.sizeof(frame))
         if bytes_sent == -1:
             log.debug("Error sending frame :-/")

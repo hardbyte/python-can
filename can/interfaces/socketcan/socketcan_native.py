@@ -419,6 +419,9 @@ class SocketcanNative_Bus(BusABC):
             arbitration_id |= 0x20000000
         l = log.getChild("tx")
         l.debug("sending: %s", msg)
+        if timeout:
+            # Wait for write availability. send will fail below on timeout
+            select.select([], [self.socket], [], timeout)
         try:
             self.socket.send(build_can_frame(arbitration_id, msg.data))
         except OSError:
