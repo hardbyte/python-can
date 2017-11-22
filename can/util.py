@@ -4,8 +4,10 @@ Utilities and configuration file parsing.
 """
 from __future__ import absolute_import
 
+from pluggy import PluginManager
+
 import can
-from can.interfaces import VALID_INTERFACES
+from can.interfaces import VALID_INTERFACES, hookspecs
 
 try:
     from configparser import ConfigParser
@@ -155,8 +157,15 @@ def load_config(path=None, config=None):
     if system_config['interface'] == 'socketcan':
         system_config['interface'] = choose_socketcan_implementation()
 
-    if system_config['interface'] not in VALID_INTERFACES:
-        raise NotImplementedError('Invalid CAN Bus Type - {}'.format(can.rc['interface']))
+    if system_config['interface'] in VALID_INTERFACES:
+        can.log.debug(
+            "interface {} in VALID_INTERFACES".format(system_config['interface'])
+        )
+    elif len(get_pluginmanager().hook.pythoncan_interface(
+            interface=system_config['interface'])):
+        can.log.debug("interface {} in a plugin".format(system_config['interface']))
+    else:
+        raise NotImplementedError('Invalid CAN Bus Type - {}'.format(system_config['interface']))
 
     if 'bitrate' in system_config:
         system_config['bitrate'] = int(system_config['bitrate'])
@@ -204,6 +213,16 @@ def set_logging_level(level_name=None):
     except AttributeError:
         can_logger.setLevel(logging.DEBUG)
     log.debug("Logging set to {}".format(level_name))
+
+
+def get_pluginmanager(load_entrypoints=True):
+    pm = PluginManager("pythoncan")
+    pm.add_hookspecs(hookspecs)
+    # XXX load internal plugins here
+    if load_entrypoints:
+        pm.load_setuptools_entrypoints("python_can.interface")
+    pm.check_pending()
+    return pm
 
 
 if __name__ == "__main__":

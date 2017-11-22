@@ -9,5 +9,9 @@ python:
   - "3.6-dev" # 3.6 development branch
   - "nightly" # currently points to 3.7-dev
 
+# command to install dependencies
+install:
+  - pip install .
+
 # command to run tests
 script: nosetests

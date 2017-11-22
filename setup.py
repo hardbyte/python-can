@@ -28,5 +28,6 @@ setup(
     },
     # Tests can be run using `python setup.py test`
     test_suite="nose.collector",
-    tests_require=['mock', 'nose']
+    tests_require=['mock', 'nose'],
+    install_requires=['pluggy']
 )

@@ -1,9 +1,12 @@
 from __future__ import absolute_import
+import sys
+from pluggy import PluginManager, HookimplMarker
 
 import can
 import importlib
 
 from can.broadcastmanager import CyclicSendTaskABC, MultiRateCyclicSendTaskABC
+from can.interfaces import hookspecs
 from can.util import load_config
 
 # interface_name => (module, classname)
@@ -23,6 +26,27 @@ BACKENDS = {
     'vector':           ('can.interfaces.vector', 'VectorBus'),
     'slcan':            ('can.interfaces.slcan', 'slcanBus')
 }
+
+hookimpl = HookimplMarker('pythoncan')
+
+
+@hookimpl(trylast=True)
+def pythoncan_interface(interface):
+    """This hook is used to process the initial config
+    and possibly input arguments.
+    """
+    return BACKENDS.get(interface)
+
+
+def get_pluginmanager(load_entrypoints=True):
+    pm = PluginManager("pythoncan")
+    pm.add_hookspecs(hookspecs)
+    # XXX load internal plugins here
+    pm.register(sys.modules[__name__])
+    if load_entrypoints:
+        pm.load_setuptools_entrypoints("python_can.interface")
+    pm.check_pending()
+    return pm
 
 
 class Bus(object):
@@ -59,7 +83,10 @@ class Bus(object):
 
         # Import the correct Bus backend
         try:
-            (module_name, class_name) = BACKENDS[interface]
+            interfaces_hook = get_pluginmanager().hook
+            (module_name, class_name) = interfaces_hook.pythoncan_interface(
+                interface=interface
+            )[0]
         except KeyError:
             raise NotImplementedError("CAN interface '{}' not supported".format(interface))
 
