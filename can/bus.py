@@ -56,9 +56,10 @@ class BusABC(object):
         """Transmit a message to CAN bus.
         Override this method to enable the transmit path.
 
-        :param msg: A :class:`can.Message` object.
+        :param can.Message msg: A message object.
         :param float timeout:
-            If > 0, wait up to this many seconds for message to be ACK:ed.
+            If > 0, wait up to this many seconds for message to be ACK:ed or
+            for transmit queue to be ready depending on driver implementation.
             If timeout is exceeded, an exception will be raised.
             Might not be supported by all interfaces.
 

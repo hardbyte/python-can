@@ -8,7 +8,9 @@ logging.basicConfig(format='%(asctime)-15s %(message)s', level=logging.INFO)
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Remote CAN server")
+    parser = argparse.ArgumentParser(
+        "python -m can.server",
+        description="Remote CAN server")
 
     parser.add_argument('-v', action='count', dest="verbosity",
                         help='''How much information do you want to see at the command line?
