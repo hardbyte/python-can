@@ -143,8 +143,8 @@ class VectorBus(BusABC):
                         is_remote_frame=bool(flags & vxlapi.XL_CAN_MSG_FLAG_REMOTE_FRAME),
                         is_error_frame=bool(flags & vxlapi.XL_CAN_MSG_FLAG_ERROR_FRAME),
                         dlc=dlc,
-                        data=event.tagData.msg.data[:dlc])
-                    msg.channel = event.chanIndex
+                        data=event.tagData.msg.data[:dlc],
+                        channel=event.chanIndex)
                     return msg
             if end_time is not None and time.time() > end_time:
                 return None

@@ -79,6 +79,7 @@ def main():
     if results.bitrate:
         config["bitrate"] = results.bitrate
     bus = can.interface.Bus(results.channel, **config)
+    print('Connected to {}: {}'.format(bus.__class__.__name__, bus.channel_info))
     print('Can Logger (Started on {})\n'.format(datetime.datetime.now()))
     logger = Logger(results.log_file)
 

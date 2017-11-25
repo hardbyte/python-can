@@ -130,13 +130,13 @@ class BLFReader(object):
                                       extended_id=bool(can_id & CAN_MSG_EXT),
                                       is_remote_frame=bool(flags & REMOTE_FLAG),
                                       dlc=dlc,
-                                      data=can_data[:dlc])
-                        msg.channel = channel
+                                      data=can_data[:dlc],
+                                      channel=channel)
                         yield msg
                     elif obj_type == CAN_ERROR:
                         channel, length = CAN_ERROR_STRUCT.unpack(obj_data)
-                        msg = Message(timestamp=timestamp, is_error_frame=True)
-                        msg.channel = channel
+                        msg = Message(timestamp=timestamp, is_error_frame=True,
+                                      channel=channel)
                         yield msg
                     pos += obj_size
                     # Add padding bytes
@@ -170,16 +170,17 @@ class BLFWriter(Listener):
         self.stop_timestamp = None
 
     def on_message_received(self, msg):
+        channel = msg.channel if isinstance(msg.channel, int) else self.channel
         if not msg.is_error_frame:
             flags = REMOTE_FLAG if msg.is_remote_frame else 0
             arb_id = msg.arbitration_id
             if msg.id_type:
                 arb_id |= CAN_MSG_EXT
-            data = CAN_MSG_STRUCT.pack(self.channel, flags, msg.dlc, arb_id,
+            data = CAN_MSG_STRUCT.pack(channel, flags, msg.dlc, arb_id,
                                        bytes(msg.data))
             self._add_object(CAN_MESSAGE, data, msg.timestamp)
         else:
-            data = CAN_ERROR_STRUCT.pack(self.channel, 0)
+            data = CAN_ERROR_STRUCT.pack(channel, 0)
             self._add_object(CAN_ERROR, data, msg.timestamp)
 
     def log_event(self, text, timestamp=None):
@@ -224,6 +225,8 @@ class BLFWriter(Listener):
 
     def _flush(self):
         """Compresses and writes data in the cache to file."""
+        if self.fp.closed:
+            return
         cache = b"".join(self.cache)
         if not cache:
             # Nothing to write
@@ -246,6 +249,8 @@ class BLFWriter(Listener):
 
     def stop(self):
         """Stops logging and closes the file."""
+        if self.fp.closed:
+            return
         self._flush()
         filesize = self.fp.tell()
         self.fp.close()

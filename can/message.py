@@ -10,7 +10,8 @@ class Message(object):
     """
 
     def __init__(self, timestamp=0.0, is_remote_frame=False, extended_id=True,
-                 is_error_frame=False, arbitration_id=0, dlc=None, data=None):
+                 is_error_frame=False, arbitration_id=0, dlc=None, data=None,
+                 channel=None):
 
         self.timestamp = timestamp
         self.id_type = extended_id
@@ -19,6 +20,7 @@ class Message(object):
         self.is_remote_frame = is_remote_frame
         self.is_error_frame = is_error_frame
         self.arbitration_id = arbitration_id
+        self.channel = channel
 
         if data is None or is_remote_frame:
             self.data = bytearray()
@@ -98,6 +100,8 @@ class Message(object):
                 "arbitration_id={:#x}".format(self.arbitration_id),
                 "dlc={}".format(self.dlc),
                 "data=[{}]".format(", ".join(data))]
+        if self.channel is not None:
+            args.append("channel={}".format(self.channel))
         return "can.Message({})".format(", ".join(args))
 
     def __eq__(self, other):

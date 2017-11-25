@@ -104,7 +104,8 @@ class IscanBus(BusABC):
                        timestamp=time.time(),   # Better than nothing...
                        is_remote_frame=bool(raw_msg.remote_req),
                        dlc=raw_msg.data_len,
-                       data=raw_msg.data[:raw_msg.data_len])
+                       data=raw_msg.data[:raw_msg.data_len],
+                       channel=self.channel.value)
 
     def send(self, msg, timeout=None):
         raw_msg = MessageExStruct(msg.arbitration_id,

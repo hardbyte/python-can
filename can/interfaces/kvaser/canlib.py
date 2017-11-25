@@ -329,6 +329,7 @@ class KvaserBus(BusABC):
             channel = int(channel)
         except ValueError:
             raise ValueError('channel must be an integer')
+        self.channel = channel
 
         if 'tseg1' not in config and bitrate in BITRATE_OBJS:
             bitrate = BITRATE_OBJS[bitrate]
@@ -473,6 +474,7 @@ class KvaserBus(BusABC):
                              extended_id=is_extended,
                              is_error_frame=is_error_frame,
                              is_remote_frame=is_remote_frame,
+                             channel=self.channel,
                              timestamp=msg_timestamp + self._timestamp_offset)
             rx_msg.flags = flags
             rx_msg.raw_timestamp = msg_timestamp

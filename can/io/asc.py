@@ -23,16 +23,15 @@ class ASCWriter(Listener):
 
     def stop(self):
         """Stops logging and closes the file."""
-        if self.log_file is not None:
+        if not self.log_file.closed:
             self.log_file.write("End TriggerBlock\n")
             self.log_file.close()
-            self.log_file = None
 
     def log_event(self, message, timestamp=None):
         """Add an arbitrary message to the log file."""
         timestamp = (timestamp or time.time()) - self.started
         line = self.EVENT_STRING.format(time=timestamp, message=message)
-        if self.log_file is not None:
+        if not self.log_file.closed:
             self.log_file.write(line)
 
     def on_message_received(self, msg):
@@ -53,10 +52,11 @@ class ASCWriter(Listener):
         if timestamp >= self.started:
             timestamp -= self.started
 
+        channel = msg.channel if isinstance(msg.channel, int) else self.channel
         line = self.LOG_STRING.format(time=timestamp,
-                                      channel=self.channel,
+                                      channel=channel,
                                       id=arb_id,
                                       dtype=dtype,
                                       data=" ".join(data))
-        if self.log_file is not None:
+        if not self.log_file.closed:
             self.log_file.write(line)
