@@ -20,6 +20,7 @@ class KvaserTest(unittest.TestCase):
         canlib.canGetNumberOfChannels = Mock(return_value=1)
         canlib.canOpenChannel = Mock(return_value=0)
         canlib.canIoCtl = Mock(return_value=0)
+        canlib.kvReadTimer = Mock()
         canlib.canSetBusParams = Mock()
         canlib.canBusOn = Mock()
         canlib.canBusOff = Mock()

@@ -21,6 +21,8 @@ log = logging.getLogger('can.kvaser')
 # Resolution in us
 TIMESTAMP_RESOLUTION = 10
 
+TIMESTAMP_FACTOR = TIMESTAMP_RESOLUTION / 1000000.0
+
 
 try:
     if sys.platform == "win32":
@@ -133,14 +135,11 @@ if __canlib is not None:
                                                    restype=canstat.c_canStatus,
                                                    errcheck=__check_status)
 
-    if sys.platform == "win32":
-        __canReadTimer_func_name = "kvReadTimer"
-    else:
-        __canReadTimer_func_name = "canReadTimer"
-    canReadTimer = __get_canlib_function(__canReadTimer_func_name,
-                                         argtypes=[c_canHandle, ctypes.c_void_p],
-                                         restype=canstat.c_canStatus,
-                                         errcheck=__check_status)
+    kvReadTimer = __get_canlib_function("kvReadTimer",
+                                        argtypes=[c_canHandle,
+                                                  ctypes.POINTER(ctypes.c_uint)],
+                                        restype=canstat.c_canStatus,
+                                        errcheck=__check_status)
 
     canBusOff = __get_canlib_function("canBusOff",
                                       argtypes=[c_canHandle],
@@ -380,15 +379,13 @@ class KvaserBus(BusABC):
         log.debug('Going bus on TX handle')
         canBusOn(self._write_handle)
 
-        self.timer_offset = None  # Used to zero the timestamps from the first message
-
-        '''
-        Approximate offset between time.time() and CAN timestamps (~2ms accuracy)
-        There will always be some lag between when the message is on the bus to
-        when it reaches Python. Allow messages to be on the bus for a while before
-        reading this value so it has a chance to correct itself
-        '''
-        self.pc_time_offset = None
+        timer = ctypes.c_uint(0)
+        try:
+            kvReadTimer(self._read_handle, ctypes.byref(timer))
+        except Exception as exc:
+            # timer is usually close to 0
+            log.info(str(exc))
+        self._timestamp_offset = time.time() - (timer.value * TIMESTAMP_FACTOR)
 
         super(KvaserBus, self).__init__()
 
@@ -434,33 +431,6 @@ class KvaserBus(BusABC):
         """
         canIoCtl(self._write_handle, canstat.canIOCTL_FLUSH_TX_BUFFER, 0, 0)
 
-    def __convert_timestamp(self, value):
-        # The kvaser seems to zero times
-        # Use the current value if the offset has not been set yet
-        if not hasattr(self, 'timer_offset') or self.timer_offset is None:
-            self.timer_offset = value
-            self.pc_time_offset = time.time()
-
-        if value < self.timer_offset:  # Check for overflow
-            MAX_32BIT = 0xFFFFFFFF  # The maximum value that the timer reaches on a 32-bit machine
-            MAX_64BIT = 0x9FFFFFFFF  # The maximum value that the timer reaches on a 64-bit machine
-            if ctypes.sizeof(ctypes.c_long) == 8:
-                value += MAX_64BIT
-            elif ctypes.sizeof(ctypes.c_long) == 4:
-                value += MAX_32BIT
-            else:
-                raise CanError('Unknown platform. Expected a long to be 4 or 8 bytes long but it was %i bytes.' % ctypes.sizeof(ctypes.c_long))
-            if value <= self.timer_offset:
-                raise OverflowError('CAN timestamp overflowed. The timer offset was ' + str(self.timer_offset))
-
-        timestamp = float(value - self.timer_offset) / (1000000 / TIMESTAMP_RESOLUTION)  # Convert into seconds
-        timestamp += self.pc_time_offset
-        lag = time.time() - timestamp
-        if lag < 0:
-            # If we see a timestamp that is quicker than the ever before, update the offset
-            self.pc_time_offset += lag
-        return timestamp
-
     def recv(self, timeout=None):
         """
         Read a message from kvaser device.
@@ -496,16 +466,16 @@ class KvaserBus(BusABC):
             is_extended = bool(flags & canstat.canMSG_EXT)
             is_remote_frame = bool(flags & canstat.canMSG_RTR)
             is_error_frame = bool(flags & canstat.canMSG_ERROR_FRAME)
-            msg_timestamp = self.__convert_timestamp(timestamp.value)
+            msg_timestamp = timestamp.value * TIMESTAMP_FACTOR
             rx_msg = Message(arbitration_id=arb_id.value,
                              data=data_array[:dlc.value],
                              dlc=dlc.value,
                              extended_id=is_extended,
                              is_error_frame=is_error_frame,
                              is_remote_frame=is_remote_frame,
-                             timestamp=msg_timestamp)
+                             timestamp=msg_timestamp + self._timestamp_offset)
             rx_msg.flags = flags
-            rx_msg.raw_timestamp = timestamp.value / (1000000.0 / TIMESTAMP_RESOLUTION)
+            rx_msg.raw_timestamp = msg_timestamp
             #log.debug('Got message: %s' % rx_msg)
             return rx_msg
         else:
