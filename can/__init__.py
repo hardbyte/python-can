@@ -30,6 +30,7 @@ from can.bus import BusABC
 from can.notifier import Notifier
 from can.interfaces import VALID_INTERFACES
 from . import interface
+from .interface import Bus
 
 from can.broadcastmanager import send_periodic, \
     CyclicSendTaskABC, \
