@@ -111,20 +111,20 @@ class BLFReader(object):
                     data = tail + data
                 pos = 0
                 while pos + OBJ_HEADER_STRUCT.size < len(data):
-                    header = OBJ_HEADER_STRUCT.unpack(
-                        data[pos:pos + OBJ_HEADER_STRUCT.size])
+                    header = OBJ_HEADER_STRUCT.unpack_from(data, pos)
                     #print(header)
                     assert header[0] == b"LOBJ", "Parse error"
                     obj_size = header[3]
                     if pos + obj_size > len(data):
                         # Object continues in next log container
                         break
-                    obj_data = data[pos + OBJ_HEADER_STRUCT.size:pos + obj_size]
                     obj_type = header[4]
                     timestamp = header[7] / 1000000000.0 + self.start_timestamp
                     if obj_type == CAN_MESSAGE:
+                        assert obj_size == OBJ_HEADER_STRUCT.size + CAN_MSG_STRUCT.size
                         (channel, flags, dlc, can_id,
-                         can_data) = CAN_MSG_STRUCT.unpack(obj_data)
+                         can_data) = CAN_MSG_STRUCT.unpack_from(
+                             data, pos + OBJ_HEADER_STRUCT.size)
                         msg = Message(timestamp=timestamp,
                                       arbitration_id=can_id & 0x1FFFFFFF,
                                       extended_id=bool(can_id & CAN_MSG_EXT),
@@ -134,7 +134,9 @@ class BLFReader(object):
                                       channel=channel)
                         yield msg
                     elif obj_type == CAN_ERROR:
-                        channel, length = CAN_ERROR_STRUCT.unpack(obj_data)
+                        assert obj_size == OBJ_HEADER_STRUCT.size + CAN_ERROR_STRUCT.size
+                        channel, length = CAN_ERROR_STRUCT.unpack_from(
+                            data, pos + OBJ_HEADER_STRUCT.size)
                         msg = Message(timestamp=timestamp, is_error_frame=True,
                                       channel=channel)
                         yield msg
@@ -217,7 +219,8 @@ class BLFWriter(Listener):
         self.cache.append(header)
         self.cache.append(data)
         padding_size = len(data) % 4
-        self.cache.append(b"\x00" * padding_size)
+        if padding_size:
+            self.cache.append(b"\x00" * padding_size)
         self.cache_size += obj_size + padding_size
         self.count_of_objects += 1
         if self.cache_size >= self.MAX_CACHE_SIZE:
@@ -231,7 +234,8 @@ class BLFWriter(Listener):
         if not cache:
             # Nothing to write
             return
-        uncompressed_data = cache[:self.MAX_CACHE_SIZE]
+        cache_view = memoryview(cache)
+        uncompressed_data = cache_view[:self.MAX_CACHE_SIZE]
         # Save data that comes after max size to next round
         tail = cache[self.MAX_CACHE_SIZE:]
         self.cache = [tail]
