@@ -234,8 +234,7 @@ class BLFWriter(Listener):
         if not cache:
             # Nothing to write
             return
-        cache_view = memoryview(cache)
-        uncompressed_data = cache_view[:self.MAX_CACHE_SIZE]
+        uncompressed_data = cache[:self.MAX_CACHE_SIZE]
         # Save data that comes after max size to next round
         tail = cache[self.MAX_CACHE_SIZE:]
         self.cache = [tail]
