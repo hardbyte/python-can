@@ -132,6 +132,8 @@ class SocketcanCtypes_Bus(BusABC):
         if bytes_sent == -1:
             log.debug("Error sending frame :-/")
             raise can.CanError("can.socketcan.ctypes failed to transmit")
+        elif bytes_sent == 0:
+            raise can.CanError("Transmit buffer overflow")
 
         log.debug("Frame transmitted with %s bytes", bytes_sent)
 

@@ -423,10 +423,11 @@ class SocketcanNative_Bus(BusABC):
             # Wait for write availability. send will fail below on timeout
             select.select([], [self.socket], [], timeout)
         try:
-            self.socket.send(build_can_frame(arbitration_id, msg.data))
-        except OSError:
-            l.warning("Failed to send: %s", msg)
-            raise can.CanError("can.socketcan.native failed to transmit")
+            bytes_sent = self.socket.send(build_can_frame(arbitration_id, msg.data))
+        except OSError as exc:
+            raise can.CanError("Transmit failed (%s)" % exc)
+        if bytes_sent == 0:
+            raise can.CanError("Transmit buffer overflow")
 
     def send_periodic(self, msg, period, duration=None):
         task = CyclicSendTask(self.channel, msg, period)
