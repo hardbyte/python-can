@@ -346,9 +346,9 @@ def _build_can_frame(message):
     # TODO need to understand the extended frame format
     frame = CAN_FRAME()
     frame.can_id = arbitration_id
-    frame.can_dlc = len(message.data)
+    frame.can_dlc = message.dlc
 
-    frame.data[0:frame.can_dlc] = message.data
+    frame.data[0:len(message.data)] = message.data
 
     log.debug("sizeof frame: %d", ctypes.sizeof(frame))
     return frame

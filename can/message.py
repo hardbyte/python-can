@@ -24,6 +24,7 @@ class Message(object):
 
     def __init__(self, timestamp=0.0, is_remote_frame=False, extended_id=True,
                  is_error_frame=False, arbitration_id=0, dlc=None, data=None,
+                 is_fd=False, bitrate_switch=False, error_state_indicator=False,
                  channel=None):
 
         self.timestamp = timestamp
@@ -34,6 +35,10 @@ class Message(object):
         self.is_error_frame = is_error_frame
         self.arbitration_id = arbitration_id
         self.channel = channel
+
+        self.is_fd = is_fd
+        self.bitrate_switch = bitrate_switch
+        self.error_state_indicator = error_state_indicator
 
         if data is None or is_remote_frame:
             self.data = bytearray()
@@ -51,7 +56,10 @@ class Message(object):
         else:
             self.dlc = dlc
 
-        assert self.dlc <= 8, "data link count was {} but it must be less than or equal to 8".format(self.dlc)
+        if is_fd and self.dlc > 64:
+            logger.warning("data link count was %d but it should be less than or equal to 64", self.dlc)
+        if not is_fd and self.dlc > 8:
+            logger.warning("data link count was %d but it should be less than or equal to 8", self.dlc)
 
     def __str__(self):
         field_strings = ["Timestamp: {0:15.6f}".format(self.timestamp)]
@@ -66,6 +74,7 @@ class Message(object):
             "X" if self.id_type else "S",
             "E" if self.is_error_frame else " ",
             "R" if self.is_remote_frame else " ",
+            "F" if self.is_fd else " ",
         ])
 
         field_strings.append(flag_string)
@@ -108,6 +117,10 @@ class Message(object):
                 "data=[{}]".format(", ".join(data))]
         if self.channel is not None:
             args.append("channel={}".format(self.channel))
+        if self.is_fd:
+            args.append("is_fd=True")
+            args.append("bitrate_switch={}".format(self.bitrate_switch))
+            args.append("error_state_indicator={}".format(self.error_state_indicator))
         return "can.Message({})".format(", ".join(args))
 
     def __eq__(self, other):
@@ -118,7 +131,9 @@ class Message(object):
                 self.dlc == other.dlc and
                 self.data == other.data and
                 self.is_remote_frame == other.is_remote_frame and
-                self.is_error_frame == other.is_error_frame)
+                self.is_error_frame == other.is_error_frame and
+                self.is_fd == other.is_fd and
+                self.bitrate_switch == other.bitrate_switch)
 
     def __hash__(self):
         return hash((
@@ -127,6 +142,8 @@ class Message(object):
             self.id_type,
             self.dlc,
             self.data,
+            self.is_fd,
+            self.bitrate_switch,
             self.is_remote_frame,
             self.is_error_frame
         ))

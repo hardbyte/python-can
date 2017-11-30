@@ -28,6 +28,11 @@ TEST_MESSAGES = [
         arbitration_id=0x768, extended_id=False, is_remote_frame=True,
         timestamp=1483389466.165),
     can.Message(is_error_frame=True, timestamp=1483389466.170),
+    can.Message(
+        is_fd=True, bitrate_switch=True,
+        arbitration_id=0x123456, extended_id=True,
+        data=[0xff] * 64,
+        timestamp=1483389466.365),
 ]
 
 
