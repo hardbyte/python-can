@@ -49,18 +49,11 @@ class Message(object):
             arbitration_id_string = "ID: {0:04x}".format(self.arbitration_id)
         field_strings.append(arbitration_id_string.rjust(12, " "))
 
-        flag_string = "".join(
-            map(
-                str,
-                map(
-                    int, [
-                        self.is_remote_frame,
-                        self.id_type,
-                        self.is_error_frame,
-                    ]
-                )
-            )
-        )
+        flag_string = " ".join([
+            "X" if self.id_type else "S",
+            "E" if self.is_error_frame else " ",
+            "R" if self.is_remote_frame else " ",
+        ])
 
         field_strings.append(flag_string)
 
