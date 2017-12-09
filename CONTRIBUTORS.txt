@@ -18,3 +18,4 @@ Joshua Villyard
 Giuseppe Corbelli <giuseppe.corbelli@weightpack.com>
 Christian Sandberg
 Eduard Bröcker <eduard@gmx.de>
+Boris Wenzlaff

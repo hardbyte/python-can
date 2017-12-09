@@ -7,7 +7,6 @@ python:
   - "3.5"
   - "3.6"
   - "nightly" # currently points to 3.7-dev
-
-install: pip install -e .
+  - pip install -r requirements.txt
 # command to run tests
 script: py.test -v
