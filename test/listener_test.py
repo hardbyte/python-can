@@ -44,6 +44,7 @@ class ListenerImportTest(unittest.TestCase):
         assert hasattr(can, 'BufferedReader')
         assert hasattr(can, 'Notifier')
         assert hasattr(can, 'ASCWriter')
+        assert hasattr(can, 'CanutilsLogWriter')
         assert hasattr(can, 'SqlReader')
 
 
@@ -71,6 +72,7 @@ class ListenerTest(BusTest):
             can_logger.stop()
 
         test_filetype_to_instance('asc', can.ASCWriter)
+        test_filetype_to_instance('log', can.CanutilsLogWriter)
         test_filetype_to_instance("blf", can.BLFWriter)
         test_filetype_to_instance("csv", can.CSVWriter)
         test_filetype_to_instance("db", can.SqliteWriter)
@@ -215,7 +217,6 @@ class BLFTest(unittest.TestCase):
         for msg1, msg2 in zip(messages, TEST_MESSAGES):
             self.assertEqual(msg1, msg2)
             self.assertAlmostEqual(msg1.timestamp, msg2.timestamp)
-
 
 if __name__ == '__main__':
     unittest.main()

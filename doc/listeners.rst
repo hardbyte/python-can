@@ -58,16 +58,39 @@ SqliteWriter
     :members:
 
 
-ASCWriter
+ASC (.asc Logging format)
 ---------
-
-Logs CAN data to an ASCII log file compatible with other CAN tools such as
+ASCWriter logs CAN data to an ASCII log file compatible with other CAN tools such as
 Vector CANalyzer/CANoe and other.
 Since no official specification exists for the format, it has been reverse-
 engineered from existing log files. One description of the format can be found `here
 <http://zone.ni.com/reference/en-XX/help/370859J-01/dlgcanconverter/dlgcanconverter/canconverter_ascii_logfiles/>`_.
 
 .. autoclass:: can.ASCWriter
+    :members:
+
+ASCReader reads CAN data from ASCII log files .asc 
+as further references can-utils can be used: 
+`asc2log <https://github.com/linux-can/can-utils/blob/master/asc2log.c>`_,
+`log2asc <https://github.com/linux-can/can-utils/blob/master/log2asc.c>`_.
+
+.. autoclass:: can.ASCReader
+    :members:
+
+Log (.log can-utils Logging format)
+---------
+canutilsLogWriter logs CAN data to an ASCII log file compatible with `can-utils <https://github.com/linux-can/can-utils>`
+As specification following references can-utils can be used: 
+`asc2log <https://github.com/linux-can/can-utils/blob/master/asc2log.c>`_,
+`log2asc <https://github.com/linux-can/can-utils/blob/master/log2asc.c>`_.
+
+
+.. autoclass:: can.canutilsLogWriter
+    :members:
+
+canutilsLogReader reads CAN data from ASCII log files .log 
+
+.. autoclass:: can.canutilsLogReader
     :members:
 
 

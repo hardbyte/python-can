@@ -31,6 +31,8 @@ The NI-CAN, remote and virtual interfaces plus the ASCII and BLF loggers were
 contributed by Christian Sandberg in 2016 and 2017. The BLF format is based on
 a C++ library by Toby Lorenz.
 
+The slcan interface, ASCII listener and log logger and listener were contributed by Eduard Bröcker in 2017.
+
 
 Support for CAN within Python
 -----------------------------

@@ -2,6 +2,8 @@ from __future__ import print_function
 import time
 import logging
 
+from .asc import ASCReader
+from .log import CanutilsLogReader
 from .blf import BLFReader
 from .sqlite import SqlReader
 
@@ -34,6 +36,11 @@ class LogReader(object):
             return BLFReader(filename)
         if filename.endswith(".db"):
             return SqlReader(filename)
+        if filename.endswith(".asc"):
+            return ASCReader(filename)
+        if filename.endswith(".log"):
+            return CanutilsLogReader(filename)
+        
         raise NotImplementedError("No read support for this log format")
 
 
