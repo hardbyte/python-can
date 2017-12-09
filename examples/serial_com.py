@@ -22,15 +22,11 @@ import can
 import threading
 
 
-def time_millis():
-    return int(round(time.time() * 1000))
-
-
 def send_cyclic(bus, msg, stop_event):
     print("Start to send a message every 1s")
-    start_time = time_millis()
+    start_time = time.time()
     while not stop_event.is_set():
-        msg.timestamp = time_millis() - start_time
+        msg.timestamp = time.time() - start_time
         bus.send(msg)
         print("tx: {}".format(tx_msg))
         time.sleep(1)

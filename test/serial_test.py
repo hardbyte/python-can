@@ -51,6 +51,7 @@ class SerialDummy:
 
 
 class SimpleSerialTest(unittest.TestCase):
+    MAX_TIMESTAMP = 0xFFFFFFFF / 1000
 
     def setUp(self):
         self.patcher = patch('serial.Serial')
@@ -117,16 +118,18 @@ class SimpleSerialTest(unittest.TestCase):
         """
         Tests the transfer with the highest possible timestamp
         """
-        msg = can.Message(timestamp=0xFFFFFFFF)
+
+        msg = can.Message(timestamp=self.MAX_TIMESTAMP)
         self.bus.send(msg)
         msg_receive = self.bus.recv()
         self.assertEqual(msg, msg_receive)
+        self.assertEqual(msg.timestamp, msg_receive.timestamp)
 
     def test_rx_tx_max_timestamp_error(self):
         """
         Tests for an exception with an out of range timestamp (max + 1)
         """
-        msg = can.Message(timestamp=0xFFFFFFFF+1)
+        msg = can.Message(timestamp=self.MAX_TIMESTAMP+1)
         self.assertRaises(ValueError, self.bus.send, msg)
 
     def test_rx_tx_min_timestamp(self):
@@ -137,6 +140,7 @@ class SimpleSerialTest(unittest.TestCase):
         self.bus.send(msg)
         msg_receive = self.bus.recv()
         self.assertEqual(msg, msg_receive)
+        self.assertEqual(msg.timestamp, msg_receive.timestamp)
 
     def test_rx_tx_min_timestamp_error(self):
         """

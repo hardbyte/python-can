@@ -75,10 +75,9 @@ class SerialBus(BusABC):
             This parameter will be ignored. The timeout value of the channel is
             used.
         """
-        if isinstance(msg.timestamp, float):
-            msg.timestamp = int(msg.timestamp)
+
         try:
-            timestamp = struct.pack('<I', msg.timestamp)
+            timestamp = struct.pack('<I', self.convert_to_integer_milliseconds(msg.timestamp))
         except Exception:
             raise ValueError('Timestamp is out of range')
         try:
@@ -97,12 +96,15 @@ class SerialBus(BusABC):
         byte_msg.append(0xBB)
         self.ser.write(byte_msg)
 
+    @staticmethod
+    def convert_to_integer_milliseconds(msg_timestamp):
+        return int(msg_timestamp * 1000)
+
     def recv(self, timeout=None):
         """
         Read a message from the serial device.
 
-        :param timeout:        # byte_msg = bytes([0xAA]) + timestamp + dlc + a_id + msg.data + \
-                 #   bytes([0xBB])
+        :param timeout:
             This parameter will be ignored. The timeout value of the channel is
             used.
         :returns:
@@ -135,10 +137,8 @@ class SerialBus(BusABC):
             rxd_byte = ord(self.ser.read())
             if rxd_byte == 0xBB:
                 # received message data okay
-                return Message(timestamp=timestamp, arbitration_id=arb_id,
-                               dlc=dlc, data=data)
-            else:
-                return None
+                return Message(timestamp=timestamp/1000,
+                               arbitration_id=arb_id,
+                               dlc=dlc,
+                               data=data)
 
-        else:
-            return None
