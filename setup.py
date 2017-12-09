@@ -18,7 +18,7 @@ setup(
     version=version,
     packages=find_packages(),
     author="Brian Thorne",
-    author_email="hardbyte@gmail.com",
+    author_email="brian@thorne.link",
     description="Controller Area Network interface module for Python",
     long_description=open('README.rst').read(),
     license="LGPL v3",
@@ -28,5 +28,8 @@ setup(
     },
     # Tests can be run using `python setup.py test`
     test_suite="nose.collector",
-    tests_require=['mock', 'nose']
+    tests_require=['mock', 'nose', 'pyserial'],
+    extras_require={
+        'serial': ['pyserial']
+    }
 )
