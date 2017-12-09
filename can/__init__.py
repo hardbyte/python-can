@@ -5,7 +5,7 @@ from __future__ import absolute_import
 
 import logging
 
-__version__ = "2.0.0-beta.1"
+__version__ = "2.0.0-rc.1"
 
 log = logging.getLogger('can')
 
