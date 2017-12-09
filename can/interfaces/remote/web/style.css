@@ -1,0 +1,39 @@
+.top {
+    background-color: #333333;
+    color: white;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    margin-bottom: 20px;
+}
+
+.connected .top {
+    background-color: #225522;
+}
+
+h1 {
+    font-size: 22pt;
+    margin-top: 0;
+    margin-bottom: 0;
+    margin-right: 20px;
+    float: left;
+}
+
+.bus-name {
+    text-align: right;
+}
+
+.trace tbody {
+    font-family: monospace;
+}
+
+.trace .timestamp {
+    width: 180px;
+}
+
+.trace .can-id {
+    width: 100px;
+}
+
+.trace .dlc {
+    width: 50px;
+}

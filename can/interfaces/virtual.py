@@ -60,3 +60,4 @@ class VirtualBus(BusABC):
 
     def shutdown(self):
         self.channel.remove(self.queue)
+        self.channel = None
