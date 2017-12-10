@@ -27,7 +27,7 @@ The usb2can interface was contributed by Joshua Villyard in 2015
 The IXXAT VCI interface was contributed by Giuseppe Corbelli and funded
 by `Weightpack <http://www.weightpack.com>`__ in 2016
 
-The NI-CAN, remote and virtual interfaces plus the ASCII and BLF loggers were
+The NI-CAN and virtual interfaces plus the ASCII and BLF loggers were
 contributed by Christian Sandberg in 2016 and 2017. The BLF format is based on
 a C++ library by Toby Lorenz.
 

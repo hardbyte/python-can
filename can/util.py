@@ -105,7 +105,7 @@ def load_config(path=None, config=None):
       where the latter may add or replace values of the former.
 
     Interface can be any of the strings from ``can.VALID_INTERFACES`` for example:
-    kvaser, socketcan, pcan, usb2can, ixxat, nican, remote, virtual.
+    kvaser, socketcan, pcan, usb2can, ixxat, nican, virtual.
 
     .. note::
 

@@ -17,7 +17,6 @@ BACKENDS = {
     'ixxat':            ('can.interfaces.ixxat', 'IXXATBus'),
     'nican':            ('can.interfaces.nican', 'NicanBus'),
     'iscan':            ('can.interfaces.iscan', 'IscanBus'),
-    'remote':           ('can.interfaces.remote', 'RemoteBus'),
     'virtual':          ('can.interfaces.virtual', 'VirtualBus'),
     'neovi':            ('can.interfaces.neovi_api', 'NeoVIBus'),
     'vector':           ('can.interfaces.vector', 'VectorBus'),
@@ -95,12 +94,6 @@ class CyclicSendTask(CyclicSendTaskABC):
         elif config['interface'] == 'socketcan_native':
             from can.interfaces.socketcan.socketcan_native import CyclicSendTask as _nativeCyclicSendTask
             cls = _nativeCyclicSendTask
-        # CyclicSendTask has not been fully implemented on remote interface yet.
-        # Waiting for issue #80 which will change the API to make it easier for
-        # interfaces other than socketcan to implement it
-        #elif can.rc['interface'] == 'remote':
-        #    from can.interfaces.remote import CyclicSendTask as _remoteCyclicSendTask
-        #    cls = _remoteCyclicSendTask
         else:
             raise can.CanError("Current CAN interface doesn't support CyclicSendTask")
 

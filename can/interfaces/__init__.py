@@ -5,4 +5,4 @@ Interfaces contain low level implementations that interact with CAN hardware.
 
 VALID_INTERFACES = set(['kvaser', 'serial', 'pcan', 'socketcan_native',
                         'socketcan_ctypes', 'socketcan', 'usb2can', 'ixxat',
-                        'nican', 'iscan', 'vector', 'remote', 'virtual', 'neovi','slcan'])
+                        'nican', 'iscan', 'vector', 'virtual', 'neovi','slcan'])

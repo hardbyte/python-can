@@ -22,7 +22,6 @@ The available interfaces are:
    interfaces/iscan
    interfaces/neovi
    interfaces/vector
-   interfaces/remote
    interfaces/virtual
 
 
