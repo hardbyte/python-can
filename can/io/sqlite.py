@@ -1,3 +1,7 @@
+"""
+Implements an SQL database writer and reader for storing CAN messages.
+"""
+
 from can.listener import BufferedReader
 from can.message import Message
 
@@ -15,7 +19,7 @@ if sys.version_info > (3,):
 
 class SqlReader:
     def __init__(self, filename):
-        log.debug("Starting sqlreader with {}".format(filename))
+        log.debug("Starting SqlReader with {}".format(filename))
         conn = sqlite3.connect(filename)
 
         self.c = conn.cursor()
@@ -74,18 +78,18 @@ class SqliteWriter(BufferedReader):
         super(SqliteWriter, self).__init__()
         self.db_fn = filename
         self.stop_running_event = threading.Event()
-        self.writer_thread = threading.Thread(target=self.db_writer_thread)
+        self.writer_thread = threading.Thread(target=self._db_writer_thread)
         self.writer_thread.start()
 
     def _create_db(self):
-        # Note you can't share sqlite3 connections between threads
+        # Note: you can't share sqlite3 connections between threads
         # hence we setup the db here.
-        log.info("Creating sqlite db")
+        log.info("Creating sqlite database")
         self.conn = sqlite3.connect(self.db_fn)
-        c = self.conn.cursor()
+        cursor = self.conn.cursor()
 
         # create table structure
-        c.execute('''
+        cursor.execute('''
         CREATE TABLE IF NOT EXISTS messages
         (
           ts REAL,
@@ -101,7 +105,7 @@ class SqliteWriter(BufferedReader):
 
         self.db_setup = True
 
-    def db_writer_thread(self):
+    def _db_writer_thread(self):
         num_frames = 0
         last_write = time.time()
         self._create_db()
@@ -109,32 +113,35 @@ class SqliteWriter(BufferedReader):
         while not self.stop_running_event.is_set():
             messages = []
 
-            m = self.get_message(self.GET_MESSAGE_TIMEOUT)
-            while m is not None:
-                log.debug("sqlitewriter buffering message")
+            msg = self.get_message(self.GET_MESSAGE_TIMEOUT)
+            while msg is not None:
+                log.debug("SqliteWriter: buffering message")
 
                 messages.append((
-                    m.timestamp,
-                    m.arbitration_id,
-                    m.id_type,
-                    m.is_remote_frame,
-                    m.is_error_frame,
-                    m.dlc,
-                    buffer(m.data)
+                    msg.timestamp,
+                    msg.arbitration_id,
+                    msg.id_type,
+                    msg.is_remote_frame,
+                    msg.is_error_frame,
+                    msg.dlc,
+                    buffer(msg.data)
                 ))
 
                 if time.time() - last_write > self.MAX_TIME_BETWEEN_WRITES:
                     log.debug("Max timeout between writes reached")
                     break
 
-                m = self.get_message(self.GET_MESSAGE_TIMEOUT)
+                msg = self.get_message(self.GET_MESSAGE_TIMEOUT)
 
-            if len(messages) > 0:
+            count = len(messages)
+            if count > 0:
                 with self.conn:
-                    log.debug("Writing %s frames to db", len(messages))
+                    log.debug("Writing %s frames to db", count)
                     self.conn.executemany(SqliteWriter.insert_msg_template, messages)
-                    num_frames += len(messages)
+                    num_frames += count
                     last_write = time.time()
+
+            # go back up and check if we are still supposed to run
 
         self.conn.close()
         log.info("Stopped sqlite writer after writing %s messages", num_frames)
@@ -143,4 +150,3 @@ class SqliteWriter(BufferedReader):
         self.stop_running_event.set()
         log.debug("Stopping sqlite writer")
         self.writer_thread.join()
-
