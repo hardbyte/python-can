@@ -19,23 +19,23 @@ if sys.version_info > (3,):
 
 class SqlReader:
     def __init__(self, filename):
-        log.debug("Starting SqlReader with {}".format(filename))
+        log.debug("Starting SqlReader with %s", filename)
         conn = sqlite3.connect(filename)
 
-        self.c = conn.cursor()
+        self.cursor = conn.cursor()
 
 
     @staticmethod
-    def create_frame_from_db_tuple(frame_data):
-        ts, id, is_extended, is_remote, is_error, dlc, data = frame_data
+    def _create_frame_from_db_tuple(frame_data):
+        timestamp, id, is_extended, is_remote, is_error, dlc, data = frame_data
         return Message(
-            ts, is_remote, is_extended, is_error, id, dlc, data
+            timestamp, is_remote, is_extended, is_error, id, dlc, data
         )
 
     def __iter__(self):
         log.debug("Iterating through messages from sql db")
-        for frame_data in self.c.execute("SELECT * FROM messages"):
-            yield SqlReader.create_frame_from_db_tuple(frame_data)
+        for frame_data in self.cursor.execute("SELECT * FROM messages"):
+            yield SqlReader._create_frame_from_db_tuple(frame_data)
 
 
 class SqliteWriter(BufferedReader):
@@ -102,8 +102,6 @@ class SqliteWriter(BufferedReader):
         )
         ''')
         self.conn.commit()
-
-        self.db_setup = True
 
     def _db_writer_thread(self):
         num_frames = 0
