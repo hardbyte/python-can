@@ -4,20 +4,48 @@ from time import sleep
 
 import can
 
+TIME = 1483389946.197 # some random number
+
 # List of messages of different types that can be used in tests
 TEST_MESSAGES = [
+    can.Message(),
+    can.Message(
+        data=[1, 2]
+    ),
+    can.Message(
+        arbitration_id=0xAB, extended_id=False
+    ),
+    can.Message(
+        arbitration_id=0x42, extended_id=True
+    ),
     can.Message(
         arbitration_id=0xDADADA, extended_id=True, is_remote_frame=False,
-        timestamp=1483389464.165,
+        timestamp=TIME + .165,
         data=[1, 2, 3, 4, 5, 6, 7, 8]),
     can.Message(
         arbitration_id=0x123, extended_id=False, is_remote_frame=False,
-        timestamp=1483389464.365,
+        timestamp=TIME + .365,
         data=[254, 255]),
     can.Message(
         arbitration_id=0x768, extended_id=False, is_remote_frame=True,
-        timestamp=1483389466.165),
-    can.Message(is_error_frame=True, timestamp=1483389466.170),
+        timestamp=TIME + 3.165),
+    can.Message(
+        is_error_frame=True,
+        timestamp=TIME + 0.170),
+    can.Message(
+        arbitration_id=0xabcdef, extended_id=True,
+        timestamp=TIME,
+        data=[1, 2, 3, 4, 5, 6, 7, 8]),
+    can.Message(
+        arbitration_id=0x123, extended_id=False,
+        timestamp=TIME + 42.42,
+        data=[0xff, 0xff]),
+    can.Message(
+        arbitration_id=0xabcdef, extended_id=True, is_remote_frame=True,
+        timestamp=TIME + 7858.67),
+    can.Message(
+        arbitration_id=0xabcdef, is_error_frame=True,
+        timestamp=TIME + 1.6)
 ]
 
 def _test_writer_and_reader(test_case, writer_constructor, reader_constructor, sleep_time=0):
@@ -61,7 +89,7 @@ class TestSqlFileFormat(unittest.TestCase):
     """Tests can.SqliteWriter and can.SqliteReader"""
 
     def test(self):
-        _test_writer_and_reader(self, can.SqliteWriter, can.SqlReader, sleep_time=0.25)
+        _test_writer_and_reader(self, can.SqliteWriter, can.SqlReader, sleep_time=0.5)
 
 
 if __name__ == '__main__':
