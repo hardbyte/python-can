@@ -58,11 +58,7 @@ TEST_MESSAGES = [
     can.Message(
         arbitration_id=0xABCDEF, extended_id=True, is_remote_frame=True,
         timestamp=TIME + 7858.67
-    ),
-    can.Message(
-        arbitration_id=0xABCDEF, is_error_frame=True,
-        timestamp=TIME + 1.6
-    ),
+    )
 ]
 
 def _test_writer_and_reader(test_case, writer_constructor, reader_constructor, sleep_time=0):
@@ -86,10 +82,10 @@ def _test_writer_and_reader(test_case, writer_constructor, reader_constructor, s
     messages = list(reader_constructor(filename))
     test_case.assertEqual(len(messages), len(TEST_MESSAGES))
 
-    for i, (msg1, msg2) in enumerate(zip(messages, TEST_MESSAGES)):
+    for i, (read, original) in enumerate(zip(messages, TEST_MESSAGES)):
         try:
-            test_case.assertEqual(msg1, msg2)
-            test_case.assertAlmostEqual(msg1.timestamp, msg2.timestamp)
+            test_case.assertEqual(read, original)
+            test_case.assertAlmostEqual(read.timestamp, original.timestamp)
         except Exception as exception:
             # attach the index
             exception.args += ("test failed at index #{}".format(i), )
@@ -99,19 +95,19 @@ def _test_writer_and_reader(test_case, writer_constructor, reader_constructor, s
 class TestCanutilsLog(unittest.TestCase):
     """Tests can.CanutilsLogWriter and can.CanutilsLogReader"""
 
-    def test(self):
+    def test_writer_and_reader(self):
         _test_writer_and_reader(self, can.CanutilsLogWriter, can.CanutilsLogReader)
 
 class TestAscFileFormat(unittest.TestCase):
     """Tests can.ASCWriter and can.ASCReader"""
 
-    def test(self):
+    def test_writer_and_reader(self):
         _test_writer_and_reader(self, can.ASCWriter, can.ASCReader)
 
 class TestSqlFileFormat(unittest.TestCase):
     """Tests can.SqliteWriter and can.SqliteReader"""
 
-    def test(self):
+    def test_writer_and_reader(self):
         _test_writer_and_reader(self, can.SqliteWriter, can.SqlReader, sleep_time=0.5)
 
 
