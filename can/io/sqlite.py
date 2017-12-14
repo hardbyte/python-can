@@ -25,6 +25,8 @@ class SqlReader:
 
     This class can be iterated over or used to fetch all messages in the
     database with :meth:`~SqlReader.read_all`.
+
+    Calling len() on this object might not run in constant time.
     """
 
     _SELECT_ALL_COMMAND = "SELECT * FROM messages"
@@ -45,6 +47,10 @@ class SqlReader:
         log.debug("Iterating through messages from sql db")
         for frame_data in self.cursor.execute(self._SELECT_ALL_COMMAND):
             yield SqlReader._create_frame_from_db_tuple(frame_data)
+
+    def __len__(self):
+        result = self.cursor.execute("SELECT COUNT(*) FROM messages")
+        return abs(int(result.fetchone()[0]))
 
     def read_all(self):
         """Fetches all messages in the database."""
