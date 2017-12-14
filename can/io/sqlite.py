@@ -1,15 +1,17 @@
 """
 Implements an SQL database writer and reader for storing CAN messages.
-"""
 
-from can.listener import BufferedReader
-from can.message import Message
+The database schema is given in the documentation of the loggers.
+"""
 
 import sys
 import time
 import threading
-import sqlite3
 import logging
+import sqlite3
+
+from can.listener import BufferedReader
+from can.message import Message
 
 log = logging.getLogger('can.io.sql')
 
@@ -18,24 +20,40 @@ if sys.version_info > (3,):
 
 
 class SqlReader:
+    """
+    Reads recorded CAN messages from a simple SQL database.
+
+    This class can be iterated over or used to fetch all messages in the
+    database with :meth:`~SqlReader.read_all`.
+    """
+
+    _SELECT_ALL_COMMAND = "SELECT * FROM messages"
+
     def __init__(self, filename):
         log.debug("Starting SqlReader with %s", filename)
-        conn = sqlite3.connect(filename)
-
-        self.cursor = conn.cursor()
-
+        self.conn = sqlite3.connect(filename)
+        self.cursor = self.conn.cursor()
 
     @staticmethod
     def _create_frame_from_db_tuple(frame_data):
-        timestamp, id, is_extended, is_remote, is_error, dlc, data = frame_data
+        timestamp, can_id, is_extended, is_remote, is_error, dlc, data = frame_data
         return Message(
-            timestamp, is_remote, is_extended, is_error, id, dlc, data
+            timestamp, is_remote, is_extended, is_error, can_id, dlc, data
         )
 
     def __iter__(self):
         log.debug("Iterating through messages from sql db")
-        for frame_data in self.cursor.execute("SELECT * FROM messages"):
+        for frame_data in self.cursor.execute(self._SELECT_ALL_COMMAND):
             yield SqlReader._create_frame_from_db_tuple(frame_data)
+
+    def read_all(self):
+        """Fetches all messages in the database."""
+        result = self.cursor.execute(self._SELECT_ALL_COMMAND)
+        return result.fetchall()
+
+    def close(self):
+        """Closes the connection to the database."""
+        self.conn.close()
 
 
 class SqliteWriter(BufferedReader):
@@ -63,10 +81,10 @@ class SqliteWriter(BufferedReader):
 
     """
 
-    insert_msg_template = '''
+    _INSERT_MSG_TEMPLATE = '''
         INSERT INTO messages VALUES
         (?, ?, ?, ?, ?, ?, ?)
-        '''
+    '''
 
     GET_MESSAGE_TIMEOUT = 0.25
     """Number of seconds to wait for messages from internal queue"""
@@ -135,7 +153,8 @@ class SqliteWriter(BufferedReader):
             if count > 0:
                 with self.conn:
                     log.debug("Writing %s frames to db", count)
-                    self.conn.executemany(SqliteWriter.insert_msg_template, messages)
+                    self.conn.executemany(SqliteWriter._INSERT_MSG_TEMPLATE, messages)
+                    self.conn.commit() # make the changes visible to the entire database
                     num_frames += count
                     last_write = time.time()
 
