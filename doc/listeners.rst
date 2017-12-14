@@ -59,7 +59,7 @@ SqliteWriter
 
 
 ASC (.asc Logging format)
----------
+-------------------------
 ASCWriter logs CAN data to an ASCII log file compatible with other CAN tools such as
 Vector CANalyzer/CANoe and other.
 Since no official specification exists for the format, it has been reverse-
@@ -77,20 +77,21 @@ as further references can-utils can be used:
 .. autoclass:: can.ASCReader
     :members:
 
+
 Log (.log can-utils Logging format)
----------
+-----------------------------------
 canutilsLogWriter logs CAN data to an ASCII log file compatible with `can-utils <https://github.com/linux-can/can-utils>`
 As specification following references can-utils can be used: 
 `asc2log <https://github.com/linux-can/can-utils/blob/master/asc2log.c>`_,
 `log2asc <https://github.com/linux-can/can-utils/blob/master/log2asc.c>`_.
 
 
-.. autoclass:: can.canutilsLogWriter
+.. autoclass:: can.io.CanutilsLogWriter
     :members:
 
 canutilsLogReader reads CAN data from ASCII log files .log 
 
-.. autoclass:: can.canutilsLogReader
+.. autoclass:: can.io.CanutilsLogReader
     :members:
 
 
