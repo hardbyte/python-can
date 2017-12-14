@@ -49,6 +49,7 @@ class SqlReader:
             yield SqlReader._create_frame_from_db_tuple(frame_data)
 
     def __len__(self):
+        # this might not run in constant time
         result = self.cursor.execute("SELECT COUNT(*) FROM messages")
         return abs(int(result.fetchone()[0]))
 
