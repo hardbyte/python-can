@@ -8,44 +8,61 @@ TIME = 1483389946.197 # some random number
 
 # List of messages of different types that can be used in tests
 TEST_MESSAGES = [
-    can.Message(),
     can.Message(
-        data=[1, 2]
+        # empty
     ),
     can.Message(
+        # only data
+        data=[0x00, 0x42]
+    ),
+    can.Message(
+        # no data
         arbitration_id=0xAB, extended_id=False
     ),
     can.Message(
+        # no data
         arbitration_id=0x42, extended_id=True
+    ),
+    can.Message(
+        # empty data
+        data=[]
     ),
     can.Message(
         arbitration_id=0xDADADA, extended_id=True, is_remote_frame=False,
         timestamp=TIME + .165,
-        data=[1, 2, 3, 4, 5, 6, 7, 8]),
+        data=[1, 2, 3, 4, 5, 6, 7, 8]
+    ),
     can.Message(
         arbitration_id=0x123, extended_id=False, is_remote_frame=False,
         timestamp=TIME + .365,
-        data=[254, 255]),
+        data=[254, 255]
+    ),
     can.Message(
         arbitration_id=0x768, extended_id=False, is_remote_frame=True,
-        timestamp=TIME + 3.165),
+        timestamp=TIME + 3.165
+    ),
     can.Message(
         is_error_frame=True,
-        timestamp=TIME + 0.170),
+        timestamp=TIME + 0.170
+    ),
     can.Message(
-        arbitration_id=0xabcdef, extended_id=True,
+        arbitration_id=0xABCDEF, extended_id=True,
         timestamp=TIME,
-        data=[1, 2, 3, 4, 5, 6, 7, 8]),
+        data=[1, 2, 3, 4, 5, 6, 7, 8]
+    ),
     can.Message(
         arbitration_id=0x123, extended_id=False,
         timestamp=TIME + 42.42,
-        data=[0xff, 0xff]),
+        data=[0xff, 0xff]
+    ),
     can.Message(
-        arbitration_id=0xabcdef, extended_id=True, is_remote_frame=True,
-        timestamp=TIME + 7858.67),
+        arbitration_id=0xABCDEF, extended_id=True, is_remote_frame=True,
+        timestamp=TIME + 7858.67
+    ),
     can.Message(
-        arbitration_id=0xabcdef, is_error_frame=True,
-        timestamp=TIME + 1.6)
+        arbitration_id=0xABCDEF, is_error_frame=True,
+        timestamp=TIME + 1.6
+    ),
 ]
 
 def _test_writer_and_reader(test_case, writer_constructor, reader_constructor, sleep_time=0):
@@ -68,9 +85,15 @@ def _test_writer_and_reader(test_case, writer_constructor, reader_constructor, s
 
     messages = list(reader_constructor(filename))
     test_case.assertEqual(len(messages), len(TEST_MESSAGES))
-    for msg1, msg2 in zip(messages, TEST_MESSAGES):
-        test_case.assertEqual(msg1, msg2)
-        test_case.assertAlmostEqual(msg1.timestamp, msg2.timestamp)
+
+    for i, (msg1, msg2) in enumerate(zip(messages, TEST_MESSAGES)):
+        try:
+            test_case.assertEqual(msg1, msg2)
+            test_case.assertAlmostEqual(msg1.timestamp, msg2.timestamp)
+        except Exception as exception:
+            # attach the index
+            exception.args += ("test failed at index #{}".format(i), )
+            raise exception
 
 
 class TestCanutilsLog(unittest.TestCase):

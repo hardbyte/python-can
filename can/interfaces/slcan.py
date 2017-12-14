@@ -63,7 +63,7 @@ class slcanBus(BusABC):
             timeout in seconds when reading message
         """
 
-        if not channel: # if not None and not empty
+        if not channel: # if None or empty
             raise TypeError("Must specify a serial port.")
 
         if '@' in channel:
