@@ -16,6 +16,9 @@ import errno
 import os
 
 log = logging.getLogger('can.socketcan.native')
+log_tx = log.getChild("tx")
+log_rx = log.getChild("rx")
+
 log.info("Loading socketcan native backend")
 
 try:
@@ -321,7 +324,6 @@ def captureMessage(sock):
         return None
 
     can_id, can_dlc, data = dissect_can_frame(cf)
-    log.debug('Received: can_id=%x, can_dlc=%x, data=%s', can_id, can_dlc, data)
 
     # Fetching the timestamp
     binary_structure = "@LL"
@@ -347,13 +349,17 @@ def captureMessage(sock):
         log.debug("CAN: Standard")
         arbitration_id = can_id & 0x000007FF
 
-    return Message(timestamp=timestamp,
-                   arbitration_id=arbitration_id,
-                   extended_id=is_extended_frame_format,
-                   is_remote_frame=is_remote_transmission_request,
-                   is_error_frame=is_error_frame,
-                   dlc=can_dlc,
-                   data=data)
+    msg = Message(timestamp=timestamp,
+                  arbitration_id=arbitration_id,
+                  extended_id=is_extended_frame_format,
+                  is_remote_frame=is_remote_transmission_request,
+                  is_error_frame=is_error_frame,
+                  dlc=can_dlc,
+                  data=data)
+
+    log_rx.debug('Received: %s', msg)
+
+    return msg
 
 
 class SocketcanNative_Bus(BusABC):
@@ -417,8 +423,7 @@ class SocketcanNative_Bus(BusABC):
         if msg.is_error_frame:
             log.warning("Trying to send an error frame - this won't work")
             arbitration_id |= 0x20000000
-        l = log.getChild("tx")
-        l.debug("sending: %s", msg)
+        log_tx.debug("Sending: %s", msg)
         if timeout:
             # Wait for write availability. send will fail below on timeout
             select.select([], [self.socket], [], timeout)
