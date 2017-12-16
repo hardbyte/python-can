@@ -4,9 +4,22 @@ logger = logging.getLogger(__name__)
 
 class Message(object):
     """
-    The :class:`~can.Message` object is used to represent CAN messages for both sending and receiving.
+    The :class:`~can.Message` object is used to represent CAN messages for
+    both sending and receiving.
 
-    Messages can use extended identifiers, be remote or error frames, and contain data.
+    Messages can use extended identifiers, be remote or error frames, contain
+    data and can be associated to a channel.
+
+    When testing for equality of the messages, the timestamp and the channel
+    is not used for comparing.
+
+    .. note::
+
+        This class does not strictly check the input. Thus, the caller must
+        prevent the creation of invalid messages. Possible problems include
+        the `dlc` field not matching the length of `data` or creating a message
+        with both `is_remote_frame` and `is_error_frame` set to True.
+
     """
 
     def __init__(self, timestamp=0.0, is_remote_frame=False, extended_id=True,
@@ -100,7 +113,7 @@ class Message(object):
     def __eq__(self, other):
         return (isinstance(other, self.__class__) and
                 self.arbitration_id == other.arbitration_id and
-                #self.timestamp == other.timestamp and # TODO: explain this
+                #self.timestamp == other.timestamp and # allow the timestamp to differ
                 self.id_type == other.id_type and
                 self.dlc == other.dlc and
                 self.data == other.data and

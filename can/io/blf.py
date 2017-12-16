@@ -10,6 +10,7 @@ which consists of a header and some zlib compressed data, usually up to 128 kB
 of uncompressed data each. This data contains the actual CAN messages and other
 objects types.
 """
+
 import struct
 import zlib
 import datetime
