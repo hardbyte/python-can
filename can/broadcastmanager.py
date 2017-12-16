@@ -88,55 +88,18 @@ class MultiRateCyclicSendTaskABC(CyclicSendTaskABC):
         super(MultiRateCyclicSendTaskABC, self).__init__(channel, message, subsequent_period)
 
 
-class ThreadBasedCyclicSendManager(object):
-    """Handles scheduling and transmission of messages using a separate thread."""
-
-    def __init__(self, send):
-        """
-        :param send:
-            A callable function to transmit one :class:`can.Message`.
-        """
-        self.send = send
-        self.scheduler = sched.scheduler(time.time, time.sleep)
-        self.thread = None
-
-    def add_task(self, task):
-        """Add task to be transmitted periodically.
-
-        :param can.broadcastmanager.ThreadBasedCyclicSendTask task:
-            Task to schedule
-        """
-        self._schedule_task(task)
-        if self.thread is None or not self.thread.is_alive():
-            self.thread = threading.Thread(target=self.scheduler.run)
-            self.thread.daemon = True
-            self.thread.start()
-
-    def _schedule_task(self, task):
-        self.scheduler.enterabs(task.next_time, task.message.arbitration_id,
-                                self._transmit, (task, ))
-
-    def _transmit(self, task):
-        self.send(task.message)
-        if not task.stopped and (task.end_time is None or
-                                 time.time() <= task.end_time):
-            task.next_time += task.period
-            self._schedule_task(task)
-
-
 class ThreadBasedCyclicSendTask(ModifiableCyclicTaskABC,
                                 LimitedDurationCyclicSendTaskABC,
                                 RestartableCyclicTaskABC):
     """Fallback cyclic send task using thread."""
 
-    def __init__(self, bus, message, period, duration=None):
+    def __init__(self, bus, lock, message, period, duration=None):
         super(ThreadBasedCyclicSendTask, self).__init__(message, period, duration)
-        if not hasattr(bus, "cyclic_manager"):
-            bus.cyclic_manager = ThreadBasedCyclicSendManager(bus.send)
         self.bus = bus
+        self.lock = lock
         self.stopped = True
-        self.next_time = time.time()
-        self.end_time = time.time() + duration - period if duration else None
+        self.thread = None
+        self.end_time = time.time() + duration if duration else None
         self.start()
 
     def stop(self):
@@ -144,7 +107,27 @@ class ThreadBasedCyclicSendTask(ModifiableCyclicTaskABC,
 
     def start(self):
         self.stopped = False
-        self.bus.cyclic_manager.add_task(self)
+        if self.thread is None or not self.thread.is_alive():
+            name = "Cyclic send task for 0x%X" % (self.message.arbitration_id)
+            self.thread = threading.Thread(target=self._run, name=name)
+            self.thread.daemon = True
+            self.thread.start()
+
+    def _run(self):
+        while not self.stopped:
+            # Prevent calling bus.send from multiple threads
+            with self.lock:
+                started = time.time()
+                try:
+                    self.bus.send(self.message)
+                except Exception as exc:
+                    log.exception(exc)
+                    break
+            if self.end_time is not None and time.time() >= self.end_time:
+                break
+            # Compensate for the time it takes to send the message
+            delay = self.period - (time.time() - started)
+            time.sleep(max(0.0, delay))
 
 
 def send_periodic(bus, message, period):
