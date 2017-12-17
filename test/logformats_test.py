@@ -80,16 +80,16 @@ def _test_writer_and_reader(test_case, writer_constructor, reader_constructor, s
         for msg, comment in zip_longest(original_messages, original_comments, fillvalue=None):
             # msg and comment might be None
             if comment is not None:
-                writer.log_event(comment) # we already know that this method exists
                 print("writing comment: ", comment)
+                writer.log_event(comment) # we already know that this method exists
             if msg is not None:
-                writer(msg)
                 print("writing message: ", msg)
+                writer(msg)
     else:
         # ony write messages
         for msg in original_messages:
-            writer(msg)
             print("writing message: ", msg)
+            writer(msg)
 
     # sleep and close the writer
     if sleep_time is not None:
