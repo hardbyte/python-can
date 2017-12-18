@@ -131,7 +131,6 @@ class TestCanutilsLog(unittest.TestCase):
                                 check_error_frames=False, # TODO this should get fixed, see Issue #217
                                 check_comments=False)
 
-
 class TestAscFileFormat(unittest.TestCase):
     """Tests can.ASCWriter and can.ASCReader"""
 
@@ -139,7 +138,6 @@ class TestAscFileFormat(unittest.TestCase):
         _test_writer_and_reader(self, can.ASCWriter, can.ASCReader,
                                 check_error_frames=False, # TODO this should get fixed, see Issue #218
                                 check_comments=True)
-
 
 class TestSqlFileFormat(unittest.TestCase):
     """Tests can.SqliteWriter and can.SqliteReader"""
@@ -198,7 +196,6 @@ class TestBlfFileFormat(unittest.TestCase):
                              extended_id=False,
                              arbitration_id=0x64,
                              data=[0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8]))
-
 
 if __name__ == '__main__':
     unittest.main()
