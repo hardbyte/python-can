@@ -30,4 +30,3 @@ class CSVWriter(Listener):
     def stop(self):
         self.csv_file.flush()
         self.csv_file.close()
-

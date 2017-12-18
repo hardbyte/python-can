@@ -25,7 +25,8 @@ from data.example_data import TEST_MESSAGES_BASE, TEST_MESSAGES_REMOTE_FRAMES, \
                               TEST_MESSAGES_ERROR_FRAMES, TEST_COMMENTS
 
 def _test_writer_and_reader(test_case, writer_constructor, reader_constructor, sleep_time=None,
-                            check_remote_frames=True, check_error_frames=True, check_comments=False):
+                            check_remote_frames=True, check_error_frames=True,
+                            check_comments=False):
     """Tests a pair of writer and reader by writing all data first and
     then reading all data and checking if they could be reconstructed
     correctly.
@@ -121,32 +122,32 @@ class TestCanutilsLog(unittest.TestCase):
 
     def test_writer_and_reader(self):
         _test_writer_and_reader(self, can.CanutilsLogWriter, can.CanutilsLogReader,
-                               check_error_frames=False, # TODO this should get fixed, see Issue #217
-                               check_comments=False)
+                                check_error_frames=False, # TODO this should get fixed, see Issue #217
+                                check_comments=False)
 
 class TestAscFileFormat(unittest.TestCase):
     """Tests can.ASCWriter and can.ASCReader"""
 
     def test_writer_and_reader(self):
         _test_writer_and_reader(self, can.ASCWriter, can.ASCReader,
-                               check_error_frames=False, # TODO this should get fixed, see Issue #218
-                               check_comments=True)
+                                check_error_frames=False, # TODO this should get fixed, see Issue #218
+                                check_comments=True)
 
 class TestSqlFileFormat(unittest.TestCase):
     """Tests can.SqliteWriter and can.SqliteReader"""
 
     def test_writer_and_reader(self):
         _test_writer_and_reader(self, can.SqliteWriter, can.SqlReader,
-                               sleep_time=0.5,
-                               check_comments=False)
+                                sleep_time=0.5,
+                                check_comments=False)
 
 class TestBlfFileFormat(unittest.TestCase):
     """Tests can.BLFWriter and can.BLFReader"""
 
     def test_writer_and_reader(self):
         _test_writer_and_reader(self, can.BLFWriter, can.BLFReader,
-                               sleep_time=None,
-                               check_comments=False)
+                                sleep_time=None,
+                                check_comments=False)
 
 
 if __name__ == '__main__':
