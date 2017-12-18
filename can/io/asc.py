@@ -36,7 +36,13 @@ class ASCReader(object):
             temp = line.strip()
             if not temp or not temp[0].isdigit():
                 continue
-            (timestamp, channel, dummy) = temp.split(None, 2) # , frameType, dlc, frameData
+
+            try:
+                (timestamp, channel, dummy) = temp.split(None, 2) # , frameType, dlc, frameData
+            except ValueError:
+                # we parsed an empty comment
+                continue
+
             timestamp = float(timestamp)
 
             if dummy.strip()[0:10] == 'ErrorFrame':
@@ -44,7 +50,7 @@ class ASCReader(object):
                 yield msg
 
             elif not channel.isdigit() or dummy.strip()[0:10] == 'Statistic:':
-                pass
+                pass # continue
 
             elif dummy[-1:].lower() == 'r':
                 (can_id_str, _) = dummy.split(None, 1)
@@ -108,6 +114,11 @@ class ASCWriter(Listener):
 
     def log_event(self, message, timestamp=None):
         """Add an arbitrary message to the log file."""
+
+        if not message: # if empty or None
+            logger.debug("ASCWriter: ignoring empty message")
+            return
+
         timestamp = (timestamp or time.time())
         if timestamp >= self.started:
             timestamp -= self.started
