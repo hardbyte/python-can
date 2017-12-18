@@ -1,10 +1,16 @@
 # -*- coding: utf-8 -*-
-from __future__ import print_function, absolute_import
 
+"""
+Contains the ABC bus implementation.
+"""
+
+from __future__ import print_function, absolute_import
 import abc
 import logging
 import threading
 from can.broadcastmanager import ThreadBasedCyclicSendTask
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -17,7 +23,6 @@ class BusABC(object):
 
     As well as setting the `channel_info` attribute to a string describing the
     interface.
-
     """
 
     #: a string describing the underlying bus channel
@@ -40,6 +45,7 @@ class BusABC(object):
         :param dict config:
             Any backend dependent configurations are passed in this dictionary
         """
+        pass
 
     @abc.abstractmethod
     def recv(self, timeout=None):
@@ -104,9 +110,10 @@ class BusABC(object):
         :yields: :class:`can.Message` msg objects.
         """
         while True:
-            m = self.recv(timeout=1.0)
-            if m is not None:
-                yield m
+            msg = self.recv(timeout=1.0)
+            if msg is not None:
+                yield msg
+        # TODO can this even be reached?
         logger.debug("done iterating over bus messages")
 
     def set_filters(self, can_filters=None):

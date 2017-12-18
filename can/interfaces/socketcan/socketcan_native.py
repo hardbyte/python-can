@@ -403,6 +403,8 @@ class SocketcanNative_Bus(BusABC):
                 # get all sockets that are ready (can be a list with a single value
                 # being self.socket or an empty list if self.socket is not ready)
                 ready_receive_sockets, _, _ = select.select([self.socket], [], [], timeout)
+            else:
+                ready_receive_sockets = True
         except OSError:
             # something bad happened (e.g. the interface went down)
             log.exception("Error while waiting for timeout")
