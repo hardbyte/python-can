@@ -28,19 +28,19 @@ Bus
 Internals
 ---------
 
-createSocket
-~~~~~~~~~~~~
+create_socket
+~~~~~~~~~~~~~
 
-.. autofunction:: can.interfaces.socketcan.socketcan_native.createSocket
-
-
-bindSocket
-~~~~~~~~~~
-
-.. autofunction:: can.interfaces.socketcan.socketcan_native.bindSocket
+.. autofunction:: can.interfaces.socketcan.socketcan_native.create_socket
 
 
-captureMessage
-~~~~~~~~~~~~~~
+bind_socket
+~~~~~~~~~~~
 
-.. autofunction:: can.interfaces.socketcan.socketcan_native.captureMessage
+.. autofunction:: can.interfaces.socketcan.socketcan_native.bind_socket
+
+
+capture_message
+~~~~~~~~~~~~~~~
+
+.. autofunction:: can.interfaces.socketcan.socketcan_native.capture_message
