@@ -378,10 +378,12 @@ class SocketcanNative_Bus(BusABC):
         self.socket = createSocket(CAN_RAW)
         self.channel = channel
 
-        # Add any socket options such as can frame filters
-        if 'can_filters' in kwargs and len(kwargs['can_filters']) > 0:
+        # add any socket options such as can frame filters
+        if 'can_filters' in kwargs and kwargs['can_filters']: # = not None or empty
             log.debug("Creating a filtered can bus")
             self.set_filters(kwargs['can_filters'])
+
+        # set the receive_own_messages paramater
         try:
             self.socket.setsockopt(socket.SOL_CAN_RAW,
                                    socket.CAN_RAW_RECV_OWN_MSGS,
@@ -396,16 +398,19 @@ class SocketcanNative_Bus(BusABC):
         self.socket.close()
 
     def recv(self, timeout=None):
-        data_ready = True
         try:
             if timeout is not None:
-                data_ready = len(select.select([self.socket], [], [], timeout)[0]) > 0
+                # get all sockets that are ready (can be a list with a single value
+                # being self.socket or an empty list if self.socket is not ready)
+                ready_receive_sockets, _, _ = select.select([self.socket], [], [], timeout)
+            else:
+                ready_receive_sockets = True
         except OSError:
             # something bad happened (e.g. the interface went down)
             log.exception("Error while waiting for timeout")
             return None
 
-        if data_ready:
+        if ready_receive_sockets: # not empty
             return captureMessage(self.socket)
         else:
             # socket wasn't readable or timeout occurred
@@ -423,14 +428,21 @@ class SocketcanNative_Bus(BusABC):
         if msg.is_error_frame:
             log.warning("Trying to send an error frame - this won't work")
             arbitration_id |= 0x20000000
-        log_tx.debug("Sending: %s", msg)
+
+        logger_tx = log.getChild("tx")
+        logger_tx.debug("sending: %s", msg)
+
         if timeout:
-            # Wait for write availability. send will fail below on timeout
-            select.select([], [self.socket], [], timeout)
+            # Wait for write availability
+            _, ready_send_sockets, _ = select.select([], [self.socket], [], timeout)
+            if not ready_send_sockets:
+                raise can.CanError("Timeout while sending")
+
         try:
             bytes_sent = self.socket.send(build_can_frame(arbitration_id, msg.data))
         except OSError as exc:
             raise can.CanError("Transmit failed (%s)" % exc)
+
         if bytes_sent == 0:
             raise can.CanError("Transmit buffer overflow")
 
@@ -447,8 +459,7 @@ class SocketcanNative_Bus(BusABC):
         filter_struct = pack_filters(can_filters)
         self.socket.setsockopt(socket.SOL_CAN_RAW,
                                socket.CAN_RAW_FILTER,
-                               filter_struct
-                               )
+                               filter_struct)
 
 
 if __name__ == "__main__":
@@ -461,15 +472,15 @@ if __name__ == "__main__":
     #     ifconfig vcan0 up
     log.setLevel(logging.DEBUG)
 
-    def receiver(e):
+    def receiver(event):
         receiver_socket = createSocket()
         bindSocket(receiver_socket, 'vcan0')
         print("Receiver is waiting for a message...")
-        e.set()
+        event.set()
         print("Receiver got: ", captureMessage(receiver_socket))
 
-    def sender(e):
-        e.wait()
+    def sender(event):
+        event.wait()
         sender_socket = createSocket()
         bindSocket(sender_socket, 'vcan0')
         sender_socket.send(build_can_frame(0x01, b'\x01\x02\x03'))
