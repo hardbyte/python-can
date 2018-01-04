@@ -68,6 +68,8 @@ The can_id/mask must be specified according to IXXAT behaviour, that is
 bit 0 of can_id/mask parameters represents the RTR field in CAN frame. See IXXAT
 VCI documentation, section "Message filters" for more info.
 
-.. hint:: Module uses ``can.ixxat`` logger and at DEBUG level logs every frame
-	sent or received. It may be too verbose for your purposes.
+.. hint::
+
+    Module uses ``can.ixxat`` logger and at DEBUG level logs every frame
+    sent or received. It may be too verbose for your purposes.
 

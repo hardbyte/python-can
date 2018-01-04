@@ -41,6 +41,6 @@ bindSocket
 
 
 captureMessage
-~~~~~~~~~~~~~
+~~~~~~~~~~~~~~
 
 .. autofunction:: can.interfaces.socketcan.socketcan_native.captureMessage
