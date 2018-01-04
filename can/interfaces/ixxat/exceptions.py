@@ -4,40 +4,25 @@ Ctypes wrapper module for IXXAT Virtual CAN Interface V3 on win32 systems
 Copyright (C) 2016 Giuseppe Corbelli <giuseppe.corbelli@weightpack.com>
 """
 
-import ctypes
-
-from . import constants
-
 from can import CanError
 
-__all__ = ['VCITimeout', 'VCIError', 'VCIDeviceNotFoundError']
+__all__ = ['VCITimeout', 'VCIError', 'VCIRxQueueEmptyError', 'VCIDeviceNotFoundError']
+
 
 class VCITimeout(CanError):
+    """ Wraps the VCI_E_TIMEOUT error """
     pass
 
 
 class VCIError(CanError):
-    " Try to display errors that occur within the wrapped C library nicely. "
+    """ Try to display errors that occur within the wrapped C library nicely. """
+    pass
 
-    _ERROR_BUFFER = ctypes.create_string_buffer(constants.VCI_MAX_ERRSTRLEN)
 
-    def __init__(self, function, HRESULT, arguments):
-        super(VCIError, self).__init__()
-        self.HRESULT = HRESULT
-        self.function = function
-        self.arguments = arguments
-
-    def __str__(self):
-        return "function {} failed - {} - arguments were {}".format(
-            self.function.__name__,
-            self.__get_error_message(),
-            self.arguments
-        )
-
-    def __get_error_message(self):
-        ctypes.memset(self._ERROR_BUFFER, 0, constants.VCI_MAX_ERRSTRLEN)
-        vciFormatError(self.HRESULT, self._ERROR_BUFFER, constants.VCI_MAX_ERRSTRLEN)
-        return "{}".format(self._ERROR_BUFFER)
+class VCIRxQueueEmptyError(VCIError):
+    """ Wraps the VCI_E_RXQUEUE_EMPTY error """
+    def __init__(self):
+        super(VCIRxQueueEmptyError, self).__init__("Receive queue is empty")
 
 
 class VCIDeviceNotFoundError(CanError):

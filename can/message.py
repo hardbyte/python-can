@@ -10,7 +10,8 @@ class Message(object):
     """
 
     def __init__(self, timestamp=0.0, is_remote_frame=False, extended_id=True,
-                 is_error_frame=False, arbitration_id=0, dlc=None, data=None):
+                 is_error_frame=False, arbitration_id=0, dlc=None, data=None,
+                 channel=None):
 
         self.timestamp = timestamp
         self.id_type = extended_id
@@ -19,18 +20,18 @@ class Message(object):
         self.is_remote_frame = is_remote_frame
         self.is_error_frame = is_error_frame
         self.arbitration_id = arbitration_id
+        self.channel = channel
 
-        #if isinstance(data, list):
-        #    data = bytes(data)
-
-        if data is None:
+        if data is None or is_remote_frame:
             self.data = bytearray()
-            self.dlc = 0
+        elif isinstance(data, bytearray):
+            self.data = data
         else:
             try:
                 self.data = bytearray(data)
             except TypeError:
-                logger.error("Couldn't create message from %r (%r)", data, type(data))
+                err = "Couldn't create message from {} ({})".format(data, type(data))
+                raise TypeError(err)
 
         if dlc is None:
             self.dlc = len(self.data)
@@ -48,25 +49,18 @@ class Message(object):
             arbitration_id_string = "ID: {0:04x}".format(self.arbitration_id)
         field_strings.append(arbitration_id_string.rjust(12, " "))
 
-        flag_string = "".join(
-            map(
-                str,
-                map(
-                    int, [
-                        self.is_remote_frame,
-                        self.id_type,
-                        self.is_error_frame,
-                    ]
-                )
-            )
-        )
+        flag_string = " ".join([
+            "X" if self.id_type else "S",
+            "E" if self.is_error_frame else " ",
+            "R" if self.is_remote_frame else " ",
+        ])
 
         field_strings.append(flag_string)
 
         field_strings.append("DLC: {0:d}".format(self.dlc))
         data_strings = []
         if self.data is not None:
-            for index in range(0, self.dlc):
+            for index in range(0, min(self.dlc, len(self.data))):
                 data_strings.append("{0:02x}".format(self.data[index]))
         if len(data_strings) > 0:
             field_strings.append(" ".join(data_strings).ljust(24, " "))
@@ -84,6 +78,12 @@ class Message(object):
     def __len__(self):
         return len(self.data)
 
+    def __bool__(self):
+        return True
+
+    def __nonzero__(self):
+        return self.__bool__()
+
     def __repr__(self):
         data = ["{:#02x}".format(byte) for byte in self.data]
         args = ["timestamp={}".format(self.timestamp),
@@ -93,10 +93,13 @@ class Message(object):
                 "arbitration_id={:#x}".format(self.arbitration_id),
                 "dlc={}".format(self.dlc),
                 "data=[{}]".format(", ".join(data))]
+        if self.channel is not None:
+            args.append("channel={}".format(self.channel))
         return "can.Message({})".format(", ".join(args))
 
     def __eq__(self, other):
-        return (self.arbitration_id == other.arbitration_id and
+        return (isinstance(other, self.__class__) and
+                self.arbitration_id == other.arbitration_id and
                 #self.timestamp == other.timestamp and
                 self.id_type == other.id_type and
                 self.dlc == other.dlc and

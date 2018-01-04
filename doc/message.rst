@@ -35,7 +35,7 @@ Message
         2\ :sup:`29` - 1 for 29-bit identifiers).
 
             >>> print(Message(extended_id=False, arbitration_id=100))
-            Timestamp:        0.000000        ID: 0064    000    DLC: 0
+            Timestamp:        0.000000        ID: 0064    S        DLC: 0
 
 
     .. attribute:: data
@@ -47,14 +47,14 @@ Message
 
             >>> example_data = bytearray([1, 2, 3])
             >>> print(Message(data=example_data))
-            0.000000    00000000    0002    3    01 02 03
+            Timestamp:        0.000000    ID: 00000000    X        DLC: 3    01 02 03
 
         A :class:`~can.Message` can also be created with bytes, or lists of ints:
 
             >>> m1 = Message(data=[0x64, 0x65, 0x61, 0x64, 0x62, 0x65, 0x65, 0x66])
             >>> print(m1.data)
             bytearray(b'deadbeef')
-            >>> m2 = can.Message(data=b'deadbeef')
+            >>> m2 = Message(data=b'deadbeef')
             >>> m2.data
             bytearray(b'deadbeef')
 
@@ -87,9 +87,9 @@ Message
         This flag controls the size of the :attr:`~can.Message.arbitration_id` field.
 
         >>> print(Message(extended_id=False))
-        Timestamp:        0.000000        ID: 0000    000    DLC: 0
+        Timestamp:        0.000000        ID: 0000    S        DLC: 0
         >>> print(Message(extended_id=True))
-        Timestamp:        0.000000    ID: 00000000    010    DLC: 0
+        Timestamp:        0.000000    ID: 00000000    X        DLC: 0
 
 
         Previously this was exposed as `id_type`.
@@ -101,6 +101,9 @@ Message
 
         This boolean parameter indicates if the message is an error frame or not.
 
+        >>> print(Message(is_error_frame=True))
+        Timestamp:        0.000000    ID: 00000000    X E      DLC: 0
+
 
     .. attribute:: is_remote_frame
 
@@ -108,6 +111,9 @@ Message
 
         This boolean attribute indicates if the message is a remote frame or a data frame, and
         modifies the bit in the CAN message's flags field indicating this.
+
+        >>> print(Message(is_remote_frame=True))
+        Timestamp:        0.000000    ID: 00000000    X   R    DLC: 0
 
 
     .. attribute:: timestamp
@@ -126,10 +132,10 @@ Message
             >>> from can import Message
             >>> test = Message()
             >>> print(test)
-            Timestamp:        0.000000    ID: 00000000    010    DLC: 0
+            Timestamp:        0.000000    ID: 00000000    X        DLC: 0
             >>> test2 = Message(data=[1, 2, 3, 4, 5])
             >>> print(test2)
-            Timestamp:        0.000000    ID: 00000000    010    DLC: 5    01 02 03 04 05
+            Timestamp:        0.000000    ID: 00000000    X        DLC: 5    01 02 03 04 05
 
         The fields in the printed message are (in order):
 
@@ -140,8 +146,15 @@ Message
         - and data.
 
 
-        The flags field is represented as a four-digit hexadecimal number. The arbitration
-        ID field as either a four or eight digit hexadecimal number depending on the length
-        of the arbitration ID (11-bit or 29-bit). Each of the bytes in the data field (when
-        present) are represented as two-digit hexadecimal numbers.
+        The flags field is represented as one, two or three letters:
 
+        - X if the :attr:`~can.Message.is_extended_id` attribute is set, otherwise S,
+        - E if the :attr:`~can.Message.is_error_frame` attribute is set,
+        - R if the :attr:`~can.Message.is_remote_frame` attribute is set.
+
+        The arbitration ID field is represented as either a four or eight digit
+        hexadecimal number depending on the length of the arbitration ID
+        (11-bit or 29-bit).
+
+        Each of the bytes in the data field (when present) are represented as
+        two-digit hexadecimal numbers.

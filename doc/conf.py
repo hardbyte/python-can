@@ -10,19 +10,19 @@ import os
 # General information about the project.
 project = u'python-can'
 
-# The version info for the project you're documenting, acts as replacement for
-# |version| and |release|, also used in various other places throughout the
-# built documents.
-#
-# The short X.Y version.
-version = '1.5'
-# The full version, including alpha/beta/rc tags.
-release = '1.5.2'
-
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath('..'))
+
+import can
+# The version info for the project, acts as replacement for
+# |version| and |release|, also used in various other places throughout the
+# built documents.
+#
+# The short X.Y version.
+version = can.__version__.split('-')[0]
+release = can.__version__
 
 # -- General configuration -----------------------------------------------------
 
@@ -39,7 +39,11 @@ extensions = ['sphinx.ext.autodoc',
 
 # Now, you can use the alias name as a new role, e.g. :issue:`123`.
 extlinks = {
-    'issue': ('https://bitbucket.org/hardbyte/python-can/issue/%s/', 'issue '),
+    'issue': ('https://github.com/hardbyte/python-can/issues/%s/', 'issue '),
+}
+
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/2/', None),
 }
 
 # If this is True, todo and todolist produce output, else they produce nothing.
@@ -98,14 +102,8 @@ autoclass_content = "both"
 # The default autodoc directive flags
 autodoc_default_flags = ['members', 'show-inheritance']
 
-# TODO: Enable links to python standard library docs
-#intersphinx_mapping = {}
-
 # Keep cached intersphinx inventories indefinitely
 intersphinx_cache_limit = -1
-
-# Include todos in the output
-todo_include_todos = True
 
 # -- Options for HTML output --------------------------------------------------
 

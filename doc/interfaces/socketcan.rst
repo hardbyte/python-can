@@ -13,6 +13,7 @@ with Python 2 and 3, and one written for future versions of Python3 which featur
 
 
 Unless you're running Python3.3 or lower the recommended backend is :doc:`socketcan_native <socketcan_native>`.
+For Python2.7 and Python3 <3.4, the available backend is :doc:`socketcan_ctypes <socketcan_ctypes>`.
 
 Socketcan Quickstart
 --------------------

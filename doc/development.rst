@@ -5,23 +5,25 @@ Developer's Overview
 Contributing
 ------------
 
-Contribute to source code, documentation, examples and report issues on bitbucket:
-https://bitbucket.org/hardbyte/python-can
+Contribute to source code, documentation, examples and report issues:
+https://github.com/hardbyte/python-can
 
 
 Creating a Release
 ------------------
 
-- Release from the ``default`` branch.
-- Update the library version in ``setup.py`` and in ``doc/conf.py`` using
-`semantic versioning <http://semver.org>`__.
+- Release from the ``master`` branch.
+- Update the library version in ``__init__.py`` using `semantic versioning <http://semver.org>`__.
 - Run all tests and examples against available hardware.
 - Update `CONTRIBUTORS.txt` with any new contributors.
 - Sanity check that documentation has stayed inline with code. For large changes update ``doc/history.rst``
 - Create a temporary virtual environment. Run ``python setup.py install`` and ``python setup.py test``
-- Create and upload the distribution: ``python setup.py sdist bdist_wheel upload --sign``
-- In a new virtual env check that the package can be installed with pip: ``pip install python-can``
+- Create and upload the distribution: ``python setup.py sdist bdist_wheel``
+- Sign the packages with gpg ``gpg --detach-sign -a dist/python_can-X.Y.Z-py3-none-any.whl``
+- Upload with twine ``twine upload dist/python-can-X.Y.Z*``
+- In a new virtual env check that the package can be installed with pip: ``pip install python-can==X.Y.Z``
 - Create a new tag in the repository.
+- Check the release on PyPi and github.
 
 
 Code Structure
@@ -33,8 +35,6 @@ The modules in ``python-can`` are:
 |Module                           | Description                                          |
 +=================================+======================================================+
 |:doc:`interfaces <interfaces>`   | Contains interface dependent code.                   |
-+---------------------------------+------------------------------------------------------+
-|:doc:`protocols <protocols>`     | Currently just the J1939 protocol exists here        |
 +---------------------------------+------------------------------------------------------+
 |:doc:`bus <bus>`                 | Contains the interface independent Bus object.       |
 +---------------------------------+------------------------------------------------------+

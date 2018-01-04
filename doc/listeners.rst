@@ -30,6 +30,9 @@ BufferedReader
 Logger
 ------
 
+The :class:`can.Logger` uses the following :class:`can.Listener` types to
+create *.asc*, *.csv* and *.db* files with the messages received.
+
 .. autoclass:: can.Logger
     :members:
 
@@ -41,27 +44,68 @@ Printer
     :members:
 
 
-
-CSVWriter & SqliteWriter
-------------------------
-
-These Listeners simply create csv and sql files with the messages received.
+CSVWriter
+---------
 
 .. autoclass:: can.CSVWriter
     :members:
+
+
+SqliteWriter
+------------
 
 .. autoclass:: can.SqliteWriter
     :members:
 
 
-ASCWriter
----------
+ASC (.asc Logging format)
+-------------------------
 
-Logs CAN data to an ASCII log file compatible with other CAN tools such as
+ASCWriter logs CAN data to an ASCII log file compatible with other CAN tools such as
 Vector CANalyzer/CANoe and other.
 Since no official specification exists for the format, it has been reverse-
 engineered from existing log files. One description of the format can be found `here
 <http://zone.ni.com/reference/en-XX/help/370859J-01/dlgcanconverter/dlgcanconverter/canconverter_ascii_logfiles/>`_.
 
 .. autoclass:: can.ASCWriter
+    :members:
+
+ASCReader reads CAN data from ASCII log files .asc 
+as further references can-utils can be used: 
+`asc2log <https://github.com/linux-can/can-utils/blob/master/asc2log.c>`_,
+`log2asc <https://github.com/linux-can/can-utils/blob/master/log2asc.c>`_.
+
+.. autoclass:: can.ASCReader
+    :members:
+
+Log (.log can-utils Logging format)
+-----------------------------------
+
+CanutilsLogWriter logs CAN data to an ASCII log file compatible with `can-utils <https://github.com/linux-can/can-utils>`
+As specification following references can-utils can be used: 
+`asc2log <https://github.com/linux-can/can-utils/blob/master/asc2log.c>`_,
+`log2asc <https://github.com/linux-can/can-utils/blob/master/log2asc.c>`_.
+
+
+.. autoclass:: can.io.CanutilsLogWriter
+    :members:
+
+CanutilsLogReader reads CAN data from ASCII log files .log
+
+.. autoclass:: can.io.CanutilsLogReader
+    :members:
+
+
+BLF (Binary Logging Format)
+---------------------------
+
+Implements support for BLF (Binary Logging Format) which is a proprietary
+CAN log format from Vector Informatik GmbH.
+
+The data is stored in a compressed format which makes it very compact.
+
+.. autoclass:: can.BLFWriter
+    :members:
+
+.. autoclass:: can.BLFReader
     :members:

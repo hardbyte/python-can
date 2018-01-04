@@ -1,32 +1,35 @@
 """
 python-can requires the setuptools package to be installed.
 """
-
+import re
+import logging
 from setuptools import setup, find_packages
 
-__version__ = "1.5.2"
+with open('can/__init__.py', 'r') as fd:
+    version = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
+                        fd.read(), re.MULTILINE).group(1)
 
-import logging
+
 logging.basicConfig(level=logging.WARNING)
 
 setup(
     name="python-can",
-    url="https://bitbucket.org/hardbyte/python-can",
-    version=__version__,
+    url="https://github.com/hardbyte/python-can",
+    version=version,
     packages=find_packages(),
     author="Brian Thorne",
-    author_email="hardbyte@gmail.com",
+    author_email="brian@thorne.link",
     description="Controller Area Network interface module for Python",
-    long_description=open('README').read(),
+    long_description=open('README.rst').read(),
     license="LGPL v3",
     package_data={
         "": ["CONTRIBUTORS.txt", "LICENSE.txt"],
         "doc": ["*.*"]
     },
-
-    scripts=["./bin/can_logger.py", './bin/j1939_logger.py'],
-
     # Tests can be run using `python setup.py test`
     test_suite="nose.collector",
-    tests_require=['mock', 'nose']
+    tests_require=['mock', 'nose', 'pyserial'],
+    extras_require={
+        'serial': ['pyserial']
+    }
 )

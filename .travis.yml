@@ -1,0 +1,17 @@
+language: python
+sudo: false
+python:
+  - "2.7"
+  - "pypy"
+  - "pypy3"
+  - "3.4"
+  - "3.5"
+  - "3.6"
+  - "3.7-dev"
+  - "nightly"
+install:
+  - travis_retry pip install .
+  - travis_retry pip install -r requirements.txt
+
+script:
+  - py.test -v

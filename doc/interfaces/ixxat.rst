@@ -11,19 +11,44 @@ Interface to `IXXAT <http://www.ixxat.com/>`__ Virtual CAN Interface V3 SDK. Wor
 
     The Linux ECI SDK is currently unsupported, however on Linux some devices are supported with :doc:`socketcan`.
 
+The :meth:`~can.interfaces.ixxat.IXXATBus.send_periodic` method is supported
+natively through the on-board cyclic transmit list.
+Modifying cyclic messages is not possible. You will need to stop it, then
+start a new periodic message.
+
 
 Bus
 ---
 
-.. autoclass:: can.interfaces.ixxat.Bus
+.. autoclass:: can.interfaces.ixxat.IXXATBus
 
-.. autoclass:: can.interfaces.ixxat.canlib.IXXATBus
+.. autoclass:: can.interfaces.ixxat.canlib.CyclicSendTask
+
+
+
+Configuration file
+------------------
+The simplest configuration file would be::
+
+    [default]
+    interface = ixxat
+    channel = 0
+
+Python-can will search for the first IXXAT device available and open the first channel.
+``interface`` and ``channel`` parameters are interpreted by frontend ``can.interfaces.interface``
+module, while the following parameters are optional and are interpreted by IXXAT implementation.
+
+* ``bitrate`` (default 500000) Channel bitrate
+* ``UniqueHardwareId`` (default first device) Unique hardware ID of the IXXAT device
+* ``rxFifoSize`` (default 16) Number of RX mailboxes
+* ``txFifoSize`` (default 16) Number of TX mailboxes
+* ``extended`` (default False) Allow usage of extended IDs
 
 
 Internals
 ---------
 
-The IXXAT :class:`~can.Bus` object is a farly straightforward interface
+The IXXAT :class:`~can.BusABC` object is a farly straightforward interface
 to the IXXAT VCI library. It can open a specific device ID or use the
 first one found.
 
@@ -43,6 +68,8 @@ The can_id/mask must be specified according to IXXAT behaviour, that is
 bit 0 of can_id/mask parameters represents the RTR field in CAN frame. See IXXAT
 VCI documentation, section "Message filters" for more info.
 
-.. hint:: Module uses ``can.ixxat`` logger and at DEBUG level logs every frame
-	sent or received. It may be too verbose for your purposes.
+.. hint::
+
+    Module uses ``can.ixxat`` logger and at DEBUG level logs every frame
+    sent or received. It may be too verbose for your purposes.
 
