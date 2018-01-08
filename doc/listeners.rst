@@ -100,7 +100,8 @@ as further references can-utils can be used:
 
 Log (.log can-utils Logging format)
 -----------------------------------
-canutilsLogWriter logs CAN data to an ASCII log file compatible with `can-utils <https://github.com/linux-can/can-utils>`
+
+CanutilsLogWriter logs CAN data to an ASCII log file compatible with `can-utils <https://github.com/linux-can/can-utils>`
 As specification following references can-utils can be used: 
 `asc2log <https://github.com/linux-can/can-utils/blob/master/asc2log.c>`_,
 `log2asc <https://github.com/linux-can/can-utils/blob/master/log2asc.c>`_.
@@ -109,7 +110,7 @@ As specification following references can-utils can be used:
 .. autoclass:: can.io.CanutilsLogWriter
     :members:
 
-canutilsLogReader reads CAN data from ASCII log files .log 
+CanutilsLogReader reads CAN data from ASCII log files .log
 
 .. autoclass:: can.io.CanutilsLogReader
     :members:

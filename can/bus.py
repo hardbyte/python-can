@@ -3,7 +3,8 @@ from __future__ import print_function, absolute_import
 
 import abc
 import logging
-from can.broadcastmanager import ThreadBasedCyclicSendManager, ThreadBasedCyclicSendTask
+import threading
+from can.broadcastmanager import ThreadBasedCyclicSendTask
 logger = logging.getLogger(__name__)
 
 
@@ -88,7 +89,10 @@ class BusABC(object):
             least *duration* seconds.
 
         """
-        return ThreadBasedCyclicSendTask(self, msg, period, duration)
+        if not hasattr(self, "_lock"):
+            # Create send lock for this bus
+            self._lock = threading.Lock()
+        return ThreadBasedCyclicSendTask(self, self._lock, msg, period, duration)
 
     def __iter__(self):
         """Allow iteration on messages as they are received.
