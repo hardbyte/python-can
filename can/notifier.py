@@ -1,4 +1,7 @@
 import threading
+import logging
+
+logger = logging.getLogger('can.Notifier')
 
 
 class Notifier(object):
@@ -23,7 +26,6 @@ class Notifier(object):
 
         self._reader = threading.Thread(target=self.rx_thread, name="can.notifier")
         self._reader.daemon = True
-
         self._reader.start()
 
     def stop(self):
