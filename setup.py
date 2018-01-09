@@ -30,6 +30,7 @@ setup(
     test_suite="nose.collector",
     tests_require=['mock', 'nose', 'pyserial'],
     extras_require={
-        'serial': ['pyserial']
+        'serial': ['pyserial'],
+        'icsneovi': ['python-ics'],
     }
 )
