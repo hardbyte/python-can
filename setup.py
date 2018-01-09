@@ -29,6 +29,7 @@ setup(
     # Tests can be run using `python setup.py test`
     test_suite="nose.collector",
     tests_require=['mock', 'nose', 'pyserial'],
+    install_requires=['pluggy'],
     extras_require={
         'serial': ['pyserial'],
         'neovi': ['python-ics'],
