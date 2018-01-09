@@ -20,7 +20,7 @@ The available interfaces are:
    interfaces/usb2can
    interfaces/nican
    interfaces/iscan
-   interfaces/neovi
+   interfaces/ics_neovi
    interfaces/vector
    interfaces/virtual
 
