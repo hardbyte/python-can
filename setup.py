@@ -31,6 +31,6 @@ setup(
     tests_require=['mock', 'nose', 'pyserial'],
     extras_require={
         'serial': ['pyserial'],
-        'icsneovi': ['python-ics'],
+        'neovi': ['python-ics'],
     }
 )

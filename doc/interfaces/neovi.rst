@@ -1,4 +1,4 @@
-ICSNEOVI Interface
+NEOVI Interface
 ==================
 
 .. warning::
@@ -14,7 +14,7 @@ wrapper on Windows.
 
 Installation
 ------------
-This icsneovi interface requires the installation of the ICS neoVI DLL and python-ics
+This neovi interface requires the installation of the ICS neoVI DLL and python-ics
 package.
 
 - Download and install the Intrepid Product Drivers
@@ -34,7 +34,7 @@ An example `can.ini` file for windows 7:
 ::
 
     [default]
-    interface = icsneovi
+    interface = neovi
     channel = 1
 
 
