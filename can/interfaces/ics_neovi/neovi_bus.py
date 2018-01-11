@@ -9,11 +9,7 @@ Implementation references:
 """
 
 import logging
-
-try:
-    import queue
-except ImportError:
-    import Queue as queue
+from collections import deque
 
 from can import Message
 from can.bus import BusABC
@@ -22,10 +18,10 @@ logger = logging.getLogger(__name__)
 
 try:
     import ics
-except ImportError:
-    logger.error(
+except ImportError as ie:
+    logger.warning(
         "You won't be able to use the ICS NeoVi can backend without the "
-        "python-ics module installed!"
+        "python-ics module installed!: %s", ie
     )
     ics = None
 
@@ -52,7 +48,7 @@ class NeoViBus(BusABC):
         """
         super(NeoViBus, self).__init__(channel, can_filters, **config)
         if ics is None:
-            raise Exception('Please install python-ics')
+            raise ImportError('Please install python-ics')
 
         logger.info("CAN Filters: {}".format(can_filters))
         logger.info("Got configuration of: {}".format(config))
@@ -61,6 +57,7 @@ class NeoViBus(BusABC):
             config.get('use_system_timestamp', False)
         )
 
+        # TODO: Add support for multiples channels
         try:
             channel = int(channel)
         except ValueError:
@@ -81,7 +78,7 @@ class NeoViBus(BusABC):
 
         self.sw_filters = None
         self.set_filters(can_filters)
-        self.rx_buffer = queue.Queue()
+        self.rx_buffer = deque()
         self.opened = True
 
         self.network = int(channel) if channel is not None else None
@@ -129,14 +126,9 @@ class NeoViBus(BusABC):
         for ics_msg in messages:
             if ics_msg.NetworkID != self.network:
                 continue
-            if ics_msg.ArbIDOrHeader == 0:
-                # Looks like ICS device sends frames with ArbIDOrHeader = 0
-                # Need to find out exactly what they are for
-                # Filtering them for now
-                continue
             if not self._is_filter_match(ics_msg.ArbIDOrHeader):
                 continue
-            self.rx_buffer.put(ics_msg)
+            self.rx_buffer.append(ics_msg)
         if errors:
             logger.warning("%d errors found" % errors)
 
@@ -196,18 +188,21 @@ class NeoViBus(BusABC):
             ),
             is_remote_frame=bool(
                 ics_msg.StatusBitField & ics.SPY_STATUS_REMOTE_FRAME
-            )
+            ),
+            channel=ics_msg.NetworkID
         )
 
     def recv(self, timeout=None):
-        try:
+        msg = None
+        if not self.rx_buffer:
             self._process_msg_queue(timeout=timeout)
-            ics_msg = self.rx_buffer.get_nowait()
-            self.rx_buffer.task_done()
-            return self._ics_msg_to_message(ics_msg)
-        except queue.Empty:
+
+        try:
+            ics_msg = self.rx_buffer.popleft()
+            msg = self._ics_msg_to_message(ics_msg)
+        except IndexError:
             pass
-        return None
+        return msg
 
     def send(self, msg, timeout=None):
         if not self.opened:
