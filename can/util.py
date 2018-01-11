@@ -156,7 +156,7 @@ def load_config(path=None, config=None):
         system_config['interface'] = choose_socketcan_implementation()
 
     if system_config['interface'] not in VALID_INTERFACES:
-        raise NotImplementedError('Invalid CAN Bus Type - {}'.format(can.rc['interface']))
+        raise NotImplementedError('Invalid CAN Bus Type - {}'.format(system_config['interface']))
 
     if 'bitrate' in system_config:
         system_config['bitrate'] = int(system_config['bitrate'])
