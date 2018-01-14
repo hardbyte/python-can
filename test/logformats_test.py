@@ -82,17 +82,14 @@ def _test_writer_and_reader(test_case, writer_constructor, reader_constructor, s
             if comment is not None:
                 print("writing comment: ", comment)
                 writer.log_event(comment) # we already know that this method exists
-                print("writing comment: ", comment)
             if msg is not None:
                 print("writing message: ", msg)
                 writer(msg)
-                print("writing message: ", msg)
     else:
         # ony write messages
         for msg in original_messages:
             print("writing message: ", msg)
             writer(msg)
-            print("writing message: ", msg)
 
     # sleep and close the writer
     if sleep_time is not None:
