@@ -1,6 +1,7 @@
 """
 Interface for slcan compatible interfaces (win32/linux).
-(Linux could use slcand/socketcan as well).
+
+Note Linux users can use slcand/socketcan as well.
 """
 
 from __future__ import absolute_import
@@ -14,6 +15,7 @@ import serial
 from can import BusABC, Message
 
 logger = logging.getLogger(__name__)
+
 
 class slcanBus(BusABC):
     """
@@ -73,7 +75,6 @@ class slcanBus(BusABC):
         self.serialPort = io.TextIOWrapper(io.BufferedRWPair(self.serialPortOrig, self.serialPortOrig, 1),
                                            newline='\r', line_buffering=True)
 
-        # why do we sleep here?
         time.sleep(self._SLEEP_AFTER_SERIAL_OPEN)
 
         if bitrate is not None:
@@ -81,7 +82,6 @@ class slcanBus(BusABC):
             if bitrate in self._BITRATES:
                 self.write(self._BITRATES[bitrate])
             else:
-                # this only prints the keys of the dict
                 raise ValueError("Invalid bitrate, choose one of " + (', '.join(self._BITRATES)) + '.')
 
         self.open()
@@ -93,27 +93,31 @@ class slcanBus(BusABC):
 
         canId = None
         remote = False
+        extended = False
         frame = []
         readStr = self.serialPort.readline()
-        if not readStr: # if not None and not empty
+        if not readStr:
             return None
         else:
-            if readStr[0] == 'T':   # extended frame
+            if readStr[0] == 'T':
+                # extended frame
                 canId = int(readStr[1:9], 16)
                 dlc = int(readStr[9])
                 extended = True
                 for i in range(0, dlc):
                     frame.append(int(readStr[10 + i * 2:12 + i * 2], 16))
-            elif readStr[0] == 't': # normal frame
+            elif readStr[0] == 't':
+                # normal frame
                 canId = int(readStr[1:4], 16)
                 dlc = int(readStr[4])
                 for i in range(0, dlc):
                     frame.append(int(readStr[5 + i * 2:7 + i * 2], 16))
-                extended = False
-            elif readStr[0] == 'r': # remote frame
+            elif readStr[0] == 'r':
+                # remote frame
                 canId = int(readStr[1:4], 16)
                 remote = True
-            elif readStr[0] == 'R': # remote extended frame
+            elif readStr[0] == 'R':
+                # remote extended frame
                 canId = int(readStr[1:9], 16)
                 extended = True
                 remote = True
