@@ -12,12 +12,12 @@ https://github.com/hardbyte/python-can
 Building & Installing
 ---------------------
 
-This assumes that the commands are executed from the root of the repository.
+This assumes that the commands are executed from the root of the repository:
 
-The project can be built and installed with ``python setup.py build`` and
+- The project can be built and installed with ``python setup.py build`` and
 ``python setup.py install``.
-The unit tests can be run with ``python setup.py test``.
-The docs can be built with ``sphinx-build doc/ doc/_build``.
+- The unit tests can be run with ``python setup.py test``. The tests can be run with `python2` and `python3` to check with both major python versions, if they are installed.
+- The docs can be built with ``sphinx-build doc/ doc/_build``.
 
 
 Creating a Release
