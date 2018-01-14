@@ -1,4 +1,7 @@
 import threading
+import logging
+
+logger = logging.getLogger('can.Notifier')
 
 
 class Notifier(object):
@@ -14,15 +17,15 @@ class Notifier(object):
         self.listeners = listeners
         self.bus = bus
         self.timeout = timeout
-        #: Exception raised in thread
+
+        # exception raised in thread
         self.exception = None
 
         self.running = threading.Event()
         self.running.set()
 
-        self._reader = threading.Thread(target=self.rx_thread)
+        self._reader = threading.Thread(target=self.rx_thread, name="can.notifier")
         self._reader.daemon = True
-
         self._reader.start()
 
     def stop(self):
