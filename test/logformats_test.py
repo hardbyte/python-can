@@ -61,6 +61,7 @@ TEST_MESSAGES = [
     )
 ]
 
+
 def _test_writer_and_reader(test_case, writer_constructor, reader_constructor, sleep_time=0):
     """Tests a pair of writer and reader.
 
@@ -98,17 +99,19 @@ class TestCanutilsLog(unittest.TestCase):
     def test_writer_and_reader(self):
         _test_writer_and_reader(self, can.CanutilsLogWriter, can.CanutilsLogReader)
 
+
 class TestAscFileFormat(unittest.TestCase):
     """Tests can.ASCWriter and can.ASCReader"""
 
     def test_writer_and_reader(self):
         _test_writer_and_reader(self, can.ASCWriter, can.ASCReader)
 
+
 class TestSqlFileFormat(unittest.TestCase):
     """Tests can.SqliteWriter and can.SqliteReader"""
 
     def test_writer_and_reader(self):
-        _test_writer_and_reader(self, can.SqliteWriter, can.SqlReader, sleep_time=0.5)
+        _test_writer_and_reader(self, can.SqliteWriter, can.SqlReader, sleep_time=5)
 
 
 if __name__ == '__main__':
