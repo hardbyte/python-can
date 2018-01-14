@@ -20,4 +20,4 @@ Bus
 Internals
 ---------
 
-.. TODO:: Implement and document slcan interface.
+.. TODO:: Document internals of slcan interface.

@@ -62,7 +62,7 @@ class Message(object):
         if self.data is not None:
             for index in range(0, min(self.dlc, len(self.data))):
                 data_strings.append("{0:02x}".format(self.data[index]))
-        if len(data_strings) > 0:
+        if data_strings: # if not empty
             field_strings.append(" ".join(data_strings).ljust(24, " "))
         else:
             field_strings.append(" " * 24)
@@ -70,7 +70,7 @@ class Message(object):
         if (self.data is not None) and (self.data.isalnum()):
             try:
                 field_strings.append("'{}'".format(self.data.decode('utf-8')))
-            except UnicodeError as e:
+            except UnicodeError:
                 pass
 
         return "    ".join(field_strings).strip()
@@ -100,9 +100,23 @@ class Message(object):
     def __eq__(self, other):
         return (isinstance(other, self.__class__) and
                 self.arbitration_id == other.arbitration_id and
-                #self.timestamp == other.timestamp and
+                #self.timestamp == other.timestamp and # TODO: explain this
                 self.id_type == other.id_type and
                 self.dlc == other.dlc and
                 self.data == other.data and
                 self.is_remote_frame == other.is_remote_frame and
                 self.is_error_frame == other.is_error_frame)
+
+    def __hash__(self):
+        return hash((
+            self.arbitration_id,
+            # self.timestamp # excluded, like in self.__eq__(self, other)
+            self.id_type,
+            self.dlc,
+            self.data,
+            self.is_remote_frame,
+            self.is_error_frame
+        ))
+
+    def __format__(self, format_spec):
+        return self.__str__()

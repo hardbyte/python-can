@@ -57,10 +57,29 @@ SqliteWriter
 .. autoclass:: can.SqliteWriter
     :members:
 
+Database table format
+~~~~~~~~~~~~~~~~~~~~~
+
+The messages are written to the table ``messages`` in the sqlite database.
+The table is created if it does not already exist.
+
+The entries are as follows:
+
+==============  ==============  ==============
+Name            Data type       Note
+--------------  --------------  --------------
+ts              REAL            The timestamp of the message
+arbitration_id  INTEGER         The arbitration id, might use the extended format
+extended        INTEGER         ``1`` if the arbitration id uses the extended format, else ``0``
+remote          INTEGER         ``1`` if the message is a remote frame, else ``0``
+error           INTEGER         ``1`` if the message is an error frame, else ``0``
+dlc             INTEGER         The data length code (DLC)
+data            BLOB            The content of the message
+==============  ==============  ==============
+
 
 ASC (.asc Logging format)
 -------------------------
-
 ASCWriter logs CAN data to an ASCII log file compatible with other CAN tools such as
 Vector CANalyzer/CANoe and other.
 Since no official specification exists for the format, it has been reverse-
@@ -77,6 +96,7 @@ as further references can-utils can be used:
 
 .. autoclass:: can.ASCReader
     :members:
+
 
 Log (.log can-utils Logging format)
 -----------------------------------
