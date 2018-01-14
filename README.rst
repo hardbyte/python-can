@@ -46,3 +46,8 @@ questions and answers tagged with ``python+can``.
 
 Wherever we interact, we strive to follow the
 `Python Community Code of Conduct <https://www.python.org/psf/codeofconduct/>`__.
+
+Contributing
+------------
+
+See `doc/development.rst` for getting started.
