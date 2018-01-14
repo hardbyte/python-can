@@ -29,10 +29,6 @@ class ListenerImportTest(unittest.TestCase):
         self.assertTrue(hasattr(can, 'CanutilsLogWriter'))
         self.assertTrue(hasattr(can, 'SqlReader'))
         # TODO add more?
-<<<<<<< HEAD
-=======
-
->>>>>>> 5b629f9f47c4deb50b90b49303238fc17dca8893
 
 class BusTest(unittest.TestCase):
 

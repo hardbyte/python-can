@@ -119,10 +119,6 @@ TEST_COMMENTS = [
     ),
 ]
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 5b629f9f47c4deb50b90b49303238fc17dca8893
 def generate_message(arbitration_id):
     """
     Generates a new message with the given ID, some random data
