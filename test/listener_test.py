@@ -161,31 +161,6 @@ class ListenerTest(BusTest):
             output_contents = f.read()
 
         self.assertTrue('This is some comment' in output_contents)
-        print("Output from ASCWriter:")
-        print(output_contents)
-
-
-class FileReaderTest(BusTest):
-
-    def test_sql_reader(self):
-        f = tempfile.NamedTemporaryFile('w', delete=False)
-        f.close()
-        a_listener = can.SqliteWriter(f.name)
-        a_listener(generate_message(0xDADADA))
-
-        sleep(a_listener.MAX_TIME_BETWEEN_WRITES)
-        while not a_listener.buffer.empty():
-            sleep(0.1)
-        a_listener.stop()
-
-        reader = can.SqlReader(f.name)
-
-        ms = []
-        for m in reader:
-            ms.append(m)
-
-        self.assertEqual(len(ms), 1)
-        self.assertEqual(0xDADADA, ms[0].arbitration_id)
 
 
 class BLFTest(unittest.TestCase):

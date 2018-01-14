@@ -1,84 +1,88 @@
 """
 Interface for slcan compatible interfaces (win32/linux).
-(Linux could use slcand/socketcan also).
+(Linux could use slcand/socketcan as well).
 """
+
 from __future__ import absolute_import
 
-import serial
 import io
 import time
 import logging
 
-from can import CanError, BusABC, Message
+import serial
 
+from can import BusABC, Message
 
 logger = logging.getLogger(__name__)
 
 class slcanBus(BusABC):
-    """slcan interface"""
+    """
+    slcan interface
+    """
 
-    def write(self, str):
-        if not str.endswith("\r"):
-            str += "\r"
-        self.serialPort.write(str.decode())
+    # the supported bitrates and their commands
+    _BITRATES = {
+        10000:      'S0',
+        20000:      'S1',
+        50000:      'S2',
+        100000:     'S3',
+        125000:     'S4',
+        250000:     'S5',
+        500000:     'S6',
+        750000:     'S7',
+        1000000:    'S8',
+        83300:      'S9'
+    }
+
+    _SLEEP_AFTER_SERIAL_OPEN = 2 # in seconds
+
+    def write(self, string):
+        if not string.endswith('\r'):
+            string += '\r'
+        self.serialPort.write(string.decode())
         self.serialPort.flush()
 
     def open(self):
-        self.write("O")
+        self.write('O')
 
     def close(self):
-        self.write("C")
+        self.write('C')
 
-
-    def __init__(self, channel, ttyBaudrate=115200, timeout=1, bitrate=None , **kwargs):
+    def __init__(self, channel, ttyBaudrate=115200, timeout=1, bitrate=None, **kwargs):
         """
         :param string channel:
             port of underlying serial or usb device (e.g. /dev/ttyUSB0, COM8, ...)
+            Must not be empty.
         :param int ttyBaudrate:
             baudrate of underlying serial or usb device
         :param int bitrate:
             Bitrate in bits/s
         :param float poll_interval:
             Poll interval in seconds when reading messages
-        :param float timeout
+        :param float timeout:
             timeout in seconds when reading message
         """
 
-
-        if channel == '':
+        if not channel: # if None or empty
             raise TypeError("Must specify a serial port.")
+
         if '@' in channel:
             (channel, ttyBaudrate) = channel.split('@')
 
         self.serialPortOrig = serial.Serial(channel, baudrate=ttyBaudrate, timeout=timeout)
         self.serialPort = io.TextIOWrapper(io.BufferedRWPair(self.serialPortOrig, self.serialPortOrig, 1),
-                                               newline='\r', line_buffering=True)
+                                           newline='\r', line_buffering=True)
 
-        time.sleep(2)
+        # why do we sleep here?
+        time.sleep(self._SLEEP_AFTER_SERIAL_OPEN)
+
         if bitrate is not None:
             self.close()
-            if bitrate == 10000:
-                self.write('S0')
-            elif bitrate == 20000:
-                self.write('S1')
-            elif bitrate == 50000:
-                self.write('S2')
-            elif bitrate == 100000:
-                self.write('S3')
-            elif bitrate == 125000:
-                self.write('S4')
-            elif bitrate == 250000:
-                self.write('S5')
-            elif bitrate == 500000:
-                self.write('S6')
-            elif bitrate == 750000:
-                self.write('S7')
-            elif bitrate == 1000000:
-                self.write('S8')
-            elif bitrate == 83300:
-                self.write('S9')
+            if bitrate in self._BITRATES:
+                self.write(self._BITRATES[bitrate])
             else:
-                raise ValueError("Invalid bitrate, choose one of 10000 20000 50000 100000 125000 250000 500000 750000 1000000 83300")
+                # this only prints the keys of the dict
+                raise ValueError("Invalid bitrate, choose one of " + (', '.join(self._BITRATES)) + '.')
 
         self.open()
         super(slcanBus, self).__init__(channel, **kwargs)
@@ -91,25 +95,25 @@ class slcanBus(BusABC):
         remote = False
         frame = []
         readStr = self.serialPort.readline()
-        if readStr is None or len(readStr) == 0:
+        if not readStr: # if not None and not empty
             return None
         else:
-            if readStr[0] == 'T':  # entended frame
+            if readStr[0] == 'T':   # extended frame
                 canId = int(readStr[1:9], 16)
                 dlc = int(readStr[9])
                 extended = True
                 for i in range(0, dlc):
                     frame.append(int(readStr[10 + i * 2:12 + i * 2], 16))
-            elif readStr[0] == 't':  # normal frame
+            elif readStr[0] == 't': # normal frame
                 canId = int(readStr[1:4], 16)
                 dlc = int(readStr[4])
                 for i in range(0, dlc):
                     frame.append(int(readStr[5 + i * 2:7 + i * 2], 16))
                 extended = False
-            elif readStr[0] == 'r':  # remote frame
+            elif readStr[0] == 'r': # remote frame
                 canId = int(readStr[1:4], 16)
                 remote = True
-            elif readStr[0] == 'R':  # remote extended frame
+            elif readStr[0] == 'R': # remote extended frame
                 canId = int(readStr[1:9], 16)
                 extended = True
                 remote = True
@@ -139,7 +143,6 @@ class slcanBus(BusABC):
             for i in range(0, msg.dlc):
                 sendStr += "%02X" % msg.data[i]
         self.write(sendStr)
-
 
     def shutdown(self):
         self.close()
