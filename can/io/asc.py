@@ -8,7 +8,8 @@ from can.message import Message
 CAN_MSG_EXT = 0x80000000
 CAN_ID_MASK = 0x1FFFFFFF
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('can.io.asc')
+
 
 class ASCReader(object):
     """
@@ -26,12 +27,12 @@ class ASCReader(object):
         else:
             is_extended = False
             can_id = int(str_can_id, 16)
-        #logging.debug('ASCReader: _extract_can_id("%s") -> %x, %r', str_can_id, can_id, is_extended)
+        logging.debug('ASCReader: _extract_can_id("%s") -> %x, %r', str_can_id, can_id, is_extended)
         return (can_id, is_extended)
 
     def __iter__(self):
         for line in self.file:
-            #logger.debug("ASCReader: parsing line: '%s'", line.splitlines()[0])
+            logger.debug("ASCReader: parsing line: '%s'", line.splitlines()[0])
 
             temp = line.strip()
             if not temp or not temp[0].isdigit():
