@@ -1,11 +1,11 @@
 """
-This test module test theseparatent reader/writer combinations of the can.io.*
+This test module test the separate reader/writer combinations of the can.io.*
 modules by writing some messages to a temporary file and reading it again.
-Then it checks if the messages that ware read are same ones as the
+Then it checks if the messages that were read are same ones as the
 ones that were written. It also checks that the order of the messages
 is correct. The types of messages that are tested differs between the
-different writer/reader pairs and one some, comments are inserted and read
-again.
+different writer/reader pairs - e.g., some don't handle error frames and
+comments.
 """
 
 import unittest
@@ -26,6 +26,7 @@ import can
 from data.example_data import TEST_MESSAGES_BASE, TEST_MESSAGES_REMOTE_FRAMES, \
                               TEST_MESSAGES_ERROR_FRAMES, TEST_COMMENTS, \
                               generate_message
+
 
 def _test_writer_and_reader(test_case, writer_constructor, reader_constructor, sleep_time=None,
                             check_remote_frames=True, check_error_frames=True,
@@ -181,6 +182,7 @@ class TestSqlFileFormat(unittest.TestCase):
 
         self.assertEqual(msg1[1], 0x01)
         self.assertEqual(msg2[1], 0x02)
+
 
 class TestBlfFileFormat(unittest.TestCase):
     """Tests can.BLFWriter and can.BLFReader"""
