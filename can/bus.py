@@ -1,4 +1,9 @@
 # -*- coding: utf-8 -*-
+
+"""
+Contains the ABC bus implementation.
+"""
+
 from __future__ import print_function, absolute_import
 
 import abc
@@ -104,10 +109,9 @@ class BusABC(object):
         :yields: :class:`can.Message` msg objects.
         """
         while True:
-            m = self.recv(timeout=1.0)
-            if m is not None:
-                yield m
-        logger.debug("done iterating over bus messages")
+            msg = self.recv(timeout=1.0)
+            if msg is not None:
+                yield msg
 
     def set_filters(self, can_filters=None):
         """Apply filtering to all messages received by this Bus.
