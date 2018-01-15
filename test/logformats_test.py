@@ -98,6 +98,7 @@ def _test_writer_and_reader(test_case, writer_constructor, reader_constructor, s
     # sleep and close the writer
     if sleep_time is not None:
         sleep(sleep_time)
+
     writer.stop()
 
     # read all written messages
@@ -135,6 +136,7 @@ class TestCanutilsLog(unittest.TestCase):
                                 check_error_frames=False, # TODO this should get fixed, see Issue #217
                                 check_comments=False)
 
+
 class TestAscFileFormat(unittest.TestCase):
     """Tests can.ASCWriter and can.ASCReader"""
 
@@ -143,12 +145,13 @@ class TestAscFileFormat(unittest.TestCase):
                                 check_error_frames=False, # TODO this should get fixed, see Issue #218
                                 check_comments=True)
 
+
 class TestSqlFileFormat(unittest.TestCase):
     """Tests can.SqliteWriter and can.SqliteReader"""
 
     def test_writer_and_reader(self):
         _test_writer_and_reader(self, can.SqliteWriter, can.SqlReader,
-                                sleep_time=0.5,
+                                sleep_time=can.SqliteWriter.MAX_TIME_BETWEEN_WRITES,
                                 check_comments=False)
 
     def testSQLWriterWritesToSameFile(self):
@@ -201,6 +204,7 @@ class TestBlfFileFormat(unittest.TestCase):
                              extended_id=False,
                              arbitration_id=0x64,
                              data=[0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8]))
+
 
 if __name__ == '__main__':
     unittest.main()
