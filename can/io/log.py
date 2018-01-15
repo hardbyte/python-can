@@ -8,6 +8,7 @@ CAN_ERR_FLAG = 0x20000000
 CAN_ERR_BUSERROR = 0x00000080
 CAN_ERR_DLC = 8
 
+
 class CanutilsLogReader(object):
     """
     Iterator of CAN messages from a .log Logging File (candump -L).
