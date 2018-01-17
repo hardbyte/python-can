@@ -47,6 +47,9 @@ class BusABC(object):
         """
         pass
 
+    def __str__(self):
+        return self.channel_info
+
     @abc.abstractmethod
     def recv(self, timeout=None):
         """Block waiting for a message from the Bus.
