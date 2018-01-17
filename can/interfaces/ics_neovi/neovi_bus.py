@@ -100,10 +100,7 @@ class NeoViBus(BusABC):
             devices = ics.find_devices()
 
         for device in devices:
-            if serial is None:
-                dev = device
-                break
-            if str(device.SerialNumber) == serial:
+            if serial is None or str(device.SerialNumber) == str(serial):
                 dev = device
                 break
         else:
