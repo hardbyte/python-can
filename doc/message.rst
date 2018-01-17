@@ -66,6 +66,9 @@ Message
         The :abbr:`DLC (Data Link Count)` parameter of a CAN message is an integer
         between 0 and 8 representing the frame payload length.
 
+        In the case of a CAN FD message, this indicates the data length in
+        number of bytes.
+
         >>> m = Message(data=[1, 2, 3])
         >>> m.dlc
         3
@@ -114,6 +117,28 @@ Message
 
         >>> print(Message(is_remote_frame=True))
         Timestamp:        0.000000    ID: 00000000    X   R    DLC: 0
+
+
+    .. attribute:: is_fd
+
+        :type: bool
+
+        Indicates that this message is a CAN FD message.
+
+
+    .. attribute:: bitrate_switch
+
+        :type: bool
+
+        If this is a CAN FD message, this indicates that a higher bitrate
+        was used for the data transmission.
+
+
+    .. attribute:: error_state_indicator
+
+        :type: bool
+
+        If this is a CAN FD message, this indicates an error active state.
 
 
     .. attribute:: timestamp

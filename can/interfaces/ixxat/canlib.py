@@ -442,14 +442,13 @@ class IXXATBus(BusABC):
         # The _message.dwTime is a 32bit tick value and will overrun,
         # so expect to see the value restarting from 0
         rx_msg = Message(
-            self._message.dwTime / self._tick_resolution,  # Relative time in s
-            True if self._message.uMsgInfo.Bits.rtr else False,
-            True if self._message.uMsgInfo.Bits.ext else False,
-            False,
-            self._message.dwMsgId,
-            self._message.uMsgInfo.Bits.dlc,
-            self._message.abData[:self._message.uMsgInfo.Bits.dlc],
-            self.channel
+            timestamp=self._message.dwTime / self._tick_resolution,  # Relative time in s
+            is_remote_frame=True if self._message.uMsgInfo.Bits.rtr else False,
+            extended_id=True if self._message.uMsgInfo.Bits.ext else False,
+            arbitration_id=self._message.dwMsgId,
+            dlc=self._message.uMsgInfo.Bits.dlc,
+            data=self._message.abData[:self._message.uMsgInfo.Bits.dlc],
+            channel=self.channel
         )
 
         log.debug('Recv()ed message %s', rx_msg)
