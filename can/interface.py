@@ -4,7 +4,7 @@ import can
 import importlib
 
 from can.broadcastmanager import CyclicSendTaskABC, MultiRateCyclicSendTaskABC
-from can.plugin import get_pluginmanager
+from pkg_resources import iter_entry_points
 from can.util import load_config
 
 # interface_name => (module, classname)
@@ -23,6 +23,12 @@ BACKENDS = {
     'vector':           ('can.interfaces.vector', 'VectorBus'),
     'slcan':            ('can.interfaces.slcan', 'slcanBus')
 }
+
+
+BACKENDS.update({
+    interface.name: (interface.module_name, interface.attrs[0])
+    for interface in iter_entry_points('python_can.interface')
+})
 
 
 class Bus(object):
@@ -59,12 +65,7 @@ class Bus(object):
 
         # Import the correct Bus backend
         try:
-            interfaces_hook = get_pluginmanager().hook
-            plugin = interfaces_hook.pythoncan_interface(interface=interface)
-            if plugin:
-                (module_name, class_name) = plugin[0]
-            else:
-                (module_name, class_name) = BACKENDS[interface]
+            (module_name, class_name) = BACKENDS[interface]
         except KeyError:
             raise NotImplementedError("CAN interface '{}' not supported".format(interface))
 
