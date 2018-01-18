@@ -27,7 +27,8 @@ The available interfaces are:
 Additional interfaces can be added via a plugin interface. An external package
 can register a new interface by using the `python_can.interface` entry point.
 
-The format of the entry point is `interface_name=module:classname`.
+The format of the entry point is `interface_name=module:classname` where
+`classname` is a can.BusABC implementation.
 
 ::
 
