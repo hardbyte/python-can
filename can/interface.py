@@ -27,17 +27,6 @@ BACKENDS = {
 }
 
 
-hookimpl = HookimplMarker('pythoncan')
-
-
-@hookimpl(trylast=True)
-def pythoncan_interface(interface):
-    """This hook is used to process the initial config
-    and possibly input arguments.
-    """
-    return BACKENDS.get(interface)
-
-
 class Bus(object):
     """
     Instantiates a CAN Bus of the given `bustype`, falls back to reading a
@@ -73,8 +62,11 @@ class Bus(object):
         # Import the correct Bus backend
         try:
             interfaces_hook = get_pluginmanager().hook
-            (module_name, class_name) = interfaces_hook.pythoncan_interface(
-                interface=interface)[0]
+            plugin = interfaces_hook.pythoncan_interface(interface=interface)
+            if plugin:
+                (module_name, class_name) = plugin[0]
+            else:
+                (module_name, class_name) = BACKENDS[interface]
         except KeyError:
             raise NotImplementedError("CAN interface '{}' not supported".format(interface))
 
