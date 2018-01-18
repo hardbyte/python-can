@@ -1,7 +1,5 @@
 from __future__ import absolute_import
 
-from pluggy import HookimplMarker
-
 import can
 import importlib
 
