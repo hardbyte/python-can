@@ -24,6 +24,18 @@ The available interfaces are:
    interfaces/vector
    interfaces/virtual
 
+Additional interfaces can be added via a plugin interface. An external package
+can register a new interface by using the `python_can.interface` entry point.
+
+The format of the entry point is `interface_name=module:classname`.
+
+::
+
+ entry_points={
+     'python_can.interface': [
+         "interface_name=module:classname",
+     ]
+ },
 
 
 The *Interface Names* are listed in :doc:`configuration`.
