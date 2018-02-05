@@ -9,9 +9,7 @@ import abc
 import logging
 import threading
 from can.broadcastmanager import ThreadBasedCyclicSendTask
-from collections import namedtuple
 
-BusState = namedtuple('BusState', 'INITIALISING, OPERATIONAL, LISTEN_ONLY, SLEEP')
 
 logger = logging.getLogger(__name__)
 
@@ -142,14 +140,5 @@ class BusABC(object):
         in shutting down a bus.
         """
         self.flush_tx_buffer()
-
-    @property
-    @abc.abstractmethod
-    def state(self):
-        return 'Should never read this'
-
-    @state.setter
-    def state(self, new_state):
-        pass
 
     __metaclass__ = abc.ABCMeta

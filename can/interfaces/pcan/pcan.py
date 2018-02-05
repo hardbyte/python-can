@@ -6,7 +6,7 @@ import logging
 import sys
 
 from can.interfaces.pcan.PCANBasic import *
-from can.bus import BusABC, BusState
+from can.bus import BusABC
 from can.message import Message
 from can import CanError
 import time
@@ -91,7 +91,6 @@ class PcanBus(BusABC):
 
         self.m_objPCANBasic = PCANBasic()
         self.m_PcanHandle = globals()[channel]
-        self._state = BusState.INITIALISING
 
         result = self.m_objPCANBasic.Initialize(self.m_PcanHandle, pcan_bitrate, hwtype, ioport, interrupt)
 
@@ -131,13 +130,13 @@ class PcanBus(BusABC):
                 if stsReturn[0] != PCAN_ERROR_OK:
                     text = "An error occurred. Error-code's text ({0:X}h) couldn't be retrieved".format(error)
                 else:
-                    text = stsReturn[1].decode('utf-8')
+                    text = stsReturn[1].decode('latin-1').encode('utf-8')
 
                 strings.append(text)
 
             complete_text = '\n'.join(strings)
         else:
-            complete_text = stsReturn[1].decode('utf-8')
+            complete_text = stsReturn[1].decode('latin-1').encode('utf-8')
 
         return complete_text
 
@@ -258,23 +257,6 @@ class PcanBus(BusABC):
 
     def shutdown(self):
         self.m_objPCANBasic.Uninitialize(self.m_PcanHandle)
-
-    @property
-    def state(self):
-        return self._state
-
-    @state.setter
-    def state(self, new_state):
-        self._state = new_state
-
-        if new_state is BusState.OPERATIONAL:
-            self.m_objPCANBasic.SetValue(self.m_PcanHandle, PCAN_LISTEN_ONLY, PCAN_PARAMETER_OFF)
-
-        if new_state is BusState.LISTEN_ONLY:
-            # When this mode is set, the CAN controller does not take part on active events (eg. transmit CAN messages)
-            # but stays in a passive mode (CAN monitor), in which it can analyse the traffic on the CAN bus used by a
-            # PCAN channel. See also the Philips Data Sheet "SJA1000 Stand-alone CAN controller".
-            self.m_objPCANBasic.SetValue(self.m_PcanHandle, PCAN_LISTEN_ONLY, PCAN_PARAMETER_ON)
 
 
 class PcanError(CanError):
