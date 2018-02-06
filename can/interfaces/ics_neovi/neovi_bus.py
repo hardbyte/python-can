@@ -11,7 +11,7 @@ Implementation references:
 import logging
 from collections import deque
 
-from can import Message
+from can import Message, CanError
 from can.bus import BusABC
 
 logger = logging.getLogger(__name__)
@@ -24,6 +24,35 @@ except ImportError as ie:
         "python-ics module installed!: %s", ie
     )
     ics = None
+
+
+class ICSApiError(CanError):
+    # A critical error which affects operation or accuracy.
+    ICS_SPY_ERR_CRITICAL = 0x10
+    # An error which is not understood.
+    ICS_SPY_ERR_QUESTION = 0x20
+    # An important error which may be critical depending on the application
+    ICS_SPY_ERR_EXCLAMATION = 0x30
+    # An error which probably does not need attention.
+    ICS_SPY_ERR_INFORMATION = 0x40
+
+    def __init__(
+            self, error_number, description_short, description_long,
+            severity, restart_needed
+    ):
+        super(ICSApiError, self).__init__(description_short)
+        self.error_number = error_number
+        self.description_short = description_short
+        self.description_long = description_long
+        self.severity = severity
+        self.restart_needed = restart_needed == 1
+
+    def __str__(self):
+        return "{} {}".format(self.description_short, self.description_long)
+
+    @property
+    def is_critical(self):
+        return self.severity == self.ICS_SPY_ERR_CRITICAL
 
 
 class NeoViBus(BusABC):
@@ -127,10 +156,13 @@ class NeoViBus(BusABC):
                 continue
             self.rx_buffer.append(ics_msg)
         if errors:
-            logger.warning("%d errors found" % errors)
+            logger.warning("%d error(s) found" % errors)
 
             for msg in ics.get_error_messages(self.dev):
-                logger.warning(msg)
+                error = ICSApiError(*msg)
+                if error.is_critical:
+                    raise error
+                logger.warning(error)
 
     def _is_filter_match(self, arb_id):
         """
@@ -219,7 +251,11 @@ class NeoViBus(BusABC):
         message.StatusBitField = flags
         message.StatusBitField2 = 0
         message.NetworkID = self.network
-        ics.transmit_messages(self.dev, message)
+
+        try:
+            ics.transmit_messages(self.dev, message)
+        except ics.RuntimeError:
+            raise ICSApiError(*ics.get_last_api_error(self.dev))
 
     def set_filters(self, can_filters=None):
         """Apply filtering to all messages received by this Bus.
