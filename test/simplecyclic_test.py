@@ -1,9 +1,6 @@
 from time import sleep
 import unittest
-import logging
 import can
-
-logging.getLogger(__file__).setLevel(logging.DEBUG)
 
 
 class SimpleCyclicSendTaskTest(unittest.TestCase):
@@ -14,14 +11,17 @@ class SimpleCyclicSendTaskTest(unittest.TestCase):
         bus2 = can.interface.Bus(bustype='virtual')
         task = bus.send_periodic(msg, 0.01, 1)
         self.assertIsInstance(task, can.broadcastmanager.CyclicSendTaskABC)
+
         sleep(1.5)
         size = bus2.queue.qsize()
         print(size)
-        # About 100 messages should have been transmitted. Some overhead will
-        # make it less though
+        # About 100 messages should have been transmitted
         self.assertTrue(90 < size < 110)
         last_msg = bus2.recv()
         self.assertEqual(last_msg, msg)
+
+        bus.shutdown()
+        bus2.shutdown()
 
 
 if __name__ == '__main__':

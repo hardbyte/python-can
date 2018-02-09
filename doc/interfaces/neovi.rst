@@ -1,37 +1,29 @@
-neoVI Interface
-===============
+NEOVI Interface
+==================
 
 .. warning::
 
-    This ``neoVI`` documentation is a work in progress. Feedback and revisions
+    This ``ICS NeoVI`` documentation is a work in progress. Feedback and revisions
     are most welcome!
 
 
 Interface to `Intrepid Control Systems <https://www.intrepidcs.com/>`__ neoVI
-API range of devices via `pyneovi <http://kempj.co.uk/projects/pyneovi/>`__
+API range of devices via `python-ics <https://pypi.python.org/pypi/python-ics/>`__
 wrapper on Windows.
-
-.. note::
-
-    This interface is not supported on Linux, however on Linux neoVI devices
-    are supported via :doc:`socketcan` with ICS `Kernel-mode SocketCAN module
-    for Intrepid devices
-    <https://github.com/intrepidcs/intrepid-socketcan-kernel-module>`__ and
-    `icsscand <https://github.com/intrepidcs/icsscand>`__
 
 
 Installation
 ------------
-This neoVI interface requires the installation of the ICS neoVI DLL and pyneovi
+This neovi interface requires the installation of the ICS neoVI DLL and python-ics
 package.
 
 - Download and install the Intrepid Product Drivers
     `Intrepid Product Drivers <https://cdn.intrepidcs.net/updates/files/ICSDrivers.zip>`__
 
-- Install pyneovi using pip and the pyneovi bitbucket repo:
+- Install python-ics
     .. code-block:: bash
 
-        pip install https://bitbucket.org/Kemp_J/pyneovi/get/default.zip
+        pip install python-ics
 
 
 Configuration
@@ -49,6 +41,6 @@ An example `can.ini` file for windows 7:
 Bus
 ---
 
-.. autoclass:: can.interfaces.neovi_api.NeoVIBus
+.. autoclass:: can.interfaces.ics_neovi.NeoViBus
 
 

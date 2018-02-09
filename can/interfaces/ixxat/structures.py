@@ -144,3 +144,14 @@ class CANMSG(ctypes.Structure):
         ("abData", ctypes.c_uint8 * 8)
     ]
 PCANMSG = ctypes.POINTER(CANMSG)
+
+class CANCYCLICTXMSG(ctypes.Structure):
+    _fields_ = [
+        ("wCycleTime", ctypes.c_uint16),
+        ("bIncrMode", ctypes.c_uint8),
+        ("bByteIndex", ctypes.c_uint8),
+        ("dwMsgId", ctypes.c_uint32),
+        ("uMsgInfo", CANMSGINFO),
+        ("abData", ctypes.c_uint8 * 8)
+    ]
+PCANCYCLICTXMSG = ctypes.POINTER(CANCYCLICTXMSG)

@@ -55,10 +55,11 @@ coverage.xml
 *.log
 
 # Sphinx documentation
-docs/_build/
+doc/_build/
 
 # PyBuilder
 target/
 
 # IDEs
 .vscode/
+.idea/

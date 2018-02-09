@@ -11,9 +11,9 @@ python-can
    :target: https://python-can.readthedocs.io/en/stable/
    :alt: Documentation Status
                 
-.. |build| image:: https://travis-ci.org/hardbyte/python-can.svg?branch=master
+.. |build| image:: https://travis-ci.org/hardbyte/python-can.svg?branch=develop
    :target: https://travis-ci.org/hardbyte/python-can
-   :alt: CI Server
+   :alt: CI Server for develop branch
 
 
 The **C**\ ontroller **A**\ rea **N**\ etwork is a bus standard designed
@@ -46,3 +46,8 @@ questions and answers tagged with ``python+can``.
 
 Wherever we interact, we strive to follow the
 `Python Community Code of Conduct <https://www.python.org/psf/codeofconduct/>`__.
+
+Contributing
+------------
+
+See `doc/development.rst` for getting started.

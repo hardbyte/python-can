@@ -230,7 +230,7 @@ class PcanBus(BusABC):
 
         # configure the message. ID, Length of data, message type and data
         CANMsg.ID = msg.arbitration_id
-        CANMsg.LEN = len(msg.data)
+        CANMsg.LEN = msg.dlc
         CANMsg.MSGTYPE = msgType
 
         # if a remote frame will be sent, data bytes are not important.

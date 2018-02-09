@@ -24,6 +24,13 @@ the **interface** and **channel** before importing from ``can.interfaces``.
     bus = Bus()
 
 
+You can also specify the interface and channel for each Bus instance::
+
+    import can
+
+    bus = can.interface.Bus(bustype='socketcan', channel='vcan0', bitrate=500000)
+
+
 Configuration File
 ------------------
 
@@ -74,6 +81,8 @@ Lookup table of interface names:
 +---------------------+-------------------------------------+
 | ``"serial"``        | :doc:`interfaces/serial`            |
 +---------------------+-------------------------------------+
+| ``"slcan"``         | :doc:`interfaces/slcan`             |
++---------------------+-------------------------------------+
 | ``"ixxat"``         | :doc:`interfaces/ixxat`             |
 +---------------------+-------------------------------------+
 | ``"pcan"``          | :doc:`interfaces/pcan`              |
@@ -87,8 +96,6 @@ Lookup table of interface names:
 | ``"neovi"``         | :doc:`interfaces/neovi`             |
 +---------------------+-------------------------------------+
 | ``"vector"``        | :doc:`interfaces/vector`            |
-+---------------------+-------------------------------------+
-| ``"remote"``        | :doc:`interfaces/remote`            |
 +---------------------+-------------------------------------+
 | ``"virtual"``       | :doc:`interfaces/virtual`           |
 +---------------------+-------------------------------------+

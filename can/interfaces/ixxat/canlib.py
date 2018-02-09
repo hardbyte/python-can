@@ -13,7 +13,8 @@ import time
 from can import CanError, BusABC
 from can import Message
 from can.interfaces.ixxat import constants, structures
-
+from can.broadcastmanager import (LimitedDurationCyclicSendTaskABC,
+                                  RestartableCyclicTaskABC)
 from can.ctypesutil import CLibrary, HANDLE, PHANDLE
 
 from .constants import VCI_MAX_ERRSTRLEN
@@ -176,6 +177,22 @@ try:
     _canlib.map_symbol("canControlAddFilterIds", ctypes.c_long, (HANDLE, ctypes.c_int, ctypes.c_uint32, ctypes.c_uint32), __check_status)
     #EXTERN_C HRESULT canControlRemFilterIds (HANDLE hControl, BOOL fExtendend, UINT32 dwCode, UINT32 dwMask );
     _canlib.map_symbol("canControlRemFilterIds", ctypes.c_long, (HANDLE, ctypes.c_int, ctypes.c_uint32, ctypes.c_uint32), __check_status)
+    #EXTERN_C HRESULT canSchedulerOpen (HANDLE hDevice, UINT32 dwCanNo, PHANDLE phScheduler );
+    _canlib.map_symbol("canSchedulerOpen", ctypes.c_long, (HANDLE, ctypes.c_uint32, PHANDLE), __check_status)
+    #EXTERN_C HRESULT canSchedulerClose (HANDLE hScheduler );
+    _canlib.map_symbol("canSchedulerClose", ctypes.c_long, (HANDLE, ), __check_status)
+    #EXTERN_C HRESULT canSchedulerGetCaps (HANDLE hScheduler, PCANCAPABILITIES pCaps );
+    _canlib.map_symbol("canSchedulerGetCaps", ctypes.c_long, (HANDLE, structures.PCANCAPABILITIES), __check_status)
+    #EXTERN_C HRESULT canSchedulerActivate ( HANDLE hScheduler, BOOL fEnable );
+    _canlib.map_symbol("canSchedulerActivate", ctypes.c_long, (HANDLE, ctypes.c_int), __check_status)
+    #EXTERN_C HRESULT canSchedulerAddMessage (HANDLE hScheduler, PCANCYCLICTXMSG pMessage, PUINT32 pdwIndex );
+    _canlib.map_symbol("canSchedulerAddMessage", ctypes.c_long, (HANDLE, structures.PCANCYCLICTXMSG, ctypes.POINTER(ctypes.c_uint32)), __check_status)
+    #EXTERN_C HRESULT canSchedulerRemMessage (HANDLE hScheduler, UINT32 dwIndex );
+    _canlib.map_symbol("canSchedulerRemMessage", ctypes.c_long, (HANDLE, ctypes.c_uint32), __check_status)
+    #EXTERN_C HRESULT canSchedulerStartMessage (HANDLE hScheduler, UINT32 dwIndex, UINT16 dwCount );
+    _canlib.map_symbol("canSchedulerStartMessage", ctypes.c_long, (HANDLE, ctypes.c_uint32, ctypes.c_uint16), __check_status)
+    #EXTERN_C HRESULT canSchedulerStopMessage (HANDLE hScheduler, UINT32 dwIndex );
+    _canlib.map_symbol("canSchedulerStopMessage", ctypes.c_long, (HANDLE, ctypes.c_uint32), __check_status)
     _canlib.vciInitialize()
 except AttributeError:
     # In case _canlib == None meaning we're not on win32/no lib found
@@ -337,15 +354,18 @@ class IXXATBus(BusABC):
         # Start the CAN controller. Messages will be forwarded to the channel
         _canlib.canControlStart(self._control_handle, constants.TRUE)
 
+        # For cyclic transmit list. Set when .send_periodic() is first called
+        self._scheduler = None
+        self._scheduler_resolution = None
+        self.channel = channel
+
         # Usually you get back 3 messages like "CAN initialized" ecc...
-        # Filter them out with low timeout
-        while True:
+        # Clear the FIFO by filter them out with low timeout
+        for i in range(rxFifoSize):
             try:
-                _canlib.canChannelWaitRxEvent(self._channel_handle, 0)
-            except VCITimeout:
-                break
-            else:
                 _canlib.canChannelReadMessage(self._channel_handle, 0, ctypes.byref(self._message))
+            except (VCITimeout, VCIRxQueueEmptyError):
+                break
 
         super(IXXATBus, self).__init__()
 
@@ -366,75 +386,69 @@ class IXXATBus(BusABC):
         """ Read a message from IXXAT device. """
 
         # TODO: handling CAN error messages?
-        if timeout is None:
-            timeout = constants.INFINITE
-        else:
-            timeout = int(timeout * 1000)
+        data_received = False
 
-        tm = None
         if timeout == 0:
             # Peek without waiting
             try:
                 _canlib.canChannelPeekMessage(self._channel_handle, ctypes.byref(self._message))
-            except VCITimeout:
-                return None
-            except VCIRxQueueEmptyError:
+            except (VCITimeout, VCIRxQueueEmptyError):
                 return None
             else:
                 if self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_DATA:
-                    tm = _timer_function()
+                    data_received = True
         else:
             # Wait if no message available
-            t0 = _timer_function()
-            elapsed_ms = 0
-            remaining_ms = 0
-            while elapsed_ms <= timeout:
-                elapsed_ms = int((_timer_function() - t0) * 1000)
-                remaining_ms = timeout - elapsed_ms
-                # Wait until at least one frame is in the buffer
+            if timeout is None or timeout < 0:
+                remaining_ms = constants.INFINITE
+                t0 = None
+            else:
+                timeout_ms = int(timeout * 1000)
+                remaining_ms = timeout_ms
+                t0 = _timer_function()
+
+            while True:
                 try:
-                    _canlib.canChannelWaitRxEvent(self._channel_handle, remaining_ms)
-                except VCITimeout:
-                    log.debug('canChannelWaitRxEvent timed out after %dms', remaining_ms)
-                    return None
-
-                # In theory we should be fine with a 0 timeout since the rxEvent was already
-                # set but I've seen timeouts appearing here and there
-                try:
-                    _canlib.canChannelReadMessage(self._channel_handle, 0, ctypes.byref(self._message))
-                except VCITimeout:
-                    continue
-
-                # See if we got a data or info/error messages
-                if self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_DATA:
-                    tm = _timer_function()
-                    break
-
-                elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_INFO:
-                    log.info(CAN_INFO_MESSAGES.get(self._message.abData[0], "Unknown CAN info message code {}".format(self._message.abData[0])))
-
-                elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_ERROR:
-                    log.warning(CAN_ERROR_MESSAGES.get(self._message.abData[0], "Unknown CAN error message code {}".format(self._message.abData[0])))
-
-                elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_TIMEOVR:
+                    _canlib.canChannelReadMessage(self._channel_handle, remaining_ms, ctypes.byref(self._message))
+                except (VCITimeout, VCIRxQueueEmptyError):
+                    # Ignore the 2 errors, the timeout is handled manually with the _timer_function()
                     pass
                 else:
-                    log.warn("Unexpected message info type")
+                    # See if we got a data or info/error messages
+                    if self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_DATA:
+                        data_received = True
+                        break
 
-        if not tm:
+                    elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_INFO:
+                        log.info(CAN_INFO_MESSAGES.get(self._message.abData[0], "Unknown CAN info message code {}".format(self._message.abData[0])))
+
+                    elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_ERROR:
+                        log.warning(CAN_ERROR_MESSAGES.get(self._message.abData[0], "Unknown CAN error message code {}".format(self._message.abData[0])))
+
+                    elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_TIMEOVR:
+                        pass
+                    else:
+                        log.warn("Unexpected message info type")
+
+                if t0 is not None:
+                    remaining_ms = timeout_ms - int((_timer_function() - t0) * 1000)
+                    if remaining_ms < 0:
+                        break
+
+        if not data_received:
             # Timed out / can message type is not DATA
             return None
 
         # The _message.dwTime is a 32bit tick value and will overrun,
         # so expect to see the value restarting from 0
         rx_msg = Message(
-            self._message.dwTime / self._tick_resolution,  # Relative time in s
-            True if self._message.uMsgInfo.Bits.rtr else False,
-            True if self._message.uMsgInfo.Bits.ext else False,
-            False,
-            self._message.dwMsgId,
-            self._message.uMsgInfo.Bits.dlc,
-            self._message.abData[:self._message.uMsgInfo.Bits.dlc]
+            timestamp=self._message.dwTime / self._tick_resolution,  # Relative time in s
+            is_remote_frame=True if self._message.uMsgInfo.Bits.rtr else False,
+            extended_id=True if self._message.uMsgInfo.Bits.ext else False,
+            arbitration_id=self._message.dwMsgId,
+            dlc=self._message.uMsgInfo.Bits.dlc,
+            data=self._message.abData[:self._message.uMsgInfo.Bits.dlc],
+            channel=self.channel
         )
 
         log.debug('Recv()ed message %s', rx_msg)
@@ -460,8 +474,67 @@ class IXXATBus(BusABC):
         else:
             _canlib.canChannelPostMessage(self._channel_handle, message)
 
+    def send_periodic(self, msg, period, duration=None):
+        """Send a message using built-in cyclic transmit list functionality."""
+        if self._scheduler is None:
+            self._scheduler = HANDLE()
+            _canlib.canSchedulerOpen(self._device_handle, self.channel,
+                                     self._scheduler)
+            caps = structures.CANCAPABILITIES()
+            _canlib.canSchedulerGetCaps(self._scheduler, caps)
+            self._scheduler_resolution = float(caps.dwClockFreq) / caps.dwCmsDivisor
+            _canlib.canSchedulerActivate(self._scheduler, constants.TRUE)
+        return CyclicSendTask(self._scheduler, msg, period, duration,
+                              self._scheduler_resolution)
+
     def shutdown(self):
+        if self._scheduler is not None:
+            _canlib.canSchedulerClose(self._scheduler)
         _canlib.canChannelClose(self._channel_handle)
         _canlib.canControlStart(self._control_handle, constants.FALSE)
         _canlib.canControlClose(self._control_handle)
         _canlib.vciDeviceClose(self._device_handle)
+
+
+class CyclicSendTask(LimitedDurationCyclicSendTaskABC,
+                     RestartableCyclicTaskABC):
+    """A message in the cyclic transmit list."""
+
+    def __init__(self, scheduler, msg, period, duration, resolution):
+        super(CyclicSendTask, self).__init__(msg, period, duration)
+        self._scheduler = scheduler
+        self._index = None
+        self._count = int(duration / period) if duration else 0
+
+        self._msg = structures.CANCYCLICTXMSG()
+        self._msg.wCycleTime = int(round(period * resolution))
+        self._msg.dwMsgId = msg.arbitration_id
+        self._msg.uMsgInfo.Bits.type = constants.CAN_MSGTYPE_DATA
+        self._msg.uMsgInfo.Bits.ext = 1 if msg.id_type else 0
+        self._msg.uMsgInfo.Bits.rtr = 1 if msg.is_remote_frame else 0
+        self._msg.uMsgInfo.Bits.dlc = msg.dlc
+        for i, b in enumerate(msg.data):
+            self._msg.abData[i] = b
+        self.start()
+
+    def start(self):
+        """Start transmitting message (add to list if needed)."""
+        if self._index is None:
+            self._index = ctypes.c_uint32()
+            _canlib.canSchedulerAddMessage(self._scheduler,
+                                           self._msg,
+                                           self._index)
+        _canlib.canSchedulerStartMessage(self._scheduler,
+                                         self._index,
+                                         self._count)
+
+    def pause(self):
+        """Pause transmitting message (keep it in the list)."""
+        _canlib.canSchedulerStopMessage(self._scheduler, self._index)
+
+    def stop(self):
+        """Stop transmitting message (remove from list)."""
+        # Remove it completely instead of just stopping it to avoid filling up
+        # the list with permanently stopped messages
+        _canlib.canSchedulerRemMessage(self._scheduler, self._index)
+        self._index = None

@@ -40,7 +40,7 @@ elif platform.system() == "Windows" or platform.python_implementation() == "Iron
     CONFIG_FILES.extend(
         [
             'can.ini',
-            os.path.join(os.getenv('APPDATA'), 'can.ini')
+            os.path.join(os.getenv('APPDATA', ''), 'can.ini')
         ]
     )
 
@@ -105,7 +105,7 @@ def load_config(path=None, config=None):
       where the latter may add or replace values of the former.
 
     Interface can be any of the strings from ``can.VALID_INTERFACES`` for example:
-    kvaser, socketcan, pcan, usb2can, ixxat, nican, remote, virtual.
+    kvaser, socketcan, pcan, usb2can, ixxat, nican, virtual.
 
     .. note::
 
@@ -156,7 +156,7 @@ def load_config(path=None, config=None):
         system_config['interface'] = choose_socketcan_implementation()
 
     if system_config['interface'] not in VALID_INTERFACES:
-        raise NotImplementedError('Invalid CAN Bus Type - {}'.format(can.rc['interface']))
+        raise NotImplementedError('Invalid CAN Bus Type - {}'.format(system_config['interface']))
 
     if 'bitrate' in system_config:
         system_config['bitrate'] = int(system_config['bitrate'])

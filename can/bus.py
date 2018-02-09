@@ -1,9 +1,16 @@
 # -*- coding: utf-8 -*-
-from __future__ import print_function, absolute_import
 
+"""
+Contains the ABC bus implementation.
+"""
+
+from __future__ import print_function, absolute_import
 import abc
 import logging
-from can.broadcastmanager import ThreadBasedCyclicSendManager, ThreadBasedCyclicSendTask
+import threading
+from can.broadcastmanager import ThreadBasedCyclicSendTask
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -16,7 +23,6 @@ class BusABC(object):
 
     As well as setting the `channel_info` attribute to a string describing the
     interface.
-
     """
 
     #: a string describing the underlying bus channel
@@ -39,6 +45,7 @@ class BusABC(object):
         :param dict config:
             Any backend dependent configurations are passed in this dictionary
         """
+        pass
 
     @abc.abstractmethod
     def recv(self, timeout=None):
@@ -56,9 +63,10 @@ class BusABC(object):
         """Transmit a message to CAN bus.
         Override this method to enable the transmit path.
 
-        :param msg: A :class:`can.Message` object.
+        :param can.Message msg: A message object.
         :param float timeout:
-            If > 0, wait up to this many seconds for message to be ACK:ed.
+            If > 0, wait up to this many seconds for message to be ACK:ed or
+            for transmit queue to be ready depending on driver implementation.
             If timeout is exceeded, an exception will be raised.
             Might not be supported by all interfaces.
 
@@ -87,7 +95,10 @@ class BusABC(object):
             least *duration* seconds.
 
         """
-        return ThreadBasedCyclicSendTask(self, msg, period, duration)
+        if not hasattr(self, "_lock"):
+            # Create send lock for this bus
+            self._lock = threading.Lock()
+        return ThreadBasedCyclicSendTask(self, self._lock, msg, period, duration)
 
     def __iter__(self):
         """Allow iteration on messages as they are received.
@@ -99,10 +110,9 @@ class BusABC(object):
         :yields: :class:`can.Message` msg objects.
         """
         while True:
-            m = self.recv(timeout=1.0)
-            if m is not None:
-                yield m
-        logger.debug("done iterating over bus messages")
+            msg = self.recv(timeout=1.0)
+            if msg is not None:
+                yield msg
 
     def set_filters(self, can_filters=None):
         """Apply filtering to all messages received by this Bus.

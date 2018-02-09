@@ -6,11 +6,12 @@ import can
 
 BITRATE = 500000
 TIMEOUT = 0.1
+TEST_CAN_FD = True
 
 INTERFACE_1 = 'virtual'
-CHANNEL_1 = 0
+CHANNEL_1 = 'vcan0'
 INTERFACE_2 = 'virtual'
-CHANNEL_2 = 0
+CHANNEL_2 = 'vcan0'
 
 
 class Back2BackTestCase(unittest.TestCase):
@@ -22,10 +23,14 @@ class Back2BackTestCase(unittest.TestCase):
     def setUp(self):
         self.bus1 = can.interface.Bus(channel=CHANNEL_1,
                                       bustype=INTERFACE_1,
-                                      bitrate=BITRATE)
+                                      bitrate=BITRATE,
+                                      fd=TEST_CAN_FD,
+                                      single_handle=True)
         self.bus2 = can.interface.Bus(channel=CHANNEL_2,
                                       bustype=INTERFACE_2,
-                                      bitrate=BITRATE)
+                                      bitrate=BITRATE,
+                                      fd=TEST_CAN_FD,
+                                      single_handle=True)
 
     def tearDown(self):
         self.bus1.shutdown()
@@ -38,6 +43,8 @@ class Back2BackTestCase(unittest.TestCase):
         self.assertEqual(recv_msg.id_type, sent_msg.id_type)
         self.assertEqual(recv_msg.is_remote_frame, sent_msg.is_remote_frame)
         self.assertEqual(recv_msg.is_error_frame, sent_msg.is_error_frame)
+        self.assertEqual(recv_msg.is_fd, sent_msg.is_fd)
+        self.assertEqual(recv_msg.bitrate_switch, sent_msg.bitrate_switch)
         self.assertEqual(recv_msg.dlc, sent_msg.dlc)
         if not sent_msg.is_remote_frame:
             self.assertSequenceEqual(recv_msg.data, sent_msg.data)
@@ -92,6 +99,23 @@ class Back2BackTestCase(unittest.TestCase):
         msg = can.Message(extended_id=False,
                           arbitration_id=0x300,
                           data=[4, 5, 6])
+        self._send_and_receive(msg)
+
+    @unittest.skipUnless(TEST_CAN_FD, "Don't test CAN-FD")
+    def test_fd_message(self):
+        msg = can.Message(is_fd=True,
+                          extended_id=True,
+                          arbitration_id=0x56789,
+                          data=[0xff] * 64)
+        self._send_and_receive(msg)
+
+    @unittest.skipUnless(TEST_CAN_FD, "Don't test CAN-FD")
+    def test_fd_message_with_brs(self):
+        msg = can.Message(is_fd=True,
+                          bitrate_switch=True,
+                          extended_id=True,
+                          arbitration_id=0x98765,
+                          data=[0xff] * 48)
         self._send_and_receive(msg)
 
 

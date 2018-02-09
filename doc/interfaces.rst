@@ -14,6 +14,7 @@ The available interfaces are:
    interfaces/socketcan
    interfaces/kvaser
    interfaces/serial
+   interfaces/slcan
    interfaces/ixxat
    interfaces/pcan
    interfaces/usb2can
@@ -21,7 +22,6 @@ The available interfaces are:
    interfaces/iscan
    interfaces/neovi
    interfaces/vector
-   interfaces/remote
    interfaces/virtual
 
 

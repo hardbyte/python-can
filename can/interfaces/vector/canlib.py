@@ -75,7 +75,11 @@ class VectorBus(BusABC):
             LOG.debug('Channel %d, Type: %d, Mask: %d',
                       hw_channel.value, hw_type.value, mask)
             self.mask |= mask
+
         permission_mask = vxlapi.XLaccess()
+        # Set mask to request channel init permission if needed
+        if bitrate:
+            permission_mask.value = self.mask
         vxlapi.xlOpenPort(self.port_handle, self._app_name, self.mask,
                           permission_mask, rx_queue_size,
                           vxlapi.XL_INTERFACE_VERSION, vxlapi.XL_BUS_TYPE_CAN)
@@ -139,8 +143,8 @@ class VectorBus(BusABC):
                         is_remote_frame=bool(flags & vxlapi.XL_CAN_MSG_FLAG_REMOTE_FRAME),
                         is_error_frame=bool(flags & vxlapi.XL_CAN_MSG_FLAG_ERROR_FRAME),
                         dlc=dlc,
-                        data=event.tagData.msg.data[:dlc])
-                    msg.channel = event.chanIndex
+                        data=event.tagData.msg.data[:dlc],
+                        channel=event.chanIndex)
                     return msg
             if end_time is not None and time.time() > end_time:
                 return None

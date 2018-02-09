@@ -10,13 +10,14 @@ which consists of a header and some zlib compressed data, usually up to 128 kB
 of uncompressed data each. This data contains the actual CAN messages and other
 objects types.
 """
+
 import struct
 import zlib
 import datetime
 import time
 
 from can.message import Message
-from can.CAN import Listener
+from can.listener import Listener
 
 
 # 0 = unknown, 2 = CANoe
@@ -37,6 +38,10 @@ OBJ_HEADER_STRUCT = struct.Struct("<4sHHLLL2xHQ")
 # channel, flags, dlc, arbitration id, data
 CAN_MSG_STRUCT = struct.Struct("<HBBL8s")
 
+# channel, flags, dlc, arbitration id, frame length, bit count, FD flags,
+# valid data bytes, data
+CAN_FD_MSG_STRUCT = struct.Struct("<HBBLLBBB5x64s")
+
 # channel, length
 CAN_ERROR_STRUCT = struct.Struct("<HH4x")
 
@@ -49,9 +54,13 @@ CAN_MESSAGE = 1
 CAN_ERROR = 2
 LOG_CONTAINER = 10
 GLOBAL_MARKER = 96
+CAN_FD_MESSAGE = 100
 
 CAN_MSG_EXT = 0x80000000
 REMOTE_FLAG = 0x80
+EDL = 0x1
+BRS = 0x2
+ESI = 0x4
 
 
 def timestamp_to_systemtime(timestamp):
@@ -87,7 +96,11 @@ class BLFReader(object):
         header = FILE_HEADER_STRUCT.unpack(data)
         #print(header)
         assert header[0] == b"LOGG", "Unknown file format"
+        self.file_size = header[10]
+        self.uncompressed_size = header[11]
+        self.object_count = header[12]
         self.start_timestamp = systemtime_to_timestamp(header[14:22])
+        self.stop_timestamp = systemtime_to_timestamp(header[22:30])
 
     def __iter__(self):
         tail = b""
@@ -111,32 +124,50 @@ class BLFReader(object):
                     data = tail + data
                 pos = 0
                 while pos + OBJ_HEADER_STRUCT.size < len(data):
-                    header = OBJ_HEADER_STRUCT.unpack(
-                        data[pos:pos + OBJ_HEADER_STRUCT.size])
+                    header = OBJ_HEADER_STRUCT.unpack_from(data, pos)
                     #print(header)
                     assert header[0] == b"LOBJ", "Parse error"
                     obj_size = header[3]
                     if pos + obj_size > len(data):
                         # Object continues in next log container
                         break
-                    obj_data = data[pos + OBJ_HEADER_STRUCT.size:pos + obj_size]
                     obj_type = header[4]
                     timestamp = header[7] / 1000000000.0 + self.start_timestamp
                     if obj_type == CAN_MESSAGE:
+                        assert obj_size == OBJ_HEADER_STRUCT.size + CAN_MSG_STRUCT.size
                         (channel, flags, dlc, can_id,
-                         can_data) = CAN_MSG_STRUCT.unpack(obj_data)
+                         can_data) = CAN_MSG_STRUCT.unpack_from(
+                             data, pos + OBJ_HEADER_STRUCT.size)
                         msg = Message(timestamp=timestamp,
                                       arbitration_id=can_id & 0x1FFFFFFF,
                                       extended_id=bool(can_id & CAN_MSG_EXT),
                                       is_remote_frame=bool(flags & REMOTE_FLAG),
                                       dlc=dlc,
-                                      data=can_data[:dlc])
-                        msg.channel = channel
+                                      data=can_data[:dlc],
+                                      channel=channel)
+                        yield msg
+                    elif obj_type == CAN_FD_MESSAGE:
+                        assert obj_size == OBJ_HEADER_STRUCT.size + CAN_FD_MSG_STRUCT.size
+                        (channel, flags, dlc, can_id, _, _, fd_flags,
+                         valid_bytes, can_data) = CAN_FD_MSG_STRUCT.unpack_from(
+                             data, pos + OBJ_HEADER_STRUCT.size)
+                        msg = Message(timestamp=timestamp,
+                                      arbitration_id=can_id & 0x1FFFFFFF,
+                                      extended_id=bool(can_id & CAN_MSG_EXT),
+                                      is_remote_frame=bool(flags & REMOTE_FLAG),
+                                      is_fd=bool(fd_flags & EDL),
+                                      bitrate_switch=bool(fd_flags & BRS),
+                                      error_state_indicator=bool(fd_flags & ESI),
+                                      dlc=dlc,
+                                      data=can_data[:valid_bytes],
+                                      channel=channel)
                         yield msg
                     elif obj_type == CAN_ERROR:
-                        channel, length = CAN_ERROR_STRUCT.unpack(obj_data)
-                        msg = Message(timestamp=timestamp, is_error_frame=True)
-                        msg.channel = channel
+                        assert obj_size == OBJ_HEADER_STRUCT.size + CAN_ERROR_STRUCT.size
+                        channel, length = CAN_ERROR_STRUCT.unpack_from(
+                            data, pos + OBJ_HEADER_STRUCT.size)
+                        msg = Message(timestamp=timestamp, is_error_frame=True,
+                                      channel=channel)
                         yield msg
                     pos += obj_size
                     # Add padding bytes
@@ -170,17 +201,29 @@ class BLFWriter(Listener):
         self.stop_timestamp = None
 
     def on_message_received(self, msg):
-        if not msg.is_error_frame:
+        channel = msg.channel if isinstance(msg.channel, int) else self.channel
+        if msg.is_error_frame:
+            data = CAN_ERROR_STRUCT.pack(channel, 0)
+            self._add_object(CAN_ERROR, data, msg.timestamp)
+        else:
             flags = REMOTE_FLAG if msg.is_remote_frame else 0
             arb_id = msg.arbitration_id
             if msg.id_type:
                 arb_id |= CAN_MSG_EXT
-            data = CAN_MSG_STRUCT.pack(self.channel, flags, msg.dlc, arb_id,
-                                       bytes(msg.data))
-            self._add_object(CAN_MESSAGE, data, msg.timestamp)
-        else:
-            data = CAN_ERROR_STRUCT.pack(self.channel, 0)
-            self._add_object(CAN_ERROR, data, msg.timestamp)
+            if msg.is_fd:
+                fd_flags = EDL
+                if msg.bitrate_switch:
+                    fd_flags |= BRS
+                if msg.error_state_indicator:
+                    fd_flags |= ESI
+                data = CAN_FD_MSG_STRUCT.pack(channel, flags, msg.dlc, arb_id,
+                                              0, 0, fd_flags, msg.dlc,
+                                              bytes(msg.data))
+                self._add_object(CAN_FD_MESSAGE, data, msg.timestamp)
+            else:
+                data = CAN_MSG_STRUCT.pack(channel, flags, msg.dlc, arb_id,
+                                           bytes(msg.data))
+                self._add_object(CAN_MESSAGE, data, msg.timestamp)
 
     def log_event(self, text, timestamp=None):
         """Add an arbitrary message to the log file as a global marker.
@@ -216,7 +259,8 @@ class BLFWriter(Listener):
         self.cache.append(header)
         self.cache.append(data)
         padding_size = len(data) % 4
-        self.cache.append(b"\x00" * padding_size)
+        if padding_size:
+            self.cache.append(b"\x00" * padding_size)
         self.cache_size += obj_size + padding_size
         self.count_of_objects += 1
         if self.cache_size >= self.MAX_CACHE_SIZE:
@@ -224,6 +268,8 @@ class BLFWriter(Listener):
 
     def _flush(self):
         """Compresses and writes data in the cache to file."""
+        if self.fp.closed:
+            return
         cache = b"".join(self.cache)
         if not cache:
             # Nothing to write
@@ -246,6 +292,8 @@ class BLFWriter(Listener):
 
     def stop(self):
         """Stops logging and closes the file."""
+        if self.fp.closed:
+            return
         self._flush()
         filesize = self.fp.tell()
         self.fp.close()
