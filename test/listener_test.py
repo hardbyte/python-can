@@ -38,7 +38,7 @@ class ListenerImportTest(unittest.TestCase):
         self.assertTrue(hasattr(can, 'CanutilsLogWriter'))
         self.assertTrue(hasattr(can, 'CanutilsLogReader'))
 
-        self.assertTrue(hasattr(can, 'SqlReader'))
+        self.assertTrue(hasattr(can, 'SqliteReader'))
         self.assertTrue(hasattr(can, 'SqliteWriter'))
 
         self.assertTrue(hasattr(can, 'Printer'))

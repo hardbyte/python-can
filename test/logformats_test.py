@@ -150,7 +150,7 @@ class TestSqlFileFormat(unittest.TestCase):
     """Tests can.SqliteWriter and can.SqliteReader"""
 
     def test_writer_and_reader(self):
-        _test_writer_and_reader(self, can.SqliteWriter, can.SqlReader,
+        _test_writer_and_reader(self, can.SqliteWriter, can.SqliteReader,
                                 sleep_time=can.SqliteWriter.MAX_TIME_BETWEEN_WRITES,
                                 check_comments=False)
 
