@@ -174,3 +174,9 @@ class VectorBus(BusABC):
         vxlapi.xlDeactivateChannel(self.port_handle, self.mask)
         vxlapi.xlClosePort(self.port_handle)
         vxlapi.xlCloseDriver()
+        
+    def reset(self):
+        vxlapi.xlDeactivateChannel(self.port_handle, self.mask)
+        vxlapi.xlActivateChannel(self.port_handle, self.mask,
+                                     vxlapi.XL_BUS_TYPE_CAN, 0)
+   
