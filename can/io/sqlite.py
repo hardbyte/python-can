@@ -19,12 +19,12 @@ if sys.version_info > (3,):
     buffer = memoryview
 
 
-class SqlReader:
+class SqliteReader:
     """
     Reads recorded CAN messages from a simple SQL database.
 
     This class can be iterated over or used to fetch all messages in the
-    database with :meth:`~SqlReader.read_all`.
+    database with :meth:`~SqliteReader.read_all`.
 
     Calling len() on this object might not run in constant time.
     """
@@ -32,7 +32,7 @@ class SqlReader:
     _SELECT_ALL_COMMAND = "SELECT * FROM messages"
 
     def __init__(self, filename):
-        log.debug("Starting SqlReader with %s", filename)
+        log.debug("Starting SqliteReader with %s", filename)
         self.conn = sqlite3.connect(filename)
         self.cursor = self.conn.cursor()
 
@@ -46,7 +46,7 @@ class SqlReader:
     def __iter__(self):
         log.debug("Iterating through messages from sql db")
         for frame_data in self.cursor.execute(self._SELECT_ALL_COMMAND):
-            yield SqlReader._create_frame_from_db_tuple(frame_data)
+            yield SqliteReader._create_frame_from_db_tuple(frame_data)
 
     def __len__(self):
         # this might not run in constant time
@@ -61,6 +61,10 @@ class SqlReader:
     def close(self):
         """Closes the connection to the database."""
         self.conn.close()
+
+
+# Backward compatibility
+SqlReader = SqliteReader
 
 
 class SqliteWriter(BufferedReader):
