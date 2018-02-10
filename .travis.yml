@@ -29,11 +29,12 @@ sudo: false
 
 matrix:
   # see "os: ..." above
-  allow_failures:
-    - os: osx
-      python: "3.7-dev"
-    - os: osx
-      python: "nightly"
+  include:
+    allow_failures:
+      - os: osx
+        python: "3.7-dev"
+      - os: osx
+        python: "nightly"
 
 install:
   - travis_retry pip install .
