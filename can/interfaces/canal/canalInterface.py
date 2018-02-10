@@ -26,7 +26,6 @@ def format_connection_string(deviceID, baudrate='500'):
     return "%s; %s" % (deviceID, baudrate)
 
 
-# TODO: Issue 36 with data being zeros or anything other than 8 must be fixed
 def message_convert_tx(msg):
     messagetx = CanalMsg()
 
@@ -38,7 +37,7 @@ def message_convert_tx(msg):
     for i in range(length):
         messagetx.data[i] = msg.data[i]
 
-    messagetx.flags = 80000000
+    messagetx.flags = 0x80000000
 
     if msg.is_error_frame:
         messagetx.flags |= IS_ERROR_FRAME
@@ -58,7 +57,7 @@ def message_convert_rx(messagerx):
     REMOTE_FRAME = bool(messagerx.flags & IS_REMOTE_FRAME)
     ERROR_FRAME = bool(messagerx.flags & IS_ERROR_FRAME)
 
-    msgrx = Message(timestamp=messagerx.timestamp,
+    msgrx = Message(timestamp=messagerx.timestamp / 1000.0,
                     is_remote_frame=REMOTE_FRAME,
                     extended_id=ID_TYPE,
                     is_error_frame=ERROR_FRAME,
@@ -151,10 +150,14 @@ class CanalBus(BusABC):
 
     def send(self, msg, timeout=None):
         tx = message_convert_tx(msg)
+
         if timeout:
-            self.can.blocking_send(self.handle, byref(tx), int(timeout * 1000))
+            status = self.can.blocking_send(self.handle, byref(tx), int(timeout * 1000))
         else:
-            self.can.send(self.handle, byref(tx))
+            status = self.can.send(self.handle, byref(tx))
+
+        if status != 0:
+            raise can.CanError("could not send message: status == {}".format(status))
 
     def recv(self, timeout=None):
 
@@ -168,16 +171,26 @@ class CanalBus(BusABC):
             status = self.can.blocking_receive(self.handle, byref(messagerx), time)
 
         if status == 0:
-            rx = message_convert_rx(messagerx)
-        elif status == 19 or status == 32:
-            # CANAL_ERROR_RCV_EMPTY or CANAL_ERROR_TIMEOUT
-            rx = None
-        else:
-            log.error('Canal Error %s', status)
-            rx = None
+            # success
+            return message_convert_rx(messagerx)
 
-        return rx
+        elif status == 19:
+            # CANAL_ERROR_RCV_EMPTY
+            log.warn("recv: status: CANAL_ERROR_RCV_EMPTY")
+            return None
+
+        elif status == 32:
+            # CANAL_ERROR_TIMEOUT
+            log.warn("recv: status: CANAL_ERROR_TIMEOUT")
+            return None
+
+        else:
+            # another error
+            raise can.CanError("could not receive message: status == {}".format(status))
 
     def shutdown(self):
         """Shut down the device safely"""
         status = self.can.close(self.handle)
+
+        if status != 0:
+            raise can.CanError("could not shut down bus: status == {}".format(status))
