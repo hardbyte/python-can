@@ -1,5 +1,4 @@
 language: python
-sudo: false
 
 python:
   # CPython:
@@ -15,8 +14,16 @@ python:
 
 os:
   - linux
-  - osx
-  - windows
+  - osx     # OSX 
+# - windows # Windows is not supported by Travis CI as of Feb. 2018
+
+sudo: false
+dist: trusty
+
+matrix:
+  allow_failures:
+    - os: osx
+      #python: 3.3
 
 install:
   - travis_retry pip install .
