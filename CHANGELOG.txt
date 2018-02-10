@@ -1,11 +1,13 @@
-Version 2.1.0 (2018-02-10)
+Version 2.1.0 (2018-02-17)
 =====
 
-
 * Support for out of tree can interfaces with pluggy.
+* Initial support for CAN-FD for socketcan_native and kvaser interfaces.
 * Neovi interface now uses Intrepid Control Systems's own interface library.
-* Improvements and new documentation for SQL reader/writer
-
+* Improvements and new documentation for SQL reader/writer.
+* Fix bug in neovi serial number decoding.
+* Add testing on OSX to TravisCI
+* Fix non english decoding error on pcan
 
 Version 2.0.0 (2018-01-05
 =====
