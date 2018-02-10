@@ -1,14 +1,23 @@
 language: python
 sudo: false
+
 python:
+  # CPython:
   - "2.7"
-  - "pypy"
-  - "pypy3"
   - "3.4"
   - "3.5"
   - "3.6"
-  - "3.7-dev"
+  - "3.7-dev" # TODO: change to "3.7" once it gets released
   - "nightly"
+  # PyPy:
+  - "pypy"
+  - "pypy3"
+
+os:
+  - linux
+  - osx
+  - windows
+
 install:
   - travis_retry pip install .
   - travis_retry pip install -r requirements.txt
