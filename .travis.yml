@@ -3,6 +3,7 @@ language: python
 python:
   # CPython:
   - "2.7"
+  - "3.3"
   - "3.4"
   - "3.5"
   - "3.6"
@@ -11,15 +12,16 @@ python:
   # PyPy:
   - "pypy"
   - "pypy3"
+  - "pypy-dev"
+  - "pypy3-dev"
 
 os:
   - linux   # Linux is officially supported and we test the software under
             # many different Python verions (see "python: ..." above)
 
-# - osx     # OSX is not officially supported by Travis CI as of Feb. 2018
-            # nevertheless, "nightly" and "3.7-dev" seem to work, so we
-            # include them explicitly below, but allow them to fail as well
-            # for now
+# - osx     # Python + OSX is not officially supported by Travis CI as of Feb. 2018
+            # nevertheless, "nightly" and "something-dev" seem to work, so we
+            # include them explicitly below
 
 # - windows # Windows is not supported at all by Travis CI as of Feb. 2018
 
@@ -31,17 +33,30 @@ matrix:
   # see "os: ..." above
   include:
     - os: osx
+      python: "2.7-dev"
+    - os: osx
+      python: "3.3-dev"
+    - os: osx
+      python: "3.4-dev"
+    - os: osx
+      python: "3.5-dev"
+    - os: osx
+      python: "3.6-dev"
+    - os: osx
       python: "3.7-dev"
     - os: osx
       python: "nightly"
     - os: osx
-      python: "3.6-stable"
+      python: "pypy-dev"
     - os: osx
-      python: "3.6-dev"
-    - os: osx
-      python: "3.6-nightly"
+      python: "pypy3-dev"
   allow_failures:
-    - python: "3.7-dev"
+    # allow dev/nighly builds to fail
+    #- python: "2.7-dev"
+    #- python: "3.4-dev"
+    #- python: "3.5-dev"
+    #- python: "3.6-dev"
+    - python: "*-dev"
     - python: "nightly"
 
 install:
