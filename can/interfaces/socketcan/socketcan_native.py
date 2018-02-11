@@ -229,16 +229,16 @@ class CyclicSendTask(SocketCanBCMBase, LimitedDurationCyclicSendTaskABC,
         :param period: The rate in seconds at which to send the message.
         """
         super(CyclicSendTask, self).__init__(channel, message, period, duration=None)
-        self._tx_setup(message)
         self.message = message
+        self._tx_setup()
 
-    def _tx_setup(self, message):
+    def _tx_setup(self):
         # Create a low level packed frame to pass to the kernel
-        self.can_id_with_flags = _add_flags_to_can_id(message)
-        self.flags = CAN_FD_FRAME if message.is_fd else 0
+        self.can_id_with_flags = _add_flags_to_can_id(self.message)
+        self.flags = CAN_FD_FRAME if self.message.is_fd else 0
         header = build_bcm_transmit_header(self.can_id_with_flags, 0, 0.0,
                                            self.period, self.flags)
-        frame = build_can_frame(message)
+        frame = build_can_frame(self.message)
         log.debug("Sending BCM command")
         send_bcm(self.bcm_socket, header + frame)
 
@@ -257,13 +257,14 @@ class CyclicSendTask(SocketCanBCMBase, LimitedDurationCyclicSendTaskABC,
     def modify_data(self, message):
         """Update the contents of this periodically sent message.
 
-        Note the Message must have the same :attr:`~can.Message.arbitration_id`.
+        Note that the Message must have the same :attr:`~can.Message.arbitration_id`.
         """
-        assert message.arbitration_id == self.can_id, "You cannot modify the can identifier"
-        self._tx_setup(message)
+        assert message.arbitration_id == self.can_id, "You cannot modify the CAN identifier"
+        self.message = message
+        self._tx_setup()
 
     def start(self):
-        self._tx_setup(self.message)
+        self._tx_setup()
 
 
 class MultiRateCyclicSendTask(CyclicSendTask):
@@ -515,7 +516,8 @@ if __name__ == "__main__":
         event.wait()
         sender_socket = create_socket()
         bind_socket(sender_socket, 'vcan0')
-        sender_socket.send(build_can_frame(0x01, b'\x01\x02\x03'))
+        message = Message(arbitration_id=0x01, data=b'\x01\x02\x03')
+        sender_socket.send(build_can_frame(message))
         print("Sender sent a message.")
 
     import threading
