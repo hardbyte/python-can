@@ -9,7 +9,6 @@ import random
 
 from can import Message
 
-
 # make tests more reproducible
 random.seed(13339115)
 
@@ -73,12 +72,12 @@ TEST_MESSAGES_BASE = [
 
 TEST_MESSAGES_REMOTE_FRAMES = [
     Message(
-        arbitration_id=0xDADADA, extended_id=True, is_remote_frame=False,
+        arbitration_id=0xDADADA, extended_id=True, is_remote_frame=True,
         timestamp=TEST_TIME + .165,
         data=[1, 2, 3, 4, 5, 6, 7, 8]
     ),
     Message(
-        arbitration_id=0x123, extended_id=False, is_remote_frame=False,
+        arbitration_id=0x123, extended_id=False, is_remote_frame=True,
         timestamp=TEST_TIME + .365,
         data=[254, 255]
     ),
@@ -124,6 +123,5 @@ def generate_message(arbitration_id):
     Generates a new message with the given ID, some random data
     and a non-extended ID.
     """
-    data = [random.randrange(0, 2 ** 8 - 1) for _ in range(8)]
-    msg = Message(arbitration_id=arbitration_id, data=data, extended_id=False)
-    return msg
+    data = bytes([random.randrange(0, 2 ** 8 - 1) for _ in range(8)])
+    return Message(arbitration_id=arbitration_id, data=data, extended_id=False)
