@@ -112,7 +112,7 @@ def _test_writer_and_reader(test_case, writer_constructor, reader_constructor, s
     for i, (read, original) in enumerate(zip(read_messages, original_messages)):
         try:
             test_case.assertEqual(read, original)
-            test_case.assertAlmostEqual(read.timestamp, original.timestamp)
+            test_case.assertAlmostEqual(read.timestamp, original.timestamp, places=6)
         except Exception as exception:
             # attach the index
             exception.args += ("test failed at index #{}".format(i), )
@@ -142,7 +142,7 @@ class TestAscFileFormat(unittest.TestCase):
 
     def test_writer_and_reader(self):
         _test_writer_and_reader(self, can.ASCWriter, can.ASCReader,
-                                check_error_frames=False, # TODO this should get fixed, see Issue #218
+                                check_error_frames=True,
                                 check_comments=True)
 
 
