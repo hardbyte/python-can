@@ -50,4 +50,4 @@ Wherever we interact, we strive to follow the
 Contributing
 ------------
 
-See `doc/development.rst` for getting started.
+See `doc/development.rst <doc/development.rst>`__ for getting started.
