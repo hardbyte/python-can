@@ -141,7 +141,6 @@ class TestCanutilsLog(unittest.TestCase):
 
     def test_writer_and_reader(self):
         _test_writer_and_reader(self, can.CanutilsLogWriter, can.CanutilsLogReader,
-                                check_error_frames=False, # TODO this should get fixed, see Issue #217
                                 check_comments=False)
 
 
