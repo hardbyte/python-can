@@ -12,7 +12,7 @@ class SimpleCyclicSendTaskTest(unittest.TestCase):
         task = bus.send_periodic(msg, 0.01, 1)
         self.assertIsInstance(task, can.broadcastmanager.CyclicSendTaskABC)
 
-        sleep(2)
+        sleep(5)
         size = bus2.queue.qsize()
         # About 100 messages should have been transmitted
         self.assertTrue(90 < size < 110,
