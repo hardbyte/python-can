@@ -1,15 +1,19 @@
+import os
 from time import sleep
 import unittest
+
 import can
 
+IS_TRAVIS = os.environ.get('TRAVIS', 'default') == 'true'
 
 class SimpleCyclicSendTaskTest(unittest.TestCase):
 
+    @unittest.skipIf(IS_TRAVIS, "skip on Travis CI")
     def test_cycle_time(self):
         msg = can.Message(extended_id=False, arbitration_id=0x100, data=[0,1,2,3,4,5,6,7])
-        bus = can.interface.Bus(bustype='virtual')
+        bus1 = can.interface.Bus(bustype='virtual')
         bus2 = can.interface.Bus(bustype='virtual')
-        task = bus.send_periodic(msg, 0.01, 1)
+        task = bus1.send_periodic(msg, 0.01, 1)
         self.assertIsInstance(task, can.broadcastmanager.CyclicSendTaskABC)
 
         sleep(5)
@@ -20,9 +24,8 @@ class SimpleCyclicSendTaskTest(unittest.TestCase):
         last_msg = bus2.recv()
         self.assertEqual(last_msg, msg)
 
-        bus.shutdown()
+        bus1.shutdown()
         bus2.shutdown()
-
 
 if __name__ == '__main__':
     unittest.main()

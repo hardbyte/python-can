@@ -1,8 +1,10 @@
+import os
 import unittest
 import time
 
 import can
 
+IS_TRAVIS = os.environ.get('TRAVIS', 'default') == 'true'
 
 BITRATE = 500000
 TIMEOUT = 0.1
@@ -67,6 +69,7 @@ class Back2BackTestCase(unittest.TestCase):
     def test_no_message(self):
         self.assertIsNone(self.bus1.recv(0.1))
 
+    @unittest.skipIf(IS_TRAVIS, "skip on Travis CI")
     def test_timestamp(self):
         self.bus2.send(can.Message())
         recv_msg1 = self.bus1.recv(TIMEOUT)
