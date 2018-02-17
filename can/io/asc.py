@@ -120,15 +120,19 @@ class ASCWriter(Listener):
             logger.debug("ASCWriter: ignoring empty message")
             return
 
-        timestamp = (timestamp or time.time())
+        if timestamp is None:
+            timestamp = time.time()
+
         if timestamp >= self.started:
             timestamp -= self.started
 
         line = self.EVENT_STRING.format(time=timestamp, message=message)
+
         if not self.log_file.closed:
             self.log_file.write(line)
 
     def on_message_received(self, msg):
+
         if msg.is_error_frame:
             self.log_event("{}  ErrorFrame".format(self.channel), msg.timestamp)
             return
@@ -139,18 +143,18 @@ class ASCWriter(Listener):
         else:
             dtype = "d {}".format(msg.dlc)
             data = ["{:02X}".format(byte) for byte in msg.data]
+
         arb_id = "{:X}".format(msg.arbitration_id)
-        if msg.id_type:
-            arb_id = arb_id + "x"
-        timestamp = msg.timestamp
-        if timestamp >= self.started:
-            timestamp -= self.started
+        if msg.is_extended_id:
+            arb_id += "x"
 
         channel = msg.channel if isinstance(msg.channel, int) else self.channel
-        line = self.LOG_STRING.format(time=timestamp,
+
+        line = self.LOG_STRING.format(time=msg.timestamp,
                                       channel=channel,
                                       id=arb_id,
                                       dtype=dtype,
                                       data=" ".join(data))
+
         if not self.log_file.closed:
             self.log_file.write(line)

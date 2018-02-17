@@ -9,6 +9,7 @@ from can.interfaces.pcan.PCANBasic import *
 from can.bus import BusABC
 from can.message import Message
 from can import CanError
+import can
 import time
 
 boottimeEpoch = 0
@@ -82,7 +83,7 @@ class PcanBus(BusABC):
         else:
             self.channel_info = channel
 
-        bitrate = kwargs.get('bitrate', 500000)
+        bitrate = kwargs.get('bitrate', can.rc.get('bitrate', 500000))
         pcan_bitrate = pcan_bitrate_objs.get(bitrate, PCAN_BAUD_500K)
 
         hwtype = PCAN_TYPE_ISA
