@@ -98,7 +98,7 @@ class NeoViBus(BusABC):
 
         self.channel_info = '%s %s CH:%s' % (
             self.dev.Name,
-            self.dev.SerialNumber,
+            self.get_serial_number(self.dev),
             channel
         )
         logger.info("Using device: {}".format(self.channel_info))
@@ -117,6 +117,23 @@ class NeoViBus(BusABC):
             ics.NEOVI6_VCAN_TIMESTAMP_1, ics.NEOVI6_VCAN_TIMESTAMP_2
         )
 
+    @staticmethod
+    def get_serial_number(device):
+        """Decode (if needed) and return the ICS device serial string
+
+        :param device: ics device
+        :return: ics device serial string
+        :rtype: str
+        """
+        def to_base36(n, alphabet="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"):
+            return (to_base36(n // 36) + alphabet[n % 36]).lstrip("0") \
+                if n > 0 else "0"
+
+        a0000 = 604661760
+        if device.SerialNumber >= a0000:
+            return to_base36(device.SerialNumber)
+        return str(device.SerialNumber)
+
     def shutdown(self):
         super(NeoViBus, self).shutdown()
         self.opened = False
@@ -129,7 +146,7 @@ class NeoViBus(BusABC):
             devices = ics.find_devices()
 
         for device in devices:
-            if serial is None or str(device.SerialNumber) == str(serial):
+            if serial is None or self.get_serial_number(device) == str(serial):
                 dev = device
                 break
         else:
