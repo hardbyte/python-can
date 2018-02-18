@@ -1,6 +1,9 @@
+# -*- coding: utf-8 -*-
+
 """
 python-can requires the setuptools package to be installed.
 """
+
 import re
 import logging
 from setuptools import setup, find_packages
@@ -30,6 +33,7 @@ setup(
     test_suite="nose.collector",
     tests_require=['mock', 'nose', 'pyserial'],
     extras_require={
-        'serial': ['pyserial']
+        'serial': ['pyserial'],
+        'neovi': ['python-ics'],
     }
 )

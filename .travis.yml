@@ -1,14 +1,47 @@
 language: python
-sudo: false
+
 python:
+  # CPython:
   - "2.7"
-  - "pypy"
-  - "pypy3"
+  - "3.3"
   - "3.4"
   - "3.5"
   - "3.6"
-  - "3.7-dev"
+  - "3.7-dev" # TODO: change to "3.7" once it gets released
   - "nightly"
+  # PyPy:
+  - "pypy"
+  - "pypy3"
+
+os:
+  - linux   # Linux is officially supported and we test the library under
+            # many different Python verions (see "python: ..." above)
+
+# - osx     # OSX + Python is not officially supported by Travis CI as of Feb. 2018
+            # nevertheless, "nightly" and some "*-dev" versions seem to work, so we
+            # include them explicitly below (see "matrix: include: ..." below)
+
+# - windows # Windows is not supported at all by Travis CI as of Feb. 2018
+
+# Linux setup
+dist: trusty
+sudo: false
+
+matrix:
+  # see "os: ..." above
+  include:
+    - os: osx
+      python: "3.6-dev"
+    - os: osx
+      python: "3.7-dev"
+    - os: osx
+      python: "nightly"
+
+  # allow all nighly builds to fail, since these python versions might be unstable
+  # we do not allow dev builds to fail, since these builds are stable enough
+  allow_failures:
+    - python: "nightly"
+
 install:
   - travis_retry pip install .
   - travis_retry pip install -r requirements.txt

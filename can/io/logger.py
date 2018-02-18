@@ -5,6 +5,7 @@ from .sqlite import SqliteWriter
 from .stdout import Printer
 from .log import CanutilsLogWriter
 
+
 class Logger(object):
     """
     Logs CAN messages to a file.

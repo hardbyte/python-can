@@ -169,6 +169,12 @@ if __canlib is not None:
                                             restype=canstat.c_canStatus,
                                             errcheck=__check_status)
 
+    canSetBusParamsFd = __get_canlib_function("canSetBusParamsFd",
+                                            argtypes=[c_canHandle, ctypes.c_long,
+                                                      ctypes.c_uint, ctypes.c_uint,
+                                                      ctypes.c_uint],
+                                            restype=canstat.c_canStatus,
+                                            errcheck=__check_status)
 
     canSetBusOutputControl = __get_canlib_function("canSetBusOutputControl",
                                                    argtypes=[c_canHandle,
@@ -254,15 +260,25 @@ DRIVER_MODE_SILENT = False
 DRIVER_MODE_NORMAL = True
 
 
-BITRATE_OBJS = {1000000 : canstat.canBITRATE_1M,
-                 500000 : canstat.canBITRATE_500K,
-                 250000 : canstat.canBITRATE_250K,
-                 125000 : canstat.canBITRATE_125K,
-                 100000 : canstat.canBITRATE_100K,
-                  83000 : canstat.canBITRATE_83K,
-                  62000 : canstat.canBITRATE_62K,
-                  50000 : canstat.canBITRATE_50K,
-                  10000 : canstat.canBITRATE_10K}
+BITRATE_OBJS = {
+    1000000: canstat.canBITRATE_1M,
+    500000: canstat.canBITRATE_500K,
+    250000: canstat.canBITRATE_250K,
+    125000: canstat.canBITRATE_125K,
+    100000: canstat.canBITRATE_100K,
+    83000: canstat.canBITRATE_83K,
+    62000: canstat.canBITRATE_62K,
+    50000: canstat.canBITRATE_50K,
+    10000: canstat.canBITRATE_10K
+}
+
+BITRATE_FD = {
+    500000: canstat.canFD_BITRATE_500K_80P,
+    1000000: canstat.canFD_BITRATE_1M_80P,
+    2000000: canstat.canFD_BITRATE_2M_80P,
+    4000000: canstat.canFD_BITRATE_4M_80P,
+    8000000: canstat.canFD_BITRATE_8M_60P
+}
 
 
 class KvaserBus(BusABC):
@@ -285,6 +301,8 @@ class KvaserBus(BusABC):
 
         :param int bitrate:
             Bitrate of channel in bit/s
+        :param bool accept_virtual:
+            If virtual channels should be accepted.
         :param int tseg1:
             Time segment 1, that is, the number of quanta from (but not including)
             the Sync Segment to the sampling point.
@@ -313,6 +331,11 @@ class KvaserBus(BusABC):
             Only works if single_handle is also False.
             If you want to receive messages from other applications on the same
             computer, set this to True or set single_handle to True.
+        :param bool fd:
+            If CAN-FD frames should be supported.
+        :param int data_bitrate:
+            Which bitrate to use for data phase in CAN FD.
+            Defaults to arbitration bitrate.
         """
         log.info("CAN Filters: {}".format(can_filters))
         log.info("Got configuration of: {}".format(config))
@@ -324,15 +347,15 @@ class KvaserBus(BusABC):
         driver_mode = config.get('driver_mode', DRIVER_MODE_NORMAL)
         single_handle = config.get('single_handle', False)
         receive_own_messages = config.get('receive_own_messages', False)
+        accept_virtual = config.get('accept_virtual', True)
+        fd = config.get('fd', False)
+        data_bitrate = config.get('data_bitrate', None)
 
         try:
             channel = int(channel)
         except ValueError:
             raise ValueError('channel must be an integer')
         self.channel = channel
-
-        if 'tseg1' not in config and bitrate in BITRATE_OBJS:
-            bitrate = BITRATE_OBJS[bitrate]
 
         log.debug('Initialising bus instance')
         self.single_handle = single_handle
@@ -348,12 +371,33 @@ class KvaserBus(BusABC):
             if idx == channel:
                 self.channel_info = channel_info
 
+        flags = 0
+        if accept_virtual:
+            flags |= canstat.canOPEN_ACCEPT_VIRTUAL
+        if fd:
+            flags |= canstat.canOPEN_CAN_FD
+
         log.debug('Creating read handle to bus channel: %s' % channel)
-        self._read_handle = canOpenChannel(channel, canstat.canOPEN_ACCEPT_VIRTUAL)
+        self._read_handle = canOpenChannel(channel, flags)
         canIoCtl(self._read_handle,
                  canstat.canIOCTL_SET_TIMER_SCALE,
                  ctypes.byref(ctypes.c_long(TIMESTAMP_RESOLUTION)),
                  4)
+        
+        if fd:
+            if 'tseg1' not in config and bitrate in BITRATE_FD:
+                # Use predefined bitrate for arbitration
+                bitrate = BITRATE_FD[bitrate]
+            if data_bitrate in BITRATE_FD:
+                # Use predefined bitrate for data
+                data_bitrate = BITRATE_FD[data_bitrate]
+            elif not data_bitrate:
+                # Use same bitrate for arbitration and data phase
+                data_bitrate = bitrate
+            canSetBusParamsFd(self._read_handle, bitrate, tseg1, tseg2, sjw)
+        else:
+            if 'tseg1' not in config and bitrate in BITRATE_OBJS:
+                bitrate = BITRATE_OBJS[bitrate]
         canSetBusParams(self._read_handle, bitrate, tseg1, tseg2, sjw, no_samp, 0)
 
         # By default, use local echo if single handle is used (see #160)
@@ -370,7 +414,7 @@ class KvaserBus(BusABC):
             self._write_handle = self._read_handle
         else:
             log.debug('Creating separate handle for TX on channel: %s' % channel)
-            self._write_handle = canOpenChannel(channel, canstat.canOPEN_ACCEPT_VIRTUAL)
+            self._write_handle = canOpenChannel(channel, flags)
             canBusOn(self._read_handle)
 
         self.set_filters(can_filters)
@@ -437,7 +481,7 @@ class KvaserBus(BusABC):
         Read a message from kvaser device.
         """
         arb_id = ctypes.c_long(0)
-        data = ctypes.create_string_buffer(8)
+        data = ctypes.create_string_buffer(64)
         dlc = ctypes.c_uint(0)
         flags = ctypes.c_uint(0)
         timestamp = ctypes.c_ulong(0)
@@ -467,6 +511,9 @@ class KvaserBus(BusABC):
             is_extended = bool(flags & canstat.canMSG_EXT)
             is_remote_frame = bool(flags & canstat.canMSG_RTR)
             is_error_frame = bool(flags & canstat.canMSG_ERROR_FRAME)
+            is_fd = bool(flags & canstat.canFDMSG_FDF)
+            bitrate_switch = bool(flags & canstat.canFDMSG_BRS)
+            error_state_indicator = bool(flags & canstat.canFDMSG_ESI)
             msg_timestamp = timestamp.value * TIMESTAMP_FACTOR
             rx_msg = Message(arbitration_id=arb_id.value,
                              data=data_array[:dlc.value],
@@ -474,6 +521,9 @@ class KvaserBus(BusABC):
                              extended_id=is_extended,
                              is_error_frame=is_error_frame,
                              is_remote_frame=is_remote_frame,
+                             is_fd=is_fd,
+                             bitrate_switch=bitrate_switch,
+                             error_state_indicator=error_state_indicator,
                              channel=self.channel,
                              timestamp=msg_timestamp + self._timestamp_offset)
             rx_msg.flags = flags
@@ -491,6 +541,10 @@ class KvaserBus(BusABC):
             flags |= canstat.canMSG_RTR
         if msg.is_error_frame:
             flags |= canstat.canMSG_ERROR_FRAME
+        if msg.is_fd:
+            flags |= canstat.canFDMSG_FDF
+        if msg.bitrate_switch:
+            flags |= canstat.canFDMSG_BRS
         ArrayConstructor = ctypes.c_byte * msg.dlc
         buf = ArrayConstructor(*msg.data)
         canWrite(self._write_handle,
@@ -520,9 +574,10 @@ class KvaserBus(BusABC):
         # Wait for transmit queue to be cleared
         try:
             canWriteSync(self._write_handle, 100)
-        except CANLIBError as e:
-            log.warning("There may be messages in the transmit queue that could "
-                        "not be transmitted before going bus off (%s)", e)
+        except CANLIBError:
+            # Not a huge deal and it seems that we get timeout if no messages
+            # exists in the buffer at all
+            pass
         if not self.single_handle:
             canBusOff(self._read_handle)
             canClose(self._read_handle)

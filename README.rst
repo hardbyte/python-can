@@ -12,7 +12,7 @@ python-can
    :alt: Documentation Status
                 
 .. |build| image:: https://travis-ci.org/hardbyte/python-can.svg?branch=develop
-   :target: https://travis-ci.org/hardbyte/python-can
+   :target: https://travis-ci.org/hardbyte/python-can/branches
    :alt: CI Server for develop branch
 
 
@@ -26,7 +26,7 @@ Python developers; providing `common abstractions to
 different hardware devices`, and a suite of utilities for sending and receiving
 messages on a can bus.
 
-The library supports Python 2.7, Python 3.3+ and runs on Mac, Linux and Windows.
+The library supports Python 2.7, Python 3.3+ as well as PyPy and runs on Mac, Linux and Windows.
 
 You can find more information in the documentation, online at
 `python-can.readthedocs.org <https://python-can.readthedocs.org/en/stable/>`__.
@@ -46,3 +46,8 @@ questions and answers tagged with ``python+can``.
 
 Wherever we interact, we strive to follow the
 `Python Community Code of Conduct <https://www.python.org/psf/codeofconduct/>`__.
+
+Contributing
+------------
+
+See `doc/development.rst <doc/development.rst>`__ for getting started.

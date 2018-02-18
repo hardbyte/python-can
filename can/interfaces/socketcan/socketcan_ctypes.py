@@ -125,12 +125,16 @@ class SocketcanCtypes_Bus(BusABC):
 
     def send(self, msg, timeout=None):
         frame = _build_can_frame(msg)
+
         if timeout:
             # Wait for write availability. write will fail below on timeout
-            select.select([], [self.socket], [], timeout)
+            _, ready_send_sockets, _ = select.select([], [self.socket], [], timeout)
+            if not ready_send_sockets:
+                raise can.CanError("Timeout while sending")
+
         bytes_sent = libc.write(self.socket, ctypes.byref(frame), ctypes.sizeof(frame))
+
         if bytes_sent == -1:
-            log.debug("Error sending frame :-/")
             raise can.CanError("can.socketcan.ctypes failed to transmit")
         elif bytes_sent == 0:
             raise can.CanError("Transmit buffer overflow")
@@ -346,9 +350,9 @@ def _build_can_frame(message):
     # TODO need to understand the extended frame format
     frame = CAN_FRAME()
     frame.can_id = arbitration_id
-    frame.can_dlc = len(message.data)
+    frame.can_dlc = message.dlc
 
-    frame.data[0:frame.can_dlc] = message.data
+    frame.data[0:len(message.data)] = message.data
 
     log.debug("sizeof frame: %d", ctypes.sizeof(frame))
     return frame

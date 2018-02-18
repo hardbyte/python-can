@@ -130,13 +130,13 @@ class PcanBus(BusABC):
                 if stsReturn[0] != PCAN_ERROR_OK:
                     text = "An error occurred. Error-code's text ({0:X}h) couldn't be retrieved".format(error)
                 else:
-                    text = stsReturn[1].decode('utf-8')
+                    text = stsReturn[1].decode('utf-8', errors='replace')
 
                 strings.append(text)
 
             complete_text = '\n'.join(strings)
         else:
-            complete_text = stsReturn[1].decode('utf-8')
+            complete_text = stsReturn[1].decode('utf-8', errors='replace')
 
         return complete_text
 
