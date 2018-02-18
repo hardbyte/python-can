@@ -8,6 +8,8 @@ Version 2.1.0 (2018-02-17)
 * Fix bug in neovi serial number decoding.
 * Add testing on OSX to TravisCI
 * Fix non english decoding error on pcan
+* Other misc improvements and bug fixes
+
 
 Version 2.0.0 (2018-01-05
 =====
