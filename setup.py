@@ -1,6 +1,9 @@
+# -*- coding: utf-8 -*-
+
 """
 python-can requires the setuptools package to be installed.
 """
+
 import re
 import logging
 from setuptools import setup, find_packages

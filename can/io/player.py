@@ -5,7 +5,7 @@ import logging
 from .asc import ASCReader
 from .log import CanutilsLogReader
 from .blf import BLFReader
-from .sqlite import SqlReader
+from .sqlite import SqliteReader
 
 log = logging.getLogger('can.io.player')
 
@@ -35,7 +35,7 @@ class LogReader(object):
         if filename.endswith(".blf"):
             return BLFReader(filename)
         if filename.endswith(".db"):
-            return SqlReader(filename)
+            return SqliteReader(filename)
         if filename.endswith(".asc"):
             return ASCReader(filename)
         if filename.endswith(".log"):

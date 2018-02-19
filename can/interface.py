@@ -4,6 +4,7 @@ import can
 import importlib
 
 from can.broadcastmanager import CyclicSendTaskABC, MultiRateCyclicSendTaskABC
+from pkg_resources import iter_entry_points
 from can.util import load_config
 
 # interface_name => (module, classname)
@@ -22,6 +23,12 @@ BACKENDS = {
     'vector':           ('can.interfaces.vector', 'VectorBus'),
     'slcan':            ('can.interfaces.slcan', 'slcanBus')
 }
+
+
+BACKENDS.update({
+    interface.name: (interface.module_name, interface.attrs[0])
+    for interface in iter_entry_points('python_can.interface')
+})
 
 
 class Bus(object):

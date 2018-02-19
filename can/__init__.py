@@ -5,7 +5,7 @@ from __future__ import absolute_import
 
 import logging
 
-__version__ = "2.0.0"
+__version__ = "2.1.1-dev"
 
 log = logging.getLogger('can')
 
@@ -22,7 +22,7 @@ from can.io import ASCWriter, ASCReader
 from can.io import BLFReader, BLFWriter
 from can.io import CanutilsLogReader, CanutilsLogWriter
 from can.io import CSVWriter
-from can.io import SqliteWriter, SqlReader
+from can.io import SqliteWriter, SqliteReader
 
 from can.util import set_logging_level
 

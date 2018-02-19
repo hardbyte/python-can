@@ -38,7 +38,7 @@ Creating a Release
 - Upload with twine ``twine upload dist/python-can-X.Y.Z*``
 - In a new virtual env check that the package can be installed with pip: ``pip install python-can==X.Y.Z``
 - Create a new tag in the repository.
-- Check the release on PyPi and github.
+- Check the release on PyPi, readthedocs and github.
 
 
 Code Structure
