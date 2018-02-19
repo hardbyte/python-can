@@ -54,14 +54,13 @@ def main():
     parser.add_argument('-b', '--bitrate', type=int,
                         help='''Bitrate to use for the CAN bus.''')
 
-    parser.add_argument('-s', '--state', type=int, dest='state', default=1,
-                        help='''State to use for the CAN bus. 1 for ACTIVE (Default), 0 for PASSIVE ''')
+    group = parser.add_mutually_exclusive_group(required=False)
+    group.add_argument('--active', action='store_true')
+    group.add_argument('--passive', action='store_true')
 
     results = parser.parse_args()
 
     verbosity = results.verbosity
-
-    state = results.state
 
     logging_level_name = ['critical', 'error', 'warning', 'info', 'debug', 'subdebug'][min(5, verbosity)]
     can.set_logging_level(logging_level_name)
@@ -86,8 +85,11 @@ def main():
         config["bitrate"] = results.bitrate
     bus = can.interface.Bus(results.channel, **config)
 
-    if results.state is 0:
-        bus.state = BusState.LISTEN_ONLY
+    if results.active:
+        bus.state = BusState.ACTIVE
+
+    if results.passive:
+        bus.state = BusState.PASSIVE
 
     print('Connected to {}: {}'.format(bus.__class__.__name__, bus.channel_info))
     print('Can Logger (Started on {})\n'.format(datetime.datetime.now()))

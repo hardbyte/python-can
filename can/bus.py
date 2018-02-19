@@ -11,7 +11,7 @@ import threading
 from can.broadcastmanager import ThreadBasedCyclicSendTask
 from collections import namedtuple
 
-BusState = namedtuple('BusState', 'INITIALISING, OPERATIONAL, LISTEN_ONLY, SLEEP')
+BusState = namedtuple('BusState', 'ACTIVE, PASSIVE, ERROR')
 
 logger = logging.getLogger(__name__)
 
@@ -149,10 +149,19 @@ class BusABC(object):
     @property
     @abc.abstractmethod
     def state(self):
-        return 'Should never read this'
+        """
+        Return the current state of the hardware
+        :return: ACTIVE, PASSIVE or ERROR
+        :rtype: NamedTuple
+        """
+        pass
 
     @state.setter
     def state(self, new_state):
+        """
+        Set the new state of the hardware
+        :param new_state: BusState.ACTIVE, BusState.PASSIVE or BusState.ERROR
+        """
         pass
 
     __metaclass__ = abc.ABCMeta

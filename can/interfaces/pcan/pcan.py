@@ -64,7 +64,7 @@ pcan_bitrate_objs = {1000000 : PCAN_BAUD_1M,
 
 class PcanBus(BusABC):
 
-    def __init__(self, channel, *args, **kwargs):
+    def __init__(self, channel, state=BusState.ACTIVE, *args, **kwargs):
         """A PCAN USB interface to CAN.
 
         On top of the usual :class:`~can.Bus` methods provided,
@@ -73,10 +73,13 @@ class PcanBus(BusABC):
         :param str channel:
             The can interface name. An example would be PCAN_USBBUS1
 
+        :param BusState state:
+            BusState of the channel.
+            Default is ACTIVE
+
         :param int bitrate:
             Bitrate of channel in bit/s.
             Default is 500 Kbs
-
         """
         if channel is None or channel == '':
             raise ArgumentError("Must specify a PCAN channel")
@@ -92,6 +95,11 @@ class PcanBus(BusABC):
 
         self.m_objPCANBasic = PCANBasic()
         self.m_PcanHandle = globals()[channel]
+
+        if state is BusState.ACTIVE or BusState.PASSIVE:
+            self._state = state
+        else:
+            raise ArgumentError("BusState must be Active or Passive")
 
         result = self.m_objPCANBasic.Initialize(self.m_PcanHandle, pcan_bitrate, hwtype, ioport, interrupt)
 
@@ -258,6 +266,24 @@ class PcanBus(BusABC):
 
     def shutdown(self):
         self.m_objPCANBasic.Uninitialize(self.m_PcanHandle)
+
+    @property
+    def state(self):
+        return self._state
+
+    @state.setter
+    def state(self, new_state):
+
+        self._state = new_state
+
+        if new_state is BusState.ACTIVE:
+            self.m_objPCANBasic.SetValue(self.m_PcanHandle, PCAN_LISTEN_ONLY, PCAN_PARAMETER_OFF)
+
+        if new_state is BusState.PASSIVE:
+            # When this mode is set, the CAN controller does not take part on active events (eg. transmit CAN messages)
+            # but stays in a passive mode (CAN monitor), in which it can analyse the traffic on the CAN bus used by a
+            # PCAN channel. See also the Philips Data Sheet "SJA1000 Stand-alone CAN controller".
+            self.m_objPCANBasic.SetValue(self.m_PcanHandle, PCAN_LISTEN_ONLY, PCAN_PARAMETER_ON)
 
 
 class PcanError(CanError):
