@@ -1,16 +1,19 @@
-"""
-Enable basic can over a PCAN USB device.
+#!/usr/bin/env python
+# coding: utf-8
 
 """
+Enable basic CAN over a PCAN USB device.
+"""
+
 import logging
 import sys
+import time
 
-from can.interfaces.pcan.PCANBasic import *
+import can
+from can import CanError
 from can.bus import BusABC
 from can.message import Message
-from can import CanError
-import can
-import time
+from can.interfaces.pcan.PCANBasic import *
 
 boottimeEpoch = 0
 try:
@@ -35,10 +38,10 @@ except ImportError:
         # Use polling instead
         HAS_EVENTS = False
 
-if sys.version_info >= (3, 3):
+try:
     # new in 3.3
     timeout_clock = time.perf_counter
-else:
+except AttributeError:
     # deprecated in 3.3
     timeout_clock = time.clock
 

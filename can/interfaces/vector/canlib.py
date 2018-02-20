@@ -1,8 +1,12 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+# coding: utf-8
+
 """
-Ctypes wrapper module for Vector CAN Interface on win32/win64 systems
+Ctypes wrapper module for Vector CAN Interface on win32/win64 systems.
+
 Authors: Julien Grave <grave.jul@gmail.com>, Christian Sandberg
 """
+
 # Import Standard Python Modules
 # ==============================
 import ctypes
@@ -179,4 +183,3 @@ class VectorBus(BusABC):
         vxlapi.xlDeactivateChannel(self.port_handle, self.mask)
         vxlapi.xlActivateChannel(self.port_handle, self.mask,
                                      vxlapi.XL_BUS_TYPE_CAN, 0)
-   

@@ -1,17 +1,21 @@
+#!/usr/bin/env python
+# coding: utf-8
+
 """
 Contains Python equivalents of the function and constant
 definitions in CANLIB's canstat.h, with some supporting functionality
 specific to Python.
 
 Copyright (C) 2010 Dynamic Controls
-
 """
+
 import ctypes
 
 
 class c_canStatus(ctypes.c_int):
     pass
 
+# TODO better formatting
 canOK = 0
 canERR_PARAM = -1
 canERR_NOMSG = -2

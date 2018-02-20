@@ -1,6 +1,9 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+# coding: utf-8
+
 """
 Ctypes wrapper module for IXXAT Virtual CAN Interface V3 on win32 systems
+
 Copyright (C) 2016 Giuseppe Corbelli <giuseppe.corbelli@weightpack.com>
 """
 
@@ -12,10 +15,11 @@ import time
 
 from can import CanError, BusABC
 from can import Message
-from can.interfaces.ixxat import constants, structures
 from can.broadcastmanager import (LimitedDurationCyclicSendTaskABC,
                                   RestartableCyclicTaskABC)
 from can.ctypesutil import CLibrary, HANDLE, PHANDLE
+
+from can.interfaces.ixxat import constants, structures
 
 from .constants import VCI_MAX_ERRSTRLEN
 from .exceptions import *
@@ -24,9 +28,10 @@ __all__ = ["VCITimeout", "VCIError", "VCIDeviceNotFoundError", "IXXATBus", "vciF
 
 log = logging.getLogger('can.ixxat')
 
-if ((sys.version_info.major == 3) and (sys.version_info.minor >= 3)):
+try:
+    # since Python 3.3
     _timer_function = time.perf_counter
-else:
+except AttributeError:
     _timer_function = time.clock
 
 # Hack to have vciFormatError as a free function, see below
@@ -203,18 +208,18 @@ except Exception as e:
 
 
 CAN_INFO_MESSAGES = {
-    constants.CAN_INFO_START: "CAN started",
-    constants.CAN_INFO_STOP: "CAN stopped",
-    constants.CAN_INFO_RESET: "CAN reset",
+    constants.CAN_INFO_START:   "CAN started",
+    constants.CAN_INFO_STOP:    "CAN stopped",
+    constants.CAN_INFO_RESET:   "CAN reset",
 }
 
 CAN_ERROR_MESSAGES = {
-    constants.CAN_ERROR_STUFF: "CAN bit stuff error",
-    constants.CAN_ERROR_FORM: "CAN form error",
-    constants.CAN_ERROR_ACK: "CAN acknowledgment error",
-    constants.CAN_ERROR_BIT: "CAN bit error",
-    constants.CAN_ERROR_CRC: "CAN CRC error",
-    constants.CAN_ERROR_OTHER: "Other (unknown) CAN error",
+    constants.CAN_ERROR_STUFF:  "CAN bit stuff error",
+    constants.CAN_ERROR_FORM:   "CAN form error",
+    constants.CAN_ERROR_ACK:    "CAN acknowledgment error",
+    constants.CAN_ERROR_BIT:    "CAN bit error",
+    constants.CAN_ERROR_CRC:    "CAN CRC error",
+    constants.CAN_ERROR_OTHER:  "Other (unknown) CAN error",
 }
 #----------------------------------------------------------------------------
 

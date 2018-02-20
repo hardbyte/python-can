@@ -1,14 +1,16 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+# coding: utf-8
+
 """
 A text based interface. For example use over serial ports like
 "/dev/ttyS1" or "/dev/ttyUSB0" on Linux machines or "COM1" on Windows.
 The interface is a simple implementation that has been used for
 recording CAN traces.
-
 """
 
 import logging
 import struct
+
 from can.bus import BusABC
 from can.message import Message
 
@@ -141,4 +143,3 @@ class SerialBus(BusABC):
                                arbitration_id=arb_id,
                                dlc=dlc,
                                data=data)
-
