@@ -1,3 +1,13 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+"""
+This module tests cyclic send tasks.
+
+Some tests are skipped when run on Travis CI because they are not
+reproducible, see #243 (https://github.com/hardbyte/python-can/issues/243).
+"""
+
 import os
 from time import sleep
 import unittest
