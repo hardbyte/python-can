@@ -1,11 +1,12 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+# coding: utf-8
 
 """
 This module implements an OS and hardware independent
 virtual CAN interface for testing purposes.
 
 Any VirtualBus instances connecting to the same channel
-will get the same messages.
+and reside in the same process will receive the same messages.
 """
 
 import logging
@@ -14,11 +15,10 @@ try:
     import queue
 except ImportError:
     import Queue as queue
+
 from can.bus import BusABC
 
-
 logger = logging.getLogger(__name__)
-#logger.setLevel(logging.DEBUG)
 
 
 # Channels are lists of queues, one for each connection
