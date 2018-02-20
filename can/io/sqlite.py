@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# coding: utf-8
+
 """
 Implements an SQL database writer and reader for storing CAN messages.
 
@@ -64,6 +67,7 @@ class SqliteReader:
 
 
 # Backward compatibility
+# TODO remove in later releases?
 SqlReader = SqliteReader
 
 
