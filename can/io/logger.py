@@ -1,3 +1,10 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+"""
+See the `Logger` class.
+"""
+
 from .asc import ASCWriter
 from .blf import BLFWriter
 from .csv import CSVWriter

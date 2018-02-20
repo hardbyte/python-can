@@ -1,3 +1,10 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+"""
+Contains handling of ASC logging files.
+"""
+
 from datetime import datetime
 import time
 import logging
@@ -13,7 +20,7 @@ logger = logging.getLogger('can.io.asc')
 
 class ASCReader(object):
     """
-    Iterator of CAN messages from a ASC Logging File.
+    Iterator of CAN messages from a ASC logging file.
     """
 
     def __init__(self, filename):
