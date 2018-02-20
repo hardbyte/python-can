@@ -1,9 +1,14 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
+# coding: utf-8
+
+"""
+"""
+
 import ctypes
 import unittest
 import time
 import logging
-logging.basicConfig(level=logging.DEBUG)
+
 import can
 from can.interfaces.kvaser import canlib
 from can.interfaces.kvaser import constants

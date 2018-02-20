@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# coding: utf-8
+
 """
 This test module test the separate reader/writer combinations of the can.io.*
 modules by writing some messages to a temporary file and reading it again.
@@ -7,6 +10,8 @@ is correct. The types of messages that are tested differs between the
 different writer/reader pairs - e.g., some don't handle error frames and
 comments.
 """
+
+from __future__ import print_function
 
 import unittest
 import tempfile

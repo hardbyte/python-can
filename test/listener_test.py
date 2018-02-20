@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+"""
+"""
+
 from time import sleep
 import unittest
 import random
