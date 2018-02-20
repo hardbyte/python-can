@@ -1,7 +1,10 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
+# coding: utf-8
+
 """
 Utilities and configuration file parsing.
 """
+
 from __future__ import absolute_import
 
 import can
