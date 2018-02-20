@@ -1,9 +1,13 @@
+#!/usr/bin/env python
+# coding: utf-8
+
 """
 This module was once the core of python-can, containing
 implementations of all the major classes in the library, now
-however all functionality has been refactored out. This api
+however all functionality has been refactored out. This API
 is left intact for version 2.0 to aide with migration.
 """
+
 from __future__ import absolute_import
 
 from can.message import Message

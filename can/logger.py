@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# coding: utf-8
+
 """
 logger.py logs CAN traffic to the terminal and to a file on disk.
 
@@ -14,7 +16,9 @@ Will filter for can frames with a can_id containing XXF03XXX.
 
 Dynamic Controls 2010
 """
+
 from __future__ import print_function
+
 import datetime
 import argparse
 import socket

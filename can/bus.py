@@ -1,15 +1,17 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+# coding: utf-8
 
 """
 Contains the ABC bus implementation.
 """
 
 from __future__ import print_function, absolute_import
+
 import abc
 import logging
 import threading
-from can.broadcastmanager import ThreadBasedCyclicSendTask
 
+from can.broadcastmanager import ThreadBasedCyclicSendTask
 
 logger = logging.getLogger(__name__)
 
