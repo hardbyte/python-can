@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+"""
+"""
+
 from __future__ import print_function
 
 import ctypes
@@ -527,4 +533,3 @@ class MultiRateCyclicSendTask(CyclicSendTask):
         bytes_sent = libc.send(self.bcm_socket, ctypes.byref(frame), ctypes.sizeof(frame))
         if bytes_sent == -1:
             log.debug("Error sending frame :-/")
-

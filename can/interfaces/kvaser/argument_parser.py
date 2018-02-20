@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+"""
+TODO: Where is this used? Is this used?
+"""
 
 def add_to_parser(parser):
     parser.add_argument("-c", "--channel", type=str, dest="channel",
