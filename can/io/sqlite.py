@@ -54,7 +54,7 @@ class SqliteReader:
     def __len__(self):
         # this might not run in constant time
         result = self.cursor.execute("SELECT COUNT(*) FROM messages")
-        return abs(int(result.fetchone()[0]))
+        return int(result.fetchone()[0])
 
     def read_all(self):
         """Fetches all messages in the database."""
