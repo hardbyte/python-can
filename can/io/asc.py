@@ -128,9 +128,9 @@ class ASCWriter(Listener):
             return
 
         if timestamp is None:
-            timestamp = time.time()
+            timestamp = 0
 
-        if timestamp >= self.started:
+        elif timestamp >= self.started:
             timestamp -= self.started
 
         line = self.EVENT_STRING.format(time=timestamp, message=message)
