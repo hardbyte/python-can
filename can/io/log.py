@@ -34,16 +34,20 @@ class CanutilsLogReader(object):
     def __iter__(self):
         for line in self.fp:
             temp = line.strip()
-            if len(temp) > 0:
+
+            if temp:
+
                 (timestamp, bus, frame) = temp.split()
                 timestamp = float(timestamp[1:-1])
                 (canId, data) = frame.split('#')
+
                 if len(canId) > 3:
                     isExtended = True
                 else:
                     isExtended = False
                 canId = int(canId, 16)
-                if len(data) > 0 and data[0].lower() == 'r':
+
+                if data and data[0].lower() == 'r':
                     isRemoteFrame = True
                     if len(data) > 1:
                         dlc = int(data[1:])
@@ -57,12 +61,12 @@ class CanutilsLogReader(object):
                     for i in range(0, 2 * dlc, 2):
                         dataBin.append(int(data[i:(i + 2)], 16))
 
-
                 if canId & CAN_ERR_FLAG and canId & CAN_ERR_BUSERROR:
                     msg = Message(timestamp=timestamp, is_error_frame=True)
                 else:
                     msg = Message(timestamp=timestamp, arbitration_id=canId & 0x1FFFFFFF,
-                              extended_id=isExtended, is_remote_frame=isRemoteFrame, dlc=dlc, data=dataBin)
+                                  extended_id=isExtended, is_remote_frame=isRemoteFrame,
+                                  dlc=dlc, data=dataBin)
                 yield msg
 
 
