@@ -1,4 +1,6 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
+# coding: utf-8
+
 """
 This example sends every second a messages over the serial interface and also 
 receives incoming messages.
@@ -17,9 +19,12 @@ Expects two serial ports (/dev/ttyS10 and /dev/ttyS11) connected to each other:
         com0com: http://com0com.sourceforge.net/
 """
 
+from __future__ import print_function
+
 import time
-import can
 import threading
+
+import can
 
 
 def send_cyclic(bus, msg, stop_event):

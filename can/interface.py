@@ -1,3 +1,12 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+"""
+This module contains the base implementation of `can.Bus` as well
+as a list of all avalibale backends and some implemented
+CyclicSendTasks.
+"""
+
 from __future__ import absolute_import
 
 import can

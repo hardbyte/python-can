@@ -1,6 +1,10 @@
+#!/usr/bin/env python
+# coding: utf-8
+
 """
 python-can requires the setuptools package to be installed.
 """
+
 import re
 import logging
 from setuptools import setup, find_packages
@@ -9,6 +13,8 @@ with open('can/__init__.py', 'r') as fd:
     version = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
                         fd.read(), re.MULTILINE).group(1)
 
+with open('README.rst', 'r') as f:
+    long_description = f.read()
 
 logging.basicConfig(level=logging.WARNING)
 
@@ -20,7 +26,7 @@ setup(
     author="Brian Thorne",
     author_email="brian@thorne.link",
     description="Controller Area Network interface module for Python",
-    long_description=open('README.rst').read(),
+    long_description=long_description,
     license="LGPL v3",
     package_data={
         "": ["CONTRIBUTORS.txt", "LICENSE.txt"],

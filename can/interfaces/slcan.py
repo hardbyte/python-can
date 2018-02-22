@@ -1,7 +1,10 @@
+#!/usr/bin/env python
+# coding: utf-8
+
 """
 Interface for slcan compatible interfaces (win32/linux).
 
-Note Linux users can use slcand/socketcan as well.
+Note: Linux users can use slcand/socketcan as well.
 """
 
 from __future__ import absolute_import
@@ -85,6 +88,7 @@ class slcanBus(BusABC):
                 raise ValueError("Invalid bitrate, choose one of " + (', '.join(self._BITRATES)) + '.')
 
         self.open()
+
         super(slcanBus, self).__init__(channel, **kwargs)
 
     def recv(self, timeout=None):

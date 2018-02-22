@@ -1,11 +1,15 @@
+#!/usr/bin/env python
+# coding: utf-8
+
 """
 can is an object-orient Controller Area Network interface module.
 """
+
 from __future__ import absolute_import
 
 import logging
 
-__version__ = "2.0.0"
+__version__ = "2.1.1-dev"
 
 log = logging.getLogger('can')
 

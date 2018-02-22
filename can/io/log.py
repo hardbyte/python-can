@@ -1,12 +1,23 @@
-from can.listener import Listener
-import datetime
-import time
-from can.message import Message
+#!/usr/bin/env python
+# coding: utf-8
 
-CAN_MSG_EXT = 0x80000000
-CAN_ERR_FLAG = 0x20000000
-CAN_ERR_BUSERROR = 0x00000080
-CAN_ERR_DLC = 8
+"""
+This module works with CAN data in ASCII log files (*.log).
+It is is compatible with "candump -L" from the canutils program
+(https://github.com/linux-can/can-utils).
+"""
+
+import time
+import datetime
+
+from can.message import Message
+from can.listener import Listener
+
+
+CAN_MSG_EXT         = 0x80000000
+CAN_ERR_FLAG        = 0x20000000
+CAN_ERR_BUSERROR    = 0x00000080
+CAN_ERR_DLC         = 8
 
 
 class CanutilsLogReader(object):
@@ -18,7 +29,7 @@ class CanutilsLogReader(object):
     """
 
     def __init__(self, filename):
-        self.fp = open(filename, "r")
+        self.fp = open(filename, 'r')
 
     def __iter__(self):
         for line in self.fp:
@@ -26,13 +37,13 @@ class CanutilsLogReader(object):
             if len(temp) > 0:
                 (timestamp, bus, frame) = temp.split()
                 timestamp = float(timestamp[1:-1])
-                (canId, data) = frame.split("#")
+                (canId, data) = frame.split('#')
                 if len(canId) > 3:
                     isExtended = True
                 else:
                     isExtended = False
                 canId = int(canId, 16)
-                if len(data) > 0 and data[0].lower() == "r":
+                if len(data) > 0 and data[0].lower() == 'r':
                     isRemoteFrame = True
                     if len(data) > 1:
                         dlc = int(data[1:])
@@ -56,13 +67,14 @@ class CanutilsLogReader(object):
 
 
 class CanutilsLogWriter(Listener):
-    """Logs CAN data to an ASCII log file (.log)
-    compatible to candump -L """
+    """Logs CAN data to an ASCII log file (.log).
+    This class is is compatible with "candump -L".
+    """
 
     def __init__(self, filename, channel="vcan0"):
         self.channel = channel
         self.started = time.time()
-        self.log_file = open(filename, "w")
+        self.log_file = open(filename, 'w')
 
     def stop(self):
         """Stops logging and closes the file."""
@@ -93,6 +105,3 @@ class CanutilsLogWriter(Listener):
                 self.log_file.write("(%f) vcan0 %08X#%s\n" % (msg.timestamp, msg.arbitration_id, "".join(data)))
             else:
                 self.log_file.write("(%f) vcan0 %03X#%s\n" % (msg.timestamp, msg.arbitration_id, "".join(data)))
-
-
-

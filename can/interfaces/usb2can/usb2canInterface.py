@@ -1,4 +1,9 @@
-# this interface is for windows only, otherwise use socketCAN
+#!/usr/bin/env python
+# coding: utf-8
+
+"""
+This interface is for windows only, otherwise use socketCAN.
+"""
 
 import logging
 
@@ -26,7 +31,6 @@ def format_connection_string(deviceID, baudrate='500'):
     return "%s; %s" % (deviceID, baudrate)
 
 
-# TODO: Issue 36 with data being zeros or anything other than 8 must be fixed
 def message_convert_tx(msg):
     messagetx = CanalMsg()
 
@@ -114,14 +118,14 @@ class Usb2canBus(BusABC):
             br = kwargs["bitrate"]
 
             # max rate is 1000 kbps
-            baudrate = max(1000, int(br/1000))
+            baudrate = min(1000, int(br/1000))
         # set default value
         else:
             baudrate = 500
 
         connector = format_connection_string(deviceID, baudrate)
 
-        self.handle = self.can.open(connector, enable_flags)
+        self.handle = self.can.open(connector.encode('utf-8'), enable_flags)
 
     def send(self, msg, timeout=None):
         tx = message_convert_tx(msg)
