@@ -4,6 +4,9 @@
 """
 """
 
+from __future__ import division
+from __future__ import print_function
+
 import logging
 
 from can import BusABC, Message
@@ -22,7 +25,7 @@ except:
 log = logging.getLogger('can.canal')
 
 
-def format_connection_string(deviceID, baudrate='500'):
+def format_connection_string(deviceID, baudrate):
     """setup the string for the device
 
     config = deviceID + '; ' + baudrate
@@ -102,28 +105,25 @@ class CanalBus(BusABC):
 
     def __init__(self, channel, *args, **kwargs):
 
-        # TODO force specifying dll
-        if 'dll' in kwargs:
-            dll = kwargs["dll"]
-        else:
+        dll = kwargs.get('dll', can.rc.get('dll', None))
+        if dll is None:
             raise Exception("please specify a CANAL dll to load, e.g. 'usb2can.dll'")
 
         self.can = CanalWrapper(dll)
 
         # set flags on the connection
-        if 'flags' in kwargs:
-            enable_flags = kwargs["flags"]
-
-        else:
-            enable_flags = 0x00000008
+        enable_flags = kwargs.get('flags', can.rc.get('flags', 0x00000008))
 
         # code to get the serial number of the device
         if 'serial' in kwargs:
             deviceID = kwargs["serial"]
+        elif 'serial' in can.rc:
+            deviceID = can.rc["serial"]
         elif channel is not None:
             deviceID = channel
         else:
             # autodetect device
+            # TODO: integrate into #51 some day
             from can.interfaces.canal.serial_selector import serial
             if 'serialMatcher' in kwargs:
                 deviceID = serial(kwargs["serialMatcher"])
@@ -135,22 +135,16 @@ class CanalBus(BusABC):
 
         self.channel_info = "CANAL device " + deviceID
 
-        # set baudrate in kb/s from bitrate
-        # (eg:500000 bitrate must be 500)
-        if 'bitrate' in kwargs:
-            br = kwargs["bitrate"]
-
-            # max rate is 1000 kbps
-            baudrate = max(1000, int(br/1000))
-        # set default value
-        else:
-            baudrate = 500
+        # get baudrate in bit/s
+        baudrate = kwargs.get('bitrate', can.rc.get('bitrate', 500000))
+        # convert to kb/s
+        baudrate = baudrate // 1000
+        # cap: max rate is 1000 kb/s
+        baudrate = max(baudrate, 1000)
 
         connector = format_connection_string(deviceID, baudrate)
 
         self.handle = self.can.open(connector, enable_flags)
-        # print "ostemad"
-
 
     def send(self, msg, timeout=None):
         tx = message_convert_tx(msg)

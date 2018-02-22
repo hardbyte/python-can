@@ -5,10 +5,11 @@
 """
 
 import logging
+
 try:
     import win32com.client
 except ImportError:
-    logging.warning("win32com.client module required for usb2can")
+    logging.error("win32com.client module required for usb2can")
     raise
 
 
@@ -22,8 +23,8 @@ def WMIDateStringToDate(dtmDate):
         strDateTime = strDateTime + dtmDate[7] + '/'
     else:
         strDateTime = strDateTime + dtmDate[6] + dtmDate[7] + '/'
-        strDateTime = strDateTime + dtmDate[0] + dtmDate[1] + dtmDate[2] + dtmDate[3] + " " + dtmDate[8] + dtmDate[
-            9] + ":" + dtmDate[10] + dtmDate[11] + ':' + dtmDate[12] + dtmDate[13]
+        strDateTime = strDateTime + dtmDate[0] + dtmDate[1] + dtmDate[2] + dtmDate[3] + ' ' + dtmDate[8] + dtmDate[9] \
+            + ':' + dtmDate[10] + dtmDate[11] + ':' + dtmDate[12] + dtmDate[13]
     return strDateTime
 
 
