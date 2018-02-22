@@ -21,7 +21,8 @@ The following assumes that the commands are executed from the root of the reposi
   ``python setup.py install``.
 - The unit tests can be run with ``python setup.py test``. The tests can be run with ``python2``,
   ``python3``, ``pypy`` or ``pypy3`` to test with other python versions, if they are installed.
-- The docs can be built with ``sphinx-build doc/ doc/_build``.
+- The docs can be built with ``sphinx-build doc/ doc/_build``. Appending ``-n`` to the command
+  makes Sphinx complain about more subtle problems.
 
 
 Creating a Release
