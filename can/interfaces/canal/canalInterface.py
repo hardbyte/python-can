@@ -1,4 +1,8 @@
-# this interface is for windows only, otherwise use socketCAN
+#!/usr/bin/env python
+# coding: utf-8
+
+"""
+"""
 
 import logging
 

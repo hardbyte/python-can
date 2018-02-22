@@ -1,4 +1,10 @@
-# This wrapper is for windows or direct access via CANAL API. Socket CAN is recommended under Unix/Linux systems
+#!/usr/bin/env python
+# coding: utf-8
+
+"""
+This wrapper is for windows or direct access via CANAL API. 
+"""
+
 import can
 from ctypes import *
 from struct import *
