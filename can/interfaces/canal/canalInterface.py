@@ -12,15 +12,6 @@ import logging
 from can import BusABC, Message
 from can.interfaces.canal.canal_wrapper import *
 
-bootTimeEpoch = 0
-try:
-    import uptime
-    import datetime
-
-    bootTimeEpoch = (uptime.boottime() - datetime.datetime.utcfromtimestamp(0)).total_seconds()
-except:
-    bootTimeEpoch = 0
-
 # Set up logging
 log = logging.getLogger('can.canal')
 
