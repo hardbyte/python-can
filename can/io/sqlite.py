@@ -25,7 +25,7 @@ if sys.version_info > (3,):
     buffer = memoryview
 
 
-@deprecated(version='2.1', reason="Use the name SqliteReader instead")
+@deprecated(reason="Use the name SqliteReader instead. (Replaced in v2.1)")
 class SqlReader:
     """
     Reads recorded CAN messages from a simple SQL database.
