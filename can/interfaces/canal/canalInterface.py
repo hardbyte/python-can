@@ -84,10 +84,10 @@ class CanalBus(BusABC):
         Bitrate of channel in bit/s. Values will be limited to a maximum of 1000 Kb/s.
         Default is 500 Kbs
 
-    :param str serial (optional)
+    :param str serial (optional):
         device serial to use for the CANAL open call
     
-    :param str serialMatcher (optional)
+    :param str serialMatcher (optional):
         search string for automatic detection of the device serial
 
     :param int flags:
