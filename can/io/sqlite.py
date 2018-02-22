@@ -13,6 +13,8 @@ import threading
 import logging
 import sqlite3
 
+from deprecated import deprecated
+
 from can.listener import BufferedReader
 from can.message import Message
 
@@ -23,7 +25,8 @@ if sys.version_info > (3,):
     buffer = memoryview
 
 
-class SqliteReader:
+@deprecated(version='2.1', reason="Use the name SqliteReader instead")
+class SqlReader:
     """
     Reads recorded CAN messages from a simple SQL database.
 
@@ -66,10 +69,8 @@ class SqliteReader:
         """Closes the connection to the database."""
         self.conn.close()
 
-
-# Backward compatibility
-# TODO remove in later releases?
-SqlReader = SqliteReader
+# SqliteReader is the newer name
+SqliteReader = SqlReader
 
 
 class SqliteWriter(BufferedReader):
