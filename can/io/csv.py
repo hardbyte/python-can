@@ -2,7 +2,7 @@
 # coding: utf-8
 
 """
-This modules contains the handler for CSV (comma seperated values) files.
+This module contains handling for CSV (comma seperated values) files.
 """
 
 import base64
@@ -11,7 +11,6 @@ from can.listener import Listener
 
 
 # TODO allow other seperators in CSVWriter
-# TODO add a CSVReader
 
 class CSVWriter(Listener):
     """Writes a comma separated text file of
@@ -46,3 +45,6 @@ class CSVWriter(Listener):
     def stop(self):
         self.csv_file.flush()
         self.csv_file.close()
+
+class CSVReader():
+    pass
