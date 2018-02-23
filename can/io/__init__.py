@@ -11,6 +11,6 @@ from .player import LogReader
 from .log import CanutilsLogReader, CanutilsLogWriter
 from .asc import ASCWriter, ASCReader
 from .blf import BLFReader, BLFWriter
-from .csv import CSVWriter
+from .csv import CSVWriter, CSVReader
 from .sqlite import SqliteReader, SqliteWriter
 from .stdout import Printer
