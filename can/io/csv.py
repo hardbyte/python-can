@@ -18,16 +18,24 @@ from can.listener import Listener
 
 
 class CSVWriter(Listener):
-    """Writes a comma separated text file of
+    """Writes a comma separated text file with a line for
+    each message.
 
-       * timestamp,
-       * arbitration id,
-       * flags (extended, remote, error),
-       * dlc and
-       * data
+    The columns are as follows:
 
-    for each message received. Each line is terminated with a platform
-    specific line seperator.
+    ================ ======================= ===============
+    name of column   format description      example
+    ================ ======================= ===============
+    timestamp        decimal float           1483389946.197
+    arbitration_id   hex                     0x00dadada
+    extended         1 == True, 0 == False   1
+    remote           1 == True, 0 == False   0
+    error            1 == True, 0 == False   0
+    dlc              int                     6
+    data             base64 encoded          WzQyLCA5XQ==
+    ================ ======================= ===============
+
+    Each line is terminated with a platform specific line seperator.
     """
 
     def __init__(self, filename):
