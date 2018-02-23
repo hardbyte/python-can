@@ -12,6 +12,7 @@ comments.
 """
 
 from __future__ import print_function
+from __future__ import absolute_import
 
 import unittest
 import tempfile
@@ -28,9 +29,9 @@ except ImportError:
 
 import can
 
-from data.example_data import TEST_MESSAGES_BASE, TEST_MESSAGES_REMOTE_FRAMES, \
-                              TEST_MESSAGES_ERROR_FRAMES, TEST_COMMENTS, \
-                              generate_message
+from .data.example_data import TEST_MESSAGES_BASE, TEST_MESSAGES_REMOTE_FRAMES, \
+                               TEST_MESSAGES_ERROR_FRAMES, TEST_COMMENTS, \
+                               generate_message
 
 
 def _test_writer_and_reader(test_case, writer_constructor, reader_constructor, sleep_time=None,
