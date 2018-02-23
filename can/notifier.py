@@ -28,23 +28,24 @@ class Notifier(object):
         # exception raised in thread
         self.exception = None
 
-        self.running = threading.Event()
-        self.running.set()
+        self._running = threading.Event()
+        self._running.set()
 
-        self._reader = threading.Thread(target=self.rx_thread, name="can.notifier")
+        self._reader = threading.Thread(target=self._rx_thread,
+                                        name='can.notifier for bus "{}"'.format(self.bus.channel_info))
         self._reader.daemon = True
         self._reader.start()
 
     def stop(self):
         """Stop notifying Listeners when new :class:`~can.Message` objects arrive
          and call :meth:`~can.Listener.stop` on each Listener."""
-        self.running.clear()
+        self._running.clear()
         if self.timeout is not None:
             self._reader.join(self.timeout + 0.1)
 
-    def rx_thread(self):
+    def _rx_thread(self):
         try:
-            while self.running.is_set():
+            while self._running.is_set():
                 msg = self.bus.recv(self.timeout)
                 if msg is not None:
                     for callback in self.listeners:
