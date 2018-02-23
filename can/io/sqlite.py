@@ -18,6 +18,7 @@ from can.message import Message
 
 log = logging.getLogger('can.io.sql')
 
+# TODO comment on this
 if sys.version_info > (3,):
     buffer = memoryview
 
