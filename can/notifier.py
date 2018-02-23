@@ -2,7 +2,7 @@
 # coding: utf-8
 
 """
-This module contains the implementation of `can.Notifier`.
+This module contains the implementation of :class:`~can.Notifier`.
 """
 
 import threading
@@ -18,7 +18,7 @@ class Notifier(object):
         list of listeners.
 
         :param bus: The :ref:`bus` to listen too.
-        :param listeners: An iterable of :class:`~can.Listeners`
+        :param listeners: An iterable of :class:`~can.Listener`s
         :param timeout: An optional maximum number of seconds to wait for any message.
         """
         self.listeners = listeners
@@ -38,7 +38,8 @@ class Notifier(object):
 
     def stop(self):
         """Stop notifying Listeners when new :class:`~can.Message` objects arrive
-         and call :meth:`~can.Listener.stop` on each Listener."""
+        and call :meth:`~can.Listener.stop` on each Listener.
+        """
         self._running.clear()
         if self.timeout is not None:
             self._reader.join(self.timeout + 0.1)
@@ -56,3 +57,20 @@ class Notifier(object):
         finally:
             for listener in self.listeners:
                 listener.stop()
+
+    def add_listener(self, listener):
+        """Add new Listener to the notification list.
+
+        :param listener: a :class:`~can.Listener` object to be added to
+                         the list to be notified
+        """
+        self.listeners.append(listener)
+
+    def remove_listener(self, listener):
+        """Remove a listener from the notification list.
+
+        :param listener: a :class:`~can.Listener` object to be removed from
+                         the list to be notified
+        :raises ValueError: if `listener` was never added to this notifier
+        """
+        self.listeners.remove(listener)
