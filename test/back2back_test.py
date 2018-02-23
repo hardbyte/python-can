@@ -3,22 +3,19 @@
 
 """
 This module tests two virtual busses attached to each other.
-
-Some tests are skipped when run on Travis CI because they are not
-reproducible, see #243 (https://github.com/hardbyte/python-can/issues/243).
 """
 
-import os
+from __future__ import absolute_import
+
 import unittest
 import time
 
 import can
 
-IS_TRAVIS = os.environ.get('TRAVIS', 'default') == 'true'
+from .config import *
 
 BITRATE = 500000
 TIMEOUT = 0.1
-TEST_CAN_FD = True
 
 INTERFACE_1 = 'virtual'
 CHANNEL_1 = 'vcan0'
@@ -79,7 +76,7 @@ class Back2BackTestCase(unittest.TestCase):
     def test_no_message(self):
         self.assertIsNone(self.bus1.recv(0.1))
 
-    @unittest.skipIf(IS_TRAVIS, "skip on Travis CI")
+    @unittest.skipIf(IS_CI, "the timing sensitive behaviour cannot be reproduced reliably on a CI server")
     def test_timestamp(self):
         self.bus2.send(can.Message())
         recv_msg1 = self.bus1.recv(TIMEOUT)
