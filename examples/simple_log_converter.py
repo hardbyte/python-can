@@ -2,7 +2,7 @@
 # coding: utf-8
 
 """
-Use this to convert .can log files. 
+Use this to convert .can/.asc files to .log files.
 
 Usage: simpleLogConvert.py sourceLog.asc targetLog.log
 """
