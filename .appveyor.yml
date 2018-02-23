@@ -19,8 +19,8 @@ environment:
 install:
   # We need our usual libraries
   - "%PYTHON%\\python.exe -m pip install -r requirements.txt"
-  # We need wheel installed to build wheels
-  #- "%PYTHON%\\python.exe -m pip install wheel"
+  # We need to install the python-can library itself
+  - "%PYTHON%\\python.exe -m pip install ."
 
 build: off
 
