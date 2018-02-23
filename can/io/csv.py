@@ -38,7 +38,7 @@ class CSVWriter(Listener):
 
     def on_message_received(self, msg):
         row = ','.join([
-            str(msg.timestamp),
+            repr(msg.timestamp), # cannot use str() here because that is rounding
             hex(msg.arbitration_id),
             '1' if msg.id_type else '0',
             '1' if msg.is_remote_frame else '0',
