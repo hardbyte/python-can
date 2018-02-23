@@ -53,7 +53,7 @@ class SqlReader:
     def __iter__(self):
         log.debug("Iterating through messages from sql db")
         for frame_data in self.cursor.execute(self._SELECT_ALL_COMMAND):
-            yield SqlReader._create_frame_from_db_tuple(frame_data)
+            yield self._create_frame_from_db_tuple(frame_data)
 
     def __len__(self):
         # this might not run in constant time
