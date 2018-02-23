@@ -12,5 +12,5 @@ from .log import CanutilsLogReader, CanutilsLogWriter
 from .asc import ASCWriter, ASCReader
 from .blf import BLFReader, BLFWriter
 from .csv import CSVWriter
-from .sqlite import SqliteReader, SqliteWriter
+from .sqlite import SqliteReader, SqlReader, SqliteWriter
 from .stdout import Printer
