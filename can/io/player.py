@@ -2,6 +2,9 @@
 # coding: utf-8
 
 """
+This module contains the generic :class:`LogReader` as
+well as :class:`MessageSync` which plays back messages
+in the recorded order an time intervals.
 """
 
 from __future__ import print_function
@@ -10,8 +13,9 @@ import time
 import logging
 
 from .asc import ASCReader
-from .log import CanutilsLogReader
 from .blf import BLFReader
+from .csv import CSVReader
+from .log import CanutilsLogReader
 from .sqlite import SqliteReader
 
 log = logging.getLogger('can.io.player')
@@ -26,6 +30,7 @@ class LogReader(object):
       * .blf
       * .csv
       * .db
+      * .log
 
     Exposes a simple iterator interface, to use simply:
 
@@ -39,22 +44,27 @@ class LogReader(object):
 
     @classmethod
     def __new__(cls, other, filename):
-        if filename.endswith(".blf"):
-            return BLFReader(filename)
-        if filename.endswith(".db"):
-            return SqliteReader(filename)
         if filename.endswith(".asc"):
             return ASCReader(filename)
-        if filename.endswith(".log"):
+        elif filename.endswith(".blf"):
+            return BLFReader(filename)
+        elif filename.endswith(".csv"):
+            return CSVReader(filename)
+        elif filename.endswith(".db"):
+            return SqliteReader(filename)
+        elif filename.endswith(".log"):
             return CanutilsLogReader(filename)
-        
-        raise NotImplementedError("No read support for this log format")
+        else:
+            raise NotImplementedError("No read support for this log format: {}".format(filename))
 
 
 class MessageSync(object):
+    """
+    Used to iterate over some given messages in the recorded time.
+    """
 
     def __init__(self, messages, timestamps=True, gap=0.0001, skip=60):
-        """
+        """Creates an new `MessageSync` instance.
 
         :param messages: An iterable of :class:`can.Message` instances.
         :param timestamps: Use the messages' timestamps.
@@ -68,6 +78,7 @@ class MessageSync(object):
 
     def __iter__(self):
         log.debug("Iterating over messages at real speed")
+
         playback_start_time = time.time()
         recorded_start_time = None
 
@@ -87,4 +98,5 @@ class MessageSync(object):
                 sleep_period = self.gap
 
             time.sleep(sleep_period)
+
             yield m

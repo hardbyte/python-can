@@ -6,6 +6,7 @@ This Listener simply prints to stdout / the terminal or a file.
 """
 
 from __future__ import print_function
+
 import logging
 
 from can.listener import Listener
