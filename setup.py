@@ -45,7 +45,7 @@ setup(
 
     # Installation
     install_requires=[
-        'Deprecated >= 1.1.0',
+        #'Deprecated >= 1.1.0',
     ],
     extras_require={
         'serial': ['pyserial >= 3.0'],

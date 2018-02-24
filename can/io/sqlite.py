@@ -25,8 +25,7 @@ if sys.version_info > (3,):
     buffer = memoryview
 
 
-@deprecated(reason="Use the name SqliteReader instead. (Replaced in v2.1)")
-class SqlReader:
+class SqliteReader:
     """
     Reads recorded CAN messages from a simple SQL database.
 
@@ -68,9 +67,6 @@ class SqlReader:
     def close(self):
         """Closes the connection to the database."""
         self.conn.close()
-
-# SqliteReader is the newer name
-SqliteReader = SqlReader
 
 
 class SqliteWriter(BufferedReader):
