@@ -13,8 +13,6 @@ import threading
 import logging
 import sqlite3
 
-from deprecated import deprecated
-
 from can.listener import BufferedReader
 from can.message import Message
 
