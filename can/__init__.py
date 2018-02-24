@@ -25,7 +25,7 @@ from can.io import Logger, Printer, LogReader
 from can.io import ASCWriter, ASCReader
 from can.io import BLFReader, BLFWriter
 from can.io import CanutilsLogReader, CanutilsLogWriter
-from can.io import CSVWriter
+from can.io import CSVWriter, CSVReader
 from can.io import SqliteWriter, SqliteReader
 
 from can.util import set_logging_level

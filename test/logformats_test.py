@@ -9,6 +9,8 @@ ones that were written. It also checks that the order of the messages
 is correct. The types of messages that are tested differs between the
 different writer/reader pairs - e.g., some don't handle error frames and
 comments.
+
+TODO: implement CAN FD support testing
 """
 
 from __future__ import print_function
@@ -148,11 +150,18 @@ class TestAscFileFormat(unittest.TestCase):
 
     def test_writer_and_reader(self):
         _test_writer_and_reader(self, can.ASCWriter, can.ASCReader,
-                                check_error_frames=True,
                                 check_comments=True)
 
 
-class TestSqlFileFormat(unittest.TestCase):
+class TestCsvFileFormat(unittest.TestCase):
+    """Tests can.ASCWriter and can.ASCReader"""
+
+    def test_writer_and_reader(self):
+        _test_writer_and_reader(self, can.CSVWriter, can.CSVReader,
+                                check_comments=False)
+
+
+class TestSqliteDatabaseFormat(unittest.TestCase):
     """Tests can.SqliteWriter and can.SqliteReader"""
 
     def test_writer_and_reader(self):
@@ -198,7 +207,6 @@ class TestBlfFileFormat(unittest.TestCase):
 
     def test_writer_and_reader(self):
         _test_writer_and_reader(self, can.BLFWriter, can.BLFReader,
-                                sleep_time=None,
                                 check_comments=False)
 
     def test_reader(self):

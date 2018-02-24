@@ -2,15 +2,15 @@
 # coding: utf-8
 
 """
-See the `Logger` class.
+See the :class:`Logger` class.
 """
 
 from .asc import ASCWriter
 from .blf import BLFWriter
 from .csv import CSVWriter
+from .log import CanutilsLogWriter
 from .sqlite import SqliteWriter
 from .stdout import Printer
-from .log import CanutilsLogWriter
 
 
 class Logger(object):
