@@ -34,7 +34,7 @@ def check_status(result, function, arguments):
 
 try:
     iscan = ctypes.cdll.LoadLibrary("iscandrv")
-except Exception as e:
+except OSError as e:
     iscan = None
     logger.warning("Failed to load IS-CAN driver: %s", e)
 else:

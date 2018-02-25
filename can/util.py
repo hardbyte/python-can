@@ -186,7 +186,7 @@ def choose_socketcan_implementation():
         m = re.match(r'\d+\.\d+\.\d', rel_string)
         if m is None:
             msg = 'Bad linux release {}'.format(rel_string)
-            raise Exception(msg)
+            raise OSError(msg)
         rel_num = [int(i) for i in rel_string[:m.end()].split('.')]
         if (rel_num >= [2, 6, 25]):
             # Check Python version: SocketCAN was added in 3.3
@@ -194,7 +194,7 @@ def choose_socketcan_implementation():
         else:
             msg = 'SocketCAN not available under Linux {}'.format(
                     rel_string)
-            raise Exception(msg)
+            raise OSError(msg)
 
 
 def set_logging_level(level_name=None):
