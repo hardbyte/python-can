@@ -8,7 +8,6 @@ Exposes several methods for transmitting cyclic messages.
 import can
 import abc
 import logging
-import sched
 import threading
 import time
 
@@ -73,19 +72,27 @@ class ModifiableCyclicTaskABC(CyclicSendTaskABC):
         """Update the contents of this periodically sent message without altering
         the timing.
 
-        :param message: The :class:`~can.Message` with new :attr:`Message.data`.
+        :param message: The :class:`~can.Message` with new :attr:`Message.data`. Note
+            the arbitration ID cannot be changed.
         """
         self.message = message
 
 
 class MultiRateCyclicSendTaskABC(CyclicSendTaskABC):
     """Exposes more of the full power of the TX_SETUP opcode.
-
-    Transmits a message `count` times at `initial_period` then
-    continues to transmit message at `subsequent_period`.
     """
 
     def __init__(self, channel, message, count, initial_period, subsequent_period):
+        """
+        Transmits a message `count` times at `initial_period` then continues to
+        transmit message at `subsequent_period`.
+
+        :param `can.Bus` channel:
+        :param `can.Message` message:
+        :param int count:
+        :param float initial_period:
+        :param float subsequent_period:
+        """
         super(MultiRateCyclicSendTaskABC, self).__init__(channel, message, subsequent_period)
 
 
@@ -133,7 +140,11 @@ class ThreadBasedCyclicSendTask(ModifiableCyclicTaskABC,
 
 def send_periodic(bus, message, period):
     """
-    Send a message every `period` seconds on the given channel.
+    Send a :class:`~can.Message` every `period` seconds on the given bus.
+
+    :param `~can.BusABC` bus: A CAN bus which supports sending.
+    :param `~can.Message` message: Message to send periodically.
+    :param float period: The minimum time between sending messages.
 
     """
     return can.interface.CyclicSendTask(bus, message, period)

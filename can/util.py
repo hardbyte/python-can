@@ -172,13 +172,14 @@ def choose_socketcan_implementation():
     """Set the best version of SocketCAN for this system.
 
     :param config: The can.rc configuration dictionary
-    :raises Exception: If the system doesn't support SocketCAN
+
+    :raises :py:OsError: If the system doesn't support SocketCAN
     """
     # Check OS: SocketCAN is available only under Linux
     if not sys.platform.startswith('linux'):
         msg = 'SocketCAN not available under {}'.format(
             sys.platform)
-        raise Exception(msg)
+        raise OSError(msg)
     else:
         # Check release: SocketCAN was added to Linux 2.6.25
         rel_string = platform.release()

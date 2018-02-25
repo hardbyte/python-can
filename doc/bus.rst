@@ -3,7 +3,7 @@
 Bus
 ---
 
-The :class:`~can.Bus` class, as the name suggests, provides an abstraction of a CAN bus.
+The :class:`~can.BusABC` class, as the name suggests, provides an abstraction of a CAN bus.
 The bus provides a wrapper around a physical or virtual CAN Bus.
 
 
