@@ -15,6 +15,8 @@ import can
 from .data.example_data import generate_message
 
 from .config import *
+from .data.example_data import generate_message
+
 
 BITRATE = 500000
 TIMEOUT = 0.1
