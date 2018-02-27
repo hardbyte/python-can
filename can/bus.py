@@ -7,7 +7,7 @@ Contains the ABC bus implementation.
 
 from __future__ import print_function, absolute_import
 
-import abc
+from abc import ABCMeta, abstractmethod
 import logging
 import threading
 
@@ -30,7 +30,7 @@ class BusABC(object):
     #: a string describing the underlying bus channel
     channel_info = 'unknown'
 
-    @abc.abstractmethod
+    @abstractmethod
     def __init__(self, channel=None, can_filters=None, **config):
         """
         :param channel:
@@ -52,7 +52,7 @@ class BusABC(object):
     def __str__(self):
         return self.channel_info
 
-    @abc.abstractmethod
+    @abstractmethod
     def recv(self, timeout=None):
         """Block waiting for a message from the Bus.
 
@@ -63,7 +63,7 @@ class BusABC(object):
         """
         raise NotImplementedError("Trying to read from a write only bus?")
 
-    @abc.abstractmethod
+    @abstractmethod
     def send(self, msg, timeout=None):
         """Transmit a message to CAN bus.
         Override this method to enable the transmit path.
@@ -146,4 +146,4 @@ class BusABC(object):
         """
         self.flush_tx_buffer()
 
-    __metaclass__ = abc.ABCMeta
+    __metaclass__ = ABCMeta

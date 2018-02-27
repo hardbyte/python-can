@@ -22,7 +22,7 @@ CAN_ERR_DLC         = 8
 
 class CanutilsLogReader(object):
     """
-    Iterator of CAN messages from a .log Logging File (candump -L).
+    Iterator over CAN messages from a .log Logging File (candump -L).
 
     .log-format looks like this:
     (0.0) vcan0 001#8d00100100820100

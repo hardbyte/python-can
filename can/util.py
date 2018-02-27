@@ -5,21 +5,21 @@
 Utilities and configuration file parsing.
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
-import can
-from can.interfaces import VALID_INTERFACES
-
-try:
-    from configparser import ConfigParser
-except ImportError:
-    from ConfigParser import SafeConfigParser as ConfigParser
 import os
 import os.path
 import sys
 import platform
 import re
 import logging
+try:
+    from configparser import ConfigParser
+except ImportError:
+    from ConfigParser import SafeConfigParser as ConfigParser
+
+import can
+from can.interfaces import VALID_INTERFACES
 
 log = logging.getLogger('can.util')
 
