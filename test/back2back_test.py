@@ -12,7 +12,7 @@ import time
 
 import can
 
-from data.example_data import generate_message
+from .data.example_data import generate_message
 
 from .config import *
 
