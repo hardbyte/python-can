@@ -59,7 +59,9 @@ class Notifier(object):
                 listener.stop()
 
     def add_listener(self, listener):
-        """Add new Listener to the notification list.
+        """Add new Listener to the notification list. 
+        If it is already present, it will be called two times
+        each time a message arrives.
 
         :param listener: a :class:`~can.Listener` object to be added to
                          the list to be notified
@@ -67,7 +69,9 @@ class Notifier(object):
         self.listeners.append(listener)
 
     def remove_listener(self, listener):
-        """Remove a listener from the notification list.
+        """Remove a listener from the notification list. This method
+        trows an exception if the given listener is not part of the
+        stored listeners.
 
         :param listener: a :class:`~can.Listener` object to be removed from
                          the list to be notified

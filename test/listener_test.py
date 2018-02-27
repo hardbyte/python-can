@@ -70,6 +70,22 @@ class ListenerTest(BusTest):
         notifier = can.Notifier(self.bus, [a_listener], 0.1)
         notifier.stop()
         self.assertIn(a_listener, notifier.listeners)
+    
+    def testAddListenerToNotifier(self):
+        a_listener = can.Listener()
+        notifier = can.Notifier(self.bus, [], 0.1)
+        notifier.stop()
+        self.assertNotIn(a_listener, notifier.listeners)
+        notifier.add_listener(a_listener)
+        self.assertIn(a_listener, notifier.listeners)
+
+    def testRemoveListenerFromNotifier(self):
+        a_listener = can.Listener()
+        notifier = can.Notifier(self.bus, [a_listener], 0.1)
+        notifier.stop()
+        self.assertIn(a_listener, notifier.listeners)
+        notifier.remove_listener(a_listener)
+        self.assertNotIn(a_listener, notifier.listeners)
 
     def testLogger(self):
         def test_filetype_to_instance(extension, klass):

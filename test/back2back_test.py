@@ -14,6 +14,8 @@ import time
 
 import can
 
+from data.example_data import generate_message
+
 IS_TRAVIS = os.environ.get('TRAVIS', 'default') == 'true'
 
 BITRATE = 500000
