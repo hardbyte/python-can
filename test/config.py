@@ -31,7 +31,7 @@ if IS_APPVEYOR and IS_APPVEYOR:
 # ############################## Platforms
 
 _sys = platform.system().lower()
-IS_WINDOWS = "windows" in _sys or "win" in _sys
+IS_WINDOWS = "windows" in _sys or ("win" in _sys and "darwin" not in _sys)
 IS_LINUX = "linux" in _sys
 IS_OSX = "darwin" in _sys
 
