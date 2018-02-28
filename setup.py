@@ -5,6 +5,7 @@
 python-can requires the setuptools package to be installed.
 """
 
+from sys import version_info
 import re
 import logging
 from setuptools import setup, find_packages
@@ -22,11 +23,11 @@ tests_require = [
     'mock',
     'nose',
     'pyserial >= 3.0',
-    'subprocess32 >= 3.2',
 ]
+if version_info.major < 3:
+    tests_require += ['subprocess32 >= 3.2']
 
 setup(
-
     # Description
     name="python-can",
     url="https://github.com/hardbyte/python-can",

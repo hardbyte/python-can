@@ -10,7 +10,6 @@ from __future__ import absolute_import, print_function
 import sys
 import unittest
 from time import sleep
-from subprocess32 import check_call
 
 import can
 
@@ -142,7 +141,7 @@ class BasicTestSocketCan(unittest.TestCase):
         """Opens the socket."""
 
         # only tested on POSIX, see: https://github.com/google/python-subprocess32
-        if sys.version_info[0] < (3, 2):
+        if sys.version_info.major < 3:
             from subprocess32 import check_call
         else:
             from subprocess import check_call
