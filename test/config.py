@@ -26,7 +26,7 @@ IS_CI = IS_TRAVIS or IS_APPVEYOR or \
         environment.get('CONTINUOUS_INTEGRATION', '').lower() == 'true'
 
 if IS_APPVEYOR and IS_APPVEYOR:
-    raise EnvironmentError("IS_APPVEYOR and IS_APPVEYOR cannot be both true at the same time")
+    raise EnvironmentError("IS_APPVEYOR and IS_APPVEYOR cannot be both True at the same time")
 
 # ############################## Platforms
 
@@ -36,7 +36,11 @@ IS_LINUX = "linux" in _sys
 IS_OSX = "darwin" in _sys
 
 if (IS_WINDOWS and IS_LINUX) or (IS_LINUX and IS_OSX) or (IS_WINDOWS and IS_OSX):
-    raise EnvironmentError("only one of IS_WINDOWS, IS_LINUX and IS_OSX can be true at the same time")
+    raise EnvironmentError(
+        "only one of IS_WINDOWS ({}), IS_LINUX ({}) and IS_OSX ({}) ".format(IS_WINDOWS, IS_LINUX, IS_OSX) +
+        "can be True at the same time " +
+        '(platform.system() == "{}")'.format(platform.system())
+    )
 
 # ############################## What tests to run
 
