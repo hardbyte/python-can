@@ -142,17 +142,16 @@ class BasicTestSocketCan(unittest.TestCase):
 
         # only tested on POSIX, see: https://github.com/google/python-subprocess32
         if sys.version_info.major < 3:
-            from subprocess32 import check_call
+            from subprocess32 import check_call, CalledProcessError
         else:
-            from subprocess import check_call
+            from subprocess import check_call, CalledProcessError
 
         try:
             check_call("sudo modprobe vcan", shell=True)
-            check_call("sudo ip link add dev vcan0 type vcan", shell=True)
-            check_call("sudo ip link set up vcan0", shell=True)
-        except Exception as exception:
-            print(exception)
-            raise unittest.SkipTest("could not open vcan0")
+            #check_call("sudo ip link add dev vcan0 type vcan", shell=True)
+            #check_call("sudo ip link set up vcan0", shell=True)
+        except CalledProcessError as ex:
+            raise unittest.SkipTest("could not open vcan0: {}".format(ex))
         else:
             print("testing python-can's socketcan version:",
                   can.util.choose_socketcan_implementation())
