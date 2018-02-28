@@ -37,7 +37,9 @@ setup(
     # Code
     version=version,
     packages=find_packages(),
-    
+    # see https://www.python.org/dev/peps/pep-0345/#version-specifiers
+    python_requires='>=2.7,!=3.0,!=3.1,!=3.2',
+
     # Author
     author="Brian Thorne",
     author_email="brian@thorne.link",
@@ -58,7 +60,7 @@ setup(
     ],
     extras_require={
         'serial': ['pyserial >= 3.0'],
-        'neovi': ['python-ics'],
+        'neovi': ['python-ics >= 2.8'],
         'test': tests_require
     },
 
