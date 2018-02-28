@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Used by .travis.yml
+# Used by .travis.yml (which is executed with sudo privileges)
 
-sudo modprobe vcan
-sudo ip link add dev vcan0 type vcan
-sudo ip link set up vcan0
+modprobe vcan
+ip link add dev vcan0 type vcan
+ip link set up vcan0
