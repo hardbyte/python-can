@@ -159,7 +159,7 @@ class BasicTestSocketCan(unittest.TestCase):
         reader = can.BufferedReader()
         notifier = can.Notifier(self.bus2, [reader])
 
-        message = can.Message(arbitration_id=0x4321, data=bytes([1, 2, 3]), extended_id=True)
+        message = can.Message(arbitration_id=0x4321, data=[1, 2, 3], extended_id=True)
         self.bus1.send(message)
 
         self.assertEqual(message, reader.get_message(timeout=2.0))
