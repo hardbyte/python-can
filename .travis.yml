@@ -43,7 +43,7 @@ matrix:
     - python: "nightly"
 
 install:
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then source test/open_vcan.sh ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo bash test/open_vcan.sh ; fi
   - travis_retry pip install .[test]
 
 script:
