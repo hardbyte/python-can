@@ -82,12 +82,12 @@ class Back2BackTestCase(unittest.TestCase):
     def test_timestamp(self):
         self.bus2.send(can.Message())
         recv_msg1 = self.bus1.recv(TIMEOUT)
-        sleep(3)
+        sleep(2.0)
         self.bus2.send(can.Message())
         recv_msg2 = self.bus1.recv(TIMEOUT)
         delta_time = recv_msg2.timestamp - recv_msg1.timestamp
-        self.assertTrue(4.8 < delta_time < 5.2,
-                        'Time difference should have been 5s +/- 200ms.' 
+        self.assertTrue(1.75 <= delta_time <= 2.25,
+                        'Time difference should have been 2s +/- 250ms.' 
                         'But measured {}'.format(delta_time))
 
     def test_standard_message(self):
