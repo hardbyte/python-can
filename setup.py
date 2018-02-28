@@ -57,6 +57,7 @@ setup(
     tests_require=[
         'mock',
         'nose',
-        'pyserial >= 3.0'
+        'pyserial >= 3.0',
+        'subprocess32 >= 3.2',
     ],
 )

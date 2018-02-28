@@ -7,6 +7,7 @@ This module tests two virtual busses attached to each other.
 
 from __future__ import absolute_import, print_function
 
+import sys
 import unittest
 from time import sleep
 from subprocess32 import check_call
@@ -139,6 +140,13 @@ class BasicTestSocketCan(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Opens the socket."""
+
+        # only tested on POSIX, see: https://github.com/google/python-subprocess32
+        if sys.version_info[0] < (3, 2):
+            from subprocess32 import check_call
+        else:
+            from subprocess import check_call
+
         try:
             check_call("sudo modprobe vcan", shell=True)
             check_call("sudo ip link add dev vcan0 type vcan", shell=True)
