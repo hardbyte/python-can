@@ -43,9 +43,7 @@ matrix:
     - python: "nightly"
 
 install:
-  - sudo modprobe vcan
-  - sudo ip link add dev vcan0 type vcan
-  - sudo ip link set up vcan0
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then source test/open_vcan.sh ; fi
   - travis_retry pip install .[test]
 
 script:

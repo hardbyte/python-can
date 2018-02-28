@@ -138,23 +138,8 @@ class BasicTestSocketCan(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        """Opens the required sockets."""
-
-        # only tested on POSIX, see: https://github.com/google/python-subprocess32
-        if sys.version_info.major < 3:
-            from subprocess32 import check_call, CalledProcessError
-        else:
-            from subprocess import check_call, CalledProcessError
-
-        try:
-            check_call("sudo modprobe vcan", shell=True)
-            #check_call("sudo ip link add dev vcan0 type vcan", shell=True)
-            #check_call("sudo ip link set up vcan0", shell=True)
-        except CalledProcessError as ex:
-            raise unittest.SkipTest("could not open vcan0: {}".format(ex))
-        else:
-            print("testing python-can's socketcan version:",
-                  can.util.choose_socketcan_implementation())
+        print("testing python-can's socketcan version:",
+              can.util.choose_socketcan_implementation())
 
     def setUp(self):
         self.bus1 = can.interface.Bus(channel="vcan0",
@@ -169,12 +154,12 @@ class BasicTestSocketCan(unittest.TestCase):
     def tearDown(self):
         self.bus1.shutdown()
         self.bus2.shutdown()
-    
+
     def test_basics(self):
         reader = can.BufferedReader()
         notifier = can.Notifier(self.bus2, [reader])
 
-        message = generate_message(0xABBA)
+        message = can.Message(arbitration_id=0x4321, data=bytes([1, 2, 3]), extended_id=True)
         self.bus1.send(message)
 
         self.assertEqual(message, reader.get_message(timeout=2.0))
