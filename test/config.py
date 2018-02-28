@@ -41,7 +41,11 @@ if (IS_WINDOWS and IS_LINUX) or (IS_LINUX and IS_OSX) or (IS_WINDOWS and IS_OSX)
         "can be True at the same time " +
         '(platform.system() == "{}")'.format(platform.system())
     )
+elif not IS_WINDOWS and not IS_LINUX and not IS_OSX:
+    raise EnvironmentError("one of IS_WINDOWS, IS_LINUX, IS_OSX has to be True")
 
 # ############################## What tests to run
 
 TEST_CAN_FD = True
+
+TEST_INTERFACE_SOCKETCAN = IS_LINUX

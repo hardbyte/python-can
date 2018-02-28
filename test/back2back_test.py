@@ -133,12 +133,12 @@ class Back2BackTestCase(unittest.TestCase):
         self._send_and_receive(msg)
 
 
-@unittest.skipUnless(IS_LINUX, "socketcan is only available on Linux")
+@unittest.skipUnless(TEST_INTERFACE_SOCKETCAN, "skip testing of socketcan")
 class BasicTestSocketCan(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        """Opens the socket."""
+        """Opens the required sockets."""
 
         # only tested on POSIX, see: https://github.com/google/python-subprocess32
         if sys.version_info.major < 3:
