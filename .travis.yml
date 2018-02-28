@@ -44,7 +44,6 @@ matrix:
 
 install:
   - travis_retry pip install .[test]
-#  - travis_retry pip install -r requirements.txt
 
 script:
   - py.test -v
