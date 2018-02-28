@@ -1,2 +1,0 @@
-pyserial >= 3.0
-#Deprecated >= 1.1.0

@@ -9,6 +9,8 @@ import re
 import logging
 from setuptools import setup, find_packages
 
+logging.basicConfig(level=logging.WARNING)
+
 with open('can/__init__.py', 'r') as fd:
     version = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
                         fd.read(), re.MULTILINE).group(1)
@@ -16,7 +18,12 @@ with open('can/__init__.py', 'r') as fd:
 with open('README.rst', 'r') as f:
     long_description = f.read()
 
-logging.basicConfig(level=logging.WARNING)
+tests_require = [
+    'mock',
+    'nose',
+    'pyserial >= 3.0',
+    'subprocess32 >= 3.2',
+]
 
 setup(
 
@@ -45,19 +52,16 @@ setup(
 
     # Installation
     install_requires=[
+        'setuptools',
         #'Deprecated >= 1.1.0',
     ],
     extras_require={
         'serial': ['pyserial >= 3.0'],
         'neovi': ['python-ics'],
+        'test': tests_require
     },
 
     # Testing
     test_suite="nose.collector",
-    tests_require=[
-        'mock',
-        'nose',
-        'pyserial >= 3.0',
-        'subprocess32 >= 3.2',
-    ],
+    tests_require=tests_require,
 )
