@@ -133,7 +133,7 @@ class Back2BackTestCase(unittest.TestCase):
         self._send_and_receive(msg)
 
 # FIXME
-unittest.skip("skip until this is fixed, see issue #274")
+@unittest.skip("skip until this is fixed, see issue #274")
 #@unittest.skipUnless(TEST_INTERFACE_SOCKETCAN, "skip testing of socketcan")
 class BasicTestSocketCan(unittest.TestCase):
 
