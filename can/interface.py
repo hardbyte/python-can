@@ -39,6 +39,49 @@ BACKENDS.update({
     for interface in iter_entry_points('python_can.interface')
 })
 
+def _get_class_for_configuration(channel, *args, **kwargs):
+    """
+    Returns the main bus class for the given interface/configuration.
+
+    :raises: TODO
+    """
+
+    # Figure out the configuration
+    config = load_config(config={
+        'interface': kwargs.get('bustype'),
+        'channel': channel
+    })
+
+    if 'bustype' in kwargs:
+        # remove the bustype so it doesn't get passed to the backend
+        del kwargs['bustype']
+    interface = config['interface']
+    channel = config['channel']
+
+    # Find the correct backend
+    try:
+        (module_name, class_name) = BACKENDS[interface]
+    except KeyError:
+        raise NotImplementedError("CAN interface '{}' not supported".format(interface))
+
+    # Import the correct interface module
+    try:
+        module = importlib.import_module(module_name)
+    except Exception as e:
+        raise ImportError(
+            "Cannot import module {} for CAN interface '{}': {}".format(module_name, interface, e)
+        )
+
+    # Get the correct class
+    try:
+        return getattr(module, class_name)
+    except Exception as e:
+        raise ImportError(
+            "Cannot import class {} from module {} for CAN interface '{}': {}".format(
+                class_name, module_name, interface, e
+            )
+        )
+
 
 class Bus(object):
     """
@@ -61,38 +104,7 @@ class Bus(object):
             or set in the can.rc config.
 
         """
-        config = load_config(config={
-            'interface': kwargs.get('bustype'),
-            'channel': channel
-        })
-
-        if 'bustype' in kwargs:
-            # remove the bustype so it doesn't get passed to the backend
-            del kwargs['bustype']
-        interface = config['interface']
-        channel = config['channel']
-
-        # Import the correct Bus backend
-        try:
-            (module_name, class_name) = BACKENDS[interface]
-        except KeyError:
-            raise NotImplementedError("CAN interface '{}' not supported".format(interface))
-
-        try:
-            module = importlib.import_module(module_name)
-        except Exception as e:
-            raise ImportError(
-                "Cannot import module {} for CAN interface '{}': {}".format(module_name, interface, e)
-            )
-        try:
-            cls = getattr(module, class_name)
-        except Exception as e:
-            raise ImportError(
-                "Cannot import class {} from module {} for CAN interface '{}': {}".format(
-                    class_name, module_name, interface, e
-                )
-            )
-
+        cls = _get_class_for_configuration(channel, args, kwargs)
         return cls(channel, **kwargs)
 
 
