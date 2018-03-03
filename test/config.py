@@ -25,8 +25,8 @@ IS_CI = IS_TRAVIS or IS_APPVEYOR or \
         environment.get('CI', '').lower() == 'true' or \
         environment.get('CONTINUOUS_INTEGRATION', '').lower() == 'true'
 
-if IS_APPVEYOR and IS_APPVEYOR:
-    raise EnvironmentError("IS_APPVEYOR and IS_APPVEYOR cannot be both True at the same time")
+if IS_APPVEYOR and IS_TRAVIS:
+    raise EnvironmentError("IS_APPVEYOR and IS_TRAVIS cannot be both True at the same time")
 
 # ############################## Platforms
 
