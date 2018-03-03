@@ -1,19 +1,23 @@
 python-can
 ==========
 
-|release| |docs| |build|
+|release| |docs| |build_travis| |build_appveyor|
 
 .. |release| image:: https://img.shields.io/pypi/v/python-can.svg
    :target: https://pypi.python.org/pypi/python-can/
-   :alt: Latest Version
+   :alt: Latest Version on PyPi
 
 .. |docs| image:: https://readthedocs.org/projects/python-can/badge/?version=stable
    :target: https://python-can.readthedocs.io/en/stable/
-   :alt: Documentation Status
+   :alt: Documentation build Status
                 
-.. |build| image:: https://travis-ci.org/hardbyte/python-can.svg?branch=develop
+.. |build_travis| image:: https://travis-ci.org/hardbyte/python-can.svg?branch=develop
    :target: https://travis-ci.org/hardbyte/python-can/branches
-   :alt: CI Server for develop branch
+   :alt: Travis CI Server for develop branch
+
+.. |build_appveyor| image:: https://ci.appveyor.com/api/projects/status/github/hardbyte/python-can?branch=develop&svg=true
+   :target: https://ci.appveyor.com/project/hardbyte/python-can/history
+   :alt: AppVeyor CI Server for develop branch
 
 
 The **C**\ ontroller **A**\ rea **N**\ etwork is a bus standard designed
@@ -26,7 +30,7 @@ Python developers; providing `common abstractions to
 different hardware devices`, and a suite of utilities for sending and receiving
 messages on a can bus.
 
-The library supports Python 2.7, Python 3.3+ as well as PyPy and runs on Mac, Linux and Windows.
+The library supports Python 2.7, Python 3.3+ as well as PyPy 2 & 3 and runs on Mac, Linux and Windows.
 
 You can find more information in the documentation, online at
 `python-can.readthedocs.org <https://python-can.readthedocs.org/en/stable/>`__.

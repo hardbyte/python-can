@@ -1,14 +1,22 @@
-import os
+#!/usr/bin/env python
+# coding: utf-8
+
+"""
+This module tests cyclic send tasks.
+"""
+
+from __future__ import absolute_import
+
 from time import sleep
 import unittest
 
 import can
 
-IS_TRAVIS = os.environ.get('TRAVIS', 'default') == 'true'
+from .config import *
 
 class SimpleCyclicSendTaskTest(unittest.TestCase):
 
-    @unittest.skipIf(IS_TRAVIS, "skip on Travis CI")
+    @unittest.skipIf(IS_CI, "the timing sensitive behaviour cannot be reproduced reliably on a CI server")
     def test_cycle_time(self):
         msg = can.Message(extended_id=False, arbitration_id=0x100, data=[0,1,2,3,4,5,6,7])
         bus1 = can.interface.Bus(bustype='virtual')

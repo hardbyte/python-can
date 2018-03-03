@@ -1,7 +1,8 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
+# coding: utf-8
+
 """
 Exposes several methods for transmitting cyclic messages.
-20/09/13
 """
 
 import can

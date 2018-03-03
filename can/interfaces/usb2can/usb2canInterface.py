@@ -1,4 +1,9 @@
-# this interface is for windows only, otherwise use socketCAN
+#!/usr/bin/env python
+# coding: utf-8
+
+"""
+This interface is for windows only, otherwise use socketCAN.
+"""
 
 import logging
 
@@ -26,7 +31,6 @@ def format_connection_string(deviceID, baudrate='500'):
     return "%s; %s" % (deviceID, baudrate)
 
 
-# TODO: Issue 36 with data being zeros or anything other than 8 must be fixed
 def message_convert_tx(msg):
     messagetx = CanalMsg()
 

@@ -1,22 +1,25 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
+# coding: utf-8
+
 """
 Utilities and configuration file parsing.
 """
-from __future__ import absolute_import
 
-import can
-from can.interfaces import VALID_INTERFACES
+from __future__ import absolute_import, print_function
 
-try:
-    from configparser import ConfigParser
-except ImportError:
-    from ConfigParser import SafeConfigParser as ConfigParser
 import os
 import os.path
 import sys
 import platform
 import re
 import logging
+try:
+    from configparser import ConfigParser
+except ImportError:
+    from ConfigParser import SafeConfigParser as ConfigParser
+
+import can
+from can.interfaces import VALID_INTERFACES
 
 log = logging.getLogger('can.util')
 

@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# coding: utf-8
+
 """
 This demo creates multiple processes of Producers to spam a socketcan bus.
 """
@@ -16,6 +19,7 @@ def producer(id):
     for i in range(16):
         msg = can.Message(arbitration_id=0x0cf02200+id, data=[id, i, 0, 1, 3, 1, 4, 1])
         bus.send(msg)
+
     # TODO Issue #3: Need to keep running to ensure the writing threads stay alive. ?
     time.sleep(2)
 
