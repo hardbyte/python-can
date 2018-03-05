@@ -147,7 +147,6 @@ class BusABC(object):
         self.flush_tx_buffer()
 
     @property
-    @abc.abstractmethod
     def state(self):
         """
         Return the current state of the hardware
