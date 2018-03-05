@@ -1,16 +1,20 @@
+#!/usr/bin/env python
+# coding: utf-8
+
 """
 Interface for isCAN from Thorsis Technologies GmbH, former ifak system GmbH.
 """
+
 import ctypes
 import time
 import logging
 
 from can import CanError, BusABC, Message
 
-
 logger = logging.getLogger(__name__)
 
 CanData = ctypes.c_ubyte * 8
+
 
 class MessageExStruct(ctypes.Structure):
     _fields_ = [
@@ -148,11 +152,11 @@ class IscanError(CanError):
 
     def __init__(self, function, error_code, arguments):
         super(IscanError, self).__init__()
-        #: Status code
+        # Status code
         self.error_code = error_code
-        #: Function that failed
+        # Function that failed
         self.function = function
-        #: Arguments passed to function
+        # Arguments passed to function
         self.arguments = arguments
 
     def __str__(self):

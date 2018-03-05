@@ -1,4 +1,6 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
+# coding: utf-8
+
 """
 This example exercises the periodic sending capabilities.
 
@@ -7,6 +9,8 @@ Expects a vcan0 interface:
     python3 -m examples.cyclic
 
 """
+
+from __future__ import print_function
 
 import logging
 import time
@@ -124,6 +128,5 @@ if __name__ == "__main__":
         #test_dual_rate_periodic_send()
 
         bus.shutdown()
-
 
     time.sleep(2)

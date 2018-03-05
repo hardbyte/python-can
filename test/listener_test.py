@@ -1,3 +1,11 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+"""
+"""
+
+from __future__ import absolute_import
+
 from time import sleep
 import unittest
 import random
@@ -8,7 +16,7 @@ import sqlite3
 
 import can
 
-from data.example_data import generate_message
+from .data.example_data import generate_message
 
 channel = 'vcan0'
 can.rc['interface'] = 'virtual'

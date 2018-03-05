@@ -1,7 +1,10 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+# coding: utf-8
+
 """
 Defines common socketcan functions.
 """
+
 import struct
 
 from can.interfaces.socketcan.socketcan_constants import CAN_EFF_FLAG
@@ -27,4 +30,5 @@ def pack_filters(can_filters=None):
                 can_id |= CAN_EFF_FLAG
         filter_data.append(can_id)
         filter_data.append(can_mask)
+
     return struct.pack(can_filter_fmt, *filter_data)

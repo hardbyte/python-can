@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# coding: utf-8
+
 """
 Replays CAN traffic saved with can.logger back
 to a CAN bus.

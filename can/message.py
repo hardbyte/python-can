@@ -1,3 +1,10 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+"""
+This module contains the implementation of `can.Message`.
+"""
+
 import logging
 logger = logging.getLogger(__name__)
 

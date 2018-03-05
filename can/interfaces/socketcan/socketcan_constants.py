@@ -1,22 +1,23 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+# coding: utf-8
+
 """
-Defines CAN constants.
+Defines shared CAN constants.
 """
 
-canMSG_EXT = 0x0004
+canMSG_EXT          = 0x0004
 
-CAN_ERR_FLAG = 0x20000000
-CAN_RTR_FLAG = 0x40000000
-CAN_EFF_FLAG = 0x80000000
+CAN_ERR_FLAG        = 0x20000000
+CAN_RTR_FLAG        = 0x40000000
+CAN_EFF_FLAG        = 0x80000000
 
 # BCM opcodes
-CAN_BCM_TX_SETUP = 1
-CAN_BCM_TX_DELETE = 2
+CAN_BCM_TX_SETUP    = 1
+CAN_BCM_TX_DELETE   = 2
 
-CAN_BCM_TX_EXPIRED = 9
+CAN_BCM_TX_EXPIRED  = 9
 
-CAN_BCM_RX_TIMEOUT = 11
-
+CAN_BCM_RX_TIMEOUT  = 11
 
 # BCM flags
 SETTIMER            = 0x0001
@@ -32,11 +33,11 @@ TX_RESET_MULTI_IDX  = 0x0200
 RX_RTR_FRAME        = 0x0400
 CAN_FD_FRAME        = 0x0800
 
-CAN_RAW =       1
-CAN_BCM =       2
+CAN_RAW             = 1
+CAN_BCM             = 2
 
-SOL_CAN_BASE = 100
-SOL_CAN_RAW  = SOL_CAN_BASE + CAN_RAW
+SOL_CAN_BASE        = 100
+SOL_CAN_RAW         = SOL_CAN_BASE + CAN_RAW
 
 CAN_RAW_FILTER        = 1
 CAN_RAW_ERR_FILTER    = 2
@@ -44,8 +45,8 @@ CAN_RAW_LOOPBACK      = 3
 CAN_RAW_RECV_OWN_MSGS = 4
 CAN_RAW_FD_FRAMES     = 5
 
-MSK_ARBID =     0x1FFFFFFF
-MSK_FLAGS =     0xE0000000
+MSK_ARBID           = 0x1FFFFFFF
+MSK_FLAGS           = 0xE0000000
 
 PF_CAN  =       29
 SOCK_RAW =      3

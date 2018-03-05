@@ -1,29 +1,19 @@
-#  PCANBasic.py
-#
-#  ~~~~~~~~~~~~
-#
-#  PCAN-Basic API
-#
-#  ~~~~~~~~~~~~
-#
-#  ------------------------------------------------------------------
-#  Author : Keneth Wagner
-#  Last change: 18.05.2016 Wagner
-#
-#  Language: Python 2.7
-#  ------------------------------------------------------------------
-#
-#  Copyright (C) 1999-2016  PEAK-System Technik GmbH, Darmstadt
-#  more Info at http://www.peak-system.com 
-#
+#!/usr/bin/env python
+# coding: utf-8
 
-# Module Imports
-#
+"""
+PCAN-Basic API
+
+Author: Keneth Wagner
+
+Copyright (C) 1999-2016 PEAK-System Technik GmbH, Darmstadt, Germany
+http://www.peak-system.com
+"""
+
 from ctypes import *
 import platform
 import logging
 
-# Patched for python-can: use logger instead of print()
 logger = logging.getLogger('can.pcan')
 
 #///////////////////////////////////////////////////////////
@@ -46,7 +36,7 @@ TPCANTimestampFD       = c_ulonglong # Represents a timestamp of a received PCAN
 #///////////////////////////////////////////////////////////
 
 # Currently defined and supported PCAN channels
-#
+
 PCAN_NONEBUS             = TPCANHandle(0x00)  # Undefined/default value for a PCAN bus
 
 PCAN_ISABUS1             = TPCANHandle(0x21)  # PCAN-ISA interface, channel 1
@@ -65,17 +55,17 @@ PCAN_PCIBUS2             = TPCANHandle(0x42)  # PCAN-PCI interface, channel 2
 PCAN_PCIBUS3             = TPCANHandle(0x43)  # PCAN-PCI interface, channel 3
 PCAN_PCIBUS4             = TPCANHandle(0x44)  # PCAN-PCI interface, channel 4
 PCAN_PCIBUS5             = TPCANHandle(0x45)  # PCAN-PCI interface, channel 5
-PCAN_PCIBUS6           = TPCANHandle(0x46)  # PCAN-PCI interface, channel 6
-PCAN_PCIBUS7           = TPCANHandle(0x47)  # PCAN-PCI interface, channel 7
-PCAN_PCIBUS8           = TPCANHandle(0x48)  # PCAN-PCI interface, channel 8
-PCAN_PCIBUS9           = TPCANHandle(0x409)  # PCAN-PCI interface, channel 9
-PCAN_PCIBUS10          = TPCANHandle(0x40A)  # PCAN-PCI interface, channel 10
-PCAN_PCIBUS11          = TPCANHandle(0x40B)  # PCAN-PCI interface, channel 11
-PCAN_PCIBUS12          = TPCANHandle(0x40C)  # PCAN-PCI interface, channel 12
-PCAN_PCIBUS13          = TPCANHandle(0x40D)  # PCAN-PCI interface, channel 13
-PCAN_PCIBUS14          = TPCANHandle(0x40E)  # PCAN-PCI interface, channel 14
-PCAN_PCIBUS15          = TPCANHandle(0x40F)  # PCAN-PCI interface, channel 15
-PCAN_PCIBUS16          = TPCANHandle(0x410)  # PCAN-PCI interface, channel 16
+PCAN_PCIBUS6             = TPCANHandle(0x46)  # PCAN-PCI interface, channel 6
+PCAN_PCIBUS7             = TPCANHandle(0x47)  # PCAN-PCI interface, channel 7
+PCAN_PCIBUS8             = TPCANHandle(0x48)  # PCAN-PCI interface, channel 8
+PCAN_PCIBUS9             = TPCANHandle(0x409) # PCAN-PCI interface, channel 9
+PCAN_PCIBUS10            = TPCANHandle(0x40A) # PCAN-PCI interface, channel 10
+PCAN_PCIBUS11            = TPCANHandle(0x40B) # PCAN-PCI interface, channel 11
+PCAN_PCIBUS12            = TPCANHandle(0x40C) # PCAN-PCI interface, channel 12
+PCAN_PCIBUS13            = TPCANHandle(0x40D) # PCAN-PCI interface, channel 13
+PCAN_PCIBUS14            = TPCANHandle(0x40E) # PCAN-PCI interface, channel 14
+PCAN_PCIBUS15            = TPCANHandle(0x40F) # PCAN-PCI interface, channel 15
+PCAN_PCIBUS16            = TPCANHandle(0x410) # PCAN-PCI interface, channel 16
 
 PCAN_USBBUS1             = TPCANHandle(0x51)  # PCAN-USB interface, channel 1
 PCAN_USBBUS2             = TPCANHandle(0x52)  # PCAN-USB interface, channel 2
@@ -85,37 +75,36 @@ PCAN_USBBUS5             = TPCANHandle(0x55)  # PCAN-USB interface, channel 5
 PCAN_USBBUS6             = TPCANHandle(0x56)  # PCAN-USB interface, channel 6
 PCAN_USBBUS7             = TPCANHandle(0x57)  # PCAN-USB interface, channel 7
 PCAN_USBBUS8             = TPCANHandle(0x58)  # PCAN-USB interface, channel 8
-PCAN_USBBUS9             = TPCANHandle(0x509)  # PCAN-USB interface, channel 9
-PCAN_USBBUS10            = TPCANHandle(0x50A)  # PCAN-USB interface, channel 10
-PCAN_USBBUS11            = TPCANHandle(0x50B)  # PCAN-USB interface, channel 11
-PCAN_USBBUS12            = TPCANHandle(0x50C)  # PCAN-USB interface, channel 12
-PCAN_USBBUS13            = TPCANHandle(0x50D)  # PCAN-USB interface, channel 13
-PCAN_USBBUS14            = TPCANHandle(0x50E)  # PCAN-USB interface, channel 14
-PCAN_USBBUS15            = TPCANHandle(0x50F)  # PCAN-USB interface, channel 15
-PCAN_USBBUS16            = TPCANHandle(0x510)  # PCAN-USB interface, channel 16
+PCAN_USBBUS9             = TPCANHandle(0x509) # PCAN-USB interface, channel 9
+PCAN_USBBUS10            = TPCANHandle(0x50A) # PCAN-USB interface, channel 10
+PCAN_USBBUS11            = TPCANHandle(0x50B) # PCAN-USB interface, channel 11
+PCAN_USBBUS12            = TPCANHandle(0x50C) # PCAN-USB interface, channel 12
+PCAN_USBBUS13            = TPCANHandle(0x50D) # PCAN-USB interface, channel 13
+PCAN_USBBUS14            = TPCANHandle(0x50E) # PCAN-USB interface, channel 14
+PCAN_USBBUS15            = TPCANHandle(0x50F) # PCAN-USB interface, channel 15
+PCAN_USBBUS16            = TPCANHandle(0x510) # PCAN-USB interface, channel 16
 
 PCAN_PCCBUS1             = TPCANHandle(0x61)  # PCAN-PC Card interface, channel 1
 PCAN_PCCBUS2             = TPCANHandle(0x62)  # PCAN-PC Card interface, channel 2
 
-PCAN_LANBUS1             = TPCANHandle(0x801)  # PCAN-LAN interface, channel 1
-PCAN_LANBUS2             = TPCANHandle(0x802)  # PCAN-LAN interface, channel 2
-PCAN_LANBUS3             = TPCANHandle(0x803)  # PCAN-LAN interface, channel 3
-PCAN_LANBUS4             = TPCANHandle(0x804)  # PCAN-LAN interface, channel 4
-PCAN_LANBUS5             = TPCANHandle(0x805)  # PCAN-LAN interface, channel 5
-PCAN_LANBUS6             = TPCANHandle(0x806)  # PCAN-LAN interface, channel 6
-PCAN_LANBUS7             = TPCANHandle(0x807)  # PCAN-LAN interface, channel 7
-PCAN_LANBUS8             = TPCANHandle(0x808)  # PCAN-LAN interface, channel 8
-PCAN_LANBUS9             = TPCANHandle(0x809)  # PCAN-LAN interface, channel 9
-PCAN_LANBUS10            = TPCANHandle(0x80A)  # PCAN-LAN interface, channel 10
-PCAN_LANBUS11            = TPCANHandle(0x80B)  # PCAN-LAN interface, channel 11
-PCAN_LANBUS12            = TPCANHandle(0x80C)  # PCAN-LAN interface, channel 12
-PCAN_LANBUS13            = TPCANHandle(0x80D)  # PCAN-LAN interface, channel 13
-PCAN_LANBUS14            = TPCANHandle(0x80E)  # PCAN-LAN interface, channel 14
-PCAN_LANBUS15            = TPCANHandle(0x80F)  # PCAN-LAN interface, channel 15
-PCAN_LANBUS16            = TPCANHandle(0x810)  # PCAN-LAN interface, channel 16
+PCAN_LANBUS1             = TPCANHandle(0x801) # PCAN-LAN interface, channel 1
+PCAN_LANBUS2             = TPCANHandle(0x802) # PCAN-LAN interface, channel 2
+PCAN_LANBUS3             = TPCANHandle(0x803) # PCAN-LAN interface, channel 3
+PCAN_LANBUS4             = TPCANHandle(0x804) # PCAN-LAN interface, channel 4
+PCAN_LANBUS5             = TPCANHandle(0x805) # PCAN-LAN interface, channel 5
+PCAN_LANBUS6             = TPCANHandle(0x806) # PCAN-LAN interface, channel 6
+PCAN_LANBUS7             = TPCANHandle(0x807) # PCAN-LAN interface, channel 7
+PCAN_LANBUS8             = TPCANHandle(0x808) # PCAN-LAN interface, channel 8
+PCAN_LANBUS9             = TPCANHandle(0x809) # PCAN-LAN interface, channel 9
+PCAN_LANBUS10            = TPCANHandle(0x80A) # PCAN-LAN interface, channel 10
+PCAN_LANBUS11            = TPCANHandle(0x80B) # PCAN-LAN interface, channel 11
+PCAN_LANBUS12            = TPCANHandle(0x80C) # PCAN-LAN interface, channel 12
+PCAN_LANBUS13            = TPCANHandle(0x80D) # PCAN-LAN interface, channel 13
+PCAN_LANBUS14            = TPCANHandle(0x80E) # PCAN-LAN interface, channel 14
+PCAN_LANBUS15            = TPCANHandle(0x80F) # PCAN-LAN interface, channel 15
+PCAN_LANBUS16            = TPCANHandle(0x810) # PCAN-LAN interface, channel 16
 
 # Represent the PCAN error and status codes 
-#
 PCAN_ERROR_OK            = TPCANStatus(0x00000)  # No error 
 PCAN_ERROR_XMTFULL       = TPCANStatus(0x00001)  # Transmit buffer in CAN controller is full
 PCAN_ERROR_OVERRUN       = TPCANStatus(0x00002)  # CAN controller was read too late
@@ -146,19 +135,17 @@ PCAN_ERROR_INITIALIZE    = TPCANStatus(0x4000000)# Channel is not initialized [V
 PCAN_ERROR_ILLOPERATION  = TPCANStatus(0x8000000)# Invalid operation [Value was changed from 0x80000 to 0x8000000]
 
 # PCAN devices
-#
-PCAN_NONE                = TPCANDevice(0x00)  # Undefined, unknown or not selected PCAN device value
-PCAN_PEAKCAN             = TPCANDevice(0x01)  # PCAN Non-Plug&Play devices. NOT USED WITHIN PCAN-Basic API
-PCAN_ISA                 = TPCANDevice(0x02)  # PCAN-ISA, PCAN-PC/104, and PCAN-PC/104-Plus
-PCAN_DNG                 = TPCANDevice(0x03)  # PCAN-Dongle
-PCAN_PCI                 = TPCANDevice(0x04)  # PCAN-PCI, PCAN-cPCI, PCAN-miniPCI, and PCAN-PCI Express
-PCAN_USB                 = TPCANDevice(0x05)  # PCAN-USB and PCAN-USB Pro
-PCAN_PCC                 = TPCANDevice(0x06)  # PCAN-PC Card
-PCAN_VIRTUAL             = TPCANDevice(0x07)  # PCAN Virtual hardware. NOT USED WITHIN PCAN-Basic API
-PCAN_LAN                 = TPCANDevice(0x08)  # PCAN Gateway devices
+PCAN_NONE                = TPCANDevice(0x00)     # Undefined, unknown or not selected PCAN device value
+PCAN_PEAKCAN             = TPCANDevice(0x01)     # PCAN Non-Plug&Play devices. NOT USED WITHIN PCAN-Basic API
+PCAN_ISA                 = TPCANDevice(0x02)     # PCAN-ISA, PCAN-PC/104, and PCAN-PC/104-Plus
+PCAN_DNG                 = TPCANDevice(0x03)     # PCAN-Dongle
+PCAN_PCI                 = TPCANDevice(0x04)     # PCAN-PCI, PCAN-cPCI, PCAN-miniPCI, and PCAN-PCI Express
+PCAN_USB                 = TPCANDevice(0x05)     # PCAN-USB and PCAN-USB Pro
+PCAN_PCC                 = TPCANDevice(0x06)     # PCAN-PC Card
+PCAN_VIRTUAL             = TPCANDevice(0x07)     # PCAN Virtual hardware. NOT USED WITHIN PCAN-Basic API
+PCAN_LAN                 = TPCANDevice(0x08)     # PCAN Gateway devices
 
 # PCAN parameters
-#
 PCAN_DEVICE_NUMBER       = TPCANParameter(0x01)  # PCAN-USB device number parameter
 PCAN_5VOLTS_POWER        = TPCANParameter(0x02)  # PCAN-PC Card 5-Volt power parameter
 PCAN_RECEIVE_EVENT       = TPCANParameter(0x03)  # PCAN receive event handler parameter
@@ -190,7 +177,6 @@ PCAN_IP_ADDRESS          = TPCANParameter(0x1C)  # Remote address of a LAN chann
 PCAN_LAN_SERVICE_STATUS  = TPCANParameter(0x1D)  # Status of the Virtual PCAN-Gateway Service
 
 # PCAN parameter values
-#
 PCAN_PARAMETER_OFF       = int(0x00)  # The PCAN parameter is not set (inactive)
 PCAN_PARAMETER_ON        = int(0x01)  # The PCAN parameter is set (active)
 PCAN_FILTER_CLOSE        = int(0x00)  # The PCAN filter is closed. No messages will be received
@@ -201,13 +187,13 @@ PCAN_CHANNEL_AVAILABLE   = int(0x01)  # The PCAN-Channel handle is available to 
 PCAN_CHANNEL_OCCUPIED    = int(0x02)  # The PCAN-Channel handle is valid, and is already being used
 PCAN_CHANNEL_PCANVIEW    = PCAN_CHANNEL_AVAILABLE | PCAN_CHANNEL_OCCUPIED  # The PCAN-Channel handle is already being used by a PCAN-View application, but is available to connect
 
-LOG_FUNCTION_DEFAULT     = int(0x00)   # Logs system exceptions / errors
-LOG_FUNCTION_ENTRY       = int(0x01)   # Logs the entries to the PCAN-Basic API functions 
-LOG_FUNCTION_PARAMETERS  = int(0x02)   # Logs the parameters passed to the PCAN-Basic API functions 
-LOG_FUNCTION_LEAVE       = int(0x04)   # Logs the exits from the PCAN-Basic API functions 
-LOG_FUNCTION_WRITE       = int(0x08)   # Logs the CAN messages passed to the CAN_Write function
-LOG_FUNCTION_READ        = int(0x10)   # Logs the CAN messages received within the CAN_Read function
-LOG_FUNCTION_ALL         = int(0xFFFF) # Logs all possible information within the PCAN-Basic API functions
+LOG_FUNCTION_DEFAULT     = int(0x00)  # Logs system exceptions / errors
+LOG_FUNCTION_ENTRY       = int(0x01)  # Logs the entries to the PCAN-Basic API functions 
+LOG_FUNCTION_PARAMETERS  = int(0x02)  # Logs the parameters passed to the PCAN-Basic API functions 
+LOG_FUNCTION_LEAVE       = int(0x04)  # Logs the exits from the PCAN-Basic API functions 
+LOG_FUNCTION_WRITE       = int(0x08)  # Logs the CAN messages passed to the CAN_Write function
+LOG_FUNCTION_READ        = int(0x10)  # Logs the CAN messages received within the CAN_Read function
+LOG_FUNCTION_ALL         = int(0xFFFF)# Logs all possible information within the PCAN-Basic API functions
 
 TRACE_FILE_SINGLE        = int(0x00)  # A single file is written until it size reaches PAN_TRACE_SIZE
 TRACE_FILE_SEGMENTED     = int(0x01)  # Traced data is distributed in several files with size PAN_TRACE_SIZE
@@ -221,7 +207,6 @@ SERVICE_STATUS_STOPPED   = int(0x01)  # The service is not running
 SERVICE_STATUS_RUNNING   = int(0x04)  # The service is running
 
 # PCAN message types
-#
 PCAN_MESSAGE_STANDARD    = TPCANMessageType(0x00)  # The PCAN message is a CAN Standard Frame (11-bit identifier)
 PCAN_MESSAGE_RTR         = TPCANMessageType(0x01)  # The PCAN message is a CAN Remote-Transfer-Request Frame
 PCAN_MESSAGE_EXTENDED    = TPCANMessageType(0x02)  # The PCAN message is a CAN Extended Frame (29-bit identifier)
@@ -231,7 +216,6 @@ PCAN_MESSAGE_ESI         = TPCANMessageType(0x10)  # The PCAN message represents
 PCAN_MESSAGE_STATUS      = TPCANMessageType(0x80)  # The PCAN message represents a PCAN status message
 
 # Frame Type / Initialization Mode
-#
 PCAN_MODE_STANDARD       = PCAN_MESSAGE_STANDARD  
 PCAN_MODE_EXTENDED       = PCAN_MESSAGE_EXTENDED  
 
@@ -239,31 +223,30 @@ PCAN_MODE_EXTENDED       = PCAN_MESSAGE_EXTENDED
 # You can define your own Baud rate with the BTROBTR1 register.
 # Take a look at www.peak-system.com for our free software "BAUDTOOL" 
 # to calculate the BTROBTR1 register for every bit rate and sample point.
-#
-PCAN_BAUD_1M             = TPCANBaudrate(0x0014) #   1 MBit/s
-PCAN_BAUD_800K           = TPCANBaudrate(0x0016) # 800 kBit/s
-PCAN_BAUD_500K           = TPCANBaudrate(0x001C) # 500 kBit/s
-PCAN_BAUD_250K           = TPCANBaudrate(0x011C) # 250 kBit/s
-PCAN_BAUD_125K           = TPCANBaudrate(0x031C) # 125 kBit/s
-PCAN_BAUD_100K           = TPCANBaudrate(0x432F) # 100 kBit/s
+
+PCAN_BAUD_1M             = TPCANBaudrate(0x0014) #   1     MBit/s
+PCAN_BAUD_800K           = TPCANBaudrate(0x0016) # 800     kBit/s
+PCAN_BAUD_500K           = TPCANBaudrate(0x001C) # 500     kBit/s
+PCAN_BAUD_250K           = TPCANBaudrate(0x011C) # 250     kBit/s
+PCAN_BAUD_125K           = TPCANBaudrate(0x031C) # 125     kBit/s
+PCAN_BAUD_100K           = TPCANBaudrate(0x432F) # 100     kBit/s
 PCAN_BAUD_95K            = TPCANBaudrate(0xC34E) #  95,238 kBit/s
 PCAN_BAUD_83K            = TPCANBaudrate(0x852B) #  83,333 kBit/s
-PCAN_BAUD_50K            = TPCANBaudrate(0x472F) #  50 kBit/s
+PCAN_BAUD_50K            = TPCANBaudrate(0x472F) #  50     kBit/s
 PCAN_BAUD_47K            = TPCANBaudrate(0x1414) #  47,619 kBit/s
 PCAN_BAUD_33K            = TPCANBaudrate(0x8B2F) #  33,333 kBit/s
-PCAN_BAUD_20K            = TPCANBaudrate(0x532F) #  20 kBit/s
-PCAN_BAUD_10K            = TPCANBaudrate(0x672F) #  10 kBit/s
-PCAN_BAUD_5K             = TPCANBaudrate(0x7F7F) #   5 kBit/s
+PCAN_BAUD_20K            = TPCANBaudrate(0x532F) #  20     kBit/s
+PCAN_BAUD_10K            = TPCANBaudrate(0x672F) #  10     kBit/s
+PCAN_BAUD_5K             = TPCANBaudrate(0x7F7F) #   5     kBit/s
 
 # Represents the configuration for a CAN bit rate
-# Note: 
+# Note:
 #    * Each parameter and its value must be separated with a '='.
 #    * Each pair of parameter/value must be separated using ','. 
 #
 # Example:
 #    f_clock=80000000,nom_brp=0,nom_tseg1=13,nom_tseg2=0,nom_sjw=0,data_brp=0,data_tseg1=13,data_tseg2=0,data_sjw=0
 #
-# Patched for python-can: use bytes to fix incompatibility with Python 3
 PCAN_BR_CLOCK            = TPCANBitrateFD(b"f_clock")
 PCAN_BR_CLOCK_MHZ        = TPCANBitrateFD(b"f_clock_mhz")
 PCAN_BR_NOM_BRP          = TPCANBitrateFD(b"nom_brp")
@@ -278,7 +261,6 @@ PCAN_BR_DATA_SJW         = TPCANBitrateFD(b"data_sjw")
 PCAN_BR_DATA_SAMPLE      = TPCANBitrateFD(b"data_ssp_offset")
 
 # Supported No-Plug-And-Play Hardware types
-#
 PCAN_TYPE_ISA            = TPCANType(0x01)  # PCAN-ISA 82C200
 PCAN_TYPE_ISA_SJA        = TPCANType(0x09)  # PCAN-ISA SJA1000
 PCAN_TYPE_ISA_PHYTEC     = TPCANType(0x04)  # PHYTEC ISA 
@@ -287,36 +269,29 @@ PCAN_TYPE_DNG_EPP        = TPCANType(0x03)  # PCAN-Dongle EPP 82C200
 PCAN_TYPE_DNG_SJA        = TPCANType(0x05)  # PCAN-Dongle SJA1000
 PCAN_TYPE_DNG_SJA_EPP    = TPCANType(0x06)  # PCAN-Dongle EPP SJA1000
 
-# Represents a PCAN message
-#
 class TPCANMsg (Structure):
     """
     Represents a PCAN message
     """
-    _fields_ = [ ("ID",      c_uint),          # 11/29-bit message identifier
+    _fields_ = [ ("ID",      c_uint),           # 11/29-bit message identifier
                  ("MSGTYPE", TPCANMessageType), # Type of the message
                  ("LEN",     c_ubyte),          # Data Length Code of the message (0..8)
                  ("DATA",    c_ubyte * 8) ]     # Data of the message (DATA[0]..DATA[7])
 
-# Represents a timestamp of a received PCAN message
-# Total Microseconds = micros + 1000 * millis + 0x100000000 * 1000 * millis_overflow
-#
 class TPCANTimestamp (Structure):
     """
     Represents a timestamp of a received PCAN message
     Total Microseconds = micros + 1000 * millis + 0x100000000 * 1000 * millis_overflow
     """
-    _fields_ = [ ("millis", c_uint),           # Base-value: milliseconds: 0.. 2^32-1
+    _fields_ = [ ("millis", c_uint),            # Base-value: milliseconds: 0.. 2^32-1
                  ("millis_overflow", c_ushort), # Roll-arounds of millis
                  ("micros", c_ushort) ]         # Microseconds: 0..999
 
-# Represents a PCAN message from a FD capable hardware
-#
 class TPCANMsgFD (Structure):
     """
-    Represents a PCAN message
+    Represents a PCAN message from a FD capable hardware
     """
-    _fields_ = [ ("ID",      c_uint),          # 11/29-bit message identifier
+    _fields_ = [ ("ID",      c_uint),           # 11/29-bit message identifier
                  ("MSGTYPE", TPCANMessageType), # Type of the message
                  ("DLC",     c_ubyte),          # Data Length Code of the message (0..15)
                  ("DATA",    c_ubyte * 64) ]    # Data of the message (DATA[0]..DATA[63])
@@ -325,15 +300,12 @@ class TPCANMsgFD (Structure):
 # PCAN-Basic API function declarations
 #///////////////////////////////////////////////////////////
 
-# PCAN-Basic API class implementation
-#
 class PCANBasic:
+    """PCAN-Basic API class implementation
     """
-      PCAN-Basic API class implementation
-    """      
+
     def __init__(self):
         # Loads the PCANBasic.dll
-        #     
         if platform.system() == 'Windows':
             self.__m_dllBasic = windll.LoadLibrary("PCANBasic")
         else:
@@ -341,8 +313,6 @@ class PCANBasic:
         if self.__m_dllBasic == None:
             logger.error("Exception: The PCAN-Basic DLL couldn't be loaded!")
 
-    # Initializes a PCAN Channel
-    #
     def Initialize(
         self,
         Channel,   
@@ -371,8 +341,6 @@ class PCANBasic:
             logger.error("Exception on PCANBasic.Initialize")
             raise
         
-    # Initializes a FD capable PCAN Channel  
-    #
     def InitializeFD(
         self,
         Channel,   
@@ -406,8 +374,6 @@ class PCANBasic:
             logger.error("Exception on PCANBasic.InitializeFD")
             raise
 
-    #  Uninitializes one or all PCAN Channels initialized by CAN_Initialize
-    #
     def Uninitialize(
         self,
         Channel):
@@ -431,8 +397,6 @@ class PCANBasic:
             logger.error("Exception on PCANBasic.Uninitialize")
             raise
 
-    #  Resets the receive and transmit queues of the PCAN Channel
-    #
     def Reset(
         self,
         Channel):
@@ -456,8 +420,6 @@ class PCANBasic:
             logger.error("Exception on PCANBasic.Reset")
             raise
             
-    #  Gets the current status of a PCAN Channel
-    #
     def GetStatus(
         self,
         Channel):
@@ -478,8 +440,6 @@ class PCANBasic:
             logger.error("Exception on PCANBasic.GetStatus")
             raise
 
-    # Reads a CAN message from the receive queue of a PCAN Channel
-    #
     def Read(
         self,
         Channel):
@@ -510,8 +470,6 @@ class PCANBasic:
             logger.error("Exception on PCANBasic.Read")
             raise           
 
-    # Reads a CAN message from the receive queue of a FD capable PCAN Channel
-    #
     def ReadFD(
         self,
         Channel):
@@ -542,8 +500,6 @@ class PCANBasic:
             logger.error("Exception on PCANBasic.ReadFD")
             raise  
 
-    # Transmits a CAN message 
-    #
     def Write(
         self,
         Channel,
@@ -566,8 +522,6 @@ class PCANBasic:
             logger.error("Exception on PCANBasic.Write")
             raise
 
-    # Transmits a CAN message over a FD capable PCAN Channel
-    #
     def WriteFD(
         self,
         Channel,
@@ -590,8 +544,6 @@ class PCANBasic:
             logger.error("Exception on PCANBasic.WriteFD")
             raise
 
-    # Configures the reception filter 
-    #
     def FilterMessages(
         self,
         Channel,
@@ -623,8 +575,6 @@ class PCANBasic:
             logger.error("Exception on PCANBasic.FilterMessages")
             raise
 
-    # Retrieves a PCAN Channel value 
-    #
     def GetValue(
         self,
         Channel,
@@ -661,9 +611,6 @@ class PCANBasic:
             logger.error("Exception on PCANBasic.GetValue")
             raise            
 
-    # Returns a descriptive text of a given TPCANStatus
-    # error code, in any desired language
-    #
     def SetValue(
         self,
         Channel,

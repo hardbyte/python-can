@@ -1,6 +1,15 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+"""
+This module contains the implementation of `can.Listener` and some readers.
+"""
+
 try:
+    # Python 3
     import queue
 except ImportError:
+    # Python 2
     import Queue as queue
 
 

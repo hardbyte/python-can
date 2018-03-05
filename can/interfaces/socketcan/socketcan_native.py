@@ -1,4 +1,5 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+# coding: utf-8
 
 """
 This implementation is for versions of Python that have native
