@@ -106,8 +106,6 @@ class NeoViBus(BusABC):
         )
         logger.info("Using device: {}".format(self.channel_info))
 
-        ics.load_default_settings(self.dev)
-
         self.sw_filters = None
         self.set_filters(can_filters)
         self.rx_buffer = deque()
