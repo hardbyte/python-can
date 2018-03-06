@@ -191,8 +191,7 @@ def choose_socketcan_implementation():
             # Check Python version: SocketCAN was added in 3.3
             return 'socketcan_native' if sys.version_info >= (3, 3) else 'socketcan_ctypes'
         else:
-            msg = 'SocketCAN not available under Linux {}'.format(
-                    rel_string)
+            msg = 'SocketCAN not available under Linux {}'.format(rel_string)
             raise Exception(msg)
 
 
@@ -212,6 +211,6 @@ def set_logging_level(level_name=None):
 if __name__ == "__main__":
     print("Searching for configuration named:")
     print("\n".join(CONFIG_FILES))
-
+    print()
     print("Settings:")
     print(load_config())
