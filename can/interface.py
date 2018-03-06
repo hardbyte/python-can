@@ -9,12 +9,13 @@ CyclicSendTasks.
 
 from __future__ import absolute_import
 
-import can
 import importlib
 from pkg_resources import iter_entry_points
 
-from can.broadcastmanager import CyclicSendTaskABC, MultiRateCyclicSendTaskABC
-from can.util import load_config
+import can
+from .bus import BusABC
+from .broadcastmanager import CyclicSendTaskABC, MultiRateCyclicSendTaskABC
+from .util import load_config
 
 
 # interface_name => (module, classname)
@@ -77,7 +78,7 @@ def _get_class_for_interface(interface):
     return bus_class
 
 
-class Bus(object):
+class Bus(BusABC):
     """
     Instantiates a CAN Bus of the given `bustype`, falls back to reading a
     configuration file from default locations.
