@@ -11,56 +11,49 @@ from __future__ import absolute_import
 
 import can
 import importlib
+from pkg_resources import iter_entry_points
 
 from can.broadcastmanager import CyclicSendTaskABC, MultiRateCyclicSendTaskABC
-from pkg_resources import iter_entry_points
 from can.util import load_config
+
 
 # interface_name => (module, classname)
 BACKENDS = {
-    'kvaser':           ('can.interfaces.kvaser', 'KvaserBus'),
-    'socketcan_ctypes': ('can.interfaces.socketcan', 'SocketcanCtypes_Bus'),
-    'socketcan_native': ('can.interfaces.socketcan', 'SocketcanNative_Bus'),
-    'serial':           ('can.interfaces.serial.serial_can', 'SerialBus'),
-    'pcan':             ('can.interfaces.pcan', 'PcanBus'),
-    'usb2can':          ('can.interfaces.usb2can', 'Usb2canBus'),
-    'ixxat':            ('can.interfaces.ixxat', 'IXXATBus'),
-    'nican':            ('can.interfaces.nican', 'NicanBus'),
-    'iscan':            ('can.interfaces.iscan', 'IscanBus'),
-    'virtual':          ('can.interfaces.virtual', 'VirtualBus'),
-    'neovi':            ('can.interfaces.ics_neovi', 'NeoViBus'),
-    'vector':           ('can.interfaces.vector', 'VectorBus'),
-    'slcan':            ('can.interfaces.slcan', 'slcanBus')
+    'kvaser':           ('can.interfaces.kvaser',           'KvaserBus'),
+    'socketcan_ctypes': ('can.interfaces.socketcan',        'SocketcanCtypes_Bus'),
+    'socketcan_native': ('can.interfaces.socketcan',        'SocketcanNative_Bus'),
+    'serial':           ('can.interfaces.serial.serial_can','SerialBus'),
+    'pcan':             ('can.interfaces.pcan',             'PcanBus'),
+    'usb2can':          ('can.interfaces.usb2can',          'Usb2canBus'),
+    'ixxat':            ('can.interfaces.ixxat',            'IXXATBus'),
+    'nican':            ('can.interfaces.nican',            'NicanBus'),
+    'iscan':            ('can.interfaces.iscan',            'IscanBus'),
+    'virtual':          ('can.interfaces.virtual',          'VirtualBus'),
+    'neovi':            ('can.interfaces.ics_neovi',        'NeoViBus'),
+    'vector':           ('can.interfaces.vector',           'VectorBus'),
+    'slcan':            ('can.interfaces.slcan',            'slcanBus')
 }
-
 
 BACKENDS.update({
     interface.name: (interface.module_name, interface.attrs[0])
     for interface in iter_entry_points('python_can.interface')
 })
 
-def _get_class_for_configuration(channel, *args, **kwargs):
+
+def _get_class_for_interface(interface):
     """
-    Returns the main bus class for the given interface/configuration.
+    Returns the main bus class for the given interface.
 
-    :raises: TODO
+    :raises:
+        NotImplementedError if the interface is not known
+    :raises:
+        ImportError if there was a problem while importing the
+        interface or the bus class within that
     """
-
-    # Figure out the configuration
-    config = load_config(config={
-        'interface': kwargs.get('bustype'),
-        'channel': channel
-    })
-
-    if 'bustype' in kwargs:
-        # remove the bustype so it doesn't get passed to the backend
-        del kwargs['bustype']
-    interface = config['interface']
-    channel = config['channel']
 
     # Find the correct backend
     try:
-        (module_name, class_name) = BACKENDS[interface]
+        module_name, class_name = BACKENDS[interface]
     except KeyError:
         raise NotImplementedError("CAN interface '{}' not supported".format(interface))
 
@@ -74,13 +67,14 @@ def _get_class_for_configuration(channel, *args, **kwargs):
 
     # Get the correct class
     try:
-        return getattr(module, class_name)
+        bus_class = getattr(module, class_name)
     except Exception as e:
         raise ImportError(
-            "Cannot import class {} from module {} for CAN interface '{}': {}".format(
-                class_name, module_name, interface, e
-            )
+            "Cannot import class {} from module {} for CAN interface '{}': {}"
+                .format(class_name, module_name, interface, e)
         )
+
+    return bus_class
 
 
 class Bus(object):
@@ -104,8 +98,19 @@ class Bus(object):
             or set in the can.rc config.
 
         """
-        cls = _get_class_for_configuration(channel, args, kwargs)
-        return cls(channel, **kwargs)
+
+        # Figure out the configuration
+        config = load_config(config={
+            'interface': kwargs.get('bustype'),
+            'channel': channel
+        })
+
+        # remove the bustype so it doesn't get passed to the backend
+        if 'bustype' in kwargs:
+            del kwargs['bustype']
+
+        cls = _get_class_for_interface(config['interface'])
+        return cls(channel=config['channel'], *args, **kwargs)
 
 
 class CyclicSendTask(CyclicSendTaskABC):
