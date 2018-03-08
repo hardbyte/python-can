@@ -68,15 +68,16 @@ class BusABC(object):
 
         :return:
             None on timeout or a :class:`can.Message` object.
-        :raise: :class:`can.CanError`
+        :raises can.CanError:
             if an error occurred while reading
         """
         start = time()
+        time_left = timeout
 
         while True:
 
             # try to get a message
-            msg, already_filtered = self._recv_internal(timeout=timeout)
+            msg, already_filtered = self._recv_internal(timeout=time_left)
 
             # return it, if it matches
             if msg and (already_filtered or self._matches_filters(msg)):
@@ -89,9 +90,9 @@ class BusABC(object):
             # try next one only if there still is time, and with reduced timeout
             else:
 
-                timeout = timeout - (time() - start)
+                time_left = timeout - (time() - start)
 
-                if timeout > 0:
+                if time_left > 0:
                     continue
                 else:
                     return None
@@ -101,7 +102,7 @@ class BusABC(object):
         """
         Read a message from the bus and tell whether it was filtered.
 
-        :raise: :class:`can.CanError`
+        :raises can.CanError:
             if an error occurred while reading
         """
         raise NotImplementedError("Trying to read from a write only bus?")
@@ -118,7 +119,7 @@ class BusABC(object):
             If timeout is exceeded, an exception will be raised.
             Might not be supported by all interfaces.
 
-        :raise: :class:`can.CanError`
+        :raises can.CanError:
             if the message could not be written.
         """
         raise NotImplementedError("Trying to write to a readonly bus?")
@@ -135,7 +136,7 @@ class BusABC(object):
             no duration is provided, the task will continue indefinitely.
 
         :return: A started task instance
-        :rtype: :class:`can.CyclicSendTaskABC`
+        :rtype: can.CyclicSendTaskABC
 
             Note the duration before the message stops being sent may not
             be exactly the same as the duration specified by the user. In
@@ -155,7 +156,8 @@ class BusABC(object):
             ...     print(msg)
 
 
-        :yields: :class:`can.Message` msg objects.
+        :yields:
+            :class:`can.Message` msg objects.
         """
         while True:
             msg = self.recv(timeout=1.0)
@@ -171,13 +173,17 @@ class BusABC(object):
         self.set_filters(filters)
 
     def set_filters(self, can_filters=None):
-        """Apply filtering to all messages received by this Bus. All messages
-        that match at least one filter are returned.
+        """Apply filtering to all messages received by this Bus.
 
-        Calling without passing any filters will reset the applied filters.
+        All messages that match at least one filter are returned.
+        If `can_filters` is `None`, all messages are matched.
+        If it is a zero size interable, no messages are matched.
 
-        :param list can_filters:
-            A list of dictionaries each containing a "can_id", a "can_mask",
+        Calling without passing any filters will reset the applied
+        filters to `None`.
+
+        :param Iterator[dict] can_filters:
+            A iterable of dictionaries each containing a "can_id", a "can_mask",
             and an optional "extended" key.
 
             >>> [{"can_id": 0x11, "can_mask": 0x21, "extended": False}]
@@ -188,9 +194,6 @@ class BusABC(object):
             only on the arbitration ID and mask.
 
         """
-        if can_filters is None:
-            can_filters = []
-
         # TODO: would it be faster to precompute `can_id & can_mask` here, and then
         # instead of (can_id, can_mask, ext) store (masked_can_id, can_mask, ext)?
         # Or maybe store it as a tuple/.../? for faster iteration & access?
@@ -213,6 +216,10 @@ class BusABC(object):
 
         # TODO: add unit testing for this method
 
+        # if no filters are set, all messages are matched
+        if self._can_filters is None:
+            return True
+
         for can_filter in self._can_filters:
             # check if this filter even applies to the message
             if 'extended' in can_filter and \
@@ -222,7 +229,10 @@ class BusABC(object):
             # then check for the mask and id
             can_id = can_filter['can_id']
             can_mask = can_filter['can_mask']
-            if msg.arbitration_id & can_mask == can_id & can_mask:
+
+            # basically, we compute `msg.arbitration_id & can_mask == can_id & can_mask`
+            # by using the faster, but equivalent from below:
+            if (can_id ^ msg.arbitration_id) & can_mask == 0:
                 return True
 
         # nothing matched
