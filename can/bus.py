@@ -18,8 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 class BusABC(object):
-
-    """CAN Bus Abstract Base Class.
+    """The CAN Bus Abstract Base Class.
 
     Concrete implementations *must* implement the following:
         * :meth:`~can.BusABC.send`
@@ -31,9 +30,7 @@ class BusABC(object):
         * :meth:`~can.BusABC.flush_tx_buffer` to allow discrading any
           messages yet to be sent
         * :meth:`~can.BusABC.shutdown` to override how the bus should
-          shut down, in which case the class has to either call through
-          `super().shutdown()` or call :meth:`~can.BusABC.flush_tx_buffer`
-          on its own
+          shut down
         * :meth:`~can.BusABC.send_periodic` to override the software based
           periodic sending and push it down to the kernel or hardware
         * :meth:`~can.BusABC._apply_filters` to apply efficient filters
@@ -261,8 +258,8 @@ class BusABC(object):
     def shutdown(self):
         """
         Called to carry out any interface specific cleanup required
-        in shutting down a bus. Calls :meth:`~can.BusABC.flush_tx_buffer`.
+        in shutting down a bus.
         """
-        self.flush_tx_buffer()
+        pass
 
     __metaclass__ = ABCMeta
