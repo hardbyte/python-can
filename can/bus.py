@@ -12,7 +12,7 @@ import logging
 import threading
 from time import time
 
-from can.broadcastmanager import ThreadBasedCyclicSendTask
+from .broadcastmanager import ThreadBasedCyclicSendTask
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ class BusABC(object):
         * :meth:`~can.BusABC.send_periodic` to override the software based
           periodic sending and push it down to the kernel or hardware
         * :meth:`~can.BusABC._apply_filters` to apply efficient filters
-          to lower level systems
+          to lower level systems like the OS kernel or hardware
 
     """
 
@@ -63,6 +63,10 @@ class BusABC(object):
 
     def recv(self, timeout=None):
         """Block waiting for a message from the Bus.
+
+        If the concrete bus does not override it, this method makes sure
+        that all filters have been applied. That is the case for all
+        internal interfaces.
 
         :param float timeout: Seconds to wait for a message.
 
@@ -97,13 +101,27 @@ class BusABC(object):
                 else:
                     return None
 
-    @abstractmethod
     def _recv_internal(self, timeout):
         """
         Read a message from the bus and tell whether it was filtered.
+        This methods may be called by :meth:`~can.BusABC.recv`
+        to read a message multiple times if the filters set by
+        :meth:`~can.BusABC.set_filters` do not match and the call has
+        not yet timed out.
+
+        New implementations should always override this method instead of
+        :meth:`~can.BusABC.recv`, to be able to take advantage of the
+        software based filtering provided by :meth:`~can.BusABC.recv`.
+
+        This method is not an `@abstractmethod` for now to allow older
+        external implementations to continue using their existing
+        custom :meth:`~can.BusABC.recv` implementation.
 
         :raises can.CanError:
             if an error occurred while reading
+        :raises NotImplementedError:
+            if the bus provides it's own :meth:`~can.BusABC.recv`
+            implementation
         """
         raise NotImplementedError("Trying to read from a write only bus?")
 
@@ -194,9 +212,6 @@ class BusABC(object):
             only on the arbitration ID and mask.
 
         """
-        # TODO: would it be faster to precompute `can_id & can_mask` here, and then
-        # instead of (can_id, can_mask, ext) store (masked_can_id, can_mask, ext)?
-        # Or maybe store it as a tuple/.../? for faster iteration & access?
         self._can_filters = can_filters
         self._apply_filters()
 
