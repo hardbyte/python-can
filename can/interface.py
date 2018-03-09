@@ -9,6 +9,7 @@ CyclicSendTasks.
 
 from __future__ import absolute_import
 
+import sys
 import importlib
 from pkg_resources import iter_entry_points
 
@@ -16,6 +17,9 @@ import can
 from .bus import BusABC
 from .broadcastmanager import CyclicSendTaskABC, MultiRateCyclicSendTaskABC
 from .util import load_config
+
+if sys.version_info.major > 2:
+    basestring = str
 
 
 # interface_name => (module, classname)
@@ -102,16 +106,68 @@ class Bus(BusABC):
 
         # Figure out the configuration
         config = load_config(config={
-            'interface': kwargs.get('bustype'),
+            'interface': kwargs.get('bustype', kwargs.get('interface')),
             'channel': channel
         })
 
-        # remove the bustype so it doesn't get passed to the backend
+        # remove the bustype & interface so it doesn't get passed to the backend
         if 'bustype' in kwargs:
             del kwargs['bustype']
+        if 'interface' in kwargs:
+            del kwargs['interface']
 
         cls = _get_class_for_interface(config['interface'])
         return cls(channel=config['channel'], *args, **kwargs)
+
+
+def detect_available_channels(search_only_in=None):
+    """Detect all configurations/channels that the interfaces could
+    currently connect with.
+
+    This might be quite time consuming. 
+
+    Automated configuration detection may not be implemented by
+    every interface on every platform.
+
+    :param search_only_in: either
+        - the name of an interface to be searched in as a string,
+        - an iterable of interface names to search in, or
+        - `None` to search in all known interfaces.
+    :rtype: Iterator[dict]
+    :return: an iterable of dicts, each suitable for usage in
+             :class:`~can.interface.Bus`'s constructor.
+    """
+
+    # Figure out where to search
+    if search_only_in is None:
+        # use an iterator over the keys so we do not have to copy it
+        search_only_in = BACKENDS.iterkeys()
+    elif isinstance(search_only_in, basestring):
+        search_only_in = [search_only_in, ]
+    # else it is supposed to be an iterable of strings
+
+    result = []
+    for interface in search_only_in:
+
+        bus_class = _get_class_for_interface(interface)
+
+        # get available channels
+        try:
+            available = bus_class._detect_available_channels()
+        except NotImplementedError:
+            log.debug('interface "%s" does not support detection of available configurations', interface)
+        else:
+            log.debug('interface "%s" detected %i available configurations', interface, len(available))
+
+            # add the interface name to the configs if it is not already present
+            for config in available:
+                if 'interface' not in config:
+                    config['interface'] = interface
+
+            # append to result
+            result += available
+
+    return result
 
 
 class CyclicSendTask(CyclicSendTaskABC):

@@ -158,7 +158,7 @@ class BusABC(object):
 
         This might be quite time consuming.
 
-        May not to be implemented by every interface.
+        May not to be implemented by every interface on every platform.
 
         :rtype: Iterator[dict]
         :return: an iterable of dicts, each being a configuration suitable
