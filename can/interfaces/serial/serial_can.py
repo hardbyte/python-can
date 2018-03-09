@@ -3,7 +3,7 @@
 
 """
 A text based interface. For example use over serial ports like
-"/dev/ttyS1" or "/dev/ttyUSB0" on Linux machines or "COM1" on Windows.
+"/dev/ttyS1" or "/dev/tty        logger.setLevel(logging.DEBUG)USB0" on Linux machines or "COM1" on Windows.
 The interface is a simple implementation that has been used for
 recording CAN traces.
 """
@@ -13,15 +13,9 @@ import struct
 
 from can.bus import BusABC
 from can.message import Message
+from can.interfaces.serial.serialcom import SerialInterface
 
-logger = logging.getLogger('can.serial')
-
-try:
-    import serial
-except ImportError:
-    logger.warning("You won't be able to use the serial can backend without "
-                   "the serial module installed!")
-    serial = None
+logger = logging.getLogger(__name__)
 
 
 class SerialBus(BusABC):
@@ -41,7 +35,8 @@ class SerialBus(BusABC):
                       rate.
 
         :param float timeout:
-            Timeout for the serial device in seconds (default 0.1).
+            Timeout for the serial device in seconds (default 0.1). The
+            timeout will be used for sending and receiving.
         """
 
         if channel == '':
@@ -50,15 +45,14 @@ class SerialBus(BusABC):
             self.channel_info = "Serial interface: " + channel
             baudrate = kwargs.get('baudrate', 115200)
             timeout = kwargs.get('timeout', 0.1)
-            self.ser = serial.Serial(channel, baudrate=baudrate, 
-                                     timeout=timeout)
+            self.ser = SerialInterface(port=channel, baudrate=baudrate, timeout=timeout)
         super(SerialBus, self).__init__(*args, **kwargs)
 
     def shutdown(self):
         """
         Close the serial interface.
         """
-        self.ser.close()
+        self.ser.close_port()
 
     def send(self, msg, timeout=None):
         """
@@ -73,9 +67,8 @@ class SerialBus(BusABC):
             .. note:: If the timestamp a float value it will be convert to an
                       integer.
 
-        :param timeout:
-            This parameter will be ignored. The timeout value of the channel is
-            used.
+        :param float timeout:
+            Timeout for sending messages in seconds, if no timeout is set the default from the constructor will be used.
         """
 
         try:
@@ -96,7 +89,7 @@ class SerialBus(BusABC):
         for i in range(0, msg.dlc):
             byte_msg.append(msg.data[i])
         byte_msg.append(0xBB)
-        self.ser.write(byte_msg)
+        self.ser.send_serial(byte_msg)
 
     @staticmethod
     def convert_to_integer_milliseconds(msg_timestamp):
@@ -106,6 +99,7 @@ class SerialBus(BusABC):
         """
         Read a message from the serial device.
 
+        #TODO change description timeout is not for the whole message, the timeout is resetet after every send
         :param timeout:
             This parameter will be ignored. The timeout value of the channel is
             used.
@@ -122,21 +116,21 @@ class SerialBus(BusABC):
         try:
             # ser.read can return an empty string ''
             # or raise a SerialException
-            rx_byte = self.ser.read()
+            rx_byte = self.ser.recv_serial()
         except serial.SerialException:
             return None
 
         if len(rx_byte) and ord(rx_byte) == 0xAA:
-            s = bytearray(self.ser.read(4))
+            s = bytearray(self.ser.recv_serial(4))
             timestamp = (struct.unpack('<I', s))[0]
-            dlc = ord(self.ser.read())
+            dlc = ord(self.ser.recv_serial())
 
-            s = bytearray(self.ser.read(4))
+            s = bytearray(self.ser.recv_serial(4))
             arb_id = (struct.unpack('<I', s))[0]
 
-            data = self.ser.read(dlc)
+            data = self.ser.recv_serial(dlc)
 
-            rxd_byte = ord(self.ser.read())
+            rxd_byte = ord(self.ser.recv_serial())
             if rxd_byte == 0xBB:
                 # received message data okay
                 return Message(timestamp=timestamp/1000,
