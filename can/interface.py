@@ -120,7 +120,7 @@ class Bus(BusABC):
         return cls(channel=config['channel'], *args, **kwargs)
 
 
-def detect_available_channels(search_only_in=None):
+def detect_available_configs(search_only_in=None):
     """Detect all configurations/channels that the interfaces could
     currently connect with.
 
@@ -153,7 +153,7 @@ def detect_available_channels(search_only_in=None):
 
         # get available channels
         try:
-            available = bus_class._detect_available_channels()
+            available = bus_class.detect_available_configs()
         except NotImplementedError:
             log.debug('interface "%s" does not support detection of available configurations', interface)
         else:

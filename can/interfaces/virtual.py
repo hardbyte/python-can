@@ -100,4 +100,9 @@ class VirtualBus(BusABC):
         while extra in available_channels:
             extra = get_extra()
 
-        return available_channels + [extra]
+        available_channels += [extra]
+
+        return [
+            {'interface': 'virtual', 'channel': channel}
+            for channel in available_channels
+        ]
