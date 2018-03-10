@@ -146,7 +146,7 @@ def detect_available_configs(search_only_in=None):
     # Figure out where to search
     if search_only_in is None:
         # use an iterator over the keys so we do not have to copy it
-        search_only_in = BACKENDS.iterkeys()
+        search_only_in = BACKENDS.keys()
     elif isinstance(search_only_in, basestring):
         search_only_in = [search_only_in, ]
     # else it is supposed to be an iterable of strings

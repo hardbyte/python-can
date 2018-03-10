@@ -92,7 +92,7 @@ class VirtualBus(BusABC):
         autodetected busses are used at once.
         """
         with channels_lock:
-            available_channels = channels.keys()
+            available_channels = list(channels.keys())
 
         # find a currently unused channel
         get_extra = lambda: "channel-{}".format(random.randint(0, 9999))
