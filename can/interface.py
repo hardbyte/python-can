@@ -12,6 +12,7 @@ from __future__ import absolute_import
 import sys
 import importlib
 from pkg_resources import iter_entry_points
+import logging
 
 import can
 from .bus import BusABC
@@ -20,6 +21,9 @@ from .util import load_config
 
 if sys.version_info.major > 2:
     basestring = str
+
+
+log = logging.getLogger('can.interface')
 
 
 # interface_name => (module, classname)
@@ -137,6 +141,7 @@ def detect_available_configs(search_only_in=None):
     :return: an iterable of dicts, each suitable for usage in
              :class:`~can.interface.Bus`'s constructor.
     """
+    logger = log.getChild('detect_available_configs')
 
     # Figure out where to search
     if search_only_in is None:
@@ -153,11 +158,11 @@ def detect_available_configs(search_only_in=None):
 
         # get available channels
         try:
-            available = bus_class.detect_available_configs()
+            available = bus_class._detect_available_configs()
         except NotImplementedError:
-            log.debug('interface "%s" does not support detection of available configurations', interface)
+            logger.debug('interface "%s" does not support detection of available configurations', interface)
         else:
-            log.debug('interface "%s" detected %i available configurations', interface, len(available))
+            logger.debug('interface "%s" detected %i available configurations', interface, len(available))
 
             # add the interface name to the configs if it is not already present
             for config in available:

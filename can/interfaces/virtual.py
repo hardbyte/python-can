@@ -44,15 +44,15 @@ class VirtualBus(BusABC):
     def __init__(self, channel=None, receive_own_messages=False, **config):
         # the channel identifier may be an arbitrary object
         self.channel_id = channel
-        self.channel_info = 'Virtual bus channel %s' % channel_id
+        self.channel_info = 'Virtual bus channel %s' % self.channel_id
         self.receive_own_messages = receive_own_messages
 
         with channels_lock:
 
             # Create a new channel if one does not exist
-            if channel_id not in channels:
-                channels[channel_id] = []
-            self.channel = channels[channel_id]
+            if self.channel_id not in channels:
+                channels[self.channel_id] = []
+            self.channel = channels[self.channel_id]
 
             self.queue = queue.Queue()
             self.channel.append(self.queue)
@@ -80,7 +80,7 @@ class VirtualBus(BusABC):
 
             # remove if emtpy
             if not self.channel:
-                del channels[channel_id]
+                del channels[self.channel_id]
 
     @staticmethod
     def _detect_available_configs():
