@@ -226,8 +226,6 @@ class BusABC(object):
         See :meth:`~can.BusABC.set_filters` for details.
         """
 
-        # TODO: add unit testing for this method
-
         # if no filters are set, all messages are matched
         if self._can_filters is None:
             return True
