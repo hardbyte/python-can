@@ -117,7 +117,7 @@ class SerialInterface:
         if timeout != self.serial_timeout:
             self.ser.timeout = timeout
             set_timeout = True
-        rx_byte = self.ser.read(size=size)
+        rx_byte = self.ser.read(size=size, timeout=timeout)
         if set_timeout:
             self.ser.timeout = self.serial_timeout
         return rx_byte

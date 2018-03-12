@@ -48,14 +48,15 @@ class SerialBus(BusABC):
             self.channel_info = "Serial interface: " + channel
             baud_rate = kwargs.get('baudrate', 115200)
             self.serial_timeout = kwargs.get('timeout', 0.1)
-            self.ser = SerialInterface(port=channel, baudrate=baud_rate, timeout=self.serial_timeout)
+            self.ser = serial.Serial(port=channel, baudrate=baud_rate, timeout=self.serial_timeout,
+                                     write_timeout=self.serial_timeout)
         super(SerialBus, self).__init__(*args, **kwargs)
 
     def shutdown(self):
         """
         Close the serial interface.
         """
-        self.ser.close_port()
+        self.ser.close()
 
     def send(self, msg, timeout=None):
         """
@@ -92,7 +93,10 @@ class SerialBus(BusABC):
         for i in range(0, msg.dlc):
             byte_msg.append(msg.data[i])
         byte_msg.append(0xBB)
-        self.ser.send_serial(byte_msg, timeout)
+        if timeout is not None:
+            self.ser.write(byte_msg, timeout)
+        else:
+            self.ser.write(byte_msg)
 
     @staticmethod
     def convert_to_integer_milliseconds(msg_timestamp):
@@ -131,20 +135,20 @@ class SerialBus(BusABC):
             can.Message
         """
         start = time.time()
-        rx_byte = self.ser.recv_serial(timeout=timeout)
+        rx_byte = self.ser.read(timeout=timeout)
         if len(rx_byte) and ord(rx_byte) == 0xAA:
             r_time = self.remaining_time(start, timeout)
-            s = bytearray(self.ser.recv_serial(4, timeout=r_time))
+            s = bytearray(self.ser.read(4, timeout=r_time))
             timestamp = (struct.unpack('<I', s))[0]
             r_time = self.remaining_time(start, timeout)
-            dlc = ord(self.ser.recv_serial(timeout=r_time))
+            dlc = ord(self.ser.read(timeout=r_time))
             r_time = self.remaining_time(start, timeout)
-            s = bytearray(self.ser.recv_serial(4, timeout=r_time))
+            s = bytearray(self.ser.read(4, timeout=r_time))
             arb_id = (struct.unpack('<I', s))[0]
             r_time = self.remaining_time(start, timeout)
-            data = self.ser.recv_serial(dlc, timeout=r_time)
+            data = self.ser.read(dlc, timeout=r_time)
             r_time = self.remaining_time(start, timeout)
-            rxd_byte = ord(self.ser.recv_serial(timeout=r_time))
+            rxd_byte = ord(self.ser.read(timeout=r_time))
             if rxd_byte == 0xBB:
                 # received message data okay
                 return Message(timestamp=timestamp / 1000, arbitration_id=arb_id, dlc=dlc, data=data)

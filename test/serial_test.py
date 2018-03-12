@@ -212,7 +212,6 @@ class SimpleSerialTest(unittest.TestCase):
         with self.assertRaises(SerialTimeoutException):
             self.bus.send(can.Message(timestamp=1))
 
-    # TODO implement correctly
     def test_rx_timeout_default(self):
         """
         Tests for SerialTimeoutException for default timeout on receive
@@ -223,26 +222,24 @@ class SimpleSerialTest(unittest.TestCase):
         with self.assertRaises(SerialTimeoutException):
             self.bus.recv()
 
-    # TODO implement correctly
-    @unittest.skip('skip, to speed up the other tests')
     def test_rx_non_timeout_default(self):
         """
         Tests for non SerialTimeoutException for default timeout on receive
         """
         global sleep_time_rx_tx
         sleep_time_rx_tx = 0.09
-        self.bus.send(can.Message(timestamp=1))
+        self.bus.send(can.Message(timestamp=1), 100)
+        self.bus.recv()
 
-    # TODO implement correctly
-    @unittest.skip('skip, to speed up the other tests')
     def test_rx_timeout_param(self):
         """
         Tests for SerialTimeoutException on receive with timeout parameter
         """
         global sleep_time_rx_tx
         sleep_time_rx_tx = 3
+        self.bus.send(can.Message(timestamp=1), 100)
         with self.assertRaises(SerialTimeoutException):
-            self.bus.send(can.Message(timestamp=1), 2)
+            self.bus.recv(2)
 
     # TODO implement correctly
     @unittest.skip('skip, to speed up the other tests')
