@@ -2,9 +2,25 @@
 # coding: utf-8
 
 """
-This module is testing the serial interface.
+Name:        serial_test.py
+Purpose:     Test of the simple serial interface
 
-Copyright: 2017 Boris Wenzlaff
+Copyright:   2017 - 2018 Boris Wenzlaff
+
+This file is part of python-can <https://github.com/hardbyte/python-can/>.
+
+python-can is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+any later version.
+
+python-can is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with python-can. If not, see <http://www.gnu.org/licenses/>.
 """
 
 import unittest
@@ -66,7 +82,7 @@ class SimpleSerialTest(unittest.TestCase):
     def tearDown(self):
         self.serial_dummy.reset()
 
-    @unittest.skip('skip, to speed up the other tests')
+    #@unittest.skip('skip, to speed up the other tests')
     def test_rx_tx_min_max_data(self):
         """
         Tests the transfer from 0x00 to 0xFF for a 1 byte payload
@@ -77,7 +93,7 @@ class SimpleSerialTest(unittest.TestCase):
             msg_receive = self.bus.recv()
             self.assertEqual(msg, msg_receive)
 
-    @unittest.skip('skip, to speed up the other tests')
+    #@unittest.skip('skip, to speed up the other tests')
     def test_rx_tx_min_max_dlc(self):
         """
         Tests the transfer from a 1 - 8 byte payload
@@ -188,7 +204,61 @@ class SimpleSerialTest(unittest.TestCase):
 
     def test_tx_reset_timeout(self):
         """
-        Tests reset of the timeout after a timeout set with an parameter
+        Tests reset of the timeout after a timeout is set with an parameter on send
+        """
+        global sleep_time_rx_tx
+        sleep_time_rx_tx = 0.11
+        self.bus.send(can.Message(timestamp=1), 0.12)
+        with self.assertRaises(SerialTimeoutException):
+            self.bus.send(can.Message(timestamp=1))
+
+    # TODO implement correctly
+    def test_rx_timeout_default(self):
+        """
+        Tests for SerialTimeoutException for default timeout on receive
+        """
+        global sleep_time_rx_tx
+        sleep_time_rx_tx = 0.11
+        self.bus.send(can.Message(timestamp=1), 100)
+        with self.assertRaises(SerialTimeoutException):
+            self.bus.recv()
+
+    # TODO implement correctly
+    @unittest.skip('skip, to speed up the other tests')
+    def test_rx_non_timeout_default(self):
+        """
+        Tests for non SerialTimeoutException for default timeout on receive
+        """
+        global sleep_time_rx_tx
+        sleep_time_rx_tx = 0.09
+        self.bus.send(can.Message(timestamp=1))
+
+    # TODO implement correctly
+    @unittest.skip('skip, to speed up the other tests')
+    def test_rx_timeout_param(self):
+        """
+        Tests for SerialTimeoutException on receive with timeout parameter
+        """
+        global sleep_time_rx_tx
+        sleep_time_rx_tx = 3
+        with self.assertRaises(SerialTimeoutException):
+            self.bus.send(can.Message(timestamp=1), 2)
+
+    # TODO implement correctly
+    @unittest.skip('skip, to speed up the other tests')
+    def test_rx_non_timeout_param(self):
+        """
+        Tests for non SerialTimeoutException on receive with timeout parameter
+        """
+        global sleep_time_rx_tx
+        sleep_time_rx_tx = 1.9
+        self.bus.send(can.Message(timestamp=1), 2)
+
+    # TODO implement correctly
+    @unittest.skip('skip, to speed up the other tests')
+    def test_rx_reset_timeout(self):
+        """
+        Tests reset of the timeout after a timeout is set with an parameter on receive
         """
         global sleep_time_rx_tx
         sleep_time_rx_tx = 0.11

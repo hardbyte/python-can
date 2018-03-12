@@ -10,6 +10,8 @@ recording CAN traces.
 
 import logging
 import struct
+import serial
+import time
 
 from can.bus import BusABC
 from can.message import Message
@@ -22,6 +24,8 @@ class SerialBus(BusABC):
     """
     Enable basic can communication over a serial device.
     """
+
+    serial_timeout = None
 
     def __init__(self, channel, *args, **kwargs):
         """
@@ -38,14 +42,13 @@ class SerialBus(BusABC):
             Timeout for the serial device in seconds (default 0.1). The
             timeout will be used for sending and receiving.
         """
-
         if channel == '':
             raise ValueError("Must specify a serial port.")
         else:
             self.channel_info = "Serial interface: " + channel
-            baudrate = kwargs.get('baudrate', 115200)
-            timeout = kwargs.get('timeout', 0.1)
-            self.ser = SerialInterface(port=channel, baudrate=baudrate, timeout=timeout)
+            baud_rate = kwargs.get('baudrate', 115200)
+            self.serial_timeout = kwargs.get('timeout', 0.1)
+            self.ser = SerialInterface(port=channel, baudrate=baud_rate, timeout=self.serial_timeout)
         super(SerialBus, self).__init__(*args, **kwargs)
 
     def shutdown(self):
@@ -89,20 +92,34 @@ class SerialBus(BusABC):
         for i in range(0, msg.dlc):
             byte_msg.append(msg.data[i])
         byte_msg.append(0xBB)
-        self.ser.send_serial(byte_msg)
+        self.ser.send_serial(byte_msg, timeout)
 
     @staticmethod
     def convert_to_integer_milliseconds(msg_timestamp):
         return int(msg_timestamp * 1000)
 
-    def recv(self, timeout=None):
+    @staticmethod
+    def remaining_time(start_time, timeout):
+        """
+        :param start_time:
+            Start time in seconds.
+        :param timeout:
+            Timeout in seconds.
+        :return: Time left for timeout or None for unlimited time.
+        """
+        if timeout is None:
+            return None
+        return timeout - (time.time() - start_time)
+
+    def recv(self, timeout=serial_timeout):
         """
         Read a message from the serial device.
 
-        #TODO change description timeout is not for the whole message, the timeout is resetet after every send
+        #TODO implement timeout correctly
         :param timeout:
-            This parameter will be ignored. The timeout value of the channel is
-            used.
+            Timeout for receiving a message in seconds. If the timeout parameter not set,
+            the default value from the constructor will be used. With timeout = None it
+            will block until a message is read.
         :returns:
             Received message.
 
@@ -113,27 +130,29 @@ class SerialBus(BusABC):
         :rtype:
             can.Message
         """
-        try:
-            # ser.read can return an empty string ''
-            # or raise a SerialException
-            rx_byte = self.ser.recv_serial()
-        except serial.SerialException:
-            return None
-
+        start = time.time()
+        rx_byte = self.ser.recv_serial(timeout=timeout)
         if len(rx_byte) and ord(rx_byte) == 0xAA:
-            s = bytearray(self.ser.recv_serial(4))
+            r_time = self.remaining_time(start, timeout)
+            s = bytearray(self.ser.recv_serial(4, timeout=r_time))
             timestamp = (struct.unpack('<I', s))[0]
-            dlc = ord(self.ser.recv_serial())
-
-            s = bytearray(self.ser.recv_serial(4))
+            r_time = self.remaining_time(start, timeout)
+            dlc = ord(self.ser.recv_serial(timeout=r_time))
+            r_time = self.remaining_time(start, timeout)
+            s = bytearray(self.ser.recv_serial(4, timeout=r_time))
             arb_id = (struct.unpack('<I', s))[0]
-
-            data = self.ser.recv_serial(dlc)
-
-            rxd_byte = ord(self.ser.recv_serial())
+            r_time = self.remaining_time(start, timeout)
+            data = self.ser.recv_serial(dlc, timeout=r_time)
+            r_time = self.remaining_time(start, timeout)
+            rxd_byte = ord(self.ser.recv_serial(timeout=r_time))
             if rxd_byte == 0xBB:
                 # received message data okay
-                return Message(timestamp=timestamp/1000,
-                               arbitration_id=arb_id,
-                               dlc=dlc,
-                               data=data)
+                return Message(timestamp=timestamp / 1000, arbitration_id=arb_id, dlc=dlc, data=data)
+
+        # queue = Queue()
+        # action_read_msg = Process(target=self.read_message, args=(queue,))
+        # action_read_msg.start()
+        # action_read_msg.join(timeout)
+        # action_read_msg.terminate()
+        # msg = queue.get()
+        # queue.close()

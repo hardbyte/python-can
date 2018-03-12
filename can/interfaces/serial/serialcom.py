@@ -27,7 +27,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 try:
-    import serial #TODO add package to requirements
+    import serial
 except ImportError:
     logger.warning("You won't be able to use the serial can backend without the serial module installed!")
     serial = None
@@ -76,7 +76,8 @@ class SerialInterface:
         """
         self.ser.close()
 
-    def send_serial(self, msg: bytes, timeout=serial_timeout):
+    # TODO catch serial errors
+    def send_serial(self, msg: bytes, timeout=None):
         """
         From Serial. Write the msg to the port. This should be of type
         bytes (or compatible such as bytearray or memoryview). Unicode
@@ -84,23 +85,19 @@ class SerialInterface:
         :param bytes msg:
             Data to send.
         :param float timeout:
-            Timeout for sending in seconds. If the timeout parameter is not set, the default
+            Timeout for sending in seconds. If the timeout parameter is not set or None, the default
             value from the constructor will be used.
         :returns:
             Number of bytes written.
-        :rtype:
+        :rtype:message
             int
         """
-        set_timeout = False
-        if timeout != self.serial_timeout and not (timeout is None):
-            self.ser.write_timeout = timeout
-            set_timeout = True
-        try:
-            return self.ser.write(msg)
-        finally:
-            if set_timeout:
-                self.ser.write_timeout = self.serial_timeout
+        if timeout is not None:
+            self.ser.write(msg, timeout)
+        else:
+            self.ser.write(msg)
 
+    #todo catch serial errors
     def recv_serial(self, size=1, timeout=serial_timeout):
         """
         From Serial. Read size bytes from the serial port. If a timeout is
