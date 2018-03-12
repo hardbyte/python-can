@@ -15,7 +15,6 @@ import time
 
 from can.bus import BusABC
 from can.message import Message
-from can.interfaces.serial.serialcom import SerialInterface
 
 logger = logging.getLogger(__name__)
 

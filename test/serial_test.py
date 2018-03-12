@@ -82,7 +82,6 @@ class SimpleSerialTest(unittest.TestCase):
     def tearDown(self):
         self.serial_dummy.reset()
 
-    #@unittest.skip('skip, to speed up the other tests')
     def test_rx_tx_min_max_data(self):
         """
         Tests the transfer from 0x00 to 0xFF for a 1 byte payload
@@ -93,7 +92,6 @@ class SimpleSerialTest(unittest.TestCase):
             msg_receive = self.bus.recv()
             self.assertEqual(msg, msg_receive)
 
-    #@unittest.skip('skip, to speed up the other tests')
     def test_rx_tx_min_max_dlc(self):
         """
         Tests the transfer from a 1 - 8 byte payload
@@ -242,7 +240,7 @@ class SimpleSerialTest(unittest.TestCase):
             self.bus.recv(2)
 
     # TODO implement correctly
-    @unittest.skip('skip, to speed up the other tests')
+    @unittest.skip('must be implemented')
     def test_rx_non_timeout_param(self):
         """
         Tests for non SerialTimeoutException on receive with timeout parameter
@@ -252,7 +250,7 @@ class SimpleSerialTest(unittest.TestCase):
         self.bus.send(can.Message(timestamp=1), 2)
 
     # TODO implement correctly
-    @unittest.skip('skip, to speed up the other tests')
+    @unittest.skip('must be implemented')
     def test_rx_reset_timeout(self):
         """
         Tests reset of the timeout after a timeout is set with an parameter on receive
