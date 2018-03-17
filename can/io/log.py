@@ -5,14 +5,19 @@
 This module works with CAN data in ASCII log files (*.log).
 It is is compatible with "candump -L" from the canutils program
 (https://github.com/linux-can/can-utils).
+
+TODO: "channel" is not uesed by CanutilsLogWriter. Is that supposed to be like that?
 """
 
 import time
 import datetime
+import logging
 
 from can.message import Message
 from can.listener import Listener
 
+
+log = logging.getLogger('can.io.canutils')
 
 CAN_MSG_EXT         = 0x80000000
 CAN_ERR_FLAG        = 0x20000000
@@ -73,39 +78,53 @@ class CanutilsLogReader(object):
 class CanutilsLogWriter(Listener):
     """Logs CAN data to an ASCII log file (.log).
     This class is is compatible with "candump -L".
+
+    If a message has a timestamp smaller than the previous one (or 0 or None),
+    it gets assigned the timestamp that was written for the last message.
+    It the first message does not have a timestamp, it is set to zero.
     """
 
     def __init__(self, filename, channel="vcan0"):
         self.channel = channel
-        self.started = time.time()
         self.log_file = open(filename, 'w')
+        self.last_timestamp = None
 
     def stop(self):
         """Stops logging and closes the file."""
         if self.log_file is not None:
             self.log_file.close()
             self.log_file = None
+        else:
+            log.warn("ignoring attempt to colse a already closed file")
 
     def on_message_received(self, msg):
         if self.log_file is None:
+            log.warn("ignoring write attempt to closed file")
             return
+
+        # this is the case for the very first message:
+        if self.last_timestamp is None:
+            self.last_timestamp = (msg.timestamp or 0.0)
+
+        # figure out the correct timestamp
+        if msg.timestamp is None or msg.timestamp < self.last_timestamp:
+            timestamp = self.last_timestamp
+        else:
+            timestamp = msg.timestamp
+
         if msg.is_error_frame:
-            self.log_file.write("(%f) vcan0 %08X#0000000000000000\n" % (msg.timestamp, CAN_ERR_FLAG | CAN_ERR_BUSERROR, ))
-            return
+            self.log_file.write("(%f) vcan0 %08X#0000000000000000\n" % (timestamp, CAN_ERR_FLAG | CAN_ERR_BUSERROR))
 
-        timestamp = msg.timestamp
-        if timestamp >= self.started:
-            timestamp -= self.started
-
-        if msg.is_remote_frame:
+        elif msg.is_remote_frame:
             data = []
             if msg.is_extended_id:
-                self.log_file.write("(%f) vcan0 %08X#R\n" % (msg.timestamp, msg.arbitration_id ))
+                self.log_file.write("(%f) vcan0 %08X#R\n" % (timestamp, msg.arbitration_id))
             else:
-                self.log_file.write("(%f) vcan0 %03X#R\n" % (msg.timestamp, msg.arbitration_id ))
+                self.log_file.write("(%f) vcan0 %03X#R\n" % (timestamp, msg.arbitration_id))
+
         else:
             data = ["{:02X}".format(byte) for byte in msg.data]
             if msg.is_extended_id:
-                self.log_file.write("(%f) vcan0 %08X#%s\n" % (msg.timestamp, msg.arbitration_id, "".join(data)))
+                self.log_file.write("(%f) vcan0 %08X#%s\n" % (timestamp, msg.arbitration_id, ''.join(data)))
             else:
-                self.log_file.write("(%f) vcan0 %03X#%s\n" % (msg.timestamp, msg.arbitration_id, "".join(data)))
+                self.log_file.write("(%f) vcan0 %03X#%s\n" % (timestamp, msg.arbitration_id, ''.join(data)))
