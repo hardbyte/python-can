@@ -148,17 +148,15 @@ class ASCWriter(Listener):
             self.last_timestamp = (timestamp or 0.0)
             self.started = self.last_timestamp
             self.log_file.write("Begin Triggerblock %s\n" % self.last_timestamp)
-            self.log_event("Start of measurement")
             self.header_written = True
+            self.log_event("Start of measurement") # recursive
 
         # figure out the correct timestamp
-        if msg.timestamp is None or msg.timestamp < self.last_timestamp:
+        if timestamp is None or timestamp < self.last_timestamp:
             timestamp = self.last_timestamp
-        else:
-            timestamp = msg.timestamp
 
         # turn into relative timestamps
-        elif timestamp >= self.started:
+        if timestamp >= self.started:
             timestamp -= self.started
 
         line = self.EVENT_STRING.format(time=timestamp, message=message)
