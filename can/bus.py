@@ -47,7 +47,7 @@ class BusABC(object):
         :param dict config:
             Any backend dependent configurations are passed in this dictionary
         """
-        pass
+        self._tx_threads = list()
 
     def __str__(self):
         return self.channel_info
@@ -103,7 +103,9 @@ class BusABC(object):
         if not hasattr(self, "_lock"):
             # Create send lock for this bus
             self._lock = threading.Lock()
-        return ThreadBasedCyclicSendTask(self, self._lock, msg, period, duration)
+        t = ThreadBasedCyclicSendTask(self, self._lock, msg, period, duration)
+        self._tx_threads.append(t)
+        return t
 
     def __iter__(self):
         """Allow iteration on messages as they are received.
@@ -145,5 +147,13 @@ class BusABC(object):
         in shutting down a bus.
         """
         self.flush_tx_buffer()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        for t in self._tx_threads:
+            t.stop()
+        self.shutdown()
 
     __metaclass__ = ABCMeta
