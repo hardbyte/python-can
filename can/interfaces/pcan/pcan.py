@@ -260,6 +260,7 @@ class PcanBus(BusABC):
         self.m_objPCANBasic.SetValue(self.m_PcanHandle, PCAN_CHANNEL_IDENTIFYING, bool(flash))
 
     def shutdown(self):
+        super(PcanBus, self).shutdown()
         self.m_objPCANBasic.Uninitialize(self.m_PcanHandle)
 
 

@@ -17,6 +17,7 @@ except ImportError:
     import Queue as queue
 
 from can.bus import BusABC
+from can import CanError
 
 logger = logging.getLogger(__name__)
 
@@ -39,8 +40,20 @@ class VirtualBus(BusABC):
         self.queue = queue.Queue()
         self.channel = channels[channel]
         self.channel.append(self.queue)
+        self._open = True
+
+        super(VirtualBus, self).__init__()
+
+    def _check_if_open(self):
+        """Raises CanError if the bus is not open.
+
+        Has to be called in every method that accesses the bus.
+        """
+        if not self._open:
+            raise CanError('Operation on closed bus')
 
     def recv(self, timeout=None):
+        self._check_if_open()
         try:
             msg = self.queue.get(block=True, timeout=timeout)
         except queue.Empty:
@@ -50,6 +63,7 @@ class VirtualBus(BusABC):
         return msg
 
     def send(self, msg, timeout=None):
+        self._check_if_open()
         msg.timestamp = time.time()
         # Add message to all listening on this channel
         for bus_queue in self.channel:
@@ -58,4 +72,7 @@ class VirtualBus(BusABC):
         #logger.log(9, 'Transmitted message:\n%s', msg)
 
     def shutdown(self):
+        self._check_if_open()
         self.channel.remove(self.queue)
+        self._open = False
+        super(VirtualBus, self).shutdown()
