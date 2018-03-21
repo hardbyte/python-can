@@ -13,7 +13,7 @@ The available interfaces are:
 
    interfaces/socketcan
    interfaces/kvaser
-   interfaces/serial
+   interfaces/simpleserial
    interfaces/slcan
    interfaces/ixxat
    interfaces/pcan

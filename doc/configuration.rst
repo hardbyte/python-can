@@ -79,7 +79,7 @@ Lookup table of interface names:
 +---------------------+-------------------------------------+
 | ``"kvaser"``        | :doc:`interfaces/kvaser`            |
 +---------------------+-------------------------------------+
-| ``"serial"``        | :doc:`interfaces/serial`            |
+| ``"simpleserial"``  | :doc:`interfaces/simpleserial`      |
 +---------------------+-------------------------------------+
 | ``"slcan"``         | :doc:`interfaces/slcan`             |
 +---------------------+-------------------------------------+

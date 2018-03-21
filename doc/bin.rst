@@ -9,7 +9,7 @@ can.logger
 Command line help (``python -m can.logger --help``)::
 
     usage: python -m can.logger [-h] [-f LOG_FILE] [-v] [-c CHANNEL]
-                                [-i {iscan,slcan,virtual,socketcan_ctypes,usb2can,ixxat,socketcan_native,kvaser,neovi,vector,nican,pcan,serial,remote,socketcan}]
+                                [-i {iscan,slcan,virtual,socketcan_ctypes,usb2can,ixxat,socketcan_native,kvaser,neovi,vector,nican,pcan,simpleserial,remote,socketcan}]
                                 [--filter ...] [-b BITRATE]
 
     Log CAN traffic, printing messages to stdout or to a given file
@@ -23,11 +23,11 @@ Command line help (``python -m can.logger --help``)::
                             line? You can add several of these e.g., -vv is DEBUG
       -c CHANNEL, --channel CHANNEL
                             Most backend interfaces require some sort of channel.
-                            For example with the serial interface the channel
+                            For example with the simpleserial interface the channel
                             might be a rfcomm device: "/dev/rfcomm0" With the
                             socketcan interfaces valid channel examples include:
                             "can0", "vcan0"
-      -i {iscan,slcan,virtual,socketcan_ctypes,usb2can,ixxat,socketcan_native,kvaser,neovi,vector,nican,pcan,serial,remote,socketcan}, --interface {iscan,slcan,virtual,socketcan_ctypes,usb2can,ixxat,socketcan_native,kvaser,neovi,vector,nican,pcan,serial,remote,socketcan}
+      -i {iscan,slcan,virtual,socketcan_ctypes,usb2can,ixxat,socketcan_native,kvaser,neovi,vector,nican,pcan,simpleserial,remote,socketcan}, --interface {iscan,slcan,virtual,socketcan_ctypes,usb2can,ixxat,socketcan_native,kvaser,neovi,vector,nican,pcan,simpleserial,remote,socketcan}
                             Specify the backend CAN interface to use. If left
                             blank, fall back to reading from configuration files.
       --filter ...          Comma separated filters can be specified for the given
@@ -45,7 +45,7 @@ can.player
 Command line help (``python -m can.player --help``)::
 
     usage: python -m can.player [-h] [-f LOG_FILE] [-v] [-c CHANNEL]
-                                [-i {kvaser,virtual,slcan,nican,neovi,ixxat,serial,usb2can,socketcan_ctypes,remote,socketcan_native,iscan,vector,pcan,socketcan}]
+                                [-i {kvaser,virtual,slcan,nican,neovi,ixxat,simpleserial,usb2can,socketcan_ctypes,remote,socketcan_native,iscan,vector,pcan,socketcan}]
                                 [-b BITRATE] [--ignore-timestamps] [-g GAP]
                                 [-s SKIP]
                                 input-file
@@ -64,11 +64,11 @@ Command line help (``python -m can.player --help``)::
                             of these to enable debugging
       -c CHANNEL, --channel CHANNEL
                             Most backend interfaces require some sort of channel.
-                            For example with the serial interface the channel
+                            For example with the simpleserial interface the channel
                             might be a rfcomm device: "/dev/rfcomm0" With the
                             socketcan interfaces valid channel examples include:
                             "can0", "vcan0"
-      -i {kvaser,virtual,slcan,nican,neovi,ixxat,serial,usb2can,socketcan_ctypes,remote,socketcan_native,iscan,vector,pcan,socketcan}, --interface {kvaser,virtual,slcan,nican,neovi,ixxat,serial,usb2can,socketcan_ctypes,remote,socketcan_native,iscan,vector,pcan,socketcan}
+      -i {kvaser,virtual,slcan,nican,neovi,ixxat,simpleserial,usb2can,socketcan_ctypes,remote,socketcan_native,iscan,vector,pcan,socketcan}, --interface {kvaser,virtual,slcan,nican,neovi,ixxat,simpleserial,usb2can,socketcan_ctypes,remote,socketcan_native,iscan,vector,pcan,socketcan}
                             Specify the backend CAN interface to use. If left
                             blank, fall back to reading from configuration files.
       -b BITRATE, --bitrate BITRATE

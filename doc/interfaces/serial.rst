@@ -1,6 +1,4 @@
-.. _serial:
-
-CAN over Serial
+CAN over Serial / Simple Serial
 ===============
 A text based interface. For example use over serial ports like
 ``/dev/ttyS1`` or ``/dev/ttyUSB0`` on Linux machines or ``COM1`` on Windows.
@@ -15,7 +13,7 @@ recording CAN traces.
 Bus
 ---
 
-.. autoclass:: can.interfaces.serial.serial_can.SerialBus
+.. autoclass:: can.interfaces.simpleserial.SimpleSerialBus
 
 Internals
 ---------
