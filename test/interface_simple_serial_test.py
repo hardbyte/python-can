@@ -66,12 +66,14 @@ class SerialDummy:
 class SimpleSerialTest(GenericInterfaceTest, unittest.TestCase):
 
     def setUp(self):
+        # patch Serial
         self.patcher = patch('serial.Serial')
         self.mock_serial = self.patcher.start()
         self.serial_dummy = SerialDummy()
         self.mock_serial.return_value.write = self.serial_dummy.write
         self.mock_serial.return_value.read = self.serial_dummy.read
         self.addCleanup(self.patcher.stop)
+
         self.bus = SimpleSerialBus('bus')
         test.interface_test.sleep_time_rx_tx = None
 

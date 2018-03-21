@@ -59,7 +59,6 @@ class SerialWrapperDummy:
 class SlcanTest(GenericInterfaceTest, unittest.TestCase):
 
     def setUp(self):
-        self.slcan = True
         # patch TextIOWrapper
         self.patcher_wrapper = patch('io.TextIOWrapper')
         self.mock_wrapper = self.patcher_wrapper.start()
@@ -84,3 +83,7 @@ class SlcanTest(GenericInterfaceTest, unittest.TestCase):
 
     def tearDown(self):
         self.wrapper_dummy.reset()
+
+
+if __name__ == '__main__':
+    unittest.main()

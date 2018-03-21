@@ -24,19 +24,21 @@ along with python-can. If not, see <http://www.gnu.org/licenses/>.
 
 from can import Message
 from can import CanError
+from can.interfaces.serial.slcan import SlcanBus
 
 sleep_time_rx_tx = None
 
 
-def skip_flag(flag):
+def skip_interface(interface_class, comment=None):
     """
     Decorator to skip tests.
-    :param flag: Name of the interface.
+    :param interface_class: Skip test for this class.
+    :param comment: Reason why skipped.
     """
     def deco(f):
         def wrapper(self, *args, **kwargs):
-            if getattr(self, flag):
-                self.skipTest()
+            if isinstance(self.bus, interface_class):
+                self.skipTest(str(comment))
             else:
                 f(self, *args, **kwargs)
         return wrapper
@@ -95,7 +97,7 @@ class GenericInterfaceTest(object):
         msg_receive = self.bus.recv()
         self.assertEqual(msg, msg_receive)
 
-    @skip_flag('slcan')
+    @skip_interface(SlcanBus, 'function not implemented')
     def test_rx_tx_max_timestamp(self):
         """
         Tests the transfer with the highest possible timestamp
@@ -107,7 +109,7 @@ class GenericInterfaceTest(object):
         self.assertEqual(msg, msg_receive)
         self.assertEqual(msg.timestamp, msg_receive.timestamp)
 
-    @skip_flag('slcan')
+    @skip_interface(SlcanBus, 'function not implemented')
     def test_rx_tx_max_timestamp_error(self):
         """
         Tests for an exception with an out of range timestamp (max + 1)
@@ -115,7 +117,7 @@ class GenericInterfaceTest(object):
         msg = Message(timestamp=self.__MAX_TIMESTAMP + 1)
         self.assertRaises(ValueError, self.bus.send, msg)
 
-    @skip_flag('slcan')
+    @skip_interface(SlcanBus, 'function not implemented')
     def test_rx_tx_min_timestamp(self):
         """
         Tests the transfer with the lowest possible timestamp
@@ -126,7 +128,7 @@ class GenericInterfaceTest(object):
         self.assertEqual(msg, msg_receive)
         self.assertEqual(msg.timestamp, msg_receive.timestamp)
 
-    @skip_flag('slcan')
+    @skip_interface(SlcanBus, 'function not implemented')
     def test_rx_tx_min_timestamp_error(self):
         """
         Tests for an exception with an out of range timestamp (min - 1)
@@ -134,7 +136,7 @@ class GenericInterfaceTest(object):
         msg = Message(timestamp=-1)
         self.assertRaises(ValueError, self.bus.send, msg)
 
-    @skip_flag('slcan')
+    @skip_interface(SlcanBus, 'function not implemented')
     def test_tx_timeout_default(self):
         """
         Tests for SerialTimeoutException for default timeout on send
@@ -144,7 +146,7 @@ class GenericInterfaceTest(object):
         with self.assertRaises(CanError):
             self.bus.send(Message(timestamp=1))
 
-    @skip_flag('slcan')
+    @skip_interface(SlcanBus, 'function not implemented')
     def test_tx_non_timeout_default(self):
         """
         Tests for non SerialTimeoutException for default timeout on send
@@ -153,7 +155,7 @@ class GenericInterfaceTest(object):
         sleep_time_rx_tx = 0.09
         self.bus.send(Message(timestamp=1))
 
-    @skip_flag('slcan')
+    @skip_interface(SlcanBus, 'function not implemented')
     def test_tx_timeout_param(self):
         """
         Tests for SerialTimeoutException on send with timeout parameter
@@ -163,7 +165,7 @@ class GenericInterfaceTest(object):
         with self.assertRaises(CanError):
             self.bus.send(Message(timestamp=1), 2)
 
-    @skip_flag('slcan')
+    @skip_interface(SlcanBus, 'function not implemented')
     def test_tx_non_timeout_param(self):
         """
         Tests for non SerialTimeoutException on send with timeout parameter
@@ -172,7 +174,7 @@ class GenericInterfaceTest(object):
         sleep_time_rx_tx = 1.9
         self.bus.send(Message(timestamp=1), 2)
 
-    @skip_flag('slcan')
+    @skip_interface(SlcanBus, 'function not implemented')
     def test_tx_reset_timeout(self):
         """
         Tests reset of the timeout after a timeout is set with an parameter on send
@@ -183,7 +185,7 @@ class GenericInterfaceTest(object):
         with self.assertRaises(CanError):
             self.bus.send(Message(timestamp=1))
 
-    @skip_flag('slcan')
+    @skip_interface(SlcanBus, 'function not implemented')
     def test_rx_timeout_default(self):
         """
         Tests for default timeout on receive
@@ -193,7 +195,7 @@ class GenericInterfaceTest(object):
         self.bus.send(Message(timestamp=1), 100)
         self.assertIsNone(self.bus.recv())
 
-    @skip_flag('slcan')
+    @skip_interface(SlcanBus, 'function not implemented')
     def test_rx_non_timeout_default(self):
         """
         Tests for non timeout on receive
@@ -202,9 +204,9 @@ class GenericInterfaceTest(object):
         sleep_time_rx_tx = 0.09
         msg = Message(timestamp=1)
         self.bus.send(msg, 100)
-        self.assertEquals(self.bus.recv(), msg)
+        self.assertEqual(self.bus.recv(), msg)
 
-    @skip_flag('slcan')
+    @skip_interface(SlcanBus, 'function not implemented')
     def test_rx_timeout_param(self):
         """
         Tests for timeout on receive with timeout parameter
@@ -214,7 +216,7 @@ class GenericInterfaceTest(object):
         self.bus.send(Message(timestamp=1), 100)
         self.assertIsNone(self.bus.recv(timeout=2))
 
-    @skip_flag('slcan')
+    @skip_interface(SlcanBus, 'function not implemented')
     def test_rx_non_timeout_param(self):
         """
         Tests for non timeout on receive with timeout parameter
@@ -223,9 +225,9 @@ class GenericInterfaceTest(object):
         sleep_time_rx_tx = 1.9
         msg = Message(timestamp=1)
         self.bus.send(msg, 100)
-        self.assertEquals(self.bus.recv(2), msg)
+        self.assertEqual(self.bus.recv(2), msg)
 
-    @skip_flag('slcan')
+    @skip_interface(SlcanBus, 'function not implemented')
     def test_rx_reset_timeout(self):
         """
         Tests reset of the timeout after a timeout is set with an parameter on receive
