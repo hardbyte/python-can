@@ -119,7 +119,6 @@ class SlcanBus(BusABC):
         self.__write('C')
         self.ser.close()
 
-    # TODO timeout implementation
     def send(self, msg, timeout=None):
         """
         Send a message over the serial device.
@@ -153,7 +152,6 @@ class SlcanBus(BusABC):
         except serial.SerialTimeoutException:
             raise CanError("Timeout while sending")
 
-    # TODO implement timeout on receive
     def recv(self, timeout=None):
         """
         Read a message from the serial device.
