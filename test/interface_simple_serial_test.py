@@ -24,12 +24,11 @@ along with python-can. If not, see <http://www.gnu.org/licenses/>.
 """
 
 import unittest
+import test.interface_test
 from mock import patch
 from serial import SerialTimeoutException
-
 from can.interfaces.serial.simpleserial import SimpleSerialBus
 from test.interface_test import GenericInterfaceTest
-import test.interface_test
 
 
 class SerialDummy:

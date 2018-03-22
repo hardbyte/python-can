@@ -24,6 +24,7 @@ along with python-can. If not, see <http://www.gnu.org/licenses/>.
 """
 
 import unittest
+import test.interface_test
 from can.interfaces.serial.slcan import SlcanBus
 from test.interface_test import GenericInterfaceTest
 from mock import patch
@@ -84,7 +85,7 @@ class SlcanTest(GenericInterfaceTest, unittest.TestCase):
         self.serial_rwpair = SerialRwPairDummy()
         self.addCleanup(self.patcher_rwpair.stop)
 
-        self.bus = SlcanBus('bus')
+        self.bus = SlcanBus('bus', serial_init_sleep=0)
 
     def tearDown(self):
         self.wrapper_dummy.reset()

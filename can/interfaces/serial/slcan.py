@@ -1,4 +1,5 @@
 # coding: utf-8
+
 """
 Name:        slcan.py
 Purpose:     Interface for SLCAN / LAWICEL / CAN232 compatible interfaces.
@@ -29,11 +30,9 @@ from __future__ import absolute_import
 
 import time
 import logging
-
 import io
 import serial
 from can import CanError
-
 from can import BusABC, Message
 
 logger = logging.getLogger(__name__)
@@ -41,7 +40,7 @@ logger = logging.getLogger(__name__)
 
 class SlcanBus(BusABC):
     """
-    slcan interface
+    SLCAN interface
     """
 
     # the supported bitrates and their commands
@@ -58,11 +57,7 @@ class SlcanBus(BusABC):
         83300:      'S9'
     }
 
-    # TODO set back to 2 sec.
-    # sleep time after initialization of the serial interface in seconds.
-    _SLEEP_AFTER_SERIAL_OPEN = 0
-
-    def __init__(self, channel, serial_baudrate=115200, timeout=0.1, bitrate=10000, **kwargs):
+    def __init__(self, channel, serial_baudrate=115200, timeout=0.1, bitrate=10000, serial_init_sleep=2, **kwargs):
         """
         :param string channel:
             The serial device to open. For example "/dev/ttyS1" or
@@ -78,7 +73,8 @@ class SlcanBus(BusABC):
             Timeout for the serial device in seconds (default 0.1). The
             timeout will be used for sending and receiving.
 
-            .. note:: The receiving timeout isn't implemented correctly.
+        :param float serial_init_sleep:
+            Sleep time to initialize the serial interface in seconds (default 2).
 
         :param int bitrate:
             Bitrate in bits/s for the CAN communication (default 10000).
@@ -98,19 +94,17 @@ class SlcanBus(BusABC):
         self.ser = serial.Serial(port=channel, baudrate=serial_baudrate, timeout=self.serial_timeout,
                                  write_timeout=self.serial_timeout)
         self.serial_port = io.TextIOWrapper(io.BufferedRWPair(self.ser, self.ser, 1), newline='\r', line_buffering=True)
-        time.sleep(self._SLEEP_AFTER_SERIAL_OPEN)
+        time.sleep(serial_init_sleep)
         self.__init_can_device()
         super(SlcanBus, self).__init__(channel, **kwargs)
 
-    def __write(self, msg, timeout=None):
-        # TODO implement timeout
-        # TODO exception handling -> can.CanError
+    def __write(self, msg):
         if not msg.endswith('\r'):
             msg += '\r'
         self.serial_port.write(msg)
 
     def __init_can_device(self):
-        # TODO init procedure, set bitrate open chennel, clean buffer
+        # TODO init procedure, set bitrate open channel, clean buffer
         self.__write('O')
 
     def shutdown(self):
@@ -120,6 +114,7 @@ class SlcanBus(BusABC):
         self.__write('C')
         self.ser.close()
 
+    # TODO timeout implementation
     def send(self, msg, timeout=None):
         """
         Send a message over the serial device.
@@ -129,6 +124,8 @@ class SlcanBus(BusABC):
 
         :param float timeout:
             Timeout for sending messages in seconds, if no timeout is set the default from the constructor will be used.
+
+            .. note:: The sending timeout isn't implemented.
 
         :raises: CanError: Will be raised on timeout while sending.
         """
@@ -147,15 +144,11 @@ class SlcanBus(BusABC):
             for i in range(0, msg.dlc):
                 send_msg += "%02X" % msg.data[i]
         try:
-            if timeout is not None:
-                self.__write(send_msg, timeout)
-            else:
-                self.__write(send_msg)
+            self.__write(send_msg)
         except serial.SerialTimeoutException:
             raise CanError("Timeout while sending")
 
     # TODO implement timeout on receive
-    # TODO fix BUG with timeout, no reset of the timeout is implmented
     def recv(self, timeout=None):
         """
         Read a message from the serial device.
@@ -167,15 +160,14 @@ class SlcanBus(BusABC):
             the default value from the constructor will be used. With timeout = None it
             will block until a message is read.
 
+            .. note:: The receiving timeout isn't implemented.
+
         :returns:
             Received message.
 
         :rtype:
             can.Message
         """
-
-        if timeout is not None:
-            self.ser.timeout = timeout
 
         can_id = None
         remote = False
