@@ -104,7 +104,12 @@ class SlcanBus(BusABC):
         self.serial_port.write(msg)
 
     def __init_can_device(self):
-        # TODO init procedure, set bitrate open channel, clean buffer
+        # reset command queue
+        for x in range(0, 3):
+            self.__write('')
+        # set bitrate
+        self.__write(self._BITRATES[self.bitrate])
+        # open channel
         self.__write('O')
 
     def shutdown(self):
