@@ -1,9 +1,7 @@
 # coding: utf-8
-# TODO better documentation
-# TODO better documentation for rst doc
 """
 Name:        slcan.py
-Purpose:     Interface for slcan compatible interfaces (win32/linux).
+Purpose:     Interface for SLCAN / LAWICEL / CAN232 compatible interfaces.
              Note: Linux users can use slcand/socketcan as well.
 
 Copyright:   2017 Eduard Bröcker
@@ -34,6 +32,7 @@ import logging
 
 import io
 import serial
+from can import CanError
 
 from can import BusABC, Message
 
@@ -41,7 +40,6 @@ logger = logging.getLogger(__name__)
 
 
 class SlcanBus(BusABC):
-    # TODO better documentation
     """
     slcan interface
     """
@@ -122,8 +120,6 @@ class SlcanBus(BusABC):
         self.__write('C')
         self.ser.close()
 
-    # TODO implement SerialTimeoutException -> CanError
-    # TODO implement timeout correctly
     def send(self, msg, timeout=None):
         """
         Send a message over the serial device.
@@ -150,7 +146,13 @@ class SlcanBus(BusABC):
 
             for i in range(0, msg.dlc):
                 send_msg += "%02X" % msg.data[i]
-        self.__write(send_msg, timeout)
+        try:
+            if timeout is not None:
+                self.__write(send_msg, timeout)
+            else:
+                self.__write(send_msg)
+        except serial.SerialTimeoutException:
+            raise CanError("Timeout while sending")
 
     # TODO implement timeout on receive
     # TODO fix BUG with timeout, no reset of the timeout is implmented

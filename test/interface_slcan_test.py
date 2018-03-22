@@ -56,6 +56,11 @@ class SerialWrapperDummy:
         self.msg = None
 
 
+# TODO add documentation / how to for test implementation
+# 1. create file
+# 2. Mock underlying connections / devices -> send = recv
+# 3. set timeout
+# 4. add skip
 class SlcanTest(GenericInterfaceTest, unittest.TestCase):
 
     def setUp(self):

@@ -1,5 +1,6 @@
 CAN over Serial / Simple Serial
 ===============
+
 A text based interface. For example use over serial ports like
 ``/dev/ttyS1`` or ``/dev/ttyUSB0`` on Linux machines or ``COM1`` on Windows.
 The interface is a simple implementation that has been used for
