@@ -1,8 +1,9 @@
 # coding: utf-8
 # TODO documentation
 """
-Name:        ...
-Purpose:     ...
+Name:        interface_test.py
+Purpose:     Generic tests for the bus interfaces.
+             These tests should cover all functions offered by the bus interface.
 
 Copyright:   2018 Boris Wenzlaff
 
@@ -102,7 +103,6 @@ class GenericInterfaceTest(object):
         """
         Tests the transfer with the highest possible timestamp
         """
-
         msg = Message(timestamp=self.__MAX_TIMESTAMP)
         self.bus.send(msg)
         msg_receive = self.bus.recv()
@@ -139,7 +139,7 @@ class GenericInterfaceTest(object):
     @skip_interface(SlcanBus, 'function not implemented')
     def test_tx_timeout_default(self):
         """
-        Tests for SerialTimeoutException for default timeout on send
+        Tests for CanError for default timeout on send
         """
         global sleep_time_rx_tx
         sleep_time_rx_tx = 0.11
@@ -149,7 +149,7 @@ class GenericInterfaceTest(object):
     @skip_interface(SlcanBus, 'function not implemented')
     def test_tx_non_timeout_default(self):
         """
-        Tests for non SerialTimeoutException for default timeout on send
+        Tests for non CanError for default timeout on send
         """
         global sleep_time_rx_tx
         sleep_time_rx_tx = 0.09
@@ -158,7 +158,7 @@ class GenericInterfaceTest(object):
     @skip_interface(SlcanBus, 'function not implemented')
     def test_tx_timeout_param(self):
         """
-        Tests for SerialTimeoutException on send with timeout parameter
+        Tests for CanError on send with timeout parameter
         """
         global sleep_time_rx_tx
         sleep_time_rx_tx = 3
@@ -168,7 +168,7 @@ class GenericInterfaceTest(object):
     @skip_interface(SlcanBus, 'function not implemented')
     def test_tx_non_timeout_param(self):
         """
-        Tests for non SerialTimeoutException on send with timeout parameter
+        Tests for non CanError on send with timeout parameter
         """
         global sleep_time_rx_tx
         sleep_time_rx_tx = 1.9

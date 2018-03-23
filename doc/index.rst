@@ -45,9 +45,8 @@ Contents:
    interfaces
    bin
    development
-   history
    howto
-
+   history
 
 Known Bugs
 ~~~~~~~~~~
