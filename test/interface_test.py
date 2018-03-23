@@ -49,6 +49,10 @@ def skip_interface(interface_class, comment=None):
 class GenericInterfaceTest(object):
     __MAX_TIMESTAMP = 0xFFFFFFFF / 1000
 
+    # TODO add more test cases: extended_id, is_remote_frame and is_error_frame
+
+    ##### send /receive #####
+
     def test_rx_tx_min_max_data(self):
         """
         Tests the transfer from 0x00 to 0xFF for a 1 byte payload
@@ -136,6 +140,8 @@ class GenericInterfaceTest(object):
         msg = Message(timestamp=-1)
         self.assertRaises(ValueError, self.bus.send, msg)
 
+    ##### send timeout #####
+
     @skip_interface(SlcanBus, 'function not implemented')
     def test_tx_timeout_default(self):
         """
@@ -184,6 +190,8 @@ class GenericInterfaceTest(object):
         self.bus.send(Message(timestamp=1), 0.12)
         with self.assertRaises(CanError):
             self.bus.send(Message(timestamp=1))
+
+    ##### receive timeout #####
 
     @skip_interface(SlcanBus, 'function not implemented')
     def test_rx_timeout_default(self):
