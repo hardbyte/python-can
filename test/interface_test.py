@@ -1,5 +1,5 @@
 # coding: utf-8
-# TODO documentation
+
 """
 Name:        interface_test.py
 Purpose:     Generic tests for the bus interfaces.
