@@ -46,6 +46,7 @@ Contents:
    bin
    development
    history
+   howto
 
 
 Known Bugs

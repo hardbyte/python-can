@@ -6,7 +6,7 @@ serial ports like ``/dev/ttyS1`` or ``/dev/ttyUSB0`` on Linux machines or ``COM1
 This driver directly uses the serial port, it makes SLCAN compatible interfaces usable with Windows also.
 
 .. note::
-    Arduino-Interface could easyly be build https://github.com/latonita/arduino-canbus-monitor
+    Arduino-Interface could easily be build https://github.com/latonita/arduino-canbus-monitor
 
 .. note::
     These interfaces can also be used with socketcan and slcand with Linux.

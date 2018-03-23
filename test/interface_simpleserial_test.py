@@ -2,7 +2,7 @@
 # coding: utf-8
 
 """
-Name:        interface_simple_serial_test.py
+Name:        interface_simpleserial_test.py
 Purpose:     Test of the simple serial interface
 
 Copyright:   2017 - 2018 Boris Wenzlaff

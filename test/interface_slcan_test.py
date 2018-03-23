@@ -24,7 +24,6 @@ along with python-can. If not, see <http://www.gnu.org/licenses/>.
 """
 
 import unittest
-import test.interface_test
 from can.interfaces.serial.slcan import SlcanBus
 from test.interface_test import GenericInterfaceTest
 from mock import patch
@@ -57,11 +56,6 @@ class SerialWrapperDummy:
         self.msg = None
 
 
-# TODO add documentation / how to for test implementation
-# 1. create file
-# 2. Mock underlying connections / devices -> send = recv
-# 3. set timeout
-# 4. add skip
 class SlcanTest(GenericInterfaceTest, unittest.TestCase):
 
     def setUp(self):
