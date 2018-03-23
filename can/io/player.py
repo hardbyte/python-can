@@ -44,7 +44,9 @@ class LogReader(object):
 
     @classmethod
     def __new__(cls, other, filename):
-        if filename.endswith(".asc"):
+        if not filename:
+            raise TypeError("a filename must be given")
+        elif filename.endswith(".asc"):
             return ASCReader(filename)
         elif filename.endswith(".blf"):
             return BLFReader(filename)

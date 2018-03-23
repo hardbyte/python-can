@@ -5,14 +5,19 @@
 This module tests two virtual busses attached to each other.
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
+import sys
 import unittest
-import time
+from time import sleep
 
 import can
 
+from .data.example_data import generate_message
+
 from .config import *
+from .data.example_data import generate_message
+
 
 BITRATE = 500000
 TIMEOUT = 0.1
@@ -80,12 +85,12 @@ class Back2BackTestCase(unittest.TestCase):
     def test_timestamp(self):
         self.bus2.send(can.Message())
         recv_msg1 = self.bus1.recv(TIMEOUT)
-        time.sleep(5)
+        sleep(2.0)
         self.bus2.send(can.Message())
         recv_msg2 = self.bus1.recv(TIMEOUT)
         delta_time = recv_msg2.timestamp - recv_msg1.timestamp
-        self.assertTrue(4.8 < delta_time < 5.2,
-                        'Time difference should have been 5s +/- 200ms.' 
+        self.assertTrue(1.75 <= delta_time <= 2.25,
+                        'Time difference should have been 2s +/- 250ms.' 
                         'But measured {}'.format(delta_time))
 
     def test_standard_message(self):
@@ -129,6 +134,39 @@ class Back2BackTestCase(unittest.TestCase):
                           arbitration_id=0x98765,
                           data=[0xff] * 48)
         self._send_and_receive(msg)
+
+# FIXME
+@unittest.skip("skip until CAN FD support is fixed, see issue #274")
+#@unittest.skipUnless(TEST_INTERFACE_SOCKETCAN, "skip testing of socketcan")
+class BasicTestSocketCan(unittest.TestCase):
+
+    def setUp(self):
+        socketcan_version = can.util.choose_socketcan_implementation()
+        print("testing python-can's socketcan version:",
+              socketcan_version)
+
+        self.bus1 = can.interface.Bus(channel="vcan0",
+                                      bustype=socketcan_version,
+                                      bitrate=250000,
+                                      fd=TEST_CAN_FD)
+        self.bus2 = can.interface.Bus(channel="vcan0",
+                                      bustype=socketcan_version,
+                                      bitrate=250000,
+                                      fd=TEST_CAN_FD)
+
+    def tearDown(self):
+        self.bus1.shutdown()
+        self.bus2.shutdown()
+
+    def test_basics(self):
+        reader = can.BufferedReader()
+        notifier = can.Notifier(self.bus2, [reader])
+
+        message = can.Message(arbitration_id=0x4321, data=[1, 2, 3], extended_id=True)
+        self.bus1.send(message)
+
+        self.assertEqual(message, reader.get_message(timeout=2.0))
+        notifier.stop()
 
 
 if __name__ == '__main__':

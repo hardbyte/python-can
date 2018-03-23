@@ -166,7 +166,7 @@ class TestSqliteDatabaseFormat(unittest.TestCase):
 
     def test_writer_and_reader(self):
         _test_writer_and_reader(self, can.SqliteWriter, can.SqliteReader,
-                                sleep_time=can.SqliteWriter.MAX_TIME_BETWEEN_WRITES,
+                                sleep_time=can.SqliteWriter.MAX_TIME_BETWEEN_WRITES + 0.5,
                                 check_comments=False)
 
     def testSQLWriterWritesToSameFile(self):
