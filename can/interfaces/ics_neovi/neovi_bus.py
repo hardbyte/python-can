@@ -14,7 +14,8 @@ Implementation references:
 import logging
 from collections import deque
 
-from can import Message, CanError, BusABC
+from can import Message, CanError
+from can.bus import BusABC
 
 logger = logging.getLogger(__name__)
 
@@ -29,10 +30,6 @@ except ImportError as ie:
 
 
 class ICSApiError(CanError):
-    """
-    Indicates an error with the ICS API.
-    """
-
     # A critical error which affects operation or accuracy.
     ICS_SPY_ERR_CRITICAL = 0x10
     # An error which is not understood.
@@ -42,8 +39,10 @@ class ICSApiError(CanError):
     # An error which probably does not need attention.
     ICS_SPY_ERR_INFORMATION = 0x40
 
-    def __init__(self, error_number, description_short, description_long,
-                 severity, restart_needed):
+    def __init__(
+            self, error_number, description_short, description_long,
+            severity, restart_needed
+    ):
         super(ICSApiError, self).__init__(description_short)
         self.error_number = error_number
         self.description_short = description_short
@@ -82,12 +81,15 @@ class NeoViBus(BusABC):
     https://github.com/intrepidcs/python_ics
     """
 
-    def __init__(self, channel, can_filters=None, **config):
+    def __init__(self, channel=None, can_filters=None, **config):
         """
+
         :param int channel:
             The Channel id to create this bus with.
         :param list can_filters:
-            See :meth:`can.BusABC.set_filters` for details.
+            A list of dictionaries each containing a "can_id" and a "can_mask".
+
+            >>> [{"can_id": 0x11, "can_mask": 0x21}]
 
         :param use_system_timestamp:
             Use system timestamp for can messages instead of the hardware time
@@ -99,17 +101,18 @@ class NeoViBus(BusABC):
             Channel bitrate in bit/s. (optional, will enable the auto bitrate
             feature if not supplied)
         """
+        super(NeoViBus, self).__init__(channel, can_filters, **config)
         if ics is None:
             raise ImportError('Please install python-ics')
-
-        super(NeoViBus, self).__init__(channel=channel, can_filters=can_filters, **config)
 
         logger.info("CAN Filters: {}".format(can_filters))
         logger.info("Got configuration of: {}".format(config))
 
-        self._use_system_timestamp = bool(config.get('use_system_timestamp', False))
+        self._use_system_timestamp = bool(
+            config.get('use_system_timestamp', False)
+        )
 
-        # TODO: Add support for multiple channels
+        # TODO: Add support for multiples channels
         try:
             channel = int(channel)
         except ValueError:
@@ -130,14 +133,13 @@ class NeoViBus(BusABC):
         }
 
         if bitrate is not None:
-            bitrate = int(bitrate)
-            if bitrate not in VALID_BITRATES:
+            if int(bitrate) not in VALID_BITRATES:
                 raise ValueError(
                     'Invalid bitrate. Valid bitrates are {}'.format(
                         VALID_BITRATES
                     )
                 )
-            baud_rate_setting = BAUDRATE_SETTING[bitrate]
+            baud_rate_setting = BAUDRATE_SETTING[int(bitrate)]
             settings = {
                 'SetBaudrate': ics.AUTO,
                 'Baudrate': baud_rate_setting,
@@ -152,10 +154,12 @@ class NeoViBus(BusABC):
         )
         logger.info("Using device: {}".format(self.channel_info))
 
+        self.sw_filters = None
+        self.set_filters(can_filters)
         self.rx_buffer = deque()
         self.opened = True
 
-        self.network = channel if channel is not None else None
+        self.network = int(channel) if channel is not None else None
 
         # TODO: Change the scaling based on the device type
         self.ts_scaling = (
@@ -223,13 +227,15 @@ class NeoViBus(BusABC):
             setattr(channel_settings, setting, value)
         ics.set_device_settings(self.dev, device_settings)
 
-    def _process_msg_queue(self, timeout):
+    def _process_msg_queue(self, timeout=None):
         try:
             messages, errors = ics.get_messages(self.dev, False, timeout)
         except ics.RuntimeError:
             return
         for ics_msg in messages:
             if ics_msg.NetworkID != self.network:
+                continue
+            if not self._is_filter_match(ics_msg.ArbIDOrHeader):
                 continue
             self.rx_buffer.append(ics_msg)
         if errors:
@@ -240,6 +246,26 @@ class NeoViBus(BusABC):
                 if error.is_critical:
                     raise error
                 logger.warning(error)
+
+    def _is_filter_match(self, arb_id):
+        """
+        If SW filtering is used, checks if the `arb_id` matches any of
+        the filters setup.
+
+        :param int arb_id:
+            CAN ID to check against.
+
+        :return:
+            True if `arb_id` matches any filters
+            (or if SW filtering is not used).
+        """
+        if not self.sw_filters:
+            # Filtering done on HW or driver level or no filtering
+            return True
+        for can_filter in self.sw_filters:
+            if not (arb_id ^ can_filter['can_id']) & can_filter['can_mask']:
+                return True
+        return False
 
     def _get_timestamp_for_msg(self, ics_msg):
         if self._use_system_timestamp:
@@ -278,20 +304,22 @@ class NeoViBus(BusABC):
             channel=ics_msg.NetworkID
         )
 
-    def _recv_internal(self, timeout):
+    def recv(self, timeout=None):
+        msg = None
         if not self.rx_buffer:
-            self._process_msg_queue(timeout)
+            self._process_msg_queue(timeout=timeout)
+
         try:
             ics_msg = self.rx_buffer.popleft()
             msg = self._ics_msg_to_message(ics_msg)
         except IndexError:
-            return None, False
-        else:
-            return msg, False
+            pass
+        return msg
 
     def send(self, msg, timeout=None):
         if not self.opened:
-            raise CanError("bus not yet opened")
+            return
+        data = tuple(msg.data)
 
         flags = 0
         if msg.is_extended_id:
@@ -301,8 +329,8 @@ class NeoViBus(BusABC):
 
         message = ics.SpyMessage()
         message.ArbIDOrHeader = msg.arbitration_id
-        message.NumberBytesData = len(msg.data)
-        message.Data = tuple(msg.data)
+        message.NumberBytesData = len(data)
+        message.Data = data
         message.StatusBitField = flags
         message.StatusBitField2 = 0
         message.NetworkID = self.network
@@ -311,3 +339,28 @@ class NeoViBus(BusABC):
             ics.transmit_messages(self.dev, message)
         except ics.RuntimeError:
             raise ICSApiError(*ics.get_last_api_error(self.dev))
+
+    def set_filters(self, can_filters=None):
+        """Apply filtering to all messages received by this Bus.
+
+        Calling without passing any filters will reset the applied filters.
+
+        :param list can_filters:
+            A list of dictionaries each containing a "can_id" and a "can_mask".
+
+            >>> [{"can_id": 0x11, "can_mask": 0x21}]
+
+            A filter matches, when
+            ``<received_can_id> & can_mask == can_id & can_mask``
+
+        """
+        self.sw_filters = can_filters or []
+
+        if not len(self.sw_filters):
+            logger.info("Filtering has been disabled")
+        else:
+            for can_filter in can_filters:
+                can_id = can_filter["can_id"]
+                can_mask = can_filter["can_mask"]
+                logger.info(
+                    "Filtering on ID 0x%X, mask 0x%X", can_id, can_mask)
