@@ -59,7 +59,7 @@ class SimpleSerialBus(BusABC):
 
         :param int serial_baudrate:
             Baud rate of underlying serial or usb device in bit/s (default 115200).
-
+t
             .. note:: Some serial port implementations don't care about the baud
                       rate.
 
