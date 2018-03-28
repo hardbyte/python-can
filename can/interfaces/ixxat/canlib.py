@@ -17,7 +17,7 @@ from can import CanError, BusABC
 from can import Message
 from can.broadcastmanager import (LimitedDurationCyclicSendTaskABC,
                                   RestartableCyclicTaskABC)
-from can.ctypesutil import CLibrary, HANDLE, PHANDLE
+from can.ctypesutil import CLibrary, HANDLE, PHANDLE, HRESULT as ctypes_HRESULT
 
 from can.interfaces.ixxat import constants, structures
 
@@ -130,7 +130,7 @@ try:
     _canlib.map_symbol("vciInitialize", ctypes.c_long, (), __check_status)
 
     #void VCIAPI vciFormatError (HRESULT hrError, PCHAR pszText, UINT32 dwsize);
-    _canlib.map_symbol("vciFormatError", None, (ctypes.HRESULT, ctypes.c_char_p, ctypes.c_uint32))
+    _canlib.map_symbol("vciFormatError", None, (ctypes_HRESULT, ctypes.c_char_p, ctypes.c_uint32))
     # Hack to have vciFormatError as a free function
     vciFormatError = functools.partial(__vciFormatError, _canlib)
 
