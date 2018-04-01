@@ -26,61 +26,27 @@ along with python-can. If not, see <http://www.gnu.org/licenses/>.
 from can import Message
 from can import CanError
 from can.interfaces.serial.slcan import SlcanBus
-from unittest import SkipTest, TestCase
-import functools
+from functools import wraps
 
 sleep_time_rx_tx = None
 
 
-def skip(reason):
-    """Unconditionally skip a test."""
-    def decorator(test_item):
-        if not isinstance(test_item, (type, types.ClassType)):
-            @functools.wraps(test_item)
-            def skip_wrapper(*args, **kwargs):
-                raise SkipTest(reason)
-            test_item = skip_wrapper
-        elif issubclass(test_item, TestCase):
-            @classmethod
-            @functools.wraps(test_item.setUpClass)
-            def skip_wrapper(*args, **kwargs):
-                raise SkipTest(reason)
-            test_item.setUpClass = skip_wrapper
-        test_item.__unittest_skip__ = True
-        test_item.__unittest_skip_why__ = reason
-        return test_item
-    return decorator
-
-
-def _id(obj):
-    return obj
-
-
-def skipIf(interface_class, reason):
-    """Skip a test if the condition is true."""
-    if type(self.bus) is interface_class:
-        self.skipTest(str(reason))
-    if condition:
-        return skip(reason)
-    return _id
-
-
-# def skip_interface(interface_class, comment=None):
-#     """
-#     Decorator to skip tests.
-#     :param interface_class: Skip test for this class.
-#     :param comment: Reason why skipped.
-#     """
-#     def deco(f):
-#         def wrapper(self, *args, **kwargs):
-#             # if isinstance(self.bus, interface_class):
-#             if type(self.bus) is interface_class:
-#                 # self.skipTest(str(comment))
-#                 raise SkipTest('Whatever')
-#             else:
-#                 f(self, *args, **kwargs)
-#         return wrapper
-#     return deco
+def skip_interface(interface_class, comment=None):
+    """
+    Decorator to skip tests.
+    :param interface_class: Skip test for this class.
+    :param comment: Reason why skipped.
+    """
+    # @wraps
+    def deco(f):
+        @wraps(f)
+        def wrapper(self, *args, **kwargs):
+            if type(self.bus) is interface_class:
+                self.skipTest(str(comment))
+            else:
+                f(self, *args, **kwargs)
+        return wrapper
+    return deco
 
 
 class GenericInterfaceTest(object):

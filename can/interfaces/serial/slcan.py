@@ -104,18 +104,22 @@ class SlcanBus(BusABC):
         self.serial_port.write(msg)
 
     def __init_can_device(self):
+        logger.debug('start initialize device {}'.format(self.channel_info))
         # reset command queue
         for x in range(0, 3):
             self.__write('')
         # set bitrate
+        logger.debug('try to set CAN bit rate to {}'.format(self.bitrate))
         self.__write(self._BITRATES[self.bitrate])
         # open channel
+        logger.debug('try to open channel on device {}'.format(self.channel_info))
         self.__write('O')
 
     def shutdown(self):
         """
         Close the serial interface and the CAN channel on the device.
         """
+        logger.debug('close device {}'.format(self.channel_info))
         self.__write('C')
         self.ser.close()
 
