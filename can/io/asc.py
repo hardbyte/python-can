@@ -155,7 +155,8 @@ class ASCWriter(Listener):
         if msg.is_extended_id:
             arb_id += "x"
 
-        channel = msg.channel if isinstance(msg.channel, int) else self.channel
+        # Many interfaces start channel numbering at 0 which is invalid
+        channel = msg.channel + 1 if isinstance(msg.channel, int) else self.channel
 
         line = self.LOG_STRING.format(time=msg.timestamp,
                                       channel=channel,
