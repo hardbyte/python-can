@@ -59,7 +59,7 @@ class SimpleSerialBus(BusABC):
 
         :param int serial_baudrate:
             Baud rate of underlying serial or usb device in bit/s (default 115200).
-t
+
             .. note:: Some serial port implementations don't care about the baud
                       rate.
 
@@ -81,6 +81,7 @@ t
         """
         Close the serial interface.
         """
+
         self.ser.close()
 
     def send(self, msg, timeout=None):
@@ -128,7 +129,6 @@ t
         except serial.SerialTimeoutException:
             raise CanError("Timeout while sending")
 
-
     @staticmethod
     def __convert_to_integer_milliseconds(msg_timestamp):
         return int(msg_timestamp * 1000)
@@ -142,6 +142,7 @@ t
             Timeout in seconds.
         :return: Time left for timeout or None for unlimited time.
         """
+
         if timeout is None:
             return None
         return timeout - (time.time() - start_time)
