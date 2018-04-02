@@ -112,7 +112,7 @@ class ASCWriter(Listener):
 
     FORMAT_MESSAGE = "{channel}  {id:<15} Rx   {dtype} {data}"
     FORMAT_DATE = "%a %b %m %I:%M:%S %p %Y"
-    FORMAT_EVENT = "{time} {message}\n"
+    FORMAT_EVENT = "{timestamp: 9.4f} {message}\n"
 
     def __init__(self, filename, channel=1):
         # setup
@@ -151,7 +151,9 @@ class ASCWriter(Listener):
         if not self.header_written:
             self.last_timestamp = (timestamp or 0.0)
             self.started = self.last_timestamp
-            self.log_file.write("Begin Triggerblock %s\n" % self.last_timestamp)
+            formatted_date = time.strftime(self.FORMAT_DATE, time.localtime(self.last_timestamp))
+            self.log_file.write("base hex  timestamps absolute\n")
+            self.log_file.write("Begin Triggerblock %s\n" % formatted_date)
             self.header_written = True
             self.log_event("Start of measurement") # recursive call
 
@@ -159,13 +161,11 @@ class ASCWriter(Listener):
         if timestamp is None or timestamp < self.last_timestamp:
             timestamp = self.last_timestamp
 
-        # turn into relative timestamps
+        # turn into relative timestamps if necessary
         if timestamp >= self.started:
             timestamp -= self.started
 
-        formatted_date = time.strftime(self.FORMAT_DATE, time.localtime(timestamp))
-
-        line = self.FORMAT_EVENT.format(time=timestamp, message=message)
+        line = self.FORMAT_EVENT.format(timestamp=timestamp, message=message)
 
         if self.log_file.closed:
             logger.warn("ASCWriter: ignoring write call to closed file")
