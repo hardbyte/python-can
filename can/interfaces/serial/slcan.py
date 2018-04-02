@@ -127,6 +127,8 @@ class SlcanBus(BusABC):
         """
         Send a message over the serial device.
 
+            .. note:: The implementation doesn't supports the sending of error and remote frames in the moment.
+
         :param can.Message msg:
             Message to send.
 

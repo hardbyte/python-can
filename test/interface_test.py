@@ -26,6 +26,7 @@ along with python-can. If not, see <http://www.gnu.org/licenses/>.
 from can import Message
 from can import CanError
 from can.interfaces.serial.slcan import SlcanBus
+from can.interfaces.serial.simpleserial import SimpleSerialBus
 from functools import wraps
 
 sleep_time_rx_tx = None
@@ -51,8 +52,6 @@ def skip_interface(interface_class, comment=None):
 
 class GenericInterfaceTest(object):
     __MAX_TIMESTAMP = 0xFFFFFFFF / 1000
-
-    # TODO add more test cases: extended_id, is_remote_frame and is_error_frame
 
     ##### send /receive #####
 
@@ -101,6 +100,30 @@ class GenericInterfaceTest(object):
         Tests the transfer with the highest arbitration id
         """
         msg = Message(arbitration_id=536870911)
+        self.bus.send(msg)
+        msg_receive = self.bus.recv()
+        self.assertEqual(msg, msg_receive)
+
+    @skip_interface(SimpleSerialBus, 'function not supported')
+    @skip_interface(SlcanBus, 'function not implemented')
+    def test_remote_frame(self):
+        """
+        # Tests the transfer of a remote frame
+        """
+        msg = Message(arbitration_id=000)
+        msg.is_remote_frame = True
+        self.bus.send(msg)
+        msg_receive = self.bus.recv()
+        self.assertEqual(msg, msg_receive)
+
+    @skip_interface(SimpleSerialBus, 'function not supported')
+    @skip_interface(SlcanBus, 'function not implemented')
+    def test_error_frame(self):
+        """
+        # Tests the transfer of a error frame
+        """
+        msg = Message(arbitration_id=000)
+        msg.is_error_frame = True
         self.bus.send(msg)
         msg_receive = self.bus.recv()
         self.assertEqual(msg, msg_receive)
