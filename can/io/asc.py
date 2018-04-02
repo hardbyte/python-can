@@ -110,13 +110,13 @@ class ASCWriter(Listener):
     It the first message does not have a timestamp, it is set to zero.
     """
 
-    LOG_STRING = "{time: 9.4f} {channel}  {id:<15} Rx   {dtype} {data}\n"
-    EVENT_STRING = "{time: 9.4f} {message}\n"
+    FORMAT_MESSAGE = "{channel}  {id:<15} Rx   {dtype} {data}"
+    FORMAT_DATE = "%a %b %m %I:%M:%S %p %Y"
+    FORMAT_EVENT = "{time} {message}\n"
 
     def __init__(self, filename, channel=1):
         # setup
         self.channel = channel
-        self.started = time.time()
         self.log_file = open(filename, 'w')
 
         # write start of file header
@@ -137,7 +137,11 @@ class ASCWriter(Listener):
             self.log_file.close()
 
     def log_event(self, message, timestamp=None):
-        """Add an arbitrary message to the log file."""
+        """Add a message to the log file.
+
+        :param str message: an arbitrary message
+        :param float message: the absolute timestamp of the event
+        """
 
         if not message: # if empty or None
             logger.debug("ASCWriter: ignoring empty message")
@@ -149,7 +153,7 @@ class ASCWriter(Listener):
             self.started = self.last_timestamp
             self.log_file.write("Begin Triggerblock %s\n" % self.last_timestamp)
             self.header_written = True
-            self.log_event("Start of measurement") # recursive
+            self.log_event("Start of measurement") # recursive call
 
         # figure out the correct timestamp
         if timestamp is None or timestamp < self.last_timestamp:
@@ -159,9 +163,13 @@ class ASCWriter(Listener):
         if timestamp >= self.started:
             timestamp -= self.started
 
-        line = self.EVENT_STRING.format(time=timestamp, message=message)
+        formatted_date = time.strftime(self.FORMAT_DATE, time.localtime(timestamp))
 
-        if not self.log_file.closed:
+        line = self.FORMAT_EVENT.format(time=timestamp, message=message)
+
+        if self.log_file.closed:
+            logger.warn("ASCWriter: ignoring write call to closed file")
+        else:
             self.log_file.write(line)
 
     def on_message_received(self, msg):
@@ -183,11 +191,9 @@ class ASCWriter(Listener):
 
         channel = msg.channel if isinstance(msg.channel, int) else self.channel
 
-        line = self.LOG_STRING.format(time=msg.timestamp,
-                                      channel=channel,
-                                      id=arb_id,
-                                      dtype=dtype,
-                                      data=' '.join(data))
+        serialized = self.FORMAT_MESSAGE.format(channel=channel,
+                                                id=arb_id,
+                                                dtype=dtype,
+                                                data=' '.join(data))
 
-        if not self.log_file.closed:
-            self.log_file.write(line)
+        self.log_event(serialized, msg.timestamp)
