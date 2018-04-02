@@ -164,7 +164,7 @@ class SlcanBus(BusABC):
 
             .. note:: The message timestamp will be set by the framework, timestamps of the protocol are not supported.
 
-        :param timeout:
+        :param float timeout:
             Timeout for receiving a message in seconds. If the timeout parameter not set,
             the default value from the constructor will be used. With timeout = None it
             will block until a message is read.
