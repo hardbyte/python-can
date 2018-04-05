@@ -73,6 +73,7 @@ class SimpleSerialBus(BusABC):
 
         self.channel_info = "Simple serial interface on: " + channel
         self.serial_timeout = timeout
+        # TODO catch serial exception
         self.ser = serial.Serial(port=channel, baudrate=serial_baudrate, timeout=self.serial_timeout,
                                  write_timeout=self.serial_timeout)
         super(SimpleSerialBus, self).__init__(channel, **kwargs)
@@ -145,7 +146,10 @@ class SimpleSerialBus(BusABC):
 
         if timeout is None:
             return None
-        return timeout - (time.time() - start_time)
+        r = timeout - (time.time() - start_time)
+        if r < 0:
+            return 0
+        return r
 
     def recv(self, timeout=-1):
         """
@@ -171,22 +175,30 @@ class SimpleSerialBus(BusABC):
 
         try:
             start = time.time()
-            rx_byte = self.ser.read(timeout=timeout)
+            self.ser.timeout = timeout
+            rx_byte = self.ser.read()
             if len(rx_byte) and ord(rx_byte) == 0xAA:
                 r_time = self.__remaining_time(start, timeout)
-                s = bytearray(self.ser.read(4, timeout=r_time))
+                self.ser.timeout = r_time
+                s = bytearray(self.ser.read(4))
                 timestamp = (struct.unpack('<I', s))[0]
                 r_time = self.__remaining_time(start, timeout)
-                dlc = ord(self.ser.read(timeout=r_time))
+                self.ser.timeout = r_time
+                dlc = ord(self.ser.read())
                 r_time = self.__remaining_time(start, timeout)
-                s = bytearray(self.ser.read(4, timeout=r_time))
+                self.ser.timeout = r_time
+                s = bytearray(self.ser.read(4))
                 arb_id = (struct.unpack('<I', s))[0]
                 r_time = self.__remaining_time(start, timeout)
-                data = self.ser.read(dlc, timeout=r_time)
+                self.ser.timeout = r_time
+                data = self.ser.read(dlc)
                 r_time = self.__remaining_time(start, timeout)
-                rxd_byte = ord(self.ser.read(timeout=r_time))
+                self.ser.timeout = r_time
+                rxd_byte = ord(self.ser.read())
                 if rxd_byte == 0xBB:
                     # received message data okay
                     return Message(timestamp=timestamp / 1000, arbitration_id=arb_id, dlc=dlc, data=data)
         except serial.SerialTimeoutException:
             return None
+        finally:
+            self.ser.timeout = self.serial_timeout
