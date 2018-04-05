@@ -41,14 +41,15 @@ def send_cyclic(bus, msg, stop_event):
 def receive(bus, stop_event):
     print("Start receiving messages")
     while not stop_event.is_set():
-        rx_msg = bus.recv(1)
+        rx_msg = bus.recv(timeout=1)
         if rx_msg is not None:
             print("rx: {}".format(rx_msg))
     print("Stopped receiving messages")
 
+
 if __name__ == "__main__":
-    server = can.interface.Bus(bustype='serial', channel='/dev/ttyS10')
-    client = can.interface.Bus(bustype='serial', channel='/dev/ttyS11')
+    server = can.interface.Bus(bustype='simpleserial', channel='/dev/ttyS10')
+    client = can.interface.Bus(bustype='simpleserial', channel='/dev/ttyS11')
 
     tx_msg = can.Message(arbitration_id=0x01, data=[0x11, 0x22, 0x33, 0x44,
                                                     0x55, 0x66, 0x77, 0x88])
