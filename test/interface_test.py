@@ -29,7 +29,8 @@ from can.interfaces.serial.slcan import SlcanBus
 from can.interfaces.serial.simpleserial import SimpleSerialBus
 from functools import wraps
 
-sleep_time_rx_tx = None
+sleep_time_rx_tx = None # sleep time for the device
+recv_timeout = 0.1      # timeout for the receive, mock doesn't support the attribut
 
 
 def skip_interface(interface_class, comment=None):
@@ -185,7 +186,9 @@ class GenericInterfaceTest(object):
         """
         global sleep_time_rx_tx
         sleep_time_rx_tx = 0.09
-        self.bus.send(Message(timestamp=1))
+        msg = Message(timestamp=1)
+        self.bus.send(msg)
+        self.assertEqual(msg, self.bus.recv(timeout=2))
 
     @skip_interface(SlcanBus, 'function not implemented')
     def test_tx_timeout_param(self):
@@ -204,7 +207,11 @@ class GenericInterfaceTest(object):
         """
         global sleep_time_rx_tx
         sleep_time_rx_tx = 1.9
-        self.bus.send(Message(timestamp=1), 2)
+        global recv_timeout
+        recv_timeout = 2
+        msg = Message(timestamp=1)
+        self.bus.send(msg, 2)
+        self.assertEqual(msg, self.bus.recv(timeout=2))
 
     @skip_interface(SlcanBus, 'function not implemented')
     def test_tx_reset_timeout(self):
@@ -247,6 +254,8 @@ class GenericInterfaceTest(object):
         """
         global sleep_time_rx_tx
         sleep_time_rx_tx = 3
+        global recv_timeout
+        recv_timeout = 2
         self.bus.send(Message(timestamp=1), 100)
         self.assertIsNone(self.bus.recv(timeout=2))
 
@@ -256,10 +265,12 @@ class GenericInterfaceTest(object):
         Tests for non timeout on receive with timeout parameter
         """
         global sleep_time_rx_tx
+        global recv_timeout
+        recv_timeout = 2
         sleep_time_rx_tx = 1.9
         msg = Message(timestamp=1)
         self.bus.send(msg, 100)
-        self.assertEqual(self.bus.recv(2), msg)
+        self.assertEqual(msg, self.bus.recv(timeout=2))
 
     @skip_interface(SlcanBus, 'function not implemented')
     def test_rx_reset_timeout(self):

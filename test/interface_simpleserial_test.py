@@ -40,9 +40,10 @@ class SerialDummy:
     def __init__(self):
         self.msg = bytearray()
 
-    def read(self, size=1, timeout=0.1):
+    def read(self, size=1):
         return_value = bytearray()
         sleep = test.interface_test.sleep_time_rx_tx
+        timeout = test.interface_test.recv_timeout
         if self.msg is not None:
             if sleep is not None and timeout is not None:
                 if sleep > timeout:
@@ -75,6 +76,7 @@ class SimpleSerialTest(GenericInterfaceTest, unittest.TestCase):
 
         self.bus = SimpleSerialBus('bus')
         test.interface_test.sleep_time_rx_tx = None
+        test.interface_test.recv_timeout = 0.1
 
     def tearDown(self):
         self.serial_dummy.reset()
