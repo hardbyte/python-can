@@ -3,6 +3,8 @@
 
 """
 Contains handling of ASC logging files.
+
+Example .asc file: https://bitbucket.org/tobylorenz/vector_asc/src/47556e1a6d32c859224ca62d075e1efcc67fa690/src/Vector/ASC/tests/unittests/data/CAN_Log_Trigger_3_2.asc?at=master&fileviewer=file-view-default
 """
 
 from datetime import datetime
@@ -21,6 +23,8 @@ logger = logging.getLogger('can.io.asc')
 class ASCReader(object):
     """
     Iterator of CAN messages from a ASC logging file.
+
+    TODO: turn realtive timestamps back to absolute form
     """
 
     def __init__(self, filename):
@@ -28,7 +32,7 @@ class ASCReader(object):
 
     @staticmethod
     def _extract_can_id(str_can_id):
-        if str_can_id[-1:].lower() == "x":
+        if str_can_id[-1:].lower() == 'x':
             is_extended = True
             can_id = int(str_can_id[0:-1], 16)
         else:
@@ -98,21 +102,33 @@ class ASCReader(object):
 
 
 class ASCWriter(Listener):
-    """Logs CAN data to an ASCII log file (.asc)"""
+    """Logs CAN data to an ASCII log file (.asc).
 
-    LOG_STRING = "{time: 9.4f} {channel}  {id:<15} Rx   {dtype} {data}\n"
-    EVENT_STRING = "{time: 9.4f} {message}\n"
+    The measurement starts with the timestamp of the first registered message.
+    If a message has a timestamp smaller than the previous one (or 0 or None),
+    it gets assigned the timestamp that was written for the last message.
+    It the first message does not have a timestamp, it is set to zero.
+    """
+
+    FORMAT_MESSAGE = "{channel}  {id:<15} Rx   {dtype} {data}"
+    FORMAT_DATE = "%a %b %m %I:%M:%S %p %Y"
+    FORMAT_EVENT = "{timestamp: 9.4f} {message}\n"
 
     def __init__(self, filename, channel=1):
-        now = datetime.now().strftime("%a %b %m %I:%M:%S %p %Y")
+        # setup
         self.channel = channel
-        self.started = time.time()
         self.log_file = open(filename, 'w')
+
+        # write start of file header
+        now = datetime.now().strftime("%a %b %m %I:%M:%S %p %Y")
         self.log_file.write("date %s\n" % now)
         self.log_file.write("base hex  timestamps absolute\n")
         self.log_file.write("internal events logged\n")
-        self.log_file.write("Begin Triggerblock %s\n" % now)
-        self.log_event("Start of measurement")
+
+        # the last part is written with the timestamp of the first message
+        self.header_written = False
+        self.last_timestamp = None
+        self.started = None
 
     def stop(self):
         """Stops logging and closes the file."""
@@ -121,21 +137,39 @@ class ASCWriter(Listener):
             self.log_file.close()
 
     def log_event(self, message, timestamp=None):
-        """Add an arbitrary message to the log file."""
+        """Add a message to the log file.
+
+        :param str message: an arbitrary message
+        :param float message: the absolute timestamp of the event
+        """
 
         if not message: # if empty or None
             logger.debug("ASCWriter: ignoring empty message")
             return
 
-        if timestamp is None:
-            timestamp = time.time()
+        # this is the case for the very first message:
+        if not self.header_written:
+            self.last_timestamp = (timestamp or 0.0)
+            self.started = self.last_timestamp
+            formatted_date = time.strftime(self.FORMAT_DATE, time.localtime(self.last_timestamp))
+            self.log_file.write("base hex  timestamps absolute\n")
+            self.log_file.write("Begin Triggerblock %s\n" % formatted_date)
+            self.header_written = True
+            self.log_event("Start of measurement") # recursive call
 
+        # figure out the correct timestamp
+        if timestamp is None or timestamp < self.last_timestamp:
+            timestamp = self.last_timestamp
+
+        # turn into relative timestamps if necessary
         if timestamp >= self.started:
             timestamp -= self.started
 
-        line = self.EVENT_STRING.format(time=timestamp, message=message)
+        line = self.FORMAT_EVENT.format(timestamp=timestamp, message=message)
 
-        if not self.log_file.closed:
+        if self.log_file.closed:
+            logger.warn("ASCWriter: ignoring write call to closed file")
+        else:
             self.log_file.write(line)
 
     def on_message_received(self, msg):
@@ -145,7 +179,7 @@ class ASCWriter(Listener):
             return
 
         if msg.is_remote_frame:
-            dtype = "r"
+            dtype = 'r'
             data = []
         else:
             dtype = "d {}".format(msg.dlc)
@@ -153,15 +187,13 @@ class ASCWriter(Listener):
 
         arb_id = "{:X}".format(msg.arbitration_id)
         if msg.is_extended_id:
-            arb_id += "x"
+            arb_id += 'x'
 
         channel = msg.channel if isinstance(msg.channel, int) else self.channel
 
-        line = self.LOG_STRING.format(time=msg.timestamp,
-                                      channel=channel,
-                                      id=arb_id,
-                                      dtype=dtype,
-                                      data=" ".join(data))
+        serialized = self.FORMAT_MESSAGE.format(channel=channel,
+                                                id=arb_id,
+                                                dtype=dtype,
+                                                data=' '.join(data))
 
-        if not self.log_file.closed:
-            self.log_file.write(line)
+        self.log_event(serialized, msg.timestamp)
