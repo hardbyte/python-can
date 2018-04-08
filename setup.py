@@ -29,7 +29,7 @@ setup(
     # Code
     version=version,
     packages=find_packages(),
-    
+
     # Author
     author="Brian Thorne",
     author_email="brian@thorne.link",
@@ -44,6 +44,7 @@ setup(
     },
 
     # Installation
+    python_requires="2.7,>=3.4",
     install_requires=[
         #'Deprecated >= 1.1.0',
     ],
