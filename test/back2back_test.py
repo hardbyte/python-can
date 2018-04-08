@@ -137,6 +137,9 @@ class Back2BackTestCase(unittest.TestCase):
 
 @unittest.skipUnless(TEST_INTERFACE_SOCKETCAN, "skip testing of socketcan")
 class BasicTestSocketCan(unittest.TestCase):
+    """
+    TODO Test more thoroughly. See #273.
+    """
 
     def setUp(self):
         socketcan_version = can.util.choose_socketcan_implementation()
