@@ -171,13 +171,22 @@ def load_config(path=None, config=None):
 def choose_socketcan_implementation():
     """Set the best version of the SocketCAN module for this system.
 
-    :param config: The `can.rc` configuration dictionary
     :rtype: str
     :return:
         either 'socketcan_ctypes' or 'socketcan_native',
         depending on the current platform and environment
     :raises Exception: If the system doesn't support SocketCAN
     """
+
+    # to support possible future versions of current platforms as well as potential
+    # other ones, we take the approach of feature checking instead of version checking
+    try:
+        from socket import CAN_RAW, CAN_BCM, CAN_RAW_FD_FRAMES
+    except ImportError:
+        return 'socketcan_ctypes'
+    else:
+        return 'socketcan_native'
+
     # Check OS: SocketCAN is available only under Linux
     if not sys.platform.startswith('linux'):
         msg = 'SocketCAN not available under {}'.format(
@@ -196,6 +205,8 @@ def choose_socketcan_implementation():
             # but support for CAN FD frames (with socket.CAN_RAW_FD_FRAMES)
             # was just added to Python in version 3.5, so we want to use
             # socketcan native only on Python >= 3.5 (see #274)
+            # furthermore, CAN is not supported by PyPy 2 or 3 (as of April 2018)
+            # thus we want to use socketcan_ctypes there as well
             return 'socketcan_native' if sys.version_info >= (3, 5) else 'socketcan_ctypes'
         else:
             msg = 'SocketCAN not available under Linux {}'.format(rel_string)
