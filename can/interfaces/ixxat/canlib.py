@@ -44,6 +44,11 @@ if sys.platform == "win32":
         _canlib = CLibrary("vcinpl")
     except Exception as e:
         log.warning("Cannot load IXXAT vcinpl library: %s", e)
+elif sys.platform == "cygwin":
+    try:
+        _canlib = CLibrary("vcinpl.dll")
+    except Exception as e:
+        log.warning("Cannot load IXXAT vcinpl library: %s", e)
 else:
     # Will not work on other systems, but have it importable anyway for
     # tests/sphinx

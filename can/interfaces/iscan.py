@@ -152,11 +152,11 @@ class IscanError(CanError):
 
     def __init__(self, function, error_code, arguments):
         super(IscanError, self).__init__()
-        # Status code
+        # :Status code
         self.error_code = error_code
-        # Function that failed
+        # :Function that failed
         self.function = function
-        # Arguments passed to function
+        # :Arguments passed to function
         self.arguments = arguments
 
     def __str__(self):
