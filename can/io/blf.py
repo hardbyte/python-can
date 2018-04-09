@@ -54,9 +54,6 @@ CAN_MSG_STRUCT = struct.Struct("<HBBL8s")
 # valid data bytes, data
 CAN_FD_MSG_STRUCT = struct.Struct("<HBBLLBBB5x64s")
 
-# channel, length
-CAN_ERROR_STRUCT = struct.Struct("<HH4x")
-
 # channel, length, flags, ecc, position, dlc, frame length, id, flags ext, data
 CAN_ERROR_EXT_STRUCT = struct.Struct("<HHLBBBxLLH2x8s")
 
@@ -193,11 +190,6 @@ class BLFReader(object):
                                       error_state_indicator=bool(fd_flags & ESI),
                                       dlc=length,
                                       data=can_data[:length],
-                                      channel=channel - 1)
-                        yield msg
-                    elif obj_type == CAN_ERROR:
-                        channel, _ = CAN_ERROR_STRUCT.unpack_from(data, pos)
-                        msg = Message(timestamp=timestamp, is_error_frame=True,
                                       channel=channel - 1)
                         yield msg
                     elif obj_type == CAN_ERROR_EXT:

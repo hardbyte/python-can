@@ -23,6 +23,7 @@ from can.interfaces import VALID_INTERFACES
 
 log = logging.getLogger('can.util')
 
+# List of valid data lengths for a CAN FD message
 CAN_FD_DLC = [
     0, 1, 2, 3, 4, 5, 6, 7, 8,
     12, 16, 20, 24, 32, 48, 64
