@@ -23,6 +23,12 @@ from can.interfaces import VALID_INTERFACES
 
 log = logging.getLogger('can.util')
 
+# List of valid data lengths for a CAN FD message
+CAN_FD_DLC = [
+    0, 1, 2, 3, 4, 5, 6, 7, 8,
+    12, 16, 20, 24, 32, 48, 64
+]
+
 REQUIRED_KEYS = [
     'interface',
     'channel',
@@ -207,6 +213,33 @@ def set_logging_level(level_name=None):
     except AttributeError:
         can_logger.setLevel(logging.DEBUG)
     log.debug("Logging set to {}".format(level_name))
+
+
+def len2dlc(length):
+    """Calculate the DLC from data length.
+
+    :param int length: Length in number of bytes (0-64)
+
+    :returns: DLC (0-15)
+    :rtype: int
+    """
+    if length <= 8:
+        return length
+    for dlc, nof_bytes in enumerate(CAN_FD_DLC):
+        if nof_bytes >= length:
+            return dlc
+    return 15
+
+
+def dlc2len(dlc):
+    """Calculate the data length from DLC.
+
+    :param int dlc: DLC (0-15)
+
+    :returns: Data length in number of bytes (0-64)
+    :rtype: int
+    """
+    return CAN_FD_DLC[dlc] if dlc <= 15 else 64
 
 
 if __name__ == "__main__":

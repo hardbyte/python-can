@@ -221,12 +221,17 @@ class TestBlfFileFormat(unittest.TestCase):
     def test_reader(self):
         logfile = os.path.join(os.path.dirname(__file__), "data", "logfile.blf")
         messages = list(can.BLFReader(logfile))
-        self.assertEqual(len(messages), 1)
+        self.assertEqual(len(messages), 2)
         self.assertEqual(messages[0],
                          can.Message(
                              extended_id=False,
                              arbitration_id=0x64,
                              data=[0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8]))
+        self.assertEqual(messages[1],
+                         can.Message(
+                             is_error_frame=True,
+                             extended_id=True,
+                             arbitration_id=0x1FFFFFFF))
 
 
 if __name__ == '__main__':

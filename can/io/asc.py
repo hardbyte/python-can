@@ -56,12 +56,18 @@ class ASCReader(object):
                 continue
 
             timestamp = float(timestamp)
+            try:
+                # See ASCWriter
+                channel = int(channel) - 1
+            except ValueError:
+                pass
 
             if dummy.strip()[0:10] == 'ErrorFrame':
-                msg = Message(timestamp=timestamp, is_error_frame=True)
+                msg = Message(timestamp=timestamp, is_error_frame=True,
+                              channel=channel)
                 yield msg
 
-            elif not channel.isdigit() or dummy.strip()[0:10] == 'Statistic:':
+            elif not isinstance(channel, int) or dummy.strip()[0:10] == 'Statistic:':
                 pass
 
             elif dummy[-1:].lower() == 'r':
@@ -70,7 +76,8 @@ class ASCReader(object):
                 msg = Message(timestamp=timestamp,
                               arbitration_id=can_id_num & CAN_ID_MASK,
                               extended_id=is_extended_id,
-                              is_remote_frame=True)
+                              is_remote_frame=True,
+                              channel=channel)
                 yield msg
 
             else:
@@ -97,7 +104,8 @@ class ASCReader(object):
                             extended_id=is_extended_id,
                             is_remote_frame=False,
                             dlc=dlc,
-                            data=frame)
+                            data=frame,
+                            channel=channel)
                 yield msg
 
 
@@ -189,7 +197,8 @@ class ASCWriter(Listener):
         if msg.is_extended_id:
             arb_id += 'x'
 
-        channel = msg.channel if isinstance(msg.channel, int) else self.channel
+        # Many interfaces start channel numbering at 0 which is invalid
+        channel = msg.channel + 1 if isinstance(msg.channel, int) else self.channel
 
         serialized = self.FORMAT_MESSAGE.format(channel=channel,
                                                 id=arb_id,
