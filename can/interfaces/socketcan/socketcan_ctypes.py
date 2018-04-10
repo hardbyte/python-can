@@ -18,7 +18,7 @@ from can.broadcastmanager import CyclicSendTaskABC, RestartableCyclicTaskABC, Mo
 from can.bus import BusABC
 from can.message import Message
 from can.interfaces.socketcan.socketcan_constants import *  # CAN_RAW
-from can.interfaces.socketcan.socketcan_common import * # parseCanFilters
+from can.interfaces.socketcan.socketcan_common import *
 
 # Set up logging
 log = logging.getLogger('can.socketcan.ctypes')
@@ -26,7 +26,7 @@ log.info("Loading socketcan ctypes backend")
 
 
 if not sys.platform.startswith("win32"):
-    libc = ctypes.cdll.LoadLibrary(find_library("c"))
+    libc = ctypes.CDLL(find_library("c"), use_errno=True)
     log.info("Loading libc with ctypes")
 else:
     log.warning("libc is unavailable")
@@ -43,8 +43,6 @@ class SocketcanCtypes_Bus(BusABC):
     An implementation of the :class:`can.bus.BusABC` for SocketCAN using :mod:`ctypes`.
     """
 
-    channel_info = "ctypes socketcan channel"
-
     def __init__(self,
                  channel='vcan0',
                  receive_own_messages=False,
@@ -57,6 +55,7 @@ class SocketcanCtypes_Bus(BusABC):
 
         self.socket = createSocket()
         self.channel = channel
+        self.channel_info = "ctypes socketcan channel '%s'" % channel
 
         log.debug("Result of createSocket was %d", self.socket)
 
@@ -138,12 +137,22 @@ class SocketcanCtypes_Bus(BusABC):
             if not ready_send_sockets:
                 raise can.CanError("Timeout while sending")
 
-        bytes_sent = libc.write(self.socket, ctypes.byref(frame), ctypes.sizeof(frame))
+        # all sizes & lengths are in bytes
+        total_sent = 0
+        remaining = ctypes.sizeof(frame)
+        while remaining > 0:
+            # this might not send the entire frame
+            # see: http://man7.org/linux/man-pages/man2/write.2.html
+            bytes_sent = libc.write(self.socket, ctypes.byref(frame, total_sent), remaining)
 
-        if bytes_sent == -1:
-            raise can.CanError("can.socketcan.ctypes failed to transmit")
-        elif bytes_sent == 0:
-            raise can.CanError("Transmit buffer overflow")
+            if bytes_sent == 0:
+                raise can.CanError("Transmit buffer overflow")
+            elif bytes_sent == -1:
+                error_message = error_code_to_str(ctypes.get_errno())
+                raise can.CanError("can.socketcan_ctypes failed to transmit: {}".format(error_message))
+
+            total_sent += bytes_sent
+            remaining -= bytes_sent
 
         log.debug("Frame transmitted with %s bytes", bytes_sent)
 

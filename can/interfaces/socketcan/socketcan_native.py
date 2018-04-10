@@ -35,7 +35,7 @@ except:
 import can
 
 from can.interfaces.socketcan.socketcan_constants import *  # CAN_RAW, CAN_*_FLAG
-from can.interfaces.socketcan.socketcan_common import * # parseCanFilters
+from can.interfaces.socketcan.socketcan_common import *
 from can import Message, BusABC
 
 from can.broadcastmanager import ModifiableCyclicTaskABC, RestartableCyclicTaskABC, LimitedDurationCyclicSendTaskABC
@@ -465,6 +465,7 @@ class SocketcanNative_Bus(BusABC):
         log.debug("We've been asked to write a message to the bus")
         logger_tx = log.getChild("tx")
         logger_tx.debug("sending: %s", msg)
+
         if timeout:
             # Wait for write availability
             _, ready_send_sockets, _ = select.select([], [self.socket], [], timeout)
@@ -472,12 +473,10 @@ class SocketcanNative_Bus(BusABC):
                 raise can.CanError("Timeout while sending")
 
         try:
-            bytes_sent = self.socket.send(build_can_frame(msg))
+            self.socket.sendall(build_can_frame(msg))
         except OSError as exc:
-            raise can.CanError("Transmit failed (%s)" % exc)
-
-        if bytes_sent == 0:
-            raise can.CanError("Transmit buffer overflow")
+            error_message = error_code_to_str(exc.errno)
+            raise can.CanError("can.socketcan_native failed to transmit: {}".format(error_message))
 
     def send_periodic(self, msg, period, duration=None):
         task = CyclicSendTask(self.channel, msg, period)
