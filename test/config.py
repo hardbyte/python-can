@@ -34,6 +34,7 @@ _sys = platform.system().lower()
 IS_WINDOWS = "windows" in _sys or ("win" in _sys and "darwin" not in _sys)
 IS_LINUX = "linux" in _sys
 IS_OSX = "darwin" in _sys
+IS_UNIX = IS_LINUX or IS_OSX
 
 if (IS_WINDOWS and IS_LINUX) or (IS_LINUX and IS_OSX) or (IS_WINDOWS and IS_OSX):
     raise EnvironmentError(
