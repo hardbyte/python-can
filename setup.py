@@ -37,8 +37,6 @@ setup(
     # Code
     version=version,
     packages=find_packages(),
-    # see https://www.python.org/dev/peps/pep-0345/#version-specifiers
-    python_requires='>=2.7,!=3.0,!=3.1,!=3.2',
 
     # Author
     author="Brian Thorne",
@@ -54,6 +52,8 @@ setup(
     },
 
     # Installation
+    # see https://www.python.org/dev/peps/pep-0345/#version-specifiers
+    python_requires=">=2.7,!=3.0,!=3.1,!=3.2,!=3.3",
     install_requires=[
         'setuptools',
         #'Deprecated >= 1.1.0',

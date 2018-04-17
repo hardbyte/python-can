@@ -3,7 +3,7 @@ language: python
 python:
   # CPython:
   - "2.7"
-  - "3.3"
+  - "3.3" # but allowed to fail
   - "3.4"
   - "3.5"
   - "3.6"
@@ -37,10 +37,14 @@ matrix:
     - os: osx
       python: "nightly"
 
-  # allow all nighly builds to fail, since these python versions might be unstable
-  # we do not allow dev builds to fail, since these builds are stable enough
   allow_failures:
+    # allow all nighly builds to fail, since these python versions might be unstable
     - python: "nightly"
+
+    # we do not allow dev builds to fail, since these builds are considered stable enough
+
+    # Python 3.3 tests are allowed to fail since Python 3.3 is not offically supported any more
+    - python: "3.3"
 
 install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo bash test/open_vcan.sh ; fi
