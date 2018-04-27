@@ -6,9 +6,9 @@ Defines common socketcan functions.
 """
 
 import logging
-import struct
-
 import os
+import errno
+import struct
 import sys
 if sys.version_info.major < 3: # and os.name == 'posix'
     import subprocess32 as subprocess
@@ -64,3 +64,25 @@ def find_available_interfaces():
         # return the first entry of each line
         for line in output.splitlines():
             yield line.split()[0]
+
+def error_code_to_str(code):
+    """
+    Converts a given error code (errno) to a useful and human readable string.
+
+    :param int error_code: a possibly invalid/unknown error code
+    :rtype: str
+    :returns: a string explaining and containing the given error code, or a string
+              explaining that the errorcode is unknown if that is the case
+    """
+
+    try:
+        name = errno.errorcode[code]
+    except KeyError:
+        name = "UNKNOWN"
+
+    try:
+        description = os.strerror(code)
+    except ValueError:
+        description = "no description available"
+
+    return "{} (errno {}): {}".format(name, code, description)

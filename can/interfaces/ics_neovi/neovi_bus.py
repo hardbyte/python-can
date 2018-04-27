@@ -58,6 +58,23 @@ class ICSApiError(CanError):
         return self.severity == self.ICS_SPY_ERR_CRITICAL
 
 
+BAUDRATE_SETTING = {
+    20000: 0,
+    33333: 1,
+    50000: 2,
+    62500: 3,
+    83333: 4,
+    100000: 5,
+    125000: 6,
+    250000: 7,
+    500000: 8,
+    800000: 9,
+    1000000: 10,
+}
+VALID_BITRATES = list(BAUDRATE_SETTING.keys())
+VALID_BITRATES.sort()
+
+
 class NeoViBus(BusABC):
     """
     The CAN Bus implemented for the python_ics interface
@@ -71,12 +88,18 @@ class NeoViBus(BusABC):
             The Channel id to create this bus with.
         :param list can_filters:
             A list of dictionaries each containing a "can_id" and a "can_mask".
+
+            >>> [{"can_id": 0x11, "can_mask": 0x21}]
+
         :param use_system_timestamp:
             Use system timestamp for can messages instead of the hardware time
             stamp
-
-                >>> [{"can_id": 0x11, "can_mask": 0x21}]
-
+        :param str serial:
+            Serial to connect (optional, will use the first found if not
+            supplied)
+        :param int bitrate:
+            Channel bitrate in bit/s. (optional, will enable the auto bitrate
+            feature if not supplied)
         """
         super(NeoViBus, self).__init__(channel, can_filters, **config)
         if ics is None:
@@ -97,7 +120,32 @@ class NeoViBus(BusABC):
 
         type_filter = config.get('type_filter')
         serial = config.get('serial')
-        self.dev = self._open_device(type_filter, serial)
+        self.dev = self._find_device(type_filter, serial)
+        ics.open_device(self.dev)
+
+        bitrate = config.get('bitrate')
+
+        # Default auto baud setting
+        settings = {
+            'SetBaudrate': ics.AUTO,
+            'Baudrate': BAUDRATE_SETTING[500000],   # Default baudrate setting
+            'auto_baud': 1
+        }
+
+        if bitrate is not None:
+            if int(bitrate) not in VALID_BITRATES:
+                raise ValueError(
+                    'Invalid bitrate. Valid bitrates are {}'.format(
+                        VALID_BITRATES
+                    )
+                )
+            baud_rate_setting = BAUDRATE_SETTING[int(bitrate)]
+            settings = {
+                'SetBaudrate': ics.AUTO,
+                'Baudrate': baud_rate_setting,
+                'auto_baud': 0,
+            }
+        self._set_can_settings(channel, settings)
 
         self.channel_info = '%s %s CH:%s' % (
             self.dev.Name,
@@ -105,8 +153,6 @@ class NeoViBus(BusABC):
             channel
         )
         logger.info("Using device: {}".format(self.channel_info))
-
-        ics.load_default_settings(self.dev)
 
         self.sw_filters = None
         self.set_filters(can_filters)
@@ -128,13 +174,9 @@ class NeoViBus(BusABC):
         :return: ics device serial string
         :rtype: str
         """
-        def to_base36(n, alphabet="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"):
-            return (to_base36(n // 36) + alphabet[n % 36]).lstrip("0") \
-                if n > 0 else "0"
-
         a0000 = 604661760
         if device.SerialNumber >= a0000:
-            return to_base36(device.SerialNumber)
+            return ics.base36enc(device.SerialNumber)
         return str(device.SerialNumber)
 
     def shutdown(self):
@@ -142,7 +184,7 @@ class NeoViBus(BusABC):
         self.opened = False
         ics.close_device(self.dev)
 
-    def _open_device(self, type_filter=None, serial=None):
+    def _find_device(self, type_filter=None, serial=None):
         if type_filter is not None:
             devices = ics.find_devices(type_filter)
         else:
@@ -161,8 +203,29 @@ class NeoViBus(BusABC):
                 msg.append('with serial {}'.format(serial))
             msg.append('found.')
             raise Exception(' '.join(msg))
-        ics.open_device(dev)
         return dev
+
+    def _get_can_settings(self, channel):
+        """Return the CanSettings for channel
+
+        :param channel: can channel number
+        :return: ics.CanSettings
+        """
+        device_settings = ics.get_device_settings(self.dev)
+        return getattr(device_settings, 'can{}'.format(channel))
+
+    def _set_can_settings(self, channel, setting):
+        """Applies can settings to channel
+
+        :param channel: can channel number
+        :param setting: settings dictionary (only the settings to update)
+        :return: None
+        """
+        device_settings = ics.get_device_settings(self.dev)
+        channel_settings = getattr(device_settings, 'can{}'.format(channel))
+        for setting, value in setting.items():
+            setattr(channel_settings, setting, value)
+        ics.set_device_settings(self.dev, device_settings)
 
     def _process_msg_queue(self, timeout=None):
         try:

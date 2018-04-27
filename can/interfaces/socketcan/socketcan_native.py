@@ -3,39 +3,38 @@
 
 """
 This implementation is for versions of Python that have native
-can socket and can bcm socket support: >3.4
+can socket and can bcm socket support: >=3.5
 """
 
 import logging
-import select
 import threading
-import socket
-import struct
-
-import errno
 
 import os
+import select
+import socket
+import struct
+import errno
 
 log = logging.getLogger('can.socketcan.native')
 log_tx = log.getChild("tx")
 log_rx = log.getChild("rx")
 
-log.info("Loading socketcan native backend")
+log.debug("Loading socketcan native backend")
 
 try:
     import fcntl
 except ImportError:
-    log.warning("fcntl not available on this platform")
+    log.error("fcntl not available on this platform")
 
 try:
     socket.CAN_RAW
 except:
-    log.debug("CAN_* properties not found in socket module. These are required to use native socketcan")
+    log.error("CAN_* properties not found in socket module. These are required to use native socketcan")
 
 import can
 
 from can.interfaces.socketcan.socketcan_constants import *  # CAN_RAW, CAN_*_FLAG
-from can.interfaces.socketcan.socketcan_common import * # parseCanFilters
+from can.interfaces.socketcan.socketcan_common import *
 from can import Message, BusABC
 
 from can.broadcastmanager import ModifiableCyclicTaskABC, RestartableCyclicTaskABC, LimitedDurationCyclicSendTaskABC
@@ -465,6 +464,7 @@ class SocketcanNative_Bus(BusABC):
         log.debug("We've been asked to write a message to the bus")
         logger_tx = log.getChild("tx")
         logger_tx.debug("sending: %s", msg)
+
         if timeout:
             # Wait for write availability
             _, ready_send_sockets, _ = select.select([], [self.socket], [], timeout)
@@ -472,12 +472,10 @@ class SocketcanNative_Bus(BusABC):
                 raise can.CanError("Timeout while sending")
 
         try:
-            bytes_sent = self.socket.send(build_can_frame(msg))
+            self.socket.sendall(build_can_frame(msg))
         except OSError as exc:
-            raise can.CanError("Transmit failed (%s)" % exc)
-
-        if bytes_sent == 0:
-            raise can.CanError("Transmit buffer overflow")
+            error_message = error_code_to_str(exc.errno)
+            raise can.CanError("can.socketcan_native failed to transmit: {}".format(error_message))
 
     def send_periodic(self, msg, period, duration=None):
         task = CyclicSendTask(self.channel, msg, period)
