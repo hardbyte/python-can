@@ -56,8 +56,8 @@ def _get_class_for_interface(interface):
     :raises:
         NotImplementedError if the interface is not known
     :raises:
-        ImportError if there was a problem while importing the
-        interface or the bus class within that
+        ImportError     if there was a problem while importing the
+                        interface or the bus class within that
     """
 
     # Find the correct backend
@@ -137,7 +137,7 @@ def detect_available_configs(search_only_in=None):
         - the name of an interface to be searched in as a string,
         - an iterable of interface names to search in, or
         - `None` to search in all known interfaces.
-    :rtype: Iterator[dict]
+    :rtype: list of `dict`s
     :return: an iterable of dicts, each suitable for usage in
              :class:`~can.interface.Bus`'s constructor.
     """
@@ -154,7 +154,11 @@ def detect_available_configs(search_only_in=None):
     result = []
     for interface in search_only_in:
 
-        bus_class = _get_class_for_interface(interface)
+        try:
+            bus_class = _get_class_for_interface(interface)
+        except ImportError:
+            logger.debug('interface "%s" can not be loaded for detection of available configurations', interface)
+            continue
 
         # get available channels
         try:
