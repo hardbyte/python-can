@@ -37,5 +37,13 @@ class TestDetectAvailableConfigs(unittest.TestCase):
         for config in returned:
             self.assertEqual(config['interface'], 'virtual')
 
+    def test_content_socketcan(self):
+        returned = detect_available_configs(search_only_in='socketcan')
+        for config in returned:
+            self.assertRegexpMatches(config['interface'], r"socketcan(_(ctypes|native))?")
+
+    # see TestSocketCanHelpers.test_find_available_interfaces()
+
+
 if __name__ == '__main__':
     unittest.main()
