@@ -39,13 +39,13 @@ setup(
 
     # Package data
     package_data={
-        "": ["CONTRIBUTORS.txt", "LICENSE.txt"],
+        "": ["CONTRIBUTORS.txt", "LICENSE.txt", "CHANGELOG.txt"],
         "doc": ["*.*"]
     },
 
-    # Installation
+    # Installation; see https://www.python.org/dev/peps/pep-0440/#version-specifiers
     install_requires=[
-        #'Deprecated >= 1.1.0',
+        'subprocess32 ~= 3.2.7',
     ],
     extras_require={
         'serial': ['pyserial >= 3.0'],
@@ -55,8 +55,8 @@ setup(
     # Testing
     test_suite="nose.collector",
     tests_require=[
-        'mock',
-        'nose',
+        'mock >= 2.0.0',
+        'nose >= 1.3.7',
         'pyserial >= 3.0'
     ],
 )

@@ -5,10 +5,19 @@
 Defines common socketcan functions.
 """
 
+import logging
 import struct
+
+import os
+import sys
+if sys.version_info.major < 3: # and os.name == 'posix'
+    import subprocess32 as subprocess
+else:
+    import subprocess
 
 from can.interfaces.socketcan.socketcan_constants import CAN_EFF_FLAG
 
+log = logging.getLogger('can.socketcan_common')
 
 def pack_filters(can_filters=None):
     if can_filters is None:
@@ -32,3 +41,26 @@ def pack_filters(can_filters=None):
         filter_data.append(can_mask)
 
     return struct.pack(can_filter_fmt, *filter_data)
+
+def find_available_interfaces():
+    """Returns the names of all open can/vcan interfaces using
+    the ``ip link list`` command. If the lookup fails, an error
+    is logged to the console and an empty list is returned.
+
+    :rtype: Iterator[:class:`str`]
+    """
+
+    try:
+        # it might be good to add "type vcan", but that might (?) exclude physical can devices
+        command = ["ip", "-br", "-0", "link", "list", "up"]
+        output = subprocess.check_output(command, universal_newlines=True)
+
+    except subprocess.CalledProcessError, e:
+        log.error("failed to fetch opened can devices: %s", e)
+        return []
+
+    else:
+        # output contains some lines like "vcan42           UNKNOWN        <NOARP,UP,LOWER_UP>"
+        # return the first entry of each line
+        for line in output.splitlines():
+            yield line.split()[0]
