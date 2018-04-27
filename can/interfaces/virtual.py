@@ -46,7 +46,7 @@ class VirtualBus(BusABC):
         except queue.Empty:
             return None
 
-        logger.log(9, 'Received message:\n%s', msg)
+        #logger.log(9, 'Received message:\n%s', msg)
         return msg
 
     def send(self, msg, timeout=None):
@@ -55,7 +55,7 @@ class VirtualBus(BusABC):
         for bus_queue in self.channel:
             if bus_queue is not self.queue or self.receive_own_messages:
                 bus_queue.put(msg)
-        logger.log(9, 'Transmitted message:\n%s', msg)
+        #logger.log(9, 'Transmitted message:\n%s', msg)
 
     def shutdown(self):
         self.channel.remove(self.queue)

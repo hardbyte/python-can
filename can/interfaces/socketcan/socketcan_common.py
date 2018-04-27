@@ -5,6 +5,8 @@
 Defines common socketcan functions.
 """
 
+import os
+import errno
 import struct
 
 from can.interfaces.socketcan.socketcan_constants import CAN_EFF_FLAG
@@ -32,3 +34,26 @@ def pack_filters(can_filters=None):
         filter_data.append(can_mask)
 
     return struct.pack(can_filter_fmt, *filter_data)
+
+
+def error_code_to_str(code):
+    """
+    Converts a given error code (errno) to a useful and human readable string.
+
+    :param int error_code: a possibly invalid/unknown error code
+    :rtype: str
+    :returns: a string explaining and containing the given error code, or a string
+              explaining that the errorcode is unknown if that is the case
+    """
+
+    try:
+        name = errno.errorcode[code]
+    except KeyError:
+        name = "UNKNOWN"
+
+    try:
+        description = os.strerror(code)
+    except ValueError:
+        description = "no description available"
+
+    return "{} (errno {}): {}".format(name, code, description)

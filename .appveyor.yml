@@ -6,21 +6,26 @@ environment:
     # http://www.appveyor.com/docs/installed-software#python
 
     - PYTHON: "C:\\Python27"
-    - PYTHON: "C:\\Python33"
     - PYTHON: "C:\\Python34"
     - PYTHON: "C:\\Python35"
     - PYTHON: "C:\\Python36"
     - PYTHON: "C:\\Python27-x64"
-    - PYTHON: "C:\\Python33-x64"
     - PYTHON: "C:\\Python34-x64"
     - PYTHON: "C:\\Python35-x64"
     - PYTHON: "C:\\Python36-x64"
 
+    # officially unsupported
+    - PYTHON: "C:\\Python33"
+    - PYTHON: "C:\\Python33-x64"
+
+matrix:
+  allow_failures:
+    - PYTHON: "C:\\Python33"
+    - PYTHON: "C:\\Python33-x64"
+
 install:
-  # We need our usual libraries
-  - "%PYTHON%\\python.exe -m pip install -r requirements.txt"
   # We need to install the python-can library itself
-  - "%PYTHON%\\python.exe -m pip install ."
+  - "%PYTHON%\\python.exe -m pip install .[test]"
 
 build: off
 
@@ -28,4 +33,4 @@ test_script:
   # Note that you must use the environment variable %PYTHON% to refer to
   # the interpreter you're using - Appveyor does not do anything special
   # to put the Python version you want to use on PATH.
-  - "%PYTHON%\\python.exe setup.py test"
+  - "%PYTHON%\\python.exe setup.py test -v"
