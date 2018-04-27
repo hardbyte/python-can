@@ -29,21 +29,26 @@ class TestDetectAvailableConfigs(unittest.TestCase):
         self.assertGreaterEqual (len(detect_available_configs(search_only_in=None)          ), 1)
 
     def test_general_values(self):
-        returned = detect_available_configs()
-        for config in returned:
+        configs = detect_available_configs()
+        for config in configs:
             self.assertIn('interface', config)
             self.assertIn('channel', config)
             self.assertIsInstance(config['interface'], basestring)
 
     def test_content_virtual(self):
-        returned = detect_available_configs(search_only_in='virtual')
-        for config in returned:
+        configs = detect_available_configs(search_only_in='virtual')
+        for config in configs:
             self.assertEqual(config['interface'], 'virtual')
 
     def test_content_socketcan(self):
-        returned = detect_available_configs(search_only_in='socketcan')
-        for config in returned:
-            self.assertRegexpMatches(config['interface'], r"socketcan(_(ctypes|native))?")
+        configs = detect_available_configs(search_only_in='socketcan')
+        for config in configs:
+            self.assertIn(config['interface'], ('socketcan_native', 'socketcan_ctypes'))
+
+    def test_socketcan_on_ci_server(self):
+        configs = detect_available_configs(search_only_in='socketcan')
+        self.assertGreaterEqual(len(configs), 1)
+        self.assertIn('vcan0', [config['channel'] for config in configs])
 
     # see TestSocketCanHelpers.test_find_available_interfaces()
 

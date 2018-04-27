@@ -167,7 +167,8 @@ class SocketcanCtypes_Bus(BusABC):
 
     @staticmethod
     def _detect_available_configs():
-        return find_available_interfaces()
+        return [{'interface': 'socketcan_ctypes', 'channel': channel}
+                for channel in find_available_interfaces()]
 
 
 class SOCKADDR(ctypes.Structure):

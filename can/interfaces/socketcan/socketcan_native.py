@@ -495,7 +495,8 @@ class SocketcanNative_Bus(BusABC):
 
     @staticmethod
     def _detect_available_configs():
-        return find_available_interfaces()
+        return [{'interface': 'socketcan_native', 'channel': channel}
+                for channel in find_available_interfaces()]
 
 
 if __name__ == "__main__":
