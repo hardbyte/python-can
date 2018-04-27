@@ -34,7 +34,8 @@ except:
 import can
 
 from can.interfaces.socketcan.socketcan_constants import *  # CAN_RAW, CAN_*_FLAG
-from can.interfaces.socketcan.socketcan_common import *
+from can.interfaces.socketcan.socketcan_common import \
+    pack_filters, find_available_interfaces, error_code_to_str
 from can import Message, BusABC
 
 from can.broadcastmanager import ModifiableCyclicTaskABC, RestartableCyclicTaskABC, LimitedDurationCyclicSendTaskABC
@@ -491,6 +492,10 @@ class SocketcanNative_Bus(BusABC):
         self.socket.setsockopt(socket.SOL_CAN_RAW,
                                socket.CAN_RAW_FILTER,
                                filter_struct)
+
+    @staticmethod
+    def _detect_available_configs():
+        return find_available_interfaces()
 
 
 if __name__ == "__main__":
