@@ -62,7 +62,10 @@ def _get_class_for_interface(interface):
 
     # filter out the socketcan special case
     if interface == 'socketcan':
-        interface = can.util.choose_socketcan_implementation()
+        try:
+            interface = can.util.choose_socketcan_implementation()
+        except Exception as e:
+            raise ImportError("Cannot choose socketcan implementation: {}".format(e))
 
     # Find the correct backend
     try:
@@ -135,7 +138,9 @@ def detect_available_configs(search_only_in=None):
     This might be quite time consuming. 
 
     Automated configuration detection may not be implemented by
-    every interface on every platform.
+    every interface on every platform. This method will not raise
+    an error in that case, but with rather return an empty list
+    for that interface.
 
     :param search_only_in: either
         - the name of an interface to be searched in as a string,
@@ -166,7 +171,7 @@ def detect_available_configs(search_only_in=None):
 
         # get available channels
         try:
-            available = bus_class._detect_available_configs()
+            available = list(bus_class._detect_available_configs())
         except NotImplementedError:
             logger.debug('interface "%s" does not support detection of available configurations', interface)
         else:

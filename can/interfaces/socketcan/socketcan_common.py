@@ -47,7 +47,7 @@ def find_available_interfaces():
     the ``ip link list`` command. If the lookup fails, an error
     is logged to the console and an empty list is returned.
 
-    :rtype: Iterator[:class:`str`]
+    :rtype: an iterable of :class:`str`
     """
 
     try:
@@ -62,8 +62,7 @@ def find_available_interfaces():
     else:
         # output contains some lines like "vcan42           UNKNOWN        <NOARP,UP,LOWER_UP>"
         # return the first entry of each line
-        for line in output.splitlines():
-            yield line.split()[0]
+        return [line.split()[0] for line in output.splitlines()]
 
 def error_code_to_str(code):
     """

@@ -6,13 +6,16 @@ This module tests :meth:`can.BusABC._detect_available_configs` /
 :meth:`can.BusABC.detect_available_configs`.
 """
 
+from __future__ import absolute_import
+
 import sys
 import unittest
+if sys.version_info.major > 2:
+    basestring = str
 
 from can import detect_available_configs
 
-if sys.version_info.major > 2:
-    basestring = str
+from .config import IS_LINUX
 
 
 class TestDetectAvailableConfigs(unittest.TestCase):
