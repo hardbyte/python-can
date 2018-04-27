@@ -60,6 +60,10 @@ def _get_class_for_interface(interface):
                         interface or the bus class within that
     """
 
+    # filter out the socketcan special case
+    if interface == 'socketcan':
+        interface = can.util.choose_socketcan_implementation()
+
     # Find the correct backend
     try:
         module_name, class_name = BACKENDS[interface]
