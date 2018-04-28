@@ -55,7 +55,7 @@ def find_available_interfaces():
         command = ["ip", "-br", "-0", "link", "list", "up"]
         output = subprocess.check_output(command, universal_newlines=True)
 
-    except subprocess.CalledProcessError as e:
+    except (subprocess.SubprocessError, FileNotFoundError) as e:
         log.error("failed to fetch opened can devices: %s", e)
         return []
 

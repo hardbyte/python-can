@@ -3,7 +3,9 @@
 
 """
 This implementation is for versions of Python that have native
-can socket and can bcm socket support: >=3.5
+can socket and can bcm socket support.
+
+See :meth:`can.util.choose_socketcan_implementation()`.
 """
 
 import logging
@@ -32,13 +34,12 @@ except:
     log.error("CAN_* properties not found in socket module. These are required to use native socketcan")
 
 import can
-
-from can.interfaces.socketcan.socketcan_constants import *  # CAN_RAW, CAN_*_FLAG
+from can import Message, BusABC
+from can.broadcastmanager import ModifiableCyclicTaskABC, \
+    RestartableCyclicTaskABC, LimitedDurationCyclicSendTaskABC
+from can.interfaces.socketcan.socketcan_constants import * # CAN_RAW, CAN_*_FLAG
 from can.interfaces.socketcan.socketcan_common import \
     pack_filters, find_available_interfaces, error_code_to_str
-from can import Message, BusABC
-
-from can.broadcastmanager import ModifiableCyclicTaskABC, RestartableCyclicTaskABC, LimitedDurationCyclicSendTaskABC
 
 # struct module defines a binary packing format:
 # https://docs.python.org/3/library/struct.html#struct-format-strings
