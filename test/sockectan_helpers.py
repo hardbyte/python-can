@@ -14,7 +14,7 @@ from can.interfaces.socketcan.socketcan_common import \
 
 from .config import *
 
-@unittest.skipUnless(IS_LINUX, "skip if not on UNIX")
+@unittest.skipUnless(IS_LINUX, "socketcan is only available on Linux")
 class TestSocketCanHelpers(unittest.TestCase):
 
     def test_error_code_to_str(self):

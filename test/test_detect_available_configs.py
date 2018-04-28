@@ -45,6 +45,7 @@ class TestDetectAvailableConfigs(unittest.TestCase):
         for config in configs:
             self.assertIn(config['interface'], ('socketcan_native', 'socketcan_ctypes'))
 
+    @unittest.skipUnless(IS_LINUX, "socketcan is only available on Linux")
     def test_socketcan_on_ci_server(self):
         configs = detect_available_configs(search_only_in='socketcan')
         self.assertGreaterEqual(len(configs), 1)
