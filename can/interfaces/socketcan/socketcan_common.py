@@ -10,7 +10,7 @@ import os
 import errno
 import struct
 import sys
-if sys.version_info.major < 3: # and os.name == 'posix'
+if sys.version_info[0] < 3 and os.name == 'posix':
     import subprocess32 as subprocess
 else:
     import subprocess
@@ -55,7 +55,7 @@ def find_available_interfaces():
         command = ["ip", "-br", "-0", "link", "list", "up"]
         output = subprocess.check_output(command, universal_newlines=True)
 
-    except (subprocess.SubprocessError, FileNotFoundError) as e:
+    except (subprocess.CalledProcessError, FileNotFoundError, Exception) as e:
         log.error("failed to fetch opened can devices: %s", e)
         return []
 
