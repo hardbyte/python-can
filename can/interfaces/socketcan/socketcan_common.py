@@ -14,6 +14,7 @@ if sys.version_info[0] < 3 and os.name == 'posix':
     import subprocess32 as subprocess
 else:
     import subprocess
+import re
 
 from can.interfaces.socketcan.socketcan_constants import CAN_EFF_FLAG
 
@@ -42,6 +43,9 @@ def pack_filters(can_filters=None):
 
     return struct.pack(can_filter_fmt, *filter_data)
 
+
+_PATTERN_CAN_INTERFACE = re.compile(r"v?can\d+")
+
 def find_available_interfaces():
     """Returns the names of all open can/vcan interfaces using
     the ``ip link list`` command. If the lookup fails, an error
@@ -52,17 +56,18 @@ def find_available_interfaces():
 
     try:
         # it might be good to add "type vcan", but that might (?) exclude physical can devices
-        command = ["ip", "-br", "-0", "link", "list", "up"]
+        command = ["ip", "-o", "link", "list", "up"]
         output = subprocess.check_output(command, universal_newlines=True)
 
-    except (subprocess.CalledProcessError, FileNotFoundError, Exception) as e:
+    except Exception as e: # subprocess.CalledProcessError was too specific
         log.error("failed to fetch opened can devices: %s", e)
         return []
 
     else:
-        # output contains some lines like "vcan42           UNKNOWN        <NOARP,UP,LOWER_UP>"
-        # return the first entry of each line
-        return [line.split()[0] for line in output.splitlines()]
+        # output contains some lines like "1: vcan42: <NOARP,UP,LOWER_UP> ..."
+        # extract the "vcan42" of each line
+        interface_names = [line.split(": ", 3)[0] for line in output.splitlines()]
+        return filter(_PATTERN_CAN_INTERFACE.match, interface_names)
 
 def error_code_to_str(code):
     """
