@@ -58,6 +58,7 @@ def find_available_interfaces():
         # it might be good to add "type vcan", but that might (?) exclude physical can devices
         command = ["ip", "-o", "link", "list", "up"]
         output = subprocess.check_output(command, universal_newlines=True)
+        log.debug('find_available_interfaces(): output="%s"', output)
 
     except Exception as e: # subprocess.CalledProcessError was too specific
         log.error("failed to fetch opened can devices: %s", e)
