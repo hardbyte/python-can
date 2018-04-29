@@ -67,8 +67,8 @@ def find_available_interfaces():
     else:
         # output contains some lines like "1: vcan42: <NOARP,UP,LOWER_UP> ..."
         # extract the "vcan42" of each line
-        interface_names = [line.split(": ", 3)[0] for line in output.splitlines()]
-        log.debug("interface names: %s", interface_names)
+        interface_names = [line.split(": ", 3)[1] for line in output.splitlines()]
+        log.debug("find_available_interfaces(): detected names: %s", interface_names)
         return filter(_PATTERN_CAN_INTERFACE.match, interface_names)
 
 def error_code_to_str(code):
