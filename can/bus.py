@@ -100,10 +100,10 @@ class BusABC(object):
             least *duration* seconds.
 
         """
-        if not hasattr(self, "_lock"):
+        if not hasattr(self, "_lock_send_periodic"):
             # Create send lock for this bus
-            self._lock = threading.Lock()
-        return ThreadBasedCyclicSendTask(self, self._lock, msg, period, duration)
+            self._lock_send_periodic = threading.Lock()
+        return ThreadBasedCyclicSendTask(self, self._lock_send_periodic, msg, period, duration)
 
     def __iter__(self):
         """Allow iteration on messages as they are received.
