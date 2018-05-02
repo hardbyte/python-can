@@ -93,7 +93,7 @@ class Bus(object):
                 )
             )
 
-        return cls(channel, **kwargs)
+        return cls(channel, *args, **kwargs)
 
 
 class CyclicSendTask(CyclicSendTaskABC):
