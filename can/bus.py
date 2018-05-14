@@ -18,11 +18,13 @@ logger = logging.getLogger(__name__)
 
 
 class BusABC(object):
-    """The CAN Bus Abstract Base Class.
+    """The CAN Bus Abstract Base Class that serves as the basis
+    for all concrete interfaces.
 
     Concrete implementations *must* implement the following:
         * :meth:`~can.BusABC.send` to send individual messages
         * :meth:`~can.BusABC._recv_internal` to receive individual messages
+          (see note below)
         * set the :attr:`~can.BusABC.channel_info` attribute to a string describing
           the underlying bus and/or channel
 
@@ -38,6 +40,14 @@ class BusABC(object):
         * :meth:`~can.BusABC._detect_available_configs` to allow the interface
           to report which configurations are currently available for new
           connections
+
+    .. note::
+
+       Previously concrete bus classes had to override :meth:`~can.BusABC.recv`
+       directly instead of :meth:`~can.BusABC._recv_internal`, but that has
+       changed to allow the abstract base class to handle in-software message
+       filtering. Older (custom) interfaces might still be implemented like
+       that and thus might not provide message filtering.
 
     """
 
