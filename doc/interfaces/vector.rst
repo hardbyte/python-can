@@ -19,6 +19,9 @@ application named "python-can"::
     channel = 0, 1
     app_name = python-can
 
+If you are using Python 2.7 it is recommended to install pywin32_, otherwise a
+slow and CPU intensive polling will be used when waiting for new messages.
+
 
 Bus
 ---
@@ -29,3 +32,4 @@ Bus
 
 
 .. _Vector: https://vector.com/
+.. _pywin32: https://sourceforge.net/projects/pywin32/

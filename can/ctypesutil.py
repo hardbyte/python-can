@@ -12,7 +12,7 @@ import sys
 
 log = logging.getLogger('can.ctypesutil')
 
-__all__ = ['CLibrary', 'HANDLE', 'PHANDLE']
+__all__ = ['CLibrary', 'HANDLE', 'PHANDLE', 'HRESULT']
 
 try:
     _LibBase = ctypes.WinDLL
@@ -84,8 +84,13 @@ class CLibrary_Unix(ctypes.CDLL, LibraryMixin):
 
 if sys.platform == "win32":
     CLibrary = CLibrary_Win32
+    HRESULT = ctypes.HRESULT
 else:
     CLibrary = CLibrary_Unix
+    if sys.platform == "cygwin":
+        # Define HRESULT for cygwin
+        class HRESULT(ctypes.c_long):
+            pass
 
 
 # Common win32 definitions

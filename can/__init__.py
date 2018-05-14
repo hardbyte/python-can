@@ -25,7 +25,7 @@ from can.io import Logger, Printer, LogReader
 from can.io import ASCWriter, ASCReader
 from can.io import BLFReader, BLFWriter
 from can.io import CanutilsLogReader, CanutilsLogWriter
-from can.io import CSVWriter
+from can.io import CSVWriter, CSVReader
 from can.io import SqliteWriter, SqliteReader
 
 from can.util import set_logging_level
@@ -35,7 +35,7 @@ from can.bus import BusABC
 from can.notifier import Notifier
 from can.interfaces import VALID_INTERFACES
 from . import interface
-from .interface import Bus
+from .interface import Bus, detect_available_configs
 
 from can.broadcastmanager import send_periodic, \
     CyclicSendTaskABC, \

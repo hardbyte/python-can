@@ -3,42 +3,43 @@
 
 """
 This implementation is for versions of Python that have native
-can socket and can bcm socket support: >3.4
+can socket and can bcm socket support.
+
+See :meth:`can.util.choose_socketcan_implementation()`.
 """
 
 import logging
-import select
 import threading
-import socket
-import struct
-
-import errno
 
 import os
+import select
+import socket
+import struct
+import errno
 
 log = logging.getLogger('can.socketcan.native')
 log_tx = log.getChild("tx")
 log_rx = log.getChild("rx")
 
-log.info("Loading socketcan native backend")
+log.debug("Loading socketcan native backend")
 
 try:
     import fcntl
 except ImportError:
-    log.warning("fcntl not available on this platform")
+    log.error("fcntl not available on this platform")
 
 try:
     socket.CAN_RAW
 except:
-    log.debug("CAN_* properties not found in socket module. These are required to use native socketcan")
+    log.error("CAN_* properties not found in socket module. These are required to use native socketcan")
 
 import can
-
-from can.interfaces.socketcan.socketcan_constants import *  # CAN_RAW, CAN_*_FLAG
-from can.interfaces.socketcan.socketcan_common import * # parseCanFilters
 from can import Message, BusABC
-
-from can.broadcastmanager import ModifiableCyclicTaskABC, RestartableCyclicTaskABC, LimitedDurationCyclicSendTaskABC
+from can.broadcastmanager import ModifiableCyclicTaskABC, \
+    RestartableCyclicTaskABC, LimitedDurationCyclicSendTaskABC
+from can.interfaces.socketcan.socketcan_constants import * # CAN_RAW, CAN_*_FLAG
+from can.interfaces.socketcan.socketcan_common import \
+    pack_filters, find_available_interfaces, error_code_to_str
 
 # struct module defines a binary packing format:
 # https://docs.python.org/3/library/struct.html#struct-format-strings
@@ -465,6 +466,7 @@ class SocketcanNative_Bus(BusABC):
         log.debug("We've been asked to write a message to the bus")
         logger_tx = log.getChild("tx")
         logger_tx.debug("sending: %s", msg)
+
         if timeout:
             # Wait for write availability
             _, ready_send_sockets, _ = select.select([], [self.socket], [], timeout)
@@ -472,12 +474,10 @@ class SocketcanNative_Bus(BusABC):
                 raise can.CanError("Timeout while sending")
 
         try:
-            bytes_sent = self.socket.send(build_can_frame(msg))
+            self.socket.sendall(build_can_frame(msg))
         except OSError as exc:
-            raise can.CanError("Transmit failed (%s)" % exc)
-
-        if bytes_sent == 0:
-            raise can.CanError("Transmit buffer overflow")
+            error_message = error_code_to_str(exc.errno)
+            raise can.CanError("can.socketcan_native failed to transmit: {}".format(error_message))
 
     def send_periodic(self, msg, period, duration=None):
         task = CyclicSendTask(self.channel, msg, period)
@@ -493,6 +493,11 @@ class SocketcanNative_Bus(BusABC):
         self.socket.setsockopt(socket.SOL_CAN_RAW,
                                socket.CAN_RAW_FILTER,
                                filter_struct)
+
+    @staticmethod
+    def _detect_available_configs():
+        return [{'interface': 'socketcan_native', 'channel': channel}
+                for channel in find_available_interfaces()]
 
 
 if __name__ == "__main__":

@@ -18,6 +18,7 @@ from can.message import Message
 
 log = logging.getLogger('can.io.sql')
 
+# TODO comment on this
 if sys.version_info > (3,):
     buffer = memoryview
 
@@ -49,12 +50,12 @@ class SqliteReader:
     def __iter__(self):
         log.debug("Iterating through messages from sql db")
         for frame_data in self.cursor.execute(self._SELECT_ALL_COMMAND):
-            yield SqliteReader._create_frame_from_db_tuple(frame_data)
+            yield self._create_frame_from_db_tuple(frame_data)
 
     def __len__(self):
         # this might not run in constant time
         result = self.cursor.execute("SELECT COUNT(*) FROM messages")
-        return abs(int(result.fetchone()[0]))
+        return int(result.fetchone()[0])
 
     def read_all(self):
         """Fetches all messages in the database."""
@@ -64,11 +65,6 @@ class SqliteReader:
     def close(self):
         """Closes the connection to the database."""
         self.conn.close()
-
-
-# Backward compatibility
-# TODO remove in later releases?
-SqlReader = SqliteReader
 
 
 class SqliteWriter(BufferedReader):
