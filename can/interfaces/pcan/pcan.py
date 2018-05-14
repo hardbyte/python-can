@@ -89,7 +89,7 @@ class PcanBus(BusABC):
         else:
             self.channel_info = channel
 
-        bitrate = kwargs.get('bitrate', can.rc.get('bitrate', 500000))
+        bitrate = kwargs.get('bitrate', 500000)
         pcan_bitrate = pcan_bitrate_objs.get(bitrate, PCAN_BAUD_500K)
 
         hwtype = PCAN_TYPE_ISA

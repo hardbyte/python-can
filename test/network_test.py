@@ -58,7 +58,7 @@ class ControllerAreaNetworkTestCase(unittest.TestCase):
                 extended_id=self.extended_flags[i],
                 data=self.data[i]
             )
-            logging.debug("writing message: {}".format(m))
+            #logging.debug("writing message: {}".format(m))
             if msg_read is not None:
                 # Don't send until the other thread is ready
                 msg_read.wait()
@@ -92,15 +92,14 @@ class ControllerAreaNetworkTestCase(unittest.TestCase):
                 print("No messages... lets go")
                 break
             else:
-                print("received messages before the test has started...")
-                self.assertTrue(False)
+                self.fail("received messages before the test has started ...")
         ready.set()
         i = 0
         while i < self.num_messages:
             msg_read.set()
             msg = self.server_bus.recv(timeout=0.5)
             self.assertIsNotNone(msg, "Didn't receive a message")
-            logging.debug("Received message {} with data: {}".format(i, msg.data))
+            #logging.debug("Received message {} with data: {}".format(i, msg.data))
 
             self.assertEqual(msg.id_type, self.extended_flags[i])
             if not msg.is_remote_frame:

@@ -23,6 +23,12 @@ from can.interfaces import VALID_INTERFACES
 
 log = logging.getLogger('can.util')
 
+# List of valid data lengths for a CAN FD message
+CAN_FD_DLC = [
+    0, 1, 2, 3, 4, 5, 6, 7, 8,
+    12, 16, 20, 24, 32, 48, 64
+]
+
 REQUIRED_KEYS = [
     'interface',
     'channel',
@@ -169,31 +175,56 @@ def load_config(path=None, config=None):
 
 
 def choose_socketcan_implementation():
-    """Set the best version of SocketCAN for this system.
+    """Set the best version of the SocketCAN module for this system.
 
-    :param config: The can.rc configuration dictionary
-    :raises Exception: If the system doesn't support SocketCAN
+    :rtype: str
+    :return:
+        either 'socketcan_ctypes' or 'socketcan_native',
+        depending on the current platform and environment
+    :raises Exception: If the system doesn't support SocketCAN at all
     """
+
     # Check OS: SocketCAN is available only under Linux
     if not sys.platform.startswith('linux'):
-        msg = 'SocketCAN not available under {}'.format(
-            sys.platform)
+        msg = 'SocketCAN not available under {}'.format(sys.platform)
         raise Exception(msg)
+
+    # Check release: SocketCAN was added to Linux 2.6.25
+    rel_string = platform.release()
+    m = re.match(r'\d+\.\d+\.\d', rel_string)
+    if not m: # None or empty
+        msg = 'Bad linux release {}'.format(rel_string)
+        raise Exception(msg)
+    rel_num = [int(i) for i in rel_string[:m.end()].split('.')]
+
+    if (rel_num < [2, 6, 25]):
+        msg = 'SocketCAN not available under Linux {}'.format(rel_string)
+        raise Exception(msg)
+
+    # Check Python version:
+    #
+    # CPython:
+    # Support for SocketCAN was added in Python 3.3, but support for
+    # CAN FD frames (with socket.CAN_RAW_FD_FRAMES) was just added
+    # to Python in version 3.5.
+    # So we want to use socketcan_native only on Python >= 3.5 (see #274).
+    #
+    # PyPy:
+    # Furthermore, socket.CAN_* is not supported by PyPy 2 or 3 (as of
+    # April 2018) at all. Thus we want to use socketcan_ctypes there as well.
+    #
+    # General approach:
+    # To support possible future versions of current platforms as well as
+    # potential other ones, we take the approach of feature checking instead
+    # of platform/version checking.
+
+    try:
+        # try to import typical attributes
+        from socket import CAN_RAW, CAN_BCM, CAN_RAW_FD_FRAMES
+    except ImportError:
+        return 'socketcan_ctypes'
     else:
-        # Check release: SocketCAN was added to Linux 2.6.25
-        rel_string = platform.release()
-        m = re.match(r'\d+\.\d+\.\d', rel_string)
-        if m is None:
-            msg = 'Bad linux release {}'.format(rel_string)
-            raise Exception(msg)
-        rel_num = [int(i) for i in rel_string[:m.end()].split('.')]
-        if (rel_num >= [2, 6, 25]):
-            # Check Python version: SocketCAN was added in 3.3
-            return 'socketcan_native' if sys.version_info >= (3, 3) else 'socketcan_ctypes'
-        else:
-            msg = 'SocketCAN not available under Linux {}'.format(
-                    rel_string)
-            raise Exception(msg)
+        return 'socketcan_native'
 
 
 def set_logging_level(level_name=None):
@@ -207,6 +238,33 @@ def set_logging_level(level_name=None):
     except AttributeError:
         can_logger.setLevel(logging.DEBUG)
     log.debug("Logging set to {}".format(level_name))
+
+
+def len2dlc(length):
+    """Calculate the DLC from data length.
+
+    :param int length: Length in number of bytes (0-64)
+
+    :returns: DLC (0-15)
+    :rtype: int
+    """
+    if length <= 8:
+        return length
+    for dlc, nof_bytes in enumerate(CAN_FD_DLC):
+        if nof_bytes >= length:
+            return dlc
+    return 15
+
+
+def dlc2len(dlc):
+    """Calculate the data length from DLC.
+
+    :param int dlc: DLC (0-15)
+
+    :returns: Data length in number of bytes (0-64)
+    :rtype: int
+    """
+    return CAN_FD_DLC[dlc] if dlc <= 15 else 64
 
 
 if __name__ == "__main__":
