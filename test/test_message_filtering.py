@@ -14,10 +14,11 @@ from can import Bus, Message
 from .data.example_data import TEST_ALL_MESSAGES
 
 
-EXAMPLE_MSG = Message(arbitration_id=123, extended_id=True)
+EXAMPLE_MSG = Message(arbitration_id=0x123, extended_id=True)
+HIGHEST_MSG = Message(arbitration_id=0x1FFFFFFF, extended_id=True)
 
 MATCH_EXAMPLE = [{
-    "can_id": 123,
+    "can_id": 0x123,
     "can_mask": 0x1FFFFFFF,
     "extended": True
 }]
@@ -51,7 +52,12 @@ class TestMessageFiltering(unittest.TestCase):
             self.assertFalse(self.bus._matches_filters(msg))
 
     def test_match_example_message(self):
-        raise NotImplementedError("TODO")
+        self.bus.set_filters(MATCH_EXAMPLE)
+        self.assertTrue(self.bus._matches_filters(EXAMPLE_MSG))
+        self.assertFalse(self.bus._matches_filters(HIGHEST_MSG))
+        self.bus.set_filters(MATCH_ONLY_HIGHEST)
+        self.assertFalse(self.bus._matches_filters(EXAMPLE_MSG))
+        self.assertTrue(self.bus._matches_filters(HIGHEST_MSG))
 
 
 if __name__ == '__main__':
