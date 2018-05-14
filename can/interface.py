@@ -9,14 +9,21 @@ CyclicSendTasks.
 
 from __future__ import absolute_import
 
+import sys
 import importlib
 from pkg_resources import iter_entry_points
+import logging
 
 import can
 from .bus import BusABC
 from .broadcastmanager import CyclicSendTaskABC, MultiRateCyclicSendTaskABC
 from .util import load_config
 
+if sys.version_info.major > 2:
+    basestring = str
+
+log = logging.getLogger('can.interface')
+log_autodetect = log.getChild('detect_available_configs')
 
 # interface_name => (module, classname)
 BACKENDS = {
@@ -48,9 +55,16 @@ def _get_class_for_interface(interface):
     :raises:
         NotImplementedError if the interface is not known
     :raises:
-        ImportError if there was a problem while importing the
-        interface or the bus class within that
+        ImportError     if there was a problem while importing the
+                        interface or the bus class within that
     """
+
+    # filter out the socketcan special case
+    if interface == 'socketcan':
+        try:
+            interface = can.util.choose_socketcan_implementation()
+        except Exception as e:
+            raise ImportError("Cannot choose socketcan implementation: {}".format(e))
 
     # Find the correct backend
     try:
@@ -102,16 +116,74 @@ class Bus(BusABC):
 
         # Figure out the configuration
         config = load_config(config={
-            'interface': kwargs.get('bustype'),
+            'interface': kwargs.get('bustype', kwargs.get('interface')),
             'channel': channel
         })
 
-        # remove the bustype so it doesn't get passed to the backend
+        # remove the bustype & interface so it doesn't get passed to the backend
         if 'bustype' in kwargs:
             del kwargs['bustype']
+        if 'interface' in kwargs:
+            del kwargs['interface']
 
         cls = _get_class_for_interface(config['interface'])
         return cls(channel=config['channel'], *args, **kwargs)
+
+
+def detect_available_configs(interfaces=None):
+    """Detect all configurations/channels that the interfaces could
+    currently connect with.
+
+    This might be quite time consuming.
+
+    Automated configuration detection may not be implemented by
+    every interface on every platform. This method will not raise
+    an error in that case, but with rather return an empty list
+    for that interface.
+
+    :param interfaces: either
+        - the name of an interface to be searched in as a string,
+        - an iterable of interface names to search in, or
+        - `None` to search in all known interfaces.
+    :rtype: list of `dict`s
+    :return: an iterable of dicts, each suitable for usage in
+             :class:`can.interface.Bus`'s constructor.
+    """
+
+    # Figure out where to search
+    if interfaces is None:
+        # use an iterator over the keys so we do not have to copy it
+        interfaces = BACKENDS.keys()
+    elif isinstance(interfaces, basestring):
+        interfaces = [interfaces, ]
+    # else it is supposed to be an iterable of strings
+
+    result = []
+    for interface in interfaces:
+
+        try:
+            bus_class = _get_class_for_interface(interface)
+        except ImportError:
+            log_autodetect.debug('interface "%s" can not be loaded for detection of available configurations', interface)
+            continue
+
+        # get available channels
+        try:
+            available = list(bus_class._detect_available_configs())
+        except NotImplementedError:
+            log_autodetect.debug('interface "%s" does not support detection of available configurations', interface)
+        else:
+            log_autodetect.debug('interface "%s" detected %i available configurations', interface, len(available))
+
+            # add the interface name to the configs if it is not already present
+            for config in available:
+                if 'interface' not in config:
+                    config['interface'] = interface
+
+            # append to result
+            result += available
+
+    return result
 
 
 class CyclicSendTask(CyclicSendTaskABC):

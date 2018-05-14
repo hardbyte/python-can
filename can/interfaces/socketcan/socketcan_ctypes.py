@@ -18,7 +18,8 @@ from can.broadcastmanager import CyclicSendTaskABC, RestartableCyclicTaskABC, Mo
 from can.bus import BusABC
 from can.message import Message
 from can.interfaces.socketcan.socketcan_constants import *  # CAN_RAW
-from can.interfaces.socketcan.socketcan_common import *
+from can.interfaces.socketcan.socketcan_common import \
+    pack_filters, find_available_interfaces, error_code_to_str
 
 # Set up logging
 log = logging.getLogger('can.socketcan.ctypes')
@@ -163,6 +164,11 @@ class SocketcanCtypes_Bus(BusABC):
             threading.Timer(duration, task.stop).start()
 
         return task
+
+    @staticmethod
+    def _detect_available_configs():
+        return [{'interface': 'socketcan_ctypes', 'channel': channel}
+                for channel in find_available_interfaces()]
 
 
 class SOCKADDR(ctypes.Structure):

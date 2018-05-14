@@ -2,6 +2,7 @@
 # coding: utf-8
 
 """
+See: https://www.kernel.org/doc/Documentation/networking/can.txt
 """
 
 from can.interfaces.socketcan import socketcan_constants as constants

@@ -21,10 +21,10 @@ class BusABC(object):
     """The CAN Bus Abstract Base Class.
 
     Concrete implementations *must* implement the following:
-        * :meth:`~can.BusABC.send`
-        * :meth:`~can.BusABC._recv_internal`
+        * :meth:`~can.BusABC.send` to send individual messages
+        * :meth:`~can.BusABC._recv_internal` to receive individual messages
         * set the :attr:`~can.BusABC.channel_info` attribute to a string describing
-          the interface and/or channel
+          the underlying bus and/or channel
 
     The *may* implement the following:
         * :meth:`~can.BusABC.flush_tx_buffer` to allow discrading any
@@ -35,10 +35,13 @@ class BusABC(object):
           periodic sending and push it down to the kernel or hardware
         * :meth:`~can.BusABC._apply_filters` to apply efficient filters
           to lower level systems like the OS kernel or hardware
+        * :meth:`~can.BusABC._detect_available_configs` to allow the interface
+          to report which configurations are currently available for new
+          connections
 
     """
 
-    #: a string describing the underlying bus channel
+    #: a string describing the underlying bus and/or channel
     channel_info = 'unknown'
 
     @abstractmethod
@@ -259,5 +262,20 @@ class BusABC(object):
         in shutting down a bus.
         """
         pass
+
+    @staticmethod
+    def _detect_available_configs():
+        """Detect all configurations/channels that this interface could
+        currently connect with.
+
+        This might be quite time consuming.
+
+        May not to be implemented by every interface on every platform.
+
+        :rtype: Iterator[dict]
+        :return: an iterable of dicts, each being a configuration suitable
+                 for usage in the interface's bus constructor.
+        """
+        raise NotImplementedError()
 
     __metaclass__ = ABCMeta
