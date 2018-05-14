@@ -2,18 +2,22 @@
 # coding: utf-8
 
 """
+Tests helpers in `can.interfaces.socketcan.socketcan_common`.
 """
 
 from __future__ import absolute_import
 
 import unittest
 
+from can.interfaces.socketcan.socketcan_common import \
+    find_available_interfaces, error_code_to_str
+
 from .config import *
-from can.interfaces.socketcan.socketcan_common import error_code_to_str
+
 
 class TestSocketCanHelpers(unittest.TestCase):
 
-    @unittest.skipUnless(IS_UNIX, "skip if not on UNIX")
+    @unittest.skipUnless(IS_LINUX, "socketcan is only available on Linux")
     def test_error_code_to_str(self):
         """
         Check that the function does not crash & always
@@ -26,6 +30,17 @@ class TestSocketCanHelpers(unittest.TestCase):
         for error_code in test_data:
             string = error_code_to_str(error_code)
             self.assertTrue(string) # not None or empty
+
+    @unittest.skipUnless(IS_LINUX, "socketcan is only available on Linux")
+    def test_find_available_interfaces(self):
+        result = list(find_available_interfaces())
+        self.assertGreaterEqual(len(result), 0)
+        for entry in result:
+            self.assertRegexpMatches(entry, r"v?can\d+")
+        if IS_CI:
+            self.assertGreaterEqual(len(result), 1)
+            self.assertIn("vcan0", result)
+
 
 if __name__ == '__main__':
     unittest.main()
