@@ -441,7 +441,7 @@ class SocketcanNative_Bus(BusABC):
     def shutdown(self):
         self.socket.close()
 
-    def _recv_internal(self, timeout=None):
+    def _recv_internal(self, timeout):
         if timeout:
             try:
                 # get all sockets that are ready (can be a list with a single value

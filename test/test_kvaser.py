@@ -39,7 +39,7 @@ class KvaserTest(unittest.TestCase):
 
         self.msg = {}
         self.msg_in_cue = None
-        self.bus = can.interface.Bus(channel=0, bustype='kvaser')
+        self.bus = can.Bus(channel=0, bustype='kvaser')
 
     def tearDown(self):
         if self.bus:
@@ -123,7 +123,7 @@ class KvaserTest(unittest.TestCase):
         self.assertSequenceEqual(self.msg['data'], [50, 51])
 
     def test_recv_no_message(self):
-        self.assertEqual(self.bus.recv(), None)
+        self.assertEqual(self.bus.recv(timeout=0.5), None)
 
     def test_recv_extended(self):
         self.msg_in_cue = can.Message(

@@ -60,7 +60,7 @@ class VirtualBus(BusABC):
             self.queue = queue.Queue()
             self.channel.append(self.queue)
 
-    def _recv_internal(self, timeout=None):
+    def _recv_internal(self, timeout):
         try:
             msg = self.queue.get(block=True, timeout=timeout)
         except queue.Empty:

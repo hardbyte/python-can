@@ -167,7 +167,7 @@ class PcanBus(BusABC):
         status = self.m_objPCANBasic.Reset(self.m_PcanHandle)
         return status == PCAN_ERROR_OK
 
-    def _recv_internal(self, timeout=None):
+    def _recv_internal(self, timeout):
 
         if HAS_EVENTS:
             # We will utilize events for the timeout handling

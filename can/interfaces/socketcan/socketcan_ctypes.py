@@ -100,7 +100,7 @@ class SocketcanCtypes_Bus(BusABC):
         else:
             self._is_filtered = True
 
-    def _recv_internal(self, timeout=None):
+    def _recv_internal(self, timeout):
 
         log.debug("Trying to read a msg")
 
