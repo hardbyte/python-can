@@ -5,15 +5,16 @@
 Enable basic CAN over a PCAN USB device.
 """
 
+from __future__ import absolute_import, print_function
+
 import logging
 import sys
 import time
 
 import can
-from can import CanError
+from can import CanError, Message
 from can.bus import BusABC
-from can.message import Message
-from can.interfaces.pcan.PCANBasic import *
+from .PCANBasic import *
 
 boottimeEpoch = 0
 try:
@@ -74,14 +75,14 @@ class PcanBus(BusABC):
         the PCAN interface includes the `flash()` and `status()` methods.
 
         :param str channel:
-            The can interface name. An example would be PCAN_USBBUS1
+            The can interface name. An example would be 'PCAN_USBBUS1'
 
         :param int bitrate:
             Bitrate of channel in bit/s.
-            Default is 500 Kbs
+            Default is 500 kbit/s
 
         """
-        if channel is None or channel == '':
+        if not channel:
             raise ArgumentError("Must specify a PCAN channel")
         else:
             self.channel_info = channel
@@ -108,13 +109,13 @@ class PcanBus(BusABC):
             if result != PCAN_ERROR_OK:
                 raise PcanError(self._get_formatted_error(result))
 
-        super(PcanBus, self).__init__(*args, **kwargs)
+        super(PcanBus, self).__init__(channel=channel, *args, **kwargs)
 
     def _get_formatted_error(self, error):
         """
-        Gets the text using the GetErrorText API function
-        If the function succeeds, the translated error is returned. If it fails,
-        a text describing the current error is returned.  Multiple errors may
+        Gets the text using the GetErrorText API function.
+        If the function call succeeds, the translated error is returned. If it fails,
+        a text describing the current error is returned. Multiple errors may
         be present in which case their individual messages are included in the
         return string, one line per error.
         """
@@ -160,13 +161,14 @@ class PcanBus(BusABC):
         return status == PCAN_ERROR_OK
 
     def reset(self):
-        # Command the PCAN driver to reset the bus after an error.
-
+        """
+        Command the PCAN driver to reset the bus after an error.
+        """
         status = self.m_objPCANBasic.Reset(self.m_PcanHandle)
-
         return status == PCAN_ERROR_OK
 
-    def recv(self, timeout=None):
+    def _recv_internal(self, timeout=None):
+
         if HAS_EVENTS:
             # We will utilize events for the timeout handling
             timeout_ms = int(timeout * 1000) if timeout is not None else INFINITE
@@ -221,7 +223,7 @@ class PcanBus(BusABC):
                          dlc=dlc,
                          data=theMsg.DATA[:dlc])
 
-        return rx_msg
+        return rx_msg, False
 
     def send(self, msg, timeout=None):
         if msg.id_type:
@@ -264,4 +266,7 @@ class PcanBus(BusABC):
 
 
 class PcanError(CanError):
+    """
+    TODO: add docs
+    """
     pass
