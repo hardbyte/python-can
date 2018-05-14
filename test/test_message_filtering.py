@@ -33,7 +33,7 @@ MATCH_ONLY_HIGHEST = [{
 class TestMessageFiltering(unittest.TestCase):
 
     def setUp(self):
-        self.bus = can.Bus(bustype='virtual', channel='testy')
+        self.bus = Bus(bustype='virtual', channel='testy')
 
     def tearDown(self):
         self.bus.shutdown()
