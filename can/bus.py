@@ -78,7 +78,7 @@ class BusABC(object):
         that all filters have been applied. That is the case for all
         internal interfaces.
 
-        :param float timeout: Seconds to wait for a message.
+        :param float timeout: seconds to wait for a message
 
         :return:
             None on timeout or a :class:`can.Message` object.
@@ -123,15 +123,25 @@ class BusABC(object):
         :meth:`~can.BusABC.recv`, to be able to take advantage of the
         software based filtering provided by :meth:`~can.BusABC.recv`.
 
-        This method is not an `@abstractmethod` for now to allow older
-        external implementations to continue using their existing
-        custom :meth:`~can.BusABC.recv` implementation.
+        .. note::
+
+            This method is not an `@abstractmethod` (for now) to allow older
+            external implementations to continue using their existing
+            :meth:`~can.BusABC.recv` implementation.
+
+        :param float timeout: seconds to wait for a message
+        :rtype: tuple[can.Message, bool] or tuple[None, bool]
+        :return:
+            1.  a message that was read or None on timeout
+            2.  a bool that is True if message filtering has already
+                been done and else False
 
         :raises can.CanError:
             if an error occurred while reading
         :raises NotImplementedError:
             if the bus provides it's own :meth:`~can.BusABC.recv`
             implementation
+
         """
         raise NotImplementedError("Trying to read from a write only bus?")
 
@@ -165,6 +175,8 @@ class BusABC(object):
 
         :return: A started task instance
         :rtype: can.CyclicSendTaskABC
+
+        .. note::
 
             Note the duration before the message stops being sent may not
             be exactly the same as the duration specified by the user. In
