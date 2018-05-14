@@ -6,15 +6,22 @@ environment:
     # http://www.appveyor.com/docs/installed-software#python
 
     - PYTHON: "C:\\Python27"
-    - PYTHON: "C:\\Python33"
     - PYTHON: "C:\\Python34"
     - PYTHON: "C:\\Python35"
     - PYTHON: "C:\\Python36"
     - PYTHON: "C:\\Python27-x64"
-    - PYTHON: "C:\\Python33-x64"
     - PYTHON: "C:\\Python34-x64"
     - PYTHON: "C:\\Python35-x64"
     - PYTHON: "C:\\Python36-x64"
+
+    # officially unsupported
+    - PYTHON: "C:\\Python33"
+    - PYTHON: "C:\\Python33-x64"
+
+matrix:
+  allow_failures:
+    - PYTHON: "C:\\Python33"
+    - PYTHON: "C:\\Python33-x64"
 
 install:
   # We need to install the python-can library itself

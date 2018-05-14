@@ -17,7 +17,7 @@ from can import CanError, BusABC
 from can import Message
 from can.broadcastmanager import (LimitedDurationCyclicSendTaskABC,
                                   RestartableCyclicTaskABC)
-from can.ctypesutil import CLibrary, HANDLE, PHANDLE
+from can.ctypesutil import CLibrary, HANDLE, PHANDLE, HRESULT as ctypes_HRESULT
 
 from can.interfaces.ixxat import constants, structures
 
@@ -42,6 +42,11 @@ _canlib = None
 if sys.platform == "win32":
     try:
         _canlib = CLibrary("vcinpl")
+    except Exception as e:
+        log.warning("Cannot load IXXAT vcinpl library: %s", e)
+elif sys.platform == "cygwin":
+    try:
+        _canlib = CLibrary("vcinpl.dll")
     except Exception as e:
         log.warning("Cannot load IXXAT vcinpl library: %s", e)
 else:
@@ -125,7 +130,7 @@ try:
     _canlib.map_symbol("vciInitialize", ctypes.c_long, (), __check_status)
 
     #void VCIAPI vciFormatError (HRESULT hrError, PCHAR pszText, UINT32 dwsize);
-    _canlib.map_symbol("vciFormatError", None, (ctypes.HRESULT, ctypes.c_char_p, ctypes.c_uint32))
+    _canlib.map_symbol("vciFormatError", None, (ctypes_HRESULT, ctypes.c_char_p, ctypes.c_uint32))
     # Hack to have vciFormatError as a free function
     vciFormatError = functools.partial(__vciFormatError, _canlib)
 
@@ -309,6 +314,8 @@ class IXXATBus(BusABC):
             else:
                 if (UniqueHardwareId is None) or (self._device_info.UniqueHardwareId.AsChar == bytes(UniqueHardwareId, 'ascii')):
                     break
+                else:
+                    log.debug("Ignoring IXXAT with hardware id '%s'.", self._device_info.UniqueHardwareId.AsChar.decode("ascii"))
         _canlib.vciEnumDeviceClose(self._device_handle)
         _canlib.vciDeviceOpen(ctypes.byref(self._device_info.VciObjectId), ctypes.byref(self._device_handle))
         log.info("Using unique HW ID %s", self._device_info.UniqueHardwareId.AsChar)

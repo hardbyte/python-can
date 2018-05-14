@@ -19,13 +19,12 @@ with open('can/__init__.py', 'r') as fd:
 with open('README.rst', 'r') as f:
     long_description = f.read()
 
+# Dependencies
 tests_require = [
-    'mock',
-    'nose',
-    'pyserial >= 3.0',
+    'mock >= 2.0.0',
+    'nose >= 1.3.7',
+    'pyserial >= 3.0'
 ]
-if version_info.major < 3:
-    tests_require += ['subprocess32 >= 3.2']
 
 setup(
     # Description
@@ -37,8 +36,6 @@ setup(
     # Code
     version=version,
     packages=find_packages(),
-    # see https://www.python.org/dev/peps/pep-0345/#version-specifiers
-    python_requires='>=2.7,!=3.0,!=3.1,!=3.2',
 
     # Author
     author="Brian Thorne",
@@ -49,15 +46,16 @@ setup(
 
     # Package data
     package_data={
-        "": ["CONTRIBUTORS.txt", "LICENSE.txt"],
+        "": ["CONTRIBUTORS.txt", "LICENSE.txt", "CHANGELOG.txt"],
         "doc": ["*.*"]
     },
 
     # Installation
+    # see https://www.python.org/dev/peps/pep-0345/#version-specifiers
+    python_requires=">=2.7,!=3.0,!=3.1,!=3.2,!=3.3",
     install_requires=[
         'setuptools',
-        #'Deprecated >= 1.1.0',
-    ],
+    ] + (['subprocess32 ~= 3.2.7'] if version_info.major < 3 else []),
     extras_require={
         'serial': ['pyserial >= 3.0'],
         'neovi': ['python-ics >= 2.8'],

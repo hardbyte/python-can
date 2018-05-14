@@ -7,6 +7,7 @@ Interfaces contain low level implementations that interact with CAN hardware.
 
 from pkg_resources import iter_entry_points
 
+# TODO: isn't this a unnecessary information duplicate of `can/interface.py :: BACKENDS`?
 VALID_INTERFACES = set(['kvaser', 'simpleserial', 'pcan', 'socketcan_native',
                         'socketcan_ctypes', 'socketcan', 'usb2can', 'ixxat',
                         'nican', 'iscan', 'vector', 'virtual', 'neovi',

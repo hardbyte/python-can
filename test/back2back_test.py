@@ -135,10 +135,11 @@ class Back2BackTestCase(unittest.TestCase):
                           data=[0xff] * 48)
         self._send_and_receive(msg)
 
-# FIXME
-@unittest.skip("skip until CAN FD support is fixed, see issue #274")
-#@unittest.skipUnless(TEST_INTERFACE_SOCKETCAN, "skip testing of socketcan")
+@unittest.skipUnless(TEST_INTERFACE_SOCKETCAN, "skip testing of socketcan")
 class BasicTestSocketCan(unittest.TestCase):
+    """
+    TODO Test more thoroughly. See #273.
+    """
 
     def setUp(self):
         socketcan_version = can.util.choose_socketcan_implementation()
