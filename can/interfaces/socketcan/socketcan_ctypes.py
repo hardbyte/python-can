@@ -41,6 +41,8 @@ SEC_USEC = 1000000
 class SocketcanCtypes_Bus(BusABC):
     """
     An implementation of the :class:`can.bus.BusABC` for SocketCAN using :mod:`ctypes`.
+
+    Implements :meth:`can.BusABC._detect_available_configs`.
     """
 
     def __init__(self,

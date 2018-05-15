@@ -28,7 +28,7 @@ class BusABC(object):
         * set the :attr:`~can.BusABC.channel_info` attribute to a string describing
           the underlying bus and/or channel
 
-    The *may* implement the following:
+    They *may* implement the following:
         * :meth:`~can.BusABC.flush_tx_buffer` to allow discrading any
           messages yet to be sent
         * :meth:`~can.BusABC.shutdown` to override how the bus should
@@ -43,11 +43,11 @@ class BusABC(object):
 
     .. note::
 
-       Previously concrete bus classes had to override :meth:`~can.BusABC.recv`
+       Previously, concrete bus classes had to override :meth:`~can.BusABC.recv`
        directly instead of :meth:`~can.BusABC._recv_internal`, but that has
        changed to allow the abstract base class to handle in-software message
-       filtering. Older (custom) interfaces might still be implemented like
-       that and thus might not provide message filtering.
+       filtering as a fallback. Older (custom) interfaces might still be
+       implemented like that and thus might not provide message filtering.
 
     """
 
@@ -121,7 +121,8 @@ class BusABC(object):
 
         New implementations should always override this method instead of
         :meth:`~can.BusABC.recv`, to be able to take advantage of the
-        software based filtering provided by :meth:`~can.BusABC.recv`.
+        software based filtering provided by :meth:`~can.BusABC.recv`
+        as a fallback.
 
         .. note::
 
@@ -212,7 +213,7 @@ class BusABC(object):
 
     @property
     def filters(self):
-        return self._can_filters
+        return self._filters
 
     @filters.setter
     def filters(self, filters):
@@ -261,15 +262,15 @@ class BusABC(object):
         if self._filters is None:
             return True
 
-        for can_filter in self._filters:
+        for filter in self._filters:
             # check if this filter even applies to the message
-            if 'extended' in can_filter and \
-                can_filter['extended'] != msg.is_extended_id:
+            if 'extended' in filter and \
+                filter['extended'] != msg.is_extended_id:
                 continue
 
             # then check for the mask and id
-            can_id = can_filter['can_id']
-            can_mask = can_filter['can_mask']
+            can_id = filter['can_id']
+            can_mask = filter['can_mask']
 
             # basically, we compute `msg.arbitration_id & can_mask == can_id & can_mask`
             # by using the faster, but equivalent from below:

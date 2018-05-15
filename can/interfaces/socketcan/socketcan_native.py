@@ -402,6 +402,9 @@ def capture_message(sock):
 
 
 class SocketcanNative_Bus(BusABC):
+    """
+    Implements :meth:`can.BusABC._detect_available_configs`.
+    """
 
     def __init__(self, channel, receive_own_messages=False, fd=False, **kwargs):
         """
