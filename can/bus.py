@@ -241,7 +241,7 @@ class BusABC(object):
 
         """
         self._filters = filters
-        self._apply_filters(self.filters)
+        self._apply_filters(self._filters)
 
     def _apply_filters(self, filters):
         """
@@ -258,10 +258,10 @@ class BusABC(object):
         """
 
         # if no filters are set, all messages are matched
-        if self._can_filters is None:
+        if self._filters is None:
             return True
 
-        for can_filter in self._can_filters:
+        for can_filter in self._filters:
             # check if this filter even applies to the message
             if 'extended' in can_filter and \
                 can_filter['extended'] != msg.is_extended_id:
