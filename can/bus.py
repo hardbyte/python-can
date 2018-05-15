@@ -129,6 +129,12 @@ class BusABC(object):
             external implementations to continue using their existing
             :meth:`~can.BusABC.recv` implementation.
 
+        .. note::
+
+            The second return value (whether filtering was already done) may change
+            over time for some interfaces, like for example in the Kvaser interface.
+            Thus it cannot be simplified to a constant value.
+
         :param float timeout: seconds to wait for a message
         :rtype: tuple[can.Message, bool] or tuple[None, bool]
         :return:
@@ -212,17 +218,17 @@ class BusABC(object):
     def filters(self, filters):
         self.set_filters(filters)
 
-    def set_filters(self, can_filters=None):
+    def set_filters(self, filters=None):
         """Apply filtering to all messages received by this Bus.
 
         All messages that match at least one filter are returned.
-        If `can_filters` is `None`, all messages are matched.
+        If `filters` is `None`, all messages are matched.
         If it is a zero size interable, no messages are matched.
 
         Calling without passing any filters will reset the applied
         filters to `None`.
 
-        :param Iterator[dict] can_filters:
+        :param Iterator[dict] filters:
             A iterable of dictionaries each containing a "can_id", a "can_mask",
             and an optional "extended" key.
 
@@ -234,10 +240,10 @@ class BusABC(object):
             only on the arbitration ID and mask.
 
         """
-        self._can_filters = can_filters
-        self._apply_filters()
+        self._filters = filters
+        self._apply_filters(self.filters)
 
-    def _apply_filters(self):
+    def _apply_filters(self, filters):
         """
         Hook for applying the filters to the underlying kernel or
         hardware if supported/implemented by the interface.

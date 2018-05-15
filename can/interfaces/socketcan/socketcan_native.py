@@ -486,8 +486,8 @@ class SocketcanNative_Bus(BusABC):
 
         return task
 
-    def set_filters(self, can_filters=None):
-        filter_struct = pack_filters(can_filters)
+    def _apply_filters(self, filters):
+        filter_struct = pack_filters(filters)
 
         # TODO handle errors, see SocketcanCtypes
         self.socket.setsockopt(socket.SOL_CAN_RAW,

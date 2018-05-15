@@ -296,10 +296,7 @@ class KvaserBus(BusABC):
             The Channel id to create this bus with.
 
         :param list can_filters:
-            A list of dictionaries each containing a "can_id" and a "can_mask".
-
-            >>> [{"can_id": 0x11, "can_mask": 0x21}]
-
+            See :meth:`can.BusABC.__init__`.
 
         Backend Configuration
 
@@ -340,7 +337,9 @@ class KvaserBus(BusABC):
         :param int data_bitrate:
             Which bitrate to use for data phase in CAN FD.
             Defaults to arbitration bitrate.
+
         """
+
         log.info("CAN Filters: {}".format(can_filters))
         log.info("Got configuration of: {}".format(config))
         bitrate = config.get('bitrate', 500000)
@@ -437,26 +436,11 @@ class KvaserBus(BusABC):
         self._is_filtered = False
         super(KvaserBus, self).__init__(channel=channel, can_filters=can_filters, **config)
 
-    def set_filters(self, can_filters=None):
-        """Apply filtering to all messages received by this Bus.
-
-        Calling without passing any filters will reset the applied filters.
-
-        Since Kvaser only supports setting one filter per handle, the filtering
-        will be disabled if more than one filter is requested.
-
-        :param list can_filters:
-            A list of dictionaries each containing a "can_id", "can_mask" and
-            "extended".
-
-            >>> [{"can_id": 0x11, "can_mask": 0x21, "extended": False}]
-
-            A filter matches, when ``<received_can_id> & can_mask == can_id & can_mask``
-        """
-        if can_filters and len(can_filters) == 1:
-            can_id = can_filters[0]['can_id']
-            can_mask = can_filters[0]['can_mask']
-            extended = 1 if can_filters[0].get('extended') else 0
+    def _apply_filters(self, filters):
+        if filters and len(filters) == 1:
+            can_id = filters[0]['can_id']
+            can_mask = filters[0]['can_mask']
+            extended = 1 if filters[0].get('extended') else 0
             try:
                 for handle in (self._read_handle, self._write_handle):
                     canSetAcceptanceFilter(handle, can_id, can_mask, extended)
@@ -475,6 +459,7 @@ class KvaserBus(BusABC):
                     for extended in (0, 1):
                         canSetAcceptanceFilter(handle, 0, 0, extended)
             except (NotImplementedError, CANLIBError):
+                # TODO add logging?
                 pass
 
     def flush_tx_buffer(self):

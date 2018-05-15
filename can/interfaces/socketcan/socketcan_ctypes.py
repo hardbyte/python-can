@@ -67,26 +67,14 @@ class SocketcanCtypes_Bus(BusABC):
 
         if receive_own_messages:
             error1 = recv_own_msgs(self.socket)
-            # TODO handle error
+            # TODO handle potential error
 
         self._is_filtered = False
         kwargs.update({'receive_own_messages': receive_own_messages})
         super(SocketcanCtypes_Bus, self).__init__(channel=channel, *args, **kwargs)
 
-    def set_filters(self, can_filters=None):
-        """Apply filtering to all messages received by this Bus.
-
-        Calling without passing any filters will reset the applied filters.
-
-        :param list can_filters:
-            A list of dictionaries each containing a "can_id" and a "can_mask".
-
-            >>> [{"can_id": 0x11, "can_mask": 0x21}]
-
-            A filter matches, when ``<received_can_id> & can_mask == can_id & can_mask``
-
-        """
-        filter_struct = pack_filters(can_filters)
+    def _apply_filters(self, filters):
+        filter_struct = pack_filters(filters)
         res = libc.setsockopt(self.socket,
                               SOL_CAN_RAW,
                               CAN_RAW_FILTER,
