@@ -2,7 +2,7 @@
 # coding: utf-8
 
 """
-Contains the ABC bus implementation and documentation.
+Contains the ABC bus implementation and it's documentation.
 """
 
 from __future__ import print_function, absolute_import
@@ -14,21 +14,19 @@ from time import time
 
 from .broadcastmanager import ThreadBasedCyclicSendTask
 
-logger = logging.getLogger(__name__)
-
 
 class BusABC(object):
     """The CAN Bus Abstract Base Class that serves as the basis
     for all concrete interfaces.
 
-    Concrete implementations *must* implement the following:
+    Concrete implementations *have to* implement the following:
         * :meth:`~can.BusABC.send` to send individual messages
         * :meth:`~can.BusABC._recv_internal` to receive individual messages
           (see note below)
         * set the :attr:`~can.BusABC.channel_info` attribute to a string describing
           the underlying bus and/or channel
 
-    They *may* implement the following:
+    They *might* implement the following:
         * :meth:`~can.BusABC.flush_tx_buffer` to allow discrading any
           messages yet to be sent
         * :meth:`~can.BusABC.shutdown` to override how the bus should
@@ -56,7 +54,11 @@ class BusABC(object):
 
     @abstractmethod
     def __init__(self, channel=None, can_filters=None, **config):
-        """
+        """Construct and open a CAN bus instance of the specified type.
+
+        Subclasses should call though this one with all parameters as
+        it applies filters (for now).
+
         :param channel:
             The can interface identifier. Expected type is backend dependent.
 
@@ -78,8 +80,14 @@ class BusABC(object):
         that all filters have been applied. That is the case for all
         internal interfaces.
 
-        :param float timeout: seconds to wait for a message
+        To enable receiving for an interface, please override
+        :meth:`~can.BusABC._recv_internal` instead of this one.
+        Overriding this method is deprecated.
 
+        :param float timeout:
+            seconds to wait for a message or None to wait indefinitely
+
+        :rtype: can.Message or None
         :return:
             None on timeout or a :class:`can.Message` object.
         :raises can.CanError:
@@ -122,7 +130,7 @@ class BusABC(object):
         New implementations should always override this method instead of
         :meth:`~can.BusABC.recv`, to be able to take advantage of the
         software based filtering provided by :meth:`~can.BusABC.recv`
-        as a fallback.
+        as a fallback. This method should never be called directly.
 
         .. note::
 
@@ -147,14 +155,15 @@ class BusABC(object):
             if an error occurred while reading
         :raises NotImplementedError:
             if the bus provides it's own :meth:`~can.BusABC.recv`
-            implementation
+            implementation (legacy implementation)
 
         """
         raise NotImplementedError("Trying to read from a write only bus?")
 
     @abstractmethod
     def send(self, msg, timeout=None):
-        """Transmit a message to CAN bus.
+        """Transmit a message to the CAN bus.
+
         Override this method to enable the transmit path.
 
         :param can.Message msg: A message object.
@@ -248,14 +257,23 @@ class BusABC(object):
         """
         Hook for applying the filters to the underlying kernel or
         hardware if supported/implemented by the interface.
+
+        :param Iterator[dict] filters:
+            See :meth:`~can.BusABC.set_filters` for details.
         """
         pass
 
     def _matches_filters(self, msg):
         """Checks whether the given message matches at least one of the
-        current filters.
+        current filters. See :meth:`~can.BusABC.set_filters` for details
+        on how the filters work.
 
-        See :meth:`~can.BusABC.set_filters` for details.
+        This method should not be overridden.
+
+        :param can.Message msg:
+            the message to check if matching
+        :rtype: bool
+        :return: whether the given message matches at least one filter
         """
 
         # if no filters are set, all messages are matched
@@ -273,7 +291,7 @@ class BusABC(object):
             can_mask = filter['can_mask']
 
             # basically, we compute `msg.arbitration_id & can_mask == can_id & can_mask`
-            # by using the faster, but equivalent from below:
+            # by using the shorter, but equivalent from below:
             if (can_id ^ msg.arbitration_id) & can_mask == 0:
                 return True
 
