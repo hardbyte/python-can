@@ -410,13 +410,13 @@ class SocketcanNative_Bus(BusABC):
         """
         :param str channel:
             The can interface name with which to create this bus. An example channel
-            would be 'vcan0' pr 'can0'.
+            would be 'vcan0' or 'can0'.
         :param bool receive_own_messages:
-            If messages transmitted should also be received back.
+            If transmitted messages should also be received by this bus.
         :param bool fd:
             If CAN-FD frames should be supported.
         :param list can_filters:
-            See BusABC class.
+            See :meth:`can.BusABC.set_filters`.
         """
         self.socket = create_socket(CAN_RAW)
         self.channel = channel
@@ -508,7 +508,7 @@ if __name__ == "__main__":
 
     # Create two sockets on vcan0 to test send and receive
     #
-    # If you want to try it out you can do the following:
+    # If you want to try it out you can do the following (possibly using sudo):
     #
     #     modprobe vcan
     #     ip link add dev vcan0 type vcan
