@@ -12,8 +12,7 @@ import sys
 import time
 
 import can
-from can import CanError, Message
-from can.bus import BusABC
+from can import CanError, Message, BusABC
 from .PCANBasic import *
 
 boottimeEpoch = 0
@@ -72,14 +71,14 @@ class PcanBus(BusABC):
         """A PCAN USB interface to CAN.
 
         On top of the usual :class:`~can.Bus` methods provided,
-        the PCAN interface includes the `flash()` and `status()` methods.
+        the PCAN interface includes the :meth:`~can.interface.pcan.PcanBus.flash()`
+        and :meth:`~can.interface.pcan.PcanBus.status()` methods.
 
         :param str channel:
             The can interface name. An example would be 'PCAN_USBBUS1'
 
         :param int bitrate:
-            Bitrate of channel in bit/s.
-            Default is 500 kbit/s
+            Bitrate of channel in bit/s. Default is 500 kbit/s.
 
         """
         if not channel:
@@ -121,6 +120,7 @@ class PcanBus(BusABC):
         """
 
         def bits(n):
+            """TODO: document"""
             while n:
                 b = n & (~n+1)
                 yield b

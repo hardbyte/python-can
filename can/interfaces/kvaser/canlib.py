@@ -296,7 +296,7 @@ class KvaserBus(BusABC):
             The Channel id to create this bus with.
 
         :param list can_filters:
-            See :meth:`can.BusABC.__init__`.
+            See :meth:`can.BusABC.set_filters`.
 
         Backend Configuration
 

@@ -42,8 +42,8 @@ class VirtualBus(BusABC):
     """
 
     def __init__(self, channel=None, receive_own_messages=False, **config):
-        config.update({'receive_own_messages': receive_own_messages})
-        super(VirtualBus, self).__init__(channel=channel, **config)
+        super(VirtualBus, self).__init__(channel=channel,
+            receive_own_messages=receive_own_messages, **config)
 
         # the channel identifier may be an arbitrary object
         self.channel_id = channel
