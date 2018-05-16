@@ -5,6 +5,13 @@
 Ctypes wrapper module for IXXAT Virtual CAN Interface V3 on win32 systems
 
 Copyright (C) 2016 Giuseppe Corbelli <giuseppe.corbelli@weightpack.com>
+
+TODO: We could implement this interface such that setting other filters
+      could work when the initial filters were set to zero using the
+      software fallback. Or could the software filters even be changed
+      after the connection was opened? We need to document that bahaviour!
+      See also the NICAN interface.
+
 """
 
 from __future__ import absolute_import, division
@@ -229,6 +236,14 @@ CAN_ERROR_MESSAGES = {
 
 class IXXATBus(BusABC):
     """The CAN Bus implemented for the IXXAT interface.
+
+    .. warning::
+
+        This interface does implement efficient filtering of messages, but
+        the filters have to be set in :meth:`~can.interfaces.ixxat.IXXATBus.__init__`
+        using the ``can_filters`` parameter. Using :meth:`~can.interfaces.ixxat.IXXATBus.set_filters`
+        does not work.
+
     """
 
     CHANNEL_BITRATES = {
@@ -262,9 +277,7 @@ class IXXATBus(BusABC):
             The Channel id to create this bus with.
 
         :param list can_filters:
-            A list of dictionaries each containing a "can_id" and a "can_mask".
-
-            >>> [{"can_id": 0x11, "can_mask": 0x21}]
+            See :meth:`can.BusABC.set_filters`.
 
         :param int UniqueHardwareId:
             UniqueHardwareId to connect (optional, will use the first found if not supplied)
@@ -342,7 +355,7 @@ class IXXATBus(BusABC):
         self._tick_resolution =  float(self._channel_capabilities.dwClockFreq / self._channel_capabilities.dwTscDivisor)
 
         # Setup filters before starting the channel
-        if can_filters is not None and len(can_filters):
+        if can_filters:
             log.info("The IXXAT VCI backend is filtering messages")
             # Disable every message coming in
             for extended in (0, 1):
@@ -377,7 +390,7 @@ class IXXATBus(BusABC):
             except (VCITimeout, VCIRxQueueEmptyError):
                 break
 
-        super(IXXATBus, self).__init__()
+        super(IXXATBus, self).__init__(channel=channel, can_filters=None, **config)
 
     def _inWaiting(self):
         try:
@@ -392,7 +405,7 @@ class IXXATBus(BusABC):
         # TODO #64: no timeout?
         _canlib.canChannelWaitTxEvent(self._channel_handle, constants.INFINITE)
 
-    def recv(self, timeout=None):
+    def _recv_internal(self, timeout):
         """ Read a message from IXXAT device. """
 
         # TODO: handling CAN error messages?
@@ -403,7 +416,7 @@ class IXXATBus(BusABC):
             try:
                 _canlib.canChannelPeekMessage(self._channel_handle, ctypes.byref(self._message))
             except (VCITimeout, VCIRxQueueEmptyError):
-                return None
+                return None, True
             else:
                 if self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_DATA:
                     data_received = True
@@ -447,7 +460,7 @@ class IXXATBus(BusABC):
 
         if not data_received:
             # Timed out / can message type is not DATA
-            return None
+            return None, True
 
         # The _message.dwTime is a 32bit tick value and will overrun,
         # so expect to see the value restarting from 0
@@ -462,7 +475,7 @@ class IXXATBus(BusABC):
         )
 
         log.debug('Recv()ed message %s', rx_msg)
-        return rx_msg
+        return rx_msg, True
 
     def send(self, msg, timeout=None):
         log.debug("Sending message: %s", msg)
@@ -504,6 +517,16 @@ class IXXATBus(BusABC):
         _canlib.canControlStart(self._control_handle, constants.FALSE)
         _canlib.canControlClose(self._control_handle)
         _canlib.vciDeviceClose(self._device_handle)
+
+    __set_filters_has_been_called = False
+    def set_filters(self, can_filers=None):
+        """Unsupported. See note on :class:`~can.interfaces.ixxat.IXXATBus`.
+        """
+        if self.__set_filters_has_been_called:
+            log.warn("using filters is not supported like this, see note on IXXATBus")
+        else:
+            # allow the constructor to call this without causing a warning
+            self.__set_filters_has_been_called = True
 
 
 class CyclicSendTask(LimitedDurationCyclicSendTaskABC,
