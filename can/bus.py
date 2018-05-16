@@ -25,6 +25,11 @@ class BusABC(object):
 
     As well as setting the `channel_info` attribute to a string describing the
     interface.
+
+    They may implement :meth:`~can.BusABC._detect_available_configs` to allow
+    the interface to report which configurations are currently available for
+    new connections.
+
     """
 
     #: a string describing the underlying bus channel
@@ -152,8 +157,23 @@ class BusABC(object):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        for t in self._tx_threads:
-            t.stop()
+        for thread in self._tx_threads:
+            thread.stop()
         self.shutdown()
+
+    @staticmethod
+    def _detect_available_configs():
+        """Detect all configurations/channels that this interface could
+        currently connect with.
+
+        This might be quite time consuming.
+
+        May not to be implemented by every interface on every platform.
+
+        :rtype: Iterator[dict]
+        :return: an iterable of dicts, each being a configuration suitable
+                 for usage in the interface's bus constructor.
+        """
+        raise NotImplementedError()
 
     __metaclass__ = ABCMeta

@@ -15,6 +15,8 @@ try:
     import queue
 except ImportError:
     import Queue as queue
+from threading import RLock
+import random
 
 from can.bus import BusABC
 from can import CanError
@@ -24,25 +26,38 @@ logger = logging.getLogger(__name__)
 
 # Channels are lists of queues, one for each connection
 channels = {}
+channels_lock = RLock()
 
 
 class VirtualBus(BusABC):
-    """Virtual CAN bus using an internal message queue for testing."""
+    """
+    A virtual CAN bus using an internal message queue. It can be
+    used for example for testing.
+
+    In this interface, a channel is an arbitarty object used as
+    an identifier for connected buses.
+
+    Implements :meth:`can.BusABC._detect_available_configs`; see
+    :meth:`can.VirtualBus._detect_available_configs` for how it
+    behaves here.
+    """
 
     def __init__(self, channel=None, receive_own_messages=False, **config):
-        self.channel_info = 'Virtual bus channel %s' % channel
+        # the channel identifier may be an arbitrary object
+        self.channel_id = channel
+        self.channel_info = 'Virtual bus channel %s' % self.channel_id
         self.receive_own_messages = receive_own_messages
-
-        # Create a new channel if one does not exist
-        if channel not in channels:
-            channels[channel] = []
-
-        self.queue = queue.Queue()
-        self.channel = channels[channel]
-        self.channel.append(self.queue)
         self._open = True
 
-        super(VirtualBus, self).__init__()
+        with channels_lock:
+
+            # Create a new channel if one does not exist
+            if self.channel_id not in channels:
+                channels[self.channel_id] = []
+            self.channel = channels[self.channel_id]
+
+            self.queue = queue.Queue()
+            self.channel.append(self.queue)
 
     def _check_if_open(self):
         """Raises CanError if the bus is not open.
@@ -73,6 +88,36 @@ class VirtualBus(BusABC):
 
     def shutdown(self):
         self._check_if_open()
-        self.channel.remove(self.queue)
         self._open = False
-        super(VirtualBus, self).shutdown()
+
+        with channels_lock:
+            self.channel.remove(self.queue)
+
+            # remove if emtpy
+            if not self.channel:
+                del channels[self.channel_id]
+
+    @staticmethod
+    def _detect_available_configs():
+        """
+        Returns all currently used channels as well as
+        one other currently unused channel.
+
+        This method will have problems if thousands of
+        autodetected busses are used at once.
+        """
+        with channels_lock:
+            available_channels = list(channels.keys())
+
+        # find a currently unused channel
+        get_extra = lambda: "channel-{}".format(random.randint(0, 9999))
+        extra = get_extra()
+        while extra in available_channels:
+            extra = get_extra()
+
+        available_channels += [extra]
+
+        return [
+            {'interface': 'virtual', 'channel': channel}
+            for channel in available_channels
+        ]
