@@ -36,7 +36,7 @@ log = logging.getLogger('can.ixxat')
 try:
     # since Python 3.3
     from time import perf_counter as _timer_function
-except AttributeError:
+except ImportError:
     from time import clock as _timer_function
 
 # Hack to have vciFormatError as a free function, see below
