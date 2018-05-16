@@ -7,6 +7,12 @@ NI-CAN interface module.
 Implementation references:
 * http://www.ni.com/pdf/manuals/370289c.pdf
 * https://github.com/buendiya/NicanPython
+
+TODO: We could implement this interface such that setting other filters
+      could work when the initial filters were set to zero using the
+      software fallback. Or could the software filters even be changed
+      after the connection was opened? We need to document that bahaviour!
+
 """
 
 import ctypes
@@ -113,6 +119,14 @@ else:
 class NicanBus(BusABC):
     """
     The CAN Bus implemented for the NI-CAN interface.
+
+    .. warning::
+
+        This interface does implement efficient filtering of messages, but
+        the filters have to be set in :meth:`~can.interfaces.nican.NicanBus.__init__`
+        using the ``can_filters`` parameter. Using :meth:`~can.interfaces.nican.NicanBus.set_filters`
+        does not work.
+
     """
 
     def __init__(self, channel, can_filters=None, bitrate=None, log_errors=True,
@@ -125,9 +139,7 @@ class NicanBus(BusABC):
             Bitrate in bits/s
 
         :param list can_filters:
-            A list of dictionaries each containing a "can_id" and a "can_mask".
-
-            >>> [{"can_id": 0x11, "can_mask": 0x21}]
+            See :meth:`can.BusABC.set_filters`.
 
         :param bool log_errors:
             If True, communication errors will appear as CAN messages with
@@ -136,6 +148,7 @@ class NicanBus(BusABC):
 
         :raises can.interfaces.nican.NicanError:
             If starting communication fails
+
         """
         if nican is None:
             raise ImportError("The NI-CAN driver could not be loaded. "
@@ -188,16 +201,16 @@ class NicanBus(BusABC):
         self.handle = ctypes.c_ulong()
         nican.ncOpenObject(channel, ctypes.byref(self.handle))
 
-    def recv(self, timeout=None):
+        super(NicanBus, self).__init__(channel=channel,
+            can_filters=can_filters, bitrate=bitrate,
+            log_errors=log_errors, **kwargs)
+
+    def _recv_internal(self, timeout):
         """
-        Read a message from NI-CAN.
+        Read a message from a NI-CAN bus.
 
         :param float timeout:
             Max time to wait in seconds or None if infinite
-
-        :returns:
-            The CAN message or None if timeout
-        :rtype: can.Message
 
         :raises can.interfaces.nican.NicanError:
             If reception fails
@@ -213,7 +226,7 @@ class NicanBus(BusABC):
                 self.handle, NC_ST_READ_AVAIL, timeout, ctypes.byref(state))
         except NicanError as e:
             if e.error_code == TIMEOUT_ERROR_CODE:
-                return None
+                return None, True
             else:
                 raise
 
@@ -235,7 +248,7 @@ class NicanBus(BusABC):
                       arbitration_id=arb_id,
                       dlc=dlc,
                       data=raw_msg.data[:dlc])
-        return msg
+        return msg, True
 
     def send(self, msg, timeout=None):
         """
@@ -258,6 +271,7 @@ class NicanBus(BusABC):
         nican.ncWrite(
             self.handle, ctypes.sizeof(raw_msg), ctypes.byref(raw_msg))
 
+        # TODO:
         # ncWaitForState can not be called here if the recv() method is called
         # from a different thread, which is a very common use case.
         # Maybe it is possible to use ncCreateNotification instead but seems a
@@ -275,6 +289,16 @@ class NicanBus(BusABC):
     def shutdown(self):
         """Close object."""
         nican.ncCloseObject(self.handle)
+
+    __set_filters_has_been_called = False
+    def set_filters(self, can_filers=None):
+        """Unsupported. See note on :class:`~can.interfaces.nican.NicanBus`.
+        """
+        if self.__set_filters_has_been_called:
+            logger.warn("using filters is not supported like this, see note on NicanBus")
+        else:
+            # allow the constructor to call this without causing a warning
+            self.__set_filters_has_been_called = True
 
 
 class NicanError(CanError):
