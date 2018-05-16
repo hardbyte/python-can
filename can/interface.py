@@ -116,7 +116,7 @@ class Bus(BusABC):
         """
 
         # figure out the rest of the configuration; this might raise an error
-        config = load_config(**config)
+        config = load_config(config=config)
 
         # resolve the bus class to use for that interface
         cls = _get_class_for_interface(config['interface'])
