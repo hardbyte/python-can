@@ -186,15 +186,15 @@ class PcanBus(BusABC):
                     result = None
                     val = WaitForSingleObject(self._recv_event, timeout_ms)
                     if val != WAIT_OBJECT_0:
-                        return None
+                        return None, False
                 elif timeout is not None and timeout_clock() >= end_time:
-                    return None
+                    return None, False
                 else:
                     result = None
                     time.sleep(0.001)
             elif result[0] & (PCAN_ERROR_BUSLIGHT | PCAN_ERROR_BUSHEAVY):
                 log.warning(self._get_formatted_error(result[0]))
-                return None
+                return None, False
             elif result[0] != PCAN_ERROR_OK:
                 raise PcanError(self._get_formatted_error(result[0]))
 
