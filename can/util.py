@@ -121,10 +121,17 @@ def load_config(path=None, config=None):
         If you pass ``"socketcan"`` this automatically selects between the
         native and ctypes version.
 
+    .. note::
+ 
+            The key ``bustype`` is copied to ``interface`` if that one is missing
+            and does never appear in the result.
+
     :param path:
         Optional path to config file.
+
     :param config:
         A dict which may set the 'interface', and/or the 'channel', or neither.
+        It may set other values that are passed through.
 
     :return:
         A config dictionary that should contain 'interface' & 'channel'::
@@ -132,46 +139,61 @@ def load_config(path=None, config=None):
             {
                 'interface': 'python-can backend interface to use',
                 'channel': 'default channel to use',
+                # possibly more
             }
 
         Note ``None`` will be used if all the options are exhausted without
         finding a value.
-    """
-    if config is None:
-        config = {}
 
-    system_config = {}
-    configs = [
-        config,
+        All unused values are passed from ``config`` over to this.
+
+    :raises:
+        NotImplementedError if the ``interface`` isn't recognized
+    """
+
+    # start with an empty dict to apply filtering to all sources
+    given_config = config
+    config = {}
+
+    # use the given dict for default values
+    config_sources = [
+        given_config,
         can.rc,
         load_environment_config,
         lambda: load_file_config(path)
     ]
 
     # Slightly complex here to only search for the file config if required
-    for cfg in configs:
+    for cfg in config_sources:
         if callable(cfg):
             cfg = cfg()
+        # remove legacy operator
+        if 'bustype' in cfg:
+            if not cfg['interface']:
+                cfg['interface'] = cfg['bustype']
+            del cfg['bustype']
+        # copy all new parameters
         for key in cfg:
-            if key not in system_config and cfg[key] is not None:
-                system_config[key] = cfg[key]
+            if key not in config:
+                config[key] = cfg[key]
 
     # substitute None for all values not found
     for key in REQUIRED_KEYS:
-        if key not in system_config:
-            system_config[key] = None
+        if key not in config:
+            config[key] = None
 
-    if system_config['interface'] == 'socketcan':
-        system_config['interface'] = choose_socketcan_implementation()
+    # this is done later too but better safe than sorry
+    if config['interface'] == 'socketcan':
+        config['interface'] = choose_socketcan_implementation()
 
-    if system_config['interface'] not in VALID_INTERFACES:
-        raise NotImplementedError('Invalid CAN Bus Type - {}'.format(system_config['interface']))
+    if config['interface'] not in VALID_INTERFACES:
+        raise NotImplementedError('Invalid CAN Bus Type - {}'.format(config['interface']))
 
-    if 'bitrate' in system_config:
-        system_config['bitrate'] = int(system_config['bitrate'])
+    if 'bitrate' in config:
+        config['bitrate'] = int(config['bitrate'])
 
-    can.log.debug("can config: {}".format(system_config))
-    return system_config
+    can.log.debug("loaded can config: {}".format(config))
+    return config
 
 
 def choose_socketcan_implementation():
