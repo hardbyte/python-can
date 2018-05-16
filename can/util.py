@@ -167,9 +167,9 @@ def load_config(path=None, config=None):
     for cfg in config_sources:
         if callable(cfg):
             cfg = cfg()
-        # remove legacy operator
+        # remove legacy operator (and copy to interface if not already present)
         if 'bustype' in cfg:
-            if not cfg['interface']:
+            if 'interface' not in cfg or not cfg['interface']:
                 cfg['interface'] = cfg['bustype']
             del cfg['bustype']
         # copy all new parameters
