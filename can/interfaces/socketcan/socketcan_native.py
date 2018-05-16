@@ -458,10 +458,10 @@ class SocketcanNative_Bus(BusABC):
             ready_receive_sockets = True
 
         if ready_receive_sockets: # not empty or True
-            return capture_message(self.socket), True
+            return capture_message(self.socket), self._is_filtered
         else:
             # socket wasn't readable or timeout occurred
-            return None, True
+            return None, self._is_filtered
 
     def send(self, msg, timeout=None):
         log.debug("We've been asked to write a message to the bus")
@@ -490,12 +490,17 @@ class SocketcanNative_Bus(BusABC):
         return task
 
     def _apply_filters(self, filters):
-        filter_struct = pack_filters(filters)
-
-        # TODO handle errors, see SocketcanCtypes
-        self.socket.setsockopt(socket.SOL_CAN_RAW,
-                               socket.CAN_RAW_FILTER,
-                               filter_struct)
+        try:
+            self.socket.setsockopt(socket.SOL_CAN_RAW,
+                                   socket.CAN_RAW_FILTER,
+                                   pack_filters(filters))
+        except socket.error as err:
+            # fall back to "software filtering" (= not in kernel)
+            self._is_filtered = False
+            # TODO Is this serious enough to raise a CanError exception?
+            log.error('Setting filters failed; falling back to software filtering (not in kernel): %s', err)
+        else:
+            self._is_filtered = True
 
     @staticmethod
     def _detect_available_configs():

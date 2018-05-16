@@ -86,7 +86,8 @@ class SocketcanCtypes_Bus(BusABC):
             # fall back to "software filtering" (= not in kernel)
             self._is_filtered = False
             # TODO Is this serious enough to raise a CanError exception?
-            log.error('Setting filters failed: %s, falling back to software filtering (not in kernel)', str(res))
+            # TODO print error code (the errno, not "res", which is always -1)
+            log.error('Setting filters failed: falling back to software filtering (not in kernel)')
         else:
             self._is_filtered = True
 
