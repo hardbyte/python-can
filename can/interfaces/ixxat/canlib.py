@@ -7,21 +7,19 @@ Ctypes wrapper module for IXXAT Virtual CAN Interface V3 on win32 systems
 Copyright (C) 2016 Giuseppe Corbelli <giuseppe.corbelli@weightpack.com>
 """
 
+from __future__ import absolute_import, division
+
 import ctypes
 import functools
 import logging
 import sys
-import time
 
-from can import CanError, BusABC
-from can import Message
+from can import CanError, BusABC, Message
 from can.broadcastmanager import (LimitedDurationCyclicSendTaskABC,
                                   RestartableCyclicTaskABC)
 from can.ctypesutil import CLibrary, HANDLE, PHANDLE, HRESULT as ctypes_HRESULT
 
-from can.interfaces.ixxat import constants, structures
-
-from .constants import VCI_MAX_ERRSTRLEN
+from . import constants, structures
 from .exceptions import *
 
 __all__ = ["VCITimeout", "VCIError", "VCIDeviceNotFoundError", "IXXATBus", "vciFormatError"]
@@ -30,9 +28,9 @@ log = logging.getLogger('can.ixxat')
 
 try:
     # since Python 3.3
-    _timer_function = time.perf_counter
+    from time import perf_counter as _timer_function
 except AttributeError:
-    _timer_function = time.clock
+    from time import clock as _timer_function
 
 # Hack to have vciFormatError as a free function, see below
 vciFormatError = None
@@ -86,9 +84,9 @@ def __vciFormatError(library_instance, function, HRESULT):
         :return:
             Formatted string
     """
-    buf = ctypes.create_string_buffer(VCI_MAX_ERRSTRLEN)
-    ctypes.memset(buf, 0, VCI_MAX_ERRSTRLEN)
-    library_instance.vciFormatError(HRESULT, buf, VCI_MAX_ERRSTRLEN)
+    buf = ctypes.create_string_buffer(constants.VCI_MAX_ERRSTRLEN)
+    ctypes.memset(buf, 0, constants.VCI_MAX_ERRSTRLEN)
+    library_instance.vciFormatError(HRESULT, buf, constants.VCI_MAX_ERRSTRLEN)
     return "function {} failed ({})".format(function._name, buf.value.decode('utf-8', 'replace'))
 
 
