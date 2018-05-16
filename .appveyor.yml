@@ -33,4 +33,5 @@ test_script:
   # Note that you must use the environment variable %PYTHON% to refer to
   # the interpreter you're using - Appveyor does not do anything special
   # to put the Python version you want to use on PATH.
-  - "%PYTHON%\\python.exe setup.py test -v --timeout=300"
+  - "%PYTHON%\\python.exe setup.py test -v" # --timeout=300 -> TODO:
+  # need to switch to pytest like on Unix first, but that's for another PR
