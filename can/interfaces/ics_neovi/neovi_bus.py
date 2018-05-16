@@ -283,7 +283,6 @@ class NeoViBus(BusABC):
     def _recv_internal(self, timeout):
         if not self.rx_buffer:
             self._process_msg_queue(timeout)
-
         try:
             ics_msg = self.rx_buffer.popleft()
             msg = self._ics_msg_to_message(ics_msg)
