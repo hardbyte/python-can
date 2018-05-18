@@ -49,7 +49,7 @@ class VectorBus(BusABC):
 
     def __init__(self, channel, can_filters=None, poll_interval=0.01,
                  receive_own_messages=False,
-                 bitrate=None, rx_queue_size=256, app_name="CANalyzer", **config):
+                 bitrate=None, rx_queue_size=256, app_name="CANalyzer", fd=False, data_bitrate=None, **config):
         """
         :param list channel:
             The channel indexes to create this bus with.
@@ -62,6 +62,11 @@ class VectorBus(BusABC):
             Number of messages in receive queue.
         :param str app_name:
             Name of application in Hardware Config.
+        :param bool fd:
+            If CAN-FD frames should be supported.
+        :param int data_bitrate:
+            Which bitrate to use for data phase in CAN FD.
+            Defaults to arbitration bitrate.
         """
         if vxlapi is None:
             raise ImportError("The Vector API has not been loaded")
@@ -80,6 +85,7 @@ class VectorBus(BusABC):
         vxlapi.xlOpenDriver()
         self.port_handle = vxlapi.XLportHandle(vxlapi.XL_INVALID_PORTHANDLE)
         self.mask = 0
+        self.fd = fd
         # Get channels masks
         for channel in self.channels:
             hw_type = ctypes.c_uint(0)
@@ -96,18 +102,46 @@ class VectorBus(BusABC):
 
         permission_mask = vxlapi.XLaccess()
         # Set mask to request channel init permission if needed
-        if bitrate:
+        if bitrate or fd:
             permission_mask.value = self.mask
-        vxlapi.xlOpenPort(self.port_handle, self._app_name, self.mask,
-                          permission_mask, rx_queue_size,
-                          vxlapi.XL_INTERFACE_VERSION, vxlapi.XL_BUS_TYPE_CAN)
+        if fd:
+            vxlapi.xlOpenPort(self.port_handle, self._app_name, self.mask,
+                              permission_mask, 16000,
+                              vxlapi.XL_INTERFACE_VERSION_V4, vxlapi.XL_BUS_TYPE_CAN)
+        else:
+            vxlapi.xlOpenPort(self.port_handle, self._app_name, self.mask,
+                              permission_mask, rx_queue_size,
+                              vxlapi.XL_INTERFACE_VERSION, vxlapi.XL_BUS_TYPE_CAN)
         LOG.debug(
             'Open Port: PortHandle: %d, PermissionMask: 0x%X',
             self.port_handle.value, permission_mask.value)
-        if bitrate:
-            if permission_mask.value != self.mask:
-                LOG.info('Can not set bitrate since no init access')
-            vxlapi.xlCanSetChannelBitrate(self.port_handle, permission_mask, bitrate)
+
+        if permission_mask.value == self.mask:
+            if fd:
+                self.canFdConf = vxlapi.XLcanFdConf()
+                if bitrate:
+                    self.canFdConf.arbitrationBitRate = ctypes.c_uint(bitrate)
+                else:
+                    self.canFdConf.arbitrationBitRate = ctypes.c_uint(500000)
+                self.canFdConf.sjwAbr = ctypes.c_uint(2)
+                self.canFdConf.tseg1Abr = ctypes.c_uint(6)
+                self.canFdConf.tseg2Abr = ctypes.c_uint(3)
+                if data_bitrate:
+                    self.canFdConf.dataBitRate = ctypes.c_uint(data_bitrate)
+                else:
+                    self.canFdConf.dataBitRate = self.canFdConf.arbitrationBitRate
+                self.canFdConf.sjwDbr = ctypes.c_uint(2)
+                self.canFdConf.tseg1Dbr = ctypes.c_uint(6)
+                self.canFdConf.tseg2Dbr = ctypes.c_uint(3)
+                
+                vxlapi.xlCanFdSetConfiguration(self.port_handle, self.mask, self.canFdConf)
+                LOG.info('SetFdConfig.: ABaudr.=%u, DBaudr.=%u', self.canFdConf.arbitrationBitRate, self.canFdConf.dataBitRate)
+            else:
+                if bitrate:
+                    vxlapi.xlCanSetChannelBitrate(self.port_handle, permission_mask, bitrate)
+                    LOG.info('SetChannelBitrate: baudr.=%u',bitrate)
+        else:
+            LOG.info('No init access!')
 
         # Enable/disable TX receipts
         tx_receipts = 1 if receive_own_messages else 0
@@ -154,31 +188,64 @@ class VectorBus(BusABC):
 
     def recv(self, timeout=None):
         end_time = time.time() + timeout if timeout is not None else None
-        event = vxlapi.XLevent(0)
-        event_count = ctypes.c_uint()
+
+        if self.fd:
+            event = vxlapi.XLcanRxEvent()
+        else:
+            event = vxlapi.XLevent()
+            event_count = ctypes.c_uint()
+            
         while True:
-            event_count.value = 1
-            try:
-                vxlapi.xlReceive(self.port_handle, event_count, event)
-            except VectorError as exc:
-                if exc.error_code != vxlapi.XL_ERR_QUEUE_IS_EMPTY:
-                    raise
+            if self.fd:
+                try:
+                    vxlapi.xlCanReceive(self.port_handle, event)
+                except VectorError as exc:
+                    if exc.error_code != vxlapi.XL_ERR_QUEUE_IS_EMPTY:
+                        raise
+                else:
+                    if event.tag == vxlapi.XL_CAN_EV_TAG_RX_OK or event.tag == vxlapi.XL_CAN_EV_TAG_TX_OK:
+                        msg_id = event.tagData.canRxOkMsg.canId
+                        dlc = self.map_dlc(event.tagData.canRxOkMsg.dlc)
+                        flags = event.tagData.canRxOkMsg.msgFlags
+                        timestamp = event.timeStamp * 1e-9
+                        msg = Message(
+                            timestamp=timestamp + self._time_offset,
+                            arbitration_id=msg_id & 0x1FFFFFFF,
+                            extended_id=bool(msg_id & vxlapi.XL_CAN_EXT_MSG_ID),
+                            is_remote_frame=bool(flags & vxlapi.XL_CAN_RXMSG_FLAG_RTR),
+                            is_error_frame=bool(flags & vxlapi.XL_CAN_RXMSG_FLAG_EF),
+                            is_fd=True,
+                            error_state_indicator=bool(flags & vxlapi.XL_CAN_RXMSG_FLAG_ESI),
+                            #extended data length (XL_CAN_RXMSG_FLAG_EDL) not in msg class
+                            bitrate_switch=bool(flags & vxlapi.XL_CAN_RXMSG_FLAG_BRS),
+                            dlc=dlc,
+                            data=event.tagData.canRxOkMsg.data[:dlc],
+                            channel=event.chanIndex)
+                        return msg
             else:
-                if event.tag == vxlapi.XL_RECEIVE_MSG:
-                    msg_id = event.tagData.msg.id
-                    dlc = event.tagData.msg.dlc
-                    flags = event.tagData.msg.flags
-                    timestamp = event.timeStamp * 1e-9
-                    msg = Message(
-                        timestamp=timestamp + self._time_offset,
-                        arbitration_id=msg_id & 0x1FFFFFFF,
-                        extended_id=bool(msg_id & vxlapi.XL_CAN_EXT_MSG_ID),
-                        is_remote_frame=bool(flags & vxlapi.XL_CAN_MSG_FLAG_REMOTE_FRAME),
-                        is_error_frame=bool(flags & vxlapi.XL_CAN_MSG_FLAG_ERROR_FRAME),
-                        dlc=dlc,
-                        data=event.tagData.msg.data[:dlc],
-                        channel=event.chanIndex)
-                    return msg
+                event_count.value = 1
+                try:
+                    vxlapi.xlReceive(self.port_handle, event_count, event)
+                except VectorError as exc:
+                    if exc.error_code != vxlapi.XL_ERR_QUEUE_IS_EMPTY:
+                        raise
+                else:
+                    if event.tag == vxlapi.XL_RECEIVE_MSG:
+                        msg_id = event.tagData.msg.id
+                        dlc = event.tagData.msg.dlc
+                        flags = event.tagData.msg.flags
+                        timestamp = event.timeStamp * 1e-9
+                        msg = Message(
+                            timestamp=timestamp + self._time_offset,
+                            arbitration_id=msg_id & 0x1FFFFFFF,
+                            extended_id=bool(msg_id & vxlapi.XL_CAN_EXT_MSG_ID),
+                            is_remote_frame=bool(flags & vxlapi.XL_CAN_MSG_FLAG_REMOTE_FRAME),
+                            is_error_frame=bool(flags & vxlapi.XL_CAN_MSG_FLAG_ERROR_FRAME),
+                            is_fd=False,
+                            dlc=dlc,
+                            data=event.tagData.msg.data[:dlc],
+                            channel=event.chanIndex)
+                        return msg
 
             if end_time is not None and time.time() > end_time:
                 return None
@@ -196,22 +263,52 @@ class VectorBus(BusABC):
                 time.sleep(self.poll_interval)
 
     def send(self, msg, timeout=None):
-        message_count = ctypes.c_uint(1)
         msg_id = msg.arbitration_id
+
         if msg.id_type:
             msg_id |= vxlapi.XL_CAN_EXT_MSG_ID
-        flags = 0
-        if msg.is_remote_frame:
-            flags |= vxlapi.XL_CAN_MSG_FLAG_REMOTE_FRAME
-        xl_event = vxlapi.XLevent()
-        xl_event.tag = vxlapi.XL_TRANSMIT_MSG
-        xl_event.tagData.msg.id = msg_id
-        xl_event.tagData.msg.dlc = msg.dlc
-        xl_event.tagData.msg.flags = flags
-        for idx, value in enumerate(msg.data):
-            xl_event.tagData.msg.data[idx] = value
-        vxlapi.xlCanTransmit(self.port_handle, self.mask, message_count, xl_event)
 
+        flags = 0
+
+        if self.fd:
+            if msg.dlc > vxlapi.MAX_MSG_LEN: #extended data length (XL_CAN_RXMSG_FLAG_EDL) not in msg class
+                flags |= vxlapi.XL_CAN_TXMSG_FLAG_EDL
+            if msg.bitrate_switch:
+                flags |= vxlapi.XL_CAN_TXMSG_FLAG_BRS
+            if msg.is_remote_frame:
+                flags |= vxlapi.XL_CAN_TXMSG_FLAG_RTR
+                        
+            message_count = 1
+            MsgCntSent = ctypes.c_uint(1)
+            
+            XLcanTxEvent = vxlapi.XLcanTxEvent()
+            XLcanTxEvent.tag = vxlapi.XL_CAN_EV_TAG_TX_MSG
+            XLcanTxEvent.transId = 0xffff
+            
+            XLcanTxEvent.tagData.canMsg.canId = msg_id
+            XLcanTxEvent.tagData.canMsg.msgFlags = flags
+            XLcanTxEvent.tagData.canMsg.dlc = msg.dlc
+            for idx, value in enumerate(msg.data):
+                XLcanTxEvent.tagData.canMsg.data[idx] = value
+            vxlapi.xlCanTransmitEx(self.port_handle, self.mask, message_count, MsgCntSent, XLcanTxEvent)
+
+        else:
+            if msg.is_remote_frame:
+                flags |= vxlapi.XL_CAN_MSG_FLAG_REMOTE_FRAME
+
+            message_count = ctypes.c_uint(1)
+            
+            xl_event = vxlapi.XLevent()
+            xl_event.tag = vxlapi.XL_TRANSMIT_MSG
+            
+            xl_event.tagData.msg.id = msg_id
+            xl_event.tagData.msg.dlc = msg.dlc
+            xl_event.tagData.msg.flags = flags
+            for idx, value in enumerate(msg.data):
+                xl_event.tagData.msg.data[idx] = value
+            vxlapi.xlCanTransmit(self.port_handle, self.mask, message_count, xl_event)
+
+        
     def flush_tx_buffer(self):
         vxlapi.xlCanFlushTransmitQueue(self.port_handle, self.mask)
 
@@ -224,3 +321,8 @@ class VectorBus(BusABC):
         vxlapi.xlDeactivateChannel(self.port_handle, self.mask)
         vxlapi.xlActivateChannel(self.port_handle, self.mask,
                                      vxlapi.XL_BUS_TYPE_CAN, 0)
+
+    def map_dlc(self,dlc_in):
+        can_fd_dlc = [0,1,2,3,4,5,6,7,8,12,16,20,24,32,48,64]
+        return can_fd_dlc[dlc_in]
+        
