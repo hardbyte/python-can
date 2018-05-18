@@ -7,7 +7,7 @@ as a list of all avalibale backends and some implemented
 CyclicSendTasks.
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
 import sys
 import importlib
@@ -129,6 +129,8 @@ class Bus(BusABC):
             raise ValueError("channel argument missing")
 
         # the channel attribute should be present in **config
+        print("DEBUGGING: ", args)
+        print("DEBUGGING: ", config)
         return cls(*args, **config)
 
 

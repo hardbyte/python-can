@@ -33,7 +33,7 @@ class VirtualBus(BusABC):
     A virtual CAN bus using an internal message queue. It can be
     used for example for testing.
 
-    In this interface, a channel is an arbitarty object used as
+    In this interface, a channel is an arbitrary object used as
     an identifier for connected buses.
 
     Implements :meth:`can.BusABC._detect_available_configs`; see
@@ -78,7 +78,7 @@ class VirtualBus(BusABC):
         with channels_lock:
             self.channel.remove(self.queue)
 
-            # remove if emtpy
+            # remove if empty
             if not self.channel:
                 del channels[self.channel_id]
 
