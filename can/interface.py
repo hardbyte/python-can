@@ -99,7 +99,7 @@ class Bus(BusABC):
     configuration file from default locations.
     """
 
-    @classmethod
+    @staticmethod
     def __new__(cls, *args, **config):
         """
         Takes the same arguments as :class:`can.BusABC.__init__` with the addition of:
