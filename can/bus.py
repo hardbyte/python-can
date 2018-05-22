@@ -10,10 +10,14 @@ from __future__ import print_function, absolute_import
 from abc import ABCMeta, abstractmethod
 import logging
 import threading
+from collections import namedtuple
 
 from can.broadcastmanager import ThreadBasedCyclicSendTask
 
 logger = logging.getLogger(__name__)
+
+
+BusState = namedtuple('BusState', 'ACTIVE, PASSIVE, ERROR')
 
 
 class BusABC(object):
@@ -160,6 +164,23 @@ class BusABC(object):
         for thread in self._tx_threads:
             thread.stop()
         self.shutdown()
+
+    @property
+    def state(self):
+        """
+        Return the current state of the hardware
+        :return: ACTIVE, PASSIVE or ERROR
+        :rtype: NamedTuple
+        """
+        return BusState.ACTIVE
+
+    @state.setter
+    def state(self, new_state):
+        """
+        Set the new state of the hardware
+        :param new_state: BusState.ACTIVE, BusState.PASSIVE or BusState.ERROR
+        """
+        raise NotImplementedError("Property is not implemented.")
 
     @staticmethod
     def _detect_available_configs():
