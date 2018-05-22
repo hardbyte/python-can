@@ -11,8 +11,12 @@ from abc import ABCMeta, abstractmethod
 import logging
 import threading
 from time import time
+from collections import namedtuple
 
 from .broadcastmanager import ThreadBasedCyclicSendTask
+
+
+BusState = namedtuple('BusState', 'ACTIVE, PASSIVE, ERROR')
 
 
 class BusABC(object):
@@ -38,6 +42,8 @@ class BusABC(object):
         * :meth:`~can.BusABC._detect_available_configs` to allow the interface
           to report which configurations are currently available for new
           connections
+        * :meth:`~can.BusABC.state` property to allow reading and/or changing
+          the bus state
 
     .. note::
 
@@ -309,6 +315,23 @@ class BusABC(object):
         in shutting down a bus.
         """
         pass
+
+    @property
+    def state(self):
+        """
+        Return the current state of the hardware
+        :return: ACTIVE, PASSIVE or ERROR
+        :rtype: NamedTuple
+        """
+        return BusState.ACTIVE
+
+    @state.setter
+    def state(self, new_state):
+        """
+        Set the new state of the hardware
+        :param new_state: BusState.ACTIVE, BusState.PASSIVE or BusState.ERROR
+        """
+        raise NotImplementedError("Property is not implemented.")
 
     @staticmethod
     def _detect_available_configs():
