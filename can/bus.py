@@ -162,7 +162,7 @@ class BusABC(object):
         :return: ACTIVE, PASSIVE or ERROR
         :rtype: NamedTuple
         """
-        pass
+        return BusState.ACTIVE
 
     @state.setter
     def state(self, new_state):
@@ -170,7 +170,7 @@ class BusABC(object):
         Set the new state of the hardware
         :param new_state: BusState.ACTIVE, BusState.PASSIVE or BusState.ERROR
         """
-        pass
+        raise NotImplementedError("Property is not implemented.")
 
     @staticmethod
     def _detect_available_configs():
