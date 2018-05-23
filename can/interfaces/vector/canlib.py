@@ -30,6 +30,7 @@ except ImportError:
 # Import Modules
 # ==============
 from can import BusABC, Message
+from can.util import len2dlc, dlc2len
 from .exceptions import VectorError
 
 # Define Module Logger
@@ -49,7 +50,7 @@ class VectorBus(BusABC):
 
     def __init__(self, channel, can_filters=None, poll_interval=0.01,
                  receive_own_messages=False,
-                 bitrate=None, rx_queue_size=256, app_name="CANalyzer", fd=False, data_bitrate=None, **config):
+                 bitrate=None, rx_queue_size=2**14, app_name="CANalyzer", fd=False, data_bitrate=None, sjwAbr=2, tseg1Abr=6, tseg2Abr=3, sjwDbr=2, tseg1Dbr=6, tseg2Dbr=3, **config):
         """
         :param list channel:
             The channel indexes to create this bus with.
@@ -59,7 +60,9 @@ class VectorBus(BusABC):
         :param int bitrate:
             Bitrate in bits/s.
         :param int rx_queue_size:
-            Number of messages in receive queue.
+            Number of messages in receive queue (power of 2).
+            CAN: range 16…32768
+            CAN-FD: range 8192…524288
         :param str app_name:
             Name of application in Hardware Config.
         :param bool fd:
@@ -106,7 +109,7 @@ class VectorBus(BusABC):
             permission_mask.value = self.mask
         if fd:
             vxlapi.xlOpenPort(self.port_handle, self._app_name, self.mask,
-                              permission_mask, 16000,
+                              permission_mask, rx_queue_size,
                               vxlapi.XL_INTERFACE_VERSION_V4, vxlapi.XL_BUS_TYPE_CAN)
         else:
             vxlapi.xlOpenPort(self.port_handle, self._app_name, self.mask,
@@ -123,19 +126,21 @@ class VectorBus(BusABC):
                     self.canFdConf.arbitrationBitRate = ctypes.c_uint(bitrate)
                 else:
                     self.canFdConf.arbitrationBitRate = ctypes.c_uint(500000)
-                self.canFdConf.sjwAbr = ctypes.c_uint(2)
-                self.canFdConf.tseg1Abr = ctypes.c_uint(6)
-                self.canFdConf.tseg2Abr = ctypes.c_uint(3)
+                self.canFdConf.sjwAbr = ctypes.c_uint(sjwAbr)
+                self.canFdConf.tseg1Abr = ctypes.c_uint(tseg1Abr)
+                self.canFdConf.tseg2Abr = ctypes.c_uint(tseg2Abr)
                 if data_bitrate:
                     self.canFdConf.dataBitRate = ctypes.c_uint(data_bitrate)
                 else:
                     self.canFdConf.dataBitRate = self.canFdConf.arbitrationBitRate
-                self.canFdConf.sjwDbr = ctypes.c_uint(2)
-                self.canFdConf.tseg1Dbr = ctypes.c_uint(6)
-                self.canFdConf.tseg2Dbr = ctypes.c_uint(3)
+                self.canFdConf.sjwDbr = ctypes.c_uint(sjwDbr)
+                self.canFdConf.tseg1Dbr = ctypes.c_uint(tseg1Dbr)
+                self.canFdConf.tseg2Dbr = ctypes.c_uint(tseg2Dbr)
                 
                 vxlapi.xlCanFdSetConfiguration(self.port_handle, self.mask, self.canFdConf)
                 LOG.info('SetFdConfig.: ABaudr.=%u, DBaudr.=%u', self.canFdConf.arbitrationBitRate, self.canFdConf.dataBitRate)
+                LOG.info('SetFdConfig.: sjwAbr=%u, tseg1Abr=%u, tseg2Abr=%u', self.canFdConf.sjwAbr, self.canFdConf.tseg1Abr, self.canFdConf.tseg2Abr)
+                LOG.info('SetFdConfig.: sjwDbr=%u, tseg1Dbr=%u, tseg2Dbr=%u', self.canFdConf.sjwDbr, self.canFdConf.tseg1Dbr, self.canFdConf.tseg2Dbr)
             else:
                 if bitrate:
                     vxlapi.xlCanSetChannelBitrate(self.port_handle, permission_mask, bitrate)
@@ -205,7 +210,7 @@ class VectorBus(BusABC):
                 else:
                     if event.tag == vxlapi.XL_CAN_EV_TAG_RX_OK or event.tag == vxlapi.XL_CAN_EV_TAG_TX_OK:
                         msg_id = event.tagData.canRxOkMsg.canId
-                        dlc = self.map_dlc(event.tagData.canRxOkMsg.dlc)
+                        dlc = dlc2len(event.tagData.canRxOkMsg.dlc)
                         flags = event.tagData.canRxOkMsg.msgFlags
                         timestamp = event.timeStamp * 1e-9
                         msg = Message(
@@ -214,9 +219,8 @@ class VectorBus(BusABC):
                             extended_id=bool(msg_id & vxlapi.XL_CAN_EXT_MSG_ID),
                             is_remote_frame=bool(flags & vxlapi.XL_CAN_RXMSG_FLAG_RTR),
                             is_error_frame=bool(flags & vxlapi.XL_CAN_RXMSG_FLAG_EF),
-                            is_fd=True,
+                            is_fd=bool(flags & vxlapi.XL_CAN_RXMSG_FLAG_EDL),
                             error_state_indicator=bool(flags & vxlapi.XL_CAN_RXMSG_FLAG_ESI),
-                            #extended data length (XL_CAN_RXMSG_FLAG_EDL) not in msg class
                             bitrate_switch=bool(flags & vxlapi.XL_CAN_RXMSG_FLAG_BRS),
                             dlc=dlc,
                             data=event.tagData.canRxOkMsg.data[:dlc],
@@ -271,7 +275,7 @@ class VectorBus(BusABC):
         flags = 0
 
         if self.fd:
-            if msg.dlc > vxlapi.MAX_MSG_LEN: #extended data length (XL_CAN_RXMSG_FLAG_EDL) not in msg class
+            if msg.is_fd:
                 flags |= vxlapi.XL_CAN_TXMSG_FLAG_EDL
             if msg.bitrate_switch:
                 flags |= vxlapi.XL_CAN_TXMSG_FLAG_BRS
@@ -287,7 +291,7 @@ class VectorBus(BusABC):
             
             XLcanTxEvent.tagData.canMsg.canId = msg_id
             XLcanTxEvent.tagData.canMsg.msgFlags = flags
-            XLcanTxEvent.tagData.canMsg.dlc = msg.dlc
+            XLcanTxEvent.tagData.canMsg.dlc = len2dlc(msg.dlc)
             for idx, value in enumerate(msg.data):
                 XLcanTxEvent.tagData.canMsg.data[idx] = value
             vxlapi.xlCanTransmitEx(self.port_handle, self.mask, message_count, MsgCntSent, XLcanTxEvent)
@@ -321,8 +325,4 @@ class VectorBus(BusABC):
         vxlapi.xlDeactivateChannel(self.port_handle, self.mask)
         vxlapi.xlActivateChannel(self.port_handle, self.mask,
                                      vxlapi.XL_BUS_TYPE_CAN, 0)
-
-    def map_dlc(self,dlc_in):
-        can_fd_dlc = [0,1,2,3,4,5,6,7,8,12,16,20,24,32,48,64]
-        return can_fd_dlc[dlc_in]
-        
+  
