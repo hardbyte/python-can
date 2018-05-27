@@ -122,6 +122,7 @@ class KvaserTest(unittest.TestCase):
         self.assertEqual(self.msg['flags'], constants.canMSG_STD)
         self.assertSequenceEqual(self.msg['data'], [50, 51])
 
+    @pytest.mark.timeout(3.0)
     def test_recv_no_message(self):
         self.assertEqual(self.bus.recv(timeout=0.5), None)
 
