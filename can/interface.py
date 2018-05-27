@@ -11,43 +11,20 @@ from __future__ import absolute_import
 
 import sys
 import importlib
-from pkg_resources import iter_entry_points
 import logging
 
 import can
 from .bus import BusABC
 from .broadcastmanager import CyclicSendTaskABC, MultiRateCyclicSendTaskABC
 from .util import load_config
+from .interfaces import BACKENDS
 
+# Required by "detect_available_configs" for argument interpretation
 if sys.version_info.major > 2:
     basestring = str
 
-
 log = logging.getLogger('can.interface')
 log_autodetect = log.getChild('detect_available_configs')
-
-# interface_name => (module, classname)
-BACKENDS = {
-    'kvaser':           ('can.interfaces.kvaser',           'KvaserBus'),
-    'socketcan_ctypes': ('can.interfaces.socketcan',        'SocketcanCtypes_Bus'),
-    'socketcan_native': ('can.interfaces.socketcan',        'SocketcanNative_Bus'),
-    'serial':           ('can.interfaces.serial.serial_can','SerialBus'),
-    'pcan':             ('can.interfaces.pcan',             'PcanBus'),
-    'usb2can':          ('can.interfaces.usb2can',          'Usb2canBus'),
-    'ixxat':            ('can.interfaces.ixxat',            'IXXATBus'),
-    'nican':            ('can.interfaces.nican',            'NicanBus'),
-    'iscan':            ('can.interfaces.iscan',            'IscanBus'),
-    'virtual':          ('can.interfaces.virtual',          'VirtualBus'),
-    'neovi':            ('can.interfaces.ics_neovi',        'NeoViBus'),
-    'vector':           ('can.interfaces.vector',           'VectorBus'),
-    'slcan':            ('can.interfaces.slcan',            'slcanBus')
-}
-
-BACKENDS.update({
-    interface.name: (interface.module_name, interface.attrs[0])
-    for interface in iter_entry_points('python_can.interface')
-})
-
 
 def _get_class_for_interface(interface):
     """
@@ -189,8 +166,8 @@ def detect_available_configs(interfaces=None):
 
 class CyclicSendTask(CyclicSendTaskABC):
 
-    @classmethod
-    def __new__(cls, other, channel, *args, **kwargs):
+    @staticmethod
+    def __new__(cls, channel, *args, **kwargs):
 
         config = load_config(config={'channel': channel})
 
@@ -209,8 +186,8 @@ class CyclicSendTask(CyclicSendTaskABC):
 
 class MultiRateCyclicSendTask(MultiRateCyclicSendTaskABC):
 
-    @classmethod
-    def __new__(cls, other, channel, *args, **kwargs):
+    @staticmethod
+    def __new__(cls, channel, *args, **kwargs):
 
         config = load_config(config={'channel': channel})
 

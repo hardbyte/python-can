@@ -34,8 +34,8 @@ class Logger(object):
     be created when instantiating this class.
     """
 
-    @classmethod
-    def __new__(cls, other, filename):
+    @staticmethod
+    def __new__(cls, filename):
         if not filename:
             return Printer()
         elif filename.endswith(".asc"):
