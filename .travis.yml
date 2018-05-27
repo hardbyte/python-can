@@ -51,4 +51,4 @@ install:
   - travis_retry pip install .[test]
 
 script:
-  - py.test -v --timeout=300
+  - pytest -v --timeout=300
