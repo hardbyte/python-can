@@ -48,7 +48,7 @@ About the ``BusABC`` class
 Concrete implementations *have to* implement the following:
     * :meth:`~can.BusABC.send` to send individual messages
     * :meth:`~can.BusABC._recv_internal` to receive individual messages
-      (see note below)
+      (see note below!)
     * set the :attr:`~can.BusABC.channel_info` attribute to a string describing
       the underlying bus and/or channel
 
@@ -69,11 +69,15 @@ They *might* implement the following:
 
 .. note::
 
+    *TL;DR*: Only override :meth:`~can.BusABC._recv_internal`,
+    never :meth:`~can.BusABC.recv` directly.
+
     Previously, concrete bus classes had to override :meth:`~can.BusABC.recv`
     directly instead of :meth:`~can.BusABC._recv_internal`, but that has
     changed to allow the abstract base class to handle in-software message
-    filtering as a fallback. Older (custom) interfaces might still be
-    implemented like that and thus might not provide message filtering.
+    filtering as a fallback. All internal interfaces now implement that new
+    behaviour. Older (custom) interfaces might still be implemented like that
+    and thus might not provide message filtering:
 
 
 Creating a Release

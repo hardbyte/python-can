@@ -51,14 +51,6 @@ class BusABC(object):
     def recv(self, timeout=None):
         """Block waiting for a message from the Bus.
 
-        If the concrete bus does not override it, this method makes sure
-        that all filters have been applied. That is the case for all
-        internal interfaces.
-
-        To enable receiving for an interface, please override
-        :meth:`~can.BusABC._recv_internal` instead of this one.
-        Overriding this method is deprecated.
-
         :param float timeout:
             seconds to wait for a message or None to wait indefinitely
 
