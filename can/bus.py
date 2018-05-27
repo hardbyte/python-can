@@ -2,7 +2,7 @@
 # coding: utf-8
 
 """
-Contains the ABC bus implementation and it's documentation.
+Contains the ABC bus implementation and its documentation.
 """
 
 from __future__ import print_function, absolute_import
@@ -62,8 +62,8 @@ class BusABC(object):
     def __init__(self, channel=None, can_filters=None, **config):
         """Construct and open a CAN bus instance of the specified type.
 
-        Subclasses should call though this one with all parameters as
-        it applies filters (for now).
+        Subclasses should call though this method with all given parameters
+        as it handles generic tasks like applying filters.
 
         :param channel:
             The can interface identifier. Expected type is backend dependent.

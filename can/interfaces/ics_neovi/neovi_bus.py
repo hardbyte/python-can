@@ -30,7 +30,7 @@ except ImportError as ie:
 
 class ICSApiError(CanError):
     """
-    TODO add docs
+    Indicates an error with the ICS API.
     """
 
     # A critical error which affects operation or accuracy.
@@ -42,10 +42,8 @@ class ICSApiError(CanError):
     # An error which probably does not need attention.
     ICS_SPY_ERR_INFORMATION = 0x40
 
-    def __init__(
-            self, error_number, description_short, description_long,
-            severity, restart_needed
-    ):
+    def __init__(self, error_number, description_short, description_long,
+                 severity, restart_needed):
         super(ICSApiError, self).__init__(description_short)
         self.error_number = error_number
         self.description_short = description_short
