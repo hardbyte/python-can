@@ -9,8 +9,8 @@ import logging
 
 from .asc import ASCWriter
 from .blf import BLFWriter
+from .canutils import CanutilsLogWriter
 from .csv import CSVWriter
-from .log import CanutilsLogWriter
 from .sqlite import SqliteWriter
 from .stdout import Printer
 

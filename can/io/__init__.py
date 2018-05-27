@@ -13,9 +13,9 @@ from .logger import Logger
 from .player import LogReader, MessageSync
 
 # Format specific
-from .canutils import CanutilsLogReader, CanutilsLogWriter
 from .asc import ASCWriter, ASCReader
 from .blf import BLFReader, BLFWriter
+from .canutils import CanutilsLogReader, CanutilsLogWriter
 from .csv import CSVWriter, CSVReader
 from .sqlite import SqliteReader, SqliteWriter
 from .stdout import Printer

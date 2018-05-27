@@ -14,8 +14,8 @@ import logging
 
 from .asc import ASCReader
 from .blf import BLFReader
+from .canutils import CanutilsLogReader
 from .csv import CSVReader
-from .log import CanutilsLogReader
 from .sqlite import SqliteReader
 
 log = logging.getLogger('can.io.player')
