@@ -5,18 +5,19 @@
 """
 
 import ctypes
-import unittest
 import time
 import logging
-
-import can
-from can.interfaces.kvaser import canlib
-from can.interfaces.kvaser import constants
-
+import unittest
 try:
     from unittest.mock import Mock, patch
 except ImportError:
     from mock import patch, Mock
+
+import pytest
+
+import can
+from can.interfaces.kvaser import canlib
+from can.interfaces.kvaser import constants
 
 
 class KvaserTest(unittest.TestCase):
