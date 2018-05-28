@@ -30,7 +30,7 @@ class NullContextManager(object):
         pass
 
 
-class ThreadSafeBus(ObjectProxy, BusABC):
+class ThreadSafeBus(ObjectProxy):
     """
     Contains a thread safe :class:`can.BusABC` implementation that
     wraps around an existing interface instance. All public methods
@@ -45,8 +45,6 @@ class ThreadSafeBus(ObjectProxy, BusABC):
         called simultaneously, and that the methods uses :meth:`~can.BusABC._recv_internal`
         instead of :meth:`~can.BusABC.recv` directly.
     """
-
-    __metaclass__ = ABCMeta
 
     # init locks for sending and receiving
     _lock_send = RLock()
