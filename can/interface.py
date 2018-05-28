@@ -7,7 +7,7 @@ as a list of all avalibale backends and some implemented
 CyclicSendTasks.
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
 import sys
 import importlib
@@ -98,36 +98,37 @@ class Bus(BusABC):
     configuration file from default locations.
     """
 
-    @classmethod
-    def __new__(cls, other, channel=None, *args, **kwargs):
+    @staticmethod
+    def __new__(cls, *args, **config):
         """
-        Takes the same arguments as :class:`can.BusABC` with the addition of:
+        Takes the same arguments as :class:`can.BusABC.__init__` with the addition of:
 
-        :param kwargs:
-            Should contain a bustype key with a valid interface name.
+        :param dict config:
+            Should contain an ``interface`` key with a valid interface name. If not,
+            it is completed using :meth:`can.util.load_config`.
 
-        :raises:
-            NotImplementedError if the bustype isn't recognized
-        :raises:
-            ValueError if the bustype or channel isn't either passed as an argument
-            or set in the can.rc config.
+        :raises: NotImplementedError
+            if the ``interface`` isn't recognized
 
+        :raises: ValueError
+            if the ``channel`` could not be determined
         """
 
-        # Figure out the configuration
-        config = load_config(config={
-            'interface': kwargs.get('bustype', kwargs.get('interface')),
-            'channel': channel
-        })
+        # figure out the rest of the configuration; this might raise an error
+        config = load_config(config=config)
 
-        # remove the bustype & interface so it doesn't get passed to the backend
-        if 'bustype' in kwargs:
-            del kwargs['bustype']
-        if 'interface' in kwargs:
-            del kwargs['interface']
-
+        # resolve the bus class to use for that interface
         cls = _get_class_for_interface(config['interface'])
-        return cls(channel=config['channel'], *args, **kwargs)
+
+        # remove the 'interface' key so it doesn't get passed to the backend
+        del config['interface']
+
+        # make sure the bus can handle this config
+        if 'channel' not in config:
+            raise ValueError("channel argument missing")
+
+        # the channel attribute should be present in **config
+        return cls(*args, **config)
 
 
 def detect_available_configs(interfaces=None):
