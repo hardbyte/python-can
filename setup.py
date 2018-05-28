@@ -23,6 +23,7 @@ with open('README.rst', 'r') as f:
 tests_require = [
     'mock >= 2.0.0',
     'nose >= 1.3.7',
+    'pytest-timeout >= 1.2.1',
     'pyserial >= 3.0'
 ]
 
