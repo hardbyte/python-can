@@ -10,10 +10,11 @@ from __future__ import absolute_import, print_function
 import sys
 import unittest
 from time import sleep
+from multiprocessing.dummy import Pool as ThreadPool 
+
+import pytest
 
 import can
-
-from .data.example_data import generate_message
 
 from .config import *
 from .data.example_data import generate_message
@@ -35,16 +36,16 @@ class Back2BackTestCase(unittest.TestCase):
     """
 
     def setUp(self):
-        self.bus1 = can.interface.Bus(channel=CHANNEL_1,
-                                      bustype=INTERFACE_1,
-                                      bitrate=BITRATE,
-                                      fd=TEST_CAN_FD,
-                                      single_handle=True)
-        self.bus2 = can.interface.Bus(channel=CHANNEL_2,
-                                      bustype=INTERFACE_2,
-                                      bitrate=BITRATE,
-                                      fd=TEST_CAN_FD,
-                                      single_handle=True)
+        self.bus1 = can.Bus(channel=CHANNEL_1,
+                            bustype=INTERFACE_1,
+                            bitrate=BITRATE,
+                            fd=TEST_CAN_FD,
+                            single_handle=True)
+        self.bus2 = can.Bus(channel=CHANNEL_2,
+                            bustype=INTERFACE_2,
+                            bitrate=BITRATE,
+                            fd=TEST_CAN_FD,
+                            single_handle=True)
 
     def tearDown(self):
         self.bus1.shutdown()
@@ -168,6 +169,52 @@ class BasicTestSocketCan(unittest.TestCase):
 
         self.assertEqual(message, reader.get_message(timeout=2.0))
         notifier.stop()
+
+
+class TestThreadSafeBus(Back2BackTestCase):
+    """Does some testing that is better than nothing.
+    """
+
+    def setUp(self):
+        self.bus1 = can.ThreadSafeBus(channel=CHANNEL_1,
+                                      bustype=INTERFACE_1,
+                                      bitrate=BITRATE,
+                                      fd=TEST_CAN_FD,
+                                      single_handle=True)
+        self.bus2 = can.ThreadSafeBus(channel=CHANNEL_2,
+                                      bustype=INTERFACE_2,
+                                      bitrate=BITRATE,
+                                      fd=TEST_CAN_FD,
+                                      single_handle=True)
+
+    @pytest.mark.timeout(5.0)
+    def test_concurrent_writes(self):
+        sender_pool = ThreadPool(100)
+        receiver_pool = ThreadPool(100)
+
+        message = can.Message(
+            arbitration_id=0x123,
+            extended_id=True,
+            timestamp=121334.365,
+            data=[254, 255, 1, 2]
+        )
+        workload = 1000 * [message]
+
+        def sender(msg):
+            self.bus1.send(msg)
+
+        def receiver(_):
+            result = self.bus2.recv(timeout=2.0)
+            self.assertIsNotNone(result)
+            self.assertEqual(result, message)
+
+        sender_pool.map_async(sender, workload)
+        receiver_pool.map_async(receiver, len(workload) * [None])
+
+        sender_pool.close()
+        sender_pool.join()
+        receiver_pool.close()
+        receiver_pool.join()
 
 
 if __name__ == '__main__':

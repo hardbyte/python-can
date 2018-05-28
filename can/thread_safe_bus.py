@@ -10,7 +10,8 @@ from threading import RLock
 
 from wrapt import ObjectProxy, synchronized
 
-from can import Bus, BusABC
+from .interface import Bus
+from .bus import BusABC
 
 
 class NullContextManager(object):
