@@ -46,7 +46,7 @@ class ThreadSafeBus(ObjectProxy):
         instead of :meth:`~can.BusABC.recv` directly.
     """
 
-    # init locks for sending and receiving
+    # init locks for sending and receiving separately
     _lock_send = RLock()
     _lock_recv = RLock()
 
