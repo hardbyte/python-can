@@ -24,8 +24,14 @@ matrix:
     - PYTHON: "C:\\Python33-x64"
 
 install:
+  # Prepend Python installation to PATH
+  - set PATH=%PYTHON_INSTALL%;%PATH%
+
+  # Prepend Python scripts to PATH (e.g. py.test)
+  - set PATH=%PYTHON_INSTALL%\\Scripts;%PATH%
+
   # We need to install the python-can library itself
-  - "%PYTHON%\\python.exe -m pip install .[test]"
+  - "python -m pip install .[test]"
 
 build: off
 
