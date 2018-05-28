@@ -21,10 +21,11 @@ with open('README.rst', 'r') as f:
 
 # Dependencies
 tests_require = [
-    'mock >= 2.0.0',
-    'nose >= 1.3.7',
-    'pytest-timeout >= 1.2.1',
-    'pyserial >= 3.0'
+    'mock ~= 2.0',
+    'nose ~= 1.3.7',
+    'pytest ~= 3.6',
+    'pytest-timeout ~= 1.2',
+    'pyserial ~= 3.0'
 ]
 
 setup(
