@@ -8,6 +8,7 @@ from __future__ import print_function, absolute_import
 
 from threading import RLock
 
+import six
 from wrapt import ObjectProxy, synchronized
 
 from .interface import Bus
@@ -29,7 +30,7 @@ class NullContextManager(object):
         pass
 
 
-class ThreadSafeBus(ObjectProxy, BusABC):
+class ThreadSafeBus(six.with_metaclass(ObjectProxy, BusABC)):
     """
     Contains a thread safe :class:`can.BusABC` implementation that
     wraps around an existing interface instance. All public methods

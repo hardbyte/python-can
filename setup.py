@@ -57,6 +57,7 @@ setup(
     install_requires=[
         'setuptools',
         'wrapt ~= 1.10',
+        'six ~= 1.11',
     ] + (['subprocess32 ~= 3.2.7'] if version_info.major < 3 else []),
     extras_require={
         'serial': ['pyserial >= 3.0'],
