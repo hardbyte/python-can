@@ -50,6 +50,8 @@ class ThreadSafeBus(ObjectProxy, BusABC):
     _lock_recv = RLock()
 
     def __init__(self, *args, **kwargs):
+        super(ThreadSafeBus, self).__init__(Bus(*args, **kwargs))
+
         # now, BusABC.send_periodic() does not need a lock anymore, but the
         # implementation still requires a context manager
         self.__wrapped__._lock_send_periodic = NullContextManager()
