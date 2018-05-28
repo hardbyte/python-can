@@ -1,4 +1,3 @@
-
 Broadcast Manager
 =================
 
@@ -6,10 +5,10 @@ The broadcast manager isn't yet supported by all interfaces.
 Currently SockerCAN and IXXAT are supported at least partially.
 It allows the user to setup periodic message jobs.
 
-If periodic transmission is not supported natively, a software thread based
-scheduler is used as a fallback.
+If periodic transmission is not supported natively, a software thread
+based scheduler is used as a fallback.
 
-This example shows the ctypes socketcan using the broadcast manager:
+This example shows the socketcan_ctypes backend using the broadcast manager:
 
 
 .. literalinclude:: ../examples/cyclic.py
@@ -17,10 +16,9 @@ This example shows the ctypes socketcan using the broadcast manager:
     :linenos:
 
 
-Functional API
---------------
-
-.. autofunction:: can.send_periodic
+.. note::
+    The functional APi in :meth:`can.send_periodic` is now deprected.
+    Use the object oriented APi in :meth:`can.BusABC.send_periodic` instead.
 
 
 Class based API
