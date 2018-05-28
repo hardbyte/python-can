@@ -6,10 +6,10 @@
 
 from __future__ import print_function, absolute_import
 
+from abc import ABCMeta
 from threading import RLock
 
-import six
-from wrapt import ObjectProxy, synchronized
+from wrapt import ObjectProxy
 
 from .interface import Bus
 from .bus import BusABC
@@ -30,7 +30,7 @@ class NullContextManager(object):
         pass
 
 
-class ThreadSafeBus(six.with_metaclass(ObjectProxy, BusABC)):
+class ThreadSafeBus(ObjectProxy, BusABC):
     """
     Contains a thread safe :class:`can.BusABC` implementation that
     wraps around an existing interface instance. All public methods
@@ -45,6 +45,8 @@ class ThreadSafeBus(six.with_metaclass(ObjectProxy, BusABC)):
         called simultaneously, and that the methods uses :meth:`~can.BusABC._recv_internal`
         instead of :meth:`~can.BusABC.recv` directly.
     """
+
+    __metaclass__ = ABCMeta
 
     # init locks for sending and receiving
     _lock_send = RLock()
