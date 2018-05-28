@@ -22,7 +22,6 @@ from .util import load_config
 if sys.version_info.major > 2:
     basestring = str
 
-
 log = logging.getLogger('can.interface')
 log_autodetect = log.getChild('detect_available_configs')
 

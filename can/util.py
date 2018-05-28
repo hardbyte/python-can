@@ -270,6 +270,6 @@ def dlc2len(dlc):
 if __name__ == "__main__":
     print("Searching for configuration named:")
     print("\n".join(CONFIG_FILES))
-
+    print()
     print("Settings:")
     print(load_config())

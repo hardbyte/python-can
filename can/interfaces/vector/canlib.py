@@ -158,8 +158,6 @@ class VectorBus(BusABC):
         else:
             LOG.info('Install pywin32 to avoid polling')
 
-        self.set_filters(can_filters)
-
         try:
             vxlapi.xlActivateChannel(self.port_handle, self.mask,
                                      vxlapi.XL_BUS_TYPE_CAN, 0)
@@ -172,26 +170,40 @@ class VectorBus(BusABC):
         vxlapi.xlGetSyncTime(self.port_handle, offset)
         self._time_offset = time.time() - offset.value * 1e-9
 
-        super(VectorBus, self).__init__()
+        self._is_filtered = False
+        super(VectorBus, self).__init__(channel=channel, can_filters=can_filters,
+            poll_interval=0.01, receive_own_messages=False, bitrate=None,
+            rx_queue_size=256, app_name="CANalyzer", **config)
 
-    def set_filters(self, can_filters=None):
-        if can_filters:
-            # Only one filter per ID type allowed
-            if len(can_filters) == 1 or (
-                    len(can_filters) == 2 and
-                    can_filters[0].get("extended") != can_filters[1].get("extended")):
-                for can_filter in can_filters:
+    def _apply_filters(self, filters):
+        if filters:
+            # Only up to one filter per ID type allowed
+            if len(filters) == 1 or (len(filters) == 2 and
+                    filters[0].get("extended") != filters[1].get("extended")):
+                for can_filter in filters:
                     try:
-                        vxlapi.xlCanSetChannelAcceptance(
-                            self.port_handle, self.mask,
+                        vxlapi.xlCanSetChannelAcceptance(self.port_handle, self.mask,
                             can_filter["can_id"], can_filter["can_mask"],
                             vxlapi.XL_CAN_EXT if can_filter.get("extended") else vxlapi.XL_CAN_STD)
                     except VectorError as exc:
                         LOG.warning("Could not set filters: %s", exc)
+                        # go to fallback
+                    else:
+                        self._is_filtered = True
+                        return
             else:
-                LOG.warning("Only one filter per extended or standard ID allowed")
+                LOG.warning("Only up to one filter per extended or standard ID allowed")
+                # go to fallback
 
-    def recv(self, timeout=None):
+        # fallback: reset filters
+        self._is_filtered = False
+        try:
+            vxlapi.xlCanSetChannelAcceptance(self.port_handle, self.mask, 0x0, 0x0, vxlapi.XL_CAN_EXT)
+            vxlapi.xlCanSetChannelAcceptance(self.port_handle, self.mask, 0x0, 0x0, vxlapi.XL_CAN_STD)
+        except VectorError as exc:
+            LOG.warning("Could not reset filters: %s", exc)
+
+    def _recv_internal(self, timeout):
         end_time = time.time() + timeout if timeout is not None else None
 
         if self.fd:
@@ -199,7 +211,7 @@ class VectorBus(BusABC):
         else:
             event = vxlapi.XLevent()
             event_count = ctypes.c_uint()
-            
+
         while True:
             if self.fd:
                 try:
@@ -225,7 +237,7 @@ class VectorBus(BusABC):
                             dlc=dlc,
                             data=event.tagData.canRxOkMsg.data[:dlc],
                             channel=event.chanIndex)
-                        return msg
+                        return msg, self._is_filtered
             else:
                 event_count.value = 1
                 try:
@@ -249,10 +261,10 @@ class VectorBus(BusABC):
                             dlc=dlc,
                             data=event.tagData.msg.data[:dlc],
                             channel=event.chanIndex)
-                        return msg
+                        return msg, self._is_filtered
 
             if end_time is not None and time.time() > end_time:
-                return None
+                return None, self._is_filtered
 
             if HAS_EVENTS:
                 # Wait for receive event to occur
