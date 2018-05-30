@@ -25,24 +25,32 @@ from can.listener import Listener
 from can.util import len2dlc, dlc2len
 
 
+class BLFParseError(Exception):
+    """BLF file could not be parsed correctly."""
+    pass
+
+
 # 0 = unknown, 2 = CANoe
 APPLICATION_ID = 5
 
-# Header must be 144 bytes in total
 # signature ("LOGG"), header size,
 # application ID, application major, application minor, application build,
 # bin log major, bin log minor, bin log build, bin log patch,
 # file size, uncompressed size, count of objects, count of objects read,
 # time start (SYSTEMTIME), time stop (SYSTEMTIME)
-FILE_HEADER_STRUCT = struct.Struct("<4sLBBBBBBBBQQLL8H8H72x")
+FILE_HEADER_STRUCT = struct.Struct("<4sLBBBBBBBBQQLL8H8H")
 
-# signature ("LOBJ"), header size, header version (1), object size, object type
+# Pad file header to this size
+FILE_HEADER_SIZE = 144
+
+# signature ("LOBJ"), header size, header version, object size, object type
 OBJ_HEADER_BASE_STRUCT = struct.Struct("<4sHHLL")
 
 # flags, client index, object version, timestamp
-OBJ_HEADER_STRUCT = struct.Struct("<LHHQ")
+OBJ_HEADER_V1_STRUCT = struct.Struct("<LHHQ")
 
-HEADER_SIZE = OBJ_HEADER_BASE_STRUCT.size + OBJ_HEADER_STRUCT.size
+# flags, timestamp status, object version, timestamp, original timestamp
+OBJ_HEADER_V2_STRUCT = struct.Struct("<LBxHQQ")
 
 # compression method, size uncompressed
 LOG_CONTAINER_STRUCT = struct.Struct("<H6xL4x")
@@ -78,6 +86,9 @@ EDL = 0x1
 BRS = 0x2
 ESI = 0x4
 
+TIME_TEN_MICS = 0x00000001
+TIME_ONE_NANS = 0x00000002
+
 
 def timestamp_to_systemtime(timestamp):
     if timestamp is None or timestamp < 631152000:
@@ -111,12 +122,15 @@ class BLFReader(object):
         data = self.fp.read(FILE_HEADER_STRUCT.size)
         header = FILE_HEADER_STRUCT.unpack(data)
         #print(header)
-        assert header[0] == b"LOGG", "Unknown file format"
+        if header[0] != b"LOGG":
+            raise BLFParseError("Unexpected file format")
         self.file_size = header[10]
         self.uncompressed_size = header[11]
         self.object_count = header[12]
         self.start_timestamp = systemtime_to_timestamp(header[14:22])
         self.stop_timestamp = systemtime_to_timestamp(header[22:30])
+        # Read rest of header
+        self.fp.read(header[1] - FILE_HEADER_STRUCT.size)
 
     def __iter__(self):
         tail = b""
@@ -128,7 +142,8 @@ class BLFReader(object):
 
             header = OBJ_HEADER_BASE_STRUCT.unpack(data)
             #print(header)
-            assert header[0] == b"LOBJ", "Parse error"
+            if header[0] != b"LOBJ":
+                raise BLFParseError()
             obj_type = header[4]
             obj_data_size = header[3] - OBJ_HEADER_BASE_STRUCT.size
             obj_data = self.fp.read(obj_data_size)
@@ -153,19 +168,37 @@ class BLFReader(object):
                 while pos + OBJ_HEADER_BASE_STRUCT.size < len(data):
                     header = OBJ_HEADER_BASE_STRUCT.unpack_from(data, pos)
                     #print(header)
-                    assert header[0] == b"LOBJ", "Parse error"
+                    if header[0] != b"LOBJ":
+                        raise BLFParseError()
+
                     obj_size = header[3]
-                    if pos + obj_size > len(data):
+                    # Calculate position of next object
+                    next_pos = pos + obj_size + (obj_size % 4)
+                    if next_pos > len(data):
                         # Object continues in next log container
                         break
                     pos += OBJ_HEADER_BASE_STRUCT.size
+
                     # Read rest of header
-                    header += OBJ_HEADER_STRUCT.unpack_from(data, pos)
-                    pos += OBJ_HEADER_STRUCT.size
+                    header_version = header[2]
+                    if header_version == 1:
+                        flags, _, _, timestamp = OBJ_HEADER_V1_STRUCT.unpack_from(data, pos)
+                        pos += OBJ_HEADER_V1_STRUCT.size
+                    elif header_version == 2:
+                        flags, _, _, timestamp, _ = OBJ_HEADER_V2_STRUCT.unpack_from(data, pos)
+                        pos += OBJ_HEADER_V2_STRUCT.size
+                    else:
+                        # Unknown header version
+                        pos = next_pos
+                        continue
+
+                    if flags == TIME_TEN_MICS:
+                        factor = 10 * 1e-6
+                    else:
+                        factor = 1e-9
+                    timestamp = timestamp * factor + self.start_timestamp
 
                     obj_type = header[4]
-                    timestamp = header[8] * 1e-9 + self.start_timestamp
-
                     if obj_type == CAN_MESSAGE:
                         (channel, flags, dlc, can_id,
                          can_data) = CAN_MSG_STRUCT.unpack_from(data, pos)
@@ -204,9 +237,7 @@ class BLFReader(object):
                                       channel=channel - 1)
                         yield msg
 
-                    pos += obj_size - HEADER_SIZE
-                    # Add padding bytes
-                    pos += obj_size % 4
+                    pos = next_pos
 
                 # Save remaing data that could not be processed
                 tail = data[pos:]
@@ -229,11 +260,11 @@ class BLFWriter(Listener):
         self.fp = open(filename, "wb")
         self.channel = channel
         # Header will be written after log is done
-        self.fp.write(b"\x00" * FILE_HEADER_STRUCT.size)
+        self.fp.write(b"\x00" * FILE_HEADER_SIZE)
         self.cache = []
         self.cache_size = 0
         self.count_of_objects = 0
-        self.uncompressed_size = FILE_HEADER_STRUCT.size
+        self.uncompressed_size = FILE_HEADER_SIZE
         self.start_timestamp = None
         self.stop_timestamp = None
 
@@ -298,10 +329,11 @@ class BLFWriter(Listener):
             self.start_timestamp = timestamp
         self.stop_timestamp = timestamp
         timestamp = int((timestamp - self.start_timestamp) * 1e9)
-        obj_size = HEADER_SIZE + len(data)
+        header_size = OBJ_HEADER_BASE_STRUCT.size + OBJ_HEADER_V1_STRUCT.size
+        obj_size = header_size + len(data)
         base_header = OBJ_HEADER_BASE_STRUCT.pack(
-            b"LOBJ", HEADER_SIZE, 1, obj_size, obj_type)
-        obj_header = OBJ_HEADER_STRUCT.pack(2, 0, 0, max(timestamp, 0))
+            b"LOBJ", header_size, 1, obj_size, obj_type)
+        obj_header = OBJ_HEADER_V1_STRUCT.pack(TIME_ONE_NANS, 0, 0, max(timestamp, 0))
 
         self.cache.append(base_header)
         self.cache.append(obj_header)
@@ -330,7 +362,7 @@ class BLFWriter(Listener):
         self.cache_size = len(tail)
         compressed_data = zlib.compress(uncompressed_data,
                                         self.COMPRESSION_LEVEL)
-        obj_size = (OBJ_HEADER_STRUCT.size + LOG_CONTAINER_STRUCT.size +
+        obj_size = (OBJ_HEADER_V1_STRUCT.size + LOG_CONTAINER_STRUCT.size +
                     len(compressed_data))
         base_header = OBJ_HEADER_BASE_STRUCT.pack(
             b"LOBJ", OBJ_HEADER_BASE_STRUCT.size, 1, obj_size, LOG_CONTAINER)
@@ -341,7 +373,7 @@ class BLFWriter(Listener):
         self.fp.write(compressed_data)
         # Write padding bytes
         self.fp.write(b"\x00" * (obj_size % 4))
-        self.uncompressed_size += OBJ_HEADER_STRUCT.size + LOG_CONTAINER_STRUCT.size
+        self.uncompressed_size += OBJ_HEADER_V1_STRUCT.size + LOG_CONTAINER_STRUCT.size
         self.uncompressed_size += len(uncompressed_data)
 
     def stop(self):
@@ -353,7 +385,7 @@ class BLFWriter(Listener):
         self.fp.close()
 
         # Write header in the beginning of the file
-        header = [b"LOGG", FILE_HEADER_STRUCT.size,
+        header = [b"LOGG", FILE_HEADER_SIZE,
                   APPLICATION_ID, 0, 0, 0, 2, 6, 8, 1]
         # The meaning of "count of objects read" is unknown
         header.extend([filesize, self.uncompressed_size,
