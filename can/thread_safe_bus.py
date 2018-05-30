@@ -35,14 +35,15 @@ class ThreadSafeBus(ObjectProxy):
     Contains a thread safe :class:`can.BusABC` implementation that
     wraps around an existing interface instance. All public methods
     of that base class are now safe to be called from multiple threads.
+    The send and receive methods are synchronized separately.
 
-    Use this as a drop in replacement for :class:`~can.BusABC`.
+    Use this as a drop-in replacement for :class:`~can.BusABC`.
 
     .. note::
 
         This approach assumes that both :meth:`~can.BusABC.send` and
         :meth:`~can.BusABC._recv_internal` of the underlying bus instance can be
-        called simultaneously, and that the methods uses :meth:`~can.BusABC._recv_internal`
+        called simultaneously, and that the methods use :meth:`~can.BusABC._recv_internal`
         instead of :meth:`~can.BusABC.recv` directly.
     """
 
@@ -65,7 +66,8 @@ class ThreadSafeBus(ObjectProxy):
         with self._lock_send:
             return self.__wrapped__.send(msg, timeout=timeout, *args, **kwargs)
 
-    # send_periodic does not need a lock, see that method and the comment in this __init__
+    # send_periodic does not need a lock, since the underlying
+    # `send` method is already synchronized
 
     @property
     def filters(self):

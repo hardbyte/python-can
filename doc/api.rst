@@ -25,9 +25,12 @@ Utilities
 .. automodule:: can.util
     :members:
 
+.. automethod:: can.detect_available_configs
 
 .. _notifier:
-   
+
+
+
 Notifier
 --------
 
@@ -35,4 +38,3 @@ The Notifier object is used as a message distributor for a bus.
 
 .. autoclass:: can.Notifier
     :members:
-

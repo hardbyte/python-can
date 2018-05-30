@@ -191,6 +191,10 @@ class BusABC(object):
 
     @property
     def filters(self):
+        """
+        Modify the filters of this bus. See :meth:`~can.BusABC.set_filters`
+        for details.
+        """
         return self._filters
 
     @filters.setter
