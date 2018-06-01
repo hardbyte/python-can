@@ -19,6 +19,7 @@ import struct
 import zlib
 import datetime
 import time
+import logging
 
 from can.message import Message
 from can.listener import Listener
@@ -29,6 +30,7 @@ class BLFParseError(Exception):
     """BLF file could not be parsed correctly."""
     pass
 
+LOG = logging.getLogger(__name__)
 
 # 0 = unknown, 2 = CANoe
 APPLICATION_ID = 5
@@ -160,6 +162,7 @@ class BLFReader(object):
                     data = zlib.decompress(container_data, 15, uncompressed_size)
                 else:
                     # Unknown compression method
+                    LOG.warning("Unknown compression method (%d)", method)
                     continue
 
                 if tail:
@@ -189,6 +192,7 @@ class BLFReader(object):
                         pos += OBJ_HEADER_V2_STRUCT.size
                     else:
                         # Unknown header version
+                        LOG.warning("Unknown object header version (%d)", header_version)
                         pos = next_pos
                         continue
 
