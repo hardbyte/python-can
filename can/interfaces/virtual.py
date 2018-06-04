@@ -19,6 +19,7 @@ from threading import RLock
 from random import randint
 
 from can.bus import BusABC
+from can import CanError
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +50,7 @@ class VirtualBus(BusABC):
         self.channel_id = channel
         self.channel_info = 'Virtual bus channel %s' % self.channel_id
         self.receive_own_messages = receive_own_messages
+        self._open = True
 
         with channels_lock:
 
@@ -60,24 +62,35 @@ class VirtualBus(BusABC):
             self.queue = queue.Queue()
             self.channel.append(self.queue)
 
+    def _check_if_open(self):
+        """Raises CanError if the bus is not open.
+
+        Has to be called in every method that accesses the bus.
+        """
+        if not self._open:
+            raise CanError('Operation on closed bus')
+
     def _recv_internal(self, timeout):
+        self._check_if_open()
         try:
             msg = self.queue.get(block=True, timeout=timeout)
         except queue.Empty:
             return None, False
         else:
-            #logger.log(9, 'Received message:\n%s', msg)
             return msg, False
 
     def send(self, msg, timeout=None):
+        self._check_if_open()
         msg.timestamp = time.time()
         # Add message to all listening on this channel
         for bus_queue in self.channel:
             if bus_queue is not self.queue or self.receive_own_messages:
                 bus_queue.put(msg)
-        #logger.log(9, 'Transmitted message:\n%s', msg)
 
     def shutdown(self):
+        self._check_if_open()
+        self._open = False
+
         with channels_lock:
             self.channel.remove(self.queue)
 
