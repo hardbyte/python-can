@@ -78,13 +78,13 @@ class Bus(BusABC):
     """
 
     @staticmethod
-    def __new__(cls, channel, *args, **config):
+    def __new__(cls, channel=None, *args, **config):
         """
         Takes the same arguments as :class:`can.BusABC.__init__`.
         Some might have a special meaning, see below.
 
         :param channel:
-            Set to ``None`` te lat it be reloved automatically from the default
+            Set to ``None`` to let it be reloved automatically from the default
             configuration. That might fail, see below.
 
             Expected type is backend dependent.
