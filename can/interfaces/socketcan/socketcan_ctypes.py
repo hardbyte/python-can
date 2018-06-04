@@ -45,10 +45,7 @@ class SocketcanCtypes_Bus(BusABC):
     Implements :meth:`can.BusABC._detect_available_configs`.
     """
 
-    def __init__(self,
-                 channel='vcan0',
-                 receive_own_messages=False,
-                 *args, **kwargs):
+    def __init__(self, channel, receive_own_messages=False, *args, **kwargs):
         """
         :param str channel:
             The can interface name with which to create this bus. An example channel

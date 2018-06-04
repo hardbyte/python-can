@@ -12,6 +12,7 @@ from __future__ import absolute_import, print_function
 import sys
 import importlib
 import logging
+import re
 
 import can
 from .bus import BusABC
@@ -72,14 +73,21 @@ def _get_class_for_interface(interface):
 
 class Bus(BusABC):
     """
-    Instantiates a CAN Bus of the given `bustype`, falls back to reading a
+    Instantiates a CAN Bus of the given ``interface``, falls back to reading a
     configuration file from default locations.
     """
 
     @staticmethod
-    def __new__(cls, *args, **config):
+    def __new__(cls, channel=None, *args, **config):
         """
-        Takes the same arguments as :class:`can.BusABC.__init__` with the addition of:
+        Takes the same arguments as :class:`can.BusABC.__init__`.
+        Some might have a special meaning, see below.
+
+        :param channel:
+            Set to ``None`` to let it be reloved automatically from the default
+            configuration. That might fail, see below.
+
+            Expected type is backend dependent.
 
         :param dict config:
             Should contain an ``interface`` key with a valid interface name. If not,
@@ -93,6 +101,8 @@ class Bus(BusABC):
         """
 
         # figure out the rest of the configuration; this might raise an error
+        if channel is not None:
+            config['channel'] = channel
         config = load_config(config=config)
 
         # resolve the bus class to use for that interface
@@ -101,12 +111,14 @@ class Bus(BusABC):
         # remove the 'interface' key so it doesn't get passed to the backend
         del config['interface']
 
-        # make sure the bus can handle this config
+        # make sure the bus can handle this config format
         if 'channel' not in config:
-            raise ValueError("channel argument missing")
+            raise ValueError("'channel' argument missing")
+        else:
+            channel = config['channel']
+            del config['channel']
 
-        # the channel attribute should be present in **config
-        return cls(*args, **config)
+        return cls(channel, *args, **config)
 
 
 def detect_available_configs(interfaces=None):

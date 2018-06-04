@@ -130,8 +130,7 @@ class NicanBus(BusABC):
 
     """
 
-    def __init__(self, channel, can_filters=None, bitrate=None, log_errors=True,
-                 **kwargs):
+    def __init__(self, channel, can_filters=None, bitrate=None, log_errors=True, **kwargs):
         """
         :param str channel:
             Name of the object to open (e.g. 'CAN0')
