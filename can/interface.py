@@ -7,47 +7,24 @@ as a list of all avalibale backends and some implemented
 CyclicSendTasks.
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
 import sys
 import importlib
-from pkg_resources import iter_entry_points
 import logging
 
 import can
 from .bus import BusABC
 from .broadcastmanager import CyclicSendTaskABC, MultiRateCyclicSendTaskABC
 from .util import load_config
+from .interfaces import BACKENDS
 
+# Required by "detect_available_configs" for argument interpretation
 if sys.version_info.major > 2:
     basestring = str
 
-
 log = logging.getLogger('can.interface')
 log_autodetect = log.getChild('detect_available_configs')
-
-# interface_name => (module, classname)
-BACKENDS = {
-    'kvaser':           ('can.interfaces.kvaser',           'KvaserBus'),
-    'socketcan_ctypes': ('can.interfaces.socketcan',        'SocketcanCtypes_Bus'),
-    'socketcan_native': ('can.interfaces.socketcan',        'SocketcanNative_Bus'),
-    'serial':           ('can.interfaces.serial.serial_can','SerialBus'),
-    'pcan':             ('can.interfaces.pcan',             'PcanBus'),
-    'usb2can':          ('can.interfaces.usb2can',          'Usb2canBus'),
-    'ixxat':            ('can.interfaces.ixxat',            'IXXATBus'),
-    'nican':            ('can.interfaces.nican',            'NicanBus'),
-    'iscan':            ('can.interfaces.iscan',            'IscanBus'),
-    'virtual':          ('can.interfaces.virtual',          'VirtualBus'),
-    'neovi':            ('can.interfaces.ics_neovi',        'NeoViBus'),
-    'vector':           ('can.interfaces.vector',           'VectorBus'),
-    'slcan':            ('can.interfaces.slcan',            'slcanBus')
-}
-
-BACKENDS.update({
-    interface.name: (interface.module_name, interface.attrs[0])
-    for interface in iter_entry_points('python_can.interface')
-})
-
 
 def _get_class_for_interface(interface):
     """
@@ -99,36 +76,37 @@ class Bus(BusABC):
     configuration file from default locations.
     """
 
-    @classmethod
-    def __new__(cls, other, channel=None, *args, **kwargs):
+    @staticmethod
+    def __new__(cls, *args, **config):
         """
-        Takes the same arguments as :class:`can.BusABC` with the addition of:
+        Takes the same arguments as :class:`can.BusABC.__init__` with the addition of:
 
-        :param kwargs:
-            Should contain a bustype key with a valid interface name.
+        :param dict config:
+            Should contain an ``interface`` key with a valid interface name. If not,
+            it is completed using :meth:`can.util.load_config`.
 
-        :raises:
-            NotImplementedError if the bustype isn't recognized
-        :raises:
-            ValueError if the bustype or channel isn't either passed as an argument
-            or set in the can.rc config.
+        :raises: NotImplementedError
+            if the ``interface`` isn't recognized
 
+        :raises: ValueError
+            if the ``channel`` could not be determined
         """
 
-        # Figure out the configuration
-        config = load_config(config={
-            'interface': kwargs.get('bustype', kwargs.get('interface')),
-            'channel': channel
-        })
+        # figure out the rest of the configuration; this might raise an error
+        config = load_config(config=config)
 
-        # remove the bustype & interface so it doesn't get passed to the backend
-        if 'bustype' in kwargs:
-            del kwargs['bustype']
-        if 'interface' in kwargs:
-            del kwargs['interface']
-
+        # resolve the bus class to use for that interface
         cls = _get_class_for_interface(config['interface'])
-        return cls(channel=config['channel'], *args, **kwargs)
+
+        # remove the 'interface' key so it doesn't get passed to the backend
+        del config['interface']
+
+        # make sure the bus can handle this config
+        if 'channel' not in config:
+            raise ValueError("channel argument missing")
+
+        # the channel attribute should be present in **config
+        return cls(*args, **config)
 
 
 def detect_available_configs(interfaces=None):
@@ -189,8 +167,8 @@ def detect_available_configs(interfaces=None):
 
 class CyclicSendTask(CyclicSendTaskABC):
 
-    @classmethod
-    def __new__(cls, other, channel, *args, **kwargs):
+    @staticmethod
+    def __new__(cls, channel, *args, **kwargs):
 
         config = load_config(config={'channel': channel})
 
@@ -209,8 +187,8 @@ class CyclicSendTask(CyclicSendTaskABC):
 
 class MultiRateCyclicSendTask(MultiRateCyclicSendTaskABC):
 
-    @classmethod
-    def __new__(cls, other, channel, *args, **kwargs):
+    @staticmethod
+    def __new__(cls, channel, *args, **kwargs):
 
         config = load_config(config={'channel': channel})
 

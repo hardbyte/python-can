@@ -24,13 +24,16 @@ matrix:
     - PYTHON: "C:\\Python33-x64"
 
 install:
+  # Prepend Python installation to PATH
+  - set PATH=%PYTHON_INSTALL%;%PATH%
+
+  # Prepend Python scripts to PATH (e.g. py.test)
+  - set PATH=%PYTHON_INSTALL%\\Scripts;%PATH%
+
   # We need to install the python-can library itself
-  - "%PYTHON%\\python.exe -m pip install .[test]"
+  - "python -m pip install .[test]"
 
 build: off
 
 test_script:
-  # Note that you must use the environment variable %PYTHON% to refer to
-  # the interpreter you're using - Appveyor does not do anything special
-  # to put the Python version you want to use on PATH.
-  - "%PYTHON%\\python.exe setup.py test -v"
+  - "pytest -v --timeout=300"

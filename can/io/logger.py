@@ -9,8 +9,8 @@ import logging
 
 from .asc import ASCWriter
 from .blf import BLFWriter
+from .canutils import CanutilsLogWriter
 from .csv import CSVWriter
-from .log import CanutilsLogWriter
 from .sqlite import SqliteWriter
 from .stdout import Printer
 
@@ -34,8 +34,8 @@ class Logger(object):
     be created when instantiating this class.
     """
 
-    @classmethod
-    def __new__(cls, other, filename):
+    @staticmethod
+    def __new__(cls, filename):
         if not filename:
             return Printer()
         elif filename.endswith(".asc"):

@@ -29,8 +29,10 @@ class CanutilsLogReader(object):
     """
     Iterator over CAN messages from a .log Logging File (candump -L).
 
-    .log-format looks like this:
-    (0.0) vcan0 001#8d00100100820100
+    .. note::
+        .log-format looks for example like this:
+
+        ``(0.0) vcan0 001#8d00100100820100``
     """
 
     def __init__(self, filename):

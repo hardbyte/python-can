@@ -4,5 +4,7 @@
 """
 """
 
-from can.interfaces.usb2can.usb2canInterface import Usb2canBus
-from can.interfaces.usb2can.usb2canabstractionlayer import Usb2CanAbstractionLayer
+from __future__ import absolute_import
+
+from .usb2canInterface import Usb2canBus
+from .usb2canabstractionlayer import Usb2CanAbstractionLayer

@@ -402,27 +402,25 @@ def capture_message(sock):
 
 
 class SocketcanNative_Bus(BusABC):
+    """
+    Implements :meth:`can.BusABC._detect_available_configs`.
+    """
 
     def __init__(self, channel, receive_own_messages=False, fd=False, **kwargs):
         """
         :param str channel:
             The can interface name with which to create this bus. An example channel
-            would be 'vcan0'.
+            would be 'vcan0' or 'can0'.
         :param bool receive_own_messages:
-            If messages transmitted should also be received back.
+            If transmitted messages should also be received by this bus.
         :param bool fd:
             If CAN-FD frames should be supported.
         :param list can_filters:
-            A list of dictionaries, each containing a "can_id" and a "can_mask".
+            See :meth:`can.BusABC.set_filters`.
         """
         self.socket = create_socket(CAN_RAW)
         self.channel = channel
         self.channel_info = "native socketcan channel '%s'" % channel
-
-        # add any socket options such as can frame filters
-        if 'can_filters' in kwargs and kwargs['can_filters']: # = not None or empty
-            log.debug("Creating a filtered can bus")
-            self.set_filters(kwargs['can_filters'])
 
         # set the receive_own_messages paramater
         try:
@@ -433,34 +431,37 @@ class SocketcanNative_Bus(BusABC):
             log.error("Could not receive own messages (%s)", e)
 
         if fd:
+            # TODO handle errors
             self.socket.setsockopt(socket.SOL_CAN_RAW,
                                    socket.CAN_RAW_FD_FRAMES,
                                    struct.pack('i', 1))
 
         bind_socket(self.socket, channel)
-        super(SocketcanNative_Bus, self).__init__()
+
+        kwargs.update({'receive_own_messages': receive_own_messages, 'fd': fd})
+        super(SocketcanNative_Bus, self).__init__(channel=channel, **kwargs)
 
     def shutdown(self):
         self.socket.close()
 
-    def recv(self, timeout=None):
-        try:
-            if timeout is not None:
+    def _recv_internal(self, timeout):
+        if timeout:
+            try:
                 # get all sockets that are ready (can be a list with a single value
                 # being self.socket or an empty list if self.socket is not ready)
                 ready_receive_sockets, _, _ = select.select([self.socket], [], [], timeout)
-            else:
-                ready_receive_sockets = True
-        except OSError:
-            # something bad happened (e.g. the interface went down)
-            log.exception("Error while waiting for timeout")
-            return None
+            except OSError:
+                # something bad happened (e.g. the interface went down)
+                log.exception("Error while waiting for timeout")
+                ready_receive_sockets = False
+        else:
+            ready_receive_sockets = True
 
-        if ready_receive_sockets: # not empty
-            return capture_message(self.socket)
+        if ready_receive_sockets: # not empty or True
+            return capture_message(self.socket), self._is_filtered
         else:
             # socket wasn't readable or timeout occurred
-            return None
+            return None, self._is_filtered
 
     def send(self, msg, timeout=None):
         log.debug("We've been asked to write a message to the bus")
@@ -488,11 +489,18 @@ class SocketcanNative_Bus(BusABC):
 
         return task
 
-    def set_filters(self, can_filters=None):
-        filter_struct = pack_filters(can_filters)
-        self.socket.setsockopt(socket.SOL_CAN_RAW,
-                               socket.CAN_RAW_FILTER,
-                               filter_struct)
+    def _apply_filters(self, filters):
+        try:
+            self.socket.setsockopt(socket.SOL_CAN_RAW,
+                                   socket.CAN_RAW_FILTER,
+                                   pack_filters(filters))
+        except socket.error as err:
+            # fall back to "software filtering" (= not in kernel)
+            self._is_filtered = False
+            # TODO Is this serious enough to raise a CanError exception?
+            log.error('Setting filters failed; falling back to software filtering (not in kernel): %s', err)
+        else:
+            self._is_filtered = True
 
     @staticmethod
     def _detect_available_configs():
@@ -501,13 +509,16 @@ class SocketcanNative_Bus(BusABC):
 
 
 if __name__ == "__main__":
+    # TODO move below to examples?
+
     # Create two sockets on vcan0 to test send and receive
     #
-    # If you want to try it out you can do the following:
+    # If you want to try it out you can do the following (possibly using sudo):
     #
     #     modprobe vcan
     #     ip link add dev vcan0 type vcan
     #     ifconfig vcan0 up
+    #
     log.setLevel(logging.DEBUG)
 
     def receiver(event):
@@ -521,7 +532,8 @@ if __name__ == "__main__":
         event.wait()
         sender_socket = create_socket()
         bind_socket(sender_socket, 'vcan0')
-        sender_socket.send(build_can_frame(0x01, b'\x01\x02\x03'))
+        msg = Message(arbitration_id=0x01, data=b'\x01\x02\x03')
+        sender_socket.send(build_can_frame(msg))
         print("Sender sent a message.")
 
     import threading

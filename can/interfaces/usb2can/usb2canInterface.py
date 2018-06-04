@@ -5,10 +5,12 @@
 This interface is for windows only, otherwise use socketCAN.
 """
 
+from __future__ import absolute_import, division
+
 import logging
 
 from can import BusABC, Message
-from can.interfaces.usb2can.usb2canabstractionlayer import *
+from .usb2canabstractionlayer import *
 
 bootTimeEpoch = 0
 try:
@@ -42,7 +44,7 @@ def message_convert_tx(msg):
     for i in range(length):
         messagetx.data[i] = msg.data[i]
 
-    messagetx.flags = 80000000
+    messagetx.flags = 0x80000000
 
     if msg.is_error_frame:
         messagetx.flags |= IS_ERROR_FRAME
@@ -77,8 +79,6 @@ def message_convert_rx(messagerx):
 class Usb2canBus(BusABC):
     """Interface to a USB2CAN Bus.
 
-    Note the USB2CAN interface doesn't implement set_filters, or flush_tx_buffer methods.
-
     :param str channel:
         The device's serial number. If not provided, Windows Management Instrumentation
         will be used to identify the first such device. The *kwarg* `serial` may also be
@@ -99,7 +99,6 @@ class Usb2canBus(BusABC):
         # set flags on the connection
         if 'flags' in kwargs:
             enable_flags = kwargs["flags"]
-
         else:
             enable_flags = 0x00000008
 
@@ -112,16 +111,10 @@ class Usb2canBus(BusABC):
             from can.interfaces.usb2can.serial_selector import serial
             deviceID = serial()
 
-        # set baudrate in kb/s from bitrate
-        # (eg:500000 bitrate must be 500)
-        if 'bitrate' in kwargs:
-            br = kwargs["bitrate"]
-
-            # max rate is 1000 kbps
-            baudrate = min(1000, int(br/1000))
-        # set default value
-        else:
-            baudrate = 500
+        # get baudrate in b/s from bitrate or use default
+        bitrate = kwargs.get("bitrate", d=500000)
+        # convert to kb/s (eg:500000 bitrate must be 500), max rate is 1000 kb/s
+        baudrate = min(1000, int(bitrate/1000))
 
         connector = format_connection_string(deviceID, baudrate)
 
@@ -134,7 +127,7 @@ class Usb2canBus(BusABC):
         else:
             self.can.send(self.handle, byref(tx))
 
-    def recv(self, timeout=None):
+    def _recv_internal(self, timeout):
 
         messagerx = CanalMsg()
 
@@ -154,8 +147,9 @@ class Usb2canBus(BusABC):
             log.error('Canal Error %s', status)
             rx = None
 
-        return rx
+        return rx, False
 
     def shutdown(self):
         """Shut down the device safely"""
+        # TODO handle error
         status = self.can.close(self.handle)
