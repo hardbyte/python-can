@@ -27,21 +27,57 @@ The following assumes that the commands are executed from the root of the reposi
   makes Sphinx complain about more subtle problems.
 
 
-Creating a Release
-------------------
+Creating a new interface/backend
+--------------------------------
 
-- Release from the ``master`` branch.
-- Update the library version in ``__init__.py`` using `semantic versioning <http://semver.org>`__.
-- Run all tests and examples against available hardware.
-- Update `CONTRIBUTORS.txt` with any new contributors.
-- Sanity check that documentation has stayed inline with code. For large changes update ``doc/history.rst``
-- Create a temporary virtual environment. Run ``python setup.py install`` and ``python setup.py test``
-- Create and upload the distribution: ``python setup.py sdist bdist_wheel``
-- Sign the packages with gpg ``gpg --detach-sign -a dist/python_can-X.Y.Z-py3-none-any.whl``
-- Upload with twine ``twine upload dist/python-can-X.Y.Z*``
-- In a new virtual env check that the package can be installed with pip: ``pip install python-can==X.Y.Z``
-- Create a new tag in the repository.
-- Check the release on PyPi, readthedocs and github.
+These steps are a guideline on how to add a new backend to python-can.
+
+- Create a module (either a ``*.py`` or an entire subdirctory depending
+  on the complexity) inside ``can.interfaces``
+- Implement the central part of the backend: the bus class that extends
+  :class:`can.BusABC`. See below for more info on this one!
+- Register your backend bus class in ``can.interface.BACKENDS`` and
+  ``can.interfaces.VALID_INTERFACES``.
+- Add docs where appropiate, like in ``doc/interfaces.rst`` and add
+  an entry in ``doc/interface/*``.
+- Add tests in ``test/*`` where appropiate.
+
+About the ``BusABC`` class
+==========================
+
+Concrete implementations *have to* implement the following:
+    * :meth:`~can.BusABC.send` to send individual messages
+    * :meth:`~can.BusABC._recv_internal` to receive individual messages
+      (see note below!)
+    * set the :attr:`~can.BusABC.channel_info` attribute to a string describing
+      the underlying bus and/or channel
+
+They *might* implement the following:
+    * :meth:`~can.BusABC.flush_tx_buffer` to allow discrading any
+      messages yet to be sent
+    * :meth:`~can.BusABC.shutdown` to override how the bus should
+      shut down
+    * :meth:`~can.BusABC.send_periodic` to override the software based
+      periodic sending and push it down to the kernel or hardware
+    * :meth:`~can.BusABC._apply_filters` to apply efficient filters
+      to lower level systems like the OS kernel or hardware
+    * :meth:`~can.BusABC._detect_available_configs` to allow the interface
+      to report which configurations are currently available for new
+      connections
+    * :meth:`~can.BusABC.state` property to allow reading and/or changing
+      the bus state
+
+.. note::
+
+    *TL;DR*: Only override :meth:`~can.BusABC._recv_internal`,
+    never :meth:`~can.BusABC.recv` directly.
+
+    Previously, concrete bus classes had to override :meth:`~can.BusABC.recv`
+    directly instead of :meth:`~can.BusABC._recv_internal`, but that has
+    changed to allow the abstract base class to handle in-software message
+    filtering as a fallback. All internal interfaces now implement that new
+    behaviour. Older (custom) interfaces might still be implemented like that
+    and thus might not provide message filtering:
 
 
 Code Structure
@@ -56,9 +92,6 @@ The modules in ``python-can`` are:
 +---------------------------------+------------------------------------------------------+
 |:doc:`bus <bus>`                 | Contains the interface independent Bus object.       |
 +---------------------------------+------------------------------------------------------+
-|:doc:`CAN <api>`                 | Contains modules to emulate a CAN system, such as a  |
-|                                 | time stamps, read/write streams and listeners.       |
-+---------------------------------+------------------------------------------------------+
 |:doc:`message <message>`         | Contains the interface independent Message object.   |
 +---------------------------------+------------------------------------------------------+
 |:doc:`io <listeners>`            | Contains a range of file readers and writers.        |
@@ -66,3 +99,23 @@ The modules in ``python-can`` are:
 |:doc:`broadcastmanager <bcm>`    | Contains interface independent broadcast manager     |
 |                                 | code.                                                |
 +---------------------------------+------------------------------------------------------+
+|:doc:`CAN <api>`                 | Legacy API. Deprecated.                               |
++---------------------------------+------------------------------------------------------+
+
+
+Creating a new Release
+----------------------
+
+- Release from the ``master`` branch.
+- Update the library version in ``__init__.py`` using `semantic versioning <http://semver.org>`__.
+- Run all tests and examples against available hardware.
+- Update `CONTRIBUTORS.txt` with any new contributors.
+- For larger changes update ``doc/history.rst``.
+- Sanity check that documentation has stayed inline with code.
+- Create a temporary virtual environment. Run ``python setup.py install`` and ``python setup.py test``
+- Create and upload the distribution: ``python setup.py sdist bdist_wheel``
+- Sign the packages with gpg ``gpg --detach-sign -a dist/python_can-X.Y.Z-py3-none-any.whl``
+- Upload with twine ``twine upload dist/python-can-X.Y.Z*``
+- In a new virtual env check that the package can be installed with pip: ``pip install python-can==X.Y.Z``
+- Create a new tag in the repository.
+- Check the release on PyPi, Read the Docs and GitHub.

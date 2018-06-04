@@ -5,15 +5,16 @@
 Enable basic CAN over a PCAN USB device.
 """
 
+from __future__ import absolute_import, print_function
+
 import logging
 import sys
 import time
 
 import can
-from can import CanError
-from can.bus import BusABC
-from can.message import Message
-from can.interfaces.pcan.PCANBasic import *
+from can import CanError, Message, BusABC
+from .PCANBasic import *
+from can.bus import BusState
 
 boottimeEpoch = 0
 try:
@@ -67,21 +68,26 @@ pcan_bitrate_objs = {1000000 : PCAN_BAUD_1M,
 
 class PcanBus(BusABC):
 
-    def __init__(self, channel, *args, **kwargs):
+    def __init__(self, channel, state=BusState.ACTIVE, *args, **kwargs):
         """A PCAN USB interface to CAN.
 
         On top of the usual :class:`~can.Bus` methods provided,
-        the PCAN interface includes the `flash()` and `status()` methods.
+        the PCAN interface includes the :meth:`~can.interface.pcan.PcanBus.flash()`
+        and :meth:`~can.interface.pcan.PcanBus.status()` methods.
 
         :param str channel:
-            The can interface name. An example would be PCAN_USBBUS1
+            The can interface name. An example would be 'PCAN_USBBUS1'
+
+        :param BusState state:
+            BusState of the channel.
+            Default is ACTIVE
 
         :param int bitrate:
             Bitrate of channel in bit/s.
-            Default is 500 Kbs
+            Default is 500 kbit/s.
 
         """
-        if channel is None or channel == '':
+        if not channel:
             raise ArgumentError("Must specify a PCAN channel")
         else:
             self.channel_info = channel
@@ -96,6 +102,11 @@ class PcanBus(BusABC):
         self.m_objPCANBasic = PCANBasic()
         self.m_PcanHandle = globals()[channel]
 
+        if state is BusState.ACTIVE or BusState.PASSIVE:
+            self._state = state
+        else:
+            raise ArgumentError("BusState must be Active or Passive")
+
         result = self.m_objPCANBasic.Initialize(self.m_PcanHandle, pcan_bitrate, hwtype, ioport, interrupt)
 
         if result != PCAN_ERROR_OK:
@@ -108,18 +119,19 @@ class PcanBus(BusABC):
             if result != PCAN_ERROR_OK:
                 raise PcanError(self._get_formatted_error(result))
 
-        super(PcanBus, self).__init__(*args, **kwargs)
+        super(PcanBus, self).__init__(channel=channel, *args, **kwargs)
 
     def _get_formatted_error(self, error):
         """
-        Gets the text using the GetErrorText API function
-        If the function succeeds, the translated error is returned. If it fails,
-        a text describing the current error is returned.  Multiple errors may
+        Gets the text using the GetErrorText API function.
+        If the function call succeeds, the translated error is returned. If it fails,
+        a text describing the current error is returned. Multiple errors may
         be present in which case their individual messages are included in the
         return string, one line per error.
         """
 
         def bits(n):
+            """TODO: document"""
             while n:
                 b = n & (~n+1)
                 yield b
@@ -160,13 +172,14 @@ class PcanBus(BusABC):
         return status == PCAN_ERROR_OK
 
     def reset(self):
-        # Command the PCAN driver to reset the bus after an error.
-
+        """
+        Command the PCAN driver to reset the bus after an error.
+        """
         status = self.m_objPCANBasic.Reset(self.m_PcanHandle)
-
         return status == PCAN_ERROR_OK
 
-    def recv(self, timeout=None):
+    def _recv_internal(self, timeout):
+
         if HAS_EVENTS:
             # We will utilize events for the timeout handling
             timeout_ms = int(timeout * 1000) if timeout is not None else INFINITE
@@ -184,15 +197,15 @@ class PcanBus(BusABC):
                     result = None
                     val = WaitForSingleObject(self._recv_event, timeout_ms)
                     if val != WAIT_OBJECT_0:
-                        return None
+                        return None, False
                 elif timeout is not None and timeout_clock() >= end_time:
-                    return None
+                    return None, False
                 else:
                     result = None
                     time.sleep(0.001)
             elif result[0] & (PCAN_ERROR_BUSLIGHT | PCAN_ERROR_BUSHEAVY):
                 log.warning(self._get_formatted_error(result[0]))
-                return None
+                return None, False
             elif result[0] != PCAN_ERROR_OK:
                 raise PcanError(self._get_formatted_error(result[0]))
 
@@ -221,7 +234,7 @@ class PcanBus(BusABC):
                          dlc=dlc,
                          data=theMsg.DATA[:dlc])
 
-        return rx_msg
+        return rx_msg, False
 
     def send(self, msg, timeout=None):
         if msg.id_type:
@@ -262,6 +275,27 @@ class PcanBus(BusABC):
     def shutdown(self):
         self.m_objPCANBasic.Uninitialize(self.m_PcanHandle)
 
+    @property
+    def state(self):
+        return self._state
+
+    @state.setter
+    def state(self, new_state):
+
+        self._state = new_state
+
+        if new_state is BusState.ACTIVE:
+            self.m_objPCANBasic.SetValue(self.m_PcanHandle, PCAN_LISTEN_ONLY, PCAN_PARAMETER_OFF)
+
+        if new_state is BusState.PASSIVE:
+            # When this mode is set, the CAN controller does not take part on active events (eg. transmit CAN messages)
+            # but stays in a passive mode (CAN monitor), in which it can analyse the traffic on the CAN bus used by a
+            # PCAN channel. See also the Philips Data Sheet "SJA1000 Stand-alone CAN controller".
+            self.m_objPCANBasic.SetValue(self.m_PcanHandle, PCAN_LISTEN_ONLY, PCAN_PARAMETER_ON)
+
 
 class PcanError(CanError):
+    """
+    TODO: add docs
+    """
     pass
