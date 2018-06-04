@@ -123,6 +123,7 @@ class Bus(BusABC):
                 return cls(*args, **config)
             except TypeError as error:
                 search_for = r"__init__\(\) got multiple values for argument '(\w+)'"
+                print(error.message)
                 match = re.match(search_for, error.message, re.UNICODE)
                 if match:
                     argument = match.group(0)
