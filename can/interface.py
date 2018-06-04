@@ -12,6 +12,7 @@ from __future__ import absolute_import, print_function
 import sys
 import importlib
 import logging
+import re
 
 import can
 from .bus import BusABC
@@ -105,8 +106,34 @@ class Bus(BusABC):
         if 'channel' not in config:
             raise ValueError("channel argument missing")
 
-        # the channel attribute should be present in **config
-        return cls(*args, **config)
+        # parameters like the channel attribute might be present in both
+        # the *args list (=positional arguments) and the **config dict
+        # (=keyowrd arguments)
+        # 
+        # One possible problem: this error could come from a subroutine
+        # calling another __init__() in a wrong way (might inspect the
+        # stack trace for that), although this would be catched by the
+        # "if argument not in config" eventually, it would result in
+        # one strange method call to the bus constructor first
+        # 
+        # TODO: solve more robustly
+
+        while True:
+            try:
+                return cls(*args, **config)
+            except TypeError as error:
+                search_for = r"__init__\(\) got multiple values for argument '(\w+)'"
+                match = re.match(search_for, error.message, re.UNICODE)
+                if match:
+                    argument = match.group(0)
+                    if argument not in config:
+                        raise
+                    else:
+                        log.warn("removing duplicate argument %s from keywaord arguments "
+                                 "since it was also given as a positional argument", config[argument])
+                        del config[argument]
+                else:
+                    raise
 
 
 def detect_available_configs(interfaces=None):
