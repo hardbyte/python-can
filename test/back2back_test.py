@@ -23,9 +23,9 @@ BITRATE = 500000
 TIMEOUT = 0.1
 
 INTERFACE_1 = 'virtual'
-CHANNEL_1 = 'vcan0'
+CHANNEL_1 = 'virtual_channel_0'
 INTERFACE_2 = 'virtual'
-CHANNEL_2 = 'vcan0'
+CHANNEL_2 = 'virtual_channel_0'
 
 
 class Back2BackTestCase(unittest.TestCase):
@@ -35,16 +35,16 @@ class Back2BackTestCase(unittest.TestCase):
     """
 
     def setUp(self):
-        self.bus1 = can.interface.Bus(channel=CHANNEL_1,
-                                      bustype=INTERFACE_1,
-                                      bitrate=BITRATE,
-                                      fd=TEST_CAN_FD,
-                                      single_handle=True)
-        self.bus2 = can.interface.Bus(channel=CHANNEL_2,
-                                      bustype=INTERFACE_2,
-                                      bitrate=BITRATE,
-                                      fd=TEST_CAN_FD,
-                                      single_handle=True)
+        self.bus1 = can.Bus(channel=CHANNEL_1,
+                            bustype=INTERFACE_1,
+                            bitrate=BITRATE,
+                            fd=TEST_CAN_FD,
+                            single_handle=True)
+        self.bus2 = can.Bus(channel=CHANNEL_2,
+                            bustype=INTERFACE_2,
+                            bitrate=BITRATE,
+                            fd=TEST_CAN_FD,
+                            single_handle=True)
 
     def tearDown(self):
         self.bus1.shutdown()
@@ -146,14 +146,14 @@ class BasicTestSocketCan(unittest.TestCase):
         print("testing python-can's socketcan version:",
               socketcan_version)
 
-        self.bus1 = can.interface.Bus(channel="vcan0",
-                                      bustype=socketcan_version,
-                                      bitrate=250000,
-                                      fd=TEST_CAN_FD)
-        self.bus2 = can.interface.Bus(channel="vcan0",
-                                      bustype=socketcan_version,
-                                      bitrate=250000,
-                                      fd=TEST_CAN_FD)
+        self.bus1 = can.Bus(channel="vcan0",
+                            bustype=socketcan_version,
+                            bitrate=250000,
+                            fd=TEST_CAN_FD)
+        self.bus2 = can.Bus(channel="vcan0",
+                            bustype=socketcan_version,
+                            bitrate=250000,
+                            fd=TEST_CAN_FD)
 
     def tearDown(self):
         self.bus1.shutdown()
@@ -168,6 +168,11 @@ class BasicTestSocketCan(unittest.TestCase):
 
         self.assertEqual(message, reader.get_message(timeout=2.0))
         notifier.stop()
+
+    def test_constructor(self):
+        """Tests that no exceptions are thrown."""
+        can.Bus(channel='vcan0', bustype=socketcan_version)
+        can.Bus('vcan0', channel='vcan0', bustype=socketcan_version) # what shall we do about this?
 
 
 if __name__ == '__main__':
