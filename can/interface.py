@@ -73,14 +73,21 @@ def _get_class_for_interface(interface):
 
 class Bus(BusABC):
     """
-    Instantiates a CAN Bus of the given `bustype`, falls back to reading a
+    Instantiates a CAN Bus of the given ``interface``, falls back to reading a
     configuration file from default locations.
     """
 
     @staticmethod
-    def __new__(cls, *args, **config):
+    def __new__(cls, channel, *args, **config):
         """
-        Takes the same arguments as :class:`can.BusABC.__init__` with the addition of:
+        Takes the same arguments as :class:`can.BusABC.__init__`.
+        Some might have a special meaning, see below.
+
+        :param channel:
+            Set to ``None`` te lat it be reloved automatically from the default
+            configuration. That might fail, see below.
+
+            Expected type is backend dependent.
 
         :param dict config:
             Should contain an ``interface`` key with a valid interface name. If not,
@@ -94,6 +101,8 @@ class Bus(BusABC):
         """
 
         # figure out the rest of the configuration; this might raise an error
+        if channel is not None:
+            config['channel'] = channel
         config = load_config(config=config)
 
         # resolve the bus class to use for that interface
@@ -102,39 +111,14 @@ class Bus(BusABC):
         # remove the 'interface' key so it doesn't get passed to the backend
         del config['interface']
 
-        # make sure the bus can handle this config
+        # make sure the bus can handle this config format
         if 'channel' not in config:
-            raise ValueError("channel argument missing")
+            raise ValueError("'channel' argument missing")
+        else:
+            channel = config['channel']
+            del config['channel']
 
-        # parameters like the channel attribute might be present in both
-        # the *args list (=positional arguments) and the **config dict
-        # (=keyowrd arguments)
-        # 
-        # One possible problem: this error could come from a subroutine
-        # calling another __init__() in a wrong way (might inspect the
-        # stack trace for that), although this would be catched by the
-        # "if argument not in config" eventually, it would result in
-        # one strange method call to the bus constructor first
-        # 
-        # TODO: solve more robustly
-
-        while True:
-            try:
-                return cls(*args, **config)
-            except TypeError as error:
-                search_for = r"__init__\(\) got multiple values for argument '(\w+)'"
-                print(error.message)
-                match = re.match(search_for, error.message, re.UNICODE)
-                if match:
-                    argument = match.group(0)
-                    if argument not in config:
-                        raise
-                    else:
-                        log.warn("removing duplicate argument %s from keywaord arguments "
-                                 "since it was also given as a positional argument", config[argument])
-                        del config[argument]
-                else:
-                    raise
+        return cls(channel, *args, **config)
 
 
 def detect_available_configs(interfaces=None):

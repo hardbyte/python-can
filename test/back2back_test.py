@@ -169,8 +169,13 @@ class BasicTestSocketCan(unittest.TestCase):
         self.assertEqual(message, reader.get_message(timeout=2.0))
         notifier.stop()
 
-    def test_constructor(self):
-        """Tests that no exceptions are thrown."""
+
+class TestConstructor(unittest.TestCase):
+    """Tests that no exceptions are thrown when duplicate
+    values for constructor arguments are given.#
+    """
+
+    def test_duplicate_values(self):
         can.Bus(channel='vcan0', bustype='socketcan')
         can.Bus('vcan0', channel='vcan0', bustype='socketcan')
 

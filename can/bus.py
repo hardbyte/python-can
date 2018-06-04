@@ -28,7 +28,7 @@ class BusABC(object):
     channel_info = 'unknown'
 
     @abstractmethod
-    def __init__(self, channel=None, can_filters=None, **config):
+    def __init__(self, channel, can_filters=None, **config):
         """Construct and open a CAN bus instance of the specified type.
 
         Subclasses should call though this method with all given parameters

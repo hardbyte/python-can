@@ -82,7 +82,7 @@ class NeoViBus(BusABC):
     https://github.com/intrepidcs/python_ics
     """
 
-    def __init__(self, channel=None, can_filters=None, **config):
+    def __init__(self, channel, can_filters=None, **config):
         """
         :param int channel:
             The Channel id to create this bus with.
