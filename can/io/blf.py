@@ -76,6 +76,7 @@ CAN_MESSAGE = 1
 CAN_ERROR = 2
 LOG_CONTAINER = 10
 CAN_ERROR_EXT = 73
+CAN_MESSAGE2 = 86
 GLOBAL_MARKER = 96
 CAN_FD_MESSAGE = 100
 
@@ -203,7 +204,8 @@ class BLFReader(object):
                     timestamp = timestamp * factor + self.start_timestamp
 
                     obj_type = header[4]
-                    if obj_type == CAN_MESSAGE:
+                    # Both CAN message types have the same starting content
+                    if obj_type in (CAN_MESSAGE, CAN_MESSAGE2):
                         (channel, flags, dlc, can_id,
                          can_data) = CAN_MSG_STRUCT.unpack_from(data, pos)
                         msg = Message(timestamp=timestamp,
