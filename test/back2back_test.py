@@ -171,8 +171,8 @@ class BasicTestSocketCan(unittest.TestCase):
 
     def test_constructor(self):
         """Tests that no exceptions are thrown."""
-        can.Bus(channel='vcan0', bustype=socketcan_version)
-        can.Bus('vcan0', channel='vcan0', bustype=socketcan_version) # what shall we do about this?
+        can.Bus(channel='vcan0', bustype='socketcan')
+        can.Bus('vcan0', channel='vcan0', bustype='socketcan') # what shall we do about this?
 
 
 if __name__ == '__main__':
