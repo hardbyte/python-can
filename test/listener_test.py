@@ -4,7 +4,7 @@
 """
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
 from time import sleep
 import unittest
@@ -18,12 +18,12 @@ import can
 
 from .data.example_data import generate_message
 
-channel = 'vcan0'
+channel = 'virtual_channel_0'
 can.rc['interface'] = 'virtual'
 
 logging.getLogger('').setLevel(logging.DEBUG)
 
-# make tests more reproducible
+# makes the random number generator deterministic
 random.seed(13339115)
 
 
@@ -54,7 +54,7 @@ class ListenerImportTest(unittest.TestCase):
 
         self.assertTrue(hasattr(can, 'LogReader'))
 
-        self.assertTrue(hasattr(can.io.player, 'MessageSync'))
+        self.assertTrue(hasattr(can, 'MessageSync'))
 
 
 class BusTest(unittest.TestCase):
@@ -106,7 +106,7 @@ class ListenerTest(BusTest):
         # test file extensions that are not supported
         with self.assertRaisesRegexp(NotImplementedError, "xyz_42"):
             test_filetype_to_instance("xyz_42", can.Printer)
-        with self.assertRaises(BaseException):
+        with self.assertRaises(Exception):
             test_filetype_to_instance(None, can.Printer)
 
     def testLoggerTypeResolution(self):
