@@ -17,6 +17,9 @@ from .config import *
 
 class TestSocketCanHelpers(unittest.TestCase):
 
+    def test_nothing(self):
+        pass # added so that this TestCase gets recognized
+
     @unittest.skipUnless(IS_LINUX, "socketcan is only available on Linux")
     def test_error_code_to_str(self):
         """
