@@ -21,7 +21,7 @@ class TestSocketCanHelpers(unittest.TestCase):
     def test_error_code_to_str(self):
         """
         Check that the function does not crash & always
-        returns a least one character.
+        returns at least one character.
         """
 
         # all possible & also some invalid error codes
