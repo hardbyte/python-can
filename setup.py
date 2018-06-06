@@ -57,7 +57,7 @@ setup(
     python_requires=">=2.7,!=3.0,!=3.1,!=3.2,!=3.3",
     install_requires=[
         'wrapt ~= 1.10',
-    ] + (['subprocess32 ~= 3.2.7'] if version_info.major < 3 else []),
+    ],
     extras_require={
         'serial': ['pyserial >= 3.0'],
         'neovi': ['python-ics >= 2.8'],
