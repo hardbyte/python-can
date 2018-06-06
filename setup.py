@@ -56,7 +56,6 @@ setup(
     # see https://www.python.org/dev/peps/pep-0345/#version-specifiers
     python_requires=">=2.7,!=3.0,!=3.1,!=3.2,!=3.3",
     install_requires=[
-        'setuptools',
         'wrapt ~= 1.10',
     ] + (['subprocess32 ~= 3.2.7'] if version_info.major < 3 else []),
     extras_require={
