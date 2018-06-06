@@ -39,7 +39,7 @@ Receiving
 '''''''''
 
 Reading from the bus is achieved by either calling the :meth:`~can.BusABC.recv` method or
-by directly iterating over the bus:
+by directly iterating over the bus::
 
     for msg in bus:
         print(msg.data)
@@ -55,7 +55,7 @@ Sending and receiving is locked seperatly to avoid unnessesary delays.
 
 It can be used exactly like the normal :class:`~can.Bus` class:
 
-    my_bus = can.Bus(interface='socketcan', channel='vcan0')
+    my_bus = can.ThreadSafeBus(interface='socketcan', channel='vcan0')
     my_bus.send(...)
 
 .. autoclass:: can.ThreadSafeBus
