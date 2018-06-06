@@ -575,6 +575,18 @@ class KvaserBus(BusABC):
         canBusOff(self._write_handle)
         canClose(self._write_handle)
 
+    @staticmethod
+    def _detect_available_configs():
+        num_channels = ctypes.c_int(0)
+        try:
+            canGetNumberOfChannels(ctypes.byref(num_channels))
+        except Exception:
+            pass
+        return [
+            {'interface': 'kvaser', 'channel': channel}
+            for channel in range(num_channels.value)
+        ]
+
 
 def get_channel_info(channel):
     name = ctypes.create_string_buffer(80)
