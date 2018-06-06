@@ -10,7 +10,7 @@ import os
 import errno
 import struct
 import sys
-if sys.version_info[0] < 3 and os.name == 'posix':
+if False: # TODO (sys.version_info[0] < 3 and os.name == 'posix'):
     import subprocess32 as subprocess
 else:
     import subprocess
