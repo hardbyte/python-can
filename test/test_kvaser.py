@@ -23,7 +23,7 @@ from can.interfaces.kvaser import constants
 class KvaserTest(unittest.TestCase):
 
     def setUp(self):
-        canlib.canGetNumberOfChannels = Mock(return_value=1)
+        canlib.canGetNumberOfChannels = KvaserTest.canGetNumberOfChannels
         canlib.canOpenChannel = Mock(return_value=0)
         canlib.canIoCtl = Mock(return_value=0)
         canlib.kvReadTimer = Mock()
@@ -49,7 +49,6 @@ class KvaserTest(unittest.TestCase):
 
     def test_bus_creation(self):
         self.assertIsInstance(self.bus, canlib.KvaserBus)
-        self.assertTrue(canlib.canGetNumberOfChannels.called)
         self.assertTrue(canlib.canOpenChannel.called)
         self.assertTrue(canlib.canBusOn.called)
 
@@ -152,6 +151,18 @@ class KvaserTest(unittest.TestCase):
         self.assertEqual(msg.dlc, 2)
         self.assertEqual(msg.id_type, False)
         self.assertSequenceEqual(msg.data, [100, 101])
+    
+    def test_available_configs(self):
+        configs = canlib.KvaserBus._detect_available_configs()
+        expected = [
+            {'interface': 'kvaser', 'channel': 0},
+            {'interface': 'kvaser', 'channel': 1}
+        ]
+        self.assertListEqual(configs, expected)
+
+    @staticmethod
+    def canGetNumberOfChannels(count):
+        count._obj.value = 2
 
     def canWrite(self, handle, arb_id, buf, dlc, flags):
         self.msg['arb_id'] = arb_id
