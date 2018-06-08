@@ -10,7 +10,7 @@ python:
   - "3.7-dev" # TODO: change to "3.7" once it gets released
   - "nightly"
   # PyPy:
-  - "pypy2.7"
+  - "pypy"
   - "pypy3.5"
 
 os:
