@@ -274,6 +274,7 @@ class CyclicSendTask(SocketCanBCMBase, LimitedDurationCyclicSendTaskABC,
         Note the Message must have the same :attr:`~can.Message.arbitration_id`.
         """
         assert message.arbitration_id == self.can_id, "You cannot modify the can identifier"
+        self.message = message
         header = build_bcm_update_header(self.can_id_with_flags, self.flags)
         frame = build_can_frame(message)
         send_bcm(self.bcm_socket, header + frame)
