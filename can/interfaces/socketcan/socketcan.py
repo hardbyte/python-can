@@ -1,22 +1,16 @@
 #!/usr/bin/env python
 # coding: utf-8
-
-"""
-This implementation is for versions of Python that have native
-can socket and can bcm socket support.
-
-See :meth:`can.util.choose_socketcan_implementation()`.
-"""
-
 import logging
 
+import ctypes
+import ctypes.util
 import os
 import select
 import socket
 import struct
 import errno
 
-log = logging.getLogger('can.socketcan.native')
+log = logging.getLogger(__name__)
 log_tx = log.getChild("tx")
 log_rx = log.getChild("rx")
 
@@ -28,16 +22,18 @@ except ImportError:
     log.error("fcntl not available on this platform")
 
 try:
-    socket.CAN_RAW
+    libc = ctypes.CDLL(ctypes.util.find_library("c"), use_errno=True)
 except:
-    log.error("CAN_* properties not found in socket module. These are required to use native socketcan")
+    log.warning("libc is unavailable")
+    libc = None
+
 
 import can
 from can import Message, BusABC
 from can.broadcastmanager import ModifiableCyclicTaskABC, \
     RestartableCyclicTaskABC, LimitedDurationCyclicSendTaskABC
-from can.interfaces.socketcan.socketcan_constants import * # CAN_RAW, CAN_*_FLAG
-from can.interfaces.socketcan.socketcan_common import \
+from can.interfaces.socketcan.constants import * # CAN_RAW, CAN_*_FLAG
+from can.interfaces.socketcan.utils import \
     pack_filters, find_available_interfaces, error_code_to_str
 
 # struct module defines a binary packing format:
@@ -157,11 +153,17 @@ def dissect_can_frame(frame):
 def create_bcm_socket(channel):
     """create a broadcast manager socket and connect to the given interface"""
     try:
-        s = socket.socket(socket.PF_CAN, socket.SOCK_DGRAM, socket.CAN_BCM)
+        s = socket.socket(PF_CAN, SOCK_DGRAM, CAN_BCM)
     except AttributeError:
         raise SystemExit("To use BCM sockets you need Python3.4 or higher")
     try:
         s.connect((channel,))
+    except socket.error:
+        # For Python 2.7
+        addr = get_addr(s, channel)
+        error = libc.connect(s.fileno(), addr, len(addr))
+        if error < 0:
+            raise can.CanError('Could not connect to socket')
     except OSError as e:
         log.error("Couldn't connect a broadcast manager socket")
         raise e
@@ -308,27 +310,19 @@ class MultiRateCyclicSendTask(CyclicSendTask):
         send_bcm(self.bcm_socket, header + frame)
 
 
-def create_socket(can_protocol=None):
-    """Creates a CAN socket. The socket can be BCM or RAW. The socket will
+def get_addr(sock, channel):
+    binary_structure = "16si"
+    data = struct.pack(binary_structure, channel.encode(), 0)
+    res = fcntl.ioctl(sock, SIOCGIFINDEX, data)
+    _, idx = struct.unpack(binary_structure, res)
+    return struct.pack("HiLL", AF_CAN, idx, 0, 0)
+
+
+def create_socket():
+    """Creates a raw CAN socket. The socket will
     be returned unbound to any interface.
-
-    :param int can_protocol:
-        The protocol to use for the CAN socket, either:
-         * socket.CAN_RAW
-         * socket.CAN_BCM.
-
-    :return:
-        * -1 if socket creation unsuccessful
-        * socketID - successful creation
     """
-    if can_protocol is None or can_protocol == socket.CAN_RAW:
-        can_protocol = socket.CAN_RAW
-        socket_type = socket.SOCK_RAW
-    elif can_protocol == socket.CAN_BCM:
-        can_protocol = socket.CAN_BCM
-        socket_type = socket.SOCK_DGRAM
-
-    sock = socket.socket(socket.PF_CAN, socket_type, can_protocol)
+    sock = socket.socket(PF_CAN, SOCK_RAW, CAN_RAW)
 
     log.info('Created a socket')
 
@@ -345,7 +339,14 @@ def bind_socket(sock, channel='can0'):
         :class:`OSError` if the specified interface isn't found.
     """
     log.debug('Binding socket to channel=%s', channel)
-    sock.bind((channel,))
+    try:
+        sock.bind((channel,))
+    except socket.error:
+        # For Python 2.7
+        addr = get_addr(sock, channel)
+        error = libc.bind(sock.fileno(), addr, len(addr))
+        if error < 0:
+            raise can.CanError('Could not bind socket')
     log.debug('Bound socket.')
 
 
@@ -360,10 +361,7 @@ def capture_message(sock):
     """
     # Fetching the Arb ID, DLC and Data
     try:
-        cf, addr = sock.recvfrom(CANFD_MTU)
-    except BlockingIOError:
-        log.debug('Captured no data, socket in non-blocking mode.')
-        return None
+        cf = sock.recv(CANFD_MTU)
     except socket.timeout:
         log.debug('Captured no data, socket read timed out.')
         return None
@@ -380,16 +378,16 @@ def capture_message(sock):
     res = fcntl.ioctl(sock, SIOCGSTAMP, struct.pack(binary_structure, 0, 0))
 
     seconds, microseconds = struct.unpack(binary_structure, res)
-    timestamp = seconds + microseconds / 1000000
+    timestamp = seconds + microseconds * 1e-6
 
     # EXT, RTR, ERR flags -> boolean attributes
     #   /* special address description flags for the CAN_ID */
     #   #define CAN_EFF_FLAG 0x80000000U /* EFF/SFF is set in the MSB */
     #   #define CAN_RTR_FLAG 0x40000000U /* remote transmission request */
     #   #define CAN_ERR_FLAG 0x20000000U /* error frame */
-    is_extended_frame_format = bool(can_id & 0x80000000)
-    is_remote_transmission_request = bool(can_id & 0x40000000)
-    is_error_frame = bool(can_id & 0x20000000)
+    is_extended_frame_format = bool(can_id & CAN_EFF_FLAG)
+    is_remote_transmission_request = bool(can_id & CAN_RTR_FLAG)
+    is_error_frame = bool(can_id & CAN_ERR_FLAG)
     is_fd = len(cf) == CANFD_MTU
     bitrate_switch = bool(flags & CANFD_BRS)
     error_state_indicator = bool(flags & CANFD_ESI)
@@ -418,7 +416,7 @@ def capture_message(sock):
     return msg
 
 
-class SocketcanNative_Bus(BusABC):
+class SocketcanBus(BusABC):
     """
     Implements :meth:`can.BusABC._detect_available_configs`.
     """
@@ -435,34 +433,34 @@ class SocketcanNative_Bus(BusABC):
         :param list can_filters:
             See :meth:`can.BusABC.set_filters`.
         """
-        self.socket = create_socket(CAN_RAW)
+        self.socket = create_socket()
         self.channel = channel
         self.channel_info = "native socketcan channel '%s'" % channel
 
         # set the receive_own_messages paramater
         try:
-            self.socket.setsockopt(socket.SOL_CAN_RAW,
-                                   socket.CAN_RAW_RECV_OWN_MSGS,
+            self.socket.setsockopt(SOL_CAN_RAW,
+                                   CAN_RAW_RECV_OWN_MSGS,
                                    struct.pack('i', receive_own_messages))
         except socket.error as e:
             log.error("Could not receive own messages (%s)", e)
 
         if fd:
             # TODO handle errors
-            self.socket.setsockopt(socket.SOL_CAN_RAW,
-                                   socket.CAN_RAW_FD_FRAMES,
+            self.socket.setsockopt(SOL_CAN_RAW,
+                                   CAN_RAW_FD_FRAMES,
                                    struct.pack('i', 1))
 
         bind_socket(self.socket, channel)
 
         kwargs.update({'receive_own_messages': receive_own_messages, 'fd': fd})
-        super(SocketcanNative_Bus, self).__init__(channel=channel, **kwargs)
+        super(SocketcanBus, self).__init__(channel=channel, **kwargs)
 
     def shutdown(self):
         self.socket.close()
 
     def _recv_internal(self, timeout):
-        if timeout:
+        if timeout is not None:
             try:
                 # get all sockets that are ready (can be a list with a single value
                 # being self.socket or an empty list if self.socket is not ready)
@@ -502,8 +500,8 @@ class SocketcanNative_Bus(BusABC):
 
     def _apply_filters(self, filters):
         try:
-            self.socket.setsockopt(socket.SOL_CAN_RAW,
-                                   socket.CAN_RAW_FILTER,
+            self.socket.setsockopt(SOL_CAN_RAW,
+                                   CAN_RAW_FILTER,
                                    pack_filters(filters))
         except socket.error as err:
             # fall back to "software filtering" (= not in kernel)

@@ -10,15 +10,12 @@ import os
 import errno
 import struct
 import sys
-if sys.version_info[0] < 3 and os.name == 'posix':
-    import subprocess32 as subprocess
-else:
-    import subprocess
+import subprocess
 import re
 
-from can.interfaces.socketcan.socketcan_constants import CAN_EFF_FLAG
+from can.interfaces.socketcan.constants import CAN_EFF_FLAG
 
-log = logging.getLogger('can.socketcan_common')
+log = logging.getLogger(__name__)
 
 def pack_filters(can_filters=None):
     if can_filters is None:
