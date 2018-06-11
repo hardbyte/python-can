@@ -59,7 +59,7 @@ setup(
     ] + (['subprocess32 ~= 3.2.7'] if version_info.major < 3 else []),
     extras_require={
         'serial': ['pyserial >= 3.0'],
-        'neovi': ['python-ics >= 2.8'],
+        'neovi': ['python-ics >= 2.12'],
         'test': tests_require
     },
 
