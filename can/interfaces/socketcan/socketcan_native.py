@@ -229,9 +229,10 @@ class CyclicSendTask(SocketCanBCMBase, LimitedDurationCyclicSendTaskABC,
 
     def __init__(self, channel, message, period, duration=None):
         """
-        :param channel: The name of the CAN channel to connect to.
-        :param message: The message to be sent periodically.
-        :param period: The rate in seconds at which to send the message.
+        :param str channel: The name of the CAN channel to connect to.
+        :param can.Message message: The message to be sent periodically.
+        :param float period: The rate in seconds at which to send the message.
+        :param float duration: Approximate duration in seconds to send the message.
         """
         super(CyclicSendTask, self).__init__(channel, message, period, duration)
         self.duration = duration
@@ -271,7 +272,8 @@ class CyclicSendTask(SocketCanBCMBase, LimitedDurationCyclicSendTaskABC,
     def modify_data(self, message):
         """Update the contents of this periodically sent message.
 
-        Note the Message must have the same :attr:`~can.Message.arbitration_id`.
+        Note the Message must have the same :attr:`~can.Message.arbitration_id`
+        like the first message.
         """
         assert message.arbitration_id == self.can_id, "You cannot modify the can identifier"
         self.message = message
