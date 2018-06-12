@@ -219,7 +219,7 @@ class BusABC(object):
             only on the arbitration ID and mask.
 
         """
-        self._filters = filters
+        self._filters = filters or None
         self._apply_filters(self._filters)
 
     def _apply_filters(self, filters):
