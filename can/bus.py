@@ -201,7 +201,7 @@ class BusABC(object):
         """Apply filtering to all messages received by this Bus.
 
         All messages that match at least one filter are returned.
-        If `filters` is `None` or a a zero size interable, all 
+        If `filters` is `None` or a zero length sequence, all 
         messages are matched.
 
         Calling without passing any filters will reset the applied
