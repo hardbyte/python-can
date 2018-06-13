@@ -179,6 +179,22 @@ class NeoViBus(BusABC):
         super(NeoViBus, self).shutdown()
         self.opened = False
         ics.close_device(self.dev)
+    
+    @staticmethod
+    def _detect_available_configs():
+        """Detect all configurations/channels that this interface could
+        currently connect with.
+
+        :rtype: Iterator[dict]
+        :return: an iterable of dicts, each being a configuration suitable
+                 for usage in the interface's bus constructor.
+        """
+        if ics is None:
+            return []
+        # TODO: add the channel(s)
+        return [{
+            'serial': NeoViBus.get_serial_number(device)
+        } for device in ics.find_devices()]
 
     def _find_device(self, type_filter=None, serial=None):
         if type_filter is not None:
