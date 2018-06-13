@@ -205,8 +205,8 @@ class BusABC(object):
         """Apply filtering to all messages received by this Bus.
 
         All messages that match at least one filter are returned.
-        If `filters` is `None`, all messages are matched.
-        If it is a zero size interable, no messages are matched.
+        If `filters` is `None` or a zero length sequence, all 
+        messages are matched.
 
         Calling without passing any filters will reset the applied
         filters to `None`.
@@ -223,7 +223,7 @@ class BusABC(object):
             only on the arbitration ID and mask.
 
         """
-        self._filters = filters
+        self._filters = filters or None
         self._apply_filters(self._filters)
 
     def _apply_filters(self, filters):
