@@ -158,28 +158,6 @@ class NeoViBus(BusABC):
             raise Exception(' '.join(msg))
         return dev
 
-    def _get_can_settings(self, channel):
-        """Return the CanSettings for channel
-
-        :param channel: can channel number
-        :return: ics.CanSettings
-        """
-        device_settings = ics.get_device_settings(self.dev)
-        return getattr(device_settings, 'can{}'.format(channel))
-
-    def _set_can_settings(self, channel, setting):
-        """Applies can settings to channel
-
-        :param channel: can channel number
-        :param setting: settings dictionary (only the settings to update)
-        :return: None
-        """
-        device_settings = ics.get_device_settings(self.dev)
-        channel_settings = getattr(device_settings, 'can{}'.format(channel))
-        for setting, value in setting.items():
-            setattr(channel_settings, setting, value)
-        ics.set_device_settings(self.dev, device_settings)
-
     def _process_msg_queue(self, timeout=0.1):
         try:
             messages, errors = ics.get_messages(self.dev, False, timeout)
