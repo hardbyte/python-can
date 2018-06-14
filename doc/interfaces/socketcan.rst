@@ -1,19 +1,5 @@
-Socketcan
+SocketCAN
 =========
-
-There are two implementations of socketcan backends. One written with :mod:`ctypes` to be compatible
-with Python 2 and 3, and one written for future versions of Python3 which feature native support.
-
-
-.. toctree::
-    :maxdepth: 2
-
-    socketcan_ctypes
-    socketcan_native
-
-
-Unless you're running Python3.3 or lower the recommended backend is :doc:`socketcan_native <socketcan_native>`.
-For Python2.7 and Python3 <3.4, the available backend is :doc:`socketcan_ctypes <socketcan_ctypes>`.
 
 Socketcan Quickstart
 --------------------
@@ -124,7 +110,7 @@ To spam a bus:
     import time
     import can
 
-    bustype = 'socketcan_native'
+    bustype = 'socketcan'
     channel = 'vcan0'
 
     def producer(id):
@@ -162,7 +148,7 @@ function:
     import can
 
     can_interface = 'vcan0'
-    bus = can.interface.Bus(can_interface, bustype='socketcan_native')
+    bus = can.interface.Bus(can_interface, bustype='socketcan')
     message = bus.recv()
 
 By default, this performs a blocking read, which means ``bus.recv()`` won't
@@ -179,3 +165,9 @@ blocking read with a timeout like this:
 If you set the timeout to ``0.0``, the read will be executed as non-blocking,
 which means ``bus.recv(0.0)`` will return immediately, either with a ``Message``
 object or ``None``, depending on whether data was available on the socket.
+
+
+Bus
+---
+
+.. autoclass:: can.interfaces.socketcan.SocketcanBus
