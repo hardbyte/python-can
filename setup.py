@@ -60,7 +60,7 @@ setup(
     ],
     extras_require={
         'serial': ['pyserial >= 3.0'],
-        'neovi': ['python-ics >= 2.8'],
+        'neovi': ['python-ics >= 2.12'],
         'test': tests_require
     },
 
