@@ -21,12 +21,6 @@ try:
 except ImportError:
     log.error("fcntl not available on this platform")
 
-try:
-    libc = ctypes.CDLL(ctypes.util.find_library("c"), use_errno=True)
-except:
-    log.warning("libc is unavailable")
-    libc = None
-
 
 import can
 from can import Message, BusABC
@@ -35,6 +29,21 @@ from can.broadcastmanager import ModifiableCyclicTaskABC, \
 from can.interfaces.socketcan.constants import * # CAN_RAW, CAN_*_FLAG
 from can.interfaces.socketcan.utils import \
     pack_filters, find_available_interfaces, error_code_to_str
+
+
+def check_status(result, function, arguments):
+    if result < 0:
+        raise can.CanError(error_code_to_str(ctypes.get_errno()))
+    return result
+
+try:
+    libc = ctypes.CDLL(ctypes.util.find_library("c"), use_errno=True)
+    libc.bind.errcheck = check_status
+    libc.connect.errcheck = check_status
+except:
+    log.warning("libc is unavailable")
+    libc = None
+
 
 # struct module defines a binary packing format:
 # https://docs.python.org/3/library/struct.html#struct-format-strings
@@ -152,36 +161,24 @@ def dissect_can_frame(frame):
 
 def create_bcm_socket(channel):
     """create a broadcast manager socket and connect to the given interface"""
-    try:
-        s = socket.socket(PF_CAN, SOCK_DGRAM, CAN_BCM)
-    except AttributeError:
-        raise SystemExit("To use BCM sockets you need Python3.4 or higher")
+    s = socket.socket(PF_CAN, socket.SOCK_DGRAM, CAN_BCM)
     try:
         s.connect((channel,))
     except socket.error:
         # For Python 2.7
         addr = get_addr(s, channel)
-        error = libc.connect(s.fileno(), addr, len(addr))
-        if error < 0:
-            raise can.CanError('Could not connect to socket')
-    except OSError as e:
-        log.error("Couldn't connect a broadcast manager socket")
-        raise e
+        libc.connect(s.fileno(), addr, len(addr))
     return s
 
 
 def send_bcm(bcm_socket, data):
     """
     Send raw frame to a BCM socket and handle errors.
-
-    :param socket:
-    :param data:
-    :return:
     """
     try:
         return bcm_socket.send(data)
     except OSError as e:
-        base = "Couldn't send CAN BCM frame. OS Error {}: {}\n".format(e.errno, os.strerror(e.errno))
+        base = "Couldn't send CAN BCM frame. OS Error {}: {}\n".format(e.errno, e.strerror)
 
         if e.errno == errno.EINVAL:
             raise can.CanError(base + "You are probably referring to a non-existing frame.")
@@ -210,15 +207,7 @@ def _add_flags_to_can_id(message):
     return can_id
 
 
-class SocketCanBCMBase(object):
-    """Mixin to add a BCM socket"""
-
-    def __init__(self, channel, *args, **kwargs):
-        self.bcm_socket = create_bcm_socket(channel)
-        super(SocketCanBCMBase, self).__init__(*args, **kwargs)
-
-
-class CyclicSendTask(SocketCanBCMBase, LimitedDurationCyclicSendTaskABC,
+class CyclicSendTask(LimitedDurationCyclicSendTaskABC,
                      ModifiableCyclicTaskABC, RestartableCyclicTaskABC):
     """
     A socketcan cyclic send task supports:
@@ -237,6 +226,7 @@ class CyclicSendTask(SocketCanBCMBase, LimitedDurationCyclicSendTaskABC,
         :param float duration: Approximate duration in seconds to send the message.
         """
         super(CyclicSendTask, self).__init__(channel, message, period, duration)
+        self.bcm_socket = create_bcm_socket(channel)
         self.duration = duration
         self._tx_setup(message)
         self.message = message
@@ -311,10 +301,10 @@ class MultiRateCyclicSendTask(CyclicSendTask):
 
 
 def get_addr(sock, channel):
-    binary_structure = "16si"
-    data = struct.pack(binary_structure, channel.encode(), 0)
+    """Get sockaddr for a channel."""
+    data = struct.pack("16si", channel.encode(), 0)
     res = fcntl.ioctl(sock, SIOCGIFINDEX, data)
-    _, idx = struct.unpack(binary_structure, res)
+    idx = struct.unpack("16xi", res)
     return struct.pack("HiLL", AF_CAN, idx, 0, 0)
 
 
@@ -322,7 +312,7 @@ def create_socket():
     """Creates a raw CAN socket. The socket will
     be returned unbound to any interface.
     """
-    sock = socket.socket(PF_CAN, SOCK_RAW, CAN_RAW)
+    sock = socket.socket(PF_CAN, socket.SOCK_RAW, CAN_RAW)
 
     log.info('Created a socket')
 
@@ -333,10 +323,10 @@ def bind_socket(sock, channel='can0'):
     """
     Binds the given socket to the given interface.
 
-    :param Socket socketID:
-        The ID of the socket to be bound
-    :raise:
-        :class:`OSError` if the specified interface isn't found.
+    :param socket.socket sock:
+        The socket to be bound
+    :raises OSError:
+        If the specified interface isn't found.
     """
     log.debug('Binding socket to channel=%s', channel)
     try:
@@ -344,9 +334,7 @@ def bind_socket(sock, channel='can0'):
     except socket.error:
         # For Python 2.7
         addr = get_addr(sock, channel)
-        error = libc.bind(sock.fileno(), addr, len(addr))
-        if error < 0:
-            raise can.CanError('Could not bind socket')
+        libc.bind(sock.fileno(), addr, len(addr))
     log.debug('Bound socket.')
 
 
@@ -354,7 +342,7 @@ def capture_message(sock):
     """
     Captures a message from given socket.
 
-    :param socket sock:
+    :param socket.socket sock:
         The socket to read a message from.
 
     :return: The received message, or None on failure.
@@ -362,13 +350,8 @@ def capture_message(sock):
     # Fetching the Arb ID, DLC and Data
     try:
         cf = sock.recv(CANFD_MTU)
-    except socket.timeout:
-        log.debug('Captured no data, socket read timed out.')
-        return None
-    except OSError:
-        # something bad happened (e.g. the interface went down)
-        log.exception("Captured no data.")
-        return None
+    except socket.error as exc:
+        raise can.CanError("Error receiving: %s" % exc)
 
     can_id, can_dlc, flags, data = dissect_can_frame(cf)
     log.debug('Received: can_id=%x, can_dlc=%x, data=%s', can_id, can_dlc, data)
@@ -461,14 +444,15 @@ class SocketcanBus(BusABC):
 
     def _recv_internal(self, timeout):
         if timeout is not None:
+            # get all sockets that are ready (can be a list with a single value
+            # being self.socket or an empty list if self.socket is not ready)
             try:
                 # get all sockets that are ready (can be a list with a single value
                 # being self.socket or an empty list if self.socket is not ready)
                 ready_receive_sockets, _, _ = select.select([self.socket], [], [], timeout)
-            except OSError:
+            except socket.error as exc:
                 # something bad happened (e.g. the interface went down)
-                log.exception("Error while waiting for timeout")
-                ready_receive_sockets = False
+                raise can.CanError("Failed to receive: %s" % exc)
         else:
             ready_receive_sockets = True
 
@@ -491,9 +475,8 @@ class SocketcanBus(BusABC):
 
         try:
             self.socket.sendall(build_can_frame(msg))
-        except OSError as exc:
-            error_message = error_code_to_str(exc.errno)
-            raise can.CanError("can.socketcan_native failed to transmit: {}".format(error_message))
+        except socket.error as exc:
+            raise can.CanError("Failed to transmit: %s" % exc)
 
     def send_periodic(self, msg, period, duration=None):
         return CyclicSendTask(self.channel, msg, period, duration)
@@ -513,7 +496,7 @@ class SocketcanBus(BusABC):
 
     @staticmethod
     def _detect_available_configs():
-        return [{'interface': 'socketcan_native', 'channel': channel}
+        return [{'interface': 'socketcan', 'channel': channel}
                 for channel in find_available_interfaces()]
 
 

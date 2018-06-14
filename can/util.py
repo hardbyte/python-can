@@ -117,11 +117,6 @@ def load_config(path=None, config=None):
     kvaser, socketcan, pcan, usb2can, ixxat, nican, virtual.
 
     .. note::
-
-        If you pass ``"socketcan"`` this automatically selects between the
-        native and ctypes version.
-
-    .. note::
  
             The key ``bustype`` is copied to ``interface`` if that one is missing
             and does never appear in the result.
@@ -184,6 +179,7 @@ def load_config(path=None, config=None):
 
     # deprecated socketcan types
     if config['interface'] in ('socketcan_native', 'socketcan_ctypes'):
+        log.warning('%s is deprecated, use socketcan instead', config['interface'])
         config['interface'] = 'socketcan'
 
     if config['interface'] not in VALID_INTERFACES:
