@@ -169,10 +169,10 @@ class BusABC(object):
             least *duration* seconds.
 
         """
-        if not hasattr(self, "_lock"):
+        if not hasattr(self, "_lock_send_periodic"):
             # Create a send lock for this bus
-            self._lock = threading.Lock()
-        return ThreadBasedCyclicSendTask(self, self._lock, msg, period, duration)
+            self._lock_send_periodic = threading.Lock()
+        return ThreadBasedCyclicSendTask(self, self._lock_send_periodic, msg, period, duration)
 
     def __iter__(self):
         """Allow iteration on messages as they are received.
@@ -191,6 +191,10 @@ class BusABC(object):
 
     @property
     def filters(self):
+        """
+        Modify the filters of this bus. See :meth:`~can.BusABC.set_filters`
+        for details.
+        """
         return self._filters
 
     @filters.setter
@@ -201,8 +205,8 @@ class BusABC(object):
         """Apply filtering to all messages received by this Bus.
 
         All messages that match at least one filter are returned.
-        If `filters` is `None`, all messages are matched.
-        If it is a zero size interable, no messages are matched.
+        If `filters` is `None` or a zero length sequence, all 
+        messages are matched.
 
         Calling without passing any filters will reset the applied
         filters to `None`.
@@ -219,7 +223,7 @@ class BusABC(object):
             only on the arbitration ID and mask.
 
         """
-        self._filters = filters
+        self._filters = filters or None
         self._apply_filters(self._filters)
 
     def _apply_filters(self, filters):
