@@ -1,6 +1,10 @@
 SocketCAN
 =========
 
+The implementation features efficient filtering of can_id's. That filtering
+occurs in the kernel and is much much more efficient than filtering messages
+in Python.
+
 Socketcan Quickstart
 --------------------
 
@@ -166,8 +170,38 @@ If you set the timeout to ``0.0``, the read will be executed as non-blocking,
 which means ``bus.recv(0.0)`` will return immediately, either with a ``Message``
 object or ``None``, depending on whether data was available on the socket.
 
+Broadcast Manager
+-----------------
+
+The ``socketcan`` interface implements thin wrappers to the linux `broadcast manager`
+socket api. This allows the cyclic transmission of CAN messages at given intervals.
+The overhead for periodic message sending is extremely low as all the heavy lifting occurs
+within the linux kernel.
+
+send_periodic()
+~~~~~~~~~~~~~~~
+
+An example that uses the send_periodic is included in ``python-can/examples/cyclic.py``
+
+The object returned can be used to halt, alter or cancel the periodic message task.
+
+.. autoclass:: can.interfaces.socketcan.CyclicSendTask
+
 
 Bus
 ---
 
 .. autoclass:: can.interfaces.socketcan.SocketcanBus
+   
+   .. method:: recv(timeout=None)
+
+      Block waiting for a message from the Bus.
+
+      :param float timeout:
+          seconds to wait for a message or None to wait indefinitely
+
+      :rtype: can.Message or None
+      :return:
+          None on timeout or a :class:`can.Message` object.
+      :raises can.CanError:
+          if an error occurred while reading
