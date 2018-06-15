@@ -149,14 +149,14 @@ class TestThreadSafeBus(Back2BackTestCase):
     """
 
     def setUp(self):
-        self.bus1 = can.ThreadSafeBus(channel=CHANNEL_1,
-                                      bustype=INTERFACE_1,
-                                      bitrate=BITRATE,
+        self.bus1 = can.ThreadSafeBus(channel=self.CHANNEL_1,
+                                      bustype=self.INTERFACE_1,
+                                      bitrate=self.BITRATE,
                                       fd=TEST_CAN_FD,
                                       single_handle=True)
-        self.bus2 = can.ThreadSafeBus(channel=CHANNEL_2,
-                                      bustype=INTERFACE_2,
-                                      bitrate=BITRATE,
+        self.bus2 = can.ThreadSafeBus(channel=self.CHANNEL_2,
+                                      bustype=self.INTERFACE_2,
+                                      bitrate=self.BITRATE,
                                       fd=TEST_CAN_FD,
                                       single_handle=True)
 
