@@ -244,13 +244,14 @@ class CyclicSendTask(LimitedDurationCyclicSendTaskABC,
         :param float period: The rate in seconds at which to send the message.
         :param float duration: Approximate duration in seconds to send the message.
         """
-        super(CyclicSendTask, self).__init__(channel, message, period, duration)
-        self.bcm_socket = create_bcm_socket(channel)
+        super(CyclicSendTask, self).__init__(message, period, duration)
+        self.channel = channel
         self.duration = duration
         self._tx_setup(message)
         self.message = message
 
     def _tx_setup(self, message):
+        self.bcm_socket = create_bcm_socket(self.channel)
         # Create a low level packed frame to pass to the kernel
         self.can_id_with_flags = _add_flags_to_can_id(message)
         self.flags = CAN_FD_FRAME if message.is_fd else 0
@@ -279,6 +280,7 @@ class CyclicSendTask(LimitedDurationCyclicSendTaskABC,
 
         stopframe = build_bcm_tx_delete_header(self.can_id_with_flags, self.flags)
         send_bcm(self.bcm_socket, stopframe)
+        self.bcm_socket.close()
 
     def modify_data(self, message):
         """Update the contents of this periodically sent message.
@@ -538,7 +540,7 @@ class SocketcanBus(BusABC):
             least *duration* seconds.
 
         """
-        return CyclicSendTask(self.channel, msg, period, duration)
+        return CyclicSendTask(msg.channel or self.channel, msg, period, duration)
 
     def _apply_filters(self, filters):
         try:
