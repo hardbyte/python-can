@@ -9,7 +9,7 @@ from __future__ import absolute_import
 
 import unittest
 
-from can.interfaces.socketcan.socketcan_common import \
+from can.interfaces.socketcan.utils import \
     find_available_interfaces, error_code_to_str
 
 from .config import *
