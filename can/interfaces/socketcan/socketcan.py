@@ -304,7 +304,7 @@ def get_addr(sock, channel):
     """Get sockaddr for a channel."""
     data = struct.pack("16si", channel.encode(), 0)
     res = fcntl.ioctl(sock, SIOCGIFINDEX, data)
-    idx = struct.unpack("16xi", res)
+    idx, = struct.unpack("16xi", res)
     return struct.pack("HiLL", AF_CAN, idx, 0, 0)
 
 
