@@ -23,7 +23,7 @@ import logging
 
 from can.message import Message
 from can.listener import Listener
-from can.util import len2dlc, dlc2len
+from can.util import len2dlc, dlc2len, channel2int
 
 
 class BLFParseError(Exception):
@@ -275,8 +275,13 @@ class BLFWriter(Listener):
         self.stop_timestamp = None
 
     def on_message_received(self, msg):
-        # Many interfaces start channel numbering at 0 which is invalid in BLF
-        channel = msg.channel + 1 if isinstance(msg.channel, int) else self.channel
+        channel = channel2int(msg.channel)
+        if channel is None:
+            channel = self.channel
+        else:
+            # Many interfaces start channel numbering at 0 which is invalid
+            channel += 1
+
         arb_id = msg.arbitration_id
         if msg.id_type:
             arb_id |= CAN_MSG_EXT

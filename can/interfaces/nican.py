@@ -154,6 +154,7 @@ class NicanBus(BusABC):
             raise ImportError("The NI-CAN driver could not be loaded. "
                               "Check that you are using 32-bit Python on Windows.")
 
+        self.channel = channel
         self.channel_info = "NI-CAN: " + channel
         if not isinstance(channel, bytes):
             channel = channel.encode()
@@ -242,6 +243,7 @@ class NicanBus(BusABC):
             arb_id &= 0x1FFFFFFF
         dlc = raw_msg.dlc
         msg = Message(timestamp=timestamp,
+                      channel=self.channel,
                       is_remote_frame=is_remote_frame,
                       is_error_frame=is_error_frame,
                       extended_id=is_extended,
