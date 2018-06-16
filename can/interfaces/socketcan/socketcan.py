@@ -51,6 +51,7 @@ if not HAS_NATIVE_SUPPORT:
         libc.bind.errcheck = check_status
         libc.connect.errcheck = check_status
         libc.sendto.errcheck = check_status
+        libc.recvfrom.errcheck = check_status
     except:
         log.warning("libc is unavailable")
         libc = None
@@ -353,20 +354,30 @@ def bind_socket(sock, channel='can0'):
     log.debug('Bound socket.')
 
 
-def capture_message(sock):
+def capture_message(sock, get_channel=False):
     """
     Captures a message from given socket.
 
     :param socket.socket sock:
         The socket to read a message from.
+    :param bool get_addr:
+        Get which channel the message comes from.
 
     :return: The received message, or None on failure.
     """
     # Fetching the Arb ID, DLC and Data
     try:
-        if HAS_NATIVE_SUPPORT:
-            cf, addr = sock.recvfrom(CANFD_MTU)
-            channel = addr[0] if isinstance(addr, tuple) else addr
+        if get_channel:
+            if HAS_NATIVE_SUPPORT:
+                cf, addr = sock.recvfrom(CANFD_MTU)
+                channel = addr[0] if isinstance(addr, tuple) else addr
+            else:
+                data = ctypes.create_string_buffer(CANFD_MTU)
+                addr = ctypes.create_string_buffer(20)
+                received = libc.recvfrom(sock.fileno(), data, len(data),
+                                         0, addr, len(addr))
+                cf = data.raw[:received]
+                channel = addr.value
         else:
             cf = sock.recv(CANFD_MTU)
             channel = None
@@ -466,22 +477,21 @@ class SocketcanBus(BusABC):
         self.socket.close()
 
     def _recv_internal(self, timeout):
-        if timeout is not None:
+        # get all sockets that are ready (can be a list with a single value
+        # being self.socket or an empty list if self.socket is not ready)
+        try:
             # get all sockets that are ready (can be a list with a single value
             # being self.socket or an empty list if self.socket is not ready)
-            try:
-                # get all sockets that are ready (can be a list with a single value
-                # being self.socket or an empty list if self.socket is not ready)
-                ready_receive_sockets, _, _ = select.select([self.socket], [], [], timeout)
-            except socket.error as exc:
-                # something bad happened (e.g. the interface went down)
-                raise can.CanError("Failed to receive: %s" % exc)
-        else:
-            ready_receive_sockets = True
+            ready_receive_sockets, _, _ = select.select([self.socket], [], [], timeout)
+        except socket.error as exc:
+            # something bad happened (e.g. the interface went down)
+            raise can.CanError("Failed to receive: %s" % exc)
 
         if ready_receive_sockets: # not empty or True
-            msg = capture_message(self.socket)
-            if not msg.channel:
+            get_channel = self.channel == ""
+            msg = capture_message(self.socket, get_channel)
+            if not msg.channel and self.channel:
+                # Default to our own channel
                 msg.channel = self.channel
             return msg, self._is_filtered
         else:
@@ -514,6 +524,7 @@ class SocketcanBus(BusABC):
             # Wait for write availability
             ready = select.select([], [self.socket], [], time_left)[1]
             if not ready:
+                # Timeout
                 break
             sent = self._send_once(data, msg.channel)
             if sent == len(data):
@@ -527,7 +538,7 @@ class SocketcanBus(BusABC):
     def _send_once(self, data, channel=None):
         try:
             if self.channel == "" and channel:
-                # Message is addressed to a specific channel
+                # Message must be addressed to a specific channel
                 if HAS_NATIVE_SUPPORT:
                     sent = self.socket.sendto(data, (channel, ))
                 else:
