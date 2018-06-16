@@ -114,7 +114,7 @@ def build_can_frame(msg):
     if msg.error_state_indicator:
         flags |= CANFD_ESI
     max_len = 64 if msg.is_fd else 8
-    data = msg.data.ljust(max_len, b'\x00')
+    data = bytes(msg.data).ljust(max_len, b'\x00')
     return CAN_FRAME_HEADER_STRUCT.pack(can_id, msg.dlc, flags) + data
 
 
