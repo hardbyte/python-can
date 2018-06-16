@@ -156,7 +156,6 @@ class SocketCanBroadcastChannel(unittest.TestCase):
         self.bus1.shutdown()
         self.bus2.shutdown()
 
-    @unittest.skipUnless(can.interfaces.socketcan.socketcan.HAS_NATIVE_SUPPORT, 'Not supported on old Python')
     def test_broadcast_channel(self):
         self.bus1.send(can.Message(channel='vcan0'))
         recv_msg = self.bus2.recv(1)

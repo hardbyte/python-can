@@ -8,6 +8,7 @@ import os
 import select
 import socket
 import struct
+import time
 import errno
 
 log = logging.getLogger(__name__)
@@ -49,6 +50,7 @@ if not HAS_NATIVE_SUPPORT:
         libc = ctypes.CDLL(ctypes.util.find_library("c"), use_errno=True)
         libc.bind.errcheck = check_status
         libc.connect.errcheck = check_status
+        libc.sendto.errcheck = check_status
     except:
         log.warning("libc is unavailable")
         libc = None
@@ -501,20 +503,43 @@ class SocketcanBus(BusABC):
         logger_tx = log.getChild("tx")
         logger_tx.debug("sending: %s", msg)
 
-        if timeout:
-            # Wait for write availability
-            _, ready_send_sockets, _ = select.select([], [self.socket], [], timeout)
-            if not ready_send_sockets:
-                raise can.CanError("Timeout while sending")
-
+        started = time.time()
+        # If no timeout is given, poll for availability
+        if timeout is None:
+            timeout = 0
+        time_left = timeout
         data = build_can_frame(msg)
+
+        while time_left >= 0:
+            # Wait for write availability
+            ready = select.select([], [self.socket], [], time_left)[1]
+            if not ready:
+                break
+            sent = self._send_once(data, msg.channel)
+            if sent == len(data):
+                return
+            # Not all data were sent, try again with remaining data
+            data = data[sent:]
+            time_left = timeout - (time.time() - started)
+
+        raise can.CanError("Transmit buffer full")
+
+    def _send_once(self, data, channel=None):
         try:
-            if self.channel == "" and HAS_NATIVE_SUPPORT and msg.channel:
-                self.socket.sendto(data, (msg.channel, ))
+            if self.channel == "" and channel:
+                # Message is addressed to a specific channel
+                if HAS_NATIVE_SUPPORT:
+                    sent = self.socket.sendto(data, (channel, ))
+                else:
+                    addr = get_addr(self.socket, channel)
+                    sent = libc.sendto(self.socket.fileno(),
+                                       data, len(data), 0,
+                                       addr, len(addr))
             else:
-                self.socket.send(data)
+                sent = self.socket.send(data)
         except socket.error as exc:
             raise can.CanError("Failed to transmit: %s" % exc)
+        return sent
 
     def send_periodic(self, msg, period, duration=None):
         """Start sending a message at a given period on this bus.
