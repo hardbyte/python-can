@@ -149,21 +149,21 @@ class BasicTestSocketCan(Back2BackTestCase):
 class SocketCanBroadcastChannel(unittest.TestCase):
 
     def setUp(self):
-        self.bus1 = can.Bus(channel='', bustype='socketcan')
-        self.bus2 = can.Bus(channel='vcan0', bustype='socketcan')
+        self.broadcast_bus = can.Bus(channel='', bustype='socketcan')
+        self.regular_bus = can.Bus(channel='vcan0', bustype='socketcan')
 
     def tearDown(self):
-        self.bus1.shutdown()
-        self.bus2.shutdown()
+        self.broadcast_bus.shutdown()
+        self.regular_bus.shutdown()
 
     def test_broadcast_channel(self):
-        self.bus1.send(can.Message(channel='vcan0'))
-        recv_msg = self.bus2.recv(1)
+        self.broadcast_bus.send(can.Message(channel='vcan0'))
+        recv_msg = self.regular_bus.recv(1)
         self.assertIsNotNone(recv_msg)
         self.assertEqual(recv_msg.channel, 'vcan0')
 
-        self.bus2.send(can.Message())
-        recv_msg = self.bus1.recv(1)
+        self.regular_bus.send(can.Message())
+        recv_msg = self.broadcast_bus.recv(1)
         self.assertIsNotNone(recv_msg)
         self.assertEqual(recv_msg.channel, 'vcan0')
 

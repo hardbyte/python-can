@@ -383,7 +383,7 @@ def capture_message(sock, get_channel=False):
                 assert family == AF_CAN
                 data = struct.pack("16xi", ifindex)
                 res = fcntl.ioctl(sock, SIOCGIFNAME, data)
-                channel = ctypes.create_string_buffer(res).value
+                channel = ctypes.create_string_buffer(res).value.decode()
         else:
             cf = sock.recv(CANFD_MTU)
             channel = None
