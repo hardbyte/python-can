@@ -360,8 +360,8 @@ def capture_message(sock, get_channel=False):
 
     :param socket.socket sock:
         The socket to read a message from.
-    :param bool get_addr:
-        Get which channel the message comes from.
+    :param bool get_channel:
+        Find out which channel the message comes from.
 
     :return: The received message, or None on failure.
     """
@@ -373,11 +373,17 @@ def capture_message(sock, get_channel=False):
                 channel = addr[0] if isinstance(addr, tuple) else addr
             else:
                 data = ctypes.create_string_buffer(CANFD_MTU)
-                addr = ctypes.create_string_buffer(20)
-                received = libc.recvfrom(sock.fileno(), data, len(data),
-                                         0, addr, len(addr))
+                addr = ctypes.create_string_buffer(32)
+                addrlen = ctypes.c_int(len(addr))
+                received = libc.recvfrom(sock.fileno(), data, len(data), 0,
+                                         addr, ctypes.byref(addrlen))
                 cf = data.raw[:received]
-                channel = addr.value
+                # Figure out the channel name
+                family, ifindex = struct.unpack_from("Hi", addr.raw)
+                assert family == AF_CAN
+                data = struct.pack("16xi", ifindex)
+                res = fcntl.ioctl(sock, SIOCGIFNAME, data)
+                channel = ctypes.create_string_buffer(res).value
         else:
             cf = sock.recv(CANFD_MTU)
             channel = None
