@@ -180,17 +180,17 @@ class VectorBus(BusABC):
             # Only up to one filter per ID type allowed
             if len(filters) == 1 or (len(filters) == 2 and
                     filters[0].get("extended") != filters[1].get("extended")):
-                for can_filter in filters:
-                    try:
+                try:
+                    for can_filter in filters:
                         vxlapi.xlCanSetChannelAcceptance(self.port_handle, self.mask,
                             can_filter["can_id"], can_filter["can_mask"],
                             vxlapi.XL_CAN_EXT if can_filter.get("extended") else vxlapi.XL_CAN_STD)
-                    except VectorError as exc:
-                        LOG.warning("Could not set filters: %s", exc)
-                        # go to fallback
-                    else:
-                        self._is_filtered = True
-                        return
+                except VectorError as exc:
+                    LOG.warning("Could not set filters: %s", exc)
+                    # go to fallback
+                else:
+                    self._is_filtered = True
+                    return
             else:
                 LOG.warning("Only up to one filter per extended or standard ID allowed")
                 # go to fallback
