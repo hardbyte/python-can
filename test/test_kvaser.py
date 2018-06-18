@@ -5,24 +5,25 @@
 """
 
 import ctypes
-import unittest
 import time
 import logging
-
-import can
-from can.interfaces.kvaser import canlib
-from can.interfaces.kvaser import constants
-
+import unittest
 try:
     from unittest.mock import Mock, patch
 except ImportError:
     from mock import patch, Mock
 
+import pytest
+
+import can
+from can.interfaces.kvaser import canlib
+from can.interfaces.kvaser import constants
+
 
 class KvaserTest(unittest.TestCase):
 
     def setUp(self):
-        canlib.canGetNumberOfChannels = Mock(return_value=1)
+        canlib.canGetNumberOfChannels = KvaserTest.canGetNumberOfChannels
         canlib.canOpenChannel = Mock(return_value=0)
         canlib.canIoCtl = Mock(return_value=0)
         canlib.kvReadTimer = Mock()
@@ -39,7 +40,7 @@ class KvaserTest(unittest.TestCase):
 
         self.msg = {}
         self.msg_in_cue = None
-        self.bus = can.interface.Bus(channel=0, bustype='kvaser')
+        self.bus = can.Bus(channel=0, bustype='kvaser')
 
     def tearDown(self):
         if self.bus:
@@ -48,7 +49,6 @@ class KvaserTest(unittest.TestCase):
 
     def test_bus_creation(self):
         self.assertIsInstance(self.bus, canlib.KvaserBus)
-        self.assertTrue(canlib.canGetNumberOfChannels.called)
         self.assertTrue(canlib.canOpenChannel.called)
         self.assertTrue(canlib.canBusOn.called)
 
@@ -122,8 +122,9 @@ class KvaserTest(unittest.TestCase):
         self.assertEqual(self.msg['flags'], constants.canMSG_STD)
         self.assertSequenceEqual(self.msg['data'], [50, 51])
 
+    @pytest.mark.timeout(3.0)
     def test_recv_no_message(self):
-        self.assertEqual(self.bus.recv(), None)
+        self.assertEqual(self.bus.recv(timeout=0.5), None)
 
     def test_recv_extended(self):
         self.msg_in_cue = can.Message(
@@ -150,6 +151,18 @@ class KvaserTest(unittest.TestCase):
         self.assertEqual(msg.dlc, 2)
         self.assertEqual(msg.id_type, False)
         self.assertSequenceEqual(msg.data, [100, 101])
+    
+    def test_available_configs(self):
+        configs = canlib.KvaserBus._detect_available_configs()
+        expected = [
+            {'interface': 'kvaser', 'channel': 0},
+            {'interface': 'kvaser', 'channel': 1}
+        ]
+        self.assertListEqual(configs, expected)
+
+    @staticmethod
+    def canGetNumberOfChannels(count):
+        count._obj.value = 2
 
     def canWrite(self, handle, arb_id, buf, dlc, flags):
         self.msg['arb_id'] = arb_id

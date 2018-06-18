@@ -4,7 +4,10 @@
 """
 Interface for slcan compatible interfaces (win32/linux).
 
-Note: Linux users can use slcand/socketcan as well.
+.. note::
+
+    Linux users can use slcand or socketcan as well.
+
 """
 
 from __future__ import absolute_import
@@ -41,18 +44,6 @@ class slcanBus(BusABC):
 
     _SLEEP_AFTER_SERIAL_OPEN = 2 # in seconds
 
-    def write(self, string):
-        if not string.endswith('\r'):
-            string += '\r'
-        self.serialPort.write(string.decode())
-        self.serialPort.flush()
-
-    def open(self):
-        self.write('O')
-
-    def close(self):
-        self.write('C')
-
     def __init__(self, channel, ttyBaudrate=115200, timeout=1, bitrate=None, **kwargs):
         """
         :param string channel:
@@ -61,7 +52,7 @@ class slcanBus(BusABC):
         :param int ttyBaudrate:
             baudrate of underlying serial or usb device
         :param int bitrate:
-            Bitrate in bits/s
+            Bitrate in bit/s
         :param float poll_interval:
             Poll interval in seconds when reading messages
         :param float timeout:
@@ -89,9 +80,22 @@ class slcanBus(BusABC):
 
         self.open()
 
-        super(slcanBus, self).__init__(channel, **kwargs)
+        super(slcanBus, self).__init__(channel, ttyBaudrate=115200, timeout=1,
+                                       bitrate=None, **kwargs)
 
-    def recv(self, timeout=None):
+    def write(self, string):
+        if not string.endswith('\r'):
+            string += '\r'
+        self.serialPort.write(string.decode())
+        self.serialPort.flush()
+
+    def open(self):
+        self.write('O')
+
+    def close(self):
+        self.write('C')
+
+    def _recv_internal(self, timeout):
         if timeout is not None:
             self.serialPortOrig.timeout = timeout
 
@@ -101,7 +105,7 @@ class slcanBus(BusABC):
         frame = []
         readStr = self.serialPort.readline()
         if not readStr:
-            return None
+            return None, False
         else:
             if readStr[0] == 'T':
                 # extended frame
@@ -127,14 +131,15 @@ class slcanBus(BusABC):
                 remote = True
 
             if canId is not None:
-                return Message(arbitration_id=canId,
-                               extended_id=extended,
-                               timestamp=time.time(),   # Better than nothing...
-                               is_remote_frame=remote,
-                               dlc=dlc,
-                               data=frame)
+                msg = Message(arbitration_id=canId,
+                              extended_id=extended,
+                              timestamp=time.time(),   # Better than nothing...
+                              is_remote_frame=remote,
+                              dlc=dlc,
+                              data=frame)
+                return msg, False
             else:
-                return None
+                return None, False
 
     def send(self, msg, timeout=None):
         if msg.is_remote_frame:

@@ -7,8 +7,8 @@ implementations of all the major classes in the library, now
 however all functionality has been refactored out. This API
 is left intact for version 2.0 to 2.3 to aide with migration.
 
-WARNING: 
-This module is deprecated an will get removed in version 2.4. 
+WARNING:
+This module is deprecated an will get removed in version 2.4.
 Please use `import can` instead.
 """
 

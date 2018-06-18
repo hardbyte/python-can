@@ -3,17 +3,20 @@
 
 """
 Exposes several methods for transmitting cyclic messages.
+
+The main entry point to these classes should be through
+:meth:`can.BusABC.send_periodic`.
 """
 
-import can
 import abc
 import logging
 import sched
 import threading
 import time
 
+import can
+
 log = logging.getLogger('can.bcm')
-log.debug("Loading base broadcast manager functionality")
 
 
 class CyclicTask(object):
@@ -39,6 +42,7 @@ class CyclicSendTaskABC(CyclicTask):
         """
         self.message = message
         self.can_id = message.arbitration_id
+        self.arbitration_id = message.arbitration_id
         self.period = period
         super(CyclicSendTaskABC, self).__init__()
 
@@ -131,9 +135,10 @@ class ThreadBasedCyclicSendTask(ModifiableCyclicTaskABC,
             time.sleep(max(0.0, delay))
 
 
-def send_periodic(bus, message, period):
+def send_periodic(bus, message, period, *args, **kwargs):
     """
     Send a message every `period` seconds on the given channel.
-
     """
-    return can.interface.CyclicSendTask(bus, message, period)
+    log.warn("The method `can.send_periodic` is deprecated and will "
+             "be removed in version 2.3. Please use `can.Bus.send_periodic` instead.")
+    return bus.send_periodic(message, period, *args, **kwargs)

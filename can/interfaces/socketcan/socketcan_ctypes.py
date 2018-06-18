@@ -2,9 +2,10 @@
 # coding: utf-8
 
 """
+See :meth:`can.util.choose_socketcan_implementation()`.
 """
 
-from __future__ import print_function
+from __future__ import print_function, absolute_import
 
 import ctypes
 import threading
@@ -14,12 +15,10 @@ import sys
 from ctypes.util import find_library
 
 import can
+from can import Message, BusABC
 from can.broadcastmanager import CyclicSendTaskABC, RestartableCyclicTaskABC, ModifiableCyclicTaskABC
-from can.bus import BusABC
-from can.message import Message
-from can.interfaces.socketcan.socketcan_constants import *  # CAN_RAW
-from can.interfaces.socketcan.socketcan_common import \
-    pack_filters, find_available_interfaces, error_code_to_str
+from .socketcan_constants import *  # CAN_RAW
+from .socketcan_common import pack_filters, find_available_interfaces, error_code_to_str
 
 # Set up logging
 log = logging.getLogger('can.socketcan.ctypes')
@@ -42,16 +41,15 @@ SEC_USEC = 1000000
 class SocketcanCtypes_Bus(BusABC):
     """
     An implementation of the :class:`can.bus.BusABC` for SocketCAN using :mod:`ctypes`.
+
+    Implements :meth:`can.BusABC._detect_available_configs`.
     """
 
-    def __init__(self,
-                 channel='vcan0',
-                 receive_own_messages=False,
-                 *args, **kwargs):
+    def __init__(self, channel, receive_own_messages=False, *args, **kwargs):
         """
         :param str channel:
             The can interface name with which to create this bus. An example channel
-            would be 'vcan0'.
+            would be 'vcan0' or 'can0'.
         """
 
         self.socket = createSocket()
@@ -59,11 +57,6 @@ class SocketcanCtypes_Bus(BusABC):
         self.channel_info = "ctypes socketcan channel '%s'" % channel
 
         log.debug("Result of createSocket was %d", self.socket)
-
-        # Add any socket options such as can frame filters
-        if 'can_filters' in kwargs and len(kwargs['can_filters']) > 0:
-            log.debug("Creating a filtered can bus")
-            self.set_filters(kwargs['can_filters'])
 
         error = bindSocket(self.socket, channel)
         if error < 0:
@@ -73,42 +66,38 @@ class SocketcanCtypes_Bus(BusABC):
 
         if receive_own_messages:
             error1 = recv_own_msgs(self.socket)
+            # TODO handle potential error
 
-        super(SocketcanCtypes_Bus, self).__init__(*args, **kwargs)
+        self._is_filtered = False
+        kwargs.update({'receive_own_messages': receive_own_messages})
+        super(SocketcanCtypes_Bus, self).__init__(channel=channel, *args, **kwargs)
 
-    def set_filters(self, can_filters=None):
-        """Apply filtering to all messages received by this Bus.
-
-        Calling without passing any filters will reset the applied filters.
-
-        :param list can_filters:
-            A list of dictionaries each containing a "can_id" and a "can_mask".
-
-            >>> [{"can_id": 0x11, "can_mask": 0x21}]
-
-            A filter matches, when ``<received_can_id> & can_mask == can_id & can_mask``
-
-        """
-        filter_struct = pack_filters(can_filters)
+    def _apply_filters(self, filters):
+        filter_struct = pack_filters(filters)
         res = libc.setsockopt(self.socket,
                               SOL_CAN_RAW,
                               CAN_RAW_FILTER,
-                              filter_struct, len(filter_struct)
-                             )
-        # TODO Is this serious enough to raise a CanError exception?
+                              filter_struct,
+                              len(filter_struct))
         if res != 0:
-            log.error('Setting filters failed: ' + str(res))
+            # fall back to "software filtering" (= not in kernel)
+            self._is_filtered = False
+            # TODO Is this serious enough to raise a CanError exception?
+            # TODO print error code (the errno, not "res", which is always -1)
+            log.error('Setting filters failed: falling back to software filtering (not in kernel)')
+        else:
+            self._is_filtered = True
 
-    def recv(self, timeout=None):
+    def _recv_internal(self, timeout):
 
         log.debug("Trying to read a msg")
 
-        if timeout is None or len(select.select([self.socket],
-                                                [], [], timeout)[0]) > 0:
-            packet = capturePacket(self.socket)
-        else:
+        ready_write_sockets, _, _ = select.select([self.socket], [], [], timeout)
+        if not ready_write_sockets:
             # socket wasn't readable or timeout occurred
-            return None
+            return None, self._is_filtered
+
+        packet = capturePacket(self.socket)
 
         log.debug("Receiving a message")
 
@@ -127,16 +116,15 @@ class SocketcanCtypes_Bus(BusABC):
             data=packet['Data']
         )
 
-        return rx_msg
+        return rx_msg, self._is_filtered
 
     def send(self, msg, timeout=None):
         frame = _build_can_frame(msg)
 
-        if timeout:
-            # Wait for write availability. write will fail below on timeout
-            _, ready_send_sockets, _ = select.select([], [self.socket], [], timeout)
-            if not ready_send_sockets:
-                raise can.CanError("Timeout while sending")
+        # Wait for write availability. write will fail below on timeout
+        _, ready_send_sockets, _ = select.select([], [self.socket], [], timeout)
+        if not ready_send_sockets:
+            raise can.CanError("Timeout while sending")
 
         # all sizes & lengths are in bytes
         total_sent = 0

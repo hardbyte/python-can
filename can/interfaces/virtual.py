@@ -16,9 +16,10 @@ try:
 except ImportError:
     import Queue as queue
 from threading import RLock
-import random
+from random import randint
 
 from can.bus import BusABC
+from can import CanError
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +34,7 @@ class VirtualBus(BusABC):
     A virtual CAN bus using an internal message queue. It can be
     used for example for testing.
 
-    In this interface, a channel is an arbitarty object used as
+    In this interface, a channel is an arbitrary object used as
     an identifier for connected buses.
 
     Implements :meth:`can.BusABC._detect_available_configs`; see
@@ -42,10 +43,14 @@ class VirtualBus(BusABC):
     """
 
     def __init__(self, channel=None, receive_own_messages=False, **config):
+        super(VirtualBus, self).__init__(channel=channel,
+            receive_own_messages=receive_own_messages, **config)
+
         # the channel identifier may be an arbitrary object
         self.channel_id = channel
         self.channel_info = 'Virtual bus channel %s' % self.channel_id
         self.receive_own_messages = receive_own_messages
+        self._open = True
 
         with channels_lock:
 
@@ -57,28 +62,39 @@ class VirtualBus(BusABC):
             self.queue = queue.Queue()
             self.channel.append(self.queue)
 
-    def recv(self, timeout=None):
+    def _check_if_open(self):
+        """Raises CanError if the bus is not open.
+
+        Has to be called in every method that accesses the bus.
+        """
+        if not self._open:
+            raise CanError('Operation on closed bus')
+
+    def _recv_internal(self, timeout):
+        self._check_if_open()
         try:
             msg = self.queue.get(block=True, timeout=timeout)
         except queue.Empty:
-            return None
-
-        #logger.log(9, 'Received message:\n%s', msg)
-        return msg
+            return None, False
+        else:
+            return msg, False
 
     def send(self, msg, timeout=None):
+        self._check_if_open()
         msg.timestamp = time.time()
         # Add message to all listening on this channel
         for bus_queue in self.channel:
             if bus_queue is not self.queue or self.receive_own_messages:
                 bus_queue.put(msg)
-        #logger.log(9, 'Transmitted message:\n%s', msg)
 
     def shutdown(self):
+        self._check_if_open()
+        self._open = False
+
         with channels_lock:
             self.channel.remove(self.queue)
 
-            # remove if emtpy
+            # remove if empty
             if not self.channel:
                 del channels[self.channel_id]
 
@@ -88,14 +104,17 @@ class VirtualBus(BusABC):
         Returns all currently used channels as well as
         one other currently unused channel.
 
-        This method will have problems if thousands of
-        autodetected busses are used at once.
+        .. note::
+
+            This method will run into problems if thousands of
+            autodetected busses are used at once.
+
         """
         with channels_lock:
             available_channels = list(channels.keys())
 
         # find a currently unused channel
-        get_extra = lambda: "channel-{}".format(random.randint(0, 9999))
+        get_extra = lambda: "channel-{}".format(randint(0, 9999))
         extra = get_extra()
         while extra in available_channels:
             extra = get_extra()

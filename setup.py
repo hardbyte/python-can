@@ -21,9 +21,11 @@ with open('README.rst', 'r') as f:
 
 # Dependencies
 tests_require = [
-    'mock >= 2.0.0',
-    'nose >= 1.3.7',
-    'pyserial >= 3.0'
+    'mock ~= 2.0',
+    'nose ~= 1.3.7',
+    'pytest ~= 3.6',
+    'pytest-timeout ~= 1.2',
+    'pyserial ~= 3.0'
 ]
 
 setup(
@@ -54,11 +56,11 @@ setup(
     # see https://www.python.org/dev/peps/pep-0345/#version-specifiers
     python_requires=">=2.7,!=3.0,!=3.1,!=3.2,!=3.3",
     install_requires=[
-        'setuptools',
-    ] + (['subprocess32 ~= 3.2.7'] if version_info.major < 3 else []),
+        'wrapt ~= 1.10',
+    ],
     extras_require={
         'serial': ['pyserial >= 3.0'],
-        'neovi': ['python-ics >= 2.8'],
+        'neovi': ['python-ics >= 2.12'],
         'test': tests_require
     },
 

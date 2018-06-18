@@ -10,10 +10,7 @@ import os
 import errno
 import struct
 import sys
-if sys.version_info[0] < 3 and os.name == 'posix':
-    import subprocess32 as subprocess
-else:
-    import subprocess
+import subprocess
 import re
 
 from can.interfaces.socketcan.socketcan_constants import CAN_EFF_FLAG

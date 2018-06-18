@@ -7,15 +7,15 @@ well as :class:`MessageSync` which plays back messages
 in the recorded order an time intervals.
 """
 
-from __future__ import print_function
+from __future__ import absolute_import, print_function
 
 import time
 import logging
 
 from .asc import ASCReader
 from .blf import BLFReader
+from .canutils import CanutilsLogReader
 from .csv import CSVReader
-from .log import CanutilsLogReader
 from .sqlite import SqliteReader
 
 log = logging.getLogger('can.io.player')
@@ -37,13 +37,14 @@ class LogReader(object):
         >>> for m in LogReader(my_file):
         ...     print(m)
 
-    Note there are no time delays, if you want to reproduce
-    the measured delays between messages look at the
-    :class:`can.util.MessageSync` class.
+    .. note::
+        There are no time delays, if you want to reproduce
+        the measured delays between messages look at the
+        :class:`can.util.MessageSync` class.
     """
 
-    @classmethod
-    def __new__(cls, other, filename):
+    @staticmethod
+    def __new__(cls, filename):
         if not filename:
             raise TypeError("a filename must be given")
         elif filename.endswith(".asc"):

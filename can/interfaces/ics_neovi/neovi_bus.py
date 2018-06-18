@@ -14,8 +14,7 @@ Implementation references:
 import logging
 from collections import deque
 
-from can import Message, CanError
-from can.bus import BusABC
+from can import Message, CanError, BusABC
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +29,10 @@ except ImportError as ie:
 
 
 class ICSApiError(CanError):
+    """
+    Indicates an error with the ICS API.
+    """
+
     # A critical error which affects operation or accuracy.
     ICS_SPY_ERR_CRITICAL = 0x10
     # An error which is not understood.
@@ -58,38 +61,19 @@ class ICSApiError(CanError):
         return self.severity == self.ICS_SPY_ERR_CRITICAL
 
 
-BAUDRATE_SETTING = {
-    20000: 0,
-    33333: 1,
-    50000: 2,
-    62500: 3,
-    83333: 4,
-    100000: 5,
-    125000: 6,
-    250000: 7,
-    500000: 8,
-    800000: 9,
-    1000000: 10,
-}
-VALID_BITRATES = list(BAUDRATE_SETTING.keys())
-VALID_BITRATES.sort()
-
-
 class NeoViBus(BusABC):
     """
     The CAN Bus implemented for the python_ics interface
     https://github.com/intrepidcs/python_ics
     """
 
-    def __init__(self, channel=None, can_filters=None, **config):
+    def __init__(self, channel, can_filters=None, **config):
         """
 
         :param int channel:
             The Channel id to create this bus with.
         :param list can_filters:
-            A list of dictionaries each containing a "can_id" and a "can_mask".
-
-            >>> [{"can_id": 0x11, "can_mask": 0x21}]
+            See :meth:`can.BusABC.set_filters` for details.
 
         :param use_system_timestamp:
             Use system timestamp for can messages instead of the hardware time
@@ -101,9 +85,11 @@ class NeoViBus(BusABC):
             Channel bitrate in bit/s. (optional, will enable the auto bitrate
             feature if not supplied)
         """
-        super(NeoViBus, self).__init__(channel, can_filters, **config)
         if ics is None:
             raise ImportError('Please install python-ics')
+
+        super(NeoViBus, self).__init__(
+            channel=channel, can_filters=can_filters, **config)
 
         logger.info("CAN Filters: {}".format(can_filters))
         logger.info("Got configuration of: {}".format(config))
@@ -111,8 +97,6 @@ class NeoViBus(BusABC):
         self._use_system_timestamp = bool(
             config.get('use_system_timestamp', False)
         )
-
-        # TODO: Add support for multiples channels
         try:
             channel = int(channel)
         except ValueError:
@@ -123,29 +107,8 @@ class NeoViBus(BusABC):
         self.dev = self._find_device(type_filter, serial)
         ics.open_device(self.dev)
 
-        bitrate = config.get('bitrate')
-
-        # Default auto baud setting
-        settings = {
-            'SetBaudrate': ics.AUTO,
-            'Baudrate': BAUDRATE_SETTING[500000],   # Default baudrate setting
-            'auto_baud': 1
-        }
-
-        if bitrate is not None:
-            if int(bitrate) not in VALID_BITRATES:
-                raise ValueError(
-                    'Invalid bitrate. Valid bitrates are {}'.format(
-                        VALID_BITRATES
-                    )
-                )
-            baud_rate_setting = BAUDRATE_SETTING[int(bitrate)]
-            settings = {
-                'SetBaudrate': ics.AUTO,
-                'Baudrate': baud_rate_setting,
-                'auto_baud': 0,
-            }
-        self._set_can_settings(channel, settings)
+        if 'bitrate' in config:
+            ics.set_bit_rate(self.dev, config.get('bitrate'), channel)
 
         self.channel_info = '%s %s CH:%s' % (
             self.dev.Name,
@@ -154,17 +117,8 @@ class NeoViBus(BusABC):
         )
         logger.info("Using device: {}".format(self.channel_info))
 
-        self.sw_filters = None
-        self.set_filters(can_filters)
         self.rx_buffer = deque()
-        self.opened = True
-
-        self.network = int(channel) if channel is not None else None
-
-        # TODO: Change the scaling based on the device type
-        self.ts_scaling = (
-            ics.NEOVI6_VCAN_TIMESTAMP_1, ics.NEOVI6_VCAN_TIMESTAMP_2
-        )
+        self.network = channel if channel is not None else None
 
     @staticmethod
     def get_serial_number(device):
@@ -181,8 +135,23 @@ class NeoViBus(BusABC):
 
     def shutdown(self):
         super(NeoViBus, self).shutdown()
-        self.opened = False
         ics.close_device(self.dev)
+    
+    @staticmethod
+    def _detect_available_configs():
+        """Detect all configurations/channels that this interface could
+        currently connect with.
+
+        :rtype: Iterator[dict]
+        :return: an iterable of dicts, each being a configuration suitable
+                 for usage in the interface's bus constructor.
+        """
+        if ics is None:
+            return []
+        # TODO: add the channel(s)
+        return [{
+            'serial': NeoViBus.get_serial_number(device)
+        } for device in ics.find_devices()]
 
     def _find_device(self, type_filter=None, serial=None):
         if type_filter is not None:
@@ -205,37 +174,13 @@ class NeoViBus(BusABC):
             raise Exception(' '.join(msg))
         return dev
 
-    def _get_can_settings(self, channel):
-        """Return the CanSettings for channel
-
-        :param channel: can channel number
-        :return: ics.CanSettings
-        """
-        device_settings = ics.get_device_settings(self.dev)
-        return getattr(device_settings, 'can{}'.format(channel))
-
-    def _set_can_settings(self, channel, setting):
-        """Applies can settings to channel
-
-        :param channel: can channel number
-        :param setting: settings dictionary (only the settings to update)
-        :return: None
-        """
-        device_settings = ics.get_device_settings(self.dev)
-        channel_settings = getattr(device_settings, 'can{}'.format(channel))
-        for setting, value in setting.items():
-            setattr(channel_settings, setting, value)
-        ics.set_device_settings(self.dev, device_settings)
-
-    def _process_msg_queue(self, timeout=None):
+    def _process_msg_queue(self, timeout=0.1):
         try:
             messages, errors = ics.get_messages(self.dev, False, timeout)
         except ics.RuntimeError:
             return
         for ics_msg in messages:
             if ics_msg.NetworkID != self.network:
-                continue
-            if not self._is_filter_match(ics_msg.ArbIDOrHeader):
                 continue
             self.rx_buffer.append(ics_msg)
         if errors:
@@ -246,26 +191,6 @@ class NeoViBus(BusABC):
                 if error.is_critical:
                     raise error
                 logger.warning(error)
-
-    def _is_filter_match(self, arb_id):
-        """
-        If SW filtering is used, checks if the `arb_id` matches any of
-        the filters setup.
-
-        :param int arb_id:
-            CAN ID to check against.
-
-        :return:
-            True if `arb_id` matches any filters
-            (or if SW filtering is not used).
-        """
-        if not self.sw_filters:
-            # Filtering done on HW or driver level or no filtering
-            return True
-        for can_filter in self.sw_filters:
-            if not (arb_id ^ can_filter['can_id']) & can_filter['can_mask']:
-                return True
-        return False
 
     def _get_timestamp_for_msg(self, ics_msg):
         if self._use_system_timestamp:
@@ -283,11 +208,7 @@ class NeoViBus(BusABC):
             return ics_msg.TimeSystem
         else:
             # This is the hardware time stamp.
-            # The TimeStamp is reset to zero every time the OpenPort method is
-            # called.
-            return \
-                float(ics_msg.TimeHardware2) * self.ts_scaling[1] + \
-                float(ics_msg.TimeHardware) * self.ts_scaling[0]
+            return ics.get_timestamp_for_msg(self.dev, ics_msg)
 
     def _ics_msg_to_message(self, ics_msg):
         return Message(
@@ -304,22 +225,19 @@ class NeoViBus(BusABC):
             channel=ics_msg.NetworkID
         )
 
-    def recv(self, timeout=None):
-        msg = None
+    def _recv_internal(self, timeout=0.1):
         if not self.rx_buffer:
             self._process_msg_queue(timeout=timeout)
-
         try:
             ics_msg = self.rx_buffer.popleft()
             msg = self._ics_msg_to_message(ics_msg)
         except IndexError:
-            pass
-        return msg
+            return None, False
+        return msg, False
 
     def send(self, msg, timeout=None):
-        if not self.opened:
-            return
-        data = tuple(msg.data)
+        if not self.dev.IsOpen:
+            raise CanError("bus not open")
 
         flags = 0
         if msg.is_extended_id:
@@ -329,8 +247,8 @@ class NeoViBus(BusABC):
 
         message = ics.SpyMessage()
         message.ArbIDOrHeader = msg.arbitration_id
-        message.NumberBytesData = len(data)
-        message.Data = data
+        message.NumberBytesData = len(msg.data)
+        message.Data = tuple(msg.data)
         message.StatusBitField = flags
         message.StatusBitField2 = 0
         message.NetworkID = self.network
@@ -339,28 +257,3 @@ class NeoViBus(BusABC):
             ics.transmit_messages(self.dev, message)
         except ics.RuntimeError:
             raise ICSApiError(*ics.get_last_api_error(self.dev))
-
-    def set_filters(self, can_filters=None):
-        """Apply filtering to all messages received by this Bus.
-
-        Calling without passing any filters will reset the applied filters.
-
-        :param list can_filters:
-            A list of dictionaries each containing a "can_id" and a "can_mask".
-
-            >>> [{"can_id": 0x11, "can_mask": 0x21}]
-
-            A filter matches, when
-            ``<received_can_id> & can_mask == can_id & can_mask``
-
-        """
-        self.sw_filters = can_filters or []
-
-        if not len(self.sw_filters):
-            logger.info("Filtering has been disabled")
-        else:
-            for can_filter in can_filters:
-                can_id = can_filter["can_id"]
-                can_mask = can_filter["can_mask"]
-                logger.info(
-                    "Filtering on ID 0x%X, mask 0x%X", can_id, can_mask)
