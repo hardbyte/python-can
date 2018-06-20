@@ -24,6 +24,8 @@ IS_ERROR_FRAME = 4
 IS_REMOTE_FRAME = 2
 IS_ID_TYPE = 1
 
+CANAL_ERROR_RCV_EMPTY = 19
+CANAL_ERROR_TIMEOUT = 32
 
 class CanalStatistics(Structure):
     _fields_ = [('ReceiveFrams', c_ulong),

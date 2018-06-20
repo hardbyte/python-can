@@ -68,17 +68,15 @@ def message_convert_rx(messagerx):
 class CanalBus(BusABC):
     """Interface to a CANAL Bus. Works only on Windows.
 
-    Note the interface doesn't implement set_filters methods.
-
     :param str channel:
         The device's serial number. If not provided, Windows Management Instrumentation
         will be used to identify the first such device. The *kwarg* `serial` may also be
         used.
 
     :param str dll:
-        dll with CANAL API to load
+        Path to the DLL with the CANAL API to load
 
-    :param int bitrate:
+    :param int bitrate (optional):
         Bitrate of channel in bit/s. Values will be limited to a maximum of 1000 Kb/s.
         Default is 500 Kbs
 
@@ -88,11 +86,12 @@ class CanalBus(BusABC):
     :param str serialMatcher (optional):
         search string for automatic detection of the device serial
 
-    :param int flags:
+    :param int flags (optional):
         Flags to directly pass to open function of the CANAL abstraction layer.
     """
 
     def __init__(self, channel, *args, **kwargs):
+        # TODO use kw arguments & util.load_config() instead of the if/else blocks
 
         dll = kwargs.get('dll', can.rc.get('dll', None))
         if dll is None:
@@ -127,7 +126,7 @@ class CanalBus(BusABC):
         # get baudrate in bit/s
         baudrate = kwargs.get('bitrate', can.rc.get('bitrate', 500000))
         # convert to kb/s
-        baudrate = baudrate // 1000
+        baudrate = int(baudrate // 1000)
         # cap: max rate is 1000 kb/s
         baudrate = min(baudrate, 1000)
 
@@ -148,7 +147,7 @@ class CanalBus(BusABC):
         if status != 0:
             raise can.CanError("could not send message: status == {}".format(status))
 
-    def recv(self, timeout=None):
+    def _recv_internal(self, timeout):
 
         messagerx = CanalMsg()
 
@@ -161,15 +160,10 @@ class CanalBus(BusABC):
 
         if status == 0:
             # success
-            return message_convert_rx(messagerx)
+            return message_convert_rx(messagerx), False
 
-        elif status == 19:
-            # CANAL_ERROR_RCV_EMPTY
-            return None
-
-        elif status == 32:
-            # CANAL_ERROR_TIMEOUT
-            return None
+        elif status == CANAL_ERROR_RCV_EMPTY or status == CANAL_ERROR_TIMEOUT:
+            return None, False
 
         else:
             # unknown error
