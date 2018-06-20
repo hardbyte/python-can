@@ -28,7 +28,7 @@ def WMIDateStringToDate(dtmDate):
     return strDateTime
 
 
-def serial(serialMatcher = "PID_6001"):
+def find_serial(serialMatcher = "PID_6001"):
     strComputer = "."
     objWMIService = win32com.client.Dispatch("WbemScripting.SWbemLocator")
     objSWbemServices = objWMIService.ConnectServer(strComputer, "root\cimv2")

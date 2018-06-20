@@ -64,7 +64,7 @@ class CanalWrapper:
         self.__m_dllBasic = windll.LoadLibrary(dll)
 
         if self.__m_dllBasic is None:
-            log.warning('DLL failed to load')
+            log.warning('DLL failed to load at path: {}'.format(dll))
 
     def open(self, pConfigureStr, flags):
         try:

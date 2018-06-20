@@ -10,6 +10,7 @@ import logging
 
 from can import BusABC, Message
 from .canal_wrapper import *
+from .serial_selector import find_serial
 
 # Set up logging
 log = logging.getLogger('can.canal')
@@ -70,19 +71,16 @@ class CanalBus(BusABC):
 
     :param str channel:
         The device's serial number. If not provided, Windows Management Instrumentation
-        will be used to identify the first such device. The *kwarg* `serial` may also be
-        used.
+        will be used to identify the first such device.
 
-    :param str dll:
+    :param str dll (optional):
         Path to the DLL with the CANAL API to load
+        Defaults to 'usb2can.dll'
 
     :param int bitrate (optional):
         Bitrate of channel in bit/s. Values will be limited to a maximum of 1000 Kb/s.
         Default is 500 Kbs
 
-    :param str serial (optional):
-        device serial to use for the CANAL open call
-    
     :param str serialMatcher (optional):
         search string for automatic detection of the device serial
 
@@ -90,51 +88,32 @@ class CanalBus(BusABC):
         Flags to directly pass to open function of the CANAL abstraction layer.
     """
 
-    def __init__(self, channel, *args, **kwargs):
-        # TODO use kw arguments & util.load_config() instead of the if/else blocks
+    def __init__(self, channel, dll='usb2can.dll', flags=0x00000008,
+                 bitrate=500000, *args, **kwargs):
 
-        dll = kwargs.get('dll', can.rc.get('dll', None))
-        if dll is None:
-            raise Exception("please specify a CANAL dll to load, e.g. 'usb2can.dll'")
+        self.can = CanalWrapper(kwargs[dll])
 
-        self.can = CanalWrapper(dll)
-
-        # set flags on the connection
-        enable_flags = kwargs.get('flags', can.rc.get('flags', 0x00000008))
-
-        # code to get the serial number of the device
-        if 'serial' in kwargs:
-            deviceID = kwargs["serial"]
-        elif 'serial' in can.rc:
-            deviceID = can.rc["serial"]
-        elif channel is not None:
-            deviceID = channel
-        else:
+        if channel is None:
             # autodetect device
             # TODO: integrate into #51 some day
-            from can.interfaces.canal.serial_selector import serial
             if 'serialMatcher' in kwargs:
-                deviceID = serial(kwargs["serialMatcher"])
+                channel = find_serial(kwargs["serialMatcher"])
             else:
-                deviceID = serial()
+                channel = find_serial()
 
-            if not deviceID:
+            if not channel:
                 raise can.CanError("Device ID could not be autodetected")
 
-        self.channel_info = "CANAL device " + deviceID
+        self.channel_info = "CANAL device {}".format(channel)
 
-        # get baudrate in bit/s
-        baudrate = kwargs.get('bitrate', can.rc.get('bitrate', 500000))
-        # convert to kb/s
-        baudrate = int(baudrate // 1000)
-        # cap: max rate is 1000 kb/s
-        baudrate = min(baudrate, 1000)
+        # convert to kb/s and cap: max rate is 1000 kb/s
+        baudrate = min(int(bitrate // 1000), 1000)
 
-        connector = format_connection_string(deviceID, baudrate)
+        connector = format_connection_string(channel, baudrate)
+        self.handle = self.can.open(connector, flags)
 
-        self.handle = self.can.open(connector, enable_flags)
-
-        super(CanalBus, self).__init__(channel=channel, *args, **kwargs)
+        super(CanalBus, self).__init__(channel=channel, dll=dll,
+              flags=flags, bitrate=bitrate, *args, **kwargs)
 
     def send(self, msg, timeout=None):
         tx = message_convert_tx(msg)
