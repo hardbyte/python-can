@@ -4,13 +4,12 @@
 """
 """
 
-from __future__ import division
-from __future__ import print_function
+from __future__ import division, print_function, absolute_import
 
 import logging
 
 from can import BusABC, Message
-from can.interfaces.canal.canal_wrapper import *
+from .canal_wrapper import *
 
 # Set up logging
 log = logging.getLogger('can.canal')
@@ -27,7 +26,7 @@ def format_connection_string(deviceID, baudrate):
 def message_convert_tx(msg):
     messagetx = CanalMsg()
 
-    length = len(msg.data)
+    length = msg.dlc
     messagetx.sizeData = length
 
     messagetx.id = msg.arbitration_id
@@ -61,16 +60,15 @@ def message_convert_rx(messagerx):
                     is_error_frame=ERROR_FRAME,
                     arbitration_id=messagerx.id,
                     dlc=messagerx.sizeData,
-                    data=messagerx.data[:messagerx.sizeData]
-                    )
+                    data=messagerx.data[:messagerx.sizeData])
 
     return msgrx
 
 
 class CanalBus(BusABC):
-    """Interface to a CANAL Bus.
+    """Interface to a CANAL Bus. Works only on Windows.
 
-    Note the interface doesn't implement set_filters, or flush_tx_buffer methods.
+    Note the interface doesn't implement set_filters methods.
 
     :param str channel:
         The device's serial number. If not provided, Windows Management Instrumentation
@@ -131,11 +129,13 @@ class CanalBus(BusABC):
         # convert to kb/s
         baudrate = baudrate // 1000
         # cap: max rate is 1000 kb/s
-        baudrate = max(baudrate, 1000)
+        baudrate = min(baudrate, 1000)
 
         connector = format_connection_string(deviceID, baudrate)
 
         self.handle = self.can.open(connector, enable_flags)
+
+        super(CanalBus, self).__init__(channel=channel, *args, **kwargs)
 
     def send(self, msg, timeout=None):
         tx = message_convert_tx(msg)
@@ -165,20 +165,22 @@ class CanalBus(BusABC):
 
         elif status == 19:
             # CANAL_ERROR_RCV_EMPTY
-            log.warn("recv: status: CANAL_ERROR_RCV_EMPTY")
             return None
 
         elif status == 32:
             # CANAL_ERROR_TIMEOUT
-            log.warn("recv: status: CANAL_ERROR_TIMEOUT")
             return None
 
         else:
-            # another error
+            # unknown error
             raise can.CanError("could not receive message: status == {}".format(status))
 
     def shutdown(self):
-        """Shut down the device safely"""
+        """
+        Shuts down connection to the device safely.
+
+        :raise cam.CanError: is closing the connection did not work
+        """
         status = self.can.close(self.handle)
 
         if status != 0:

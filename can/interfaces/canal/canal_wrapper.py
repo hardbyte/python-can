@@ -17,7 +17,7 @@ flags = c_ulong
 pConfigureStr = c_char_p
 handle = c_long
 timeout = c_ulong
-filter = c_ulong
+filter_t = c_ulong
 
 # flags mappings
 IS_ERROR_FRAME = 4
