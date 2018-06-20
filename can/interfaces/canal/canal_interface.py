@@ -70,8 +70,7 @@ class CanalBus(BusABC):
     """Interface to a CANAL Bus. Works only on Windows.
 
     :param str channel:
-        The device's serial number. If not provided, Windows Management Instrumentation
-        will be used to identify the first such device.
+        The device's serial number.
 
     :param str dll (optional):
         Path to the DLL with the CANAL API to load
@@ -81,9 +80,6 @@ class CanalBus(BusABC):
         Bitrate of channel in bit/s. Values will be limited to a maximum of 1000 Kb/s.
         Default is 500 Kbs
 
-    :param str serialMatcher (optional):
-        search string for automatic detection of the device serial
-
     :param int flags (optional):
         Flags to directly pass to open function of the CANAL abstraction layer.
     """
@@ -92,17 +88,6 @@ class CanalBus(BusABC):
                  bitrate=500000, *args, **kwargs):
 
         self.can = CanalWrapper(kwargs[dll])
-
-        if channel is None:
-            # autodetect device
-            # TODO: integrate into #51 some day
-            if 'serialMatcher' in kwargs:
-                channel = find_serial(kwargs["serialMatcher"])
-            else:
-                channel = find_serial()
-
-            if not channel:
-                raise can.CanError("Device ID could not be autodetected")
 
         self.channel_info = "CANAL device {}".format(channel)
 
@@ -156,5 +141,25 @@ class CanalBus(BusABC):
         """
         status = self.can.close(self.handle)
 
-        if status != 0:
+        if status != STATUS_OK:
             raise can.CanError("could not shut down bus: status == {}".format(status))
+
+    @staticmethod
+    def _detect_available_configs(serial_matcher=None):
+        """
+        Uses the Windows Management Instrumentation to identify
+        the *first* device. This methods thus returns zero or one
+        configuration.
+
+        :param str serialMatcher (optional):
+            search string for automatic detection of the device serial
+        """
+        if serial_matcher:
+            channel = find_serial(serial_matcher)
+        else:
+            channel = find_serial()
+
+        if channel:
+            return [{'interface': 'canal', 'channel': channel}]
+        else:
+            return []
