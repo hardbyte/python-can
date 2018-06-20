@@ -74,30 +74,30 @@ class s_xl_can_msg(ctypes.Structure):
 
 
 class s_xl_can_ev_error(ctypes.Structure):
-	_fields_ = [('errorCode', ctypes.c_ubyte), ('reserved', ctypes.c_ubyte * 95)]
+    _fields_ = [('errorCode', ctypes.c_ubyte), ('reserved', ctypes.c_ubyte * 95)]
 
 class s_xl_can_ev_chip_state(ctypes.Structure):
-	_fields_ = [('busStatus', ctypes.c_ubyte), ('txErrorCounter', ctypes.c_ubyte),
+    _fields_ = [('busStatus', ctypes.c_ubyte), ('txErrorCounter', ctypes.c_ubyte),
                 ('rxErrorCounter', ctypes.c_ubyte),('reserved', ctypes.c_ubyte),
                 ('reserved0', ctypes.c_uint)]
 
 class s_xl_can_ev_sync_pulse(ctypes.Structure):
-	_fields_ = [('triggerSource', ctypes.c_uint), ('reserved', ctypes.c_uint),
+    _fields_ = [('triggerSource', ctypes.c_uint), ('reserved', ctypes.c_uint),
                 ('time', XLuint64)]
-	
+
 # BASIC bus message structure
 class s_xl_tag_data(ctypes.Union):
     _fields_ = [('msg', s_xl_can_msg)]
 
 # CAN FD messages
 class s_xl_can_ev_rx_msg(ctypes.Structure):
-	_fields_ = [('canId', ctypes.c_uint), ('msgFlags', ctypes.c_uint),
+    _fields_ = [('canId', ctypes.c_uint), ('msgFlags', ctypes.c_uint),
                 ('crc', ctypes.c_uint), ('reserved1', ctypes.c_ubyte * 12),
-				('totalBitCnt', ctypes.c_ushort), ('dlc', ctypes.c_ubyte),
+                ('totalBitCnt', ctypes.c_ushort), ('dlc', ctypes.c_ubyte),
                 ('reserved', ctypes.c_ubyte * 5), ('data', ctypes.c_ubyte * XL_CAN_MAX_DATA_LEN)]
-				
+
 class s_xl_can_ev_tx_request(ctypes.Structure):
-	_fields_ = [('canId', ctypes.c_uint), ('msgFlags', ctypes.c_uint),
+    _fields_ = [('canId', ctypes.c_uint), ('msgFlags', ctypes.c_uint),
                 ('dlc', ctypes.c_ubyte),('txAttemptConf', ctypes.c_ubyte),
                 ('reserved', ctypes.c_ushort), ('data', ctypes.c_ubyte * XL_CAN_MAX_DATA_LEN)]
 
@@ -107,12 +107,12 @@ class s_xl_can_tx_msg(ctypes.Structure):
                 ('data', ctypes.c_ubyte * XL_CAN_MAX_DATA_LEN)]
 
 class s_rxTagData(ctypes.Union):
-	_fields_ = [('canRxOkMsg', s_xl_can_ev_rx_msg), ('canTxOkMsg', s_xl_can_ev_rx_msg),
+    _fields_ = [('canRxOkMsg', s_xl_can_ev_rx_msg), ('canTxOkMsg', s_xl_can_ev_rx_msg),
                 ('canTxRequest', s_xl_can_ev_tx_request),('canError', s_xl_can_ev_error),
                 ('canChipState', s_xl_can_ev_chip_state),('canSyncPulse', s_xl_can_ev_sync_pulse)]
 
 class s_txTagData(ctypes.Union):
-	_fields_ = [('canMsg', s_xl_can_tx_msg)]
+    _fields_ = [('canMsg', s_xl_can_tx_msg)]
 
 # BASIC events				
 XLeventTag = ctypes.c_ubyte
@@ -123,7 +123,7 @@ class XLevent(ctypes.Structure):
                 ('flags', ctypes.c_ubyte), ('reserved', ctypes.c_ubyte),
                 ('timeStamp', XLuint64), ('tagData', s_xl_tag_data)]
 
-# CAN FD events				
+# CAN FD events
 class XLcanRxEvent(ctypes.Structure):
     _fields_ = [('size',ctypes.c_int),('tag', ctypes.c_ushort),
                 ('chanIndex', ctypes.c_ubyte),('reserved', ctypes.c_ubyte),
@@ -143,7 +143,7 @@ class XLcanFdConf(ctypes.Structure):
                 ('dataBitRate', ctypes.c_uint), ('sjwDbr', ctypes.c_uint),
                 ('tseg1Dbr', ctypes.c_uint), ('tseg2Dbr', ctypes.c_uint),
                 ('reserved', ctypes.c_uint * 2)]
-				
+
 # driver status
 XLstatus = ctypes.c_short
 
