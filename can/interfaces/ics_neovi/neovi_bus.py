@@ -188,8 +188,6 @@ class NeoViBus(BusABC):
 
             for msg in ics.get_error_messages(self.dev):
                 error = ICSApiError(*msg)
-                if error.is_critical:
-                    raise error
                 logger.warning(error)
 
     def _get_timestamp_for_msg(self, ics_msg):
