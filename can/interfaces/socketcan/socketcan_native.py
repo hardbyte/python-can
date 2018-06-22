@@ -172,7 +172,7 @@ def send_bcm(bcm_socket, data):
     """
     Send raw frame to a BCM socket and handle errors.
 
-    :param socket:
+    :param bcm_socket:
     :param data:
     :return:
     """
@@ -339,7 +339,7 @@ def bind_socket(sock, channel='can0'):
     """
     Binds the given socket to the given interface.
 
-    :param Socket socketID:
+    :param Socket sock:
         The ID of the socket to be bound
     :raise:
         :class:`OSError` if the specified interface isn't found.
