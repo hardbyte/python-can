@@ -9,7 +9,14 @@ from __future__ import print_function, absolute_import
 from abc import ABCMeta
 from threading import RLock
 
-from wrapt import ObjectProxy
+try:
+    # Only raise an exception on instantiation but allow module
+    # to be imported
+    from wrapt import ObjectProxy
+    import_exc = None
+except ImportError as exc:
+    ObjectProxy = object
+    import_exc = exc
 
 from .interface import Bus
 from .bus import BusABC
@@ -52,6 +59,9 @@ class ThreadSafeBus(ObjectProxy):
     _lock_recv = RLock()
 
     def __init__(self, *args, **kwargs):
+        if import_exc is not None:
+            raise import_exc
+
         super(ThreadSafeBus, self).__init__(Bus(*args, **kwargs))
 
         # now, BusABC.send_periodic() does not need a lock anymore, but the
