@@ -179,6 +179,8 @@ def load_config(path=None, config=None):
 
     # deprecated socketcan types
     if config['interface'] in ('socketcan_native', 'socketcan_ctypes'):
+        # Change this to a DeprecationWarning in future 2.x releases
+        # Remove completely in 3.0
         log.warning('%s is deprecated, use socketcan instead', config['interface'])
         config['interface'] = 'socketcan'
 

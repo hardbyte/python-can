@@ -448,6 +448,8 @@ class SocketcanBus(BusABC):
             The can interface name with which to create this bus. An example channel
             would be 'vcan0' or 'can0'.
             An empty string '' will receive messages from all channels.
+            In that case any sent messages must be explicitly addressed to a
+            channel using :attr:`can.Message.channel`.
         :param bool receive_own_messages:
             If transmitted messages should also be received by this bus.
         :param bool fd:
@@ -457,13 +459,13 @@ class SocketcanBus(BusABC):
         """
         self.socket = create_socket()
         self.channel = channel
-        self.channel_info = "native socketcan channel '%s'" % channel
+        self.channel_info = "socketcan channel '%s'" % channel
 
         # set the receive_own_messages paramater
         try:
             self.socket.setsockopt(SOL_CAN_RAW,
                                    CAN_RAW_RECV_OWN_MSGS,
-                                   struct.pack('i', receive_own_messages))
+                                   1 if receive_own_messages else 0)
         except socket.error as e:
             log.error("Could not receive own messages (%s)", e)
 
@@ -471,7 +473,7 @@ class SocketcanBus(BusABC):
             # TODO handle errors
             self.socket.setsockopt(SOL_CAN_RAW,
                                    CAN_RAW_FD_FRAMES,
-                                   struct.pack('i', 1))
+                                   1)
 
         bind_socket(self.socket, channel)
 

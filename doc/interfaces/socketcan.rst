@@ -1,15 +1,21 @@
 SocketCAN
 =========
 
-The implementation features efficient filtering of can_id's. That filtering
-occurs in the kernel and is much much more efficient than filtering messages
-in Python.
+The full documentation for socketcan can be found in the kernel docs at
+`networking/can.txt <https://www.kernel.org/doc/Documentation/networking/can.txt>`_.
+
+
+.. note::
+
+    Versions before 2.2 had two different implementations named
+    ``socketcan_ctypes`` and ``socketcan_native``. These are now
+    deprecated and the aliases to ``socketcan`` will be removed in
+    version 3.0. Future 2.x release may raise a DeprecationWarning.
+
 
 Socketcan Quickstart
 --------------------
 
-The full documentation for socketcan can be found in the kernel docs at
-`networking/can.txt <https://www.kernel.org/doc/Documentation/networking/can.txt>`_.
 The CAN network driver provides a generic
 interface to setup, configure and monitor CAN devices. To configure
 bit-timing parameters use the program ``ip``.
@@ -169,6 +175,13 @@ blocking read with a timeout like this:
 If you set the timeout to ``0.0``, the read will be executed as non-blocking,
 which means ``bus.recv(0.0)`` will return immediately, either with a ``Message``
 object or ``None``, depending on whether data was available on the socket.
+
+Filtering
+---------
+
+The implementation features efficient filtering of can_id's. That filtering
+occurs in the kernel and is much much more efficient than filtering messages
+in Python.
 
 Broadcast Manager
 -----------------
