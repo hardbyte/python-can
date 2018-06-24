@@ -7,6 +7,7 @@ This module contains the implementation of :class:`~can.Notifier`.
 
 import threading
 import logging
+import time
 
 logger = logging.getLogger('can.Notifier')
 
@@ -17,7 +18,7 @@ class Notifier(object):
         """Manages the distribution of **Messages** from a given bus/buses to a
         list of listeners.
 
-        :param bus: The :ref:`bus` or list of buses to listen to.
+        :param can.Bus bus: The :ref:`bus` or a list of buses to listen to.
         :param list listeners: An iterable of :class:`~can.Listener`s
         :param float timeout: An optional maximum number of seconds to wait for any message.
         """
@@ -40,25 +41,32 @@ class Notifier(object):
             reader.start()
             self._readers.append(reader)
 
-    def stop(self):
+    def stop(self, timeout=5):
         """Stop notifying Listeners when new :class:`~can.Message` objects arrive
         and call :meth:`~can.Listener.stop` on each Listener.
+
+        :param float timeout:
+            Max time in seconds to wait for receive threads to finish.
+            Should be longer than timeout given at instantiation.
         """
         self._running = False
-        timeout = self.timeout + 0.1 if self.timeout is not None else 5
+        end_time = time.time() + timeout
         for reader in self._readers:
-            reader.join(timeout)
+            now = time.time()
+            if now < end_time:
+                reader.join(end_time - now)
         for listener in self.listeners:
             listener.stop()
 
     def _rx_thread(self, bus):
+        msg = None
         try:
             while self._running:
-                msg = bus.recv(self.timeout)
                 if msg is not None:
                     with self._lock:
                         for callback in self.listeners:
                             callback(msg)
+                msg = bus.recv(self.timeout)
         except Exception as exc:
             self.exception = exc
             raise

@@ -86,6 +86,12 @@ Since no official specification exists for the format, it has been reverse-
 engineered from existing log files. One description of the format can be found `here
 <http://zone.ni.com/reference/en-XX/help/370859J-01/dlgcanconverter/dlgcanconverter/canconverter_ascii_logfiles/>`_.
 
+
+.. note::
+
+    Channels will be converted to integers.
+
+
 .. autoclass:: can.ASCWriter
     :members:
 
@@ -123,6 +129,10 @@ Implements support for BLF (Binary Logging Format) which is a proprietary
 CAN log format from Vector Informatik GmbH.
 
 The data is stored in a compressed format which makes it very compact.
+
+.. note::
+
+    Channels will be converted to integers.
 
 .. autoclass:: can.BLFWriter
     :members:

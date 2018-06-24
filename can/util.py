@@ -292,20 +292,21 @@ def dlc2len(dlc):
 def channel2int(channel):
     """Try to convert the channel to an integer.
 
-    :param str channel:
-        Channel string (e.g. can0, CAN1)
+    :param channel:
+        Channel string (e.g. can0, CAN1) or integer
     
-    :returns: Channel integer or `None`
+    :returns: Channel integer or `None` if unsuccessful
     :rtype: int
     """
     if channel is None:
         return None
     if isinstance(channel, int):
         return channel
-    # Assume it's a string
-    match = re.match(r'.*(\d+)$', channel)
-    if match:
-        return int(match.group(1))
+    # String and byte objects have a lower() method
+    if hasattr(channel, "lower"):
+        match = re.match(r'.*(\d+)$', channel)
+        if match:
+            return int(match.group(1))
     return None
 
 
