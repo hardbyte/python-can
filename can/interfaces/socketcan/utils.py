@@ -72,7 +72,7 @@ def error_code_to_str(code):
     """
     Converts a given error code (errno) to a useful and human readable string.
 
-    :param int error_code: a possibly invalid/unknown error code
+    :param int code: a possibly invalid/unknown error code
     :rtype: str
     :returns: a string explaining and containing the given error code, or a string
               explaining that the errorcode is unknown if that is the case

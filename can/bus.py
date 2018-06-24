@@ -253,15 +253,15 @@ class BusABC(object):
         if self._filters is None:
             return True
 
-        for filter in self._filters:
+        for _filter in self._filters:
             # check if this filter even applies to the message
-            if 'extended' in filter and \
-                filter['extended'] != msg.is_extended_id:
+            if 'extended' in _filter and \
+                _filter['extended'] != msg.is_extended_id:
                 continue
 
             # then check for the mask and id
-            can_id = filter['can_id']
-            can_mask = filter['can_mask']
+            can_id = _filter['can_id']
+            can_mask = _filter['can_mask']
 
             # basically, we compute `msg.arbitration_id & can_mask == can_id & can_mask`
             # by using the shorter, but equivalent from below:

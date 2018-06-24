@@ -148,7 +148,7 @@ class ASCWriter(Listener):
         """Add a message to the log file.
 
         :param str message: an arbitrary message
-        :param float message: the absolute timestamp of the event
+        :param float timestamp: the absolute timestamp of the event
         """
 
         if not message: # if empty or None

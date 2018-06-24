@@ -33,6 +33,9 @@ a C++ library by Toby Lorenz.
 
 The slcan interface, ASCII listener and log logger and listener were contributed by Eduard Bröcker in 2017.
 
+The NeoVi interface for ICS (Intrepid Control Systems) devices was contributed 
+by Pierre-Luc Tessier Gagné in 2017.
+
 
 Support for CAN within Python
 -----------------------------
