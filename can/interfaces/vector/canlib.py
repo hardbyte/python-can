@@ -90,6 +90,8 @@ class VectorBus(BusABC):
         self.mask = 0
         self.fd = fd
         # Get channels masks
+        self.channel_masks = {}
+        self.index_to_channel = {}
         for channel in self.channels:
             hw_type = ctypes.c_uint(0)
             hw_index = ctypes.c_uint(0)
@@ -97,10 +99,13 @@ class VectorBus(BusABC):
             vxlapi.xlGetApplConfig(self._app_name, channel, hw_type, hw_index,
                                    hw_channel, vxlapi.XL_BUS_TYPE_CAN)
             LOG.debug('Channel index %d found', channel)
-            mask = vxlapi.xlGetChannelMask(hw_type.value, hw_index.value,
+            idx = vxlapi.xlGetChannelIndex(hw_type.value, hw_index.value,
                                            hw_channel.value)
-            LOG.debug('Channel %d, Type: %d, Mask: %d',
+            mask = 1 << idx
+            LOG.debug('Channel %d, Type: %d, Mask: 0x%X',
                       hw_channel.value, hw_type.value, mask)
+            self.channel_masks[channel] = mask
+            self.index_to_channel[idx] = channel
             self.mask |= mask
 
         permission_mask = vxlapi.XLaccess()
@@ -225,6 +230,7 @@ class VectorBus(BusABC):
                         dlc = dlc2len(event.tagData.canRxOkMsg.dlc)
                         flags = event.tagData.canRxOkMsg.msgFlags
                         timestamp = event.timeStamp * 1e-9
+                        channel = self.index_to_channel.get(event.chanIndex)
                         msg = Message(
                             timestamp=timestamp + self._time_offset,
                             arbitration_id=msg_id & 0x1FFFFFFF,
@@ -236,7 +242,7 @@ class VectorBus(BusABC):
                             bitrate_switch=bool(flags & vxlapi.XL_CAN_RXMSG_FLAG_BRS),
                             dlc=dlc,
                             data=event.tagData.canRxOkMsg.data[:dlc],
-                            channel=event.chanIndex)
+                            channel=channel)
                         return msg, self._is_filtered
             else:
                 event_count.value = 1
@@ -251,6 +257,7 @@ class VectorBus(BusABC):
                         dlc = event.tagData.msg.dlc
                         flags = event.tagData.msg.flags
                         timestamp = event.timeStamp * 1e-9
+                        channel = self.index_to_channel.get(event.chanIndex)
                         msg = Message(
                             timestamp=timestamp + self._time_offset,
                             arbitration_id=msg_id & 0x1FFFFFFF,
@@ -260,7 +267,7 @@ class VectorBus(BusABC):
                             is_fd=False,
                             dlc=dlc,
                             data=event.tagData.msg.data[:dlc],
-                            channel=event.chanIndex)
+                            channel=channel)
                         return msg, self._is_filtered
 
             if end_time is not None and time.time() > end_time:
@@ -286,6 +293,10 @@ class VectorBus(BusABC):
 
         flags = 0
 
+        # If channel has been specified, try to send only to that one.
+        # Otherwise send to all channels
+        mask = self.channel_masks.get(msg.channel, self.mask)
+
         if self.fd:
             if msg.is_fd:
                 flags |= vxlapi.XL_CAN_TXMSG_FLAG_EDL
@@ -306,7 +317,7 @@ class VectorBus(BusABC):
             XLcanTxEvent.tagData.canMsg.dlc = len2dlc(msg.dlc)
             for idx, value in enumerate(msg.data):
                 XLcanTxEvent.tagData.canMsg.data[idx] = value
-            vxlapi.xlCanTransmitEx(self.port_handle, self.mask, message_count, MsgCntSent, XLcanTxEvent)
+            vxlapi.xlCanTransmitEx(self.port_handle, mask, message_count, MsgCntSent, XLcanTxEvent)
 
         else:
             if msg.is_remote_frame:
@@ -322,7 +333,7 @@ class VectorBus(BusABC):
             xl_event.tagData.msg.flags = flags
             for idx, value in enumerate(msg.data):
                 xl_event.tagData.msg.data[idx] = value
-            vxlapi.xlCanTransmit(self.port_handle, self.mask, message_count, xl_event)
+            vxlapi.xlCanTransmit(self.port_handle, mask, message_count, xl_event)
 
         
     def flush_tx_buffer(self):

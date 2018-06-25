@@ -5,8 +5,6 @@
 This module works with CAN data in ASCII log files (*.log).
 It is is compatible with "candump -L" from the canutils program
 (https://github.com/linux-can/can-utils).
-
-TODO: "channel" is not uesed by CanutilsLogWriter. Is that supposed to be like that?
 """
 
 import time
@@ -44,9 +42,11 @@ class CanutilsLogReader(object):
 
             if temp:
 
-                (timestamp, bus, frame) = temp.split()
+                (timestamp, channel, frame) = temp.split()
                 timestamp = float(timestamp[1:-1])
                 (canId, data) = frame.split('#')
+                if channel.isdigit():
+                    channel = int(channel)
 
                 if len(canId) > 3:
                     isExtended = True
@@ -73,7 +73,7 @@ class CanutilsLogReader(object):
                 else:
                     msg = Message(timestamp=timestamp, arbitration_id=canId & 0x1FFFFFFF,
                                   extended_id=isExtended, is_remote_frame=isRemoteFrame,
-                                  dlc=dlc, data=dataBin)
+                                  dlc=dlc, data=dataBin, channel=channel)
                 yield msg
 
 
@@ -113,20 +113,22 @@ class CanutilsLogWriter(Listener):
             timestamp = self.last_timestamp
         else:
             timestamp = msg.timestamp
+        
+        channel = msg.channel if msg.channel is not None else self.channel
 
         if msg.is_error_frame:
-            self.log_file.write("(%f) vcan0 %08X#0000000000000000\n" % (timestamp, CAN_ERR_FLAG | CAN_ERR_BUSERROR))
+            self.log_file.write("(%f) %s %08X#0000000000000000\n" % (timestamp, channel, CAN_ERR_FLAG | CAN_ERR_BUSERROR))
 
         elif msg.is_remote_frame:
             data = []
             if msg.is_extended_id:
-                self.log_file.write("(%f) vcan0 %08X#R\n" % (timestamp, msg.arbitration_id))
+                self.log_file.write("(%f) %s %08X#R\n" % (timestamp, channel, msg.arbitration_id))
             else:
-                self.log_file.write("(%f) vcan0 %03X#R\n" % (timestamp, msg.arbitration_id))
+                self.log_file.write("(%f) %s %03X#R\n" % (timestamp, channel, msg.arbitration_id))
 
         else:
             data = ["{:02X}".format(byte) for byte in msg.data]
             if msg.is_extended_id:
-                self.log_file.write("(%f) vcan0 %08X#%s\n" % (timestamp, msg.arbitration_id, ''.join(data)))
+                self.log_file.write("(%f) %s %08X#%s\n" % (timestamp, channel, msg.arbitration_id, ''.join(data)))
             else:
-                self.log_file.write("(%f) vcan0 %03X#%s\n" % (timestamp, msg.arbitration_id, ''.join(data)))
+                self.log_file.write("(%f) %s %03X#%s\n" % (timestamp, channel, msg.arbitration_id, ''.join(data)))

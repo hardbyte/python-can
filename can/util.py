@@ -289,6 +289,27 @@ def dlc2len(dlc):
     return CAN_FD_DLC[dlc] if dlc <= 15 else 64
 
 
+def channel2int(channel):
+    """Try to convert the channel to an integer.
+
+    :param channel:
+        Channel string (e.g. can0, CAN1) or integer
+    
+    :returns: Channel integer or `None` if unsuccessful
+    :rtype: int
+    """
+    if channel is None:
+        return None
+    if isinstance(channel, int):
+        return channel
+    # String and byte objects have a lower() method
+    if hasattr(channel, "lower"):
+        match = re.match(r'.*(\d+)$', channel)
+        if match:
+            return int(match.group(1))
+    return None
+
+
 if __name__ == "__main__":
     print("Searching for configuration named:")
     print("\n".join(CONFIG_FILES))

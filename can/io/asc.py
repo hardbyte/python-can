@@ -13,6 +13,7 @@ import logging
 
 from can.listener import Listener
 from can.message import Message
+from can.util import channel2int
 
 CAN_MSG_EXT = 0x80000000
 CAN_ID_MASK = 0x1FFFFFFF
@@ -197,8 +198,12 @@ class ASCWriter(Listener):
         if msg.is_extended_id:
             arb_id += 'x'
 
-        # Many interfaces start channel numbering at 0 which is invalid
-        channel = msg.channel + 1 if isinstance(msg.channel, int) else self.channel
+        channel = channel2int(msg.channel)
+        if channel is None:
+            channel = self.channel
+        else:
+            # Many interfaces start channel numbering at 0 which is invalid
+            channel += 1
 
         serialized = self.FORMAT_MESSAGE.format(channel=channel,
                                                 id=arb_id,

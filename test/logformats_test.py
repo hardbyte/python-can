@@ -227,11 +227,13 @@ class TestBlfFileFormat(unittest.TestCase):
                              extended_id=False,
                              arbitration_id=0x64,
                              data=[0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8]))
+        self.assertEqual(messages[0].channel, 0)
         self.assertEqual(messages[1],
                          can.Message(
                              is_error_frame=True,
                              extended_id=True,
                              arbitration_id=0x1FFFFFFF))
+        self.assertEqual(messages[1].channel, 0)
 
 
 if __name__ == '__main__':
