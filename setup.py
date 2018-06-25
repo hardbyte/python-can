@@ -37,7 +37,7 @@ setup(
 
     # Code
     version=version,
-    packages=find_packages(),
+    packages=find_packages(exclude=["test", "test.*"]),
 
     # Author
     author="Brian Thorne",
