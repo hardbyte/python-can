@@ -20,6 +20,8 @@ from .broadcastmanager import CyclicSendTaskABC, MultiRateCyclicSendTaskABC
 from .util import load_config
 from .interfaces import BACKENDS
 
+from can.interfaces.socketcan.socketcan import CyclicSendTask, MultiRateCyclicSendTask
+
 # Required by "detect_available_configs" for argument interpretation
 if sys.version_info.major > 2:
     basestring = str
@@ -37,14 +39,6 @@ def _get_class_for_interface(interface):
         ImportError     if there was a problem while importing the
                         interface or the bus class within that
     """
-
-    # filter out the socketcan special case
-    if interface == 'socketcan':
-        try:
-            interface = can.util.choose_socketcan_implementation()
-        except Exception as e:
-            raise ImportError("Cannot choose socketcan implementation: {}".format(e))
-
     # Find the correct backend
     try:
         module_name, class_name = BACKENDS[interface]
@@ -175,43 +169,3 @@ def detect_available_configs(interfaces=None):
             result += available
 
     return result
-
-
-class CyclicSendTask(CyclicSendTaskABC):
-
-    @staticmethod
-    def __new__(cls, channel, *args, **kwargs):
-
-        config = load_config(config={'channel': channel})
-
-        # Import the correct implementation of CyclicSendTask
-        if config['interface'] == 'socketcan_ctypes':
-            from can.interfaces.socketcan.socketcan_ctypes import CyclicSendTask as _ctypesCyclicSendTask
-            cls = _ctypesCyclicSendTask
-        elif config['interface'] == 'socketcan_native':
-            from can.interfaces.socketcan.socketcan_native import CyclicSendTask as _nativeCyclicSendTask
-            cls = _nativeCyclicSendTask
-        else:
-            raise can.CanError("Current CAN interface doesn't support CyclicSendTask")
-
-        return cls(config['channel'], *args, **kwargs)
-
-
-class MultiRateCyclicSendTask(MultiRateCyclicSendTaskABC):
-
-    @staticmethod
-    def __new__(cls, channel, *args, **kwargs):
-
-        config = load_config(config={'channel': channel})
-
-        # Import the correct implementation of CyclicSendTask
-        if config['interface'] == 'socketcan_ctypes':
-            from can.interfaces.socketcan.socketcan_ctypes import MultiRateCyclicSendTask as _ctypesMultiRateCyclicSendTask
-            cls = _ctypesMultiRateCyclicSendTask
-        elif config['interface'] == 'socketcan_native':
-            from can.interfaces.socketcan.socketcan_native import MultiRateCyclicSendTask as _nativeMultiRateCyclicSendTask
-            cls = _nativeMultiRateCyclicSendTask
-        else:
-            can.log.info("Current CAN interface doesn't support CyclicSendTask")
-
-        return cls(config['channel'], *args, **kwargs)
