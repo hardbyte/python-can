@@ -474,7 +474,7 @@ class IXXATBus(BusABC):
             channel=self.channel
         )
 
-        log.debug('Recv()ed message %s', rx_msg)
+        #log.debug('Recv()ed message %s', rx_msg)
         return rx_msg, True
 
     def send(self, msg, timeout=None):

@@ -484,7 +484,7 @@ class KvaserBus(BusABC):
         else:
             timeout = int(timeout * 1000)
 
-        log.log(9, 'Reading for %d ms on handle: %s' % (timeout, self._read_handle))
+        #log.log(9, 'Reading for %d ms on handle: %s' % (timeout, self._read_handle))
         status = canReadWait(
             self._read_handle,
             ctypes.byref(arb_id),
