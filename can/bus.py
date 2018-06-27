@@ -12,9 +12,11 @@ import logging
 import threading
 from time import time
 from collections import namedtuple
+import logging
 
 from .broadcastmanager import ThreadBasedCyclicSendTask
 
+LOG = logging.getLogger(__name__)
 
 BusState = namedtuple('BusState', 'ACTIVE, PASSIVE, ERROR')
 
@@ -70,6 +72,7 @@ class BusABC(object):
 
             # return it, if it matches
             if msg and (already_filtered or self._matches_filters(msg)):
+                LOG.log(9, 'Received: %s', msg)
                 return msg
 
             # if not, and timeout is None, try indefinitely

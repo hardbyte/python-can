@@ -391,7 +391,7 @@ def capture_message(sock, get_channel=False):
         raise can.CanError("Error receiving: %s" % exc)
 
     can_id, can_dlc, flags, data = dissect_can_frame(cf)
-    log.debug('Received: can_id=%x, can_dlc=%x, data=%s', can_id, can_dlc, data)
+    #log.debug('Received: can_id=%x, can_dlc=%x, data=%s', can_id, can_dlc, data)
 
     # Fetching the timestamp
     binary_structure = "@LL"
@@ -413,11 +413,11 @@ def capture_message(sock, get_channel=False):
     error_state_indicator = bool(flags & CANFD_ESI)
 
     if is_extended_frame_format:
-        log.debug("CAN: Extended")
+        #log.debug("CAN: Extended")
         # TODO does this depend on SFF or EFF?
         arbitration_id = can_id & 0x1FFFFFFF
     else:
-        log.debug("CAN: Standard")
+        #log.debug("CAN: Standard")
         arbitration_id = can_id & 0x000007FF
 
     msg = Message(timestamp=timestamp,
@@ -432,7 +432,7 @@ def capture_message(sock, get_channel=False):
                   dlc=can_dlc,
                   data=data)
 
-    log_rx.debug('Received: %s', msg)
+    #log_rx.debug('Received: %s', msg)
 
     return msg
 

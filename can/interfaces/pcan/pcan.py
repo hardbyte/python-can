@@ -187,7 +187,7 @@ class PcanBus(BusABC):
             # Calculate max time
             end_time = timeout_clock() + timeout
 
-        log.debug("Trying to read a msg")
+        #log.debug("Trying to read a msg")
 
         result = None
         while result is None:
@@ -212,17 +212,10 @@ class PcanBus(BusABC):
         theMsg = result[1]
         itsTimeStamp = result[2]
 
-        log.debug("Received a message")
+        #log.debug("Received a message")
 
         bIsRTR = (theMsg.MSGTYPE & PCAN_MESSAGE_RTR.value) == PCAN_MESSAGE_RTR.value
         bIsExt = (theMsg.MSGTYPE & PCAN_MESSAGE_EXTENDED.value) == PCAN_MESSAGE_EXTENDED.value
-
-        if bIsExt:
-            #rx_msg.id_type = ID_TYPE_EXTENDED
-            log.debug("CAN: Extended")
-        else:
-            #rx_msg.id_type = ID_TYPE_STANDARD
-            log.debug("CAN: Standard")
 
         dlc = theMsg.LEN
         timestamp = boottimeEpoch + ((itsTimeStamp.micros + (1000 * itsTimeStamp.millis)) / (1000.0 * 1000.0))
