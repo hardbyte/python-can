@@ -99,7 +99,7 @@ The modules in ``python-can`` are:
 |:doc:`broadcastmanager <bcm>`    | Contains interface independent broadcast manager     |
 |                                 | code.                                                |
 +---------------------------------+------------------------------------------------------+
-|:doc:`CAN <api>`                 | Legacy API. Deprecated.                               |
+|:doc:`CAN <api>`                 | Legacy API. Deprecated.                              |
 +---------------------------------+------------------------------------------------------+
 
 

@@ -159,7 +159,7 @@ class BusABC(object):
             no duration is provided, the task will continue indefinitely.
 
         :return: A started task instance
-        :rtype: can.CyclicSendTaskABC
+        :rtype: can.broadcastmanager.CyclicSendTaskABC
 
         .. note::
 
@@ -211,7 +211,7 @@ class BusABC(object):
         Calling without passing any filters will reset the applied
         filters to `None`.
 
-        :param Iterator[dict] filters:
+        :param filters:
             A iterable of dictionaries each containing a "can_id", a "can_mask",
             and an optional "extended" key.
 
@@ -221,7 +221,6 @@ class BusABC(object):
             If ``extended`` is set as well, it only matches messages where
             ``<received_is_extended> == extended``. Else it matches every messages based
             only on the arbitration ID and mask.
-
         """
         self._filters = filters or None
         self._apply_filters(self._filters)

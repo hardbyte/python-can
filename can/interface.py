@@ -29,6 +29,7 @@ if sys.version_info.major > 2:
 log = logging.getLogger('can.interface')
 log_autodetect = log.getChild('detect_available_configs')
 
+
 def _get_class_for_interface(interface):
     """
     Returns the main bus class for the given interface.
@@ -66,7 +67,8 @@ def _get_class_for_interface(interface):
 
 
 class Bus(BusABC):
-    """
+    """Bus wrapper with configuration loading.
+
     Instantiates a CAN Bus of the given ``interface``, falls back to reading a
     configuration file from default locations.
     """
@@ -130,9 +132,9 @@ def detect_available_configs(interfaces=None):
         - the name of an interface to be searched in as a string,
         - an iterable of interface names to search in, or
         - `None` to search in all known interfaces.
-    :rtype: list of `dict`s
+    :rtype: list[dict]
     :return: an iterable of dicts, each suitable for usage in
-             :class:`can.interface.Bus`'s constructor.
+             :class:`can.interface.Bus`\ 's constructor.
     """
 
     # Figure out where to search

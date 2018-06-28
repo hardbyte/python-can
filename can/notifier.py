@@ -18,8 +18,8 @@ class Notifier(object):
         """Manages the distribution of **Messages** from a given bus/buses to a
         list of listeners.
 
-        :param can.Bus bus: The :ref:`bus` or a list of buses to listen to.
-        :param list listeners: An iterable of :class:`~can.Listener`s
+        :param can.BusABC bus: The :ref:`bus` or a list of buses to listen to.
+        :param list listeners: An iterable of :class:`~can.Listener`
         :param float timeout: An optional maximum number of seconds to wait for any message.
         """
         self.listeners = listeners
