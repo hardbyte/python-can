@@ -53,6 +53,4 @@ script:
   # Build Docs with Sphinx
   #
   # -a Write all files
-  # -n nitpick mode
-  # -W   Turn warnings into errors. This means that the build stops at the first warning and sphinx-build exits with exit status 1
-  - python -m sphinx -aW doc build
+  - python -m sphinx -a doc build
