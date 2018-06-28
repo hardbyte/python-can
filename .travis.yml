@@ -46,6 +46,13 @@ matrix:
 install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo bash test/open_vcan.sh ; fi
   - travis_retry pip install .[test]
+  - travis_retry pip install sphinx
 
 script:
   - pytest -v --timeout=300
+  # Build Docs with Sphinx
+  #
+  # -a Write all files
+  # -n nitpick mode
+  # -W   Turn warnings into errors. This means that the build stops at the first warning and sphinx-build exits with exit status 1
+  - python -m sphinx -aW doc build

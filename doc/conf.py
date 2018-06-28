@@ -45,7 +45,7 @@ extlinks = {
 }
 
 intersphinx_mapping = {
-    'python': ('https://docs.python.org/2/', None),
+    'python': ('https://docs.python.org/3/', None)
 }
 
 # If this is True, todo and todolist produce output, else they produce nothing.
