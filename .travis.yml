@@ -7,7 +7,7 @@ python:
   - "3.4"
   - "3.5"
   - "3.6"
-  - "3.7-dev" # TODO: change to "3.7" once it gets released
+  - "3.7-dev" # TODO: change to "3.7" once it is supported by travis-ci
   - "nightly"
   # PyPy:
   - "pypy"
@@ -53,4 +53,4 @@ script:
   # Build Docs with Sphinx
   #
   # -a Write all files
-  - python -m sphinx -a doc build
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "3.6" ]]; then python -m sphinx -a doc build; fi
