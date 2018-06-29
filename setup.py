@@ -32,7 +32,7 @@ tests_require = [
     'pytest-timeout ~= 1.2',
     'pytest-cov ~= 2.5',
 ]
-for key, requirements in extras_require:
+for key, requirements in extras_require.items():
     tests_require += requirements
 extras_require['test'] = tests_require
 
