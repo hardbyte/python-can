@@ -31,9 +31,9 @@ tests_require = [
     'pytest ~= 3.6',
     'pytest-timeout ~= 1.2',
     'pytest-cov ~= 2.5',
-]
-for key, requirements in extras_require.items():
-    tests_require += requirements
+] + extras_require['serial']
+#for key, requirements in extras_require.items():
+#    tests_require += requirements
 extras_require['test'] = tests_require
 
 setup(
