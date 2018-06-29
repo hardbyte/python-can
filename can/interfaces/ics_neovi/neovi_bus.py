@@ -149,9 +149,13 @@ class NeoViBus(BusABC):
         if ics is None:
             return []
         # TODO: add the channel(s)
-        return [{
-            'serial': NeoViBus.get_serial_number(device)
-        } for device in ics.find_devices()]
+        try:
+            return [{
+                'serial': NeoViBus.get_serial_number(device)
+            } for device in ics.find_devices()]
+        except Exception as e:
+            logger.debug("Failed to detect configs: %s", e)
+            return []
 
     def _find_device(self, type_filter=None, serial=None):
         if type_filter is not None:
