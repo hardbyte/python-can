@@ -8,6 +8,7 @@ python-can requires the setuptools package to be installed.
 from sys import version_info
 import re
 import logging
+from itertools import chain
 from setuptools import setup, find_packages
 
 logging.basicConfig(level=logging.WARNING)
@@ -31,6 +32,8 @@ tests_require = [
     'pytest-timeout ~= 1.2',
     'pytest-cov ~= 2.5',
 ]
+for key, requirements in extras_require:
+    tests_require += requirements
 extras_require['test'] = tests_require
 
 setup(
