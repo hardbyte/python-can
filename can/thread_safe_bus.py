@@ -1,12 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-"""
-"""
-
 from __future__ import print_function, absolute_import
-
-from abc import ABCMeta
 from threading import RLock
 
 try:
@@ -19,7 +14,6 @@ except ImportError as exc:
     import_exc = exc
 
 from .interface import Bus
-from .bus import BusABC
 
 
 class NullContextManager(object):

@@ -16,17 +16,42 @@ This example shows the socketcan_ctypes backend using the broadcast manager:
     :linenos:
 
 
-.. note::
-    The functional APi in :meth:`can.send_periodic` is now deprected.
-    Use the object oriented APi in :meth:`can.BusABC.send_periodic` instead.
-
-
 Class based API
 ---------------
 
-.. autoclass:: can.CyclicSendTaskABC
+.. autoclass:: can.broadcastmanager.CyclicTask
     :members:
 
 
-.. autoclass:: can.MultiRateCyclicSendTaskABC
+.. autoclass:: can.broadcastmanager.CyclicSendTaskABC
     :members:
+
+.. autoclass:: can.broadcastmanager.LimitedDurationCyclicSendTaskABC
+    :members:
+
+
+.. autoclass:: can.broadcastmanager.RestartableCyclicTaskABC
+    :members:
+
+
+.. autoclass:: can.broadcastmanager.ModifiableCyclicTaskABC
+    :members:
+
+.. autoclass:: can.broadcastmanager.MultiRateCyclicSendTaskABC
+    :members:
+
+.. autoclass:: can.broadcastmanager.ThreadBasedCyclicSendTask
+    :members:
+
+
+
+Functional API
+--------------
+
+.. note::
+    The functional API in :func:`can.broadcastmanager.send_periodic` is now deprecated.
+    Use the object oriented API via :meth:`can.BusABC.send_periodic` instead.
+
+
+.. autofunction:: can.broadcastmanager.send_periodic
+

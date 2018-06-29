@@ -15,9 +15,10 @@ log = logging.getLogger('can')
 
 rc = dict()
 
+
 class CanError(IOError):
-    """
-    Indicates an error with the CAN network.
+    """Indicates an error with the CAN network.
+
     """
     pass
 

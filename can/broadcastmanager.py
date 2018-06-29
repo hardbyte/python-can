@@ -10,11 +10,10 @@ The main entry point to these classes should be through
 
 import abc
 import logging
-import sched
+
 import threading
 import time
 
-import can
 
 log = logging.getLogger('can.bcm')
 
@@ -77,7 +76,7 @@ class ModifiableCyclicTaskABC(CyclicSendTaskABC):
         """Update the contents of this periodically sent message without altering
         the timing.
 
-        :param message: The :class:`~can.Message` with new :attr:`Message.data`.
+        :param message: The :class:`~can.Message` with new :attr:`can.Message.data`.
         """
         self.message = message
 
@@ -136,9 +135,12 @@ class ThreadBasedCyclicSendTask(ModifiableCyclicTaskABC,
 
 
 def send_periodic(bus, message, period, *args, **kwargs):
+    """Send a message every `period` seconds on the given channel.
+
+    :param bus: The :class:`can.BusABC` to transmit to.
+    :param message: The :class:`can.Message` instance to periodically send
+    :return: A started task instance
     """
-    Send a message every `period` seconds on the given channel.
-    """
-    log.warn("The method `can.send_periodic` is deprecated and will "
+    log.warning("The function `can.send_periodic` is deprecated and will " +
              "be removed in version 2.3. Please use `can.Bus.send_periodic` instead.")
     return bus.send_periodic(message, period, *args, **kwargs)
