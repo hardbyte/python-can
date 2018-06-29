@@ -45,12 +45,12 @@ matrix:
 
 install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo bash test/open_vcan.sh ; fi
+  - travis_retry pip install sphinx codecov pytest-cov
   - travis_retry pip install .[test]
-  - travis_retry pip install sphinx
 
 script:
-  - pytest -v --timeout=300
+  - pytest -v --timeout=300 --cov=./can/*
+
   # Build Docs with Sphinx
-  #
   # -a Write all files
   - if [[ "$TRAVIS_PYTHON_VERSION" == "3.6" ]]; then python -m sphinx -an doc build; fi
