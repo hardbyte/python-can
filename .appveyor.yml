@@ -28,4 +28,4 @@ install:
 build: off
 
 test_script:
-  - "pytest -v --timeout=300"
+  - "pytest -v --timeout=300 --cov=can"
