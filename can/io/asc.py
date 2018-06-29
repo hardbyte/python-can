@@ -25,7 +25,7 @@ class ASCReader(object):
     """
     Iterator of CAN messages from a ASC logging file.
 
-    TODO: turn realtive timestamps back to absolute form
+    TODO: turn relative timestamps back to absolute form
     """
 
     def __init__(self, filename):
