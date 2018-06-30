@@ -50,7 +50,7 @@ install:
 
 script:
   - pytest -v --timeout=300 --cov=can
-
+  - codecov
   # Build Docs with Sphinx
   # -a Write all files
   - if [[ "$TRAVIS_PYTHON_VERSION" == "3.6" ]]; then python -m sphinx -an doc build; fi
