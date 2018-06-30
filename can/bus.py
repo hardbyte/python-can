@@ -29,6 +29,9 @@ class BusABC(object):
     #: a string describing the underlying bus and/or channel
     channel_info = 'unknown'
 
+    #: Log level for received messages
+    RECV_LOGGING_LEVEL = 9
+
     @abstractmethod
     def __init__(self, channel, can_filters=None, **config):
         """Construct and open a CAN bus instance of the specified type.
@@ -72,7 +75,7 @@ class BusABC(object):
 
             # return it, if it matches
             if msg and (already_filtered or self._matches_filters(msg)):
-                LOG.log(9, 'Received: %s', msg)
+                LOG.log(self.RECV_LOGGING_LEVEL, 'Received: %s', msg)
                 return msg
 
             # if not, and timeout is None, try indefinitely
