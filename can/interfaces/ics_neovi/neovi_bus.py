@@ -136,7 +136,7 @@ class NeoViBus(BusABC):
     def shutdown(self):
         super(NeoViBus, self).shutdown()
         ics.close_device(self.dev)
-    
+
     @staticmethod
     def _detect_available_configs():
         """Detect all configurations/channels that this interface could
@@ -148,10 +148,18 @@ class NeoViBus(BusABC):
         """
         if ics is None:
             return []
+
+        try:
+            devices = ics.find_devices()
+        except Exception as e:
+            logger.debug("Failed to detect configs: %s", e)
+            return []
+
         # TODO: add the channel(s)
         return [{
+            'interface': 'neovi',
             'serial': NeoViBus.get_serial_number(device)
-        } for device in ics.find_devices()]
+        } for device in devices]
 
     def _find_device(self, type_filter=None, serial=None):
         if type_filter is not None:

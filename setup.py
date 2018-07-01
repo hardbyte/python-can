@@ -20,13 +20,21 @@ with open('README.rst', 'r') as f:
     long_description = f.read()
 
 # Dependencies
+extras_require = {
+    'serial':   ['pyserial ~= 3.0'],
+    'neovi':    ['python-ics >= 2.12']
+}
+
 tests_require = [
     'mock ~= 2.0',
-    'nose ~= 1.3.7',
+    'nose ~= 1.3',
     'pytest ~= 3.6',
     'pytest-timeout ~= 1.2',
-    'pyserial ~= 3.0'
-]
+    'pytest-cov ~= 2.5',
+    'codecov ~= 2.0'
+] + extras_require['serial']
+
+extras_require['test'] = tests_require
 
 setup(
     # Description
@@ -58,11 +66,7 @@ setup(
     install_requires=[
         'wrapt ~= 1.10',
     ],
-    extras_require={
-        'serial': ['pyserial >= 3.0'],
-        'neovi': ['python-ics >= 2.12'],
-        'test': tests_require
-    },
+    extras_require=extras_require,
 
     # Testing
     test_suite="nose.collector",

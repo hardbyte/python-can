@@ -23,9 +23,10 @@ install:
   - set PATH=%PYTHON_INSTALL%\\Scripts;%PATH%
 
   # We need to install the python-can library itself
-  - "python -m pip install .[test]"
+  - "python -m pip install .[test,neovi]"
 
 build: off
 
 test_script:
-  - "pytest -v --timeout=300"
+  - "pytest -v --timeout=300 --cov=can"
+  - "codecov"
