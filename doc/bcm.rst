@@ -10,7 +10,7 @@ It allows the user to setup periodic message jobs.
 If periodic transmission is not supported natively, a software thread
 based scheduler is used as a fallback.
 
-This example shows the socketcan_ctypes backend using the broadcast manager:
+This example shows the socketcan backend using the broadcast manager:
 
 .. literalinclude:: ../examples/cyclic.py
     :language: python
@@ -22,9 +22,9 @@ Message Sending Tasks
 
 The class based api for the broadcast manager uses a series of
 `mixin classes <https://www.ianlewis.org/en/mixins-and-python>`_.
-All mixins inherit from :class:`~can.CyclicSendTaskABC`
+All mixins inherit from :class:`~can.broadcastmanager.CyclicSendTaskABC`
 
-.. autoclass:: CyclicSendTaskABC
+.. autoclass:: can.broadcastmanager.CyclicSendTaskABC
     :members:
 
 .. autoclass:: LimitedDurationCyclicSendTaskABC

@@ -172,7 +172,7 @@ class BusABC(object):
             Note the duration before the message stops being sent may not
             be exactly the same as the duration specified by the user. In
             general the message will be sent at the given rate until at
-            least *duration* seconds.
+            least **duration** seconds.
 
         """
         if not hasattr(self, "_lock_send_periodic"):

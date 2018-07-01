@@ -19,7 +19,7 @@ log = logging.getLogger('can.bcm')
 
 class CyclicTask(object):
     """
-    Abstract Base for all Cyclic Tasks
+    Abstract Base for all cyclic tasks.
     """
 
     @abc.abstractmethod
@@ -91,8 +91,8 @@ class MultiRateCyclicSendTaskABC(CyclicSendTaskABC):
         Transmits a message `count` times at `initial_period` then continues to
         transmit message at `subsequent_period`.
 
-        :param `can.Bus` channel:
-        :param `can.Message` message:
+        :param can.interface.Bus channel:
+        :param can.Message message:
         :param int count:
         :param float initial_period:
         :param float subsequent_period:
