@@ -5,6 +5,8 @@
 Interface for isCAN from Thorsis Technologies GmbH, former ifak system GmbH.
 """
 
+from __future__ import absolute_import, division
+
 import ctypes
 import time
 import logging
@@ -76,16 +78,21 @@ class IscanBus(BusABC):
         """
         if iscan is None:
             raise ImportError("Could not load isCAN driver")
+
         self.channel = ctypes.c_ubyte(int(channel))
         self.channel_info = "IS-CAN: %s" % channel
+
         if bitrate not in self.BAUDRATES:
             valid_bitrates = ", ".join(str(bitrate) for bitrate in self.BAUDRATES)
             raise ValueError("Invalid bitrate, choose one of " + valid_bitrates)
+
         self.poll_interval = poll_interval
         iscan.isCAN_DeviceInitEx(self.channel, self.BAUDRATES[bitrate])
-        super(IscanBus, self).__init__(channel, **kwargs)
 
-    def recv(self, timeout=None):
+        super(IscanBus, self).__init__(channel=channel, bitrate=bitrate,
+            poll_interval=poll_interval, **kwargs)
+
+    def _recv_internal(self, timeout):
         raw_msg = MessageExStruct()
         end_time = time.time() + timeout if timeout is not None else None
         while True:
@@ -97,19 +104,21 @@ class IscanBus(BusABC):
                     raise
                 if end_time is not None and time.time() > end_time:
                     # No message within timeout
-                    return None
+                    return None, False
                 # Sleep a short time to avoid hammering
                 time.sleep(self.poll_interval)
             else:
                 # A message was received
                 break
-        return Message(arbitration_id=raw_msg.message_id,
-                       extended_id=bool(raw_msg.is_extended),
-                       timestamp=time.time(),   # Better than nothing...
-                       is_remote_frame=bool(raw_msg.remote_req),
-                       dlc=raw_msg.data_len,
-                       data=raw_msg.data[:raw_msg.data_len],
-                       channel=self.channel.value)
+
+        msg = Message(arbitration_id=raw_msg.message_id,
+                      extended_id=bool(raw_msg.is_extended),
+                      timestamp=time.time(),                    # Better than nothing...
+                      is_remote_frame=bool(raw_msg.remote_req),
+                      dlc=raw_msg.data_len,
+                      data=raw_msg.data[:raw_msg.data_len],
+                      channel=self.channel.value)
+        return msg, False
 
     def send(self, msg, timeout=None):
         raw_msg = MessageExStruct(msg.arbitration_id,
@@ -124,6 +133,7 @@ class IscanBus(BusABC):
 
 
 class IscanError(CanError):
+    # TODO: document
 
     ERROR_CODES = {
         1: "No access to device",
@@ -152,11 +162,11 @@ class IscanError(CanError):
 
     def __init__(self, function, error_code, arguments):
         super(IscanError, self).__init__()
-        # Status code
+        # :Status code
         self.error_code = error_code
-        # Function that failed
+        # :Function that failed
         self.function = function
-        # Arguments passed to function
+        # :Arguments passed to function
         self.arguments = arguments
 
     def __str__(self):

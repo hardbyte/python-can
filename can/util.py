@@ -23,6 +23,12 @@ from can.interfaces import VALID_INTERFACES
 
 log = logging.getLogger('can.util')
 
+# List of valid data lengths for a CAN FD message
+CAN_FD_DLC = [
+    0, 1, 2, 3, 4, 5, 6, 7, 8,
+    12, 16, 20, 24, 32, 48, 64
+]
+
 REQUIRED_KEYS = [
     'interface',
     'channel',
@@ -111,14 +117,16 @@ def load_config(path=None, config=None):
     kvaser, socketcan, pcan, usb2can, ixxat, nican, virtual.
 
     .. note::
-
-        If you pass ``"socketcan"`` this automatically selects between the
-        native and ctypes version.
+ 
+            The key ``bustype`` is copied to ``interface`` if that one is missing
+            and does never appear in the result.
 
     :param path:
         Optional path to config file.
+
     :param config:
         A dict which may set the 'interface', and/or the 'channel', or neither.
+        It may set other values that are passed through.
 
     :return:
         A config dictionary that should contain 'interface' & 'channel'::
@@ -126,43 +134,61 @@ def load_config(path=None, config=None):
             {
                 'interface': 'python-can backend interface to use',
                 'channel': 'default channel to use',
+                # possibly more
             }
 
         Note ``None`` will be used if all the options are exhausted without
         finding a value.
-    """
-    if config is None:
-        config = {}
 
-    system_config = {}
-    configs = [
-        config,
+        All unused values are passed from ``config`` over to this.
+
+    :raises:
+        NotImplementedError if the ``interface`` isn't recognized
+    """
+
+    # start with an empty dict to apply filtering to all sources
+    given_config = config
+    config = {}
+
+    # use the given dict for default values
+    config_sources = [
+        given_config,
         can.rc,
         load_environment_config,
         lambda: load_file_config(path)
     ]
 
     # Slightly complex here to only search for the file config if required
-    for cfg in configs:
+    for cfg in config_sources:
         if callable(cfg):
             cfg = cfg()
+        # remove legacy operator (and copy to interface if not already present)
+        if 'bustype' in cfg:
+            if 'interface' not in cfg or not cfg['interface']:
+                cfg['interface'] = cfg['bustype']
+            del cfg['bustype']
+        # copy all new parameters
         for key in cfg:
-            if key not in system_config and cfg[key] is not None:
-                system_config[key] = cfg[key]
+            if key not in config:
+                config[key] = cfg[key]
 
     # substitute None for all values not found
     for key in REQUIRED_KEYS:
-        if key not in system_config:
-            system_config[key] = None
+        if key not in config:
+            config[key] = None
 
-    if system_config['interface'] == 'socketcan':
-        system_config['interface'] = choose_socketcan_implementation()
+    # deprecated socketcan types
+    if config['interface'] in ('socketcan_native', 'socketcan_ctypes'):
+        # Change this to a DeprecationWarning in future 2.x releases
+        # Remove completely in 3.0
+        log.warning('%s is deprecated, use socketcan instead', config['interface'])
+        config['interface'] = 'socketcan'
 
-    if system_config['interface'] not in VALID_INTERFACES:
-        raise NotImplementedError('Invalid CAN Bus Type - {}'.format(system_config['interface']))
+    if config['interface'] not in VALID_INTERFACES:
+        raise NotImplementedError('Invalid CAN Bus Type - {}'.format(config['interface']))
 
-    if 'bitrate' in system_config:
-        system_config['bitrate'] = int(system_config['bitrate'])
+    if 'bitrate' in config:
+        config['bitrate'] = int(config['bitrate'])
 
     can.log.debug("can config: {}".format(system_config))
     return system_config
@@ -196,7 +222,7 @@ def choose_socketcan_implementation():
                     rel_string)
             raise OSError(msg)
 
-
+            
 def set_logging_level(level_name=None):
     """Set the logging level for the "can" logger.
     Expects one of: 'critical', 'error', 'warning', 'info', 'debug', 'subdebug'
@@ -210,9 +236,57 @@ def set_logging_level(level_name=None):
     log.debug("Logging set to {}".format(level_name))
 
 
+def len2dlc(length):
+    """Calculate the DLC from data length.
+
+    :param int length: Length in number of bytes (0-64)
+
+    :returns: DLC (0-15)
+    :rtype: int
+    """
+    if length <= 8:
+        return length
+    for dlc, nof_bytes in enumerate(CAN_FD_DLC):
+        if nof_bytes >= length:
+            return dlc
+    return 15
+
+
+def dlc2len(dlc):
+    """Calculate the data length from DLC.
+
+    :param int dlc: DLC (0-15)
+
+    :returns: Data length in number of bytes (0-64)
+    :rtype: int
+    """
+    return CAN_FD_DLC[dlc] if dlc <= 15 else 64
+
+
+def channel2int(channel):
+    """Try to convert the channel to an integer.
+
+    :param channel:
+        Channel string (e.g. can0, CAN1) or integer
+    
+    :returns: Channel integer or `None` if unsuccessful
+    :rtype: int
+    """
+    if channel is None:
+        return None
+    if isinstance(channel, int):
+        return channel
+    # String and byte objects have a lower() method
+    if hasattr(channel, "lower"):
+        match = re.match(r'.*(\d+)$', channel)
+        if match:
+            return int(match.group(1))
+    return None
+
+
 if __name__ == "__main__":
     print("Searching for configuration named:")
     print("\n".join(CONFIG_FILES))
-
+    print()
     print("Settings:")
     print(load_config())

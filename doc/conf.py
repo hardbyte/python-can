@@ -4,6 +4,8 @@
 #
 # This file is execfile()d with the current directory set to its containing dir.
 
+from __future__ import unicode_literals, absolute_import
+
 import sys
 import os
 
@@ -182,27 +184,3 @@ html_theme = 'default'
 
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'python-can'
-
-
-class Mock(object):
-
-    def __init__(self, *args, **kwargs):
-        pass
-
-    def __call__(self, *args, **kwargs):
-        return Mock()
-
-    @classmethod
-    def __getattr__(cls, name):
-        if name in ('__file__', '__path__'):
-            return '/dev/null'
-        elif name[0] == name[0].upper():
-            mockType = type(name, (), {})
-            mockType.__module__ = __name__
-            return mockType
-        else:
-            return Mock()
-
-MOCK_MODULES = ['serial']
-for mod_name in MOCK_MODULES:
-    sys.modules[mod_name] = Mock()

@@ -2,14 +2,14 @@
 # coding: utf-8
 
 """
-can is an object-orient Controller Area Network interface module.
+``can`` is an object-orient Controller Area Network (CAN) interface module.
 """
 
 from __future__ import absolute_import
 
 import logging
 
-__version__ = "2.1.1-dev"
+__version__ = "2.2.0-dev"
 
 log = logging.getLogger('can')
 
@@ -17,25 +17,29 @@ rc = dict()
 
 
 class CanError(IOError):
+    """Indicates an error with the CAN network.
+
+    """
     pass
 
-from can.listener import Listener, BufferedReader, RedirectReader
+from .listener import Listener, BufferedReader, RedirectReader
 
-from can.io import Logger, Printer, LogReader
-from can.io import ASCWriter, ASCReader
-from can.io import BLFReader, BLFWriter
-from can.io import CanutilsLogReader, CanutilsLogWriter
-from can.io import CSVWriter, CSVReader
-from can.io import SqliteWriter, SqliteReader
+from .io import Logger, Printer, LogReader, MessageSync
+from .io import ASCWriter, ASCReader
+from .io import BLFReader, BLFWriter
+from .io import CanutilsLogReader, CanutilsLogWriter
+from .io import CSVWriter, CSVReader
+from .io import SqliteWriter, SqliteReader
 
-from can.util import set_logging_level
+from .util import set_logging_level
 
-from can.message import Message
-from can.bus import BusABC
-from can.notifier import Notifier
-from can.interfaces import VALID_INTERFACES
+from .message import Message
+from .bus import BusABC
+from .thread_safe_bus import ThreadSafeBus
+from .notifier import Notifier
+from .interfaces import VALID_INTERFACES
 from . import interface
-from .interface import Bus
+from .interface import Bus, detect_available_configs
 
 from can.broadcastmanager import send_periodic, \
     CyclicSendTaskABC, \

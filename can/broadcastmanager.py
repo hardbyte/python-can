@@ -3,16 +3,18 @@
 
 """
 Exposes several methods for transmitting cyclic messages.
+
+The main entry point to these classes should be through
+:meth:`can.BusABC.send_periodic`.
 """
 
-import can
 import abc
 import logging
 import threading
 import time
 
+
 log = logging.getLogger('can.bcm')
-log.debug("Loading base broadcast manager functionality")
 
 
 class CyclicTask(object):
@@ -38,6 +40,7 @@ class CyclicSendTaskABC(CyclicTask):
         """
         self.message = message
         self.can_id = message.arbitration_id
+        self.arbitration_id = message.arbitration_id
         self.period = period
         super(CyclicSendTaskABC, self).__init__()
 
@@ -72,8 +75,9 @@ class ModifiableCyclicTaskABC(CyclicSendTaskABC):
         """Update the contents of this periodically sent message without altering
         the timing.
 
-        :param message: The :class:`~can.Message` with new :attr:`Message.data`. Note
-            the arbitration ID cannot be changed.
+        :param message:
+          The :class:`~can.Message` with new :attr:`can.Message.data`.
+          Note: The arbitration ID cannot be changed.
         """
         self.message = message
 
@@ -138,13 +142,15 @@ class ThreadBasedCyclicSendTask(ModifiableCyclicTaskABC,
             time.sleep(max(0.0, delay))
 
 
-def send_periodic(bus, message, period):
+def send_periodic(bus, message, period, *args, **kwargs):
     """
     Send a :class:`~can.Message` every `period` seconds on the given bus.
 
     :param `~can.BusABC` bus: A CAN bus which supports sending.
     :param `~can.Message` message: Message to send periodically.
     :param float period: The minimum time between sending messages.
-
+    :return: A started task instance
     """
-    return can.interface.CyclicSendTask(bus, message, period)
+    log.warning("The function `can.send_periodic` is deprecated and will " +
+             "be removed in version 2.3. Please use `can.Bus.send_periodic` instead.")
+    return bus.send_periodic(message, period, *args, **kwargs)

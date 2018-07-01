@@ -1,31 +1,31 @@
 environment:
-
   matrix:
 
     # For Python versions available on Appveyor, see
     # http://www.appveyor.com/docs/installed-software#python
 
     - PYTHON: "C:\\Python27"
-    - PYTHON: "C:\\Python33"
     - PYTHON: "C:\\Python34"
     - PYTHON: "C:\\Python35"
     - PYTHON: "C:\\Python36"
     - PYTHON: "C:\\Python27-x64"
-    - PYTHON: "C:\\Python33-x64"
     - PYTHON: "C:\\Python34-x64"
     - PYTHON: "C:\\Python35-x64"
     - PYTHON: "C:\\Python36-x64"
 
+    # Python 3.3 has reached EOL
+
 install:
-  # We need our usual libraries
-  - "%PYTHON%\\python.exe -m pip install -r requirements.txt"
+  # Prepend Python installation to PATH
+  - set PATH=%PYTHON_INSTALL%;%PATH%
+
+  # Prepend Python scripts to PATH (e.g. py.test)
+  - set PATH=%PYTHON_INSTALL%\\Scripts;%PATH%
+
   # We need to install the python-can library itself
-  - "%PYTHON%\\python.exe -m pip install ."
+  - "python -m pip install .[test]"
 
 build: off
 
 test_script:
-  # Note that you must use the environment variable %PYTHON% to refer to
-  # the interpreter you're using - Appveyor does not do anything special
-  # to put the Python version you want to use on PATH.
-  - "%PYTHON%\\python.exe setup.py test"
+  - "pytest -v --timeout=300"
