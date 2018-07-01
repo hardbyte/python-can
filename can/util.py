@@ -190,8 +190,8 @@ def load_config(path=None, config=None):
     if 'bitrate' in config:
         config['bitrate'] = int(config['bitrate'])
 
-    can.log.debug("can config: {}".format(system_config))
-    return system_config
+    can.log.debug("can config: {}".format(config))
+    return config
 
 
 def choose_socketcan_implementation():
