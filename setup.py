@@ -8,7 +8,6 @@ python-can requires the setuptools package to be installed.
 from sys import version_info
 import re
 import logging
-from itertools import chain
 from setuptools import setup, find_packages
 
 logging.basicConfig(level=logging.WARNING)
@@ -25,6 +24,7 @@ extras_require = {
     'serial':   ['pyserial ~= 3.0'],
     'neovi':    ['python-ics >= 2.12']
 }
+
 tests_require = [
     'mock ~= 2.0',
     'nose ~= 1.3',
@@ -33,8 +33,7 @@ tests_require = [
     'pytest-cov ~= 2.5',
     'codecov ~= 2.0'
 ] + extras_require['serial']
-#for key, requirements in extras_require.items():
-#    tests_require += requirements
+
 extras_require['test'] = tests_require
 
 setup(
