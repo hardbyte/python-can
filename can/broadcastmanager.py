@@ -35,7 +35,7 @@ class CyclicSendTaskABC(CyclicTask):
 
     def __init__(self, message, period):
         """
-        :param message: The :class:`can.Message` to be sent periodically.
+        :param can.Message message: The message to be sent periodically.
         :param float period: The rate in seconds at which to send the message.
         """
         self.message = message
@@ -50,7 +50,7 @@ class LimitedDurationCyclicSendTaskABC(CyclicSendTaskABC):
     def __init__(self, message, period, duration):
         """Message send task with a defined duration and period.
 
-        :param message: The :class:`can.Message` to be sent periodically.
+        :param can.Message message: The message to be sent periodically.
         :param float period: The rate in seconds at which to send the message.
         :param float duration:
             The duration to keep sending this message at given rate.
@@ -75,8 +75,8 @@ class ModifiableCyclicTaskABC(CyclicSendTaskABC):
         """Update the contents of this periodically sent message without altering
         the timing.
 
-        :param message:
-          The :class:`~can.Message` with new :attr:`can.Message.data`.
+        :param can.Message message:
+          The message with the new :attr:`can.Message.data`.
           Note: The arbitration ID cannot be changed.
         """
         self.message = message
@@ -146,11 +146,11 @@ def send_periodic(bus, message, period, *args, **kwargs):
     """
     Send a :class:`~can.Message` every `period` seconds on the given bus.
 
-    :param `~can.BusABC` bus: A CAN bus which supports sending.
-    :param `~can.Message` message: Message to send periodically.
+    :param can.BusABC bus: A CAN bus which supports sending.
+    :param can.Message message: Message to send periodically.
     :param float period: The minimum time between sending messages.
     :return: A started task instance
     """
     log.warning("The function `can.send_periodic` is deprecated and will " +
-             "be removed in version 2.3. Please use `can.Bus.send_periodic` instead.")
+                "be removed in version 2.3. Please use `can.Bus.send_periodic` instead.")
     return bus.send_periodic(message, period, *args, **kwargs)

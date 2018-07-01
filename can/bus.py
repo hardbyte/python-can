@@ -59,7 +59,7 @@ class BusABC(object):
         :param float timeout:
             seconds to wait for a message or None to wait indefinitely
 
-        :rtype: can.Message or None
+        :rtype: can.Message or NoneType
         :return:
             None on timeout or a :class:`can.Message` object.
         :raises can.CanError:
@@ -118,9 +118,9 @@ class BusABC(object):
             Thus it cannot be simplified to a constant value.
 
         :param float timeout: seconds to wait for a message,
-                              see :meth:`can.BusABC.send`
+                              see :meth:`~can.BusABC.send`
 
-        :rtype: tuple[can.Message, bool] or tuple[None, bool]
+        :rtype: tuple[can.Message, bool] or tuple[NoneType, bool]
         :return:
             1.  a message that was read or None on timeout
             2.  a bool that is True if message filtering has already
