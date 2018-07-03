@@ -32,7 +32,7 @@ class ASCReader(BaseIOHandler):
     """
 
     def __init__(self, filename):
-        super(ASCReader, self).__init__(open_file=True, filename=filename, mode='Urt')
+        super(ASCReader, self).__init__(open_file=True, filename=filename, mode='Ur')
 
     @staticmethod
     def _extract_can_id(str_can_id):
@@ -129,7 +129,7 @@ class ASCWriter(BaseIOHandler, Listener):
     FORMAT_EVENT = "{timestamp: 9.4f} {message}\n"
 
     def __init__(self, filename, channel=1):
-        super(ASCWriter, self).__init__(open_file=True, filename=filename, mode='wt')
+        super(ASCWriter, self).__init__(open_file=True, filename=filename, mode='w')
         self.channel = channel
 
         # write start of file header

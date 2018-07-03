@@ -26,7 +26,7 @@ class Printer(BaseIOHandler, Listener):
 
     def __init__(self, filename=None):
         self.write_to_file = filename is not None
-        super(Printer, self).__init__(open_file=self.write_to_file, filename=filename, mode='wt')
+        super(Printer, self).__init__(open_file=self.write_to_file, filename=filename, mode='w')
 
     def on_message_received(self, msg):
         if self.write_to_file:

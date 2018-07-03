@@ -13,8 +13,7 @@ comments.
 TODO: implement CAN FD support testing
 """
 
-from __future__ import print_function
-from __future__ import absolute_import
+from __future__ import print_function, absolute_import
 
 import unittest
 import tempfile
@@ -41,7 +40,7 @@ def _test_writer_and_reader(test_case, writer_constructor, reader_constructor, s
                             check_comments=False, round_timestamps=False):
     """Tests a pair of writer and reader by writing all data first and
     then reading all data and checking if they could be reconstructed
-    correctly.
+    correctly. Optionally writes some comments as well.
 
     :param unittest.TestCase test_case: the test case the use the assert methods on
     :param Callable writer_constructor: the constructor of the writer class
