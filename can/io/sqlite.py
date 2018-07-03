@@ -101,7 +101,7 @@ class SqliteWriter(BaseIOHandler, BufferedReader):
     """Maximum number of seconds to wait between writes to the database"""
 
     def __init__(self, filename, table_name="messages"):
-        super(SqliteWriter, self).__init__()
+        super(SqliteWriter, self).__init__(open_file=False)
         self.table_name = table_name
         self.filename = filename
         self.stop_running_event = threading.Event()
