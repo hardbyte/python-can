@@ -1,4 +1,6 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+# coding: utf-8
+
 """
 Contains Python equivalents of the function and constant
 definitions in CANLIB's canlib.h, with some supporting functionality
@@ -7,6 +9,8 @@ specific to Python.
 Copyright (C) 2010 Dynamic Controls
 """
 
+from __future__ import absolute_import
+
 import sys
 import time
 import logging
@@ -14,7 +18,7 @@ import ctypes
 
 from can import CanError, BusABC
 from can import Message
-from can.interfaces.kvaser import constants as canstat
+from . import constants as canstat
 
 log = logging.getLogger('can.kvaser')
 
@@ -292,10 +296,7 @@ class KvaserBus(BusABC):
             The Channel id to create this bus with.
 
         :param list can_filters:
-            A list of dictionaries each containing a "can_id" and a "can_mask".
-
-            >>> [{"can_id": 0x11, "can_mask": 0x21}]
-
+            See :meth:`can.BusABC.set_filters`.
 
         Backend Configuration
 
@@ -312,8 +313,8 @@ class KvaserBus(BusABC):
             Time segment 2, that is, the number of quanta from the sampling
             point to the end of the bit.
         :param int sjw:
-            The Synchronisation Jump Width. Decides the maximum number of time quanta
-            that the controller can resynchronise every bit.
+            The Synchronization Jump Width. Decides the maximum number of time quanta
+            that the controller can resynchronize every bit.
         :param int no_samp:
             Either 1 or 3. Some CAN controllers can also sample each bit three times.
             In this case, the bit will be sampled three quanta in a row,
@@ -336,7 +337,9 @@ class KvaserBus(BusABC):
         :param int data_bitrate:
             Which bitrate to use for data phase in CAN FD.
             Defaults to arbitration bitrate.
+
         """
+
         log.info("CAN Filters: {}".format(can_filters))
         log.info("Got configuration of: {}".format(config))
         bitrate = config.get('bitrate', 500000)
@@ -417,8 +420,6 @@ class KvaserBus(BusABC):
             self._write_handle = canOpenChannel(channel, flags)
             canBusOn(self._read_handle)
 
-        self.set_filters(can_filters)
-
         can_driver_mode = canstat.canDRIVER_SILENT if driver_mode == DRIVER_MODE_SILENT else canstat.canDRIVER_NORMAL
         canSetBusOutputControl(self._write_handle, can_driver_mode)
         log.debug('Going bus on TX handle')
@@ -432,43 +433,33 @@ class KvaserBus(BusABC):
             log.info(str(exc))
         self._timestamp_offset = time.time() - (timer.value * TIMESTAMP_FACTOR)
 
-        super(KvaserBus, self).__init__()
+        self._is_filtered = False
+        super(KvaserBus, self).__init__(channel=channel, can_filters=can_filters, **config)
 
-    def set_filters(self, can_filters=None):
-        """Apply filtering to all messages received by this Bus.
-
-        Calling without passing any filters will reset the applied filters.
-
-        Since Kvaser only supports setting one filter per handle, the filtering
-        will be disabled if more than one filter is requested.
-
-        :param list can_filters:
-            A list of dictionaries each containing a "can_id", "can_mask" and
-            "extended".
-
-            >>> [{"can_id": 0x11, "can_mask": 0x21, "extended": False}]
-
-            A filter matches, when ``<received_can_id> & can_mask == can_id & can_mask``
-        """
-        if can_filters and len(can_filters) == 1:
-            can_id = can_filters[0]['can_id']
-            can_mask = can_filters[0]['can_mask']
-            extended = 1 if can_filters[0].get('extended') else 0
+    def _apply_filters(self, filters):
+        if filters and len(filters) == 1:
+            can_id = filters[0]['can_id']
+            can_mask = filters[0]['can_mask']
+            extended = 1 if filters[0].get('extended') else 0
             try:
                 for handle in (self._read_handle, self._write_handle):
                     canSetAcceptanceFilter(handle, can_id, can_mask, extended)
             except (NotImplementedError, CANLIBError) as e:
+                self._is_filtered = False
                 log.error('Filtering is not supported - %s', e)
             else:
+                self._is_filtered = True
                 log.info('canlib is filtering on ID 0x%X, mask 0x%X', can_id, can_mask)
 
         else:
+            self._is_filtered = False
             log.info('Hardware filtering has been disabled')
             try:
                 for handle in (self._read_handle, self._write_handle):
                     for extended in (0, 1):
                         canSetAcceptanceFilter(handle, 0, 0, extended)
             except (NotImplementedError, CANLIBError):
+                # TODO add logging?
                 pass
 
     def flush_tx_buffer(self):
@@ -476,9 +467,9 @@ class KvaserBus(BusABC):
         """
         canIoCtl(self._write_handle, canstat.canIOCTL_FLUSH_TX_BUFFER, 0, 0)
 
-    def recv(self, timeout=None):
+    def _recv_internal(self, timeout=None):
         """
-        Read a message from kvaser device.
+        Read a message from kvaser device and return whether filtering has taken place.
         """
         arb_id = ctypes.c_long(0)
         data = ctypes.create_string_buffer(64)
@@ -529,10 +520,10 @@ class KvaserBus(BusABC):
             rx_msg.flags = flags
             rx_msg.raw_timestamp = msg_timestamp
             #log.debug('Got message: %s' % rx_msg)
-            return rx_msg
+            return rx_msg, self._is_filtered
         else:
             #log.debug('read complete -> status not okay')
-            return None
+            return None, self._is_filtered
 
     def send(self, msg, timeout=None):
         #log.debug("Writing a message: {}".format(msg))
@@ -583,6 +574,18 @@ class KvaserBus(BusABC):
             canClose(self._read_handle)
         canBusOff(self._write_handle)
         canClose(self._write_handle)
+
+    @staticmethod
+    def _detect_available_configs():
+        num_channels = ctypes.c_int(0)
+        try:
+            canGetNumberOfChannels(ctypes.byref(num_channels))
+        except Exception:
+            pass
+        return [
+            {'interface': 'kvaser', 'channel': channel}
+            for channel in range(num_channels.value)
+        ]
 
 
 def get_channel_info(channel):

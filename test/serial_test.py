@@ -1,31 +1,17 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+# coding: utf-8
 
 """
-Name:        serial_test
-Purpose:     Testing the serial interface
+This module is testing the serial interface.
 
-Copyright:   2017 Boris Wenzlaff
-
-This file is part of python-can <https://github.com/hardbyte/python-can/>.
-
-python-can is free software: you can redistribute it and/or modify
-it under the terms of the GNU Lesser General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-any later version.
-
-python-can is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU Lesser General Public License for more details.
-
-You should have received a copy of the GNU Lesser General Public License
-along with python-can. If not, see <http://www.gnu.org/licenses/>.
+Copyright: 2017 Boris Wenzlaff
 """
 
 import unittest
+from mock import patch
+
 import can
 from can.interfaces.serial.serial_can import SerialBus
-from mock import patch
 
 
 class SerialDummy:

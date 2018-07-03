@@ -1,10 +1,21 @@
+#!/usr/bin/env python
+# coding: utf-8
+
 """
 NI-CAN interface module.
 
 Implementation references:
 * http://www.ni.com/pdf/manuals/370289c.pdf
 * https://github.com/buendiya/NicanPython
+
+TODO: We could implement this interface such that setting other filters
+      could work when the initial filters were set to zero using the
+      software fallback. Or could the software filters even be changed
+      after the connection was opened? We need to document that bahaviour!
+      See also the IXXAT interface.
+
 """
+
 import ctypes
 import logging
 import sys
@@ -13,38 +24,38 @@ from can import CanError, BusABC, Message
 
 logger = logging.getLogger(__name__)
 
-NC_SUCCESS = 0
-NC_ERR_TIMEOUT = 1
-TIMEOUT_ERROR_CODE = -1074388991
+NC_SUCCESS =            0
+NC_ERR_TIMEOUT =        1
+TIMEOUT_ERROR_CODE =    -1074388991
 
-NC_DURATION_INFINITE = 0xFFFFFFFF
+NC_DURATION_INFINITE =  0xFFFFFFFF
 
-NC_OP_START = 0x80000001
-NC_OP_STOP = 0x80000002
-NC_OP_RESET = 0x80000003
+NC_OP_START =           0x80000001
+NC_OP_STOP  =           0x80000002
+NC_OP_RESET =           0x80000003
 
-NC_FRMTYPE_REMOTE = 1
-NC_FRMTYPE_COMM_ERR = 2
+NC_FRMTYPE_REMOTE =     1
+NC_FRMTYPE_COMM_ERR =   2
 
-NC_ST_READ_AVAIL = 0x00000001
-NC_ST_WRITE_SUCCESS = 0x00000002
-NC_ST_ERROR = 0x00000010
-NC_ST_WARNING = 0x00000020
+NC_ST_READ_AVAIL =      0x00000001
+NC_ST_WRITE_SUCCESS =   0x00000002
+NC_ST_ERROR =           0x00000010
+NC_ST_WARNING =         0x00000020
 
-NC_ATTR_BAUD_RATE = 0x80000007
+NC_ATTR_BAUD_RATE =     0x80000007
 NC_ATTR_START_ON_OPEN = 0x80000006
-NC_ATTR_READ_Q_LEN = 0x80000013
-NC_ATTR_WRITE_Q_LEN = 0x80000014
-NC_ATTR_CAN_COMP_STD = 0x80010001
-NC_ATTR_CAN_MASK_STD = 0x80010002
-NC_ATTR_CAN_COMP_XTD = 0x80010003
-NC_ATTR_CAN_MASK_XTD = 0x80010004
+NC_ATTR_READ_Q_LEN =    0x80000013
+NC_ATTR_WRITE_Q_LEN =   0x80000014
+NC_ATTR_CAN_COMP_STD =  0x80010001
+NC_ATTR_CAN_MASK_STD =  0x80010002
+NC_ATTR_CAN_COMP_XTD =  0x80010003
+NC_ATTR_CAN_MASK_XTD =  0x80010004
 NC_ATTR_LOG_COMM_ERRS = 0x8001000A
 
-NC_FL_CAN_ARBID_XTD = 0x20000000
-
+NC_FL_CAN_ARBID_XTD =   0x20000000
 
 CanData = ctypes.c_ubyte * 8
+
 
 class RxMessageStruct(ctypes.Structure):
     _pack_ = 1
@@ -109,10 +120,17 @@ else:
 class NicanBus(BusABC):
     """
     The CAN Bus implemented for the NI-CAN interface.
+
+    .. warning::
+
+        This interface does implement efficient filtering of messages, but
+        the filters have to be set in :meth:`~can.interfaces.nican.NicanBus.__init__`
+        using the ``can_filters`` parameter. Using :meth:`~can.interfaces.nican.NicanBus.set_filters`
+        does not work.
+
     """
 
-    def __init__(self, channel, can_filters=None, bitrate=None, log_errors=True,
-                 **kwargs):
+    def __init__(self, channel, can_filters=None, bitrate=None, log_errors=True, **kwargs):
         """
         :param str channel:
             Name of the object to open (e.g. 'CAN0')
@@ -121,9 +139,7 @@ class NicanBus(BusABC):
             Bitrate in bits/s
 
         :param list can_filters:
-            A list of dictionaries each containing a "can_id" and a "can_mask".
-
-            >>> [{"can_id": 0x11, "can_mask": 0x21}]
+            See :meth:`can.BusABC.set_filters`.
 
         :param bool log_errors:
             If True, communication errors will appear as CAN messages with
@@ -132,11 +148,13 @@ class NicanBus(BusABC):
 
         :raises can.interfaces.nican.NicanError:
             If starting communication fails
+
         """
         if nican is None:
             raise ImportError("The NI-CAN driver could not be loaded. "
                               "Check that you are using 32-bit Python on Windows.")
 
+        self.channel = channel
         self.channel_info = "NI-CAN: " + channel
         if not isinstance(channel, bytes):
             channel = channel.encode()
@@ -184,16 +202,16 @@ class NicanBus(BusABC):
         self.handle = ctypes.c_ulong()
         nican.ncOpenObject(channel, ctypes.byref(self.handle))
 
-    def recv(self, timeout=None):
+        super(NicanBus, self).__init__(channel=channel,
+            can_filters=can_filters, bitrate=bitrate,
+            log_errors=log_errors, **kwargs)
+
+    def _recv_internal(self, timeout):
         """
-        Read a message from NI-CAN.
+        Read a message from a NI-CAN bus.
 
         :param float timeout:
             Max time to wait in seconds or None if infinite
-
-        :returns:
-            The CAN message or None if timeout
-        :rtype: can.Message
 
         :raises can.interfaces.nican.NicanError:
             If reception fails
@@ -209,7 +227,7 @@ class NicanBus(BusABC):
                 self.handle, NC_ST_READ_AVAIL, timeout, ctypes.byref(state))
         except NicanError as e:
             if e.error_code == TIMEOUT_ERROR_CODE:
-                return None
+                return None, True
             else:
                 raise
 
@@ -225,13 +243,14 @@ class NicanBus(BusABC):
             arb_id &= 0x1FFFFFFF
         dlc = raw_msg.dlc
         msg = Message(timestamp=timestamp,
+                      channel=self.channel,
                       is_remote_frame=is_remote_frame,
                       is_error_frame=is_error_frame,
                       extended_id=is_extended,
                       arbitration_id=arb_id,
                       dlc=dlc,
                       data=raw_msg.data[:dlc])
-        return msg
+        return msg, True
 
     def send(self, msg, timeout=None):
         """
@@ -254,6 +273,7 @@ class NicanBus(BusABC):
         nican.ncWrite(
             self.handle, ctypes.sizeof(raw_msg), ctypes.byref(raw_msg))
 
+        # TODO:
         # ncWaitForState can not be called here if the recv() method is called
         # from a different thread, which is a very common use case.
         # Maybe it is possible to use ncCreateNotification instead but seems a
@@ -271,6 +291,16 @@ class NicanBus(BusABC):
     def shutdown(self):
         """Close object."""
         nican.ncCloseObject(self.handle)
+
+    __set_filters_has_been_called = False
+    def set_filters(self, can_filers=None):
+        """Unsupported. See note on :class:`~can.interfaces.nican.NicanBus`.
+        """
+        if self.__set_filters_has_been_called:
+            logger.warn("using filters is not supported like this, see note on NicanBus")
+        else:
+            # allow the constructor to call this without causing a warning
+            self.__set_filters_has_been_called = True
 
 
 class NicanError(CanError):

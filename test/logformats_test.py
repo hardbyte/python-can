@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# coding: utf-8
+
 """
 This test module test the separate reader/writer combinations of the can.io.*
 modules by writing some messages to a temporary file and reading it again.
@@ -6,7 +9,12 @@ ones that were written. It also checks that the order of the messages
 is correct. The types of messages that are tested differs between the
 different writer/reader pairs - e.g., some don't handle error frames and
 comments.
+
+TODO: implement CAN FD support testing
 """
+
+from __future__ import print_function
+from __future__ import absolute_import
 
 import unittest
 import tempfile
@@ -23,27 +31,32 @@ except ImportError:
 
 import can
 
-from data.example_data import TEST_MESSAGES_BASE, TEST_MESSAGES_REMOTE_FRAMES, \
-                              TEST_MESSAGES_ERROR_FRAMES, TEST_COMMENTS, \
-                              generate_message
+from .data.example_data import TEST_MESSAGES_BASE, TEST_MESSAGES_REMOTE_FRAMES, \
+                               TEST_MESSAGES_ERROR_FRAMES, TEST_COMMENTS, \
+                               generate_message
 
 
 def _test_writer_and_reader(test_case, writer_constructor, reader_constructor, sleep_time=None,
                             check_remote_frames=True, check_error_frames=True,
-                            check_comments=False):
+                            check_comments=False, round_timestamps=False):
     """Tests a pair of writer and reader by writing all data first and
     then reading all data and checking if they could be reconstructed
     correctly.
 
-    :param test_case: the test case the use the assert methods on
-    :param sleep_time: specifies the time to sleep after writing all messages.
+    :param unittest.TestCase test_case: the test case the use the assert methods on
+    :param Callable writer_constructor: the constructor of the writer class
+    :param Callable reader_constructor: the constructor of the reader class
+
+    :param float sleep_time: specifies the time to sleep after writing all messages.
         gets ignored when set to None
-    :param check_remote_frames: if true, also tests remote frames
-    :param check_error_frames: if true, also tests error frames
-    :param check_comments: if true, also inserts comments at some
+    :param bool check_remote_frames: if True, also tests remote frames
+    :param bool check_error_frames: if True, also tests error frames
+    :param bool check_comments: if True, also inserts comments at some
         locations and checks if they are contained anywhere literally
         in the resulting file. The locations as selected randomly
         but deterministically, which makes the test reproducible.
+    :param bool round_timestamps: if True, rounds timestamps using :meth:`~builtin.round`
+        before comparing the read messages/events
     """
 
     assert isinstance(test_case, unittest.TestCase), \
@@ -111,8 +124,13 @@ def _test_writer_and_reader(test_case, writer_constructor, reader_constructor, s
     # check the order and content of the individual messages
     for i, (read, original) in enumerate(zip(read_messages, original_messages)):
         try:
+            # check everything except the timestamp
             test_case.assertEqual(read, original)
-            test_case.assertAlmostEqual(read.timestamp, original.timestamp)
+            # check the timestamp
+            if round_timestamps:
+                original.timestamp = round(original.timestamp)
+                read.timestamp = round(read.timestamp)
+            test_case.assertAlmostEqual(read.timestamp, original.timestamp, places=6)
         except Exception as exception:
             # attach the index
             exception.args += ("test failed at index #{}".format(i), )
@@ -133,7 +151,6 @@ class TestCanutilsLog(unittest.TestCase):
 
     def test_writer_and_reader(self):
         _test_writer_and_reader(self, can.CanutilsLogWriter, can.CanutilsLogReader,
-                                check_error_frames=False, # TODO this should get fixed, see Issue #217
                                 check_comments=False)
 
 
@@ -142,16 +159,23 @@ class TestAscFileFormat(unittest.TestCase):
 
     def test_writer_and_reader(self):
         _test_writer_and_reader(self, can.ASCWriter, can.ASCReader,
-                                check_error_frames=False, # TODO this should get fixed, see Issue #218
-                                check_comments=True)
+                                check_comments=True, round_timestamps=True)
 
 
-class TestSqlFileFormat(unittest.TestCase):
+class TestCsvFileFormat(unittest.TestCase):
+    """Tests can.ASCWriter and can.ASCReader"""
+
+    def test_writer_and_reader(self):
+        _test_writer_and_reader(self, can.CSVWriter, can.CSVReader,
+                                check_comments=False)
+
+
+class TestSqliteDatabaseFormat(unittest.TestCase):
     """Tests can.SqliteWriter and can.SqliteReader"""
 
     def test_writer_and_reader(self):
         _test_writer_and_reader(self, can.SqliteWriter, can.SqliteReader,
-                                sleep_time=can.SqliteWriter.MAX_TIME_BETWEEN_WRITES,
+                                sleep_time=can.SqliteWriter.MAX_TIME_BETWEEN_WRITES + 0.5,
                                 check_comments=False)
 
     def testSQLWriterWritesToSameFile(self):
@@ -192,18 +216,24 @@ class TestBlfFileFormat(unittest.TestCase):
 
     def test_writer_and_reader(self):
         _test_writer_and_reader(self, can.BLFWriter, can.BLFReader,
-                                sleep_time=None,
                                 check_comments=False)
 
     def test_reader(self):
         logfile = os.path.join(os.path.dirname(__file__), "data", "logfile.blf")
         messages = list(can.BLFReader(logfile))
-        self.assertEqual(len(messages), 1)
+        self.assertEqual(len(messages), 2)
         self.assertEqual(messages[0],
                          can.Message(
                              extended_id=False,
                              arbitration_id=0x64,
                              data=[0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8]))
+        self.assertEqual(messages[0].channel, 0)
+        self.assertEqual(messages[1],
+                         can.Message(
+                             is_error_frame=True,
+                             extended_id=True,
+                             arbitration_id=0x1FFFFFFF))
+        self.assertEqual(messages[1].channel, 0)
 
 
 if __name__ == '__main__':

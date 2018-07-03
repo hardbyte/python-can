@@ -1,16 +1,19 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+# coding: utf-8
+
 """
 A text based interface. For example use over serial ports like
 "/dev/ttyS1" or "/dev/ttyUSB0" on Linux machines or "COM1" on Windows.
 The interface is a simple implementation that has been used for
 recording CAN traces.
-
 """
+
+from __future__ import absolute_import, division
 
 import logging
 import struct
-from can.bus import BusABC
-from can.message import Message
+
+from can import BusABC, Message
 
 logger = logging.getLogger('can.serial')
 
@@ -25,32 +28,35 @@ except ImportError:
 class SerialBus(BusABC):
     """
     Enable basic can communication over a serial device.
+
+    .. note:: See :meth:`can.interfaces.serial.SerialBus._recv_internal`
+              for some special semantics.
+
     """
 
-    def __init__(self, channel, *args, **kwargs):
+    def __init__(self, channel, baudrate=115200, timeout=0.1, *args, **kwargs):
         """
         :param str channel:
             The serial device to open. For example "/dev/ttyS1" or
             "/dev/ttyUSB0" on Linux or "COM1" on Windows systems.
+
         :param int baudrate:
             Baud rate of the serial device in bit/s (default 115200).
 
-            .. note:: Some serial port implementations don't care about the baud
-                      rate.
+            .. warning::
+                Some serial port implementations don't care about the baudrate.
 
         :param float timeout:
             Timeout for the serial device in seconds (default 0.1).
-        """
 
-        if channel == '':
+        """
+        if not channel:
             raise ValueError("Must specify a serial port.")
-        else:
-            self.channel_info = "Serial interface: " + channel
-            baudrate = kwargs.get('baudrate', 115200)
-            timeout = kwargs.get('timeout', 0.1)
-            self.ser = serial.Serial(channel, baudrate=baudrate, 
-                                     timeout=timeout)
-        super(SerialBus, self).__init__(*args, **kwargs)
+
+        self.channel_info = "Serial interface: " + channel
+        self.ser = serial.Serial(channel, baudrate=baudrate, timeout=timeout)
+
+        super(SerialBus, self).__init__(channel=channel, *args, **kwargs)
 
     def shutdown(self):
         """
@@ -65,24 +71,24 @@ class SerialBus(BusABC):
         :param can.Message msg:
             Message to send.
 
-            .. note:: Flags like extended_id, is_remote_frame and is_error_frame
-                      will be ignored.
+            .. note:: Flags like ``extended_id``, ``is_remote_frame`` and
+                      ``is_error_frame`` will be ignored.
 
-            .. note:: If the timestamp a float value it will be convert to an
-                      integer.
+            .. note:: If the timestamp is a float value it will be converted
+                      to an integer.
 
         :param timeout:
             This parameter will be ignored. The timeout value of the channel is
-            used.
-        """
+            used instead.
 
+        """
         try:
-            timestamp = struct.pack('<I', self.convert_to_integer_milliseconds(msg.timestamp))
-        except Exception:
+            timestamp = struct.pack('<I', int(msg.timestamp * 1000))
+        except struct.error:
             raise ValueError('Timestamp is out of range')
         try:
             a_id = struct.pack('<I', msg.arbitration_id)
-        except Exception:
+        except struct.error:
             raise ValueError('Arbitration Id is out of range')
         byte_msg = bytearray()
         byte_msg.append(0xAA)
@@ -96,35 +102,34 @@ class SerialBus(BusABC):
         byte_msg.append(0xBB)
         self.ser.write(byte_msg)
 
-    @staticmethod
-    def convert_to_integer_milliseconds(msg_timestamp):
-        return int(msg_timestamp * 1000)
-
-    def recv(self, timeout=None):
+    def _recv_internal(self, timeout):
         """
         Read a message from the serial device.
 
         :param timeout:
-            This parameter will be ignored. The timeout value of the channel is
-            used.
-        :returns:
-            Received message.
+            
+            .. warning:: 
+                This parameter will be ignored. The timeout value of the channel is used.
 
-            .. note:: Flags like extended_id, is_remote_frame and is_error_frame
-              will not be set over this function, the flags in the return
-              message are the default values.
+        :returns:
+            Received message and False (because not filtering as taken place).
+
+            .. warning::
+                Flags like extended_id, is_remote_frame and is_error_frame
+                will not be set over this function, the flags in the return
+                message are the default values.
 
         :rtype:
-            can.Message
+            can.Message, bool
         """
         try:
-            # ser.read can return an empty string ''
+            # ser.read can return an empty string
             # or raise a SerialException
             rx_byte = self.ser.read()
         except serial.SerialException:
-            return None
+            return None, False
 
-        if len(rx_byte) and ord(rx_byte) == 0xAA:
+        if rx_byte and ord(rx_byte) == 0xAA:
             s = bytearray(self.ser.read(4))
             timestamp = (struct.unpack('<I', s))[0]
             dlc = ord(self.ser.read())
@@ -137,8 +142,11 @@ class SerialBus(BusABC):
             rxd_byte = ord(self.ser.read())
             if rxd_byte == 0xBB:
                 # received message data okay
-                return Message(timestamp=timestamp/1000,
-                               arbitration_id=arb_id,
-                               dlc=dlc,
-                               data=data)
+                msg = Message(timestamp=timestamp/1000,
+                              arbitration_id=arb_id,
+                              dlc=dlc,
+                              data=data)
+                return msg, False
 
+        else:
+            return None, False

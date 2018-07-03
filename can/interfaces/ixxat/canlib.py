@@ -1,33 +1,43 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+# coding: utf-8
+
 """
 Ctypes wrapper module for IXXAT Virtual CAN Interface V3 on win32 systems
+
 Copyright (C) 2016 Giuseppe Corbelli <giuseppe.corbelli@weightpack.com>
+
+TODO: We could implement this interface such that setting other filters
+      could work when the initial filters were set to zero using the
+      software fallback. Or could the software filters even be changed
+      after the connection was opened? We need to document that bahaviour!
+      See also the NICAN interface.
+
 """
+
+from __future__ import absolute_import, division
 
 import ctypes
 import functools
 import logging
 import sys
-import time
 
-from can import CanError, BusABC
-from can import Message
-from can.interfaces.ixxat import constants, structures
+from can import CanError, BusABC, Message
 from can.broadcastmanager import (LimitedDurationCyclicSendTaskABC,
                                   RestartableCyclicTaskABC)
-from can.ctypesutil import CLibrary, HANDLE, PHANDLE
+from can.ctypesutil import CLibrary, HANDLE, PHANDLE, HRESULT as ctypes_HRESULT
 
-from .constants import VCI_MAX_ERRSTRLEN
+from . import constants, structures
 from .exceptions import *
 
 __all__ = ["VCITimeout", "VCIError", "VCIDeviceNotFoundError", "IXXATBus", "vciFormatError"]
 
 log = logging.getLogger('can.ixxat')
 
-if ((sys.version_info.major == 3) and (sys.version_info.minor >= 3)):
-    _timer_function = time.perf_counter
-else:
-    _timer_function = time.clock
+try:
+    # since Python 3.3
+    from time import perf_counter as _timer_function
+except ImportError:
+    from time import clock as _timer_function
 
 # Hack to have vciFormatError as a free function, see below
 vciFormatError = None
@@ -37,6 +47,11 @@ _canlib = None
 if sys.platform == "win32":
     try:
         _canlib = CLibrary("vcinpl")
+    except Exception as e:
+        log.warning("Cannot load IXXAT vcinpl library: %s", e)
+elif sys.platform == "cygwin":
+    try:
+        _canlib = CLibrary("vcinpl.dll")
     except Exception as e:
         log.warning("Cannot load IXXAT vcinpl library: %s", e)
 else:
@@ -76,9 +91,9 @@ def __vciFormatError(library_instance, function, HRESULT):
         :return:
             Formatted string
     """
-    buf = ctypes.create_string_buffer(VCI_MAX_ERRSTRLEN)
-    ctypes.memset(buf, 0, VCI_MAX_ERRSTRLEN)
-    library_instance.vciFormatError(HRESULT, buf, VCI_MAX_ERRSTRLEN)
+    buf = ctypes.create_string_buffer(constants.VCI_MAX_ERRSTRLEN)
+    ctypes.memset(buf, 0, constants.VCI_MAX_ERRSTRLEN)
+    library_instance.vciFormatError(HRESULT, buf, constants.VCI_MAX_ERRSTRLEN)
     return "function {} failed ({})".format(function._name, buf.value.decode('utf-8', 'replace'))
 
 
@@ -120,7 +135,7 @@ try:
     _canlib.map_symbol("vciInitialize", ctypes.c_long, (), __check_status)
 
     #void VCIAPI vciFormatError (HRESULT hrError, PCHAR pszText, UINT32 dwsize);
-    _canlib.map_symbol("vciFormatError", None, (ctypes.HRESULT, ctypes.c_char_p, ctypes.c_uint32))
+    _canlib.map_symbol("vciFormatError", None, (ctypes_HRESULT, ctypes.c_char_p, ctypes.c_uint32))
     # Hack to have vciFormatError as a free function
     vciFormatError = functools.partial(__vciFormatError, _canlib)
 
@@ -203,24 +218,32 @@ except Exception as e:
 
 
 CAN_INFO_MESSAGES = {
-    constants.CAN_INFO_START: "CAN started",
-    constants.CAN_INFO_STOP: "CAN stopped",
-    constants.CAN_INFO_RESET: "CAN reset",
+    constants.CAN_INFO_START:   "CAN started",
+    constants.CAN_INFO_STOP:    "CAN stopped",
+    constants.CAN_INFO_RESET:   "CAN reset",
 }
 
 CAN_ERROR_MESSAGES = {
-    constants.CAN_ERROR_STUFF: "CAN bit stuff error",
-    constants.CAN_ERROR_FORM: "CAN form error",
-    constants.CAN_ERROR_ACK: "CAN acknowledgment error",
-    constants.CAN_ERROR_BIT: "CAN bit error",
-    constants.CAN_ERROR_CRC: "CAN CRC error",
-    constants.CAN_ERROR_OTHER: "Other (unknown) CAN error",
+    constants.CAN_ERROR_STUFF:  "CAN bit stuff error",
+    constants.CAN_ERROR_FORM:   "CAN form error",
+    constants.CAN_ERROR_ACK:    "CAN acknowledgment error",
+    constants.CAN_ERROR_BIT:    "CAN bit error",
+    constants.CAN_ERROR_CRC:    "CAN CRC error",
+    constants.CAN_ERROR_OTHER:  "Other (unknown) CAN error",
 }
 #----------------------------------------------------------------------------
 
 
 class IXXATBus(BusABC):
     """The CAN Bus implemented for the IXXAT interface.
+
+    .. warning::
+
+        This interface does implement efficient filtering of messages, but
+        the filters have to be set in :meth:`~can.interfaces.ixxat.IXXATBus.__init__`
+        using the ``can_filters`` parameter. Using :meth:`~can.interfaces.ixxat.IXXATBus.set_filters`
+        does not work.
+
     """
 
     CHANNEL_BITRATES = {
@@ -254,9 +277,7 @@ class IXXATBus(BusABC):
             The Channel id to create this bus with.
 
         :param list can_filters:
-            A list of dictionaries each containing a "can_id" and a "can_mask".
-
-            >>> [{"can_id": 0x11, "can_mask": 0x21}]
+            See :meth:`can.BusABC.set_filters`.
 
         :param int UniqueHardwareId:
             UniqueHardwareId to connect (optional, will use the first found if not supplied)
@@ -304,6 +325,8 @@ class IXXATBus(BusABC):
             else:
                 if (UniqueHardwareId is None) or (self._device_info.UniqueHardwareId.AsChar == bytes(UniqueHardwareId, 'ascii')):
                     break
+                else:
+                    log.debug("Ignoring IXXAT with hardware id '%s'.", self._device_info.UniqueHardwareId.AsChar.decode("ascii"))
         _canlib.vciEnumDeviceClose(self._device_handle)
         _canlib.vciDeviceOpen(ctypes.byref(self._device_info.VciObjectId), ctypes.byref(self._device_handle))
         log.info("Using unique HW ID %s", self._device_info.UniqueHardwareId.AsChar)
@@ -332,7 +355,7 @@ class IXXATBus(BusABC):
         self._tick_resolution =  float(self._channel_capabilities.dwClockFreq / self._channel_capabilities.dwTscDivisor)
 
         # Setup filters before starting the channel
-        if can_filters is not None and len(can_filters):
+        if can_filters:
             log.info("The IXXAT VCI backend is filtering messages")
             # Disable every message coming in
             for extended in (0, 1):
@@ -367,7 +390,7 @@ class IXXATBus(BusABC):
             except (VCITimeout, VCIRxQueueEmptyError):
                 break
 
-        super(IXXATBus, self).__init__()
+        super(IXXATBus, self).__init__(channel=channel, can_filters=None, **config)
 
     def _inWaiting(self):
         try:
@@ -382,7 +405,7 @@ class IXXATBus(BusABC):
         # TODO #64: no timeout?
         _canlib.canChannelWaitTxEvent(self._channel_handle, constants.INFINITE)
 
-    def recv(self, timeout=None):
+    def _recv_internal(self, timeout):
         """ Read a message from IXXAT device. """
 
         # TODO: handling CAN error messages?
@@ -393,7 +416,7 @@ class IXXATBus(BusABC):
             try:
                 _canlib.canChannelPeekMessage(self._channel_handle, ctypes.byref(self._message))
             except (VCITimeout, VCIRxQueueEmptyError):
-                return None
+                return None, True
             else:
                 if self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_DATA:
                     data_received = True
@@ -437,7 +460,7 @@ class IXXATBus(BusABC):
 
         if not data_received:
             # Timed out / can message type is not DATA
-            return None
+            return None, True
 
         # The _message.dwTime is a 32bit tick value and will overrun,
         # so expect to see the value restarting from 0
@@ -452,7 +475,7 @@ class IXXATBus(BusABC):
         )
 
         log.debug('Recv()ed message %s', rx_msg)
-        return rx_msg
+        return rx_msg, True
 
     def send(self, msg, timeout=None):
         log.debug("Sending message: %s", msg)
@@ -494,6 +517,16 @@ class IXXATBus(BusABC):
         _canlib.canControlStart(self._control_handle, constants.FALSE)
         _canlib.canControlClose(self._control_handle)
         _canlib.vciDeviceClose(self._device_handle)
+
+    __set_filters_has_been_called = False
+    def set_filters(self, can_filers=None):
+        """Unsupported. See note on :class:`~can.interfaces.ixxat.IXXATBus`.
+        """
+        if self.__set_filters_has_been_called:
+            log.warn("using filters is not supported like this, see note on IXXATBus")
+        else:
+            # allow the constructor to call this without causing a warning
+            self.__set_filters_has_been_called = True
 
 
 class CyclicSendTask(LimitedDurationCyclicSendTaskABC,

@@ -1,3 +1,10 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+"""
+This module contains the implementation of `can.Message`.
+"""
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -116,7 +123,7 @@ class Message(object):
                 "dlc={}".format(self.dlc),
                 "data=[{}]".format(", ".join(data))]
         if self.channel is not None:
-            args.append("channel={}".format(self.channel))
+            args.append("channel={!r}".format(self.channel))
         if self.is_fd:
             args.append("is_fd=True")
             args.append("bitrate_switch={}".format(self.bitrate_switch))

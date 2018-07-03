@@ -1,6 +1,9 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+# coding: utf-8
 
-" Common ctypes utils "
+"""
+This module contains common `ctypes` utils.
+"""
 
 import binascii
 import ctypes
@@ -9,7 +12,12 @@ import sys
 
 log = logging.getLogger('can.ctypesutil')
 
-__all__ = ['CLibrary', 'HANDLE', 'PHANDLE']
+__all__ = ['CLibrary', 'HANDLE', 'PHANDLE', 'HRESULT']
+
+try:
+    _LibBase = ctypes.WinDLL
+except AttributeError:
+    _LibBase = ctypes.CDLL
 
 
 class LibraryMixin:
@@ -46,11 +54,6 @@ class LibraryMixin:
         return symbol
 
 
-try:
-    _LibBase = ctypes.WinDLL
-except AttributeError:
-    _LibBase = ctypes.CDLL
-
 class CLibrary_Win32(_LibBase, LibraryMixin):
     " Basic ctypes.WinDLL derived class + LibraryMixin "
 
@@ -81,8 +84,13 @@ class CLibrary_Unix(ctypes.CDLL, LibraryMixin):
 
 if sys.platform == "win32":
     CLibrary = CLibrary_Win32
+    HRESULT = ctypes.HRESULT
 else:
     CLibrary = CLibrary_Unix
+    if sys.platform == "cygwin":
+        # Define HRESULT for cygwin
+        class HRESULT(ctypes.c_long):
+            pass
 
 
 # Common win32 definitions

@@ -1,6 +1,9 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+# coding: utf-8
+
 """
 Ctypes wrapper module for IXXAT Virtual CAN Interface V3 on win32 systems
+
 Copyright (C) 2016 Giuseppe Corbelli <giuseppe.corbelli@weightpack.com>
 """
 
@@ -8,8 +11,8 @@ import ctypes
 
 class LUID(ctypes.Structure):
     _fields_ = [
-        ("LowPart", ctypes.c_ulong),
-        ("HighPart", ctypes.c_long),
+        ("LowPart", ctypes.c_uint32),
+        ("HighPart", ctypes.c_int32),
     ]
 PLUID = ctypes.POINTER(LUID)
 
@@ -24,9 +27,9 @@ PVCIID = ctypes.POINTER(VCIID)
 
 class GUID(ctypes.Structure):
     _fields_ = [
-        ("Data1", ctypes.c_long),
-        ("Data2", ctypes.c_short),
-        ("Data3", ctypes.c_short),
+        ("Data1", ctypes.c_uint32),
+        ("Data2", ctypes.c_uint16),
+        ("Data3", ctypes.c_uint16),
         ("Data4", ctypes.c_char * 8),
     ]
 

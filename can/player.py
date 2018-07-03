@@ -1,11 +1,15 @@
 #!/usr/bin/env python
+# coding: utf-8
+
 """
 Replays CAN traffic saved with can.logger back
 to a CAN bus.
 
 Similar to canplayer in the can-utils package.
 """
+
 from __future__ import print_function
+
 import argparse
 import datetime
 
