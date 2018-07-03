@@ -95,17 +95,14 @@ def _test_writer_and_reader(test_case, writer_constructor, reader_constructor, s
             if comment is not None:
                 print("writing comment: ", comment)
                 writer.log_event(comment) # we already know that this method exists
-                print("writing comment: ", comment)
             if msg is not None:
                 print("writing message: ", msg)
                 writer(msg)
-                print("writing message: ", msg)
     else:
         # ony write messages
         for msg in original_messages:
             print("writing message: ", msg)
             writer(msg)
-            print("writing message: ", msg)
 
     # sleep and close the writer
     if sleep_time is not None:
@@ -114,6 +111,7 @@ def _test_writer_and_reader(test_case, writer_constructor, reader_constructor, s
     writer.stop()
 
     # read all written messages
+    print("reading all messages ...")
     read_messages = list(reader_constructor(filename))
 
     # check if at least the number of messages matches
@@ -123,6 +121,9 @@ def _test_writer_and_reader(test_case, writer_constructor, reader_constructor, s
     # check the order and content of the individual messages
     for i, (read, original) in enumerate(zip(read_messages, original_messages)):
         try:
+            if read != original:
+                print("original message: {}".format(original))
+                print("read     message: {}".format(read))
             # check everything except the timestamp
             test_case.assertEqual(read, original)
             # check the timestamp

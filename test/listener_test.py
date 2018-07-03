@@ -69,13 +69,13 @@ class BusTest(unittest.TestCase):
 class ListenerTest(BusTest):
 
     def testBasicListenerCanBeAddedToNotifier(self):
-        a_listener = can.Listener()
+        a_listener = can.Printer()
         notifier = can.Notifier(self.bus, [a_listener], 0.1)
         notifier.stop()
         self.assertIn(a_listener, notifier.listeners)
-    
+
     def testAddListenerToNotifier(self):
-        a_listener = can.Listener()
+        a_listener = can.Printer()
         notifier = can.Notifier(self.bus, [], 0.1)
         notifier.stop()
         self.assertNotIn(a_listener, notifier.listeners)
@@ -83,7 +83,7 @@ class ListenerTest(BusTest):
         self.assertIn(a_listener, notifier.listeners)
 
     def testRemoveListenerFromNotifier(self):
-        a_listener = can.Listener()
+        a_listener = can.Printer()
         notifier = can.Notifier(self.bus, [a_listener], 0.1)
         notifier.stop()
         self.assertIn(a_listener, notifier.listeners)
@@ -113,7 +113,8 @@ class ListenerTest(BusTest):
         def test_filetype_to_instance(extension, klass):
             can_logger = can.Logger("test.{}".format(extension))
             self.assertIsInstance(can_logger, klass)
-            can_logger.stop()
+            if hasattr(can_logger, "stop"):
+                can_logger.stop()
 
         test_filetype_to_instance("asc", can.ASCWriter)
         test_filetype_to_instance("blf", can.BLFWriter)
@@ -122,7 +123,7 @@ class ListenerTest(BusTest):
         test_filetype_to_instance("log", can.CanutilsLogWriter)
         test_filetype_to_instance("txt", can.Printer)
 
-        # test file extensions that should usa a fallback
+        # test file extensions that should use a fallback
         test_filetype_to_instance(None, can.Printer)
         test_filetype_to_instance("some_unknown_extention_42", can.Printer)
 
