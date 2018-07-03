@@ -94,6 +94,12 @@ class CanutilsLogWriter(BaseIOHandler, Listener):
     """
 
     def __init__(self, filename, channel="vcan0", append=False):
+        """
+        :param channel: a default channel to use when the message does not
+                        have a channel set
+        :param bool append: if set to `True` messages are appended to
+                            the file, else the file is truncated
+        """
         mode = 'a' if append else 'w'
         super(CanutilsLogWriter, self).__init__(open_file=True, filename=filename, mode=mode)
 

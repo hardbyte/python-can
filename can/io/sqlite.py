@@ -39,6 +39,9 @@ class SqliteReader(BaseIOHandler):
     """
 
     def __init__(self, filename, table_name="messages"):
+        """
+        :param str table_name: the name of the table to look for the messages
+        """
         super(SqliteReader, self).__init__(open_file=False)
         self.conn = sqlite3.connect(filename)
         self.cursor = self.conn.cursor()
@@ -101,6 +104,9 @@ class SqliteWriter(BaseIOHandler, BufferedReader):
     """Maximum number of seconds to wait between writes to the database"""
 
     def __init__(self, filename, table_name="messages"):
+        """
+        :param str table_name: the name of the table to store messages in
+        """
         super(SqliteWriter, self).__init__(open_file=False)
         self.table_name = table_name
         self.filename = filename
