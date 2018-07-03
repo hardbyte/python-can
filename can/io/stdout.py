@@ -5,36 +5,31 @@
 This Listener simply prints to stdout / the terminal or a file.
 """
 
-from __future__ import print_function
+from __future__ import print_function, absolute_import
 
 import logging
 
 from can.listener import Listener
+from .generic import BaseIOHandler
 
-log = logging.getLogger('can.io.stdout')
+log = logging.getLogger('can.io.printer')
 
 
-class Printer(Listener):
+class Printer(BaseIOHandler, Listener):
     """
     The Printer class is a subclass of :class:`~can.Listener` which simply prints
-    any messages it receives to the terminal (stdout).
+    any messages it receives to the terminal (stdout). A message is tunred into a
+    string using :meth:`~can.Message.__str__`.
 
-    :param output_file: An optional file to "print" to.
+    :param str output_file: An optional file to "print" to.
     """
 
-    def __init__(self, output_file=None):
-        if output_file is not None:
-            log.info('Creating log file "{}"'.format(output_file))
-            output_file = open(output_file, 'wt')
-        self.output_file = output_file
+    def __init__(self, filename=None):
+        self.write_to_file = filename is not None
+        super(Printer, self).__init__(open_file=self.write_to_file, filename=filename, mode='wt')
 
     def on_message_received(self, msg):
-        if self.output_file is not None:
-            self.output_file.write(str(msg) + '\n')
+        if self.write_to_file:
+            self.file.write(str(msg) + '\n')
         else:
             print(msg)
-
-    def stop(self):
-        if self.output_file:
-            self.output_file.write('\n')
-            self.output_file.close()
