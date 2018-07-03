@@ -16,7 +16,8 @@ except ImportError:
 
 
 class Listener(object):
-    """The basic listener that can be called directly to deliver a message::
+    """The basic listener that can be called directly to handle some
+    CAN message::
 
         listener = SomeListener()
         msg = my_bus.recv()
