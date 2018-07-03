@@ -37,7 +37,7 @@ class CanutilsLogReader(BaseIOHandler):
     """
 
     def __init__(self, filename):
-        super(BaseIOHandler, self).__init__(open_file=True, filename=filename, mode='Urt')
+        super(CanutilsLogReader, self).__init__(open_file=True, filename=filename, mode='Urt')
 
     def __iter__(self):
         for line in self.file:
@@ -95,17 +95,12 @@ class CanutilsLogWriter(BaseIOHandler, Listener):
 
     def __init__(self, filename, channel="vcan0", append=False):
         mode = 'Uat' if append else 'Uwt'
-        super(BaseIOHandler, self).__init__(open_file=True, filename=filename, mode=mode)
+        super(CanutilsLogWriter, self).__init__(open_file=True, filename=filename, mode=mode)
 
         self.channel = channel
         self.last_timestamp = None
 
     def on_message_received(self, msg):
-        # TODO handle uniform
-        if self.file is None:
-            log.warn("ignoring write attempt to closed file")
-            return
-
         # this is the case for the very first message:
         if self.last_timestamp is None:
             self.last_timestamp = (msg.timestamp or 0.0)

@@ -40,7 +40,7 @@ class LogReader(object):
     .. note::
         There are no time delays, if you want to reproduce
         the measured delays between messages look at the
-        :class:`can.util.MessageSync` class.
+        :class:`can.MessageSync` class.
     """
 
     @staticmethod
@@ -67,12 +67,12 @@ class MessageSync(object):
     """
 
     def __init__(self, messages, timestamps=True, gap=0.0001, skip=60):
-        """Creates an new `MessageSync` instance.
+        """Creates an new **MessageSync** instance.
 
         :param messages: An iterable of :class:`can.Message` instances.
-        :param timestamps: Use the messages' timestamps.
-        :param gap: Minimum time between sent messages
-        :param skip: Skip periods of inactivity greater than this.
+        :param bool timestamps: Use the messages' timestamps.
+        :param float gap: Minimum time between sent messages in seconds
+        :param float skip: Skip periods of inactivity greater than this (in seconds).
         """
         self.raw_messages = messages
         self.timestamps = timestamps

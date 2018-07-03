@@ -43,7 +43,7 @@ class CSVWriter(BaseIOHandler, Listener):
 
     def __init__(self, filename, append=False):
         mode = 'Uat' if append else 'Uwt'
-        super(BaseIOHandler, self).__init__(open_file=True, filename=filename, mode=mode)
+        super(CSVWriter, self).__init__(open_file=True, filename=filename, mode=mode)
 
         # Write a header row
         self.file.write("timestamp,arbitration_id,extended,remote,error,dlc,data\n")
@@ -71,7 +71,7 @@ class CSVReader(BaseIOHandler):
     """
 
     def __init__(self, filename):
-        super(BaseIOHandler, self).__init__(open_file=True, filename=filename, mode='Urt')
+        super(CSVReader, self).__init__(open_file=True, filename=filename, mode='Urt')
 
     def __iter__(self):
         # skip the header line
