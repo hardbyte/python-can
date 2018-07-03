@@ -129,7 +129,7 @@ class ASCWriter(BaseIOHandler, Listener):
     FORMAT_EVENT = "{timestamp: 9.4f} {message}\n"
 
     def __init__(self, filename, channel=1):
-        super(ASCWriter, self).__init__(open_file=True, filename=filename, mode='Uwt')
+        super(ASCWriter, self).__init__(open_file=True, filename=filename, mode='wt')
         self.channel = channel
 
         # write start of file header

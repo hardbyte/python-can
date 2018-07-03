@@ -42,7 +42,7 @@ class CSVWriter(BaseIOHandler, Listener):
     """
 
     def __init__(self, filename, append=False):
-        mode = 'Uat' if append else 'Uwt'
+        mode = 'at' if append else 'wt'
         super(CSVWriter, self).__init__(open_file=True, filename=filename, mode=mode)
 
         # Write a header row

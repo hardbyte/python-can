@@ -94,7 +94,7 @@ class CanutilsLogWriter(BaseIOHandler, Listener):
     """
 
     def __init__(self, filename, channel="vcan0", append=False):
-        mode = 'Uat' if append else 'Uwt'
+        mode = 'at' if append else 'wt'
         super(CanutilsLogWriter, self).__init__(open_file=True, filename=filename, mode=mode)
 
         self.channel = channel
