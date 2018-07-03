@@ -5,6 +5,8 @@
 This module contains the implementation of `can.Listener` and some readers.
 """
 
+from abc import ABCMeta, abstractmethod
+
 try:
     # Python 3
     import queue
@@ -14,12 +16,28 @@ except ImportError:
 
 
 class Listener(object):
+    """The basic listener that can be called directly to deliver a message::
 
+        listener = SomeListener()
+        msg = my_bus.recv()
+
+        # now either call
+        listener(msg)
+        # or
+        listener.on_message_received(msg)
+
+    """
+
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
     def on_message_received(self, msg):
-        raise NotImplementedError(
-            "{} has not implemented on_message_received".format(
-                self.__class__.__name__)
-        )
+        """This method is called to handle the given message.
+
+        :param can.Message msg: the delivered message
+
+        """
+        pass
 
     def __call__(self, msg):
         return self.on_message_received(msg)
@@ -32,8 +50,7 @@ class Listener(object):
 
 class RedirectReader(Listener):
     """
-    A RedirectReader sends all received messages
-    to another Bus.
+    A RedirectReader sends all received messages to another Bus.
 
     """
 
@@ -49,10 +66,12 @@ class BufferedReader(Listener):
     A BufferedReader is a subclass of :class:`~can.Listener` which implements a
     **message buffer**: that is, when the :class:`can.BufferedReader` instance is
     notified of a new message it pushes it into a queue of messages waiting to
-    be serviced.
+    be serviced. The messages can then be fetched with
+    :meth:`~can.BufferedReader.get_message`
     """
 
     def __init__(self):
+        # 0 is "infinite" size
         self.buffer = queue.Queue(0)
 
     def on_message_received(self, msg):
@@ -65,7 +84,8 @@ class BufferedReader(Listener):
         is shorter),
 
         :param float timeout: The number of seconds to wait for a new message.
-        :return: the :class:`~can.Message` if there is one, or None if there is not.
+        :rytpe: can.Message
+        :return: the message if there is one, or None if there is not.
         """
         try:
             return self.buffer.get(block=True, timeout=timeout)
