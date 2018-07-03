@@ -46,7 +46,8 @@ class CSVWriter(BaseIOHandler, Listener):
         super(CSVWriter, self).__init__(open_file=True, filename=filename, mode=mode)
 
         # Write a header row
-        self.file.write("timestamp,arbitration_id,extended,remote,error,dlc,data\n")
+        if not append:
+            self.file.write("timestamp,arbitration_id,extended,remote,error,dlc,data\n")
 
     def on_message_received(self, msg):
         row = ','.join([
