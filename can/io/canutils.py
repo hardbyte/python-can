@@ -37,7 +37,7 @@ class CanutilsLogReader(BaseIOHandler):
     """
 
     def __init__(self, filename):
-        super(CanutilsLogReader, self).__init__(open_file=True, filename=filename, mode='Ur')
+        super(CanutilsLogReader, self).__init__(open_file=True, filename=filename, mode='r')
 
     def __iter__(self):
         for line in self.file:

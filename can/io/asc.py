@@ -32,7 +32,7 @@ class ASCReader(BaseIOHandler):
     """
 
     def __init__(self, filename):
-        super(ASCReader, self).__init__(open_file=True, filename=filename, mode='Ur')
+        super(ASCReader, self).__init__(open_file=True, filename=filename, mode='r')
 
     @staticmethod
     def _extract_can_id(str_can_id):

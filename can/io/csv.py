@@ -72,7 +72,7 @@ class CSVReader(BaseIOHandler):
     """
 
     def __init__(self, filename):
-        super(CSVReader, self).__init__(open_file=True, filename=filename, mode='Ur')
+        super(CSVReader, self).__init__(open_file=True, filename=filename, mode='r')
 
     def __iter__(self):
         # skip the header line
@@ -84,9 +84,9 @@ class CSVReader(BaseIOHandler):
 
             yield Message(
                 timestamp=float(timestamp),
-                is_remote_frame=bool(remote),
-                extended_id=bool(extended),
-                is_error_frame=bool(error),
+                is_remote_frame=(remote == '1'),
+                extended_id=(extended == '1'),
+                is_error_frame=(error == '1'),
                 arbitration_id=int(arbitration_id, base=16),
                 dlc=int(dlc),
                 data=b64decode(data),

@@ -124,7 +124,7 @@ class BLFReader(BaseIOHandler):
     """
 
     def __init__(self, filename):
-        super(BLFReader, self).__init__(open_file=True, filename=filename, mode='Urb')
+        super(BLFReader, self).__init__(open_file=True, filename=filename, mode='rb')
         data = self.file.read(FILE_HEADER_STRUCT.size)
         header = FILE_HEADER_STRUCT.unpack(data)
         if header[0] != b"LOGG":

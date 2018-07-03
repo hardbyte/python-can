@@ -18,7 +18,7 @@ class BaseIOHandler(object):
 
     __metaclass__ = ABCMeta
 
-    def __init__(self, open_file, filename='can_data', mode='Urt'):
+    def __init__(self, open_file, filename='can_data', mode='rt'):
         """
         :param bool open_file: opens a file if set to True
         :param str filename: the path/filename of the file to open
