@@ -36,9 +36,7 @@ class Logger(object):
 
     @staticmethod
     def __new__(cls, filename):
-        if not filename:
-            return Printer()
-        elif filename.endswith(".asc"):
+        if filename.endswith(".asc"):
             return ASCWriter(filename)
         elif filename.endswith(".blf"):
             return BLFWriter(filename)

@@ -42,7 +42,7 @@ class SqliteReader(BaseIOHandler):
         """
         :param str table_name: the name of the table to look for the messages
         """
-        super(SqliteReader, self).__init__(open_file=False)
+        super(SqliteReader, self).__init__(file=None)
         self.conn = sqlite3.connect(filename)
         self.cursor = self.conn.cursor()
         self.table_name = table_name
@@ -87,7 +87,7 @@ class SqliteWriter(BaseIOHandler, BufferedReader):
         :attr:`~SqliteWriter.GET_MESSAGE_TIMEOUT`.
 
         If the :attr:`~SqliteWriter.GET_MESSAGE_TIMEOUT` expires before a message
-        is received, the internal buffer is written out to the databases file.
+        is received, the internal buffer is written out to the database file.
 
         However if the bus is still saturated with messages, the Listener
         will continue receiving until the :attr:`~SqliteWriter.MAX_TIME_BETWEEN_WRITES`
@@ -107,7 +107,7 @@ class SqliteWriter(BaseIOHandler, BufferedReader):
         """
         :param str table_name: the name of the table to store messages in
         """
-        super(SqliteWriter, self).__init__(open_file=False)
+        super(SqliteWriter, self).__init__(file=None)
         self.table_name = table_name
         self.filename = filename
         self.stop_running_event = threading.Event()

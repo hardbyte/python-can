@@ -124,7 +124,7 @@ class BLFReader(BaseIOHandler):
     """
 
     def __init__(self, filename):
-        super(BLFReader, self).__init__(open_file=True, filename=filename, mode='rb')
+        super(BLFReader, self).__init__(file=filename, mode='rb')
         data = self.file.read(FILE_HEADER_STRUCT.size)
         header = FILE_HEADER_STRUCT.unpack(data)
         if header[0] != b"LOGG":
@@ -246,7 +246,7 @@ class BLFReader(BaseIOHandler):
 
                     pos = next_pos
 
-                # save remainig data that could not be processed
+                # save the remaining data that could not be processed
                 tail = data[pos:]
 
         self.stop()
@@ -264,7 +264,7 @@ class BLFWriter(BaseIOHandler, Listener):
     COMPRESSION_LEVEL = 9
 
     def __init__(self, filename, channel=1):
-        super(BLFWriter, self).__init__(open_file=True, filename=filename, mode='wb')
+        super(BLFWriter, self).__init__(file=filename, mode='wb')
         self.channel = channel
         # Header will be written after log is done
         self.file.write(b"\x00" * FILE_HEADER_SIZE)

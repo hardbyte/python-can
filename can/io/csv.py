@@ -49,7 +49,7 @@ class CSVWriter(BaseIOHandler, Listener):
                             written header line
         """
         mode = 'a' if append else 'w'
-        super(CSVWriter, self).__init__(open_file=True, filename=filename, mode=mode)
+        super(CSVWriter, self).__init__(file=filename, mode=mode)
 
         # Write a header row
         if not append:
@@ -79,7 +79,7 @@ class CSVReader(BaseIOHandler):
     """
 
     def __init__(self, filename):
-        super(CSVReader, self).__init__(open_file=True, filename=filename, mode='r')
+        super(CSVReader, self).__init__(file=filename, mode='r')
 
     def __iter__(self):
         # skip the header line

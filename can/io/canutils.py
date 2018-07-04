@@ -37,7 +37,7 @@ class CanutilsLogReader(BaseIOHandler):
     """
 
     def __init__(self, filename):
-        super(CanutilsLogReader, self).__init__(open_file=True, filename=filename, mode='r')
+        super(CanutilsLogReader, self).__init__(file=filename, mode='r')
 
     def __iter__(self):
         for line in self.file:
@@ -101,7 +101,7 @@ class CanutilsLogWriter(BaseIOHandler, Listener):
                             the file, else the file is truncated
         """
         mode = 'a' if append else 'w'
-        super(CanutilsLogWriter, self).__init__(open_file=True, filename=filename, mode=mode)
+        super(CanutilsLogWriter, self).__init__(file=filename, mode=mode)
 
         self.channel = channel
         self.last_timestamp = None
