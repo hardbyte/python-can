@@ -42,8 +42,9 @@ These steps are a guideline on how to add a new backend to python-can.
   an entry in ``doc/interface/*``.
 - Add tests in ``test/*`` where appropiate.
 
+
 About the ``BusABC`` class
-==========================
+--------------------------
 
 Concrete implementations *have to* implement the following:
     * :meth:`~can.BusABC.send` to send individual messages
