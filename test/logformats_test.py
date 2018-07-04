@@ -66,7 +66,7 @@ def _test_writer_and_reader(test_case, writer_constructor, reader_constructor,
     original_comments = TEST_COMMENTS if check_comments else ()
 
     # TODO: use https://docs.python.org/3/library/unittest.html#unittest.TestCase.subTest
-    # once Python 2.7 gets dropped
+    # once Python 2.7 support gets dropped
 
     print("testing with path-like object and explicit stop() call")
     temp = tempfile.NamedTemporaryFile('w', delete=False)
@@ -85,8 +85,10 @@ def _test_writer_and_reader(test_case, writer_constructor, reader_constructor,
                                     use_context_manager=True, **kwargs)
 
     print("testing with file-like object and explicit stop() call")
+    # TODO
 
     print("testing with file-like object and context manager")
+    # TODO
 
 
 def _test_writer_and_reader_execute(test_case, writer_constructor, reader_constructor,
@@ -163,8 +165,8 @@ def _test_writer_and_reader_execute(test_case, writer_constructor, reader_constr
             # check everything except the timestamp
             if read != original:
                 # check like this to print the whole message
-                print("original message: {}".format(original))
-                print("read     message: {}".format(read))
+                print("original message: {!r}".format(original))
+                print("read     message: {!r}".format(read))
                 test_case.fail()
             # check the timestamp
             if round_timestamps:

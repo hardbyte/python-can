@@ -69,7 +69,7 @@ class Message(object):
             logger.warning("data link count was %d but it should be less than or equal to 8", self.dlc)
 
     def __str__(self):
-        field_strings = ["Timestamp: {0:15.6f}".format(self.timestamp)]
+        field_strings = ["Timestamp: {0:>15.6f}".format(self.timestamp)]
         if self.id_type:
             # Extended arbitrationID
             arbitration_id_string = "ID: {0:08x}".format(self.arbitration_id)
