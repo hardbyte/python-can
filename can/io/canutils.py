@@ -116,7 +116,7 @@ class CanutilsLogWriter(BaseIOHandler, Listener):
             timestamp = self.last_timestamp
         else:
             timestamp = msg.timestamp
-        
+
         channel = msg.channel if msg.channel is not None else self.channel
 
         if msg.is_error_frame:
