@@ -116,7 +116,7 @@ def _test_writer_and_reader_execute(test_case, writer_constructor, reader_constr
     assert isinstance(test_case, unittest.TestCase), \
         "test_case has to be a subclass of unittest.TestCase"
 
-    def _write_all():
+    def _write_all(writer):
         # write messages and insert comments here and there
         # Note: we make no assumptions about the length of original_messages and original_comments
         for msg, comment in zip_longest(original_messages, original_comments, fillvalue=None):
@@ -136,9 +136,10 @@ def _test_writer_and_reader_execute(test_case, writer_constructor, reader_constr
     print("writing all messages/comments")
     if use_context_manager:
         with writer_constructor(file) as writer:
-            _write_all()
+            _write_all(writer)
     else:
-        _write_all()
+        writer = writer_constructor(file)
+        _write_all(writer)
         writer.stop()
 
     # read all written messages
