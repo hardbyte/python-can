@@ -35,43 +35,17 @@ from .data.example_data import TEST_MESSAGES_BASE, TEST_MESSAGES_REMOTE_FRAMES, 
                                generate_message
 
 
-def _test_writer_and_reader(test_case, writer_constructor, reader_constructor, sleep_time=None,
-                            check_remote_frames=True, check_error_frames=True,
-                            check_comments=False, round_timestamps=False):
-    """Tests a pair of writer and reader by writing all data first and
-    then reading all data and checking if they could be reconstructed
-    correctly. Optionally writes some comments as well.
-
-    :param unittest.TestCase test_case: the test case the use the assert methods on
-    :param Callable writer_constructor: the constructor of the writer class
-    :param Callable reader_constructor: the constructor of the reader class
-
-    :param float sleep_time: specifies the time to sleep after writing all messages.
-        gets ignored when set to None
+def _test_writer_and_reader(test_case, writer_constructor, reader_constructor,
+                            check_remote_frames=True, check_error_frames=True, check_comments=False,
+                            **kwargs):
+    """
     :param bool check_remote_frames: if True, also tests remote frames
     :param bool check_error_frames: if True, also tests error frames
     :param bool check_comments: if True, also inserts comments at some
         locations and checks if they are contained anywhere literally
         in the resulting file. The locations as selected randomly
         but deterministically, which makes the test reproducible.
-    :param bool round_timestamps: if True, rounds timestamps using :meth:`~builtin.round`
-        before comparing the read messages/events
     """
-
-    assert isinstance(test_case, unittest.TestCase), \
-        "test_case has to be a subclass of unittest.TestCase"
-
-    if check_comments:
-        # we check this because of the lack of a common base class
-        # we filter for not starts with '__' so we do not get all the builtin
-        # methods when logging to the console
-        test_case.assertIn('log_event', [d for d in dir(writer_constructor) if not d.startswith('__')],
-            "cannot check comments with this writer: {}".format(writer_constructor))
-
-    # create a temporary file
-    temp = tempfile.NamedTemporaryFile('w', delete=False)
-    temp.close()
-    filename = temp.name
 
     # get all test messages
     original_messages = TEST_MESSAGES_BASE
@@ -80,14 +54,69 @@ def _test_writer_and_reader(test_case, writer_constructor, reader_constructor, s
     if check_error_frames:
         original_messages += TEST_MESSAGES_ERROR_FRAMES
 
-    # get all test comments
-    original_comments = TEST_COMMENTS
-
-    # create writer
-    writer = writer_constructor(filename)
-
-    # write
     if check_comments:
+        # we check this because of the lack of a common base class
+        # we filter for not starts with '__' so we do not get all the builtin
+        # methods when logging to the console
+        attrs = [attr for attr in dir(writer_constructor) if not attr.startswith('__')]
+        test_case.assertIn('log_event', attrs,
+            "cannot check comments with this writer: {}".format(writer_constructor))
+
+    # get all test comments
+    original_comments = TEST_COMMENTS if check_comments else ()
+
+    # TODO: use https://docs.python.org/3/library/unittest.html#unittest.TestCase.subTest
+    # once Python 2.7 gets dropped
+
+    print("testing with path-like object and explicit stop() call")
+    temp = tempfile.NamedTemporaryFile('w', delete=False)
+    filename = temp.name
+    temp.close()
+    _test_writer_and_reader_execute(test_case, writer_constructor, reader_constructor,
+                                    filename, original_messages, original_comments,
+                                    use_context_manager=False, **kwargs)
+
+    print("testing with path-like object and context manager")
+    temp = tempfile.NamedTemporaryFile('w', delete=False)
+    filename = temp.name
+    temp.close()
+    _test_writer_and_reader_execute(test_case, writer_constructor, reader_constructor,
+                                    filename, original_messages, original_comments,
+                                    use_context_manager=True, **kwargs)
+
+    print("testing with file-like object and explicit stop() call")
+
+    print("testing with file-like object and context manager")
+
+
+def _test_writer_and_reader_execute(test_case, writer_constructor, reader_constructor,
+                                    file, original_messages, original_comments,
+                                    use_context_manager=False,
+                                    sleep_time=None, round_timestamps=False):
+    """Tests a pair of writer and reader by writing all data first and
+    then reading all data and checking if they could be reconstructed
+    correctly. Optionally writes some comments as well.
+
+    :param unittest.TestCase test_case: the test case the use the assert methods on
+    :param Callable writer_constructor: the constructor of the writer class
+    :param Callable reader_constructor: the constructor of the reader class
+
+    :param bool use_context_manager:
+        if False, uses a explicit :meth:`~can.io.generic.BaseIOHandler.stop()`
+        call on the reader and writer when finished, and else used the reader
+        and writer as context managers
+
+    :param float sleep_time: specifies the time to sleep after writing all messages.
+                             gets ignored when set to None
+    :param bool round_timestamps: if True, rounds timestamps using :meth:`~builtin.round`
+                                  before comparing the read messages/events
+
+    """
+
+    assert isinstance(test_case, unittest.TestCase), \
+        "test_case has to be a subclass of unittest.TestCase"
+
+    def _write_all():
         # write messages and insert comments here and there
         # Note: we make no assumptions about the length of original_messages and original_comments
         for msg, comment in zip_longest(original_messages, original_comments, fillvalue=None):
@@ -98,21 +127,30 @@ def _test_writer_and_reader(test_case, writer_constructor, reader_constructor, s
             if msg is not None:
                 print("writing message: ", msg)
                 writer(msg)
+
+        # sleep and close the writer
+        if sleep_time is not None:
+            sleep(sleep_time)
+
+    # create writer
+    print("writing all messages/comments")
+    if use_context_manager:
+        with writer_constructor(file) as writer:
+            _write_all()
     else:
-        # ony write messages
-        for msg in original_messages:
-            print("writing message: ", msg)
-            writer(msg)
-
-    # sleep and close the writer
-    if sleep_time is not None:
-        sleep(sleep_time)
-
-    writer.stop()
+        _write_all()
+        writer.stop()
 
     # read all written messages
-    print("reading all messages ...")
-    read_messages = list(reader_constructor(filename))
+    print("reading all messages")
+    if use_context_manager:
+        with reader_constructor(file) as reader:
+            read_messages = list(reader)
+    else:
+        reader = reader_constructor(file)
+        read_messages = list(reader)
+        # redundant, but this checks if stop() can be called multiple times
+        reader.stop()
 
     # check if at least the number of messages matches
     test_case.assertEqual(len(read_messages), len(original_messages),
@@ -121,11 +159,12 @@ def _test_writer_and_reader(test_case, writer_constructor, reader_constructor, s
     # check the order and content of the individual messages
     for i, (read, original) in enumerate(zip(read_messages, original_messages)):
         try:
+            # check everything except the timestamp
             if read != original:
+                # check like this to print the whole message
                 print("original message: {}".format(original))
                 print("read     message: {}".format(read))
-            # check everything except the timestamp
-            test_case.assertEqual(read, original)
+                test_case.fail()
             # check the timestamp
             if round_timestamps:
                 original.timestamp = round(original.timestamp)
@@ -133,17 +172,17 @@ def _test_writer_and_reader(test_case, writer_constructor, reader_constructor, s
             test_case.assertAlmostEqual(read.timestamp, original.timestamp, places=6)
         except Exception as exception:
             # attach the index
-            exception.args += ("test failed at index #{}".format(i), )
+            exception.args += ("messages are not equal at index #{}".format(i), )
             raise exception
 
     # check if the comments are contained in the file
-    if check_comments:
+    if original_comments:
         # read the entire outout file
-        with open(filename, 'r') as file:
+        with open(file, 'r') as file:
             output_contents = file.read()
         # check each, if they can be found in there literally
         for comment in original_comments:
-            test_case.assertTrue(comment in output_contents)
+            test_case.assertIn(comment, output_contents)
 
 
 class TestCanutilsLog(unittest.TestCase):
