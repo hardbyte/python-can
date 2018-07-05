@@ -50,6 +50,9 @@ CSVWriter
 .. autoclass:: can.CSVWriter
     :members:
 
+.. autoclass:: can.CSVReader
+    :members:
+
 
 SqliteWriter
 ------------
@@ -57,11 +60,15 @@ SqliteWriter
 .. autoclass:: can.SqliteWriter
     :members:
 
+.. autoclass:: can.SqliteReader
+    :members:
+
+
 Database table format
 ~~~~~~~~~~~~~~~~~~~~~
 
-The messages are written to the table ``messages`` in the sqlite database.
-The table is created if it does not already exist.
+The messages are written to the table ``messages`` in the sqlite database
+by default. The table is created if it does not already exist.
 
 The entries are as follows:
 
@@ -95,7 +102,7 @@ engineered from existing log files. One description of the format can be found `
 .. autoclass:: can.ASCWriter
     :members:
 
-ASCReader reads CAN data from ASCII log files .asc 
+ASCReader reads CAN data from ASCII log files .asc,
 as further references can-utils can be used: 
 `asc2log <https://github.com/linux-can/can-utils/blob/master/asc2log.c>`_,
 `log2asc <https://github.com/linux-can/can-utils/blob/master/log2asc.c>`_.
