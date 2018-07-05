@@ -12,11 +12,11 @@ from __future__ import absolute_import
 import time
 import logging
 
-from . import ASCReader
-from . import BLFReader
-from . import CanutilsLogReader
-from . import CSVReader
-from . import SqliteReader
+from .asc import ASCReader
+from .blf import BLFReader
+from .canutils import CanutilsLogReader
+from .csv import CSVReader
+from .sqlite import SqliteReader
 
 log = logging.getLogger('can.io.player')
 

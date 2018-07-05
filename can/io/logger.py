@@ -9,12 +9,12 @@ from __future__ import absolute_import
 
 import logging
 
-from . import ASCWriter
-from . import BLFWriter
-from . import CanutilsLogWriter
-from . import CSVWriter
-from . import SqliteWriter
-from . import Printer
+from .asc import ASCWriter
+from .blf import BLFWriter
+from .canutils import CanutilsLogWriter
+from .csv import CSVWriter
+from .sqlite import SqliteWriter
+from .printer import Printer
 
 log = logging.getLogger("can.io.logger")
 
