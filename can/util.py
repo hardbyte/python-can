@@ -193,35 +193,6 @@ def load_config(path=None, config=None):
     can.log.debug("can config: {}".format(config))
     return config
 
-
-def choose_socketcan_implementation():
-    """Set the best version of SocketCAN for this system.
-
-    :param config: The can.rc configuration dictionary
-
-    :raises :py:OsError: If the system doesn't support SocketCAN
-    """
-    # Check OS: SocketCAN is available only under Linux
-    if not sys.platform.startswith('linux'):
-        msg = 'SocketCAN not available under {}'.format(
-            sys.platform)
-        raise OSError(msg)
-    else:
-        # Check release: SocketCAN was added to Linux 2.6.25
-        rel_string = platform.release()
-        m = re.match(r'\d+\.\d+\.\d', rel_string)
-        if m is None:
-            msg = 'Bad linux release {}'.format(rel_string)
-            raise OSError(msg)
-        rel_num = [int(i) for i in rel_string[:m.end()].split('.')]
-        if (rel_num >= [2, 6, 25]):
-            # Check Python version: SocketCAN was added in 3.3
-            return 'socketcan_native' if sys.version_info >= (3, 3) else 'socketcan_ctypes'
-        else:
-            msg = 'SocketCAN not available under Linux {}'.format(
-                    rel_string)
-            raise OSError(msg)
-
             
 def set_logging_level(level_name=None):
     """Set the logging level for the "can" logger.
