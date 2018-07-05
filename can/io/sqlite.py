@@ -38,36 +38,41 @@ class SqliteReader(BaseIOHandler):
     .. note:: The database schema is given in the documentation of the loggers.
     """
 
-    def __init__(self, filename, table_name="messages"):
+    def __init__(self, file, table_name="messages"):
         """
+        :param file: a `str` or since Python 3.7 a path like object that points
+                     to the database file to use
         :param str table_name: the name of the table to look for the messages
+
+        .. warning:: In contrary to all other readers/writers the Sqlite handlers
+                     do not accept file-like objects as the `file` parameter.
         """
         super(SqliteReader, self).__init__(file=None)
-        self.conn = sqlite3.connect(filename)
-        self.cursor = self.conn.cursor()
+        self._conn = sqlite3.connect(file)
+        self._cursor = self._conn.cursor()
         self.table_name = table_name
 
     def __iter__(self):
-        for frame_data in self.cursor.execute("SELECT * FROM {}".format(self.table_name)):
+        for frame_data in self._cursor.execute("SELECT * FROM {}".format(self.table_name)):
             timestamp, can_id, is_extended, is_remote, is_error, dlc, data = frame_data
             yield Message(timestamp, is_remote, is_extended, is_error, can_id, dlc, data)
 
     def __len__(self):
         # this might not run in constant time
-        result = self.cursor.execute("SELECT COUNT(*) FROM {}".format(self.table_name))
+        result = self._cursor.execute("SELECT COUNT(*) FROM {}".format(self.table_name))
         return int(result.fetchone()[0])
 
     def read_all(self):
         """Fetches all messages in the database.
         """
-        result = self.cursor.execute("SELECT * FROM {}".format(self.table_name))
+        result = self._cursor.execute("SELECT * FROM {}".format(self.table_name))
         return result.fetchall()
 
     def stop(self):
         """Closes the connection to the database.
         """
         super(SqliteReader, self).stop()
-        self.conn.close()
+        self._conn.close()
 
 
 class SqliteWriter(BaseIOHandler, BufferedReader):
@@ -103,16 +108,21 @@ class SqliteWriter(BaseIOHandler, BufferedReader):
     MAX_TIME_BETWEEN_WRITES = 5.0
     """Maximum number of seconds to wait between writes to the database"""
 
-    def __init__(self, filename, table_name="messages"):
+    def __init__(self, file, table_name="messages"):
         """
+        :param file: a `str` or since Python 3.7 a path like object that points
+                     to the database file to use
         :param str table_name: the name of the table to store messages in
+
+        .. warning:: In contrary to all other readers/writers the Sqlite handlers
+                     do not accept file-like objects as the `file` parameter.
         """
         super(SqliteWriter, self).__init__(file=None)
         self.table_name = table_name
-        self.filename = filename
-        self.stop_running_event = threading.Event()
-        self.writer_thread = threading.Thread(target=self._db_writer_thread)
-        self.writer_thread.start()
+        self._db_filename = file
+        self._stop_running_event = threading.Event()
+        self._writer_thread = threading.Thread(target=self._db_writer_thread)
+        self._writer_thread.start()
 
     def _create_db(self):
         """Creates a new databae or opens a connection to an existing one.
@@ -122,11 +132,10 @@ class SqliteWriter(BaseIOHandler, BufferedReader):
             setup the db here.
         """
         log.debug("Creating sqlite database")
-        self.conn = sqlite3.connect(self.filename)
-        cursor = self.conn.cursor()
+        self._conn = sqlite3.connect(self._db_filename)
 
         # create table structure
-        cursor.execute("""
+        self._conn.cursor().execute("""
         CREATE TABLE IF NOT EXISTS {}
         (
           ts REAL,
@@ -138,9 +147,9 @@ class SqliteWriter(BaseIOHandler, BufferedReader):
           data BLOB
         )
         """.format(self.table_name))
-        self.conn.commit()
+        self._conn.commit()
 
-        self.insert_template = "INSERT INTO {} VALUES (?, ?, ?, ?, ?, ?, ?)".format(self.table_name)
+        self._insert_template = "INSERT INTO {} VALUES (?, ?, ?, ?, ?, ?, ?)".format(self.table_name)
 
     def _db_writer_thread(self):
         num_frames = 0
@@ -148,7 +157,7 @@ class SqliteWriter(BaseIOHandler, BufferedReader):
         self._create_db()
 
         try:
-            while not self.stop_running_event.is_set():
+            while not self._stop_running_event.is_set():
                 messages = []
 
                 msg = self.get_message(self.GET_MESSAGE_TIMEOUT)
@@ -173,20 +182,20 @@ class SqliteWriter(BaseIOHandler, BufferedReader):
 
                 count = len(messages)
                 if count > 0:
-                    with self.conn:
+                    with self._conn:
                         #log.debug("Writing %s frames to db", count)
-                        self.conn.executemany(self.insert_template, messages)
-                        self.conn.commit() # make the changes visible to the entire database
+                        self._conn.executemany(self._insert_template, messages)
+                        self._conn.commit() # make the changes visible to the entire database
                         num_frames += count
                         last_write = time.time()
 
                 # go back up and check if we are still supposed to run
 
         finally:
-            self.conn.close()
+            self._conn.close()
             log.info("Stopped sqlite writer after writing %s messages", num_frames)
 
     def stop(self):
         super(SqliteWriter, self).stop()
-        self.stop_running_event.set()
-        self.writer_thread.join()
+        self._stop_running_event.set()
+        self._writer_thread.join()
