@@ -20,11 +20,15 @@ class Printer(BaseIOHandler, Listener):
     The Printer class is a subclass of :class:`~can.Listener` which simply prints
     any messages it receives to the terminal (stdout). A message is tunred into a
     string using :meth:`~can.Message.__str__`.
+
+    :attr bool write_to_file: `True` iff this instance prints to a file instead of
+                              standard out
     """
 
     def __init__(self, file=None):
         """
-        :param str file: An optional file to "print" to
+        :param file: an optional path-like object or as file-like object to "print"
+                     to instead of writing to standard out (stdout)
         """
         self.write_to_file = file is not None
         super(Printer, self).__init__(file, mode='w')

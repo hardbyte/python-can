@@ -37,6 +37,9 @@ class CanutilsLogReader(BaseIOHandler):
     """
 
     def __init__(self, file):
+        """
+        :param file: a path-like object or as file-like object to read from
+        """
         super(CanutilsLogReader, self).__init__(file, mode='r')
 
     def __iter__(self):
@@ -95,6 +98,7 @@ class CanutilsLogWriter(BaseIOHandler, Listener):
 
     def __init__(self, file, channel="vcan0", append=False):
         """
+        :param file: a path-like object or as file-like object to write to
         :param channel: a default channel to use when the message does not
                         have a channel set
         :param bool append: if set to `True` messages are appended to

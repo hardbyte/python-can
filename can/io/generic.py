@@ -24,8 +24,8 @@ class BaseIOHandler(object):
 
     def __init__(self, file, mode='rt'):
         """
-        :param str file: a path-like object to open a file, a file-like object
-                         to be used as a file or `None` to not use a file at all 
+        :param file: a path-like object to open a file, a file-like object
+                     to be used as a file or `None` to not use a file at all
         :param str mode: the mode that should be used to open the file, see
                          :func:`builtin.open`, ignored if *file* is `None`
         """

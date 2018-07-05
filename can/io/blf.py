@@ -124,6 +124,9 @@ class BLFReader(BaseIOHandler):
     """
 
     def __init__(self, file):
+        """
+        :param file: a path-like object or as file-like object to read from
+        """
         super(BLFReader, self).__init__(file, mode='rb')
         data = self.file.read(FILE_HEADER_STRUCT.size)
         header = FILE_HEADER_STRUCT.unpack(data)
@@ -264,6 +267,9 @@ class BLFWriter(BaseIOHandler, Listener):
     COMPRESSION_LEVEL = 9
 
     def __init__(self, file, channel=1):
+        """
+        :param file: a path-like object or as file-like object to write to
+        """
         super(BLFWriter, self).__init__(file, mode='wb')
         self.channel = channel
         # Header will be written after log is done

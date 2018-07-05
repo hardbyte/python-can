@@ -128,8 +128,8 @@ class SqliteWriter(BaseIOHandler, BufferedReader):
         """Creates a new databae or opens a connection to an existing one.
 
         .. note::
-            You can't share sqlite3 connections between threads hence we
-            setup the db here.
+            You can't share sqlite3 connections between threads (by default)
+            hence we setup the db here. It has the upside of running async.
         """
         log.debug("Creating sqlite database")
         self._conn = sqlite3.connect(self._db_filename)
