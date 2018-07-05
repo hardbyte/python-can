@@ -198,10 +198,10 @@ def load_config(path=None, config=None, context=None):
     if 'bitrate' in config:
         config['bitrate'] = int(config['bitrate'])
 
-    can.log.debug("loaded can config: {}".format(config))
+    can.log.debug("can config: {}".format(config))
     return config
 
-
+            
 def set_logging_level(level_name=None):
     """Set the logging level for the "can" logger.
     Expects one of: 'critical', 'error', 'warning', 'info', 'debug', 'subdebug'

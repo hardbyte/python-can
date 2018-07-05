@@ -28,6 +28,8 @@ release = can.__version__
 
 # -- General configuration -----------------------------------------------------
 
+primary_domain = 'py'
+
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = ['sphinx.ext.autodoc',
@@ -45,7 +47,7 @@ extlinks = {
 }
 
 intersphinx_mapping = {
-    'python': ('https://docs.python.org/3/', None)
+    'python': ('https://docs.python.org/3/', None),
 }
 
 # If this is True, todo and todolist produce output, else they produce nothing.
