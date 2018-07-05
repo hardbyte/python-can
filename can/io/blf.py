@@ -123,8 +123,8 @@ class BLFReader(BaseIOHandler):
     silently ignored.
     """
 
-    def __init__(self, filename):
-        super(BLFReader, self).__init__(file=filename, mode='rb')
+    def __init__(self, file):
+        super(BLFReader, self).__init__(file, mode='rb')
         data = self.file.read(FILE_HEADER_STRUCT.size)
         header = FILE_HEADER_STRUCT.unpack(data)
         if header[0] != b"LOGG":
@@ -263,8 +263,8 @@ class BLFWriter(BaseIOHandler, Listener):
     #: ZLIB compression level
     COMPRESSION_LEVEL = 9
 
-    def __init__(self, filename, channel=1):
-        super(BLFWriter, self).__init__(file=filename, mode='wb')
+    def __init__(self, file, channel=1):
+        super(BLFWriter, self).__init__(file, mode='wb')
         self.channel = channel
         # Header will be written after log is done
         self.file.write(b"\x00" * FILE_HEADER_SIZE)

@@ -22,12 +22,12 @@ class Printer(BaseIOHandler, Listener):
     string using :meth:`~can.Message.__str__`.
     """
 
-    def __init__(self, filename=None):
+    def __init__(self, file=None):
         """
-        :param str output_file: An optional file to "print" to
+        :param str file: An optional file to "print" to
         """
-        self.write_to_file = filename is not None
-        super(Printer, self).__init__(file=filename, mode='w')
+        self.write_to_file = file is not None
+        super(Printer, self).__init__(file, mode='w')
 
     def on_message_received(self, msg):
         if self.write_to_file:

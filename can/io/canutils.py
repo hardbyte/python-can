@@ -36,8 +36,8 @@ class CanutilsLogReader(BaseIOHandler):
         ``(0.0) vcan0 001#8d00100100820100``
     """
 
-    def __init__(self, filename):
-        super(CanutilsLogReader, self).__init__(file=filename, mode='r')
+    def __init__(self, file):
+        super(CanutilsLogReader, self).__init__(file, mode='r')
 
     def __iter__(self):
         for line in self.file:
@@ -93,7 +93,7 @@ class CanutilsLogWriter(BaseIOHandler, Listener):
     It the first message does not have a timestamp, it is set to zero.
     """
 
-    def __init__(self, filename, channel="vcan0", append=False):
+    def __init__(self, file, channel="vcan0", append=False):
         """
         :param channel: a default channel to use when the message does not
                         have a channel set
@@ -101,7 +101,7 @@ class CanutilsLogWriter(BaseIOHandler, Listener):
                             the file, else the file is truncated
         """
         mode = 'a' if append else 'w'
-        super(CanutilsLogWriter, self).__init__(file=filename, mode=mode)
+        super(CanutilsLogWriter, self).__init__(file, mode=mode)
 
         self.channel = channel
         self.last_timestamp = None

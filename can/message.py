@@ -2,7 +2,7 @@
 # coding: utf-8
 
 """
-This module contains the implementation of `can.Message`.
+This module contains the implementation of :class:`can.Message`.
 """
 
 import logging

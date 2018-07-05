@@ -41,7 +41,7 @@ class CSVWriter(BaseIOHandler, Listener):
     Each line is terminated with a platform specific line seperator.
     """
 
-    def __init__(self, filename, append=False):
+    def __init__(self, file, append=False):
         """
         :param bool append: if set to `True` messages are appended to
                             the file and no header line is written, else
@@ -49,7 +49,7 @@ class CSVWriter(BaseIOHandler, Listener):
                             written header line
         """
         mode = 'a' if append else 'w'
-        super(CSVWriter, self).__init__(file=filename, mode=mode)
+        super(CSVWriter, self).__init__(file, mode=mode)
 
         # Write a header row
         if not append:
@@ -78,8 +78,8 @@ class CSVReader(BaseIOHandler):
     Any line seperator is accepted.
     """
 
-    def __init__(self, filename):
-        super(CSVReader, self).__init__(file=filename, mode='r')
+    def __init__(self, file):
+        super(CSVReader, self).__init__(file, mode='r')
 
     def __iter__(self):
         # skip the header line

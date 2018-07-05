@@ -31,8 +31,8 @@ class ASCReader(BaseIOHandler):
     TODO: turn relative timestamps back to absolute form
     """
 
-    def __init__(self, filename):
-        super(ASCReader, self).__init__(file=filename, mode='r')
+    def __init__(self, file):
+        super(ASCReader, self).__init__(file, mode='r')
 
     @staticmethod
     def _extract_can_id(str_can_id):
@@ -128,12 +128,12 @@ class ASCWriter(BaseIOHandler, Listener):
     FORMAT_DATE = "%a %b %m %I:%M:%S %p %Y"
     FORMAT_EVENT = "{timestamp: 9.4f} {message}\n"
 
-    def __init__(self, filename, channel=1):
+    def __init__(self, file, channel=1):
         """
         :param channel: a default channel to use when the message does not
                         have a channel set
         """
-        super(ASCWriter, self).__init__(file=filename, mode='w')
+        super(ASCWriter, self).__init__(file, mode='w')
         self.channel = channel
 
         # write start of file header

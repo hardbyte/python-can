@@ -22,7 +22,7 @@ class BaseIOHandler(object):
 
     __metaclass__ = ABCMeta
 
-    def __init__(self, file='can.data', mode='rt'):
+    def __init__(self, file, mode='rt'):
         """
         :param str file: a path-like object to open a file, a file-like object
                          to be used as a file or `None` to not use a file at all 

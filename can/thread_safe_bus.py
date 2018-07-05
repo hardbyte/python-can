@@ -20,6 +20,8 @@ class NullContextManager(object):
     """
     A context manager that does nothing at all.
     """
+    # could use https://docs.python.org/3/library/contextlib.html#contextlib.nullcontext
+    # beginning with Python 3.7
 
     def __init__(self, resource=None):
         self.resource = resource
