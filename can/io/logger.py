@@ -29,13 +29,15 @@ class Logger(object):
       * .log :class:`can.CanutilsLogWriter`
       * other: :class:`can.Printer`
 
-    Note this class itself is just a dispatcher,
-    an object that inherits from Listener will
-    be created when instantiating this class.
+    Note this class itself is just a dispatcher, an object that inherits
+    from Listener will be created when instantiating this class.
     """
 
     @staticmethod
     def __new__(cls, filename):
+        """
+        :param str filename: the filename/path the file to write to
+        """
         if filename.endswith(".asc"):
             return ASCWriter(filename)
         elif filename.endswith(".blf"):

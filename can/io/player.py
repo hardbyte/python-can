@@ -45,9 +45,10 @@ class LogReader(object):
 
     @staticmethod
     def __new__(cls, filename):
-        if filename is None:
-            raise TypeError("a filename must be given")
-        elif filename.endswith(".asc"):
+        """
+        :param str filename: the filename/path the file to read from
+        """
+        if filename.endswith(".asc"):
             return ASCReader(filename)
         elif filename.endswith(".blf"):
             return BLFReader(filename)
