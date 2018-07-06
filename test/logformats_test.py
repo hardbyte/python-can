@@ -35,7 +35,7 @@ from .data.example_data import TEST_MESSAGES_BASE, TEST_MESSAGES_REMOTE_FRAMES, 
                                generate_message
 
 
-class ReaderWriterTest(unittest.TestCase):
+class ReaderWriterTest(object):
     """Tests a pair of writer and reader by writing all data first and
     then reading all data and checking if they could be reconstructed
     correctly. Optionally writes some comments as well.
@@ -227,7 +227,7 @@ class ReaderWriterTest(unittest.TestCase):
                 self.assertIn(comment, output_contents)
 
 
-class TestAscFileFormat(ReaderWriterTest):
+class TestAscFileFormat(ReaderWriterTest, unittest.TestCase):
     """Tests can.ASCWriter and can.ASCReader"""
 
     def __init__(self):
@@ -237,7 +237,7 @@ class TestAscFileFormat(ReaderWriterTest):
         )
 
 
-class TestBlfFileFormat(ReaderWriterTest):
+class TestBlfFileFormat(ReaderWriterTest, unittest.TestCase):
     """Tests can.BLFWriter and can.BLFReader"""
 
     def __init__(self):
@@ -265,7 +265,7 @@ class TestBlfFileFormat(ReaderWriterTest):
         self.assertEqual(messages[1].channel, 0)
 
 
-class TestCanutilsFileFormat(ReaderWriterTest):
+class TestCanutilsFileFormat(ReaderWriterTest, unittest.TestCase):
     """Tests can.CanutilsLogWriter and can.CanutilsLogReader"""
 
     def __init__(self):
@@ -275,7 +275,7 @@ class TestCanutilsFileFormat(ReaderWriterTest):
         )
 
 
-class TestCsvFileFormat(ReaderWriterTest):
+class TestCsvFileFormat(ReaderWriterTest, unittest.TestCase):
     """Tests can.ASCWriter and can.ASCReader"""
 
     def __init__(self):
@@ -285,7 +285,7 @@ class TestCsvFileFormat(ReaderWriterTest):
         )
 
 
-class TestSqliteDatabaseFormat(ReaderWriterTest):
+class TestSqliteDatabaseFormat(ReaderWriterTest, unittest.TestCase):
     """Tests can.SqliteWriter and can.SqliteReader"""
 
     def __init__(self):
