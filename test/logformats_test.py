@@ -79,7 +79,8 @@ def _test_writer_and_reader(test_case, writer_constructor, reader_constructor,
     temp.close()
     _test_writer_and_reader_execute(test_case, writer_constructor, reader_constructor,
                                     filename, original_messages, original_comments,
-                                    use_context_manager=False, sleep_time=sleep_time)
+                                    use_context_manager=False, sleep_time=sleep_time,
+                                    round_timestamps=round_timestamps)
 
     print("testing with path-like object and context manager")
     temp = tempfile.NamedTemporaryFile('w', delete=False)
@@ -87,7 +88,8 @@ def _test_writer_and_reader(test_case, writer_constructor, reader_constructor,
     temp.close()
     _test_writer_and_reader_execute(test_case, writer_constructor, reader_constructor,
                                     filename, original_messages, original_comments,
-                                    use_context_manager=True, sleep_time=sleep_time)
+                                    use_context_manager=True, sleep_time=sleep_time,
+                                    round_timestamps=round_timestamps)
 
     print("testing with file-like object and explicit stop() call")
     # TODO
