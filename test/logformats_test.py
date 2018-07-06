@@ -37,8 +37,8 @@ from .data.example_data import TEST_MESSAGES_BASE, TEST_MESSAGES_REMOTE_FRAMES, 
 
 def _test_writer_and_reader(test_case, writer_constructor, reader_constructor,
                             check_remote_frames=True, check_error_frames=True, check_comments=False,
-                            test_append=False, round_timestamps=False,
-                            **kwargs):
+                            test_append=False,
+                            sleep_time=None, round_timestamps=False):
     """
     :param bool check_remote_frames: if True, also tests remote frames
     :param bool check_error_frames: if True, also tests error frames
@@ -79,7 +79,7 @@ def _test_writer_and_reader(test_case, writer_constructor, reader_constructor,
     temp.close()
     _test_writer_and_reader_execute(test_case, writer_constructor, reader_constructor,
                                     filename, original_messages, original_comments,
-                                    use_context_manager=False, **kwargs)
+                                    use_context_manager=False, sleep_time=sleep_time)
 
     print("testing with path-like object and context manager")
     temp = tempfile.NamedTemporaryFile('w', delete=False)
@@ -87,7 +87,7 @@ def _test_writer_and_reader(test_case, writer_constructor, reader_constructor,
     temp.close()
     _test_writer_and_reader_execute(test_case, writer_constructor, reader_constructor,
                                     filename, original_messages, original_comments,
-                                    use_context_manager=True, **kwargs)
+                                    use_context_manager=True, sleep_time=sleep_time)
 
     print("testing with file-like object and explicit stop() call")
     # TODO
@@ -106,6 +106,8 @@ def _test_writer_and_reader(test_case, writer_constructor, reader_constructor,
         with writer_constructor(filename) as writer:
             for message in first_part:
                 writer(message)
+            if sleep_time is not None:
+                sleep(sleep_time)
         # use append mode
         try:
             writer = writer_constructor(filename, append=True)
@@ -119,6 +121,8 @@ def _test_writer_and_reader(test_case, writer_constructor, reader_constructor,
         with writer:
             for message in second_part:
                 writer(message)
+            if sleep_time is not None:
+                sleep(sleep_time)
         with reader_constructor(filename) as reader:
             read_messages = list(reader)
         _check_messages(test_case, original_messages, read_messages, round_timestamps)
@@ -128,8 +132,8 @@ def _test_writer_and_reader(test_case, writer_constructor, reader_constructor,
 
 def _test_writer_and_reader_execute(test_case, writer_constructor, reader_constructor,
                                     file, original_messages, original_comments,
-                                    use_context_manager=False,
-                                    sleep_time=None, round_timestamps=False):
+                                    use_context_manager,
+                                    sleep_time, round_timestamps):
     """Tests a pair of writer and reader by writing all data first and
     then reading all data and checking if they could be reconstructed
     correctly. Optionally writes some comments as well.
@@ -165,7 +169,6 @@ def _test_writer_and_reader_execute(test_case, writer_constructor, reader_constr
                 print("writing message: ", msg)
                 writer(msg)
 
-        # sleep and close the writer
         if sleep_time is not None:
             sleep(sleep_time)
 
