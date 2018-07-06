@@ -319,5 +319,22 @@ class TestSqliteDatabaseFormat(unittest.TestCase):
         self.assertEqual(msg2[1], 0x02)
 
 
+class TestPrinter(unittest.TestCase):
+    """Tests that can.Printer does not crash"""
+
+    messages = TEST_MESSAGES_BASE + TEST_MESSAGES_REMOTE_FRAMES + TEST_MESSAGES_ERROR_FRAMES
+
+    def test_not_crashes_stdout(self):
+        with can.Printer() as printer:
+            for message in self.messages:
+                printer(message)
+
+    def test_not_crashed_file(self):
+        with tempfile.NamedTemporaryFile('w', delete=False) as temp_file:
+            with can.Printer(temp_file) as printer:
+                for message in self.messages:
+                    printer(message)
+
+
 if __name__ == '__main__':
     unittest.main()
