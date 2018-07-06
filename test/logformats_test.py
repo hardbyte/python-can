@@ -13,7 +13,7 @@ comments.
 TODO: implement CAN FD support testing
 """
 
-from __future__ import print_function, absolute_import
+from __future__ import print_function, absolute_import, division
 
 import unittest
 import tempfile
@@ -37,6 +37,7 @@ from .data.example_data import TEST_MESSAGES_BASE, TEST_MESSAGES_REMOTE_FRAMES, 
 
 def _test_writer_and_reader(test_case, writer_constructor, reader_constructor,
                             check_remote_frames=True, check_error_frames=True, check_comments=False,
+                            test_append=False, round_timestamps=False,
                             **kwargs):
     """
     :param bool check_remote_frames: if True, also tests remote frames
@@ -45,6 +46,10 @@ def _test_writer_and_reader(test_case, writer_constructor, reader_constructor,
         locations and checks if they are contained anywhere literally
         in the resulting file. The locations as selected randomly
         but deterministically, which makes the test reproducible.
+    :param bool test_append: tests the writer in append mode as well
+    :param bool round_timestamps: if True, rounds timestamps using :meth:`~builtin.round`
+                                  before comparing the read messages/events
+
     """
 
     # get all test messages
@@ -89,6 +94,24 @@ def _test_writer_and_reader(test_case, writer_constructor, reader_constructor,
 
     print("testing with file-like object and context manager")
     # TODO
+
+    if test_append:
+        print("testing append mode with context manager and path-like object")
+        count = len(original_messages)
+        first_part = original_messages[:count //  2]
+        second_part = original_messages[count //  2:]
+        temp = tempfile.NamedTemporaryFile('w', delete=False)
+        filename = temp.name
+        temp.close()
+        with writer_constructor(filename) as writer:
+            for message in first_part:
+                writer(message)
+        with writer_constructor(filename, append=True) as writer:
+            for message in second_part:
+                writer(message)
+        with reader_constructor(filename) as reader:
+            read_messages = list(reader)
+        _check_messages(test_case, original_messages, read_messages, round_timestamps)
 
 
 def _test_writer_and_reader_execute(test_case, writer_constructor, reader_constructor,
@@ -159,8 +182,23 @@ def _test_writer_and_reader_execute(test_case, writer_constructor, reader_constr
     test_case.assertEqual(len(read_messages), len(original_messages),
         "the number of written messages does not match the number of read messages")
 
-    # check the order and content of the individual messages
-    for i, (read, original) in enumerate(zip(read_messages, original_messages)):
+    _check_messages(test_case, original_messages, read_messages, round_timestamps)
+
+    # check if the comments are contained in the file
+    if original_comments:
+        # read the entire outout file
+        with open(file, 'r') as file:
+            output_contents = file.read()
+        # check each, if they can be found in there literally
+        for comment in original_comments:
+            test_case.assertIn(comment, output_contents)
+
+
+def _check_messages(test_case, original_messages, read_messages, round_timestamps):
+    """
+    Checks the order and content of the individual messages.
+    """
+    for index, (original, read) in enumerate(zip(original_messages, read_messages)):
         try:
             # check everything except the timestamp
             if read != original:
@@ -175,17 +213,8 @@ def _test_writer_and_reader_execute(test_case, writer_constructor, reader_constr
             test_case.assertAlmostEqual(read.timestamp, original.timestamp, places=6)
         except Exception as exception:
             # attach the index
-            exception.args += ("messages are not equal at index #{}".format(i), )
+            exception.args += ("messages are not equal at index #{}".format(index), )
             raise exception
-
-    # check if the comments are contained in the file
-    if original_comments:
-        # read the entire outout file
-        with open(file, 'r') as file:
-            output_contents = file.read()
-        # check each, if they can be found in there literally
-        for comment in original_comments:
-            test_case.assertIn(comment, output_contents)
 
 
 class TestCanutilsLog(unittest.TestCase):
