@@ -106,12 +106,24 @@ def _test_writer_and_reader(test_case, writer_constructor, reader_constructor,
         with writer_constructor(filename) as writer:
             for message in first_part:
                 writer(message)
-        with writer_constructor(filename, append=True) as writer:
+        # use append mode
+        try:
+            writer = writer_constructor(filename, append=True)
+        except TypeError as e:
+            # maybe "append" is not a formal parameter
+            try:
+                writer = writer_constructor(filename)
+            except TypeError:
+                # is the is still a problem, raise the initial error
+                raise e
+        with writer:
             for message in second_part:
                 writer(message)
         with reader_constructor(filename) as reader:
             read_messages = list(reader)
         _check_messages(test_case, original_messages, read_messages, round_timestamps)
+    else:
+        print("do not test append mode")
 
 
 def _test_writer_and_reader_execute(test_case, writer_constructor, reader_constructor,
