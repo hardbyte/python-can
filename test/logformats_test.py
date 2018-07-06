@@ -17,7 +17,6 @@ from __future__ import print_function, absolute_import, division
 
 import unittest
 import tempfile
-from time import sleep
 import sqlite3
 import os
 
@@ -297,7 +296,6 @@ class TestSqliteDatabaseFormat(ReaderWriterTest, unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(TestSqliteDatabaseFormat, self).__init__(
             can.SqliteWriter, can.SqliteReader,
-            sleep_time=can.SqliteWriter.MAX_TIME_BETWEEN_WRITES + 0.5,
             test_append=True, check_comments=False,
             *args, **kwargs
         )
