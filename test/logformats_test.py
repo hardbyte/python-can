@@ -211,22 +211,19 @@ def _check_messages(test_case, original_messages, read_messages, round_timestamp
     Checks the order and content of the individual messages.
     """
     for index, (original, read) in enumerate(zip(original_messages, read_messages)):
-        try:
-            # check everything except the timestamp
-            if read != original:
-                # check like this to print the whole message
-                print("original message: {!r}".format(original))
-                print("read     message: {!r}".format(read))
-                test_case.fail()
-            # check the timestamp
-            if round_timestamps:
-                original.timestamp = round(original.timestamp)
-                read.timestamp = round(read.timestamp)
-            test_case.assertAlmostEqual(read.timestamp, original.timestamp, places=6)
-        except Exception as exception:
-            # attach the index
-            exception.args += ("messages are not equal at index #{}".format(index), )
-            raise exception
+        # check everything except the timestamp
+        if read != original:
+            # check like this to print the whole message
+            print("original message: {!r}".format(original))
+            print("read     message: {!r}".format(read))
+            test_case.fail("messages are not equal at index #{}".format(index))
+        # check the timestamp
+        if round_timestamps:
+            original.timestamp = round(original.timestamp)
+            read.timestamp = round(read.timestamp)
+        test_case.assertAlmostEqual(read.timestamp, original.timestamp, places=6,
+            msg="message timestamps are not almost_equal at index #{} ({!r} !~= {!r})"
+                .format(index, original.timestamp, read.timestamp))
 
 
 class TestAscFileFormat(unittest.TestCase):
