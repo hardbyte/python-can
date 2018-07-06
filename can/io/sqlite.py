@@ -55,7 +55,15 @@ class SqliteReader(BaseIOHandler):
     def __iter__(self):
         for frame_data in self._cursor.execute("SELECT * FROM {}".format(self.table_name)):
             timestamp, can_id, is_extended, is_remote, is_error, dlc, data = frame_data
-            yield Message(timestamp, is_remote, is_extended, is_error, can_id, dlc, data)
+            yield Message(
+                timestamp=timestamp,
+                is_remote_frame=bool(is_remote),
+                extended_id=bool(is_extended),
+                is_error_frame=bool(is_error),
+                arbitration_id=can_id,
+                dlc=dlc,
+                data=data
+            )
 
     def __len__(self):
         # this might not run in constant time
