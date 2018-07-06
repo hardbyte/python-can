@@ -217,14 +217,6 @@ def _check_messages(test_case, original_messages, read_messages, round_timestamp
             raise exception
 
 
-class TestCanutilsLog(unittest.TestCase):
-    """Tests can.CanutilsLogWriter and can.CanutilsLogReader"""
-
-    def test_writer_and_reader(self):
-        _test_writer_and_reader(self, can.CanutilsLogWriter, can.CanutilsLogReader,
-                                check_comments=False)
-
-
 class TestAscFileFormat(unittest.TestCase):
     """Tests can.ASCWriter and can.ASCReader"""
 
@@ -233,12 +225,45 @@ class TestAscFileFormat(unittest.TestCase):
                                 check_comments=True, round_timestamps=True)
 
 
+class TestBlfFileFormat(unittest.TestCase):
+    """Tests can.BLFWriter and can.BLFReader"""
+
+    def test_writer_and_reader(self):
+        _test_writer_and_reader(self, can.BLFWriter, can.BLFReader,
+                                check_comments=False)
+
+    def test_reader(self):
+        logfile = os.path.join(os.path.dirname(__file__), "data", "logfile.blf")
+        messages = list(can.BLFReader(logfile))
+        self.assertEqual(len(messages), 2)
+        self.assertEqual(messages[0],
+                         can.Message(
+                             extended_id=False,
+                             arbitration_id=0x64,
+                             data=[0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8]))
+        self.assertEqual(messages[0].channel, 0)
+        self.assertEqual(messages[1],
+                         can.Message(
+                             is_error_frame=True,
+                             extended_id=True,
+                             arbitration_id=0x1FFFFFFF))
+        self.assertEqual(messages[1].channel, 0)
+
+
+class TestCanutilsLog(unittest.TestCase):
+    """Tests can.CanutilsLogWriter and can.CanutilsLogReader"""
+
+    def test_writer_and_reader(self):
+        _test_writer_and_reader(self, can.CanutilsLogWriter, can.CanutilsLogReader,
+                                test_append=True, check_comments=False)
+
+
 class TestCsvFileFormat(unittest.TestCase):
     """Tests can.ASCWriter and can.ASCReader"""
 
     def test_writer_and_reader(self):
         _test_writer_and_reader(self, can.CSVWriter, can.CSVReader,
-                                check_comments=False)
+                                test_append=True, check_comments=False)
 
 
 class TestSqliteDatabaseFormat(unittest.TestCase):
@@ -247,7 +272,7 @@ class TestSqliteDatabaseFormat(unittest.TestCase):
     def test_writer_and_reader(self):
         _test_writer_and_reader(self, can.SqliteWriter, can.SqliteReader,
                                 sleep_time=can.SqliteWriter.MAX_TIME_BETWEEN_WRITES + 0.5,
-                                check_comments=False)
+                                test_append=True, check_comments=False)
 
     def testSQLWriterWritesToSameFile(self):
         f = tempfile.NamedTemporaryFile('w', delete=False)
@@ -280,31 +305,6 @@ class TestSqliteDatabaseFormat(unittest.TestCase):
 
         self.assertEqual(msg1[1], 0x01)
         self.assertEqual(msg2[1], 0x02)
-
-
-class TestBlfFileFormat(unittest.TestCase):
-    """Tests can.BLFWriter and can.BLFReader"""
-
-    def test_writer_and_reader(self):
-        _test_writer_and_reader(self, can.BLFWriter, can.BLFReader,
-                                check_comments=False)
-
-    def test_reader(self):
-        logfile = os.path.join(os.path.dirname(__file__), "data", "logfile.blf")
-        messages = list(can.BLFReader(logfile))
-        self.assertEqual(len(messages), 2)
-        self.assertEqual(messages[0],
-                         can.Message(
-                             extended_id=False,
-                             arbitration_id=0x64,
-                             data=[0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8]))
-        self.assertEqual(messages[0].channel, 0)
-        self.assertEqual(messages[1],
-                         can.Message(
-                             is_error_frame=True,
-                             extended_id=True,
-                             arbitration_id=0x1FFFFFFF))
-        self.assertEqual(messages[1].channel, 0)
 
 
 if __name__ == '__main__':
