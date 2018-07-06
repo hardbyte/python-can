@@ -60,6 +60,7 @@ class ReaderWriterTest(object):
                                       before comparing the read messages/events
 
         """
+        super(ReaderWriterTest, self).__init__()
 
         # get all test messages
         self.original_messages = TEST_MESSAGES_BASE
@@ -73,8 +74,8 @@ class ReaderWriterTest(object):
             # we filter for not starts with '__' so we do not get all the builtin
             # methods when logging to the console
             attrs = [attr for attr in dir(writer_constructor) if not attr.startswith('__')]
-            self.assertIn('log_event', attrs,
-                "cannot check comments with this writer: {}".format(writer_constructor))
+            assert 'log_event' in attrs, \
+                "cannot check comments with this writer: {}".format(writer_constructor)
 
         # get all test comments
         self.original_comments = TEST_COMMENTS if check_comments else ()
