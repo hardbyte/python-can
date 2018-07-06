@@ -104,12 +104,14 @@ def _test_writer_and_reader(test_case, writer_constructor, reader_constructor,
         second_part = original_messages[count //  2:]
         temp = tempfile.NamedTemporaryFile('w', delete=False)
         filename = temp.name
+        fileno = temp.fileno()
         temp.close()
         with writer_constructor(filename) as writer:
             for message in first_part:
                 writer(message)
             if sleep_time is not None:
                 sleep(sleep_time)
+        os.fsync(fileno)
         # use append mode
         try:
             writer = writer_constructor(filename, append=True)
