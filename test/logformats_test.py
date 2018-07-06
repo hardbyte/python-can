@@ -44,7 +44,8 @@ class ReaderWriterTest(object):
 
     def __init__(self, writer_constructor, reader_constructor,
                  check_remote_frames=True, check_error_frames=True, check_comments=False,
-                 test_append=False, round_timestamps=False):
+                 test_append=False, round_timestamps=False,
+                 *args, **kwargs):
         """
         :param Callable writer_constructor: the constructor of the writer class
         :param Callable reader_constructor: the constructor of the reader class
@@ -60,7 +61,7 @@ class ReaderWriterTest(object):
                                       before comparing the read messages/events
 
         """
-        super(ReaderWriterTest, self).__init__()
+        super(ReaderWriterTest, self).__init__(*args, **kwargs)
 
         # get all test messages
         self.original_messages = TEST_MESSAGES_BASE
@@ -231,20 +232,22 @@ class ReaderWriterTest(object):
 class TestAscFileFormat(ReaderWriterTest, unittest.TestCase):
     """Tests can.ASCWriter and can.ASCReader"""
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         super(TestAscFileFormat, self).__init__(
             can.ASCWriter, can.ASCReader,
-            check_comments=True, round_timestamps=True
+            check_comments=True, round_timestamps=True,
+            *args, **kwargs
         )
 
 
 class TestBlfFileFormat(ReaderWriterTest, unittest.TestCase):
     """Tests can.BLFWriter and can.BLFReader"""
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         super(TestBlfFileFormat, self).__init__(
             can.BLFWriter, can.BLFReader,
-            check_comments=False
+            check_comments=False,
+            *args, **kwargs
         )
 
     def test_read_known_file(self):
@@ -269,31 +272,34 @@ class TestBlfFileFormat(ReaderWriterTest, unittest.TestCase):
 class TestCanutilsFileFormat(ReaderWriterTest, unittest.TestCase):
     """Tests can.CanutilsLogWriter and can.CanutilsLogReader"""
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         super(TestCanutilsFileFormat, self).__init__(
             can.CanutilsLogWriter, can.CanutilsLogReader,
-            test_append=True, check_comments=False
+            test_append=True, check_comments=False,
+            *args, **kwargs
         )
 
 
 class TestCsvFileFormat(ReaderWriterTest, unittest.TestCase):
     """Tests can.ASCWriter and can.ASCReader"""
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         super(TestCsvFileFormat, self).__init__(
             can.CSVWriter, can.CSVReader,
-            test_append=True, check_comments=False
+            test_append=True, check_comments=False,
+            *args, **kwargs
         )
 
 
 class TestSqliteDatabaseFormat(ReaderWriterTest, unittest.TestCase):
     """Tests can.SqliteWriter and can.SqliteReader"""
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         super(TestSqliteDatabaseFormat, self).__init__(
             can.SqliteWriter, can.SqliteReader,
             sleep_time=can.SqliteWriter.MAX_TIME_BETWEEN_WRITES + 0.5,
-            test_append=True, check_comments=False
+            test_append=True, check_comments=False,
+            *args, **kwargs
         )
 
     def test_writes_to_same_file(self):
