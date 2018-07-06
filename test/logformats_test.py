@@ -34,12 +34,14 @@ from .data.example_data import TEST_MESSAGES_BASE, TEST_MESSAGES_REMOTE_FRAMES, 
                                generate_message
 
 
-class ReaderWriterTest(object):
+class ReaderWriterTest(unittest.TestCase):
     """Tests a pair of writer and reader by writing all data first and
     then reading all data and checking if they could be reconstructed
     correctly. Optionally writes some comments as well.
 
     """
+
+    __test__ = False
 
     def __init__(self, writer_constructor, reader_constructor,
                  check_remote_frames=True, check_error_frames=True, check_comments=False,
@@ -228,7 +230,7 @@ class ReaderWriterTest(object):
                 self.assertIn(comment, output_contents)
 
 
-class TestAscFileFormat(unittest.TestCase, ReaderWriterTest):
+class TestAscFileFormat(ReaderWriterTest):
     """Tests can.ASCWriter and can.ASCReader"""
 
     def __init__(self, *args, **kwargs):
@@ -239,7 +241,7 @@ class TestAscFileFormat(unittest.TestCase, ReaderWriterTest):
         )
 
 
-class TestBlfFileFormat(ReaderWriterTest, unittest.TestCase):
+class TestBlfFileFormat(ReaderWriterTest):
     """Tests can.BLFWriter and can.BLFReader"""
 
     def __init__(self, *args, **kwargs):
@@ -268,7 +270,7 @@ class TestBlfFileFormat(ReaderWriterTest, unittest.TestCase):
         self.assertEqual(messages[1].channel, 0)
 
 
-class TestCanutilsFileFormat(ReaderWriterTest, unittest.TestCase):
+class TestCanutilsFileFormat(ReaderWriterTest):
     """Tests can.CanutilsLogWriter and can.CanutilsLogReader"""
 
     def __init__(self, *args, **kwargs):
@@ -279,7 +281,7 @@ class TestCanutilsFileFormat(ReaderWriterTest, unittest.TestCase):
         )
 
 
-class TestCsvFileFormat(ReaderWriterTest, unittest.TestCase):
+class TestCsvFileFormat(ReaderWriterTest):
     """Tests can.ASCWriter and can.ASCReader"""
 
     def __init__(self, *args, **kwargs):
@@ -290,7 +292,7 @@ class TestCsvFileFormat(ReaderWriterTest, unittest.TestCase):
         )
 
 
-class TestSqliteDatabaseFormat(ReaderWriterTest, unittest.TestCase):
+class TestSqliteDatabaseFormat(ReaderWriterTest):
     """Tests can.SqliteWriter and can.SqliteReader"""
 
     def __init__(self, *args, **kwargs):
