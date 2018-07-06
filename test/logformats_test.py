@@ -228,7 +228,7 @@ class ReaderWriterTest(object):
                 self.assertIn(comment, output_contents)
 
 
-class TestAscFileFormat(ReaderWriterTest, unittest.TestCase):
+class TestAscFileFormat(unittest.TestCase, ReaderWriterTest):
     """Tests can.ASCWriter and can.ASCReader"""
 
     def __init__(self, *args, **kwargs):
