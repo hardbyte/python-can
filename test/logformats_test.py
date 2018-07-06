@@ -233,6 +233,8 @@ class ReaderWriterTest(unittest.TestCase):
 class TestAscFileFormat(ReaderWriterTest):
     """Tests can.ASCWriter and can.ASCReader"""
 
+    __test__ = True
+
     def __init__(self, *args, **kwargs):
         super(TestAscFileFormat, self).__init__(
             can.ASCWriter, can.ASCReader,
@@ -243,6 +245,8 @@ class TestAscFileFormat(ReaderWriterTest):
 
 class TestBlfFileFormat(ReaderWriterTest):
     """Tests can.BLFWriter and can.BLFReader"""
+
+    __test__ = True
 
     def __init__(self, *args, **kwargs):
         super(TestBlfFileFormat, self).__init__(
@@ -273,6 +277,8 @@ class TestBlfFileFormat(ReaderWriterTest):
 class TestCanutilsFileFormat(ReaderWriterTest):
     """Tests can.CanutilsLogWriter and can.CanutilsLogReader"""
 
+    __test__ = True
+
     def __init__(self, *args, **kwargs):
         super(TestCanutilsFileFormat, self).__init__(
             can.CanutilsLogWriter, can.CanutilsLogReader,
@@ -284,6 +290,8 @@ class TestCanutilsFileFormat(ReaderWriterTest):
 class TestCsvFileFormat(ReaderWriterTest):
     """Tests can.ASCWriter and can.ASCReader"""
 
+    __test__ = True
+
     def __init__(self, *args, **kwargs):
         super(TestCsvFileFormat, self).__init__(
             can.CSVWriter, can.CSVReader,
@@ -294,6 +302,8 @@ class TestCsvFileFormat(ReaderWriterTest):
 
 class TestSqliteDatabaseFormat(ReaderWriterTest):
     """Tests can.SqliteWriter and can.SqliteReader"""
+
+    __test__ = True
 
     def __init__(self, *args, **kwargs):
         super(TestSqliteDatabaseFormat, self).__init__(
