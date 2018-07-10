@@ -102,7 +102,13 @@ class VectorBus(BusABC):
             idx = vxlapi.xlGetChannelIndex(hw_type.value, hw_index.value,
                                            hw_channel.value)
             if idx < 0:
-                raise CanError('Channel %s is not available' % channel)
+                # Undocumented behavior! See issue #353.
+                # If hardware is unavailable, this function returns -1.
+                # Raise an exception as if the driver
+                # would have signalled XL_ERR_HW_NOT_PRESENT.
+                raise VectorError(vxlapi.XL_ERR_HW_NOT_PRESENT,
+                                  "XL_ERR_HW_NOT_PRESENT",
+                                  "xlGetChannelIndex")
             mask = 1 << idx
             LOG.debug('Channel %d, Type: %d, Mask: 0x%X',
                       hw_channel.value, hw_type.value, mask)

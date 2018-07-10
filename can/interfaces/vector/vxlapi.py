@@ -51,6 +51,8 @@ XL_CAN_RXMSG_FLAG_EF = 0x0200
 XL_CAN_STD = 1
 XL_CAN_EXT = 2
 
+XL_ERR_HW_NOT_PRESENT = 129
+
 XLuint64 = ctypes.c_ulonglong
 XLaccess = XLuint64
 XLhandle = ctypes.c_void_p
