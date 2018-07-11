@@ -1,3 +1,8 @@
+Version 2.2.1 (2018-07-12)
+=====
+
+* Fix errors and warnings when importing library on Windows
+* Fix Vector backend raising ValueError when hardware is not connected
 
 Version 2.2.0 (2018-06-30)
 =====
