@@ -65,6 +65,7 @@ class VectorBus(BusABC):
             CAN-FD: range 8192…524288
         :param str app_name:
             Name of application in Hardware Config.
+            If set to None, the channel should be a global channel index.
         :param bool fd:
             If CAN-FD frames should be supported.
         :param int data_bitrate:
@@ -93,25 +94,28 @@ class VectorBus(BusABC):
         self.channel_masks = {}
         self.index_to_channel = {}
         for channel in self.channels:
-            hw_type = ctypes.c_uint(0)
-            hw_index = ctypes.c_uint(0)
-            hw_channel = ctypes.c_uint(0)
-            vxlapi.xlGetApplConfig(self._app_name, channel, hw_type, hw_index,
-                                   hw_channel, vxlapi.XL_BUS_TYPE_CAN)
-            LOG.debug('Channel index %d found', channel)
-            idx = vxlapi.xlGetChannelIndex(hw_type.value, hw_index.value,
-                                           hw_channel.value)
-            if idx < 0:
-                # Undocumented behavior! See issue #353.
-                # If hardware is unavailable, this function returns -1.
-                # Raise an exception as if the driver
-                # would have signalled XL_ERR_HW_NOT_PRESENT.
-                raise VectorError(vxlapi.XL_ERR_HW_NOT_PRESENT,
-                                  "XL_ERR_HW_NOT_PRESENT",
-                                  "xlGetChannelIndex")
+            if app_name:
+                # Get global channel index from application channel
+                hw_type = ctypes.c_uint(0)
+                hw_index = ctypes.c_uint(0)
+                hw_channel = ctypes.c_uint(0)
+                vxlapi.xlGetApplConfig(self._app_name, channel, hw_type, hw_index,
+                                       hw_channel, vxlapi.XL_BUS_TYPE_CAN)
+                LOG.debug('Channel index %d found', channel)
+                idx = vxlapi.xlGetChannelIndex(hw_type.value, hw_index.value,
+                                               hw_channel.value)
+                if idx < 0:
+                    # Undocumented behavior! See issue #353.
+                    # If hardware is unavailable, this function returns -1.
+                    # Raise an exception as if the driver
+                    # would have signalled XL_ERR_HW_NOT_PRESENT.
+                    raise VectorError(vxlapi.XL_ERR_HW_NOT_PRESENT,
+                                      "XL_ERR_HW_NOT_PRESENT",
+                                      "xlGetChannelIndex")
+            else:
+                # Channel already given as global channel
+                idx = channel
             mask = 1 << idx
-            LOG.debug('Channel %d, Type: %d, Mask: 0x%X',
-                      hw_channel.value, hw_type.value, mask)
             self.channel_masks[channel] = mask
             self.index_to_channel[idx] = channel
             self.mask |= mask
@@ -355,4 +359,26 @@ class VectorBus(BusABC):
         vxlapi.xlDeactivateChannel(self.port_handle, self.mask)
         vxlapi.xlActivateChannel(self.port_handle, self.mask,
                                      vxlapi.XL_BUS_TYPE_CAN, 0)
-  
+
+    @staticmethod
+    def _detect_available_configs():
+        configs = []
+        if vxlapi is None:
+            return configs
+        driver_config = vxlapi.XLdriverConfig()
+        try:
+            vxlapi.xlOpenDriver()
+            vxlapi.xlGetDriverConfig(driver_config)
+            vxlapi.xlCloseDriver()
+        except:
+            pass
+        LOG.info('Found %d channels', driver_config.channelCount)
+        for i in range(driver_config.channelCount):
+            channel_config = driver_config.channel[i]
+            LOG.info('Channel index %d: %s',
+                     channel_config.channelIndex,
+                     channel_config.name.decode('ascii'))
+            configs.append({'interface': 'vector',
+                            'app_name': None,
+                            'channel': channel_config.channelIndex})
+        return configs
