@@ -52,7 +52,7 @@ XL_CAN_RXMSG_FLAG_EF = 0x0200
 XL_CAN_STD = 1
 XL_CAN_EXT = 2
 
-XLuint64 = ctypes.c_ulonglong
+XLuint64 = ctypes.c_int64
 XLaccess = XLuint64
 XLhandle = ctypes.c_void_p
 
@@ -145,6 +145,55 @@ class XLcanFdConf(ctypes.Structure):
                 ('tseg1Dbr', ctypes.c_uint), ('tseg2Dbr', ctypes.c_uint),
                 ('reserved', ctypes.c_uint * 2)]
 
+class XLchannelConfig(ctypes.Structure):
+    _pack_ = 1
+    _fields_ = [
+        ('name', ctypes.c_char * 32),
+        ('hwType', ctypes.c_ubyte),
+        ('hwIndex', ctypes.c_ubyte),
+        ('hwChannel', ctypes.c_ubyte),
+        ('transceiverType', ctypes.c_ushort),
+        ('transceiverState', ctypes.c_ushort),
+        ('configError', ctypes.c_ushort),
+        ('channelIndex', ctypes.c_ubyte),
+        ('channelMask', XLuint64),
+        ('channelCapabilities', ctypes.c_uint),
+        ('channelBusCapabilities', ctypes.c_uint),
+        ('isOnBus', ctypes.c_ubyte),
+        ('connectedBusType', ctypes.c_uint),
+        ('busParams', ctypes.c_ubyte * 32),
+        ('_doNotUse', ctypes.c_uint),
+        ('driverVersion', ctypes.c_uint),
+        ('interfaceVersion', ctypes.c_uint),
+        ('raw_data', ctypes.c_uint * 10),
+        ('serialNumber', ctypes.c_uint),
+        ('articleNumber', ctypes.c_uint),
+        ('transceiverName', ctypes.c_char * 32),
+        ('specialCabFlags', ctypes.c_uint),
+        ('dominantTimeout', ctypes.c_uint),
+        ('dominantRecessiveDelay', ctypes.c_ubyte),
+        ('recessiveDominantDelay', ctypes.c_ubyte),
+        ('connectionInfo', ctypes.c_ubyte),
+        ('currentlyAvailableTimestamps', ctypes.c_ubyte),
+        ('minimalSupplyVoltage', ctypes.c_ushort),
+        ('maximalSupplyVoltage', ctypes.c_ushort),
+        ('maximalBaudrate', ctypes.c_uint),
+        ('fpgaCoreCapabilities', ctypes.c_ubyte),
+        ('specialDeviceStatus', ctypes.c_ubyte),
+        ('channelBusActiveCapabilities', ctypes.c_ushort),
+        ('breakOffset', ctypes.c_ushort),
+        ('delimiterOffset', ctypes.c_ushort),
+        ('reserved', ctypes.c_uint * 3)
+    ]
+
+class XLdriverConfig(ctypes.Structure):
+    _fields_ = [
+        ('dllVersion', ctypes.c_uint),
+        ('channelCount', ctypes.c_uint),
+        ('reserved', ctypes.c_uint * 10),
+        ('channel', XLchannelConfig * 64)
+    ]
+
 # driver status
 XLstatus = ctypes.c_short
 
@@ -158,6 +207,11 @@ def check_status(result, function, arguments):
         raise VectorError(result, xlGetErrorString(result).decode(), function.__name__)
     return result
 
+
+xlGetDriverConfig = _xlapi_dll.xlGetDriverConfig
+xlGetDriverConfig.argtypes = [ctypes.POINTER(XLdriverConfig)]
+xlGetDriverConfig.restype = XLstatus
+xlGetDriverConfig.errcheck = check_status
 
 xlOpenDriver = _xlapi_dll.xlOpenDriver
 xlOpenDriver.argtypes = []
