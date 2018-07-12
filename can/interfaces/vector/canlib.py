@@ -29,7 +29,7 @@ except ImportError:
 
 # Import Modules
 # ==============
-from can import BusABC, Message
+from can import BusABC, Message, CanError
 from can.util import len2dlc, dlc2len
 from .exceptions import VectorError
 
@@ -101,6 +101,14 @@ class VectorBus(BusABC):
             LOG.debug('Channel index %d found', channel)
             idx = vxlapi.xlGetChannelIndex(hw_type.value, hw_index.value,
                                            hw_channel.value)
+            if idx < 0:
+                # Undocumented behavior! See issue #353.
+                # If hardware is unavailable, this function returns -1.
+                # Raise an exception as if the driver
+                # would have signalled XL_ERR_HW_NOT_PRESENT.
+                raise VectorError(vxlapi.XL_ERR_HW_NOT_PRESENT,
+                                  "XL_ERR_HW_NOT_PRESENT",
+                                  "xlGetChannelIndex")
             mask = 1 << idx
             LOG.debug('Channel %d, Type: %d, Mask: 0x%X',
                       hw_channel.value, hw_type.value, mask)
@@ -177,8 +185,7 @@ class VectorBus(BusABC):
 
         self._is_filtered = False
         super(VectorBus, self).__init__(channel=channel, can_filters=can_filters,
-            poll_interval=0.01, receive_own_messages=False, bitrate=None,
-            rx_queue_size=256, app_name="CANalyzer", **config)
+            **config)
 
     def _apply_filters(self, filters):
         if filters:
