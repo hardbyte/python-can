@@ -279,6 +279,9 @@ class IXXATBus(BusABC):
         :param list can_filters:
             See :meth:`can.BusABC.set_filters`.
 
+        :param bool receive_own_messages:
+            Enable self-reception of sent messages.
+
         :param int UniqueHardwareId:
             UniqueHardwareId to connect (optional, will use the first found if not supplied)
 
@@ -294,6 +297,7 @@ class IXXATBus(BusABC):
         UniqueHardwareId = config.get('UniqueHardwareId', None)
         rxFifoSize = config.get('rxFifoSize', 16)
         txFifoSize = config.get('txFifoSize', 16)
+        self._receive_own_messages = config.get('receive_own_messages', False)
         # Usually comes as a string from the config file
         channel = int(channel)
 
@@ -485,6 +489,7 @@ class IXXATBus(BusABC):
         message.uMsgInfo.Bits.type = constants.CAN_MSGTYPE_DATA
         message.uMsgInfo.Bits.rtr = 1 if msg.is_remote_frame else 0
         message.uMsgInfo.Bits.ext = 1 if msg.id_type else 0
+        message.uMsgInfo.Bits.srr = 1 if self._receive_own_messages else 0
         message.dwMsgId = msg.arbitration_id
         if msg.dlc:
             message.uMsgInfo.Bits.dlc = msg.dlc
