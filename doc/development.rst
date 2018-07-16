@@ -54,7 +54,7 @@ Concrete implementations *have to* implement the following:
       the underlying bus and/or channel
 
 They *might* implement the following:
-    * :meth:`~can.BusABC.flush_tx_buffer` to allow discrading any
+    * :meth:`~can.BusABC.flush_tx_buffer` to allow discarding any
       messages yet to be sent
     * :meth:`~can.BusABC.shutdown` to override how the bus should
       shut down
