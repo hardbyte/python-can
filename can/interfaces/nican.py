@@ -284,7 +284,9 @@ class NicanBus(BusABC):
 
     def reset(self):
         """
-        Resets the CAN chip.
+        Resets network interface. Stops network interface, then resets the CAN
+        chip to clear the CAN error counters (clear error passive state).
+        Resetting includes clearing all entries from read and write queues.
         """
         nican.ncAction(self.handle, NC_OP_RESET, 0)
 
