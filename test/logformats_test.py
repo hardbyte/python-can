@@ -334,19 +334,17 @@ class TestSqliteDatabaseFormat(ReaderWriterTest):
 
         with can.SqliteWriter(filename) as first_listener:
             first_listener(generate_message(0x01))
-            first_listener.stop()
 
         with can.SqliteWriter(filename) as second_listener:
             second_listener(generate_message(0x02))
-            second_listener.stop()
 
         with sqlite3.connect(filename) as con:
             c = con.cursor()
 
-            c.execute("select COUNT() from messages")
+            c.execute("SELECT COUNT(*) FROM messages")
             self.assertEqual(2, c.fetchone()[0])
 
-            c.execute("select * from messages")
+            c.execute("SELECT * FROM messages")
             msg1 = c.fetchone()
             msg2 = c.fetchone()
 
