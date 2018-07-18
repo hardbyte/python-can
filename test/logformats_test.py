@@ -19,6 +19,7 @@ import unittest
 import tempfile
 import sqlite3
 import os
+from abc import abstractmethod, ABCMeta
 
 try:
     # Python 3
@@ -43,10 +44,21 @@ class ReaderWriterTest(unittest.TestCase):
 
     __test__ = False
 
-    def __init__(self, writer_constructor, reader_constructor,
-                 check_remote_frames=True, check_error_frames=True, check_comments=False,
-                 test_append=False, round_timestamps=False,
-                 *args, **kwargs):
+    __metaclass__ = ABCMeta
+
+    def __init__(self, *args, **kwargs):
+        super(ReaderWriterTest, self).__init__(*args, **kwargs)
+        self._setup_instance()
+
+    @abstractmethod
+    def _setup_instance(self):
+        """Hook for subclasses."""
+        raise NotImplementedError()
+
+    def _setup_instance_helper(self,
+            writer_constructor, reader_constructor,
+            check_remote_frames=True, check_error_frames=True, check_comments=False,
+            test_append=False, round_timestamps=False):
         """
         :param Callable writer_constructor: the constructor of the writer class
         :param Callable reader_constructor: the constructor of the reader class
@@ -62,8 +74,6 @@ class ReaderWriterTest(unittest.TestCase):
                                       before comparing the read messages/events
 
         """
-        super(ReaderWriterTest, self).__init__(*args, **kwargs)
-
         # get all test messages
         self.original_messages = TEST_MESSAGES_BASE
         if check_remote_frames:
@@ -235,11 +245,10 @@ class TestAscFileFormat(ReaderWriterTest):
 
     __test__ = True
 
-    def __init__(self, *args, **kwargs):
-        super(TestAscFileFormat, self).__init__(
+    def _setup_instance(self):
+        super(TestAscFileFormat, self)._setup_instance_helper(
             can.ASCWriter, can.ASCReader,
-            check_comments=True, round_timestamps=True,
-            *args, **kwargs
+            check_comments=True, round_timestamps=True
         )
 
 
@@ -248,11 +257,10 @@ class TestBlfFileFormat(ReaderWriterTest):
 
     __test__ = True
 
-    def __init__(self, *args, **kwargs):
-        super(TestBlfFileFormat, self).__init__(
+    def _setup_instance(self):
+        super(TestBlfFileFormat, self)._setup_instance_helper(
             can.BLFWriter, can.BLFReader,
-            check_comments=False,
-            *args, **kwargs
+            check_comments=False
         )
 
     def test_read_known_file(self):
@@ -279,11 +287,10 @@ class TestCanutilsFileFormat(ReaderWriterTest):
 
     __test__ = True
 
-    def __init__(self, *args, **kwargs):
-        super(TestCanutilsFileFormat, self).__init__(
+    def _setup_instance(self):
+        super(TestCanutilsFileFormat, self)._setup_instance_helper(
             can.CanutilsLogWriter, can.CanutilsLogReader,
-            test_append=True, check_comments=False,
-            *args, **kwargs
+            test_append=True, check_comments=False
         )
 
 
@@ -292,11 +299,10 @@ class TestCsvFileFormat(ReaderWriterTest):
 
     __test__ = True
 
-    def __init__(self, *args, **kwargs):
-        super(TestCsvFileFormat, self).__init__(
+    def _setup_instance(self):
+        super(TestCsvFileFormat, self)._setup_instance_helper(
             can.CSVWriter, can.CSVReader,
-            test_append=True, check_comments=False,
-            *args, **kwargs
+            test_append=True, check_comments=False
         )
 
 
@@ -305,11 +311,10 @@ class TestSqliteDatabaseFormat(ReaderWriterTest):
 
     __test__ = True
 
-    def __init__(self, *args, **kwargs):
-        super(TestSqliteDatabaseFormat, self).__init__(
+    def _setup_instance(self):
+        super(TestSqliteDatabaseFormat, self)._setup_instance_helper(
             can.SqliteWriter, can.SqliteReader,
-            test_append=True, check_comments=False,
-            *args, **kwargs
+            test_append=True, check_comments=False
         )
 
     def test_writes_to_same_file(self):
@@ -342,12 +347,12 @@ class TestPrinter(unittest.TestCase):
 
     messages = TEST_MESSAGES_BASE + TEST_MESSAGES_REMOTE_FRAMES + TEST_MESSAGES_ERROR_FRAMES
 
-    def test_not_crashes_stdout(self):
+    def test_not_crashes_with_stdout(self):
         with can.Printer() as printer:
             for message in self.messages:
                 printer(message)
 
-    def test_not_crashed_file(self):
+    def test_not_crashes_with_file(self):
         with tempfile.NamedTemporaryFile('w', delete=False) as temp_file:
             with can.Printer(temp_file) as printer:
                 for message in self.messages:
