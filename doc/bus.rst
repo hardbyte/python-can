@@ -8,13 +8,20 @@ The bus provides a wrapper around a physical or virtual CAN Bus.
 
 A thread safe bus wrapper is also available, see `Thread safe bus`_.
 
+Autoconfig Bus
+''''''''''''''
+
+.. autoclass:: can.Bus
+    :members:
+    :undoc-members:
+
 
 API
-''''
+'''
 
 .. autoclass:: can.BusABC
     :members:
-    :special-members: __iter__
+    :undoc-members:
 
 
 Transmitting
@@ -60,11 +67,3 @@ It can be used exactly like the normal :class:`~can.BusABC`:
 
 .. autoclass:: can.ThreadSafeBus
     :members:
-
-
-Autoconfig Bus
---------------
-
-.. autoclass:: can.interface.Bus
-    :members:
-    :special-members: __iter__

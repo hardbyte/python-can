@@ -83,18 +83,10 @@ They *might* implement the following:
 This is the entire ABC bus class with all internal methods:
 
 .. autoclass:: can.BusABC
-    :members:
-    :undoc-members:
     :private-members:
     :special-members:
 
-Concrete instances are created by this class:
-
-.. autoclass:: can.Bus
-    :members:
-    :undoc-members:
-    :private-members:
-    :special-members:
+Concrete instances are created by :class:`can.Bus`.
 
 
 Code Structure
