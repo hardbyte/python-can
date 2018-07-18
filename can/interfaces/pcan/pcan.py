@@ -77,6 +77,7 @@ class PcanBus(BusABC):
 
         :param str channel:
             The can interface name. An example would be 'PCAN_USBBUS1'
+            Default is 'PCAN_USBBUS1'
 
         :param can.bus.BusState state:
             BusState of the channel.
@@ -88,9 +89,11 @@ class PcanBus(BusABC):
 
         """
         if not channel:
-            raise ArgumentError("Must specify a PCAN channel")
+            channel = 'PCAN_USBBUS1'
         else:
-            self.channel_info = channel
+            channel = channel
+
+        self.channel_info = channel
 
         bitrate = kwargs.get('bitrate', 500000)
         pcan_bitrate = pcan_bitrate_objs.get(bitrate, PCAN_BAUD_500K)
