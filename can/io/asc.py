@@ -7,13 +7,15 @@ Contains handling of ASC logging files.
 Example .asc file: https://bitbucket.org/tobylorenz/vector_asc/src/47556e1a6d32c859224ca62d075e1efcc67fa690/src/Vector/ASC/tests/unittests/data/CAN_Log_Trigger_3_2.asc?at=master&fileviewer=file-view-default
 """
 
+from __future__ import absolute_import
+
 from datetime import datetime
 import time
 import logging
 
-from can.listener import Listener
-from can.message import Message
-from can.util import channel2int
+from ..message import Message
+from ..listener import Listener
+from ..util import channel2int
 
 CAN_MSG_EXT = 0x80000000
 CAN_ID_MASK = 0x1FFFFFFF
