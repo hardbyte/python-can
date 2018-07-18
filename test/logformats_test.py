@@ -321,11 +321,11 @@ class TestSqliteDatabaseFormat(ReaderWriterTest):
             test_append=True, check_comments=False
         )
 
-    @unittest.SkipTest("not implemented")
+    @unittest.skip("not implemented")
     def test_file_like_explicit_stop(self):
         pass
 
-    @unittest.SkipTest("not implemented")
+    @unittest.skip("not implemented")
     def test_file_like_context_manager(self):
         pass
 
