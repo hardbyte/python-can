@@ -24,6 +24,8 @@ BusState = namedtuple('BusState', 'ACTIVE, PASSIVE, ERROR')
 class BusABC(object):
     """The CAN Bus Abstract Base Class that serves as the basis
     for all concrete interfaces.
+
+    This class may be used as an iterator over the received messages.
     """
 
     #: a string describing the underlying bus and/or channel
