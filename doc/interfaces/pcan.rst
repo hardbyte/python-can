@@ -7,7 +7,7 @@ Interface to `Peak-System <https://www.peak-system.com/?&L=1/>`__'s PCAN-Basic A
 
 Windows driver: https://www.peak-system.com/Downloads.76.0.html?&L=1
 
-Linux driver: https://www.peak-system.com/fileadmin/media/linux/index.htm
+Linux driver: https://www.peak-system.com/fileadmin/media/linux/index.htm#download and https://www.peak-system.com/Downloads.76.0.html?&L=1 (PCAN-Basic API (Linux))
 
 Mac driver: http://www.mac-can.com
 
@@ -42,6 +42,19 @@ Valid ``channel`` values:
     PCAN_LANBUSx
 
 Where ``x`` should be replaced with the desired channel number starting at 1.
+
+Linux installation
+------------
+
+Kernels >= 3.4 supports the PCAN adapters natively via :doc:`/interfaces/socketcan`, so there is no need to install any drivers. The CAN interface can be brought like so:
+
+::
+
+    sudo modprobe peak_usb
+    sudo modprobe peak_pci
+    sudo ip link set can0 up type can bitrate 500000
+
+And then accessed using the :doc:`/interfaces/socketcan` interface.
 
 Bus
 ---
