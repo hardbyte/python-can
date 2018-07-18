@@ -105,7 +105,8 @@ class ReaderWriterTest(unittest.TestCase):
         print("writing all messages/comments")
         writer = self.writer_constructor(filename)
         self._write_all(writer)
-        os.fsync(writer.file.fileno())
+        if hasattr(writer.file, 'fileno'):
+            os.fsync(writer.file.fileno())
         writer.stop()
 
         print("reading all messages")
@@ -130,7 +131,8 @@ class ReaderWriterTest(unittest.TestCase):
         print("writing all messages/comments")
         with self.writer_constructor(filename) as writer:
             self._write_all(writer)
-            os.fsync(writer.file.fileno())
+            if hasattr(writer.file, 'fileno'):
+                os.fsync(writer.file.fileno())
 
         # read all written messages
         print("reading all messages")
@@ -168,7 +170,8 @@ class ReaderWriterTest(unittest.TestCase):
         with self.writer_constructor(filename) as writer:
             for message in first_part:
                 writer(message)
-            os.fsync(writer.file.fileno())
+            if hasattr(writer.file, 'fileno'):
+                os.fsync(writer.file.fileno())
 
         # use append mode for second half
         try:
@@ -183,7 +186,8 @@ class ReaderWriterTest(unittest.TestCase):
         with writer:
             for message in second_part:
                 writer(message)
-            os.fsync(writer.file.fileno())
+            if hasattr(writer.file, 'fileno'):
+                os.fsync(writer.file.fileno())
         with self.reader_constructor(filename) as reader:
             read_messages = list(reader)
 
@@ -316,6 +320,14 @@ class TestSqliteDatabaseFormat(ReaderWriterTest):
             can.SqliteWriter, can.SqliteReader,
             test_append=True, check_comments=False
         )
+
+    @unittest.SkipTest("not implemented")
+    def test_file_like_explicit_stop(self):
+        pass
+
+    @unittest.SkipTest("not implemented")
+    def test_file_like_context_manager(self):
+        pass
 
     def test_writes_to_same_file(self):
         filename = self._get_temp_filename()
