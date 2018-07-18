@@ -68,7 +68,7 @@ pcan_bitrate_objs = {1000000 : PCAN_BAUD_1M,
 
 class PcanBus(BusABC):
 
-    def __init__(self, channel, state=BusState.ACTIVE, *args, **kwargs):
+    def __init__(self, channel='PCAN_USBBUS1', state=BusState.ACTIVE, bitrate=500000, *args, **kwargs):
         """A PCAN USB interface to CAN.
 
         On top of the usual :class:`~can.Bus` methods provided,
@@ -88,14 +88,7 @@ class PcanBus(BusABC):
             Default is 500 kbit/s.
 
         """
-        if not channel:
-            channel = 'PCAN_USBBUS1'
-        else:
-            channel = channel
-
         self.channel_info = channel
-
-        bitrate = kwargs.get('bitrate', 500000)
         pcan_bitrate = pcan_bitrate_objs.get(bitrate, PCAN_BAUD_500K)
 
         hwtype = PCAN_TYPE_ISA
@@ -122,7 +115,7 @@ class PcanBus(BusABC):
             if result != PCAN_ERROR_OK:
                 raise PcanError(self._get_formatted_error(result))
 
-        super(PcanBus, self).__init__(channel=channel, *args, **kwargs)
+        super(PcanBus, self).__init__(channel=channel, state=state, bitrate=bitrate, *args, **kwargs)
 
     def _get_formatted_error(self, error):
         """
