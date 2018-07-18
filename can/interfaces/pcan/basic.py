@@ -292,7 +292,7 @@ class TPCANMsg (Structure):
     """
     Represents a PCAN message
     """
-    _fields_ = [ ("ID",      c_uint),           # 11/29-bit message identifier
+    _fields_ = [ ("ID",      c_ulong),          # 11/29-bit message identifier
                  ("MSGTYPE", TPCANMessageType), # Type of the message
                  ("LEN",     c_ubyte),          # Data Length Code of the message (0..8)
                  ("DATA",    c_ubyte * 8) ]     # Data of the message (DATA[0]..DATA[7])
@@ -312,7 +312,7 @@ class TPCANMsgFD (Structure):
     """
     Represents a PCAN message
     """
-    _fields_ = [ ("ID",      c_uint),           # 11/29-bit message identifier
+    _fields_ = [ ("ID",      c_ulong),          # 11/29-bit message identifier
                  ("MSGTYPE", TPCANMessageType), # Type of the message
                  ("DLC",     c_ubyte),          # Data Length Code of the message (0..15)
                  ("DATA",    c_ubyte * 64) ]    # Data of the message (DATA[0]..DATA[63])
@@ -329,6 +329,8 @@ class PCANBasic:
         # Loads the PCANBasic.dll
         if platform.system() == 'Windows':
             self.__m_dllBasic = windll.LoadLibrary("PCANBasic")
+        elif platform.system() == 'Darwin':
+            self.__m_dllBasic = cdll.LoadLibrary('libPCBUSB.dylib')
         else:
             self.__m_dllBasic = cdll.LoadLibrary("libpcanbasic.so")
         if self.__m_dllBasic == None:
