@@ -121,7 +121,7 @@ class BusABC(object):
         :param float timeout: seconds to wait for a message,
                               see :meth:`~can.BusABC.send`
 
-        :rtype: tuple[can.Message, bool] or tuple[NoneType, bool]
+        :rtype: tuple[can.Message, bool] or tuple[None, bool]
         :return:
             1.  a message that was read or None on timeout
             2.  a bool that is True if message filtering has already
