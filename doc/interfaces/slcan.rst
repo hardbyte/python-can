@@ -11,7 +11,7 @@ Usage: use ``port[@baurate]`` to open the device.
 For example use ``/dev/ttyUSB0@115200`` or ``COM4@9600``
 
 .. note:
-    An Arduino-Interface could easyly be build wit this:
+    An Arduino-Interface could easily be build with this:
     https://github.com/latonita/arduino-canbus-monitor
 
 
