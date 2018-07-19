@@ -9,7 +9,7 @@ is left intact for version 2.0 to 2.3 to aide with migration.
 
 WARNING:
 This module is deprecated an will get removed in version 2.4.
-Please use `import can` instead.
+Please use ``import can`` instead.
 """
 
 from __future__ import absolute_import
