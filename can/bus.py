@@ -24,6 +24,8 @@ BusState = namedtuple('BusState', 'ACTIVE, PASSIVE, ERROR')
 class BusABC(object):
     """The CAN Bus Abstract Base Class that serves as the basis
     for all concrete interfaces.
+
+    This class may be used as an iterator over the received messages.
     """
 
     #: a string describing the underlying bus and/or channel
@@ -56,10 +58,11 @@ class BusABC(object):
     def recv(self, timeout=None):
         """Block waiting for a message from the Bus.
 
-        :param float timeout:
+        :type timeout: float or None
+        :param timeout:
             seconds to wait for a message or None to wait indefinitely
 
-        :rtype: can.Message or NoneType
+        :rtype: can.Message or None
         :return:
             None on timeout or a :class:`can.Message` object.
         :raises can.CanError:
@@ -120,7 +123,7 @@ class BusABC(object):
         :param float timeout: seconds to wait for a message,
                               see :meth:`~can.BusABC.send`
 
-        :rtype: tuple[can.Message, bool] or tuple[NoneType, bool]
+        :rtype: tuple[can.Message, bool] or tuple[None, bool]
         :return:
             1.  a message that was read or None on timeout
             2.  a bool that is True if message filtering has already
@@ -142,14 +145,17 @@ class BusABC(object):
         Override this method to enable the transmit path.
 
         :param can.Message msg: A message object.
-        :param float timeout:
-            If > 0, wait up to this many seconds for message to be ACK:ed or
+        
+        :type timeout: float or None
+        :param timeout:
+            If > 0, wait up to this many seconds for message to be ACK'ed or
             for transmit queue to be ready depending on driver implementation.
             If timeout is exceeded, an exception will be raised.
             Might not be supported by all interfaces.
+            None blocks indefinitly.
 
         :raises can.CanError:
-            if the message could not be written.
+            if the message could not be sent
         """
         raise NotImplementedError("Trying to write to a readonly bus?")
 

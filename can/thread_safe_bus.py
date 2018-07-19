@@ -16,19 +16,23 @@ except ImportError as exc:
 from .interface import Bus
 
 
-class NullContextManager(object):
-    """
-    A context manager that does nothing at all.
-    """
+try:
+    from contextlib import nullcontext as NullContextManager
 
-    def __init__(self, resource=None):
-        self.resource = resource
+except ImportError:
+    class NullContextManager(object):
+        """A context manager that does nothing at all.
+        A fallback for Python 3.7's :class:`contextlib.nullcontext` manager.
+        """
 
-    def __enter__(self):
-        return self.resource
+        def __init__(self, enter_result=None):
+            self.enter_result = enter_result
 
-    def __exit__(self, *args):
-        pass
+        def __enter__(self):
+            return self.enter_result
+
+        def __exit__(self, *args):
+            pass
 
 
 class ThreadSafeBus(ObjectProxy):

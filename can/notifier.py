@@ -14,11 +14,11 @@ logger = logging.getLogger('can.Notifier')
 
 class Notifier(object):
 
-    def __init__(self, bus, listeners, timeout=1):
+    def __init__(self, bus, listeners, timeout=1.0):
         """Manages the distribution of **Messages** from a given bus/buses to a
         list of listeners.
 
-        :param can.BusABC bus: The :ref:`bus` or a list of buses to listen to.
+        :param can.BusABC bus: A :ref:`bus` or a list of buses to listen to.
         :param list listeners: An iterable of :class:`~can.Listener`
         :param float timeout: An optional maximum number of seconds to wait for any message.
         """

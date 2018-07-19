@@ -46,7 +46,7 @@ class slcanBus(BusABC):
 
     def __init__(self, channel, ttyBaudrate=115200, timeout=1, bitrate=None, **kwargs):
         """
-        :param string channel:
+        :param str channel:
             port of underlying serial or usb device (e.g. /dev/ttyUSB0, COM8, ...)
             Must not be empty.
         :param int ttyBaudrate:
