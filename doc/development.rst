@@ -42,8 +42,9 @@ These steps are a guideline on how to add a new backend to python-can.
   an entry in ``doc/interface/*``.
 - Add tests in ``test/*`` where appropiate.
 
+
 About the ``BusABC`` class
-==========================
+--------------------------
 
 Concrete implementations *have to* implement the following:
     * :meth:`~can.BusABC.send` to send individual messages
@@ -53,7 +54,7 @@ Concrete implementations *have to* implement the following:
       the underlying bus and/or channel
 
 They *might* implement the following:
-    * :meth:`~can.BusABC.flush_tx_buffer` to allow discrading any
+    * :meth:`~can.BusABC.flush_tx_buffer` to allow discarding any
       messages yet to be sent
     * :meth:`~can.BusABC.shutdown` to override how the bus should
       shut down

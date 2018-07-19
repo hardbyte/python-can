@@ -25,7 +25,7 @@ os:
 
 # Linux setup
 dist: trusty
-sudo: false
+sudo: required
 
 matrix:
   # see "os: ..." above

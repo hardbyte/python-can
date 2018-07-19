@@ -3,8 +3,8 @@
 Bus
 ---
 
-The :class:`can.BusABC` class, as the name suggests, provides an abstraction of a CAN bus.
-The bus provides an abstract wrapper around a physical or virtual CAN Bus.
+The :class:`~can.BusABC` class, as the name suggests, provides an abstraction of a CAN bus.
+The bus provides a wrapper around a physical or virtual CAN Bus.
 
 A thread safe bus wrapper is also available, see `Thread safe bus`_.
 
@@ -61,10 +61,10 @@ It can be used exactly like the normal :class:`~can.BusABC`:
 .. autoclass:: can.ThreadSafeBus
     :members:
 
+
 Autoconfig Bus
 --------------
 
 .. autoclass:: can.interface.Bus
     :members:
     :special-members: __iter__
-

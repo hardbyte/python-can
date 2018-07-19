@@ -20,7 +20,10 @@ from .broadcastmanager import CyclicSendTaskABC, MultiRateCyclicSendTaskABC
 from .util import load_config
 from .interfaces import BACKENDS
 
-from can.interfaces.socketcan.socketcan import CyclicSendTask, MultiRateCyclicSendTask
+if 'linux' in sys.platform:
+    # Deprecated and undocumented access to SocketCAN cyclic tasks
+    # Will be removed in version 3.0
+    from can.interfaces.socketcan import CyclicSendTask, MultiRateCyclicSendTask
 
 # Required by "detect_available_configs" for argument interpretation
 if sys.version_info.major > 2:
@@ -99,7 +102,12 @@ class Bus(BusABC):
         # figure out the rest of the configuration; this might raise an error
         if channel is not None:
             config['channel'] = channel
-        config = load_config(config=config)
+        if 'context' in config:
+            context = config['context']
+            del config['context']
+        else:
+            context = None
+        config = load_config(config=config, context=context)
 
         # resolve the bus class to use for that interface
         cls = _get_class_for_interface(config['interface'])

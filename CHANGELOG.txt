@@ -1,3 +1,21 @@
+Version 2.2.1 (2018-07-12)
+=====
+
+* Fix errors and warnings when importing library on Windows
+* Fix Vector backend raising ValueError when hardware is not connected
+
+Version 2.2.0 (2018-06-30)
+=====
+
+* Fallback message filtering implemented in Python for interfaces that don't offer better accelerated mechanism.
+* SocketCAN interfaces have been merged (Now use `socketcan` instead of either `socketcan_native` and `socketcan_ctypes`),
+  this is now completely transparent for the library user.
+* automatic detection of available configs/channels in supported interfaces.
+* Added synchronized (thread-safe) Bus variant.
+* context manager support for the Bus class.
+* Dropped support for Python 3.3 (officially reached end-of-life in Sept. 2017)
+* Deprecated the old `CAN` module, please use the newer `can` entry point (will be removed in version 2.4)
+
 Version 2.1.0 (2018-02-17)
 =====
 

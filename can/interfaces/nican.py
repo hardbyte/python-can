@@ -282,9 +282,11 @@ class NicanBus(BusABC):
         #nican.ncWaitForState(
         #    self.handle, NC_ST_WRITE_SUCCESS, int(timeout * 1000), ctypes.byref(state))
 
-    def flush_tx_buffer(self):
+    def reset(self):
         """
-        Resets the CAN chip which includes clearing receive and transmit queues.
+        Resets network interface. Stops network interface, then resets the CAN
+        chip to clear the CAN error counters (clear error passive state).
+        Resetting includes clearing all entries from read and write queues.
         """
         nican.ncAction(self.handle, NC_OP_RESET, 0)
 
