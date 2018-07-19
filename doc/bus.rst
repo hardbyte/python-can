@@ -5,6 +5,14 @@ Bus
 
 The :class:`~can.BusABC` class, as the name suggests, provides an abstraction of a CAN bus.
 The bus provides a wrapper around a physical or virtual CAN Bus.
+An interface specific instance of the :class:`~can.BusABC` is created by the :class:`~can.Bus`
+class, for example::
+
+    vector_bus = can.Bus(interface='vector', ...)
+
+That bus is then able to handle the interface specific software/hardware interactions
+and implements the :class:`~can.BusABC` API. It itself is an instance of ``VectorBus``,
+but these specififc buses should not be instantiated directly.
 
 A thread safe bus wrapper is also available, see `Thread safe bus`_.
 
