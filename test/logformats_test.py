@@ -329,28 +329,6 @@ class TestSqliteDatabaseFormat(ReaderWriterTest):
     def test_file_like_context_manager(self):
         pass
 
-    def test_writes_to_same_file(self):
-        filename = self._get_temp_filename()
-
-        with can.SqliteWriter(filename) as first_listener:
-            first_listener(generate_message(0x01))
-
-        with can.SqliteWriter(filename) as second_listener:
-            second_listener(generate_message(0x02))
-
-        with sqlite3.connect(filename) as con:
-            c = con.cursor()
-
-            c.execute("SELECT COUNT(*) FROM messages")
-            self.assertEqual(2, c.fetchone()[0])
-
-            c.execute("SELECT * FROM messages")
-            msg1 = c.fetchone()
-            msg2 = c.fetchone()
-
-        self.assertEqual(msg1[1], 0x01)
-        self.assertEqual(msg2[1], 0x02)
-
 
 class TestPrinter(unittest.TestCase):
     """Tests that can.Printer does not crash"""
