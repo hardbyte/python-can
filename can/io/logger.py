@@ -33,8 +33,9 @@ class Logger(BaseIOHandler, Listener):
       * .log :class:`can.CanutilsLogWriter`
       * other: :class:`can.Printer`
 
-    Note this class itself is just a dispatcher, an object that inherits
-    from Listener will be created when instantiating this class.
+    .. note::
+        This class itself is just a dispatcher, and any positional an keyword
+        arguments are passed on to the returned instance.
     """
 
     @staticmethod

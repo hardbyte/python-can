@@ -35,13 +35,16 @@ class LogReader(BaseIOHandler):
 
     Exposes a simple iterator interface, to use simply:
 
-        >>> for m in LogReader(my_file):
-        ...     print(m)
+        >>> for msg in LogReader("some/path/to/my_file.log"):
+        ...     print(msg)
 
     .. note::
-        There are no time delays, if you want to reproduce
-        the measured delays between messages look at the
-        :class:`can.MessageSync` class.
+        There are no time delays, if you want to reproduce the measured
+        delays between messages look at the :class:`can.MessageSync` class.
+
+    .. note::
+        This class itself is just a dispatcher, and any positional an keyword
+        arguments are passed on to the returned instance.
     """
 
     @staticmethod
