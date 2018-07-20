@@ -21,10 +21,6 @@ from .generic import BaseIOHandler
 
 log = logging.getLogger('can.io.sqlite')
 
-# TODO comment on this
-if sys.version_info > (3,):
-    buffer = memoryview
-
 
 class SqliteReader(BaseIOHandler):
     """
@@ -57,16 +53,20 @@ class SqliteReader(BaseIOHandler):
 
     def __iter__(self):
         for frame_data in self._cursor.execute("SELECT * FROM {}".format(self.table_name)):
-            timestamp, can_id, is_extended, is_remote, is_error, dlc, data = frame_data
-            yield Message(
-                timestamp=timestamp,
-                is_remote_frame=bool(is_remote),
-                extended_id=bool(is_extended),
-                is_error_frame=bool(is_error),
-                arbitration_id=can_id,
-                dlc=dlc,
-                data=data
-            )
+            yield SqliteReader._assemble_message(frame_data)
+
+    @staticmethod 
+    def _assemble_message(frame_data):
+        timestamp, can_id, is_extended, is_remote, is_error, dlc, data = frame_data
+        return Message(
+            timestamp=timestamp,
+            is_remote_frame=bool(is_remote),
+            extended_id=bool(is_extended),
+            is_error_frame=bool(is_error),
+            arbitration_id=can_id,
+            dlc=dlc,
+            data=data
+        )
 
     def __len__(self):
         # this might not run in constant time
@@ -75,9 +75,11 @@ class SqliteReader(BaseIOHandler):
 
     def read_all(self):
         """Fetches all messages in the database.
+
+        :rtype: Generator[can.Message]
         """
-        result = self._cursor.execute("SELECT * FROM {}".format(self.table_name))
-        return result.fetchall()
+        result = self._cursor.execute("SELECT * FROM {}".format(self.table_name)).fetchall()
+        return (SqliteReader._assemble_message(frame) for frame in result)
 
     def stop(self):
         """Closes the connection to the database.
@@ -194,7 +196,7 @@ class SqliteWriter(BaseIOHandler, BufferedReader):
                         msg.is_remote_frame,
                         msg.is_error_frame,
                         msg.dlc,
-                        buffer(msg.data)
+                        memoryview(msg.data)
                     ))
 
                     if time.time() - self.last_write > self.MAX_TIME_BETWEEN_WRITES or \
