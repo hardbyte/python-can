@@ -1,25 +1,21 @@
-Socketcan
+SocketCAN
 =========
 
-There are two implementations of socketcan backends. One written with :mod:`ctypes` to be compatible
-with Python 2 and 3, and one written for future versions of Python3 which feature native support.
+The full documentation for socketcan can be found in the kernel docs at
+`networking/can.txt <https://www.kernel.org/doc/Documentation/networking/can.txt>`_.
 
 
-.. toctree::
-    :maxdepth: 2
+.. note::
 
-    socketcan_ctypes
-    socketcan_native
+    Versions before 2.2 had two different implementations named
+    ``socketcan_ctypes`` and ``socketcan_native``. These are now
+    deprecated and the aliases to ``socketcan`` will be removed in
+    version 3.0. Future 2.x release may raise a DeprecationWarning.
 
-
-Unless you're running Python3.3 or lower the recommended backend is :doc:`socketcan_native <socketcan_native>`.
-For Python2.7 and Python3 <3.4, the available backend is :doc:`socketcan_ctypes <socketcan_ctypes>`.
 
 Socketcan Quickstart
 --------------------
 
-The full documentation for socketcan can be found in the kernel docs at
-`networking/can.txt <https://www.kernel.org/doc/Documentation/networking/can.txt>`_.
 The CAN network driver provides a generic
 interface to setup, configure and monitor CAN devices. To configure
 bit-timing parameters use the program ``ip``.
@@ -124,7 +120,7 @@ To spam a bus:
     import time
     import can
 
-    bustype = 'socketcan_native'
+    bustype = 'socketcan'
     channel = 'vcan0'
 
     def producer(id):
@@ -162,7 +158,7 @@ function:
     import can
 
     can_interface = 'vcan0'
-    bus = can.interface.Bus(can_interface, bustype='socketcan_native')
+    bus = can.interface.Bus(can_interface, bustype='socketcan')
     message = bus.recv()
 
 By default, this performs a blocking read, which means ``bus.recv()`` won't
@@ -179,3 +175,46 @@ blocking read with a timeout like this:
 If you set the timeout to ``0.0``, the read will be executed as non-blocking,
 which means ``bus.recv(0.0)`` will return immediately, either with a ``Message``
 object or ``None``, depending on whether data was available on the socket.
+
+Filtering
+---------
+
+The implementation features efficient filtering of can_id's. That filtering
+occurs in the kernel and is much much more efficient than filtering messages
+in Python.
+
+Broadcast Manager
+-----------------
+
+The ``socketcan`` interface implements thin wrappers to the linux `broadcast manager`
+socket api. This allows the cyclic transmission of CAN messages at given intervals.
+The overhead for periodic message sending is extremely low as all the heavy lifting occurs
+within the linux kernel.
+
+send_periodic()
+~~~~~~~~~~~~~~~
+
+An example that uses the send_periodic is included in ``python-can/examples/cyclic.py``
+
+The object returned can be used to halt, alter or cancel the periodic message task.
+
+.. autoclass:: can.interfaces.socketcan.CyclicSendTask
+
+
+Bus
+---
+
+.. autoclass:: can.interfaces.socketcan.SocketcanBus
+   
+   .. method:: recv(timeout=None)
+
+      Block waiting for a message from the Bus.
+
+      :param float timeout:
+          seconds to wait for a message or None to wait indefinitely
+
+      :rtype: can.Message or None
+      :return:
+          None on timeout or a :class:`can.Message` object.
+      :raises can.CanError:
+          if an error occurred while reading

@@ -10,18 +10,16 @@ The main entry point to these classes should be through
 
 import abc
 import logging
-import sched
 import threading
 import time
 
-import can
 
 log = logging.getLogger('can.bcm')
 
 
 class CyclicTask(object):
     """
-    Abstract Base for all Cyclic Tasks
+    Abstract Base for all cyclic tasks.
     """
 
     @abc.abstractmethod
@@ -37,7 +35,7 @@ class CyclicSendTaskABC(CyclicTask):
 
     def __init__(self, message, period):
         """
-        :param message: The :class:`can.Message` to be sent periodically.
+        :param can.Message message: The message to be sent periodically.
         :param float period: The rate in seconds at which to send the message.
         """
         self.message = message
@@ -52,7 +50,7 @@ class LimitedDurationCyclicSendTaskABC(CyclicSendTaskABC):
     def __init__(self, message, period, duration):
         """Message send task with a defined duration and period.
 
-        :param message: The :class:`can.Message` to be sent periodically.
+        :param can.Message message: The message to be sent periodically.
         :param float period: The rate in seconds at which to send the message.
         :param float duration:
             The duration to keep sending this message at given rate.
@@ -77,19 +75,28 @@ class ModifiableCyclicTaskABC(CyclicSendTaskABC):
         """Update the contents of this periodically sent message without altering
         the timing.
 
-        :param message: The :class:`~can.Message` with new :attr:`Message.data`.
+        :param can.Message message:
+          The message with the new :attr:`can.Message.data`.
+          Note: The arbitration ID cannot be changed.
         """
         self.message = message
 
 
 class MultiRateCyclicSendTaskABC(CyclicSendTaskABC):
     """Exposes more of the full power of the TX_SETUP opcode.
-
-    Transmits a message `count` times at `initial_period` then
-    continues to transmit message at `subsequent_period`.
     """
 
     def __init__(self, channel, message, count, initial_period, subsequent_period):
+        """
+        Transmits a message `count` times at `initial_period` then continues to
+        transmit message at `subsequent_period`.
+
+        :param can.interface.Bus channel:
+        :param can.Message message:
+        :param int count:
+        :param float initial_period:
+        :param float subsequent_period:
+        """
         super(MultiRateCyclicSendTaskABC, self).__init__(channel, message, subsequent_period)
 
 
@@ -137,8 +144,13 @@ class ThreadBasedCyclicSendTask(ModifiableCyclicTaskABC,
 
 def send_periodic(bus, message, period, *args, **kwargs):
     """
-    Send a message every `period` seconds on the given channel.
+    Send a :class:`~can.Message` every `period` seconds on the given bus.
+
+    :param can.BusABC bus: A CAN bus which supports sending.
+    :param can.Message message: Message to send periodically.
+    :param float period: The minimum time between sending messages.
+    :return: A started task instance
     """
-    log.warn("The method `can.send_periodic` is deprecated and will "
-             "be removed in version 2.3. Please use `can.Bus.send_periodic` instead.")
+    log.warning("The function `can.send_periodic` is deprecated and will " +
+                "be removed in version 2.3. Please use `can.Bus.send_periodic` instead.")
     return bus.send_periodic(message, period, *args, **kwargs)

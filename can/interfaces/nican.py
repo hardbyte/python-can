@@ -130,8 +130,7 @@ class NicanBus(BusABC):
 
     """
 
-    def __init__(self, channel, can_filters=None, bitrate=None, log_errors=True,
-                 **kwargs):
+    def __init__(self, channel, can_filters=None, bitrate=None, log_errors=True, **kwargs):
         """
         :param str channel:
             Name of the object to open (e.g. 'CAN0')
@@ -155,6 +154,7 @@ class NicanBus(BusABC):
             raise ImportError("The NI-CAN driver could not be loaded. "
                               "Check that you are using 32-bit Python on Windows.")
 
+        self.channel = channel
         self.channel_info = "NI-CAN: " + channel
         if not isinstance(channel, bytes):
             channel = channel.encode()
@@ -243,6 +243,7 @@ class NicanBus(BusABC):
             arb_id &= 0x1FFFFFFF
         dlc = raw_msg.dlc
         msg = Message(timestamp=timestamp,
+                      channel=self.channel,
                       is_remote_frame=is_remote_frame,
                       is_error_frame=is_error_frame,
                       extended_id=is_extended,
@@ -281,9 +282,11 @@ class NicanBus(BusABC):
         #nican.ncWaitForState(
         #    self.handle, NC_ST_WRITE_SUCCESS, int(timeout * 1000), ctypes.byref(state))
 
-    def flush_tx_buffer(self):
+    def reset(self):
         """
-        Resets the CAN chip which includes clearing receive and transmit queues.
+        Resets network interface. Stops network interface, then resets the CAN
+        chip to clear the CAN error counters (clear error passive state).
+        Resetting includes clearing all entries from read and write queues.
         """
         nican.ncAction(self.handle, NC_OP_RESET, 0)
 

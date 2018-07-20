@@ -20,12 +20,21 @@ with open('README.rst', 'r') as f:
     long_description = f.read()
 
 # Dependencies
+extras_require = {
+    'serial':   ['pyserial ~= 3.0'],
+    'neovi':    ['python-ics >= 2.12']
+}
+
 tests_require = [
-    'mock >= 2.0.0',
-    'nose >= 1.3.7',
-    'pytest-timeout >= 1.2.1',
-    'pyserial >= 3.0'
-]
+    'mock ~= 2.0',
+    'nose ~= 1.3',
+    'pytest ~= 3.6',
+    'pytest-timeout ~= 1.2',
+    'pytest-cov ~= 2.5',
+    'codecov ~= 2.0'
+] + extras_require['serial']
+
+extras_require['test'] = tests_require
 
 setup(
     # Description
@@ -36,7 +45,7 @@ setup(
 
     # Code
     version=version,
-    packages=find_packages(),
+    packages=find_packages(exclude=["test", "test.*"]),
 
     # Author
     author="Brian Thorne",
@@ -55,13 +64,9 @@ setup(
     # see https://www.python.org/dev/peps/pep-0345/#version-specifiers
     python_requires=">=2.7,!=3.0,!=3.1,!=3.2,!=3.3",
     install_requires=[
-        'setuptools',
-    ] + (['subprocess32 ~= 3.2.7'] if version_info.major < 3 else []),
-    extras_require={
-        'serial': ['pyserial >= 3.0'],
-        'neovi': ['python-ics >= 2.8'],
-        'test': tests_require
-    },
+        'wrapt ~= 1.10',
+    ],
+    extras_require=extras_require,
 
     # Testing
     test_suite="nose.collector",

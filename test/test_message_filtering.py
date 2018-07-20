@@ -46,10 +46,10 @@ class TestMessageFiltering(unittest.TestCase):
         self.bus.set_filters(None)
         self.assertTrue(self.bus._matches_filters(EXAMPLE_MSG))
 
-    def test_match_nothing(self):
+    def test_match_filters_is_empty(self):
         self.bus.set_filters([])
         for msg in TEST_ALL_MESSAGES:
-            self.assertFalse(self.bus._matches_filters(msg))
+            self.assertTrue(self.bus._matches_filters(msg))
 
     def test_match_example_message(self):
         self.bus.set_filters(MATCH_EXAMPLE)

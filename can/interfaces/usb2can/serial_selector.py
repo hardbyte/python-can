@@ -23,8 +23,8 @@ def WMIDateStringToDate(dtmDate):
         strDateTime = strDateTime + dtmDate[7] + '/'
     else:
         strDateTime = strDateTime + dtmDate[6] + dtmDate[7] + '/'
-        strDateTime = strDateTime + dtmDate[0] + dtmDate[1] + dtmDate[2] + dtmDate[3] + ' ' + dtmDate[8] + dtmDate[
-            9] + ':' + dtmDate[10] + dtmDate[11] + ':' + dtmDate[12] + dtmDate[13]
+        strDateTime = strDateTime + dtmDate[0] + dtmDate[1] + dtmDate[2] + dtmDate[3] + ' ' + dtmDate[8] + dtmDate[9] \
+            + ':' + dtmDate[10] + dtmDate[11] + ':' + dtmDate[12] + dtmDate[13]
     return strDateTime
 
 
@@ -38,7 +38,4 @@ def serial():
         string = objItem.Dependent
         # find based on beginning of serial
         if 'ED' in string:
-            # print "Dependent:" + ` objItem.Dependent`
-            string = string[len(string) - 9:len(string) - 1]
-
-            return string
+            return string[len(string) - 9:len(string) - 1]

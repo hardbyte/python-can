@@ -10,8 +10,7 @@ from pkg_resources import iter_entry_points
 # interface_name => (module, classname)
 BACKENDS = {
     'kvaser':           ('can.interfaces.kvaser',           'KvaserBus'),
-    'socketcan_ctypes': ('can.interfaces.socketcan',        'SocketcanCtypes_Bus'),
-    'socketcan_native': ('can.interfaces.socketcan',        'SocketcanNative_Bus'),
+    'socketcan':        ('can.interfaces.socketcan',        'SocketcanBus'),
     'serial':           ('can.interfaces.serial.serial_can','SerialBus'),
     'pcan':             ('can.interfaces.pcan',             'PcanBus'),
     'usb2can':          ('can.interfaces.usb2can',          'Usb2canBus'),
@@ -30,4 +29,4 @@ BACKENDS.update({
     for interface in iter_entry_points('can.interface')
 })
 
-VALID_INTERFACES = frozenset(list(BACKENDS.keys()) + ['socketcan'])
+VALID_INTERFACES = frozenset(list(BACKENDS.keys()) + ['socketcan_native', 'socketcan_ctypes'])

@@ -12,6 +12,7 @@ from __future__ import absolute_import, print_function
 import sys
 import importlib
 import logging
+import re
 
 import can
 from .bus import BusABC
@@ -19,12 +20,18 @@ from .broadcastmanager import CyclicSendTaskABC, MultiRateCyclicSendTaskABC
 from .util import load_config
 from .interfaces import BACKENDS
 
+if 'linux' in sys.platform:
+    # Deprecated and undocumented access to SocketCAN cyclic tasks
+    # Will be removed in version 3.0
+    from can.interfaces.socketcan import CyclicSendTask, MultiRateCyclicSendTask
+
 # Required by "detect_available_configs" for argument interpretation
 if sys.version_info.major > 2:
     basestring = str
 
 log = logging.getLogger('can.interface')
 log_autodetect = log.getChild('detect_available_configs')
+
 
 def _get_class_for_interface(interface):
     """
@@ -36,14 +43,6 @@ def _get_class_for_interface(interface):
         ImportError     if there was a problem while importing the
                         interface or the bus class within that
     """
-
-    # filter out the socketcan special case
-    if interface == 'socketcan':
-        try:
-            interface = can.util.choose_socketcan_implementation()
-        except Exception as e:
-            raise ImportError("Cannot choose socketcan implementation: {}".format(e))
-
     # Find the correct backend
     try:
         module_name, class_name = BACKENDS[interface]
@@ -71,15 +70,23 @@ def _get_class_for_interface(interface):
 
 
 class Bus(BusABC):
-    """
-    Instantiates a CAN Bus of the given `bustype`, falls back to reading a
+    """Bus wrapper with configuration loading.
+
+    Instantiates a CAN Bus of the given ``interface``, falls back to reading a
     configuration file from default locations.
     """
 
     @staticmethod
-    def __new__(cls, *args, **config):
+    def __new__(cls, channel=None, *args, **config):
         """
-        Takes the same arguments as :class:`can.BusABC.__init__` with the addition of:
+        Takes the same arguments as :class:`can.BusABC.__init__`.
+        Some might have a special meaning, see below.
+
+        :param channel:
+            Set to ``None`` to let it be reloved automatically from the default
+            configuration. That might fail, see below.
+
+            Expected type is backend dependent.
 
         :param dict config:
             Should contain an ``interface`` key with a valid interface name. If not,
@@ -93,7 +100,14 @@ class Bus(BusABC):
         """
 
         # figure out the rest of the configuration; this might raise an error
-        config = load_config(config=config)
+        if channel is not None:
+            config['channel'] = channel
+        if 'context' in config:
+            context = config['context']
+            del config['context']
+        else:
+            context = None
+        config = load_config(config=config, context=context)
 
         # resolve the bus class to use for that interface
         cls = _get_class_for_interface(config['interface'])
@@ -101,12 +115,14 @@ class Bus(BusABC):
         # remove the 'interface' key so it doesn't get passed to the backend
         del config['interface']
 
-        # make sure the bus can handle this config
+        # make sure the bus can handle this config format
         if 'channel' not in config:
-            raise ValueError("channel argument missing")
+            raise ValueError("'channel' argument missing")
+        else:
+            channel = config['channel']
+            del config['channel']
 
-        # the channel attribute should be present in **config
-        return cls(*args, **config)
+        return cls(channel, *args, **config)
 
 
 def detect_available_configs(interfaces=None):
@@ -124,9 +140,9 @@ def detect_available_configs(interfaces=None):
         - the name of an interface to be searched in as a string,
         - an iterable of interface names to search in, or
         - `None` to search in all known interfaces.
-    :rtype: list of `dict`s
+    :rtype: list[dict]
     :return: an iterable of dicts, each suitable for usage in
-             :class:`can.interface.Bus`'s constructor.
+             :class:`can.interface.Bus`\ 's constructor.
     """
 
     # Figure out where to search
@@ -163,43 +179,3 @@ def detect_available_configs(interfaces=None):
             result += available
 
     return result
-
-
-class CyclicSendTask(CyclicSendTaskABC):
-
-    @staticmethod
-    def __new__(cls, channel, *args, **kwargs):
-
-        config = load_config(config={'channel': channel})
-
-        # Import the correct implementation of CyclicSendTask
-        if config['interface'] == 'socketcan_ctypes':
-            from can.interfaces.socketcan.socketcan_ctypes import CyclicSendTask as _ctypesCyclicSendTask
-            cls = _ctypesCyclicSendTask
-        elif config['interface'] == 'socketcan_native':
-            from can.interfaces.socketcan.socketcan_native import CyclicSendTask as _nativeCyclicSendTask
-            cls = _nativeCyclicSendTask
-        else:
-            raise can.CanError("Current CAN interface doesn't support CyclicSendTask")
-
-        return cls(config['channel'], *args, **kwargs)
-
-
-class MultiRateCyclicSendTask(MultiRateCyclicSendTaskABC):
-
-    @staticmethod
-    def __new__(cls, channel, *args, **kwargs):
-
-        config = load_config(config={'channel': channel})
-
-        # Import the correct implementation of CyclicSendTask
-        if config['interface'] == 'socketcan_ctypes':
-            from can.interfaces.socketcan.socketcan_ctypes import MultiRateCyclicSendTask as _ctypesMultiRateCyclicSendTask
-            cls = _ctypesMultiRateCyclicSendTask
-        elif config['interface'] == 'socketcan_native':
-            from can.interfaces.socketcan.socketcan_native import MultiRateCyclicSendTask as _nativeMultiRateCyclicSendTask
-            cls = _nativeMultiRateCyclicSendTask
-        else:
-            can.log.info("Current CAN interface doesn't support CyclicSendTask")
-
-        return cls(config['channel'], *args, **kwargs)

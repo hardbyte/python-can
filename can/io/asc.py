@@ -7,12 +7,15 @@ Contains handling of ASC logging files.
 Example .asc file: https://bitbucket.org/tobylorenz/vector_asc/src/47556e1a6d32c859224ca62d075e1efcc67fa690/src/Vector/ASC/tests/unittests/data/CAN_Log_Trigger_3_2.asc?at=master&fileviewer=file-view-default
 """
 
+from __future__ import absolute_import
+
 from datetime import datetime
 import time
 import logging
 
-from can.listener import Listener
-from can.message import Message
+from ..message import Message
+from ..listener import Listener
+from ..util import channel2int
 
 CAN_MSG_EXT = 0x80000000
 CAN_ID_MASK = 0x1FFFFFFF
@@ -24,7 +27,7 @@ class ASCReader(object):
     """
     Iterator of CAN messages from a ASC logging file.
 
-    TODO: turn realtive timestamps back to absolute form
+    TODO: turn relative timestamps back to absolute form
     """
 
     def __init__(self, filename):
@@ -148,7 +151,7 @@ class ASCWriter(Listener):
         """Add a message to the log file.
 
         :param str message: an arbitrary message
-        :param float message: the absolute timestamp of the event
+        :param float timestamp: the absolute timestamp of the event
         """
 
         if not message: # if empty or None
@@ -197,8 +200,12 @@ class ASCWriter(Listener):
         if msg.is_extended_id:
             arb_id += 'x'
 
-        # Many interfaces start channel numbering at 0 which is invalid
-        channel = msg.channel + 1 if isinstance(msg.channel, int) else self.channel
+        channel = channel2int(msg.channel)
+        if channel is None:
+            channel = self.channel
+        else:
+            # Many interfaces start channel numbering at 0 which is invalid
+            channel += 1
 
         serialized = self.FORMAT_MESSAGE.format(channel=channel,
                                                 id=arb_id,

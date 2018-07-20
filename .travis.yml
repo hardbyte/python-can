@@ -3,15 +3,15 @@ language: python
 python:
   # CPython:
   - "2.7"
-  - "3.3" # but allowed to fail
+  # Python 3.3 has reached EOL and pytest fails there
   - "3.4"
   - "3.5"
   - "3.6"
-  - "3.7-dev" # TODO: change to "3.7" once it gets released
+  - "3.7-dev" # TODO: change to "3.7" once it is supported by travis-ci
   - "nightly"
   # PyPy:
   - "pypy"
-  - "pypy3"
+  - "pypy3.5"
 
 os:
   - linux   # Linux is officially supported and we test the library under
@@ -25,7 +25,7 @@ os:
 
 # Linux setup
 dist: trusty
-sudo: false
+sudo: required
 
 matrix:
   # see "os: ..." above
@@ -43,12 +43,14 @@ matrix:
 
     # we do not allow dev builds to fail, since these builds are considered stable enough
 
-    # Python 3.3 tests are allowed to fail since Python 3.3 is not offically supported any more
-    - python: "3.3"
-
 install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo bash test/open_vcan.sh ; fi
+  - travis_retry pip install sphinx
   - travis_retry pip install .[test]
 
 script:
-  - pytest -v --timeout=300
+  - pytest -v --timeout=300 --cov=can
+  - codecov
+  # Build Docs with Sphinx
+  # -a Write all files
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "3.6" ]]; then python -m sphinx -an doc build; fi

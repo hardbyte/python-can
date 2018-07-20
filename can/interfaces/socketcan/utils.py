@@ -10,15 +10,12 @@ import os
 import errno
 import struct
 import sys
-if sys.version_info[0] < 3 and os.name == 'posix':
-    import subprocess32 as subprocess
-else:
-    import subprocess
+import subprocess
 import re
 
-from can.interfaces.socketcan.socketcan_constants import CAN_EFF_FLAG
+from can.interfaces.socketcan.constants import CAN_EFF_FLAG
 
-log = logging.getLogger('can.socketcan_common')
+log = logging.getLogger(__name__)
 
 def pack_filters(can_filters=None):
     if can_filters is None:
@@ -75,7 +72,7 @@ def error_code_to_str(code):
     """
     Converts a given error code (errno) to a useful and human readable string.
 
-    :param int error_code: a possibly invalid/unknown error code
+    :param int code: a possibly invalid/unknown error code
     :rtype: str
     :returns: a string explaining and containing the given error code, or a string
               explaining that the errorcode is unknown if that is the case

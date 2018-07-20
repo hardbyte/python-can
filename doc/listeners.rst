@@ -13,7 +13,7 @@ Listeners are registered with :ref:`notifier` object(s) which ensure they are
 notified whenever a new message is received.
 
 Subclasses of Listener that do not override **on_message_received** will cause
-`NotImplementedError` to be thrown when a message is received on
+:class:`NotImplementedError` to be thrown when a message is received on
 the CAN bus.
 
 .. autoclass:: can.Listener
@@ -31,7 +31,7 @@ Logger
 ------
 
 The :class:`can.Logger` uses the following :class:`can.Listener` types to
-create *.asc*, *.csv* and *.db* files with the messages received.
+create log files with different file types of the messages received.
 
 .. autoclass:: can.Logger
     :members:
@@ -50,12 +50,19 @@ CSVWriter
 .. autoclass:: can.CSVWriter
     :members:
 
+.. autoclass:: can.CSVReader
+    :members:
+
 
 SqliteWriter
 ------------
 
 .. autoclass:: can.SqliteWriter
     :members:
+
+.. autoclass:: can.SqliteReader
+    :members:
+
 
 Database table format
 ~~~~~~~~~~~~~~~~~~~~~
@@ -86,6 +93,12 @@ Since no official specification exists for the format, it has been reverse-
 engineered from existing log files. One description of the format can be found `here
 <http://zone.ni.com/reference/en-XX/help/370859J-01/dlgcanconverter/dlgcanconverter/canconverter_ascii_logfiles/>`_.
 
+
+.. note::
+
+    Channels will be converted to integers.
+
+
 .. autoclass:: can.ASCWriter
     :members:
 
@@ -107,12 +120,12 @@ As specification following references can-utils can be used:
 `log2asc <https://github.com/linux-can/can-utils/blob/master/log2asc.c>`_.
 
 
-.. autoclass:: can.io.CanutilsLogWriter
+.. autoclass:: can.CanutilsLogWriter
     :members:
 
-CanutilsLogReader reads CAN data from ASCII log files .log
+**CanutilsLogReader** reads CAN data from ASCII log files .log
 
-.. autoclass:: can.io.CanutilsLogReader
+.. autoclass:: can.CanutilsLogReader
     :members:
 
 
@@ -124,8 +137,12 @@ CAN log format from Vector Informatik GmbH.
 
 The data is stored in a compressed format which makes it very compact.
 
+.. note:: Channels will be converted to integers.
+
 .. autoclass:: can.BLFWriter
     :members:
+
+The following class can be used to read messages from BLF file:
 
 .. autoclass:: can.BLFReader
     :members:

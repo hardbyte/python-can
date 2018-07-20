@@ -12,9 +12,11 @@ import logging
 import threading
 from time import time
 from collections import namedtuple
+import logging
 
 from .broadcastmanager import ThreadBasedCyclicSendTask
 
+LOG = logging.getLogger(__name__)
 
 BusState = namedtuple('BusState', 'ACTIVE, PASSIVE, ERROR')
 
@@ -22,13 +24,18 @@ BusState = namedtuple('BusState', 'ACTIVE, PASSIVE, ERROR')
 class BusABC(object):
     """The CAN Bus Abstract Base Class that serves as the basis
     for all concrete interfaces.
+
+    This class may be used as an iterator over the received messages.
     """
 
     #: a string describing the underlying bus and/or channel
     channel_info = 'unknown'
 
+    #: Log level for received messages
+    RECV_LOGGING_LEVEL = 9
+
     @abstractmethod
-    def __init__(self, channel=None, can_filters=None, **config):
+    def __init__(self, channel, can_filters=None, **config):
         """Construct and open a CAN bus instance of the specified type.
 
         Subclasses should call though this method with all given parameters
@@ -51,7 +58,8 @@ class BusABC(object):
     def recv(self, timeout=None):
         """Block waiting for a message from the Bus.
 
-        :param float timeout:
+        :type timeout: float or None
+        :param timeout:
             seconds to wait for a message or None to wait indefinitely
 
         :rtype: can.Message or None
@@ -70,6 +78,7 @@ class BusABC(object):
 
             # return it, if it matches
             if msg and (already_filtered or self._matches_filters(msg)):
+                LOG.log(self.RECV_LOGGING_LEVEL, 'Received: %s', msg)
                 return msg
 
             # if not, and timeout is None, try indefinitely
@@ -112,7 +121,7 @@ class BusABC(object):
             Thus it cannot be simplified to a constant value.
 
         :param float timeout: seconds to wait for a message,
-                              see :meth:`can.BusABC.send`
+                              see :meth:`~can.BusABC.send`
 
         :rtype: tuple[can.Message, bool] or tuple[None, bool]
         :return:
@@ -136,14 +145,17 @@ class BusABC(object):
         Override this method to enable the transmit path.
 
         :param can.Message msg: A message object.
-        :param float timeout:
-            If > 0, wait up to this many seconds for message to be ACK:ed or
+        
+        :type timeout: float or None
+        :param timeout:
+            If > 0, wait up to this many seconds for message to be ACK'ed or
             for transmit queue to be ready depending on driver implementation.
             If timeout is exceeded, an exception will be raised.
             Might not be supported by all interfaces.
+            None blocks indefinitly.
 
         :raises can.CanError:
-            if the message could not be written.
+            if the message could not be sent
         """
         raise NotImplementedError("Trying to write to a readonly bus?")
 
@@ -159,20 +171,20 @@ class BusABC(object):
             no duration is provided, the task will continue indefinitely.
 
         :return: A started task instance
-        :rtype: can.CyclicSendTaskABC
+        :rtype: can.broadcastmanager.CyclicSendTaskABC
 
         .. note::
 
             Note the duration before the message stops being sent may not
             be exactly the same as the duration specified by the user. In
             general the message will be sent at the given rate until at
-            least *duration* seconds.
+            least **duration** seconds.
 
         """
-        if not hasattr(self, "_lock"):
+        if not hasattr(self, "_lock_send_periodic"):
             # Create a send lock for this bus
-            self._lock = threading.Lock()
-        return ThreadBasedCyclicSendTask(self, self._lock, msg, period, duration)
+            self._lock_send_periodic = threading.Lock()
+        return ThreadBasedCyclicSendTask(self, self._lock_send_periodic, msg, period, duration)
 
     def __iter__(self):
         """Allow iteration on messages as they are received.
@@ -191,6 +203,10 @@ class BusABC(object):
 
     @property
     def filters(self):
+        """
+        Modify the filters of this bus. See :meth:`~can.BusABC.set_filters`
+        for details.
+        """
         return self._filters
 
     @filters.setter
@@ -201,13 +217,13 @@ class BusABC(object):
         """Apply filtering to all messages received by this Bus.
 
         All messages that match at least one filter are returned.
-        If `filters` is `None`, all messages are matched.
-        If it is a zero size interable, no messages are matched.
+        If `filters` is `None` or a zero length sequence, all 
+        messages are matched.
 
         Calling without passing any filters will reset the applied
         filters to `None`.
 
-        :param Iterator[dict] filters:
+        :param filters:
             A iterable of dictionaries each containing a "can_id", a "can_mask",
             and an optional "extended" key.
 
@@ -217,9 +233,8 @@ class BusABC(object):
             If ``extended`` is set as well, it only matches messages where
             ``<received_is_extended> == extended``. Else it matches every messages based
             only on the arbitration ID and mask.
-
         """
-        self._filters = filters
+        self._filters = filters or None
         self._apply_filters(self._filters)
 
     def _apply_filters(self, filters):
@@ -249,15 +264,15 @@ class BusABC(object):
         if self._filters is None:
             return True
 
-        for filter in self._filters:
+        for _filter in self._filters:
             # check if this filter even applies to the message
-            if 'extended' in filter and \
-                filter['extended'] != msg.is_extended_id:
+            if 'extended' in _filter and \
+                _filter['extended'] != msg.is_extended_id:
                 continue
 
             # then check for the mask and id
-            can_id = filter['can_id']
-            can_mask = filter['can_mask']
+            can_id = _filter['can_id']
+            can_mask = _filter['can_mask']
 
             # basically, we compute `msg.arbitration_id & can_mask == can_id & can_mask`
             # by using the shorter, but equivalent from below:
@@ -278,6 +293,12 @@ class BusABC(object):
         in shutting down a bus.
         """
         pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.shutdown()
 
     @property
     def state(self):

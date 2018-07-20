@@ -54,7 +54,7 @@ elif platform.system() == "Windows" or platform.python_implementation() == "Iron
     )
 
 
-def load_file_config(path=None):
+def load_file_config(path=None, section=None):
     """
     Loads configuration from file with following content::
 
@@ -65,7 +65,8 @@ def load_file_config(path=None):
     :param path:
         path to config file. If not specified, several sensible
         default locations are tried depending on platform.
-
+    :param section:
+        name of the section to read configuration from.
     """
     config = ConfigParser()
     if path is None:
@@ -73,13 +74,16 @@ def load_file_config(path=None):
     else:
         config.read(path)
 
-    if not config.has_section('default'):
-        return {}
+    _config = {}
 
-    return dict(
-        (key, val)
-        for key, val in config.items('default')
-    )
+    section = section if section is not None else 'default'
+    if config.has_section(section):
+        if config.has_section('default'):
+            _config.update(
+                dict((key, val) for key, val in config.items('default')))
+        _config.update(dict((key, val) for key, val in config.items(section)))
+
+    return _config
 
 
 def load_environment_config():
@@ -103,7 +107,7 @@ def load_environment_config():
     )
 
 
-def load_config(path=None, config=None):
+def load_config(path=None, config=None, context=None):
     """
     Returns a dict with configuration details which is loaded from (in this order):
 
@@ -117,11 +121,6 @@ def load_config(path=None, config=None):
     kvaser, socketcan, pcan, usb2can, ixxat, nican, virtual.
 
     .. note::
-
-        If you pass ``"socketcan"`` this automatically selects between the
-        native and ctypes version.
-
-    .. note::
  
             The key ``bustype`` is copied to ``interface`` if that one is missing
             and does never appear in the result.
@@ -132,6 +131,10 @@ def load_config(path=None, config=None):
     :param config:
         A dict which may set the 'interface', and/or the 'channel', or neither.
         It may set other values that are passed through.
+
+    :param context:
+        Extra 'context' pass to config sources. This can be use to section
+        other than 'default' in the configuration file.
 
     :return:
         A config dictionary that should contain 'interface' & 'channel'::
@@ -152,21 +155,21 @@ def load_config(path=None, config=None):
     """
 
     # start with an empty dict to apply filtering to all sources
-    given_config = config
+    given_config = config or {}
     config = {}
 
     # use the given dict for default values
     config_sources = [
         given_config,
         can.rc,
-        load_environment_config,
-        lambda: load_file_config(path)
+        lambda _context: load_environment_config(),  # context is not supported
+        lambda _context: load_file_config(path, _context)
     ]
 
     # Slightly complex here to only search for the file config if required
     for cfg in config_sources:
         if callable(cfg):
-            cfg = cfg()
+            cfg = cfg(context)
         # remove legacy operator (and copy to interface if not already present)
         if 'bustype' in cfg:
             if 'interface' not in cfg or not cfg['interface']:
@@ -182,9 +185,12 @@ def load_config(path=None, config=None):
         if key not in config:
             config[key] = None
 
-    # this is done later too but better safe than sorry
-    if config['interface'] == 'socketcan':
-        config['interface'] = choose_socketcan_implementation()
+    # deprecated socketcan types
+    if config['interface'] in ('socketcan_native', 'socketcan_ctypes'):
+        # Change this to a DeprecationWarning in future 2.x releases
+        # Remove completely in 3.0
+        log.warning('%s is deprecated, use socketcan instead', config['interface'])
+        config['interface'] = 'socketcan'
 
     if config['interface'] not in VALID_INTERFACES:
         raise NotImplementedError('Invalid CAN Bus Type - {}'.format(config['interface']))
@@ -192,63 +198,10 @@ def load_config(path=None, config=None):
     if 'bitrate' in config:
         config['bitrate'] = int(config['bitrate'])
 
-    can.log.debug("loaded can config: {}".format(config))
+    can.log.debug("can config: {}".format(config))
     return config
 
-
-def choose_socketcan_implementation():
-    """Set the best version of the SocketCAN module for this system.
-
-    :rtype: str
-    :return:
-        either 'socketcan_ctypes' or 'socketcan_native',
-        depending on the current platform and environment
-    :raises Exception: If the system doesn't support SocketCAN at all
-    """
-
-    # Check OS: SocketCAN is available only under Linux
-    if not sys.platform.startswith('linux'):
-        msg = 'SocketCAN not available under {}'.format(sys.platform)
-        raise Exception(msg)
-
-    # Check release: SocketCAN was added to Linux 2.6.25
-    rel_string = platform.release()
-    m = re.match(r'\d+\.\d+\.\d', rel_string)
-    if not m: # None or empty
-        msg = 'Bad linux release {}'.format(rel_string)
-        raise Exception(msg)
-    rel_num = [int(i) for i in rel_string[:m.end()].split('.')]
-
-    if (rel_num < [2, 6, 25]):
-        msg = 'SocketCAN not available under Linux {}'.format(rel_string)
-        raise Exception(msg)
-
-    # Check Python version:
-    #
-    # CPython:
-    # Support for SocketCAN was added in Python 3.3, but support for
-    # CAN FD frames (with socket.CAN_RAW_FD_FRAMES) was just added
-    # to Python in version 3.5.
-    # So we want to use socketcan_native only on Python >= 3.5 (see #274).
-    #
-    # PyPy:
-    # Furthermore, socket.CAN_* is not supported by PyPy 2 or 3 (as of
-    # April 2018) at all. Thus we want to use socketcan_ctypes there as well.
-    #
-    # General approach:
-    # To support possible future versions of current platforms as well as
-    # potential other ones, we take the approach of feature checking instead
-    # of platform/version checking.
-
-    try:
-        # try to import typical attributes
-        from socket import CAN_RAW, CAN_BCM, CAN_RAW_FD_FRAMES
-    except ImportError:
-        return 'socketcan_ctypes'
-    else:
-        return 'socketcan_native'
-
-
+            
 def set_logging_level(level_name=None):
     """Set the logging level for the "can" logger.
     Expects one of: 'critical', 'error', 'warning', 'info', 'debug', 'subdebug'
@@ -287,6 +240,27 @@ def dlc2len(dlc):
     :rtype: int
     """
     return CAN_FD_DLC[dlc] if dlc <= 15 else 64
+
+
+def channel2int(channel):
+    """Try to convert the channel to an integer.
+
+    :param channel:
+        Channel string (e.g. can0, CAN1) or integer
+    
+    :returns: Channel integer or `None` if unsuccessful
+    :rtype: int
+    """
+    if channel is None:
+        return None
+    if isinstance(channel, int):
+        return channel
+    # String and byte objects have a lower() method
+    if hasattr(channel, "lower"):
+        match = re.match(r'.*(\d+)$', channel)
+        if match:
+            return int(match.group(1))
+    return None
 
 
 if __name__ == "__main__":

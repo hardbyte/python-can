@@ -29,7 +29,7 @@ except ImportError:
 
 # Import Modules
 # ==============
-from can import BusABC, Message
+from can import BusABC, Message, CanError
 from can.util import len2dlc, dlc2len
 from .exceptions import VectorError
 
@@ -65,6 +65,7 @@ class VectorBus(BusABC):
             CAN-FD: range 8192…524288
         :param str app_name:
             Name of application in Hardware Config.
+            If set to None, the channel should be a global channel index.
         :param bool fd:
             If CAN-FD frames should be supported.
         :param int data_bitrate:
@@ -90,17 +91,33 @@ class VectorBus(BusABC):
         self.mask = 0
         self.fd = fd
         # Get channels masks
+        self.channel_masks = {}
+        self.index_to_channel = {}
         for channel in self.channels:
-            hw_type = ctypes.c_uint(0)
-            hw_index = ctypes.c_uint(0)
-            hw_channel = ctypes.c_uint(0)
-            vxlapi.xlGetApplConfig(self._app_name, channel, hw_type, hw_index,
-                                   hw_channel, vxlapi.XL_BUS_TYPE_CAN)
-            LOG.debug('Channel index %d found', channel)
-            mask = vxlapi.xlGetChannelMask(hw_type.value, hw_index.value,
-                                           hw_channel.value)
-            LOG.debug('Channel %d, Type: %d, Mask: %d',
-                      hw_channel.value, hw_type.value, mask)
+            if app_name:
+                # Get global channel index from application channel
+                hw_type = ctypes.c_uint(0)
+                hw_index = ctypes.c_uint(0)
+                hw_channel = ctypes.c_uint(0)
+                vxlapi.xlGetApplConfig(self._app_name, channel, hw_type, hw_index,
+                                       hw_channel, vxlapi.XL_BUS_TYPE_CAN)
+                LOG.debug('Channel index %d found', channel)
+                idx = vxlapi.xlGetChannelIndex(hw_type.value, hw_index.value,
+                                               hw_channel.value)
+                if idx < 0:
+                    # Undocumented behavior! See issue #353.
+                    # If hardware is unavailable, this function returns -1.
+                    # Raise an exception as if the driver
+                    # would have signalled XL_ERR_HW_NOT_PRESENT.
+                    raise VectorError(vxlapi.XL_ERR_HW_NOT_PRESENT,
+                                      "XL_ERR_HW_NOT_PRESENT",
+                                      "xlGetChannelIndex")
+            else:
+                # Channel already given as global channel
+                idx = channel
+            mask = 1 << idx
+            self.channel_masks[channel] = mask
+            self.index_to_channel[idx] = channel
             self.mask |= mask
 
         permission_mask = vxlapi.XLaccess()
@@ -172,25 +189,24 @@ class VectorBus(BusABC):
 
         self._is_filtered = False
         super(VectorBus, self).__init__(channel=channel, can_filters=can_filters,
-            poll_interval=0.01, receive_own_messages=False, bitrate=None,
-            rx_queue_size=256, app_name="CANalyzer", **config)
+            **config)
 
     def _apply_filters(self, filters):
         if filters:
             # Only up to one filter per ID type allowed
             if len(filters) == 1 or (len(filters) == 2 and
                     filters[0].get("extended") != filters[1].get("extended")):
-                for can_filter in filters:
-                    try:
+                try:
+                    for can_filter in filters:
                         vxlapi.xlCanSetChannelAcceptance(self.port_handle, self.mask,
                             can_filter["can_id"], can_filter["can_mask"],
                             vxlapi.XL_CAN_EXT if can_filter.get("extended") else vxlapi.XL_CAN_STD)
-                    except VectorError as exc:
-                        LOG.warning("Could not set filters: %s", exc)
-                        # go to fallback
-                    else:
-                        self._is_filtered = True
-                        return
+                except VectorError as exc:
+                    LOG.warning("Could not set filters: %s", exc)
+                    # go to fallback
+                else:
+                    self._is_filtered = True
+                    return
             else:
                 LOG.warning("Only up to one filter per extended or standard ID allowed")
                 # go to fallback
@@ -225,6 +241,7 @@ class VectorBus(BusABC):
                         dlc = dlc2len(event.tagData.canRxOkMsg.dlc)
                         flags = event.tagData.canRxOkMsg.msgFlags
                         timestamp = event.timeStamp * 1e-9
+                        channel = self.index_to_channel.get(event.chanIndex)
                         msg = Message(
                             timestamp=timestamp + self._time_offset,
                             arbitration_id=msg_id & 0x1FFFFFFF,
@@ -236,7 +253,7 @@ class VectorBus(BusABC):
                             bitrate_switch=bool(flags & vxlapi.XL_CAN_RXMSG_FLAG_BRS),
                             dlc=dlc,
                             data=event.tagData.canRxOkMsg.data[:dlc],
-                            channel=event.chanIndex)
+                            channel=channel)
                         return msg, self._is_filtered
             else:
                 event_count.value = 1
@@ -251,6 +268,7 @@ class VectorBus(BusABC):
                         dlc = event.tagData.msg.dlc
                         flags = event.tagData.msg.flags
                         timestamp = event.timeStamp * 1e-9
+                        channel = self.index_to_channel.get(event.chanIndex)
                         msg = Message(
                             timestamp=timestamp + self._time_offset,
                             arbitration_id=msg_id & 0x1FFFFFFF,
@@ -260,7 +278,7 @@ class VectorBus(BusABC):
                             is_fd=False,
                             dlc=dlc,
                             data=event.tagData.msg.data[:dlc],
-                            channel=event.chanIndex)
+                            channel=channel)
                         return msg, self._is_filtered
 
             if end_time is not None and time.time() > end_time:
@@ -286,6 +304,10 @@ class VectorBus(BusABC):
 
         flags = 0
 
+        # If channel has been specified, try to send only to that one.
+        # Otherwise send to all channels
+        mask = self.channel_masks.get(msg.channel, self.mask)
+
         if self.fd:
             if msg.is_fd:
                 flags |= vxlapi.XL_CAN_TXMSG_FLAG_EDL
@@ -306,7 +328,7 @@ class VectorBus(BusABC):
             XLcanTxEvent.tagData.canMsg.dlc = len2dlc(msg.dlc)
             for idx, value in enumerate(msg.data):
                 XLcanTxEvent.tagData.canMsg.data[idx] = value
-            vxlapi.xlCanTransmitEx(self.port_handle, self.mask, message_count, MsgCntSent, XLcanTxEvent)
+            vxlapi.xlCanTransmitEx(self.port_handle, mask, message_count, MsgCntSent, XLcanTxEvent)
 
         else:
             if msg.is_remote_frame:
@@ -322,7 +344,7 @@ class VectorBus(BusABC):
             xl_event.tagData.msg.flags = flags
             for idx, value in enumerate(msg.data):
                 xl_event.tagData.msg.data[idx] = value
-            vxlapi.xlCanTransmit(self.port_handle, self.mask, message_count, xl_event)
+            vxlapi.xlCanTransmit(self.port_handle, mask, message_count, xl_event)
 
         
     def flush_tx_buffer(self):
@@ -337,4 +359,26 @@ class VectorBus(BusABC):
         vxlapi.xlDeactivateChannel(self.port_handle, self.mask)
         vxlapi.xlActivateChannel(self.port_handle, self.mask,
                                      vxlapi.XL_BUS_TYPE_CAN, 0)
-  
+
+    @staticmethod
+    def _detect_available_configs():
+        configs = []
+        if vxlapi is None:
+            return configs
+        driver_config = vxlapi.XLdriverConfig()
+        try:
+            vxlapi.xlOpenDriver()
+            vxlapi.xlGetDriverConfig(driver_config)
+            vxlapi.xlCloseDriver()
+        except:
+            pass
+        LOG.info('Found %d channels', driver_config.channelCount)
+        for i in range(driver_config.channelCount):
+            channel_config = driver_config.channel[i]
+            LOG.info('Channel index %d: %s',
+                     channel_config.channelIndex,
+                     channel_config.name.decode('ascii'))
+            configs.append({'interface': 'vector',
+                            'app_name': None,
+                            'channel': channel_config.channelIndex})
+        return configs

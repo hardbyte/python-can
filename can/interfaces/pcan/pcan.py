@@ -5,7 +5,7 @@
 Enable basic CAN over a PCAN USB device.
 """
 
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, print_function, division
 
 import logging
 import sys
@@ -13,8 +13,8 @@ import time
 
 import can
 from can import CanError, Message, BusABC
-from .PCANBasic import *
 from can.bus import BusState
+from .basic import *
 
 boottimeEpoch = 0
 try:
@@ -72,13 +72,13 @@ class PcanBus(BusABC):
         """A PCAN USB interface to CAN.
 
         On top of the usual :class:`~can.Bus` methods provided,
-        the PCAN interface includes the :meth:`~can.interface.pcan.PcanBus.flash()`
-        and :meth:`~can.interface.pcan.PcanBus.status()` methods.
+        the PCAN interface includes the :meth:`~can.interface.pcan.PcanBus.flash`
+        and :meth:`~can.interface.pcan.PcanBus.status` methods.
 
         :param str channel:
             The can interface name. An example would be 'PCAN_USBBUS1'
 
-        :param BusState state:
+        :param can.bus.BusState state:
             BusState of the channel.
             Default is ACTIVE
 
@@ -160,7 +160,8 @@ class PcanBus(BusABC):
         """
         Query the PCAN bus status.
 
-        :return: The status code. See values in pcan_constants.py
+        :rtype: int
+        :return: The status code. See values in **basic.PCAN_ERROR_**
         """
         return self.m_objPCANBasic.GetStatus(self.m_PcanHandle)
 
@@ -187,7 +188,7 @@ class PcanBus(BusABC):
             # Calculate max time
             end_time = timeout_clock() + timeout
 
-        log.debug("Trying to read a msg")
+        #log.debug("Trying to read a msg")
 
         result = None
         while result is None:
@@ -212,17 +213,10 @@ class PcanBus(BusABC):
         theMsg = result[1]
         itsTimeStamp = result[2]
 
-        log.debug("Received a message")
+        #log.debug("Received a message")
 
         bIsRTR = (theMsg.MSGTYPE & PCAN_MESSAGE_RTR.value) == PCAN_MESSAGE_RTR.value
         bIsExt = (theMsg.MSGTYPE & PCAN_MESSAGE_EXTENDED.value) == PCAN_MESSAGE_EXTENDED.value
-
-        if bIsExt:
-            #rx_msg.id_type = ID_TYPE_EXTENDED
-            log.debug("CAN: Extended")
-        else:
-            #rx_msg.id_type = ID_TYPE_STANDARD
-            log.debug("CAN: Standard")
 
         dlc = theMsg.LEN
         timestamp = boottimeEpoch + ((itsTimeStamp.micros + (1000 * itsTimeStamp.millis)) / (1000.0 * 1000.0))
@@ -273,6 +267,7 @@ class PcanBus(BusABC):
         self.m_objPCANBasic.SetValue(self.m_PcanHandle, PCAN_CHANNEL_IDENTIFYING, bool(flash))
 
     def shutdown(self):
+        super(PcanBus, self).shutdown()
         self.m_objPCANBasic.Uninitialize(self.m_PcanHandle)
 
     @property

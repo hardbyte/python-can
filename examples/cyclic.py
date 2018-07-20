@@ -16,6 +16,7 @@ import logging
 import time
 
 import can
+
 logging.basicConfig(level=logging.INFO)
 
 
@@ -104,15 +105,13 @@ if __name__ == "__main__":
 
     reset_msg = can.Message(arbitration_id=0x00, data=[0, 0, 0, 0, 0, 0], extended_id=False)
 
-
     for interface, channel in [
-        ('socketcan_ctypes', 'can0'),
-        ('socketcan_native', 'can0')
+        ('socketcan', 'can0'),
         #('ixxat', 0)
     ]:
         print("Carrying out cyclic tests with {} interface".format(interface))
 
-        bus = can.interface.Bus(bustype=interface, channel=channel, bitrate=500000)
+        bus = can.Bus(interface=interface, channel=channel, bitrate=500000)
         bus.send(reset_msg)
 
         simple_periodic_send(bus)

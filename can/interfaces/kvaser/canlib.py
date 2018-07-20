@@ -484,7 +484,7 @@ class KvaserBus(BusABC):
         else:
             timeout = int(timeout * 1000)
 
-        log.log(9, 'Reading for %d ms on handle: %s' % (timeout, self._read_handle))
+        #log.log(9, 'Reading for %d ms on handle: %s' % (timeout, self._read_handle))
         status = canReadWait(
             self._read_handle,
             ctypes.byref(arb_id),
@@ -574,6 +574,18 @@ class KvaserBus(BusABC):
             canClose(self._read_handle)
         canBusOff(self._write_handle)
         canClose(self._write_handle)
+
+    @staticmethod
+    def _detect_available_configs():
+        num_channels = ctypes.c_int(0)
+        try:
+            canGetNumberOfChannels(ctypes.byref(num_channels))
+        except Exception:
+            pass
+        return [
+            {'interface': 'kvaser', 'channel': channel}
+            for channel in range(num_channels.value)
+        ]
 
 
 def get_channel_info(channel):

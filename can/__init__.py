@@ -9,15 +9,16 @@ from __future__ import absolute_import
 
 import logging
 
-__version__ = "2.1.1-dev"
+__version__ = "2.3.0-dev"
 
 log = logging.getLogger('can')
 
 rc = dict()
 
+
 class CanError(IOError):
-    """
-    Indicates an error with the CAN network.
+    """Indicates an error with the CAN network.
+
     """
     pass
 
@@ -34,6 +35,7 @@ from .util import set_logging_level
 
 from .message import Message
 from .bus import BusABC
+from .thread_safe_bus import ThreadSafeBus
 from .notifier import Notifier
 from .interfaces import VALID_INTERFACES
 from . import interface
