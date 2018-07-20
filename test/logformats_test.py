@@ -280,12 +280,10 @@ class ReaderWriterTest(unittest.TestCase):
         Checks the order and content of the individual messages.
         """
         for index, (original, read) in enumerate(zip(self.original_messages, read_messages)):
+            print("Comapring: original message: {!r}".format(original))
+            print("           read     message: {!r}".format(read))
             # check everything except the timestamp
-            if read != original:
-                # check like this to print the whole message
-                print("original message: {!r}".format(original))
-                print("read     message: {!r}".format(read))
-                self.fail("messages are not equal at index #{}".format(index))
+            self.assertEqual(original, read, "messages are not equal at index #{}".format(index))
             # check the timestamp
             if self.round_timestamps:
                 original.timestamp = round(original.timestamp)
