@@ -12,6 +12,7 @@ from __future__ import absolute_import
 import time
 import logging
 
+from .generic import BaseIOHandler
 from .asc import ASCReader
 from .blf import BLFReader
 from .canutils import CanutilsLogReader
@@ -21,7 +22,7 @@ from .sqlite import SqliteReader
 log = logging.getLogger('can.io.player')
 
 
-class LogReader(object):
+class LogReader(BaseIOHandler):
     """
     Replay logged CAN messages from a file.
 

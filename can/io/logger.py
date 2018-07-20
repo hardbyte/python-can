@@ -9,6 +9,8 @@ from __future__ import absolute_import
 
 import logging
 
+from ..listener import Listener
+from .generic import BaseIOHandler
 from .asc import ASCWriter
 from .blf import BLFWriter
 from .canutils import CanutilsLogWriter
@@ -19,7 +21,7 @@ from .printer import Printer
 log = logging.getLogger("can.io.logger")
 
 
-class Logger(object):
+class Logger(BaseIOHandler, Listener):
     """
     Logs CAN messages to a file.
 
