@@ -82,8 +82,8 @@ class CanutilsLogReader(BaseIOHandler):
                 msg = Message(timestamp=timestamp, is_error_frame=True)
             else:
                 msg = Message(timestamp=timestamp, arbitration_id=canId & 0x1FFFFFFF,
-                                extended_id=isExtended, is_remote_frame=isRemoteFrame,
-                                dlc=dlc, data=dataBin, channel=channel)
+                              extended_id=isExtended, is_remote_frame=isRemoteFrame,
+                              dlc=dlc, data=dataBin, channel=channel)
             yield msg
 
         self.stop()

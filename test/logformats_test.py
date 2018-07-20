@@ -114,8 +114,7 @@ class ReaderWriterTest(unittest.TestCase):
         print("writing all messages/comments")
         writer = self.writer_constructor(self.test_file_name)
         self._write_all(writer)
-        if hasattr(writer.file, 'fileno'):
-            os.fsync(writer.file.fileno())
+        self._ensure_fsync(writer)
         writer.stop()
         if hasattr(writer.file, 'closed'):
             self.assertTrue(writer.file.closed)
@@ -143,8 +142,7 @@ class ReaderWriterTest(unittest.TestCase):
         print("writing all messages/comments")
         with self.writer_constructor(self.test_file_name) as writer:
             self._write_all(writer)
-            if hasattr(writer.file, 'fileno'):
-                os.fsync(writer.file.fileno())
+            self._ensure_fsync(writer)
             w = writer
         if hasattr(w.file, 'closed'):
             self.assertTrue(w.file.closed)
@@ -172,8 +170,7 @@ class ReaderWriterTest(unittest.TestCase):
         my_file = open(self.test_file_name, 'wb' if self.binary_file else 'w')
         writer = self.writer_constructor(my_file)
         self._write_all(writer)
-        if hasattr(writer.file, 'fileno'):
-            os.fsync(writer.file.fileno())
+        self._ensure_fsync(writer)
         writer.stop()
         if hasattr(my_file, 'closed'):
             self.assertTrue(my_file.closed)
@@ -203,8 +200,7 @@ class ReaderWriterTest(unittest.TestCase):
         my_file = open(self.test_file_name, 'wb' if self.binary_file else 'w')
         with self.writer_constructor(my_file) as writer:
             self._write_all(writer)
-            if hasattr(writer.file, 'fileno'):
-                os.fsync(writer.file.fileno())
+            self._ensure_fsync(writer)
             w = writer
         if hasattr(my_file, 'closed'):
             self.assertTrue(my_file.closed)
@@ -240,8 +236,7 @@ class ReaderWriterTest(unittest.TestCase):
         with self.writer_constructor(self.test_file_name) as writer:
             for message in first_part:
                 writer(message)
-            if hasattr(writer.file, 'fileno'):
-                os.fsync(writer.file.fileno())
+            self._ensure_fsync(writer)
 
         # use append mode for second half
         try:
@@ -256,8 +251,7 @@ class ReaderWriterTest(unittest.TestCase):
         with writer:
             for message in second_part:
                 writer(message)
-            if hasattr(writer.file, 'fileno'):
-                os.fsync(writer.file.fileno())
+            self._ensure_fsync(writer)
         with self.reader_constructor(self.test_file_name) as reader:
             read_messages = list(reader)
 
@@ -274,6 +268,11 @@ class ReaderWriterTest(unittest.TestCase):
             if msg is not None:
                 print("writing message: ", msg)
                 writer(msg)
+
+    def _ensure_fsync(self, io_handler):
+        if hasattr(io_handler.file, 'fileno'):
+            io_handler.file.flush()
+            os.fsync(io_handler.file.fileno())
 
     def assertMessagesEqual(self, read_messages):
         """
