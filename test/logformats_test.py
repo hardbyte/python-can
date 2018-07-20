@@ -212,7 +212,7 @@ class ReaderWriterTest(unittest.TestCase):
         # read all written messages
         print("reading all messages")
         my_file = open(self.test_file_name, 'rb' if self.binary_file else 'r')
-        with self.reader_constructor(self.test_file_name) as reader:
+        with self.reader_constructor(my_file) as reader:
             read_messages = list(reader)
             r = reader
         if hasattr(my_file, 'closed'):
