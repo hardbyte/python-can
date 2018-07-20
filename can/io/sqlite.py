@@ -46,6 +46,7 @@ class SqliteReader(BaseIOHandler):
 
         .. warning:: In contrary to all other readers/writers the Sqlite handlers
                      do not accept file-like objects as the `file` parameter.
+                     It also runs in ``append=True`` mode all the time.
         """
         super(SqliteReader, self).__init__(file=None)
         self._conn = sqlite3.connect(file)
