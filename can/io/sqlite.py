@@ -35,6 +35,8 @@ class SqliteReader(BaseIOHandler):
 
     Calling :func:`~builtin.len` on this object might not run in constant time.
 
+    :attr str table_name: the name of the database table used for storing the messages
+
     .. note:: The database schema is given in the documentation of the loggers.
     """
 
@@ -91,12 +93,20 @@ class SqliteWriter(BaseIOHandler, BufferedReader):
     be created when the first message arrives.
 
     Messages are internally buffered and written to the SQL file in a background
-    thread.
+    thread. Ensures that all messages that are added before calling :meth:`~can.SqliteWriter.stop()`
+    are actually written to the database after that call returns. Thus, calling
+    :meth:`~can.SqliteWriter.stop()` may take a while.
+
+    :attr str table_name: the name of the database table used for storing the messages
+    :attr int num_frames: the number of frames actally writtem to the database, this
+                          excludes messages that are still buffered
+    :attr float last_write: the last time a message war actually written to the database,
+                            as given by ``time.time()``
 
     .. note::
 
         When the listener's :meth:`~SqliteWriter.stop` method is called the
-        thread writing to the sql file will continue to receive and internally
+        thread writing to the database will continue to receive and internally
         buffer messages if they continue to arrive before the
         :attr:`~SqliteWriter.GET_MESSAGE_TIMEOUT`.
 
@@ -104,8 +114,9 @@ class SqliteWriter(BaseIOHandler, BufferedReader):
         is received, the internal buffer is written out to the database file.
 
         However if the bus is still saturated with messages, the Listener
-        will continue receiving until the :attr:`~SqliteWriter.MAX_TIME_BETWEEN_WRITES`
-        timeout is reached.
+        will continue receiving until the :attr:`~can.SqliteWriter.MAX_TIME_BETWEEN_WRITES`
+        timeout is reached or more than
+        :attr:`~can.SqliteWriter.MAX_BUFFER_SIZE_BEFORE_WRITES` messages are buffered.
 
     .. note:: The database schema is given in the documentation of the loggers.
 
@@ -116,6 +127,9 @@ class SqliteWriter(BaseIOHandler, BufferedReader):
 
     MAX_TIME_BETWEEN_WRITES = 5.0
     """Maximum number of seconds to wait between writes to the database"""
+
+    MAX_BUFFER_SIZE_BEFORE_WRITES = 500
+    """Maximum number of messages to buffer before writing to the database"""
 
     def __init__(self, file, table_name="messages"):
         """
@@ -132,6 +146,8 @@ class SqliteWriter(BaseIOHandler, BufferedReader):
         self._stop_running_event = threading.Event()
         self._writer_thread = threading.Thread(target=self._db_writer_thread)
         self._writer_thread.start()
+        self.num_frames = 0
+        self.last_write = time.time()
 
     def _create_db(self):
         """Creates a new databae or opens a connection to an existing one.
@@ -161,17 +177,15 @@ class SqliteWriter(BaseIOHandler, BufferedReader):
         self._insert_template = "INSERT INTO {} VALUES (?, ?, ?, ?, ?, ?, ?)".format(self.table_name)
 
     def _db_writer_thread(self):
-        num_frames = 0
-        last_write = time.time()
         self._create_db()
 
         try:
-            while not self._stop_running_event.is_set():
-                messages = []
+            while True:
+                messages = [] # reset buffer
 
                 msg = self.get_message(self.GET_MESSAGE_TIMEOUT)
                 while msg is not None:
-                    #log.debug("SqliteWriter: buffering message")
+                    log.debug("SqliteWriter: buffering message")
 
                     messages.append((
                         msg.timestamp,
@@ -183,11 +197,12 @@ class SqliteWriter(BaseIOHandler, BufferedReader):
                         buffer(msg.data)
                     ))
 
-                    if time.time() - last_write > self.MAX_TIME_BETWEEN_WRITES:
-                        #log.debug("Max timeout between writes reached")
-                        break
-
-                    msg = self.get_message(self.GET_MESSAGE_TIMEOUT)
+                    if time.time() - self.last_write > self.MAX_TIME_BETWEEN_WRITES or \
+                       len(messages) > self.MAX_BUFFER_SIZE_BEFORE_WRITES:
+                       break
+                    else:
+                        # just go on
+                        msg = self.get_message(self.GET_MESSAGE_TIMEOUT)
 
                 count = len(messages)
                 if count > 0:
@@ -195,16 +210,22 @@ class SqliteWriter(BaseIOHandler, BufferedReader):
                         #log.debug("Writing %s frames to db", count)
                         self._conn.executemany(self._insert_template, messages)
                         self._conn.commit() # make the changes visible to the entire database
-                        num_frames += count
-                        last_write = time.time()
+                    self.num_frames += count
+                    self.last_write = time.time()
 
-                # go back up and check if we are still supposed to run
+                # check if we are still supposed to run and go back up if yes
+                if self._stop_running_event.is_set():
+                    break
 
         finally:
             self._conn.close()
-            log.info("Stopped sqlite writer after writing %s messages", num_frames)
+            log.info("Stopped sqlite writer after writing %d messages", self.num_frames)
 
     def stop(self):
-        super(SqliteWriter, self).stop()
+        """Stops the reader an writes all remaining messages to the database. Thus, this
+        might take a while an block.
+        """
+        BufferedReader.stop(self)
         self._stop_running_event.set()
         self._writer_thread.join()
+        BaseIOHandler.stop(self)
