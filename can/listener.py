@@ -67,7 +67,12 @@ class BufferedReader(Listener):
     **message buffer**: that is, when the :class:`can.BufferedReader` instance is
     notified of a new message it pushes it into a queue of messages waiting to
     be serviced. The messages can then be fetched with
-    :meth:`~can.BufferedReader.get_message`
+    :meth:`~can.BufferedReader.get_message`.
+
+    Putting in messages after :meth:`~can.BufferedReader.stop` has be called will raise
+    an exception, see :meth:`~can.BufferedReader.on_message_received`.
+
+    :attr bool is_stopped: ``True`` iff the reader has been stopped
     """
 
     def __init__(self):
@@ -75,19 +80,33 @@ class BufferedReader(Listener):
         self.buffer = SimpleQueue(0)
 
     def on_message_received(self, msg):
-        self.buffer.put(msg)
+        """Append a message to the buffer.
+
+        :raises: BufferError
+            if the reader has already been stopped
+        """
+        if self.is_stopped:
+            raise BufferError("reader has already been stopped")
+        else:
+            self.buffer.put(msg)
 
     def get_message(self, timeout=0.5):
         """
         Attempts to retrieve the latest message received by the instance. If no message is
-        available it blocks for given timeout or until a message is received (whichever
-        is shorter),
+        available it blocks for given timeout or until a message is received, or else
+        returns None (whichever is shorter). This method does not block after
+        :meth:`can.BufferedReader.stop` has been called.
 
         :param float timeout: The number of seconds to wait for a new message.
-        :rytpe: can.Message
+        :rytpe: can.Message or None
         :return: the message if there is one, or None if there is not.
         """
         try:
-            return self.buffer.get(block=True, timeout=timeout)
+            return self.buffer.get(block=not self.is_stopped, timeout=timeout)
         except Empty:
             return None
+
+    def stop(self):
+        """Prohibits any more additions to this reader.
+        """
+        self.is_stopped = True
