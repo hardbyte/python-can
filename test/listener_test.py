@@ -92,10 +92,9 @@ class ListenerTest(BusTest):
 
     def testPlayerTypeResolution(self):
         def test_filetype_to_instance(extension, klass):
-            can_player = can.LogReader("test.{}".format(extension))
-            self.assertIsInstance(can_player, klass)
-            if hasattr(can_player, "stop"):
-                can_player.stop()
+            with tempfile.NamedTemporaryFile(suffix=extension) as my_file:
+                with can.LogReader(my_file.name) as reader:
+                    self.assertIsInstance(reader, klass)
 
         test_filetype_to_instance("asc", can.ASCReader)
         test_filetype_to_instance("blf", can.BLFReader)
@@ -111,10 +110,9 @@ class ListenerTest(BusTest):
 
     def testLoggerTypeResolution(self):
         def test_filetype_to_instance(extension, klass):
-            can_logger = can.Logger("test.{}".format(extension))
-            self.assertIsInstance(can_logger, klass)
-            if hasattr(can_logger, "stop"):
-                can_logger.stop()
+            with tempfile.NamedTemporaryFile(suffix=extension) as my_file:
+                with can.Logger(my_file.name) as writer:
+                    self.assertIsInstance(writer, klass)
 
         test_filetype_to_instance("asc", can.ASCWriter)
         test_filetype_to_instance("blf", can.BLFWriter)
@@ -130,8 +128,10 @@ class ListenerTest(BusTest):
     def testBufferedListenerReceives(self):
         a_listener = can.BufferedReader()
         a_listener(generate_message(0xDADADA))
-        m = a_listener.get_message(0.1)
-        self.assertIsNotNone(m)
+        a_listener(generate_message(0xDADADA))
+        self.assertIsNotNone(a_listener.get_message(0.1))
+        a_listener.stop()
+        self.assertIsNotNone(a_listener.get_message(0.1))
 
 
 if __name__ == '__main__':
