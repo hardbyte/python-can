@@ -239,7 +239,7 @@ class ReaderWriterTest(unittest.TestCase):
         try:
             writer = self.writer_constructor(self.test_file_name, append=True)
         except TypeError as e:
-            # maybe "append" is not a formal parameter
+            # maybe "append" is not a formal parameter (this is the case for SqliteWriter)
             try:
                 writer = self.writer_constructor(self.test_file_name)
             except TypeError:

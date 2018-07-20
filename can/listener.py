@@ -8,11 +8,16 @@ This module contains the implementation of `can.Listener` and some readers.
 from abc import ABCMeta, abstractmethod
 
 try:
-    # Python 3
+    # Python 3.7
     from queue import SimpleQueue, Empty
 except ImportError:
-    # Python 2
-    from Queue import Queue as SimpleQueue, Empty
+    try:
+        # Python 3.0 - 3.6
+        from queue import Queue as SimpleQueue, Empty
+    except ImportError:
+        # Python 2
+        from Queue import Queue as SimpleQueue, Empty
+
 
 class Listener(object):
     """The basic listener that can be called directly to handle some
