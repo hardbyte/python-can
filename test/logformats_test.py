@@ -15,6 +15,7 @@ TODO: implement CAN FD support testing
 
 from __future__ import print_function, absolute_import, division
 
+import logging
 import unittest
 import tempfile
 import os
@@ -31,6 +32,8 @@ import can
 
 from .data.example_data import TEST_MESSAGES_BASE, TEST_MESSAGES_REMOTE_FRAMES, \
                                TEST_MESSAGES_ERROR_FRAMES, TEST_COMMENTS
+
+logging.basicConfig(level=logging.DEBUG)
 
 
 class ReaderWriterTest(unittest.TestCase):

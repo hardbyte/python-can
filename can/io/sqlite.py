@@ -187,7 +187,7 @@ class SqliteWriter(BaseIOHandler, BufferedReader):
 
                 msg = self.get_message(self.GET_MESSAGE_TIMEOUT)
                 while msg is not None:
-                    log.debug("SqliteWriter: buffering message")
+                    #log.debug("SqliteWriter: buffering message")
 
                     messages.append((
                         msg.timestamp,
@@ -209,7 +209,7 @@ class SqliteWriter(BaseIOHandler, BufferedReader):
                 count = len(messages)
                 if count > 0:
                     with self._conn:
-                        #log.debug("Writing %s frames to db", count)
+                        #log.debug("Writing %d frames to db", count)
                         self._conn.executemany(self._insert_template, messages)
                         self._conn.commit() # make the changes visible to the entire database
                     self.num_frames += count

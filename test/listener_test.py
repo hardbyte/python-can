@@ -11,7 +11,6 @@ import unittest
 import random
 import logging
 import tempfile
-import os.path
 import sqlite3
 
 import can
@@ -21,7 +20,7 @@ from .data.example_data import generate_message
 channel = 'virtual_channel_0'
 can.rc['interface'] = 'virtual'
 
-logging.getLogger('').setLevel(logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG)
 
 # makes the random number generator deterministic
 random.seed(13339115)
