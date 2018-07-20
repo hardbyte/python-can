@@ -404,7 +404,7 @@ class TestSqliteDatabaseFormat(ReaderWriterTest):
         # read all written messages
         print("reading all messages")
         with self.reader_constructor(self.test_file_name) as reader:
-            read_messages = reader.read_all()
+            read_messages = list(reader.read_all())
 
         # check if at least the number of messages matches; 
         self.assertEqual(len(read_messages), len(self.original_messages),
