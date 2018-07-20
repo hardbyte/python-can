@@ -96,15 +96,15 @@ class ListenerTest(BusTest):
                 with can.LogReader(my_file.name) as reader:
                     self.assertIsInstance(reader, klass)
 
-        test_filetype_to_instance("asc", can.ASCReader)
-        test_filetype_to_instance("blf", can.BLFReader)
-        test_filetype_to_instance("csv", can.CSVReader)
-        test_filetype_to_instance("db" , can.SqliteReader)
-        test_filetype_to_instance("log", can.CanutilsLogReader)
+        test_filetype_to_instance(".asc", can.ASCReader)
+        test_filetype_to_instance(".blf", can.BLFReader)
+        test_filetype_to_instance(".csv", can.CSVReader)
+        test_filetype_to_instance(".db" , can.SqliteReader)
+        test_filetype_to_instance(".log", can.CanutilsLogReader)
 
         # test file extensions that are not supported
-        with self.assertRaisesRegexp(NotImplementedError, "xyz_42"):
-            test_filetype_to_instance("xyz_42", can.Printer)
+        with self.assertRaisesRegexp(NotImplementedError, ".xyz_42"):
+            test_filetype_to_instance(".xyz_42", can.Printer)
         with self.assertRaises(Exception):
             test_filetype_to_instance(None, can.Printer)
 
@@ -114,16 +114,16 @@ class ListenerTest(BusTest):
                 with can.Logger(my_file.name) as writer:
                     self.assertIsInstance(writer, klass)
 
-        test_filetype_to_instance("asc", can.ASCWriter)
-        test_filetype_to_instance("blf", can.BLFWriter)
-        test_filetype_to_instance("csv", can.CSVWriter)
-        test_filetype_to_instance("db" , can.SqliteWriter)
-        test_filetype_to_instance("log", can.CanutilsLogWriter)
-        test_filetype_to_instance("txt", can.Printer)
+        test_filetype_to_instance(".asc", can.ASCWriter)
+        test_filetype_to_instance(".blf", can.BLFWriter)
+        test_filetype_to_instance(".csv", can.CSVWriter)
+        test_filetype_to_instance(".db" , can.SqliteWriter)
+        test_filetype_to_instance(".log", can.CanutilsLogWriter)
+        test_filetype_to_instance(".txt", can.Printer)
 
         # test file extensions that should use a fallback
+        test_filetype_to_instance(".some_unknown_extention_42", can.Printer)
         test_filetype_to_instance(None, can.Printer)
-        test_filetype_to_instance("some_unknown_extention_42", can.Printer)
 
     def testBufferedListenerReceives(self):
         a_listener = can.BufferedReader()
