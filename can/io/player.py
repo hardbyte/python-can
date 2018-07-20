@@ -44,20 +44,20 @@ class LogReader(object):
     """
 
     @staticmethod
-    def __new__(cls, filename):
+    def __new__(cls, filename, *args, **kwargs):
         """
         :param str filename: the filename/path the file to read from
         """
         if filename.endswith(".asc"):
-            return ASCReader(filename)
+            return ASCReader(filename, *args, **kwargs)
         elif filename.endswith(".blf"):
-            return BLFReader(filename)
+            return BLFReader(filename, *args, **kwargs)
         elif filename.endswith(".csv"):
-            return CSVReader(filename)
+            return CSVReader(filename, *args, **kwargs)
         elif filename.endswith(".db"):
-            return SqliteReader(filename)
+            return SqliteReader(filename, *args, **kwargs)
         elif filename.endswith(".log"):
-            return CanutilsLogReader(filename)
+            return CanutilsLogReader(filename, *args, **kwargs)
         else:
             raise NotImplementedError("No read support for this log format: {}".format(filename))
 

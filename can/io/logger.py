@@ -36,20 +36,20 @@ class Logger(object):
     """
 
     @staticmethod
-    def __new__(cls, filename):
+    def __new__(cls, filename, *args, **kwargs):
         """
         :param str filename: the filename/path the file to write to
         """
         if filename.endswith(".asc"):
-            return ASCWriter(filename)
+            return ASCWriter(filename, *args, **kwargs)
         elif filename.endswith(".blf"):
-            return BLFWriter(filename)
+            return BLFWriter(filename, *args, **kwargs)
         elif filename.endswith(".csv"):
-            return CSVWriter(filename)
+            return CSVWriter(filename, *args, **kwargs)
         elif filename.endswith(".db"):
-            return SqliteWriter(filename)
+            return SqliteWriter(filename, *args, **kwargs)
         elif filename.endswith(".log"):
-            return CanutilsLogWriter(filename)
+            return CanutilsLogWriter(filename, *args, **kwargs)
         else:
             log.info('unknown file type "%s", falling pack to can.Printer', filename)
-            return Printer(filename)
+            return Printer(filename, *args, **kwargs)
