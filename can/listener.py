@@ -83,6 +83,7 @@ class BufferedReader(Listener):
     def __init__(self):
         # 0 is "infinite" size
         self.buffer = SimpleQueue(0)
+        self.is_stopped = False
 
     def on_message_received(self, msg):
         """Append a message to the buffer.
