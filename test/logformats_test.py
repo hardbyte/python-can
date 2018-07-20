@@ -17,6 +17,7 @@ from __future__ import print_function, absolute_import, division
 
 import unittest
 import tempfile
+import os
 import sqlite3
 import os
 from abc import abstractmethod, ABCMeta
@@ -97,23 +98,34 @@ class ReaderWriterTest(unittest.TestCase):
         self.test_append_enabled = test_append
         self.round_timestamps = round_timestamps
 
+    def setUp(self):
+        with tempfile.NamedTemporaryFile('w+', delete=False) as test_file:
+            self.test_file_name = test_file.name
+
+    def tearDown(self):
+        os.remove(self.test_file_name)
+        del self.test_file_name
+
     def test_path_like_explicit_stop(self):
         """testing with path-like and explicit stop() call"""
-        filename = self._get_temp_filename()
 
         # create writer
         print("writing all messages/comments")
-        writer = self.writer_constructor(filename)
+        writer = self.writer_constructor(self.test_file_name)
         self._write_all(writer)
         if hasattr(writer.file, 'fileno'):
             os.fsync(writer.file.fileno())
         writer.stop()
+        if hasattr(writer.file, 'closed'):
+            self.assertTrue(writer.file.closed)
 
         print("reading all messages")
-        reader = self.reader_constructor(filename)
+        reader = self.reader_constructor(self.test_file_name)
         read_messages = list(reader)
         # redundant, but this checks if stop() can be called multiple times
         reader.stop()
+        if hasattr(writer.file, 'closed'):
+            self.assertTrue(writer.file.closed)
 
         # check if at least the number of messages matches
         # could use assertCountEqual in later versions of Python and in the other methods
@@ -121,34 +133,66 @@ class ReaderWriterTest(unittest.TestCase):
             "the number of written messages does not match the number of read messages")
 
         self.assertMessagesEqual(read_messages)
-        self.assertIncludesComments(filename)
+        self.assertIncludesComments(self.test_file_name)
 
     def test_path_like_context_manager(self):
         """testing with path-like object and context manager"""
-        filename = self._get_temp_filename()
 
         # create writer
         print("writing all messages/comments")
-        with self.writer_constructor(filename) as writer:
+        with self.writer_constructor(self.test_file_name) as writer:
             self._write_all(writer)
             if hasattr(writer.file, 'fileno'):
                 os.fsync(writer.file.fileno())
+            w = writer
+        if hasattr(w.file, 'closed'):
+            self.assertTrue(w.file.closed)
 
         # read all written messages
         print("reading all messages")
-        with self.reader_constructor(filename) as reader:
+        with self.reader_constructor(self.test_file_name) as reader:
             read_messages = list(reader)
+            r = reader
+        if hasattr(r.file, 'closed'):
+            self.assertTrue(r.file.closed)
 
         # check if at least the number of messages matches; 
         self.assertEqual(len(read_messages), len(self.original_messages),
             "the number of written messages does not match the number of read messages")
 
         self.assertMessagesEqual(read_messages)
-        self.assertIncludesComments(filename)
+        self.assertIncludesComments(self.test_file_name)
 
     def test_file_like_explicit_stop(self):
         """testing with file-like object and explicit stop() call"""
-        raise unittest.SkipTest("not yet implemented")
+
+        # create writer
+        print("writing all messages/comments")
+        my_file = open(self.test_file_name, 'w')
+        writer = self.writer_constructor(my_file)
+        self._write_all(writer)
+        if hasattr(writer.file, 'fileno'):
+            os.fsync(writer.file.fileno())
+        writer.stop()
+        if hasattr(my_file, 'closed'):
+            self.assertTrue(my_file.closed)
+
+        print("reading all messages")
+        my_file = open(self.test_file_name, 'r')
+        reader = self.reader_constructor(my_file)
+        read_messages = list(reader)
+        # redundant, but this checks if stop() can be called multiple times
+        reader.stop()
+        if hasattr(my_file, 'closed'):
+            self.assertTrue(my_file.closed)
+
+        # check if at least the number of messages matches
+        # could use assertCountEqual in later versions of Python and in the other methods
+        self.assertEqual(len(read_messages), len(self.original_messages),
+            "the number of written messages does not match the number of read messages")
+
+        self.assertMessagesEqual(read_messages)
+        self.assertIncludesComments(self.test_file_name)
 
     def test_file_like_context_manager(self):
         """testing with file-like object and context manager"""
@@ -161,13 +205,12 @@ class ReaderWriterTest(unittest.TestCase):
         if not self.test_append_enabled:
             raise unittest.SkipTest("do not test append mode")
 
-        filename = self._get_temp_filename()
         count = len(self.original_messages)
         first_part = self.original_messages[:count //  2]
         second_part = self.original_messages[count //  2:]
 
         # write first half
-        with self.writer_constructor(filename) as writer:
+        with self.writer_constructor(self.test_file_name) as writer:
             for message in first_part:
                 writer(message)
             if hasattr(writer.file, 'fileno'):
@@ -175,11 +218,11 @@ class ReaderWriterTest(unittest.TestCase):
 
         # use append mode for second half
         try:
-            writer = self.writer_constructor(filename, append=True)
+            writer = self.writer_constructor(self.test_file_name, append=True)
         except TypeError as e:
             # maybe "append" is not a formal parameter
             try:
-                writer = self.writer_constructor(filename)
+                writer = self.writer_constructor(self.test_file_name)
             except TypeError:
                 # is the is still a problem, raise the initial error
                 raise e
@@ -188,15 +231,10 @@ class ReaderWriterTest(unittest.TestCase):
                 writer(message)
             if hasattr(writer.file, 'fileno'):
                 os.fsync(writer.file.fileno())
-        with self.reader_constructor(filename) as reader:
+        with self.reader_constructor(self.test_file_name) as reader:
             read_messages = list(reader)
 
         self.assertMessagesEqual(read_messages)
-
-    @staticmethod
-    def _get_temp_filename():
-        with tempfile.NamedTemporaryFile('w+', delete=False) as temp:
-            return temp.name
 
     def _write_all(self, writer):
         """Writes messages and insert comments here and there."""
@@ -237,7 +275,7 @@ class ReaderWriterTest(unittest.TestCase):
         """
         if self.original_comments:
             # read the entire outout file
-            with open(filename, 'rt') as file:
+            with open(filename, 'r') as file:
                 output_contents = file.read()
             # check each, if they can be found in there literally
             for comment in self.original_comments:
