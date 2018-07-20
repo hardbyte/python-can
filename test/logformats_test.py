@@ -18,8 +18,6 @@ from __future__ import print_function, absolute_import, division
 import unittest
 import tempfile
 import os
-import sqlite3
-import os
 from abc import abstractmethod, ABCMeta
 
 try:
@@ -32,8 +30,7 @@ except ImportError:
 import can
 
 from .data.example_data import TEST_MESSAGES_BASE, TEST_MESSAGES_REMOTE_FRAMES, \
-                               TEST_MESSAGES_ERROR_FRAMES, TEST_COMMENTS, \
-                               generate_message
+                               TEST_MESSAGES_ERROR_FRAMES, TEST_COMMENTS
 
 
 class ReaderWriterTest(unittest.TestCase):
