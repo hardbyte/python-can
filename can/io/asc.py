@@ -13,9 +13,9 @@ from datetime import datetime
 import time
 import logging
 
-from can.listener import Listener
-from can.message import Message
-from can.util import channel2int
+from ..message import Message
+from ..listener import Listener
+from ..util import channel2int
 from .generic import BaseIOHandler
 
 CAN_MSG_EXT = 0x80000000
