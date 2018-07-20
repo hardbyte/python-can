@@ -9,11 +9,10 @@ from abc import ABCMeta, abstractmethod
 
 try:
     # Python 3
-    import queue
+    from queue import SimpleQueue, Empty
 except ImportError:
     # Python 2
-    import Queue as queue
-
+    from Queue import Queue as SimpleQueue, Empty
 
 class Listener(object):
     """The basic listener that can be called directly to handle some
@@ -73,7 +72,7 @@ class BufferedReader(Listener):
 
     def __init__(self):
         # 0 is "infinite" size
-        self.buffer = queue.Queue(0)
+        self.buffer = SimpleQueue(0)
 
     def on_message_received(self, msg):
         self.buffer.put(msg)
@@ -90,5 +89,5 @@ class BufferedReader(Listener):
         """
         try:
             return self.buffer.get(block=True, timeout=timeout)
-        except queue.Empty:
+        except Empty:
             return None
