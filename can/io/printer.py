@@ -29,6 +29,8 @@ class Printer(BaseIOHandler, Listener):
         """
         :param file: an optional path-like object or as file-like object to "print"
                      to instead of writing to standard out (stdout)
+                     If this is a file-like object, is has to opened in text
+                     write mode, not binary write mode.
         """
         self.write_to_file = file is not None
         super(Printer, self).__init__(file, mode='w')

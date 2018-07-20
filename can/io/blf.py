@@ -126,6 +126,8 @@ class BLFReader(BaseIOHandler):
     def __init__(self, file):
         """
         :param file: a path-like object or as file-like object to read from
+                     If this is a file-like object, is has to opened in binary
+                     read mode, not text read mode.
         """
         super(BLFReader, self).__init__(file, mode='rb')
         data = self.file.read(FILE_HEADER_STRUCT.size)
@@ -269,6 +271,8 @@ class BLFWriter(BaseIOHandler, Listener):
     def __init__(self, file, channel=1):
         """
         :param file: a path-like object or as file-like object to write to
+                     If this is a file-like object, is has to opened in binary
+                     write mode, not text write mode.
         """
         super(BLFWriter, self).__init__(file, mode='wb')
         self.channel = channel

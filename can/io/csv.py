@@ -44,6 +44,8 @@ class CSVWriter(BaseIOHandler, Listener):
     def __init__(self, file, append=False):
         """
         :param file: a path-like object or as file-like object to write to
+                     If this is a file-like object, is has to opened in text
+                     write mode, not binary write mode.
         :param bool append: if set to `True` messages are appended to
                             the file and no header line is written, else
                             the file is truncated and starts with a newly
@@ -82,6 +84,8 @@ class CSVReader(BaseIOHandler):
     def __init__(self, file):
         """
         :param file: a path-like object or as file-like object to read from
+                     If this is a file-like object, is has to opened in text
+                     read mode, not binary read mode.
         """
         super(CSVReader, self).__init__(file, mode='r')
 

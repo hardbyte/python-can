@@ -57,7 +57,7 @@ class ReaderWriterTest(unittest.TestCase):
         raise NotImplementedError()
 
     def _setup_instance_helper(self,
-            writer_constructor, reader_constructor,
+            writer_constructor, reader_constructor, binary_file=False,
             check_remote_frames=True, check_error_frames=True, check_comments=False,
             test_append=False, round_timestamps=False):
         """
@@ -95,6 +95,7 @@ class ReaderWriterTest(unittest.TestCase):
 
         self.writer_constructor = writer_constructor
         self.reader_constructor = reader_constructor
+        self.binary_file = binary_file
         self.test_append_enabled = test_append
         self.round_timestamps = round_timestamps
 
@@ -168,7 +169,7 @@ class ReaderWriterTest(unittest.TestCase):
 
         # create writer
         print("writing all messages/comments")
-        my_file = open(self.test_file_name, 'w')
+        my_file = open(self.test_file_name, 'wb' if self.binary_file else 'w')
         writer = self.writer_constructor(my_file)
         self._write_all(writer)
         if hasattr(writer.file, 'fileno'):
@@ -178,7 +179,7 @@ class ReaderWriterTest(unittest.TestCase):
             self.assertTrue(my_file.closed)
 
         print("reading all messages")
-        my_file = open(self.test_file_name, 'r')
+        my_file = open(self.test_file_name, 'rb' if self.binary_file else 'r')
         reader = self.reader_constructor(my_file)
         read_messages = list(reader)
         # redundant, but this checks if stop() can be called multiple times
@@ -199,7 +200,7 @@ class ReaderWriterTest(unittest.TestCase):
 
         # create writer
         print("writing all messages/comments")
-        my_file = open(self.test_file_name, 'w')
+        my_file = open(self.test_file_name, 'wb' if self.binary_file else 'w')
         with self.writer_constructor(my_file) as writer:
             self._write_all(writer)
             if hasattr(writer.file, 'fileno'):
@@ -210,7 +211,7 @@ class ReaderWriterTest(unittest.TestCase):
 
         # read all written messages
         print("reading all messages")
-        my_file = open(self.test_file_name, 'w')
+        my_file = open(self.test_file_name, 'rb' if self.binary_file else 'r')
         with self.reader_constructor(self.test_file_name) as reader:
             read_messages = list(reader)
             r = reader
@@ -301,7 +302,7 @@ class ReaderWriterTest(unittest.TestCase):
         """
         if self.original_comments:
             # read the entire outout file
-            with open(filename, 'r') as file:
+            with open(filename, 'rb' if self.binary_file else 'r') as file:
                 output_contents = file.read()
             # check each, if they can be found in there literally
             for comment in self.original_comments:
@@ -328,6 +329,7 @@ class TestBlfFileFormat(ReaderWriterTest):
     def _setup_instance(self):
         super(TestBlfFileFormat, self)._setup_instance_helper(
             can.BLFWriter, can.BLFReader,
+            binary_file=True,
             check_comments=False
         )
 

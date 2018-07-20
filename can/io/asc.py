@@ -34,6 +34,8 @@ class ASCReader(BaseIOHandler):
     def __init__(self, file):
         """
         :param file: a path-like object or as file-like object to read from
+                     If this is a file-like object, is has to opened in text
+                     read mode, not binary read mode.
         """
         super(ASCReader, self).__init__(file, mode='r')
 
@@ -134,6 +136,8 @@ class ASCWriter(BaseIOHandler, Listener):
     def __init__(self, file, channel=1):
         """
         :param file: a path-like object or as file-like object to write to
+                     If this is a file-like object, is has to opened in text
+                     write mode, not binary write mode.
         :param channel: a default channel to use when the message does not
                         have a channel set
         """
