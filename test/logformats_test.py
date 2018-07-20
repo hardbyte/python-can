@@ -392,6 +392,26 @@ class TestSqliteDatabaseFormat(ReaderWriterTest):
     def test_file_like_context_manager(self):
         pass
 
+    def test_read_all(self):
+        """
+        testing :meth:`can.SqliteReader.read_all` with context manager and path-like object
+        """
+        # create writer
+        print("writing all messages/comments")
+        with self.writer_constructor(self.test_file_name) as writer:
+            self._write_all(writer)
+
+        # read all written messages
+        print("reading all messages")
+        with self.reader_constructor(self.test_file_name) as reader:
+            read_messages = reader.read_all()
+
+        # check if at least the number of messages matches; 
+        self.assertEqual(len(read_messages), len(self.original_messages),
+            "the number of written messages does not match the number of read messages")
+
+        self.assertMessagesEqual(read_messages)
+
 
 class TestPrinter(unittest.TestCase):
     """Tests that can.Printer does not crash"""
