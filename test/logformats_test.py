@@ -196,7 +196,33 @@ class ReaderWriterTest(unittest.TestCase):
 
     def test_file_like_context_manager(self):
         """testing with file-like object and context manager"""
-        raise unittest.SkipTest("not yet implemented")
+
+        # create writer
+        print("writing all messages/comments")
+        my_file = open(self.test_file_name, 'w')
+        with self.writer_constructor(my_file) as writer:
+            self._write_all(writer)
+            if hasattr(writer.file, 'fileno'):
+                os.fsync(writer.file.fileno())
+            w = writer
+        if hasattr(my_file, 'closed'):
+            self.assertTrue(my_file.closed)
+
+        # read all written messages
+        print("reading all messages")
+        my_file = open(self.test_file_name, 'w')
+        with self.reader_constructor(self.test_file_name) as reader:
+            read_messages = list(reader)
+            r = reader
+        if hasattr(my_file, 'closed'):
+            self.assertTrue(my_file.closed)
+
+        # check if at least the number of messages matches; 
+        self.assertEqual(len(read_messages), len(self.original_messages),
+            "the number of written messages does not match the number of read messages")
+
+        self.assertMessagesEqual(read_messages)
+        self.assertIncludesComments(self.test_file_name)
 
     def test_append_mode(self):
         """
