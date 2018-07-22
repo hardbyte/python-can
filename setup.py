@@ -46,6 +46,10 @@ setup(
     # Code
     version=version,
     packages=find_packages(exclude=["test", "test.*"]),
+    scripts=[
+        'scripts/logger.py',
+        'scripts/player.py'
+    ],
 
     # Author
     author="Brian Thorne",
