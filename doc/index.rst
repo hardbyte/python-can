@@ -43,7 +43,7 @@ Contents:
    configuration
    api
    interfaces
-   bin
+   scripts
    development
    history
 
