@@ -11,10 +11,10 @@ Similar to canplayer in the can-utils package.
 from __future__ import print_function
 
 import argparse
-import datetime
+from datetime import datetime
 
 import can
-from can.io.player import LogReader, MessageSync
+from can import Bus, LogReader, MessageSync
 
 
 def main():
@@ -64,18 +64,17 @@ def main():
 
     config = {"single_handle": True}
     if results.interface:
-        config["bustype"] = results.interface
+        config["interface"] = results.interface
     if results.bitrate:
         config["bitrate"] = results.bitrate
-    bus = can.interface.Bus(results.channel, **config)
+    bus = Bus(results.channel, **config)
 
     player = LogReader(results.infile)
 
     in_sync = MessageSync(player, timestamps=results.timestamps,
                           gap=gap, skip=results.skip)
 
-    print('Can LogReader (Started on {})'.format(
-        datetime.datetime.now()))
+    print('Can LogReader (Started on {})'.format(datetime.now()))
 
     try:
         for m in in_sync:

@@ -19,13 +19,12 @@ Dynamic Controls 2010
 
 from __future__ import print_function
 
-import datetime
 import argparse
 import socket
+from datetime import datetime
 
 import can
-from can.bus import BusState
-from can.io.logger import Logger
+from can import Bus, BusState, Logger
 
 
 def main():
@@ -84,10 +83,10 @@ def main():
 
     config = {"can_filters": can_filters, "single_handle": True}
     if results.interface:
-        config["bustype"] = results.interface
+        config["interface"] = results.interface
     if results.bitrate:
         config["bitrate"] = results.bitrate
-    bus = can.interface.Bus(results.channel, **config)
+    bus = Bus(results.channel, **config)
 
     if results.active:
         bus.state = BusState.ACTIVE
@@ -96,7 +95,7 @@ def main():
         bus.state = BusState.PASSIVE
 
     print('Connected to {}: {}'.format(bus.__class__.__name__, bus.channel_info))
-    print('Can Logger (Started on {})\n'.format(datetime.datetime.now()))
+    print('Can Logger (Started on {})\n'.format(datetime.now()))
     logger = Logger(results.log_file)
 
     try:
