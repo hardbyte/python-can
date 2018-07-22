@@ -50,7 +50,7 @@ Features
 Example usage
 -------------
 
-::
+.. code:: python
 
     # import the library
     import can

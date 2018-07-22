@@ -478,11 +478,9 @@ class IXXATBus(BusABC):
             channel=self.channel
         )
 
-        #log.debug('Recv()ed message %s', rx_msg)
         return rx_msg, True
 
     def send(self, msg, timeout=None):
-        log.debug("Sending message: %s", msg)
 
         # This system is not designed to be very efficient
         message = structures.CANMSG()
