@@ -122,7 +122,11 @@ class Bus(BusABC):
             channel = config['channel']
             del config['channel']
 
-        return cls(channel, *args, **config)
+        if channel is None:
+            # Use the default channel for the backend
+            return cls(*args, **config)
+        else:
+            return cls(channel, *args, **config)    
 
 
 def detect_available_configs(interfaces=None):
