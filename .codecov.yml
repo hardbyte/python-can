@@ -1,0 +1,19 @@
+codecov:
+  archive:
+    uploads: no
+
+coverage:
+  precision: 2
+  round: down
+  range: 50...100
+
+comment:
+  layout: "header, diff, changes"
+
+coverage:
+  status:
+    # pull-requests only
+    patch:
+      default:
+        # coverage may fall by <1.0% and still be considered "passing"
+        threshold: 1.0%
