@@ -45,7 +45,7 @@ and 2018.
 Support for CAN within Python
 -----------------------------
 
-Python natively supports the CAN protocol from version 3.3 on, if running on Lniux:
+Python natively supports the CAN protocol from version 3.3 on, if running on Linux:
 
 ==============  ==============================================================  ====
 Python version  Feature                                                         Link
