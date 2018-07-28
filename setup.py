@@ -51,7 +51,7 @@ setup(
     # Code
     version=version,
     packages=find_packages(exclude=["test", "test.*"]),
-    scripts=filter(isfile, (join("scripts/", f) for f in listdir("scripts/"))),
+    scripts=list(filter(isfile, (join("scripts/", f) for f in listdir("scripts/")))),
 
     # Author
     author="Brian Thorne",
