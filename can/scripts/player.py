@@ -8,7 +8,7 @@ to a CAN bus.
 Similar to canplayer in the can-utils package.
 """
 
-from __future__ import print_function
+from __future__ import absolute_import, print_function
 
 import argparse
 from datetime import datetime
@@ -19,11 +19,11 @@ from can import Bus, LogReader, MessageSync
 
 def main():
     parser = argparse.ArgumentParser(
-        "python -m can.player",
-        description="Replay CAN traffic")
+        "python -m can.scripts.player",
+        description="Replay CAN traffic.")
 
     parser.add_argument("-f", "--file_name", dest="log_file",
-                        help="""Path and base log filename, extension can be .txt, .asc, .csv, .db, .npz""",
+                        help="""Path and base log filename, for supported types see can.LogReader.""",
                         default=None)
 
     parser.add_argument("-v", action="count", dest="verbosity",
@@ -44,20 +44,20 @@ def main():
                         help='''Bitrate to use for the CAN bus.''')
 
     parser.add_argument('--ignore-timestamps', dest='timestamps',
-                        help='''Ignore timestamps (send all frames immediately with minimum gap between
-    frames)''', action='store_false')
+                        help='''Ignore timestamps (send all frames immediately with minimum gap between frames)''',
+                        action='store_false')
 
-    parser.add_argument('-g', '--gap', type=float, help='''<s> minimum time between replayed frames''')
+    parser.add_argument('-g', '--gap', type=float, help='''<s> minimum time between replayed frames''',
+                        default=0.0001)
     parser.add_argument('-s', '--skip', type=float, default=60*60*24,
                         help='''<s> skip gaps greater than 's' seconds''')
 
     parser.add_argument('infile', metavar='input-file', type=str,
-                        help='The file to replay. Supported types: .db, .blf')
+                        help='The file to replay. For supported types see can.LogReader.')
 
     results = parser.parse_args()
 
     verbosity = results.verbosity
-    gap = 0.0001 if results.gap is None else results.gap
 
     logging_level_name = ['critical', 'error', 'warning', 'info', 'debug', 'subdebug'][min(5, verbosity)]
     can.set_logging_level(logging_level_name)
@@ -69,10 +69,10 @@ def main():
         config["bitrate"] = results.bitrate
     bus = Bus(results.channel, **config)
 
-    player = LogReader(results.infile)
+    reader = LogReader(results.infile)
 
-    in_sync = MessageSync(player, timestamps=results.timestamps,
-                          gap=gap, skip=results.skip)
+    in_sync = MessageSync(reader, timestamps=results.timestamps,
+                          gap=results.gap, skip=results.skip)
 
     print('Can LogReader (Started on {})'.format(datetime.now()))
 
@@ -85,6 +85,7 @@ def main():
         pass
     finally:
         bus.shutdown()
+        reader.stop()
 
 
 if __name__ == "__main__":

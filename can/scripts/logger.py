@@ -17,7 +17,7 @@ Will filter for can frames with a can_id containing XXF03XXX.
 Dynamic Controls 2010
 """
 
-from __future__ import print_function
+from __future__ import absolute_import, print_function
 
 import argparse
 import socket
@@ -29,11 +29,11 @@ from can import Bus, BusState, Logger
 
 def main():
     parser = argparse.ArgumentParser(
-        "python -m can.logger",
-        description="Log CAN traffic, printing messages to stdout or to a given file")
+        "python -m can.scripts.logger",
+        description="Log CAN traffic, printing messages to stdout or to a given file.")
 
     parser.add_argument("-f", "--file_name", dest="log_file",
-                        help="""Path and base log filename, extension can be .txt, .asc, .csv, .db, .npz""",
+                        help="""Path and base log filename, for supported types see can.Logger.""",
                         default=None)
 
     parser.add_argument("-v", action="count", dest="verbosity",
@@ -58,8 +58,10 @@ def main():
                         help='''Bitrate to use for the CAN bus.''')
 
     group = parser.add_mutually_exclusive_group(required=False)
-    group.add_argument('--active', action='store_true')
-    group.add_argument('--passive', action='store_true')
+    group.add_argument('--active', help="Start the bus as active, this is applied the default.",
+                       action='store_true')
+    group.add_argument('--passive', help="Start the bus as passive.",
+                       action='store_true')
 
     results = parser.parse_args()
 

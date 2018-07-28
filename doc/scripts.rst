@@ -3,22 +3,30 @@ Scripts
 
 The following modules are callable from python-can.
 
-can.logger
-----------
+They can either be called by for example ``python -m can.scripts.logger`` or ``can_logger.py``.
 
-Command line help (``python -m can.logger --help``)::
+.. note::
+    The old ``can.logger``/``can.player`` modules still exist and work,
+    but are deprecated and will be removed in a future version.
 
-    usage: python -m can.logger [-h] [-f LOG_FILE] [-v] [-c CHANNEL]
-                                [-i {iscan,slcan,virtual,socketcan_ctypes,usb2can,ixxat,socketcan_native,kvaser,neovi,vector,nican,pcan,serial,remote,socketcan}]
-                                [--filter ...] [-b BITRATE]
 
-    Log CAN traffic, printing messages to stdout or to a given file
+can.scripts.logger
+------------------
+
+Command line help, called with ``--help``::
+
+    usage: python -m can.scripts.logger [-h] [-f LOG_FILE] [-v] [-c CHANNEL]
+                                        [-i {pcan,ixxat,socketcan_ctypes,kvaser,virtual,usb2can,vector,slcan,nican,socketcan,iscan,neovi,serial,socketcan_native}]
+                                        [--filter ...] [-b BITRATE]
+                                        [--active | --passive]
+
+    Log CAN traffic, printing messages to stdout or to a given file.
 
     optional arguments:
       -h, --help            show this help message and exit
       -f LOG_FILE, --file_name LOG_FILE
-                            Path and base log filename, extension can be .txt,
-                            .asc, .csv, .db, .npz
+                            Path and base log filename, for supported types see
+                            can.Logger.
       -v                    How much information do you want to see at the command
                             line? You can add several of these e.g., -vv is DEBUG
       -c CHANNEL, --channel CHANNEL
@@ -27,7 +35,7 @@ Command line help (``python -m can.logger --help``)::
                             might be a rfcomm device: "/dev/rfcomm0" With the
                             socketcan interfaces valid channel examples include:
                             "can0", "vcan0"
-      -i {iscan,slcan,virtual,socketcan_ctypes,usb2can,ixxat,socketcan_native,kvaser,neovi,vector,nican,pcan,serial,remote,socketcan}, --interface {iscan,slcan,virtual,socketcan_ctypes,usb2can,ixxat,socketcan_native,kvaser,neovi,vector,nican,pcan,serial,remote,socketcan}
+      -i {pcan,ixxat,socketcan_ctypes,kvaser,virtual,usb2can,vector,slcan,nican,socketcan,iscan,neovi,serial,socketcan_native}, --interface {pcan,ixxat,socketcan_ctypes,kvaser,virtual,usb2can,vector,slcan,nican,socketcan,iscan,neovi,serial,socketcan_native}
                             Specify the backend CAN interface to use. If left
                             blank, fall back to reading from configuration files.
       --filter ...          Comma separated filters can be specified for the given
@@ -37,29 +45,32 @@ Command line help (``python -m can.logger --help``)::
                             mask != can_id & mask)
       -b BITRATE, --bitrate BITRATE
                             Bitrate to use for the CAN bus.
+      --active              Start the bus as active, this is applied the default.
+      --passive             Start the bus as passive.
 
 
-can.player
-----------
+can.scripts.player
+------------------
 
-Command line help (``python -m can.player --help``)::
+Command line help, called with ``--help``::
 
-    usage: python -m can.player [-h] [-f LOG_FILE] [-v] [-c CHANNEL]
-                                [-i {kvaser,virtual,slcan,nican,neovi,ixxat,serial,usb2can,socketcan_ctypes,remote,socketcan_native,iscan,vector,pcan,socketcan}]
-                                [-b BITRATE] [--ignore-timestamps] [-g GAP]
-                                [-s SKIP]
-                                input-file
+    usage: python -m can.scripts.player [-h] [-f LOG_FILE] [-v] [-c CHANNEL]
+                                        [-i {pcan,ixxat,socketcan_ctypes,kvaser,virtual,usb2can,vector,slcan,nican,socketcan,iscan,neovi,serial,socketcan_native}]
+                                        [-b BITRATE] [--ignore-timestamps]
+                                        [-g GAP] [-s SKIP]
+                                        input-file
 
-    Replay CAN traffic
+    Replay CAN traffic.
 
     positional arguments:
-      input-file            The file to replay. Supported types: .db, .blf
+      input-file            The file to replay. For supported types see
+                            can.LogReader.
 
     optional arguments:
       -h, --help            show this help message and exit
       -f LOG_FILE, --file_name LOG_FILE
-                            Path and base log filename, extension can be .txt,
-                            .asc, .csv, .db, .npz
+                            Path and base log filename, for supported types see
+                            can.LogReader.
       -v                    Also print can frames to stdout. You can add several
                             of these to enable debugging
       -c CHANNEL, --channel CHANNEL
@@ -68,7 +79,7 @@ Command line help (``python -m can.player --help``)::
                             might be a rfcomm device: "/dev/rfcomm0" With the
                             socketcan interfaces valid channel examples include:
                             "can0", "vcan0"
-      -i {kvaser,virtual,slcan,nican,neovi,ixxat,serial,usb2can,socketcan_ctypes,remote,socketcan_native,iscan,vector,pcan,socketcan}, --interface {kvaser,virtual,slcan,nican,neovi,ixxat,serial,usb2can,socketcan_ctypes,remote,socketcan_native,iscan,vector,pcan,socketcan}
+      -i {pcan,ixxat,socketcan_ctypes,kvaser,virtual,usb2can,vector,slcan,nican,socketcan,iscan,neovi,serial,socketcan_native}, --interface {pcan,ixxat,socketcan_ctypes,kvaser,virtual,usb2can,vector,slcan,nican,socketcan,iscan,neovi,serial,socketcan_native}
                             Specify the backend CAN interface to use. If left
                             blank, fall back to reading from configuration files.
       -b BITRATE, --bitrate BITRATE
