@@ -292,7 +292,7 @@ class TPCANMsg (Structure):
     """
     Represents a PCAN message
     """
-    _fields_ = [ ("ID",      c_ulong),          # 11/29-bit message identifier - ID was changed from u_uint to c_ulong, as it caused a "Segmentation fault: 11" on Mac
+    _fields_ = [ ("ID",      c_ulong),          # 11/29-bit message identifier - was changed from u_uint to c_ulong, so it is compatible with the PCAN-USB Driver for macOS
                  ("MSGTYPE", TPCANMessageType), # Type of the message
                  ("LEN",     c_ubyte),          # Data Length Code of the message (0..8)
                  ("DATA",    c_ubyte * 8) ]     # Data of the message (DATA[0]..DATA[7])
@@ -303,7 +303,7 @@ class TPCANTimestamp (Structure):
     Represents a timestamp of a received PCAN message
     Total Microseconds = micros + 1000 * millis + 0x100000000 * 1000 * millis_overflow
     """
-    _fields_ = [ ("millis", c_uint),            # Base-value: milliseconds: 0.. 2^32-1
+    _fields_ = [ ("millis", c_ulong),           # Base-value: milliseconds: 0.. 2^32-1 - was changed from u_uint to c_ulong, so it is compatible with the PCAN-USB Driver for macOS
                  ("millis_overflow", c_ushort), # Roll-arounds of millis
                  ("micros", c_ushort) ]         # Microseconds: 0..999
 
@@ -312,7 +312,7 @@ class TPCANMsgFD (Structure):
     """
     Represents a PCAN message
     """
-    _fields_ = [ ("ID",      c_ulong),          # 11/29-bit message identifier - ID was changed from u_uint to c_ulong, as it caused a "Segmentation fault: 11" on Mac
+    _fields_ = [ ("ID",      c_ulong),          # 11/29-bit message identifier - was changed from u_uint to c_ulong, so it is compatible with the PCAN-USB Driver for macOS
                  ("MSGTYPE", TPCANMessageType), # Type of the message
                  ("DLC",     c_ubyte),          # Data Length Code of the message (0..15)
                  ("DATA",    c_ubyte * 64) ]    # Data of the message (DATA[0]..DATA[63])
