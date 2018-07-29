@@ -41,9 +41,11 @@ from .interfaces import VALID_INTERFACES
 from . import interface
 from .interface import Bus, detect_available_configs
 
-from can.broadcastmanager import send_periodic, \
+from .broadcastmanager import send_periodic, \
     CyclicSendTaskABC, \
     LimitedDurationCyclicSendTaskABC, \
     ModifiableCyclicTaskABC, \
     MultiRateCyclicSendTaskABC, \
     RestartableCyclicTaskABC
+
+from .scripts import *
