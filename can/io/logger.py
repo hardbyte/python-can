@@ -41,18 +41,24 @@ class Logger(BaseIOHandler, Listener):
     @staticmethod
     def __new__(cls, filename, *args, **kwargs):
         """
-        :param str filename: the filename/path the file to write to
+        :type filename: str or None or path-like
+        :param filename: the filename/path the file to write to,
+                         may be a path-like object if the target logger supports
+                         it, and may be None to instantiate a :class:`~can.Printer`
+
         """
-        if filename.endswith(".asc"):
-            return ASCWriter(filename, *args, **kwargs)
-        elif filename.endswith(".blf"):
-            return BLFWriter(filename, *args, **kwargs)
-        elif filename.endswith(".csv"):
-            return CSVWriter(filename, *args, **kwargs)
-        elif filename.endswith(".db"):
-            return SqliteWriter(filename, *args, **kwargs)
-        elif filename.endswith(".log"):
-            return CanutilsLogWriter(filename, *args, **kwargs)
-        else:
-            log.info('unknown file type "%s", falling pack to can.Printer', filename)
-            return Printer(filename, *args, **kwargs)
+        if filename:
+            if filename.endswith(".asc"):
+                return ASCWriter(filename, *args, **kwargs)
+            elif filename.endswith(".blf"):
+                return BLFWriter(filename, *args, **kwargs)
+            elif filename.endswith(".csv"):
+                return CSVWriter(filename, *args, **kwargs)
+            elif filename.endswith(".db"):
+                return SqliteWriter(filename, *args, **kwargs)
+            elif filename.endswith(".log"):
+                return CanutilsLogWriter(filename, *args, **kwargs)
+
+        # else:
+        log.info('unknown file type "%s", falling pack to can.Printer', filename)
+        return Printer(filename, *args, **kwargs)

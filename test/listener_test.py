@@ -12,6 +12,7 @@ import random
 import logging
 import tempfile
 import sqlite3
+from os.path import join, dirname
 
 import can
 
@@ -91,7 +92,14 @@ class ListenerTest(BusTest):
 
     def testPlayerTypeResolution(self):
         def test_filetype_to_instance(extension, klass):
-            with tempfile.NamedTemporaryFile(suffix=extension) as my_file:
+            print("testing: {}".format(extension))
+
+            if extension == ".blf":
+                file_handler = open(join(dirname(__file__), "data/logfile.blf"))
+            else:
+                file_handler = tempfile.NamedTemporaryFile(suffix=extension)
+
+            with file_handler as my_file:
                 with can.LogReader(my_file.name) as reader:
                     self.assertIsInstance(reader, klass)
 
@@ -104,11 +112,10 @@ class ListenerTest(BusTest):
         # test file extensions that are not supported
         with self.assertRaisesRegexp(NotImplementedError, ".xyz_42"):
             test_filetype_to_instance(".xyz_42", can.Printer)
-        with self.assertRaises(Exception):
-            test_filetype_to_instance(None, can.Printer)
 
     def testLoggerTypeResolution(self):
         def test_filetype_to_instance(extension, klass):
+            print("testing: {}".format(extension))
             with tempfile.NamedTemporaryFile(suffix=extension) as my_file:
                 with can.Logger(my_file.name) as writer:
                     self.assertIsInstance(writer, klass)
@@ -121,8 +128,11 @@ class ListenerTest(BusTest):
         test_filetype_to_instance(".txt", can.Printer)
 
         # test file extensions that should use a fallback
+        test_filetype_to_instance("", can.Printer)
+        test_filetype_to_instance(".", can.Printer)
         test_filetype_to_instance(".some_unknown_extention_42", can.Printer)
-        test_filetype_to_instance(None, can.Printer)
+        with can.Logger(None) as logger:
+            self.assertIsInstance(logger, can.Printer)
 
     def testBufferedListenerReceives(self):
         a_listener = can.BufferedReader()
