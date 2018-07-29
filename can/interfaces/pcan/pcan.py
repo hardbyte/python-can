@@ -215,7 +215,7 @@ class PcanBus(BusABC):
         bIsExt = (theMsg.MSGTYPE & PCAN_MESSAGE_EXTENDED.value) == PCAN_MESSAGE_EXTENDED.value
 
         dlc = theMsg.LEN
-        timestamp = boottimeEpoch + ((itsTimeStamp.micros + (1000 * itsTimeStamp.millis)) / (1000.0 * 1000.0))
+        timestamp = boottimeEpoch + ((itsTimeStamp.micros + 1000 * itsTimeStamp.millis + 0x100000000 * 1000 * itsTimeStamp.millis_overflow) / (1000.0 * 1000.0))
 
         rx_msg = Message(timestamp=timestamp,
                          arbitration_id=theMsg.ID,
