@@ -29,7 +29,7 @@ from can import Bus, BusState, Logger
 
 def main():
     parser = argparse.ArgumentParser(
-        "python -m can.scripts.logger",
+        "python -m can.logger",
         description="Log CAN traffic, printing messages to stdout or to a given file.")
 
     parser.add_argument("-f", "--file_name", dest="log_file",

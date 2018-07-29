@@ -3,22 +3,20 @@ Scripts
 
 The following modules are callable from python-can.
 
-They can either be called by for example ``python -m can.scripts.logger`` or ``can_logger.py``.
-
-.. note::
-    The old ``can.logger``/``can.player`` modules still exist and work,
-    but are deprecated and will be removed in a future version.
+They can either be called by for example ``python -m can.logger`` or ``can_logger.py`` (if installed by pip).
+The scripts are internally placed in the module ``can.scripts.*``,
+so they could also be launched by ``python -m can.scripts.logger``.
 
 
-can.scripts.logger
-------------------
+can.logger
+----------
 
 Command line help, called with ``--help``::
 
-    usage: python -m can.scripts.logger [-h] [-f LOG_FILE] [-v] [-c CHANNEL]
-                                        [-i {pcan,ixxat,socketcan_ctypes,kvaser,virtual,usb2can,vector,slcan,nican,socketcan,iscan,neovi,serial,socketcan_native}]
-                                        [--filter ...] [-b BITRATE]
-                                        [--active | --passive]
+    usage: python -m can.logger [-h] [-f LOG_FILE] [-v] [-c CHANNEL]
+                                [-i {pcan,ixxat,socketcan_ctypes,kvaser,virtual,usb2can,vector,slcan,nican,socketcan,iscan,neovi,serial,socketcan_native}]
+                                [--filter ...] [-b BITRATE]
+                                [--active | --passive]
 
     Log CAN traffic, printing messages to stdout or to a given file.
 
@@ -49,16 +47,16 @@ Command line help, called with ``--help``::
       --passive             Start the bus as passive.
 
 
-can.scripts.player
-------------------
+can.player
+----------
 
 Command line help, called with ``--help``::
 
-    usage: python -m can.scripts.player [-h] [-f LOG_FILE] [-v] [-c CHANNEL]
-                                        [-i {pcan,ixxat,socketcan_ctypes,kvaser,virtual,usb2can,vector,slcan,nican,socketcan,iscan,neovi,serial,socketcan_native}]
-                                        [-b BITRATE] [--ignore-timestamps]
-                                        [-g GAP] [-s SKIP]
-                                        input-file
+    usage: python -m can.player [-h] [-f LOG_FILE] [-v] [-c CHANNEL]
+                                [-i {pcan,ixxat,socketcan_ctypes,kvaser,virtual,usb2can,vector,slcan,nican,socketcan,iscan,neovi,serial,socketcan_native}]
+                                [-b BITRATE] [--ignore-timestamps]
+                                [-g GAP] [-s SKIP]
+                                input-file
 
     Replay CAN traffic.
 

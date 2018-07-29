@@ -19,7 +19,7 @@ from can import Bus, LogReader, MessageSync
 
 def main():
     parser = argparse.ArgumentParser(
-        "python -m can.scripts.player",
+        "python -m can.player",
         description="Replay CAN traffic.")
 
     parser.add_argument("-f", "--file_name", dest="log_file",
