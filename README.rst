@@ -19,9 +19,9 @@ python-can
    :target: https://ci.appveyor.com/project/hardbyte/python-can/history
    :alt: AppVeyor CI Server for develop branch
 
-.. |coverage| image:: https://codecov.io/gh/hardbyte/python-can/branch/master/graph/badge.svg
-   :target: https://codecov.io/gh/hardbyte/python-can
-   :alt: Coverage reports on Codecov.io
+.. |coverage| image:: https://codecov.io/gh/hardbyte/python-can/branch/develop/graph/badge.svg
+   :target: https://codecov.io/gh/hardbyte/python-can/branch/develop
+   :alt: Test coverage reports on Codecov.io
 
 
 The **C**\ ontroller **A**\ rea **N**\ etwork is a bus standard designed
