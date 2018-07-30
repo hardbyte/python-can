@@ -28,5 +28,6 @@ install:
 build: off
 
 test_script:
+  - set TMPDIR=%cd%\test\__tempdir__
   - "pytest"
   - "codecov"
