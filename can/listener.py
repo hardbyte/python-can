@@ -92,7 +92,7 @@ class BufferedReader(Listener):
             if the reader has already been stopped
         """
         if self.is_stopped:
-            raise BufferError("reader has already been stopped")
+            raise RuntimeError("reader has already been stopped")
         else:
             self.buffer.put(msg)
 
