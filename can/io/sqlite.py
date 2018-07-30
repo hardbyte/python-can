@@ -21,6 +21,10 @@ from .generic import BaseIOHandler
 
 log = logging.getLogger('can.io.sqlite')
 
+if sys.version_info.major < 3:	
+    # legacy fallback for Python 2
+    memoryview = buffer
+
 
 class SqliteReader(BaseIOHandler):
     """
