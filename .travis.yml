@@ -49,7 +49,7 @@ install:
   - travis_retry pip install .[test]
 
 script:
-  - pytest -v --timeout=300 --cov=can
+  - pytest
   - codecov
   # Build Docs with Sphinx
   # -a Write all files
