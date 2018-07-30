@@ -5,6 +5,10 @@
 python-can requires the setuptools package to be installed.
 """
 
+from __future__ import absolute_import
+
+from os import listdir
+from os.path import isfile, join
 from sys import version_info
 import re
 import logging
@@ -35,6 +39,7 @@ tests_require = [
 ] + extras_require['serial']
 
 extras_require['test'] = tests_require
+
 
 setup(
     # Description
@@ -74,6 +79,7 @@ setup(
     # Code
     version=version,
     packages=find_packages(exclude=["test", "test.*"]),
+    scripts=list(filter(isfile, (join("scripts/", f) for f in listdir("scripts/")))),
 
     # Author
     author="Brian Thorne",
