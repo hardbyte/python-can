@@ -40,6 +40,7 @@ These steps are a guideline on how to add a new backend to python-can.
   ``can.interfaces.VALID_INTERFACES``.
 - Add docs where appropiate, like in ``doc/interfaces.rst`` and add
   an entry in ``doc/interface/*``.
+  Update ``doc/scripts.rst`` accordingly.
 - Add tests in ``test/*`` where appropiate.
 
 
