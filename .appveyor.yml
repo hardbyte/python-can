@@ -29,14 +29,14 @@ build: off
 
 before_test:
   # see: https://help.appveyor.com/discussions/problems/938-getting-permission-denied-errors-when-trying-to-make-a-temp-directory
-  - set TMPDIR=%APPVEYOR_BUILD_FOLDER%\test\__tempdir__
+  # TMPDIR is used by Python to detect the temporary directory: https://docs.python.org/3/library/tempfile.html#tempfile.tempdir
+  - set TMPDIR=%APPVEYOR_BUILD_FOLDER%\test\__tmpdir__
   - mkdir %TMPDIR%
-  - icacls %TMPDIR% /inheritance:r /grant Everyone:F
+  - icacls %TMPDIR% /inheritance:r /grant Everyone:(OI)(CI)F
 
 test_script:
-  # TODO: is this required?
-  - set TMPDIR=%APPVEYOR_BUILD_FOLDER%\test\__tempdir__
   - "pytest"
   - "codecov"
 
-# TODO delete at the end (?)
+after_test:
+  - rmdir /S /Q %TMPDIR%
