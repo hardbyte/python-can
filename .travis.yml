@@ -1,16 +1,15 @@
 language: python
 
 python:
-  # CPython:
+  # CPython; versions 3.0-3.3 have reached EOL
   - "2.7"
-  # Python 3.3 has reached EOL and pytest fails there
   - "3.4"
   - "3.5"
   - "3.6"
   - "3.7-dev" # TODO: change to "3.7" once it is supported by travis-ci
   - "nightly"
   # PyPy:
-  - "pypy"
+  - "pypy2.7"
   - "pypy3.5"
 
 os:
@@ -31,9 +30,9 @@ matrix:
   # see "os: ..." above
   include:
     - os: osx
-      python: "3.6-dev"
+      python: "2.7"
     - os: osx
-      python: "3.7-dev"
+      python: "3.6"
     - os: osx
       python: "nightly"
 
