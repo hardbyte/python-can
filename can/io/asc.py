@@ -4,7 +4,9 @@
 """
 Contains handling of ASC logging files.
 
-Example .asc file: https://bitbucket.org/tobylorenz/vector_asc/src/47556e1a6d32c859224ca62d075e1efcc67fa690/src/Vector/ASC/tests/unittests/data/CAN_Log_Trigger_3_2.asc?at=master&fileviewer=file-view-default
+Example .asc files:
+    - https://bitbucket.org/tobylorenz/vector_asc/src/47556e1a6d32c859224ca62d075e1efcc67fa690/src/Vector/ASC/tests/unittests/data/CAN_Log_Trigger_3_2.asc?at=master&fileviewer=file-view-default
+    - under `test/data/logfile.asc`
 """
 
 from __future__ import absolute_import
@@ -176,10 +178,9 @@ class ASCWriter(BaseIOHandler, Listener):
             self.last_timestamp = (timestamp or 0.0)
             self.started = self.last_timestamp
             formatted_date = time.strftime(self.FORMAT_DATE, time.localtime(self.last_timestamp))
-            self.file.write("base hex  timestamps absolute\n")
             self.file.write("Begin Triggerblock %s\n" % formatted_date)
             self.header_written = True
-            self.log_event("Start of measurement") # recursive call
+            self.log_event("Start of measurement") # caution: this is a recursive call!
 
         # figure out the correct timestamp
         if timestamp is None or timestamp < self.last_timestamp:
