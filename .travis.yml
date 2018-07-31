@@ -9,8 +9,8 @@ python:
   - "3.7-dev" # TODO: change to "3.7" once it is supported by travis-ci
   - "nightly"
   # PyPy:
-  - "pypy2.7"
-  - "pypy3.5"
+  - "pypy" # Python 2.7
+  - "pypy3.5" # Python 3.5
 
 os:
   - linux   # Linux is officially supported and we test the library under
