@@ -242,7 +242,7 @@ class NeoViBus(BusABC):
         return msg, False
 
     def send(self, msg, timeout=None):
-        if not self.dev.IsOpen:
+        if not ics.validate_hobject(self.dev):
             raise CanError("bus not open")
 
         flags = 0
