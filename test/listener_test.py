@@ -12,6 +12,7 @@ import random
 import logging
 import tempfile
 import sqlite3
+import os
 from os.path import join, dirname
 
 import can
@@ -93,20 +94,20 @@ class ListenerTest(BusTest):
     def testPlayerTypeResolution(self):
         def test_filetype_to_instance(extension, klass):
             print("testing: {}".format(extension))
+            try:
+                if extension == ".blf":
+                    delete = False
+                    file_handler = open(join(dirname(__file__), "data/logfile.blf"))
+                else:
+                    delete = True
+                    file_handler = tempfile.NamedTemporaryFile(suffix=extension, delete=False)
 
-            if extension == ".blf":
-                delete = False
-                file_handler = open(join(dirname(__file__), "data/logfile.blf"))
-            else:
-                delete = True
-                file_handler = tempfile.NamedTemporaryFile(suffix=extension, delete=False)
-
-            with file_handler as my_file:
-                filename = my_file.name
-            with can.LogReader(filename) as reader:
-                self.assertIsInstance(reader, klass)
-
-            # TODO: delete
+                with file_handler as my_file:
+                    filename = my_file.name
+                with can.LogReader(filename) as reader:
+                    self.assertIsInstance(reader, klass)
+            finally:
+                os.remove(filename)
 
         test_filetype_to_instance(".asc", can.ASCReader)
         test_filetype_to_instance(".blf", can.BLFReader)
@@ -121,12 +122,13 @@ class ListenerTest(BusTest):
     def testLoggerTypeResolution(self):
         def test_filetype_to_instance(extension, klass):
             print("testing: {}".format(extension))
-            with tempfile.NamedTemporaryFile(suffix=extension, delete=False) as my_file:
-                filename = my_file.name
-            with can.Logger(filename) as writer:
-                self.assertIsInstance(writer, klass)
-
-            # TODO: delete
+            try:
+                with tempfile.NamedTemporaryFile(suffix=extension, delete=False) as my_file:
+                    filename = my_file.name
+                with can.Logger(filename) as writer:
+                    self.assertIsInstance(writer, klass)
+            finally:
+                os.remove(filename)
 
         test_filetype_to_instance(".asc", can.ASCWriter)
         test_filetype_to_instance(".blf", can.BLFWriter)
