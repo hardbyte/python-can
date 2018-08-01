@@ -107,7 +107,8 @@ class ListenerTest(BusTest):
                 with can.LogReader(filename) as reader:
                     self.assertIsInstance(reader, klass)
             finally:
-                os.remove(filename)
+                if delete:
+                    os.remove(filename)
 
         test_filetype_to_instance(".asc", can.ASCReader)
         test_filetype_to_instance(".blf", can.BLFReader)
