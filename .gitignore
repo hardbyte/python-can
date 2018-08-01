@@ -1,5 +1,5 @@
-__tempdir__
-
+test/__tempdir__/
+.pytest_cache/
 
 # -------------------------
 # below: https://github.com/github/gitignore/blob/da00310ccba9de9a988cc973ef5238ad2c1460e9/Python.gitignore

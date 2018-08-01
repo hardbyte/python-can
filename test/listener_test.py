@@ -95,13 +95,18 @@ class ListenerTest(BusTest):
             print("testing: {}".format(extension))
 
             if extension == ".blf":
+                delete = False
                 file_handler = open(join(dirname(__file__), "data/logfile.blf"))
             else:
-                file_handler = tempfile.NamedTemporaryFile(suffix=extension)
+                delete = True
+                file_handler = tempfile.NamedTemporaryFile(suffix=extension, delete=False)
 
             with file_handler as my_file:
-                with can.LogReader(my_file.name) as reader:
-                    self.assertIsInstance(reader, klass)
+                filename = my_file.name
+            with can.LogReader(filename) as reader:
+                self.assertIsInstance(reader, klass)
+
+            # TODO: delete
 
         test_filetype_to_instance(".asc", can.ASCReader)
         test_filetype_to_instance(".blf", can.BLFReader)
@@ -116,9 +121,12 @@ class ListenerTest(BusTest):
     def testLoggerTypeResolution(self):
         def test_filetype_to_instance(extension, klass):
             print("testing: {}".format(extension))
-            with tempfile.NamedTemporaryFile(suffix=extension) as my_file:
-                with can.Logger(my_file.name) as writer:
-                    self.assertIsInstance(writer, klass)
+            with tempfile.NamedTemporaryFile(suffix=extension, delete=False) as my_file:
+                filename = my_file.name
+            with can.Logger(filename) as writer:
+                self.assertIsInstance(writer, klass)
+
+            # TODO: delete
 
         test_filetype_to_instance(".asc", can.ASCWriter)
         test_filetype_to_instance(".blf", can.BLFWriter)
