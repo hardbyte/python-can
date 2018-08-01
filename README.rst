@@ -1,7 +1,7 @@
 python-can
 ==========
 
-|release| |docs| |build_travis| |build_appveyor|
+|release| |docs| |build_travis| |build_appveyor| |coverage|
 
 .. |release| image:: https://img.shields.io/pypi/v/python-can.svg
    :target: https://pypi.python.org/pypi/python-can/
@@ -18,6 +18,10 @@ python-can
 .. |build_appveyor| image:: https://ci.appveyor.com/api/projects/status/github/hardbyte/python-can?branch=develop&svg=true
    :target: https://ci.appveyor.com/project/hardbyte/python-can/history
    :alt: AppVeyor CI Server for develop branch
+
+.. |coverage| image:: https://codecov.io/gh/hardbyte/python-can/branch/develop/graph/badge.svg
+   :target: https://codecov.io/gh/hardbyte/python-can/branch/develop
+   :alt: Test coverage reports on Codecov.io
 
 
 The **C**\ ontroller **A**\ rea **N**\ etwork is a bus standard designed
