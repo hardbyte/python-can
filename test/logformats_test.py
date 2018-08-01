@@ -31,7 +31,8 @@ except ImportError:
 import can
 
 from .data.example_data import TEST_MESSAGES_BASE, TEST_MESSAGES_REMOTE_FRAMES, \
-                               TEST_MESSAGES_ERROR_FRAMES, TEST_COMMENTS
+                               TEST_MESSAGES_ERROR_FRAMES, TEST_COMMENTS, \
+                               sort_messages
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -81,6 +82,9 @@ class ReaderWriterTest(unittest.TestCase):
             self.original_messages += TEST_MESSAGES_REMOTE_FRAMES
         if check_error_frames:
             self.original_messages += TEST_MESSAGES_ERROR_FRAMES
+
+        # sort them so that for example ASCWriter does not "fix" any messages with timestamp 0.0
+        self.original_messages = sort_messages(self.original_messages)
 
         if check_comments:
             # we check this because of the lack of a common base class

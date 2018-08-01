@@ -82,8 +82,8 @@ class ASCReader(BaseIOHandler):
                 pass
 
             elif dummy[-1:].lower() == 'r':
-                (can_id_str, _) = dummy.split(None, 1)
-                (can_id_num, is_extended_id) = self._extract_can_id(can_id_str)
+                can_id_str, _ = dummy.split(None, 1)
+                can_id_num, is_extended_id = self._extract_can_id(can_id_str)
                 msg = Message(timestamp=timestamp,
                               arbitration_id=can_id_num & CAN_ID_MASK,
                               extended_id=is_extended_id,
@@ -126,7 +126,7 @@ class ASCWriter(BaseIOHandler, Listener):
     """Logs CAN data to an ASCII log file (.asc).
 
     The measurement starts with the timestamp of the first registered message.
-    If a message has a timestamp smaller than the previous one (or 0 or None),
+    If a message has a timestamp smaller than the previous one or None,
     it gets assigned the timestamp that was written for the last message.
     It the first message does not have a timestamp, it is set to zero.
     """
