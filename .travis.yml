@@ -30,19 +30,19 @@ matrix:
   # see "os: ..." above
   include:
     - os: osx
-      osx_image: xcode9.3
+      osx_image: xcode8.3
       python: "2.7"
     - os: osx
-      osx_image: xcode9.3
+      osx_image: xcode8.3
       python: "3.6"
     - os: osx
-      osx_image: xcode9.3
+      osx_image: xcode8.3
       python: "3.6-dev"
     - os: osx
-      osx_image: xcode9.3
+      osx_image: xcode8.3
       python: "3.7-dev"
     - os: osx
-      osx_image: xcode9.3
+      osx_image: xcode8.3
       python: "nightly"
 
   allow_failures:
