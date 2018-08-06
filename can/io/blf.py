@@ -15,6 +15,8 @@ of uncompressed data each. This data contains the actual CAN messages and other
 objects types.
 """
 
+from __future__ import absolute_import
+
 import struct
 import zlib
 import datetime
@@ -24,6 +26,7 @@ import logging
 from can.message import Message
 from can.listener import Listener
 from can.util import len2dlc, dlc2len, channel2int
+from .generic import BaseIOHandler
 
 
 class BLFParseError(Exception):
@@ -112,7 +115,7 @@ def systemtime_to_timestamp(systemtime):
         return 0
 
 
-class BLFReader(object):
+class BLFReader(BaseIOHandler):
     """
     Iterator of CAN messages from a Binary Logging File.
 
@@ -120,11 +123,15 @@ class BLFReader(object):
     silently ignored.
     """
 
-    def __init__(self, filename):
-        self.fp = open(filename, "rb")
-        data = self.fp.read(FILE_HEADER_STRUCT.size)
+    def __init__(self, file):
+        """
+        :param file: a path-like object or as file-like object to read from
+                     If this is a file-like object, is has to opened in binary
+                     read mode, not text read mode.
+        """
+        super(BLFReader, self).__init__(file, mode='rb')
+        data = self.file.read(FILE_HEADER_STRUCT.size)
         header = FILE_HEADER_STRUCT.unpack(data)
-        #print(header)
         if header[0] != b"LOGG":
             raise BLFParseError("Unexpected file format")
         self.file_size = header[10]
@@ -133,25 +140,24 @@ class BLFReader(object):
         self.start_timestamp = systemtime_to_timestamp(header[14:22])
         self.stop_timestamp = systemtime_to_timestamp(header[22:30])
         # Read rest of header
-        self.fp.read(header[1] - FILE_HEADER_STRUCT.size)
+        self.file.read(header[1] - FILE_HEADER_STRUCT.size)
 
     def __iter__(self):
         tail = b""
         while True:
-            data = self.fp.read(OBJ_HEADER_BASE_STRUCT.size)
+            data = self.file.read(OBJ_HEADER_BASE_STRUCT.size)
             if not data:
                 # EOF
                 break
 
             header = OBJ_HEADER_BASE_STRUCT.unpack(data)
-            #print(header)
             if header[0] != b"LOBJ":
                 raise BLFParseError()
             obj_type = header[4]
             obj_data_size = header[3] - OBJ_HEADER_BASE_STRUCT.size
-            obj_data = self.fp.read(obj_data_size)
+            obj_data = self.file.read(obj_data_size)
             # Read padding bytes
-            self.fp.read(obj_data_size % 4)
+            self.file.read(obj_data_size % 4)
 
             if obj_type == LOG_CONTAINER:
                 method, uncompressed_size = LOG_CONTAINER_STRUCT.unpack_from(
@@ -245,13 +251,13 @@ class BLFReader(object):
 
                     pos = next_pos
 
-                # Save remaing data that could not be processed
+                # save the remaining data that could not be processed
                 tail = data[pos:]
 
-        self.fp.close()
+        self.stop()
 
 
-class BLFWriter(Listener):
+class BLFWriter(BaseIOHandler, Listener):
     """
     Logs CAN data to a Binary Logging File compatible with Vector's tools.
     """
@@ -262,11 +268,16 @@ class BLFWriter(Listener):
     #: ZLIB compression level
     COMPRESSION_LEVEL = 9
 
-    def __init__(self, filename, channel=1):
-        self.fp = open(filename, "wb")
+    def __init__(self, file, channel=1):
+        """
+        :param file: a path-like object or as file-like object to write to
+                     If this is a file-like object, is has to opened in binary
+                     write mode, not text write mode.
+        """
+        super(BLFWriter, self).__init__(file, mode='wb')
         self.channel = channel
         # Header will be written after log is done
-        self.fp.write(b"\x00" * FILE_HEADER_SIZE)
+        self.file.write(b"\x00" * FILE_HEADER_SIZE)
         self.cache = []
         self.cache_size = 0
         self.count_of_objects = 0
@@ -360,7 +371,7 @@ class BLFWriter(Listener):
 
     def _flush(self):
         """Compresses and writes data in the cache to file."""
-        if self.fp.closed:
+        if self.file.closed:
             return
         cache = b"".join(self.cache)
         if not cache:
@@ -379,21 +390,19 @@ class BLFWriter(Listener):
             b"LOBJ", OBJ_HEADER_BASE_STRUCT.size, 1, obj_size, LOG_CONTAINER)
         container_header = LOG_CONTAINER_STRUCT.pack(
             ZLIB_DEFLATE, len(uncompressed_data))
-        self.fp.write(base_header)
-        self.fp.write(container_header)
-        self.fp.write(compressed_data)
+        self.file.write(base_header)
+        self.file.write(container_header)
+        self.file.write(compressed_data)
         # Write padding bytes
-        self.fp.write(b"\x00" * (obj_size % 4))
+        self.file.write(b"\x00" * (obj_size % 4))
         self.uncompressed_size += OBJ_HEADER_V1_STRUCT.size + LOG_CONTAINER_STRUCT.size
         self.uncompressed_size += len(uncompressed_data)
 
     def stop(self):
         """Stops logging and closes the file."""
-        if self.fp.closed:
-            return
         self._flush()
-        filesize = self.fp.tell()
-        self.fp.close()
+        filesize = self.file.tell()
+        super(BLFWriter, self).stop()
 
         # Write header in the beginning of the file
         header = [b"LOGG", FILE_HEADER_SIZE,
@@ -403,5 +412,5 @@ class BLFWriter(Listener):
                        self.count_of_objects, 0])
         header.extend(timestamp_to_systemtime(self.start_timestamp))
         header.extend(timestamp_to_systemtime(self.stop_timestamp))
-        with open(self.fp.name, "r+b") as f:
+        with open(self.file.name, "r+b") as f:
             f.write(FILE_HEADER_STRUCT.pack(*header))
