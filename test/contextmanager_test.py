@@ -16,7 +16,7 @@ class ContextManagerTest(unittest.TestCase):
         self.msg_send = can.Message(extended_id=False, arbitration_id=0x100, data=data)
 
     def test_open_buses(self):
-        with can.interface.Bus(bustype='virtual') as bus_send, can.interface.Bus(bustype='virtual') as bus_recv:
+        with can.Bus(interface='virtual') as bus_send, can.Bus(interface='virtual') as bus_recv:
             bus_send.send(self.msg_send)
             msg_recv = bus_recv.recv()
 
@@ -24,7 +24,7 @@ class ContextManagerTest(unittest.TestCase):
             self.assertTrue(msg_recv)
 
     def test_use_closed_bus(self):
-        with can.interface.Bus(bustype='virtual') as bus_send, can.interface.Bus(bustype='virtual') as bus_recv:
+        with can.Bus(interface='virtual') as bus_send, can.Bus(interface='virtual') as bus_recv:
             bus_send.send(self.msg_send)
 
         # Receiving a frame after bus has been closed should raise a CanException
