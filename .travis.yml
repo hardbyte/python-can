@@ -30,16 +30,24 @@ matrix:
   # see "os: ..." above
   include:
     - os: osx
+      osx_image: xcode9.3
       python: "2.7"
     - os: osx
+      osx_image: xcode9.3
       python: "3.6"
     - os: osx
+      osx_image: xcode9.3
+      python: "3.6-dev"
+    - os: osx
+      osx_image: xcode9.3
+      python: "3.7-dev"
+    - os: osx
+      osx_image: xcode9.3
       python: "nightly"
 
   allow_failures:
     # allow all nighly builds to fail, since these python versions might be unstable
     - python: "nightly"
-
     # we do not allow dev builds to fail, since these builds are considered stable enough
 
 install:
@@ -52,4 +60,5 @@ script:
   - codecov
   # Build Docs with Sphinx
   # -a Write all files
+  # -n nitpicky
   - if [[ "$TRAVIS_PYTHON_VERSION" == "3.6" ]]; then python -m sphinx -an doc build; fi
