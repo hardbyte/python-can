@@ -1,17 +1,16 @@
 language: python
 
 python:
-  # CPython:
+  # CPython; versions 3.0-3.3 have reached EOL
   - "2.7"
-  # Python 3.3 has reached EOL and pytest fails there
   - "3.4"
   - "3.5"
   - "3.6"
   - "3.7-dev" # TODO: change to "3.7" once it is supported by travis-ci
   - "nightly"
   # PyPy:
-  - "pypy"
-  - "pypy3.5"
+  - "pypy" # Python 2.7
+  - "pypy3.5" # Python 3.5
 
 os:
   - linux   # Linux is officially supported and we test the library under
@@ -31,16 +30,18 @@ matrix:
   # see "os: ..." above
   include:
     - os: osx
+      osx_image: xcode8.3
       python: "3.6-dev"
     - os: osx
+      osx_image: xcode8.3
       python: "3.7-dev"
     - os: osx
+      osx_image: xcode8.3
       python: "nightly"
 
   allow_failures:
     # allow all nighly builds to fail, since these python versions might be unstable
     - python: "nightly"
-
     # we do not allow dev builds to fail, since these builds are considered stable enough
 
 install:
@@ -53,4 +54,5 @@ script:
   - codecov
   # Build Docs with Sphinx
   # -a Write all files
+  # -n nitpicky
   - if [[ "$TRAVIS_PYTHON_VERSION" == "3.6" ]]; then python -m sphinx -an doc build; fi
