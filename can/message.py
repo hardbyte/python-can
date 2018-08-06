@@ -2,7 +2,7 @@
 # coding: utf-8
 
 """
-This module contains the implementation of `can.Message`.
+This module contains the implementation of :class:`can.Message`.
 """
 
 import logging
@@ -69,7 +69,7 @@ class Message(object):
             logger.warning("data link count was %d but it should be less than or equal to 8", self.dlc)
 
     def __str__(self):
-        field_strings = ["Timestamp: {0:15.6f}".format(self.timestamp)]
+        field_strings = ["Timestamp: {0:>15.6f}".format(self.timestamp)]
         if self.id_type:
             # Extended arbitrationID
             arbitration_id_string = "ID: {0:08x}".format(self.arbitration_id)
@@ -131,7 +131,8 @@ class Message(object):
         return "can.Message({})".format(", ".join(args))
 
     def __eq__(self, other):
-        return (isinstance(other, self.__class__) and
+        if isinstance(other, self.__class__):
+            return (
                 self.arbitration_id == other.arbitration_id and
                 #self.timestamp == other.timestamp and # allow the timestamp to differ
                 self.id_type == other.id_type and
@@ -140,7 +141,16 @@ class Message(object):
                 self.is_remote_frame == other.is_remote_frame and
                 self.is_error_frame == other.is_error_frame and
                 self.is_fd == other.is_fd and
-                self.bitrate_switch == other.bitrate_switch)
+                self.bitrate_switch == other.bitrate_switch
+            )
+        else:
+            return NotImplemented
+
+    def __ne__(self, other):
+        if isinstance(other, self.__class__):
+            return not self.__eq__(other)
+        else:
+            return NotImplemented
 
     def __hash__(self):
         return hash((
