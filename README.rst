@@ -1,7 +1,7 @@
 python-can
 ==========
 
-|release| |docs| |build_travis| |build_appveyor|
+|release| |docs| |build_travis| |build_appveyor| |coverage|
 
 .. |release| image:: https://img.shields.io/pypi/v/python-can.svg
    :target: https://pypi.python.org/pypi/python-can/
@@ -18,6 +18,10 @@ python-can
 .. |build_appveyor| image:: https://ci.appveyor.com/api/projects/status/github/hardbyte/python-can?branch=develop&svg=true
    :target: https://ci.appveyor.com/project/hardbyte/python-can/history
    :alt: AppVeyor CI Server for develop branch
+
+.. |coverage| image:: https://codecov.io/gh/hardbyte/python-can/branch/develop/graph/badge.svg
+   :target: https://codecov.io/gh/hardbyte/python-can/branch/develop
+   :alt: Test coverage reports on Codecov.io
 
 
 The **C**\ ontroller **A**\ rea **N**\ etwork is a bus standard designed
@@ -37,13 +41,14 @@ Features
 --------
 
 - common abstractions for CAN communication
-- support for many different backends (see the `docs <https://python-can.readthedocs.io/en/master/interfaces.html>`__)
+- support for many different backends (see the `docs <https://python-can.readthedocs.io/en/stable/interfaces.html>`__)
 - receiving, sending, and periodically sending messages
 - normal and extended arbitration IDs
 - limited `CAN FD <https://en.wikipedia.org/wiki/CAN_FD>`__ support
 - many different loggers and readers supporting playback: ASC (CANalyzer format), BLF (Binary Logging Format by Vector), CSV, SQLite and Canutils log
 - efficient in-kernel or in-hardware filtering of messages on supported interfaces
 - bus configuration reading from file or environment variables
+- CLI tools for working with CAN busses (see the `docs <https://python-can.readthedocs.io/en/stable/scripts.html>`__)
 - more
 
 
