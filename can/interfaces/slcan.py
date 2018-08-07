@@ -103,10 +103,11 @@ class slcanBus(BusABC):
         frame = []
 
         readStr = self.serialPortOrig.read_until(b'\r')
-        readStr = readStr.decode('utf-8')
+        
         if not readStr:
             return None, False
         else:
+            readStr = readStr.decode()
             if readStr[0] == 'T':
                 # extended frame
                 canId = int(readStr[1:9], 16)
