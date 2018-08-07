@@ -84,7 +84,7 @@ class slcanBus(BusABC):
     def write(self, string):
         if not string.endswith('\r'):
             string += '\r'
-        self.serialPortOrig.write(bytes(string,'utf-8'))
+        self.serialPortOrig.write(string.encode())
         self.serialPortOrig.flush()
 
     def open(self):
