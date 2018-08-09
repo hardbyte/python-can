@@ -50,7 +50,7 @@ class VectorBus(BusABC):
 
     def __init__(self, channel, can_filters=None, poll_interval=0.01,
                  receive_own_messages=False,
-                 bitrate=None, rx_queue_size=2**14, app_name="CANalyzer", serialNumber=None, fd=False, data_bitrate=None, sjwAbr=2, tseg1Abr=6, tseg2Abr=3, sjwDbr=2, tseg1Dbr=6, tseg2Dbr=3, **config):
+                 bitrate=None, rx_queue_size=2**14, app_name="CANalyzer", serial=None, fd=False, data_bitrate=None, sjwAbr=2, tseg1Abr=6, tseg2Abr=3, sjwDbr=2, tseg1Dbr=6, tseg2Dbr=3, **config):
         """
         :param list channel:
             The channel indexes to create this bus with.
@@ -66,8 +66,8 @@ class VectorBus(BusABC):
         :param str app_name:
             Name of application in Hardware Config.
             If set to None, the channel should be a global channel index.
-        :param int serialNumber:
-            serialNumber of the Hardware to bu used.
+        :param int serial:
+            Serial number of the hardware to be used.
             If set, the channel parameter refers to the channels ONLY on the specified hardware.
             If set, the app_name is unused.
         :param bool fd:
@@ -98,20 +98,19 @@ class VectorBus(BusABC):
         self.channel_masks = {}
         self.index_to_channel = {}
 
-        if serialNumber is not None:
+        if serial is not None:
             app_name = None
-            globalChannel = []
-            hwSpecificChannel = 0
-            hardwareConfigs = self._detect_available_configs()
-            for hardwareConfig in hardwareConfigs:
-                if hardwareConfig['serialNumber'] == serialNumber:
-                    if hwSpecificChannel in self.channels:
-                        globalChannel.append(hardwareConfig['channel'])
-                    hwSpecificChannel = hwSpecificChannel + 1
-            if len(globalChannel) > 0:
-                if len(globalChannel) != len(self.channels):
+            channel_index = []
+            channel_configs, channel_count = get_channel_configs()
+            for i in range(channel_count):
+                channel_config = channel_configs[i]
+                if channel_config.serialNumber == serial:
+                    if channel_config.hwChannel in self.channels:
+                        channel_index.append(channel_config.channelIndex)
+            if len(channel_index) > 0:
+                if len(channel_index) != len(self.channels):
                     LOG.info("At least one defined channel wasn't found on the specified hardware.")
-                self.channels = globalChannel
+                self.channels = channel_index
             else:
                 # Is there any better way to raise the error?
                 raise Exception("None of the configured channels could be found on the specified hardware.")
@@ -386,23 +385,26 @@ class VectorBus(BusABC):
     @staticmethod
     def _detect_available_configs():
         configs = []
-        if vxlapi is None:
-            return configs
-        driver_config = vxlapi.XLdriverConfig()
-        try:
-            vxlapi.xlOpenDriver()
-            vxlapi.xlGetDriverConfig(driver_config)
-            vxlapi.xlCloseDriver()
-        except:
-            pass
-        LOG.info('Found %d channels', driver_config.channelCount)
-        for i in range(driver_config.channelCount):
-            channel_config = driver_config.channel[i]
+        channel_configs, channel_count = get_channel_configs()
+        LOG.info('Found %d channels', channel_count)
+        for i in range(channel_count):
+            channel_config = channel_configs[i]
             LOG.info('Channel index %d: %s',
                      channel_config.channelIndex,
                      channel_config.name.decode('ascii'))
             configs.append({'interface': 'vector',
                             'app_name': None,
-                            'channel': channel_config.channelIndex,
-                            'serialNumber': channel_config.serialNumber})
+                            'channel': channel_config.channelIndex})
         return configs
+
+def get_channel_configs():
+    if vxlapi is None:
+        return [], 0
+    driver_config = vxlapi.XLdriverConfig()
+    try:
+        vxlapi.xlOpenDriver()
+        vxlapi.xlGetDriverConfig(driver_config)
+        vxlapi.xlCloseDriver()
+    except:
+        pass
+    return driver_config.channel, driver_config.channelCount
