@@ -108,7 +108,7 @@ PCAN_LANBUS14            = TPCANHandle(0x80E) # PCAN-LAN interface, channel 14
 PCAN_LANBUS15            = TPCANHandle(0x80F) # PCAN-LAN interface, channel 15
 PCAN_LANBUS16            = TPCANHandle(0x810) # PCAN-LAN interface, channel 16
 
-# Represent the PCAN error and status codes 
+# Represent the PCAN error and status codes
 PCAN_ERROR_OK            = TPCANStatus(0x00000)  # No error
 PCAN_ERROR_XMTFULL       = TPCANStatus(0x00001)  # Transmit buffer in CAN controller is full
 PCAN_ERROR_OVERRUN       = TPCANStatus(0x00002)  # CAN controller was read too late
@@ -239,7 +239,7 @@ PCAN_MODE_EXTENDED       = PCAN_MESSAGE_EXTENDED
 
 # Baud rate codes = BTR0/BTR1 register values for the CAN controller.
 # You can define your own Baud rate with the BTROBTR1 register.
-# Take a look at www.peak-system.com for our free software "BAUDTOOL" 
+# Take a look at www.peak-system.com for our free software "BAUDTOOL"
 # to calculate the BTROBTR1 register for every bit rate and sample point.
 
 PCAN_BAUD_1M             = TPCANBaudrate(0x0014) #   1     MBit/s
@@ -260,7 +260,7 @@ PCAN_BAUD_5K             = TPCANBaudrate(0x7F7F) #   5     kBit/s
 # Represents the configuration for a CAN bit rate
 # Note:
 #    * Each parameter and its value must be separated with a '='.
-#    * Each pair of parameter/value must be separated using ','. 
+#    * Each pair of parameter/value must be separated using ','.
 #
 # Example:
 #    f_clock=80000000,nom_brp=10,nom_tseg1=5,nom_tseg2=2,nom_sjw=1,data_brp=4,data_tseg1=7,data_tseg2=2,data_sjw=1
@@ -292,7 +292,7 @@ class TPCANMsg (Structure):
     """
     Represents a PCAN message
     """
-    _fields_ = [ ("ID",      c_uint),           # 11/29-bit message identifier
+    _fields_ = [ ("ID",      c_ulong),          # 11/29-bit message identifier - was changed from u_uint to c_ulong, so it is compatible with the PCAN-USB Driver for macOS
                  ("MSGTYPE", TPCANMessageType), # Type of the message
                  ("LEN",     c_ubyte),          # Data Length Code of the message (0..8)
                  ("DATA",    c_ubyte * 8) ]     # Data of the message (DATA[0]..DATA[7])
@@ -303,7 +303,7 @@ class TPCANTimestamp (Structure):
     Represents a timestamp of a received PCAN message
     Total Microseconds = micros + 1000 * millis + 0x100000000 * 1000 * millis_overflow
     """
-    _fields_ = [ ("millis", c_uint),            # Base-value: milliseconds: 0.. 2^32-1
+    _fields_ = [ ("millis", c_ulong),           # Base-value: milliseconds: 0.. 2^32-1 - was changed from u_uint to c_ulong, so it is compatible with the PCAN-USB Driver for macOS
                  ("millis_overflow", c_ushort), # Roll-arounds of millis
                  ("micros", c_ushort) ]         # Microseconds: 0..999
 
@@ -312,7 +312,7 @@ class TPCANMsgFD (Structure):
     """
     Represents a PCAN message
     """
-    _fields_ = [ ("ID",      c_uint),           # 11/29-bit message identifier
+    _fields_ = [ ("ID",      c_ulong),          # 11/29-bit message identifier - was changed from u_uint to c_ulong, so it is compatible with the PCAN-USB Driver for macOS
                  ("MSGTYPE", TPCANMessageType), # Type of the message
                  ("DLC",     c_ubyte),          # Data Length Code of the message (0..15)
                  ("DATA",    c_ubyte * 64) ]    # Data of the message (DATA[0]..DATA[63])
@@ -329,6 +329,8 @@ class PCANBasic:
         # Loads the PCANBasic.dll
         if platform.system() == 'Windows':
             self.__m_dllBasic = windll.LoadLibrary("PCANBasic")
+        elif platform.system() == 'Darwin':
+            self.__m_dllBasic = cdll.LoadLibrary('libPCBUSB.dylib')
         else:
             self.__m_dllBasic = cdll.LoadLibrary("libpcanbasic.so")
         if self.__m_dllBasic == None:
@@ -351,7 +353,7 @@ class PCANBasic:
           HwType   : NON PLUG&PLAY: The type of hardware and operation mode
           IOPort   : NON PLUG&PLAY: The I/O address for the parallel port
           Interrupt: NON PLUG&PLAY: Interrupt number of the parallel port
-        
+
         Returns:
           A TPCANStatus error code
         """
@@ -368,7 +370,7 @@ class PCANBasic:
         BitrateFD):
 
         """
-          Initializes a FD capable PCAN Channel  
+          Initializes a FD capable PCAN Channel
 
         Parameters:
           Channel  : The handle of a FD capable PCAN Channel
@@ -401,13 +403,13 @@ class PCANBasic:
 
         """
           Uninitializes one or all PCAN Channels initialized by CAN_Initialize
-          
+
         Remarks:
           Giving the TPCANHandle value "PCAN_NONEBUS", uninitialize all initialized channels
-          
+
         Parameters:
           Channel  : A TPCANHandle representing a PCAN Channel
-        
+
         Returns:
           A TPCANStatus error code
         """
@@ -424,13 +426,13 @@ class PCANBasic:
 
         """
           Resets the receive and transmit queues of the PCAN Channel
-          
+
         Remarks:
           A reset of the CAN controller is not performed
-          
+
         Parameters:
           Channel  : A TPCANHandle representing a PCAN Channel
-        
+
         Returns:
           A TPCANStatus error code
         """
@@ -447,10 +449,10 @@ class PCANBasic:
 
         """
           Gets the current status of a PCAN Channel
-          
+
         Parameters:
           Channel  : A TPCANHandle representing a PCAN Channel
-        
+
         Returns:
           A TPCANStatus error code
         """
@@ -469,16 +471,16 @@ class PCANBasic:
           Reads a CAN message from the receive queue of a PCAN Channel
 
         Remarks:
-          The return value of this method is a 3-touple, where 
+          The return value of this method is a 3-touple, where
           the first value is the result (TPCANStatus) of the method.
           The order of the values are:
           [0]: A TPCANStatus error code
           [1]: A TPCANMsg structure with the CAN message read
           [2]: A TPCANTimestamp structure with the time when a message was read
-          
+
         Parameters:
           Channel  : A TPCANHandle representing a PCAN Channel
-        
+
         Returns:
           A touple with three values
         """
@@ -499,16 +501,16 @@ class PCANBasic:
           Reads a CAN message from the receive queue of a FD capable PCAN Channel
 
         Remarks:
-          The return value of this method is a 3-touple, where 
+          The return value of this method is a 3-touple, where
           the first value is the result (TPCANStatus) of the method.
           The order of the values are:
           [0]: A TPCANStatus error code
           [1]: A TPCANMsgFD structure with the CAN message read
           [2]: A TPCANTimestampFD that is the time when a message was read
-          
+
         Parameters:
           Channel  : The handle of a FD capable PCAN Channel
-        
+
         Returns:
           A touple with three values
         """
@@ -527,12 +529,12 @@ class PCANBasic:
         MessageBuffer):
 
         """
-          Transmits a CAN message 
-          
+          Transmits a CAN message
+
         Parameters:
           Channel      : A TPCANHandle representing a PCAN Channel
           MessageBuffer: A TPCANMsg representing the CAN message to be sent
-        
+
         Returns:
           A TPCANStatus error code
         """
@@ -549,12 +551,12 @@ class PCANBasic:
         MessageBuffer):
 
         """
-          Transmits a CAN message over a FD capable PCAN Channel 
-          
+          Transmits a CAN message over a FD capable PCAN Channel
+
         Parameters:
           Channel      : The handle of a FD capable PCAN Channel
           MessageBuffer: A TPCANMsgFD buffer with the message to be sent
-        
+
         Returns:
           A TPCANStatus error code
         """
@@ -578,14 +580,14 @@ class PCANBasic:
         Remarks:
           The message filter will be expanded with every call to this function.
           If it is desired to reset the filter, please use the 'SetValue' function.
-        
+
         Parameters:
           Channel : A TPCANHandle representing a PCAN Channel
           FromID  : A c_uint value with the lowest CAN ID to be received
           ToID    : A c_uint value with the highest CAN ID to be received
-          Mode    : A TPCANMode representing the message type (Standard, 11-bit 
+          Mode    : A TPCANMode representing the message type (Standard, 11-bit
                     identifier, or Extended, 29-bit identifier)
-        
+
         Returns:
           A TPCANStatus error code
         """
@@ -608,15 +610,15 @@ class PCANBasic:
           Parameters can be present or not according with the kind
           of Hardware (PCAN Channel) being used. If a parameter is not available,
           a PCAN_ERROR_ILLPARAMTYPE error will be returned.
-          
-          The return value of this method is a 2-touple, where 
+
+          The return value of this method is a 2-touple, where
           the first value is the result (TPCANStatus) of the method and
-          the second one, the asked value 
-          
+          the second one, the asked value
+
         Parameters:
           Channel   : A TPCANHandle representing a PCAN Channel
           Parameter : The TPCANParameter parameter to get
-        
+
         Returns:
           A touple with 2 values
         """
@@ -646,13 +648,13 @@ class PCANBasic:
           Parameters can be present or not according with the kind
           of Hardware (PCAN Channel) being used. If a parameter is not available,
           a PCAN_ERROR_ILLPARAMTYPE error will be returned.
-          
+
         Parameters:
           Channel      : A TPCANHandle representing a PCAN Channel
           Parameter    : The TPCANParameter parameter to set
           Buffer       : Buffer with the value to be set
           BufferLength : Size in bytes of the buffer
-        
+
         Returns:
           A TPCANStatus error code
         """
@@ -681,16 +683,16 @@ class PCANBasic:
 
           The current languages available for translation are:
           Neutral (0x00), German (0x07), English (0x09), Spanish (0x0A),
-          Italian (0x10) and French (0x0C)          
+          Italian (0x10) and French (0x0C)
 
           The return value of this method is a 2-touple, where
           the first value is the result (TPCANStatus) of the method and
           the second one, the error text
-          
+
         Parameters:
           Error    : A TPCANStatus error code
           Language : Indicates a 'Primary language ID' (Default is Neutral(0))
-        
+
         Returns:
           A touple with 2 values
         """

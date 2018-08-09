@@ -48,6 +48,19 @@ existing ``can0`` interface with a bitrate of 1MB:
 
     sudo ip link set can0 up type can bitrate 1000000
 
+.. _socketcan-pcan:
+
+PCAN
+~~~~
+
+Kernels >= 3.4 supports the PCAN adapters natively via :doc:`/interfaces/socketcan`, so there is no need to install any drivers. The CAN interface can be brought like so:
+
+::
+
+    sudo modprobe peak_usb
+    sudo modprobe peak_pci
+    sudo ip link set can0 up type can bitrate 500000
+
 Send Test Message
 ^^^^^^^^^^^^^^^^^
 
@@ -205,7 +218,7 @@ Bus
 ---
 
 .. autoclass:: can.interfaces.socketcan.SocketcanBus
-   
+
    .. method:: recv(timeout=None)
 
       Block waiting for a message from the Bus.

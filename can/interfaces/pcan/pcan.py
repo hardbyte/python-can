@@ -68,7 +68,7 @@ pcan_bitrate_objs = {1000000 : PCAN_BAUD_1M,
 
 class PcanBus(BusABC):
 
-    def __init__(self, channel, state=BusState.ACTIVE, *args, **kwargs):
+    def __init__(self, channel='PCAN_USBBUS1', state=BusState.ACTIVE, bitrate=500000, *args, **kwargs):
         """A PCAN USB interface to CAN.
 
         On top of the usual :class:`~can.Bus` methods provided,
@@ -77,6 +77,7 @@ class PcanBus(BusABC):
 
         :param str channel:
             The can interface name. An example would be 'PCAN_USBBUS1'
+            Default is 'PCAN_USBBUS1'
 
         :param can.bus.BusState state:
             BusState of the channel.
@@ -87,12 +88,7 @@ class PcanBus(BusABC):
             Default is 500 kbit/s.
 
         """
-        if not channel:
-            raise ArgumentError("Must specify a PCAN channel")
-        else:
-            self.channel_info = channel
-
-        bitrate = kwargs.get('bitrate', 500000)
+        self.channel_info = channel
         pcan_bitrate = pcan_bitrate_objs.get(bitrate, PCAN_BAUD_500K)
 
         hwtype = PCAN_TYPE_ISA
@@ -119,7 +115,7 @@ class PcanBus(BusABC):
             if result != PCAN_ERROR_OK:
                 raise PcanError(self._get_formatted_error(result))
 
-        super(PcanBus, self).__init__(channel=channel, *args, **kwargs)
+        super(PcanBus, self).__init__(channel=channel, state=state, bitrate=bitrate, *args, **kwargs)
 
     def _get_formatted_error(self, error):
         """
@@ -219,7 +215,7 @@ class PcanBus(BusABC):
         bIsExt = (theMsg.MSGTYPE & PCAN_MESSAGE_EXTENDED.value) == PCAN_MESSAGE_EXTENDED.value
 
         dlc = theMsg.LEN
-        timestamp = boottimeEpoch + ((itsTimeStamp.micros + (1000 * itsTimeStamp.millis)) / (1000.0 * 1000.0))
+        timestamp = boottimeEpoch + ((itsTimeStamp.micros + 1000 * itsTimeStamp.millis + 0x100000000 * 1000 * itsTimeStamp.millis_overflow) / (1000.0 * 1000.0))
 
         rx_msg = Message(timestamp=timestamp,
                          arbitration_id=theMsg.ID,
