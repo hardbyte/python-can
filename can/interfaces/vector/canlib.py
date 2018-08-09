@@ -50,7 +50,7 @@ class VectorBus(BusABC):
 
     def __init__(self, channel, can_filters=None, poll_interval=0.01,
                  receive_own_messages=False,
-                 bitrate=None, rx_queue_size=2**14, app_name="CANalyzer", fd=False, data_bitrate=None, sjwAbr=2, tseg1Abr=6, tseg2Abr=3, sjwDbr=2, tseg1Dbr=6, tseg2Dbr=3, **config):
+                 bitrate=None, rx_queue_size=2**14, app_name="CANalyzer", serialNumber=None, fd=False, data_bitrate=None, sjwAbr=2, tseg1Abr=6, tseg2Abr=3, sjwDbr=2, tseg1Dbr=6, tseg2Dbr=3, **config):
         """
         :param list channel:
             The channel indexes to create this bus with.
@@ -66,6 +66,10 @@ class VectorBus(BusABC):
         :param str app_name:
             Name of application in Hardware Config.
             If set to None, the channel should be a global channel index.
+        :param int serialNumber:
+            serialNumber of the Hardware to bu used.
+            If set, the channel parameter refers to the channels ONLY on the specified hardware.
+            If set, the app_name is unused.
         :param bool fd:
             If CAN-FD frames should be supported.
         :param int data_bitrate:
@@ -93,6 +97,25 @@ class VectorBus(BusABC):
         # Get channels masks
         self.channel_masks = {}
         self.index_to_channel = {}
+
+        if serialNumber is not None:
+            app_name = None
+            globalChannel = []
+            hwSpecificChannel = 0
+            hardwareConfigs = self._detect_available_configs()
+            for hardwareConfig in hardwareConfigs:
+                if hardwareConfig['serialNumber'] == serialNumber:
+                    if hwSpecificChannel in self.channels:
+                        globalChannel.append(hardwareConfig['channel'])
+                    hwSpecificChannel = hwSpecificChannel + 1
+            if len(globalChannel) > 0:
+                if len(globalChannel) != len(self.channels):
+                    LOG.info("At least one defined channel wasn't found on the specified hardware.")
+                self.channels = globalChannel
+            else:
+                # Is there any better way to raise the error?
+                raise Exception("None of the configured channels could be found on the specified hardware.")
+
         for channel in self.channels:
             if app_name:
                 # Get global channel index from application channel
@@ -380,5 +403,6 @@ class VectorBus(BusABC):
                      channel_config.name.decode('ascii'))
             configs.append({'interface': 'vector',
                             'app_name': None,
-                            'channel': channel_config.channelIndex})
+                            'channel': channel_config.channelIndex,
+                            'serialNumber': channel_config.serialNumber})
         return configs
