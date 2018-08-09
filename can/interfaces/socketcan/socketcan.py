@@ -475,6 +475,11 @@ class SocketcanBus(BusABC):
                                    CAN_RAW_FD_FRAMES,
                                    1)
 
+        # Enable error frames
+        self.socket.setsockopt(SOL_CAN_RAW,
+                               CAN_RAW_ERR_FILTER,
+                               0x1FFFFFFF)
+
         bind_socket(self.socket, channel)
 
         kwargs.update({'receive_own_messages': receive_own_messages, 'fd': fd})

@@ -17,7 +17,6 @@ import pytest
 import can
 
 from .config import *
-from .data.example_data import generate_message
 
 
 class Back2BackTestCase(unittest.TestCase):

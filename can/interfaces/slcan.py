@@ -66,8 +66,6 @@ class slcanBus(BusABC):
             (channel, ttyBaudrate) = channel.split('@')
 
         self.serialPortOrig = serial.Serial(channel, baudrate=ttyBaudrate, timeout=timeout)
-        self.serialPort = io.TextIOWrapper(io.BufferedRWPair(self.serialPortOrig, self.serialPortOrig, 1),
-                                           newline='\r', line_buffering=True)
 
         time.sleep(self._SLEEP_AFTER_SERIAL_OPEN)
 
@@ -86,8 +84,8 @@ class slcanBus(BusABC):
     def write(self, string):
         if not string.endswith('\r'):
             string += '\r'
-        self.serialPort.write(string.decode())
-        self.serialPort.flush()
+        self.serialPortOrig.write(string.encode())
+        self.serialPortOrig.flush()
 
     def open(self):
         self.write('O')
@@ -103,10 +101,13 @@ class slcanBus(BusABC):
         remote = False
         extended = False
         frame = []
-        readStr = self.serialPort.readline()
+
+        readStr = self.serialPortOrig.read_until(b'\r')
+        
         if not readStr:
             return None, False
         else:
+            readStr = readStr.decode()
             if readStr[0] == 'T':
                 # extended frame
                 canId = int(readStr[1:9], 16)
