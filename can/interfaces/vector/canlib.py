@@ -90,20 +90,11 @@ class VectorBus(BusABC):
         self.channel_info = 'Application %s: %s' % (
             app_name, ', '.join('CAN %d' % (ch + 1) for ch in self.channels))
 
-        vxlapi.xlOpenDriver()
-        self.port_handle = vxlapi.XLportHandle(vxlapi.XL_INVALID_PORTHANDLE)
-        self.mask = 0
-        self.fd = fd
-        # Get channels masks
-        self.channel_masks = {}
-        self.index_to_channel = {}
-
         if serial is not None:
             app_name = None
             channel_index = []
-            channel_configs, channel_count = get_channel_configs()
-            for i in range(channel_count):
-                channel_config = channel_configs[i]
+            channel_configs = get_channel_configs()
+            for channel_config in channel_configs:
                 if channel_config.serialNumber == serial:
                     if channel_config.hwChannel in self.channels:
                         channel_index.append(channel_config.channelIndex)
@@ -115,6 +106,14 @@ class VectorBus(BusABC):
                 # Is there any better way to raise the error?
                 raise Exception("None of the configured channels could be found on the specified hardware.")
 
+        vxlapi.xlOpenDriver()
+        self.port_handle = vxlapi.XLportHandle(vxlapi.XL_INVALID_PORTHANDLE)
+        self.mask = 0
+        self.fd = fd
+        # Get channels masks
+        self.channel_masks = {}
+        self.index_to_channel = {}
+        
         for channel in self.channels:
             if app_name:
                 # Get global channel index from application channel
@@ -385,10 +384,9 @@ class VectorBus(BusABC):
     @staticmethod
     def _detect_available_configs():
         configs = []
-        channel_configs, channel_count = get_channel_configs()
+        channel_configs = get_channel_configs()
         LOG.info('Found %d channels', channel_count)
-        for i in range(channel_count):
-            channel_config = channel_configs[i]
+        for channel_config in channel_configs:
             LOG.info('Channel index %d: %s',
                      channel_config.channelIndex,
                      channel_config.name.decode('ascii'))
@@ -407,4 +405,4 @@ def get_channel_configs():
         vxlapi.xlCloseDriver()
     except:
         pass
-    return driver_config.channel, driver_config.channelCount
+    return [driver_config.channel[i] for i in range(driver_config.channelCount)]
