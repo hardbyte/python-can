@@ -2,7 +2,7 @@
 # coding: utf-8
 
 """
-This module contains various scripts, like a logfile writer and a logfile player.
+This module contains various scripts, like a logfile writer, a logfile player and a terminal viewer application.
 
 .. note::
     The scripts reside in here so they can be launched as modules. That makes them
