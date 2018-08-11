@@ -28,4 +28,10 @@ BACKENDS.update({
     for interface in iter_entry_points('can.interface')
 })
 
+# Old entry point name. May be removed in 3.0.
+BACKENDS.update({
+    interface.name: (interface.module_name, interface.attrs[0])
+    for interface in iter_entry_points('python_can.interface')
+})
+
 VALID_INTERFACES = frozenset(list(BACKENDS.keys()) + ['socketcan_native', 'socketcan_ctypes'])
