@@ -8,23 +8,30 @@ This module contains the implementation of :class:`~can.Notifier`.
 import threading
 import logging
 import time
+try:
+    import asyncio
+except ImportError:
+    asyncio = None
 
 logger = logging.getLogger('can.Notifier')
 
 
 class Notifier(object):
 
-    def __init__(self, bus, listeners, timeout=1.0):
+    def __init__(self, bus, listeners, timeout=1.0, loop=None):
         """Manages the distribution of **Messages** from a given bus/buses to a
         list of listeners.
 
         :param can.BusABC bus: A :ref:`bus` or a list of buses to listen to.
         :param list listeners: An iterable of :class:`~can.Listener`
         :param float timeout: An optional maximum number of seconds to wait for any message.
+        :param asyncio.AbstractEventLoop loop:
+            An :mod:`asyncio` event loop to schedule listeners in.
         """
         self.listeners = listeners
         self.bus = bus
         self.timeout = timeout
+        self._loop = loop
 
         #: Exception raised in thread
         self.exception = None
@@ -56,7 +63,8 @@ class Notifier(object):
             if now < end_time:
                 reader.join(end_time - now)
         for listener in self.listeners:
-            listener.stop()
+            if hasattr(listener, 'stop'):
+                listener.stop()
 
     def _rx_thread(self, bus):
         msg = None
@@ -64,12 +72,22 @@ class Notifier(object):
             while self._running:
                 if msg is not None:
                     with self._lock:
-                        for callback in self.listeners:
-                            callback(msg)
+                        self.on_message_received(msg)
                 msg = bus.recv(self.timeout)
         except Exception as exc:
             self.exception = exc
             raise
+
+    def on_message_received(self, msg):
+        for callback in self.listeners:
+            if self._loop is not None:
+                if asyncio.iscoroutinefunction(callback):
+                    coro = callback(msg)
+                    asyncio.run_coroutine_threadsafe(coro, self._loop)
+                else:
+                    self._loop.call_soon_threadsafe(callback, msg)
+            else:
+                callback(msg)
 
     def add_listener(self, listener):
         """Add new Listener to the notification list. 
