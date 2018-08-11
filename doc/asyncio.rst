@@ -21,15 +21,3 @@ Here is an example using both callback and coroutine based code:
 
 .. literalinclude:: ../examples/asyncio_demo.py
     :language: python
-
-
-Native SocketCAN usage
-----------------------
-
-If only SocketCAN is expected to be used, it can be used without the extra
-reader thread in the Notifier class.
-Use the event loop's :meth:`~asyncio.AbstractEventLoop.add_reader` method to get
-notified when new messages are available:
-
-.. literalinclude:: ../examples/asyncio_socketcan.py
-    :language: python

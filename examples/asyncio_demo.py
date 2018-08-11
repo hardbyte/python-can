@@ -6,7 +6,7 @@ def print_message(msg):
     print(msg)
 
 async def main():
-    can0 = can.Bus('can0', bustype='virtual', receive_own_messages=True)
+    can0 = can.Bus('vcan0', bustype='virtual', receive_own_messages=True)
     reader = can.AsyncBufferedReader()
     logger = can.Logger('logfile.asc')
 
@@ -25,10 +25,12 @@ async def main():
     for _ in range(10):
         # Wait for next message from AsyncBufferedReader
         msg = await reader.get_message()
-        # Wait 1 second
+        # Delay response
         await asyncio.sleep(0.5)
         msg.arbitration_id += 1
         can0.send(msg)
+    # Wait for last message to arrive
+    await reader.get_message()
     print('Done!')
 
     # Clean-up

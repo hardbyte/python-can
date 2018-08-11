@@ -42,10 +42,15 @@ class Notifier(object):
         self._readers = []
         buses = self.bus if isinstance(self.bus, list) else [self.bus]
         for bus in buses:
-            reader = threading.Thread(target=self._rx_thread, args=(bus,),
-                                      name='can.notifier for bus "{}"'.format(bus.channel_info))
-            reader.daemon = True
-            reader.start()
+            if loop is not None and hasattr(bus, 'fileno'):
+                # Use file descriptor to watch for messages
+                reader = bus.fileno()
+                loop.add_reader(reader, self.on_message_available, bus)
+            else:
+                reader = threading.Thread(target=self._rx_thread, args=(bus,),
+                    name='can.notifier for bus "{}"'.format(bus.channel_info))
+                reader.daemon = True
+                reader.start()
             self._readers.append(reader)
 
     def stop(self, timeout=5):
@@ -59,9 +64,13 @@ class Notifier(object):
         self._running = False
         end_time = time.time() + timeout
         for reader in self._readers:
-            now = time.time()
-            if now < end_time:
-                reader.join(end_time - now)
+            if isinstance(reader, threading.Thread):
+                now = time.time()
+                if now < end_time:
+                    reader.join(end_time - now)
+            else:
+                # reader is a file descriptor
+                self._loop.remove_reader(reader)
         for listener in self.listeners:
             if hasattr(listener, 'stop'):
                 listener.stop()
@@ -88,6 +97,15 @@ class Notifier(object):
                     self._loop.call_soon_threadsafe(callback, msg)
             else:
                 callback(msg)
+
+    def on_message_available(self, bus):
+        msg = bus.recv(0)
+        if msg is not None:
+            for callback in self.listeners:
+                if asyncio.iscoroutinefunction(callback):
+                    self._loop.create_task(callback(msg))
+                else:
+                    self._loop.call_soon(callback, msg)
 
     def add_listener(self, listener):
         """Add new Listener to the notification list. 
