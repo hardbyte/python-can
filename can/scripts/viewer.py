@@ -18,6 +18,7 @@ import os
 import six
 import struct
 import sys
+import time
 
 from curses.ascii import ESC as KEY_ESC, SP as KEY_SPACE
 from typing import Dict, List, Tuple, Union
@@ -88,9 +89,10 @@ class CanViewer:
         # Get the window dimensions - used for resizing the window
         self.y, self.x = self.stdscr.getmaxyx()
 
-        # Do not wait for key inputs and disable the cursor
+        # Do not wait for key inputs, disable the cursor and choose the background color automatically
         self.stdscr.nodelay(True)
         curses.curs_set(0)
+        curses.use_default_colors()
 
         if not testing:  # pragma: no cover
             self.run()
@@ -144,6 +146,9 @@ class CanViewer:
                 if hasattr(curses, 'resizeterm'):  # pragma: no cover
                     curses.resizeterm(self.y, self.x)
                 self.redraw_screen()
+
+            # Sleep 0.1 ms, so the application does not use 100 % of the CPU resources
+            time.sleep(.1 / 1000.)
 
         # Shutdown the CAN-Bus interface
         self.bus.shutdown()
@@ -387,7 +392,7 @@ class CanViewer:
             self.draw_can_bus_message(self.ids[key]['msg'])
 
 
-# noinspection PyUnresolvedReferences,PyProtectedMember,PyMethodMayBeStatic,PyUnusedLocal
+# noinspection PyProtectedMember
 class SmartFormatter(argparse.HelpFormatter):  # pragma: no cover
 
     def _get_default_metavar_for_optional(self, action):
@@ -395,11 +400,11 @@ class SmartFormatter(argparse.HelpFormatter):  # pragma: no cover
 
     def _format_usage(self, usage, actions, groups, prefix):
         # Use uppercase for "Usage:" text
-        return argparse.HelpFormatter._format_usage(self, usage, actions, groups, 'Usage: ')
+        return super(SmartFormatter, self)._format_usage(usage, actions, groups, 'Usage: ')
 
     def _format_args(self, action, default_metavar):
         if action.nargs != argparse.REMAINDER and action.nargs != argparse.ONE_OR_MORE:
-            return argparse.HelpFormatter._format_args(self, action, default_metavar)
+            return super(SmartFormatter, self)._format_args(action, default_metavar)
 
         # Use the metavar if "REMAINDER" or "ONE_OR_MORE" is set
         get_metavar = self._metavar_formatter(action, default_metavar)
@@ -407,7 +412,7 @@ class SmartFormatter(argparse.HelpFormatter):  # pragma: no cover
 
     def _format_action_invocation(self, action):
         if not action.option_strings or action.nargs == 0:
-            return argparse.HelpFormatter._format_action_invocation(self, action)
+            return super(SmartFormatter, self)._format_action_invocation(action)
 
         # Modified so "-s ARGS, --long ARGS" is replaced with "-s, --long ARGS"
         else:
@@ -425,7 +430,14 @@ class SmartFormatter(argparse.HelpFormatter):  # pragma: no cover
         # Allow to manually split the lines
         if text.startswith('R|'):
             return text[2:].splitlines()
-        return argparse.HelpFormatter._split_lines(self, text, width)
+        return super(SmartFormatter, self)._split_lines(text, width)
+
+    def _fill_text(self, text, width, indent):
+        if text.startswith('R|'):
+            # noinspection PyTypeChecker
+            return ''.join(indent + line for line in text[2:].splitlines(keepends=True))
+        else:
+            return super(SmartFormatter, self)._fill_text(text, width, indent)
 
 
 def parse_args(args):
@@ -437,6 +449,15 @@ def parse_args(args):
     # Parse command line arguments
     parser = argparse.ArgumentParser('python -m can.viewer',
                                      description='A simple CAN viewer terminal application written in Python',
+                                     epilog='R|Shortcuts: '
+                                            '\n        +---------+-------------------------+'
+                                            '\n        |   Key   |       Description       |'
+                                            '\n        +---------+-------------------------+'
+                                            '\n        | ESQ/q   | Exit the viewer         |'
+                                            '\n        | c       | Clear the stored frames |'
+                                            '\n        | SPACE   | Pause the viewer        |'
+                                            '\n        | UP/DOWN | Scroll the viewer       |'
+                                            '\n        +---------+-------------------------+',
                                      formatter_class=SmartFormatter, add_help=False, **kwargs)
 
     optional = parser.add_argument_group('Optional arguments')
@@ -579,7 +600,7 @@ def parse_args(args):
 def main():  # pragma: no cover
     parsed_args, can_filters, data_structs, ignore_canopen = parse_args(sys.argv[1:])
 
-    config = {}
+    config = {'single_handle': True}
     if can_filters:
         config['can_filters'] = can_filters
     if parsed_args.interface:

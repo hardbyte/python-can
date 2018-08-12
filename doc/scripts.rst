@@ -120,7 +120,7 @@ The full usage page can be seen below::
                             Bitrate to use for the given CAN interface
       -c, --channel CHANNEL
                             Most backend interfaces require some sort of channel.
-                            for example with the serial interface the channel
+                            For example with the serial interface the channel
                             might be a rfcomm device: "/dev/rfcomm0" with the
                             socketcan interfaces valid channel examples include:
                             "can0", "vcan0". (default: use default for the
@@ -170,17 +170,12 @@ The full usage page can be seen below::
                             Specify the backend CAN interface to use. (default: "socketcan")
       --ignore-canopen      Do not print CANopen information
 
-Shortcuts
-^^^^^^^^^
-
-+------------+-------------------------+
-| Key        | Description             |
-+============+=========================+
-| ESC/q      | Exit the viewer         |
-+------------+-------------------------+
-| c          | Clear the stored frames |
-+------------+-------------------------+
-| SPACE      | Pause the viewer        |
-+------------+-------------------------+
-| UP/DOWN    | Scroll the viewer       |
-+------------+-------------------------+
+    Shortcuts:
+            +---------+-------------------------+
+            |   Key   |       Description       |
+            +---------+-------------------------+
+            | ESQ/q   | Exit the viewer         |
+            | c       | Clear the stored frames |
+            | SPACE   | Pause the viewer        |
+            | UP/DOWN | Scroll the viewer       |
+            +---------+-------------------------+
