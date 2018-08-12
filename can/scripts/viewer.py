@@ -372,7 +372,7 @@ class CanViewer:
             pass
 
     def draw_header(self):
-        self.stdscr.clear()
+        self.stdscr.erase()
         self.draw_line(0, 0, 'Count', curses.A_BOLD)
         self.draw_line(0, 8, 'Time', curses.A_BOLD)
         self.draw_line(0, 23, 'dt', curses.A_BOLD)
@@ -471,57 +471,57 @@ def parse_args(args):
     optional.add_argument('-b', '--bitrate', type=int, help='''Bitrate to use for the given CAN interface''')
 
     optional.add_argument('-c', '--channel', help='''Most backend interfaces require some sort of channel.
-                          for example with the serial interface the channel might be a rfcomm device: "/dev/rfcomm0"
+                          For example with the serial interface the channel might be a rfcomm device: "/dev/rfcomm0"
                           with the socketcan interfaces valid channel examples include: "can0", "vcan0".
                           (default: use default for the specified interface)''', default=None)
 
     optional.add_argument('-d', '--decode', dest='decode',
-                          help='''R|Specify how to convert the raw bytes into real values. \
-                          \nThe ID of the frame is given as the first argument and the format as the second. \
-                          \nThe Python struct package is used to unpack the received data \
-                          \nwhere the format characters have the following meaning: \
-                          \n      < = little-endian, > = big-endian \
-                          \n      x = pad byte \
-                          \n      c = char \
-                          \n      ? = bool \
-                          \n      b = int8_t, B = uint8_t \
-                          \n      h = int16, H = uint16 \
-                          \n      l = int32_t, L = uint32_t \
-                          \n      q = int64_t, Q = uint64_t \
-                          \n      f = float (32-bits), d = double (64-bits) \
-                          \nFx to convert six bytes with ID 0x100 into uint8_t, uint16 and uint32_t: \
-                          \n  $ python -m can.viewer -d "100:<BHL" \
-                          \nNote that the IDs are always interpreted as hex values. \
-                          \nAn optional conversion from integers to real units can be given \
-                          \nas additional arguments. In order to convert from raw integer \
-                          \nvalues the values are multiplied with the corresponding scaling value, \
-                          \nsimilarly the values are divided by the scaling value in order \
-                          \nto convert from real units to raw integer values. \
-                          \nFx lets say the uint8_t needs no conversion, but the uint16 and the uint32_t \
-                          \nneeds to be divided by 10 and 100 respectively: \
-                          \n  $ python -m can.viewer -d "101:<BHL:1:10.0:100.0" \
-                          \nBe aware that integer division is performed if the scaling value is an integer. \
-                          \nMultiple arguments are separated by spaces: \
-                          \n  $ python -m can.viewer -d "100:<BHL" "101:<BHL:1:10.0:100.0" \
-                          \nAlternatively a file containing the conversion strings separated by new lines \
-                          \ncan be given as input: \
-                          \n  $ cat file.txt \
-                          \n      100:<BHL \
-                          \n      101:<BHL:1:10.0:100.0 \
-                          \n  $ python -m can.viewer -d file.txt''',
+                          help='R|Specify how to convert the raw bytes into real values.'
+                               '\nThe ID of the frame is given as the first argument and the format as the second.'
+                               '\nThe Python struct package is used to unpack the received data'
+                               '\nwhere the format characters have the following meaning:'
+                               '\n      < = little-endian, > = big-endian'
+                               '\n      x = pad byte'
+                               '\n      c = char'
+                               '\n      ? = bool'
+                               '\n      b = int8_t, B = uint8_t'
+                               '\n      h = int16, H = uint16'
+                               '\n      l = int32_t, L = uint32_t'
+                               '\n      q = int64_t, Q = uint64_t'
+                               '\n      f = float (32-bits), d = double (64-bits)'
+                               '\nFx to convert six bytes with ID 0x100 into uint8_t, uint16 and uint32_t:'
+                               '\n  $ python -m can.viewer -d "100:<BHL"'
+                               '\nNote that the IDs are always interpreted as hex values.'
+                               '\nAn optional conversion from integers to real units can be given'
+                               '\nas additional arguments. In order to convert from raw integer'
+                               '\nvalues the values are multiplied with the corresponding scaling value,'
+                               '\nsimilarly the values are divided by the scaling value in order'
+                               '\nto convert from real units to raw integer values.'
+                               '\nFx lets say the uint8_t needs no conversion, but the uint16 and the uint32_t'
+                               '\nneeds to be divided by 10 and 100 respectively:'
+                               '\n  $ python -m can.viewer -d "101:<BHL:1:10.0:100.0"'
+                               '\nBe aware that integer division is performed if the scaling value is an integer.'
+                               '\nMultiple arguments are separated by spaces:'
+                               '\n  $ python -m can.viewer -d "100:<BHL" "101:<BHL:1:10.0:100.0"'
+                               '\nAlternatively a file containing the conversion strings separated by new lines'
+                               '\ncan be given as input:'
+                                '\n  $ cat file.txt'
+                                '\n      100:<BHL'
+                                '\n      101:<BHL:1:10.0:100.0'
+                                '\n  $ python -m can.viewer -d file.txt',
                           metavar='{<id>:<format>,<id>:<format>:<scaling1>:...:<scalingN>,file.txt}',
                           nargs=argparse.ONE_OR_MORE, default='')
 
-    optional.add_argument('-f', '--filter', help='''R|Comma separated CAN filters for the given CAN interface: \
-                          \n      <can_id>:<can_mask> (matches when <received_can_id> & mask == can_id & mask) \
-                          \n      <can_id>~<can_mask> (matches when <received_can_id> & mask != can_id & mask) \
-                          \nFx to show only frames with ID 0x100 to 0x103: \
-                          \n      python -m can.viewer -f 100:7FC \
-                          \nNote that the ID and mask are alway interpreted as hex values''',
+    optional.add_argument('-f', '--filter', help='R|Comma separated CAN filters for the given CAN interface:'
+                          '\n      <can_id>:<can_mask> (matches when <received_can_id> & mask == can_id & mask)'
+                          '\n      <can_id>~<can_mask> (matches when <received_can_id> & mask != can_id & mask)'
+                          '\nFx to show only frames with ID 0x100 to 0x103:'
+                          '\n      python -m can.viewer -f 100:7FC'
+                          '\nNote that the ID and mask are alway interpreted as hex values',
                           metavar='{<can_id>:<can_mask>,<can_id>~<can_mask>}', nargs=argparse.ONE_OR_MORE, default='')
 
     optional.add_argument('-i', '--interface', dest='interface',
-                          help='''R|Specify the backend CAN interface to use. (default: "socketcan")''',
+                          help='R|Specify the backend CAN interface to use. (default: "socketcan")',
                           choices=sorted(can.VALID_INTERFACES), default='socketcan')
 
     optional.add_argument('--ignore-canopen', dest='ignore_canopen', help='''Do not print CANopen information''',
