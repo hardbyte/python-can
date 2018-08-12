@@ -48,6 +48,10 @@ class StdscrDummy:
         pass
 
     @staticmethod
+    def erase():
+        pass
+
+    @staticmethod
     def getmaxyx():
         # Set y-value, so scrolling gets tested
         return 1, 1
@@ -104,6 +108,10 @@ class CanViewerTest(unittest.TestCase):
         patch_curs_set = patch('curses.curs_set')
         patch_curs_set.start()
         self.addCleanup(patch_curs_set.stop)
+
+        patch_use_default_colors = patch('curses.use_default_colors')
+        patch_use_default_colors.start()
+        self.addCleanup(patch_use_default_colors.stop)
 
         patch_is_term_resized = patch('curses.is_term_resized')
         mock_is_term_resized = patch_is_term_resized.start()
