@@ -385,7 +385,7 @@ class VectorBus(BusABC):
     def _detect_available_configs():
         configs = []
         channel_configs = get_channel_configs()
-        LOG.info('Found %d channels', channel_count)
+        LOG.info('Found %d channels', len(channel_configs))
         for channel_config in channel_configs:
             LOG.info('Channel index %d: %s',
                      channel_config.channelIndex,
@@ -397,7 +397,7 @@ class VectorBus(BusABC):
 
 def get_channel_configs():
     if vxlapi is None:
-        return [], 0
+        return []
     driver_config = vxlapi.XLdriverConfig()
     try:
         vxlapi.xlOpenDriver()
