@@ -150,3 +150,9 @@ class SerialBus(BusABC):
 
         else:
             return None, False
+
+    def fileno(self):
+        if hasattr(self.ser, 'fileno'):
+            return self.ser.fileno()
+        # Return an invalid file descriptor on Windows
+        return -1

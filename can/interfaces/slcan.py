@@ -16,11 +16,16 @@ import io
 import time
 import logging
 
-import serial
-
 from can import BusABC, Message
 
 logger = logging.getLogger(__name__)
+
+try:
+    import serial
+except ImportError:
+    logger.warning("You won't be able to use the slcan can backend without "
+                   "the serial module installed!")
+    serial = None
 
 
 class slcanBus(BusABC):
@@ -44,7 +49,7 @@ class slcanBus(BusABC):
 
     _SLEEP_AFTER_SERIAL_OPEN = 2 # in seconds
 
-    def __init__(self, channel, ttyBaudrate=115200, timeout=1, bitrate=None, **kwargs):
+    def __init__(self, channel, ttyBaudrate=115200, bitrate=None, **kwargs):
         """
         :param str channel:
             port of underlying serial or usb device (e.g. /dev/ttyUSB0, COM8, ...)
@@ -65,7 +70,7 @@ class slcanBus(BusABC):
         if '@' in channel:
             (channel, ttyBaudrate) = channel.split('@')
 
-        self.serialPortOrig = serial.Serial(channel, baudrate=ttyBaudrate, timeout=timeout)
+        self.serialPortOrig = serial.Serial(channel, baudrate=ttyBaudrate)
 
         time.sleep(self._SLEEP_AFTER_SERIAL_OPEN)
 
@@ -78,7 +83,7 @@ class slcanBus(BusABC):
 
         self.open()
 
-        super(slcanBus, self).__init__(channel, ttyBaudrate=115200, timeout=1,
+        super(slcanBus, self).__init__(channel, ttyBaudrate=115200,
                                        bitrate=None, **kwargs)
 
     def write(self, string):
@@ -94,7 +99,7 @@ class slcanBus(BusABC):
         self.write('C')
 
     def _recv_internal(self, timeout):
-        if timeout is not None:
+        if timeout != self.serialPortOrig.timeout:
             self.serialPortOrig.timeout = timeout
 
         canId = None
@@ -142,7 +147,10 @@ class slcanBus(BusABC):
             else:
                 return None, False
 
-    def send(self, msg, timeout=None):
+    def send(self, msg, timeout=0):
+        if timeout != self.serialPortOrig.write_timeout:
+            self.serialPortOrig.write_timeout = timeout
+
         if msg.is_remote_frame:
             if msg.is_extended_id:
                 sendStr = "R%08X0" % (msg.arbitration_id)
@@ -160,3 +168,9 @@ class slcanBus(BusABC):
 
     def shutdown(self):
         self.close()
+
+    def fileno(self):
+        if hasattr(self.serialPortOrig, 'fileno'):
+            return self.serialPortOrig.fileno()
+        # Return an invalid file descriptor on Windows
+        return -1

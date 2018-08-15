@@ -42,7 +42,7 @@ class Notifier(object):
         self._readers = []
         buses = self.bus if isinstance(self.bus, list) else [self.bus]
         for bus in buses:
-            if loop is not None and hasattr(bus, 'fileno'):
+            if loop is not None and hasattr(bus, 'fileno') and bus.fileno() >= 0:
                 # Use file descriptor to watch for messages
                 reader = bus.fileno()
                 loop.add_reader(reader, self.on_message_available, bus)
