@@ -135,9 +135,9 @@ if asyncio is not None:
                 print(msg)
         """
 
-        def __init__(self):
+        def __init__(self, loop=None):
             # set to "infinite" size
-            self.buffer = asyncio.Queue()
+            self.buffer = asyncio.Queue(loop=loop)
 
         def on_message_received(self, msg):
             """Append a message to the buffer.
