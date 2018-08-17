@@ -36,7 +36,8 @@ tests_require = [
     'pytest-timeout ~= 1.2',
     'pytest-cov ~= 2.5',
     'codecov ~= 2.0',
-    'future'
+    'future',
+    'six'
 ] + extras_require['serial']
 
 extras_require['test'] = tests_require
@@ -99,7 +100,7 @@ setup(
     # see https://www.python.org/dev/peps/pep-0345/#version-specifiers
     python_requires=">=2.7,!=3.0,!=3.1,!=3.2,!=3.3",
     install_requires=[
-        'wrapt ~= 1.10', 'six', 'typing', 'windows-curses;platform_system=="Windows"',
+        'wrapt ~= 1.10', 'typing', 'windows-curses;platform_system=="Windows"',
     ],
     extras_require=extras_require,
 

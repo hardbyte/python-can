@@ -167,7 +167,7 @@ The full usage page can be seen below::
                                   python -m can.viewer -f 100:7FC
                             Note that the ID and mask are alway interpreted as hex values
       -i, --interface {iscan,ixxat,kvaser,neovi,nican,pcan,serial,slcan,socketcan,socketcan_ctypes,socketcan_native,usb2can,vector,virtual}
-                            Specify the backend CAN interface to use. (default: "socketcan")
+                            Specify the backend CAN interface to use.
       --ignore-canopen      Do not print CANopen information
 
     Shortcuts:
@@ -176,6 +176,7 @@ The full usage page can be seen below::
             +---------+-------------------------+
             | ESQ/q   | Exit the viewer         |
             | c       | Clear the stored frames |
+            | s       | Sort the stored frames  |
             | SPACE   | Pause the viewer        |
             | UP/DOWN | Scroll the viewer       |
             +---------+-------------------------+

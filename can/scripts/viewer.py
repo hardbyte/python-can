@@ -15,7 +15,6 @@ import argparse
 import can
 import curses
 import os
-import six
 import struct
 import sys
 import time
@@ -94,6 +93,9 @@ class CanViewer:
         curses.curs_set(0)
         curses.use_default_colors()
 
+        # Used to color error frames red
+        curses.init_pair(1, curses.COLOR_RED, -1)
+
         if not testing:  # pragma: no cover
             self.run()
 
@@ -105,9 +107,12 @@ class CanViewer:
             # Do not read the CAN-Bus when in paused mode
             if not self.paused:
                 # Read the CAN-Bus and draw it in the terminal window
-                msg = self.bus.recv(timeout=0)
+                msg = self.bus.recv(timeout=1. / 1000.)
                 if msg is not None:
                     self.draw_can_bus_message(msg)
+            else:
+                # Sleep 1 ms, so the application does not use 100 % of the CPU resources
+                time.sleep(1. / 1000.)
 
             # Read the terminal input
             key = self.stdscr.getch()
@@ -122,6 +127,17 @@ class CanViewer:
                 self.start_time = None
                 self.scroll = 0
                 self.draw_header()
+
+            # Sort by pressing 's'
+            elif key == ord('s'):
+                # Sort frames based on the CAN-Bus ID
+                self.draw_header()
+                for i, key in enumerate(sorted(self.ids.keys())):
+                    # Set the new row index, but skip the header
+                    self.ids[key]['row'] = i + 1
+
+                    # Do a recursive call, so the frames are repositioned
+                    self.draw_can_bus_message(self.ids[key]['msg'], sorting=True)
 
             # Pause by pressing space
             elif key == KEY_SPACE:
@@ -147,50 +163,8 @@ class CanViewer:
                     curses.resizeterm(self.y, self.x)
                 self.redraw_screen()
 
-            # Sleep 0.1 ms, so the application does not use 100 % of the CPU resources
-            time.sleep(.1 / 1000.)
-
         # Shutdown the CAN-Bus interface
         self.bus.shutdown()
-
-    # Convert it into raw integer values and then pack the data
-    @staticmethod
-    def pack_data(cmd, cmd_to_struct, *args):  # type: (int, Dict, Union[*float, *int]) -> bytes
-        if not cmd_to_struct or len(args) == 0:
-            # If no arguments are given, then the message does not contain a data package
-            return b''
-
-        for key in cmd_to_struct.keys():
-            if cmd == key if isinstance(key, int) else cmd in key:
-                value = cmd_to_struct[key]
-                if isinstance(value, tuple):
-                    # The struct is given as the fist argument
-                    struct_t = value[0]  # type: struct.Struct
-
-                    # The conversion from SI-units to raw values are given in the rest of the tuple
-                    fmt = struct_t.format
-                    if isinstance(fmt, six.string_types):  # pragma: no cover
-                        # Needed for Python 3.7
-                        fmt = six.b(fmt)
-
-                    # Make sure the endian is given as the first argument
-                    assert six.byte2int(fmt) == ord('<') or six.byte2int(fmt) == ord('>')
-
-                    # Disable rounding if the format is a float
-                    data = []
-                    for c, arg, val in zip(six.iterbytes(fmt[1:]), args, value[1:]):
-                        if c == ord('f'):
-                            data.append(arg * val)
-                        else:
-                            data.append(round(arg * val))
-                else:
-                    # No conversion from SI-units is needed
-                    struct_t = value  # type: struct.Struct
-                    data = args
-
-                return struct_t.pack(*data)
-        else:
-            raise ValueError('Unknown command: 0x{:02X}'.format(cmd))
 
     # Unpack the data and then convert it into SI-units
     @staticmethod
@@ -309,54 +283,51 @@ class CanViewer:
             # Increment frame counter
             self.ids[key]['count'] += 1
 
-        # Sort frames based on the CAN-Bus ID if a new frame was added
-        if new_id_added:
-            self.draw_header()
-            for i, key in enumerate(sorted(self.ids.keys())):
-                # Set the new row index, but skip the header
-                self.ids[key]['row'] = i + 1
+        # Format the CAN-Bus ID as a hex value
+        arbitration_id_string = '0x{0:0{1}X}'.format(msg.arbitration_id, 8 if msg.is_extended_id else 3)
 
-                # Do a recursive call, so the frames are repositioned
-                self.draw_can_bus_message(self.ids[key]['msg'], sorting=True)
+        # Generate data string
+        data_string = ''
+        if msg.dlc > 0:
+            data_string = ' '.join('{:02X}'.format(x) for x in msg.data)
+
+        # Check if is a CANopen message
+        if self.ignore_canopen:
+            canopen_function_code_string, canopen_node_id_string = None, None
         else:
-            # Format the CAN-Bus ID as a hex value
-            arbitration_id_string = '0x{0:0{1}X}'.format(msg.arbitration_id, 8 if msg.is_extended_id else 3)
+            canopen_function_code_string, canopen_node_id_string = self.parse_canopen_message(msg)
 
-            # Generate data string
-            data_string = ''
-            if msg.dlc > 0:
-                data_string = ' '.join('{:02X}'.format(x) for x in msg.data)
+        # Use red for error frames
+        if msg.is_error_frame:
+            color = curses.color_pair(1)
+        else:
+            color = curses.color_pair(0)
 
-            # Check if is a CANopen message
-            if self.ignore_canopen:
-                canopen_function_code_string, canopen_node_id_string = None, None
-            else:
-                canopen_function_code_string, canopen_node_id_string = self.parse_canopen_message(msg)
+        # Now draw the CAN-Bus message on the terminal window
+        self.draw_line(self.ids[key]['row'], 0, str(self.ids[key]['count']), color)
+        self.draw_line(self.ids[key]['row'], 8, '{0:.6f}'.format(self.ids[key]['msg'].timestamp - self.start_time),
+                       color)
+        self.draw_line(self.ids[key]['row'], 23, '{0:.6f}'.format(self.ids[key]['dt']), color)
+        self.draw_line(self.ids[key]['row'], 35, arbitration_id_string, color)
+        self.draw_line(self.ids[key]['row'], 47, str(msg.dlc), color)
+        self.draw_line(self.ids[key]['row'], 52, data_string, color)
+        if canopen_function_code_string:
+            self.draw_line(self.ids[key]['row'], 77, canopen_function_code_string, color)
+        if canopen_node_id_string:
+            self.draw_line(self.ids[key]['row'], 88, canopen_node_id_string, color)
 
-            # Now draw the CAN-Bus message on the terminal window
-            self.draw_line(self.ids[key]['row'], 0, str(self.ids[key]['count']))
-            self.draw_line(self.ids[key]['row'], 8, '{0:.6f}'.format(self.ids[key]['msg'].timestamp - self.start_time))
-            self.draw_line(self.ids[key]['row'], 23, '{0:.6f}'.format(self.ids[key]['dt']))
-            self.draw_line(self.ids[key]['row'], 35, arbitration_id_string)
-            self.draw_line(self.ids[key]['row'], 47, str(msg.dlc))
-            self.draw_line(self.ids[key]['row'], 52, data_string)
-            if canopen_function_code_string:
-                self.draw_line(self.ids[key]['row'], 77, canopen_function_code_string)
-            if canopen_node_id_string:
-                self.draw_line(self.ids[key]['row'], 88, canopen_node_id_string)
-
-            if self.data_structs:
-                try:
-                    values_list = []
-                    for x in self.unpack_data(msg.arbitration_id, self.data_structs, msg.data):
-                        if isinstance(x, float):
-                            values_list.append('{0:.6f}'.format(x))
-                        else:
-                            values_list.append(str(x))
-                    values_string = ' '.join(values_list)
-                    self.draw_line(self.ids[key]['row'], 97 - (20 if self.ignore_canopen else 0), values_string)
-                except (ValueError, struct.error):
-                    pass
+        if self.data_structs:
+            try:
+                values_list = []
+                for x in self.unpack_data(msg.arbitration_id, self.data_structs, msg.data):
+                    if isinstance(x, float):
+                        values_list.append('{0:.6f}'.format(x))
+                    else:
+                        values_list.append(str(x))
+                values_string = ' '.join(values_list)
+                self.draw_line(self.ids[key]['row'], 97 - (20 if self.ignore_canopen else 0), values_string, color)
+            except (ValueError, struct.error):
+                pass
 
         return self.ids[key]
 
@@ -455,6 +426,7 @@ def parse_args(args):
                                             '\n        +---------+-------------------------+'
                                             '\n        | ESQ/q   | Exit the viewer         |'
                                             '\n        | c       | Clear the stored frames |'
+                                            '\n        | s       | Sort the stored frames  |'
                                             '\n        | SPACE   | Pause the viewer        |'
                                             '\n        | UP/DOWN | Scroll the viewer       |'
                                             '\n        +---------+-------------------------+',
@@ -473,7 +445,7 @@ def parse_args(args):
     optional.add_argument('-c', '--channel', help='''Most backend interfaces require some sort of channel.
                           For example with the serial interface the channel might be a rfcomm device: "/dev/rfcomm0"
                           with the socketcan interfaces valid channel examples include: "can0", "vcan0".
-                          (default: use default for the specified interface)''', default=None)
+                          (default: use default for the specified interface)''')
 
     optional.add_argument('-d', '--decode', dest='decode',
                           help='R|Specify how to convert the raw bytes into real values.'
@@ -521,8 +493,8 @@ def parse_args(args):
                           metavar='{<can_id>:<can_mask>,<can_id>~<can_mask>}', nargs=argparse.ONE_OR_MORE, default='')
 
     optional.add_argument('-i', '--interface', dest='interface',
-                          help='R|Specify the backend CAN interface to use. (default: "socketcan")',
-                          choices=sorted(can.VALID_INTERFACES), default='socketcan')
+                          help='R|Specify the backend CAN interface to use.',
+                          choices=sorted(can.VALID_INTERFACES))
 
     optional.add_argument('--ignore-canopen', dest='ignore_canopen', help='''Do not print CANopen information''',
                           action='store_true')

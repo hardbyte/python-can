@@ -22,6 +22,7 @@ import struct
 import time
 import unittest
 import os
+import six
 
 from typing import Dict, Tuple, Union
 
@@ -75,11 +76,13 @@ class StdscrDummy:
             # Send invalid key
             return -1
         elif self.key_counter == 2:
-            return ord('c')
+            return ord('c')  # Clear
         elif self.key_counter == 3:
             return KEY_SPACE  # Pause
         elif self.key_counter == 4:
             return KEY_SPACE  # Unpause
+        elif self.key_counter == 5:
+            return ord('s')  # Sort
 
         # Keep scrolling until it exceeds the number of messages
         elif self.key_counter <= 100:
@@ -112,6 +115,14 @@ class CanViewerTest(unittest.TestCase):
         patch_use_default_colors = patch('curses.use_default_colors')
         patch_use_default_colors.start()
         self.addCleanup(patch_use_default_colors.stop)
+
+        patch_init_pair = patch('curses.init_pair')
+        patch_init_pair.start()
+        self.addCleanup(patch_init_pair.stop)
+
+        patch_color_pair = patch('curses.color_pair')
+        patch_color_pair.start()
+        self.addCleanup(patch_color_pair.stop)
 
         patch_is_term_resized = patch('curses.is_term_resized')
         mock_is_term_resized = patch_is_term_resized.start()
@@ -284,6 +295,10 @@ class CanViewerTest(unittest.TestCase):
         time.sleep(.1)
         self.can_viewer.bus.send(msg)
 
+        # Send error message
+        msg = can.Message(is_error_frame=True)
+        self.can_viewer.bus.send(msg)
+
     def test_receive(self):
         # Send the messages again, but this time the test code will receive it
         self.test_canopen()
@@ -320,6 +335,45 @@ class CanViewerTest(unittest.TestCase):
             else:
                 break
 
+    # Convert it into raw integer values and then pack the data
+    @staticmethod
+    def pack_data(cmd, cmd_to_struct, *args):  # type: (int, Dict, Union[*float, *int]) -> bytes
+        if not cmd_to_struct or len(args) == 0:
+            # If no arguments are given, then the message does not contain a data package
+            return b''
+
+        for key in cmd_to_struct.keys():
+            if cmd == key if isinstance(key, int) else cmd in key:
+                value = cmd_to_struct[key]
+                if isinstance(value, tuple):
+                    # The struct is given as the fist argument
+                    struct_t = value[0]  # type: struct.Struct
+
+                    # The conversion from SI-units to raw values are given in the rest of the tuple
+                    fmt = struct_t.format
+                    if isinstance(fmt, six.string_types):  # pragma: no cover
+                        # Needed for Python 3.7
+                        fmt = six.b(fmt)
+
+                    # Make sure the endian is given as the first argument
+                    assert six.byte2int(fmt) == ord('<') or six.byte2int(fmt) == ord('>')
+
+                    # Disable rounding if the format is a float
+                    data = []
+                    for c, arg, val in zip(six.iterbytes(fmt[1:]), args, value[1:]):
+                        if c == ord('f'):
+                            data.append(arg * val)
+                        else:
+                            data.append(round(arg * val))
+                else:
+                    # No conversion from SI-units is needed
+                    struct_t = value  # type: struct.Struct
+                    data = args
+
+                return struct_t.pack(*data)
+        else:
+            raise ValueError('Unknown command: 0x{:02X}'.format(cmd))
+
     def test_pack_unpack(self):
         # Dictionary used to convert between Python values and C structs represented as Python strings.
         # If the value is 'None' then the message does not contain any data package.
@@ -350,41 +404,41 @@ class CanViewerTest(unittest.TestCase):
             (CANOPEN_TPDO3 + 2, CANOPEN_TPDO4 + 2): struct.Struct('>LL'),
         }  # type: Dict[Union[int, Tuple[int, ...]], Union[struct.Struct, Tuple, None]]
 
-        raw_data = CanViewer.pack_data(CANOPEN_TPDO1 + 1, data_structs, -7, 13, -1024, 2048, 0xFFFF)
+        raw_data = self.pack_data(CANOPEN_TPDO1 + 1, data_structs, -7, 13, -1024, 2048, 0xFFFF)
         parsed_data = CanViewer.unpack_data(CANOPEN_TPDO1 + 1, data_structs, raw_data)
         self.assertListEqual(parsed_data, [-7, 13, -1024, 2048, 0xFFFF])
         self.assertTrue(all(isinstance(d, int) for d in parsed_data))
 
-        raw_data = CanViewer.pack_data(CANOPEN_TPDO2 + 1, data_structs, 12.34, 4.5, 6)
+        raw_data = self.pack_data(CANOPEN_TPDO2 + 1, data_structs, 12.34, 4.5, 6)
         parsed_data = CanViewer.unpack_data(CANOPEN_TPDO2 + 1, data_structs, raw_data)
         self.assertTrue(pytest.approx(parsed_data, [12.34, 4.5, 6]))
         self.assertTrue(isinstance(parsed_data[0], float) and isinstance(parsed_data[1], float) and
                         isinstance(parsed_data[2], int))
 
-        raw_data = CanViewer.pack_data(CANOPEN_TPDO3 + 1, data_structs, 123.45, 67.89)
+        raw_data = self.pack_data(CANOPEN_TPDO3 + 1, data_structs, 123.45, 67.89)
         parsed_data = CanViewer.unpack_data(CANOPEN_TPDO3 + 1, data_structs, raw_data)
         self.assertTrue(pytest.approx(parsed_data, [123.45, 67.89]))
         self.assertTrue(all(isinstance(d, float) for d in parsed_data))
 
-        raw_data = CanViewer.pack_data(CANOPEN_TPDO4 + 1, data_structs, math.pi / 2., math.pi)
+        raw_data = self.pack_data(CANOPEN_TPDO4 + 1, data_structs, math.pi / 2., math.pi)
         parsed_data = CanViewer.unpack_data(CANOPEN_TPDO4 + 1, data_structs, raw_data)
         self.assertTrue(pytest.approx(parsed_data, [math.pi / 2., math.pi]))
         self.assertTrue(all(isinstance(d, float) for d in parsed_data))
 
-        raw_data = CanViewer.pack_data(CANOPEN_TPDO1 + 2, data_structs)
+        raw_data = self.pack_data(CANOPEN_TPDO1 + 2, data_structs)
         parsed_data = CanViewer.unpack_data(CANOPEN_TPDO1 + 2, data_structs, raw_data)
         self.assertListEqual(parsed_data, [])
         self.assertIsInstance(parsed_data, list)
 
-        raw_data = CanViewer.pack_data(CANOPEN_TPDO2 + 2, data_structs, -2147483648, 0xFFFFFFFF)
+        raw_data = self.pack_data(CANOPEN_TPDO2 + 2, data_structs, -2147483648, 0xFFFFFFFF)
         parsed_data = CanViewer.unpack_data(CANOPEN_TPDO2 + 2, data_structs, raw_data)
         self.assertListEqual(parsed_data, [-2147483648, 0xFFFFFFFF])
 
-        raw_data = CanViewer.pack_data(CANOPEN_TPDO3 + 2, data_structs, 0xFF, 0xFFFF)
+        raw_data = self.pack_data(CANOPEN_TPDO3 + 2, data_structs, 0xFF, 0xFFFF)
         parsed_data = CanViewer.unpack_data(CANOPEN_TPDO3 + 2, data_structs, raw_data)
         self.assertListEqual(parsed_data, [0xFF, 0xFFFF])
 
-        raw_data = CanViewer.pack_data(CANOPEN_TPDO4 + 2, data_structs, 0xFFFFFF, 0xFFFFFFFF)
+        raw_data = self.pack_data(CANOPEN_TPDO4 + 2, data_structs, 0xFFFFFF, 0xFFFFFFFF)
         parsed_data = CanViewer.unpack_data(CANOPEN_TPDO4 + 2, data_structs, raw_data)
         self.assertListEqual(parsed_data, [0xFFFFFF, 0xFFFFFFFF])
 
@@ -394,7 +448,7 @@ class CanViewerTest(unittest.TestCase):
 
         # Make sure that the ValueError exception is raised
         with self.assertRaises(ValueError):
-            CanViewer.pack_data(0x101, data_structs, 1, 2, 3, 4)
+            self.pack_data(0x101, data_structs, 1, 2, 3, 4)
 
         with self.assertRaises(ValueError):
             CanViewer.unpack_data(0x102, data_structs, b'\x01\x02\x03\x04\x05\x06\x07\x08')
