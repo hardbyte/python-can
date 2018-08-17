@@ -21,6 +21,7 @@ project in 2011. The socketcan interface was helped immensely by Phil Dixon
 who wrote a leaf-socketcan driver for Linux.
 
 The pcan interface was contributed by Albert Bloomfield in 2013.
+Support for pcan on Mac was added by Kristian Sloth Lauszus in 2018.
 
 The usb2can interface was contributed by Joshua Villyard in 2015.
 
@@ -34,13 +35,14 @@ a C++ library by Toby Lorenz.
 The slcan interface, ASCII listener and log logger and listener were contributed
 by Eduard Bröcker in 2017.
 
-The NeoVi interface for ICS (Intrepid Control Systems) devices was contributed 
+The NeoVi interface for ICS (Intrepid Control Systems) devices was contributed
 by Pierre-Luc Tessier Gagné in 2017.
 
 Many improvements all over the library, cleanups, unifications as well as more
 comprehensive documentation and CI testing was contributed by Felix Divo in 2017
 and 2018.
 
+The CAN viewer terminal script was contributed by Kristian Sloth Lauszus in 2018.
 
 Support for CAN within Python
 -----------------------------
