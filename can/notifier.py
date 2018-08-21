@@ -42,16 +42,24 @@ class Notifier(object):
         self._readers = []
         buses = self.bus if isinstance(self.bus, list) else [self.bus]
         for bus in buses:
-            if loop is not None and hasattr(bus, 'fileno') and bus.fileno() >= 0:
-                # Use file descriptor to watch for messages
-                reader = bus.fileno()
-                loop.add_reader(reader, self.on_message_available, bus)
-            else:
-                reader = threading.Thread(target=self._rx_thread, args=(bus,),
-                    name='can.notifier for bus "{}"'.format(bus.channel_info))
-                reader.daemon = True
-                reader.start()
-            self._readers.append(reader)
+            self.add_bus(bus)
+
+    def add_bus(self, bus):
+        """Add a bus for notification.
+
+        :param can.BusABC bus:
+            CAN bus instance.
+        """
+        if self._loop is not None and hasattr(bus, 'fileno') and bus.fileno() >= 0:
+            # Use file descriptor to watch for messages
+            reader = bus.fileno()
+            self._loop.add_reader(reader, self._on_message_available, bus)
+        else:
+            reader = threading.Thread(target=self._rx_thread, args=(bus,),
+                name='can.notifier for bus "{}"'.format(bus.channel_info))
+            reader.daemon = True
+            reader.start()
+        self._readers.append(reader)
 
     def stop(self, timeout=5):
         """Stop notifying Listeners when new :class:`~can.Message` objects arrive
@@ -81,31 +89,27 @@ class Notifier(object):
             while self._running:
                 if msg is not None:
                     with self._lock:
-                        self.on_message_received(msg)
+                        if self._loop is not None:
+                            self._loop.call_soon_threadsafe(
+                                self._on_message_received, msg)
+                        else:
+                            self._on_message_received(msg)
                 msg = bus.recv(self.timeout)
         except Exception as exc:
             self.exception = exc
             raise
 
-    def on_message_received(self, msg):
-        for callback in self.listeners:
-            if self._loop is not None:
-                if asyncio.iscoroutinefunction(callback):
-                    coro = callback(msg)
-                    asyncio.run_coroutine_threadsafe(coro, self._loop)
-                else:
-                    self._loop.call_soon_threadsafe(callback, msg)
-            else:
-                callback(msg)
-
-    def on_message_available(self, bus):
+    def _on_message_available(self, bus):
         msg = bus.recv(0)
         if msg is not None:
-            for callback in self.listeners:
-                if asyncio.iscoroutinefunction(callback):
-                    self._loop.create_task(callback(msg))
-                else:
-                    self._loop.call_soon(callback, msg)
+            self._on_message_received(msg)
+
+    def _on_message_received(self, msg):
+        for callback in self.listeners:
+            res = callback(msg)
+            if self._loop is not None and asyncio.iscoroutine(res):
+                # Schedule coroutine
+                self._loop.create_task(res)
 
     def add_listener(self, listener):
         """Add new Listener to the notification list. 
