@@ -65,7 +65,8 @@ class slcanBus(BusABC):
         if '@' in channel:
             (channel, ttyBaudrate) = channel.split('@')
 
-        self.serialPortOrig = serial.Serial(channel, baudrate=ttyBaudrate, timeout=timeout)
+        self.serialPortOrig = serial.serial_for_url(
+            channel, baudrate=ttyBaudrate, timeout=timeout)
 
         time.sleep(self._SLEEP_AFTER_SERIAL_OPEN)
 
