@@ -64,8 +64,8 @@ class ThreadSafeBus(ObjectProxy):
         self.__wrapped__._lock_send_periodic = nullcontext()
 
         # init locks for sending and receiving separately
-        _lock_send = RLock()
-        _lock_recv = RLock()
+        self._lock_send = RLock()
+        self._lock_recv = RLock()
 
     def recv(self, timeout=None, *args, **kwargs):
         with self._lock_recv:
