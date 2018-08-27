@@ -36,20 +36,8 @@ class SerialDummy:
         self.msg = None
 
 
-class SimpleSerialTest(unittest.TestCase):
+class SimpleSerialTestBase(object):
     MAX_TIMESTAMP = 0xFFFFFFFF / 1000
-
-    def setUp(self):
-        self.patcher = patch('serial.Serial')
-        self.mock_serial = self.patcher.start()
-        self.serial_dummy = SerialDummy()
-        self.mock_serial.return_value.write = self.serial_dummy.write
-        self.mock_serial.return_value.read = self.serial_dummy.read
-        self.addCleanup(self.patcher.stop)
-        self.bus = SerialBus('bus')
-
-    def tearDown(self):
-        self.serial_dummy.reset()
 
     def test_rx_tx_min_max_data(self):
         """
@@ -134,6 +122,30 @@ class SimpleSerialTest(unittest.TestCase):
         """
         msg = can.Message(timestamp=-1)
         self.assertRaises(ValueError, self.bus.send, msg)
+
+
+class SimpleSerialTest(unittest.TestCase, SimpleSerialTestBase):
+
+    def setUp(self):
+        self.patcher = patch('serial.Serial')
+        self.mock_serial = self.patcher.start()
+        self.serial_dummy = SerialDummy()
+        self.mock_serial.return_value.write = self.serial_dummy.write
+        self.mock_serial.return_value.read = self.serial_dummy.read
+        self.addCleanup(self.patcher.stop)
+        self.bus = SerialBus('bus')
+
+    def tearDown(self):
+        self.serial_dummy.reset()
+
+
+class SimpleSerialLoopTest(unittest.TestCase, SimpleSerialTestBase):
+
+    def setUp(self):
+        self.bus = SerialBus('loop://')
+
+    def tearDown(self):
+        self.bus.shutdown()
 
 
 if __name__ == '__main__':
