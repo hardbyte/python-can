@@ -118,11 +118,14 @@ def build_bcm_tx_delete_header(can_id, flags):
     return build_bcm_header(opcode, flags, 0, 0, 0, 0, 0, can_id, 1)
 
 
-def build_bcm_transmit_header(can_id, count, initial_period, subsequent_period,
-                              msg_flags):
+def build_bcm_transmit_header(can_id, count, initial_period, subsequent_period, msg_flags, startTransmission):
     opcode = CAN_BCM_TX_SETUP
-
-    flags = msg_flags | SETTIMER | STARTTIMER
+    
+    if startTransmission:
+        flags = msg_flags | SETTIMER | STARTTIMER
+        log.debug("bcm header: adding SETTIMER and STARTTIMER flags")
+    else:
+        flags = msg_flags   # don't add SETTIMER and STARTTIMER flags if the message isn't to be transmitted immediately
 
     if initial_period > 0:
         # Note `TX_COUNTEVT` creates the message TX_EXPIRED when count expires
@@ -222,22 +225,23 @@ class CyclicSendTask(SocketCanBCMBase, LimitedDurationCyclicSendTaskABC,
 
     """
 
-    def __init__(self, channel, message, period):
+    def __init__(self, channel, message, period, startTransmission=True):
         """
         :param channel: The name of the CAN channel to connect to.
         :param message: The message to be sent periodically.
         :param period: The rate in seconds at which to send the message.
+        :param startTransmission: Specifies if the message should be transmitted immediately (alternatively call start() to begin transmission) [default = True]
         """
         super(CyclicSendTask, self).__init__(channel, message, period, duration=None)
-        self._tx_setup(message)
+        self._tx_setup(message, doImmediateTransmit=startTransmission)
         self.message = message
 
-    def _tx_setup(self, message):
+    def _tx_setup(self, message, doImmediateTransmit=True):
         # Create a low level packed frame to pass to the kernel
         self.can_id_with_flags = _add_flags_to_can_id(message)
         self.flags = CAN_FD_FRAME if message.is_fd else 0
         header = build_bcm_transmit_header(self.can_id_with_flags, 0, 0.0,
-                                           self.period, self.flags)
+                                           self.period, self.flags, doImmediateTransmit)
         frame = build_can_frame(message)
         log.debug("Sending BCM command")
         send_bcm(self.bcm_socket, header + frame)
@@ -254,13 +258,13 @@ class CyclicSendTask(SocketCanBCMBase, LimitedDurationCyclicSendTaskABC,
         stopframe = build_bcm_tx_delete_header(self.can_id_with_flags, self.flags)
         send_bcm(self.bcm_socket, stopframe)
 
-    def modify_data(self, message):
+    def modify_data(self, message, sendImmediately=True):
         """Update the contents of this periodically sent message.
 
         Note the Message must have the same :attr:`~can.Message.arbitration_id`.
         """
         assert message.arbitration_id == self.can_id, "You cannot modify the can identifier"
-        self._tx_setup(message)
+        self._tx_setup(message, doImmediateTransmit=sendImmediately)
 
     def start(self):
         self._tx_setup(self.message)
@@ -283,7 +287,8 @@ class MultiRateCyclicSendTask(CyclicSendTask):
             count,
             initial_period,
             subsequent_period,
-            self.flags)
+            self.flags,
+            true)
 
         log.info("Sending BCM TX_SETUP command")
         send_bcm(self.bcm_socket, header + frame)
