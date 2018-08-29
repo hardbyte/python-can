@@ -4,6 +4,10 @@ CAN over Serial
 ===============
 A text based interface. For example use over serial ports like
 ``/dev/ttyS1`` or ``/dev/ttyUSB0`` on Linux machines or ``COM1`` on Windows.
+Remote ports can be also used via a special URL. Both raw TCP sockets as
+also RFC2217 ports are supported: ``socket://192.168.254.254:5000`` or
+``rfc2217://192.168.254.254:5000``. In addition a virtual loopback can be
+used via ``loop://`` URL.
 The interface is a simple implementation that has been used for
 recording CAN traces.
 
