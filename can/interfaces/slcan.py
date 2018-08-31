@@ -12,7 +12,6 @@ Interface for slcan compatible interfaces (win32/linux).
 
 from __future__ import absolute_import
 
-import io
 import time
 import logging
 
@@ -42,9 +41,10 @@ class slcanBus(BusABC):
         83300:      'S9'
     }
 
-    _SLEEP_AFTER_SERIAL_OPEN = 2 # in seconds
+    _SLEEP_AFTER_SERIAL_OPEN = 2  # in seconds
 
-    def __init__(self, channel, ttyBaudrate=115200, timeout=1, bitrate=None, **kwargs):
+    def __init__(self, channel, ttyBaudrate=115200, timeout=1, bitrate=None,
+                 rtscts=False, **kwargs):
         """
         :param str channel:
             port of underlying serial or usb device (e.g. /dev/ttyUSB0, COM8, ...)
@@ -57,16 +57,18 @@ class slcanBus(BusABC):
             Poll interval in seconds when reading messages
         :param float timeout:
             timeout in seconds when reading message
+        :param bool rtscts:
+            turn hardware handshake (RTS/CTS) on and off
         """
 
-        if not channel: # if None or empty
+        if not channel:  # if None or empty
             raise TypeError("Must specify a serial port.")
 
         if '@' in channel:
             (channel, ttyBaudrate) = channel.split('@')
 
         self.serialPortOrig = serial.serial_for_url(
-            channel, baudrate=ttyBaudrate, timeout=timeout)
+            channel, baudrate=ttyBaudrate, timeout=timeout, rtscts=rtscts)
 
         time.sleep(self._SLEEP_AFTER_SERIAL_OPEN)
 
@@ -80,7 +82,7 @@ class slcanBus(BusABC):
         self.open()
 
         super(slcanBus, self).__init__(channel, ttyBaudrate=115200, timeout=1,
-                                       bitrate=None, **kwargs)
+                                       bitrate=None, rtscts=False, **kwargs)
 
     def write(self, string):
         if not string.endswith('\r'):
@@ -104,7 +106,7 @@ class slcanBus(BusABC):
         frame = []
 
         readStr = self.serialPortOrig.read_until(b'\r')
-        
+
         if not readStr:
             return None, False
         else:
