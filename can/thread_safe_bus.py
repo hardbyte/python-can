@@ -18,10 +18,10 @@ from .interface import Bus
 
 
 try:
-    from contextlib import nullcontext as NullContextManager
+    from contextlib import nullcontext
 
 except ImportError:
-    class NullContextManager(object):
+    class nullcontext(object):
         """A context manager that does nothing at all.
         A fallback for Python 3.7's :class:`contextlib.nullcontext` manager.
         """
@@ -53,10 +53,6 @@ class ThreadSafeBus(ObjectProxy):
         instead of :meth:`~can.BusABC.recv` directly.
     """
 
-    # init locks for sending and receiving separately
-    _lock_send = RLock()
-    _lock_recv = RLock()
-
     def __init__(self, *args, **kwargs):
         if import_exc is not None:
             raise import_exc
@@ -65,7 +61,11 @@ class ThreadSafeBus(ObjectProxy):
 
         # now, BusABC.send_periodic() does not need a lock anymore, but the
         # implementation still requires a context manager
-        self.__wrapped__._lock_send_periodic = NullContextManager()
+        self.__wrapped__._lock_send_periodic = nullcontext()
+
+        # init locks for sending and receiving separately
+        self._lock_send = RLock()
+        self._lock_recv = RLock()
 
     def recv(self, timeout=None, *args, **kwargs):
         with self._lock_recv:

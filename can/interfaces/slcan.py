@@ -60,8 +60,6 @@ class slcanBus(BusABC):
             Bitrate in bit/s
         :param float poll_interval:
             Poll interval in seconds when reading messages
-        :param float timeout:
-            timeout in seconds when reading message
         """
 
         if not channel: # if None or empty
@@ -70,7 +68,8 @@ class slcanBus(BusABC):
         if '@' in channel:
             (channel, ttyBaudrate) = channel.split('@')
 
-        self.serialPortOrig = serial.Serial(channel, baudrate=ttyBaudrate)
+        self.serialPortOrig = serial.serial_for_url(
+            channel, baudrate=ttyBaudrate)
 
         time.sleep(self._SLEEP_AFTER_SERIAL_OPEN)
 

@@ -54,7 +54,8 @@ class SerialBus(BusABC):
             raise ValueError("Must specify a serial port.")
 
         self.channel_info = "Serial interface: " + channel
-        self.ser = serial.Serial(channel, baudrate=baudrate, timeout=timeout)
+        self.ser = serial.serial_for_url(
+            channel, baudrate=baudrate, timeout=timeout)
 
         super(SerialBus, self).__init__(channel=channel, *args, **kwargs)
 
