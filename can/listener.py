@@ -52,6 +52,12 @@ class Listener(object):
     def __call__(self, msg):
         return self.on_message_received(msg)
 
+    def on_error(self, exc):
+        """This method is called to handle any exception in the receive thread.
+
+        :param Exception exc: The exception causing the thread to stop
+        """
+
     def stop(self):
         """
         Override to cleanup any open resources.
