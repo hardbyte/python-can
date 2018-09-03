@@ -97,12 +97,10 @@ class Notifier(object):
                 msg = bus.recv(self.timeout)
         except Exception as exc:
             self.exception = exc
-            for listener in self.listeners:
-                if hasattr(listener, 'on_error'):
-                    if self._loop is not None:
-                        self._loop.call_soon_threadsafe(listener.on_error, exc)
-                    else:
-                        listener.on_error(exc)
+            if self._loop is not None:
+                self._loop.call_soon_threadsafe(self._on_error, exc)
+            else:
+                self._on_error(exc)
             raise
 
     def _on_message_available(self, bus):
@@ -116,6 +114,11 @@ class Notifier(object):
             if self._loop is not None and asyncio.iscoroutine(res):
                 # Schedule coroutine
                 self._loop.create_task(res)
+
+    def _on_error(self, exc):
+        for listener in self.listeners:
+            if hasattr(listener, 'on_error'):
+                listener.on_error(exc)
 
     def add_listener(self, listener):
         """Add new Listener to the notification list. 
