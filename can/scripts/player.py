@@ -10,6 +10,7 @@ Similar to canplayer in the can-utils package.
 
 from __future__ import absolute_import, print_function
 
+import sys
 import argparse
 from datetime import datetime
 
@@ -59,8 +60,7 @@ def main():
     if len(sys.argv) < 2:
         parser.print_help(sys.stderr)
         import errno
-        sys.exit(errno.EINVAL)
-        return
+        raise SystemExit(errno.EINVAL)
 
     results = parser.parse_args()
 

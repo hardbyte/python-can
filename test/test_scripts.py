@@ -9,30 +9,57 @@ from __future__ import absolute_import
 
 import subprocess
 import unittest
+import sys
 import errno
+from abc import ABCMeta, abstractmethod
 
+from .config import *
 
-class TestCanScript(object):
+class CanScriptTest(unittest.TestCase):
 
-    def do_commands_exist(self):
+    @classmethod
+    def setUpClass(cls):
+        # clean out the argument list
+        sys.argv = sys.argv[:1]
+
+    __test__ = False
+
+    __metaclass__ = ABCMeta
+
+    #@unittest.skipUnless(IS_UNIX, "commands may only be available on unix")
+    def test_do_commands_exist(self):
         """This test calls each scripts once and veifies that the help
         can be read without any errors.
         """
         for command in self._commands():
             try:
-                subprocess.check_output(COMMANDS.spli(), stderr=subprocess.STDOUT)
+                subprocess.check_output(command.split(), stderr=subprocess.STDOUT)
             except subprocess.CalledProcessError as e:
                 self.assertEqual(e.returncode, errno.EINVAL,
-                    'Calling "{}" failed:\n{}'.format(command, e.output))
+                    'Calling "{}" failed (exit code was {} and not EINVAL/22):\n{}'
+                    .format(command, e.returncode, e.output))
 
-    def does_not_crash(self):
+    def test_does_not_crash(self):
         # test import
         module = self._import()
         # test main method
-        module.main()
+        with self.assertRaises(SystemExit) as cm:
+            module.main()
+            self.assertEqual(cm.exception.code, errno.EINVAL,
+                    'Calling main failed:\n{}'.format(command, e.output))
+
+    @abstractmethod
+    def _commands(self):
+        pass
+
+    @abstractmethod
+    def _import(self):
+        pass
 
 
-class TestLoggerScript(unittest.TestCase, TestCanScript):
+class TestLoggerScript(CanScriptTest):
+
+    __test__ = True
 
     def _commands(self):
         return (
@@ -46,7 +73,9 @@ class TestLoggerScript(unittest.TestCase, TestCanScript):
         return module
 
 
-class TestPlayerScript(unittest.TestCase, TestCanScript):
+class TestPlayerScript(CanScriptTest):
+
+    __test__ = True
 
     def _commands(self):
         return (

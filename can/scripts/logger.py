@@ -68,8 +68,7 @@ def main():
     if len(sys.argv) < 2:
         parser.print_help(sys.stderr)
         import errno
-        sys.exit(errno.EINVAL)
-        return
+        raise SystemExit(errno.EINVAL)
 
     results = parser.parse_args()
 
