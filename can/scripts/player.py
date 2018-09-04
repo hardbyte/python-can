@@ -55,6 +55,13 @@ def main():
     parser.add_argument('infile', metavar='input-file', type=str,
                         help='The file to replay. For supported types see can.LogReader.')
 
+    # print help message when no arguments were given
+    if len(sys.argv) < 2:
+        parser.print_help(sys.stderr)
+        import errno
+        sys.exit(errno.EINVAL)
+        return
+
     results = parser.parse_args()
 
     verbosity = results.verbosity

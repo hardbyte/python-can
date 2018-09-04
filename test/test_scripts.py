@@ -9,6 +9,7 @@ from __future__ import absolute_import
 
 import subprocess
 import unittest
+import errno
 
 
 class TestCanScript(object):
@@ -21,7 +22,8 @@ class TestCanScript(object):
             try:
                 subprocess.check_output(COMMANDS.spli(), stderr=subprocess.STDOUT)
             except subprocess.CalledProcessError as e:
-                self.fail('Calling "{}" failed:\n{}'.format(command, e.output))
+                self.assertEqual(e.returncode, errno.EINVAL,
+                    'Calling "{}" failed:\n{}'.format(command, e.output))
 
     def does_not_crash(self):
         # test import
