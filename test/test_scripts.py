@@ -23,12 +23,11 @@ class CanScriptTest(unittest.TestCase):
         # in test_does_not_crash() succeeds
         sys.argv = sys.argv[:1]
 
-    #: this is override by the subclasses
+    #: this is overridden by the subclasses
     __test__ = False
 
     __metaclass__ = ABCMeta
 
-    #@unittest.skipUnless(IS_UNIX, "commands may only be available on unix")
     def test_do_commands_exist(self):
         """This test calls each scripts once and veifies that the help
         can be read without any other errors, like the script not being
@@ -79,7 +78,7 @@ class TestLoggerScript(CanScriptTest):
         )
 
     def _import(self):
-        import can.scripts.logger as module
+        import can.logger as module
         return module
 
 
@@ -94,7 +93,7 @@ class TestPlayerScript(CanScriptTest):
         )
 
     def _import(self):
-        import can.scripts.player as module
+        import can.player as module
         return module
 
 
