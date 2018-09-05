@@ -15,11 +15,16 @@ from __future__ import absolute_import
 import time
 import logging
 
-import serial
-
 from can import BusABC, Message
 
 logger = logging.getLogger(__name__)
+
+try:
+    import serial
+except ImportError:
+    logger.warning("You won't be able to use the slcan can backend without "
+                   "the serial module installed!")
+    serial = None
 
 
 class slcanBus(BusABC):
@@ -43,7 +48,7 @@ class slcanBus(BusABC):
 
     _SLEEP_AFTER_SERIAL_OPEN = 2  # in seconds
 
-    def __init__(self, channel, ttyBaudrate=115200, timeout=1, bitrate=None,
+    def __init__(self, channel, ttyBaudrate=115200, bitrate=None,
                  rtscts=False, **kwargs):
         """
         :param str channel:
@@ -55,8 +60,6 @@ class slcanBus(BusABC):
             Bitrate in bit/s
         :param float poll_interval:
             Poll interval in seconds when reading messages
-        :param float timeout:
-            timeout in seconds when reading message
         :param bool rtscts:
             turn hardware handshake (RTS/CTS) on and off
         """
@@ -68,7 +71,7 @@ class slcanBus(BusABC):
             (channel, ttyBaudrate) = channel.split('@')
 
         self.serialPortOrig = serial.serial_for_url(
-            channel, baudrate=ttyBaudrate, timeout=timeout, rtscts=rtscts)
+            channel, baudrate=ttyBaudrate, rtscts=rtscts)
 
         time.sleep(self._SLEEP_AFTER_SERIAL_OPEN)
 
@@ -81,7 +84,7 @@ class slcanBus(BusABC):
 
         self.open()
 
-        super(slcanBus, self).__init__(channel, ttyBaudrate=115200, timeout=1,
+        super(slcanBus, self).__init__(channel, ttyBaudrate=115200,
                                        bitrate=None, rtscts=False, **kwargs)
 
     def write(self, string):
@@ -97,7 +100,7 @@ class slcanBus(BusABC):
         self.write('C')
 
     def _recv_internal(self, timeout):
-        if timeout is not None:
+        if timeout != self.serialPortOrig.timeout:
             self.serialPortOrig.timeout = timeout
 
         canId = None
@@ -145,7 +148,10 @@ class slcanBus(BusABC):
             else:
                 return None, False
 
-    def send(self, msg, timeout=None):
+    def send(self, msg, timeout=0):
+        if timeout != self.serialPortOrig.write_timeout:
+            self.serialPortOrig.write_timeout = timeout
+
         if msg.is_remote_frame:
             if msg.is_extended_id:
                 sendStr = "R%08X0" % (msg.arbitration_id)
@@ -163,3 +169,9 @@ class slcanBus(BusABC):
 
     def shutdown(self):
         self.close()
+
+    def fileno(self):
+        if hasattr(self.serialPortOrig, 'fileno'):
+            return self.serialPortOrig.fileno()
+        # Return an invalid file descriptor on Windows
+        return -1

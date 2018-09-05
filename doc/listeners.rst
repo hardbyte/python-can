@@ -26,6 +26,9 @@ BufferedReader
 .. autoclass:: can.BufferedReader
     :members:
 
+.. autoclass:: can.AsyncBufferedReader
+    :members:
+
 
 Logger
 ------

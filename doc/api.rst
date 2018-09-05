@@ -15,6 +15,7 @@ A form of CAN interface is also required.
    bus
    message
    listeners
+   asyncio
    bcm
 
 
