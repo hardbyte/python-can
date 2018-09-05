@@ -47,5 +47,3 @@ from .broadcastmanager import send_periodic, \
     ModifiableCyclicTaskABC, \
     MultiRateCyclicSendTaskABC, \
     RestartableCyclicTaskABC
-
-from .scripts import *
