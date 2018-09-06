@@ -5,38 +5,43 @@
 This module contains the implementation of :class:`can.Message`.
 
 .. note::
-    Could also use `@dataclass <https://docs.python.org/3.7/library/dataclasses.html>`__
+    Could use `@dataclass <https://docs.python.org/3.7/library/dataclasses.html>`__
     starting with Python 3.7.
 """
 
 import logging
-logger = logging.getLogger(__name__)
 
 
 class Message(object):
     """
     The :class:`~can.Message` object is used to represent CAN messages for
-    sending, receiving and other purposes like converting between.
+    sending, receiving and other purposes like converting between different
+    logging formats.
 
     Messages can use extended identifiers, be remote or error frames, contain
     data and can be associated to a channel.
 
-    When testing for equality of the messages, the timestamp and the channel
-    is not used for comparing.
-
-    .. note::
-
-        This class does not strictly check the input. Thus, the caller must
-        prevent the creation of invalid messages. Possible problems include
-        the `dlc` field not matching the length of `data` or creating a message
-        with both `is_remote_frame` and `is_error_frame` set to True.
-
+    When testing for equality of messages, the timestamp and the channel
+    are not used for comparing.
     """
 
     def __init__(self, timestamp=0.0, arbitration_id=0, extended_id=True,
                  is_remote_frame=False, is_error_frame=False, channel=None,
                  dlc=None, data=None,
-                 is_fd=False, bitrate_switch=False, error_state_indicator=False,):
+                 is_fd=False, bitrate_switch=False, error_state_indicator=False,
+                 check=False):
+        """
+        To create a message object, simply provide any of the below attributes
+        toghether with additional parameters as keyword arguments to the constructor.
+
+        :param bool check: By default, the constructor of this class does not strictly check the input.
+                           Thus, the caller must prevent the creation of invalid messages or
+                           set this parameter to `True`, to raise an Error on invalid inputs.
+                           Possible problems include the `dlc` field not matching the length of `data`
+                           or creating a message with both `is_remote_frame` and `is_error_frame` set to `True`.
+
+        :raises ValueError: iff `check` is set to `True` and one or more arguments were invalid
+        """
 
         self.timestamp = timestamp
         self.arbitration_id = arbitration_id
@@ -67,11 +72,8 @@ class Message(object):
         else:
             self.dlc = dlc
 
-        # TODO: this shall only be checked when asked for
-        if is_fd and self.dlc > 64:
-            logger.warning("data link count was %d but it should be less than or equal to 64", self.dlc)
-        if not is_fd and self.dlc > 8:
-            logger.warning("data link count was %d but it should be less than or equal to 8", self.dlc)
+        if check:
+            self._check()
 
     def __str__(self):
         field_strings = ["Timestamp: {0:>15.6f}".format(self.timestamp)]
@@ -171,4 +173,21 @@ class Message(object):
         ))
 
     def __format__(self, format_spec):
-        return self.__str__()
+        if not format_spec:
+            return self.__str__()
+        else:
+            raise ValueError('non empty format_specs are not supported')
+
+    def __bytes__(self):
+        return bytes(self.data)
+
+    def _check(self):
+        """Checks if the message parameters are valid.
+
+        :raises ValueError: iff one or more attributes are invalid
+        """
+        # TODO add checks
+        if is_fd and self.dlc > 64:
+            logger.warning("data link count was %d but it should be less than or equal to 64", self.dlc)
+        if not is_fd and self.dlc > 8:
+            logger.warning("data link count was %d but it should be less than or equal to 8", self.dlc)
