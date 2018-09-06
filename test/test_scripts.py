@@ -37,14 +37,16 @@ class CanScriptTest(unittest.TestCase):
             try:
                 subprocess.check_output(command.split(), stderr=subprocess.STDOUT)
             except subprocess.CalledProcessError as e:
-                error_code = e.returncode
+                return_code = e.returncode
+                output = e.output
             else:
-                error_code = 0
+                return_code = 0
+                output = "-- NO OUTPUT --"
 
             allowed = [0, errno.EINVAL]
-            self.assertIn(error_code, allowed,
+            self.assertIn(return_code, allowed,
                     'Calling "{}" failed (exit code was {} and not SUCCESS/0 or EINVAL/22):\n{}'
-                    .format(command, e.returncode, e.output))
+                    .format(command, return_code, output))
 
     def test_does_not_crash(self):
         # test import
