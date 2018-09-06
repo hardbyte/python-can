@@ -30,7 +30,7 @@ Message
         The frame identifier used for arbitration on the bus.
 
         The arbitration ID can take an int between 0 and the
-        maximum value allowed depending on the is_extended_id flag
+        maximum value allowed depending on the ``is_extended_id`` flag
         (either 2\ :sup:`11` - 1 for 11-bit IDs, or
         2\ :sup:`29` - 1 for 29-bit identifiers).
 
@@ -63,7 +63,7 @@ Message
 
         :type: int
 
-        The :abbr:`DLC (Data Link Count)` parameter of a CAN message is an integer
+        The :abbr:`DLC (Data Length Code)` parameter of a CAN message is an integer
         between 0 and 8 representing the frame payload length.
 
         In the case of a CAN FD message, this indicates the data length in
@@ -96,6 +96,7 @@ Message
 
 
         Previously this was exposed as `id_type`.
+        Please use `is_extended_id` from now on.
 
 
     .. attribute:: is_error_frame
