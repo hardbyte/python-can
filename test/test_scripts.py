@@ -78,7 +78,7 @@ class TestLoggerScript(CanScriptTest):
     def _commands(self):
         commands = [
             "python -m can.logger --help",
-            "python can_logger.py --help"
+            "python scripts/can_logger.py --help"
         ]
         if IS_UNIX:
             commands += ["can_logger.py --help"]
@@ -96,7 +96,7 @@ class TestPlayerScript(CanScriptTest):
     def _commands(self):
         commands = [
             "python -m can.player --help",
-            "python can_player.py --help"
+            "python scripts/can_player.py --help"
         ]
         if IS_UNIX:
             commands += ["can_player.py --help"]
