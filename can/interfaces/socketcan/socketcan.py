@@ -604,6 +604,9 @@ class SocketcanBus(BusABC):
         else:
             self._is_filtered = True
 
+    def fileno(self):
+        return self.socket.fileno()
+
     @staticmethod
     def _detect_available_configs():
         return [{'interface': 'socketcan', 'channel': channel}
