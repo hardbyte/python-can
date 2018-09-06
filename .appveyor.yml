@@ -17,17 +17,17 @@ environment:
     - PYTHON: "C:\\Python37-x64"
 
 install:
-  # Prepend Python installation to PATH
-  - set PATH=%PYTHON_INSTALL%;%PATH%
+  # Prepend Python installation and scripts (e.g. pytest) to PATH
+  - set PATH=%PYTHON_INSTALL%;%PYTHON_INSTALL%\\Scripts;%PATH%
 
-  # Prepend Python scripts to PATH (e.g. pytest)
-  - set PATH=%PYTHON_INSTALL%\\Scripts;%PATH%
-
-  # We need to install the python-can library itself
+  # We need to install the python-can library itself including the dependencies
   - "python -m pip install .[test,neovi]"
 
 build: off
 
 test_script:
+  # run tests
   - "pytest"
+
+  # uplad coverage reports
   - "codecov"
