@@ -23,6 +23,15 @@ Message
     2.0B) in length, and ``python-can`` exposes this difference with the
     :attr:`~can.Message.is_extended_id` attribute.
 
+    .. attribute:: timestamp
+
+        :type: float
+
+        The timestamp field in a CAN message is a floating point number representing when
+        the message was received since the epoch in seconds. Where possible this will be
+        timestamped in hardware.
+
+
     .. attribute:: arbitration_id
 
         :type: int
@@ -82,6 +91,12 @@ Message
             represents the amount of data contained in the message, in remote
             frames it represents the amount of data being requested.
 
+    .. attribute:: channel
+
+        :type: str or int or None
+
+        This might store the channel from which the message came.
+
 
     .. attribute:: is_extended_id
 
@@ -140,15 +155,6 @@ Message
         :type: bool
 
         If this is a CAN FD message, this indicates an error active state.
-
-
-    .. attribute:: timestamp
-
-        :type: float
-
-        The timestamp field in a CAN message is a floating point number representing when
-        the message was received since the epoch in seconds. Where possible this will be
-        timestamped in hardware.
 
 
     .. method:: __str__
