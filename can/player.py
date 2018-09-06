@@ -10,6 +10,7 @@ Similar to canplayer in the can-utils package.
 
 from __future__ import absolute_import, print_function
 
+import sys
 import argparse
 from datetime import datetime
 
@@ -54,6 +55,12 @@ def main():
 
     parser.add_argument('infile', metavar='input-file', type=str,
                         help='The file to replay. For supported types see can.LogReader.')
+
+    # print help message when no arguments were given
+    if len(sys.argv) < 2:
+        parser.print_help(sys.stderr)
+        import errno
+        raise SystemExit(errno.EINVAL)
 
     results = parser.parse_args()
 
