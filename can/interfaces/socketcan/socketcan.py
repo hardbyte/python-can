@@ -240,21 +240,25 @@ class CyclicSendTask(LimitedDurationCyclicSendTaskABC,
 
     """
 
-    def __init__(self, channel, message, period, duration=None):
+    def __init__(self, channel, message, period, duration=None, sock=None):
         """
         :param str channel: The name of the CAN channel to connect to.
         :param can.Message message: The message to be sent periodically.
         :param float period: The rate in seconds at which to send the message.
         :param float duration: Approximate duration in seconds to send the message.
+        :param socket.socket sock: An already established BCM socket.
         """
         super(CyclicSendTask, self).__init__(message, period, duration)
         self.channel = channel
         self.duration = duration
+        if sock is not None:
+            self.bcm_socket = sock
+        else:
+            self.bcm_socket = create_bcm_socket(channel)
         self._tx_setup(message)
         self.message = message
 
     def _tx_setup(self, message):
-        self.bcm_socket = create_bcm_socket(self.channel)
         # Create a low level packed frame to pass to the kernel
         self.can_id_with_flags = _add_flags_to_can_id(message)
         self.flags = CAN_FD_FRAME if message.is_fd else 0
@@ -283,7 +287,6 @@ class CyclicSendTask(LimitedDurationCyclicSendTaskABC,
 
         stopframe = build_bcm_tx_delete_header(self.can_id_with_flags, self.flags)
         send_bcm(self.bcm_socket, stopframe)
-        self.bcm_socket.close()
 
     def modify_data(self, message):
         """Update the contents of this periodically sent message.
@@ -482,11 +485,15 @@ class SocketcanBus(BusABC):
 
         bind_socket(self.socket, channel)
 
+        self.bcm_socket = create_bcm_socket(channel) if channel else None
+
         kwargs.update({'receive_own_messages': receive_own_messages, 'fd': fd})
         super(SocketcanBus, self).__init__(channel=channel, **kwargs)
 
     def shutdown(self):
         """Closes the socket."""
+        if self.bcm_socket is not None:
+            self.bcm_socket.close()
         self.socket.close()
 
     def _recv_internal(self, timeout):
@@ -589,7 +596,8 @@ class SocketcanBus(BusABC):
             least *duration* seconds.
 
         """
-        return CyclicSendTask(msg.channel or self.channel, msg, period, duration)
+        return CyclicSendTask(msg.channel or self.channel, msg, period, duration,
+                              self.bcm_socket)
 
     def _apply_filters(self, filters):
         try:
