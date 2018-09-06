@@ -78,7 +78,6 @@ class Message(object):
     def __str__(self):
         field_strings = ["Timestamp: {0:>15.6f}".format(self.timestamp)]
         if self.is_extended_id:
-            # Extended arbitrationID
             arbitration_id_string = "ID: {0:08x}".format(self.arbitration_id)
         else:
             arbitration_id_string = "ID: {0:04x}".format(self.arbitration_id)
@@ -89,6 +88,8 @@ class Message(object):
             "E" if self.is_error_frame else " ",
             "R" if self.is_remote_frame else " ",
             "F" if self.is_fd else " ",
+            "BS" if self.bitrate_switch else "  ",
+            "EI" if self.error_state_indicator else "  "
         ])
 
         field_strings.append(flag_string)
@@ -109,6 +110,9 @@ class Message(object):
             except UnicodeError:
                 pass
 
+        if self.channel is not None:
+            field_strings.append("Channel: {}".format(self.channel))
+
         return "    ".join(field_strings).strip()
 
     def __len__(self):
@@ -121,34 +125,40 @@ class Message(object):
         return self.__bool__()
 
     def __repr__(self):
-        data = ["{:#02x}".format(byte) for byte in self.data]
         args = ["timestamp={}".format(self.timestamp),
-                "is_remote_frame={}".format(self.is_remote_frame),
-                "extended_id={}".format(self.is_extended_id),
-                "is_error_frame={}".format(self.is_error_frame),
                 "arbitration_id={:#x}".format(self.arbitration_id),
-                "dlc={}".format(self.dlc),
-                "data=[{}]".format(", ".join(data))]
+                "extended_id={}".format(self.is_extended_id),
+                "is_remote_frame={}".format(self.is_remote_frame),
+                "is_error_frame={}".format(self.is_error_frame)]
+
         if self.channel is not None:
-            args.append("channel={!r}".format(self.channel))
+            args.append("channel={!r}".format(self.channel))                
+
+        data = ["{:#02x}".format(byte) for byte in self.data]
+        args += ["dlc={}".format(self.dlc),
+                "data=[{}]".format(", ".join(data))]
+
         if self.is_fd:
             args.append("is_fd=True")
             args.append("bitrate_switch={}".format(self.bitrate_switch))
             args.append("error_state_indicator={}".format(self.error_state_indicator))
+
         return "can.Message({})".format(", ".join(args))
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
             return (
-                self.arbitration_id == other.arbitration_id and
                 #self.timestamp == other.timestamp and # allow the timestamp to differ
+                self.arbitration_id == other.arbitration_id and
                 self.is_extended_id == other.is_extended_id and
-                self.dlc == other.dlc and
-                self.data == other.data and
                 self.is_remote_frame == other.is_remote_frame and
                 self.is_error_frame == other.is_error_frame and
+                self.channel == other.channel and
+                self.dlc == other.dlc and
+                self.data == other.data and
                 self.is_fd == other.is_fd and
-                self.bitrate_switch == other.bitrate_switch
+                self.bitrate_switch == other.bitrate_switch and
+                self.error_state_indicator == other.error_state_indicator
             )
         else:
             return NotImplemented
