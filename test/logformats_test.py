@@ -59,22 +59,28 @@ class ReaderWriterTest(unittest.TestCase):
 
     def _setup_instance_helper(self,
             writer_constructor, reader_constructor, binary_file=False,
-            check_remote_frames=True, check_error_frames=True, check_comments=False,
-            test_append=False, round_timestamps=False):
+            check_remote_frames=True, check_error_frames=True, check_fd=True,
+            check_comments=False, test_append=False,
+            round_timestamps=False, preserves_timestamp_exact=True, preserves_channel=True):
         """
         :param Callable writer_constructor: the constructor of the writer class
         :param Callable reader_constructor: the constructor of the reader class
+        :param bool binary_file: if True, opens files in binary and not in text mode
 
         :param bool check_remote_frames: if True, also tests remote frames
         :param bool check_error_frames: if True, also tests error frames
+        :param bool check_fd: if True, also tests CAN FD frames
         :param bool check_comments: if True, also inserts comments at some
                                     locations and checks if they are contained anywhere literally
                                     in the resulting file. The locations as selected randomly
                                     but deterministically, which makes the test reproducible.
         :param bool test_append: tests the writer in append mode as well
-        :param bool round_timestamps: if True, rounds timestamps using :meth:`~builtin.round`
-                                      before comparing the read messages/events
 
+        :param bool round_timestamps: if True, rounds timestamps using :meth:`~builtin.round`
+                                      to integers before comparing
+        :param bool preserves_timestamp_exact: if True, checks that timestamps match exactly
+                                               in this case, no rounding is performed
+        :param bool preserves_channel: if True, checks that the channel attribute is preserved
         """
         # get all test messages
         self.original_messages = TEST_MESSAGES_BASE
@@ -82,6 +88,8 @@ class ReaderWriterTest(unittest.TestCase):
             self.original_messages += TEST_MESSAGES_REMOTE_FRAMES
         if check_error_frames:
             self.original_messages += TEST_MESSAGES_ERROR_FRAMES
+        if check_fd:
+            self.original_messages += [] # TODO: add TEST_MESSAGES_CAN_FD
 
         # sort them so that for example ASCWriter does not "fix" any messages with timestamp 0.0
         self.original_messages = sort_messages(self.original_messages)
@@ -101,7 +109,10 @@ class ReaderWriterTest(unittest.TestCase):
         self.reader_constructor = reader_constructor
         self.binary_file = binary_file
         self.test_append_enabled = test_append
+
         self.round_timestamps = round_timestamps
+        self.preserves_timestamp_exact = preserves_timestamp_exact
+        self.preserves_channel = preserves_channel
 
     def setUp(self):
         with tempfile.NamedTemporaryFile('w+', delete=False) as test_file:
@@ -284,19 +295,39 @@ class ReaderWriterTest(unittest.TestCase):
         """
         for index, (original, read) in enumerate(zip(self.original_messages, read_messages)):
             try:
-                # check everything except the timestamp
-                self.assertEqual(original, read, "messages are not equal at index #{}".format(index))
-                # check the timestamp
-                if self.round_timestamps:
-                    original.timestamp = round(original.timestamp)
-                    read.timestamp = round(read.timestamp)
-                self.assertAlmostEqual(read.timestamp, original.timestamp, places=6,
-                    msg="message timestamps are not almost_equal at index #{} ({!r} !~= {!r})"
-                        .format(index, original.timestamp, read.timestamp))
-            except:
+                self.assertMessageEqual(original, read)
+            except AssertionError as e:
                 print("Comparing: original message: {!r}".format(original))
                 print("           read     message: {!r}".format(read))
-                raise
+                self.fail("messages are not equal at index #{}:\n{}".format(index, e))
+
+    def assertMessageEqual(self, message_1, message_2):
+        """
+        Checks that two messages are equal, according to the current rules.
+        """
+        # check the timestamp
+        if self.preserves_timestamp_exact:
+            self.assertEqual(message_1.timestamp, message_2.timestamp)
+        else:
+            t1 = round(message_1.timestamp) if self.round_timestamps else message_1.timestamp
+            t2 = round(message_2.timestamp) if self.round_timestamps else message_2.timestamp
+            self.assertAlmostEqual(message_2.timestamp, message_1.timestamp, places=6,
+                msg="message timestamps are not almost_equal ({!r} !~= {!r}{})"
+                    .format(message_1.timestamp, message_2.timestamp,
+                            "; rounded" if self.round_timestamps else ""))
+
+        # check the rest
+        self.assertEqual(message_1.arbitration_id, message_2.arbitration_id)
+        self.assertEqual(message_1.is_extended_id, message_2.is_extended_id)
+        self.assertEqual(message_1.is_remote_frame, message_2.is_remote_frame)
+        self.assertEqual(message_1.is_error_frame, message_2.is_error_frame)
+        if self.preserves_channel:
+            self.assertEqual(message_1.channel, message_2.channel)
+        self.assertEqual(message_1.dlc, message_2.dlc)
+        self.assertEqual(message_1.data, message_2.data)
+        self.assertEqual(message_1.is_fd, message_2.is_fd)
+        self.assertEqual(message_1.bitrate_switch, message_2.bitrate_switch)
+        self.assertEqual(message_1.error_state_indicator, message_2.error_state_indicator)
 
     def assertIncludesComments(self, filename):
         """
@@ -321,6 +352,7 @@ class TestAscFileFormat(ReaderWriterTest):
     def _setup_instance(self):
         super(TestAscFileFormat, self)._setup_instance_helper(
             can.ASCWriter, can.ASCReader,
+            check_fd=False,
             check_comments=True, round_timestamps=True
         )
 
@@ -334,6 +366,7 @@ class TestBlfFileFormat(ReaderWriterTest):
         super(TestBlfFileFormat, self)._setup_instance_helper(
             can.BLFWriter, can.BLFReader,
             binary_file=True,
+            check_fd=False,
             check_comments=False
         )
 
@@ -364,6 +397,7 @@ class TestCanutilsFileFormat(ReaderWriterTest):
     def _setup_instance(self):
         super(TestCanutilsFileFormat, self)._setup_instance_helper(
             can.CanutilsLogWriter, can.CanutilsLogReader,
+            check_fd=False,
             test_append=True, check_comments=False
         )
 
@@ -376,6 +410,7 @@ class TestCsvFileFormat(ReaderWriterTest):
     def _setup_instance(self):
         super(TestCsvFileFormat, self)._setup_instance_helper(
             can.CSVWriter, can.CSVReader,
+            check_fd=False,
             test_append=True, check_comments=False
         )
 
@@ -388,6 +423,7 @@ class TestSqliteDatabaseFormat(ReaderWriterTest):
     def _setup_instance(self):
         super(TestSqliteDatabaseFormat, self)._setup_instance_helper(
             can.SqliteWriter, can.SqliteReader,
+            check_fd=False,
             test_append=True, check_comments=False
         )
 
@@ -423,6 +459,7 @@ class TestSqliteDatabaseFormat(ReaderWriterTest):
 class TestPrinter(unittest.TestCase):
     """Tests that can.Printer does not crash"""
 
+    # TODO add CAN FD messages
     messages = TEST_MESSAGES_BASE + TEST_MESSAGES_REMOTE_FRAMES + TEST_MESSAGES_ERROR_FRAMES
 
     def test_not_crashes_with_stdout(self):
