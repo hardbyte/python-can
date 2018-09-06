@@ -294,7 +294,7 @@ class BLFWriter(BaseIOHandler, Listener):
             channel += 1
 
         arb_id = msg.arbitration_id
-        if msg.id_type:
+        if msg.is_extended_id:
             arb_id |= CAN_MSG_EXT
         flags = REMOTE_FLAG if msg.is_remote_frame else 0
         data = bytes(msg.data)

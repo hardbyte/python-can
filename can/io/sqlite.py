@@ -196,7 +196,7 @@ class SqliteWriter(BaseIOHandler, BufferedReader):
                     messages.append((
                         msg.timestamp,
                         msg.arbitration_id,
-                        msg.id_type,
+                        msg.is_extended_id,
                         msg.is_remote_frame,
                         msg.is_error_frame,
                         msg.dlc,

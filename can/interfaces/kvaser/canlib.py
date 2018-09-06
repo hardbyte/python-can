@@ -527,7 +527,7 @@ class KvaserBus(BusABC):
 
     def send(self, msg, timeout=None):
         #log.debug("Writing a message: {}".format(msg))
-        flags = canstat.canMSG_EXT if msg.id_type else canstat.canMSG_STD
+        flags = canstat.canMSG_EXT if msg.is_extended_id else canstat.canMSG_STD
         if msg.is_remote_frame:
             flags |= canstat.canMSG_RTR
         if msg.is_error_frame:

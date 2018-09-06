@@ -62,7 +62,7 @@ class CSVWriter(BaseIOHandler, Listener):
         row = ','.join([
             repr(msg.timestamp), # cannot use str() here because that is rounding
             hex(msg.arbitration_id),
-            '1' if msg.id_type else '0',
+            '1' if msg.is_extended_id else '0',
             '1' if msg.is_remote_frame else '0',
             '1' if msg.is_error_frame else '0',
             str(msg.dlc),

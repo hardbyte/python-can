@@ -3,6 +3,10 @@
 
 """
 This module contains the implementation of :class:`can.Message`.
+
+.. note::
+    Could also use `@dataclass <https://docs.python.org/3.7/library/dataclasses.html>`__
+    starting with Python 3.7.
 """
 
 import logging
@@ -12,7 +16,7 @@ logger = logging.getLogger(__name__)
 class Message(object):
     """
     The :class:`~can.Message` object is used to represent CAN messages for
-    both sending and receiving.
+    sending, receiving and other purposes like converting between.
 
     Messages can use extended identifiers, be remote or error frames, contain
     data and can be associated to a channel.
@@ -29,18 +33,18 @@ class Message(object):
 
     """
 
-    def __init__(self, timestamp=0.0, is_remote_frame=False, extended_id=True,
-                 is_error_frame=False, arbitration_id=0, dlc=None, data=None,
-                 is_fd=False, bitrate_switch=False, error_state_indicator=False,
-                 channel=None):
+    def __init__(self, timestamp=0.0, arbitration_id=0, extended_id=True,
+                 is_remote_frame=False, is_error_frame=False, channel=None,
+                 dlc=None, data=None,
+                 is_fd=False, bitrate_switch=False, error_state_indicator=False,):
 
         self.timestamp = timestamp
-        self.id_type = extended_id
+        self.arbitration_id = arbitration_id
+        self.id_type = extended_id  # deprecated
         self.is_extended_id = extended_id
 
         self.is_remote_frame = is_remote_frame
         self.is_error_frame = is_error_frame
-        self.arbitration_id = arbitration_id
         self.channel = channel
 
         self.is_fd = is_fd
@@ -63,6 +67,7 @@ class Message(object):
         else:
             self.dlc = dlc
 
+        # TODO: this shall only be checked when asked for
         if is_fd and self.dlc > 64:
             logger.warning("data link count was %d but it should be less than or equal to 64", self.dlc)
         if not is_fd and self.dlc > 8:
@@ -70,7 +75,7 @@ class Message(object):
 
     def __str__(self):
         field_strings = ["Timestamp: {0:>15.6f}".format(self.timestamp)]
-        if self.id_type:
+        if self.is_extended_id:
             # Extended arbitrationID
             arbitration_id_string = "ID: {0:08x}".format(self.arbitration_id)
         else:
@@ -78,7 +83,7 @@ class Message(object):
         field_strings.append(arbitration_id_string.rjust(12, " "))
 
         flag_string = " ".join([
-            "X" if self.id_type else "S",
+            "X" if self.is_extended_id else "S",
             "E" if self.is_error_frame else " ",
             "R" if self.is_remote_frame else " ",
             "F" if self.is_fd else " ",
@@ -117,7 +122,7 @@ class Message(object):
         data = ["{:#02x}".format(byte) for byte in self.data]
         args = ["timestamp={}".format(self.timestamp),
                 "is_remote_frame={}".format(self.is_remote_frame),
-                "extended_id={}".format(self.id_type),
+                "extended_id={}".format(self.is_extended_id),
                 "is_error_frame={}".format(self.is_error_frame),
                 "arbitration_id={:#x}".format(self.arbitration_id),
                 "dlc={}".format(self.dlc),
@@ -135,7 +140,7 @@ class Message(object):
             return (
                 self.arbitration_id == other.arbitration_id and
                 #self.timestamp == other.timestamp and # allow the timestamp to differ
-                self.id_type == other.id_type and
+                self.is_extended_id == other.is_extended_id and
                 self.dlc == other.dlc and
                 self.data == other.data and
                 self.is_remote_frame == other.is_remote_frame and
@@ -156,7 +161,7 @@ class Message(object):
         return hash((
             self.arbitration_id,
             # self.timestamp # excluded, like in self.__eq__(self, other)
-            self.id_type,
+            self.is_extended_id,
             self.dlc,
             self.data,
             self.is_fd,
