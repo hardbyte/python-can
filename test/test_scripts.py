@@ -37,12 +37,14 @@ class CanScriptTest(unittest.TestCase):
             try:
                 subprocess.check_output(command.split(), stderr=subprocess.STDOUT)
             except subprocess.CalledProcessError as e:
-                self.assertEqual(e.returncode, errno.EINVAL,
-                    'Calling "{}" failed (exit code was {} and not EINVAL/22):\n{}'
-                    .format(command, e.returncode, e.output))
+                error_code = e.returncode
             else:
-                # this is also okay
-                pass
+                error_code = 0
+
+            allowed = [0, errno.EINVAL]
+            self.assertIn(error_code, allowed,
+                    'Calling "{}" failed (exit code was {} and not SUCCESS/0 or EINVAL/22):\n{}'
+                    .format(command, e.returncode, e.output))
 
     def test_does_not_crash(self):
         # test import
@@ -72,10 +74,13 @@ class TestLoggerScript(CanScriptTest):
     __test__ = True
 
     def _commands(self):
-        return (
-            "can_logger.py --help",
+        commands = [
             "python -m can.logger --help",
-        )
+            "python can_logger.py --help"
+        ]
+        if IS_UNIX:
+            commands += ["can_logger.py --help"]
+        return commands
 
     def _import(self):
         import can.logger as module
@@ -87,10 +92,13 @@ class TestPlayerScript(CanScriptTest):
     __test__ = True
 
     def _commands(self):
-        return (
-            "can_player.py --help",
+        commands = [
             "python -m can.player --help",
-        )
+            "python can_player.py --help"
+        ]
+        if IS_UNIX:
+            commands += ["can_player.py --help"]
+        return commands
 
     def _import(self):
         import can.player as module
