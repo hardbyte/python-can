@@ -59,6 +59,14 @@ TEST_MESSAGES_BASE = [
         data=[0xFF, 0xFE, 0xFD],
     ),
     Message(
+        # with channel as integer
+        channel=42,
+    ),
+    Message(
+        # with channel as string
+        channel="awesome_channel",
+    ),
+    Message(
         arbitration_id=0xABCDEF, extended_id=True,
         timestamp=TEST_TIME,
         data=[1, 2, 3, 4, 5, 6, 7, 8]
