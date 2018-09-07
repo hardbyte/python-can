@@ -71,7 +71,7 @@ class NeoViBus(BusABC):
         """
 
         :param int channel:
-            The Channel id to create this bus with.
+            The Channel id or name to create this bus with.
         :param list can_filters:
             See :meth:`can.BusABC.set_filters` for details.
 
@@ -102,7 +102,12 @@ class NeoViBus(BusABC):
         try:
             channel = int(channel)
         except ValueError:
-            raise ValueError('channel must be an integer')
+            channel = getattr(ics, "NETID_{}".format(channel.upper()), -1)
+            if channel == -1:
+                raise ValueError(
+                    'channel must be an integer or '
+                    'a valid ICS channel name'
+                )
 
         type_filter = config.get('type_filter')
         serial = config.get('serial')
