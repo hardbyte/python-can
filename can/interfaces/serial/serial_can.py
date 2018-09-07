@@ -34,7 +34,8 @@ class SerialBus(BusABC):
 
     """
 
-    def __init__(self, channel, baudrate=115200, timeout=0.1, *args, **kwargs):
+    def __init__(self, channel, baudrate=115200, timeout=0.1, rtscts=False,
+                 *args, **kwargs):
         """
         :param str channel:
             The serial device to open. For example "/dev/ttyS1" or
@@ -49,12 +50,16 @@ class SerialBus(BusABC):
         :param float timeout:
             Timeout for the serial device in seconds (default 0.1).
 
+        :param bool rtscts:
+            turn hardware handshake (RTS/CTS) on and off
+
         """
         if not channel:
             raise ValueError("Must specify a serial port.")
 
         self.channel_info = "Serial interface: " + channel
-        self.ser = serial.Serial(channel, baudrate=baudrate, timeout=timeout)
+        self.ser = serial.serial_for_url(
+            channel, baudrate=baudrate, timeout=timeout, rtscts=rtscts)
 
         super(SerialBus, self).__init__(channel=channel, *args, **kwargs)
 
@@ -107,8 +112,8 @@ class SerialBus(BusABC):
         Read a message from the serial device.
 
         :param timeout:
-            
-            .. warning:: 
+
+            .. warning::
                 This parameter will be ignored. The timeout value of the channel is used.
 
         :returns:
@@ -150,3 +155,9 @@ class SerialBus(BusABC):
 
         else:
             return None, False
+
+    def fileno(self):
+        if hasattr(self.ser, 'fileno'):
+            return self.ser.fileno()
+        # Return an invalid file descriptor on Windows
+        return -1

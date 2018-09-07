@@ -122,7 +122,11 @@ class Bus(BusABC):
             channel = config['channel']
             del config['channel']
 
-        return cls(channel, *args, **config)
+        if channel is None:
+            # Use the default channel for the backend
+            return cls(*args, **config)
+        else:
+            return cls(channel, *args, **config)    
 
 
 def detect_available_configs(interfaces=None):
@@ -142,7 +146,7 @@ def detect_available_configs(interfaces=None):
         - `None` to search in all known interfaces.
     :rtype: list[dict]
     :return: an iterable of dicts, each suitable for usage in
-             :class:`can.interface.Bus`\ 's constructor.
+             the constructor of :class:`can.interface.Bus`.
     """
 
     # Figure out where to search

@@ -23,6 +23,10 @@ class CanError(IOError):
     pass
 
 from .listener import Listener, BufferedReader, RedirectReader
+try:
+    from .listener import AsyncBufferedReader
+except ImportError:
+    pass
 
 from .io import Logger, Printer, LogReader, MessageSync
 from .io import ASCWriter, ASCReader
@@ -47,5 +51,3 @@ from .broadcastmanager import send_periodic, \
     ModifiableCyclicTaskABC, \
     MultiRateCyclicSendTaskABC, \
     RestartableCyclicTaskABC
-
-from .scripts import *

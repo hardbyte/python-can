@@ -12,7 +12,6 @@ import logging
 import threading
 from time import time
 from collections import namedtuple
-import logging
 
 from .broadcastmanager import ThreadBasedCyclicSendTask
 
@@ -85,7 +84,8 @@ class BusABC(object):
             elif timeout is None:
                 continue
 
-            # try next one only if there still is time, and with reduced timeout
+            # try next one only if there still is time, and with
+            # reduced timeout
             else:
 
                 time_left = timeout - (time() - start)
@@ -116,9 +116,9 @@ class BusABC(object):
 
         .. note::
 
-            The second return value (whether filtering was already done) may change
-            over time for some interfaces, like for example in the Kvaser interface.
-            Thus it cannot be simplified to a constant value.
+            The second return value (whether filtering was already done) may
+            change over time for some interfaces, like for example in the
+            Kvaser interface. Thus it cannot be simplified to a constant value.
 
         :param float timeout: seconds to wait for a message,
                               see :meth:`~can.BusABC.send`
@@ -145,7 +145,7 @@ class BusABC(object):
         Override this method to enable the transmit path.
 
         :param can.Message msg: A message object.
-        
+
         :type timeout: float or None
         :param timeout:
             If > 0, wait up to this many seconds for message to be ACK'ed or
@@ -184,7 +184,8 @@ class BusABC(object):
         if not hasattr(self, "_lock_send_periodic"):
             # Create a send lock for this bus
             self._lock_send_periodic = threading.Lock()
-        return ThreadBasedCyclicSendTask(self, self._lock_send_periodic, msg, period, duration)
+        return ThreadBasedCyclicSendTask(
+            self, self._lock_send_periodic, msg, period, duration)
 
     def __iter__(self):
         """Allow iteration on messages as they are received.
@@ -217,22 +218,23 @@ class BusABC(object):
         """Apply filtering to all messages received by this Bus.
 
         All messages that match at least one filter are returned.
-        If `filters` is `None` or a zero length sequence, all 
+        If `filters` is `None` or a zero length sequence, all
         messages are matched.
 
         Calling without passing any filters will reset the applied
         filters to `None`.
 
         :param filters:
-            A iterable of dictionaries each containing a "can_id", a "can_mask",
-            and an optional "extended" key.
+            A iterable of dictionaries each containing a "can_id",
+            a "can_mask", and an optional "extended" key.
 
             >>> [{"can_id": 0x11, "can_mask": 0x21, "extended": False}]
 
-            A filter matches, when ``<received_can_id> & can_mask == can_id & can_mask``.
+            A filter matches, when
+            ``<received_can_id> & can_mask == can_id & can_mask``.
             If ``extended`` is set as well, it only matches messages where
-            ``<received_is_extended> == extended``. Else it matches every messages based
-            only on the arbitration ID and mask.
+            ``<received_is_extended> == extended``. Else it matches every
+            messages based only on the arbitration ID and mask.
         """
         self._filters = filters or None
         self._apply_filters(self._filters)
@@ -267,14 +269,15 @@ class BusABC(object):
         for _filter in self._filters:
             # check if this filter even applies to the message
             if 'extended' in _filter and \
-                _filter['extended'] != msg.is_extended_id:
+                    _filter['extended'] != msg.is_extended_id:
                 continue
 
             # then check for the mask and id
             can_id = _filter['can_id']
             can_mask = _filter['can_mask']
 
-            # basically, we compute `msg.arbitration_id & can_mask == can_id & can_mask`
+            # basically, we compute
+            # `msg.arbitration_id & can_mask == can_id & can_mask`
             # by using the shorter, but equivalent from below:
             if (can_id ^ msg.arbitration_id) & can_mask == 0:
                 return True

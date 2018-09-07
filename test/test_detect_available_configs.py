@@ -23,7 +23,7 @@ class TestDetectAvailableConfigs(unittest.TestCase):
     def test_count_returned(self):
         # At least virtual has to always return at least one interface
         self.assertGreaterEqual (len(detect_available_configs()                         ), 1)
-        self.assertEquals       (len(detect_available_configs(interfaces=[])            ), 0)
+        self.assertEqual        (len(detect_available_configs(interfaces=[])            ), 0)
         self.assertGreaterEqual (len(detect_available_configs(interfaces='virtual')     ), 1)
         self.assertGreaterEqual (len(detect_available_configs(interfaces=['virtual'])   ), 1)
         self.assertGreaterEqual (len(detect_available_configs(interfaces=None)          ), 1)
