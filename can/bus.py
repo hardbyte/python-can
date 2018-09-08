@@ -49,6 +49,7 @@ class BusABC(object):
         :param dict config:
             Any backend dependent configurations are passed in this dictionary
         """
+        self._periodic_tasks = []
         self.set_filters(can_filters)
 
     def __str__(self):
@@ -184,8 +185,15 @@ class BusABC(object):
         if not hasattr(self, "_lock_send_periodic"):
             # Create a send lock for this bus
             self._lock_send_periodic = threading.Lock()
-        return ThreadBasedCyclicSendTask(
-            self, self._lock_send_periodic, msg, period, duration)
+        task = ThreadBasedCyclicSendTask(self, self._lock_send_periodic, msg, period, duration)
+        self._periodic_tasks.append(task)
+        return task
+
+    def stop_all_periodic_tasks(self):
+        """Stop sending any messages that were started using bus.send_periodic
+        """
+        for task in self._periodic_tasks:
+            task.stop()
 
     def __iter__(self):
         """Allow iteration on messages as they are received.
