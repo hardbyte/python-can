@@ -32,10 +32,7 @@ try:
 except ImportError:
     from mock import Mock, patch
 
-from can.viewer import KEY_ESC, KEY_SPACE, CanViewer, canopen_function_codes, CANOPEN_NMT, CANOPEN_SYNC_EMCY, \
-    CANOPEN_TIME, CANOPEN_TPDO1, CANOPEN_RPDO1, CANOPEN_TPDO2, CANOPEN_RPDO2, CANOPEN_TPDO3, CANOPEN_RPDO3, \
-    CANOPEN_TPDO4, CANOPEN_RPDO4, CANOPEN_SDO_TX, CANOPEN_SDO_RX, CANOPEN_HEARTBEAT, CANOPEN_LSS_TX, CANOPEN_LSS_RX, \
-    parse_args
+from can.viewer import KEY_ESC, KEY_SPACE, CanViewer, parse_args
 
 
 # noinspection SpellCheckingInspection,PyUnusedLocal
@@ -106,7 +103,6 @@ class CanViewerTest(unittest.TestCase):
         config = {'interface': 'virtual', 'receive_own_messages': True}
         bus = can.Bus(**config)
         data_structs = None
-        ignore_canopen = False
 
         patch_curs_set = patch('curses.curs_set')
         patch_curs_set.start()
@@ -134,162 +130,43 @@ class CanViewerTest(unittest.TestCase):
             patch_resizeterm.start()
             self.addCleanup(patch_resizeterm.stop)
 
-        self.can_viewer = CanViewer(stdscr, bus, data_structs, ignore_canopen, testing=True)
+        self.can_viewer = CanViewer(stdscr, bus, data_structs, testing=True)
 
     def tearDown(self):
         # Run the viewer after the test, this is done, so we can receive the CAN-Bus messages and make sure that they
         # are parsed correctly
         self.can_viewer.run()
 
-    def test_canopen(self):
-        # NMT
-        data = [2, 1]  # cmd = stop node, node ID = 1
-        msg = can.Message(arbitration_id=CANOPEN_NMT, data=data, extended_id=False)
-        self.can_viewer.bus.send(msg)
-        self.assertTupleEqual(self.can_viewer.parse_canopen_message(msg), ('NMT', '0x01'))
-
-        msg = can.Message(arbitration_id=CANOPEN_NMT, data=data, extended_id=True)  # CANopen do not use an extended id
-        self.can_viewer.bus.send(msg)
-        self.assertTupleEqual(self.can_viewer.parse_canopen_message(msg), (None, None))
-
-        # The ID is not added to the NMT function code
-        msg = can.Message(arbitration_id=CANOPEN_NMT + 1, data=data, extended_id=False)
-        self.can_viewer.bus.send(msg)
-        self.assertTupleEqual(self.can_viewer.parse_canopen_message(msg), (None, None))
-
-        data = [2, 128]  # cmd = stop node, node ID = invalid id
-        msg = can.Message(arbitration_id=CANOPEN_NMT, data=data, extended_id=False)
-        self.can_viewer.bus.send(msg)
-        self.assertTupleEqual(self.can_viewer.parse_canopen_message(msg), (None, None))
-
-        data = [1, 0]  # cmd = start node, node ID = all
-        msg = can.Message(arbitration_id=CANOPEN_NMT, data=data, extended_id=False)
-        self.can_viewer.bus.send(msg)
-        self.assertTupleEqual(self.can_viewer.parse_canopen_message(msg), ('NMT', 'ALL'))
-
-        # SYNC
-        # The ID is not added to the SYNC function code
-        msg = can.Message(arbitration_id=CANOPEN_SYNC_EMCY + 1, data=None, extended_id=False)
-        self.can_viewer.bus.send(msg)
-        self.assertTupleEqual(self.can_viewer.parse_canopen_message(msg), (None, None))
-
-        data = [1, 2, 3, 4, 5, 6, 7, 8]  # Wrong length
-        msg = can.Message(arbitration_id=CANOPEN_SYNC_EMCY, data=data, extended_id=False)
-        self.can_viewer.bus.send(msg)
-        self.assertTupleEqual(self.can_viewer.parse_canopen_message(msg), (None, None))
-
-        msg = can.Message(arbitration_id=CANOPEN_SYNC_EMCY, data=None, extended_id=False)
-        self.can_viewer.bus.send(msg)
-        self.assertTupleEqual(self.can_viewer.parse_canopen_message(msg), ('SYNC', None))
-
-        # EMCY
+    def test_send(self):
+        # CANopen EMCY
         data = [1, 2, 3, 4, 5, 6, 7]  # Wrong length
-        msg = can.Message(arbitration_id=CANOPEN_SYNC_EMCY + 1, data=data, extended_id=False)
+        msg = can.Message(arbitration_id=0x080 + 1, data=data, extended_id=False)
         self.can_viewer.bus.send(msg)
-        tmp = self.can_viewer.parse_canopen_message(msg)
-        self.assertTupleEqual(tmp, (None, None))
 
         data = [1, 2, 3, 4, 5, 6, 7, 8]
-        msg = can.Message(arbitration_id=CANOPEN_SYNC_EMCY + 128, data=data, extended_id=False)  # Invalid ID
+        msg = can.Message(arbitration_id=0x080 + 1, data=data, extended_id=False)
         self.can_viewer.bus.send(msg)
-        self.assertTupleEqual(self.can_viewer.parse_canopen_message(msg), (None, None))
 
-        msg = can.Message(arbitration_id=CANOPEN_SYNC_EMCY + 1, data=data, extended_id=False)
-        self.can_viewer.bus.send(msg)
-        self.assertTupleEqual(self.can_viewer.parse_canopen_message(msg), ('EMCY', '0x01'))
-
-        # TIME
-        one_day_seconds = 24 * 60 * 60
-        offset = datetime.datetime(year=1984, month=1, day=1)
-        now = datetime.datetime.now()
-        delta = (now - offset).total_seconds()
-        days, seconds = divmod(delta, one_day_seconds)
-        time_struct = struct.Struct('<LH')
-        data = time_struct.pack(round(seconds * 1000), int(days))
-        msg = can.Message(arbitration_id=CANOPEN_TIME, data=data, extended_id=False)
-        self.can_viewer.bus.send(msg)
-        self.assertTupleEqual(self.can_viewer.parse_canopen_message(msg), ('TIME', None))
-
-        # The ID is not added to the TIME function code
-        msg = can.Message(arbitration_id=CANOPEN_TIME + 1, data=data, extended_id=False)
-        self.can_viewer.bus.send(msg)
-        self.assertTupleEqual(self.can_viewer.parse_canopen_message(msg), (None, None))
-
-        # milliseconds, days = time_struct.unpack(data)
-        # seconds = days * one_day_seconds + milliseconds / 1000.
-        # now_unpacked = datetime.datetime.utcfromtimestamp(
-        #     seconds + (offset - datetime.datetime.utcfromtimestamp(0)).total_seconds())
-
-        # TPDO1, RPDO1, TPDO2, RPDO2, TPDO3, RPDO3, TPDO4, RPDO4
-        data = [1, 2, 3, 4, 5, 6, 7, 8]
-        for i, func_code in enumerate([CANOPEN_TPDO1, CANOPEN_RPDO1, CANOPEN_TPDO2, CANOPEN_RPDO2,
-                                       CANOPEN_TPDO3, CANOPEN_RPDO3, CANOPEN_TPDO4, CANOPEN_RPDO4]):
-            node_id = i + 1
-            msg = can.Message(arbitration_id=func_code + node_id, data=data, extended_id=False)
-            self.can_viewer.bus.send(msg)
-            self.assertTupleEqual(self.can_viewer.parse_canopen_message(msg), (canopen_function_codes[func_code],
-                                                                               '0x{0:02X}'.format(node_id)))
-
-        # Set invalid node ID
-        msg = can.Message(arbitration_id=CANOPEN_TPDO1 + 128, data=data, extended_id=False)
-        self.can_viewer.bus.send(msg)
-        self.assertTupleEqual(self.can_viewer.parse_canopen_message(msg), (None, None))
-
-        # SDO_TX
-        data = [1, 2, 3, 4, 5, 6, 7, 8]
-        msg = can.Message(arbitration_id=CANOPEN_SDO_TX + 0x10, data=data, extended_id=False)
-        self.can_viewer.bus.send(msg)
-        self.assertTupleEqual(self.can_viewer.parse_canopen_message(msg), ('SDO_TX', '0x10'))
-
-        data = [1, 2, 3, 4]  # Invalid data length
-        msg = can.Message(arbitration_id=CANOPEN_SDO_TX + 0x10, data=data, extended_id=False)
-        self.can_viewer.bus.send(msg)
-        self.assertTupleEqual(self.can_viewer.parse_canopen_message(msg), (None, None))
-
-        # SDO_RX
-        data = [1, 2, 3, 4, 5, 6, 7, 8]
-        msg = can.Message(arbitration_id=CANOPEN_SDO_RX + 0x20, data=data, extended_id=False)
-        self.can_viewer.bus.send(msg)
-        self.assertTupleEqual(self.can_viewer.parse_canopen_message(msg), ('SDO_RX', '0x20'))
-
-        # HEARTBEAT
+        # CANopen HEARTBEAT
         data = [0x05]  # Operational
-        msg = can.Message(arbitration_id=CANOPEN_HEARTBEAT + 0x7F, data=data, extended_id=False)
+        msg = can.Message(arbitration_id=0x700 + 0x7F, data=data, extended_id=False)
         self.can_viewer.bus.send(msg)
-        self.assertTupleEqual(self.can_viewer.parse_canopen_message(msg), ('HEARTBEAT', '0x7F'))
-
-        # LSS_TX
-        data = [1, 2, 3, 4, 5, 6, 7, 8]
-        msg = can.Message(arbitration_id=CANOPEN_LSS_TX, data=data, extended_id=False)
-        self.can_viewer.bus.send(msg)
-        self.assertTupleEqual(self.can_viewer.parse_canopen_message(msg), ('LSS_TX', None))
-
-        # LSS_RX
-        msg = can.Message(arbitration_id=CANOPEN_LSS_RX, data=data, extended_id=False)
-        self.can_viewer.bus.send(msg)
-        self.assertTupleEqual(self.can_viewer.parse_canopen_message(msg), ('LSS_RX', None))
-
-        # Send ID that does not match any of the function codes
-        msg = can.Message(arbitration_id=CANOPEN_LSS_RX + 1, data=data, extended_id=False)
-        self.can_viewer.bus.send(msg)
-        self.assertTupleEqual(self.can_viewer.parse_canopen_message(msg), (None, None))
 
         # Send non-CANopen message
+        data = [1, 2, 3, 4, 5, 6, 7, 8]
         msg = can.Message(arbitration_id=0x101, data=data, extended_id=False)
         self.can_viewer.bus.send(msg)
-        self.assertTupleEqual(self.can_viewer.parse_canopen_message(msg), (None, None))
 
         # Send the same command, but with another data length
         data = [1, 2, 3, 4, 5, 6]
         msg = can.Message(arbitration_id=0x101, data=data, extended_id=False)
         self.can_viewer.bus.send(msg)
-        self.assertTupleEqual(self.can_viewer.parse_canopen_message(msg), (None, None))
 
         # Message with extended id
         data = [1, 2, 3, 4, 5, 6, 7, 8]
         msg = can.Message(arbitration_id=0x123456, data=data, extended_id=True)
         self.can_viewer.bus.send(msg)
-        self.assertTupleEqual(self.can_viewer.parse_canopen_message(msg), (None, None))
+        # self.assertTupleEqual(self.can_viewer.parse_canopen_message(msg), (None, None))
 
         # Send the same message again to make sure that resending works and dt is correct
         time.sleep(.1)
@@ -301,7 +178,7 @@ class CanViewerTest(unittest.TestCase):
 
     def test_receive(self):
         # Send the messages again, but this time the test code will receive it
-        self.test_canopen()
+        self.test_send()
 
         data_structs = {
             # For converting the EMCY and HEARTBEAT messages
@@ -316,7 +193,6 @@ class CanViewerTest(unittest.TestCase):
             msg = self.can_viewer.bus.recv(timeout=0)
             if msg is not None:
                 self.can_viewer.data_structs = data_structs if msg.arbitration_id != 0x101 else None
-                self.can_viewer.ignore_canopen = False if msg.arbitration_id != 0x123456 else True
                 _id = self.can_viewer.draw_can_bus_message(msg)
                 if _id['msg'].arbitration_id == 0x101:
                     # Check if the counter is reset when the length has changed
@@ -375,6 +251,11 @@ class CanViewerTest(unittest.TestCase):
             raise ValueError('Unknown command: 0x{:02X}'.format(cmd))
 
     def test_pack_unpack(self):
+        CANOPEN_TPDO1 = 0x180
+        CANOPEN_TPDO2 = 0x280
+        CANOPEN_TPDO3 = 0x380
+        CANOPEN_TPDO4 = 0x480
+
         # Dictionary used to convert between Python values and C structs represented as Python strings.
         # If the value is 'None' then the message does not contain any data package.
         #
@@ -454,27 +335,19 @@ class CanViewerTest(unittest.TestCase):
             CanViewer.unpack_data(0x102, data_structs, b'\x01\x02\x03\x04\x05\x06\x07\x08')
 
     def test_parse_args(self):
-        parsed_args, _, _, _ = parse_args(['-b', '250000'])
+        parsed_args, _, _ = parse_args(['-b', '250000'])
         self.assertEqual(parsed_args.bitrate, 250000)
 
-        parsed_args, _, _, _ = parse_args(['--bitrate', '500000'])
+        parsed_args, _, _ = parse_args(['--bitrate', '500000'])
         self.assertEqual(parsed_args.bitrate, 500000)
 
-        parsed_args, _, _, _ = parse_args(['-c', 'can0'])
+        parsed_args, _, _ = parse_args(['-c', 'can0'])
         self.assertEqual(parsed_args.channel, 'can0')
 
-        parsed_args, _, _, _ = parse_args(['--channel', 'PCAN_USBBUS1'])
+        parsed_args, _, _ = parse_args(['--channel', 'PCAN_USBBUS1'])
         self.assertEqual(parsed_args.channel, 'PCAN_USBBUS1')
 
-        parsed_args, _, _, ignore_canopen = parse_args([])
-        self.assertFalse(parsed_args.ignore_canopen)
-        self.assertFalse(ignore_canopen)
-
-        parsed_args, _, _, ignore_canopen = parse_args(['--ignore-canopen'])
-        self.assertTrue(parsed_args.ignore_canopen)
-        self.assertTrue(ignore_canopen)
-
-        parsed_args, _, data_structs, _ = parse_args(['-d', '100:<L'])
+        parsed_args, _, data_structs = parse_args(['-d', '100:<L'])
         self.assertEqual(parsed_args.decode, ['100:<L'])
 
         self.assertIsInstance(data_structs, dict)
@@ -487,7 +360,7 @@ class CanViewerTest(unittest.TestCase):
         f = open('test.txt', 'w')
         f.write('100:<BB\n101:<HH\n')
         f.close()
-        parsed_args, _, data_structs, _ = parse_args(['-d', 'test.txt'])
+        parsed_args, _, data_structs = parse_args(['-d', 'test.txt'])
 
         self.assertIsInstance(data_structs, dict)
         self.assertEqual(len(data_structs), 2)
@@ -501,7 +374,7 @@ class CanViewerTest(unittest.TestCase):
         self.assertEqual(data_structs[0x101].size, 4)
         os.remove('test.txt')
 
-        parsed_args, _, data_structs, _ = parse_args(['--decode', '100:<LH:10.:100.', '101:<ff', '102:<Bf:1:57.3'])
+        parsed_args, _, data_structs = parse_args(['--decode', '100:<LH:10.:100.', '101:<ff', '102:<Bf:1:57.3'])
         self.assertEqual(parsed_args.decode, ['100:<LH:10.:100.', '101:<ff', '102:<Bf:1:57.3'])
 
         self.assertIsInstance(data_structs, dict)
@@ -530,14 +403,14 @@ class CanViewerTest(unittest.TestCase):
         self.assertEqual(data_structs[0x102][1], 1)
         self.assertAlmostEqual(data_structs[0x102][2], 57.3)
 
-        parsed_args, can_filters, _, _ = parse_args(['-f', '100:7FF'])
+        parsed_args, can_filters, _ = parse_args(['-f', '100:7FF'])
         self.assertEqual(parsed_args.filter, ['100:7FF'])
         self.assertIsInstance(can_filters, list)
         self.assertIsInstance(can_filters[0], dict)
         self.assertEqual(can_filters[0]['can_id'], 0x100)
         self.assertEqual(can_filters[0]['can_mask'], 0x7FF)
 
-        parsed_args, can_filters, _, _ = parse_args(['-f', '101:7FF', '102:7FC'])
+        parsed_args, can_filters, _ = parse_args(['-f', '101:7FF', '102:7FC'])
         self.assertEqual(parsed_args.filter, ['101:7FF', '102:7FC'])
         self.assertIsInstance(can_filters, list)
         self.assertIsInstance(can_filters[0], dict)
@@ -550,18 +423,22 @@ class CanViewerTest(unittest.TestCase):
         with self.assertRaises(argparse.ArgumentError):
             parse_args(['-f', '101,7FF'])
 
-        parsed_args, can_filters, _, _ = parse_args(['--filter', '100~7FF'])
+        parsed_args, can_filters, _ = parse_args(['--filter', '100~7FF'])
         self.assertEqual(parsed_args.filter, ['100~7FF'])
         self.assertIsInstance(can_filters, list)
         self.assertIsInstance(can_filters[0], dict)
         self.assertEqual(can_filters[0]['can_id'], 0x100 | 0x20000000)
         self.assertEqual(can_filters[0]['can_mask'], 0x7FF & 0x20000000)
 
-        parsed_args, _, _, _ = parse_args(['-i', 'socketcan'])
+        parsed_args, _, _ = parse_args(['-i', 'socketcan'])
         self.assertEqual(parsed_args.interface, 'socketcan')
 
-        parsed_args, _, _, _ = parse_args(['--interface', 'pcan'])
+        parsed_args, _, _ = parse_args(['--interface', 'pcan'])
         self.assertEqual(parsed_args.interface, 'pcan')
+
+        # Make sure the help message is printed when no arguments are given
+        with self.assertRaises(SystemExit):
+            parsed_args, _, _ = parse_args([])
 
 
 if __name__ == '__main__':

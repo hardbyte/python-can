@@ -24,60 +24,13 @@ from typing import Dict, List, Tuple, Union
 
 from can import __version__
 
-# CANopen function codes
-CANOPEN_NMT = 0x000
-CANOPEN_SYNC_EMCY = 0x080
-CANOPEN_TIME = 0x100
-CANOPEN_TPDO1 = 0x180
-CANOPEN_RPDO1 = 0x200
-CANOPEN_TPDO2 = 0x280
-CANOPEN_RPDO2 = 0x300
-CANOPEN_TPDO3 = 0x380
-CANOPEN_RPDO3 = 0x400
-CANOPEN_TPDO4 = 0x480
-CANOPEN_RPDO4 = 0x500
-CANOPEN_SDO_TX = 0x580
-CANOPEN_SDO_RX = 0x600
-CANOPEN_HEARTBEAT = 0x700
-CANOPEN_LSS_TX = 0x7E4
-CANOPEN_LSS_RX = 0x7E5
-
-# Mask for extracting the CANopen function code
-CANOPEN_FUNCTION_CODE_MASK = 0x780
-
-# Mask for extracting the CANopen node ID
-CANOPEN_NODE_ID_MASK = 0x07F
-
-# CANopen function codes, all the messages except the TPDOx and RPDOx message have a fixed length according to the
-# specs,  so this is checked as well in order to varify that it is indeed a CANopen message
-canopen_function_codes = {
-    CANOPEN_NMT:        {2: 'NMT'},        # Network management (NMT) node control. The node id should not be added to this value
-    CANOPEN_SYNC_EMCY:  {0: 'SYNC',        # Synchronization (SYNC) protocol. The node id should not be added to this value
-                         8: 'EMCY'},       # Emergency (EMCY) protocol
-    CANOPEN_TIME:       {6: 'TIME'},       # Time (TIME) protocol. The node id should not be added to this value
-    CANOPEN_TPDO1:          'TPDO1',       # 1. Transmit Process Data Object (PDO)
-    CANOPEN_RPDO1:          'RPDO1',       # 1. Receive Process Data Object (PDO)
-    CANOPEN_TPDO2:          'TPDO2',       # 2. Transmit Process Data Object (PDO)
-    CANOPEN_RPDO2:          'RPDO2',       # 2. Receive Process Data Object (PDO)
-    CANOPEN_TPDO3:          'TPDO3',       # 3. Transmit Process Data Object (PDO)
-    CANOPEN_RPDO3:          'RPDO3',       # 3. Receive Process Data Object (PDO)
-    CANOPEN_TPDO4:          'TPDO4',       # 4. Transmit Process Data Object (PDO)
-    CANOPEN_RPDO4:          'RPDO4',       # 4. Receive Process Data Object (PDO)
-    CANOPEN_SDO_TX:     {8: 'SDO_TX'},     # Synchronization Object (SYNC) transmit
-    CANOPEN_SDO_RX:     {8: 'SDO_RX'},     # Synchronization Object (SYNC) receive
-    CANOPEN_HEARTBEAT:  {1: 'HEARTBEAT'},  # Network management (NMT) node monitoring
-    CANOPEN_LSS_TX:     {8: 'LSS_TX'},     # Layer Setting Services (LSS) transmit
-    CANOPEN_LSS_RX:     {8: 'LSS_RX'},     # Layer Setting Services (LSS) receive
-}
-
 
 class CanViewer:
 
-    def __init__(self, stdscr, bus, data_structs, ignore_canopen, testing=False):
+    def __init__(self, stdscr, bus, data_structs, testing=False):
         self.stdscr = stdscr
         self.bus = bus
         self.data_structs = data_structs
-        self.ignore_canopen = ignore_canopen
 
         # Initialise the ID dictionary, start timestamp, scroll and variable for pausing the viewer
         self.ids = {}
@@ -192,59 +145,6 @@ class CanViewer:
         else:
             raise ValueError('Unknown command: 0x{:02X}'.format(cmd))
 
-    @staticmethod
-    def parse_canopen_message(msg):
-        canopen_function_code_string, canopen_node_id_string = None, None
-
-        if not msg.is_extended_id:
-            canopen_function_code = msg.arbitration_id & CANOPEN_FUNCTION_CODE_MASK
-            if canopen_function_code in canopen_function_codes:
-                canopen_node_id = msg.arbitration_id & CANOPEN_NODE_ID_MASK
-
-                # The SYNC and EMCY uses the same function code, so determine which message it is by checking both the
-                # node ID and message length
-                if canopen_function_code == 0x080:
-                    # Check if the length is valid
-                    if msg.dlc in canopen_function_codes[canopen_function_code]:
-                        # Make sure the length and node ID combination is valid
-                        if (msg.dlc == 0 and canopen_node_id == 0) or (msg.dlc == 8 and 1 <= canopen_node_id <= 127):
-                            canopen_function_code_string = canopen_function_codes[canopen_function_code][msg.dlc]
-                elif (canopen_function_code == 0x000 or canopen_function_code == 0x100) and \
-                        (canopen_node_id != 0 or msg.dlc not in canopen_function_codes[canopen_function_code]):
-                    # It is not a CANopen message, as the node ID is not added to these command
-                    canopen_function_code_string = None
-                else:
-                    if isinstance(canopen_function_codes[canopen_function_code], dict):
-                        # Make sure the message has the defined length
-                        if msg.dlc in canopen_function_codes[canopen_function_code]:
-                            canopen_function_code_string = canopen_function_codes[canopen_function_code][msg.dlc]
-                    # These IDs do not have a fixed length
-                    else:
-                        # Make sure the node ID is valid
-                        if 1 <= canopen_node_id <= 127:
-                            canopen_function_code_string = canopen_function_codes[canopen_function_code]
-
-                # Now determine set the node ID string
-                if canopen_function_code_string:
-                    if 1 <= canopen_node_id <= 127:  # Make sure the node ID is valid
-                        canopen_node_id_string = '0x{0:02X}'.format(canopen_node_id)
-                    elif canopen_function_code == 0x000:
-                        # The NMT command sends the node ID as the second byte, except when it is 0,
-                        # then the command is sent to all nodes
-                        if msg.data[1] == 0:
-                            canopen_node_id_string = 'ALL'
-                        elif 1 <= msg.data[1] <= 127:
-                            canopen_node_id_string = '0x{0:02X}'.format(msg.data[1])
-                        else:
-                            # It not a valid NMT command, as the node ID is not valid
-                            canopen_function_code_string = None
-            elif (msg.arbitration_id == 0x7E4 or msg.arbitration_id == 0x7E5) and \
-                    msg.dlc in canopen_function_codes[msg.arbitration_id]:
-                # Check if it is the LSS commands
-                canopen_function_code_string = canopen_function_codes[msg.arbitration_id][msg.dlc]
-
-        return canopen_function_code_string, canopen_node_id_string
-
     def draw_can_bus_message(self, msg, sorting=False):
         # Use the CAN-Bus ID as the key in the dict
         key = msg.arbitration_id
@@ -291,12 +191,6 @@ class CanViewer:
         if msg.dlc > 0:
             data_string = ' '.join('{:02X}'.format(x) for x in msg.data)
 
-        # Check if is a CANopen message
-        if self.ignore_canopen:
-            canopen_function_code_string, canopen_node_id_string = None, None
-        else:
-            canopen_function_code_string, canopen_node_id_string = self.parse_canopen_message(msg)
-
         # Use red for error frames
         if msg.is_error_frame:
             color = curses.color_pair(1)
@@ -311,10 +205,6 @@ class CanViewer:
         self.draw_line(self.ids[key]['row'], 35, arbitration_id_string, color)
         self.draw_line(self.ids[key]['row'], 47, str(msg.dlc), color)
         self.draw_line(self.ids[key]['row'], 52, data_string, color)
-        if canopen_function_code_string:
-            self.draw_line(self.ids[key]['row'], 77, canopen_function_code_string, color)
-        if canopen_node_id_string:
-            self.draw_line(self.ids[key]['row'], 88, canopen_node_id_string, color)
 
         if self.data_structs:
             try:
@@ -325,7 +215,7 @@ class CanViewer:
                     else:
                         values_list.append(str(x))
                 values_string = ' '.join(values_list)
-                self.draw_line(self.ids[key]['row'], 97 - (20 if self.ignore_canopen else 0), values_string, color)
+                self.draw_line(self.ids[key]['row'], 77, values_string, color)
             except (ValueError, struct.error):
                 pass
 
@@ -350,11 +240,8 @@ class CanViewer:
         self.draw_line(0, 35, 'ID', curses.A_BOLD)
         self.draw_line(0, 47, 'DLC', curses.A_BOLD)
         self.draw_line(0, 52, 'Data', curses.A_BOLD)
-        if not self.ignore_canopen:
-            self.draw_line(0, 77, 'Func code', curses.A_BOLD)
-            self.draw_line(0, 88, 'Node ID', curses.A_BOLD)
         if self.data_structs:  # Only draw if the dictionary is not empty
-            self.draw_line(0, 97 - (20 if self.ignore_canopen else 0), 'Parsed values', curses.A_BOLD)
+            self.draw_line(0, 77, 'Parsed values', curses.A_BOLD)
 
     def redraw_screen(self):
         # Trigger a complete redraw
@@ -496,9 +383,6 @@ def parse_args(args):
                           help='R|Specify the backend CAN interface to use.',
                           choices=sorted(can.VALID_INTERFACES))
 
-    optional.add_argument('--ignore-canopen', dest='ignore_canopen', help='''Do not print CANopen information''',
-                          action='store_true')
-
     # Print help message when no arguments are given
     if len(args) < 2:  # pragma: no cover
         parser.print_help(sys.stderr)
@@ -570,13 +454,11 @@ def parse_args(args):
                 data_structs[key] = struct.Struct(fmt)
             # print(data_structs[key])
 
-    ignore_canopen = parsed_args.ignore_canopen
-
-    return parsed_args, can_filters, data_structs, ignore_canopen
+    return parsed_args, can_filters, data_structs
 
 
 def main():  # pragma: no cover
-    parsed_args, can_filters, data_structs, ignore_canopen = parse_args(sys.argv[1:])
+    parsed_args, can_filters, data_structs = parse_args(sys.argv[1:])
 
     config = {'single_handle': True}
     if can_filters:
@@ -590,7 +472,7 @@ def main():  # pragma: no cover
     bus = can.Bus(parsed_args.channel, **config)
     # print('Connected to {}: {}'.format(bus.__class__.__name__, bus.channel_info))
 
-    curses.wrapper(CanViewer, bus, data_structs, ignore_canopen)
+    curses.wrapper(CanViewer, bus, data_structs)
 
 
 if __name__ == '__main__':  # pragma: no cover
