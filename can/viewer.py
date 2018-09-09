@@ -499,6 +499,12 @@ def parse_args(args):
     optional.add_argument('--ignore-canopen', dest='ignore_canopen', help='''Do not print CANopen information''',
                           action='store_true')
 
+    # Print help message when no arguments are given
+    if len(args) < 2:  # pragma: no cover
+        parser.print_help(sys.stderr)
+        import errno
+        raise SystemExit(errno.EINVAL)
+
     parsed_args = parser.parse_args(args)
 
     can_filters = []
