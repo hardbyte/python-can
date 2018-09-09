@@ -92,9 +92,7 @@ A screenshot of the application can be seen below:
 .. image:: ../images/viewer.png
     :width: 100%
 
-The first column is the number of times a frame with the particular ID has been received, next is the timestamp of the frame relative to the first received message. The third column is the time between the current frame relative to the previous one. Next is the length of the frame and then the data.
-
-The last two columns are the decoded CANopen function code and node ID. If CANopen is not used, then they can simply be ignored.
+The first column is the number of times a frame with the particular ID that has been received, next is the timestamp of the frame relative to the first received message. The third column is the time between the current frame relative to the previous one. Next is the length of the frame, the data and then the decoded data converted according to the ``-d`` argument. The top red row indicates an error frame.
 
 Command line arguments
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -107,7 +105,6 @@ The full usage page can be seen below::
                                 [-d {<id>:<format>,<id>:<format>:<scaling1>:...:<scalingN>,file.txt}]
                                 [-f {<can_id>:<can_mask>,<can_id>~<can_mask>}]
                                 [-i {iscan,ixxat,kvaser,neovi,nican,pcan,serial,slcan,socketcan,socketcan_ctypes,socketcan_native,usb2can,vector,virtual}]
-                                [--ignore-canopen]
 
     A simple CAN viewer terminal application written in Python
 
@@ -166,7 +163,6 @@ The full usage page can be seen below::
                             Note that the ID and mask are alway interpreted as hex values
       -i, --interface {iscan,ixxat,kvaser,neovi,nican,pcan,serial,slcan,socketcan,socketcan_ctypes,socketcan_native,usb2can,vector,virtual}
                             Specify the backend CAN interface to use.
-      --ignore-canopen      Do not print CANopen information
 
     Shortcuts:
             +---------+-------------------------+
