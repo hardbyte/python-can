@@ -251,7 +251,7 @@ class CanViewer:
 
 
 # noinspection PyProtectedMember
-class SmartFormatter(argparse.HelpFormatter):  # pragma: no cover
+class SmartFormatter(argparse.HelpFormatter):
 
     def _get_default_metavar_for_optional(self, action):
         return action.dest.upper()
@@ -293,7 +293,7 @@ class SmartFormatter(argparse.HelpFormatter):  # pragma: no cover
     def _fill_text(self, text, width, indent):
         if text.startswith('R|'):
             # noinspection PyTypeChecker
-            return ''.join(indent + line for line in text[2:].splitlines(keepends=True))
+            return ''.join(indent + line + '\n' for line in text[2:].splitlines())
         else:
             return super(SmartFormatter, self)._fill_text(text, width, indent)
 
@@ -384,7 +384,7 @@ def parse_args(args):
                           choices=sorted(can.VALID_INTERFACES))
 
     # Print help message when no arguments are given
-    if len(args) < 2:  # pragma: no cover
+    if len(args) < 2:
         parser.print_help(sys.stderr)
         import errno
         raise SystemExit(errno.EINVAL)
