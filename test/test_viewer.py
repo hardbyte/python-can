@@ -32,7 +32,7 @@ try:
 except ImportError:
     from mock import Mock, patch
 
-from can.scripts.viewer import KEY_ESC, KEY_SPACE, CanViewer, canopen_function_codes, CANOPEN_NMT, CANOPEN_SYNC_EMCY, \
+from can.viewer import KEY_ESC, KEY_SPACE, CanViewer, canopen_function_codes, CANOPEN_NMT, CANOPEN_SYNC_EMCY, \
     CANOPEN_TIME, CANOPEN_TPDO1, CANOPEN_RPDO1, CANOPEN_TPDO2, CANOPEN_RPDO2, CANOPEN_TPDO3, CANOPEN_RPDO3, \
     CANOPEN_TPDO4, CANOPEN_RPDO4, CANOPEN_SDO_TX, CANOPEN_SDO_RX, CANOPEN_HEARTBEAT, CANOPEN_LSS_TX, CANOPEN_LSS_RX, \
     parse_args

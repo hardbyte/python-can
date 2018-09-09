@@ -2,12 +2,12 @@
 # coding: utf-8
 
 """
-See :mod:`can.scripts.viewer`.
+See :mod:`can.viewer`.
 """
 
 from __future__ import absolute_import
 
-from can.scripts.viewer import main
+from can.viewer import main
 
 
 if __name__ == "__main__":
