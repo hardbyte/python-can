@@ -14,7 +14,6 @@ from __future__ import absolute_import
 import argparse
 import can
 import curses
-import datetime
 import math
 import pytest
 import random
@@ -30,6 +29,7 @@ try:
     # noinspection PyCompatibility
     from unittest.mock import Mock, patch
 except ImportError:
+    # noinspection PyPackageRequirements
     from mock import Mock, patch
 
 from can.viewer import KEY_ESC, KEY_SPACE, CanViewer, parse_args
