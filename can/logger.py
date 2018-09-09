@@ -19,6 +19,7 @@ Dynamic Controls 2010
 
 from __future__ import absolute_import, print_function
 
+import sys
 import argparse
 import socket
 from datetime import datetime
@@ -62,6 +63,12 @@ def main():
                        action='store_true')
     group.add_argument('--passive', help="Start the bus as passive.",
                        action='store_true')
+
+    # print help message when no arguments wre given
+    if len(sys.argv) < 2:
+        parser.print_help(sys.stderr)
+        import errno
+        raise SystemExit(errno.EINVAL)
 
     results = parser.parse_args()
 

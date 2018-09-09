@@ -18,6 +18,11 @@ except ImportError:
         # Python 2
         from Queue import Queue as SimpleQueue, Empty
 
+try:
+    import asyncio
+except ImportError:
+    asyncio = None
+
 
 class Listener(object):
     """The basic listener that can be called directly to handle some
@@ -46,6 +51,12 @@ class Listener(object):
 
     def __call__(self, msg):
         return self.on_message_received(msg)
+
+    def on_error(self, exc):
+        """This method is called to handle any exception in the receive thread.
+
+        :param Exception exc: The exception causing the thread to stop
+        """
 
     def stop(self):
         """
@@ -116,3 +127,44 @@ class BufferedReader(Listener):
         """Prohibits any more additions to this reader.
         """
         self.is_stopped = True
+
+
+if asyncio is not None:
+    class AsyncBufferedReader(Listener):
+        """A message buffer for use with :mod:`asyncio`.
+
+        See :ref:`asyncio` for how to use with :class:`can.Notifier`.
+        
+        Can also be used as an asynchronous iterator::
+
+            async for msg in reader:
+                print(msg)
+        """
+
+        def __init__(self, loop=None):
+            # set to "infinite" size
+            self.buffer = asyncio.Queue(loop=loop)
+
+        def on_message_received(self, msg):
+            """Append a message to the buffer.
+            
+            Must only be called inside an event loop!
+            """
+            self.buffer.put_nowait(msg)
+
+        def get_message(self):
+            """
+            Retrieve the latest message when awaited for::
+            
+                msg = await reader.get_message()
+
+            :rtype: can.Message
+            :return: The CAN message.
+            """
+            return self.buffer.get()
+
+        def __aiter__(self):
+            return self
+        
+        def __anext__(self):
+            return self.buffer.get()

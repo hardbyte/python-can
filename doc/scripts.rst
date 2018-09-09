@@ -3,9 +3,7 @@ Scripts
 
 The following modules are callable from python-can.
 
-They can either be called by for example ``python -m can.logger`` or ``can_logger.py`` (if installed by pip).
-The scripts are internally placed in the module ``can.scripts.*``,
-so they could also be launched by ``python -m can.scripts.logger``.
+They can be called for example by ``python -m can.logger`` or ``can_logger.py`` (if installed using pip).
 
 can.logger
 ----------
