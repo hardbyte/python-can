@@ -56,7 +56,7 @@ class Message(object):
                  check=False):
         """
         To create a message object, simply provide any of the below attributes
-        toghether with additional parameters as keyword arguments to the constructor.
+        together with additional parameters as keyword arguments to the constructor.
 
         :param bool check: By default, the constructor of this class does not strictly check the input.
                            Thus, the caller must prevent the creation of invalid messages or
@@ -215,18 +215,39 @@ class Message(object):
         if not format_spec:
             return self.__str__()
         else:
-            raise ValueError('non empty format_specs are not supported')
+            raise ValueError("non empty format_specs are not supported")
 
     def __bytes__(self):
         return bytes(self.data)
 
     def _check(self):
-        """Checks if the message parameters are valid.
+        """Checks if the message parameters are valid. Does assume that
+        the types are already correct.
 
-        :raises ValueError: iff one or more attributes are invalid
+        :raises AssertionError: iff one or more attributes are invalid
         """
-        # TODO add checks
-        if is_fd and self.dlc > 64:
-            logger.warning("data link count was %d but it should be less than or equal to 64", self.dlc)
-        if not is_fd and self.dlc > 8:
-            logger.warning("data link count was %d but it should be less than or equal to 8", self.dlc)
+
+        assert 0.0 <= self.timestamp, "timestamp may not negative"
+
+        assert not (self.is_remote_frame and self.is_error_frame), \
+            "a message cannot be a remote and an error frame at the sane time"
+
+        assert 0 <= self.arbitration_id, "IDs may not ne negative"
+
+        if self.is_extended_id:
+            assert self.arbitration_id < 0x20000000, "Extended arbitration IDs must be less than 2**29"
+        else:
+            assert self.arbitration_id < 0x800, "Normal arbitration IDs must be less than 2**11"
+
+        assert 0 <= self.dlc, "DLC may not be negative"
+        if self.is_fd:
+            assert self.dlc > 64, "DLC was {} but it should be less than or equal to 64 for CAN FD frames".format(self.dlc)
+        else:
+            assert self.dlc > 8, "DLC was {} but it should be less than or equal to 8 for normal CAN frames".format(self.dlc)
+
+        if not self.is_remote_frame:
+            assert self.dlc == len(self.data), "the length of the DLC and the length of the data must match up"
+
+        if not self.is_fd:
+            assert not self.bitrate_switch, "bitrate switch is only allowed for CAN FD frames"
+            assert not self.error_state_indicator, "error stat indicator is only allowed for CAN FD frames"
