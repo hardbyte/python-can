@@ -117,7 +117,7 @@ class Message(object):
 
         field_strings.append(flag_string)
 
-        field_strings.append("DLC: {0:d}".format(self.dlc))
+        field_strings.append("DLC: {0:2d}".format(self.dlc))
         data_strings = []
         if self.data is not None:
             for index in range(0, min(self.dlc, len(self.data))):
