@@ -152,7 +152,7 @@ class ReaderWriterTest(unittest.TestCase):
         self.assertEqual(len(read_messages), len(self.original_messages),
             "the number of written messages does not match the number of read messages")
 
-        self.assertMessagesEqual(read_messages)
+        self.assertMessagesEqual(self.original_messages, read_messages)
         self.assertIncludesComments(self.test_file_name)
 
     def test_path_like_context_manager(self):
@@ -179,7 +179,7 @@ class ReaderWriterTest(unittest.TestCase):
         self.assertEqual(len(read_messages), len(self.original_messages),
             "the number of written messages does not match the number of read messages")
 
-        self.assertMessagesEqual(read_messages)
+        self.assertMessagesEqual(self.original_messages, read_messages)
         self.assertIncludesComments(self.test_file_name)
 
     def test_file_like_explicit_stop(self):
@@ -209,7 +209,7 @@ class ReaderWriterTest(unittest.TestCase):
         self.assertEqual(len(read_messages), len(self.original_messages),
             "the number of written messages does not match the number of read messages")
 
-        self.assertMessagesEqual(read_messages)
+        self.assertMessagesEqual(self.original_messages, read_messages)
         self.assertIncludesComments(self.test_file_name)
 
     def test_file_like_context_manager(self):
@@ -238,7 +238,7 @@ class ReaderWriterTest(unittest.TestCase):
         self.assertEqual(len(read_messages), len(self.original_messages),
             "the number of written messages does not match the number of read messages")
 
-        self.assertMessagesEqual(read_messages)
+        self.assertMessagesEqual(self.original_messages, read_messages)
         self.assertIncludesComments(self.test_file_name)
 
     def test_append_mode(self):
@@ -275,7 +275,7 @@ class ReaderWriterTest(unittest.TestCase):
         with self.reader_constructor(self.test_file_name) as reader:
             read_messages = list(reader)
 
-        self.assertMessagesEqual(read_messages)
+        self.assertMessagesEqual(self.original_messages, read_messages)
 
     def _write_all(self, writer):
         """Writes messages and insert comments here and there."""
@@ -294,16 +294,18 @@ class ReaderWriterTest(unittest.TestCase):
             io_handler.file.flush()
             os.fsync(io_handler.file.fileno())
 
-    def assertMessagesEqual(self, read_messages):
+    def assertMessagesEqual(self, messages_1, messages_2):
         """
         Checks the order and content of the individual messages.
         """
-        for index, (original, read) in enumerate(zip(self.original_messages, read_messages)):
+        self.assertEqual(len(messages_1), len(messages_2))
+
+        for index, (message_1, message_2) in enumerate(zip(messages_1, messages_2)):
             try:
-                self.assertMessageEqual(original, read)
+                self.assertMessageEqual(message_1, message_2)
             except AssertionError as e:
-                print("Comparing: original message: {!r}".format(original))
-                print("           read     message: {!r}".format(read))
+                print("Comparing: message 1: {!r}".format(message_1))
+                print("           message 2: {!r}".format(message_2))
                 self.fail("messages are not equal at index #{}:\n{}".format(index, e))
 
     def assertMessageEqual(self, message_1, message_2):
@@ -389,19 +391,19 @@ class TestBlfFileFormat(ReaderWriterTest):
         logfile = os.path.join(os.path.dirname(__file__), "data", "logfile.blf")
         with can.BLFReader(logfile) as reader:
             messages = list(reader)
-        self.assertEqual(len(messages), 2)
-        self.assertEqual(messages[0],
-                         can.Message(
-                             extended_id=False,
-                             arbitration_id=0x64,
-                             data=[0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8]))
-        self.assertEqual(messages[0].channel, 0)
-        self.assertEqual(messages[1],
-                         can.Message(
-                             is_error_frame=True,
-                             extended_id=True,
-                             arbitration_id=0x1FFFFFFF))
-        self.assertEqual(messages[1].channel, 0)
+
+        expected = [
+            can.Message(
+                extended_id=False,
+                arbitration_id=0x64,
+                data=[0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8]),
+            can.Message(
+                extended_id=True,
+                arbitration_id=0x1FFFFFFF,
+                is_error_frame=True,)
+        ]
+
+        self.assertMessagesEqual(messages, expected)
 
 
 class TestCanutilsFileFormat(ReaderWriterTest):
@@ -471,7 +473,7 @@ class TestSqliteDatabaseFormat(ReaderWriterTest):
         self.assertEqual(len(read_messages), len(self.original_messages),
             "the number of written messages does not match the number of read messages")
 
-        self.assertMessagesEqual(read_messages)
+        self.assertMessagesEqual(self.original_messages, read_messages)
 
 
 class TestPrinter(unittest.TestCase):
