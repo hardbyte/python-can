@@ -574,8 +574,7 @@ class SocketcanBus(BusABC):
     def send_periodic(self, msg, period, duration=None):
         """Start sending a message at a given period on this bus.
 
-        The kernel's broadcast manager will be used and the task will
-        be active while this Bus instance is still in scope.
+        The kernel's broadcast manager will be used.
 
         :param can.Message msg:
             Message to transmit

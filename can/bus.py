@@ -163,6 +163,14 @@ class BusABC(object):
     def send_periodic(self, msg, period, duration=None):
         """Start sending a message at a given period on this bus.
 
+        The task will be active until one of the following conditions is met:
+
+        - the (optional) duration expires
+        - the Bus instance goes out of scope
+        - the Bus instance is shutdown
+        - :meth:`Bus.stop_all_periodic_tasks()` is called
+        - the task's :meth:`Task.stop()` method is called.
+
         :param can.Message msg:
             Message to transmit
         :param float period:
@@ -171,7 +179,9 @@ class BusABC(object):
             The duration to keep sending this message at given rate. If
             no duration is provided, the task will continue indefinitely.
 
-        :return: A started task instance
+        :return:
+            A started task instance. Note the task can be stopped by calling the
+            :meth:`stop` method.
         :rtype: can.broadcastmanager.CyclicSendTaskABC
 
         .. note::
@@ -186,6 +196,16 @@ class BusABC(object):
             # Create a send lock for this bus
             self._lock_send_periodic = threading.Lock()
         task = ThreadBasedCyclicSendTask(self, self._lock_send_periodic, msg, period, duration)
+        # we wrap the task`s stop method to also remove it from the Bus's list of tasks
+        original_stop_method = task.stop
+
+        def wrapped_stop_method():
+            try:
+                self._periodic_tasks.remove(task)
+            except ValueError:
+                pass
+            original_stop_method()
+        task.stop = wrapped_stop_method
         self._periodic_tasks.append(task)
         return task
 
