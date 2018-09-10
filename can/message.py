@@ -127,9 +127,13 @@ class Message(object):
     def __repr__(self):
         args = ["timestamp={}".format(self.timestamp),
                 "arbitration_id={:#x}".format(self.arbitration_id),
-                "extended_id={}".format(self.is_extended_id),
-                "is_remote_frame={}".format(self.is_remote_frame),
-                "is_error_frame={}".format(self.is_error_frame)]
+                "extended_id={}".format(self.is_extended_id)]
+
+        if self.is_remote_frame:
+            args.append("is_remote_frame={}".format(self.is_remote_frame))
+
+        if self.is_error_frame:
+            args.append("is_error_frame={}".format(self.is_error_frame))
 
         if self.channel is not None:
             args.append("channel={!r}".format(self.channel))                
