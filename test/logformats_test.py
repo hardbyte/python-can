@@ -10,6 +10,7 @@ is correct. The types of messages that are tested differs between the
 different writer/reader pairs - e.g., some don't handle error frames and
 comments.
 
+TODO: correctly set preserves_channel and adds_default_channel
 TODO: implement CAN FD support testing
 """
 
@@ -61,7 +62,8 @@ class ReaderWriterTest(unittest.TestCase):
             writer_constructor, reader_constructor, binary_file=False,
             check_remote_frames=True, check_error_frames=True, check_fd=True,
             check_comments=False, test_append=False,
-            round_timestamps=False, preserves_timestamp_exact=True, preserves_channel=True):
+            round_timestamps=False, preserves_timestamp_exact=True,
+            preserves_channel=True, adds_default_channel=None):
         """
         :param Callable writer_constructor: the constructor of the writer class
         :param Callable reader_constructor: the constructor of the reader class
@@ -81,6 +83,8 @@ class ReaderWriterTest(unittest.TestCase):
         :param bool preserves_timestamp_exact: if True, checks that timestamps match exactly
                                                in this case, no rounding is performed
         :param bool preserves_channel: if True, checks that the channel attribute is preserved
+        :param any adds_default_channel: sets this as the channel when not other channel was given
+                                         ignored, if *preserves_channel* is True
         """
         # get all test messages
         self.original_messages = TEST_MESSAGES_BASE
@@ -113,6 +117,7 @@ class ReaderWriterTest(unittest.TestCase):
         self.round_timestamps = round_timestamps
         self.preserves_timestamp_exact = preserves_timestamp_exact
         self.preserves_channel = preserves_channel
+        self.adds_default_channel = adds_default_channel
 
     def setUp(self):
         with tempfile.NamedTemporaryFile('w+', delete=False) as test_file:
@@ -305,6 +310,10 @@ class ReaderWriterTest(unittest.TestCase):
         """
         Checks that two messages are equal, according to the current rules.
         """
+        # try conventional
+        if message_1 == message_2:
+            return
+
         # check the timestamp
         if self.preserves_timestamp_exact:
             self.assertEqual(message_1.timestamp, message_2.timestamp)
@@ -323,6 +332,8 @@ class ReaderWriterTest(unittest.TestCase):
         self.assertEqual(message_1.is_error_frame, message_2.is_error_frame)
         if self.preserves_channel:
             self.assertEqual(message_1.channel, message_2.channel)
+        else:
+            self.assertEqual(message_2.channel, self.adds_default_channel)
         self.assertEqual(message_1.dlc, message_2.dlc)
         self.assertEqual(message_1.data, message_2.data)
         self.assertEqual(message_1.is_fd, message_2.is_fd)
@@ -353,7 +364,9 @@ class TestAscFileFormat(ReaderWriterTest):
         super(TestAscFileFormat, self)._setup_instance_helper(
             can.ASCWriter, can.ASCReader,
             check_fd=False,
-            check_comments=True, round_timestamps=True
+            check_comments=True,
+            round_timestamps=True,
+            preserves_channel=False, adds_default_channel=0
         )
 
 
@@ -367,7 +380,8 @@ class TestBlfFileFormat(ReaderWriterTest):
             can.BLFWriter, can.BLFReader,
             binary_file=True,
             check_fd=False,
-            check_comments=False
+            check_comments=False,
+            preserves_channel=False, adds_default_channel=0
         )
 
     def test_read_known_file(self):
@@ -398,7 +412,8 @@ class TestCanutilsFileFormat(ReaderWriterTest):
         super(TestCanutilsFileFormat, self)._setup_instance_helper(
             can.CanutilsLogWriter, can.CanutilsLogReader,
             check_fd=False,
-            test_append=True, check_comments=False
+            test_append=True, check_comments=False,
+            preserves_channel=False, adds_default_channel='vcan0'
         )
 
 
@@ -411,7 +426,8 @@ class TestCsvFileFormat(ReaderWriterTest):
         super(TestCsvFileFormat, self)._setup_instance_helper(
             can.CSVWriter, can.CSVReader,
             check_fd=False,
-            test_append=True, check_comments=False
+            test_append=True, check_comments=False,
+            preserves_channel=False, adds_default_channel=None
         )
 
 
@@ -424,7 +440,8 @@ class TestSqliteDatabaseFormat(ReaderWriterTest):
         super(TestSqliteDatabaseFormat, self)._setup_instance_helper(
             can.SqliteWriter, can.SqliteReader,
             check_fd=False,
-            test_append=True, check_comments=False
+            test_append=True, check_comments=False,
+            preserves_channel=False, adds_default_channel=None
         )
 
     @unittest.skip("not implemented")

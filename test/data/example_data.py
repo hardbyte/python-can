@@ -60,7 +60,15 @@ TEST_MESSAGES_BASE = [
     ),
     Message(
         # with channel as integer
+        channel=0,
+    ),
+    Message(
+        # with channel as integer
         channel=42,
+    ),
+    Message(
+        # with channel as string
+        channel="vcan0",
     ),
     Message(
         # with channel as string
