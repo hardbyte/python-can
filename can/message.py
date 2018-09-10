@@ -9,7 +9,7 @@ This module contains the implementation of :class:`can.Message`.
     starting with Python 3.7.
 """
 
-import logging
+import warnings
 
 
 class Message(object):

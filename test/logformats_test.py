@@ -320,7 +320,7 @@ class ReaderWriterTest(unittest.TestCase):
         else:
             t1 = round(message_1.timestamp) if self.round_timestamps else message_1.timestamp
             t2 = round(message_2.timestamp) if self.round_timestamps else message_2.timestamp
-            self.assertAlmostEqual(message_2.timestamp, message_1.timestamp, delta=0.0001,
+            self.assertAlmostEqual(message_2.timestamp, message_1.timestamp, delta=1e-6,
                 msg="message timestamps are not almost_equal ({!r} !~= {!r}{})"
                     .format(message_1.timestamp, message_2.timestamp,
                             "; rounded" if self.round_timestamps else ""))
@@ -381,6 +381,7 @@ class TestBlfFileFormat(ReaderWriterTest):
             binary_file=True,
             check_fd=False,
             check_comments=False,
+            preserves_timestamp_exact=False,
             preserves_channel=False, adds_default_channel=0
         )
 
