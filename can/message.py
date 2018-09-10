@@ -25,7 +25,31 @@ class Message(object):
     are not used for comparing.
     """
 
-    def __init__(self, timestamp=0.0, arbitration_id=0, extended_id=True,
+    __slots__ = (
+        "timestamp",
+        "arbitration_id",
+        "is_extended_id",
+        "is_remote_frame",
+        "is_error_frame",
+        "channel",
+        "dlc",
+        "data",
+        "is_fd",
+        "bitrate_switch",
+        "error_state_indicator",
+    )
+
+    @property
+    def id_type(self):
+        warnings.warn("Message.id_type is deprecated, use is_extended_id", DeprecationWarning)
+        return self.is_extended_id
+
+    @id_type.setter
+    def id_type(self, value):
+        warnings.warn("Message.id_type is deprecated, use is_extended_id", DeprecationWarning)
+        self.is_extended_id = value
+
+    def __init__(self, timestamp=0.0, arbitration_id=0, is_extended_id=True,
                  is_remote_frame=False, is_error_frame=False, channel=None,
                  dlc=None, data=None,
                  is_fd=False, bitrate_switch=False, error_state_indicator=False,
@@ -45,7 +69,6 @@ class Message(object):
 
         self.timestamp = timestamp
         self.arbitration_id = arbitration_id
-        self.id_type = extended_id  # deprecated
         self.is_extended_id = extended_id
 
         self.is_remote_frame = is_remote_frame
@@ -175,15 +198,17 @@ class Message(object):
 
     def __hash__(self):
         return hash((
-            self.arbitration_id,
             # self.timestamp # excluded, like in self.__eq__(self, other)
+            self.arbitration_id,
             self.is_extended_id,
+            self.is_remote_frame,
+            self.is_error_frame,
+            self.channel,
             self.dlc,
             self.data,
             self.is_fd,
             self.bitrate_switch,
-            self.is_remote_frame,
-            self.is_error_frame
+            self.error_state_indicator
         ))
 
     def __format__(self, format_spec):
