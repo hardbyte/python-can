@@ -69,9 +69,10 @@ class NeoViBus(BusABC):
 
     def __init__(self, channel, can_filters=None, **config):
         """
-
-        :param int channel:
-            The Channel id or name to create this bus with.
+        :param list channel:
+            The channel ids to create this bus with.
+            Can also be a single integer, netid name or a comma separated
+            string.
         :param list can_filters:
             See :meth:`can.BusABC.set_filters` for details.
         :param use_system_timestamp:
@@ -98,18 +99,14 @@ class NeoViBus(BusABC):
         logger.info("CAN Filters: {}".format(can_filters))
         logger.info("Got configuration of: {}".format(config))
 
-        self._use_system_timestamp = bool(
-            config.get('use_system_timestamp', False)
-        )
-        try:
-            channel = int(channel)
-        except ValueError:
-            channel = getattr(ics, "NETID_{}".format(channel.upper()), -1)
-            if channel == -1:
-                raise ValueError(
-                    'channel must be an integer or '
-                    'a valid ICS channel name'
-                )
+        if isinstance(channel, (list, tuple)):
+            self.channels = channel
+        elif isinstance(channel, int):
+            self.channels = [channel]
+        else:
+            # Assume comma separated string of channels
+            self.channels = [ch.strip() for ch in channel.split(',')]
+        self.channels = [NeoViBus.channel_to_netid(ch) for ch in self.channels]
 
         type_filter = config.get('type_filter')
         serial = config.get('serial')
@@ -125,15 +122,33 @@ class NeoViBus(BusABC):
                 ics.set_fd_bit_rate(
                     self.dev, config.get('data_bitrate'), channel)
 
+        self._use_system_timestamp = bool(
+            config.get('use_system_timestamp', False)
+        )
+
         self.channel_info = '%s %s CH:%s' % (
             self.dev.Name,
             self.get_serial_number(self.dev),
-            channel
+            self.channels
         )
         logger.info("Using device: {}".format(self.channel_info))
 
         self.rx_buffer = deque()
-        self.network = channel if channel is not None else None
+
+    @staticmethod
+    def channel_to_netid(channel_name_or_id):
+        try:
+            channel = int(channel_name_or_id)
+        except ValueError:
+            netid = "NETID_{}".format(channel_name_or_id.upper())
+            if hasattr(ics, netid):
+                channel = getattr(ics, netid)
+            else:
+                raise ValueError(
+                    'channel must be an integer or '
+                    'a valid ICS channel name'
+                )
+        return channel
 
     @staticmethod
     def get_serial_number(device):
@@ -203,7 +218,7 @@ class NeoViBus(BusABC):
         except ics.RuntimeError:
             return
         for ics_msg in messages:
-            if ics_msg.NetworkID != self.network:
+            if ics_msg.NetworkID not in self.channels:
                 continue
             self.rx_buffer.append(ics_msg)
         if errors:
@@ -258,7 +273,7 @@ class NeoViBus(BusABC):
                 bitrate_switch=bool(
                     ics_msg.StatusBitField3 & ics.SPY_STATUS3_CANFD_BRS
                 ),
-                channel=ics_msg.NetworkID
+                channel=int(ics_msg.NetworkID)
             )
         else:
             return Message(
@@ -273,7 +288,7 @@ class NeoViBus(BusABC):
                 is_remote_frame=bool(
                     ics_msg.StatusBitField & ics.SPY_STATUS_REMOTE_FRAME
                 ),
-                channel=ics_msg.NetworkID
+                channel=int(ics_msg.NetworkID)
             )
 
     def _recv_internal(self, timeout=0.1):
@@ -314,7 +329,11 @@ class NeoViBus(BusABC):
         message.StatusBitField = flag0
         message.StatusBitField2 = 0
         message.StatusBitField3 = flag3
-        message.NetworkID = self.network
+        if msg.channel is not None:
+            message.NetworkID = msg.channel
+        else:
+            # defaults to the first channel in channels
+            message.NetworkID = self.channels[0]
 
         try:
             ics.transmit_messages(self.dev, message)
