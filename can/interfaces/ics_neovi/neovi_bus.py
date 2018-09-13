@@ -4,7 +4,7 @@
 """
 ICS NeoVi interface module.
 
-python-ics is a Python wrapper around the API provided by Intrepid Control 
+python-ics is a Python wrapper around the API provided by Intrepid Control
 Systems for communicating with their NeoVI range of devices.
 
 Implementation references:
@@ -74,7 +74,6 @@ class NeoViBus(BusABC):
             The Channel id or name to create this bus with.
         :param list can_filters:
             See :meth:`can.BusABC.set_filters` for details.
-
         :param use_system_timestamp:
             Use system timestamp for can messages instead of the hardware time
             stamp
@@ -84,6 +83,11 @@ class NeoViBus(BusABC):
         :param int bitrate:
             Channel bitrate in bit/s. (optional, will enable the auto bitrate
             feature if not supplied)
+        :param bool fd:
+            If CAN-FD frames should be supported.
+        :param int data_bitrate:
+            Which bitrate to use for data phase in CAN FD.
+            Defaults to arbitration bitrate.
         """
         if ics is None:
             raise ImportError('Please install python-ics')
@@ -114,6 +118,12 @@ class NeoViBus(BusABC):
 
         if 'bitrate' in config:
             ics.set_bit_rate(self.dev, config.get('bitrate'), channel)
+
+        fd = config.get('fd', False)
+        if fd:
+            if 'data_bitrate' in config:
+                ics.set_fd_bit_rate(
+                    self.dev, config.get('data_bitrate'), channel)
 
         self.channel_info = '%s %s CH:%s' % (
             self.dev.Name,
@@ -222,19 +232,49 @@ class NeoViBus(BusABC):
             return ics.get_timestamp_for_msg(self.dev, ics_msg)
 
     def _ics_msg_to_message(self, ics_msg):
-        return Message(
-            timestamp=self._get_timestamp_for_msg(ics_msg),
-            arbitration_id=ics_msg.ArbIDOrHeader,
-            data=ics_msg.Data[:ics_msg.NumberBytesData],
-            dlc=ics_msg.NumberBytesData,
-            extended_id=bool(
-                ics_msg.StatusBitField & ics.SPY_STATUS_XTD_FRAME
-            ),
-            is_remote_frame=bool(
-                ics_msg.StatusBitField & ics.SPY_STATUS_REMOTE_FRAME
-            ),
-            channel=ics_msg.NetworkID
-        )
+        is_fd = ics_msg.Protocol == ics.SPY_PROTOCOL_CANFD
+
+        if is_fd:
+            if ics_msg.ExtraDataPtrEnabled:
+                data = ics_msg.ExtraDataPtr[:ics_msg.NumberBytesData]
+            else:
+                data = ics_msg.Data[:ics_msg.NumberBytesData]
+
+            return Message(
+                timestamp=self._get_timestamp_for_msg(ics_msg),
+                arbitration_id=ics_msg.ArbIDOrHeader,
+                data=data,
+                dlc=ics_msg.NumberBytesData,
+                extended_id=bool(
+                    ics_msg.StatusBitField & ics.SPY_STATUS_XTD_FRAME
+                ),
+                is_fd=is_fd,
+                is_remote_frame=bool(
+                    ics_msg.StatusBitField & ics.SPY_STATUS_REMOTE_FRAME
+                ),
+                error_state_indicator=bool(
+                    ics_msg.StatusBitField3 & ics.SPY_STATUS3_CANFD_ESI
+                ),
+                bitrate_switch=bool(
+                    ics_msg.StatusBitField3 & ics.SPY_STATUS3_CANFD_BRS
+                ),
+                channel=ics_msg.NetworkID
+            )
+        else:
+            return Message(
+                timestamp=self._get_timestamp_for_msg(ics_msg),
+                arbitration_id=ics_msg.ArbIDOrHeader,
+                data=ics_msg.Data[:ics_msg.NumberBytesData],
+                dlc=ics_msg.NumberBytesData,
+                extended_id=bool(
+                    ics_msg.StatusBitField & ics.SPY_STATUS_XTD_FRAME
+                ),
+                is_fd=is_fd,
+                is_remote_frame=bool(
+                    ics_msg.StatusBitField & ics.SPY_STATUS_REMOTE_FRAME
+                ),
+                channel=ics_msg.NetworkID
+            )
 
     def _recv_internal(self, timeout=0.1):
         if not self.rx_buffer:
@@ -249,19 +289,31 @@ class NeoViBus(BusABC):
     def send(self, msg, timeout=None):
         if not ics.validate_hobject(self.dev):
             raise CanError("bus not open")
-
-        flags = 0
-        if msg.is_extended_id:
-            flags |= ics.SPY_STATUS_XTD_FRAME
-        if msg.is_remote_frame:
-            flags |= ics.SPY_STATUS_REMOTE_FRAME
-
         message = ics.SpyMessage()
+
+        flag0 = 0
+        if msg.is_extended_id:
+            flag0 |= ics.SPY_STATUS_XTD_FRAME
+        if msg.is_remote_frame:
+            flag0 |= ics.SPY_STATUS_REMOTE_FRAME
+
+        flag3 = 0
+        if msg.is_fd:
+            message.Protocol = ics.SPY_PROTOCOL_CANFD
+            if msg.bitrate_switch:
+                flag3 |= ics.SPY_STATUS3_CANFD_BRS
+            if msg.error_state_indicator:
+                flag3 |= ics.SPY_STATUS3_CANFD_ESI
+
         message.ArbIDOrHeader = msg.arbitration_id
         message.NumberBytesData = len(msg.data)
-        message.Data = tuple(msg.data)
-        message.StatusBitField = flags
+        message.Data = tuple(msg.data[:8])
+        if msg.is_fd and len(msg.data) > 8:
+            message.ExtraDataPtrEnabled = 1
+            message.ExtraDataPtr = tuple(msg.data)
+        message.StatusBitField = flag0
         message.StatusBitField2 = 0
+        message.StatusBitField3 = flag3
         message.NetworkID = self.network
 
         try:
