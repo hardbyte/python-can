@@ -74,7 +74,6 @@ class NeoViBus(BusABC):
             The Channel id or name to create this bus with.
         :param list can_filters:
             See :meth:`can.BusABC.set_filters` for details.
-
         :param use_system_timestamp:
             Use system timestamp for can messages instead of the hardware time
             stamp
@@ -84,8 +83,11 @@ class NeoViBus(BusABC):
         :param int bitrate:
             Channel bitrate in bit/s. (optional, will enable the auto bitrate
             feature if not supplied)
-        :param int fd_bitrate:
-            Channel CAN FD bitrate in bit/s.
+        :param bool fd:
+            If CAN-FD frames should be supported.
+        :param int data_bitrate:
+            Which bitrate to use for data phase in CAN FD.
+            Defaults to arbitration bitrate.
         """
         if ics is None:
             raise ImportError('Please install python-ics')
@@ -117,8 +119,11 @@ class NeoViBus(BusABC):
         if 'bitrate' in config:
             ics.set_bit_rate(self.dev, config.get('bitrate'), channel)
 
-        if 'fd_bitrate' in config:
-            ics.set_fd_bit_rate(self.dev, config.get('fd_bitrate'), channel)
+        fd = config.get('fd', False)
+        if fd:
+            if 'data_bitrate' in config:
+                ics.set_fd_bit_rate(
+                    self.dev, config.get('data_bitrate'), channel)
 
         self.channel_info = '%s %s CH:%s' % (
             self.dev.Name,
