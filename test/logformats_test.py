@@ -365,7 +365,7 @@ class TestAscFileFormat(ReaderWriterTest):
             can.ASCWriter, can.ASCReader,
             check_fd=False,
             check_comments=True,
-            round_timestamps=True,
+            #round_timestamps=True, # TODO is this required?
             preserves_channel=False, adds_default_channel=0
         )
 

@@ -25,7 +25,7 @@ class Message(object):
     are not used for comparing.
     """
 
-    __slots__ = (
+    __slots__ = [
         "timestamp",
         "arbitration_id",
         "is_extended_id",
@@ -37,7 +37,15 @@ class Message(object):
         "is_fd",
         "bitrate_switch",
         "error_state_indicator",
-    )
+        "__weakref__ ",
+        "__dict__" # TODO keep this for a version, to not break old code
+    ]
+
+    def __getattr__(self, key, value):
+        # TODO keep this for a version, to not break old code
+        # called if the attribute was not found in __slots__
+        warnings.warn("Custom attributes of messages are deprecated and will be removed in the next major version", DeprecationWarning)
+        return self.__dict__[key]
 
     @property
     def id_type(self):
