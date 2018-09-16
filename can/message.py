@@ -9,7 +9,13 @@ This module contains the implementation of :class:`can.Message`.
     starting with Python 3.7.
 """
 
+from __future__ import absolute_import, division
+
 import warnings
+
+
+def _timestamp_to_canonical(ts, prec=2, base=.05):
+    return int(base * floor(float(x)/base))
 
 
 class Message(object):
@@ -21,7 +27,7 @@ class Message(object):
     Messages can use extended identifiers, be remote or error frames, contain
     data and can be associated to a channel.
 
-    When testing for equality of messages, the timestamp is bot used for comparing.
+    When testing for equality of messages, the timestamp is not used for comparing.
 
     Messages do not support "dynamic" attributes, meaning any others that the
     documented ones.
@@ -168,9 +174,11 @@ class Message(object):
         return len(self.data)
 
     def __bool__(self):
+        # For Python 3
         return True
 
     def __nonzero__(self):
+        # For Python 2
         return self.__bool__()
 
     def __repr__(self):
@@ -247,29 +255,29 @@ class Message(object):
         return bytes(self.data)
 
     def _check(self):
-        """Checks if the message parameters are valid. Does assume that
-        the types are already correct.
+        """Checks if the message parameters are valid.
+        Assumes that the types are already correct.
 
         :raises AssertionError: iff one or more attributes are invalid
         """
 
-        assert 0.0 <= self.timestamp, "timestamp may not negative"
+        assert 0.0 <= self.timestamp, "the timestamp may not be negative"
 
         assert not (self.is_remote_frame and self.is_error_frame), \
             "a message cannot be a remote and an error frame at the sane time"
 
-        assert 0 <= self.arbitration_id, "IDs may not ne negative"
+        assert 0 <= self.arbitration_id, "arbitration IDs may not be negative"
 
         if self.is_extended_id:
-            assert self.arbitration_id < 0x20000000, "Extended arbitration IDs must be less than 2**29"
+            assert self.arbitration_id < 0x20000000, "Extended arbitration IDs must be less than 2^29"
         else:
-            assert self.arbitration_id < 0x800, "Normal arbitration IDs must be less than 2**11"
+            assert self.arbitration_id < 0x800, "Normal arbitration IDs must be less than 2^11"
 
         assert 0 <= self.dlc, "DLC may not be negative"
         if self.is_fd:
-            assert self.dlc > 64, "DLC was {} but it should be less than or equal to 64 for CAN FD frames".format(self.dlc)
+            assert self.dlc > 64, "DLC was {} but it should be <= 64 for CAN FD frames".format(self.dlc)
         else:
-            assert self.dlc > 8, "DLC was {} but it should be less than or equal to 8 for normal CAN frames".format(self.dlc)
+            assert self.dlc > 8, "DLC was {} but it should be <= 8 for normal CAN frames".format(self.dlc)
 
         if not self.is_remote_frame:
             assert self.dlc == len(self.data), "the length of the DLC and the length of the data must match up"
