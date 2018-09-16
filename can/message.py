@@ -25,7 +25,7 @@ class Message(object):
     are not used for comparing.
     """
 
-    __slots__ = [
+    __slots__ = (
         "timestamp",
         "arbitration_id",
         "is_extended_id",
@@ -37,15 +37,28 @@ class Message(object):
         "is_fd",
         "bitrate_switch",
         "error_state_indicator",
-        "__weakref__ ",
-        "__dict__" # TODO keep this for a version, to not break old code
-    ]
+        "__weakref__", # support weak references to messages
+        "_dict" # see __getattr__
+    )
 
-    def __getattr__(self, key, value):
-        # TODO keep this for a version, to not break old code
-        # called if the attribute was not found in __slots__
-        warnings.warn("Custom attributes of messages are deprecated and will be removed in the next major version", DeprecationWarning)
-        return self.__dict__[key]
+    def __getattr__(self, key):
+        # TODO keep this for a version, in order to not break old code
+        # this entire method (as well as the _dict attribute in __slots__ and the __setattr__ method) can be removed
+        # in the next major version after 2.3
+        # this method is only called if the attribute was not found elsewhere, like in __slots__
+        try:
+            warnings.warn("Custom attributes of messages are deprecated and will be removed in the next major version", DeprecationWarning)
+            return self._dict[key]
+        except KeyError:
+            raise AttributeError("'message' object has no attribute '{}'".format(key))
+
+    def __setattr__(self, key, value):
+        # see __getattr__
+        try:
+            super(Message, self).__setattr__(key, value)
+        except AttributeError:
+            warnings.warn("Custom attributes of messages are deprecated and will be removed in the next major version", DeprecationWarning)
+            self._dict[key] = value
 
     @property
     def id_type(self):
@@ -74,6 +87,7 @@ class Message(object):
 
         :raises ValueError: iff `check` is set to `True` and one or more arguments were invalid
         """
+        self._dict = dict() # see __getattr__
 
         self.timestamp = timestamp
         self.arbitration_id = arbitration_id
