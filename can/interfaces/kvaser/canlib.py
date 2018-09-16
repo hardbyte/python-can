@@ -517,8 +517,6 @@ class KvaserBus(BusABC):
                              error_state_indicator=error_state_indicator,
                              channel=self.channel,
                              timestamp=msg_timestamp + self._timestamp_offset)
-            rx_msg.flags = flags
-            rx_msg.raw_timestamp = msg_timestamp
             #log.debug('Got message: %s' % rx_msg)
             return rx_msg, self._is_filtered
         else:

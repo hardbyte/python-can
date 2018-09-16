@@ -21,8 +21,10 @@ class Message(object):
     Messages can use extended identifiers, be remote or error frames, contain
     data and can be associated to a channel.
 
-    When testing for equality of messages, the timestamp and the channel
-    are not used for comparing.
+    When testing for equality of messages, the timestamp is bot used for comparing.
+
+    Messages do not support "dynamic" attributes, meaning any others that the
+    documented ones.
     """
 
     __slots__ = (
