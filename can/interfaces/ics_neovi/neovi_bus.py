@@ -273,7 +273,7 @@ class NeoViBus(BusABC):
                 bitrate_switch=bool(
                     ics_msg.StatusBitField3 & ics.SPY_STATUS3_CANFD_BRS
                 ),
-                channel=int(ics_msg.NetworkID)
+                channel=ics_msg.NetworkID
             )
         else:
             return Message(
@@ -288,7 +288,7 @@ class NeoViBus(BusABC):
                 is_remote_frame=bool(
                     ics_msg.StatusBitField & ics.SPY_STATUS_REMOTE_FRAME
                 ),
-                channel=int(ics_msg.NetworkID)
+                channel=ics_msg.NetworkID
             )
 
     def _recv_internal(self, timeout=0.1):
