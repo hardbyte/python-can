@@ -160,10 +160,10 @@ class BusABC(object):
         """
         raise NotImplementedError("Trying to write to a readonly bus?")
 
-    def send_periodic(self, msg, period, duration=None):
+    def send_periodic(self, msg, period, duration=None, store_task=True):
         """Start sending a message at a given period on this bus.
 
-        The task will be active until one of the following conditions is met:
+        The task will be active until one of the following conditions are met:
 
         - the (optional) duration expires
         - the Bus instance goes out of scope
@@ -178,10 +178,12 @@ class BusABC(object):
         :param float duration:
             The duration to keep sending this message at given rate. If
             no duration is provided, the task will continue indefinitely.
-
+        :param bool store_task:
+            If True (the default) the task will be attached to this Bus instance.
+            Disable to instead manage tasks manually.
         :return:
-            A started task instance. Note the task can be stopped by calling the
-            :meth:`stop` method.
+            A started task instance. Note the task can be stopped (and depending on
+            the backend modified) by calling the :meth:`stop` method.
         :rtype: can.broadcastmanager.CyclicSendTaskABC
 
         .. note::
@@ -191,6 +193,11 @@ class BusABC(object):
             general the message will be sent at the given rate until at
             least **duration** seconds.
 
+        .. note::
+
+            For extremely long running Bus instances with many short lived tasks the default
+            api with ``store_task==True`` may not be appropriate as the stopped tasks are
+            still taking up memory as they are associated with the Bus instance.
         """
         if not hasattr(self, "_lock_send_periodic"):
             # Create a send lock for this bus
@@ -206,7 +213,8 @@ class BusABC(object):
                 pass
             original_stop_method()
         task.stop = wrapped_stop_method
-        self._periodic_tasks.append(task)
+        if store_task:
+            self._periodic_tasks.append(task)
         return task
 
     def stop_all_periodic_tasks(self):
