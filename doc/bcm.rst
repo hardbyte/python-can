@@ -1,3 +1,5 @@
+.. _bcm:
+
 Broadcast Manager
 =================
 
