@@ -36,16 +36,16 @@ Configuration File
 
 On Linux systems the config file is searched in the following paths:
 
-1. ``~/can.conf``
-2. ``/etc/can.conf``
-3. ``$HOME/.can``
-4. ``$HOME/.canrc``
+#. ``~/can.conf``
+#. ``/etc/can.conf``
+#. ``$HOME/.can``
+#. ``$HOME/.canrc``
 
 On Windows systems the config file is searched in the following paths:
 
-1. ``~/can.conf``
-1. ``can.ini`` (current working directory)
-2. ``$APPDATA/can.ini``
+#. ``~/can.conf``
+#. ``can.ini`` (current working directory)
+#. ``$APPDATA/can.ini``
 
 The configuration file sets the default interface and channel:
 
