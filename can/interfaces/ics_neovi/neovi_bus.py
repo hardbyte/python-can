@@ -331,9 +331,11 @@ class NeoViBus(BusABC):
         message.StatusBitField3 = flag3
         if msg.channel is not None:
             message.NetworkID = msg.channel
-        else:
-            # defaults to the first channel in channels
+        elif len(self.channels) == 1:
             message.NetworkID = self.channels[0]
+        else:
+            raise ValueError(
+                "msg.channel must be set when using multiple channels.")
 
         try:
             ics.transmit_messages(self.dev, message)
