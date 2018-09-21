@@ -203,7 +203,7 @@ class BusABC(object):
             # Create a send lock for this bus
             self._lock_send_periodic = threading.Lock()
         task = ThreadBasedCyclicSendTask(self, self._lock_send_periodic, msg, period, duration)
-        # we wrap the task`s stop method to also remove it from the Bus's list of tasks
+        # we wrap the task's stop method to also remove it from the Bus's list of tasks
         original_stop_method = task.stop
 
         def wrapped_stop_method():
