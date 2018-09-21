@@ -69,13 +69,14 @@ class NeoViBus(BusABC):
 
     def __init__(self, channel, can_filters=None, **config):
         """
-        :param list channel:
+        :param channel:
             The channel ids to create this bus with.
             Can also be a single integer, netid name or a comma separated
             string.
+        :type channel: int or str or list(int) or list(str)
         :param list can_filters:
             See :meth:`can.BusABC.set_filters` for details.
-        :param use_system_timestamp:
+        :param bool use_system_timestamp:
             Use system timestamp for can messages instead of the hardware time
             stamp
         :param str serial:
