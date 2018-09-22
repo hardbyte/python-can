@@ -1,13 +1,99 @@
 Version 2.3.0
 ====
 
-* adds task management responsibility to the `Bus`. By default tasks created with `bus.send_periodic` will have
-  a reference held by the bus - this means in many cases the user doesn't need to keep the task in scope for their
-  periodic messages to continue being sent. If this behavior isn't desired pass `store_task=False` to the
-  `send_periodic` method.
-* the bus now has a `stop_all_periodic_tasks` method
-* The socketcan tasks now reuse a bcm socket
+Major features
+--------------
 
+* Adds support for developing `asyncio` applications with `python-can` more easily. This can be useful
+  when implementing protocols that handles simultaneous connections to many nodes since you can write
+  synchronous looking code without handling multiple threads and locking mechanisms. #388
+* New can viewer terminal application. #390
+* More formally adds task management responsibility to the `Bus`. By default tasks created with
+  `bus.send_periodic` will have a reference held by the bus - this means in many cases the user
+  doesn't need to keep the task in scope for their periodic messages to continue being sent. If
+  this behavior isn't desired pass `store_task=False` to the `send_periodic` method. Stop all tasks
+  by calling the bus's new `stop_all_periodic_tasks` method.
+
+
+Breaking changes
+----------------
+
+- writing to closed writers is not supported any more (it was supported only for some)
+- the method `Listener.on_message_received()` is now abstract (using `@abc.abstractmethod`)
+- the file in the reader/writer is now always stored in the attribute uniformly called `file`, and not in
+  something like `fp`, `log_file` or `output_file`. Changed the name of the first parameter of the
+  read/writer constructors from `filename` to `file`.
+
+
+Other notable changes
+---------------------
+
+* IO module updates to bring consistency to the different CAN message writers and readers. #348
+    - context manager support for all readers and writers
+    - they share a common super class called `BaseIOHandler`
+    - all file handles can now be closed with the `stop()` method
+    - the table name in `SqliteReader`/`SqliteWriter` can be adjusted
+    - append mode added in `CSVWriter` and `CanutilsLogWriter`
+    - [file-like](https://docs.python.org/3/glossary.html#term-file-like-object) and
+      [path-like](https://docs.python.org/3/glossary.html#term-path-like-object) objects can now be passed to
+      the readers and writers (except to the Sqlite handlers)
+    - add a `__ne__()` method to the `Message` class (this was required by the tests)
+    - added a `stop()` method for `BufferedReader`
+    - `SqliteWriter`: this now guarantees that all messages are being written, exposes some previously internal metrics
+      and only buffers messages up to a certain limit before writing/committing to the database.
+    - the unused `header_line` attribute from `CSVReader` has been removed
+    - privatized some attributes that are only to be  used internally in the classes
+* Start testing against Python 3.7 #380
+* All scripts have been moved into `can/scripts`. #370, #406
+* Added support for additional sections to the config #338
+* Code coverage reports added. #346, #374
+* Bug fix to thread safe bus. #397
+
+General fixes, cleanup and docs changes: (#347, #348, #367, #368, #370, #371, #373, #420, #417, #419)
+
+Backend Specific Changes
+------------------------
+
+3rd party interfaces
+~~~~~~~~~~~~~~~~~~~~
+
+* Deprecated `python_can.interface` entry point instead use `can.interface`. #389
+
+neovi
+~~~~~
+
+* Added support for CAN-FD #408
+* Fix issues checking if bus is open. #381
+
+nican
+~~~~~
+
+* implements reset instead of custom `flush_tx_buffer`. #364
+
+pcan
+~~~~
+
+* now supported on OSX. #365
+
+
+serial
+~~~~~~
+
+* Removed TextIOWrapper from serial. #383
+* switch to `serial_for_url` enabling using remote ports via `loop://`, ``socket://` and `rfc2217://` URLs. #393
+* hardware handshake using `rtscts` kwarg #402
+
+socketcan
+~~~~~~~~~
+
+* socketcan tasks now reuse a bcm socket
+* socketcan bugfix to receive error frames #384
+
+vector
+~~~~~~
+
+* Vector interface now implements `_detect_available_configs`. #362
+* Added support to select device by serial number. #387
 
 Version 2.2.1 (2018-07-12)
 =====
@@ -45,7 +131,7 @@ Version 2.0.0 (2018-01-05
 
 After an extended baking period we have finally tagged version 2.0.0!
 
-Quite a few major Changes from v1.x:
+Quite a few major changes from v1.x:
 
 * New interfaces:
   * Vector
