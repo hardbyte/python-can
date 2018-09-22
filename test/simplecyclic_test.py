@@ -91,15 +91,22 @@ class SimpleCyclicSendTaskTest(unittest.TestCase):
             task = bus.send_periodic(msg, 0.1, 1)
             tasks.append(task)
 
+        assert len(bus._periodic_tasks) == 10
         # stop half the tasks using the task object
         for task in tasks[::2]:
             task.stop()
 
+        assert len(bus._periodic_tasks) == 5
+
         # stop the other half using the bus api
-        bus.stop_all_periodic_tasks()
+        bus.stop_all_periodic_tasks(remove_tasks=False)
 
         for task in tasks:
             assert task.thread.join(5.0) is None, "Task didn't stop before timeout"
+
+        # Tasks stopped via `stop_all_periodic_tasks` with remove_tasks=False should
+        # still be associated with the bus (e.g. for restarting)
+        assert len(bus._periodic_tasks) == 5
 
         bus.shutdown()
 

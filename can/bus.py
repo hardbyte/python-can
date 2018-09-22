@@ -206,22 +206,26 @@ class BusABC(object):
         # we wrap the task's stop method to also remove it from the Bus's list of tasks
         original_stop_method = task.stop
 
-        def wrapped_stop_method():
-            try:
-                self._periodic_tasks.remove(task)
-            except ValueError:
-                pass
+        def wrapped_stop_method(remove_task=True):
+            if remove_task:
+                try:
+                    self._periodic_tasks.remove(task)
+                except ValueError:
+                    pass
             original_stop_method()
         task.stop = wrapped_stop_method
         if store_task:
             self._periodic_tasks.append(task)
         return task
 
-    def stop_all_periodic_tasks(self):
+    def stop_all_periodic_tasks(self, remove_tasks=True):
         """Stop sending any messages that were started using bus.send_periodic
+
+        :param bool remove_tasks:
+            Stop tracking the stopped tasks.
         """
         for task in self._periodic_tasks:
-            task.stop()
+            task.stop(remove_task=remove_tasks)
 
     def __iter__(self):
         """Allow iteration on messages as they are received.
