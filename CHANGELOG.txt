@@ -1,3 +1,14 @@
+Version 2.3.0
+====
+
+* adds task management responsibility to the `Bus`. By default tasks created with `bus.send_periodic` will have
+  a reference held by the bus - this means in many cases the user doesn't need to keep the task in scope for their
+  periodic messages to continue being sent. If this behavior isn't desired pass `store_task=False` to the
+  `send_periodic` method.
+* the bus now has a `stop_all_periodic_tasks` method
+* The socketcan tasks now reuse a bcm socket
+
+
 Version 2.2.1 (2018-07-12)
 =====
 
