@@ -49,6 +49,7 @@ class BusABC(object):
         :param dict config:
             Any backend dependent configurations are passed in this dictionary
         """
+        self._periodic_tasks = []
         self.set_filters(can_filters)
 
     def __str__(self):
@@ -159,8 +160,16 @@ class BusABC(object):
         """
         raise NotImplementedError("Trying to write to a readonly bus?")
 
-    def send_periodic(self, msg, period, duration=None):
+    def send_periodic(self, msg, period, duration=None, store_task=True):
         """Start sending a message at a given period on this bus.
+
+        The task will be active until one of the following conditions are met:
+
+        - the (optional) duration expires
+        - the Bus instance goes out of scope
+        - the Bus instance is shutdown
+        - :meth:`Bus.stop_all_periodic_tasks()` is called
+        - the task's :meth:`Task.stop()` method is called.
 
         :param can.Message msg:
             Message to transmit
@@ -169,8 +178,12 @@ class BusABC(object):
         :param float duration:
             The duration to keep sending this message at given rate. If
             no duration is provided, the task will continue indefinitely.
-
-        :return: A started task instance
+        :param bool store_task:
+            If True (the default) the task will be attached to this Bus instance.
+            Disable to instead manage tasks manually.
+        :return:
+            A started task instance. Note the task can be stopped (and depending on
+            the backend modified) by calling the :meth:`stop` method.
         :rtype: can.broadcastmanager.CyclicSendTaskABC
 
         .. note::
@@ -180,12 +193,39 @@ class BusABC(object):
             general the message will be sent at the given rate until at
             least **duration** seconds.
 
+        .. note::
+
+            For extremely long running Bus instances with many short lived tasks the default
+            api with ``store_task==True`` may not be appropriate as the stopped tasks are
+            still taking up memory as they are associated with the Bus instance.
         """
         if not hasattr(self, "_lock_send_periodic"):
             # Create a send lock for this bus
             self._lock_send_periodic = threading.Lock()
-        return ThreadBasedCyclicSendTask(
-            self, self._lock_send_periodic, msg, period, duration)
+        task = ThreadBasedCyclicSendTask(self, self._lock_send_periodic, msg, period, duration)
+        # we wrap the task's stop method to also remove it from the Bus's list of tasks
+        original_stop_method = task.stop
+
+        def wrapped_stop_method(remove_task=True):
+            if remove_task:
+                try:
+                    self._periodic_tasks.remove(task)
+                except ValueError:
+                    pass
+            original_stop_method()
+        task.stop = wrapped_stop_method
+        if store_task:
+            self._periodic_tasks.append(task)
+        return task
+
+    def stop_all_periodic_tasks(self, remove_tasks=True):
+        """Stop sending any messages that were started using bus.send_periodic
+
+        :param bool remove_tasks:
+            Stop tracking the stopped tasks.
+        """
+        for task in self._periodic_tasks:
+            task.stop(remove_task=remove_tasks)
 
     def __iter__(self):
         """Allow iteration on messages as they are received.
