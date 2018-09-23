@@ -14,10 +14,6 @@ from __future__ import absolute_import, division
 import warnings
 
 
-def _timestamp_to_canonical(ts, prec=2, base=.05):
-    return int(base * floor(float(x)/base))
-
-
 class Message(object):
     """
     The :class:`~can.Message` object is used to represent CAN messages for
