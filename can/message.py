@@ -255,6 +255,40 @@ class Message(object):
     def __bytes__(self):
         return bytes(self.data)
 
+    def __copy__(self):
+        new = Message(
+            timestamp=self.timestamp,
+            arbitration_id=self.arbitration_id,
+            extended_id=self.is_extended_id,
+            is_remote_frame=self.is_remote_frame,
+            is_error_frame=self.is_error_frame,
+            channel=self.channel,
+            dlc=self.dlc,
+            data=self.data,
+            is_fd=self.is_fd,
+            bitrate_switch=self.bitrate_switch,
+            error_state_indicator=self.error_state_indicator
+        )
+        new._dict.update(self._dict)
+        return new
+
+    def __deepcopy__(self, memo):
+        new = Message(
+            timestamp=self.timestamp,
+            arbitration_id=self.arbitration_id,
+            extended_id=self.is_extended_id,
+            is_remote_frame=self.is_remote_frame,
+            is_error_frame=self.is_error_frame,
+            channel=deepcopy(self.channel, memo),
+            dlc=self.dlc,
+            data=deepcopy(self.data, memo),
+            is_fd=self.is_fd,
+            bitrate_switch=self.bitrate_switch,
+            error_state_indicator=self.error_state_indicator
+        )
+        new._dict.update(self._dict)
+        return new
+
     def _check(self):
         """Checks if the message parameters are valid.
         Assumes that the types are already correct.
