@@ -280,9 +280,9 @@ class Message(object):
 
         assert 0 <= self.dlc, "DLC may not be negative"
         if self.is_fd:
-            assert self.dlc > 64, "DLC was {} but it should be <= 64 for CAN FD frames".format(self.dlc)
+            assert self.dlc <= 64, "DLC was {} but it should be <= 64 for CAN FD frames".format(self.dlc)
         else:
-            assert self.dlc > 8, "DLC was {} but it should be <= 8 for normal CAN frames".format(self.dlc)
+            assert self.dlc <= 8, "DLC was {} but it should be <= 8 for normal CAN frames".format(self.dlc)
 
         if not self.is_remote_frame:
             assert self.dlc == len(self.data), "the length of the DLC and the length of the data must match up"
