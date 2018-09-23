@@ -23,8 +23,10 @@ class Message(object):
     Messages can use extended identifiers, be remote or error frames, contain
     data and may be associated to a channel.
 
-    Messages are always compared by identity, and never by value because that
+    Messages are always compared by identity and never by value, because that
     may introduce unexpected behaviour.
+    Hashing uses all fields without exceptions.
+    :func:`~copy.copy`/:func:`~copy.deepcopy` is supported as well.
 
     Messages do not support "dynamic" attributes, meaning any others that the
     documented ones.
@@ -205,30 +207,6 @@ class Message(object):
 
     # Comparing messages by something other than identity (the default) was
     # discussed in and removed as part of PR #413.
-    #
-    #def __eq__(self, other):
-    #    if isinstance(other, self.__class__):
-    #        return (
-    #            #self.timestamp == other.timestamp and # allow the timestamp to differ
-    #            self.arbitration_id == other.arbitration_id and
-    #            self.is_extended_id == other.is_extended_id and
-    #            self.is_remote_frame == other.is_remote_frame and
-    #            self.is_error_frame == other.is_error_frame and
-    #            self.channel == other.channel and
-    #            self.dlc == other.dlc and
-    #            self.data == other.data and
-    #            self.is_fd == other.is_fd and
-    #            self.bitrate_switch == other.bitrate_switch and
-    #            self.error_state_indicator == other.error_state_indicator
-    #        )
-    #    else:
-    #        return NotImplemented
-    #
-    #def __ne__(self, other):
-    #    if isinstance(other, self.__class__):
-    #        return not self.__eq__(other)
-    #    else:
-    #        return NotImplemented
 
     def __hash__(self):
         return hash((
