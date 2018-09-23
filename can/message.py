@@ -232,7 +232,7 @@ class Message(object):
 
     def __hash__(self):
         return hash((
-            self.timestamp
+            self.timestamp,
             self.arbitration_id,
             self.is_extended_id,
             self.is_remote_frame,
