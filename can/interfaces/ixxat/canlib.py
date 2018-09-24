@@ -500,7 +500,7 @@ class IXXATBus(BusABC):
         else:
             _canlib.canChannelPostMessage(self._channel_handle, message)
 
-    def send_periodic(self, msg, period, duration=None):
+    def _send_periodic_internal(self, msg, period, duration=None):
         """Send a message using built-in cyclic transmit list functionality."""
         if self._scheduler is None:
             self._scheduler = HANDLE()
