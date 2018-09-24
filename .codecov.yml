@@ -1,3 +1,4 @@
+# Validate with curl --data-binary @.codecov.yml https://codecov.io/validate
 codecov:
   archive:
     uploads: no
