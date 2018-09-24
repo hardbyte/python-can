@@ -436,9 +436,16 @@ class CanViewerTest(unittest.TestCase):
         parsed_args, _, _ = parse_args(['--interface', 'pcan'])
         self.assertEqual(parsed_args.interface, 'pcan')
 
-        # Make sure the help message is printed when no arguments are given
-        with self.assertRaises(SystemExit):
-            parsed_args, _, _ = parse_args([])
+        # Make sure it exits with the correct error code when displaying the help page
+        # See: https://github.com/hardbyte/python-can/issues/427
+        with self.assertRaises(SystemExit) as cm:
+            parse_args(['-h'])
+        self.assertEqual(cm.exception.code, 0)
+
+        with self.assertRaises(SystemExit) as cm:
+            parse_args([])
+        import errno
+        self.assertEqual(cm.exception.code, errno.EINVAL)
 
 
 if __name__ == '__main__':
