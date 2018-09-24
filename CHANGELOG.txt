@@ -12,7 +12,7 @@ Major features
   `bus.send_periodic` will have a reference held by the bus - this means in many cases the user
   doesn't need to keep the task in scope for their periodic messages to continue being sent. If
   this behavior isn't desired pass `store_task=False` to the `send_periodic` method. Stop all tasks
-  by calling the bus's new `stop_all_periodic_tasks` method.
+  by calling the bus's new `stop_all_periodic_tasks` method. #412
 
 
 Breaking changes
@@ -64,6 +64,7 @@ neovi
 
 * Added support for CAN-FD #408
 * Fix issues checking if bus is open. #381
+* Adding multiple channels support. #415
 
 nican
 ~~~~~
