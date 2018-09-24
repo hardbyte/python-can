@@ -599,7 +599,6 @@ class SocketcanBus(BusABC):
         """
         bcm_socket = self._get_bcm_socket(msg.channel or self.channel)
         task = CyclicSendTask(bcm_socket, msg, period, duration)
-        self._periodic_tasks.append(task)
         return task
 
     def _get_bcm_socket(self, channel):
