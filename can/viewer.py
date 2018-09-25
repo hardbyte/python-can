@@ -383,7 +383,7 @@ def parse_args(args):
                           choices=sorted(can.VALID_INTERFACES))
 
     # Print help message when no arguments are given
-    if len(args) < 2:
+    if len(args) == 0:
         parser.print_help(sys.stderr)
         import errno
         raise SystemExit(errno.EINVAL)
