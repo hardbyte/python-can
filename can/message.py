@@ -10,7 +10,7 @@ This module contains the implementation of :class:`can.Message`.
 """
 
 from __future__ import absolute_import, division
-
+        
 import warnings
 
 
@@ -24,7 +24,7 @@ class Message(object):
     data and may be associated to a channel.
 
     Messages are always compared by identity and never by value, because that
-    may introduce unexpected behaviour.
+    may introduce unexpected behaviour. See also :meth:`~can.Message.equals`.
     Hashing uses all fields without exceptions.
     :func:`~copy.copy`/:func:`~copy.deepcopy` is supported as well.
 
@@ -298,3 +298,40 @@ class Message(object):
         if not self.is_fd:
             assert not self.bitrate_switch, "bitrate switch is only allowed for CAN FD frames"
             assert not self.error_state_indicator, "error stat indicator is only allowed for CAN FD frames"
+
+    def equals(self, other, timestamp_delta=1.0e-6):
+        """
+        Compares a given message with this one.
+
+        :param can.Message other: the message to compare with
+
+        :type timestamp_delta: float or int or None
+        :param timestamp_delta: the maximum difference at which two timestamps are
+                                still considered equal or None to not compare timestamps
+
+        :rtype: bool
+        :return: True iff the given message equals this one
+        """
+        # see https://github.com/hardbyte/python-can/pull/413 for a discussion
+        # on why a delta of 1.0e-6 was chosen
+        return (
+            # check for identity first
+            self is other or
+            # then check for equality by value
+            (
+                (
+                    timestamp_delta is None or
+                    abs(self.timestamp - other.timestamp) <= timestamp_delta
+                ) and
+                self.arbitration_id == other.arbitration_id and
+                self.is_extended_id == other.is_extended_id and
+                self.dlc == other.dlc and
+                self.data == other.data and
+                self.is_remote_frame == other.is_remote_frame and
+                self.is_error_frame == other.is_error_frame and
+                self.channel == other.channel and
+                self.is_fd == other.is_fd and
+                self.bitrate_switch == other.bitrate_switch and
+                self.error_state_indicator == other.error_state_indicator
+            )
+        )
