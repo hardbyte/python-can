@@ -86,6 +86,8 @@ This is the entire ABC bus class with all internal methods:
 .. autoclass:: can.BusABC
     :private-members:
     :special-members:
+    :noindex:
+
 
 Concrete instances are created by :class:`can.Bus`.
 
