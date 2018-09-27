@@ -24,6 +24,9 @@ class CyclicTask(object):
     @abc.abstractmethod
     def stop(self):
         """Cancel this periodic task.
+
+        :raises can.CanError:
+            If stop is called on an already stopped task.
         """
 
 
