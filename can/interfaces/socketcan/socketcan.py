@@ -570,7 +570,7 @@ class SocketcanBus(BusABC):
             raise can.CanError("Failed to transmit: %s" % exc)
         return sent
 
-    def send_periodic(self, msg, period, duration=None):
+    def _send_periodic_internal(self, msg, period, duration=None):
         """Start sending a message at a given period on this bus.
 
         The kernel's broadcast manager will be used.
@@ -598,7 +598,6 @@ class SocketcanBus(BusABC):
         """
         bcm_socket = self._get_bcm_socket(msg.channel or self.channel)
         task = CyclicSendTask(bcm_socket, msg, period, duration)
-        self._periodic_tasks.append(task)
         return task
 
     def _get_bcm_socket(self, channel):
