@@ -198,10 +198,7 @@ class BusABC(object):
             api with ``store_task==True`` may not be appropriate as the stopped tasks are
             still taking up memory as they are associated with the Bus instance.
         """
-        if not hasattr(self, "_lock_send_periodic"):
-            # Create a send lock for this bus
-            self._lock_send_periodic = threading.Lock()
-        task = ThreadBasedCyclicSendTask(self, self._lock_send_periodic, msg, period, duration)
+        task = self._send_periodic_internal(msg, period, duration)
         # we wrap the task's stop method to also remove it from the Bus's list of tasks
         original_stop_method = task.stop
 
@@ -213,8 +210,33 @@ class BusABC(object):
                     pass
             original_stop_method()
         task.stop = wrapped_stop_method
+
         if store_task:
             self._periodic_tasks.append(task)
+
+        return task
+
+    def _send_periodic_internal(self, msg, period, duration=None):
+        """Default implementation of periodic message sending using threading.
+
+        Override this method to enable a more efficient backend specific approach.
+
+        :param can.Message msg:
+            Message to transmit
+        :param float period:
+            Period in seconds between each message
+        :param float duration:
+            The duration to keep sending this message at given rate. If
+            no duration is provided, the task will continue indefinitely.
+        :return:
+            A started task instance. Note the task can be stopped (and depending on
+            the backend modified) by calling the :meth:`stop` method.
+        :rtype: can.broadcastmanager.CyclicSendTaskABC
+        """
+        if not hasattr(self, "_lock_send_periodic"):
+            # Create a send lock for this bus
+            self._lock_send_periodic = threading.Lock()
+        task = ThreadBasedCyclicSendTask(self, self._lock_send_periodic, msg, period, duration)
         return task
 
     def stop_all_periodic_tasks(self, remove_tasks=True):
