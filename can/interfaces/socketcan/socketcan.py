@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # coding: utf-8
 import logging
 
@@ -214,6 +213,7 @@ def send_bcm(bcm_socket, data):
         else:
             raise e
 
+
 def _add_flags_to_can_id(message):
     can_id = message.arbitration_id
     if message.is_extended_id:
@@ -240,21 +240,21 @@ class CyclicSendTask(LimitedDurationCyclicSendTaskABC,
 
     """
 
-    def __init__(self, channel, message, period, duration=None):
+    def __init__(self, bcm_socket, message, period, duration=None):
         """
-        :param str channel: The name of the CAN channel to connect to.
+        :param bcm_socket: An open bcm socket on the desired CAN channel.
         :param can.Message message: The message to be sent periodically.
         :param float period: The rate in seconds at which to send the message.
         :param float duration: Approximate duration in seconds to send the message.
         """
         super(CyclicSendTask, self).__init__(message, period, duration)
-        self.channel = channel
+        self.bcm_socket = bcm_socket
         self.duration = duration
         self._tx_setup(message)
         self.message = message
 
     def _tx_setup(self, message):
-        self.bcm_socket = create_bcm_socket(self.channel)
+
         # Create a low level packed frame to pass to the kernel
         self.can_id_with_flags = _add_flags_to_can_id(message)
         self.flags = CAN_FD_FRAME if message.is_fd else 0
@@ -283,7 +283,6 @@ class CyclicSendTask(LimitedDurationCyclicSendTaskABC,
 
         stopframe = build_bcm_tx_delete_header(self.can_id_with_flags, self.flags)
         send_bcm(self.bcm_socket, stopframe)
-        self.bcm_socket.close()
 
     def modify_data(self, message):
         """Update the contents of this periodically sent message.
@@ -460,8 +459,9 @@ class SocketcanBus(BusABC):
         self.socket = create_socket()
         self.channel = channel
         self.channel_info = "socketcan channel '%s'" % channel
+        self._bcm_sockets = {}
 
-        # set the receive_own_messages paramater
+        # set the receive_own_messages parameter
         try:
             self.socket.setsockopt(SOL_CAN_RAW,
                                    CAN_RAW_RECV_OWN_MSGS,
@@ -481,12 +481,17 @@ class SocketcanBus(BusABC):
                                0x1FFFFFFF)
 
         bind_socket(self.socket, channel)
-
         kwargs.update({'receive_own_messages': receive_own_messages, 'fd': fd})
         super(SocketcanBus, self).__init__(channel=channel, **kwargs)
 
     def shutdown(self):
-        """Closes the socket."""
+        """Stops all active periodic tasks and closes the socket."""
+        self.stop_all_periodic_tasks()
+        for channel in self._bcm_sockets:
+            log.debug("Closing bcm socket for channel {}".format(channel))
+            bcm_socket = self._bcm_sockets[channel]
+            bcm_socket.close()
+        log.debug("Closing raw can socket")
         self.socket.close()
 
     def _recv_internal(self, timeout):
@@ -578,7 +583,9 @@ class SocketcanBus(BusABC):
             The duration to keep sending this message at given rate. If
             no duration is provided, the task will continue indefinitely.
 
-        :return: A started task instance
+        :return:
+            A started task instance. This can be used to modify the data,
+            pause/resume the transmission and to stop the transmission.
         :rtype: can.interfaces.socketcan.CyclicSendTask
 
         .. note::
@@ -589,7 +596,15 @@ class SocketcanBus(BusABC):
             least *duration* seconds.
 
         """
-        return CyclicSendTask(msg.channel or self.channel, msg, period, duration)
+        bcm_socket = self._get_bcm_socket(msg.channel or self.channel)
+        task = CyclicSendTask(bcm_socket, msg, period, duration)
+        self._periodic_tasks.append(task)
+        return task
+
+    def _get_bcm_socket(self, channel):
+        if channel not in self._bcm_sockets:
+            self._bcm_sockets[channel] = create_bcm_socket(self.channel)
+        return self._bcm_sockets[channel]
 
     def _apply_filters(self, filters):
         try:
