@@ -1,4 +1,3 @@
-#!/usr/bin/python
 # coding: utf-8
 #
 # Copyright (C) 2018 Kristian Sloth Lauszus. All rights reserved.
@@ -384,7 +383,7 @@ def parse_args(args):
                           choices=sorted(can.VALID_INTERFACES))
 
     # Print help message when no arguments are given
-    if len(args) < 2:
+    if len(args) == 0:
         parser.print_help(sys.stderr)
         import errno
         raise SystemExit(errno.EINVAL)
