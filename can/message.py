@@ -24,7 +24,7 @@ class Message(object):
 
     Messages are always compared by identity and never by value, because that
     may introduce unexpected behaviour. See also :meth:`~can.Message.equals`.
-    Hashing uses all fields without exceptions.
+
     :func:`~copy.copy`/:func:`~copy.deepcopy` is supported as well.
 
     Messages do not support "dynamic" attributes, meaning any others that the
@@ -195,7 +195,7 @@ class Message(object):
 
         data = ["{:#02x}".format(byte) for byte in self.data]
         args += ["dlc={}".format(self.dlc),
-                "data=[{}]".format(", ".join(data))]
+                 "data=[{}]".format(", ".join(data))]
 
         if self.is_fd:
             args.append("is_fd=True")
@@ -203,25 +203,6 @@ class Message(object):
             args.append("error_state_indicator={}".format(self.error_state_indicator))
 
         return "can.Message({})".format(", ".join(args))
-
-    # Comparing messages by something other than identity (the default) was
-    # discussed in and removed as part of PR #413.
-
-    def __hash__(self):
-        return hash((
-            self.timestamp,
-            self.arbitration_id,
-            self.is_extended_id,
-            self.is_remote_frame,
-            self.is_error_frame,
-            self.channel,
-            self.dlc,
-            self.data,
-            self.is_fd,
-            self.bitrate_switch,
-            self.error_state_indicator,
-            hash(self._dict)
-        ))
 
     def __format__(self, format_spec):
         if not format_spec:
