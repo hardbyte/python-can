@@ -7,14 +7,18 @@ This module is testing the serial interface.
 Copyright: 2017 Boris Wenzlaff
 """
 
+from __future__ import division
+
 import unittest
 from mock import patch
 
 import can
 from can.interfaces.serial.serial_can import SerialBus
 
+from .message_helper import ComparingMessagesTestCase
 
-class SerialDummy:
+
+class SerialDummy(object):
     """
     Dummy to mock the serial communication
     """
@@ -36,8 +40,12 @@ class SerialDummy:
         self.msg = None
 
 
-class SimpleSerialTestBase(object):
+class SimpleSerialTestBase(ComparingMessagesTestCase):
+
     MAX_TIMESTAMP = 0xFFFFFFFF / 1000
+
+    def __init__(self):
+        ComparingMessagesTestCase.__init__(self, allowed_timestamp_delta=None, preserves_channel=True)
 
     def test_rx_tx_min_max_data(self):
         """
@@ -47,7 +55,7 @@ class SimpleSerialTestBase(object):
             msg = can.Message(data=[b])
             self.bus.send(msg)
             msg_receive = self.bus.recv()
-            self.assertEqual(msg, msg_receive)
+            self.assertMessageEqual(msg, msg_receive)
 
     def test_rx_tx_min_max_dlc(self):
         """
@@ -59,7 +67,7 @@ class SimpleSerialTestBase(object):
             msg = can.Message(data=payload)
             self.bus.send(msg)
             msg_receive = self.bus.recv()
-            self.assertEqual(msg, msg_receive)
+            self.assertMessageEqual(msg, msg_receive)
 
     def test_rx_tx_data_none(self):
         """
@@ -68,7 +76,7 @@ class SimpleSerialTestBase(object):
         msg = can.Message(data=None)
         self.bus.send(msg)
         msg_receive = self.bus.recv()
-        self.assertEqual(msg, msg_receive)
+        self.assertMessageEqual(msg, msg_receive)
 
     def test_rx_tx_min_id(self):
         """
@@ -77,7 +85,7 @@ class SimpleSerialTestBase(object):
         msg = can.Message(arbitration_id=0)
         self.bus.send(msg)
         msg_receive = self.bus.recv()
-        self.assertEqual(msg, msg_receive)
+        self.assertMessageEqual(msg, msg_receive)
 
     def test_rx_tx_max_id(self):
         """
@@ -86,7 +94,7 @@ class SimpleSerialTestBase(object):
         msg = can.Message(arbitration_id=536870911)
         self.bus.send(msg)
         msg_receive = self.bus.recv()
-        self.assertEqual(msg, msg_receive)
+        self.assertMessageEqual(msg, msg_receive)
 
     def test_rx_tx_max_timestamp(self):
         """
@@ -96,7 +104,7 @@ class SimpleSerialTestBase(object):
         msg = can.Message(timestamp=self.MAX_TIMESTAMP)
         self.bus.send(msg)
         msg_receive = self.bus.recv()
-        self.assertEqual(msg, msg_receive)
+        self.assertMessageEqual(msg, msg_receive)
         self.assertEqual(msg.timestamp, msg_receive.timestamp)
 
     def test_rx_tx_max_timestamp_error(self):
@@ -113,7 +121,7 @@ class SimpleSerialTestBase(object):
         msg = can.Message(timestamp=0)
         self.bus.send(msg)
         msg_receive = self.bus.recv()
-        self.assertEqual(msg, msg_receive)
+        self.assertMessageEqual(msg, msg_receive)
         self.assertEqual(msg.timestamp, msg_receive.timestamp)
 
     def test_rx_tx_min_timestamp_error(self):
@@ -125,6 +133,10 @@ class SimpleSerialTestBase(object):
 
 
 class SimpleSerialTest(unittest.TestCase, SimpleSerialTestBase):
+
+    def __init__(self, *args, **kwargs):
+        unittest.TestCase.__init__(self, *args, **kwargs)
+        SimpleSerialTestBase.__init__(self)
 
     def setUp(self):
         self.patcher = patch('serial.Serial')
@@ -140,6 +152,10 @@ class SimpleSerialTest(unittest.TestCase, SimpleSerialTestBase):
 
 
 class SimpleSerialLoopTest(unittest.TestCase, SimpleSerialTestBase):
+
+    def __init__(self, *args, **kwargs):
+        unittest.TestCase.__init__(self, *args, **kwargs)
+        SimpleSerialTestBase.__init__(self)
 
     def setUp(self):
         self.bus = SerialBus('loop://')

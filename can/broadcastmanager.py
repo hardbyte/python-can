@@ -154,5 +154,5 @@ def send_periodic(bus, message, period, *args, **kwargs):
     :return: A started task instance
     """
     log.warning("The function `can.send_periodic` is deprecated and will " +
-                "be removed in version 2.3. Please use `can.Bus.send_periodic` instead.")
+                "be removed in version 3.0. Please use `can.Bus.send_periodic` instead.")
     return bus.send_periodic(message, period, *args, **kwargs)

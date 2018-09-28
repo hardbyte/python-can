@@ -8,7 +8,10 @@ coverage:
   round: down
   range: 50...100
   status:
-    # pull-requests only
+    project:
+      default:
+        # coverage may fall by <1.0% and still be considered "passing"
+        threshold: 1.0%
     patch:
       default:
         # coverage may fall by <1.0% and still be considered "passing"
