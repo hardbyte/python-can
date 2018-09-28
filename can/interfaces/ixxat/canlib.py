@@ -485,7 +485,7 @@ class IXXATBus(BusABC):
         message = structures.CANMSG()
         message.uMsgInfo.Bits.type = constants.CAN_MSGTYPE_DATA
         message.uMsgInfo.Bits.rtr = 1 if msg.is_remote_frame else 0
-        message.uMsgInfo.Bits.ext = 1 if msg.id_type else 0
+        message.uMsgInfo.Bits.ext = 1 if msg.is_extended_id else 0
         message.uMsgInfo.Bits.srr = 1 if self._receive_own_messages else 0
         message.dwMsgId = msg.arbitration_id
         if msg.dlc:
@@ -545,7 +545,7 @@ class CyclicSendTask(LimitedDurationCyclicSendTaskABC,
         self._msg.wCycleTime = int(round(period * resolution))
         self._msg.dwMsgId = msg.arbitration_id
         self._msg.uMsgInfo.Bits.type = constants.CAN_MSGTYPE_DATA
-        self._msg.uMsgInfo.Bits.ext = 1 if msg.id_type else 0
+        self._msg.uMsgInfo.Bits.ext = 1 if msg.is_extended_id else 0
         self._msg.uMsgInfo.Bits.rtr = 1 if msg.is_remote_frame else 0
         self._msg.uMsgInfo.Bits.dlc = msg.dlc
         for i, b in enumerate(msg.data):

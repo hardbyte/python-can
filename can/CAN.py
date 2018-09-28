@@ -22,10 +22,10 @@ import logging
 
 log = logging.getLogger('can')
 
-# See #267
+# See #267.
 # Version 2.0 - 2.1:    Log a Debug message
 # Version 2.2:          Log a Warning
 # Version 2.3:          Log an Error
 # Version 2.4:          Remove the module
-log.warning('Loading python-can via the old "CAN" API is deprecated since v2.0 an will get removed in v2.4. '
+log.error('Loading python-can via the old "CAN" API is deprecated since v2.0 an will get removed in v2.4. '
             'Please use `import can` instead.')

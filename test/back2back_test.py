@@ -53,7 +53,7 @@ class Back2BackTestCase(unittest.TestCase):
         self.assertIsNotNone(recv_msg,
                              "No message was received on %s" % self.INTERFACE_2)
         self.assertEqual(recv_msg.arbitration_id, sent_msg.arbitration_id)
-        self.assertEqual(recv_msg.id_type, sent_msg.id_type)
+        self.assertEqual(recv_msg.is_extended_id, sent_msg.is_extended_id)
         self.assertEqual(recv_msg.is_remote_frame, sent_msg.is_remote_frame)
         self.assertEqual(recv_msg.is_error_frame, sent_msg.is_error_frame)
         self.assertEqual(recv_msg.is_fd, sent_msg.is_fd)
