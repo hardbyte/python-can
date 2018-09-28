@@ -1,4 +1,4 @@
-Version 2.3.0
+Version 3.0.0
 ====
 
 Major features
@@ -18,6 +18,8 @@ Major features
 Breaking changes
 ----------------
 
+- Interfaces should no longer override `send_periodic` and instead implement
+  `_send_periodic_internal` #426
 - writing to closed writers is not supported any more (it was supported only for some)
 - the method `Listener.on_message_received()` is now abstract (using `@abc.abstractmethod`)
 - the file in the reader/writer is now always stored in the attribute uniformly called `file`, and not in
@@ -112,7 +114,7 @@ Version 2.2.0 (2018-06-30)
 * Added synchronized (thread-safe) Bus variant.
 * context manager support for the Bus class.
 * Dropped support for Python 3.3 (officially reached end-of-life in Sept. 2017)
-* Deprecated the old `CAN` module, please use the newer `can` entry point (will be removed in version 2.4)
+* Deprecated the old `CAN` module, please use the newer `can` entry point (will be removed in an upcoming major version)
 
 Version 2.1.0 (2018-02-17)
 =====
