@@ -30,6 +30,11 @@ Breaking changes
 Other notable changes
 ---------------------
 
+* can.Message class updated #413
+    - Addition of a Message.equals method.
+    - Deprecate id_type in favor of is_extended_id
+    - documentation, testing and example updates
+    - Addition of support for various builtins: __repr__, __slots__, __copy__
 * IO module updates to bring consistency to the different CAN message writers and readers. #348
     - context manager support for all readers and writers
     - they share a common super class called `BaseIOHandler`
