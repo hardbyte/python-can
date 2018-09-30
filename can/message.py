@@ -43,8 +43,8 @@ class Message(object):
         "is_fd",
         "bitrate_switch",
         "error_state_indicator",
-        "__weakref__", # support weak references to messages
-        "_dict" # see __getattr__
+        "__weakref__",              # support weak references to messages
+        "_dict"                     # see __getattr__
     )
 
     def __getattr__(self, key):
@@ -68,20 +68,21 @@ class Message(object):
 
     @property
     def id_type(self):
-        # TODO remove in 3.0
+        # TODO remove in >3.1
         warnings.warn("Message.id_type is deprecated, use is_extended_id", DeprecationWarning)
         return self.is_extended_id
 
     @id_type.setter
     def id_type(self, value):
-        # TODO remove in 3.0
+        # TODO remove in >3.1
         warnings.warn("Message.id_type is deprecated, use is_extended_id", DeprecationWarning)
         self.is_extended_id = value
 
-    def __init__(self, timestamp=0.0, arbitration_id=0, extended_id=True,
+    def __init__(self, timestamp=0.0, arbitration_id=0, is_extended_id=None,
                  is_remote_frame=False, is_error_frame=False, channel=None,
                  dlc=None, data=None,
                  is_fd=False, bitrate_switch=False, error_state_indicator=False,
+                 extended_id=True,
                  check=False):
         """
         To create a message object, simply provide any of the below attributes
@@ -99,7 +100,13 @@ class Message(object):
 
         self.timestamp = timestamp
         self.arbitration_id = arbitration_id
-        self.is_extended_id = extended_id
+        if is_extended_id is not None:
+            self.is_extended_id = is_extended_id
+        else:
+            if not extended_id:
+                # Passed extended_id=False (default argument is True) so we warn to update
+                warnings.warn("extended_id is a deprecated parameter, use is_extended_id", DeprecationWarning)
+            self.is_extended_id = extended_id
 
         self.is_remote_frame = is_remote_frame
         self.is_error_frame = is_error_frame
@@ -152,7 +159,7 @@ class Message(object):
         if self.data is not None:
             for index in range(0, min(self.dlc, len(self.data))):
                 data_strings.append("{0:02x}".format(self.data[index]))
-        if data_strings: # if not empty
+        if data_strings:  # if not empty
             field_strings.append(" ".join(data_strings).ljust(24, " "))
         else:
             field_strings.append(" " * 24)
