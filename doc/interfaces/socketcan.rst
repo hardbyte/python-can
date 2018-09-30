@@ -10,7 +10,7 @@ The full documentation for socketcan can be found in the kernel docs at
     Versions before 2.2 had two different implementations named
     ``socketcan_ctypes`` and ``socketcan_native``. These are now
     deprecated and the aliases to ``socketcan`` will be removed in
-    version 3.0. Future 2.x release may raise a DeprecationWarning.
+    version 4.0.  3.x releases raise a DeprecationWarning.
 
 
 Socketcan Quickstart

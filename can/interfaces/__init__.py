@@ -4,11 +4,9 @@
 Interfaces contain low level implementations that interact with CAN hardware.
 """
 
-import logging
-
+import warnings
 from pkg_resources import iter_entry_points
 
-logger = logging.getLogger(__name__)
 
 # interface_name => (module, classname)
 BACKENDS = {
@@ -31,10 +29,10 @@ BACKENDS.update({
     for interface in iter_entry_points('can.interface')
 })
 
-# Old entry point name. May be removed in 3.0.
+# Old entry point name. May be removed >3.0.
 for interface in iter_entry_points('python_can.interface'):
     BACKENDS[interface.name] = (interface.module_name, interface.attrs[0])
-    logger.warning('%s is using the deprecated python_can.interface entry point. '
-                   'Please change to can.interface instead.', interface.name)
+    warnings.warn('{} is using the deprecated python_can.interface entry point. '.format(interface.name) +
+                  'Please change to can.interface instead.', DeprecationWarning)
 
 VALID_INTERFACES = frozenset(list(BACKENDS.keys()) + ['socketcan_native', 'socketcan_ctypes'])

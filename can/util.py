@@ -12,6 +12,8 @@ import sys
 import platform
 import re
 import logging
+import warnings
+
 try:
     from configparser import ConfigParser
 except ImportError:
@@ -184,11 +186,11 @@ def load_config(path=None, config=None, context=None):
         if key not in config:
             config[key] = None
 
-    # deprecated socketcan types
+    # Handle deprecated socketcan types
     if config['interface'] in ('socketcan_native', 'socketcan_ctypes'):
-        # Change this to a DeprecationWarning in future 2.x releases
-        # Remove completely in 3.0
-        log.warning('%s is deprecated, use socketcan instead', config['interface'])
+        # DeprecationWarning in 3.x releases
+        # TODO: Remove completely in 4.0
+        warnings.warn('{} is deprecated, use socketcan instead'.format(config['interface']), DeprecationWarning)
         config['interface'] = 'socketcan'
 
     if config['interface'] not in VALID_INTERFACES:

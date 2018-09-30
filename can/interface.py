@@ -21,7 +21,7 @@ from .interfaces import BACKENDS
 
 if 'linux' in sys.platform:
     # Deprecated and undocumented access to SocketCAN cyclic tasks
-    # Will be removed in version 3.0
+    # Will be removed in version 4.0
     from can.interfaces.socketcan import CyclicSendTask, MultiRateCyclicSendTask
 
 # Required by "detect_available_configs" for argument interpretation
