@@ -226,7 +226,7 @@ class PcanBus(BusABC):
         return rx_msg, False
 
     def send(self, msg, timeout=None):
-        if msg.id_type:
+        if msg.is_extended_id:
             msgType = PCAN_MESSAGE_EXTENDED
         else:
             msgType = PCAN_MESSAGE_STANDARD

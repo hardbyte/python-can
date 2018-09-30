@@ -112,7 +112,7 @@ class VectorBus(BusABC):
         # Get channels masks
         self.channel_masks = {}
         self.index_to_channel = {}
-        
+
         for channel in self.channels:
             if app_name:
                 # Get global channel index from application channel
@@ -319,7 +319,7 @@ class VectorBus(BusABC):
     def send(self, msg, timeout=None):
         msg_id = msg.arbitration_id
 
-        if msg.id_type:
+        if msg.is_extended_id:
             msg_id |= vxlapi.XL_CAN_EXT_MSG_ID
 
         flags = 0

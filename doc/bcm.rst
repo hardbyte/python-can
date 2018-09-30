@@ -49,7 +49,7 @@ Functional API
 
 .. warning::
     The functional API in :func:`can.broadcastmanager.send_periodic` is now deprecated
-    and will be removed in version 2.3.
+    and will be removed in version 4.0.
     Use the object oriented API via :meth:`can.BusABC.send_periodic` instead.
 
 .. autofunction:: can.broadcastmanager.send_periodic
