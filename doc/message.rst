@@ -103,6 +103,7 @@ Message
         :type: bool
 
         This flag controls the size of the :attr:`~can.Message.arbitration_id` field.
+        Previously this was exposed as `id_type`.
 
         >>> print(Message(extended_id=False))
         Timestamp:        0.000000        ID: 0000    S        DLC: 0
@@ -110,8 +111,10 @@ Message
         Timestamp:        0.000000    ID: 00000000    X        DLC: 0
 
 
-        Previously this was exposed as `id_type`.
-        Please use `is_extended_id` from now on.
+        .. note::
+
+            The :meth:`Message.__init__` argument ``extended_id`` has been deprecated in favor of
+            ``is_extended_id``, but will continue to work for the ``3.x`` release series.
 
 
     .. attribute:: is_error_frame
