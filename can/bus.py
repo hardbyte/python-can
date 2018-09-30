@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # coding: utf-8
 
 """
@@ -15,6 +14,7 @@ from collections import namedtuple
 
 from .broadcastmanager import ThreadBasedCyclicSendTask
 
+LOG = logging.getLogger(__name__)
 
 BusState = namedtuple('BusState', 'ACTIVE, PASSIVE, ERROR')
 
@@ -22,10 +22,15 @@ BusState = namedtuple('BusState', 'ACTIVE, PASSIVE, ERROR')
 class BusABC(object):
     """The CAN Bus Abstract Base Class that serves as the basis
     for all concrete interfaces.
+
+    This class may be used as an iterator over the received messages.
     """
 
     #: a string describing the underlying bus and/or channel
     channel_info = 'unknown'
+
+    #: Log level for received messages
+    RECV_LOGGING_LEVEL = 9
 
     @abstractmethod
     def __init__(self, channel, can_filters=None, **config):
@@ -43,6 +48,7 @@ class BusABC(object):
         :param dict config:
             Any backend dependent configurations are passed in this dictionary
         """
+        self._periodic_tasks = []
         self.set_filters(can_filters)
 
     def __str__(self):
@@ -51,7 +57,8 @@ class BusABC(object):
     def recv(self, timeout=None):
         """Block waiting for a message from the Bus.
 
-        :param float timeout:
+        :type timeout: float or None
+        :param timeout:
             seconds to wait for a message or None to wait indefinitely
 
         :rtype: can.Message or None
@@ -70,13 +77,15 @@ class BusABC(object):
 
             # return it, if it matches
             if msg and (already_filtered or self._matches_filters(msg)):
+                LOG.log(self.RECV_LOGGING_LEVEL, 'Received: %s', msg)
                 return msg
 
             # if not, and timeout is None, try indefinitely
             elif timeout is None:
                 continue
 
-            # try next one only if there still is time, and with reduced timeout
+            # try next one only if there still is time, and with
+            # reduced timeout
             else:
 
                 time_left = timeout - (time() - start)
@@ -107,12 +116,12 @@ class BusABC(object):
 
         .. note::
 
-            The second return value (whether filtering was already done) may change
-            over time for some interfaces, like for example in the Kvaser interface.
-            Thus it cannot be simplified to a constant value.
+            The second return value (whether filtering was already done) may
+            change over time for some interfaces, like for example in the
+            Kvaser interface. Thus it cannot be simplified to a constant value.
 
         :param float timeout: seconds to wait for a message,
-                              see :meth:`can.BusABC.send`
+                              see :meth:`~can.BusABC.send`
 
         :rtype: tuple[can.Message, bool] or tuple[None, bool]
         :return:
@@ -136,19 +145,30 @@ class BusABC(object):
         Override this method to enable the transmit path.
 
         :param can.Message msg: A message object.
-        :param float timeout:
-            If > 0, wait up to this many seconds for message to be ACK:ed or
+
+        :type timeout: float or None
+        :param timeout:
+            If > 0, wait up to this many seconds for message to be ACK'ed or
             for transmit queue to be ready depending on driver implementation.
             If timeout is exceeded, an exception will be raised.
             Might not be supported by all interfaces.
+            None blocks indefinitly.
 
         :raises can.CanError:
-            if the message could not be written.
+            if the message could not be sent
         """
         raise NotImplementedError("Trying to write to a readonly bus?")
 
-    def send_periodic(self, msg, period, duration=None):
+    def send_periodic(self, msg, period, duration=None, store_task=True):
         """Start sending a message at a given period on this bus.
+
+        The task will be active until one of the following conditions are met:
+
+        - the (optional) duration expires
+        - the Bus instance goes out of scope
+        - the Bus instance is shutdown
+        - :meth:`Bus.stop_all_periodic_tasks()` is called
+        - the task's :meth:`Task.stop()` method is called.
 
         :param can.Message msg:
             Message to transmit
@@ -157,8 +177,12 @@ class BusABC(object):
         :param float duration:
             The duration to keep sending this message at given rate. If
             no duration is provided, the task will continue indefinitely.
-
-        :return: A started task instance
+        :param bool store_task:
+            If True (the default) the task will be attached to this Bus instance.
+            Disable to instead manage tasks manually.
+        :return:
+            A started task instance. Note the task can be stopped (and depending on
+            the backend modified) by calling the :meth:`stop` method.
         :rtype: can.broadcastmanager.CyclicSendTaskABC
 
         .. note::
@@ -166,13 +190,63 @@ class BusABC(object):
             Note the duration before the message stops being sent may not
             be exactly the same as the duration specified by the user. In
             general the message will be sent at the given rate until at
-            least *duration* seconds.
+            least **duration** seconds.
 
+        .. note::
+
+            For extremely long running Bus instances with many short lived tasks the default
+            api with ``store_task==True`` may not be appropriate as the stopped tasks are
+            still taking up memory as they are associated with the Bus instance.
+        """
+        task = self._send_periodic_internal(msg, period, duration)
+        # we wrap the task's stop method to also remove it from the Bus's list of tasks
+        original_stop_method = task.stop
+
+        def wrapped_stop_method(remove_task=True):
+            if remove_task:
+                try:
+                    self._periodic_tasks.remove(task)
+                except ValueError:
+                    pass
+            original_stop_method()
+        task.stop = wrapped_stop_method
+
+        if store_task:
+            self._periodic_tasks.append(task)
+
+        return task
+
+    def _send_periodic_internal(self, msg, period, duration=None):
+        """Default implementation of periodic message sending using threading.
+
+        Override this method to enable a more efficient backend specific approach.
+
+        :param can.Message msg:
+            Message to transmit
+        :param float period:
+            Period in seconds between each message
+        :param float duration:
+            The duration to keep sending this message at given rate. If
+            no duration is provided, the task will continue indefinitely.
+        :return:
+            A started task instance. Note the task can be stopped (and depending on
+            the backend modified) by calling the :meth:`stop` method.
+        :rtype: can.broadcastmanager.CyclicSendTaskABC
         """
         if not hasattr(self, "_lock_send_periodic"):
             # Create a send lock for this bus
             self._lock_send_periodic = threading.Lock()
-        return ThreadBasedCyclicSendTask(self, self._lock_send_periodic, msg, period, duration)
+        task = ThreadBasedCyclicSendTask(self, self._lock_send_periodic, msg, period, duration)
+        return task
+
+    def stop_all_periodic_tasks(self, remove_tasks=True):
+        """Stop sending any messages that were started using bus.send_periodic
+
+        :param bool remove_tasks:
+            Stop tracking the stopped tasks.
+        """
+        for task in self._periodic_tasks:
+            task.stop(remove_task=remove_tasks)
 
     def __iter__(self):
         """Allow iteration on messages as they are received.
@@ -205,22 +279,23 @@ class BusABC(object):
         """Apply filtering to all messages received by this Bus.
 
         All messages that match at least one filter are returned.
-        If `filters` is `None` or a zero length sequence, all 
+        If `filters` is `None` or a zero length sequence, all
         messages are matched.
 
         Calling without passing any filters will reset the applied
         filters to `None`.
 
         :param filters:
-            A iterable of dictionaries each containing a "can_id", a "can_mask",
-            and an optional "extended" key.
+            A iterable of dictionaries each containing a "can_id",
+            a "can_mask", and an optional "extended" key.
 
             >>> [{"can_id": 0x11, "can_mask": 0x21, "extended": False}]
 
-            A filter matches, when ``<received_can_id> & can_mask == can_id & can_mask``.
+            A filter matches, when
+            ``<received_can_id> & can_mask == can_id & can_mask``.
             If ``extended`` is set as well, it only matches messages where
-            ``<received_is_extended> == extended``. Else it matches every messages based
-            only on the arbitration ID and mask.
+            ``<received_is_extended> == extended``. Else it matches every
+            messages based only on the arbitration ID and mask.
         """
         self._filters = filters or None
         self._apply_filters(self._filters)
@@ -255,14 +330,15 @@ class BusABC(object):
         for _filter in self._filters:
             # check if this filter even applies to the message
             if 'extended' in _filter and \
-                _filter['extended'] != msg.is_extended_id:
+                    _filter['extended'] != msg.is_extended_id:
                 continue
 
             # then check for the mask and id
             can_id = _filter['can_id']
             can_mask = _filter['can_mask']
 
-            # basically, we compute `msg.arbitration_id & can_mask == can_id & can_mask`
+            # basically, we compute
+            # `msg.arbitration_id & can_mask == can_id & can_mask`
             # by using the shorter, but equivalent from below:
             if (can_id ^ msg.arbitration_id) & can_mask == 0:
                 return True

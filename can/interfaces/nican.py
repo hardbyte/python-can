@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # coding: utf-8
 
 """
@@ -264,7 +263,7 @@ class NicanBus(BusABC):
             It does not wait for message to be ACKed currently.
         """
         arb_id = msg.arbitration_id
-        if msg.id_type:
+        if msg.is_extended_id:
             arb_id |= NC_FL_CAN_ARBID_XTD
         raw_msg = TxMessageStruct(arb_id,
                                   bool(msg.is_remote_frame),
@@ -282,9 +281,11 @@ class NicanBus(BusABC):
         #nican.ncWaitForState(
         #    self.handle, NC_ST_WRITE_SUCCESS, int(timeout * 1000), ctypes.byref(state))
 
-    def flush_tx_buffer(self):
+    def reset(self):
         """
-        Resets the CAN chip which includes clearing receive and transmit queues.
+        Resets network interface. Stops network interface, then resets the CAN
+        chip to clear the CAN error counters (clear error passive state).
+        Resetting includes clearing all entries from read and write queues.
         """
         nican.ncAction(self.handle, NC_OP_RESET, 0)
 

@@ -3,25 +3,40 @@
 Bus
 ---
 
-The :class:`can.BusABC` class, as the name suggests, provides an abstraction of a CAN bus.
-The bus provides an abstract wrapper around a physical or virtual CAN Bus.
+The :class:`~can.BusABC` class, as the name suggests, provides an abstraction of a CAN bus.
+The bus provides a wrapper around a physical or virtual CAN Bus.
+An interface specific instance of the :class:`~can.BusABC` is created by the :class:`~can.Bus`
+class, for example::
+
+    vector_bus = can.Bus(interface='vector', ...)
+
+That bus is then able to handle the interface specific software/hardware interactions
+and implements the :class:`~can.BusABC` API.
 
 A thread safe bus wrapper is also available, see `Thread safe bus`_.
 
+Autoconfig Bus
+''''''''''''''
+
+.. autoclass:: can.Bus
+    :members:
+    :undoc-members:
+
 
 API
-''''
+'''
 
 .. autoclass:: can.BusABC
     :members:
-    :special-members: __iter__
+    :undoc-members:
 
 
 Transmitting
 ''''''''''''
 
-Writing to the bus is done by calling the :meth:`~can.BusABC.send` method and
-passing a :class:`~can.Message` instance.
+Writing individual messages to the bus is done by calling the :meth:`~can.BusABC.send` method
+and passing a :class:`~can.Message` instance. Periodic sending is controlled by the
+:ref:`broadcast manager <bcm>`.
 
 
 Receiving
@@ -53,18 +68,10 @@ Conflicting calls are executed by blocking until the bus is accessible.
 
 It can be used exactly like the normal :class:`~can.BusABC`:
 
-    # 'socketcan' is only an exemple interface, it works with all the others too
+    # 'socketcan' is only an example interface, it works with all the others too
     my_bus = can.ThreadSafeBus(interface='socketcan', channel='vcan0')
     my_bus.send(...)
     my_bus.recv(...)
 
 .. autoclass:: can.ThreadSafeBus
     :members:
-
-Autoconfig Bus
---------------
-
-.. autoclass:: can.interface.Bus
-    :members:
-    :special-members: __iter__
-

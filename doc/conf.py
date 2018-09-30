@@ -28,6 +28,8 @@ release = can.__version__
 
 # -- General configuration -----------------------------------------------------
 
+primary_domain = 'py'
+
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = ['sphinx.ext.autodoc',
@@ -37,7 +39,9 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.intersphinx',
               'sphinx.ext.coverage',
               'sphinx.ext.viewcode',
-              'sphinx.ext.graphviz']
+              'sphinx.ext.graphviz',
+              'sphinxcontrib.programoutput'
+              ]
 
 # Now, you can use the alias name as a new role, e.g. :issue:`123`.
 extlinks = {
@@ -45,7 +49,7 @@ extlinks = {
 }
 
 intersphinx_mapping = {
-    'python': ('https://docs.python.org/3/', None)
+    'python': ('https://docs.python.org/3/', None),
 }
 
 # If this is True, todo and todolist produce output, else they produce nothing.

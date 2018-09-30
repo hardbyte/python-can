@@ -3,17 +3,14 @@
 IXXAT Virtual CAN Interface
 ===========================
 
-
 Interface to `IXXAT <http://www.ixxat.com/>`__ Virtual CAN Interface V3 SDK. Works on Windows.
 
+The Linux ECI SDK is currently unsupported, however on Linux some devices are
+supported with :doc:`socketcan`.
 
-.. note::
-
-    The Linux ECI SDK is currently unsupported, however on Linux some devices are supported with :doc:`socketcan`.
-
-The :meth:`~can.interfaces.ixxat.IXXATBus.send_periodic` method is supported
+The :meth:`~can.interfaces.ixxat.canlib.IXXATBus.send_periodic` method is supported
 natively through the on-board cyclic transmit list.
-Modifying cyclic messages is not possible. You will need to stop it, then
+Modifying cyclic messages is not possible. You will need to stop it, and then
 start a new periodic message.
 
 
@@ -21,9 +18,10 @@ Bus
 ---
 
 .. autoclass:: can.interfaces.ixxat.IXXATBus
+    :members:
 
 .. autoclass:: can.interfaces.ixxat.canlib.CyclicSendTask
-
+    :members:
 
 
 Configuration file
@@ -67,9 +65,3 @@ to receive (including RTR field).
 The can_id/mask must be specified according to IXXAT behaviour, that is
 bit 0 of can_id/mask parameters represents the RTR field in CAN frame. See IXXAT
 VCI documentation, section "Message filters" for more info.
-
-.. hint::
-
-    Module uses ``can.ixxat`` logger and at DEBUG level logs every frame
-    sent or received. It may be too verbose for your purposes.
-

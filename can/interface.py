@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # coding: utf-8
 
 """
@@ -22,7 +21,7 @@ from .interfaces import BACKENDS
 
 if 'linux' in sys.platform:
     # Deprecated and undocumented access to SocketCAN cyclic tasks
-    # Will be removed in version 3.0
+    # Will be removed in version 4.0
     from can.interfaces.socketcan import CyclicSendTask, MultiRateCyclicSendTask
 
 # Required by "detect_available_configs" for argument interpretation
@@ -102,7 +101,12 @@ class Bus(BusABC):
         # figure out the rest of the configuration; this might raise an error
         if channel is not None:
             config['channel'] = channel
-        config = load_config(config=config)
+        if 'context' in config:
+            context = config['context']
+            del config['context']
+        else:
+            context = None
+        config = load_config(config=config, context=context)
 
         # resolve the bus class to use for that interface
         cls = _get_class_for_interface(config['interface'])
@@ -117,7 +121,11 @@ class Bus(BusABC):
             channel = config['channel']
             del config['channel']
 
-        return cls(channel, *args, **config)
+        if channel is None:
+            # Use the default channel for the backend
+            return cls(*args, **config)
+        else:
+            return cls(channel, *args, **config)
 
 
 def detect_available_configs(interfaces=None):
@@ -137,7 +145,7 @@ def detect_available_configs(interfaces=None):
         - `None` to search in all known interfaces.
     :rtype: list[dict]
     :return: an iterable of dicts, each suitable for usage in
-             :class:`can.interface.Bus`\ 's constructor.
+             the constructor of :class:`can.interface.Bus`.
     """
 
     # Figure out where to search

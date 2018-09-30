@@ -1,2 +1,3 @@
 include *.txt
+include test/data/*.*
 recursive-include doc *.rst

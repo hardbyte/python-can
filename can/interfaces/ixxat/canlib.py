@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # coding: utf-8
 
 """
@@ -279,6 +278,9 @@ class IXXATBus(BusABC):
         :param list can_filters:
             See :meth:`can.BusABC.set_filters`.
 
+        :param bool receive_own_messages:
+            Enable self-reception of sent messages.
+
         :param int UniqueHardwareId:
             UniqueHardwareId to connect (optional, will use the first found if not supplied)
 
@@ -294,6 +296,7 @@ class IXXATBus(BusABC):
         UniqueHardwareId = config.get('UniqueHardwareId', None)
         rxFifoSize = config.get('rxFifoSize', 16)
         txFifoSize = config.get('txFifoSize', 16)
+        self._receive_own_messages = config.get('receive_own_messages', False)
         # Usually comes as a string from the config file
         channel = int(channel)
 
@@ -474,17 +477,16 @@ class IXXATBus(BusABC):
             channel=self.channel
         )
 
-        log.debug('Recv()ed message %s', rx_msg)
         return rx_msg, True
 
     def send(self, msg, timeout=None):
-        log.debug("Sending message: %s", msg)
 
         # This system is not designed to be very efficient
         message = structures.CANMSG()
         message.uMsgInfo.Bits.type = constants.CAN_MSGTYPE_DATA
         message.uMsgInfo.Bits.rtr = 1 if msg.is_remote_frame else 0
-        message.uMsgInfo.Bits.ext = 1 if msg.id_type else 0
+        message.uMsgInfo.Bits.ext = 1 if msg.is_extended_id else 0
+        message.uMsgInfo.Bits.srr = 1 if self._receive_own_messages else 0
         message.dwMsgId = msg.arbitration_id
         if msg.dlc:
             message.uMsgInfo.Bits.dlc = msg.dlc
@@ -497,7 +499,7 @@ class IXXATBus(BusABC):
         else:
             _canlib.canChannelPostMessage(self._channel_handle, message)
 
-    def send_periodic(self, msg, period, duration=None):
+    def _send_periodic_internal(self, msg, period, duration=None):
         """Send a message using built-in cyclic transmit list functionality."""
         if self._scheduler is None:
             self._scheduler = HANDLE()
@@ -543,7 +545,7 @@ class CyclicSendTask(LimitedDurationCyclicSendTaskABC,
         self._msg.wCycleTime = int(round(period * resolution))
         self._msg.dwMsgId = msg.arbitration_id
         self._msg.uMsgInfo.Bits.type = constants.CAN_MSGTYPE_DATA
-        self._msg.uMsgInfo.Bits.ext = 1 if msg.id_type else 0
+        self._msg.uMsgInfo.Bits.ext = 1 if msg.is_extended_id else 0
         self._msg.uMsgInfo.Bits.rtr = 1 if msg.is_remote_frame else 0
         self._msg.uMsgInfo.Bits.dlc = msg.dlc
         for i, b in enumerate(msg.data):

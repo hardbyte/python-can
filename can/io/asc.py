@@ -1,19 +1,23 @@
-#!/usr/bin/env python
 # coding: utf-8
 
 """
 Contains handling of ASC logging files.
 
-Example .asc file: https://bitbucket.org/tobylorenz/vector_asc/src/47556e1a6d32c859224ca62d075e1efcc67fa690/src/Vector/ASC/tests/unittests/data/CAN_Log_Trigger_3_2.asc?at=master&fileviewer=file-view-default
+Example .asc files:
+    - https://bitbucket.org/tobylorenz/vector_asc/src/47556e1a6d32c859224ca62d075e1efcc67fa690/src/Vector/ASC/tests/unittests/data/CAN_Log_Trigger_3_2.asc?at=master&fileviewer=file-view-default
+    - under `test/data/logfile.asc`
 """
+
+from __future__ import absolute_import
 
 from datetime import datetime
 import time
 import logging
 
-from can.listener import Listener
-from can.message import Message
-from can.util import channel2int
+from ..message import Message
+from ..listener import Listener
+from ..util import channel2int
+from .generic import BaseIOHandler
 
 CAN_MSG_EXT = 0x80000000
 CAN_ID_MASK = 0x1FFFFFFF
@@ -21,15 +25,20 @@ CAN_ID_MASK = 0x1FFFFFFF
 logger = logging.getLogger('can.io.asc')
 
 
-class ASCReader(object):
+class ASCReader(BaseIOHandler):
     """
     Iterator of CAN messages from a ASC logging file.
 
-    TODO: turn realtive timestamps back to absolute form
+    TODO: turn relative timestamps back to absolute form
     """
 
-    def __init__(self, filename):
-        self.file = open(filename, 'r')
+    def __init__(self, file):
+        """
+        :param file: a path-like object or as file-like object to read from
+                     If this is a file-like object, is has to opened in text
+                     read mode, not binary read mode.
+        """
+        super(ASCReader, self).__init__(file, mode='r')
 
     @staticmethod
     def _extract_can_id(str_can_id):
@@ -39,19 +48,19 @@ class ASCReader(object):
         else:
             is_extended = False
             can_id = int(str_can_id, 16)
-        logging.debug('ASCReader: _extract_can_id("%s") -> %x, %r', str_can_id, can_id, is_extended)
-        return (can_id, is_extended)
+        #logging.debug('ASCReader: _extract_can_id("%s") -> %x, %r', str_can_id, can_id, is_extended)
+        return can_id, is_extended
 
     def __iter__(self):
         for line in self.file:
-            logger.debug("ASCReader: parsing line: '%s'", line.splitlines()[0])
+            #logger.debug("ASCReader: parsing line: '%s'", line.splitlines()[0])
 
             temp = line.strip()
             if not temp or not temp[0].isdigit():
                 continue
 
             try:
-                (timestamp, channel, dummy) = temp.split(None, 2) # , frameType, dlc, frameData
+                timestamp, channel, dummy = temp.split(None, 2) # , frameType, dlc, frameData
             except ValueError:
                 # we parsed an empty comment
                 continue
@@ -72,8 +81,8 @@ class ASCReader(object):
                 pass
 
             elif dummy[-1:].lower() == 'r':
-                (can_id_str, _) = dummy.split(None, 1)
-                (can_id_num, is_extended_id) = self._extract_can_id(can_id_str)
+                can_id_str, _ = dummy.split(None, 1)
+                can_id_num, is_extended_id = self._extract_can_id(can_id_str)
                 msg = Message(timestamp=timestamp,
                               arbitration_id=can_id_num & CAN_ID_MASK,
                               extended_id=is_extended_id,
@@ -84,10 +93,10 @@ class ASCReader(object):
             else:
                 try:
                     # this only works if dlc > 0 and thus data is availabe
-                    (can_id_str, _, _, dlc, data) = dummy.split(None, 4)
+                    can_id_str, _, _, dlc, data = dummy.split(None, 4)
                 except ValueError:
                     # but if not, we only want to get the stuff up to the dlc
-                    (can_id_str, _, _, dlc      ) = dummy.split(None, 3)
+                    can_id_str, _, _, dlc       = dummy.split(None, 3)
                     # and we set data to an empty sequence manually
                     data = ''
 
@@ -97,24 +106,26 @@ class ASCReader(object):
                 for byte in data[0:dlc]:
                     frame.append(int(byte, 16))
 
-                (can_id_num, is_extended_id) = self._extract_can_id(can_id_str)
+                can_id_num, is_extended_id = self._extract_can_id(can_id_str)
 
-                msg = Message(
-                            timestamp=timestamp,
-                            arbitration_id=can_id_num & CAN_ID_MASK,
-                            extended_id=is_extended_id,
-                            is_remote_frame=False,
-                            dlc=dlc,
-                            data=frame,
-                            channel=channel)
-                yield msg
+                yield Message(
+                    timestamp=timestamp,
+                    arbitration_id=can_id_num & CAN_ID_MASK,
+                    extended_id=is_extended_id,
+                    is_remote_frame=False,
+                    dlc=dlc,
+                    data=frame,
+                    channel=channel
+                )
+
+        self.stop()
 
 
-class ASCWriter(Listener):
+class ASCWriter(BaseIOHandler, Listener):
     """Logs CAN data to an ASCII log file (.asc).
 
     The measurement starts with the timestamp of the first registered message.
-    If a message has a timestamp smaller than the previous one (or 0 or None),
+    If a message has a timestamp smaller than the previous one or None,
     it gets assigned the timestamp that was written for the last message.
     It the first message does not have a timestamp, it is set to zero.
     """
@@ -123,16 +134,22 @@ class ASCWriter(Listener):
     FORMAT_DATE = "%a %b %m %I:%M:%S %p %Y"
     FORMAT_EVENT = "{timestamp: 9.4f} {message}\n"
 
-    def __init__(self, filename, channel=1):
-        # setup
+    def __init__(self, file, channel=1):
+        """
+        :param file: a path-like object or as file-like object to write to
+                     If this is a file-like object, is has to opened in text
+                     write mode, not binary write mode.
+        :param channel: a default channel to use when the message does not
+                        have a channel set
+        """
+        super(ASCWriter, self).__init__(file, mode='w')
         self.channel = channel
-        self.log_file = open(filename, 'w')
 
         # write start of file header
         now = datetime.now().strftime("%a %b %m %I:%M:%S %p %Y")
-        self.log_file.write("date %s\n" % now)
-        self.log_file.write("base hex  timestamps absolute\n")
-        self.log_file.write("internal events logged\n")
+        self.file.write("date %s\n" % now)
+        self.file.write("base hex  timestamps absolute\n")
+        self.file.write("internal events logged\n")
 
         # the last part is written with the timestamp of the first message
         self.header_written = False
@@ -140,10 +157,9 @@ class ASCWriter(Listener):
         self.started = None
 
     def stop(self):
-        """Stops logging and closes the file."""
-        if not self.log_file.closed:
-            self.log_file.write("End TriggerBlock\n")
-            self.log_file.close()
+        if not self.file.closed:
+            self.file.write("End TriggerBlock\n")
+        super(ASCWriter, self).stop()
 
     def log_event(self, message, timestamp=None):
         """Add a message to the log file.
@@ -161,10 +177,9 @@ class ASCWriter(Listener):
             self.last_timestamp = (timestamp or 0.0)
             self.started = self.last_timestamp
             formatted_date = time.strftime(self.FORMAT_DATE, time.localtime(self.last_timestamp))
-            self.log_file.write("base hex  timestamps absolute\n")
-            self.log_file.write("Begin Triggerblock %s\n" % formatted_date)
+            self.file.write("Begin Triggerblock %s\n" % formatted_date)
             self.header_written = True
-            self.log_event("Start of measurement") # recursive call
+            self.log_event("Start of measurement") # caution: this is a recursive call!
 
         # figure out the correct timestamp
         if timestamp is None or timestamp < self.last_timestamp:
@@ -175,11 +190,7 @@ class ASCWriter(Listener):
             timestamp -= self.started
 
         line = self.FORMAT_EVENT.format(timestamp=timestamp, message=message)
-
-        if self.log_file.closed:
-            logger.warn("ASCWriter: ignoring write call to closed file")
-        else:
-            self.log_file.write(line)
+        self.file.write(line)
 
     def on_message_received(self, msg):
 

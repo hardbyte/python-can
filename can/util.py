@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # coding: utf-8
 
 """
@@ -13,6 +12,8 @@ import sys
 import platform
 import re
 import logging
+import warnings
+
 try:
     from configparser import ConfigParser
 except ImportError:
@@ -54,7 +55,7 @@ elif platform.system() == "Windows" or platform.python_implementation() == "Iron
     )
 
 
-def load_file_config(path=None):
+def load_file_config(path=None, section=None):
     """
     Loads configuration from file with following content::
 
@@ -65,7 +66,8 @@ def load_file_config(path=None):
     :param path:
         path to config file. If not specified, several sensible
         default locations are tried depending on platform.
-
+    :param section:
+        name of the section to read configuration from.
     """
     config = ConfigParser()
     if path is None:
@@ -73,13 +75,16 @@ def load_file_config(path=None):
     else:
         config.read(path)
 
-    if not config.has_section('default'):
-        return {}
+    _config = {}
 
-    return dict(
-        (key, val)
-        for key, val in config.items('default')
-    )
+    section = section if section is not None else 'default'
+    if config.has_section(section):
+        if config.has_section('default'):
+            _config.update(
+                dict((key, val) for key, val in config.items('default')))
+        _config.update(dict((key, val) for key, val in config.items(section)))
+
+    return _config
 
 
 def load_environment_config():
@@ -103,7 +108,7 @@ def load_environment_config():
     )
 
 
-def load_config(path=None, config=None):
+def load_config(path=None, config=None, context=None):
     """
     Returns a dict with configuration details which is loaded from (in this order):
 
@@ -128,6 +133,10 @@ def load_config(path=None, config=None):
         A dict which may set the 'interface', and/or the 'channel', or neither.
         It may set other values that are passed through.
 
+    :param context:
+        Extra 'context' pass to config sources. This can be use to section
+        other than 'default' in the configuration file.
+
     :return:
         A config dictionary that should contain 'interface' & 'channel'::
 
@@ -147,21 +156,21 @@ def load_config(path=None, config=None):
     """
 
     # start with an empty dict to apply filtering to all sources
-    given_config = config
+    given_config = config or {}
     config = {}
 
     # use the given dict for default values
     config_sources = [
         given_config,
         can.rc,
-        load_environment_config,
-        lambda: load_file_config(path)
+        lambda _context: load_environment_config(),  # context is not supported
+        lambda _context: load_file_config(path, _context)
     ]
 
     # Slightly complex here to only search for the file config if required
     for cfg in config_sources:
         if callable(cfg):
-            cfg = cfg()
+            cfg = cfg(context)
         # remove legacy operator (and copy to interface if not already present)
         if 'bustype' in cfg:
             if 'interface' not in cfg or not cfg['interface']:
@@ -177,11 +186,11 @@ def load_config(path=None, config=None):
         if key not in config:
             config[key] = None
 
-    # deprecated socketcan types
+    # Handle deprecated socketcan types
     if config['interface'] in ('socketcan_native', 'socketcan_ctypes'):
-        # Change this to a DeprecationWarning in future 2.x releases
-        # Remove completely in 3.0
-        log.warning('%s is deprecated, use socketcan instead', config['interface'])
+        # DeprecationWarning in 3.x releases
+        # TODO: Remove completely in 4.0
+        warnings.warn('{} is deprecated, use socketcan instead'.format(config['interface']), DeprecationWarning)
         config['interface'] = 'socketcan'
 
     if config['interface'] not in VALID_INTERFACES:
@@ -190,10 +199,10 @@ def load_config(path=None, config=None):
     if 'bitrate' in config:
         config['bitrate'] = int(config['bitrate'])
 
-    can.log.debug("loaded can config: {}".format(config))
+    can.log.debug("can config: {}".format(config))
     return config
 
-
+            
 def set_logging_level(level_name=None):
     """Set the logging level for the "can" logger.
     Expects one of: 'critical', 'error', 'warning', 'info', 'debug', 'subdebug'

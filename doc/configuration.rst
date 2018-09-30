@@ -36,16 +36,16 @@ Configuration File
 
 On Linux systems the config file is searched in the following paths:
 
-1. ``~/can.conf``
-2. ``/etc/can.conf``
-3. ``$HOME/.can``
-4. ``$HOME/.canrc``
+#. ``~/can.conf``
+#. ``/etc/can.conf``
+#. ``$HOME/.can``
+#. ``$HOME/.canrc``
 
 On Windows systems the config file is searched in the following paths:
 
-1. ``~/can.conf``
-1. ``can.ini`` (current working directory)
-2. ``$APPDATA/can.ini``
+#. ``~/can.conf``
+#. ``can.ini`` (current working directory)
+#. ``$APPDATA/can.ini``
 
 The configuration file sets the default interface and channel:
 
@@ -56,6 +56,33 @@ The configuration file sets the default interface and channel:
     channel = <the channel to use by default>
     bitrate = <the bitrate in bits/s to use by default>
 
+
+The configuration can also contain additional sections:
+
+::
+
+    [default]
+    interface = <the name of the interface to use>
+    channel = <the channel to use by default>
+    bitrate = <the bitrate in bits/s to use by default>
+
+    [HS]
+    # All the values from the 'default' section are inherited
+    channel = <the channel to use>
+    bitrate = <the bitrate in bits/s to use. i.e. 500000>
+
+    [MS]
+    # All the values from the 'default' section are inherited
+    channel = <the channel to use>
+    bitrate = <the bitrate in bits/s to use. i.e. 125000>
+
+
+::
+
+    from can.interfaces.interface import Bus
+
+    hs_bus = Bus(config_section='HS')
+    ms_bus = Bus(config_section='MS')
 
 Environment Variables
 ---------------------

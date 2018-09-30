@@ -16,6 +16,7 @@ import logging
 import time
 
 import can
+
 logging.basicConfig(level=logging.INFO)
 
 
@@ -36,14 +37,18 @@ def simple_periodic_send(bus):
 def limited_periodic_send(bus):
     print("Starting to send a message every 200ms for 1s")
     msg = can.Message(arbitration_id=0x12345678, data=[0, 0, 0, 0, 0, 0], extended_id=True)
-    task = bus.send_periodic(msg, 0.20, 1)
+    task = bus.send_periodic(msg, 0.20, 1, store_task=False)
     if not isinstance(task, can.LimitedDurationCyclicSendTaskABC):
         print("This interface doesn't seem to support a ")
         task.stop()
         return
 
-    time.sleep(1.5)
-    print("stopped cyclic send")
+    time.sleep(2)
+    print("Cyclic send should have stopped as duration expired")
+    # Note the (finished) task will still be tracked by the Bus
+    # unless we pass `store_task=False` to bus.send_periodic
+    # alternatively calling stop removes the task from the bus
+    #task.stop()
 
 
 def test_periodic_send_with_modifying_data(bus):
@@ -104,15 +109,13 @@ if __name__ == "__main__":
 
     reset_msg = can.Message(arbitration_id=0x00, data=[0, 0, 0, 0, 0, 0], extended_id=False)
 
-
     for interface, channel in [
-        ('socketcan_ctypes', 'can0'),
-        ('socketcan_native', 'can0')
+        ('socketcan', 'vcan0'),
         #('ixxat', 0)
     ]:
         print("Carrying out cyclic tests with {} interface".format(interface))
 
-        bus = can.interface.Bus(bustype=interface, channel=channel, bitrate=500000)
+        bus = can.Bus(interface=interface, channel=channel, bitrate=500000)
         bus.send(reset_msg)
 
         simple_periodic_send(bus)
