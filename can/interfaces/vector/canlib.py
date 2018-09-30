@@ -112,7 +112,7 @@ class VectorBus(BusABC):
         # Get channels masks
         self.channel_masks = {}
         self.index_to_channel = {}
-        
+
         for channel in self.channels:
             if app_name:
                 # Get global channel index from application channel

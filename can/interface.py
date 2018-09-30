@@ -125,7 +125,7 @@ class Bus(BusABC):
             # Use the default channel for the backend
             return cls(*args, **config)
         else:
-            return cls(channel, *args, **config)    
+            return cls(channel, *args, **config)
 
 
 def detect_available_configs(interfaces=None):
