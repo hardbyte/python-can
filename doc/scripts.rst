@@ -25,7 +25,7 @@ can.viewer
 
 A screenshot of the application can be seen below:
 
-.. image:: ../images/viewer.png
+.. image:: images/viewer.png
     :width: 100%
 
 The first column is the number of times a frame with the particular ID that has been received, next is the timestamp of the frame relative to the first received message. The third column is the time between the current frame relative to the previous one. Next is the length of the frame, the data and then the decoded data converted according to the ``-d`` argument. The top red row indicates an error frame.
