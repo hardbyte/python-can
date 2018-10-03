@@ -103,9 +103,6 @@ class Message(object):
         if is_extended_id is not None:
             self.is_extended_id = is_extended_id
         else:
-            if not extended_id:
-                # Passed extended_id=False (default argument is True) so we warn to update
-                warnings.warn("extended_id is a deprecated parameter, use is_extended_id", DeprecationWarning)
             self.is_extended_id = extended_id
 
         self.is_remote_frame = is_remote_frame
