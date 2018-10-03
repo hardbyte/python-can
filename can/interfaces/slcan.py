@@ -125,7 +125,7 @@ class slcanBus(BusABC):
 
         if pos != -1:
             readStr = self._buffer[0:pos].decode()
-            del self._buffer[0:pos]
+            del self._buffer[0:pos+1]
             if readStr[0] == 'T':
                 # extended frame
                 canId = int(readStr[1:9], 16)

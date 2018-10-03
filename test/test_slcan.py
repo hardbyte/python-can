@@ -90,6 +90,7 @@ class slcanTestCase(unittest.TestCase):
         self.serial.write(b'T12ABCDEF')
         msg = self.bus.recv(0)
         self.assertIsNone(msg)
+
         self.serial.write(b'2AA55\rT12')
         msg = self.bus.recv(0)
         self.assertIsNotNone(msg)
@@ -98,6 +99,13 @@ class slcanTestCase(unittest.TestCase):
         self.assertEqual(msg.is_remote_frame, False)
         self.assertEqual(msg.dlc, 2)
         self.assertSequenceEqual(msg.data, [0xAA, 0x55])
+
+        msg = self.bus.recv(0)
+        self.assertIsNone(msg)
+
+        self.serial.write(b'ABCDEF2AA55\r')
+        msg = self.bus.recv(0)
+        self.assertIsNotNone(msg)
 
 
 if __name__ == '__main__':
