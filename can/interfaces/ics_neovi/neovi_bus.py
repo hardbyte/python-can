@@ -1,10 +1,9 @@
-#!/usr/bin/env python
 # coding: utf-8
 
 """
 ICS NeoVi interface module.
 
-python-ics is a Python wrapper around the API provided by Intrepid Control 
+python-ics is a Python wrapper around the API provided by Intrepid Control
 Systems for communicating with their NeoVI range of devices.
 
 Implementation references:
@@ -69,13 +68,14 @@ class NeoViBus(BusABC):
 
     def __init__(self, channel, can_filters=None, **config):
         """
-
-        :param int channel:
-            The Channel id to create this bus with.
+        :param channel:
+            The channel ids to create this bus with.
+            Can also be a single integer, netid name or a comma separated
+            string.
+        :type channel: int or str or list(int) or list(str)
         :param list can_filters:
             See :meth:`can.BusABC.set_filters` for details.
-
-        :param use_system_timestamp:
+        :param bool use_system_timestamp:
             Use system timestamp for can messages instead of the hardware time
             stamp
         :param str serial:
@@ -84,6 +84,11 @@ class NeoViBus(BusABC):
         :param int bitrate:
             Channel bitrate in bit/s. (optional, will enable the auto bitrate
             feature if not supplied)
+        :param bool fd:
+            If CAN-FD frames should be supported.
+        :param int data_bitrate:
+            Which bitrate to use for data phase in CAN FD.
+            Defaults to arbitration bitrate.
         """
         if ics is None:
             raise ImportError('Please install python-ics')
@@ -94,13 +99,14 @@ class NeoViBus(BusABC):
         logger.info("CAN Filters: {}".format(can_filters))
         logger.info("Got configuration of: {}".format(config))
 
-        self._use_system_timestamp = bool(
-            config.get('use_system_timestamp', False)
-        )
-        try:
-            channel = int(channel)
-        except ValueError:
-            raise ValueError('channel must be an integer')
+        if isinstance(channel, (list, tuple)):
+            self.channels = channel
+        elif isinstance(channel, int):
+            self.channels = [channel]
+        else:
+            # Assume comma separated string of channels
+            self.channels = [ch.strip() for ch in channel.split(',')]
+        self.channels = [NeoViBus.channel_to_netid(ch) for ch in self.channels]
 
         type_filter = config.get('type_filter')
         serial = config.get('serial')
@@ -108,17 +114,43 @@ class NeoViBus(BusABC):
         ics.open_device(self.dev)
 
         if 'bitrate' in config:
-            ics.set_bit_rate(self.dev, config.get('bitrate'), channel)
+            for channel in self.channels:
+                ics.set_bit_rate(self.dev, config.get('bitrate'), channel)
+
+        fd = config.get('fd', False)
+        if fd:
+            if 'data_bitrate' in config:
+                for channel in self.channels:
+                    ics.set_fd_bit_rate(
+                        self.dev, config.get('data_bitrate'), channel)
+
+        self._use_system_timestamp = bool(
+            config.get('use_system_timestamp', False)
+        )
 
         self.channel_info = '%s %s CH:%s' % (
             self.dev.Name,
             self.get_serial_number(self.dev),
-            channel
+            self.channels
         )
         logger.info("Using device: {}".format(self.channel_info))
 
         self.rx_buffer = deque()
-        self.network = channel if channel is not None else None
+
+    @staticmethod
+    def channel_to_netid(channel_name_or_id):
+        try:
+            channel = int(channel_name_or_id)
+        except ValueError:
+            netid = "NETID_{}".format(channel_name_or_id.upper())
+            if hasattr(ics, netid):
+                channel = getattr(ics, netid)
+            else:
+                raise ValueError(
+                    'channel must be an integer or '
+                    'a valid ICS channel name'
+                )
+        return channel
 
     @staticmethod
     def get_serial_number(device):
@@ -136,7 +168,7 @@ class NeoViBus(BusABC):
     def shutdown(self):
         super(NeoViBus, self).shutdown()
         ics.close_device(self.dev)
-    
+
     @staticmethod
     def _detect_available_configs():
         """Detect all configurations/channels that this interface could
@@ -148,10 +180,18 @@ class NeoViBus(BusABC):
         """
         if ics is None:
             return []
+
+        try:
+            devices = ics.find_devices()
+        except Exception as e:
+            logger.debug("Failed to detect configs: %s", e)
+            return []
+
         # TODO: add the channel(s)
         return [{
+            'interface': 'neovi',
             'serial': NeoViBus.get_serial_number(device)
-        } for device in ics.find_devices()]
+        } for device in devices]
 
     def _find_device(self, type_filter=None, serial=None):
         if type_filter is not None:
@@ -180,7 +220,7 @@ class NeoViBus(BusABC):
         except ics.RuntimeError:
             return
         for ics_msg in messages:
-            if ics_msg.NetworkID != self.network:
+            if ics_msg.NetworkID not in self.channels:
                 continue
             self.rx_buffer.append(ics_msg)
         if errors:
@@ -209,19 +249,49 @@ class NeoViBus(BusABC):
             return ics.get_timestamp_for_msg(self.dev, ics_msg)
 
     def _ics_msg_to_message(self, ics_msg):
-        return Message(
-            timestamp=self._get_timestamp_for_msg(ics_msg),
-            arbitration_id=ics_msg.ArbIDOrHeader,
-            data=ics_msg.Data[:ics_msg.NumberBytesData],
-            dlc=ics_msg.NumberBytesData,
-            extended_id=bool(
-                ics_msg.StatusBitField & ics.SPY_STATUS_XTD_FRAME
-            ),
-            is_remote_frame=bool(
-                ics_msg.StatusBitField & ics.SPY_STATUS_REMOTE_FRAME
-            ),
-            channel=ics_msg.NetworkID
-        )
+        is_fd = ics_msg.Protocol == ics.SPY_PROTOCOL_CANFD
+
+        if is_fd:
+            if ics_msg.ExtraDataPtrEnabled:
+                data = ics_msg.ExtraDataPtr[:ics_msg.NumberBytesData]
+            else:
+                data = ics_msg.Data[:ics_msg.NumberBytesData]
+
+            return Message(
+                timestamp=self._get_timestamp_for_msg(ics_msg),
+                arbitration_id=ics_msg.ArbIDOrHeader,
+                data=data,
+                dlc=ics_msg.NumberBytesData,
+                extended_id=bool(
+                    ics_msg.StatusBitField & ics.SPY_STATUS_XTD_FRAME
+                ),
+                is_fd=is_fd,
+                is_remote_frame=bool(
+                    ics_msg.StatusBitField & ics.SPY_STATUS_REMOTE_FRAME
+                ),
+                error_state_indicator=bool(
+                    ics_msg.StatusBitField3 & ics.SPY_STATUS3_CANFD_ESI
+                ),
+                bitrate_switch=bool(
+                    ics_msg.StatusBitField3 & ics.SPY_STATUS3_CANFD_BRS
+                ),
+                channel=ics_msg.NetworkID
+            )
+        else:
+            return Message(
+                timestamp=self._get_timestamp_for_msg(ics_msg),
+                arbitration_id=ics_msg.ArbIDOrHeader,
+                data=ics_msg.Data[:ics_msg.NumberBytesData],
+                dlc=ics_msg.NumberBytesData,
+                extended_id=bool(
+                    ics_msg.StatusBitField & ics.SPY_STATUS_XTD_FRAME
+                ),
+                is_fd=is_fd,
+                is_remote_frame=bool(
+                    ics_msg.StatusBitField & ics.SPY_STATUS_REMOTE_FRAME
+                ),
+                channel=ics_msg.NetworkID
+            )
 
     def _recv_internal(self, timeout=0.1):
         if not self.rx_buffer:
@@ -234,22 +304,40 @@ class NeoViBus(BusABC):
         return msg, False
 
     def send(self, msg, timeout=None):
-        if not self.dev.IsOpen:
+        if not ics.validate_hobject(self.dev):
             raise CanError("bus not open")
-
-        flags = 0
-        if msg.is_extended_id:
-            flags |= ics.SPY_STATUS_XTD_FRAME
-        if msg.is_remote_frame:
-            flags |= ics.SPY_STATUS_REMOTE_FRAME
-
         message = ics.SpyMessage()
+
+        flag0 = 0
+        if msg.is_extended_id:
+            flag0 |= ics.SPY_STATUS_XTD_FRAME
+        if msg.is_remote_frame:
+            flag0 |= ics.SPY_STATUS_REMOTE_FRAME
+
+        flag3 = 0
+        if msg.is_fd:
+            message.Protocol = ics.SPY_PROTOCOL_CANFD
+            if msg.bitrate_switch:
+                flag3 |= ics.SPY_STATUS3_CANFD_BRS
+            if msg.error_state_indicator:
+                flag3 |= ics.SPY_STATUS3_CANFD_ESI
+
         message.ArbIDOrHeader = msg.arbitration_id
         message.NumberBytesData = len(msg.data)
-        message.Data = tuple(msg.data)
-        message.StatusBitField = flags
+        message.Data = tuple(msg.data[:8])
+        if msg.is_fd and len(msg.data) > 8:
+            message.ExtraDataPtrEnabled = 1
+            message.ExtraDataPtr = tuple(msg.data)
+        message.StatusBitField = flag0
         message.StatusBitField2 = 0
-        message.NetworkID = self.network
+        message.StatusBitField3 = flag3
+        if msg.channel is not None:
+            message.NetworkID = msg.channel
+        elif len(self.channels) == 1:
+            message.NetworkID = self.channels[0]
+        else:
+            raise ValueError(
+                "msg.channel must be set when using multiple channels.")
 
         try:
             ics.transmit_messages(self.dev, message)

@@ -15,7 +15,7 @@ if sys.version_info.major > 2:
 
 from can import detect_available_configs
 
-from .config import IS_LINUX
+from .config import IS_LINUX, IS_CI
 
 
 class TestDetectAvailableConfigs(unittest.TestCase):
@@ -23,7 +23,7 @@ class TestDetectAvailableConfigs(unittest.TestCase):
     def test_count_returned(self):
         # At least virtual has to always return at least one interface
         self.assertGreaterEqual (len(detect_available_configs()                         ), 1)
-        self.assertEquals       (len(detect_available_configs(interfaces=[])            ), 0)
+        self.assertEqual        (len(detect_available_configs(interfaces=[])            ), 0)
         self.assertGreaterEqual (len(detect_available_configs(interfaces='virtual')     ), 1)
         self.assertGreaterEqual (len(detect_available_configs(interfaces=['virtual'])   ), 1)
         self.assertGreaterEqual (len(detect_available_configs(interfaces=None)          ), 1)
@@ -45,7 +45,7 @@ class TestDetectAvailableConfigs(unittest.TestCase):
         for config in configs:
             self.assertEqual(config['interface'], 'socketcan')
 
-    @unittest.skipUnless(IS_LINUX, "socketcan is only available on Linux")
+    @unittest.skipUnless(IS_LINUX and IS_CI, "socketcan is only available on Linux")
     def test_socketcan_on_ci_server(self):
         configs = detect_available_configs(interfaces='socketcan')
         self.assertGreaterEqual(len(configs), 1)

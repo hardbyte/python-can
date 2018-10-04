@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # coding: utf-8
 
 """
@@ -484,7 +483,7 @@ class KvaserBus(BusABC):
         else:
             timeout = int(timeout * 1000)
 
-        log.log(9, 'Reading for %d ms on handle: %s' % (timeout, self._read_handle))
+        #log.log(9, 'Reading for %d ms on handle: %s' % (timeout, self._read_handle))
         status = canReadWait(
             self._read_handle,
             ctypes.byref(arb_id),
@@ -517,8 +516,6 @@ class KvaserBus(BusABC):
                              error_state_indicator=error_state_indicator,
                              channel=self.channel,
                              timestamp=msg_timestamp + self._timestamp_offset)
-            rx_msg.flags = flags
-            rx_msg.raw_timestamp = msg_timestamp
             #log.debug('Got message: %s' % rx_msg)
             return rx_msg, self._is_filtered
         else:
@@ -527,7 +524,7 @@ class KvaserBus(BusABC):
 
     def send(self, msg, timeout=None):
         #log.debug("Writing a message: {}".format(msg))
-        flags = canstat.canMSG_EXT if msg.id_type else canstat.canMSG_STD
+        flags = canstat.canMSG_EXT if msg.is_extended_id else canstat.canMSG_STD
         if msg.is_remote_frame:
             flags |= canstat.canMSG_RTR
         if msg.is_error_frame:

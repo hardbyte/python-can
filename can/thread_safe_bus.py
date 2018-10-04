@@ -1,7 +1,7 @@
-#!/usr/bin/env python
 # coding: utf-8
 
 from __future__ import print_function, absolute_import
+
 from threading import RLock
 
 try:
@@ -16,19 +16,23 @@ except ImportError as exc:
 from .interface import Bus
 
 
-class NullContextManager(object):
-    """
-    A context manager that does nothing at all.
-    """
+try:
+    from contextlib import nullcontext
 
-    def __init__(self, resource=None):
-        self.resource = resource
+except ImportError:
+    class nullcontext(object):
+        """A context manager that does nothing at all.
+        A fallback for Python 3.7's :class:`contextlib.nullcontext` manager.
+        """
 
-    def __enter__(self):
-        return self.resource
+        def __init__(self, enter_result=None):
+            self.enter_result = enter_result
 
-    def __exit__(self, *args):
-        pass
+        def __enter__(self):
+            return self.enter_result
+
+        def __exit__(self, *args):
+            pass
 
 
 class ThreadSafeBus(ObjectProxy):
@@ -48,10 +52,6 @@ class ThreadSafeBus(ObjectProxy):
         instead of :meth:`~can.BusABC.recv` directly.
     """
 
-    # init locks for sending and receiving separately
-    _lock_send = RLock()
-    _lock_recv = RLock()
-
     def __init__(self, *args, **kwargs):
         if import_exc is not None:
             raise import_exc
@@ -60,7 +60,11 @@ class ThreadSafeBus(ObjectProxy):
 
         # now, BusABC.send_periodic() does not need a lock anymore, but the
         # implementation still requires a context manager
-        self.__wrapped__._lock_send_periodic = NullContextManager()
+        self.__wrapped__._lock_send_periodic = nullcontext()
+
+        # init locks for sending and receiving separately
+        self._lock_send = RLock()
+        self._lock_recv = RLock()
 
     def recv(self, timeout=None, *args, **kwargs):
         with self._lock_recv:

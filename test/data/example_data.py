@@ -7,14 +7,27 @@ types and example comments with different challenges.
 """
 
 import random
+from operator import attrgetter
 
 from can import Message
 
 # make tests more reproducible
 random.seed(13339115)
 
+
+def sort_messages(messages):
+    """
+    Sorts the given messages by timestamps (ascending).
+
+    :param Iterable[can.Message] messages: a sequence of messages to sort
+    :rtype: list
+    """
+    return list(sorted(messages, key=attrgetter('timestamp')))
+
+
 # some random number
 TEST_TIME = 1483389946.197
+
 
 # List of messages of different types that can be used in tests
 TEST_MESSAGES_BASE = [
@@ -46,6 +59,22 @@ TEST_MESSAGES_BASE = [
         data=[0xFF, 0xFE, 0xFD],
     ),
     Message(
+        # with channel as integer
+        channel=0,
+    ),
+    Message(
+        # with channel as integer
+        channel=42,
+    ),
+    Message(
+        # with channel as string
+        channel="vcan0",
+    ),
+    Message(
+        # with channel as string
+        channel="awesome_channel",
+    ),
+    Message(
         arbitration_id=0xABCDEF, extended_id=True,
         timestamp=TEST_TIME,
         data=[1, 2, 3, 4, 5, 6, 7, 8]
@@ -70,6 +99,8 @@ TEST_MESSAGES_BASE = [
         timestamp=TEST_TIME + 3.165
     ),
 ]
+TEST_MESSAGES_BASE = sort_messages(TEST_MESSAGES_BASE)
+
 
 TEST_MESSAGES_REMOTE_FRAMES = [
     Message(
@@ -91,6 +122,8 @@ TEST_MESSAGES_REMOTE_FRAMES = [
         timestamp=TEST_TIME + 7858.67
     ),
 ]
+TEST_MESSAGES_REMOTE_FRAMES = sort_messages(TEST_MESSAGES_REMOTE_FRAMES)
+
 
 TEST_MESSAGES_ERROR_FRAMES = [
     Message(
@@ -105,8 +138,12 @@ TEST_MESSAGES_ERROR_FRAMES = [
         timestamp=TEST_TIME + 17.157
     )
 ]
+TEST_MESSAGES_ERROR_FRAMES = sort_messages(TEST_MESSAGES_ERROR_FRAMES)
 
-TEST_ALL_MESSAGES = TEST_MESSAGES_BASE + TEST_MESSAGES_REMOTE_FRAMES + TEST_MESSAGES_ERROR_FRAMES
+
+TEST_ALL_MESSAGES = sort_messages(TEST_MESSAGES_BASE + TEST_MESSAGES_REMOTE_FRAMES + \
+                                  TEST_MESSAGES_ERROR_FRAMES)
+
 
 TEST_COMMENTS = [
     "This is the first comment",
@@ -127,4 +164,4 @@ def generate_message(arbitration_id):
     and a non-extended ID.
     """
     data = bytearray([random.randrange(0, 2 ** 8 - 1) for _ in range(8)])
-    return Message(arbitration_id=arbitration_id, data=data, extended_id=False)
+    return Message(arbitration_id=arbitration_id, data=data, extended_id=False, timestamp=TEST_TIME)

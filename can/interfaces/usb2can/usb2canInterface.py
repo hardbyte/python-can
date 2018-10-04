@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # coding: utf-8
 
 """
@@ -52,7 +51,7 @@ def message_convert_tx(msg):
     if msg.is_remote_frame:
         messagetx.flags |= IS_REMOTE_FRAME
 
-    if msg.id_type:
+    if msg.is_extended_id:
         messagetx.flags |= IS_ID_TYPE
 
     return messagetx
@@ -112,7 +111,7 @@ class Usb2canBus(BusABC):
             deviceID = serial()
 
         # get baudrate in b/s from bitrate or use default
-        bitrate = kwargs.get("bitrate", d=500000)
+        bitrate = kwargs.get("bitrate", 500000)
         # convert to kb/s (eg:500000 bitrate must be 500), max rate is 1000 kb/s
         baudrate = min(1000, int(bitrate/1000))
 

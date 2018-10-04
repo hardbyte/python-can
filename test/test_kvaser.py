@@ -136,7 +136,7 @@ class KvaserTest(unittest.TestCase):
         msg = self.bus.recv()
         self.assertEqual(msg.arbitration_id, 0xc0ffef)
         self.assertEqual(msg.dlc, 8)
-        self.assertEqual(msg.id_type, True)
+        self.assertEqual(msg.is_extended_id, True)
         self.assertSequenceEqual(msg.data, self.msg_in_cue.data)
         self.assertTrue(now - 1 < msg.timestamp < now + 1)
 
@@ -149,7 +149,7 @@ class KvaserTest(unittest.TestCase):
         msg = self.bus.recv()
         self.assertEqual(msg.arbitration_id, 0x123)
         self.assertEqual(msg.dlc, 2)
-        self.assertEqual(msg.id_type, False)
+        self.assertEqual(msg.is_extended_id, False)
         self.assertSequenceEqual(msg.data, [100, 101])
     
     def test_available_configs(self):
@@ -178,7 +178,7 @@ class KvaserTest(unittest.TestCase):
         dlc._obj.value = self.msg_in_cue.dlc
         data._obj.raw = self.msg_in_cue.data
         flags_temp = 0
-        if self.msg_in_cue.id_type:
+        if self.msg_in_cue.is_extended_id:
             flags_temp |= constants.canMSG_EXT
         else:
             flags_temp |= constants.canMSG_STD

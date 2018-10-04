@@ -10,7 +10,7 @@ The full documentation for socketcan can be found in the kernel docs at
     Versions before 2.2 had two different implementations named
     ``socketcan_ctypes`` and ``socketcan_native``. These are now
     deprecated and the aliases to ``socketcan`` will be removed in
-    version 3.0. Future 2.x release may raise a DeprecationWarning.
+    version 4.0.  3.x releases raise a DeprecationWarning.
 
 
 Socketcan Quickstart
@@ -47,6 +47,19 @@ existing ``can0`` interface with a bitrate of 1MB:
 .. code-block:: bash
 
     sudo ip link set can0 up type can bitrate 1000000
+
+.. _socketcan-pcan:
+
+PCAN
+~~~~
+
+Kernels >= 3.4 supports the PCAN adapters natively via :doc:`/interfaces/socketcan`, so there is no need to install any drivers. The CAN interface can be brought like so:
+
+::
+
+    sudo modprobe peak_usb
+    sudo modprobe peak_pci
+    sudo ip link set can0 up type can bitrate 500000
 
 Send Test Message
 ^^^^^^^^^^^^^^^^^
@@ -205,7 +218,7 @@ Bus
 ---
 
 .. autoclass:: can.interfaces.socketcan.SocketcanBus
-   
+
    .. method:: recv(timeout=None)
 
       Block waiting for a message from the Bus.

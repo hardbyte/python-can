@@ -3,29 +3,31 @@ environment:
 
     # For Python versions available on Appveyor, see
     # http://www.appveyor.com/docs/installed-software#python
+    # Python 3.0-3.3 have reached EOL
 
     - PYTHON: "C:\\Python27"
     - PYTHON: "C:\\Python34"
     - PYTHON: "C:\\Python35"
     - PYTHON: "C:\\Python36"
+    - PYTHON: "C:\\Python37"
     - PYTHON: "C:\\Python27-x64"
     - PYTHON: "C:\\Python34-x64"
     - PYTHON: "C:\\Python35-x64"
     - PYTHON: "C:\\Python36-x64"
-
-    # Python 3.3 has reached EOL
+    - PYTHON: "C:\\Python37-x64"
 
 install:
-  # Prepend Python installation to PATH
-  - set PATH=%PYTHON_INSTALL%;%PATH%
+  # Prepend Python installation and scripts (e.g. pytest) to PATH
+  - set PATH=%PYTHON_INSTALL%;%PYTHON_INSTALL%\\Scripts;%PATH%
 
-  # Prepend Python scripts to PATH (e.g. py.test)
-  - set PATH=%PYTHON_INSTALL%\\Scripts;%PATH%
-
-  # We need to install the python-can library itself
-  - "python -m pip install .[test]"
+  # We need to install the python-can library itself including the dependencies
+  - "python -m pip install .[test,neovi]"
 
 build: off
 
 test_script:
-  - "pytest -v --timeout=300"
+  # run tests
+  - "pytest"
+
+  # uplad coverage reports
+  - "codecov"

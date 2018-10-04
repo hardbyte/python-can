@@ -1,17 +1,16 @@
 language: python
 
 python:
-  # CPython:
+  # CPython; versions 3.0-3.3 have reached EOL
   - "2.7"
-  # Python 3.3 has reached EOL and pytest fails there
   - "3.4"
   - "3.5"
   - "3.6"
   - "3.7-dev" # TODO: change to "3.7" once it is supported by travis-ci
   - "nightly"
   # PyPy:
-  - "pypy"
-  - "pypy3.5"
+  - "pypy" # Python 2.7
+  - "pypy3.5" # Python 3.5
 
 os:
   - linux   # Linux is officially supported and we test the library under
@@ -19,38 +18,45 @@ os:
 
 # - osx     # OSX + Python is not officially supported by Travis CI as of Feb. 2018
             # nevertheless, "nightly" and some "*-dev" versions seem to work, so we
-            # include them explicitly below (see "matrix: include: ..." below)
+            # include them explicitly below (see "matrix: include: ..." below).
+            # They only seem to work with the xcode8.3 image, and not the newer ones.
+            # Thus we will leave this in, until it breaks one day, at which point we
+            # will probably reomve testing on OSX if it is not supported then.
+            # See #385 on Github.
 
 # - windows # Windows is not supported at all by Travis CI as of Feb. 2018
 
 # Linux setup
 dist: trusty
-sudo: false
+sudo: required
 
 matrix:
   # see "os: ..." above
   include:
     - os: osx
+      osx_image: xcode8.3
       python: "3.6-dev"
     - os: osx
+      osx_image: xcode8.3
       python: "3.7-dev"
     - os: osx
+      osx_image: xcode8.3
       python: "nightly"
 
   allow_failures:
     # allow all nighly builds to fail, since these python versions might be unstable
     - python: "nightly"
-
     # we do not allow dev builds to fail, since these builds are considered stable enough
 
 install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo bash test/open_vcan.sh ; fi
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "3.6" ]]; then travis_retry pip install -r doc/doc-requirements.txt; fi
   - travis_retry pip install .[test]
-  - travis_retry pip install sphinx
 
 script:
-  - pytest -v --timeout=300
+  - pytest
+  - codecov
   # Build Docs with Sphinx
-  #
   # -a Write all files
+  # -n nitpicky
   - if [[ "$TRAVIS_PYTHON_VERSION" == "3.6" ]]; then python -m sphinx -an doc build; fi
