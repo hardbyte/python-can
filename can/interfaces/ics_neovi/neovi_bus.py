@@ -116,13 +116,15 @@ class NeoViBus(BusABC):
         ics.open_device(self.dev)
 
         if 'bitrate' in config:
-            ics.set_bit_rate(self.dev, config.get('bitrate'), channel)
+            for channel in self.channels:
+                ics.set_bit_rate(self.dev, config.get('bitrate'), channel)
 
         fd = config.get('fd', False)
         if fd:
             if 'data_bitrate' in config:
-                ics.set_fd_bit_rate(
-                    self.dev, config.get('data_bitrate'), channel)
+                for channel in self.channels:
+                    ics.set_fd_bit_rate(
+                        self.dev, config.get('data_bitrate'), channel)
 
         self._use_system_timestamp = bool(
             config.get('use_system_timestamp', False)
