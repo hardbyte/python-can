@@ -75,6 +75,8 @@ class NeoViBus(BusABC):
         :type channel: int or str or list(int) or list(str)
         :param list can_filters:
             See :meth:`can.BusABC.set_filters` for details.
+        :param bool receive_own_messages:
+            If transmitted messages should also be received by this bus.
         :param bool use_system_timestamp:
             Use system timestamp for can messages instead of the hardware time
             stamp
@@ -127,6 +129,7 @@ class NeoViBus(BusABC):
         self._use_system_timestamp = bool(
             config.get('use_system_timestamp', False)
         )
+        self._receive_own_messages = config.get('receive_own_messages', True)
 
         self.channel_info = '%s %s CH:%s' % (
             self.dev.Name,
@@ -221,6 +224,9 @@ class NeoViBus(BusABC):
             return
         for ics_msg in messages:
             if ics_msg.NetworkID not in self.channels:
+                continue
+            is_tx = bool(ics_msg.StatusBitField & ics.SPY_STATUS_TX_MSG)
+            if not self._receive_own_messages and is_tx:
                 continue
             self.rx_buffer.append(ics_msg)
         if errors:
