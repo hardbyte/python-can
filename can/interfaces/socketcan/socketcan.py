@@ -422,7 +422,7 @@ def capture_message(sock, get_channel=False):
     msg = Message(timestamp=timestamp,
                   channel=channel,
                   arbitration_id=arbitration_id,
-                  extended_id=is_extended_frame_format,
+                  is_extended_id=is_extended_frame_format,
                   is_remote_frame=is_remote_transmission_request,
                   is_error_frame=is_error_frame,
                   is_fd=is_fd,

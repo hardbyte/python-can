@@ -64,7 +64,7 @@ class SqliteReader(BaseIOHandler):
         return Message(
             timestamp=timestamp,
             is_remote_frame=bool(is_remote),
-            extended_id=bool(is_extended),
+            is_extended_id=bool(is_extended),
             is_error_frame=bool(is_error),
             arbitration_id=can_id,
             dlc=dlc,

@@ -14,8 +14,8 @@ from can import Bus, Message
 from .data.example_data import TEST_ALL_MESSAGES
 
 
-EXAMPLE_MSG = Message(arbitration_id=0x123, extended_id=True)
-HIGHEST_MSG = Message(arbitration_id=0x1FFFFFFF, extended_id=True)
+EXAMPLE_MSG = Message(arbitration_id=0x123, is_extended_id=True)
+HIGHEST_MSG = Message(arbitration_id=0x1FFFFFFF, is_extended_id=True)
 
 MATCH_EXAMPLE = [{
     "can_id": 0x123,

@@ -352,12 +352,12 @@ class TestBlfFileFormat(ReaderWriterTest):
         expected = [
             can.Message(
                 timestamp=1.0,
-                extended_id=False,
+                is_extended_id=False,
                 arbitration_id=0x64,
                 data=[0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8]),
             can.Message(
                 timestamp=73.0,
-                extended_id=True,
+                is_extended_id=True,
                 arbitration_id=0x1FFFFFFF,
                 is_error_frame=True,)
         ]

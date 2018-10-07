@@ -100,7 +100,7 @@ class KvaserTest(unittest.TestCase):
         msg = can.Message(
             arbitration_id=0xc0ffee,
             data=[0, 25, 0, 1, 3, 1, 4],
-            extended_id=True)
+            is_extended_id=True)
 
         self.bus.send(msg)
 
@@ -113,7 +113,7 @@ class KvaserTest(unittest.TestCase):
         msg = can.Message(
             arbitration_id=0x321,
             data=[50, 51],
-            extended_id=False)
+            is_extended_id=False)
 
         self.bus.send(msg)
 
@@ -130,7 +130,7 @@ class KvaserTest(unittest.TestCase):
         self.msg_in_cue = can.Message(
             arbitration_id=0xc0ffef,
             data=[1, 2, 3, 4, 5, 6, 7, 8],
-            extended_id=True)
+            is_extended_id=True)
 
         now = time.time()
         msg = self.bus.recv()
@@ -144,7 +144,7 @@ class KvaserTest(unittest.TestCase):
         self.msg_in_cue = can.Message(
             arbitration_id=0x123,
             data=[100, 101],
-            extended_id=False)
+            is_extended_id=False)
 
         msg = self.bus.recv()
         self.assertEqual(msg.arbitration_id, 0x123)

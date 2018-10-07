@@ -265,7 +265,7 @@ class VectorBus(BusABC):
                         msg = Message(
                             timestamp=timestamp + self._time_offset,
                             arbitration_id=msg_id & 0x1FFFFFFF,
-                            extended_id=bool(msg_id & vxlapi.XL_CAN_EXT_MSG_ID),
+                            is_extended_id=bool(msg_id & vxlapi.XL_CAN_EXT_MSG_ID),
                             is_remote_frame=bool(flags & vxlapi.XL_CAN_RXMSG_FLAG_RTR),
                             is_error_frame=bool(flags & vxlapi.XL_CAN_RXMSG_FLAG_EF),
                             is_fd=bool(flags & vxlapi.XL_CAN_RXMSG_FLAG_EDL),
@@ -292,7 +292,7 @@ class VectorBus(BusABC):
                         msg = Message(
                             timestamp=timestamp + self._time_offset,
                             arbitration_id=msg_id & 0x1FFFFFFF,
-                            extended_id=bool(msg_id & vxlapi.XL_CAN_EXT_MSG_ID),
+                            is_extended_id=bool(msg_id & vxlapi.XL_CAN_EXT_MSG_ID),
                             is_remote_frame=bool(flags & vxlapi.XL_CAN_MSG_FLAG_REMOTE_FRAME),
                             is_error_frame=bool(flags & vxlapi.XL_CAN_MSG_FLAG_ERROR_FRAME),
                             is_fd=False,
