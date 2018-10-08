@@ -119,7 +119,7 @@ class SerialBus(BusABC):
             Received message and False (because not filtering as taken place).
 
             .. warning::
-                Flags like extended_id, is_remote_frame and is_error_frame
+                Flags like is_extended_id, is_remote_frame and is_error_frame
                 will not be set over this function, the flags in the return
                 message are the default values.
 

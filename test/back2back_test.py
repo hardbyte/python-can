@@ -93,26 +93,26 @@ class Back2BackTestCase(unittest.TestCase):
                         'But measured {}'.format(delta_time))
 
     def test_standard_message(self):
-        msg = can.Message(extended_id=False,
+        msg = can.Message(is_extended_id=False,
                           arbitration_id=0x100,
                           data=[1, 2, 3, 4, 5, 6, 7, 8])
         self._send_and_receive(msg)
 
     def test_extended_message(self):
-        msg = can.Message(extended_id=True,
+        msg = can.Message(is_extended_id=True,
                           arbitration_id=0x123456,
                           data=[10, 11, 12, 13, 14, 15, 16, 17])
         self._send_and_receive(msg)
 
     def test_remote_message(self):
-        msg = can.Message(extended_id=False,
+        msg = can.Message(is_extended_id=False,
                           arbitration_id=0x200,
                           is_remote_frame=True,
                           dlc=4)
         self._send_and_receive(msg)
 
     def test_dlc_less_than_eight(self):
-        msg = can.Message(extended_id=False,
+        msg = can.Message(is_extended_id=False,
                           arbitration_id=0x300,
                           data=[4, 5, 6])
         self._send_and_receive(msg)
@@ -120,7 +120,7 @@ class Back2BackTestCase(unittest.TestCase):
     @unittest.skipUnless(TEST_CAN_FD, "Don't test CAN-FD")
     def test_fd_message(self):
         msg = can.Message(is_fd=True,
-                          extended_id=True,
+                          is_extended_id=True,
                           arbitration_id=0x56789,
                           data=[0xff] * 64)
         self._send_and_receive(msg)
@@ -129,7 +129,7 @@ class Back2BackTestCase(unittest.TestCase):
     def test_fd_message_with_brs(self):
         msg = can.Message(is_fd=True,
                           bitrate_switch=True,
-                          extended_id=True,
+                          is_extended_id=True,
                           arbitration_id=0x98765,
                           data=[0xff] * 48)
         self._send_and_receive(msg)
@@ -190,7 +190,7 @@ class TestThreadSafeBus(Back2BackTestCase):
 
         message = can.Message(
             arbitration_id=0x123,
-            extended_id=True,
+            is_extended_id=True,
             timestamp=121334.365,
             data=[254, 255, 1, 2]
         )

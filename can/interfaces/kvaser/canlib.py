@@ -508,7 +508,7 @@ class KvaserBus(BusABC):
             rx_msg = Message(arbitration_id=arb_id.value,
                              data=data_array[:dlc.value],
                              dlc=dlc.value,
-                             extended_id=is_extended,
+                             is_extended_id=is_extended,
                              is_error_frame=is_error_frame,
                              is_remote_frame=is_remote_frame,
                              is_fd=is_fd,

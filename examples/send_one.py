@@ -24,7 +24,7 @@ def send_one():
 
     msg = can.Message(arbitration_id=0xc0ffee,
                       data=[0, 25, 0, 1, 3, 1, 4, 1],
-                      extended_id=True)
+                      is_extended_id=True)
 
     try:
         bus.send(msg)

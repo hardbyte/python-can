@@ -99,7 +99,7 @@ class CSVReader(BaseIOHandler):
             yield Message(
                 timestamp=float(timestamp),
                 is_remote_frame=(remote == '1'),
-                extended_id=(extended == '1'),
+                is_extended_id=(extended == '1'),
                 is_error_frame=(error == '1'),
                 arbitration_id=int(arbitration_id, base=16),
                 dlc=int(dlc),

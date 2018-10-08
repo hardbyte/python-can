@@ -24,7 +24,7 @@ class SimpleCyclicSendTaskTest(unittest.TestCase, ComparingMessagesTestCase):
 
     @unittest.skipIf(IS_CI, "the timing sensitive behaviour cannot be reproduced reliably on a CI server")
     def test_cycle_time(self):
-        msg = can.Message(extended_id=False, arbitration_id=0x123, data=[0,1,2,3,4,5,6,7])
+        msg = can.Message(is_extended_id=False, arbitration_id=0x123, data=[0,1,2,3,4,5,6,7])
         bus1 = can.interface.Bus(bustype='virtual')
         bus2 = can.interface.Bus(bustype='virtual')
         task = bus1.send_periodic(msg, 0.01, 1)
@@ -46,7 +46,7 @@ class SimpleCyclicSendTaskTest(unittest.TestCase, ComparingMessagesTestCase):
         bus = can.interface.Bus(bustype='virtual')
         tasks = []
         for task_i in range(10):
-            msg = can.Message(extended_id=False, arbitration_id=0x123, data=[0, 1, 2, 3, 4, 5, 6, 7])
+            msg = can.Message(is_extended_id=False, arbitration_id=0x123, data=[0, 1, 2, 3, 4, 5, 6, 7])
             msg.arbitration_id = task_i
             task = bus.send_periodic(msg, 0.1, 1)
             tasks.append(task)
@@ -65,7 +65,7 @@ class SimpleCyclicSendTaskTest(unittest.TestCase, ComparingMessagesTestCase):
         bus = can.interface.Bus(bustype='virtual', receive_own_messages=True)
         tasks = []
         for task_i in range(3):
-            msg = can.Message(extended_id=False, arbitration_id=0x123, data=[0, 1, 2, 3, 4, 5, 6, 7])
+            msg = can.Message(is_extended_id=False, arbitration_id=0x123, data=[0, 1, 2, 3, 4, 5, 6, 7])
             msg.arbitration_id = task_i
             task = bus.send_periodic(msg, 0.1, 10, store_task=False)
             tasks.append(task)
@@ -91,7 +91,7 @@ class SimpleCyclicSendTaskTest(unittest.TestCase, ComparingMessagesTestCase):
         bus = can.interface.Bus(bustype='virtual')
         tasks = []
         for task_i in range(10):
-            msg = can.Message(extended_id=False, arbitration_id=0x123, data=[0, 1, 2, 3, 4, 5, 6, 7])
+            msg = can.Message(is_extended_id=False, arbitration_id=0x123, data=[0, 1, 2, 3, 4, 5, 6, 7])
             msg.arbitration_id = task_i
             task = bus.send_periodic(msg, 0.1, 1)
             tasks.append(task)

@@ -268,7 +268,7 @@ class NeoViBus(BusABC):
                 arbitration_id=ics_msg.ArbIDOrHeader,
                 data=data,
                 dlc=ics_msg.NumberBytesData,
-                extended_id=bool(
+                is_extended_id=bool(
                     ics_msg.StatusBitField & ics.SPY_STATUS_XTD_FRAME
                 ),
                 is_fd=is_fd,
@@ -289,7 +289,7 @@ class NeoViBus(BusABC):
                 arbitration_id=ics_msg.ArbIDOrHeader,
                 data=ics_msg.Data[:ics_msg.NumberBytesData],
                 dlc=ics_msg.NumberBytesData,
-                extended_id=bool(
+                is_extended_id=bool(
                     ics_msg.StatusBitField & ics.SPY_STATUS_XTD_FRAME
                 ),
                 is_fd=is_fd,
