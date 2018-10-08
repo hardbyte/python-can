@@ -50,7 +50,7 @@ matrix:
 
 install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo bash test/open_vcan.sh ; fi
-  - travis_retry pip install sphinx
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "3.6" ]]; then travis_retry pip install -r doc/doc-requirements.txt; fi
   - travis_retry pip install .[test]
 
 script:

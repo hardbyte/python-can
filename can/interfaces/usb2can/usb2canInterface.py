@@ -51,7 +51,7 @@ def message_convert_tx(msg):
     if msg.is_remote_frame:
         messagetx.flags |= IS_REMOTE_FRAME
 
-    if msg.id_type:
+    if msg.is_extended_id:
         messagetx.flags |= IS_ID_TYPE
 
     return messagetx

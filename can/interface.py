@@ -21,7 +21,7 @@ from .interfaces import BACKENDS
 
 if 'linux' in sys.platform:
     # Deprecated and undocumented access to SocketCAN cyclic tasks
-    # Will be removed in version 3.0
+    # Will be removed in version 4.0
     from can.interfaces.socketcan import CyclicSendTask, MultiRateCyclicSendTask
 
 # Required by "detect_available_configs" for argument interpretation
@@ -125,7 +125,7 @@ class Bus(BusABC):
             # Use the default channel for the backend
             return cls(*args, **config)
         else:
-            return cls(channel, *args, **config)    
+            return cls(channel, *args, **config)
 
 
 def detect_available_configs(interfaces=None):

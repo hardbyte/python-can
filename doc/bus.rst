@@ -68,7 +68,7 @@ Conflicting calls are executed by blocking until the bus is accessible.
 
 It can be used exactly like the normal :class:`~can.BusABC`:
 
-    # 'socketcan' is only an exemple interface, it works with all the others too
+    # 'socketcan' is only an example interface, it works with all the others too
     my_bus = can.ThreadSafeBus(interface='socketcan', channel='vcan0')
     my_bus.send(...)
     my_bus.recv(...)

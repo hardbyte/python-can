@@ -13,9 +13,14 @@ import unittest
 import can
 
 from .config import *
+from .message_helper import ComparingMessagesTestCase
 
 
-class SimpleCyclicSendTaskTest(unittest.TestCase):
+class SimpleCyclicSendTaskTest(unittest.TestCase, ComparingMessagesTestCase):
+
+    def __init__(self, *args, **kwargs):
+        unittest.TestCase.__init__(self, *args, **kwargs)
+        ComparingMessagesTestCase.__init__(self, allowed_timestamp_delta=None, preserves_channel=True)
 
     @unittest.skipIf(IS_CI, "the timing sensitive behaviour cannot be reproduced reliably on a CI server")
     def test_cycle_time(self):
@@ -31,7 +36,7 @@ class SimpleCyclicSendTaskTest(unittest.TestCase):
         self.assertTrue(80 <= size <= 120,
                         '100 +/- 20 messages should have been transmitted. But queue contained {}'.format(size))
         last_msg = bus2.recv()
-        self.assertEqual(last_msg, msg)
+        self.assertMessageEqual(last_msg, msg)
 
         bus1.shutdown()
         bus2.shutdown()

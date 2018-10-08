@@ -15,7 +15,7 @@ if sys.version_info.major > 2:
 
 from can import detect_available_configs
 
-from .config import IS_LINUX
+from .config import IS_LINUX, IS_CI
 
 
 class TestDetectAvailableConfigs(unittest.TestCase):
@@ -45,7 +45,7 @@ class TestDetectAvailableConfigs(unittest.TestCase):
         for config in configs:
             self.assertEqual(config['interface'], 'socketcan')
 
-    @unittest.skipUnless(IS_LINUX, "socketcan is only available on Linux")
+    @unittest.skipUnless(IS_LINUX and IS_CI, "socketcan is only available on Linux")
     def test_socketcan_on_ci_server(self):
         configs = detect_available_configs(interfaces='socketcan')
         self.assertGreaterEqual(len(configs), 1)

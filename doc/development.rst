@@ -32,16 +32,16 @@ Creating a new interface/backend
 
 These steps are a guideline on how to add a new backend to python-can.
 
-- Create a module (either a ``*.py`` or an entire subdirctory depending
+- Create a module (either a ``*.py`` or an entire subdirectory depending
   on the complexity) inside ``can.interfaces``
 - Implement the central part of the backend: the bus class that extends
   :class:`can.BusABC`. See below for more info on this one!
 - Register your backend bus class in ``can.interface.BACKENDS`` and
-  ``can.interfaces.VALID_INTERFACES``.
-- Add docs where appropiate, like in ``doc/interfaces.rst`` and add
-  an entry in ``doc/interface/*``.
-  Update ``doc/scripts.rst`` accordingly.
-- Add tests in ``test/*`` where appropiate.
+  ``can.interfaces.VALID_INTERFACES`` in ``can.interfaces.__init__.py``.
+- Add docs where appropriate. At a minimum add to ``doc/interfaces.rst`` and add
+  a new interface specific document in ``doc/interface/*``.
+- Update ``doc/scripts.rst`` accordingly.
+- Add tests in ``test/*`` where appropriate.
 
 
 About the ``BusABC`` class
@@ -59,15 +59,15 @@ They *might* implement the following:
       messages yet to be sent
     * :meth:`~can.BusABC.shutdown` to override how the bus should
       shut down
-    * :meth:`~can.BusABC.send_periodic` to override the software based
-      periodic sending and push it down to the kernel or hardware
+    * :meth:`~can.BusABC._send_periodic_internal` to override the software based
+      periodic sending and push it down to the kernel or hardware.
     * :meth:`~can.BusABC._apply_filters` to apply efficient filters
-      to lower level systems like the OS kernel or hardware
+      to lower level systems like the OS kernel or hardware.
     * :meth:`~can.BusABC._detect_available_configs` to allow the interface
       to report which configurations are currently available for new
-      connections
+      connections.
     * :meth:`~can.BusABC.state` property to allow reading and/or changing
-      the bus state
+      the bus state.
 
 .. note::
 
@@ -86,6 +86,8 @@ This is the entire ABC bus class with all internal methods:
 .. autoclass:: can.BusABC
     :private-members:
     :special-members:
+    :noindex:
+
 
 Concrete instances are created by :class:`can.Bus`.
 
@@ -118,14 +120,15 @@ Creating a new Release
 
 - Release from the ``master`` branch.
 - Update the library version in ``__init__.py`` using `semantic versioning <http://semver.org>`__.
+- Check if any deprecations are pending.
 - Run all tests and examples against available hardware.
 - Update `CONTRIBUTORS.txt` with any new contributors.
 - For larger changes update ``doc/history.rst``.
 - Sanity check that documentation has stayed inline with code.
-- Create a temporary virtual environment. Run ``python setup.py install`` and ``python setup.py test``
-- Create and upload the distribution: ``python setup.py sdist bdist_wheel``
-- Sign the packages with gpg ``gpg --detach-sign -a dist/python_can-X.Y.Z-py3-none-any.whl``
-- Upload with twine ``twine upload dist/python-can-X.Y.Z*``
-- In a new virtual env check that the package can be installed with pip: ``pip install python-can==X.Y.Z``
+- Create a temporary virtual environment. Run ``python setup.py install`` and ``python setup.py test``.
+- Create and upload the distribution: ``python setup.py sdist bdist_wheel``.
+- Sign the packages with gpg ``gpg --detach-sign -a dist/python_can-X.Y.Z-py3-none-any.whl``.
+- Upload with twine ``twine upload dist/python-can-X.Y.Z*``.
+- In a new virtual env check that the package can be installed with pip: ``pip install python-can==X.Y.Z``.
 - Create a new tag in the repository.
 - Check the release on PyPi, Read the Docs and GitHub.

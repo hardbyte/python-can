@@ -11,7 +11,7 @@ import abc
 import logging
 import threading
 import time
-
+import warnings
 
 log = logging.getLogger('can.bcm')
 
@@ -24,6 +24,9 @@ class CyclicTask(object):
     @abc.abstractmethod
     def stop(self):
         """Cancel this periodic task.
+
+        :raises can.CanError:
+            If stop is called on an already stopped task.
         """
 
 
@@ -150,6 +153,6 @@ def send_periodic(bus, message, period, *args, **kwargs):
     :param float period: The minimum time between sending messages.
     :return: A started task instance
     """
-    log.warning("The function `can.send_periodic` is deprecated and will " +
-                "be removed in version 2.3. Please use `can.Bus.send_periodic` instead.")
+    warnings.warn("The function `can.send_periodic` is deprecated and will " +
+                  "be removed in an upcoming version. Please use `can.Bus.send_periodic` instead.", DeprecationWarning)
     return bus.send_periodic(message, period, *args, **kwargs)
