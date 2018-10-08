@@ -384,11 +384,11 @@ def parse_args(args):
                           metavar='{<id>:<format>,<id>:<format>:<scaling1>:...:<scalingN>,file.txt}',
                           nargs=argparse.ONE_OR_MORE, default='')
 
-    optional.add_argument('-f', '--filter', help='R|Comma separated CAN filters for the given CAN interface:'
+    optional.add_argument('-f', '--filter', help='R|Space separated CAN filters for the given CAN interface:'
                           '\n      <can_id>:<can_mask> (matches when <received_can_id> & mask == can_id & mask)'
                           '\n      <can_id>~<can_mask> (matches when <received_can_id> & mask != can_id & mask)'
-                          '\nFx to show only frames with ID 0x100 to 0x103:'
-                          '\n      python -m can.viewer -f 100:7FC'
+                          '\nFx to show only frames with ID 0x100 to 0x103 and 0x200 to 0x20F:'
+                          '\n      python -m can.viewer -f 100:7FC 200:7F0'
                           '\nNote that the ID and mask are alway interpreted as hex values',
                           metavar='{<can_id>:<can_mask>,<can_id>~<can_mask>}', nargs=argparse.ONE_OR_MORE, default='')
 
