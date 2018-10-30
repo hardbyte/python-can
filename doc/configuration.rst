@@ -57,7 +57,7 @@ The configuration file sets the default interface and channel:
     bitrate = <the bitrate in bits/s to use by default>
 
 
-The configuration can also contain additional sections:
+The configuration can also contain additional sections (or context):
 
 ::
 
@@ -81,8 +81,8 @@ The configuration can also contain additional sections:
 
     from can.interfaces.interface import Bus
 
-    hs_bus = Bus(config_section='HS')
-    ms_bus = Bus(config_section='MS')
+    hs_bus = Bus(context='HS')
+    ms_bus = Bus(context='MS')
 
 Environment Variables
 ---------------------

@@ -40,11 +40,11 @@ TEST_MESSAGES_BASE = [
     ),
     Message(
         # no data
-        arbitration_id=0xAB, extended_id=False
+        arbitration_id=0xAB, is_extended_id=False
     ),
     Message(
         # no data
-        arbitration_id=0x42, extended_id=True
+        arbitration_id=0x42, is_extended_id=True
     ),
     Message(
         # no data
@@ -75,27 +75,27 @@ TEST_MESSAGES_BASE = [
         channel="awesome_channel",
     ),
     Message(
-        arbitration_id=0xABCDEF, extended_id=True,
+        arbitration_id=0xABCDEF, is_extended_id=True,
         timestamp=TEST_TIME,
         data=[1, 2, 3, 4, 5, 6, 7, 8]
     ),
     Message(
-        arbitration_id=0x123, extended_id=False,
+        arbitration_id=0x123, is_extended_id=False,
         timestamp=TEST_TIME + 42.42,
         data=[0xff, 0xff]
     ),
     Message(
-        arbitration_id=0xDADADA, extended_id=True,
+        arbitration_id=0xDADADA, is_extended_id=True,
         timestamp=TEST_TIME + .165,
         data=[1, 2, 3, 4, 5, 6, 7, 8]
     ),
     Message(
-        arbitration_id=0x123, extended_id=False,
+        arbitration_id=0x123, is_extended_id=False,
         timestamp=TEST_TIME + .365,
         data=[254, 255]
     ),
     Message(
-        arbitration_id=0x768, extended_id=False,
+        arbitration_id=0x768, is_extended_id=False,
         timestamp=TEST_TIME + 3.165
     ),
 ]
@@ -104,21 +104,21 @@ TEST_MESSAGES_BASE = sort_messages(TEST_MESSAGES_BASE)
 
 TEST_MESSAGES_REMOTE_FRAMES = [
     Message(
-        arbitration_id=0xDADADA, extended_id=True, is_remote_frame=True,
+        arbitration_id=0xDADADA, is_extended_id=True, is_remote_frame=True,
         timestamp=TEST_TIME + .165,
         data=[1, 2, 3, 4, 5, 6, 7, 8]
     ),
     Message(
-        arbitration_id=0x123, extended_id=False, is_remote_frame=True,
+        arbitration_id=0x123, is_extended_id=False, is_remote_frame=True,
         timestamp=TEST_TIME + .365,
         data=[254, 255]
     ),
     Message(
-        arbitration_id=0x768, extended_id=False, is_remote_frame=True,
+        arbitration_id=0x768, is_extended_id=False, is_remote_frame=True,
         timestamp=TEST_TIME + 3.165
     ),
     Message(
-        arbitration_id=0xABCDEF, extended_id=True, is_remote_frame=True,
+        arbitration_id=0xABCDEF, is_extended_id=True, is_remote_frame=True,
         timestamp=TEST_TIME + 7858.67
     ),
 ]
@@ -164,4 +164,4 @@ def generate_message(arbitration_id):
     and a non-extended ID.
     """
     data = bytearray([random.randrange(0, 2 ** 8 - 1) for _ in range(8)])
-    return Message(arbitration_id=arbitration_id, data=data, extended_id=False, timestamp=TEST_TIME)
+    return Message(arbitration_id=arbitration_id, data=data, is_extended_id=False, timestamp=TEST_TIME)

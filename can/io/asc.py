@@ -85,7 +85,7 @@ class ASCReader(BaseIOHandler):
                 can_id_num, is_extended_id = self._extract_can_id(can_id_str)
                 msg = Message(timestamp=timestamp,
                               arbitration_id=can_id_num & CAN_ID_MASK,
-                              extended_id=is_extended_id,
+                              is_extended_id=is_extended_id,
                               is_remote_frame=True,
                               channel=channel)
                 yield msg
@@ -111,7 +111,7 @@ class ASCReader(BaseIOHandler):
                 yield Message(
                     timestamp=timestamp,
                     arbitration_id=can_id_num & CAN_ID_MASK,
-                    extended_id=is_extended_id,
+                    is_extended_id=is_extended_id,
                     is_remote_frame=False,
                     dlc=dlc,
                     data=frame,

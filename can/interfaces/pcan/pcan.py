@@ -218,7 +218,7 @@ class PcanBus(BusABC):
 
         rx_msg = Message(timestamp=timestamp,
                          arbitration_id=theMsg.ID,
-                         extended_id=bIsExt,
+                         is_extended_id=bIsExt,
                          is_remote_frame=bIsRTR,
                          dlc=dlc,
                          data=theMsg.DATA[:dlc])
