@@ -132,7 +132,7 @@ class ASCWriter(BaseIOHandler, Listener):
 
     FORMAT_MESSAGE = "{channel}  {id:<15} Rx   {dtype} {data}"
     FORMAT_DATE = "%a %b %m %I:%M:%S %p %Y"
-    FORMAT_EVENT = "{timestamp: 9.4f} {message}\n"
+    FORMAT_EVENT = "{timestamp: 9.6f} {message}\n"
 
     def __init__(self, file, channel=1):
         """
@@ -181,8 +181,8 @@ class ASCWriter(BaseIOHandler, Listener):
             self.header_written = True
             self.log_event("Start of measurement") # caution: this is a recursive call!
 
-        # figure out the correct timestamp
-        if timestamp is None or timestamp < self.last_timestamp:
+        # Use last known timestamp if unknown
+        if timestamp is None:
             timestamp = self.last_timestamp
 
         # turn into relative timestamps if necessary
