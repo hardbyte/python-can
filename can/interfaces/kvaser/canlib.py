@@ -396,7 +396,7 @@ class KvaserBus(BusABC):
             elif not data_bitrate:
                 # Use same bitrate for arbitration and data phase
                 data_bitrate = bitrate
-            canSetBusParamsFd(self._read_handle, bitrate, tseg1, tseg2, sjw)
+            canSetBusParamsFd(self._read_handle, data_bitrate, tseg1, tseg2, sjw)
         else:
             if 'tseg1' not in config and bitrate in BITRATE_OBJS:
                 bitrate = BITRATE_OBJS[bitrate]
