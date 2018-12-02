@@ -38,6 +38,8 @@ class KvaserTest(unittest.TestCase):
         canlib.canWriteSync = Mock()
         canlib.canWrite = self.canWrite
         canlib.canReadWait = self.canReadWait
+        canlib.canGetBusStatistics = Mock()
+        canlib.canRequestBusStatistics = Mock()
 
         self.msg = {}
         self.msg_in_cue = None
@@ -190,6 +192,12 @@ class KvaserTest(unittest.TestCase):
             0, constants.canFD_BITRATE_500K_80P, 0, 0, 0, 0, 0)
         canlib.canSetBusParamsFd.assert_called_once_with(
             0, data_bitrate, 0, 0, 0)
+
+    def test_bus_getstats(self):
+        stats = self.bus.getstats()
+        self.assertTrue(canlib.canRequestBusStatistics.called)
+        self.assertTrue(canlib.canGetBusStatistics.called)
+        self.assertIsInstance(stats, canlib.structures.BusStatistics)
 
     @staticmethod
     def canGetNumberOfChannels(count):

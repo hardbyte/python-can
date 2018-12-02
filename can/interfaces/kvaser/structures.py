@@ -23,12 +23,12 @@ class BusStatistics(ctypes.Structure):
 
     def __str__(self):
         return ("stdData: {}, stdRemote: {}, extData: {}, extRemote: {}, "
-                "errFrame: {}, busLoad: {}, overruns: {}").format(
+                "errFrame: {}, busLoad: {:.1f}%, overruns: {}").format(
             self.stdData,
             self.stdRemote,
             self.extData,
             self.extRemote,
             self.errFrame,
-            self.busLoad / 100,
+            self.busLoad / 100.0,
             self.overruns,
         )
