@@ -193,8 +193,8 @@ class KvaserTest(unittest.TestCase):
         canlib.canSetBusParamsFd.assert_called_once_with(
             0, data_bitrate, 0, 0, 0)
 
-    def test_bus_getstats(self):
-        stats = self.bus.getstats()
+    def test_bus_get_stats(self):
+        stats = self.bus.get_stats()
         self.assertTrue(canlib.canRequestBusStatistics.called)
         self.assertTrue(canlib.canGetBusStatistics.called)
         self.assertIsInstance(stats, canlib.structures.BusStatistics)

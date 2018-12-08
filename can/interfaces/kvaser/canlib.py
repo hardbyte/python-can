@@ -585,8 +585,18 @@ class KvaserBus(BusABC):
         canBusOff(self._write_handle)
         canClose(self._write_handle)
 
-    def getstats(self):
-        """Returns the bus statistics."""
+    def get_stats(self):
+        """Retrieves the bus statistics.
+
+        Use like so:
+
+        >>> stats = bus.get_stats()
+        >>> print(stats)
+        std_data: 0, std_remote: 0, ext_data: 0, ext_remote: 0, err_frame: 0, bus_load: 0.0%, overruns: 0
+
+        :returns: bus statistics.
+        :rtype: can.interfaces.kvaser.structures.BusStatistics
+         """
         canRequestBusStatistics(self._write_handle)
         stats = structures.BusStatistics()
         canGetBusStatistics(self._write_handle,
