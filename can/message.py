@@ -11,7 +11,7 @@ This module contains the implementation of :class:`can.Message`.
 from __future__ import absolute_import, division
         
 import warnings
-
+from copy import deepcopy
 
 class Message(object):
     """
