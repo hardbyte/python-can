@@ -45,7 +45,7 @@ except OSError as e:
 
 
 class CANalystIIBus(BusABC):
-    def __init__(self, channel, can_filters=None):
+    def __init__(self, channel, device=0, baud=10000000, Timing0=0x00, Timing1=0x14, can_filters=None):
         super(CANalystIIBus, self).__init__(channel, can_filters)
 
         if isinstance(channel, (list, tuple)):
@@ -56,18 +56,51 @@ class CANalystIIBus(BusABC):
             # Assume comma separated string of channels
             self.channels = [int(ch.strip()) for ch in channel.split(',')]
 
-        self.init_config = VCI_INIT_CONFIG(0, 0xFFFFFFFF, 0, 1, 0x00, 0x1C, 0)
+        self.device = device
 
-        if CANalystII.VCI_OpenDevice(VCI_USBCAN2, 0, 0) == STATUS_ERR:
+        if baud == 1000000:
+            Timing0, Timing1 = (0x00, 0x14)
+        elif baud == 800000:
+            Timing0, Timing1 = (0x00, 0x16)
+        elif baud == 666000:
+            Timing0, Timing1 = (0x80, 0xB6)
+        elif baud == 500000:
+            Timing0, Timing1 = (0x00, 0x1C)
+        elif baud == 400000:
+            Timing0, Timing1 = (0x80, 0xFA)
+        elif baud == 250000:
+            Timing0, Timing1 = (0x01, 0x1C)
+        elif baud == 200000:
+            Timing0, Timing1 = (0x81, 0xFA)
+        elif baud == 125000:
+            Timing0, Timing1 = (0x03, 0x1C)
+        elif baud == 100000:
+            Timing0, Timing1 = (0x04, 0x1C)
+        elif baud == 80000:
+            Timing0, Timing1 = (0x83, 0xFF)
+        elif baud == 50000:
+            Timing0, Timing1 = (0x09, 0x1C)
+        elif baud == 40000:
+            Timing0, Timing1 = (0x87, 0xFF)
+        elif baud == 20000:
+            Timing0, Timing1 = (0x18, 0x1C)
+        elif baud == 10000:
+            Timing0, Timing1 = (0x31, 0x1C)
+        elif baud == 5000:
+            Timing0, Timing1 = (0xBF, 0xFF)
+
+        self.init_config = VCI_INIT_CONFIG(0, 0xFFFFFFFF, 0, 1, Timing0, Timing1, 0)
+
+        if CANalystII.VCI_OpenDevice(VCI_USBCAN2, self.device, 0) == STATUS_ERR:
             logger.error("VCI_OpenDevice Error")
 
         for channel in self.channels:
-            if CANalystII.VCI_InitCAN(VCI_USBCAN2, 0, channel, byref(self.init_config)) == STATUS_ERR:
+            if CANalystII.VCI_InitCAN(VCI_USBCAN2, self.device, channel, byref(self.init_config)) == STATUS_ERR:
                 logger.error("VCI_InitCAN Error")
                 self.shutdown()
                 return
 
-            if CANalystII.VCI_StartCAN(VCI_USBCAN2, 0, channel) == STATUS_ERR:
+            if CANalystII.VCI_StartCAN(VCI_USBCAN2, self.device, channel) == STATUS_ERR:
                 logger.error("VCI_StartCAN Error")
                 self.shutdown()
                 return
@@ -79,7 +112,7 @@ class CANalystIIBus(BusABC):
         :param timeout: timeout is not used here
         :return:
         """
-        raw_message = VCI_CAN_OBJ(msg.arbitration_id, 0, 0, 0, 0, 0, msg.dlc, (c_ubyte * 8)(*msg.data), (c_byte * 3)(*[0, 0, 0]))
+        raw_message = VCI_CAN_OBJ(msg.arbitration_id, 0, 0, 0, msg.is_remote_frame, 0, msg.dlc, (c_ubyte * 8)(*msg.data), (c_byte * 3)(*[0, 0, 0]))
 
         if msg.channel is not None:
             channel = msg.channel
@@ -89,7 +122,7 @@ class CANalystIIBus(BusABC):
             raise ValueError(
                 "msg.channel must be set when using multiple channels.")
 
-        CANalystII.VCI_Transmit(VCI_USBCAN2, 0, channel, byref(raw_message), 1)
+        CANalystII.VCI_Transmit(VCI_USBCAN2, self.device, channel, byref(raw_message), 1)
 
     def _recv_internal(self, timeout=None):
         """
@@ -101,10 +134,20 @@ class CANalystIIBus(BusABC):
 
         timeout = -1 if timeout is None else int(timeout * 1000)
 
-        if CANalystII.VCI_Receive(VCI_USBCAN2, 0, self.channels[0], byref(raw_message), 1, timeout) <= STATUS_ERR:
+        if CANalystII.VCI_Receive(VCI_USBCAN2, self.device, self.channels[0], byref(raw_message), 1, timeout) <= STATUS_ERR:
             return None, False
         else:
-            return Message(arbitration_id=raw_message.ID, channel=0, data=raw_message.Data), False
+            return (
+                Message(
+                    timestamp=raw_message.TimeStamp if raw_message.TimeFlag else 0.0,
+                    arbitration_id=raw_message.ID,
+                    is_remote_frame=raw_message.RemoteFlag,
+                    channel=0,
+                    dlc=raw_message.DataLen,
+                    data=raw_message.Data,
+                ),
+                False,
+            )
 
     def shutdown(self):
-        CANalystII.VCI_CloseDevice(VCI_USBCAN2, 0)
+        CANalystII.VCI_CloseDevice(VCI_USBCAN2, self.device)
