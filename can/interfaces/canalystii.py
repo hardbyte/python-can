@@ -46,6 +46,15 @@ except OSError as e:
 
 class CANalystIIBus(BusABC):
     def __init__(self, channel, device=0, baud=10000000, Timing0=0x00, Timing1=0x14, can_filters=None):
+        """
+
+        :param channel: channel number
+        :param device: device number
+        :param baud: baud rate
+        :param Timing0: customize the timing register if baudrate is not specified
+        :param Timing1:
+        :param can_filters: filters for packet
+        """
         super(CANalystIIBus, self).__init__(channel, can_filters)
 
         if isinstance(channel, (list, tuple)):
@@ -57,6 +66,8 @@ class CANalystIIBus(BusABC):
             self.channels = [int(ch.strip()) for ch in channel.split(',')]
 
         self.device = device
+
+        self.channel_info = "CANalyst-II: device {}, channels {}".format(self.device, self.channels)
 
         if baud == 1000000:
             Timing0, Timing1 = (0x00, 0x14)
@@ -148,6 +159,10 @@ class CANalystIIBus(BusABC):
                 ),
                 False,
             )
+
+    def flush_tx_buffer(self):
+        for channel in self.channels:
+            CANalystII.VCI_ClearBUffer(VCI_USBCAN2, self.device, channel)
 
     def shutdown(self):
         CANalystII.VCI_CloseDevice(VCI_USBCAN2, self.device)
