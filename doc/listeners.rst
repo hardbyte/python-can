@@ -24,7 +24,7 @@ and are listed below.
 Some of them allow messages to be written to files, and the corresponding file
 readers are also documented here.
 
-.. warning ::
+.. note ::
 
     Please note that writing and the reading a message might not always yield a
     completely unchanged message again, since some properties are not (yet)
