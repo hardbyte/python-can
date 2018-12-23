@@ -35,6 +35,8 @@ class Listener(object):
         # or
         listener.on_message_received(msg)
 
+        # finally flush outputs
+        listener.stop()
     """
 
     __metaclass__ = ABCMeta

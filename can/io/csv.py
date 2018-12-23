@@ -19,6 +19,7 @@ from can.message import Message
 from can.listener import Listener
 from .generic import BaseIOHandler
 
+
 class CSVWriter(BaseIOHandler, Listener):
     """Writes a comma separated text file with a line for
     each message. Includes a header line.
