@@ -87,9 +87,9 @@ class ThreadSafeBus(ObjectProxy):
         with self._lock_recv:
             self.__wrapped__.filters = filters
 
-    def set_filters(self, can_filters=None, *args, **kwargs):
+    def set_filters(self, filters=None, *args, **kwargs):
         with self._lock_recv:
-            return self.__wrapped__.set_filters(can_filters=can_filters, *args, **kwargs)
+            return self.__wrapped__.set_filters(filters=filters, *args, **kwargs)
 
     def flush_tx_buffer(self, *args, **kwargs):
         with self._lock_send:
