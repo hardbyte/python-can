@@ -29,7 +29,7 @@ class CanScriptTest(unittest.TestCase):
     __metaclass__ = ABCMeta
 
     def test_do_commands_exist(self):
-        """This test calls each scripts once and veifies that the help
+        """This test calls each scripts once and verifies that the help
         can be read without any other errors, like the script not being
         found.
         """

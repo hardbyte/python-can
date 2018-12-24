@@ -291,6 +291,16 @@ class TPCANMsg (Structure):
     """
     Represents a PCAN message
     """
+    _fields_ = [ ("ID",      c_uint),           # 11/29-bit message identifier
+                 ("MSGTYPE", TPCANMessageType), # Type of the message
+                 ("LEN",     c_ubyte),          # Data Length Code of the message (0..8)
+                 ("DATA",    c_ubyte * 8) ]     # Data of the message (DATA[0]..DATA[7])
+
+
+class TPCANMsgMac (Structure):
+    """
+    Represents a PCAN message
+    """
     _fields_ = [ ("ID",      c_ulong),          # 11/29-bit message identifier - was changed from u_uint to c_ulong, so it is compatible with the PCAN-USB Driver for macOS
                  ("MSGTYPE", TPCANMessageType), # Type of the message
                  ("LEN",     c_ubyte),          # Data Length Code of the message (0..8)
@@ -302,12 +312,31 @@ class TPCANTimestamp (Structure):
     Represents a timestamp of a received PCAN message
     Total Microseconds = micros + 1000 * millis + 0x100000000 * 1000 * millis_overflow
     """
+    _fields_ = [ ("millis", c_uint),            # Base-value: milliseconds: 0.. 2^32-1
+                 ("millis_overflow", c_ushort), # Roll-arounds of millis
+                 ("micros", c_ushort) ]         # Microseconds: 0..999
+
+
+class TPCANTimestampMac (Structure):
+    """
+    Represents a timestamp of a received PCAN message
+    Total Microseconds = micros + 1000 * millis + 0x100000000 * 1000 * millis_overflow
+    """
     _fields_ = [ ("millis", c_ulong),           # Base-value: milliseconds: 0.. 2^32-1 - was changed from u_uint to c_ulong, so it is compatible with the PCAN-USB Driver for macOS
                  ("millis_overflow", c_ushort), # Roll-arounds of millis
                  ("micros", c_ushort) ]         # Microseconds: 0..999
 
 
 class TPCANMsgFD (Structure):
+    """
+    Represents a PCAN message
+    """
+    _fields_ = [ ("ID",      c_uint),           # 11/29-bit message identifier
+                 ("MSGTYPE", TPCANMessageType), # Type of the message
+                 ("DLC",     c_ubyte),          # Data Length Code of the message (0..15)
+                 ("DATA",    c_ubyte * 64) ]    # Data of the message (DATA[0]..DATA[63])
+
+class TPCANMsgFDMac (Structure):
     """
     Represents a PCAN message
     """
@@ -484,8 +513,12 @@ class PCANBasic:
           A touple with three values
         """
         try:
-            msg = TPCANMsg()
-            timestamp = TPCANTimestamp()
+            if platform.system() == 'Darwin':
+                msg = TPCANMsgMac()
+                timestamp = TPCANTimestampMac()
+            else:
+                msg = TPCANMsg()
+                timestamp = TPCANTimestamp()
             res = self.__m_dllBasic.CAN_Read(Channel,byref(msg),byref(timestamp))
             return TPCANStatus(res),msg,timestamp
         except:
@@ -514,7 +547,10 @@ class PCANBasic:
           A touple with three values
         """
         try:
-            msg = TPCANMsgFD()
+            if platform.system() == 'Darwin':
+                msg = TPCANMsgFDMac()
+            else:
+                msg = TPCANMsgFD()
             timestamp = TPCANTimestampFD()
             res = self.__m_dllBasic.CAN_ReadFD(Channel,byref(msg),byref(timestamp))
             return TPCANStatus(res),msg,timestamp

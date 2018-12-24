@@ -228,7 +228,7 @@ class SqliteWriter(BaseIOHandler, BufferedReader):
 
     def stop(self):
         """Stops the reader an writes all remaining messages to the database. Thus, this
-        might take a while an block.
+        might take a while and block.
         """
         BufferedReader.stop(self)
         self._stop_running_event.set()

@@ -28,6 +28,7 @@ class KvaserTest(unittest.TestCase):
         canlib.canIoCtl = Mock(return_value=0)
         canlib.kvReadTimer = Mock()
         canlib.canSetBusParams = Mock()
+        canlib.canSetBusParamsFd = Mock()
         canlib.canBusOn = Mock()
         canlib.canBusOff = Mock()
         canlib.canClose = Mock()
@@ -159,6 +160,36 @@ class KvaserTest(unittest.TestCase):
             {'interface': 'kvaser', 'channel': 1}
         ]
         self.assertListEqual(configs, expected)
+
+    def test_canfd_default_data_bitrate(self):
+        canlib.canSetBusParams.reset_mock()
+        canlib.canSetBusParamsFd.reset_mock()
+        can.Bus(channel=0, bustype='kvaser', fd=True)
+        canlib.canSetBusParams.assert_called_once_with(
+            0, constants.canFD_BITRATE_500K_80P, 0, 0, 0, 0, 0)
+        canlib.canSetBusParamsFd.assert_called_once_with(
+            0, constants.canFD_BITRATE_500K_80P, 0, 0, 0)
+
+    def test_canfd_nondefault_data_bitrate(self):
+        canlib.canSetBusParams.reset_mock()
+        canlib.canSetBusParamsFd.reset_mock()
+        data_bitrate = 2000000
+        can.Bus(channel=0, bustype='kvaser', fd=True, data_bitrate=data_bitrate)
+        bitrate_constant = canlib.BITRATE_FD[data_bitrate]
+        canlib.canSetBusParams.assert_called_once_with(
+            0, constants.canFD_BITRATE_500K_80P, 0, 0, 0, 0, 0)
+        canlib.canSetBusParamsFd.assert_called_once_with(
+            0, bitrate_constant, 0, 0, 0)
+
+    def test_canfd_custom_data_bitrate(self):
+        canlib.canSetBusParams.reset_mock()
+        canlib.canSetBusParamsFd.reset_mock()
+        data_bitrate = 123456
+        can.Bus(channel=0, bustype='kvaser', fd=True, data_bitrate=data_bitrate)
+        canlib.canSetBusParams.assert_called_once_with(
+            0, constants.canFD_BITRATE_500K_80P, 0, 0, 0, 0, 0)
+        canlib.canSetBusParamsFd.assert_called_once_with(
+            0, data_bitrate, 0, 0, 0)
 
     @staticmethod
     def canGetNumberOfChannels(count):
