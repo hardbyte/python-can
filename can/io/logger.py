@@ -32,6 +32,8 @@ class Logger(BaseIOHandler, Listener):
       * .log :class:`can.CanutilsLogWriter`
       * other: :class:`can.Printer`
 
+    The log files may be incomplete until `stop()` is called due to buffering.
+
     .. note::
         This class itself is just a dispatcher, and any positional an keyword
         arguments are passed on to the returned instance.

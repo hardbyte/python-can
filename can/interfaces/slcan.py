@@ -112,53 +112,56 @@ class slcanBus(BusABC):
         extended = False
         frame = []
 
-        # Read everything that is already available
-        waiting = self.serialPortOrig.read(self.serialPortOrig.in_waiting)
-        self._buffer += waiting
+        # First read what is already in the receive buffer
+        while (self.serialPortOrig.in_waiting and
+               self.LINE_TERMINATOR not in self._buffer):
+            self._buffer += self.serialPortOrig.read(1)
 
-        # Check if a complete message has been received
-        pos = self._buffer.find(self.LINE_TERMINATOR)
-        if pos == -1:
-            # Keep reading...
+        # If we still don't have a complete message, do a blocking read
+        if self.LINE_TERMINATOR not in self._buffer:
             self._buffer += self.serialPortOrig.read_until(self.LINE_TERMINATOR)
-            pos = self._buffer.find(self.LINE_TERMINATOR)
 
-        if pos != -1:
-            readStr = self._buffer[0:pos].decode()
-            del self._buffer[0:pos+1]
-            if readStr[0] == 'T':
-                # extended frame
-                canId = int(readStr[1:9], 16)
-                dlc = int(readStr[9])
-                extended = True
-                for i in range(0, dlc):
-                    frame.append(int(readStr[10 + i * 2:12 + i * 2], 16))
-            elif readStr[0] == 't':
-                # normal frame
-                canId = int(readStr[1:4], 16)
-                dlc = int(readStr[4])
-                for i in range(0, dlc):
-                    frame.append(int(readStr[5 + i * 2:7 + i * 2], 16))
-            elif readStr[0] == 'r':
-                # remote frame
-                canId = int(readStr[1:4], 16)
-                dlc = int(readStr[4])
-                remote = True
-            elif readStr[0] == 'R':
-                # remote extended frame
-                canId = int(readStr[1:9], 16)
-                dlc = int(readStr[9])
-                extended = True
-                remote = True
+        if self.LINE_TERMINATOR not in self._buffer:
+            # Timed out
+            return None, False
 
-            if canId is not None:
-                msg = Message(arbitration_id=canId,
-                              is_extended_id=extended,
-                              timestamp=time.time(),   # Better than nothing...
-                              is_remote_frame=remote,
-                              dlc=dlc,
-                              data=frame)
-                return msg, False
+        readStr = self._buffer.decode()
+        del self._buffer[:]
+        if not readStr:
+            pass
+        elif readStr[0] == 'T':
+            # extended frame
+            canId = int(readStr[1:9], 16)
+            dlc = int(readStr[9])
+            extended = True
+            for i in range(0, dlc):
+                frame.append(int(readStr[10 + i * 2:12 + i * 2], 16))
+        elif readStr[0] == 't':
+            # normal frame
+            canId = int(readStr[1:4], 16)
+            dlc = int(readStr[4])
+            for i in range(0, dlc):
+                frame.append(int(readStr[5 + i * 2:7 + i * 2], 16))
+        elif readStr[0] == 'r':
+            # remote frame
+            canId = int(readStr[1:4], 16)
+            dlc = int(readStr[4])
+            remote = True
+        elif readStr[0] == 'R':
+            # remote extended frame
+            canId = int(readStr[1:9], 16)
+            dlc = int(readStr[9])
+            extended = True
+            remote = True
+
+        if canId is not None:
+            msg = Message(arbitration_id=canId,
+                            is_extended_id=extended,
+                            timestamp=time.time(),   # Better than nothing...
+                            is_remote_frame=remote,
+                            dlc=dlc,
+                            data=frame)
+            return msg, False
         return None, False
 
     def send(self, msg, timeout=None):
