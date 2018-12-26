@@ -10,6 +10,8 @@ Bus
 ---
 
 .. autoclass:: can.interfaces.kvaser.canlib.KvaserBus
+    :members:
+    :exclude-members: get_stats
 
 
 Internals
@@ -35,3 +37,12 @@ If one filter is requested, this is will be handled by the Kvaser driver.
 If more than one filter is needed, these will be handled in Python code
 in the ``recv`` method. If a message does not match any of the filters,
 ``recv()`` will return None.
+
+
+Custom methods
+~~~~~~~~~~~~~~~~~
+
+This section contains Kvaser driver specific methods.
+
+
+.. automethod:: can.interfaces.kvaser.canlib.KvaserBus.get_stats
