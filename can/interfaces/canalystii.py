@@ -33,6 +33,27 @@ VCI_USBCAN2 = 4
 STATUS_OK = 0x01
 STATUS_ERR = 0x00
 
+TIMING_DICT = {
+    5000: (0xBF, 0xFF),
+    10000: (0x31, 0x1C),
+    20000: (0x18, 0x1C),
+    33330: (0x09, 0x6F),
+    40000: (0x87, 0xFF),
+    50000: (0x09, 0x1C),
+    66660: (0x04, 0x6F),
+    80000: (0x83, 0xFF),
+    83330: (0x03, 0x6F),
+    100000: (0x04, 0x1C),
+    125000: (0x03, 0x1C),
+    200000: (0x81, 0xFA),
+    250000: (0x01, 0x1C),
+    400000: (0x80, 0xFA),
+    500000: (0x00, 0x1C),
+    666000: (0x80, 0xB6),
+    800000: (0x00, 0x16),
+    1000000: (0x00, 0x14),
+}
+
 try:
     if platform.system() == "Windows":
         CANalystII = WinDLL("./ControlCAN.dll")
@@ -45,7 +66,7 @@ except OSError as e:
 
 
 class CANalystIIBus(BusABC):
-    def __init__(self, channel, device=0, baud=10000000, Timing0=0x00, Timing1=0x14, can_filters=None):
+    def __init__(self, channel, device=0, baud=None, Timing0=None, Timing1=None, can_filters=None):
         """
 
         :param channel: channel number
@@ -69,36 +90,14 @@ class CANalystIIBus(BusABC):
 
         self.channel_info = "CANalyst-II: device {}, channels {}".format(self.device, self.channels)
 
-        if baud == 1000000:
-            Timing0, Timing1 = (0x00, 0x14)
-        elif baud == 800000:
-            Timing0, Timing1 = (0x00, 0x16)
-        elif baud == 666000:
-            Timing0, Timing1 = (0x80, 0xB6)
-        elif baud == 500000:
-            Timing0, Timing1 = (0x00, 0x1C)
-        elif baud == 400000:
-            Timing0, Timing1 = (0x80, 0xFA)
-        elif baud == 250000:
-            Timing0, Timing1 = (0x01, 0x1C)
-        elif baud == 200000:
-            Timing0, Timing1 = (0x81, 0xFA)
-        elif baud == 125000:
-            Timing0, Timing1 = (0x03, 0x1C)
-        elif baud == 100000:
-            Timing0, Timing1 = (0x04, 0x1C)
-        elif baud == 80000:
-            Timing0, Timing1 = (0x83, 0xFF)
-        elif baud == 50000:
-            Timing0, Timing1 = (0x09, 0x1C)
-        elif baud == 40000:
-            Timing0, Timing1 = (0x87, 0xFF)
-        elif baud == 20000:
-            Timing0, Timing1 = (0x18, 0x1C)
-        elif baud == 10000:
-            Timing0, Timing1 = (0x31, 0x1C)
-        elif baud == 5000:
-            Timing0, Timing1 = (0xBF, 0xFF)
+        if baud is not None:
+            try:
+                Timing0, Timing1 = TIMING_DICT[baud]
+            except KeyError:
+                raise ValueError("Baudrate is not supported")
+
+        if Timing0 is None or Timing1 is None:
+            raise ValueError("Timing registers are not set")
 
         self.init_config = VCI_INIT_CONFIG(0, 0xFFFFFFFF, 0, 1, Timing0, Timing1, 0)
 
