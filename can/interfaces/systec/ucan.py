@@ -1,7 +1,7 @@
-#!/usr/bin/env python
+# coding: utf-8
 
 from ctypes import WinDLL, byref
-from ctypes.wintypes import PWCHAR, PDWORD
+from ctypes.wintypes import LPWSTR
 import logging
 
 from .constants import *
@@ -107,7 +107,7 @@ def check_result(result, func, arguments):
 # BOOL PUBLIC UcanSetDebugMode (DWORD dwDbgLevel_p, _TCHAR* pszFilePathName_p, DWORD dwFlags_p);
 UcanSetDebugMode = WinDLL('usbcan32.dll').UcanSetDebugMode
 UcanSetDebugMode.restype = BOOL
-UcanSetDebugMode.argtypes = [DWORD, PWCHAR, DWORD]
+UcanSetDebugMode.argtypes = [DWORD, LPWSTR, DWORD]
 
 # DWORD PUBLIC UcanGetVersionEx (VersionType VerType_p);
 UcanGetVersionEx = WinDLL('usbcan32.dll').UcanGetVersionEx
@@ -157,7 +157,7 @@ UcanInitHardwareEx2.errcheck = check_result
 # BYTE PUBLIC UcanGetModuleTime (Handle UcanHandle_p, DWORD* pdwTime_p);
 UcanGetModuleTime = WinDLL('usbcan32.dll').UcanGetModuleTime
 UcanGetModuleTime.restype = ReturnCode
-UcanGetModuleTime.argtypes = [Handle, PDWORD]
+UcanGetModuleTime.argtypes = [Handle, POINTER(DWORD)]
 UcanGetModuleTime.errcheck = check_result
 
 # BYTE PUBLIC UcanGetHardwareInfoEx2 (Handle UcanHandle_p,
@@ -199,14 +199,14 @@ UcanResetCanEx.errcheck = check_result
 #   CanMsg* pCanMsg_p, DWORD* pdwCount_p);
 UcanReadCanMsgEx = WinDLL('usbcan32.dll').UcanReadCanMsgEx
 UcanReadCanMsgEx.restype = ReturnCode
-UcanReadCanMsgEx.argtypes = [Handle, POINTER(BYTE), POINTER(CanMsg), PDWORD]
+UcanReadCanMsgEx.argtypes = [Handle, POINTER(BYTE), POINTER(CanMsg), POINTER(DWORD)]
 UcanReadCanMsgEx.errcheck = check_result
 
 # BYTE PUBLIC UcanWriteCanMsgEx (Handle UcanHandle_p, BYTE bChannel_p,
 #   CanMsg* pCanMsg_p, DWORD* pdwCount_p);
 UcanWriteCanMsgEx = WinDLL('usbcan32.dll').UcanWriteCanMsgEx
 UcanWriteCanMsgEx.restype = ReturnCode
-UcanWriteCanMsgEx.argtypes = [Handle, BYTE, POINTER(CanMsg), PDWORD]
+UcanWriteCanMsgEx.argtypes = [Handle, BYTE, POINTER(CanMsg), POINTER(DWORD)]
 UcanWriteCanMsgEx.errcheck = check_result
 
 # BYTE PUBLIC UcanGetStatusEx (Handle UcanHandle_p, BYTE bChannel_p, Status* pStatus_p);
@@ -226,14 +226,14 @@ UcanGetMsgCountInfoEx.errcheck = check_result
 #   BYTE bChannel_p, DWORD dwFlags_p, DWORD* pdwPendingCount_p);
 UcanGetMsgPending = WinDLL('usbcan32.dll').UcanGetMsgPending
 UcanGetMsgPending.restype = ReturnCode
-UcanGetMsgPending.argtypes = [Handle, BYTE, DWORD, PDWORD]
+UcanGetMsgPending.argtypes = [Handle, BYTE, DWORD, POINTER(DWORD)]
 UcanGetMsgPending.errcheck = check_result
 
 # BYTE PUBLIC UcanGetCanErrorCounter (Handle UcanHandle_p,
 #   BYTE bChannel_p, DWORD* pdwTxErrorCounter_p, DWORD* pdwRxErrorCounter_p);
 UcanGetCanErrorCounter = WinDLL('usbcan32.dll').UcanGetCanErrorCounter
 UcanGetCanErrorCounter.restype = ReturnCode
-UcanGetCanErrorCounter.argtypes = [Handle, BYTE, PDWORD, PDWORD]
+UcanGetCanErrorCounter.argtypes = [Handle, BYTE, POINTER(DWORD), POINTER(DWORD)]
 UcanGetCanErrorCounter.errcheck = check_result
 
 # BYTE PUBLIC UcanSetTxTimeout (Handle UcanHandle_p,
@@ -266,7 +266,7 @@ UcanDefineCyclicCanMsg.errcheck = check_result
 #   BYTE bChannel_p, CanMsg* pCanMsgList_p, DWORD* pdwCount_p);
 UcanReadCyclicCanMsg = WinDLL('usbcan32.dll').UcanReadCyclicCanMsg
 UcanReadCyclicCanMsg.restype = ReturnCode
-UcanReadCyclicCanMsg.argtypes = [Handle, BYTE, POINTER(CanMsg), PDWORD]
+UcanReadCyclicCanMsg.argtypes = [Handle, BYTE, POINTER(CanMsg), POINTER(DWORD)]
 UcanReadCyclicCanMsg.errcheck = check_result
 
 # BYTE PUBLIC UcanEnableCyclicCanMsg (Handle UcanHandle_p,
@@ -277,7 +277,7 @@ UcanEnableCyclicCanMsg.argtypes = [Handle, BYTE, DWORD]
 UcanEnableCyclicCanMsg.errcheck = check_result
 
 
-class UcanServer:
+class UcanServer(object):
     """
     UcanServer is a Python wrapper class for using the USBCAN32.DLL.
     """
