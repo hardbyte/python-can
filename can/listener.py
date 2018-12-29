@@ -35,6 +35,8 @@ class Listener(object):
         # or
         listener.on_message_received(msg)
 
+        # Important to ensure all outputs are flushed
+        listener.stop()
     """
 
     __metaclass__ = ABCMeta
@@ -59,7 +61,10 @@ class Listener(object):
 
     def stop(self):
         """
-        Override to cleanup any open resources.
+        Stop handling new messages, carry out any final tasks to ensure
+        data is persisted and cleanup any open resources.
+
+        Concrete implementations override.
         """
 
 

@@ -13,6 +13,7 @@ from time import sleep
 from multiprocessing.dummy import Pool as ThreadPool 
 
 import pytest
+import random
 
 import can
 
@@ -168,8 +169,6 @@ class SocketCanBroadcastChannel(unittest.TestCase):
 
 
 class TestThreadSafeBus(Back2BackTestCase):
-    """Does some testing that is better than nothing.
-    """
 
     def setUp(self):
         self.bus1 = can.ThreadSafeBus(channel=self.CHANNEL_1,
@@ -190,6 +189,7 @@ class TestThreadSafeBus(Back2BackTestCase):
 
         message = can.Message(
             arbitration_id=0x123,
+            channel=self.CHANNEL_1,
             is_extended_id=True,
             timestamp=121334.365,
             data=[254, 255, 1, 2]
@@ -200,12 +200,57 @@ class TestThreadSafeBus(Back2BackTestCase):
             self.bus1.send(msg)
 
         def receiver(_):
-            result = self.bus2.recv(timeout=2.0)
-            self.assertIsNotNone(result)
-            self.assertEqual(result, message)
+            return self.bus2.recv(timeout=2.0)
 
         sender_pool.map_async(sender, workload)
-        receiver_pool.map_async(receiver, len(workload) * [None])
+        for msg in receiver_pool.map(receiver, len(workload) * [None]):
+            self.assertIsNotNone(msg)
+            self.assertEqual(message.arbitration_id, msg.arbitration_id)
+            self.assertTrue(message.equals(msg, timestamp_delta=None))
+
+        sender_pool.close()
+        sender_pool.join()
+        receiver_pool.close()
+        receiver_pool.join()
+
+    @pytest.mark.timeout(5.0)
+    def test_filtered_bus(self):
+        sender_pool = ThreadPool(100)
+        receiver_pool = ThreadPool(100)
+
+        included_message = can.Message(
+            arbitration_id=0x123,
+            channel=self.CHANNEL_1,
+            is_extended_id=True,
+            timestamp=121334.365,
+            data=[254, 255, 1, 2]
+        )
+        excluded_message = can.Message(
+            arbitration_id=0x02,
+            channel=self.CHANNEL_1,
+            is_extended_id=True,
+            timestamp=121334.300,
+            data=[1, 2, 3]
+        )
+        workload = 500 * [included_message] + 500 * [excluded_message]
+        random.shuffle(workload)
+
+        self.bus2.set_filters([{"can_id": 0x123, "can_mask": 0xff, "extended": True}])
+
+        def sender(msg):
+            self.bus1.send(msg)
+
+        def receiver(_):
+            return self.bus2.recv(timeout=2.0)
+
+        sender_pool.map_async(sender, workload)
+        received_msgs = receiver_pool.map(receiver, 500 * [None])
+
+        for msg in received_msgs:
+            self.assertIsNotNone(msg)
+            self.assertEqual(msg.arbitration_id, included_message.arbitration_id)
+            self.assertTrue(included_message.equals(msg, timestamp_delta=None))
+        self.assertEqual(len(received_msgs), 500)
 
         sender_pool.close()
         sender_pool.join()
