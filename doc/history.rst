@@ -44,6 +44,8 @@ and 2018.
 
 The CAN viewer terminal script was contributed by Kristian Sloth Lauszus in 2018.
 
+The CANalyst-II interface was contributed by Shaoyu Meng in 2018.
+
 Support for CAN within Python
 -----------------------------
 
