@@ -11,6 +11,7 @@ from .structures import *
 
 log = logging.getLogger('can.systec')
 
+Ucan = None
 try:
     if sys.platform == "win32":
         from .ucan import UcanServer
@@ -94,11 +95,10 @@ class UcanBus(BusABC):
         :raises can.CanError:
             If hardware or CAN interface initialization failed.
         """
-        try:
-            self._ucan = Ucan()
-        except Exception as ex:
-            raise ImportError("The SYSTEC ucan library has not been initialized: %s.", ex)
+        if Ucan is None:
+            raise ImportError("The SYSTEC ucan library has not been initialized.")
 
+        self._ucan = Ucan()
         self.channel = int(channel)
         device_number = int(config.get('device_number', ANY_MODULE))
 
@@ -182,14 +182,17 @@ class UcanBus(BusABC):
     @staticmethod
     def _detect_available_configs():
         configs = {}
-        for index, is_used, hw_info_ex, init_info in Ucan.enumerate_hardware():
-            configs += {'interface': 'systec',
-                        'channel': Channel.CHANNEL_CH0,
-                        'device_number': hw_info_ex.device_number}
-            if Ucan.check_support_two_channel(hw_info_ex):
+        if Ucan is None:
+            log.warning("The SYSTEC ucan library has not been initialized.")
+        else:
+            for index, is_used, hw_info_ex, init_info in Ucan.enumerate_hardware():
                 configs += {'interface': 'systec',
-                            'channel': Channel.CHANNEL_CH1,
+                            'channel': Channel.CHANNEL_CH0,
                             'device_number': hw_info_ex.device_number}
+                if Ucan.check_support_two_channel(hw_info_ex):
+                    configs += {'interface': 'systec',
+                                'channel': Channel.CHANNEL_CH1,
+                                'device_number': hw_info_ex.device_number}
         return configs
 
     def _apply_filters(self, filters):
