@@ -32,6 +32,12 @@ class CanMsg(Structure):
     def __init__(self, id=0, frame_format=MsgFrameFormat.MSG_FF_STD, data=[]):
         super(CanMsg, self).__init__(id, frame_format, len(data), (BYTE * 8)(*data), 0)
 
+    def __eq__(self, other):
+        if not isinstance(other, CanMsg):
+            return False
+
+        return self.id == other.id and self.frame_format == other.frame_format and self.data == other.data
+
     @property
     def id(self): return self.m_dwID
 
@@ -73,6 +79,12 @@ class Status(Structure):
         ("m_wUsbStatus", WORD),  # USB error status (see enum :class:`UsbStatus`)
     ]
 
+    def __eq__(self, other):
+        if not isinstance(other, Status):
+            return False
+
+        return self.can_status == other.can_status and self.usb_status == other.usb_status
+
     @property
     def can_status(self): return self.m_wCanStatus
 
@@ -105,6 +117,14 @@ class InitCanParam(Structure):
     def __init__(self, mode, BTR, OCR, AMR, ACR, baudrate, rx_buffer_entries, tx_buffer_entries):
         super(InitCanParam, self).__init__(sizeof(InitCanParam), mode, BTR >> 8, BTR, OCR, AMR, ACR,
                                            baudrate, rx_buffer_entries, tx_buffer_entries)
+
+    def __eq__(self, other):
+        if not isinstance(other, InitCanParam):
+            return False
+
+        return self.mode == other.mode and self.BTR == other.BTR and self.OCR == other.OCR and \
+               self.baudrate == other.baudrate and self.rx_buffer_entries == other.rx_buffer_entries and \
+               self.tx_buffer_entries == other.tx_buffer_entries
 
     @property
     def mode(self): return self.m_bMode
@@ -173,6 +193,14 @@ class HardwareInfoEx(Structure):
     def __init__(self):
         super(HardwareInfoEx, self).__init__(sizeof(HardwareInfoEx))
 
+    def __eq__(self, other):
+        if not isinstance(other, HardwareInfoEx):
+            return False
+
+        return self.device_number == other.device_number and self.serial == other.serial and \
+               self.fw_version == other.fw_version and self.product_code == other.product_code and \
+               self.unique_id == other.unique_id and self.flags == other.flags
+
     @property
     def device_number(self): return self.m_bDeviceNr
 
@@ -240,6 +268,14 @@ class ChannelInfo(Structure):
 
     def __init__(self):
         super(ChannelInfo, self).__init__(sizeof(ChannelInfo))
+
+    def __eq__(self, other):
+        if not isinstance(other, ChannelInfo):
+            return False
+
+        return self.mode == other.mode and self.BTR == other.BTR and self.OCR == other.OCR and \
+               self.AMR == other.AMR and self.ACR == other.ACR and self.baudrate == other.baudrate and \
+               self.can_is_init == other.can_is_init and self.can_status == other.can_status
 
     @property
     def mode(self): return self.m_bMode
