@@ -181,18 +181,18 @@ class UcanBus(BusABC):
 
     @staticmethod
     def _detect_available_configs():
-        configs = {}
+        configs = []
         if Ucan is None:
             log.warning("The SYSTEC ucan library has not been initialized.")
         else:
             for index, is_used, hw_info_ex, init_info in Ucan.enumerate_hardware():
-                configs += {'interface': 'systec',
-                            'channel': Channel.CHANNEL_CH0,
-                            'device_number': hw_info_ex.device_number}
+                configs.append({'interface': 'systec',
+                                'channel': Channel.CHANNEL_CH0,
+                                'device_number': hw_info_ex.device_number})
                 if Ucan.check_support_two_channel(hw_info_ex):
-                    configs += {'interface': 'systec',
-                                'channel': Channel.CHANNEL_CH1,
-                                'device_number': hw_info_ex.device_number}
+                    configs.append({'interface': 'systec',
+                                    'channel': Channel.CHANNEL_CH1,
+                                    'device_number': hw_info_ex.device_number})
         return configs
 
     def _apply_filters(self, filters):
