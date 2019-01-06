@@ -1,6 +1,5 @@
 # coding: utf-8
 
-import sys
 import logging
 from threading import Event
 
@@ -8,32 +7,28 @@ from can import BusABC, BusState, Message
 
 from .constants import *
 from .structures import *
+from .ucan import UcanServer
 
 log = logging.getLogger('can.systec')
 
-Ucan = None
-try:
-    if sys.platform == "win32":
-        from .ucan import UcanServer
 
-        class Ucan(UcanServer):
-            def __init__(self):
-                super(Ucan, self).__init__()
-                self._msg_received_event = Event()
+class Ucan(UcanServer):
+    """
+    Wrapper around UcanServer to read messages with timeout using events.
+    """
+    def __init__(self):
+        super(Ucan, self).__init__()
+        self._msg_received_event = Event()
 
-            def can_msg_received_event(self, channel):
-                self._msg_received_event.set()
+    def can_msg_received_event(self, channel):
+        self._msg_received_event.set()
 
-            def read_can_msg(self, channel, count, timeout):
-                self._msg_received_event.clear()
-                if self.get_msg_pending(channel, PendingFlags.PENDING_FLAG_RX_DLL) == 0:
-                    if not self._msg_received_event.wait(timeout):
-                        return None, False
-                return super(Ucan, self).read_can_msg(channel, 1)
-    else:
-        log.warning("SYSTEC ucan library does not work on %s platform", sys.platform)
-except Exception as ex:
-    log.warning("Cannot load SYSTEC ucan library: %s", ex)
+    def read_can_msg(self, channel, count, timeout):
+        self._msg_received_event.clear()
+        if self.get_msg_pending(channel, PendingFlags.PENDING_FLAG_RX_DLL) == 0:
+            if not self._msg_received_event.wait(timeout):
+                return None, False
+        return super(Ucan, self).read_can_msg(channel, 1)
 
 
 class UcanBus(BusABC):
@@ -95,10 +90,11 @@ class UcanBus(BusABC):
         :raises can.CanError:
             If hardware or CAN interface initialization failed.
         """
-        if Ucan is None:
+        try:
+            self._ucan = Ucan()
+        except Exception:
             raise ImportError("The SYSTEC ucan library has not been initialized.")
 
-        self._ucan = Ucan()
         self.channel = int(channel)
         device_number = int(config.get('device_number', ANY_MODULE))
 
@@ -182,9 +178,7 @@ class UcanBus(BusABC):
     @staticmethod
     def _detect_available_configs():
         configs = []
-        if Ucan is None:
-            log.warning("The SYSTEC ucan library has not been initialized.")
-        else:
+        try:
             for index, is_used, hw_info_ex, init_info in Ucan.enumerate_hardware():
                 configs.append({'interface': 'systec',
                                 'channel': Channel.CHANNEL_CH0,
@@ -193,6 +187,8 @@ class UcanBus(BusABC):
                     configs.append({'interface': 'systec',
                                     'channel': Channel.CHANNEL_CH1,
                                     'device_number': hw_info_ex.device_number})
+        except:
+            log.warning("The SYSTEC ucan library has not been initialized.")
         return configs
 
     def _apply_filters(self, filters):

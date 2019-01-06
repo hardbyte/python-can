@@ -1,7 +1,6 @@
 # coding: utf-8
 
-from ctypes import c_ubyte as BYTE
-from ctypes.wintypes import WORD, DWORD
+from ctypes import c_ubyte as BYTE, c_ushort as WORD, c_ulong as DWORD
 
 #: Maximum number of modules that are supported.
 MAX_MODULES = 64

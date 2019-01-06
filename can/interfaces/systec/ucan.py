@@ -1,9 +1,10 @@
 # coding: utf-8
 
-from ctypes import WinDLL, byref
-from ctypes.wintypes import LPWSTR
 import logging
 import sys
+
+from ctypes import byref
+from ctypes import c_wchar_p as LPWSTR
 
 from .constants import *
 from .structures import *
@@ -105,185 +106,189 @@ def check_result(result, func, arguments):
     return result
 
 
-# Select the dll architecture
-if sys.maxsize > 2**32:
-    dllname = 'usbcan64.dll'
+if os.name != "nt":
+    log.warning("SYSTEC ucan library does not work on %s platform.", sys.platform)
 else:
-    dllname = 'usbcan32.dll'
+    from ctypes import WinDLL
 
-lib = WinDLL(dllname)
+    try:
+        # Select the proper dll architecture
+        lib = WinDLL('usbcan64.dll' if sys.maxsize > 2 ** 32 else 'usbcan32.dll')
 
-# BOOL PUBLIC UcanSetDebugMode (DWORD dwDbgLevel_p, _TCHAR* pszFilePathName_p, DWORD dwFlags_p);
-UcanSetDebugMode = lib.UcanSetDebugMode
-UcanSetDebugMode.restype = BOOL
-UcanSetDebugMode.argtypes = [DWORD, LPWSTR, DWORD]
+        # BOOL PUBLIC UcanSetDebugMode (DWORD dwDbgLevel_p, _TCHAR* pszFilePathName_p, DWORD dwFlags_p);
+        UcanSetDebugMode = lib.UcanSetDebugMode
+        UcanSetDebugMode.restype = BOOL
+        UcanSetDebugMode.argtypes = [DWORD, LPWSTR, DWORD]
 
-# DWORD PUBLIC UcanGetVersionEx (VersionType VerType_p);
-UcanGetVersionEx = lib.UcanGetVersionEx
-UcanGetVersionEx.restype = DWORD
-UcanGetVersionEx.argtypes = [VersionType]
+        # DWORD PUBLIC UcanGetVersionEx (VersionType VerType_p);
+        UcanGetVersionEx = lib.UcanGetVersionEx
+        UcanGetVersionEx.restype = DWORD
+        UcanGetVersionEx.argtypes = [VersionType]
 
-# DWORD PUBLIC UcanGetFwVersion (Handle UcanHandle_p);
-UcanGetFwVersion = lib.UcanGetFwVersion
-UcanGetFwVersion.restype = DWORD
-UcanGetFwVersion.argtypes = [Handle]
+        # DWORD PUBLIC UcanGetFwVersion (Handle UcanHandle_p);
+        UcanGetFwVersion = lib.UcanGetFwVersion
+        UcanGetFwVersion.restype = DWORD
+        UcanGetFwVersion.argtypes = [Handle]
 
-# BYTE PUBLIC UcanInitHwConnectControlEx (ConnectControlFktEx fpConnectControlFktEx_p, void* pCallbackArg_p);
-UcanInitHwConnectControlEx = lib.UcanInitHwConnectControlEx
-UcanInitHwConnectControlEx.restype = ReturnCode
-UcanInitHwConnectControlEx.argtypes = [ConnectControlFktEx, LPVOID]
-UcanInitHwConnectControlEx.errcheck = check_result
+        # BYTE PUBLIC UcanInitHwConnectControlEx (ConnectControlFktEx fpConnectControlFktEx_p, void* pCallbackArg_p);
+        UcanInitHwConnectControlEx = lib.UcanInitHwConnectControlEx
+        UcanInitHwConnectControlEx.restype = ReturnCode
+        UcanInitHwConnectControlEx.argtypes = [ConnectControlFktEx, LPVOID]
+        UcanInitHwConnectControlEx.errcheck = check_result
 
-# BYTE PUBLIC UcanDeinitHwConnectControl (void)
-UcanDeinitHwConnectControl = lib.UcanDeinitHwConnectControl
-UcanDeinitHwConnectControl.restype = ReturnCode
-UcanDeinitHwConnectControl.argtypes = []
-UcanDeinitHwConnectControl.errcheck = check_result
+        # BYTE PUBLIC UcanDeinitHwConnectControl (void)
+        UcanDeinitHwConnectControl = lib.UcanDeinitHwConnectControl
+        UcanDeinitHwConnectControl.restype = ReturnCode
+        UcanDeinitHwConnectControl.argtypes = []
+        UcanDeinitHwConnectControl.errcheck = check_result
 
-# DWORD PUBLIC UcanEnumerateHardware (EnumCallback fpCallback_p, void* pCallbackArg_p,
-#    BOOL  fEnumUsedDevs_p,
-#    BYTE  bDeviceNrLow_p,     BYTE  bDeviceNrHigh_p,
-#    DWORD dwSerialNrLow_p,    DWORD dwSerialNrHigh_p,
-#    DWORD dwProductCodeLow_p, DWORD dwProductCodeHigh_p);
-UcanEnumerateHardware = lib.UcanEnumerateHardware
-UcanEnumerateHardware.restype = DWORD
-UcanEnumerateHardware.argtypes = [EnumCallback, LPVOID, BOOL, BYTE, BYTE, DWORD, DWORD, DWORD, DWORD]
+        # DWORD PUBLIC UcanEnumerateHardware (EnumCallback fpCallback_p, void* pCallbackArg_p,
+        #    BOOL  fEnumUsedDevs_p,
+        #    BYTE  bDeviceNrLow_p,     BYTE  bDeviceNrHigh_p,
+        #    DWORD dwSerialNrLow_p,    DWORD dwSerialNrHigh_p,
+        #    DWORD dwProductCodeLow_p, DWORD dwProductCodeHigh_p);
+        UcanEnumerateHardware = lib.UcanEnumerateHardware
+        UcanEnumerateHardware.restype = DWORD
+        UcanEnumerateHardware.argtypes = [EnumCallback, LPVOID, BOOL, BYTE, BYTE, DWORD, DWORD, DWORD, DWORD]
 
-# BYTE PUBLIC UcanInitHardwareEx (Handle* pUcanHandle_p, BYTE bDeviceNr_p,
-#   CallbackFktEx fpCallbackFktEx_p, void* pCallbackArg_p);
-UcanInitHardwareEx = lib.UcanInitHardwareEx
-UcanInitHardwareEx.restype = ReturnCode
-UcanInitHardwareEx.argtypes = [POINTER(Handle), BYTE, CallbackFktEx, LPVOID]
-UcanInitHardwareEx.errcheck = check_result
+        # BYTE PUBLIC UcanInitHardwareEx (Handle* pUcanHandle_p, BYTE bDeviceNr_p,
+        #   CallbackFktEx fpCallbackFktEx_p, void* pCallbackArg_p);
+        UcanInitHardwareEx = lib.UcanInitHardwareEx
+        UcanInitHardwareEx.restype = ReturnCode
+        UcanInitHardwareEx.argtypes = [POINTER(Handle), BYTE, CallbackFktEx, LPVOID]
+        UcanInitHardwareEx.errcheck = check_result
 
-# BYTE PUBLIC UcanInitHardwareEx2 (Handle* pUcanHandle_p, DWORD dwSerialNr_p,
-#   CallbackFktEx fpCallbackFktEx_p, void* pCallbackArg_p);
-UcanInitHardwareEx2 = lib.UcanInitHardwareEx2
-UcanInitHardwareEx2.restype = ReturnCode
-UcanInitHardwareEx2.argtypes = [POINTER(Handle), DWORD, CallbackFktEx, LPVOID]
-UcanInitHardwareEx2.errcheck = check_result
+        # BYTE PUBLIC UcanInitHardwareEx2 (Handle* pUcanHandle_p, DWORD dwSerialNr_p,
+        #   CallbackFktEx fpCallbackFktEx_p, void* pCallbackArg_p);
+        UcanInitHardwareEx2 = lib.UcanInitHardwareEx2
+        UcanInitHardwareEx2.restype = ReturnCode
+        UcanInitHardwareEx2.argtypes = [POINTER(Handle), DWORD, CallbackFktEx, LPVOID]
+        UcanInitHardwareEx2.errcheck = check_result
 
-# BYTE PUBLIC UcanGetModuleTime (Handle UcanHandle_p, DWORD* pdwTime_p);
-UcanGetModuleTime = lib.UcanGetModuleTime
-UcanGetModuleTime.restype = ReturnCode
-UcanGetModuleTime.argtypes = [Handle, POINTER(DWORD)]
-UcanGetModuleTime.errcheck = check_result
+        # BYTE PUBLIC UcanGetModuleTime (Handle UcanHandle_p, DWORD* pdwTime_p);
+        UcanGetModuleTime = lib.UcanGetModuleTime
+        UcanGetModuleTime.restype = ReturnCode
+        UcanGetModuleTime.argtypes = [Handle, POINTER(DWORD)]
+        UcanGetModuleTime.errcheck = check_result
 
-# BYTE PUBLIC UcanGetHardwareInfoEx2 (Handle UcanHandle_p,
-#   HardwareInfoEx* pHwInfo_p,
-#   ChannelInfo* pCanInfoCh0_p, ChannelInfo* pCanInfoCh1_p);
-UcanGetHardwareInfoEx2 = lib.UcanGetHardwareInfoEx2
-UcanGetHardwareInfoEx2.restype = ReturnCode
-UcanGetHardwareInfoEx2.argtypes = [Handle, POINTER(HardwareInfoEx), POINTER(ChannelInfo),
-                                   POINTER(ChannelInfo)]
-UcanGetHardwareInfoEx2.errcheck = check_result
+        # BYTE PUBLIC UcanGetHardwareInfoEx2 (Handle UcanHandle_p,
+        #   HardwareInfoEx* pHwInfo_p,
+        #   ChannelInfo* pCanInfoCh0_p, ChannelInfo* pCanInfoCh1_p);
+        UcanGetHardwareInfoEx2 = lib.UcanGetHardwareInfoEx2
+        UcanGetHardwareInfoEx2.restype = ReturnCode
+        UcanGetHardwareInfoEx2.argtypes = [Handle, POINTER(HardwareInfoEx), POINTER(ChannelInfo),
+                                           POINTER(ChannelInfo)]
+        UcanGetHardwareInfoEx2.errcheck = check_result
 
-# BYTE PUBLIC UcanInitCanEx2 (Handle UcanHandle_p, BYTE bChannel_p, tUcaninit_canParam* pinit_canParam_p);
-UcanInitCanEx2 = lib.UcanInitCanEx2
-UcanInitCanEx2.restype = ReturnCode
-UcanInitCanEx2.argtypes = [Handle, BYTE, POINTER(InitCanParam)]
-UcanInitCanEx2.errcheck = check_result
+        # BYTE PUBLIC UcanInitCanEx2 (Handle UcanHandle_p, BYTE bChannel_p, tUcaninit_canParam* pinit_canParam_p);
+        UcanInitCanEx2 = lib.UcanInitCanEx2
+        UcanInitCanEx2.restype = ReturnCode
+        UcanInitCanEx2.argtypes = [Handle, BYTE, POINTER(InitCanParam)]
+        UcanInitCanEx2.errcheck = check_result
 
-# BYTE PUBLIC UcanSetBaudrateEx (Handle UcanHandle_p,
-#   BYTE bChannel_p, BYTE bBTR0_p, BYTE bBTR1_p, DWORD dwBaudrate_p);
-UcanSetBaudrateEx = lib.UcanSetBaudrateEx
-UcanSetBaudrateEx.restype = ReturnCode
-UcanSetBaudrateEx.argtypes = [Handle, BYTE, BYTE, BYTE, DWORD]
-UcanSetBaudrateEx.errcheck = check_result
+        # BYTE PUBLIC UcanSetBaudrateEx (Handle UcanHandle_p,
+        #   BYTE bChannel_p, BYTE bBTR0_p, BYTE bBTR1_p, DWORD dwBaudrate_p);
+        UcanSetBaudrateEx = lib.UcanSetBaudrateEx
+        UcanSetBaudrateEx.restype = ReturnCode
+        UcanSetBaudrateEx.argtypes = [Handle, BYTE, BYTE, BYTE, DWORD]
+        UcanSetBaudrateEx.errcheck = check_result
 
-# BYTE PUBLIC UcanSetAcceptanceEx (Handle UcanHandle_p, BYTE bChannel_p,
-#   DWORD dwAMR_p, DWORD dwACR_p);
-UcanSetAcceptanceEx = lib.UcanSetAcceptanceEx
-UcanSetAcceptanceEx.restype = ReturnCode
-UcanSetAcceptanceEx.argtypes = [Handle, BYTE, DWORD, DWORD]
-UcanSetAcceptanceEx.errcheck = check_result
+        # BYTE PUBLIC UcanSetAcceptanceEx (Handle UcanHandle_p, BYTE bChannel_p,
+        #   DWORD dwAMR_p, DWORD dwACR_p);
+        UcanSetAcceptanceEx = lib.UcanSetAcceptanceEx
+        UcanSetAcceptanceEx.restype = ReturnCode
+        UcanSetAcceptanceEx.argtypes = [Handle, BYTE, DWORD, DWORD]
+        UcanSetAcceptanceEx.errcheck = check_result
 
-# BYTE PUBLIC UcanResetCanEx (Handle UcanHandle_p, BYTE bChannel_p, DWORD dwResetFlags_p);
-UcanResetCanEx = lib.UcanResetCanEx
-UcanResetCanEx.restype = ReturnCode
-UcanResetCanEx.argtypes = [Handle, BYTE, DWORD]
-UcanResetCanEx.errcheck = check_result
+        # BYTE PUBLIC UcanResetCanEx (Handle UcanHandle_p, BYTE bChannel_p, DWORD dwResetFlags_p);
+        UcanResetCanEx = lib.UcanResetCanEx
+        UcanResetCanEx.restype = ReturnCode
+        UcanResetCanEx.argtypes = [Handle, BYTE, DWORD]
+        UcanResetCanEx.errcheck = check_result
 
-# BYTE PUBLIC UcanReadCanMsgEx (Handle UcanHandle_p, BYTE* pbChannel_p,
-#   CanMsg* pCanMsg_p, DWORD* pdwCount_p);
-UcanReadCanMsgEx = lib.UcanReadCanMsgEx
-UcanReadCanMsgEx.restype = ReturnCode
-UcanReadCanMsgEx.argtypes = [Handle, POINTER(BYTE), POINTER(CanMsg), POINTER(DWORD)]
-UcanReadCanMsgEx.errcheck = check_result
+        # BYTE PUBLIC UcanReadCanMsgEx (Handle UcanHandle_p, BYTE* pbChannel_p,
+        #   CanMsg* pCanMsg_p, DWORD* pdwCount_p);
+        UcanReadCanMsgEx = lib.UcanReadCanMsgEx
+        UcanReadCanMsgEx.restype = ReturnCode
+        UcanReadCanMsgEx.argtypes = [Handle, POINTER(BYTE), POINTER(CanMsg), POINTER(DWORD)]
+        UcanReadCanMsgEx.errcheck = check_result
 
-# BYTE PUBLIC UcanWriteCanMsgEx (Handle UcanHandle_p, BYTE bChannel_p,
-#   CanMsg* pCanMsg_p, DWORD* pdwCount_p);
-UcanWriteCanMsgEx = lib.UcanWriteCanMsgEx
-UcanWriteCanMsgEx.restype = ReturnCode
-UcanWriteCanMsgEx.argtypes = [Handle, BYTE, POINTER(CanMsg), POINTER(DWORD)]
-UcanWriteCanMsgEx.errcheck = check_result
+        # BYTE PUBLIC UcanWriteCanMsgEx (Handle UcanHandle_p, BYTE bChannel_p,
+        #   CanMsg* pCanMsg_p, DWORD* pdwCount_p);
+        UcanWriteCanMsgEx = lib.UcanWriteCanMsgEx
+        UcanWriteCanMsgEx.restype = ReturnCode
+        UcanWriteCanMsgEx.argtypes = [Handle, BYTE, POINTER(CanMsg), POINTER(DWORD)]
+        UcanWriteCanMsgEx.errcheck = check_result
 
-# BYTE PUBLIC UcanGetStatusEx (Handle UcanHandle_p, BYTE bChannel_p, Status* pStatus_p);
-UcanGetStatusEx = lib.UcanGetStatusEx
-UcanGetStatusEx.restype = ReturnCode
-UcanGetStatusEx.argtypes = [Handle, BYTE, POINTER(Status)]
-UcanGetStatusEx.errcheck = check_result
+        # BYTE PUBLIC UcanGetStatusEx (Handle UcanHandle_p, BYTE bChannel_p, Status* pStatus_p);
+        UcanGetStatusEx = lib.UcanGetStatusEx
+        UcanGetStatusEx.restype = ReturnCode
+        UcanGetStatusEx.argtypes = [Handle, BYTE, POINTER(Status)]
+        UcanGetStatusEx.errcheck = check_result
 
-# BYTE PUBLIC UcanGetMsgCountInfoEx (Handle UcanHandle_p, BYTE bChannel_p,
-#   MsgCountInfo* pMsgCountInfo_p);
-UcanGetMsgCountInfoEx = lib.UcanGetMsgCountInfoEx
-UcanGetMsgCountInfoEx.restype = ReturnCode
-UcanGetMsgCountInfoEx.argtypes = [Handle, BYTE, POINTER(MsgCountInfo)]
-UcanGetMsgCountInfoEx.errcheck = check_result
+        # BYTE PUBLIC UcanGetMsgCountInfoEx (Handle UcanHandle_p, BYTE bChannel_p,
+        #   MsgCountInfo* pMsgCountInfo_p);
+        UcanGetMsgCountInfoEx = lib.UcanGetMsgCountInfoEx
+        UcanGetMsgCountInfoEx.restype = ReturnCode
+        UcanGetMsgCountInfoEx.argtypes = [Handle, BYTE, POINTER(MsgCountInfo)]
+        UcanGetMsgCountInfoEx.errcheck = check_result
 
-# BYTE PUBLIC UcanGetMsgPending (Handle UcanHandle_p,
-#   BYTE bChannel_p, DWORD dwFlags_p, DWORD* pdwPendingCount_p);
-UcanGetMsgPending = lib.UcanGetMsgPending
-UcanGetMsgPending.restype = ReturnCode
-UcanGetMsgPending.argtypes = [Handle, BYTE, DWORD, POINTER(DWORD)]
-UcanGetMsgPending.errcheck = check_result
+        # BYTE PUBLIC UcanGetMsgPending (Handle UcanHandle_p,
+        #   BYTE bChannel_p, DWORD dwFlags_p, DWORD* pdwPendingCount_p);
+        UcanGetMsgPending = lib.UcanGetMsgPending
+        UcanGetMsgPending.restype = ReturnCode
+        UcanGetMsgPending.argtypes = [Handle, BYTE, DWORD, POINTER(DWORD)]
+        UcanGetMsgPending.errcheck = check_result
 
-# BYTE PUBLIC UcanGetCanErrorCounter (Handle UcanHandle_p,
-#   BYTE bChannel_p, DWORD* pdwTxErrorCounter_p, DWORD* pdwRxErrorCounter_p);
-UcanGetCanErrorCounter = lib.UcanGetCanErrorCounter
-UcanGetCanErrorCounter.restype = ReturnCode
-UcanGetCanErrorCounter.argtypes = [Handle, BYTE, POINTER(DWORD), POINTER(DWORD)]
-UcanGetCanErrorCounter.errcheck = check_result
+        # BYTE PUBLIC UcanGetCanErrorCounter (Handle UcanHandle_p,
+        #   BYTE bChannel_p, DWORD* pdwTxErrorCounter_p, DWORD* pdwRxErrorCounter_p);
+        UcanGetCanErrorCounter = lib.UcanGetCanErrorCounter
+        UcanGetCanErrorCounter.restype = ReturnCode
+        UcanGetCanErrorCounter.argtypes = [Handle, BYTE, POINTER(DWORD), POINTER(DWORD)]
+        UcanGetCanErrorCounter.errcheck = check_result
 
-# BYTE PUBLIC UcanSetTxTimeout (Handle UcanHandle_p,
-#   BYTE bChannel_p, DWORD dwTxTimeout_p);
-UcanSetTxTimeout = lib.UcanSetTxTimeout
-UcanSetTxTimeout.restype = ReturnCode
-UcanSetTxTimeout.argtypes = [Handle, BYTE, DWORD]
-UcanSetTxTimeout.errcheck = check_result
+        # BYTE PUBLIC UcanSetTxTimeout (Handle UcanHandle_p,
+        #   BYTE bChannel_p, DWORD dwTxTimeout_p);
+        UcanSetTxTimeout = lib.UcanSetTxTimeout
+        UcanSetTxTimeout.restype = ReturnCode
+        UcanSetTxTimeout.argtypes = [Handle, BYTE, DWORD]
+        UcanSetTxTimeout.errcheck = check_result
 
-# BYTE PUBLIC UcanDeinitCanEx (Handle UcanHandle_p, BYTE bChannel_p);
-UcanDeinitCanEx = lib.UcanDeinitCanEx
-UcanDeinitCanEx.restype = ReturnCode
-UcanDeinitCanEx.argtypes = [Handle, BYTE]
-UcanDeinitCanEx.errcheck = check_result
+        # BYTE PUBLIC UcanDeinitCanEx (Handle UcanHandle_p, BYTE bChannel_p);
+        UcanDeinitCanEx = lib.UcanDeinitCanEx
+        UcanDeinitCanEx.restype = ReturnCode
+        UcanDeinitCanEx.argtypes = [Handle, BYTE]
+        UcanDeinitCanEx.errcheck = check_result
 
-# BYTE PUBLIC UcanDeinitHardware (Handle UcanHandle_p);
-UcanDeinitHardware = lib.UcanDeinitHardware
-UcanDeinitHardware.restype = ReturnCode
-UcanDeinitHardware.argtypes = [Handle]
-UcanDeinitHardware.errcheck = check_result
+        # BYTE PUBLIC UcanDeinitHardware (Handle UcanHandle_p);
+        UcanDeinitHardware = lib.UcanDeinitHardware
+        UcanDeinitHardware.restype = ReturnCode
+        UcanDeinitHardware.argtypes = [Handle]
+        UcanDeinitHardware.errcheck = check_result
 
-# BYTE PUBLIC UcanDefineCyclicCanMsg (Handle UcanHandle_p,
-#   BYTE bChannel_p, CanMsg* pCanMsgList_p, DWORD dwCount_p);
-UcanDefineCyclicCanMsg = lib.UcanDefineCyclicCanMsg
-UcanDefineCyclicCanMsg.restype = ReturnCode
-UcanDefineCyclicCanMsg.argtypes = [Handle, BYTE, POINTER(CanMsg), DWORD]
-UcanDefineCyclicCanMsg.errcheck = check_result
+        # BYTE PUBLIC UcanDefineCyclicCanMsg (Handle UcanHandle_p,
+        #   BYTE bChannel_p, CanMsg* pCanMsgList_p, DWORD dwCount_p);
+        UcanDefineCyclicCanMsg = lib.UcanDefineCyclicCanMsg
+        UcanDefineCyclicCanMsg.restype = ReturnCode
+        UcanDefineCyclicCanMsg.argtypes = [Handle, BYTE, POINTER(CanMsg), DWORD]
+        UcanDefineCyclicCanMsg.errcheck = check_result
 
-# BYTE PUBLIC UcanReadCyclicCanMsg (Handle UcanHandle_p,
-#   BYTE bChannel_p, CanMsg* pCanMsgList_p, DWORD* pdwCount_p);
-UcanReadCyclicCanMsg = lib.UcanReadCyclicCanMsg
-UcanReadCyclicCanMsg.restype = ReturnCode
-UcanReadCyclicCanMsg.argtypes = [Handle, BYTE, POINTER(CanMsg), POINTER(DWORD)]
-UcanReadCyclicCanMsg.errcheck = check_result
+        # BYTE PUBLIC UcanReadCyclicCanMsg (Handle UcanHandle_p,
+        #   BYTE bChannel_p, CanMsg* pCanMsgList_p, DWORD* pdwCount_p);
+        UcanReadCyclicCanMsg = lib.UcanReadCyclicCanMsg
+        UcanReadCyclicCanMsg.restype = ReturnCode
+        UcanReadCyclicCanMsg.argtypes = [Handle, BYTE, POINTER(CanMsg), POINTER(DWORD)]
+        UcanReadCyclicCanMsg.errcheck = check_result
 
-# BYTE PUBLIC UcanEnableCyclicCanMsg (Handle UcanHandle_p,
-#   BYTE bChannel_p, DWORD dwFlags_p);
-UcanEnableCyclicCanMsg = lib.UcanEnableCyclicCanMsg
-UcanEnableCyclicCanMsg.restype = ReturnCode
-UcanEnableCyclicCanMsg.argtypes = [Handle, BYTE, DWORD]
-UcanEnableCyclicCanMsg.errcheck = check_result
+        # BYTE PUBLIC UcanEnableCyclicCanMsg (Handle UcanHandle_p,
+        #   BYTE bChannel_p, DWORD dwFlags_p);
+        UcanEnableCyclicCanMsg = lib.UcanEnableCyclicCanMsg
+        UcanEnableCyclicCanMsg.restype = ReturnCode
+        UcanEnableCyclicCanMsg.argtypes = [Handle, BYTE, DWORD]
+        UcanEnableCyclicCanMsg.errcheck = check_result
+
+    except Exception as ex:
+        log.warning("Cannot load SYSTEC ucan library: %s.", ex)
 
 
 class UcanServer(object):

@@ -1,7 +1,13 @@
 # coding: utf-8
 
-from ctypes import Structure, WINFUNCTYPE, POINTER, sizeof, c_ubyte as BYTE
-from ctypes.wintypes import WORD, DWORD, BOOL, LPVOID
+from ctypes import Structure, POINTER, sizeof
+from ctypes import c_ubyte as BYTE, c_ushort as WORD, c_ulong as DWORD, c_long as BOOL, c_void_p as LPVOID
+import os
+# Workaround for Unix based platforms to be able to load structures for testing, etc...
+if os.name == "nt":
+    from ctypes import WINFUNCTYPE as FUNCTYPE
+else:
+    from ctypes import CFUNCTYPE as FUNCTYPE
 
 from .constants import MsgFrameFormat
 
@@ -222,7 +228,7 @@ class HardwareInfoEx(Structure):
 
 # void PUBLIC UcanCallbackFktEx (Handle UcanHandle_p, DWORD dwEvent_p,
 #                                BYTE bChannel_p, void* pArg_p);
-CallbackFktEx = WINFUNCTYPE(None, Handle, DWORD, BYTE, LPVOID)
+CallbackFktEx = FUNCTYPE(None, Handle, DWORD, BYTE, LPVOID)
 
 
 class HardwareInitInfo(Structure):
@@ -324,8 +330,8 @@ class MsgCountInfo(Structure):
 
 
 # void (PUBLIC *ConnectControlFktEx) (DWORD dwEvent_p, DWORD dwParam_p, void* pArg_p);
-ConnectControlFktEx = WINFUNCTYPE(None, DWORD, DWORD, LPVOID)
+ConnectControlFktEx = FUNCTYPE(None, DWORD, DWORD, LPVOID)
 
 # typedef void (PUBLIC *EnumCallback) (DWORD dwIndex_p, BOOL fIsUsed_p,
 #    HardwareInfoEx* pHwInfoEx_p, HardwareInitInfo* pInitInfo_p, void* pArg_p);
-EnumCallback = WINFUNCTYPE(None, DWORD, BOOL, POINTER(HardwareInfoEx), POINTER(HardwareInitInfo), LPVOID)
+EnumCallback = FUNCTYPE(None, DWORD, BOOL, POINTER(HardwareInfoEx), POINTER(HardwareInitInfo), LPVOID)
