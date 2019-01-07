@@ -25,17 +25,25 @@
 from __future__ import absolute_import, print_function
 
 import argparse
-import can
-import curses
 import os
 import struct
 import sys
 import time
-
-from curses.ascii import ESC as KEY_ESC, SP as KEY_SPACE
+import logging
 from typing import Dict, List, Tuple, Union
-
+import can
 from can import __version__
+
+logger = logging.getLogger('can.serial')
+
+try:
+    import curses
+    from curses.ascii import ESC as KEY_ESC, SP as KEY_SPACE
+except ImportError:
+    # Probably on windows
+    logger.warning("You won't be able to use the viewer program without "
+                   "curses installed!")
+    curses = None
 
 
 class CanViewer:
