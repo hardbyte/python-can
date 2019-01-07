@@ -1,8 +1,8 @@
 # coding: utf-8
 
 """
-This module contains the base implementation of `can.Bus` as well
-as a list of all avalibale backends and some implemented
+This module contains the base implementation of :class:`can.BusABC` as well
+as a list of all available backends and some implemented
 CyclicSendTasks.
 """
 
@@ -11,7 +11,6 @@ from __future__ import absolute_import, print_function
 import sys
 import importlib
 import logging
-import re
 
 import can
 from .bus import BusABC

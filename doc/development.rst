@@ -47,6 +47,8 @@ These steps are a guideline on how to add a new backend to python-can.
 About the ``BusABC`` class
 --------------------------
 
+
+
 Concrete implementations *have to* implement the following:
     * :meth:`~can.BusABC.send` to send individual messages
     * :meth:`~can.BusABC._recv_internal` to receive individual messages
