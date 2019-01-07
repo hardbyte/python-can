@@ -303,8 +303,7 @@ class CyclicSendTask(LimitedDurationCyclicSendTaskABC,
 class MultiRateCyclicSendTask(CyclicSendTask):
     """Exposes more of the full power of the TX_SETUP opcode.
 
-    Transmits a message `count` times at `initial_period` then
-    continues to transmit message at `subsequent_period`.
+
     """
 
     def __init__(self, channel, message, count, initial_period, subsequent_period):

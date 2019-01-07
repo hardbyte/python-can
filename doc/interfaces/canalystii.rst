@@ -1,7 +1,8 @@
 CANalyst-II
 ===========
 
-CANalyst-II(+) is a USB to CAN Analyzer. The controlcan library is originally developed by `ZLG ZHIYUAN Electronics`_.
+CANalyst-II(+) is a USB to CAN Analyzer. The controlcan library is originally developed by
+`ZLG ZHIYUAN Electronics`_.
 
 
 Bus

@@ -30,6 +30,7 @@ API
     :members:
     :undoc-members:
 
+    .. automethod:: __iter__
 
 Transmitting
 ''''''''''''
