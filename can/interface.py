@@ -145,7 +145,7 @@ def detect_available_configs(interfaces=None):
         - `None` to search in all known interfaces.
     :rtype: list[dict]
     :return: an iterable of dicts, each suitable for usage in
-             the constructor of :class:`can.interface.Bus`.
+             the constructor of :class:`can.BusABC`.
     """
 
     # Figure out where to search

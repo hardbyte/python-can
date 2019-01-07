@@ -113,7 +113,7 @@ Message
 
         .. note::
 
-            The :meth:`Message.__init__` argument ``extended_id`` has been deprecated in favor of
+            The initializer argument and attribute ``extended_id`` has been deprecated in favor of
             ``is_extended_id``, but will continue to work for the ``3.x`` release series.
 
 
@@ -129,7 +129,7 @@ Message
 
     .. attribute:: is_remote_frame
 
-        :type: boolean
+        :type: bool
 
         This boolean attribute indicates if the message is a remote frame or a data frame, and
         modifies the bit in the CAN message's flags field indicating this.
