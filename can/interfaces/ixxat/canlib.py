@@ -123,6 +123,8 @@ def __check_status(result, function, arguments):
         raise VCIRxQueueEmptyError()
     elif result == constants.VCI_E_NO_MORE_ITEMS:
         raise StopIteration()
+    elif result == constants.VCI_E_ACCESSDENIED:
+        pass # not a real error, might happen if another program has initialized the bus
     elif result != constants.VCI_OK:
         raise VCIError(vciFormatError(function, result))
 
