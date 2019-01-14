@@ -114,6 +114,10 @@ class slcanBus(BusABC):
         # drop line terminator
         return string[:string.find(self.LINE_TERMINATOR)]
     
+    def flush(self):
+        while self.serialPortOrig.in_waiting:
+            self.serialPortOrig.read(1)
+    
     def open(self):
         self.write('O')
 
@@ -195,6 +199,7 @@ class slcanBus(BusABC):
 
     def get_version(self, timeout = None):
         cmd = "V"
+        self.flush()
         self.write(cmd)
         string = self.read(timeout)
         
@@ -210,6 +215,7 @@ class slcanBus(BusABC):
     
     def get_serial(self, timeout = None):
         cmd = "N"
+        self.flush()
         self.write(cmd)
         string = self.read(timeout)
         
