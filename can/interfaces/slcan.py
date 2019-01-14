@@ -109,8 +109,10 @@ class slcanBus(BusABC):
             return None
 
         string = self._buffer.decode()
-        del self._buffer[:]  
-        return string
+        del self._buffer[:]
+
+        # drop line terminator
+        return string[:string.find(self.LINE_TERMINATOR)]
     
     def open(self):
         self.write('O')
@@ -191,25 +193,25 @@ class slcanBus(BusABC):
         # Return an invalid file descriptor on Windows
         return -1
 
-    def get_version(self):
+    def get_version(self, timeout = None):
         cmd = "V"
         self.write(cmd)
-        string = self.read()
+        string = self.read(timeout)
         
         if not string:
             pass
         elif string[0] == cmd and len(string) == 5:
-            # convert BCD
-            hw_version = 10*ord(string[1]) + ord(string[2])
-            sw_version = 10*ord(string[3]) + ord(string[4])
+            # convert ASCII coded version
+            hw_version = int(string[1:3])
+            sw_version = int(string[3:5])
             return hw_version, sw_version
         
         return None, None
     
-    def get_serial(self):
+    def get_serial(self, timeout = None):
         cmd = "N"
         self.write(cmd)
-        string = self.read()
+        string = self.read(timeout)
         
         if not string:
             pass
