@@ -190,3 +190,31 @@ class slcanBus(BusABC):
             return self.serialPortOrig.fileno()
         # Return an invalid file descriptor on Windows
         return -1
+
+    def get_version(self):
+        cmd = "V"
+        self.write(cmd)
+        string = self.read()
+        
+        if not string:
+            pass
+        elif string[0] == cmd and len(string) == 5:
+            # convert BCD
+            hw_version = 10*ord(string[1]) + ord(string[2])
+            sw_version = 10*ord(string[3]) + ord(string[4])
+            return hw_version, sw_version
+        
+        return None, None
+    
+    def get_serial(self):
+        cmd = "N"
+        self.write(cmd)
+        string = self.read()
+        
+        if not string:
+            pass
+        elif string[0] == cmd and len(string) == 5:
+            serial = string[1:]
+            return serial
+        
+        return None
