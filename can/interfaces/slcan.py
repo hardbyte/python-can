@@ -48,6 +48,8 @@ class slcanBus(BusABC):
     _SLEEP_AFTER_SERIAL_OPEN = 2  # in seconds
 
     LINE_TERMINATOR = b'\r'
+    OK = b'\r'
+    ERROR = b'\a'
 
     def __init__(self, channel, ttyBaudrate=115200, bitrate=None,
                  sleep_after_open=_SLEEP_AFTER_SERIAL_OPEN,
@@ -83,12 +85,15 @@ class slcanBus(BusABC):
 
         if bitrate is not None:
             self.close()
+            self.read(None)
             if bitrate in self._BITRATES:
                 self.write(self._BITRATES[bitrate])
+                self.read(None)
             else:
                 raise ValueError("Invalid bitrate, choose one of " + (', '.join(self._BITRATES)) + '.')
 
         self.open()
+        self.read(None)
 
         super(slcanBus, self).__init__(channel, ttyBaudrate=115200,
                                        bitrate=None, rtscts=False, **kwargs)
@@ -101,18 +106,19 @@ class slcanBus(BusABC):
         if timeout != self.serialPortOrig.timeout:
             self.serialPortOrig.timeout = timeout
 
-        # If we don't have a complete message, do a blocking read
-        self._buffer += self.serialPortOrig.read_until(self.LINE_TERMINATOR)
-
-        if self.LINE_TERMINATOR not in self._buffer:
-            # Timed out
-            return None
+        while (self.OK not in self._buffer and self.ERROR not in self._buffer):
+            byte = self.serialPortOrig.read(1)
+            if byte:
+                self._buffer += byte
+            else:
+                logger.debug("Read timed out!")
+                return None
 
         string = self._buffer.decode()
+
         del self._buffer[:]
 
-        # drop line terminator
-        return string[:string.find(self.LINE_TERMINATOR)]
+        return string
     
     def flush(self):
         while self.serialPortOrig.in_waiting:
@@ -205,7 +211,7 @@ class slcanBus(BusABC):
         
         if not string:
             pass
-        elif string[0] == cmd and len(string) == 5:
+        elif string[0] == cmd and len(string) == 6:
             # convert ASCII coded version
             hw_version = int(string[1:3])
             sw_version = int(string[3:5])
@@ -221,7 +227,7 @@ class slcanBus(BusABC):
         
         if not string:
             pass
-        elif string[0] == cmd and len(string) == 5:
+        elif string[0] == cmd and len(string) == 6:
             serial = string[1:]
             return serial
         
