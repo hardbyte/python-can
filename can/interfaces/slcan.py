@@ -84,24 +84,26 @@ class slcanBus(BusABC):
         time.sleep(sleep_after_open)
 
         if bitrate is not None:
-            self.close()
-            self.read(None)
-            if bitrate in self._BITRATES:
-                self.write(self._BITRATES[bitrate])
-                self.read(None)
-            else:
-                raise ValueError("Invalid bitrate, choose one of " + (', '.join(self._BITRATES)) + '.')
+            self.set_bitrate(bitrate)
 
         self.open()
-        self.read(None)
 
         super(slcanBus, self).__init__(channel, ttyBaudrate=115200,
                                        bitrate=None, rtscts=False, **kwargs)
 
+    def set_bitrate(self, bitrate, timeout=None):
+        self.close()
+        if bitrate in self._BITRATES:
+            self.write(self._BITRATES[bitrate])
+            self.read(timeout)
+        else:
+            raise ValueError("Invalid bitrate, choose one of " + (', '.join(self._BITRATES)) + '.')
+        self.open()
+
     def write(self, string):
         self.serialPortOrig.write(string.encode() + self.LINE_TERMINATOR)
         self.serialPortOrig.flush()
-    
+
     def read(self, timeout):
         if timeout != self.serialPortOrig.timeout:
             self.serialPortOrig.timeout = timeout
@@ -124,11 +126,17 @@ class slcanBus(BusABC):
         while self.serialPortOrig.in_waiting:
             self.serialPortOrig.read(1)
     
-    def open(self):
+    def open(self, timeout=None):
         self.write('O')
+        response = self.read(timeout)
+        while (response!=self.OK and response!=self.ERROR):
+            response = self.read(timeout)
 
-    def close(self):
+    def close(self, timeout=None):
         self.write('C')
+        response = self.read(timeout)
+        while (response!=self.OK and response!=self.ERROR):
+            response = self.read(timeout)
 
     def _recv_internal(self, timeout):
         canId = None
@@ -203,11 +211,13 @@ class slcanBus(BusABC):
         # Return an invalid file descriptor on Windows
         return -1
 
-    def get_version(self, timeout = None):
+    def get_version(self, timeout=None):
         cmd = "V"
+        self.close(timeout)
         self.flush()
         self.write(cmd)
         string = self.read(timeout)
+        self.open(timeout)
         
         if not string:
             pass
@@ -219,11 +229,13 @@ class slcanBus(BusABC):
         
         return None, None
     
-    def get_serial(self, timeout = None):
+    def get_serial(self, timeout=None):
         cmd = "N"
+        self.close(timeout)
         self.flush()
         self.write(cmd)
         string = self.read(timeout)
+        self.open(timeout)
         
         if not string:
             pass
