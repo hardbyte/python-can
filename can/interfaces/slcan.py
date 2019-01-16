@@ -240,7 +240,7 @@ class slcanBus(BusABC):
         if not string:
             pass
         elif string[0] == cmd and len(string) == 6:
-            serial = string[1:]
+            serial = string[1:-1]
             return serial
         
         return None
