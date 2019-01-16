@@ -52,7 +52,7 @@ class slcanBus(BusABC):
     ERROR = b'\a'
 
     def __init__(self, channel, ttyBaudrate=115200, bitrate=None,
-                 sleep_after_open=_SLEEP_AFTER_SERIAL_OPEN,
+                 sleep_after_open=_SLEEP_AFTER_SERIAL_OPEN, timeout=None,
                  rtscts=False, **kwargs):
         """
         :param str channel:
@@ -77,28 +77,28 @@ class slcanBus(BusABC):
             (channel, ttyBaudrate) = channel.split('@')
 
         self.serialPortOrig = serial.serial_for_url(
-            channel, baudrate=ttyBaudrate, rtscts=rtscts)
+            channel, baudrate=ttyBaudrate, timeout=timeout, rtscts=rtscts)
 
         self._buffer = bytearray()
 
         time.sleep(sleep_after_open)
 
         if bitrate is not None:
-            self.set_bitrate(bitrate)
+            self.set_bitrate(bitrate, timeout)
 
-        self.open()
+        self.open(timeout)
 
         super(slcanBus, self).__init__(channel, ttyBaudrate=115200,
                                        bitrate=None, rtscts=False, **kwargs)
 
     def set_bitrate(self, bitrate, timeout=None):
-        self.close()
+        self.close(timeout)
         if bitrate in self._BITRATES:
             self.write(self._BITRATES[bitrate])
             self.read(timeout)
         else:
             raise ValueError("Invalid bitrate, choose one of " + (', '.join(self._BITRATES)) + '.')
-        self.open()
+        self.open(timeout)
 
     def write(self, string):
         self.serialPortOrig.write(string.encode() + self.LINE_TERMINATOR)
@@ -129,13 +129,15 @@ class slcanBus(BusABC):
     def open(self, timeout=None):
         self.write('O')
         response = self.read(timeout)
-        while (response!=self.OK and response!=self.ERROR):
+        # response is "" if read timed out
+        while (response and response!=self.OK and response!=self.ERROR):
             response = self.read(timeout)
 
     def close(self, timeout=None):
         self.write('C')
         response = self.read(timeout)
-        while (response!=self.OK and response!=self.ERROR):
+        # response is "" if read timed out
+        while (response and response!=self.OK and response!=self.ERROR):
             response = self.read(timeout)
 
     def _recv_internal(self, timeout):
@@ -201,8 +203,8 @@ class slcanBus(BusABC):
             sendStr += "".join(["%02X" % b for b in msg.data])
         self.write(sendStr)
 
-    def shutdown(self):
-        self.close()
+    def shutdown(self, timeout=None):
+        self.close(timeout)
         self.serialPortOrig.close()
 
     def fileno(self):
