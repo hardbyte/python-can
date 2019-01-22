@@ -131,7 +131,7 @@ class ASCWriter(BaseIOHandler, Listener):
     """
 
     FORMAT_MESSAGE = "{channel}  {id:<15} Rx   {dtype} {data}"
-    FORMAT_DATE = "%a %b %m %I:%M:%S %p %Y"
+    FORMAT_DATE = "%a %b %m %I:%M:%S.{} %p %Y"
     FORMAT_EVENT = "{timestamp: 9.6f} {message}\n"
 
     def __init__(self, file, channel=1):
@@ -146,7 +146,7 @@ class ASCWriter(BaseIOHandler, Listener):
         self.channel = channel
 
         # write start of file header
-        now = datetime.now().strftime("%a %b %m %I:%M:%S %p %Y")
+        now = datetime.now().strftime("%a %b %m %I:%M:%S.%f %p %Y")
         self.file.write("date %s\n" % now)
         self.file.write("base hex  timestamps absolute\n")
         self.file.write("internal events logged\n")
@@ -176,7 +176,8 @@ class ASCWriter(BaseIOHandler, Listener):
         if not self.header_written:
             self.last_timestamp = (timestamp or 0.0)
             self.started = self.last_timestamp
-            formatted_date = time.strftime(self.FORMAT_DATE, time.localtime(self.last_timestamp))
+            mlsec = repr(self.last_timestamp).split('.')[1][:3]
+            formatted_date = time.strftime(self.FORMAT_DATE.format(mlsec), time.localtime(self.last_timestamp))
             self.file.write("Begin Triggerblock %s\n" % formatted_date)
             self.header_written = True
             self.log_event("Start of measurement") # caution: this is a recursive call!
