@@ -218,7 +218,7 @@ class PcanBus(BusABC):
 
         rx_msg = Message(timestamp=timestamp,
                          arbitration_id=theMsg.ID,
-                         extended_id=bIsExt,
+                         is_extended_id=bIsExt,
                          is_remote_frame=bIsRTR,
                          dlc=dlc,
                          data=theMsg.DATA[:dlc])
@@ -232,7 +232,10 @@ class PcanBus(BusABC):
             msgType = PCAN_MESSAGE_STANDARD
 
         # create a TPCANMsg message structure
-        CANMsg = TPCANMsg()
+        if platform.system() == 'Darwin':
+            CANMsg = TPCANMsgMac()
+        else:
+            CANMsg = TPCANMsg()
 
         # configure the message. ID, Length of data, message type and data
         CANMsg.ID = msg.arbitration_id

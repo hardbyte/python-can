@@ -19,6 +19,7 @@ from can.message import Message
 from can.listener import Listener
 from .generic import BaseIOHandler
 
+
 class CSVWriter(BaseIOHandler, Listener):
     """Writes a comma separated text file with a line for
     each message. Includes a header line.
@@ -37,13 +38,13 @@ class CSVWriter(BaseIOHandler, Listener):
     data             base64 encoded          WzQyLCA5XQ==
     ================ ======================= ===============
 
-    Each line is terminated with a platform specific line seperator.
+    Each line is terminated with a platform specific line separator.
     """
 
     def __init__(self, file, append=False):
         """
-        :param file: a path-like object or as file-like object to write to
-                     If this is a file-like object, is has to opened in text
+        :param file: a path-like object or a file-like object to write to.
+                     If this is a file-like object, is has to open in text
                      write mode, not binary write mode.
         :param bool append: if set to `True` messages are appended to
                             the file and no header line is written, else
@@ -99,7 +100,7 @@ class CSVReader(BaseIOHandler):
             yield Message(
                 timestamp=float(timestamp),
                 is_remote_frame=(remote == '1'),
-                extended_id=(extended == '1'),
+                is_extended_id=(extended == '1'),
                 is_error_frame=(error == '1'),
                 arbitration_id=int(arbitration_id, base=16),
                 dlc=int(dlc),

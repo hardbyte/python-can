@@ -1,3 +1,30 @@
+Version 3.1.0
+====
+
+Major features
+--------------
+
+Two new interfaces this release:
+
+- SYSTEC contributed by @idaniel86 in PR #466
+- CANalyst-II contributed by @smeng9 in PR #476
+
+
+Other notable changes
+---------------------
+
+- #477 kvaser interface now supports bus statistics via a custom bus method.
+- #471 fix CAN FD issue in kvaser interface
+- #434 neovi supports receiving own messages
+- #447 improvements to serial interface:
+  * to allow receiving partial messages
+  * to fix issue with  DLC of remote frames
+  * addition of unit tests
+- #462 `Notifier` issue with asyncio.
+- #481 - Fix PCAN support on OSX.
+- #455 minor fix to `Message` initializer.
+
+
 Version 3.0.0
 ====
 
@@ -7,7 +34,7 @@ Major features
 * Adds support for developing `asyncio` applications with `python-can` more easily. This can be useful
   when implementing protocols that handles simultaneous connections to many nodes since you can write
   synchronous looking code without handling multiple threads and locking mechanisms. #388
-* New can viewer terminal application. #390
+* New can viewer terminal application. (`python -m can.viewer`) #390
 * More formally adds task management responsibility to the `Bus`. By default tasks created with
   `bus.send_periodic` will have a reference held by the bus - this means in many cases the user
   doesn't need to keep the task in scope for their periodic messages to continue being sent. If
@@ -18,11 +45,10 @@ Major features
 Breaking changes
 ----------------
 
-- Interfaces should no longer override `send_periodic` and instead implement
-  `_send_periodic_internal` #426
-- writing to closed writers is not supported any more (it was supported only for some)
-- the method `Listener.on_message_received()` is now abstract (using `@abc.abstractmethod`)
-- the file in the reader/writer is now always stored in the attribute uniformly called `file`, and not in
+* Interfaces should no longer override `send_periodic` and instead implement
+  `_send_periodic_internal` to allow the Bus base class to manage tasks. #426
+* writing to closed writers is not supported any more (it was supported only for some)
+* the file in the reader/writer is now always stored in the attribute uniformly called `file`, and not in
   something like `fp`, `log_file` or `output_file`. Changed the name of the first parameter of the
   read/writer constructors from `filename` to `file`.
 
@@ -31,8 +57,9 @@ Other notable changes
 ---------------------
 
 * can.Message class updated #413
-    - Addition of a Message.equals method.
+    - Addition of a `Message.equals` method.
     - Deprecate id_type in favor of is_extended_id
+    - Initializer parameter extended_id deprecated in favor of is_extended_id
     - documentation, testing and example updates
     - Addition of support for various builtins: __repr__, __slots__, __copy__
 * IO module updates to bring consistency to the different CAN message writers and readers. #348
@@ -50,13 +77,14 @@ Other notable changes
       and only buffers messages up to a certain limit before writing/committing to the database.
     - the unused `header_line` attribute from `CSVReader` has been removed
     - privatized some attributes that are only to be  used internally in the classes
+    - the method `Listener.on_message_received()` is now abstract (using `@abc.abstractmethod`)
 * Start testing against Python 3.7 #380
 * All scripts have been moved into `can/scripts`. #370, #406
 * Added support for additional sections to the config #338
 * Code coverage reports added. #346, #374
 * Bug fix to thread safe bus. #397
 
-General fixes, cleanup and docs changes: (#347, #348, #367, #368, #370, #371, #373, #420, #417, #419)
+General fixes, cleanup and docs changes: (#347, #348, #367, #368, #370, #371, #373, #420, #417, #419, #432)
 
 Backend Specific Changes
 ------------------------
@@ -94,7 +122,7 @@ serial
 socketcan
 ~~~~~~~~~
 
-* socketcan tasks now reuse a bcm socket
+* socketcan tasks now reuse a bcm socket #404, #425, #426,
 * socketcan bugfix to receive error frames #384
 
 vector

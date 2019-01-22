@@ -11,7 +11,7 @@ This module contains the implementation of :class:`can.Message`.
 from __future__ import absolute_import, division
         
 import warnings
-
+from copy import deepcopy
 
 class Message(object):
     """
@@ -82,7 +82,7 @@ class Message(object):
                  is_remote_frame=False, is_error_frame=False, channel=None,
                  dlc=None, data=None,
                  is_fd=False, bitrate_switch=False, error_state_indicator=False,
-                 extended_id=True,
+                 extended_id=True, # deprecated in 3.x, removed in 4.x
                  check=False):
         """
         To create a message object, simply provide any of the below attributes
@@ -221,7 +221,7 @@ class Message(object):
         new = Message(
             timestamp=self.timestamp,
             arbitration_id=self.arbitration_id,
-            extended_id=self.is_extended_id,
+            is_extended_id=self.is_extended_id,
             is_remote_frame=self.is_remote_frame,
             is_error_frame=self.is_error_frame,
             channel=self.channel,
@@ -238,7 +238,7 @@ class Message(object):
         new = Message(
             timestamp=self.timestamp,
             arbitration_id=self.arbitration_id,
-            extended_id=self.is_extended_id,
+            is_extended_id=self.is_extended_id,
             is_remote_frame=self.is_remote_frame,
             is_error_frame=self.is_error_frame,
             channel=deepcopy(self.channel, memo),

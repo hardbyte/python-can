@@ -1,6 +1,20 @@
 # coding: utf-8
 #
-# Copyright (C) 2018 Kristian Sloth Lauszus. All rights reserved.
+# Copyright (C) 2018 Kristian Sloth Lauszus.
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 3 of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program; if not, write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 # Contact information
 # -------------------
@@ -11,17 +25,25 @@
 from __future__ import absolute_import, print_function
 
 import argparse
-import can
-import curses
 import os
 import struct
 import sys
 import time
-
-from curses.ascii import ESC as KEY_ESC, SP as KEY_SPACE
+import logging
 from typing import Dict, List, Tuple, Union
-
+import can
 from can import __version__
+
+logger = logging.getLogger('can.serial')
+
+try:
+    import curses
+    from curses.ascii import ESC as KEY_ESC, SP as KEY_SPACE
+except ImportError:
+    # Probably on windows
+    logger.warning("You won't be able to use the viewer program without "
+                   "curses installed!")
+    curses = None
 
 
 class CanViewer:
@@ -352,8 +374,8 @@ def parse_args(args):
                                '\nNote that the IDs are always interpreted as hex values.'
                                '\nAn optional conversion from integers to real units can be given'
                                '\nas additional arguments. In order to convert from raw integer'
-                               '\nvalues the values are multiplied with the corresponding scaling value,'
-                               '\nsimilarly the values are divided by the scaling value in order'
+                               '\nvalues the values are divided with the corresponding scaling value,'
+                               '\nsimilarly the values are multiplied by the scaling value in order'
                                '\nto convert from real units to raw integer values.'
                                '\nFx lets say the uint8_t needs no conversion, but the uint16 and the uint32_t'
                                '\nneeds to be divided by 10 and 100 respectively:'
@@ -370,11 +392,11 @@ def parse_args(args):
                           metavar='{<id>:<format>,<id>:<format>:<scaling1>:...:<scalingN>,file.txt}',
                           nargs=argparse.ONE_OR_MORE, default='')
 
-    optional.add_argument('-f', '--filter', help='R|Comma separated CAN filters for the given CAN interface:'
+    optional.add_argument('-f', '--filter', help='R|Space separated CAN filters for the given CAN interface:'
                           '\n      <can_id>:<can_mask> (matches when <received_can_id> & mask == can_id & mask)'
                           '\n      <can_id>~<can_mask> (matches when <received_can_id> & mask != can_id & mask)'
-                          '\nFx to show only frames with ID 0x100 to 0x103:'
-                          '\n      python -m can.viewer -f 100:7FC'
+                          '\nFx to show only frames with ID 0x100 to 0x103 and 0x200 to 0x20F:'
+                          '\n      python -m can.viewer -f 100:7FC 200:7F0'
                           '\nNote that the ID and mask are alway interpreted as hex values',
                           metavar='{<can_id>:<can_mask>,<can_id>~<can_mask>}', nargs=argparse.ONE_OR_MORE, default='')
 

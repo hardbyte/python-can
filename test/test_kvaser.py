@@ -28,6 +28,7 @@ class KvaserTest(unittest.TestCase):
         canlib.canIoCtl = Mock(return_value=0)
         canlib.kvReadTimer = Mock()
         canlib.canSetBusParams = Mock()
+        canlib.canSetBusParamsFd = Mock()
         canlib.canBusOn = Mock()
         canlib.canBusOff = Mock()
         canlib.canClose = Mock()
@@ -37,6 +38,8 @@ class KvaserTest(unittest.TestCase):
         canlib.canWriteSync = Mock()
         canlib.canWrite = self.canWrite
         canlib.canReadWait = self.canReadWait
+        canlib.canGetBusStatistics = Mock()
+        canlib.canRequestBusStatistics = Mock()
 
         self.msg = {}
         self.msg_in_cue = None
@@ -100,7 +103,7 @@ class KvaserTest(unittest.TestCase):
         msg = can.Message(
             arbitration_id=0xc0ffee,
             data=[0, 25, 0, 1, 3, 1, 4],
-            extended_id=True)
+            is_extended_id=True)
 
         self.bus.send(msg)
 
@@ -113,7 +116,7 @@ class KvaserTest(unittest.TestCase):
         msg = can.Message(
             arbitration_id=0x321,
             data=[50, 51],
-            extended_id=False)
+            is_extended_id=False)
 
         self.bus.send(msg)
 
@@ -130,7 +133,7 @@ class KvaserTest(unittest.TestCase):
         self.msg_in_cue = can.Message(
             arbitration_id=0xc0ffef,
             data=[1, 2, 3, 4, 5, 6, 7, 8],
-            extended_id=True)
+            is_extended_id=True)
 
         now = time.time()
         msg = self.bus.recv()
@@ -144,7 +147,7 @@ class KvaserTest(unittest.TestCase):
         self.msg_in_cue = can.Message(
             arbitration_id=0x123,
             data=[100, 101],
-            extended_id=False)
+            is_extended_id=False)
 
         msg = self.bus.recv()
         self.assertEqual(msg.arbitration_id, 0x123)
@@ -159,6 +162,42 @@ class KvaserTest(unittest.TestCase):
             {'interface': 'kvaser', 'channel': 1}
         ]
         self.assertListEqual(configs, expected)
+
+    def test_canfd_default_data_bitrate(self):
+        canlib.canSetBusParams.reset_mock()
+        canlib.canSetBusParamsFd.reset_mock()
+        can.Bus(channel=0, bustype='kvaser', fd=True)
+        canlib.canSetBusParams.assert_called_once_with(
+            0, constants.canFD_BITRATE_500K_80P, 0, 0, 0, 0, 0)
+        canlib.canSetBusParamsFd.assert_called_once_with(
+            0, constants.canFD_BITRATE_500K_80P, 0, 0, 0)
+
+    def test_canfd_nondefault_data_bitrate(self):
+        canlib.canSetBusParams.reset_mock()
+        canlib.canSetBusParamsFd.reset_mock()
+        data_bitrate = 2000000
+        can.Bus(channel=0, bustype='kvaser', fd=True, data_bitrate=data_bitrate)
+        bitrate_constant = canlib.BITRATE_FD[data_bitrate]
+        canlib.canSetBusParams.assert_called_once_with(
+            0, constants.canFD_BITRATE_500K_80P, 0, 0, 0, 0, 0)
+        canlib.canSetBusParamsFd.assert_called_once_with(
+            0, bitrate_constant, 0, 0, 0)
+
+    def test_canfd_custom_data_bitrate(self):
+        canlib.canSetBusParams.reset_mock()
+        canlib.canSetBusParamsFd.reset_mock()
+        data_bitrate = 123456
+        can.Bus(channel=0, bustype='kvaser', fd=True, data_bitrate=data_bitrate)
+        canlib.canSetBusParams.assert_called_once_with(
+            0, constants.canFD_BITRATE_500K_80P, 0, 0, 0, 0, 0)
+        canlib.canSetBusParamsFd.assert_called_once_with(
+            0, data_bitrate, 0, 0, 0)
+
+    def test_bus_get_stats(self):
+        stats = self.bus.get_stats()
+        self.assertTrue(canlib.canRequestBusStatistics.called)
+        self.assertTrue(canlib.canGetBusStatistics.called)
+        self.assertIsInstance(stats, canlib.structures.BusStatistics)
 
     @staticmethod
     def canGetNumberOfChannels(count):

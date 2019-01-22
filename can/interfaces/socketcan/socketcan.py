@@ -303,8 +303,7 @@ class CyclicSendTask(LimitedDurationCyclicSendTaskABC,
 class MultiRateCyclicSendTask(CyclicSendTask):
     """Exposes more of the full power of the TX_SETUP opcode.
 
-    Transmits a message `count` times at `initial_period` then
-    continues to transmit message at `subsequent_period`.
+
     """
 
     def __init__(self, channel, message, count, initial_period, subsequent_period):
@@ -422,7 +421,7 @@ def capture_message(sock, get_channel=False):
     msg = Message(timestamp=timestamp,
                   channel=channel,
                   arbitration_id=arbitration_id,
-                  extended_id=is_extended_frame_format,
+                  is_extended_id=is_extended_frame_format,
                   is_remote_frame=is_remote_transmission_request,
                   is_error_frame=is_error_frame,
                   is_fd=is_fd,

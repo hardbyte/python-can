@@ -123,6 +123,8 @@ def __check_status(result, function, arguments):
         raise VCIRxQueueEmptyError()
     elif result == constants.VCI_E_NO_MORE_ITEMS:
         raise StopIteration()
+    elif result == constants.VCI_E_ACCESSDENIED:
+        pass # not a real error, might happen if another program has initialized the bus
     elif result != constants.VCI_OK:
         raise VCIError(vciFormatError(function, result))
 
@@ -470,7 +472,7 @@ class IXXATBus(BusABC):
         rx_msg = Message(
             timestamp=self._message.dwTime / self._tick_resolution,  # Relative time in s
             is_remote_frame=True if self._message.uMsgInfo.Bits.rtr else False,
-            extended_id=True if self._message.uMsgInfo.Bits.ext else False,
+            is_extended_id=True if self._message.uMsgInfo.Bits.ext else False,
             arbitration_id=self._message.dwMsgId,
             dlc=self._message.uMsgInfo.Bits.dlc,
             data=self._message.abData[:self._message.uMsgInfo.Bits.dlc],

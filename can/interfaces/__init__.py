@@ -22,7 +22,9 @@ BACKENDS = {
     'neovi':            ('can.interfaces.ics_neovi',        'NeoViBus'),
     'vector':           ('can.interfaces.vector',           'VectorBus'),
     'slcan':            ('can.interfaces.slcan',            'slcanBus'),
-    'canal':            ('can.interfaces.canal',            'CanalBus'),
+    'canalystii':       ('can.interfaces.canalystii',       'CANalystIIBus'),
+    'systec':           ('can.interfaces.systec',           'UcanBus'),
+    'canal':            ('can.interfaces.canal',            'CanalBus')
 }
 
 BACKENDS.update({

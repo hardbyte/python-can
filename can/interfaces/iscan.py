@@ -111,7 +111,7 @@ class IscanBus(BusABC):
                 break
 
         msg = Message(arbitration_id=raw_msg.message_id,
-                      extended_id=bool(raw_msg.is_extended),
+                      is_extended_id=bool(raw_msg.is_extended),
                       timestamp=time.time(),                    # Better than nothing...
                       is_remote_frame=bool(raw_msg.remote_req),
                       dlc=raw_msg.data_len,

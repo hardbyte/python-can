@@ -26,7 +26,7 @@ class BaseIOHandler(object):
         :param file: a path-like object to open a file, a file-like object
                      to be used as a file or `None` to not use a file at all
         :param str mode: the mode that should be used to open the file, see
-                         :func:`builtin.open`, ignored if *file* is `None`
+                         :func:`open`, ignored if *file* is `None`
         """
         if file is None or (hasattr(file, 'read') and hasattr(file, 'write')):
             # file is None or some file-like object

@@ -85,7 +85,7 @@ class ModifiableCyclicTaskABC(CyclicSendTaskABC):
 
 
 class MultiRateCyclicSendTaskABC(CyclicSendTaskABC):
-    """Exposes more of the full power of the TX_SETUP opcode.
+    """A Cyclic send task that supports switches send frequency after a set time.
     """
 
     def __init__(self, channel, message, count, initial_period, subsequent_period):
@@ -93,7 +93,7 @@ class MultiRateCyclicSendTaskABC(CyclicSendTaskABC):
         Transmits a message `count` times at `initial_period` then continues to
         transmit message at `subsequent_period`.
 
-        :param can.interface.Bus channel:
+        :param channel: See interface specific documentation.
         :param can.Message message:
         :param int count:
         :param float initial_period:
