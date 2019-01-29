@@ -52,7 +52,7 @@ Message
         :type: bytearray
 
         The data parameter of a CAN message is exposed as a **bytearray**
-        with length between 0 and 8.
+        with length between 0 and 7, 0 being the first byte in a sequence.
 
             >>> example_data = bytearray([1, 2, 3])
             >>> print(Message(data=example_data))
