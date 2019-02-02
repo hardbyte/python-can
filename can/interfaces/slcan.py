@@ -132,7 +132,7 @@ class slcanBus(BusABC):
                     return None
 
         # return first message
-        for i in xrange(len(self._buffer)):
+        for i in range(len(self._buffer)):
             if (    chr(self._buffer[i]) == self._OK or
                     chr(self._buffer[i]) == self._ERROR    ):
                 string = self._buffer[:i+1].decode()
