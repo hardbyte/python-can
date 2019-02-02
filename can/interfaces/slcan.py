@@ -85,16 +85,20 @@ class slcanBus(BusABC):
         time.sleep(sleep_after_open)
 
         if bitrate is not None:
-            self.close()
-            if bitrate in self._BITRATES:
-                self.write(self._BITRATES[bitrate])
-            else:
-                raise ValueError("Invalid bitrate, choose one of " + (', '.join(self._BITRATES)) + '.')
+            self.set_bitrate(self, bitrate)
 
         self.open()
 
         super(slcanBus, self).__init__(channel, ttyBaudrate=115200,
                                        bitrate=None, rtscts=False, **kwargs)
+
+    def set_bitrate(self, bitrate):
+        self.close()
+        if bitrate in self._BITRATES:
+            self.write(self._BITRATES[bitrate])
+        else:
+            raise ValueError("Invalid bitrate, choose one of " + (', '.join(self._BITRATES)) + '.')
+        self.open()
 
     def write(self, string):
         self.serialPortOrig.write(string.encode() + self.LINE_TERMINATOR)
