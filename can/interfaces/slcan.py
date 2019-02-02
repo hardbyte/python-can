@@ -47,6 +47,9 @@ class slcanBus(BusABC):
 
     _SLEEP_AFTER_SERIAL_OPEN = 2  # in seconds
 
+    _OK = b'\r'
+    _ERROR = b'\a'
+
     LINE_TERMINATOR = b'\r'
 
     def __init__(self, channel, ttyBaudrate=115200, bitrate=None,
@@ -97,6 +100,43 @@ class slcanBus(BusABC):
         self.serialPortOrig.write(string.encode() + self.LINE_TERMINATOR)
         self.serialPortOrig.flush()
 
+    def read(self, timeout):
+
+        # first read what is already in receive buffer
+        while self.serialPortOrig.in_waiting:
+            self._buffer += self.serialPortOrig.read(1)
+
+        # if we still don't have a complete message, do a blocking read
+        start = time.time()
+        time_left = timeout
+        while not (self._OK in self._buffer or self._ERROR in self._buffer):
+            self.serialPortOrig.timeout = time_left
+            byte = self.serialPortOrig.read(1)
+            if byte:
+                self._buffer += byte
+
+            # if timeout is None, try indefinitely
+            if timeout is None:
+                continue
+            # try next one only if there still is time, and with
+            # reduced timeout
+            else:
+                time_left = timeout - (time.time() - start)
+                if time_left > 0:
+                    continue
+                else:
+                    return None
+
+        # return first message
+        for i in xrange(len(self._buffer)):
+            if (    chr(self._buffer[i]) == self._OK or
+                    chr(self._buffer[i]) == self._ERROR    ):
+                string = self._buffer[:i+1].decode()
+                del self._buffer[:i+1]
+                break
+
+        return string
+
     def open(self):
         self.write('O')
 
@@ -104,53 +144,38 @@ class slcanBus(BusABC):
         self.write('C')
 
     def _recv_internal(self, timeout):
-        if timeout != self.serialPortOrig.timeout:
-            self.serialPortOrig.timeout = timeout
 
         canId = None
         remote = False
         extended = False
         frame = []
 
-        # First read what is already in the receive buffer
-        while (self.serialPortOrig.in_waiting and
-               self.LINE_TERMINATOR not in self._buffer):
-            self._buffer += self.serialPortOrig.read(1)
+        string = self.read(timeout)
 
-        # If we still don't have a complete message, do a blocking read
-        if self.LINE_TERMINATOR not in self._buffer:
-            self._buffer += self.serialPortOrig.read_until(self.LINE_TERMINATOR)
-
-        if self.LINE_TERMINATOR not in self._buffer:
-            # Timed out
-            return None, False
-
-        readStr = self._buffer.decode()
-        del self._buffer[:]
-        if not readStr:
+        if not string:
             pass
-        elif readStr[0] == 'T':
+        elif string[0] == 'T':
             # extended frame
-            canId = int(readStr[1:9], 16)
-            dlc = int(readStr[9])
+            canId = int(string[1:9], 16)
+            dlc = int(string[9])
             extended = True
             for i in range(0, dlc):
-                frame.append(int(readStr[10 + i * 2:12 + i * 2], 16))
-        elif readStr[0] == 't':
+                frame.append(int(string[10 + i * 2:12 + i * 2], 16))
+        elif string[0] == 't':
             # normal frame
-            canId = int(readStr[1:4], 16)
-            dlc = int(readStr[4])
+            canId = int(string[1:4], 16)
+            dlc = int(string[4])
             for i in range(0, dlc):
-                frame.append(int(readStr[5 + i * 2:7 + i * 2], 16))
-        elif readStr[0] == 'r':
+                frame.append(int(string[5 + i * 2:7 + i * 2], 16))
+        elif string[0] == 'r':
             # remote frame
-            canId = int(readStr[1:4], 16)
-            dlc = int(readStr[4])
+            canId = int(string[1:4], 16)
+            dlc = int(string[4])
             remote = True
-        elif readStr[0] == 'R':
+        elif string[0] == 'R':
             # remote extended frame
-            canId = int(readStr[1:9], 16)
-            dlc = int(readStr[9])
+            canId = int(string[1:9], 16)
+            dlc = int(string[9])
             extended = True
             remote = True
 
