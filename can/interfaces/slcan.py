@@ -221,3 +221,59 @@ class slcanBus(BusABC):
             return self.serialPortOrig.fileno()
         # Return an invalid file descriptor on Windows
         return -1
+
+    def get_version(self, timeout):
+        cmd = "V"
+        self.write(cmd)
+
+        start = time.time()
+        time_left = timeout
+        while True:
+            string = self.read(time_left)
+
+            if not string:
+                pass
+            elif string[0] == cmd and len(string) == 6:
+                # convert ASCII coded version
+                hw_version = int(string[1:3])
+                sw_version = int(string[3:5])
+                return hw_version, sw_version
+
+            # if timeout is None, try indefinitely
+            if timeout is None:
+                continue
+            # try next one only if there still is time, and with
+            # reduced timeout
+            else:
+                time_left = timeout - (time.time() - start)
+                if time_left > 0:
+                    continue
+                else:
+                    return None, None
+
+    def get_serial(self, timeout):
+        cmd = "N"
+        self.write(cmd)
+
+        start = time.time()
+        time_left = timeout
+        while True:
+            string = self.read(time_left)
+
+            if not string:
+                pass
+            elif string[0] == cmd and len(string) == 6:
+                serial = string[1:-1]
+                return serial
+
+            # if timeout is None, try indefinitely
+            if timeout is None:
+                continue
+            # try next one only if there still is time, and with
+            # reduced timeout
+            else:
+                time_left = timeout - (time.time() - start)
+                if time_left > 0:
+                    continue
+                else:
+                    return None
