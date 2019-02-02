@@ -137,6 +137,11 @@ class slcanBus(BusABC):
 
         return string
 
+    def flush(self):
+        del self._buffer[:]
+        while self.serialPortOrig.in_waiting:
+            self.serialPortOrig.read(1)
+
     def open(self):
         self.write('O')
 
