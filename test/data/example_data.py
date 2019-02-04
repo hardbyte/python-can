@@ -106,12 +106,10 @@ TEST_MESSAGES_REMOTE_FRAMES = [
     Message(
         arbitration_id=0xDADADA, is_extended_id=True, is_remote_frame=True,
         timestamp=TEST_TIME + .165,
-        data=[1, 2, 3, 4, 5, 6, 7, 8]
     ),
     Message(
         arbitration_id=0x123, is_extended_id=False, is_remote_frame=True,
         timestamp=TEST_TIME + .365,
-        data=[254, 255]
     ),
     Message(
         arbitration_id=0x768, is_extended_id=False, is_remote_frame=True,
