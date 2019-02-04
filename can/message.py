@@ -9,9 +9,10 @@ This module contains the implementation of :class:`can.Message`.
 """
 
 from __future__ import absolute_import, division
-        
+
 import warnings
 from copy import deepcopy
+
 
 class Message(object):
     """
@@ -53,7 +54,7 @@ class Message(object):
         # can be removed in 4.0
         # this method is only called if the attribute was not found elsewhere, like in __slots__
         try:
-            warnings.warn("Custom attributes of messages are deprecated and will be removed in the next major version", DeprecationWarning)
+            warnings.warn("Custom attributes of messages are deprecated and will be removed in 4.0", DeprecationWarning)
             return self._dict[key]
         except KeyError:
             raise AttributeError("'message' object has no attribute '{}'".format(key))
@@ -63,26 +64,26 @@ class Message(object):
         try:
             super(Message, self).__setattr__(key, value)
         except AttributeError:
-            warnings.warn("Custom attributes of messages are deprecated and will be removed in the next major version", DeprecationWarning)
+            warnings.warn("Custom attributes of messages are deprecated and will be removed in 4.0", DeprecationWarning)
             self._dict[key] = value
 
     @property
     def id_type(self):
         # TODO remove in 4.0
-        warnings.warn("Message.id_type is deprecated, use is_extended_id", DeprecationWarning)
+        warnings.warn("Message.id_type is deprecated and will be removed in 4.0, use is_extended_id instead", DeprecationWarning)
         return self.is_extended_id
 
     @id_type.setter
     def id_type(self, value):
         # TODO remove in 4.0
-        warnings.warn("Message.id_type is deprecated, use is_extended_id", DeprecationWarning)
+        warnings.warn("Message.id_type is deprecated and will be removed in 4.0, use is_extended_id instead", DeprecationWarning)
         self.is_extended_id = value
 
     def __init__(self, timestamp=0.0, arbitration_id=0, is_extended_id=None,
                  is_remote_frame=False, is_error_frame=False, channel=None,
                  dlc=None, data=None,
                  is_fd=False, bitrate_switch=False, error_state_indicator=False,
-                 extended_id=True, # deprecated in 3.x, removed in 4.x
+                 extended_id=None, # deprecated in 3.x, TODO remove in 4.x
                  check=False):
         """
         To create a message object, simply provide any of the below attributes
@@ -100,10 +101,15 @@ class Message(object):
 
         self.timestamp = timestamp
         self.arbitration_id = arbitration_id
+
+        if extended_id is not None:
+            # TODO remove in 4.0
+            warnings.warn("The extended_id parameter is deprecated and will be removed in 4.0, use is_extended_id instead", DeprecationWarning)
+
         if is_extended_id is not None:
             self.is_extended_id = is_extended_id
         else:
-            self.is_extended_id = extended_id
+            self.is_extended_id = True if extended_id is None else extended_id
 
         self.is_remote_frame = is_remote_frame
         self.is_error_frame = is_error_frame
