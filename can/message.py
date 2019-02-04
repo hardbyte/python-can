@@ -119,7 +119,7 @@ class Message(object):
         self.bitrate_switch = bitrate_switch
         self.error_state_indicator = error_state_indicator
 
-        if data is None or is_remote_frame:
+        if data is None:
             self.data = bytearray()
         elif isinstance(data, bytearray):
             self.data = data
@@ -268,6 +268,9 @@ class Message(object):
 
         assert not (self.is_remote_frame and self.is_error_frame), \
             "a message cannot be a remote and an error frame at the sane time"
+
+        assert self.data is None or not self.is_remote_frame, \
+            "remote frames may not carry any data"
 
         assert 0 <= self.arbitration_id, "arbitration IDs may not be negative"
 
