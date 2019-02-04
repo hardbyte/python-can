@@ -4,7 +4,7 @@ python:
   # CPython; versions pre-2.7 and 3.0-3.4 have reached EOL
   - "2.7"
   - "3.6"
-  - "3.7-dev" # TODO: change to "3.7" once it is supported by travis-ci
+  - "3.7"
   - "nightly"
   # PyPy:
   - "pypy" # Python 2.7
@@ -25,7 +25,7 @@ os:
 # - windows # Windows is not supported at all by Travis CI as of Feb. 2018
 
 # Linux setup
-dist: trusty
+dist: xenial
 sudo: required
 
 matrix:
