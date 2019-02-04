@@ -299,7 +299,7 @@ class Message(object):
         # see https://github.com/hardbyte/python-can/pull/413 for a discussion
         # on why a delta of 1.0e-6 was chosen
         return (
-            # check for identity first
+            # check for identity first and finish fast
             self is other or
             # then check for equality by value
             (
