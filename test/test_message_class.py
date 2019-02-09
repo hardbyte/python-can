@@ -13,6 +13,11 @@ from can import Message
 
 
 class TestMessageClass(unittest.TestCase):
+    """
+    This test tries many inputs to the message class constructor and then sanity checks
+    all methods and ensures that nothing crashes. It also checks whether Message.check()
+    allows all valid can frames.
+    """
 
     @given(
         timestamp=st.floats(min_value=0.0),
@@ -56,7 +61,7 @@ class TestMessageClass(unittest.TestCase):
             normal_copy = copy(message)
             deep_copy = deepcopy(message)
             for other in (normal_copy, deep_copy, message):
-                self.assertTrue(message.equals(other), str(other))
+                self.assertTrue(message.equals(other))
 
 
 if __name__ == '__main__':
