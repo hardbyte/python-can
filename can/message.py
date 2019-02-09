@@ -168,18 +168,19 @@ class Message(object):
             field_strings.append(" " * 24)
 
         if (self.data is not None) and (self.data.isalnum()):
-            try:
-                field_strings.append("'{}'".format(self.data.decode('utf-8')))
-            except UnicodeError:
-                pass
+            field_strings.append("'{}'".format(self.data.decode('utf-8', 'replace')))
 
         if self.channel is not None:
-            field_strings.append("Channel: {}".format(self.channel))
+            try:
+                field_strings.append("Channel: {}".format(self.channel))
+            except UnicodeEncodeError:
+                pass
 
         return "    ".join(field_strings).strip()
 
     def __len__(self):
-        return len(self.data)
+        # return the dlc such that it also works on remote frames
+        return self.dlc
 
     def __bool__(self):
         # For Python 3
@@ -269,9 +270,6 @@ class Message(object):
         assert not (self.is_remote_frame and self.is_error_frame), \
             "a message cannot be a remote and an error frame at the sane time"
 
-        assert self.data is None or not self.is_remote_frame, \
-            "remote frames may not carry any data"
-
         assert 0 <= self.arbitration_id, "arbitration IDs may not be negative"
 
         if self.is_extended_id:
@@ -285,8 +283,10 @@ class Message(object):
         else:
             assert self.dlc <= 8, "DLC was {} but it should be <= 8 for normal CAN frames".format(self.dlc)
 
-        if not self.is_remote_frame:
-            assert self.dlc == len(self.data), "the length of the DLC and the length of the data must match up"
+        if self.is_remote_frame:
+            assert self.data is None or len(self.data) == 0, "remote frames may not carry any data"
+        else:
+            assert self.dlc == len(self.data), "the DLC and the length of the data must match up for non remote frames"
 
         if not self.is_fd:
             assert not self.bitrate_switch, "bitrate switch is only allowed for CAN FD frames"
