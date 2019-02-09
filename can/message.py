@@ -119,7 +119,7 @@ class Message(object):
         self.bitrate_switch = bitrate_switch
         self.error_state_indicator = error_state_indicator
 
-        if data is None:
+        if data is None or is_remote_frame:
             self.data = bytearray()
         elif isinstance(data, bytearray):
             self.data = data
