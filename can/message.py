@@ -12,6 +12,7 @@ from __future__ import absolute_import, division
 
 import warnings
 from copy import deepcopy
+from math import isinf, isnan
 
 
 class Message(object):
@@ -136,7 +137,10 @@ class Message(object):
             self.dlc = dlc
 
         if check:
-            self._check()
+            try:
+                self._check()
+            except AssertionError as error:
+                raise ValueError(error.message)
 
     def __str__(self):
         field_strings = ["Timestamp: {0:>15.6f}".format(self.timestamp)]
@@ -266,6 +270,8 @@ class Message(object):
         """
 
         assert 0.0 <= self.timestamp, "the timestamp may not be negative"
+        assert not isinf(self.timestamp), "the timestamp may not be infinite"
+        assert not isnan(self.timestamp), "the timestamp may not be NaN"
 
         assert not (self.is_remote_frame and self.is_error_frame), \
             "a message cannot be a remote and an error frame at the sane time"
