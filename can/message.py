@@ -140,7 +140,7 @@ class Message(object):
             try:
                 self._check()
             except AssertionError as error:
-                raise ValueError(error.message)
+                raise ValueError(str(error))
 
     def __str__(self):
         field_strings = ["Timestamp: {0:>15.6f}".format(self.timestamp)]
