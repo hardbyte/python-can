@@ -32,7 +32,7 @@ class TestMessageClass(unittest.TestCase):
         bitrate_switch=st.booleans(),
         error_state_indicator=st.booleans()
     )
-    @settings(max_examples=2000, deadline=50)
+    @settings(max_examples=2000)
     def test_methods(self, **kwargs):
         is_valid = not (
             (not kwargs['is_remote_frame'] and (len(kwargs['data'] or []) != kwargs['dlc'])) or
@@ -46,8 +46,12 @@ class TestMessageClass(unittest.TestCase):
             isinf(kwargs['timestamp'])
         )
 
-        # this should return normally and not throw an assertion error
+        # this should return normally and not throw an exception
         message = Message(check=is_valid, **kwargs)
+
+        if kwargs['data'] is None or kwargs['is_remote_frame']:
+            kwargs['data'] = bytearray()
+
         if not is_valid and not kwargs['is_remote_frame']:
             with self.assertRaises(ValueError):
                 Message(check=True, **kwargs)
@@ -61,8 +65,8 @@ class TestMessageClass(unittest.TestCase):
         _ = "{}".format(message)
         with self.assertRaises(Exception):
             _ = "{somespec}".format(message)
-        if sys.version_info.major > 2 and not kwargs['is_remote_frame']:
-            self.assertEqual(bytes(message), kwargs['data'])
+        if sys.version_info.major > 2:
+            self.assertEqual(bytearray(bytes(message)), kwargs['data'])
 
         # check copies and equalities
         if is_valid:
