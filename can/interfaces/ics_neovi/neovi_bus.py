@@ -91,6 +91,8 @@ class NeoViBus(BusABC):
         :param int data_bitrate:
             Which bitrate to use for data phase in CAN FD.
             Defaults to arbitration bitrate.
+        :param override_library_name:
+            Absolute path or relative path to the library including filename.
         """
         if ics is None:
             raise ImportError('Please install python-ics')
@@ -100,6 +102,9 @@ class NeoViBus(BusABC):
 
         logger.info("CAN Filters: {}".format(can_filters))
         logger.info("Got configuration of: {}".format(config))
+
+        if 'override_library_name' in config:
+            ics.override_library_name(config.get('override_library_name'))
 
         if isinstance(channel, (list, tuple)):
             self.channels = channel
