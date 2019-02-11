@@ -167,8 +167,8 @@ class BusABC(object):
         - the (optional) duration expires
         - the Bus instance goes out of scope
         - the Bus instance is shutdown
-        - :meth:`Bus.stop_all_periodic_tasks()` is called
-        - the task's :meth:`Task.stop()` method is called.
+        - :meth:`BusABC.stop_all_periodic_tasks()` is called
+        - the task's :meth:`CyclicTask.stop()` method is called.
 
         :param can.Message msg:
             Message to transmit
@@ -368,6 +368,7 @@ class BusABC(object):
     def state(self):
         """
         Return the current state of the hardware
+
         :return: ACTIVE, PASSIVE or ERROR
         :rtype: NamedTuple
         """
@@ -377,6 +378,7 @@ class BusABC(object):
     def state(self, new_state):
         """
         Set the new state of the hardware
+
         :param new_state: BusState.ACTIVE, BusState.PASSIVE or BusState.ERROR
         """
         raise NotImplementedError("Property is not implemented.")

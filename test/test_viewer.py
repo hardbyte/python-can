@@ -1,7 +1,21 @@
 #!/usr/bin/python
 # coding: utf-8
 #
-# Copyright (C) 2018 Kristian Sloth Lauszus. All rights reserved.
+# Copyright (C) 2018 Kristian Sloth Lauszus.
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 3 of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program; if not, write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 # Contact information
 # -------------------
@@ -140,31 +154,31 @@ class CanViewerTest(unittest.TestCase):
     def test_send(self):
         # CANopen EMCY
         data = [1, 2, 3, 4, 5, 6, 7]  # Wrong length
-        msg = can.Message(arbitration_id=0x080 + 1, data=data, extended_id=False)
+        msg = can.Message(arbitration_id=0x080 + 1, data=data, is_extended_id=False)
         self.can_viewer.bus.send(msg)
 
         data = [1, 2, 3, 4, 5, 6, 7, 8]
-        msg = can.Message(arbitration_id=0x080 + 1, data=data, extended_id=False)
+        msg = can.Message(arbitration_id=0x080 + 1, data=data, is_extended_id=False)
         self.can_viewer.bus.send(msg)
 
         # CANopen HEARTBEAT
         data = [0x05]  # Operational
-        msg = can.Message(arbitration_id=0x700 + 0x7F, data=data, extended_id=False)
+        msg = can.Message(arbitration_id=0x700 + 0x7F, data=data, is_extended_id=False)
         self.can_viewer.bus.send(msg)
 
         # Send non-CANopen message
         data = [1, 2, 3, 4, 5, 6, 7, 8]
-        msg = can.Message(arbitration_id=0x101, data=data, extended_id=False)
+        msg = can.Message(arbitration_id=0x101, data=data, is_extended_id=False)
         self.can_viewer.bus.send(msg)
 
         # Send the same command, but with another data length
         data = [1, 2, 3, 4, 5, 6]
-        msg = can.Message(arbitration_id=0x101, data=data, extended_id=False)
+        msg = can.Message(arbitration_id=0x101, data=data, is_extended_id=False)
         self.can_viewer.bus.send(msg)
 
         # Message with extended id
         data = [1, 2, 3, 4, 5, 6, 7, 8]
-        msg = can.Message(arbitration_id=0x123456, data=data, extended_id=True)
+        msg = can.Message(arbitration_id=0x123456, data=data, is_extended_id=True)
         self.can_viewer.bus.send(msg)
         # self.assertTupleEqual(self.can_viewer.parse_canopen_message(msg), (None, None))
 

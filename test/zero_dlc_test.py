@@ -19,7 +19,7 @@ class ZeroDLCTest(unittest.TestCase):
         bus_send = can.interface.Bus(bustype='virtual')
         bus_recv = can.interface.Bus(bustype='virtual')
         data = [0, 1, 2, 3, 4, 5, 6, 7]
-        msg_send = can.Message(extended_id=False, arbitration_id=0x100, data=data)
+        msg_send = can.Message(is_extended_id=False, arbitration_id=0x100, data=data)
 
         bus_send.send(msg_send)
         msg_recv = bus_recv.recv()
@@ -38,7 +38,7 @@ class ZeroDLCTest(unittest.TestCase):
     def test_recv_zero_dlc(self):
         bus_send = can.interface.Bus(bustype='virtual')
         bus_recv = can.interface.Bus(bustype='virtual')
-        msg_send = can.Message(extended_id=False, arbitration_id=0x100, data=[])
+        msg_send = can.Message(is_extended_id=False, arbitration_id=0x100, data=[])
 
         bus_send.send(msg_send)
         msg_recv = bus_recv.recv()

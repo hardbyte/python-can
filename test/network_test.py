@@ -55,7 +55,7 @@ class ControllerAreaNetworkTestCase(unittest.TestCase):
                 arbitration_id=self.ids[i],
                 is_remote_frame=self.remote_flags[i],
                 is_error_frame=self.error_flags[i],
-                extended_id=self.extended_flags[i],
+                is_extended_id=self.extended_flags[i],
                 data=self.data[i]
             )
             #logging.debug("writing message: {}".format(m))

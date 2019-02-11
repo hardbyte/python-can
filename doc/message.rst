@@ -43,7 +43,7 @@ Message
         (either 2\ :sup:`11` - 1 for 11-bit IDs, or
         2\ :sup:`29` - 1 for 29-bit identifiers).
 
-            >>> print(Message(extended_id=False, arbitration_id=100))
+            >>> print(Message(is_extended_id=False, arbitration_id=100))
             Timestamp:        0.000000        ID: 0064    S        DLC: 0
 
 
@@ -105,15 +105,15 @@ Message
         This flag controls the size of the :attr:`~can.Message.arbitration_id` field.
         Previously this was exposed as `id_type`.
 
-        >>> print(Message(extended_id=False))
+        >>> print(Message(is_extended_id=False))
         Timestamp:        0.000000        ID: 0000    S        DLC: 0
-        >>> print(Message(extended_id=True))
+        >>> print(Message(is_extended_id=True))
         Timestamp:        0.000000    ID: 00000000    X        DLC: 0
 
 
         .. note::
 
-            The :meth:`Message.__init__` argument ``extended_id`` has been deprecated in favor of
+            The initializer argument and attribute ``extended_id`` has been deprecated in favor of
             ``is_extended_id``, but will continue to work for the ``3.x`` release series.
 
 
@@ -129,7 +129,7 @@ Message
 
     .. attribute:: is_remote_frame
 
-        :type: boolean
+        :type: bool
 
         This boolean attribute indicates if the message is a remote frame or a data frame, and
         modifies the bit in the CAN message's flags field indicating this.

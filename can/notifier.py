@@ -18,8 +18,15 @@ logger = logging.getLogger('can.Notifier')
 class Notifier(object):
 
     def __init__(self, bus, listeners, timeout=1.0, loop=None):
-        """Manages the distribution of **Messages** from a given bus/buses to a
-        list of listeners.
+        """Manages the distribution of :class:`can.Message` instances to listeners.
+
+        Supports multiple busses and listeners.
+
+        .. Note::
+
+            Remember to call `stop()` after all messages are received as
+            many listeners carry out flush operations to persist data.
+
 
         :param can.BusABC bus: A :ref:`bus` or a list of buses to listen to.
         :param list listeners: An iterable of :class:`~can.Listener`
