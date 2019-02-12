@@ -137,10 +137,7 @@ class Message(object):
             self.dlc = dlc
 
         if check:
-            try:
-                self._check()
-            except AssertionError as error:
-                raise ValueError(str(error))
+            self._check()
 
     def __str__(self):
         field_strings = ["Timestamp: {0:>15.6f}".format(self.timestamp)]
@@ -266,37 +263,47 @@ class Message(object):
         """Checks if the message parameters are valid.
         Assumes that the types are already correct.
 
-        :raises AssertionError: iff one or more attributes are invalid
+        :raises ValueError: iff one or more attributes are invalid
         """
 
-        assert 0.0 <= self.timestamp, "the timestamp may not be negative"
-        assert not isinf(self.timestamp), "the timestamp may not be infinite"
-        assert not isnan(self.timestamp), "the timestamp may not be NaN"
+        if self.timestamp < 0.0:
+            raise ValueError("the timestamp may not be negative")
+        if isinf(self.timestamp):
+            raise ValueError("the timestamp may not be infinite")
+        if isnan(self.timestamp):
+            raise ValueError("the timestamp may not be NaN")
 
-        assert not (self.is_remote_frame and self.is_error_frame), \
-            "a message cannot be a remote and an error frame at the sane time"
+        if self.is_remote_frame and self.is_error_frame:
+            raise ValueError("a message cannot be a remote and an error frame at the sane time")
 
-        assert 0 <= self.arbitration_id, "arbitration IDs may not be negative"
+        if self.arbitration_id < 0:
+            raise ValueError("arbitration IDs may not be negative")
 
         if self.is_extended_id:
-            assert self.arbitration_id < 0x20000000, "Extended arbitration IDs must be less than 2^29"
-        else:
-            assert self.arbitration_id < 0x800, "Normal arbitration IDs must be less than 2^11"
+            if 0x20000000 <= self.arbitration_id:
+                raise ValueError("Extended arbitration IDs must be less than 2^29")
+        elif 0x800 <= self.arbitration_id:
+            raise ValueError("Normal arbitration IDs must be less than 2^11")
 
-        assert 0 <= self.dlc, "DLC may not be negative"
+        if self.dlc < 0:
+            raise ValueError("DLC may not be negative")
         if self.is_fd:
-            assert self.dlc <= 64, "DLC was {} but it should be <= 64 for CAN FD frames".format(self.dlc)
-        else:
-            assert self.dlc <= 8, "DLC was {} but it should be <= 8 for normal CAN frames".format(self.dlc)
+            if 64 < self.dlc:
+                raise ValueError("DLC was {} but it should be <= 64 for CAN FD frames".format(self.dlc))
+        elif 8 < self.dlc:
+            raise ValueError("DLC was {} but it should be <= 8 for normal CAN frames".format(self.dlc))
 
         if self.is_remote_frame:
-            assert self.data is None or len(self.data) == 0, "remote frames may not carry any data"
-        else:
-            assert self.dlc == len(self.data), "the DLC and the length of the data must match up for non remote frames"
+            if self.data is not None and len(self.data) != 0:
+                raise ValueError("remote frames may not carry any data")
+        elif self.dlc != len(self.data):
+            raise ValueError("the DLC and the length of the data must match up for non remote frames")
 
         if not self.is_fd:
-            assert not self.bitrate_switch, "bitrate switch is only allowed for CAN FD frames"
-            assert not self.error_state_indicator, "error stat indicator is only allowed for CAN FD frames"
+            if self.bitrate_switch:
+                raise ValueError("bitrate switch is only allowed for CAN FD frames")
+            if self.error_state_indicator:
+                raise ValueError("error stat indicator is only allowed for CAN FD frames")
 
     def equals(self, other, timestamp_delta=1.0e-6):
         """
