@@ -119,6 +119,8 @@ class Usb2canBus(BusABC):
 
         self.handle = self.can.open(connector.encode('utf-8'), enable_flags)
 
+        super(Usb2canBus, self).__init__(channel=channel, *args, **kwargs)
+
     def send(self, msg, timeout=None):
         tx = message_convert_tx(msg)
         if timeout:
