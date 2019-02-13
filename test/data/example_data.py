@@ -30,7 +30,7 @@ TEST_TIME = 1483389946.197
 
 
 # List of messages of different types that can be used in tests
-TEST_MESSAGES_BASE = [
+TEST_MESSAGES_BASE = sort_messages([
     Message(
         # empty
     ),
@@ -98,20 +98,17 @@ TEST_MESSAGES_BASE = [
         arbitration_id=0x768, is_extended_id=False,
         timestamp=TEST_TIME + 3.165
     ),
-]
-TEST_MESSAGES_BASE = sort_messages(TEST_MESSAGES_BASE)
+])
 
 
-TEST_MESSAGES_REMOTE_FRAMES = [
+TEST_MESSAGES_REMOTE_FRAMES = sort_messages([
     Message(
         arbitration_id=0xDADADA, is_extended_id=True, is_remote_frame=True,
         timestamp=TEST_TIME + .165,
-        data=[1, 2, 3, 4, 5, 6, 7, 8]
     ),
     Message(
         arbitration_id=0x123, is_extended_id=False, is_remote_frame=True,
         timestamp=TEST_TIME + .365,
-        data=[254, 255]
     ),
     Message(
         arbitration_id=0x768, is_extended_id=False, is_remote_frame=True,
@@ -121,11 +118,10 @@ TEST_MESSAGES_REMOTE_FRAMES = [
         arbitration_id=0xABCDEF, is_extended_id=True, is_remote_frame=True,
         timestamp=TEST_TIME + 7858.67
     ),
-]
-TEST_MESSAGES_REMOTE_FRAMES = sort_messages(TEST_MESSAGES_REMOTE_FRAMES)
+])
 
 
-TEST_MESSAGES_ERROR_FRAMES = [
+TEST_MESSAGES_ERROR_FRAMES = sort_messages([
     Message(
         is_error_frame=True
     ),
@@ -137,8 +133,7 @@ TEST_MESSAGES_ERROR_FRAMES = [
         is_error_frame=True,
         timestamp=TEST_TIME + 17.157
     )
-]
-TEST_MESSAGES_ERROR_FRAMES = sort_messages(TEST_MESSAGES_ERROR_FRAMES)
+])
 
 
 TEST_ALL_MESSAGES = sort_messages(TEST_MESSAGES_BASE + TEST_MESSAGES_REMOTE_FRAMES + \
