@@ -36,7 +36,8 @@ tests_require = [
     'pytest-cov~=2.5',
     'codecov~=2.0',
     'future',
-    'six'
+    'six',
+    'hypothesis'
 ] + extras_require['serial']
 
 extras_require['test'] = tests_require

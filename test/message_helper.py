@@ -1,13 +1,21 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+"""
+This module contains a helper for writing test cases that need to compare messages.
+"""
+
 from __future__ import absolute_import, print_function
 
 from copy import copy
 
 
 class ComparingMessagesTestCase(object):
-    """Must be extended by a class also extending a unittest.TestCase.
+    """
+    Must be extended by a class also extending a unittest.TestCase.
+
+    .. note:: This class does not extend unittest.TestCase so it does not get
+              run as a test itself.
     """
 
     def __init__(self, allowed_timestamp_delta=0.0, preserves_channel=True):
