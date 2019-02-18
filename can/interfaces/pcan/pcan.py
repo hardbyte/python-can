@@ -233,9 +233,15 @@ class PcanBus(BusABC):
 
         # create a TPCANMsg message structure
         if platform.system() == 'Darwin':
-            CANMsg = TPCANMsgMac()
+            if msg.is_fd:
+                CANMsg = TPCANMsgFDMac()
+            else:
+                CANMsg = TPCANMsgMac()
         else:
-            CANMsg = TPCANMsg()
+            if msg.is_fd:
+                CANMsg = TPCANMsgFD()
+            else:
+                CANMsg = TPCANMsg()
 
         # configure the message. ID, Length of data, message type and data
         CANMsg.ID = msg.arbitration_id
