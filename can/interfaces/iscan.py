@@ -147,6 +147,7 @@ class IscanError(CanError):
         10: "Thread already started",
         11: "Buffer overrun",
         12: "Device not initialized",
+        15: "Found the device, but it is being used by another process",
         16: "Bus error",
         17: "Bus off",
         18: "Error passive",
