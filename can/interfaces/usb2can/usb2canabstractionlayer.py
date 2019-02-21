@@ -5,10 +5,13 @@ This wrapper is for windows or direct access via CANAL API.
 Socket CAN is recommended under Unix/Linux systems.
 """
 
-import can
+from __future__ import division, print_function, absolute_import
+
 from ctypes import *
 from struct import *
 import logging
+
+import can
 
 log = logging.getLogger('can.usb2can')
 
@@ -17,12 +20,16 @@ flags = c_ulong
 pConfigureStr = c_char_p
 handle = c_long
 timeout = c_ulong
-filter = c_ulong
+filter_t = c_ulong
 
 # flags mappings
 IS_ERROR_FRAME = 4
 IS_REMOTE_FRAME = 2
 IS_ID_TYPE = 1
+
+CANAL_STATUS_OK = 0
+CANAL_ERROR_RCV_EMPTY = 19
+CANAL_ERROR_TIMEOUT = 32
 
 
 class CanalStatistics(Structure):
@@ -59,17 +66,27 @@ class Usb2CanAbstractionLayer:
     """A low level wrapper around the usb2can library.
 
     Documentation: http://www.8devices.com/media/products/usb2can/downloads/CANAL_API.pdf
-
     """
-    def __init__(self):
-        self.__m_dllBasic = windll.LoadLibrary("usb2can.dll")
+
+    def __init__(self, dll="usb2can.dll"):
+        """
+        :type dll: str or path-like
+        :param dll (optional): the path to the usb2can DLL to load
+        :raises OSError: if the DLL could not be loaded
+        """
+        self.__m_dllBasic = windll.LoadLibrary(dll)
 
         if self.__m_dllBasic is None:
-            log.warning('DLL failed to load')
+            log.warning('DLL failed to load at path: {}'.format(dll))
 
-    def open(self, pConfigureStr, flags):
+    def open(self, configuration, flags):
         try:
-            res = self.__m_dllBasic.CanalOpen(pConfigureStr, flags)
+            # unicode is not supported
+            configuration = configuration.encode('ascii', 'ignore')
+            result = self.__m_dllBasic.CanalOpen(configuration, flags)
+            if result != CANAL_STATUS_OK:
+                raise can.CanError("CanalOpen failed, configure string: " + configuration)
+
             return res
         except:
             log.warning('Failed to open')

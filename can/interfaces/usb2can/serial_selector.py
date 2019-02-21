@@ -3,6 +3,8 @@
 """
 """
 
+from __future__ import division, print_function, absolute_import
+
 import logging
 
 try:
@@ -27,14 +29,19 @@ def WMIDateStringToDate(dtmDate):
     return strDateTime
 
 
-def serial():
-    strComputer = '.'
-    objWMIService = win32com.client.Dispatch("WbemScripting.SWbemLocator")
-    objSWbemServices = objWMIService.ConnectServer(strComputer, "root\cimv2")
-    colItems = objSWbemServices.ExecQuery("SELECT * FROM Win32_USBControllerDevice")
+def find_serial_devices(serial_matcher="ED"):
+    """
+    Finds a list of serial devices.
 
-    for objItem in colItems:
-        string = objItem.Dependent
-        # find based on beginning of serial
-        if 'ED' in string:
-            return string[len(string) - 9:len(string) - 1]
+    :rtype: List[str]
+    """
+    objWMIService = win32com.client.Dispatch("WbemScripting.SWbemLocator")
+    objSWbemServices = objWMIService.ConnectServer(".", "root\cimv2")
+    items = objSWbemServices.ExecQuery("SELECT * FROM Win32_USBControllerDevice")
+    ids = map(lambda item: item.Dependent, items)
+
+    return [
+        string[len(string) - 9:len(string) - 1]
+        for string in ids
+        if serial_matcher in string
+    ]
