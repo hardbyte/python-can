@@ -17,16 +17,6 @@ from .serial_selector import find_serial_devices
 log = logging.getLogger('can.usb2can')
 
 
-def format_connection_string(deviceID, baudrate='500'):
-    """Set up the connection string for the device.
-
-    >>> config = deviceID + '; ' + baudrate
-
-    :rtype: str
-    """
-    return "%s; %s" % (deviceID, baudrate)
-
-
 def message_convert_tx(msg):
     messagetx = CanalMsg()
 
@@ -120,7 +110,7 @@ class Usb2canBus(BusABC):
 
         self.channel_info = "USB2CAN device {}".format(device_id)
 
-        connector = format_connection_string(device_id, baudrate)
+        connector = "%s; %s" % (device_id, baudrate)
         # we need to convert this into bytes, since the underlying DLL cannot
         # handle non-ASCII configuration strings
         self.handle = self.can.open(connector.encode('utf-8', 'ignore'), flags)

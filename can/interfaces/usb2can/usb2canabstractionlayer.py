@@ -81,10 +81,11 @@ class Usb2CanAbstractionLayer:
 
     def open(self, configuration, flags):
         """
-        Opens a CAN connection.
+        Opens a CAN connection using `CanalOpen()`.
 
         :param bytes configuration: the configuration as ASCII bytes
                                     (or simply as a str on Python 2)
+        :param int flags: the flags to be set
 
         :raises can.CanError: if any error occured
         :returns: Nothing
