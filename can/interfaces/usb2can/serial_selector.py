@@ -38,10 +38,5 @@ def find_serial_devices(serial_matcher="ED"):
     objWMIService = win32com.client.Dispatch("WbemScripting.SWbemLocator")
     objSWbemServices = objWMIService.ConnectServer(".", "root\cimv2")
     items = objSWbemServices.ExecQuery("SELECT * FROM Win32_USBControllerDevice")
-    ids = map(lambda item: item.Dependent, items)
-
-    return [
-        string[len(string) - 9:len(string) - 1]
-        for string in ids
-        if serial_matcher in string
-    ]
+    ids = (item.Dependent[-8:] for item in items)
+    return [el for el in ids if serial_matcher in el]
