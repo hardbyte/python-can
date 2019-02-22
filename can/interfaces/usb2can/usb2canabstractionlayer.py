@@ -80,17 +80,24 @@ class Usb2CanAbstractionLayer:
             log.warning('DLL failed to load at path: {}'.format(dll))
 
     def open(self, configuration, flags):
+        """
+        Opens a CAN connection.
+
+        :param bytes configuration: the configuration as ASCII bytes
+                                    (or simply as a str on Python 2)
+
+        :raises can.CanError: if any error occured
+        :returns: Nothing
+        """
         try:
             # unicode is not supported
-            configuration = configuration.encode('ascii', 'ignore')
             result = self.__m_dllBasic.CanalOpen(configuration, flags)
             if result != CANAL_STATUS_OK:
-                raise can.CanError("CanalOpen failed, configure string: " + configuration)
-
-            return res
-        except:
-            log.warning('Failed to open')
-            raise
+                raise can.CanError('CanalOpen() failed, configuration: "{}", return code: {}'
+                                   .format(configuration, result))
+        except Exception as ex:
+            raise can.CanError('CanalOpen() failed, configuration: "{}", error: {}'
+                               .format(configuration, ex))
 
     def close(self, handle):
         try:

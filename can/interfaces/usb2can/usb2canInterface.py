@@ -18,9 +18,11 @@ log = logging.getLogger('can.usb2can')
 
 
 def format_connection_string(deviceID, baudrate='500'):
-    """setup the string for the device
+    """Set up the connection string for the device.
 
     >>> config = deviceID + '; ' + baudrate
+
+    :rtype: str
     """
     return "%s; %s" % (deviceID, baudrate)
 
@@ -69,11 +71,11 @@ def message_convert_rx(messagerx):
 
 class Usb2canBus(BusABC):
     """Interface to a USB2CAN Bus.
-    
+
     This interface only works on Windows.
     Please use socketcan on Linux.
 
-    :param str channel:
+    :param str channel (optional):
         The device's serial number. If not provided, Windows Management Instrumentation
         will be used to identify the first such device.
 
@@ -88,31 +90,40 @@ class Usb2canBus(BusABC):
         Path to the DLL with the CANAL API to load
         Defaults to 'usb2can.dll'
 
+    :param str serial (optional):
+        Alias for `channel` that is provided for legacy reasons.
+        If both `serial` and `channel` are set, `serial` will be used and
+        channel will be ignored.
+
     """
 
-    def __init__(self, channel, dll='usb2can.dll', flags=0x00000008,
+    def __init__(self, channel=None, dll="usb2can.dll", flags=0x00000008,
                  bitrate=500000, *args, **kwargs):
 
         self.can = Usb2CanAbstractionLayer(dll)
 
-        self.channel_info = "USB2CAN device {}".format(channel)
-
-        # code to get the serial number of the device
-        if 'serial' in kwargs:
-            deviceID = kwargs["serial"]
-        elif channel is not None:
-            deviceID = channel
+        # get the serial number of the device
+        if "serial" in kwargs:
+            device_id = kwargs["serial"]
         else:
+            device_id = channel
+
+        # search for a serial number if the device_id is None or empty
+        if not device_id:
             devices = find_serial_devices()
             if not devices:
-                raise CanError("could not find any serial device")
-            deviceID = devices[0]
+                raise CanError("could not automatically find any serial device")
+            device_id = devices[0]
 
         # convert to kb/s and cap: max rate is 1000 kb/s
         baudrate = min(int(bitrate // 1000), 1000)
 
-        connector = format_connection_string(deviceID, baudrate)
-        self.handle = self.can.open(connector.encode('utf-8'), flags)
+        self.channel_info = "USB2CAN device {}".format(device_id)
+
+        connector = format_connection_string(device_id, baudrate)
+        # we need to convert this into bytes, since the underlying DLL cannot
+        # handle non-ASCII configuration strings
+        self.handle = self.can.open(connector.encode('utf-8', 'ignore'), flags)
 
         super(Usb2canBus, self).__init__(channel=channel, dll=dll, flags=flags,
                                          bitrate=bitrate, *args, **kwargs)
