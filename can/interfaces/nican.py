@@ -245,7 +245,7 @@ class NicanBus(BusABC):
                       channel=self.channel,
                       is_remote_frame=is_remote_frame,
                       is_error_frame=is_error_frame,
-                      extended_id=is_extended,
+                      is_extended_id=is_extended,
                       arbitration_id=arb_id,
                       dlc=dlc,
                       data=raw_msg.data[:dlc])

@@ -64,7 +64,7 @@ class SqliteReader(BaseIOHandler):
         return Message(
             timestamp=timestamp,
             is_remote_frame=bool(is_remote),
-            extended_id=bool(is_extended),
+            is_extended_id=bool(is_extended),
             is_error_frame=bool(is_error),
             arbitration_id=can_id,
             dlc=dlc,
@@ -228,7 +228,7 @@ class SqliteWriter(BaseIOHandler, BufferedReader):
 
     def stop(self):
         """Stops the reader an writes all remaining messages to the database. Thus, this
-        might take a while an block.
+        might take a while and block.
         """
         BufferedReader.stop(self)
         self._stop_running_event.set()

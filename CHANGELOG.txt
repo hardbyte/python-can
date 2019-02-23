@@ -1,3 +1,34 @@
+Version 3.1.0
+====
+
+Major features
+--------------
+
+Two new interfaces this release:
+
+- SYSTEC contributed by @idaniel86 in PR #466
+- CANalyst-II contributed by @smeng9 in PR #476
+
+
+Other notable changes
+---------------------
+
+- #477 The kvaser interface now supports bus statistics via a custom bus method.
+- #434 neovi now supports receiving own messages
+- #490 Adding option to override the neovi library name
+- #488 Allow simultaneous access to IXXAT cards
+- #447 Improvements to serial interface:
+  * to allow receiving partial messages
+  * to fix issue with  DLC of remote frames
+  * addition of unit tests
+- #497 Small API changes to `Message` and added unit tests
+- #471 Fix CAN FD issue in kvaser interface
+- #462 Fix `Notifier` issue with asyncio
+- #481 Fix PCAN support on OSX
+- #455 Fix to `Message` initializer
+- Small bugfixes and improvements
+
+
 Version 3.0.0
 ====
 

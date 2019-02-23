@@ -26,7 +26,7 @@ def simple_periodic_send(bus):
     Sleeps for 2 seconds then stops the task.
     """
     print("Starting to send a message every 200ms for 2s")
-    msg = can.Message(arbitration_id=0x123, data=[1, 2, 3, 4, 5, 6], extended_id=False)
+    msg = can.Message(arbitration_id=0x123, data=[1, 2, 3, 4, 5, 6], is_extended_id=False)
     task = bus.send_periodic(msg, 0.20)
     assert isinstance(task, can.CyclicSendTaskABC)
     time.sleep(2)
@@ -36,7 +36,7 @@ def simple_periodic_send(bus):
 
 def limited_periodic_send(bus):
     print("Starting to send a message every 200ms for 1s")
-    msg = can.Message(arbitration_id=0x12345678, data=[0, 0, 0, 0, 0, 0], extended_id=True)
+    msg = can.Message(arbitration_id=0x12345678, data=[0, 0, 0, 0, 0, 0], is_extended_id=True)
     task = bus.send_periodic(msg, 0.20, 1, store_task=False)
     if not isinstance(task, can.LimitedDurationCyclicSendTaskABC):
         print("This interface doesn't seem to support a ")
@@ -107,7 +107,7 @@ def test_periodic_send_with_modifying_data(bus):
 
 if __name__ == "__main__":
 
-    reset_msg = can.Message(arbitration_id=0x00, data=[0, 0, 0, 0, 0, 0], extended_id=False)
+    reset_msg = can.Message(arbitration_id=0x00, data=[0, 0, 0, 0, 0, 0], is_extended_id=False)
 
     for interface, channel in [
         ('socketcan', 'vcan0'),

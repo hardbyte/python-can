@@ -36,7 +36,8 @@ tests_require = [
     'pytest-cov~=2.5',
     'codecov~=2.0',
     'future',
-    'six'
+    'six',
+    'hypothesis'
 ] + extras_require['serial']
 
 extras_require['test'] = tests_require
@@ -100,7 +101,7 @@ setup(
     python_requires=">=2.7,!=3.0,!=3.1,!=3.2,!=3.3",
     install_requires=[
         'wrapt~=1.10',
-        'typing',
+        'typing;python_version<"3.5"',
         'windows-curses;platform_system=="Windows"',
     ],
     extras_require=extras_require,

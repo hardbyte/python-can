@@ -215,7 +215,7 @@ class BLFReader(BaseIOHandler):
                          can_data) = CAN_MSG_STRUCT.unpack_from(data, pos)
                         msg = Message(timestamp=timestamp,
                                       arbitration_id=can_id & 0x1FFFFFFF,
-                                      extended_id=bool(can_id & CAN_MSG_EXT),
+                                      is_extended_id=bool(can_id & CAN_MSG_EXT),
                                       is_remote_frame=bool(flags & REMOTE_FLAG),
                                       dlc=dlc,
                                       data=can_data[:dlc],
@@ -227,7 +227,7 @@ class BLFReader(BaseIOHandler):
                         length = dlc2len(dlc)
                         msg = Message(timestamp=timestamp,
                                       arbitration_id=can_id & 0x1FFFFFFF,
-                                      extended_id=bool(can_id & CAN_MSG_EXT),
+                                      is_extended_id=bool(can_id & CAN_MSG_EXT),
                                       is_remote_frame=bool(flags & REMOTE_FLAG),
                                       is_fd=bool(fd_flags & EDL),
                                       bitrate_switch=bool(fd_flags & BRS),
@@ -241,7 +241,7 @@ class BLFReader(BaseIOHandler):
                          can_data) = CAN_ERROR_EXT_STRUCT.unpack_from(data, pos)
                         msg = Message(timestamp=timestamp,
                                       is_error_frame=True,
-                                      extended_id=bool(can_id & CAN_MSG_EXT),
+                                      is_extended_id=bool(can_id & CAN_MSG_EXT),
                                       arbitration_id=can_id & 0x1FFFFFFF,
                                       dlc=dlc,
                                       data=can_data[:dlc],

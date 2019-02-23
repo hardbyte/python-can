@@ -65,7 +65,7 @@ def message_convert_rx(messagerx):
 
     msgrx = Message(timestamp=messagerx.timestamp,
                     is_remote_frame=REMOTE_FRAME,
-                    extended_id=ID_TYPE,
+                    is_extended_id=ID_TYPE,
                     is_error_frame=ERROR_FRAME,
                     arbitration_id=messagerx.id,
                     dlc=messagerx.sizeData,
@@ -118,6 +118,8 @@ class Usb2canBus(BusABC):
         connector = format_connection_string(deviceID, baudrate)
 
         self.handle = self.can.open(connector.encode('utf-8'), enable_flags)
+
+        super(Usb2canBus, self).__init__(channel=channel, *args, **kwargs)
 
     def send(self, msg, timeout=None):
         tx = message_convert_tx(msg)

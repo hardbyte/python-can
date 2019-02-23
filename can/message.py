@@ -9,8 +9,10 @@ This module contains the implementation of :class:`can.Message`.
 """
 
 from __future__ import absolute_import, division
-        
+
 import warnings
+from copy import deepcopy
+from math import isinf, isnan
 
 
 class Message(object):
@@ -53,7 +55,7 @@ class Message(object):
         # can be removed in 4.0
         # this method is only called if the attribute was not found elsewhere, like in __slots__
         try:
-            warnings.warn("Custom attributes of messages are deprecated and will be removed in the next major version", DeprecationWarning)
+            warnings.warn("Custom attributes of messages are deprecated and will be removed in 4.0", DeprecationWarning)
             return self._dict[key]
         except KeyError:
             raise AttributeError("'message' object has no attribute '{}'".format(key))
@@ -63,26 +65,26 @@ class Message(object):
         try:
             super(Message, self).__setattr__(key, value)
         except AttributeError:
-            warnings.warn("Custom attributes of messages are deprecated and will be removed in the next major version", DeprecationWarning)
+            warnings.warn("Custom attributes of messages are deprecated and will be removed in 4.0", DeprecationWarning)
             self._dict[key] = value
 
     @property
     def id_type(self):
         # TODO remove in 4.0
-        warnings.warn("Message.id_type is deprecated, use is_extended_id", DeprecationWarning)
+        warnings.warn("Message.id_type is deprecated and will be removed in 4.0, use is_extended_id instead", DeprecationWarning)
         return self.is_extended_id
 
     @id_type.setter
     def id_type(self, value):
         # TODO remove in 4.0
-        warnings.warn("Message.id_type is deprecated, use is_extended_id", DeprecationWarning)
+        warnings.warn("Message.id_type is deprecated and will be removed in 4.0, use is_extended_id instead", DeprecationWarning)
         self.is_extended_id = value
 
     def __init__(self, timestamp=0.0, arbitration_id=0, is_extended_id=None,
                  is_remote_frame=False, is_error_frame=False, channel=None,
                  dlc=None, data=None,
                  is_fd=False, bitrate_switch=False, error_state_indicator=False,
-                 extended_id=True,
+                 extended_id=None, # deprecated in 3.x, TODO remove in 4.x
                  check=False):
         """
         To create a message object, simply provide any of the below attributes
@@ -100,10 +102,15 @@ class Message(object):
 
         self.timestamp = timestamp
         self.arbitration_id = arbitration_id
+
+        if extended_id is not None:
+            # TODO remove in 4.0
+            warnings.warn("The extended_id parameter is deprecated and will be removed in 4.0, use is_extended_id instead", DeprecationWarning)
+
         if is_extended_id is not None:
             self.is_extended_id = is_extended_id
         else:
-            self.is_extended_id = extended_id
+            self.is_extended_id = True if extended_id is None else extended_id
 
         self.is_remote_frame = is_remote_frame
         self.is_error_frame = is_error_frame
@@ -162,18 +169,19 @@ class Message(object):
             field_strings.append(" " * 24)
 
         if (self.data is not None) and (self.data.isalnum()):
-            try:
-                field_strings.append("'{}'".format(self.data.decode('utf-8')))
-            except UnicodeError:
-                pass
+            field_strings.append("'{}'".format(self.data.decode('utf-8', 'replace')))
 
         if self.channel is not None:
-            field_strings.append("Channel: {}".format(self.channel))
+            try:
+                field_strings.append("Channel: {}".format(self.channel))
+            except UnicodeEncodeError:
+                pass
 
         return "    ".join(field_strings).strip()
 
     def __len__(self):
-        return len(self.data)
+        # return the dlc such that it also works on remote frames
+        return self.dlc
 
     def __bool__(self):
         # For Python 3
@@ -221,7 +229,7 @@ class Message(object):
         new = Message(
             timestamp=self.timestamp,
             arbitration_id=self.arbitration_id,
-            extended_id=self.is_extended_id,
+            is_extended_id=self.is_extended_id,
             is_remote_frame=self.is_remote_frame,
             is_error_frame=self.is_error_frame,
             channel=self.channel,
@@ -238,7 +246,7 @@ class Message(object):
         new = Message(
             timestamp=self.timestamp,
             arbitration_id=self.arbitration_id,
-            extended_id=self.is_extended_id,
+            is_extended_id=self.is_extended_id,
             is_remote_frame=self.is_remote_frame,
             is_error_frame=self.is_error_frame,
             channel=deepcopy(self.channel, memo),
@@ -255,33 +263,47 @@ class Message(object):
         """Checks if the message parameters are valid.
         Assumes that the types are already correct.
 
-        :raises AssertionError: iff one or more attributes are invalid
+        :raises ValueError: iff one or more attributes are invalid
         """
 
-        assert 0.0 <= self.timestamp, "the timestamp may not be negative"
+        if self.timestamp < 0.0:
+            raise ValueError("the timestamp may not be negative")
+        if isinf(self.timestamp):
+            raise ValueError("the timestamp may not be infinite")
+        if isnan(self.timestamp):
+            raise ValueError("the timestamp may not be NaN")
 
-        assert not (self.is_remote_frame and self.is_error_frame), \
-            "a message cannot be a remote and an error frame at the sane time"
+        if self.is_remote_frame and self.is_error_frame:
+            raise ValueError("a message cannot be a remote and an error frame at the sane time")
 
-        assert 0 <= self.arbitration_id, "arbitration IDs may not be negative"
+        if self.arbitration_id < 0:
+            raise ValueError("arbitration IDs may not be negative")
 
         if self.is_extended_id:
-            assert self.arbitration_id < 0x20000000, "Extended arbitration IDs must be less than 2^29"
-        else:
-            assert self.arbitration_id < 0x800, "Normal arbitration IDs must be less than 2^11"
+            if 0x20000000 <= self.arbitration_id:
+                raise ValueError("Extended arbitration IDs must be less than 2^29")
+        elif 0x800 <= self.arbitration_id:
+            raise ValueError("Normal arbitration IDs must be less than 2^11")
 
-        assert 0 <= self.dlc, "DLC may not be negative"
+        if self.dlc < 0:
+            raise ValueError("DLC may not be negative")
         if self.is_fd:
-            assert self.dlc <= 64, "DLC was {} but it should be <= 64 for CAN FD frames".format(self.dlc)
-        else:
-            assert self.dlc <= 8, "DLC was {} but it should be <= 8 for normal CAN frames".format(self.dlc)
+            if 64 < self.dlc:
+                raise ValueError("DLC was {} but it should be <= 64 for CAN FD frames".format(self.dlc))
+        elif 8 < self.dlc:
+            raise ValueError("DLC was {} but it should be <= 8 for normal CAN frames".format(self.dlc))
 
-        if not self.is_remote_frame:
-            assert self.dlc == len(self.data), "the length of the DLC and the length of the data must match up"
+        if self.is_remote_frame:
+            if self.data is not None and len(self.data) != 0:
+                raise ValueError("remote frames may not carry any data")
+        elif self.dlc != len(self.data):
+            raise ValueError("the DLC and the length of the data must match up for non remote frames")
 
         if not self.is_fd:
-            assert not self.bitrate_switch, "bitrate switch is only allowed for CAN FD frames"
-            assert not self.error_state_indicator, "error stat indicator is only allowed for CAN FD frames"
+            if self.bitrate_switch:
+                raise ValueError("bitrate switch is only allowed for CAN FD frames")
+            if self.error_state_indicator:
+                raise ValueError("error stat indicator is only allowed for CAN FD frames")
 
     def equals(self, other, timestamp_delta=1.0e-6):
         """
@@ -299,7 +321,7 @@ class Message(object):
         # see https://github.com/hardbyte/python-can/pull/413 for a discussion
         # on why a delta of 1.0e-6 was chosen
         return (
-            # check for identity first
+            # check for identity first and finish fast
             self is other or
             # then check for equality by value
             (
