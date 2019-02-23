@@ -19,6 +19,7 @@ from ..listener import Listener
 from ..util import channel2int
 from .generic import BaseIOHandler
 
+
 CAN_MSG_EXT = 0x80000000
 CAN_ID_MASK = 0x1FFFFFFF
 
@@ -48,7 +49,6 @@ class ASCReader(BaseIOHandler):
         else:
             is_extended = False
             can_id = int(str_can_id, 16)
-        #logging.debug('ASCReader: _extract_can_id("%s") -> %x, %r', str_can_id, can_id, is_extended)
         return can_id, is_extended
 
     def __iter__(self):
@@ -72,12 +72,12 @@ class ASCReader(BaseIOHandler):
             except ValueError:
                 pass
 
-            if dummy.strip()[0:10] == 'ErrorFrame':
+            if dummy.strip()[0:10].lower() == 'errorframe':
                 msg = Message(timestamp=timestamp, is_error_frame=True,
                               channel=channel)
                 yield msg
 
-            elif not isinstance(channel, int) or dummy.strip()[0:10] == 'Statistic:':
+            elif not isinstance(channel, int) or dummy.strip()[0:10].lower() == 'statistic:':
                 pass
 
             elif dummy[-1:].lower() == 'r':
