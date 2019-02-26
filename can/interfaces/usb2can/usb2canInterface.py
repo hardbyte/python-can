@@ -18,45 +18,43 @@ log = logging.getLogger('can.usb2can')
 
 
 def message_convert_tx(msg):
-    messagetx = CanalMsg()
+    message_tx = CanalMsg()
 
     length = msg.dlc
-    messagetx.sizeData = length
+    message_tx.sizeData = length
 
-    messagetx.id = msg.arbitration_id
+    message_tx.id = msg.arbitration_id
 
     for i in range(length):
-        messagetx.data[i] = msg.data[i]
+        message_tx.data[i] = msg.data[i]
 
-    messagetx.flags = 0x80000000
+    message_tx.flags = 0x80000000
 
     if msg.is_error_frame:
-        messagetx.flags |= IS_ERROR_FRAME
+        message_tx.flags |= IS_ERROR_FRAME
 
     if msg.is_remote_frame:
-        messagetx.flags |= IS_REMOTE_FRAME
+        message_tx.flags |= IS_REMOTE_FRAME
 
     if msg.is_extended_id:
-        messagetx.flags |= IS_ID_TYPE
+        message_tx.flags |= IS_ID_TYPE
 
-    return messagetx
+    return message_tx
 
 
-def message_convert_rx(messagerx):
+def message_convert_rx(message_rx):
     """convert the message from the CANAL type to pythoncan type"""
-    ID_TYPE = bool(messagerx.flags & IS_ID_TYPE)
-    REMOTE_FRAME = bool(messagerx.flags & IS_REMOTE_FRAME)
-    ERROR_FRAME = bool(messagerx.flags & IS_ERROR_FRAME)
+    is_extended_id = bool(message_rx.flags & IS_ID_TYPE)
+    is_remote_frame = bool(message_rx.flags & IS_REMOTE_FRAME)
+    is_error_frame = bool(message_rx.flags & IS_ERROR_FRAME)
 
-    msgrx = Message(timestamp=messagerx.timestamp,
-                    is_remote_frame=REMOTE_FRAME,
-                    is_extended_id=ID_TYPE,
-                    is_error_frame=ERROR_FRAME,
-                    arbitration_id=messagerx.id,
-                    dlc=messagerx.sizeData,
-                    data=messagerx.data[:messagerx.sizeData])
-
-    return msgrx
+    return Message(timestamp=message_rx.timestamp,
+                   is_remote_frame=is_remote_frame,
+                   is_extended_id=is_extended_id,
+                   is_error_frame=is_error_frame,
+                   arbitration_id=message_rx.id,
+                   dlc=message_rx.sizeData,
+                   data=message_rx.data[:message_rx.sizeData])
 
 
 class Usb2canBus(BusABC):
@@ -102,7 +100,7 @@ class Usb2canBus(BusABC):
         if not device_id:
             devices = find_serial_devices()
             if not devices:
-                raise CanError("could not automatically find any serial device")
+                raise CanError("could not automatically find any device")
             device_id = devices[0]
 
         # convert to kb/s and cap: max rate is 1000 kb/s
@@ -110,10 +108,10 @@ class Usb2canBus(BusABC):
 
         self.channel_info = "USB2CAN device {}".format(device_id)
 
-        connector = "%s; %s" % (device_id, baudrate)
+        connector = "{}; {}".format(device_id, baudrate)
         # we need to convert this into bytes, since the underlying DLL cannot
         # handle non-ASCII configuration strings
-        self.handle = self.can.open(connector.encode('utf-8', 'ignore'), flags)
+        self.handle = self.can.open(connector, flags)
 
         super(Usb2canBus, self).__init__(channel=channel, dll=dll, flags=flags,
                                          bitrate=bitrate, *args, **kwargs)
@@ -126,7 +124,7 @@ class Usb2canBus(BusABC):
         else:
             status = self.can.send(self.handle, byref(tx))
 
-        if status != CANAL_STATUS_OK:
+        if status != CANAL_ERROR_SUCCESS:
             raise CanError("could not send message: status == {}".format(status))
 
 
@@ -141,7 +139,7 @@ class Usb2canBus(BusABC):
             time = 0 if timeout is None else int(timeout * 1000)
             status = self.can.blocking_receive(self.handle, byref(messagerx), time)
 
-        if status == CANAL_STATUS_OK:
+        if status == CANAL_ERROR_SUCCESS:
             rx = message_convert_rx(messagerx)
         elif status == CANAL_ERROR_RCV_EMPTY or status == CANAL_ERROR_TIMEOUT:
             rx = None
@@ -159,7 +157,7 @@ class Usb2canBus(BusABC):
         """
         status = self.can.close(self.handle)
 
-        if status != CANAL_STATUS_OK:
+        if status != CANAL_ERROR_SUCCESS:
             raise CanError("could not shut down bus: status == {}".format(status))
 
     @staticmethod

@@ -27,7 +27,7 @@ IS_ERROR_FRAME = 4
 IS_REMOTE_FRAME = 2
 IS_ID_TYPE = 1
 
-CANAL_STATUS_OK = 0
+CANAL_ERROR_SUCCESS = 0
 CANAL_ERROR_RCV_EMPTY = 19
 CANAL_ERROR_TIMEOUT = 32
 
@@ -83,22 +83,27 @@ class Usb2CanAbstractionLayer:
         """
         Opens a CAN connection using `CanalOpen()`.
 
-        :param bytes configuration: the configuration as ASCII bytes
-                                    (or simply as a str on Python 2)
+        :param str configuration: the configuration: "device_id; baudrate"
         :param int flags: the flags to be set
 
-        :raises can.CanError: if any error occured
+        :raises can.CanError: if any error occurred
         :returns: Nothing
         """
         try:
             # unicode is not supported
-            result = self.__m_dllBasic.CanalOpen(configuration, flags)
-            if result != CANAL_STATUS_OK:
-                raise can.CanError('CanalOpen() failed, configuration: "{}", return code: {}'
-                                   .format(configuration, result))
+            config_ascii = configuration.encode('ascii', 'ignore')
+            result = self.__m_dllBasic.CanalOpen(config_ascii, flags)
         except Exception as ex:
+            # catch any errors thrown by this call and re-raise
             raise can.CanError('CanalOpen() failed, configuration: "{}", error: {}'
                                .format(configuration, ex))
+        else:
+            # any greater-than-zero return value indicates a success
+            # (see https://grodansparadis.gitbooks.io/the-vscp-daemon/canal_interface_specification.html)
+            # raise an error if the return code is <= 0
+            if result <= 0:
+                raise can.CanError('CanalOpen() failed, configuration: "{}", return code: {}'
+                                   .format(configuration, result))
 
     def close(self, handle):
         try:

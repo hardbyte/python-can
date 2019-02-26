@@ -31,7 +31,7 @@ def WMIDateStringToDate(dtmDate):
 
 def find_serial_devices(serial_matcher="ED"):
     """
-    Finds a list of serial devices.
+    Finds a list of USB devices where the serial number (partially) matches the given string.
 
     :rtype: List[str]
     """
@@ -39,4 +39,4 @@ def find_serial_devices(serial_matcher="ED"):
     objSWbemServices = objWMIService.ConnectServer(".", "root\cimv2")
     items = objSWbemServices.ExecQuery("SELECT * FROM Win32_USBControllerDevice")
     ids = (item.Dependent[-8:] for item in items)
-    return [el for el in ids if serial_matcher in el]
+    return [e for e in ids if e.startswith(serial_matcher)]
