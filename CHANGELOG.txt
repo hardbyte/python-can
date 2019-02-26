@@ -1,4 +1,4 @@
-Version 3.1.0
+Version 3.1.1
 ====
 
 Major features
@@ -28,6 +28,12 @@ Other notable changes
 - #455 Fix to `Message` initializer
 - Small bugfixes and improvements
 
+Version 3.1.0
+====
+
+Version 3.1.0 was built with old wheel and/or setuptools
+packages and was replaced with v3.1.1 after an installation
+but was discovered.
 
 Version 3.0.0
 ====
