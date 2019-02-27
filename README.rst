@@ -1,7 +1,7 @@
 python-can
 ==========
 
-|release| |docs| |build_travis| |build_appveyor| |coverage|
+|release| |docs| |build_travis| |build_appveyor| |coverage| |downloads|
 
 .. |release| image:: https://img.shields.io/pypi/v/python-can.svg
    :target: https://pypi.python.org/pypi/python-can/
@@ -11,11 +11,11 @@ python-can
    :target: https://python-can.readthedocs.io/en/stable/
    :alt: Documentation
 
-.. |build_travis| image:: https://travis-ci.org/hardbyte/python-can.svg?branch=develop
+.. |build_travis| image:: https://img.shields.io/travis/hardbyte/python-can/develop.svg?label=Travis%20CI
    :target: https://travis-ci.org/hardbyte/python-can/branches
    :alt: Travis CI Server for develop branch
 
-.. |build_appveyor| image:: https://ci.appveyor.com/api/projects/status/github/hardbyte/python-can?branch=develop&svg=true
+.. |build_appveyor| image:: https://img.shields.io/appveyor/ci/hardbyte/python-can/develop.svg?label=AppVeyor
    :target: https://ci.appveyor.com/project/hardbyte/python-can/history
    :alt: AppVeyor CI Server for develop branch
 
@@ -23,6 +23,9 @@ python-can
    :target: https://codecov.io/gh/hardbyte/python-can/branch/develop
    :alt: Test coverage reports on Codecov.io
 
+.. |downloads| image:: https://pepy.tech/badge/python-can
+   :target: https://pepy.tech/project/python-can
+   :alt: Downloads on PePy
 
 The **C**\ ontroller **A**\ rea **N**\ etwork is a bus standard designed
 to allow microcontrollers and devices to communicate with each other. It
