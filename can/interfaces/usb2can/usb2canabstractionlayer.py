@@ -90,7 +90,8 @@ class Usb2CanAbstractionLayer:
         :returns: Nothing
         """
         try:
-            # unicode is not supported
+            # we need to convert this into bytes, since the underlying DLL cannot
+            # handle non-ASCII configuration strings
             config_ascii = configuration.encode('ascii', 'ignore')
             result = self.__m_dllBasic.CanalOpen(config_ascii, flags)
         except Exception as ex:

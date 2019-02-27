@@ -109,8 +109,6 @@ class Usb2canBus(BusABC):
         self.channel_info = "USB2CAN device {}".format(device_id)
 
         connector = "{}; {}".format(device_id, baudrate)
-        # we need to convert this into bytes, since the underlying DLL cannot
-        # handle non-ASCII configuration strings
         self.handle = self.can.open(connector, flags)
 
         super(Usb2canBus, self).__init__(channel=channel, dll=dll, flags=flags,
