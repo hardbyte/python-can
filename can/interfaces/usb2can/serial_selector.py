@@ -33,10 +33,13 @@ def find_serial_devices(serial_matcher="ED"):
     """
     Finds a list of USB devices where the serial number (partially) matches the given string.
 
+    :param str serial_matcher (optional):
+        only device IDs starting with this string are returned
+
     :rtype: List[str]
     """
     objWMIService = win32com.client.Dispatch("WbemScripting.SWbemLocator")
     objSWbemServices = objWMIService.ConnectServer(".", "root\cimv2")
     items = objSWbemServices.ExecQuery("SELECT * FROM Win32_USBControllerDevice")
-    ids = (item.Dependent[-8:] for item in items)
+    ids = (item.Dependent.strip('"')[-8:] for item in items)
     return [e for e in ids if e.startswith(serial_matcher)]
