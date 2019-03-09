@@ -87,6 +87,7 @@ class VirtualBus(BusABC):
 
         msg_copy = deepcopy(msg)
         msg_copy.timestamp = time.time()
+        msg_copy.channel = self.channel_id
 
         # Add message to all listening on this channel
         all_sent = True
