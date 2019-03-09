@@ -8,7 +8,7 @@ Any VirtualBus instances connecting to the same channel
 and reside in the same process will receive the same messages.
 """
 
-import copy
+from copy import deepcopy
 import logging
 import time
 try:
@@ -40,6 +40,8 @@ class VirtualBus(BusABC):
     Implements :meth:`can.BusABC._detect_available_configs`; see
     :meth:`can.VirtualBus._detect_available_configs` for how it
     behaves here.
+
+    The timeout when sending a message applies to each receiver.
     """
 
     def __init__(self, channel=None, receive_own_messages=False,
@@ -82,13 +84,12 @@ class VirtualBus(BusABC):
 
     def send(self, msg, timeout=None):
         self._check_if_open()
-        # Create a shallow copy for this channel
-        msg_copy = copy.copy(msg)
+
+        msg_copy = deepcopy(msg)
         msg_copy.timestamp = time.time()
-        msg_copy.data = bytearray(msg.data)
-        msg_copy.channel = self.channel_id
-        all_sent = True
+
         # Add message to all listening on this channel
+        all_sent = True
         for bus_queue in self.channel:
             if bus_queue is not self.queue or self.receive_own_messages:
                 try:
