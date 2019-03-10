@@ -41,7 +41,10 @@ class VirtualBus(BusABC):
     :meth:`can.VirtualBus._detect_available_configs` for how it
     behaves here.
 
-    The timeout when sending a message applies to each receiver.
+    .. note::
+        The timeout when sending a message applies to each receiver
+        individually. This means that sending can block up to 5 seconds
+        if a message is sent to 5 receivers with the timeout set to 1.0.
     """
 
     def __init__(self, channel=None, receive_own_messages=False,
@@ -51,7 +54,7 @@ class VirtualBus(BusABC):
 
         # the channel identifier may be an arbitrary object
         self.channel_id = channel
-        self.channel_info = 'Virtual bus channel %s' % self.channel_id
+        self.channel_info = "Virtual bus channel {}".format(self.channel_id)
         self.receive_own_messages = receive_own_messages
         self._open = True
 
@@ -71,7 +74,7 @@ class VirtualBus(BusABC):
         Has to be called in every method that accesses the bus.
         """
         if not self._open:
-            raise CanError('Operation on closed bus')
+            raise CanError("Operation on closed bus")
 
     def _recv_internal(self, timeout):
         self._check_if_open()
@@ -98,7 +101,7 @@ class VirtualBus(BusABC):
                 except queue.Full:
                     all_sent = False
         if not all_sent:
-            raise CanError('Could not send message to one or more recipients')
+            raise CanError("Could not send message to one or more recipients")
 
     def shutdown(self):
         self._check_if_open()
