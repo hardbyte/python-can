@@ -30,7 +30,6 @@ extras_require = {
 
 tests_require = [
     'mock~=2.0',
-    'nose2~=0.8',
     'pytest~=4.3',
     'pytest-timeout~=1.3',
     'pytest-cov~=2.6',
@@ -79,7 +78,7 @@ setup(
 
     # Code
     version=version,
-    packages=find_packages(exclude=["test", "test.*"]),
+    packages=find_packages(exclude=["test", "doc", "scripts", "examples"]),
     scripts=list(filter(isfile, (join("scripts/", f) for f in listdir("scripts/")))),
 
     # Author
@@ -91,21 +90,19 @@ setup(
 
     # Package data
     package_data={
-        "": ["CONTRIBUTORS.txt", "LICENSE.txt", "CHANGELOG.txt"],
-        "doc": ["*.*"]
+        "": ["README.rst", "CONTRIBUTORS.txt", "LICENSE.txt", "CHANGELOG.txt"],
+        "doc": ["*.*"],
+        "examples": ["*.py"]
     },
 
     # Installation
     # see https://www.python.org/dev/peps/pep-0345/#version-specifiers
-    python_requires=">=2.7,!=3.0,!=3.1,!=3.2,!=3.3,!=3.4",
+    python_requires=">=2.7",
     install_requires=[
         'wrapt~=1.10',
         'typing;python_version<"3.5"',
         'windows-curses;platform_system=="Windows"',
     ],
     extras_require=extras_require,
-
-    # Testing
-    test_suite="nose.collector",
-    tests_require=tests_require,
+    tests_require=tests_require
 )
