@@ -104,7 +104,7 @@ class UcanBus(BusABC):
             raise ValueError("Invalid bitrate {}".format(bitrate))
 
         state = config.get('state', BusState.ACTIVE)
-        if state is BusState.ACTIVE or BusState.PASSIVE:
+        if state is BusState.ACTIVE or state is BusState.PASSIVE:
             self._state = state
         else:
             raise ValueError("BusState must be Active or Passive")
@@ -247,11 +247,11 @@ class UcanBus(BusABC):
 
     @state.setter
     def state(self, new_state):
-        if self._state != BusState.ERROR and (new_state == BusState.ACTIVE or new_state == BusState.PASSIVE):
+        if self._state is not BusState.ERROR and (new_state is BusState.ACTIVE or new_state is BusState.PASSIVE):
             # deinitialize CAN channel
             self._ucan.shutdown(self.channel, False)
             # set mode
-            if new_state == BusState.ACTIVE:
+            if new_state is BusState.ACTIVE:
                 self._params["mode"] &= ~Mode.MODE_LISTEN_ONLY
             else:
                 self._params["mode"] |= Mode.MODE_LISTEN_ONLY

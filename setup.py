@@ -102,6 +102,7 @@ setup(
     install_requires=[
         'wrapt~=1.10',
         'typing;python_version<"3.5"',
+        'aenum;python_version<"3.6"',
         'windows-curses;platform_system=="Windows"',
     ],
     extras_require=extras_require,
