@@ -87,7 +87,7 @@ class Usb2CanAbstractionLayer:
         :param int flags: the flags to be set
 
         :raises can.CanError: if any error occurred
-        :returns: Nothing
+        :returns: Valid handle for CANAL API functions on success
         """
         try:
             # we need to convert this into bytes, since the underlying DLL cannot
@@ -105,6 +105,8 @@ class Usb2CanAbstractionLayer:
             if result <= 0:
                 raise can.CanError('CanalOpen() failed, configuration: "{}", return code: {}'
                                    .format(configuration, result))
+            else:
+                return result
 
     def close(self, handle):
         try:
