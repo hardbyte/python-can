@@ -1,9 +1,8 @@
 language: python
 
 python:
-  # CPython; versions 3.0-3.3 have reached EOL
+  # CPython; versions pre-2.7 and 3.0-3.4 have reached EOL
   - "2.7"
-  - "3.4"
   - "3.5"
   - "3.6"
   - "3.7-dev" # TODO: change to "3.7" once it is supported by travis-ci

@@ -2,16 +2,14 @@ environment:
   matrix:
 
     # For Python versions available on Appveyor, see
-    # http://www.appveyor.com/docs/installed-software#python
-    # Python 3.0-3.3 have reached EOL
+    # https://www.appveyor.com/docs/windows-images-software/#python
+    # Python pre-2.7 and 3.0-3.4 have reached EOL
 
     - PYTHON: "C:\\Python27"
-    - PYTHON: "C:\\Python34"
     - PYTHON: "C:\\Python35"
     - PYTHON: "C:\\Python36"
     - PYTHON: "C:\\Python37"
     - PYTHON: "C:\\Python27-x64"
-    - PYTHON: "C:\\Python34-x64"
     - PYTHON: "C:\\Python35-x64"
     - PYTHON: "C:\\Python36-x64"
     - PYTHON: "C:\\Python37-x64"
