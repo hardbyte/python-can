@@ -66,7 +66,7 @@ class NeoViBus(BusABC):
     https://github.com/intrepidcs/python_ics
     """
 
-    def __init__(self, channel, can_filters=None, **config):
+    def __init__(self, channel, can_filters=None, **kwargs):
         """
         :param channel:
             The channel ids to create this bus with.
@@ -98,13 +98,13 @@ class NeoViBus(BusABC):
             raise ImportError('Please install python-ics')
 
         super(NeoViBus, self).__init__(
-            channel=channel, can_filters=can_filters, **config)
+            channel=channel, can_filters=can_filters, **kwargs)
 
         logger.info("CAN Filters: {}".format(can_filters))
-        logger.info("Got configuration of: {}".format(config))
+        logger.info("Got configuration of: {}".format(kwargs))
 
-        if 'override_library_name' in config:
-            ics.override_library_name(config.get('override_library_name'))
+        if 'override_library_name' in kwargs:
+            ics.override_library_name(kwargs.get('override_library_name'))
 
         if isinstance(channel, (list, tuple)):
             self.channels = channel
@@ -115,26 +115,26 @@ class NeoViBus(BusABC):
             self.channels = [ch.strip() for ch in channel.split(',')]
         self.channels = [NeoViBus.channel_to_netid(ch) for ch in self.channels]
 
-        type_filter = config.get('type_filter')
-        serial = config.get('serial')
+        type_filter = kwargs.get('type_filter')
+        serial = kwargs.get('serial')
         self.dev = self._find_device(type_filter, serial)
         ics.open_device(self.dev)
 
-        if 'bitrate' in config:
+        if 'bitrate' in kwargs:
             for channel in self.channels:
-                ics.set_bit_rate(self.dev, config.get('bitrate'), channel)
+                ics.set_bit_rate(self.dev, kwargs.get('bitrate'), channel)
 
-        fd = config.get('fd', False)
+        fd = kwargs.get('fd', False)
         if fd:
-            if 'data_bitrate' in config:
+            if 'data_bitrate' in kwargs:
                 for channel in self.channels:
                     ics.set_fd_bit_rate(
-                        self.dev, config.get('data_bitrate'), channel)
+                        self.dev, kwargs.get('data_bitrate'), channel)
 
         self._use_system_timestamp = bool(
-            config.get('use_system_timestamp', False)
+            kwargs.get('use_system_timestamp', False)
         )
-        self._receive_own_messages = config.get('receive_own_messages', True)
+        self._receive_own_messages = kwargs.get('receive_own_messages', True)
 
         self.channel_info = '%s %s CH:%s' % (
             self.dev.Name,
