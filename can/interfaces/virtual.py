@@ -47,10 +47,8 @@ class VirtualBus(BusABC):
         if a message is sent to 5 receivers with the timeout set to 1.0.
     """
 
-    def __init__(self, channel=None, receive_own_messages=False,
-                 rx_queue_size=0, **config):
-        super(VirtualBus, self).__init__(channel=channel,
-            receive_own_messages=receive_own_messages, **config)
+    def __init__(self, channel=None, receive_own_messages=False, rx_queue_size=0, **kwargs):
+        super(VirtualBus, self).__init__(channel=channel, receive_own_messages=receive_own_messages, **kwargs)
 
         # the channel identifier may be an arbitrary object
         self.channel_id = channel
