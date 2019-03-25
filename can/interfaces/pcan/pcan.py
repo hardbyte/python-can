@@ -67,7 +67,7 @@ pcan_bitrate_objs = {1000000 : PCAN_BAUD_1M,
 
 class PcanBus(BusABC):
 
-    def __init__(self, channel='PCAN_USBBUS1', state=BusState.ACTIVE, bitrate=500000, *args, **kwargs):
+    def __init__(self, channel='PCAN_USBBUS1', state=BusState.ACTIVE, bitrate=500000, user_bit=False, *args, **kwargs):
         """A PCAN USB interface to CAN.
 
         On top of the usual :class:`~can.Bus` methods provided,
@@ -86,9 +86,15 @@ class PcanBus(BusABC):
             Bitrate of channel in bit/s.
             Default is 500 kbit/s.
 
+        :param bool user_bit:
+            If true use the user defined bitrate with SJW, BRP, TSEG2, TSEG1
+            Default is False
         """
         self.channel_info = channel
-        pcan_bitrate = pcan_bitrate_objs.get(bitrate, PCAN_BAUD_500K)
+        if not user_bit:
+            pcan_bitrate = pcan_bitrate_objs.get(bitrate, PCAN_BAUD_500K)
+        else:
+            pcan_bitrate = TPCANHandle(bitrate)
 
         hwtype = PCAN_TYPE_ISA
         ioport = 0x02A0
@@ -232,10 +238,7 @@ class PcanBus(BusABC):
             msgType = PCAN_MESSAGE_STANDARD
 
         # create a TPCANMsg message structure
-        if platform.system() == 'Darwin':
-            CANMsg = TPCANMsgMac()
-        else:
-            CANMsg = TPCANMsg()
+        CANMsg = TPCANMsg()
 
         # configure the message. ID, Length of data, message type and data
         CANMsg.ID = msg.arbitration_id
