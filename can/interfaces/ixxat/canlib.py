@@ -272,7 +272,7 @@ class IXXATBus(BusABC):
         }
     }
 
-    def __init__(self, channel, can_filters=None, **config):
+    def __init__(self, channel, can_filters=None, **kwargs):
         """
         :param int channel:
             The Channel id to create this bus with.
@@ -292,13 +292,13 @@ class IXXATBus(BusABC):
         if _canlib is None:
             raise ImportError("The IXXAT VCI library has not been initialized. Check the logs for more details.")
         log.info("CAN Filters: %s", can_filters)
-        log.info("Got configuration of: %s", config)
+        log.info("Got configuration of: %s", kwargs)
         # Configuration options
-        bitrate = config.get('bitrate', 500000)
-        UniqueHardwareId = config.get('UniqueHardwareId', None)
-        rxFifoSize = config.get('rxFifoSize', 16)
-        txFifoSize = config.get('txFifoSize', 16)
-        self._receive_own_messages = config.get('receive_own_messages', False)
+        bitrate = kwargs.get('bitrate', 500000)
+        UniqueHardwareId = kwargs.get('UniqueHardwareId', None)
+        rxFifoSize = kwargs.get('rxFifoSize', 16)
+        txFifoSize = kwargs.get('txFifoSize', 16)
+        self._receive_own_messages = kwargs.get('receive_own_messages', False)
         # Usually comes as a string from the config file
         channel = int(channel)
 
@@ -395,7 +395,7 @@ class IXXATBus(BusABC):
             except (VCITimeout, VCIRxQueueEmptyError):
                 break
 
-        super(IXXATBus, self).__init__(channel=channel, can_filters=None, **config)
+        super(IXXATBus, self).__init__(channel=channel, can_filters=None, **kwargs)
 
     def _inWaiting(self):
         try:
