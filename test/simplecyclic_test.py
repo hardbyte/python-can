@@ -37,8 +37,18 @@ class SimpleCyclicSendTaskTest(unittest.TestCase, ComparingMessagesTestCase):
                         '100 +/- 20 messages should have been transmitted. But queue contained {}'.format(size))
         last_msg = bus2.recv()
         next_last_msg = bus2.recv()
+        # Check consecutive messages are spaced properly in time and have
+        # the same id/data
         self.assertMessageEqual(last_msg, next_last_msg)
 
+
+        # Check the message id/data sent is the same as message received
+        # Set timestamp and channel to match recv'd because we don't care
+        # and they are not initialized by the can.Message constructor.
+        msg.timestamp = last_msg.timestamp
+        msg.channel = last_msg.channel
+        self.assertMessageEqual(msg, last_msg)
+	
         bus1.shutdown()
         bus2.shutdown()
 
