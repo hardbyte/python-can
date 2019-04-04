@@ -105,7 +105,7 @@ class UcanBus(BusABC):
 
         state = kwargs.get('state', BusState.ACTIVE)
         if state is BusState.ACTIVE or state is BusState.PASSIVE:
-            self.state = state
+            self._state = state
         else:
             raise ValueError("BusState must be Active or Passive")
 
@@ -248,7 +248,7 @@ class UcanBus(BusABC):
     @state.setter
     def state(self, new_state):
         if self._state is not BusState.ERROR and (new_state is BusState.ACTIVE or new_state is BusState.PASSIVE):
-            # deinitialize CAN channel
+            # close the CAN channel
             self._ucan.shutdown(self.channel, False)
             # set mode
             if new_state is BusState.ACTIVE:
