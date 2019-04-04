@@ -48,7 +48,7 @@ class UcanBus(BusABC):
         1000000: Baudrate.BAUD_1MBit
     }
 
-    def __init__(self, channel, can_filters=None, **config):
+    def __init__(self, channel, can_filters=None, **kwargs):
         """
         :param int channel:
             The Channel id to create this bus with.
@@ -96,31 +96,31 @@ class UcanBus(BusABC):
             raise ImportError("The SYSTEC ucan library has not been initialized.")
 
         self.channel = int(channel)
-        device_number = int(config.get('device_number', ANY_MODULE))
+        device_number = int(kwargs.get('device_number', ANY_MODULE))
 
         # configuration options
-        bitrate = config.get('bitrate', 500000)
+        bitrate = kwargs.get('bitrate', 500000)
         if bitrate not in self.BITRATES:
             raise ValueError("Invalid bitrate {}".format(bitrate))
 
-        state = config.get('state', BusState.ACTIVE)
+        state = kwargs.get('state', BusState.ACTIVE)
         if state is BusState.ACTIVE or state is BusState.PASSIVE:
-            self._state = state
+            self.state = state
         else:
             raise ValueError("BusState must be Active or Passive")
 
         # get parameters
         self._params = {
             "mode": Mode.MODE_NORMAL |
-                    (Mode.MODE_TX_ECHO if config.get('receive_own_messages') else 0) |
+                    (Mode.MODE_TX_ECHO if kwargs.get('receive_own_messages') else 0) |
                     (Mode.MODE_LISTEN_ONLY if state is BusState.PASSIVE else 0),
             "BTR": self.BITRATES[bitrate]
         }
         # get extra parameters
-        if config.get("rx_buffer_entries"):
-            self._params["rx_buffer_entries"] = int(config.get("rx_buffer_entries"))
-        if config.get("tx_buffer_entries"):
-            self._params["tx_buffer_entries"] = int(config.get("tx_buffer_entries"))
+        if kwargs.get("rx_buffer_entries"):
+            self._params["rx_buffer_entries"] = int(kwargs.get("rx_buffer_entries"))
+        if kwargs.get("tx_buffer_entries"):
+            self._params["tx_buffer_entries"] = int(kwargs.get("tx_buffer_entries"))
 
         self._ucan.init_hardware(device_number=device_number)
         self._ucan.init_can(self.channel, **self._params)
@@ -131,7 +131,7 @@ class UcanBus(BusABC):
             self.channel,
             self._ucan.get_baudrate_message(self.BITRATES[bitrate])
         )
-        super(UcanBus, self).__init__(channel=channel, can_filters=can_filters, **config)
+        super(UcanBus, self).__init__(channel=channel, can_filters=can_filters, **kwargs)
 
     def _recv_internal(self, timeout):
         message, _ = self._ucan.read_can_msg(self.channel, 1, timeout)

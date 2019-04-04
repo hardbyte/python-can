@@ -40,7 +40,7 @@ class BusABC(object):
     RECV_LOGGING_LEVEL = 9
 
     @abstractmethod
-    def __init__(self, channel, can_filters=None, **config):
+    def __init__(self, channel, can_filters=None, **kwargs):
         """Construct and open a CAN bus instance of the specified type.
 
         Subclasses should call though this method with all given parameters
@@ -52,7 +52,7 @@ class BusABC(object):
         :param list can_filters:
             See :meth:`~can.BusABC.set_filters` for details.
 
-        :param dict config:
+        :param dict kwargs:
             Any backend dependent configurations are passed in this dictionary
         """
         self._periodic_tasks = []

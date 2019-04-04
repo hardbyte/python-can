@@ -98,7 +98,7 @@ class PcanBus(BusABC):
         self.m_PcanHandle = globals()[channel]
 
         if state is BusState.ACTIVE or state is BusState.PASSIVE:
-            self._state = state
+            self.state = state
         else:
             raise ArgumentError("BusState must be Active or Passive")
 
