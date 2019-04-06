@@ -12,7 +12,7 @@ import can
 def send_one():
 
     # this uses the default configuration (for example from the config file)
-    # see http://python-can.readthedocs.io/en/latest/configuration.html
+    # see https://python-can.readthedocs.io/en/stable/configuration.html
     bus = can.interface.Bus()
 
     # Using specific buses works similar:
