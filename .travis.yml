@@ -3,7 +3,6 @@ language: python
 python:
   # CPython; versions pre-2.7 and 3.0-3.4 have reached EOL
   - "2.7"
-  - "3.5"
   - "3.6"
   - "3.7-dev" # TODO: change to "3.7" once it is supported by travis-ci
   - "nightly"
@@ -59,3 +58,13 @@ script:
   # -a Write all files
   # -n nitpicky
   - if [[ "$TRAVIS_PYTHON_VERSION" == "3.6" ]]; then python -m sphinx -an doc build; fi
+
+# Have travis deploy tagged commits to PyPi
+deploy:
+  provider: pypi
+  user: hardbyte
+  password:
+    secure: oQ9XpEkcilkZgKp+rKvPb2J1GrZe2ZvtOq/IjzCpiA8NeWixl/ai3BkPrLbd8t1wNIFoGwx7IQ7zxWL79aPYeG6XrljEomv3g45NR6dkQewUH+dQFlnT75Rm96Ycxvme0w1+71vM4PqxIuzyXUrF2n7JjC0XCCxHdTuYmPGbxVO1fOsE5R5b9inAbpEUtJuWz5AIrDEZ0OgoQpLSC8fLwbymTThX3JZ5GBLpRScVvLazjIYfRkZxvCqQ4mp1UNTdoMzekxsvxOOcEW6+j3fQO+Q/8uvMksKP0RgT8HE69oeYOeVic4Q4wGqORw+ur4A56NvBqVKtizVLCzzEG9ZfoSDy7ryvGWGZykkh8HX0PFQAEykC3iYihHK8ZFz5bEqRMegTmuRYZwPsel61wVd5posxnQkGm0syIoJNKuuRc5sUK+E3GviYcT8NntdR+4WBrvpQAYa1ZHpVrfnQXyaDmGzOjwCRGPoIDJweEqGVmLycEC5aT8rX3/W9tie9iPnjmFJh4CwNMxDgVQRo80m6Gtlf/DQpA3mH39IvWGqd5fHdTPxYPs32EQSCsaYLJV5pM8xBNv6M2S/KriGnGZU0xT7MEr46da0LstKsK/U8O0yamjyugMvQoC3zQcKLrDzWFSBsT7/vG+AuV5SK8yzfEHugo7jkPQQ+NTw29xzk4dY=
+  on:
+    tags: true
+  skip_cleanup: true
