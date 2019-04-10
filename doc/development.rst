@@ -11,6 +11,9 @@ https://github.com/hardbyte/python-can
 There is also a `python-can <https://groups.google.com/forum/#!forum/python-can>`__
 mailing list for development discussion.
 
+Some more information about the internals of this library can be found
+in the chapter :ref:`internalapi`.
+
 
 Building & Installing
 ---------------------
@@ -35,14 +38,14 @@ These steps are a guideline on how to add a new backend to python-can.
 - Create a module (either a ``*.py`` or an entire subdirectory depending
   on the complexity) inside ``can.interfaces``
 - Implement the central part of the backend: the bus class that extends
-  :class:`can.BusABC`. See :ref:`businternals` for more info on this one!
+  :class:`can.BusABC`.
+  See :ref:`businternals` for more info on this one!
 - Register your backend bus class in ``can.interface.BACKENDS`` and
   ``can.interfaces.VALID_INTERFACES`` in ``can.interfaces.__init__.py``.
 - Add docs where appropriate. At a minimum add to ``doc/interfaces.rst`` and add
   a new interface specific document in ``doc/interface/*``.
 - Update ``doc/scripts.rst`` accordingly.
 - Add tests in ``test/*`` where appropriate.
-
 
 
 Code Structure
@@ -84,4 +87,7 @@ Creating a new Release
 - Upload with twine ``twine upload dist/python-can-X.Y.Z*``.
 - In a new virtual env check that the package can be installed with pip: ``pip install python-can==X.Y.Z``.
 - Create a new tag in the repository.
-- Check the release on PyPi, Read the Docs and GitHub.
+- Check the release on
+  `PyPi <https://pypi.org/project/python-can/#history>`__,
+  `Read the Docs <https://readthedocs.org/projects/python-can/versions/>`__ and
+  `GitHub <https://github.com/hardbyte/python-can/releases>`__.
