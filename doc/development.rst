@@ -13,6 +13,8 @@ mailing list for development discussion.
 
 Some more information about the internals of this library can be found
 in the chapter :ref:`internalapi`.
+There is also additional information on extending the ``can.io`` module.
+
 
 
 Building & Installing
