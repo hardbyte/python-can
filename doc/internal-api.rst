@@ -81,7 +81,7 @@ to be able to be passed directly to a :class:`can.Notifier`.
 Adding support for new file formats
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This assumes that you want to add a new file format, called *canstore*.
+This assumes that you want to add a new file format, called *canstore*. Ideally add both reading and writing support for the new file format, although this is not strictly required.
 
 1. Create a new module: *can/io/canstore.py*
    (*or* simply copy some existing one like *can/io/csv.py*)
