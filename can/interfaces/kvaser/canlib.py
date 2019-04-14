@@ -302,7 +302,7 @@ class KvaserBus(BusABC):
     The CAN Bus implemented for the Kvaser interface.
     """
 
-    def __init__(self, channel, can_filters=None, **config):
+    def __init__(self, channel, can_filters=None, **kwargs):
         """
         :param int channel:
             The Channel id to create this bus with.
@@ -353,18 +353,18 @@ class KvaserBus(BusABC):
         """
 
         log.info("CAN Filters: {}".format(can_filters))
-        log.info("Got configuration of: {}".format(config))
-        bitrate = config.get('bitrate', 500000)
-        tseg1 = config.get('tseg1', 0)
-        tseg2 = config.get('tseg2', 0)
-        sjw = config.get('sjw', 0)
-        no_samp = config.get('no_samp', 0)
-        driver_mode = config.get('driver_mode', DRIVER_MODE_NORMAL)
-        single_handle = config.get('single_handle', False)
-        receive_own_messages = config.get('receive_own_messages', False)
-        accept_virtual = config.get('accept_virtual', True)
-        fd = config.get('fd', False)
-        data_bitrate = config.get('data_bitrate', None)
+        log.info("Got configuration of: {}".format(kwargs))
+        bitrate = kwargs.get('bitrate', 500000)
+        tseg1 = kwargs.get('tseg1', 0)
+        tseg2 = kwargs.get('tseg2', 0)
+        sjw = kwargs.get('sjw', 0)
+        no_samp = kwargs.get('no_samp', 0)
+        driver_mode = kwargs.get('driver_mode', DRIVER_MODE_NORMAL)
+        single_handle = kwargs.get('single_handle', False)
+        receive_own_messages = kwargs.get('receive_own_messages', False)
+        accept_virtual = kwargs.get('accept_virtual', True)
+        fd = kwargs.get('fd', False)
+        data_bitrate = kwargs.get('data_bitrate', None)
 
         try:
             channel = int(channel)
@@ -400,7 +400,7 @@ class KvaserBus(BusABC):
                  4)
         
         if fd:
-            if 'tseg1' not in config and bitrate in BITRATE_FD:
+            if 'tseg1' not in kwargs and bitrate in BITRATE_FD:
                 # Use predefined bitrate for arbitration
                 bitrate = BITRATE_FD[bitrate]
             if data_bitrate in BITRATE_FD:
@@ -411,7 +411,7 @@ class KvaserBus(BusABC):
                 data_bitrate = bitrate
             canSetBusParamsFd(self._read_handle, data_bitrate, tseg1, tseg2, sjw)
         else:
-            if 'tseg1' not in config and bitrate in BITRATE_OBJS:
+            if 'tseg1' not in kwargs and bitrate in BITRATE_OBJS:
                 bitrate = BITRATE_OBJS[bitrate]
         canSetBusParams(self._read_handle, bitrate, tseg1, tseg2, sjw, no_samp, 0)
 
@@ -446,7 +446,7 @@ class KvaserBus(BusABC):
         self._timestamp_offset = time.time() - (timer.value * TIMESTAMP_FACTOR)
 
         self._is_filtered = False
-        super(KvaserBus, self).__init__(channel=channel, can_filters=can_filters, **config)
+        super(KvaserBus, self).__init__(channel=channel, can_filters=can_filters, **kwargs)
 
     def _apply_filters(self, filters):
         if filters and len(filters) == 1:

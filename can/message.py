@@ -29,8 +29,8 @@ class Message(object):
 
     :func:`~copy.copy`/:func:`~copy.deepcopy` is supported as well.
 
-    Messages do not support "dynamic" attributes, meaning any others that the
-    documented ones.
+    Messages do not support "dynamic" attributes, meaning any others than the
+    documented ones, since it uses :attr:`~object.__slots__`.
     """
 
     __slots__ = (
@@ -303,7 +303,7 @@ class Message(object):
             if self.bitrate_switch:
                 raise ValueError("bitrate switch is only allowed for CAN FD frames")
             if self.error_state_indicator:
-                raise ValueError("error stat indicator is only allowed for CAN FD frames")
+                raise ValueError("error state indicator is only allowed for CAN FD frames")
 
     def equals(self, other, timestamp_delta=1.0e-6):
         """

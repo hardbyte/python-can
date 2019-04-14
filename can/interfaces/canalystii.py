@@ -122,7 +122,8 @@ class CANalystIIBus(BusABC):
         :param timeout: timeout is not used here
         :return:
         """
-        raw_message = VCI_CAN_OBJ(msg.arbitration_id, 0, 0, 0, msg.is_remote_frame, 0, msg.dlc, (c_ubyte * 8)(*msg.data), (c_byte * 3)(*[0, 0, 0]))
+        extern_flag = 1 if msg.is_extended_id else 0
+        raw_message = VCI_CAN_OBJ(msg.arbitration_id, 0, 0, 1, msg.is_remote_frame, extern_flag, msg.dlc, (c_ubyte * 8)(*msg.data), (c_byte * 3)(*[0, 0, 0]))
 
         if msg.channel is not None:
             channel = msg.channel
@@ -161,7 +162,7 @@ class CANalystIIBus(BusABC):
 
     def flush_tx_buffer(self):
         for channel in self.channels:
-            CANalystII.VCI_ClearBUffer(VCI_USBCAN2, self.device, channel)
+            CANalystII.VCI_ClearBuffer(VCI_USBCAN2, self.device, channel)
 
     def shutdown(self):
         CANalystII.VCI_CloseDevice(VCI_USBCAN2, self.device)
