@@ -1,3 +1,5 @@
+.. _internalapi:
+
 Internal API
 ============
 
@@ -46,7 +48,6 @@ They **might** implement the following:
     and thus might not provide message filtering:
 
 
-
 Concrete instances are usually created by :class:`can.Bus` which takes the users
 configuration into account.
 
@@ -66,8 +67,43 @@ methods:
 
 
 
+About the IO module
+-------------------
+
+Handling of the different file formats is implemented in :mod:`can.io`.
+Each file/IO type is within a separate module and ideally implements both a *Reader* and a *Writer*.
+The reader usually extends :class:`can.io.generic.BaseIOHandler`, while
+the writer often additionally extends :class:`can.Listener`,
+to be able to be passed directly to a :class:`can.Notifier`.
+
+
+
+Adding support for new file formats
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This assumes that you want to add a new file format, called *canstore*.
+Ideally add both reading and writing support for the new file format, although this is not strictly required.
+
+1. Create a new module: *can/io/canstore.py*
+   (*or* simply copy some existing one like *can/io/csv.py*)
+2. Implement a reader ``CanstoreReader`` (which often extends :class:`can.io.generic.BaseIOHandler`, but does not have to).
+   Besides from a constructor, only ``__iter__(self)`` needs to be implemented.
+3. Implement a writer ``CanstoreWriter`` (which often extends :class:`can.io.generic.BaseIOHandler` and :class:`can.Listener`, but does not have to).
+   Besides from a constructor, only ``on_message_received(self, msg)`` needs to be implemented.
+4. Document the two new classes (and possibly additional helpers) with docstrings and comments.
+   Please mention features and limitations of the implementation.
+5. Add a short section to the bottom of *doc/listeners.rst*.
+6. Add tests where appropriate, for example by simply adding a test case called
+   `class TestCanstoreFileFormat(ReaderWriterTest)` to *test/logformats_test.py*.
+   That should already handle all of the general testing.
+   Just follow the way the other tests in there do it.
+7. Add imports to *can/__init__py* and *can/io/__init__py* so that the
+   new classes can be simply imported as *from can import CanstoreReader, CanstoreWriter*.
+
+
+
 IO Utilities
-------------
+~~~~~~~~~~~~
 
 
 .. automodule:: can.io.generic
@@ -75,10 +111,9 @@ IO Utilities
 
 
 
-Other Util
-----------
+Other Utilities
+---------------
 
 
 .. automodule:: can.util
     :members:
-
