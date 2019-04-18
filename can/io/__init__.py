@@ -6,6 +6,7 @@ and Writers based off the file extension.
 """
 
 from __future__ import absolute_import
+import sys
 
 # Generic
 from .logger import Logger
@@ -18,3 +19,5 @@ from .canutils import CanutilsLogReader, CanutilsLogWriter
 from .csv import CSVWriter, CSVReader
 from .sqlite import SqliteReader, SqliteWriter
 from .printer import Printer
+if sys.hexversion >= 0x03060000:
+    from .mf4 import MF4Writer 

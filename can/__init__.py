@@ -7,6 +7,7 @@
 from __future__ import absolute_import
 
 import logging
+import sys
 
 __version__ = "3.1.1"
 
@@ -34,6 +35,8 @@ from .io import BLFReader, BLFWriter
 from .io import CanutilsLogReader, CanutilsLogWriter
 from .io import CSVWriter, CSVReader
 from .io import SqliteWriter, SqliteReader
+if sys.hexversion >= 0x03060000:
+    from .io import MF4Writer
 
 from .util import set_logging_level
 
