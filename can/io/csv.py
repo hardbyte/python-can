@@ -1,7 +1,7 @@
 # coding: utf-8
 
 """
-This module contains handling for CSV (comma seperated values) files.
+This module contains handling for CSV (comma separated values) files.
 
 TODO: CAN FD messages are not yet supported.
 
