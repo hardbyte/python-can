@@ -42,6 +42,7 @@ from .io import CanutilsLogReader, CanutilsLogWriter
 from .io import CSVWriter, CSVReader
 from .io import SqliteWriter, SqliteReader
 from .io import TRCReader, TRCWriter, TRCFileVersion
+from .io import MF4Writer
 
 from .broadcastmanager import (
     CyclicSendTaskABC,
