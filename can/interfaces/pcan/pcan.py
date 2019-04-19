@@ -97,7 +97,7 @@ class PcanBus(BusABC):
         self.m_objPCANBasic = PCANBasic()
         self.m_PcanHandle = globals()[channel]
 
-        if state is BusState.ACTIVE or BusState.PASSIVE:
+        if state is BusState.ACTIVE or state is BusState.PASSIVE:
             self.state = state
         else:
             raise ArgumentError("BusState must be Active or Passive")
@@ -280,7 +280,7 @@ class PcanBus(BusABC):
         if new_state is BusState.ACTIVE:
             self.m_objPCANBasic.SetValue(self.m_PcanHandle, PCAN_LISTEN_ONLY, PCAN_PARAMETER_OFF)
 
-        if new_state is BusState.PASSIVE:
+        elif new_state is BusState.PASSIVE:
             # When this mode is set, the CAN controller does not take part on active events (eg. transmit CAN messages)
             # but stays in a passive mode (CAN monitor), in which it can analyse the traffic on the CAN bus used by a
             # PCAN channel. See also the Philips Data Sheet "SJA1000 Stand-alone CAN controller".
@@ -289,6 +289,6 @@ class PcanBus(BusABC):
 
 class PcanError(CanError):
     """
-    TODO: add docs
+    A generic error on a PCAN bus.
     """
     pass
