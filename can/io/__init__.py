@@ -19,5 +19,7 @@ from .canutils import CanutilsLogReader, CanutilsLogWriter
 from .csv import CSVWriter, CSVReader
 from .sqlite import SqliteReader, SqliteWriter
 from .printer import Printer
-if sys.hexversion >= 0x03060000:
+try:
     from .mf4 import MF4Writer 
+except ImportError:
+    pass

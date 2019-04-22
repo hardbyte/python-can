@@ -35,8 +35,10 @@ from .io import BLFReader, BLFWriter
 from .io import CanutilsLogReader, CanutilsLogWriter
 from .io import CSVWriter, CSVReader
 from .io import SqliteWriter, SqliteReader
-if sys.hexversion >= 0x03060000:
+try:
     from .io import MF4Writer
+except ImportError:
+    pass
 
 from .util import set_logging_level
 
