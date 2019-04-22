@@ -160,3 +160,29 @@ The following class can be used to read messages from BLF file:
 
 .. autoclass:: can.BLFReader
     :members:
+    
+  
+MF4 (Measurement Data Format v4)
+--------------------------------
+
+Implements support for MF4 (Measurement Data Format v4) which is a proprietary
+format from ASAM, widely used in many automotive software (Vector CANape, ETAS INCA, dSPACE COntrolDesk, etc.).
+
+MF4 support requires Python >= 3.6
+
+The data is stored in a compressed format which makes it compact.
+
+.. note:: Channels will be converted to integers.
+
+.. note:: MF4Writer does not suppport append mode
+
+`MF4Writer` has the following init arguments
+
+* **file** : a path-like object or as file-like object to write to.
+  If this is a file-like object, is has to be opened in binary write mode, not text write mode.
+* **database** : optional path to a DBC or ARXML file that contains message description.
+
+`MF4Reader` has the following init arguments
+
+* **file** : a path-like object or as file-like object to write to.
+  If this is a file-like object, is has to be opened in binary write mode, not text write mode.

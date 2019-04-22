@@ -88,6 +88,8 @@ try:
     class MF4Writer(BaseIOHandler, Listener):
         """Logs CAN data to an ASAM Measurement Data File v4 (.mf4).
 
+        MF4Writer does not support append mode.
+
         If a message has a timestamp smaller than the previous one or None,
         it gets assigned the timestamp that was written for the last message.
         It the first message does not have a timestamp, it is set to zero.
@@ -96,7 +98,7 @@ try:
         def __init__(self, file, database=None):
             """
             :param file: a path-like object or as file-like object to write to
-                         If this is a file-like object, is has to opened in
+                         If this is a file-like object, is has to be opened in
                          binary write mode, not text write mode.
             :param database: optional path to a DBC or ARXML file that contains
                              message description.
@@ -231,7 +233,7 @@ try:
         def __init__(self, file):
             """
             :param file: a path-like object or as file-like object to read from
-                         If this is a file-like object, is has to opened in
+                         If this is a file-like object, is has to be opened in
                          binary read mode, not text read mode.
             """
             super(MF4Reader, self).__init__(file, mode='rb')
