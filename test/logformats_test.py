@@ -132,6 +132,7 @@ class ReaderWriterTest(unittest.TestCase, ComparingMessagesTestCase):
         writer = self.writer_constructor(self.test_file_name)
         self._write_all(writer)
         self._ensure_fsync(writer)
+
         writer.stop()
         if hasattr(writer.file, 'closed'):
             self.assertTrue(writer.file.closed)
@@ -234,8 +235,6 @@ class ReaderWriterTest(unittest.TestCase, ComparingMessagesTestCase):
         # check if at least the number of messages matches;
         self.assertEqual(len(read_messages), len(self.original_messages),
             "the number of written messages does not match the number of read messages")
-
-        print('!!!!!!    ', len(read_messages))
 
         self.assertMessagesEqual(self.original_messages, read_messages)
         self.assertIncludesComments(self.test_file_name)
@@ -395,19 +394,25 @@ class TestCsvFileFormat(ReaderWriterTest):
         )
 
 
-class TestMF4FileFormat(ReaderWriterTest):
-    """Tests can.MF4Writer and can.MF4Reader"""
+try:
+    from can import MF4Writer, MF4Reader
 
-    __test__ = True
+    class TestMF4FileFormat(ReaderWriterTest):
+        """Tests can.MF4Writer and can.MF4Reader"""
 
-    def _setup_instance(self):
-        super(TestMF4FileFormat, self)._setup_instance_helper(
-            can.MF4Writer, can.MF4Reader,
-            binary_file=True,
-            check_comments=False,
-            preserves_channel=False, adds_default_channel=0
-        )
+        __test__ = True
 
+        def _setup_instance(self):
+            super(TestMF4FileFormat, self)._setup_instance_helper(
+                MF4Writer, MF4Reader,
+                binary_file=True,
+                check_comments=False,
+                preserves_channel=False,
+                adds_default_channel=0,
+            )
+
+except ImportError:
+    pass
 
 
 class TestSqliteDatabaseFormat(ReaderWriterTest):

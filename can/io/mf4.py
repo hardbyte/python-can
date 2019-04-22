@@ -182,12 +182,12 @@ try:
                 buffer['CAN_DataFrame.DataLength'] = size
                 buffer['CAN_DataFrame.DataBytes'][0, :size] = data
                 if msg.is_fd:
-                    buffer['CAN_DataFrame.DLC'] = FD_LEN2DLC[size]
+                    buffer['CAN_DataFrame.DLC'] = FD_LEN2DLC[msg.dlc]
                     buffer['CAN_DataFrame.ESI'] = int(msg.error_state_indicator)
                     buffer['CAN_DataFrame.BRS'] = int(msg.bitrate_switch)
                     buffer['CAN_DataFrame.EDL'] = 1
                 else:
-                    buffer['CAN_DataFrame.DLC'] = size
+                    buffer['CAN_DataFrame.DLC'] = msg.dlc
                     buffer['CAN_DataFrame.ESI'] = 0
                     buffer['CAN_DataFrame.BRS'] = 0
                     buffer['CAN_DataFrame.EDL'] = 0
@@ -201,14 +201,16 @@ try:
                     timestamp,
                 )
 
+            timestamp -= self._start_time
+
             if msg.is_remote_frame:
                 sigs = [
-                    (np.array([self.last_timestamp]), None),
+                    (np.array([timestamp]), None),
                     (rtr_buffer, None)
                 ]
             else:
                 sigs = [
-                    (np.array([self.last_timestamp]), None),
+                    (np.array([timestamp]), None),
                     (buffer, None)
                 ]
 
@@ -232,17 +234,16 @@ try:
                          If this is a file-like object, is has to opened in
                          binary read mode, not text read mode.
             """
-            self.start_timestamp = datetime.now().timestamp()
             super(MF4Reader, self).__init__(file, mode='rb')
 
             self._mdf = MDF(file)
+
+            self.start_timestamp = self._mdf.header.start_time.timestamp()
 
             masters = [
                 self._mdf.get_master(i, copy_master=False)
                 for i in range(3)
             ]
-
-            print('++++++++++        ', [len(s) for s in masters])
 
             masters = [
                 np.core.records.fromarrays(
@@ -251,14 +252,14 @@ try:
                 for i, master in enumerate(masters)
             ]
 
-            print
-
             self.masters = np.sort(np.concatenate(masters))
 
         def __iter__(self):
             standard_counter = 0
             error_counter = 0
             rtr_counter = 0
+
+
 
             for timestamp, group_index in self.masters:
 
@@ -279,7 +280,7 @@ try:
                         arbitration_id = int(sample['CAN_DataFrame.ID'])
                         size = int(sample['CAN_DataFrame.DataLength'])
                         dlc = int(sample['CAN_DataFrame.DLC'])
-                        data = sample['CAN_DataFrame.DataBytes'][:size].tobytes()
+                        data = sample['CAN_DataFrame.DataBytes'][0, :size].tobytes()
 
                         msg = Message(
                             timestamp=timestamp + self.start_timestamp,
@@ -299,7 +300,7 @@ try:
                         arbitration_id = int(sample['CAN_DataFrame.ID'])
                         size = int(sample['CAN_DataFrame.DataLength'])
                         dlc = FD_DLC2LEN(sample['CAN_DataFrame.DLC'])
-                        data = sample['CAN_DataFrame.DataBytes'][:size].tobytes()
+                        data = sample['CAN_DataFrame.DataBytes'][0, :size].tobytes()
                         error_state_indicator = int(sample['CAN_DataFrame.ESI'])
                         bitrate_switch = int(sample['CAN_DataFrame.BRS'])
 
@@ -338,7 +339,7 @@ try:
                         arbitration_id = int(sample['CAN_ErrorFrame.ID'])
                         size = int(sample['CAN_ErrorFrame.DataLength'])
                         dlc = int(sample['CAN_ErrorFrame.DLC'])
-                        data = sample['CAN_ErrorFrame.DataBytes'][:size].tobytes()
+                        data = sample['CAN_ErrorFrame.DataBytes'][0, :size].tobytes()
 
                         msg = Message(
                             timestamp=timestamp + self.start_timestamp,
@@ -358,7 +359,7 @@ try:
                         arbitration_id = int(sample['CAN_ErrorFrame.ID'])
                         size = int(sample['CAN_ErrorFrame.DataLength'])
                         dlc = FD_DLC2LEN(sample['CAN_ErrorFrame.DLC'])
-                        data = sample['CAN_ErrorFrame.DataBytes'][:size].tobytes()
+                        data = sample['CAN_ErrorFrame.DataBytes'][0, :size].tobytes()
                         error_state_indicator = int(sample['CAN_ErrorFrame.ESI'])
                         bitrate_switch = int(sample['CAN_ErrorFrame.BRS'])
 
@@ -409,12 +410,6 @@ try:
 
                     rtr_counter += 1
 
-
-            print('!!!!\n!!!!!!!\n!!!!!!!         ', standard_counter,
-            error_counter,
-            rtr_counter,
-            [gp.channel_group.cycles_nr for gp in self._mdf.groups]
-            )
             self.stop()
 
         def stop(self):
