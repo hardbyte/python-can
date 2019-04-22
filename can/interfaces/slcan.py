@@ -53,6 +53,8 @@ class slcanBus(BusABC):
                  btr=None, sleep_after_open=_SLEEP_AFTER_SERIAL_OPEN,
                  rtscts=False, **kwargs):
         """
+        :raise ValueError: if both *bitrate* and *btr* are set
+
         :param str channel:
             port of underlying serial or usb device (e.g. /dev/ttyUSB0, COM8, ...)
             Must not be empty.
@@ -61,7 +63,7 @@ class slcanBus(BusABC):
         :param int bitrate:
             Bitrate in bit/s
         :param str btr:
-            BTR register value to set custom can speed (overrides bitrate)
+            BTR register value to set custom can speed
         :param float poll_interval:
             Poll interval in seconds when reading messages
         :param float sleep_after_open:
