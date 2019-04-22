@@ -3,6 +3,9 @@
 """
 Contains handling of MF4 logging files.
 
+MF4 files represent Measurement Data Format (MDF) version 4 as specified by
+the ASAM MDF standard (see https://www.asam.net/standards/detail/mdf/)
+
 """
 
 from __future__ import absolute_import
@@ -11,11 +14,12 @@ from datetime import datetime
 from pathlib import Path
 import logging
 
+import numpy as np
+
+from ..message import Message
 from ..listener import Listener
 from ..util import channel2int
 from .generic import BaseIOHandler
-
-import numpy as np
 
 try:
     from asammdf import MDF, Signal
@@ -56,6 +60,11 @@ try:
         32: 13,
         48: 14,
         64: 15,
+    }
+
+    FD_DLC2LEN = {
+        value: key
+        for key, value in FD_LEN2DLC.items()
     }
 
     logger = logging.getLogger('can.io.mf4')
@@ -193,6 +202,202 @@ try:
                 self._mdf.extend(1, sigs)
             else:
                 self._mdf.extend(0, sigs)
+
+
+    class MF4Reader(BaseIOHandler):
+        """
+        Iterator of CAN messages from a MF4 logging file.
+
+        """
+
+        def __init__(self, file):
+            """
+            :param file: a path-like object or as file-like object to read from
+                         If this is a file-like object, is has to opened in
+                         binary read mode, not text read mode.
+            """
+            self.start_timestamp = datetime.now().timestamp()
+            super(MF4Reader, self).__init__(file, mode='rb')
+
+            self._mdf = MDF(file)
+
+            masters = [
+                self._mdf.get_master(i, copy_master=False)
+                for i in range(3)
+            ]
+
+            masters = [
+                np.core.records.fromarrays(
+                    (master, np.ones(len(master)))
+                )
+                for master in masters
+            ]
+
+            self.masters = np.sort(masters)
+
+        def __iter__(self):
+            standard_counter = 0
+            error_counter = 0
+            rtr_counter = 0
+
+            for timestamp, group_index in self.masters:
+
+                # standard frames
+                if group_index == 0:
+                    sample = self._mdf.get(
+                        'CAN_DataFrame',
+                        group=group_index,
+                        raw=True,
+                        record_offset=standard_counter,
+                        record_count=1,
+                    )
+
+                    if sample['CAN_DataFrame.EDL'] == 0:
+
+                        is_extended_id = bool(sample['CAN_DataFrame.IDE'])
+                        channel = sample['CAN_DataFrame.ID']
+                        arbitration_id = int(sample['CAN_DataFrame.ID'])
+                        size = int(sample['CAN_DataFrame.DataLength'])
+                        dlc = int(sample['CAN_DataFrame.DLC'])
+                        data = sample['CAN_DataFrame.DataBytes'][:size].tobytes()
+
+                        msg = Message(
+                            timestamp=timestamp + self.start_timestamp,
+                            is_error_frame=False,
+                            is_remote_frame=False,
+                            if_fd=False,
+                            is_extended_id=is_extended_id,
+                            channel=channel,
+                            arbitration_id=arbitration_id,
+                            data=data,
+                            dlc=dlc,
+                        )
+
+                    else:
+                        is_extended_id = bool(sample['CAN_DataFrame.IDE'])
+                        channel = sample['CAN_DataFrame.ID']
+                        arbitration_id = int(sample['CAN_DataFrame.ID'])
+                        size = int(sample['CAN_DataFrame.DataLength'])
+                        dlc = FD_DLC2LEN(sample['CAN_DataFrame.DLC'])
+                        data = sample['CAN_DataFrame.DataBytes'][:size].tobytes()
+                        error_state_indicator = int(sample['CAN_DataFrame.ESI'])
+                        bitrate_switch = int(sample['CAN_DataFrame.BRS'])
+
+                        msg = Message(
+                            timestamp=timestamp + self.start_timestamp,
+                            is_error_frame=False,
+                            is_remote_frame=False,
+                            if_fd=True,
+                            is_extended_id=is_extended_id,
+                            channel=channel,
+                            arbitration_id=arbitration_id,
+                            data=data,
+                            dlc=dlc,
+                            bitrate_switch=bitrate_switch,
+                            error_state_indicator=error_state_indicator,
+                        )
+
+                    yield msg
+                    standard_counter += 1
+
+                # error frames
+                elif group_index == 1:
+                    sample = self._mdf.get(
+                        'CAN_ErrorFrame',
+                        group=group_index,
+                        raw=True,
+                        record_offset=error_counter,
+                        record_count=1,
+                    )
+
+                    if sample['CAN_ErrorFrame.EDL'] == 0:
+
+                        is_extended_id = bool(sample['CAN_ErrorFrame.IDE'])
+                        channel = sample['CAN_ErrorFrame.ID']
+                        arbitration_id = int(sample['CAN_ErrorFrame.ID'])
+                        size = int(sample['CAN_ErrorFrame.DataLength'])
+                        dlc = int(sample['CAN_ErrorFrame.DLC'])
+                        data = sample['CAN_ErrorFrame.DataBytes'][:size].tobytes()
+
+                        msg = Message(
+                            timestamp=timestamp + self.start_timestamp,
+                            is_error_frame=True,
+                            is_remote_frame=False,
+                            if_fd=False,
+                            is_extended_id=is_extended_id,
+                            channel=channel,
+                            arbitration_id=arbitration_id,
+                            data=data,
+                            dlc=dlc,
+                        )
+
+                    else:
+                        is_extended_id = bool(sample['CAN_ErrorFrame.IDE'])
+                        channel = sample['CAN_ErrorFrame.ID']
+                        arbitration_id = int(sample['CAN_ErrorFrame.ID'])
+                        size = int(sample['CAN_ErrorFrame.DataLength'])
+                        dlc = FD_DLC2LEN(sample['CAN_ErrorFrame.DLC'])
+                        data = sample['CAN_ErrorFrame.DataBytes'][:size].tobytes()
+                        error_state_indicator = int(sample['CAN_ErrorFrame.ESI'])
+                        bitrate_switch = int(sample['CAN_ErrorFrame.BRS'])
+
+                        msg = Message(
+                            timestamp=timestamp + self.start_timestamp,
+                            is_error_frame=True,
+                            is_remote_frame=False,
+                            if_fd=True,
+                            is_extended_id=is_extended_id,
+                            channel=channel,
+                            arbitration_id=arbitration_id,
+                            data=data,
+                            dlc=dlc,
+                            bitrate_switch=bitrate_switch,
+                            error_state_indicator=error_state_indicator,
+                        )
+
+                    yield msg
+                    error_counter += 1
+
+                # remote frames
+                else:
+                    sample = self._mdf.get(
+                        'CAN_DataFrame',
+                        group=group_index,
+                        raw=True,
+                        record_offset=rtr_counter,
+                        record_count=1,
+                    )
+
+                    if sample['CAN_DataFrame.EDL'] == 0:
+
+                        is_extended_id = bool(sample['CAN_DataFrame.IDE'])
+                        channel = sample['CAN_DataFrame.ID']
+                        arbitration_id = int(sample['CAN_DataFrame.ID'])
+                        dlc = int(sample['CAN_DataFrame.DLC'])
+
+                        msg = Message(
+                            timestamp=timestamp + self.start_timestamp,
+                            is_error_frame=False,
+                            is_remote_frame=True,
+                            if_fd=False,
+                            is_extended_id=is_extended_id,
+                            channel=channel,
+                            arbitration_id=arbitration_id,
+                            dlc=dlc,
+                        )
+
+                        yield msg
+
+                    else:
+                        logger.warning("CAN FD does not have remote frames")
+
+                    rtr_counter += 1
+
+            self.stop()
+
+        def stop(self):
+            self._mdf.close()
+            super(MF4Writer, self).stop()
 
     ASAMMDF_AVAILABLE = True
 
