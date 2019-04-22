@@ -57,10 +57,10 @@ def main():
     parser.add_argument('-b', '--bitrate', type=int,
                         help='''Bitrate to use for the CAN bus.''')
 
-    group = parser.add_mutually_exclusive_group(required=False)
-    group.add_argument('--active', help="Start the bus as active, this is applied the default.",
+    state_group = parser.add_mutually_exclusive_group(required=False)
+    state_group.add_argument('--active', help="Start the bus as active, this is applied by default.",
                        action='store_true')
-    group.add_argument('--passive', help="Start the bus as passive.",
+    state_group.add_argument('--passive', help="Start the bus as passive.",
                        action='store_true')
 
     # print help message when no arguments wre given
@@ -98,8 +98,7 @@ def main():
 
     if results.active:
         bus.state = BusState.ACTIVE
-
-    if results.passive:
+    elif results.passive:
         bus.state = BusState.PASSIVE
 
     print('Connected to {}: {}'.format(bus.__class__.__name__, bus.channel_info))
