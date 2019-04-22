@@ -27,28 +27,43 @@ try:
     CAN_MSG_EXT = 0x80000000
     CAN_ID_MASK = 0x1FFFFFFF
 
-    DTYPE = np.dtype(
+    STD_DTYPE = np.dtype(
         [
-            ('BusChannel', '<u1'),
-            ('ID', '<u4'),
-            ('IDE', '<u1'),
-            ('DLC', '<u1'),
-            ('DataLength', '<u1'),
-            ('DataBytes', '(64,)u1'),
-            ('Dir', '<u1'),
-            ('EDL', '<u1'),
-            ('BRS', '<u1'),
-            ('ESI', '<u1'),
+            ('CAN_DataFrame.BusChannel', '<u1'),
+            ('CAN_DataFrame.ID', '<u4'),
+            ('CAN_DataFrame.IDE', '<u1'),
+            ('CAN_DataFrame.DLC', '<u1'),
+            ('CAN_DataFrame.DataLength', '<u1'),
+            ('CAN_DataFrame.DataBytes', '(64,)u1'),
+            ('CAN_DataFrame.Dir', '<u1'),
+            ('CAN_DataFrame.EDL', '<u1'),
+            ('CAN_DataFrame.BRS', '<u1'),
+            ('CAN_DataFrame.ESI', '<u1'),
+        ]
+    )
+
+    ERR_DTYPE = np.dtype(
+        [
+            ('CAN_ErrorFrame.BusChannel', '<u1'),
+            ('CAN_ErrorFrame.ID', '<u4'),
+            ('CAN_ErrorFrame.IDE', '<u1'),
+            ('CAN_ErrorFrame.DLC', '<u1'),
+            ('CAN_ErrorFrame.DataLength', '<u1'),
+            ('CAN_ErrorFrame.DataBytes', '(64,)u1'),
+            ('CAN_ErrorFrame.Dir', '<u1'),
+            ('CAN_ErrorFrame.EDL', '<u1'),
+            ('CAN_ErrorFrame.BRS', '<u1'),
+            ('CAN_ErrorFrame.ESI', '<u1'),
         ]
     )
 
     RTR_DTYPE = np.dtype(
         [
-            ('BusChannel', '<u1'),
-            ('ID', '<u4'),
-            ('IDE', '<u1'),
-            ('DLC', '<u1'),
-            ('Dir', '<u1'),
+            ('CAN_DataFrame.BusChannel', '<u1'),
+            ('CAN_DataFrame.ID', '<u4'),
+            ('CAN_DataFrame.IDE', '<u1'),
+            ('CAN_DataFrame.DLC', '<u1'),
+            ('CAN_DataFrame.Dir', '<u1'),
         ]
     )
 
@@ -106,7 +121,7 @@ try:
             self._mdf.append(
                 Signal(
                     name="CAN_DataFrame",
-                    samples=np.array([], dtype=DTYPE),
+                    samples=np.array([], dtype=STD_DTYPE),
                     timestamps=np.array([], dtype='<f8'),
                     attachment=attachment,
                 )
@@ -116,7 +131,7 @@ try:
             self._mdf.append(
                 Signal(
                     name="CAN_ErrorFrame",
-                    samples=np.array([], dtype=DTYPE),
+                    samples=np.array([], dtype=ERR_DTYPE),
                     timestamps=np.array([], dtype='<f8'),
                     attachment=attachment,
                 )
@@ -132,11 +147,12 @@ try:
                 )
             )
 
-            self._buffer = np.zeros(1, dtype=DTYPE)
+            self._buffer = np.zeros(1, dtype=STD_DTYPE)
             self._rtr_buffer = np.zeros(1, dtype=RTR_DTYPE)
 
         def stop(self):
             self._mdf.save(self.file, compression=2)
+            self._mdf.save(r'D:\TMP\test.mf4', overwrite=True)
             self._mdf.close()
             super(MF4Writer, self).stop()
 
@@ -149,32 +165,32 @@ try:
 
             if msg.is_remote_frame:
                 if channel is not None:
-                    rtr_buffer['BusChannel'] = channel
+                    rtr_buffer['CAN_DataFrame.BusChannel'] = channel
 
-                rtr_buffer['ID'] = msg.arbitration_id
-                rtr_buffer['IDE'] = int(msg.is_extended_id)
-                rtr_buffer['DLC'] = msg.dlc
+                rtr_buffer['CAN_DataFrame.ID'] = msg.arbitration_id
+                rtr_buffer['CAN_DataFrame.IDE'] = int(msg.is_extended_id)
+                rtr_buffer['CAN_DataFrame.DLC'] = msg.dlc
 
             else:
                 if channel is not None:
-                    buffer['BusChannel'] = channel
+                    buffer['CAN_DataFrame.BusChannel'] = channel
 
-                buffer['ID'] = msg.arbitration_id
-                buffer['IDE'] = int(msg.is_extended_id)
+                buffer['CAN_DataFrame.ID'] = msg.arbitration_id
+                buffer['CAN_DataFrame.IDE'] = int(msg.is_extended_id)
                 data = msg.data
                 size = len(data)
-                buffer['DataLength'] = size
-                buffer['DataBytes'][0, :size] = data
+                buffer['CAN_DataFrame.DataLength'] = size
+                buffer['CAN_DataFrame.DataBytes'][0, :size] = data
                 if msg.is_fd:
-                    buffer['DLC'] = FD_LEN2DLC[size]
-                    buffer['ESI'] = int(msg.error_state_indicator)
-                    buffer['BRS'] = int(msg.bitrate_switch)
-                    buffer['EDL'] = 1
+                    buffer['CAN_DataFrame.DLC'] = FD_LEN2DLC[size]
+                    buffer['CAN_DataFrame.ESI'] = int(msg.error_state_indicator)
+                    buffer['CAN_DataFrame.BRS'] = int(msg.bitrate_switch)
+                    buffer['CAN_DataFrame.EDL'] = 1
                 else:
-                    buffer['DLC'] = size
-                    buffer['ESI'] = 0
-                    buffer['BRS'] = 0
-                    buffer['EDL'] = 0
+                    buffer['CAN_DataFrame.DLC'] = size
+                    buffer['CAN_DataFrame.ESI'] = 0
+                    buffer['CAN_DataFrame.BRS'] = 0
+                    buffer['CAN_DataFrame.EDL'] = 0
 
             timestamp = msg.timestamp
             if timestamp is None:
@@ -187,12 +203,12 @@ try:
 
             if msg.is_remote_frame:
                 sigs = [
-                    ([self.last_timestamp], None)
+                    (np.array([self.last_timestamp]), None),
                     (rtr_buffer, None)
                 ]
             else:
                 sigs = [
-                    ([self.last_timestamp], None)
+                    (np.array([self.last_timestamp]), None),
                     (buffer, None)
                 ]
 
@@ -226,14 +242,18 @@ try:
                 for i in range(3)
             ]
 
+            print('++++++++++        ', [len(s) for s in masters])
+
             masters = [
                 np.core.records.fromarrays(
-                    (master, np.ones(len(master)))
+                    (master, np.ones(len(master)) * i)
                 )
-                for master in masters
+                for i, master in enumerate(masters)
             ]
 
-            self.masters = np.sort(masters)
+            print
+
+            self.masters = np.sort(np.concatenate(masters))
 
         def __iter__(self):
             standard_counter = 0
@@ -265,7 +285,7 @@ try:
                             timestamp=timestamp + self.start_timestamp,
                             is_error_frame=False,
                             is_remote_frame=False,
-                            if_fd=False,
+                            is_fd=False,
                             is_extended_id=is_extended_id,
                             channel=channel,
                             arbitration_id=arbitration_id,
@@ -287,7 +307,7 @@ try:
                             timestamp=timestamp + self.start_timestamp,
                             is_error_frame=False,
                             is_remote_frame=False,
-                            if_fd=True,
+                            is_fd=True,
                             is_extended_id=is_extended_id,
                             channel=channel,
                             arbitration_id=arbitration_id,
@@ -302,6 +322,7 @@ try:
 
                 # error frames
                 elif group_index == 1:
+
                     sample = self._mdf.get(
                         'CAN_ErrorFrame',
                         group=group_index,
@@ -323,7 +344,7 @@ try:
                             timestamp=timestamp + self.start_timestamp,
                             is_error_frame=True,
                             is_remote_frame=False,
-                            if_fd=False,
+                            is_fd=False,
                             is_extended_id=is_extended_id,
                             channel=channel,
                             arbitration_id=arbitration_id,
@@ -345,7 +366,7 @@ try:
                             timestamp=timestamp + self.start_timestamp,
                             is_error_frame=True,
                             is_remote_frame=False,
-                            if_fd=True,
+                            is_fd=True,
                             is_extended_id=is_extended_id,
                             channel=channel,
                             arbitration_id=arbitration_id,
@@ -368,36 +389,37 @@ try:
                         record_count=1,
                     )
 
-                    if sample['CAN_DataFrame.EDL'] == 0:
+                    is_extended_id = bool(sample['CAN_DataFrame.IDE'])
+                    channel = sample['CAN_DataFrame.ID']
+                    arbitration_id = int(sample['CAN_DataFrame.ID'])
+                    dlc = int(sample['CAN_DataFrame.DLC'])
 
-                        is_extended_id = bool(sample['CAN_DataFrame.IDE'])
-                        channel = sample['CAN_DataFrame.ID']
-                        arbitration_id = int(sample['CAN_DataFrame.ID'])
-                        dlc = int(sample['CAN_DataFrame.DLC'])
+                    msg = Message(
+                        timestamp=timestamp + self.start_timestamp,
+                        is_error_frame=False,
+                        is_remote_frame=True,
+                        is_fd=False,
+                        is_extended_id=is_extended_id,
+                        channel=channel,
+                        arbitration_id=arbitration_id,
+                        dlc=dlc,
+                    )
 
-                        msg = Message(
-                            timestamp=timestamp + self.start_timestamp,
-                            is_error_frame=False,
-                            is_remote_frame=True,
-                            if_fd=False,
-                            is_extended_id=is_extended_id,
-                            channel=channel,
-                            arbitration_id=arbitration_id,
-                            dlc=dlc,
-                        )
-
-                        yield msg
-
-                    else:
-                        logger.warning("CAN FD does not have remote frames")
+                    yield msg
 
                     rtr_counter += 1
 
+
+            print('!!!!\n!!!!!!!\n!!!!!!!         ', standard_counter,
+            error_counter,
+            rtr_counter,
+            [gp.channel_group.cycles_nr for gp in self._mdf.groups]
+            )
             self.stop()
 
         def stop(self):
             self._mdf.close()
-            super(MF4Writer, self).stop()
+            super(MF4Reader, self).stop()
 
     ASAMMDF_AVAILABLE = True
 

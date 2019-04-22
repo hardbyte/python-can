@@ -36,7 +36,7 @@ from .io import CanutilsLogReader, CanutilsLogWriter
 from .io import CSVWriter, CSVReader
 from .io import SqliteWriter, SqliteReader
 try:
-    from .io import MF4Writer
+    from .io import MF4Writer, MF4Reader
 except ImportError:
     pass
 
