@@ -289,6 +289,8 @@ class ReaderWriterTest(unittest.TestCase, ComparingMessagesTestCase, metaclass=A
             "the number of written messages does not match the number of read messages",
         )
 
+        print('!!!!!!    ', len(read_messages))
+
         self.assertMessagesEqual(self.original_messages, read_messages)
         self.assertIncludesComments(self.test_file_name)
 
@@ -705,6 +707,21 @@ class TestCsvFileFormat(ReaderWriterTest):
             preserves_channel=False,
             adds_default_channel=None,
         )
+
+
+class TestMF4FileFormat(ReaderWriterTest):
+    """Tests can.MF4Writer and can.MF4Reader"""
+
+    __test__ = True
+
+    def _setup_instance(self):
+        super(TestMF4FileFormat, self)._setup_instance_helper(
+            can.MF4Writer, can.MF4Reader,
+            binary_file=True,
+            check_comments=False,
+            preserves_channel=False, adds_default_channel=0
+        )
+
 
 
 class TestSqliteDatabaseFormat(ReaderWriterTest):
