@@ -94,37 +94,34 @@ try:
                 attachment = None
 
             # standard frames group
-            sigs = [
+            self._mdf.append(
                 Signal(
                     name="CAN_DataFrame",
                     samples=np.array([], dtype=DTYPE),
                     timestamps=np.array([], dtype='<f8'),
                     attachment=attachment,
                 )
-            ]
-            self._mdf.append(sigs)
+            )
 
             # error frames group
-            sigs = [
+            self._mdf.append(
                 Signal(
                     name="CAN_ErrorFrame",
                     samples=np.array([], dtype=DTYPE),
                     timestamps=np.array([], dtype='<f8'),
                     attachment=attachment,
                 )
-            ]
-            self._mdf.append(sigs)
+            )
 
             # remote frames group
-            sigs = [
+            self._mdf.append(
                 Signal(
                     name="CAN_DataFrame",
                     samples=np.array([], dtype=RTR_DTYPE),
                     timestamps=np.array([], dtype='<f8'),
                     attachment=attachment,
                 )
-            ]
-            self._mdf.append(sigs)
+            )
 
             self._buffer = np.zeros(1, dtype=DTYPE)
             self._rtr_buffer = np.zeros(1, dtype=RTR_DTYPE)
