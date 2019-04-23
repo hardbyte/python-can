@@ -19,7 +19,7 @@ install:
   - set PATH=%PYTHON_INSTALL%;%PYTHON_INSTALL%\\Scripts;%PATH%
 
   # We need to install the python-can library itself including the dependencies
-  - "python -m pip install .[test,neovi]"
+  - "python -m pip install .[test,neovi,mf4]"
 
 build: off
 

@@ -168,21 +168,19 @@ MF4 (Measurement Data Format v4)
 Implements support for MF4 (Measurement Data Format v4) which is a proprietary
 format from ASAM, widely used in many automotive software (Vector CANape, ETAS INCA, dSPACE COntrolDesk, etc.).
 
-MF4 support requires Python >= 3.6
-
 The data is stored in a compressed format which makes it compact.
+
+.. note:: MF4 support requires Python >= 3.6 and has to be installed as an extra with for example ``pip install python-can[mf4]``.
 
 .. note:: Channels will be converted to integers.
 
 .. note:: MF4Writer does not suppport append mode
 
-`MF4Writer` has the following init arguments
 
-* **file** : a path-like object or as file-like object to write to.
-  If this is a file-like object, is has to be opened in binary write mode, not text write mode.
-* **database** : optional path to a DBC or ARXML file that contains message description.
+.. autoclass:: can.MF4Writer
+    :members:
 
-`MF4Reader` has the following init arguments
+MF4Reader can only replay files created with MF4Writer. The following class can be used to read messages from MF4 file:
 
-* **file** : a path-like object or as file-like object to write to.
-  If this is a file-like object, is has to be opened in binary write mode, not text write mode.
+.. autoclass:: can.MF4Reader
+    :members:
