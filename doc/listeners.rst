@@ -174,7 +174,7 @@ The data is stored in a compressed format which makes it compact.
 
 .. note:: Channels will be converted to integers.
 
-.. note:: MF4Writer does not suppport append mode
+.. note:: MF4Writer does not suppport append mode.
 
 
 .. autoclass:: can.MF4Writer
