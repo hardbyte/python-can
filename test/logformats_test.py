@@ -43,9 +43,12 @@ class ReaderWriterTest(unittest.TestCase, ComparingMessagesTestCase):
     """Tests a pair of writer and reader by writing all data first and
     then reading all data and checking if they could be reconstructed
     correctly. Optionally writes some comments as well.
-    """
 
-    __test__ = False
+    .. note::
+        This class is prevented from being executed as a test
+        case itself by a *del* statement in at the end of the file.
+        (Source: `*Wojciech B.* on StackOverlfow <https://stackoverflow.com/a/22836015/3753684>`_)
+    """
 
     __metaclass__ = ABCMeta
 
@@ -318,8 +321,6 @@ class ReaderWriterTest(unittest.TestCase, ComparingMessagesTestCase):
 class TestAscFileFormat(ReaderWriterTest):
     """Tests can.ASCWriter and can.ASCReader"""
 
-    __test__ = True
-
     def _setup_instance(self):
         super(TestAscFileFormat, self)._setup_instance_helper(
             can.ASCWriter, can.ASCReader,
@@ -331,8 +332,6 @@ class TestAscFileFormat(ReaderWriterTest):
 
 class TestBlfFileFormat(ReaderWriterTest):
     """Tests can.BLFWriter and can.BLFReader"""
-
-    __test__ = True
 
     def _setup_instance(self):
         super(TestBlfFileFormat, self)._setup_instance_helper(
@@ -368,8 +367,6 @@ class TestBlfFileFormat(ReaderWriterTest):
 class TestCanutilsFileFormat(ReaderWriterTest):
     """Tests can.CanutilsLogWriter and can.CanutilsLogReader"""
 
-    __test__ = True
-
     def _setup_instance(self):
         super(TestCanutilsFileFormat, self)._setup_instance_helper(
             can.CanutilsLogWriter, can.CanutilsLogReader,
@@ -382,8 +379,6 @@ class TestCanutilsFileFormat(ReaderWriterTest):
 class TestCsvFileFormat(ReaderWriterTest):
     """Tests can.ASCWriter and can.ASCReader"""
 
-    __test__ = True
-
     def _setup_instance(self):
         super(TestCsvFileFormat, self)._setup_instance_helper(
             can.CSVWriter, can.CSVReader,
@@ -395,8 +390,6 @@ class TestCsvFileFormat(ReaderWriterTest):
 
 class TestSqliteDatabaseFormat(ReaderWriterTest):
     """Tests can.SqliteWriter and can.SqliteReader"""
-
-    __test__ = True
 
     def _setup_instance(self):
         super(TestSqliteDatabaseFormat, self)._setup_instance_helper(
@@ -451,6 +444,10 @@ class TestPrinter(unittest.TestCase):
             with can.Printer(temp_file) as printer:
                 for message in self.messages:
                     printer(message)
+
+
+# this excludes the base class from being executed as a test case itself
+del(ReaderWriterTest)
 
 
 if __name__ == '__main__':
