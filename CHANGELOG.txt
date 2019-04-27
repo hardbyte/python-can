@@ -1,3 +1,21 @@
+Version 3.2.0
+====
+
+Support has been removed for Python 3.4
+
+Major features
+--------------
+
+- FD support added for Pcan in PR #537
+
+Other notable changes
+---------------------
+
+- This release should automatically be published to PyPi by travis. #535
+- BusState is now an enum. #533
+- A guide has been added for new io formats. #548
+- Finish moving from nose to pytest #550
+
 Version 3.1.1
 ====
 
