@@ -16,15 +16,23 @@ import pytest
 
 from can import MessageSync, Message
 
-from .config import IS_APPVEYOR
+from .config import IS_APPVEYOR, IS_CI
 from .message_helper import ComparingMessagesTestCase
 from .data.example_data import TEST_MESSAGES_BASE
+
 
 TEST_FEWER_MESSAGES = TEST_MESSAGES_BASE[::2]
 
 
+def inc(value):
+    if IS_CI:
+        return value * 1.5
+    else:
+        return value
+
+
 @unittest.skipIf(IS_APPVEYOR, "this environment's timings are too unpredictable")
-class TestMessageFiltering(unittest.TestCase, ComparingMessagesTestCase):
+class TestMessageSync(unittest.TestCase, ComparingMessagesTestCase):
 
     def __init__(self, *args, **kwargs):
         unittest.TestCase.__init__(self, *args, **kwargs)
@@ -56,15 +64,14 @@ class TestMessageFiltering(unittest.TestCase, ComparingMessagesTestCase):
             timings.append(now - start)
             start = now
 
-
         self.assertMessagesEqual(messages, collected)
         self.assertEqual(len(timings), len(messages), "programming error in test code")
 
-        self.assertTrue(0.0 <= timings[0] < 0.005, str(timings[0]))
-        self.assertTrue(0.0 <= timings[1] < 0.005, str(timings[1]))
-        self.assertTrue(0.045 <= timings[2] < 0.055, str(timings[2]))
-        self.assertTrue(0.075 <= timings[3] < 0.085, str(timings[3]))
-        self.assertTrue(0.0 <= timings[4] < 0.005, str(timings[4]))
+        self.assertTrue(0.0 <= timings[0] < inc(0.005), str(timings[0]))
+        self.assertTrue(0.0 <= timings[1] < inc(0.005), str(timings[1]))
+        self.assertTrue(0.045 <= timings[2] < inc(0.055), str(timings[2]))
+        self.assertTrue(0.075 <= timings[3] < inc(0.085), str(timings[3]))
+        self.assertTrue(0.0 <= timings[4] < inc(0.005), str(timings[4]))
 
     @pytest.mark.timeout(0.1 * len(TEST_FEWER_MESSAGES)) # very conservative
     def test_skip(self):
@@ -77,7 +84,7 @@ class TestMessageFiltering(unittest.TestCase, ComparingMessagesTestCase):
         took = after - before
 
         # the handling of the messages itself also take time: ~0.001 s/msg on my laptop
-        assert 0 < took < len(messages) * (0.005 + 0.003), "took: {}s".format(took)
+        assert 0 < took < inc(len(messages) * (0.005 + 0.003)), "took: {}s".format(took)
 
         self.assertMessagesEqual(messages, collected)
 
@@ -104,7 +111,7 @@ def test_gap(timestamp_1, timestamp_2):
     gc.enable()
     took = after - before
 
-    assert 0.1 <= took < 0.3
+    assert 0.1 <= took < inc(0.3)
     assert messages == collected
 
 
