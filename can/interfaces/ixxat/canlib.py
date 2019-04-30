@@ -115,6 +115,8 @@ def __check_status(result, function, arguments):
 		# Real return value is an unsigned long
 		result = ctypes.c_ulong(result).value
 
+	#print(hex(result), function)
+
 	if result == constants.VCI_E_TIMEOUT:
 		raise VCITimeout("Function {} timed out".format(function._name))
 	elif result == constants.VCI_E_RXQUEUE_EMPTY:
@@ -318,7 +320,6 @@ class IXXATBus(BusABC):
 		self._channel_handle = HANDLE()
 		self._channel_capabilities = structures.CANCAPABILITIES()
 		self._message = structures.CANMSG()
-		self._payload = (ctypes.c_byte * 8)()
 
 		# Search for supplied device
 		if UniqueHardwareId is None:
@@ -456,7 +457,6 @@ class IXXATBus(BusABC):
 						log.info(CAN_INFO_MESSAGES.get(self._message.abData[0], "Unknown CAN info message code {}".format(self._message.abData[0])))
 					elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_ERROR:
 						log.warning(CAN_ERROR_MESSAGES.get(self._message.abData[0], "Unknown CAN error message code {}".format(self._message.abData[0])))
-						# TODO report error with is_error_frame is set to true
 					elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_TIMEOVR:
 						pass
 					else:
@@ -487,7 +487,12 @@ class IXXATBus(BusABC):
 		return rx_msg, True
 
 	def send(self, msg, timeout=None):
-
+		"""
+		Sends a message on the bus. The interface may buffer the message.
+		returns True on success or when timeout is None
+		returns False on timeout (when timeout is not None)
+		raises CanOperationError
+		"""
 		# This system is not designed to be very efficient
 		message = structures.CANMSG()
 		message.uMsgInfo.Bits.type = constants.CAN_MSGTYPE_DATA
@@ -500,10 +505,21 @@ class IXXATBus(BusABC):
 			adapter = (ctypes.c_uint8 * len(msg.data)).from_buffer(msg.data)
 			ctypes.memmove(message.abData, adapter, len(msg.data))
 
-		if timeout:
-			_canlib.canChannelSendMessage(self._channel_handle, int(timeout * 1000), message)
-		else:
-			_canlib.canChannelPostMessage(self._channel_handle, message)
+		try:
+			if timeout:
+				_canlib.canChannelSendMessage(self._channel_handle, int(timeout * 1000), message)
+			else:
+				_canlib.canChannelPostMessage(self._channel_handle, message)
+		except VCITimeout:
+			# if the user wanted an timeout, the timeout in the library is probably no error
+			if timeout:
+				return False
+			else:
+				raise(CanOperationError())
+		except:
+			raise(CanOperationError())
+		
+		return True
 
 	def _send_periodic_internal(self, msg, period, duration=None):
 		"""Send a message using built-in cyclic transmit list functionality."""
