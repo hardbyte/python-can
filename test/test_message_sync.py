@@ -56,6 +56,7 @@ class TestMessageFiltering(unittest.TestCase, ComparingMessagesTestCase):
             timings.append(now - start)
             start = now
 
+
         self.assertMessagesEqual(messages, collected)
         self.assertEqual(len(timings), len(messages), "programming error in test code")
 
