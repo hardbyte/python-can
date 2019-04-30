@@ -50,9 +50,11 @@ class slcanBus(BusABC):
     LINE_TERMINATOR = b'\r'
 
     def __init__(self, channel, ttyBaudrate=115200, bitrate=None,
-                 sleep_after_open=_SLEEP_AFTER_SERIAL_OPEN,
+                 btr=None, sleep_after_open=_SLEEP_AFTER_SERIAL_OPEN,
                  rtscts=False, **kwargs):
         """
+        :raise ValueError: if both *bitrate* and *btr* are set
+
         :param str channel:
             port of underlying serial or usb device (e.g. /dev/ttyUSB0, COM8, ...)
             Must not be empty.
@@ -60,6 +62,8 @@ class slcanBus(BusABC):
             baudrate of underlying serial or usb device
         :param int bitrate:
             Bitrate in bit/s
+        :param str btr:
+            BTR register value to set custom can speed
         :param float poll_interval:
             Poll interval in seconds when reading messages
         :param float sleep_after_open:
@@ -81,12 +85,19 @@ class slcanBus(BusABC):
 
         time.sleep(sleep_after_open)
 
+        if bitrate is not None and btr is not None:
+            raise ValueError("Bitrate and btr mutually exclusive.")
+
         if bitrate is not None:
             self.close()
             if bitrate in self._BITRATES:
                 self.write(self._BITRATES[bitrate])
             else:
                 raise ValueError("Invalid bitrate, choose one of " + (', '.join(self._BITRATES)) + '.')
+
+        if btr is not None:
+            self.close()
+            self.write("s" + btr)
 
         self.open()
 
