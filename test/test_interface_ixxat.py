@@ -16,6 +16,7 @@ class SoftwareTestCase(unittest.TestCase):
     def setUp(self):
         try:
             bus = can.Bus(interface = 'ixxat', channel = 0)
+            bus.shutdown()
         except ImportError:
             raise(unittest.SkipTest())
     
@@ -43,6 +44,7 @@ class HardwareTestCase(unittest.TestCase):
     def setUp(self):
         try:
             bus = can.Bus(interface = 'ixxat', channel = 0)
+            bus.shutdown()
         except ImportError:
             raise(unittest.SkipTest())
     

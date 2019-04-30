@@ -23,7 +23,7 @@ import sys
 
 from can import BusABC, Message
 from can import CanError, CanBackEndError, CanInitializationError, CanOperationError
-from can.broadcastmanager import (LimitedDurationCyclicSendTaskABC, RestartableCyclicTaskABC)
+from can.broadcastmanager import LimitedDurationCyclicSendTaskABC, RestartableCyclicTaskABC
 from can.ctypesutil import CLibrary, HANDLE, PHANDLE, HRESULT as ctypes_HRESULT
 
 from . import constants, structures
@@ -345,7 +345,7 @@ class IXXATBus(BusABC):
         try:
             _canlib.vciDeviceOpen(ctypes.byref(self._device_info.VciObjectId), ctypes.byref(self._device_handle))
         except:
-            raise(CanInitializationError("Could not open device."))
+            raise CanInitializationError("Could not open device.")
 
         log.info("Using unique HW ID %s", self._device_info.UniqueHardwareId.AsChar)
 
@@ -355,7 +355,7 @@ class IXXATBus(BusABC):
             _canlib.canChannelOpen(self._device_handle, channel, constants.FALSE, ctypes.byref(self._channel_handle))
             # Signal TX/RX events when at least one frame has been handled
         except:
-            raise(CanInitializationError("Could not open and initialize channel."))
+            raise CanInitializationError("Could not open and initialize channel.")
 
         _canlib.canChannelInitialize(self._channel_handle, rxFifoSize, 1, txFifoSize, 1)
         _canlib.canChannelActivate(self._channel_handle, constants.TRUE)
@@ -515,9 +515,9 @@ class IXXATBus(BusABC):
             if timeout:
                 return False
             else:
-                raise(CanOperationError())
+                raise CanOperationError("Timeout in library call.")
         except:
-            raise(CanOperationError())
+            raise CanOperationError("Send failed.")
         
         return True
 
