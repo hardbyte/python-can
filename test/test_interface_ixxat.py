@@ -14,7 +14,10 @@ class SoftwareTestCase(unittest.TestCase):
     Test cases that test the software only and do not rely on an existing/connected hardware.
     """
     def setUp(self):
-        pass
+        try:
+            bus = can.Bus(interface = 'ixxat', channel = 0)
+        except ImportError:
+            raise(unittest.SkipTest())
     
     def tearDown(self):
         pass
@@ -40,7 +43,7 @@ class HardwareTestCase(unittest.TestCase):
     def setUp(self):
         try:
             bus = can.Bus(interface = 'ixxat', channel = 0)
-        except:
+        except ImportError:
             raise(unittest.SkipTest())
     
     def tearDown(self):
