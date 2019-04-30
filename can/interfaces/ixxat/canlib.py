@@ -22,7 +22,7 @@ import logging
 import sys
 
 from can import BusABC, Message
-from can import CanError, CanInitializationError
+from can import CanError, CanBackEndError, CanInitializationError, CanOperationError
 from can.broadcastmanager import (LimitedDurationCyclicSendTaskABC, RestartableCyclicTaskABC)
 from can.ctypesutil import CLibrary, HANDLE, PHANDLE, HRESULT as ctypes_HRESULT
 
@@ -452,17 +452,16 @@ class IXXATBus(BusABC):
 					if self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_DATA:
 						data_received = True
 						break
-
 					elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_INFO:
 						log.info(CAN_INFO_MESSAGES.get(self._message.abData[0], "Unknown CAN info message code {}".format(self._message.abData[0])))
-
 					elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_ERROR:
 						log.warning(CAN_ERROR_MESSAGES.get(self._message.abData[0], "Unknown CAN error message code {}".format(self._message.abData[0])))
-
+						# TODO report error with is_error_frame is set to true
 					elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_TIMEOVR:
 						pass
 					else:
 						log.warn("Unexpected message info type")
+						raise(CanBackEndError())
 
 				if t0 is not None:
 					remaining_ms = timeout_ms - int((_timer_function() - t0) * 1000)

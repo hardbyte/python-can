@@ -14,7 +14,7 @@ log = logging.getLogger('can')
 
 rc = dict()
 
-from .exceptions import CanError, CanInitializationError, CanOperationError
+from .exceptions import CanError, CanBackEndError, CanInitializationError, CanOperationError
 
 from .listener import Listener, BufferedReader, RedirectReader
 try:
