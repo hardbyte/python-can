@@ -16,7 +16,7 @@ import pytest
 
 from can import MessageSync, Message
 
-from .config import IS_APPVEYOR, IS_CI
+from .config import IS_CI, IS_APPVEYOR, IS_TRAVIS, IS_OSX
 from .message_helper import ComparingMessagesTestCase
 from .data.example_data import TEST_MESSAGES_BASE
 
@@ -31,7 +31,8 @@ def inc(value):
         return value
 
 
-@unittest.skipIf(IS_APPVEYOR, "this environment's timings are too unpredictable")
+@unittest.skipIf(IS_APPVEYOR or (IS_TRAVIS and IS_OSX),
+                 "this environment's timings are too unpredictable")
 class TestMessageSync(unittest.TestCase, ComparingMessagesTestCase):
 
     def __init__(self, *args, **kwargs):
@@ -44,7 +45,7 @@ class TestMessageSync(unittest.TestCase, ComparingMessagesTestCase):
     def teardown_method(self, _):
         gc.enable()
 
-    @pytest.mark.timeout(0.2)
+    @pytest.mark.timeout(inc(0.2))
     def test_general(self):
         messages = [
             Message(timestamp=50.0),
@@ -73,7 +74,7 @@ class TestMessageSync(unittest.TestCase, ComparingMessagesTestCase):
         self.assertTrue(0.075 <= timings[3] < inc(0.085), str(timings[3]))
         self.assertTrue(0.0 <= timings[4] < inc(0.005), str(timings[4]))
 
-    @pytest.mark.timeout(0.1 * len(TEST_FEWER_MESSAGES)) # very conservative
+    @pytest.mark.timeout(inc(0.1) * len(TEST_FEWER_MESSAGES)) # very conservative
     def test_skip(self):
         messages = copy(TEST_FEWER_MESSAGES)
         sync = MessageSync(messages, skip=0.005, gap=0.0)
@@ -89,30 +90,31 @@ class TestMessageSync(unittest.TestCase, ComparingMessagesTestCase):
         self.assertMessagesEqual(messages, collected)
 
 
-@unittest.skipIf(IS_APPVEYOR, "this environment's timings are too unpredictable")
-@pytest.mark.timeout(0.3)
-@pytest.mark.parametrize("timestamp_1,timestamp_2", [
-    (0.0, 0.0),
-    (0.0, 0.01),
-    (0.01, 0.0),
-])
-def test_gap(timestamp_1, timestamp_2):
-    """This method is alone so it can be parameterized."""
-    messages = [
-        Message(arbitration_id=0x1, timestamp=timestamp_1),
-        Message(arbitration_id=0x2, timestamp=timestamp_2)
-    ]
-    sync = MessageSync(messages, gap=0.1)
+if not IS_APPVEYOR: # this environment's timings are too unpredictable
 
-    gc.disable()
-    before = time()
-    collected = list(sync)
-    after = time()
-    gc.enable()
-    took = after - before
+    @pytest.mark.timeout(inc(0.3))
+    @pytest.mark.parametrize("timestamp_1,timestamp_2", [
+        (0.0, 0.0),
+        (0.0, 0.01),
+        (0.01, 0.0),
+    ])
+    def test_gap(timestamp_1, timestamp_2):
+        """This method is alone so it can be parameterized."""
+        messages = [
+            Message(arbitration_id=0x1, timestamp=timestamp_1),
+            Message(arbitration_id=0x2, timestamp=timestamp_2)
+        ]
+        sync = MessageSync(messages, gap=0.1)
 
-    assert 0.1 <= took < inc(0.3)
-    assert messages == collected
+        gc.disable()
+        before = time()
+        collected = list(sync)
+        after = time()
+        gc.enable()
+        took = after - before
+
+        assert 0.1 <= took < inc(0.3)
+        assert messages == collected
 
 
 if __name__ == '__main__':
