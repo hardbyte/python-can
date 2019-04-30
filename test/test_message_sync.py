@@ -16,10 +16,14 @@ import pytest
 
 from can import MessageSync, Message
 
+from .config import IS_APPVEYOR
 from .message_helper import ComparingMessagesTestCase
 from .data.example_data import TEST_MESSAGES_BASE
+
 TEST_FEWER_MESSAGES = TEST_MESSAGES_BASE[::2]
 
+
+@unittest.skipIf(IS_APPVEYOR, "this environment's timings are too unpredictable")
 class TestMessageFiltering(unittest.TestCase, ComparingMessagesTestCase):
 
     def __init__(self, *args, **kwargs):
@@ -77,6 +81,7 @@ class TestMessageFiltering(unittest.TestCase, ComparingMessagesTestCase):
         self.assertMessagesEqual(messages, collected)
 
 
+@unittest.skipIf(IS_APPVEYOR, "this environment's timings are too unpredictable")
 @pytest.mark.timeout(0.3)
 @pytest.mark.parametrize("timestamp_1,timestamp_2", [
     (0.0, 0.0),
