@@ -1,7 +1,7 @@
 # coding: utf-8
 
 """
-Read and Write CAN bus messages using a range of Readers
+Read and write CAN bus messages using a range of Readers
 and Writers based off the file extension.
 """
 
