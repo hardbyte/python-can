@@ -70,7 +70,7 @@ script:
       # Run the tests
       python setup.py test
       # Upload the coverage to codecov.io
-      if [[ "$TRAVIS_PYTHON_VERSION" == "3.7" ]]; then codecov fi
+      if [[ "$TRAVIS_PYTHON_VERSION" == "3.7" ]]; then codecov; fi
     fi
 
 # Have travis deploy tagged commits to PyPi
