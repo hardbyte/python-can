@@ -68,7 +68,7 @@ script:
       python -m sphinx -an doc build
     else
       # Run the tests
-      python setup.py test
+      python setup.py test && # (preserve the error code semantics)
       # Upload the coverage to codecov.io
       if [[ "$TRAVIS_PYTHON_VERSION" == "3.7" ]]; then codecov; fi
     fi
