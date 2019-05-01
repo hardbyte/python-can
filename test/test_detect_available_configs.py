@@ -15,7 +15,7 @@ if sys.version_info.major > 2:
 
 from can import detect_available_configs
 
-from .config import IS_LINUX, IS_CI
+from .config import IS_LINUX, IS_CI, TEST_INTERFACE_SOCKETCAN
 
 
 class TestDetectAvailableConfigs(unittest.TestCase):
@@ -45,13 +45,13 @@ class TestDetectAvailableConfigs(unittest.TestCase):
         for config in configs:
             self.assertEqual(config['interface'], 'socketcan')
 
-    @unittest.skipUnless(IS_LINUX and IS_CI, "socketcan is only available on Linux")
+    @unittest.skipUnless(TEST_INTERFACE_SOCKETCAN, "socketcan is not tested")
     def test_socketcan_on_ci_server(self):
         configs = detect_available_configs(interfaces='socketcan')
         self.assertGreaterEqual(len(configs), 1)
         self.assertIn('vcan0', [config['channel'] for config in configs])
 
-    # see TestSocketCanHelpers.test_find_available_interfaces()
+    # see TestSocketCanHelpers.test_find_available_interfaces() too
 
 
 if __name__ == '__main__':
