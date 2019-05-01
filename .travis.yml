@@ -5,10 +5,11 @@ python:
   - "2.7"
   - "3.6"
   - "3.7"
-  - "nightly"
+  - 3.8-dev
+  - nightly
   # PyPy:
-  - "pypy" # Python 2.7
-  - "pypy3.5" # Python 3.5
+  - pypy # Python 2.7
+  - pypy3.5 # Python 3.5
 
 os:
   - linux   # Linux is officially supported and we test the library under
@@ -33,7 +34,7 @@ matrix:
     # building the docs
     - python: "3.7"
       env: BUILD_ONLY_DOCS=TRUE
-    # testing socketcan on Trusty
+    # testing socketcan on Trusty & Python 3.6, since it is not available on Xenial
     - os: linux
       dist: trusty
       python: "3.6"
@@ -41,18 +42,20 @@ matrix:
     # testing on macOS; see "os: ..." above
     - os: osx
       osx_image: xcode8.3
-      python: "3.6-dev"
+      python: 3.6-dev
     - os: osx
       osx_image: xcode8.3
-      python: "3.7-dev"
+      python: 3.7-dev
     - os: osx
       osx_image: xcode8.3
-      python: "nightly"
+      python: nightly
 
   allow_failures:
-    # we do not allow dev builds to fail, since these builds are considered stable enough
-    # we allow all nighly builds to fail, since these python versions might be unstable
-    - python: "nightly"
+    # we allow all dev & nighly builds to fail, since these python versions might
+    # still be very unstable
+    - python:
+        - 3.8-dev
+        - nightly
 
 install:
   - if [[ "$TEST_SOCKETCAN" ]]; then sudo bash test/open_vcan.sh ; fi
