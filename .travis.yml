@@ -1,7 +1,7 @@
 language: python
 
 python:
-  # CPython; versions pre-2.7 and 3.0-3.4 have reached EOL
+  # CPython; versions pre-2.7 and 3.0-3.5 have reached EOL
   - "2.7"
   - "3.6"
   - "3.7"
@@ -29,8 +29,16 @@ dist: xenial
 sudo: required
 
 matrix:
-  # see "os: ..." above
   include:
+    # building the docs
+    - python: "3.7"
+      env: BUILD_ONLY_DOCS=TRUE
+    # testing socketcan on Trusty
+    - os: linux
+      dist: trusty
+      python: "3.6"
+      env: TEST_SOCKETCAN=TRUE
+    # testing on macOS; see "os: ..." above
     - os: osx
       osx_image: xcode8.3
       python: "3.6-dev"
@@ -42,22 +50,28 @@ matrix:
       python: "nightly"
 
   allow_failures:
-    # allow all nighly builds to fail, since these python versions might be unstable
-    - python: "nightly"
     # we do not allow dev builds to fail, since these builds are considered stable enough
+    # we allow all nighly builds to fail, since these python versions might be unstable
+    - python: "nightly"
 
 install:
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo bash test/open_vcan.sh ; fi
-  - if [[ "$TRAVIS_PYTHON_VERSION" == "3.6" ]]; then travis_retry pip install -r doc/doc-requirements.txt; fi
+  - if [[ "$TEST_SOCKETCAN" ]]; then sudo bash test/open_vcan.sh ; fi
+  - if [[ "$BUILD_ONLY_DOCS" ]]; then travis_retry pip install -r doc/doc-requirements.txt; fi
   - travis_retry pip install .[test]
 
 script:
-  - pytest
-  - codecov
-  # Build Docs with Sphinx
-  # -a Write all files
-  # -n nitpicky
-  - if [[ "$TRAVIS_PYTHON_VERSION" == "3.6" ]]; then python -m sphinx -an doc build; fi
+  - |
+    if [[ "$BUILD_ONLY_DOCS" ]]; then
+      # Build the docs with Sphinx
+      #   -a Write all files
+      #   -n nitpicky
+      python -m sphinx -an doc build;
+    else
+      # Run the tests
+      python setup.py test
+      # Upload the coverage to codecov.io
+      codecov;
+    fi
 
 # Have travis deploy tagged commits to PyPi
 deploy:
