@@ -156,7 +156,7 @@ class PcanBus(BusABC):
             pcan_bitrate = pcan_bitrate_objs[bitrate]
         except KeyError:
             # Try to use a user defined CAN-speed
-            pcan_bitrate = TPCANHandle(bitrate)
+            pcan_bitrate = TPCANBaudrate(bitrate)
         hwtype = PCAN_TYPE_ISA
         ioport = 0x02A0
         interrupt = 11
