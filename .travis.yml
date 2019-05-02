@@ -27,7 +27,6 @@ os:
 
 # Linux setup
 dist: xenial
-sudo: required
 
 matrix:
   include:
@@ -38,6 +37,7 @@ matrix:
     - os: linux
       dist: trusty
       python: "3.6"
+      sudo: required
       env: TEST_SOCKETCAN=TRUE
     # testing on macOS; see "os: ..." above
     - os: osx
@@ -70,9 +70,13 @@ script:
       python -m sphinx -an doc build
     else
       # Run the tests
-      python setup.py test && # (preserve the error code semantics)
+      python setup.py test
+      # preserve the error code
+      RETURN_CODE=$?
       # Upload the coverage to codecov.io
-      if [[ "$TRAVIS_PYTHON_VERSION" == "3.7" ]]; then codecov; fi
+      codecov
+      # set error code
+      (exit $RETURN_CODE);
     fi
 
 # Have travis deploy tagged commits to PyPi
