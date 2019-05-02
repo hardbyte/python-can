@@ -48,7 +48,7 @@ setup(
     url="https://github.com/hardbyte/python-can",
     description="Controller Area Network interface module for Python",
     long_description=long_description,
-    classifiers=(
+    classifiers=[
         # a list of all available ones: https://pypi.org/classifiers/
         "Programming Language :: Python",
         "Programming Language :: Python :: 2.7",
@@ -74,7 +74,7 @@ setup(
         "Topic :: System :: Networking",
         "Topic :: System :: Hardware :: Hardware Drivers",
         "Topic :: Utilities"
-    ),
+    ],
 
     # Code
     version=version,
