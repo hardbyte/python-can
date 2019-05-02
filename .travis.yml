@@ -30,7 +30,7 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo bash test/open_vcan.sh ; fi
   - if [[ "$TRAVIS_PYTHON_VERSION" == "3.6" ]]; then travis_retry pip install -r doc/doc-requirements.txt; fi
   - pip freeze --all
-  - travis_retry pip install --verbose .[test,mf4]
+  - travis_retry pip install --verbose --upgrade .[test,mf4]
   - pip freeze --all
 
 script:
