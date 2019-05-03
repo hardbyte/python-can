@@ -36,7 +36,8 @@ tests_require = [
     'codecov~=2.0',
     'future',
     'six',
-    'hypothesis'
+    'hypothesis',
+    'crccheck'
 ] + extras_require['serial']
 
 extras_require['test'] = tests_require
