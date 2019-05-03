@@ -1,14 +1,15 @@
 language: python
 
 python:
-  # CPython; versions pre-2.7 and 3.0-3.4 have reached EOL
+  # CPython; versions pre-2.7 and 3.0-3.5 have reached EOL
   - "2.7"
   - "3.6"
-  - "3.7-dev" # TODO: change to "3.7" once it is supported by travis-ci
-  - "nightly"
+  - "3.7"
+  - 3.8-dev
+  - nightly
   # PyPy:
-  - "pypy" # Python 2.7
-  - "pypy3.5" # Python 3.5
+  - pypy # Python 2.7
+  - pypy3.5 # Python 3.5
 
 os:
   - linux   # Linux is officially supported and we test the library under
@@ -25,39 +26,58 @@ os:
 # - windows # Windows is not supported at all by Travis CI as of Feb. 2018
 
 # Linux setup
-dist: trusty
-sudo: required
+dist: xenial
 
 matrix:
-  # see "os: ..." above
   include:
+    # building the docs
+    - python: "3.7"
+      env: BUILD_ONLY_DOCS=TRUE
+    # testing socketcan on Trusty & Python 3.6, since it is not available on Xenial
+    - os: linux
+      dist: trusty
+      python: "3.6"
+      sudo: required
+      env: TEST_SOCKETCAN=TRUE
+    # testing on macOS; see "os: ..." above
     - os: osx
       osx_image: xcode8.3
-      python: "3.6-dev"
+      python: 3.6-dev
     - os: osx
       osx_image: xcode8.3
-      python: "3.7-dev"
+      python: 3.7-dev
     - os: osx
       osx_image: xcode8.3
-      python: "nightly"
+      python: nightly
 
   allow_failures:
-    # allow all nighly builds to fail, since these python versions might be unstable
-    - python: "nightly"
-    # we do not allow dev builds to fail, since these builds are considered stable enough
+    # we allow all dev & nighly builds to fail, since these python versions might
+    # still be very unstable
+    - python: 3.8-dev
+    - python: nightly
 
 install:
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo bash test/open_vcan.sh ; fi
-  - if [[ "$TRAVIS_PYTHON_VERSION" == "3.6" ]]; then travis_retry pip install -r doc/doc-requirements.txt; fi
+  - if [[ "$TEST_SOCKETCAN" ]]; then sudo bash test/open_vcan.sh ; fi
+  - if [[ "$BUILD_ONLY_DOCS" ]]; then travis_retry pip install -r doc/doc-requirements.txt; fi
   - travis_retry pip install .[test,mf4]
 
 script:
-  - pytest
-  - codecov
-  # Build Docs with Sphinx
-  # -a Write all files
-  # -n nitpicky
-  - if [[ "$TRAVIS_PYTHON_VERSION" == "3.6" ]]; then python -m sphinx -an doc build; fi
+  - |
+    if [[ "$BUILD_ONLY_DOCS" ]]; then
+      # Build the docs with Sphinx
+      #   -a Write all files
+      #   -n nitpicky
+      python -m sphinx -an doc build
+    else
+      # Run the tests
+      python setup.py test
+      # preserve the error code
+      RETURN_CODE=$?
+      # Upload the coverage to codecov.io
+      codecov
+      # set error code
+      (exit $RETURN_CODE);
+    fi
 
 # Have travis deploy tagged commits to PyPi
 deploy:

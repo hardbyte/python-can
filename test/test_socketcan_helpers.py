@@ -37,7 +37,7 @@ class TestSocketCanHelpers(unittest.TestCase):
         self.assertGreaterEqual(len(result), 0)
         for entry in result:
             self.assertRegexpMatches(entry, r"v?can\d+")
-        if IS_CI:
+        if TEST_INTERFACE_SOCKETCAN:
             self.assertGreaterEqual(len(result), 1)
             self.assertIn("vcan0", result)
 
