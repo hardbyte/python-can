@@ -12,12 +12,10 @@ https://copperhilltech.com/blog/usbcan-analyzer-usb-to-can-bus-serial-protocol-d
 this file uses Crc8Darc checksums.
 """
 
-
 from __future__ import absolute_import, division
 
 import logging
 import struct
-from crccheck.crc import Crc8Darc
 from time import sleep, time
 from can import BusABC, Message
 
@@ -29,6 +27,11 @@ except ImportError:
     logger.warning("You won't be able to use the serial can backend without "
                    "the serial module installed!")
     serial = None
+
+try:
+    from crccheck.crc import Crc8Darc
+except ImportError:
+    logger.warning("The interface requires the install option crccheck.")
 
 
 class CanAnalyzer(BusABC):
@@ -53,7 +56,7 @@ class CanAnalyzer(BusABC):
                10000: 0x0B,
                5000: 0x0C
               }
-    
+
     FRAMETYPE = {
                  "STD":0x01,
                  "EXT":0x02
@@ -100,7 +103,7 @@ class CanAnalyzer(BusABC):
             channel, baudrate=baudrate, timeout=timeout, rtscts=rtscts)
 
         super(CanAnalyzer, self).__init__(channel=channel, *args, **kwargs)
-        self.init_frame
+        self.init_frame()
 
     def shutdown(self):
         """
@@ -119,27 +122,23 @@ class CanAnalyzer(BusABC):
         byte_msg.append(CanAnalyzer.BITRATE[self.bit_rate])  # CAN Baud Rate
         byte_msg.append(CanAnalyzer.FRAMETYPE[self.frame_type]) 
 
-        for i in range(0, 4):
-            byte_msg.append(self.filter_id[i])
+        byte_msg.extend(self.filter_id)
 
-        for i in range(0, 4):
-            byte_msg.append(self.mask_id[i])
+        byte_msg.extend(self.mask_id)
 
         byte_msg.append(CanAnalyzer.OPERATIONMODE[self.op_mode])
-        
+
         byte_msg.append(0x01)
 
         for i in range(0, 4):
             byte_msg.append(0x00)
 
-        print "byte_str = " + str(byte_msg[2:])
-
         crc = Crc8Darc.calc(byte_msg[2:])
         crc_byte = struct.pack('B', crc)
 
-        print "crc_byte: " + str(crc_byte) + " length: " + str(len(crc_byte))
-
         byte_msg.append(crc_byte)
+
+        logger.debug("init_frm:\t" + str(byte_msg))
         self.ser.write(byte_msg)
 
     def flush_buffer(self):
@@ -156,16 +155,13 @@ class CanAnalyzer(BusABC):
         for i in range(0, 14):
             byte_msg.append(0x00)
 
-        print "byte_str = " + str(byte_msg[2:])
-
         crc = Crc8Darc.calc(byte_msg[2:])
         crc_byte = struct.pack('B', crc)
 
-        print "crc_byte: " + str(crc_byte) + " length: " + str(len(crc_byte))
-
         byte_msg.append(crc_byte)
-        self.ser.write(byte_msg)
 
+        logger.debug("status_frm:\t" + str(byte_msg))
+        self.ser.write(byte_msg)
 
     def send(self, msg, timeout=None):
         """
@@ -203,6 +199,8 @@ class CanAnalyzer(BusABC):
         for i in range(0, msg.dlc):
             byte_msg.append(msg.data[i])
         byte_msg.append(0xBB)
+
+        logger.debug("Sending:\t" + byte_msg)
         self.ser.write(byte_msg)
 
     def _recv_internal(self, timeout):
@@ -229,7 +227,7 @@ class CanAnalyzer(BusABC):
             # ser.read can return an empty string
             # or raise a SerialException
             rx_byte_1 = self.ser.read()
-            
+
         except serial.SerialException:
             return None, False
 
@@ -260,14 +258,13 @@ class CanAnalyzer(BusABC):
                                   arbitration_id=arb_id,
                                   extended_id=is_extended,
                                   data=data)
-
+                    logger.debug("recv_msg:\t" + str(msg))
                     return msg, False
 
                 else:
                     return None, False
 
         return None, None
-
 
     def fileno(self):
         if hasattr(self.ser, 'fileno'):

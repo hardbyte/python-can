@@ -25,7 +25,8 @@ with open('README.rst', 'r') as f:
 # Dependencies
 extras_require = {
     'serial':   ['pyserial~=3.0'],
-    'neovi':    ['python-ics>=2.12']
+    'neovi':    ['python-ics>=2.12'],
+    'usb-can-analyzer': ['crccheck>=0.6']
 }
 
 tests_require = [
@@ -36,8 +37,7 @@ tests_require = [
     'codecov~=2.0',
     'future',
     'six',
-    'hypothesis',
-    'crccheck'
+    'hypothesis'
 ] + extras_require['serial']
 
 extras_require['test'] = tests_require
