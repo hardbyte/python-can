@@ -255,8 +255,9 @@ class CanAnalyzer(BusABC):
                 if end_packet == 0x55:
                     msg = Message(timestamp=time_stamp,
                                   arbitration_id=arb_id,
-                                  extended_id=is_extended,
+                                  is_extended_id=is_extended,
                                   is_remote_frame=is_remote,
+                                  dlc=length,
                                   data=data)
                     logger.debug("recv message: " + str(msg))
                     return msg, False
