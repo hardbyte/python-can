@@ -26,7 +26,7 @@ with open('README.rst', 'r') as f:
 extras_require = {
     'serial':   ['pyserial~=3.0'],
     'neovi':    ['python-ics>=2.12'],
-    'mf4':      ['asammdf>=5.5.0', 'numpy>=1.16.0']
+    'mf4':      ['asammdf>=5.5.0;python_version>="3.6"', 'numpy>=1.16.0;python_version>="3.6"']
 }
 
 tests_require = [
