@@ -61,6 +61,7 @@ install:
   - if [[ "$BUILD_ONLY_DOCS" ]]; then travis_retry pip install -r doc/doc-requirements.txt; fi
   - travis_retry pip install .[test]
 
+
 script:
   - |
     if [[ "$BUILD_ONLY_DOCS" ]]; then
