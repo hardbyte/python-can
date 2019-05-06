@@ -16,6 +16,7 @@ from __future__ import absolute_import, division
 
 import logging
 import struct
+import binascii
 from time import sleep, time
 from can import BusABC, Message
 
@@ -138,7 +139,7 @@ class CanAnalyzer(BusABC):
 
         byte_msg.append(crc_byte)
 
-        logger.debug("init_frm:\t" + str(byte_msg))
+        logger.debug("init_frm:\t" + binascii.hexlify(byte_msg))
         self.ser.write(byte_msg)
 
     def flush_buffer(self):
@@ -160,7 +161,7 @@ class CanAnalyzer(BusABC):
 
         byte_msg.append(crc_byte)
 
-        logger.debug("status_frm:\t" + str(byte_msg))
+        logger.debug("status_frm:\t" + binascii.hexlify(byte_msg))
         self.ser.write(byte_msg)
 
     def send(self, msg, timeout=None):
@@ -200,7 +201,7 @@ class CanAnalyzer(BusABC):
             byte_msg.append(msg.data[i])
         byte_msg.append(0xBB)
 
-        logger.debug("Sending:\t" + byte_msg)
+        logger.debug("Sending:\t" + binascii.hexlify(byte_msg))
         self.ser.write(byte_msg)
 
     def _recv_internal(self, timeout):
@@ -240,8 +241,7 @@ class CanAnalyzer(BusABC):
             else:
                 length = int(rx_byte_2 & 0x0F)
                 is_extended = bool(rx_byte_2 & 0x20)
-                is_data = bool(rx_byte_2 & 10)
-
+                is_remote = bool(rx_byte_2 & 0x10)
                 if is_extended:
                     s_3_4_5_6 = bytearray(self.ser.read(4))
                     arb_id = (struct.unpack('<I', s_3_4_5_6))[0]
@@ -252,13 +252,13 @@ class CanAnalyzer(BusABC):
 
                 data = bytearray(self.ser.read(length))
                 end_packet = ord(self.ser.read())
-
                 if end_packet == 0x55:
                     msg = Message(timestamp=time_stamp,
                                   arbitration_id=arb_id,
                                   extended_id=is_extended,
+                                  is_remote_frame=is_remote,
                                   data=data)
-                    logger.debug("recv_msg:\t" + str(msg))
+                    logger.debug("recv message: " + str(msg))
                     return msg, False
 
                 else:
