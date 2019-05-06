@@ -154,7 +154,6 @@ try:
 
         def stop(self):
             self._mdf.save(self.file, compression=2)
-            self._mdf.save(r'D:\TMP\test.mf4', overwrite=True)
             self._mdf.close()
             super(MF4Writer, self).stop()
 
