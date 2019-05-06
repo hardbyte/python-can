@@ -15,18 +15,16 @@ from abc import ABCMeta, abstractmethod
 
 from .config import *
 
+
 class CanScriptTest(unittest.TestCase):
+
+    __metaclass__ = ABCMeta
 
     @classmethod
     def setUpClass(cls):
         # clean up the argument list so the call to the main() functions
         # in test_does_not_crash() succeeds
         sys.argv = sys.argv[:1]
-
-    #: this is overridden by the subclasses
-    __test__ = False
-
-    __metaclass__ = ABCMeta
 
     def test_do_commands_exist(self):
         """This test calls each scripts once and verifies that the help
@@ -54,8 +52,7 @@ class CanScriptTest(unittest.TestCase):
         # test main method
         with self.assertRaises(SystemExit) as cm:
             module.main()
-            self.assertEqual(cm.exception.code, errno.EINVAL,
-                    'Calling main failed:\n{}'.format(command, e.output))
+        self.assertEqual(cm.exception.code, errno.EINVAL)
 
     @abstractmethod
     def _commands(self):
@@ -73,8 +70,6 @@ class CanScriptTest(unittest.TestCase):
 
 class TestLoggerScript(CanScriptTest):
 
-    __test__ = True
-
     def _commands(self):
         commands = [
             "python -m can.logger --help",
@@ -91,8 +86,6 @@ class TestLoggerScript(CanScriptTest):
 
 class TestPlayerScript(CanScriptTest):
 
-    __test__ = True
-
     def _commands(self):
         commands = [
             "python -m can.player --help",
@@ -108,6 +101,10 @@ class TestPlayerScript(CanScriptTest):
 
 
 # TODO add #390
+
+
+# this excludes the base class from being executed as a test case itself
+del(CanScriptTest)
 
 
 if __name__ == '__main__':
