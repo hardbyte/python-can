@@ -25,6 +25,7 @@ TEST_FEWER_MESSAGES = TEST_MESSAGES_BASE[::2]
 
 
 def inc(value):
+    """Makes the test boundaries give some more space when run on the CI server."""
     if IS_CI:
         return value * 1.5
     else:
@@ -40,9 +41,11 @@ class TestMessageSync(unittest.TestCase, ComparingMessagesTestCase):
         ComparingMessagesTestCase.__init__(self)
 
     def setup_method(self, _):
+        # disabling the garbage collector makes the time readings more reliable
         gc.disable()
 
     def teardown_method(self, _):
+        # we need to reenable the garbage collector again
         gc.enable()
 
     @pytest.mark.timeout(inc(0.2))
@@ -84,7 +87,8 @@ class TestMessageSync(unittest.TestCase, ComparingMessagesTestCase):
         after = time()
         took = after - before
 
-        # the handling of the messages itself also take time: ~0.001 s/msg on my laptop
+        # the handling of the messages itself also takes some time:
+        # ~0.001 s/message on a ThinkPad T560 laptop (Ubuntu 18.04, i5-6200U)
         assert 0 < took < inc(len(messages) * (0.005 + 0.003)), "took: {}s".format(took)
 
         self.assertMessagesEqual(messages, collected)

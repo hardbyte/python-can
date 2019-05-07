@@ -30,6 +30,7 @@ class SimpleCyclicSendTaskTest(unittest.TestCase, ComparingMessagesTestCase):
         with can.interface.Bus(bustype='virtual') as bus1:
             with can.interface.Bus(bustype='virtual') as bus2:
 
+                # disabling the garbage collector makes the time readings more reliable
                 gc.disable()
 
                 task = bus1.send_periodic(msg, 0.01, 1)
@@ -43,6 +44,7 @@ class SimpleCyclicSendTaskTest(unittest.TestCase, ComparingMessagesTestCase):
                 last_msg = bus2.recv()
                 next_last_msg = bus2.recv()
 
+                # we need to reenable the garbage collector again
                 gc.enable()
 
                 # Check consecutive messages are spaced properly in time and have
