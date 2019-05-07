@@ -89,6 +89,9 @@ class PcanBus(BusABC):
         :param int bitrate:
             Bitrate of channel in bit/s.
             Default is 500 kbit/s.
+            This argument can also be used for a user defined CAN-speed (e.g.: 0x0012 for 1.33 MHz)
+            For details on how to write a user speed register (SJW, TSEG 1/2, BRP) see:
+            http://www.bittiming.can-wiki.info (NXP SJA1000)
             Ignored if using CanFD.
 
         :param bool fd:
@@ -163,8 +166,11 @@ class PcanBus(BusABC):
         """
         self.channel_info = channel
         self.fd = kwargs.get('fd', False)
-        pcan_bitrate = pcan_bitrate_objs.get(bitrate, PCAN_BAUD_500K)
-
+        try:
+            pcan_bitrate = pcan_bitrate_objs[bitrate]
+        except KeyError:
+            # Try to use a user defined CAN-speed
+            pcan_bitrate = TPCANBaudrate(bitrate)
         hwtype = PCAN_TYPE_ISA
         ioport = 0x02A0
         interrupt = 11
