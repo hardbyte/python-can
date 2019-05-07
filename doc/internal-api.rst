@@ -90,14 +90,15 @@ Ideally add both reading and writing support for the new file format, although t
    Besides from a constructor, only ``__iter__(self)`` needs to be implemented.
 3. Implement a writer ``CanstoreWriter`` (which often extends :class:`can.io.generic.BaseIOHandler` and :class:`can.Listener`, but does not have to).
    Besides from a constructor, only ``on_message_received(self, msg)`` needs to be implemented.
-4. Document the two new classes (and possibly additional helpers) with docstrings and comments.
+4. Add a case to ``can.io.player.LogReader``'s ``__new__()``.
+5. Document the two new classes (and possibly additional helpers) with docstrings and comments.
    Please mention features and limitations of the implementation.
-5. Add a short section to the bottom of *doc/listeners.rst*.
-6. Add tests where appropriate, for example by simply adding a test case called
+6. Add a short section to the bottom of *doc/listeners.rst*.
+7. Add tests where appropriate, for example by simply adding a test case called
    `class TestCanstoreFileFormat(ReaderWriterTest)` to *test/logformats_test.py*.
    That should already handle all of the general testing.
    Just follow the way the other tests in there do it.
-7. Add imports to *can/__init__py* and *can/io/__init__py* so that the
+8. Add imports to *can/__init__py* and *can/io/__init__py* so that the
    new classes can be simply imported as *from can import CanstoreReader, CanstoreWriter*.
 
 
