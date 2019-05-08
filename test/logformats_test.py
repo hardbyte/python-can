@@ -295,15 +295,6 @@ class ReaderWriterTest(unittest.TestCase, ComparingMessagesTestCase):
             io_handler.file.flush()
             os.fsync(io_handler.file.fileno())
 
-    def assertMessagesEqual(self, messages_1, messages_2):
-        """
-        Checks the order and content of the individual messages.
-        """
-        self.assertEqual(len(messages_1), len(messages_2))
-
-        for message_1, message_2 in zip(messages_1, messages_2):
-            self.assertMessageEqual(message_1, message_2)
-
     def assertIncludesComments(self, filename):
         """
         Ensures that all comments are literally contained in the given file.
