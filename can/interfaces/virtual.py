@@ -121,7 +121,7 @@ class VirtualBus(BusABC):
         .. note::
 
             This method will run into problems if thousands of
-            autodetected busses are used at once.
+            autodetected buses are used at once.
 
         """
         with channels_lock:
