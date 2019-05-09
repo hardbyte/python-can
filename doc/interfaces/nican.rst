@@ -12,7 +12,7 @@ This interface adds support for CAN controllers by `National Instruments`_.
 
 .. warning::
 
-    CAN filtering has not been tested throughly and may not work as expected.
+    CAN filtering has not been tested thoroughly and may not work as expected.
 
 
 Bus
