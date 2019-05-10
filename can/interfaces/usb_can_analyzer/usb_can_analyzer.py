@@ -171,35 +171,32 @@ class CanAnalyzer(BusABC):
         :param can.Message msg:
             Message to send.
 
-            .. note:: Flags like ``extended_id``, ``is_remote_frame`` and
-                      ``is_error_frame`` will be ignored.
-
-            .. note:: If the timestamp is a float value it will be converted
-                      to an integer.
-
         :param timeout:
             This parameter will be ignored. The timeout value of the channel is
             used instead.
-
         """
-        try:
-            timestamp = struct.pack('<I', int(msg.timestamp * 1000))
-        except struct.error:
-            raise ValueError('Timestamp is out of range')
-        try:
-            a_id = struct.pack('<I', msg.arbitration_id)
-        except struct.error:
-            raise ValueError('Arbitration Id is out of range')
+
         byte_msg = bytearray()
         byte_msg.append(0xAA)
-        for i in range(0, 4):
-            byte_msg.append(timestamp[i])
-        byte_msg.append(msg.dlc)
-        for i in range(0, 4):
-            byte_msg.append(a_id[i])
-        for i in range(0, msg.dlc):
-            byte_msg.append(msg.data[i])
-        byte_msg.append(0xBB)
+
+        m_type = 0xc0
+        if msg.is_extended_id:
+            m_type += 1 << 5
+
+        if msg.is_remote_frame:
+            m_type += 1 << 4
+
+        m_type += msg.dlc
+        byte_msg.append(m_type)
+
+        if msg.is_extended_id:
+            a_id = struct.pack('<I', msg.arbitration_id)
+        else:
+            a_id = struct.pack('<H', msg.arbitration_id)
+
+        byte_msg.extend(a_id)
+        byte_msg.extend(msg.data)
+        byte_msg.append(0x55)
 
         logger.debug("Sending:\t" + binascii.hexlify(byte_msg))
         self.ser.write(byte_msg)
@@ -215,11 +212,6 @@ class CanAnalyzer(BusABC):
 
         :returns:
             Received message and False (because not filtering as taken place).
-
-            .. warning::
-                Flags like is_extended_id, is_remote_frame and is_error_frame
-                will not be set over this function, the flags in the return
-                message are the default values.
 
         :rtype:
             can.Message, bool
