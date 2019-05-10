@@ -26,7 +26,7 @@ with open('README.rst', 'r') as f:
 extras_require = {
     'serial':   ['pyserial~=3.0'],
     'neovi':    ['python-ics>=2.12'],
-    'crccheck': ['crccheck>=0.6']
+    'usb_can_analyzer': ['crccheck>=0.6','pyserial>=3.0']
 }
 
 tests_require = [
