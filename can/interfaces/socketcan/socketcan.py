@@ -102,7 +102,34 @@ def bcm_header_factory(fields, alignment=8):
 
     return type("BcmMsgHead", (ctypes.Structure,), {"_fields_": results})
 
-
+# The fields definition is taken from the C struct definitions in
+# <linux/can/bcm.h>
+#
+#     struct bcm_timeval {
+#     	long tv_sec;
+#     	long tv_usec;
+#     };
+#
+#     /**
+#      * struct bcm_msg_head - head of messages to/from the broadcast manager
+#      * @opcode:    opcode, see enum below.
+#      * @flags:     special flags, see below.
+#      * @count:     number of frames to send before changing interval.
+#      * @ival1:     interval for the first @count frames.
+#      * @ival2:     interval for the following frames.
+#      * @can_id:    CAN ID of frames to be sent or received.
+#      * @nframes:   number of frames appended to the message head.
+#      * @frames:    array of CAN frames.
+#      */
+#     struct bcm_msg_head {
+#     	__u32 opcode;
+#     	__u32 flags;
+#     	__u32 count;
+#     	struct bcm_timeval ival1, ival2;
+#     	canid_t can_id;
+#     	__u32 nframes;
+#     	struct can_frame frames[0];
+#     };
 BcmMsgHead = bcm_header_factory(
     fields=[
         ("opcode", ctypes.c_uint32),
@@ -180,15 +207,6 @@ def build_bcm_header(
     can_id,
     nframes,
 ):
-    # == Must use native not standard types for packing ==
-    # struct bcm_msg_head {
-    #     __u32 opcode; -> I
-    #     __u32 flags;  -> I
-    #     __u32 count;  -> I
-    #     struct timeval ival1, ival2; ->  llll ...
-    #     canid_t can_id; -> I
-    #     __u32 nframes; -> I
-
     result = BcmMsgHead(
         opcode=opcode,
         flags=flags,
