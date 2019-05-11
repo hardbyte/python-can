@@ -4,8 +4,6 @@
 Defines shared CAN constants.
 """
 
-canMSG_EXT          = 0x0004
-
 CAN_ERR_FLAG        = 0x20000000
 CAN_RTR_FLAG        = 0x40000000
 CAN_EFF_FLAG        = 0x80000000
@@ -13,10 +11,6 @@ CAN_EFF_FLAG        = 0x80000000
 # BCM opcodes
 CAN_BCM_TX_SETUP    = 1
 CAN_BCM_TX_DELETE   = 2
-
-CAN_BCM_TX_EXPIRED  = 9
-
-CAN_BCM_RX_TIMEOUT  = 11
 
 # BCM flags
 SETTIMER            = 0x0001
