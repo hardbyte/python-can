@@ -67,6 +67,57 @@ if not HAS_NATIVE_SUPPORT:
         return struct.pack("HiLL", AF_CAN, idx, 0, 0)
 
 
+# Setup BCM struct
+def bcm_header_factory(fields, alignment=8):
+    curr_stride = 0
+    results = []
+    pad_index = 0
+    for field in fields:
+        field_alignment = ctypes.alignment(field[1])
+        field_size = ctypes.sizeof(field[1])
+
+        # If the current stride index isn't a multiple of the alignment
+        # requirements of this field, then we must add padding bytes until we
+        # are aligned
+        while curr_stride % field_alignment != 0:
+            results.append(("pad_{}".format(pad_index), ctypes.c_uint8))
+            pad_index += 1
+            curr_stride += 1
+
+        # Now can it fit?
+        # Example: If this is 8 bytes and the type requires 4 bytes alignment
+        # then we can only fit when we're starting at 0. Otherwise, we will
+        # split across 2 strides.
+        #
+        # | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 |
+        results.append(field)
+        curr_stride += field_size
+
+    # Add trailing padding to align to a multiple of the largest scalar member
+    # in the structure
+    while curr_stride % alignment != 0:
+        results.append(("pad_{}".format(pad_index), ctypes.c_uint8))
+        pad_index += 1
+        curr_stride += 1
+
+    return type("BcmMsgHead", (ctypes.Structure,), {"_fields_": results})
+
+
+BcmMsgHead = bcm_header_factory(
+    fields=[
+        ("opcode", ctypes.c_uint32),
+        ("flags", ctypes.c_uint32),
+        ("count", ctypes.c_uint32),
+        ("ival1_tv_sec", ctypes.c_long),
+        ("ival1_tv_usec", ctypes.c_long),
+        ("ival2_tv_sec", ctypes.c_long),
+        ("ival2_tv_usec", ctypes.c_long),
+        ("can_id", ctypes.c_uint32),
+        ("nframes", ctypes.c_uint32),
+    ]
+)
+
+
 # struct module defines a binary packing format:
 # https://docs.python.org/3/library/struct.html#struct-format-strings
 # The 32bit can id is directly followed by the 8bit data link count
@@ -118,42 +169,17 @@ def build_can_frame(msg):
     return CAN_FRAME_HEADER_STRUCT.pack(can_id, msg.dlc, flags) + data
 
 
-def bcm_header_factory(fields, alignment=8):
-    curr_stride = 0
-    results = []
-    pad_index = 0
-    for field in fields:
-        field_alignment = ctypes.alignment(field[1])
-        field_size = ctypes.sizeof(field[1])
-
-        # If the current stride index isn't a multiple of the alignment
-        # requirements of this field, then we must add padding bytes until we
-        # are aligned
-        while curr_stride % field_alignment != 0:
-            results.append(("pad_{}".format(pad_index), ctypes.c_uint8))
-            pad_index += 1
-            curr_stride += 1
-
-        # Now can it fit?
-        # Example: If this is 8 bytes and the type requires 4 bytes alignment
-        # then we can only fit when we're starting at 0. Otherwise, we will
-        # split across 2 strides.
-        #
-        # | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 |
-        results.append(field)
-        curr_stride += field_size
-
-    # Add trailing padding to align to a multiple of the largest scalar member
-    # in the structure
-    while curr_stride % alignment != 0:
-        results.append(("pad_{}".format(pad_index), ctypes.c_uint8))
-        pad_index += 1
-        curr_stride += 1
-
-    return type("BcmMsgHead", (ctypes.Structure,), {"_fields_": results})
-
-
-def build_bcm_header(opcode, flags, count, ival1_seconds, ival1_usec, ival2_seconds, ival2_usec, can_id, nframes):
+def build_bcm_header(
+    opcode,
+    flags,
+    count,
+    ival1_seconds,
+    ival1_usec,
+    ival2_seconds,
+    ival2_usec,
+    can_id,
+    nframes,
+):
     # == Must use native not standard types for packing ==
     # struct bcm_msg_head {
     #     __u32 opcode; -> I
@@ -163,18 +189,6 @@ def build_bcm_header(opcode, flags, count, ival1_seconds, ival1_usec, ival2_seco
     #     canid_t can_id; -> I
     #     __u32 nframes; -> I
 
-    fields = [
-        ("opcode", ctypes.c_uint32),
-        ("flags", ctypes.c_uint32),
-        ("count", ctypes.c_uint32),
-        ("ival1_tv_sec", ctypes.c_long),
-        ("ival1_tv_usec", ctypes.c_long),
-        ("ival2_tv_sec", ctypes.c_long),
-        ("ival2_tv_usec", ctypes.c_long),
-        ("can_id", ctypes.c_uint32),
-        ("nframes", ctypes.c_uint32),
-    ]
-    BcmMsgHead = bcm_header_factory(fields)
     result = BcmMsgHead(
         opcode=opcode,
         flags=flags,
