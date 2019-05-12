@@ -52,7 +52,6 @@ jobs:
     # Jobs within a stage can also be named.
 
     # Unit Testing Stage
-    - stage: test
 
     # testing socketcan on Trusty & Python 3.6, since it is not available on Xenial
     - stage: test
