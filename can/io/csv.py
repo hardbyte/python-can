@@ -78,7 +78,7 @@ class CSVReader(BaseIOHandler):
     format as described there. Assumes that there is a header
     and thus skips the first line.
 
-    Any line seperator is accepted.
+    Any line separator is accepted.
     """
 
     def __init__(self, file):
