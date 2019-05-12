@@ -24,7 +24,6 @@ env:
 
 install:
   - if [[ "$TEST_SOCKETCAN" ]]; then sudo bash test/open_vcan.sh ; fi
-  - if [[ "$BUILD_ONLY_DOCS" ]]; then travis_retry pip install -r doc/doc-requirements.txt; fi
   - travis_retry pip install .[test]
 
 script:
@@ -77,6 +76,8 @@ jobs:
 
     - stage: documentation
       python: "3.7"
+      before_install:
+        - travis_retry pip install -r doc/doc-requirements.txt
       script:
         # Build the docs with Sphinx
         #   -a Write all files
