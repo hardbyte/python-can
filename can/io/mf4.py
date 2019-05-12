@@ -14,8 +14,6 @@ from datetime import datetime
 from pathlib import Path
 import logging
 
-import numpy as np
-
 from ..message import Message
 from ..listener import Listener
 from ..util import channel2int
@@ -23,6 +21,7 @@ from .generic import BaseIOHandler
 
 try:
     from asammdf import MDF, Signal
+    import numpy as np
 
     CAN_MSG_EXT = 0x80000000
     CAN_ID_MASK = 0x1FFFFFFF
