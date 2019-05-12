@@ -12,7 +12,7 @@ from can import CanError, CanInitializationError
 __all__ = ['VCITimeout', 'VCIError', 'VCIRxQueueEmptyError', 'VCIDeviceNotFoundError']
 
 
-class VCITimeout(CanError):
+class VCITimeout(CanTimeoutError):
     """ Wraps the VCI_E_TIMEOUT error """
     pass
 

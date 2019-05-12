@@ -1,10 +1,5 @@
-# coding: utf-8
-
 """
 Ctypes wrapper module for IXXAT Virtual CAN Interface V3 on win32 systems
-
-Copyright (C) 2016 Giuseppe Corbelli <giuseppe.corbelli@weightpack.com>
-Copyright (C) 2019 Marcel Kanter <marcel.kanter@googlemail.com>
 
 TODO: We could implement this interface such that setting other filters
       could work when the initial filters were set to zero using the
@@ -44,12 +39,8 @@ vciFormatError = None
 
 # main ctypes instance
 _canlib = None
-if sys.platform == "win32":
-    try:
-        _canlib = CLibrary("vcinpl")
-    except Exception as e:
-        log.warning("Cannot load IXXAT vcinpl library: %s", e)
-elif sys.platform == "cygwin":
+# TODO: Use ECI driver for linux
+if sys.platform == "win32" or sys.platform == "cygwin":
     try:
         _canlib = CLibrary("vcinpl.dll")
     except Exception as e:
@@ -489,9 +480,14 @@ class IXXATBus(BusABC):
     def send(self, msg, timeout=None):
         """
         Sends a message on the bus. The interface may buffer the message.
-        returns True on success or when timeout is None
-        returns False on timeout (when timeout is not None)
-        raises CanOperationError
+        
+        :param can.Message msg:
+            The message to send.
+        :param float timeout:
+            Timeout after some time.
+        :raise:
+            :class:CanTimeoutError
+            :class:CanOperationError
         """
         # This system is not designed to be very efficient
         message = structures.CANMSG()
@@ -505,21 +501,10 @@ class IXXATBus(BusABC):
             adapter = (ctypes.c_uint8 * len(msg.data)).from_buffer(msg.data)
             ctypes.memmove(message.abData, adapter, len(msg.data))
 
-        try:
-            if timeout:
-                _canlib.canChannelSendMessage(self._channel_handle, int(timeout * 1000), message)
-            else:
-                _canlib.canChannelPostMessage(self._channel_handle, message)
-        except VCITimeout:
-            # if the user wanted an timeout, the timeout in the library is probably no error
-            if timeout:
-                return False
-            else:
-                raise CanOperationError("Timeout in library call.")
-        except:
-            raise CanOperationError("Send failed.")
-        
-        return True
+        if timeout:
+            _canlib.canChannelSendMessage(self._channel_handle, int(timeout * 1000), message)
+        else:
+            _canlib.canChannelPostMessage(self._channel_handle, message)
 
     def _send_periodic_internal(self, msg, period, duration=None):
         """Send a message using built-in cyclic transmit list functionality."""
@@ -551,8 +536,7 @@ class IXXATBus(BusABC):
             self.__set_filters_has_been_called = True
 
 
-class CyclicSendTask(LimitedDurationCyclicSendTaskABC,
-                     RestartableCyclicTaskABC):
+class CyclicSendTask(LimitedDurationCyclicSendTaskABC, RestartableCyclicTaskABC):
     """A message in the cyclic transmit list."""
 
     def __init__(self, scheduler, msg, period, duration, resolution):
