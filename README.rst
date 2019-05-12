@@ -51,7 +51,7 @@ Features
 - many different loggers and readers supporting playback: ASC (CANalyzer format), BLF (Binary Logging Format by Vector), CSV, SQLite, Canutils log and MF4 (Measurement Data Format v4 by ASAM)
 - efficient in-kernel or in-hardware filtering of messages on supported interfaces
 - bus configuration reading from file or environment variables
-- CLI tools for working with CAN busses (see the `docs <https://python-can.readthedocs.io/en/stable/scripts.html>`__)
+- CLI tools for working with CAN buses (see the `docs <https://python-can.readthedocs.io/en/stable/scripts.html>`__)
 - more
 
 
