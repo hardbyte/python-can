@@ -54,6 +54,7 @@ jobs:
 
     # testing socketcan on Trusty & Python 3.6, since it is not available on Xenial
     - stage: test
+      name: Socketcan
       os: linux
       dist: trusty
       python: "3.6"
@@ -75,6 +76,7 @@ jobs:
       python: nightly
 
     - stage: documentation
+      name: "Sphinx Build"
       python: "3.7"
       before_install:
         - travis_retry pip install -r doc/doc-requirements.txt
@@ -84,6 +86,7 @@ jobs:
         #   -n nitpicky
         - python -m sphinx -an doc build
     - stage: deploy
+      name: "PyPi Deployment"
       python: "3.7"
       deploy:
         provider: pypi
