@@ -140,7 +140,7 @@ class UcanBus(BusABC):
 
         msg = Message(timestamp=float(message[0].time) / 1000.0,
                       is_remote_frame=bool(message[0].frame_format & MsgFrameFormat.MSG_FF_RTR),
-                      extended_id=bool(message[0].frame_format & MsgFrameFormat.MSG_FF_EXT),
+                      is_extended_id=bool(message[0].frame_format & MsgFrameFormat.MSG_FF_EXT),
                       arbitration_id=message[0].id,
                       dlc=len(message[0].data),
                       data=message[0].data)

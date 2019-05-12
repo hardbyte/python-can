@@ -28,4 +28,4 @@ test_script:
   - "pytest"
 
   # uplad coverage reports
-  - "codecov"
+  - "codecov -X gcov"
