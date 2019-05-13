@@ -6,7 +6,7 @@ Major features
 --------------
 
 * FD support added for Pcan by @bmeisels with input from
-  @markupsp, @christiansandberg & @felixdivo in PR #537
+  @markupspi, @christiansandberg & @felixdivo in PR #537
 
 Other notable changes
 ---------------------
@@ -14,6 +14,7 @@ Other notable changes
 * #532 Support has been removed for Python 3.4
 * #533 BusState is now an enum.
 * #535 This release should automatically be published to PyPi by travis.
+* #577 Travis-ci now uses stages.
 * #548 A guide has been added for new io formats.
 * #550 Finish moving from nose to pytest.
 * #558 Fix installation on Windows.
