@@ -7,11 +7,13 @@ Major features
 
 * FD support added for Pcan by @bmeisels with input from
   @markupspi, @christiansandberg & @felixdivo in PR #537
+* This is the last version of python-can which will support Python 2.7
+  and Python 3.5. Support has been removed for Python 3.4 in this
+  release in PR #532
 
 Other notable changes
 ---------------------
 
-* #532 Support has been removed for Python 3.4
 * #533 BusState is now an enum.
 * #535 This release should automatically be published to PyPi by travis.
 * #577 Travis-ci now uses stages.
