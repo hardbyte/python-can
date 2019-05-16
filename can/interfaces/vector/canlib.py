@@ -49,7 +49,9 @@ class VectorBus(BusABC):
 
     def __init__(self, channel, can_filters=None, poll_interval=0.01,
                  receive_own_messages=False,
-                 bitrate=None, rx_queue_size=2**14, app_name="CANalyzer", serial=None, fd=False, data_bitrate=None, sjwAbr=2, tseg1Abr=6, tseg2Abr=3, sjwDbr=2, tseg1Dbr=6, tseg2Dbr=3, **config):
+                 bitrate=None, rx_queue_size=2**14, app_name="CANalyzer",
+                 serial=None, fd=False, data_bitrate=None, sjwAbr=2, tseg1Abr=6,
+                 tseg2Abr=3, sjwDbr=2, tseg1Dbr=6, tseg2Dbr=3, **kwargs):
         """
         :param list channel:
             The channel indexes to create this bus with.
@@ -85,7 +87,7 @@ class VectorBus(BusABC):
         else:
             # Assume comma separated string of channels
             self.channels = [int(ch.strip()) for ch in channel.split(',')]
-        self._app_name = app_name.encode()
+        self._app_name = app_name.encode() if app_name is not None else ''
         self.channel_info = 'Application %s: %s' % (
             app_name, ', '.join('CAN %d' % (ch + 1) for ch in self.channels))
 
@@ -208,8 +210,7 @@ class VectorBus(BusABC):
         self._time_offset = time.time() - offset.value * 1e-9
 
         self._is_filtered = False
-        super(VectorBus, self).__init__(channel=channel, can_filters=can_filters,
-            **config)
+        super(VectorBus, self).__init__(channel=channel, can_filters=can_filters, **kwargs)
 
     def _apply_filters(self, filters):
         if filters:

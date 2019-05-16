@@ -46,7 +46,7 @@ module, while the following parameters are optional and are interpreted by IXXAT
 Internals
 ---------
 
-The IXXAT :class:`~can.BusABC` object is a farly straightforward interface
+The IXXAT :class:`~can.BusABC` object is a fairly straightforward interface
 to the IXXAT VCI library. It can open a specific device ID or use the
 first one found.
 

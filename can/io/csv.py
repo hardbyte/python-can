@@ -1,7 +1,7 @@
 # coding: utf-8
 
 """
-This module contains handling for CSV (comma seperated values) files.
+This module contains handling for CSV (comma separated values) files.
 
 TODO: CAN FD messages are not yet supported.
 
@@ -78,7 +78,7 @@ class CSVReader(BaseIOHandler):
     format as described there. Assumes that there is a header
     and thus skips the first line.
 
-    Any line seperator is accepted.
+    Any line separator is accepted.
     """
 
     def __init__(self, file):

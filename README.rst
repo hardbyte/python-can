@@ -1,7 +1,7 @@
 python-can
 ==========
 
-|release| |docs| |build_travis| |build_appveyor| |coverage|
+|release| |docs| |build_travis| |build_appveyor| |coverage| |downloads|
 
 .. |release| image:: https://img.shields.io/pypi/v/python-can.svg
    :target: https://pypi.python.org/pypi/python-can/
@@ -11,11 +11,11 @@ python-can
    :target: https://python-can.readthedocs.io/en/stable/
    :alt: Documentation
 
-.. |build_travis| image:: https://travis-ci.org/hardbyte/python-can.svg?branch=develop
+.. |build_travis| image:: https://img.shields.io/travis/hardbyte/python-can/develop.svg?label=Travis%20CI
    :target: https://travis-ci.org/hardbyte/python-can/branches
    :alt: Travis CI Server for develop branch
 
-.. |build_appveyor| image:: https://ci.appveyor.com/api/projects/status/github/hardbyte/python-can?branch=develop&svg=true
+.. |build_appveyor| image:: https://img.shields.io/appveyor/ci/hardbyte/python-can/develop.svg?label=AppVeyor
    :target: https://ci.appveyor.com/project/hardbyte/python-can/history
    :alt: AppVeyor CI Server for develop branch
 
@@ -23,6 +23,9 @@ python-can
    :target: https://codecov.io/gh/hardbyte/python-can/branch/develop
    :alt: Test coverage reports on Codecov.io
 
+.. |downloads| image:: https://pepy.tech/badge/python-can
+   :target: https://pepy.tech/project/python-can
+   :alt: Downloads on PePy
 
 The **C**\ ontroller **A**\ rea **N**\ etwork is a bus standard designed
 to allow microcontrollers and devices to communicate with each other. It
@@ -34,7 +37,16 @@ Python developers; providing common abstractions to
 different hardware devices, and a suite of utilities for sending and receiving
 messages on a can bus.
 
-The library supports Python 2.7, Python 3.4+ as well as PyPy 2 & 3 and runs on Mac, Linux and Windows.
+The library supports Python 2.7, Python 3.5+ as well as PyPy 2 & 3 and runs
+on Mac, Linux and Windows.
+
+==================  ===========
+Library Version      Python
+------------------  -----------
+  2.x                 2.6+, 3.4+
+  3.x                 2.7+, 3.5+
+  4.x (expected)      3.6+
+==================  ===========
 
 
 Features
@@ -48,7 +60,7 @@ Features
 - many different loggers and readers supporting playback: ASC (CANalyzer format), BLF (Binary Logging Format by Vector), CSV, SQLite and Canutils log
 - efficient in-kernel or in-hardware filtering of messages on supported interfaces
 - bus configuration reading from file or environment variables
-- CLI tools for working with CAN busses (see the `docs <https://python-can.readthedocs.io/en/stable/scripts.html>`__)
+- CLI tools for working with CAN buses (see the `docs <https://python-can.readthedocs.io/en/stable/scripts.html>`__)
 - more
 
 

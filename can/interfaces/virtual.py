@@ -8,7 +8,7 @@ Any VirtualBus instances connecting to the same channel
 and reside in the same process will receive the same messages.
 """
 
-import copy
+from copy import deepcopy
 import logging
 import time
 try:
@@ -40,16 +40,19 @@ class VirtualBus(BusABC):
     Implements :meth:`can.BusABC._detect_available_configs`; see
     :meth:`can.VirtualBus._detect_available_configs` for how it
     behaves here.
+
+    .. note::
+        The timeout when sending a message applies to each receiver
+        individually. This means that sending can block up to 5 seconds
+        if a message is sent to 5 receivers with the timeout set to 1.0.
     """
 
-    def __init__(self, channel=None, receive_own_messages=False,
-                 rx_queue_size=0, **config):
-        super(VirtualBus, self).__init__(channel=channel,
-            receive_own_messages=receive_own_messages, **config)
+    def __init__(self, channel=None, receive_own_messages=False, rx_queue_size=0, **kwargs):
+        super(VirtualBus, self).__init__(channel=channel, receive_own_messages=receive_own_messages, **kwargs)
 
         # the channel identifier may be an arbitrary object
         self.channel_id = channel
-        self.channel_info = 'Virtual bus channel %s' % self.channel_id
+        self.channel_info = "Virtual bus channel {}".format(self.channel_id)
         self.receive_own_messages = receive_own_messages
         self._open = True
 
@@ -69,7 +72,7 @@ class VirtualBus(BusABC):
         Has to be called in every method that accesses the bus.
         """
         if not self._open:
-            raise CanError('Operation on closed bus')
+            raise CanError("Operation on closed bus")
 
     def _recv_internal(self, timeout):
         self._check_if_open()
@@ -82,13 +85,13 @@ class VirtualBus(BusABC):
 
     def send(self, msg, timeout=None):
         self._check_if_open()
-        # Create a shallow copy for this channel
-        msg_copy = copy.copy(msg)
+
+        msg_copy = deepcopy(msg)
         msg_copy.timestamp = time.time()
-        msg_copy.data = bytearray(msg.data)
         msg_copy.channel = self.channel_id
-        all_sent = True
+
         # Add message to all listening on this channel
+        all_sent = True
         for bus_queue in self.channel:
             if bus_queue is not self.queue or self.receive_own_messages:
                 try:
@@ -96,7 +99,7 @@ class VirtualBus(BusABC):
                 except queue.Full:
                     all_sent = False
         if not all_sent:
-            raise CanError('Could not send message to one or more recipients')
+            raise CanError("Could not send message to one or more recipients")
 
     def shutdown(self):
         self._check_if_open()
@@ -118,7 +121,7 @@ class VirtualBus(BusABC):
         .. note::
 
             This method will run into problems if thousands of
-            autodetected busses are used at once.
+            autodetected buses are used at once.
 
         """
         with channels_lock:
