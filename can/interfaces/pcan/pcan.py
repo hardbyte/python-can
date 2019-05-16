@@ -216,11 +216,17 @@ class PcanBus(BusABC):
         """
 
         def bits(n):
-            """TODO: document"""
+            """
+            Iterate over all the set bits in `n`, returning the masked bits at
+            the set indices
+            """
             while n:
-                b = n & (~n+1)
-                yield b
-                n ^= b
+                # Create a mask to mask the lowest set bit in n
+                mask = (~n + 1)
+                masked_value = n & mask
+                yield masked_value
+                # Toggle the lowest set bit
+                n ^= masked_value
 
         stsReturn = self.m_objPCANBasic.GetErrorText(error, 0)
         if stsReturn[0] != PCAN_ERROR_OK:
