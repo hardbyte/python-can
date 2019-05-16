@@ -37,7 +37,16 @@ Python developers; providing common abstractions to
 different hardware devices, and a suite of utilities for sending and receiving
 messages on a can bus.
 
-The library supports Python 2.7, Python 3.5+ as well as PyPy 2 & 3 and runs on Mac, Linux and Windows.
+The library supports Python 2.7, Python 3.5+ as well as PyPy 2 & 3 and runs
+on Mac, Linux and Windows.
+
+==================  ===========
+Library Version      Python
+------------------  -----------
+  2.x                 2.6+, 3.4+
+  3.x                 2.7+, 3.5+
+  4.x (expected)      3.6+
+==================  ===========
 
 
 Features
