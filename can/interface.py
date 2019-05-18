@@ -16,10 +16,6 @@ from .broadcastmanager import CyclicSendTaskABC, MultiRateCyclicSendTaskABC
 from .util import load_config
 from .interfaces import BACKENDS
 
-# Required by "detect_available_configs" for argument interpretation
-if sys.version_info.major > 2:
-    basestring = str
-
 log = logging.getLogger('can.interface')
 log_autodetect = log.getChild('detect_available_configs')
 
@@ -144,7 +140,7 @@ def detect_available_configs(interfaces=None):
     if interfaces is None:
         # use an iterator over the keys so we do not have to copy it
         interfaces = BACKENDS.keys()
-    elif isinstance(interfaces, basestring):
+    elif isinstance(interfaces, str):
         interfaces = [interfaces, ]
     # else it is supposed to be an iterable of strings
 
