@@ -138,12 +138,7 @@ class Message:
         return self.dlc
 
     def __bool__(self):
-        # For Python 3
         return True
-
-    def __nonzero__(self):
-        # For Python 2
-        return self.__bool__()
 
     def __repr__(self):
         args = ["timestamp={}".format(self.timestamp),
