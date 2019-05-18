@@ -259,8 +259,6 @@ try:
             error_counter = 0
             rtr_counter = 0
 
-
-
             for timestamp, group_index in self.masters:
 
                 # standard frames
