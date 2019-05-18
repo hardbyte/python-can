@@ -6,6 +6,7 @@ from can import CanError
 
 class UcanException(CanError):
     """ Base class for USB can errors. """
+
     def __init__(self, result, func, arguments):
         self.result = result.value
         self.func = func
@@ -20,7 +21,7 @@ class UcanException(CanError):
 class UcanError(UcanException):
     """ Exception class for errors from USB-CAN-library. """
     def __init__(self, result, func, arguments):
-        super(UcanError, self).__init__(result, func, arguments)
+        super().__init__(result, func, arguments)
         self.return_msgs = {
             ReturnCode.ERR_RESOURCE: "could not created a resource (memory, handle, ...)",
             ReturnCode.ERR_MAXMODULES: "the maximum number of opened modules is reached",
@@ -46,8 +47,9 @@ class UcanError(UcanException):
 
 class UcanCmdError(UcanException):
     """ Exception class for errors from firmware in USB-CANmodul."""
+
     def __init__(self, result, func, arguments):
-        super(UcanCmdError, self).__init__(result, func, arguments)
+        super().__init__(result, func, arguments)
         self.return_msgs = {
             ReturnCode.ERRCMD_NOTEQU: "the received response does not match to the transmitted command",
             ReturnCode.ERRCMD_REGTST: "no access to the CAN controller",
@@ -69,8 +71,9 @@ class UcanCmdError(UcanException):
 
 class UcanWarning(UcanException):
     """ Exception class for warnings, the function has been executed anyway. """
+
     def __init__(self, result, func, arguments):
-        super(UcanWarning, self).__init__(result, func, arguments)
+        super().__init__(result, func, arguments)
         self.return_msgs = {
             ReturnCode.WARN_NODATA: "no CAN messages received",
             ReturnCode.WARN_SYS_RXOVERRUN: "overrun in receive buffer of the kernel driver",

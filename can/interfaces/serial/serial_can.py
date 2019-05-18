@@ -58,7 +58,7 @@ class SerialBus(BusABC):
         self.ser = serial.serial_for_url(
             channel, baudrate=baudrate, timeout=timeout, rtscts=rtscts)
 
-        super(SerialBus, self).__init__(channel=channel, *args, **kwargs)
+        super().__init__(channel=channel, *args, **kwargs)
 
     def shutdown(self):
         """
