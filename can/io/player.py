@@ -6,8 +6,6 @@ well as :class:`MessageSync` which plays back messages
 in the recorded order an time intervals.
 """
 
-from __future__ import absolute_import
-
 from time import time, sleep
 import logging
 
@@ -65,7 +63,7 @@ class LogReader(BaseIOHandler):
             raise NotImplementedError("No read support for this log format: {}".format(filename))
 
 
-class MessageSync(object):
+class MessageSync:
     """
     Used to iterate over some given messages in the recorded time.
     """
