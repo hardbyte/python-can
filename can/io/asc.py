@@ -39,7 +39,7 @@ class ASCReader(BaseIOHandler):
                      If this is a file-like object, is has to opened in text
                      read mode, not binary read mode.
         """
-        super(ASCReader, self).__init__(file, mode='r')
+        super().__init__(file, mode='r')
 
     @staticmethod
     def _extract_can_id(str_can_id):
@@ -142,7 +142,7 @@ class ASCWriter(BaseIOHandler, Listener):
         :param channel: a default channel to use when the message does not
                         have a channel set
         """
-        super(ASCWriter, self).__init__(file, mode='w')
+        super().__init__(file, mode='w')
         self.channel = channel
 
         # write start of file header
@@ -159,7 +159,7 @@ class ASCWriter(BaseIOHandler, Listener):
     def stop(self):
         if not self.file.closed:
             self.file.write("End TriggerBlock\n")
-        super(ASCWriter, self).stop()
+        super().stop()
 
     def log_event(self, message, timestamp=None):
         """Add a message to the log file.

@@ -204,7 +204,7 @@ class PcanBus(BusABC):
             if result != PCAN_ERROR_OK:
                 raise PcanError(self._get_formatted_error(result))
 
-        super(PcanBus, self).__init__(channel=channel, state=state, bitrate=bitrate, *args, **kwargs)
+        super().__init__(channel=channel, state=state, bitrate=bitrate, *args, **kwargs)
 
     def _get_formatted_error(self, error):
         """
@@ -408,7 +408,7 @@ class PcanBus(BusABC):
         self.m_objPCANBasic.SetValue(self.m_PcanHandle, PCAN_CHANNEL_IDENTIFYING, bool(flash))
 
     def shutdown(self):
-        super(PcanBus, self).shutdown()
+        super().shutdown()
         self.m_objPCANBasic.Uninitialize(self.m_PcanHandle)
 
     @property

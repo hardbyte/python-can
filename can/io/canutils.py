@@ -41,7 +41,7 @@ class CanutilsLogReader(BaseIOHandler):
                      If this is a file-like object, is has to opened in text
                      read mode, not binary read mode.
         """
-        super(CanutilsLogReader, self).__init__(file, mode='r')
+        super().__init__(file, mode='r')
 
     def __iter__(self):
         for line in self.file:
@@ -108,7 +108,7 @@ class CanutilsLogWriter(BaseIOHandler, Listener):
                             the file, else the file is truncated
         """
         mode = 'a' if append else 'w'
-        super(CanutilsLogWriter, self).__init__(file, mode=mode)
+        super().__init__(file, mode=mode)
 
         self.channel = channel
         self.last_timestamp = None

@@ -327,7 +327,7 @@ class CyclicSendTask(LimitedDurationCyclicSendTaskABC,
         :param float period: The rate in seconds at which to send the message.
         :param float duration: Approximate duration in seconds to send the message.
         """
-        super(CyclicSendTask, self).__init__(message, period, duration)
+        super().__init__(message, period, duration)
         self.bcm_socket = bcm_socket
         self.duration = duration
         self._tx_setup(message)
@@ -387,7 +387,7 @@ class MultiRateCyclicSendTask(CyclicSendTask):
     """
 
     def __init__(self, channel, message, count, initial_period, subsequent_period):
-        super(MultiRateCyclicSendTask, self).__init__(channel, message, subsequent_period)
+        super().__init__(channel, message, subsequent_period)
 
         # Create a low level packed frame to pass to the kernel
         frame = build_can_frame(message)
@@ -561,7 +561,7 @@ class SocketcanBus(BusABC):
 
         bind_socket(self.socket, channel)
         kwargs.update({'receive_own_messages': receive_own_messages, 'fd': fd})
-        super(SocketcanBus, self).__init__(channel=channel, **kwargs)
+        super().__init__(channel=channel, **kwargs)
 
     def shutdown(self):
         """Stops all active periodic tasks and closes the socket."""

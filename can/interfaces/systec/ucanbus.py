@@ -16,8 +16,9 @@ class Ucan(UcanServer):
     """
     Wrapper around UcanServer to read messages with timeout using events.
     """
+
     def __init__(self):
-        super(Ucan, self).__init__()
+        super().__init__()
         self._msg_received_event = Event()
 
     def can_msg_received_event(self, channel):
@@ -28,7 +29,7 @@ class Ucan(UcanServer):
         if self.get_msg_pending(channel, PendingFlags.PENDING_FLAG_RX_DLL) == 0:
             if not self._msg_received_event.wait(timeout):
                 return None, False
-        return super(Ucan, self).read_can_msg(channel, 1)
+        return super().read_can_msg(channel, 1)
 
 
 class UcanBus(BusABC):
@@ -131,7 +132,7 @@ class UcanBus(BusABC):
             self.channel,
             self._ucan.get_baudrate_message(self.BITRATES[bitrate])
         )
-        super(UcanBus, self).__init__(channel=channel, can_filters=can_filters, **kwargs)
+        super().__init__(channel=channel, can_filters=can_filters, **kwargs)
 
     def _recv_internal(self, timeout):
         message, _ = self._ucan.read_can_msg(self.channel, 1, timeout)

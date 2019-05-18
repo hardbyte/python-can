@@ -69,7 +69,7 @@ class CANLIBError(CanError):
     """
 
     def __init__(self, function, error_code, arguments):
-        super(CANLIBError, self).__init__()
+        super().__init__()
         self.error_code = error_code
         self.function = function
         self.arguments = arguments
@@ -446,7 +446,7 @@ class KvaserBus(BusABC):
         self._timestamp_offset = time.time() - (timer.value * TIMESTAMP_FACTOR)
 
         self._is_filtered = False
-        super(KvaserBus, self).__init__(channel=channel, can_filters=can_filters, **kwargs)
+        super().__init__(channel=channel, can_filters=can_filters, **kwargs)
 
     def _apply_filters(self, filters):
         if filters and len(filters) == 1:

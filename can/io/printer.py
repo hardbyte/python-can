@@ -32,7 +32,7 @@ class Printer(BaseIOHandler, Listener):
                      write mode, not binary write mode.
         """
         self.write_to_file = file is not None
-        super(Printer, self).__init__(file, mode='w')
+        super().__init__(file, mode='w')
 
     def on_message_received(self, msg):
         if self.write_to_file:
