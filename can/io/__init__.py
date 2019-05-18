@@ -6,7 +6,6 @@ and Writers based off the file extension.
 """
 
 from __future__ import absolute_import
-import sys
 
 # Generic
 from .logger import Logger
