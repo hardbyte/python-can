@@ -48,7 +48,7 @@ class Message(object):
         "__weakref__"               # support weak references to messages
     )
 
-    def __init__(self, timestamp=0.0, arbitration_id=0, is_extended_id=None,
+    def __init__(self, timestamp=0.0, arbitration_id=0, is_extended_id=True,
                  is_remote_frame=False, is_error_frame=False, channel=None,
                  dlc=None, data=None,
                  is_fd=False, bitrate_switch=False, error_state_indicator=False,
