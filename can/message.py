@@ -45,46 +45,13 @@ class Message(object):
         "is_fd",
         "bitrate_switch",
         "error_state_indicator",
-        "__weakref__",              # support weak references to messages
-        "_dict"                     # see __getattr__
+        "__weakref__"               # support weak references to messages
     )
-
-    def __getattr__(self, key):
-        # TODO keep this for a version, in order to not break old code
-        # this entire method (as well as the _dict attribute in __slots__ and the __setattr__ method)
-        # can be removed in 4.0
-        # this method is only called if the attribute was not found elsewhere, like in __slots__
-        try:
-            warnings.warn("Custom attributes of messages are deprecated and will be removed in 4.0", DeprecationWarning)
-            return self._dict[key]
-        except KeyError:
-            raise AttributeError("'message' object has no attribute '{}'".format(key))
-
-    def __setattr__(self, key, value):
-        # see __getattr__
-        try:
-            super(Message, self).__setattr__(key, value)
-        except AttributeError:
-            warnings.warn("Custom attributes of messages are deprecated and will be removed in 4.0", DeprecationWarning)
-            self._dict[key] = value
-
-    @property
-    def id_type(self):
-        # TODO remove in 4.0
-        warnings.warn("Message.id_type is deprecated and will be removed in 4.0, use is_extended_id instead", DeprecationWarning)
-        return self.is_extended_id
-
-    @id_type.setter
-    def id_type(self, value):
-        # TODO remove in 4.0
-        warnings.warn("Message.id_type is deprecated and will be removed in 4.0, use is_extended_id instead", DeprecationWarning)
-        self.is_extended_id = value
 
     def __init__(self, timestamp=0.0, arbitration_id=0, is_extended_id=None,
                  is_remote_frame=False, is_error_frame=False, channel=None,
                  dlc=None, data=None,
                  is_fd=False, bitrate_switch=False, error_state_indicator=False,
-                 extended_id=None, # deprecated in 3.x, TODO remove in 4.x
                  check=False):
         """
         To create a message object, simply provide any of the below attributes
@@ -98,24 +65,12 @@ class Message(object):
 
         :raises ValueError: iff `check` is set to `True` and one or more arguments were invalid
         """
-        self._dict = dict() # see __getattr__
-
         self.timestamp = timestamp
         self.arbitration_id = arbitration_id
-
-        if extended_id is not None:
-            # TODO remove in 4.0
-            warnings.warn("The extended_id parameter is deprecated and will be removed in 4.0, use is_extended_id instead", DeprecationWarning)
-
-        if is_extended_id is not None:
-            self.is_extended_id = is_extended_id
-        else:
-            self.is_extended_id = True if extended_id is None else extended_id
-
+        self.is_extended_id = is_extended_id
         self.is_remote_frame = is_remote_frame
         self.is_error_frame = is_error_frame
         self.channel = channel
-
         self.is_fd = is_fd
         self.bitrate_switch = bitrate_switch
         self.error_state_indicator = error_state_indicator
@@ -239,7 +194,6 @@ class Message(object):
             bitrate_switch=self.bitrate_switch,
             error_state_indicator=self.error_state_indicator
         )
-        new._dict.update(self._dict)
         return new
 
     def __deepcopy__(self, memo):
@@ -256,7 +210,6 @@ class Message(object):
             bitrate_switch=self.bitrate_switch,
             error_state_indicator=self.error_state_indicator
         )
-        new._dict.update(self._dict)
         return new
 
     def _check(self):
