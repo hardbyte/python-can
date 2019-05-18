@@ -8,8 +8,6 @@ specific to Python.
 Copyright (C) 2010 Dynamic Controls
 """
 
-from __future__ import absolute_import
-
 import sys
 import time
 import logging

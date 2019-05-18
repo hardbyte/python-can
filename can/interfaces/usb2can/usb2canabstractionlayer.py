@@ -5,8 +5,6 @@ This wrapper is for windows or direct access via CANAL API.
 Socket CAN is recommended under Unix/Linux systems.
 """
 
-from __future__ import division, print_function, absolute_import
-
 from ctypes import *
 from struct import *
 import logging

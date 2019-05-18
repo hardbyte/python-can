@@ -7,8 +7,6 @@ The interface is a simple implementation that has been used for
 recording CAN traces.
 """
 
-from __future__ import absolute_import, division
-
 import logging
 import struct
 
