@@ -1,20 +1,63 @@
 Version 3.2.0
 ====
 
-Support has been removed for Python 3.4
 
 Major features
 --------------
 
-- FD support added for Pcan in PR #537
+* FD support added for Pcan by @bmeisels with input from
+  @markuspi, @christiansandberg & @felixdivo in PR #537
+* This is the last version of python-can which will support Python 2.7
+  and Python 3.5. Support has been removed for Python 3.4 in this
+  release in PR #532
 
 Other notable changes
 ---------------------
 
-- This release should automatically be published to PyPi by travis. #535
-- BusState is now an enum. #533
-- A guide has been added for new io formats. #548
-- Finish moving from nose to pytest #550
+* #533 BusState is now an enum.
+* #535 This release should automatically be published to PyPi by travis.
+* #577 Travis-ci now uses stages.
+* #548 A guide has been added for new io formats.
+* #550 Finish moving from nose to pytest.
+* #558 Fix installation on Windows.
+* #561 Tests for MessageSync added.
+
+General fixes, cleanup and docs changes can be found on the GitHub milestone
+https://github.com/hardbyte/python-can/milestone/7?closed=1
+
+Pulls: #522, #526, #527, #536, #540, #546, #547, #548, #533, #559, #569, #571, #572, #575
+
+Backend Specific Changes
+------------------------
+
+pcan
+~~~~
+
+* FD
+
+slcan
+~~~~
+
+* ability to set custom can speed instead of using predefined speed values. #553
+
+socketcan
+~~~~
+
+* Bug fix to properly support 32bit systems. #573
+
+usb2can
+~~~~
+
+* slightly better error handling
+* multiple serial devices can be found
+* support for the `_detect_available_configs()` API
+
+Pulls #511, #535
+
+vector
+~~~~
+
+* handle `app_name`. #525
 
 Version 3.1.1
 ====
@@ -31,20 +74,20 @@ Two new interfaces this release:
 Other notable changes
 ---------------------
 
-- #477 The kvaser interface now supports bus statistics via a custom bus method.
-- #434 neovi now supports receiving own messages
-- #490 Adding option to override the neovi library name
-- #488 Allow simultaneous access to IXXAT cards
-- #447 Improvements to serial interface:
+* #477 The kvaser interface now supports bus statistics via a custom bus method.
+* #434 neovi now supports receiving own messages
+* #490 Adding option to override the neovi library name
+* #488 Allow simultaneous access to IXXAT cards
+* #447 Improvements to serial interface:
   * to allow receiving partial messages
   * to fix issue with  DLC of remote frames
   * addition of unit tests
-- #497 Small API changes to `Message` and added unit tests
-- #471 Fix CAN FD issue in kvaser interface
-- #462 Fix `Notifier` issue with asyncio
-- #481 Fix PCAN support on OSX
-- #455 Fix to `Message` initializer
-- Small bugfixes and improvements
+* #497 Small API changes to `Message` and added unit tests
+* #471 Fix CAN FD issue in kvaser interface
+* #462 Fix `Notifier` issue with asyncio
+* #481 Fix PCAN support on OSX
+* #455 Fix to `Message` initializer
+* Small bugfixes and improvements
 
 Version 3.1.0
 ====
