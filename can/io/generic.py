@@ -9,7 +9,7 @@ from abc import ABCMeta, abstractmethod
 from can import Listener
 
 
-class BaseIOHandler(object):
+class BaseIOHandler:
     """A generic file handler that can be used for reading and writing.
 
     Can be used as a context manager.
