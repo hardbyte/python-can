@@ -1,5 +1,12 @@
 language: python
 
+# Linux setup
+dist: xenial
+
+cache:
+  directories:
+  - "$HOME/.cache/pip"
+
 python:
   # CPython; versions pre-2.7 and 3.0-3.5 have reached EOL
   - "2.7"
@@ -10,82 +17,81 @@ python:
   # PyPy:
   - pypy # Python 2.7
   - pypy3.5 # Python 3.5
+  - pypy3
 
-os:
-  - linux   # Linux is officially supported and we test the library under
-            # many different Python verions (see "python: ..." above)
+install:
+  - if [[ "$TEST_SOCKETCAN" ]]; then sudo bash test/open_vcan.sh ; fi
+  - travis_retry pip install .[test,mf4]
 
-# - osx     # OSX + Python is not officially supported by Travis CI as of Feb. 2018
-            # nevertheless, "nightly" and some "*-dev" versions seem to work, so we
-            # include them explicitly below (see "matrix: include: ..." below).
-            # They only seem to work with the xcode8.3 image, and not the newer ones.
-            # Thus we will leave this in, until it breaks one day, at which point we
-            # will probably reomve testing on OSX if it is not supported then.
-            # See #385 on Github.
+script:
+  - |
+    # Run the tests
+    python setup.py test
+    # preserve the error code
+    RETURN_CODE=$?
+    # Upload the coverage to codecov.io
+    codecov -X gcov
+    # set error code
+    (exit $RETURN_CODE);
 
-# - windows # Windows is not supported at all by Travis CI as of Feb. 2018
 
-# Linux setup
-dist: xenial
-
-matrix:
-  include:
-    # building the docs
-    - python: "3.7"
-      env: BUILD_ONLY_DOCS=TRUE
-    # testing socketcan on Trusty & Python 3.6, since it is not available on Xenial
-    - os: linux
-      dist: trusty
-      python: "3.6"
-      sudo: required
-      env: TEST_SOCKETCAN=TRUE
-    # testing on macOS; see "os: ..." above
-    - os: osx
-      osx_image: xcode8.3
-      python: 3.6-dev
-    - os: osx
-      osx_image: xcode8.3
-      python: 3.7-dev
-    - os: osx
-      osx_image: xcode8.3
-      python: nightly
-
+jobs:
   allow_failures:
-    # we allow all dev & nighly builds to fail, since these python versions might
+    # we allow all dev & nightly builds to fail, since these python versions might
     # still be very unstable
     - python: 3.8-dev
     - python: nightly
 
-install:
-  - if [[ "$TEST_SOCKETCAN" ]]; then sudo bash test/open_vcan.sh ; fi
-  - if [[ "$BUILD_ONLY_DOCS" ]]; then travis_retry pip install -r doc/doc-requirements.txt; fi
-  - travis_retry pip install .[test,mf4]
+  include:
+    # Note no matrix support when using stages.
+    # Stages with the same name get run in parallel.
+    # Jobs within a stage can also be named.
 
+    # Unit Testing Stage
 
-script:
-  - |
-    if [[ "$BUILD_ONLY_DOCS" ]]; then
-      # Build the docs with Sphinx
-      #   -a Write all files
-      #   -n nitpicky
-      python -m sphinx -an doc build
-    else
-      # Run the tests
-      python setup.py test
-      # preserve the error code
-      RETURN_CODE=$?
-      # Upload the coverage to codecov.io
-      codecov -X gcov
-      # set error code
-      (exit $RETURN_CODE);
-    fi
+    # testing socketcan on Trusty & Python 3.6, since it is not available on Xenial
+    - stage: test
+      name: Socketcan
+      os: linux
+      dist: trusty
+      python: "3.6"
+      sudo: required
+      env: TEST_SOCKETCAN=TRUE
 
-# Have travis deploy tagged commits to PyPi
-deploy:
-  provider: pypi
-  user: hardbyte
-  password:
-    secure: oQ9XpEkcilkZgKp+rKvPb2J1GrZe2ZvtOq/IjzCpiA8NeWixl/ai3BkPrLbd8t1wNIFoGwx7IQ7zxWL79aPYeG6XrljEomv3g45NR6dkQewUH+dQFlnT75Rm96Ycxvme0w1+71vM4PqxIuzyXUrF2n7JjC0XCCxHdTuYmPGbxVO1fOsE5R5b9inAbpEUtJuWz5AIrDEZ0OgoQpLSC8fLwbymTThX3JZ5GBLpRScVvLazjIYfRkZxvCqQ4mp1UNTdoMzekxsvxOOcEW6+j3fQO+Q/8uvMksKP0RgT8HE69oeYOeVic4Q4wGqORw+ur4A56NvBqVKtizVLCzzEG9ZfoSDy7ryvGWGZykkh8HX0PFQAEykC3iYihHK8ZFz5bEqRMegTmuRYZwPsel61wVd5posxnQkGm0syIoJNKuuRc5sUK+E3GviYcT8NntdR+4WBrvpQAYa1ZHpVrfnQXyaDmGzOjwCRGPoIDJweEqGVmLycEC5aT8rX3/W9tie9iPnjmFJh4CwNMxDgVQRo80m6Gtlf/DQpA3mH39IvWGqd5fHdTPxYPs32EQSCsaYLJV5pM8xBNv6M2S/KriGnGZU0xT7MEr46da0LstKsK/U8O0yamjyugMvQoC3zQcKLrDzWFSBsT7/vG+AuV5SK8yzfEHugo7jkPQQ+NTw29xzk4dY=
-  on:
-    tags: true
-  skip_cleanup: true
+    # testing on OSX
+    - stage: test
+      os: osx
+      osx_image: xcode8.3
+      python: 3.6-dev
+    - stage: test
+      os: osx
+      osx_image: xcode8.3
+      python: 3.7-dev
+    - stage: test
+      os: osx
+      osx_image: xcode8.3
+      python: nightly
+
+    - stage: documentation
+      name: "Sphinx Build"
+      python: "3.7"
+      before_install:
+        - travis_retry pip install -r doc/doc-requirements.txt
+      script:
+        # Build the docs with Sphinx
+        #   -a Write all files
+        #   -n nitpicky
+        - python -m sphinx -an doc build
+
+    - stage: deploy
+      name: "PyPi Deployment"
+      python: "3.7"
+      deploy:
+        provider: pypi
+        user: hardbyte
+        password:
+          secure: oQ9XpEkcilkZgKp+rKvPb2J1GrZe2ZvtOq/IjzCpiA8NeWixl/ai3BkPrLbd8t1wNIFoGwx7IQ7zxWL79aPYeG6XrljEomv3g45NR6dkQewUH+dQFlnT75Rm96Ycxvme0w1+71vM4PqxIuzyXUrF2n7JjC0XCCxHdTuYmPGbxVO1fOsE5R5b9inAbpEUtJuWz5AIrDEZ0OgoQpLSC8fLwbymTThX3JZ5GBLpRScVvLazjIYfRkZxvCqQ4mp1UNTdoMzekxsvxOOcEW6+j3fQO+Q/8uvMksKP0RgT8HE69oeYOeVic4Q4wGqORw+ur4A56NvBqVKtizVLCzzEG9ZfoSDy7ryvGWGZykkh8HX0PFQAEykC3iYihHK8ZFz5bEqRMegTmuRYZwPsel61wVd5posxnQkGm0syIoJNKuuRc5sUK+E3GviYcT8NntdR+4WBrvpQAYa1ZHpVrfnQXyaDmGzOjwCRGPoIDJweEqGVmLycEC5aT8rX3/W9tie9iPnjmFJh4CwNMxDgVQRo80m6Gtlf/DQpA3mH39IvWGqd5fHdTPxYPs32EQSCsaYLJV5pM8xBNv6M2S/KriGnGZU0xT7MEr46da0LstKsK/U8O0yamjyugMvQoC3zQcKLrDzWFSBsT7/vG+AuV5SK8yzfEHugo7jkPQQ+NTw29xzk4dY=
+        on:
+          # Have travis deploy tagged commits to PyPi
+          tags: true
+        skip_cleanup: true

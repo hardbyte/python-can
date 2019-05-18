@@ -50,7 +50,7 @@ available, the times are returned as number of seconds from system
 startup. To install the uptime library, run ``pip install uptime``.
 
 This library can take advantage of the `Python for Windows Extensions
-<https://sourceforge.net/projects/pywin32>`__ library if installed.
+<https://github.com/mhammond/pywin32>`__ library if installed.
 It will be used to get notified of new messages instead of
 the CPU intensive polling that will otherwise have be used.
 
@@ -83,7 +83,7 @@ Installing python-can in development mode
 -----------------------------------------
 
 A "development" install of this package allows you to make changes locally
-or pull updates from the Mercurial repository and use them without having to
+or pull updates from the Git repository and use them without having to
 reinstall. Download or clone the source repository then:
 
 ::
