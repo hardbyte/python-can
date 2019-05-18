@@ -5,8 +5,6 @@
 This module tests :meth:`can.BusABC._matches_filters`.
 """
 
-from __future__ import absolute_import
-
 import unittest
 
 from can import Bus, Message

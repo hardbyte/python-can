@@ -3,10 +3,7 @@
 
 import unittest
 import time
-try:
-    import asyncio
-except ImportError:
-    asyncio = None
+import asyncio
 
 import can
 
@@ -45,7 +42,6 @@ class NotifierTest(unittest.TestCase):
 
 class AsyncNotifierTest(unittest.TestCase):
 
-    @unittest.skipIf(asyncio is None, 'Test requires asyncio')
     def test_asyncio_notifier(self):
         loop = asyncio.get_event_loop()
         bus = can.Bus('test', bustype='virtual', receive_own_messages=True)
@@ -58,7 +54,6 @@ class AsyncNotifierTest(unittest.TestCase):
         self.assertIsNotNone(recv_msg)
         notifier.stop()
         bus.shutdown()
-
 
 
 if __name__ == '__main__':

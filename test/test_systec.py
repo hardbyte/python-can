@@ -2,10 +2,7 @@
 # coding: utf-8
 
 import unittest
-try:
-    from unittest.mock import Mock, patch
-except ImportError:
-    from mock import Mock, patch
+from unittest.mock import Mock, patch
 
 import can
 from can.interfaces.systec import ucan, ucanbus

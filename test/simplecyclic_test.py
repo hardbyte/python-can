@@ -5,8 +5,6 @@
 This module tests cyclic send tasks.
 """
 
-from __future__ import absolute_import
-
 from time import sleep
 import unittest
 import gc

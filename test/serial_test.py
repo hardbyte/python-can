@@ -7,8 +7,6 @@ This module is testing the serial interface.
 Copyright: 2017 Boris Wenzlaff
 """
 
-from __future__ import division
-
 import unittest
 from mock import patch
 
@@ -18,7 +16,7 @@ from can.interfaces.serial.serial_can import SerialBus
 from .message_helper import ComparingMessagesTestCase
 
 
-class SerialDummy(object):
+class SerialDummy:
     """
     Dummy to mock the serial communication
     """

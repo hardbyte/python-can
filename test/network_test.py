@@ -1,17 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-from __future__ import print_function
 
 import unittest
 import threading
-try:
-    import queue
-except ImportError:
-    import Queue as queue
+import queue
 import random
-
 import logging
+
 logging.getLogger(__file__).setLevel(logging.WARNING)
 
 # make a random bool:
