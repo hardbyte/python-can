@@ -149,7 +149,7 @@ class Message(object):
     def __repr__(self):
         args = ["timestamp={}".format(self.timestamp),
                 "arbitration_id={:#x}".format(self.arbitration_id),
-                "extended_id={}".format(self.is_extended_id)]
+                "is_extended_id={}".format(self.is_extended_id)]
 
         if self.is_remote_frame:
             args.append("is_remote_frame={}".format(self.is_remote_frame))
