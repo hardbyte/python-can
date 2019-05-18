@@ -9,7 +9,7 @@ from abc import ABCMeta, abstractmethod
 from can import Listener
 
 
-class BaseIOHandler:
+class BaseIOHandler(metaclass=ABCMeta):
     """A generic file handler that can be used for reading and writing.
 
     Can be used as a context manager.
@@ -18,8 +18,6 @@ class BaseIOHandler:
         the file-like object that is kept internally, or None if none
         was opened
     """
-
-    __metaclass__ = ABCMeta
 
     def __init__(self, file, mode='rt'):
         """

@@ -138,10 +138,9 @@ def detect_available_configs(interfaces=None):
 
     # Figure out where to search
     if interfaces is None:
-        # use an iterator over the keys so we do not have to copy it
-        interfaces = BACKENDS.keys()
+        interfaces = BACKENDS
     elif isinstance(interfaces, str):
-        interfaces = [interfaces, ]
+        interfaces = (interfaces, )
     # else it is supposed to be an iterable of strings
 
     result = []

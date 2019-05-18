@@ -24,7 +24,7 @@ class BusState(Enum):
     ERROR = auto()
 
 
-class BusABC(object):
+class BusABC(metaclass=ABCMeta):
     """The CAN Bus Abstract Base Class that serves as the basis
     for all concrete interfaces.
 
@@ -401,5 +401,3 @@ class BusABC(object):
                  for usage in the interface's bus constructor.
         """
         raise NotImplementedError()
-
-    __metaclass__ = ABCMeta

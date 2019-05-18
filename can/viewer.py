@@ -145,7 +145,7 @@ class CanViewer:
             # These messages do not contain a data package
             return []
 
-        for key in cmd_to_struct.keys():
+        for key in cmd_to_struct:
             if cmd == key if isinstance(key, int) else cmd in key:
                 value = cmd_to_struct[key]
                 if isinstance(value, tuple):
@@ -265,7 +265,7 @@ class CanViewer:
     def redraw_screen(self):
         # Trigger a complete redraw
         self.draw_header()
-        for key in self.ids.keys():
+        for key in self.ids:
             self.draw_can_bus_message(self.ids[key]['msg'])
 
 

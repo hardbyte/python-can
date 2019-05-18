@@ -657,7 +657,7 @@ if __name__ == "__main__":
         bind_socket(receiver_socket, 'vcan0')
         print("Receiver is waiting for a message...")
         event.set()
-        print("Receiver got: ", capture_message(receiver_socket))
+        print(f"Receiver got: {capture_message(receiver_socket)}")
 
     def sender(event):
         event.wait()
