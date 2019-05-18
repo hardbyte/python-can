@@ -1,6 +1,6 @@
 # coding: utf-8
-import logging
 
+import logging
 import ctypes
 import ctypes.util
 import os
@@ -13,8 +13,6 @@ import errno
 log = logging.getLogger(__name__)
 log_tx = log.getChild("tx")
 log_rx = log.getChild("rx")
-
-log.debug("Loading socketcan native backend")
 
 try:
     import fcntl
