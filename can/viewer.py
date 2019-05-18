@@ -1,5 +1,5 @@
 # coding: utf-8
-#
+
 # Copyright (C) 2018 Kristian Sloth Lauszus.
 #
 # This program is free software; you can redistribute it and/or
@@ -21,8 +21,6 @@
 # Kristian Sloth Lauszus
 # Web      :  http://www.lauszus.com
 # e-mail   :  lauszus@gmail.com
-
-from __future__ import absolute_import, print_function
 
 import argparse
 import os
@@ -496,7 +494,7 @@ def main():  # pragma: no cover
     curses.wrapper(CanViewer, bus, data_structs)
 
 
-if __name__ == '__main__':  # pragma: no cover
+if __name__ == '__main__':
     # Catch ctrl+c
     try:
         main()

@@ -16,7 +16,7 @@ import warnings
 log = logging.getLogger('can.bcm')
 
 
-class CyclicTask(object):
+class CyclicTask:
     """
     Abstract Base for all cyclic tasks.
     """

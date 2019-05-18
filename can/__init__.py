@@ -4,8 +4,6 @@
 ``can`` is an object-orient Controller Area Network (CAN) interface module.
 """
 
-from __future__ import absolute_import
-
 import logging
 
 __version__ = "3.2.0"

@@ -4,8 +4,6 @@
 Contains the ABC bus implementation and its documentation.
 """
 
-from __future__ import print_function, absolute_import
-
 from abc import ABCMeta, abstractmethod
 import logging
 import threading

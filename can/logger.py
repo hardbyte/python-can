@@ -16,8 +16,6 @@ Will filter for can frames with a can_id containing XXF03XXX.
 Dynamic Controls 2010
 """
 
-from __future__ import absolute_import, print_function
-
 import sys
 import argparse
 import socket
@@ -115,6 +113,7 @@ def main():
     finally:
         bus.shutdown()
         logger.stop()
+
 
 if __name__ == "__main__":
     main()

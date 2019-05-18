@@ -7,8 +7,6 @@ to a CAN bus.
 Similar to canplayer in the can-utils package.
 """
 
-from __future__ import absolute_import, print_function
-
 import sys
 import argparse
 from datetime import datetime
