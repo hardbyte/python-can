@@ -4,8 +4,6 @@
 Utilities and configuration file parsing.
 """
 
-from __future__ import absolute_import, print_function
-
 import os
 import os.path
 import sys
@@ -13,11 +11,7 @@ import platform
 import re
 import logging
 import warnings
-
-try:
-    from configparser import ConfigParser
-except ImportError:
-    from ConfigParser import SafeConfigParser as ConfigParser
+from configparser import ConfigParser
 
 import can
 from can.interfaces import VALID_INTERFACES

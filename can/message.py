@@ -8,14 +8,13 @@ This module contains the implementation of :class:`can.Message`.
     starting with Python 3.7.
 """
 
-from __future__ import absolute_import, division
 
 import warnings
 from copy import deepcopy
 from math import isinf, isnan
 
 
-class Message(object):
+class Message:
     """
     The :class:`~can.Message` object is used to represent CAN messages for
     sending, receiving and other purposes like converting between different

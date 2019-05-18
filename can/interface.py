@@ -6,8 +6,6 @@ as a list of all available backends and some implemented
 CyclicSendTasks.
 """
 
-from __future__ import absolute_import, print_function
-
 import sys
 import importlib
 import logging
