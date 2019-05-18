@@ -273,7 +273,7 @@ class ChannelInfo(Structure):
     ]
 
     def __init__(self):
-        super(ChannelInfo, self).__init__(sizeof(ChannelInfo))
+        super().__init__(sizeof(ChannelInfo))
 
     def __eq__(self, other):
         if not isinstance(other, ChannelInfo):
