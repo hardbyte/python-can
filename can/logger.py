@@ -76,7 +76,7 @@ def main():
 
     can_filters = []
     if len(results.filter) > 0:
-        print('Adding filter/s', results.filter)
+        print(f"Adding filter(s): {results.filter}")
         for filt in results.filter:
             if ':' in filt:
                 _ = filt.split(":")
@@ -99,8 +99,8 @@ def main():
     elif results.passive:
         bus.state = BusState.PASSIVE
 
-    print('Connected to {}: {}'.format(bus.__class__.__name__, bus.channel_info))
-    print('Can Logger (Started on {})\n'.format(datetime.now()))
+    print(f"Connected to {bus.__class__.__name__}: {bus.channel_info}")
+    print(f"Can Logger (Started on {datetime.now()})")
     logger = Logger(results.log_file)
 
     try:

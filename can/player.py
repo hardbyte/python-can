@@ -78,7 +78,7 @@ def main():
     in_sync = MessageSync(reader, timestamps=results.timestamps,
                           gap=results.gap, skip=results.skip)
 
-    print('Can LogReader (Started on {})'.format(datetime.now()))
+    print(f"Can LogReader (Started on {datetime.now()})")
 
     try:
         for m in in_sync:

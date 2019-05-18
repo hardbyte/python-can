@@ -16,7 +16,7 @@ except ImportError:
 import asyncio
 
 
-class Listener:
+class Listener(metaclass=ABCMeta):
     """The basic listener that can be called directly to handle some
     CAN message::
 
@@ -31,8 +31,6 @@ class Listener:
         # Important to ensure all outputs are flushed
         listener.stop()
     """
-
-    __metaclass__ = ABCMeta
 
     @abstractmethod
     def on_message_received(self, msg):
