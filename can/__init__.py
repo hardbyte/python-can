@@ -8,7 +8,7 @@ from __future__ import absolute_import
 
 import logging
 
-__version__ = "3.2.0-exception-handling"
+__version__ = "4.0.0-dev"
 
 log = logging.getLogger('can')
 
