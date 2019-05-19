@@ -303,7 +303,7 @@ class TestAscFileFormat(ReaderWriterTest):
     """Tests can.ASCWriter and can.ASCReader"""
 
     def _setup_instance(self):
-        super(TestAscFileFormat, self)._setup_instance_helper(
+        super()._setup_instance_helper(
             can.ASCWriter, can.ASCReader,
             check_fd=False,
             check_comments=True,
@@ -315,7 +315,7 @@ class TestBlfFileFormat(ReaderWriterTest):
     """Tests can.BLFWriter and can.BLFReader"""
 
     def _setup_instance(self):
-        super(TestBlfFileFormat, self)._setup_instance_helper(
+        super()._setup_instance_helper(
             can.BLFWriter, can.BLFReader,
             binary_file=True,
             check_fd=False,
@@ -349,7 +349,7 @@ class TestCanutilsFileFormat(ReaderWriterTest):
     """Tests can.CanutilsLogWriter and can.CanutilsLogReader"""
 
     def _setup_instance(self):
-        super(TestCanutilsFileFormat, self)._setup_instance_helper(
+        super()._setup_instance_helper(
             can.CanutilsLogWriter, can.CanutilsLogReader,
             check_fd=False,
             test_append=True, check_comments=False,
@@ -361,7 +361,7 @@ class TestCsvFileFormat(ReaderWriterTest):
     """Tests can.ASCWriter and can.ASCReader"""
 
     def _setup_instance(self):
-        super(TestCsvFileFormat, self)._setup_instance_helper(
+        super()._setup_instance_helper(
             can.CSVWriter, can.CSVReader,
             check_fd=False,
             test_append=True, check_comments=False,
@@ -373,7 +373,7 @@ class TestSqliteDatabaseFormat(ReaderWriterTest):
     """Tests can.SqliteWriter and can.SqliteReader"""
 
     def _setup_instance(self):
-        super(TestSqliteDatabaseFormat, self)._setup_instance_helper(
+        super()._setup_instance_helper(
             can.SqliteWriter, can.SqliteReader,
             check_fd=False,
             test_append=True, check_comments=False,

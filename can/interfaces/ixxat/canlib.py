@@ -389,7 +389,7 @@ class IXXATBus(BusABC):
             except (VCITimeout, VCIRxQueueEmptyError):
                 break
 
-        super(IXXATBus, self).__init__(channel=channel, can_filters=None, **kwargs)
+        super().__init__(channel=channel, can_filters=None, **kwargs)
 
     def _inWaiting(self):
         try:
@@ -532,7 +532,7 @@ class CyclicSendTask(LimitedDurationCyclicSendTaskABC,
     """A message in the cyclic transmit list."""
 
     def __init__(self, scheduler, msg, period, duration, resolution):
-        super(CyclicSendTask, self).__init__(msg, period, duration)
+        super().__init__(msg, period, duration)
         self._scheduler = scheduler
         self._index = None
         self._count = int(duration / period) if duration else 0

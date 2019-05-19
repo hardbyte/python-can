@@ -44,7 +44,7 @@ class CyclicSendTaskABC(CyclicTask):
         self.can_id = message.arbitration_id
         self.arbitration_id = message.arbitration_id
         self.period = period
-        super(CyclicSendTaskABC, self).__init__()
+        super().__init__()
 
 
 class LimitedDurationCyclicSendTaskABC(CyclicSendTaskABC):
@@ -57,7 +57,7 @@ class LimitedDurationCyclicSendTaskABC(CyclicSendTaskABC):
         :param float duration:
             The duration to keep sending this message at given rate.
         """
-        super(LimitedDurationCyclicSendTaskABC, self).__init__(message, period)
+        super().__init__(message, period)
         self.duration = duration
 
 
@@ -99,7 +99,7 @@ class MultiRateCyclicSendTaskABC(CyclicSendTaskABC):
         :param float initial_period:
         :param float subsequent_period:
         """
-        super(MultiRateCyclicSendTaskABC, self).__init__(channel, message, subsequent_period)
+        super().__init__(channel, message, subsequent_period)
 
 
 class ThreadBasedCyclicSendTask(ModifiableCyclicTaskABC,
@@ -108,7 +108,7 @@ class ThreadBasedCyclicSendTask(ModifiableCyclicTaskABC,
     """Fallback cyclic send task using thread."""
 
     def __init__(self, bus, lock, message, period, duration=None):
-        super(ThreadBasedCyclicSendTask, self).__init__(message, period, duration)
+        super().__init__(message, period, duration)
         self.bus = bus
         self.lock = lock
         self.stopped = True

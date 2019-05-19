@@ -210,7 +210,7 @@ class VectorBus(BusABC):
         self._time_offset = time.time() - offset.value * 1e-9
 
         self._is_filtered = False
-        super(VectorBus, self).__init__(channel=channel, can_filters=can_filters, **kwargs)
+        super().__init__(channel=channel, can_filters=can_filters, **kwargs)
 
     def _apply_filters(self, filters):
         if filters:
