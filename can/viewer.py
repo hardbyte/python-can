@@ -141,7 +141,7 @@ class CanViewer:
     # Unpack the data and then convert it into SI-units
     @staticmethod
     def unpack_data(cmd, cmd_to_struct, data):  # type: (int, Dict, bytes) -> List[Union[float, int]]
-        if not cmd_to_struct or data:
+        if not cmd_to_struct or not data:
             # These messages do not contain a data package
             return []
 
