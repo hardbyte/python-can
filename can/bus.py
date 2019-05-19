@@ -313,7 +313,6 @@ class BusABC(metaclass=ABCMeta):
         :param Iterator[dict] filters:
             See :meth:`~can.BusABC.set_filters` for details.
         """
-        pass
 
     def _matches_filters(self, msg):
         """Checks whether the given message matches at least one of the
@@ -354,14 +353,12 @@ class BusABC(metaclass=ABCMeta):
     def flush_tx_buffer(self):
         """Discard every message that may be queued in the output buffer(s).
         """
-        pass
 
     def shutdown(self):
         """
         Called to carry out any interface specific cleanup required
         in shutting down a bus.
         """
-        pass
 
     def __enter__(self):
         return self

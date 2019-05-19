@@ -426,4 +426,3 @@ class PcanError(CanError):
     """
     A generic error on a PCAN bus.
     """
-    pass

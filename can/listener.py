@@ -39,7 +39,6 @@ class Listener(metaclass=ABCMeta):
         :param can.Message msg: the delivered message
 
         """
-        pass
 
     def __call__(self, msg):
         return self.on_message_received(msg)

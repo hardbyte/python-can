@@ -18,7 +18,7 @@ try:
     from contextlib import nullcontext
 
 except ImportError:
-    class nullcontext(object):
+    class nullcontext:
         """A context manager that does nothing at all.
         A fallback for Python 3.7's :class:`contextlib.nullcontext` manager.
         """

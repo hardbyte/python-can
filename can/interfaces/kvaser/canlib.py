@@ -41,7 +41,8 @@ def _unimplemented_function(*args):
     raise NotImplementedError('This function is not implemented in canlib')
 
 
-def __get_canlib_function(func_name, argtypes=[], restype=None, errcheck=None):
+def __get_canlib_function(func_name, argtypes=None, restype=None, errcheck=None):
+    argtypes = [] if argtypes is None else argtypes
     #log.debug('Wrapping function "%s"' % func_name)
     try:
         # e.g. canlib.canBusOn

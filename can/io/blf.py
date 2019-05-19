@@ -28,7 +28,7 @@ from .generic import BaseIOHandler
 
 class BLFParseError(Exception):
     """BLF file could not be parsed correctly."""
-    pass
+
 
 LOG = logging.getLogger(__name__)
 

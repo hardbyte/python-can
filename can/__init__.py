@@ -17,7 +17,6 @@ class CanError(IOError):
     """Indicates an error with the CAN network.
 
     """
-    pass
 
 
 from .listener import Listener, BufferedReader, RedirectReader, AsyncBufferedReader

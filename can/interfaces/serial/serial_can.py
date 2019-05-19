@@ -121,7 +121,7 @@ class SerialBus(BusABC):
                 message are the default values.
 
         :rtype:
-            can.Message, bool
+            Tuple[can.Message, Bool]
         """
         try:
             # ser.read can return an empty string
