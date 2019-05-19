@@ -450,7 +450,7 @@ class IXXATBus(BusABC):
                     elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_TIMEOVR:
                         pass
                     else:
-                        log.warn("Unexpected message info type")
+                        log.warning("Unexpected message info type")
 
                 if t0 is not None:
                     remaining_ms = timeout_ms - int((_timer_function() - t0) * 1000)
@@ -521,7 +521,7 @@ class IXXATBus(BusABC):
         """Unsupported. See note on :class:`~can.interfaces.ixxat.IXXATBus`.
         """
         if self.__set_filters_has_been_called:
-            log.warn("using filters is not supported like this, see note on IXXATBus")
+            log.warning("using filters is not supported like this, see note on IXXATBus")
         else:
             # allow the constructor to call this without causing a warning
             self.__set_filters_has_been_called = True

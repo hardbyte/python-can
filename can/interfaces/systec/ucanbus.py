@@ -188,7 +188,7 @@ class UcanBus(BusABC):
                     configs.append({'interface': 'systec',
                                     'channel': Channel.CHANNEL_CH1,
                                     'device_number': hw_info_ex.device_number})
-        except:
+        except Exception:
             log.warning("The SYSTEC ucan library has not been initialized.")
         return configs
 

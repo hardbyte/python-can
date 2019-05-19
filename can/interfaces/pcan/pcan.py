@@ -19,7 +19,7 @@ try:
     import uptime
     import datetime
     boottimeEpoch = (uptime.boottime() - datetime.datetime.utcfromtimestamp(0)).total_seconds()
-except:
+except ImportError:
     boottimeEpoch = 0
 
 try:
@@ -62,7 +62,8 @@ pcan_fd_parameter_list = ['nom_brp', 'nom_tseg1', 'nom_tseg2', 'nom_sjw', 'data_
 
 class PcanBus(BusABC):
 
-    def __init__(self, channel='PCAN_USBBUS1', state=BusState.ACTIVE, bitrate=500000, *args, **kwargs):
+    def __init__(self, *args, channel='PCAN_USBBUS1', state=BusState.ACTIVE, bitrate=500000,
+                 **kwargs):
         """A PCAN USB interface to CAN.
 
         On top of the usual :class:`~can.Bus` methods provided,

@@ -31,8 +31,7 @@ class SerialBus(BusABC):
 
     """
 
-    def __init__(self, channel, baudrate=115200, timeout=0.1, rtscts=False,
-                 *args, **kwargs):
+    def __init__(self, channel, *args, baudrate=115200, timeout=0.1, rtscts=False, **kwargs):
         """
         :param str channel:
             The serial device to open. For example "/dev/ttyS1" or

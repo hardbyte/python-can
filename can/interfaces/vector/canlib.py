@@ -402,6 +402,6 @@ def get_channel_configs():
         vxlapi.xlOpenDriver()
         vxlapi.xlGetDriverConfig(driver_config)
         vxlapi.xlCloseDriver()
-    except:
+    except Exception:
         pass
     return [driver_config.channel[i] for i in range(driver_config.channelCount)]

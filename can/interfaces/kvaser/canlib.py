@@ -266,7 +266,7 @@ def init_kvaser_library():
             log.debug("Initializing Kvaser CAN library")
             canInitializeLibrary()
             log.debug("CAN library initialized")
-        except:
+        except Exception:
             log.warning("Kvaser canlib could not be initialized.")
 
 

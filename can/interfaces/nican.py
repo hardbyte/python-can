@@ -298,7 +298,7 @@ class NicanBus(BusABC):
         """Unsupported. See note on :class:`~can.interfaces.nican.NicanBus`.
         """
         if self.__set_filters_has_been_called:
-            logger.warn("using filters is not supported like this, see note on NicanBus")
+            logger.warning("using filters is not supported like this, see note on NicanBus")
         else:
             # allow the constructor to call this without causing a warning
             self.__set_filters_has_been_called = True

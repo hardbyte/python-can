@@ -11,11 +11,11 @@ class UcanException(CanError):
         self.result = result.value
         self.func = func
         self.arguments = arguments
-        self.return_msgs = NotImplemented
+        self.return_msgs = {}
 
     def __str__(self):
-        return "Function %s returned %d: %s" % \
-               (self.func.__name__, self.result, self.return_msgs.get(self.result, "unknown"))
+        message = self.return_msgs.get(self.result, "unknown")
+        return f"Function {self.func.__name__} returned {self.result}: {message}"
 
 
 class UcanError(UcanException):

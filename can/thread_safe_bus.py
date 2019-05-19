@@ -64,11 +64,11 @@ class ThreadSafeBus(ObjectProxy):
         self._lock_send = RLock()
         self._lock_recv = RLock()
 
-    def recv(self, timeout=None, *args, **kwargs):
+    def recv(self, *args, timeout=None, **kwargs):
         with self._lock_recv:
             return self.__wrapped__.recv(timeout=timeout, *args, **kwargs)
 
-    def send(self, msg, timeout=None, *args, **kwargs):
+    def send(self, msg, *args, timeout=None, **kwargs):
         with self._lock_send:
             return self.__wrapped__.send(msg, timeout=timeout, *args, **kwargs)
 
@@ -85,7 +85,7 @@ class ThreadSafeBus(ObjectProxy):
         with self._lock_recv:
             self.__wrapped__.filters = filters
 
-    def set_filters(self, filters=None, *args, **kwargs):
+    def set_filters(self, *args, filters=None, **kwargs):
         with self._lock_recv:
             return self.__wrapped__.set_filters(filters=filters, *args, **kwargs)
 
