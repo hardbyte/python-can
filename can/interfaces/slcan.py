@@ -99,7 +99,7 @@ class slcanBus(BusABC):
 
         self.open()
 
-        super(slcanBus, self).__init__(channel, ttyBaudrate=115200,
+        super().__init__(channel, ttyBaudrate=115200,
                                        bitrate=None, rtscts=False, **kwargs)
 
     def write(self, string):

@@ -30,12 +30,10 @@ extras_require = {
 }
 
 tests_require = [
-    'mock~=2.0',
     'pytest~=4.3',
     'pytest-timeout~=1.3',
     'pytest-cov~=2.6',
     'codecov~=2.0',
-    'future',
     'six',
     'hypothesis'
 ] + extras_require['serial']

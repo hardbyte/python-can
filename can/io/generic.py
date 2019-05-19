@@ -34,7 +34,7 @@ class BaseIOHandler(metaclass=ABCMeta):
             self.file = open(file, mode)
 
         # for multiple inheritance
-        super(BaseIOHandler, self).__init__()
+        super().__init__()
 
     def __enter__(self):
         return self

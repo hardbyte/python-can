@@ -5,8 +5,6 @@
 This module tests :class:`can.MessageSync`.
 """
 
-from __future__ import absolute_import
-
 from copy import copy
 from time import time
 import gc

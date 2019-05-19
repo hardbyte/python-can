@@ -23,8 +23,9 @@ class VCIError(CanError):
 
 class VCIRxQueueEmptyError(VCIError):
     """ Wraps the VCI_E_RXQUEUE_EMPTY error """
+
     def __init__(self):
-        super(VCIRxQueueEmptyError, self).__init__("Receive queue is empty")
+        super().__init__("Receive queue is empty")
 
 
 class VCIDeviceNotFoundError(CanError):

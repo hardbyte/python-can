@@ -3,14 +3,9 @@ Test functions in `can.interfaces.socketcan.socketcan`.
 """
 import unittest
 
-try:
-    from unittest.mock import Mock
-    from unittest.mock import patch
-    from unittest.mock import call
-except ImportError:
-    from mock import Mock
-    from mock import patch
-    from mock import call
+from unittest.mock import Mock
+from unittest.mock import patch
+from unittest.mock import call
 
 import ctypes
 

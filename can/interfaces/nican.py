@@ -201,7 +201,7 @@ class NicanBus(BusABC):
         self.handle = ctypes.c_ulong()
         nican.ncOpenObject(channel, ctypes.byref(self.handle))
 
-        super(NicanBus, self).__init__(channel=channel,
+        super().__init__(channel=channel,
             can_filters=can_filters, bitrate=bitrate,
             log_errors=log_errors, **kwargs)
 
@@ -308,7 +308,7 @@ class NicanError(CanError):
     """Error from NI-CAN driver."""
 
     def __init__(self, function, error_code, arguments):
-        super(NicanError, self).__init__()
+        super().__init__()
         #: Status code
         self.error_code = error_code
         #: Function that failed
