@@ -51,8 +51,6 @@ setup(
     classifiers=[
         # a list of all available ones: https://pypi.org/classifiers/
         "Programming Language :: Python",
-        "Programming Language :: Python :: 2.7",
-        "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: Implementation :: CPython",
@@ -97,11 +95,10 @@ setup(
 
     # Installation
     # see https://www.python.org/dev/peps/pep-0345/#version-specifiers
-    python_requires=">=2.7",
+    python_requires=">=3.6",
     install_requires=[
         'wrapt~=1.10',
         'aenum',
-        'typing;python_version<"3.5"',
         'windows-curses;platform_system=="Windows"',
     ],
     setup_requires=["pytest-runner"],

@@ -4,8 +4,6 @@
 Enable basic CAN over a PCAN USB device.
 """
 
-from __future__ import absolute_import, print_function, division
-
 import logging
 import sys
 import time
@@ -16,8 +14,8 @@ from can.bus import BusState
 from can.util import len2dlc, dlc2len
 from .basic import *
 
-boottimeEpoch = 0
 try:
+    # use the "uptime" library if available
     import uptime
     import datetime
     boottimeEpoch = (uptime.boottime() - datetime.datetime.utcfromtimestamp(0)).total_seconds()
@@ -38,13 +36,6 @@ except ImportError:
     except ImportError:
         # Use polling instead
         HAS_EVENTS = False
-
-try:
-    # new in 3.3
-    timeout_clock = time.perf_counter
-except AttributeError:
-    # deprecated in 3.3
-    timeout_clock = time.clock
 
 # Set up logging
 log = logging.getLogger('can.pcan')
@@ -277,7 +268,7 @@ class PcanBus(BusABC):
             timeout_ms = int(timeout * 1000) if timeout is not None else INFINITE
         elif timeout is not None:
             # Calculate max time
-            end_time = timeout_clock() + timeout
+            end_time = time.perf_counter() + timeout
 
         #log.debug("Trying to read a msg")
 
@@ -293,7 +284,7 @@ class PcanBus(BusABC):
                     val = WaitForSingleObject(self._recv_event, timeout_ms)
                     if val != WAIT_OBJECT_0:
                         return None, False
-                elif timeout is not None and timeout_clock() >= end_time:
+                elif timeout is not None and time.perf_counter() >= end_time:
                     return None, False
                 else:
                     result = None

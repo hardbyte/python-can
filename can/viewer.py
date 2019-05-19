@@ -1,5 +1,5 @@
 # coding: utf-8
-#
+
 # Copyright (C) 2018 Kristian Sloth Lauszus.
 #
 # This program is free software; you can redistribute it and/or
@@ -21,8 +21,6 @@
 # Kristian Sloth Lauszus
 # Web      :  http://www.lauszus.com
 # e-mail   :  lauszus@gmail.com
-
-from __future__ import absolute_import, print_function
 
 import argparse
 import os
@@ -147,7 +145,7 @@ class CanViewer:
             # These messages do not contain a data package
             return []
 
-        for key in cmd_to_struct.keys():
+        for key in cmd_to_struct:
             if cmd == key if isinstance(key, int) else cmd in key:
                 value = cmd_to_struct[key]
                 if isinstance(value, tuple):
@@ -267,7 +265,7 @@ class CanViewer:
     def redraw_screen(self):
         # Trigger a complete redraw
         self.draw_header()
-        for key in self.ids.keys():
+        for key in self.ids:
             self.draw_can_bus_message(self.ids[key]['msg'])
 
 
@@ -496,7 +494,7 @@ def main():  # pragma: no cover
     curses.wrapper(CanViewer, bus, data_structs)
 
 
-if __name__ == '__main__':  # pragma: no cover
+if __name__ == '__main__':
     # Catch ctrl+c
     try:
         main()
