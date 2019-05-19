@@ -658,13 +658,15 @@ class PCANBasic:
           A touple with 2 values
         """
         try:
-            if Parameter == PCAN_API_VERSION or Parameter == PCAN_HARDWARE_NAME or Parameter == PCAN_CHANNEL_VERSION or Parameter == PCAN_LOG_LOCATION or Parameter == PCAN_TRACE_LOCATION or Parameter == PCAN_BITRATE_INFO_FD or Parameter == PCAN_IP_ADDRESS:
+            if Parameter in (PCAN_API_VERSION, PCAN_HARDWARE_NAME, PCAN_CHANNEL_VERSION,
+                             PCAN_LOG_LOCATION, PCAN_TRACE_LOCATION, PCAN_BITRATE_INFO_FD,
+                             PCAN_IP_ADDRESS):
                 mybuffer = create_string_buffer(256)
             else:
                 mybuffer = c_int(0)
 
-            res = self.__m_dllBasic.CAN_GetValue(Channel,Parameter,byref(mybuffer),sizeof(mybuffer))
-            return TPCANStatus(res),mybuffer.value
+            res = self.__m_dllBasic.CAN_GetValue(Channel, Parameter, byref(mybuffer), sizeof(mybuffer))
+            return TPCANStatus(res), mybuffer.value
         except:
             logger.error("Exception on PCANBasic.GetValue")
             raise
@@ -694,13 +696,13 @@ class PCANBasic:
           A TPCANStatus error code
         """
         try:
-            if Parameter == PCAN_LOG_LOCATION or Parameter == PCAN_LOG_TEXT or Parameter == PCAN_TRACE_LOCATION:
+            if Parameter in (PCAN_LOG_LOCATION, PCAN_LOG_TEXT, PCAN_TRACE_LOCATION):
                 mybuffer = create_string_buffer(256)
             else:
                 mybuffer = c_int(0)
 
             mybuffer.value = Buffer
-            res = self.__m_dllBasic.CAN_SetValue(Channel,Parameter,byref(mybuffer),sizeof(mybuffer))
+            res = self.__m_dllBasic.CAN_SetValue(Channel, Parameter, byref(mybuffer), sizeof(mybuffer))
             return TPCANStatus(res)
         except:
             logger.error("Exception on PCANBasic.SetValue")

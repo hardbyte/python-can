@@ -465,8 +465,8 @@ class IXXATBus(BusABC):
         # so expect to see the value restarting from 0
         rx_msg = Message(
             timestamp=self._message.dwTime / self._tick_resolution,  # Relative time in s
-            is_remote_frame=True if self._message.uMsgInfo.Bits.rtr else False,
-            is_extended_id=True if self._message.uMsgInfo.Bits.ext else False,
+            is_remote_frame=bool(self._message.uMsgInfo.Bits.rtr),
+            is_extended_id=bool(self._message.uMsgInfo.Bits.ext),
             arbitration_id=self._message.dwMsgId,
             dlc=self._message.uMsgInfo.Bits.dlc,
             data=self._message.abData[:self._message.uMsgInfo.Bits.dlc],
