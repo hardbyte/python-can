@@ -9,8 +9,6 @@ Interface for slcan compatible interfaces (win32/linux).
 
 """
 
-from __future__ import absolute_import
-
 import time
 import logging
 

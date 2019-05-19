@@ -37,7 +37,16 @@ Python developers; providing common abstractions to
 different hardware devices, and a suite of utilities for sending and receiving
 messages on a can bus.
 
-The library supports Python 2.7, Python 3.5+ as well as PyPy 2 & 3 and runs on Mac, Linux and Windows.
+The library currently supports Python 3.6+ as well as PyPy 3 and runs
+on Mac, Linux and Windows.
+
+==================  ===========
+Library Version      Python
+------------------  -----------
+  2.x                 2.6+, 3.4+
+  3.x                 2.7+, 3.5+
+  4.x                 3.6+
+==================  ===========
 
 
 Features
@@ -51,7 +60,7 @@ Features
 - many different loggers and readers supporting playback: ASC (CANalyzer format), BLF (Binary Logging Format by Vector), CSV, SQLite and Canutils log
 - efficient in-kernel or in-hardware filtering of messages on supported interfaces
 - bus configuration reading from file or environment variables
-- CLI tools for working with CAN busses (see the `docs <https://python-can.readthedocs.io/en/stable/scripts.html>`__)
+- CLI tools for working with CAN buses (see the `docs <https://python-can.readthedocs.io/en/stable/scripts.html>`__)
 - more
 
 

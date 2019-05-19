@@ -6,8 +6,6 @@ Implements an SQL database writer and reader for storing CAN messages.
 .. note:: The database schema is given in the documentation of the loggers.
 """
 
-from __future__ import absolute_import
-
 import sys
 import time
 import threading
@@ -19,10 +17,6 @@ from can.message import Message
 from .generic import BaseIOHandler
 
 log = logging.getLogger('can.io.sqlite')
-
-if sys.version_info.major < 3:	
-    # legacy fallback for Python 2
-    memoryview = buffer
 
 
 class SqliteReader(BaseIOHandler):
@@ -58,7 +52,7 @@ class SqliteReader(BaseIOHandler):
         for frame_data in self._cursor.execute("SELECT * FROM {}".format(self.table_name)):
             yield SqliteReader._assemble_message(frame_data)
 
-    @staticmethod 
+    @staticmethod
     def _assemble_message(frame_data):
         timestamp, can_id, is_extended, is_remote, is_error, dlc, data = frame_data
         return Message(
@@ -103,7 +97,7 @@ class SqliteWriter(BaseIOHandler, BufferedReader):
     :meth:`~can.SqliteWriter.stop()` may take a while.
 
     :attr str table_name: the name of the database table used for storing the messages
-    :attr int num_frames: the number of frames actally writtem to the database, this
+    :attr int num_frames: the number of frames actually written to the database, this
                           excludes messages that are still buffered
     :attr float last_write: the last time a message war actually written to the database,
                             as given by ``time.time()``

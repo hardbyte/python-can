@@ -11,8 +11,6 @@ TODO: This module could use https://docs.python.org/2/library/csv.html#module-cs
       of a CSV file.
 """
 
-from __future__ import absolute_import
-
 from base64 import b64encode, b64decode
 
 from can.message import Message
@@ -78,7 +76,7 @@ class CSVReader(BaseIOHandler):
     format as described there. Assumes that there is a header
     and thus skips the first line.
 
-    Any line seperator is accepted.
+    Any line separator is accepted.
     """
 
     def __init__(self, file):

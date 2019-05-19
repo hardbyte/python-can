@@ -4,8 +4,6 @@
 This Listener simply prints to stdout / the terminal or a file.
 """
 
-from __future__ import print_function, absolute_import
-
 import logging
 
 from can.listener import Listener
@@ -17,7 +15,7 @@ log = logging.getLogger('can.io.printer')
 class Printer(BaseIOHandler, Listener):
     """
     The Printer class is a subclass of :class:`~can.Listener` which simply prints
-    any messages it receives to the terminal (stdout). A message is tunred into a
+    any messages it receives to the terminal (stdout). A message is turned into a
     string using :meth:`~can.Message.__str__`.
 
     :attr bool write_to_file: `True` iff this instance prints to a file instead of
