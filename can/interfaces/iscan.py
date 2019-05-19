@@ -4,8 +4,6 @@
 Interface for isCAN from Thorsis Technologies GmbH, former ifak system GmbH.
 """
 
-from __future__ import absolute_import, division
-
 import ctypes
 import time
 import logging

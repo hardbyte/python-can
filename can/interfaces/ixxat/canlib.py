@@ -13,8 +13,6 @@ TODO: We could implement this interface such that setting other filters
 
 """
 
-from __future__ import absolute_import, division
-
 import ctypes
 import functools
 import logging
@@ -32,11 +30,7 @@ __all__ = ["VCITimeout", "VCIError", "VCIDeviceNotFoundError", "IXXATBus", "vciF
 
 log = logging.getLogger('can.ixxat')
 
-try:
-    # since Python 3.3
-    from time import perf_counter as _timer_function
-except ImportError:
-    from time import clock as _timer_function
+from time import perf_counter as _timer_function
 
 # Hack to have vciFormatError as a free function, see below
 vciFormatError = None

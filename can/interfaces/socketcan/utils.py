@@ -67,6 +67,7 @@ def find_available_interfaces():
         log.debug("find_available_interfaces(): detected: %s", interface_names)
         return filter(_PATTERN_CAN_INTERFACE.match, interface_names)
 
+
 def error_code_to_str(code):
     """
     Converts a given error code (errno) to a useful and human readable string.

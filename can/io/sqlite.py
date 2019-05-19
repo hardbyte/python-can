@@ -6,8 +6,6 @@ Implements an SQL database writer and reader for storing CAN messages.
 .. note:: The database schema is given in the documentation of the loggers.
 """
 
-from __future__ import absolute_import
-
 import sys
 import time
 import threading
@@ -19,10 +17,6 @@ from can.message import Message
 from .generic import BaseIOHandler
 
 log = logging.getLogger('can.io.sqlite')
-
-if sys.version_info.major < 3:
-    # legacy fallback for Python 2
-    memoryview = buffer
 
 
 class SqliteReader(BaseIOHandler):

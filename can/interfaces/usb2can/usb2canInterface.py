@@ -4,8 +4,6 @@
 This interface is for Windows only, otherwise use socketCAN.
 """
 
-from __future__ import division, print_function, absolute_import
-
 import logging
 from ctypes import byref
 

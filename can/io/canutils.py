@@ -6,8 +6,6 @@ It is is compatible with "candump -L" from the canutils program
 (https://github.com/linux-can/can-utils).
 """
 
-from __future__ import absolute_import, division
-
 import time
 import datetime
 import logging

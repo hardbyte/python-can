@@ -14,8 +14,6 @@ of uncompressed data each. This data contains the actual CAN messages and other
 objects types.
 """
 
-from __future__ import absolute_import
-
 import struct
 import zlib
 import datetime
