@@ -165,7 +165,7 @@ class InitCanParam(Structure):
     @property
     def tx_buffer_entries(self): return self.m_wNrOfTxBufferEntries
 
-    @rx_buffer_entries.setter
+    @tx_buffer_entries.setter
     def tx_buffer_entries(self, tx_buffer_entries): self.m_wNrOfTxBufferEntries = tx_buffer_entries
 
 
