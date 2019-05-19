@@ -403,7 +403,7 @@ def parse_args(args):
                           choices=sorted(can.VALID_INTERFACES))
 
     # Print help message when no arguments are given
-    if args:
+    if not args:
         parser.print_help(sys.stderr)
         import errno
         raise SystemExit(errno.EINVAL)
