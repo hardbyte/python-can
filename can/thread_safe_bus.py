@@ -1,7 +1,5 @@
 # coding: utf-8
 
-from __future__ import print_function, absolute_import
-
 from threading import RLock
 
 try:
@@ -56,7 +54,7 @@ class ThreadSafeBus(ObjectProxy):
         if import_exc is not None:
             raise import_exc
 
-        super(ThreadSafeBus, self).__init__(Bus(*args, **kwargs))
+        super().__init__(Bus(*args, **kwargs))
 
         # now, BusABC.send_periodic() does not need a lock anymore, but the
         # implementation still requires a context manager

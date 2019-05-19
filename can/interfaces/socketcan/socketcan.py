@@ -1,6 +1,6 @@
 # coding: utf-8
-import logging
 
+import logging
 import ctypes
 import ctypes.util
 import os
@@ -13,8 +13,6 @@ import errno
 log = logging.getLogger(__name__)
 log_tx = log.getChild("tx")
 log_rx = log.getChild("rx")
-
-log.debug("Loading socketcan native backend")
 
 try:
     import fcntl
@@ -31,40 +29,82 @@ from can.interfaces.socketcan.utils import \
     pack_filters, find_available_interfaces, error_code_to_str
 
 
-try:
-    socket.CAN_BCM
-except AttributeError:
-    HAS_NATIVE_SUPPORT = False
-else:
-    HAS_NATIVE_SUPPORT = True
+# Setup BCM struct
+def bcm_header_factory(fields, alignment=8):
+    curr_stride = 0
+    results = []
+    pad_index = 0
+    for field in fields:
+        field_alignment = ctypes.alignment(field[1])
+        field_size = ctypes.sizeof(field[1])
 
+        # If the current stride index isn't a multiple of the alignment
+        # requirements of this field, then we must add padding bytes until we
+        # are aligned
+        while curr_stride % field_alignment != 0:
+            results.append(("pad_{}".format(pad_index), ctypes.c_uint8))
+            pad_index += 1
+            curr_stride += 1
 
-if not HAS_NATIVE_SUPPORT:
-    def check_status(result, function, arguments):
-        if result < 0:
-            raise can.CanError(error_code_to_str(ctypes.get_errno()))
-        return result
+        # Now can it fit?
+        # Example: If this is 8 bytes and the type requires 4 bytes alignment
+        # then we can only fit when we're starting at 0. Otherwise, we will
+        # split across 2 strides.
+        #
+        # | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 |
+        results.append(field)
+        curr_stride += field_size
 
-    try:
-        libc = ctypes.CDLL(ctypes.util.find_library("c"), use_errno=True)
-        libc.bind.errcheck = check_status
-        libc.connect.errcheck = check_status
-        libc.sendto.errcheck = check_status
-        libc.recvfrom.errcheck = check_status
-    except:
-        log.warning("libc is unavailable")
-        libc = None
+    # Add trailing padding to align to a multiple of the largest scalar member
+    # in the structure
+    while curr_stride % alignment != 0:
+        results.append(("pad_{}".format(pad_index), ctypes.c_uint8))
+        pad_index += 1
+        curr_stride += 1
 
-    def get_addr(sock, channel):
-        """Get sockaddr for a channel."""
-        if channel:
-            data = struct.pack("16si", channel.encode(), 0)
-            res = fcntl.ioctl(sock, SIOCGIFINDEX, data)
-            idx, = struct.unpack("16xi", res)
-        else:
-            # All channels
-            idx = 0
-        return struct.pack("HiLL", AF_CAN, idx, 0, 0)
+    return type("BcmMsgHead", (ctypes.Structure,), {"_fields_": results})
+
+# The fields definition is taken from the C struct definitions in
+# <linux/can/bcm.h>
+#
+#     struct bcm_timeval {
+#     	long tv_sec;
+#     	long tv_usec;
+#     };
+#
+#     /**
+#      * struct bcm_msg_head - head of messages to/from the broadcast manager
+#      * @opcode:    opcode, see enum below.
+#      * @flags:     special flags, see below.
+#      * @count:     number of frames to send before changing interval.
+#      * @ival1:     interval for the first @count frames.
+#      * @ival2:     interval for the following frames.
+#      * @can_id:    CAN ID of frames to be sent or received.
+#      * @nframes:   number of frames appended to the message head.
+#      * @frames:    array of CAN frames.
+#      */
+#     struct bcm_msg_head {
+#     	__u32 opcode;
+#     	__u32 flags;
+#     	__u32 count;
+#     	struct bcm_timeval ival1, ival2;
+#     	canid_t can_id;
+#     	__u32 nframes;
+#     	struct can_frame frames[0];
+#     };
+BcmMsgHead = bcm_header_factory(
+    fields=[
+        ("opcode", ctypes.c_uint32),
+        ("flags", ctypes.c_uint32),
+        ("count", ctypes.c_uint32),
+        ("ival1_tv_sec", ctypes.c_long),
+        ("ival1_tv_usec", ctypes.c_long),
+        ("ival2_tv_sec", ctypes.c_long),
+        ("ival2_tv_usec", ctypes.c_long),
+        ("can_id", ctypes.c_uint32),
+        ("nframes", ctypes.c_uint32),
+    ]
+)
 
 
 # struct module defines a binary packing format:
@@ -118,27 +158,29 @@ def build_can_frame(msg):
     return CAN_FRAME_HEADER_STRUCT.pack(can_id, msg.dlc, flags) + data
 
 
-def build_bcm_header(opcode, flags, count, ival1_seconds, ival1_usec, ival2_seconds, ival2_usec, can_id, nframes):
-    # == Must use native not standard types for packing ==
-    # struct bcm_msg_head {
-    #     __u32 opcode; -> I
-    #     __u32 flags;  -> I
-    #     __u32 count;  -> I
-    #     struct timeval ival1, ival2; ->  llll ...
-    #     canid_t can_id; -> I
-    #     __u32 nframes; -> I
-    bcm_cmd_msg_fmt = "@3I4l2I0q"
-
-    return struct.pack(bcm_cmd_msg_fmt,
-                       opcode,
-                       flags,
-                       count,
-                       ival1_seconds,
-                       ival1_usec,
-                       ival2_seconds,
-                       ival2_usec,
-                       can_id,
-                       nframes)
+def build_bcm_header(
+    opcode,
+    flags,
+    count,
+    ival1_seconds,
+    ival1_usec,
+    ival2_seconds,
+    ival2_usec,
+    can_id,
+    nframes,
+):
+    result = BcmMsgHead(
+        opcode=opcode,
+        flags=flags,
+        count=count,
+        ival1_tv_sec=ival1_seconds,
+        ival1_tv_usec=ival1_usec,
+        ival2_tv_sec=ival2_seconds,
+        ival2_tv_usec=ival2_usec,
+        can_id=can_id,
+        nframes=nframes,
+    )
+    return ctypes.string_at(ctypes.addressof(result), ctypes.sizeof(result))
 
 
 def build_bcm_tx_delete_header(can_id, flags):
@@ -184,11 +226,7 @@ def dissect_can_frame(frame):
 def create_bcm_socket(channel):
     """create a broadcast manager socket and connect to the given interface"""
     s = socket.socket(PF_CAN, socket.SOCK_DGRAM, CAN_BCM)
-    if HAS_NATIVE_SUPPORT:
-        s.connect((channel,))
-    else:
-        addr = get_addr(s, channel)
-        libc.connect(s.fileno(), addr, len(addr))
+    s.connect((channel,))
     return s
 
 
@@ -247,7 +285,7 @@ class CyclicSendTask(LimitedDurationCyclicSendTaskABC,
         :param float period: The rate in seconds at which to send the message.
         :param float duration: Approximate duration in seconds to send the message.
         """
-        super(CyclicSendTask, self).__init__(message, period, duration)
+        super().__init__(message, period, duration)
         self.bcm_socket = bcm_socket
         self.duration = duration
         self._tx_setup(message)
@@ -307,7 +345,7 @@ class MultiRateCyclicSendTask(CyclicSendTask):
     """
 
     def __init__(self, channel, message, count, initial_period, subsequent_period):
-        super(MultiRateCyclicSendTask, self).__init__(channel, message, subsequent_period)
+        super().__init__(channel, message, subsequent_period)
 
         # Create a low level packed frame to pass to the kernel
         frame = build_can_frame(message)
@@ -343,12 +381,7 @@ def bind_socket(sock, channel='can0'):
         If the specified interface isn't found.
     """
     log.debug('Binding socket to channel=%s', channel)
-    if HAS_NATIVE_SUPPORT:
-        sock.bind((channel,))
-    else:
-        # For Python 2.7
-        addr = get_addr(sock, channel)
-        libc.bind(sock.fileno(), addr, len(addr))
+    sock.bind((channel,))
     log.debug('Bound socket.')
 
 
@@ -366,22 +399,8 @@ def capture_message(sock, get_channel=False):
     # Fetching the Arb ID, DLC and Data
     try:
         if get_channel:
-            if HAS_NATIVE_SUPPORT:
-                cf, addr = sock.recvfrom(CANFD_MTU)
-                channel = addr[0] if isinstance(addr, tuple) else addr
-            else:
-                data = ctypes.create_string_buffer(CANFD_MTU)
-                addr = ctypes.create_string_buffer(32)
-                addrlen = ctypes.c_int(len(addr))
-                received = libc.recvfrom(sock.fileno(), data, len(data), 0,
-                                         addr, ctypes.byref(addrlen))
-                cf = data.raw[:received]
-                # Figure out the channel name
-                family, ifindex = struct.unpack_from("Hi", addr.raw)
-                assert family == AF_CAN
-                data = struct.pack("16xi", ifindex)
-                res = fcntl.ioctl(sock, SIOCGIFNAME, data)
-                channel = ctypes.create_string_buffer(res).value.decode()
+            cf, addr = sock.recvfrom(CANFD_MTU)
+            channel = addr[0] if isinstance(addr, tuple) else addr
         else:
             cf = sock.recv(CANFD_MTU)
             channel = None
@@ -481,7 +500,7 @@ class SocketcanBus(BusABC):
 
         bind_socket(self.socket, channel)
         kwargs.update({'receive_own_messages': receive_own_messages, 'fd': fd})
-        super(SocketcanBus, self).__init__(channel=channel, **kwargs)
+        super().__init__(channel=channel, **kwargs)
 
     def shutdown(self):
         """Stops all active periodic tasks and closes the socket."""
@@ -556,13 +575,7 @@ class SocketcanBus(BusABC):
         try:
             if self.channel == "" and channel:
                 # Message must be addressed to a specific channel
-                if HAS_NATIVE_SUPPORT:
-                    sent = self.socket.sendto(data, (channel, ))
-                else:
-                    addr = get_addr(self.socket, channel)
-                    sent = libc.sendto(self.socket.fileno(),
-                                       data, len(data), 0,
-                                       addr, len(addr))
+                sent = self.socket.sendto(data, (channel, ))
             else:
                 sent = self.socket.send(data)
         except socket.error as exc:
@@ -644,7 +657,7 @@ if __name__ == "__main__":
         bind_socket(receiver_socket, 'vcan0')
         print("Receiver is waiting for a message...")
         event.set()
-        print("Receiver got: ", capture_message(receiver_socket))
+        print(f"Receiver got: {capture_message(receiver_socket)}")
 
     def sender(event):
         event.wait()

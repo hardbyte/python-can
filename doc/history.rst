@@ -55,7 +55,7 @@ Python natively supports the CAN protocol from version 3.3 on, if running on Lin
 Python version  Feature                                                         Link
 ==============  ==============================================================  ====
 3.3             Initial SocketCAN support                                       `Docs <https://docs.python.org/3/library/socket.html#socket.AF_CAN>`__
-3.4             Broadcast Banagement (BCM) commands are natively supported      `Docs <https://docs.python.org/3/library/socket.html#socket.CAN_BCM>`__
+3.4             Broadcast Management (BCM) commands are natively supported      `Docs <https://docs.python.org/3/library/socket.html#socket.CAN_BCM>`__
 3.5             CAN FD support                                                  `Docs <https://docs.python.org/3/library/socket.html#socket.CAN_RAW_FD_FRAMES>`__
 3.7             Support for CAN ISO-TP                                          `Docs <https://docs.python.org/3/library/socket.html#socket.CAN_ISOTP>`__
 ==============  ==============================================================  ====

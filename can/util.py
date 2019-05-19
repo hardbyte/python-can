@@ -4,8 +4,6 @@
 Utilities and configuration file parsing.
 """
 
-from __future__ import absolute_import, print_function
-
 import os
 import os.path
 import sys
@@ -13,11 +11,7 @@ import platform
 import re
 import logging
 import warnings
-
-try:
-    from configparser import ConfigParser
-except ImportError:
-    from ConfigParser import SafeConfigParser as ConfigParser
+from configparser import ConfigParser
 
 import can
 from can.interfaces import VALID_INTERFACES
@@ -185,13 +179,6 @@ def load_config(path=None, config=None, context=None):
     for key in REQUIRED_KEYS:
         if key not in config:
             config[key] = None
-
-    # Handle deprecated socketcan types
-    if config['interface'] in ('socketcan_native', 'socketcan_ctypes'):
-        # DeprecationWarning in 3.x releases
-        # TODO: Remove completely in 4.0
-        warnings.warn('{} is deprecated, use socketcan instead'.format(config['interface']), DeprecationWarning)
-        config['interface'] = 'socketcan'
 
     if config['interface'] not in VALID_INTERFACES:
         raise NotImplementedError('Invalid CAN Bus Type - {}'.format(config['interface']))

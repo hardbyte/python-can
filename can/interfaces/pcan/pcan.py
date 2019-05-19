@@ -4,8 +4,6 @@
 Enable basic CAN over a PCAN USB device.
 """
 
-from __future__ import absolute_import, print_function, division
-
 import logging
 import sys
 import time
@@ -16,8 +14,8 @@ from can.bus import BusState
 from can.util import len2dlc, dlc2len
 from .basic import *
 
-boottimeEpoch = 0
 try:
+    # use the "uptime" library if available
     import uptime
     import datetime
     boottimeEpoch = (uptime.boottime() - datetime.datetime.utcfromtimestamp(0)).total_seconds()
@@ -38,13 +36,6 @@ except ImportError:
     except ImportError:
         # Use polling instead
         HAS_EVENTS = False
-
-try:
-    # new in 3.3
-    timeout_clock = time.perf_counter
-except AttributeError:
-    # deprecated in 3.3
-    timeout_clock = time.clock
 
 # Set up logging
 log = logging.getLogger('can.pcan')
@@ -204,7 +195,7 @@ class PcanBus(BusABC):
             if result != PCAN_ERROR_OK:
                 raise PcanError(self._get_formatted_error(result))
 
-        super(PcanBus, self).__init__(channel=channel, state=state, bitrate=bitrate, *args, **kwargs)
+        super().__init__(channel=channel, state=state, bitrate=bitrate, *args, **kwargs)
 
     def _get_formatted_error(self, error):
         """
@@ -216,11 +207,17 @@ class PcanBus(BusABC):
         """
 
         def bits(n):
-            """TODO: document"""
+            """
+            Iterate over all the set bits in `n`, returning the masked bits at
+            the set indices
+            """
             while n:
-                b = n & (~n+1)
-                yield b
-                n ^= b
+                # Create a mask to mask the lowest set bit in n
+                mask = (~n + 1)
+                masked_value = n & mask
+                yield masked_value
+                # Toggle the lowest set bit
+                n ^= masked_value
 
         stsReturn = self.m_objPCANBasic.GetErrorText(error, 0)
         if stsReturn[0] != PCAN_ERROR_OK:
@@ -271,7 +268,7 @@ class PcanBus(BusABC):
             timeout_ms = int(timeout * 1000) if timeout is not None else INFINITE
         elif timeout is not None:
             # Calculate max time
-            end_time = timeout_clock() + timeout
+            end_time = time.perf_counter() + timeout
 
         #log.debug("Trying to read a msg")
 
@@ -287,7 +284,7 @@ class PcanBus(BusABC):
                     val = WaitForSingleObject(self._recv_event, timeout_ms)
                     if val != WAIT_OBJECT_0:
                         return None, False
-                elif timeout is not None and timeout_clock() >= end_time:
+                elif timeout is not None and time.perf_counter() >= end_time:
                     return None, False
                 else:
                     result = None
@@ -402,7 +399,7 @@ class PcanBus(BusABC):
         self.m_objPCANBasic.SetValue(self.m_PcanHandle, PCAN_CHANNEL_IDENTIFYING, bool(flash))
 
     def shutdown(self):
-        super(PcanBus, self).shutdown()
+        super().shutdown()
         self.m_objPCANBasic.Uninitialize(self.m_PcanHandle)
 
     @property

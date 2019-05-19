@@ -13,8 +13,6 @@ TODO: We could implement this interface such that setting other filters
 
 """
 
-from __future__ import absolute_import, division
-
 import ctypes
 import functools
 import logging
@@ -32,11 +30,7 @@ __all__ = ["VCITimeout", "VCIError", "VCIDeviceNotFoundError", "IXXATBus", "vciF
 
 log = logging.getLogger('can.ixxat')
 
-try:
-    # since Python 3.3
-    from time import perf_counter as _timer_function
-except ImportError:
-    from time import clock as _timer_function
+from time import perf_counter as _timer_function
 
 # Hack to have vciFormatError as a free function, see below
 vciFormatError = None
@@ -395,7 +389,7 @@ class IXXATBus(BusABC):
             except (VCITimeout, VCIRxQueueEmptyError):
                 break
 
-        super(IXXATBus, self).__init__(channel=channel, can_filters=None, **kwargs)
+        super().__init__(channel=channel, can_filters=None, **kwargs)
 
     def _inWaiting(self):
         try:
@@ -538,7 +532,7 @@ class CyclicSendTask(LimitedDurationCyclicSendTaskABC,
     """A message in the cyclic transmit list."""
 
     def __init__(self, scheduler, msg, period, duration, resolution):
-        super(CyclicSendTask, self).__init__(msg, period, duration)
+        super().__init__(msg, period, duration)
         self._scheduler = scheduler
         self._index = None
         self._count = int(duration / period) if duration else 0

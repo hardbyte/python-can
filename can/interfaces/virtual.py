@@ -11,10 +11,7 @@ and reside in the same process will receive the same messages.
 from copy import deepcopy
 import logging
 import time
-try:
-    import queue
-except ImportError:
-    import Queue as queue
+import queue
 from threading import RLock
 from random import randint
 
@@ -48,7 +45,7 @@ class VirtualBus(BusABC):
     """
 
     def __init__(self, channel=None, receive_own_messages=False, rx_queue_size=0, **kwargs):
-        super(VirtualBus, self).__init__(channel=channel, receive_own_messages=receive_own_messages, **kwargs)
+        super().__init__(channel=channel, receive_own_messages=receive_own_messages, **kwargs)
 
         # the channel identifier may be an arbitrary object
         self.channel_id = channel
@@ -121,7 +118,7 @@ class VirtualBus(BusABC):
         .. note::
 
             This method will run into problems if thousands of
-            autodetected busses are used at once.
+            autodetected buses are used at once.
 
         """
         with channels_lock:

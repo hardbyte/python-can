@@ -4,8 +4,6 @@
 Interface for isCAN from Thorsis Technologies GmbH, former ifak system GmbH.
 """
 
-from __future__ import absolute_import, division
-
 import ctypes
 import time
 import logging
@@ -88,7 +86,7 @@ class IscanBus(BusABC):
         self.poll_interval = poll_interval
         iscan.isCAN_DeviceInitEx(self.channel, self.BAUDRATES[bitrate])
 
-        super(IscanBus, self).__init__(channel=channel, bitrate=bitrate,
+        super().__init__(channel=channel, bitrate=bitrate,
             poll_interval=poll_interval, **kwargs)
 
     def _recv_internal(self, timeout):
@@ -161,7 +159,7 @@ class IscanError(CanError):
     }
 
     def __init__(self, function, error_code, arguments):
-        super(IscanError, self).__init__()
+        super().__init__()
         # :Status code
         self.error_code = error_code
         # :Function that failed

@@ -1,5 +1,5 @@
 # coding: utf-8
-#
+
 # Copyright (C) 2018 Kristian Sloth Lauszus.
 #
 # This program is free software; you can redistribute it and/or
@@ -21,8 +21,6 @@
 # Kristian Sloth Lauszus
 # Web      :  http://www.lauszus.com
 # e-mail   :  lauszus@gmail.com
-
-from __future__ import absolute_import, print_function
 
 import argparse
 import os
@@ -147,7 +145,7 @@ class CanViewer:
             # These messages do not contain a data package
             return []
 
-        for key in cmd_to_struct.keys():
+        for key in cmd_to_struct:
             if cmd == key if isinstance(key, int) else cmd in key:
                 value = cmd_to_struct[key]
                 if isinstance(value, tuple):
@@ -267,7 +265,7 @@ class CanViewer:
     def redraw_screen(self):
         # Trigger a complete redraw
         self.draw_header()
-        for key in self.ids.keys():
+        for key in self.ids:
             self.draw_can_bus_message(self.ids[key]['msg'])
 
 
@@ -279,11 +277,11 @@ class SmartFormatter(argparse.HelpFormatter):
 
     def _format_usage(self, usage, actions, groups, prefix):
         # Use uppercase for "Usage:" text
-        return super(SmartFormatter, self)._format_usage(usage, actions, groups, 'Usage: ')
+        return super()._format_usage(usage, actions, groups, 'Usage: ')
 
     def _format_args(self, action, default_metavar):
         if action.nargs != argparse.REMAINDER and action.nargs != argparse.ONE_OR_MORE:
-            return super(SmartFormatter, self)._format_args(action, default_metavar)
+            return super()._format_args(action, default_metavar)
 
         # Use the metavar if "REMAINDER" or "ONE_OR_MORE" is set
         get_metavar = self._metavar_formatter(action, default_metavar)
@@ -291,7 +289,7 @@ class SmartFormatter(argparse.HelpFormatter):
 
     def _format_action_invocation(self, action):
         if not action.option_strings or action.nargs == 0:
-            return super(SmartFormatter, self)._format_action_invocation(action)
+            return super()._format_action_invocation(action)
 
         # Modified so "-s ARGS, --long ARGS" is replaced with "-s, --long ARGS"
         else:
@@ -309,14 +307,14 @@ class SmartFormatter(argparse.HelpFormatter):
         # Allow to manually split the lines
         if text.startswith('R|'):
             return text[2:].splitlines()
-        return super(SmartFormatter, self)._split_lines(text, width)
+        return super()._split_lines(text, width)
 
     def _fill_text(self, text, width, indent):
         if text.startswith('R|'):
             # noinspection PyTypeChecker
             return ''.join(indent + line + '\n' for line in text[2:].splitlines())
         else:
-            return super(SmartFormatter, self)._fill_text(text, width, indent)
+            return super()._fill_text(text, width, indent)
 
 
 def parse_args(args):
@@ -496,7 +494,7 @@ def main():  # pragma: no cover
     curses.wrapper(CanViewer, bus, data_structs)
 
 
-if __name__ == '__main__':  # pragma: no cover
+if __name__ == '__main__':
     # Catch ctrl+c
     try:
         main()
