@@ -8,19 +8,13 @@ from __future__ import absolute_import
 
 import logging
 
-__version__ = "3.2.0-a0"
+__version__ = "4.0.0.dev0"
 
 log = logging.getLogger('can')
 
 rc = dict()
 
-
-class CanError(IOError):
-    """Indicates an error with the CAN network.
-
-    """
-    pass
-
+from .exceptions import CanError, CanBackEndError, CanInitializationError, CanOperationError, CanTimeoutError
 
 from .listener import Listener, BufferedReader, RedirectReader
 try:

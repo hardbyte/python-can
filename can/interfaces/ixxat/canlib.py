@@ -1,9 +1,5 @@
-# coding: utf-8
-
 """
 Ctypes wrapper module for IXXAT Virtual CAN Interface V3 on win32 systems
-
-Copyright (C) 2016 Giuseppe Corbelli <giuseppe.corbelli@weightpack.com>
 
 TODO: We could implement this interface such that setting other filters
       could work when the initial filters were set to zero using the
@@ -20,9 +16,9 @@ import functools
 import logging
 import sys
 
-from can import CanError, BusABC, Message
-from can.broadcastmanager import (LimitedDurationCyclicSendTaskABC,
-                                  RestartableCyclicTaskABC)
+from can import BusABC, Message
+from can.exceptions import *
+from can.broadcastmanager import LimitedDurationCyclicSendTaskABC, RestartableCyclicTaskABC
 from can.ctypesutil import CLibrary, HANDLE, PHANDLE, HRESULT as ctypes_HRESULT
 
 from . import constants, structures
@@ -43,12 +39,8 @@ vciFormatError = None
 
 # main ctypes instance
 _canlib = None
-if sys.platform == "win32":
-    try:
-        _canlib = CLibrary("vcinpl")
-    except Exception as e:
-        log.warning("Cannot load IXXAT vcinpl library: %s", e)
-elif sys.platform == "cygwin":
+# TODO: Use ECI driver for linux
+if sys.platform == "win32" or sys.platform == "cygwin":
     try:
         _canlib = CLibrary("vcinpl.dll")
     except Exception as e:
@@ -73,10 +65,7 @@ def __vciFormatErrorExtended(library_instance, function, HRESULT, arguments):
             Formatted string
     """
     #TODO: make sure we don't generate another exception
-    return "{} - arguments were {}".format(
-        __vciFormatError(library_instance, function, HRESULT),
-        arguments
-    )
+    return "{} - arguments were {}".format(__vciFormatError(library_instance, function, HRESULT), arguments)
 
 
 def __vciFormatError(library_instance, function, HRESULT):
@@ -117,6 +106,8 @@ def __check_status(result, function, arguments):
         # Real return value is an unsigned long
         result = ctypes.c_ulong(result).value
 
+    #print(hex(result), function)
+
     if result == constants.VCI_E_TIMEOUT:
         raise VCITimeout("Function {} timed out".format(function._name))
     elif result == constants.VCI_E_RXQUEUE_EMPTY:
@@ -131,7 +122,7 @@ def __check_status(result, function, arguments):
     return result
 
 try:
-    # Map all required symbols and initialize library ---------------------------
+    # Map all required symbols and initialize library
     #HRESULT VCIAPI vciInitialize ( void );
     _canlib.map_symbol("vciInitialize", ctypes.c_long, (), __check_status)
 
@@ -219,18 +210,18 @@ except Exception as e:
 
 
 CAN_INFO_MESSAGES = {
-    constants.CAN_INFO_START:   "CAN started",
-    constants.CAN_INFO_STOP:    "CAN stopped",
-    constants.CAN_INFO_RESET:   "CAN reset",
+    constants.CAN_INFO_START: "CAN started",
+    constants.CAN_INFO_STOP: "CAN stopped",
+    constants.CAN_INFO_RESET: "CAN reset",
 }
 
 CAN_ERROR_MESSAGES = {
-    constants.CAN_ERROR_STUFF:  "CAN bit stuff error",
-    constants.CAN_ERROR_FORM:   "CAN form error",
-    constants.CAN_ERROR_ACK:    "CAN acknowledgment error",
-    constants.CAN_ERROR_BIT:    "CAN bit error",
-    constants.CAN_ERROR_CRC:    "CAN CRC error",
-    constants.CAN_ERROR_OTHER:  "Other (unknown) CAN error",
+    constants.CAN_ERROR_STUFF: "CAN bit stuff error",
+    constants.CAN_ERROR_FORM: "CAN form error",
+    constants.CAN_ERROR_ACK: "CAN acknowledgment error",
+    constants.CAN_ERROR_BIT: "CAN bit error",
+    constants.CAN_ERROR_CRC: "CAN CRC error",
+    constants.CAN_ERROR_OTHER: "Other (unknown) CAN error",
 }
 #----------------------------------------------------------------------------
 
@@ -301,9 +292,18 @@ class IXXATBus(BusABC):
         self._receive_own_messages = kwargs.get('receive_own_messages', False)
         # Usually comes as a string from the config file
         channel = int(channel)
-
+        
         if (bitrate not in self.CHANNEL_BITRATES[0]):
             raise ValueError("Invalid bitrate {}".format(bitrate))
+        
+        if rxFifoSize <= 0:
+            raise ValueError("rxFifoSize must be > 0")
+        
+        if txFifoSize <= 0:
+            raise ValueError("txFifoSize must be > 0")
+        
+        if channel < 0:
+            raise ValueError("channel number must be >= 0")
 
         self._device_handle = HANDLE()
         self._device_info = structures.VCIDEVICEINFO()
@@ -311,7 +311,6 @@ class IXXATBus(BusABC):
         self._channel_handle = HANDLE()
         self._channel_capabilities = structures.CANCAPABILITIES()
         self._message = structures.CANMSG()
-        self._payload = (ctypes.c_byte * 8)()
 
         # Search for supplied device
         if UniqueHardwareId is None:
@@ -333,23 +332,28 @@ class IXXATBus(BusABC):
                 else:
                     log.debug("Ignoring IXXAT with hardware id '%s'.", self._device_info.UniqueHardwareId.AsChar.decode("ascii"))
         _canlib.vciEnumDeviceClose(self._device_handle)
-        _canlib.vciDeviceOpen(ctypes.byref(self._device_info.VciObjectId), ctypes.byref(self._device_handle))
+
+        try:
+            _canlib.vciDeviceOpen(ctypes.byref(self._device_info.VciObjectId), ctypes.byref(self._device_handle))
+        except:
+            raise CanInitializationError("Could not open device.")
+
         log.info("Using unique HW ID %s", self._device_info.UniqueHardwareId.AsChar)
 
         log.info("Initializing channel %d in shared mode, %d rx buffers, %d tx buffers", channel, rxFifoSize, txFifoSize)
-        _canlib.canChannelOpen(self._device_handle, channel, constants.FALSE, ctypes.byref(self._channel_handle))
-        # Signal TX/RX events when at least one frame has been handled
+
+        try:
+            _canlib.canChannelOpen(self._device_handle, channel, constants.FALSE, ctypes.byref(self._channel_handle))
+            # Signal TX/RX events when at least one frame has been handled
+        except:
+            raise CanInitializationError("Could not open and initialize channel.")
+
         _canlib.canChannelInitialize(self._channel_handle, rxFifoSize, 1, txFifoSize, 1)
         _canlib.canChannelActivate(self._channel_handle, constants.TRUE)
 
         log.info("Initializing control %d bitrate %d", channel, bitrate)
         _canlib.canControlOpen(self._device_handle, channel, ctypes.byref(self._control_handle))
-        _canlib.canControlInitialize(
-            self._control_handle,
-            constants.CAN_OPMODE_STANDARD|constants.CAN_OPMODE_EXTENDED|constants.CAN_OPMODE_ERRFRAME,
-            self.CHANNEL_BITRATES[0][bitrate],
-            self.CHANNEL_BITRATES[1][bitrate]
-        )
+        _canlib.canControlInitialize(self._control_handle, constants.CAN_OPMODE_STANDARD | constants.CAN_OPMODE_EXTENDED | constants.CAN_OPMODE_ERRFRAME, self.CHANNEL_BITRATES[0][bitrate], self.CHANNEL_BITRATES[1][bitrate])
         _canlib.canControlGetCaps(self._control_handle, ctypes.byref(self._channel_capabilities))
 
         # With receive messages, this field contains the relative reception time of
@@ -364,19 +368,13 @@ class IXXATBus(BusABC):
             log.info("The IXXAT VCI backend is filtering messages")
             # Disable every message coming in
             for extended in (0, 1):
-                _canlib.canControlSetAccFilter(self._control_handle,
-                                               extended,
-                                               constants.CAN_ACC_CODE_NONE,
-                                               constants.CAN_ACC_MASK_NONE)
+                _canlib.canControlSetAccFilter(self._control_handle, extended, constants.CAN_ACC_CODE_NONE, constants.CAN_ACC_MASK_NONE)
             for can_filter in can_filters:
                 # Whitelist
                 code = int(can_filter['can_id'])
                 mask = int(can_filter['can_mask'])
                 extended = can_filter.get('extended', False)
-                _canlib.canControlAddFilterIds(self._control_handle,
-                                               1 if extended else 0,
-                                               code << 1,
-                                               mask << 1)
+                _canlib.canControlAddFilterIds(self._control_handle, 1 if extended else 0, code << 1, mask << 1)
                 log.info("Accepting ID: 0x%X MASK: 0x%X", code, mask)
 
         # Start the CAN controller. Messages will be forwarded to the channel
@@ -446,17 +444,15 @@ class IXXATBus(BusABC):
                     if self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_DATA:
                         data_received = True
                         break
-
                     elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_INFO:
                         log.info(CAN_INFO_MESSAGES.get(self._message.abData[0], "Unknown CAN info message code {}".format(self._message.abData[0])))
-
                     elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_ERROR:
                         log.warning(CAN_ERROR_MESSAGES.get(self._message.abData[0], "Unknown CAN error message code {}".format(self._message.abData[0])))
-
                     elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_TIMEOVR:
                         pass
                     else:
                         log.warn("Unexpected message info type")
+                        raise(CanBackEndError())
 
                 if t0 is not None:
                     remaining_ms = timeout_ms - int((_timer_function() - t0) * 1000)
@@ -482,7 +478,17 @@ class IXXATBus(BusABC):
         return rx_msg, True
 
     def send(self, msg, timeout=None):
-
+        """
+        Sends a message on the bus. The interface may buffer the message.
+        
+        :param can.Message msg:
+            The message to send.
+        :param float timeout:
+            Timeout after some time.
+        :raise:
+            :class:CanTimeoutError
+            :class:CanOperationError
+        """
         # This system is not designed to be very efficient
         message = structures.CANMSG()
         message.uMsgInfo.Bits.type = constants.CAN_MSGTYPE_DATA
@@ -496,8 +502,7 @@ class IXXATBus(BusABC):
             ctypes.memmove(message.abData, adapter, len(msg.data))
 
         if timeout:
-            _canlib.canChannelSendMessage(
-                self._channel_handle, int(timeout * 1000), message)
+            _canlib.canChannelSendMessage(self._channel_handle, int(timeout * 1000), message)
         else:
             _canlib.canChannelPostMessage(self._channel_handle, message)
 
@@ -505,14 +510,12 @@ class IXXATBus(BusABC):
         """Send a message using built-in cyclic transmit list functionality."""
         if self._scheduler is None:
             self._scheduler = HANDLE()
-            _canlib.canSchedulerOpen(self._device_handle, self.channel,
-                                     self._scheduler)
+            _canlib.canSchedulerOpen(self._device_handle, self.channel, self._scheduler)
             caps = structures.CANCAPABILITIES()
             _canlib.canSchedulerGetCaps(self._scheduler, caps)
             self._scheduler_resolution = float(caps.dwClockFreq) / caps.dwCmsDivisor
             _canlib.canSchedulerActivate(self._scheduler, constants.TRUE)
-        return CyclicSendTask(self._scheduler, msg, period, duration,
-                              self._scheduler_resolution)
+        return CyclicSendTask(self._scheduler, msg, period, duration, self._scheduler_resolution)
 
     def shutdown(self):
         if self._scheduler is not None:
@@ -533,8 +536,7 @@ class IXXATBus(BusABC):
             self.__set_filters_has_been_called = True
 
 
-class CyclicSendTask(LimitedDurationCyclicSendTaskABC,
-                     RestartableCyclicTaskABC):
+class CyclicSendTask(LimitedDurationCyclicSendTaskABC, RestartableCyclicTaskABC):
     """A message in the cyclic transmit list."""
 
     def __init__(self, scheduler, msg, period, duration, resolution):
@@ -558,12 +560,8 @@ class CyclicSendTask(LimitedDurationCyclicSendTaskABC,
         """Start transmitting message (add to list if needed)."""
         if self._index is None:
             self._index = ctypes.c_uint32()
-            _canlib.canSchedulerAddMessage(self._scheduler,
-                                           self._msg,
-                                           self._index)
-        _canlib.canSchedulerStartMessage(self._scheduler,
-                                         self._index,
-                                         self._count)
+            _canlib.canSchedulerAddMessage(self._scheduler, self._msg, self._index)
+        _canlib.canSchedulerStartMessage(self._scheduler, self._index, self._count)
 
     def pause(self):
         """Pause transmitting message (keep it in the list)."""

@@ -40,4 +40,10 @@ The Notifier object is used as a message distributor for a bus.
 Errors
 ------
 
-.. autoclass:: can.CanError
+| CanError
+|     CanBackendError
+|     CanInitializationError
+|     CanOperationError
+|     CanTimeoutError
+
+.. automodule:: can.exceptions
