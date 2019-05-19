@@ -5,8 +5,6 @@
 Tests helpers in `can.interfaces.socketcan.socketcan_common`.
 """
 
-from __future__ import absolute_import
-
 import unittest
 
 from can.interfaces.socketcan.utils import \
@@ -36,7 +34,7 @@ class TestSocketCanHelpers(unittest.TestCase):
         result = list(find_available_interfaces())
         self.assertGreaterEqual(len(result), 0)
         for entry in result:
-            self.assertRegexpMatches(entry, r"v?can\d+")
+            self.assertRegex(entry, r"v?can\d+")
         if TEST_INTERFACE_SOCKETCAN:
             self.assertGreaterEqual(len(result), 1)
             self.assertIn("vcan0", result)

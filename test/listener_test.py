@@ -4,8 +4,6 @@
 """
 """
 
-from __future__ import absolute_import, print_function
-
 from time import sleep
 import unittest
 import random
@@ -117,7 +115,7 @@ class ListenerTest(BusTest):
         test_filetype_to_instance(".log", can.CanutilsLogReader)
 
         # test file extensions that are not supported
-        with self.assertRaisesRegexp(NotImplementedError, ".xyz_42"):
+        with self.assertRaisesRegex(NotImplementedError, ".xyz_42"):
             test_filetype_to_instance(".xyz_42", can.Printer)
 
     def testLoggerTypeResolution(self):

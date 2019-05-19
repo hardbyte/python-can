@@ -5,12 +5,10 @@
 This module contains a helper for writing test cases that need to compare messages.
 """
 
-from __future__ import absolute_import, print_function
-
 from copy import copy
 
 
-class ComparingMessagesTestCase(object):
+class ComparingMessagesTestCase:
     """
     Must be extended by a class also extending a unittest.TestCase.
 

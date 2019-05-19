@@ -8,10 +8,7 @@ import ctypes
 import time
 import logging
 import unittest
-try:
-    from unittest.mock import Mock, patch
-except ImportError:
-    from mock import patch, Mock
+from unittest.mock import Mock, patch
 
 import pytest
 

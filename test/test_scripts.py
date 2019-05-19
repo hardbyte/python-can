@@ -5,8 +5,6 @@
 This module tests that the scripts are all callable.
 """
 
-from __future__ import absolute_import
-
 import subprocess
 import unittest
 import sys
@@ -16,9 +14,7 @@ from abc import ABCMeta, abstractmethod
 from .config import *
 
 
-class CanScriptTest(unittest.TestCase):
-
-    __metaclass__ = ABCMeta
+class CanScriptTest(unittest.TestCase, metaclass=ABCMeta):
 
     @classmethod
     def setUpClass(cls):

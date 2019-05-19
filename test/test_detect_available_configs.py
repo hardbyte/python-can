@@ -6,12 +6,8 @@ This module tests :meth:`can.BusABC._detect_available_configs` and
 :meth:`can.BusABC.detect_available_configs`.
 """
 
-from __future__ import absolute_import
-
 import sys
 import unittest
-if sys.version_info.major > 2:
-    basestring = str
 
 from can import detect_available_configs
 
@@ -33,7 +29,7 @@ class TestDetectAvailableConfigs(unittest.TestCase):
         for config in configs:
             self.assertIn('interface', config)
             self.assertIn('channel', config)
-            self.assertIsInstance(config['interface'], basestring)
+            self.assertIsInstance(config['interface'], str)
 
     def test_content_virtual(self):
         configs = detect_available_configs(interfaces='virtual')
