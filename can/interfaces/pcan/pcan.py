@@ -175,7 +175,7 @@ class PcanBus(BusABC):
                 f_clock = "{}={}".format('f_clock_mhz', kwargs.get('f_clock_mhz', None))
             else:
                 f_clock = "{}={}".format('f_clock', kwargs.get('f_clock', None))
-            
+
             fd_parameters_values = [f_clock] + ["{}={}".format(key, kwargs.get(key, None)) for key in pcan_fd_parameter_list if kwargs.get(key, None) is not None]
 
             self.fd_bitrate = ' ,'.join(fd_parameters_values).encode("ascii")
@@ -348,7 +348,7 @@ class PcanBus(BusABC):
                 CANMsg = TPCANMsgFDMac()
             else:
                 CANMsg = TPCANMsgFD()
-            
+
             # configure the message. ID, Length of data, message type and data
             CANMsg.ID = msg.arbitration_id
             CANMsg.DLC = len2dlc(msg.dlc)

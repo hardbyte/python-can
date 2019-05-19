@@ -396,7 +396,7 @@ class KvaserBus(BusABC):
                  canstat.canIOCTL_SET_TIMER_SCALE,
                  ctypes.byref(ctypes.c_long(TIMESTAMP_RESOLUTION)),
                  4)
-        
+
         if fd:
             if 'tseg1' not in kwargs and bitrate in BITRATE_FD:
                 # Use predefined bitrate for arbitration

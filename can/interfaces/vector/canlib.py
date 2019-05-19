@@ -175,7 +175,7 @@ class VectorBus(BusABC):
                 self.canFdConf.sjwDbr = ctypes.c_uint(sjwDbr)
                 self.canFdConf.tseg1Dbr = ctypes.c_uint(tseg1Dbr)
                 self.canFdConf.tseg2Dbr = ctypes.c_uint(tseg2Dbr)
-                
+
                 vxlapi.xlCanFdSetConfiguration(self.port_handle, self.mask, self.canFdConf)
                 LOG.info('SetFdConfig.: ABaudr.=%u, DBaudr.=%u', self.canFdConf.arbitrationBitRate, self.canFdConf.dataBitRate)
                 LOG.info('SetFdConfig.: sjwAbr=%u, tseg1Abr=%u, tseg2Abr=%u', self.canFdConf.sjwAbr, self.canFdConf.tseg1Abr, self.canFdConf.tseg2Abr)
@@ -336,14 +336,14 @@ class VectorBus(BusABC):
                 flags |= vxlapi.XL_CAN_TXMSG_FLAG_BRS
             if msg.is_remote_frame:
                 flags |= vxlapi.XL_CAN_TXMSG_FLAG_RTR
-                        
+
             message_count = 1
             MsgCntSent = ctypes.c_uint(1)
-            
+
             XLcanTxEvent = vxlapi.XLcanTxEvent()
             XLcanTxEvent.tag = vxlapi.XL_CAN_EV_TAG_TX_MSG
             XLcanTxEvent.transId = 0xffff
-            
+
             XLcanTxEvent.tagData.canMsg.canId = msg_id
             XLcanTxEvent.tagData.canMsg.msgFlags = flags
             XLcanTxEvent.tagData.canMsg.dlc = len2dlc(msg.dlc)
@@ -356,10 +356,10 @@ class VectorBus(BusABC):
                 flags |= vxlapi.XL_CAN_MSG_FLAG_REMOTE_FRAME
 
             message_count = ctypes.c_uint(1)
-            
+
             xl_event = vxlapi.XLevent()
             xl_event.tag = vxlapi.XL_TRANSMIT_MSG
-            
+
             xl_event.tagData.msg.id = msg_id
             xl_event.tagData.msg.dlc = msg.dlc
             xl_event.tagData.msg.flags = flags
@@ -367,7 +367,6 @@ class VectorBus(BusABC):
                 xl_event.tagData.msg.data[idx] = value
             vxlapi.xlCanTransmit(self.port_handle, mask, message_count, xl_event)
 
-        
     def flush_tx_buffer(self):
         vxlapi.xlCanFlushTransmitQueue(self.port_handle, self.mask)
 
@@ -375,7 +374,7 @@ class VectorBus(BusABC):
         vxlapi.xlDeactivateChannel(self.port_handle, self.mask)
         vxlapi.xlClosePort(self.port_handle)
         vxlapi.xlCloseDriver()
-        
+
     def reset(self):
         vxlapi.xlDeactivateChannel(self.port_handle, self.mask)
         vxlapi.xlActivateChannel(self.port_handle, self.mask,
