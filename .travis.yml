@@ -8,15 +8,12 @@ cache:
   - "$HOME/.cache/pip"
 
 python:
-  # CPython; versions pre-2.7 and 3.0-3.5 have reached EOL
-  - "2.7"
+  # CPython; only 3.6 is supported
   - "3.6"
   - "3.7"
   - 3.8-dev
   - nightly
   # PyPy:
-  - pypy # Python 2.7
-  - pypy3.5 # Python 3.5
   - pypy3
 
 install:

@@ -8,8 +8,6 @@ Example .asc files:
     - under `test/data/logfile.asc`
 """
 
-from __future__ import absolute_import
-
 from datetime import datetime
 import time
 import logging
