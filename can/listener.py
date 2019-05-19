@@ -146,7 +146,7 @@ class AsyncBufferedReader(Listener):
         """
         self.buffer.put_nowait(msg)
 
-    def get_message(self):
+    async def get_message(self):
         """
         Retrieve the latest message when awaited for::
         
@@ -155,7 +155,7 @@ class AsyncBufferedReader(Listener):
         :rtype: can.Message
         :return: The CAN message.
         """
-        return self.buffer.get()
+        return await self.buffer.get()
 
     def __aiter__(self):
         return self
