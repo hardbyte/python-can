@@ -93,17 +93,9 @@ disable=blacklisted-name,
         too-many-statements,
         too-many-nested-blocks,
         no-else-raise,
-        lost-exception,
-        assert-on-tuple,
         attribute-defined-outside-init,
-        bad-staticmethod-argument,
         protected-access,
-        arguments-differ,
-        signature-differs,
         abstract-method,
-        super-init-not-called,
-        no-init,
-        non-parent-init-called,
         bad-indentation,
         wildcard-import,
         fixme,
@@ -133,7 +125,8 @@ disable=blacklisted-name,
         cyclic-import,
         useless-else-on-loop,
         duplicate-code,
-        inconsistent-return-statements
+        inconsistent-return-statements,
+        arguments-differ
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option

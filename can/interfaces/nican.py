@@ -201,9 +201,8 @@ class NicanBus(BusABC):
         self.handle = ctypes.c_ulong()
         nican.ncOpenObject(channel, ctypes.byref(self.handle))
 
-        super().__init__(channel=channel,
-            can_filters=can_filters, bitrate=bitrate,
-            log_errors=log_errors, **kwargs)
+        super().__init__(channel=channel, can_filters=can_filters, bitrate=bitrate,
+                         log_errors=log_errors, **kwargs)
 
     def _recv_internal(self, timeout):
         """
@@ -292,16 +291,6 @@ class NicanBus(BusABC):
     def shutdown(self):
         """Close object."""
         nican.ncCloseObject(self.handle)
-
-    __set_filters_has_been_called = False
-    def set_filters(self, can_filers=None):
-        """Unsupported. See note on :class:`~can.interfaces.nican.NicanBus`.
-        """
-        if self.__set_filters_has_been_called:
-            logger.warning("using filters is not supported like this, see note on NicanBus")
-        else:
-            # allow the constructor to call this without causing a warning
-            self.__set_filters_has_been_called = True
 
 
 class NicanError(CanError):

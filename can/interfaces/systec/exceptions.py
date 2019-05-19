@@ -12,6 +12,7 @@ class UcanException(CanError):
         self.func = func
         self.arguments = arguments
         self.return_msgs = {}
+        super().__init__()
 
     def __str__(self):
         message = self.return_msgs.get(self.result, "unknown")

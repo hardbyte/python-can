@@ -154,7 +154,11 @@ class Usb2canBus(BusABC):
             raise CanError("could not shut down bus: status == {}".format(status))
 
     @staticmethod
-    def _detect_available_configs(serial_matcher=None):
+    def _detect_available_configs():
+        return Usb2canBus.detect_available_configs()
+
+    @staticmethod
+    def detect_available_configs(serial_matcher=None):
         """
         Uses the Windows Management Instrumentation to identify serial devices.
 

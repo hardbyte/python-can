@@ -516,16 +516,6 @@ class IXXATBus(BusABC):
         _canlib.canControlClose(self._control_handle)
         _canlib.vciDeviceClose(self._device_handle)
 
-    __set_filters_has_been_called = False
-    def set_filters(self, can_filers=None):
-        """Unsupported. See note on :class:`~can.interfaces.ixxat.IXXATBus`.
-        """
-        if self.__set_filters_has_been_called:
-            log.warning("using filters is not supported like this, see note on IXXATBus")
-        else:
-            # allow the constructor to call this without causing a warning
-            self.__set_filters_has_been_called = True
-
 
 class CyclicSendTask(LimitedDurationCyclicSendTaskABC,
                      RestartableCyclicTaskABC):
