@@ -60,7 +60,7 @@ pcan_fd_parameter_list = ['nom_brp', 'nom_tseg1', 'nom_tseg2', 'nom_sjw', 'data_
 
 class PcanBus(BusABC):
 
-    def __init__(self, *args, channel='PCAN_USBBUS1', state=BusState.ACTIVE, bitrate=500000,
+    def __init__(self, channel='PCAN_USBBUS1', state=BusState.ACTIVE, bitrate=500000, *args,
                  **kwargs):
         """A PCAN USB interface to CAN.
 

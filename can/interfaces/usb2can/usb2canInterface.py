@@ -83,7 +83,7 @@ class Usb2canBus(BusABC):
 
     """
 
-    def __init__(self, *args, channel=None, dll="usb2can.dll", flags=0x00000008,
+    def __init__(self, channel=None, dll="usb2can.dll", flags=0x00000008, *args,
                  bitrate=500000, **kwargs):
 
         self.can = Usb2CanAbstractionLayer(dll)
