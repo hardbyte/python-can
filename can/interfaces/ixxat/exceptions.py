@@ -7,9 +7,7 @@ Copyright (C) 2016 Giuseppe Corbelli <giuseppe.corbelli@weightpack.com>
 Copyright (C) 2019 Marcel Kanter <marcel.kanter@googlemail.com>
 """
 
-from can import CanError, CanInitializationError
-
-__all__ = ['VCITimeout', 'VCIError', 'VCIRxQueueEmptyError', 'VCIDeviceNotFoundError']
+from can import CanError, CanBackEndError, CanInitializationError, CanOperationError, CanTimeoutError
 
 
 class VCITimeout(CanTimeoutError):
@@ -17,7 +15,7 @@ class VCITimeout(CanTimeoutError):
     pass
 
 
-class VCIError(CanError):
+class VCIError(CanOperationError):
     """ Try to display errors that occur within the wrapped C library nicely. """
     pass
 

@@ -17,7 +17,7 @@ import logging
 import sys
 
 from can import BusABC, Message
-from can import CanError, CanBackEndError, CanInitializationError, CanOperationError
+from can.exceptions import *
 from can.broadcastmanager import LimitedDurationCyclicSendTaskABC, RestartableCyclicTaskABC
 from can.ctypesutil import CLibrary, HANDLE, PHANDLE, HRESULT as ctypes_HRESULT
 

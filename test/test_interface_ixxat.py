@@ -1,11 +1,13 @@
 """
 Unittest for ixxat interface.
+
+Run only this test:
+python setup.py test --addopts "--verbose -s test/test_interface_ixxat.py"
 """
 
 import unittest
 import can
 
-from can import CanError, CanBackEndError, CanInitializationError, CanOperationError
 
 class SoftwareTestCase(unittest.TestCase):
     """
@@ -51,14 +53,14 @@ class HardwareTestCase(unittest.TestCase):
     
     def test_bus_creation(self):
         # non-existent channel -> use arbitrary high value
-        with self.assertRaises(CanInitializationError):
+        with self.assertRaises(can.CanInitializationError):
             bus = can.Bus(interface="ixxat", channel=0xFFFF)
     
     def test_send_after_shutdown(self):
         bus = can.Bus(interface="ixxat", channel=0)
         msg = can.Message(arbitration_id=0x3FF, dlc=0)
         bus.shutdown()
-        with self.assertRaises(CanOperationError):
+        with self.assertRaises(can.CanOperationError):
             bus.send(msg)
 
 
