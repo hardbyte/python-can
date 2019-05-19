@@ -5,10 +5,8 @@ Enable basic CAN over a PCAN USB device.
 """
 
 import logging
-import sys
 import time
 
-import can
 from can import CanError, Message, BusABC
 from can.bus import BusState
 from can.util import len2dlc, dlc2len
@@ -165,7 +163,7 @@ class PcanBus(BusABC):
         self.m_PcanHandle = globals()[channel]
 
         if state is BusState.ACTIVE or state is BusState.PASSIVE:
-            self.state = state
+            self._state = state
         else:
             raise ArgumentError("BusState must be Active or Passive")
 

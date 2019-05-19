@@ -4,9 +4,7 @@
 Contains a generic class for file IO.
 """
 
-from abc import ABCMeta, abstractmethod
-
-from can import Listener
+from abc import ABCMeta
 
 
 class BaseIOHandler(metaclass=ABCMeta):

@@ -9,7 +9,6 @@ This module contains the implementation of :class:`can.Message`.
 """
 
 
-import warnings
 from copy import deepcopy
 from math import isinf, isnan
 

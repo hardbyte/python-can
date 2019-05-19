@@ -375,10 +375,9 @@ class KvaserBus(BusABC):
         self.single_handle = single_handle
 
         num_channels = ctypes.c_int(0)
-        res = canGetNumberOfChannels(ctypes.byref(num_channels))
-        #log.debug("Res: {}".format(res))
+        #log.debug("Res: %d", canGetNumberOfChannels(ctypes.byref(num_channels)))
         num_channels = int(num_channels.value)
-        log.info('Found %d available channels' % num_channels)
+        log.info('Found %d available channels', num_channels)
         for idx in range(num_channels):
             channel_info = get_channel_info(idx)
             log.info('%d: %s', idx, channel_info)
@@ -391,7 +390,7 @@ class KvaserBus(BusABC):
         if fd:
             flags |= canstat.canOPEN_CAN_FD
 
-        log.debug('Creating read handle to bus channel: %s' % channel)
+        log.debug('Creating read handle to bus channel: %s', channel)
         self._read_handle = canOpenChannel(channel, flags)
         canIoCtl(self._read_handle,
                  canstat.canIOCTL_SET_TIMER_SCALE,
@@ -427,7 +426,7 @@ class KvaserBus(BusABC):
             log.debug("We don't require separate handles to the bus")
             self._write_handle = self._read_handle
         else:
-            log.debug('Creating separate handle for TX on channel: %s' % channel)
+            log.debug('Creating separate handle for TX on channel: %s', channel)
             self._write_handle = canOpenChannel(channel, flags)
             canBusOn(self._read_handle)
 

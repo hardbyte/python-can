@@ -6,8 +6,6 @@ It is is compatible with "candump -L" from the canutils program
 (https://github.com/linux-can/can-utils).
 """
 
-import time
-import datetime
 import logging
 
 from can.message import Message

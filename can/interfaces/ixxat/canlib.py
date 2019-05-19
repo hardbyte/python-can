@@ -18,7 +18,7 @@ import functools
 import logging
 import sys
 
-from can import CanError, BusABC, Message
+from can import BusABC, Message
 from can.broadcastmanager import (LimitedDurationCyclicSendTaskABC,
                                   RestartableCyclicTaskABC)
 from can.ctypesutil import CLibrary, HANDLE, PHANDLE, HRESULT as ctypes_HRESULT
@@ -383,7 +383,7 @@ class IXXATBus(BusABC):
 
         # Usually you get back 3 messages like "CAN initialized" ecc...
         # Clear the FIFO by filter them out with low timeout
-        for i in range(rxFifoSize):
+        for _ in range(rxFifoSize):
             try:
                 _canlib.canChannelReadMessage(self._channel_handle, 0, ctypes.byref(self._message))
             except (VCITimeout, VCIRxQueueEmptyError):

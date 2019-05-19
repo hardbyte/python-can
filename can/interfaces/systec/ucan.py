@@ -947,7 +947,7 @@ class UcanServer:
         - CbEvent.EVENT_FATALDISCON: USB-CAN-Handle of the disconnected module
         :param arg: Additional parameter defined with :meth:`init_hardware_ex` (not used in this wrapper class).
         """
-        log.debug("Event: %s, Param: %s" % (event, param))
+        log.debug("Event: %s, Param: %s", event, param)
 
         if event == CbEvent.EVENT_FATALDISCON:
             self.fatal_disconnect_event(param)
@@ -966,7 +966,7 @@ class UcanServer:
             CAN channel (:data:`Channel.CHANNEL_CH0`, :data:`Channel.CHANNEL_CH1` or :data:`Channel.CHANNEL_ANY`).
         :param arg: Additional parameter defined with :meth:`init_hardware_ex`.
         """
-        log.debug("Handle: %s, Event: %s, Channel: %s" % (handle, event, channel))
+        log.debug("Handle: %s, Event: %s, Channel: %s", handle, event, channel)
 
         if event == CbEvent.EVENT_INITHW:
             self.init_hw_event()

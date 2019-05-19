@@ -6,11 +6,9 @@ Utilities and configuration file parsing.
 
 import os
 import os.path
-import sys
 import platform
 import re
 import logging
-import warnings
 from configparser import ConfigParser
 
 import can

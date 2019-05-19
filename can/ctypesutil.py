@@ -4,7 +4,6 @@
 This module contains common `ctypes` utils.
 """
 
-import binascii
 import ctypes
 import logging
 import sys
@@ -44,7 +43,7 @@ class LibraryMixin:
             raise ImportError("Could not map function '{}' from library {}".format(func_name, self._name))
 
         setattr(symbol, "_name", func_name)
-        log.debug('Wrapped function "{}", result type: {}, error_check {}'.format(func_name, type(restype), errcheck))
+        log.debug(f'Wrapped function "{func_name}", result type: {type(restype)}, error_check {errcheck}')
 
         if errcheck:
             symbol.errcheck = errcheck

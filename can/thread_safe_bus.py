@@ -33,7 +33,7 @@ except ImportError:
             pass
 
 
-class ThreadSafeBus(ObjectProxy):
+class ThreadSafeBus(ObjectProxy): # pylint: disable=abstract-method
     """
     Contains a thread safe :class:`can.BusABC` implementation that
     wraps around an existing interface instance. All public methods
@@ -58,7 +58,7 @@ class ThreadSafeBus(ObjectProxy):
 
         # now, BusABC.send_periodic() does not need a lock anymore, but the
         # implementation still requires a context manager
-        self.__wrapped__._lock_send_periodic = nullcontext()
+        self.__wrapped__._lock_send_periodic = nullcontext() # pylint: disable=protected-access
 
         # init locks for sending and receiving separately
         self._lock_send = RLock()

@@ -132,6 +132,8 @@ class UcanBus(BusABC):
             self.channel,
             self._ucan.get_baudrate_message(self.BITRATES[bitrate])
         )
+        self._is_filtered = False
+
         super().__init__(channel=channel, can_filters=can_filters, **kwargs)
 
     def _recv_internal(self, timeout):
@@ -180,7 +182,8 @@ class UcanBus(BusABC):
     def _detect_available_configs():
         configs = []
         try:
-            for index, is_used, hw_info_ex, init_info in Ucan.enumerate_hardware():
+            # index, is_used, hw_info_ex, init_info
+            for _, _, hw_info_ex, _ in Ucan.enumerate_hardware():
                 configs.append({'interface': 'systec',
                                 'channel': Channel.CHANNEL_CH0,
                                 'device_number': hw_info_ex.device_number})

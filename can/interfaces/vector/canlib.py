@@ -10,7 +10,6 @@ Authors: Julien Grave <grave.jul@gmail.com>, Christian Sandberg
 # ==============================
 import ctypes
 import logging
-import sys
 import time
 
 try:
@@ -28,7 +27,7 @@ except ImportError:
 
 # Import Modules
 # ==============
-from can import BusABC, Message, CanError
+from can import BusABC, Message
 from can.util import len2dlc, dlc2len
 from .exceptions import VectorError
 
