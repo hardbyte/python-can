@@ -7,15 +7,12 @@ This module contains the implementation of :class:`~can.Notifier`.
 import threading
 import logging
 import time
-try:
-    import asyncio
-except ImportError:
-    asyncio = None
+import asyncio
 
 logger = logging.getLogger('can.Notifier')
 
 
-class Notifier(object):
+class Notifier:
 
     def __init__(self, bus, listeners, timeout=1.0, loop=None):
         """Manages the distribution of :class:`can.Message` instances to listeners.

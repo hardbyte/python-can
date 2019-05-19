@@ -6,8 +6,6 @@ Implements an SQL database writer and reader for storing CAN messages.
 .. note:: The database schema is given in the documentation of the loggers.
 """
 
-from __future__ import absolute_import
-
 import sys
 import time
 import threading
@@ -19,10 +17,6 @@ from can.message import Message
 from .generic import BaseIOHandler
 
 log = logging.getLogger('can.io.sqlite')
-
-if sys.version_info.major < 3:
-    # legacy fallback for Python 2
-    memoryview = buffer
 
 
 class SqliteReader(BaseIOHandler):
@@ -49,7 +43,7 @@ class SqliteReader(BaseIOHandler):
                      do not accept file-like objects as the `file` parameter.
                      It also runs in ``append=True`` mode all the time.
         """
-        super(SqliteReader, self).__init__(file=None)
+        super().__init__(file=None)
         self._conn = sqlite3.connect(file)
         self._cursor = self._conn.cursor()
         self.table_name = table_name
@@ -87,7 +81,7 @@ class SqliteReader(BaseIOHandler):
     def stop(self):
         """Closes the connection to the database.
         """
-        super(SqliteReader, self).stop()
+        super().stop()
         self._conn.close()
 
 
@@ -145,7 +139,7 @@ class SqliteWriter(BaseIOHandler, BufferedReader):
         .. warning:: In contrary to all other readers/writers the Sqlite handlers
                      do not accept file-like objects as the `file` parameter.
         """
-        super(SqliteWriter, self).__init__(file=None)
+        super().__init__(file=None)
         self.table_name = table_name
         self._db_filename = file
         self._stop_running_event = threading.Event()

@@ -11,8 +11,6 @@ TODO: This module could use https://docs.python.org/2/library/csv.html#module-cs
       of a CSV file.
 """
 
-from __future__ import absolute_import
-
 from base64 import b64encode, b64decode
 
 from can.message import Message
@@ -52,7 +50,7 @@ class CSVWriter(BaseIOHandler, Listener):
                             written header line
         """
         mode = 'a' if append else 'w'
-        super(CSVWriter, self).__init__(file, mode=mode)
+        super().__init__(file, mode=mode)
 
         # Write a header row
         if not append:
@@ -87,7 +85,7 @@ class CSVReader(BaseIOHandler):
                      If this is a file-like object, is has to opened in text
                      read mode, not binary read mode.
         """
-        super(CSVReader, self).__init__(file, mode='r')
+        super().__init__(file, mode='r')
 
     def __iter__(self):
         # skip the header line

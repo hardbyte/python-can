@@ -23,8 +23,6 @@
 # Web      :  http://www.lauszus.com
 # e-mail   :  lauszus@gmail.com
 
-from __future__ import absolute_import
-
 import argparse
 import can
 import curses
@@ -36,15 +34,8 @@ import time
 import unittest
 import os
 import six
-
 from typing import Dict, Tuple, Union
-
-try:
-    # noinspection PyCompatibility
-    from unittest.mock import Mock, patch
-except ImportError:
-    # noinspection PyPackageRequirements
-    from mock import Mock, patch
+from unittest.mock import Mock, patch
 
 from can.viewer import KEY_ESC, KEY_SPACE, CanViewer, parse_args
 
@@ -337,9 +328,7 @@ class CanViewerTest(unittest.TestCase):
         parsed_data = CanViewer.unpack_data(CANOPEN_TPDO4 + 2, data_structs, raw_data)
         self.assertListEqual(parsed_data, [0xFFFFFF, 0xFFFFFFFF])
 
-        # See: http://python-future.org/compatible_idioms.html#long-integers
-        from past.builtins import long
-        self.assertTrue(all(isinstance(d, (int, long)) for d in parsed_data))
+        self.assertTrue(all(isinstance(d, int) for d in parsed_data))
 
         # Make sure that the ValueError exception is raised
         with self.assertRaises(ValueError):

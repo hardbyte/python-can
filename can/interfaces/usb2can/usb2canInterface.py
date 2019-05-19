@@ -4,8 +4,6 @@
 This interface is for Windows only, otherwise use socketCAN.
 """
 
-from __future__ import division, print_function, absolute_import
-
 import logging
 from ctypes import byref
 
@@ -111,8 +109,8 @@ class Usb2canBus(BusABC):
         connector = "{}; {}".format(device_id, baudrate)
         self.handle = self.can.open(connector, flags)
 
-        super(Usb2canBus, self).__init__(channel=channel, dll=dll, flags=flags,
-                                         bitrate=bitrate, *args, **kwargs)
+        super().__init__(channel=channel, dll=dll, flags=flags, bitrate=bitrate,
+                         *args, **kwargs)
 
     def send(self, msg, timeout=None):
         tx = message_convert_tx(msg)

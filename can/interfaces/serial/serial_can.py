@@ -7,8 +7,6 @@ The interface is a simple implementation that has been used for
 recording CAN traces.
 """
 
-from __future__ import absolute_import, division
-
 import logging
 import struct
 
@@ -60,7 +58,7 @@ class SerialBus(BusABC):
         self.ser = serial.serial_for_url(
             channel, baudrate=baudrate, timeout=timeout, rtscts=rtscts)
 
-        super(SerialBus, self).__init__(channel=channel, *args, **kwargs)
+        super().__init__(channel=channel, *args, **kwargs)
 
     def shutdown(self):
         """

@@ -4,8 +4,6 @@
 ``can`` is an object-orient Controller Area Network (CAN) interface module.
 """
 
-from __future__ import absolute_import
-
 import logging
 
 __version__ = "3.2.0"
@@ -22,11 +20,7 @@ class CanError(IOError):
     pass
 
 
-from .listener import Listener, BufferedReader, RedirectReader
-try:
-    from .listener import AsyncBufferedReader
-except ImportError:
-    pass
+from .listener import Listener, BufferedReader, RedirectReader, AsyncBufferedReader
 
 from .io import Logger, Printer, LogReader, MessageSync
 from .io import ASCWriter, ASCReader
@@ -45,7 +39,7 @@ from .interfaces import VALID_INTERFACES
 from . import interface
 from .interface import Bus, detect_available_configs
 
-from .broadcastmanager import send_periodic, \
+from .broadcastmanager import \
     CyclicSendTaskABC, \
     LimitedDurationCyclicSendTaskABC, \
     ModifiableCyclicTaskABC, \
