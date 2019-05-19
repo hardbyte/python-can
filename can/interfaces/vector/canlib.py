@@ -99,7 +99,7 @@ class VectorBus(BusABC):
                 if channel_config.serialNumber == serial:
                     if channel_config.hwChannel in self.channels:
                         channel_index.append(channel_config.channelIndex)
-            if len(channel_index) > 0:
+            if channel_index:
                 if len(channel_index) != len(self.channels):
                     LOG.info("At least one defined channel wasn't found on the specified hardware.")
                 self.channels = channel_index

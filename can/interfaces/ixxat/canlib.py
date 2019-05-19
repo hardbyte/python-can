@@ -296,7 +296,7 @@ class IXXATBus(BusABC):
         # Usually comes as a string from the config file
         channel = int(channel)
 
-        if (bitrate not in self.CHANNEL_BITRATES[0]):
+        if bitrate not in self.CHANNEL_BITRATES[0]:
             raise ValueError("Invalid bitrate {}".format(bitrate))
 
         self._device_handle = HANDLE()
@@ -317,7 +317,7 @@ class IXXATBus(BusABC):
             try:
                 _canlib.vciEnumDeviceNext(self._device_handle, ctypes.byref(self._device_info))
             except StopIteration:
-                if (UniqueHardwareId is None):
+                if UniqueHardwareId is None:
                     raise VCIDeviceNotFoundError("No IXXAT device(s) connected or device(s) in use by other process(es).")
                 else:
                     raise VCIDeviceNotFoundError("Unique HW ID {} not connected or not available.".format(UniqueHardwareId))

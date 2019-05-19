@@ -34,7 +34,7 @@ class LibraryMixin:
         :param callable errcheck:
             optional error checking function, see ctypes docs for _FuncPtr
         """
-        if (argtypes):
+        if argtypes:
             prototype = self.function_type(restype, *argtypes)
         else:
             prototype = self.function_type(restype)
@@ -46,7 +46,7 @@ class LibraryMixin:
         setattr(symbol, "_name", func_name)
         log.debug('Wrapped function "{}", result type: {}, error_check {}'.format(func_name, type(restype), errcheck))
 
-        if (errcheck):
+        if errcheck:
             symbol.errcheck = errcheck
 
         setattr(self, func_name, symbol)
@@ -57,7 +57,7 @@ class CLibrary_Win32(_LibBase, LibraryMixin):
     " Basic ctypes.WinDLL derived class + LibraryMixin "
 
     def __init__(self, library_or_path):
-        if (isinstance(library_or_path, str)):
+        if isinstance(library_or_path, str):
             super().__init__(library_or_path)
         else:
             super().__init__(library_or_path._name, library_or_path._handle)
@@ -71,7 +71,7 @@ class CLibrary_Unix(ctypes.CDLL, LibraryMixin):
     " Basic ctypes.CDLL derived class + LibraryMixin "
 
     def __init__(self, library_or_path):
-        if (isinstance(library_or_path, str)):
+        if isinstance(library_or_path, str):
             super().__init__(library_or_path)
         else:
             super().__init__(library_or_path._name, library_or_path._handle)

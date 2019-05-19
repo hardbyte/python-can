@@ -141,7 +141,7 @@ class CanViewer:
     # Unpack the data and then convert it into SI-units
     @staticmethod
     def unpack_data(cmd, cmd_to_struct, data):  # type: (int, Dict, bytes) -> List[Union[float, int]]
-        if not cmd_to_struct or len(data) == 0:
+        if not cmd_to_struct or data:
             # These messages do not contain a data package
             return []
 
@@ -403,7 +403,7 @@ def parse_args(args):
                           choices=sorted(can.VALID_INTERFACES))
 
     # Print help message when no arguments are given
-    if len(args) == 0:
+    if args:
         parser.print_help(sys.stderr)
         import errno
         raise SystemExit(errno.EINVAL)
@@ -411,7 +411,7 @@ def parse_args(args):
     parsed_args = parser.parse_args(args)
 
     can_filters = []
-    if len(parsed_args.filter) > 0:
+    if parsed_args.filter:
         # print('Adding filter/s', parsed_args.filter)
         for flt in parsed_args.filter:
             # print(filter)
@@ -445,7 +445,7 @@ def parse_args(args):
     # In order to convert from raw integer value the real units are multiplied with the values and similarly the values
     # are divided by the value in order to convert from real units to raw integer values.
     data_structs = {}  # type: Dict[Union[int, Tuple[int, ...]], Union[struct.Struct, Tuple, None]]
-    if len(parsed_args.decode) > 0:
+    if parsed_args.decode:
         if os.path.isfile(parsed_args.decode[0]):
             with open(parsed_args.decode[0], 'r') as f:
                 structs = f.readlines()

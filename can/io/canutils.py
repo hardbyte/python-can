@@ -55,10 +55,7 @@ class CanutilsLogReader(BaseIOHandler):
             if channel.isdigit():
                 channel = int(channel)
 
-            if len(canId) > 3:
-                isExtended = True
-            else:
-                isExtended = False
+            isExtended = len(canId) > 3
             canId = int(canId, 16)
 
             if data and data[0].lower() == 'r':

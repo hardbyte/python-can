@@ -361,7 +361,7 @@ class PCANBasic:
             self.__m_dllBasic = cdll.LoadLibrary('libPCBUSB.dylib')
         else:
             self.__m_dllBasic = cdll.LoadLibrary("libpcanbasic.so")
-        if self.__m_dllBasic == None:
+        if self.__m_dllBasic is None:
             logger.error("Exception: The PCAN-Basic DLL couldn't be loaded!")
 
     def Initialize(

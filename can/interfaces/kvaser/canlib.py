@@ -113,7 +113,7 @@ canINVALID_HANDLE = -1
 
 
 def __handle_is_valid(handle):
-    return (handle.value > canINVALID_HANDLE)
+    return handle.value > canINVALID_HANDLE
 
 
 def __check_bus_handle_validity(handle, function, arguments):
