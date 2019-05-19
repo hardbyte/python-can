@@ -240,7 +240,7 @@ class Message:
             raise ValueError("DLC was {} but it should be <= 8 for normal CAN frames".format(self.dlc))
 
         if self.is_remote_frame:
-            if self.data is not None and not self.data:
+            if self.data:
                 raise ValueError("remote frames may not carry any data")
         elif self.dlc != len(self.data):
             raise ValueError("the DLC and the length of the data must match up for non remote frames")
