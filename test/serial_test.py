@@ -8,7 +8,7 @@ Copyright: 2017 Boris Wenzlaff
 """
 
 import unittest
-from mock import patch
+from unittest.mock import patch
 
 import can
 from can.interfaces.serial.serial_can import SerialBus
