@@ -58,9 +58,9 @@ class CLibrary_Win32(_LibBase, LibraryMixin):
 
     def __init__(self, library_or_path):
         if (isinstance(library_or_path, str)):
-            super(CLibrary_Win32, self).__init__(library_or_path)
+            super().__init__(library_or_path)
         else:
-            super(CLibrary_Win32, self).__init__(library_or_path._name, library_or_path._handle)
+            super().__init__(library_or_path._name, library_or_path._handle)
 
     @property
     def function_type(self):
@@ -72,9 +72,9 @@ class CLibrary_Unix(ctypes.CDLL, LibraryMixin):
 
     def __init__(self, library_or_path):
         if (isinstance(library_or_path, str)):
-            super(CLibrary_Unix, self).__init__(library_or_path)
+            super().__init__(library_or_path)
         else:
-            super(CLibrary_Unix, self).__init__(library_or_path._name, library_or_path._handle)
+            super().__init__(library_or_path._name, library_or_path._handle)
 
     @property
     def function_type(self):

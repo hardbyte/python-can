@@ -140,7 +140,7 @@ class BLFReader(BaseIOHandler):
                      If this is a file-like object, is has to opened in binary
                      read mode, not text read mode.
         """
-        super(BLFReader, self).__init__(file, mode='rb')
+        super().__init__(file, mode='rb')
         data = self.file.read(FILE_HEADER_STRUCT.size)
         header = FILE_HEADER_STRUCT.unpack(data)
         if header[0] != b"LOGG":
@@ -310,7 +310,7 @@ class BLFWriter(BaseIOHandler, Listener):
                      If this is a file-like object, is has to opened in binary
                      write mode, not text write mode.
         """
-        super(BLFWriter, self).__init__(file, mode='wb')
+        super().__init__(file, mode='wb')
         self.channel = channel
         # Header will be written after log is done
         self.file.write(b"\x00" * FILE_HEADER_SIZE)
@@ -438,7 +438,7 @@ class BLFWriter(BaseIOHandler, Listener):
         """Stops logging and closes the file."""
         self._flush()
         filesize = self.file.tell()
-        super(BLFWriter, self).stop()
+        super().stop()
 
         # Write header in the beginning of the file
         header = [b"LOGG", FILE_HEADER_SIZE,
