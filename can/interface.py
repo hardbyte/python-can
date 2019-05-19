@@ -6,8 +6,6 @@ as a list of all available backends and some implemented
 CyclicSendTasks.
 """
 
-from __future__ import absolute_import, print_function
-
 import sys
 import importlib
 import logging
@@ -17,15 +15,6 @@ from .bus import BusABC
 from .broadcastmanager import CyclicSendTaskABC, MultiRateCyclicSendTaskABC
 from .util import load_config
 from .interfaces import BACKENDS
-
-if 'linux' in sys.platform:
-    # Deprecated and undocumented access to SocketCAN cyclic tasks
-    # Will be removed in version 4.0
-    from can.interfaces.socketcan import CyclicSendTask, MultiRateCyclicSendTask
-
-# Required by "detect_available_configs" for argument interpretation
-if sys.version_info.major > 2:
-    basestring = str
 
 log = logging.getLogger('can.interface')
 log_autodetect = log.getChild('detect_available_configs')
@@ -149,10 +138,9 @@ def detect_available_configs(interfaces=None):
 
     # Figure out where to search
     if interfaces is None:
-        # use an iterator over the keys so we do not have to copy it
-        interfaces = BACKENDS.keys()
-    elif isinstance(interfaces, basestring):
-        interfaces = [interfaces, ]
+        interfaces = BACKENDS
+    elif isinstance(interfaces, str):
+        interfaces = (interfaces, )
     # else it is supposed to be an iterable of strings
 
     result = []

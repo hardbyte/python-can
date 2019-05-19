@@ -16,6 +16,7 @@ class Ucan(UcanServer):
     """
     Wrapper around UcanServer to read messages with timeout using events.
     """
+
     def __init__(self):
         super(Ucan, self).__init__()
         self._msg_received_event = Event()

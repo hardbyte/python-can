@@ -11,8 +11,6 @@ TODO: This module could use https://docs.python.org/2/library/csv.html#module-cs
       of a CSV file.
 """
 
-from __future__ import absolute_import
-
 from base64 import b64encode, b64decode
 
 from can.message import Message

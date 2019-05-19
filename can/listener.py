@@ -10,20 +10,13 @@ try:
     # Python 3.7
     from queue import SimpleQueue, Empty
 except ImportError:
-    try:
-        # Python 3.0 - 3.6
-        from queue import Queue as SimpleQueue, Empty
-    except ImportError:
-        # Python 2
-        from Queue import Queue as SimpleQueue, Empty
+    # Python 3.0 - 3.6
+    from queue import Queue as SimpleQueue, Empty
 
-try:
-    import asyncio
-except ImportError:
-    asyncio = None
+import asyncio
 
 
-class Listener(object):
+class Listener(metaclass=ABCMeta):
     """The basic listener that can be called directly to handle some
     CAN message::
 
@@ -38,8 +31,6 @@ class Listener(object):
         # Important to ensure all outputs are flushed
         listener.stop()
     """
-
-    __metaclass__ = ABCMeta
 
     @abstractmethod
     def on_message_received(self, msg):
@@ -133,42 +124,41 @@ class BufferedReader(Listener):
         self.is_stopped = True
 
 
-if asyncio is not None:
-    class AsyncBufferedReader(Listener):
-        """A message buffer for use with :mod:`asyncio`.
+class AsyncBufferedReader(Listener):
+    """A message buffer for use with :mod:`asyncio`.
 
-        See :ref:`asyncio` for how to use with :class:`can.Notifier`.
+    See :ref:`asyncio` for how to use with :class:`can.Notifier`.
+    
+    Can also be used as an asynchronous iterator::
+
+        async for msg in reader:
+            print(msg)
+    """
+
+    def __init__(self, loop=None):
+        # set to "infinite" size
+        self.buffer = asyncio.Queue(loop=loop)
+
+    def on_message_received(self, msg):
+        """Append a message to the buffer.
         
-        Can also be used as an asynchronous iterator::
-
-            async for msg in reader:
-                print(msg)
+        Must only be called inside an event loop!
         """
+        self.buffer.put_nowait(msg)
 
-        def __init__(self, loop=None):
-            # set to "infinite" size
-            self.buffer = asyncio.Queue(loop=loop)
-
-        def on_message_received(self, msg):
-            """Append a message to the buffer.
-            
-            Must only be called inside an event loop!
-            """
-            self.buffer.put_nowait(msg)
-
-        def get_message(self):
-            """
-            Retrieve the latest message when awaited for::
-            
-                msg = await reader.get_message()
-
-            :rtype: can.Message
-            :return: The CAN message.
-            """
-            return self.buffer.get()
-
-        def __aiter__(self):
-            return self
+    async def get_message(self):
+        """
+        Retrieve the latest message when awaited for::
         
-        def __anext__(self):
-            return self.buffer.get()
+            msg = await reader.get_message()
+
+        :rtype: can.Message
+        :return: The CAN message.
+        """
+        return await self.buffer.get()
+
+    def __aiter__(self):
+        return self
+    
+    def __anext__(self):
+        return self.buffer.get()

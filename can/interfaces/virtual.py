@@ -11,10 +11,7 @@ and reside in the same process will receive the same messages.
 from copy import deepcopy
 import logging
 import time
-try:
-    import queue
-except ImportError:
-    import Queue as queue
+import queue
 from threading import RLock
 from random import randint
 

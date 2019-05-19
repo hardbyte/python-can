@@ -1,6 +1,6 @@
 # coding: utf-8
-import logging
 
+import logging
 import ctypes
 import ctypes.util
 import os
@@ -13,8 +13,6 @@ import errno
 log = logging.getLogger(__name__)
 log_tx = log.getChild("tx")
 log_rx = log.getChild("rx")
-
-log.debug("Loading socketcan native backend")
 
 try:
     import fcntl
@@ -29,42 +27,6 @@ from can.broadcastmanager import ModifiableCyclicTaskABC, \
 from can.interfaces.socketcan.constants import * # CAN_RAW, CAN_*_FLAG
 from can.interfaces.socketcan.utils import \
     pack_filters, find_available_interfaces, error_code_to_str
-
-
-try:
-    socket.CAN_BCM
-except AttributeError:
-    HAS_NATIVE_SUPPORT = False
-else:
-    HAS_NATIVE_SUPPORT = True
-
-
-if not HAS_NATIVE_SUPPORT:
-    def check_status(result, function, arguments):
-        if result < 0:
-            raise can.CanError(error_code_to_str(ctypes.get_errno()))
-        return result
-
-    try:
-        libc = ctypes.CDLL(ctypes.util.find_library("c"), use_errno=True)
-        libc.bind.errcheck = check_status
-        libc.connect.errcheck = check_status
-        libc.sendto.errcheck = check_status
-        libc.recvfrom.errcheck = check_status
-    except:
-        log.warning("libc is unavailable")
-        libc = None
-
-    def get_addr(sock, channel):
-        """Get sockaddr for a channel."""
-        if channel:
-            data = struct.pack("16si", channel.encode(), 0)
-            res = fcntl.ioctl(sock, SIOCGIFINDEX, data)
-            idx, = struct.unpack("16xi", res)
-        else:
-            # All channels
-            idx = 0
-        return struct.pack("HiLL", AF_CAN, idx, 0, 0)
 
 
 # Setup BCM struct
@@ -264,11 +226,7 @@ def dissect_can_frame(frame):
 def create_bcm_socket(channel):
     """create a broadcast manager socket and connect to the given interface"""
     s = socket.socket(PF_CAN, socket.SOCK_DGRAM, CAN_BCM)
-    if HAS_NATIVE_SUPPORT:
-        s.connect((channel,))
-    else:
-        addr = get_addr(s, channel)
-        libc.connect(s.fileno(), addr, len(addr))
+    s.connect((channel,))
     return s
 
 
@@ -423,12 +381,7 @@ def bind_socket(sock, channel='can0'):
         If the specified interface isn't found.
     """
     log.debug('Binding socket to channel=%s', channel)
-    if HAS_NATIVE_SUPPORT:
-        sock.bind((channel,))
-    else:
-        # For Python 2.7
-        addr = get_addr(sock, channel)
-        libc.bind(sock.fileno(), addr, len(addr))
+    sock.bind((channel,))
     log.debug('Bound socket.')
 
 
@@ -446,22 +399,8 @@ def capture_message(sock, get_channel=False):
     # Fetching the Arb ID, DLC and Data
     try:
         if get_channel:
-            if HAS_NATIVE_SUPPORT:
-                cf, addr = sock.recvfrom(CANFD_MTU)
-                channel = addr[0] if isinstance(addr, tuple) else addr
-            else:
-                data = ctypes.create_string_buffer(CANFD_MTU)
-                addr = ctypes.create_string_buffer(32)
-                addrlen = ctypes.c_int(len(addr))
-                received = libc.recvfrom(sock.fileno(), data, len(data), 0,
-                                         addr, ctypes.byref(addrlen))
-                cf = data.raw[:received]
-                # Figure out the channel name
-                family, ifindex = struct.unpack_from("Hi", addr.raw)
-                assert family == AF_CAN
-                data = struct.pack("16xi", ifindex)
-                res = fcntl.ioctl(sock, SIOCGIFNAME, data)
-                channel = ctypes.create_string_buffer(res).value.decode()
+            cf, addr = sock.recvfrom(CANFD_MTU)
+            channel = addr[0] if isinstance(addr, tuple) else addr
         else:
             cf = sock.recv(CANFD_MTU)
             channel = None
@@ -636,13 +575,7 @@ class SocketcanBus(BusABC):
         try:
             if self.channel == "" and channel:
                 # Message must be addressed to a specific channel
-                if HAS_NATIVE_SUPPORT:
-                    sent = self.socket.sendto(data, (channel, ))
-                else:
-                    addr = get_addr(self.socket, channel)
-                    sent = libc.sendto(self.socket.fileno(),
-                                       data, len(data), 0,
-                                       addr, len(addr))
+                sent = self.socket.sendto(data, (channel, ))
             else:
                 sent = self.socket.send(data)
         except socket.error as exc:
@@ -724,7 +657,7 @@ if __name__ == "__main__":
         bind_socket(receiver_socket, 'vcan0')
         print("Receiver is waiting for a message...")
         event.set()
-        print("Receiver got: ", capture_message(receiver_socket))
+        print(f"Receiver got: {capture_message(receiver_socket)}")
 
     def sender(event):
         event.wait()
