@@ -15,7 +15,8 @@ from can.util import len2dlc, dlc2len
 from .basic import *
 
 try:
-    import uptime # isn't this from a library?
+    # use the "uptime" library if available
+    import uptime
     import datetime
     boottimeEpoch = (uptime.boottime() - datetime.datetime.utcfromtimestamp(0)).total_seconds()
 except:
