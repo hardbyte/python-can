@@ -163,7 +163,7 @@ class PcanBus(BusABC):
         self.m_PcanHandle = globals()[channel]
 
         if state is BusState.ACTIVE or state is BusState.PASSIVE:
-            self._state = state
+            self.state = state
         else:
             raise ArgumentError("BusState must be Active or Passive")
 
@@ -407,8 +407,8 @@ class PcanBus(BusABC):
 
     @state.setter
     def state(self, new_state):
-
-        self._state = new_state
+        # declare here, which is called by __init__()
+        self._state = new_state # pylint: disable=attribute-defined-outside-init
 
         if new_state is BusState.ACTIVE:
             self.m_objPCANBasic.SetValue(self.m_PcanHandle, PCAN_LISTEN_ONLY, PCAN_PARAMETER_OFF)
