@@ -8,7 +8,6 @@ import logging
 import os
 import errno
 import struct
-import sys
 import subprocess
 import re
 

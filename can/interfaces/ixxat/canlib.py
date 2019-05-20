@@ -18,7 +18,7 @@ import functools
 import logging
 import sys
 
-from can import CanError, BusABC, Message
+from can import BusABC, Message
 from can.broadcastmanager import (LimitedDurationCyclicSendTaskABC,
                                   RestartableCyclicTaskABC)
 from can.ctypesutil import CLibrary, HANDLE, PHANDLE, HRESULT as ctypes_HRESULT
@@ -296,7 +296,7 @@ class IXXATBus(BusABC):
         # Usually comes as a string from the config file
         channel = int(channel)
 
-        if (bitrate not in self.CHANNEL_BITRATES[0]):
+        if bitrate not in self.CHANNEL_BITRATES[0]:
             raise ValueError("Invalid bitrate {}".format(bitrate))
 
         self._device_handle = HANDLE()
@@ -317,7 +317,7 @@ class IXXATBus(BusABC):
             try:
                 _canlib.vciEnumDeviceNext(self._device_handle, ctypes.byref(self._device_info))
             except StopIteration:
-                if (UniqueHardwareId is None):
+                if UniqueHardwareId is None:
                     raise VCIDeviceNotFoundError("No IXXAT device(s) connected or device(s) in use by other process(es).")
                 else:
                     raise VCIDeviceNotFoundError("Unique HW ID {} not connected or not available.".format(UniqueHardwareId))
@@ -383,7 +383,7 @@ class IXXATBus(BusABC):
 
         # Usually you get back 3 messages like "CAN initialized" ecc...
         # Clear the FIFO by filter them out with low timeout
-        for i in range(rxFifoSize):
+        for _ in range(rxFifoSize):
             try:
                 _canlib.canChannelReadMessage(self._channel_handle, 0, ctypes.byref(self._message))
             except (VCITimeout, VCIRxQueueEmptyError):
@@ -450,7 +450,7 @@ class IXXATBus(BusABC):
                     elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_TIMEOVR:
                         pass
                     else:
-                        log.warn("Unexpected message info type")
+                        log.warning("Unexpected message info type")
 
                 if t0 is not None:
                     remaining_ms = timeout_ms - int((_timer_function() - t0) * 1000)
@@ -465,8 +465,8 @@ class IXXATBus(BusABC):
         # so expect to see the value restarting from 0
         rx_msg = Message(
             timestamp=self._message.dwTime / self._tick_resolution,  # Relative time in s
-            is_remote_frame=True if self._message.uMsgInfo.Bits.rtr else False,
-            is_extended_id=True if self._message.uMsgInfo.Bits.ext else False,
+            is_remote_frame=bool(self._message.uMsgInfo.Bits.rtr),
+            is_extended_id=bool(self._message.uMsgInfo.Bits.ext),
             arbitration_id=self._message.dwMsgId,
             dlc=self._message.uMsgInfo.Bits.dlc,
             data=self._message.abData[:self._message.uMsgInfo.Bits.dlc],
@@ -515,16 +515,6 @@ class IXXATBus(BusABC):
         _canlib.canControlStart(self._control_handle, constants.FALSE)
         _canlib.canControlClose(self._control_handle)
         _canlib.vciDeviceClose(self._device_handle)
-
-    __set_filters_has_been_called = False
-    def set_filters(self, can_filers=None):
-        """Unsupported. See note on :class:`~can.interfaces.ixxat.IXXATBus`.
-        """
-        if self.__set_filters_has_been_called:
-            log.warn("using filters is not supported like this, see note on IXXATBus")
-        else:
-            # allow the constructor to call this without causing a warning
-            self.__set_filters_has_been_called = True
 
 
 class CyclicSendTask(LimitedDurationCyclicSendTaskABC,

@@ -6,11 +6,9 @@ Utilities and configuration file parsing.
 
 import os
 import os.path
-import sys
 import platform
 import re
 import logging
-import warnings
 from configparser import ConfigParser
 
 import can
@@ -116,7 +114,7 @@ def load_config(path=None, config=None, context=None):
     kvaser, socketcan, pcan, usb2can, ixxat, nican, virtual.
 
     .. note::
- 
+
             The key ``bustype`` is copied to ``interface`` if that one is missing
             and does never appear in the result.
 
@@ -189,7 +187,7 @@ def load_config(path=None, config=None, context=None):
     can.log.debug("can config: {}".format(config))
     return config
 
-            
+
 def set_logging_level(level_name=None):
     """Set the logging level for the "can" logger.
     Expects one of: 'critical', 'error', 'warning', 'info', 'debug', 'subdebug'
@@ -235,7 +233,7 @@ def channel2int(channel):
 
     :param channel:
         Channel string (e.g. can0, CAN1) or integer
-    
+
     :returns: Channel integer or `None` if unsuccessful
     :rtype: int
     """

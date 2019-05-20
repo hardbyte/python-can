@@ -35,7 +35,8 @@ class CanMsg(Structure):
         ("m_dwTime", DWORD,)  # Receive time stamp in ms (for transmit messages no meaning)
     ]
 
-    def __init__(self, id=0, frame_format=MsgFrameFormat.MSG_FF_STD, data=[]):
+    def __init__(self, id=0, frame_format=MsgFrameFormat.MSG_FF_STD, data=None):
+        data = [] if data is None else data
         super().__init__(id, frame_format, len(data), (BYTE * 8)(*data), 0)
 
     def __eq__(self, other):
@@ -165,7 +166,7 @@ class InitCanParam(Structure):
     @property
     def tx_buffer_entries(self): return self.m_wNrOfTxBufferEntries
 
-    @rx_buffer_entries.setter
+    @tx_buffer_entries.setter
     def tx_buffer_entries(self, tx_buffer_entries): self.m_wNrOfTxBufferEntries = tx_buffer_entries
 
 

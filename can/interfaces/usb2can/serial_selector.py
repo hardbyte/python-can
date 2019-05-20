@@ -13,12 +13,12 @@ except ImportError:
 
 
 def WMIDateStringToDate(dtmDate):
-    if (dtmDate[4] == 0):
+    if dtmDate[4] == 0:
         strDateTime = dtmDate[5] + '/'
     else:
         strDateTime = dtmDate[4] + dtmDate[5] + '/'
 
-    if (dtmDate[6] == 0):
+    if dtmDate[6] == 0:
         strDateTime = strDateTime + dtmDate[7] + '/'
     else:
         strDateTime = strDateTime + dtmDate[6] + dtmDate[7] + '/'

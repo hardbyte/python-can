@@ -83,16 +83,13 @@ class Usb2canBus(BusABC):
 
     """
 
-    def __init__(self, channel=None, dll="usb2can.dll", flags=0x00000008,
-                 bitrate=500000, *args, **kwargs):
+    def __init__(self, channel=None, dll="usb2can.dll", flags=0x00000008, *args,
+                 bitrate=500000, **kwargs):
 
         self.can = Usb2CanAbstractionLayer(dll)
 
         # get the serial number of the device
-        if "serial" in kwargs:
-            device_id = kwargs["serial"]
-        else:
-            device_id = channel
+        device_id = kwargs.get("serial", d=channel)
 
         # search for a serial number if the device_id is None or empty
         if not device_id:
@@ -107,9 +104,9 @@ class Usb2canBus(BusABC):
         self.channel_info = "USB2CAN device {}".format(device_id)
 
         connector = "{}; {}".format(device_id, baudrate)
-        self.handle = self.can.open(connector, flags)
+        self.handle = self.can.open(connector, flags_t)
 
-        super().__init__(channel=channel, dll=dll, flags=flags, bitrate=bitrate,
+        super().__init__(channel=channel, dll=dll, flags_t=flags_t, bitrate=bitrate,
                          *args, **kwargs)
 
     def send(self, msg, timeout=None):
@@ -137,7 +134,7 @@ class Usb2canBus(BusABC):
 
         if status == CANAL_ERROR_SUCCESS:
             rx = message_convert_rx(messagerx)
-        elif status == CANAL_ERROR_RCV_EMPTY or status == CANAL_ERROR_TIMEOUT:
+        elif status in (CANAL_ERROR_RCV_EMPTY, CANAL_ERROR_TIMEOUT):
             rx = None
         else:
             log.error('Canal Error %s', status)
@@ -157,7 +154,11 @@ class Usb2canBus(BusABC):
             raise CanError("could not shut down bus: status == {}".format(status))
 
     @staticmethod
-    def _detect_available_configs(serial_matcher=None):
+    def _detect_available_configs():
+        return Usb2canBus.detect_available_configs()
+
+    @staticmethod
+    def detect_available_configs(serial_matcher=None):
         """
         Uses the Windows Management Instrumentation to identify serial devices.
 
