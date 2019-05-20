@@ -234,7 +234,7 @@ class NeoViBus(BusABC):
                 continue
             self.rx_buffer.append(ics_msg)
         if errors:
-            logger.warning("%d error(s) found" % errors)
+            logger.warning("%d error(s) found", errors)
 
             for msg in ics.get_error_messages(self.dev):
                 error = ICSApiError(*msg)

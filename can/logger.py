@@ -75,7 +75,7 @@ def main():
     can.set_logging_level(logging_level_name)
 
     can_filters = []
-    if len(results.filter) > 0:
+    if results.filter:
         print(f"Adding filter(s): {results.filter}")
         for filt in results.filter:
             if ':' in filt:

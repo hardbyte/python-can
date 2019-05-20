@@ -8,7 +8,6 @@ from abc import ABCMeta, abstractmethod
 import logging
 import threading
 from time import time
-from collections import namedtuple
 from aenum import Enum, auto
 
 from .broadcastmanager import ThreadBasedCyclicSendTask
@@ -239,8 +238,8 @@ class BusABC(metaclass=ABCMeta):
         :rtype: can.broadcastmanager.CyclicSendTaskABC
         """
         if not hasattr(self, "_lock_send_periodic"):
-            # Create a send lock for this bus
-            self._lock_send_periodic = threading.Lock()
+            # Create a send lock for this bus, but not for buses which override this method
+            self._lock_send_periodic = threading.Lock()  # pylint: disable=attribute-defined-outside-init
         task = ThreadBasedCyclicSendTask(self, self._lock_send_periodic, msg, period, duration)
         return task
 
@@ -313,7 +312,6 @@ class BusABC(metaclass=ABCMeta):
         :param Iterator[dict] filters:
             See :meth:`~can.BusABC.set_filters` for details.
         """
-        pass
 
     def _matches_filters(self, msg):
         """Checks whether the given message matches at least one of the
@@ -354,14 +352,12 @@ class BusABC(metaclass=ABCMeta):
     def flush_tx_buffer(self):
         """Discard every message that may be queued in the output buffer(s).
         """
-        pass
 
     def shutdown(self):
         """
         Called to carry out any interface specific cleanup required
         in shutting down a bus.
         """
-        pass
 
     def __enter__(self):
         return self

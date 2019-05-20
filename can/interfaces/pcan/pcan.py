@@ -5,10 +5,8 @@ Enable basic CAN over a PCAN USB device.
 """
 
 import logging
-import sys
 import time
 
-import can
 from can import CanError, Message, BusABC
 from can.bus import BusState
 from can.util import len2dlc, dlc2len
@@ -19,7 +17,7 @@ try:
     import uptime
     import datetime
     boottimeEpoch = (uptime.boottime() - datetime.datetime.utcfromtimestamp(0)).total_seconds()
-except:
+except ImportError:
     boottimeEpoch = 0
 
 try:
@@ -62,7 +60,8 @@ pcan_fd_parameter_list = ['nom_brp', 'nom_tseg1', 'nom_tseg2', 'nom_sjw', 'data_
 
 class PcanBus(BusABC):
 
-    def __init__(self, channel='PCAN_USBBUS1', state=BusState.ACTIVE, bitrate=500000, *args, **kwargs):
+    def __init__(self, channel='PCAN_USBBUS1', state=BusState.ACTIVE, bitrate=500000, *args,
+                 **kwargs):
         """A PCAN USB interface to CAN.
 
         On top of the usual :class:`~can.Bus` methods provided,
@@ -175,7 +174,7 @@ class PcanBus(BusABC):
                 f_clock = "{}={}".format('f_clock_mhz', kwargs.get('f_clock_mhz', None))
             else:
                 f_clock = "{}={}".format('f_clock', kwargs.get('f_clock', None))
-            
+
             fd_parameters_values = [f_clock] + ["{}={}".format(key, kwargs.get(key, None)) for key in pcan_fd_parameter_list if kwargs.get(key, None) is not None]
 
             self.fd_bitrate = ' ,'.join(fd_parameters_values).encode("ascii")
@@ -348,7 +347,7 @@ class PcanBus(BusABC):
                 CANMsg = TPCANMsgFDMac()
             else:
                 CANMsg = TPCANMsgFD()
-            
+
             # configure the message. ID, Length of data, message type and data
             CANMsg.ID = msg.arbitration_id
             CANMsg.DLC = len2dlc(msg.dlc)
@@ -408,8 +407,8 @@ class PcanBus(BusABC):
 
     @state.setter
     def state(self, new_state):
-
-        self._state = new_state
+        # declare here, which is called by __init__()
+        self._state = new_state # pylint: disable=attribute-defined-outside-init
 
         if new_state is BusState.ACTIVE:
             self.m_objPCANBasic.SetValue(self.m_PcanHandle, PCAN_LISTEN_ONLY, PCAN_PARAMETER_OFF)
@@ -425,4 +424,3 @@ class PcanError(CanError):
     """
     A generic error on a PCAN bus.
     """
-    pass

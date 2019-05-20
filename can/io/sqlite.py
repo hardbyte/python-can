@@ -6,7 +6,6 @@ Implements an SQL database writer and reader for storing CAN messages.
 .. note:: The database schema is given in the documentation of the loggers.
 """
 
-import sys
 import time
 import threading
 import logging
@@ -143,10 +142,12 @@ class SqliteWriter(BaseIOHandler, BufferedReader):
         self.table_name = table_name
         self._db_filename = file
         self._stop_running_event = threading.Event()
+        self._conn = None
         self._writer_thread = threading.Thread(target=self._db_writer_thread)
         self._writer_thread.start()
         self.num_frames = 0
         self.last_write = time.time()
+        self._insert_template = f"INSERT INTO {self.table_name} VALUES (?, ?, ?, ?, ?, ?, ?)"
 
     def _create_db(self):
         """Creates a new databae or opens a connection to an existing one.
@@ -173,8 +174,6 @@ class SqliteWriter(BaseIOHandler, BufferedReader):
         """.format(self.table_name))
         self._conn.commit()
 
-        self._insert_template = "INSERT INTO {} VALUES (?, ?, ?, ?, ?, ?, ?)".format(self.table_name)
-
     def _db_writer_thread(self):
         self._create_db()
 
@@ -198,7 +197,7 @@ class SqliteWriter(BaseIOHandler, BufferedReader):
 
                     if time.time() - self.last_write > self.MAX_TIME_BETWEEN_WRITES or \
                        len(messages) > self.MAX_BUFFER_SIZE_BEFORE_WRITES:
-                       break
+                        break
                     else:
                         # just go on
                         msg = self.get_message(self.GET_MESSAGE_TIMEOUT)

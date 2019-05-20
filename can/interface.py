@@ -6,13 +6,10 @@ as a list of all available backends and some implemented
 CyclicSendTasks.
 """
 
-import sys
 import importlib
 import logging
 
-import can
 from .bus import BusABC
-from .broadcastmanager import CyclicSendTaskABC, MultiRateCyclicSendTaskABC
 from .util import load_config
 from .interfaces import BACKENDS
 
@@ -56,7 +53,7 @@ def _get_class_for_interface(interface):
     return bus_class
 
 
-class Bus(BusABC):
+class Bus(BusABC): # pylint disable=abstract-method
     """Bus wrapper with configuration loading.
 
     Instantiates a CAN Bus of the given ``interface``, falls back to reading a
@@ -70,7 +67,7 @@ class Bus(BusABC):
         Some might have a special meaning, see below.
 
         :param channel:
-            Set to ``None`` to let it be reloved automatically from the default
+            Set to ``None`` to let it be resloved automatically from the default
             configuration. That might fail, see below.
 
             Expected type is backend dependent.
@@ -154,7 +151,7 @@ def detect_available_configs(interfaces=None):
 
         # get available channels
         try:
-            available = list(bus_class._detect_available_configs())
+            available = list(bus_class._detect_available_configs()) # pylint: disable=protected-access
         except NotImplementedError:
             log_autodetect.debug('interface "%s" does not support detection of available configurations', interface)
         else:

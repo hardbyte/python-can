@@ -3,7 +3,6 @@
 import logging
 import ctypes
 import ctypes.util
-import os
 import select
 import socket
 import struct
@@ -25,8 +24,7 @@ from can import Message, BusABC
 from can.broadcastmanager import ModifiableCyclicTaskABC, \
     RestartableCyclicTaskABC, LimitedDurationCyclicSendTaskABC
 from can.interfaces.socketcan.constants import * # CAN_RAW, CAN_*_FLAG
-from can.interfaces.socketcan.utils import \
-    pack_filters, find_available_interfaces, error_code_to_str
+from can.interfaces.socketcan.utils import pack_filters, find_available_interfaces
 
 
 # Setup BCM struct
@@ -478,6 +476,7 @@ class SocketcanBus(BusABC):
         self.channel = channel
         self.channel_info = "socketcan channel '%s'" % channel
         self._bcm_sockets = {}
+        self._is_filtered = False
 
         # set the receive_own_messages parameter
         try:
