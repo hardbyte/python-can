@@ -9,25 +9,29 @@ logger = logging.getLogger(__name__)
 
 
 class VCI_INIT_CONFIG(Structure):
-    _fields_ = [("AccCode", c_int32),
-                ("AccMask", c_int32),
-                ("Reserved", c_int32),
-                ("Filter", c_ubyte),
-                ("Timing0", c_ubyte),
-                ("Timing1", c_ubyte),
-                ("Mode", c_ubyte)]
+    _fields_ = [
+        ("AccCode", c_int32),
+        ("AccMask", c_int32),
+        ("Reserved", c_int32),
+        ("Filter", c_ubyte),
+        ("Timing0", c_ubyte),
+        ("Timing1", c_ubyte),
+        ("Mode", c_ubyte),
+    ]
 
 
 class VCI_CAN_OBJ(Structure):
-    _fields_ = [("ID", c_uint),
-                ("TimeStamp", c_int),
-                ("TimeFlag", c_byte),
-                ("SendType", c_byte),
-                ("RemoteFlag", c_byte),
-                ("ExternFlag", c_byte),
-                ("DataLen", c_byte),
-                ("Data", c_ubyte * 8),
-                ("Reserved", c_byte * 3)]
+    _fields_ = [
+        ("ID", c_uint),
+        ("TimeStamp", c_int),
+        ("TimeFlag", c_byte),
+        ("SendType", c_byte),
+        ("RemoteFlag", c_byte),
+        ("ExternFlag", c_byte),
+        ("DataLen", c_byte),
+        ("Data", c_ubyte * 8),
+        ("Reserved", c_byte * 3),
+    ]
 
 
 VCI_USBCAN2 = 4
@@ -68,7 +72,9 @@ except OSError as e:
 
 
 class CANalystIIBus(BusABC):
-    def __init__(self, channel, device=0, baud=None, Timing0=None, Timing1=None, can_filters=None):
+    def __init__(
+        self, channel, device=0, baud=None, Timing0=None, Timing1=None, can_filters=None
+    ):
         """
 
         :param channel: channel number
@@ -86,11 +92,13 @@ class CANalystIIBus(BusABC):
             self.channels = [channel]
         else:
             # Assume comma separated string of channels
-            self.channels = [int(ch.strip()) for ch in channel.split(',')]
+            self.channels = [int(ch.strip()) for ch in channel.split(",")]
 
         self.device = device
 
-        self.channel_info = "CANalyst-II: device {}, channels {}".format(self.device, self.channels)
+        self.channel_info = "CANalyst-II: device {}, channels {}".format(
+            self.device, self.channels
+        )
 
         if baud is not None:
             try:
@@ -107,7 +115,12 @@ class CANalystIIBus(BusABC):
             logger.error("VCI_OpenDevice Error")
 
         for channel in self.channels:
-            if CANalystII.VCI_InitCAN(VCI_USBCAN2, self.device, channel, byref(self.init_config)) == STATUS_ERR:
+            if (
+                CANalystII.VCI_InitCAN(
+                    VCI_USBCAN2, self.device, channel, byref(self.init_config)
+                )
+                == STATUS_ERR
+            ):
                 logger.error("VCI_InitCAN Error")
                 self.shutdown()
                 return
@@ -125,17 +138,28 @@ class CANalystIIBus(BusABC):
         :return:
         """
         extern_flag = 1 if msg.is_extended_id else 0
-        raw_message = VCI_CAN_OBJ(msg.arbitration_id, 0, 0, 1, msg.is_remote_frame, extern_flag, msg.dlc, (c_ubyte * 8)(*msg.data), (c_byte * 3)(*[0, 0, 0]))
+        raw_message = VCI_CAN_OBJ(
+            msg.arbitration_id,
+            0,
+            0,
+            1,
+            msg.is_remote_frame,
+            extern_flag,
+            msg.dlc,
+            (c_ubyte * 8)(*msg.data),
+            (c_byte * 3)(*[0, 0, 0]),
+        )
 
         if msg.channel is not None:
             channel = msg.channel
         elif len(self.channels) == 1:
             channel = self.channels[0]
         else:
-            raise ValueError(
-                "msg.channel must be set when using multiple channels.")
+            raise ValueError("msg.channel must be set when using multiple channels.")
 
-        CANalystII.VCI_Transmit(VCI_USBCAN2, self.device, channel, byref(raw_message), 1)
+        CANalystII.VCI_Transmit(
+            VCI_USBCAN2, self.device, channel, byref(raw_message), 1
+        )
 
     def _recv_internal(self, timeout=None):
         """
@@ -147,7 +171,17 @@ class CANalystIIBus(BusABC):
 
         timeout = -1 if timeout is None else int(timeout * 1000)
 
-        if CANalystII.VCI_Receive(VCI_USBCAN2, self.device, self.channels[0], byref(raw_message), 1, timeout) <= STATUS_ERR:
+        if (
+            CANalystII.VCI_Receive(
+                VCI_USBCAN2,
+                self.device,
+                self.channels[0],
+                byref(raw_message),
+                1,
+                timeout,
+            )
+            <= STATUS_ERR
+        ):
             return None, False
         else:
             return (

@@ -17,9 +17,11 @@ def producer(id, message_count=16):
     :param int id: the id of the thread/process
     """
 
-    with can.Bus(bustype='socketcan', channel='vcan0') as bus:
+    with can.Bus(bustype="socketcan", channel="vcan0") as bus:
         for i in range(message_count):
-            msg = can.Message(arbitration_id=0x0cf02200+id, data=[id, i, 0, 1, 3, 1, 4, 1])
+            msg = can.Message(
+                arbitration_id=0x0CF02200 + id, data=[id, i, 0, 1, 3, 1, 4, 1]
+            )
             bus.send(msg)
         sleep(1.0)
 

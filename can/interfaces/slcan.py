@@ -19,8 +19,10 @@ logger = logging.getLogger(__name__)
 try:
     import serial
 except ImportError:
-    logger.warning("You won't be able to use the slcan can backend without "
-                   "the serial module installed!")
+    logger.warning(
+        "You won't be able to use the slcan can backend without "
+        "the serial module installed!"
+    )
     serial = None
 
 
@@ -31,25 +33,32 @@ class slcanBus(BusABC):
 
     # the supported bitrates and their commands
     _BITRATES = {
-        10000:      'S0',
-        20000:      'S1',
-        50000:      'S2',
-        100000:     'S3',
-        125000:     'S4',
-        250000:     'S5',
-        500000:     'S6',
-        750000:     'S7',
-        1000000:    'S8',
-        83300:      'S9'
+        10000: "S0",
+        20000: "S1",
+        50000: "S2",
+        100000: "S3",
+        125000: "S4",
+        250000: "S5",
+        500000: "S6",
+        750000: "S7",
+        1000000: "S8",
+        83300: "S9",
     }
 
     _SLEEP_AFTER_SERIAL_OPEN = 2  # in seconds
 
-    LINE_TERMINATOR = b'\r'
+    LINE_TERMINATOR = b"\r"
 
-    def __init__(self, channel, ttyBaudrate=115200, bitrate=None,
-                 btr=None, sleep_after_open=_SLEEP_AFTER_SERIAL_OPEN,
-                 rtscts=False, **kwargs):
+    def __init__(
+        self,
+        channel,
+        ttyBaudrate=115200,
+        bitrate=None,
+        btr=None,
+        sleep_after_open=_SLEEP_AFTER_SERIAL_OPEN,
+        rtscts=False,
+        **kwargs
+    ):
         """
         :raise ValueError: if both *bitrate* and *btr* are set
 
@@ -73,11 +82,12 @@ class slcanBus(BusABC):
         if not channel:  # if None or empty
             raise TypeError("Must specify a serial port.")
 
-        if '@' in channel:
-            (channel, ttyBaudrate) = channel.split('@')
+        if "@" in channel:
+            (channel, ttyBaudrate) = channel.split("@")
 
         self.serialPortOrig = serial.serial_for_url(
-            channel, baudrate=ttyBaudrate, rtscts=rtscts)
+            channel, baudrate=ttyBaudrate, rtscts=rtscts
+        )
 
         self._buffer = bytearray()
 
@@ -91,7 +101,11 @@ class slcanBus(BusABC):
             if bitrate in self._BITRATES:
                 self.write(self._BITRATES[bitrate])
             else:
-                raise ValueError("Invalid bitrate, choose one of " + (', '.join(self._BITRATES)) + '.')
+                raise ValueError(
+                    "Invalid bitrate, choose one of "
+                    + (", ".join(self._BITRATES))
+                    + "."
+                )
 
         if btr is not None:
             self.close()
@@ -99,18 +113,19 @@ class slcanBus(BusABC):
 
         self.open()
 
-        super().__init__(channel, ttyBaudrate=115200,
-                                       bitrate=None, rtscts=False, **kwargs)
+        super().__init__(
+            channel, ttyBaudrate=115200, bitrate=None, rtscts=False, **kwargs
+        )
 
     def write(self, string):
         self.serialPortOrig.write(string.encode() + self.LINE_TERMINATOR)
         self.serialPortOrig.flush()
 
     def open(self):
-        self.write('O')
+        self.write("O")
 
     def close(self):
-        self.write('C')
+        self.write("C")
 
     def _recv_internal(self, timeout):
         if timeout != self.serialPortOrig.timeout:
@@ -122,8 +137,9 @@ class slcanBus(BusABC):
         frame = []
 
         # First read what is already in the receive buffer
-        while (self.serialPortOrig.in_waiting and
-               self.LINE_TERMINATOR not in self._buffer):
+        while (
+            self.serialPortOrig.in_waiting and self.LINE_TERMINATOR not in self._buffer
+        ):
             self._buffer += self.serialPortOrig.read(1)
 
         # If we still don't have a complete message, do a blocking read
@@ -138,25 +154,25 @@ class slcanBus(BusABC):
         del self._buffer[:]
         if not readStr:
             pass
-        elif readStr[0] == 'T':
+        elif readStr[0] == "T":
             # extended frame
             canId = int(readStr[1:9], 16)
             dlc = int(readStr[9])
             extended = True
             for i in range(0, dlc):
-                frame.append(int(readStr[10 + i * 2:12 + i * 2], 16))
-        elif readStr[0] == 't':
+                frame.append(int(readStr[10 + i * 2 : 12 + i * 2], 16))
+        elif readStr[0] == "t":
             # normal frame
             canId = int(readStr[1:4], 16)
             dlc = int(readStr[4])
             for i in range(0, dlc):
-                frame.append(int(readStr[5 + i * 2:7 + i * 2], 16))
-        elif readStr[0] == 'r':
+                frame.append(int(readStr[5 + i * 2 : 7 + i * 2], 16))
+        elif readStr[0] == "r":
             # remote frame
             canId = int(readStr[1:4], 16)
             dlc = int(readStr[4])
             remote = True
-        elif readStr[0] == 'R':
+        elif readStr[0] == "R":
             # remote extended frame
             canId = int(readStr[1:9], 16)
             dlc = int(readStr[9])
@@ -164,12 +180,14 @@ class slcanBus(BusABC):
             remote = True
 
         if canId is not None:
-            msg = Message(arbitration_id=canId,
-                            is_extended_id=extended,
-                            timestamp=time.time(),   # Better than nothing...
-                            is_remote_frame=remote,
-                            dlc=dlc,
-                            data=frame)
+            msg = Message(
+                arbitration_id=canId,
+                is_extended_id=extended,
+                timestamp=time.time(),  # Better than nothing...
+                is_remote_frame=remote,
+                dlc=dlc,
+                data=frame,
+            )
             return msg, False
         return None, False
 
@@ -196,7 +214,7 @@ class slcanBus(BusABC):
         self.serialPortOrig.close()
 
     def fileno(self):
-        if hasattr(self.serialPortOrig, 'fileno'):
+        if hasattr(self.serialPortOrig, "fileno"):
             return self.serialPortOrig.fileno()
         # Return an invalid file descriptor on Windows
         return -1

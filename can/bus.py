@@ -31,7 +31,7 @@ class BusABC(metaclass=ABCMeta):
     """
 
     #: a string describing the underlying bus and/or channel
-    channel_info = 'unknown'
+    channel_info = "unknown"
 
     #: Log level for received messages
     RECV_LOGGING_LEVEL = 9
@@ -81,7 +81,7 @@ class BusABC(metaclass=ABCMeta):
 
             # return it, if it matches
             if msg and (already_filtered or self._matches_filters(msg)):
-                LOG.log(self.RECV_LOGGING_LEVEL, 'Received: %s', msg)
+                LOG.log(self.RECV_LOGGING_LEVEL, "Received: %s", msg)
                 return msg
 
             # if not, and timeout is None, try indefinitely
@@ -213,6 +213,7 @@ class BusABC(metaclass=ABCMeta):
                 except ValueError:
                     pass
             original_stop_method()
+
         task.stop = wrapped_stop_method
 
         if store_task:
@@ -239,8 +240,12 @@ class BusABC(metaclass=ABCMeta):
         """
         if not hasattr(self, "_lock_send_periodic"):
             # Create a send lock for this bus, but not for buses which override this method
-            self._lock_send_periodic = threading.Lock()  # pylint: disable=attribute-defined-outside-init
-        task = ThreadBasedCyclicSendTask(self, self._lock_send_periodic, msg, period, duration)
+            self._lock_send_periodic = (
+                threading.Lock()
+            )  # pylint: disable=attribute-defined-outside-init
+        task = ThreadBasedCyclicSendTask(
+            self, self._lock_send_periodic, msg, period, duration
+        )
         return task
 
     def stop_all_periodic_tasks(self, remove_tasks=True):
@@ -332,13 +337,12 @@ class BusABC(metaclass=ABCMeta):
 
         for _filter in self._filters:
             # check if this filter even applies to the message
-            if 'extended' in _filter and \
-                    _filter['extended'] != msg.is_extended_id:
+            if "extended" in _filter and _filter["extended"] != msg.is_extended_id:
                 continue
 
             # then check for the mask and id
-            can_id = _filter['can_id']
-            can_mask = _filter['can_mask']
+            can_id = _filter["can_id"]
+            can_mask = _filter["can_mask"]
 
             # basically, we compute
             # `msg.arbitration_id & can_mask == can_id & can_mask`

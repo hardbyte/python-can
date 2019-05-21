@@ -15,6 +15,7 @@ class BusStatistics(ctypes.Structure):
      .. seealso:: :meth:`KvaserBus.get_stats`
 
     """
+
     _fields_ = [
         ("m_stdData", ctypes.c_ulong),
         ("m_stdRemote", ctypes.c_ulong),
@@ -22,12 +23,14 @@ class BusStatistics(ctypes.Structure):
         ("m_extRemote", ctypes.c_ulong),
         ("m_errFrame", ctypes.c_ulong),
         ("m_busLoad", ctypes.c_ulong),
-        ("m_overruns", ctypes.c_ulong)
+        ("m_overruns", ctypes.c_ulong),
     ]
 
     def __str__(self):
-        return ("std_data: {}, std_remote: {}, ext_data: {}, ext_remote: {}, "
-                "err_frame: {}, bus_load: {:.1f}%, overruns: {}").format(
+        return (
+            "std_data: {}, std_remote: {}, ext_data: {}, ext_remote: {}, "
+            "err_frame: {}, bus_load: {:.1f}%, overruns: {}"
+        ).format(
             self.std_data,
             self.std_remote,
             self.ext_data,
