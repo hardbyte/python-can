@@ -15,23 +15,14 @@ from .data.example_data import TEST_ALL_MESSAGES
 EXAMPLE_MSG = Message(arbitration_id=0x123, is_extended_id=True)
 HIGHEST_MSG = Message(arbitration_id=0x1FFFFFFF, is_extended_id=True)
 
-MATCH_EXAMPLE = [{
-    "can_id": 0x123,
-    "can_mask": 0x1FFFFFFF,
-    "extended": True
-}]
+MATCH_EXAMPLE = [{"can_id": 0x123, "can_mask": 0x1FFFFFFF, "extended": True}]
 
-MATCH_ONLY_HIGHEST = [{
-    "can_id": 0xFFFFFFFF,
-    "can_mask": 0x1FFFFFFF,
-    "extended": True
-}]
+MATCH_ONLY_HIGHEST = [{"can_id": 0xFFFFFFFF, "can_mask": 0x1FFFFFFF, "extended": True}]
 
 
 class TestMessageFiltering(unittest.TestCase):
-
     def setUp(self):
-        self.bus = Bus(bustype='virtual', channel='testy')
+        self.bus = Bus(bustype="virtual", channel="testy")
 
     def tearDown(self):
         self.bus.shutdown()
@@ -58,5 +49,5 @@ class TestMessageFiltering(unittest.TestCase):
         self.assertTrue(self.bus._matches_filters(HIGHEST_MSG))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

@@ -8,9 +8,9 @@ import ctypes
 import logging
 import sys
 
-log = logging.getLogger('can.ctypesutil')
+log = logging.getLogger("can.ctypesutil")
 
-__all__ = ['CLibrary', 'HANDLE', 'PHANDLE', 'HRESULT']
+__all__ = ["CLibrary", "HANDLE", "PHANDLE", "HRESULT"]
 
 try:
     _LibBase = ctypes.WinDLL
@@ -40,10 +40,16 @@ class LibraryMixin:
         try:
             symbol = prototype((func_name, self))
         except AttributeError:
-            raise ImportError("Could not map function '{}' from library {}".format(func_name, self._name))
+            raise ImportError(
+                "Could not map function '{}' from library {}".format(
+                    func_name, self._name
+                )
+            )
 
         setattr(symbol, "_name", func_name)
-        log.debug(f'Wrapped function "{func_name}", result type: {type(restype)}, error_check {errcheck}')
+        log.debug(
+            f'Wrapped function "{func_name}", result type: {type(restype)}, error_check {errcheck}'
+        )
 
         if errcheck:
             symbol.errcheck = errcheck
@@ -94,5 +100,6 @@ else:
 # Common win32 definitions
 class HANDLE(ctypes.c_void_p):
     pass
+
 
 PHANDLE = ctypes.POINTER(HANDLE)

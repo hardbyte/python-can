@@ -27,30 +27,35 @@ class Back2BackTestCase(unittest.TestCase):
     BITRATE = 500000
     TIMEOUT = 0.1
 
-    INTERFACE_1 = 'virtual'
-    CHANNEL_1 = 'virtual_channel_0'
-    INTERFACE_2 = 'virtual'
-    CHANNEL_2 = 'virtual_channel_0'
+    INTERFACE_1 = "virtual"
+    CHANNEL_1 = "virtual_channel_0"
+    INTERFACE_2 = "virtual"
+    CHANNEL_2 = "virtual_channel_0"
 
     def setUp(self):
-        self.bus1 = can.Bus(channel=self.CHANNEL_1,
-                            bustype=self.INTERFACE_1,
-                            bitrate=self.BITRATE,
-                            fd=TEST_CAN_FD,
-                            single_handle=True)
-        self.bus2 = can.Bus(channel=self.CHANNEL_2,
-                            bustype=self.INTERFACE_2,
-                            bitrate=self.BITRATE,
-                            fd=TEST_CAN_FD,
-                            single_handle=True)
+        self.bus1 = can.Bus(
+            channel=self.CHANNEL_1,
+            bustype=self.INTERFACE_1,
+            bitrate=self.BITRATE,
+            fd=TEST_CAN_FD,
+            single_handle=True,
+        )
+        self.bus2 = can.Bus(
+            channel=self.CHANNEL_2,
+            bustype=self.INTERFACE_2,
+            bitrate=self.BITRATE,
+            fd=TEST_CAN_FD,
+            single_handle=True,
+        )
 
     def tearDown(self):
         self.bus1.shutdown()
         self.bus2.shutdown()
 
     def _check_received_message(self, recv_msg, sent_msg):
-        self.assertIsNotNone(recv_msg,
-                             "No message was received on %s" % self.INTERFACE_2)
+        self.assertIsNotNone(
+            recv_msg, "No message was received on %s" % self.INTERFACE_2
+        )
         self.assertEqual(recv_msg.arbitration_id, sent_msg.arbitration_id)
         self.assertEqual(recv_msg.is_extended_id, sent_msg.is_extended_id)
         self.assertEqual(recv_msg.is_remote_frame, sent_msg.is_remote_frame)
@@ -79,7 +84,10 @@ class Back2BackTestCase(unittest.TestCase):
     def test_no_message(self):
         self.assertIsNone(self.bus1.recv(0.1))
 
-    @unittest.skipIf(IS_CI, "the timing sensitive behaviour cannot be reproduced reliably on a CI server")
+    @unittest.skipIf(
+        IS_CI,
+        "the timing sensitive behaviour cannot be reproduced reliably on a CI server",
+    )
     def test_timestamp(self):
         self.bus2.send(can.Message())
         recv_msg1 = self.bus1.recv(self.TIMEOUT)
@@ -87,98 +95,102 @@ class Back2BackTestCase(unittest.TestCase):
         self.bus2.send(can.Message())
         recv_msg2 = self.bus1.recv(self.TIMEOUT)
         delta_time = recv_msg2.timestamp - recv_msg1.timestamp
-        self.assertTrue(1.75 <= delta_time <= 2.25,
-                        'Time difference should have been 2s +/- 250ms.'
-                        'But measured {}'.format(delta_time))
+        self.assertTrue(
+            1.75 <= delta_time <= 2.25,
+            "Time difference should have been 2s +/- 250ms."
+            "But measured {}".format(delta_time),
+        )
 
     def test_standard_message(self):
-        msg = can.Message(is_extended_id=False,
-                          arbitration_id=0x100,
-                          data=[1, 2, 3, 4, 5, 6, 7, 8])
+        msg = can.Message(
+            is_extended_id=False, arbitration_id=0x100, data=[1, 2, 3, 4, 5, 6, 7, 8]
+        )
         self._send_and_receive(msg)
 
     def test_extended_message(self):
-        msg = can.Message(is_extended_id=True,
-                          arbitration_id=0x123456,
-                          data=[10, 11, 12, 13, 14, 15, 16, 17])
+        msg = can.Message(
+            is_extended_id=True,
+            arbitration_id=0x123456,
+            data=[10, 11, 12, 13, 14, 15, 16, 17],
+        )
         self._send_and_receive(msg)
 
     def test_remote_message(self):
-        msg = can.Message(is_extended_id=False,
-                          arbitration_id=0x200,
-                          is_remote_frame=True,
-                          dlc=4)
+        msg = can.Message(
+            is_extended_id=False, arbitration_id=0x200, is_remote_frame=True, dlc=4
+        )
         self._send_and_receive(msg)
 
     def test_dlc_less_than_eight(self):
-        msg = can.Message(is_extended_id=False,
-                          arbitration_id=0x300,
-                          data=[4, 5, 6])
+        msg = can.Message(is_extended_id=False, arbitration_id=0x300, data=[4, 5, 6])
         self._send_and_receive(msg)
 
     @unittest.skipUnless(TEST_CAN_FD, "Don't test CAN-FD")
     def test_fd_message(self):
-        msg = can.Message(is_fd=True,
-                          is_extended_id=True,
-                          arbitration_id=0x56789,
-                          data=[0xff] * 64)
+        msg = can.Message(
+            is_fd=True, is_extended_id=True, arbitration_id=0x56789, data=[0xFF] * 64
+        )
         self._send_and_receive(msg)
 
     @unittest.skipUnless(TEST_CAN_FD, "Don't test CAN-FD")
     def test_fd_message_with_brs(self):
-        msg = can.Message(is_fd=True,
-                          bitrate_switch=True,
-                          is_extended_id=True,
-                          arbitration_id=0x98765,
-                          data=[0xff] * 48)
+        msg = can.Message(
+            is_fd=True,
+            bitrate_switch=True,
+            is_extended_id=True,
+            arbitration_id=0x98765,
+            data=[0xFF] * 48,
+        )
         self._send_and_receive(msg)
 
 
 @unittest.skipUnless(TEST_INTERFACE_SOCKETCAN, "skip testing of socketcan")
 class BasicTestSocketCan(Back2BackTestCase):
 
-    INTERFACE_1 = 'socketcan'
-    CHANNEL_1 = 'vcan0'
-    INTERFACE_2 = 'socketcan'
-    CHANNEL_2 = 'vcan0'
+    INTERFACE_1 = "socketcan"
+    CHANNEL_1 = "vcan0"
+    INTERFACE_2 = "socketcan"
+    CHANNEL_2 = "vcan0"
 
 
 @unittest.skipUnless(TEST_INTERFACE_SOCKETCAN, "skip testing of socketcan")
 class SocketCanBroadcastChannel(unittest.TestCase):
-
     def setUp(self):
-        self.broadcast_bus = can.Bus(channel='', bustype='socketcan')
-        self.regular_bus = can.Bus(channel='vcan0', bustype='socketcan')
+        self.broadcast_bus = can.Bus(channel="", bustype="socketcan")
+        self.regular_bus = can.Bus(channel="vcan0", bustype="socketcan")
 
     def tearDown(self):
         self.broadcast_bus.shutdown()
         self.regular_bus.shutdown()
 
     def test_broadcast_channel(self):
-        self.broadcast_bus.send(can.Message(channel='vcan0'))
+        self.broadcast_bus.send(can.Message(channel="vcan0"))
         recv_msg = self.regular_bus.recv(1)
         self.assertIsNotNone(recv_msg)
-        self.assertEqual(recv_msg.channel, 'vcan0')
+        self.assertEqual(recv_msg.channel, "vcan0")
 
         self.regular_bus.send(can.Message())
         recv_msg = self.broadcast_bus.recv(1)
         self.assertIsNotNone(recv_msg)
-        self.assertEqual(recv_msg.channel, 'vcan0')
+        self.assertEqual(recv_msg.channel, "vcan0")
 
 
 class TestThreadSafeBus(Back2BackTestCase):
-
     def setUp(self):
-        self.bus1 = can.ThreadSafeBus(channel=self.CHANNEL_1,
-                                      bustype=self.INTERFACE_1,
-                                      bitrate=self.BITRATE,
-                                      fd=TEST_CAN_FD,
-                                      single_handle=True)
-        self.bus2 = can.ThreadSafeBus(channel=self.CHANNEL_2,
-                                      bustype=self.INTERFACE_2,
-                                      bitrate=self.BITRATE,
-                                      fd=TEST_CAN_FD,
-                                      single_handle=True)
+        self.bus1 = can.ThreadSafeBus(
+            channel=self.CHANNEL_1,
+            bustype=self.INTERFACE_1,
+            bitrate=self.BITRATE,
+            fd=TEST_CAN_FD,
+            single_handle=True,
+        )
+        self.bus2 = can.ThreadSafeBus(
+            channel=self.CHANNEL_2,
+            bustype=self.INTERFACE_2,
+            bitrate=self.BITRATE,
+            fd=TEST_CAN_FD,
+            single_handle=True,
+        )
 
     @pytest.mark.timeout(5.0)
     def test_concurrent_writes(self):
@@ -190,7 +202,7 @@ class TestThreadSafeBus(Back2BackTestCase):
             channel=self.CHANNEL_1,
             is_extended_id=True,
             timestamp=121334.365,
-            data=[254, 255, 1, 2]
+            data=[254, 255, 1, 2],
         )
         workload = 1000 * [message]
 
@@ -221,19 +233,19 @@ class TestThreadSafeBus(Back2BackTestCase):
             channel=self.CHANNEL_1,
             is_extended_id=True,
             timestamp=121334.365,
-            data=[254, 255, 1, 2]
+            data=[254, 255, 1, 2],
         )
         excluded_message = can.Message(
             arbitration_id=0x02,
             channel=self.CHANNEL_1,
             is_extended_id=True,
             timestamp=121334.300,
-            data=[1, 2, 3]
+            data=[1, 2, 3],
         )
         workload = 500 * [included_message] + 500 * [excluded_message]
         random.shuffle(workload)
 
-        self.bus2.set_filters([{"can_id": 0x123, "can_mask": 0xff, "extended": True}])
+        self.bus2.set_filters([{"can_id": 0x123, "can_mask": 0xFF, "extended": True}])
 
         def sender(msg):
             self.bus1.send(msg)
@@ -256,5 +268,5 @@ class TestThreadSafeBus(Back2BackTestCase):
         receiver_pool.join()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

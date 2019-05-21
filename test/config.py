@@ -12,8 +12,8 @@ import platform
 from os import environ as environment
 
 
-def env(name): # type: bool
-    return environment.get(name, '').lower() in ("yes", "true", "t", "1")
+def env(name):  # type: bool
+    return environment.get(name, "").lower() in ("yes", "true", "t", "1")
 
 
 # ############################## Continuos integration
@@ -22,13 +22,15 @@ def env(name): # type: bool
 #   - https://docs.travis-ci.com/user/environment-variables/
 #   - https://www.appveyor.com/docs/environment-variables/
 
-IS_TRAVIS = env('TRAVIS')
-IS_APPVEYOR = env('APPVEYOR')
+IS_TRAVIS = env("TRAVIS")
+IS_APPVEYOR = env("APPVEYOR")
 
-IS_CI = IS_TRAVIS or IS_APPVEYOR or env('CI') or env('CONTINUOUS_INTEGRATION')
+IS_CI = IS_TRAVIS or IS_APPVEYOR or env("CI") or env("CONTINUOUS_INTEGRATION")
 
 if IS_APPVEYOR and IS_TRAVIS:
-    raise EnvironmentError("IS_APPVEYOR and IS_TRAVIS cannot be both True at the same time")
+    raise EnvironmentError(
+        "IS_APPVEYOR and IS_TRAVIS cannot be both True at the same time"
+    )
 
 
 # ############################## Platforms
@@ -41,9 +43,11 @@ IS_UNIX = IS_LINUX or IS_OSX
 
 if (IS_WINDOWS and IS_LINUX) or (IS_LINUX and IS_OSX) or (IS_WINDOWS and IS_OSX):
     raise EnvironmentError(
-        "only one of IS_WINDOWS ({}), IS_LINUX ({}) and IS_OSX ({}) ".format(IS_WINDOWS, IS_LINUX, IS_OSX) +
-        "can be True at the same time " +
-        '(platform.system() == "{}")'.format(platform.system())
+        "only one of IS_WINDOWS ({}), IS_LINUX ({}) and IS_OSX ({}) ".format(
+            IS_WINDOWS, IS_LINUX, IS_OSX
+        )
+        + "can be True at the same time "
+        + '(platform.system() == "{}")'.format(platform.system())
     )
 
 
@@ -51,4 +55,4 @@ if (IS_WINDOWS and IS_LINUX) or (IS_LINUX and IS_OSX) or (IS_WINDOWS and IS_OSX)
 
 TEST_CAN_FD = True
 
-TEST_INTERFACE_SOCKETCAN = IS_LINUX and env('TEST_SOCKETCAN')
+TEST_INTERFACE_SOCKETCAN = IS_LINUX and env("TEST_SOCKETCAN")
