@@ -14,20 +14,12 @@ TODO: correctly set preserves_channel and adds_default_channel
 TODO: implement CAN FD support testing
 """
 
-from __future__ import print_function, absolute_import, division
-
 import logging
 import unittest
 import tempfile
 import os
 from abc import abstractmethod, ABCMeta
-
-try:
-    # Python 3
-    from itertools import zip_longest
-except ImportError:
-    # Python 2
-    from itertools import izip_longest as zip_longest
+from itertools import zip_longest
 
 import can
 
@@ -39,7 +31,7 @@ from .message_helper import ComparingMessagesTestCase
 logging.basicConfig(level=logging.DEBUG)
 
 
-class ReaderWriterTest(unittest.TestCase, ComparingMessagesTestCase):
+class ReaderWriterTest(unittest.TestCase, ComparingMessagesTestCase, metaclass=ABCMeta):
     """Tests a pair of writer and reader by writing all data first and
     then reading all data and checking if they could be reconstructed
     correctly. Optionally writes some comments as well.
@@ -49,8 +41,6 @@ class ReaderWriterTest(unittest.TestCase, ComparingMessagesTestCase):
         case itself by a *del* statement in at the end of the file.
         (Source: `*Wojciech B.* on StackOverlfow <https://stackoverflow.com/a/22836015/3753684>`_)
     """
-
-    __metaclass__ = ABCMeta
 
     def __init__(self, *args, **kwargs):
         unittest.TestCase.__init__(self, *args, **kwargs)
@@ -294,15 +284,6 @@ class ReaderWriterTest(unittest.TestCase, ComparingMessagesTestCase):
             io_handler.file.flush()
             os.fsync(io_handler.file.fileno())
 
-    def assertMessagesEqual(self, messages_1, messages_2):
-        """
-        Checks the order and content of the individual messages.
-        """
-        self.assertEqual(len(messages_1), len(messages_2))
-
-        for message_1, message_2 in zip(messages_1, messages_2):
-            self.assertMessageEqual(message_1, message_2)
-
     def assertIncludesComments(self, filename):
         """
         Ensures that all comments are literally contained in the given file.
@@ -322,7 +303,7 @@ class TestAscFileFormat(ReaderWriterTest):
     """Tests can.ASCWriter and can.ASCReader"""
 
     def _setup_instance(self):
-        super(TestAscFileFormat, self)._setup_instance_helper(
+        super()._setup_instance_helper(
             can.ASCWriter, can.ASCReader,
             check_fd=False,
             check_comments=True,
@@ -334,7 +315,7 @@ class TestBlfFileFormat(ReaderWriterTest):
     """Tests can.BLFWriter and can.BLFReader"""
 
     def _setup_instance(self):
-        super(TestBlfFileFormat, self)._setup_instance_helper(
+        super()._setup_instance_helper(
             can.BLFWriter, can.BLFReader,
             binary_file=True,
             check_fd=False,
@@ -368,7 +349,7 @@ class TestCanutilsFileFormat(ReaderWriterTest):
     """Tests can.CanutilsLogWriter and can.CanutilsLogReader"""
 
     def _setup_instance(self):
-        super(TestCanutilsFileFormat, self)._setup_instance_helper(
+        super()._setup_instance_helper(
             can.CanutilsLogWriter, can.CanutilsLogReader,
             check_fd=False,
             test_append=True, check_comments=False,
@@ -380,7 +361,7 @@ class TestCsvFileFormat(ReaderWriterTest):
     """Tests can.ASCWriter and can.ASCReader"""
 
     def _setup_instance(self):
-        super(TestCsvFileFormat, self)._setup_instance_helper(
+        super()._setup_instance_helper(
             can.CSVWriter, can.CSVReader,
             check_fd=False,
             test_append=True, check_comments=False,
@@ -392,7 +373,7 @@ class TestSqliteDatabaseFormat(ReaderWriterTest):
     """Tests can.SqliteWriter and can.SqliteReader"""
 
     def _setup_instance(self):
-        super(TestSqliteDatabaseFormat, self)._setup_instance_helper(
+        super()._setup_instance_helper(
             can.SqliteWriter, can.SqliteReader,
             check_fd=False,
             test_append=True, check_comments=False,

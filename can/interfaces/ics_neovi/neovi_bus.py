@@ -45,7 +45,7 @@ class ICSApiError(CanError):
             self, error_number, description_short, description_long,
             severity, restart_needed
     ):
-        super(ICSApiError, self).__init__(description_short)
+        super().__init__(description_short)
         self.error_number = error_number
         self.description_short = description_short
         self.description_long = description_long
@@ -97,8 +97,7 @@ class NeoViBus(BusABC):
         if ics is None:
             raise ImportError('Please install python-ics')
 
-        super(NeoViBus, self).__init__(
-            channel=channel, can_filters=can_filters, **kwargs)
+        super().__init__(channel=channel, can_filters=can_filters, **kwargs)
 
         logger.info("CAN Filters: {}".format(can_filters))
         logger.info("Got configuration of: {}".format(kwargs))
@@ -174,7 +173,7 @@ class NeoViBus(BusABC):
         return str(device.SerialNumber)
 
     def shutdown(self):
-        super(NeoViBus, self).shutdown()
+        super().shutdown()
         ics.close_device(self.dev)
 
     @staticmethod
@@ -235,7 +234,7 @@ class NeoViBus(BusABC):
                 continue
             self.rx_buffer.append(ics_msg)
         if errors:
-            logger.warning("%d error(s) found" % errors)
+            logger.warning("%d error(s) found", errors)
 
             for msg in ics.get_error_messages(self.dev):
                 error = ICSApiError(*msg)

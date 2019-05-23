@@ -4,8 +4,6 @@
 See the :class:`Logger` class.
 """
 
-from __future__ import absolute_import
-
 import logging
 
 from ..listener import Listener
@@ -20,7 +18,7 @@ from .printer import Printer
 log = logging.getLogger("can.io.logger")
 
 
-class Logger(BaseIOHandler, Listener):
+class Logger(BaseIOHandler, Listener): # pylint: disable=abstract-method
     """
     Logs CAN messages to a file.
 
@@ -61,5 +59,5 @@ class Logger(BaseIOHandler, Listener):
                 return CanutilsLogWriter(filename, *args, **kwargs)
 
         # else:
-        log.info('unknown file type "%s", falling pack to can.Printer', filename)
+        log.warning('unknown file type "%s", falling pack to can.Printer', filename)
         return Printer(filename, *args, **kwargs)

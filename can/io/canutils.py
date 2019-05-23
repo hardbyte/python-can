@@ -6,10 +6,6 @@ It is is compatible with "candump -L" from the canutils program
 (https://github.com/linux-can/can-utils).
 """
 
-from __future__ import absolute_import, division
-
-import time
-import datetime
 import logging
 
 from can.message import Message
@@ -41,7 +37,7 @@ class CanutilsLogReader(BaseIOHandler):
                      If this is a file-like object, is has to opened in text
                      read mode, not binary read mode.
         """
-        super(CanutilsLogReader, self).__init__(file, mode='r')
+        super().__init__(file, mode='r')
 
     def __iter__(self):
         for line in self.file:
@@ -57,10 +53,7 @@ class CanutilsLogReader(BaseIOHandler):
             if channel.isdigit():
                 channel = int(channel)
 
-            if len(canId) > 3:
-                isExtended = True
-            else:
-                isExtended = False
+            isExtended = len(canId) > 3
             canId = int(canId, 16)
 
             if data and data[0].lower() == 'r':
@@ -108,7 +101,7 @@ class CanutilsLogWriter(BaseIOHandler, Listener):
                             the file, else the file is truncated
         """
         mode = 'a' if append else 'w'
-        super(CanutilsLogWriter, self).__init__(file, mode=mode)
+        super().__init__(file, mode=mode)
 
         self.channel = channel
         self.last_timestamp = None

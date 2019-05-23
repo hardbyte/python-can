@@ -14,8 +14,6 @@ of uncompressed data each. This data contains the actual CAN messages and other
 objects types.
 """
 
-from __future__ import absolute_import
-
 import struct
 import zlib
 import datetime
@@ -30,7 +28,7 @@ from .generic import BaseIOHandler
 
 class BLFParseError(Exception):
     """BLF file could not be parsed correctly."""
-    pass
+
 
 LOG = logging.getLogger(__name__)
 
@@ -66,6 +64,13 @@ CAN_MSG_STRUCT = struct.Struct("<HBBL8s")
 # valid data bytes, data
 CAN_FD_MSG_STRUCT = struct.Struct("<HBBLLBBB5x64s")
 
+# channel, dlc, valid payload length of data, tx count, arbitration id,
+# frame length, flags, bit rate used in arbitration phase,
+# bit rate used in data phase, time offset of brs field,
+# time offset of crc delimiter field, bit count, direction,
+# offset if extDataOffset is used, crc
+CAN_FD_MSG_64_STRUCT = struct.Struct("<BBBBLLLLLLLHBBL")
+
 # channel, length, flags, ecc, position, dlc, frame length, id, flags ext, data
 CAN_ERROR_EXT_STRUCT = struct.Struct("<HHLBBBxLLH2x8s")
 
@@ -81,6 +86,7 @@ CAN_ERROR_EXT = 73
 CAN_MESSAGE2 = 86
 GLOBAL_MARKER = 96
 CAN_FD_MESSAGE = 100
+CAN_FD_MESSAGE_64 = 101
 
 NO_COMPRESSION = 0
 ZLIB_DEFLATE = 2
@@ -90,6 +96,12 @@ REMOTE_FLAG = 0x80
 EDL = 0x1
 BRS = 0x2
 ESI = 0x4
+
+# CAN FD 64 Flags
+REMOTE_FLAG_64 = 0x0010
+EDL_64 = 0x1000
+BRS_64 = 0x2000
+ESI_64 = 0x4000
 
 TIME_TEN_MICS = 0x00000001
 TIME_ONE_NANS = 0x00000002
@@ -128,7 +140,7 @@ class BLFReader(BaseIOHandler):
                      If this is a file-like object, is has to opened in binary
                      read mode, not text read mode.
         """
-        super(BLFReader, self).__init__(file, mode='rb')
+        super().__init__(file, mode='rb')
         data = self.file.read(FILE_HEADER_STRUCT.size)
         header = FILE_HEADER_STRUCT.unpack(data)
         if header[0] != b"LOGG":
@@ -236,6 +248,29 @@ class BLFReader(BaseIOHandler):
                                       data=can_data[:length],
                                       channel=channel - 1)
                         yield msg
+                    elif obj_type == CAN_FD_MESSAGE_64:
+                        (
+                            channel, dlc, _, _, can_id, _, fd_flags
+                         ) = CAN_FD_MSG_64_STRUCT.unpack_from(data, pos)[:7]
+                        length = dlc2len(dlc)
+                        can_data = struct.unpack_from(
+                            "<{}s".format(length),
+                            data,
+                            pos + CAN_FD_MSG_64_STRUCT.size
+                        )[0]
+                        msg = Message(
+                            timestamp=timestamp,
+                            arbitration_id=can_id & 0x1FFFFFFF,
+                            is_extended_id=bool(can_id & CAN_MSG_EXT),
+                            is_remote_frame=bool(fd_flags & REMOTE_FLAG_64),
+                            is_fd=bool(fd_flags & EDL_64),
+                            bitrate_switch=bool(fd_flags & BRS_64),
+                            error_state_indicator=bool(fd_flags & ESI_64),
+                            dlc=length,
+                            data=can_data[:length],
+                            channel=channel - 1
+                        )
+                        yield msg
                     elif obj_type == CAN_ERROR_EXT:
                         (channel, _, _, _, _, dlc, _, can_id, _,
                          can_data) = CAN_ERROR_EXT_STRUCT.unpack_from(data, pos)
@@ -247,6 +282,8 @@ class BLFReader(BaseIOHandler):
                                       data=can_data[:dlc],
                                       channel=channel - 1)
                         yield msg
+                    # else:
+                    #     LOG.warning("Unknown object type (%d)", obj_type)
 
                     pos = next_pos
 
@@ -273,7 +310,7 @@ class BLFWriter(BaseIOHandler, Listener):
                      If this is a file-like object, is has to opened in binary
                      write mode, not text write mode.
         """
-        super(BLFWriter, self).__init__(file, mode='wb')
+        super().__init__(file, mode='wb')
         self.channel = channel
         # Header will be written after log is done
         self.file.write(b"\x00" * FILE_HEADER_SIZE)
@@ -401,7 +438,7 @@ class BLFWriter(BaseIOHandler, Listener):
         """Stops logging and closes the file."""
         self._flush()
         filesize = self.file.tell()
-        super(BLFWriter, self).stop()
+        super().stop()
 
         # Write header in the beginning of the file
         header = [b"LOGG", FILE_HEADER_SIZE,

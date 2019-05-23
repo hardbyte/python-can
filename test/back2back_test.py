@@ -2,15 +2,13 @@
 # coding: utf-8
 
 """
-This module tests two virtual busses attached to each other.
+This module tests two virtual buses attached to each other.
 """
-
-from __future__ import absolute_import, print_function
 
 import sys
 import unittest
 from time import sleep
-from multiprocessing.dummy import Pool as ThreadPool 
+from multiprocessing.dummy import Pool as ThreadPool
 
 import pytest
 import random
@@ -90,7 +88,7 @@ class Back2BackTestCase(unittest.TestCase):
         recv_msg2 = self.bus1.recv(self.TIMEOUT)
         delta_time = recv_msg2.timestamp - recv_msg1.timestamp
         self.assertTrue(1.75 <= delta_time <= 2.25,
-                        'Time difference should have been 2s +/- 250ms.' 
+                        'Time difference should have been 2s +/- 250ms.'
                         'But measured {}'.format(delta_time))
 
     def test_standard_message(self):

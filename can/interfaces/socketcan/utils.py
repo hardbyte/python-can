@@ -8,7 +8,6 @@ import logging
 import os
 import errno
 import struct
-import sys
 import subprocess
 import re
 
@@ -66,6 +65,7 @@ def find_available_interfaces():
         interface_names = [line.split(": ", 3)[1] for line in output.splitlines()]
         log.debug("find_available_interfaces(): detected: %s", interface_names)
         return filter(_PATTERN_CAN_INTERFACE.match, interface_names)
+
 
 def error_code_to_str(code):
     """

@@ -291,7 +291,7 @@ else:
         log.warning("Cannot load SYSTEC ucan library: %s.", ex)
 
 
-class UcanServer(object):
+class UcanServer:
     """
     UcanServer is a Python wrapper class for using the usbcan32.dll / usbcan64.dll.
     """
@@ -947,7 +947,7 @@ class UcanServer(object):
         - CbEvent.EVENT_FATALDISCON: USB-CAN-Handle of the disconnected module
         :param arg: Additional parameter defined with :meth:`init_hardware_ex` (not used in this wrapper class).
         """
-        log.debug("Event: %s, Param: %s" % (event, param))
+        log.debug("Event: %s, Param: %s", event, param)
 
         if event == CbEvent.EVENT_FATALDISCON:
             self.fatal_disconnect_event(param)
@@ -966,7 +966,7 @@ class UcanServer(object):
             CAN channel (:data:`Channel.CHANNEL_CH0`, :data:`Channel.CHANNEL_CH1` or :data:`Channel.CHANNEL_ANY`).
         :param arg: Additional parameter defined with :meth:`init_hardware_ex`.
         """
-        log.debug("Handle: %s, Event: %s, Channel: %s" % (handle, event, channel))
+        log.debug("Handle: %s, Event: %s, Channel: %s", handle, event, channel)
 
         if event == CbEvent.EVENT_INITHW:
             self.init_hw_event()
@@ -987,7 +987,6 @@ class UcanServer(object):
 
         .. note:: To be overridden by subclassing.
         """
-        pass
 
     def init_can_event(self, channel):
         """
@@ -997,7 +996,6 @@ class UcanServer(object):
 
         .. note:: To be overridden by subclassing.
         """
-        pass
 
     def can_msg_received_event(self, channel):
         """
@@ -1009,7 +1007,6 @@ class UcanServer(object):
 
         .. note:: To be overridden by subclassing.
         """
-        pass
 
     def status_event(self, channel):
         """
@@ -1021,7 +1018,6 @@ class UcanServer(object):
 
         .. note:: To be overridden by subclassing.
         """
-        pass
 
     def deinit_can_event(self, channel):
         """
@@ -1031,7 +1027,6 @@ class UcanServer(object):
 
         .. note:: To be overridden by subclassing.
         """
-        pass
 
     def deinit_hw_event(self):
         """
@@ -1039,7 +1034,6 @@ class UcanServer(object):
 
         .. note:: To be overridden by subclassing.
         """
-        pass
 
     def connect_event(self):
         """
@@ -1047,7 +1041,6 @@ class UcanServer(object):
 
         .. note:: To be overridden by subclassing.
         """
-        pass
 
     def disconnect_event(self):
         """
@@ -1055,7 +1048,6 @@ class UcanServer(object):
 
         .. note:: To be overridden by subclassing.
         """
-        pass
 
     def fatal_disconnect_event(self, device_number):
         """
@@ -1067,7 +1059,6 @@ class UcanServer(object):
 
         .. note:: To be overridden by subclassing.
         """
-        pass
 
 
 UcanServer._enum_callback_ref = EnumCallback(UcanServer._enum_callback)

@@ -4,13 +4,10 @@
 Contains the ABC bus implementation and its documentation.
 """
 
-from __future__ import print_function, absolute_import
-
 from abc import ABCMeta, abstractmethod
 import logging
 import threading
 from time import time
-from collections import namedtuple
 from aenum import Enum, auto
 
 from .broadcastmanager import ThreadBasedCyclicSendTask
@@ -26,7 +23,7 @@ class BusState(Enum):
     ERROR = auto()
 
 
-class BusABC(object):
+class BusABC(metaclass=ABCMeta):
     """The CAN Bus Abstract Base Class that serves as the basis
     for all concrete interfaces.
 
@@ -241,8 +238,8 @@ class BusABC(object):
         :rtype: can.broadcastmanager.CyclicSendTaskABC
         """
         if not hasattr(self, "_lock_send_periodic"):
-            # Create a send lock for this bus
-            self._lock_send_periodic = threading.Lock()
+            # Create a send lock for this bus, but not for buses which override this method
+            self._lock_send_periodic = threading.Lock()  # pylint: disable=attribute-defined-outside-init
         task = ThreadBasedCyclicSendTask(self, self._lock_send_periodic, msg, period, duration)
         return task
 
@@ -315,7 +312,6 @@ class BusABC(object):
         :param Iterator[dict] filters:
             See :meth:`~can.BusABC.set_filters` for details.
         """
-        pass
 
     def _matches_filters(self, msg):
         """Checks whether the given message matches at least one of the
@@ -356,14 +352,12 @@ class BusABC(object):
     def flush_tx_buffer(self):
         """Discard every message that may be queued in the output buffer(s).
         """
-        pass
 
     def shutdown(self):
         """
         Called to carry out any interface specific cleanup required
         in shutting down a bus.
         """
-        pass
 
     def __enter__(self):
         return self
@@ -403,5 +397,3 @@ class BusABC(object):
                  for usage in the interface's bus constructor.
         """
         raise NotImplementedError()
-
-    __metaclass__ = ABCMeta

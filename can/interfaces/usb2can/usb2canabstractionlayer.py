@@ -5,8 +5,6 @@ This wrapper is for windows or direct access via CANAL API.
 Socket CAN is recommended under Unix/Linux systems.
 """
 
-from __future__ import division, print_function, absolute_import
-
 from ctypes import *
 from struct import *
 import logging
@@ -16,10 +14,10 @@ import can
 log = logging.getLogger('can.usb2can')
 
 # type definitions
-flags = c_ulong
+flags_t = c_ulong
 pConfigureStr = c_char_p
-handle = c_long
-timeout = c_ulong
+handle_t = c_long
+timeout_t = c_ulong
 filter_t = c_ulong
 
 # flags mappings
@@ -148,17 +146,17 @@ class Usb2CanAbstractionLayer:
             log.warning('Blocking Receive Failed')
             raise
 
-    def get_status(self, handle, CanalStatus):
+    def get_status(self, handle, status):
         try:
-            res = self.__m_dllBasic.CanalGetStatus(handle, CanalStatus)
+            res = self.__m_dllBasic.CanalGetStatus(handle, status)
             return res
         except:
             log.warning('Get status failed')
             raise
 
-    def get_statistics(self, handle, CanalStatistics):
+    def get_statistics(self, handle, statistics):
         try:
-            res = self.__m_dllBasic.CanalGetStatistics(handle, CanalStatistics)
+            res = self.__m_dllBasic.CanalGetStatistics(handle, statistics)
             return res
         except:
             log.warning('Get Statistics failed')

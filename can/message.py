@@ -8,14 +8,12 @@ This module contains the implementation of :class:`can.Message`.
     starting with Python 3.7.
 """
 
-from __future__ import absolute_import, division
 
-import warnings
 from copy import deepcopy
 from math import isinf, isnan
 
 
-class Message(object):
+class Message:
     """
     The :class:`~can.Message` object is used to represent CAN messages for
     sending, receiving and other purposes like converting between different
@@ -45,46 +43,13 @@ class Message(object):
         "is_fd",
         "bitrate_switch",
         "error_state_indicator",
-        "__weakref__",              # support weak references to messages
-        "_dict"                     # see __getattr__
+        "__weakref__"               # support weak references to messages
     )
 
-    def __getattr__(self, key):
-        # TODO keep this for a version, in order to not break old code
-        # this entire method (as well as the _dict attribute in __slots__ and the __setattr__ method)
-        # can be removed in 4.0
-        # this method is only called if the attribute was not found elsewhere, like in __slots__
-        try:
-            warnings.warn("Custom attributes of messages are deprecated and will be removed in 4.0", DeprecationWarning)
-            return self._dict[key]
-        except KeyError:
-            raise AttributeError("'message' object has no attribute '{}'".format(key))
-
-    def __setattr__(self, key, value):
-        # see __getattr__
-        try:
-            super(Message, self).__setattr__(key, value)
-        except AttributeError:
-            warnings.warn("Custom attributes of messages are deprecated and will be removed in 4.0", DeprecationWarning)
-            self._dict[key] = value
-
-    @property
-    def id_type(self):
-        # TODO remove in 4.0
-        warnings.warn("Message.id_type is deprecated and will be removed in 4.0, use is_extended_id instead", DeprecationWarning)
-        return self.is_extended_id
-
-    @id_type.setter
-    def id_type(self, value):
-        # TODO remove in 4.0
-        warnings.warn("Message.id_type is deprecated and will be removed in 4.0, use is_extended_id instead", DeprecationWarning)
-        self.is_extended_id = value
-
-    def __init__(self, timestamp=0.0, arbitration_id=0, is_extended_id=None,
+    def __init__(self, timestamp=0.0, arbitration_id=0, is_extended_id=True,
                  is_remote_frame=False, is_error_frame=False, channel=None,
                  dlc=None, data=None,
                  is_fd=False, bitrate_switch=False, error_state_indicator=False,
-                 extended_id=None, # deprecated in 3.x, TODO remove in 4.x
                  check=False):
         """
         To create a message object, simply provide any of the below attributes
@@ -98,24 +63,12 @@ class Message(object):
 
         :raises ValueError: iff `check` is set to `True` and one or more arguments were invalid
         """
-        self._dict = dict() # see __getattr__
-
         self.timestamp = timestamp
         self.arbitration_id = arbitration_id
-
-        if extended_id is not None:
-            # TODO remove in 4.0
-            warnings.warn("The extended_id parameter is deprecated and will be removed in 4.0, use is_extended_id instead", DeprecationWarning)
-
-        if is_extended_id is not None:
-            self.is_extended_id = is_extended_id
-        else:
-            self.is_extended_id = True if extended_id is None else extended_id
-
+        self.is_extended_id = is_extended_id
         self.is_remote_frame = is_remote_frame
         self.is_error_frame = is_error_frame
         self.channel = channel
-
         self.is_fd = is_fd
         self.bitrate_switch = bitrate_switch
         self.error_state_indicator = error_state_indicator
@@ -184,17 +137,12 @@ class Message(object):
         return self.dlc
 
     def __bool__(self):
-        # For Python 3
         return True
-
-    def __nonzero__(self):
-        # For Python 2
-        return self.__bool__()
 
     def __repr__(self):
         args = ["timestamp={}".format(self.timestamp),
                 "arbitration_id={:#x}".format(self.arbitration_id),
-                "extended_id={}".format(self.is_extended_id)]
+                "is_extended_id={}".format(self.is_extended_id)]
 
         if self.is_remote_frame:
             args.append("is_remote_frame={}".format(self.is_remote_frame))
@@ -203,7 +151,7 @@ class Message(object):
             args.append("is_error_frame={}".format(self.is_error_frame))
 
         if self.channel is not None:
-            args.append("channel={!r}".format(self.channel))                
+            args.append("channel={!r}".format(self.channel))
 
         data = ["{:#02x}".format(byte) for byte in self.data]
         args += ["dlc={}".format(self.dlc),
@@ -239,7 +187,6 @@ class Message(object):
             bitrate_switch=self.bitrate_switch,
             error_state_indicator=self.error_state_indicator
         )
-        new._dict.update(self._dict)
         return new
 
     def __deepcopy__(self, memo):
@@ -256,7 +203,6 @@ class Message(object):
             bitrate_switch=self.bitrate_switch,
             error_state_indicator=self.error_state_indicator
         )
-        new._dict.update(self._dict)
         return new
 
     def _check(self):
@@ -280,21 +226,21 @@ class Message(object):
             raise ValueError("arbitration IDs may not be negative")
 
         if self.is_extended_id:
-            if 0x20000000 <= self.arbitration_id:
+            if self.arbitration_id >= 0x20000000:
                 raise ValueError("Extended arbitration IDs must be less than 2^29")
-        elif 0x800 <= self.arbitration_id:
+        elif self.arbitration_id >= 0x800:
             raise ValueError("Normal arbitration IDs must be less than 2^11")
 
         if self.dlc < 0:
             raise ValueError("DLC may not be negative")
         if self.is_fd:
-            if 64 < self.dlc:
+            if self.dlc > 64:
                 raise ValueError("DLC was {} but it should be <= 64 for CAN FD frames".format(self.dlc))
-        elif 8 < self.dlc:
+        elif self.dlc > 8:
             raise ValueError("DLC was {} but it should be <= 8 for normal CAN frames".format(self.dlc))
 
         if self.is_remote_frame:
-            if self.data is not None and len(self.data) != 0:
+            if self.data:
                 raise ValueError("remote frames may not carry any data")
         elif self.dlc != len(self.data):
             raise ValueError("the DLC and the length of the data must match up for non remote frames")

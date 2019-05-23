@@ -1,3 +1,5 @@
+# coding: utf-8
+
 from ctypes import *
 import logging
 import platform
@@ -76,7 +78,7 @@ class CANalystIIBus(BusABC):
         :param Timing1:
         :param can_filters: filters for packet
         """
-        super(CANalystIIBus, self).__init__(channel, can_filters)
+        super().__init__(channel, can_filters)
 
         if isinstance(channel, (list, tuple)):
             self.channels = channel
