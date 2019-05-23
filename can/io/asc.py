@@ -131,6 +131,25 @@ class ASCWriter(BaseIOHandler, Listener):
     """
 
     FORMAT_MESSAGE = "{channel}  {id:<15} Rx   {dtype} {data}"
+    FORMAT_MESSAGE_FD = " ".join([
+        "CANFD",
+        "{channel:>3}",
+        "{dir:<4}",
+        "{id:>8}  {symbolic_name:>32}",
+        "{brs}",
+        "{esi}",
+        "{dlc}",
+        "{data_length:>2}",
+        "{data}",
+        "{message_duration:>8}",
+        "{message_length:>4}",
+        "{flags:>8X}",
+        "{crc:>8}",
+        "{bit_timing_conf_arb:>8}",
+        "{bit_timing_conf_data:>8}",
+        "{bit_timing_conf_ext_arb:>8}",
+        "{bit_timing_conf_ext_data:>8}"
+    ])
     FORMAT_DATE = "%a %b %m %I:%M:%S.{} %p %Y"
     FORMAT_EVENT = "{timestamp: 9.6f} {message}\n"
 
@@ -217,9 +236,39 @@ class ASCWriter(BaseIOHandler, Listener):
             # Many interfaces start channel numbering at 0 which is invalid
             channel += 1
 
-        serialized = self.FORMAT_MESSAGE.format(channel=channel,
-                                                id=arb_id,
-                                                dtype=dtype,
-                                                data=' '.join(data))
+        if msg.is_fd:
+            flags = 0
+            flags |= 1 << 12
+            if msg.bitrate_switch:
+                flags |= 1 << 13
+            if msg.error_state_indicator:
+                flags |= 1 << 14
+
+            serialized = self.FORMAT_MESSAGE_FD.format(
+                channel=channel,
+                id=arb_id,
+                dir="Rx",
+                symbolic_name="",
+                brs=1 if msg.bitrate_switch else 0,
+                esi=1 if msg.error_state_indicator else 0,
+                dlc=msg.dlc,
+                data_length=len(data),
+                data=' '.join(data),
+                message_duration=0,
+                message_length=0,
+                flags=flags,
+                crc=0,
+                bit_timing_conf_arb=0,
+                bit_timing_conf_data=0,
+                bit_timing_conf_ext_arb=0,
+                bit_timing_conf_ext_data=0
+            )
+        else:
+            serialized = self.FORMAT_MESSAGE.format(
+                channel=channel,
+                id=arb_id,
+                dtype=dtype,
+                data=' '.join(data)
+            )
 
         self.log_event(serialized, msg.timestamp)
