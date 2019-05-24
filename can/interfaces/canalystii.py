@@ -115,12 +115,10 @@ class CANalystIIBus(BusABC):
             logger.error("VCI_OpenDevice Error")
 
         for channel in self.channels:
-            if (
-                CANalystII.VCI_InitCAN(
-                    VCI_USBCAN2, self.device, channel, byref(self.init_config)
-                )
-                == STATUS_ERR
-            ):
+            status = CANalystII.VCI_InitCAN(
+                VCI_USBCAN2, self.device, channel, byref(self.init_config)
+            )
+            if status == STATUS_ERR:
                 logger.error("VCI_InitCAN Error")
                 self.shutdown()
                 return
@@ -171,17 +169,10 @@ class CANalystIIBus(BusABC):
 
         timeout = -1 if timeout is None else int(timeout * 1000)
 
-        if (
-            CANalystII.VCI_Receive(
-                VCI_USBCAN2,
-                self.device,
-                self.channels[0],
-                byref(raw_message),
-                1,
-                timeout,
-            )
-            <= STATUS_ERR
-        ):
+        status = CANalystII.VCI_Receive(
+            VCI_USBCAN2, self.device, self.channels[0], byref(raw_message), 1, timeout
+        )
+        if status <= STATUS_ERR:
             return None, False
         else:
             return (
