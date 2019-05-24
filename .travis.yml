@@ -98,8 +98,7 @@ jobs:
       before_install:
         - travis_retry pip install -r requirements-lint.txt
       script:
-        - black --diff .
-        - black --check .
+        - black --check --verbose .
     - stage: deploy
       name: "PyPi Deployment"
       python: "3.7"
