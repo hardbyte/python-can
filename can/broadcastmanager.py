@@ -11,7 +11,6 @@ import abc
 import logging
 import threading
 import time
-import warnings
 
 log = logging.getLogger('can.bcm')
 

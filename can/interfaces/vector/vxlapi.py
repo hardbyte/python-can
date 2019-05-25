@@ -46,7 +46,7 @@ XL_CAN_RXMSG_FLAG_EDL = 0x0001
 XL_CAN_RXMSG_FLAG_BRS = 0x0002
 XL_CAN_RXMSG_FLAG_ESI = 0x0004
 XL_CAN_RXMSG_FLAG_RTR = 0x0010
-XL_CAN_RXMSG_FLAG_EF = 0x0200 
+XL_CAN_RXMSG_FLAG_EF = 0x0200
 
 XL_CAN_STD = 1
 XL_CAN_EXT = 2
@@ -114,7 +114,7 @@ class s_rxTagData(ctypes.Union):
 class s_txTagData(ctypes.Union):
     _fields_ = [('canMsg', s_xl_can_tx_msg)]
 
-# BASIC events				
+# BASIC events
 XLeventTag = ctypes.c_ubyte
 
 class XLevent(ctypes.Structure):

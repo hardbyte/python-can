@@ -9,7 +9,6 @@ This module contains the implementation of :class:`can.Message`.
 """
 
 
-import warnings
 from copy import deepcopy
 from math import isinf, isnan
 
@@ -152,7 +151,7 @@ class Message:
             args.append("is_error_frame={}".format(self.is_error_frame))
 
         if self.channel is not None:
-            args.append("channel={!r}".format(self.channel))                
+            args.append("channel={!r}".format(self.channel))
 
         data = ["{:#02x}".format(byte) for byte in self.data]
         args += ["dlc={}".format(self.dlc),
@@ -227,21 +226,21 @@ class Message:
             raise ValueError("arbitration IDs may not be negative")
 
         if self.is_extended_id:
-            if 0x20000000 <= self.arbitration_id:
+            if self.arbitration_id >= 0x20000000:
                 raise ValueError("Extended arbitration IDs must be less than 2^29")
-        elif 0x800 <= self.arbitration_id:
+        elif self.arbitration_id >= 0x800:
             raise ValueError("Normal arbitration IDs must be less than 2^11")
 
         if self.dlc < 0:
             raise ValueError("DLC may not be negative")
         if self.is_fd:
-            if 64 < self.dlc:
+            if self.dlc > 64:
                 raise ValueError("DLC was {} but it should be <= 64 for CAN FD frames".format(self.dlc))
-        elif 8 < self.dlc:
+        elif self.dlc > 8:
             raise ValueError("DLC was {} but it should be <= 8 for normal CAN frames".format(self.dlc))
 
         if self.is_remote_frame:
-            if self.data is not None and len(self.data) != 0:
+            if self.data:
                 raise ValueError("remote frames may not carry any data")
         elif self.dlc != len(self.data):
             raise ValueError("the DLC and the length of the data must match up for non remote frames")

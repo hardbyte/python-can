@@ -13,12 +13,10 @@ __all__ = ['VCITimeout', 'VCIError', 'VCIRxQueueEmptyError', 'VCIDeviceNotFoundE
 
 class VCITimeout(CanError):
     """ Wraps the VCI_E_TIMEOUT error """
-    pass
 
 
 class VCIError(CanError):
     """ Try to display errors that occur within the wrapped C library nicely. """
-    pass
 
 
 class VCIRxQueueEmptyError(VCIError):

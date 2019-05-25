@@ -39,7 +39,6 @@ class Listener(metaclass=ABCMeta):
         :param can.Message msg: the delivered message
 
         """
-        pass
 
     def __call__(self, msg):
         return self.on_message_received(msg)
@@ -128,7 +127,7 @@ class AsyncBufferedReader(Listener):
     """A message buffer for use with :mod:`asyncio`.
 
     See :ref:`asyncio` for how to use with :class:`can.Notifier`.
-    
+
     Can also be used as an asynchronous iterator::
 
         async for msg in reader:
@@ -141,7 +140,7 @@ class AsyncBufferedReader(Listener):
 
     def on_message_received(self, msg):
         """Append a message to the buffer.
-        
+
         Must only be called inside an event loop!
         """
         self.buffer.put_nowait(msg)
@@ -149,7 +148,7 @@ class AsyncBufferedReader(Listener):
     async def get_message(self):
         """
         Retrieve the latest message when awaited for::
-        
+
             msg = await reader.get_message()
 
         :rtype: can.Message
@@ -159,6 +158,6 @@ class AsyncBufferedReader(Listener):
 
     def __aiter__(self):
         return self
-    
+
     def __anext__(self):
         return self.buffer.get()
