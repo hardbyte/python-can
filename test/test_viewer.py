@@ -235,18 +235,16 @@ class CanViewerTest(unittest.TestCase):
 
                     # The conversion from SI-units to raw values are given in the rest of the tuple
                     fmt = struct_t.format
-                    if isinstance(fmt, six.string_types):  # pragma: no cover
+                    if isinstance(fmt, str):  # pragma: no cover
                         # Needed for Python 3.7
-                        fmt = six.b(fmt)
+                        fmt = fmt.encode()
 
                     # Make sure the endian is given as the first argument
-                    assert six.byte2int(fmt) == ord("<") or six.byte2int(fmt) == ord(
-                        ">"
-                    )
+                    assert fmt[0] == ord("<") or fmt[0] == ord(">")
 
                     # Disable rounding if the format is a float
                     data = []
-                    for c, arg, val in zip(six.iterbytes(fmt[1:]), args, value[1:]):
+                    for c, arg, val in zip(fmt[1:], args, value[1:]):
                         if c == ord("f"):
                             data.append(arg * val)
                         else:

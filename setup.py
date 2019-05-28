@@ -31,7 +31,6 @@ tests_require = [
     "pytest-timeout~=1.3",
     "pytest-cov~=2.6",
     "codecov~=2.0",
-    "six",
     "hypothesis",
 ] + extras_require["serial"]
 
