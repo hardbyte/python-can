@@ -24,19 +24,19 @@
 # e-mail   :  lauszus@gmail.com
 
 import argparse
-import can
 import curses
 import math
-import pytest
+import os
 import random
 import struct
 import time
 import unittest
-import os
-import six
 from typing import Dict, Tuple, Union
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
+import pytest
+
+import can
 from can.viewer import KEY_ESC, KEY_SPACE, CanViewer, parse_args
 
 
