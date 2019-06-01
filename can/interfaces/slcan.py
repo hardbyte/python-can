@@ -103,8 +103,7 @@ class slcanBus(BusABC):
             self.set_bitrate(self, bitrate)
 
         if btr is not None:
-            self.close()
-            self.write("s" + btr)
+            self.set_bitrate_reg(self, btr)
 
         self.open()
 
@@ -121,6 +120,11 @@ class slcanBus(BusABC):
                 "Invalid bitrate, choose one of " +
                 (", ".join(self._BITRATES)) + "."
             )
+        self.open()
+
+    def set_bitrate_reg(self, btr):
+        self.close()
+        self.write("s" + btr)
         self.open()
 
     def write(self, string):
