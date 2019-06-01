@@ -26,7 +26,8 @@ WINDOWS INSTALL
     1. To install on Windows download the USB2CAN Windows driver.  It is compatible with XP, Vista, Win7, Win8/8.1. (Written against driver version v1.0.2.1)
     2. Install the appropriate version of `pywin32 <https://sourceforge.net/projects/pywin32/>`_ (win32com)
     3. Download the USB2CAN CANAL DLL from the USB2CAN website.  Place this in either the same directory you are running usb2can.py from or your DLL folder in your python install.
-        (Written against CANAL DLL version v1.0.6)
+       Note that only a 32-bit version is currently available, so this only works in a 32-bit Python environment.
+       (Written against CANAL DLL version v1.0.6)
 
 Interface Layout
 ----------------

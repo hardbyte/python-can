@@ -14,6 +14,7 @@ import ctypes
 class c_canStatus(ctypes.c_int):
     pass
 
+
 # TODO better formatting
 canOK = 0
 canERR_PARAM = -1
@@ -54,7 +55,8 @@ canERR__RESERVED = -33
 def CANSTATUS_SUCCESS(status):
     return status >= canOK
 
-canMSG_MASK = 0x00ff
+
+canMSG_MASK = 0x00FF
 canMSG_RTR = 0x0001
 canMSG_STD = 0x0002
 canMSG_EXT = 0x0004
@@ -68,7 +70,7 @@ canFDMSG_FDF = 0x010000
 canFDMSG_BRS = 0x020000
 canFDMSG_ESI = 0x040000
 
-canMSGERR_MASK = 0xff00
+canMSGERR_MASK = 0xFF00
 canMSGERR_HW_OVERRUN = 0x0200
 canMSGERR_SW_OVERRUN = 0x0400
 canMSGERR_STUFF = 0x0800
@@ -153,7 +155,7 @@ canTransceiverTypeStrings = {
     canTRANSCEIVER_TYPE_LINX_J1708: "LINX_J1708",
     canTRANSCEIVER_TYPE_LINX_K: "LINX_K",
     canTRANSCEIVER_TYPE_LINX_SWC: "LINX_SWC",
-    canTRANSCEIVER_TYPE_LINX_LS: "LINX_LS"
+    canTRANSCEIVER_TYPE_LINX_LS: "LINX_LS",
 }
 
 canDRIVER_NORMAL = 4

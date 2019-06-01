@@ -2,23 +2,17 @@ environment:
   matrix:
 
     # For Python versions available on Appveyor, see
-    # http://www.appveyor.com/docs/installed-software#python
-    # Python 3.0-3.3 have reached EOL
+    # https://www.appveyor.com/docs/windows-images-software/#python
+    # Only Python 3.6+ is supported
 
-    - PYTHON: "C:\\Python27"
-    - PYTHON: "C:\\Python34"
-    - PYTHON: "C:\\Python35"
     - PYTHON: "C:\\Python36"
     - PYTHON: "C:\\Python37"
-    - PYTHON: "C:\\Python27-x64"
-    - PYTHON: "C:\\Python34-x64"
-    - PYTHON: "C:\\Python35-x64"
     - PYTHON: "C:\\Python36-x64"
     - PYTHON: "C:\\Python37-x64"
 
 install:
   # Prepend Python installation and scripts (e.g. pytest) to PATH
-  - set PATH=%PYTHON_INSTALL%;%PYTHON_INSTALL%\\Scripts;%PATH%
+  - set PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%
 
   # We need to install the python-can library itself including the dependencies
   - "python -m pip install .[test,neovi]"
@@ -30,4 +24,4 @@ test_script:
   - "pytest"
 
   # uplad coverage reports
-  - "codecov"
+  - "codecov -X gcov"

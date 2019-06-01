@@ -5,8 +5,6 @@
 This module tests that the scripts are all callable.
 """
 
-from __future__ import absolute_import
-
 import subprocess
 import unittest
 import sys
@@ -15,18 +13,13 @@ from abc import ABCMeta, abstractmethod
 
 from .config import *
 
-class CanScriptTest(unittest.TestCase):
 
+class CanScriptTest(unittest.TestCase, metaclass=ABCMeta):
     @classmethod
     def setUpClass(cls):
         # clean up the argument list so the call to the main() functions
         # in test_does_not_crash() succeeds
         sys.argv = sys.argv[:1]
-
-    #: this is overridden by the subclasses
-    __test__ = False
-
-    __metaclass__ = ABCMeta
 
     def test_do_commands_exist(self):
         """This test calls each scripts once and verifies that the help
@@ -44,9 +37,13 @@ class CanScriptTest(unittest.TestCase):
                 output = "-- NO OUTPUT --"
 
             allowed = [0, errno.EINVAL]
-            self.assertIn(return_code, allowed,
-                    'Calling "{}" failed (exit code was {} and not SUCCESS/0 or EINVAL/22):\n{}'
-                    .format(command, return_code, output))
+            self.assertIn(
+                return_code,
+                allowed,
+                'Calling "{}" failed (exit code was {} and not SUCCESS/0 or EINVAL/22):\n{}'.format(
+                    command, return_code, output
+                ),
+            )
 
     def test_does_not_crash(self):
         # test import
@@ -54,8 +51,7 @@ class CanScriptTest(unittest.TestCase):
         # test main method
         with self.assertRaises(SystemExit) as cm:
             module.main()
-            self.assertEqual(cm.exception.code, errno.EINVAL,
-                    'Calling main failed:\n{}'.format(command, e.output))
+        self.assertEqual(cm.exception.code, errno.EINVAL)
 
     @abstractmethod
     def _commands(self):
@@ -72,13 +68,10 @@ class CanScriptTest(unittest.TestCase):
 
 
 class TestLoggerScript(CanScriptTest):
-
-    __test__ = True
-
     def _commands(self):
         commands = [
             "python -m can.logger --help",
-            "python scripts/can_logger.py --help"
+            "python scripts/can_logger.py --help",
         ]
         if IS_UNIX:
             commands += ["can_logger.py --help"]
@@ -86,17 +79,15 @@ class TestLoggerScript(CanScriptTest):
 
     def _import(self):
         import can.logger as module
+
         return module
 
 
 class TestPlayerScript(CanScriptTest):
-
-    __test__ = True
-
     def _commands(self):
         commands = [
             "python -m can.player --help",
-            "python scripts/can_player.py --help"
+            "python scripts/can_player.py --help",
         ]
         if IS_UNIX:
             commands += ["can_player.py --help"]
@@ -104,11 +95,16 @@ class TestPlayerScript(CanScriptTest):
 
     def _import(self):
         import can.player as module
+
         return module
 
 
 # TODO add #390
 
 
-if __name__ == '__main__':
+# this excludes the base class from being executed as a test case itself
+del CanScriptTest
+
+
+if __name__ == "__main__":
     unittest.main()

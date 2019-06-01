@@ -4,8 +4,6 @@
 Interface for isCAN from Thorsis Technologies GmbH, former ifak system GmbH.
 """
 
-from __future__ import absolute_import, division
-
 import ctypes
 import time
 import logging
@@ -63,7 +61,7 @@ class IscanBus(BusABC):
         250000: 6,
         500000: 7,
         800000: 8,
-        1000000: 9
+        1000000: 9,
     }
 
     def __init__(self, channel, bitrate=500000, poll_interval=0.01, **kwargs):
@@ -88,8 +86,9 @@ class IscanBus(BusABC):
         self.poll_interval = poll_interval
         iscan.isCAN_DeviceInitEx(self.channel, self.BAUDRATES[bitrate])
 
-        super(IscanBus, self).__init__(channel=channel, bitrate=bitrate,
-            poll_interval=poll_interval, **kwargs)
+        super().__init__(
+            channel=channel, bitrate=bitrate, poll_interval=poll_interval, **kwargs
+        )
 
     def _recv_internal(self, timeout):
         raw_msg = MessageExStruct()
@@ -110,21 +109,25 @@ class IscanBus(BusABC):
                 # A message was received
                 break
 
-        msg = Message(arbitration_id=raw_msg.message_id,
-                      is_extended_id=bool(raw_msg.is_extended),
-                      timestamp=time.time(),                    # Better than nothing...
-                      is_remote_frame=bool(raw_msg.remote_req),
-                      dlc=raw_msg.data_len,
-                      data=raw_msg.data[:raw_msg.data_len],
-                      channel=self.channel.value)
+        msg = Message(
+            arbitration_id=raw_msg.message_id,
+            is_extended_id=bool(raw_msg.is_extended),
+            timestamp=time.time(),  # Better than nothing...
+            is_remote_frame=bool(raw_msg.remote_req),
+            dlc=raw_msg.data_len,
+            data=raw_msg.data[: raw_msg.data_len],
+            channel=self.channel.value,
+        )
         return msg, False
 
     def send(self, msg, timeout=None):
-        raw_msg = MessageExStruct(msg.arbitration_id,
-                                  bool(msg.is_extended_id),
-                                  bool(msg.is_remote_frame),
-                                  msg.dlc,
-                                  CanData(*msg.data))
+        raw_msg = MessageExStruct(
+            msg.arbitration_id,
+            bool(msg.is_extended_id),
+            bool(msg.is_remote_frame),
+            msg.dlc,
+            CanData(*msg.data),
+        )
         iscan.isCAN_TransmitMessageEx(self.channel, ctypes.byref(raw_msg))
 
     def shutdown(self):
@@ -147,6 +150,7 @@ class IscanError(CanError):
         10: "Thread already started",
         11: "Buffer overrun",
         12: "Device not initialized",
+        15: "Found the device, but it is being used by another process",
         16: "Bus error",
         17: "Bus off",
         18: "Error passive",
@@ -156,11 +160,11 @@ class IscanError(CanError):
         31: "Transmission not acknowledged on bus",
         32: "Error critical bus",
         35: "Callbackthread is blocked, stopping thread failed",
-        40: "Need a licence number under NT4"
+        40: "Need a licence number under NT4",
     }
 
     def __init__(self, function, error_code, arguments):
-        super(IscanError, self).__init__()
+        super().__init__()
         # :Status code
         self.error_code = error_code
         # :Function that failed
@@ -169,6 +173,7 @@ class IscanError(CanError):
         self.arguments = arguments
 
     def __str__(self):
-        description = self.ERROR_CODES.get(self.error_code,
-                                           "Error code %d" % self.error_code)
+        description = self.ERROR_CODES.get(
+            self.error_code, "Error code %d" % self.error_code
+        )
         return "Function %s failed: %s" % (self.function.__name__, description)
