@@ -140,7 +140,10 @@ class slcanBus(BusABC):
         # if we still don't have a complete message, do a blocking read
         start = time.time()
         time_left = timeout
-        while not (self._OK in self._buffer or self._ERROR in self._buffer):
+        while not (
+                ord(self._OK) in self._buffer or
+                ord(self._ERROR) in self._buffer
+            ):
             self.serialPortOrig.timeout = time_left
             byte = self.serialPortOrig.read()
             if byte:
@@ -160,8 +163,8 @@ class slcanBus(BusABC):
 
         # return first message
         for i in range(len(self._buffer)):
-            if (    chr(self._buffer[i]) == self._OK or
-                    chr(self._buffer[i]) == self._ERROR    ):
+            if (    self._buffer[i] == ord(self._OK) or
+                    self._buffer[i] == ord(self._ERROR)    ):
                 string = self._buffer[:i+1].decode()
                 del self._buffer[:i+1]
                 break
