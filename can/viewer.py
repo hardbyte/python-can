@@ -23,12 +23,13 @@
 # e-mail   :  lauszus@gmail.com
 
 import argparse
+import logging
 import os
 import struct
 import sys
 import time
-import logging
 from typing import Dict, List, Tuple, Union
+
 import can
 from can import __version__
 
