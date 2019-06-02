@@ -135,14 +135,14 @@ class slcanBus(BusABC):
 
         # first read what is already in receive buffer
         while self.serialPortOrig.in_waiting:
-            self._buffer += self.serialPortOrig.read(1)
+            self._buffer += self.serialPortOrig.read()
 
         # if we still don't have a complete message, do a blocking read
         start = time.time()
         time_left = timeout
         while not (self._OK in self._buffer or self._ERROR in self._buffer):
             self.serialPortOrig.timeout = time_left
-            byte = self.serialPortOrig.read(1)
+            byte = self.serialPortOrig.read()
             if byte:
                 self._buffer += byte
 
@@ -171,7 +171,7 @@ class slcanBus(BusABC):
     def flush(self):
         del self._buffer[:]
         while self.serialPortOrig.in_waiting:
-            self.serialPortOrig.read(1)
+            self.serialPortOrig.read()
 
     def open(self):
         self.write("O")
