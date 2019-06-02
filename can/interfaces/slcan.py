@@ -287,7 +287,7 @@ class slcanBus(BusABC):
                 else:
                     return None, None
 
-    def get_serial(self, timeout):
+    def get_serial_number(self, timeout):
         cmd = "N"
         self.write(cmd)
 
@@ -299,8 +299,8 @@ class slcanBus(BusABC):
             if not string:
                 pass
             elif string[0] == cmd and len(string) == 6:
-                serial = string[1:-1]
-                return serial
+                serial_number = string[1:-1]
+                return serial_number
 
             # if timeout is None, try indefinitely
             if timeout is None:

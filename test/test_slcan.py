@@ -115,12 +115,12 @@ class slcanTestCase(unittest.TestCase):
         self.assertIsNone(hw_ver)
         self.assertIsNone(sw_ver)
 
-    def test_serial(self):
+    def test_serial_number(self):
         self.serial.write(b'NA123\r')
-        sn = self.bus.get_serial(0)
+        sn = self.bus.get_serial_number(0)
         self.assertEqual(sn, "A123")
 
-        sn = self.bus.get_serial(0)
+        sn = self.bus.get_serial_number(0)
         self.assertIsNone(sn)
 
 
