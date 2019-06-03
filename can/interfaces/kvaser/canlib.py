@@ -425,7 +425,6 @@ class KvaserBus(BusABC):
 
         num_channels = ctypes.c_int(0)
         canGetNumberOfChannels(ctypes.byref(num_channels))
-        # log.debug("canGetNumberOfChannels(): %d", canGetNumberOfChannels(ctypes.byref(num_channels)))
         num_channels = int(num_channels.value)
         log.info("Found %d available channels", num_channels)
         for idx in range(num_channels):
