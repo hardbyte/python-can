@@ -107,6 +107,12 @@ class slcanBus(BusABC):
         )
 
     def set_bitrate(self, bitrate):
+        """
+        :raise ValueError: if both *bitrate* is not among the possible values
+
+        :param int bitrate:
+            Bitrate in bit/s
+        """
         self.close()
         if bitrate in self._BITRATES:
             self.write(self._BITRATES[bitrate])
@@ -117,6 +123,10 @@ class slcanBus(BusABC):
         self.open()
 
     def set_bitrate_reg(self, btr):
+        """
+        :param str btr:
+            BTR register value to set custom can speed
+        """
         self.close()
         self.write("s" + btr)
         self.open()
@@ -125,7 +135,7 @@ class slcanBus(BusABC):
         self.serialPortOrig.write(string.encode() + self.LINE_TERMINATOR)
         self.serialPortOrig.flush()
 
-    def read(self, timeout):
+    def _read(self, timeout):
 
         # first read what is already in receive buffer
         while self.serialPortOrig.in_waiting:
@@ -175,7 +185,7 @@ class slcanBus(BusABC):
         extended = False
         frame = []
 
-        string = self.read(timeout)
+        string = self._read(timeout)
 
         if not string:
             pass
@@ -242,13 +252,24 @@ class slcanBus(BusABC):
         return -1
 
     def get_version(self, timeout):
+        """Get HW and SW version of the slcan interface.
+
+        :type timeout: int or None
+        :param timeout:
+            seconds to wait for version or None to wait indefinitely
+
+        :returns: tuple (hw_version, sw_version)
+            WHERE
+            int hw_version is the hardware version or None on timeout
+            int sw_version is the software version or None on timeout
+        """
         cmd = "V"
         self.write(cmd)
 
         start = time.time()
         time_left = timeout
         while True:
-            string = self.read(time_left)
+            string = self._read(time_left)
 
             if not string:
                 pass
@@ -270,13 +291,23 @@ class slcanBus(BusABC):
                     return None, None
 
     def get_serial_number(self, timeout):
+        """Get serial number of the slcan interface.
+
+        :type timeout: int or None
+        :param timeout:
+            seconds to wait for serial number or None to wait indefinitely
+
+        :rtype str or None
+        :return:
+            None on timeout or a str object.
+        """
         cmd = "N"
         self.write(cmd)
 
         start = time.time()
         time_left = timeout
         while True:
-            string = self.read(time_left)
+            string = self._read(time_left)
 
             if not string:
                 pass
