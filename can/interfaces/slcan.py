@@ -252,6 +252,17 @@ class slcanBus(BusABC):
         return -1
 
     def get_version(self, timeout):
+        """Get HW and SW version of the slcan interface.
+
+        :type timeout: int or None
+        :param timeout:
+            seconds to wait for version or None to wait indefinitely
+
+        :returns: tuple (hw_version, sw_version)
+            WHERE
+            int hw_version is the hardware version or None on timeout
+            int sw_version is the software version or None on timeout
+        """
         cmd = "V"
         self.write(cmd)
 
@@ -280,6 +291,16 @@ class slcanBus(BusABC):
                     return None, None
 
     def get_serial_number(self, timeout):
+        """Get serial number of the slcan interface.
+
+        :type timeout: int or None
+        :param timeout:
+            seconds to wait for serial number or None to wait indefinitely
+
+        :rtype str or None
+        :return:
+            None on timeout or a str object.
+        """
         cmd = "N"
         self.write(cmd)
 
