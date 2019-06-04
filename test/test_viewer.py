@@ -24,19 +24,19 @@
 # e-mail   :  lauszus@gmail.com
 
 import argparse
-import can
 import curses
 import math
-import pytest
+import os
 import random
 import struct
 import time
 import unittest
-import os
-import six
 from typing import Dict, Tuple, Union
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
+import pytest
+
+import can
 from can.viewer import KEY_ESC, KEY_SPACE, CanViewer, parse_args
 
 
@@ -235,18 +235,16 @@ class CanViewerTest(unittest.TestCase):
 
                     # The conversion from SI-units to raw values are given in the rest of the tuple
                     fmt = struct_t.format
-                    if isinstance(fmt, six.string_types):  # pragma: no cover
+                    if isinstance(fmt, str):  # pragma: no cover
                         # Needed for Python 3.7
-                        fmt = six.b(fmt)
+                        fmt = fmt.encode()
 
                     # Make sure the endian is given as the first argument
-                    assert six.byte2int(fmt) == ord("<") or six.byte2int(fmt) == ord(
-                        ">"
-                    )
+                    assert fmt[0] == ord("<") or fmt[0] == ord(">")
 
                     # Disable rounding if the format is a float
                     data = []
-                    for c, arg, val in zip(six.iterbytes(fmt[1:]), args, value[1:]):
+                    for c, arg, val in zip(fmt[1:], args, value[1:]):
                         if c == ord("f"):
                             data.append(arg * val)
                         else:
