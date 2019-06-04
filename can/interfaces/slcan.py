@@ -135,7 +135,7 @@ class slcanBus(BusABC):
         self.serialPortOrig.write(string.encode() + self.LINE_TERMINATOR)
         self.serialPortOrig.flush()
 
-    def read(self, timeout):
+    def _read(self, timeout):
 
         # first read what is already in receive buffer
         while self.serialPortOrig.in_waiting:
@@ -185,7 +185,7 @@ class slcanBus(BusABC):
         extended = False
         frame = []
 
-        string = self.read(timeout)
+        string = self._read(timeout)
 
         if not string:
             pass
@@ -258,7 +258,7 @@ class slcanBus(BusABC):
         start = time.time()
         time_left = timeout
         while True:
-            string = self.read(time_left)
+            string = self._read(time_left)
 
             if not string:
                 pass
@@ -286,7 +286,7 @@ class slcanBus(BusABC):
         start = time.time()
         time_left = timeout
         while True:
-            string = self.read(time_left)
+            string = self._read(time_left)
 
             if not string:
                 pass
