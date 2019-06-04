@@ -107,6 +107,12 @@ class slcanBus(BusABC):
         )
 
     def set_bitrate(self, bitrate):
+        """
+        :raise ValueError: if both *bitrate* is not among the possible values
+
+        :param int bitrate:
+            Bitrate in bit/s
+        """
         self.close()
         if bitrate in self._BITRATES:
             self.write(self._BITRATES[bitrate])
@@ -117,6 +123,10 @@ class slcanBus(BusABC):
         self.open()
 
     def set_bitrate_reg(self, btr):
+        """
+        :param str btr:
+            BTR register value to set custom can speed
+        """
         self.close()
         self.write("s" + btr)
         self.open()
