@@ -56,7 +56,7 @@ class BitTiming:
     def brp(self):
         if self._brp:
             return self._brp
-        return (2 * self.bitrate * self.nbt) // self.f_clock
+        return round(self.f_clock / (2 * self.bitrate * self.nbt))
 
     @property
     def sjw(self):
