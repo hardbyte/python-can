@@ -115,7 +115,7 @@ class slcanBus(BusABC):
         """
         self.close()
         if bitrate in self._BITRATES:
-            self.write(self._BITRATES[bitrate])
+            self._write(self._BITRATES[bitrate])
         else:
             raise ValueError(
                 "Invalid bitrate, choose one of " + (", ".join(self._BITRATES)) + "."
@@ -128,10 +128,10 @@ class slcanBus(BusABC):
             BTR register value to set custom can speed
         """
         self.close()
-        self.write("s" + btr)
+        self._write("s" + btr)
         self.open()
 
-    def write(self, string):
+    def _write(self, string):
         self.serialPortOrig.write(string.encode() + self.LINE_TERMINATOR)
         self.serialPortOrig.flush()
 
@@ -173,10 +173,10 @@ class slcanBus(BusABC):
             self.serialPortOrig.read()
 
     def open(self):
-        self.write("O")
+        self._write("O")
 
     def close(self):
-        self.write("C")
+        self._write("C")
 
     def _recv_internal(self, timeout):
 
@@ -239,7 +239,7 @@ class slcanBus(BusABC):
             else:
                 sendStr = "t%03X%d" % (msg.arbitration_id, msg.dlc)
             sendStr += "".join(["%02X" % b for b in msg.data])
-        self.write(sendStr)
+        self._write(sendStr)
 
     def shutdown(self):
         self.close()
@@ -264,7 +264,7 @@ class slcanBus(BusABC):
             int sw_version is the software version or None on timeout
         """
         cmd = "V"
-        self.write(cmd)
+        self._write(cmd)
 
         start = time.time()
         time_left = timeout
@@ -302,7 +302,7 @@ class slcanBus(BusABC):
             None on timeout or a str object.
         """
         cmd = "N"
-        self.write(cmd)
+        self._write(cmd)
 
         start = time.time()
         time_left = timeout
