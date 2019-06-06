@@ -105,6 +105,24 @@ class slcanTestCase(unittest.TestCase):
         msg = self.bus.recv(0)
         self.assertIsNotNone(msg)
 
+    def test_version(self):
+        self.serial.write(b"V1013\r")
+        hw_ver, sw_ver = self.bus.get_version(0)
+        self.assertEqual(hw_ver, 10)
+        self.assertEqual(sw_ver, 13)
+
+        hw_ver, sw_ver = self.bus.get_version(0)
+        self.assertIsNone(hw_ver)
+        self.assertIsNone(sw_ver)
+
+    def test_serial_number(self):
+        self.serial.write(b"NA123\r")
+        sn = self.bus.get_serial_number(0)
+        self.assertEqual(sn, "A123")
+
+        sn = self.bus.get_serial_number(0)
+        self.assertIsNone(sn)
+
 
 if __name__ == "__main__":
     unittest.main()
