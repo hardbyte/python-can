@@ -73,7 +73,14 @@ except OSError as e:
 
 class CANalystIIBus(BusABC):
     def __init__(
-        self, channel, device=0, bitrate=None, Timing0=None, Timing1=None, can_filters=None, **kwargs,
+        self,
+        channel,
+        device=0,
+        bitrate=None,
+        Timing0=None,
+        Timing1=None,
+        can_filters=None,
+        **kwargs,
     ):
         """
 
