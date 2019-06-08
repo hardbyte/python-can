@@ -66,7 +66,9 @@ except OSError as e:
 
 
 class CANalystIIBus(BusABC):
-    def __init__(self, channel, device=0, baud=None, Timing0=None, Timing1=None, can_filters=None):
+    def __init__(
+        self, channel, device=0, baud=None, Timing0=None, Timing1=None, can_filters=None, **kwargs
+    ):
         """
 
         :param channel: channel number
@@ -76,7 +78,7 @@ class CANalystIIBus(BusABC):
         :param Timing1:
         :param can_filters: filters for packet
         """
-        super(CANalystIIBus, self).__init__(channel, can_filters)
+        super(CANalystIIBus, self).__init__(channel, can_filters, **kwargs)
 
         if isinstance(channel, (list, tuple)):
             self.channels = channel
