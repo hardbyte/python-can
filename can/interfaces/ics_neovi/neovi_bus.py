@@ -22,7 +22,8 @@ try:
 except ImportError as ie:
     logger.warning(
         "You won't be able to use the ICS NeoVi can backend without the "
-        "python-ics module installed!: %s", ie
+        "python-ics module installed!: %s",
+        ie,
     )
     ics = None
 
@@ -42,8 +43,12 @@ class ICSApiError(CanError):
     ICS_SPY_ERR_INFORMATION = 0x40
 
     def __init__(
-            self, error_number, description_short, description_long,
-            severity, restart_needed
+        self,
+        error_number,
+        description_short,
+        description_long,
+        severity,
+        restart_needed,
     ):
         super().__init__(description_short)
         self.error_number = error_number
@@ -95,15 +100,15 @@ class NeoViBus(BusABC):
             Absolute path or relative path to the library including filename.
         """
         if ics is None:
-            raise ImportError('Please install python-ics')
+            raise ImportError("Please install python-ics")
 
         super().__init__(channel=channel, can_filters=can_filters, **kwargs)
 
         logger.info("CAN Filters: {}".format(can_filters))
         logger.info("Got configuration of: {}".format(kwargs))
 
-        if 'override_library_name' in kwargs:
-            ics.override_library_name(kwargs.get('override_library_name'))
+        if "override_library_name" in kwargs:
+            ics.override_library_name(kwargs.get("override_library_name"))
 
         if isinstance(channel, (list, tuple)):
             self.channels = channel
@@ -111,34 +116,31 @@ class NeoViBus(BusABC):
             self.channels = [channel]
         else:
             # Assume comma separated string of channels
-            self.channels = [ch.strip() for ch in channel.split(',')]
+            self.channels = [ch.strip() for ch in channel.split(",")]
         self.channels = [NeoViBus.channel_to_netid(ch) for ch in self.channels]
 
-        type_filter = kwargs.get('type_filter')
-        serial = kwargs.get('serial')
+        type_filter = kwargs.get("type_filter")
+        serial = kwargs.get("serial")
         self.dev = self._find_device(type_filter, serial)
         ics.open_device(self.dev)
 
-        if 'bitrate' in kwargs:
+        if "bitrate" in kwargs:
             for channel in self.channels:
-                ics.set_bit_rate(self.dev, kwargs.get('bitrate'), channel)
+                ics.set_bit_rate(self.dev, kwargs.get("bitrate"), channel)
 
-        fd = kwargs.get('fd', False)
+        fd = kwargs.get("fd", False)
         if fd:
-            if 'data_bitrate' in kwargs:
+            if "data_bitrate" in kwargs:
                 for channel in self.channels:
-                    ics.set_fd_bit_rate(
-                        self.dev, kwargs.get('data_bitrate'), channel)
+                    ics.set_fd_bit_rate(self.dev, kwargs.get("data_bitrate"), channel)
 
-        self._use_system_timestamp = bool(
-            kwargs.get('use_system_timestamp', False)
-        )
-        self._receive_own_messages = kwargs.get('receive_own_messages', True)
+        self._use_system_timestamp = bool(kwargs.get("use_system_timestamp", False))
+        self._receive_own_messages = kwargs.get("receive_own_messages", True)
 
-        self.channel_info = '%s %s CH:%s' % (
+        self.channel_info = "%s %s CH:%s" % (
             self.dev.Name,
             self.get_serial_number(self.dev),
-            self.channels
+            self.channels,
         )
         logger.info("Using device: {}".format(self.channel_info))
 
@@ -154,8 +156,7 @@ class NeoViBus(BusABC):
                 channel = getattr(ics, netid)
             else:
                 raise ValueError(
-                    'channel must be an integer or '
-                    'a valid ICS channel name'
+                    "channel must be an integer or " "a valid ICS channel name"
                 )
         return channel
 
@@ -195,10 +196,10 @@ class NeoViBus(BusABC):
             return []
 
         # TODO: add the channel(s)
-        return [{
-            'interface': 'neovi',
-            'serial': NeoViBus.get_serial_number(device)
-        } for device in devices]
+        return [
+            {"interface": "neovi", "serial": NeoViBus.get_serial_number(device)}
+            for device in devices
+        ]
 
     def _find_device(self, type_filter=None, serial=None):
         if type_filter is not None:
@@ -211,14 +212,14 @@ class NeoViBus(BusABC):
                 dev = device
                 break
         else:
-            msg = ['No device']
+            msg = ["No device"]
 
             if type_filter is not None:
-                msg.append('with type {}'.format(type_filter))
+                msg.append("with type {}".format(type_filter))
             if serial is not None:
-                msg.append('with serial {}'.format(serial))
-            msg.append('found.')
-            raise Exception(' '.join(msg))
+                msg.append("with serial {}".format(serial))
+            msg.append("found.")
+            raise Exception(" ".join(msg))
         return dev
 
     def _process_msg_queue(self, timeout=0.1):
@@ -263,18 +264,16 @@ class NeoViBus(BusABC):
 
         if is_fd:
             if ics_msg.ExtraDataPtrEnabled:
-                data = ics_msg.ExtraDataPtr[:ics_msg.NumberBytesData]
+                data = ics_msg.ExtraDataPtr[: ics_msg.NumberBytesData]
             else:
-                data = ics_msg.Data[:ics_msg.NumberBytesData]
+                data = ics_msg.Data[: ics_msg.NumberBytesData]
 
             return Message(
                 timestamp=self._get_timestamp_for_msg(ics_msg),
                 arbitration_id=ics_msg.ArbIDOrHeader,
                 data=data,
                 dlc=ics_msg.NumberBytesData,
-                is_extended_id=bool(
-                    ics_msg.StatusBitField & ics.SPY_STATUS_XTD_FRAME
-                ),
+                is_extended_id=bool(ics_msg.StatusBitField & ics.SPY_STATUS_XTD_FRAME),
                 is_fd=is_fd,
                 is_remote_frame=bool(
                     ics_msg.StatusBitField & ics.SPY_STATUS_REMOTE_FRAME
@@ -285,22 +284,20 @@ class NeoViBus(BusABC):
                 bitrate_switch=bool(
                     ics_msg.StatusBitField3 & ics.SPY_STATUS3_CANFD_BRS
                 ),
-                channel=ics_msg.NetworkID
+                channel=ics_msg.NetworkID,
             )
         else:
             return Message(
                 timestamp=self._get_timestamp_for_msg(ics_msg),
                 arbitration_id=ics_msg.ArbIDOrHeader,
-                data=ics_msg.Data[:ics_msg.NumberBytesData],
+                data=ics_msg.Data[: ics_msg.NumberBytesData],
                 dlc=ics_msg.NumberBytesData,
-                is_extended_id=bool(
-                    ics_msg.StatusBitField & ics.SPY_STATUS_XTD_FRAME
-                ),
+                is_extended_id=bool(ics_msg.StatusBitField & ics.SPY_STATUS_XTD_FRAME),
                 is_fd=is_fd,
                 is_remote_frame=bool(
                     ics_msg.StatusBitField & ics.SPY_STATUS_REMOTE_FRAME
                 ),
-                channel=ics_msg.NetworkID
+                channel=ics_msg.NetworkID,
             )
 
     def _recv_internal(self, timeout=0.1):
@@ -346,8 +343,7 @@ class NeoViBus(BusABC):
         elif len(self.channels) == 1:
             message.NetworkID = self.channels[0]
         else:
-            raise ValueError(
-                "msg.channel must be set when using multiple channels.")
+            raise ValueError("msg.channel must be set when using multiple channels.")
 
         try:
             ics.transmit_messages(self.dev, message)

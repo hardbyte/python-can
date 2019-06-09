@@ -12,7 +12,7 @@ import logging
 import threading
 import time
 
-log = logging.getLogger('can.bcm')
+log = logging.getLogger("can.bcm")
 
 
 class CyclicTask:
@@ -47,7 +47,6 @@ class CyclicSendTaskABC(CyclicTask):
 
 
 class LimitedDurationCyclicSendTaskABC(CyclicSendTaskABC):
-
     def __init__(self, message, period, duration):
         """Message send task with a defined duration and period.
 
@@ -101,9 +100,9 @@ class MultiRateCyclicSendTaskABC(CyclicSendTaskABC):
         super().__init__(channel, message, subsequent_period)
 
 
-class ThreadBasedCyclicSendTask(ModifiableCyclicTaskABC,
-                                LimitedDurationCyclicSendTaskABC,
-                                RestartableCyclicTaskABC):
+class ThreadBasedCyclicSendTask(
+    ModifiableCyclicTaskABC, LimitedDurationCyclicSendTaskABC, RestartableCyclicTaskABC
+):
     """Fallback cyclic send task using thread."""
 
     def __init__(self, bus, lock, message, period, duration=None):

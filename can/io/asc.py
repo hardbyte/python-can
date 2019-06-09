@@ -21,7 +21,7 @@ from .generic import BaseIOHandler
 CAN_MSG_EXT = 0x80000000
 CAN_ID_MASK = 0x1FFFFFFF
 
-logger = logging.getLogger('can.io.asc')
+logger = logging.getLogger("can.io.asc")
 
 
 class ASCReader(BaseIOHandler):
@@ -37,11 +37,11 @@ class ASCReader(BaseIOHandler):
                      If this is a file-like object, is has to opened in text
                      read mode, not binary read mode.
         """
-        super().__init__(file, mode='r')
+        super().__init__(file, mode="r")
 
     @staticmethod
     def _extract_can_id(str_can_id):
-        if str_can_id[-1:].lower() == 'x':
+        if str_can_id[-1:].lower() == "x":
             is_extended = True
             can_id = int(str_can_id[0:-1], 16)
         else:
@@ -51,14 +51,16 @@ class ASCReader(BaseIOHandler):
 
     def __iter__(self):
         for line in self.file:
-            #logger.debug("ASCReader: parsing line: '%s'", line.splitlines()[0])
+            # logger.debug("ASCReader: parsing line: '%s'", line.splitlines()[0])
 
             temp = line.strip()
             if not temp or not temp[0].isdigit():
                 continue
 
             try:
-                timestamp, channel, dummy = temp.split(None, 2) # , frameType, dlc, frameData
+                timestamp, channel, dummy = temp.split(
+                    None, 2
+                )  # , frameType, dlc, frameData
             except ValueError:
                 # we parsed an empty comment
                 continue
@@ -70,22 +72,26 @@ class ASCReader(BaseIOHandler):
             except ValueError:
                 pass
 
-            if dummy.strip()[0:10].lower() == 'errorframe':
-                msg = Message(timestamp=timestamp, is_error_frame=True,
-                              channel=channel)
+            if dummy.strip()[0:10].lower() == "errorframe":
+                msg = Message(timestamp=timestamp, is_error_frame=True, channel=channel)
                 yield msg
 
-            elif not isinstance(channel, int) or dummy.strip()[0:10].lower() == 'statistic:':
+            elif (
+                not isinstance(channel, int)
+                or dummy.strip()[0:10].lower() == "statistic:"
+            ):
                 pass
 
-            elif dummy[-1:].lower() == 'r':
+            elif dummy[-1:].lower() == "r":
                 can_id_str, _ = dummy.split(None, 1)
                 can_id_num, is_extended_id = self._extract_can_id(can_id_str)
-                msg = Message(timestamp=timestamp,
-                              arbitration_id=can_id_num & CAN_ID_MASK,
-                              is_extended_id=is_extended_id,
-                              is_remote_frame=True,
-                              channel=channel)
+                msg = Message(
+                    timestamp=timestamp,
+                    arbitration_id=can_id_num & CAN_ID_MASK,
+                    is_extended_id=is_extended_id,
+                    is_remote_frame=True,
+                    channel=channel,
+                )
                 yield msg
 
             else:
@@ -94,9 +100,9 @@ class ASCReader(BaseIOHandler):
                     can_id_str, _, _, dlc, data = dummy.split(None, 4)
                 except ValueError:
                     # but if not, we only want to get the stuff up to the dlc
-                    can_id_str, _, _, dlc       = dummy.split(None, 3)
+                    can_id_str, _, _, dlc = dummy.split(None, 3)
                     # and we set data to an empty sequence manually
-                    data = ''
+                    data = ""
 
                 dlc = int(dlc)
                 frame = bytearray()
@@ -113,7 +119,7 @@ class ASCReader(BaseIOHandler):
                     is_remote_frame=False,
                     dlc=dlc,
                     data=frame,
-                    channel=channel
+                    channel=channel,
                 )
 
         self.stop()
@@ -159,7 +165,7 @@ class ASCWriter(BaseIOHandler, Listener):
         :param channel: a default channel to use when the message does not
                         have a channel set
         """
-        super().__init__(file, mode='w')
+        super().__init__(file, mode="w")
         self.channel = channel
 
         # write start of file header
@@ -185,19 +191,21 @@ class ASCWriter(BaseIOHandler, Listener):
         :param float timestamp: the absolute timestamp of the event
         """
 
-        if not message: # if empty or None
+        if not message:  # if empty or None
             logger.debug("ASCWriter: ignoring empty message")
             return
 
         # this is the case for the very first message:
         if not self.header_written:
-            self.last_timestamp = (timestamp or 0.0)
+            self.last_timestamp = timestamp or 0.0
             self.started = self.last_timestamp
-            mlsec = repr(self.last_timestamp).split('.')[1][:3]
-            formatted_date = time.strftime(self.FORMAT_DATE.format(mlsec), time.localtime(self.last_timestamp))
+            mlsec = repr(self.last_timestamp).split(".")[1][:3]
+            formatted_date = time.strftime(
+                self.FORMAT_DATE.format(mlsec), time.localtime(self.last_timestamp)
+            )
             self.file.write("Begin Triggerblock %s\n" % formatted_date)
             self.header_written = True
-            self.log_event("Start of measurement") # caution: this is a recursive call!
+            self.log_event("Start of measurement")  # caution: this is a recursive call!
 
         # Use last known timestamp if unknown
         if timestamp is None:
@@ -217,7 +225,7 @@ class ASCWriter(BaseIOHandler, Listener):
             return
 
         if msg.is_remote_frame:
-            dtype = 'r'
+            dtype = "r"
             data = []
         else:
             dtype = "d {}".format(msg.dlc)
@@ -225,7 +233,7 @@ class ASCWriter(BaseIOHandler, Listener):
 
         arb_id = "{:X}".format(msg.arbitration_id)
         if msg.is_extended_id:
-            arb_id += 'x'
+            arb_id += "x"
 
         channel = channel2int(msg.channel)
         if channel is None:
@@ -251,7 +259,7 @@ class ASCWriter(BaseIOHandler, Listener):
                 esi=1 if msg.error_state_indicator else 0,
                 dlc=msg.dlc,
                 data_length=len(data),
-                data=' '.join(data),
+                data=" ".join(data),
                 message_duration=0,
                 message_length=0,
                 flags=flags,
@@ -259,14 +267,14 @@ class ASCWriter(BaseIOHandler, Listener):
                 bit_timing_conf_arb=0,
                 bit_timing_conf_data=0,
                 bit_timing_conf_ext_arb=0,
-                bit_timing_conf_ext_data=0
+                bit_timing_conf_ext_data=0,
             )
         else:
             serialized = self.FORMAT_MESSAGE.format(
                 channel=channel,
                 id=arb_id,
                 dtype=dtype,
-                data=' '.join(data)
+                data=" ".join(data),
             )
 
         self.log_event(serialized, msg.timestamp)

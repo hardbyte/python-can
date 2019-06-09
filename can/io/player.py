@@ -16,7 +16,7 @@ from .canutils import CanutilsLogReader
 from .csv import CSVReader
 from .sqlite import SqliteReader
 
-log = logging.getLogger('can.io.player')
+log = logging.getLogger("can.io.player")
 
 
 class LogReader(BaseIOHandler):
@@ -60,7 +60,9 @@ class LogReader(BaseIOHandler):
         elif filename.endswith(".log"):
             return CanutilsLogReader(filename, *args, **kwargs)
         else:
-            raise NotImplementedError("No read support for this log format: {}".format(filename))
+            raise NotImplementedError(
+                "No read support for this log format: {}".format(filename)
+            )
 
 
 class MessageSync:

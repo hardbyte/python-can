@@ -21,6 +21,7 @@ class UcanException(CanError):
 
 class UcanError(UcanException):
     """ Exception class for errors from USB-CAN-library. """
+
     def __init__(self, result, func, arguments):
         super().__init__(result, func, arguments)
         self.return_msgs = {
@@ -29,7 +30,7 @@ class UcanError(UcanException):
             ReturnCode.ERR_HWINUSE: "the specified module is already in use",
             ReturnCode.ERR_ILLVERSION: "the software versions of the module and library are incompatible",
             ReturnCode.ERR_ILLHW: "the module with the specified device number is not connected "
-                                          "(or used by an other application)",
+            "(or used by an other application)",
             ReturnCode.ERR_ILLHANDLE: "wrong USB-CAN-Handle handed over to the function",
             ReturnCode.ERR_ILLPARAM: "wrong parameter handed over to the function",
             ReturnCode.ERR_BUSY: "instruction can not be processed at this time",
@@ -60,13 +61,13 @@ class UcanCmdError(UcanException):
             ReturnCode.ERRCMD_RESERVED2: "reserved",
             ReturnCode.ERRCMD_RESERVED3: "reserved",
             ReturnCode.ERRCMD_ILLBDR: "illegal baud rate value specified in BTR0/BTR1 for systec "
-                                              "USB-CANmoduls",
+            "USB-CANmoduls",
             ReturnCode.ERRCMD_NOTINIT: "CAN channel is not initialized",
             ReturnCode.ERRCMD_ALREADYINIT: "CAN channel is already initialized",
             ReturnCode.ERRCMD_ILLSUBCMD: "illegal sub-command specified",
             ReturnCode.ERRCMD_ILLIDX: "illegal index specified (e.g. index for cyclic CAN messages)",
             ReturnCode.ERRCMD_RUNNING: "cyclic CAN message(s) can not be defined because transmission of "
-                                               "cyclic CAN messages is already running",
+            "cyclic CAN messages is already running",
         }
 
 
@@ -82,12 +83,12 @@ class UcanWarning(UcanException):
             ReturnCode.WARN_RESERVED1: "reserved",
             ReturnCode.WARN_RESERVED2: "reserved",
             ReturnCode.WARN_FW_TXOVERRUN: "overrun in transmit buffer of the firmware (but this CAN message "
-                                                  "was successfully stored in buffer of the ibrary)",
+            "was successfully stored in buffer of the ibrary)",
             ReturnCode.WARN_FW_RXOVERRUN: "overrun in receive buffer of the firmware (but this CAN message "
-                                                  "was successfully read)",
+            "was successfully read)",
             ReturnCode.WARN_FW_TXMSGLOST: "reserved",
             ReturnCode.WARN_NULL_PTR: "pointer is NULL",
             ReturnCode.WARN_TXLIMIT: "not all CAN messages could be stored to the transmit buffer in "
-                                             "USB-CAN-library",
-            ReturnCode.WARN_BUSY: "reserved"
+            "USB-CAN-library",
+            ReturnCode.WARN_BUSY: "reserved",
         }

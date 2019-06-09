@@ -8,19 +8,18 @@ Copyright (C) 2016 Giuseppe Corbelli <giuseppe.corbelli@weightpack.com>
 
 import ctypes
 
+
 class LUID(ctypes.Structure):
-    _fields_ = [
-        ("LowPart", ctypes.c_uint32),
-        ("HighPart", ctypes.c_int32),
-    ]
+    _fields_ = [("LowPart", ctypes.c_uint32), ("HighPart", ctypes.c_int32)]
+
+
 PLUID = ctypes.POINTER(LUID)
 
 
 class VCIID(ctypes.Union):
-    _fields_ = [
-        ("AsLuid", LUID),
-        ("AsInt64", ctypes.c_int64),
-    ]
+    _fields_ = [("AsLuid", LUID), ("AsInt64", ctypes.c_int64)]
+
+
 PVCIID = ctypes.POINTER(VCIID)
 
 
@@ -35,10 +34,8 @@ class GUID(ctypes.Structure):
 
 class VCIDEVICEINFO(ctypes.Structure):
     class UniqueHardwareId(ctypes.Union):
-        _fields_ = [
-            ("AsChar", ctypes.c_char * 16),
-            ("AsGuid", GUID),
-        ]
+        _fields_ = [("AsChar", ctypes.c_char * 16), ("AsGuid", GUID)]
+
     _fields_ = [
         ("VciObjectId", VCIID),
         ("DeviceClass", GUID),
@@ -66,8 +63,10 @@ class VCIDEVICEINFO(ctypes.Structure):
             self.DriverReleaseVersion,
             self.DriverMajorVersion,
             self.DriverMinorVersion,
-            self.DriverBuildVersion
+            self.DriverBuildVersion,
         )
+
+
 PVCIDEVICEINFO = ctypes.POINTER(VCIDEVICEINFO)
 
 
@@ -77,8 +76,10 @@ class CANLINESTATUS(ctypes.Structure):
         ("bBtReg0", ctypes.c_uint8),
         ("bBtReg1", ctypes.c_uint8),
         ("bBusLoad", ctypes.c_uint8),
-        ("dwStatus", ctypes.c_uint32)
+        ("dwStatus", ctypes.c_uint32),
     ]
+
+
 PCANLINESTATUS = ctypes.POINTER(CANLINESTATUS)
 
 
@@ -88,8 +89,10 @@ class CANCHANSTATUS(ctypes.Structure):
         ("fActivated", ctypes.c_uint32),
         ("fRxOverrun", ctypes.c_uint32),
         ("bRxFifoLoad", ctypes.c_uint8),
-        ("bTxFifoLoad", ctypes.c_uint8)
+        ("bTxFifoLoad", ctypes.c_uint8),
     ]
+
+
 PCANCHANSTATUS = ctypes.POINTER(CANCHANSTATUS)
 
 
@@ -103,8 +106,10 @@ class CANCAPABILITIES(ctypes.Structure):
         ("dwCmsDivisor", ctypes.c_uint32),
         ("dwCmsMaxTicks", ctypes.c_uint32),
         ("dwDtxDivisor", ctypes.c_uint32),
-        ("dwDtxMaxTicks", ctypes.c_uint32)
+        ("dwDtxMaxTicks", ctypes.c_uint32),
     ]
+
+
 PCANCAPABILITIES = ctypes.POINTER(CANCAPABILITIES)
 
 
@@ -128,13 +133,12 @@ class CANMSGINFO(ctypes.Union):
             ("srr", ctypes.c_uint32, 1),
             ("rtr", ctypes.c_uint32, 1),
             ("ext", ctypes.c_uint32, 1),
-            ("afc", ctypes.c_uint32, 8)
+            ("afc", ctypes.c_uint32, 8),
         ]
 
-    _fields_ = [
-        ("Bytes", Bytes),
-        ("Bits", Bits)
-    ]
+    _fields_ = [("Bytes", Bytes), ("Bits", Bits)]
+
+
 PCANMSGINFO = ctypes.POINTER(CANMSGINFO)
 
 
@@ -143,9 +147,12 @@ class CANMSG(ctypes.Structure):
         ("dwTime", ctypes.c_uint32),
         ("dwMsgId", ctypes.c_uint32),
         ("uMsgInfo", CANMSGINFO),
-        ("abData", ctypes.c_uint8 * 8)
+        ("abData", ctypes.c_uint8 * 8),
     ]
+
+
 PCANMSG = ctypes.POINTER(CANMSG)
+
 
 class CANCYCLICTXMSG(ctypes.Structure):
     _fields_ = [
@@ -154,6 +161,8 @@ class CANCYCLICTXMSG(ctypes.Structure):
         ("bByteIndex", ctypes.c_uint8),
         ("dwMsgId", ctypes.c_uint32),
         ("uMsgInfo", CANMSGINFO),
-        ("abData", ctypes.c_uint8 * 8)
+        ("abData", ctypes.c_uint8 * 8),
     ]
+
+
 PCANCYCLICTXMSG = ctypes.POINTER(CANCYCLICTXMSG)

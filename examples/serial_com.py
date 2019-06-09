@@ -46,17 +46,20 @@ def receive(bus, stop_event):
             print("rx: {}".format(rx_msg))
     print("Stopped receiving messages")
 
-if __name__ == "__main__":
-    server = can.interface.Bus(bustype='serial', channel='/dev/ttyS10')
-    client = can.interface.Bus(bustype='serial', channel='/dev/ttyS11')
 
-    tx_msg = can.Message(arbitration_id=0x01, data=[0x11, 0x22, 0x33, 0x44,
-                                                    0x55, 0x66, 0x77, 0x88])
+if __name__ == "__main__":
+    server = can.interface.Bus(bustype="serial", channel="/dev/ttyS10")
+    client = can.interface.Bus(bustype="serial", channel="/dev/ttyS11")
+
+    tx_msg = can.Message(
+        arbitration_id=0x01, data=[0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88]
+    )
 
     # Thread for sending and receiving messages
     stop_event = threading.Event()
-    t_send_cyclic = threading.Thread(target=send_cyclic, args=(server, tx_msg,
-                                                               stop_event))
+    t_send_cyclic = threading.Thread(
+        target=send_cyclic, args=(server, tx_msg, stop_event)
+    )
     t_receive = threading.Thread(target=receive, args=(client, stop_event))
     t_receive.start()
     t_send_cyclic.start()
