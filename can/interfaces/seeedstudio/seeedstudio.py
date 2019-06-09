@@ -121,7 +121,7 @@ class CanAnalyzer(BusABC):
         byte_msg.append(0x12)     # Initialization Message ID
 
         byte_msg.append(CanAnalyzer.BITRATE[self.bit_rate])  # CAN Baud Rate
-        byte_msg.append(CanAnalyzer.FRAMETYPE[self.frame_type]) 
+        byte_msg.append(CanAnalyzer.FRAMETYPE[self.frame_type])
 
         byte_msg.extend(self.filter_id)
 
@@ -135,11 +135,11 @@ class CanAnalyzer(BusABC):
             byte_msg.append(0x00)
 
         crc = Crc8Darc.calc(byte_msg[2:])
-        crc_byte = struct.pack('B', crc)
+#        crc_byte = struct.pack('B', crc)
 
-        byte_msg.append(crc_byte)
+        byte_msg.append(crc)
 
-        logger.debug("init_frm:\t" + binascii.hexlify(byte_msg))
+        logger.debug("init_frm:\t" + byte_msg.hex())
         self.ser.write(byte_msg)
 
     def flush_buffer(self):
@@ -161,7 +161,7 @@ class CanAnalyzer(BusABC):
 
         byte_msg.append(crc_byte)
 
-        logger.debug("status_frm:\t" + binascii.hexlify(byte_msg))
+        logger.debug("status_frm:\t" + byte_msg.hex())
         self.ser.write(byte_msg)
 
     def send(self, msg, timeout=None):
@@ -198,7 +198,7 @@ class CanAnalyzer(BusABC):
         byte_msg.extend(msg.data)
         byte_msg.append(0x55)
 
-        logger.debug("Sending:\t" + binascii.hexlify(byte_msg))
+        logger.debug("Sending:\t" + byte_msg.hex())
         self.ser.write(byte_msg)
 
     def _recv_internal(self, timeout):

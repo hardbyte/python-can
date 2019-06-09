@@ -24,7 +24,7 @@ BACKENDS = {
     'slcan':            ('can.interfaces.slcan',            'slcanBus'),
     'canalystii':       ('can.interfaces.canalystii',       'CANalystIIBus'),
     'systec':           ('can.interfaces.systec',           'UcanBus'),
-    'usb_can_analyzer': ('can.interfaces.usb_can_analyzer.usb_can_analyzer', 'CanAnalyzer')
+    'seeedstudio':      ('can.interfaces.seeedstudio',      'CanAnalyzer')
 }
 
 BACKENDS.update({
