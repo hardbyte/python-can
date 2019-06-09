@@ -34,24 +34,35 @@ class ComparingMessagesTestCase:
         elif self.preserves_channel:
             print("Comparing: message 1: {!r}".format(message_1))
             print("           message 2: {!r}".format(message_2))
-            self.fail("messages are unequal with allowed timestamp delta {}".format(self.allowed_timestamp_delta))
+            self.fail(
+                "messages are unequal with allowed timestamp delta {}".format(
+                    self.allowed_timestamp_delta
+                )
+            )
         else:
-            message_2 = copy(message_2) # make sure this method is pure
+            message_2 = copy(message_2)  # make sure this method is pure
             message_2.channel = message_1.channel
-            if message_1.equals(message_2, timestamp_delta=self.allowed_timestamp_delta):
+            if message_1.equals(
+                message_2, timestamp_delta=self.allowed_timestamp_delta
+            ):
                 return
             else:
                 print("Comparing: message 1: {!r}".format(message_1))
                 print("           message 2: {!r}".format(message_2))
-                self.fail("messages are unequal with allowed timestamp delta {} even when ignoring channels" \
-                          .format(self.allowed_timestamp_delta))
+                self.fail(
+                    "messages are unequal with allowed timestamp delta {} even when ignoring channels".format(
+                        self.allowed_timestamp_delta
+                    )
+                )
 
     def assertMessagesEqual(self, messages_1, messages_2):
         """
         Checks the order and content of the individual messages pairwise.
         Raises an error if the lengths of the sequences are not equal.
         """
-        self.assertEqual(len(messages_1), len(messages_2), "the number of messages differs")
+        self.assertEqual(
+            len(messages_1), len(messages_2), "the number of messages differs"
+        )
 
         for message_1, message_2 in zip(messages_1, messages_2):
             self.assertMessageEqual(message_1, message_2)

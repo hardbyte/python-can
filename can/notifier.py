@@ -9,11 +9,10 @@ import logging
 import time
 import asyncio
 
-logger = logging.getLogger('can.Notifier')
+logger = logging.getLogger("can.Notifier")
 
 
 class Notifier:
-
     def __init__(self, bus, listeners, timeout=1.0, loop=None):
         """Manages the distribution of :class:`can.Message` instances to listeners.
 
@@ -53,13 +52,16 @@ class Notifier:
         :param can.BusABC bus:
             CAN bus instance.
         """
-        if self._loop is not None and hasattr(bus, 'fileno') and bus.fileno() >= 0:
+        if self._loop is not None and hasattr(bus, "fileno") and bus.fileno() >= 0:
             # Use file descriptor to watch for messages
             reader = bus.fileno()
             self._loop.add_reader(reader, self._on_message_available, bus)
         else:
-            reader = threading.Thread(target=self._rx_thread, args=(bus,),
-                name='can.notifier for bus "{}"'.format(bus.channel_info))
+            reader = threading.Thread(
+                target=self._rx_thread,
+                args=(bus,),
+                name='can.notifier for bus "{}"'.format(bus.channel_info),
+            )
             reader.daemon = True
             reader.start()
         self._readers.append(reader)
@@ -83,7 +85,7 @@ class Notifier:
                 # reader is a file descriptor
                 self._loop.remove_reader(reader)
         for listener in self.listeners:
-            if hasattr(listener, 'stop'):
+            if hasattr(listener, "stop"):
                 listener.stop()
 
     def _rx_thread(self, bus):
@@ -94,7 +96,8 @@ class Notifier:
                     with self._lock:
                         if self._loop is not None:
                             self._loop.call_soon_threadsafe(
-                                self._on_message_received, msg)
+                                self._on_message_received, msg
+                            )
                         else:
                             self._on_message_received(msg)
                 msg = bus.recv(self.timeout)
@@ -120,7 +123,7 @@ class Notifier:
 
     def _on_error(self, exc):
         for listener in self.listeners:
-            if hasattr(listener, 'on_error'):
+            if hasattr(listener, "on_error"):
                 listener.on_error(exc)
 
     def add_listener(self, listener):

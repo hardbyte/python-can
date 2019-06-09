@@ -24,9 +24,11 @@ with open("README.rst", "r") as f:
     long_description = f.read()
 
 # Dependencies
-extras_require = {"serial": ["pyserial~=3.0"],
-                  "neovi": ["python-ics>=2.12"],
-                  "seeedstudio": ["crccheck>=0.6","pyserial>=3.0"]}
+extras_require = {
+    "serial": ["pyserial~=3.0"],
+    "neovi": ["python-ics>=2.12"],
+    "seeedstudio": ["crccheck>=0.6", "pyserial>=3.0"],
+}
 
 tests_require = [
     "pytest~=4.3",

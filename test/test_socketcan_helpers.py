@@ -7,14 +7,12 @@ Tests helpers in `can.interfaces.socketcan.socketcan_common`.
 
 import unittest
 
-from can.interfaces.socketcan.utils import \
-    find_available_interfaces, error_code_to_str
+from can.interfaces.socketcan.utils import find_available_interfaces, error_code_to_str
 
 from .config import *
 
 
 class TestSocketCanHelpers(unittest.TestCase):
-
     @unittest.skipUnless(IS_LINUX, "socketcan is only available on Linux")
     def test_error_code_to_str(self):
         """
@@ -27,7 +25,7 @@ class TestSocketCanHelpers(unittest.TestCase):
 
         for error_code in test_data:
             string = error_code_to_str(error_code)
-            self.assertTrue(string) # not None or empty
+            self.assertTrue(string)  # not None or empty
 
     @unittest.skipUnless(IS_LINUX, "socketcan is only available on Linux")
     def test_find_available_interfaces(self):
@@ -40,5 +38,5 @@ class TestSocketCanHelpers(unittest.TestCase):
             self.assertIn("vcan0", result)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

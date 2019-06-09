@@ -92,6 +92,13 @@ jobs:
         # warnings to the .pylintrc-wip file to prevent them from being
         # re-introduced
         - pylint --rcfile=.pylintrc-wip can/
+    - stage: linter
+      name: "Formatting Checks"
+      python: "3.7"
+      before_install:
+        - travis_retry pip install -r requirements-lint.txt
+      script:
+        - black --check --verbose .
     - stage: deploy
       name: "PyPi Deployment"
       python: "3.7"
