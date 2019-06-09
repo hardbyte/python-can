@@ -8,7 +8,7 @@ import logging
 
 __version__ = "3.2.0"
 
-log = logging.getLogger('can')
+log = logging.getLogger("can")
 
 rc = dict()
 
@@ -42,9 +42,10 @@ from .interfaces import VALID_INTERFACES
 from . import interface
 from .interface import Bus, detect_available_configs
 
-from .broadcastmanager import \
-    CyclicSendTaskABC, \
-    LimitedDurationCyclicSendTaskABC, \
-    ModifiableCyclicTaskABC, \
-    MultiRateCyclicSendTaskABC, \
-    RestartableCyclicTaskABC
+from .broadcastmanager import (
+    CyclicSendTaskABC,
+    LimitedDurationCyclicSendTaskABC,
+    ModifiableCyclicTaskABC,
+    MultiRateCyclicSendTaskABC,
+    RestartableCyclicTaskABC,
+)

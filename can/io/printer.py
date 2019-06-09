@@ -9,7 +9,7 @@ import logging
 from can.listener import Listener
 from .generic import BaseIOHandler
 
-log = logging.getLogger('can.io.printer')
+log = logging.getLogger("can.io.printer")
 
 
 class Printer(BaseIOHandler, Listener):
@@ -30,10 +30,10 @@ class Printer(BaseIOHandler, Listener):
                      write mode, not binary write mode.
         """
         self.write_to_file = file is not None
-        super().__init__(file, mode='w')
+        super().__init__(file, mode="w")
 
     def on_message_received(self, msg):
         if self.write_to_file:
-            self.file.write(str(msg) + '\n')
+            self.file.write(str(msg) + "\n")
         else:
             print(msg)

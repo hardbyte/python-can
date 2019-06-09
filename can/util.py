@@ -14,37 +14,20 @@ from configparser import ConfigParser
 import can
 from can.interfaces import VALID_INTERFACES
 
-log = logging.getLogger('can.util')
+log = logging.getLogger("can.util")
 
 # List of valid data lengths for a CAN FD message
-CAN_FD_DLC = [
-    0, 1, 2, 3, 4, 5, 6, 7, 8,
-    12, 16, 20, 24, 32, 48, 64
-]
+CAN_FD_DLC = [0, 1, 2, 3, 4, 5, 6, 7, 8, 12, 16, 20, 24, 32, 48, 64]
 
-REQUIRED_KEYS = [
-    'interface',
-    'channel',
-]
+REQUIRED_KEYS = ["interface", "channel"]
 
 
-CONFIG_FILES = ['~/can.conf']
+CONFIG_FILES = ["~/can.conf"]
 
 if platform.system() == "Linux":
-    CONFIG_FILES.extend(
-        [
-            '/etc/can.conf',
-            '~/.can',
-            '~/.canrc'
-        ]
-    )
+    CONFIG_FILES.extend(["/etc/can.conf", "~/.can", "~/.canrc"])
 elif platform.system() == "Windows" or platform.python_implementation() == "IronPython":
-    CONFIG_FILES.extend(
-        [
-            'can.ini',
-            os.path.join(os.getenv('APPDATA', ''), 'can.ini')
-        ]
-    )
+    CONFIG_FILES.extend(["can.ini", os.path.join(os.getenv("APPDATA", ""), "can.ini")])
 
 
 def load_file_config(path=None, section=None):
@@ -69,11 +52,10 @@ def load_file_config(path=None, section=None):
 
     _config = {}
 
-    section = section if section is not None else 'default'
+    section = section if section is not None else "default"
     if config.has_section(section):
-        if config.has_section('default'):
-            _config.update(
-                dict((key, val) for key, val in config.items('default')))
+        if config.has_section("default"):
+            _config.update(dict((key, val) for key, val in config.items("default")))
         _config.update(dict((key, val) for key, val in config.items(section)))
 
     return _config
@@ -89,14 +71,12 @@ def load_environment_config():
 
     """
     mapper = {
-        'interface': 'CAN_INTERFACE',
-        'channel': 'CAN_CHANNEL',
-        'bitrate': 'CAN_BITRATE',
+        "interface": "CAN_INTERFACE",
+        "channel": "CAN_CHANNEL",
+        "bitrate": "CAN_BITRATE",
     }
     return dict(
-        (key, os.environ.get(val))
-        for key, val in mapper.items()
-        if val in os.environ
+        (key, os.environ.get(val)) for key, val in mapper.items() if val in os.environ
     )
 
 
@@ -156,7 +136,7 @@ def load_config(path=None, config=None, context=None):
         given_config,
         can.rc,
         lambda _context: load_environment_config(),  # context is not supported
-        lambda _context: load_file_config(path, _context)
+        lambda _context: load_file_config(path, _context),
     ]
 
     # Slightly complex here to only search for the file config if required
@@ -164,10 +144,10 @@ def load_config(path=None, config=None, context=None):
         if callable(cfg):
             cfg = cfg(context)
         # remove legacy operator (and copy to interface if not already present)
-        if 'bustype' in cfg:
-            if 'interface' not in cfg or not cfg['interface']:
-                cfg['interface'] = cfg['bustype']
-            del cfg['bustype']
+        if "bustype" in cfg:
+            if "interface" not in cfg or not cfg["interface"]:
+                cfg["interface"] = cfg["bustype"]
+            del cfg["bustype"]
         # copy all new parameters
         for key in cfg:
             if key not in config:
@@ -178,11 +158,13 @@ def load_config(path=None, config=None, context=None):
         if key not in config:
             config[key] = None
 
-    if config['interface'] not in VALID_INTERFACES:
-        raise NotImplementedError('Invalid CAN Bus Type - {}'.format(config['interface']))
+    if config["interface"] not in VALID_INTERFACES:
+        raise NotImplementedError(
+            "Invalid CAN Bus Type - {}".format(config["interface"])
+        )
 
-    if 'bitrate' in config:
-        config['bitrate'] = int(config['bitrate'])
+    if "bitrate" in config:
+        config["bitrate"] = int(config["bitrate"])
 
     can.log.debug("can config: {}".format(config))
     return config
@@ -192,7 +174,7 @@ def set_logging_level(level_name=None):
     """Set the logging level for the "can" logger.
     Expects one of: 'critical', 'error', 'warning', 'info', 'debug', 'subdebug'
     """
-    can_logger = logging.getLogger('can')
+    can_logger = logging.getLogger("can")
 
     try:
         can_logger.setLevel(getattr(logging, level_name.upper()))
@@ -243,7 +225,7 @@ def channel2int(channel):
         return channel
     # String and byte objects have a lower() method
     if hasattr(channel, "lower"):
-        match = re.match(r'.*(\d+)$', channel)
+        match = re.match(r".*(\d+)$", channel)
         if match:
             return int(match.group(1))
     return None

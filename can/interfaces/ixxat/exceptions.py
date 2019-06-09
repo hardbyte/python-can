@@ -8,7 +8,7 @@ Copyright (C) 2016 Giuseppe Corbelli <giuseppe.corbelli@weightpack.com>
 
 from can import CanError
 
-__all__ = ['VCITimeout', 'VCIError', 'VCIRxQueueEmptyError', 'VCIDeviceNotFoundError']
+__all__ = ["VCITimeout", "VCIError", "VCIRxQueueEmptyError", "VCIDeviceNotFoundError"]
 
 
 class VCITimeout(CanError):
