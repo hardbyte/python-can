@@ -77,6 +77,9 @@ class BitTiming:
             self._tseg2 = ((btr1 >> 4) & 0x7) + 1
             self._nof_samples = 3 if btr1 & 0x80 else 1
 
+        if nof_samples not in (1, 3):
+            raise ValueError("nof_samples must be 1 or 3")
+
     @property
     def nbt(self):
         """Nominal Bit Time."""
@@ -171,7 +174,37 @@ class BitTiming:
             raise ValueError("tseg1 must be 1 - 16")
         if tseg2 < 1 or tseg2 > 8:
             raise ValueError("tseg2 must be 1 - 8")
-        if nof_samples not in (1, 3):
-            raise ValueError("nof_samples must be 1 or 3")
 
         return sam << 7 | (tseg2 - 1) << 4 | tseg1 - 1
+
+    def __str__(self):
+        segments = []
+        try:
+            segments.append(f"{self.bitrate} bits/s")
+        except ValueError:
+            pass
+        try:
+            segments.append(f"sample point: {self.sample_point:.2f}%")
+        except ValueError:
+            pass
+        try:
+            segments.append(f"BRP: {self.brp}")
+        except ValueError:
+            pass
+        try:
+            segments.append(f"TSEG1: {self.tseg1}")
+        except ValueError:
+            pass
+        try:
+            segments.append(f"TSEG2: {self.tseg2}")
+        except ValueError:
+            pass
+        try:
+            segments.append(f"SJW: {self.sjw}")
+        except ValueError:
+            pass
+        try:
+            segments.append(f"BTR: {self.btr0:02X}{self.btr1:02X}h")
+        except ValueError:
+            pass
+        return ", ".join(segments)
