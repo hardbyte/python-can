@@ -1,3 +1,6 @@
+from typing import Union
+
+
 class BitTiming:
     """Representation of a bit timing configuration.
 
@@ -24,15 +27,15 @@ class BitTiming:
 
     def __init__(
         self,
-        bitrate=None,
-        f_clock=None,
-        brp=None,
-        tseg1=None,
-        tseg2=None,
-        sjw=None,
-        nof_samples=1,
-        btr0=None,
-        btr1=None,
+        bitrate: int = None,
+        f_clock: int = None,
+        brp: int = None,
+        tseg1: int = None,
+        tseg2: int = None,
+        sjw: int = None,
+        nof_samples: int = 1,
+        btr0: int = None,
+        btr1: int = None,
     ):
         """
         :param int bitrate:
@@ -81,12 +84,12 @@ class BitTiming:
             raise ValueError("nof_samples must be 1 or 3")
 
     @property
-    def nbt(self):
+    def nbt(self) -> int:
         """Nominal Bit Time."""
         return self.sync_seg + self.tseg1 + self.tseg2
 
     @property
-    def bitrate(self):
+    def bitrate(self) -> Union[int, float]:
         """Bitrate in bits/s."""
         if self._bitrate:
             return self._bitrate
@@ -95,7 +98,7 @@ class BitTiming:
         raise ValueError("bitrate must be specified")
 
     @property
-    def brp(self):
+    def brp(self) -> int:
         """Bit Rate Prescaler."""
         if self._brp:
             return self._brp
@@ -104,14 +107,14 @@ class BitTiming:
         raise ValueError("Either bitrate and f_clock or brp must be specified")
 
     @property
-    def sjw(self):
+    def sjw(self) -> int:
         """Synchronization Jump Width."""
         if not self._sjw:
             raise ValueError("sjw must be specified")
         return self._sjw
 
     @property
-    def tseg1(self):
+    def tseg1(self) -> int:
         """Time segment 1.
 
         The number of quanta from (but not including) the Sync Segment to the sampling point.
@@ -121,7 +124,7 @@ class BitTiming:
         return self._tseg1
 
     @property
-    def tseg2(self):
+    def tseg2(self) -> int:
         """Time segment 2.
 
         The number of quanta from the sampling point to the end of the bit.
@@ -131,14 +134,14 @@ class BitTiming:
         return self._tseg2
 
     @property
-    def nof_samples(self):
+    def nof_samples(self) -> int:
         """Number of samples (1 or 3)."""
         if not self._nof_samples:
             raise ValueError("nof_samples must be specified")
         return self._nof_samples
 
     @property
-    def f_clock(self):
+    def f_clock(self) -> int:
         """The CAN system clock frequency in Hz.
 
         Usually the oscillator frequency divided by 2.
@@ -148,12 +151,12 @@ class BitTiming:
         return self._f_clock
 
     @property
-    def sample_point(self):
+    def sample_point(self) -> float:
         """Sample point in percent."""
         return 100.0 * (self.nbt - self.tseg2) / self.nbt
 
     @property
-    def btr0(self):
+    def btr0(self) -> int:
         sjw = self.sjw
         brp = self.brp
 
@@ -165,7 +168,7 @@ class BitTiming:
         return (sjw - 1) << 6 | brp - 1
 
     @property
-    def btr1(self):
+    def btr1(self) -> int:
         sam = 1 if self.nof_samples == 3 else 0
         tseg1 = self.tseg1
         tseg2 = self.tseg2
@@ -177,7 +180,7 @@ class BitTiming:
 
         return sam << 7 | (tseg2 - 1) << 4 | tseg1 - 1
 
-    def __str__(self):
+    def __str__(self) -> str:
         segments = []
         try:
             segments.append(f"{self.bitrate} bits/s")
