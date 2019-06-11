@@ -1,13 +1,13 @@
 class BitTiming:
     """Representation of a bit timing configuration.
-    
+
     The class can be constructed in various ways, depending on the information
     available or the capabilities of the interfaces that need to be supported.
 
     The preferred way is using bitrate, CAN clock frequency, TSEG1, TSEG2, SJW::
 
         can.BitTiming(bitrate=1000000, f_clock=8000000, tseg1=5, tseg2=1, sjw=1)
-    
+
     If the clock frequency is unknown it may be omitted but some interfaces may
     require it.
 
@@ -123,7 +123,7 @@ class BitTiming:
     @property
     def tseg2(self):
         """Time segment 2.
-        
+
         The number of quanta from the sampling point to the end of the bit.
         """
         if not self._tseg2:
