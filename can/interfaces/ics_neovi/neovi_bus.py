@@ -15,8 +15,6 @@ import os
 import tempfile
 from collections import deque
 
-from filelock import FileLock
-
 from can import Message, CanError, BusABC
 
 logger = logging.getLogger(__name__)
@@ -30,6 +28,30 @@ except ImportError as ie:
         ie,
     )
     ics = None
+
+
+try:
+    from filelock import FileLock
+except ImportError as ie:
+
+    logger.warning(
+        "Using ICS NeoVi can backend without the "
+        "filelock module installed may cause some issues!: %s",
+        ie,
+    )
+
+    class FileLock:
+        """Dummy file lock that do not actually do anything"""
+
+        def __init__(self, lock_file, timeout=-1):
+            self._lock_file = lock_file
+            self.timeout = timeout
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            return None
 
 
 # Use inter-process mutex to prevent concurrent device open.
