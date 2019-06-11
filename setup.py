@@ -90,6 +90,7 @@ setup(
         "wrapt~=1.10",
         "aenum",
         'windows-curses;platform_system=="Windows"',
+        'filelock'
     ],
     setup_requires=["pytest-runner"],
     extras_require=extras_require,
