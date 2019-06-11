@@ -11,9 +11,12 @@ Implementation references:
 """
 
 import logging
+import os
+import tempfile
 from collections import deque
 
 from can import Message, CanError, BusABC
+from filelock import FileLock
 
 logger = logging.getLogger(__name__)
 
@@ -118,7 +121,14 @@ class NeoViBus(BusABC):
         type_filter = kwargs.get('type_filter')
         serial = kwargs.get('serial')
         self.dev = self._find_device(type_filter, serial)
-        ics.open_device(self.dev)
+
+        # Use inter-process mutex to prevent concurrent device open.
+        # When neoVI server is enabled, there is an issue with concurrent
+        # device open.
+        open_lock = FileLock(
+            os.path.join(tempfile.gettempdir(), 'neovi.lock'))
+        with open_lock:
+            ics.open_device(self.dev)
 
         if 'bitrate' in kwargs:
             for channel in self.channels:
