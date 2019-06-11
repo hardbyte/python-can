@@ -3,7 +3,9 @@ import can
 
 def test_sja1000():
     """Test some values obtained using other bit timing calculators."""
-    timing = can.BitTiming(f_clock=8000000, bitrate=125000, tseg1=11, tseg2=4, sjw=2)
+    timing = can.BitTiming(
+        f_clock=8000000, bitrate=125000, tseg1=11, tseg2=4, sjw=2, nof_samples=3
+    )
     assert timing.f_clock == 8000000
     assert timing.bitrate == 125000
     assert timing.brp == 4
@@ -11,9 +13,10 @@ def test_sja1000():
     assert timing.tseg1 == 11
     assert timing.tseg2 == 4
     assert timing.sjw == 2
+    assert timing.nof_samples == 3
     assert timing.sample_point == 75
     assert timing.btr0 == 0x43
-    assert timing.btr1 == 0x3A
+    assert timing.btr1 == 0xBA
 
     timing = can.BitTiming(f_clock=8000000, bitrate=500000, tseg1=13, tseg2=2, sjw=1)
     assert timing.f_clock == 8000000
@@ -23,6 +26,7 @@ def test_sja1000():
     assert timing.tseg1 == 13
     assert timing.tseg2 == 2
     assert timing.sjw == 1
+    assert timing.nof_samples == 1
     assert timing.sample_point == 87.5
     assert timing.btr0 == 0x00
     assert timing.btr1 == 0x1C
@@ -35,6 +39,7 @@ def test_sja1000():
     assert timing.tseg1 == 5
     assert timing.tseg2 == 2
     assert timing.sjw == 1
+    assert timing.nof_samples == 1
     assert timing.sample_point == 75
     assert timing.btr0 == 0x00
     assert timing.btr1 == 0x14
