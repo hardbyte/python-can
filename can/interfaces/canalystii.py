@@ -86,7 +86,7 @@ class CANalystIIBus(BusABC):
 
         :param channel: channel number
         :param device: device number
-        :param bitrate: CAN network bandwidth (bytes/s)
+        :param bitrate: CAN network bandwidth (bits/s)
         :param Timing0: customize the timing register if bitrate is not specified
         :param Timing1:
         :param can_filters: filters for packet
