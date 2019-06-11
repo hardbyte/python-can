@@ -15,8 +15,9 @@ import os
 import tempfile
 from collections import deque
 
-from can import Message, CanError, BusABC
 from filelock import FileLock
+
+from can import Message, CanError, BusABC
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,11 @@ except ImportError as ie:
         ie,
     )
     ics = None
+
+
+# Use inter-process mutex to prevent concurrent device open.
+# When neoVI server is enabled, there is an issue with concurrent device open.
+open_lock = FileLock(os.path.join(tempfile.gettempdir(), "neovi.lock"))
 
 
 class ICSApiError(CanError):
@@ -126,11 +132,6 @@ class NeoViBus(BusABC):
         serial = kwargs.get("serial")
         self.dev = self._find_device(type_filter, serial)
 
-        # Use inter-process mutex to prevent concurrent device open.
-        # When neoVI server is enabled, there is an issue with concurrent
-        # device open.
-        open_lock = FileLock(
-            os.path.join(tempfile.gettempdir(), 'neovi.lock'))
         with open_lock:
             ics.open_device(self.dev)
 
