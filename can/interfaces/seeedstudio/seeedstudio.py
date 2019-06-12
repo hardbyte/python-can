@@ -6,7 +6,6 @@ as a serial port, for example "/dev/ttyUSB0" on Linux machines
 or "COM1" on Windows.
 https://www.seeedstudio.com/USB-CAN-Analyzer-p-2888.html
 SKU 114991193
-this file uses Crc8Darc checksums.
 """
 
 import logging
@@ -14,7 +13,7 @@ import struct
 from time import sleep, time
 from can import BusABC, Message
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('seeedbus')
 
 try:
     import serial
@@ -22,11 +21,6 @@ except ImportError:
     logger.warning("You won't be able to use the serial can backend without "
                    "the serial module installed!")
     serial = None
-
-try:
-    from crccheck.crc import Crc8Darc
-except ImportError:
-    logger.warning("The interface requires the install option seeddstudio.")
 
 class SeeedBus(BusABC):
     """
@@ -121,12 +115,12 @@ class SeeedBus(BusABC):
         byte_msg.extend(self.filter_id)
         byte_msg.extend(self.mask_id)
         byte_msg.append(SeeedBus.OPERATIONMODE[self.op_mode])
-        byte_msg.append(0x01)
+        byte_msg.append(0x01)     # Follows 'Send once' in windows app.
 
-        for i in range(0, 4):
+        for i in range(0, 4):     # Manual bitrate config, details unknown.
             byte_msg.append(0x00)
 
-        crc = Crc8Darc.calc(byte_msg[2:])
+        crc = sum(byte_msg[2:]) & 0xFF
         byte_msg.append(crc)
 
         logger.debug("init_frm:\t" + byte_msg.hex())
@@ -137,7 +131,8 @@ class SeeedBus(BusABC):
 
     def status_frame(self, timeout=None):
         """
-        Send status message over the serial device.
+        Send status request message over the serial device.  The device will
+        respond but details of error codes are unknown but are logged - DEBUG.
 
         :param timeout:
             This parameter will be ignored. The timeout value of the channel is
@@ -153,7 +148,7 @@ class SeeedBus(BusABC):
         for i in range(0, 14):
             byte_msg.append(0x00)
 
-        crc = Crc8Darc.calc(byte_msg[2:])
+        crc = sum(byte_msg[2:]) & 0xFF
         byte_msg.append(crc)
 
         logger.debug("status_frm:\t" + byte_msg.hex())
@@ -193,7 +188,7 @@ class SeeedBus(BusABC):
         byte_msg.extend(msg.data)
         byte_msg.append(0x55)
 
-        logger.debug("Sending:\t" + byte_msg.hex())
+        logger.debug("sending:\t" + byte_msg.hex())
         self.ser.write(byte_msg)
 
     def _recv_internal(self, timeout):
@@ -224,7 +219,8 @@ class SeeedBus(BusABC):
             rx_byte_2 = ord(self.ser.read())
             time_stamp = time()
             if rx_byte_2 == 0x55:
-                rx_msg_type = self.ser.read()
+                status = bytearray(self.ser.read(18))
+                logger.debug("status resp:\t" + status.hex())
 
             else:
                 length = int(rx_byte_2 & 0x0F)

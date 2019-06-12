@@ -27,7 +27,7 @@ with open("README.rst", "r") as f:
 extras_require = {
     "serial": ["pyserial~=3.0"],
     "neovi": ["python-ics>=2.12"],
-    "seeedstudio": ["crccheck>=0.6", "pyserial>=3.0"],
+    "seeedstudio": ["pyserial>=3.0"],
 }
 
 tests_require = [
