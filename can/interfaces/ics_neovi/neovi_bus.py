@@ -40,7 +40,7 @@ except ImportError as ie:
     )
 
     class FileLock:
-        """Dummy file lock that do not actually do anything"""
+        """Dummy file lock that does not actually do anything"""
 
         def __init__(self, lock_file, timeout=-1):
             self._lock_file = lock_file
