@@ -211,3 +211,22 @@ class BitTiming:
         except ValueError:
             pass
         return ", ".join(segments)
+
+    def __repr__(self) -> str:
+        kwargs = {}
+        if self._f_clock:
+            kwargs["f_clock"] = self._f_clock
+        if self._bitrate:
+            kwargs["bitrate"] = self._bitrate
+        if self._brp:
+            kwargs["brp"] = self._brp
+        if self._tseg1:
+            kwargs["tseg1"] = self._tseg1
+        if self._tseg2:
+            kwargs["tseg2"] = self._tseg2
+        if self._sjw:
+            kwargs["sjw"] = self._sjw
+        if self._nof_samples != 1:
+            kwargs["nof_samples"] = self._nof_samples
+        args = ", ".join(f"{key}={value}" for key, value in kwargs.items())
+        return f"can.BitTiming({args})"
