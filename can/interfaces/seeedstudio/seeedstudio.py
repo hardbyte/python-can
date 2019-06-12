@@ -60,7 +60,7 @@ class SeeedBus(BusABC):
                     }
 
     def __init__(self, channel, baudrate=2000000, timeout=0.1, frame_type="STD",
-                 operation_mode="normal", bit_rate=500000, *args, **kwargs):
+                 operation_mode="normal", bitrate=500000, *args, **kwargs):
         """
         :param str channel:
             The serial device to open. For example "/dev/ttyS1" or
@@ -78,8 +78,11 @@ class SeeedBus(BusABC):
         :param operation_mode
             normal, loopback, silent or loopback_and_silent.
 
+        :param bitrate
+            CAN bus bit rate, selected from available list.
+
         """
-        self.bit_rate = bit_rate
+        self.bit_rate = bitrate
         self.frame_type = frame_type
         self.op_mode = operation_mode
         self.filter_id = bytearray([0x00, 0x00, 0x00, 0x00])

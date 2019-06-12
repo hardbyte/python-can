@@ -49,10 +49,11 @@ Parameters
 ::
 
  SeeedBus(channel,
+          baudrate=2000000,
           timeout=0.1,
           frame_type='STD',
           operation_mode='normal',
-          bit_rate=500000)
+          bitrate=500000)
 
 ChANNEL
  The serial port created by the USB device when connected.
