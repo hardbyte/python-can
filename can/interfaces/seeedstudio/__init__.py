@@ -3,4 +3,4 @@
 """
 """
 
-from can.interfaces.seeedstudio.seeedstudio import CanAnalyzer
+from can.interfaces.seeedstudio.seeedstudio import SeeedBus

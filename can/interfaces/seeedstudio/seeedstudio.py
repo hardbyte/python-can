@@ -2,25 +2,19 @@
 
 """
 To Support the Seeed USB-Can analyzer interface. The device will appear
-as a serial port, for example "/dev/ttyS1" or "/dev/ttyUSB0" on Linux
-machines or "COM1" on Windows.
+as a serial port, for example "/dev/ttyUSB0" on Linux machines
+or "COM1" on Windows.
 https://www.seeedstudio.com/USB-CAN-Analyzer-p-2888.html
 SKU 114991193
-See protoocl:
-https://copperhilltech.com/blog/usbcan-analyzer-usb-to-can-bus-serial-protocol-definition/
-
 this file uses Crc8Darc checksums.
 """
 
-from __future__ import absolute_import, division
-
 import logging
 import struct
-import binascii
 from time import sleep, time
 from can import BusABC, Message
 
-logger = logging.getLogger('can.CanAnalyzer')
+logger = logging.getLogger(__name__)
 
 try:
     import serial
@@ -32,16 +26,11 @@ except ImportError:
 try:
     from crccheck.crc import Crc8Darc
 except ImportError:
-    logger.warning("The interface requires the install option crccheck.")
+    logger.warning("The interface requires the install option seeddstudio.")
 
-
-class CanAnalyzer(BusABC):
+class SeeedBus(BusABC):
     """
-    Enable basic can communication over a serial device.
-
-    .. note:: See :meth:`can.interfaces.serial.CanAnalyzer._recv_internal`
-              for some special semantics.
-
+    Enable basic can communication over a USB-CAN-Analyzer device.
     """
     BITRATE = {
                1000000: 0x01,
@@ -70,25 +59,24 @@ class CanAnalyzer(BusABC):
                      "loopback_and_silent":0x03
                     }
 
-    def __init__(self, channel, baudrate=2000000, timeout=0.1, rtscts=False,
-                 frame_type='STD', operation_mode='normal', bit_rate=500000,
-                 *args, **kwargs):
+    def __init__(self, channel, baudrate=2000000, timeout=0.1, frame_type="STD",
+                 operation_mode="normal", bit_rate=500000, *args, **kwargs):
         """
         :param str channel:
             The serial device to open. For example "/dev/ttyS1" or
             "/dev/ttyUSB0" on Linux or "COM1" on Windows systems.
 
-        :param int baudrate:
-            Baud rate of the serial device in bit/s (default 115200).
-
-            .. warning::
-                Some serial port implementations don't care about the baudrate.
+        :param baudrate:
+            The default matches required baudrate
 
         :param float timeout:
             Timeout for the serial device in seconds (default 0.1).
 
-        :param bool rtscts:
-            turn hardware handshake (RTS/CTS) on and off
+        :param str frame_type:
+            STD or EXT, to select standard or extended messages
+
+        :param operation_mode
+            normal, loopback, silent or loopback_and_silent.
 
         """
         self.bit_rate = bit_rate
@@ -101,9 +89,9 @@ class CanAnalyzer(BusABC):
 
         self.channel_info = "Serial interface: " + channel
         self.ser = serial.Serial(
-            channel, baudrate=baudrate, timeout=timeout, rtscts=rtscts)
+            channel, baudrate=baudrate, timeout=timeout, rtscts=False)
 
-        super(CanAnalyzer, self).__init__(channel=channel, *args, **kwargs)
+        super(SeeedBus, self).__init__(channel=channel, *args, **kwargs)
         self.init_frame()
 
     def shutdown(self):
@@ -113,30 +101,29 @@ class CanAnalyzer(BusABC):
         self.ser.close()
 
     def init_frame(self, timeout=None):
+        """
+        Send init message to setup the device for comms. this is called during
+        interface creation.
 
+        :param timeout:
+            This parameter will be ignored. The timeout value of the channel is
+            used instead.
+        """
         byte_msg = bytearray()
         byte_msg.append(0xAA)     # Frame Start Byte 1
         byte_msg.append(0x55)     # Frame Start Byte 2
-
         byte_msg.append(0x12)     # Initialization Message ID
-
-        byte_msg.append(CanAnalyzer.BITRATE[self.bit_rate])  # CAN Baud Rate
-        byte_msg.append(CanAnalyzer.FRAMETYPE[self.frame_type])
-
+        byte_msg.append(SeeedBus.BITRATE[self.bit_rate])  # CAN Baud Rate
+        byte_msg.append(SeeedBus.FRAMETYPE[self.frame_type])
         byte_msg.extend(self.filter_id)
-
         byte_msg.extend(self.mask_id)
-
-        byte_msg.append(CanAnalyzer.OPERATIONMODE[self.op_mode])
-
+        byte_msg.append(SeeedBus.OPERATIONMODE[self.op_mode])
         byte_msg.append(0x01)
 
         for i in range(0, 4):
             byte_msg.append(0x00)
 
         crc = Crc8Darc.calc(byte_msg[2:])
-#        crc_byte = struct.pack('B', crc)
-
         byte_msg.append(crc)
 
         logger.debug("init_frm:\t" + byte_msg.hex())
@@ -146,6 +133,13 @@ class CanAnalyzer(BusABC):
         self.ser.flushInput()
 
     def status_frame(self, timeout=None):
+        """
+        Send status message over the serial device.
+
+        :param timeout:
+            This parameter will be ignored. The timeout value of the channel is
+            used instead.
+        """
         byte_msg = bytearray()
         byte_msg.append(0xAA)     # Frame Start Byte 1
         byte_msg.append(0x55)     # Frame Start Byte 2
@@ -157,9 +151,7 @@ class CanAnalyzer(BusABC):
             byte_msg.append(0x00)
 
         crc = Crc8Darc.calc(byte_msg[2:])
-        crc_byte = struct.pack('B', crc)
-
-        byte_msg.append(crc_byte)
+        byte_msg.append(crc)
 
         logger.debug("status_frm:\t" + byte_msg.hex())
         self.ser.write(byte_msg)
@@ -208,7 +200,8 @@ class CanAnalyzer(BusABC):
         :param timeout:
 
             .. warning::
-                This parameter will be ignored. The timeout value of the channel is used.
+                This parameter will be ignored. The timeout value of the
+                channel is used.
 
         :returns:
             Received message and False (because not filtering as taken place).
