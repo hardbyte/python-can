@@ -60,14 +60,6 @@ jobs:
       os: osx
       osx_image: xcode8.3
       python: 3.6-dev
-    - stage: test
-      os: osx
-      osx_image: xcode8.3
-      python: 3.7-dev
-    - stage: test
-      os: osx
-      osx_image: xcode8.3
-      python: nightly
 
     - stage: documentation
       name: "Sphinx Build"

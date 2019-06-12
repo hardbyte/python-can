@@ -1,7 +1,7 @@
 python-can
 ==========
 
-|release| |docs| |build_travis| |build_appveyor| |coverage| |downloads|
+|release| |docs| |build_travis| |build_appveyor| |coverage| |downloads| |formatter|
 
 .. |release| image:: https://img.shields.io/pypi/v/python-can.svg
    :target: https://pypi.python.org/pypi/python-can/
@@ -26,6 +26,10 @@ python-can
 .. |downloads| image:: https://pepy.tech/badge/python-can
    :target: https://pepy.tech/project/python-can
    :alt: Downloads on PePy
+
+.. |formatter| image:: https://img.shields.io/badge/code%20style-black-000000.svg
+   :target: https://github.com/python/black
+   :alt: This project uses the black formatter.
 
 The **C**\ ontroller **A**\ rea **N**\ etwork is a bus standard designed
 to allow microcontrollers and devices to communicate with each other. It
