@@ -11,6 +11,8 @@ Implementation references:
 """
 
 import logging
+import os
+import tempfile
 from collections import deque
 
 from can import Message, CanError, BusABC
@@ -26,6 +28,35 @@ except ImportError as ie:
         ie,
     )
     ics = None
+
+
+try:
+    from filelock import FileLock
+except ImportError as ie:
+
+    logger.warning(
+        "Using ICS NeoVi can backend without the "
+        "filelock module installed may cause some issues!: %s",
+        ie,
+    )
+
+    class FileLock:
+        """Dummy file lock that does not actually do anything"""
+
+        def __init__(self, lock_file, timeout=-1):
+            self._lock_file = lock_file
+            self.timeout = timeout
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            return None
+
+
+# Use inter-process mutex to prevent concurrent device open.
+# When neoVI server is enabled, there is an issue with concurrent device open.
+open_lock = FileLock(os.path.join(tempfile.gettempdir(), "neovi.lock"))
 
 
 class ICSApiError(CanError):
@@ -122,7 +153,9 @@ class NeoViBus(BusABC):
         type_filter = kwargs.get("type_filter")
         serial = kwargs.get("serial")
         self.dev = self._find_device(type_filter, serial)
-        ics.open_device(self.dev)
+
+        with open_lock:
+            ics.open_device(self.dev)
 
         if "bitrate" in kwargs:
             for channel in self.channels:
