@@ -150,6 +150,7 @@ class PcanBus(BusABC):
                 raise ArgumentError("timing and data_timing arguments missing")
 
             fd_bitrate = ",".join(f"{key}={val}" for key, val in params.items())
+            log.debug("FD bit rate string: " + fd_bitrate)
 
             result = self.m_objPCANBasic.InitializeFD(
                 self.m_PcanHandle, fd_bitrate.encode("ascii")
