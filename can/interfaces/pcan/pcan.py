@@ -6,6 +6,7 @@ Enable basic CAN over a PCAN USB device.
 
 import logging
 import time
+import warnings
 
 from can import CanError, Message, BusABC
 from can.bus import BusState
@@ -62,26 +63,17 @@ pcan_bitrate_objs = {
 }
 
 
-pcan_fd_parameter_list = [
-    "nom_brp",
-    "nom_tseg1",
-    "nom_tseg2",
-    "nom_sjw",
-    "data_brp",
-    "data_tseg1",
-    "data_tseg2",
-    "data_sjw",
-]
-
-
 class PcanBus(BusABC):
     def __init__(
         self,
         channel="PCAN_USBBUS1",
         state=BusState.ACTIVE,
         bitrate=500000,
+        timing=None,
+        data_timing=None,
+        fd=False,
         *args,
-        **kwargs
+        **kwargs,
     ):
         """A PCAN USB interface to CAN.
 
@@ -104,77 +96,14 @@ class PcanBus(BusABC):
 
         :param bool fd:
             Should the Bus be initialized in CAN-FD mode.
-
-        :param int f_clock:
-            Clock rate in Hz.
-            Any of the following:
-            20000000, 24000000, 30000000, 40000000, 60000000, 80000000.
-            Ignored if not using CAN-FD.
-            Pass either f_clock or f_clock_mhz.
-
-        :param int f_clock_mhz:
-            Clock rate in MHz.
-            Any of the following:
-            20, 24, 30, 40, 60, 80.
-            Ignored if not using CAN-FD.
-            Pass either f_clock or f_clock_mhz.
-
-        :param int nom_brp:
-            Clock prescaler for nominal time quantum.
-            In the range (1..1024)
-            Ignored if not using CAN-FD.
-
-        :param int nom_tseg1:
-            Time segment 1 for nominal bit rate,
-            that is, the number of quanta from (but not including)
-            the Sync Segment to the sampling point.
-            In the range (1..256).
-            Ignored if not using CAN-FD.
-
-        :param int nom_tseg2:
-            Time segment 2 for nominal bit rate,
-            that is, the number of quanta from the sampling
-            point to the end of the bit.
-            In the range (1..128).
-            Ignored if not using CAN-FD.
-
-        :param int nom_sjw:
-            Synchronization Jump Width for nominal bit rate.
-            Decides the maximum number of time quanta
-            that the controller can resynchronize every bit.
-            In the range (1..128).
-            Ignored if not using CAN-FD.
-
-        :param int data_brp:
-            Clock prescaler for fast data time quantum.
-            In the range (1..1024)
-            Ignored if not using CAN-FD.
-
-        :param int data_tseg1:
-            Time segment 1 for fast data bit rate,
-            that is, the number of quanta from (but not including)
-            the Sync Segment to the sampling point.
-            In the range (1..32).
-            Ignored if not using CAN-FD.
-
-        :param int data_tseg2:
-            Time segment 2 for fast data bit rate,
-            that is, the number of quanta from the sampling
-            point to the end of the bit.
-            In the range (1..16).
-            Ignored if not using CAN-FD.
-
-        :param int data_sjw:
-            Synchronization Jump Width for fast data bit rate.
-            Decides the maximum number of time quanta
-            that the controller can resynchronize every bit.
-            In the range (1..16).
-            Ignored if not using CAN-FD.
-
+        :param can.BitTiming timing:
+            Bit timing configuration.
+            For CAN-FD this also applies to arbitration/nominal phase.
+        :param can.BitTiming data_timing:
+            Bit timing configuration for data phase.
         """
         self.channel_info = channel
-        self.fd = kwargs.get("fd", False)
-        pcan_bitrate = pcan_bitrate_objs.get(bitrate, PCAN_BAUD_500K)
+        self.fd = fd
 
         hwtype = PCAN_TYPE_ISA
         ioport = 0x02A0
@@ -189,24 +118,50 @@ class PcanBus(BusABC):
             raise ArgumentError("BusState must be Active or Passive")
 
         if self.fd:
-            f_clock_val = kwargs.get("f_clock", None)
-            if f_clock_val is None:
-                f_clock = "{}={}".format("f_clock_mhz", kwargs.get("f_clock_mhz", None))
+            params = {}
+            if timing and data_timing:
+                params["f_clock"] = timing.f_clock
+                params["nom_brp"] = timing.brp
+                params["nom_tseg1"] = timing.tseg1
+                params["nom_tseg2"] = timing.tseg2
+                params["nom_sjw"] = timing.sjw
+                params["data_brp"] = data_timing.brp
+                params["data_tseg1"] = data_timing.tseg1
+                params["data_tseg2"] = data_timing.tseg2
+                params["data_sjw"] = data_timing.sjw
+            elif "nom_tseg1" in kwargs:
+                warnings.warn(
+                    "Specifying bit timing as direct keyword arguments is depreceated. Use the can.BitTiming class instead.",
+                    DeprecationWarning,
+                )
+                if "f_clock" in kwargs:
+                    params["f_clock"] = kwargs["f_clock"]
+                if "f_clock_mhz" in kwargs:
+                    params["f_clock_mhz"] = kwargs["f_clock_mhz"]
+                params["nom_brp"] = kwargs["nom_brp"]
+                params["nom_tseg1"] = kwargs["nom_tseg1"]
+                params["nom_tseg2"] = kwargs["nom_tseg2"]
+                params["nom_sjw"] = kwargs["nom_sjw"]
+                params["data_brp"] = kwargs["data_brp"]
+                params["data_tseg1"] = kwargs["data_tseg1"]
+                params["data_tseg2"] = kwargs["data_tseg2"]
+                params["data_sjw"] = kwargs["data_sjw"]
             else:
-                f_clock = "{}={}".format("f_clock", kwargs.get("f_clock", None))
+                raise ArgumentError("timing and data_timing arguments missing")
 
-            fd_parameters_values = [f_clock] + [
-                "{}={}".format(key, kwargs.get(key, None))
-                for key in pcan_fd_parameter_list
-                if kwargs.get(key, None) is not None
-            ]
-
-            self.fd_bitrate = " ,".join(fd_parameters_values).encode("ascii")
+            fd_bitrate = ",".join(f"{key}={val}" for key, val in params.items())
 
             result = self.m_objPCANBasic.InitializeFD(
-                self.m_PcanHandle, self.fd_bitrate
+                self.m_PcanHandle, fd_bitrate.encode("ascii")
             )
         else:
+            if timing:
+                pcan_bitrate = TPCANBaudrate(timing.btr0 << 8 | timing.btr1)
+            elif bitrate in pcan_bitrate_objs:
+                pcan_bitrate = pcan_bitrate_objs[bitrate]
+            else:
+                log.warning("Unknown bitrate. Falling back to 500 kbit/s.")
+                pcan_bitrate = PCAN_BAUD_500K
             result = self.m_objPCANBasic.Initialize(
                 self.m_PcanHandle, pcan_bitrate, hwtype, ioport, interrupt
             )
