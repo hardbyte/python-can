@@ -4,6 +4,7 @@
 Utilities and configuration file parsing.
 """
 
+import json
 import os
 import os.path
 import platform
@@ -65,6 +66,7 @@ def load_environment_config(context=None):
     * CAN_INTERFACE
     * CAN_CHANNEL
     * CAN_BITRATE
+    * CAN_CONFIG
 
     if context is supplied, "_{context}" is appended to the environment
     variable name we will look at. For example if context="ABC":
@@ -72,6 +74,7 @@ def load_environment_config(context=None):
     * CAN_INTERFACE_ABC
     * CAN_CHANNEL_ABC
     * CAN_BITRATE_ABC
+    * CAN_CONFIG_ABC
 
     """
     mapper = {
@@ -79,12 +82,18 @@ def load_environment_config(context=None):
         "channel": "CAN_CHANNEL",
         "bitrate": "CAN_BITRATE",
     }
-    config = dict()
+
+    context_suffix = "_{}".format(context) if context else ""
+
+    config = {}
+
+    can_config_key = "CAN_CONFIG" + context_suffix
+    if can_config_key in os.environ:
+        config = json.loads(os.environ.get(can_config_key))
+
     for key, val in mapper.items():
-        if context is not None:
-            val = val + "_{}".format(context)
         if val in os.environ:
-            config[key] = os.environ.get(val)
+            config[key] = os.environ.get(val + context_suffix)
 
     return config
 
