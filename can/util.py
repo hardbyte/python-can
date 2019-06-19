@@ -153,7 +153,9 @@ def load_config(path=None, config=None, context=None):
     config_sources = [
         given_config,
         can.rc,
-        lambda _context: load_environment_config(_context),
+        lambda _context: load_environment_config(  # pylint: disable=unnecessary-lambda
+            _context
+        ),
         lambda _context: load_environment_config(),
         lambda _context: load_file_config(path, _context),
         lambda _context: load_file_config(path),
