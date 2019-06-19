@@ -45,15 +45,16 @@ class LoadFileConfigTest(unittest.TestCase):
     def test_config_file_with_default_and_section(self):
         tmp_config = self._gen_configration_file(["default", "one"])
 
-        default = can.util.load_file_config(path=tmp_config)
-        self.assertEqual(default, self.configuration["default"])
+        config = can.util.load_file_config(path=tmp_config)
+        self.assertEqual(config, self.configuration["default"])
 
-        one = can.util.load_file_config(path=tmp_config, section="one")
-        self.assertEqual(one, self.configuration["one"])
+        config.update(can.util.load_file_config(path=tmp_config, section="one"))
+        self.assertEqual(config, self.configuration["one"])
 
     def test_config_file_with_section_only(self):
         tmp_config = self._gen_configration_file(["one"])
-        config = can.util.load_file_config(path=tmp_config, section="one")
+        config = can.util.load_file_config(path=tmp_config)
+        config.update(can.util.load_file_config(path=tmp_config, section="one"))
         self.assertEqual(config, self.configuration["one"])
 
     def test_config_file_with_section_and_key_in_default(self):
@@ -61,13 +62,15 @@ class LoadFileConfigTest(unittest.TestCase):
         expected.update(self.configuration["two"])
 
         tmp_config = self._gen_configration_file(["default", "two"])
-        config = can.util.load_file_config(path=tmp_config, section="two")
+        config = can.util.load_file_config(path=tmp_config)
+        config.update(can.util.load_file_config(path=tmp_config, section="two"))
         self.assertEqual(config, expected)
 
     def test_config_file_with_section_missing_interface(self):
         expected = self.configuration["two"].copy()
         tmp_config = self._gen_configration_file(["two"])
-        config = can.util.load_file_config(path=tmp_config, section="two")
+        config = can.util.load_file_config(path=tmp_config)
+        config.update(can.util.load_file_config(path=tmp_config, section="two"))
         self.assertEqual(config, expected)
 
     def test_config_file_extra(self):
@@ -75,14 +78,16 @@ class LoadFileConfigTest(unittest.TestCase):
         expected.update(self.configuration["three"])
 
         tmp_config = self._gen_configration_file(["default", "three"])
-        config = can.util.load_file_config(path=tmp_config, section="three")
+        config = can.util.load_file_config(path=tmp_config)
+        config.update(can.util.load_file_config(path=tmp_config, section="three"))
         self.assertEqual(config, expected)
 
     def test_config_file_with_non_existing_section(self):
-        expected = {}
+        expected = self.configuration["default"].copy()
 
         tmp_config = self._gen_configration_file(["default", "one", "two", "three"])
-        config = can.util.load_file_config(path=tmp_config, section="zero")
+        config = can.util.load_file_config(path=tmp_config)
+        config.update(can.util.load_file_config(path=tmp_config, section="zero"))
         self.assertEqual(config, expected)
 
 
