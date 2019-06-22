@@ -195,8 +195,13 @@ class BLFReader(BaseIOHandler):
                         raise BLFParseError()
 
                     obj_size = header[3]
+                    obj_type = header[4]
                     # Calculate position of next object
-                    next_pos = pos + obj_size + (obj_size % 4)
+                    if obj_size % 4 and obj_type != CAN_FD_MESSAGE_64:
+                        next_pos = pos + obj_size + (obj_size % 4)
+                    else:
+                        # CAN_FD_MESSAGE_64 objects are not padded to 4 bytes.
+                        next_pos = pos + obj_size
                     if next_pos > len(data):
                         # Object continues in next log container
                         break
@@ -222,7 +227,6 @@ class BLFReader(BaseIOHandler):
                         factor = 1e-9
                     timestamp = timestamp * factor + self.start_timestamp
 
-                    obj_type = header[4]
                     # Both CAN message types have the same starting content
                     if obj_type in (CAN_MESSAGE, CAN_MESSAGE2):
                         (channel, flags, dlc, can_id,
