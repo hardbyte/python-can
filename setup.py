@@ -25,9 +25,9 @@ with open("README.rst", "r") as f:
 
 # Dependencies
 extras_require = {
-    "serial": ["pyserial~=3.0"],
-    "neovi": ["python-ics>=2.12"],
     "seeedstudio": ["pyserial>=3.0"],
+    "serial": ["pyserial~=3.0"],
+    "neovi": ["python-ics>=2.12", "filelock"],
 }
 
 tests_require = [
@@ -94,6 +94,7 @@ setup(
         "wrapt~=1.10",
         "aenum",
         'windows-curses;platform_system=="Windows"',
+        "filelock",
     ],
     setup_requires=["pytest-runner"],
     extras_require=extras_require,
