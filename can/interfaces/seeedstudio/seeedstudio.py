@@ -123,7 +123,7 @@ class SeeedBus(BusABC):
         crc = sum(byte_msg[2:]) & 0xFF
         byte_msg.append(crc)
 
-        logger.debug("init_frm:\t" + byte_msg.hex())
+        logger.debug("init_frm:\t%s", byte_msg.hex())
         self.ser.write(byte_msg)
 
     def flush_buffer(self):
@@ -151,7 +151,7 @@ class SeeedBus(BusABC):
         crc = sum(byte_msg[2:]) & 0xFF
         byte_msg.append(crc)
 
-        logger.debug("status_frm:\t" + byte_msg.hex())
+        logger.debug("status_frm:\t%s", byte_msg.hex())
         self.ser.write(byte_msg)
 
     def send(self, msg, timeout=None):
@@ -188,7 +188,7 @@ class SeeedBus(BusABC):
         byte_msg.extend(msg.data)
         byte_msg.append(0x55)
 
-        logger.debug("sending:\t" + byte_msg.hex())
+        logger.debug("sending:\t%s", byte_msg.hex())
         self.ser.write(byte_msg)
 
     def _recv_internal(self, timeout):
@@ -219,8 +219,9 @@ class SeeedBus(BusABC):
             rx_byte_2 = ord(self.ser.read())
             time_stamp = time()
             if rx_byte_2 == 0x55:
-                status = bytearray(self.ser.read(18))
-                logger.debug("status resp:\t" + status.hex())
+                status = bytearray([0xAA, 0x55])
+                status += bytearray(self.ser.read(18))
+                logger.debug("status resp:\t%s", status.hex())
 
             else:
                 length = int(rx_byte_2 & 0x0F)
@@ -243,7 +244,7 @@ class SeeedBus(BusABC):
                                   is_remote_frame=is_remote,
                                   dlc=length,
                                   data=data)
-                    logger.debug("recv message: " + str(msg))
+                    logger.debug("recv message: %s", str(msg))
                     return msg, False
 
                 else:
