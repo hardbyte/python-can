@@ -197,11 +197,9 @@ class BLFReader(BaseIOHandler):
                     obj_size = header[3]
                     obj_type = header[4]
                     # Calculate position of next object
-                    if obj_size % 4 and obj_type != CAN_FD_MESSAGE_64:
-                        next_pos = pos + obj_size + (obj_size % 4)
-                    else:
-                        # CAN_FD_MESSAGE_64 objects are not padded to 4 bytes.
-                        next_pos = pos + obj_size
+                    next_pos = pos + obj_size
+                    if obj_type != CAN_FD_MESSAGE_64:
+                        next_pos += obj_size % 4
                     if next_pos > len(data):
                         # Object continues in next log container
                         break
