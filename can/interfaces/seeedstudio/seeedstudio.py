@@ -10,7 +10,7 @@ SKU 114991193
 
 import logging
 import struct
-from time import sleep, time
+from time import time
 from can import BusABC, Message
 
 logger = logging.getLogger('seeedbus')
@@ -117,7 +117,7 @@ class SeeedBus(BusABC):
         byte_msg.append(SeeedBus.OPERATIONMODE[self.op_mode])
         byte_msg.append(0x01)     # Follows 'Send once' in windows app.
 
-        for i in range(0, 4):     # Manual bitrate config, details unknown.
+        for _ in range(0, 4):     # Manual bitrate config, details unknown.
             byte_msg.append(0x00)
 
         crc = sum(byte_msg[2:]) & 0xFF
@@ -145,7 +145,7 @@ class SeeedBus(BusABC):
         byte_msg.append(0x00)     # In response packet - Rx error count
         byte_msg.append(0x00)     # In response packet - Tx error count
 
-        for i in range(0, 14):
+        for _ in range(0, 14):
             byte_msg.append(0x00)
 
         crc = sum(byte_msg[2:]) & 0xFF
