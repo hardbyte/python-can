@@ -17,7 +17,7 @@ Links:
 
 Installation
 ------------
-This interface has additional dependencies which can be installed using pip and the optional extra [seeedstudio].  That will install two additional packages if not already available:
+This interface has additional dependencies which can be installed using pip and the optional extra [seeedstudio].  That will install an additional packages if not already available:
  - pyserial
 
 

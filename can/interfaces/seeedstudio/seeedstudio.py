@@ -128,8 +128,7 @@ class SeeedBus(BusABC):
         byte_msg.append(SeeedBus.OPERATIONMODE[self.op_mode])
         byte_msg.append(0x01)  # Follows 'Send once' in windows app.
 
-        for _ in range(0, 4):  # Manual bitrate config, details unknown.
-            byte_msg.append(0x00)
+        byte_msg.extend([0x00] * 4)  # Manual bitrate config, details unknown.
 
         crc = sum(byte_msg[2:]) & 0xFF
         byte_msg.append(crc)
@@ -156,8 +155,7 @@ class SeeedBus(BusABC):
         byte_msg.append(0x00)  # In response packet - Rx error count
         byte_msg.append(0x00)  # In response packet - Tx error count
 
-        for _ in range(0, 14):
-            byte_msg.append(0x00)
+        byte_msg.extend([0x00] * 14)
 
         crc = sum(byte_msg[2:]) & 0xFF
         byte_msg.append(crc)
