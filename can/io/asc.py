@@ -56,7 +56,6 @@ class ASCReader(BaseIOHandler):
             temp = line.strip()
             if not temp or not temp[0].isdigit():
                 continue
-
             try:
                 timestamp, channel, dummy = temp.split(
                     None, 2
@@ -64,27 +63,30 @@ class ASCReader(BaseIOHandler):
             except ValueError:
                 # we parsed an empty comment
                 continue
-
             timestamp = float(timestamp)
             try:
                 # See ASCWriter
                 channel = int(channel) - 1
             except ValueError:
                 pass
-
             if dummy.strip()[0:10].lower() == "errorframe":
-                msg = Message(timestamp=timestamp, is_error_frame=True, channel=channel)
+                msg = Message(
+                    timestamp=timestamp,
+                    is_error_frame=True,
+                    channel=channel,
+                )
                 yield msg
-
             elif (
                 not isinstance(channel, int)
-                or dummy.strip()[0:10].lower() == "statistic:"
+                or dummy.strip()[0:10].lower()
+                == "statistic:"
             ):
                 pass
-
             elif dummy[-1:].lower() == "r":
                 can_id_str, _ = dummy.split(None, 1)
-                can_id_num, is_extended_id = self._extract_can_id(can_id_str)
+                can_id_num, is_extended_id = self._extract_can_id(
+                    can_id_str
+                )
                 msg = Message(
                     timestamp=timestamp,
                     arbitration_id=can_id_num & CAN_ID_MASK,
@@ -93,24 +95,27 @@ class ASCReader(BaseIOHandler):
                     channel=channel,
                 )
                 yield msg
-
             else:
                 try:
                     # this only works if dlc > 0 and thus data is availabe
-                    can_id_str, _, _, dlc, data = dummy.split(None, 4)
+                    can_id_str, _, _, dlc, data = dummy.split(
+                        None, 4
+                    )
                 except ValueError:
                     # but if not, we only want to get the stuff up to the dlc
-                    can_id_str, _, _, dlc = dummy.split(None, 3)
+                    can_id_str, _, _, dlc = dummy.split(
+                        None, 3
+                    )
                     # and we set data to an empty sequence manually
                     data = ""
-
                 dlc = int(dlc)
                 frame = bytearray()
                 data = data.split()
                 for byte in data[0:dlc]:
                     frame.append(int(byte, 16))
-
-                can_id_num, is_extended_id = self._extract_can_id(can_id_str)
+                can_id_num, is_extended_id = self._extract_can_id(
+                    can_id_str
+                )
 
                 yield Message(
                     timestamp=timestamp,
@@ -121,7 +126,6 @@ class ASCReader(BaseIOHandler):
                     data=frame,
                     channel=channel,
                 )
-
         self.stop()
 
 
@@ -134,26 +138,30 @@ class ASCWriter(BaseIOHandler, Listener):
     It the first message does not have a timestamp, it is set to zero.
     """
 
-    FORMAT_MESSAGE = "{channel}  {id:<15} Rx   {dtype} {data}"
-    FORMAT_MESSAGE_FD = " ".join([
-        "CANFD",
-        "{channel:>3}",
-        "{dir:<4}",
-        "{id:>8}  {symbolic_name:>32}",
-        "{brs}",
-        "{esi}",
-        "{dlc}",
-        "{data_length:>2}",
-        "{data}",
-        "{message_duration:>8}",
-        "{message_length:>4}",
-        "{flags:>8X}",
-        "{crc:>8}",
-        "{bit_timing_conf_arb:>8}",
-        "{bit_timing_conf_data:>8}",
-        "{bit_timing_conf_ext_arb:>8}",
-        "{bit_timing_conf_ext_data:>8}"
-    ])
+    FORMAT_MESSAGE = (
+        "{channel}  {id:<15} Rx   {dtype} {data}"
+    )
+    FORMAT_MESSAGE_FD = " ".join(
+        [
+            "CANFD",
+            "{channel:>3}",
+            "{dir:<4}",
+            "{id:>8}  {symbolic_name:>32}",
+            "{brs}",
+            "{esi}",
+            "{dlc}",
+            "{data_length:>2}",
+            "{data}",
+            "{message_duration:>8}",
+            "{message_length:>4}",
+            "{flags:>8X}",
+            "{crc:>8}",
+            "{bit_timing_conf_arb:>8}",
+            "{bit_timing_conf_data:>8}",
+            "{bit_timing_conf_ext_arb:>8}",
+            "{bit_timing_conf_ext_data:>8}",
+        ]
+    )
     FORMAT_DATE = "%a %b %m %I:%M:%S.{} %p %Y"
     FORMAT_EVENT = "{timestamp: 9.6f} {message}\n"
 
@@ -169,7 +177,9 @@ class ASCWriter(BaseIOHandler, Listener):
         self.channel = channel
 
         # write start of file header
-        now = datetime.now().strftime("%a %b %m %I:%M:%S.%f %p %Y")
+        now = datetime.now().strftime(
+            "%a %b %m %I:%M:%S.%f %p %Y"
+        )
         self.file.write("date %s\n" % now)
         self.file.write("base hex  timestamps absolute\n")
         self.file.write("internal events logged\n")
@@ -192,56 +202,64 @@ class ASCWriter(BaseIOHandler, Listener):
         """
 
         if not message:  # if empty or None
-            logger.debug("ASCWriter: ignoring empty message")
+            logger.debug(
+                "ASCWriter: ignoring empty message"
+            )
             return
-
         # this is the case for the very first message:
         if not self.header_written:
             self.last_timestamp = timestamp or 0.0
             self.started = self.last_timestamp
-            mlsec = repr(self.last_timestamp).split(".")[1][:3]
+            mlsec = repr(self.last_timestamp).split(".")[1][
+                :3
+            ]
             formatted_date = time.strftime(
-                self.FORMAT_DATE.format(mlsec), time.localtime(self.last_timestamp)
+                self.FORMAT_DATE.format(mlsec),
+                time.localtime(self.last_timestamp),
             )
-            self.file.write("Begin Triggerblock %s\n" % formatted_date)
+            self.file.write(
+                "Begin Triggerblock %s\n" % formatted_date
+            )
             self.header_written = True
-            self.log_event("Start of measurement")  # caution: this is a recursive call!
-
+            self.log_event(
+                "Start of measurement"
+            )  # caution: this is a recursive call!
         # Use last known timestamp if unknown
         if timestamp is None:
             timestamp = self.last_timestamp
-
         # turn into relative timestamps if necessary
         if timestamp >= self.started:
             timestamp -= self.started
-
-        line = self.FORMAT_EVENT.format(timestamp=timestamp, message=message)
+        line = self.FORMAT_EVENT.format(
+            timestamp=timestamp, message=message
+        )
         self.file.write(line)
 
     def on_message_received(self, msg):
 
         if msg.is_error_frame:
-            self.log_event("{}  ErrorFrame".format(self.channel), msg.timestamp)
+            self.log_event(
+                "{}  ErrorFrame".format(self.channel),
+                msg.timestamp,
+            )
             return
-
         if msg.is_remote_frame:
             dtype = "r"
             data = []
         else:
             dtype = "d {}".format(msg.dlc)
-            data = ["{:02X}".format(byte) for byte in msg.data]
-
+            data = [
+                "{:02X}".format(byte) for byte in msg.data
+            ]
         arb_id = "{:X}".format(msg.arbitration_id)
         if msg.is_extended_id:
             arb_id += "x"
-
         channel = channel2int(msg.channel)
         if channel is None:
             channel = self.channel
         else:
             # Many interfaces start channel numbering at 0 which is invalid
             channel += 1
-
         if msg.is_fd:
             flags = 0
             flags |= 1 << 12
@@ -249,7 +267,6 @@ class ASCWriter(BaseIOHandler, Listener):
                 flags |= 1 << 13
             if msg.error_state_indicator:
                 flags |= 1 << 14
-
             serialized = self.FORMAT_MESSAGE_FD.format(
                 channel=channel,
                 id=arb_id,
@@ -276,5 +293,4 @@ class ASCWriter(BaseIOHandler, Listener):
                 dtype=dtype,
                 data=" ".join(data),
             )
-
         self.log_event(serialized, msg.timestamp)
