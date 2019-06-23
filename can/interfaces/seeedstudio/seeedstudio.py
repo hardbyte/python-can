@@ -13,48 +13,58 @@ import struct
 from time import time
 from can import BusABC, Message
 
-logger = logging.getLogger('seeedbus')
+logger = logging.getLogger("seeedbus")
 
 try:
     import serial
 except ImportError:
-    logger.warning("You won't be able to use the serial can backend without "
-                   "the serial module installed!")
+    logger.warning(
+        "You won't be able to use the serial can backend without "
+        "the serial module installed!"
+    )
     serial = None
+
 
 class SeeedBus(BusABC):
     """
     Enable basic can communication over a USB-CAN-Analyzer device.
     """
-    BITRATE = {
-               1000000: 0x01,
-               800000: 0x02,
-               500000: 0x03,
-               400000: 0x04,
-               250000: 0x05,
-               200000: 0x06,
-               125000: 0x07,
-               100000: 0x08,
-               50000: 0x09,
-               20000: 0x0A,
-               10000: 0x0B,
-               5000: 0x0C
-              }
 
-    FRAMETYPE = {
-                 "STD":0x01,
-                 "EXT":0x02
-                }
+    BITRATE = {
+        1000000: 0x01,
+        800000: 0x02,
+        500000: 0x03,
+        400000: 0x04,
+        250000: 0x05,
+        200000: 0x06,
+        125000: 0x07,
+        100000: 0x08,
+        50000: 0x09,
+        20000: 0x0A,
+        10000: 0x0B,
+        5000: 0x0C,
+    }
+
+    FRAMETYPE = {"STD": 0x01, "EXT": 0x02}
 
     OPERATIONMODE = {
-                     "normal":0x00,
-                     "loopback":0x01,
-                     "silent":0x02,
-                     "loopback_and_silent":0x03
-                    }
+        "normal": 0x00,
+        "loopback": 0x01,
+        "silent": 0x02,
+        "loopback_and_silent": 0x03,
+    }
 
-    def __init__(self, channel, baudrate=2000000, timeout=0.1, frame_type="STD",
-                 operation_mode="normal", bitrate=500000, *args, **kwargs):
+    def __init__(
+        self,
+        channel,
+        baudrate=2000000,
+        timeout=0.1,
+        frame_type="STD",
+        operation_mode="normal",
+        bitrate=500000,
+        *args,
+        **kwargs
+    ):
         """
         :param str channel:
             The serial device to open. For example "/dev/ttyS1" or
@@ -86,7 +96,8 @@ class SeeedBus(BusABC):
 
         self.channel_info = "Serial interface: " + channel
         self.ser = serial.Serial(
-            channel, baudrate=baudrate, timeout=timeout, rtscts=False)
+            channel, baudrate=baudrate, timeout=timeout, rtscts=False
+        )
 
         super(SeeedBus, self).__init__(channel=channel, *args, **kwargs)
         self.init_frame()
@@ -107,17 +118,17 @@ class SeeedBus(BusABC):
             used instead.
         """
         byte_msg = bytearray()
-        byte_msg.append(0xAA)     # Frame Start Byte 1
-        byte_msg.append(0x55)     # Frame Start Byte 2
-        byte_msg.append(0x12)     # Initialization Message ID
+        byte_msg.append(0xAA)  # Frame Start Byte 1
+        byte_msg.append(0x55)  # Frame Start Byte 2
+        byte_msg.append(0x12)  # Initialization Message ID
         byte_msg.append(SeeedBus.BITRATE[self.bit_rate])  # CAN Baud Rate
         byte_msg.append(SeeedBus.FRAMETYPE[self.frame_type])
         byte_msg.extend(self.filter_id)
         byte_msg.extend(self.mask_id)
         byte_msg.append(SeeedBus.OPERATIONMODE[self.op_mode])
-        byte_msg.append(0x01)     # Follows 'Send once' in windows app.
+        byte_msg.append(0x01)  # Follows 'Send once' in windows app.
 
-        for _ in range(0, 4):     # Manual bitrate config, details unknown.
+        for _ in range(0, 4):  # Manual bitrate config, details unknown.
             byte_msg.append(0x00)
 
         crc = sum(byte_msg[2:]) & 0xFF
@@ -139,11 +150,11 @@ class SeeedBus(BusABC):
             used instead.
         """
         byte_msg = bytearray()
-        byte_msg.append(0xAA)     # Frame Start Byte 1
-        byte_msg.append(0x55)     # Frame Start Byte 2
-        byte_msg.append(0x04)     # Status Message ID
-        byte_msg.append(0x00)     # In response packet - Rx error count
-        byte_msg.append(0x00)     # In response packet - Tx error count
+        byte_msg.append(0xAA)  # Frame Start Byte 1
+        byte_msg.append(0x55)  # Frame Start Byte 2
+        byte_msg.append(0x04)  # Status Message ID
+        byte_msg.append(0x00)  # In response packet - Rx error count
+        byte_msg.append(0x00)  # In response packet - Tx error count
 
         for _ in range(0, 14):
             byte_msg.append(0x00)
@@ -169,7 +180,7 @@ class SeeedBus(BusABC):
         byte_msg = bytearray()
         byte_msg.append(0xAA)
 
-        m_type = 0xc0
+        m_type = 0xC0
         if msg.is_extended_id:
             m_type += 1 << 5
 
@@ -180,9 +191,9 @@ class SeeedBus(BusABC):
         byte_msg.append(m_type)
 
         if msg.is_extended_id:
-            a_id = struct.pack('<I', msg.arbitration_id)
+            a_id = struct.pack("<I", msg.arbitration_id)
         else:
-            a_id = struct.pack('<H', msg.arbitration_id)
+            a_id = struct.pack("<H", msg.arbitration_id)
 
         byte_msg.extend(a_id)
         byte_msg.extend(msg.data)
@@ -215,7 +226,7 @@ class SeeedBus(BusABC):
         except serial.SerialException:
             return None, False
 
-        if rx_byte_1 and  ord(rx_byte_1) == 0xAA:
+        if rx_byte_1 and ord(rx_byte_1) == 0xAA:
             rx_byte_2 = ord(self.ser.read())
             time_stamp = time()
             if rx_byte_2 == 0x55:
@@ -229,21 +240,23 @@ class SeeedBus(BusABC):
                 is_remote = bool(rx_byte_2 & 0x10)
                 if is_extended:
                     s_3_4_5_6 = bytearray(self.ser.read(4))
-                    arb_id = (struct.unpack('<I', s_3_4_5_6))[0]
+                    arb_id = (struct.unpack("<I", s_3_4_5_6))[0]
 
                 else:
                     s_3_4 = bytearray(self.ser.read(2))
-                    arb_id = (struct.unpack('<H', s_3_4))[0]
+                    arb_id = (struct.unpack("<H", s_3_4))[0]
 
                 data = bytearray(self.ser.read(length))
                 end_packet = ord(self.ser.read())
                 if end_packet == 0x55:
-                    msg = Message(timestamp=time_stamp,
-                                  arbitration_id=arb_id,
-                                  is_extended_id=is_extended,
-                                  is_remote_frame=is_remote,
-                                  dlc=length,
-                                  data=data)
+                    msg = Message(
+                        timestamp=time_stamp,
+                        arbitration_id=arb_id,
+                        is_extended_id=is_extended,
+                        is_remote_frame=is_remote,
+                        dlc=length,
+                        data=data,
+                    )
                     logger.debug("recv message: %s", str(msg))
                     return msg, False
 
@@ -253,7 +266,7 @@ class SeeedBus(BusABC):
         return None, None
 
     def fileno(self):
-        if hasattr(self.ser, 'fileno'):
+        if hasattr(self.ser, "fileno"):
             return self.ser.fileno()
         # Return an invalid file descriptor on Windows
         return -1
