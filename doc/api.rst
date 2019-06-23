@@ -17,6 +17,7 @@ A form of CAN interface is also required.
    listeners
    asyncio
    bcm
+   bit_timing
    internal-api
 
 
