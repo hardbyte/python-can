@@ -1,6 +1,12 @@
-Version 3.2.0
+Version 3.2.1
 ====
 
+* CAN FD 64 frame support to blf reader
+* Minor fix to use latest tools when building wheels on travis.
+* Updates links in documentation.
+
+Version 3.2.0
+====
 
 Major features
 --------------
