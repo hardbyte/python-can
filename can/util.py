@@ -166,6 +166,25 @@ def load_config(path=None, config=None, context=None):
     if "bitrate" in config:
         config["bitrate"] = int(config["bitrate"])
 
+    # Create bit timing configuration if given
+    timing_conf = {}
+    for key in (
+        "f_clock",
+        "brp",
+        "tseg1",
+        "tseg2",
+        "sjw",
+        "nof_samples",
+        "btr0",
+        "btr1",
+    ):
+        if key in config:
+            timing_conf[key] = int(config[key], base=0)
+            del config[key]
+    if timing_conf:
+        timing_conf["bitrate"] = config.get("bitrate")
+        config["timing"] = can.BitTiming(**timing_conf)
+
     can.log.debug("can config: {}".format(config))
     return config
 
