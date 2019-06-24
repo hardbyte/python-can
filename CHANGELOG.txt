@@ -1,6 +1,10 @@
-Version 3.2.0
+Version 3.2.1
 ====
 
+Minor fix to use latest tools when building wheels on travis.
+
+Version 3.2.0
+====
 
 Major features
 --------------
