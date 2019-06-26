@@ -190,7 +190,6 @@ def load_config(path=None, config=None, context=None):
         config["timing"] = can.BitTiming(**timing_conf)
 
     can.log.debug("can config: {}".format(config))
-    print(config)
     return config
 
 
