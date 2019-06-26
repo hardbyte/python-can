@@ -377,6 +377,14 @@ def parse_args(args):
         help="""Bitrate to use for the given CAN interface""",
     )
 
+    optional.add_argument("--fd", help="Activate CAN-FD support", action="store_true")
+
+    optional.add_argument(
+        "--data_bitrate",
+        type=int,
+        help="""Bitrate to use for the data phase in case of CAN-FD.""",
+    )
+
     optional.add_argument(
         "-c",
         "--channel",
@@ -537,6 +545,10 @@ def main():  # pragma: no cover
         config["interface"] = parsed_args.interface
     if parsed_args.bitrate:
         config["bitrate"] = parsed_args.bitrate
+    if parsed_args.fd:
+        config["fd"] = True
+    if parsed_args.data_bitrate:
+        config["data_bitrate"] = parsed_args.data_bitrate
 
     # Create a CAN-Bus interface
     bus = can.Bus(parsed_args.channel, **config)

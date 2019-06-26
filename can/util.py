@@ -165,6 +165,10 @@ def load_config(path=None, config=None, context=None):
 
     if "bitrate" in config:
         config["bitrate"] = int(config["bitrate"])
+    if "fd" in config:
+        config["fd"] = config["fd"] not in ("0", "False", "false")
+    if "data_bitrate" in config:
+        config["data_bitrate"] = int(config["data_bitrate"])
 
     # Create bit timing configuration if given
     timing_conf = {}
@@ -186,6 +190,7 @@ def load_config(path=None, config=None, context=None):
         config["timing"] = can.BitTiming(**timing_conf)
 
     can.log.debug("can config: {}".format(config))
+    print(config)
     return config
 
 
