@@ -4,6 +4,7 @@
 Utilities and configuration file parsing.
 """
 
+import json
 import os
 import os.path
 import platform
@@ -30,7 +31,7 @@ elif platform.system() == "Windows" or platform.python_implementation() == "Iron
     CONFIG_FILES.extend(["can.ini", os.path.join(os.getenv("APPDATA", ""), "can.ini")])
 
 
-def load_file_config(path=None, section=None):
+def load_file_config(path=None, section="default"):
     """
     Loads configuration from file with following content::
 
@@ -52,22 +53,28 @@ def load_file_config(path=None, section=None):
 
     _config = {}
 
-    section = section if section is not None else "default"
     if config.has_section(section):
-        if config.has_section("default"):
-            _config.update(dict((key, val) for key, val in config.items("default")))
         _config.update(dict((key, val) for key, val in config.items(section)))
 
     return _config
 
 
-def load_environment_config():
+def load_environment_config(context=None):
     """
     Loads config dict from environmental variables (if set):
 
     * CAN_INTERFACE
     * CAN_CHANNEL
     * CAN_BITRATE
+    * CAN_CONFIG
+
+    if context is supplied, "_{context}" is appended to the environment
+    variable name we will look at. For example if context="ABC":
+
+    * CAN_INTERFACE_ABC
+    * CAN_CHANNEL_ABC
+    * CAN_BITRATE_ABC
+    * CAN_CONFIG_ABC
 
     """
     mapper = {
@@ -75,9 +82,20 @@ def load_environment_config():
         "channel": "CAN_CHANNEL",
         "bitrate": "CAN_BITRATE",
     }
-    return dict(
-        (key, os.environ.get(val)) for key, val in mapper.items() if val in os.environ
-    )
+
+    context_suffix = "_{}".format(context) if context else ""
+
+    config = {}
+
+    can_config_key = "CAN_CONFIG" + context_suffix
+    if can_config_key in os.environ:
+        config = json.loads(os.environ.get(can_config_key))
+
+    for key, val in mapper.items():
+        if val in os.environ:
+            config[key] = os.environ.get(val + context_suffix)
+
+    return config
 
 
 def load_config(path=None, config=None, context=None):
@@ -135,8 +153,12 @@ def load_config(path=None, config=None, context=None):
     config_sources = [
         given_config,
         can.rc,
-        lambda _context: load_environment_config(),  # context is not supported
+        lambda _context: load_environment_config(  # pylint: disable=unnecessary-lambda
+            _context
+        ),
+        lambda _context: load_environment_config(),
         lambda _context: load_file_config(path, _context),
+        lambda _context: load_file_config(path),
     ]
 
     # Slightly complex here to only search for the file config if required
