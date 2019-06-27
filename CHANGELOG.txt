@@ -1,9 +1,10 @@
-Version 3.2.1
+Version 3.3.0
 ====
 
-* CAN FD 64 frame support to blf reader
+* Adding CAN FD 64 frame support to blf reader
+* Updates to installation instructions
+* Clean up bits generator in PCAN interface #588
 * Minor fix to use latest tools when building wheels on travis.
-* Updates links in documentation.
 
 Version 3.2.0
 ====
