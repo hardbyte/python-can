@@ -24,6 +24,7 @@ BACKENDS = {
     "slcan": ("can.interfaces.slcan", "slcanBus"),
     "canalystii": ("can.interfaces.canalystii", "CANalystIIBus"),
     "systec": ("can.interfaces.systec", "UcanBus"),
+    "seeedstudio": ("can.interfaces.seeedstudio", "SeeedBus"),
 }
 
 BACKENDS.update(

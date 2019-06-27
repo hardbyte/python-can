@@ -25,6 +25,7 @@ with open("README.rst", "r") as f:
 
 # Dependencies
 extras_require = {
+    "seeedstudio": ["pyserial>=3.0"],
     "serial": ["pyserial~=3.0"],
     "neovi": ["python-ics>=2.12", "filelock"],
 }
