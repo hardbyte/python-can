@@ -41,6 +41,7 @@ from .notifier import Notifier
 from .interfaces import VALID_INTERFACES
 from . import interface
 from .interface import Bus, detect_available_configs
+from .bit_timing import BitTiming
 
 from .broadcastmanager import (
     CyclicSendTaskABC,

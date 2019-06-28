@@ -25,9 +25,10 @@ with open("README.rst", "r") as f:
 
 # Dependencies
 extras_require = {
+    "seeedstudio": ["pyserial>=3.0"],
     "mf4": ["asammdf>=5.5.0", "numpy>=1.16.0"],
-    "neovi": ["python-ics>=2.12", "filelock"],
     "serial": ["pyserial~=3.0"],
+    "neovi": ["python-ics>=2.12", "filelock"],
 }
 
 tests_require = [
