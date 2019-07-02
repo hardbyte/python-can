@@ -79,6 +79,14 @@ def main():
         "-b", "--bitrate", type=int, help="""Bitrate to use for the CAN bus."""
     )
 
+    parser.add_argument("--fd", help="Activate CAN-FD support", action="store_true")
+
+    parser.add_argument(
+        "--data_bitrate",
+        type=int,
+        help="""Bitrate to use for the data phase in case of CAN-FD.""",
+    )
+
     state_group = parser.add_mutually_exclusive_group(required=False)
     state_group.add_argument(
         "--active",
@@ -123,6 +131,10 @@ def main():
         config["interface"] = results.interface
     if results.bitrate:
         config["bitrate"] = results.bitrate
+    if results.fd:
+        config["fd"] = True
+    if results.data_bitrate:
+        config["data_bitrate"] = results.data_bitrate
     bus = Bus(results.channel, **config)
 
     if results.active:
