@@ -212,11 +212,6 @@ class CanViewer:
             msg.arbitration_id, 8 if msg.is_extended_id else 3
         )
 
-        # Generate data string
-        data_string = ""
-        if msg.dlc > 0:
-            data_string = " ".join("{:02X}".format(x) for x in msg.data)
-
         # Use red for error frames
         if msg.is_error_frame:
             color = curses.color_pair(1)
@@ -236,7 +231,14 @@ class CanViewer:
         )
         self.draw_line(self.ids[key]["row"], 35, arbitration_id_string, color)
         self.draw_line(self.ids[key]["row"], 47, str(msg.dlc), color)
-        self.draw_line(self.ids[key]["row"], 52, data_string, color)
+        for i, b in enumerate(msg.data):
+            col = 52 + i * 3
+            if col > self.x - 2:
+                # Data does not fit
+                self.draw_line(self.ids[key]["row"], col - 4, "...", color)
+                break
+            text = "{:02X}".format(b)
+            self.draw_line(self.ids[key]["row"], col, text, color)
 
         if self.data_structs:
             try:
@@ -375,6 +377,14 @@ def parse_args(args):
         "--bitrate",
         type=int,
         help="""Bitrate to use for the given CAN interface""",
+    )
+
+    optional.add_argument("--fd", help="Activate CAN-FD support", action="store_true")
+
+    optional.add_argument(
+        "--data_bitrate",
+        type=int,
+        help="""Bitrate to use for the data phase in case of CAN-FD.""",
     )
 
     optional.add_argument(
@@ -537,6 +547,10 @@ def main():  # pragma: no cover
         config["interface"] = parsed_args.interface
     if parsed_args.bitrate:
         config["bitrate"] = parsed_args.bitrate
+    if parsed_args.fd:
+        config["fd"] = True
+    if parsed_args.data_bitrate:
+        config["data_bitrate"] = parsed_args.data_bitrate
 
     # Create a CAN-Bus interface
     bus = can.Bus(parsed_args.channel, **config)
