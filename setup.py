@@ -39,7 +39,7 @@ extras_require = {
     "viewer": [
         'windows-curses;platform_system=="Windows" and platform_python_implementation=="CPython"'
     ],
-    'mf4': ['asammdf>=5.5.0', 'numpy>=1.16.0'],
+    "mf4": ["asammdf>=5.5.0", "numpy>=1.16.0", "Cython"],
 }
 
 setup(
