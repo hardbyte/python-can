@@ -347,7 +347,8 @@ class CyclicSendTask(
         try:
             self.bcm_socket.send(check_header)
         except OSError as e:
-            assert e.errno == errno.EINVAL
+            if e.errno != errno.EINVAL:
+                raise e
         else:
             raise ValueError(
                 "A periodic Task for Arbitration ID {} has already been created".format(
