@@ -330,6 +330,32 @@ class CyclicSendTask(
             ival1 = 0
             ival2 = self.period
 
+        # First do a TX_READ before creating a new task, and check if we get
+        # EINVAL. If so, then we are referring to a CAN message with the same
+        # ID
+        check_header = build_bcm_header(
+            opcode=CAN_BCM_TX_READ,
+            flags=0,
+            count=0,
+            ival1_seconds=0,
+            ival1_usec=0,
+            ival2_seconds=0,
+            ival2_usec=0,
+            can_id=self.can_id_with_flags,
+            nframes=0,
+        )
+        try:
+            self.bcm_socket.send(check_header)
+        except OSError as e:
+            if e.errno != errno.EINVAL:
+                raise e
+        else:
+            raise ValueError(
+                "A periodic Task for Arbitration ID {} has already been created".format(
+                    messages[0].arbitration_id
+                )
+            )
+
         header = build_bcm_transmit_header(
             self.can_id_with_flags,
             count,
