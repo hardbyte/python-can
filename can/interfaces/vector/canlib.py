@@ -474,6 +474,8 @@ class VectorBus(BusABC):
         channel_configs = get_channel_configs()
         LOG.info("Found %d channels", len(channel_configs))
         for channel_config in channel_configs:
+            if not channel_config.channelBusCapabilities & vxlapi.XL_BUS_ACTIVE_CAP_CAN:
+                continue
             LOG.info(
                 "Channel index %d: %s",
                 channel_config.channelIndex,
