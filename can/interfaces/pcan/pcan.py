@@ -495,7 +495,11 @@ class PcanBus(BusABC):
             error, value = libraryHandle.GetValue(i['id'], PCAN_CHANNEL_CONDITION)
             if error != PCAN_ERROR_OK or value != PCAN_CHANNEL_AVAILABLE:
                 continue
-            channels.append({'interface': 'pcan', 'channel': i['name']})
+            hasFd = False
+            error, value = libraryHandle.GetValue(i['id'], PCAN_CHANNEL_FEATURES)
+            if error == PCAN_ERROR_OK:
+                hasFd = bool(value & FEATURE_FD_CAPABLE)
+            channels.append({'interface': 'pcan', 'channel': i['name'], 'supportsFd': hasFd})
         return channels
 
 class PcanError(CanError):
