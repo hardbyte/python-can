@@ -479,8 +479,11 @@ class PcanBus(BusABC):
 
     @staticmethod
     def _detect_available_configs():
-        libraryHandle = PCANBasic()
         channels = []
+        try:
+            libraryHandle = PCANBasic()
+        except:
+            return channels
         interfaces = []
         for i in range(16):
             interfaces.append({'id': TPCANHandle(PCAN_PCIBUS1.value + i), 'name': 'PCAN_PCIBUS'+str(i+1)})
