@@ -486,7 +486,7 @@ class VectorBus(BusABC):
                     "interface": "vector",
                     "app_name": None,
                     "channel": channel_config.channelIndex,
-                    'supports_fd': bool(channel_config.channelBusCapabilities & vxlapi.XL_CHANNEL_FLAG_CANFD_ISO_SUPPORT)}
+                    'supports_fd': bool(channel_config.channelBusCapabilities & vxlapi.XL_CHANNEL_FLAG_CANFD_ISO_SUPPORT)
                 }
             )
         return configs
