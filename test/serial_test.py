@@ -20,6 +20,7 @@ class SerialDummy:
     """
     Dummy to mock the serial communication
     """
+
     msg = None
 
     def __init__(self):
@@ -43,7 +44,9 @@ class SimpleSerialTestBase(ComparingMessagesTestCase):
     MAX_TIMESTAMP = 0xFFFFFFFF / 1000
 
     def __init__(self):
-        ComparingMessagesTestCase.__init__(self, allowed_timestamp_delta=None, preserves_channel=True)
+        ComparingMessagesTestCase.__init__(
+            self, allowed_timestamp_delta=None, preserves_channel=True
+        )
 
     def test_rx_tx_min_max_data(self):
         """
@@ -109,7 +112,7 @@ class SimpleSerialTestBase(ComparingMessagesTestCase):
         """
         Tests for an exception with an out of range timestamp (max + 1)
         """
-        msg = can.Message(timestamp=self.MAX_TIMESTAMP+1)
+        msg = can.Message(timestamp=self.MAX_TIMESTAMP + 1)
         self.assertRaises(ValueError, self.bus.send, msg)
 
     def test_rx_tx_min_timestamp(self):
@@ -131,36 +134,34 @@ class SimpleSerialTestBase(ComparingMessagesTestCase):
 
 
 class SimpleSerialTest(unittest.TestCase, SimpleSerialTestBase):
-
     def __init__(self, *args, **kwargs):
         unittest.TestCase.__init__(self, *args, **kwargs)
         SimpleSerialTestBase.__init__(self)
 
     def setUp(self):
-        self.patcher = patch('serial.Serial')
+        self.patcher = patch("serial.Serial")
         self.mock_serial = self.patcher.start()
         self.serial_dummy = SerialDummy()
         self.mock_serial.return_value.write = self.serial_dummy.write
         self.mock_serial.return_value.read = self.serial_dummy.read
         self.addCleanup(self.patcher.stop)
-        self.bus = SerialBus('bus')
+        self.bus = SerialBus("bus")
 
     def tearDown(self):
         self.serial_dummy.reset()
 
 
 class SimpleSerialLoopTest(unittest.TestCase, SimpleSerialTestBase):
-
     def __init__(self, *args, **kwargs):
         unittest.TestCase.__init__(self, *args, **kwargs)
         SimpleSerialTestBase.__init__(self)
 
     def setUp(self):
-        self.bus = SerialBus('loop://')
+        self.bus = SerialBus("loop://")
 
     def tearDown(self):
         self.bus.shutdown()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

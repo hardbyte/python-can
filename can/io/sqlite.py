@@ -6,7 +6,6 @@ Implements an SQL database writer and reader for storing CAN messages.
 .. note:: The database schema is given in the documentation of the loggers.
 """
 
-import sys
 import time
 import threading
 import logging
@@ -16,7 +15,7 @@ from can.listener import BufferedReader
 from can.message import Message
 from .generic import BaseIOHandler
 
-log = logging.getLogger('can.io.sqlite')
+log = logging.getLogger("can.io.sqlite")
 
 
 class SqliteReader(BaseIOHandler):
@@ -49,7 +48,9 @@ class SqliteReader(BaseIOHandler):
         self.table_name = table_name
 
     def __iter__(self):
-        for frame_data in self._cursor.execute("SELECT * FROM {}".format(self.table_name)):
+        for frame_data in self._cursor.execute(
+            "SELECT * FROM {}".format(self.table_name)
+        ):
             yield SqliteReader._assemble_message(frame_data)
 
     @staticmethod
@@ -62,7 +63,7 @@ class SqliteReader(BaseIOHandler):
             is_error_frame=bool(is_error),
             arbitration_id=can_id,
             dlc=dlc,
-            data=data
+            data=data,
         )
 
     def __len__(self):
@@ -75,7 +76,9 @@ class SqliteReader(BaseIOHandler):
 
         :rtype: Generator[can.Message]
         """
-        result = self._cursor.execute("SELECT * FROM {}".format(self.table_name)).fetchall()
+        result = self._cursor.execute(
+            "SELECT * FROM {}".format(self.table_name)
+        ).fetchall()
         return (SqliteReader._assemble_message(frame) for frame in result)
 
     def stop(self):
@@ -143,10 +146,14 @@ class SqliteWriter(BaseIOHandler, BufferedReader):
         self.table_name = table_name
         self._db_filename = file
         self._stop_running_event = threading.Event()
+        self._conn = None
         self._writer_thread = threading.Thread(target=self._db_writer_thread)
         self._writer_thread.start()
         self.num_frames = 0
         self.last_write = time.time()
+        self._insert_template = (
+            f"INSERT INTO {self.table_name} VALUES (?, ?, ?, ?, ?, ?, ?)"
+        )
 
     def _create_db(self):
         """Creates a new databae or opens a connection to an existing one.
@@ -159,7 +166,8 @@ class SqliteWriter(BaseIOHandler, BufferedReader):
         self._conn = sqlite3.connect(self._db_filename)
 
         # create table structure
-        self._conn.cursor().execute("""
+        self._conn.cursor().execute(
+            """
         CREATE TABLE IF NOT EXISTS {}
         (
           ts REAL,
@@ -170,35 +178,40 @@ class SqliteWriter(BaseIOHandler, BufferedReader):
           dlc INTEGER,
           data BLOB
         )
-        """.format(self.table_name))
+        """.format(
+                self.table_name
+            )
+        )
         self._conn.commit()
-
-        self._insert_template = "INSERT INTO {} VALUES (?, ?, ?, ?, ?, ?, ?)".format(self.table_name)
 
     def _db_writer_thread(self):
         self._create_db()
 
         try:
             while True:
-                messages = [] # reset buffer
+                messages = []  # reset buffer
 
                 msg = self.get_message(self.GET_MESSAGE_TIMEOUT)
                 while msg is not None:
-                    #log.debug("SqliteWriter: buffering message")
+                    # log.debug("SqliteWriter: buffering message")
 
-                    messages.append((
-                        msg.timestamp,
-                        msg.arbitration_id,
-                        msg.is_extended_id,
-                        msg.is_remote_frame,
-                        msg.is_error_frame,
-                        msg.dlc,
-                        memoryview(msg.data)
-                    ))
+                    messages.append(
+                        (
+                            msg.timestamp,
+                            msg.arbitration_id,
+                            msg.is_extended_id,
+                            msg.is_remote_frame,
+                            msg.is_error_frame,
+                            msg.dlc,
+                            memoryview(msg.data),
+                        )
+                    )
 
-                    if time.time() - self.last_write > self.MAX_TIME_BETWEEN_WRITES or \
-                       len(messages) > self.MAX_BUFFER_SIZE_BEFORE_WRITES:
-                       break
+                    if (
+                        time.time() - self.last_write > self.MAX_TIME_BETWEEN_WRITES
+                        or len(messages) > self.MAX_BUFFER_SIZE_BEFORE_WRITES
+                    ):
+                        break
                     else:
                         # just go on
                         msg = self.get_message(self.GET_MESSAGE_TIMEOUT)
@@ -206,9 +219,9 @@ class SqliteWriter(BaseIOHandler, BufferedReader):
                 count = len(messages)
                 if count > 0:
                     with self._conn:
-                        #log.debug("Writing %d frames to db", count)
+                        # log.debug("Writing %d frames to db", count)
                         self._conn.executemany(self._insert_template, messages)
-                        self._conn.commit() # make the changes visible to the entire database
+                        self._conn.commit()  # make the changes visible to the entire database
                     self.num_frames += count
                     self.last_write = time.time()
 

@@ -11,13 +11,13 @@ import logging
 
 import can
 
-log = logging.getLogger('can.usb2can')
+log = logging.getLogger("can.usb2can")
 
 # type definitions
-flags = c_ulong
+flags_t = c_ulong
 pConfigureStr = c_char_p
-handle = c_long
-timeout = c_ulong
+handle_t = c_long
+timeout_t = c_ulong
 filter_t = c_ulong
 
 # flags mappings
@@ -31,33 +31,39 @@ CANAL_ERROR_TIMEOUT = 32
 
 
 class CanalStatistics(Structure):
-    _fields_ = [('ReceiveFrams', c_ulong),
-                ('TransmistFrams', c_ulong),
-                ('ReceiveData', c_ulong),
-                ('TransmitData', c_ulong),
-                ('Overruns', c_ulong),
-                ('BusWarnings', c_ulong),
-                ('BusOff', c_ulong)]
+    _fields_ = [
+        ("ReceiveFrams", c_ulong),
+        ("TransmistFrams", c_ulong),
+        ("ReceiveData", c_ulong),
+        ("TransmitData", c_ulong),
+        ("Overruns", c_ulong),
+        ("BusWarnings", c_ulong),
+        ("BusOff", c_ulong),
+    ]
 
 
 stat = CanalStatistics
 
 
 class CanalStatus(Structure):
-    _fields_ = [('channel_status', c_ulong),
-                ('lasterrorcode', c_ulong),
-                ('lasterrorsubcode', c_ulong),
-                ('lasterrorstr', c_byte * 80)]
+    _fields_ = [
+        ("channel_status", c_ulong),
+        ("lasterrorcode", c_ulong),
+        ("lasterrorsubcode", c_ulong),
+        ("lasterrorstr", c_byte * 80),
+    ]
 
 
 # data type for the CAN Message
 class CanalMsg(Structure):
-    _fields_ = [('flags', c_ulong),
-                ('obid', c_ulong),
-                ('id', c_ulong),
-                ('sizeData', c_ubyte),
-                ('data', c_ubyte * 8),
-                ('timestamp', c_ulong)]
+    _fields_ = [
+        ("flags", c_ulong),
+        ("obid", c_ulong),
+        ("id", c_ulong),
+        ("sizeData", c_ubyte),
+        ("data", c_ubyte * 8),
+        ("timestamp", c_ulong),
+    ]
 
 
 class Usb2CanAbstractionLayer:
@@ -75,7 +81,7 @@ class Usb2CanAbstractionLayer:
         self.__m_dllBasic = windll.LoadLibrary(dll)
 
         if self.__m_dllBasic is None:
-            log.warning('DLL failed to load at path: {}'.format(dll))
+            log.warning("DLL failed to load at path: {}".format(dll))
 
     def open(self, configuration, flags):
         """
@@ -90,19 +96,25 @@ class Usb2CanAbstractionLayer:
         try:
             # we need to convert this into bytes, since the underlying DLL cannot
             # handle non-ASCII configuration strings
-            config_ascii = configuration.encode('ascii', 'ignore')
+            config_ascii = configuration.encode("ascii", "ignore")
             result = self.__m_dllBasic.CanalOpen(config_ascii, flags)
         except Exception as ex:
             # catch any errors thrown by this call and re-raise
-            raise can.CanError('CanalOpen() failed, configuration: "{}", error: {}'
-                               .format(configuration, ex))
+            raise can.CanError(
+                'CanalOpen() failed, configuration: "{}", error: {}'.format(
+                    configuration, ex
+                )
+            )
         else:
             # any greater-than-zero return value indicates a success
             # (see https://grodansparadis.gitbooks.io/the-vscp-daemon/canal_interface_specification.html)
             # raise an error if the return code is <= 0
             if result <= 0:
-                raise can.CanError('CanalOpen() failed, configuration: "{}", return code: {}'
-                                   .format(configuration, result))
+                raise can.CanError(
+                    'CanalOpen() failed, configuration: "{}", return code: {}'.format(
+                        configuration, result
+                    )
+                )
             else:
                 return result
 
@@ -111,7 +123,7 @@ class Usb2CanAbstractionLayer:
             res = self.__m_dllBasic.CanalClose(handle)
             return res
         except:
-            log.warning('Failed to close')
+            log.warning("Failed to close")
             raise
 
     def send(self, handle, msg):
@@ -119,7 +131,7 @@ class Usb2CanAbstractionLayer:
             res = self.__m_dllBasic.CanalSend(handle, msg)
             return res
         except:
-            log.warning('Sending error')
+            log.warning("Sending error")
             raise can.CanError("Failed to transmit frame")
 
     def receive(self, handle, msg):
@@ -127,7 +139,7 @@ class Usb2CanAbstractionLayer:
             res = self.__m_dllBasic.CanalReceive(handle, msg)
             return res
         except:
-            log.warning('Receive error')
+            log.warning("Receive error")
             raise
 
     def blocking_send(self, handle, msg, timeout):
@@ -135,7 +147,7 @@ class Usb2CanAbstractionLayer:
             res = self.__m_dllBasic.CanalBlockingSend(handle, msg, timeout)
             return res
         except:
-            log.warning('Blocking send error')
+            log.warning("Blocking send error")
             raise
 
     def blocking_receive(self, handle, msg, timeout):
@@ -143,23 +155,23 @@ class Usb2CanAbstractionLayer:
             res = self.__m_dllBasic.CanalBlockingReceive(handle, msg, timeout)
             return res
         except:
-            log.warning('Blocking Receive Failed')
+            log.warning("Blocking Receive Failed")
             raise
 
-    def get_status(self, handle, CanalStatus):
+    def get_status(self, handle, status):
         try:
-            res = self.__m_dllBasic.CanalGetStatus(handle, CanalStatus)
+            res = self.__m_dllBasic.CanalGetStatus(handle, status)
             return res
         except:
-            log.warning('Get status failed')
+            log.warning("Get status failed")
             raise
 
-    def get_statistics(self, handle, CanalStatistics):
+    def get_statistics(self, handle, statistics):
         try:
-            res = self.__m_dllBasic.CanalGetStatistics(handle, CanalStatistics)
+            res = self.__m_dllBasic.CanalGetStatistics(handle, statistics)
             return res
         except:
-            log.warning('Get Statistics failed')
+            log.warning("Get Statistics failed")
             raise
 
     def get_version(self):
@@ -167,7 +179,7 @@ class Usb2CanAbstractionLayer:
             res = self.__m_dllBasic.CanalGetVersion()
             return res
         except:
-            log.warning('Failed to get version info')
+            log.warning("Failed to get version info")
             raise
 
     def get_library_version(self):
@@ -175,7 +187,7 @@ class Usb2CanAbstractionLayer:
             res = self.__m_dllBasic.CanalGetDllVersion()
             return res
         except:
-            log.warning('Failed to get DLL version')
+            log.warning("Failed to get DLL version")
             raise
 
     def get_vendor_string(self):
@@ -183,5 +195,5 @@ class Usb2CanAbstractionLayer:
             res = self.__m_dllBasic.CanalGetVendorString()
             return res
         except:
-            log.warning('Failed to get vendor string')
+            log.warning("Failed to get vendor string")
             raise

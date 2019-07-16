@@ -12,13 +12,15 @@ import struct
 
 from can import BusABC, Message
 
-logger = logging.getLogger('can.serial')
+logger = logging.getLogger("can.serial")
 
 try:
     import serial
 except ImportError:
-    logger.warning("You won't be able to use the serial can backend without "
-                   "the serial module installed!")
+    logger.warning(
+        "You won't be able to use the serial can backend without "
+        "the serial module installed!"
+    )
     serial = None
 
 
@@ -31,8 +33,9 @@ class SerialBus(BusABC):
 
     """
 
-    def __init__(self, channel, baudrate=115200, timeout=0.1, rtscts=False,
-                 *args, **kwargs):
+    def __init__(
+        self, channel, baudrate=115200, timeout=0.1, rtscts=False, *args, **kwargs
+    ):
         """
         :param str channel:
             The serial device to open. For example "/dev/ttyS1" or
@@ -56,7 +59,8 @@ class SerialBus(BusABC):
 
         self.channel_info = "Serial interface: " + channel
         self.ser = serial.serial_for_url(
-            channel, baudrate=baudrate, timeout=timeout, rtscts=rtscts)
+            channel, baudrate=baudrate, timeout=timeout, rtscts=rtscts
+        )
 
         super().__init__(channel=channel, *args, **kwargs)
 
@@ -85,13 +89,13 @@ class SerialBus(BusABC):
 
         """
         try:
-            timestamp = struct.pack('<I', int(msg.timestamp * 1000))
+            timestamp = struct.pack("<I", int(msg.timestamp * 1000))
         except struct.error:
-            raise ValueError('Timestamp is out of range')
+            raise ValueError("Timestamp is out of range")
         try:
-            a_id = struct.pack('<I', msg.arbitration_id)
+            a_id = struct.pack("<I", msg.arbitration_id)
         except struct.error:
-            raise ValueError('Arbitration Id is out of range')
+            raise ValueError("Arbitration Id is out of range")
         byte_msg = bytearray()
         byte_msg.append(0xAA)
         for i in range(0, 4):
@@ -122,7 +126,7 @@ class SerialBus(BusABC):
                 message are the default values.
 
         :rtype:
-            can.Message, bool
+            Tuple[can.Message, Bool]
         """
         try:
             # ser.read can return an empty string
@@ -133,28 +137,30 @@ class SerialBus(BusABC):
 
         if rx_byte and ord(rx_byte) == 0xAA:
             s = bytearray(self.ser.read(4))
-            timestamp = (struct.unpack('<I', s))[0]
+            timestamp = (struct.unpack("<I", s))[0]
             dlc = ord(self.ser.read())
 
             s = bytearray(self.ser.read(4))
-            arb_id = (struct.unpack('<I', s))[0]
+            arb_id = (struct.unpack("<I", s))[0]
 
             data = self.ser.read(dlc)
 
             rxd_byte = ord(self.ser.read())
             if rxd_byte == 0xBB:
                 # received message data okay
-                msg = Message(timestamp=timestamp/1000,
-                              arbitration_id=arb_id,
-                              dlc=dlc,
-                              data=data)
+                msg = Message(
+                    timestamp=timestamp / 1000,
+                    arbitration_id=arb_id,
+                    dlc=dlc,
+                    data=data,
+                )
                 return msg, False
 
         else:
             return None, False
 
     def fileno(self):
-        if hasattr(self.ser, 'fileno'):
+        if hasattr(self.ser, "fileno"):
             return self.ser.fileno()
         # Return an invalid file descriptor on Windows
         return -1

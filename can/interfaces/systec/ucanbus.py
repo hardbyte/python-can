@@ -9,7 +9,7 @@ from .constants import *
 from .structures import *
 from .ucan import UcanServer
 
-log = logging.getLogger('can.systec')
+log = logging.getLogger("can.systec")
 
 
 class Ucan(UcanServer):
@@ -46,7 +46,7 @@ class UcanBus(BusABC):
         250000: Baudrate.BAUD_250kBit,
         500000: Baudrate.BAUD_500kBit,
         800000: Baudrate.BAUD_800kBit,
-        1000000: Baudrate.BAUD_1MBit
+        1000000: Baudrate.BAUD_1MBit,
     }
 
     def __init__(self, channel, can_filters=None, **kwargs):
@@ -97,14 +97,14 @@ class UcanBus(BusABC):
             raise ImportError("The SYSTEC ucan library has not been initialized.")
 
         self.channel = int(channel)
-        device_number = int(kwargs.get('device_number', ANY_MODULE))
+        device_number = int(kwargs.get("device_number", ANY_MODULE))
 
         # configuration options
-        bitrate = kwargs.get('bitrate', 500000)
+        bitrate = kwargs.get("bitrate", 500000)
         if bitrate not in self.BITRATES:
             raise ValueError("Invalid bitrate {}".format(bitrate))
 
-        state = kwargs.get('state', BusState.ACTIVE)
+        state = kwargs.get("state", BusState.ACTIVE)
         if state is BusState.ACTIVE or state is BusState.PASSIVE:
             self._state = state
         else:
@@ -112,10 +112,10 @@ class UcanBus(BusABC):
 
         # get parameters
         self._params = {
-            "mode": Mode.MODE_NORMAL |
-                    (Mode.MODE_TX_ECHO if kwargs.get('receive_own_messages') else 0) |
-                    (Mode.MODE_LISTEN_ONLY if state is BusState.PASSIVE else 0),
-            "BTR": self.BITRATES[bitrate]
+            "mode": Mode.MODE_NORMAL
+            | (Mode.MODE_TX_ECHO if kwargs.get("receive_own_messages") else 0)
+            | (Mode.MODE_LISTEN_ONLY if state is BusState.PASSIVE else 0),
+            "BTR": self.BITRATES[bitrate],
         }
         # get extra parameters
         if kwargs.get("rx_buffer_entries"):
@@ -126,12 +126,14 @@ class UcanBus(BusABC):
         self._ucan.init_hardware(device_number=device_number)
         self._ucan.init_can(self.channel, **self._params)
         hw_info_ex, _, _ = self._ucan.get_hardware_info()
-        self.channel_info = '%s, S/N %s, CH %s, BTR %s' % (
+        self.channel_info = "%s, S/N %s, CH %s, BTR %s" % (
             self._ucan.get_product_code_message(hw_info_ex.product_code),
             hw_info_ex.serial,
             self.channel,
-            self._ucan.get_baudrate_message(self.BITRATES[bitrate])
+            self._ucan.get_baudrate_message(self.BITRATES[bitrate]),
         )
+        self._is_filtered = False
+
         super().__init__(channel=channel, can_filters=can_filters, **kwargs)
 
     def _recv_internal(self, timeout):
@@ -139,12 +141,14 @@ class UcanBus(BusABC):
         if not message:
             return None, False
 
-        msg = Message(timestamp=float(message[0].time) / 1000.0,
-                      is_remote_frame=bool(message[0].frame_format & MsgFrameFormat.MSG_FF_RTR),
-                      is_extended_id=bool(message[0].frame_format & MsgFrameFormat.MSG_FF_EXT),
-                      arbitration_id=message[0].id,
-                      dlc=len(message[0].data),
-                      data=message[0].data)
+        msg = Message(
+            timestamp=float(message[0].time) / 1000.0,
+            is_remote_frame=bool(message[0].frame_format & MsgFrameFormat.MSG_FF_RTR),
+            is_extended_id=bool(message[0].frame_format & MsgFrameFormat.MSG_FF_EXT),
+            arbitration_id=message[0].id,
+            dlc=len(message[0].data),
+            data=message[0].data,
+        )
         return msg, self._is_filtered
 
     def send(self, msg, timeout=None):
@@ -169,40 +173,51 @@ class UcanBus(BusABC):
         if timeout is not None and timeout >= 0:
             self._ucan.set_tx_timeout(self.channel, int(timeout * 1000))
 
-        message = CanMsg(msg.arbitration_id,
-                         MsgFrameFormat.MSG_FF_STD |
-                         (MsgFrameFormat.MSG_FF_EXT if msg.is_extended_id else 0) |
-                         (MsgFrameFormat.MSG_FF_RTR if msg.is_remote_frame else 0),
-                         msg.data)
+        message = CanMsg(
+            msg.arbitration_id,
+            MsgFrameFormat.MSG_FF_STD
+            | (MsgFrameFormat.MSG_FF_EXT if msg.is_extended_id else 0)
+            | (MsgFrameFormat.MSG_FF_RTR if msg.is_remote_frame else 0),
+            msg.data,
+        )
         self._ucan.write_can_msg(self.channel, [message])
 
     @staticmethod
     def _detect_available_configs():
         configs = []
         try:
-            for index, is_used, hw_info_ex, init_info in Ucan.enumerate_hardware():
-                configs.append({'interface': 'systec',
-                                'channel': Channel.CHANNEL_CH0,
-                                'device_number': hw_info_ex.device_number})
+            # index, is_used, hw_info_ex, init_info
+            for _, _, hw_info_ex, _ in Ucan.enumerate_hardware():
+                configs.append(
+                    {
+                        "interface": "systec",
+                        "channel": Channel.CHANNEL_CH0,
+                        "device_number": hw_info_ex.device_number,
+                    }
+                )
                 if Ucan.check_support_two_channel(hw_info_ex):
-                    configs.append({'interface': 'systec',
-                                    'channel': Channel.CHANNEL_CH1,
-                                    'device_number': hw_info_ex.device_number})
-        except:
+                    configs.append(
+                        {
+                            "interface": "systec",
+                            "channel": Channel.CHANNEL_CH1,
+                            "device_number": hw_info_ex.device_number,
+                        }
+                    )
+        except Exception:
             log.warning("The SYSTEC ucan library has not been initialized.")
         return configs
 
     def _apply_filters(self, filters):
         if filters and len(filters) == 1:
-            can_id = filters[0]['can_id']
-            can_mask = filters[0]['can_mask']
+            can_id = filters[0]["can_id"]
+            can_mask = filters[0]["can_mask"]
             self._ucan.set_acceptance(self.channel, can_mask, can_id)
             self._is_filtered = True
-            log.info('Hardware filtering on ID 0x%X, mask 0x%X', can_id, can_mask)
+            log.info("Hardware filtering on ID 0x%X, mask 0x%X", can_id, can_mask)
         else:
             self._ucan.set_acceptance(self.channel)
             self._is_filtered = False
-            log.info('Hardware filtering has been disabled')
+            log.info("Hardware filtering has been disabled")
 
     def flush_tx_buffer(self):
         """
@@ -211,7 +226,7 @@ class UcanBus(BusABC):
         :raises can.CanError:
             If flushing of the transmit buffer failed.
         """
-        log.info('Flushing transmit buffer')
+        log.info("Flushing transmit buffer")
         self._ucan.reset_can(self.channel, ResetFlags.RESET_ONLY_TX_BUFF)
 
     @staticmethod
@@ -236,11 +251,17 @@ class UcanBus(BusABC):
 
         :return: Returns list with one filter containing a "can_id", a "can_mask" and "extended" key.
         """
-        return [{
-            "can_id": Ucan.calculate_acr(extended, from_id, to_id, rtr_only, rtr_too),
-            "can_mask": Ucan.calculate_amr(extended, from_id, to_id, rtr_only, rtr_too),
-            "extended": extended
-        }]
+        return [
+            {
+                "can_id": Ucan.calculate_acr(
+                    extended, from_id, to_id, rtr_only, rtr_too
+                ),
+                "can_mask": Ucan.calculate_amr(
+                    extended, from_id, to_id, rtr_only, rtr_too
+                ),
+                "extended": extended,
+            }
+        ]
 
     @property
     def state(self):
@@ -248,7 +269,9 @@ class UcanBus(BusABC):
 
     @state.setter
     def state(self, new_state):
-        if self._state is not BusState.ERROR and (new_state is BusState.ACTIVE or new_state is BusState.PASSIVE):
+        if self._state is not BusState.ERROR and (
+            new_state is BusState.ACTIVE or new_state is BusState.PASSIVE
+        ):
             # close the CAN channel
             self._ucan.shutdown(self.channel, False)
             # set mode

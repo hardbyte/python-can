@@ -8,17 +8,15 @@ Copyright (C) 2016 Giuseppe Corbelli <giuseppe.corbelli@weightpack.com>
 
 from can import CanError
 
-__all__ = ['VCITimeout', 'VCIError', 'VCIRxQueueEmptyError', 'VCIDeviceNotFoundError']
+__all__ = ["VCITimeout", "VCIError", "VCIRxQueueEmptyError", "VCIDeviceNotFoundError"]
 
 
 class VCITimeout(CanError):
     """ Wraps the VCI_E_TIMEOUT error """
-    pass
 
 
 class VCIError(CanError):
     """ Try to display errors that occur within the wrapped C library nicely. """
-    pass
 
 
 class VCIRxQueueEmptyError(VCIError):

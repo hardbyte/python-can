@@ -9,7 +9,6 @@ This module contains the implementation of :class:`can.Message`.
 """
 
 
-import warnings
 from copy import deepcopy
 from math import isinf, isnan
 
@@ -44,14 +43,24 @@ class Message:
         "is_fd",
         "bitrate_switch",
         "error_state_indicator",
-        "__weakref__"               # support weak references to messages
+        "__weakref__",  # support weak references to messages
     )
 
-    def __init__(self, timestamp=0.0, arbitration_id=0, is_extended_id=True,
-                 is_remote_frame=False, is_error_frame=False, channel=None,
-                 dlc=None, data=None,
-                 is_fd=False, bitrate_switch=False, error_state_indicator=False,
-                 check=False):
+    def __init__(
+        self,
+        timestamp=0.0,
+        arbitration_id=0,
+        is_extended_id=True,
+        is_remote_frame=False,
+        is_error_frame=False,
+        channel=None,
+        dlc=None,
+        data=None,
+        is_fd=False,
+        bitrate_switch=False,
+        error_state_indicator=False,
+        check=False,
+    ):
         """
         To create a message object, simply provide any of the below attributes
         together with additional parameters as keyword arguments to the constructor.
@@ -101,14 +110,16 @@ class Message:
             arbitration_id_string = "ID: {0:04x}".format(self.arbitration_id)
         field_strings.append(arbitration_id_string.rjust(12, " "))
 
-        flag_string = " ".join([
-            "X" if self.is_extended_id else "S",
-            "E" if self.is_error_frame else " ",
-            "R" if self.is_remote_frame else " ",
-            "F" if self.is_fd else " ",
-            "BS" if self.bitrate_switch else "  ",
-            "EI" if self.error_state_indicator else "  "
-        ])
+        flag_string = " ".join(
+            [
+                "X" if self.is_extended_id else "S",
+                "E" if self.is_error_frame else " ",
+                "R" if self.is_remote_frame else " ",
+                "F" if self.is_fd else " ",
+                "BS" if self.bitrate_switch else "  ",
+                "EI" if self.error_state_indicator else "  ",
+            ]
+        )
 
         field_strings.append(flag_string)
 
@@ -123,7 +134,7 @@ class Message:
             field_strings.append(" " * 24)
 
         if (self.data is not None) and (self.data.isalnum()):
-            field_strings.append("'{}'".format(self.data.decode('utf-8', 'replace')))
+            field_strings.append("'{}'".format(self.data.decode("utf-8", "replace")))
 
         if self.channel is not None:
             try:
@@ -141,9 +152,11 @@ class Message:
         return True
 
     def __repr__(self):
-        args = ["timestamp={}".format(self.timestamp),
-                "arbitration_id={:#x}".format(self.arbitration_id),
-                "is_extended_id={}".format(self.is_extended_id)]
+        args = [
+            "timestamp={}".format(self.timestamp),
+            "arbitration_id={:#x}".format(self.arbitration_id),
+            "is_extended_id={}".format(self.is_extended_id),
+        ]
 
         if self.is_remote_frame:
             args.append("is_remote_frame={}".format(self.is_remote_frame))
@@ -152,11 +165,10 @@ class Message:
             args.append("is_error_frame={}".format(self.is_error_frame))
 
         if self.channel is not None:
-            args.append("channel={!r}".format(self.channel))                
+            args.append("channel={!r}".format(self.channel))
 
         data = ["{:#02x}".format(byte) for byte in self.data]
-        args += ["dlc={}".format(self.dlc),
-                 "data=[{}]".format(", ".join(data))]
+        args += ["dlc={}".format(self.dlc), "data=[{}]".format(", ".join(data))]
 
         if self.is_fd:
             args.append("is_fd=True")
@@ -186,7 +198,7 @@ class Message:
             data=self.data,
             is_fd=self.is_fd,
             bitrate_switch=self.bitrate_switch,
-            error_state_indicator=self.error_state_indicator
+            error_state_indicator=self.error_state_indicator,
         )
         return new
 
@@ -202,7 +214,7 @@ class Message:
             data=deepcopy(self.data, memo),
             is_fd=self.is_fd,
             bitrate_switch=self.bitrate_switch,
-            error_state_indicator=self.error_state_indicator
+            error_state_indicator=self.error_state_indicator,
         )
         return new
 
@@ -221,36 +233,50 @@ class Message:
             raise ValueError("the timestamp may not be NaN")
 
         if self.is_remote_frame and self.is_error_frame:
-            raise ValueError("a message cannot be a remote and an error frame at the sane time")
+            raise ValueError(
+                "a message cannot be a remote and an error frame at the sane time"
+            )
 
         if self.arbitration_id < 0:
             raise ValueError("arbitration IDs may not be negative")
 
         if self.is_extended_id:
-            if 0x20000000 <= self.arbitration_id:
+            if self.arbitration_id >= 0x20000000:
                 raise ValueError("Extended arbitration IDs must be less than 2^29")
-        elif 0x800 <= self.arbitration_id:
+        elif self.arbitration_id >= 0x800:
             raise ValueError("Normal arbitration IDs must be less than 2^11")
 
         if self.dlc < 0:
             raise ValueError("DLC may not be negative")
         if self.is_fd:
-            if 64 < self.dlc:
-                raise ValueError("DLC was {} but it should be <= 64 for CAN FD frames".format(self.dlc))
-        elif 8 < self.dlc:
-            raise ValueError("DLC was {} but it should be <= 8 for normal CAN frames".format(self.dlc))
+            if self.dlc > 64:
+                raise ValueError(
+                    "DLC was {} but it should be <= 64 for CAN FD frames".format(
+                        self.dlc
+                    )
+                )
+        elif self.dlc > 8:
+            raise ValueError(
+                "DLC was {} but it should be <= 8 for normal CAN frames".format(
+                    self.dlc
+                )
+            )
 
         if self.is_remote_frame:
-            if self.data is not None and len(self.data) != 0:
+            if self.data:
                 raise ValueError("remote frames may not carry any data")
         elif self.dlc != len(self.data):
-            raise ValueError("the DLC and the length of the data must match up for non remote frames")
+            raise ValueError(
+                "the DLC and the length of the data must match up for non remote frames"
+            )
 
         if not self.is_fd:
             if self.bitrate_switch:
                 raise ValueError("bitrate switch is only allowed for CAN FD frames")
             if self.error_state_indicator:
-                raise ValueError("error state indicator is only allowed for CAN FD frames")
+                raise ValueError(
+                    "error state indicator is only allowed for CAN FD frames"
+                )
 
     def equals(self, other, timestamp_delta=1.0e-6):
         """
@@ -269,22 +295,23 @@ class Message:
         # on why a delta of 1.0e-6 was chosen
         return (
             # check for identity first and finish fast
-            self is other or
+            self is other
+            or
             # then check for equality by value
             (
                 (
-                    timestamp_delta is None or
-                    abs(self.timestamp - other.timestamp) <= timestamp_delta
-                ) and
-                self.arbitration_id == other.arbitration_id and
-                self.is_extended_id == other.is_extended_id and
-                self.dlc == other.dlc and
-                self.data == other.data and
-                self.is_remote_frame == other.is_remote_frame and
-                self.is_error_frame == other.is_error_frame and
-                self.channel == other.channel and
-                self.is_fd == other.is_fd and
-                self.bitrate_switch == other.bitrate_switch and
-                self.error_state_indicator == other.error_state_indicator
+                    timestamp_delta is None
+                    or abs(self.timestamp - other.timestamp) <= timestamp_delta
+                )
+                and self.arbitration_id == other.arbitration_id
+                and self.is_extended_id == other.is_extended_id
+                and self.dlc == other.dlc
+                and self.data == other.data
+                and self.is_remote_frame == other.is_remote_frame
+                and self.is_error_frame == other.is_error_frame
+                and self.channel == other.channel
+                and self.is_fd == other.is_fd
+                and self.bitrate_switch == other.bitrate_switch
+                and self.error_state_indicator == other.error_state_indicator
             )
         )

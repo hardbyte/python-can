@@ -92,6 +92,13 @@ Configuration can be pulled from these environmental variables:
     * CAN_INTERFACE
     * CAN_CHANNEL
     * CAN_BITRATE
+    * CAN_CONFIG
+
+The ``CAN_CONFIG`` environment variable allows to set any bus configuration using JSON.
+
+For example:
+
+``CAN_INTERFACE=socketcan CAN_CONFIG={"receive_own_messages": true, "fd": true}``
 
 
 Interface Names
@@ -125,4 +132,8 @@ Lookup table of interface names:
 | ``"vector"``        | :doc:`interfaces/vector`            |
 +---------------------+-------------------------------------+
 | ``"virtual"``       | :doc:`interfaces/virtual`           |
++---------------------+-------------------------------------+
+| ``"canalystii"``    | :doc:`interfaces/canalystii`        |
++---------------------+-------------------------------------+
+| ``"systec"``        | :doc:`interfaces/systec`            |
 +---------------------+-------------------------------------+

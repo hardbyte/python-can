@@ -18,7 +18,7 @@ from .printer import Printer
 log = logging.getLogger("can.io.logger")
 
 
-class Logger(BaseIOHandler, Listener):
+class Logger(BaseIOHandler, Listener):  # pylint: disable=abstract-method
     """
     Logs CAN messages to a file.
 

@@ -1,7 +1,7 @@
 python-can
 ==========
 
-|release| |docs| |build_travis| |build_appveyor| |coverage| |downloads|
+|release| |docs| |build_travis| |build_appveyor| |coverage| |downloads| |formatter|
 
 .. |release| image:: https://img.shields.io/pypi/v/python-can.svg
    :target: https://pypi.python.org/pypi/python-can/
@@ -27,6 +27,10 @@ python-can
    :target: https://pepy.tech/project/python-can
    :alt: Downloads on PePy
 
+.. |formatter| image:: https://img.shields.io/badge/code%20style-black-000000.svg
+   :target: https://github.com/python/black
+   :alt: This project uses the black formatter.
+
 The **C**\ ontroller **A**\ rea **N**\ etwork is a bus standard designed
 to allow microcontrollers and devices to communicate with each other. It
 has priority based bus arbitration and reliable deterministic
@@ -40,13 +44,13 @@ messages on a can bus.
 The library currently supports Python 3.6+ as well as PyPy 3 and runs
 on Mac, Linux and Windows.
 
-==================  ===========
-Library Version      Python
-------------------  -----------
-  2.x                 2.6+, 3.4+
-  3.x                 2.7+, 3.5+
-  4.x                 3.6+
-==================  ===========
+=============================  ===========
+Library Version                Python
+-----------------------------  -----------
+  2.x                          2.6+, 3.4+
+  3.x                          2.7+, 3.5+
+  4.x *(currently on devlop)*  3.6+
+=============================  ===========
 
 
 Features

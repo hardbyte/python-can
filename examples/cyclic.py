@@ -26,7 +26,9 @@ def simple_periodic_send(bus):
     Sleeps for 2 seconds then stops the task.
     """
     print("Starting to send a message every 200ms for 2s")
-    msg = can.Message(arbitration_id=0x123, data=[1, 2, 3, 4, 5, 6], is_extended_id=False)
+    msg = can.Message(
+        arbitration_id=0x123, data=[1, 2, 3, 4, 5, 6], is_extended_id=False
+    )
     task = bus.send_periodic(msg, 0.20)
     assert isinstance(task, can.CyclicSendTaskABC)
     time.sleep(2)
@@ -36,7 +38,9 @@ def simple_periodic_send(bus):
 
 def limited_periodic_send(bus):
     print("Starting to send a message every 200ms for 1s")
-    msg = can.Message(arbitration_id=0x12345678, data=[0, 0, 0, 0, 0, 0], is_extended_id=True)
+    msg = can.Message(
+        arbitration_id=0x12345678, data=[0, 0, 0, 0, 0, 0], is_extended_id=True
+    )
     task = bus.send_periodic(msg, 0.20, 1, store_task=False)
     if not isinstance(task, can.LimitedDurationCyclicSendTaskABC):
         print("This interface doesn't seem to support a ")
@@ -48,12 +52,12 @@ def limited_periodic_send(bus):
     # Note the (finished) task will still be tracked by the Bus
     # unless we pass `store_task=False` to bus.send_periodic
     # alternatively calling stop removes the task from the bus
-    #task.stop()
+    # task.stop()
 
 
 def test_periodic_send_with_modifying_data(bus):
     print("Starting to send a message every 200ms. Initial data is ones")
-    msg = can.Message(arbitration_id=0x0cf02200, data=[1, 1, 1, 1])
+    msg = can.Message(arbitration_id=0x0CF02200, data=[1, 1, 1, 1])
     task = bus.send_periodic(msg, 0.20)
     if not isinstance(task, can.ModifiableCyclicTaskABC):
         print("This interface doesn't seem to support modification")
@@ -68,7 +72,7 @@ def test_periodic_send_with_modifying_data(bus):
     task.stop()
     print("stopped cyclic send")
     print("Changing data of stopped task to single ff byte")
-    msg.data = bytearray([0xff])
+    msg.data = bytearray([0xFF])
     msg.dlc = 1
     task.modify_data(msg)
     time.sleep(1)
@@ -107,11 +111,13 @@ def test_periodic_send_with_modifying_data(bus):
 
 if __name__ == "__main__":
 
-    reset_msg = can.Message(arbitration_id=0x00, data=[0, 0, 0, 0, 0, 0], is_extended_id=False)
+    reset_msg = can.Message(
+        arbitration_id=0x00, data=[0, 0, 0, 0, 0, 0], is_extended_id=False
+    )
 
     for interface, channel in [
-        ('socketcan', 'vcan0'),
-        #('ixxat', 0)
+        ("socketcan", "vcan0"),
+        # ('ixxat', 0)
     ]:
         print("Carrying out cyclic tests with {} interface".format(interface))
 
@@ -126,9 +132,9 @@ if __name__ == "__main__":
 
         test_periodic_send_with_modifying_data(bus)
 
-        #print("Carrying out multirate cyclic test for {} interface".format(interface))
-        #can.rc['interface'] = interface
-        #test_dual_rate_periodic_send()
+        # print("Carrying out multirate cyclic test for {} interface".format(interface))
+        # can.rc['interface'] = interface
+        # test_dual_rate_periodic_send()
 
         bus.shutdown()
 
