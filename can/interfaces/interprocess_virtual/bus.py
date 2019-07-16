@@ -1,7 +1,6 @@
 # coding: utf-8
 
 import logging
-
 import select
 import socket
 import struct
@@ -9,7 +8,6 @@ import time
 
 import can
 from can import BusABC
-from abc import abstractmethod
 
 from utils import pack_message, unpack_message
 
@@ -150,9 +148,7 @@ class GeneralPurposeMulticastBus(object):
 
         :param bytes data: the data to be sent
         """
-        while True:
-            self._socket_send.sendto(data, (self._addrinfo[4][0], self.port))
-            time.sleep(1)
+        self._socket_send.sendto(data, (self._addrinfo[4][0], self.port))
 
     def recv(self, timeout):
         # get all sockets that are ready (can be a list with a single value
@@ -178,8 +174,6 @@ class GeneralPurposeMulticastBus(object):
 
 
 if __name__ == "__main__":
-    from time import sleep
-
     with InterprocessVirtualBus() as bus_1:
         with InterprocessVirtualBus() as bus_2:
             notifier = can.Notifier(bus_2, [can.Printer()])
@@ -187,4 +181,4 @@ if __name__ == "__main__":
             message = can.Message(arbitration_id=0x123, data=[1, 2, 3])
             bus_1.send(message)
 
-            sleep(10)
+            time.sleep(2)

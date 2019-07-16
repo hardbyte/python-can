@@ -25,6 +25,7 @@ def pack_message(message):
     }
     return msgpack.packb(as_dict, use_bin_type=True)
 
+
 def unpack_message(data):
     as_dict = msgpack.unpackb(data, raw=False)
     return Message(**as_dict)
