@@ -285,7 +285,7 @@ class VectorBus(BusABC):
         vxlapi.xlGetSyncTime(self.port_handle, offset)
         self._time_offset = time.time() - offset.value * 1e-9
 
-        # Send first cipState request
+        # Send first chipState request
         self._chip_state: int = vxlapi.XL_CHIPSTAT_ERROR_ACTIVE
         self.request_chip_state()
 
