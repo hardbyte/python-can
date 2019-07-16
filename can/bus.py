@@ -274,13 +274,21 @@ class BusABC(metaclass=ABCMeta):
         return task
 
     def stop_all_periodic_tasks(self, remove_tasks=True):
-        """Stop sending any messages that were started using bus.send_periodic
+        """Stop sending any messages that were started using **bus.send_periodic**.
+
+        .. note::
+            The result is undefined if a single task throws an exception while being stopped.
 
         :param bool remove_tasks:
             Stop tracking the stopped tasks.
         """
         for task in self._periodic_tasks:
-            task.stop(remove_task=remove_tasks)
+            # we cannot let `task.stop()` modify `self._periodic_tasks` while we are
+            # iterating over it (#634)
+            task.stop(remove_task=False)
+
+        if remove_tasks:
+            self._periodic_tasks = []
 
     def __iter__(self):
         """Allow iteration on messages as they are received.
