@@ -174,11 +174,12 @@ class GeneralPurposeMulticastBus(object):
 
 
 if __name__ == "__main__":
-    with InterprocessVirtualBus() as bus_1:
-        with InterprocessVirtualBus() as bus_2:
-            notifier = can.Notifier(bus_2, [can.Printer()])
+    with InterprocessVirtualBus() as bus_1, \
+         InterprocessVirtualBus() as bus_2:
 
-            message = can.Message(arbitration_id=0x123, data=[1, 2, 3])
-            bus_1.send(message)
+        notifier = can.Notifier(bus_2, [can.Printer()])
 
-            time.sleep(2)
+        message = can.Message(arbitration_id=0x123, data=[1, 2, 3])
+        bus_1.send(message)
+
+        time.sleep(2)
