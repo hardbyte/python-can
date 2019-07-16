@@ -10,6 +10,7 @@ import logging
 import threading
 from time import time
 from aenum import Enum, auto
+from typing import Tuple
 
 from .broadcastmanager import ThreadBasedCyclicSendTask
 
@@ -22,6 +23,15 @@ class BusState(Enum):
     ACTIVE = auto()
     PASSIVE = auto()
     ERROR = auto()
+
+
+class ErrorState(Enum):
+    """The fault confinement state in which CAN interface can be."""
+
+    BUS_OFF = auto()
+    ERROR_PASSIVE = auto()
+    ERROR_WARNING = auto()
+    ERROR_ACTIVE = auto()
 
 
 class BusABC(metaclass=ABCMeta):
@@ -55,6 +65,11 @@ class BusABC(metaclass=ABCMeta):
         """
         self._periodic_tasks = []
         self.set_filters(can_filters)
+
+        #: initialize Error status, transmit error count TEC, receive error count REC
+        self.error_state: ErrorState = ErrorState.ERROR_ACTIVE
+        self.TEC: int = -1
+        self.REC: int = -1
 
     def __str__(self):
         return self.channel_info
@@ -411,3 +426,14 @@ class BusABC(metaclass=ABCMeta):
                  for usage in the interface's bus constructor.
         """
         raise NotImplementedError()
+
+    @property
+    def error_statistics(self) -> Tuple[ErrorState, int, int]:
+        """Get the error state, the transmit error count and the receive
+        error count of the CAN interface.
+
+        :rtype: Tuple[can.ErrorState, int, int]
+        :return: a tuple of can.ErrorState, the transmit error count and
+        the receive error count.
+        """
+        return self.error_state, self.TEC, self.REC

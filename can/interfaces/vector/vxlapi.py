@@ -91,6 +91,12 @@ XL_CHIPSTAT_ERROR_PASSIVE = 0x02
 XL_CHIPSTAT_ERROR_WARNING = 0x04
 XL_CHIPSTAT_ERROR_ACTIVE = 0x08
 
+# constants for output mode
+XL_OUTPUT_MODE_SILENT = 0
+XL_OUTPUT_MODE_NORMAL = 1
+XL_OUTPUT_MODE_TX_OFF = 2
+XL_OUTPUT_MODE_SJA_1000_SILENT = 3
+
 # s_xl_can_ev_error : errorCode
 XL_CAN_ERRC_BIT_ERROR = 1
 XL_CAN_ERRC_FORM_ERROR = 2
@@ -483,3 +489,8 @@ xlCanRequestChipState = _xlapi_dll.xlCanRequestChipState
 xlCanRequestChipState.argtypes = [XLportHandle, XLaccess]
 xlCanRequestChipState.restype = XLstatus
 xlCanRequestChipState.errcheck = check_status
+
+xlCanSetChannelOutput = _xlapi_dll.xlCanSetChannelOutput
+xlCanSetChannelOutput.argtypes = [XLportHandle, XLaccess, ctypes.c_char]
+xlCanSetChannelOutput.restype = XLstatus
+xlCanSetChannelOutput.errcheck = check_status

@@ -11,6 +11,7 @@ Authors: Julien Grave <grave.jul@gmail.com>, Christian Sandberg
 import ctypes
 import logging
 import time
+from typing import Tuple
 
 try:
     # Try builtin Python 3 Windows API
@@ -29,7 +30,7 @@ except ImportError:
 
 # Import Modules
 # ==============
-from can import BusABC, Message
+from can import BusABC, Message, ErrorState, BusState
 from can.util import len2dlc, dlc2len
 from .exceptions import VectorError
 
@@ -55,6 +56,7 @@ class VectorBus(BusABC):
         poll_interval=0.01,
         receive_own_messages=False,
         bitrate=None,
+        state=BusState.ACTIVE,
         rx_queue_size=2 ** 14,
         app_name="CANalyzer",
         serial=None,
@@ -76,6 +78,9 @@ class VectorBus(BusABC):
             Poll interval in seconds.
         :param int bitrate:
             Bitrate in bits/s.
+        :param can.bus.BusState state:
+            BusState of the channel.
+            Default is ACTIVE
         :param int rx_queue_size:
             Number of messages in receive queue (power of 2).
             CAN: range 16…32768
@@ -254,6 +259,13 @@ class VectorBus(BusABC):
         tx_receipts = 1 if receive_own_messages else 0
         vxlapi.xlCanSetChannelMode(self.port_handle, self.mask, tx_receipts, 0)
 
+        # Set Output Mode
+        if state == BusState.PASSIVE:
+            mode = vxlapi.XL_OUTPUT_MODE_SILENT
+        else:
+            mode = vxlapi.XL_OUTPUT_MODE_NORMAL
+        vxlapi.xlCanSetChannelOutput(self.port_handle, self.mask, mode)
+
         if HAS_EVENTS:
             self.event_handle = vxlapi.XLhandle()
             vxlapi.xlSetNotification(self.port_handle, self.event_handle, 1)
@@ -272,6 +284,10 @@ class VectorBus(BusABC):
         offset = vxlapi.XLuint64()
         vxlapi.xlGetSyncTime(self.port_handle, offset)
         self._time_offset = time.time() - offset.value * 1e-9
+
+        # Send first cipState request
+        self._chip_state: int = vxlapi.XL_CHIPSTAT_ERROR_ACTIVE
+        self.request_chip_state()
 
         self._is_filtered = False
         super().__init__(channel=channel, can_filters=can_filters, **kwargs)
@@ -358,6 +374,11 @@ class VectorBus(BusABC):
                             channel=channel,
                         )
                         return msg, self._is_filtered
+                    elif event.tag == vxlapi.XL_CAN_EV_TAG_CHIP_STATE:
+                        self._chip_state = event.tagData.canChipState.busStatus
+                        self.TEC = event.tagData.canChipState.txErrorCounter
+                        self.REC = event.tagData.canChipState.rxErrorCounter
+                        self.request_chip_state()
             else:
                 event_count.value = 1
                 try:
@@ -455,6 +476,21 @@ class VectorBus(BusABC):
             for idx, value in enumerate(msg.data):
                 xl_event.tagData.msg.data[idx] = value
             vxlapi.xlCanTransmit(self.port_handle, mask, message_count, xl_event)
+
+    def request_chip_state(self) -> None:
+        vxlapi.xlCanRequestChipState(self.port_handle, self.mask)
+
+    @property
+    def error_statistics(self) -> Tuple[ErrorState, int, int]:
+        if self._chip_state == vxlapi.XL_CHIPSTAT_ERROR_ACTIVE:
+            self.error_state = ErrorState.ERROR_ACTIVE
+        elif self._chip_state == vxlapi.XL_CHIPSTAT_ERROR_WARNING:
+            self.error_state = ErrorState.ERROR_WARNING
+        elif self._chip_state == vxlapi.XL_CHIPSTAT_ERROR_PASSIVE:
+            self.error_state = ErrorState.ERROR_PASSIVE
+        elif self._chip_state == vxlapi.XL_CHIPSTAT_BUSOFF:
+            self.error_state = ErrorState.BUS_OFF
+        return self.error_state, self.TEC, self.REC
 
     def flush_tx_buffer(self):
         vxlapi.xlCanFlushTransmitQueue(self.port_handle, self.mask)
