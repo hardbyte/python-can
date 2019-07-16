@@ -15,7 +15,7 @@ log = logging.getLogger(__name__)
 
 
 class InterprocessVirtualBus(BusABC):
-    """Adds a virtual interface that allows to communicate between multiple processes.
+    """A virtual interface that allows to communicate between multiple processes.
     """
 
     DEFAULT_GROUP_IPv4 = '225.0.0.250'
@@ -23,8 +23,6 @@ class InterprocessVirtualBus(BusABC):
 
     def __init__(self, channel=DEFAULT_GROUP_IPv6, port=43113, ttl=1,
                  receive_own_messages=False, **kwargs):
-        """Construct and open a CAN bus instance.
-        """
         super(InterprocessVirtualBus, self).__init__(channel, **kwargs)
 
         self.multicast = GeneralPurposeMulticastBus(channel, port, ttl, receive_own_messages)
@@ -39,46 +37,14 @@ class InterprocessVirtualBus(BusABC):
         return can_message, False
 
     def send(self, msg, timeout=None):
-        """Transmit a message to the CAN bus.
-
-        Override this method to enable the transmit path.
-
-        :param can.Message msg: A message object.
-
-        :type timeout: float or None
-        :param timeout:
-            If > 0, wait up to this many seconds for message to be ACK'ed or
-            for transmit queue to be ready depending on driver implementation.
-            If timeout is exceeded, an exception will be raised.
-            Might not be supported by all interfaces.
-            None blocks indefinitly.
-
-        :raises can.CanError:
-            if the message could not be sent
-        """
         data = pack_message(msg)
         self.multicast.send(data)
 
     def shutdown(self):
-        """
-        Called to carry out any interface specific cleanup required
-        in shutting down a bus.
-        """
         self.multicast.shutdown()
 
     @staticmethod
     def _detect_available_configs():
-        """Detect all configurations/channels that this interface could
-        currently connect with.
-
-        This might be quite time consuming.
-
-        May not to be implemented by every interface on every platform.
-
-        :rtype: Iterator[dict]
-        :return: an iterable of dicts, each being a configuration suitable
-                 for usage in the interface's bus constructor.
-        """
         return (
             {
                 'interface': 'interprocess_virtual',
@@ -150,7 +116,13 @@ class GeneralPurposeMulticastBus(object):
         """
         self._socket_send.sendto(data, (self._addrinfo[4][0], self.port))
 
-    def recv(self, timeout):
+    def recv(self, timeout, max_buffer=1500):
+        """
+        Receive up to **max_buffer** bytes.
+
+        :returns: None on timeout or the data alongside the sender of the data
+        :rtype: Union[NoneType, Tuple[bytes, Tuple]]
+        """
         # get all sockets that are ready (can be a list with a single value
         # being self.socket or an empty list if self.socket is not ready)
         try:
@@ -162,15 +134,24 @@ class GeneralPurposeMulticastBus(object):
             raise can.CanError("Failed to receive: %s" % exc)
 
         if ready_receive_sockets: # not empty or True
-            data, sender = self._socket_receive.recvfrom(1500)
+            data, sender = self._socket_receive.recvfrom(max_buffer)
             return data, sender
 
         # socket wasn't readable or timeout occurred
         return None
 
     def shutdown(self):
-        self._socket_send.close()
-        self._socket_receive.close()
+        """Close all sockets and free up any resources.
+        """
+        try:
+            self._socket_send.close()
+        except OSError as exception:
+            log.error("could not close sending socket: %s", exception)
+
+        try:
+            self._socket_receive.close()
+        except OSError as exception:
+            log.error("could not close receiving socket: %s", exception)
 
 
 if __name__ == "__main__":

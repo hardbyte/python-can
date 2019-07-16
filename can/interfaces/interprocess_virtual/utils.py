@@ -10,6 +10,8 @@ from can import Message
 
 
 def pack_message(message):
+    """Pack a can.Message into a msgpack byte blob.
+    """
     as_dict = {
         "timestamp": message.timestamp,
         "arbitration_id": message.arbitration_id,
@@ -26,6 +28,12 @@ def pack_message(message):
     return msgpack.packb(as_dict, use_bin_type=True)
 
 
-def unpack_message(data):
+def unpack_message(data, check=False):
+    """Unpack a can.Message from a msgpack byte blob.
+
+    :raise TypeError: if the data contains key that are not valid arguments for can.Message
+    :raise ValueError: if **check == True** and the message metadata is invalid in some way
+    :raise Exception: if there was another problem while unpacking
+    """
     as_dict = msgpack.unpackb(data, raw=False)
-    return Message(**as_dict)
+    return Message(check=check, **as_dict)
