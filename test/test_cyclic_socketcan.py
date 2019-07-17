@@ -523,6 +523,56 @@ class CyclicSocketCan(unittest.TestCase):
         with self.assertRaises(ValueError):
             task.modify_data(new_message)
 
+    def test_stop_all_periodic_tasks_and_remove_task(self):
+        message_a = can.Message(
+            arbitration_id=0x401,
+            data=[0x11, 0x11, 0x11, 0x11, 0x11, 0x11],
+            is_extended_id=False,
+        )
+        message_b = can.Message(
+            arbitration_id=0x402,
+            data=[0x22, 0x22, 0x22, 0x22, 0x22, 0x22],
+            is_extended_id=False,
+        )
+        message_c = can.Message(
+            arbitration_id=0x403,
+            data=[0x33, 0x33, 0x33, 0x33, 0x33, 0x33],
+            is_extended_id=False,
+        )
+
+        # Start Tasks
+        task_a = self._send_bus.send_periodic(message_a, self.PERIOD)
+        task_b = self._send_bus.send_periodic(message_b, self.PERIOD)
+        task_c = self._send_bus.send_periodic(message_c, self.PERIOD)
+
+        self.assertIsInstance(task_a, can.broadcastmanager.ModifiableCyclicTaskABC)
+        self.assertIsInstance(task_b, can.broadcastmanager.ModifiableCyclicTaskABC)
+        self.assertIsInstance(task_c, can.broadcastmanager.ModifiableCyclicTaskABC)
+
+        for _ in range(6):
+            _ = self._recv_bus.recv(self.PERIOD)
+
+        # Stop all tasks and delete
+        self._send_bus.stop_all_periodic_tasks(remove_tasks=True)
+
+        # Now wait for a few periods, after which we should definitely not
+        # receive any CAN messages
+        time.sleep(4 * self.PERIOD)
+
+        # If we successfully deleted everything, then we will eventually read
+        # 0 messages.
+        successfully_stopped = False
+        for _ in range(6):
+            rx_message = self._recv_bus.recv(self.PERIOD)
+
+            if rx_message is None:
+                successfully_stopped = True
+                break
+        self.assertTrue(successfully_stopped, "Still received messages after stopping")
+
+        # None of the tasks should still be associated with the bus
+        self.assertEqual(0, len(self._send_bus._periodic_tasks))
+
 
 if __name__ == "__main__":
     unittest.main()
