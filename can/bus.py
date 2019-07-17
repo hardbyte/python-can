@@ -5,6 +5,7 @@ Contains the ABC bus implementation and its documentation.
 """
 
 from abc import ABCMeta, abstractmethod
+import can
 import logging
 import threading
 from time import time
@@ -163,8 +164,8 @@ class BusABC(metaclass=ABCMeta):
         """
         raise NotImplementedError("Trying to write to a readonly bus?")
 
-    def send_periodic(self, msg, period, duration=None, store_task=True):
-        """Start sending a message at a given period on this bus.
+    def send_periodic(self, msgs, period, duration=None, store_task=True):
+        """Start sending messages at a given period on this bus.
 
         The task will be active until one of the following conditions are met:
 
@@ -174,12 +175,12 @@ class BusABC(metaclass=ABCMeta):
         - :meth:`BusABC.stop_all_periodic_tasks()` is called
         - the task's :meth:`CyclicTask.stop()` method is called.
 
-        :param can.Message msg:
-            Message to transmit
+        :param Union[Sequence[can.Message], can.Message] msgs:
+            Messages to transmit
         :param float period:
             Period in seconds between each message
         :param float duration:
-            The duration to keep sending this message at given rate. If
+            Approximate duration in seconds to continue sending messages. If
             no duration is provided, the task will continue indefinitely.
         :param bool store_task:
             If True (the default) the task will be attached to this Bus instance.
@@ -191,18 +192,26 @@ class BusABC(metaclass=ABCMeta):
 
         .. note::
 
-            Note the duration before the message stops being sent may not
+            Note the duration before the messages stop being sent may not
             be exactly the same as the duration specified by the user. In
             general the message will be sent at the given rate until at
             least **duration** seconds.
 
         .. note::
 
-            For extremely long running Bus instances with many short lived tasks the default
-            api with ``store_task==True`` may not be appropriate as the stopped tasks are
-            still taking up memory as they are associated with the Bus instance.
+            For extremely long running Bus instances with many short lived
+            tasks the default api with ``store_task==True`` may not be
+            appropriate as the stopped tasks are still taking up memory as they
+            are associated with the Bus instance.
         """
-        task = self._send_periodic_internal(msg, period, duration)
+        if not isinstance(msgs, (list, tuple)):
+            if isinstance(msgs, can.Message):
+                msgs = [msgs]
+            else:
+                raise ValueError("Must be either a list, tuple, or a Message")
+        if not msgs:
+            raise ValueError("Must be at least a list or tuple of length 1")
+        task = self._send_periodic_internal(msgs, period, duration)
         # we wrap the task's stop method to also remove it from the Bus's list of tasks
         original_stop_method = task.stop
 
@@ -221,21 +230,22 @@ class BusABC(metaclass=ABCMeta):
 
         return task
 
-    def _send_periodic_internal(self, msg, period, duration=None):
+    def _send_periodic_internal(self, msgs, period, duration=None):
         """Default implementation of periodic message sending using threading.
 
         Override this method to enable a more efficient backend specific approach.
 
-        :param can.Message msg:
-            Message to transmit
+        :param Union[Sequence[can.Message], can.Message] msgs:
+            Messages to transmit
         :param float period:
             Period in seconds between each message
         :param float duration:
-            The duration to keep sending this message at given rate. If
+            The duration between sending each message at the given rate. If
             no duration is provided, the task will continue indefinitely.
         :return:
-            A started task instance. Note the task can be stopped (and depending on
-            the backend modified) by calling the :meth:`stop` method.
+            A started task instance. Note the task can be stopped (and
+            depending on the backend modified) by calling the :meth:`stop`
+            method.
         :rtype: can.broadcastmanager.CyclicSendTaskABC
         """
         if not hasattr(self, "_lock_send_periodic"):
@@ -244,18 +254,26 @@ class BusABC(metaclass=ABCMeta):
                 threading.Lock()
             )  # pylint: disable=attribute-defined-outside-init
         task = ThreadBasedCyclicSendTask(
-            self, self._lock_send_periodic, msg, period, duration
+            self, self._lock_send_periodic, msgs, period, duration
         )
         return task
 
     def stop_all_periodic_tasks(self, remove_tasks=True):
-        """Stop sending any messages that were started using bus.send_periodic
+        """Stop sending any messages that were started using **bus.send_periodic**.
+
+        .. note::
+            The result is undefined if a single task throws an exception while being stopped.
 
         :param bool remove_tasks:
             Stop tracking the stopped tasks.
         """
         for task in self._periodic_tasks:
-            task.stop(remove_task=remove_tasks)
+            # we cannot let `task.stop()` modify `self._periodic_tasks` while we are
+            # iterating over it (#634)
+            task.stop(remove_task=False)
+
+        if remove_tasks:
+            self._periodic_tasks = []
 
     def __iter__(self):
         """Allow iteration on messages as they are received.
