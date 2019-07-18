@@ -601,7 +601,7 @@ class SocketcanBus(BusABC):
             # something bad happened (e.g. the interface went down)
             raise can.CanError("Failed to receive: %s" % exc)
 
-        if ready_receive_sockets:  # not empty or True
+        if ready_receive_sockets:  # not empty
             get_channel = self.channel == ""
             msg = capture_message(self.socket, get_channel)
             if not msg.channel and self.channel:

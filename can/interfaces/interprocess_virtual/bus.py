@@ -6,12 +6,18 @@ import socket
 import struct
 import time
 
+log = logging.getLogger(__name__)
+
+# TODO find alternative?
+try:
+    import fcntl
+except ImportError:
+    log.error("fcntl not available on this platform")
+
 import can
 from can import BusABC
 
 from utils import pack_message, unpack_message
-
-log = logging.getLogger(__name__)
 
 
 class InterprocessVirtualBus(BusABC):
@@ -32,8 +38,9 @@ class InterprocessVirtualBus(BusABC):
         if not result:
             return None, False
 
-        data, _ = result
-        can_message = unpack_message(data)
+        data, _, timestamp = result
+        can_message = unpack_message(data, replace={'timestamp': timestamp})
+
         return can_message, False
 
     def send(self, msg, timeout=None):
@@ -57,21 +64,24 @@ class InterprocessVirtualBus(BusABC):
         )
 
 
-class GeneralPurposeMulticastBus(object):
+class GeneralPurposeMulticastBus:
     """A general purpose send and receive handler for multicast over IP.
     """
 
-    def __init__(self, group, port, ttl, receive_own_messages):
+    def __init__(self, group, port, ttl, receive_own_messages, max_buffer=4096):
         self.group = group
         self.port = port
         self.ttl = ttl
         self.receive_own_messages = receive_own_messages  # TODO actually use this
+        self.max_buffer = max_buffer
 
         # Look up multicast group address in name server and find out IP version
         self._addrinfo = socket.getaddrinfo(group, None)[0]
         self.ip_version = 4 if self._addrinfo[0] == socket.AF_INET else 6
 
         self._socket_send = self._create_send_socket()
+        self._send_destination = (self._addrinfo[4][0], self.port) # TODO might be replaceable
+
         self._socket_receive = self._create_receive_socket()
 
     def _create_send_socket(self):
@@ -108,15 +118,21 @@ class GeneralPurposeMulticastBus(object):
 
         return sock
 
-    def send(self, data):
+    def send(self, data, start=0, count=None):
         """
         Send this data to all participants.
 
-        :param bytes data: the data to be sent
+        :param data: the data to be sent as byte object,
+                     or if size is not given (i.e. it is not zero or None) it must be
+                     a readable buffer (like a bytearray)
         """
-        self._socket_send.sendto(data, (self._addrinfo[4][0], self.port))
+        if not count:
+            self._socket_send.sendto(data, self._send_destination)
+        else:
+            data = memoryview(data)[start:start+count]
+            self._socket_send.sendto(data, self._send_destination)
 
-    def recv(self, timeout, max_buffer=1500):
+    def recv(self, timeout):
         """
         Receive up to **max_buffer** bytes.
 
@@ -133,9 +149,20 @@ class GeneralPurposeMulticastBus(object):
             # something bad happened (e.g. the interface went down)
             raise can.CanError("Failed to receive: %s" % exc)
 
-        if ready_receive_sockets: # not empty or True
-            data, sender = self._socket_receive.recvfrom(max_buffer)
-            return data, sender
+        if ready_receive_sockets: # not empty
+            # fetch data & source address
+            data, sender = self._socket_receive.recvfrom(self.max_buffer)
+
+            # fetch timestamp
+            # TODO maybe use https://stackoverflow.com/a/13308900/3753684
+            # see:           https://stackoverflow.com/a/46330410/3753684
+            binary_structure = "@LL"
+            SIOCGSTAMP = 0x8906
+            res = fcntl.ioctl(self._socket_receive, SIOCGSTAMP, struct.pack(binary_structure, 0, 0))
+            seconds, microseconds = struct.unpack(binary_structure, res)
+            timestamp = seconds + microseconds * 1e-6
+
+            return data, sender, timestamp
 
         # socket wasn't readable or timeout occurred
         return None

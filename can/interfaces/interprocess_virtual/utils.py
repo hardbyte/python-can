@@ -28,7 +28,7 @@ def pack_message(message):
     return msgpack.packb(as_dict, use_bin_type=True)
 
 
-def unpack_message(data, check=False):
+def unpack_message(data, replace=dict(), check=False):
     """Unpack a can.Message from a msgpack byte blob.
 
     :raise TypeError: if the data contains key that are not valid arguments for can.Message
@@ -36,4 +36,5 @@ def unpack_message(data, check=False):
     :raise Exception: if there was another problem while unpacking
     """
     as_dict = msgpack.unpackb(data, raw=False)
+    as_dict.update(replace)
     return Message(check=check, **as_dict)
