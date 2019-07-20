@@ -45,6 +45,9 @@ class TestVectorBus(unittest.TestCase):
         can.interfaces.vector.canlib.vxlapi.xlCanSetChannelBitrate = Mock(
             side_effect=xlCanSetChannelBitrate
         )
+        can.interfaces.vector.canlib.vxlapi.xlSetNotification = Mock(
+            side_effect=xlSetNotification
+        )
 
         # bus deactivation functions
         can.interfaces.vector.canlib.vxlapi.xlDeactivateChannel = Mock(
@@ -292,6 +295,15 @@ def xlCanSetChannelBitrate(
     access_mask: vxlapi.XLaccess,
     bitrate: ctypes.c_ulong,
 ) -> int:
+    return 0
+
+
+def xlSetNotification(
+    port_handle: vxlapi.XLportHandle,
+    event_handle: ctypes.POINTER(vxlapi.XLhandle),
+    queue_level: ctypes.c_int,
+) -> int:
+    event_handle.value = 520
     return 0
 
 
