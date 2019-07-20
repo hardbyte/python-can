@@ -37,12 +37,9 @@ from .exceptions import VectorError
 # ====================
 LOG = logging.getLogger(__name__)
 
-# Import safely Vector API module for Travis tests
-vxlapi = None
-try:
-    from . import vxlapi
-except Exception as exc:
-    LOG.warning("Could not import vxlapi: %s", exc)
+# Import Vector API module
+# ========================
+from . import vxlapi
 
 
 class VectorBus(BusABC):
@@ -93,7 +90,7 @@ class VectorBus(BusABC):
             Which bitrate to use for data phase in CAN FD.
             Defaults to arbitration bitrate.
         """
-        if vxlapi is None:
+        if not hasattr(vxlapi, "xlOpenDriver"):
             raise ImportError("The Vector API has not been loaded")
         self.poll_interval = poll_interval
         if isinstance(channel, (list, tuple)):
