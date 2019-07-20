@@ -252,6 +252,17 @@ class XLcanTxEvent(ctypes.Structure):
     ]
 
 
+# CAN configuration structure
+class XLchipParams(ctypes.Structure):
+    _fields_ = [
+        ("bitRate", ctypes.c_ulong),
+        ("sjw", ctypes.c_ubyte),
+        ("tseg1", ctypes.c_ubyte),
+        ("tseg2", ctypes.c_ubyte),
+        ("sam", ctypes.c_ubyte),
+    ]
+
+
 # CAN FD configuration structure
 class XLcanFdConf(ctypes.Structure):
     _fields_ = [
@@ -437,6 +448,11 @@ xlCanSetChannelBitrate = _xlapi_dll.xlCanSetChannelBitrate
 xlCanSetChannelBitrate.argtypes = [XLportHandle, XLaccess, ctypes.c_ulong]
 xlCanSetChannelBitrate.restype = XLstatus
 xlCanSetChannelBitrate.errcheck = check_status
+
+xlCanSetChannelParams = _xlapi_dll.xlCanSetChannelParams
+xlCanSetChannelParams.argtypes = [XLportHandle, XLaccess, ctypes.POINTER(XLchipParams)]
+xlCanSetChannelParams.restype = XLstatus
+xlCanSetChannelParams.errcheck = check_status
 
 xlCanTransmit = _xlapi_dll.xlCanTransmit
 xlCanTransmit.argtypes = [

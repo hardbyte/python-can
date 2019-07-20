@@ -55,6 +55,8 @@ class VectorBus(BusABC):
         poll_interval=0.01,
         receive_own_messages=False,
         bitrate=None,
+        timing=None,
+        data_timing=None,
         rx_queue_size=2 ** 14,
         app_name="CANalyzer",
         serial=None,
@@ -76,6 +78,11 @@ class VectorBus(BusABC):
             Poll interval in seconds.
         :param int bitrate:
             Bitrate in bits/s.
+        :param can.BitTiming timing:
+            Bit timing configuration.
+            For CAN-FD this also applies to arbitration/nominal phase.
+        :param can.BitTiming data_timing:
+            Bit timing configuration for data phase.
         :param int rx_queue_size:
             Number of messages in receive queue (power of 2).
             CAN: range 16…32768
@@ -175,7 +182,7 @@ class VectorBus(BusABC):
 
         permission_mask = vxlapi.XLaccess()
         # Set mask to request channel init permission if needed
-        if bitrate or fd:
+        if bitrate or fd or timing:
             permission_mask.value = self.mask
         if fd:
             vxlapi.xlOpenPort(
@@ -206,20 +213,36 @@ class VectorBus(BusABC):
         if permission_mask.value == self.mask:
             if fd:
                 self.canFdConf = vxlapi.XLcanFdConf()
-                if bitrate:
-                    self.canFdConf.arbitrationBitRate = ctypes.c_uint(bitrate)
+                if timing:
+                    self.canFdConf.arbitrationBitRate = ctypes.c_uint(timing.bitrate)
+                    self.canFdConf.sjwAbr = ctypes.c_uint(timing.sjw)
+                    self.canFdConf.tseg1Abr = ctypes.c_uint(timing.tseg1)
+                    self.canFdConf.tseg2Abr = ctypes.c_uint(timing.tseg2)
+                    if data_timing:
+                        self.canFdConf.dataBitRate = ctypes.c_uint(data_timing.bitrate)
+                        self.canFdConf.sjwDbr = ctypes.c_uint(data_timing.sjw)
+                        self.canFdConf.tseg1Dbr = ctypes.c_uint(data_timing.tseg1)
+                        self.canFdConf.tseg2Dbr = ctypes.c_uint(data_timing.tseg2)
+                    else:
+                        self.canFdConf.dataBitRate = ctypes.c_uint(timing.bitrate)
+                        self.canFdConf.sjwDbr = ctypes.c_uint(timing.sjw)
+                        self.canFdConf.tseg1Dbr = ctypes.c_uint(timing.tseg1)
+                        self.canFdConf.tseg2Dbr = ctypes.c_uint(timing.tseg2)
                 else:
-                    self.canFdConf.arbitrationBitRate = ctypes.c_uint(500000)
-                self.canFdConf.sjwAbr = ctypes.c_uint(sjwAbr)
-                self.canFdConf.tseg1Abr = ctypes.c_uint(tseg1Abr)
-                self.canFdConf.tseg2Abr = ctypes.c_uint(tseg2Abr)
-                if data_bitrate:
-                    self.canFdConf.dataBitRate = ctypes.c_uint(data_bitrate)
-                else:
-                    self.canFdConf.dataBitRate = self.canFdConf.arbitrationBitRate
-                self.canFdConf.sjwDbr = ctypes.c_uint(sjwDbr)
-                self.canFdConf.tseg1Dbr = ctypes.c_uint(tseg1Dbr)
-                self.canFdConf.tseg2Dbr = ctypes.c_uint(tseg2Dbr)
+                    if bitrate:
+                        self.canFdConf.arbitrationBitRate = ctypes.c_uint(bitrate)
+                    else:
+                        self.canFdConf.arbitrationBitRate = ctypes.c_uint(500000)
+                    self.canFdConf.sjwAbr = ctypes.c_uint(sjwAbr)
+                    self.canFdConf.tseg1Abr = ctypes.c_uint(tseg1Abr)
+                    self.canFdConf.tseg2Abr = ctypes.c_uint(tseg2Abr)
+                    if data_bitrate:
+                        self.canFdConf.dataBitRate = ctypes.c_uint(data_bitrate)
+                    else:
+                        self.canFdConf.dataBitRate = self.canFdConf.arbitrationBitRate
+                    self.canFdConf.sjwDbr = ctypes.c_uint(sjwDbr)
+                    self.canFdConf.tseg1Dbr = ctypes.c_uint(tseg1Dbr)
+                    self.canFdConf.tseg2Dbr = ctypes.c_uint(tseg2Dbr)
 
                 vxlapi.xlCanFdSetConfiguration(
                     self.port_handle, self.mask, self.canFdConf
@@ -242,7 +265,17 @@ class VectorBus(BusABC):
                     self.canFdConf.tseg2Dbr,
                 )
             else:
-                if bitrate:
+                if timing:
+                    self.chipParams = vxlapi.XLchipParams()
+                    self.chipParams.bitRate = ctypes.c_ulong(timing.bitrate)
+                    self.chipParams.sjw = ctypes.c_ubyte(timing.sjw)
+                    self.chipParams.tseg1 = ctypes.c_ubyte(timing.tseg1)
+                    self.chipParams.tseg2 = ctypes.c_ubyte(timing.tseg2)
+                    self.chipParams.sam = ctypes.c_ubyte(timing.nof_samples)
+                    vxlapi.xlCanSetChannelParams(
+                        self.port_handle, self.mask, self.chipParams
+                    )
+                elif bitrate:
                     vxlapi.xlCanSetChannelBitrate(
                         self.port_handle, permission_mask, bitrate
                     )
