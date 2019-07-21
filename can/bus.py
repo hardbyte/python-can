@@ -66,10 +66,10 @@ class BusABC(metaclass=ABCMeta):
         self._periodic_tasks = []
         self.set_filters(can_filters)
 
-        #: initialize Error status, transmit error count TEC, receive error count REC
+        # initialize Error state, transmit error count txErrorCount, receive error count rxErrorCount
         self.error_state: ErrorState = ErrorState.ERROR_ACTIVE
-        self.TEC: int = -1
-        self.REC: int = -1
+        self.txErrorCount: int = -1
+        self.rxErrorCount: int = -1
 
     def __str__(self):
         return self.channel_info
@@ -440,8 +440,19 @@ class BusABC(metaclass=ABCMeta):
         """Get the error state, the transmit error count and the receive
         error count of the CAN interface.
 
+        The error state refers to the error confinement mechanisms and can be one of the following:
+
+        - ErrorState.ERROR_ACTIVE if both error counts are below 128
+        - ErrorState.ERROR_WARNING if an error count is above 96
+        - ErrorState.ERROR_PASSIVE if an error count is above 127
+        - ErrorState.BUS_OFF if an error count is above 255
+
+        The availability of these states depends on the CAN controller.
+
+        For more information about the error confinement mechanisms of the CAN protocol
+        please refer to the CAN literature.
+
         :rtype: Tuple[can.ErrorState, int, int]
-        :return: a tuple of can.ErrorState, the transmit error count and
-        the receive error count.
+        :return: a tuple of can.ErrorState, the transmit error count and the receive error count.
         """
-        return self.error_state, self.TEC, self.REC
+        return self.error_state, self.txErrorCount, self.txErrorCount
