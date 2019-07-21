@@ -6,7 +6,6 @@ Definition of constants for vxlapi.
 
 # Import Python Modules
 # ==============================
-import ctypes
 from enum import Enum
 
 
