@@ -541,7 +541,7 @@ class VectorBus(BusABC):
 def get_channel_configs():
     if xldriver is None:
         return []
-    driver_config = xlclass.xldriverConfig()
+    driver_config = xlclass.XLdriverConfig()
     try:
         xldriver.xlOpenDriver()
         xldriver.xlGetDriverConfig(driver_config)
