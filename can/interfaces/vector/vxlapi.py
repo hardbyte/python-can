@@ -28,28 +28,79 @@ XL_BUS_TYPE_CAN = 0x00000001
 XL_ERR_QUEUE_IS_EMPTY = 10
 XL_ERR_HW_NOT_PRESENT = 129
 
+# XLeventTag
+# Common and CAN events
+XL_NO_COMMAND = 0
 XL_RECEIVE_MSG = 1
-XL_CAN_EV_TAG_RX_OK = 1024
-XL_CAN_EV_TAG_TX_OK = 1028
+XL_CHIP_STATE = 4
+XL_TRANSCEIVER = 6
+XL_TIMER = 8
 XL_TRANSMIT_MSG = 10
-XL_CAN_EV_TAG_TX_MSG = 1088
+XL_SYNC_PULSE = 11
+XL_APPLICATION_NOTIFICATION = 15
 
+# CAN/CAN-FD event tags
+# Rx
+XL_CAN_EV_TAG_RX_OK = 0x0400
+XL_CAN_EV_TAG_RX_ERROR = 0x0401
+XL_CAN_EV_TAG_TX_ERROR = 0x0402
+XL_CAN_EV_TAG_TX_REQUEST = 0x0403
+XL_CAN_EV_TAG_TX_OK = 0x0404
+XL_CAN_EV_TAG_CHIP_STATE = 0x0409
+# Tx
+XL_CAN_EV_TAG_TX_MSG = 0x0440
+
+#  s_xl_can_msg : id
 XL_CAN_EXT_MSG_ID = 0x80000000
+
+#  s_xl_can_msg : flags
 XL_CAN_MSG_FLAG_ERROR_FRAME = 0x01
 XL_CAN_MSG_FLAG_REMOTE_FRAME = 0x10
 XL_CAN_MSG_FLAG_TX_COMPLETED = 0x40
 
+# to be used with
+# XLcanTxEvent::XL_CAN_TX_MSG::msgFlags
 XL_CAN_TXMSG_FLAG_EDL = 0x0001
 XL_CAN_TXMSG_FLAG_BRS = 0x0002
 XL_CAN_TXMSG_FLAG_RTR = 0x0010
+XL_CAN_TXMSG_FLAG_HIGHPRIO = 0x0080
+XL_CAN_TXMSG_FLAG_WAKEUP = 0x0200
+
+# to be used with
+# XLcanRxEvent::XL_CAN_EV_RX_MSG::msgFlags
+# XLcanRxEvent::XL_CAN_EV_TX_REQUEST::msgFlags
+# XLcanRxEvent::XL_CAN_EV_RX_MSG::msgFlags
+# XLcanRxEvent::XL_CAN_EV_TX_REMOVED::msgFlags
+# XLcanRxEvent::XL_CAN_EV_ERROR::msgFlags
 XL_CAN_RXMSG_FLAG_EDL = 0x0001
 XL_CAN_RXMSG_FLAG_BRS = 0x0002
 XL_CAN_RXMSG_FLAG_ESI = 0x0004
 XL_CAN_RXMSG_FLAG_RTR = 0x0010
 XL_CAN_RXMSG_FLAG_EF = 0x0200
+XL_CAN_RXMSG_FLAG_ARB_LOST = 0x0400
+XL_CAN_RXMSG_FLAG_WAKEUP = 0x2000
+XL_CAN_RXMSG_FLAG_TE = 0x4000
 
+# acceptance filter
 XL_CAN_STD = 1
 XL_CAN_EXT = 2
+
+# s_xl_chip_state : busStatus
+XL_CHIPSTAT_BUSOFF = 0x01
+XL_CHIPSTAT_ERROR_PASSIVE = 0x02
+XL_CHIPSTAT_ERROR_WARNING = 0x04
+XL_CHIPSTAT_ERROR_ACTIVE = 0x08
+
+# s_xl_can_ev_error : errorCode
+XL_CAN_ERRC_BIT_ERROR = 1
+XL_CAN_ERRC_FORM_ERROR = 2
+XL_CAN_ERRC_STUFF_ERROR = 3
+XL_CAN_ERRC_OTHER_ERROR = 4
+XL_CAN_ERRC_CRC_ERROR = 5
+XL_CAN_ERRC_ACK_ERROR = 6
+XL_CAN_ERRC_NACK_ERROR = 7
+XL_CAN_ERRC_OVLD_ERROR = 8
+XL_CAN_ERRC_EXCPT_ERROR = 9
 
 XLuint64 = ctypes.c_int64
 XLaccess = XLuint64
@@ -57,12 +108,16 @@ XLhandle = ctypes.c_void_p
 
 MAX_MSG_LEN = 8
 
+# CAN / CAN-FD types and definitions
 XL_CAN_MAX_DATA_LEN = 64
+XL_CANFD_RX_EVENT_HEADER_SIZE = 32
+XL_CANFD_MAX_EVENT_SIZE = 128
 
 # current version
 XL_INTERFACE_VERSION = 3
 XL_INTERFACE_VERSION_V4 = 4
 
+XL_BUS_ACTIVE_CAP_CAN = XL_BUS_TYPE_CAN << 16
 XL_CHANNEL_FLAG_CANFD_ISO_SUPPORT = 0x80000000
 
 # structure for XL_RECEIVE_MSG, XL_TRANSMIT_MSG
@@ -424,3 +479,8 @@ xlCanResetAcceptance = _xlapi_dll.xlCanResetAcceptance
 xlCanResetAcceptance.argtypes = [XLportHandle, XLaccess, ctypes.c_uint]
 xlCanResetAcceptance.restype = XLstatus
 xlCanResetAcceptance.errcheck = check_status
+
+xlCanRequestChipState = _xlapi_dll.xlCanRequestChipState
+xlCanRequestChipState.argtypes = [XLportHandle, XLaccess]
+xlCanRequestChipState.restype = XLstatus
+xlCanRequestChipState.errcheck = check_status

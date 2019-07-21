@@ -1,5 +1,12 @@
 # coding: utf-8
 
+"""
+The main module of the socketcan interface containing most user-facing classes and methods
+along some internal methods.
+
+At the end of the file the usage of the internal methods is shown.
+"""
+
 import logging
 import ctypes
 import ctypes.util
@@ -726,15 +733,14 @@ class SocketcanBus(BusABC):
 
 
 if __name__ == "__main__":
-    # TODO move below to examples?
-
-    # Create two sockets on vcan0 to test send and receive
+    # This example demonstrates how to use the internal methods of this module.
+    # It creates two sockets on vcan0 to test sending and receiving.
     #
     # If you want to try it out you can do the following (possibly using sudo):
     #
     #     modprobe vcan
     #     ip link add dev vcan0 type vcan
-    #     ifconfig vcan0 up
+    #     ip link set vcan0 up
     #
     log.setLevel(logging.DEBUG)
 
