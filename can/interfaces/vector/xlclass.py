@@ -12,7 +12,7 @@ import ctypes
 
 # Vector XL API Definitions
 # =========================
-from . import XLDefine
+from . import xldefine
 
 XLuint64 = ctypes.c_int64
 XLaccess = XLuint64
@@ -28,7 +28,7 @@ class s_xl_can_msg(ctypes.Structure):
         ("flags", ctypes.c_ushort),
         ("dlc", ctypes.c_ushort),
         ("res1", XLuint64),
-        ("data", ctypes.c_ubyte * XLDefine.MAX_MSG_LEN),
+        ("data", ctypes.c_ubyte * xldefine.MAX_MSG_LEN),
         ("res2", XLuint64),
     ]
 
@@ -70,7 +70,7 @@ class s_xl_can_ev_rx_msg(ctypes.Structure):
         ("totalBitCnt", ctypes.c_ushort),
         ("dlc", ctypes.c_ubyte),
         ("reserved", ctypes.c_ubyte * 5),
-        ("data", ctypes.c_ubyte * XLDefine.XL_CAN_MAX_DATA_LEN),
+        ("data", ctypes.c_ubyte * xldefine.XL_CAN_MAX_DATA_LEN),
     ]
 
 
@@ -81,7 +81,7 @@ class s_xl_can_ev_tx_request(ctypes.Structure):
         ("dlc", ctypes.c_ubyte),
         ("txAttemptConf", ctypes.c_ubyte),
         ("reserved", ctypes.c_ushort),
-        ("data", ctypes.c_ubyte * XLDefine.XL_CAN_MAX_DATA_LEN),
+        ("data", ctypes.c_ubyte * xldefine.XL_CAN_MAX_DATA_LEN),
     ]
 
 
@@ -91,7 +91,7 @@ class s_xl_can_tx_msg(ctypes.Structure):
         ("msgFlags", ctypes.c_uint),
         ("dlc", ctypes.c_ubyte),
         ("reserved", ctypes.c_ubyte * 7),
-        ("data", ctypes.c_ubyte * XLDefine.XL_CAN_MAX_DATA_LEN),
+        ("data", ctypes.c_ubyte * xldefine.XL_CAN_MAX_DATA_LEN),
     ]
 
 

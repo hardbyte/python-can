@@ -15,7 +15,7 @@ from .exceptions import VectorError
 
 # Vector XL API Definitions
 # =========================
-from . import XLClass
+from . import xlclass
 
 # Load Windows DLL
 DLL_NAME = "vxlapi64" if platform.architecture()[0] == "64bit" else "vxlapi"
@@ -24,7 +24,7 @@ _xlapi_dll = ctypes.windll.LoadLibrary(DLL_NAME)
 
 # ctypes wrapping for API functions
 xlGetErrorString = _xlapi_dll.xlGetErrorString
-xlGetErrorString.argtypes = [XLClass.XLstatus]
+xlGetErrorString.argtypes = [xlclass.XLstatus]
 xlGetErrorString.restype = ctypes.c_char_p
 
 
@@ -35,18 +35,18 @@ def check_status(result, function, arguments):
 
 
 xlGetDriverConfig = _xlapi_dll.xlGetDriverConfig
-xlGetDriverConfig.argtypes = [ctypes.POINTER(XLClass.XLdriverConfig)]
-xlGetDriverConfig.restype = XLClass.XLstatus
+xlGetDriverConfig.argtypes = [ctypes.POINTER(xlclass.XLdriverConfig)]
+xlGetDriverConfig.restype = xlclass.XLstatus
 xlGetDriverConfig.errcheck = check_status
 
 xlOpenDriver = _xlapi_dll.xlOpenDriver
 xlOpenDriver.argtypes = []
-xlOpenDriver.restype = XLClass.XLstatus
+xlOpenDriver.restype = xlclass.XLstatus
 xlOpenDriver.errcheck = check_status
 
 xlCloseDriver = _xlapi_dll.xlCloseDriver
 xlCloseDriver.argtypes = []
-xlCloseDriver.restype = XLClass.XLstatus
+xlCloseDriver.restype = xlclass.XLstatus
 xlCloseDriver.errcheck = check_status
 
 xlGetApplConfig = _xlapi_dll.xlGetApplConfig
@@ -58,7 +58,7 @@ xlGetApplConfig.argtypes = [
     ctypes.POINTER(ctypes.c_uint),
     ctypes.c_uint,
 ]
-xlGetApplConfig.restype = XLClass.XLstatus
+xlGetApplConfig.restype = xlclass.XLstatus
 xlGetApplConfig.errcheck = check_status
 
 xlGetChannelIndex = _xlapi_dll.xlGetChannelIndex
@@ -67,154 +67,154 @@ xlGetChannelIndex.restype = ctypes.c_int
 
 xlGetChannelMask = _xlapi_dll.xlGetChannelMask
 xlGetChannelMask.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_int]
-xlGetChannelMask.restype = XLClass.XLaccess
+xlGetChannelMask.restype = xlclass.XLaccess
 
 xlOpenPort = _xlapi_dll.xlOpenPort
 xlOpenPort.argtypes = [
-    ctypes.POINTER(XLClass.XLportHandle),
+    ctypes.POINTER(xlclass.XLportHandle),
     ctypes.c_char_p,
-    XLClass.XLaccess,
-    ctypes.POINTER(XLClass.XLaccess),
+    xlclass.XLaccess,
+    ctypes.POINTER(xlclass.XLaccess),
     ctypes.c_uint,
     ctypes.c_uint,
     ctypes.c_uint,
 ]
-xlOpenPort.restype = XLClass.XLstatus
+xlOpenPort.restype = xlclass.XLstatus
 xlOpenPort.errcheck = check_status
 
 xlGetSyncTime = _xlapi_dll.xlGetSyncTime
-xlGetSyncTime.argtypes = [XLClass.XLportHandle, ctypes.POINTER(XLClass.XLuint64)]
-xlGetSyncTime.restype = XLClass.XLstatus
+xlGetSyncTime.argtypes = [xlclass.XLportHandle, ctypes.POINTER(xlclass.XLuint64)]
+xlGetSyncTime.restype = xlclass.XLstatus
 xlGetSyncTime.errcheck = check_status
 
 xlClosePort = _xlapi_dll.xlClosePort
-xlClosePort.argtypes = [XLClass.XLportHandle]
-xlClosePort.restype = XLClass.XLstatus
+xlClosePort.argtypes = [xlclass.XLportHandle]
+xlClosePort.restype = xlclass.XLstatus
 xlClosePort.errcheck = check_status
 
 xlSetNotification = _xlapi_dll.xlSetNotification
 xlSetNotification.argtypes = [
-    XLClass.XLportHandle,
-    ctypes.POINTER(XLClass.XLhandle),
+    xlclass.XLportHandle,
+    ctypes.POINTER(xlclass.XLhandle),
     ctypes.c_int,
 ]
-xlSetNotification.restype = XLClass.XLstatus
+xlSetNotification.restype = xlclass.XLstatus
 xlSetNotification.errcheck = check_status
 
 xlCanSetChannelMode = _xlapi_dll.xlCanSetChannelMode
 xlCanSetChannelMode.argtypes = [
-    XLClass.XLportHandle,
-    XLClass.XLaccess,
+    xlclass.XLportHandle,
+    xlclass.XLaccess,
     ctypes.c_int,
     ctypes.c_int,
 ]
-xlCanSetChannelMode.restype = XLClass.XLstatus
+xlCanSetChannelMode.restype = xlclass.XLstatus
 xlCanSetChannelMode.errcheck = check_status
 
 xlActivateChannel = _xlapi_dll.xlActivateChannel
 xlActivateChannel.argtypes = [
-    XLClass.XLportHandle,
-    XLClass.XLaccess,
+    xlclass.XLportHandle,
+    xlclass.XLaccess,
     ctypes.c_uint,
     ctypes.c_uint,
 ]
-xlActivateChannel.restype = XLClass.XLstatus
+xlActivateChannel.restype = xlclass.XLstatus
 xlActivateChannel.errcheck = check_status
 
 xlDeactivateChannel = _xlapi_dll.xlDeactivateChannel
-xlDeactivateChannel.argtypes = [XLClass.XLportHandle, XLClass.XLaccess]
-xlDeactivateChannel.restype = XLClass.XLstatus
+xlDeactivateChannel.argtypes = [xlclass.XLportHandle, xlclass.XLaccess]
+xlDeactivateChannel.restype = xlclass.XLstatus
 xlDeactivateChannel.errcheck = check_status
 
 xlCanFdSetConfiguration = _xlapi_dll.xlCanFdSetConfiguration
 xlCanFdSetConfiguration.argtypes = [
-    XLClass.XLportHandle,
-    XLClass.XLaccess,
-    ctypes.POINTER(XLClass.XLcanFdConf),
+    xlclass.XLportHandle,
+    xlclass.XLaccess,
+    ctypes.POINTER(xlclass.XLcanFdConf),
 ]
-xlCanFdSetConfiguration.restype = XLClass.XLstatus
+xlCanFdSetConfiguration.restype = xlclass.XLstatus
 xlCanFdSetConfiguration.errcheck = check_status
 
 xlReceive = _xlapi_dll.xlReceive
 xlReceive.argtypes = [
-    XLClass.XLportHandle,
+    xlclass.XLportHandle,
     ctypes.POINTER(ctypes.c_uint),
-    ctypes.POINTER(XLClass.XLevent),
+    ctypes.POINTER(xlclass.XLevent),
 ]
-xlReceive.restype = XLClass.XLstatus
+xlReceive.restype = xlclass.XLstatus
 xlReceive.errcheck = check_status
 
 xlCanReceive = _xlapi_dll.xlCanReceive
-xlCanReceive.argtypes = [XLClass.XLportHandle, ctypes.POINTER(XLClass.XLcanRxEvent)]
-xlCanReceive.restype = XLClass.XLstatus
+xlCanReceive.argtypes = [xlclass.XLportHandle, ctypes.POINTER(xlclass.XLcanRxEvent)]
+xlCanReceive.restype = xlclass.XLstatus
 xlCanReceive.errcheck = check_status
 
 xlCanSetChannelBitrate = _xlapi_dll.xlCanSetChannelBitrate
 xlCanSetChannelBitrate.argtypes = [
-    XLClass.XLportHandle,
-    XLClass.XLaccess,
+    xlclass.XLportHandle,
+    xlclass.XLaccess,
     ctypes.c_ulong,
 ]
-xlCanSetChannelBitrate.restype = XLClass.XLstatus
+xlCanSetChannelBitrate.restype = xlclass.XLstatus
 xlCanSetChannelBitrate.errcheck = check_status
 
 xlCanSetChannelParams = _xlapi_dll.xlCanSetChannelParams
 xlCanSetChannelParams.argtypes = [
-    XLClass.XLportHandle,
-    XLClass.XLaccess,
-    ctypes.POINTER(XLClass.XLchipParams),
+    xlclass.XLportHandle,
+    xlclass.XLaccess,
+    ctypes.POINTER(xlclass.XLchipParams),
 ]
-xlCanSetChannelParams.restype = XLClass.XLstatus
+xlCanSetChannelParams.restype = xlclass.XLstatus
 xlCanSetChannelParams.errcheck = check_status
 
 xlCanTransmit = _xlapi_dll.xlCanTransmit
 xlCanTransmit.argtypes = [
-    XLClass.XLportHandle,
-    XLClass.XLaccess,
+    xlclass.XLportHandle,
+    xlclass.XLaccess,
     ctypes.POINTER(ctypes.c_uint),
-    ctypes.POINTER(XLClass.XLevent),
+    ctypes.POINTER(xlclass.XLevent),
 ]
-xlCanTransmit.restype = XLClass.XLstatus
+xlCanTransmit.restype = xlclass.XLstatus
 xlCanTransmit.errcheck = check_status
 
 xlCanTransmitEx = _xlapi_dll.xlCanTransmitEx
 xlCanTransmitEx.argtypes = [
-    XLClass.XLportHandle,
-    XLClass.XLaccess,
+    xlclass.XLportHandle,
+    xlclass.XLaccess,
     ctypes.c_uint,
     ctypes.POINTER(ctypes.c_uint),
-    ctypes.POINTER(XLClass.XLcanTxEvent),
+    ctypes.POINTER(xlclass.XLcanTxEvent),
 ]
-xlCanTransmitEx.restype = XLClass.XLstatus
+xlCanTransmitEx.restype = xlclass.XLstatus
 xlCanTransmitEx.errcheck = check_status
 
 xlCanFlushTransmitQueue = _xlapi_dll.xlCanFlushTransmitQueue
-xlCanFlushTransmitQueue.argtypes = [XLClass.XLportHandle, XLClass.XLaccess]
-xlCanFlushTransmitQueue.restype = XLClass.XLstatus
+xlCanFlushTransmitQueue.argtypes = [xlclass.XLportHandle, xlclass.XLaccess]
+xlCanFlushTransmitQueue.restype = xlclass.XLstatus
 xlCanFlushTransmitQueue.errcheck = check_status
 
 xlCanSetChannelAcceptance = _xlapi_dll.xlCanSetChannelAcceptance
 xlCanSetChannelAcceptance.argtypes = [
-    XLClass.XLportHandle,
-    XLClass.XLaccess,
+    xlclass.XLportHandle,
+    xlclass.XLaccess,
     ctypes.c_ulong,
     ctypes.c_ulong,
     ctypes.c_uint,
 ]
-xlCanSetChannelAcceptance.restype = XLClass.XLstatus
+xlCanSetChannelAcceptance.restype = xlclass.XLstatus
 xlCanSetChannelAcceptance.errcheck = check_status
 
 xlCanResetAcceptance = _xlapi_dll.xlCanResetAcceptance
-xlCanResetAcceptance.argtypes = [XLClass.XLportHandle, XLClass.XLaccess, ctypes.c_uint]
-xlCanResetAcceptance.restype = XLClass.XLstatus
+xlCanResetAcceptance.argtypes = [xlclass.XLportHandle, xlclass.XLaccess, ctypes.c_uint]
+xlCanResetAcceptance.restype = xlclass.XLstatus
 xlCanResetAcceptance.errcheck = check_status
 
 xlCanRequestChipState = _xlapi_dll.xlCanRequestChipState
-xlCanRequestChipState.argtypes = [XLClass.XLportHandle, XLClass.XLaccess]
-xlCanRequestChipState.restype = XLClass.XLstatus
+xlCanRequestChipState.argtypes = [xlclass.XLportHandle, xlclass.XLaccess]
+xlCanRequestChipState.restype = xlclass.XLstatus
 xlCanRequestChipState.errcheck = check_status
 
 xlCanSetChannelOutput = _xlapi_dll.xlCanSetChannelOutput
-xlCanSetChannelOutput.argtypes = [XLClass.XLportHandle, XLClass.XLaccess, ctypes.c_char]
-xlCanSetChannelOutput.restype = XLClass.XLstatus
+xlCanSetChannelOutput.argtypes = [xlclass.XLportHandle, xlclass.XLaccess, ctypes.c_char]
+xlCanSetChannelOutput.restype = xlclass.XLstatus
 xlCanSetChannelOutput.errcheck = check_status
