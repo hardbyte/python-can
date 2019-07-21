@@ -476,6 +476,55 @@ class PcanBus(BusABC):
                 self.m_PcanHandle, PCAN_LISTEN_ONLY, PCAN_PARAMETER_ON
             )
 
+    @staticmethod
+    def _detect_available_configs():
+        channels = []
+        try:
+            library_handle = PCANBasic()
+        except OSError:
+            return channels
+        interfaces = []
+        for i in range(16):
+            interfaces.append(
+                {
+                    "id": TPCANHandle(PCAN_PCIBUS1.value + i),
+                    "name": "PCAN_PCIBUS" + str(i + 1),
+                }
+            )
+        for i in range(16):
+            interfaces.append(
+                {
+                    "id": TPCANHandle(PCAN_USBBUS1.value + i),
+                    "name": "PCAN_USBBUS" + str(i + 1),
+                }
+            )
+        for i in range(2):
+            interfaces.append(
+                {
+                    "id": TPCANHandle(PCAN_PCCBUS1.value + i),
+                    "name": "PCAN_PCCBUS" + str(i + 1),
+                }
+            )
+        for i in range(16):
+            interfaces.append(
+                {
+                    "id": TPCANHandle(PCAN_LANBUS1.value + i),
+                    "name": "PCAN_LANBUS" + str(i + 1),
+                }
+            )
+        for i in interfaces:
+            error, value = library_handle.GetValue(i["id"], PCAN_CHANNEL_CONDITION)
+            if error != PCAN_ERROR_OK or value != PCAN_CHANNEL_AVAILABLE:
+                continue
+            has_fd = False
+            error, value = library_handle.GetValue(i["id"], PCAN_CHANNEL_FEATURES)
+            if error == PCAN_ERROR_OK:
+                has_fd = bool(value & FEATURE_FD_CAPABLE)
+            channels.append(
+                {"interface": "pcan", "channel": i["name"], "supports_fd": has_fd}
+            )
+        return channels
+
 
 class PcanError(CanError):
     """
