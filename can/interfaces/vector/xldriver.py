@@ -13,6 +13,10 @@ import logging
 import platform
 from .exceptions import VectorError
 
+# Define Module Logger
+# ====================
+LOG = logging.getLogger(__name__)
+
 # Vector XL API Definitions
 # =========================
 from . import xlclass
