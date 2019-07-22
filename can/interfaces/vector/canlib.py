@@ -98,6 +98,7 @@ class VectorBus(BusABC):
             Which bitrate to use for data phase in CAN FD.
             Defaults to arbitration bitrate.
         """
+
         if vxlapi is None:
             raise ImportError("The Vector API has not been loaded")
         self.poll_interval = poll_interval
@@ -180,7 +181,7 @@ class VectorBus(BusABC):
 
         permission_mask = vxlapi.XLaccess()
         # Set mask to request channel init permission if needed
-        if bitrate or fd:
+        if bitrate or fd or (state != BusState.ACTIVE):
             permission_mask.value = self.mask
         if fd:
             vxlapi.xlOpenPort(
@@ -229,6 +230,7 @@ class VectorBus(BusABC):
                 vxlapi.xlCanFdSetConfiguration(
                     self.port_handle, self.mask, self.canFdConf
                 )
+
                 LOG.info(
                     "SetFdConfig.: ABaudr.=%u, DBaudr.=%u",
                     self.canFdConf.arbitrationBitRate,
@@ -252,19 +254,20 @@ class VectorBus(BusABC):
                         self.port_handle, permission_mask, bitrate
                     )
                     LOG.info("SetChannelBitrate: baudr.=%u", bitrate)
+            # decide Output Mode
+            if state == BusState.PASSIVE:
+                mode = vxlapi.XL_OUTPUT_MODE_SILENT
+                LOG.info("SetChannelOutput: XL_OUTPUT_MODE_SILENT")
+            else:
+                mode = vxlapi.XL_OUTPUT_MODE_NORMAL
+                LOG.info("SetChannelOutput: XL_OUTPUT_MODE_NORMAL")
+            vxlapi.xlCanSetChannelOutput(self.port_handle, self.mask, mode)
         else:
             LOG.info("No init access!")
 
         # Enable/disable TX receipts
         tx_receipts = 1 if receive_own_messages else 0
         vxlapi.xlCanSetChannelMode(self.port_handle, self.mask, tx_receipts, 0)
-
-        # Set Output Mode
-        if state == BusState.PASSIVE:
-            mode = vxlapi.XL_OUTPUT_MODE_SILENT
-        else:
-            mode = vxlapi.XL_OUTPUT_MODE_NORMAL
-        vxlapi.xlCanSetChannelOutput(self.port_handle, self.mask, mode)
 
         if HAS_EVENTS:
             self.event_handle = vxlapi.XLhandle()
@@ -287,7 +290,7 @@ class VectorBus(BusABC):
 
         # Send first chipState request
         self._chip_state: int = vxlapi.XL_CHIPSTAT_ERROR_ACTIVE
-        self.request_chip_state()
+        self._request_chip_state()
 
         self._is_filtered = False
         super().__init__(channel=channel, can_filters=can_filters, **kwargs)
@@ -378,7 +381,7 @@ class VectorBus(BusABC):
                         self._chip_state = event.tagData.canChipState.busStatus
                         self.txErrorCount = event.tagData.canChipState.txErrorCounter
                         self.rxErrorCount = event.tagData.canChipState.rxErrorCounter
-                        self.request_chip_state()
+                        self._request_chip_state()
             else:
                 event_count.value = 1
                 try:
@@ -409,6 +412,11 @@ class VectorBus(BusABC):
                             channel=channel,
                         )
                         return msg, self._is_filtered
+                    elif event.tag == vxlapi.XL_CHIP_STATE:
+                        self._chip_state = event.tagData.chipState.busStatus
+                        self.txErrorCount = event.tagData.chipState.txErrorCounter
+                        self.rxErrorCount = event.tagData.chipState.rxErrorCounter
+                        self._request_chip_state()
 
             if end_time is not None and time.time() > end_time:
                 return None, self._is_filtered
@@ -477,7 +485,7 @@ class VectorBus(BusABC):
                 xl_event.tagData.msg.data[idx] = value
             vxlapi.xlCanTransmit(self.port_handle, mask, message_count, xl_event)
 
-    def request_chip_state(self) -> None:
+    def _request_chip_state(self) -> None:
         vxlapi.xlCanRequestChipState(self.port_handle, self.mask)
 
     @property
