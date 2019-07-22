@@ -66,10 +66,10 @@ class BusABC(metaclass=ABCMeta):
         self._periodic_tasks = []
         self.set_filters(can_filters)
 
-        # initialize Error state, transmit error count txErrorCount, receive error count rxErrorCount
+        # initialize Error state, transmit error count tx_error_count, receive error count rx_error_count
         self.error_state: ErrorState = ErrorState.ERROR_ACTIVE
-        self.txErrorCount: int = -1
-        self.rxErrorCount: int = -1
+        self.tx_error_count: int = -1
+        self.rx_error_count: int = -1
 
     def __str__(self):
         return self.channel_info
@@ -455,4 +455,4 @@ class BusABC(metaclass=ABCMeta):
         :rtype: Tuple[can.ErrorState, int, int]
         :return: a tuple of can.ErrorState, the transmit error count and the receive error count.
         """
-        return self.error_state, self.txErrorCount, self.txErrorCount
+        return self.error_state, self.tx_error_count, self.rx_error_count

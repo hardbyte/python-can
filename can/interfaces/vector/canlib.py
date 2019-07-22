@@ -379,8 +379,8 @@ class VectorBus(BusABC):
                         return msg, self._is_filtered
                     elif event.tag == vxlapi.XL_CAN_EV_TAG_CHIP_STATE:
                         self._chip_state = event.tagData.canChipState.busStatus
-                        self.txErrorCount = event.tagData.canChipState.txErrorCounter
-                        self.rxErrorCount = event.tagData.canChipState.rxErrorCounter
+                        self.tx_error_count = event.tagData.canChipState.txErrorCounter
+                        self.rx_error_count = event.tagData.canChipState.rxErrorCounter
                         self._request_chip_state()
             else:
                 event_count.value = 1
@@ -414,8 +414,8 @@ class VectorBus(BusABC):
                         return msg, self._is_filtered
                     elif event.tag == vxlapi.XL_CHIP_STATE:
                         self._chip_state = event.tagData.chipState.busStatus
-                        self.txErrorCount = event.tagData.chipState.txErrorCounter
-                        self.rxErrorCount = event.tagData.chipState.rxErrorCounter
+                        self.tx_error_count = event.tagData.chipState.txErrorCounter
+                        self.rx_error_count = event.tagData.chipState.rxErrorCounter
                         self._request_chip_state()
 
             if end_time is not None and time.time() > end_time:
@@ -498,7 +498,7 @@ class VectorBus(BusABC):
             self.error_state = ErrorState.ERROR_PASSIVE
         elif self._chip_state == vxlapi.XL_CHIPSTAT_BUSOFF:
             self.error_state = ErrorState.BUS_OFF
-        return self.error_state, self.txErrorCount, self.rxErrorCount
+        return self.error_state, self.tx_error_count, self.rx_error_count
 
     def flush_tx_buffer(self):
         vxlapi.xlCanFlushTransmitQueue(self.port_handle, self.mask)
