@@ -6,6 +6,8 @@ Contains the ABC bus implementation and its documentation.
 
 from typing import Any, Dict, Iterable, Iterator, List, Optional, Sequence, Union
 
+import can.typechecking
+
 from abc import ABCMeta, abstractmethod
 import can
 import logging
@@ -43,7 +45,7 @@ class BusABC(metaclass=ABCMeta):
     def __init__(
         self,
         channel: Any,
-        can_filters: Optional[List[Dict[str, Union[bool, int, str]]]] = None,
+        can_filters: Optional[can.typechecking.CanFilters] = None,
         **kwargs: object
     ):
         """Construct and open a CAN bus instance of the specified type.
@@ -317,12 +319,10 @@ class BusABC(metaclass=ABCMeta):
         return self._filters
 
     @filters.setter
-    def filters(self, filters: Optional[Iterable[Dict[str, Union[bool, int, str]]]]):
+    def filters(self, filters: Optional[can.typechecking.CanFilters]):
         self.set_filters(filters)
 
-    def set_filters(
-        self, filters: Optional[Iterable[Dict[str, Union[bool, int, str]]]] = None
-    ):
+    def set_filters(self, filters: Optional[can.typechecking.CanFilters] = None):
         """Apply filtering to all messages received by this Bus.
 
         All messages that match at least one filter are returned.
@@ -347,9 +347,7 @@ class BusABC(metaclass=ABCMeta):
         self._filters = filters or None
         self._apply_filters(self._filters)
 
-    def _apply_filters(
-        self, filters: Optional[Iterable[Dict[str, Union[bool, int, str]]]]
-    ):
+    def _apply_filters(self, filters: Optional[can.typechecking.CanFilters]):
         """
         Hook for applying the filters to the underlying kernel or
         hardware if supported/implemented by the interface.
