@@ -4,7 +4,7 @@
 Contains the ABC bus implementation and its documentation.
 """
 
-from typing import Any, Iterator, List, Optional, Sequence, Union
+from typing import Any, Iterator, List, Optional, Sequence, Tuple, Union
 
 import can.typechecking
 
@@ -56,7 +56,7 @@ class BusABC(metaclass=ABCMeta):
         :param channel:
             The can interface identifier. Expected type is backend dependent.
 
-        :param list can_filters:
+        :param can_filters:
             See :meth:`~can.BusABC.set_filters` for details.
 
         :param dict kwargs:
@@ -71,11 +71,9 @@ class BusABC(metaclass=ABCMeta):
     def recv(self, timeout: Optional[float] = None) -> Optional[can.Message]:
         """Block waiting for a message from the Bus.
 
-        :type timeout: float or None
         :param timeout:
             seconds to wait for a message or None to wait indefinitely
 
-        :rtype: can.Message or None
         :return:
             None on timeout or a :class:`can.Message` object.
         :raises can.CanError:
@@ -109,7 +107,9 @@ class BusABC(metaclass=ABCMeta):
                 else:
                     return None
 
-    def _recv_internal(self, timeout: Optional[float]):
+    def _recv_internal(
+        self, timeout: Optional[float]
+    ) -> Tuple[Optional[can.Message], bool]:
         """
         Read a message from the bus and tell whether it was filtered.
         This methods may be called by :meth:`~can.BusABC.recv`
@@ -137,7 +137,6 @@ class BusABC(metaclass=ABCMeta):
         :param float timeout: seconds to wait for a message,
                               see :meth:`~can.BusABC.send`
 
-        :rtype: tuple[can.Message, bool] or tuple[None, bool]
         :return:
             1.  a message that was read or None on timeout
             2.  a bool that is True if message filtering has already
@@ -160,7 +159,6 @@ class BusABC(metaclass=ABCMeta):
 
         :param can.Message msg: A message object.
 
-        :type timeout: float or None
         :param timeout:
             If > 0, wait up to this many seconds for message to be ACK'ed or
             for transmit queue to be ready depending on driver implementation.
@@ -190,20 +188,19 @@ class BusABC(metaclass=ABCMeta):
         - :meth:`BusABC.stop_all_periodic_tasks()` is called
         - the task's :meth:`CyclicTask.stop()` method is called.
 
-        :param Union[Sequence[can.Message], can.Message] msgs:
+        :param msgs:
             Messages to transmit
-        :param float period:
+        :param period:
             Period in seconds between each message
-        :param float duration:
+        :param duration:
             Approximate duration in seconds to continue sending messages. If
             no duration is provided, the task will continue indefinitely.
-        :param bool store_task:
+        :param store_task:
             If True (the default) the task will be attached to this Bus instance.
             Disable to instead manage tasks manually.
         :return:
             A started task instance. Note the task can be stopped (and depending on
             the backend modified) by calling the :meth:`stop` method.
-        :rtype: can.broadcastmanager.CyclicSendTaskABC
 
         .. note::
 
@@ -255,18 +252,17 @@ class BusABC(metaclass=ABCMeta):
 
         Override this method to enable a more efficient backend specific approach.
 
-        :param Union[Sequence[can.Message], can.Message] msgs:
+        :param msgs:
             Messages to transmit
-        :param float period:
+        :param period:
             Period in seconds between each message
-        :param float duration:
+        :param duration:
             The duration between sending each message at the given rate. If
             no duration is provided, the task will continue indefinitely.
         :return:
             A started task instance. Note the task can be stopped (and
             depending on the backend modified) by calling the :meth:`stop`
             method.
-        :rtype: can.broadcastmanager.CyclicSendTaskABC
         """
         if not hasattr(self, "_lock_send_periodic"):
             # Create a send lock for this bus, but not for buses which override this method
@@ -352,7 +348,7 @@ class BusABC(metaclass=ABCMeta):
         Hook for applying the filters to the underlying kernel or
         hardware if supported/implemented by the interface.
 
-        :param Iterator[dict] filters:
+        :param filters:
             See :meth:`~can.BusABC.set_filters` for details.
         """
 
@@ -363,9 +359,8 @@ class BusABC(metaclass=ABCMeta):
 
         This method should not be overridden.
 
-        :param can.Message msg:
+        :param msg:
             the message to check if matching
-        :rtype: bool
         :return: whether the given message matches at least one filter
         """
 
@@ -411,8 +406,6 @@ class BusABC(metaclass=ABCMeta):
     def state(self) -> BusState:
         """
         Return the current state of the hardware
-
-        :type: can.BusState
         """
         return BusState.ACTIVE
 
@@ -420,8 +413,6 @@ class BusABC(metaclass=ABCMeta):
     def state(self, new_state: BusState):
         """
         Set the new state of the hardware
-
-        :type: can.BusState
         """
         raise NotImplementedError("Property is not implemented.")
 
@@ -434,7 +425,6 @@ class BusABC(metaclass=ABCMeta):
 
         May not to be implemented by every interface on every platform.
 
-        :rtype: Iterator[dict]
         :return: an iterable of dicts, each being a configuration suitable
                  for usage in the interface's bus constructor.
         """
