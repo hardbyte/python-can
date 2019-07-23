@@ -1,3 +1,8 @@
+Version 3.3.1
+====
+
+Minor fix to setup.py to only require pytest-runner when necessary.
+
 Version 3.3.0
 ====
 
