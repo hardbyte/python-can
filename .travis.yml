@@ -84,6 +84,8 @@ jobs:
         # warnings to the .pylintrc-wip file to prevent them from being
         # re-introduced
         - pylint --rcfile=.pylintrc-wip can/
+        # mypy checking
+        - mypy --python-version=3.7 --ignore-missing-imports --no-implicit-optional can/bit_timing.py can/broadcastmanager.py can/bus.py can/interface.py can/listener.py can/logger.py can/message.py can/notifier.py can/player.py can/thread_safe_bus.py can/util.py
     - stage: linter
       name: "Formatting Checks"
       python: "3.7"
