@@ -2,5 +2,9 @@
 """
 import typing
 
-CanFilter = typing.Dict[str, typing.Union[bool, int, str]]
+import mypy_extensions
+
+CanFilter = mypy_extensions.TypedDict(
+    "CanFilter", {"can_id": int, "can_mask": int, "extended": bool}
+)
 CanFilters = typing.Iterable[CanFilter]

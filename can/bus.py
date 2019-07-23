@@ -4,7 +4,7 @@
 Contains the ABC bus implementation and its documentation.
 """
 
-from typing import Any, Iterable, Iterator, List, Optional, Sequence, Union
+from typing import Any, Iterator, List, Optional, Sequence, Union
 
 import can.typechecking
 
@@ -311,7 +311,7 @@ class BusABC(metaclass=ABCMeta):
                 yield msg
 
     @property
-    def filters(self) -> Optional[Iterable[dict]]:
+    def filters(self) -> Optional[can.typechecking.CanFilters]:
         """
         Modify the filters of this bus. See :meth:`~can.BusABC.set_filters`
         for details.
