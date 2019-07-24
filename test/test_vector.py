@@ -172,6 +172,38 @@ class TestVectorBus(unittest.TestCase):
         self.assertEqual(canFdConf.tseg1Dbr, 29)
         self.assertEqual(canFdConf.tseg2Dbr, 10)
 
+    def test_bus_creation_bittiming_class_fd_2(self) -> None:
+        timing = can.BitTiming(
+            f_clock=8000000, bitrate=250000, tseg1=13, tseg2=2, sjw=1
+        )
+        self.bus = self.bus = can.Bus(
+            channel=0, bustype="vector", timing=timing, fd=True
+        )
+        self.assertIsInstance(self.bus, canlib.VectorBus)
+        can.interfaces.vector.canlib.xldriver.xlOpenDriver.assert_called()
+        can.interfaces.vector.canlib.xldriver.xlGetApplConfig.assert_called()
+        can.interfaces.vector.canlib.xldriver.xlOpenPort.assert_called()
+        xlOpenPort_args = can.interfaces.vector.canlib.xldriver.xlOpenPort.call_args[0]
+        self.assertEqual(
+            xlOpenPort_args[5],
+            xldefine.XL_InterfaceVersion.XL_INTERFACE_VERSION_V4.value,
+        )
+        self.assertEqual(xlOpenPort_args[6], xldefine.XL_BusTypes.XL_BUS_TYPE_CAN.value)
+        can.interfaces.vector.canlib.xldriver.xlCanFdSetConfiguration.assert_called()
+        can.interfaces.vector.canlib.xldriver.xlCanSetChannelBitrate.assert_not_called()
+        xlCanFdSetConfiguration_args = can.interfaces.vector.canlib.xldriver.xlCanFdSetConfiguration.call_args[
+            0
+        ]
+        canFdConf = xlCanFdSetConfiguration_args[2]
+        self.assertEqual(canFdConf.arbitrationBitRate, 250000)
+        self.assertEqual(canFdConf.dataBitRate, 250000)
+        self.assertEqual(canFdConf.sjwAbr, 1)
+        self.assertEqual(canFdConf.tseg1Abr, 13)
+        self.assertEqual(canFdConf.tseg2Abr, 2)
+        self.assertEqual(canFdConf.sjwDbr, 1)
+        self.assertEqual(canFdConf.tseg1Dbr, 13)
+        self.assertEqual(canFdConf.tseg2Dbr, 2)
+
     def test_bus_creation_fd(self) -> None:
         self.bus = can.Bus(channel=0, bustype="vector", fd=True)
         self.assertIsInstance(self.bus, canlib.VectorBus)
