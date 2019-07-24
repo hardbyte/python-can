@@ -22,6 +22,7 @@ from can import BusABC, Message
 from can.broadcastmanager import (
     LimitedDurationCyclicSendTaskABC,
     RestartableCyclicTaskABC,
+    ModifiableCyclicTaskABC,
 )
 from can.ctypesutil import CLibrary, HANDLE, PHANDLE, HRESULT as ctypes_HRESULT
 
@@ -713,7 +714,7 @@ class IXXATBus(BusABC):
         _canlib.vciDeviceClose(self._device_handle)
 
 
-class CyclicSendTask(LimitedDurationCyclicSendTaskABC, RestartableCyclicTaskABC):
+class CyclicSendTask(LimitedDurationCyclicSendTaskABC, RestartableCyclicTaskABC, ModifiableCyclicTaskABC):
     """A message in the cyclic transmit list."""
 
     def __init__(self, scheduler, msgs, period, duration, resolution):
@@ -736,7 +737,23 @@ class CyclicSendTask(LimitedDurationCyclicSendTaskABC, RestartableCyclicTaskABC)
         self._msg.uMsgInfo.Bits.dlc = self.messages[0].dlc
         for i, b in enumerate(self.messages[0].data):
             self._msg.abData[i] = b
+        # self.updateMsgData(msg.data)
+        # for i, b in enumerate(msg.data):
+        #     self._msg.abData[i] = b
         self.start()
+
+    def updateMsgData(self, data):
+        for i, b in enumerate(data):
+            self._msg.abData[i] = b
+
+    def modify_data(self, msg):
+        self.updateMsgData(msg.data)
+        if self._index is None:
+            self.start()
+        else:
+            _canlib.canSchedulerRemMessage(self._scheduler, self._index)
+            _canlib.canSchedulerAddMessage(self._scheduler, self._msg, self._index)
+            _canlib.canSchedulerStartMessage(self._scheduler, self._index, self._count)
 
     def start(self):
         """Start transmitting message (add to list if needed)."""
