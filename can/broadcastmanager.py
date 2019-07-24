@@ -23,7 +23,6 @@ except ImportError as e:
     print(str(e))
     HAS_EVENTS = False
 
-
 log = logging.getLogger("can.bcm")
 
 
@@ -192,9 +191,7 @@ class ThreadBasedCyclicSendTask(
 
         if HAS_EVENTS:
             self.period_ms: int = int(round(period * 1000, 0))
-            self.event = win32event.CreateWaitableTimer(
-                None, False, "TIMER_" + str(self.period_ms)
-            )
+            self.event = win32event.CreateWaitableTimer(None, False, None)
 
         self.start()
 
