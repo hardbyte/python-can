@@ -19,8 +19,7 @@ try:
     import win32event
 
     HAS_EVENTS = True
-except ImportError as e:
-    print(str(e))
+except ImportError:
     HAS_EVENTS = False
 
 log = logging.getLogger("can.bcm")
