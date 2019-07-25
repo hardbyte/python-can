@@ -415,7 +415,6 @@ class VectorBus(BusABC):
                         self._chip_state = event.tagData.canChipState.busStatus
                         self.tx_error_count = event.tagData.canChipState.txErrorCounter
                         self.rx_error_count = event.tagData.canChipState.rxErrorCounter
-                        self._request_chip_state()
             else:
                 event_count.value = 1
                 try:
@@ -455,7 +454,6 @@ class VectorBus(BusABC):
                         self._chip_state = event.tagData.chipState.busStatus
                         self.tx_error_count = event.tagData.chipState.txErrorCounter
                         self.rx_error_count = event.tagData.chipState.rxErrorCounter
-                        self._request_chip_state()
 
             if end_time is not None and time.time() > end_time:
                 return None, self._is_filtered
