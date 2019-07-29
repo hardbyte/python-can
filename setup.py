@@ -103,6 +103,7 @@ setup(
         "aenum",
         'windows-curses;platform_system=="Windows"',
         "filelock",
+        "mypy_extensions >= 0.4.0, < 0.5.0",
     ],
     setup_requires=pytest_runner,
     extras_require=extras_require,
