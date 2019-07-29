@@ -8,3 +8,6 @@ CanFilter = mypy_extensions.TypedDict(
     "CanFilter", {"can_id": int, "can_mask": int, "extended": bool}
 )
 CanFilters = typing.Iterable[CanFilter]
+
+# Used for the Abstract Base Class
+Channel = typing.Union[int, str]
