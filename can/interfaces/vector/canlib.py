@@ -98,7 +98,7 @@ class VectorBus(BusABC):
             Which bitrate to use for data phase in CAN FD.
             Defaults to arbitration bitrate.
         """
-        if os.name != "nt":
+        if os.name != "nt" and not kwargs.get("testing", d=False):
             raise OSError(
                 f'The Vector interface is only supported on Windows, but you are running "{os.name}"'
             )
