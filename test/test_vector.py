@@ -18,7 +18,6 @@ from can.interfaces.vector import canlib, xldefine, xlclass
 
 
 class TestVectorBus(unittest.TestCase):
-
     def setUp(self) -> None:
         # basic mock for XLDriver
         can.interfaces.vector.canlib.xldriver = Mock()
@@ -77,7 +76,7 @@ class TestVectorBus(unittest.TestCase):
             self.bus = None
 
     def test_bus_creation(self) -> None:
-        self.bus = can.Bus(channel=0, bustype="vector", testing=True)
+        self.bus = can.Bus(channel=0, bustype="vector", _testing=True)
         self.assertIsInstance(self.bus, canlib.VectorBus)
         can.interfaces.vector.canlib.xldriver.xlOpenDriver.assert_called()
         can.interfaces.vector.canlib.xldriver.xlGetApplConfig.assert_called()
@@ -93,7 +92,7 @@ class TestVectorBus(unittest.TestCase):
         can.interfaces.vector.canlib.xldriver.xlCanSetChannelBitrate.assert_not_called()
 
     def test_bus_creation_bitrate(self) -> None:
-        self.bus = can.Bus(channel=0, bustype="vector", bitrate=200000, testing=True)
+        self.bus = can.Bus(channel=0, bustype="vector", bitrate=200000, _testing=True)
         self.assertIsInstance(self.bus, canlib.VectorBus)
         can.interfaces.vector.canlib.xldriver.xlOpenDriver.assert_called()
         can.interfaces.vector.canlib.xldriver.xlGetApplConfig.assert_called()
@@ -113,7 +112,7 @@ class TestVectorBus(unittest.TestCase):
         self.assertEqual(xlCanSetChannelBitrate_args[2], 200000)
 
     def test_bus_creation_fd(self) -> None:
-        self.bus = can.Bus(channel=0, bustype="vector", fd=True, testing=True)
+        self.bus = can.Bus(channel=0, bustype="vector", fd=True, _testing=True)
         self.assertIsInstance(self.bus, canlib.VectorBus)
         can.interfaces.vector.canlib.xldriver.xlOpenDriver.assert_called()
         can.interfaces.vector.canlib.xldriver.xlGetApplConfig.assert_called()
@@ -142,7 +141,7 @@ class TestVectorBus(unittest.TestCase):
             sjwDbr=13,
             tseg1Dbr=14,
             tseg2Dbr=15,
-            testing=True,
+            _testing=True,
         )
         self.assertIsInstance(self.bus, canlib.VectorBus)
         can.interfaces.vector.canlib.xldriver.xlOpenDriver.assert_called()
@@ -173,19 +172,19 @@ class TestVectorBus(unittest.TestCase):
         self.assertEqual(canFdConf.tseg2Dbr, 15)
 
     def test_receive(self) -> None:
-        self.bus = can.Bus(channel=0, bustype="vector", testing=True)
+        self.bus = can.Bus(channel=0, bustype="vector", _testing=True)
         self.bus.recv(timeout=0.05)
         can.interfaces.vector.canlib.xldriver.xlReceive.assert_called()
         can.interfaces.vector.canlib.xldriver.xlCanReceive.assert_not_called()
 
     def test_receive_fd(self) -> None:
-        self.bus = can.Bus(channel=0, bustype="vector", fd=True, testing=True)
+        self.bus = can.Bus(channel=0, bustype="vector", fd=True, _testing=True)
         self.bus.recv(timeout=0.05)
         can.interfaces.vector.canlib.xldriver.xlReceive.assert_not_called()
         can.interfaces.vector.canlib.xldriver.xlCanReceive.assert_called()
 
     def test_send(self) -> None:
-        self.bus = can.Bus(channel=0, bustype="vector", testing=True)
+        self.bus = can.Bus(channel=0, bustype="vector", _testing=True)
         msg = can.Message(
             arbitration_id=0xC0FFEF, data=[1, 2, 3, 4, 5, 6, 7, 8], is_extended_id=True
         )
@@ -194,7 +193,7 @@ class TestVectorBus(unittest.TestCase):
         can.interfaces.vector.canlib.xldriver.xlCanTransmitEx.assert_not_called()
 
     def test_send_fd(self) -> None:
-        self.bus = can.Bus(channel=0, bustype="vector", fd=True, testing=True)
+        self.bus = can.Bus(channel=0, bustype="vector", fd=True, _testing=True)
         msg = can.Message(
             arbitration_id=0xC0FFEF, data=[1, 2, 3, 4, 5, 6, 7, 8], is_extended_id=True
         )
@@ -203,19 +202,19 @@ class TestVectorBus(unittest.TestCase):
         can.interfaces.vector.canlib.xldriver.xlCanTransmitEx.assert_called()
 
     def test_flush_tx_buffer(self) -> None:
-        self.bus = can.Bus(channel=0, bustype="vector", testing=True)
+        self.bus = can.Bus(channel=0, bustype="vector", _testing=True)
         self.bus.flush_tx_buffer()
         can.interfaces.vector.canlib.xldriver.xlCanFlushTransmitQueue.assert_called()
 
     def test_shutdown(self) -> None:
-        self.bus = can.Bus(channel=0, bustype="vector", testing=True)
+        self.bus = can.Bus(channel=0, bustype="vector", _testing=True)
         self.bus.shutdown()
         can.interfaces.vector.canlib.xldriver.xlDeactivateChannel.assert_called()
         can.interfaces.vector.canlib.xldriver.xlClosePort.assert_called()
         can.interfaces.vector.canlib.xldriver.xlCloseDriver.assert_called()
 
     def test_reset(self):
-        self.bus = can.Bus(channel=0, bustype="vector", testing=True)
+        self.bus = can.Bus(channel=0, bustype="vector", _testing=True)
         self.bus.reset()
         can.interfaces.vector.canlib.xldriver.xlDeactivateChannel.assert_called()
         can.interfaces.vector.canlib.xldriver.xlActivateChannel.assert_called()
