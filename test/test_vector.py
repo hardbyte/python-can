@@ -8,6 +8,7 @@ Test for Vector Interface
 import ctypes
 import time
 import logging
+import os
 import unittest
 from unittest.mock import Mock
 
@@ -213,11 +214,18 @@ class TestVectorBus(unittest.TestCase):
         can.interfaces.vector.canlib.xldriver.xlClosePort.assert_called()
         can.interfaces.vector.canlib.xldriver.xlCloseDriver.assert_called()
 
-    def test_reset(self):
+    def test_reset(self) -> None:
         self.bus = can.Bus(channel=0, bustype="vector", _testing=True)
         self.bus.reset()
         can.interfaces.vector.canlib.xldriver.xlDeactivateChannel.assert_called()
         can.interfaces.vector.canlib.xldriver.xlActivateChannel.assert_called()
+
+    def test_called_without_testing_argument(self) -> None:
+        """This tests if an exception is thrown when we are not running on Windows."""
+        if os.name != "nt":
+            with self.assertRaises(OSError):
+                # do not set the _testing argument, since it supresses the exception
+                can.Bus(channel=0, bustype="vector")
 
 
 def xlGetApplConfig(
