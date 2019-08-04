@@ -118,7 +118,9 @@ class TestVectorBus(unittest.TestCase):
         timing = can.BitTiming(
             f_clock=8000000, bitrate=250000, tseg1=13, tseg2=2, sjw=1
         )
-        self.bus = self.bus = can.Bus(channel=0, bustype="vector", timing=timing)
+        self.bus = self.bus = can.Bus(
+            channel=0, bustype="vector", timing=timing, _testing=True
+        )
         self.assertIsInstance(self.bus, canlib.VectorBus)
         can.interfaces.vector.canlib.xldriver.xlOpenDriver.assert_called()
         can.interfaces.vector.canlib.xldriver.xlGetApplConfig.assert_called()
@@ -146,7 +148,12 @@ class TestVectorBus(unittest.TestCase):
             f_clock=80000000, bitrate=2000000, tseg1=29, tseg2=10, sjw=10
         )
         self.bus = self.bus = can.Bus(
-            channel=0, bustype="vector", timing=timing, data_timing=data_timing, fd=True
+            channel=0,
+            bustype="vector",
+            timing=timing,
+            data_timing=data_timing,
+            fd=True,
+            _testing=True,
         )
         self.assertIsInstance(self.bus, canlib.VectorBus)
         can.interfaces.vector.canlib.xldriver.xlOpenDriver.assert_called()
@@ -178,7 +185,7 @@ class TestVectorBus(unittest.TestCase):
             f_clock=8000000, bitrate=250000, tseg1=13, tseg2=2, sjw=1
         )
         self.bus = self.bus = can.Bus(
-            channel=0, bustype="vector", timing=timing, fd=True
+            channel=0, bustype="vector", timing=timing, fd=True, _testing=True
         )
         self.assertIsInstance(self.bus, canlib.VectorBus)
         can.interfaces.vector.canlib.xldriver.xlOpenDriver.assert_called()
