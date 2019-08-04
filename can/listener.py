@@ -11,7 +11,7 @@ try:
     from queue import SimpleQueue, Empty
 except ImportError:
     # Python 3.0 - 3.6
-    from queue import Queue as SimpleQueue, Empty
+    from queue import Queue as SimpleQueue, Empty  # type: ignore
 
 import asyncio
 

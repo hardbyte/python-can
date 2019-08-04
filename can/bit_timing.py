@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Optional, Union
 
 
 class BitTiming:
@@ -27,15 +27,15 @@ class BitTiming:
 
     def __init__(
         self,
-        bitrate: int = None,
-        f_clock: int = None,
-        brp: int = None,
-        tseg1: int = None,
-        tseg2: int = None,
-        sjw: int = None,
+        bitrate: Optional[int] = None,
+        f_clock: Optional[int] = None,
+        brp: Optional[int] = None,
+        tseg1: Optional[int] = None,
+        tseg2: Optional[int] = None,
+        sjw: Optional[int] = None,
         nof_samples: int = 1,
-        btr0: int = None,
-        btr1: int = None,
+        btr0: Optional[int] = None,
+        btr1: Optional[int] = None,
     ):
         """
         :param int bitrate:

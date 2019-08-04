@@ -7,6 +7,10 @@ The main entry point to these classes should be through
 :meth:`can.BusABC.send_periodic`.
 """
 
+from typing import Optional, Sequence, Tuple, Union
+
+import can.typechecking
+
 import abc
 import logging
 import threading
@@ -36,11 +40,13 @@ class CyclicSendTaskABC(CyclicTask):
     Message send task with defined period
     """
 
-    def __init__(self, messages, period):
+    def __init__(
+        self, messages: Union[Sequence[can.Message], can.Message], period: float
+    ):
         """
-        :param Union[Sequence[can.Message], can.Message] messages:
+        :param messages:
             The messages to be sent periodically.
-        :param float period: The rate in seconds at which to send the messages.
+        :param period: The rate in seconds at which to send the messages.
         """
         messages = self._check_and_convert_messages(messages)
 
@@ -50,7 +56,9 @@ class CyclicSendTaskABC(CyclicTask):
         self.messages = messages
 
     @staticmethod
-    def _check_and_convert_messages(messages):
+    def _check_and_convert_messages(
+        messages: Union[Sequence[can.Message], can.Message]
+    ) -> Tuple[can.Message, ...]:
         """Helper function to convert a Message or Sequence of messages into a
         tuple, and raises an error when the given value is invalid.
 
@@ -84,13 +92,18 @@ class CyclicSendTaskABC(CyclicTask):
 
 
 class LimitedDurationCyclicSendTaskABC(CyclicSendTaskABC):
-    def __init__(self, messages, period, duration):
+    def __init__(
+        self,
+        messages: Union[Sequence[can.Message], can.Message],
+        period: float,
+        duration: Optional[float],
+    ):
         """Message send task with a defined duration and period.
 
-        :param Union[Sequence[can.Message], can.Message] messages:
+        :param messages:
             The messages to be sent periodically.
-        :param float period: The rate in seconds at which to send the messages.
-        :param float duration:
+        :param period: The rate in seconds at which to send the messages.
+        :param duration:
             Approximate duration in seconds to continue sending messages. If
             no duration is provided, the task will continue indefinitely.
         """
@@ -110,7 +123,7 @@ class RestartableCyclicTaskABC(CyclicSendTaskABC):
 class ModifiableCyclicTaskABC(CyclicSendTaskABC):
     """Adds support for modifying a periodic message"""
 
-    def _check_modified_messages(self, messages):
+    def _check_modified_messages(self, messages: Tuple[can.Message, ...]):
         """Helper function to perform error checking when modifying the data in
         the cyclic task.
 
@@ -130,11 +143,11 @@ class ModifiableCyclicTaskABC(CyclicSendTaskABC):
                 "from when the task was created"
             )
 
-    def modify_data(self, messages):
+    def modify_data(self, messages: Union[Sequence[can.Message], can.Message]):
         """Update the contents of the periodically sent messages, without
         altering the timing.
 
-        :param Union[Sequence[can.Message], can.Message] messages:
+        :param messages:
             The messages with the new :attr:`can.Message.data`.
 
             Note: The arbitration ID cannot be changed.
@@ -153,18 +166,26 @@ class MultiRateCyclicSendTaskABC(CyclicSendTaskABC):
     """A Cyclic send task that supports switches send frequency after a set time.
     """
 
-    def __init__(self, channel, messages, count, initial_period, subsequent_period):
+    def __init__(
+        self,
+        channel: can.typechecking.Channel,
+        messages: Union[Sequence[can.Message], can.Message],
+        count: int,
+        initial_period: float,
+        subsequent_period: float,
+    ):
         """
         Transmits a message `count` times at `initial_period` then continues to
         transmit messages at `subsequent_period`.
 
         :param channel: See interface specific documentation.
-        :param Union[Sequence[can.Message], can.Message] messages:
-        :param int count:
-        :param float initial_period:
-        :param float subsequent_period:
+        :param messages:
+        :param count:
+        :param initial_period:
+        :param subsequent_period:
         """
-        super().__init__(channel, messages, subsequent_period)
+        super().__init__(messages, subsequent_period)
+        self._channel = channel
 
 
 class ThreadBasedCyclicSendTask(
@@ -172,7 +193,14 @@ class ThreadBasedCyclicSendTask(
 ):
     """Fallback cyclic send task using thread."""
 
-    def __init__(self, bus, lock, messages, period, duration=None):
+    def __init__(
+        self,
+        bus: "can.bus.BusABC",
+        lock: threading.Lock,
+        messages: Union[Sequence[can.Message], can.Message],
+        period: float,
+        duration: Optional[float] = None,
+    ):
         super().__init__(messages, period, duration)
         self.bus = bus
         self.send_lock = lock
