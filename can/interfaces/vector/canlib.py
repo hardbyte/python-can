@@ -11,6 +11,7 @@ Authors: Julien Grave <grave.jul@gmail.com>, Christian Sandberg
 import ctypes
 import logging
 import time
+import os
 
 try:
     # Try builtin Python 3 Windows API
@@ -72,7 +73,7 @@ class VectorBus(BusABC):
         sjwDbr=2,
         tseg1Dbr=6,
         tseg2Dbr=3,
-        **kwargs
+        **kwargs,
     ):
         """
         :param list channel:
@@ -104,8 +105,14 @@ class VectorBus(BusABC):
             Which bitrate to use for data phase in CAN FD.
             Defaults to arbitration bitrate.
         """
+        if os.name != "nt" and not kwargs.get("_testing", False):
+            raise OSError(
+                f'The Vector interface is only supported on Windows, but you are running "{os.name}"'
+            )
+
         if xldriver is None:
             raise ImportError("The Vector API has not been loaded")
+
         self.poll_interval = poll_interval
         if isinstance(channel, (list, tuple)):
             self.channels = channel
