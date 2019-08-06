@@ -5,6 +5,9 @@ Contains a generic class for file IO.
 """
 
 from abc import ABCMeta
+from typing import Optional, Union, cast
+
+from can.typechecking import FileLike, PathLike
 
 
 class BaseIOHandler(metaclass=ABCMeta):
@@ -12,24 +15,24 @@ class BaseIOHandler(metaclass=ABCMeta):
 
     Can be used as a context manager.
 
-    :attr file-like file:
+    :attr Optional[FileLike] file:
         the file-like object that is kept internally, or None if none
         was opened
     """
 
-    def __init__(self, file, mode="rt"):
+    def __init__(self, file: Optional[Union[FileLike, PathLike]], mode: str = "rt"):
         """
         :param file: a path-like object to open a file, a file-like object
                      to be used as a file or `None` to not use a file at all
-        :param str mode: the mode that should be used to open the file, see
-                         :func:`open`, ignored if *file* is `None`
+        :param mode: the mode that should be used to open the file, see
+                     :func:`open`, ignored if *file* is `None`
         """
         if file is None or (hasattr(file, "read") and hasattr(file, "write")):
             # file is None or some file-like object
-            self.file = file
+            self.file = cast(Optional[FileLike], file)
         else:
             # file is some path-like object
-            self.file = open(file, mode)
+            self.file = open(cast(PathLike, file), mode)
 
         # for multiple inheritance
         super().__init__()
@@ -41,6 +44,7 @@ class BaseIOHandler(metaclass=ABCMeta):
         self.stop()
 
     def stop(self):
+        """Closes the undelying file-like object and flushes it, if it was opened in write mode."""
         if self.file is not None:
             # this also implies a flush()
             self.file.close()
