@@ -78,6 +78,17 @@ neoVI
 
 See :doc:`interfaces/neovi`.
 
+Vector
+~~~~~~
+
+To install ``python-can`` using the XL Driver Library as the backend:
+
+1. Install the `latest drivers <https://www.vector.com/latest_driver>`__ for your Vector hardware interface.
+
+2. Install the `XL Driver Library <https://www.vector.com/xl-lib/11/>`__ or copy the ``vxlapi.dll`` and/or
+   ``vxlapi64.dll`` into your working directory.
+
+3. Use Vector Hardware Configuration to assign a channel to your application.
 
 Installing python-can in development mode
 -----------------------------------------
