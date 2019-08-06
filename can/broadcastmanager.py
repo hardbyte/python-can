@@ -18,6 +18,14 @@ import time
 
 import can
 
+# try to import win32event for event-based cyclic send task(needs pywin32 package)
+try:
+    import win32event
+
+    HAS_EVENTS = True
+except ImportError:
+    HAS_EVENTS = False
+
 log = logging.getLogger("can.bcm")
 
 
@@ -206,10 +214,17 @@ class ThreadBasedCyclicSendTask(
         self.send_lock = lock
         self.stopped = True
         self.thread = None
-        self.end_time = time.time() + duration if duration else None
+        self.end_time = time.perf_counter() + duration if duration else None
+
+        if HAS_EVENTS:
+            self.period_ms: int = int(round(period * 1000, 0))
+            self.event = win32event.CreateWaitableTimer(None, False, None)
+
         self.start()
 
     def stop(self):
+        if HAS_EVENTS:
+            win32event.CancelWaitableTimer(self.event.handle)
         self.stopped = True
 
     def start(self):
@@ -218,6 +233,12 @@ class ThreadBasedCyclicSendTask(
             name = "Cyclic send task for 0x%X" % (self.messages[0].arbitration_id)
             self.thread = threading.Thread(target=self._run, name=name)
             self.thread.daemon = True
+
+            if HAS_EVENTS:
+                win32event.SetWaitableTimer(
+                    self.event.handle, 0, self.period_ms, None, None, False
+                )
+
             self.thread.start()
 
     def _run(self):
@@ -225,15 +246,19 @@ class ThreadBasedCyclicSendTask(
         while not self.stopped:
             # Prevent calling bus.send from multiple threads
             with self.send_lock:
-                started = time.time()
+                started = time.perf_counter()
                 try:
                     self.bus.send(self.messages[msg_index])
                 except Exception as exc:
                     log.exception(exc)
                     break
-            if self.end_time is not None and time.time() >= self.end_time:
+            if self.end_time is not None and time.perf_counter() >= self.end_time:
                 break
             msg_index = (msg_index + 1) % len(self.messages)
-            # Compensate for the time it takes to send the message
-            delay = self.period - (time.time() - started)
-            time.sleep(max(0.0, delay))
+
+            if HAS_EVENTS:
+                win32event.WaitForSingleObject(self.event.handle, self.period_ms)
+            else:
+                # Compensate for the time it takes to send the message
+                delay = self.period - (time.perf_counter() - started)
+                time.sleep(max(0.0, delay))
