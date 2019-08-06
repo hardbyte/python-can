@@ -1,5 +1,7 @@
 """Types for mypy type-checking
 """
+
+import os
 import typing
 
 import mypy_extensions
@@ -18,3 +20,7 @@ CanData = typing.Union[bytes, bytearray, int, typing.Iterable[int]]
 
 # Used for the Abstract Base Class
 Channel = typing.Union[int, str]
+
+# Used by the IO module
+FileLike = typing.IO[typing.Any]
+PathLike = typing.Union[str, bytes, os.PathLike]
