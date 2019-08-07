@@ -7,6 +7,7 @@ Contains a generic class for file IO.
 from abc import ABCMeta
 from typing import Optional, cast
 
+import can
 import can.typechecking
 
 
@@ -48,3 +49,15 @@ class BaseIOHandler(metaclass=ABCMeta):
         if self.file is not None:
             # this also implies a flush()
             self.file.close()
+
+
+# pylint: disable=abstract-method,too-few-public-methods
+class MessageWriter(
+    BaseIOHandler, can.Listener, metaclass=ABCMeta
+):
+    """The base class for all writers."""
+
+
+# pylint: disable=too-few-public-methods
+class MessageReader(BaseIOHandler, metaclass=ABCMeta):
+    """The base class for all readers."""

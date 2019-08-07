@@ -4,7 +4,6 @@
 See the :class:`Logger` class.
 """
 
-import logging
 import pathlib
 import typing
 
@@ -18,8 +17,6 @@ from .canutils import CanutilsLogWriter
 from .csv import CSVWriter
 from .sqlite import SqliteWriter
 from .printer import Printer
-
-log = logging.getLogger("can.io.logger")
 
 
 class Logger(BaseIOHandler, Listener):  # pylint: disable=abstract-method
