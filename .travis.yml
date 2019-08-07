@@ -101,8 +101,7 @@ jobs:
           can/thread_safe_bus.py
           can/typechecking.py
           can/util.py
-          can/io/generic.py
-          can/io/logger.py
+          can/io/**.py
     - stage: linter
       name: "Formatting Checks"
       python: "3.7"
