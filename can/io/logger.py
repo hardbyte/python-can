@@ -29,6 +29,7 @@ class Logger(BaseIOHandler, Listener):  # pylint: disable=abstract-method
       * .csv: :class:`can.CSVWriter`
       * .db: :class:`can.SqliteWriter`
       * .log :class:`can.CanutilsLogWriter`
+      * .txt :class:`can.Printer`
 
     The **filename** may also be *None*, to fall back to :class:`can.Printer`.
 
@@ -62,5 +63,7 @@ class Logger(BaseIOHandler, Listener):  # pylint: disable=abstract-method
             return SqliteWriter(filename, *args, **kwargs)
         if suffix == ".log":
             return CanutilsLogWriter(filename, *args, **kwargs)
+        if suffix == ".txt":
+            return Printer(filename, *args, **kwargs)
 
         raise ValueError(f'unknown file type "{filename}"')

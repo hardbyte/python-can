@@ -459,7 +459,10 @@ class TestSqliteDatabaseFormat(ReaderWriterTest):
 
 
 class TestPrinter(unittest.TestCase):
-    """Tests that can.Printer does not crash"""
+    """Tests that can.Printer does not crash
+
+    TODO test append mode
+    """
 
     # TODO add CAN FD messages
     messages = (

@@ -1,8 +1,10 @@
 """Types for mypy type-checking
 """
 
-import os
 import typing
+
+if typing.TYPE_CHECKING:
+    import os
 
 import mypy_extensions
 
