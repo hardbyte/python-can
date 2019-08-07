@@ -102,6 +102,7 @@ jobs:
           can/typechecking.py
           can/util.py
           can/io/generic.py
+          can/io/logger.py
     - stage: linter
       name: "Formatting Checks"
       python: "3.7"

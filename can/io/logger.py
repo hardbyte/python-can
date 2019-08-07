@@ -5,6 +5,8 @@ See the :class:`Logger` class.
 """
 
 import logging
+import pathlib
+import typing
 
 from ..listener import Listener
 from .generic import BaseIOHandler
@@ -14,6 +16,8 @@ from .canutils import CanutilsLogWriter
 from .csv import CSVWriter
 from .sqlite import SqliteWriter
 from .printer import Printer
+
+from can.typechecking import PathLike
 
 log = logging.getLogger("can.io.logger")
 
@@ -28,36 +32,36 @@ class Logger(BaseIOHandler, Listener):  # pylint: disable=abstract-method
       * .csv: :class:`can.CSVWriter`
       * .db: :class:`can.SqliteWriter`
       * .log :class:`can.CanutilsLogWriter`
-      * other: :class:`can.Printer`
+
+    The **filename** may also be *None*, to fall back to :class:`can.Printer`.
 
     The log files may be incomplete until `stop()` is called due to buffering.
 
     .. note::
-        This class itself is just a dispatcher, and any positional an keyword
+        This class itself is just a dispatcher, and any positional and keyword
         arguments are passed on to the returned instance.
     """
 
     @staticmethod
-    def __new__(cls, filename, *args, **kwargs):
+    def __new__(cls, filename: typing.Optional[PathLike], *args, **kwargs):
         """
-        :type filename: str or None or path-like
-        :param filename: the filename/path the file to write to,
-                         may be a path-like object if the target logger supports
-                         it, and may be None to instantiate a :class:`~can.Printer`
-
+        :param filename: the filename/path of the file to write to,
+                         may be a path-like object or None to
+                         instantiate a :class:`~can.Printer`
         """
-        if filename:
-            if filename.endswith(".asc"):
-                return ASCWriter(filename, *args, **kwargs)
-            elif filename.endswith(".blf"):
-                return BLFWriter(filename, *args, **kwargs)
-            elif filename.endswith(".csv"):
-                return CSVWriter(filename, *args, **kwargs)
-            elif filename.endswith(".db"):
-                return SqliteWriter(filename, *args, **kwargs)
-            elif filename.endswith(".log"):
-                return CanutilsLogWriter(filename, *args, **kwargs)
+        if filename is None:
+            return Printer(*args, **kwargs)
 
-        # else:
-        log.warning('unknown file type "%s", falling pack to can.Printer', filename)
-        return Printer(filename, *args, **kwargs)
+        suffix = pathlib.PurePath(filename).suffix
+        if suffix == ".asc":
+            return ASCWriter(filename, *args, **kwargs)
+        if suffix == ".blf":
+            return BLFWriter(filename, *args, **kwargs)
+        if suffix == ".csv":
+            return CSVWriter(filename, *args, **kwargs)
+        if suffix == ".db":
+            return SqliteWriter(filename, *args, **kwargs)
+        if suffix == ".log":
+            return CanutilsLogWriter(filename, *args, **kwargs)
+
+        raise ValueError(f'unknown file type "{filename}"')

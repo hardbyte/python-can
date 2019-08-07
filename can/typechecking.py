@@ -23,4 +23,5 @@ Channel = typing.Union[int, str]
 
 # Used by the IO module
 FileLike = typing.IO[typing.Any]
-PathLike = typing.Union[str, bytes, os.PathLike]
+PathLike = typing.Union[str, os.PathLike[str]]
+AcceptedIOType = typing.Optional[typing.Union[FileLike, PathLike]]
