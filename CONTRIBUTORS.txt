@@ -28,3 +28,6 @@ Jan Goeteyn
 "ykzheng" <wishdo@gmail.com>
 Lear Corporation
 Nick Black <dank@qemfd.net>
+Michael Ohtake <mikado98765@gmail.com>
+Mark Ciechanowski <markc@dgtech.com>
+DG Technologies, Inc.

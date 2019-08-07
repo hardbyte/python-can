@@ -8,7 +8,7 @@ import logging
 
 from typing import Dict, Any
 
-__version__ = "3.2.0"
+__version__ = "3.2.2"
 
 log = logging.getLogger("can")
 
