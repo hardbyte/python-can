@@ -4,12 +4,10 @@
 """
 """
 
-from time import sleep
 import unittest
 import random
 import logging
 import tempfile
-import sqlite3
 import os
 from os.path import join, dirname
 
@@ -137,12 +135,15 @@ class ListenerTest(BusTest):
         test_filetype_to_instance(".log", can.CanutilsLogWriter)
         test_filetype_to_instance(".txt", can.Printer)
 
-        # test file extensions that should use a fallback
-        test_filetype_to_instance("", can.Printer)
-        test_filetype_to_instance(".", can.Printer)
-        test_filetype_to_instance(".some_unknown_extention_42", can.Printer)
         with can.Logger(None) as logger:
             self.assertIsInstance(logger, can.Printer)
+
+        # test file extensions that should use a fallback
+        should_fail_with = ["", ".", ".some_unknown_extention_42"]
+        for supposed_fail in should_fail_with:
+            with self.assertRaises(ValueError):
+                with can.Logger(supposed_fail):  # make sure we close it anyways
+                    pass
 
     def testBufferedListenerReceives(self):
         a_listener = can.BufferedReader()

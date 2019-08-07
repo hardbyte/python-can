@@ -10,7 +10,7 @@ import pathlib
 from time import time, sleep
 import typing
 
-import can.typechecking
+import can
 
 from .generic import BaseIOHandler
 from .asc import ASCReader
@@ -46,7 +46,7 @@ class LogReader(BaseIOHandler):
     """
 
     @staticmethod
-    def __new__(cls, filename: can.typechecking.PathLike, *args, **kwargs):
+    def __new__(cls, filename: "can.typechecking.PathLike", *args, **kwargs):
         """
         :param filename: the filename/path the file to read from
         """
@@ -73,7 +73,7 @@ class MessageSync:  # pylint: disable=too-few-public-methods
 
     def __init__(
         self,
-        messages: typing.Iterable[can.Message],
+        messages: typing.Iterable["can.Message"],
         timestamps: bool = True,
         gap: float = 0.0001,
         skip: float = 60.0,
@@ -90,7 +90,7 @@ class MessageSync:  # pylint: disable=too-few-public-methods
         self.gap = gap
         self.skip = skip
 
-    def __iter__(self) -> typing.Generator[can.Message, None, None]:
+    def __iter__(self) -> typing.Generator["can.Message", None, None]:
         playback_start_time = time()
         recorded_start_time = None
 

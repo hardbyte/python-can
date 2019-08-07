@@ -52,9 +52,7 @@ class BaseIOHandler(metaclass=ABCMeta):
 
 
 # pylint: disable=abstract-method,too-few-public-methods
-class MessageWriter(
-    BaseIOHandler, can.Listener, metaclass=ABCMeta
-):
+class MessageWriter(BaseIOHandler, can.Listener, metaclass=ABCMeta):
     """The base class for all writers."""
 
 
