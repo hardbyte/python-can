@@ -5,7 +5,7 @@ Contains a generic class for file IO.
 """
 
 from abc import ABCMeta
-from typing import Optional, Union, cast
+from typing import Optional, cast
 
 import can.typechecking
 
@@ -20,7 +20,7 @@ class BaseIOHandler(metaclass=ABCMeta):
         was opened
     """
 
-    def __init__(self, file: can.typechecking.AcceptedIOType, mode: str = "rt"):
+    def __init__(self, file: can.typechecking.AcceptedIOType, mode: str = "rt") -> None:
         """
         :param file: a path-like object to open a file, a file-like object
                      to be used as a file or `None` to not use a file at all
@@ -37,13 +37,13 @@ class BaseIOHandler(metaclass=ABCMeta):
         # for multiple inheritance
         super().__init__()
 
-    def __enter__(self):
+    def __enter__(self) -> "BaseIOHandler":
         return self
 
-    def __exit__(self, *args):
+    def __exit__(self, *args) -> None:
         self.stop()
 
-    def stop(self):
+    def stop(self) -> None:
         """Closes the undelying file-like object and flushes it, if it was opened in write mode."""
         if self.file is not None:
             # this also implies a flush()

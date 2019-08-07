@@ -8,6 +8,8 @@ import logging
 import pathlib
 import typing
 
+import can.typechecking
+
 from ..listener import Listener
 from .generic import BaseIOHandler
 from .asc import ASCWriter
@@ -16,8 +18,6 @@ from .canutils import CanutilsLogWriter
 from .csv import CSVWriter
 from .sqlite import SqliteWriter
 from .printer import Printer
-
-import can.typechecking
 
 log = logging.getLogger("can.io.logger")
 
@@ -43,7 +43,9 @@ class Logger(BaseIOHandler, Listener):  # pylint: disable=abstract-method
     """
 
     @staticmethod
-    def __new__(cls, filename: typing.Optional[can.typechecking.PathLike], *args, **kwargs):
+    def __new__(
+        cls, filename: typing.Optional[can.typechecking.PathLike], *args, **kwargs
+    ):
         """
         :param filename: the filename/path of the file to write to,
                          may be a path-like object or None to
