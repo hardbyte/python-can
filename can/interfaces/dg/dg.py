@@ -5,9 +5,6 @@
 # ----------------------------------------------------------------------
 #
 # **********************************************************************
-# Copyright (C) 2019 DG Technologies/Dearborn Group, Inc. All rights
-# reserved. The copyright here does not evidence any actual or intended
-# publication.
 #
 # File Name: dg.py
 # Author(s): mohtake <mohtake@dgtech.com>
