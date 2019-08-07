@@ -7,7 +7,7 @@ Contains a generic class for file IO.
 from abc import ABCMeta
 from typing import Optional, Union, cast
 
-from can.typechecking import FileLike, PathLike, AcceptedIOType
+import can.typechecking
 
 
 class BaseIOHandler(metaclass=ABCMeta):
@@ -20,7 +20,7 @@ class BaseIOHandler(metaclass=ABCMeta):
         was opened
     """
 
-    def __init__(self, file: AcceptedIOType, mode: str = "rt"):
+    def __init__(self, file: can.typechecking.AcceptedIOType, mode: str = "rt"):
         """
         :param file: a path-like object to open a file, a file-like object
                      to be used as a file or `None` to not use a file at all
@@ -29,10 +29,10 @@ class BaseIOHandler(metaclass=ABCMeta):
         """
         if file is None or (hasattr(file, "read") and hasattr(file, "write")):
             # file is None or some file-like object
-            self.file = cast(Optional[FileLike], file)
+            self.file = cast(Optional[can.typechecking.FileLike], file)
         else:
             # file is some path-like object
-            self.file = open(cast(PathLike, file), mode)
+            self.file = open(cast(can.typechecking.PathLike, file), mode)
 
         # for multiple inheritance
         super().__init__()
