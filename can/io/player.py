@@ -48,7 +48,7 @@ class LogReader(BaseIOHandler):
     @staticmethod
     def __new__(cls, filename: "can.typechecking.PathLike", *args, **kwargs):
         """
-        :param filename: the filename/path the file to read from
+        :param filename: the filename/path of the file to read from
         """
         suffix = pathlib.PurePath(filename).suffix
 
