@@ -3,7 +3,7 @@
 
 import typing
 
-import os
+import os  # pylint: disable=unused-import
 
 import mypy_extensions
 

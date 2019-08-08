@@ -10,7 +10,7 @@ import pathlib
 from time import time, sleep
 import typing
 
-import can
+import can  # pylint: disable=unused-import
 
 from .generic import BaseIOHandler
 from .asc import ASCReader
