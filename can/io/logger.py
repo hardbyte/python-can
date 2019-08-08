@@ -40,6 +40,7 @@ class Logger(BaseIOHandler, Listener):  # pylint: disable=abstract-method
         arguments are passed on to the returned instance.
     """
 
+    # pylint: disable=too-many-return-statements
     @staticmethod
     def __new__(
         cls, filename: typing.Optional[can.typechecking.PathLike], *args, **kwargs
