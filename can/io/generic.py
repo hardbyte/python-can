@@ -33,7 +33,7 @@ class BaseIOHandler(metaclass=ABCMeta):
             self.file = cast(Optional[can.typechecking.FileLike], file)
         else:
             # file is some path-like object
-            self.file = open(cast(can.typechecking.PathLike, file), mode)
+            self.file = open(cast(can.typechecking.StringPathLike, file), mode)
 
         # for multiple inheritance
         super().__init__()

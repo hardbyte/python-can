@@ -42,12 +42,13 @@ class Logger(BaseIOHandler, Listener):  # pylint: disable=abstract-method
 
     @staticmethod
     def __new__(
-        cls, filename: typing.Optional[can.typechecking.PathLike], *args, **kwargs
+        cls, filename: typing.Optional[can.typechecking.StringPathLike], *args, **kwargs
     ):
         """
         :param filename: the filename/path of the file to write to,
                          may be a path-like object or None to
                          instantiate a :class:`~can.Printer`
+        :raises ValueError: if the filename's suffix is of an unknown file type
         """
         if filename is None:
             return Printer(*args, **kwargs)
@@ -64,4 +65,4 @@ class Logger(BaseIOHandler, Listener):  # pylint: disable=abstract-method
         try:
             return lookup[suffix](filename, *args, **kwargs)
         except KeyError:
-            raise ValueError(f'unknown file type "{suffix}"')
+            raise ValueError(f'No write support for this unknown log format "{suffix}"')

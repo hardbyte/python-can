@@ -10,7 +10,8 @@ import pathlib
 from time import time, sleep
 import typing
 
-import can  # pylint: disable=unused-import
+if typing.TYPE_CHECKING:
+    import can
 
 from .generic import BaseIOHandler
 from .asc import ASCReader
@@ -49,21 +50,22 @@ class LogReader(BaseIOHandler):
     def __new__(cls, filename: "can.typechecking.PathLike", *args, **kwargs):
         """
         :param filename: the filename/path of the file to read from
+        :raises ValueError: if the filename's suffix is of an unknown file type
         """
         suffix = pathlib.PurePath(filename).suffix
 
-        if suffix == ".asc":
-            return ASCReader(filename)
-        if suffix == ".blf":
-            return BLFReader(filename)
-        if suffix == ".csv":
-            return CSVReader(filename)
-        if suffix == ".db":
-            return SqliteReader(filename, *args, **kwargs)
-        if suffix == ".log":
-            return CanutilsLogReader(filename)
-
-        raise NotImplementedError(f"No read support for this log format: {filename}")
+        lookup = {
+            ".asc": ASCReader,
+            ".blf": BLFReader,
+            ".csv": CSVReader,
+            ".db": SqliteReader,
+            ".log": CanutilsLogReader,
+        }
+        suffix = pathlib.PurePath(filename).suffix
+        try:
+            return lookup[suffix](filename, *args, **kwargs)
+        except KeyError:
+            raise ValueError(f'No read support for this unknown log format "{suffix}"')
 
 
 class MessageSync:  # pylint: disable=too-few-public-methods
@@ -81,7 +83,8 @@ class MessageSync:  # pylint: disable=too-few-public-methods
         """Creates an new **MessageSync** instance.
 
         :param messages: An iterable of :class:`can.Message` instances.
-        :param timestamps: Use the messages' timestamps. If False, uses the *gap* parameter as the time between messages.
+        :param timestamps: Use the messages' timestamps. If False, uses the *gap* parameter
+                           as the time between messages.
         :param gap: Minimum time between sent messages in seconds
         :param skip: Skip periods of inactivity greater than this (in seconds).
         """
