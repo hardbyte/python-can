@@ -138,7 +138,6 @@ class ListenerTest(BusTest):
         with can.Logger(None) as logger:
             self.assertIsInstance(logger, can.Printer)
 
-        # test file extensions that should use a fallback
         should_fail_with = ["", ".", ".some_unknown_extention_42"]
         for supposed_fail in should_fail_with:
             with self.assertRaises(ValueError):
