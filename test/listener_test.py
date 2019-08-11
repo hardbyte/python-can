@@ -111,9 +111,11 @@ class ListenerTest(BusTest):
         test_filetype_to_instance(".db", can.SqliteReader)
         test_filetype_to_instance(".log", can.CanutilsLogReader)
 
-        # test file extensions that are not supported
-        with self.assertRaisesRegex(NotImplementedError, ".xyz_42"):
-            test_filetype_to_instance(".xyz_42", can.Printer)
+    def testPlayerTypeResolutionUnsupportedFileTypes(self):
+        for should_fail_with in ["", ".", ".some_unknown_extention_42"]:
+            with self.assertRaises(ValueError):
+                with can.LogReader(should_fail_with):  # make sure we close it anyways
+                    pass
 
     def testLoggerTypeResolution(self):
         def test_filetype_to_instance(extension, klass):
@@ -138,10 +140,10 @@ class ListenerTest(BusTest):
         with can.Logger(None) as logger:
             self.assertIsInstance(logger, can.Printer)
 
-        should_fail_with = ["", ".", ".some_unknown_extention_42"]
-        for supposed_fail in should_fail_with:
+    def testLoggerTypeResolutionUnsupportedFileTypes(self):
+        for should_fail_with in ["", ".", ".some_unknown_extention_42"]:
             with self.assertRaises(ValueError):
-                with can.Logger(supposed_fail):  # make sure we close it anyways
+                with can.Logger(should_fail_with):  # make sure we close it anyways
                     pass
 
     def testBufferedListenerReceives(self):

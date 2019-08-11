@@ -3,7 +3,8 @@
 
 import typing
 
-import os  # pylint: disable=unused-import
+if typing.TYPE_CHECKING:
+    import os
 
 import mypy_extensions
 
