@@ -53,18 +53,16 @@ class Logger(BaseIOHandler, Listener):  # pylint: disable=abstract-method
         if filename is None:
             return Printer(*args, **kwargs)
 
+        lookup = {
+            ".asc": ASCWriter,
+            ".blf": BLFWriter,
+            ".csv": CSVWriter,
+            ".db": SqliteWriter,
+            ".log": CanutilsLogWriter,
+            ".txt": Printer,
+        }
         suffix = pathlib.PurePath(filename).suffix
-        if suffix == ".asc":
-            return ASCWriter(filename, *args, **kwargs)
-        if suffix == ".blf":
-            return BLFWriter(filename, *args, **kwargs)
-        if suffix == ".csv":
-            return CSVWriter(filename, *args, **kwargs)
-        if suffix == ".db":
-            return SqliteWriter(filename, *args, **kwargs)
-        if suffix == ".log":
-            return CanutilsLogWriter(filename, *args, **kwargs)
-        if suffix == ".txt":
-            return Printer(filename, *args, **kwargs)
-
-        raise ValueError(f'unknown file type "{filename}"')
+        try:
+            return lookup[suffix](filename, *args, **kwargs)
+        except KeyError:
+            raise ValueError(f'unknown file type "{suffix}"')
