@@ -35,6 +35,4 @@ BACKENDS.update(
     }
 )
 
-VALID_INTERFACES = frozenset(
-    list(BACKENDS.keys()) + ["socketcan_native", "socketcan_ctypes"]
-)
+VALID_INTERFACES = frozenset(list(BACKENDS.keys()))
