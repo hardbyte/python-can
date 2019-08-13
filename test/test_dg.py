@@ -10,11 +10,6 @@
 # Target Project: python-can
 # Description:
 # Notes:
-# ----------------------------------------------------------------------
-# Release Revision: $Rev: 73 $
-# Release Date: $Date: 2019/08/05 14:26:05 $
-# Revision Control Tags: $Tags: tip $
-# ----------------------------------------------------------------------
 # **********************************************************************
 #
 
@@ -64,8 +59,10 @@ class mockedBus():
         server_commands.Gryphon.CMD_CARD_SET_DEFAULT_FILTER = Mock(side_effect=self.del_filt)
         server_commands.Gryphon.CMD_CARD_ADD_FILTER = Mock(side_effect=self.set_filt)
         server_commands.Gryphon.CMD_CARD_SET_FILTER_MODE = Mock(side_effect=self.filt_mode)
-        server_commands.Gryphon.CMD_SCHED_MSG_REPLACE = Mock(side_effect=self.change_sched)
+        server_commands.Gryphon.CMD_SCHED_MSG_REPLACE = Mock(side_effect=self.channelge_sched)
         server_commands.Gryphon.CMD_SCHED_KILL_TX = Mock(side_effect=self.kill_sched)
+        server_commands.Gryphon.CMD_EVENT_ENABLE = Mock()
+        server_commands.Gryphon.CMD_EVENT_DISABLE = Mock()
 
     def filt_mode(self, *args):
         """Set the filter mode to on or off"""
@@ -134,7 +131,7 @@ class mockedBus():
         t.start()
         return {"schedule_id" : len(self.threads)}
 
-    def change_sched(self):
+    def channelge_sched(self):
         """Not currently implemented"""
         raise NotImplementedError
 
@@ -149,7 +146,12 @@ class test_dg(unittest.TestCase):
 
     def setUp(self):
         """Setup mockedBus for each test"""
+        # IF YOU WANT TO RUN THE ACTUAL TESTS WITHOUT THE MOCKED BUS,
+        # MEANING YOU HAVE A BEACON CONNECTED AT SOME IP ADDRESS, THEN
+        # COMMENT OUT THE NEXT LINE (mockedBus()) AND ENTER THE IP
+        # INTO self.ip
         mockedBus()
+        self.ip = "localhost"
 
     def test_filter_schedule(self):
         """
@@ -157,7 +159,7 @@ class test_dg(unittest.TestCase):
         TESTS: _apply_filters(filter), _send_periodic_internal()
         """
         print("\ntest_filter_schedule")
-        bus = can.interface.Bus(bustype="dg", chan=1, mode="CAN", ip="10.93.172.9")
+        bus = can.interface.Bus(bustype="dg", channel=1, is_fd=False, ip=self.ip)
         try:
             msg = Message(arbitration_id=0x05ea, data=[12, 255, 29, 152])
             bus.send_periodic(msg, .1)
@@ -166,7 +168,6 @@ class test_dg(unittest.TestCase):
             bus.set_filters(filt)
             for _ in range(0, 50):
                 bus.recv(timeout=0)
-            time.sleep(1)
             reply = bus.recv(timeout=0)
             self.assertEqual(reply, None)
         finally:
@@ -179,7 +180,7 @@ class test_dg(unittest.TestCase):
         TESTS: _recv_internal, send
         """
         print("\ntest_RX_TX")
-        bus = can.interface.Bus(bustype="dg", chan=1, mode="CAN", ip="10.93.172.9")
+        bus = can.interface.Bus(bustype="dg", channel=1, is_fd=False, ip=self.ip)
         try:
             msg = Message(arbitration_id=0x05ea, data=[12, 255, 29, 152])
             bus.send(msg)
@@ -195,11 +196,11 @@ class test_dg(unittest.TestCase):
         TESTS: _detect_available_configs
         """
         print("\ntest_configs")
-        bus = can.interface.Bus(bustype="dg", chan=1, mode="CAN", ip="10.93.172.9")
+        bus = can.interface.Bus(bustype="dg", channel=1, is_fd=False, ip=self.ip)
         try:
             conf = bus._detect_available_configs()
             for item in conf:
-                self.assertTrue(isinstance(item["chan"], int))
+                self.assertTrue(isinstance(item["channel"], int))
         finally:
             bus.shutdown()
 
@@ -209,7 +210,7 @@ class test_dg(unittest.TestCase):
         TESTS: flush_tx_buffer
         """
         print("\ntest_flush")
-        bus = can.interface.Bus(bustype="dg", chan=1, mode="CAN", ip="10.93.172.9")
+        bus = can.interface.Bus(bustype="dg", channel=1, is_fd=False, ip=self.ip)
         try:
             bus.flush_tx_buffer()
             self.assertTrue(True)
@@ -222,7 +223,7 @@ class test_dg(unittest.TestCase):
         TESTS: _apply_filters(filt)
         """
         print("\ntest_filter_simple")
-        bus = can.interface.Bus(bustype="dg", chan=1, mode="CAN", ip="10.93.172.9")
+        bus = can.interface.Bus(bustype="dg", channel=1, is_fd=False, ip=self.ip)
         try:
             msg = Message(arbitration_id=0x05ea, data=[12, 255, 29, 152])
             filt = [{"can_id": 0x054a, "can_mask": 0xffff, "extended": True}]
@@ -239,7 +240,7 @@ class test_dg(unittest.TestCase):
         TESTS: _apply_filters()
         """
         print("\ntest_filter_shutoff")
-        bus = can.interface.Bus(bustype="dg", chan=1, mode="CAN", ip="10.93.172.9")
+        bus = can.interface.Bus(bustype="dg", channel=1, is_fd=False, ip=self.ip)
         try:
             msg = Message(arbitration_id=0x01ef, data=[12, 255, 29, 152])
             filt = [{"can_id": 0x054a, "can_mask": 0xffff, "extended": True}]
@@ -260,7 +261,7 @@ class test_dg(unittest.TestCase):
         TESTS: _apply_filters(filt)
         """
         print("\ntest_long_filter")
-        bus = can.interface.Bus(bustype="dg", chan=1, mode="CAN", ip="10.93.172.9")
+        bus = can.interface.Bus(bustype="dg", channel=1, is_fd=False, ip=self.ip)
         try:
             msg = Message(arbitration_id=0x0132, data=[12, 255, 29, 152])
             filt = [{"can_id": 0x01e00132, "can_mask": 0xffffffff, "extended": True}]
@@ -287,7 +288,7 @@ class test_dg(unittest.TestCase):
         TESTS: _apply_filters(filt), _apply_filters()
         """
         print("\ntest_add_and_clear_filter")
-        bus = can.interface.Bus(bustype="dg", chan=1, mode="CAN", ip="10.93.172.9")
+        bus = can.interface.Bus(bustype="dg", channel=1, is_fd=False, ip=self.ip)
         try:
             msg = Message(arbitration_id=0x01e2, data=[12, 255, 29, 182])
             msg2 = Message(arbitration_id=0x01e00132, data=[12, 255, 29, 152])
@@ -318,13 +319,13 @@ class test_dg(unittest.TestCase):
         TESTS: _send_periodic_internal(), task.stop
         """
         print("\ntest_simple_sched")
-        bus = can.interface.Bus(bustype="dg", chan=1, mode="CAN", ip="10.93.172.9")
+        bus = can.interface.Bus(bustype="dg", channel=1, is_fd=False, ip=self.ip)
         try:
             msg = Message(arbitration_id=0x01e2, data=[12, 255, 29, 252])
             task = bus.send_periodic(msg, .5)
-            time.sleep(2.2)
+            time.sleep(1.1)
             task.stop()
-            for _ in range(0, 4):
+            for _ in range(0, 3):
                 reply = bus.recv(timeout=0)
                 self.assertEqual(reply.arbitration_id, 0x01e2)
         finally:
@@ -337,13 +338,13 @@ class test_dg(unittest.TestCase):
         TESTS: _send_periodic_internal(), task.stop
         """
         print("\ntest_sched_accuracy")
-        bus = can.interface.Bus(bustype="dg", chan=1, mode="CAN", ip="10.93.172.9")
+        bus = can.interface.Bus(bustype="dg", channel=1, is_fd=False, ip=self.ip)
         try:
             msg = Message(arbitration_id=0x01e2, data=[12, 255, 29, 140])
             task = bus.send_periodic(msg, .2)
-            time.sleep(3.1)
+            time.sleep(1.1)
             task.stop()
-            for _ in range(0, 16):
+            for _ in range(0, 6):
                 reply = bus.recv(timeout=0)
                 self.assertEqual(reply.arbitration_id, 0x01e2)
             reply = bus.recv(timeout=0)
@@ -359,19 +360,19 @@ class test_dg(unittest.TestCase):
         TESTS: task.modify_data
         """
         print("\ntest_alter_sched")
-        bus = can.interface.Bus(bustype="dg", chan=1, mode="CAN", ip="10.93.172.9")
+        bus = can.interface.Bus(bustype="dg", channel=1, is_fd=False, ip=self.ip)
         try:
             msg = Message(arbitration_id=0x01e2, data=[12, 255, 29, 160])
             task = bus.send_periodic(msg, .5)
-            time.sleep(3.2)
+            time.sleep(1.6)
             msg.data = [34, 13, 22, 1]
             task.modify_data(msg)
-            time.sleep(3.2)
+            time.sleep(1.6)
             task.stop()
-            for _ in range(0, 7):
+            for _ in range(0, 4):
                 reply = bus.recv(timeout=0)
                 self.assertEqual(reply.arbitration_id, 0x01e2)
-            for _ in range(0, 6):
+            for _ in range(0, 3):
                 reply = bus.recv(timeout=0)
                 self.assertEqual(reply.data, bytearray([34, 13, 22, 1]))
             reply = bus.recv(timeout=0)
@@ -386,7 +387,7 @@ class test_dg(unittest.TestCase):
         TESTS: _send_periodic_internal(duration)
         """
         print("\ntest_mult_sched")
-        bus = can.interface.Bus(bustype="dg", chan=1, mode="CAN", ip="10.93.172.9")
+        bus = can.interface.Bus(bustype="dg", channel=1, is_fd=False, ip=self.ip)
         try:
             msg1 = Message(arbitration_id=0x01ee, data=[12, 255])
             msg2 = Message(arbitration_id=0x043ea209, data=[16, 211, 15])
@@ -409,7 +410,7 @@ class test_dg(unittest.TestCase):
         TESTS: stop_all_periodic_tasks
         """
         print("\ntest_stop_all_tasks")
-        bus = can.interface.Bus(bustype="dg", chan=1, mode="CAN", ip="10.93.172.9")
+        bus = can.interface.Bus(bustype="dg", channel=1, is_fd=False, ip=self.ip)
         try:
             msg1 = Message(arbitration_id=0x01ff4332, data=[12, 255, 29, 152])
             msg2 = Message(arbitration_id=0x043ea209, data=[16, 211])
@@ -423,7 +424,6 @@ class test_dg(unittest.TestCase):
             time.sleep(1)
             for _ in range(1, 50):
                 bus.recv(timeout=0)
-            time.sleep(1)
             reply = bus.recv(timeout=0)
             self.assertEqual(reply, None)
         finally:
@@ -437,7 +437,7 @@ class test_dg(unittest.TestCase):
         TESTS: send, _recv_internal
         """
         print("\ntest_TS_RX_TX")
-        bus = can.ThreadSafeBus(bustype="dg", chan=1, mode="CAN", ip="10.93.172.9")
+        bus = can.ThreadSafeBus(bustype="dg", channel=1, is_fd=False, ip=self.ip)
         try:
             msg = Message(arbitration_id=0x05ea, data=[122, 122, 122, 122])
             bus.send(msg)
@@ -453,8 +453,8 @@ class test_dg(unittest.TestCase):
         TESTS: send, _recv_internal
         """
         print("\ntest_CANFD_RX_TX")
-        bus = can.interface.Bus(bustype="dg", chan=1, mode="CANFD", ip="10.93.172.9")
-        bus2 = can.interface.Bus(bustype="dg", chan=2, mode="CANFD", ip="10.93.172.9")
+        bus = can.interface.Bus(bustype="dg", channel=1, is_fd=True, ip=self.ip)
+        bus2 = can.interface.Bus(bustype="dg", channel=2, is_fd=True, ip=self.ip)
         try:
             msg = Message(arbitration_id=0x05ea, data=[122, 122, 122, 122])
             bus.send(msg)
@@ -471,8 +471,8 @@ class test_dg(unittest.TestCase):
         TESTS: send, _recv_internal
         """
         print("\ntest_PREISO_RX_TX")
-        bus = can.interface.Bus(bustype="dg", chan=1, mode="CANPREISO", ip="10.93.172.9")
-        bus2 = can.interface.Bus(bustype="dg", chan=2, mode="CANPREISO", ip="10.93.172.9")
+        bus = can.interface.Bus(bustype="dg", channel=1, is_fd=True, ip=self.ip, pre_iso=True)
+        bus2 = can.interface.Bus(bustype="dg", channel=2, is_fd=True, ip=self.ip, pre_iso=True)
         try:
             msg = Message(arbitration_id=0x05ea, data=[122, 122, 122, 122])
             bus.send(msg)
@@ -490,7 +490,7 @@ class test_dg(unittest.TestCase):
         TESTS: _send_periodic_internal, _send_periodic_internal(duration)
         """
         print("\ntest_TS_stop_all_tasks")
-        bus = can.ThreadSafeBus(bustype="dg", chan=1, mode="CAN", ip="10.93.172.9")
+        bus = can.ThreadSafeBus(bustype="dg", channel=1, is_fd=False, ip=self.ip)
         try:
             msg1 = Message(arbitration_id=0x01ff4332, data=[12, 255, 29, 152])
             msg2 = Message(arbitration_id=0x043ea209, data=[16, 211])
@@ -506,7 +506,6 @@ class test_dg(unittest.TestCase):
             time.sleep(1)
             for _ in range(1, 50):
                 bus.recv(timeout=0)
-            time.sleep(1)
             reply = bus.recv(timeout=0)
             self.assertEqual(reply, None)
         finally:
@@ -520,13 +519,13 @@ class test_dg(unittest.TestCase):
         TESTS: _send_periodic_internal
         """
         print("\ntest_TS_sched_accuracy")
-        bus = can.ThreadSafeBus(bustype="dg", chan=1, mode="CAN", ip="10.93.172.9")
+        bus = can.ThreadSafeBus(bustype="dg", channel=1, is_fd=False, ip=self.ip)
         try:
             msg = Message(arbitration_id=0x0444, data=[12, 255, 29, 152])
             task = bus.send_periodic(msg, .2)
-            time.sleep(3.1)
+            time.sleep(1.1)
             task.stop()
-            for _ in range(0, 16):
+            for _ in range(0, 6):
                 reply = bus.recv(timeout=0)
                 self.assertEqual(reply.arbitration_id, 0x0444)
             reply = bus.recv(timeout=0)
@@ -541,12 +540,95 @@ class test_dg(unittest.TestCase):
         TESTS: shutdown
         """
         print("\ntest_shutdown")
-        bus = can.interface.Bus(bustype="dg", chan=1, mode="CAN", ip="10.93.172.9")
+        bus = can.interface.Bus(bustype="dg", channel=1, is_fd=False, ip=self.ip)
         msg = Message(arbitration_id=0x01e2, data=[12, 255, 29, 112])
         bus.shutdown()
         with self.assertRaises(AttributeError):
             bus.send(msg)
 
+    def test_set_mode(self):
+        """
+        REQUIRES:
+        TESTS: set_mode
+        """
+        print("\ntest_set_mode")
+        bus = can.interface.Bus(bustype="dg", channel=1, is_fd=False, ip=self.ip)
+        try:
+            bus.set_mode("CANPREISO")
+            self.assertEqual(bus.mode, "CANPREISO")
+            bus.set_mode("CANFD")
+            self.assertEqual(bus.mode, "CANFD")
+            bus.set_mode("CAN")
+            self.assertEqual(bus.mode, "CAN")
+        finally:
+            bus.shutdown()
+
+    def test_set_bitrate(self):
+        """
+        REQUIRES:
+        TESTS: set_bitrate
+        """
+        print("\ntest_set_bitrate")
+        bus = can.interface.Bus(bustype="dg", channel=1, is_fd=False, ip=self.ip)
+        try:
+            bus.set_bitrate(300000)
+            self.assertEqual(bus.bitrate, 300000)
+        finally:
+            bus.shutdown()
+
+    def test_set_termination(self):
+        """
+        REQUIRES:
+        TESTS: set_termination
+        """
+        print("\ntest_set_termination")
+        bus = can.interface.Bus(bustype="dg", channel=1, is_fd=False, ip=self.ip)
+        try:
+            bus.set_termination(False)
+            self.assertEqual(bus.termination, False)
+        finally:
+            bus.shutdown()
+
+    def test_set_databitr(self):
+        """
+        REQUIRES:
+        TESTS: set_databitr
+        """
+        print("\ntest_set_databitr")
+        bus = can.interface.Bus(bustype="dg", channel=1, is_fd=True, ip=self.ip)
+        try:
+            bus.set_databitr(1000000)
+            self.assertEqual(bus.data_bitrate, 1000000)
+        finally:
+            bus.shutdown()
+
+    def test_event_rx(self):
+        """
+        REQUIRES:
+        TESTS: set_event_rx
+        """
+        print("\ntest_set_event_rx")
+        bus = can.interface.Bus(bustype="dg", channel=1, is_fd=False, ip=self.ip)
+        try:
+            bus.set_event_rx(False)
+            bus.set_event_rx(True)
+            self.assertEqual(bus.mode, "CAN")
+        finally:
+            bus.shutdown()
+
+    def test_dbit_mode(self):
+        """
+        REQUIRES:
+        TESTS: set_databitr, set_mode
+        """
+        print("\ntest_dbit_mode")
+        bus = can.interface.Bus(bustype="dg", channel=1, is_fd=False, ip=self.ip)
+        try:
+            bus.set_databitr(500000)
+            bus.set_mode("CANFD")
+            self.assertEqual(bus.data_bitrate, 500000)
+        finally:
+            bus.shutdown()
 
 if __name__ == '__main__':
     unittest.main()

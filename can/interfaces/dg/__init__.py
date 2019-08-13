@@ -1,1 +1,1 @@
-from can.interfaces.dg.dg import dgBus
+from can.interfaces.dg.dg import DGBus
