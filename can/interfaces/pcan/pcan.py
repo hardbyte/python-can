@@ -426,9 +426,7 @@ class PcanBus(BusABC):
             CANMsg.MSGTYPE = msgType
 
             # if a remote frame will be sent, data bytes are not important.
-            if msg.is_remote_frame:
-                CANMsg.MSGTYPE = msgType.value | PCAN_MESSAGE_RTR.value
-            else:
+            if not msg.is_remote_frame:
                 # copy data
                 for i in range(CANMsg.LEN):
                     CANMsg.DATA[i] = msg.data[i]
