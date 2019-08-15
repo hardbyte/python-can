@@ -1,3 +1,8 @@
+Version 3.3.2
+====
+
+Minor bug fix release addressing issue in PCAN RTR.
+
 Version 3.3.1
 ====
 
