@@ -449,7 +449,7 @@ class VectorBus(BusABC):
                 # Wait a short time until we try again
                 time.sleep(self.poll_interval)
 
-    def send(self, msg, timeout=None):
+    def _send_internal(self, msg, timeout=None):
         msg_id = msg.arbitration_id
 
         if msg.is_extended_id:

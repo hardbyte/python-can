@@ -70,7 +70,7 @@ class SerialBus(BusABC):
         """
         self.ser.close()
 
-    def send(self, msg, timeout=None):
+    def _send_internal(self, msg, timeout=None):
         """
         Send a message over the serial device.
 

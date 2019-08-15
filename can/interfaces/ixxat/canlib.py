@@ -670,7 +670,7 @@ class IXXATBus(BusABC):
 
         return rx_msg, True
 
-    def send(self, msg, timeout=None):
+    def _send_internal(self, msg, timeout=None):
 
         # This system is not designed to be very efficient
         message = structures.CANMSG()

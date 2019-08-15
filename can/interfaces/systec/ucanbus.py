@@ -151,7 +151,7 @@ class UcanBus(BusABC):
         )
         return msg, self._is_filtered
 
-    def send(self, msg, timeout=None):
+    def _send_internal(self, msg, timeout=None):
         """
         Sends one CAN message.
 

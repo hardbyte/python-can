@@ -3,7 +3,7 @@
 """
 Contains the ABC bus implementation and its documentation.
 """
-
+import collections
 from typing import Iterator, List, Optional, Sequence, Tuple, Union
 
 import can.typechecking
@@ -152,13 +152,37 @@ class BusABC(metaclass=ABCMeta):
         """
         raise NotImplementedError("Trying to read from a write only bus?")
 
-    @abstractmethod
-    def send(self, msg: Message, timeout: Optional[float] = None):
+    def send(
+        self, msgs: Union[Sequence[Message], Message], timeout: Optional[float] = None
+    ):
         """Transmit a message to the CAN bus.
 
         Override this method to enable the transmit path.
 
-        :param Message msg: A message object.
+        :param msgs: A message object of sequence of message objects.
+
+        :param timeout:
+            If > 0, wait up to this many seconds for message to be ACK'ed or
+            for transmit queue to be ready depending on driver implementation.
+            If timeout is exceeded, an exception will be raised.
+            Might not be supported by all interfaces.
+            None blocks indefinitely.
+
+        :raises can.CanError:
+            if the message could not be sent
+        """
+        for msg in self._get_messages_sequence(msgs):
+            self._send_internal(msg, timeout)
+
+    @abstractmethod
+    def _send_internal(
+        self, msgs: Union[Sequence[Message], Message], timeout: Optional[float] = None
+    ):
+        """Transmit a message to the CAN bus.
+
+        Override this method to enable the transmit path.
+
+        :param msgs: A message object of sequence of message objects.
 
         :param timeout:
             If > 0, wait up to this many seconds for message to be ACK'ed or
@@ -217,13 +241,7 @@ class BusABC(metaclass=ABCMeta):
             appropriate as the stopped tasks are still taking up memory as they
             are associated with the Bus instance.
         """
-        if not isinstance(msgs, (list, tuple)):
-            if isinstance(msgs, Message):
-                msgs = [msgs]
-            else:
-                raise ValueError("Must be either a list, tuple, or a Message")
-        if not msgs:
-            raise ValueError("Must be at least a list or tuple of length 1")
+        msgs = BusABC._get_messages_sequence(msgs)
         task = self._send_periodic_internal(msgs, period, duration)
         # we wrap the task's stop method to also remove it from the Bus's list of tasks
         original_stop_method = task.stop
@@ -242,6 +260,17 @@ class BusABC(metaclass=ABCMeta):
             self._periodic_tasks.append(task)
 
         return task
+
+    @staticmethod
+    def _get_messages_sequence(msgs: Union[Sequence[Message], Message]):
+        if not isinstance(msgs, collections.Sequence):
+            if isinstance(msgs, Message):
+                msgs = [msgs]
+            else:
+                raise ValueError("Must be either a Message sequence, or a Message")
+        if not msgs:
+            raise ValueError("Must be at least a sequence of length 1")
+        return msgs
 
     def _send_periodic_internal(
         self,

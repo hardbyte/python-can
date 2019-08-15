@@ -619,7 +619,7 @@ class SocketcanBus(BusABC):
             # socket wasn't readable or timeout occurred
             return None, self._is_filtered
 
-    def send(self, msg, timeout=None):
+    def _send_internal(self, msg, timeout=None):
         """Transmit a message to the CAN bus.
 
         :param can.Message msg: A message object.

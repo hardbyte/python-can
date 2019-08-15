@@ -163,7 +163,7 @@ class SeeedBus(BusABC):
         logger.debug("status_frm:\t%s", byte_msg.hex())
         self.ser.write(byte_msg)
 
-    def send(self, msg, timeout=None):
+    def _send_internal(self, msg, timeout=None):
         """
         Send a message over the serial device.
 

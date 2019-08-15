@@ -84,7 +84,7 @@ class VirtualBus(BusABC):
         else:
             return msg, False
 
-    def send(self, msg, timeout=None):
+    def _send_internal(self, msg, timeout=None):
         self._check_if_open()
 
         msg_copy = deepcopy(msg)

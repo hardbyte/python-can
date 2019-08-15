@@ -225,7 +225,7 @@ class slcanBus(BusABC):
             return msg, False
         return None, False
 
-    def send(self, msg, timeout=None):
+    def _send_internal(self, msg, timeout=None):
         if timeout != self.serialPortOrig.write_timeout:
             self.serialPortOrig.write_timeout = timeout
         if msg.is_remote_frame:

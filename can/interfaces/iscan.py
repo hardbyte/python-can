@@ -120,7 +120,7 @@ class IscanBus(BusABC):
         )
         return msg, False
 
-    def send(self, msg, timeout=None):
+    def _send_internal(self, msg, timeout=None):
         raw_msg = MessageExStruct(
             msg.arbitration_id,
             bool(msg.is_extended_id),

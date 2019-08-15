@@ -276,7 +276,7 @@ class NicanBus(BusABC):
         )
         return msg, True
 
-    def send(self, msg, timeout=None):
+    def _send_internal(self, msg, timeout=None):
         """
         Send a message to NI-CAN.
 

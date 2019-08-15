@@ -375,7 +375,7 @@ class PcanBus(BusABC):
 
         return rx_msg, False
 
-    def send(self, msg, timeout=None):
+    def _send_internal(self, msg, timeout=None):
         msgType = (
             PCAN_MESSAGE_EXTENDED.value
             if msg.is_extended_id

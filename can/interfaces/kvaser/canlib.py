@@ -592,7 +592,7 @@ class KvaserBus(BusABC):
             # log.debug('read complete -> status not okay')
             return None, self._is_filtered
 
-    def send(self, msg, timeout=None):
+    def _send_internal(self, msg, timeout=None):
         # log.debug("Writing a message: {}".format(msg))
         flags = canstat.canMSG_EXT if msg.is_extended_id else canstat.canMSG_STD
         if msg.is_remote_frame:

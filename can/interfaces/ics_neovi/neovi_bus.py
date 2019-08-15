@@ -29,7 +29,6 @@ except ImportError as ie:
     )
     ics = None
 
-
 try:
     from filelock import FileLock
 except ImportError as ie:
@@ -343,17 +342,13 @@ class NeoViBus(BusABC):
             return None, False
         return msg, False
 
-    def send(self, msg, timeout=None):
-        if not ics.validate_hobject(self.dev):
-            raise CanError("bus not open")
+    def _msg_to_spy_msg(self, msg):
         message = ics.SpyMessage()
-
         flag0 = 0
         if msg.is_extended_id:
             flag0 |= ics.SPY_STATUS_XTD_FRAME
         if msg.is_remote_frame:
             flag0 |= ics.SPY_STATUS_REMOTE_FRAME
-
         flag3 = 0
         if msg.is_fd:
             message.Protocol = ics.SPY_PROTOCOL_CANFD
@@ -361,7 +356,6 @@ class NeoViBus(BusABC):
                 flag3 |= ics.SPY_STATUS3_CANFD_BRS
             if msg.error_state_indicator:
                 flag3 |= ics.SPY_STATUS3_CANFD_ESI
-
         message.ArbIDOrHeader = msg.arbitration_id
         message.NumberBytesData = len(msg.data)
         message.Data = tuple(msg.data[:8])
@@ -377,8 +371,17 @@ class NeoViBus(BusABC):
             message.NetworkID = self.channels[0]
         else:
             raise ValueError("msg.channel must be set when using multiple channels.")
+        return message
+
+    def send(self, msgs, timeout=None):
+        self._send_internal(self._get_messages_sequence(msgs), timeout)
+
+    def _send_internal(self, msg, timeout=None):
+        if not ics.validate_hobject(self.dev):
+            raise CanError("bus not open")
+        messages = tuple(self._msg_to_spy_msg(can_msg) for can_msg in msg)
 
         try:
-            ics.transmit_messages(self.dev, message)
+            ics.transmit_messages(self.dev, messages)
         except ics.RuntimeError:
             raise ICSApiError(*ics.get_last_api_error(self.dev))

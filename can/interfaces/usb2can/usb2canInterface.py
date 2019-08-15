@@ -119,7 +119,7 @@ class Usb2canBus(BusABC):
             channel=channel, dll=dll, flags_t=flags_t, bitrate=bitrate, *args, **kwargs
         )
 
-    def send(self, msg, timeout=None):
+    def _send_internal(self, msg, timeout=None):
         tx = message_convert_tx(msg)
 
         if timeout:

@@ -135,7 +135,7 @@ class CANalystIIBus(BusABC):
                 self.shutdown()
                 return
 
-    def send(self, msg, timeout=None):
+    def _send_internal(self, msg, timeout=None):
         """
 
         :param msg: message to send
