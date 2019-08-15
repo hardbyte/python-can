@@ -65,4 +65,6 @@ class Logger(BaseIOHandler, Listener):  # pylint: disable=abstract-method
         try:
             return lookup[suffix](filename, *args, **kwargs)
         except KeyError:
-            raise ValueError(f'No write support for this unknown log format "{suffix}"')
+            raise ValueError(
+                f'No write support for this unknown log format "{suffix}"'
+            ) from None
