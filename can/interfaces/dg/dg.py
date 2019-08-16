@@ -335,15 +335,15 @@ class DGBus(BusABC):
         temp["termination"] = term
         return temp
 
-    def _detect_available_configs(self):
+    @staticmethod
+    def _detect_available_configs():
         """ Returns list of dicts that contains available configs for the
             beacon
         """
-        reply = []
-        for i in range(1, 9):
-            temp = self.detect_channel_config(i)
-            reply.append(temp)
-        return reply
+        return [
+            {"interface": "dg", "channel": channel}
+            for channel in range(1,9)
+        ]
 
     #
     # METHODS SPECIFIC TO DG INTERFACE

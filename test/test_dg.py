@@ -198,7 +198,7 @@ class test_dg(unittest.TestCase):
         print("\ntest_configs")
         bus = can.interface.Bus(bustype="dg", channel=1, is_fd=False, ip=self.ip)
         try:
-            conf = bus._detect_available_configs()
+            conf = can.interfaces.dg.dg.DGBus._detect_available_configs()
             for item in conf:
                 self.assertTrue(isinstance(item["channel"], int))
         finally:
