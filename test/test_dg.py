@@ -332,27 +332,6 @@ class test_dg(unittest.TestCase):
             bus.stop_all_periodic_tasks(remove_tasks=False)
             bus.shutdown()
 
-    def test_sched_accuracy(self):
-        """
-        REQUIRES: shutdown, _recv_internal
-        TESTS: _send_periodic_internal(), task.stop
-        """
-        print("\ntest_sched_accuracy")
-        bus = can.interface.Bus(bustype="dg", channel=1, is_fd=False, ip=self.ip)
-        try:
-            msg = Message(arbitration_id=0x01e2, data=[12, 255, 29, 140])
-            task = bus.send_periodic(msg, .2)
-            time.sleep(1.1)
-            task.stop()
-            for _ in range(0, 6):
-                reply = bus.recv(timeout=0)
-                self.assertEqual(reply.arbitration_id, 0x01e2)
-            reply = bus.recv(timeout=0)
-            self.assertEqual(reply, None)
-        finally:
-            bus.stop_all_periodic_tasks(remove_tasks=False)
-            bus.shutdown()
-
     # Not going to bother with modifying schedules at the moment
     def _test_alter_sched(self):
         """
