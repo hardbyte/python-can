@@ -8,7 +8,7 @@ Usage:
     >>> reply_dict = server.CMD_GET_CONFIG()
     >>> delete server
 """
-__version__ = '1.1 of 20190731'
-__author__ = 'markc <markc@dgtech.com>'
+__version__ = "1.1 of 20190731"
+__author__ = "markc <markc@dgtech.com>"
 __servercommands__ = ["Gryphon", "BEACON"]
 __genericcommands__ = [""]

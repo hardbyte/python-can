@@ -58,20 +58,25 @@ Yet To Be Completed (TODO):
 # from dg_timeout import timeout
 import os
 import datetime
+
 # import Queue  # for read thread
 import collections  # for incoming packets
 import socket
+
 # import json
 import sys
+
 # import functools
 # import time
 import signal
 import threading
+
 # from stackoverflow - How to set timeout on python's socket recv method?
 # at http://stackoverflow.com/questions/2719017/how-to-set-timeout-on-pythons-socket-recv-method
 import select
 import struct  # for floating point number
 import six  # manages compatibilty between Python 2.7 and Python 3.3+
+
 # import ticker  # for Windows alarm signal
 #
 # ----------------------------------------------------------------------
@@ -120,12 +125,18 @@ def listntohl(data):
     Raises:
         none
     """
-    return (ord(data[0]) * 1024) + (ord(data[1]) * 512) + (ord(data[2]) * 256) + ord(data[3])
+    return (
+        (ord(data[0]) * 1024)
+        + (ord(data[1]) * 512)
+        + (ord(data[2]) * 256)
+        + ord(data[3])
+    )
 
 
-class GryphonProtocolSD():
+class GryphonProtocolSD:
     """SD defines
     """
+
     #
     # ----------------------------------------------------------------------
     # pylint: disable=too-few-public-methods
@@ -135,112 +146,117 @@ class GryphonProtocolSD():
     SD_CARD = 0x01  # /* (vehicle) network interface */
     SD_SERVER = 0x02
     SD_CLIENT = 0x03
-    SD_KNOWN = 0x10    # /* Client ID >= are well known */
-    SD_SCHED = 0x10    # /* scheduler */
-    SD_SCRIPT = 0x20   # /* script processor */
-    SD_PGM = 0x21    # /* Program loader */
+    SD_KNOWN = 0x10  # /* Client ID >= are well known */
+    SD_SCHED = 0x10  # /* scheduler */
+    SD_SCRIPT = 0x20  # /* script processor */
+    SD_PGM = 0x21  # /* Program loader */
     SD_USDT = 0x22
-    SD_BLM = 0x23    # /* Bus Load Monitoring */
-    SD_LIN = 0x24    # /* LIN extensions */
-    SD_FLIGHT = 0x25    # /* Flight Recorder */
-    SD_LOGGER = 0x25    # /* Data logger */
-    SD_RESP = 0x26    # /* Message Response */
-    SD_IOPWR = 0x27    # /* VNG / Compact Gryphon I/O & power */
-    SD_UTIL = 0x28    # /* Miscellaneous utility commands   */
-    SD_CNVT = 0x29    # /* Signal conversion commands       */
+    SD_BLM = 0x23  # /* Bus Load Monitoring */
+    SD_LIN = 0x24  # /* LIN extensions */
+    SD_FLIGHT = 0x25  # /* Flight Recorder */
+    SD_LOGGER = 0x25  # /* Data logger */
+    SD_RESP = 0x26  # /* Message Response */
+    SD_IOPWR = 0x27  # /* VNG / Compact Gryphon I/O & power */
+    SD_UTIL = 0x28  # /* Miscellaneous utility commands   */
+    SD_CNVT = 0x29  # /* Signal conversion commands       */
     SD_J1939TP = 0x30  # /* J1939 Transport Protocol */
     CH_BROADCAST = 0xFF  # /* Special channel ID for broadcast messages */
 
 
-class GryphonProtocolFT():
+class GryphonProtocolFT:
     """FT defines
     """
+
     #
     # ----------------------------------------------------------------------
     # pylint: disable=too-few-public-methods
     # ----------------------------------------------------------------------
     #
     # /* frame types: */
-    FT_CMD = 0x01    # /* command to initiate some action */
-    FT_RESP = 0x02    # /* response to a command */
-    FT_DATA = 0x03   # /* (vehicle) network data */
+    FT_CMD = 0x01  # /* command to initiate some action */
+    FT_RESP = 0x02  # /* response to a command */
+    FT_DATA = 0x03  # /* (vehicle) network data */
     FT_EVENT = 0x04  # /* notification of an event */
-    FT_MISC = 0x05    # /* misc data */
-    FT_TEXT = 0x06    # /* null-terminated ASCII strings */
-    FT_SIG = 0x07    # /* (vehicle) network signals */
-    MAX_TEXT = 0xff    # /* Maximum FT_TEXT string length */
+    FT_MISC = 0x05  # /* misc data */
+    FT_TEXT = 0x06  # /* null-terminated ASCII strings */
+    FT_SIG = 0x07  # /* (vehicle) network signals */
+    MAX_TEXT = 0xFF  # /* Maximum FT_TEXT string length */
 
 
-class GryphonProtocolSDSERVER():
+class GryphonProtocolSDSERVER:
     """card command bytes "B"
     """
+
     #
     # ----------------------------------------------------------------------
     # pylint: disable=too-few-public-methods
     # ----------------------------------------------------------------------
     #
     # /* SD_SERVER command types: */
-    BCMD_SERVER_REG = 0x50    # /* register connection */
-    BCMD_SERVER_SET_SORT = 0x51    # /* set sorting behavior */
-    BCMD_SERVER_SET_OPT = 0x52    # /* set type of optimization */
+    BCMD_SERVER_REG = 0x50  # /* register connection */
+    BCMD_SERVER_SET_SORT = 0x51  # /* set sorting behavior */
+    BCMD_SERVER_SET_OPT = 0x52  # /* set type of optimization */
     BCMD_SERVER_SET_TIMED_XMIT = 0x53  # /* set to time xmit data frame msgs */
-    BCMD_SERVER_SET_SERVICE = 0x54    # /* set the higher-layer protocol service */
-    BCMD_J1939_ADDR_CLAIM = 0x55   # /* claim J1939 address */
+    BCMD_SERVER_SET_SERVICE = 0x54  # /* set the higher-layer protocol service */
+    BCMD_J1939_ADDR_CLAIM = 0x55  # /* claim J1939 address */
 
 
-class GryphonProtocolSDCARD():
+class GryphonProtocolSDCARD:
     """card command bytes "B"
     """
+
     #
     # ----------------------------------------------------------------------
     # pylint: disable=too-few-public-methods
     # ----------------------------------------------------------------------
     #
     # /* SD_CARD command types: */
-    BCMD_CARD_SET_SPEED = 0x40    # /* set peripheral speed */
-    BCMD_CARD_GET_SPEED = 0x41    # /* get peripheral speed */
-    BCMD_CARD_SET_FILTER = 0x42    # /* set filter to pass or block all */
-    BCMD_CARD_GET_FILTER = 0x43    # /* get a pass/block filter */
-    BCMD_CARD_TX = 0x44    # /* transmit message */
-    BCMD_CARD_TX_LOOP_ON = 0x45    # /* set transmit loopback on */
-    BCMD_CARD_TX_LOOP_OFF = 0x46    # /* set transmit loopback off */
-    BCMD_CARD_IOCTL = 0x47    # /* device driver ioctl pass-through */
-    BCMD_CARD_ADD_FILTER = 0x48    # /* add a pass/block filter */
-    BCMD_CARD_MODIFY_FILTER = 0x49    # /* modify a pass/block filter */
+    BCMD_CARD_SET_SPEED = 0x40  # /* set peripheral speed */
+    BCMD_CARD_GET_SPEED = 0x41  # /* get peripheral speed */
+    BCMD_CARD_SET_FILTER = 0x42  # /* set filter to pass or block all */
+    BCMD_CARD_GET_FILTER = 0x43  # /* get a pass/block filter */
+    BCMD_CARD_TX = 0x44  # /* transmit message */
+    BCMD_CARD_TX_LOOP_ON = 0x45  # /* set transmit loopback on */
+    BCMD_CARD_TX_LOOP_OFF = 0x46  # /* set transmit loopback off */
+    BCMD_CARD_IOCTL = 0x47  # /* device driver ioctl pass-through */
+    BCMD_CARD_ADD_FILTER = 0x48  # /* add a pass/block filter */
+    BCMD_CARD_MODIFY_FILTER = 0x49  # /* modify a pass/block filter */
     BCMD_CARD_GET_FILTER_HANDLES = 0x4A  # /* get a list of filters */
     BCMD_CARD_SET_DEFAULT_FILTER = 0x4B  # /* set the default action */
     BCMD_CARD_GET_DEFAULT_FILTER = 0x4C  # /* get the defautl action */
-    BCMD_CARD_SET_FILTER_MODE = 0x4D   # /* set the client data mode */
-    BCMD_CARD_GET_FILTER_MODE = 0x4E   # /* get the client data mode */
-    BCMD_CARD_GET_EVNAMES = 0x4f   # /* get event names */
-    BCMD_CARD_GET_SPEEDS = 0x50   # /* get speed definitions */
+    BCMD_CARD_SET_FILTER_MODE = 0x4D  # /* set the client data mode */
+    BCMD_CARD_GET_FILTER_MODE = 0x4E  # /* get the client data mode */
+    BCMD_CARD_GET_EVNAMES = 0x4F  # /* get event names */
+    BCMD_CARD_GET_SPEEDS = 0x50  # /* get speed definitions */
 
 
-class GryphonProtocolCMD():
+class GryphonProtocolCMD:
     """protocol command bytes "B"
     """
+
     #
     # ----------------------------------------------------------------------
     # pylint: disable=too-few-public-methods
     # ----------------------------------------------------------------------
     #
     # /* generic (all SD type) commands: values 0x00 to 0x3f */
-    BCMD_INIT = 0x01    # /* initialize target */
+    BCMD_INIT = 0x01  # /* initialize target */
     # CMD_GET_STAT = 0x02    # /* request status */
-    BCMD_GET_CONFIG = 0x03    # /* request configuration info */
-    BCMD_EVENT_ENABLE = 0x04    # /* Enable event type */
-    BCMD_EVENT_DISABLE = 0x05    # /* Disable event type */
-    BCMD_GET_TIME = 0x06    # /* Get current value of timestamp */
-    BCMD_GET_RXDROP = 0x07    # /* Get count of Rx msgs dropped */
-    BCMD_RESET_RXDROP = 0x08    # /* Set count of Rx msgs dropped to zero */
-    BCMD_BCAST_ON = 0x09    # /* broadcasts on */
-    BCMD_BCAST_OFF = 0x0a    # /* broadcasts off */
-    BCMD_SET_TIME = 0x0b    # /* set time */
+    BCMD_GET_CONFIG = 0x03  # /* request configuration info */
+    BCMD_EVENT_ENABLE = 0x04  # /* Enable event type */
+    BCMD_EVENT_DISABLE = 0x05  # /* Disable event type */
+    BCMD_GET_TIME = 0x06  # /* Get current value of timestamp */
+    BCMD_GET_RXDROP = 0x07  # /* Get count of Rx msgs dropped */
+    BCMD_RESET_RXDROP = 0x08  # /* Set count of Rx msgs dropped to zero */
+    BCMD_BCAST_ON = 0x09  # /* broadcasts on */
+    BCMD_BCAST_OFF = 0x0A  # /* broadcasts off */
+    BCMD_SET_TIME = 0x0B  # /* set time */
 
 
-class GryphonProtocolLINServer():
+class GryphonProtocolLINServer:
     """LIN command bytes "B"
     """
+
     #
     # ----------------------------------------------------------------------
     # pylint: disable=too-few-public-methods
@@ -268,12 +284,13 @@ class GryphonProtocolLINServer():
     BCMD_SAVE_SESSION = 0xCB
     BCMD_RESTORE_SESSION = 0xCC
     BCMD_GET_NODE_SIGNALS = 0xCD
-    BGRESETHC08 = '11800009'
+    BGRESETHC08 = "11800009"
 
 
-class GryphonProtocolCNVTServer():
+class GryphonProtocolCNVTServer:
     """cnvt command bytes "B"
     """
+
     #
     # ----------------------------------------------------------------------
     # pylint: disable=too-few-public-methods
@@ -293,9 +310,10 @@ class GryphonProtocolCNVTServer():
     BCMD_CNVT_REQ_CANCEL = 0x83
 
 
-class GryphonProtocolKWPIOCTL():
+class GryphonProtocolKWPIOCTL:
     """code for KWP ISO9141 ioctl
     """
+
     #
     # ----------------------------------------------------------------------
     # pylint: disable=too-few-public-methods
@@ -315,9 +333,9 @@ class GryphonProtocolKWPIOCTL():
     GKWPSETWAKETYPE = 0x11700108  # /* 1 */
     GKWPFAST = 0x00
     GKWPFIVEBAUD = 0x02
-    GKWPSETTARGADDR = 0x1170010a  # /* 1 */
-    GKWPSETKEYBYTES = 0x1170010c  # /* 2 */
-    GKWPSETSTARTREQ = 0x1170010e  # /* 5 */
+    GKWPSETTARGADDR = 0x1170010A  # /* 1 */
+    GKWPSETKEYBYTES = 0x1170010C  # /* 2 */
+    GKWPSETSTARTREQ = 0x1170010E  # /* 5 */
     GKWPSETSTARTRESP = 0x11700110  # /* 7 */
     GKWPSETPROTOCOL = 0x11700112  # /* 1 vsoni */
     GKWPKWP2000 = 0x01
@@ -326,9 +344,10 @@ class GryphonProtocolKWPIOCTL():
     GKWPSETLASTKEYBYTES = 0x11700202  # /* 2 */
 
 
-class GryphonProtocolLINIOCTL():
+class GryphonProtocolLINIOCTL:
     """code for LIN ioctl
     """
+
     #
     # ----------------------------------------------------------------------
     # pylint: disable=too-few-public-methods
@@ -389,9 +408,10 @@ class GryphonProtocolLINIOCTL():
     GLINCLEARONESHOT = 0x11C00035  # 0
 
 
-class GryphonProtocolDDIOCTL():
+class GryphonProtocolDDIOCTL:
     """code for dd ioctl
     """
+
     #
     # ----------------------------------------------------------------------
     # pylint: disable=too-few-public-methods
@@ -411,9 +431,10 @@ class GryphonProtocolDDIOCTL():
     GDLYPARTIALFLUSHSTREAM = 0x11D5000C  # 4 flush the delay buffer
 
 
-class GryphonProtocolUSDTServer():
+class GryphonProtocolUSDTServer:
     """USDT command bytes "B"
     """
+
     #
     # ----------------------------------------------------------------------
     # pylint: disable=too-few-public-methods
@@ -438,10 +459,11 @@ class GryphonProtocolUSDTServer():
     BCMD_USDT_ACTIVATE_STMIN_OVERRIDE = 0xBA
 
 
-class GryphonProtocolSched():
+class GryphonProtocolSched:
     """sched commands
         see sched.h
     """
+
     #
     # ----------------------------------------------------------------------
     # pylint: disable=too-few-public-methods
@@ -457,40 +479,42 @@ class GryphonProtocolSched():
     EVENT_SCHED_DONE = 0x04
 
 
-class GryphonProtocolResp():
+class GryphonProtocolResp:
     """response codes
     """
+
     #
     # ----------------------------------------------------------------------
     # pylint: disable=too-few-public-methods
     # ----------------------------------------------------------------------
     #
     # /* response frame (FT_RESP) response field definitions: */
-    RESP_OK = 0x00    # /* no error */
-    RESP_UNKNOWN_ERR = 0x01    # /* unknown error */
-    RESP_UNKNOWN_CMD = 0x02    # /* unrecognised command */
-    RESP_UNSUPPORTED = 0x03    # /* unsupported command */
-    RESP_INVAL_CHAN = 0x04    # /* invalid channel specified */
-    RESP_INVAL_DST = 0x05    # /* invalid destination */
-    RESP_INVAL_PARAM = 0x06    # /* invalid parameters */
-    RESP_INVAL_MSG = 0x07    # /* invalid message */
-    RESP_INVAL_LEN = 0x08    # /* invalid length field */
-    RESP_TX_FAIL = 0x09    # /* transmit failed */
-    RESP_RX_FAIL = 0x0a    # /* receive failed */
-    RESP_AUTH_FAIL = 0x0b
-    RESP_MEM_ALLOC_ERR = 0x0c    # /* memory allocation error */
-    RESP_TIMEOUT = 0x0d    # /* command timed out */
-    RESP_UNAVAILABLE = 0x0e
-    RESP_BUF_FULL = 0x0f    # /* buffer full */
+    RESP_OK = 0x00  # /* no error */
+    RESP_UNKNOWN_ERR = 0x01  # /* unknown error */
+    RESP_UNKNOWN_CMD = 0x02  # /* unrecognised command */
+    RESP_UNSUPPORTED = 0x03  # /* unsupported command */
+    RESP_INVAL_CHAN = 0x04  # /* invalid channel specified */
+    RESP_INVAL_DST = 0x05  # /* invalid destination */
+    RESP_INVAL_PARAM = 0x06  # /* invalid parameters */
+    RESP_INVAL_MSG = 0x07  # /* invalid message */
+    RESP_INVAL_LEN = 0x08  # /* invalid length field */
+    RESP_TX_FAIL = 0x09  # /* transmit failed */
+    RESP_RX_FAIL = 0x0A  # /* receive failed */
+    RESP_AUTH_FAIL = 0x0B
+    RESP_MEM_ALLOC_ERR = 0x0C  # /* memory allocation error */
+    RESP_TIMEOUT = 0x0D  # /* command timed out */
+    RESP_UNAVAILABLE = 0x0E
+    RESP_BUF_FULL = 0x0F  # /* buffer full */
     RESP_NO_SUCH_JOB = 0x10
-    RESP_NO_ROOM = 0x11    # /* not enough room on the disk */
-    RESP_BUSY = 0x12    # /* device or object is busy */
+    RESP_NO_ROOM = 0x11  # /* not enough room on the disk */
+    RESP_BUSY = 0x12  # /* device or object is busy */
     NO_FRAME_DATA = 0x13  # /* no frame data */
 
 
-class GryphonProtocolInit():
+class GryphonProtocolInit:
     """filter defines
     """
+
     #
     # ----------------------------------------------------------------------
     # pylint: disable=too-few-public-methods
@@ -503,9 +527,10 @@ class GryphonProtocolInit():
     INIT_SCHEDULER = 0  # init sched chan=0, other channels are channel number
 
 
-class GryphonProtocolModFilter():
+class GryphonProtocolModFilter:
     """mod filter defines
     """
+
     #
     # ----------------------------------------------------------------------
     # pylint: disable=too-few-public-methods
@@ -517,9 +542,10 @@ class GryphonProtocolModFilter():
     DEACTIVATE_FILTER = 2
 
 
-class GryphonProtocolSetFilterMode():
+class GryphonProtocolSetFilterMode:
     """filter mode defines
     """
+
     #
     # ----------------------------------------------------------------------
     # pylint: disable=too-few-public-methods
@@ -531,9 +557,10 @@ class GryphonProtocolSetFilterMode():
     FILTER_ON = 5
 
 
-class GryphonProtocolSetDefaultFilter():
+class GryphonProtocolSetDefaultFilter:
     """default filter
     """
+
     #
     # ----------------------------------------------------------------------
     # pylint: disable=too-few-public-methods
@@ -544,9 +571,10 @@ class GryphonProtocolSetDefaultFilter():
     DEFAULT_FILTER_PASS = 1
 
 
-class GryphonProtocolFilterFlags():
+class GryphonProtocolFilterFlags:
     """filter flags
     """
+
     #
     # ----------------------------------------------------------------------
     # pylint: disable=too-few-public-methods
@@ -563,9 +591,10 @@ class GryphonProtocolFilterFlags():
     FILTER_FLAG_SAMPLING_ACTIVE = 8
 
 
-class GryphonProtocolFilterDataType():
+class GryphonProtocolFilterDataType:
     """filter flags
     """
+
     #
     # ----------------------------------------------------------------------
     # pylint: disable=too-few-public-methods
@@ -580,9 +609,10 @@ class GryphonProtocolFilterDataType():
     FILTER_EVENT_TYPE_EXTRA_DATA = 5
 
 
-class GryphonProtocolEventIDs():
+class GryphonProtocolEventIDs:
     """event IDs
     """
+
     #
     # ----------------------------------------------------------------------
     # pylint: disable=too-few-public-methods
@@ -599,9 +629,10 @@ class GryphonProtocolEventIDs():
     EVENT_SCHED_DONE = 4
 
 
-class GryphonProtocolFilterCondition():
+class GryphonProtocolFilterCondition:
     """filter condition operator defines
     """
+
     #
     # ----------------------------------------------------------------------
     # pylint: disable=too-few-public-methods
@@ -624,9 +655,10 @@ class GryphonProtocolFilterCondition():
     DIG_TRANSITION = 13
 
 
-class GryphonProtocolMSGRESP():
+class GryphonProtocolMSGRESP:
     """message responder commands
     """
+
     #
     # ----------------------------------------------------------------------
     # pylint: disable=too-few-public-methods
@@ -638,9 +670,10 @@ class GryphonProtocolMSGRESP():
     BCMD_MSGRESP_GET_HANDLES = 0xB3
 
 
-class GryphonProtocolMSGRESPActions():
+class GryphonProtocolMSGRESPActions:
     """message responder
     """
+
     #
     # ----------------------------------------------------------------------
     # pylint: disable=too-few-public-methods
@@ -658,43 +691,45 @@ class GryphonProtocolMSGRESPActions():
     MSGRESP_DEACTIVATE_RESPONSE = 2
 
 
-class GryphonProtocolDictKeys():
+class GryphonProtocolDictKeys:
     """code for dictionaries (i.e. assoc arrays)
     """
+
     #
     # ----------------------------------------------------------------------
     # pylint: disable=too-few-public-methods
     # ----------------------------------------------------------------------
     #
-    SRC = 'src'
-    SRCCHAN = 'srcchan'
-    DST = 'dst'
-    DSTCHAN = 'dstchan'
-    LEN = 'msglen'
-    FRAMETYPE = 'frametype'
-    CMD = 'cmd'
-    DATASTR = 'datastr'
-    FTDATA = 'ftdata'
-    CLIENT_ID = 'client_id'
-    STATUS = 'status'
-    PRIV = 'priv'
-    CONTEXT = 'context'
-    RAWDATA = 'rawdata'
-    SET_IOCTL = 'set_ioctl'
-    GET_IOCTL = 'get_ioctl'
-    N_PRESET = 'n_preset'
-    PRESET_SIZE = 'preset_size'
-    PRESETS = 'presets'
-    BTR = 'btr'
-    EVNAMES = 'event_names'
-    EVENT_ID = 'event_id'
-    EVENT_NAME = 'event_name'
-    MODE = 'mode'
+    SRC = "src"
+    SRCCHAN = "srcchan"
+    DST = "dst"
+    DSTCHAN = "dstchan"
+    LEN = "msglen"
+    FRAMETYPE = "frametype"
+    CMD = "cmd"
+    DATASTR = "datastr"
+    FTDATA = "ftdata"
+    CLIENT_ID = "client_id"
+    STATUS = "status"
+    PRIV = "priv"
+    CONTEXT = "context"
+    RAWDATA = "rawdata"
+    SET_IOCTL = "set_ioctl"
+    GET_IOCTL = "get_ioctl"
+    N_PRESET = "n_preset"
+    PRESET_SIZE = "preset_size"
+    PRESETS = "presets"
+    BTR = "btr"
+    EVNAMES = "event_names"
+    EVENT_ID = "event_id"
+    EVENT_NAME = "event_name"
+    MODE = "mode"
 
 
-class GryphonProtocolIOCTL():
+class GryphonProtocolIOCTL:
     """code for ioctl
     """
+
     #
     # ----------------------------------------------------------------------
     # pylint: disable=too-few-public-methods
@@ -749,10 +784,11 @@ class GryphonProtocolIOCTL():
     IOCTL_GCANSWSETMODE = 0x11220002  # 1
 
 
-class GryphonProtocolRxTxMode():
+class GryphonProtocolRxTxMode:
     """code for rx tx mode
         see gmsg.h
     """
+
     #
     # ----------------------------------------------------------------------
     # pylint: disable=too-few-public-methods
@@ -767,9 +803,10 @@ class GryphonProtocolRxTxMode():
     MODE_COMBINED = 0x04
 
 
-class GryphonProtocolCANMode():
+class GryphonProtocolCANMode:
     """CAN modes
     """
+
     #
     # ----------------------------------------------------------------------
     # pylint: disable=too-few-public-methods
@@ -780,10 +817,11 @@ class GryphonProtocolCANMode():
     MODE_CANFD_PREISO = 0x02
 
 
-class GryphonProtocolDefs():
+class GryphonProtocolDefs:
     """code for defs
         see gmsg.h
     """
+
     #
     # ----------------------------------------------------------------------
     # pylint: disable=too-few-public-methods
@@ -798,14 +836,46 @@ class GryphonProtocolDefs():
 # pylint: disable=too-few-public-methods
 # ----------------------------------------------------------------------
 #
-class GryphonProtocolCommands(GryphonProtocolSDCARD, GryphonProtocolSDSERVER, GryphonProtocolCMD, GryphonProtocolLINServer, GryphonProtocolCNVTServer, GryphonProtocolUSDTServer, GryphonProtocolSched, GryphonProtocolMSGRESP):
+class GryphonProtocolCommands(
+    GryphonProtocolSDCARD,
+    GryphonProtocolSDSERVER,
+    GryphonProtocolCMD,
+    GryphonProtocolLINServer,
+    GryphonProtocolCNVTServer,
+    GryphonProtocolUSDTServer,
+    GryphonProtocolSched,
+    GryphonProtocolMSGRESP,
+):
     """all commands, for convenience
     """
 
 
-class GryphonProtocolDefines(GryphonProtocolCommands, GryphonProtocolFT, GryphonProtocolSD, GryphonProtocolDictKeys, GryphonProtocolResp, GryphonProtocolInit, GryphonProtocolModFilter, GryphonProtocolSetFilterMode, GryphonProtocolSetDefaultFilter, GryphonProtocolFilterFlags, GryphonProtocolFilterDataType, GryphonProtocolFilterCondition, GryphonProtocolLINIOCTL, GryphonProtocolKWPIOCTL, GryphonProtocolDDIOCTL, GryphonProtocolIOCTL, GryphonProtocolRxTxMode, GryphonProtocolEventIDs, GryphonProtocolMSGRESPActions, GryphonProtocolDefs):
+class GryphonProtocolDefines(
+    GryphonProtocolCommands,
+    GryphonProtocolFT,
+    GryphonProtocolSD,
+    GryphonProtocolDictKeys,
+    GryphonProtocolResp,
+    GryphonProtocolInit,
+    GryphonProtocolModFilter,
+    GryphonProtocolSetFilterMode,
+    GryphonProtocolSetDefaultFilter,
+    GryphonProtocolFilterFlags,
+    GryphonProtocolFilterDataType,
+    GryphonProtocolFilterCondition,
+    GryphonProtocolLINIOCTL,
+    GryphonProtocolKWPIOCTL,
+    GryphonProtocolDDIOCTL,
+    GryphonProtocolIOCTL,
+    GryphonProtocolRxTxMode,
+    GryphonProtocolEventIDs,
+    GryphonProtocolMSGRESPActions,
+    GryphonProtocolDefs,
+):
     """all defines, all commands, for convenience
     """
+
+
 #
 # ----------------------------------------------------------------------
 # pylint: enable=too-many-ancestors
@@ -817,6 +887,7 @@ class GryphonProtocolDefines(GryphonProtocolCommands, GryphonProtocolFT, Gryphon
 class TooManyLoops(Exception):
     """too many loops looking for response
     """
+
     def __init__(self, arg1=None):
         self.arg1 = arg1
         super(TooManyLoops, self).__init__(arg1)
@@ -825,6 +896,7 @@ class TooManyLoops(Exception):
 class TimeOut(Exception):
     """timeout exception
     """
+
     def __init__(self, arg1=None):
         self.arg1 = arg1
         super(TimeOut, self).__init__(arg1)
@@ -838,7 +910,7 @@ def handle_timeout(signal_in, frame_in):
     raise TimeOut()
 
 
-class GryphonQueue():
+class GryphonQueue:
     """queue
 
     Attributes:
@@ -849,6 +921,7 @@ class GryphonQueue():
         self.overflow - queue overflow
         self.not_empty_event - not empty event
     """
+
     def __init__(self, name="Unknown", maxlen=1000):
         """init
         """
@@ -1103,13 +1176,27 @@ class GryphonReadThread(GryphonProtocolDefines):
         self.data_q = Queue.Queue()  # FT_DATA /* (vehicle) network data */
         """
         self.general_q = GryphonQueue(name="General", maxlen=maxlen)
-        self.event_q = GryphonQueue(name="Event", maxlen=maxlen)  # FT_EVENT /* notification of an event */
-        self.cmd_q = GryphonQueue(name="Req", maxlen=maxlen)  # FT_CMD /* command to initiate some action */
-        self.resp_q = GryphonQueue(name="Resp", maxlen=maxlen)  # FT_RESP /* response to a command */
-        self.misc_q = GryphonQueue(name="Misc", maxlen=maxlen)  # FT_MISC /* misc data */
-        self.text_q = GryphonQueue(name="Text", maxlen=maxlen)  # FT_TEXT /* null-terminated ASCII strings */
-        self.sig_q = GryphonQueue(name="Sig", maxlen=maxlen)  # FT_SIG /* (vehicle) network signals */
-        self.data_q = GryphonQueue(name="Data", maxlen=maxlen)  # FT_DATA /* (vehicle) network data */
+        self.event_q = GryphonQueue(
+            name="Event", maxlen=maxlen
+        )  # FT_EVENT /* notification of an event */
+        self.cmd_q = GryphonQueue(
+            name="Req", maxlen=maxlen
+        )  # FT_CMD /* command to initiate some action */
+        self.resp_q = GryphonQueue(
+            name="Resp", maxlen=maxlen
+        )  # FT_RESP /* response to a command */
+        self.misc_q = GryphonQueue(
+            name="Misc", maxlen=maxlen
+        )  # FT_MISC /* misc data */
+        self.text_q = GryphonQueue(
+            name="Text", maxlen=maxlen
+        )  # FT_TEXT /* null-terminated ASCII strings */
+        self.sig_q = GryphonQueue(
+            name="Sig", maxlen=maxlen
+        )  # FT_SIG /* (vehicle) network signals */
+        self.data_q = GryphonQueue(
+            name="Data", maxlen=maxlen
+        )  # FT_DATA /* (vehicle) network data */
 
         # TODO make more compact, dry,
         # dict of queues
@@ -1120,7 +1207,7 @@ class GryphonReadThread(GryphonProtocolDefines):
             GryphonProtocolFT.FT_MISC: self.misc_q,
             GryphonProtocolFT.FT_TEXT: self.text_q,
             GryphonProtocolFT.FT_SIG: self.sig_q,
-            GryphonProtocolFT.FT_DATA: self.data_q
+            GryphonProtocolFT.FT_DATA: self.data_q,
         }
 
         # TODO
@@ -1231,11 +1318,19 @@ class GryphonReadThread(GryphonProtocolDefines):
                 reply = {"GCprotocol": {"framehdr": {}, "body": {}}}
                 if sys.version_info[0] < 3:
                     reply["GCprotocol"]["framehdr"].update({self.SRC: ord(datar[0])})
-                    reply["GCprotocol"]["framehdr"].update({self.SRCCHAN: ord(datar[1])})
+                    reply["GCprotocol"]["framehdr"].update(
+                        {self.SRCCHAN: ord(datar[1])}
+                    )
                     reply["GCprotocol"]["framehdr"].update({self.DST: ord(datar[2])})
-                    reply["GCprotocol"]["framehdr"].update({self.CLIENT_ID: ord(datar[3])})
-                    reply["GCprotocol"]["framehdr"].update({self.DSTCHAN: ord(datar[3])})
-                    reply["GCprotocol"]["framehdr"].update({self.LEN: (ord(datar[4]) * 256) + ord(datar[5])})
+                    reply["GCprotocol"]["framehdr"].update(
+                        {self.CLIENT_ID: ord(datar[3])}
+                    )
+                    reply["GCprotocol"]["framehdr"].update(
+                        {self.DSTCHAN: ord(datar[3])}
+                    )
+                    reply["GCprotocol"]["framehdr"].update(
+                        {self.LEN: (ord(datar[4]) * 256) + ord(datar[5])}
+                    )
                     frametype = ord(datar[6])
                 else:
                     reply["GCprotocol"]["framehdr"].update({self.SRC: datar[0]})
@@ -1243,7 +1338,9 @@ class GryphonReadThread(GryphonProtocolDefines):
                     reply["GCprotocol"]["framehdr"].update({self.DST: datar[2]})
                     reply["GCprotocol"]["framehdr"].update({self.CLIENT_ID: datar[3]})
                     reply["GCprotocol"]["framehdr"].update({self.DSTCHAN: datar[3]})
-                    reply["GCprotocol"]["framehdr"].update({self.LEN: (datar[4] * 256) + datar[5]})
+                    reply["GCprotocol"]["framehdr"].update(
+                        {self.LEN: (datar[4] * 256) + datar[5]}
+                    )
                     frametype = datar[6]
                 reply["GCprotocol"]["framehdr"].update({self.FRAMETYPE: frametype})
 
@@ -1252,7 +1349,9 @@ class GryphonReadThread(GryphonProtocolDefines):
                 if not self.thr1_kill_event.is_set():
                     if frametype == GryphonProtocolFT.FT_DATA:
                         new_padding = reply["GCprotocol"]["framehdr"][self.LEN]
-                        new_padding += self._padding_number(reply["GCprotocol"]["framehdr"][self.LEN])
+                        new_padding += self._padding_number(
+                            reply["GCprotocol"]["framehdr"][self.LEN]
+                        )
                         try:
                             datar2 = self._read_some(new_padding)
                         except TooManyLoops:
@@ -1262,7 +1361,9 @@ class GryphonReadThread(GryphonProtocolDefines):
                         # print "DEBUG---------------putting type {} into queues".format(reply[self.FRAMETYPE])
                     elif frametype == GryphonProtocolFT.FT_RESP:
                         new_padding = reply["GCprotocol"]["framehdr"][self.LEN]
-                        new_padding += self._padding_number(reply["GCprotocol"]["framehdr"][self.LEN])
+                        new_padding += self._padding_number(
+                            reply["GCprotocol"]["framehdr"][self.LEN]
+                        )
                         try:
                             datar2 = self._read_some(new_padding)
                         except TooManyLoops:
@@ -1272,7 +1373,9 @@ class GryphonReadThread(GryphonProtocolDefines):
                     else:
                         # TODO try padding for all received msgs!
                         new_padding = reply["GCprotocol"]["framehdr"][self.LEN]
-                        new_padding += self._padding_number(reply["GCprotocol"]["framehdr"][self.LEN])
+                        new_padding += self._padding_number(
+                            reply["GCprotocol"]["framehdr"][self.LEN]
+                        )
                         try:
                             datar2 = self._read_some(new_padding)
                         except TooManyLoops:
@@ -1322,7 +1425,9 @@ class GryphonReadThread(GryphonProtocolDefines):
         Raises:
             IndexError on error accessing queue
         """
-        if (timeout is None) or not isinstance(timeout, (six.integer_types, float)):  # don't block
+        if (timeout is None) or not isinstance(
+            timeout, (six.integer_types, float)
+        ):  # don't block
             try:
                 return self.general_q.get()
             # except Queue.Empty:
@@ -1457,6 +1562,7 @@ class Gryphon(GryphonProtocolDefines):
             self.read_thread - read thread
 
     """
+
     #
     # ----------------------------------------------------------------------
     # pylint: disable=too-many-ancestors
@@ -1615,7 +1721,9 @@ class Gryphon(GryphonProtocolDefines):
         _unused_param = chan
         _unused_param = _unused_param
 
-        reply = self.read_thread.read_type_queue(timeout=0.25, msgtype=GryphonProtocolFT.FT_EVENT)
+        reply = self.read_thread.read_type_queue(
+            timeout=0.25, msgtype=GryphonProtocolFT.FT_EVENT
+        )
         return reply
 
     def _read_text(self, timeout=0.25):
@@ -1638,7 +1746,9 @@ class Gryphon(GryphonProtocolDefines):
         #
         # TODO implement a timeout or loop count
         # header read
-        reply_dict = self.read_thread.read_type_queue(timeout=timeout, msgtype=GryphonProtocolFT.FT_TEXT)
+        reply_dict = self.read_thread.read_type_queue(
+            timeout=timeout, msgtype=GryphonProtocolFT.FT_TEXT
+        )
 
         # data
         if reply_dict is False:
@@ -1668,39 +1778,44 @@ class Gryphon(GryphonProtocolDefines):
 
         if cmd == self.BCMD_LDF_LIST and dst == self.SD_LIN:
             ldf_dict = {}
-            ldf_dict['number'] = ord(datar[8])
-            ldf_dict['remaining'] = (ord(datar[10]) * 256) + ord(datar[11])
-            ldf_dict['list'] = []
+            ldf_dict["number"] = ord(datar[8])
+            ldf_dict["remaining"] = (ord(datar[10]) * 256) + ord(datar[11])
+            ldf_dict["list"] = []
             start = 12
-            for i in range(0, ldf_dict['number']):
+            for i in range(0, ldf_dict["number"]):
                 ldf_list = {}
                 end = start + 32
-                ldf_list['name'] = ''.join(datar[start:end])
+                ldf_list["name"] = "".join(datar[start:end])
                 # split the string at the first null char
-                if "\x00" in ldf_list['name']:
-                    ldf_list['name'] = ldf_list['name'].split('\x00')[0]
+                if "\x00" in ldf_list["name"]:
+                    ldf_list["name"] = ldf_list["name"].split("\x00")[0]
                 start += 32
                 end = start + 80
-                ldf_list['description'] = ''.join(datar[start:end])
-                if "\x00" in ldf_list['description']:
-                    ldf_list['description'] = ldf_list['description'].split('\x00')[0]
-                ldf_dict['list'].append(ldf_list)
+                ldf_list["description"] = "".join(datar[start:end])
+                if "\x00" in ldf_list["description"]:
+                    ldf_list["description"] = ldf_list["description"].split("\x00")[0]
+                ldf_dict["list"].append(ldf_list)
                 start += 80
                 # print "NAME {} DESC {}".format(ldf_list['name'], ldf_list['description'])
                 del ldf_list
             return ldf_dict
         if cmd == self.BCMD_GET_LDF_INFO and dst == self.SD_LIN:
             ldf_dict = {}
-            ldf_dict['protocol'] = ''.join(datar[0 + 8:16 + 8]).split('\x00')[0]
-            ldf_dict['language'] = ''.join(datar[16 + 8:32 + 8]).split('\x00')[0]
+            ldf_dict["protocol"] = "".join(datar[0 + 8 : 16 + 8]).split("\x00")[0]
+            ldf_dict["language"] = "".join(datar[16 + 8 : 32 + 8]).split("\x00")[0]
             # ldf_dict['bitrate'] = (ord(datar[32 + 8 + 0]) * 1) + (ord(datar[32 + 8 + 1]) * 256) + (ord(datar[32 + 8 + 2]) * 512) + (ord(datar[32 + 8 + 3]) * 1024)
-            ldf_dict['bitrate'] = (ord(datar[32 + 8 + 0]) * 1024) + (ord(datar[32 + 8 + 1]) * 512) + (ord(datar[32 + 8 + 2]) * 256) + (ord(datar[32 + 8 + 3]) * 1)
+            ldf_dict["bitrate"] = (
+                (ord(datar[32 + 8 + 0]) * 1024)
+                + (ord(datar[32 + 8 + 1]) * 512)
+                + (ord(datar[32 + 8 + 2]) * 256)
+                + (ord(datar[32 + 8 + 3]) * 1)
+            )
             return ldf_dict
         if cmd == self.BCMD_GET_NODE_NAMES and dst == self.SD_LIN:
             ldf_array = []
             ind = 10
             number = listntohs(datar[8:ind])
-            nodes = ''.join(datar[ind:]).split('\x00')
+            nodes = "".join(datar[ind:]).split("\x00")
             # print "-------------------------------number={} nodes={} ".format(number, nodes)
             for i in range(0, number):
                 ldf_array.append(nodes[i])
@@ -1710,136 +1825,138 @@ class Gryphon(GryphonProtocolDefines):
             ldf_array = []
             ind = 10
             number = listntohs(datar[8:ind])
-            nodes = ''.join(datar[ind:]).split('\x00')
+            nodes = "".join(datar[ind:]).split("\x00")
             for i in range(0, number):
                 ldf_array.append(nodes[i])
             return ldf_array
         if cmd == self.BCMD_GET_FRAMES and dst == self.SD_LIN:
             ldf_array = []
             ind = 8
-            number = listntohs(datar[ind:ind + 2])
+            number = listntohs(datar[ind : ind + 2])
             ind += 2
             for i in range(0, number):
                 ldf_dict = {}
-                ldf_dict['id'] = ord(datar[ind])
+                ldf_dict["id"] = ord(datar[ind])
                 ind += 1
-                ldf_dict['name'] = ''.join(datar[ind:]).split('\x00')[0]
-                ind += len(ldf_dict['name']) + 1
+                ldf_dict["name"] = "".join(datar[ind:]).split("\x00")[0]
+                ind += len(ldf_dict["name"]) + 1
                 ldf_array.append(ldf_dict)
             return ldf_array
         if cmd == self.BCMD_GET_FRAME_INFO and dst == self.SD_LIN:
             ldf_dict = {}
             ind = 8
-            ldf_dict['databytes'] = ord(datar[ind])
+            ldf_dict["databytes"] = ord(datar[ind])
             ind += 1
-            rest = ''.join(datar[ind:]).split('\x00')
-            ldf_dict['publisher'] = rest[0]
+            rest = "".join(datar[ind:]).split("\x00")
+            ldf_dict["publisher"] = rest[0]
             num_signals = ord(rest[1][0])
-            ldf_dict['num_signals'] = num_signals
-            publen = len(ldf_dict['publisher'])
+            ldf_dict["num_signals"] = num_signals
+            publen = len(ldf_dict["publisher"])
             ind += 1 + publen + 1
             # re-split the data
-            rest = ''.join(datar[ind:]).split('\x00')
-            ldf_dict['signals'] = rest[:num_signals]
+            rest = "".join(datar[ind:]).split("\x00")
+            ldf_dict["signals"] = rest[:num_signals]
             return ldf_dict
         if cmd == self.BCMD_GET_SIGNAL_INFO and dst == self.SD_LIN:
             ldf_dict = {}
             ind = 8
-            ldf_dict['offset'] = ord(datar[ind])
+            ldf_dict["offset"] = ord(datar[ind])
             ind += 1
-            ldf_dict['length'] = ord(datar[ind])
+            ldf_dict["length"] = ord(datar[ind])
             ind += 1
-            ldf_dict['signal_encoding_name'] = ''.join(datar[ind:]).split('\x00')[0]
+            ldf_dict["signal_encoding_name"] = "".join(datar[ind:]).split("\x00")[0]
             return ldf_dict
         if cmd == self.BCMD_GET_SIGNAL_DETAIL and dst == self.SD_LIN:
             ldf_dict = {}
             ind = 8
-            ldf_dict['offset'] = ord(datar[ind])  # offset in bits, bit 0 is MSB of the data byte, bit 7 is LSB of data byte
+            ldf_dict["offset"] = ord(
+                datar[ind]
+            )  # offset in bits, bit 0 is MSB of the data byte, bit 7 is LSB of data byte
             ind += 1
-            ldf_dict['length'] = ord(datar[ind])  # length of signal in bits
+            ldf_dict["length"] = ord(datar[ind])  # length of signal in bits
             ind += 1
-            number = listntohs(datar[ind:ind + 2])
-            ldf_dict['number'] = number
+            number = listntohs(datar[ind : ind + 2])
+            ldf_dict["number"] = number
             ind += 2
-            ldf_dict['encodings'] = []
+            ldf_dict["encodings"] = []
             for i in range(0, number):
                 encoding_dict = {}
                 # no no. This etype is 12-bytes long. always.
-                encoding_dict['etype'] = ''.join(datar[ind:ind + 12]).split('\x00')[0]
+                encoding_dict["etype"] = "".join(datar[ind : ind + 12]).split("\x00")[0]
                 ind += 12
-                value = listntohs(datar[ind:ind + 2])
+                value = listntohs(datar[ind : ind + 2])
                 ind += 2
-                if encoding_dict['etype'] == 'logical':
+                if encoding_dict["etype"] == "logical":
                     # 2-bytes and a var string
-                    encoding_dict['value'] = value
-                    encoding_dict['string'] = ''.join(datar[ind:]).split('\x00')[0]
-                    ind += len(encoding_dict['string']) + 1
-                elif encoding_dict['etype'] == 'physical':
+                    encoding_dict["value"] = value
+                    encoding_dict["string"] = "".join(datar[ind:]).split("\x00")[0]
+                    ind += len(encoding_dict["string"]) + 1
+                elif encoding_dict["etype"] == "physical":
                     # 2-bytes, 2-bytes,  three var strings
-                    encoding_dict['min'] = value
-                    encoding_dict['max'] = listntohs(datar[ind:ind + 2])
+                    encoding_dict["min"] = value
+                    encoding_dict["max"] = listntohs(datar[ind : ind + 2])
                     ind += 2
-                    rest = ''.join(datar[ind:]).split('\x00')
-                    encoding_dict['scale'] = rest[0]
-                    encoding_dict['offset'] = rest[1]
-                    encoding_dict['units'] = rest[2]
+                    rest = "".join(datar[ind:]).split("\x00")
+                    encoding_dict["scale"] = rest[0]
+                    encoding_dict["offset"] = rest[1]
+                    encoding_dict["units"] = rest[2]
                     ind += len(rest[0]) + 1 + len(rest[1]) + 1 + len(rest[2]) + 1
-                elif encoding_dict['etype'] == 'bcd':
+                elif encoding_dict["etype"] == "bcd":
                     # 2-bytes
                     # nothing else
-                    encoding_dict['value'] = value
-                elif encoding_dict['etype'] == 'ascii':
+                    encoding_dict["value"] = value
+                elif encoding_dict["etype"] == "ascii":
                     # 2-bytes
                     # nothing else
-                    encoding_dict['value'] = value
-                ldf_dict['encodings'].append(encoding_dict)
+                    encoding_dict["value"] = value
+                ldf_dict["encodings"].append(encoding_dict)
             return ldf_dict
         if cmd == self.BCMD_GET_ENCODING_INFO and dst == self.SD_LIN:
             ldf_dict = {}
             ind = 8
-            number = listntohs(datar[ind:ind + 2])
-            ldf_dict['number_encodings'] = number
+            number = listntohs(datar[ind : ind + 2])
+            ldf_dict["number_encodings"] = number
             ind += 2
-            ldf_dict['encodings'] = []
+            ldf_dict["encodings"] = []
             for i in range(0, number):
                 encoding_dict = {}
                 # no no. This etype is 12-bytes long. always.
-                encoding_dict['etype'] = ''.join(datar[ind:ind + 12]).split('\x00')[0]
+                encoding_dict["etype"] = "".join(datar[ind : ind + 12]).split("\x00")[0]
                 ind += 12
-                value = listntohs(datar[ind:ind + 2])
+                value = listntohs(datar[ind : ind + 2])
                 ind += 2
-                if encoding_dict['etype'] == 'logical':
+                if encoding_dict["etype"] == "logical":
                     # 2-bytes and a var string
-                    encoding_dict['value'] = value
-                    encoding_dict['string'] = ''.join(datar[ind:]).split('\x00')[0]
-                    ind += len(encoding_dict['string']) + 1
-                elif encoding_dict['etype'] == 'physical':
+                    encoding_dict["value"] = value
+                    encoding_dict["string"] = "".join(datar[ind:]).split("\x00")[0]
+                    ind += len(encoding_dict["string"]) + 1
+                elif encoding_dict["etype"] == "physical":
                     # 2-bytes, 2-bytes,  three var strings
-                    encoding_dict['min'] = value
-                    encoding_dict['max'] = listntohs(datar[ind:ind + 2])
+                    encoding_dict["min"] = value
+                    encoding_dict["max"] = listntohs(datar[ind : ind + 2])
                     ind += 2
-                    rest = ''.join(datar[ind:]).split('\x00')
-                    encoding_dict['scale'] = rest[0]
-                    encoding_dict['offset'] = rest[1]
-                    encoding_dict['units'] = rest[2]
+                    rest = "".join(datar[ind:]).split("\x00")
+                    encoding_dict["scale"] = rest[0]
+                    encoding_dict["offset"] = rest[1]
+                    encoding_dict["units"] = rest[2]
                     ind += len(rest[0]) + 1 + len(rest[1]) + 1 + len(rest[2]) + 1
-                elif encoding_dict['etype'] == 'bcd':
+                elif encoding_dict["etype"] == "bcd":
                     # 2-bytes
                     # nothing else
-                    encoding_dict['value'] = value
-                elif encoding_dict['etype'] == 'ascii':
+                    encoding_dict["value"] = value
+                elif encoding_dict["etype"] == "ascii":
                     # 2-bytes
                     # nothing else
-                    encoding_dict['value'] = value
+                    encoding_dict["value"] = value
 
-                ldf_dict['encodings'].append(encoding_dict)
+                ldf_dict["encodings"].append(encoding_dict)
             return ldf_dict
         if cmd == self.BCMD_GET_SCHEDULES and dst == self.SD_LIN:
             ldf_array = []
             ind = 8
-            number = listntohs(datar[ind:ind + 2])
+            number = listntohs(datar[ind : ind + 2])
             ind += 2
-            rest = ''.join(datar[ind:]).split('\x00')
+            rest = "".join(datar[ind:]).split("\x00")
             for i in range(0, number):
                 ldf_array.append(rest[i])
             return ldf_array
@@ -1847,7 +1964,7 @@ class Gryphon(GryphonProtocolDefines):
             ldf_file = ""
             start = 8
             end = start + 32
-            ldf_file = ''.join(datar[start:end]).split('\x00')[0]
+            ldf_file = "".join(datar[start:end]).split("\x00")[0]
             return ldf_file
         if cmd == self.BCMD_CNVT_GET_VALUES and dst == self.SD_CNVT:
             ldf_array = []
@@ -1862,17 +1979,17 @@ class Gryphon(GryphonProtocolDefines):
                 sig_array["flags"] = flags
                 if flags & 0x01 == 0x01:
                     # float TODO
-                    number = listntohl(datar[ind:ind + 4])
+                    number = listntohl(datar[ind : ind + 4])
                     sig_array["float"] = number
                     ind += 4
                 if flags & 0x02 == 0x02:
                     # int
-                    number = listntohl(datar[ind:ind + 4])
+                    number = listntohl(datar[ind : ind + 4])
                     ind += 4
                     sig_array["int"] = number
                 if flags & 0x04 == 0x04:
                     # string
-                    string1 = ''.join(datar[ind:]).split('\x00')[0]
+                    string1 = "".join(datar[ind:]).split("\x00")[0]
                     ind += len(string1) + 1
                     sig_array["string"] = string1
                 ldf_array.append(sig_array)
@@ -1905,7 +2022,9 @@ class Gryphon(GryphonProtocolDefines):
         # header read
         reply = None
         try:
-            reply = self.read_thread.read_type_queue(timeout=2.25, msgtype=GryphonProtocolFT.FT_RESP)
+            reply = self.read_thread.read_type_queue(
+                timeout=2.25, msgtype=GryphonProtocolFT.FT_RESP
+            )
         except IndexError:
             # TODO
             raise IndexError
@@ -1918,8 +2037,15 @@ class Gryphon(GryphonProtocolDefines):
         if sys.version_info[0] < 3:
             reply["GCprotocol"]["body"]["cmd"] = ord(datar[0])
             # six.print_("====reply {}".format(reply))
-            self.last_returned_status = (ord(datar[4]) * 1024) + (ord(datar[5]) * 512) + (ord(datar[6]) * 256) + ord(datar[7])
-            reply["GCprotocol"]["body"]["status"] = reply["response_return_code"] = self.last_returned_status
+            self.last_returned_status = (
+                (ord(datar[4]) * 1024)
+                + (ord(datar[5]) * 512)
+                + (ord(datar[6]) * 256)
+                + ord(datar[7])
+            )
+            reply["GCprotocol"]["body"]["status"] = reply[
+                "response_return_code"
+            ] = self.last_returned_status
 
             if reply["GCprotocol"]["body"]["cmd"] != cmd:
                 return {"response_return_code": self.last_returned_status}
@@ -1927,7 +2053,10 @@ class Gryphon(GryphonProtocolDefines):
 
             if self.last_returned_status != 0:
                 # TODO remove, debugging only
-                six.print_("==ERROR==status is not OK 0x%08x cmd %x" % (self.last_returned_status, cmd))
+                six.print_(
+                    "==ERROR==status is not OK 0x%08x cmd %x"
+                    % (self.last_returned_status, cmd)
+                )
                 return reply
 
             # six.print_("====cmd {}".format(cmd))
@@ -1938,8 +2067,12 @@ class Gryphon(GryphonProtocolDefines):
 
             reply["GCprotocol"]["body"]["cmd"] = datar[0]
             # six.print_("====reply {}".format(reply))
-            self.last_returned_status = (datar[4] * 1024) + (datar[5] * 512) + (datar[6] * 256) + datar[7]
-            reply["GCprotocol"]["body"]["status"] = reply["response_return_code"] = self.last_returned_status
+            self.last_returned_status = (
+                (datar[4] * 1024) + (datar[5] * 512) + (datar[6] * 256) + datar[7]
+            )
+            reply["GCprotocol"]["body"]["status"] = reply[
+                "response_return_code"
+            ] = self.last_returned_status
 
             if reply["GCprotocol"]["body"]["cmd"] != cmd:
                 return {"response_return_code": self.last_returned_status}
@@ -1947,7 +2080,10 @@ class Gryphon(GryphonProtocolDefines):
 
             if self.last_returned_status != 0:
                 # TODO remove, debugging only
-                six.print_("==ERROR==status is not OK 0x%08x cmd %x" % (self.last_returned_status, cmd))
+                six.print_(
+                    "==ERROR==status is not OK 0x%08x cmd %x"
+                    % (self.last_returned_status, cmd)
+                )
                 return reply
 
             # six.print_("====cmd {}".format(cmd))
@@ -1963,30 +2099,9 @@ class Gryphon(GryphonProtocolDefines):
         # _______________________________________________________________________________
         return reply
 
-        reply_dict = {}
-        # TODO 20190103 HERE convert to GCprotocol
-        if dst == self.SD_LIN:
-            reply_lin = self._read_resp_func_from_lin(cmd, datar, reply, dst)
-            if (reply_lin is None) or (reply_lin is False):
-                return {"response_return_code": reply_lin}
-            reply_dict = {"response_return_code": GryphonProtocolResp.RESP_OK}
-            reply_dict.update(reply_lin)
-            return reply_dict
-        if dst == self.SD_CNVT:
-            if cmd == self.BCMD_CNVT_GET_UNITS:
-                ldf_array = []
-                ind = 8
-                number = ord(datar[ind])
-                ind += 1
-                for _ in range(0, number):
-                    string1 = ''.join(datar[ind:]).split('\x00')[0]
-                    ind += len(string1) + 1
-                    ldf_array.append(string1)
-                return ldf_array
-
-        return self.last_returned_status
-
-    def _wait_and_read_rx(self, frametype=GryphonProtocolFT.FT_DATA, hdr=None, data=None, timeout=0.05):
+    def _wait_and_read_rx(
+        self, frametype=GryphonProtocolFT.FT_DATA, hdr=None, data=None, timeout=0.05
+    ):
         """wait for rx data
         Args:
             hdr - not used yet
@@ -2053,7 +2168,9 @@ class Gryphon(GryphonProtocolDefines):
         # header read
         reply = []
         while True:
-            reply = self.read_thread.read_type_queue(timeout=0.25, msgtype=GryphonProtocolFT.FT_EVENT)
+            reply = self.read_thread.read_type_queue(
+                timeout=0.25, msgtype=GryphonProtocolFT.FT_EVENT
+            )
             datar = reply[self.DATASTR]
 
             if datar is None:
@@ -2077,9 +2194,11 @@ class Gryphon(GryphonProtocolDefines):
         # ---- got event for the requested channel
         # data
 
-        return datar[8:8 + 12]
+        return datar[8 : 8 + 12]
 
-    def _build_and_send_command(self, dst, dstchan, cmd, data=None, unusual_length=None, src=None, srcchan=None):
+    def _build_and_send_command(
+        self, dst, dstchan, cmd, data=None, unusual_length=None, src=None, srcchan=None
+    ):
         #
         # ----------------------------------------------------------------------
         # pylint: disable=too-many-arguments
@@ -2157,8 +2276,8 @@ class Gryphon(GryphonProtocolDefines):
             message[5] = msg_len_full
         else:
             # TODO make this work for message larger than 255 bytes!
-            message[4] = ((msg_len_full & 0xFF00) >> 8)
-            message[5] = (msg_len_full & 0x00FF)
+            message[4] = (msg_len_full & 0xFF00) >> 8
+            message[5] = msg_len_full & 0x00FF
 
         # print message[4]
         # print message[5]
@@ -2208,12 +2327,20 @@ class Gryphon(GryphonProtocolDefines):
             message[5] = msg_len_full
         else:
             # TODO make this work for message larger than 255 bytes!
-            message[4] = ((msg_len_full & 0xFF00) >> 8)
-            message[5] = (msg_len_full & 0x00FF)
+            message[4] = (msg_len_full & 0xFF00) >> 8
+            message[5] = msg_len_full & 0x00FF
 
         self.sock.sendall(message)
 
-    def _build_and_send_data(self, dst, dstchan, data=None, src=None, srcchan=None, fttype=GryphonProtocolFT.FT_DATA):
+    def _build_and_send_data(
+        self,
+        dst,
+        dstchan,
+        data=None,
+        src=None,
+        srcchan=None,
+        fttype=GryphonProtocolFT.FT_DATA,
+    ):
         #
         # ----------------------------------------------------------------------
         # pylint: disable=too-many-arguments
@@ -2263,8 +2390,8 @@ class Gryphon(GryphonProtocolDefines):
             message[5] = msg_len_full
         else:
             # TODO make this work for message larger than 255 bytes!
-            message[4] = ((msg_len_full & 0xFF00) >> 8)
-            message[5] = (msg_len_full & 0x00FF)
+            message[4] = (msg_len_full & 0xFF00) >> 8
+            message[5] = msg_len_full & 0x00FF
 
         self.sock.sendall(message)
 
@@ -2275,7 +2402,9 @@ class Gryphon(GryphonProtocolDefines):
             self.read_thread.kill()
             self.read_thread = None
 
-    def CMD_SERVER_REG(self, username="root", password=None, src_type=GryphonProtocolSD.SD_CLIENT):
+    def CMD_SERVER_REG(
+        self, username="root", password=None, src_type=GryphonProtocolSD.SD_CLIENT
+    ):
         """register with server, the first command
 
         Args:
@@ -2324,9 +2453,9 @@ class Gryphon(GryphonProtocolDefines):
             message.extend([0] * (16 - len(username)))
             message.extend(password[0:32])
         else:
-            message.extend(bytes(username[0:16], encoding='ascii'))
+            message.extend(bytes(username[0:16], encoding="ascii"))
             message.extend([0] * (16 - len(username)))
-            message.extend(bytes(password[0:32], encoding='ascii'))
+            message.extend(bytes(password[0:32], encoding="ascii"))
 
         msglen = len(message)
         message.extend([0] * (60 - msglen))
@@ -2337,11 +2466,19 @@ class Gryphon(GryphonProtocolDefines):
         reply = self._read_resp_func(message[8], self.SD_SERVER)
         reply["GCprotocol"]["body"].update({"data": {}})
         if sys.version_info[0] < 3:
-            reply["GCprotocol"]["body"]["data"].update({self.CLIENT_ID: ord(reply["GCprotocol"]["body"][self.RAWDATA][8])})
-            reply["GCprotocol"]["body"]["data"].update({self.PRIV: ord(reply["GCprotocol"]["body"][self.RAWDATA][9])})
+            reply["GCprotocol"]["body"]["data"].update(
+                {self.CLIENT_ID: ord(reply["GCprotocol"]["body"][self.RAWDATA][8])}
+            )
+            reply["GCprotocol"]["body"]["data"].update(
+                {self.PRIV: ord(reply["GCprotocol"]["body"][self.RAWDATA][9])}
+            )
         else:
-            reply["GCprotocol"]["body"]["data"].update({self.CLIENT_ID: reply["GCprotocol"]["body"][self.RAWDATA][8]})
-            reply["GCprotocol"]["body"]["data"].update({self.PRIV: reply["GCprotocol"]["body"][self.RAWDATA][9]})
+            reply["GCprotocol"]["body"]["data"].update(
+                {self.CLIENT_ID: reply["GCprotocol"]["body"][self.RAWDATA][8]}
+            )
+            reply["GCprotocol"]["body"]["data"].update(
+                {self.PRIV: reply["GCprotocol"]["body"][self.RAWDATA][9]}
+            )
         reply.update({"client_id": reply["GCprotocol"]["body"]["data"][self.CLIENT_ID]})
         return reply
 
@@ -2366,7 +2503,9 @@ class Gryphon(GryphonProtocolDefines):
         """
         databa = bytearray()
         databa.extend([opttype])
-        return self._build_and_send_command(dst=self.SD_SERVER, dstchan=0, cmd=self.BCMD_SERVER_SET_OPT, data=databa)
+        return self._build_and_send_command(
+            dst=self.SD_SERVER, dstchan=0, cmd=self.BCMD_SERVER_SET_OPT, data=databa
+        )
 
     def CMD_GET_CONFIG(self):
         #
@@ -2402,7 +2541,9 @@ class Gryphon(GryphonProtocolDefines):
         # pylint: disable=too-many-statements
         # ----------------------------------------------------------------------
         #
-        reply = self._build_and_send_command(dst=self.SD_SERVER, dstchan=0, cmd=self.BCMD_GET_CONFIG)
+        reply = self._build_and_send_command(
+            dst=self.SD_SERVER, dstchan=0, cmd=self.BCMD_GET_CONFIG
+        )
 
         datar = reply["GCprotocol"]["body"][self.RAWDATA]
         # get config
@@ -2415,12 +2556,12 @@ class Gryphon(GryphonProtocolDefines):
         else:
             datarc = list(map(chr, datar[start:end_in]))
 
-        end = datarc.index('\x00')  # find first null at end of C string
+        end = datarc.index("\x00")  # find first null at end of C string
 
         if end < 0:
             return False
         # print "---name---%s" % ''.join(datar[8:end])
-        self.get_config["device_name"] = ''.join(datarc[:end])
+        self.get_config["device_name"] = "".join(datarc[:end])
         # device version
         start = end_in
         end_in = start + 8
@@ -2431,7 +2572,7 @@ class Gryphon(GryphonProtocolDefines):
         else:
             datarc = list(map(chr, datar[start:end_in]))
 
-        self.get_config["device_version"] = ''.join(datarc[:end])
+        self.get_config["device_version"] = "".join(datarc[:end])
         # print "---ver---%s" % self.get_config["device_version"]
         start = end_in
         end_in = start + 20
@@ -2441,11 +2582,11 @@ class Gryphon(GryphonProtocolDefines):
         else:
             datarc = list(map(chr, datar[start:end_in]))
 
-        end = datarc.index('\x00')  # find first null at end of C string
+        end = datarc.index("\x00")  # find first null at end of C string
 
         if end < 0:
             return False
-        self.get_config["serial_number"] = ''.join(datarc[:end])
+        self.get_config["serial_number"] = "".join(datarc[:end])
         start = end_in
         end_in = start + 1
         end = end_in
@@ -2473,10 +2614,10 @@ class Gryphon(GryphonProtocolDefines):
             else:
                 datarc = list(map(chr, datar[start:end_in]))
 
-            end = datarc.index('\x00')  # find first null at end of C string
+            end = datarc.index("\x00")  # find first null at end of C string
             if end < 0:
                 return False
-            self.get_config["channels"][i]["driver_name"] = ''.join(datarc[:end])
+            self.get_config["channels"][i]["driver_name"] = "".join(datarc[:end])
             start = end_in
 
             # driver version as null-terminated ASCII string
@@ -2487,11 +2628,11 @@ class Gryphon(GryphonProtocolDefines):
             else:
                 datarc = list(map(chr, datar[start:end_in]))
 
-            end = datarc.index('\x00')  # find first null at end of C string
+            end = datarc.index("\x00")  # find first null at end of C string
 
             if end < 0:
                 return False
-            self.get_config["channels"][i]["driver_version"] = ''.join(datarc[:end])
+            self.get_config["channels"][i]["driver_version"] = "".join(datarc[:end])
             start = end_in
             # security string as ASCII string
             end_in = start + 16
@@ -2501,7 +2642,7 @@ class Gryphon(GryphonProtocolDefines):
             else:
                 datarc = list(map(chr, datar[start:end_in]))
 
-            end = datarc.index('\x00')  # find first null at end of C string
+            end = datarc.index("\x00")  # find first null at end of C string
 
             if end < 0:
                 return False
@@ -2511,17 +2652,27 @@ class Gryphon(GryphonProtocolDefines):
             else:
                 datarc = list(map(chr, datar[start:end_in]))
 
-            end = datarc.index('\x00')  # find first null at end of C string
+            end = datarc.index("\x00")  # find first null at end of C string
 
             # six.print_("-3--------------start{}--------end{}--------{}----------{}".format(start,end_in,datar[start:end_in], datarc))
-            self.get_config["channels"][i]["security_string"] = ''.join(datarc[:end])
+            self.get_config["channels"][i]["security_string"] = "".join(datarc[:end])
             # valid headers
             start = end_in
             end_in = start + 4
             if sys.version_info[0] < 3:
-                header_lengths_bytes = (ord(datar[start]) * (256 * 3)) + (ord(datar[start + 1]) * (256 * 2)) + (ord(datar[start + 2]) * 256) + (ord(datar[start + 3]))
+                header_lengths_bytes = (
+                    (ord(datar[start]) * (256 * 3))
+                    + (ord(datar[start + 1]) * (256 * 2))
+                    + (ord(datar[start + 2]) * 256)
+                    + (ord(datar[start + 3]))
+                )
             else:
-                header_lengths_bytes = (datar[start] * (256 * 3)) + (datar[start + 1] * (256 * 2)) + (datar[start + 2] * 256) + (datar[start + 3])
+                header_lengths_bytes = (
+                    (datar[start] * (256 * 3))
+                    + (datar[start + 1] * (256 * 2))
+                    + (datar[start + 2] * 256)
+                    + (datar[start + 3])
+                )
 
             self.get_config["channels"][i]["header_sizes"] = []
             for count, bit in enumerate(range(0, 32)):
@@ -2533,16 +2684,24 @@ class Gryphon(GryphonProtocolDefines):
             start = end_in
             end_in = start + 2
             if sys.version_info[0] < 3:
-                self.get_config["channels"][i]["max_data_len"] = (ord(datar[start]) * 256) + (ord(datar[start + 1]))
+                self.get_config["channels"][i]["max_data_len"] = (
+                    ord(datar[start]) * 256
+                ) + (ord(datar[start + 1]))
             else:
-                self.get_config["channels"][i]["max_data_len"] = (datar[start] * 256) + (datar[start + 1])
+                self.get_config["channels"][i]["max_data_len"] = (
+                    datar[start] * 256
+                ) + (datar[start + 1])
             # min data len
             start = end_in
             end_in = start + 2
             if sys.version_info[0] < 3:
-                self.get_config["channels"][i]["min_data_len"] = (ord(datar[start]) * 256) + (ord(datar[start + 1]))
+                self.get_config["channels"][i]["min_data_len"] = (
+                    ord(datar[start]) * 256
+                ) + (ord(datar[start + 1]))
             else:
-                self.get_config["channels"][i]["min_data_len"] = (datar[start] * 256) + (datar[start + 1])
+                self.get_config["channels"][i]["min_data_len"] = (
+                    datar[start] * 256
+                ) + (datar[start + 1])
             # hardware serial number as ASCII string
             start = end_in
             end_in = start + 20
@@ -2552,10 +2711,10 @@ class Gryphon(GryphonProtocolDefines):
             else:
                 datarc = list(map(chr, datar[start:end_in]))
 
-            end = datarc.index('\x00')  # find first null at end of C string
+            end = datarc.index("\x00")  # find first null at end of C string
             if end < 0:
                 return False
-            self.get_config["channels"][i]["serial_number"] = ''.join(datarc[:end])
+            self.get_config["channels"][i]["serial_number"] = "".join(datarc[:end])
 
             # type
             start = end_in
@@ -2584,22 +2743,37 @@ class Gryphon(GryphonProtocolDefines):
             start += 1
             # max extra len
             if sys.version_info[0] < 3:
-                self.get_config["channels"][i]["max_extra_len"] = (ord(datar[start]) * 256) + (ord(datar[start + 1]))
+                self.get_config["channels"][i]["max_extra_len"] = (
+                    ord(datar[start]) * 256
+                ) + (ord(datar[start + 1]))
             else:
-                self.get_config["channels"][i]["max_extra_len"] = (datar[start] * 256) + (datar[start + 1])
+                self.get_config["channels"][i]["max_extra_len"] = (
+                    datar[start] * 256
+                ) + (datar[start + 1])
             start += 2
             # min extra len
             if sys.version_info[0] < 3:
-                self.get_config["channels"][i]["min_extra_len"] = (ord(datar[start]) * 256) + (ord(datar[start + 1]))
+                self.get_config["channels"][i]["min_extra_len"] = (
+                    ord(datar[start]) * 256
+                ) + (ord(datar[start + 1]))
             else:
-                self.get_config["channels"][i]["min_extra_len"] = (datar[start] * 256) + (datar[start + 1])
+                self.get_config["channels"][i]["min_extra_len"] = (
+                    datar[start] * 256
+                ) + (datar[start + 1])
             start += 2
 
         reply["GCprotocol"]["body"].update({"data": {}})
         reply["GCprotocol"]["body"]["data"].update(self.get_config)
         return reply
 
-    def CMD_GENERIC(self, data_in, set_client_id=True, add_padding=True, set_context=True, set_length=True):
+    def CMD_GENERIC(
+        self,
+        data_in,
+        set_client_id=True,
+        add_padding=True,
+        set_context=True,
+        set_length=True,
+    ):
         #
         # ----------------------------------------------------------------------
         # pylint: disable=too-many-arguments
@@ -2674,27 +2848,29 @@ class Gryphon(GryphonProtocolDefines):
             None.
         """
         # done 20190103
-        reply_dict = self._build_and_send_command(dst=self.SD_SERVER, dstchan=0, cmd=self.BCMD_GET_TIME)
+        reply_dict = self._build_and_send_command(
+            dst=self.SD_SERVER, dstchan=0, cmd=self.BCMD_GET_TIME
+        )
         reply_dict["GCprotocol"]["body"].update({"data": {}})
         mytime = 0
         if sys.version_info[0] < 3:
-            mytime += (ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][8]) << 56)
-            mytime += (ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][9]) << 48)
-            mytime += (ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][10]) << 40)
-            mytime += (ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][11]) << 32)
-            mytime += (ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][12]) << 24)
-            mytime += (ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][13]) << 16)
-            mytime += (ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][14]) << 8)
-            mytime += (ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][15]) << 0)
+            mytime += ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][8]) << 56
+            mytime += ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][9]) << 48
+            mytime += ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][10]) << 40
+            mytime += ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][11]) << 32
+            mytime += ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][12]) << 24
+            mytime += ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][13]) << 16
+            mytime += ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][14]) << 8
+            mytime += ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][15]) << 0
         else:
-            mytime += (reply_dict["GCprotocol"]["body"][self.RAWDATA][8] << 56)
-            mytime += (reply_dict["GCprotocol"]["body"][self.RAWDATA][9] << 48)
-            mytime += (reply_dict["GCprotocol"]["body"][self.RAWDATA][10] << 40)
-            mytime += (reply_dict["GCprotocol"]["body"][self.RAWDATA][11] << 32)
-            mytime += (reply_dict["GCprotocol"]["body"][self.RAWDATA][12] << 24)
-            mytime += (reply_dict["GCprotocol"]["body"][self.RAWDATA][13] << 16)
-            mytime += (reply_dict["GCprotocol"]["body"][self.RAWDATA][14] << 8)
-            mytime += (reply_dict["GCprotocol"]["body"][self.RAWDATA][15] << 0)
+            mytime += reply_dict["GCprotocol"]["body"][self.RAWDATA][8] << 56
+            mytime += reply_dict["GCprotocol"]["body"][self.RAWDATA][9] << 48
+            mytime += reply_dict["GCprotocol"]["body"][self.RAWDATA][10] << 40
+            mytime += reply_dict["GCprotocol"]["body"][self.RAWDATA][11] << 32
+            mytime += reply_dict["GCprotocol"]["body"][self.RAWDATA][12] << 24
+            mytime += reply_dict["GCprotocol"]["body"][self.RAWDATA][13] << 16
+            mytime += reply_dict["GCprotocol"]["body"][self.RAWDATA][14] << 8
+            mytime += reply_dict["GCprotocol"]["body"][self.RAWDATA][15] << 0
         stime = int(mytime / 100000)
         ustime = (mytime % 100000) * 10
         pytime = str(datetime.datetime.fromtimestamp(stime)) + "." + str(ustime)
@@ -2744,10 +2920,14 @@ class Gryphon(GryphonProtocolDefines):
 
         databa = bytearray()
         databa.extend(timedata)
-        reply_dict = self._build_and_send_command(dst=self.SD_SERVER, dstchan=0, cmd=self.BCMD_SET_TIME, data=databa)
+        reply_dict = self._build_and_send_command(
+            dst=self.SD_SERVER, dstchan=0, cmd=self.BCMD_SET_TIME, data=databa
+        )
         return reply_dict
 
-    def CMD_USDT_REGISTER_NON_LEGACY(self, chan, register_action=True, tx_options=None, rx_options=None, blocks=None):
+    def CMD_USDT_REGISTER_NON_LEGACY(
+        self, chan, register_action=True, tx_options=None, rx_options=None, blocks=None
+    ):
         """register USDT
         tx_options['echo_long'] - True or False, optional, default is False
         tx_options['padding'] - 0x00, 0xFF, or None, optional, default is None no padding
@@ -2823,36 +3003,36 @@ class Gryphon(GryphonProtocolDefines):
                     else:
                         transmit_options |= 0x00  # -----00- pad with 0x00
 
-            if 'send_done_event' in tx_options:
-                if tx_options['send_done_event']:
+            if "send_done_event" in tx_options:
+                if tx_options["send_done_event"]:
                     transmit_options |= 0x08  # ----1---
 
-            if 'echo_short' in tx_options:
-                if tx_options['echo_short']:
+            if "echo_short" in tx_options:
+                if tx_options["echo_short"]:
                     transmit_options |= 0x10  # ---1----
 
-            if 'send_rx_control_flow_event' in tx_options:
-                if tx_options['send_rx_control_flow_event']:
+            if "send_rx_control_flow_event" in tx_options:
+                if tx_options["send_rx_control_flow_event"]:
                     transmit_options |= 0x20  # --1-----
 
         receive_options = 0x00
         if rx_options:
-            if 'verify_and_send' in rx_options:
-                if rx_options['verify_and_send']:
+            if "verify_and_send" in rx_options:
+                if rx_options["verify_and_send"]:
                     receive_options |= 0x01  # ------01
                 else:
                     receive_options |= 0x02  # ------10
 
-            if 'send_firstframe_event' in rx_options:
-                if rx_options['send_firstframe_event']:
+            if "send_firstframe_event" in rx_options:
+                if rx_options["send_firstframe_event"]:
                     receive_options |= 0x04  # -----1--
 
-            if 'send_lastframe_event' in rx_options:
-                if rx_options['send_lastframe_event']:
+            if "send_lastframe_event" in rx_options:
+                if rx_options["send_lastframe_event"]:
                     receive_options |= 0x08  # ----1---
 
-            if 'send_tx_control_flow_event' in rx_options:
-                if rx_options['send_tx_control_flow_event']:
+            if "send_tx_control_flow_event" in rx_options:
+                if rx_options["send_tx_control_flow_event"]:
                     receive_options |= 0x20  # --1-----
 
         # add to databa
@@ -2861,11 +3041,11 @@ class Gryphon(GryphonProtocolDefines):
         if blocks:
             for block in blocks:
                 number = 1
-                if 'number' in block:
-                    number = block['number']
+                if "number" in block:
+                    number = block["number"]
 
-                if 'J1939_style_length' in block:
-                    if block['J1939_style_length']:
+                if "J1939_style_length" in block:
+                    if block["J1939_style_length"]:
                         number |= 0x40000000
 
                 n1 = (number & 0xFF000000) >> 24
@@ -2877,13 +3057,13 @@ class Gryphon(GryphonProtocolDefines):
 
                 # TODO add some 11-bit 29-bit error checking, raise exceptions
                 usdt_req = 0x00000000
-                if 'USDT_request_id' in block:
-                    usdt_req = block['USDT_request_id']
-                if 'USDT_request_id_ext_addressing' in block:
-                    if block['USDT_request_id_ext_addressing']:
+                if "USDT_request_id" in block:
+                    usdt_req = block["USDT_request_id"]
+                if "USDT_request_id_ext_addressing" in block:
+                    if block["USDT_request_id_ext_addressing"]:
                         usdt_req |= 0x20000000
-                if 'USDT_request_id_29bits' in block:
-                    if block['USDT_request_id_29bits']:
+                if "USDT_request_id_29bits" in block:
+                    if block["USDT_request_id_29bits"]:
                         usdt_req |= 0x80000000
 
                 usdt_req1 = (usdt_req & 0xFF000000) >> 24
@@ -2894,13 +3074,13 @@ class Gryphon(GryphonProtocolDefines):
                 databa.extend([usdt_req1, usdt_req2, usdt_req3, usdt_req4])
 
                 usdt_resp = 0x00000000
-                if 'USDT_response_id' in block:
-                    usdt_resp = block['USDT_response_id']
-                if 'USDT_response_id_ext_addressing' in block:
-                    if block['USDT_response_id_ext_addressing']:
+                if "USDT_response_id" in block:
+                    usdt_resp = block["USDT_response_id"]
+                if "USDT_response_id_ext_addressing" in block:
+                    if block["USDT_response_id_ext_addressing"]:
                         usdt_resp |= 0x20000000
-                if 'USDT_response_id_29bits' in block:
-                    if block['USDT_response_id_29bits']:
+                if "USDT_response_id_29bits" in block:
+                    if block["USDT_response_id_29bits"]:
                         usdt_resp |= 0x80000000
 
                 usdt_resp1 = (usdt_resp & 0xFF000000) >> 24
@@ -2911,13 +3091,13 @@ class Gryphon(GryphonProtocolDefines):
                 databa.extend([usdt_resp1, usdt_resp2, usdt_resp3, usdt_resp4])
 
                 uudt_resp = 0x00000000
-                if 'UUDT_response_id' in block:
-                    uudt_resp = block['UUDT_response_id']
-                if 'UUDT_response_id_ext_addressing' in block:
-                    if block['UUDT_response_id_ext_addressing']:
+                if "UUDT_response_id" in block:
+                    uudt_resp = block["UUDT_response_id"]
+                if "UUDT_response_id_ext_addressing" in block:
+                    if block["UUDT_response_id_ext_addressing"]:
                         uudt_resp |= 0x20000000
-                if 'UUDT_response_id_29bits' in block:
-                    if block['UUDT_response_id_29bits']:
+                if "UUDT_response_id_29bits" in block:
+                    if block["UUDT_response_id_29bits"]:
                         uudt_resp |= 0x80000000
 
                 uudt_resp1 = (uudt_resp & 0xFF000000) >> 24
@@ -2928,28 +3108,19 @@ class Gryphon(GryphonProtocolDefines):
                 databa.extend([uudt_resp1, uudt_resp2, uudt_resp3, uudt_resp4])
 
                 usdt_req_ext = 0
-                if 'USDT_request_ext_address' in block:
-                    usdt_req_ext = block['USDT_request_ext_address']
+                if "USDT_request_ext_address" in block:
+                    usdt_req_ext = block["USDT_request_ext_address"]
                 usdt_req_ext = 0
-                if 'USDT_response_ext_address' in block:
-                    usdt_req_ext = block['USDT_response_ext_address']
+                if "USDT_response_ext_address" in block:
+                    usdt_req_ext = block["USDT_response_ext_address"]
                 uudt_resp_ext = 0
-                if 'UUDT_response_ext_address' in block:
-                    uudt_resp_ext = block['UUDT_response_ext_address']
+                if "UUDT_response_ext_address" in block:
+                    uudt_resp_ext = block["UUDT_response_ext_address"]
                 databa.extend([usdt_req_ext, usdt_req_ext, uudt_resp_ext, 0])
 
-        # DEBUG
-        """DEBUG
-        for count, a in enumerate(databa):
-            if (count % 4) == 0:
-                print("")
-                print("0x{:02X}, ".format(a)),
-        print("")
-        """
-        # reply_dict = {"response_return_code": 0}
-        # return reply_dict
-
-        reply_dict = self._build_and_send_command(dst=self.SD_USDT, dstchan=chan, cmd=self.BCMD_USDT_REGISTER_NON, data=databa)
+        reply_dict = self._build_and_send_command(
+            dst=self.SD_USDT, dstchan=chan, cmd=self.BCMD_USDT_REGISTER_NON, data=databa
+        )
         return reply_dict
 
     def CMD_USDT_SET_STMIN_FC(self, chan, stmin):
@@ -2980,7 +3151,13 @@ class Gryphon(GryphonProtocolDefines):
         databa = bytearray()
         databa.extend([stmin])
         # TODO this is unusual, will not work with size=8
-        reply_dict = self._build_and_send_command(dst=self.SD_USDT, dstchan=chan, cmd=self.BCMD_USDT_SET_STMIN_FC, data=databa, unusual_length=5)
+        reply_dict = self._build_and_send_command(
+            dst=self.SD_USDT,
+            dstchan=chan,
+            cmd=self.BCMD_USDT_SET_STMIN_FC,
+            data=databa,
+            unusual_length=5,
+        )
         return reply_dict
 
     def CMD_USDT_GET_STMIN_FC(self, chan):
@@ -3007,12 +3184,18 @@ class Gryphon(GryphonProtocolDefines):
         if chan == 0:
             raise self.ChannelNotValid(chan)
 
-        reply_dict = self._build_and_send_command(dst=self.SD_USDT, dstchan=chan, cmd=self.BCMD_USDT_GET_STMIN_FC, data=None)
+        reply_dict = self._build_and_send_command(
+            dst=self.SD_USDT, dstchan=chan, cmd=self.BCMD_USDT_GET_STMIN_FC, data=None
+        )
         reply_dict["GCprotocol"]["body"].update({"data": {}})
         if sys.version_info[0] < 3:
-            reply_dict["GCprotocol"]["body"]["data"].update({"stmin": ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][8])})
+            reply_dict["GCprotocol"]["body"]["data"].update(
+                {"stmin": ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][8])}
+            )
         else:
-            reply_dict["GCprotocol"]["body"]["data"].update({"stmin": reply_dict["GCprotocol"]["body"][self.RAWDATA][8]})
+            reply_dict["GCprotocol"]["body"]["data"].update(
+                {"stmin": reply_dict["GCprotocol"]["body"][self.RAWDATA][8]}
+            )
         return reply_dict
 
     def CMD_USDT_SET_BSMAX_FC(self, chan, bsmax):
@@ -3043,7 +3226,13 @@ class Gryphon(GryphonProtocolDefines):
         databa = bytearray()
         databa.extend([bsmax])
         # TODO this is unusual, will not work with size=8
-        reply_dict = self._build_and_send_command(dst=self.SD_USDT, dstchan=chan, cmd=self.BCMD_USDT_SET_BSMAX_FC, data=databa, unusual_length=5)
+        reply_dict = self._build_and_send_command(
+            dst=self.SD_USDT,
+            dstchan=chan,
+            cmd=self.BCMD_USDT_SET_BSMAX_FC,
+            data=databa,
+            unusual_length=5,
+        )
         return reply_dict
 
     def CMD_USDT_GET_BSMAX_FC(self, chan):
@@ -3070,12 +3259,18 @@ class Gryphon(GryphonProtocolDefines):
         if chan == 0:
             raise self.ChannelNotValid(chan)
 
-        reply_dict = self._build_and_send_command(dst=self.SD_USDT, dstchan=chan, cmd=self.BCMD_USDT_GET_BSMAX_FC, data=None)
+        reply_dict = self._build_and_send_command(
+            dst=self.SD_USDT, dstchan=chan, cmd=self.BCMD_USDT_GET_BSMAX_FC, data=None
+        )
         reply_dict["GCprotocol"]["body"].update({"data": {}})
         if sys.version_info[0] < 3:
-            reply_dict["GCprotocol"]["body"]["data"].update({"bsmax": ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][8])})
+            reply_dict["GCprotocol"]["body"]["data"].update(
+                {"bsmax": ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][8])}
+            )
         else:
-            reply_dict["GCprotocol"]["body"]["data"].update({"bsmax": reply_dict["GCprotocol"]["body"][self.RAWDATA][8]})
+            reply_dict["GCprotocol"]["body"]["data"].update(
+                {"bsmax": reply_dict["GCprotocol"]["body"][self.RAWDATA][8]}
+            )
         return reply_dict
 
     def CMD_USDT_SET_STMIN_OVERRIDE(self, chan, stmin_override):
@@ -3106,7 +3301,13 @@ class Gryphon(GryphonProtocolDefines):
         databa = bytearray()
         databa.extend([stmin_override])
         # TODO this is unusual, will not work with size=8
-        reply_dict = self._build_and_send_command(dst=self.SD_USDT, dstchan=chan, cmd=self.BCMD_USDT_SET_STMIN_OVERRIDE, data=databa, unusual_length=5)
+        reply_dict = self._build_and_send_command(
+            dst=self.SD_USDT,
+            dstchan=chan,
+            cmd=self.BCMD_USDT_SET_STMIN_OVERRIDE,
+            data=databa,
+            unusual_length=5,
+        )
         return reply_dict
 
     def CMD_USDT_GET_STMIN_OVERRIDE(self, chan):
@@ -3133,12 +3334,25 @@ class Gryphon(GryphonProtocolDefines):
         if chan == 0:
             raise self.ChannelNotValid(chan)
 
-        reply_dict = self._build_and_send_command(dst=self.SD_USDT, dstchan=chan, cmd=self.BCMD_USDT_GET_STMIN_OVERRIDE, data=None)
+        reply_dict = self._build_and_send_command(
+            dst=self.SD_USDT,
+            dstchan=chan,
+            cmd=self.BCMD_USDT_GET_STMIN_OVERRIDE,
+            data=None,
+        )
         reply_dict["GCprotocol"]["body"].update({"data": {}})
         if sys.version_info[0] < 3:
-            reply_dict["GCprotocol"]["body"]["data"].update({"stmin_override": ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][8])})
+            reply_dict["GCprotocol"]["body"]["data"].update(
+                {
+                    "stmin_override": ord(
+                        reply_dict["GCprotocol"]["body"][self.RAWDATA][8]
+                    )
+                }
+            )
         else:
-            reply_dict["GCprotocol"]["body"]["data"].update({"stmin_override": reply_dict["GCprotocol"]["body"][self.RAWDATA][8]})
+            reply_dict["GCprotocol"]["body"]["data"].update(
+                {"stmin_override": reply_dict["GCprotocol"]["body"][self.RAWDATA][8]}
+            )
         return reply_dict
 
     def CMD_USDT_ACTIVATE_STMIN_OVERRIDE(self, chan, activate=True):
@@ -3171,7 +3385,13 @@ class Gryphon(GryphonProtocolDefines):
         else:
             databa.extend([0])
         # TODO this is unusual, will not work with size=8
-        reply_dict = self._build_and_send_command(dst=self.SD_USDT, dstchan=chan, cmd=self.BCMD_USDT_ACTIVATE_STMIN_OVERRIDE, data=databa, unusual_length=5)
+        reply_dict = self._build_and_send_command(
+            dst=self.SD_USDT,
+            dstchan=chan,
+            cmd=self.BCMD_USDT_ACTIVATE_STMIN_OVERRIDE,
+            data=databa,
+            unusual_length=5,
+        )
         return reply_dict
 
     def CMD_USDT_SET_STMIN_MULT(self, chan, stmin_mult):
@@ -3198,9 +3418,16 @@ class Gryphon(GryphonProtocolDefines):
         # done 20190103
         if chan == 0:
             raise self.ChannelNotValid(chan)
-        databa = bytearray(struct.pack(">f", stmin_mult))  # pack floating point number into bytearray
+        databa = bytearray(
+            struct.pack(">f", stmin_mult)
+        )  # pack floating point number into bytearray
         # databa = bytearray([1])  # a test
-        reply_dict = self._build_and_send_command(dst=self.SD_USDT, dstchan=chan, cmd=self.BCMD_USDT_SET_STMIN_MULT, data=databa)
+        reply_dict = self._build_and_send_command(
+            dst=self.SD_USDT,
+            dstchan=chan,
+            cmd=self.BCMD_USDT_SET_STMIN_MULT,
+            data=databa,
+        )
         return reply_dict
 
     def CMD_BCAST_ON(self):
@@ -3223,7 +3450,9 @@ class Gryphon(GryphonProtocolDefines):
             None.
         """
         # done 20190103
-        return self._build_and_send_command(dst=self.SD_SERVER, dstchan=0, cmd=self.BCMD_BCAST_ON)
+        return self._build_and_send_command(
+            dst=self.SD_SERVER, dstchan=0, cmd=self.BCMD_BCAST_ON
+        )
 
     def CMD_BCAST_OFF(self):
         """set broadcast off
@@ -3245,13 +3474,16 @@ class Gryphon(GryphonProtocolDefines):
             None.
         """
         # done 20190103
-        return self._build_and_send_command(dst=self.SD_SERVER, dstchan=0, cmd=self.BCMD_BCAST_OFF)
+        return self._build_and_send_command(
+            dst=self.SD_SERVER, dstchan=0, cmd=self.BCMD_BCAST_OFF
+        )
 
     class ChannelNotValid(Exception):
         """chan value cannot be 0
             Usage:
                 raise Gryphon.ChannelNotValid(chan)
         """
+
         def __init__(self, arg1=None):
             self.arg1 = arg1
             super(Gryphon.ChannelNotValid, self).__init__(arg1)
@@ -3261,6 +3493,7 @@ class Gryphon(GryphonProtocolDefines):
             Usage:
                 raise Gryphon.IncorrectXMLConfigFilename(filename)
         """
+
         def __init__(self, arg1=None):
             self.arg1 = arg1
             super(Gryphon.IncorrectXMLConfigFilename, self).__init__(arg1)
@@ -3268,6 +3501,7 @@ class Gryphon(GryphonProtocolDefines):
     class ValueNotInt(Exception):
         """value must be int or long
         """
+
         def __init__(self, arg1=None):
             self.arg1 = arg1
             super(Gryphon.ValueNotInt, self).__init__(arg1)
@@ -3275,6 +3509,7 @@ class Gryphon(GryphonProtocolDefines):
     class FlagsNotFound(Exception):
         """data_in does not contained necessary "flags" item
         """
+
         def __init__(self, arg1=None):
             self.arg1 = arg1
             super(Gryphon.FlagsNotFound, self).__init__(arg1)
@@ -3282,6 +3517,7 @@ class Gryphon(GryphonProtocolDefines):
     class FilterBlocksNotFound(Exception):
         """data_in does not contained necessary "filter_blocks" item
         """
+
         def __init__(self, arg1=None):
             self.arg1 = arg1
             super(Gryphon.FilterBlocksNotFound, self).__init__(arg1)
@@ -3289,6 +3525,7 @@ class Gryphon(GryphonProtocolDefines):
     class RespBlocksNotFound(Exception):
         """data_in does not contained necessary "response_blocks" item
         """
+
         def __init__(self, arg1=None):
             self.arg1 = arg1
             super(Gryphon.RespBlocksNotFound, self).__init__(arg1)
@@ -3298,6 +3535,7 @@ class Gryphon(GryphonProtocolDefines):
             Usage:
                 raise Gryphon.ActionNotValid(action)
         """
+
         def __init__(self, arg1=None):
             self.arg1 = arg1
             super(Gryphon.ActionNotValid, self).__init__(arg1)
@@ -3305,6 +3543,7 @@ class Gryphon(GryphonProtocolDefines):
     class TimeIntervalNotFound(Exception):
         """data_in does not contained necessary "time_interval" item
         """
+
         def __init__(self, arg1=None):
             self.arg1 = arg1
             super(Gryphon.TimeIntervalNotFound, self).__init__(arg1)
@@ -3312,6 +3551,7 @@ class Gryphon(GryphonProtocolDefines):
     class MsgCountNotFound(Exception):
         """data_in does not contained necessary "message_count" item
         """
+
         def __init__(self, arg1=None):
             self.arg1 = arg1
             super(Gryphon.MsgCountNotFound, self).__init__(arg1)
@@ -3319,6 +3559,7 @@ class Gryphon(GryphonProtocolDefines):
     class ByteOffsetNotFound(Exception):
         """data_in does not contained necessary "byte_offset" item
         """
+
         def __init__(self, arg1=None):
             self.arg1 = arg1
             super(Gryphon.ByteOffsetNotFound, self).__init__(arg1)
@@ -3326,6 +3567,7 @@ class Gryphon(GryphonProtocolDefines):
     class FrameHdrNotFound(Exception):
         """framehdr not found
         """
+
         def __init__(self, arg1=None):
             self.arg1 = arg1
             super(Gryphon.FrameHdrNotFound, self).__init__(arg1)
@@ -3333,6 +3575,7 @@ class Gryphon(GryphonProtocolDefines):
     class BodyNotFound(Exception):
         """framehdr not found
         """
+
         def __init__(self, arg1=None):
             self.arg1 = arg1
             super(Gryphon.BodyNotFound, self).__init__(arg1)
@@ -3340,6 +3583,7 @@ class Gryphon(GryphonProtocolDefines):
     class TextNotFound(Exception):
         """framehdr not found
         """
+
         def __init__(self, arg1=None):
             self.arg1 = arg1
             super(Gryphon.TextNotFound, self).__init__(arg1)
@@ -3347,6 +3591,7 @@ class Gryphon(GryphonProtocolDefines):
     class DataNotFound(Exception):
         """framehdr not found
         """
+
         def __init__(self, arg1=None):
             self.arg1 = arg1
             super(Gryphon.DataNotFound, self).__init__(arg1)
@@ -3354,6 +3599,7 @@ class Gryphon(GryphonProtocolDefines):
     class OperatorNotFound(Exception):
         """data_in["filter_blocks"][n] does not contained necessary "operator" item
         """
+
         def __init__(self, arg1=None):
             self.arg1 = arg1
             super(Gryphon.OperatorNotFound, self).__init__(arg1)
@@ -3361,6 +3607,7 @@ class Gryphon(GryphonProtocolDefines):
     class ValueNotInFilterCondition(Exception):
         """data_in["filter_blocks"][n]["operator"] value not in GryphonProtocolFilterCondition
         """
+
         def __init__(self, arg1=None):
             self.arg1 = arg1
             super(Gryphon.ValueNotInFilterCondition, self).__init__(arg1)
@@ -3368,6 +3615,7 @@ class Gryphon(GryphonProtocolDefines):
     class ValueNotInFT(Exception):
         """value not in GryphonProtocolFT
         """
+
         def __init__(self, arg1=None):
             self.arg1 = arg1
             super(Gryphon.ValueNotInFT, self).__init__(arg1)
@@ -3375,6 +3623,7 @@ class Gryphon(GryphonProtocolDefines):
     class PatternNotFound(Exception):
         """data_in["filter_blocks"][n]["operator"] does not contained necessary "pattern" item
         """
+
         def __init__(self, arg1=None):
             self.arg1 = arg1
             super(Gryphon.PatternNotFound, self).__init__(arg1)
@@ -3382,6 +3631,7 @@ class Gryphon(GryphonProtocolDefines):
     class MaskNotFound(Exception):
         """data_in["filter_blocks"][n]["operator"] does not contained necessary "mask" item
         """
+
         def __init__(self, arg1=None):
             self.arg1 = arg1
             super(Gryphon.MaskNotFound, self).__init__(arg1)
@@ -3389,6 +3639,7 @@ class Gryphon(GryphonProtocolDefines):
     class LengthsNotEqual(Exception):
         """pattern and mask list lengths must be same
         """
+
         def __init__(self, arg1=None, arg2=None):
             self.arg1 = arg1
             self.arg2 = arg2
@@ -3397,6 +3648,7 @@ class Gryphon(GryphonProtocolDefines):
     class BitMaskNotFound(Exception):
         """block does not contained necessary "bit_mask" item
         """
+
         def __init__(self, arg1=None):
             self.arg1 = arg1
             super(Gryphon.BitMaskNotFound, self).__init__(arg1)
@@ -3404,6 +3656,7 @@ class Gryphon(GryphonProtocolDefines):
     class ValueNotFound(Exception):
         """data_in["filter_blocks"][n]["operator"] does not contained necessary "value" item
         """
+
         def __init__(self, arg1=None):
             self.arg1 = arg1
             super(Gryphon.ValueNotFound, self).__init__(arg1)
@@ -3411,6 +3664,7 @@ class Gryphon(GryphonProtocolDefines):
     class DataTypeNotFound(Exception):
         """data_in["filter_blocks"][n] does not contained necessary "data_type" item
         """
+
         def __init__(self, arg1=None):
             self.arg1 = arg1
             super(Gryphon.DataTypeNotFound, self).__init__(arg1)
@@ -3418,6 +3672,7 @@ class Gryphon(GryphonProtocolDefines):
     class ValueNotInFilterDataType(Exception):
         """data_in["filter_blocks"][n]["data_type"] value not in GryphonProtocolFilterDataType
         """
+
         def __init__(self, arg1=None):
             self.arg1 = arg1
             super(Gryphon.ValueNotInFilterDataType, self).__init__(arg1)
@@ -3425,6 +3680,7 @@ class Gryphon(GryphonProtocolDefines):
     class ValueNotInModFilter(Exception):
         """action value not in GryphonProtocolModFilter
         """
+
         def __init__(self, arg1=None):
             self.arg1 = arg1
             super(Gryphon.ValueNotInModFilter, self).__init__(arg1)
@@ -3432,6 +3688,7 @@ class Gryphon(GryphonProtocolDefines):
     class ValueOutOfRange(Exception):
         """value out of range
         """
+
         def __init__(self, arg1=None):
             self.arg1 = arg1
             super(Gryphon.ValueOutOfRange, self).__init__(arg1)
@@ -3439,6 +3696,7 @@ class Gryphon(GryphonProtocolDefines):
     class ValueNotValid(Exception):
         """value not valid
         """
+
         def __init__(self, arg1=None):
             self.arg1 = arg1
             super(Gryphon.ValueNotValid, self).__init__(arg1)
@@ -3446,6 +3704,7 @@ class Gryphon(GryphonProtocolDefines):
     class HdrNotFound(Exception):
         """data_in does not contained necessary "hdr" item
         """
+
         def __init__(self, arg1=None):
             self.arg1 = arg1
             super(Gryphon.HdrNotFound, self).__init__(arg1)
@@ -3453,6 +3712,7 @@ class Gryphon(GryphonProtocolDefines):
     class HdrLenNotFound(Exception):
         """data_in does not contained necessary "hdrlen" item
         """
+
         def __init__(self, arg1=None):
             self.arg1 = arg1
             super(Gryphon.HdrLenNotFound, self).__init__(arg1)
@@ -3460,6 +3720,7 @@ class Gryphon(GryphonProtocolDefines):
     class SignalNameNotFound(Exception):
         """data_in does not contained necessary "signal_name" item
         """
+
         def __init__(self, arg1=None):
             self.arg1 = arg1
             super(Gryphon.SignalNameNotFound, self).__init__(arg1)
@@ -3467,6 +3728,7 @@ class Gryphon(GryphonProtocolDefines):
     class ExtraLenNotFound(Exception):
         """data_in does not contained necessary "hdrlen" item
         """
+
         def __init__(self, arg1=None):
             self.arg1 = arg1
             super(Gryphon.ExtraLenNotFound, self).__init__(arg1)
@@ -3474,6 +3736,7 @@ class Gryphon(GryphonProtocolDefines):
     class MessageListNotFound(Exception):
         """data_in does not contained necessary "message_list" item
         """
+
         def __init__(self, arg1=None):
             self.arg1 = arg1
             super(Gryphon.MessageListNotFound, self).__init__(arg1)
@@ -3483,6 +3746,7 @@ class Gryphon(GryphonProtocolDefines):
             Usage:
                 raise Gryphon.NotYetImplemented
         """
+
         def __init__(self, arg1=None):
             self.arg1 = arg1
             super(Gryphon.NotYetImplemented, self).__init__(arg1)
@@ -3514,7 +3778,13 @@ class Gryphon(GryphonProtocolDefines):
         databa = bytearray()
         databa.extend([value_in])
         # TODO this is unusual, will not work with size=8
-        return self._build_and_send_command(dst=self.SD_CARD, dstchan=chan, cmd=self.BCMD_EVENT_ENABLE, data=databa, unusual_length=5)
+        return self._build_and_send_command(
+            dst=self.SD_CARD,
+            dstchan=chan,
+            cmd=self.BCMD_EVENT_ENABLE,
+            data=databa,
+            unusual_length=5,
+        )
 
     def CMD_EVENT_DISABLE(self, chan, value_in):
         """event enable
@@ -3544,7 +3814,13 @@ class Gryphon(GryphonProtocolDefines):
         databa = bytearray()
         databa.extend([value_in])
         # TODO this is unusual, will not work with size=8
-        return self._build_and_send_command(dst=self.SD_CARD, dstchan=chan, cmd=self.BCMD_EVENT_DISABLE, data=databa, unusual_length=5)
+        return self._build_and_send_command(
+            dst=self.SD_CARD,
+            dstchan=chan,
+            cmd=self.BCMD_EVENT_DISABLE,
+            data=databa,
+            unusual_length=5,
+        )
 
     def CMD_INIT(self, dstchan, dst=GryphonProtocolSD.SD_CARD, value_in=0):
         """init chan or sched
@@ -3591,7 +3867,9 @@ class Gryphon(GryphonProtocolDefines):
         databa.extend([value_in])
 
         # TODO this is unusual, will not work with size=8
-        reply = self._build_and_send_command(dst=dst, dstchan=dstchan, cmd=self.BCMD_INIT, data=databa, unusual_length=5)
+        reply = self._build_and_send_command(
+            dst=dst, dstchan=dstchan, cmd=self.BCMD_INIT, data=databa, unusual_length=5
+        )
 
         return reply
 
@@ -3636,7 +3914,12 @@ class Gryphon(GryphonProtocolDefines):
 
         databa = bytearray()
         databa.extend([value_in])
-        return self._build_and_send_command(dst=self.SD_CARD, dstchan=chan, cmd=self.BCMD_CARD_SET_FILTER_MODE, data=databa)
+        return self._build_and_send_command(
+            dst=self.SD_CARD,
+            dstchan=chan,
+            cmd=self.BCMD_CARD_SET_FILTER_MODE,
+            data=databa,
+        )
 
     def CMD_CARD_GET_FILTER_MODE(self, chan):
         """get filter mode
@@ -3660,11 +3943,17 @@ class Gryphon(GryphonProtocolDefines):
         if chan == 0:
             raise self.ChannelNotValid(chan)
 
-        reply_dict = self._build_and_send_command(dst=self.SD_CARD, dstchan=chan, cmd=self.BCMD_CARD_GET_FILTER_MODE)
+        reply_dict = self._build_and_send_command(
+            dst=self.SD_CARD, dstchan=chan, cmd=self.BCMD_CARD_GET_FILTER_MODE
+        )
         if sys.version_info[0] < 3:
-            reply_dict.update({"filter_mode": ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][8])})
+            reply_dict.update(
+                {"filter_mode": ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][8])}
+            )
         else:
-            reply_dict.update({"filter_mode": reply_dict["GCprotocol"]["body"][self.RAWDATA][8]})
+            reply_dict.update(
+                {"filter_mode": reply_dict["GCprotocol"]["body"][self.RAWDATA][8]}
+            )
         return reply_dict
 
     def _padding_number(self, msg_len):
@@ -3785,7 +4074,9 @@ class Gryphon(GryphonProtocolDefines):
             values[:] = [x for x in values if "__" not in x]
             filtervalues = []
             # get the actual values of all of the commands, using the attribute names
-            filtervalues.extend([getattr(GryphonProtocolFilterCondition, x) for x in values])
+            filtervalues.extend(
+                [getattr(GryphonProtocolFilterCondition, x) for x in values]
+            )
             if block["operator"] not in filtervalues:
                 raise self.ValueNotInFilterCondition(block["operator"])
 
@@ -3794,13 +4085,13 @@ class Gryphon(GryphonProtocolDefines):
                     raise self.PatternNotFound
                 if "mask" not in block:
                     raise self.MaskNotFound
-                first_field_len1 = ((len(block["pattern"]) & 0xFF00) >> 8)
-                first_field_len2 = ((len(block["pattern"]) & 0x00FF) >> 0)
+                first_field_len1 = (len(block["pattern"]) & 0xFF00) >> 8
+                first_field_len2 = (len(block["pattern"]) & 0x00FF) >> 0
             else:
                 if "value" not in block:
                     raise self.ValueNotFound
-                first_field_len1 = ((len(block["value"]) & 0xFF00) >> 8)
-                first_field_len2 = ((len(block["value"]) & 0x00FF) >> 0)
+                first_field_len1 = (len(block["value"]) & 0xFF00) >> 8
+                first_field_len2 = (len(block["value"]) & 0x00FF) >> 0
             data.extend([first_field_len1, first_field_len2])  # len
 
             if "data_type" not in block:
@@ -3810,7 +4101,9 @@ class Gryphon(GryphonProtocolDefines):
             values[:] = [x for x in values if "__" not in x]
             filtervalues = []
             # get the actual values of all of the commands, using the attribute names
-            filtervalues.extend([getattr(GryphonProtocolFilterDataType, x) for x in values])
+            filtervalues.extend(
+                [getattr(GryphonProtocolFilterDataType, x) for x in values]
+            )
             if block["data_type"] not in filtervalues:
                 raise self.ValueNotInFilterDataType(block["data_type"])
             dtype = block["data_type"]
@@ -3833,11 +4126,21 @@ class Gryphon(GryphonProtocolDefines):
         # TODO for some unknown reason, the padding on last block of command CMD_CARD_ADD_FILTER needs to be 8-bytes
         # data.extend([0, 0, 0, 0])
 
-        reply_dict = self._build_and_send_command(dst=self.SD_CARD, dstchan=chan, cmd=self.BCMD_CARD_ADD_FILTER, data=data)
+        reply_dict = self._build_and_send_command(
+            dst=self.SD_CARD, dstchan=chan, cmd=self.BCMD_CARD_ADD_FILTER, data=data
+        )
         if sys.version_info[0] < 3:
-            reply_dict.update({"filter_handle": ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][8])})
+            reply_dict.update(
+                {
+                    "filter_handle": ord(
+                        reply_dict["GCprotocol"]["body"][self.RAWDATA][8]
+                    )
+                }
+            )
         else:
-            reply_dict.update({"filter_handle": reply_dict["GCprotocol"]["body"][self.RAWDATA][8]})
+            reply_dict.update(
+                {"filter_handle": reply_dict["GCprotocol"]["body"][self.RAWDATA][8]}
+            )
         return reply_dict
 
     def CMD_CARD_MODIFY_FILTER(self, chan, action, filter_handle=0):
@@ -3882,7 +4185,12 @@ class Gryphon(GryphonProtocolDefines):
         data_value.extend([action])
         data_value.extend([0, 0])  # padding
 
-        return self._build_and_send_command(dst=self.SD_CARD, dstchan=chan, cmd=self.BCMD_CARD_MODIFY_FILTER, data=data_value)
+        return self._build_and_send_command(
+            dst=self.SD_CARD,
+            dstchan=chan,
+            cmd=self.BCMD_CARD_MODIFY_FILTER,
+            data=data_value,
+        )
 
     def CMD_CARD_SET_DEFAULT_FILTER(self, chan, value_in):
         """set default filter
@@ -3915,7 +4223,9 @@ class Gryphon(GryphonProtocolDefines):
         values[:] = [x for x in values if "__" not in x]
         filtervalues = []
         # get the actual values of all of the commands, using the attribute names
-        filtervalues.extend([getattr(GryphonProtocolSetDefaultFilter, x) for x in values])
+        filtervalues.extend(
+            [getattr(GryphonProtocolSetDefaultFilter, x) for x in values]
+        )
         if value_in not in filtervalues:
             # print "WARNING CMD_CARD_SET_DEFAULT_FILTER() value={} not in {}".format(value_in, filtervalues)
             # TODO ?
@@ -3927,7 +4237,12 @@ class Gryphon(GryphonProtocolDefines):
 
         data_value = bytearray()
         data_value.extend([value_in])
-        return self._build_and_send_command(dst=self.SD_CARD, dstchan=chan, cmd=self.BCMD_CARD_SET_DEFAULT_FILTER, data=data_value)
+        return self._build_and_send_command(
+            dst=self.SD_CARD,
+            dstchan=chan,
+            cmd=self.BCMD_CARD_SET_DEFAULT_FILTER,
+            data=data_value,
+        )
 
     def CMD_CARD_GET_DEFAULT_FILTER(self, chan):
         """set default filter
@@ -3951,11 +4266,25 @@ class Gryphon(GryphonProtocolDefines):
         if chan == 0:
             raise self.ChannelNotValid(chan)
 
-        reply_dict = self._build_and_send_command(dst=self.SD_CARD, dstchan=chan, cmd=self.BCMD_CARD_GET_DEFAULT_FILTER)
+        reply_dict = self._build_and_send_command(
+            dst=self.SD_CARD, dstchan=chan, cmd=self.BCMD_CARD_GET_DEFAULT_FILTER
+        )
         if sys.version_info[0] < 3:
-            reply_dict.update({"default_filter_mode": ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][8])})
+            reply_dict.update(
+                {
+                    "default_filter_mode": ord(
+                        reply_dict["GCprotocol"]["body"][self.RAWDATA][8]
+                    )
+                }
+            )
         else:
-            reply_dict.update({"default_filter_mode": reply_dict["GCprotocol"]["body"][self.RAWDATA][8]})
+            reply_dict.update(
+                {
+                    "default_filter_mode": reply_dict["GCprotocol"]["body"][
+                        self.RAWDATA
+                    ][8]
+                }
+            )
         return reply_dict
 
     def CMD_CARD_GET_EVNAMES(self, chan):
@@ -3980,17 +4309,29 @@ class Gryphon(GryphonProtocolDefines):
         if chan == 0:
             raise self.ChannelNotValid(chan)
 
-        reply_dict = self._build_and_send_command(dst=self.SD_CARD, dstchan=chan, cmd=self.BCMD_CARD_GET_EVNAMES)
+        reply_dict = self._build_and_send_command(
+            dst=self.SD_CARD, dstchan=chan, cmd=self.BCMD_CARD_GET_EVNAMES
+        )
         reply1 = []  # returns a list of dict
-        for item in range(8, reply_dict["GCprotocol"]["framehdr"][self.LEN], 20):  # increment by 20 bytes
+        for item in range(
+            8, reply_dict["GCprotocol"]["framehdr"][self.LEN], 20
+        ):  # increment by 20 bytes
             event = {}
             if sys.version_info[0] < 3:
                 event["id"] = ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][item])
-                event["name"] = ''.join(reply_dict["GCprotocol"]["body"][self.RAWDATA][item + 1:item + 20])
+                event["name"] = "".join(
+                    reply_dict["GCprotocol"]["body"][self.RAWDATA][item + 1 : item + 20]
+                )
             else:
                 event["id"] = reply_dict["GCprotocol"]["body"][self.RAWDATA][item]
-                event["name"] = ''.join(map(chr,
-                                            reply_dict["GCprotocol"]["body"][self.RAWDATA][item + 1:item + 20]))
+                event["name"] = "".join(
+                    map(
+                        chr,
+                        reply_dict["GCprotocol"]["body"][self.RAWDATA][
+                            item + 1 : item + 20
+                        ],
+                    )
+                )
             reply1.append(event)
         reply_dict.update({"event_names": reply1})
         return reply_dict
@@ -4018,7 +4359,12 @@ class Gryphon(GryphonProtocolDefines):
 
         data_value = bytearray()
         data_value.extend([value_in])
-        return self._build_and_send_command(dst=self.SD_CARD, dstchan=chan, cmd=self.BCMD_CARD_SET_SPEED, data=data_value)
+        return self._build_and_send_command(
+            dst=self.SD_CARD,
+            dstchan=chan,
+            cmd=self.BCMD_CARD_SET_SPEED,
+            data=data_value,
+        )
 
     def CMD_CARD_GET_SPEED(self, chan):
         """get speed
@@ -4041,7 +4387,9 @@ class Gryphon(GryphonProtocolDefines):
         if chan == 0:
             raise self.ChannelNotValid(chan)
 
-        return self._build_and_send_command(dst=self.SD_CARD, dstchan=chan, cmd=self.BCMD_CARD_SET_SPEED, data=None)
+        return self._build_and_send_command(
+            dst=self.SD_CARD, dstchan=chan, cmd=self.BCMD_CARD_SET_SPEED, data=None
+        )
 
     def CMD_CARD_GET_FILTER(self, chan, filter_handle):
         #
@@ -4072,11 +4420,18 @@ class Gryphon(GryphonProtocolDefines):
         # done 20190103
         data_value = bytearray()
         data_value.extend([filter_handle])
-        reply_dict = self._build_and_send_command(dst=self.SD_CARD, dstchan=chan, cmd=self.BCMD_CARD_GET_FILTER, data=data_value)
+        reply_dict = self._build_and_send_command(
+            dst=self.SD_CARD,
+            dstchan=chan,
+            cmd=self.BCMD_CARD_GET_FILTER,
+            data=data_value,
+        )
         index = 8
         reply_dict["GCprotocol"]["body"].update({"data": {}})
         if sys.version_info[0] < 3:
-            reply_dict["GCprotocol"]["body"]["data"].update({"flags": ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][index])})
+            reply_dict["GCprotocol"]["body"]["data"].update(
+                {"flags": ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][index])}
+            )
             index += 1
             nblocks = ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][index])
             index += 1
@@ -4085,18 +4440,38 @@ class Gryphon(GryphonProtocolDefines):
             for block_number in range(0, nblocks):
                 filter_block = {}
                 filter_block.update({"filter_block_number": block_number + 1})
-                byte_offset = (ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][index]) << 8)
+                byte_offset = (
+                    ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][index]) << 8
+                )
                 index += 1
-                byte_offset += (ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][index]) << 0)
-                filter_block.update({"byte_offset": ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][index])})
+                byte_offset += (
+                    ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][index]) << 0
+                )
+                filter_block.update(
+                    {
+                        "byte_offset": ord(
+                            reply_dict["GCprotocol"]["body"][self.RAWDATA][index]
+                        )
+                    }
+                )
                 index += 1
 
-                field_len = (ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][index]) << 8)
+                field_len = (
+                    ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][index]) << 8
+                )
                 index += 1
-                field_len += (ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][index]) << 0)
+                field_len += (
+                    ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][index]) << 0
+                )
                 index += 1
 
-                filter_block.update({"data_type": ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][index])})
+                filter_block.update(
+                    {
+                        "data_type": ord(
+                            reply_dict["GCprotocol"]["body"][self.RAWDATA][index]
+                        )
+                    }
+                )
                 index += 1
 
                 operator = ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][index])
@@ -4110,14 +4485,18 @@ class Gryphon(GryphonProtocolDefines):
                     while bytenumber < field_len:
                         bytenumber += 1
                         # print "------------------->>>>>>>>>>----------index {} pattern {}".format(index, pattern)
-                        pattern.append(ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][index]))
+                        pattern.append(
+                            ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][index])
+                        )
                         index += 1
                     filter_block.update({"pattern": pattern})
                     mask = []
                     bytenumber = 0
                     while bytenumber < field_len:
                         bytenumber += 1
-                        mask.append(ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][index]))
+                        mask.append(
+                            ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][index])
+                        )
                         index += 1
                     filter_block.update({"mask": mask})
                 else:
@@ -4126,13 +4505,17 @@ class Gryphon(GryphonProtocolDefines):
                     while bytenumber < field_len:
                         bytenumber += 1
                         # print "------------------->>>>>>>>>>----------index {} value {}".format(index, value)
-                        value.append(ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][index]))
+                        value.append(
+                            ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][index])
+                        )
                         index += 1
                     filter_block.update({"value": value})
 
                 filter_blocks.append(filter_block)
         else:
-            reply_dict["GCprotocol"]["body"]["data"].update({"flags": reply_dict["GCprotocol"]["body"][self.RAWDATA][index]})
+            reply_dict["GCprotocol"]["body"]["data"].update(
+                {"flags": reply_dict["GCprotocol"]["body"][self.RAWDATA][index]}
+            )
             index += 1
             nblocks = reply_dict["GCprotocol"]["body"][self.RAWDATA][index]
             index += 1
@@ -4141,18 +4524,28 @@ class Gryphon(GryphonProtocolDefines):
             for block_number in range(0, nblocks):
                 filter_block = {}
                 filter_block.update({"filter_block_number": block_number + 1})
-                byte_offset = (reply_dict["GCprotocol"]["body"][self.RAWDATA][index] << 8)
+                byte_offset = reply_dict["GCprotocol"]["body"][self.RAWDATA][index] << 8
                 index += 1
-                byte_offset += (reply_dict["GCprotocol"]["body"][self.RAWDATA][index] << 0)
-                filter_block.update({"byte_offset": reply_dict["GCprotocol"]["body"][self.RAWDATA][index]})
+                byte_offset += (
+                    reply_dict["GCprotocol"]["body"][self.RAWDATA][index] << 0
+                )
+                filter_block.update(
+                    {
+                        "byte_offset": reply_dict["GCprotocol"]["body"][self.RAWDATA][
+                            index
+                        ]
+                    }
+                )
                 index += 1
 
-                field_len = (reply_dict["GCprotocol"]["body"][self.RAWDATA][index] << 8)
+                field_len = reply_dict["GCprotocol"]["body"][self.RAWDATA][index] << 8
                 index += 1
-                field_len += (reply_dict["GCprotocol"]["body"][self.RAWDATA][index] << 0)
+                field_len += reply_dict["GCprotocol"]["body"][self.RAWDATA][index] << 0
                 index += 1
 
-                filter_block.update({"data_type": reply_dict["GCprotocol"]["body"][self.RAWDATA][index]})
+                filter_block.update(
+                    {"data_type": reply_dict["GCprotocol"]["body"][self.RAWDATA][index]}
+                )
                 index += 1
 
                 operator = reply_dict["GCprotocol"]["body"][self.RAWDATA][index]
@@ -4166,14 +4559,18 @@ class Gryphon(GryphonProtocolDefines):
                     while bytenumber < field_len:
                         bytenumber += 1
                         # print "------------------->>>>>>>>>>----------index {} pattern {}".format(index, pattern)
-                        pattern.append(reply_dict["GCprotocol"]["body"][self.RAWDATA][index])
+                        pattern.append(
+                            reply_dict["GCprotocol"]["body"][self.RAWDATA][index]
+                        )
                         index += 1
                     filter_block.update({"pattern": pattern})
                     mask = []
                     bytenumber = 0
                     while bytenumber < field_len:
                         bytenumber += 1
-                        mask.append(reply_dict["GCprotocol"]["body"][self.RAWDATA][index])
+                        mask.append(
+                            reply_dict["GCprotocol"]["body"][self.RAWDATA][index]
+                        )
                         index += 1
                     filter_block.update({"mask": mask})
                 else:
@@ -4182,12 +4579,16 @@ class Gryphon(GryphonProtocolDefines):
                     while bytenumber < field_len:
                         bytenumber += 1
                         # print "------------------->>>>>>>>>>----------index {} value {}".format(index, value)
-                        value.append(reply_dict["GCprotocol"]["body"][self.RAWDATA][index])
+                        value.append(
+                            reply_dict["GCprotocol"]["body"][self.RAWDATA][index]
+                        )
                         index += 1
                     filter_block.update({"value": value})
 
                 filter_blocks.append(filter_block)
-        reply_dict["GCprotocol"]["body"]["data"].update({"filter_blocks": filter_blocks})
+        reply_dict["GCprotocol"]["body"]["data"].update(
+            {"filter_blocks": filter_blocks}
+        )
 
         return reply_dict
 
@@ -4210,22 +4611,30 @@ class Gryphon(GryphonProtocolDefines):
             None.
         """
         # done 20190103
-        reply_dict = self._build_and_send_command(dst=self.SD_CARD, dstchan=chan, cmd=self.BCMD_CARD_GET_FILTER_HANDLES)
+        reply_dict = self._build_and_send_command(
+            dst=self.SD_CARD, dstchan=chan, cmd=self.BCMD_CARD_GET_FILTER_HANDLES
+        )
         filter_handles = []
         if sys.version_info[0] < 3:
             nfilters = ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][8])
             index = 9
             for _ in range(0, nfilters):
-                filter_handles.append(ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][index]))
+                filter_handles.append(
+                    ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][index])
+                )
                 index += 1
         else:
             nfilters = reply_dict["GCprotocol"]["body"][self.RAWDATA][8]
             index = 9
             for _ in range(0, nfilters):
-                filter_handles.append(reply_dict["GCprotocol"]["body"][self.RAWDATA][index])
+                filter_handles.append(
+                    reply_dict["GCprotocol"]["body"][self.RAWDATA][index]
+                )
                 index += 1
         reply_dict["GCprotocol"]["body"].update({"data": {}})
-        reply_dict["GCprotocol"]["body"]["data"].update({"filter_handles": filter_handles})
+        reply_dict["GCprotocol"]["body"]["data"].update(
+            {"filter_handles": filter_handles}
+        )
         return reply_dict
 
     def CMD_CARD_TX(self, msg):
@@ -4274,51 +4683,29 @@ class Gryphon(GryphonProtocolDefines):
         if "framehdr" not in msg:
             raise self.FrameHdrNotFound
 
-        """
-        if "src" in msg['framehdr']:
-            src = msg['framehdr']['src']
-        else:
-            src = GryphonProtocolSD.SD_CLIENT
-
-        if "srcchan" in msg['framehdr']:
-            srcchan = msg['framehdr']['srcchan']
-        else:
-            srcchan = self.client_id
-
-        if "dst" not in msg['framehdr']:
-            dst = GryphonProtocolSD.SD_CARD
-        else:
-            dst = msg['framehdr']['dst']
-        """
-
-        if "dstchan" not in msg['framehdr']:
+        if "dstchan" not in msg["framehdr"]:
             raise self.FrameHdrNotFound
-        dstchan = msg['framehdr']['dstchan']
+        dstchan = msg["framehdr"]["dstchan"]
         chan = dstchan
 
         # default FT_DATA
-        if "frametype" in msg['framehdr']:
+        if "frametype" in msg["framehdr"]:
             # TODO create defines to replace constants
-            frametype = msg['framehdr']['frametype'] & 0x3F
+            frametype = msg["framehdr"]["frametype"] & 0x3F
         else:
-            frametype = msg['framehdr']['frametype'] = GryphonProtocolFT.FT_DATA  # default
-
-        """
-        if "frametype_with_flags" in msg['framehdr']:
-            frametype_raw = msg["framehdr"]["frametype_with_flags"]
-        else:
-            frametype_raw = frametype
-        """
+            frametype = msg["framehdr"][
+                "frametype"
+            ] = GryphonProtocolFT.FT_DATA  # default
 
         if "body" not in msg:
             raise self.BodyNotFound
 
         if frametype == GryphonProtocolFT.FT_DATA:
 
-            if "data" not in msg['body']:
+            if "data" not in msg["body"]:
                 raise self.DataNotFound
 
-            data_in = msg['body']['data']
+            data_in = msg["body"]["data"]
 
             # hdrlen
             # %%%WARNING: must compute hdrlen before doing hdr[]
@@ -4349,14 +4736,14 @@ class Gryphon(GryphonProtocolDefines):
                     raise self.HdrLenNotFound()
                 # split hdr into hdrlen number of bytes
                 for ind in range(0, hdrlen):
-                    mask = (0x00FF << (8 * ind))
+                    mask = 0x00FF << (8 * ind)
                     num = data_in["hdr"] * mask
                     mybyte = num >> (8 * ind)
                     hdr.append(mybyte)
                 # reverse the list
                 hdr.reverse()
             else:
-                raise self.HdrNotFound(data_in['hdr'])
+                raise self.HdrNotFound(data_in["hdr"])
 
             # hdrbits
             hdrbits = 11  # CANbus 11-bit header, default
@@ -4459,8 +4846,12 @@ class Gryphon(GryphonProtocolDefines):
                 raise self.ValueNotInFT(frametype)
 
             # NOTE: we will need to go back and calculate the message len when all done
-            gcframes.extend([hdrlen, hdrbits, datalen1, datalen2])  # BEACON data header, hdrlen, hdrbits, data len
-            gcframes.extend([extralen, mode, pri, status])  # BEACON data header, extralen, mode, pri, status
+            gcframes.extend(
+                [hdrlen, hdrbits, datalen1, datalen2]
+            )  # BEACON data header, hdrlen, hdrbits, data len
+            gcframes.extend(
+                [extralen, mode, pri, status]
+            )  # BEACON data header, extralen, mode, pri, status
 
             timestamp = []
             if "timestamp" in data_in:
@@ -4495,16 +4886,18 @@ class Gryphon(GryphonProtocolDefines):
 
         elif frametype == GryphonProtocolFT.FT_TEXT:
 
-            if "text" not in msg['body']:
+            if "text" not in msg["body"]:
                 raise self.TextNotFound
 
-            lena = len(msg['body']['text'])
-            gcframes.extend(msg['body']['text'])
+            lena = len(msg["body"]["text"])
+            gcframes.extend(msg["body"]["text"])
             gcframes.extend(self._padding(lena))  # padding
         else:
-            raise self.ValueNotInFT(msg['framehdr']['frametype'])
+            raise self.ValueNotInFT(msg["framehdr"]["frametype"])
 
-        reply_dict = self._build_and_send_command(dst=self.SD_CARD, dstchan=chan, cmd=self.BCMD_CARD_TX, data=gcframes)
+        reply_dict = self._build_and_send_command(
+            dst=self.SD_CARD, dstchan=chan, cmd=self.BCMD_CARD_TX, data=gcframes
+        )
         return reply_dict
 
     def CMD_CARD_TX_LOOP_ON(self, chan):
@@ -4531,7 +4924,9 @@ class Gryphon(GryphonProtocolDefines):
         # TODO we need to verify that get tx loop work for multiple clients and channels
         if chan == 0:
             raise self.ChannelNotValid(chan)
-        return self._build_and_send_command(dst=self.SD_CARD, dstchan=chan, cmd=self.BCMD_CARD_TX_LOOP_ON)
+        return self._build_and_send_command(
+            dst=self.SD_CARD, dstchan=chan, cmd=self.BCMD_CARD_TX_LOOP_ON
+        )
 
     def CMD_CARD_TX_LOOP_OFF(self, chan):
         """tx loop off
@@ -4557,9 +4952,20 @@ class Gryphon(GryphonProtocolDefines):
         # TODO we need to verify that get tx loop work for multiple clients and channels
         if chan == 0:
             raise self.ChannelNotValid(chan)
-        return self._build_and_send_command(dst=self.SD_CARD, dstchan=chan, cmd=self.BCMD_CARD_TX_LOOP_OFF)
+        return self._build_and_send_command(
+            dst=self.SD_CARD, dstchan=chan, cmd=self.BCMD_CARD_TX_LOOP_OFF
+        )
 
-    def CMD_CARD_IOCTL(self, chan, ioctl_in, data_in=None, src=None, srcchan=None, dst=GryphonProtocolSD.SD_CARD, dstchan=None):
+    def CMD_CARD_IOCTL(
+        self,
+        chan,
+        ioctl_in,
+        data_in=None,
+        src=None,
+        srcchan=None,
+        dst=GryphonProtocolSD.SD_CARD,
+        dstchan=None,
+    ):
         #
         # ----------------------------------------------------------------------
         # pylint: disable=too-many-arguments
@@ -4599,7 +5005,7 @@ class Gryphon(GryphonProtocolDefines):
             dstchan = chan
 
         databa = bytearray()
-        ioctlbytes = struct.unpack('4B', struct.pack('>I', ioctl_in))
+        ioctlbytes = struct.unpack("4B", struct.pack(">I", ioctl_in))
         databa.extend(ioctlbytes)
         if data_in is not None:
             # data_in not None
@@ -4610,18 +5016,46 @@ class Gryphon(GryphonProtocolDefines):
                 if srcchan is None:
                     # src None, srcchan None
                     # let it go to defaults
-                    reply_dict = self._build_and_send_command(dst=dst, dstchan=dstchan, cmd=self.BCMD_CARD_IOCTL, data=databa, unusual_length=4 + len(databa) + len(new_padding))
+                    reply_dict = self._build_and_send_command(
+                        dst=dst,
+                        dstchan=dstchan,
+                        cmd=self.BCMD_CARD_IOCTL,
+                        data=databa,
+                        unusual_length=4 + len(databa) + len(new_padding),
+                    )
                     # six.print_("====this one line {} {}".format(4109,reply_dict))
                 else:
                     # src None, srcchan not None
-                    reply_dict = self._build_and_send_command(dst=dst, dstchan=dstchan, cmd=self.BCMD_CARD_IOCTL, data=databa, unusual_length=4 + len(databa) + len(new_padding), srcchan=srcchan)
+                    reply_dict = self._build_and_send_command(
+                        dst=dst,
+                        dstchan=dstchan,
+                        cmd=self.BCMD_CARD_IOCTL,
+                        data=databa,
+                        unusual_length=4 + len(databa) + len(new_padding),
+                        srcchan=srcchan,
+                    )
             else:
                 if srcchan is None:
                     # src not None, srcchan None
-                    reply_dict = self._build_and_send_command(dst=dst, dstchan=dstchan, cmd=self.BCMD_CARD_IOCTL, data=databa, unusual_length=4 + len(databa) + len(new_padding), src=src)
+                    reply_dict = self._build_and_send_command(
+                        dst=dst,
+                        dstchan=dstchan,
+                        cmd=self.BCMD_CARD_IOCTL,
+                        data=databa,
+                        unusual_length=4 + len(databa) + len(new_padding),
+                        src=src,
+                    )
                 else:
                     # src not None, srcchan not None
-                    reply_dict = self._build_and_send_command(dst=dst, dstchan=dstchan, cmd=self.BCMD_CARD_IOCTL, data=databa, unusual_length=4 + len(databa) + len(new_padding), src=src, srcchan=srcchan)
+                    reply_dict = self._build_and_send_command(
+                        dst=dst,
+                        dstchan=dstchan,
+                        cmd=self.BCMD_CARD_IOCTL,
+                        data=databa,
+                        unusual_length=4 + len(databa) + len(new_padding),
+                        src=src,
+                        srcchan=srcchan,
+                    )
 
             reply_dict["GCprotocol"]["body"].update({"data": {}})
             reply_dict["GCprotocol"]["body"]["data"].update({})
@@ -4631,15 +5065,21 @@ class Gryphon(GryphonProtocolDefines):
             while index < len(data_in):
                 # six.print_("====loop while index {} len data_in {}".format(index, len(data_in)))
                 if sys.version_info[0] < 3:
-                    ioctl_data.append(ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][index + 8]))
+                    ioctl_data.append(
+                        ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][index + 8])
+                    )
                 else:
-                    ioctl_data.append(reply_dict["GCprotocol"]["body"][self.RAWDATA][index + 8])
+                    ioctl_data.append(
+                        reply_dict["GCprotocol"]["body"][self.RAWDATA][index + 8]
+                    )
                 index += 1
             reply_dict["GCprotocol"]["body"]["data"].update({"ioctl_data": ioctl_data})
 
         else:
             # data_in None
-            reply_dict = self._build_and_send_command(dst=dst, dstchan=chan, cmd=self.BCMD_CARD_IOCTL, data=databa)
+            reply_dict = self._build_and_send_command(
+                dst=dst, dstchan=chan, cmd=self.BCMD_CARD_IOCTL, data=databa
+            )
 
         return reply_dict
 
@@ -4675,11 +5115,11 @@ class Gryphon(GryphonProtocolDefines):
                 raise self.ChannelNotValid(chan)
 
         databa = bytearray()
-        interationbytes = struct.unpack('4B', struct.pack('>I', iterations))
+        interationbytes = struct.unpack("4B", struct.pack(">I", iterations))
         databa.extend(interationbytes)
 
         if "flags" in data_in:
-            flags = struct.unpack('4B', struct.pack('>I', data_in["flags"]))
+            flags = struct.unpack("4B", struct.pack(">I", data_in["flags"]))
             databa.extend(flags)  # flags critical
         else:
             databa.extend([0, 0, 0, 0])  # flags critical
@@ -4692,17 +5132,19 @@ class Gryphon(GryphonProtocolDefines):
 
         for msg in data_in["message_list"]:
             if "sleep" in msg:
-                sleep = struct.unpack('4B', struct.pack('>I', msg["sleep"]))
+                sleep = struct.unpack("4B", struct.pack(">I", msg["sleep"]))
                 databa.extend(sleep)  # sleep
             else:
                 databa.extend([0, 0, 0, 0])  # sleep
             if "tx_count" in msg:
-                txcount = struct.unpack('4B', struct.pack('>I', msg["tx_count"]))
+                txcount = struct.unpack("4B", struct.pack(">I", msg["tx_count"]))
                 databa.extend(txcount)  # tx count # of times to tx this msg
             else:
-                databa.extend([0, 0, 0, 1])  # tx count # of times to tx this msg, default is 1
+                databa.extend(
+                    [0, 0, 0, 1]
+                )  # tx count # of times to tx this msg, default is 1
             if "tx_period" in msg:
-                txper = struct.unpack('4B', struct.pack('>I', msg["tx_period"]))
+                txper = struct.unpack("4B", struct.pack(">I", msg["tx_period"]))
                 databa.extend(txper)  # tx period
             else:
                 databa.extend([0, 0, 0, 0])  # tx period, default 100-milliseconds
@@ -4754,14 +5196,14 @@ class Gryphon(GryphonProtocolDefines):
                     raise self.HdrLenNotFound()
                 # split hdr into hdrlen number of bytes
                 for ind in range(0, hdrlen):
-                    mask = (0x00FF << (8 * ind))
+                    mask = 0x00FF << (8 * ind)
                     num = msg["hdr"] * mask
                     mybyte = num >> (8 * ind)
                     hdr.append(mybyte)
                 # reverse the list
                 hdr.reverse()
             else:
-                raise self.HdrNotFound(msg['hdr'])
+                raise self.HdrNotFound(msg["hdr"])
 
             # hdrbits
             hdrbits = 11  # CANbus 11-bit header, default
@@ -4868,8 +5310,12 @@ class Gryphon(GryphonProtocolDefines):
                 context = self.cmd_context  # default
 
             gcframe = bytearray()
-            gcframe.extend([hdrlen, hdrbits, datalen1, datalen2])  # BEACON data header, hdrlen, hdrbits, data len
-            gcframe.extend([extralen, mode, pri, status])  # BEACON data header, extralen, mode, pri, status
+            gcframe.extend(
+                [hdrlen, hdrbits, datalen1, datalen2]
+            )  # BEACON data header, hdrlen, hdrbits, data len
+            gcframe.extend(
+                [extralen, mode, pri, status]
+            )  # BEACON data header, extralen, mode, pri, status
             gcframe.extend(timestamp)  # BEACON data header, timestamp
             gcframe.extend([context, 0, 0, 0])  # BEACON data header, context, resv
             gcframe.extend(hdr)  # msg header
@@ -4885,13 +5331,25 @@ class Gryphon(GryphonProtocolDefines):
         # print "-----------len-----"
         # print len(databa)
 
-        reply_dict = self._build_and_send_command(dst=self.SD_SCHED, dstchan=chan, cmd=self.BCMD_SCHED_TX, data=databa)
+        reply_dict = self._build_and_send_command(
+            dst=self.SD_SCHED, dstchan=chan, cmd=self.BCMD_SCHED_TX, data=databa
+        )
         if reply_dict["response_return_code"] != GryphonProtocolResp.RESP_OK:
             return reply_dict
         if sys.version_info[0] < 3:
-            sched_id = (ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][8]) * 1024) + (ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][9]) * 512) + (ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][10]) * 256) + ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][11])
+            sched_id = (
+                (ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][8]) * 1024)
+                + (ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][9]) * 512)
+                + (ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][10]) * 256)
+                + ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][11])
+            )
         else:
-            sched_id = (reply_dict["GCprotocol"]["body"][self.RAWDATA][8] * 1024) + (reply_dict["GCprotocol"]["body"][self.RAWDATA][9] * 512) + (reply_dict["GCprotocol"]["body"][self.RAWDATA][10] * 256) + reply_dict["GCprotocol"]["body"][self.RAWDATA][11]
+            sched_id = (
+                (reply_dict["GCprotocol"]["body"][self.RAWDATA][8] * 1024)
+                + (reply_dict["GCprotocol"]["body"][self.RAWDATA][9] * 512)
+                + (reply_dict["GCprotocol"]["body"][self.RAWDATA][10] * 256)
+                + reply_dict["GCprotocol"]["body"][self.RAWDATA][11]
+            )
         reply_dict.update({"schedule_id": sched_id})
         return reply_dict
 
@@ -4921,9 +5379,11 @@ class Gryphon(GryphonProtocolDefines):
             raise self.ChannelNotValid(chan)
 
         databa = bytearray()
-        interationbytes = struct.unpack('4B', struct.pack('>I', schedule_id))
+        interationbytes = struct.unpack("4B", struct.pack(">I", schedule_id))
         databa.extend(interationbytes)
-        reply_dict = self._build_and_send_command(dst=self.SD_SCHED, dstchan=chan, cmd=self.BCMD_SCHED_KILL_TX, data=databa)
+        reply_dict = self._build_and_send_command(
+            dst=self.SD_SCHED, dstchan=chan, cmd=self.BCMD_SCHED_KILL_TX, data=databa
+        )
         return reply_dict
 
     def CMD_SCHED_MSG_REPLACE(self, schedule_id, data_in, index=1, flush=True, value=0):
@@ -4987,14 +5447,14 @@ class Gryphon(GryphonProtocolDefines):
                 raise self.HdrLenNotFound()
             # split hdr into hdrlen number of bytes
             for ind in range(0, hdrlen):
-                mask = (0x00FF << (8 * ind))
+                mask = 0x00FF << (8 * ind)
                 num = data_in["hdr"] * mask
                 mybyte = num >> (8 * ind)
                 hdr.append(mybyte)
             # reverse the list
             hdr.reverse()
         else:
-            raise self.HdrNotFound(data_in['hdr'])
+            raise self.HdrNotFound(data_in["hdr"])
 
         # hdrbits
         hdrbits = 11  # CANbus 11-bit header, default
@@ -5100,7 +5560,7 @@ class Gryphon(GryphonProtocolDefines):
         else:
             context = self.cmd_context  # default
 
-        sched_id = struct.unpack('4B', struct.pack('>I', schedule_id))
+        sched_id = struct.unpack("4B", struct.pack(">I", schedule_id))
         databa.extend(sched_id)
         databa.extend([index])  # index
         if flush:
@@ -5113,8 +5573,12 @@ class Gryphon(GryphonProtocolDefines):
 
         gcframe = bytearray()
 
-        gcframe.extend([hdrlen, hdrbits, datalen1, datalen2])  # BEACON data header, hdrlen, hdrbits, data len
-        gcframe.extend([extralen, mode, pri, status])  # BEACON data header, extralen, mode, pri, status
+        gcframe.extend(
+            [hdrlen, hdrbits, datalen1, datalen2]
+        )  # BEACON data header, hdrlen, hdrbits, data len
+        gcframe.extend(
+            [extralen, mode, pri, status]
+        )  # BEACON data header, extralen, mode, pri, status
         gcframe.extend(timestamp)  # BEACON data header, timestamp
         gcframe.extend([context, 0, 0, 0])  # BEACON data header, context, resv
         gcframe.extend(hdr)  # msg header
@@ -5123,7 +5587,9 @@ class Gryphon(GryphonProtocolDefines):
         if extra is not None:
             gcframe.extend(extra)  # msg extra
         databa.extend(gcframe)
-        reply_dict = self._build_and_send_command(dst=self.SD_SCHED, dstchan=0, cmd=self.BCMD_SCHED_MSG_REPLACE, data=databa)
+        reply_dict = self._build_and_send_command(
+            dst=self.SD_SCHED, dstchan=0, cmd=self.BCMD_SCHED_MSG_REPLACE, data=databa
+        )
         return reply_dict
 
     def CMD_SCHED_GET_IDS(self):
@@ -5144,7 +5610,9 @@ class Gryphon(GryphonProtocolDefines):
             None.
         """
         # done 20190103
-        reply_dict = self._build_and_send_command(dst=self.SD_SCHED, dstchan=0, cmd=self.BCMD_SCHED_GET_IDS, data=None)
+        reply_dict = self._build_and_send_command(
+            dst=self.SD_SCHED, dstchan=0, cmd=self.BCMD_SCHED_GET_IDS, data=None
+        )
         if sys.version_info[0] < 3:
             nschedules = ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][8])
             reply_dict["GCprotocol"]["body"].update({"data": {}})
@@ -5152,34 +5620,122 @@ class Gryphon(GryphonProtocolDefines):
             idx = 12
             for _ in range(0, nschedules):
                 sched = {}
-                sched["id"] = (ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx]) * 1024) + (ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 1]) * 512) + (ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 2]) * 256) + ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 3])
+                sched["id"] = (
+                    (ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx]) * 1024)
+                    + (
+                        ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 1])
+                        * 512
+                    )
+                    + (
+                        ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 2])
+                        * 256
+                    )
+                    + ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 3])
+                )
                 idx += 4
                 sched["src"] = ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx])
                 idx += 1
-                sched["srcchan"] = ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx])
+                sched["srcchan"] = ord(
+                    reply_dict["GCprotocol"]["body"][self.RAWDATA][idx]
+                )
                 idx += 1
-                sched["dstchan"] = ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx])
+                sched["dstchan"] = ord(
+                    reply_dict["GCprotocol"]["body"][self.RAWDATA][idx]
+                )
                 idx += 1
-                sched["context"] = ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx])
+                sched["context"] = ord(
+                    reply_dict["GCprotocol"]["body"][self.RAWDATA][idx]
+                )
                 idx += 1
-                sched["nmsg"] = (ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx]) * 1024) + (ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 1]) * 512) + (ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 2]) * 256) + ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 3])
+                sched["nmsg"] = (
+                    (ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx]) * 1024)
+                    + (
+                        ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 1])
+                        * 512
+                    )
+                    + (
+                        ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 2])
+                        * 256
+                    )
+                    + ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 3])
+                )
                 idx += 4
 
                 sched["messages"] = []
                 for _ in range(0, sched["nmsg"]):
                     msgs = {}
-                    msgs["index"] = (ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx]) * 256) + ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 1])
+                    msgs["index"] = (
+                        ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx]) * 256
+                    ) + ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 1])
                     idx += 2
                     idx += 2
-                    msgs["sleep"] = (ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx]) * 1024) + (ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 1]) * 512) + (ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 2]) * 256) + ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 3])
+                    msgs["sleep"] = (
+                        (
+                            ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx])
+                            * 1024
+                        )
+                        + (
+                            ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 1])
+                            * 512
+                        )
+                        + (
+                            ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 2])
+                            * 256
+                        )
+                        + ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 3])
+                    )
                     idx += 4
-                    msgs["count"] = (ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx]) * 1024) + (ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 1]) * 512) + (ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 2]) * 256) + ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 3])
+                    msgs["count"] = (
+                        (
+                            ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx])
+                            * 1024
+                        )
+                        + (
+                            ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 1])
+                            * 512
+                        )
+                        + (
+                            ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 2])
+                            * 256
+                        )
+                        + ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 3])
+                    )
                     idx += 4
-                    msgs["period"] = (ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx]) * 1024) + (ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 1]) * 512) + (ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 2]) * 256) + ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 3])
+                    msgs["period"] = (
+                        (
+                            ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx])
+                            * 1024
+                        )
+                        + (
+                            ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 1])
+                            * 512
+                        )
+                        + (
+                            ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 2])
+                            * 256
+                        )
+                        + ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 3])
+                    )
                     idx += 4
-                    msgs["flags"] = (ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx]) * 1024) + (ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 1]) * 512) + (ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 2]) * 256) + ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 3])
+                    msgs["flags"] = (
+                        (
+                            ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx])
+                            * 1024
+                        )
+                        + (
+                            ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 1])
+                            * 512
+                        )
+                        + (
+                            ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 2])
+                            * 256
+                        )
+                        + ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 3])
+                    )
                     idx += 2
-                    msgs["channel"] = ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][idx])
+                    msgs["channel"] = ord(
+                        reply_dict["GCprotocol"]["body"][self.RAWDATA][idx]
+                    )
                     idx += 1
                     idx += 1
                     sched["messages"].append(msgs)
@@ -5192,7 +5748,12 @@ class Gryphon(GryphonProtocolDefines):
             idx = 12
             for _ in range(0, nschedules):
                 sched = {}
-                sched["id"] = (reply_dict["GCprotocol"]["body"][self.RAWDATA][idx] * 1024) + (reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 1] * 512) + (reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 2] * 256) + reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 3]
+                sched["id"] = (
+                    (reply_dict["GCprotocol"]["body"][self.RAWDATA][idx] * 1024)
+                    + (reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 1] * 512)
+                    + (reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 2] * 256)
+                    + reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 3]
+                )
                 idx += 4
                 sched["src"] = reply_dict["GCprotocol"]["body"][self.RAWDATA][idx]
                 idx += 1
@@ -5202,24 +5763,77 @@ class Gryphon(GryphonProtocolDefines):
                 idx += 1
                 sched["context"] = reply_dict["GCprotocol"]["body"][self.RAWDATA][idx]
                 idx += 1
-                sched["nmsg"] = (reply_dict["GCprotocol"]["body"][self.RAWDATA][idx] * 1024) + (reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 1] * 512) + (reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 2] * 256) + reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 3]
+                sched["nmsg"] = (
+                    (reply_dict["GCprotocol"]["body"][self.RAWDATA][idx] * 1024)
+                    + (reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 1] * 512)
+                    + (reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 2] * 256)
+                    + reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 3]
+                )
                 idx += 4
 
                 sched["messages"] = []
                 for _ in range(0, sched["nmsg"]):
                     msgs = {}
-                    msgs["index"] = (reply_dict["GCprotocol"]["body"][self.RAWDATA][idx] * 256) + reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 1]
+                    msgs["index"] = (
+                        reply_dict["GCprotocol"]["body"][self.RAWDATA][idx] * 256
+                    ) + reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 1]
                     idx += 2
                     idx += 2
-                    msgs["sleep"] = (reply_dict["GCprotocol"]["body"][self.RAWDATA][idx] * 1024) + (reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 1] * 512) + (reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 2] * 256) + reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 3]
+                    msgs["sleep"] = (
+                        (reply_dict["GCprotocol"]["body"][self.RAWDATA][idx] * 1024)
+                        + (
+                            reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 1]
+                            * 512
+                        )
+                        + (
+                            reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 2]
+                            * 256
+                        )
+                        + reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 3]
+                    )
                     idx += 4
-                    msgs["count"] = (reply_dict["GCprotocol"]["body"][self.RAWDATA][idx] * 1024) + (reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 1] * 512) + (reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 2] * 256) + reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 3]
+                    msgs["count"] = (
+                        (reply_dict["GCprotocol"]["body"][self.RAWDATA][idx] * 1024)
+                        + (
+                            reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 1]
+                            * 512
+                        )
+                        + (
+                            reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 2]
+                            * 256
+                        )
+                        + reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 3]
+                    )
                     idx += 4
-                    msgs["period"] = (reply_dict["GCprotocol"]["body"][self.RAWDATA][idx] * 1024) + (reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 1] * 512) + (reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 2] * 256) + reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 3]
+                    msgs["period"] = (
+                        (reply_dict["GCprotocol"]["body"][self.RAWDATA][idx] * 1024)
+                        + (
+                            reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 1]
+                            * 512
+                        )
+                        + (
+                            reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 2]
+                            * 256
+                        )
+                        + reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 3]
+                    )
                     idx += 4
-                    msgs["flags"] = (reply_dict["GCprotocol"]["body"][self.RAWDATA][idx] * 1024) + (reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 1] * 512) + (reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 2] * 256) + reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 3]
+                    msgs["flags"] = (
+                        (reply_dict["GCprotocol"]["body"][self.RAWDATA][idx] * 1024)
+                        + (
+                            reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 1]
+                            * 512
+                        )
+                        + (
+                            reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 2]
+                            * 256
+                        )
+                        + reply_dict["GCprotocol"]["body"][self.RAWDATA][idx + 3]
+                    )
                     idx += 2
-                    msgs["channel"] = reply_dict["GCprotocol"]["body"][self.RAWDATA][idx]
+                    msgs["channel"] = reply_dict["GCprotocol"]["body"][self.RAWDATA][
+                        idx
+                    ]
                     idx += 1
                     idx += 1
                     sched["messages"].append(msgs)
@@ -5228,7 +5842,13 @@ class Gryphon(GryphonProtocolDefines):
 
         return reply_dict
 
-    def FT_TEXT_TX(self, chan=GryphonProtocolSD.CH_BROADCAST, text_in="", read_loopback=False, timeout=0.25):
+    def FT_TEXT_TX(
+        self,
+        chan=GryphonProtocolSD.CH_BROADCAST,
+        text_in="",
+        read_loopback=False,
+        timeout=0.25,
+    ):
         """FT_TEXT tx
             The default is to broadcast a blank text string
 
@@ -5252,9 +5872,9 @@ class Gryphon(GryphonProtocolDefines):
             raise self.ChannelNotValid(chan)
         databa = bytearray()
         if sys.version_info[0] < 3:
-            databa.extend(text_in + '\0')
+            databa.extend(text_in + "\0")
         else:
-            databa.extend(bytes(text_in + '\0', encoding='ascii'))
+            databa.extend(bytes(text_in + "\0", encoding="ascii"))
         self._build_and_send_text(dst=self.src_type, dstchan=chan, text=databa)
         reply_dict = {"response_return_code": GryphonProtocolResp.RESP_OK}
 
@@ -5262,7 +5882,9 @@ class Gryphon(GryphonProtocolDefines):
             if chan == self.CH_BROADCAST:
                 reply_dict = self._read_text(timeout=timeout)
                 if reply_dict is None:
-                    six.print_("Warning reply_dict is None in FT_TEXT_TX() broadcast loopback")
+                    six.print_(
+                        "Warning reply_dict is None in FT_TEXT_TX() broadcast loopback"
+                    )
                 else:
                     if isinstance(reply_dict, dict):
                         reply_dict["GCprotocol"]["body"].update({"data": {}})
@@ -5271,9 +5893,13 @@ class Gryphon(GryphonProtocolDefines):
                             msg = "".join(datar).split("\x00")[0]
                         else:
                             msg = "".join(map(chr, datar)).split("\x00")[0]
-                        reply_dict["GCprotocol"]["body"]["data"].update({"broadcast": msg})
+                        reply_dict["GCprotocol"]["body"]["data"].update(
+                            {"broadcast": msg}
+                        )
                     else:
-                        six.print_("Warning reply_dict without expected keys in FT_TEXT_TX() broadcast loopback")
+                        six.print_(
+                            "Warning reply_dict without expected keys in FT_TEXT_TX() broadcast loopback"
+                        )
             elif chan == self.client_id:
                 reply_dict = self._read_text(timeout=timeout)
                 # TODO
@@ -5303,13 +5929,6 @@ class Gryphon(GryphonProtocolDefines):
             None.
         """
         raise self.NotYetImplemented
-        block_number = 0
-        databa = bytearray()
-        databa.extend([block_number])
-        reply = self._build_and_send_command(dst=self.SD_LIN, dstchan=0, cmd=self.BCMD_LDF_LIST, data=databa)
-        # TODO make this get additional lists until none remain
-        name_list = reply['list']
-        return name_list
 
     def CMD_LDF_DESC_AND_UPLOAD(self, filename, description):
         """describe the file and upload the contents
@@ -5336,57 +5955,6 @@ class Gryphon(GryphonProtocolDefines):
         #
         # open the file, get it's total size
         raise self.NotYetImplemented
-        size = os.path.getsize(filename)
-        with open(filename, 'r') as myfile:
-            # filedata = myfile.read().replace('\n', '')
-            filedata = myfile.read()
-        size = len(filedata)
-
-        databa = bytearray()
-        sizearray = [(size >> i & 0xff) for i in (24, 16, 8, 0)]
-        # debug
-        # print sizearray
-        databa.extend(sizearray)
-        databa.extend(filename.ljust(32, '\0'))
-        databa.extend(description.ljust(80, '\0'))
-        reply = self._build_and_send_command(dst=self.SD_LIN, dstchan=0, cmd=self.BCMD_LDF_DESC, data=databa)
-        # debug
-        # print "size {} max {}".format(size, self.MAXPAYLOAD)
-        if size > self.MAXPAYLOAD:
-            # TODO do large files
-            uploaded = 0
-            remaining = size
-            blockn = 0
-            start = 0
-            # end = self.MAXPAYLOAD
-            # end = 66  # try uploading 66bytes at a time, this makes 72 which is even 4bytes therefore no padding
-            end = 254  # try uploading
-            # encode1 = [elem.encode("hex") for elem in filedata]
-            encode1 = [ord(elem) for elem in filedata]
-            while remaining > 0:
-                databb = bytearray()
-                # TODO get this to work for n blocks > 256
-                databb.extend([0, blockn])  # block number
-                # debug
-                # print "start {} end {}".format(start, end)
-                # print "ord 0 is %x 1 is %x" % (ord(filedata[0]), ord(filedata[1]))
-                databb.extend(encode1[start:end])
-                reply = self._build_and_send_command(dst=self.SD_LIN, dstchan=0, cmd=self.BCMD_LDF_UPLOAD, data=databb)
-                thissize = end - start
-                uploaded += thissize
-                remaining -= thissize
-                start = end
-                end += thissize
-                if end > size:
-                    end = size
-                blockn += 1
-        else:
-            encode1 = [elem.encode("hex") for elem in filedata]
-            databb = bytearray()
-            databb.extend([0, 0])  # block number
-            databb.extend(encode1)
-            reply = self._build_and_send_command(dst=self.SD_LIN, dstchan=0, cmd=self.BCMD_LDF_UPLOAD, data=databb)
-        return reply
 
     def CMD_LDF_DELETE(self, filename):
         """delete
@@ -5407,9 +5975,6 @@ class Gryphon(GryphonProtocolDefines):
             None.
         """
         raise self.NotYetImplemented
-        databa = bytearray()
-        databa.extend(filename.ljust(32, '\0'))
-        return self._build_and_send_command(dst=self.SD_LIN, dstchan=0, cmd=self.BCMD_LDF_DELETE, data=databa)
 
     def CMD_LDF_PARSE(self, filename):
         """delete
@@ -5431,9 +5996,6 @@ class Gryphon(GryphonProtocolDefines):
             None.
         """
         raise self.NotYetImplemented
-        databa = bytearray()
-        databa.extend(filename.ljust(32, '\0'))
-        return self._build_and_send_command(dst=self.SD_LIN, dstchan=0, cmd=self.BCMD_LDF_PARSE, data=databa)
 
     def CMD_GET_LDF_INFO(self):
         """delete
@@ -5456,7 +6018,6 @@ class Gryphon(GryphonProtocolDefines):
             None.
         """
         raise self.NotYetImplemented
-        return self._build_and_send_command(dst=self.SD_LIN, dstchan=0, cmd=self.BCMD_GET_LDF_INFO)
 
     def CMD_GET_NODE_NAMES(self):
         """get entire list of LDF names
@@ -5479,8 +6040,6 @@ class Gryphon(GryphonProtocolDefines):
             None.
         """
         raise self.NotYetImplemented
-        reply = self._build_and_send_command(dst=self.SD_LIN, dstchan=0, cmd=self.BCMD_GET_NODE_NAMES)
-        return reply
 
     def CMD_GET_NODE_SIGNALS(self, node_in):
         """get entire list of LDF names
@@ -5503,11 +6062,6 @@ class Gryphon(GryphonProtocolDefines):
             None.
         """
         raise self.NotYetImplemented
-        databa = bytearray()
-        node = node_in + '\x00'
-        databa.extend(node)
-        reply = self._build_and_send_command(dst=self.SD_LIN, dstchan=0, cmd=self.BCMD_GET_NODE_SIGNALS, data=databa)
-        return reply
 
     def CMD_EMULATE_NODES(self, nodes_in):
         """get entire list of LDF names
@@ -5530,15 +6084,6 @@ class Gryphon(GryphonProtocolDefines):
             None.
         """
         raise self.NotYetImplemented
-        databa = bytearray()
-        databa.extend([len(nodes_in)])
-        # TODO change to enumerate
-        for i in range(0, len(nodes_in)):
-            databa.extend([nodes_in[i]['channel']])
-            node = nodes_in[i]['node'] + '\x00'
-            databa.extend(node)
-        reply = self._build_and_send_command(dst=self.SD_LIN, dstchan=0, cmd=self.BCMD_EMULATE_NODES, data=databa)
-        return reply
 
     def CMD_GET_FRAMES(self, node_in):
         """get entire list of LDF names
@@ -5561,10 +6106,6 @@ class Gryphon(GryphonProtocolDefines):
             None.
         """
         raise self.NotYetImplemented
-        databa = bytearray()
-        databa.extend(node_in)
-        reply = self._build_and_send_command(dst=self.SD_LIN, dstchan=0, cmd=self.BCMD_GET_FRAMES, data=databa)
-        return reply
 
     def CMD_GET_FRAME_INFO(self, frame, id_in=None):
         """get entire list of LDF names
@@ -5588,15 +6129,6 @@ class Gryphon(GryphonProtocolDefines):
             None.
         """
         raise self.NotYetImplemented
-        databa = bytearray()
-        if frame == '':
-            databa.extend('\x00')
-            databa.extend([id_in])
-        else:
-            frame0 = frame + '\x00'
-            databa.extend(frame0)
-        reply = self._build_and_send_command(dst=self.SD_LIN, dstchan=0, cmd=self.BCMD_GET_FRAME_INFO, data=databa)
-        return reply
 
     def CMD_GET_SIGNAL_INFO(self, mysignal):
         """get entire list of LDF names
@@ -5619,11 +6151,6 @@ class Gryphon(GryphonProtocolDefines):
             None.
         """
         raise self.NotYetImplemented
-        databa = bytearray()
-        signal0 = mysignal + '\x00'
-        databa.extend(signal0)
-        reply = self._build_and_send_command(dst=self.SD_LIN, dstchan=0, cmd=self.BCMD_GET_SIGNAL_INFO, data=databa)
-        return reply
 
     def CMD_GET_SIGNAL_DETAIL(self, mysignal):
         """get
@@ -5646,11 +6173,6 @@ class Gryphon(GryphonProtocolDefines):
             None.
         """
         raise self.NotYetImplemented
-        databa = bytearray()
-        signal0 = mysignal + '\x00'
-        databa.extend(signal0)
-        reply = self._build_and_send_command(dst=self.SD_LIN, dstchan=0, cmd=self.BCMD_GET_SIGNAL_DETAIL, data=databa)
-        return reply
 
     def CMD_GET_ENCODING_INFO(self, encoding_name):
         """get
@@ -5673,11 +6195,6 @@ class Gryphon(GryphonProtocolDefines):
             None.
         """
         raise self.NotYetImplemented
-        databa = bytearray()
-        name0 = encoding_name + '\x00'
-        databa.extend(name0)
-        reply = self._build_and_send_command(dst=self.SD_LIN, dstchan=0, cmd=self.BCMD_GET_ENCODING_INFO, data=databa)
-        return reply
 
     def CMD_GET_SCHEDULES(self):
         """get sched
@@ -5700,8 +6217,6 @@ class Gryphon(GryphonProtocolDefines):
             None.
         """
         raise self.NotYetImplemented
-        reply = self._build_and_send_command(dst=self.SD_LIN, dstchan=0, cmd=self.BCMD_GET_SCHEDULES)
-        return reply
 
     def CMD_START_SCHEDULE(self, name):
         """get sched
@@ -5724,10 +6239,6 @@ class Gryphon(GryphonProtocolDefines):
             None.
         """
         raise self.NotYetImplemented
-        databa = bytearray()
-        databa.extend(name)
-        reply = self._build_and_send_command(dst=self.SD_LIN, dstchan=0, cmd=self.BCMD_START_SCHEDULE, data=databa)
-        return reply
 
     def CMD_STORE_DATA(self, frame, id_in=None, data_in=None):
         """store data
@@ -5750,18 +6261,6 @@ class Gryphon(GryphonProtocolDefines):
             None.
         """
         raise self.NotYetImplemented
-        databa = bytearray()
-        databa.extend(data_in)
-        if frame == '':
-            databa.extend('\x00')
-            databa.extend([id_in])
-            databa.extend(data_in)
-        else:
-            frame0 = frame + '\x00'
-            databa.extend(frame0)
-            databa.extend([0])
-            databa.extend(data_in)
-        return self._build_and_send_command(dst=self.SD_LIN, dstchan=0, cmd=self.BCMD_STORE_DATA, data=databa)
 
     def CMD_SAVE_SESSION(self, dst=GryphonProtocolSD.SD_LIN, id_in="123"):
         """
@@ -5789,10 +6288,12 @@ class Gryphon(GryphonProtocolDefines):
         # done 20190306
         databa = bytearray()
         if sys.version_info[0] < 3:
-            databa.extend(id_in.ljust(32, '\0'))
+            databa.extend(id_in.ljust(32, "\0"))
         else:
-            databa.extend(bytes(id_in.ljust(32, '\0'), encoding='ascii'))
-        reply_dict = self._build_and_send_command(dst=dst, dstchan=0, cmd=self.BCMD_SAVE_SESSION, data=databa)
+            databa.extend(bytes(id_in.ljust(32, "\0"), encoding="ascii"))
+        reply_dict = self._build_and_send_command(
+            dst=dst, dstchan=0, cmd=self.BCMD_SAVE_SESSION, data=databa
+        )
         return reply_dict
 
     def CMD_RESTORE_SESSION(self, dst=GryphonProtocolSD.SD_LIN, id_in="123"):
@@ -5821,10 +6322,12 @@ class Gryphon(GryphonProtocolDefines):
         # done 20190306
         databa = bytearray()
         if sys.version_info[0] < 3:
-            databa.extend(id_in.ljust(32, '\0'))
+            databa.extend(id_in.ljust(32, "\0"))
         else:
-            databa.extend(bytes(id_in.ljust(32, '\0'), encoding='ascii'))
-        reply_dict = self._build_and_send_command(dst=dst, dstchan=0, cmd=self.BCMD_RESTORE_SESSION, data=databa)
+            databa.extend(bytes(id_in.ljust(32, "\0"), encoding="ascii"))
+        reply_dict = self._build_and_send_command(
+            dst=dst, dstchan=0, cmd=self.BCMD_RESTORE_SESSION, data=databa
+        )
         return reply_dict
 
     def CMD_CNVT_GET_VALUES(self, chan, dataa_in):
@@ -5846,12 +6349,6 @@ class Gryphon(GryphonProtocolDefines):
             None.
         """
         raise self.NotYetImplemented
-        databa = bytearray()
-        databa.extend([len(dataa_in)])
-        # TODO change to enumerate
-        for i in range(0, len(dataa_in)):
-            databa.extend(dataa_in[i] + '\x00')
-        return self._build_and_send_command(dst=self.SD_CNVT, dstchan=chan, cmd=self.BCMD_CNVT_GET_VALUES, data=databa)
 
     def CMD_CNVT_GET_UNITS(self, chan, dataa_in):
         """signal converter get units
@@ -5872,12 +6369,6 @@ class Gryphon(GryphonProtocolDefines):
             None.
         """
         raise self.NotYetImplemented
-        databa = bytearray()
-        databa.extend([len(dataa_in)])
-        # TODO change to enumerate
-        for i in range(0, len(dataa_in)):
-            databa.extend(dataa_in[i] + '\x00')
-        return self._build_and_send_command(dst=self.SD_CNVT, dstchan=chan, cmd=self.BCMD_CNVT_GET_UNITS, data=databa)
 
     def CMD_CNVT_GET_NODE_SIGNALS(self, node_in):
         """get entire list of LDF names
@@ -5900,11 +6391,6 @@ class Gryphon(GryphonProtocolDefines):
             None.
         """
         raise self.NotYetImplemented
-        databa = bytearray()
-        node = node_in + '\x00'
-        databa.extend(node)
-        reply = self._build_and_send_command(dst=self.SD_CNVT, dstchan=0, cmd=self.BCMD_GET_NODE_SIGNALS, data=databa)
-        return reply
 
     def CMD_CNVT_SET_VALUES(self, chan, dataa_in):
         """signal converter set values
@@ -5925,16 +6411,6 @@ class Gryphon(GryphonProtocolDefines):
             None.
         """
         raise self.NotYetImplemented
-        databa = bytearray()
-        databa.extend([len(dataa_in)])
-        # TODO change to enumerate
-        for i in range(0, len(dataa_in)):
-            databa.extend(dataa_in[i]['signal'] + '\x00')
-            databa.extend([dataa_in[i]['value1']])
-            databa.extend([dataa_in[i]['value2']])
-            databa.extend([dataa_in[i]['value3']])
-            databa.extend([dataa_in[i]['value4']])
-        return self._build_and_send_command(dst=self.SD_CNVT, dstchan=chan, cmd=self.BCMD_CNVT_SET_VALUES, data=databa)
 
     def CMD_READ_CNVT_CONFIG(self, filename):
         """signal converter CAN .dbc read config
@@ -5970,11 +6446,13 @@ class Gryphon(GryphonProtocolDefines):
         if sys.version_info[0] < 3:
             databa.extend(config_filename)
         else:
-            databa.extend(bytes(config_filename, encoding='ascii'))
+            databa.extend(bytes(config_filename, encoding="ascii"))
         databa.extend([0])
         # filnamelength = len(config_filename)
         # reply_dict = self._build_and_send_command(dst=self.SD_CNVT, dstchan=0, cmd=self.BCMD_READ_CNVT_CONFIG, data=databa, unusual_length = filnamelength + 4)
-        reply_dict = self._build_and_send_command(dst=self.SD_CNVT, dstchan=0, cmd=self.BCMD_READ_CNVT_CONFIG, data=databa)
+        reply_dict = self._build_and_send_command(
+            dst=self.SD_CNVT, dstchan=0, cmd=self.BCMD_READ_CNVT_CONFIG, data=databa
+        )
 
         return reply_dict
 
@@ -5998,31 +6476,47 @@ class Gryphon(GryphonProtocolDefines):
             None.
         """
         # done 20190306
-        reply_dict = self._build_and_send_command(dst=self.SD_CNVT, dstchan=0, cmd=self.BCMD_CNVT_GET_MSG_NAMES, data=None)
+        reply_dict = self._build_and_send_command(
+            dst=self.SD_CNVT, dstchan=0, cmd=self.BCMD_CNVT_GET_MSG_NAMES, data=None
+        )
         if sys.version_info[0] < 3:
-            nids = (ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][8]) * 256) + ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][9])
+            nids = (ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][8]) * 256) + ord(
+                reply_dict["GCprotocol"]["body"][self.RAWDATA][9]
+            )
             reply_dict["GCprotocol"]["body"].update({"data": {}})
             reply_dict["GCprotocol"]["body"]["data"].update({"number": nids})
             reply_dict["GCprotocol"]["body"]["data"].update({"names": []})
             index = 10
             for _ in range(0, nids):
                 name = {}
-                frame_id_length = ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][index])
-                name['frame_id_length'] = frame_id_length
+                frame_id_length = ord(
+                    reply_dict["GCprotocol"]["body"][self.RAWDATA][index]
+                )
+                name["frame_id_length"] = frame_id_length
                 index += 1
                 frame_id = 0
                 for n in range(frame_id_length - 1, 0, -1):
-                    frame_id += ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][index]) * (256 * n)
+                    frame_id += ord(
+                        reply_dict["GCprotocol"]["body"][self.RAWDATA][index]
+                    ) * (256 * n)
                     index += 1
                 frame_id += ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][index])
                 index += 1
-                name['frame_id'] = frame_id
-                end = index + reply_dict["GCprotocol"]["body"][self.RAWDATA][index:].index('\x00')  # find first null at end of C string
-                name['message_name'] = ''.join(reply_dict["GCprotocol"]["body"][self.RAWDATA][index:end])
+                name["frame_id"] = frame_id
+                end = index + reply_dict["GCprotocol"]["body"][self.RAWDATA][
+                    index:
+                ].index(
+                    "\x00"
+                )  # find first null at end of C string
+                name["message_name"] = "".join(
+                    reply_dict["GCprotocol"]["body"][self.RAWDATA][index:end]
+                )
                 index = end + 1
                 reply_dict["GCprotocol"]["body"]["data"]["names"].append(name)
         else:
-            nids = (reply_dict["GCprotocol"]["body"][self.RAWDATA][8] * 256) + reply_dict["GCprotocol"]["body"][self.RAWDATA][9]
+            nids = (
+                reply_dict["GCprotocol"]["body"][self.RAWDATA][8] * 256
+            ) + reply_dict["GCprotocol"]["body"][self.RAWDATA][9]
             reply_dict["GCprotocol"]["body"].update({"data": {}})
             reply_dict["GCprotocol"]["body"]["data"].update({"number": nids})
             reply_dict["GCprotocol"]["body"]["data"].update({"names": []})
@@ -6030,17 +6524,25 @@ class Gryphon(GryphonProtocolDefines):
             for _ in range(0, nids):
                 name = {}
                 frame_id_length = reply_dict["GCprotocol"]["body"][self.RAWDATA][index]
-                name['frame_id_length'] = frame_id_length
+                name["frame_id_length"] = frame_id_length
                 index += 1
                 frame_id = 0
                 for n in range(frame_id_length - 1, 0, -1):
-                    frame_id += reply_dict["GCprotocol"]["body"][self.RAWDATA][index] * (256 * n)
+                    frame_id += reply_dict["GCprotocol"]["body"][self.RAWDATA][
+                        index
+                    ] * (256 * n)
                     index += 1
                 frame_id += reply_dict["GCprotocol"]["body"][self.RAWDATA][index]
                 index += 1
-                name['frame_id'] = frame_id
-                end = index + reply_dict["GCprotocol"]["body"][self.RAWDATA][index:].index(0)  # find first null at end of C string
-                name['message_name'] = ''.join(map(chr, reply_dict["GCprotocol"]["body"][self.RAWDATA][index:end]))
+                name["frame_id"] = frame_id
+                end = index + reply_dict["GCprotocol"]["body"][self.RAWDATA][
+                    index:
+                ].index(
+                    0
+                )  # find first null at end of C string
+                name["message_name"] = "".join(
+                    map(chr, reply_dict["GCprotocol"]["body"][self.RAWDATA][index:end])
+                )
                 index = end + 1
                 reply_dict["GCprotocol"]["body"]["data"]["names"].append(name)
 
@@ -6071,31 +6573,57 @@ class Gryphon(GryphonProtocolDefines):
         if sys.version_info[0] < 3:
             databa.extend(message_name)
             databa.extend([0])
-            reply_dict = self._build_and_send_command(dst=self.SD_CNVT, dstchan=0, cmd=self.BCMD_CNVT_GET_SIG_NAMES, data=databa)
-            nsigs = (ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][8]) * 256) + ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][9])
+            reply_dict = self._build_and_send_command(
+                dst=self.SD_CNVT,
+                dstchan=0,
+                cmd=self.BCMD_CNVT_GET_SIG_NAMES,
+                data=databa,
+            )
+            nsigs = (
+                ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][8]) * 256
+            ) + ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][9])
             reply_dict["GCprotocol"]["body"].update({"data": {}})
             reply_dict["GCprotocol"]["body"]["data"].update({"number": nsigs})
             reply_dict["GCprotocol"]["body"]["data"].update({"signals": []})
             index = 10
             for _ in range(0, nsigs):
                 signaldict = {}
-                end = index + reply_dict["GCprotocol"]["body"][self.RAWDATA][index:].index('\x00')  # find first null at end of C string
-                signaldict['signal_name'] = ''.join(reply_dict["GCprotocol"]["body"][self.RAWDATA][index:end])
+                end = index + reply_dict["GCprotocol"]["body"][self.RAWDATA][
+                    index:
+                ].index(
+                    "\x00"
+                )  # find first null at end of C string
+                signaldict["signal_name"] = "".join(
+                    reply_dict["GCprotocol"]["body"][self.RAWDATA][index:end]
+                )
                 index = end + 1
                 reply_dict["GCprotocol"]["body"]["data"]["signals"].append(signaldict)
         else:
-            databa.extend(bytes(message_name, encoding='ascii'))
+            databa.extend(bytes(message_name, encoding="ascii"))
             databa.extend([0])
-            reply_dict = self._build_and_send_command(dst=self.SD_CNVT, dstchan=0, cmd=self.BCMD_CNVT_GET_SIG_NAMES, data=databa)
-            nsigs = (reply_dict["GCprotocol"]["body"][self.RAWDATA][8] * 256) + reply_dict["GCprotocol"]["body"][self.RAWDATA][9]
+            reply_dict = self._build_and_send_command(
+                dst=self.SD_CNVT,
+                dstchan=0,
+                cmd=self.BCMD_CNVT_GET_SIG_NAMES,
+                data=databa,
+            )
+            nsigs = (
+                reply_dict["GCprotocol"]["body"][self.RAWDATA][8] * 256
+            ) + reply_dict["GCprotocol"]["body"][self.RAWDATA][9]
             reply_dict["GCprotocol"]["body"].update({"data": {}})
             reply_dict["GCprotocol"]["body"]["data"].update({"number": nsigs})
             reply_dict["GCprotocol"]["body"]["data"].update({"signals": []})
             index = 10
             for _ in range(0, nsigs):
                 signaldict = {}
-                end = index + reply_dict["GCprotocol"]["body"][self.RAWDATA][index:].index(0)  # find first null at end of C string
-                signaldict['signal_name'] = ''.join(map(chr, reply_dict["GCprotocol"]["body"][self.RAWDATA][index:end]))
+                end = index + reply_dict["GCprotocol"]["body"][self.RAWDATA][
+                    index:
+                ].index(
+                    0
+                )  # find first null at end of C string
+                signaldict["signal_name"] = "".join(
+                    map(chr, reply_dict["GCprotocol"]["body"][self.RAWDATA][index:end])
+                )
                 index = end + 1
                 reply_dict["GCprotocol"]["body"]["data"]["signals"].append(signaldict)
 
@@ -6131,59 +6659,87 @@ class Gryphon(GryphonProtocolDefines):
         if chan == 0:
             raise self.ChannelNotValid(chan)
 
-        if 'signal_names' not in signal_list:
+        if "signal_names" not in signal_list:
             raise self.SignalNameNotFound(signal_list)
 
         databa = bytearray()
-        nsigs = len(signal_list['signal_names'])
+        nsigs = len(signal_list["signal_names"])
         databa.extend([nsigs])  # numb of signals
-        if 'flag' in signal_list:
-            databa.extend([signal_list['flag']])  # flag
+        if "flag" in signal_list:
+            databa.extend([signal_list["flag"]])  # flag
         else:
             databa.extend([1])  # default flag 0x00
-        if 'value' in signal_list:
-            val1 = (signal_list['value'] & 0xFF00) >> 8
-            val2 = signal_list['value'] & 0x00FF
+        if "value" in signal_list:
+            val1 = (signal_list["value"] & 0xFF00) >> 8
+            val2 = signal_list["value"] & 0x00FF
             databa.extend([val1, val2])  # value
         else:
             databa.extend([0, 0])  # default value 0x0000
 
         if sys.version_info[0] < 3:
-            for item in signal_list['signal_names']:
+            for item in signal_list["signal_names"]:
                 databa.extend(item)
                 databa.extend([0])  # null terminated string
 
-            reply_dict = self._build_and_send_command(dst=self.SD_CNVT, dstchan=chan, cmd=self.BCMD_CNVT_REQ_VALUES, data=databa)
-            signal_request_index = ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][8])
+            reply_dict = self._build_and_send_command(
+                dst=self.SD_CNVT,
+                dstchan=chan,
+                cmd=self.BCMD_CNVT_REQ_VALUES,
+                data=databa,
+            )
+            signal_request_index = ord(
+                reply_dict["GCprotocol"]["body"][self.RAWDATA][8]
+            )
             nunits = ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][9])
             reply_dict["GCprotocol"]["body"].update({"data": {}})
-            reply_dict["GCprotocol"]["body"]["data"].update({"signal_request_index": signal_request_index})
+            reply_dict["GCprotocol"]["body"]["data"].update(
+                {"signal_request_index": signal_request_index}
+            )
             reply_dict["GCprotocol"]["body"]["data"].update({"number": nunits})
             reply_dict["GCprotocol"]["body"]["data"].update({"units": []})
             index = 10
             for _ in range(0, nunits):
                 units = ""
-                end = index + reply_dict["GCprotocol"]["body"][self.RAWDATA][index:].index('\x00')  # find first null at end of C string
-                units = ''.join(reply_dict["GCprotocol"]["body"][self.RAWDATA][index:end])
+                end = index + reply_dict["GCprotocol"]["body"][self.RAWDATA][
+                    index:
+                ].index(
+                    "\x00"
+                )  # find first null at end of C string
+                units = "".join(
+                    reply_dict["GCprotocol"]["body"][self.RAWDATA][index:end]
+                )
                 index = end + 1
                 reply_dict["GCprotocol"]["body"]["data"]["units"].append(units)
         else:
-            for item in signal_list['signal_names']:
-                databa.extend(bytes(item, encoding='ascii'))
+            for item in signal_list["signal_names"]:
+                databa.extend(bytes(item, encoding="ascii"))
                 databa.extend([0])  # null terminated string
 
-            reply_dict = self._build_and_send_command(dst=self.SD_CNVT, dstchan=chan, cmd=self.BCMD_CNVT_REQ_VALUES, data=databa)
+            reply_dict = self._build_and_send_command(
+                dst=self.SD_CNVT,
+                dstchan=chan,
+                cmd=self.BCMD_CNVT_REQ_VALUES,
+                data=databa,
+            )
             signal_request_index = reply_dict["GCprotocol"]["body"][self.RAWDATA][8]
             nunits = reply_dict["GCprotocol"]["body"][self.RAWDATA][9]
             reply_dict["GCprotocol"]["body"].update({"data": {}})
-            reply_dict["GCprotocol"]["body"]["data"].update({"signal_request_index": signal_request_index})
+            reply_dict["GCprotocol"]["body"]["data"].update(
+                {"signal_request_index": signal_request_index}
+            )
             reply_dict["GCprotocol"]["body"]["data"].update({"number": nunits})
             reply_dict["GCprotocol"]["body"]["data"].update({"units": []})
             index = 10
             for _ in range(0, nunits):
                 units = ""
-                end = index + reply_dict["GCprotocol"]["body"][self.RAWDATA][index:].index(0)  # find first null at end of C string
-                units = ''.join(map(chr, reply_dict["GCprotocol"]["body"][self.RAWDATA][index:end]))
+                end = index + reply_dict["GCprotocol"]["body"][self.RAWDATA][
+                    index:
+                ].index(
+                    0
+                )  # find first null at end of C string
+                units = "".join(
+                    map(chr, reply_dict["GCprotocol"]["body"][self.RAWDATA][index:end])
+                )
                 index = end + 1
                 reply_dict["GCprotocol"]["body"]["data"]["units"].append(units)
 
@@ -6255,7 +6811,9 @@ class Gryphon(GryphonProtocolDefines):
             raise self.ChannelNotValid(chan)
 
         # flags
-        if ("filter_flag" in dataa_in) and (dataa_in['filter_flag'] == GryphonProtocolFilterFlags.FILTER_FLAG_INACTIVE):
+        if ("filter_flag" in dataa_in) and (
+            dataa_in["filter_flag"] == GryphonProtocolFilterFlags.FILTER_FLAG_INACTIVE
+        ):
             flags = GryphonProtocolFilterFlags.FILTER_FLAG_INACTIVE  # default
         else:
             flags = GryphonProtocolFilterFlags.FILTER_FLAG_ACTIVE  # default
@@ -6263,33 +6821,43 @@ class Gryphon(GryphonProtocolDefines):
         # n filter blocks
         if "filter_blocks" not in dataa_in:
             raise self.FilterBlocksNotFound
-        nfilter_blocks = len(dataa_in['filter_blocks'])
+        nfilter_blocks = len(dataa_in["filter_blocks"])
 
         # n response blocks
         if "response_blocks" not in dataa_in:
             raise self.RespBlocksNotFound()
-        nresp_blocks = len(dataa_in['response_blocks'])
+        nresp_blocks = len(dataa_in["response_blocks"])
 
         # old_handle
         if "old_handle" in dataa_in:
-            old_handle = dataa_in['old_handle']
+            old_handle = dataa_in["old_handle"]
         else:
             old_handle = 0  # default
 
         # action_code default is GryphonProtocolMSGRESPActions.FR_RESP_AFTER_EVENT
         if "action_code" in dataa_in:
             # must be one and only one of these
-            if dataa_in["action_code"] not in (GryphonProtocolMSGRESPActions.FR_RESP_AFTER_EVENT, GryphonProtocolMSGRESPActions.FR_RESP_AFTER_PERIOD, GryphonProtocolMSGRESPActions.FR_IGNORE_DURING_PER):
+            if dataa_in["action_code"] not in (
+                GryphonProtocolMSGRESPActions.FR_RESP_AFTER_EVENT,
+                GryphonProtocolMSGRESPActions.FR_RESP_AFTER_PERIOD,
+                GryphonProtocolMSGRESPActions.FR_IGNORE_DURING_PER,
+            ):
                 raise self.ActionNotValid(dataa_in["action_code"])
-            action_code = dataa_in['action_code']
+            action_code = dataa_in["action_code"]
         else:
             action_code = GryphonProtocolMSGRESPActions.FR_RESP_AFTER_EVENT
 
         # action_flags default is GryphonProtocolMSGRESPActions.FR_RESP_AFTER_EVENT
         if "action_flag" in dataa_in:
-            if dataa_in["action_flag"] not in (0, GryphonProtocolMSGRESPActions.FR_PERIOD_MSGS, GryphonProtocolMSGRESPActions.FR_DELETE, GryphonProtocolMSGRESPActions.FR_DEACT_ON_EVENT, GryphonProtocolMSGRESPActions.FR_DEACT_AFTER_PER):
+            if dataa_in["action_flag"] not in (
+                0,
+                GryphonProtocolMSGRESPActions.FR_PERIOD_MSGS,
+                GryphonProtocolMSGRESPActions.FR_DELETE,
+                GryphonProtocolMSGRESPActions.FR_DEACT_ON_EVENT,
+                GryphonProtocolMSGRESPActions.FR_DEACT_AFTER_PER,
+            ):
                 raise self.ActionNotValid(dataa_in["action_flag"])
-            action_code |= dataa_in['action_flag']
+            action_code |= dataa_in["action_flag"]
 
         # break into 2 bytes
         action_value1 = 0  # default
@@ -6300,7 +6868,10 @@ class Gryphon(GryphonProtocolDefines):
 
         # implement action_value, action_time_value, action_message_counter_value
         if "action_time_value" in dataa_in:
-            if not dataa_in["action_flag"] & GryphonProtocolMSGRESPActions.FR_PERIOD_MSGS:
+            if (
+                not dataa_in["action_flag"]
+                & GryphonProtocolMSGRESPActions.FR_PERIOD_MSGS
+            ):
                 raise self.ActionNotValid(dataa_in["action_time_value"])
             if "action_value" in dataa_in:
                 if dataa_in["action_value"] != dataa_in["action_time_value"]:
@@ -6308,7 +6879,10 @@ class Gryphon(GryphonProtocolDefines):
             action_value1 = (dataa_in["action_time_value"] & 0xFF00) >> 8
             action_value2 = (dataa_in["action_time_value"] & 0x00FF) >> 0
         if "action_message_counter_value" in dataa_in:
-            if not dataa_in["action_flag"] & GryphonProtocolMSGRESPActions.FR_PERIOD_MSGS:
+            if (
+                not dataa_in["action_flag"]
+                & GryphonProtocolMSGRESPActions.FR_PERIOD_MSGS
+            ):
                 raise self.ActionNotValid(dataa_in["action_message_counter_value"])
             if "action_value" in dataa_in:
                 if dataa_in["action_value"] != dataa_in["action_message_counter_value"]:
@@ -6317,7 +6891,9 @@ class Gryphon(GryphonProtocolDefines):
             action_value2 = (dataa_in["action_message_counter_value"] & 0x00FF) >> 0
 
         databa = bytearray()
-        databa.extend([flags, nfilter_blocks, nresp_blocks, old_handle])  # flags, #filter blocks, #resps, oldhandle
+        databa.extend(
+            [flags, nfilter_blocks, nresp_blocks, old_handle]
+        )  # flags, #filter blocks, #resps, oldhandle
         databa.extend([action_code, 0, action_value1, action_value2])
 
         filters = bytearray()
@@ -6327,37 +6903,41 @@ class Gryphon(GryphonProtocolDefines):
             if "byte_offset" not in block:
                 raise self.ByteOffsetNotFound
             # break into 2 bytes
-            bo1 = (block['byte_offset'] & 0xFF00) >> 8
-            bo2 = (block['byte_offset'] & 0x00FF) >> 0
+            bo1 = (block["byte_offset"] & 0xFF00) >> 8
+            bo2 = (block["byte_offset"] & 0x00FF) >> 0
             filters.extend([bo1, bo2])
 
             field_length = 0
             if "operator" not in block:
                 raise self.OperatorNotFound
-            if block['operator'] == GryphonProtocolFilterCondition.BIT_FIELD_CHECK:
+            if block["operator"] == GryphonProtocolFilterCondition.BIT_FIELD_CHECK:
                 if "pattern" not in block:
                     raise self.PatternNotFound
                 if "mask" not in block:
                     raise self.MaskNotFound
-                if len(block['pattern']) != len(block['mask']):
-                    raise self.LengthsNotEqual(block['pattern'], block['mask'])
+                if len(block["pattern"]) != len(block["mask"]):
+                    raise self.LengthsNotEqual(block["pattern"], block["mask"])
 
-                field_length = len(block['pattern'])
-                pattern_mask_length = len(block['pattern']) + len(block['mask'])
+                field_length = len(block["pattern"])
+                pattern_mask_length = len(block["pattern"]) + len(block["mask"])
 
-            elif (block['operator'] == GryphonProtocolFilterCondition.DIG_LOW_TO_HIGH) or (block['operator'] == GryphonProtocolFilterCondition.DIG_HIGH_TO_LOW) or (block['operator'] == GryphonProtocolFilterCondition.DIG_TRANSITION):
+            elif (
+                (block["operator"] == GryphonProtocolFilterCondition.DIG_LOW_TO_HIGH)
+                or (block["operator"] == GryphonProtocolFilterCondition.DIG_HIGH_TO_LOW)
+                or (block["operator"] == GryphonProtocolFilterCondition.DIG_TRANSITION)
+            ):
 
                 if "bit_mask" not in block:
                     raise self.BitMaskNotFound
 
-                field_length = len(block['bit_mask'])
+                field_length = len(block["bit_mask"])
 
             else:
 
                 if "value" not in block:
                     raise self.ValueNotFound
 
-                field_length = len(block['value'])
+                field_length = len(block["value"])
 
             # break into 2 bytes
             le1 = (field_length & 0xFF00) >> 8
@@ -6369,23 +6949,29 @@ class Gryphon(GryphonProtocolDefines):
             values[:] = [x for x in values if "__" not in x]
             filtervalues = []
             # get the actual values of all of the commands, using the attribute names
-            filtervalues.extend([getattr(GryphonProtocolFilterDataType, x) for x in values])
+            filtervalues.extend(
+                [getattr(GryphonProtocolFilterDataType, x) for x in values]
+            )
             if block["data_type"] not in filtervalues:
                 raise self.ValueNotInFilterDataType(block["data_type"])
 
-            filters.extend([block['data_type']])
-            filters.extend([block['operator']])
+            filters.extend([block["data_type"]])
+            filters.extend([block["operator"]])
             filters.extend([0, 0])  # reserved
 
-            if block['operator'] == GryphonProtocolFilterCondition.BIT_FIELD_CHECK:
-                filters.extend(block['pattern'])
-                filters.extend(block['mask'])
+            if block["operator"] == GryphonProtocolFilterCondition.BIT_FIELD_CHECK:
+                filters.extend(block["pattern"])
+                filters.extend(block["mask"])
                 filters.extend(self._padding(pattern_mask_length))  # padding
-            elif (block['operator'] == GryphonProtocolFilterCondition.DIG_LOW_TO_HIGH) or (block['operator'] == GryphonProtocolFilterCondition.DIG_HIGH_TO_LOW) or (block['operator'] == GryphonProtocolFilterCondition.DIG_TRANSITION):
-                filters.extend(block['bit_mask'])
+            elif (
+                (block["operator"] == GryphonProtocolFilterCondition.DIG_LOW_TO_HIGH)
+                or (block["operator"] == GryphonProtocolFilterCondition.DIG_HIGH_TO_LOW)
+                or (block["operator"] == GryphonProtocolFilterCondition.DIG_TRANSITION)
+            ):
+                filters.extend(block["bit_mask"])
                 filters.extend(self._padding(field_length))  # padding
             else:
-                filters.extend(block['value'])
+                filters.extend(block["value"])
                 filters.extend(self._padding(field_length))  # padding
 
         databa.extend(filters)
@@ -6396,43 +6982,45 @@ class Gryphon(GryphonProtocolDefines):
             if "framehdr" not in block:
                 raise self.FrameHdrNotFound
 
-            if "src" in block['framehdr']:
-                src = block['framehdr']['src']
+            if "src" in block["framehdr"]:
+                src = block["framehdr"]["src"]
             else:
                 src = GryphonProtocolSD.SD_CLIENT
 
-            if "srcchan" in block['framehdr']:
-                srcchan = block['framehdr']['srcchan']
+            if "srcchan" in block["framehdr"]:
+                srcchan = block["framehdr"]["srcchan"]
             else:
                 srcchan = self.client_id
 
-            if "dst" not in block['framehdr']:
+            if "dst" not in block["framehdr"]:
                 raise self.FrameHdrNotFound
-            if "dstchan" not in block['framehdr']:
+            if "dstchan" not in block["framehdr"]:
                 raise self.FrameHdrNotFound
-            dst = block['framehdr']['dst']
-            dstchan = block['framehdr']['dstchan']
+            dst = block["framehdr"]["dst"]
+            dstchan = block["framehdr"]["dstchan"]
 
             gcframes.extend([src, srcchan, dst, dstchan])  # src, srchan, dst, dstchan
 
             # default FT_DATA
-            if "frametype" in block['framehdr']:
+            if "frametype" in block["framehdr"]:
                 # TODO create defines to replace constants
-                frametype = block['framehdr']['frametype'] & 0x3F
+                frametype = block["framehdr"]["frametype"] & 0x3F
             else:
-                frametype = block['framehdr']['frametype'] = GryphonProtocolFT.FT_DATA  # default
+                frametype = block["framehdr"][
+                    "frametype"
+                ] = GryphonProtocolFT.FT_DATA  # default
 
-            if "frametype_with_flags" in block['framehdr']:
+            if "frametype_with_flags" in block["framehdr"]:
                 frametype_raw = block["framehdr"]["frametype_with_flags"]
             else:
                 frametype_raw = frametype
 
-            if 'flag_dont_wait' in block['framehdr']:
-                if block['framehdr']['flag_dont_wait']:
+            if "flag_dont_wait" in block["framehdr"]:
+                if block["framehdr"]["flag_dont_wait"]:
                     # TODO create defines to replace constants
                     frametype_raw |= 0x80  # dont wait for a response
-            if 'flag_send_after' in block['framehdr']:
-                if block['framehdr']['flag_send_after']:
+            if "flag_send_after" in block["framehdr"]:
+                if block["framehdr"]["flag_send_after"]:
                     # TODO create defines to replace constants
                     frametype_raw |= 0x40  # send out this command after all responses
 
@@ -6441,10 +7029,10 @@ class Gryphon(GryphonProtocolDefines):
 
             if frametype == GryphonProtocolFT.FT_DATA:
 
-                if "data" not in block['body']:
+                if "data" not in block["body"]:
                     raise self.DataNotFound
 
-                data_in = block['body']['data']
+                data_in = block["body"]["data"]
 
                 # hdrlen
                 # %%%WARNING: must compute hdrlen before doing hdr[]
@@ -6475,14 +7063,14 @@ class Gryphon(GryphonProtocolDefines):
                         raise self.HdrLenNotFound()
                     # split hdr into hdrlen number of bytes
                     for ind in range(0, hdrlen):
-                        mask = (0x00FF << (8 * ind))
+                        mask = 0x00FF << (8 * ind)
                         num = data_in["hdr"] * mask
                         mybyte = num >> (8 * ind)
                         hdr.append(mybyte)
                     # reverse the list
                     hdr.reverse()
                 else:
-                    raise self.HdrNotFound(data_in['hdr'])
+                    raise self.HdrNotFound(data_in["hdr"])
 
                 # hdrbits
                 hdrbits = 11  # CANbus 11-bit header, default
@@ -6578,26 +7166,32 @@ class Gryphon(GryphonProtocolDefines):
                         msglen = len(hdr) + len(data) + len(extra) + 16
                 elif frametype == GryphonProtocolFT.FT_EVENT:
                     # TODO implement FT_EVENT for CMD_MSGRESP_ADD()
-                    raise self.ValueNotValid(block['framehdr']['frametype'])
+                    raise self.ValueNotValid(block["framehdr"]["frametype"])
                 elif frametype == GryphonProtocolFT.FT_MISC:
                     # TODO implement FT_MISC for CMD_MSGRESP_ADD()
-                    raise self.ValueNotValid(block['framehdr']['frametype'])
+                    raise self.ValueNotValid(block["framehdr"]["frametype"])
                 elif frametype == GryphonProtocolFT.FT_TEXT:
                     # TODO implement FT_TEXT for CMD_MSGRESP_ADD()
-                    raise self.ValueNotValid(block['framehdr']['frametype'])
+                    raise self.ValueNotValid(block["framehdr"]["frametype"])
                 elif frametype == GryphonProtocolFT.FT_SIG:
                     # TODO implement FT_SIG for CMD_MSGRESP_ADD()
-                    raise self.ValueNotValid(block['framehdr']['frametype'])
+                    raise self.ValueNotValid(block["framehdr"]["frametype"])
                 else:
-                    raise self.ValueNotInFT(block['framehdr']['frametype'])
+                    raise self.ValueNotInFT(block["framehdr"]["frametype"])
 
                 msglen1 = (msglen & 0xFF00) >> 8
                 msglen2 = (msglen & 0x00FF) >> 0
 
                 # NOTE: we will need to go back and calculate the message len when all done
-                gcframes.extend([msglen1, msglen2, frametype_raw, 0])  # data len, frame type, rsvd
-                gcframes.extend([hdrlen, hdrbits, datalen1, datalen2])  # BEACON data header, hdrlen, hdrbits, data len
-                gcframes.extend([extralen, mode, pri, status])  # BEACON data header, extralen, mode, pri, status
+                gcframes.extend(
+                    [msglen1, msglen2, frametype_raw, 0]
+                )  # data len, frame type, rsvd
+                gcframes.extend(
+                    [hdrlen, hdrbits, datalen1, datalen2]
+                )  # BEACON data header, hdrlen, hdrbits, data len
+                gcframes.extend(
+                    [extralen, mode, pri, status]
+                )  # BEACON data header, extralen, mode, pri, status
 
                 timestamp = []
                 if "timestamp" in data_in:
@@ -6606,10 +7200,18 @@ class Gryphon(GryphonProtocolDefines):
                     else:
                         # turn int into a list
                         # TODO
-                        timestamp.append(((data_in["timestamp"] & 0xFF000000) >> 24) & 0xFF)
-                        timestamp.append(((data_in["timestamp"] & 0x00FF0000) >> 16) & 0xFF)
-                        timestamp.append(((data_in["timestamp"] & 0x0000FF00) >> 8) & 0xFF)
-                        timestamp.append(((data_in["timestamp"] & 0x000000FF) >> 0) & 0xFF)
+                        timestamp.append(
+                            ((data_in["timestamp"] & 0xFF000000) >> 24) & 0xFF
+                        )
+                        timestamp.append(
+                            ((data_in["timestamp"] & 0x00FF0000) >> 16) & 0xFF
+                        )
+                        timestamp.append(
+                            ((data_in["timestamp"] & 0x0000FF00) >> 8) & 0xFF
+                        )
+                        timestamp.append(
+                            ((data_in["timestamp"] & 0x000000FF) >> 0) & 0xFF
+                        )
                 else:
                     timestamp = [0, 0, 0, 0]  # default
 
@@ -6632,26 +7234,44 @@ class Gryphon(GryphonProtocolDefines):
 
             elif frametype == GryphonProtocolFT.FT_TEXT:
 
-                if "text" not in block['body']:
+                if "text" not in block["body"]:
                     raise self.TextNotFound
 
-                lena = len(block['body']['text'])
-                gcframes.extend(block['body']['text'])
+                lena = len(block["body"]["text"])
+                gcframes.extend(block["body"]["text"])
                 gcframes.extend(self._padding(lena))  # padding
             else:
-                raise self.ValueNotInFT(block['framehdr']['frametype'])
+                raise self.ValueNotInFT(block["framehdr"]["frametype"])
 
         databa.extend(gcframes)
 
-        reply_dict = self._build_and_send_command(dst=self.SD_RESP, dstchan=chan, cmd=self.BCMD_MSGRESP_ADD, data=databa)
+        reply_dict = self._build_and_send_command(
+            dst=self.SD_RESP, dstchan=chan, cmd=self.BCMD_MSGRESP_ADD, data=databa
+        )
         if sys.version_info[0] < 3:
-            reply_dict.update({"response_handle": ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][8])})
+            reply_dict.update(
+                {
+                    "response_handle": ord(
+                        reply_dict["GCprotocol"]["body"][self.RAWDATA][8]
+                    )
+                }
+            )
             reply_dict["GCprotocol"]["body"].update({"data": {}})
-            reply_dict["GCprotocol"]["body"]["data"].update({"response_handle": ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][8])})
+            reply_dict["GCprotocol"]["body"]["data"].update(
+                {
+                    "response_handle": ord(
+                        reply_dict["GCprotocol"]["body"][self.RAWDATA][8]
+                    )
+                }
+            )
         else:
-            reply_dict.update({"response_handle": reply_dict["GCprotocol"]["body"][self.RAWDATA][8]})
+            reply_dict.update(
+                {"response_handle": reply_dict["GCprotocol"]["body"][self.RAWDATA][8]}
+            )
             reply_dict["GCprotocol"]["body"].update({"data": {}})
-            reply_dict["GCprotocol"]["body"]["data"].update({"response_handle": reply_dict["GCprotocol"]["body"][self.RAWDATA][8]})
+            reply_dict["GCprotocol"]["body"]["data"].update(
+                {"response_handle": reply_dict["GCprotocol"]["body"][self.RAWDATA][8]}
+            )
         return reply_dict
 
     def CMD_MSGRESP_MODIFY(self, chan, handle, action):
@@ -6676,12 +7296,18 @@ class Gryphon(GryphonProtocolDefines):
         """
         # done 20190103
 
-        if action not in (GryphonProtocolMSGRESPActions.MSGRESP_DELETE_RESPONSE, GryphonProtocolMSGRESPActions.MSGRESP_ACTIVATE_RESPONSE, GryphonProtocolMSGRESPActions.MSGRESP_DEACTIVATE_RESPONSE):
+        if action not in (
+            GryphonProtocolMSGRESPActions.MSGRESP_DELETE_RESPONSE,
+            GryphonProtocolMSGRESPActions.MSGRESP_ACTIVATE_RESPONSE,
+            GryphonProtocolMSGRESPActions.MSGRESP_DEACTIVATE_RESPONSE,
+        ):
             raise self.ActionNotValid(action)
 
         databa = bytearray()
         databa.extend([handle, action])
-        resp_dict = self._build_and_send_command(dst=self.SD_RESP, dstchan=chan, cmd=self.BCMD_MSGRESP_MODIFY, data=databa)
+        resp_dict = self._build_and_send_command(
+            dst=self.SD_RESP, dstchan=chan, cmd=self.BCMD_MSGRESP_MODIFY, data=databa
+        )
         return resp_dict
 
     def CMD_MSGRESP_GET_HANDELS(self, chan=0):
@@ -6703,18 +7329,26 @@ class Gryphon(GryphonProtocolDefines):
             None.
         """
         # done 20190103
-        reply_dict = self._build_and_send_command(dst=self.SD_RESP, dstchan=chan, cmd=self.BCMD_MSGRESP_GET_HANDLES, data=None)
+        reply_dict = self._build_and_send_command(
+            dst=self.SD_RESP, dstchan=chan, cmd=self.BCMD_MSGRESP_GET_HANDLES, data=None
+        )
         reply_dict["GCprotocol"]["body"].update({"data": {}})
         msgresp_array = []
         if sys.version_info[0] < 3:
             nresponses = ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][8])
             for i in range(0, nresponses):
-                msgresp_array.append(ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][9 + i]))
+                msgresp_array.append(
+                    ord(reply_dict["GCprotocol"]["body"][self.RAWDATA][9 + i])
+                )
         else:
             nresponses = reply_dict["GCprotocol"]["body"][self.RAWDATA][8]
             for i in range(0, nresponses):
-                msgresp_array.append(reply_dict["GCprotocol"]["body"][self.RAWDATA][9 + i])
-        reply_dict["GCprotocol"]["body"]["data"].update({"response_handles": msgresp_array})
+                msgresp_array.append(
+                    reply_dict["GCprotocol"]["body"][self.RAWDATA][9 + i]
+                )
+        reply_dict["GCprotocol"]["body"]["data"].update(
+            {"response_handles": msgresp_array}
+        )
         return reply_dict
 
     def CMD_MSGRESP_GET(self, response_handle):
@@ -6746,7 +7380,9 @@ class Gryphon(GryphonProtocolDefines):
         #
         databa = bytearray()
         databa.extend([response_handle])
-        reply_dict = self._build_and_send_command(dst=self.SD_RESP, dstchan=0, cmd=self.BCMD_MSGRESP_GET, data=databa)
+        reply_dict = self._build_and_send_command(
+            dst=self.SD_RESP, dstchan=0, cmd=self.BCMD_MSGRESP_GET, data=databa
+        )
         reply_dict["GCprotocol"]["body"].update({"data": {}})
         datar = reply_dict["GCprotocol"]["body"][self.RAWDATA]
         msgresp_dict = {}
@@ -6767,10 +7403,19 @@ class Gryphon(GryphonProtocolDefines):
             action = ord(datar[12])  # raw action byte
             msgresp_dict.update({"action": action})  # raw action byte
             # action_code
-            action_code = ord(datar[12]) & (GryphonProtocolMSGRESPActions.FR_RESP_AFTER_EVENT | GryphonProtocolMSGRESPActions.FR_RESP_AFTER_PERIOD | GryphonProtocolMSGRESPActions.FR_IGNORE_DURING_PER)
+            action_code = ord(datar[12]) & (
+                GryphonProtocolMSGRESPActions.FR_RESP_AFTER_EVENT
+                | GryphonProtocolMSGRESPActions.FR_RESP_AFTER_PERIOD
+                | GryphonProtocolMSGRESPActions.FR_IGNORE_DURING_PER
+            )
             msgresp_dict.update({"action_code": action_code})
             # action_flag
-            action_flag = ord(datar[12]) & (GryphonProtocolMSGRESPActions.FR_PERIOD_MSGS | GryphonProtocolMSGRESPActions.FR_DELETE | GryphonProtocolMSGRESPActions.FR_DEACT_ON_EVENT | GryphonProtocolMSGRESPActions.FR_DEACT_AFTER_PER)
+            action_flag = ord(datar[12]) & (
+                GryphonProtocolMSGRESPActions.FR_PERIOD_MSGS
+                | GryphonProtocolMSGRESPActions.FR_DELETE
+                | GryphonProtocolMSGRESPActions.FR_DEACT_ON_EVENT
+                | GryphonProtocolMSGRESPActions.FR_DEACT_AFTER_PER
+            )
             msgresp_dict.update({"action_flag": action_flag})
 
             # TODO
@@ -6781,7 +7426,7 @@ class Gryphon(GryphonProtocolDefines):
             # reserverd datar[13]
 
             # action_value, action_time_value, action_message_counter_value
-            action_value = ((ord(datar[14]) * 256) + ord(datar[15]))
+            action_value = (ord(datar[14]) * 256) + ord(datar[15])
             msgresp_dict.update({"action_value": action_value})
             if ord(datar[12]) & GryphonProtocolMSGRESPActions.FR_PERIOD_MSGS:
                 msgresp_dict.update({"action_message_counter_value": action_value})
@@ -6826,7 +7471,11 @@ class Gryphon(GryphonProtocolDefines):
                     # here have to make sure we calculate to jump over any padding
                     ind += len(self._padding(field_length * 2))
 
-                elif operator in (GryphonProtocolFilterCondition.DIG_LOW_TO_HIGH, GryphonProtocolFilterCondition.DIG_HIGH_TO_LOW, GryphonProtocolFilterCondition.DIG_TRANSITION):
+                elif operator in (
+                    GryphonProtocolFilterCondition.DIG_LOW_TO_HIGH,
+                    GryphonProtocolFilterCondition.DIG_HIGH_TO_LOW,
+                    GryphonProtocolFilterCondition.DIG_TRANSITION,
+                ):
                     bmlist = []
                     for _ in range(0, field_length):
                         bmlist.append(ord(datar[ind]))
@@ -6852,14 +7501,14 @@ class Gryphon(GryphonProtocolDefines):
             msgresp_dict.update({"response_blocks": []})
             for _ in range(0, nresp_blocks):
                 blk = {}
-                blk.update({'framehdr': {}})
-                blk['framehdr'].update({'src': ord(datar[ind])})
+                blk.update({"framehdr": {}})
+                blk["framehdr"].update({"src": ord(datar[ind])})
                 ind += 1
-                blk['framehdr'].update({'srcchan': ord(datar[ind])})
+                blk["framehdr"].update({"srcchan": ord(datar[ind])})
                 ind += 1
-                blk['framehdr'].update({'dst': ord(datar[ind])})
+                blk["framehdr"].update({"dst": ord(datar[ind])})
                 ind += 1
-                blk['framehdr'].update({'dstchan': ord(datar[ind])})
+                blk["framehdr"].update({"dstchan": ord(datar[ind])})
                 ind += 1
                 # skip the total datalen
                 # totaldatalen = (ord(datar[ind]) * 256) + ord(datar[ind + 1])
@@ -6869,63 +7518,68 @@ class Gryphon(GryphonProtocolDefines):
                 frametype = ord(datar[ind]) & 0x3F
                 flags = ord(datar[ind]) & 0xC0
                 ind += 1
-                blk['framehdr'].update({'frametype': frametype_raw})
-                blk['framehdr'].update({'frametype_with_flags': frametype_raw})
+                blk["framehdr"].update({"frametype": frametype_raw})
+                blk["framehdr"].update({"frametype_with_flags": frametype_raw})
                 # TODO create defines to replace constants
                 if flags & 0x80:
-                    blk['framehdr'].update({'flag_dont_wait': True})
+                    blk["framehdr"].update({"flag_dont_wait": True})
                 else:
-                    blk['framehdr'].update({'flag_dont_wait': False})
+                    blk["framehdr"].update({"flag_dont_wait": False})
                 if flags & 0x40:
-                    blk['framehdr'].update({'flag_send_after': True})
+                    blk["framehdr"].update({"flag_send_after": True})
                 else:
-                    blk['framehdr'].update({'flag_send_after': False})
+                    blk["framehdr"].update({"flag_send_after": False})
 
                 ind += 1  # reserved
 
-                blk.update({'body': {}})
-                blk['body'].update({'data': {}})
+                blk.update({"body": {}})
+                blk["body"].update({"data": {}})
 
                 if frametype == GryphonProtocolFT.FT_DATA:
 
                     hdrlen = ord(datar[ind])
-                    blk['body']['data'].update({'hdrlen': hdrlen})
+                    blk["body"]["data"].update({"hdrlen": hdrlen})
                     ind += 1
-                    blk['body']['data'].update({'hdrbits': ord(datar[ind])})
+                    blk["body"]["data"].update({"hdrbits": ord(datar[ind])})
                     ind += 1
                     datalen = (ord(datar[ind]) * 256) + ord(datar[ind + 1])
-                    blk['body']['data'].update({'datalen': datalen})
+                    blk["body"]["data"].update({"datalen": datalen})
                     ind += 2
                     extralen = ord(datar[ind])
-                    blk['body']['data'].update({'extralen': extralen})
+                    blk["body"]["data"].update({"extralen": extralen})
                     ind += 1
-                    blk['body']['data'].update({'mode': ord(datar[ind])})
+                    blk["body"]["data"].update({"mode": ord(datar[ind])})
                     ind += 1
-                    blk['body']['data'].update({'pri': ord(datar[ind])})
+                    blk["body"]["data"].update({"pri": ord(datar[ind])})
                     ind += 1
-                    blk['body']['data'].update({'status': ord(datar[ind])})
+                    blk["body"]["data"].update({"status": ord(datar[ind])})
                     ind += 1
-                    timestamp = (ord(datar[ind]) * 1024) + (ord(datar[ind + 1]) * 512) + (ord(datar[ind + 2]) * 256) + ord(datar[ind + 3])
-                    blk['body']['data'].update({'status': timestamp})
+                    timestamp = (
+                        (ord(datar[ind]) * 1024)
+                        + (ord(datar[ind + 1]) * 512)
+                        + (ord(datar[ind + 2]) * 256)
+                        + ord(datar[ind + 3])
+                    )
+                    blk["body"]["data"].update({"status": timestamp})
                     ind += 4
-                    blk['body']['data'].update({'context': ord(datar[ind])})
+                    blk["body"]["data"].update({"context": ord(datar[ind])})
                     ind += 1
 
                     ind += 3  # reserved
 
-                    blk['body']['data'].update({'hdr': []})
+                    blk["body"]["data"].update({"hdr": []})
                     for _ in range(0, hdrlen):
-                        blk['body']['data']['hdr'].append(ord(datar[ind]))
+                        blk["body"]["data"]["hdr"].append(ord(datar[ind]))
                         ind += 1
                     if datalen > 0:
-                        blk['body']['data'].update({'data': []})
+                        blk["body"]["data"].update({"data": []})
                         for _ in range(0, datalen):
-                            blk['body']['data']['data'].append(ord(datar[ind]))
+                            blk["body"]["data"]["data"].append(ord(datar[ind]))
                             ind += 1
                     if extralen > 0:
-                        blk['body']['data'].update({'extra': []})
+                        blk["body"]["data"].update({"extra": []})
                         for _ in range(0, extralen):
-                            blk['body']['data']['extra'].append(ord(datar[ind]))
+                            blk["body"]["data"]["extra"].append(ord(datar[ind]))
                             ind += 1
 
                     # here have to make sure we calculate to jump over any padding
@@ -6964,10 +7618,19 @@ class Gryphon(GryphonProtocolDefines):
             action = datar[12]  # raw action byte
             msgresp_dict.update({"action": action})  # raw action byte
             # action_code
-            action_code = datar[12] & (GryphonProtocolMSGRESPActions.FR_RESP_AFTER_EVENT | GryphonProtocolMSGRESPActions.FR_RESP_AFTER_PERIOD | GryphonProtocolMSGRESPActions.FR_IGNORE_DURING_PER)
+            action_code = datar[12] & (
+                GryphonProtocolMSGRESPActions.FR_RESP_AFTER_EVENT
+                | GryphonProtocolMSGRESPActions.FR_RESP_AFTER_PERIOD
+                | GryphonProtocolMSGRESPActions.FR_IGNORE_DURING_PER
+            )
             msgresp_dict.update({"action_code": action_code})
             # action_flag
-            action_flag = datar[12] & (GryphonProtocolMSGRESPActions.FR_PERIOD_MSGS | GryphonProtocolMSGRESPActions.FR_DELETE | GryphonProtocolMSGRESPActions.FR_DEACT_ON_EVENT | GryphonProtocolMSGRESPActions.FR_DEACT_AFTER_PER)
+            action_flag = datar[12] & (
+                GryphonProtocolMSGRESPActions.FR_PERIOD_MSGS
+                | GryphonProtocolMSGRESPActions.FR_DELETE
+                | GryphonProtocolMSGRESPActions.FR_DEACT_ON_EVENT
+                | GryphonProtocolMSGRESPActions.FR_DEACT_AFTER_PER
+            )
             msgresp_dict.update({"action_flag": action_flag})
 
             # TODO
@@ -6978,7 +7641,7 @@ class Gryphon(GryphonProtocolDefines):
             # reserverd datar[13]
 
             # action_value, action_time_value, action_message_counter_value
-            action_value = ((datar[14] * 256) + datar[15])
+            action_value = (datar[14] * 256) + datar[15]
             msgresp_dict.update({"action_value": action_value})
             if datar[12] & GryphonProtocolMSGRESPActions.FR_PERIOD_MSGS:
                 msgresp_dict.update({"action_message_counter_value": action_value})
@@ -7023,7 +7686,11 @@ class Gryphon(GryphonProtocolDefines):
                     # here have to make sure we calculate to jump over any padding
                     ind += len(self._padding(field_length * 2))
 
-                elif operator in (GryphonProtocolFilterCondition.DIG_LOW_TO_HIGH, GryphonProtocolFilterCondition.DIG_HIGH_TO_LOW, GryphonProtocolFilterCondition.DIG_TRANSITION):
+                elif operator in (
+                    GryphonProtocolFilterCondition.DIG_LOW_TO_HIGH,
+                    GryphonProtocolFilterCondition.DIG_HIGH_TO_LOW,
+                    GryphonProtocolFilterCondition.DIG_TRANSITION,
+                ):
                     bmlist = []
                     for _ in range(0, field_length):
                         bmlist.append(datar[ind])
@@ -7049,14 +7716,14 @@ class Gryphon(GryphonProtocolDefines):
             msgresp_dict.update({"response_blocks": []})
             for _ in range(0, nresp_blocks):
                 blk = {}
-                blk.update({'framehdr': {}})
-                blk['framehdr'].update({'src': datar[ind]})
+                blk.update({"framehdr": {}})
+                blk["framehdr"].update({"src": datar[ind]})
                 ind += 1
-                blk['framehdr'].update({'srcchan': datar[ind]})
+                blk["framehdr"].update({"srcchan": datar[ind]})
                 ind += 1
-                blk['framehdr'].update({'dst': datar[ind]})
+                blk["framehdr"].update({"dst": datar[ind]})
                 ind += 1
-                blk['framehdr'].update({'dstchan': datar[ind]})
+                blk["framehdr"].update({"dstchan": datar[ind]})
                 ind += 1
                 # skip the total datalen
                 # totaldatalen = (ord(datar[ind]) * 256) + ord(datar[ind + 1])
@@ -7066,63 +7733,68 @@ class Gryphon(GryphonProtocolDefines):
                 frametype = datar[ind] & 0x3F
                 flags = datar[ind] & 0xC0
                 ind += 1
-                blk['framehdr'].update({'frametype': frametype_raw})
-                blk['framehdr'].update({'frametype_with_flags': frametype_raw})
+                blk["framehdr"].update({"frametype": frametype_raw})
+                blk["framehdr"].update({"frametype_with_flags": frametype_raw})
                 # TODO create defines to replace constants
                 if flags & 0x80:
-                    blk['framehdr'].update({'flag_dont_wait': True})
+                    blk["framehdr"].update({"flag_dont_wait": True})
                 else:
-                    blk['framehdr'].update({'flag_dont_wait': False})
+                    blk["framehdr"].update({"flag_dont_wait": False})
                 if flags & 0x40:
-                    blk['framehdr'].update({'flag_send_after': True})
+                    blk["framehdr"].update({"flag_send_after": True})
                 else:
-                    blk['framehdr'].update({'flag_send_after': False})
+                    blk["framehdr"].update({"flag_send_after": False})
 
                 ind += 1  # reserved
 
-                blk.update({'body': {}})
-                blk['body'].update({'data': {}})
+                blk.update({"body": {}})
+                blk["body"].update({"data": {}})
 
                 if frametype == GryphonProtocolFT.FT_DATA:
 
                     hdrlen = datar[ind]
-                    blk['body']['data'].update({'hdrlen': hdrlen})
+                    blk["body"]["data"].update({"hdrlen": hdrlen})
                     ind += 1
-                    blk['body']['data'].update({'hdrbits': datar[ind]})
+                    blk["body"]["data"].update({"hdrbits": datar[ind]})
                     ind += 1
                     datalen = (datar[ind] * 256) + datar[ind + 1]
-                    blk['body']['data'].update({'datalen': datalen})
+                    blk["body"]["data"].update({"datalen": datalen})
                     ind += 2
                     extralen = datar[ind]
-                    blk['body']['data'].update({'extralen': extralen})
+                    blk["body"]["data"].update({"extralen": extralen})
                     ind += 1
-                    blk['body']['data'].update({'mode': datar[ind]})
+                    blk["body"]["data"].update({"mode": datar[ind]})
                     ind += 1
-                    blk['body']['data'].update({'pri': datar[ind]})
+                    blk["body"]["data"].update({"pri": datar[ind]})
                     ind += 1
-                    blk['body']['data'].update({'status': datar[ind]})
+                    blk["body"]["data"].update({"status": datar[ind]})
                     ind += 1
-                    timestamp = (datar[ind] * 1024) + (datar[ind + 1] * 512) + (datar[ind + 2] * 256) + datar[ind + 3]
-                    blk['body']['data'].update({'status': timestamp})
+                    timestamp = (
+                        (datar[ind] * 1024)
+                        + (datar[ind + 1] * 512)
+                        + (datar[ind + 2] * 256)
+                        + datar[ind + 3]
+                    )
+                    blk["body"]["data"].update({"status": timestamp})
                     ind += 4
-                    blk['body']['data'].update({'context': datar[ind]})
+                    blk["body"]["data"].update({"context": datar[ind]})
                     ind += 1
 
                     ind += 3  # reserved
 
-                    blk['body']['data'].update({'hdr': []})
+                    blk["body"]["data"].update({"hdr": []})
                     for _ in range(0, hdrlen):
-                        blk['body']['data']['hdr'].append(datar[ind])
+                        blk["body"]["data"]["hdr"].append(datar[ind])
                         ind += 1
                     if datalen > 0:
-                        blk['body']['data'].update({'data': []})
+                        blk["body"]["data"].update({"data": []})
                         for _ in range(0, datalen):
-                            blk['body']['data']['data'].append(datar[ind])
+                            blk["body"]["data"]["data"].append(datar[ind])
                             ind += 1
                     if extralen > 0:
-                        blk['body']['data'].update({'extra': []})
+                        blk["body"]["data"].update({"extra": []})
                         for _ in range(0, extralen):
-                            blk['body']['data']['extra'].append(datar[ind])
+                            blk["body"]["data"]["extra"].append(datar[ind])
                             ind += 1
 
                     # here have to make sure we calculate to jump over any padding
@@ -7161,18 +7833,32 @@ class Gryphon(GryphonProtocolDefines):
             raise self.ChannelNotValid(chan)
 
         databa = bytearray()
-        ioctlbytes = struct.unpack('4B', struct.pack('>I', GryphonProtocolIOCTL.IOCTL_GGETBITRATE))
+        ioctlbytes = struct.unpack(
+            "4B", struct.pack(">I", GryphonProtocolIOCTL.IOCTL_GGETBITRATE)
+        )
         databa.extend(ioctlbytes)
         databa.extend([0] * 4)
-        reply_dict = self._build_and_send_command(dst=self.SD_CARD, dstchan=chan, cmd=self.BCMD_CARD_IOCTL, data=databa)
+        reply_dict = self._build_and_send_command(
+            dst=self.SD_CARD, dstchan=chan, cmd=self.BCMD_CARD_IOCTL, data=databa
+        )
         reply_dict["GCprotocol"]["body"].update({"data": {}})
         datar = reply_dict["GCprotocol"]["body"][self.RAWDATA]
         ind = 8
         if sys.version_info[0] < 3:
-            rate = (ord(datar[ind + 3]) * 0x01000000) + (ord(datar[ind + 2]) * 0x010000) + (ord(datar[ind + 1]) * 0x0100) + ord(datar[ind])
+            rate = (
+                (ord(datar[ind + 3]) * 0x01000000)
+                + (ord(datar[ind + 2]) * 0x010000)
+                + (ord(datar[ind + 1]) * 0x0100)
+                + ord(datar[ind])
+            )
         else:
-            rate = (datar[ind + 3] * 0x01000000) + (datar[ind + 2] * 0x010000) + (datar[ind + 1] * 0x0100) + datar[ind]
-        reply_dict["GCprotocol"]["body"]["data"].update({'bitrate': rate})
+            rate = (
+                (datar[ind + 3] * 0x01000000)
+                + (datar[ind + 2] * 0x010000)
+                + (datar[ind + 1] * 0x0100)
+                + datar[ind]
+            )
+        reply_dict["GCprotocol"]["body"]["data"].update({"bitrate": rate})
         return reply_dict
 
     def GCANGETMODE_IOCTL(self, chan):
@@ -7192,10 +7878,14 @@ class Gryphon(GryphonProtocolDefines):
             raise self.ChannelNotValid(chan)
 
         databa = bytearray()
-        ioctlbytes = struct.unpack('4B', struct.pack('>I', GryphonProtocolIOCTL.IOCTL_GCANGETMODE))
+        ioctlbytes = struct.unpack(
+            "4B", struct.pack(">I", GryphonProtocolIOCTL.IOCTL_GCANGETMODE)
+        )
         databa.extend(ioctlbytes)
         databa.extend([0] * 1)
-        reply_dict = self._build_and_send_command(dst=self.SD_CARD, dstchan=chan, cmd=self.BCMD_CARD_IOCTL, data=databa)
+        reply_dict = self._build_and_send_command(
+            dst=self.SD_CARD, dstchan=chan, cmd=self.BCMD_CARD_IOCTL, data=databa
+        )
         reply_dict["GCprotocol"]["body"].update({"data": {}})
         datar = reply_dict["GCprotocol"]["body"][self.RAWDATA]
         ind = 8
@@ -7203,15 +7893,23 @@ class Gryphon(GryphonProtocolDefines):
             mode = ord(datar[ind])
         else:
             mode = datar[ind]
-        reply_dict["GCprotocol"]["body"]["data"].update({'mode': mode})
+        reply_dict["GCprotocol"]["body"]["data"].update({"mode": mode})
         if mode == 0:
-            reply_dict["GCprotocol"]["body"]["data"].update({'mode_description': "MODE_CAN"})
+            reply_dict["GCprotocol"]["body"]["data"].update(
+                {"mode_description": "MODE_CAN"}
+            )
         elif mode == 1:
-            reply_dict["GCprotocol"]["body"]["data"].update({'mode_description': "MODE_CANFD"})
+            reply_dict["GCprotocol"]["body"]["data"].update(
+                {"mode_description": "MODE_CANFD"}
+            )
         elif mode == 2:
-            reply_dict["GCprotocol"]["body"]["data"].update({'mode_description': "MODE_CANFD_PREISO"})
+            reply_dict["GCprotocol"]["body"]["data"].update(
+                {"mode_description": "MODE_CANFD_PREISO"}
+            )
         else:
-            reply_dict["GCprotocol"]["body"]["data"].update({'mode_description': "error unknown"})
+            reply_dict["GCprotocol"]["body"]["data"].update(
+                {"mode_description": "error unknown"}
+            )
         return reply_dict
 
     def GCANSETMODE_IOCTL(self, chan, mode):
@@ -7230,19 +7928,6 @@ class Gryphon(GryphonProtocolDefines):
 
         """
         raise self.NotYetImplemented
-        if chan == 0:
-            raise self.ChannelNotValid(chan)
-
-        values = dir(GryphonProtocolCANMode)
-        # filter out all of the __x__ attributes
-        values[:] = [x for x in values if "__" not in x]
-        filtervalues = []
-        # get the actual values of all of the commands, using the attribute names
-        filtervalues.extend([getattr(GryphonProtocolCANMode, x) for x in values])
-        if mode not in filtervalues:
-            raise self.ValueNotValid(mode)
-
-        # databa = bytearray()
 
     def FT_DATA_TX(self, chan, data_dict_in, wait_for_loopback=False):
         #
@@ -7315,14 +8000,14 @@ class Gryphon(GryphonProtocolDefines):
                 raise self.HdrLenNotFound()
             # split hdr into hdrlen number of bytes
             for ind in range(0, hdrlen):
-                mask = (0x00FF << (8 * ind))
+                mask = 0x00FF << (8 * ind)
                 num = data_dict_in["hdr"] * mask
                 mybyte = num >> (8 * ind)
                 hdr.append(mybyte)
             # reverse the list
             hdr.reverse()
         else:
-            raise self.HdrNotFound(data_dict_in['hdr'])
+            raise self.HdrNotFound(data_dict_in["hdr"])
 
         # hdrbits
         hdrbits = 11  # CANbus 11-bit header, default
@@ -7416,8 +8101,12 @@ class Gryphon(GryphonProtocolDefines):
             else:
                 # turn int into a list
                 # TODO
-                timestamp.append(((data_dict_in["timestamp"] & 0xFF000000) >> 24) & 0xFF)
-                timestamp.append(((data_dict_in["timestamp"] & 0x00FF0000) >> 16) & 0xFF)
+                timestamp.append(
+                    ((data_dict_in["timestamp"] & 0xFF000000) >> 24) & 0xFF
+                )
+                timestamp.append(
+                    ((data_dict_in["timestamp"] & 0x00FF0000) >> 16) & 0xFF
+                )
                 timestamp.append(((data_dict_in["timestamp"] & 0x0000FF00) >> 8) & 0xFF)
                 timestamp.append(((data_dict_in["timestamp"] & 0x000000FF) >> 0) & 0xFF)
         else:
@@ -7429,8 +8118,12 @@ class Gryphon(GryphonProtocolDefines):
             context = self.cmd_context
 
         gcframe = bytearray()
-        gcframe.extend([hdrlen, hdrbits, datalen1, datalen2])  # BEACON data header, hdrlen, hdrbits, data len
-        gcframe.extend([extralen, mode, pri, status])  # BEACON data header, extralen, mode, pri, status
+        gcframe.extend(
+            [hdrlen, hdrbits, datalen1, datalen2]
+        )  # BEACON data header, hdrlen, hdrbits, data len
+        gcframe.extend(
+            [extralen, mode, pri, status]
+        )  # BEACON data header, extralen, mode, pri, status
         gcframe.extend(timestamp)  # BEACON data header, timestamp
         gcframe.extend([context, 0, 0, 0])  # BEACON data header, context, resv
         gcframe.extend(hdr)  # msg header
@@ -7466,7 +8159,6 @@ class Gryphon(GryphonProtocolDefines):
             None.
         """
         raise self.NotYetImplemented
-        self._build_and_send_data(dst=dst_in, dstchan=dstchan_in, data=data_in, src=src_in, srcchan=srcchan_in, fttype=GryphonProtocolFT.FT_MISC)
 
     def FT_DATA_WAIT_FOR_RX(self, hdr=None, data=None, timeout=0.05):
         """FT_DATA_WAIT_FOR_RX, wait to read a rx msg
@@ -7490,7 +8182,9 @@ class Gryphon(GryphonProtocolDefines):
         # done 20190103
         # TODO implement wait for hdr and data
         # print("=DEBUG=======================timeout {}".format(timeout))
-        reply = self._wait_and_read_rx(frametype=GryphonProtocolFT.FT_DATA, hdr=hdr, data=data, timeout=timeout)
+        reply = self._wait_and_read_rx(
+            frametype=GryphonProtocolFT.FT_DATA, hdr=hdr, data=data, timeout=timeout
+        )
         if reply is None:
             return reply
 
@@ -7519,21 +8213,23 @@ class Gryphon(GryphonProtocolDefines):
             rollover *= 10
             rollover = int(rollover / 1000000)
             reply["GCprotocol"]["body"]["data"].update({"timestamp": timestamp})
-            reply["GCprotocol"]["body"]["data"].update({"seconds to rollover": rollover})
+            reply["GCprotocol"]["body"]["data"].update(
+                {"seconds to rollover": rollover}
+            )
             reply["GCprotocol"]["body"]["data"].update({"context": ord(datar[12])})
             reply["GCprotocol"]["body"]["data"].update({"hdr": []})
             ind = 16
-            for item in datar[ind:ind + hdrlen]:
+            for item in datar[ind : ind + hdrlen]:
                 reply["GCprotocol"]["body"]["data"]["hdr"].append(ord(item))
             ind = ind + hdrlen
             if datalen > 0:
                 reply["GCprotocol"]["body"]["data"].update({"data": []})
-                for item in datar[ind:ind + datalen]:
+                for item in datar[ind : ind + datalen]:
                     reply["GCprotocol"]["body"]["data"]["data"].append(ord(item))
                 ind = ind + datalen
             if extralen > 0:
                 reply["GCprotocol"]["body"]["data"].update({"extra": []})
-                for item in datar[ind:ind + extralen]:
+                for item in datar[ind : ind + extralen]:
                     reply["GCprotocol"]["body"]["data"]["extra"].append(ord(item))
         else:
             hdrlen = datar[0]
@@ -7557,21 +8253,23 @@ class Gryphon(GryphonProtocolDefines):
             rollover *= 10
             rollover = int(rollover / 1000000)
             reply["GCprotocol"]["body"]["data"].update({"timestamp": timestamp})
-            reply["GCprotocol"]["body"]["data"].update({"seconds to rollover": rollover})
+            reply["GCprotocol"]["body"]["data"].update(
+                {"seconds to rollover": rollover}
+            )
             reply["GCprotocol"]["body"]["data"].update({"context": datar[12]})
             reply["GCprotocol"]["body"]["data"].update({"hdr": []})
             ind = 16
-            for item in datar[ind:ind + hdrlen]:
+            for item in datar[ind : ind + hdrlen]:
                 reply["GCprotocol"]["body"]["data"]["hdr"].append(item)
             ind = ind + hdrlen
             if datalen > 0:
                 reply["GCprotocol"]["body"]["data"].update({"data": []})
-                for item in datar[ind:ind + datalen]:
+                for item in datar[ind : ind + datalen]:
                     reply["GCprotocol"]["body"]["data"]["data"].append(item)
                 ind = ind + datalen
             if extralen > 0:
                 reply["GCprotocol"]["body"]["data"].update({"extra": []})
-                for item in datar[ind:ind + extralen]:
+                for item in datar[ind : ind + extralen]:
                     reply["GCprotocol"]["body"]["data"]["extra"].append(item)
 
         return reply
@@ -7596,14 +8294,15 @@ class Gryphon(GryphonProtocolDefines):
         """
         # 20190605
         # 20190626 TODO
-        # raise self.NotYetImplemented
 
-        reply_dict = self._wait_and_read_rx(frametype=GryphonProtocolFT.FT_TEXT, timeout=timeout)
+        reply_dict = self._wait_and_read_rx(
+            frametype=GryphonProtocolFT.FT_TEXT, timeout=timeout
+        )
         if reply_dict is None:
             return reply_dict
 
         # datar = reply_dict["GCprotocol"]["body"][self.RAWDATA]
-        msg = ''.join(reply_dict["GCprotocol"]["body"]["rawdata"])
+        msg = "".join(reply_dict["GCprotocol"]["body"]["rawdata"])
         reply_dict["GCprotocol"]["body"].update({"text": msg})
         return reply_dict
 
@@ -7633,7 +8332,9 @@ class Gryphon(GryphonProtocolDefines):
         """
         # done 20190311
         # TODO implement wait for hdr and data
-        reply_dict = self._wait_and_read_rx(frametype=GryphonProtocolFT.FT_SIG, hdr=hdr, data=data, timeout=timeout)
+        reply_dict = self._wait_and_read_rx(
+            frametype=GryphonProtocolFT.FT_SIG, hdr=hdr, data=data, timeout=timeout
+        )
         if reply_dict is None:
             return reply_dict
         datar = reply_dict["GCprotocol"]["body"][self.RAWDATA]
@@ -7651,10 +8352,14 @@ class Gryphon(GryphonProtocolDefines):
             reply_dict["GCprotocol"]["body"]["data"].update({"mode": mode})
             idx += 1
             request_index = ord(datar[idx])
-            reply_dict["GCprotocol"]["body"]["data"].update({"request_index": request_index})
+            reply_dict["GCprotocol"]["body"]["data"].update(
+                {"request_index": request_index}
+            )
             idx += 1
             number_of_signals = ord(datar[idx])
-            reply_dict["GCprotocol"]["body"]["data"].update({"number_of_signals": number_of_signals})
+            reply_dict["GCprotocol"]["body"]["data"].update(
+                {"number_of_signals": number_of_signals}
+            )
             idx += 1
             idx += 1
             reply_dict["GCprotocol"]["body"]["data"].update({"signals": []})
@@ -7684,7 +8389,7 @@ class Gryphon(GryphonProtocolDefines):
                     fpba.extend([ord(datar[idx + 2])])
                     fpba.extend([ord(datar[idx + 1])])
                     fpba.extend([ord(datar[idx + 0])])
-                    fp = struct.unpack('f', fpba)[0]
+                    fp = struct.unpack("f", fpba)[0]
                     mysignal.update({"value_fp": fp})
                     idx += 4
                 if flags & 0x02:
@@ -7698,8 +8403,10 @@ class Gryphon(GryphonProtocolDefines):
                     idx += 4
                 if flags & 0x04:
                     # do string
-                    end = idx + datar[idx:].index('\x00')  # find first null at end of C string
-                    value = ''.join(datar[idx:end])
+                    end = idx + datar[idx:].index(
+                        "\x00"
+                    )  # find first null at end of C string
+                    value = "".join(datar[idx:end])
                     mysignal.update({"value_string": value})
                     idx = end
 
@@ -7715,10 +8422,14 @@ class Gryphon(GryphonProtocolDefines):
             reply_dict["GCprotocol"]["body"]["data"].update({"mode": mode})
             idx += 1
             request_index = datar[idx]
-            reply_dict["GCprotocol"]["body"]["data"].update({"request_index": request_index})
+            reply_dict["GCprotocol"]["body"]["data"].update(
+                {"request_index": request_index}
+            )
             idx += 1
             number_of_signals = datar[idx]
-            reply_dict["GCprotocol"]["body"]["data"].update({"number_of_signals": number_of_signals})
+            reply_dict["GCprotocol"]["body"]["data"].update(
+                {"number_of_signals": number_of_signals}
+            )
             idx += 1
             idx += 1
             reply_dict["GCprotocol"]["body"]["data"].update({"signals": []})
@@ -7748,7 +8459,7 @@ class Gryphon(GryphonProtocolDefines):
                     fpba.extend([datar[idx + 2]])
                     fpba.extend([datar[idx + 1]])
                     fpba.extend([datar[idx + 0]])
-                    fp = struct.unpack('f', fpba)[0]
+                    fp = struct.unpack("f", fpba)[0]
                     mysignal.update({"value_fp": fp})
                     idx += 4
                 if flags & 0x02:
@@ -7762,8 +8473,10 @@ class Gryphon(GryphonProtocolDefines):
                     idx += 4
                 if flags & 0x04:
                     # do string
-                    end = idx + datar[idx:].index(0)  # find first null at end of C string
-                    value = ''.join(map(chr, datar[idx:end]))
+                    end = idx + datar[idx:].index(
+                        0
+                    )  # find first null at end of C string
+                    value = "".join(map(chr, datar[idx:end]))
                     mysignal.update({"value_string": value})
                     idx = end
 
@@ -7786,8 +8499,8 @@ class Gryphon(GryphonProtocolDefines):
         Raises:
             None.
         """
+        # return self._wait_and_read_event(srcchan=chan, event=event)
         raise self.NotYetImplemented
-        return self._wait_and_read_event(srcchan=chan, event=event)
 
     def get_client_id(self):
         """get client_id
@@ -7818,6 +8531,8 @@ class BEACON(Gryphon):
     """BEACON
       aliased to Gryphon class
     """
+
+
 #
 # ----------------------------------------------------------------------
 # pylint: enable=too-many-ancestors
