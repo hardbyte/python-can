@@ -59,11 +59,11 @@ class DGBus(BusABC):
         self.ip = kwargs["ip"] if "ip" in kwargs else "localhost"
         self.is_fd = kwargs["is_fd"] if "is_fd" in kwargs else False
         self.bitrate = kwargs["bitrate"] if "bitrate" in kwargs else 500000
-        self.termination = kwargs["termination"] if "termination" in kwargs \
-            else True
+        self.termination = kwargs["termination"] if "termination" in kwargs else True
         self.pre_iso = kwargs["pre_iso"] if "pre_iso" in kwargs else False
-        self.data_bitrate = kwargs["data_bitrate"] if "data_bitrate" in \
-            kwargs else 2000000
+        self.data_bitrate = (
+            kwargs["data_bitrate"] if "data_bitrate" in kwargs else 2000000
+        )
         self.channel = channel
 
         self.beacon = server_commands.Gryphon(self.ip)
@@ -80,23 +80,27 @@ class DGBus(BusABC):
             temp_mode = [1]
         temp_databitr = DGBus._int_to_list(self.data_bitrate)
         temp_databitr.reverse()
-        self.beacon.CMD_CARD_IOCTL(self.channel,
-                                   self.beacon.IOCTL_GSETFASTBITRATE,
-                                   data_in=temp_databitr)
+        self.beacon.CMD_CARD_IOCTL(
+            self.channel, self.beacon.IOCTL_GSETFASTBITRATE, data_in=temp_databitr
+        )
 
         temp_bitr = DGBus._int_to_list(self.bitrate)
         temp_bitr.reverse()
         temp_term = [1] if self.termination else [0]
 
-        self.beacon.CMD_CARD_IOCTL(self.channel, self.beacon.IOCTL_SETINTTERM,
-                                   data_in=temp_term)
-        self.beacon.CMD_CARD_IOCTL(self.channel, self.beacon.IOCTL_GSETBITRATE,
-                                   data_in=temp_bitr)
-        self.beacon.CMD_CARD_IOCTL(self.channel, self.beacon.IOCTL_GCANSETMODE,
-                                   data_in=temp_mode)
+        self.beacon.CMD_CARD_IOCTL(
+            self.channel, self.beacon.IOCTL_SETINTTERM, data_in=temp_term
+        )
+        self.beacon.CMD_CARD_IOCTL(
+            self.channel, self.beacon.IOCTL_GSETBITRATE, data_in=temp_bitr
+        )
+        self.beacon.CMD_CARD_IOCTL(
+            self.channel, self.beacon.IOCTL_GCANSETMODE, data_in=temp_mode
+        )
         self.beacon.CMD_INIT(self.channel, value_in=self.beacon.ALWAYS_INIT)
-        self.beacon.CMD_CARD_SET_FILTER_MODE(self.channel,
-                                             self.beacon.FILTER_OFF_PASS_ALL)
+        self.beacon.CMD_CARD_SET_FILTER_MODE(
+            self.channel, self.beacon.FILTER_OFF_PASS_ALL
+        )
         self.channel_info = ("dg channel '%s' on " + self.mode) % self.channel
         super(DGBus, self).__init__(self.channel, None)
 
@@ -112,10 +116,10 @@ class DGBus(BusABC):
         :rtype:
             list
         """
-        hdrTemp = hex(num).rstrip('L')[2:]
+        hdrTemp = hex(num).rstrip("L")[2:]
         if len(hdrTemp) % 2 != 0:
-            hdrTemp = '0' + hdrTemp
-        return [int(hdrTemp[i:i + 2], 16) for i in range(0, len(hdrTemp), 2)]
+            hdrTemp = "0" + hdrTemp
+        return [int(hdrTemp[i : i + 2], 16) for i in range(0, len(hdrTemp), 2)]
 
     @staticmethod
     def _list_to_int(datab):
@@ -133,7 +137,7 @@ class DGBus(BusABC):
         header = "0x"
         for item in datab:
             if item < 16:
-                header = header + '0' + hex(item)[2:]
+                header = header + "0" + hex(item)[2:]
             else:
                 header = header + hex(item)[2:]
         return int(header, 16)
@@ -183,15 +187,18 @@ class DGBus(BusABC):
         :rtype:
             can.Message
         """
-        timestamp = \
-            msgForm["GCprotocol"]["body"]["data"]["timestamp"] / 1000000.0
-        headerForm = cls._list_to_int(
-            msgForm["GCprotocol"]["body"]["data"]["hdr"])
+        timestamp = msgForm["GCprotocol"]["body"]["data"]["timestamp"] / 1000000.0
+        headerForm = cls._list_to_int(msgForm["GCprotocol"]["body"]["data"]["hdr"])
         data = msgForm["GCprotocol"]["body"]["data"]["data"]
-        extId = (msgForm["GCprotocol"]["body"]["data"]["hdrlen"] == 8)
+        extId = msgForm["GCprotocol"]["body"]["data"]["hdrlen"] == 8
         isFD = msgForm["GCprotocol"]["body"]["data"]["status"] == 48
-        return Message(timestamp=timestamp, arbitration_id=headerForm,
-                       data=data, is_extended_id=extId, is_fd=isFD)
+        return Message(
+            timestamp=timestamp,
+            arbitration_id=headerForm,
+            data=data,
+            is_extended_id=extId,
+            is_fd=isFD,
+        )
 
     def send(self, msg, timeout=None):
         """send a can message
@@ -210,19 +217,24 @@ class DGBus(BusABC):
             cycles = 4294967295
         else:
             cycles = int(duration / period)
-        reply = self.beacon.CMD_SCHED_TX(self.channel, msgForm,
-                                         iterations=cycles)
-        return Scheduling(msg, period, duration, reply["schedule_id"],
-                          weakref.ref(self.beacon), self.channel)
+        reply = self.beacon.CMD_SCHED_TX(self.channel, msgForm, iterations=cycles)
+        return Scheduling(
+            msg,
+            period,
+            duration,
+            reply["schedule_id"],
+            weakref.ref(self.beacon),
+            self.channel,
+        )
 
     def _recv_internal(self, timeout=None):
         """wait for a received can message from BEACON,
            or timeout
         """
         if timeout is None:
-            reply = self.beacon.FT_DATA_WAIT_FOR_RX(timeout=.5)
+            reply = self.beacon.FT_DATA_WAIT_FOR_RX(timeout=0.5)
             while reply is None:
-                reply = self.beacon.FT_DATA_WAIT_FOR_RX(timeout=.5)
+                reply = self.beacon.FT_DATA_WAIT_FOR_RX(timeout=0.5)
             return self._dict_to_msg(reply), True
 
         reply = self.beacon.FT_DATA_WAIT_FOR_RX(timeout=timeout)
@@ -236,38 +248,41 @@ class DGBus(BusABC):
         if filters is None:
             reply = self.beacon.CMD_CARD_GET_FILTER_HANDLES(self.channel)
             for item in reply["GCprotocol"]["body"]["data"]["filter_handles"]:
-                self.beacon.CMD_CARD_MODIFY_FILTER(self.channel,
-                                                   self.beacon.DELETE_FILTER,
-                                                   filter_handle=item)
+                self.beacon.CMD_CARD_MODIFY_FILTER(
+                    self.channel, self.beacon.DELETE_FILTER, filter_handle=item
+                )
             self.beacon.CMD_CARD_SET_DEFAULT_FILTER(
-                self.channel,
-                self.beacon.DEFAULT_FILTER_PASS)
+                self.channel, self.beacon.DEFAULT_FILTER_PASS
+            )
             return
         dataFil = {}
         counter = 0
-        dataFil["flags"] = (self.beacon.FILTER_FLAG_PASS
-                            | self.beacon.FILTER_FLAG_ACTIVE
-                            | self.beacon.FILTER_FLAG_OR_BLOCKS
-                            | self.beacon.FILTER_FLAG_SAMPLING_INACTIVE)
+        dataFil["flags"] = (
+            self.beacon.FILTER_FLAG_PASS
+            | self.beacon.FILTER_FLAG_ACTIVE
+            | self.beacon.FILTER_FLAG_OR_BLOCKS
+            | self.beacon.FILTER_FLAG_SAMPLING_INACTIVE
+        )
         dataFil["filter_blocks"] = []
         for item in filters:
             dataFil["filter_blocks"].append({})
             dataFil["filter_blocks"][counter]["byte_offset"] = 0
-            dataFil["filter_blocks"][counter]["data_type"] = \
-                self.beacon.FILTER_DATA_TYPE_HEADER
-            dataFil["filter_blocks"][counter]["operator"] = \
-                self.beacon.BIT_FIELD_CHECK
-            dataFil["filter_blocks"][counter]["mask"] = \
-                self._int_to_list(item["can_mask"])
-            dataFil["filter_blocks"][counter]["pattern"] = \
-                self._int_to_list(item["can_id"])
+            dataFil["filter_blocks"][counter][
+                "data_type"
+            ] = self.beacon.FILTER_DATA_TYPE_HEADER
+            dataFil["filter_blocks"][counter]["operator"] = self.beacon.BIT_FIELD_CHECK
+            dataFil["filter_blocks"][counter]["mask"] = self._int_to_list(
+                item["can_mask"]
+            )
+            dataFil["filter_blocks"][counter]["pattern"] = self._int_to_list(
+                item["can_id"]
+            )
             counter += 1
         self.beacon.CMD_CARD_ADD_FILTER(self.channel, dataFil)
-        self.beacon.CMD_CARD_SET_FILTER_MODE(self.channel,
-                                             self.beacon.FILTER_ON)
+        self.beacon.CMD_CARD_SET_FILTER_MODE(self.channel, self.beacon.FILTER_ON)
         self.beacon.CMD_CARD_SET_DEFAULT_FILTER(
-            self.channel,
-            self.beacon.DEFAULT_FILTER_BLOCK)
+            self.channel, self.beacon.DEFAULT_FILTER_BLOCK
+        )
 
     def shutdown(self):
         """stop the BEACON
@@ -291,9 +306,9 @@ class DGBus(BusABC):
             dict
         """
         temp = {}
-        modeInt = self.beacon.CMD_CARD_IOCTL(channel,
-                                             self.beacon.IOCTL_GCANGETMODE,
-                                             data_in=[0])
+        modeInt = self.beacon.CMD_CARD_IOCTL(
+            channel, self.beacon.IOCTL_GCANGETMODE, data_in=[0]
+        )
         modeInt = modeInt["GCprotocol"]["body"]["data"]["ioctl_data"][0]
         if modeInt == 0:
             is_fd = False
@@ -304,24 +319,23 @@ class DGBus(BusABC):
             is_fd = True
             pre_iso = True
 
-        bitrArr = self.beacon.CMD_CARD_IOCTL(channel,
-                                             self.beacon.IOCTL_GGETBITRATE,
-                                             data_in=[0, 0, 0, 0])
+        bitrArr = self.beacon.CMD_CARD_IOCTL(
+            channel, self.beacon.IOCTL_GGETBITRATE, data_in=[0, 0, 0, 0]
+        )
         bitrArr = bitrArr["GCprotocol"]["body"]["data"]["ioctl_data"]
         bitrArr.reverse()
         bitr = DGBus._list_to_int(bitrArr)
 
-        termInt = self.beacon.CMD_CARD_IOCTL(channel,
-                                             self.beacon.IOCTL_GETINTTERM,
-                                             data_in=[0])
+        termInt = self.beacon.CMD_CARD_IOCTL(
+            channel, self.beacon.IOCTL_GETINTTERM, data_in=[0]
+        )
         termInt = termInt["GCprotocol"]["body"]["data"]["ioctl_data"][0]
         term = termInt == 1
 
         if is_fd:
             dataArr = self.beacon.CMD_CARD_IOCTL(
-                channel,
-                self.beacon.IOCTL_GGETFASTBITRATE,
-                data_in=[0, 0, 0, 0])
+                channel, self.beacon.IOCTL_GGETFASTBITRATE, data_in=[0, 0, 0, 0]
+            )
             dataArr = dataArr["GCprotocol"]["body"]["data"]["ioctl_data"]
             dataArr.reverse()
             data = DGBus._list_to_int(dataArr)
@@ -340,10 +354,7 @@ class DGBus(BusABC):
         """ Returns list of dicts that contains available configs for the
             beacon
         """
-        return [
-            {"interface": "dg", "channel": channel}
-            for channel in range(1,9)
-        ]
+        return [{"interface": "dg", "channel": channel} for channel in range(1, 9)]
 
     #
     # METHODS SPECIFIC TO DG INTERFACE
@@ -371,8 +382,9 @@ class DGBus(BusABC):
             self.is_fd = True
             self.pre_iso = False
 
-        self.beacon.CMD_CARD_IOCTL(self.channel, self.beacon.IOCTL_GCANSETMODE,
-                                   data_in=temp_mode)
+        self.beacon.CMD_CARD_IOCTL(
+            self.channel, self.beacon.IOCTL_GCANSETMODE, data_in=temp_mode
+        )
         self.beacon.CMD_INIT(self.channel, value_in=self.beacon.ALWAYS_INIT)
 
     def set_bitrate(self, new_bitr):
@@ -383,8 +395,9 @@ class DGBus(BusABC):
         self.bitrate = new_bitr
         temp_bitrate = DGBus._int_to_list(new_bitr)
         temp_bitrate.reverse()
-        self.beacon.CMD_CARD_IOCTL(self.channel, self.beacon.IOCTL_GSETBITRATE,
-                                   data_in=temp_bitrate)
+        self.beacon.CMD_CARD_IOCTL(
+            self.channel, self.beacon.IOCTL_GSETBITRATE, data_in=temp_bitrate
+        )
         self.beacon.CMD_INIT(self.channel, value_in=self.beacon.ALWAYS_INIT)
 
     def set_termination(self, new_term):
@@ -394,8 +407,9 @@ class DGBus(BusABC):
         """
         self.termination = new_term
         temp_term = [1] if new_term else [0]
-        self.beacon.CMD_CARD_IOCTL(self.channel, self.beacon.IOCTL_SETINTTERM,
-                                   data_in=temp_term)
+        self.beacon.CMD_CARD_IOCTL(
+            self.channel, self.beacon.IOCTL_SETINTTERM, data_in=temp_term
+        )
         self.beacon.CMD_INIT(self.channel, value_in=self.beacon.ALWAYS_INIT)
 
     def set_databitr(self, new_databitr):
@@ -406,9 +420,9 @@ class DGBus(BusABC):
         self.data_bitrate = new_databitr
         temp_databitr = DGBus._int_to_list(new_databitr)
         temp_databitr.reverse()
-        self.beacon.CMD_CARD_IOCTL(self.channel,
-                                   self.beacon.IOCTL_GSETFASTBITRATE,
-                                   data_in=temp_databitr)
+        self.beacon.CMD_CARD_IOCTL(
+            self.channel, self.beacon.IOCTL_GSETFASTBITRATE, data_in=temp_databitr
+        )
         self.beacon.CMD_INIT(self.channel, value_in=self.beacon.ALWAYS_INIT)
 
     def set_event_rx(self, state):
@@ -434,9 +448,9 @@ class Scheduling(LimitedDurationCyclicSendTaskABC, ModifiableCyclicTaskABC):
         self.channel = channel
 
     def modify_data(self, message):
-        self.beaconref().CMD_SCHED_MSG_REPLACE(self.idIn,
-                                               DGBus.msg_to_dict(message),
-                                               index=0)
+        self.beaconref().CMD_SCHED_MSG_REPLACE(
+            self.idIn, DGBus.msg_to_dict(message), index=0
+        )
 
     def stop(self):
         self.beaconref().CMD_SCHED_KILL_TX(self.channel, self.idIn)
