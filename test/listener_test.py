@@ -90,7 +90,9 @@ class ListenerTest(BusTest):
             try:
                 if extension == ".blf":
                     delete = False
-                    file_handler = open(join(dirname(__file__), "data/logfile.blf"))
+                    file_handler = open(
+                        join(dirname(__file__), "data", "test_CanMessage.blf")
+                    )
                 else:
                     delete = True
                     file_handler = tempfile.NamedTemporaryFile(
