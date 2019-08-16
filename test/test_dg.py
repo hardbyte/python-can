@@ -525,7 +525,7 @@ class test_dg(unittest.TestCase):
             task = bus.send_periodic(msg, .2)
             time.sleep(1.1)
             task.stop()
-            for _ in range(0, 6):
+            for _ in range(0, 4):
                 reply = bus.recv(timeout=0)
                 self.assertEqual(reply.arbitration_id, 0x0444)
             reply = bus.recv(timeout=0)
