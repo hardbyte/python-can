@@ -23,9 +23,11 @@ class ASCParseError(Exception):
     """ASC file could not be parsed correctly."""
 
 
-BASES = {'dec': 10, 'hex': 16}
+BASES = {"dec": 10, "hex": 16}
 CAN_MSG_EXT = 0x80000000
 CAN_ID_MASK = 0x1FFFFFFF
+BEGIN_TRIGGERBLOCK = "Begin Triggerblock"
+MAX_HEADER_ROW_LENGTH = 10  # TODO Just guessing here, is there an actual max row length of asc header?
 
 logger = logging.getLogger("can.io.asc")
 
@@ -51,17 +53,17 @@ class ASCReader(BaseIOHandler):
     def _parse_header(self):
         """Parse the header for information about base and timestamps."""
         base_regex = r"base\s+(?P<base>\w+)\s+timestamps\s+(?P<timestamps>\w+)"
-        for i in range(10):
+        for _ in range(MAX_HEADER_ROW_LENGTH):
             line = self.file.readline()
+            if line.startswith(BEGIN_TRIGGERBLOCK):
+                break  # Header end
             m = re.search(base_regex, line)
             if m:
-                base = m.group('base')
+                base = m.group("base")
                 if base not in BASES:
-                    raise ASCParseError("Support for base %s not implemented" % base)
+                    raise ValueError("Support for base %s not implemented" % base)
                 self.base = BASES[base]
-                self.absolute_timestamps = m.group('timestamps') == 'absolute'
-                break
-        self.file.seek(0)
+                self.absolute_timestamps = m.group("timestamps") == "absolute"
 
     def _extract_can_id(self, str_can_id):
         if str_can_id[-1:].lower() == "x":
@@ -100,8 +102,8 @@ class ASCReader(BaseIOHandler):
                 yield msg
 
             elif (
-                    not isinstance(channel, int)
-                    or dummy.strip()[0:10].lower() == "statistic:"
+                not isinstance(channel, int)
+                or dummy.strip()[0:10].lower() == "statistic:"
             ):
                 pass
 
