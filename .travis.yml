@@ -99,7 +99,9 @@ jobs:
           can/notifier.py
           can/player.py
           can/thread_safe_bus.py
+          can/typechecking.py
           can/util.py
+          can/io/**.py
     - stage: linter
       name: "Formatting Checks"
       python: "3.7"

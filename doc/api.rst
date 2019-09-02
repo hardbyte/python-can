@@ -11,7 +11,7 @@ A form of CAN interface is also required.
 
 .. toctree::
    :maxdepth: 1
-   
+
    bus
    message
    listeners
@@ -25,7 +25,7 @@ Utilities
 ---------
 
 
-.. automethod:: can.detect_available_configs
+.. autofunction:: can.detect_available_configs
 
 
 .. _notifier:
