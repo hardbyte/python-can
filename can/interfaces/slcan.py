@@ -97,9 +97,9 @@ class slcanBus(BusABC):
         if bitrate is not None and btr is not None:
             raise ValueError("Bitrate and btr mutually exclusive.")
         if bitrate is not None:
-            self.set_bitrate(self, bitrate)
+            self.set_bitrate(bitrate)
         if btr is not None:
-            self.set_bitrate_reg(self, btr)
+            self.set_bitrate_reg(btr)
         self.open()
 
         super().__init__(
