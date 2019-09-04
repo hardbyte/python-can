@@ -84,6 +84,8 @@ jobs:
         # warnings to the .pylintrc-wip file to prevent them from being
         # re-introduced
         - pylint --rcfile=.pylintrc-wip can/
+        # check examples
+        - pylint --rcfile=.pylintrc-wip examples/
         # mypy checking
         - mypy
           --python-version=3.7
