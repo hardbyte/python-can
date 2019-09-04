@@ -415,14 +415,17 @@ class TestCsvFileFormat(ReaderWriterTest):
 
 try:
     from can import MF4Writer, MF4Reader
+except ImportError:
+    # seems to unsupported on this platform
+    # see GitHub issue #696: MF4 does not run on PyPy
+    pass
+else:
 
     class TestMF4FileFormat(ReaderWriterTest):
         """Tests can.MF4Writer and can.MF4Reader"""
 
-        __test__ = True
-
         def _setup_instance(self):
-            super(TestMF4FileFormat, self)._setup_instance_helper(
+            super()._setup_instance_helper(
                 MF4Writer,
                 MF4Reader,
                 binary_file=True,
@@ -430,10 +433,6 @@ try:
                 preserves_channel=False,
                 adds_default_channel=0,
             )
-
-
-except ImportError:
-    pass
 
 
 class TestSqliteDatabaseFormat(ReaderWriterTest):
