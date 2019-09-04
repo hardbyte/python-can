@@ -83,9 +83,9 @@ jobs:
         # Slowly enable all pylint warnings by adding addressed classes of
         # warnings to the .pylintrc-wip file to prevent them from being
         # re-introduced
-        - pylint --rcfile=.pylintrc-wip can/
+        - pylint --rcfile=.pylintrc-wip can/**.py
         # check examples
-        - pylint --rcfile=.pylintrc-wip examples/
+        - pylint --rcfile=.pylintrc-wip examples/**.py
         # mypy checking
         - mypy
           --python-version=3.7
