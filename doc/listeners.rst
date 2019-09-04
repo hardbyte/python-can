@@ -177,11 +177,11 @@ format from ASAM, widely used in many automotive software (Vector CANape, ETAS I
 
 The data is stored in a compressed format which makes it compact.
 
-.. note:: MF4 support requires Python >= 3.6 and has to be installed as an extra with for example ``pip install python-can[mf4]``.
+.. note:: MF4 support has to be installed as an extra with for example ``pip install python-can[mf4]``.
 
 .. note:: Channels will be converted to integers.
 
-.. note:: MF4Writer does not suppport append mode.
+.. note:: MF4Writer does not suppport the append mode.
 
 
 .. autoclass:: can.MF4Writer
