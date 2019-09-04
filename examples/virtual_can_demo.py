@@ -19,7 +19,8 @@ def producer(thread_id: int, message_count: int = 16):
     with can.Bus(bustype="socketcan", channel="vcan0") as bus:  # type: ignore
         for i in range(message_count):
             msg = can.Message(
-                arbitration_id=0x0CF02200 + thread_id, data=[thread_id, i, 0, 1, 3, 1, 4, 1]
+                arbitration_id=0x0CF02200 + thread_id,
+                data=[thread_id, i, 0, 1, 3, 1, 4, 1],
             )
             bus.send(msg)
         sleep(1.0)

@@ -133,7 +133,9 @@ if __name__ == "__main__":
     for interface, channel in [("socketcan", "vcan0")]:
         print(f"Carrying out cyclic multiple tests with {interface} interface")
 
-        with can.Bus(interface=interface, channel=channel, bitrate=500000) as BUS:  # type: ignore
+        with can.Bus(
+            interface=interface, channel=channel, bitrate=500000
+        ) as BUS:  # type: ignore
             cyclic_multiple_send(BUS)
             cyclic_multiple_send_modify(BUS)
 
