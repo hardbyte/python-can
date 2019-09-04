@@ -1,4 +1,3 @@
-# coding: utf-8
 
 """
 This interface is for Windows only, otherwise use socketCAN.

@@ -1,4 +1,3 @@
-# coding: utf-8
 
 """
 To Support the Seeed USB-Can analyzer interface. The device will appear

@@ -1,4 +1,3 @@
-# coding: utf-8
 
 """
 This Listener simply prints to stdout / the terminal or a file.

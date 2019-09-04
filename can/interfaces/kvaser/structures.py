@@ -1,4 +1,3 @@
-# coding: utf-8
 
 """
 Contains Python equivalents of the structures in CANLIB's canlib.h,

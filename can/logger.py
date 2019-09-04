@@ -1,4 +1,3 @@
-# coding: utf-8
 
 """
 logger.py logs CAN traffic to the terminal and to a file on disk.

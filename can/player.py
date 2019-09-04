@@ -1,4 +1,3 @@
-# coding: utf-8
 
 """
 Replays CAN traffic saved with can.logger back

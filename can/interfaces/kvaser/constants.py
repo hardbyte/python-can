@@ -1,4 +1,3 @@
-# coding: utf-8
 
 """
 Contains Python equivalents of the function and constant
