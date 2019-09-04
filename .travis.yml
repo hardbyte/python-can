@@ -88,6 +88,8 @@ jobs:
         - pylint --rcfile=.pylintrc *.py
         # check doc/conf.py
         - pylint --rcfile=.pylintrc doc/**.py
+        # check scripts
+        - pylint --rcfile=.pylintrc scripts/**.py
         # mypy checking
         - mypy
           --python-version=3.7
