@@ -131,14 +131,10 @@ def cyclic_multiple_send_modify(bus):
 
 if __name__ == "__main__":
     for interface, channel in [("socketcan", "vcan0")]:
-        print("Carrying out cyclic multiple tests with {} interface".format(interface))
+        print(f"Carrying out cyclic multiple tests with {interface} interface")
 
-        bus = can.Bus(interface=interface, channel=channel, bitrate=500000)
-
-        cyclic_multiple_send(bus)
-
-        cyclic_multiple_send_modify(bus)
-
-        bus.shutdown()
+        with can.Bus(interface=interface, channel=channel, bitrate=500000) as BUS:
+            cyclic_multiple_send(BUS)
+            cyclic_multiple_send_modify(BUS)
 
     time.sleep(2)

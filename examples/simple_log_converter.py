@@ -2,17 +2,25 @@
 
 """
 Use this to convert .can/.asc files to .log files.
+Can be easily adapted for all sorts of files.
 
-Usage: simpleLogConvert.py sourceLog.asc targetLog.log
+Usage: python3 simple_log_convert.py sourceLog.asc targetLog.log
 """
 
 import sys
 
-import can.io.logger
-import can.io.player
+import can
 
-reader = can.io.player.LogReader(sys.argv[1])
-writer = can.io.logger.Logger(sys.argv[2])
 
-for msg in reader:
-    writer.on_message_received(msg)
+def main():
+    """The transcoder"""
+
+    with can.LogReader(sys.argv[1]) as reader:
+        with can.Logger(sys.argv[2]) as writer:
+
+            for msg in reader:
+                writer.on_message_received(msg)
+
+
+if __name__ == "__main__":
+    main()
