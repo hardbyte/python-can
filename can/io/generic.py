@@ -1,4 +1,3 @@
-
 """
 Contains a generic class for file IO.
 """

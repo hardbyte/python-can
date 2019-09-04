@@ -1,4 +1,3 @@
-
 """
 Definition of constants for vxlapi.
 """

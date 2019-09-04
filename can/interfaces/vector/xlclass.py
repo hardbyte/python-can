@@ -1,4 +1,3 @@
-
 """
 Definition of data types and structures for vxlapi.
 

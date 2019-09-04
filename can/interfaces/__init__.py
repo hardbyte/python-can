@@ -1,4 +1,3 @@
-
 """
 Interfaces contain low level implementations that interact with CAN hardware.
 """

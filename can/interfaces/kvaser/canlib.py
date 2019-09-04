@@ -1,4 +1,3 @@
-
 """
 Contains Python equivalents of the function and constant
 definitions in CANLIB's canlib.h, with some supporting functionality

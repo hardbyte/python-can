@@ -1,4 +1,3 @@
-
 """
 Defines common socketcan functions.
 """

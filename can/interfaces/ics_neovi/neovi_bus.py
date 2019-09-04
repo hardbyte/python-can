@@ -1,4 +1,3 @@
-
 """
 ICS NeoVi interface module.
 

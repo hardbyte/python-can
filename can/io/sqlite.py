@@ -1,4 +1,3 @@
-
 """
 Implements an SQL database writer and reader for storing CAN messages.
 

@@ -1,4 +1,3 @@
-
 """
 This module contains the implementation of `can.Listener` and some readers.
 """

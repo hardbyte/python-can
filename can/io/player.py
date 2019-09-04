@@ -1,4 +1,3 @@
-
 """
 This module contains the generic :class:`LogReader` as
 well as :class:`MessageSync` which plays back messages

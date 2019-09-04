@@ -1,4 +1,3 @@
-
 """
 This module contains common `ctypes` utils.
 """

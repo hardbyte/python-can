@@ -1,4 +1,3 @@
-
 """
 NI-CAN interface module.
 
