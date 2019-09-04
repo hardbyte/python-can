@@ -1,4 +1,3 @@
-
 """
 This module implements an OS and hardware independent
 virtual CAN interface for testing purposes.

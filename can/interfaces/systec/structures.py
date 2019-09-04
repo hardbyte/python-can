@@ -1,4 +1,3 @@
-
 from ctypes import Structure, POINTER, sizeof
 from ctypes import (
     c_ubyte as BYTE,

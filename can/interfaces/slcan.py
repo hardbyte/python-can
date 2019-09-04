@@ -1,4 +1,3 @@
-
 """
 Interface for slcan compatible interfaces (win32/linux).
 

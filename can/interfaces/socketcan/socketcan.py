@@ -1,4 +1,3 @@
-
 """
 The main module of the socketcan interface containing most user-facing classes and methods
 along some internal methods.

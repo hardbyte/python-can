@@ -1,4 +1,3 @@
-
 """
 See the :class:`Logger` class.
 """

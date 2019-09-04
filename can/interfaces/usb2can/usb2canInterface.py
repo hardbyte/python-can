@@ -1,4 +1,3 @@
-
 """
 This interface is for Windows only, otherwise use socketCAN.
 """

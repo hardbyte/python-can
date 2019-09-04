@@ -1,4 +1,3 @@
-
 """
 Contains handling of ASC logging files.
 

@@ -1,4 +1,3 @@
-
 # Copyright (C) 2018 Kristian Sloth Lauszus.
 #
 # This program is free software; you can redistribute it and/or

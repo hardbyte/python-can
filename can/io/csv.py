@@ -1,4 +1,3 @@
-
 """
 This module contains handling for CSV (comma separated values) files.
 

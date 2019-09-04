@@ -1,4 +1,3 @@
-
 from ctypes import *
 import logging
 import platform

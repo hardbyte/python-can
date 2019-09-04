@@ -1,4 +1,3 @@
-
 """
 Implements support for BLF (Binary Logging Format) which is a proprietary
 CAN log format from Vector Informatik GmbH (Germany).

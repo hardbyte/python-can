@@ -1,4 +1,3 @@
-
 """
 Exposes several methods for transmitting cyclic messages.
 

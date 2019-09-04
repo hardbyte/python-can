@@ -1,4 +1,3 @@
-
 """
 Defines shared CAN constants.
 """

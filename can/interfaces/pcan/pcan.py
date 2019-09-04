@@ -1,4 +1,3 @@
-
 """
 Enable basic CAN over a PCAN USB device.
 """

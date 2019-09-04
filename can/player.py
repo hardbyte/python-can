@@ -1,4 +1,3 @@
-
 """
 Replays CAN traffic saved with can.logger back
 to a CAN bus.

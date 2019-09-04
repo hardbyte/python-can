@@ -1,4 +1,3 @@
-
 """
 This module contains the base implementation of :class:`can.BusABC` as well
 as a list of all available backends and some implemented

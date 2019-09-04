@@ -1,4 +1,3 @@
-
 """
 This module contains the implementation of :class:`can.Message`.
 

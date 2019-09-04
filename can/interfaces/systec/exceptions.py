@@ -1,4 +1,3 @@
-
 from .constants import ReturnCode
 from can import CanError
 

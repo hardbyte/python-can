@@ -1,4 +1,3 @@
-
 """
 Contains the ABC bus implementation and its documentation.
 """

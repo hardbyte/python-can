@@ -1,4 +1,3 @@
-
 """
 ``can`` is an object-orient Controller Area Network (CAN) interface module.
 """
