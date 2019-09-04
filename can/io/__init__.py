@@ -15,6 +15,7 @@ from .csv import CSVWriter, CSVReader
 from .sqlite import SqliteReader, SqliteWriter
 from .printer import Printer
 from .trc import TRCReader, TRCWriter, TRCFileVersion
+
 try:
     from .mf4 import MF4Writer, MF4Reader
 except ImportError:
