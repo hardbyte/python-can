@@ -104,6 +104,8 @@ jobs:
           can/typechecking.py
           can/util.py
           can/io/**.py
+          scripts/**.py
+          examples/**.py
     - stage: linter
       name: "Formatting Checks"
       python: "3.7"
