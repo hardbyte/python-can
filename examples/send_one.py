@@ -1,11 +1,8 @@
 #!/usr/bin/env python
-# coding: utf-8
 
 """
 This example shows how sending a single message works.
 """
-
-from __future__ import print_function
 
 import can
 

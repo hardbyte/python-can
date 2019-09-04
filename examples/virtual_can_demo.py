@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# coding: utf-8
 
 """
 This demo creates multiple processes of producers to spam a socketcan bus.

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# coding: utf-8
 
 """
 This example sends every second a messages over the serial interface and also 
@@ -18,8 +17,6 @@ Expects two serial ports (/dev/ttyS10 and /dev/ttyS11) connected to each other:
     ports on Windows, the following software can be used:
         com0com: http://com0com.sourceforge.net/
 """
-
-from __future__ import print_function
 
 import time
 import threading
