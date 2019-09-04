@@ -4,12 +4,10 @@
 """
 """
 
-from time import sleep
 import unittest
 import random
 import logging
 import tempfile
-import sqlite3
 import os
 from os.path import join, dirname
 
@@ -113,9 +111,11 @@ class ListenerTest(BusTest):
         test_filetype_to_instance(".db", can.SqliteReader)
         test_filetype_to_instance(".log", can.CanutilsLogReader)
 
-        # test file extensions that are not supported
-        with self.assertRaisesRegex(NotImplementedError, ".xyz_42"):
-            test_filetype_to_instance(".xyz_42", can.Printer)
+    def testPlayerTypeResolutionUnsupportedFileTypes(self):
+        for should_fail_with in ["", ".", ".some_unknown_extention_42"]:
+            with self.assertRaises(ValueError):
+                with can.LogReader(should_fail_with):  # make sure we close it anyways
+                    pass
 
     def testLoggerTypeResolution(self):
         def test_filetype_to_instance(extension, klass):
@@ -137,12 +137,14 @@ class ListenerTest(BusTest):
         test_filetype_to_instance(".log", can.CanutilsLogWriter)
         test_filetype_to_instance(".txt", can.Printer)
 
-        # test file extensions that should use a fallback
-        test_filetype_to_instance("", can.Printer)
-        test_filetype_to_instance(".", can.Printer)
-        test_filetype_to_instance(".some_unknown_extention_42", can.Printer)
         with can.Logger(None) as logger:
             self.assertIsInstance(logger, can.Printer)
+
+    def testLoggerTypeResolutionUnsupportedFileTypes(self):
+        for should_fail_with in ["", ".", ".some_unknown_extention_42"]:
+            with self.assertRaises(ValueError):
+                with can.Logger(should_fail_with):  # make sure we close it anyways
+                    pass
 
     def testBufferedListenerReceives(self):
         a_listener = can.BufferedReader()

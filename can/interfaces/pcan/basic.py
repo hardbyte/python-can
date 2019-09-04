@@ -780,7 +780,7 @@ class PCANBasic:
           A touple with 2 values
         """
         try:
-            if Parameter in {
+            if Parameter in (
                 PCAN_API_VERSION,
                 PCAN_HARDWARE_NAME,
                 PCAN_CHANNEL_VERSION,
@@ -788,7 +788,7 @@ class PCANBasic:
                 PCAN_TRACE_LOCATION,
                 PCAN_BITRATE_INFO_FD,
                 PCAN_IP_ADDRESS,
-            }:
+            ):
                 mybuffer = create_string_buffer(256)
             else:
                 mybuffer = c_int(0)
@@ -822,7 +822,7 @@ class PCANBasic:
           A TPCANStatus error code
         """
         try:
-            if Parameter in {PCAN_LOG_LOCATION, PCAN_LOG_TEXT, PCAN_TRACE_LOCATION}:
+            if Parameter in (PCAN_LOG_LOCATION, PCAN_LOG_TEXT, PCAN_TRACE_LOCATION):
                 mybuffer = create_string_buffer(256)
             else:
                 mybuffer = c_int(0)
