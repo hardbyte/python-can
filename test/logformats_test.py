@@ -423,12 +423,14 @@ try:
 
         def _setup_instance(self):
             super(TestMF4FileFormat, self)._setup_instance_helper(
-                MF4Writer, MF4Reader,
+                MF4Writer,
+                MF4Reader,
                 binary_file=True,
                 check_comments=False,
                 preserves_channel=False,
                 adds_default_channel=0,
             )
+
 
 except ImportError:
     pass

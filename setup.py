@@ -13,9 +13,12 @@ from os.path import isfile, join
 import re
 import logging
 import sys
+import platform
 from setuptools import setup, find_packages
 
 logging.basicConfig(level=logging.WARNING)
+
+IS_CPYTHON = platform.python_implementation() == "CPython"
 
 with open("can/__init__.py", "r") as fd:
     version = re.search(
@@ -33,7 +36,7 @@ extras_require = {
     "neovi": ["python-ics>=2.12", "filelock"],
 }
 
-tests_require = [
+extras_require["test"] = [
     "pytest~=4.3",
     "pytest-timeout~=1.3",
     "pytest-cov~=2.6",
@@ -41,7 +44,9 @@ tests_require = [
     "hypothesis",
 ] + extras_require["serial"]
 
-extras_require["test"] = tests_require
+# see GitHub issue #696: MF4 does not run on PyPy
+if IS_CPYTHON:
+    extras_require["test"] += extras_require["mf4"]
 
 # Check for 'pytest-runner' only if setup.py was invoked with 'test'.
 # This optimizes setup.py for cases when pytest-runner is not needed,
@@ -105,10 +110,10 @@ setup(
         "aenum",
         'windows-curses;platform_system=="Windows"',
         "filelock",
-        "mypy_extensions >= 0.4.0, < 0.5.0",
+        "mypy_extensions~=0.4.0",
         'pywin32;platform_system=="Windows"',
     ],
     setup_requires=pytest_runner,
     extras_require=extras_require,
-    tests_require=tests_require,
+    tests_require=extras_require["test"],
 )
