@@ -1,4 +1,3 @@
-# coding: utf-8
 
 """
 Implements support for BLF (Binary Logging Format) which is a proprietary

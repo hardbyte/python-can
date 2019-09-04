@@ -1,4 +1,3 @@
-# coding: utf-8
 
 from ctypes import c_ubyte as BYTE, c_ushort as WORD, c_ulong as DWORD
 

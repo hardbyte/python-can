@@ -1,4 +1,3 @@
-# coding: utf-8
 
 """
 This wrapper is for windows or direct access via CANAL API.

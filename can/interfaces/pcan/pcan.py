@@ -1,4 +1,3 @@
-# coding: utf-8
 
 """
 Enable basic CAN over a PCAN USB device.

@@ -1,4 +1,3 @@
-# coding: utf-8
 
 """
 ``can`` is an object-orient Controller Area Network (CAN) interface module.

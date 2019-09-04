@@ -1,4 +1,3 @@
-# coding: utf-8
 
 """
 This module contains handling for CSV (comma separated values) files.

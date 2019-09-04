@@ -1,4 +1,3 @@
-# coding: utf-8
 
 """
 A text based interface. For example use over serial ports like

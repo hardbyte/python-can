@@ -1,4 +1,3 @@
-# coding: utf-8
 
 """
 Definition of data types and structures for vxlapi.

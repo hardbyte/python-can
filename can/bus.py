@@ -1,4 +1,3 @@
-# coding: utf-8
 
 """
 Contains the ABC bus implementation and its documentation.

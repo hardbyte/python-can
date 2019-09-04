@@ -1,4 +1,3 @@
-# coding: utf-8
 
 """
 This module implements an OS and hardware independent

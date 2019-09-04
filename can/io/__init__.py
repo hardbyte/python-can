@@ -1,4 +1,3 @@
-# coding: utf-8
 
 """
 Read and write CAN bus messages using a range of Readers

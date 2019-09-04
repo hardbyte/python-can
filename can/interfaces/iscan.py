@@ -1,4 +1,3 @@
-# coding: utf-8
 
 """
 Interface for isCAN from Thorsis Technologies GmbH, former ifak system GmbH.
