@@ -75,6 +75,7 @@ class ASCReader(BaseIOHandler):
             elif (
                 not isinstance(channel, int)
                 or dummy.strip()[0:10].lower() == "statistic:"
+                or dummy.split(None, 1)[0] == "J1939TP"
             ):
                 pass
             elif dummy[-1:].lower() == "r":
