@@ -41,7 +41,7 @@ except ImportError:
     logger.warning(
         "You won't be able to use the viewer program without " "curses installed!"
     )
-    curses = None
+    curses = None  # type: ignore
 
 
 class CanViewer:
@@ -151,7 +151,7 @@ class CanViewer:
                 value = cmd_to_struct[key]
                 if isinstance(value, tuple):
                     # The struct is given as the fist argument
-                    struct_t = value[0]  # type: struct.Struct
+                    struct_t: struct.Struct = value[0]
 
                     # The conversion from raw values to SI-units are given in the rest of the tuple
                     values = [
@@ -160,8 +160,8 @@ class CanViewer:
                     ]
                 else:
                     # No conversion from SI-units is needed
-                    struct_t = value  # type: struct.Struct
-                    values = list(struct_t.unpack(data))
+                    as_struct_t: struct.Struct = value
+                    values = list(as_struct_t.unpack(data))
 
                 return values
         else:
