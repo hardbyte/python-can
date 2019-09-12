@@ -1,5 +1,3 @@
-# coding: utf-8
-
 """
 Utilities and configuration file parsing.
 """
