@@ -1,5 +1,3 @@
-# coding: utf-8
-
 """
 Contains handling of ASC logging files.
 

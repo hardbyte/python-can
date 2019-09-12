@@ -1,5 +1,3 @@
-# coding: utf-8
-
 """
 See the :class:`Logger` class.
 """

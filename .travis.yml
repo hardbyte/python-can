@@ -80,13 +80,23 @@ jobs:
       before_install:
         - travis_retry pip install -r requirements-lint.txt
       script:
+        # -------------
+        # pylint checking:
         # Slowly enable all pylint warnings by adding addressed classes of
         # warnings to the .pylintrc-wip file to prevent them from being
         # re-introduced
+        # check the entire main codebase
         - pylint --rcfile=.pylintrc-wip can/**.py
-        # check examples
+        # check setup.py
+        - pylint --rcfile=.pylintrc *.py
+        # check doc/conf.py and possible other scripts in there
+        - pylint --rcfile=.pylintrc doc/**.py
+        # check the scripts folder
+        - pylint --rcfile=.pylintrc scripts/**.py
+        # check the examples
         - pylint --rcfile=.pylintrc-wip examples/**.py
-        # mypy checking
+        # -------------
+        # mypy checking:
         - mypy
           --python-version=3.7
           --ignore-missing-imports

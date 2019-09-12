@@ -1,5 +1,3 @@
-# coding: utf-8
-
 """
 Contains Python equivalents of the function and constant
 definitions in CANLIB's canstat.h, with some supporting functionality

@@ -1,5 +1,3 @@
-# coding: utf-8
-
 """
 Replays CAN traffic saved with can.logger back
 to a CAN bus.
@@ -74,6 +72,12 @@ def main():
     )
 
     parser.add_argument(
+        "--error-frames",
+        help="Also send error frames to the interface.",
+        action="store_true",
+    )
+
+    parser.add_argument(
         "-g",
         "--gap",
         type=float,
@@ -111,6 +115,8 @@ def main():
     ]
     can.set_logging_level(logging_level_name)
 
+    error_frames = results.error_frames
+
     config = {"single_handle": True}
     if results.interface:
         config["interface"] = results.interface
@@ -132,6 +138,8 @@ def main():
 
     try:
         for m in in_sync:
+            if m.is_error_frame and not error_frames:
+                continue
             if verbosity >= 3:
                 print(m)
             bus.send(m)
