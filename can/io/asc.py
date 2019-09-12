@@ -26,7 +26,8 @@ logger = logging.getLogger("can.io.asc")
 
 class ASCReader(BaseIOHandler):
     """
-    Iterator of CAN messages from a ASC logging file.
+    Iterator of CAN messages from a ASC logging file. Meta data (comments,
+    bus statistics, J1939 Transport Protocol messages) is ignored.
 
     TODO: turn relative timestamps back to absolute form
     """
