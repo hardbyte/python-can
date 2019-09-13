@@ -1,5 +1,3 @@
-# coding: utf-8
-
 """
 NI-CAN interface module.
 
