@@ -1,5 +1,3 @@
-# coding: utf-8
-
 """
 Contains a generic class for file IO.
 """

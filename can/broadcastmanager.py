@@ -1,5 +1,3 @@
-# coding: utf-8
-
 """
 Exposes several methods for transmitting cyclic messages.
 
