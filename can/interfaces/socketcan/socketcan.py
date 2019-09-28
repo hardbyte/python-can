@@ -289,7 +289,7 @@ def _add_flags_to_can_id(message):
 
 
 class CyclicSendTask(
-    LimitedDurationCyclicSendTaskABC, ModifiableCyclicTaskABC, RestartableCyclicTaskABC
+    ModifiableCyclicTaskABC, LimitedDurationCyclicSendTaskABC, RestartableCyclicTaskABC
 ):
     """
     A SocketCAN cyclic send task supports:
@@ -300,7 +300,8 @@ class CyclicSendTask(
 
     """
 
-    def __init__(self, bcm_socket, messages, period, duration=None):
+    def __init__(self, bcm_socket, messages, period, duration=None,
+                 modifier_callback=None):
         """
         :param bcm_socket: An open BCM socket on the desired CAN channel.
         :param Union[Sequence[can.Message], can.Message] messages:
@@ -314,7 +315,7 @@ class CyclicSendTask(
         #   - self.messages
         #   - self.period
         #   - self.duration
-        super().__init__(messages, period, duration)
+        super().__init__(messages, period, duration, modifier_callback)
 
         self.bcm_socket = bcm_socket
         self._tx_setup(self.messages)
@@ -665,7 +666,8 @@ class SocketcanBus(BusABC):
             raise can.CanError("Failed to transmit: %s" % exc)
         return sent
 
-    def _send_periodic_internal(self, msgs, period, duration=None):
+    def _send_periodic_internal(self, msgs, period, duration=None,
+                                modifier_callback=None):
         """Start sending messages at a given period on this bus.
 
         The kernel's Broadcast Manager SocketCAN API will be used.
