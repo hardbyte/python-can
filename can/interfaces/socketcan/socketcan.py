@@ -665,8 +665,9 @@ class SocketcanBus(BusABC):
             raise can.CanError("Failed to transmit: %s" % exc)
         return sent
 
-    def _send_periodic_internal(self, msgs, period, duration=None,
-                                modifier_callback=None):
+    def _send_periodic_internal(
+        self, msgs, period, duration=None, modifier_callback=None
+    ):
         """Start sending messages at a given period on this bus.
 
         The kernel's Broadcast Manager SocketCAN API will be used.

@@ -176,8 +176,9 @@ class BusABC(metaclass=ABCMeta):
         period: float,
         duration: Optional[float] = None,
         store_task: bool = True,
-        modifier_callback: Optional[Callable[[Tuple[Message, ...]],
-                                             Tuple[Message, ...]]] = None,
+        modifier_callback: Optional[
+            Callable[[Tuple[Message, ...]], Tuple[Message, ...]]
+        ] = None,
     ) -> can.broadcastmanager.CyclicSendTaskABC:
         """Start sending messages at a given period on this bus.
 
@@ -224,8 +225,7 @@ class BusABC(metaclass=ABCMeta):
                 raise ValueError("Must be either a list, tuple, or a Message")
         if not msgs:
             raise ValueError("Must be at least a list or tuple of length 1")
-        task = self._send_periodic_internal(msgs, period, duration,
-                                            modifier_callback)
+        task = self._send_periodic_internal(msgs, period, duration, modifier_callback)
         # we wrap the task's stop method to also remove it from the Bus's list of tasks
         original_stop_method = task.stop
 
@@ -249,8 +249,9 @@ class BusABC(metaclass=ABCMeta):
         msgs: Union[Sequence[Message], Message],
         period: float,
         duration: Optional[float] = None,
-        modifier_callback: Optional[Callable[[Tuple[Message, ...]],
-                                             Tuple[Message, ...]]] = None
+        modifier_callback: Optional[
+            Callable[[Tuple[Message, ...]], Tuple[Message, ...]]
+        ] = None,
     ) -> can.broadcastmanager.CyclicSendTaskABC:
         """Default implementation of periodic message sending using threading.
 
@@ -274,8 +275,7 @@ class BusABC(metaclass=ABCMeta):
                 threading.Lock()
             )  # pylint: disable=attribute-defined-outside-init
         task = ThreadBasedCyclicSendTask(
-            self, self._lock_send_periodic, msgs, period, duration,
-            modifier_callback
+            self, self._lock_send_periodic, msgs, period, duration, modifier_callback
         )
         return task
 

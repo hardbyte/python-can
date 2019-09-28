@@ -23,8 +23,7 @@ def cyclic_checksum_send(bus):
     The message's counter and checksum is updated before each send.
     Sleeps for 10 seconds then stops the task.
     """
-    message = can.Message(arbitration_id=0xdeadbeef,
-                          data=[0, 1, 2, 3, 4, 5, 6, 0])
+    message = can.Message(arbitration_id=0xDEADBEEF, data=[0, 1, 2, 3, 4, 5, 6, 0])
     print("Starting to send an auto-updating message every 1 s for 10 s")
     task = bus.send_periodic(message, 1, modifier_callback=update_message)
     assert isinstance(task, can.CyclicSendTaskABC)
@@ -55,7 +54,7 @@ def compute_xbr_checksum(message, counter):
     Computes an XBR checksum as per SAE J1939 SPN 3188.
     """
     checksum = sum(message.data[:7])
-    checksum += sum(message.arbitration_id.to_bytes(length=4, byteorder='big'))
+    checksum += sum(message.arbitration_id.to_bytes(length=4, byteorder="big"))
     checksum += counter & 0x0F
     xbr_checksum = ((checksum >> 4) + checksum) & 0x0F
 
@@ -64,6 +63,6 @@ def compute_xbr_checksum(message, counter):
 
 if __name__ == "__main__":
     with can.Bus(  # type: ignore
-        'test', interface='virtual'
+        "test", interface="virtual"
     ) as BUS:
         cyclic_checksum_send(BUS)
