@@ -220,7 +220,7 @@ class ThreadBasedCyclicSendTask(
         period: float,
         duration: Optional[float] = None,
         modifier_callback: Optional[Callable[[Tuple[Message, ...]],
-                                             Tuple[Message, ...] = None,
+                                             Tuple[Message, ...]]] = None,
     ):
         super().__init__(messages, period, duration)
         self.bus = bus
