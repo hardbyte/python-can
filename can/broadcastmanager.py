@@ -149,6 +149,8 @@ class ModifiableCyclicTaskABC(CyclicSendTaskABC):
 
         if modifier_callback is not None:
             self.modifier_callback = self._check_modifier_callback(modifier_callback)
+        else:
+            self.modifier_callback = None
 
     def _check_modifier_callback(self, modifier_callback):
         modified_msgs = modifier_callback(self.messages)
