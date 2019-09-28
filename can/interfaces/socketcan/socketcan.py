@@ -289,7 +289,7 @@ def _add_flags_to_can_id(message):
 
 
 class CyclicSendTask(
-    ModifiableCyclicTaskABC, LimitedDurationCyclicSendTaskABC, RestartableCyclicTaskABC
+    LimitedDurationCyclicSendTaskABC, ModifiableCyclicTaskABC, RestartableCyclicTaskABC
 ):
     """
     A SocketCAN cyclic send task supports:
@@ -300,8 +300,7 @@ class CyclicSendTask(
 
     """
 
-    def __init__(self, bcm_socket, messages, period, duration=None,
-                 modifier_callback=None):
+    def __init__(self, bcm_socket, messages, period, duration=None):
         """
         :param bcm_socket: An open BCM socket on the desired CAN channel.
         :param Union[Sequence[can.Message], can.Message] messages:
@@ -315,7 +314,7 @@ class CyclicSendTask(
         #   - self.messages
         #   - self.period
         #   - self.duration
-        super().__init__(messages, period, duration, modifier_callback)
+        super().__init__(messages, period, duration)
 
         self.bcm_socket = bcm_socket
         self._tx_setup(self.messages)
