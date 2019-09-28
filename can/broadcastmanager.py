@@ -5,7 +5,7 @@ The main entry point to these classes should be through
 :meth:`can.BusABC.send_periodic`.
 """
 
-from typing import Optional, Sequence, Tuple, Union, TYPE_CHECKING
+from typing import Callable, Optional, Sequence, Tuple, Union, TYPE_CHECKING
 
 from can import typechecking
 
@@ -129,6 +129,37 @@ class RestartableCyclicTaskABC(CyclicSendTaskABC):
 
 class ModifiableCyclicTaskABC(CyclicSendTaskABC):
     """Adds support for modifying a periodic message"""
+    def __init__(
+        self,
+        messages: Union[Sequence[Message], Message],
+        period: float,
+        duration: Optional[float],
+        modifier_callback: Optional[Callable[[Tuple[Message, ...]],
+                                             Tuple[Message, ...]]],
+    ):
+        """
+        :param messages:
+            The messages to be sent periodically.
+        :param period: The rate in seconds at which to send the messages.
+        :param modifier_callback:
+            Callback function which takes takes a can.Message as input and
+            returns a modified can.Message.
+        """
+        super().__init__(messages, period, duration)
+
+        if modifier_callback is not None:
+            self.modifier_callback = self._check_modifier_callback(modifier_callback)
+
+    def _check_modifier_callback(self, modifier_callback):
+        modified_msgs = modifier_callback(self.messages)
+
+        if modified_msgs[0].arbitration_id != self.arbitration_id:
+            raise ValueError(
+                    "The modifier callback function must not modify the "
+                    "messages' arbitration ID."
+            )
+
+        return modifier_callback
 
     def _check_modified_messages(self, messages: Tuple[Message, ...]):
         """Helper function to perform error checking when modifying the data in
@@ -207,8 +238,10 @@ class ThreadBasedCyclicSendTask(
         messages: Union[Sequence[Message], Message],
         period: float,
         duration: Optional[float] = None,
+        modifier_callback: Optional[Callable[[Tuple[Message, ...]],
+                                             Tuple[Message, ...]]] = None,
     ):
-        super().__init__(messages, period, duration)
+        super().__init__(messages, period, duration, modifier_callback)
         self.bus = bus
         self.send_lock = lock
         self.stopped = True
@@ -247,6 +280,8 @@ class ThreadBasedCyclicSendTask(
             with self.send_lock:
                 started = time.perf_counter()
                 try:
+                    if self.modifier_callback is not None:
+                        self.messages = self.modifier_callback(self.messages)
                     self.bus.send(self.messages[msg_index])
                 except Exception as exc:
                     log.exception(exc)
