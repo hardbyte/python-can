@@ -1,5 +1,3 @@
-# coding: utf-8
-
 from threading import RLock
 
 try:
@@ -16,11 +14,11 @@ from .interface import Bus
 
 
 try:
-    from contextlib import nullcontext
+    from contextlib import nullcontext  # type: ignore
 
 except ImportError:
 
-    class nullcontext:
+    class nullcontext:  # type: ignore
         """A context manager that does nothing at all.
         A fallback for Python 3.7's :class:`contextlib.nullcontext` manager.
         """

@@ -1,23 +1,24 @@
-# -*- coding: utf-8 -*-
-#
-# python-can documentation build configuration file
-#
-# This file is execfile()d with the current directory set to its containing dir.
+"""
+python-can documentation build configuration file
 
-from __future__ import unicode_literals, absolute_import
+This file is execfile()d with the current directory set to its containing dir.
+"""
+
+# -- Imports -------------------------------------------------------------------
 
 import sys
 import os
-
-# General information about the project.
-project = "python-can"
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath(".."))
 
-import can
+import can  # pylint: disable=wrong-import-position
+
+# -- General configuration -----------------------------------------------------
+
+# pylint: disable=invalid-name
 
 # The version info for the project, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -27,7 +28,8 @@ import can
 version = can.__version__.split("-")[0]
 release = can.__version__
 
-# -- General configuration -----------------------------------------------------
+# General information about the project.
+project = "python-can"
 
 primary_domain = "py"
 
@@ -43,6 +45,7 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.graphviz",
     "sphinxcontrib.programoutput",
+    "sphinx_autodoc_typehints",
 ]
 
 # Now, you can use the alias name as a new role, e.g. :issue:`123`.

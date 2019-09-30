@@ -1,16 +1,16 @@
-# coding: utf-8
-
 """
 ``can`` is an object-orient Controller Area Network (CAN) interface module.
 """
 
 import logging
 
+from typing import Dict, Any
+
 __version__ = "3.2.0"
 
 log = logging.getLogger("can")
 
-rc = dict()
+rc: Dict[str, Any] = dict()
 
 
 class CanError(IOError):

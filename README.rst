@@ -1,11 +1,25 @@
 python-can
 ==========
 
-|release| |docs| |build_travis| |build_appveyor| |coverage| |downloads| |formatter|
+|release| |downloads| |downloads_monthly| |formatter|
+
+|docs| |build_travis| |build_appveyor| |coverage|
 
 .. |release| image:: https://img.shields.io/pypi/v/python-can.svg
    :target: https://pypi.python.org/pypi/python-can/
    :alt: Latest Version on PyPi
+
+.. |downloads| image:: https://pepy.tech/badge/python-can
+   :target: https://pepy.tech/project/python-can
+   :alt: Downloads on PePy
+
+.. |downloads_monthly| image:: https://pepy.tech/badge/python-can/month
+   :target: https://pepy.tech/project/python-can/month
+   :alt: Monthly downloads on PePy
+
+.. |formatter| image:: https://img.shields.io/badge/code%20style-black-000000.svg
+   :target: https://github.com/python/black
+   :alt: This project uses the black formatter.
 
 .. |docs| image:: https://readthedocs.org/projects/python-can/badge/?version=stable
    :target: https://python-can.readthedocs.io/en/stable/
@@ -23,14 +37,6 @@ python-can
    :target: https://codecov.io/gh/hardbyte/python-can/branch/develop
    :alt: Test coverage reports on Codecov.io
 
-.. |downloads| image:: https://pepy.tech/badge/python-can
-   :target: https://pepy.tech/project/python-can
-   :alt: Downloads on PePy
-
-.. |formatter| image:: https://img.shields.io/badge/code%20style-black-000000.svg
-   :target: https://github.com/python/black
-   :alt: This project uses the black formatter.
-
 The **C**\ ontroller **A**\ rea **N**\ etwork is a bus standard designed
 to allow microcontrollers and devices to communicate with each other. It
 has priority based bus arbitration and reliable deterministic
@@ -44,13 +50,13 @@ messages on a can bus.
 The library currently supports Python 3.6+ as well as PyPy 3 and runs
 on Mac, Linux and Windows.
 
-=============================  ===========
-Library Version                Python
------------------------------  -----------
-  2.x                          2.6+, 3.4+
-  3.x                          2.7+, 3.5+
-  4.x *(currently on devlop)*  3.6+
-=============================  ===========
+==============================  ===========
+Library Version                 Python
+------------------------------  -----------
+  2.x                           2.6+, 3.4+
+  3.x                           2.7+, 3.5+
+  4.x *(currently on develop)*  3.6+
+==============================  ===========
 
 
 Features

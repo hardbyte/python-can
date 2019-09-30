@@ -1,5 +1,3 @@
-# coding: utf-8
-
 """
 A text based interface. For example use over serial ports like
 "/dev/ttyS1" or "/dev/ttyUSB0" on Linux machines or "COM1" on Windows.

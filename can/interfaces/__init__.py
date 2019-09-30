@@ -1,5 +1,3 @@
-# coding: utf-8
-
 """
 Interfaces contain low level implementations that interact with CAN hardware.
 """
@@ -34,6 +32,4 @@ BACKENDS.update(
     }
 )
 
-VALID_INTERFACES = frozenset(
-    list(BACKENDS.keys()) + ["socketcan_native", "socketcan_ctypes"]
-)
+VALID_INTERFACES = frozenset(list(BACKENDS.keys()))

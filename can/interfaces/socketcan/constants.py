@@ -1,5 +1,3 @@
-# coding: utf-8
-
 """
 Defines shared CAN constants.
 """
@@ -11,6 +9,7 @@ CAN_EFF_FLAG = 0x80000000
 # BCM opcodes
 CAN_BCM_TX_SETUP = 1
 CAN_BCM_TX_DELETE = 2
+CAN_BCM_TX_READ = 3
 
 # BCM flags
 SETTIMER = 0x0001

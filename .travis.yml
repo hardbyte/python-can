@@ -16,6 +16,9 @@ python:
   # PyPy:
   - pypy3
 
+env:
+
+
 install:
   - if [[ "$TEST_SOCKETCAN" ]]; then sudo bash test/open_vcan.sh ; fi
   - travis_retry pip install .[test,mf4]
@@ -78,10 +81,42 @@ jobs:
       before_install:
         - travis_retry pip install -r requirements-lint.txt
       script:
+        # -------------
+        # pylint checking:
         # Slowly enable all pylint warnings by adding addressed classes of
         # warnings to the .pylintrc-wip file to prevent them from being
         # re-introduced
-        - pylint --rcfile=.pylintrc-wip can/
+        # check the entire main codebase
+        - pylint --rcfile=.pylintrc-wip can/**.py
+        # check setup.py
+        - pylint --rcfile=.pylintrc *.py
+        # check doc/conf.py and possible other scripts in there
+        - pylint --rcfile=.pylintrc doc/**.py
+        # check the scripts folder
+        - pylint --rcfile=.pylintrc scripts/**.py
+        # check the examples
+        - pylint --rcfile=.pylintrc-wip examples/**.py
+        # -------------
+        # mypy checking:
+        - mypy
+          --python-version=3.7
+          --ignore-missing-imports
+          --no-implicit-optional
+          can/bit_timing.py
+          can/broadcastmanager.py
+          can/bus.py
+          can/interface.py
+          can/listener.py
+          can/logger.py
+          can/message.py
+          can/notifier.py
+          can/player.py
+          can/thread_safe_bus.py
+          can/typechecking.py
+          can/util.py
+          can/io/**.py
+          scripts/**.py
+          examples/**.py
 
     - stage: linter
       name: "Formatting Checks"
