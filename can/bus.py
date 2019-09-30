@@ -250,9 +250,7 @@ class BusABC(metaclass=ABCMeta):
         msgs: Union[Sequence[Message], Message],
         period: float,
         duration: Optional[float] = None,
-        modifier_callback: Optional[
-            Callable[[Tuple[Message, ...]], Tuple[Message, ...]]
-        ] = None,
+        modifier_callback: Optional[Callable[[Message], Message]] = None,
     ) -> can.broadcastmanager.CyclicSendTaskABC:
         """Default implementation of periodic message sending using threading.
 
