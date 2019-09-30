@@ -91,12 +91,12 @@ try:
 
         If a message has a timestamp smaller than the previous one or None,
         it gets assigned the timestamp that was written for the last message.
-        It the first message does not have a timestamp, it is set to zero.
+        If the first message does not have a timestamp, it is set to zero.
         """
 
         def __init__(self, file, database=None):
             """
-            :param file: a path-like object or as file-like object to write to
+            :param file: a path-like object or a file-like object to write to
                          If this is a file-like object, is has to be opened in
                          binary write mode, not text write mode.
             :param database: optional path to a DBC or ARXML file that contains
@@ -151,8 +151,15 @@ try:
             self._buffer = np.zeros(1, dtype=STD_DTYPE)
             self._rtr_buffer = np.zeros(1, dtype=RTR_DTYPE)
 
-        def stop(self):
-            self._mdf.save(self.file, compression=2)
+        def stop(self, compression=2):
+            """
+            :param file: compression option as integer (default 2)
+                         * 0 - no compression
+                         * 1 - deflate (slower, but produces smaller files)
+                         * 2 - transposition + deflate (slowest, but produces
+                           the smallest files)
+            """
+            self._mdf.save(self.file, compression=compression)
             self._mdf.close()
             super(MF4Writer, self).stop()
 
@@ -297,7 +304,7 @@ try:
                         channel = sample['CAN_DataFrame.ID']
                         arbitration_id = int(sample['CAN_DataFrame.ID'])
                         size = int(sample['CAN_DataFrame.DataLength'])
-                        dlc = FD_DLC2LEN(sample['CAN_DataFrame.DLC'])
+                        dlc = FD_DLC2LEN[sample['CAN_DataFrame.DLC']]
                         data = sample['CAN_DataFrame.DataBytes'][0, :size].tobytes()
                         error_state_indicator = int(sample['CAN_DataFrame.ESI'])
                         bitrate_switch = int(sample['CAN_DataFrame.BRS'])
@@ -356,7 +363,7 @@ try:
                         channel = sample['CAN_ErrorFrame.ID']
                         arbitration_id = int(sample['CAN_ErrorFrame.ID'])
                         size = int(sample['CAN_ErrorFrame.DataLength'])
-                        dlc = FD_DLC2LEN(sample['CAN_ErrorFrame.DLC'])
+                        dlc = FD_DLC2LEN[sample['CAN_ErrorFrame.DLC']]
                         data = sample['CAN_ErrorFrame.DataBytes'][0, :size].tobytes()
                         error_state_indicator = int(sample['CAN_ErrorFrame.ESI'])
                         bitrate_switch = int(sample['CAN_ErrorFrame.BRS'])
