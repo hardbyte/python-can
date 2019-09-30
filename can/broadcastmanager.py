@@ -132,9 +132,9 @@ class ModifiableCyclicTaskABC(CyclicSendTaskABC):
 
     def _check_modifier_callback(self, modifier_callback):
         if modifier_callback is not None:
-            modified_msgs = modifier_callback(self.messages)
+            modified_msg = modifier_callback(self.messages[0])
 
-            if modified_msgs[0].arbitration_id != self.arbitration_id:
+            if modified_msg.arbitration_id != self.arbitration_id:
                 raise ValueError(
                     "The modifier callback function must not modify the "
                     "messages' arbitration ID."
@@ -219,9 +219,7 @@ class ThreadBasedCyclicSendTask(
         messages: Union[Sequence[Message], Message],
         period: float,
         duration: Optional[float] = None,
-        modifier_callback: Optional[
-            Callable[[Tuple[Message, ...]], Tuple[Message, ...]]
-        ] = None,
+        modifier_callback: Optional[Callable[[Message], Message]] = None,
     ):
         super().__init__(messages, period, duration)
         self.bus = bus
@@ -264,7 +262,8 @@ class ThreadBasedCyclicSendTask(
                 started = time.perf_counter()
                 try:
                     if self.modifier_callback is not None:
-                        self.messages = self.modifier_callback(self.messages)
+                        modified_msg = self.modifier_callback(self.messages[msg_index])
+                        self.messages[msg_index].data = modified_msg.data
                     self.bus.send(self.messages[msg_index])
                 except Exception as exc:
                     log.exception(exc)

@@ -32,13 +32,12 @@ def cyclic_checksum_send(bus):
     print("stopped cyclic send")
 
 
-def update_message(messages):
-    for m in messages:
-        counter = increment_counter(m)
-        checksum = compute_xbr_checksum(m, counter)
-        m.data[7] = (checksum << 4) + counter
+def update_message(message):
+    counter = increment_counter(message)
+    checksum = compute_xbr_checksum(message, counter)
+    message.data[7] = (checksum << 4) + counter
 
-    return messages
+    return message
 
 
 def increment_counter(message):

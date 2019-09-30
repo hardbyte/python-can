@@ -176,9 +176,7 @@ class BusABC(metaclass=ABCMeta):
         period: float,
         duration: Optional[float] = None,
         store_task: bool = True,
-        modifier_callback: Optional[
-            Callable[[Tuple[Message, ...]], Tuple[Message, ...]]
-        ] = None,
+        modifier_callback: Optional[Callable[[Message], Message]] = None,
     ) -> can.broadcastmanager.CyclicSendTaskABC:
         """Start sending messages at a given period on this bus.
 
@@ -200,6 +198,9 @@ class BusABC(metaclass=ABCMeta):
         :param store_task:
             If True (the default) the task will be attached to this Bus instance.
             Disable to instead manage tasks manually.
+        :param modifier_callback:
+            Function which should be used to modify each message's data before
+            sending. Should take a Message as input and return the same.
         :return:
             A started task instance. Note the task can be stopped (and depending on
             the backend modified) by calling the :meth:`stop` method.
