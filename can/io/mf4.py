@@ -237,7 +237,7 @@ try:
 
         def __init__(self, file):
             """
-            :param file: a path-like object or as file-like object to read from
+            :param file: a path-like object or a file-like object to read from
                          If this is a file-like object, is has to be opened in
                          binary read mode, not text read mode.
             """

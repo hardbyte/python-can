@@ -20,6 +20,11 @@ from .trc import TRCReader
 from ..typechecking import StringPathLike, FileLike, AcceptedIOType
 from ..message import Message
 
+try:
+    from .mf4 import MF4Reader
+except ImportError:
+    MF4Reader = None
+
 
 class LogReader(MessageReader):
     """
@@ -31,6 +36,7 @@ class LogReader(MessageReader):
       * .csv
       * .db
       * .log
+      * .mf4
       * .trc
 
     Gzip compressed files can be used as long as the original
@@ -58,6 +64,7 @@ class LogReader(MessageReader):
         ".csv": CSVReader,
         ".db": SqliteReader,
         ".log": CanutilsLogReader,
+        ".mf4": MF4Reader,
         ".trc": TRCReader,
     }
 

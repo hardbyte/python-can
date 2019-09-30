@@ -1,7 +1,10 @@
+# coding: utf-8
+
 """
 See the :class:`Logger` class.
 """
 
+<<<<<<< HEAD
 import os
 import pathlib
 from abc import ABC, abstractmethod
@@ -10,6 +13,11 @@ import gzip
 from typing import Any, Optional, Callable, Type, Tuple, cast, Dict, Set
 
 from types import TracebackType
+=======
+from __future__ import absolute_import
+
+import logging
+>>>>>>> ceb3305 (add MF4Writer and MF4Reader to logger and player modules)
 
 from typing_extensions import Literal
 from pkg_resources import iter_entry_points
@@ -26,6 +34,13 @@ from .printer import Printer
 from .trc import TRCWriter
 from ..typechecking import StringPathLike, FileLike, AcceptedIOType
 
+try:
+    from .mf4 import MF4Writer
+except ImportError:
+    MF4Writer = None
+
+log = logging.getLogger("can.io.logger")
+
 
 class Logger(MessageWriter):  # pylint: disable=abstract-method
     """
@@ -39,6 +54,7 @@ class Logger(MessageWriter):  # pylint: disable=abstract-method
       * .log :class:`can.CanutilsLogWriter`
       * .trc :class:`can.TRCWriter`
       * .txt :class:`can.Printer`
+      * .mf4 :class:`can.MF4Writer`
 
     Any of these formats can be used with gzip compression by appending
     the suffix .gz (e.g. filename.asc.gz). However, third-party tools might not
@@ -49,7 +65,7 @@ class Logger(MessageWriter):  # pylint: disable=abstract-method
     The log files may be incomplete until `stop()` is called due to buffering.
 
     .. note::
-        This class itself is just a dispatcher, and any positional and keyword
+        This class itself is just a dispatcher, and any positional an keyword
         arguments are passed on to the returned instance.
     """
 
@@ -69,13 +85,28 @@ class Logger(MessageWriter):  # pylint: disable=abstract-method
         cls: Any, filename: Optional[StringPathLike], *args: Any, **kwargs: Any
     ) -> MessageWriter:
         """
-        :param filename: the filename/path of the file to write to,
-                         may be a path-like object or None to
-                         instantiate a :class:`~can.Printer`
-        :raises ValueError: if the filename's suffix is of an unknown file type
+        :type filename: str or None or path-like
+        :param filename: the filename/path the file to write to,
+                         may be a path-like object if the target logger supports
+                         it, and may be None to instantiate a :class:`~can.Printer`
+
         """
-        if filename is None:
-            return Printer(*args, **kwargs)
+        if filename:
+            if filename.endswith(".asc"):
+                return ASCWriter(filename, *args, **kwargs)
+            elif filename.endswith(".blf"):
+                return BLFWriter(filename, *args, **kwargs)
+            elif filename.endswith(".csv"):
+                return CSVWriter(filename, *args, **kwargs)
+            elif filename.endswith(".db"):
+                return SqliteWriter(filename, *args, **kwargs)
+            elif filename.endswith(".log"):
+                return CanutilsLogWriter(filename, *args, **kwargs)
+            elif filename.endswith(".mf4"):
+                if MF4Writer is not None:
+                    return MF4Writer(filename, *args, **kwargs)
+                else:
+                    log.info('Could not import MF4 logger, falling pack to can.Printer')
 
         if not Logger.fetched_plugins:
             Logger.message_writers.update(
