@@ -18,6 +18,11 @@ from .canutils import CanutilsLogReader
 from .csv import CSVReader
 from .sqlite import SqliteReader
 
+try:
+    from .mf4 import MF4Reader
+except ImportError:
+    MF4Reader = None
+
 
 class LogReader(BaseIOHandler):
     """
@@ -59,6 +64,9 @@ class LogReader(BaseIOHandler):
             ".db": SqliteReader,
             ".log": CanutilsLogReader,
         }
+        if MF4Reader is not None:
+            lookup[".mf4"] = MF4Reader
+
         suffix = pathlib.PurePath(filename).suffix
         try:
             return lookup[suffix](filename, *args, **kwargs)
