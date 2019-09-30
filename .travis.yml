@@ -86,6 +86,8 @@ jobs:
         # Slowly enable all pylint warnings by adding addressed classes of
         # warnings to the .pylintrc-wip file to prevent them from being
         # re-introduced
+
+
         # check the entire main codebase
         - pylint --rcfile=.pylintrc-wip can/**.py
         # check setup.py
