@@ -5,6 +5,7 @@ See the :class:`Logger` class.
 """
 
 import os
+import logging
 import pathlib
 from abc import ABC, abstractmethod
 from datetime import datetime
