@@ -4,7 +4,6 @@
 See the :class:`Logger` class.
 """
 
-<<<<<<< HEAD
 import os
 import pathlib
 from abc import ABC, abstractmethod
@@ -13,11 +12,6 @@ import gzip
 from typing import Any, Optional, Callable, Type, Tuple, cast, Dict, Set
 
 from types import TracebackType
-=======
-from __future__ import absolute_import
-
-import logging
->>>>>>> ceb3305 (add MF4Writer and MF4Reader to logger and player modules)
 
 from typing_extensions import Literal
 from pkg_resources import iter_entry_points
