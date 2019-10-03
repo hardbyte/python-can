@@ -4,8 +4,6 @@
 See the :class:`Logger` class.
 """
 
-from __future__ import absolute_import
-
 import logging
 import pathlib
 import typing
