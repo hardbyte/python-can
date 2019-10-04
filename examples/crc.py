@@ -20,8 +20,8 @@ logging.basicConfig(level=logging.INFO)
 
 def crc_send(bus):
     """
-    Sends periodic messages every 1 s with no explicit timeout
-    Sleeps for 10 seconds then stops the task.
+    Sends periodic messages every 1 s with no explicit timeout. Modifies messages
+    after 8 seconds, sends for 10 more seconds, then stops.
     """
     msg = can.Message(arbitration_id=0x12345678, data=[1, 2, 3, 4, 5, 6, 7, 0])
     messages = build_crc_msgs(msg)
