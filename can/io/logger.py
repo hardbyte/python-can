@@ -32,7 +32,8 @@ from ..typechecking import StringPathLike, FileLike, AcceptedIOType
 try:
     from .mf4 import MF4Writer
 except ImportError:
-    MF4Writer = None
+    # be careful when using MF4Writer, it might NameError
+    pass
 
 log = logging.getLogger("can.io.logger")
 
