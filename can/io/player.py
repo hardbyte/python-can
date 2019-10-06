@@ -21,7 +21,8 @@ from .sqlite import SqliteReader
 try:
     from .mf4 import MF4Reader
 except ImportError:
-    MF4Reader = None
+    # be careful when using MF4Writer, it might NameError
+    pass
 
 
 class LogReader(BaseIOHandler):
@@ -64,8 +65,10 @@ class LogReader(BaseIOHandler):
             ".db": SqliteReader,
             ".log": CanutilsLogReader,
         }
-        if MF4Reader is not None:
+        try:
             lookup[".mf4"] = MF4Reader
+        except NameError:
+            pass
 
         suffix = pathlib.PurePath(filename).suffix
         try:

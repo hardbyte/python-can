@@ -22,7 +22,8 @@ from .printer import Printer
 try:
     from .mf4 import MF4Writer
 except ImportError:
-    MF4Writer = None
+    # be careful when using MF4Writer, it might NameError
+    pass
 
 
 class Logger(BaseIOHandler, Listener):  # pylint: disable=abstract-method
@@ -68,8 +69,10 @@ class Logger(BaseIOHandler, Listener):  # pylint: disable=abstract-method
             ".log": CanutilsLogWriter,
             ".txt": Printer,
         }
-        if MF4Writer is not None:
+        try:
             lookup[".mf4"] = MF4Writer
+        except NameError:
+            pass
 
         suffix = pathlib.PurePath(filename).suffix
         try:
