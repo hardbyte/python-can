@@ -521,6 +521,12 @@ class PcanBus(BusABC):
             )
         return channels
 
+    def allow_error_frames(self, allow=True):
+        ret = self.m_objPCANBasic.SetValue(self.channel_info,
+                                           PCAN_ALLOW_ERROR_FRAMES,
+                                           PCAN_PARAMETER_ON if allow else PCAN_PARAMETER_OFF)
+        return ret == PCAN_ERROR_OK
+
 
 class PcanError(CanError):
     """
