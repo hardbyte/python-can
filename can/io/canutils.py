@@ -56,10 +56,13 @@ class CanutilsLogReader(BaseIOHandler):
 
             if data and data[0].lower() == "r":
                 isRemoteFrame = True
+
                 if len(data) > 1:
                     dlc = int(data[1:])
                 else:
                     dlc = 0
+
+                dataBin = None
             else:
                 isRemoteFrame = False
 
