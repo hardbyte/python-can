@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+
+"""
+This example demonstrates how to use async IO with python-can.
+"""
+
 import asyncio
 import can
 
@@ -8,7 +14,9 @@ def print_message(msg):
 
 
 async def main():
-    can0 = can.Bus("vcan0", bustype="virtual", receive_own_messages=True)
+    """The main function that runs in the loop."""
+
+    bus = can.Bus("vcan0", bustype="virtual", receive_own_messages=True)
     reader = can.AsyncBufferedReader()
     logger = can.Logger("logfile.asc")
 
@@ -19,9 +27,9 @@ async def main():
     ]
     # Create Notifier with an explicit loop to use for scheduling of callbacks
     loop = asyncio.get_event_loop()
-    notifier = can.Notifier(can0, listeners, loop=loop)
+    notifier = can.Notifier(bus, listeners, loop=loop)
     # Start sending first message
-    can0.send(can.Message(arbitration_id=0))
+    bus.send(can.Message(arbitration_id=0))
 
     print("Bouncing 10 messages...")
     for _ in range(10):
@@ -30,18 +38,24 @@ async def main():
         # Delay response
         await asyncio.sleep(0.5)
         msg.arbitration_id += 1
-        can0.send(msg)
+        bus.send(msg)
     # Wait for last message to arrive
     await reader.get_message()
     print("Done!")
 
     # Clean-up
     notifier.stop()
-    can0.shutdown()
+    bus.shutdown()
 
 
-# Get the default event loop
-loop = asyncio.get_event_loop()
-# Run until main coroutine finishes
-loop.run_until_complete(main())
-loop.close()
+if __name__ == "__main":
+    try:
+        # Get the default event loop
+        LOOP = asyncio.get_event_loop()
+        # Run until main coroutine finishes
+        LOOP.run_until_complete(main())
+    finally:
+        LOOP.close()
+
+    # or on Python 3.7+ simply
+    # asyncio.run(main())

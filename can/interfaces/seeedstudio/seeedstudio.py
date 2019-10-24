@@ -1,5 +1,3 @@
-# coding: utf-8
-
 """
 To Support the Seeed USB-Can analyzer interface. The device will appear
 as a serial port, for example "/dev/ttyUSB0" on Linux machines
