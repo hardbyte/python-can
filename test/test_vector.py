@@ -55,8 +55,6 @@ class TestVectorBus(unittest.TestCase):
         can.interfaces.vector.canlib.xldriver.xlClosePort = Mock(return_value=0)
         can.interfaces.vector.canlib.xldriver.xlCloseDriver = Mock()
 
-        # receiver functions
-
         # sender functions
         can.interfaces.vector.canlib.xldriver.xlCanTransmit = Mock(return_value=0)
         can.interfaces.vector.canlib.xldriver.xlCanTransmitEx = Mock(return_value=0)
