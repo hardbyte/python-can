@@ -212,6 +212,11 @@ class PcanBus(BusABC):
         if result != PCAN_ERROR_OK:
             raise PcanError(self._get_formatted_error(result))
 
+        result = self.m_objPCANBasic.SetValue(self.channel_info, PCAN_ALLOW_ERROR_FRAMES, PCAN_PARAMETER_ON)
+
+        if result != PCAN_ERROR_OK:
+            raise PcanError(self._get_formatted_error(result))
+
         if HAS_EVENTS:
             self._recv_event = CreateEvent(None, 0, 0, None)
             result = self.m_objPCANBasic.SetValue(
@@ -546,14 +551,6 @@ class PcanBus(BusABC):
                 {"interface": "pcan", "channel": i["name"], "supports_fd": has_fd}
             )
         return channels
-
-    def allow_error_frames(self, allow=True):
-        ret = self.m_objPCANBasic.SetValue(
-            self.channel_info,
-            PCAN_ALLOW_ERROR_FRAMES,
-            PCAN_PARAMETER_ON if allow else PCAN_PARAMETER_OFF,
-        )
-        return ret == PCAN_ERROR_OK
 
 
 class PcanError(CanError):
