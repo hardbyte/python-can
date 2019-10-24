@@ -35,6 +35,14 @@ class s_xl_can_ev_error(ctypes.Structure):
     _fields_ = [("errorCode", ctypes.c_ubyte), ("reserved", ctypes.c_ubyte * 95)]
 
 
+class s_xl_chip_state(ctypes.Structure):
+    _fields_ = [
+        ("busStatus", ctypes.c_ubyte),
+        ("txErrorCounter", ctypes.c_ubyte),
+        ("rxErrorCounter", ctypes.c_ubyte),
+    ]
+
+
 class s_xl_can_ev_chip_state(ctypes.Structure):
     _fields_ = [
         ("busStatus", ctypes.c_ubyte),
@@ -55,7 +63,7 @@ class s_xl_can_ev_sync_pulse(ctypes.Structure):
 
 # BASIC bus message structure
 class s_xl_tag_data(ctypes.Union):
-    _fields_ = [("msg", s_xl_can_msg)]
+    _fields_ = [("msg", s_xl_can_msg), ("chipState", s_xl_chip_state)]
 
 
 # CAN FD messages

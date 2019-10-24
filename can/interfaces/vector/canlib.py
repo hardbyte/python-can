@@ -462,7 +462,10 @@ class VectorBus(BusABC):
         :param event: XLevent that could have a `XL_CHIP_STATE`, `XL_TIMER` or `XL_SYNC_PULSE` tag.
         :return: None
         """
-        pass
+        if event.tag == xldefine.XL_EventTags.XL_CHIP_STATE.value:
+            pass
+        elif event.tag == xldefine.XL_EventTags.XL_TIMER.value:
+            pass
 
     def _handle_canfd_event(self, event: xlclass.XLcanRxEvent) -> None:
         """Handle non-message CAN FD events.
@@ -470,11 +473,16 @@ class VectorBus(BusABC):
         Method is called by :meth:`~can.interfaces.vector.VectorBus._recv_internal`
         when `event.tag` is not `XL_RECEIVE_MSG`. Subclasses can implement this method.
 
-        :param event: `XLcanRxEvent` that could have a `XL_CAN_EV_TAG_RX_ERROR`, `XL_CAN_EV_TAG_TX_ERROR`,
-            `XL_CAN_EV_TAG_STATISTIC` or `XL_CAN_EV_TAG_CHIP_STATE` tag.
+        :param event: `XLcanRxEvent` that could have a `XL_CAN_EV_TAG_RX_ERROR`, `XL_CAN_EV_TAG_TX_ERROR`
+            or `XL_CAN_EV_TAG_CHIP_STATE` tag.
         :return: None
         """
-        pass
+        if event.tag == xldefine.XL_CANFD_RX_EventTags.XL_CAN_EV_TAG_CHIP_STATE.value:
+            pass
+        elif event.tag == xldefine.XL_CANFD_RX_EventTags.XL_CAN_EV_TAG_RX_ERROR.value:
+            pass
+        elif event.tag == xldefine.XL_CANFD_RX_EventTags.XL_CAN_EV_TAG_TX_ERROR.value:
+            pass
 
     def send(self, msg, timeout=None):
         msg_id = msg.arbitration_id
