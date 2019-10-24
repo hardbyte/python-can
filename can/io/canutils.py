@@ -62,7 +62,7 @@ class CanutilsLogReader(BaseIOHandler):
             else:
                 isExtended = False
             canId = int(canId, 16)
-
+            dataBin = None
             if data and data[0].lower() == 'r':
                 isRemoteFrame = True
                 if len(data) > 1:
