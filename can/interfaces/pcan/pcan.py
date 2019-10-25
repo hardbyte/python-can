@@ -213,7 +213,7 @@ class PcanBus(BusABC):
             raise PcanError(self._get_formatted_error(result))
 
         result = self.m_objPCANBasic.SetValue(
-            self.channel_info, PCAN_ALLOW_ERROR_FRAMES, PCAN_PARAMETER_ON
+            self.m_PcanHandle, PCAN_ALLOW_ERROR_FRAMES, PCAN_PARAMETER_ON
         )
 
         if result != PCAN_ERROR_OK:
