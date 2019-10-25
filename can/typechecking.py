@@ -27,3 +27,5 @@ Channel = typing.Union[int, str]
 FileLike = typing.IO[typing.Any]
 StringPathLike = typing.Union[str, "os.PathLike[str]"]
 AcceptedIOType = typing.Optional[typing.Union[FileLike, StringPathLike]]
+
+BusConfig = typing.NewType("BusConfig", dict)

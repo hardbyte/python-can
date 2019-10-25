@@ -1,5 +1,3 @@
-# coding: utf-8
-
 """
 Contains handling of ASC logging files.
 
@@ -26,7 +24,8 @@ logger = logging.getLogger("can.io.asc")
 
 class ASCReader(BaseIOHandler):
     """
-    Iterator of CAN messages from a ASC logging file.
+    Iterator of CAN messages from a ASC logging file. Meta data (comments,
+    bus statistics, J1939 Transport Protocol messages) is ignored.
 
     TODO: turn relative timestamps back to absolute form
     """
@@ -75,6 +74,7 @@ class ASCReader(BaseIOHandler):
             elif (
                 not isinstance(channel, int)
                 or dummy.strip()[0:10].lower() == "statistic:"
+                or dummy.split(None, 1)[0] == "J1939TP"
             ):
                 pass
             elif dummy[-1:].lower() == "r":
