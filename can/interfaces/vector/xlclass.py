@@ -218,10 +218,7 @@ class s_xl_bus_params_data(ctypes.Union):
 
 
 class XLbusParams(ctypes.Structure):
-    _fields_ = [
-        ("busType", ctypes.c_uint),
-        ("data", s_xl_bus_params_data),
-    ]
+    _fields_ = [("busType", ctypes.c_uint), ("data", s_xl_bus_params_data)]
 
 
 class XLchannelConfig(ctypes.Structure):
