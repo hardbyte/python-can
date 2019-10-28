@@ -288,32 +288,6 @@ class PcanBus(BusABC):
         status = self.status()
         return status == PCAN_ERROR_OK
 
-    def status_string(self):
-        """
-        Query the PCAN bus status.
-        :rtype: string
-        :return: The status in string.
-        """
-        status = self.status()
-        if status == PCAN_ERROR_OK:
-            return "OK"
-        elif status == PCAN_ERROR_XMTFULL:
-            return "XMTFULL"
-        elif status == PCAN_ERROR_OVERRUN:
-            return "OVERRUN"
-        elif status == PCAN_ERROR_BUSLIGHT:
-            return "BUSLIGHT"
-        elif status == PCAN_ERROR_BUSHEAVY:
-            return "BUSHEAVY"
-        elif status == PCAN_ERROR_BUSWARNING:
-            return "BUSWARNING"
-        elif status == PCAN_ERROR_BUSPASSIVE:
-            return "BUSPASSIVE"
-        elif status == PCAN_ERROR_BUSOFF:
-            return "BUSOFF"
-        else:
-            return "ERROR"
-
     def reset(self):
         """
         Command the PCAN driver to reset the bus after an error.
