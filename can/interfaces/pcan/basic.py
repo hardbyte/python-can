@@ -14,6 +14,7 @@ from ctypes import *
 from string import *
 import platform
 import logging
+import winreg
 
 logger = logging.getLogger("can.pcan")
 
@@ -498,9 +499,16 @@ class PCANBasic:
     """
 
     def __init__(self):
-        # Loads the PCANBasic.dll
+        # Loads the PCANBasic.dll and checks if driver is available
         if platform.system() == "Windows":
             self.__m_dllBasic = windll.LoadLibrary("PCANBasic")
+            aReg = winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE)
+            try:
+                aKey = winreg.OpenKey(aReg, r"SOFTWARE\PEAK-System\PEAK-Drivers")
+                winreg.CloseKey(aKey)
+            except WindowsError:
+                logger.error("Exception: The PEAK-driver couldn't be found!")
+            winreg.CloseKey(aReg)
         elif platform.system() == "Darwin":
             self.__m_dllBasic = cdll.LoadLibrary("libPCBUSB.dylib")
         else:
