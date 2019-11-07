@@ -105,6 +105,7 @@ jobs:
           can/broadcastmanager.py
           can/bus.py
           can/interface.py
+          can/interfaces/socketcan/**.py
           can/listener.py
           can/logger.py
           can/message.py
