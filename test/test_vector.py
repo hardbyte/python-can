@@ -187,22 +187,22 @@ class TestVectorBus(unittest.TestCase):
             side_effect=xlReceive_chipstate
         )
         self.bus = can.Bus(channel=0, bustype="vector", _testing=True)
-        self.bus._handle_can_event = Mock()
+        self.bus.handle_can_event = Mock()
         self.bus.recv(timeout=0.05)
         can.interfaces.vector.canlib.xldriver.xlReceive.assert_called()
         can.interfaces.vector.canlib.xldriver.xlCanReceive.assert_not_called()
-        self.bus._handle_can_event.assert_called()
+        self.bus.handle_can_event.assert_called()
 
     def test_receive_fd_non_msg_event(self) -> None:
         can.interfaces.vector.canlib.xldriver.xlCanReceive = Mock(
             side_effect=xlCanReceive_chipstate
         )
         self.bus = can.Bus(channel=0, bustype="vector", fd=True, _testing=True)
-        self.bus._handle_canfd_event = Mock()
+        self.bus.handle_canfd_event = Mock()
         self.bus.recv(timeout=0.05)
         can.interfaces.vector.canlib.xldriver.xlReceive.assert_not_called()
         can.interfaces.vector.canlib.xldriver.xlCanReceive.assert_called()
-        self.bus._handle_canfd_event.assert_called()
+        self.bus.handle_canfd_event.assert_called()
 
     def test_send(self) -> None:
         self.bus = can.Bus(channel=0, bustype="vector", _testing=True)
