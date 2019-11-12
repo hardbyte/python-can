@@ -177,8 +177,56 @@ class XLcanFdConf(ctypes.Structure):
         ("sjwDbr", ctypes.c_uint),
         ("tseg1Dbr", ctypes.c_uint),
         ("tseg2Dbr", ctypes.c_uint),
-        ("reserved", ctypes.c_uint * 2),
+        ("reserved", ctypes.c_ubyte),
+        ("options", ctypes.c_ubyte),
+        ("reserved1", ctypes.c_ubyte * 2),
+        ("reserved2", ctypes.c_ubyte),
     ]
+
+
+# channel configuration structures
+class s_xl_bus_params_data_can(ctypes.Structure):
+    _fields_ = [
+        ("bitRate", ctypes.c_uint),
+        ("sjw", ctypes.c_ubyte),
+        ("tseg1", ctypes.c_ubyte),
+        ("tseg2", ctypes.c_ubyte),
+        ("sam", ctypes.c_ubyte),
+        ("outputMode", ctypes.c_ubyte),
+        ("reserved", ctypes.c_ubyte * 7),
+        ("canOpMode", ctypes.c_ubyte),
+    ]
+
+
+class s_xl_bus_params_data_canfd(ctypes.Structure):
+    _fields_ = [
+        ("arbitrationBitRate", ctypes.c_uint),
+        ("sjwAbr", ctypes.c_ubyte),
+        ("tseg1Abr", ctypes.c_ubyte),
+        ("tseg2Abr", ctypes.c_ubyte),
+        ("samAbr", ctypes.c_ubyte),
+        ("outputMode", ctypes.c_ubyte),
+        ("sjwDbr", ctypes.c_ubyte),
+        ("tseg1Dbr", ctypes.c_ubyte),
+        ("tseg2Dbr", ctypes.c_ubyte),
+        ("dataBitRate", ctypes.c_uint),
+        ("canOpMode", ctypes.c_ubyte),
+    ]
+
+
+class s_xl_bus_params_data(ctypes.Union):
+    _fields_ = [
+        ("can", s_xl_bus_params_data_can),
+        ("canFD", s_xl_bus_params_data_canfd),
+        ("most", ctypes.c_ubyte * 12),
+        ("flexray", ctypes.c_ubyte * 12),
+        ("ethernet", ctypes.c_ubyte * 12),
+        ("a429", ctypes.c_ubyte * 28),
+    ]
+
+
+class XLbusParams(ctypes.Structure):
+    _fields_ = [("busType", ctypes.c_uint), ("data", s_xl_bus_params_data)]
 
 
 class XLchannelConfig(ctypes.Structure):
@@ -197,7 +245,7 @@ class XLchannelConfig(ctypes.Structure):
         ("channelBusCapabilities", ctypes.c_uint),
         ("isOnBus", ctypes.c_ubyte),
         ("connectedBusType", ctypes.c_uint),
-        ("busParams", ctypes.c_ubyte * 32),
+        ("busParams", XLbusParams),
         ("_doNotUse", ctypes.c_uint),
         ("driverVersion", ctypes.c_uint),
         ("interfaceVersion", ctypes.c_uint),

@@ -2,7 +2,7 @@
 Contains the ABC bus implementation and its documentation.
 """
 
-from typing import Iterator, List, Optional, Sequence, Tuple, Union
+from typing import cast, Iterator, List, Optional, Sequence, Tuple, Union
 
 import can.typechecking
 
@@ -369,8 +369,10 @@ class BusABC(metaclass=ABCMeta):
 
         for _filter in self._filters:
             # check if this filter even applies to the message
-            if "extended" in _filter and _filter["extended"] != msg.is_extended_id:
-                continue
+            if "extended" in _filter:
+                _filter = cast(can.typechecking.CanFilterExtended, _filter)
+                if _filter["extended"] != msg.is_extended_id:
+                    continue
 
             # then check for the mask and id
             can_id = _filter["can_id"]
@@ -416,7 +418,7 @@ class BusABC(metaclass=ABCMeta):
         raise NotImplementedError("Property is not implemented.")
 
     @staticmethod
-    def _detect_available_configs() -> Iterator[dict]:
+    def _detect_available_configs() -> List[can.typechecking.AutoDetectedConfig]:
         """Detect all configurations/channels that this interface could
         currently connect with.
 
