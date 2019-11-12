@@ -397,7 +397,7 @@ class VectorBus(BusABC):
                         )
                         return msg, self._is_filtered
                     else:
-                        self._handle_canfd_event(event)
+                        self.handle_canfd_event(event)
 
             else:
                 event_count.value = 1
@@ -435,7 +435,7 @@ class VectorBus(BusABC):
                         )
                         return msg, self._is_filtered
                     else:
-                        self._handle_can_event(event)
+                        self.handle_can_event(event)
 
             if end_time is not None and time.time() > end_time:
                 return None, self._is_filtered
@@ -452,7 +452,7 @@ class VectorBus(BusABC):
                 # Wait a short time until we try again
                 time.sleep(self.poll_interval)
 
-    def _handle_can_event(self, event: xlclass.XLevent) -> None:
+    def handle_can_event(self, event: xlclass.XLevent) -> None:
         """Handle non-message CAN events.
 
         Method is called by :meth:`~can.interfaces.vector.VectorBus._recv_internal`
@@ -464,7 +464,7 @@ class VectorBus(BusABC):
         """
         pass
 
-    def _handle_canfd_event(self, event: xlclass.XLcanRxEvent) -> None:
+    def handle_canfd_event(self, event: xlclass.XLcanRxEvent) -> None:
         """Handle non-message CAN FD events.
 
         Method is called by :meth:`~can.interfaces.vector.VectorBus._recv_internal`
