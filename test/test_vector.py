@@ -55,12 +55,6 @@ class TestVectorBus(unittest.TestCase):
         can.interfaces.vector.canlib.xldriver.xlClosePort = Mock(return_value=0)
         can.interfaces.vector.canlib.xldriver.xlCloseDriver = Mock()
 
-        # receiver functions
-        can.interfaces.vector.canlib.xldriver.xlReceive = Mock(side_effect=xlReceive)
-        can.interfaces.vector.canlib.xldriver.xlCanReceive = Mock(
-            side_effect=xlCanReceive
-        )
-
         # sender functions
         can.interfaces.vector.canlib.xldriver.xlCanTransmit = Mock(return_value=0)
         can.interfaces.vector.canlib.xldriver.xlCanTransmitEx = Mock(return_value=0)
@@ -173,16 +167,42 @@ class TestVectorBus(unittest.TestCase):
         self.assertEqual(canFdConf.tseg2Dbr, 15)
 
     def test_receive(self) -> None:
+        can.interfaces.vector.canlib.xldriver.xlReceive = Mock(side_effect=xlReceive)
         self.bus = can.Bus(channel=0, bustype="vector", _testing=True)
         self.bus.recv(timeout=0.05)
         can.interfaces.vector.canlib.xldriver.xlReceive.assert_called()
         can.interfaces.vector.canlib.xldriver.xlCanReceive.assert_not_called()
 
     def test_receive_fd(self) -> None:
+        can.interfaces.vector.canlib.xldriver.xlCanReceive = Mock(
+            side_effect=xlCanReceive
+        )
         self.bus = can.Bus(channel=0, bustype="vector", fd=True, _testing=True)
         self.bus.recv(timeout=0.05)
         can.interfaces.vector.canlib.xldriver.xlReceive.assert_not_called()
         can.interfaces.vector.canlib.xldriver.xlCanReceive.assert_called()
+
+    def test_receive_non_msg_event(self) -> None:
+        can.interfaces.vector.canlib.xldriver.xlReceive = Mock(
+            side_effect=xlReceive_chipstate
+        )
+        self.bus = can.Bus(channel=0, bustype="vector", _testing=True)
+        self.bus.handle_can_event = Mock()
+        self.bus.recv(timeout=0.05)
+        can.interfaces.vector.canlib.xldriver.xlReceive.assert_called()
+        can.interfaces.vector.canlib.xldriver.xlCanReceive.assert_not_called()
+        self.bus.handle_can_event.assert_called()
+
+    def test_receive_fd_non_msg_event(self) -> None:
+        can.interfaces.vector.canlib.xldriver.xlCanReceive = Mock(
+            side_effect=xlCanReceive_chipstate
+        )
+        self.bus = can.Bus(channel=0, bustype="vector", fd=True, _testing=True)
+        self.bus.handle_canfd_event = Mock()
+        self.bus.recv(timeout=0.05)
+        can.interfaces.vector.canlib.xldriver.xlReceive.assert_not_called()
+        can.interfaces.vector.canlib.xldriver.xlCanReceive.assert_called()
+        self.bus.handle_canfd_event.assert_called()
 
     def test_send(self) -> None:
         self.bus = can.Bus(channel=0, bustype="vector", _testing=True)
@@ -303,6 +323,32 @@ def xlCanReceive(
     event.chanIndex = 0
     for idx, value in enumerate([1, 2, 3, 4, 5, 6, 7, 8]):
         event.tagData.canRxOkMsg.data[idx] = value
+    return 0
+
+
+def xlReceive_chipstate(
+    port_handle: xlclass.XLportHandle,
+    event_count_p: ctypes.POINTER(ctypes.c_uint),
+    event: ctypes.POINTER(xlclass.XLevent),
+) -> int:
+    event.tag = xldefine.XL_EventTags.XL_CHIP_STATE.value
+    event.tagData.chipState.busStatus = 8
+    event.tagData.chipState.rxErrorCounter = 0
+    event.tagData.chipState.txErrorCounter = 0
+    event.timeStamp = 0
+    event.chanIndex = 2
+    return 0
+
+
+def xlCanReceive_chipstate(
+    port_handle: xlclass.XLportHandle, event: ctypes.POINTER(xlclass.XLcanRxEvent)
+) -> int:
+    event.tag = xldefine.XL_CANFD_RX_EventTags.XL_CAN_EV_TAG_CHIP_STATE.value
+    event.tagData.canChipState.busStatus = 8
+    event.tagData.canChipState.rxErrorCounter = 0
+    event.tagData.canChipState.txErrorCounter = 0
+    event.timeStamp = 0
+    event.chanIndex = 2
     return 0
 
 

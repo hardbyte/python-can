@@ -396,6 +396,9 @@ class VectorBus(BusABC):
                             channel=channel,
                         )
                         return msg, self._is_filtered
+                    else:
+                        self.handle_canfd_event(event)
+
             else:
                 event_count.value = 1
                 try:
@@ -431,6 +434,8 @@ class VectorBus(BusABC):
                             channel=channel,
                         )
                         return msg, self._is_filtered
+                    else:
+                        self.handle_can_event(event)
 
             if end_time is not None and time.time() > end_time:
                 return None, self._is_filtered
@@ -446,6 +451,30 @@ class VectorBus(BusABC):
             else:
                 # Wait a short time until we try again
                 time.sleep(self.poll_interval)
+
+    def handle_can_event(self, event: xlclass.XLevent) -> None:
+        """Handle non-message CAN events.
+
+        Method is called by :meth:`~can.interfaces.vector.VectorBus._recv_internal`
+        when `event.tag` is not `XL_CAN_EV_TAG_RX_OK` or `XL_CAN_EV_TAG_TX_OK`.
+        Subclasses can implement this method.
+
+        :param event: XLevent that could have a `XL_CHIP_STATE`, `XL_TIMER` or `XL_SYNC_PULSE` tag.
+        :return: None
+        """
+        pass
+
+    def handle_canfd_event(self, event: xlclass.XLcanRxEvent) -> None:
+        """Handle non-message CAN FD events.
+
+        Method is called by :meth:`~can.interfaces.vector.VectorBus._recv_internal`
+        when `event.tag` is not `XL_RECEIVE_MSG`. Subclasses can implement this method.
+
+        :param event: `XLcanRxEvent` that could have a `XL_CAN_EV_TAG_RX_ERROR`, `XL_CAN_EV_TAG_TX_ERROR`
+            or `XL_CAN_EV_TAG_CHIP_STATE` tag.
+        :return: None
+        """
+        pass
 
     def send(self, msg, timeout=None):
         msg_id = msg.arbitration_id
