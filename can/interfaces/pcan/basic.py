@@ -16,6 +16,7 @@ import platform
 import logging
 import winreg
 
+
 logger = logging.getLogger("can.pcan")
 
 # ///////////////////////////////////////////////////////////
