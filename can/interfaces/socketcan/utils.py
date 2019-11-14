@@ -2,6 +2,9 @@
 Defines common socketcan functions.
 """
 
+from typing import cast, Iterable, Optional
+import can.typechecking as typechecking
+
 import logging
 import os
 import errno
@@ -14,7 +17,7 @@ from can.interfaces.socketcan.constants import CAN_EFF_FLAG
 log = logging.getLogger(__name__)
 
 
-def pack_filters(can_filters=None):
+def pack_filters(can_filters: Optional[typechecking.CanFilters] = None) -> bytes:
     if can_filters is None:
         # Pass all messages
         can_filters = [{"can_id": 0, "can_mask": 0}]
@@ -25,6 +28,7 @@ def pack_filters(can_filters=None):
         can_id = can_filter["can_id"]
         can_mask = can_filter["can_mask"]
         if "extended" in can_filter:
+            can_filter = cast(typechecking.CanFilterExtended, can_filter)
             # Match on either 11-bit OR 29-bit messages instead of both
             can_mask |= CAN_EFF_FLAG
             if can_filter["extended"]:
@@ -38,7 +42,7 @@ def pack_filters(can_filters=None):
 _PATTERN_CAN_INTERFACE = re.compile(r"v?can\d+")
 
 
-def find_available_interfaces():
+def find_available_interfaces() -> Iterable[str]:
     """Returns the names of all open can/vcan interfaces using
     the ``ip link list`` command. If the lookup fails, an error
     is logged to the console and an empty list is returned.
@@ -64,7 +68,7 @@ def find_available_interfaces():
         return filter(_PATTERN_CAN_INTERFACE.match, interface_names)
 
 
-def error_code_to_str(code):
+def error_code_to_str(code: int) -> str:
     """
     Converts a given error code (errno) to a useful and human readable string.
 
