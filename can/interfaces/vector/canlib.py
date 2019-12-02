@@ -282,7 +282,10 @@ class VectorBus(BusABC):
 
         # Calculate time offset for absolute timestamps
         offset = xlclass.XLuint64()
-        xldriver.xlGetSyncTime(self.port_handle, offset)
+        try:
+            xldriver.xlGetSyncTime(self.port_handle, offset)
+        except:
+            xldriver.xlGetChannelTime(self.port_handle, self.mask, offset)
         self._time_offset = time.time() - offset.value * 1e-9
 
         self._is_filtered = False

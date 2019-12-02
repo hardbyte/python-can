@@ -89,6 +89,15 @@ xlGetSyncTime.argtypes = [xlclass.XLportHandle, ctypes.POINTER(xlclass.XLuint64)
 xlGetSyncTime.restype = xlclass.XLstatus
 xlGetSyncTime.errcheck = check_status
 
+xlGetChannelTime = _xlapi_dll.xlGetChannelTime
+xlGetChannelTime.argtypes = [
+    xlclass.XLportHandle,
+    xlclass.XLaccess,
+    ctypes.POINTER(xlclass.XLuint64)
+]
+xlGetChannelTime.restype = xlclass.XLstatus
+xlGetChannelTime.errcheck = check_status
+
 xlClosePort = _xlapi_dll.xlClosePort
 xlClosePort.argtypes = [xlclass.XLportHandle]
 xlClosePort.restype = xlclass.XLstatus
