@@ -93,7 +93,7 @@ xlGetChannelTime = _xlapi_dll.xlGetChannelTime
 xlGetChannelTime.argtypes = [
     xlclass.XLportHandle,
     xlclass.XLaccess,
-    ctypes.POINTER(xlclass.XLuint64)
+    ctypes.POINTER(xlclass.XLuint64),
 ]
 xlGetChannelTime.restype = xlclass.XLstatus
 xlGetChannelTime.errcheck = check_status
