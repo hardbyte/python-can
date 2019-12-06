@@ -182,7 +182,9 @@ class robotellBus(BusABC):
         newmsg = self._readmessage(not self._loopback_test, True, timeout)
         if newmsg is None:
             logger.warning(
-                "Timeout waiting for response when reading config value {:04X}.".format(configid)
+                "Timeout waiting for response when reading config value {:04X}.".format(
+                    configid
+                )
             )
             return None
         return newmsg[4:12]
@@ -303,7 +305,7 @@ class robotellBus(BusABC):
 
         if msgtype == self._CAN_DATA_FRAME:
             for idx in range(datalen):
-                msgbuf[idx+4] = msgdata[idx]
+                msgbuf[idx + 4] = msgdata[idx]
 
         msgbuf[12] = datalen
         msgbuf[13] = msgchan
@@ -319,7 +321,11 @@ class robotellBus(BusABC):
         packet.append(self._PACKET_HEAD)
         packet.append(self._PACKET_HEAD)
         for msgbyte in msgbuf:
-            if msgbyte == self._PACKET_ESC or msgbyte == self._PACKET_HEAD or msgbyte == self._PACKET_TAIL:
+            if (
+                msgbyte == self._PACKET_ESC
+                or msgbyte == self._PACKET_HEAD
+                or msgbyte == self._PACKET_TAIL
+            ):
                 packet.append(self._PACKET_ESC)
             packet.append(msgbyte)
         packet.append(self._PACKET_TAIL)
