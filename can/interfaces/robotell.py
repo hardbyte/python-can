@@ -76,11 +76,14 @@ class robotellBus(BusABC):
             channel, baudrate=ttyBaudrate, rtscts=rtscts
         )
 
+        ## Disable flushing queued config ACKs on lookup channel (for unit tests)
+        self._loopback_test = channel == "loop://"
+
         self._rxbuffer = bytearray()  # raw bytes from the serial port
         self._rxmsg = []  # extracted CAN messages waiting to be read
         self._configmsg = []  # extracted config channel messages
 
-        self._writeconfig(self._CAN_RESET_ID, 0)  # Not sure if this is really needed
+        self._writeconfig(self._CAN_RESET_ID, 0)  # Not sure if this is really necessary
 
         if bitrate is not None:
             self.set_bitrate(bitrate)
@@ -139,7 +142,7 @@ class robotellBus(BusABC):
         :param bool enabled:
             This filter is enabled
         :param int msgid_value:
-            CAN message ID to filter on
+            CAN message ID to filter on. The test unit does not accept an extented message ID unless bit 31 of the ID was set.
         :param int msgid_mask:
             Mask to apply to CAN messagge ID
         :param bool extended_msg:
@@ -176,11 +179,10 @@ class robotellBus(BusABC):
             msgtype=self._CAN_REMOTE_FRAME,
         )
         # Read message from config channel with result. Flush any previously pending config messages
-        newmsg = self._readmessage(True, True, timeout)
+        newmsg = self._readmessage(not self._loopback_test, True, timeout)
         if newmsg is None:
             logger.warning(
-                "Timeout waiting for response when reading config value "
-                + str(configid)
+                "Timeout waiting for response when reading config value {:04X}.".format(configid)
             )
             return None
         return newmsg[4:12]
@@ -208,7 +210,7 @@ class robotellBus(BusABC):
             msgtype=self._CAN_DATA_FRAME,
         )
         # Read message from config channel to verify. Flush any previously pending config messages
-        newmsg = self._readmessage(True, True, 1)
+        newmsg = self._readmessage(not self._loopback_test, True, 1)
         if newmsg is None:
             logger.warning(
                 "Timeout waiting for response when writing config value "
@@ -223,9 +225,10 @@ class robotellBus(BusABC):
         if flushold:
             del msgqueue[:]
 
-        # first read what is already in serial port receive buffer
-        while self.serialPortOrig.in_waiting:
-            self._rxbuffer += self.serialPortOrig.read()
+        # read what is already in serial port receive buffer - unless we are doing loopback testing
+        if not self._loopback_test:
+            while self.serialPortOrig.in_waiting:
+                self._rxbuffer += self.serialPortOrig.read()
 
         # loop until we have read an appropriate message
         start = time.time()
@@ -298,8 +301,9 @@ class robotellBus(BusABC):
         msgbuf[2] = (msgid >> 16) & 0xFF
         msgbuf[3] = (msgid >> 24) & 0xFF
 
-        for idx in range(datalen):
-            msgbuf[idx + 4] = msgdata[idx]
+        if msgtype == self._CAN_DATA_FRAME:
+            for idx in range(datalen):
+                msgbuf[idx+4] = msgdata[idx]
 
         msgbuf[12] = datalen
         msgbuf[13] = msgchan
@@ -315,7 +319,7 @@ class robotellBus(BusABC):
         packet.append(self._PACKET_HEAD)
         packet.append(self._PACKET_HEAD)
         for msgbyte in msgbuf:
-            if msgbyte == self._PACKET_ESC:
+            if msgbyte == self._PACKET_ESC or msgbyte == self._PACKET_HEAD or msgbyte == self._PACKET_TAIL:
                 packet.append(self._PACKET_ESC)
             packet.append(msgbyte)
         packet.append(self._PACKET_TAIL)
