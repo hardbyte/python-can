@@ -62,8 +62,6 @@ class robotellBus(BusABC):
             baudrate of underlying serial or usb device
         :param int bitrate:
             CAN Bitrate in bit/s. Value is stored in the adapter and will be used as default if no bitrate is specified
-        :param float poll_interval:
-            Poll interval in seconds when reading messages
         :param bool rtscts:
             turn hardware handshake (RTS/CTS) on and off
         """
@@ -94,9 +92,7 @@ class robotellBus(BusABC):
         )
         logger.info("Using device: {}".format(self.channel_info))
 
-        super().__init__(
-            channel, ttyBaudrate=115200, bitrate=None, rtscts=False, **kwargs
-        )
+        super().__init__(channel=channel, **kwargs)
 
     def set_bitrate(self, bitrate):
         """
@@ -111,14 +107,14 @@ class robotellBus(BusABC):
                 "Invalid bitrate, must be less than " + str(self._MAX_CAN_BAUD)
             )
 
-    def _set_auto_retransmit(self, retrans_flag):
+    def set_auto_retransmit(self, retrans_flag):
         """
         :param bool retrans_flag:
             Enable/disable automatic retransmission of unacknowledged CAN frames
         """
         self._writeconfig(self._CAN_ART_ID, 1 if retrans_flag else 0)
 
-    def _set_auto_bus_management(self, auto_man):
+    def set_auto_bus_management(self, auto_man):
         """
         :param bool auto_man:
             Enable/disable automatic bus management
@@ -127,14 +123,14 @@ class robotellBus(BusABC):
         ## automatic ACK of CAN frames (listen only mode)
         self._writeconfig(self._CAN_ABOM_ID, 1 if auto_man else 0)
 
-    def _set_serial_rate(self, serial_bps):
+    def set_serial_rate(self, serial_bps):
         """
         :param int serial_bps:
             Set the baud rate of the serial port (not CAN) interface
         """
         self._writeconfig(self._CAN_SERIALBPS_ID, serial_bps)
 
-    def _set_hw_filter(self, filterid, enabled, msgid_value, msgid_mask, extended_msg):
+    def set_hw_filter(self, filterid, enabled, msgid_value, msgid_mask, extended_msg):
         """
         :raise ValueError: if *filterid* is not between 1 and 14
         :param int filterid:
