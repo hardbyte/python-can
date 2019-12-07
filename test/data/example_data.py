@@ -108,6 +108,16 @@ TEST_MESSAGES_BASE = sort_messages(
 )
 
 
+TEST_MESSAGES_CAN_FD = sort_messages(
+    [
+        Message(is_fd=True, data=range(64)),
+        Message(is_fd=True, data=range(8)),
+        Message(is_fd=True, bitrate_switch=True),
+        Message(is_fd=True, error_state_indicator=True),
+    ]
+)
+
+
 TEST_MESSAGES_REMOTE_FRAMES = sort_messages(
     [
         Message(
