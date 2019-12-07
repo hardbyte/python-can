@@ -563,8 +563,8 @@ class robotellTestCase(unittest.TestCase):
                 ]
             )
         )
-        self.bus._set_auto_retransmit(True)
-        self.bus._set_auto_retransmit(False)
+        self.bus.set_auto_retransmit(True)
+        self.bus.set_auto_retransmit(False)
         data = self.serial.read(self.serial.in_waiting)
         self.assertEqual(
             data,
@@ -671,8 +671,8 @@ class robotellTestCase(unittest.TestCase):
                 ]
             )
         )
-        self.bus._set_auto_bus_management(True)
-        self.bus._set_auto_bus_management(False)
+        self.bus.set_auto_bus_management(True)
+        self.bus.set_auto_bus_management(False)
         data = self.serial.read(self.serial.in_waiting)
         self.assertEqual(
             data,
@@ -752,7 +752,7 @@ class robotellTestCase(unittest.TestCase):
                 ]
             )
         )
-        self.bus._set_serial_rate(115200)
+        self.bus.set_serial_rate(115200)
         data = self.serial.read(self.serial.in_waiting)
         self.assertEqual(
             data,
@@ -866,9 +866,9 @@ class robotellTestCase(unittest.TestCase):
                 ]
             )
         )
-        self.bus._set_hw_filter(1, True, 0, 0, False)
-        self.bus._set_hw_filter(2, True, 0, 0, True)
-        self.bus._set_hw_filter(3, False, 0x1F0, 0x1F0, False)
+        self.bus.set_hw_filter(1, True, 0, 0, False)
+        self.bus.set_hw_filter(2, True, 0, 0, True)
+        self.bus.set_hw_filter(3, False, 0x1F0, 0x1F0, False)
         data = self.serial.read(self.serial.in_waiting)
         self.assertEqual(
             data,
