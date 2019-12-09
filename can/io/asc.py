@@ -61,7 +61,7 @@ class ASCReader(BaseIOHandler):
                     None, 2
                 )  # , frameType, dlc, frameData
                 if channel == "CANFD":
-                    timestamp, _, channel, dir, dummy = temp.split(None, 4)
+                    timestamp, _, channel, _, dummy = temp.split(None, 4)
                     is_fd = True
             except ValueError:
                 # we parsed an empty comment
