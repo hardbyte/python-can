@@ -71,10 +71,3 @@ class TestAscReader:
         assert fourth_message.is_fd is True
         assert fourth_message.bitrate_switch is True
         assert fourth_message.error_state_indicator is False
-
-
-
-
-
-
-
