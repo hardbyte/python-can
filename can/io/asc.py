@@ -101,12 +101,14 @@ class ASCReader(BaseIOHandler):
                     if not is_fd:
                         can_id_str, _, _, dlc, data = dummy.split(None, 4)
                     else:
-                        can_id_str, frame_name, brs, esi, dlc, data_length, \
-                            data = dummy.split(None, 6)
+                        can_id_str, frame_name, brs, esi, dlc, data_length, data = dummy.split(
+                            None, 6
+                        )
                         if frame_name.isdigit():
                             # Empty frame_name
-                            can_id_str, brs, esi, dlc, data_length, data = \
-                                dummy.split(None, 5)
+                            can_id_str, brs, esi, dlc, data_length, data = dummy.split(
+                                None, 5
+                            )
                 except ValueError:
                     # but if not, we only want to get the stuff up to the dlc
                     can_id_str, _, _, dlc = dummy.split(None, 3)
@@ -132,8 +134,8 @@ class ASCReader(BaseIOHandler):
                     data=frame,
                     is_fd=is_fd,
                     channel=channel,
-                    bitrate_switch=is_fd and brs == '1',
-                    error_state_indicator=is_fd and esi == '1'
+                    bitrate_switch=is_fd and brs == "1",
+                    error_state_indicator=is_fd and esi == "1",
                 )
         self.stop()
 
