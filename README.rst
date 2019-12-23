@@ -95,7 +95,7 @@ Example usage
 
     # iterate over received messages
     for msg in bus:
-        print("{X}: {}".format(msg.arbitration_id, msg.data))
+        print("{:X}: {}".format(msg.arbitration_id, msg.data))
 
     # or use an asynchronous notifier
     notifier = can.Notifier(bus, [can.Logger("recorded.log"), can.Printer()])
