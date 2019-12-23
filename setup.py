@@ -33,11 +33,14 @@ tests_require = [
     'mock~=2.0',
     'pytest~=4.3',
     'pytest-timeout~=1.3',
-    'pytest-cov~=2.6',
+    'pytest-cov~=2.8',
+    # coveragepy==5.0 fails with `Safety level may not be changed inside a transaction`
+    # on python 3.6 on MACOS
+    'coverage<5',
     'codecov~=2.0',
     'future',
     'six',
-    'hypothesis'
+    'hypothesis~=4.56'
 ] + extras_require['serial']
 
 extras_require['test'] = tests_require
