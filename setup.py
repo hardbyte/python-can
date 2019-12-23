@@ -33,11 +33,11 @@ extras_require = {
 }
 
 tests_require = [
-    "pytest~=4.3",
+    "pytest~=5.3",
     "pytest-timeout~=1.3",
-    "pytest-cov~=2.6",
+    "pytest-cov~=2.8",
     "codecov~=2.0",
-    "hypothesis",
+    "hypothesis~=4.56",
 ] + extras_require["serial"]
 
 extras_require["test"] = tests_require
