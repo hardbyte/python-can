@@ -44,7 +44,7 @@ class Message:
         "is_fd",
         "bitrate_switch",
         "error_state_indicator",
-        "__weakref__"  # support weak references to messages
+        "__weakref__",  # support weak references to messages
     )
 
     def __init__(
@@ -60,7 +60,7 @@ class Message:
         is_fd: bool = False,
         bitrate_switch: bool = False,
         error_state_indicator: bool = False,
-        check: bool = False
+        check: bool = False,
     ):
         """
         To create a message object, simply provide any of the below attributes
@@ -118,7 +118,7 @@ class Message:
                 "R" if self.is_remote_frame else " ",
                 "F" if self.is_fd else " ",
                 "BS" if self.bitrate_switch else "  ",
-                "EI" if self.error_state_indicator else "  "
+                "EI" if self.error_state_indicator else "  ",
             ]
         )
 
@@ -156,7 +156,7 @@ class Message:
         args = [
             "timestamp={}".format(self.timestamp),
             "arbitration_id={:#x}".format(self.arbitration_id),
-            "is_extended_id={}".format(self.is_extended_id)
+            "is_extended_id={}".format(self.is_extended_id),
         ]
 
         if self.is_remote_frame:
@@ -199,7 +199,7 @@ class Message:
             data=self.data,
             is_fd=self.is_fd,
             bitrate_switch=self.bitrate_switch,
-            error_state_indicator=self.error_state_indicator
+            error_state_indicator=self.error_state_indicator,
         )
         return new
 
@@ -215,7 +215,7 @@ class Message:
             data=deepcopy(self.data, memo),
             is_fd=self.is_fd,
             bitrate_switch=self.bitrate_switch,
-            error_state_indicator=self.error_state_indicator
+            error_state_indicator=self.error_state_indicator,
         )
         return new
 
@@ -234,7 +234,9 @@ class Message:
             raise ValueError("the timestamp may not be NaN")
 
         if self.is_remote_frame and self.is_error_frame:
-            raise ValueError("a message cannot be a remote and an error frame at the sane time")
+            raise ValueError(
+                "a message cannot be a remote and an error frame at the sane time"
+            )
 
         if self.arbitration_id < 0:
             raise ValueError("arbitration IDs may not be negative")
@@ -249,21 +251,33 @@ class Message:
             raise ValueError("DLC may not be negative")
         if self.is_fd:
             if self.dlc > 64:
-                raise ValueError("DLC was {} but it should be <= 64 for CAN FD frames".format(self.dlc))
+                raise ValueError(
+                    "DLC was {} but it should be <= 64 for CAN FD frames".format(
+                        self.dlc
+                    )
+                )
         elif self.dlc > 8:
-            raise ValueError("DLC was {} but it should be <= 8 for normal CAN frames".format(self.dlc))
+            raise ValueError(
+                "DLC was {} but it should be <= 8 for normal CAN frames".format(
+                    self.dlc
+                )
+            )
 
         if self.is_remote_frame:
             if self.data:
                 raise ValueError("remote frames may not carry any data")
         elif self.dlc != len(self.data):
-            raise ValueError("the DLC and the length of the data must match up for non remote frames")
+            raise ValueError(
+                "the DLC and the length of the data must match up for non remote frames"
+            )
 
         if not self.is_fd:
             if self.bitrate_switch:
                 raise ValueError("bitrate switch is only allowed for CAN FD frames")
             if self.error_state_indicator:
-                raise ValueError("error state indicator is only allowed for CAN FD frames")
+                raise ValueError(
+                    "error state indicator is only allowed for CAN FD frames"
+                )
 
     def __eq__(self, other: object) -> bool:
         """ Compares a given message with this one.
@@ -274,8 +288,13 @@ class Message:
         :return: True if the given message equals this one
         """
         return self.equals(other, timestamp_delta=None, check_channel=False)
-    
-    def equals(self, other: "Message", timestamp_delta: Optional[Union[float, int]] = 1.0e-6, check_channel: bool = False) -> bool:
+
+    def equals(
+        self,
+        other: object,
+        timestamp_delta: Optional[Union[float, int]] = 1.0e-6,
+        check_channel: bool = False,
+    ) -> bool:
         """
         Compares a given message with this one.
         
@@ -288,20 +307,20 @@ class Message:
         """
         # see https://github.com/hardbyte/python-can/pull/413 for a discussion
         # on why a delta of 1.0e-6 was chosen
-        return (
-            self is other
-            or
-            (
-                self.__class__ == other.__class__ and
-                (timestamp_delta is None or abs(self.timestamp - other.timestamp) <= timestamp_delta)
-                and self.arbitration_id == other.arbitration_id
-                and self.is_extended_id == other.is_extended_id
-                and self.dlc == other.dlc
-                and self.data == other.data
-                and self.is_remote_frame == other.is_remote_frame
-                and self.is_error_frame == other.is_error_frame
-                and (check_channel == False or self.channel == other.channel)
-                and self.is_fd == other.is_fd
-                and self.bitrate_switch == other.bitrate_switch
-                and self.error_state_indicator == other.error_state_indicator)
+        return self is other or (
+            self.__class__ == other.__class__
+            and (
+                timestamp_delta is None
+                or abs(self.timestamp - other.timestamp) <= timestamp_delta
             )
+            and self.arbitration_id == other.arbitration_id
+            and self.is_extended_id == other.is_extended_id
+            and self.dlc == other.dlc
+            and self.data == other.data
+            and self.is_remote_frame == other.is_remote_frame
+            and self.is_error_frame == other.is_error_frame
+            and (check_channel == False or self.channel == other.channel)
+            and self.is_fd == other.is_fd
+            and self.bitrate_switch == other.bitrate_switch
+            and self.error_state_indicator == other.error_state_indicator
+        )
