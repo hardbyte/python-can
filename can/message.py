@@ -265,7 +265,7 @@ class Message:
             if self.error_state_indicator:
                 raise ValueError("error state indicator is only allowed for CAN FD frames")
 
-    def __eq__(self, other: "Message") -> bool:
+    def __eq__(self, other: object) -> bool:
         """ Compares a given message with this one.
         The result is the as same as calling ``equals`` without timestamp and channel check.
         
@@ -274,16 +274,16 @@ class Message:
         :return: True if the given message equals this one
         """
         return self.equals(other, timestamp_delta=None, check_channel=False)
-
+    
     def equals(self, other: "Message", timestamp_delta: Optional[Union[float, int]] = 1.0e-6, check_channel: bool = False) -> bool:
         """
         Compares a given message with this one.
-
+        
         :param other: the message to compare with
-
+        
         :param timestamp_delta: the maximum difference at which two timestamps are
                                 still considered equal or None to not compare timestamps
-
+        
         :return: True if the given message equals this one
         """
         # see https://github.com/hardbyte/python-can/pull/413 for a discussion
@@ -292,6 +292,7 @@ class Message:
             self is other
             or
             (
+                self.__class__ == other.__class__ and
                 (timestamp_delta is None or abs(self.timestamp - other.timestamp) <= timestamp_delta)
                 and self.arbitration_id == other.arbitration_id
                 and self.is_extended_id == other.is_extended_id
