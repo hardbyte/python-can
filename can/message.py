@@ -307,9 +307,12 @@ class Message:
         """
         # see https://github.com/hardbyte/python-can/pull/413 for a discussion
         # on why a delta of 1.0e-6 was chosen
-        return self is other or (
-            self.__class__ == other.__class__
-            and (
+        if self is other:
+            return True
+        if type(self) != type(other):
+            return False
+        return (
+            (
                 timestamp_delta is None
                 or abs(self.timestamp - other.timestamp) <= timestamp_delta
             )
