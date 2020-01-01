@@ -6,7 +6,7 @@ This module contains the implementation of :class:`can.Message`.
     starting with Python 3.7.
 """
 
-from typing import Optional, Union
+from typing import Optional, Union, Any
 
 from . import typechecking
 
@@ -279,7 +279,7 @@ class Message:
                     "error state indicator is only allowed for CAN FD frames"
                 )
 
-    def __eq__(self, other: object) -> bool:
+    def __eq__(self, other: Any) -> bool:
         """ Compares a given message with this one.
         The result is the as same as calling ``equals`` without timestamp and channel check.
         
@@ -291,7 +291,7 @@ class Message:
 
     def equals(
         self,
-        other: object,
+        other: Any,
         timestamp_delta: Optional[Union[float, int]] = 1.0e-6,
         check_channel: bool = False,
     ) -> bool:
