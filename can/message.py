@@ -309,7 +309,7 @@ class Message:
         # on why a delta of 1.0e-6 was chosen
         if self is other:
             return True
-        if type(self) != type(other): # pylint: disable=unidiomatic-typecheck
+        if type(self) != type(other):  # pylint: disable=unidiomatic-typecheck
             return False
         return (
             (
