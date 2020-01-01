@@ -282,9 +282,9 @@ class Message:
     def __eq__(self, other: Any) -> bool:
         """ Compares a given message with this one.
         The result is the as same as calling ``equals`` without timestamp and channel check.
-        
+
         :param other: the message to compare with
-        
+
         :return: True if the given message equals this one
         """
         return self.equals(other, timestamp_delta=None, check_channel=False)
@@ -297,19 +297,19 @@ class Message:
     ) -> bool:
         """
         Compares a given message with this one.
-        
+
         :param other: the message to compare with
-        
+
         :param timestamp_delta: the maximum difference at which two timestamps are
                                 still considered equal or None to not compare timestamps
-        
+
         :return: True if the given message equals this one
         """
         # see https://github.com/hardbyte/python-can/pull/413 for a discussion
         # on why a delta of 1.0e-6 was chosen
         if self is other:
             return True
-        if type(self) != type(other):
+        if type(self) != type(other): # pylint: disable=unidiomatic-typecheck
             return False
         return (
             (
@@ -322,7 +322,7 @@ class Message:
             and self.data == other.data
             and self.is_remote_frame == other.is_remote_frame
             and self.is_error_frame == other.is_error_frame
-            and (check_channel == False or self.channel == other.channel)
+            and (check_channel or self.channel == other.channel)
             and self.is_fd == other.is_fd
             and self.bitrate_switch == other.bitrate_switch
             and self.error_state_indicator == other.error_state_indicator
