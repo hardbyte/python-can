@@ -32,6 +32,7 @@ from .util import set_logging_level
 
 from .message import Message
 from .bus import BusABC, BusState
+from .socket import Socket
 from .thread_safe_bus import ThreadSafeBus
 from .notifier import Notifier
 from .interfaces import VALID_INTERFACES
