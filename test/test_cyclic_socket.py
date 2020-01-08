@@ -10,6 +10,204 @@ from .config import TEST_INTERFACE_SOCKETCAN
 
 
 @unittest.skipUnless(TEST_INTERFACE_SOCKETCAN, "skip testing of socketcan")
+class CyclicSocketCanFiltering(unittest.TestCase):
+    BITRATE = 500000
+    TIMEOUT = 0.1
+
+    INTERFACE_1 = "socketcan"
+    CHANNEL_1 = "vcan0"
+    INTERFACE_2 = "socketcan"
+    CHANNEL_2 = "vcan0"
+    INTERFACE_3 = "socketcan"
+    CHANNEL_3 = "vcan0"
+    INTERFACE_4 = "socketcan"
+    CHANNEL_4 = "vcan0"
+
+    PERIOD = 1.0
+
+    DELTA = 0.01
+
+    def _find_start_index(self, tx_messages, message):
+        """
+        :param tx_messages:
+            The list of messages that were passed to the periodic backend
+        :param message:
+            The message whose data we wish to match and align to
+
+        :returns: start index in the tx_messages
+        """
+        start_index = -1
+        for index, tx_message in enumerate(tx_messages):
+            if tx_message.data == message.data:
+                start_index = index
+                break
+        return start_index
+
+    def setUp(self):
+        self._send_bus = can.Socket(
+            interface=self.INTERFACE_1, channel=self.CHANNEL_1, bitrate=self.BITRATE
+        )
+        self._recv_bus1 = can.Socket(
+            interface=self.INTERFACE_2, channel=self.CHANNEL_2, bitrate=self.BITRATE, can_filters=[{"can_id": 0x100, "can_mask": 0x7ff, "extended": False}]
+        )
+        self._recv_bus2 = can.Socket(
+            interface=self.INTERFACE_3, channel=self.CHANNEL_3, bitrate=self.BITRATE, can_filters=[{"can_id": 0x200, "can_mask": 0x7ff, "extended": False}]
+        )
+        self._recv_bus3 = can.Socket(
+            interface=self.INTERFACE_4, channel=self.CHANNEL_4, bitrate=self.BITRATE
+        )
+
+    def tearDown(self):
+        self._send_bus.shutdown()
+        self._recv_bus1.shutdown()
+        self._recv_bus2.shutdown()
+        self._recv_bus3.shutdown()
+
+    def test_cyclic_initializer_list(self):
+        messages = []
+        messages.append(
+            can.Message(
+                arbitration_id=0x100,
+                data=[0x11, 0x11, 0x11, 0x11, 0x11, 0x11],
+                is_extended_id=False,
+            )
+        )
+        messages.append(
+            can.Message(
+                arbitration_id=0x200,
+                data=[0x22, 0x22, 0x22, 0x22, 0x22, 0x22],
+                is_extended_id=False,
+            )
+        )
+        messages.append(
+            can.Message(
+                arbitration_id=0x100,
+                data=[0x33, 0x33, 0x33, 0x33, 0x33, 0x33],
+                is_extended_id=False,
+            )
+        )
+        messages.append(
+            can.Message(
+                arbitration_id=0x200,
+                data=[0x44, 0x44, 0x44, 0x44, 0x44, 0x44],
+                is_extended_id=False,
+            )
+        )
+        messages.append(
+            can.Message(
+                arbitration_id=0x100,
+                data=[0x55, 0x55, 0x55, 0x55, 0x55, 0x55],
+                is_extended_id=False,
+            )
+        )
+        messages.append(
+            can.Message(
+                arbitration_id=0x200,
+                data=[0x66, 0x66, 0x66, 0x66, 0x66, 0x66],
+                is_extended_id=False,
+            )
+        )
+
+        task1 = self._send_bus.send_periodic([m for m in messages if m.arbitration_id == 0x100], self.PERIOD)
+        self.assertIsInstance(task1, can.broadcastmanager.CyclicSendTaskABC)
+        time.sleep(self.PERIOD / 2)
+        task2 = self._send_bus.send_periodic([m for m in messages if m.arbitration_id == 0x200], self.PERIOD)
+        self.assertIsInstance(task1, can.broadcastmanager.CyclicSendTaskABC)
+
+        results1 = []
+        results2 = []
+        results3 = []
+        results4 = []
+        for _ in range(len(messages) * 2):
+            result = self._recv_bus1.recv(self.PERIOD)
+            if result:
+                results1.append(result)
+            result = self._recv_bus2.recv(self.PERIOD)
+            if result:
+                results2.append(result)
+            result = self._send_bus.recv(self.PERIOD)
+            if result:
+                results3.append(result)
+            result = self._recv_bus3.recv(self.PERIOD)
+            if result:
+                results4.append(result)
+
+        task1.stop()
+        task2.stop()
+
+        self.assertEqual(len(results3), 0)
+
+        # Find starting index for each
+        start_index = self._find_start_index(messages, results1[0])
+        self.assertTrue(start_index != -1)
+
+        # Now go through the partitioned results and assert that they're equal
+        for rx_index, rx_message in enumerate(results1):
+
+            tx_message = messages[start_index]
+
+            self.assertIsNotNone(rx_message)
+            self.assertEqual(tx_message.arbitration_id, rx_message.arbitration_id)
+            self.assertEqual(0x100, rx_message.arbitration_id)
+            self.assertEqual(tx_message.dlc, rx_message.dlc)
+            self.assertEqual(tx_message.data, rx_message.data)
+            self.assertEqual(tx_message.is_extended_id, rx_message.is_extended_id)
+            self.assertEqual(tx_message.is_remote_frame, rx_message.is_remote_frame)
+            self.assertEqual(tx_message.is_error_frame, rx_message.is_error_frame)
+            self.assertEqual(tx_message.is_fd, rx_message.is_fd)
+
+            start_index = (start_index + 2) % len(messages)
+
+        # Find starting index for each
+        start_index = self._find_start_index(messages, results2[0])
+        self.assertTrue(start_index != -1)
+
+        # Now go through the partitioned results and assert that they're equal
+        for rx_index, rx_message in enumerate(results2):
+
+            tx_message = messages[start_index]
+
+            self.assertIsNotNone(rx_message)
+            self.assertEqual(tx_message.arbitration_id,
+                             rx_message.arbitration_id)
+            self.assertEqual(0x200, rx_message.arbitration_id)
+            self.assertEqual(tx_message.dlc, rx_message.dlc)
+            self.assertEqual(tx_message.data, rx_message.data)
+            self.assertEqual(tx_message.is_extended_id,
+                             rx_message.is_extended_id)
+            self.assertEqual(tx_message.is_remote_frame,
+                             rx_message.is_remote_frame)
+            self.assertEqual(tx_message.is_error_frame,
+                             rx_message.is_error_frame)
+            self.assertEqual(tx_message.is_fd, rx_message.is_fd)
+
+            start_index = (start_index + 2) % len(messages)
+
+        # Find starting index for each
+        start_index = self._find_start_index(messages, results4[0])
+        self.assertTrue(start_index != -1)
+
+        # Now go through the partitioned results and assert that they're equal
+        for rx_index, rx_message in enumerate(results4):
+            tx_message = messages[start_index]
+
+            self.assertIsNotNone(rx_message)
+            self.assertEqual(tx_message.arbitration_id,
+                             rx_message.arbitration_id)
+            self.assertEqual(tx_message.dlc, rx_message.dlc)
+            self.assertEqual(tx_message.data, rx_message.data)
+            self.assertEqual(tx_message.is_extended_id,
+                             rx_message.is_extended_id)
+            self.assertEqual(tx_message.is_remote_frame,
+                             rx_message.is_remote_frame)
+            self.assertEqual(tx_message.is_error_frame,
+                             rx_message.is_error_frame)
+            self.assertEqual(tx_message.is_fd, rx_message.is_fd)
+
+            start_index = (start_index + 1) % len(messages)
+
+
+@unittest.skipUnless(TEST_INTERFACE_SOCKETCAN, "skip testing of socketcan")
 class CyclicSocketCan(unittest.TestCase):
     BITRATE = 500000
     TIMEOUT = 0.1

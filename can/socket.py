@@ -40,7 +40,8 @@ class SocketsThreadPool(object):
             if msg is None:
                 continue
             for sock in sockets:
-                sock.rx_queue.put(msg)
+                if sock._matches_filters(msg):
+                    sock.rx_queue.put(copy.copy(msg))
 
     def send_function(self, k):
         while True:
@@ -56,12 +57,15 @@ class SocketsThreadPool(object):
                 sender, msg = tx_queue.get(timeout=0.001)
             except queue.Empty:
                 continue
-            bus.send(msg)
-            m = copy.copy(msg)
-            for sock in sockets:
-                m.timestamp = time.time()
-                if sock != sender and sock._matches_filters(m):
-                    sock.rx_queue.put(m)
+            try:
+                bus.send(msg)
+                msg = copy.copy(msg)
+                for sock in sockets:
+                    msg.timestamp = time.time()
+                    if sock != sender and sock._matches_filters(msg):
+                        sock.rx_queue.put(msg)
+            except CanError:
+                continue
 
     def register(self, socket, *args, **kwargs):
         k = str(kwargs.get("bustype", "unknown_bustype") + "_" +
@@ -146,4 +150,3 @@ class Socket(BusABC):
     @staticmethod
     def select(sockets, *args, **kwargs):
         return [s for s in sockets if not s.rx_queue.empty()], [], []
-
