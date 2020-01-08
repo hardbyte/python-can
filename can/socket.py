@@ -15,7 +15,8 @@ log = logging.getLogger("can.socket")
 log_autodetect = log.getChild("detect_available_configs")
 
 
-class SocketsThreadPool(object):
+class SocketsThreadPool:
+    # pylint: disable=no-member
     __instance = None
 
     def __new__(cls):
@@ -34,7 +35,7 @@ class SocketsThreadPool(object):
                     bus, _, _, sockets = self.buses[k]
                 except KeyError:
                     return
-            if len(sockets) == 0:
+            if not sockets:
                 return
             msg = bus.recv(timeout=0.01)
             if msg is None:
@@ -50,7 +51,7 @@ class SocketsThreadPool(object):
                     bus, tx_queue, tx_signal, sockets = self.buses[k]
                 except KeyError:
                     return
-            if len(sockets) == 0:
+            if not sockets:
                 return
             try:
                 tx_signal.acquire()
@@ -79,7 +80,7 @@ class SocketsThreadPool(object):
             bus, tx_queue, tx_signal, sockets = self.buses[k]
             sockets.append(socket)
             filters = [s.filters for s in sockets if s.filters is not None]
-            if len(filters):
+            if filters:
                 bus.set_filters(reduce(add, filters))
             socket.tx_queue = tx_queue
             socket.tx_signal = tx_signal
@@ -111,7 +112,7 @@ class SocketsThreadPool(object):
 
         for k, v in self.buses.copy().items():
             bus, _, tx_signal, sockets = v
-            if len(sockets) == 0:
+            if not sockets:
                 with self.buses_mutex:
                     del self.buses[k]
                 tx_signal.release()

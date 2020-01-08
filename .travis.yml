@@ -110,6 +110,7 @@ jobs:
           can/message.py
           can/notifier.py
           can/player.py
+          can/socket.py
           can/thread_safe_bus.py
           can/typechecking.py
           can/util.py
