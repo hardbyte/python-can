@@ -10,6 +10,7 @@ from operator import add
 from .interface import Bus
 from .bus import BusABC
 from . import CanError
+from .message import Message
 
 log = logging.getLogger("can.socket")
 log_autodetect = log.getChild("detect_available_configs")
@@ -129,7 +130,7 @@ class Socket(BusABC):
 
     def __init__(self, *args, **kwargs) -> None:
         super(Socket, self).__init__(*args, **kwargs)
-        self.rx_queue = queue.Queue()
+        self.rx_queue: queue.Queue[Message] = queue.Queue()
         self.tx_queue = None
         self.tx_signal = None
         SocketsThreadPool().register(self, *args, **kwargs)
