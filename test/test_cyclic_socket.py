@@ -48,10 +48,16 @@ class CyclicSocketCanFiltering(unittest.TestCase):
             interface=self.INTERFACE_1, channel=self.CHANNEL_1, bitrate=self.BITRATE
         )
         self._recv_bus1 = can.Socket(
-            interface=self.INTERFACE_2, channel=self.CHANNEL_2, bitrate=self.BITRATE, can_filters=[{"can_id": 0x100, "can_mask": 0x7ff, "extended": False}]
+            interface=self.INTERFACE_2,
+            channel=self.CHANNEL_2,
+            bitrate=self.BITRATE,
+            can_filters=[{"can_id": 0x100, "can_mask": 0x7FF, "extended": False}],
         )
         self._recv_bus2 = can.Socket(
-            interface=self.INTERFACE_3, channel=self.CHANNEL_3, bitrate=self.BITRATE, can_filters=[{"can_id": 0x200, "can_mask": 0x7ff, "extended": False}]
+            interface=self.INTERFACE_3,
+            channel=self.CHANNEL_3,
+            bitrate=self.BITRATE,
+            can_filters=[{"can_id": 0x200, "can_mask": 0x7FF, "extended": False}],
         )
         self._recv_bus3 = can.Socket(
             interface=self.INTERFACE_4, channel=self.CHANNEL_4, bitrate=self.BITRATE
@@ -108,10 +114,14 @@ class CyclicSocketCanFiltering(unittest.TestCase):
             )
         )
 
-        task1 = self._send_bus.send_periodic([m for m in messages if m.arbitration_id == 0x100], self.PERIOD)
+        task1 = self._send_bus.send_periodic(
+            [m for m in messages if m.arbitration_id == 0x100], self.PERIOD
+        )
         self.assertIsInstance(task1, can.broadcastmanager.CyclicSendTaskABC)
         time.sleep(self.PERIOD / 2)
-        task2 = self._send_bus.send_periodic([m for m in messages if m.arbitration_id == 0x200], self.PERIOD)
+        task2 = self._send_bus.send_periodic(
+            [m for m in messages if m.arbitration_id == 0x200], self.PERIOD
+        )
         self.assertIsInstance(task1, can.broadcastmanager.CyclicSendTaskABC)
 
         results1 = []
@@ -168,17 +178,13 @@ class CyclicSocketCanFiltering(unittest.TestCase):
             tx_message = messages[start_index]
 
             self.assertIsNotNone(rx_message)
-            self.assertEqual(tx_message.arbitration_id,
-                             rx_message.arbitration_id)
+            self.assertEqual(tx_message.arbitration_id, rx_message.arbitration_id)
             self.assertEqual(0x200, rx_message.arbitration_id)
             self.assertEqual(tx_message.dlc, rx_message.dlc)
             self.assertEqual(tx_message.data, rx_message.data)
-            self.assertEqual(tx_message.is_extended_id,
-                             rx_message.is_extended_id)
-            self.assertEqual(tx_message.is_remote_frame,
-                             rx_message.is_remote_frame)
-            self.assertEqual(tx_message.is_error_frame,
-                             rx_message.is_error_frame)
+            self.assertEqual(tx_message.is_extended_id, rx_message.is_extended_id)
+            self.assertEqual(tx_message.is_remote_frame, rx_message.is_remote_frame)
+            self.assertEqual(tx_message.is_error_frame, rx_message.is_error_frame)
             self.assertEqual(tx_message.is_fd, rx_message.is_fd)
 
             start_index = (start_index + 2) % len(messages)
@@ -192,16 +198,12 @@ class CyclicSocketCanFiltering(unittest.TestCase):
             tx_message = messages[start_index]
 
             self.assertIsNotNone(rx_message)
-            self.assertEqual(tx_message.arbitration_id,
-                             rx_message.arbitration_id)
+            self.assertEqual(tx_message.arbitration_id, rx_message.arbitration_id)
             self.assertEqual(tx_message.dlc, rx_message.dlc)
             self.assertEqual(tx_message.data, rx_message.data)
-            self.assertEqual(tx_message.is_extended_id,
-                             rx_message.is_extended_id)
-            self.assertEqual(tx_message.is_remote_frame,
-                             rx_message.is_remote_frame)
-            self.assertEqual(tx_message.is_error_frame,
-                             rx_message.is_error_frame)
+            self.assertEqual(tx_message.is_extended_id, rx_message.is_extended_id)
+            self.assertEqual(tx_message.is_remote_frame, rx_message.is_remote_frame)
+            self.assertEqual(tx_message.is_error_frame, rx_message.is_error_frame)
             self.assertEqual(tx_message.is_fd, rx_message.is_fd)
 
             start_index = (start_index + 1) % len(messages)

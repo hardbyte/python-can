@@ -68,9 +68,13 @@ class SocketsThreadPool(object):
                 continue
 
     def register(self, socket, *args, **kwargs):
-        k = str(kwargs.get("bustype", "unknown_bustype") + "_" +
-                kwargs.get("channel", "unknown_channel") + "_" +
-                kwargs.get("interface", "unknown_interface"))
+        k = str(
+            kwargs.get("bustype", "unknown_bustype")
+            + "_"
+            + kwargs.get("channel", "unknown_channel")
+            + "_"
+            + kwargs.get("interface", "unknown_interface")
+        )
         if k in self.buses:
             bus, tx_queue, tx_signal, sockets = self.buses[k]
             sockets.append(socket)
@@ -89,10 +93,8 @@ class SocketsThreadPool(object):
             socket.tx_signal = tx_signal
             with self.buses_mutex:
                 self.buses[k] = (bus, tx_queue, tx_signal, [socket])
-            self.rx_threads[k] = threading.Thread(
-                target=self.recv_function, args=(k,))
-            self.tx_threads[k] = threading.Thread(
-                target=self.send_function, args=(k,))
+            self.rx_threads[k] = threading.Thread(target=self.recv_function, args=(k,))
+            self.tx_threads[k] = threading.Thread(target=self.send_function, args=(k,))
             self.rx_threads[k].start()
             self.tx_threads[k].start()
 
