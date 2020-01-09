@@ -281,19 +281,19 @@ class Message:
 
     def __eq__(self, other: Any) -> bool:
         """ Compares a given message with this one.
-        The result is the as same as calling ``equals`` without timestamp and channel check.
+        The result is the as same as calling ``equals`` with default arguments.
 
         :param other: the message to compare with
 
         :return: True if the given message equals this one
         """
-        return self.equals(other, timestamp_delta=None, check_channel=False)
+        return self.equals(other)
 
     def equals(
         self,
         other: Any,
         timestamp_delta: Optional[Union[float, int]] = 1.0e-6,
-        check_channel: bool = False,
+        check_channel: bool = True,
     ) -> bool:
         """
         Compares a given message with this one.
@@ -302,6 +302,8 @@ class Message:
 
         :param timestamp_delta: the maximum difference at which two timestamps are
                                 still considered equal or None to not compare timestamps
+
+        :param check_channel: compare the channels of the messages
 
         :return: True if the given message equals this one
         """
@@ -322,7 +324,7 @@ class Message:
             and self.data == other.data
             and self.is_remote_frame == other.is_remote_frame
             and self.is_error_frame == other.is_error_frame
-            and (check_channel or self.channel == other.channel)
+            and (not check_channel or self.channel == other.channel)
             and self.is_fd == other.is_fd
             and self.bitrate_switch == other.bitrate_switch
             and self.error_state_indicator == other.error_state_indicator
