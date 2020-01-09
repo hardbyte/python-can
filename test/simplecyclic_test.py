@@ -43,7 +43,7 @@ class SimpleCyclicSendTaskTest(unittest.TestCase, ComparingMessagesTestCase):
                 sleep(2)
                 bus1.stop_all_periodic_tasks()
                 sleep(1)
-                
+
                 size = bus2.queue.qsize()
                 # About 100 messages should have been transmitted
                 self.assertTrue(
