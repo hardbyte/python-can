@@ -23,7 +23,7 @@ class SimpleCyclicSendTaskTest(unittest.TestCase, ComparingMessagesTestCase):
         )
 
     @unittest.skipIf(
-        IS_CI,
+        IS_CI or IS_WINDOWS,
         "the timing sensitive behaviour cannot be reproduced reliably on a CI server",
     )
     def test_cycle_time(self):

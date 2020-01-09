@@ -47,7 +47,6 @@ class TestMessageSync(unittest.TestCase, ComparingMessagesTestCase):
         # we need to reenable the garbage collector again
         gc.enable()
 
-    @pytest.mark.timeout(inc(0.2))
     def test_general(self):
         messages = [
             Message(timestamp=50.0),
@@ -76,7 +75,6 @@ class TestMessageSync(unittest.TestCase, ComparingMessagesTestCase):
         self.assertTrue(0.075 <= timings[3] < inc(0.085), str(timings[3]))
         self.assertTrue(0.0 <= timings[4] < inc(0.005), str(timings[4]))
 
-    @pytest.mark.timeout(inc(0.1) * len(TEST_FEWER_MESSAGES))  # very conservative
     def test_skip(self):
         messages = copy(TEST_FEWER_MESSAGES)
         sync = MessageSync(messages, skip=0.005, gap=0.0)
@@ -95,7 +93,6 @@ class TestMessageSync(unittest.TestCase, ComparingMessagesTestCase):
 
 if not IS_APPVEYOR:  # this environment's timings are too unpredictable
 
-    @pytest.mark.timeout(inc(0.3))
     @pytest.mark.parametrize(
         "timestamp_1,timestamp_2", [(0.0, 0.0), (0.0, 0.01), (0.01, 0.0)]
     )
