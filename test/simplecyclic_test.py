@@ -19,11 +19,11 @@ class SimpleCyclicSendTaskTest(unittest.TestCase, ComparingMessagesTestCase):
     def __init__(self, *args, **kwargs):
         unittest.TestCase.__init__(self, *args, **kwargs)
         ComparingMessagesTestCase.__init__(
-            self, allowed_timestamp_delta=0.016, preserves_channel=True
+            self, allowed_timestamp_delta=0.04, preserves_channel=True
         )
 
     @unittest.skipIf(
-        IS_CI or IS_WINDOWS,
+        IS_CI,
         "the timing sensitive behaviour cannot be reproduced reliably on a CI server",
     )
     def test_cycle_time(self):
@@ -41,10 +41,13 @@ class SimpleCyclicSendTaskTest(unittest.TestCase, ComparingMessagesTestCase):
                 self.assertIsInstance(task, can.broadcastmanager.CyclicSendTaskABC)
 
                 sleep(2)
+                bus1.stop_all_periodic_tasks()
+                sleep(1)
+                
                 size = bus2.queue.qsize()
                 # About 100 messages should have been transmitted
                 self.assertTrue(
-                    80 <= size <= 120,
+                    40 <= size <= 120,
                     "100 +/- 20 messages should have been transmitted. But queue contained {}".format(
                         size
                     ),
