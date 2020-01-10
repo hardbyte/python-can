@@ -130,7 +130,7 @@ class Socket(BusABC):
 
     def __init__(self, *args, **kwargs) -> None:
         super(Socket, self).__init__(*args, **kwargs)
-        self.rx_queue = queue.Queue() # type: queue.Queue[Message]
+        self.rx_queue = queue.Queue()  # type: queue.Queue[Message]
         self.tx_queue = None
         self.tx_signal = None
         SocketsThreadPool().register(self, *args, **kwargs)
