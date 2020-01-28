@@ -7,6 +7,7 @@ Interface for slcan compatible interfaces (win32/linux).
 
 """
 
+import io
 import time
 import logging
 
@@ -244,9 +245,12 @@ class slcanBus(BusABC):
         self.serialPortOrig.close()
 
     def fileno(self):
-        if hasattr(self.serialPortOrig, "fileno"):
+        try:
             return self.serialPortOrig.fileno()
-        # Return an invalid file descriptor on Windows
+        except (io.UnsupportedOperation):
+            # Return an invalid file descriptor on a platform which doesn't implement fileno such as Windows
+            pass
+
         return -1
 
     def get_version(self, timeout):
