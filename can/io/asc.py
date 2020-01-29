@@ -26,8 +26,6 @@ class ASCReader(BaseIOHandler):
     """
     Iterator of CAN messages from a ASC logging file. Meta data (comments,
     bus statistics, J1939 Transport Protocol messages) is ignored.
-
-    TODO: turn relative timestamps back to absolute form
     """
 
     def __init__(self, file):
@@ -49,10 +47,18 @@ class ASCReader(BaseIOHandler):
         return can_id, is_extended
 
     def __iter__(self):
+        start_time = 0.0
         for line in self.file:
             # logger.debug("ASCReader: parsing line: '%s'", line.splitlines()[0])
 
             temp = line.strip()
+            
+            #check for timestamp
+            if "begin triggerblock" in temp.lower():
+                _, _, start_time = temp.split(None, 2)
+                start_time = datetime.strptime(start_time, "%a %b %m %I:%M:%S.%f %p %Y").timestamp()
+                continue
+
             if not temp or not temp[0].isdigit():
                 continue
             try:
@@ -62,7 +68,7 @@ class ASCReader(BaseIOHandler):
             except ValueError:
                 # we parsed an empty comment
                 continue
-            timestamp = float(timestamp)
+            timestamp = float(timestamp) + start_time
             try:
                 # See ASCWriter
                 channel = int(channel) - 1
