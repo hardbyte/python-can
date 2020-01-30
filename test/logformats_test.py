@@ -338,7 +338,7 @@ class TestAscFileFormat(ReaderWriterTest):
         super()._setup_instance_helper(
             can.ASCWriter,
             can.ASCReader,
-            check_fd=False,
+            check_fd=True,
             check_comments=True,
             preserves_channel=False,
             adds_default_channel=0,
