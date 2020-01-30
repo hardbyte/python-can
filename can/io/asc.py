@@ -59,9 +59,13 @@ class ASCReader(BaseIOHandler):
             temp = line.strip()
             if not temp or not temp[0].isdigit():
                 continue
-
+            is_fd = False
             try:
                 timestamp, channel, dummy = temp.split(None, 2) # , frameType, dlc, frameData
+                if channel == "CANFD":
+                    timestamp, _, channel, _, dummy = temp.split(None, 4)
+                    is_fd = True
+
             except ValueError:
                 # we parsed an empty comment
                 continue
@@ -95,16 +99,32 @@ class ASCReader(BaseIOHandler):
                 yield msg
 
             else:
+                brs = None
+                esi = None
+                data_length = 0
                 try:
-                    # this only works if dlc > 0 and thus data is availabe
-                    can_id_str, _, _, dlc, data = dummy.split(None, 4)
+                    # this only works if dlc > 0 and thus data is available
+                    if not is_fd:
+                        can_id_str, _, _, dlc, data = dummy.split(None, 4)
+                    else:
+                        can_id_str, frame_name, brs, esi, dlc, data_length, data = dummy.split(
+                            None, 6
+                        )
+                        if frame_name.isdigit():
+                            # Empty frame_name
+                            can_id_str, brs, esi, dlc, data_length, data = dummy.split(
+                                None, 5
+                            )
                 except ValueError:
                     # but if not, we only want to get the stuff up to the dlc
                     can_id_str, _, _, dlc       = dummy.split(None, 3)
                     # and we set data to an empty sequence manually
                     data = ''
-
-                dlc = int(dlc)
+                dlc = int(dlc, 16)
+                if is_fd:
+                    # For fd frames, dlc and data length might not be equal and
+                    # data_length is the actual size of the data
+                    dlc = int(data_length)
                 frame = bytearray()
                 data = data.split()
                 for byte in data[0:dlc]:
@@ -119,7 +139,10 @@ class ASCReader(BaseIOHandler):
                     is_remote_frame=False,
                     dlc=dlc,
                     data=frame,
-                    channel=channel
+                    is_fd=is_fd,
+                    channel=channel,
+                    bitrate_switch=is_fd and brs == "1",
+                    error_state_indicator=is_fd and esi == "1",
                 )
 
         self.stop()
