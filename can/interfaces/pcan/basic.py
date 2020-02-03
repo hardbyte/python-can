@@ -509,7 +509,8 @@ class PCANBasic:
                 winreg.CloseKey(aKey)
             except WindowsError:
                 logger.error("Exception: The PEAK-driver couldn't be found!")
-            winreg.CloseKey(aReg)
+            finally:
+                winreg.CloseKey(aReg)
         elif platform.system() == "Darwin":
             self.__m_dllBasic = cdll.LoadLibrary("libPCBUSB.dylib")
         else:
