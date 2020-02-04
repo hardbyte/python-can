@@ -528,10 +528,9 @@ class PcanBus(BusABC):
             )
         return channels
 
-    def status_string(self):
+    def status_string(self) -> Optional[str]:
         """
         Query the PCAN bus status.
-        :rtype: string
         :return: The status in string.
         """
         status = self.status()
@@ -552,7 +551,7 @@ class PcanBus(BusABC):
         elif status == PCAN_ERROR_BUSOFF:
             return "BUSOFF"
         else:
-            return "NonImplementedError"
+            return None
 
 
 class PcanError(CanError):
