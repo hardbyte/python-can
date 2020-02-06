@@ -30,22 +30,24 @@ class ASCReader(BaseIOHandler):
     TODO: turn relative timestamps back to absolute form
     """
 
-    def __init__(self, file):
+    def __init__(self, file, base=16):
         """
         :param file: a path-like object or as file-like object to read from
                      If this is a file-like object, is has to opened in text
                      read mode, not binary read mode.
+        :param base: Select the base(radix) of id and data.
         """
         super().__init__(file, mode="r")
+        self.base = base
 
     @staticmethod
-    def _extract_can_id(str_can_id):
+    def _extract_can_id(str_can_id, base):
         if str_can_id[-1:].lower() == "x":
             is_extended = True
-            can_id = int(str_can_id[0:-1], 16)
+            can_id = int(str_can_id[0:-1], base)
         else:
             is_extended = False
-            can_id = int(str_can_id, 16)
+            can_id = int(str_can_id, base)
         return can_id, is_extended
 
     def __iter__(self):
@@ -83,7 +85,7 @@ class ASCReader(BaseIOHandler):
                 pass
             elif dummy[-1:].lower() == "r":
                 can_id_str, _ = dummy.split(None, 1)
-                can_id_num, is_extended_id = self._extract_can_id(can_id_str)
+                can_id_num, is_extended_id = self._extract_can_id(can_id_str, self.base)
                 msg = Message(
                     timestamp=timestamp,
                     arbitration_id=can_id_num & CAN_ID_MASK,
@@ -114,7 +116,7 @@ class ASCReader(BaseIOHandler):
                     can_id_str, _, _, dlc = dummy.split(None, 3)
                     # and we set data to an empty sequence manually
                     data = ""
-                dlc = int(dlc, 16)
+                dlc = int(dlc, self.base)
                 if is_fd:
                     # For fd frames, dlc and data length might not be equal and
                     # data_length is the actual size of the data
@@ -122,8 +124,8 @@ class ASCReader(BaseIOHandler):
                 frame = bytearray()
                 data = data.split()
                 for byte in data[0:dlc]:
-                    frame.append(int(byte, 16))
-                can_id_num, is_extended_id = self._extract_can_id(can_id_str)
+                    frame.append(int(byte, self.base))
+                can_id_num, is_extended_id = self._extract_can_id(can_id_str, self.base)
 
                 yield Message(
                     timestamp=timestamp,
