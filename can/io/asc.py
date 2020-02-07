@@ -18,6 +18,8 @@ from .generic import BaseIOHandler
 
 CAN_MSG_EXT = 0x80000000
 CAN_ID_MASK = 0x1FFFFFFF
+BASE_HEX = 16
+BASE_DEC = 10
 
 logger = logging.getLogger("can.io.asc")
 
@@ -30,12 +32,14 @@ class ASCReader(BaseIOHandler):
     TODO: turn relative timestamps back to absolute form
     """
 
-    def __init__(self, file, base=16):
+    def __init__(self, file, base="hex"):
         """
         :param file: a path-like object or as file-like object to read from
                      If this is a file-like object, is has to opened in text
                      read mode, not binary read mode.
-        :param base: Select the base(radix) of id and data.
+        :param base: Select the base(hex or dec) of id and data.
+                     If the header of the asc file contains base information,
+                     this value will be overwritten. Default "hex".
         """
         super().__init__(file, mode="r")
         self.base = base
@@ -50,9 +54,18 @@ class ASCReader(BaseIOHandler):
             can_id = int(str_can_id, base)
         return can_id, is_extended
 
+    @staticmethod
+    def _check_base(base):
+        if base not in ["hex", "dec"]:
+            raise ValueError('base should be either "hex" or "dec"')
+        return BASE_DEC if base == "dec" else BASE_HEX
+
     def __iter__(self):
+        base = self._check_base(self.base)
         for line in self.file:
             # logger.debug("ASCReader: parsing line: '%s'", line.splitlines()[0])
+            if line.split(" ")[0] == "base":
+                base = self._check_base(line.split(" ")[1])
 
             temp = line.strip()
             if not temp or not temp[0].isdigit():
@@ -85,7 +98,7 @@ class ASCReader(BaseIOHandler):
                 pass
             elif dummy[-1:].lower() == "r":
                 can_id_str, _ = dummy.split(None, 1)
-                can_id_num, is_extended_id = self._extract_can_id(can_id_str, self.base)
+                can_id_num, is_extended_id = self._extract_can_id(can_id_str, base)
                 msg = Message(
                     timestamp=timestamp,
                     arbitration_id=can_id_num & CAN_ID_MASK,
@@ -116,7 +129,7 @@ class ASCReader(BaseIOHandler):
                     can_id_str, _, _, dlc = dummy.split(None, 3)
                     # and we set data to an empty sequence manually
                     data = ""
-                dlc = int(dlc, self.base)
+                dlc = int(dlc, base)
                 if is_fd:
                     # For fd frames, dlc and data length might not be equal and
                     # data_length is the actual size of the data
@@ -124,8 +137,8 @@ class ASCReader(BaseIOHandler):
                 frame = bytearray()
                 data = data.split()
                 for byte in data[0:dlc]:
-                    frame.append(int(byte, self.base))
-                can_id_num, is_extended_id = self._extract_can_id(can_id_str, self.base)
+                    frame.append(int(byte, base))
+                can_id_num, is_extended_id = self._extract_can_id(can_id_str, base)
 
                 yield Message(
                     timestamp=timestamp,
