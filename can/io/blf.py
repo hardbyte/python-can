@@ -230,7 +230,7 @@ class BLFReader(BaseIOHandler):
             if obj_type != CAN_FD_MESSAGE_64:
                 # Add padding bytes
                 next_pos += obj_size % 4
-            if next_pos >= max_pos:
+            if next_pos > max_pos:
                 # This object continues in the next container
                 return
             pos += obj_header_base_size
