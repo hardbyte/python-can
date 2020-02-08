@@ -189,13 +189,13 @@ class BLFReader(BaseIOHandler):
     def _parse_container(self, data):
         if self._tail:
             data = b"".join((self._tail, data))
-        self._pos = 0
         try:
             yield from self._parse_data(data)
         except struct.error:
-            # Container data exhausted
-            # Save the remaining data that could not be processed
-            self._tail = data[self._pos :]
+            # There was not enough data in the container to unpack a struct
+            pass
+        # Save the remaining data that could not be processed
+        self._tail = data[self._pos :]
 
     def _parse_data(self, data):
         """Optimized inner loop by making local copies of global variables
@@ -213,12 +213,14 @@ class BLFReader(BaseIOHandler):
         unpack_can_error_ext = CAN_ERROR_EXT_STRUCT.unpack_from
 
         start_timestamp = self.start_timestamp
+        max_pos = len(data)
         pos = 0
 
         # Loop until a struct unpack raises an exception
         while True:
             self._pos = pos
             header = unpack_obj_header_base(data, pos)
+            # print(header)
             signature, _, header_version, obj_size, obj_type = header
             if signature != b"LOBJ":
                 raise BLFParseError()
@@ -228,6 +230,9 @@ class BLFReader(BaseIOHandler):
             if obj_type != CAN_FD_MESSAGE_64:
                 # Add padding bytes
                 next_pos += obj_size % 4
+            if next_pos >= max_pos:
+                # This object continues in the next container
+                return
             pos += obj_header_base_size
 
             # Read rest of header
