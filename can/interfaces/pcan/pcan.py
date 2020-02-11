@@ -5,6 +5,7 @@ Enable basic CAN over a PCAN USB device.
 import logging
 import time
 
+from typing import Optional
 from can import CanError, Message, BusABC
 from can.bus import BusState
 from can.util import len2dlc, dlc2len
@@ -527,6 +528,16 @@ class PcanBus(BusABC):
                 {"interface": "pcan", "channel": i["name"], "supports_fd": has_fd}
             )
         return channels
+
+    def status_string(self) -> Optional[str]:
+        """
+        Query the PCAN bus status.
+        :return: The status in string.
+        """
+        if self.status() in PCAN_DICT_STATUS:
+            return PCAN_DICT_STATUS[self.status()]
+        else:
+            return None
 
 
 class PcanError(CanError):
