@@ -13,7 +13,6 @@ from .config import IS_LINUX, TEST_INTERFACE_SOCKETCAN
 
 
 class TestSocketCanHelpers(unittest.TestCase):
-
     @unittest.skipUnless(IS_LINUX, "socketcan is only available on Linux")
     def test_error_code_to_str(self):
         """
