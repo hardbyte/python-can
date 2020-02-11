@@ -9,10 +9,11 @@ import unittest
 
 from can.interfaces.socketcan.utils import find_available_interfaces, error_code_to_str
 
-from .config import *
+from .config import IS_LINUX, TEST_INTERFACE_SOCKETCAN
 
 
 class TestSocketCanHelpers(unittest.TestCase):
+
     @unittest.skipUnless(IS_LINUX, "socketcan is only available on Linux")
     def test_error_code_to_str(self):
         """
