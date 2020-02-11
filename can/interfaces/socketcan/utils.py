@@ -46,8 +46,6 @@ def find_available_interfaces() -> Iterable[str]:
     """Returns the names of all open can/vcan interfaces using
     the ``ip link list`` command. If the lookup fails, an error
     is logged to the console and an empty list is returned.
-
-    :rtype: an iterable of :class:`str`
     """
 
     try:
@@ -72,8 +70,7 @@ def error_code_to_str(code: int) -> str:
     """
     Converts a given error code (errno) to a useful and human readable string.
 
-    :param int code: a possibly invalid/unknown error code
-    :rtype: str
+    :param code: a possibly invalid/unknown error code
     :returns: a string explaining and containing the given error code, or a string
               explaining that the errorcode is unknown if that is the case
     """
