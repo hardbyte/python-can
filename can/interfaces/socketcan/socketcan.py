@@ -578,10 +578,17 @@ class SocketcanBus(BusABC):
         fd: bool = False,
         **kwargs,
     ) -> None:
-        """
+        """Creates a new socketcan bus.
+
+        It setting some socket options fails, an error will be printed but no exception will be thrown.
+        This includes enabling:
+         - that own messages should be received,
+         - CAN-FD frames and
+         - error frames.
+
         :param channel:
-            The can interface name with which to create this bus. An example channel
-            would be 'vcan0' or 'can0'.
+            The can interface name with which to create this bus.
+            An example channel would be 'vcan0' or 'can0'.
             An empty string '' will receive messages from all channels.
             In that case any sent messages must be explicitly addressed to a
             channel using :attr:`can.Message.channel`.
@@ -589,7 +596,7 @@ class SocketcanBus(BusABC):
             If transmitted messages should also be received by this bus.
         :param fd:
             If CAN-FD frames should be supported.
-        :param list can_filters:
+        :param List can_filters:
             See :meth:`can.BusABC.set_filters`.
         """
         self.socket = create_socket()
@@ -751,13 +758,12 @@ class SocketcanBus(BusABC):
     def _apply_filters(self, filters: Optional[can.typechecking.CanFilters]) -> None:
         try:
             self.socket.setsockopt(SOL_CAN_RAW, CAN_RAW_FILTER, pack_filters(filters))
-        except socket.error as err:
+        except socket.error as error:
             # fall back to "software filtering" (= not in kernel)
             self._is_filtered = False
-            # TODO Is this serious enough to raise a CanError exception?
             log.error(
                 "Setting filters failed; falling back to software filtering (not in kernel): %s",
-                err,
+                error,
             )
         else:
             self._is_filtered = True
