@@ -45,7 +45,7 @@ On Windows systems the config file is searched in the following paths:
 
 #. ``~/can.conf``
 #. ``can.ini`` (current working directory)
-#. ``$APPDATA/can.ini``
+#. ``%APPDATA%/can.ini``
 
 The configuration file sets the default interface and channel:
 
