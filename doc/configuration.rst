@@ -43,7 +43,7 @@ On Linux systems the config file is searched in the following paths:
 
 On Windows systems the config file is searched in the following paths:
 
-#. ``~/can.conf``
+#. ``%USERPROFILE%/can.conf``
 #. ``can.ini`` (current working directory)
 #. ``%APPDATA%/can.ini``
 
