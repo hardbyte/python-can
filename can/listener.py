@@ -1,5 +1,3 @@
-# coding: utf-8
-
 """
 This module contains the implementation of `can.Listener` and some readers.
 """

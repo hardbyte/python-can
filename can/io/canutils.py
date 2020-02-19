@@ -1,5 +1,3 @@
-# coding: utf-8
-
 """
 This module works with CAN data in ASCII log files (*.log).
 It is is compatible with "candump -L" from the canutils program

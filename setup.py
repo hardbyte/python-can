@@ -1,9 +1,10 @@
 #!/usr/bin/env python
-# coding: utf-8
 
 """
 python-can requires the setuptools package to be installed.
 """
+
+# pylint: disable=invalid-name
 
 from __future__ import absolute_import
 
