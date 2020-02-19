@@ -32,6 +32,7 @@ extras_require = {
 }
 
 tests_require = [
+<<<<<<< HEAD
     "pytest~=4.3",
     "pytest-timeout~=1.3",
     "pytest-cov~=2.6",
@@ -40,6 +41,19 @@ tests_require = [
 ] + extras_require["serial"]
 
 extras_require["test"] = tests_require
+=======
+    'mock~=2.0',
+    'pytest~=4.3',
+    'pytest-timeout~=1.3',
+    'pytest-cov~=2.6',
+    'codecov~=2.0',
+    'future',
+    'six',
+    'hypothesis'
+] + extras_require['serial']
+
+extras_require['test'] = tests_require
+>>>>>>> upstream/master
 
 # Check for 'pytest-runner' only if setup.py was invoked with 'test'.
 # This optimizes setup.py for cases when pytest-runner is not needed,
@@ -48,6 +62,10 @@ extras_require["test"] = tests_require
 # See https://pypi.org/project/pytest-runner/#conditional-requirement
 needs_pytest = {"pytest", "test", "ptr"}.intersection(sys.argv)
 pytest_runner = ["pytest-runner"] if needs_pytest else []
+<<<<<<< HEAD
+=======
+
+>>>>>>> upstream/master
 
 setup(
     # Description

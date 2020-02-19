@@ -1,6 +1,23 @@
-Version 3.2.0
+Version 3.3.2
 ====
 
+Minor bug fix release addressing issue in PCAN RTR.
+
+Version 3.3.1
+====
+
+Minor fix to setup.py to only require pytest-runner when necessary.
+
+Version 3.3.0
+====
+
+* Adding CAN FD 64 frame support to blf reader
+* Updates to installation instructions
+* Clean up bits generator in PCAN interface #588
+* Minor fix to use latest tools when building wheels on travis.
+
+Version 3.2.0
+====
 
 Major features
 --------------
