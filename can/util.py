@@ -2,6 +2,10 @@
 Utilities and configuration file parsing.
 """
 
+from typing import Dict, Optional, Union
+
+from can import typechecking
+
 import json
 import os
 import os.path
@@ -29,7 +33,9 @@ elif platform.system() == "Windows" or platform.python_implementation() == "Iron
     CONFIG_FILES.extend(["can.ini", os.path.join(os.getenv("APPDATA", ""), "can.ini")])
 
 
-def load_file_config(path=None, section="default"):
+def load_file_config(
+    path: Optional[typechecking.AcceptedIOType] = None, section: str = "default"
+) -> Dict[str, str]:
     """
     Loads configuration from file with following content::
 
@@ -57,7 +63,7 @@ def load_file_config(path=None, section="default"):
     return _config
 
 
-def load_environment_config(context=None):
+def load_environment_config(context: Optional[str] = None) -> Dict[str, str]:
     """
     Loads config dict from environmental variables (if set):
 
@@ -83,20 +89,22 @@ def load_environment_config(context=None):
 
     context_suffix = "_{}".format(context) if context else ""
 
-    config = {}
-
     can_config_key = "CAN_CONFIG" + context_suffix
-    if can_config_key in os.environ:
-        config = json.loads(os.environ.get(can_config_key))
+    config: Dict[str, str] = json.loads(os.environ.get(can_config_key, "{}"))
 
     for key, val in mapper.items():
-        if val in os.environ:
-            config[key] = os.environ.get(val + context_suffix)
+        config_option = os.environ.get(val + context_suffix, None)
+        if config_option:
+            config[key] = config_option
 
     return config
 
 
-def load_config(path=None, config=None, context=None):
+def load_config(
+    path: Optional[typechecking.AcceptedIOType] = None,
+    config=None,
+    context: Optional[str] = None,
+) -> typechecking.BusConfig:
     """
     Returns a dict with configuration details which is loaded from (in this order):
 
@@ -213,26 +221,25 @@ def load_config(path=None, config=None, context=None):
     return config
 
 
-def set_logging_level(level_name=None):
+def set_logging_level(level_name: Optional[str] = None):
     """Set the logging level for the "can" logger.
     Expects one of: 'critical', 'error', 'warning', 'info', 'debug', 'subdebug'
     """
     can_logger = logging.getLogger("can")
 
     try:
-        can_logger.setLevel(getattr(logging, level_name.upper()))
+        can_logger.setLevel(getattr(logging, level_name.upper()))  # type: ignore
     except AttributeError:
         can_logger.setLevel(logging.DEBUG)
     log.debug("Logging set to {}".format(level_name))
 
 
-def len2dlc(length):
+def len2dlc(length: int) -> int:
     """Calculate the DLC from data length.
 
     :param int length: Length in number of bytes (0-64)
 
     :returns: DLC (0-15)
-    :rtype: int
     """
     if length <= 8:
         return length
@@ -242,25 +249,23 @@ def len2dlc(length):
     return 15
 
 
-def dlc2len(dlc):
+def dlc2len(dlc: int) -> int:
     """Calculate the data length from DLC.
 
-    :param int dlc: DLC (0-15)
+    :param dlc: DLC (0-15)
 
     :returns: Data length in number of bytes (0-64)
-    :rtype: int
     """
     return CAN_FD_DLC[dlc] if dlc <= 15 else 64
 
 
-def channel2int(channel):
+def channel2int(channel: Optional[Union[typechecking.Channel]]) -> Optional[int]:
     """Try to convert the channel to an integer.
 
     :param channel:
         Channel string (e.g. can0, CAN1) or integer
 
     :returns: Channel integer or `None` if unsuccessful
-    :rtype: int
     """
     if channel is None:
         return None

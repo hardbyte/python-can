@@ -5,6 +5,8 @@ along some internal methods.
 At the end of the file the usage of the internal methods is shown.
 """
 
+from typing import Dict, List, Optional, Sequence, Tuple, Type, Union
+
 import logging
 import ctypes
 import ctypes.util
@@ -34,11 +36,17 @@ from can.broadcastmanager import (
 from can.interfaces.socketcan.constants import *  # CAN_RAW, CAN_*_FLAG
 from can.interfaces.socketcan.utils import pack_filters, find_available_interfaces
 
-
 # Setup BCM struct
-def bcm_header_factory(fields, alignment=8):
+def bcm_header_factory(
+    fields: List[Tuple[str, Union[Type[ctypes.c_uint32], Type[ctypes.c_long]]]],
+    alignment: int = 8,
+):
     curr_stride = 0
-    results = []
+    results: List[
+        Tuple[
+            str, Union[Type[ctypes.c_uint8], Type[ctypes.c_uint32], Type[ctypes.c_long]]
+        ]
+    ] = []
     pad_index = 0
     for field in fields:
         field_alignment = ctypes.alignment(field[1])
@@ -122,7 +130,7 @@ BcmMsgHead = bcm_header_factory(
 CAN_FRAME_HEADER_STRUCT = struct.Struct("=IBB2x")
 
 
-def build_can_frame(msg):
+def build_can_frame(msg: Message) -> bytes:
     """ CAN frame packing/unpacking (see 'struct can_frame' in <linux/can.h>)
     /**
      * struct can_frame - basic CAN frame structure
@@ -166,16 +174,16 @@ def build_can_frame(msg):
 
 
 def build_bcm_header(
-    opcode,
-    flags,
-    count,
-    ival1_seconds,
-    ival1_usec,
-    ival2_seconds,
-    ival2_usec,
-    can_id,
-    nframes,
-):
+    opcode: int,
+    flags: int,
+    count: int,
+    ival1_seconds: int,
+    ival1_usec: int,
+    ival2_seconds: int,
+    ival2_usec: int,
+    can_id: int,
+    nframes: int,
+) -> bytes:
     result = BcmMsgHead(
         opcode=opcode,
         flags=flags,
@@ -190,14 +198,19 @@ def build_bcm_header(
     return ctypes.string_at(ctypes.addressof(result), ctypes.sizeof(result))
 
 
-def build_bcm_tx_delete_header(can_id, flags):
+def build_bcm_tx_delete_header(can_id: int, flags: int) -> bytes:
     opcode = CAN_BCM_TX_DELETE
     return build_bcm_header(opcode, flags, 0, 0, 0, 0, 0, can_id, 1)
 
 
 def build_bcm_transmit_header(
-    can_id, count, initial_period, subsequent_period, msg_flags, nframes=1
-):
+    can_id: int,
+    count: int,
+    initial_period: float,
+    subsequent_period: float,
+    msg_flags: int,
+    nframes: int = 1,
+) -> bytes:
     opcode = CAN_BCM_TX_SETUP
 
     flags = msg_flags | SETTIMER | STARTTIMER
@@ -206,7 +219,7 @@ def build_bcm_transmit_header(
         # Note `TX_COUNTEVT` creates the message TX_EXPIRED when count expires
         flags |= TX_COUNTEVT
 
-    def split_time(value):
+    def split_time(value: float) -> Tuple[int, int]:
         """Given seconds as a float, return whole seconds and microseconds"""
         seconds = int(value)
         microseconds = int(1e6 * (value - seconds))
@@ -228,11 +241,11 @@ def build_bcm_transmit_header(
     )
 
 
-def build_bcm_update_header(can_id, msg_flags, nframes=1):
+def build_bcm_update_header(can_id: int, msg_flags: int, nframes: int = 1) -> bytes:
     return build_bcm_header(CAN_BCM_TX_SETUP, msg_flags, 0, 0, 0, 0, 0, can_id, nframes)
 
 
-def dissect_can_frame(frame):
+def dissect_can_frame(frame: bytes) -> Tuple[int, int, int, bytes]:
     can_id, can_dlc, flags = CAN_FRAME_HEADER_STRUCT.unpack_from(frame)
     if len(frame) != CANFD_MTU:
         # Flags not valid in non-FD frames
@@ -240,14 +253,14 @@ def dissect_can_frame(frame):
     return can_id, can_dlc, flags, frame[8 : 8 + can_dlc]
 
 
-def create_bcm_socket(channel):
+def create_bcm_socket(channel: str) -> socket.socket:
     """create a broadcast manager socket and connect to the given interface"""
     s = socket.socket(PF_CAN, socket.SOCK_DGRAM, CAN_BCM)
     s.connect((channel,))
     return s
 
 
-def send_bcm(bcm_socket, data):
+def send_bcm(bcm_socket: socket.socket, data: bytes) -> int:
     """
     Send raw frame to a BCM socket and handle errors.
     """
@@ -273,7 +286,7 @@ def send_bcm(bcm_socket, data):
             raise e
 
 
-def _add_flags_to_can_id(message):
+def _add_flags_to_can_id(message: Message) -> int:
     can_id = message.arbitration_id
     if message.is_extended_id:
         log.debug("sending an extended id type message")
@@ -300,14 +313,20 @@ class CyclicSendTask(
 
     """
 
-    def __init__(self, bcm_socket, messages, period, duration=None):
+    def __init__(
+        self,
+        bcm_socket: socket.socket,
+        messages: Union[Sequence[Message], Message],
+        period: float,
+        duration: Optional[float] = None,
+    ):
         """
         :param bcm_socket: An open BCM socket on the desired CAN channel.
-        :param Union[Sequence[can.Message], can.Message] messages:
+        :param messages:
             The messages to be sent periodically.
-        :param float period:
+        :param period:
             The rate in seconds at which to send the messages.
-        :param float duration:
+        :param duration:
             Approximate duration in seconds to send the messages for.
         """
         # The following are assigned by LimitedDurationCyclicSendTaskABC:
@@ -319,9 +338,8 @@ class CyclicSendTask(
         self.bcm_socket = bcm_socket
         self._tx_setup(self.messages)
 
-    def _tx_setup(self, messages):
+    def _tx_setup(self, messages: Sequence[Message]) -> None:
         # Create a low level packed frame to pass to the kernel
-        header = bytearray()
         body = bytearray()
         self.can_id_with_flags = _add_flags_to_can_id(messages[0])
         self.flags = CAN_FD_FRAME if messages[0].is_fd else 0
@@ -329,10 +347,10 @@ class CyclicSendTask(
         if self.duration:
             count = int(self.duration / self.period)
             ival1 = self.period
-            ival2 = 0
+            ival2 = 0.0
         else:
             count = 0
-            ival1 = 0
+            ival1 = 0.0
             ival2 = self.period
 
         # First do a TX_READ before creating a new task, and check if we get
@@ -374,7 +392,7 @@ class CyclicSendTask(
         log.debug("Sending BCM command")
         send_bcm(self.bcm_socket, header + body)
 
-    def stop(self):
+    def stop(self) -> None:
         """Send a TX_DELETE message to cancel this task.
 
         This will delete the entry for the transmission of the CAN-message
@@ -386,7 +404,7 @@ class CyclicSendTask(
         stopframe = build_bcm_tx_delete_header(self.can_id_with_flags, self.flags)
         send_bcm(self.bcm_socket, stopframe)
 
-    def modify_data(self, messages):
+    def modify_data(self, messages: Union[Sequence[Message], Message]) -> None:
         """Update the contents of the periodically sent messages.
 
         Note: The messages must all have the same
@@ -395,7 +413,7 @@ class CyclicSendTask(
         Note: The number of new cyclic messages to be sent must be equal to the
         original number of messages originally specified for this task.
 
-        :param Union[Sequence[can.Message], can.Message] messages:
+        :param messages:
             The messages with the new :attr:`can.Message.data`.
         """
         messages = self._check_and_convert_messages(messages)
@@ -403,7 +421,6 @@ class CyclicSendTask(
 
         self.messages = messages
 
-        header = bytearray()
         body = bytearray()
         header = build_bcm_update_header(
             can_id=self.can_id_with_flags, msg_flags=self.flags, nframes=len(messages)
@@ -413,7 +430,7 @@ class CyclicSendTask(
         log.debug("Sending BCM command")
         send_bcm(self.bcm_socket, header + body)
 
-    def start(self):
+    def start(self) -> None:
         self._tx_setup(self.messages)
 
 
@@ -423,7 +440,14 @@ class MultiRateCyclicSendTask(CyclicSendTask):
 
     """
 
-    def __init__(self, channel, messages, count, initial_period, subsequent_period):
+    def __init__(
+        self,
+        channel: socket.socket,
+        messages: Sequence[Message],
+        count: int,
+        initial_period: float,
+        subsequent_period: float,
+    ):
         super().__init__(channel, messages, subsequent_period)
 
         # Create a low level packed frame to pass to the kernel
@@ -444,7 +468,7 @@ class MultiRateCyclicSendTask(CyclicSendTask):
         send_bcm(self.bcm_socket, header + body)
 
 
-def create_socket():
+def create_socket() -> socket.socket:
     """Creates a raw CAN socket. The socket will
     be returned unbound to any interface.
     """
@@ -455,11 +479,11 @@ def create_socket():
     return sock
 
 
-def bind_socket(sock, channel="can0"):
+def bind_socket(sock: socket.socket, channel: str = "can0") -> None:
     """
     Binds the given socket to the given interface.
 
-    :param socket.socket sock:
+    :param sock:
         The socket to be bound
     :raises OSError:
         If the specified interface isn't found.
@@ -469,13 +493,15 @@ def bind_socket(sock, channel="can0"):
     log.debug("Bound socket.")
 
 
-def capture_message(sock, get_channel=False):
+def capture_message(
+    sock: socket.socket, get_channel: bool = False
+) -> Optional[Message]:
     """
     Captures a message from given socket.
 
-    :param socket.socket sock:
+    :param sock:
         The socket to read a message from.
-    :param bool get_channel:
+    :param get_channel:
         Find out which channel the message comes from.
 
     :return: The received message, or None on failure.
@@ -496,7 +522,7 @@ def capture_message(sock, get_channel=False):
 
     # Fetching the timestamp
     binary_structure = "@LL"
-    res = fcntl.ioctl(sock, SIOCGSTAMP, struct.pack(binary_structure, 0, 0))
+    res = fcntl.ioctl(sock.fileno(), SIOCGSTAMP, struct.pack(binary_structure, 0, 0))
 
     seconds, microseconds = struct.unpack(binary_structure, res)
     timestamp = seconds + microseconds * 1e-6
@@ -545,17 +571,23 @@ class SocketcanBus(BusABC):
     Implements :meth:`can.BusABC._detect_available_configs`.
     """
 
-    def __init__(self, channel="", receive_own_messages=False, fd=False, **kwargs):
+    def __init__(
+        self,
+        channel: str = "",
+        receive_own_messages: bool = False,
+        fd: bool = False,
+        **kwargs,
+    ) -> None:
         """
-        :param str channel:
+        :param channel:
             The can interface name with which to create this bus. An example channel
             would be 'vcan0' or 'can0'.
             An empty string '' will receive messages from all channels.
             In that case any sent messages must be explicitly addressed to a
             channel using :attr:`can.Message.channel`.
-        :param bool receive_own_messages:
+        :param receive_own_messages:
             If transmitted messages should also be received by this bus.
-        :param bool fd:
+        :param fd:
             If CAN-FD frames should be supported.
         :param list can_filters:
             See :meth:`can.BusABC.set_filters`.
@@ -563,7 +595,7 @@ class SocketcanBus(BusABC):
         self.socket = create_socket()
         self.channel = channel
         self.channel_info = "socketcan channel '%s'" % channel
-        self._bcm_sockets = {}
+        self._bcm_sockets: Dict[str, socket.socket] = {}
         self._is_filtered = False
 
         # set the receive_own_messages parameter
@@ -585,7 +617,7 @@ class SocketcanBus(BusABC):
         kwargs.update({"receive_own_messages": receive_own_messages, "fd": fd})
         super().__init__(channel=channel, **kwargs)
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         """Stops all active periodic tasks and closes the socket."""
         self.stop_all_periodic_tasks()
         for channel in self._bcm_sockets:
@@ -595,7 +627,9 @@ class SocketcanBus(BusABC):
         log.debug("Closing raw can socket")
         self.socket.close()
 
-    def _recv_internal(self, timeout):
+    def _recv_internal(
+        self, timeout: Optional[float]
+    ) -> Tuple[Optional[Message], bool]:
         # get all sockets that are ready (can be a list with a single value
         # being self.socket or an empty list if self.socket is not ready)
         try:
@@ -609,7 +643,7 @@ class SocketcanBus(BusABC):
         if ready_receive_sockets:  # not empty or True
             get_channel = self.channel == ""
             msg = capture_message(self.socket, get_channel)
-            if not msg.channel and self.channel:
+            if msg and not msg.channel and self.channel:
                 # Default to our own channel
                 msg.channel = self.channel
             return msg, self._is_filtered
@@ -617,11 +651,11 @@ class SocketcanBus(BusABC):
             # socket wasn't readable or timeout occurred
             return None, self._is_filtered
 
-    def send(self, msg, timeout=None):
+    def send(self, msg: Message, timeout: Optional[float] = None) -> None:
         """Transmit a message to the CAN bus.
 
-        :param can.Message msg: A message object.
-        :param float timeout:
+        :param msg: A message object.
+        :param timeout:
             Wait up to this many seconds for the transmit queue to be ready.
             If not given, the call may fail immediately.
 
@@ -645,7 +679,8 @@ class SocketcanBus(BusABC):
             if not ready:
                 # Timeout
                 break
-            sent = self._send_once(data, msg.channel)
+            channel = str(msg.channel) if msg.channel else None
+            sent = self._send_once(data, channel)
             if sent == len(data):
                 return
             # Not all data were sent, try again with remaining data
@@ -654,7 +689,7 @@ class SocketcanBus(BusABC):
 
         raise can.CanError("Transmit buffer full")
 
-    def _send_once(self, data, channel=None):
+    def _send_once(self, data: bytes, channel: Optional[str] = None) -> int:
         try:
             if self.channel == "" and channel:
                 # Message must be addressed to a specific channel
@@ -665,23 +700,27 @@ class SocketcanBus(BusABC):
             raise can.CanError("Failed to transmit: %s" % exc)
         return sent
 
-    def _send_periodic_internal(self, msgs, period, duration=None):
+    def _send_periodic_internal(
+        self,
+        msgs: Union[Sequence[Message], Message],
+        period: float,
+        duration: Optional[float] = None,
+    ) -> CyclicSendTask:
         """Start sending messages at a given period on this bus.
 
         The kernel's Broadcast Manager SocketCAN API will be used.
 
-        :param Union[Sequence[can.Message], can.Message] messages:
+        :param messages:
             The messages to be sent periodically
-        :param float period:
+        :param period:
             The rate in seconds at which to send the messages.
-        :param float duration:
+        :param duration:
             Approximate duration in seconds to continue sending messages. If
             no duration is provided, the task will continue indefinitely.
 
         :return:
             A started task instance. This can be used to modify the data,
             pause/resume the transmission and to stop the transmission.
-        :rtype: can.interfaces.socketcan.CyclicSendTask
 
         .. note::
 
@@ -693,19 +732,20 @@ class SocketcanBus(BusABC):
         """
         msgs = LimitedDurationCyclicSendTaskABC._check_and_convert_messages(msgs)
 
-        bcm_socket = self._get_bcm_socket(msgs[0].channel or self.channel)
+        msgs_channel = str(msgs[0].channel) if msgs[0].channel else None
+        bcm_socket = self._get_bcm_socket(msgs_channel or self.channel)
         # TODO: The SocketCAN BCM interface treats all cyclic tasks sharing an
         # Arbitration ID as the same Cyclic group. We should probably warn the
         # user instead of overwriting the old group?
         task = CyclicSendTask(bcm_socket, msgs, period, duration)
         return task
 
-    def _get_bcm_socket(self, channel):
+    def _get_bcm_socket(self, channel: str) -> socket.socket:
         if channel not in self._bcm_sockets:
             self._bcm_sockets[channel] = create_bcm_socket(self.channel)
         return self._bcm_sockets[channel]
 
-    def _apply_filters(self, filters):
+    def _apply_filters(self, filters: Optional[can.typechecking.CanFilters]) -> None:
         try:
             self.socket.setsockopt(SOL_CAN_RAW, CAN_RAW_FILTER, pack_filters(filters))
         except socket.error as err:
@@ -719,11 +759,11 @@ class SocketcanBus(BusABC):
         else:
             self._is_filtered = True
 
-    def fileno(self):
+    def fileno(self) -> int:
         return self.socket.fileno()
 
     @staticmethod
-    def _detect_available_configs():
+    def _detect_available_configs() -> List[can.typechecking.AutoDetectedConfig]:
         return [
             {"interface": "socketcan", "channel": channel}
             for channel in find_available_interfaces()
@@ -742,14 +782,14 @@ if __name__ == "__main__":
     #
     log.setLevel(logging.DEBUG)
 
-    def receiver(event):
+    def receiver(event: threading.Event) -> None:
         receiver_socket = create_socket()
         bind_socket(receiver_socket, "vcan0")
         print("Receiver is waiting for a message...")
         event.set()
         print(f"Receiver got: {capture_message(receiver_socket)}")
 
-    def sender(event):
+    def sender(event: threading.Event) -> None:
         event.wait()
         sender_socket = create_socket()
         bind_socket(sender_socket, "vcan0")

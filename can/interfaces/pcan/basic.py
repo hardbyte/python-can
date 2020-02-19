@@ -14,6 +14,8 @@ from ctypes import *
 from string import *
 import platform
 import logging
+import winreg
+
 
 logger = logging.getLogger("can.pcan")
 
@@ -400,6 +402,38 @@ PCAN_TYPE_DNG_EPP = TPCANType(0x03)  # PCAN-Dongle EPP 82C200
 PCAN_TYPE_DNG_SJA = TPCANType(0x05)  # PCAN-Dongle SJA1000
 PCAN_TYPE_DNG_SJA_EPP = TPCANType(0x06)  # PCAN-Dongle EPP SJA1000
 
+# string description of the error codes
+PCAN_DICT_STATUS = {
+    PCAN_ERROR_OK: "OK",
+    PCAN_ERROR_XMTFULL: "XMTFULL",
+    PCAN_ERROR_OVERRUN: "OVERRUN",
+    PCAN_ERROR_BUSLIGHT: "BUSLIGHT",
+    PCAN_ERROR_BUSHEAVY: "BUSHEAVY",
+    PCAN_ERROR_BUSWARNING: "BUSWARNING",
+    PCAN_ERROR_BUSPASSIVE: "BUSPASSIVE",
+    PCAN_ERROR_BUSOFF: "BUSOFF",
+    PCAN_ERROR_ANYBUSERR: "ANYBUSERR",
+    PCAN_ERROR_QRCVEMPTY: "QRCVEMPTY",
+    PCAN_ERROR_QOVERRUN: "QOVERRUN",
+    PCAN_ERROR_QXMTFULL: "QXMTFULL",
+    PCAN_ERROR_REGTEST: "ERR_REGTEST",
+    PCAN_ERROR_NODRIVER: "NODRIVER",
+    PCAN_ERROR_HWINUSE: "HWINUSE",
+    PCAN_ERROR_NETINUSE: "NETINUSE",
+    PCAN_ERROR_ILLHW: "ILLHW",
+    PCAN_ERROR_ILLNET: "ILLNET",
+    PCAN_ERROR_ILLCLIENT: "ILLCLIENT",
+    PCAN_ERROR_ILLHANDLE: "ILLHANDLE",
+    PCAN_ERROR_RESOURCE: "ERR_RESOURCE",
+    PCAN_ERROR_ILLPARAMTYPE: "ILLPARAMTYPE",
+    PCAN_ERROR_ILLPARAMVAL: "ILLPARAMVAL",
+    PCAN_ERROR_UNKNOWN: "UNKNOWN",
+    PCAN_ERROR_ILLDATA: "ILLDATA",
+    PCAN_ERROR_CAUTION: "CAUTION",
+    PCAN_ERROR_INITIALIZE: "ERR_INITIALIZE",
+    PCAN_ERROR_ILLOPERATION: "ILLOPERATION",
+}
+
 
 class TPCANMsg(Structure):
     """
@@ -498,9 +532,17 @@ class PCANBasic:
     """
 
     def __init__(self):
-        # Loads the PCANBasic.dll
+        # Loads the PCANBasic.dll and checks if driver is available
         if platform.system() == "Windows":
             self.__m_dllBasic = windll.LoadLibrary("PCANBasic")
+            aReg = winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE)
+            try:
+                aKey = winreg.OpenKey(aReg, r"SOFTWARE\PEAK-System\PEAK-Drivers")
+                winreg.CloseKey(aKey)
+            except WindowsError:
+                logger.error("Exception: The PEAK-driver couldn't be found!")
+            finally:
+                winreg.CloseKey(aReg)
         elif platform.system() == "Darwin":
             self.__m_dllBasic = cdll.LoadLibrary("libPCBUSB.dylib")
         else:

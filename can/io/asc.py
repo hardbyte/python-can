@@ -18,46 +18,66 @@ from .generic import BaseIOHandler
 
 CAN_MSG_EXT = 0x80000000
 CAN_ID_MASK = 0x1FFFFFFF
+BASE_HEX = 16
+BASE_DEC = 10
 
 logger = logging.getLogger("can.io.asc")
 
 
 class ASCReader(BaseIOHandler):
     """
-    Iterator of CAN messages from a ASC logging file.
+    Iterator of CAN messages from a ASC logging file. Meta data (comments,
+    bus statistics, J1939 Transport Protocol messages) is ignored.
 
     TODO: turn relative timestamps back to absolute form
     """
 
-    def __init__(self, file):
+    def __init__(self, file, base="hex"):
         """
         :param file: a path-like object or as file-like object to read from
                      If this is a file-like object, is has to opened in text
                      read mode, not binary read mode.
+        :param base: Select the base(hex or dec) of id and data.
+                     If the header of the asc file contains base information,
+                     this value will be overwritten. Default "hex".
         """
         super().__init__(file, mode="r")
+        self.base = base
 
     @staticmethod
-    def _extract_can_id(str_can_id):
+    def _extract_can_id(str_can_id, base):
         if str_can_id[-1:].lower() == "x":
             is_extended = True
-            can_id = int(str_can_id[0:-1], 16)
+            can_id = int(str_can_id[0:-1], base)
         else:
             is_extended = False
-            can_id = int(str_can_id, 16)
+            can_id = int(str_can_id, base)
         return can_id, is_extended
 
+    @staticmethod
+    def _check_base(base):
+        if base not in ["hex", "dec"]:
+            raise ValueError('base should be either "hex" or "dec"')
+        return BASE_DEC if base == "dec" else BASE_HEX
+
     def __iter__(self):
+        base = self._check_base(self.base)
         for line in self.file:
             # logger.debug("ASCReader: parsing line: '%s'", line.splitlines()[0])
+            if line.split(" ")[0] == "base":
+                base = self._check_base(line.split(" ")[1])
 
             temp = line.strip()
             if not temp or not temp[0].isdigit():
                 continue
+            is_fd = False
             try:
                 timestamp, channel, dummy = temp.split(
                     None, 2
                 )  # , frameType, dlc, frameData
+                if channel == "CANFD":
+                    timestamp, _, channel, _, dummy = temp.split(None, 4)
+                    is_fd = True
             except ValueError:
                 # we parsed an empty comment
                 continue
@@ -73,11 +93,12 @@ class ASCReader(BaseIOHandler):
             elif (
                 not isinstance(channel, int)
                 or dummy.strip()[0:10].lower() == "statistic:"
+                or dummy.split(None, 1)[0] == "J1939TP"
             ):
                 pass
             elif dummy[-1:].lower() == "r":
                 can_id_str, _ = dummy.split(None, 1)
-                can_id_num, is_extended_id = self._extract_can_id(can_id_str)
+                can_id_num, is_extended_id = self._extract_can_id(can_id_str, base)
                 msg = Message(
                     timestamp=timestamp,
                     arbitration_id=can_id_num & CAN_ID_MASK,
@@ -87,20 +108,37 @@ class ASCReader(BaseIOHandler):
                 )
                 yield msg
             else:
+                brs = None
+                esi = None
+                data_length = 0
                 try:
-                    # this only works if dlc > 0 and thus data is availabe
-                    can_id_str, _, _, dlc, data = dummy.split(None, 4)
+                    # this only works if dlc > 0 and thus data is available
+                    if not is_fd:
+                        can_id_str, _, _, dlc, data = dummy.split(None, 4)
+                    else:
+                        can_id_str, frame_name, brs, esi, dlc, data_length, data = dummy.split(
+                            None, 6
+                        )
+                        if frame_name.isdigit():
+                            # Empty frame_name
+                            can_id_str, brs, esi, dlc, data_length, data = dummy.split(
+                                None, 5
+                            )
                 except ValueError:
                     # but if not, we only want to get the stuff up to the dlc
                     can_id_str, _, _, dlc = dummy.split(None, 3)
                     # and we set data to an empty sequence manually
                     data = ""
-                dlc = int(dlc)
+                dlc = int(dlc, base)
+                if is_fd:
+                    # For fd frames, dlc and data length might not be equal and
+                    # data_length is the actual size of the data
+                    dlc = int(data_length)
                 frame = bytearray()
                 data = data.split()
                 for byte in data[0:dlc]:
-                    frame.append(int(byte, 16))
-                can_id_num, is_extended_id = self._extract_can_id(can_id_str)
+                    frame.append(int(byte, base))
+                can_id_num, is_extended_id = self._extract_can_id(can_id_str, base)
 
                 yield Message(
                     timestamp=timestamp,
@@ -109,7 +147,10 @@ class ASCReader(BaseIOHandler):
                     is_remote_frame=False,
                     dlc=dlc,
                     data=frame,
+                    is_fd=is_fd,
                     channel=channel,
+                    bitrate_switch=is_fd and brs == "1",
+                    error_state_indicator=is_fd and esi == "1",
                 )
         self.stop()
 
@@ -145,7 +186,7 @@ class ASCWriter(BaseIOHandler, Listener):
             "{bit_timing_conf_ext_data:>8}",
         ]
     )
-    FORMAT_DATE = "%a %b %m %I:%M:%S.{} %p %Y"
+    FORMAT_DATE = "%a %b %d %I:%M:%S.{} %p %Y"
     FORMAT_EVENT = "{timestamp: 9.6f} {message}\n"
 
     def __init__(self, file, channel=1):
@@ -160,7 +201,7 @@ class ASCWriter(BaseIOHandler, Listener):
         self.channel = channel
 
         # write start of file header
-        now = datetime.now().strftime("%a %b %m %I:%M:%S.%f %p %Y")
+        now = datetime.now().strftime("%a %b %d %I:%M:%S.%f %p %Y")
         self.file.write("date %s\n" % now)
         self.file.write("base hex  timestamps absolute\n")
         self.file.write("internal events logged\n")

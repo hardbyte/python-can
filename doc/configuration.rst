@@ -11,7 +11,7 @@ In Code
 -------
 
 The ``can`` object exposes an ``rc`` dictionary which can be used to set
-the **interface** and **channel** before importing from ``can.interfaces``.
+the **interface** and **channel**.
 
 ::
 
@@ -19,7 +19,7 @@ the **interface** and **channel** before importing from ``can.interfaces``.
     can.rc['interface'] = 'socketcan'
     can.rc['channel'] = 'vcan0'
     can.rc['bitrate'] = 500000
-    from can.interfaces.interface import Bus
+    from can.interface import Bus
 
     bus = Bus()
 
@@ -79,7 +79,7 @@ The configuration can also contain additional sections (or context):
 
 ::
 
-    from can.interfaces.interface import Bus
+    from can.interface import Bus
 
     hs_bus = Bus(context='HS')
     ms_bus = Bus(context='MS')
