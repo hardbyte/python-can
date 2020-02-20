@@ -71,13 +71,15 @@ class ASCReader(BaseIOHandler):
             if not temp or not temp[0].isdigit():
                 continue
             is_fd = False
+            is_rx = True
             try:
                 timestamp, channel, dummy = temp.split(
                     None, 2
                 )  # , frameType, dlc, frameData
                 if channel == "CANFD":
-                    timestamp, _, channel, _, dummy = temp.split(None, 4)
+                    timestamp, _, channel, direction, dummy = temp.split(None, 4)
                     is_fd = True
+                    is_rx = direction == "Rx"
             except ValueError:
                 # we parsed an empty comment
                 continue
@@ -97,13 +99,14 @@ class ASCReader(BaseIOHandler):
             ):
                 pass
             elif dummy[-1:].lower() == "r":
-                can_id_str, _ = dummy.split(None, 1)
+                can_id_str, direction, _ = dummy.split(None, 2)
                 can_id_num, is_extended_id = self._extract_can_id(can_id_str, base)
                 msg = Message(
                     timestamp=timestamp,
                     arbitration_id=can_id_num & CAN_ID_MASK,
                     is_extended_id=is_extended_id,
                     is_remote_frame=True,
+                    is_rx=direction == "Rx",
                     channel=channel,
                 )
                 yield msg
@@ -114,7 +117,8 @@ class ASCReader(BaseIOHandler):
                 try:
                     # this only works if dlc > 0 and thus data is available
                     if not is_fd:
-                        can_id_str, _, _, dlc, data = dummy.split(None, 4)
+                        can_id_str, direction, _, dlc, data = dummy.split(None, 4)
+                        is_rx = direction == "Rx"
                     else:
                         can_id_str, frame_name, brs, esi, dlc, data_length, data = dummy.split(
                             None, 6
@@ -148,6 +152,7 @@ class ASCReader(BaseIOHandler):
                     dlc=dlc,
                     data=frame,
                     is_fd=is_fd,
+                    is_rx=is_rx,
                     channel=channel,
                     bitrate_switch=is_fd and brs == "1",
                     error_state_indicator=is_fd and esi == "1",
