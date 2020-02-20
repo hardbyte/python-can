@@ -577,6 +577,15 @@ class VectorBus(BusABC):
             )
         return configs
 
+    @staticmethod
+    def popup_vector_hw_configuration(wait_for_finish: int = 0) -> None:
+        """Open vector hardware configuration window.
+
+        :param int wait_for_finish:
+            Time to wait for user input.
+        """
+        xldriver.xlPopupHwConfig(ctypes.c_char_p(), ctypes.c_uint(wait_for_finish))
+
 
 def get_channel_configs():
     if xldriver is None:

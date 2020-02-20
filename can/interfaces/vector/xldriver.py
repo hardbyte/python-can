@@ -229,3 +229,8 @@ xlCanSetChannelOutput = _xlapi_dll.xlCanSetChannelOutput
 xlCanSetChannelOutput.argtypes = [xlclass.XLportHandle, xlclass.XLaccess, ctypes.c_char]
 xlCanSetChannelOutput.restype = xlclass.XLstatus
 xlCanSetChannelOutput.errcheck = check_status
+
+xlPopupHwConfig = _xlapi_dll.xlPopupHwConfig
+xlPopupHwConfig.argtypes = [ctypes.c_char_p, ctypes.c_uint]
+xlPopupHwConfig.restype = xlclass.XLstatus
+xlPopupHwConfig.errcheck = check_status
