@@ -289,7 +289,7 @@ class BLFReader(BaseIOHandler):
                     arbitration_id=can_id & 0x1FFFFFFF,
                     is_extended_id=bool(can_id & CAN_MSG_EXT),
                     is_remote_frame=bool(flags & REMOTE_FLAG),
-                    is_fd=bool(flags & 0x1),
+                    is_fd=bool(fd_flags & 0x1),
                     is_rx=not bool(flags & DIR),
                     bitrate_switch=bool(fd_flags & 0x2),
                     error_state_indicator=bool(fd_flags & 0x4),
