@@ -303,6 +303,6 @@ class ASCWriter(BaseIOHandler, Listener):
                 id=arb_id,
                 dir="Rx" if msg.is_rx else "Tx",
                 dtype=dtype,
-                data=" ".join(data)
+                data=" ".join(data),
             )
         self.log_event(serialized, msg.timestamp)

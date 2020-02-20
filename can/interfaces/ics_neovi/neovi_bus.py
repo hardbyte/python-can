@@ -306,9 +306,7 @@ class NeoViBus(BusABC):
                 dlc=ics_msg.NumberBytesData,
                 is_extended_id=bool(ics_msg.StatusBitField & ics.SPY_STATUS_XTD_FRAME),
                 is_fd=is_fd,
-                is_rx=not bool(
-                    ics_msg.StatusBitField & ics.SPY_STATUS_TX_MSG
-                ),
+                is_rx=not bool(ics_msg.StatusBitField & ics.SPY_STATUS_TX_MSG),
                 is_remote_frame=bool(
                     ics_msg.StatusBitField & ics.SPY_STATUS_REMOTE_FRAME
                 ),
@@ -328,9 +326,7 @@ class NeoViBus(BusABC):
                 dlc=ics_msg.NumberBytesData,
                 is_extended_id=bool(ics_msg.StatusBitField & ics.SPY_STATUS_XTD_FRAME),
                 is_fd=is_fd,
-                is_rx=not bool(
-                    ics_msg.StatusBitField & ics.SPY_STATUS_TX_MSG
-                ),
+                is_rx=not bool(ics_msg.StatusBitField & ics.SPY_STATUS_TX_MSG),
                 is_remote_frame=bool(
                     ics_msg.StatusBitField & ics.SPY_STATUS_REMOTE_FRAME
                 ),
