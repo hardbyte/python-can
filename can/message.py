@@ -42,6 +42,7 @@ class Message:
         "dlc",
         "data",
         "is_fd",
+        "is_rx",
         "bitrate_switch",
         "error_state_indicator",
         "__weakref__",  # support weak references to messages
@@ -58,6 +59,7 @@ class Message:
         dlc: Optional[int] = None,
         data: Optional[typechecking.CanData] = None,
         is_fd: bool = False,
+        is_rx: bool = True,
         bitrate_switch: bool = False,
         error_state_indicator: bool = False,
         check: bool = False,
@@ -81,6 +83,7 @@ class Message:
         self.is_error_frame = is_error_frame
         self.channel = channel
         self.is_fd = is_fd
+        self.is_rx = is_rx
         self.bitrate_switch = bitrate_switch
         self.error_state_indicator = error_state_indicator
 
@@ -114,6 +117,7 @@ class Message:
         flag_string = " ".join(
             [
                 "X" if self.is_extended_id else "S",
+                "Rx" if self.is_rx else "Tx",
                 "E" if self.is_error_frame else " ",
                 "R" if self.is_remote_frame else " ",
                 "F" if self.is_fd else " ",

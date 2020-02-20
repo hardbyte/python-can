@@ -91,6 +91,7 @@ REMOTE_FLAG = 0x80
 EDL = 0x1
 BRS = 0x2
 ESI = 0x4
+DIR = 0x1
 
 TIME_TEN_MICS = 0x00000001
 TIME_ONE_NANS = 0x00000002
@@ -258,6 +259,7 @@ class BLFReader(BaseIOHandler):
                     arbitration_id=can_id & 0x1FFFFFFF,
                     is_extended_id=bool(can_id & CAN_MSG_EXT),
                     is_remote_frame=bool(flags & REMOTE_FLAG),
+                    is_rx=not bool(flags & DIR),
                     dlc=dlc,
                     data=can_data[:dlc],
                     channel=channel - 1,
@@ -287,7 +289,8 @@ class BLFReader(BaseIOHandler):
                     arbitration_id=can_id & 0x1FFFFFFF,
                     is_extended_id=bool(can_id & CAN_MSG_EXT),
                     is_remote_frame=bool(flags & REMOTE_FLAG),
-                    is_fd=bool(fd_flags & 0x1),
+                    is_fd=bool(flags & 0x1),
+                    is_rx=not bool(flags & DIR),
                     bitrate_switch=bool(fd_flags & 0x2),
                     error_state_indicator=bool(fd_flags & 0x4),
                     dlc=dlc2len(dlc),
@@ -399,6 +402,8 @@ class BLFWriter(BaseIOHandler, Listener):
         if msg.is_extended_id:
             arb_id |= CAN_MSG_EXT
         flags = REMOTE_FLAG if msg.is_remote_frame else 0
+        if not msg.is_rx:
+            flags |= DIR
         can_data = bytes(msg.data)
 
         if msg.is_error_frame:

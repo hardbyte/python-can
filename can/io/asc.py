@@ -164,7 +164,7 @@ class ASCWriter(BaseIOHandler, Listener):
     It the first message does not have a timestamp, it is set to zero.
     """
 
-    FORMAT_MESSAGE = "{channel}  {id:<15} Rx   {dtype} {data}"
+    FORMAT_MESSAGE = "{channel}  {id:<15} {dir:<4} {dtype} {data}"
     FORMAT_MESSAGE_FD = " ".join(
         [
             "CANFD",
@@ -276,7 +276,7 @@ class ASCWriter(BaseIOHandler, Listener):
             serialized = self.FORMAT_MESSAGE_FD.format(
                 channel=channel,
                 id=arb_id,
-                dir="Rx",
+                dir="Rx" if msg.is_rx else "Tx",
                 symbolic_name="",
                 brs=1 if msg.bitrate_switch else 0,
                 esi=1 if msg.error_state_indicator else 0,
@@ -294,6 +294,10 @@ class ASCWriter(BaseIOHandler, Listener):
             )
         else:
             serialized = self.FORMAT_MESSAGE.format(
-                channel=channel, id=arb_id, dtype=dtype, data=" ".join(data)
+                channel=channel,
+                id=arb_id,
+                dir="Rx" if msg.is_rx else "Tx",
+                dtype=dtype,
+                data=" ".join(data)
             )
         self.log_event(serialized, msg.timestamp)
