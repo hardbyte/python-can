@@ -71,10 +71,8 @@ The modules in ``python-can`` are:
 +---------------------------------+------------------------------------------------------+
 
 
-Process for creating a new Release
-----------------------------------
-
-Note many of these steps are carried out by the CI system on creating a tag in git.
+Creating a new Release
+----------------------
 
 - Release from the ``master`` branch.
 - Update the library version in ``__init__.py`` using `semantic versioning <http://semver.org>`__.
@@ -84,9 +82,8 @@ Note many of these steps are carried out by the CI system on creating a tag in g
 - For larger changes update ``doc/history.rst``.
 - Sanity check that documentation has stayed inline with code.
 - Create a temporary virtual environment. Run ``python setup.py install`` and ``python setup.py test``.
-- Ensure the ``setuptools`` and ``wheel`` tools are up to date: ``pip install -U setuptools wheel``.
 - Create and upload the distribution: ``python setup.py sdist bdist_wheel``.
-- [Optionally] Sign the packages with gpg ``gpg --detach-sign -a dist/python_can-X.Y.Z-py3-none-any.whl``.
+- Sign the packages with gpg ``gpg --detach-sign -a dist/python_can-X.Y.Z-py3-none-any.whl``.
 - Upload with twine ``twine upload dist/python-can-X.Y.Z*``.
 - In a new virtual env check that the package can be installed with pip: ``pip install python-can==X.Y.Z``.
 - Create a new tag in the repository.

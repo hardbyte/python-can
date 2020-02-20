@@ -126,8 +126,6 @@ jobs:
     - stage: deploy
       name: "PyPi Deployment"
       python: "3.7"
-      before_install:
-        - travis_retry pip install -U wheel setuptools
       deploy:
         provider: pypi
         user: hardbyte
