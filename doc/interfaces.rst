@@ -15,6 +15,7 @@ The available interfaces are:
    interfaces/kvaser
    interfaces/serial
    interfaces/slcan
+   interfaces/robotell
    interfaces/ixxat
    interfaces/pcan
    interfaces/usb2can
