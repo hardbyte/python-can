@@ -35,4 +35,3 @@ BACKENDS.update(
 )
 
 VALID_INTERFACES = frozenset(list(BACKENDS.keys()))
-)
