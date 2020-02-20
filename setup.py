@@ -33,12 +33,7 @@ extras_require = {
 }
 
 tests_require = [
-<<<<<<< HEAD
-<<<<<<< HEAD
-    "pytest~=4.3",
-=======
     "pytest~=5.3",
->>>>>>> b87329983d03b91b16920d47a8b4f90e650ca433
     "pytest-timeout~=1.3",
     "pytest-cov~=2.8",
     # coveragepy==5.0 fails with `Safety level may not be changed inside a transaction`
@@ -49,7 +44,6 @@ tests_require = [
 ] + extras_require["serial"]
 
 extras_require["test"] = tests_require
-=======
     'mock~=2.0',
     'pytest~=4.3',
     'pytest-timeout~=1.3',
@@ -61,7 +55,6 @@ extras_require["test"] = tests_require
 ] + extras_require['serial']
 
 extras_require['test'] = tests_require
->>>>>>> upstream/master
 
 # Check for 'pytest-runner' only if setup.py was invoked with 'test'.
 # This optimizes setup.py for cases when pytest-runner is not needed,
@@ -70,10 +63,7 @@ extras_require['test'] = tests_require
 # See https://pypi.org/project/pytest-runner/#conditional-requirement
 needs_pytest = {"pytest", "test", "ptr"}.intersection(sys.argv)
 pytest_runner = ["pytest-runner"] if needs_pytest else []
-<<<<<<< HEAD
-=======
 
->>>>>>> upstream/master
 
 setup(
     # Description
