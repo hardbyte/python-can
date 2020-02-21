@@ -202,6 +202,7 @@ class Message:
             dlc=self.dlc,
             data=self.data,
             is_fd=self.is_fd,
+            is_rx=self.is_rx,
             bitrate_switch=self.bitrate_switch,
             error_state_indicator=self.error_state_indicator,
         )
@@ -218,6 +219,7 @@ class Message:
             dlc=self.dlc,
             data=deepcopy(self.data, memo),
             is_fd=self.is_fd,
+            is_rx=self.is_rx,
             bitrate_switch=self.bitrate_switch,
             error_state_indicator=self.error_state_indicator,
         )
