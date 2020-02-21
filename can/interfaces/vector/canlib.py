@@ -582,7 +582,7 @@ class VectorBus(BusABC):
         """Open vector hardware configuration window.
 
         :param int wait_for_finish:
-            Time to wait for user input.
+            Time to wait for user input in milliseconds.
         """
         xldriver.xlPopupHwConfig(ctypes.c_char_p(), ctypes.c_uint(wait_for_finish))
 
