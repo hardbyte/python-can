@@ -88,13 +88,18 @@ class VirtualBus(BusABC):
         msg_copy = deepcopy(msg)
         msg_copy.timestamp = time.time()
         msg_copy.channel = self.channel_id
+        msg_copy.is_rx = True
 
         # Add message to all listening on this channel
         all_sent = True
         for bus_queue in self.channel:
+            msg_to_send = msg_copy
+            if bus_queue is self.queue and self.receive_own_messages:
+                msg_to_send = deepcopy(msg_copy)
+                msg_to_send.is_rx = False
             if bus_queue is not self.queue or self.receive_own_messages:
                 try:
-                    bus_queue.put(msg_copy, block=True, timeout=timeout)
+                    bus_queue.put(msg_to_send, block=True, timeout=timeout)
                 except queue.Full:
                     all_sent = False
         if not all_sent:
