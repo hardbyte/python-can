@@ -17,7 +17,7 @@ try:
     import datetime
 
     boottimeEpoch = (
-        uptime.boottime() - datetime.datetime.utcfromtimestamp(0)
+        uptime.boottime() - datetime.datetime.fromtimestamp(0)
     ).total_seconds()
 except ImportError:
     boottimeEpoch = 0
