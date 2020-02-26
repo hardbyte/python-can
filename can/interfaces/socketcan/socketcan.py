@@ -509,10 +509,10 @@ def capture_message(
     # Fetching the Arb ID, DLC and Data
     try:
         if get_channel:
-            cf, addr = sock.recvfrom(CANFD_MTU)
+            cf, _, msg_flags, addr = sock.recvmsg(CANFD_MTU)
             channel = addr[0] if isinstance(addr, tuple) else addr
         else:
-            cf = sock.recv(CANFD_MTU)
+            cf, _, msg_flags, _ = sock.recvmsg(CANFD_MTU)
             channel = None
     except socket.error as exc:
         raise can.CanError("Error receiving: %s" % exc)
@@ -536,6 +536,7 @@ def capture_message(
     is_remote_transmission_request = bool(can_id & CAN_RTR_FLAG)
     is_error_frame = bool(can_id & CAN_ERR_FLAG)
     is_fd = len(cf) == CANFD_MTU
+    is_tx = bool(msg_flags & socket.MSG_DONTROUTE)
     bitrate_switch = bool(flags & CANFD_BRS)
     error_state_indicator = bool(flags & CANFD_ESI)
 
@@ -555,6 +556,7 @@ def capture_message(
         is_remote_frame=is_remote_transmission_request,
         is_error_frame=is_error_frame,
         is_fd=is_fd,
+        is_rx=not is_tx,
         bitrate_switch=bitrate_switch,
         error_state_indicator=error_state_indicator,
         dlc=can_dlc,
