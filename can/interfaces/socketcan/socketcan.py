@@ -536,9 +536,12 @@ def capture_message(
     is_remote_transmission_request = bool(can_id & CAN_RTR_FLAG)
     is_error_frame = bool(can_id & CAN_ERR_FLAG)
     is_fd = len(cf) == CANFD_MTU
-    is_tx = bool(msg_flags & socket.MSG_DONTROUTE)
     bitrate_switch = bool(flags & CANFD_BRS)
     error_state_indicator = bool(flags & CANFD_ESI)
+
+    # https://www.kernel.org/doc/Documentation/networking/can.txt, section 4.7.1:
+    # MSG_DONTROUTE: set when the received frame was created on the local host.
+    is_rx = not bool(msg_flags & socket.MSG_DONTROUTE)
 
     if is_extended_frame_format:
         # log.debug("CAN: Extended")
@@ -556,7 +559,7 @@ def capture_message(
         is_remote_frame=is_remote_transmission_request,
         is_error_frame=is_error_frame,
         is_fd=is_fd,
-        is_rx=not is_tx,
+        is_rx=is_rx,
         bitrate_switch=bitrate_switch,
         error_state_indicator=error_state_indicator,
         dlc=can_dlc,
