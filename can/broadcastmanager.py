@@ -5,7 +5,7 @@ The main entry point to these classes should be through
 :meth:`can.BusABC.send_periodic`.
 """
 
-from typing import Optional, Sequence, Tuple, Union, TYPE_CHECKING
+from typing import Optional, Sequence, Tuple, Union, Callable, TYPE_CHECKING
 
 from can import typechecking
 
@@ -207,6 +207,7 @@ class ThreadBasedCyclicSendTask(
         messages: Union[Sequence[Message], Message],
         period: float,
         duration: Optional[float] = None,
+        error_callback: Optional[Callable[[Exception], None]] = None
     ):
         super().__init__(messages, period, duration)
         self.bus = bus
@@ -214,6 +215,7 @@ class ThreadBasedCyclicSendTask(
         self.stopped = True
         self.thread = None
         self.end_time = time.perf_counter() + duration if duration else None
+        self.error_callback = error_callback
 
         if HAS_EVENTS:
             self.period_ms: int = int(round(period * 1000, 0))
@@ -250,6 +252,8 @@ class ThreadBasedCyclicSendTask(
                     self.bus.send(self.messages[msg_index])
                 except Exception as exc:
                     log.exception(exc)
+                    if self.error_callback:
+                        self.error_callback(exc)
                     break
             if self.end_time is not None and time.perf_counter() >= self.end_time:
                 break
