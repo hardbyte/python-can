@@ -207,7 +207,7 @@ class ThreadBasedCyclicSendTask(
         messages: Union[Sequence[Message], Message],
         period: float,
         duration: Optional[float] = None,
-        error_callback: Optional[Callable[[Exception], None]] = None
+        error_callback: Optional[Callable[[Exception], None]] = None,
     ):
         super().__init__(messages, period, duration)
         self.bus = bus
