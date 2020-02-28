@@ -61,10 +61,12 @@ class LogReader(BaseIOHandler):
             ".db": SqliteReader,
             ".log": CanutilsLogReader,
         }
-        lookup.update({
-            reader.name: reader.load()
-            for reader in iter_entry_points("can.io.message_reader")
-        })
+        lookup.update(
+            {
+                reader.name: reader.load()
+                for reader in iter_entry_points("can.io.message_reader")
+            }
+        )
         suffix = pathlib.PurePath(filename).suffix
         try:
             return lookup[suffix](filename, *args, **kwargs)

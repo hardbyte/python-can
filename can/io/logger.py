@@ -60,10 +60,12 @@ class Logger(BaseIOHandler, Listener):  # pylint: disable=abstract-method
             ".log": CanutilsLogWriter,
             ".txt": Printer,
         }
-        lookup.update({
-            writer.name: writer.load()
-            for writer in iter_entry_points("can.io.message_writer")
-        })
+        lookup.update(
+            {
+                writer.name: writer.load()
+                for writer in iter_entry_points("can.io.message_writer")
+            }
+        )
         suffix = pathlib.PurePath(filename).suffix
         try:
             return lookup[suffix](filename, *args, **kwargs)
