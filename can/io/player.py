@@ -45,6 +45,7 @@ class LogReader(BaseIOHandler):
         This class itself is just a dispatcher, and any positional an keyword
         arguments are passed on to the returned instance.
     """
+
     fetched_plugins = False
     message_readers = {
         ".asc": ASCReader,

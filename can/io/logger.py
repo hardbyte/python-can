@@ -38,6 +38,7 @@ class Logger(BaseIOHandler, Listener):  # pylint: disable=abstract-method
         This class itself is just a dispatcher, and any positional and keyword
         arguments are passed on to the returned instance.
     """
+
     fetched_plugins = False
     message_writers = {
         ".asc": ASCWriter,
