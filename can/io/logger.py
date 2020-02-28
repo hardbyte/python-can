@@ -38,6 +38,15 @@ class Logger(BaseIOHandler, Listener):  # pylint: disable=abstract-method
         This class itself is just a dispatcher, and any positional and keyword
         arguments are passed on to the returned instance.
     """
+    fetched_plugins = False
+    message_writers = {
+        ".asc": ASCWriter,
+        ".blf": BLFWriter,
+        ".csv": CSVWriter,
+        ".db": SqliteWriter,
+        ".log": CanutilsLogWriter,
+        ".txt": Printer,
+    }
 
     @staticmethod
     def __new__(
@@ -52,23 +61,18 @@ class Logger(BaseIOHandler, Listener):  # pylint: disable=abstract-method
         if filename is None:
             return Printer(*args, **kwargs)
 
-        lookup = {
-            ".asc": ASCWriter,
-            ".blf": BLFWriter,
-            ".csv": CSVWriter,
-            ".db": SqliteWriter,
-            ".log": CanutilsLogWriter,
-            ".txt": Printer,
-        }
-        lookup.update(
-            {
-                writer.name: writer.load()
-                for writer in iter_entry_points("can.io.message_writer")
-            }
-        )
+        if not Logger.fetched_plugins:
+            Logger.message_writers.update(
+                {
+                    writer.name: writer.load()
+                    for writer in iter_entry_points("can.io.message_writer")
+                }
+            )
+            Logger.fetched_plugins = True
+
         suffix = pathlib.PurePath(filename).suffix
         try:
-            return lookup[suffix](filename, *args, **kwargs)
+            return Logger.message_writers[suffix](filename, *args, **kwargs)
         except KeyError:
             raise ValueError(
                 f'No write support for this unknown log format "{suffix}"'

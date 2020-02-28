@@ -45,6 +45,14 @@ class LogReader(BaseIOHandler):
         This class itself is just a dispatcher, and any positional an keyword
         arguments are passed on to the returned instance.
     """
+    fetched_plugins = False
+    message_readers = {
+        ".asc": ASCReader,
+        ".blf": BLFReader,
+        ".csv": CSVReader,
+        ".db": SqliteReader,
+        ".log": CanutilsLogReader,
+    }
 
     @staticmethod
     def __new__(cls, filename: "can.typechecking.StringPathLike", *args, **kwargs):
@@ -52,24 +60,18 @@ class LogReader(BaseIOHandler):
         :param filename: the filename/path of the file to read from
         :raises ValueError: if the filename's suffix is of an unknown file type
         """
-        suffix = pathlib.PurePath(filename).suffix
+        if not LogReader.fetched_plugins:
+            LogReader.message_readers.update(
+                {
+                    reader.name: reader.load()
+                    for reader in iter_entry_points("can.io.message_reader")
+                }
+            )
+            LogReader.fetched_plugins = True
 
-        lookup = {
-            ".asc": ASCReader,
-            ".blf": BLFReader,
-            ".csv": CSVReader,
-            ".db": SqliteReader,
-            ".log": CanutilsLogReader,
-        }
-        lookup.update(
-            {
-                reader.name: reader.load()
-                for reader in iter_entry_points("can.io.message_reader")
-            }
-        )
         suffix = pathlib.PurePath(filename).suffix
         try:
-            return lookup[suffix](filename, *args, **kwargs)
+            return LogReader.message_readers[suffix](filename, *args, **kwargs)
         except KeyError:
             raise ValueError(
                 f'No read support for this unknown log format "{suffix}"'
