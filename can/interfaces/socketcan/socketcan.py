@@ -539,8 +539,7 @@ def capture_message(
     bitrate_switch = bool(flags & CANFD_BRS)
     error_state_indicator = bool(flags & CANFD_ESI)
 
-    # https://www.kernel.org/doc/Documentation/networking/can.txt, section 4.7.1:
-    # MSG_DONTROUTE: set when the received frame was created on the local host.
+    # Section 4.7.1: MSG_DONTROUTE: set when the received frame was created on the local host.
     is_rx = not bool(msg_flags & socket.MSG_DONTROUTE)
 
     if is_extended_frame_format:
