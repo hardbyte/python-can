@@ -146,7 +146,7 @@ class ASCWriter(BaseIOHandler, Listener):
         self.channel = channel
 
         # write start of file header
-        now = datetime.now().strftime("%a %b %m %I:%M:%S.%f %p %Y")
+        now = datetime.now().strftime("%a %b %d %I:%M:%S.%f %p %Y")
         self.file.write("date %s\n" % now)
         self.file.write("base hex  timestamps absolute\n")
         self.file.write("internal events logged\n")
