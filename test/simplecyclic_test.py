@@ -7,6 +7,7 @@ This module tests cyclic send tasks.
 
 from time import sleep
 import unittest
+from unittest.mock import MagicMock
 import gc
 
 import can
@@ -150,6 +151,42 @@ class SimpleCyclicSendTaskTest(unittest.TestCase, ComparingMessagesTestCase):
         assert len(bus._periodic_tasks) == 5
 
         bus.shutdown()
+
+    def test_thread_based_cyclic_send_task(self):
+        bus = can.ThreadSafeBus(bustype="virtual")
+        message = can.Message(
+            is_extended_id=False,
+            arbitration_id=0x123,
+            data=[0, 1, 2, 3, 4, 5, 6, 7],
+        )
+
+        # good case, bus is up
+        on_error_mock = MagicMock(return_value=True)
+        task = can.broadcastmanager.ThreadBasedCyclicSendTask(
+            bus, bus._lock_send_periodic, message, 0.1, 3, on_error_mock)
+        task.start()
+        sleep(1)
+        on_error_mock.assert_not_called()
+        task.stop()
+        bus.shutdown()
+
+        # bus has been shutted down
+        on_error_mock.reset_mock()
+        task = can.broadcastmanager.ThreadBasedCyclicSendTask(
+            bus, bus._lock_send_periodic, message, 0.1, 3, on_error_mock)
+        task.start()
+        sleep(1)
+        self.assertTrue(on_error_mock.call_count is 1)
+        task.stop()
+
+        # bus is still shutted down, but on_error returns False
+        on_error_mock = MagicMock(return_value=False)
+        task = can.broadcastmanager.ThreadBasedCyclicSendTask(
+            bus, bus._lock_send_periodic, message, 0.1, 3, on_error_mock)
+        task.start()
+        sleep(1)
+        self.assertTrue(on_error_mock.call_count > 1)
+        task.stop()
 
 
 if __name__ == "__main__":
