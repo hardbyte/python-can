@@ -154,16 +154,15 @@ class SimpleCyclicSendTaskTest(unittest.TestCase, ComparingMessagesTestCase):
 
     def test_thread_based_cyclic_send_task(self):
         bus = can.ThreadSafeBus(bustype="virtual")
-        message = can.Message(
-            is_extended_id=False,
-            arbitration_id=0x123,
-            data=[0, 1, 2, 3, 4, 5, 6, 7],
+        msg = can.Message(
+            is_extended_id=False, arbitration_id=0x123, data=[0, 1, 2, 3, 4, 5, 6, 7]
         )
 
         # good case, bus is up
         on_error_mock = MagicMock(return_value=True)
         task = can.broadcastmanager.ThreadBasedCyclicSendTask(
-            bus, bus._lock_send_periodic, message, 0.1, 3, on_error_mock)
+            bus, bus._lock_send_periodic, msg, 0.1, 3, on_error_mock
+        )
         task.start()
         sleep(1)
         on_error_mock.assert_not_called()
@@ -173,7 +172,8 @@ class SimpleCyclicSendTaskTest(unittest.TestCase, ComparingMessagesTestCase):
         # bus has been shutted down
         on_error_mock.reset_mock()
         task = can.broadcastmanager.ThreadBasedCyclicSendTask(
-            bus, bus._lock_send_periodic, message, 0.1, 3, on_error_mock)
+            bus, bus._lock_send_periodic, msg, 0.1, 3, on_error_mock
+        )
         task.start()
         sleep(1)
         self.assertTrue(on_error_mock.call_count is 1)
@@ -182,7 +182,8 @@ class SimpleCyclicSendTaskTest(unittest.TestCase, ComparingMessagesTestCase):
         # bus is still shutted down, but on_error returns False
         on_error_mock = MagicMock(return_value=False)
         task = can.broadcastmanager.ThreadBasedCyclicSendTask(
-            bus, bus._lock_send_periodic, message, 0.1, 3, on_error_mock)
+            bus, bus._lock_send_periodic, msg, 0.1, 3, on_error_mock
+        )
         task.start()
         sleep(1)
         self.assertTrue(on_error_mock.call_count > 1)
