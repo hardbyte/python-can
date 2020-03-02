@@ -94,9 +94,7 @@ class VirtualBus(BusABC):
             msg_copy = deepcopy(msg)
             msg_copy.timestamp = timestamp
             msg_copy.channel = self.channel_id
-            msg_copy.is_rx = True
-            if bus_queue is self.queue:
-                msg_copy.is_rx = False
+            msg_copy.is_rx = bus_queue is not self.queue
             try:
                 bus_queue.put(msg_copy, block=True, timeout=timeout)
             except queue.Full:
