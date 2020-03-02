@@ -244,27 +244,6 @@ class CyclicSocketCan(unittest.TestCase):
         with self.assertRaises(ValueError):
             task = self._send_bus.send_periodic(messages, self.PERIOD)
 
-    def test_create_same_id_raises_exception(self):
-        messages_a = can.Message(
-            arbitration_id=0x401,
-            data=[0x11, 0x11, 0x11, 0x11, 0x11, 0x11],
-            is_extended_id=False,
-        )
-
-        messages_b = can.Message(
-            arbitration_id=0x401,
-            data=[0x22, 0x22, 0x22, 0x22, 0x22, 0x22],
-            is_extended_id=False,
-        )
-
-        task_a = self._send_bus.send_periodic(messages_a, 1)
-        self.assertIsInstance(task_a, can.broadcastmanager.CyclicSendTaskABC)
-
-        # The second one raises a ValueError when we attempt to create a new
-        # Task, since it has the same arbitration ID.
-        with self.assertRaises(ValueError):
-            task_b = self._send_bus.send_periodic(messages_b, 1)
-
     def test_modify_data_list(self):
         messages_odd = []
         messages_odd.append(
