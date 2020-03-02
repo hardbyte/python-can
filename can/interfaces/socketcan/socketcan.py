@@ -7,6 +7,7 @@ At the end of the file the usage of the internal methods is shown.
 
 from typing import Dict, List, Optional, Sequence, Tuple, Type, Union
 
+import threading
 import logging
 import ctypes
 import ctypes.util
@@ -162,7 +163,7 @@ def build_can_frame(msg: Message) -> bytes:
         __u8    data[CANFD_MAX_DLEN] __attribute__((aligned(8)));
     };
     """
-    can_id = _add_flags_to_can_id(msg)
+    can_id = _compose_arbitration_id(msg)
     flags = 0
     if msg.bitrate_switch:
         flags |= CANFD_BRS
@@ -286,7 +287,18 @@ def send_bcm(bcm_socket: socket.socket, data: bytes) -> int:
             raise e
 
 
-def _add_flags_to_can_id(message: Message) -> int:
+GLOBAL_TASK_ID = 0
+TASK_LOCK = threading.Lock()
+
+
+def _compose_next_task_id() -> int:
+    with TASK_LOCK:
+        global GLOBAL_TASK_ID
+        GLOBAL_TASK_ID += 1
+        return GLOBAL_TASK_ID
+
+
+def _compose_arbitration_id(message: Message) -> int:
     can_id = message.arbitration_id
     if message.is_extended_id:
         log.debug("sending an extended id type message")
@@ -297,7 +309,6 @@ def _add_flags_to_can_id(message: Message) -> int:
     if message.is_error_frame:
         log.debug("sending error frame")
         can_id |= CAN_ERR_FLAG
-
     return can_id
 
 
@@ -341,7 +352,7 @@ class CyclicSendTask(
     def _tx_setup(self, messages: Sequence[Message]) -> None:
         # Create a low level packed frame to pass to the kernel
         body = bytearray()
-        self.can_id_with_flags = _add_flags_to_can_id(messages[0])
+        self.task_id = _compose_next_task_id()
         self.flags = CAN_FD_FRAME if messages[0].is_fd else 0
 
         if self.duration:
@@ -353,39 +364,8 @@ class CyclicSendTask(
             ival1 = 0.0
             ival2 = self.period
 
-        # First do a TX_READ before creating a new task, and check if we get
-        # EINVAL. If so, then we are referring to a CAN message with the same
-        # ID
-        check_header = build_bcm_header(
-            opcode=CAN_BCM_TX_READ,
-            flags=0,
-            count=0,
-            ival1_seconds=0,
-            ival1_usec=0,
-            ival2_seconds=0,
-            ival2_usec=0,
-            can_id=self.can_id_with_flags,
-            nframes=0,
-        )
-        try:
-            self.bcm_socket.send(check_header)
-        except OSError as e:
-            if e.errno != errno.EINVAL:
-                raise e
-        else:
-            raise ValueError(
-                "A periodic Task for Arbitration ID {} has already been created".format(
-                    messages[0].arbitration_id
-                )
-            )
-
         header = build_bcm_transmit_header(
-            self.can_id_with_flags,
-            count,
-            ival1,
-            ival2,
-            self.flags,
-            nframes=len(messages),
+            self.task_id, count, ival1, ival2, self.flags, nframes=len(messages)
         )
         for message in messages:
             body += build_can_frame(message)
@@ -401,7 +381,7 @@ class CyclicSendTask(
         """
         log.debug("Stopping periodic task")
 
-        stopframe = build_bcm_tx_delete_header(self.can_id_with_flags, self.flags)
+        stopframe = build_bcm_tx_delete_header(self.task_id, self.flags)
         send_bcm(self.bcm_socket, stopframe)
 
     def modify_data(self, messages: Union[Sequence[Message], Message]) -> None:
@@ -423,7 +403,7 @@ class CyclicSendTask(
 
         body = bytearray()
         header = build_bcm_update_header(
-            can_id=self.can_id_with_flags, msg_flags=self.flags, nframes=len(messages)
+            can_id=self.task_id, msg_flags=self.flags, nframes=len(messages)
         )
         for message in messages:
             body += build_can_frame(message)
@@ -452,7 +432,7 @@ class MultiRateCyclicSendTask(CyclicSendTask):
 
         # Create a low level packed frame to pass to the kernel
         header = build_bcm_transmit_header(
-            self.can_id_with_flags,
+            self.task_id,
             count,
             initial_period,
             subsequent_period,
@@ -734,9 +714,6 @@ class SocketcanBus(BusABC):
 
         msgs_channel = str(msgs[0].channel) if msgs[0].channel else None
         bcm_socket = self._get_bcm_socket(msgs_channel or self.channel)
-        # TODO: The SocketCAN BCM interface treats all cyclic tasks sharing an
-        # Arbitration ID as the same Cyclic group. We should probably warn the
-        # user instead of overwriting the old group?
         task = CyclicSendTask(bcm_socket, msgs, period, duration)
         return task
 
