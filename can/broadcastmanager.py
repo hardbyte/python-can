@@ -212,7 +212,7 @@ class ThreadBasedCyclicSendTask(
         """Transmits `messages` with a `period` seconds for `duration` seconds on a `bus`.
 
         The `on_error` is called if any error happens on `bus` while sending `messages`.
-        If `on_error` present, and returns ``True`` when invoked, thread is
+        If `on_error` present, and returns ``False`` when invoked, thread is
         stopped immediately, otherwise, thread continuiously tries to send `messages`
         ignoring errors on a `bus`. Absence of `on_error` means that thread exits immediately
         on error.
@@ -266,7 +266,7 @@ class ThreadBasedCyclicSendTask(
                 except Exception as exc:
                     log.exception(exc)
                     if self.on_error:
-                        if self.on_error(exc) is True:
+                        if not self.on_error(exc):
                             break
                     else:
                         break
