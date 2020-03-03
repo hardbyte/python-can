@@ -125,11 +125,11 @@ class Back2BackTestCase(unittest.TestCase):
         msg = can.Message(is_extended_id=False, arbitration_id=0x300, data=[4, 5, 6])
         self._send_and_receive(msg)
 
-    @unittest.skipUnless(
-        INTERFACE_1 == "virtual",
-        "Message direction not yet implemented for all interface types",
-    )
     def test_message_direction_and_instances(self):
+        if self.INTERFACE_1 != "virtual":
+            raise unittest.SkipTest(
+                "Message direction not yet implemented for socketcan"
+            )
         bus3 = can.Bus(
             channel=self.CHANNEL_2,
             bustype=self.INTERFACE_2,
