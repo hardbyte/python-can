@@ -125,7 +125,9 @@ class Back2BackTestCase(unittest.TestCase):
         msg = can.Message(is_extended_id=False, arbitration_id=0x300, data=[4, 5, 6])
         self._send_and_receive(msg)
 
-    def test_message_direction_and_instances(self):
+    def test_message_direction(self):
+        # Verify that own message received has is_rx set to False while message
+        # received on the other virtual interfaces have is_rx set to True
         if self.INTERFACE_1 != "virtual":
             raise unittest.SkipTest(
                 "Message direction not yet implemented for socketcan"
@@ -147,16 +149,36 @@ class Back2BackTestCase(unittest.TestCase):
             recv_msg_bus2 = self.bus2.recv(self.TIMEOUT)
             self_recv_msg_bus3 = bus3.recv(self.TIMEOUT)
 
-            # Verify that own message received has is_rx set to False while
-            # message received on the other virtual interfaces has is_rx set to
-            # True
             self.assertEqual(recv_msg_bus1.is_rx, True)
             self.assertEqual(recv_msg_bus2.is_rx, True)
             self.assertEqual(self_recv_msg_bus3.is_rx, False)
+        finally:
+            bus3.shutdown()
+
+    def test_unique_message_instances(self):
+        # Verify that we have a different instances of message for each bus
+        if self.INTERFACE_1 != "virtual":
+            raise unittest.SkipTest("Not relevant for socketcan")
+        bus3 = can.Bus(
+            channel=self.CHANNEL_2,
+            bustype=self.INTERFACE_2,
+            bitrate=self.BITRATE,
+            fd=TEST_CAN_FD,
+            single_handle=True,
+            receive_own_messages=True,
+        )
+        try:
+            msg = can.Message(
+                is_extended_id=False, arbitration_id=0x300, data=[2, 1, 3]
+            )
+            bus3.send(msg)
+            recv_msg_bus1 = self.bus1.recv(self.TIMEOUT)
+            recv_msg_bus2 = self.bus2.recv(self.TIMEOUT)
+            self_recv_msg_bus3 = bus3.recv(self.TIMEOUT)
+
             self._check_received_message(recv_msg_bus1, recv_msg_bus2)
             self._check_received_message(recv_msg_bus2, self_recv_msg_bus3)
 
-            # Verify that we have a different instances of message for each bus
             recv_msg_bus1.data[0] = 4
             self.assertNotEqual(recv_msg_bus1.data, recv_msg_bus2.data)
             self.assertEqual(recv_msg_bus2.data, self_recv_msg_bus3.data)
