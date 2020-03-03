@@ -149,9 +149,9 @@ class Back2BackTestCase(unittest.TestCase):
             recv_msg_bus2 = self.bus2.recv(self.TIMEOUT)
             self_recv_msg_bus3 = bus3.recv(self.TIMEOUT)
 
-            self.assertEqual(recv_msg_bus1.is_rx, True)
-            self.assertEqual(recv_msg_bus2.is_rx, True)
-            self.assertEqual(self_recv_msg_bus3.is_rx, False)
+            self.assertTrue(recv_msg_bus1.is_rx)
+            self.assertTrue(recv_msg_bus2.is_rx)
+            self.assertFalse(self_recv_msg_bus3.is_rx)
         finally:
             bus3.shutdown()
 
