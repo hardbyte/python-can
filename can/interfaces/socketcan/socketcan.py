@@ -710,9 +710,7 @@ class SocketcanBus(BusABC):
         return task
 
     def _get_next_task_id(self) -> int:
-        if self._task_id >= 2 ** 11 - 1:
-            self._task_id = 0
-        self._task_id += 1
+        self._task_id = (self._task_id + 1) % (2 ** 11 - 1)
         return self._task_id
 
     def _get_bcm_socket(self, channel: str) -> socket.socket:
