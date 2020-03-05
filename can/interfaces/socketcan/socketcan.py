@@ -7,7 +7,6 @@ At the end of the file the usage of the internal methods is shown.
 
 from typing import Dict, List, Optional, Sequence, Tuple, Type, Union
 
-import threading
 import logging
 import ctypes
 import ctypes.util
@@ -287,17 +286,6 @@ def send_bcm(bcm_socket: socket.socket, data: bytes) -> int:
             raise e
 
 
-GLOBAL_TASK_ID = 0
-TASK_LOCK = threading.Lock()
-
-
-def _compose_next_task_id() -> int:
-    with TASK_LOCK:
-        global GLOBAL_TASK_ID
-        GLOBAL_TASK_ID += 1
-        return GLOBAL_TASK_ID
-
-
 def _compose_arbitration_id(message: Message) -> int:
     can_id = message.arbitration_id
     if message.is_extended_id:
@@ -327,6 +315,7 @@ class CyclicSendTask(
     def __init__(
         self,
         bcm_socket: socket.socket,
+        task_id: int,
         messages: Union[Sequence[Message], Message],
         period: float,
         duration: Optional[float] = None,
@@ -347,12 +336,12 @@ class CyclicSendTask(
         super().__init__(messages, period, duration)
 
         self.bcm_socket = bcm_socket
+        self.task_id = task_id
         self._tx_setup(self.messages)
 
     def _tx_setup(self, messages: Sequence[Message]) -> None:
         # Create a low level packed frame to pass to the kernel
         body = bytearray()
-        self.task_id = _compose_next_task_id()
         self.flags = CAN_FD_FRAME if messages[0].is_fd else 0
 
         if self.duration:
@@ -423,12 +412,13 @@ class MultiRateCyclicSendTask(CyclicSendTask):
     def __init__(
         self,
         channel: socket.socket,
+        task_id: int,
         messages: Sequence[Message],
         count: int,
         initial_period: float,
         subsequent_period: float,
     ):
-        super().__init__(channel, messages, subsequent_period)
+        super().__init__(channel, task_id, messages, subsequent_period)
 
         # Create a low level packed frame to pass to the kernel
         header = build_bcm_transmit_header(
@@ -577,6 +567,7 @@ class SocketcanBus(BusABC):
         self.channel_info = "socketcan channel '%s'" % channel
         self._bcm_sockets: Dict[str, socket.socket] = {}
         self._is_filtered = False
+        self._task_id = 0
 
         # set the receive_own_messages parameter
         try:
@@ -714,8 +705,15 @@ class SocketcanBus(BusABC):
 
         msgs_channel = str(msgs[0].channel) if msgs[0].channel else None
         bcm_socket = self._get_bcm_socket(msgs_channel or self.channel)
-        task = CyclicSendTask(bcm_socket, msgs, period, duration)
+        task_id = self._get_next_task_id()
+        task = CyclicSendTask(bcm_socket, task_id, msgs, period, duration)
         return task
+
+    def _get_next_task_id(self) -> int:
+        if self._task_id >= 2 ** 11 - 1:
+            self._task_id = 0
+        self._task_id += 1
+        return self._task_id
 
     def _get_bcm_socket(self, channel: str) -> socket.socket:
         if channel not in self._bcm_sockets:

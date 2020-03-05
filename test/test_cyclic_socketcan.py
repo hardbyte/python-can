@@ -244,6 +244,55 @@ class CyclicSocketCan(unittest.TestCase):
         with self.assertRaises(ValueError):
             task = self._send_bus.send_periodic(messages, self.PERIOD)
 
+    def test_create_same_id(self):
+        messages_a = can.Message(
+            arbitration_id=0x401,
+            data=[0x11, 0x11, 0x11, 0x11, 0x11, 0x11],
+            is_extended_id=False,
+        )
+
+        messages_b = can.Message(
+            arbitration_id=0x401,
+            data=[0x22, 0x22, 0x22, 0x22, 0x22, 0x22],
+            is_extended_id=False,
+        )
+
+        task_a = self._send_bus.send_periodic(messages_a, self.PERIOD)
+        self.assertIsInstance(task_a, can.broadcastmanager.CyclicSendTaskABC)
+        task_b = self._send_bus.send_periodic(messages_b, self.PERIOD)
+        self.assertIsInstance(task_b, can.broadcastmanager.CyclicSendTaskABC)
+
+        time.sleep(self.PERIOD * 4)
+
+        task_a.stop()
+        task_b.stop()
+
+        msgs = []
+        for _ in range(4):
+            msg = self._recv_bus.recv(self.PERIOD * 2)
+            self.assertIsNotNone(msg)
+
+            msgs.append(msg)
+
+        self.assertTrue(len(msgs) >= 4)
+
+        # Both messages should be recevied on the bus,
+        # even with the same arbitration id
+        msg_a_data_present = msg_b_data_present = False
+        for rx_message in msgs:
+            self.assertTrue(
+                rx_message.arbitration_id
+                == messages_a.arbitration_id
+                == messages_b.arbitration_id
+            )
+            if rx_message.data == messages_a.data:
+                msg_a_data_present = True
+            if rx_message.data == messages_b.data:
+                msg_b_data_present = True
+
+        self.assertTrue(msg_a_data_present)
+        self.assertTrue(msg_b_data_present)
+
     def test_modify_data_list(self):
         messages_odd = []
         messages_odd.append(
