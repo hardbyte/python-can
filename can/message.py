@@ -112,7 +112,7 @@ class Message(object):
         if is_extended_id is not None:
             self.is_extended_id = is_extended_id
         else:
-            self.is_extended_id = True if extended_id is None else extended_id
+            self.is_extended_id = False if extended_id is None else extended_id
 
         self.is_remote_frame = is_remote_frame
         self.is_error_frame = is_error_frame
