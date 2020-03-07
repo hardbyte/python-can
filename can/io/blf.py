@@ -220,6 +220,14 @@ class BLFReader(BaseIOHandler):
         # Loop until a struct unpack raises an exception
         while True:
             self._pos = pos
+            #fix padding
+            if pos + obj_header_base_size > max_pos:
+                # This object continues in the next container
+                return
+            for i in range(4):
+                if data[pos+i:pos+i+4] == b"LOBJ":
+                    break
+            pos += i
             header = unpack_obj_header_base(data, pos)
             # print(header)
             signature, _, header_version, obj_size, obj_type = header
@@ -228,9 +236,6 @@ class BLFReader(BaseIOHandler):
 
             # Calculate position of next object
             next_pos = pos + obj_size
-            if obj_type != CAN_FD_MESSAGE_64:
-                # Add padding bytes
-                next_pos += obj_size % 4
             if next_pos > max_pos:
                 # This object continues in the next container
                 return
