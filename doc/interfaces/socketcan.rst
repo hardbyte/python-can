@@ -196,6 +196,17 @@ The implementation features efficient filtering of can_id's. That filtering
 occurs in the kernel and is much much more efficient than filtering messages
 in Python.
 
+Example defining two filters, one to pass 11-bit ID 0x451, the other to pass 29-bit ID 0xA0000:
+
+.. code-block:: python
+
+    filters = [{"can_id": 0x451, "can_mask":0x7FF,"extended":False},{"can_id": 0xA0000, "can_mask":0x1FFFFFFF,"extended":True}]
+    bus = can.interface.Bus(channel='can0', bustype='socketcan_native',can_filters=filters)
+
+Examples of CAN ID filtering and masking can be found `here <http://www.cse.dmu.ac.uk/~eg/tele/CanbusIDandMask.html>`_.
+
+ 
+        
 Broadcast Manager
 -----------------
 
