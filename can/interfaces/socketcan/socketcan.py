@@ -509,10 +509,10 @@ def capture_message(
     # Fetching the Arb ID, DLC and Data
     try:
         if get_channel:
-            cf, addr = sock.recvfrom(CANFD_MTU)
+            cf, _, msg_flags, addr = sock.recvmsg(CANFD_MTU)
             channel = addr[0] if isinstance(addr, tuple) else addr
         else:
-            cf = sock.recv(CANFD_MTU)
+            cf, _, msg_flags, _ = sock.recvmsg(CANFD_MTU)
             channel = None
     except socket.error as exc:
         raise can.CanError("Error receiving: %s" % exc)
@@ -539,6 +539,9 @@ def capture_message(
     bitrate_switch = bool(flags & CANFD_BRS)
     error_state_indicator = bool(flags & CANFD_ESI)
 
+    # Section 4.7.1: MSG_DONTROUTE: set when the received frame was created on the local host.
+    is_rx = not bool(msg_flags & socket.MSG_DONTROUTE)
+
     if is_extended_frame_format:
         # log.debug("CAN: Extended")
         # TODO does this depend on SFF or EFF?
@@ -555,6 +558,7 @@ def capture_message(
         is_remote_frame=is_remote_transmission_request,
         is_error_frame=is_error_frame,
         is_fd=is_fd,
+        is_rx=is_rx,
         bitrate_switch=bitrate_switch,
         error_state_indicator=error_state_indicator,
         dlc=can_dlc,
