@@ -14,6 +14,7 @@ import select
 import socket
 import struct
 import time
+import threading
 import errno
 
 log = logging.getLogger(__name__)
@@ -353,6 +354,8 @@ class CyclicSendTask(
             ival1 = 0.0
             ival2 = self.period
 
+        self._check_bcm_task()
+
         header = build_bcm_transmit_header(
             self.task_id, count, ival1, ival2, self.flags, nframes=len(messages)
         )
@@ -360,6 +363,32 @@ class CyclicSendTask(
             body += build_can_frame(message)
         log.debug("Sending BCM command")
         send_bcm(self.bcm_socket, header + body)
+
+    def _check_bcm_task(self):
+        # Do a TX_READ on a task ID, and check if we get EINVAL. If so,
+        # then we are referring to a CAN message with the existing ID
+        check_header = build_bcm_header(
+            opcode=CAN_BCM_TX_READ,
+            flags=0,
+            count=0,
+            ival1_seconds=0,
+            ival1_usec=0,
+            ival2_seconds=0,
+            ival2_usec=0,
+            can_id=self.task_id,
+            nframes=0,
+        )
+        try:
+            self.bcm_socket.send(check_header)
+        except OSError as e:
+            if e.errno != errno.EINVAL:
+                raise e
+        else:
+            raise ValueError(
+                "A periodic task for Task ID {} is already in progress by SocketCAN Linux layer".format(
+                    self.task_id
+                )
+            )
 
     def stop(self) -> None:
         """Send a TX_DELETE message to cancel this task.
@@ -568,6 +597,7 @@ class SocketcanBus(BusABC):
         self._bcm_sockets: Dict[str, socket.socket] = {}
         self._is_filtered = False
         self._task_id = 0
+        self._task_id_guard = threading.Lock()
 
         # set the receive_own_messages parameter
         try:
@@ -710,8 +740,9 @@ class SocketcanBus(BusABC):
         return task
 
     def _get_next_task_id(self) -> int:
-        self._task_id = (self._task_id + 1) % (2 ** 11 - 1)
-        return self._task_id
+        with self._task_id_guard:
+            self._task_id = (self._task_id + 1) % (2 ** 32 - 1)
+            return self._task_id
 
     def _get_bcm_socket(self, channel: str) -> socket.socket:
         if channel not in self._bcm_sockets:
