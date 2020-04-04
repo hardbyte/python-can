@@ -85,18 +85,20 @@ class VirtualBus(BusABC):
     def send(self, msg, timeout=None):
         self._check_if_open()
 
-        msg_copy = deepcopy(msg)
-        msg_copy.timestamp = time.time()
-        msg_copy.channel = self.channel_id
-
+        timestamp = time.time()
         # Add message to all listening on this channel
         all_sent = True
         for bus_queue in self.channel:
-            if bus_queue is not self.queue or self.receive_own_messages:
-                try:
-                    bus_queue.put(msg_copy, block=True, timeout=timeout)
-                except queue.Full:
-                    all_sent = False
+            if bus_queue is self.queue and not self.receive_own_messages:
+                continue
+            msg_copy = deepcopy(msg)
+            msg_copy.timestamp = timestamp
+            msg_copy.channel = self.channel_id
+            msg_copy.is_rx = bus_queue is not self.queue
+            try:
+                bus_queue.put(msg_copy, block=True, timeout=timeout)
+            except queue.Full:
+                all_sent = False
         if not all_sent:
             raise CanError("Could not send message to one or more recipients")
 

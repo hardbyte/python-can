@@ -240,6 +240,14 @@ class TestVectorBus(unittest.TestCase):
         can.interfaces.vector.canlib.xldriver.xlDeactivateChannel.assert_called()
         can.interfaces.vector.canlib.xldriver.xlActivateChannel.assert_called()
 
+    def test_popup_hw_cfg(self) -> None:
+        canlib.xldriver.xlPopupHwConfig = Mock()
+        canlib.VectorBus.popup_vector_hw_configuration(10)
+        assert canlib.xldriver.xlPopupHwConfig.called
+        args, kwargs = canlib.xldriver.xlPopupHwConfig.call_args
+        assert isinstance(args[0], ctypes.c_char_p)
+        assert isinstance(args[1], ctypes.c_uint)
+
     def test_called_without_testing_argument(self) -> None:
         """This tests if an exception is thrown when we are not running on Windows."""
         if os.name != "nt":
