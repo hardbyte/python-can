@@ -323,6 +323,8 @@ class CyclicSendTask(
     ):
         """
         :param bcm_socket: An open BCM socket on the desired CAN channel.
+        :param task_id:
+            The identifier used to uniquely reference particular cyclic send task.
         :param messages:
             The messages to be sent periodically.
         :param period:
