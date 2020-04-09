@@ -2,7 +2,7 @@ SocketCAN
 =========
 
 The `SocketCAN`_ documentation can be found in the Linux kernel docs at
-``networking`` directory. Hereafter is quote from SocketCAN Linux document::
+``networking`` directory. Quoting from the SocketCAN Linux documentation::
 
 > The socketcan package is an implementation of CAN protocols
 > (Controller Area Network) for Linux.  CAN is a networking technology
