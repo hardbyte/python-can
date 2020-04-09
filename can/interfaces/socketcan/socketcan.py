@@ -727,15 +727,23 @@ class SocketcanBus(BusABC):
     ) -> CyclicSendTask:
         """Start sending messages at a given period on this bus.
 
-        The Linux kernel's Broadcast Manager SocketCAN API is used.
+        The Linux kernel's Broadcast Manager SocketCAN API is used to schedule
+        periodic sending of CAN messages. The wrapping 32-bit counter (see
+        :meth:`~_get_next_task_id()`) designated to distinguish different
+        :class:`CyclicSendTask` within BCM provides flexibility to schedule
+        CAN messages sending with the same CAN ID, but different CAN data.
 
         :param messages:
-            The messages to be sent periodically
+            The message(s) to be sent periodically.
         :param period:
             The rate in seconds at which to send the messages.
         :param duration:
             Approximate duration in seconds to continue sending messages. If
             no duration is provided, the task will continue indefinitely.
+
+        :raises ValueError:
+            If task identifier passed to :class:`CyclicSendTask` can't be used
+            to schedule new task in Linux BCM.
 
         :return:
             A :class:`CyclicSendTask` task instance. This can be used to modify the data,
