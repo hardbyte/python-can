@@ -67,7 +67,7 @@ This thread safe version of the :class:`~can.BusABC` class can be used by multip
 Sending and receiving is locked separately to avoid unnecessary delays.
 Conflicting calls are executed by blocking until the bus is accessible.
 
-It can be used exactly like the normal :class:`~can.BusABC`:
+It can be used exactly like the normal :class:`~can.BusABC`::
 
     # 'socketcan' is only an example interface, it works with all the others too
     my_bus = can.ThreadSafeBus(interface='socketcan', channel='vcan0')

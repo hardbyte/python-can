@@ -310,7 +310,6 @@ class CyclicSendTask(
         - setting of a task duration
         - modifying the data
         - stopping then subsequent restarting of the task
-
     """
 
     def __init__(
@@ -321,10 +320,12 @@ class CyclicSendTask(
         period: float,
         duration: Optional[float] = None,
     ):
-        """
+        """Construct and :meth:`~start` a task.
+
         :param bcm_socket: An open BCM socket on the desired CAN channel.
         :param task_id:
-            The identifier used to uniquely reference particular cyclic send task.
+            The identifier used to uniquely reference particular cyclic send task
+            within Linux BCM.
         :param messages:
             The messages to be sent periodically.
         :param period:
@@ -393,11 +394,11 @@ class CyclicSendTask(
             )
 
     def stop(self) -> None:
-        """Send a TX_DELETE message to cancel this task.
+        """Stop a task by sending TX_DELETE message to Linux kernel.
 
         This will delete the entry for the transmission of the CAN-message
-        with the specified can_id CAN identifier. The message length for the command
-        TX_DELETE is {[bcm_msg_head]} (only the header).
+        with the specified :attr:`~task_id` identifier. The message length
+        for the command TX_DELETE is {[bcm_msg_head]} (only the header).
         """
         log.debug("Stopping periodic task")
 
@@ -405,13 +406,14 @@ class CyclicSendTask(
         send_bcm(self.bcm_socket, stopframe)
 
     def modify_data(self, messages: Union[Sequence[Message], Message]) -> None:
-        """Update the contents of the periodically sent messages.
+        """Update the contents of the periodically sent CAN messages by
+        sending TX_SETUP message to Linux kernel.
 
-        Note: The messages must all have the same
-        :attr:`~can.Message.arbitration_id` like the first message.
-
-        Note: The number of new cyclic messages to be sent must be equal to the
+        The number of new cyclic messages to be sent must be equal to the
         original number of messages originally specified for this task.
+
+        .. note:: The messages must all have the same
+                  :attr:`~can.Message.arbitration_id` like the first message.
 
         :param messages:
             The messages with the new :attr:`can.Message.data`.
@@ -431,6 +433,14 @@ class CyclicSendTask(
         send_bcm(self.bcm_socket, header + body)
 
     def start(self) -> None:
+        """Start a periodic task by sending TX_SETUP message to Linux kernel.
+
+        It verifies presence of the particular BCM task through sending TX_READ
+        message to Linux kernel prior to scheduling.
+
+        :raises ValueError:
+            If the task referenced by :attr:`~task_id` is already running.
+        """
         self._tx_setup(self.messages)
 
 
@@ -572,8 +582,10 @@ def capture_message(
 
 
 class SocketcanBus(BusABC):
-    """
-    Implements :meth:`can.BusABC._detect_available_configs`.
+    """ A SocketCAN interface to CAN.
+
+    It implements :meth:`can.BusABC._detect_available_configs` to search for
+    available interfaces.
     """
 
     def __init__(
@@ -715,7 +727,7 @@ class SocketcanBus(BusABC):
     ) -> CyclicSendTask:
         """Start sending messages at a given period on this bus.
 
-        The kernel's Broadcast Manager SocketCAN API will be used.
+        The Linux kernel's Broadcast Manager SocketCAN API is used.
 
         :param messages:
             The messages to be sent periodically
@@ -726,7 +738,7 @@ class SocketcanBus(BusABC):
             no duration is provided, the task will continue indefinitely.
 
         :return:
-            A started task instance. This can be used to modify the data,
+            A :class:`CyclicSendTask` task instance. This can be used to modify the data,
             pause/resume the transmission and to stop the transmission.
 
         .. note::
@@ -735,7 +747,6 @@ class SocketcanBus(BusABC):
             be exactly the same as the duration specified by the user. In
             general the message will be sent at the given rate until at
             least *duration* seconds.
-
         """
         msgs = LimitedDurationCyclicSendTaskABC._check_and_convert_messages(msgs)
 
