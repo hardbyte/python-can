@@ -5,6 +5,8 @@ virtual CAN interface for testing purposes.
 Any VirtualBus instances connecting to the same channel
 and reside in the same process will receive the same messages.
 """
+from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
+from can import typechecking
 
 from copy import deepcopy
 import logging
@@ -13,14 +15,19 @@ import queue
 from threading import RLock
 from random import randint
 
-from can.bus import BusABC
 from can import CanError
+from can.bus import BusABC
+from can.message import Message
 
 logger = logging.getLogger(__name__)
 
 
 # Channels are lists of queues, one for each connection
-channels = {}
+if TYPE_CHECKING:
+    # https://mypy.readthedocs.io/en/stable/common_issues.html#using-classes-that-are-generic-in-stubs-but-not-at-runtime
+    channels: Dict[Optional[Any], List[queue.Queue[Message]]] = {}
+else:
+    channels = {}
 channels_lock = RLock()
 
 
@@ -43,8 +50,12 @@ class VirtualBus(BusABC):
     """
 
     def __init__(
-        self, channel=None, receive_own_messages=False, rx_queue_size=0, **kwargs
-    ):
+        self,
+        channel: Any = None,
+        receive_own_messages: bool = False,
+        rx_queue_size: int = 0,
+        **kwargs: Any
+    ) -> None:
         super().__init__(
             channel=channel, receive_own_messages=receive_own_messages, **kwargs
         )
@@ -62,10 +73,10 @@ class VirtualBus(BusABC):
                 channels[self.channel_id] = []
             self.channel = channels[self.channel_id]
 
-            self.queue = queue.Queue(rx_queue_size)
+            self.queue: queue.Queue[Message] = queue.Queue(rx_queue_size)
             self.channel.append(self.queue)
 
-    def _check_if_open(self):
+    def _check_if_open(self) -> None:
         """Raises CanError if the bus is not open.
 
         Has to be called in every method that accesses the bus.
@@ -73,7 +84,9 @@ class VirtualBus(BusABC):
         if not self._open:
             raise CanError("Operation on closed bus")
 
-    def _recv_internal(self, timeout):
+    def _recv_internal(
+        self, timeout: Optional[float]
+    ) -> Tuple[Optional[Message], bool]:
         self._check_if_open()
         try:
             msg = self.queue.get(block=True, timeout=timeout)
@@ -82,7 +95,7 @@ class VirtualBus(BusABC):
         else:
             return msg, False
 
-    def send(self, msg, timeout=None):
+    def send(self, msg: Message, timeout: Optional[float] = None) -> None:
         self._check_if_open()
 
         timestamp = time.time()
@@ -102,7 +115,7 @@ class VirtualBus(BusABC):
         if not all_sent:
             raise CanError("Could not send message to one or more recipients")
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         self._check_if_open()
         self._open = False
 
