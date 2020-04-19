@@ -118,9 +118,9 @@ class Notifier:
             self.exception = exc
             if self._loop is not None:
                 self._loop.call_soon_threadsafe(self._on_error, exc)
-            else:
-                self._on_error(exc)
-            raise
+                raise
+            elif not self._on_error(exc):
+                raise
 
     def _on_message_available(self, bus: BusABC):
         msg = bus.recv(0)
@@ -134,10 +134,15 @@ class Notifier:
                 # Schedule coroutine
                 self._loop.create_task(res)
 
-    def _on_error(self, exc: Exception):
-        for listener in self.listeners:
-            if hasattr(listener, "on_error"):
-                listener.on_error(exc)
+    def _on_error(self, exc: Exception) -> bool:
+        listeners_with_on_error = [
+            listener for listener in self.listeners if hasattr(listener, "on_error")
+        ]
+
+        for listener in listeners_with_on_error:
+            listener.on_error(exc)
+
+        return bool(listeners_with_on_error)
 
     def add_listener(self, listener: Listener):
         """Add new Listener to the notification list.
