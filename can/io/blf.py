@@ -175,7 +175,7 @@ class BLFReader(BaseIOHandler):
 
             if obj_type == LOG_CONTAINER:
                 method, uncompressed_size = LOG_CONTAINER_STRUCT.unpack_from(obj_data)
-                container_data = memoryview(obj_data)[LOG_CONTAINER_STRUCT.size :]
+                container_data = obj_data[LOG_CONTAINER_STRUCT.size :]
                 if method == NO_COMPRESSION:
                     data = container_data
                 elif method == ZLIB_DEFLATE:
@@ -220,6 +220,14 @@ class BLFReader(BaseIOHandler):
         # Loop until a struct unpack raises an exception
         while True:
             self._pos = pos
+            # Find next object after padding (depends on object type)
+            try:
+                pos = data.index(b"LOBJ", pos, pos + 8)
+            except ValueError:
+                if pos + 8 > max_pos:
+                    # Not enough data in container
+                    return
+                raise BLFParseError("Could not find next object")
             header = unpack_obj_header_base(data, pos)
             # print(header)
             signature, _, header_version, obj_size, obj_type = header
@@ -228,9 +236,6 @@ class BLFReader(BaseIOHandler):
 
             # Calculate position of next object
             next_pos = pos + obj_size
-            if obj_type != CAN_FD_MESSAGE_64:
-                # Add padding bytes
-                next_pos += obj_size % 4
             if next_pos > max_pos:
                 # This object continues in the next container
                 return
