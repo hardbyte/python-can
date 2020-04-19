@@ -1,3 +1,19 @@
+Version 3.3.3
+====
+
+Backported fixes from Python 3 only 4.x development.
+
+* Exclude test packages from distribution. #740
+* RTR crash fix in canutils log reader parsing RTR frames. #713
+* Skip J1939 messages in ASC Reader. #701
+* Exposes a configuration option to allow the CAN message player to send error frames
+  (and sets the default to not send error frames). #690
+* Fixes the semantics provided by periodic tasks in SocketCAN interface. #638
+* Avoid padding CAN_FD_MESSAGE_64 objects to 4 bytes. #628
+* Fixes the broken CANalyst-II interface. #617
+* Socketcan BCM status fix. #605
+
+
 Version 3.3.2
 ====
 
