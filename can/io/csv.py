@@ -91,7 +91,11 @@ class CSVReader(BaseIOHandler):
 
     def __iter__(self):
         # skip the header line
-        next(self.file)
+        try:
+            next(self.file)
+        except StopIteration:
+            # don't crash on a file with only a header
+            return
 
         for line in self.file:
 
