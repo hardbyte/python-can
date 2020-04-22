@@ -66,7 +66,7 @@ class ASCReader(BaseIOHandler):
         r"(?P<id>[\da-f]+x?)\s+"
         r"(?P<dir>Tx|Rx|TxRq)\s+"
         r"(?P<remote>r)"
-        r"(?:$|(?:\s+(?P<dlc>[0-9a-f]+)(?:$\s+.*$))|(\s+.*$))",
+        r"(?:$|(?:\s+(?P<dlc>[0-9a-f]+)(?:$|\s+.*$))|(\s+.*$))",
         re.IGNORECASE,
     )
     regex_classic_error_frame = re.compile(
