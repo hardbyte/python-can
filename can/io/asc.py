@@ -32,6 +32,7 @@ class ASCReader(BaseIOHandler):
 
     TODO: turn relative timestamps back to absolute form
     """
+
     # Regex attribute names and their conversion functions
     regex_mappings = {
         "timestamp": "_process_timestamp",
@@ -44,7 +45,7 @@ class ASCReader(BaseIOHandler):
         "brs": "_process_brs",
         "esi": "_process_esi",
         "remote": "_process_remote",
-        "error_frame": "_process_error_frame"
+        "error_frame": "_process_error_frame",
     }
 
     # CLASSIC CAN MESSAGES
@@ -57,7 +58,7 @@ class ASCReader(BaseIOHandler):
         r"(?P<dlc>[0-9a-f]{1,2})"
         r"(?:\s+(?P<data>([0-9a-f]{2}\s)*[0-9a-f]{2}))?"
         r"(?:$|\s+.*$)",
-        re.IGNORECASE
+        re.IGNORECASE,
     )
     regex_classic_remote = re.compile(
         r"^(?P<timestamp>[\d.]+)\s+"
@@ -66,13 +67,13 @@ class ASCReader(BaseIOHandler):
         r"(?P<dir>Tx|Rx|TxRq)\s+"
         r"(?P<remote>r)"
         r"(?:$|(?:\s+(?P<dlc>[0-9a-f]+)(?:$\s+.*$))|(\s+.*$))",
-        re.IGNORECASE
+        re.IGNORECASE,
     )
     regex_classic_error_frame = re.compile(
         r"^(?P<timestamp>[\d.]+)\s+"
         r"(?P<channel>\d+)\s+"
         r"(?P<error_frame>ErrorFrame)",
-        re.IGNORECASE
+        re.IGNORECASE,
     )
 
     # CAN FD MESSAGES
@@ -88,7 +89,7 @@ class ASCReader(BaseIOHandler):
         r"(?P<dlc>[0-9a-f]{1,2})\s+"
         r"(?P<data_length>\d+)\s+"
         r"(?P<data>([0-9a-f]{2}\s)*[0-9a-f]{2})\s+\S",
-        re.IGNORECASE
+        re.IGNORECASE,
     )
     regex_fd_remote = re.compile(
         r"^(?P<timestamp>[\d.]+)\s+"
@@ -101,7 +102,7 @@ class ASCReader(BaseIOHandler):
         r"(?P<esi>[01])\s+"
         r"(?P<dlc>[0-9a-f]{1,2})\s+"
         r"(?P<remote>0)\s+",
-        re.IGNORECASE
+        re.IGNORECASE,
     )
     all_regex = (
         regex_classic_msg,
@@ -131,14 +132,11 @@ class ASCReader(BaseIOHandler):
         r"(?P<data_length>\d+)\s+"
         r"(?:(?P<data>(?:[0-9a-f]{2}\s)*[0-9a-f]{2})\s+)?"
         r"\S",
-        re.IGNORECASE
+        re.IGNORECASE,
     )
     regex_classic_error_event = re.compile(
-        r"^(?P<timestamp>[\d.]+)\s+"
-        r"CAN\s+"
-        r"(?P<channel>\d+)\s+"
-        r"Status:.*$",
-        re.IGNORECASE
+        r"^(?P<timestamp>[\d.]+)\s+" r"CAN\s+" r"(?P<channel>\d+)\s+" r"Status:.*$",
+        re.IGNORECASE,
     )
 
     def __init__(self, file, base="hex"):
@@ -245,8 +243,7 @@ class ASCReader(BaseIOHandler):
                 try:
                     _, base, _, timestamp_format = line.split()
                 except ValueError:
-                    raise Exception(
-                        "Unsupported header string format: {}".format(line))
+                    raise Exception("Unsupported header string format: {}".format(line))
                 self.base = self._check_base(base)
                 self.timestamps_format = timestamp_format
             elif lower_case.endswith("internal events logged"):
