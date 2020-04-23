@@ -9,6 +9,7 @@ Example .asc files:
 from datetime import datetime
 import time
 import logging
+import re
 
 from ..message import Message
 from ..listener import Listener
@@ -43,6 +44,30 @@ class ASCReader(BaseIOHandler):
         """
         super().__init__(file, mode="r")
         self.base = base
+        self.date = None
+        self.timestamps_format = None
+        self.internal_events_logged = None
+
+    def _extract_header(self):
+        for line in self.file:
+            line = line.strip()
+            lower_case = line.lower()
+            if lower_case.startswith("date"):
+                self.date = line[5:]
+            elif lower_case.startswith("base"):
+                try:
+                    _, base, _, timestamp_format = line.split()
+                except ValueError:
+                    raise Exception("Unsupported header string format: {}".format(line))
+                self.base = base
+                self.timestamps_format = timestamp_format
+            elif lower_case.endswith("internal events logged"):
+                if lower_case.startswith("no"):
+                    self.internal_events_logged = False
+                else:
+                    self.internal_events_logged = True
+            else:
+                return
 
     @staticmethod
     def _extract_can_id(str_can_id, base):
@@ -61,11 +86,10 @@ class ASCReader(BaseIOHandler):
         return BASE_DEC if base == "dec" else BASE_HEX
 
     def __iter__(self):
+        self._extract_header()
         base = self._check_base(self.base)
         for line in self.file:
             # logger.debug("ASCReader: parsing line: '%s'", line.splitlines()[0])
-            if line.split(" ")[0] == "base":
-                base = self._check_base(line.split(" ")[1])
 
             temp = line.strip()
             if not temp or not temp[0].isdigit():
