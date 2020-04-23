@@ -9,7 +9,6 @@ Example .asc files:
 from datetime import datetime
 import time
 import logging
-import re
 
 from ..message import Message
 from ..listener import Listener
