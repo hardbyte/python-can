@@ -66,6 +66,7 @@ class ASCReader(BaseIOHandler):
                     self.internal_events_logged = False
                 else:
                     self.internal_events_logged = True
+                return
             else:
                 return
 
