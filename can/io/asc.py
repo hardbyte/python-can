@@ -154,7 +154,7 @@ class ASCReader(BaseIOHandler):
                 brs, esi, dlc, data_length, data = rest_of_message.split(None, 4)
 
             self._extract_can_id(can_id_str, msg_kwargs)
-            msg_kwargs["bitrate_switch"] = True if brs == "1" else False
+            msg_kwargs["bitrate_switch"] = brs == "1"
             msg_kwargs["error_state_indicator"] = True if esi == "1" else False
             dlc = int(dlc, self._converted_base)
             msg_kwargs["dlc"] = dlc
