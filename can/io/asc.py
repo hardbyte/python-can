@@ -102,7 +102,7 @@ class ASCReader(BaseIOHandler):
 
         if not msg_found:
             abr_id_str, dir, rest_of_message = line.split(None, 2)
-            msg_kwargs["is_rx"] = False if dir != "Rx" else True
+            msg_kwargs["is_rx"] = dir == "Rx"
             self._extract_can_id(abr_id_str, msg_kwargs)
 
             if rest_of_message[0].lower() == "r":
@@ -132,7 +132,7 @@ class ASCReader(BaseIOHandler):
     def _process_fd_can_frame(self, line, msg_kwargs):
         channel, dir, rest_of_message = line.split(None, 2)
         msg_kwargs["channel"] = int(channel) - 1
-        msg_kwargs["is_rx"] = False if dir != "Rx" else True
+        msg_kwargs["is_rx"] = dir == "Rx"
         msg_found = False
 
         # CAN FD error frame
