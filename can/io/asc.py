@@ -143,7 +143,9 @@ class ASCReader(BaseIOHandler):
             msg_found = True
 
         if not msg_found:
-            can_id_str, frame_name_or_brs, rest_of_message = rest_of_message.split(None, 2)
+            can_id_str, frame_name_or_brs, rest_of_message = rest_of_message.split(
+                None, 2
+            )
 
             if frame_name_or_brs.isdigit():
                 brs = frame_name_or_brs
