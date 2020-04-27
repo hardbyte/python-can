@@ -161,7 +161,7 @@ class ASCReader(BaseIOHandler):
             data_length = int(data_length)
 
             # CAN remote Frame
-            msg_kwargs["is_remote_frame"] = True if data_length == 0 else False
+            msg_kwargs["is_remote_frame"] = data_length == 0
 
             self._process_data_string(data, data_length, msg_kwargs)
 
