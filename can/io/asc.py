@@ -131,9 +131,7 @@ class ASCReader(BaseIOHandler):
         return Message(**msg_kwargs)
 
     def _process_fd_can_frame(self, line, msg_kwargs):
-        channel, dir, rest_of_message = line.split(
-            None, 2
-        )
+        channel, dir, rest_of_message = line.split(None, 2)
         msg_kwargs["channel"] = int(channel) - 1
         if dir != "Rx":
             msg_kwargs["is_rx"] = False
@@ -145,8 +143,7 @@ class ASCReader(BaseIOHandler):
             msg_kwargs["is_error_frame"] = True
             return Message(**msg_kwargs)
 
-        can_id_str, frame_name_or_brs, rest_of_message = rest_of_message.split(
-            None, 2)
+        can_id_str, frame_name_or_brs, rest_of_message = rest_of_message.split(None, 2)
 
         if frame_name_or_brs.isdigit():
             brs = frame_name_or_brs
