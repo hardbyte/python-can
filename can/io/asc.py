@@ -44,6 +44,31 @@ class ASCReader(BaseIOHandler):
         super().__init__(file, mode="r")
         self.base = base
         self._converted_base = self._check_base(base)
+        self.date = None
+        self.timestamps_format = None
+        self.internal_events_logged = None
+
+    def _extract_header(self):
+        for line in self.file:
+            line = line.strip()
+            lower_case = line.lower()
+            if lower_case.startswith("date"):
+                self.date = line[5:]
+            elif lower_case.startswith("base"):
+                try:
+                    _, base, _, timestamp_format = line.split()
+                except ValueError:
+                    raise Exception("Unsupported header string format: {}".format(line))
+                self.base = base
+                self.timestamps_format = timestamp_format
+            elif lower_case.endswith("internal events logged"):
+                if lower_case.startswith("no"):
+                    self.internal_events_logged = False
+                else:
+                    self.internal_events_logged = True
+                return
+            else:
+                return
 
     def _extract_can_id(self, str_can_id, msg_kwargs):
         if str_can_id[-1:].lower() == "x":
@@ -146,7 +171,7 @@ class ASCReader(BaseIOHandler):
         return Message(**msg_kwargs)
 
     def __iter__(self):
-
+        self._extract_header()
         for line in self.file:
             temp = line.strip()
             if not temp or not temp[0].isdigit():
