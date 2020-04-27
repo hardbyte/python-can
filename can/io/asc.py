@@ -62,10 +62,8 @@ class ASCReader(BaseIOHandler):
                 self.base = base
                 self.timestamps_format = timestamp_format
             elif lower_case.endswith("internal events logged"):
-                if lower_case.startswith("no"):
-                    self.internal_events_logged = False
-                else:
-                    self.internal_events_logged = True
+                self.internal_events_logged = not lower_case.startswith("no")
+
                 return
             else:
                 return
