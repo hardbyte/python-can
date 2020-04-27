@@ -60,16 +60,18 @@ class ASCReader(BaseIOHandler):
                 except ValueError:
                     raise Exception("Unsupported header string format: {}".format(line))
                 self.base = base
+                self._converted_base = self._check_base(self.base)
                 self.timestamps_format = timestamp_format
             elif lower_case.endswith("internal events logged"):
                 self.internal_events_logged = not lower_case.startswith("no")
-
-                return
+                # Currently the last line in the header which is parsed
+                break
             else:
-                return
+                break
 
     def _extract_can_id(self, str_can_id, msg_kwargs):
         if str_can_id[-1:].lower() == "x":
+            msg_kwargs["is_extended_id"] = True
             can_id = int(str_can_id[0:-1], self._converted_base)
         else:
             msg_kwargs["is_extended_id"] = False
@@ -90,79 +92,77 @@ class ASCReader(BaseIOHandler):
         msg_kwargs["data"] = frame
 
     def _process_classic_can_frame(self, line, msg_kwargs):
+        msg_found = False
+
         # CAN error frame
         if line.strip()[0:10].lower() == "errorframe":
             # Error Frame
             msg_kwargs["is_error_frame"] = True
-            return Message(**msg_kwargs)
+            msg_found = True
 
-        abr_id_str, dir, rest_of_message = line.split(None, 2)
-        if dir != "Rx":
-            msg_kwargs["is_rx"] = False
-        self._extract_can_id(abr_id_str, msg_kwargs)
+        if not msg_found:
+            abr_id_str, dir, rest_of_message = line.split(None, 2)
+            msg_kwargs["is_rx"] = False if dir != "Rx" else True
+            self._extract_can_id(abr_id_str, msg_kwargs)
 
-        # CAN remote Frame
-        if rest_of_message[0].lower() == "r":
-            msg_kwargs["is_remote_frame"] = True
-            remote_data = rest_of_message.split()
-            if len(remote_data) > 1:
-                dlc = remote_data[1]
-                if dlc.isdigit():
-                    msg_kwargs["dlc"] = int(dlc, self._converted_base)
-            return Message(**msg_kwargs)
+            if rest_of_message[0].lower() == "r":
+                # CAN Remote Frame
+                msg_kwargs["is_remote_frame"] = True
+                remote_data = rest_of_message.split()
+                if len(remote_data) > 1:
+                    dlc = remote_data[1]
+                    if dlc.isdigit():
+                        msg_kwargs["dlc"] = int(dlc, self._converted_base)
+            else:
+                # Classic CAN Message
+                try:
+                    # There is data after DLC
+                    _, dlc, data = rest_of_message.split(None, 2)
+                except ValueError:
+                    # No data after DLC
+                    _, dlc = rest_of_message.split(None, 1)
+                    data = ""
 
-        # Classic CAN message
-        try:
-            # There is Data after DLC
-            _, dlc, data = rest_of_message.split(None, 2)
-        except ValueError:
-            # No data after DLC
-            _, dlc = rest_of_message.split(None, 1)
-            data = ""
+                dlc = int(dlc, self._converted_base)
+                msg_kwargs["dlc"] = dlc
+                self._process_data_string(data, dlc, msg_kwargs)
 
-        if dir != "Rx":
-            msg_kwargs["is_rx"] = False
-
-        dlc = int(dlc, self._converted_base)
-        msg_kwargs["dlc"] = dlc
-        self._process_data_string(data, dlc, msg_kwargs)
         return Message(**msg_kwargs)
 
     def _process_fd_can_frame(self, line, msg_kwargs):
         channel, dir, rest_of_message = line.split(None, 2)
         msg_kwargs["channel"] = int(channel) - 1
-        if dir != "Rx":
-            msg_kwargs["is_rx"] = False
+        msg_kwargs["is_rx"] = False if dir != "Rx" else True
+        msg_found = False
 
         # CAN FD error frame
         if rest_of_message.strip()[:10].lower() == "errorframe":
             # Error Frame
             # TODO: maybe use regex to parse BRS, ESI, etc?
             msg_kwargs["is_error_frame"] = True
-            return Message(**msg_kwargs)
+            msg_found = True
 
-        can_id_str, frame_name_or_brs, rest_of_message = rest_of_message.split(None, 2)
+        if not msg_found:
+            can_id_str, frame_name_or_brs, rest_of_message = rest_of_message.split(None, 2)
 
-        if frame_name_or_brs.isdigit():
-            brs = frame_name_or_brs
-            esi, dlc, data_length, data = rest_of_message.split(None, 3)
-        else:
-            brs, esi, dlc, data_length, data = rest_of_message.split(None, 4)
+            if frame_name_or_brs.isdigit():
+                brs = frame_name_or_brs
+                esi, dlc, data_length, data = rest_of_message.split(None, 3)
+            else:
+                brs, esi, dlc, data_length, data = rest_of_message.split(None, 4)
 
-        self._extract_can_id(can_id_str, msg_kwargs)
-        if brs == "1":
-            msg_kwargs["bitrate_switch"] = True
-        if esi == "1":
-            msg_kwargs["error_state_indicator"] = True
-        dlc = int(dlc, self._converted_base)
-        msg_kwargs["dlc"] = dlc
-        data_length = int(data_length)
+            self._extract_can_id(can_id_str, msg_kwargs)
+            msg_kwargs["bitrate_switch"] = True if brs == "1" else False
+            msg_kwargs["error_state_indicator"] = True if esi == "1" else False
+            dlc = int(dlc, self._converted_base)
+            msg_kwargs["dlc"] = dlc
+            data_length = int(data_length)
 
-        # CAN remote Frame
-        if data_length == 0:
-            msg_kwargs["is_remote_frame"] = True
+            # CAN remote Frame
+            msg_kwargs["is_remote_frame"] = True if data_length == 0 else False
 
-        self._process_data_string(data, data_length, msg_kwargs)
+            self._process_data_string(data, data_length, msg_kwargs)
+
         return Message(**msg_kwargs)
 
     def __iter__(self):
@@ -182,8 +182,7 @@ class ASCReader(BaseIOHandler):
                 elif channel.isdigit():
                     msg_kwargs["channel"] = int(channel) - 1
                 else:
-                    # Not a CAN message. Possible values include "statistic",
-                    # "J1939TP
+                    # Not a CAN message. Possible values include "statistic", J1939TP
                     continue
             except ValueError:
                 # Some other unprocessed or unknown format
@@ -193,7 +192,7 @@ class ASCReader(BaseIOHandler):
                 msg = self._process_classic_can_frame(rest_of_message, msg_kwargs)
             else:
                 msg = self._process_fd_can_frame(rest_of_message, msg_kwargs)
-            if msg:
+            if msg is not None:
                 yield msg
 
         self.stop()
