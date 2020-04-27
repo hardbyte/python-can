@@ -43,16 +43,15 @@ class ASCReader(BaseIOHandler):
         """
         super().__init__(file, mode="r")
         self.base = base
+        self._converted_base = self._check_base(base)
 
-    @staticmethod
-    def _extract_can_id(str_can_id, base):
+    def _extract_can_id(self, str_can_id, msg_kwargs):
         if str_can_id[-1:].lower() == "x":
-            is_extended = True
-            can_id = int(str_can_id[0:-1], base)
+            can_id = int(str_can_id[0:-1], self._converted_base)
         else:
-            is_extended = False
-            can_id = int(str_can_id, base)
-        return can_id, is_extended
+            msg_kwargs["is_extended_id"] = False
+            can_id = int(str_can_id, self._converted_base)
+        msg_kwargs["arbitration_id"] = can_id
 
     @staticmethod
     def _check_base(base):
@@ -60,103 +59,123 @@ class ASCReader(BaseIOHandler):
             raise ValueError('base should be either "hex" or "dec"')
         return BASE_DEC if base == "dec" else BASE_HEX
 
-    def __iter__(self):
-        base = self._check_base(self.base)
-        for line in self.file:
-            # logger.debug("ASCReader: parsing line: '%s'", line.splitlines()[0])
-            if line.split(" ")[0] == "base":
-                base = self._check_base(line.split(" ")[1])
+    def _process_data_string(self, data, data_length, msg_kwargs):
+        frame = bytearray()
+        data = data.split()
+        for byte in data[:data_length]:
+            frame.append(int(byte, self._converted_base))
+        msg_kwargs["data"] = frame
 
+    def _process_classic_can_frame(self, line, msg_kwargs):
+        # CAN error frame
+        if line.strip()[0:10].lower() == "errorframe":
+            # Error Frame
+            msg_kwargs["is_error_frame"] = True
+            return Message(**msg_kwargs)
+
+        abr_id_str, dir, rest_of_message = line.split(None, 2)
+        if dir != "Rx":
+            msg_kwargs["is_rx"] = False
+        self._extract_can_id(abr_id_str, msg_kwargs)
+
+        # CAN remote Frame
+        if rest_of_message[0].lower() == "r":
+            msg_kwargs["is_remote_frame"] = True
+            remote_data = rest_of_message.split()
+            if len(remote_data) > 1:
+                dlc = remote_data[1]
+                if dlc.isdigit():
+                    msg_kwargs["dlc"] = int(dlc, self._converted_base)
+            return Message(**msg_kwargs)
+
+        # Classic CAN message
+        try:
+            # There is Data after DLC
+            _, dlc, data = rest_of_message.split(None, 2)
+        except ValueError:
+            # No data after DLC
+            _, dlc = rest_of_message.split(None, 1)
+            data = ""
+
+        if dir != "Rx":
+            msg_kwargs["is_rx"] = False
+
+        dlc = int(dlc, self._converted_base)
+        msg_kwargs["dlc"] = dlc
+        self._process_data_string(data, dlc, msg_kwargs)
+        return Message(**msg_kwargs)
+
+    def _process_fd_can_frame(self, line, msg_kwargs):
+        channel, dir, rest_of_message = line.split(
+            None, 2
+        )
+        msg_kwargs["channel"] = int(channel) - 1
+        if dir != "Rx":
+            msg_kwargs["is_rx"] = False
+
+        # CAN FD error frame
+        if rest_of_message.strip()[:10].lower() == "errorframe":
+            # Error Frame
+            # TODO: maybe use regex to parse BRS, ESI, etc?
+            msg_kwargs["is_error_frame"] = True
+            return Message(**msg_kwargs)
+
+        can_id_str, frame_name_or_brs, rest_of_message = rest_of_message.split(
+            None, 2)
+
+        if frame_name_or_brs.isdigit():
+            brs = frame_name_or_brs
+            esi, dlc, data_length, data = rest_of_message.split(None, 3)
+        else:
+            brs, esi, dlc, data_length, data = rest_of_message.split(None, 4)
+
+        self._extract_can_id(can_id_str, msg_kwargs)
+        if brs == "1":
+            msg_kwargs["bitrate_switch"] = True
+        if esi == "1":
+            msg_kwargs["error_state_indicator"] = True
+        dlc = int(dlc, self._converted_base)
+        msg_kwargs["dlc"] = dlc
+        data_length = int(data_length)
+
+        # CAN remote Frame
+        if data_length == 0:
+            msg_kwargs["is_remote_frame"] = True
+
+        self._process_data_string(data, data_length, msg_kwargs)
+        return Message(**msg_kwargs)
+
+    def __iter__(self):
+
+        for line in self.file:
             temp = line.strip()
             if not temp or not temp[0].isdigit():
+                # Could be a comment
                 continue
-            is_fd = False
-            is_rx = True
+            msg_kwargs = {}
             try:
-                timestamp, channel, dummy = temp.split(
-                    None, 2
-                )  # , frameType, dlc, frameData
+                timestamp, channel, rest_of_message = temp.split(None, 2)
+                timestamp = float(timestamp)
+                msg_kwargs["timestamp"] = timestamp
                 if channel == "CANFD":
-                    timestamp, _, channel, direction, dummy = temp.split(None, 4)
-                    is_fd = True
-                    is_rx = direction == "Rx"
+                    msg_kwargs["is_fd"] = True
+                elif channel.isdigit():
+                    msg_kwargs["channel"] = int(channel) - 1
+                else:
+                    # Not a CAN message. Possible values include "statistic",
+                    # "J1939TP
+                    continue
             except ValueError:
-                # we parsed an empty comment
+                # Some other unprocessed or unknown format
                 continue
-            timestamp = float(timestamp)
-            try:
-                # See ASCWriter
-                channel = int(channel) - 1
-            except ValueError:
-                pass
-            if dummy.strip()[0:10].lower() == "errorframe":
-                msg = Message(timestamp=timestamp, is_error_frame=True, channel=channel)
-                yield msg
-            elif (
-                not isinstance(channel, int)
-                or dummy.strip()[0:10].lower() == "statistic:"
-                or dummy.split(None, 1)[0] == "J1939TP"
-            ):
-                pass
-            elif dummy[-1:].lower() == "r":
-                can_id_str, direction, _ = dummy.split(None, 2)
-                can_id_num, is_extended_id = self._extract_can_id(can_id_str, base)
-                msg = Message(
-                    timestamp=timestamp,
-                    arbitration_id=can_id_num & CAN_ID_MASK,
-                    is_extended_id=is_extended_id,
-                    is_remote_frame=True,
-                    is_rx=direction == "Rx",
-                    channel=channel,
-                )
-                yield msg
-            else:
-                brs = None
-                esi = None
-                data_length = 0
-                try:
-                    # this only works if dlc > 0 and thus data is available
-                    if not is_fd:
-                        can_id_str, direction, _, dlc, data = dummy.split(None, 4)
-                        is_rx = direction == "Rx"
-                    else:
-                        can_id_str, frame_name, brs, esi, dlc, data_length, data = dummy.split(
-                            None, 6
-                        )
-                        if frame_name.isdigit():
-                            # Empty frame_name
-                            can_id_str, brs, esi, dlc, data_length, data = dummy.split(
-                                None, 5
-                            )
-                except ValueError:
-                    # but if not, we only want to get the stuff up to the dlc
-                    can_id_str, _, _, dlc = dummy.split(None, 3)
-                    # and we set data to an empty sequence manually
-                    data = ""
-                dlc = int(dlc, base)
-                if is_fd:
-                    # For fd frames, dlc and data length might not be equal and
-                    # data_length is the actual size of the data
-                    dlc = int(data_length)
-                frame = bytearray()
-                data = data.split()
-                for byte in data[0:dlc]:
-                    frame.append(int(byte, base))
-                can_id_num, is_extended_id = self._extract_can_id(can_id_str, base)
 
-                yield Message(
-                    timestamp=timestamp,
-                    arbitration_id=can_id_num & CAN_ID_MASK,
-                    is_extended_id=is_extended_id,
-                    is_remote_frame=False,
-                    dlc=dlc,
-                    data=frame,
-                    is_fd=is_fd,
-                    is_rx=is_rx,
-                    channel=channel,
-                    bitrate_switch=is_fd and brs == "1",
-                    error_state_indicator=is_fd and esi == "1",
-                )
+            if "is_fd" not in msg_kwargs:
+                msg = self._process_classic_can_frame(rest_of_message, msg_kwargs)
+            else:
+                msg = self._process_fd_can_frame(rest_of_message, msg_kwargs)
+            if msg:
+                yield msg
+
         self.stop()
 
 
@@ -178,7 +197,7 @@ class ASCWriter(BaseIOHandler, Listener):
             "{id:>8}  {symbolic_name:>32}",
             "{brs}",
             "{esi}",
-            "{dlc}",
+            "{dlc:x}",
             "{data_length:>2}",
             "{data}",
             "{message_duration:>8}",
@@ -257,10 +276,10 @@ class ASCWriter(BaseIOHandler, Listener):
             self.log_event("{}  ErrorFrame".format(self.channel), msg.timestamp)
             return
         if msg.is_remote_frame:
-            dtype = "r"
+            dtype = "r {:x}".format(msg.dlc)  # New after v8.5
             data = []
         else:
-            dtype = "d {}".format(msg.dlc)
+            dtype = "d {:x}".format(msg.dlc)
             data = ["{:02X}".format(byte) for byte in msg.data]
         arb_id = "{:X}".format(msg.arbitration_id)
         if msg.is_extended_id:
