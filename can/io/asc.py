@@ -92,15 +92,12 @@ class ASCReader(BaseIOHandler):
         msg_kwargs["data"] = frame
 
     def _process_classic_can_frame(self, line, msg_kwargs):
-        msg_found = False
 
         # CAN error frame
         if line.strip()[0:10].lower() == "errorframe":
             # Error Frame
             msg_kwargs["is_error_frame"] = True
-            msg_found = True
-
-        if not msg_found:
+        else:
             abr_id_str, dir, rest_of_message = line.split(None, 2)
             msg_kwargs["is_rx"] = dir == "Rx"
             self._extract_can_id(abr_id_str, msg_kwargs)
@@ -133,16 +130,13 @@ class ASCReader(BaseIOHandler):
         channel, dir, rest_of_message = line.split(None, 2)
         msg_kwargs["channel"] = int(channel) - 1
         msg_kwargs["is_rx"] = dir == "Rx"
-        msg_found = False
 
         # CAN FD error frame
         if rest_of_message.strip()[:10].lower() == "errorframe":
             # Error Frame
             # TODO: maybe use regex to parse BRS, ESI, etc?
             msg_kwargs["is_error_frame"] = True
-            msg_found = True
-
-        if not msg_found:
+        else:
             can_id_str, frame_name_or_brs, rest_of_message = rest_of_message.split(
                 None, 2
             )
