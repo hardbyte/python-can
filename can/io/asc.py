@@ -128,6 +128,7 @@ class ASCReader(BaseIOHandler):
 
     def _process_fd_can_frame(self, line, msg_kwargs):
         channel, dir, rest_of_message = line.split(None, 2)
+        # See ASCWriter
         msg_kwargs["channel"] = int(channel) - 1
         msg_kwargs["is_rx"] = dir == "Rx"
 
@@ -176,6 +177,7 @@ class ASCReader(BaseIOHandler):
                 if channel == "CANFD":
                     msg_kwargs["is_fd"] = True
                 elif channel.isdigit():
+                    # See ASCWriter
                     msg_kwargs["channel"] = int(channel) - 1
                 else:
                     # Not a CAN message. Possible values include "statistic", J1939TP
