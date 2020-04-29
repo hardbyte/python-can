@@ -112,7 +112,7 @@ class VectorBus(BusABC):
         else:
             # Assume comma separated string of channels
             self.channels = [int(ch.strip()) for ch in channel.split(",")]
-        self._app_name = app_name.encode() if app_name is not None else ""
+        self._app_name = app_name.encode() if app_name is not None else b""
         self.channel_info = "Application %s: %s" % (
             app_name,
             ", ".join("CAN %d" % (ch + 1) for ch in self.channels),
@@ -576,6 +576,15 @@ class VectorBus(BusABC):
                 }
             )
         return configs
+
+    @staticmethod
+    def popup_vector_hw_configuration(wait_for_finish: int = 0) -> None:
+        """Open vector hardware configuration window.
+
+        :param int wait_for_finish:
+            Time to wait for user input in milliseconds.
+        """
+        xldriver.xlPopupHwConfig(ctypes.c_char_p(), ctypes.c_uint(wait_for_finish))
 
 
 def get_channel_configs():

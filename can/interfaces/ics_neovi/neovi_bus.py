@@ -306,6 +306,7 @@ class NeoViBus(BusABC):
                 dlc=ics_msg.NumberBytesData,
                 is_extended_id=bool(ics_msg.StatusBitField & ics.SPY_STATUS_XTD_FRAME),
                 is_fd=is_fd,
+                is_rx=not bool(ics_msg.StatusBitField & ics.SPY_STATUS_TX_MSG),
                 is_remote_frame=bool(
                     ics_msg.StatusBitField & ics.SPY_STATUS_REMOTE_FRAME
                 ),
@@ -325,6 +326,7 @@ class NeoViBus(BusABC):
                 dlc=ics_msg.NumberBytesData,
                 is_extended_id=bool(ics_msg.StatusBitField & ics.SPY_STATUS_XTD_FRAME),
                 is_fd=is_fd,
+                is_rx=not bool(ics_msg.StatusBitField & ics.SPY_STATUS_TX_MSG),
                 is_remote_frame=bool(
                     ics_msg.StatusBitField & ics.SPY_STATUS_REMOTE_FRAME
                 ),
@@ -361,11 +363,12 @@ class NeoViBus(BusABC):
                 flag3 |= ics.SPY_STATUS3_CANFD_ESI
 
         message.ArbIDOrHeader = msg.arbitration_id
-        message.NumberBytesData = len(msg.data)
-        message.Data = tuple(msg.data[:8])
-        if msg.is_fd and len(msg.data) > 8:
+        msg_data = msg.data
+        message.NumberBytesData = len(msg_data)
+        message.Data = tuple(msg_data[:8])
+        if msg.is_fd and len(msg_data) > 8:
             message.ExtraDataPtrEnabled = 1
-            message.ExtraDataPtr = tuple(msg.data)
+            message.ExtraDataPtr = tuple(msg_data)
         message.StatusBitField = flag0
         message.StatusBitField2 = 0
         message.StatusBitField3 = flag3
