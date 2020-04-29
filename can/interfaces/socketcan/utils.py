@@ -2,12 +2,12 @@
 Defines common socketcan functions.
 """
 
+import errno
 import logging
 import os
-import errno
+import re
 import struct
 import subprocess
-import re
 from typing import cast, Iterable, Optional
 
 from can.interfaces.socketcan.constants import CAN_EFF_FLAG
@@ -73,7 +73,7 @@ def error_code_to_str(code: Optional[int]) -> str:
     :returns: a string explaining and containing the given error code, or a string
               explaining that the errorcode is unknown if that is the case
     """
-    name = errno.errorcode.get(code, "UNKNOWN")
-    description = os.strerror(code)
+    name = errno.errorcode.get(code, "UNKNOWN") if code is not None else "UNKNOWN"
+    description = os.strerror(code) if code is not None else "NO DESCRIPTION AVAILABLE"
 
     return f"{name} (errno {code}): {description}"
