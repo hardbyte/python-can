@@ -112,7 +112,7 @@ class VectorBus(BusABC):
         else:
             # Assume comma separated string of channels
             self.channels = [int(ch.strip()) for ch in channel.split(",")]
-        self._app_name = app_name.encode() if app_name is not None else ""
+        self._app_name = app_name.encode() if app_name is not None else b""
         self.channel_info = "Application %s: %s" % (
             app_name,
             ", ".join("CAN %d" % (ch + 1) for ch in self.channels),
