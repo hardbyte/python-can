@@ -34,6 +34,7 @@ from can.broadcastmanager import (
     RestartableCyclicTaskABC,
     LimitedDurationCyclicSendTaskABC,
 )
+from can.typechecking import CanFilters
 from can.interfaces.socketcan.constants import *  # CAN_RAW, CAN_*_FLAG
 from can.interfaces.socketcan.utils import pack_filters, find_available_interfaces
 
@@ -593,6 +594,7 @@ class SocketcanBus(BusABC):
         channel: str = "",
         receive_own_messages: bool = False,
         fd: bool = False,
+        can_filters: Optional[CanFilters] = None,
         **kwargs,
     ) -> None:
         """Creates a new socketcan bus.
@@ -613,7 +615,7 @@ class SocketcanBus(BusABC):
             If transmitted messages should also be received by this bus.
         :param fd:
             If CAN-FD frames should be supported.
-        :param List can_filters:
+        :param can_filters:
             See :meth:`can.BusABC.set_filters`.
         """
         self.socket = create_socket()
@@ -647,7 +649,7 @@ class SocketcanBus(BusABC):
 
         bind_socket(self.socket, channel)
         kwargs.update({"receive_own_messages": receive_own_messages, "fd": fd})
-        super().__init__(channel=channel, **kwargs)
+        super().__init__(channel=channel, can_filters=can_filters, **kwargs)
 
     def shutdown(self) -> None:
         """Stops all active periodic tasks and closes the socket."""
