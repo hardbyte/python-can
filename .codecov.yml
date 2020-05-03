@@ -1,7 +1,7 @@
 # Validate with curl --data-binary @.codecov.yml https://codecov.io/validate
 codecov:
   archive:
-    uploads: yes
+    uploads: no
 
 coverage:
   precision: 2
