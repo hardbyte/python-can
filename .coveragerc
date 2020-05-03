@@ -3,6 +3,9 @@
 branch = False
 # already specified by call to pytest using --cov=can
 #source = can
+# TODO: Update the OSX image to use a Python version that isn't affected by
+# https://bugs.python.org/msg284585.
+parallel = true
 
 [report]
 # two digits after decimal point
