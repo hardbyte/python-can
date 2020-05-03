@@ -18,15 +18,18 @@ python:
 
 env:
 
-
 install:
+  - curl -fsS -o get-poetry.py https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py
+  - python get-poetry.py --preview -y
+  - rm get-poetry.py
+  - source $HOME/.poetry/env
+  - poetry install
   - if [[ "$TEST_SOCKETCAN" ]]; then sudo bash test/open_vcan.sh ; fi
-  - travis_retry pip install .[test]
 
 script:
   - |
     # Run the tests
-    python setup.py test
+    poetry run pytest
     # preserve the error code
     RETURN_CODE=$?
     # Upload the coverage to codecov.io
@@ -86,8 +89,6 @@ jobs:
         # re-introduced
         # check the entire main codebase
         - pylint --rcfile=.pylintrc-wip can/**.py
-        # check setup.py
-        - pylint --rcfile=.pylintrc *.py
         # check doc/conf.py and possible other scripts in there
         - pylint --rcfile=.pylintrc doc/**.py
         # check the scripts folder
