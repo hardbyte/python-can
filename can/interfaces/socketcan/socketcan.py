@@ -597,7 +597,7 @@ class SocketcanBus(BusABC):
     ) -> None:
         """Creates a new socketcan bus.
 
-        It setting some socket options fails, an error will be printed but no exception will be thrown.
+        If setting some socket options fails, an error will be printed but no exception will be thrown.
         This includes enabling:
          - that own messages should be received,
          - CAN-FD frames and
