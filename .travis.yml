@@ -61,10 +61,27 @@ jobs:
       env: TEST_SOCKETCAN=TRUE
 
     # testing on OSX
+    # Travis CI dropped support for Python builds on macOS [0], so we just pick
+    # a base image and use the system Python. We pin xcode9.4, which is
+    # expected to have Python 3.7.5.
+    #
+    # Then since our pyproject.toml file specifies a minimum Python version,
+    # we just let poetry find it, instead of having to install a custom Python
+    # version from Homebrew or replace the system Python.
+    #
+    # All this is to:
+    #
+    #   1. Get a recent Python 3
+    #   2. Use a relatively recent coverage version (>= 5.0).
+    #   3. Work around an ABI incompatibility in the Python 3.6 sqlite library
+    #      that results in issues when running coverage tests, as older images
+    #      use the affected Python version. (https://bugs.python.org/msg284585)
+    #
+    # [0] https://docs.travis-ci.com/user/languages/python/
     - stage: test
       os: osx
-      osx_image: xcode8.3
-      python: 3.6-dev
+      osx_image: xcode9.4
+      language: minimal
 
     - stage: documentation
       name: "Sphinx Build"
