@@ -14,6 +14,7 @@ from abc import ABCMeta, abstractmethod
 from .config import *
 
 
+@unittest.skip("This requires python-can to be installed. See #805 for discussion.")
 class CanScriptTest(unittest.TestCase, metaclass=ABCMeta):
     @classmethod
     def setUpClass(cls):
