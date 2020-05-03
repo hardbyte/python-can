@@ -1,0 +1,16 @@
+[run]
+# we could also use branch coverage
+branch = False
+# already specified by call to pytest using --cov=can
+#source = can
+
+[report]
+# two digits after decimal point
+precision = 3
+show_missing = True
+exclude_lines =
+    # Have to re-enable the standard pragma, see https://coverage.readthedocs.io/en/coverage-4.5.1a/config.html#syntax
+    pragma: no cover
+
+    # Don't complain if non-runnable code isn't run:
+    if __name__ == .__main__.:
