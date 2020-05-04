@@ -60,9 +60,9 @@ def find_available_interfaces() -> Iterable[str]:
         # log.debug("find_available_interfaces(): output=\n%s", output)
         # output contains some lines like "1: vcan42: <NOARP,UP,LOWER_UP> ..."
         # extract the "vcan42" of each line
-        interface_names = [line.split(": ", 3)[1] for line in output.splitlines()]
-        log.debug("find_available_interfaces(): detected: %s", interface_names)
-        return filter(_PATTERN_CAN_INTERFACE.match, interface_names)
+        interfaces = [line.split(": ", 3)[1] for line in output.splitlines()]
+        log.debug("find_available_interfaces(): detected these interfaces (before filtering): %s", interfaces)
+        return filter(_PATTERN_CAN_INTERFACE.match, interfaces)
 
 
 def error_code_to_str(code: Optional[int]) -> str:
@@ -73,7 +73,7 @@ def error_code_to_str(code: Optional[int]) -> str:
     :returns: a string explaining and containing the given error code, or a string
               explaining that the errorcode is unknown if that is the case
     """
-    name = errno.errorcode.get(code, "UNKNOWN") if code is not None else "UNKNOWN"
+    name = errno.errorcode.get(code, "UNKNOWN")  # type: ignore
     description = os.strerror(code) if code is not None else "NO DESCRIPTION AVAILABLE"
 
     return f"{name} (errno {code}): {description}"
