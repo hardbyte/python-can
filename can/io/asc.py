@@ -94,14 +94,18 @@ class ASCReader(BaseIOHandler):
             raise ValueError('base should be either "hex" or "dec"')
         return BASE_DEC if base == "dec" else BASE_HEX
 
-    def _process_data_string(self, data: str, data_length: int, msg_kwargs: Dict[str, Any]) -> None:
+    def _process_data_string(
+        self, data: str, data_length: int, msg_kwargs: Dict[str, Any]
+    ) -> None:
         frame = bytearray()
         data = data.split()
         for byte in data[:data_length]:
             frame.append(int(byte, self._converted_base))
         msg_kwargs["data"] = frame
 
-    def _process_classic_can_frame(self, line: str, msg_kwargs: Dict[str, Any]) -> Message:
+    def _process_classic_can_frame(
+        self, line: str, msg_kwargs: Dict[str, Any]
+    ) -> Message:
 
         # CAN error frame
         if line.strip()[0:10].lower() == "errorframe":
