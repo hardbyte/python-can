@@ -95,10 +95,10 @@ class ASCReader(BaseIOHandler):
         return BASE_DEC if base == "dec" else BASE_HEX
 
     def _process_data_string(
-        self, data: str, data_length: int, msg_kwargs: Dict[str, Any]
+        self, data_str: str, data_length: int, msg_kwargs: Dict[str, Any]
     ) -> None:
         frame = bytearray()
-        data = data.split()
+        data = data_str.split()
         for byte in data[:data_length]:
             frame.append(int(byte, self._converted_base))
         msg_kwargs["data"] = frame
@@ -121,20 +121,20 @@ class ASCReader(BaseIOHandler):
                 msg_kwargs["is_remote_frame"] = True
                 remote_data = rest_of_message.split()
                 if len(remote_data) > 1:
-                    dlc = remote_data[1]
-                    if dlc.isdigit():
-                        msg_kwargs["dlc"] = int(dlc, self._converted_base)
+                    dlc_str = remote_data[1]
+                    if dlc_str.isdigit():
+                        msg_kwargs["dlc"] = int(dlc_str, self._converted_base)
             else:
                 # Classic CAN Message
                 try:
                     # There is data after DLC
-                    _, dlc, data = rest_of_message.split(None, 2)
+                    _, dlc_str, data = rest_of_message.split(None, 2)
                 except ValueError:
                     # No data after DLC
-                    _, dlc = rest_of_message.split(None, 1)
+                    _, dlc_str = rest_of_message.split(None, 1)
                     data = ""
 
-                dlc = int(dlc, self._converted_base)
+                dlc = int(dlc_str, self._converted_base)
                 msg_kwargs["dlc"] = dlc
                 self._process_data_string(data, dlc, msg_kwargs)
 
@@ -158,16 +158,16 @@ class ASCReader(BaseIOHandler):
 
             if frame_name_or_brs.isdigit():
                 brs = frame_name_or_brs
-                esi, dlc, data_length, data = rest_of_message.split(None, 3)
+                esi, dlc_str, data_length_str, data = rest_of_message.split(None, 3)
             else:
-                brs, esi, dlc, data_length, data = rest_of_message.split(None, 4)
+                brs, esi, dlc_str, data_length_str, data = rest_of_message.split(None, 4)
 
             self._extract_can_id(can_id_str, msg_kwargs)
             msg_kwargs["bitrate_switch"] = brs == "1"
             msg_kwargs["error_state_indicator"] = esi == "1"
-            dlc = int(dlc, self._converted_base)
+            dlc = int(dlc_str, self._converted_base)
             msg_kwargs["dlc"] = dlc
-            data_length = int(data_length)
+            data_length = int(data_length_str)
 
             # CAN remote Frame
             msg_kwargs["is_remote_frame"] = data_length == 0
