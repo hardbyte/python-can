@@ -2,7 +2,7 @@
 Contains the ABC bus implementation and its documentation.
 """
 
-from typing import cast, Iterator, List, Optional, Sequence, Tuple, Union
+from typing import cast, Any, Iterator, List, Optional, Sequence, Tuple, Union
 
 import can.typechecking
 
@@ -43,7 +43,7 @@ class BusABC(metaclass=ABCMeta):
     @abstractmethod
     def __init__(
         self,
-        channel: can.typechecking.Channel,
+        channel: Any,
         can_filters: Optional[can.typechecking.CanFilters] = None,
         **kwargs: object
     ):

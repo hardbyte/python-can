@@ -14,7 +14,9 @@ from ctypes import *
 from string import *
 import platform
 import logging
-import winreg
+
+if platform.system() == "Windows":
+    import winreg
 
 
 logger = logging.getLogger("can.pcan")
