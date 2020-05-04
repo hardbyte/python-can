@@ -160,7 +160,9 @@ class ASCReader(BaseIOHandler):
                 brs = frame_name_or_brs
                 esi, dlc_str, data_length_str, data = rest_of_message.split(None, 3)
             else:
-                brs, esi, dlc_str, data_length_str, data = rest_of_message.split(None, 4)
+                brs, esi, dlc_str, data_length_str, data = rest_of_message.split(
+                    None, 4
+                )
 
             self._extract_can_id(can_id_str, msg_kwargs)
             msg_kwargs["bitrate_switch"] = brs == "1"
