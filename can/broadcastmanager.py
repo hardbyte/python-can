@@ -5,7 +5,7 @@ The main entry point to these classes should be through
 :meth:`can.BusABC.send_periodic`.
 """
 
-from typing import Optional, Sequence, Tuple, Union, TYPE_CHECKING
+from typing import Optional, Sequence, Tuple, Union, Callable, TYPE_CHECKING
 
 from can import typechecking
 
@@ -198,7 +198,7 @@ class MultiRateCyclicSendTaskABC(CyclicSendTaskABC):
 class ThreadBasedCyclicSendTask(
     ModifiableCyclicTaskABC, LimitedDurationCyclicSendTaskABC, RestartableCyclicTaskABC
 ):
-    """Fallback cyclic send task using thread."""
+    """Fallback cyclic send task using daemon thread."""
 
     def __init__(
         self,
@@ -207,13 +207,28 @@ class ThreadBasedCyclicSendTask(
         messages: Union[Sequence[Message], Message],
         period: float,
         duration: Optional[float] = None,
+        on_error: Optional[Callable[[Exception], bool]] = None,
     ):
+        """Transmits `messages` with a `period` seconds for `duration` seconds on a `bus`.
+
+        The `on_error` is called if any error happens on `bus` while sending `messages`.
+        If `on_error` present, and returns ``False`` when invoked, thread is
+        stopped immediately, otherwise, thread continuiously tries to send `messages`
+        ignoring errors on a `bus`. Absence of `on_error` means that thread exits immediately
+        on error.
+
+        :param on_error: The callable that accepts an exception if any
+                         error happened on a `bus` while sending `messages`,
+                         it shall return either ``True`` or ``False`` depending
+                         on desired behaviour of `ThreadBasedCyclicSendTask`.
+        """
         super().__init__(messages, period, duration)
         self.bus = bus
         self.send_lock = lock
         self.stopped = True
         self.thread = None
         self.end_time = time.perf_counter() + duration if duration else None
+        self.on_error = on_error
 
         if HAS_EVENTS:
             self.period_ms: int = int(round(period * 1000, 0))
@@ -250,7 +265,11 @@ class ThreadBasedCyclicSendTask(
                     self.bus.send(self.messages[msg_index])
                 except Exception as exc:
                     log.exception(exc)
-                    break
+                    if self.on_error:
+                        if not self.on_error(exc):
+                            break
+                    else:
+                        break
             if self.end_time is not None and time.perf_counter() >= self.end_time:
                 break
             msg_index = (msg_index + 1) % len(self.messages)
