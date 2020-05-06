@@ -6,9 +6,9 @@ This module contains the implementation of :class:`can.Message`.
     starting with Python 3.7.
 """
 
-from typing import Optional, Union
+from typing import Optional, Union, Callable
 
-from . import typechecking
+from .typechecking import CanData, Channel
 
 from copy import deepcopy
 from math import isinf, isnan
@@ -40,11 +40,12 @@ class Message:
         "is_error_frame",
         "channel",
         "dlc",
-        "data",
+        "_data",
         "is_fd",
         "is_rx",
         "bitrate_switch",
         "error_state_indicator",
+        "data_callback",
         "__weakref__",  # support weak references to messages
     )
 
@@ -55,24 +56,31 @@ class Message:
         is_extended_id: bool = True,
         is_remote_frame: bool = False,
         is_error_frame: bool = False,
-        channel: Optional[typechecking.Channel] = None,
+        channel: Optional[Channel] = None,
         dlc: Optional[int] = None,
-        data: Optional[typechecking.CanData] = None,
+        data: Optional[CanData] = None,
         is_fd: bool = False,
         is_rx: bool = True,
         bitrate_switch: bool = False,
         error_state_indicator: bool = False,
         check: bool = False,
+        data_callback: Optional[Callable[[int, CanData], CanData]] = None,
     ):
         """
         To create a message object, simply provide any of the below attributes
         together with additional parameters as keyword arguments to the constructor.
 
-        :param check: By default, the constructor of this class does not strictly check the input.
-                      Thus, the caller must prevent the creation of invalid messages or
-                      set this parameter to `True`, to raise an Error on invalid inputs.
-                      Possible problems include the `dlc` field not matching the length of `data`
-                      or creating a message with both `is_remote_frame` and `is_error_frame` set to `True`.
+        :param check:
+            By default, the constructor of this class does not strictly check the input.
+            Thus, the caller must prevent the creation of invalid messages or
+            set this parameter to `True`, to raise an Error on invalid inputs.
+            Possible problems include the `dlc` field not matching the length of `data`
+            or creating a message with both `is_remote_frame` and `is_error_frame` set to `True`.
+
+        :param data_callback:
+            This optional function is called every time the `data` property is accessed. The function
+            `data_callback` must accept `arbitration_id: int, data: CanData` as arguments and return
+            the new `data`.
 
         :raises ValueError: iff `check` is set to `True` and one or more arguments were invalid
         """
@@ -86,20 +94,17 @@ class Message:
         self.is_rx = is_rx
         self.bitrate_switch = bitrate_switch
         self.error_state_indicator = error_state_indicator
+        self.data_callback = data_callback
 
         if data is None or is_remote_frame:
-            self.data = bytearray()
+            self._data = bytearray()
         elif isinstance(data, bytearray):
-            self.data = data
+            self._data = data
         else:
-            try:
-                self.data = bytearray(data)
-            except TypeError:
-                err = "Couldn't create message from {} ({})".format(data, type(data))
-                raise TypeError(err)
+            self.data = data
 
         if dlc is None:
-            self.dlc = len(self.data)
+            self.dlc = len(self._data)
         else:
             self.dlc = dlc
 
@@ -130,16 +135,16 @@ class Message:
 
         field_strings.append("DLC: {0:2d}".format(self.dlc))
         data_strings = []
-        if self.data is not None:
-            for index in range(0, min(self.dlc, len(self.data))):
-                data_strings.append("{0:02x}".format(self.data[index]))
+        if self._data is not None:
+            for index in range(0, min(self.dlc, len(self._data))):
+                data_strings.append("{0:02x}".format(self._data[index]))
         if data_strings:  # if not empty
             field_strings.append(" ".join(data_strings).ljust(24, " "))
         else:
             field_strings.append(" " * 24)
 
-        if (self.data is not None) and (self.data.isalnum()):
-            field_strings.append("'{}'".format(self.data.decode("utf-8", "replace")))
+        if (self._data is not None) and (self._data.isalnum()):
+            field_strings.append("'{}'".format(self._data.decode("utf-8", "replace")))
 
         if self.channel is not None:
             try:
@@ -175,7 +180,7 @@ class Message:
         if self.channel is not None:
             args.append("channel={!r}".format(self.channel))
 
-        data = ["{:#02x}".format(byte) for byte in self.data]
+        data = ["{:#02x}".format(byte) for byte in self._data]
         args += ["dlc={}".format(self.dlc), "data=[{}]".format(", ".join(data))]
 
         if self.is_fd:
@@ -192,7 +197,7 @@ class Message:
             raise ValueError("non empty format_specs are not supported")
 
     def __bytes__(self) -> bytes:
-        return bytes(self.data)
+        return bytes(self._data)
 
     def __copy__(self) -> "Message":
         new = Message(
@@ -203,11 +208,12 @@ class Message:
             is_error_frame=self.is_error_frame,
             channel=self.channel,
             dlc=self.dlc,
-            data=self.data,
+            data=self._data,
             is_fd=self.is_fd,
             is_rx=self.is_rx,
             bitrate_switch=self.bitrate_switch,
             error_state_indicator=self.error_state_indicator,
+            data_callback=self.data_callback,
         )
         return new
 
@@ -220,11 +226,12 @@ class Message:
             is_error_frame=self.is_error_frame,
             channel=deepcopy(self.channel, memo),
             dlc=self.dlc,
-            data=deepcopy(self.data, memo),
+            data=deepcopy(self._data, memo),
             is_fd=self.is_fd,
             is_rx=self.is_rx,
             bitrate_switch=self.bitrate_switch,
             error_state_indicator=self.error_state_indicator,
+            data_callback=self.data_callback,
         )
         return new
 
@@ -273,9 +280,9 @@ class Message:
             )
 
         if self.is_remote_frame:
-            if self.data:
+            if self._data:
                 raise ValueError("remote frames may not carry any data")
-        elif self.dlc != len(self.data):
+        elif self.dlc != len(self._data):
             raise ValueError(
                 "the DLC and the length of the data must match up for non remote frames"
             )
@@ -287,6 +294,25 @@ class Message:
                 raise ValueError(
                     "error state indicator is only allowed for CAN FD frames"
                 )
+
+    @property
+    def data(self) -> CanData:
+        if self.data_callback:
+            self._data = self.data_callback(self.arbitration_id, self._data)
+        return self._data
+
+    @data.setter
+    def data(self, data: Optional[CanData]):
+        try:
+            self._data = bytearray(data)
+        except TypeError:
+            err = "Unable to set message data {} ({})".format(data, type(data))
+            raise TypeError(err)
+
+    @property
+    def current_data(self) -> CanData:
+        """Retrieve the current data of auto modifying messages without changing it."""
+        return self._data
 
     def equals(
         self,
@@ -322,12 +348,13 @@ class Message:
                 and self.arbitration_id == other.arbitration_id
                 and self.is_extended_id == other.is_extended_id
                 and self.dlc == other.dlc
-                and self.data == other.data
+                and self._data == other._data
                 and self.is_remote_frame == other.is_remote_frame
                 and self.is_error_frame == other.is_error_frame
                 and self.channel == other.channel
                 and self.is_fd == other.is_fd
                 and self.bitrate_switch == other.bitrate_switch
                 and self.error_state_indicator == other.error_state_indicator
+                and self.data_callback == other.data_callback
             )
         )

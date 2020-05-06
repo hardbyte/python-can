@@ -84,6 +84,31 @@ class TestMessageClass(unittest.TestCase):
                 self.assertTrue(message.equals(other))
                 self.assertTrue(message.equals(other, timestamp_delta=0))
 
+    def test_data_callback(self):
+        arbitration_id = 123
+
+        def increment_counter(a_id, data):
+            assert a_id == arbitration_id
+            data[0] = (data[0] + 1) % 16
+            return data
+
+        msg = Message(
+            arbitration_id=arbitration_id,
+            data=[1, 2, 3, 4, 5, 6, 7, 8],
+            data_callback=increment_counter,
+        )
+
+        # test getters
+        assert msg.current_data == bytearray([1, 2, 3, 4, 5, 6, 7, 8])
+        assert msg.data == bytearray([2, 2, 3, 4, 5, 6, 7, 8])
+        assert msg.current_data == bytearray([2, 2, 3, 4, 5, 6, 7, 8])
+        assert msg.data == bytearray([3, 2, 3, 4, 5, 6, 7, 8])
+
+    def test_data_setter(self):
+        msg = Message()
+        msg.data = [1, 2, 3, 4, 5, 6, 7, 8]
+        assert msg.current_data == bytearray([1, 2, 3, 4, 5, 6, 7, 8])
+
 
 if __name__ == "__main__":
     unittest.main()
