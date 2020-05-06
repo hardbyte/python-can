@@ -77,11 +77,6 @@ class Message:
             Possible problems include the `dlc` field not matching the length of `data`
             or creating a message with both `is_remote_frame` and `is_error_frame` set to `True`.
 
-        :param data_callback:
-            This optional function is called every time the `data` property is accessed. The function
-            `data_callback` must accept `arbitration_id: int, data: CanData` as arguments and return
-            the new `data`.
-
         :raises ValueError: iff `check` is set to `True` and one or more arguments were invalid
         """
         self.timestamp = timestamp

@@ -67,6 +67,40 @@ Message
             >>> m2.data
             bytearray(b'deadbeef')
 
+        Every access of the :attr:`~can.Message.data` triggers a refresh if a :attr:`~can.Message.data_callback`
+        was added to the :class:`~can.Message`.
+
+
+    .. attribute:: data_callback
+
+        :type: Callable
+
+        This function is called on every access to the :attr:`~can.Message.data` property. It must accept the
+        :attr:`~can.Message.arbitration_id` and the :attr:`~can.Message.current_data` as arguments and return
+        the new :attr:`~can.Message.data`. This can be used to update signal values, increment rolling counters
+        or to calculate the :abbr:`CRC (Cyclic redundancy check)`.
+
+            >>> from can import Message
+            >>>
+            >>> def increment_counter(arbitration_id, data):
+            >>>     data[0] = (data[0] + 1) % 16
+            >>>     return data
+            >>>
+            >>> msg = Message(data=[1, 2, 3, 4, 5], data_callback=increment_counter)
+            >>> msg.current_data
+            bytearray(b'\x01\x02\x03\x04\x05')
+            >>> msg.data
+            bytearray(b'\x02\x02\x03\x04\x05')
+            >>> print(msg)
+            Timestamp:        0.000000    ID: 00000000    X Rx                DLC:  5    02 02 03 04 05
+
+    .. attribute:: current_data
+
+        :type: bytearray
+
+        If a :attr:`~can.Message.data_callback` was added to the :class:`~can.Message` then this property
+        gives access to the :attr:`~can.Message.data` without modifying it.
+
 
     .. attribute:: dlc
 
