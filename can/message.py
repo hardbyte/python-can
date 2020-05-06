@@ -93,8 +93,6 @@ class Message:
 
         if data is None or is_remote_frame:
             self._data = bytearray()
-        elif isinstance(data, bytearray):
-            self._data = data
         else:
             self.data = data
 
@@ -297,7 +295,7 @@ class Message:
         return self._data
 
     @data.setter
-    def data(self, data: Optional[CanData]):
+    def data(self, data: CanData):
         try:
             self._data = bytearray(data)
         except TypeError:
