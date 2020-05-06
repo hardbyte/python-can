@@ -1,11 +1,12 @@
 Version 3.3.3
 ====
 
-Backported fixes from Python 3 only 4.x development.
+Backported fixes from 4.x development branch which targets Python 3.
 
-* #798 Backport caching msg.data value in neovi interface
-* #796 Fix Vector CANlib treatment of empty app name
-* #771 Handle empty CSV file
+* #798 Backport caching msg.data value in neovi interface.
+* #796 Fix Vector CANlib treatment of empty app name.
+* #771 Handle empty CSV file.
+* #741 ASCII reader can now handle FD frames.
 * #740 Exclude test packages from distribution.
 * #713 RTR crash fix in canutils log reader parsing RTR frames.
 * #701 Skip J1939 messages in ASC Reader.
