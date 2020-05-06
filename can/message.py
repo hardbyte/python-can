@@ -64,7 +64,7 @@ class Message:
         bitrate_switch: bool = False,
         error_state_indicator: bool = False,
         check: bool = False,
-        data_callback: Optional[Callable[[int, CanData], CanData]] = None,
+        data_callback: Optional[Callable[[int, bytearray], bytearray]] = None,
     ):
         """
         To create a message object, simply provide any of the below attributes
@@ -91,10 +91,15 @@ class Message:
         self.error_state_indicator = error_state_indicator
         self.data_callback = data_callback
 
+        self._data: bytearray
         if data is None or is_remote_frame:
             self._data = bytearray()
         else:
-            self.data = data
+            try:
+                self.data = bytearray(data)
+            except TypeError:
+                err = "Unable to set message data {} ({})".format(data, type(data))
+                raise TypeError(err)
 
         if dlc is None:
             self.dlc = len(self._data)
@@ -289,17 +294,17 @@ class Message:
                 )
 
     @property
-    def data(self) -> CanData:
+    def data(self) -> bytearray:
         if self.data_callback:
             self._data = self.data_callback(self.arbitration_id, self._data)
         return self._data
 
     @data.setter
-    def data(self, data: CanData):
-        try:
-            self._data = bytearray(data)
-        except TypeError:
-            err = "Unable to set message data {} ({})".format(data, type(data))
+    def data(self, data: bytearray):
+        if isinstance(data, bytearray):
+            self._data = data
+        else:
+            err = "Data {} ({}) must be {}".format(data, type(data), bytearray)
             raise TypeError(err)
 
     @property

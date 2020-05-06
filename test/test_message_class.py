@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
-
+import pickle
 import unittest
 import sys
 from math import isinf, isnan
@@ -106,8 +106,13 @@ class TestMessageClass(unittest.TestCase):
 
     def test_data_setter(self):
         msg = Message()
-        msg.data = [1, 2, 3, 4, 5, 6, 7, 8]
+        msg.data = bytearray([1, 2, 3, 4, 5, 6, 7, 8])
         assert msg.current_data == bytearray([1, 2, 3, 4, 5, 6, 7, 8])
+
+    def test_pickle_message(self):
+        msg = Message(data=[1, 2, 3, 4])
+        p = pickle.dumps(msg)
+        assert msg.equals(pickle.loads(p))
 
 
 if __name__ == "__main__":
