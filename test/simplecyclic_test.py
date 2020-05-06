@@ -168,6 +168,7 @@ class SimpleCyclicSendTaskTest(unittest.TestCase, ComparingMessagesTestCase):
         on_error_mock.assert_not_called()
         task.stop()
         bus.shutdown()
+        sleep(.5)
 
         # bus has been shutted down
         on_error_mock.reset_mock()
