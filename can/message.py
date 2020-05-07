@@ -308,7 +308,7 @@ class Message:
             raise TypeError(err)
 
     @property
-    def current_data(self) -> CanData:
+    def current_data(self) -> bytearray:
         """Retrieve the current data of auto modifying messages without changing it."""
         return self._data
 
