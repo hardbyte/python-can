@@ -176,7 +176,7 @@ class SimpleCyclicSendTaskTest(unittest.TestCase, ComparingMessagesTestCase):
         )
         task.start()
         sleep(1)
-        self.assertTrue(on_error_mock.call_count is 1)
+        self.assertEqual(on_error_mock.call_count, 1)
         task.stop()
 
         # bus is still shutted down, but on_error returns True
