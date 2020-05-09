@@ -99,6 +99,7 @@ jobs:
           can/broadcastmanager.py
           can/bus.py
           can/interface.py
+          can/interfaces/slcan.py
           can/interfaces/socketcan/**.py
           can/interfaces/virtual.py
           can/listener.py
