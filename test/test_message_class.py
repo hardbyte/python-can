@@ -8,6 +8,7 @@ from copy import copy, deepcopy
 
 from hypothesis import given, settings, reproduce_failure
 import hypothesis.strategies as st
+import pytest
 
 from can import Message
 
@@ -108,6 +109,12 @@ class TestMessageClass(unittest.TestCase):
         msg = Message()
         msg.data = bytearray([1, 2, 3, 4, 5, 6, 7, 8])
         assert msg.current_data == bytearray([1, 2, 3, 4, 5, 6, 7, 8])
+
+        with pytest.raises(TypeError):
+            msg.data = [0, 1, 2, 3]
+
+        with pytest.raises(TypeError):
+            msg.data = "string"
 
     def test_pickle_message(self):
         msg = Message(data=[1, 2, 3, 4])
