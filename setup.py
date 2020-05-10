@@ -12,7 +12,6 @@ from os import listdir
 from os.path import isfile, join
 import re
 import logging
-import sys
 from setuptools import setup, find_packages
 
 logging.basicConfig(level=logging.WARNING)
@@ -31,27 +30,6 @@ extras_require = {
     "serial": ["pyserial~=3.0"],
     "neovi": ["python-ics>=2.12", "filelock"],
 }
-
-tests_require = [
-    "pytest~=5.3",
-    "pytest-timeout~=1.3",
-    "pytest-cov~=2.8",
-    # coveragepy==5.0 fails with `Safety level may not be changed inside a transaction`
-    # on python 3.6 on MACOS
-    "coverage<5",
-    "codecov~=2.0",
-    "hypothesis~=4.56",
-] + extras_require["serial"]
-
-extras_require["test"] = tests_require
-
-# Check for 'pytest-runner' only if setup.py was invoked with 'test'.
-# This optimizes setup.py for cases when pytest-runner is not needed,
-# using the approach that is suggested upstream.
-#
-# See https://pypi.org/project/pytest-runner/#conditional-requirement
-needs_pytest = {"pytest", "test", "ptr"}.intersection(sys.argv)
-pytest_runner = ["pytest-runner"] if needs_pytest else []
 
 setup(
     # Description
@@ -110,7 +88,5 @@ setup(
         "mypy_extensions >= 0.4.0, < 0.5.0",
         'pywin32;platform_system=="Windows"',
     ],
-    setup_requires=pytest_runner,
     extras_require=extras_require,
-    tests_require=tests_require,
 )

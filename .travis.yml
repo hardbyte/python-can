@@ -21,12 +21,13 @@ env:
 
 install:
   - if [[ "$TEST_SOCKETCAN" ]]; then sudo bash test/open_vcan.sh ; fi
-  - travis_retry pip install .[test]
 
 script:
   - |
+    # install tox
+    pip install tox
     # Run the tests
-    python setup.py test
+    tox -e travis
     # preserve the error code
     RETURN_CODE=$?
     # Upload the coverage to codecov.io
