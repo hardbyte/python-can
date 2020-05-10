@@ -15,7 +15,7 @@ install:
   - set PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%
 
   # Install tox
-  - "python -m pip install tox
+  - "python -m pip install tox"
 
 build: off
 
