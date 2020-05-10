@@ -28,13 +28,6 @@ script:
     pip install tox
     # Run the tests
     tox -e travis
-    # preserve the error code
-    RETURN_CODE=$?
-    # Upload the coverage to codecov.io
-    codecov -X gcov
-    # set error code
-    (exit $RETURN_CODE);
-
 
 jobs:
   allow_failures:
