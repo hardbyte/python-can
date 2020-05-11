@@ -234,3 +234,8 @@ xlPopupHwConfig = _xlapi_dll.xlPopupHwConfig
 xlPopupHwConfig.argtypes = [ctypes.c_char_p, ctypes.c_uint]
 xlPopupHwConfig.restype = xlclass.XLstatus
 xlPopupHwConfig.errcheck = check_status
+
+xlSetTimerRate = _xlapi_dll.xlSetTimerRate
+xlSetTimerRate.argtypes = [xlclass.XLportHandle, ctypes.c_ulong]
+xlSetTimerRate.restype = xlclass.XLstatus
+xlSetTimerRate.errcheck = check_status

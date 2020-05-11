@@ -586,6 +586,10 @@ class VectorBus(BusABC):
         """
         xldriver.xlPopupHwConfig(ctypes.c_char_p(), ctypes.c_uint(wait_for_finish))
 
+    def set_timer_rate(self, timer_rate_ms: int):
+        timer_rate_10us = timer_rate_ms * 100
+        xldriver.xlSetTimerRate(self.port_handle, timer_rate_10us)
+
 
 def get_channel_configs():
     if xldriver is None:
