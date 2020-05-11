@@ -586,15 +586,85 @@ class VectorBus(BusABC):
         """
         xldriver.xlPopupHwConfig(ctypes.c_char_p(), ctypes.c_uint(wait_for_finish))
 
+    @staticmethod
+    def get_application_config(
+        app_name: str, app_channel: int, bus_type: xldefine.XL_BusTypes,
+    ):
+        """Retrieve information for an application in Vector Hardware Configuration.
+
+        :param app_name:
+            The name of the application.
+        :param app_channel:
+            The channel of the application.
+        :param bus_type:
+            The bus type Enum e.g. `XL_BusTypes.XL_BUS_TYPE_CAN`
+        :return:
+            Retruns a tuple of the hardware type, the hardware index and the
+            hardware channel.
+        :raises VectorError:
+            Raises a VectorError when the application name does not exist in
+            Vector Hardware Configuration.
+        """
+        hw_type = ctypes.c_uint()
+        hw_index = ctypes.c_uint()
+        hw_channel = ctypes.c_uint()
+
+        xldriver.xlGetApplConfig(
+            app_name.encode(),
+            app_channel,
+            hw_type,
+            hw_index,
+            hw_channel,
+            bus_type.value,
+        )
+        return xldefine.XL_HardwareType(hw_type.value), hw_index, hw_channel
+
+    @staticmethod
+    def set_application_config(
+        app_name: str,
+        app_channel: int,
+        hw_type: xldefine.XL_HardwareType,
+        hw_index: int,
+        hw_channel: int,
+        bus_type: xldefine.XL_BusTypes,
+    ) -> None:
+        """Modify the application settings in Vector Hardware Configuration.
+
+        :param app_name:
+            The name of the application. Creates a new application if it does
+            not exist yet.
+        :param hw_type:
+            The hardware type of the interface.
+            E.g XL_HardwareType.XL_HWTYPE_VIRTUAL
+        :param hw_index:
+            The index of the interface if multiple interface with the same
+            hardware type are present.
+        :param hw_channel:
+            The channel index of the interface.
+        :param bus_type:
+            The bus type of the interfaces, which should be
+            XL_BusTypes.XL_BUS_TYPE_CAN for most cases.
+        :return:
+        """
+
+        xldriver.xlSetApplConfig(
+            app_name.encode(),
+            app_channel,
+            hw_type.value,
+            hw_index,
+            hw_channel,
+            bus_type.value,
+        )
+
 
 def get_channel_configs():
     if xldriver is None:
         return []
     driver_config = xlclass.XLdriverConfig()
     try:
-        xldriver.xlOpenDriver()
+        # xldriver.xlOpenDriver()
         xldriver.xlGetDriverConfig(driver_config)
-        xldriver.xlCloseDriver()
+        # xldriver.xlCloseDriver()
     except Exception:
         pass
     return [driver_config.channel[i] for i in range(driver_config.channelCount)]

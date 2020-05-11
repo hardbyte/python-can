@@ -234,3 +234,27 @@ xlPopupHwConfig = _xlapi_dll.xlPopupHwConfig
 xlPopupHwConfig.argtypes = [ctypes.c_char_p, ctypes.c_uint]
 xlPopupHwConfig.restype = xlclass.XLstatus
 xlPopupHwConfig.errcheck = check_status
+
+xlSetApplConfig = _xlapi_dll.xlSetApplConfig
+xlSetApplConfig.argtypes = [
+    ctypes.c_char_p,
+    ctypes.c_uint,
+    ctypes.c_uint,
+    ctypes.c_uint,
+    ctypes.c_uint,
+    ctypes.c_uint,
+]
+xlSetApplConfig.restype = xlclass.XLstatus
+xlSetApplConfig.errcheck = check_status
+
+xlGetApplConfig = _xlapi_dll.xlGetApplConfig
+xlGetApplConfig.argtypes = [
+    ctypes.c_char_p,
+    ctypes.c_uint,
+    ctypes.POINTER(ctypes.c_uint),
+    ctypes.POINTER(ctypes.c_uint),
+    ctypes.POINTER(ctypes.c_uint),
+    ctypes.c_uint,
+]
+xlGetApplConfig.restype = xlclass.XLstatus
+xlGetApplConfig.errcheck = check_status
