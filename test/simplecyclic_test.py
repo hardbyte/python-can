@@ -170,7 +170,7 @@ class SimpleCyclicSendTaskTest(unittest.TestCase, ComparingMessagesTestCase):
         bus.shutdown()
 
         # bus has been shutted down
-        on_error_mock.reset_mock()
+        on_error_mock = MagicMock(return_value=False)
         task = can.broadcastmanager.ThreadBasedCyclicSendTask(
             bus, bus._lock_send_periodic, msg, 0.1, 3, on_error_mock
         )
