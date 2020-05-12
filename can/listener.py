@@ -82,10 +82,10 @@ class BufferedReader(Listener):
     be serviced. The messages can then be fetched with
     :meth:`~can.BufferedReader.get_message`.
 
-    Putting in messages after :meth:`~can.BufferedReader.stop` has be called will raise
+    Putting in messages after :meth:`~can.BufferedReader.stop` has been called will raise
     an exception, see :meth:`~can.BufferedReader.on_message_received`.
 
-    :attr bool is_stopped: ``True`` iff the reader has been stopped
+    :attr bool is_stopped: ``True`` if the reader has been stopped
     """
 
     def __init__(self):
