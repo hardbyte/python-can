@@ -1,0 +1,10 @@
+pull_request_rules:
+  - name: Automatic merge on up to date branch with dual approval
+    conditions:
+      - "#approved-reviews-by>=2"
+      - "status-success=continuous-integration/travis-ci/pr"
+      - "label!=work-in-progress"
+    actions:
+      merge:
+        method: merge
+        strict: true
