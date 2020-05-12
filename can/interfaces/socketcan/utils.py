@@ -61,7 +61,10 @@ def find_available_interfaces() -> Iterable[str]:
         # output contains some lines like "1: vcan42: <NOARP,UP,LOWER_UP> ..."
         # extract the "vcan42" of each line
         interfaces = [line.split(": ", 3)[1] for line in output.splitlines()]
-        log.debug("find_available_interfaces(): detected these interfaces (before filtering): %s", interfaces)
+        log.debug(
+            "find_available_interfaces(): detected these interfaces (before filtering): %s",
+            interfaces,
+        )
         return filter(_PATTERN_CAN_INTERFACE.match, interfaces)
 
 
