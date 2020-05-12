@@ -286,9 +286,17 @@ class BLFReader(BaseIOHandler):
                 )
             elif obj_type == CAN_FD_MESSAGE:
                 members = unpack_can_fd_msg(data, pos)
-                channel, flags, dlc, can_id, _, _, fd_flags, valid_bytes, can_data = (
-                    members
-                )
+                (
+                    channel,
+                    flags,
+                    dlc,
+                    can_id,
+                    _,
+                    _,
+                    fd_flags,
+                    valid_bytes,
+                    can_data,
+                ) = members
                 yield Message(
                     timestamp=timestamp,
                     arbitration_id=can_id & 0x1FFFFFFF,
