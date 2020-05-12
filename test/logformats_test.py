@@ -344,6 +344,157 @@ class TestAscFileFormat(ReaderWriterTest):
             adds_default_channel=0,
         )
 
+    def _read_log_file(self, filename):
+        logfile = os.path.join(os.path.dirname(__file__), "data", filename)
+        with can.ASCReader(logfile) as reader:
+            return list(reader)
+
+    def test_can_message(self):
+        expected_messages = [
+            can.Message(
+                timestamp=2.5010,
+                arbitration_id=0xC8,
+                is_extended_id=False,
+                is_rx=False,
+                channel=1,
+                dlc=8,
+                data=[9, 8, 7, 6, 5, 4, 3, 2],
+            ),
+            can.Message(
+                timestamp=17.876708,
+                arbitration_id=0x6F9,
+                is_extended_id=False,
+                channel=0,
+                dlc=0x8,
+                data=[5, 0xC, 0, 0, 0, 0, 0, 0],
+            ),
+        ]
+        actual = self._read_log_file("test_CanMessage.asc")
+        self.assertMessagesEqual(actual, expected_messages)
+
+    def test_can_remote_message(self):
+        expected_messages = [
+            can.Message(
+                timestamp=2.510001,
+                arbitration_id=0x100,
+                is_extended_id=False,
+                channel=1,
+                is_remote_frame=True,
+            ),
+            can.Message(
+                timestamp=2.520002,
+                arbitration_id=0x200,
+                is_extended_id=False,
+                is_rx=False,
+                channel=2,
+                is_remote_frame=True,
+            ),
+            can.Message(
+                timestamp=2.584921,
+                arbitration_id=0x300,
+                is_extended_id=False,
+                channel=3,
+                dlc=8,
+                is_remote_frame=True,
+            ),
+        ]
+        actual = self._read_log_file("test_CanRemoteMessage.asc")
+        self.assertMessagesEqual(actual, expected_messages)
+
+    def test_can_fd_remote_message(self):
+        expected_messages = [
+            can.Message(
+                timestamp=30.300981,
+                arbitration_id=0x50005,
+                channel=2,
+                dlc=5,
+                is_rx=False,
+                is_fd=True,
+                is_remote_frame=True,
+                error_state_indicator=True,
+            )
+        ]
+        actual = self._read_log_file("test_CanFdRemoteMessage.asc")
+        self.assertMessagesEqual(actual, expected_messages)
+
+    def test_can_fd_message(self):
+        expected_messages = [
+            can.Message(
+                timestamp=30.005021,
+                arbitration_id=0x300,
+                is_extended_id=False,
+                channel=0,
+                dlc=8,
+                data=[0x11, 0xC2, 3, 4, 5, 6, 7, 8],
+                is_fd=True,
+                bitrate_switch=True,
+            ),
+            can.Message(
+                timestamp=30.005041,
+                arbitration_id=0x1C4D80A7,
+                channel=1,
+                dlc=8,
+                is_rx=False,
+                data=[0x12, 0xC2, 3, 4, 5, 6, 7, 8],
+                is_fd=True,
+                error_state_indicator=True,
+            ),
+            can.Message(
+                timestamp=30.005071,
+                arbitration_id=0x30A,
+                is_extended_id=False,
+                channel=2,
+                dlc=8,
+                data=[1, 2, 3, 4, 5, 6, 7, 8],
+                is_fd=True,
+                bitrate_switch=True,
+                error_state_indicator=True,
+            ),
+        ]
+        actual = self._read_log_file("test_CanFdMessage.asc")
+        self.assertMessagesEqual(actual, expected_messages)
+
+    def test_can_fd_message_64(self):
+        expected_messages = [
+            can.Message(
+                timestamp=30.506898,
+                arbitration_id=0x4EE,
+                is_extended_id=False,
+                channel=3,
+                dlc=0xF,
+                data=[0xA1, 2, 3, 4] + 59 * [0] + [0x64],
+                is_fd=True,
+                error_state_indicator=True,
+            ),
+            can.Message(
+                timestamp=31.506898,
+                arbitration_id=0x1C4D80A7,
+                channel=3,
+                dlc=0xF,
+                data=[0xB1, 2, 3, 4] + 59 * [0] + [0x64],
+                is_fd=True,
+                bitrate_switch=True,
+            ),
+        ]
+        actual = self._read_log_file("test_CanFdMessage64.asc")
+        self.assertMessagesEqual(actual, expected_messages)
+
+    def test_can_and_canfd_error_frames(self):
+        expected_messages = [
+            can.Message(timestamp=2.501000, channel=0, is_error_frame=True),
+            can.Message(timestamp=3.501000, channel=0, is_error_frame=True),
+            can.Message(timestamp=4.501000, channel=1, is_error_frame=True),
+            can.Message(
+                timestamp=30.806898,
+                channel=4,
+                is_rx=False,
+                is_error_frame=True,
+                is_fd=True,
+            ),
+        ]
+        actual = self._read_log_file("test_CanErrorFrames.asc")
+        self.assertMessagesEqual(actual, expected_messages)
+
 
 class TestBlfFileFormat(ReaderWriterTest):
     """Tests can.BLFWriter and can.BLFReader.
