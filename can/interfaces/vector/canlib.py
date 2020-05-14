@@ -10,6 +10,7 @@ import ctypes
 import logging
 import time
 import os
+from typing import Tuple
 
 try:
     # Try builtin Python 3 Windows API
@@ -589,7 +590,7 @@ class VectorBus(BusABC):
     @staticmethod
     def get_application_config(
         app_name: str, app_channel: int, bus_type: xldefine.XL_BusTypes,
-    ):
+    ) -> Tuple[xldefine.XL_HardwareType, int, int]:
         """Retrieve information for an application in Vector Hardware Configuration.
 
         :param app_name:
@@ -617,7 +618,7 @@ class VectorBus(BusABC):
             hw_channel,
             bus_type.value,
         )
-        return xldefine.XL_HardwareType(hw_type.value), hw_index, hw_channel
+        return xldefine.XL_HardwareType(hw_type.value), hw_index.value, hw_channel.value
 
     @staticmethod
     def set_application_config(
@@ -633,6 +634,8 @@ class VectorBus(BusABC):
         :param app_name:
             The name of the application. Creates a new application if it does
             not exist yet.
+        :param app_channel:
+            The channel of the application.
         :param hw_type:
             The hardware type of the interface.
             E.g XL_HardwareType.XL_HWTYPE_VIRTUAL
@@ -644,9 +647,7 @@ class VectorBus(BusABC):
         :param bus_type:
             The bus type of the interfaces, which should be
             XL_BusTypes.XL_BUS_TYPE_CAN for most cases.
-        :return:
         """
-
         xldriver.xlSetApplConfig(
             app_name.encode(),
             app_channel,
