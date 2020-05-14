@@ -658,6 +658,16 @@ class VectorBus(BusABC):
         )
 
     def set_timer_rate(self, timer_rate_ms: int):
+        """Set the cyclic event rate of the port.
+
+        Once set, the port will generate a cyclic event with the tag XL_EventTags.XL_TIMER.
+        This timer can be used to keep an application alive. See XL Driver Library Description
+        for more information
+
+        :param timer_rate_ms:
+            The timer rate in ms. The minimal timer rate is 1ms, a value of 0 deactivates
+            the timer events.
+        """
         timer_rate_10us = timer_rate_ms * 100
         xldriver.xlSetTimerRate(self.port_handle, timer_rate_10us)
 
