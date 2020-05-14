@@ -246,3 +246,8 @@ xlSetApplConfig.argtypes = [
 ]
 xlSetApplConfig.restype = xlclass.XLstatus
 xlSetApplConfig.errcheck = check_status
+
+xlSetTimerRate = _xlapi_dll.xlSetTimerRate
+xlSetTimerRate.argtypes = [xlclass.XLportHandle, ctypes.c_ulong]
+xlSetTimerRate.restype = xlclass.XLstatus
+xlSetTimerRate.errcheck = check_status

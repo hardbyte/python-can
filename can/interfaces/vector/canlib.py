@@ -657,15 +657,19 @@ class VectorBus(BusABC):
             bus_type.value,
         )
 
+    def set_timer_rate(self, timer_rate_ms: int):
+        timer_rate_10us = timer_rate_ms * 100
+        xldriver.xlSetTimerRate(self.port_handle, timer_rate_10us)
+
 
 def get_channel_configs():
     if xldriver is None:
         return []
     driver_config = xlclass.XLdriverConfig()
     try:
-        # xldriver.xlOpenDriver()
+        xldriver.xlOpenDriver()
         xldriver.xlGetDriverConfig(driver_config)
-        # xldriver.xlCloseDriver()
+        xldriver.xlCloseDriver()
     except Exception:
         pass
     return [driver_config.channel[i] for i in range(driver_config.channelCount)]
