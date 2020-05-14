@@ -600,7 +600,7 @@ class VectorBus(BusABC):
         :param bus_type:
             The bus type Enum e.g. `XL_BusTypes.XL_BUS_TYPE_CAN`
         :return:
-            Retruns a tuple of the hardware type, the hardware index and the
+            Returns a tuple of the hardware type, the hardware index and the
             hardware channel.
         :raises VectorError:
             Raises a VectorError when the application name does not exist in
