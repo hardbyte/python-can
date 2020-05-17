@@ -68,7 +68,7 @@ class Bus(BusABC):  # pylint disable=abstract-method
         Some might have a special meaning, see below.
 
         :param channel:
-            Set to ``None`` to let it be resloved automatically from the default
+            Set to ``None`` to let it be resolved automatically from the default
             configuration. That might fail, see below.
 
             Expected type is backend dependent.
