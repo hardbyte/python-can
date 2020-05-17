@@ -63,6 +63,18 @@ xlGetApplConfig.argtypes = [
 xlGetApplConfig.restype = xlclass.XLstatus
 xlGetApplConfig.errcheck = check_status
 
+xlSetApplConfig = _xlapi_dll.xlSetApplConfig
+xlSetApplConfig.argtypes = [
+    ctypes.c_char_p,
+    ctypes.c_uint,
+    ctypes.c_uint,
+    ctypes.c_uint,
+    ctypes.c_uint,
+    ctypes.c_uint,
+]
+xlSetApplConfig.restype = xlclass.XLstatus
+xlSetApplConfig.errcheck = check_status
+
 xlGetChannelIndex = _xlapi_dll.xlGetChannelIndex
 xlGetChannelIndex.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_int]
 xlGetChannelIndex.restype = ctypes.c_int
@@ -234,18 +246,6 @@ xlPopupHwConfig = _xlapi_dll.xlPopupHwConfig
 xlPopupHwConfig.argtypes = [ctypes.c_char_p, ctypes.c_uint]
 xlPopupHwConfig.restype = xlclass.XLstatus
 xlPopupHwConfig.errcheck = check_status
-
-xlSetApplConfig = _xlapi_dll.xlSetApplConfig
-xlSetApplConfig.argtypes = [
-    ctypes.c_char_p,
-    ctypes.c_uint,
-    ctypes.c_uint,
-    ctypes.c_uint,
-    ctypes.c_uint,
-    ctypes.c_uint,
-]
-xlSetApplConfig.restype = xlclass.XLstatus
-xlSetApplConfig.errcheck = check_status
 
 xlSetTimerRate = _xlapi_dll.xlSetTimerRate
 xlSetTimerRate.argtypes = [xlclass.XLportHandle, ctypes.c_ulong]

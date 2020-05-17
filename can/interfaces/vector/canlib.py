@@ -589,7 +589,7 @@ class VectorBus(BusABC):
 
     @staticmethod
     def get_application_config(
-        app_name: str, app_channel: int, bus_type: xldefine.XL_BusTypes,
+        app_name: str, app_channel: int, bus_type: xldefine.XL_BusTypes
     ) -> Tuple[xldefine.XL_HardwareType, int, int]:
         """Retrieve information for an application in Vector Hardware Configuration.
 
