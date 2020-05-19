@@ -357,6 +357,8 @@ class PCANBasic:
         # Loads the PCANBasic.dll
         if platform.system() == 'Windows':
             self.__m_dllBasic = windll.LoadLibrary("PCANBasic")
+        elif 'CYGWIN' in platform.system():
+            self.__m_dllBasic = cdll.LoadLibrary("PCANBasic.dll")
         elif platform.system() == 'Darwin':
             self.__m_dllBasic = cdll.LoadLibrary('libPCBUSB.dylib')
         else:
