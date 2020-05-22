@@ -34,6 +34,7 @@ from can.broadcastmanager import (
     RestartableCyclicTaskABC,
     LimitedDurationCyclicSendTaskABC,
 )
+from can.typechecking import CanFilters
 from can.interfaces.socketcan.constants import *  # CAN_RAW, CAN_*_FLAG
 from can.interfaces.socketcan.utils import pack_filters, find_available_interfaces
 
@@ -593,12 +594,20 @@ class SocketcanBus(BusABC):
         channel: str = "",
         receive_own_messages: bool = False,
         fd: bool = False,
+        can_filters: Optional[CanFilters] = None,
         **kwargs,
     ) -> None:
-        """
+        """Creates a new socketcan bus.
+
+        If setting some socket options fails, an error will be printed but no exception will be thrown.
+        This includes enabling:
+         - that own messages should be received,
+         - CAN-FD frames and
+         - error frames.
+
         :param channel:
-            The can interface name with which to create this bus. An example channel
-            would be 'vcan0' or 'can0'.
+            The can interface name with which to create this bus.
+            An example channel would be 'vcan0' or 'can0'.
             An empty string '' will receive messages from all channels.
             In that case any sent messages must be explicitly addressed to a
             channel using :attr:`can.Message.channel`.
@@ -606,7 +615,7 @@ class SocketcanBus(BusABC):
             If transmitted messages should also be received by this bus.
         :param fd:
             If CAN-FD frames should be supported.
-        :param list can_filters:
+        :param can_filters:
             See :meth:`can.BusABC.set_filters`.
         """
         self.socket = create_socket()
@@ -622,26 +631,31 @@ class SocketcanBus(BusABC):
             self.socket.setsockopt(
                 SOL_CAN_RAW, CAN_RAW_RECV_OWN_MSGS, 1 if receive_own_messages else 0
             )
-        except socket.error as e:
-            log.error("Could not receive own messages (%s)", e)
+        except socket.error as error:
+            log.error("Could not receive own messages (%s)", error)
 
+        # enable CAN-FD frames
         if fd:
-            # TODO handle errors
-            self.socket.setsockopt(SOL_CAN_RAW, CAN_RAW_FD_FRAMES, 1)
+            try:
+                self.socket.setsockopt(SOL_CAN_RAW, CAN_RAW_FD_FRAMES, 1)
+            except socket.error as error:
+                log.error("Could not enable CAN-FD frames (%s)", error)
 
-        # Enable error frames
-        self.socket.setsockopt(SOL_CAN_RAW, CAN_RAW_ERR_FILTER, 0x1FFFFFFF)
+        # enable error frames
+        try:
+            self.socket.setsockopt(SOL_CAN_RAW, CAN_RAW_ERR_FILTER, 0x1FFFFFFF)
+        except socket.error as error:
+            log.error("Could not enable error frames (%s)", error)
 
         bind_socket(self.socket, channel)
         kwargs.update({"receive_own_messages": receive_own_messages, "fd": fd})
-        super().__init__(channel=channel, **kwargs)
+        super().__init__(channel=channel, can_filters=can_filters, **kwargs)
 
     def shutdown(self) -> None:
         """Stops all active periodic tasks and closes the socket."""
         self.stop_all_periodic_tasks()
-        for channel in self._bcm_sockets:
-            log.debug("Closing bcm socket for channel {}".format(channel))
-            bcm_socket = self._bcm_sockets[channel]
+        for channel, bcm_socket in self._bcm_sockets.items():
+            log.debug("Closing bcm socket for channel %s", channel)
             bcm_socket.close()
         log.debug("Closing raw can socket")
         self.socket.close()
@@ -649,26 +663,24 @@ class SocketcanBus(BusABC):
     def _recv_internal(
         self, timeout: Optional[float]
     ) -> Tuple[Optional[Message], bool]:
-        # get all sockets that are ready (can be a list with a single value
-        # being self.socket or an empty list if self.socket is not ready)
         try:
             # get all sockets that are ready (can be a list with a single value
             # being self.socket or an empty list if self.socket is not ready)
             ready_receive_sockets, _, _ = select.select([self.socket], [], [], timeout)
         except socket.error as exc:
             # something bad happened (e.g. the interface went down)
-            raise can.CanError("Failed to receive: %s" % exc)
+            raise can.CanError(f"Failed to receive: {exc}")
 
-        if ready_receive_sockets:  # not empty or True
+        if ready_receive_sockets:  # not empty
             get_channel = self.channel == ""
             msg = capture_message(self.socket, get_channel)
             if msg and not msg.channel and self.channel:
                 # Default to our own channel
                 msg.channel = self.channel
             return msg, self._is_filtered
-        else:
-            # socket wasn't readable or timeout occurred
-            return None, self._is_filtered
+
+        # socket wasn't readable or timeout occurred
+        return None, self._is_filtered
 
     def send(self, msg: Message, timeout: Optional[float] = None) -> None:
         """Transmit a message to the CAN bus.
@@ -777,13 +789,12 @@ class SocketcanBus(BusABC):
     def _apply_filters(self, filters: Optional[can.typechecking.CanFilters]) -> None:
         try:
             self.socket.setsockopt(SOL_CAN_RAW, CAN_RAW_FILTER, pack_filters(filters))
-        except socket.error as err:
+        except socket.error as error:
             # fall back to "software filtering" (= not in kernel)
             self._is_filtered = False
-            # TODO Is this serious enough to raise a CanError exception?
             log.error(
                 "Setting filters failed; falling back to software filtering (not in kernel): %s",
-                err,
+                error,
             )
         else:
             self._is_filtered = True
