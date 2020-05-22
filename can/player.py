@@ -47,6 +47,12 @@ def main():
                         help='''Ignore timestamps (send all frames immediately with minimum gap between frames)''',
                         action='store_false')
 
+    parser.add_argument(
+        "--error-frames",
+        help="Also send error frames to the interface.",
+        action="store_true",
+    )
+
     parser.add_argument('-g', '--gap', type=float, help='''<s> minimum time between replayed frames''',
                         default=0.0001)
     parser.add_argument('-s', '--skip', type=float, default=60*60*24,
@@ -68,6 +74,8 @@ def main():
     logging_level_name = ['critical', 'error', 'warning', 'info', 'debug', 'subdebug'][min(5, verbosity)]
     can.set_logging_level(logging_level_name)
 
+    error_frames = results.error_frames
+
     config = {"single_handle": True}
     if results.interface:
         config["interface"] = results.interface
@@ -84,6 +92,8 @@ def main():
 
     try:
         for m in in_sync:
+            if m.is_error_frame and not error_frames:
+                continue
             if verbosity >= 3:
                 print(m)
             bus.send(m)

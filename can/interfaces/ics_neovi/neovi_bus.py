@@ -334,11 +334,12 @@ class NeoViBus(BusABC):
                 flag3 |= ics.SPY_STATUS3_CANFD_ESI
 
         message.ArbIDOrHeader = msg.arbitration_id
-        message.NumberBytesData = len(msg.data)
-        message.Data = tuple(msg.data[:8])
-        if msg.is_fd and len(msg.data) > 8:
+        msg_data = msg.data
+        message.NumberBytesData = len(msg_data)
+        message.Data = tuple(msg_data[:8])
+        if msg.is_fd and len(msg_data) > 8:
             message.ExtraDataPtrEnabled = 1
-            message.ExtraDataPtr = tuple(msg.data)
+            message.ExtraDataPtr = tuple(msg_data)
         message.StatusBitField = flag0
         message.StatusBitField2 = 0
         message.StatusBitField3 = flag3

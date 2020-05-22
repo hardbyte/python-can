@@ -1,3 +1,4 @@
+import warnings
 from ctypes import *
 import logging
 import platform
@@ -66,17 +67,19 @@ except OSError as e:
 
 
 class CANalystIIBus(BusABC):
-    def __init__(self, channel, device=0, baud=None, Timing0=None, Timing1=None, can_filters=None):
+    def __init__(
+        self, channel, device=0, bitrate=None, baud=None, Timing0=None, Timing1=None, can_filters=None, **kwargs
+    ):
         """
 
         :param channel: channel number
         :param device: device number
-        :param baud: baud rate
+        :param baud: baud rate. Renamed to bitrate in next release.
         :param Timing0: customize the timing register if baudrate is not specified
         :param Timing1:
         :param can_filters: filters for packet
         """
-        super(CANalystIIBus, self).__init__(channel, can_filters)
+        super(CANalystIIBus, self).__init__(channel, can_filters, **kwargs)
 
         if isinstance(channel, (list, tuple)):
             self.channels = channel
@@ -91,10 +94,15 @@ class CANalystIIBus(BusABC):
         self.channel_info = "CANalyst-II: device {}, channels {}".format(self.device, self.channels)
 
         if baud is not None:
+            warnings.warn('Argument baud will be deprecated in version 4, use bitrate instead',
+                          PendingDeprecationWarning)
+            bitrate = baud
+
+        if bitrate is not None:
             try:
-                Timing0, Timing1 = TIMING_DICT[baud]
+                Timing0, Timing1 = TIMING_DICT[bitrate]
             except KeyError:
-                raise ValueError("Baudrate is not supported")
+                raise ValueError("Bitrate is not supported")
 
         if Timing0 is None or Timing1 is None:
             raise ValueError("Timing registers are not set")
