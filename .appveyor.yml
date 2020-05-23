@@ -14,14 +14,11 @@ install:
   # Prepend Python installation and scripts (e.g. pytest) to PATH
   - set PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%
 
-  # We need to install the python-can library itself including the dependencies
-  - "python -m pip install .[test,neovi]"
+  # Install tox
+  - "pip install tox"
 
 build: off
 
 test_script:
   # run tests
-  - "pytest"
-
-  # uplad coverage reports
-  - "codecov -X gcov"
+  - "tox -e appveyor"
