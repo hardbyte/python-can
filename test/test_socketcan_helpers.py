@@ -9,7 +9,7 @@ import unittest
 
 from can.interfaces.socketcan.utils import find_available_interfaces, error_code_to_str
 
-from .config import *
+from .config import IS_LINUX, TEST_INTERFACE_SOCKETCAN
 
 
 class TestSocketCanHelpers(unittest.TestCase):
@@ -21,7 +21,7 @@ class TestSocketCanHelpers(unittest.TestCase):
         """
 
         # all possible & also some invalid error codes
-        test_data = list(range(0, 256)) + [-1, 256, 5235, 346264]
+        test_data = list(range(0, 256)) + [-1, 256, 5235, 346264, None]
 
         for error_code in test_data:
             string = error_code_to_str(error_code)
