@@ -34,7 +34,7 @@ The project can be installed in editable mode with::
 The unit tests can be run with::
 
     pip install tox
-    tox
+    tox -e py
 
 The documentation can be built with::
 
