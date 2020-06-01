@@ -18,7 +18,7 @@ def receive_all():
         # bus = can.interface.Bus(bustype='vector', app_name='CANalyzer', channel=0, bitrate=250000)
 
         # set to read-only, only supported on some interfaces
-        bus.state = BusState.PASSIVE
+        bus.state = BusState.ERROR_PASSIVE
 
         try:
             while True:

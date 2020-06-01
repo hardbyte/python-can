@@ -78,7 +78,7 @@ class PcanBus(BusABC):
     def __init__(
         self,
         channel="PCAN_USBBUS1",
-        state=BusState.ACTIVE,
+        state=BusState.ERROR_ACTIVE,
         bitrate=500000,
         *args,
         **kwargs
@@ -95,7 +95,7 @@ class PcanBus(BusABC):
 
         :param can.bus.BusState state:
             BusState of the channel.
-            Default is ACTIVE
+            Default is ERROR_ACTIVE
 
         :param int bitrate:
             Bitrate of channel in bit/s.
@@ -183,10 +183,10 @@ class PcanBus(BusABC):
         self.m_objPCANBasic = PCANBasic()
         self.m_PcanHandle = globals()[channel]
 
-        if state is BusState.ACTIVE or state is BusState.PASSIVE:
+        if state is BusState.ERROR_ACTIVE or state is BusState.ERROR_PASSIVE:
             self.state = state
         else:
-            raise ArgumentError("BusState must be Active or Passive")
+            raise ArgumentError("BusState must be ERROR_ACTIVE or ERROR_PASSIVE")
 
         if self.fd:
             f_clock_val = kwargs.get("f_clock", None)
@@ -468,12 +468,12 @@ class PcanBus(BusABC):
         # declare here, which is called by __init__()
         self._state = new_state  # pylint: disable=attribute-defined-outside-init
 
-        if new_state is BusState.ACTIVE:
+        if new_state is BusState.ERROR_ACTIVE:
             self.m_objPCANBasic.SetValue(
                 self.m_PcanHandle, PCAN_LISTEN_ONLY, PCAN_PARAMETER_OFF
             )
 
-        elif new_state is BusState.PASSIVE:
+        elif new_state is BusState.ERROR_PASSIVE:
             # When this mode is set, the CAN controller does not take part on active events (eg. transmit CAN messages)
             # but stays in a passive mode (CAN monitor), in which it can analyse the traffic on the CAN bus used by a
             # PCAN channel. See also the Philips Data Sheet "SJA1000 Stand-alone CAN controller".

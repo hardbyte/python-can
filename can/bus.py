@@ -22,10 +22,11 @@ LOG = logging.getLogger(__name__)
 class BusState(Enum):
     """The state in which a :class:`can.BusABC` can be."""
 
-    ACTIVE = auto()
-    PASSIVE = auto()
-    ERROR = auto()
-
+    ERROR_ACTIVE = auto()
+    ERROR_PASSIVE = auto()
+    BUS_OFF = auto()
+    STOPPED = auto()
+    UNKNOWN = auto()
 
 class BusABC(metaclass=ABCMeta):
     """The CAN Bus Abstract Base Class that serves as the basis

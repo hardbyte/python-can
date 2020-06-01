@@ -69,7 +69,7 @@ class UcanBus(BusABC):
 
         :param can.bus.BusState state:
             BusState of the channel.
-            Default is ACTIVE.
+            Default is ERROR_ACTIVE.
 
         :param bool receive_own_messages:
             If messages transmitted should also be received back.
@@ -102,17 +102,17 @@ class UcanBus(BusABC):
         if bitrate not in self.BITRATES:
             raise ValueError("Invalid bitrate {}".format(bitrate))
 
-        state = kwargs.get("state", BusState.ACTIVE)
-        if state is BusState.ACTIVE or state is BusState.PASSIVE:
+        state = kwargs.get("state", BusState.ERROR_ACTIVE)
+        if state is BusState.ERROR_ACTIVE or state is BusState.ERROR_PASSIVE:
             self._state = state
         else:
-            raise ValueError("BusState must be Active or Passive")
+            raise ValueError("BusState must be ERROR_ACTIVE or ERROR_PASSIVE")
 
         # get parameters
         self._params = {
             "mode": Mode.MODE_NORMAL
             | (Mode.MODE_TX_ECHO if kwargs.get("receive_own_messages") else 0)
-            | (Mode.MODE_LISTEN_ONLY if state is BusState.PASSIVE else 0),
+            | (Mode.MODE_LISTEN_ONLY if state is BusState.ERROR_PASSIVE else 0),
             "BTR": self.BITRATES[bitrate],
         }
         # get extra parameters
@@ -267,13 +267,13 @@ class UcanBus(BusABC):
 
     @state.setter
     def state(self, new_state):
-        if self._state is not BusState.ERROR and (
-            new_state is BusState.ACTIVE or new_state is BusState.PASSIVE
+        if self._state is not BusState.BUS_OFF and (
+            new_state is BusState.ERROR_ACTIVE or new_state is BusState.ERROR_PASSIVE
         ):
             # close the CAN channel
             self._ucan.shutdown(self.channel, False)
             # set mode
-            if new_state is BusState.ACTIVE:
+            if new_state is BusState.ERROR_ACTIVE:
                 self._params["mode"] &= ~Mode.MODE_LISTEN_ONLY
             else:
                 self._params["mode"] |= Mode.MODE_LISTEN_ONLY

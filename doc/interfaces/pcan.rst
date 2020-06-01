@@ -26,7 +26,7 @@ Here is an example configuration file for using `PCAN-USB <https://www.peak-syst
 
 ``channel``: (default PCAN_USBBUS1) CAN interface name
 
-``state``: (default can.bus.BusState.ACTIVE) BusState of the channel
+``state``: (default can.bus.BusState.ERROR_ACTIVE) BusState of the channel
 
 ``bitrate``: (default 500000) Channel bitrate
 

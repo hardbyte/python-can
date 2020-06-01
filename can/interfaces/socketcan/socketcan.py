@@ -10,8 +10,10 @@ from typing import Dict, List, Optional, Sequence, Tuple, Type, Union
 import logging
 import ctypes
 import ctypes.util
+import re
 import select
 import socket
+import subprocess
 import struct
 import time
 import threading
@@ -28,7 +30,7 @@ except ImportError:
 
 
 import can
-from can import Message, BusABC
+from can import Message, BusABC, BusState
 from can.broadcastmanager import (
     ModifiableCyclicTaskABC,
     RestartableCyclicTaskABC,
@@ -659,6 +661,36 @@ class SocketcanBus(BusABC):
             bcm_socket.close()
         log.debug("Closing raw can socket")
         self.socket.close()
+
+    @property
+    def state(self):
+        try:
+            addr = self.socket.getsockname()
+        except OSError:
+            return BusState.UNKNOWN
+        # Need to check data type due to https://bugs.python.org/issue37405
+        if isinstance(addr, tuple):
+            interface, *_ = self.socket.getsockname()
+        else:
+            interface = self.socket.getsockname()
+        try:
+            details = subprocess.check_output(["ip", "-d", "link", "show", interface])
+        except subprocess.CalledProcessError:
+            return BusState.UNKNOWN
+        match = re.search("state ([^\s]+) restart-ms", str(details))
+        if match is None:
+            return BusState.UNKNOWN
+        state = match.group(1)
+        # From https://github.com/shemminger/iproute2/blob/master/ip/iplink_can.c
+        if state == "ERROR-ACTIVE":
+            return BusState.ERROR_ACTIVE
+        if state == "ERROR-PASSIVE":
+            return BusState.ERROR_PASSIVE
+        if state == "BUS-OFF":
+            return BusState.BUS_OFF
+        if state == "STOPPED":
+            return BusState.STOPPED
+        return BusState.UNKNOWN
 
     def _recv_internal(
         self, timeout: Optional[float]
