@@ -150,21 +150,11 @@ class VectorBus(BusABC):
         for channel in self.channels:
             if app_name:
                 # Get global channel index from application channel
-                hw_type = ctypes.c_uint(0)
-                hw_index = ctypes.c_uint(0)
-                hw_channel = ctypes.c_uint(0)
-                xldriver.xlGetApplConfig(
-                    self._app_name,
-                    channel,
-                    hw_type,
-                    hw_index,
-                    hw_channel,
-                    xldefine.XL_BusTypes.XL_BUS_TYPE_CAN.value,
+                hw_type, hw_index, hw_channel = self.get_application_config(
+                    app_name, channel, xldefine.XL_BusTypes.XL_BUS_TYPE_CAN
                 )
                 LOG.debug("Channel index %d found", channel)
-                idx = xldriver.xlGetChannelIndex(
-                    hw_type.value, hw_index.value, hw_channel.value
-                )
+                idx = xldriver.xlGetChannelIndex(hw_type.value, hw_index, hw_channel)
                 if idx < 0:
                     # Undocumented behavior! See issue #353.
                     # If hardware is unavailable, this function returns -1.
@@ -172,7 +162,7 @@ class VectorBus(BusABC):
                     # would have signalled XL_ERR_HW_NOT_PRESENT.
                     raise VectorError(
                         xldefine.XL_Status.XL_ERR_HW_NOT_PRESENT.value,
-                        "XL_ERR_HW_NOT_PRESENT",
+                        xldefine.XL_Status.XL_ERR_HW_NOT_PRESENT.name,
                         "xlGetChannelIndex",
                     )
             else:
@@ -350,7 +340,6 @@ class VectorBus(BusABC):
             event = xlclass.XLcanRxEvent()
         else:
             event = xlclass.XLevent()
-            event_count = ctypes.c_uint()
 
         while True:
             if self.fd:
@@ -407,7 +396,7 @@ class VectorBus(BusABC):
                         self.handle_canfd_event(event)
 
             else:
-                event_count.value = 1
+                event_count = ctypes.c_uint(1)
                 try:
                     xldriver.xlReceive(self.port_handle, event_count, event)
                 except VectorError as exc:
