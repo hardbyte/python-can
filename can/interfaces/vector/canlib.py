@@ -10,7 +10,7 @@ import ctypes
 import logging
 import time
 import os
-from typing import Tuple
+from typing import Tuple, List
 
 try:
     # Try builtin Python 3 Windows API
@@ -657,7 +657,7 @@ class VectorBus(BusABC):
             bus_type.value,
         )
 
-    def set_timer_rate(self, timer_rate_ms: int):
+    def set_timer_rate(self, timer_rate_ms: int) -> None:
         """Set the cyclic event rate of the port.
 
         Once set, the port will generate a cyclic event with the tag XL_EventTags.XL_TIMER.
@@ -672,7 +672,7 @@ class VectorBus(BusABC):
         xldriver.xlSetTimerRate(self.port_handle, timer_rate_10us)
 
 
-def get_channel_configs():
+def get_channel_configs() -> List[xlclass.XLchannelConfig]:
     if xldriver is None:
         return []
     driver_config = xlclass.XLdriverConfig()
@@ -680,6 +680,6 @@ def get_channel_configs():
         xldriver.xlOpenDriver()
         xldriver.xlGetDriverConfig(driver_config)
         xldriver.xlCloseDriver()
-    except Exception:
+    except VectorError:
         pass
     return [driver_config.channel[i] for i in range(driver_config.channelCount)]
