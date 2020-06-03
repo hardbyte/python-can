@@ -27,7 +27,7 @@ _xlapi_dll = ctypes.windll.LoadLibrary(DLL_NAME)
 # ctypes wrapping for API functions
 xlGetErrorString = _xlapi_dll.xlGetErrorString
 xlGetErrorString.argtypes = [xlclass.XLstatus]
-xlGetErrorString.restype = ctypes.c_char_p
+xlGetErrorString.restype = xlclass.XLstringType
 
 
 def check_status(result, function, arguments):
@@ -251,3 +251,11 @@ xlSetTimerRate = _xlapi_dll.xlSetTimerRate
 xlSetTimerRate.argtypes = [xlclass.XLportHandle, ctypes.c_ulong]
 xlSetTimerRate.restype = xlclass.XLstatus
 xlSetTimerRate.errcheck = check_status
+
+xlGetEventString = _xlapi_dll.xlGetEventString
+xlGetEventString.argtypes = [ctypes.POINTER(xlclass.XLevent)]
+xlGetEventString.restype = xlclass.XLstringType
+
+xlCanGetEventString = _xlapi_dll.xlCanGetEventString
+xlCanGetEventString.argtypes = [ctypes.POINTER(xlclass.XLcanRxEvent)]
+xlCanGetEventString.restype = xlclass.XLstringType
