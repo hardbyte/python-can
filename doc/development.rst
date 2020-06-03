@@ -22,14 +22,30 @@ Building & Installing
 
 The following assumes that the commands are executed from the root of the repository:
 
-- The project can be built and installed with ``python setup.py build`` and
-  ``python setup.py install``.
-- The unit tests can be run with ``python setup.py test``. The tests can be run with ``python2``,
-  ``python3``, ``pypy`` or ``pypy3`` to test with other python versions, if they are installed.
-  Maybe, you need to execute ``pip3 install python-can[test]`` (or only ``pip`` for Python 2),
-  if some dependencies are missing.
-- The docs can be built with ``sphinx-build doc/ doc/_build``. Appending ``-n`` to the command
-  makes Sphinx complain about more subtle problems.
+The project can be built with::
+
+    pip install wheel
+    python setup.py sdist bdist_wheel
+
+The project can be installed in editable mode with::
+
+    pip install -e .
+
+The unit tests can be run with::
+
+    pip install tox
+    tox -e py
+
+The documentation can be built with::
+
+    pip install -r doc/doc-requirements.txt
+    python -m sphinx -an doc build
+
+The linters can be run with::
+
+    pip install -r requirements-lint.txt
+    pylint --rcfile=.pylintrc-wip can/**.py
+    black --check --verbose can
 
 
 Creating a new interface/backend
@@ -81,7 +97,7 @@ Creating a new Release
 - Update `CONTRIBUTORS.txt` with any new contributors.
 - For larger changes update ``doc/history.rst``.
 - Sanity check that documentation has stayed inline with code.
-- Create a temporary virtual environment. Run ``python setup.py install`` and ``python setup.py test``.
+- Create a temporary virtual environment. Run ``python setup.py install`` and ``tox``.
 - Create and upload the distribution: ``python setup.py sdist bdist_wheel``.
 - Sign the packages with gpg ``gpg --detach-sign -a dist/python_can-X.Y.Z-py3-none-any.whl``.
 - Upload with twine ``twine upload dist/python-can-X.Y.Z*``.
