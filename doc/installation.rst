@@ -90,6 +90,14 @@ To install ``python-can`` using the XL Driver Library as the backend:
 
 3. Use Vector Hardware Configuration to assign a channel to your application.
 
+CANtact
+~~~~~~~
+
+To install ``python-can`` using the CANtact driver backend:
+
+1. Install the Python ``cantact`` package: ``python3 -m pip install cantact``
+
+
 Installing python-can in development mode
 -----------------------------------------
 
