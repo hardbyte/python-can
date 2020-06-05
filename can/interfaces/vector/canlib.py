@@ -464,8 +464,7 @@ class VectorBus(BusABC):
         """Handle non-message CAN events.
 
         Method is called by :meth:`~can.interfaces.vector.VectorBus._recv_internal`
-        when `event.tag` is not `XL_CAN_EV_TAG_RX_OK` or `XL_CAN_EV_TAG_TX_OK`.
-        Subclasses can implement this method.
+        when `event.tag` is not `XL_RECEIVE_MSG`. Subclasses can implement this method.
 
         :param event: XLevent that could have a `XL_CHIP_STATE`, `XL_TIMER` or `XL_SYNC_PULSE` tag.
         :return: None
@@ -476,10 +475,11 @@ class VectorBus(BusABC):
         """Handle non-message CAN FD events.
 
         Method is called by :meth:`~can.interfaces.vector.VectorBus._recv_internal`
-        when `event.tag` is not `XL_RECEIVE_MSG`. Subclasses can implement this method.
+        when `event.tag` is not `XL_CAN_EV_TAG_RX_OK` or `XL_CAN_EV_TAG_TX_OK`.
+        Subclasses can implement this method.
 
-        :param event: `XLcanRxEvent` that could have a `XL_CAN_EV_TAG_RX_ERROR`, `XL_CAN_EV_TAG_TX_ERROR`
-            or `XL_CAN_EV_TAG_CHIP_STATE` tag.
+        :param event: `XLcanRxEvent` that could have a `XL_CAN_EV_TAG_RX_ERROR`, `XL_CAN_EV_TAG_TX_ERROR`,
+            `XL_TIMER` or `XL_CAN_EV_TAG_CHIP_STATE` tag.
         :return: None
         """
         pass
@@ -505,9 +505,9 @@ class VectorBus(BusABC):
         mask = self._get_tx_channel_mask(msgs)
         message_count = ctypes.c_uint(len(msgs))
 
-        xl_event_array = (xlclass.XLevent * message_count.value)()
-        for idx, msg in enumerate(msgs):
-            xl_event_array[idx] = self._build_xl_event(msg)
+        xl_event_array = (xlclass.XLevent * message_count.value)(
+            *map(self._build_xl_event, msgs)
+        )
 
         xldriver.xlCanTransmit(self.port_handle, mask, message_count, xl_event_array)
         return message_count.value
@@ -527,8 +527,7 @@ class VectorBus(BusABC):
         xl_event.tagData.msg.id = msg_id
         xl_event.tagData.msg.dlc = msg.dlc
         xl_event.tagData.msg.flags = flags
-        for idx, value in enumerate(msg.data):
-            xl_event.tagData.msg.data[idx] = value
+        xl_event.tagData.msg.data = tuple(msg.data)
 
         return xl_event
 
@@ -537,9 +536,9 @@ class VectorBus(BusABC):
         mask = self._get_tx_channel_mask(msgs)
         message_count = len(msgs)
 
-        xl_can_tx_event_array = (xlclass.XLcanTxEvent * message_count)()
-        for idx, msg in enumerate(msgs):
-            xl_can_tx_event_array[idx] = self._build_xl_can_tx_event(msg)
+        xl_can_tx_event_array = (xlclass.XLcanTxEvent * message_count)(
+            *map(self._build_xl_can_tx_event, msgs)
+        )
 
         msg_count_sent = ctypes.c_uint(0)
         xldriver.xlCanTransmitEx(
@@ -568,8 +567,7 @@ class VectorBus(BusABC):
         xl_can_tx_event.tagData.canMsg.canId = msg_id
         xl_can_tx_event.tagData.canMsg.msgFlags = flags
         xl_can_tx_event.tagData.canMsg.dlc = len2dlc(msg.dlc)
-        for idx, value in enumerate(msg.data):
-            xl_can_tx_event.tagData.canMsg.data[idx] = value
+        xl_can_tx_event.tagData.canMsg.data = tuple(msg.data)
 
         return xl_can_tx_event
 
