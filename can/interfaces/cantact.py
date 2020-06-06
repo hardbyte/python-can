@@ -10,6 +10,7 @@ from can import BusABC, Message
 
 logger = logging.getLogger(__name__)
 
+
 class CANtact(BusABC):
     """CANtact interface"""
 
@@ -23,7 +24,9 @@ class CANtact(BusABC):
 
         return channels
 
-    def __init__(self, channel, bitrate=500000, poll_interval=0.01, monitor=False, **kwargs):
+    def __init__(
+        self, channel, bitrate=500000, poll_interval=0.01, monitor=False, **kwargs
+    ):
         """
         :param int channel:
             Device number
@@ -54,19 +57,25 @@ class CANtact(BusABC):
             return None, False
 
         msg = Message(
-            arbitration_id=frame['id'],
-            is_extended_id=frame['extended'],
+            arbitration_id=frame["id"],
+            is_extended_id=frame["extended"],
             timestamp=time.time(),  # Better than nothing...
-            is_remote_frame=frame['rtr'],
-            dlc=frame['dlc'],
-            data=frame['data'][: frame['dlc']],
-            channel=frame['channel']
+            is_remote_frame=frame["rtr"],
+            dlc=frame["dlc"],
+            data=frame["data"][: frame["dlc"]],
+            channel=frame["channel"],
         )
         return msg, False
 
     def send(self, msg, timeout=None):
-        self.interface.send(self.channel, msg.arbitration_id, bool(
-            msg.is_extended_id), bool(msg.is_remote_frame), msg.dlc, msg.data)
+        self.interface.send(
+            self.channel,
+            msg.arbitration_id,
+            bool(msg.is_extended_id),
+            bool(msg.is_remote_frame),
+            msg.dlc,
+            msg.data,
+        )
 
     def shutdown(self):
         self.interface.stop()
