@@ -120,6 +120,10 @@ class SimpleCyclicSendTaskTest(unittest.TestCase, ComparingMessagesTestCase):
 
         bus.shutdown()
 
+    @unittest.skipIf(
+        IS_CI,
+        "the timing sensitive behaviour cannot be reproduced reliably on a CI server",
+    )
     def test_stopping_perodic_tasks(self):
         bus = can.interface.Bus(bustype="virtual")
         tasks = []
