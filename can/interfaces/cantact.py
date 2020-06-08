@@ -4,14 +4,20 @@ Interface for CANtact devices from Linklayer Labs
 
 import time
 import logging
-import cantact
 
 from can import BusABC, Message
 
 logger = logging.getLogger(__name__)
 
+try:
+    import cantact
+except ImportError:
+    logger.warning(
+        "The CANtact module is not installed. Install it using `python3 -m pip install cantact`"
+    )
 
-class CANtact(BusABC):
+
+class CantactBus(BusABC):
     """CANtact interface"""
 
     @staticmethod
