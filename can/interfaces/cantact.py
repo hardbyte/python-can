@@ -4,6 +4,7 @@ Interface for CANtact devices from Linklayer Labs
 
 import time
 import logging
+from unittest.mock import Mock
 
 from can import BusABC, Message
 
@@ -22,16 +23,25 @@ class CantactBus(BusABC):
 
     @staticmethod
     def _detect_available_configs():
-        interface = cantact.Interface()
-        channels = []
+        try:
+            interface = cantact.Interface()
+        except NameError:
+            # couldn't import cantact, so no configurations are available
+            return []
 
+        channels = []
         for i in range(0, interface.channel_count()):
             channels.append({"interface": "cantact", "channel": "ch:%d" % i})
-
         return channels
 
     def __init__(
-        self, channel, bitrate=500000, poll_interval=0.01, monitor=False, **kwargs
+        self,
+        channel,
+        bitrate=500000,
+        poll_interval=0.01,
+        monitor=False,
+        _testing=False,
+        **kwargs
     ):
         """
         :param int channel:
@@ -42,11 +52,15 @@ class CantactBus(BusABC):
             If true, operate in listen-only monitoring mode
         """
 
+        if _testing:
+            self.interface = MockInterface()
+        else:
+            self.interface = cantact.Interface()
+
         self.channel = int(channel)
         self.channel_info = "CANtact: ch:%s" % channel
 
         # configure the interface
-        self.interface = cantact.Interface()
         self.interface.set_bitrate(int(channel), int(bitrate))
         self.interface.set_enabled(int(channel), True)
         self.interface.set_monitor(int(channel), monitor)
@@ -85,3 +99,37 @@ class CantactBus(BusABC):
 
     def shutdown(self):
         self.interface.stop()
+
+
+def mock_recv(timeout):
+    if timeout > 0:
+        frame = {}
+        frame["id"] = 0x123
+        frame["extended"] = False
+        frame["timestamp"] = time.time()
+        frame["rtr"] = False
+        frame["dlc"] = 8
+        frame["data"] = [1, 2, 3, 4, 5, 6, 7, 8]
+        frame["channel"] = 0
+        return frame
+    else:
+        # simulate timeout when timeout = 0
+        return None
+
+
+class MockInterface:
+    """
+    Mock interface to replace real interface when testing.
+    This allows for tests to run without actual hardware.
+    """
+
+    start = Mock()
+    set_bitrate = Mock()
+    set_enabled = Mock()
+    set_monitor = Mock()
+    start = Mock()
+    stop = Mock()
+    send = Mock()
+    channel_count = Mock(return_value=1)
+
+    recv = Mock(side_effect=mock_recv)
