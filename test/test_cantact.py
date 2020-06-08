@@ -74,13 +74,13 @@ class CantactTest(unittest.TestCase):
         bus = can.Bus(channel=0, bustype="cantact", _testing=True)
         frame = bus.recv(timeout=0.5)
         cantactdrv.Interface.recv.assert_called()
-        self.assertIsInstance(f, can.Message)
+        self.assertIsInstance(frame, can.Message)
 
     def test_recv_timeout(self):
         bus = can.Bus(channel=0, bustype="cantact", _testing=True)
         frame = bus.recv(timeout=0.0)
         cantactdrv.Interface.recv.assert_called()
-        self.assertIsNone(f)
+        self.assertIsNone(frame)
 
     def test_shutdown(self):
         bus = can.Bus(channel=0, bustype="cantact", _testing=True)
