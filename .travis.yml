@@ -17,6 +17,7 @@ python:
   - pypy3
 
 env:
+  - CI=1
 
 
 install:
