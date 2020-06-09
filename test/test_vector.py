@@ -6,6 +6,7 @@ Test for Vector Interface
 """
 
 import ctypes
+import pickle
 import time
 import logging
 import os
@@ -15,7 +16,7 @@ from unittest.mock import Mock
 import pytest
 
 import can
-from can.interfaces.vector import canlib, xldefine, xlclass
+from can.interfaces.vector import canlib, xldefine, xlclass, VectorError
 
 
 class TestVectorBus(unittest.TestCase):
@@ -283,6 +284,23 @@ class TestVectorBus(unittest.TestCase):
             with self.assertRaises(OSError):
                 # do not set the _testing argument, since it supresses the exception
                 can.Bus(channel=0, bustype="vector")
+
+    def test_vector_error_pickle(self) -> None:
+        error_code = 118
+        error_string = "XL_ERROR"
+        function = "function_name"
+
+        exc = VectorError(error_code, error_string, function)
+
+        # pickle and unpickle
+        p = pickle.dumps(exc)
+        exc_unpickled: VectorError = pickle.loads(p)
+
+        self.assertEqual(str(exc), str(exc_unpickled))
+        self.assertEqual(error_code, exc_unpickled.error_code)
+
+        with pytest.raises(VectorError):
+            raise exc_unpickled
 
 
 def xlGetApplConfig(
