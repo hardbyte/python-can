@@ -11,7 +11,9 @@ Implementation references:
 import logging
 import os
 import tempfile
-from collections import deque
+from collections import deque, defaultdict
+from itertools import cycle
+from threading import Event
 
 from can import Message, CanError, BusABC
 
@@ -55,6 +57,7 @@ except ImportError as ie:
 # Use inter-process mutex to prevent concurrent device open.
 # When neoVI server is enabled, there is an issue with concurrent device open.
 open_lock = FileLock(os.path.join(tempfile.gettempdir(), "neovi.lock"))
+description_id = cycle(range(1, 0x8000))
 
 
 class ICSApiError(CanError):
@@ -176,6 +179,7 @@ class NeoViBus(BusABC):
         logger.info("Using device: {}".format(self.channel_info))
 
         self.rx_buffer = deque()
+        self.message_receipts = defaultdict(Event)
 
     @staticmethod
     def channel_to_netid(channel_name_or_id):
@@ -267,6 +271,9 @@ class NeoViBus(BusABC):
             if is_tx:
                 if bool(ics_msg.StatusBitField & ics.SPY_STATUS_GLOBAL_ERR):
                     continue
+                if ics_msg.DescriptionID:
+                    receipt_key = (ics_msg.ArbIDOrHeader, ics_msg.DescriptionID)
+                    self.message_receipts[receipt_key].set()
                 if not self._receive_own_messages:
                     continue
 
@@ -349,7 +356,19 @@ class NeoViBus(BusABC):
             return None, False
         return msg, False
 
-    def send(self, msg, timeout=None):
+    def send(self, msg, timeout=0):
+        """Transmit a message to the CAN bus.
+
+        :param Message msg: A message object.
+
+        :param timeout:
+            If > 0, wait up to this many seconds for message to be ACK'ed.
+            If timeout is exceeded, an exception will be raised.
+            None blocks indefinitely.
+
+        :raises can.CanError:
+            if the message could not be sent
+        """
         if not ics.validate_hobject(self.dev):
             raise CanError("bus not open")
         message = ics.SpyMessage()
@@ -385,7 +404,19 @@ class NeoViBus(BusABC):
         else:
             raise ValueError("msg.channel must be set when using multiple channels.")
 
+        desc_id = next(description_id)
+        message.DescriptionID = desc_id
+        receipt_key = (msg.arbitration_id, desc_id)
+
+        if timeout != 0:
+            self.message_receipts[receipt_key].clear()
+
         try:
             ics.transmit_messages(self.dev, message)
         except ics.RuntimeError:
             raise ICSApiError(*ics.get_last_api_error(self.dev))
+
+        if timeout != 0:
+            if not self.message_receipts[receipt_key].wait(timeout):
+                raise CanError("Transmit timeout")
+        return desc_id
