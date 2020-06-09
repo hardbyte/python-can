@@ -261,9 +261,15 @@ class NeoViBus(BusABC):
         for ics_msg in messages:
             if ics_msg.NetworkID not in self.channels:
                 continue
+
             is_tx = bool(ics_msg.StatusBitField & ics.SPY_STATUS_TX_MSG)
-            if not self._receive_own_messages and is_tx:
-                continue
+
+            if is_tx:
+                if bool(ics_msg.StatusBitField & ics.SPY_STATUS_GLOBAL_ERR):
+                    continue
+                if not self._receive_own_messages:
+                    continue
+
             self.rx_buffer.append(ics_msg)
         if errors:
             logger.warning("%d error(s) found", errors)
