@@ -361,7 +361,7 @@ class NeoViBus(BusABC):
 
         :param Message msg: A message object.
 
-        :param timeout:
+        :param float timeout:
             If > 0, wait up to this many seconds for message to be ACK'ed.
             If timeout is exceeded, an exception will be raised.
             None blocks indefinitely.
@@ -404,9 +404,9 @@ class NeoViBus(BusABC):
         else:
             raise ValueError("msg.channel must be set when using multiple channels.")
 
-        desc_id = next(description_id)
-        message.DescriptionID = desc_id
-        receipt_key = (msg.arbitration_id, desc_id)
+        msg_desc_id = next(description_id)
+        message.DescriptionID = msg_desc_id
+        receipt_key = (msg.arbitration_id, msg_desc_id)
 
         if timeout != 0:
             self.message_receipts[receipt_key].clear()
@@ -416,7 +416,8 @@ class NeoViBus(BusABC):
         except ics.RuntimeError:
             raise ICSApiError(*ics.get_last_api_error(self.dev))
 
-        if timeout != 0:
-            if not self.message_receipts[receipt_key].wait(timeout):
-                raise CanError("Transmit timeout")
-        return desc_id
+        # If timeout is set, wait for ACK
+        # This requires a notifier for the bus or
+        # some other thread calling recv periodically
+        if timeout != 0 and not self.message_receipts[receipt_key].wait(timeout):
+            raise CanError("Transmit timeout")
