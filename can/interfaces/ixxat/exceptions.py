@@ -8,7 +8,13 @@ Copyright (C) 2016 Giuseppe Corbelli <giuseppe.corbelli@weightpack.com>
 
 from can import CanError
 
-__all__ = ['VCITimeout', 'VCIError', 'VCIRxQueueEmptyError', 'VCIDeviceNotFoundError']
+__all__ = [
+    'VCITimeout',
+    'VCIError',
+    'VCIRxQueueEmptyError',
+    'VCIBusOffError',
+    'VCIDeviceNotFoundError',
+]
 
 
 class VCITimeout(CanError):
@@ -25,6 +31,11 @@ class VCIRxQueueEmptyError(VCIError):
     """ Wraps the VCI_E_RXQUEUE_EMPTY error """
     def __init__(self):
         super(VCIRxQueueEmptyError, self).__init__("Receive queue is empty")
+
+
+class VCIBusOffError(VCIError):
+    def __init__(self):
+        super().__init__("Controller is in BUSOFF state")
 
 
 class VCIDeviceNotFoundError(CanError):

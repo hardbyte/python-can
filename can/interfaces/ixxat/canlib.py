@@ -28,7 +28,14 @@ from can.ctypesutil import CLibrary, HANDLE, PHANDLE, HRESULT as ctypes_HRESULT
 from . import constants, structures
 from .exceptions import *
 
-__all__ = ["VCITimeout", "VCIError", "VCIDeviceNotFoundError", "IXXATBus", "vciFormatError"]
+__all__ = [
+    "VCITimeout",
+    "VCIError",
+    "VCIBusOffError",
+    "VCIDeviceNotFoundError",
+    "IXXATBus",
+    "vciFormatError",
+]
 
 log = logging.getLogger('can.ixxat')
 
@@ -231,6 +238,15 @@ CAN_ERROR_MESSAGES = {
     constants.CAN_ERROR_BIT:    "CAN bit error",
     constants.CAN_ERROR_CRC:    "CAN CRC error",
     constants.CAN_ERROR_OTHER:  "Other (unknown) CAN error",
+}
+
+CAN_STATUS_FLAGS = {
+    constants.CAN_STATUS_TXPEND: "transmission pending",
+    constants.CAN_STATUS_OVRRUN: "data overrun occurred",
+    constants.CAN_STATUS_ERRLIM: "error warning limit exceeded",
+    constants.CAN_STATUS_BUSOFF: "bus off",
+    constants.CAN_STATUS_ININIT: "init mode active",
+    constants.CAN_STATUS_BUSCERR: "bus coupling error",
 }
 #----------------------------------------------------------------------------
 
@@ -455,6 +471,11 @@ class IXXATBus(BusABC):
 
                     elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_TIMEOVR:
                         pass
+
+                    elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_STATUS:
+                        log.info(_format_can_status(self._message.abData[0]))
+                        if self._message.abData[0] & constants.CAN_STATUS_BUSOFF:
+                            raise VCIBusOffError()
                     else:
                         log.warn("Unexpected message info type")
 
@@ -575,3 +596,25 @@ class CyclicSendTask(LimitedDurationCyclicSendTaskABC,
         # the list with permanently stopped messages
         _canlib.canSchedulerRemMessage(self._scheduler, self._index)
         self._index = None
+
+
+def _format_can_status(status_flags: int):
+    """
+    Format a status bitfield found in CAN_MSGTYPE_STATUS messages or in dwStatus
+    field in CANLINESTATUS.
+
+    Valid states are defined in the CAN_STATUS_* constants in cantype.h
+    """
+    states = []
+    for flag, description in CAN_STATUS_FLAGS.items():
+        if status_flags & flag:
+            states.append(description)
+            status_flags &= ~flag
+
+    if status_flags:
+        states.append("unknown state 0x{:02x}".format(status_flags))
+
+    if states:
+        return "CAN status message: {}".format(", ".join(states))
+    else:
+        return "Empty CAN status message"
