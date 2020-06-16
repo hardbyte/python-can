@@ -99,6 +99,18 @@ class VectorBus(BusABC):
         :param int data_bitrate:
             Which bitrate to use for data phase in CAN FD.
             Defaults to arbitration bitrate.
+        :param int sjw_abr:
+            Bus timing value sample jump width (arbitration).
+        :param int tseg1_abr:
+            Bus timing value tseg1 (arbitration)
+        :param int tseg2_abr:
+            Bus timing value tseg2 (arbitration)
+        :param int sjw_dbr:
+            Bus timing value sample jump width (data)
+        :param int tseg1_dbr:
+            Bus timing value tseg1 (data)
+        :param int tseg2_dbr:
+            Bus timing value tseg2 (data)
         """
         if os.name != "nt" and not kwargs.get("_testing", False):
             raise OSError(
