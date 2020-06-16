@@ -63,12 +63,12 @@ class VectorBus(BusABC):
         serial=None,
         fd=False,
         data_bitrate=None,
-        sjwAbr=2,
-        tseg1Abr=6,
-        tseg2Abr=3,
-        sjwDbr=2,
-        tseg1Dbr=6,
-        tseg2Dbr=3,
+        sjw_abr=2,
+        tseg1_abr=6,
+        tseg2_abr=3,
+        sjw_dbr=2,
+        tseg1_dbr=6,
+        tseg2_dbr=3,
         **kwargs,
     ):
         """
@@ -219,16 +219,16 @@ class VectorBus(BusABC):
                     self.canFdConf.arbitrationBitRate = ctypes.c_uint(bitrate)
                 else:
                     self.canFdConf.arbitrationBitRate = ctypes.c_uint(500000)
-                self.canFdConf.sjwAbr = ctypes.c_uint(sjwAbr)
-                self.canFdConf.tseg1Abr = ctypes.c_uint(tseg1Abr)
-                self.canFdConf.tseg2Abr = ctypes.c_uint(tseg2Abr)
+                self.canFdConf.sjwAbr = ctypes.c_uint(sjw_abr)
+                self.canFdConf.tseg1Abr = ctypes.c_uint(tseg1_abr)
+                self.canFdConf.tseg2Abr = ctypes.c_uint(tseg2_abr)
                 if data_bitrate:
                     self.canFdConf.dataBitRate = ctypes.c_uint(data_bitrate)
                 else:
                     self.canFdConf.dataBitRate = self.canFdConf.arbitrationBitRate
-                self.canFdConf.sjwDbr = ctypes.c_uint(sjwDbr)
-                self.canFdConf.tseg1Dbr = ctypes.c_uint(tseg1Dbr)
-                self.canFdConf.tseg2Dbr = ctypes.c_uint(tseg2Dbr)
+                self.canFdConf.sjwDbr = ctypes.c_uint(sjw_dbr)
+                self.canFdConf.tseg1Dbr = ctypes.c_uint(tseg1_dbr)
+                self.canFdConf.tseg2Dbr = ctypes.c_uint(tseg2_dbr)
 
                 xldriver.xlCanFdSetConfiguration(
                     self.port_handle, self.mask, self.canFdConf
