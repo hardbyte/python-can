@@ -48,6 +48,10 @@ except Exception as exc:
     LOG.warning("Could not import vxlapi: %s", exc)
 
 
+def arg_to_c_uint(value):
+    return ctypes.c_uint(int(value))
+
+
 class VectorBus(BusABC):
     """The CAN Bus implemented for the Vector interface."""
 
@@ -216,19 +220,19 @@ class VectorBus(BusABC):
             if fd:
                 self.canFdConf = xlclass.XLcanFdConf()
                 if bitrate:
-                    self.canFdConf.arbitrationBitRate = ctypes.c_uint(bitrate)
+                    self.canFdConf.arbitrationBitRate = arg_to_c_uint(bitrate)
                 else:
-                    self.canFdConf.arbitrationBitRate = ctypes.c_uint(500000)
-                self.canFdConf.sjwAbr = ctypes.c_uint(sjw_abr)
-                self.canFdConf.tseg1Abr = ctypes.c_uint(tseg1_abr)
-                self.canFdConf.tseg2Abr = ctypes.c_uint(tseg2_abr)
+                    self.canFdConf.arbitrationBitRate = arg_to_c_uint(500000)
+                self.canFdConf.sjwAbr = arg_to_c_uint(sjw_abr)
+                self.canFdConf.tseg1Abr = arg_to_c_uint(tseg1_abr)
+                self.canFdConf.tseg2Abr = arg_to_c_uint(tseg2_abr)
                 if data_bitrate:
-                    self.canFdConf.dataBitRate = ctypes.c_uint(data_bitrate)
+                    self.canFdConf.dataBitRate = arg_to_c_uint(data_bitrate)
                 else:
                     self.canFdConf.dataBitRate = self.canFdConf.arbitrationBitRate
-                self.canFdConf.sjwDbr = ctypes.c_uint(sjw_dbr)
-                self.canFdConf.tseg1Dbr = ctypes.c_uint(tseg1_dbr)
-                self.canFdConf.tseg2Dbr = ctypes.c_uint(tseg2_dbr)
+                self.canFdConf.sjwDbr = arg_to_c_uint(sjw_dbr)
+                self.canFdConf.tseg1Dbr = arg_to_c_uint(tseg1_dbr)
+                self.canFdConf.tseg2Dbr = arg_to_c_uint(tseg2_dbr)
 
                 xldriver.xlCanFdSetConfiguration(
                     self.port_handle, self.mask, self.canFdConf
