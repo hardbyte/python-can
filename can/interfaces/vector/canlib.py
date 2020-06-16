@@ -7,9 +7,11 @@ Authors: Julien Grave <grave.jul@gmail.com>, Christian Sandberg
 # Import Standard Python Modules
 # ==============================
 import ctypes
+import functools
 import logging
 import time
 import os
+import warnings
 
 try:
     # Try builtin Python 3 Windows API
@@ -48,6 +50,33 @@ except Exception as exc:
     LOG.warning("Could not import vxlapi: %s", exc)
 
 
+def deprecated_args_alias(**aliases):
+    def deco(f):
+        @functools.wraps(f)
+        def wrapper(*args, **kwargs):
+            rename_kwargs(f.__name__, kwargs, aliases)
+            return f(*args, **kwargs)
+
+        return wrapper
+
+    return deco
+
+
+def rename_kwargs(func_name, kwargs, aliases):
+    for alias, new in aliases.items():
+        if alias in kwargs:
+            warnings.warn(
+                "{} is deprecated; use {}".format(alias, new), DeprecationWarning
+            )
+            if new in kwargs:
+                raise TypeError(
+                    "{} received both {} (deprecated) and {}".format(
+                        func_name, alias, new
+                    )
+                )
+            kwargs[new] = kwargs.pop(alias)
+
+
 def arg_to_c_uint(value):
     return ctypes.c_uint(int(value))
 
@@ -55,6 +84,16 @@ def arg_to_c_uint(value):
 class VectorBus(BusABC):
     """The CAN Bus implemented for the Vector interface."""
 
+    deprecated_args = dict(
+        sjwAbr="sjw_abr",
+        tseg1Abr="tseg1_abr",
+        tseg2Abr="tseg2_abr",
+        sjwDbr="sjw_dbr",
+        tseg1Dbr="tseg1_dbr",
+        tseg2Dbr="tseg2_dbr",
+    )
+
+    @deprecated_args_alias(**deprecated_args)
     def __init__(
         self,
         channel,
