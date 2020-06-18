@@ -60,7 +60,6 @@ class ASCReader(BaseIOHandler):
                     start_time = datetime.strptime(start_time, "%a %b %m %I:%M:%S.%f %p %Y").timestamp()
                 except ValueError:
                     start_time = 0.0
-                start_time = datetime.strptime(start_time, "%a %b %m %I:%M:%S.%f %p %Y").timestamp()
                 continue
 
             if not temp or not temp[0].isdigit():
