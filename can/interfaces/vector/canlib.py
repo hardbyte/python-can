@@ -7,13 +7,12 @@ Authors: Julien Grave <grave.jul@gmail.com>, Christian Sandberg
 # Import Standard Python Modules
 # ==============================
 import ctypes
-import functools
 import logging
 import time
 import os
-import warnings
 
 from typing import Optional, Tuple
+
 
 try:
     # Try builtin Python 3 Windows API
@@ -33,7 +32,8 @@ except ImportError:
 # Import Modules
 # ==============
 from can import BusABC, Message
-from can.util import len2dlc, dlc2len
+from can.ctypesutil import arg_to_c_uint
+from can.util import len2dlc, dlc2len, deprecated_args_alias
 from .exceptions import VectorError
 
 # Define Module Logger
@@ -50,37 +50,6 @@ try:
     from . import xldriver
 except Exception as exc:
     LOG.warning("Could not import vxlapi: %s", exc)
-
-
-def deprecated_args_alias(**aliases):
-    def deco(f):
-        @functools.wraps(f)
-        def wrapper(*args, **kwargs):
-            rename_kwargs(f.__name__, kwargs, aliases)
-            return f(*args, **kwargs)
-
-        return wrapper
-
-    return deco
-
-
-def rename_kwargs(func_name, kwargs, aliases):
-    for alias, new in aliases.items():
-        if alias in kwargs:
-            warnings.warn(
-                "{} is deprecated; use {}".format(alias, new), DeprecationWarning
-            )
-            if new in kwargs:
-                raise TypeError(
-                    "{} received both {} (deprecated) and {}".format(
-                        func_name, alias, new
-                    )
-                )
-            kwargs[new] = kwargs.pop(alias)
-
-
-def arg_to_c_uint(value):
-    return ctypes.c_uint(int(value))
 
 
 class VectorBus(BusABC):

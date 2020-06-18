@@ -101,3 +101,8 @@ class HANDLE(ctypes.c_void_p):
 
 
 PHANDLE = ctypes.POINTER(HANDLE)
+
+
+def arg_to_c_uint(value):
+    """Convert a number or string to an C unsigned integer"""
+    return ctypes.c_uint(int(value))

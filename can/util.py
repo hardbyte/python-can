@@ -1,7 +1,8 @@
 """
 Utilities and configuration file parsing.
 """
-
+import functools
+import warnings
 from typing import Dict, Optional, Union
 
 from can import typechecking
@@ -277,6 +278,38 @@ def channel2int(channel: Optional[Union[typechecking.Channel]]) -> Optional[int]
         if match:
             return int(match.group(1))
     return None
+
+
+def deprecated_args_alias(**aliases):
+    """Allows to rename/deprecate a function kwarg(s) and
+    have the deprecated kwarg(s) set as alias(es)
+    """
+
+    def deco(f):
+        @functools.wraps(f)
+        def wrapper(*args, **kwargs):
+            rename_kwargs(f.__name__, kwargs, aliases)
+            return f(*args, **kwargs)
+
+        return wrapper
+
+    return deco
+
+
+def rename_kwargs(func_name, kwargs, aliases):
+    """Helper function for `deprecated_args_alias`"""
+    for alias, new in aliases.items():
+        if alias in kwargs:
+            warnings.warn(
+                "{} is deprecated; use {}".format(alias, new), DeprecationWarning
+            )
+            if new in kwargs:
+                raise TypeError(
+                    "{} received both {} (deprecated) and {}".format(
+                        func_name, alias, new
+                    )
+                )
+            kwargs[new] = kwargs.pop(alias)
 
 
 if __name__ == "__main__":
