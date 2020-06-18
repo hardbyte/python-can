@@ -31,8 +31,6 @@ class ASCReader(BaseIOHandler):
     """
     Iterator of CAN messages from a ASC logging file. Meta data (comments,
     bus statistics, J1939 Transport Protocol messages) is ignored.
-
-    TODO: turn relative timestamps back to absolute form
     """
 
     def __init__(
@@ -183,15 +181,26 @@ class ASCReader(BaseIOHandler):
         self.file = cast(IO[Any], self.file)
         self._extract_header()
 
+        start_time = 0.0
+
         for line in self.file:
             temp = line.strip()
+
+            #check for timestamp
+            if "begin triggerblock" in temp.lower():
+                try:
+                    _, _, start_time = temp.split(None, 2)
+                    start_time = datetime.strptime(start_time, "%a %b %m %I:%M:%S.%f %p %Y").timestamp()
+                except ValueError:
+                    continue
+
             if not temp or not temp[0].isdigit():
                 # Could be a comment
                 continue
             msg_kwargs = {}
             try:
                 timestamp, channel, rest_of_message = temp.split(None, 2)
-                timestamp = float(timestamp)
+                timestamp = float(timestamp) + start_time
                 msg_kwargs["timestamp"] = timestamp
                 if channel == "CANFD":
                     msg_kwargs["is_fd"] = True
