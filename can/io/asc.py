@@ -186,7 +186,11 @@ class ASCReader(BaseIOHandler):
             
             #check for timestamp
             if "begin triggerblock" in temp.lower():
-                _, _, start_time = temp.split(None, 2)
+                try:
+                    _, _, start_time = temp.split(None, 2)
+                    start_time = datetime.strptime(start_time, "%a %b %m %I:%M:%S.%f %p %Y").timestamp()
+                except ValueError:
+                    start_time = 0.0
                 start_time = datetime.strptime(start_time, "%a %b %m %I:%M:%S.%f %p %Y").timestamp()
                 continue
 
