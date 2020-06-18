@@ -363,7 +363,7 @@ class CyclicSendTask(LimitedDurationCyclicSendTaskABC,
         )
         try:
             self.bcm_socket.send(check_header)
-        except OSError as e:
+        except (socket.error, OSError) as e:
             if e.errno != errno.EINVAL:
                 raise e
         else:
