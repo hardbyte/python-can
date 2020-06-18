@@ -10,6 +10,9 @@ import ctypes
 import logging
 import time
 import os
+from typing import Optional, Tuple
+
+import typing
 
 try:
     # Try builtin Python 3 Windows API
@@ -342,113 +345,32 @@ class VectorBus(BusABC):
         except VectorError as exc:
             LOG.warning("Could not reset filters: %s", exc)
 
-    def _recv_internal(self, timeout):
+    def _recv_internal(
+        self, timeout: Optional[float]
+    ) -> Tuple[Optional[Message], bool]:
         end_time = time.time() + timeout if timeout is not None else None
 
-        if self.fd:
-            event = xlclass.XLcanRxEvent()
-        else:
-            event = xlclass.XLevent()
-            event_count = ctypes.c_uint()
-
         while True:
-            if self.fd:
-                try:
-                    xldriver.xlCanReceive(self.port_handle, event)
-                except VectorError as exc:
-                    if exc.error_code != xldefine.XL_Status.XL_ERR_QUEUE_IS_EMPTY.value:
-                        raise
+            try:
+                if self.fd:
+                    msg = self._recv_canfd()
                 else:
-                    if (
-                        event.tag
-                        == xldefine.XL_CANFD_RX_EventTags.XL_CAN_EV_TAG_RX_OK.value
-                        or event.tag
-                        == xldefine.XL_CANFD_RX_EventTags.XL_CAN_EV_TAG_TX_OK.value
-                    ):
-                        msg_id = event.tagData.canRxOkMsg.canId
-                        dlc = dlc2len(event.tagData.canRxOkMsg.dlc)
-                        flags = event.tagData.canRxOkMsg.msgFlags
-                        timestamp = event.timeStamp * 1e-9
-                        channel = self.index_to_channel.get(event.chanIndex)
-                        msg = Message(
-                            timestamp=timestamp + self._time_offset,
-                            arbitration_id=msg_id & 0x1FFFFFFF,
-                            is_extended_id=bool(
-                                msg_id
-                                & xldefine.XL_MessageFlagsExtended.XL_CAN_EXT_MSG_ID.value
-                            ),
-                            is_remote_frame=bool(
-                                flags
-                                & xldefine.XL_CANFD_RX_MessageFlags.XL_CAN_RXMSG_FLAG_RTR.value
-                            ),
-                            is_error_frame=bool(
-                                flags
-                                & xldefine.XL_CANFD_RX_MessageFlags.XL_CAN_RXMSG_FLAG_EF.value
-                            ),
-                            is_fd=bool(
-                                flags
-                                & xldefine.XL_CANFD_RX_MessageFlags.XL_CAN_RXMSG_FLAG_EDL.value
-                            ),
-                            error_state_indicator=bool(
-                                flags
-                                & xldefine.XL_CANFD_RX_MessageFlags.XL_CAN_RXMSG_FLAG_ESI.value
-                            ),
-                            bitrate_switch=bool(
-                                flags
-                                & xldefine.XL_CANFD_RX_MessageFlags.XL_CAN_RXMSG_FLAG_BRS.value
-                            ),
-                            dlc=dlc,
-                            data=event.tagData.canRxOkMsg.data[:dlc],
-                            channel=channel,
-                        )
-                        return msg, self._is_filtered
-                    else:
-                        self.handle_canfd_event(event)
+                    msg = self._recv_can()
 
+            except VectorError as exc:
+                if exc.error_code != xldefine.XL_Status.XL_ERR_QUEUE_IS_EMPTY.value:
+                    raise
             else:
-                event_count.value = 1
-                try:
-                    xldriver.xlReceive(self.port_handle, event_count, event)
-                except VectorError as exc:
-                    if exc.error_code != xldefine.XL_Status.XL_ERR_QUEUE_IS_EMPTY.value:
-                        raise
-                else:
-                    if event.tag == xldefine.XL_EventTags.XL_RECEIVE_MSG.value:
-                        msg_id = event.tagData.msg.id
-                        dlc = event.tagData.msg.dlc
-                        flags = event.tagData.msg.flags
-                        timestamp = event.timeStamp * 1e-9
-                        channel = self.index_to_channel.get(event.chanIndex)
-                        msg = Message(
-                            timestamp=timestamp + self._time_offset,
-                            arbitration_id=msg_id & 0x1FFFFFFF,
-                            is_extended_id=bool(
-                                msg_id
-                                & xldefine.XL_MessageFlagsExtended.XL_CAN_EXT_MSG_ID.value
-                            ),
-                            is_remote_frame=bool(
-                                flags
-                                & xldefine.XL_MessageFlags.XL_CAN_MSG_FLAG_REMOTE_FRAME.value
-                            ),
-                            is_error_frame=bool(
-                                flags
-                                & xldefine.XL_MessageFlags.XL_CAN_MSG_FLAG_ERROR_FRAME.value
-                            ),
-                            is_fd=False,
-                            dlc=dlc,
-                            data=event.tagData.msg.data[:dlc],
-                            channel=channel,
-                        )
-                        return msg, self._is_filtered
-                    else:
-                        self.handle_can_event(event)
+                if msg:
+                    return msg, self._is_filtered
 
+            # if no message was received, wait or return on timeout
             if end_time is not None and time.time() > end_time:
                 return None, self._is_filtered
 
             if HAS_EVENTS:
                 # Wait for receive event to occur
-                if timeout is None:
+                if end_time is None:
                     time_left_ms = INFINITE
                 else:
                     time_left = end_time - time.time()
@@ -458,12 +380,102 @@ class VectorBus(BusABC):
                 # Wait a short time until we try again
                 time.sleep(self.poll_interval)
 
+    def _recv_canfd(self) -> Optional[Message]:
+        xl_can_rx_event = xlclass.XLcanRxEvent()
+        xldriver.xlCanReceive(self.port_handle, xl_can_rx_event)
+
+        if (
+            xl_can_rx_event.tag
+            == xldefine.XL_CANFD_RX_EventTags.XL_CAN_EV_TAG_RX_OK.value
+        ):
+            is_rx = True
+            data_struct = xl_can_rx_event.tagData.canRxOkMsg
+        elif (
+            xl_can_rx_event.tag
+            == xldefine.XL_CANFD_RX_EventTags.XL_CAN_EV_TAG_TX_OK.value
+        ):
+            is_rx = False
+            data_struct = xl_can_rx_event.tagData.canTxOkMsg
+        else:
+            self.handle_canfd_event(xl_can_rx_event)
+            return
+
+        msg_id = data_struct.canId
+        dlc = dlc2len(data_struct.dlc)
+        flags = data_struct.msgFlags
+        timestamp = xl_can_rx_event.timeStamp * 1e-9
+        channel = self.index_to_channel.get(xl_can_rx_event.chanIndex)
+
+        msg = Message(
+            timestamp=timestamp + self._time_offset,
+            arbitration_id=msg_id & 0x1FFFFFFF,
+            is_extended_id=bool(
+                msg_id & xldefine.XL_MessageFlagsExtended.XL_CAN_EXT_MSG_ID.value
+            ),
+            is_remote_frame=bool(
+                flags & xldefine.XL_CANFD_RX_MessageFlags.XL_CAN_RXMSG_FLAG_RTR.value
+            ),
+            is_error_frame=bool(
+                flags & xldefine.XL_CANFD_RX_MessageFlags.XL_CAN_RXMSG_FLAG_EF.value
+            ),
+            is_fd=bool(
+                flags & xldefine.XL_CANFD_RX_MessageFlags.XL_CAN_RXMSG_FLAG_EDL.value
+            ),
+            bitrate_switch=bool(
+                flags & xldefine.XL_CANFD_RX_MessageFlags.XL_CAN_RXMSG_FLAG_BRS.value
+            ),
+            error_state_indicator=bool(
+                flags & xldefine.XL_CANFD_RX_MessageFlags.XL_CAN_RXMSG_FLAG_ESI.value
+            ),
+            is_rx=is_rx,
+            channel=channel,
+            dlc=dlc,
+            data=data_struct.data[:dlc],
+        )
+        return msg
+
+    def _recv_can(self) -> Optional[Message]:
+        xl_event = xlclass.XLevent()
+        event_count = ctypes.c_uint(1)
+        xldriver.xlReceive(self.port_handle, event_count, xl_event)
+
+        if xl_event.tag != xldefine.XL_EventTags.XL_RECEIVE_MSG.value:
+            self.handle_can_event(xl_event)
+            return
+
+        msg_id = xl_event.tagData.msg.id
+        dlc = xl_event.tagData.msg.dlc
+        flags = xl_event.tagData.msg.flags
+        timestamp = xl_event.timeStamp * 1e-9
+        channel = self.index_to_channel.get(xl_event.chanIndex)
+
+        msg = Message(
+            timestamp=timestamp + self._time_offset,
+            arbitration_id=msg_id & 0x1FFFFFFF,
+            is_extended_id=bool(
+                msg_id & xldefine.XL_MessageFlagsExtended.XL_CAN_EXT_MSG_ID.value
+            ),
+            is_remote_frame=bool(
+                flags & xldefine.XL_MessageFlags.XL_CAN_MSG_FLAG_REMOTE_FRAME.value
+            ),
+            is_error_frame=bool(
+                flags & xldefine.XL_MessageFlags.XL_CAN_MSG_FLAG_ERROR_FRAME.value
+            ),
+            is_rx=not bool(
+                flags & xldefine.XL_MessageFlags.XL_CAN_MSG_FLAG_TX_COMPLETED.value
+            ),
+            is_fd=False,
+            dlc=dlc,
+            data=xl_event.tagData.msg.data[:dlc],
+            channel=channel,
+        )
+        return msg
+
     def handle_can_event(self, event: xlclass.XLevent) -> None:
         """Handle non-message CAN events.
 
         Method is called by :meth:`~can.interfaces.vector.VectorBus._recv_internal`
-        when `event.tag` is not `XL_CAN_EV_TAG_RX_OK` or `XL_CAN_EV_TAG_TX_OK`.
-        Subclasses can implement this method.
+        when `event.tag` is not `XL_RECEIVE_MSG`. Subclasses can implement this method.
 
         :param event: XLevent that could have a `XL_CHIP_STATE`, `XL_TIMER` or `XL_SYNC_PULSE` tag.
         :return: None
@@ -474,65 +486,101 @@ class VectorBus(BusABC):
         """Handle non-message CAN FD events.
 
         Method is called by :meth:`~can.interfaces.vector.VectorBus._recv_internal`
-        when `event.tag` is not `XL_RECEIVE_MSG`. Subclasses can implement this method.
+        when `event.tag` is not `XL_CAN_EV_TAG_RX_OK` or `XL_CAN_EV_TAG_TX_OK`.
+        Subclasses can implement this method.
 
-        :param event: `XLcanRxEvent` that could have a `XL_CAN_EV_TAG_RX_ERROR`, `XL_CAN_EV_TAG_TX_ERROR`
-            or `XL_CAN_EV_TAG_CHIP_STATE` tag.
+        :param event: `XLcanRxEvent` that could have a `XL_CAN_EV_TAG_RX_ERROR`, `XL_CAN_EV_TAG_TX_ERROR`,
+            `XL_TIMER` or `XL_CAN_EV_TAG_CHIP_STATE` tag.
         :return: None
         """
         pass
 
-    def send(self, msg, timeout=None):
-        msg_id = msg.arbitration_id
+    def send(self, msg: Message, timeout: typing.Optional[float] = None):
+        self._send_sequence([msg])
 
+    def _send_sequence(self, msgs: typing.Sequence[Message]) -> int:
+        """Send messages and return number of successful transmissions."""
+        if self.fd:
+            return self._send_can_fd_msg_sequence(msgs)
+        else:
+            return self._send_can_msg_sequence(msgs)
+
+    def _get_tx_channel_mask(self, msgs: typing.Sequence[Message]) -> int:
+        if len(msgs) == 1:
+            return self.channel_masks.get(msgs[0].channel, self.mask)
+        else:
+            return self.mask
+
+    def _send_can_msg_sequence(self, msgs: typing.Sequence[Message]) -> int:
+        """Send CAN messages and return number of successful transmissions."""
+        mask = self._get_tx_channel_mask(msgs)
+        message_count = ctypes.c_uint(len(msgs))
+
+        xl_event_array = (xlclass.XLevent * message_count.value)(
+            *map(self._build_xl_event, msgs)
+        )
+
+        xldriver.xlCanTransmit(self.port_handle, mask, message_count, xl_event_array)
+        return message_count.value
+
+    @staticmethod
+    def _build_xl_event(msg: Message) -> xlclass.XLevent:
+        msg_id = msg.arbitration_id
         if msg.is_extended_id:
             msg_id |= xldefine.XL_MessageFlagsExtended.XL_CAN_EXT_MSG_ID.value
 
         flags = 0
+        if msg.is_remote_frame:
+            flags |= xldefine.XL_MessageFlags.XL_CAN_MSG_FLAG_REMOTE_FRAME.value
 
-        # If channel has been specified, try to send only to that one.
-        # Otherwise send to all channels
-        mask = self.channel_masks.get(msg.channel, self.mask)
+        xl_event = xlclass.XLevent()
+        xl_event.tag = xldefine.XL_EventTags.XL_TRANSMIT_MSG.value
+        xl_event.tagData.msg.id = msg_id
+        xl_event.tagData.msg.dlc = msg.dlc
+        xl_event.tagData.msg.flags = flags
+        xl_event.tagData.msg.data = tuple(msg.data)
 
-        if self.fd:
-            if msg.is_fd:
-                flags |= xldefine.XL_CANFD_TX_MessageFlags.XL_CAN_TXMSG_FLAG_EDL.value
-            if msg.bitrate_switch:
-                flags |= xldefine.XL_CANFD_TX_MessageFlags.XL_CAN_TXMSG_FLAG_BRS.value
-            if msg.is_remote_frame:
-                flags |= xldefine.XL_CANFD_TX_MessageFlags.XL_CAN_TXMSG_FLAG_RTR.value
+        return xl_event
 
-            message_count = 1
-            MsgCntSent = ctypes.c_uint(1)
+    def _send_can_fd_msg_sequence(self, msgs: typing.Sequence[Message]) -> int:
+        """Send CAN FD messages and return number of successful transmissions."""
+        mask = self._get_tx_channel_mask(msgs)
+        message_count = len(msgs)
 
-            XLcanTxEvent = xlclass.XLcanTxEvent()
-            XLcanTxEvent.tag = xldefine.XL_CANFD_TX_EventTags.XL_CAN_EV_TAG_TX_MSG.value
-            XLcanTxEvent.transId = 0xFFFF
+        xl_can_tx_event_array = (xlclass.XLcanTxEvent * message_count)(
+            *map(self._build_xl_can_tx_event, msgs)
+        )
 
-            XLcanTxEvent.tagData.canMsg.canId = msg_id
-            XLcanTxEvent.tagData.canMsg.msgFlags = flags
-            XLcanTxEvent.tagData.canMsg.dlc = len2dlc(msg.dlc)
-            for idx, value in enumerate(msg.data):
-                XLcanTxEvent.tagData.canMsg.data[idx] = value
-            xldriver.xlCanTransmitEx(
-                self.port_handle, mask, message_count, MsgCntSent, XLcanTxEvent
-            )
+        msg_count_sent = ctypes.c_uint(0)
+        xldriver.xlCanTransmitEx(
+            self.port_handle, mask, message_count, msg_count_sent, xl_can_tx_event_array
+        )
+        return msg_count_sent.value
 
-        else:
-            if msg.is_remote_frame:
-                flags |= xldefine.XL_MessageFlags.XL_CAN_MSG_FLAG_REMOTE_FRAME.value
+    @staticmethod
+    def _build_xl_can_tx_event(msg: Message) -> xlclass.XLcanTxEvent:
+        msg_id = msg.arbitration_id
+        if msg.is_extended_id:
+            msg_id |= xldefine.XL_MessageFlagsExtended.XL_CAN_EXT_MSG_ID.value
 
-            message_count = ctypes.c_uint(1)
+        flags = 0
+        if msg.is_fd:
+            flags |= xldefine.XL_CANFD_TX_MessageFlags.XL_CAN_TXMSG_FLAG_EDL.value
+        if msg.bitrate_switch:
+            flags |= xldefine.XL_CANFD_TX_MessageFlags.XL_CAN_TXMSG_FLAG_BRS.value
+        if msg.is_remote_frame:
+            flags |= xldefine.XL_CANFD_TX_MessageFlags.XL_CAN_TXMSG_FLAG_RTR.value
 
-            xl_event = xlclass.XLevent()
-            xl_event.tag = xldefine.XL_EventTags.XL_TRANSMIT_MSG.value
+        xl_can_tx_event = xlclass.XLcanTxEvent()
+        xl_can_tx_event.tag = xldefine.XL_CANFD_TX_EventTags.XL_CAN_EV_TAG_TX_MSG.value
+        xl_can_tx_event.transId = 0xFFFF
 
-            xl_event.tagData.msg.id = msg_id
-            xl_event.tagData.msg.dlc = msg.dlc
-            xl_event.tagData.msg.flags = flags
-            for idx, value in enumerate(msg.data):
-                xl_event.tagData.msg.data[idx] = value
-            xldriver.xlCanTransmit(self.port_handle, mask, message_count, xl_event)
+        xl_can_tx_event.tagData.canMsg.canId = msg_id
+        xl_can_tx_event.tagData.canMsg.msgFlags = flags
+        xl_can_tx_event.tagData.canMsg.dlc = len2dlc(msg.dlc)
+        xl_can_tx_event.tagData.canMsg.data = tuple(msg.data)
+
+        return xl_can_tx_event
 
     def flush_tx_buffer(self):
         xldriver.xlCanFlushTransmitQueue(self.port_handle, self.mask)
