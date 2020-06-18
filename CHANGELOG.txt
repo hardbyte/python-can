@@ -1,3 +1,11 @@
+Version 3.3.4
+====
+
+Last call for Python2 support.
+
+* #850 Fix socket.error is a deprecated alias of OSError used on Python versions lower than 3.3.
+
+
 Version 3.3.3
 ====
 
