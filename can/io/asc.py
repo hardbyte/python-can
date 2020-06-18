@@ -37,17 +37,25 @@ class ASCReader(BaseIOHandler):
         self,
         file: Union[typechecking.FileLike, typechecking.StringPathLike],
         base: str = "hex",
+        relative_time: bool = False
     ) -> None:
         """
-        :param file: a path-like object or as file-like object to read from
-                     If this is a file-like object, is has to opened in text
-                     read mode, not binary read mode.
-        :param base: Select the base(hex or dec) of id and data.
-                     If the header of the asc file contains base information,
-                     this value will be overwritten. Default "hex".
+        :param file:
+            a path-like object or as file-like object to read from
+            If this is a file-like object, is has to opened in text
+            read mode, not binary read mode.
+        :param base:
+            Select the base(hex or dec) of id and data.
+            If the header of the asc file contains base information,
+            this value will be overwritten. Default "hex".
+        :param relative_time:
+            Ignore the absolute time from the ASC file, and
+            produce messages with timestamps relative to the start
+            time.
         """
         super().__init__(file, mode="r")
 
+        self.use_relative_time = relative_time
         if not self.file:
             raise ValueError("The given file cannot be None")
         self.base = base
@@ -186,8 +194,8 @@ class ASCReader(BaseIOHandler):
         for line in self.file:
             temp = line.strip()
 
-            #check for timestamp
-            if "begin triggerblock" in temp.lower():
+            # check for timestamp
+            if not self.use_relative_time and "begin triggerblock" in temp.lower():
                 try:
                     _, _, start_time = temp.split(None, 2)
                     start_time = datetime.strptime(start_time, "%a %b %m %I:%M:%S.%f %p %Y").timestamp()
