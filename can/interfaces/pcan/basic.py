@@ -545,6 +545,10 @@ class PCANBasic:
                 logger.error("Exception: The PEAK-driver couldn't be found!")
             finally:
                 winreg.CloseKey(aReg)
+        elif "CYGWIN" in platform.system():
+            self.__m_dllBasic = cdll.LoadLibrary("PCANBasic.dll")
+            # Unfortunately cygwin python has no winreg module, so we can't
+            # check for the registry key.
         elif platform.system() == "Darwin":
             self.__m_dllBasic = cdll.LoadLibrary("libPCBUSB.dylib")
         else:
