@@ -1,12 +1,15 @@
 """
-``can`` is an object-orient Controller Area Network (CAN) interface module.
+The ``can`` package provides controller area network support for
+Python developers; providing common abstractions to
+different hardware devices, and a suite of utilities for sending and receiving
+messages on a can bus.
 """
 
 import logging
 
 from typing import Dict, Any
 
-__version__ = "3.2.0"
+__version__ = "4.0.0-dev"
 
 log = logging.getLogger("can")
 
