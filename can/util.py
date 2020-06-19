@@ -283,6 +283,12 @@ def channel2int(channel: Optional[Union[typechecking.Channel]]) -> Optional[int]
 def deprecated_args_alias(**aliases):
     """Allows to rename/deprecate a function kwarg(s) and
     have the deprecated kwarg(s) set as alias(es)
+    
+    Example:
+    
+        @deprecated_args_alias(oldArg="new_arg", anotherOldArg="another_new_arg")
+        def library_function(new_arg, another_new_arg):
+            pass
     """
 
     def deco(f):
