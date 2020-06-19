@@ -1,3 +1,52 @@
+Version 3.3.4
+====
+
+Last call for Python2 support.
+
+* #850 Fix socket.error is a deprecated alias of OSError used on Python versions lower than 3.3.
+
+
+Version 3.3.3
+====
+
+Backported fixes from 4.x development branch which targets Python 3.
+
+* #798 Backport caching msg.data value in neovi interface.
+* #796 Fix Vector CANlib treatment of empty app name.
+* #771 Handle empty CSV file.
+* #741 ASCII reader can now handle FD frames.
+* #740 Exclude test packages from distribution.
+* #713 RTR crash fix in canutils log reader parsing RTR frames.
+* #701 Skip J1939 messages in ASC Reader.
+* #690 Exposes a configuration option to allow the CAN message player to send error frames
+  (and sets the default to not send error frames).
+* #638 Fixes the semantics provided by periodic tasks in SocketCAN interface.
+* #628 Avoid padding CAN_FD_MESSAGE_64 objects to 4 bytes.
+* #617 Fixes the broken CANalyst-II interface.
+* #605 Socketcan BCM status fix.
+
+
+Version 3.3.2
+====
+
+Minor bug fix release addressing issue in PCAN RTR.
+
+
+Version 3.3.1
+====
+
+Minor fix to setup.py to only require pytest-runner when necessary.
+
+
+Version 3.3.0
+====
+
+* Adding CAN FD 64 frame support to blf reader
+* Updates to installation instructions
+* Clean up bits generator in PCAN interface #588
+* Minor fix to use latest tools when building wheels on travis.
+
+
 Version 3.2.0
 ====
 
