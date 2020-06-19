@@ -10,7 +10,7 @@ import ctypes
 import logging
 import time
 import os
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 import typing
 
@@ -174,21 +174,11 @@ class VectorBus(BusABC):
         for channel in self.channels:
             if app_name:
                 # Get global channel index from application channel
-                hw_type = ctypes.c_uint(0)
-                hw_index = ctypes.c_uint(0)
-                hw_channel = ctypes.c_uint(0)
-                xldriver.xlGetApplConfig(
-                    self._app_name,
-                    channel,
-                    hw_type,
-                    hw_index,
-                    hw_channel,
-                    xldefine.XL_BusTypes.XL_BUS_TYPE_CAN.value,
+                hw_type, hw_index, hw_channel = self.get_application_config(
+                    app_name, channel, xldefine.XL_BusTypes.XL_BUS_TYPE_CAN
                 )
                 LOG.debug("Channel index %d found", channel)
-                idx = xldriver.xlGetChannelIndex(
-                    hw_type.value, hw_index.value, hw_channel.value
-                )
+                idx = xldriver.xlGetChannelIndex(hw_type.value, hw_index, hw_channel)
                 if idx < 0:
                     # Undocumented behavior! See issue #353.
                     # If hardware is unavailable, this function returns -1.
@@ -196,7 +186,7 @@ class VectorBus(BusABC):
                     # would have signalled XL_ERR_HW_NOT_PRESENT.
                     raise VectorError(
                         xldefine.XL_Status.XL_ERR_HW_NOT_PRESENT.value,
-                        "XL_ERR_HW_NOT_PRESENT",
+                        xldefine.XL_Status.XL_ERR_HW_NOT_PRESENT.name,
                         "xlGetChannelIndex",
                     )
             else:
@@ -656,8 +646,92 @@ class VectorBus(BusABC):
         """
         xldriver.xlPopupHwConfig(ctypes.c_char_p(), ctypes.c_uint(wait_for_finish))
 
+    @staticmethod
+    def get_application_config(
+        app_name: str, app_channel: int, bus_type: xldefine.XL_BusTypes
+    ) -> Tuple[xldefine.XL_HardwareType, int, int]:
+        """Retrieve information for an application in Vector Hardware Configuration.
 
-def get_channel_configs():
+        :param app_name:
+            The name of the application.
+        :param app_channel:
+            The channel of the application.
+        :param bus_type:
+            The bus type Enum e.g. `XL_BusTypes.XL_BUS_TYPE_CAN`
+        :return:
+            Returns a tuple of the hardware type, the hardware index and the
+            hardware channel.
+        :raises VectorError:
+            Raises a VectorError when the application name does not exist in
+            Vector Hardware Configuration.
+        """
+        hw_type = ctypes.c_uint()
+        hw_index = ctypes.c_uint()
+        hw_channel = ctypes.c_uint()
+
+        xldriver.xlGetApplConfig(
+            app_name.encode(),
+            app_channel,
+            hw_type,
+            hw_index,
+            hw_channel,
+            bus_type.value,
+        )
+        return xldefine.XL_HardwareType(hw_type.value), hw_index.value, hw_channel.value
+
+    @staticmethod
+    def set_application_config(
+        app_name: str,
+        app_channel: int,
+        hw_type: xldefine.XL_HardwareType,
+        hw_index: int,
+        hw_channel: int,
+        bus_type: xldefine.XL_BusTypes,
+    ) -> None:
+        """Modify the application settings in Vector Hardware Configuration.
+
+        :param app_name:
+            The name of the application. Creates a new application if it does
+            not exist yet.
+        :param app_channel:
+            The channel of the application.
+        :param hw_type:
+            The hardware type of the interface.
+            E.g XL_HardwareType.XL_HWTYPE_VIRTUAL
+        :param hw_index:
+            The index of the interface if multiple interface with the same
+            hardware type are present.
+        :param hw_channel:
+            The channel index of the interface.
+        :param bus_type:
+            The bus type of the interfaces, which should be
+            XL_BusTypes.XL_BUS_TYPE_CAN for most cases.
+        """
+        xldriver.xlSetApplConfig(
+            app_name.encode(),
+            app_channel,
+            hw_type.value,
+            hw_index,
+            hw_channel,
+            bus_type.value,
+        )
+
+    def set_timer_rate(self, timer_rate_ms: int) -> None:
+        """Set the cyclic event rate of the port.
+
+        Once set, the port will generate a cyclic event with the tag XL_EventTags.XL_TIMER.
+        This timer can be used to keep an application alive. See XL Driver Library Description
+        for more information
+
+        :param timer_rate_ms:
+            The timer rate in ms. The minimal timer rate is 1ms, a value of 0 deactivates
+            the timer events.
+        """
+        timer_rate_10us = timer_rate_ms * 100
+        xldriver.xlSetTimerRate(self.port_handle, timer_rate_10us)
+
+
+def get_channel_configs() -> List[xlclass.XLchannelConfig]:
     if xldriver is None:
         return []
     driver_config = xlclass.XLdriverConfig()
@@ -665,6 +739,6 @@ def get_channel_configs():
         xldriver.xlOpenDriver()
         xldriver.xlGetDriverConfig(driver_config)
         xldriver.xlCloseDriver()
-    except Exception:
+    except VectorError:
         pass
     return [driver_config.channel[i] for i in range(driver_config.channelCount)]
