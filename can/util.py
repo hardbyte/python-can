@@ -281,13 +281,17 @@ def channel2int(channel: Optional[Union[typechecking.Channel]]) -> Optional[int]
 
 
 def deprecated_args_alias(**aliases):
-    """Allows to rename/deprecate a function kwarg(s) and
+    """Allows to rename/deprecate a function kwarg(s) and optionally
     have the deprecated kwarg(s) set as alias(es)
-    
+
     Example:
-    
+
         @deprecated_args_alias(oldArg="new_arg", anotherOldArg="another_new_arg")
         def library_function(new_arg, another_new_arg):
+            pass
+
+        @deprecated_args_alias(oldArg="new_arg", obsoleteOldArg=None)
+        def library_function(new_arg):
             pass
     """
 
@@ -306,16 +310,20 @@ def rename_kwargs(func_name, kwargs, aliases):
     """Helper function for `deprecated_args_alias`"""
     for alias, new in aliases.items():
         if alias in kwargs:
-            warnings.warn(
-                "{} is deprecated; use {}".format(alias, new), DeprecationWarning
-            )
-            if new in kwargs:
-                raise TypeError(
-                    "{} received both {} (deprecated) and {}".format(
-                        func_name, alias, new
-                    )
+            value = kwargs.pop(alias)
+            if new is not None:
+                warnings.warn(
+                    "{} is deprecated; use {}".format(alias, new), DeprecationWarning
                 )
-            kwargs[new] = kwargs.pop(alias)
+                if new in kwargs:
+                    raise TypeError(
+                        "{} received both {} (deprecated) and {}".format(
+                            func_name, alias, new
+                        )
+                    )
+                kwargs[new] = value
+            else:
+                warnings.warn("{} is deprecated".format(alias), DeprecationWarning)
 
 
 if __name__ == "__main__":
