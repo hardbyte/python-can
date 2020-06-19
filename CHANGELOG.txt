@@ -11,7 +11,6 @@ Last call for Python2 support.
 
 * #850 Fix socket.error is a deprecated alias of OSError used on Python versions lower than 3.3.
 
-
 Version 3.3.3
 ====
 
@@ -37,12 +36,10 @@ Version 3.3.2
 
 Minor bug fix release addressing issue in PCAN RTR.
 
-
 Version 3.3.1
 ====
 
 Minor fix to setup.py to only require pytest-runner when necessary.
-
 
 Version 3.3.0
 ====
@@ -52,6 +49,12 @@ Version 3.3.0
 * Clean up bits generator in PCAN interface #588
 * Minor fix to use latest tools when building wheels on travis.
 
+Version 3.2.1
+====
+
+* CAN FD 64 frame support to blf reader
+* Minor fix to use latest tools when building wheels on travis.
+* Updates links in documentation.
 
 Version 3.2.0
 ====
