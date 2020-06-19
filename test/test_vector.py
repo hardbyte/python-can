@@ -6,10 +6,8 @@ Test for Vector Interface
 """
 
 import ctypes
-import pickle
-import time
-import logging
 import os
+import pickle
 import unittest
 from unittest.mock import Mock
 
@@ -131,12 +129,12 @@ class TestVectorBus(unittest.TestCase):
             fd=True,
             bitrate=500000,
             data_bitrate=2000000,
-            sjwAbr=10,
-            tseg1Abr=11,
-            tseg2Abr=12,
-            sjwDbr=13,
-            tseg1Dbr=14,
-            tseg2Dbr=15,
+            sjw_abr=10,
+            tseg1_abr=11,
+            tseg2_abr=12,
+            sjw_dbr=13,
+            tseg1_dbr=14,
+            tseg2_dbr=15,
             _testing=True,
         )
         self.assertIsInstance(self.bus, canlib.VectorBus)

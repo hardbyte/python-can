@@ -32,7 +32,7 @@ except ImportError:
 # Import Modules
 # ==============
 from can import BusABC, Message
-from can.util import len2dlc, dlc2len
+from can.util import len2dlc, dlc2len, deprecated_args_alias
 from .exceptions import VectorError
 
 # Define Module Logger
@@ -54,6 +54,16 @@ except Exception as exc:
 class VectorBus(BusABC):
     """The CAN Bus implemented for the Vector interface."""
 
+    deprecated_args = dict(
+        sjwAbr="sjw_abr",
+        tseg1Abr="tseg1_abr",
+        tseg2Abr="tseg2_abr",
+        sjwDbr="sjw_dbr",
+        tseg1Dbr="tseg1_dbr",
+        tseg2Dbr="tseg2_dbr",
+    )
+
+    @deprecated_args_alias(**deprecated_args)
     def __init__(
         self,
         channel,
@@ -66,12 +76,12 @@ class VectorBus(BusABC):
         serial=None,
         fd=False,
         data_bitrate=None,
-        sjwAbr=2,
-        tseg1Abr=6,
-        tseg2Abr=3,
-        sjwDbr=2,
-        tseg1Dbr=6,
-        tseg2Dbr=3,
+        sjw_abr=2,
+        tseg1_abr=6,
+        tseg2_abr=3,
+        sjw_dbr=2,
+        tseg1_dbr=6,
+        tseg2_dbr=3,
         **kwargs,
     ):
         """
@@ -98,6 +108,18 @@ class VectorBus(BusABC):
         :param int data_bitrate:
             Which bitrate to use for data phase in CAN FD.
             Defaults to arbitration bitrate.
+        :param int sjw_abr:
+            Bus timing value sample jump width (arbitration).
+        :param int tseg1_abr:
+            Bus timing value tseg1 (arbitration)
+        :param int tseg2_abr:
+            Bus timing value tseg2 (arbitration)
+        :param int sjw_dbr:
+            Bus timing value sample jump width (data)
+        :param int tseg1_dbr:
+            Bus timing value tseg1 (data)
+        :param int tseg2_dbr:
+            Bus timing value tseg2 (data)
         """
         if os.name != "nt" and not kwargs.get("_testing", False):
             raise OSError(
@@ -209,19 +231,19 @@ class VectorBus(BusABC):
             if fd:
                 self.canFdConf = xlclass.XLcanFdConf()
                 if bitrate:
-                    self.canFdConf.arbitrationBitRate = ctypes.c_uint(bitrate)
+                    self.canFdConf.arbitrationBitRate = int(bitrate)
                 else:
-                    self.canFdConf.arbitrationBitRate = ctypes.c_uint(500000)
-                self.canFdConf.sjwAbr = ctypes.c_uint(sjwAbr)
-                self.canFdConf.tseg1Abr = ctypes.c_uint(tseg1Abr)
-                self.canFdConf.tseg2Abr = ctypes.c_uint(tseg2Abr)
+                    self.canFdConf.arbitrationBitRate = 500000
+                self.canFdConf.sjwAbr = int(sjw_abr)
+                self.canFdConf.tseg1Abr = int(tseg1_abr)
+                self.canFdConf.tseg2Abr = int(tseg2_abr)
                 if data_bitrate:
-                    self.canFdConf.dataBitRate = ctypes.c_uint(data_bitrate)
+                    self.canFdConf.dataBitRate = int(data_bitrate)
                 else:
                     self.canFdConf.dataBitRate = self.canFdConf.arbitrationBitRate
-                self.canFdConf.sjwDbr = ctypes.c_uint(sjwDbr)
-                self.canFdConf.tseg1Dbr = ctypes.c_uint(tseg1Dbr)
-                self.canFdConf.tseg2Dbr = ctypes.c_uint(tseg2Dbr)
+                self.canFdConf.sjwDbr = int(sjw_dbr)
+                self.canFdConf.tseg1Dbr = int(tseg1_dbr)
+                self.canFdConf.tseg2Dbr = int(tseg2_dbr)
 
                 xldriver.xlCanFdSetConfiguration(
                     self.port_handle, self.mask, self.canFdConf
