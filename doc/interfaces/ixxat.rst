@@ -43,6 +43,17 @@ module, while the following parameters are optional and are interpreted by IXXAT
 * ``extended`` (default False) Allow usage of extended IDs
 
 
+Filtering
+---------
+
+The CAN filters act as an allow list in IXXAT implementation, that is if you
+supply a non-empty filter list you must explicitly state EVERY frame you want
+to receive (including RTR field).
+The can_id/mask must be specified according to IXXAT behaviour, that is
+bit 0 of can_id/mask parameters represents the RTR field in CAN frame. See IXXAT
+VCI documentation, section "Message filters" for more info.
+
+
 Internals
 ---------
 
@@ -58,10 +69,3 @@ explicitly instantiated by the caller.
 
 RX and TX FIFO sizes are configurable with ``rxFifoSize`` and ``txFifoSize``
 options, defaulting at 16 for both.
-
-The CAN filters act as a "whitelist" in IXXAT implementation, that is if you
-supply a non-empty filter list you must explicitly state EVERY frame you want
-to receive (including RTR field).
-The can_id/mask must be specified according to IXXAT behaviour, that is
-bit 0 of can_id/mask parameters represents the RTR field in CAN frame. See IXXAT
-VCI documentation, section "Message filters" for more info.
