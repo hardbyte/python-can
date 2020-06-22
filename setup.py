@@ -78,7 +78,6 @@ setup(
     python_requires=">=3.6",
     install_requires=[
         "wrapt~=1.10",
-        "aenum",
         'windows-curses;platform_system=="Windows"',
         "filelock",
         "mypy_extensions >= 0.4.0, < 0.5.0",
