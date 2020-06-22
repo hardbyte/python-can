@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 # pylint: disable=invalid-name
+# pylint: disable=missing-module-docstring
 
 from __future__ import absolute_import
 
