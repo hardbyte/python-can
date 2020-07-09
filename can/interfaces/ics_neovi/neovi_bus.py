@@ -158,15 +158,25 @@ class NeoViBus(BusABC):
         with open_lock:
             ics.open_device(self.dev)
 
-        if "bitrate" in kwargs:
-            for channel in self.channels:
-                ics.set_bit_rate(self.dev, kwargs.get("bitrate"), channel)
-
-        fd = kwargs.get("fd", False)
-        if fd:
-            if "data_bitrate" in kwargs:
+        try:
+            if "bitrate" in kwargs:
                 for channel in self.channels:
-                    ics.set_fd_bit_rate(self.dev, kwargs.get("data_bitrate"), channel)
+                    ics.set_bit_rate(self.dev, kwargs.get("bitrate"), channel)
+
+            fd = kwargs.get("fd", False)
+            if fd:
+                if "data_bitrate" in kwargs:
+                    for channel in self.channels:
+                        ics.set_fd_bit_rate(
+                            self.dev, kwargs.get("data_bitrate"), channel
+                        )
+        except ics.RuntimeError as re:
+            logger.error(re)
+            err = ICSApiError(*ics.get_last_api_error(self.dev))
+            try:
+                self.shutdown()
+            finally:
+                raise err
 
         self._use_system_timestamp = bool(kwargs.get("use_system_timestamp", False))
         self._receive_own_messages = kwargs.get("receive_own_messages", True)
