@@ -163,8 +163,7 @@ class NeoViBus(BusABC):
                 for channel in self.channels:
                     ics.set_bit_rate(self.dev, kwargs.get("bitrate"), channel)
 
-            fd = kwargs.get("fd", False)
-            if fd:
+            if kwargs.get("fd", False):
                 if "data_bitrate" in kwargs:
                     for channel in self.channels:
                         ics.set_fd_bit_rate(
