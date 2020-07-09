@@ -1,7 +1,10 @@
 #!/usr/bin/env python
+"""
+Setup script for the `can` package.
+Learn more at https://github.com/hardbyte/python-can/
+"""
 
 # pylint: disable=invalid-name
-# pylint: disable=missing-module-docstring
 
 from __future__ import absolute_import
 
