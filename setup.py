@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-
 """
-python-can requires the setuptools package to be installed.
+Setup script for the `can` package.
+Learn more at https://github.com/hardbyte/python-can/
 """
 
 # pylint: disable=invalid-name
@@ -42,6 +42,7 @@ setup(
         "Programming Language :: Python",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: Implementation :: CPython",
         "Programming Language :: Python :: Implementation :: PyPy",
         "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
@@ -62,16 +63,11 @@ setup(
         "Topic :: System :: Hardware :: Hardware Drivers",
         "Topic :: Utilities",
     ],
-    # Code
     version=version,
     packages=find_packages(exclude=["test*", "doc", "scripts", "examples"]),
     scripts=list(filter(isfile, (join("scripts/", f) for f in listdir("scripts/")))),
-    # Author
-    author="Brian Thorne",
-    author_email="brian@thorne.link",
-    # License
+    author="Python CAN contributors",
     license="LGPL v3",
-    # Package data
     package_data={
         "": ["README.rst", "CONTRIBUTORS.txt", "LICENSE.txt", "CHANGELOG.txt"],
         "doc": ["*.*"],
