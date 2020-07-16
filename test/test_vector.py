@@ -6,10 +6,8 @@ Test for Vector Interface
 """
 
 import ctypes
-import pickle
-import time
-import logging
 import os
+import pickle
 import unittest
 from unittest.mock import Mock
 
@@ -131,12 +129,12 @@ class TestVectorBus(unittest.TestCase):
             fd=True,
             bitrate=500000,
             data_bitrate=2000000,
-            sjwAbr=10,
-            tseg1Abr=11,
-            tseg2Abr=12,
-            sjwDbr=13,
-            tseg1Dbr=14,
-            tseg2Dbr=15,
+            sjw_abr=10,
+            tseg1_abr=11,
+            tseg2_abr=12,
+            sjw_dbr=13,
+            tseg1_dbr=14,
+            tseg2_dbr=15,
             _testing=True,
         )
         self.assertIsInstance(self.bus, canlib.VectorBus)
@@ -248,6 +246,35 @@ class TestVectorBus(unittest.TestCase):
         args, kwargs = canlib.xldriver.xlPopupHwConfig.call_args
         assert isinstance(args[0], ctypes.c_char_p)
         assert isinstance(args[1], ctypes.c_uint)
+
+    def test_get_application_config(self) -> None:
+        canlib.xldriver.xlGetApplConfig = Mock()
+        canlib.VectorBus.get_application_config(
+            app_name="CANalyzer",
+            app_channel=0,
+            bus_type=xldefine.XL_BusTypes.XL_BUS_TYPE_CAN,
+        )
+        assert canlib.xldriver.xlGetApplConfig.called
+
+    def test_set_application_config(self) -> None:
+        canlib.xldriver.xlSetApplConfig = Mock()
+        canlib.VectorBus.set_application_config(
+            app_name="CANalyzer",
+            app_channel=0,
+            hw_type=xldefine.XL_HardwareType.XL_HWTYPE_VN1610,
+            hw_index=0,
+            hw_channel=0,
+            bus_type=xldefine.XL_BusTypes.XL_BUS_TYPE_CAN,
+        )
+        assert canlib.xldriver.xlSetApplConfig.called
+
+    def test_set_timer_rate(self) -> None:
+        canlib.xldriver.xlSetTimerRate = Mock()
+        bus: canlib.VectorBus = can.Bus(
+            channel=0, bustype="vector", fd=True, _testing=True
+        )
+        bus.set_timer_rate(timer_rate_ms=1)
+        assert canlib.xldriver.xlSetTimerRate.called
 
     def test_called_without_testing_argument(self) -> None:
         """This tests if an exception is thrown when we are not running on Windows."""
