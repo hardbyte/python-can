@@ -212,10 +212,10 @@ class NeoViBus(BusABC):
         :return: ics device serial string
         :rtype: str
         """
-        a0000 = 604661760
-        if device.SerialNumber >= a0000:
+        if int("AA0000", 36) < device.SerialNumber < int("ZZZZZZ", 36):
             return ics.base36enc(device.SerialNumber)
-        return str(device.SerialNumber)
+        else:
+            return str(device.SerialNumber)
 
     def shutdown(self):
         super().shutdown()
