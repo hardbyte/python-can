@@ -16,8 +16,9 @@ try:
     import uptime
     import datetime
 
+    # boottime() and fromtimestamp() are timezone offset, so the difference is not.
     boottimeEpoch = (
-        uptime.boottime() - datetime.datetime.utcfromtimestamp(0)
+        uptime.boottime() - datetime.datetime.fromtimestamp(0)
     ).total_seconds()
 except ImportError:
     boottimeEpoch = 0
