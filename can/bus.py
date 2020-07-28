@@ -199,7 +199,7 @@ class BusABC(metaclass=ABCMeta):
             Disable to instead manage tasks manually.
         :return:
             A started task instance. Note the task can be stopped (and depending on
-            the backend modified) by calling the :meth:`stop` method.
+            the backend modified) by calling the task's :meth:`stop` method.
 
         .. note::
 
@@ -430,3 +430,6 @@ class BusABC(metaclass=ABCMeta):
                  for usage in the interface's bus constructor.
         """
         raise NotImplementedError()
+
+    def fileno(self) -> int:
+        raise NotImplementedError("fileno is not implemented using current CAN bus")

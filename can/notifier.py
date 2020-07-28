@@ -61,13 +61,15 @@ class Notifier:
         :param bus:
             CAN bus instance.
         """
-        if (
-            self._loop is not None
-            and hasattr(bus, "fileno")
-            and bus.fileno() >= 0  # type: ignore
-        ):
+        try:
+            reader = bus.fileno()
+        except NotImplementedError as e:
+            # Bus doesn't support fileno
+            reader = None
+
+        if self._loop is not None and reader is not None and reader >= 0:
             # Use file descriptor to watch for messages
-            reader = bus.fileno()  # type: ignore
+            reader = bus.fileno()
             self._loop.add_reader(reader, self._on_message_available, bus)
         else:
             reader = threading.Thread(
