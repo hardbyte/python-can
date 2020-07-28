@@ -46,6 +46,5 @@ from .broadcastmanager import (
     CyclicSendTaskABC,
     LimitedDurationCyclicSendTaskABC,
     ModifiableCyclicTaskABC,
-    MultiRateCyclicSendTaskABC,
     RestartableCyclicTaskABC,
 )

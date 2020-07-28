@@ -169,32 +169,6 @@ class ModifiableCyclicTaskABC(CyclicSendTaskABC):
         self.messages = messages
 
 
-class MultiRateCyclicSendTaskABC(CyclicSendTaskABC):
-    """A Cyclic send task that supports switches send frequency after a set time.
-    """
-
-    def __init__(
-        self,
-        channel: typechecking.Channel,
-        messages: Union[Sequence[Message], Message],
-        count: int,
-        initial_period: float,
-        subsequent_period: float,
-    ):
-        """
-        Transmits a message `count` times at `initial_period` then continues to
-        transmit messages at `subsequent_period`.
-
-        :param channel: See interface specific documentation.
-        :param messages:
-        :param count:
-        :param initial_period:
-        :param subsequent_period:
-        """
-        super().__init__(messages, subsequent_period)
-        self._channel = channel
-
-
 class ThreadBasedCyclicSendTask(
     ModifiableCyclicTaskABC, LimitedDurationCyclicSendTaskABC, RestartableCyclicTaskABC
 ):
@@ -213,7 +187,7 @@ class ThreadBasedCyclicSendTask(
 
         The `on_error` is called if any error happens on `bus` while sending `messages`.
         If `on_error` present, and returns ``False`` when invoked, thread is
-        stopped immediately, otherwise, thread continuiously tries to send `messages`
+        stopped immediately, otherwise, thread continuously tries to send `messages`
         ignoring errors on a `bus`. Absence of `on_error` means that thread exits immediately
         on error.
 
