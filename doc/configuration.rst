@@ -19,7 +19,7 @@ the **interface** and **channel** before importing from ``can.interfaces``.
     can.rc['interface'] = 'socketcan'
     can.rc['channel'] = 'vcan0'
     can.rc['bitrate'] = 500000
-    from can.interfaces.interface import Bus
+    from can.interface import Bus
 
     bus = Bus()
 
