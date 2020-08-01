@@ -75,6 +75,9 @@ create log files with different file types of the messages received.
 .. autoclass:: can.Logger
     :members:
 
+.. autoclass:: can.RotatingFileLogger
+    :members:
+
 
 Printer
 -------
