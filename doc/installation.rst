@@ -93,10 +93,16 @@ To install ``python-can`` using the XL Driver Library as the backend:
 CANtact
 ~~~~~~~
 
+CANtact is supported on Linux, Windows, and macOS. 
 To install ``python-can`` using the CANtact driver backend:
 
-1. Install the Python ``cantact`` package: ``python3 -m pip install cantact``
+``python3 -m pip install "python-can[cantact]"``
 
+If ``python-can`` is already installed, the CANtact backend can be installed seperately:
+
+``python3 -m pip install cantact``
+
+Additional CANtact documentation is available at https://cantact.io.
 
 Installing python-can in development mode
 -----------------------------------------

@@ -40,16 +40,19 @@ class CantactBus(BusABC):
         bitrate=500000,
         poll_interval=0.01,
         monitor=False,
+        bit_timing=None,
         _testing=False,
         **kwargs
     ):
         """
         :param int channel:
-            Device number
+            Channel number (zero indexed, labeled on multi-channel devices)
         :param int bitrate:
             Bitrate in bits/s
         :param bool monitor:
             If true, operate in listen-only monitoring mode
+        :param BitTiming bit_timing
+            Optional BitTiming to use for custom bit timing setting. Overrides bitrate if not None.
         """
 
         if _testing:
@@ -61,7 +64,18 @@ class CantactBus(BusABC):
         self.channel_info = "CANtact: ch:%s" % channel
 
         # configure the interface
-        self.interface.set_bitrate(int(channel), int(bitrate))
+        if bit_timing is None:
+            # use bitrate
+            self.interface.set_bitrate(int(channel), int(bitrate))
+        else:
+            # use custom bit timing
+            self.interface.set_bit_timing(
+                int(channel),
+                int(bit_timing.brp),
+                int(bit_timing.tseg1),
+                int(bit_timing.tseg2),
+                int(bit_timing.sjw),
+            )
         self.interface.set_enabled(int(channel), True)
         self.interface.set_monitor(int(channel), monitor)
         self.interface.start()
@@ -79,11 +93,12 @@ class CantactBus(BusABC):
         msg = Message(
             arbitration_id=frame["id"],
             is_extended_id=frame["extended"],
-            timestamp=time.time(),  # Better than nothing...
+            timestamp=frame["timestamp"],
             is_remote_frame=frame["rtr"],
             dlc=frame["dlc"],
             data=frame["data"][: frame["dlc"]],
             channel=frame["channel"],
+            is_rx=(not frame["loopback"]),  # received if not loopback frame
         )
         return msg, False
 
@@ -107,6 +122,7 @@ def mock_recv(timeout):
         frame["id"] = 0x123
         frame["extended"] = False
         frame["timestamp"] = time.time()
+        frame["loopback"] = False
         frame["rtr"] = False
         frame["dlc"] = 8
         frame["data"] = [1, 2, 3, 4, 5, 6, 7, 8]
@@ -125,6 +141,7 @@ class MockInterface:
 
     start = Mock()
     set_bitrate = Mock()
+    set_bit_timing = Mock()
     set_enabled = Mock()
     set_monitor = Mock()
     start = Mock()
