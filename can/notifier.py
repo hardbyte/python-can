@@ -69,7 +69,6 @@ class Notifier:
 
         if self._loop is not None and reader is not None and reader >= 0:
             # Use file descriptor to watch for messages
-            reader = bus.fileno()
             self._loop.add_reader(reader, self._on_message_available, bus)
         else:
             reader = threading.Thread(
