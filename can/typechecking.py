@@ -22,7 +22,9 @@ CanFilters = typing.Sequence[typing.Union[CanFilter, CanFilterExtended]]
 CanData = typing.Union[bytes, bytearray, int, typing.Iterable[int]]
 
 # Used for the Abstract Base Class
-Channel = typing.Union[int, str]
+ChannelStr = str
+ChannelInt = int
+Channel = typing.Union[ChannelInt, ChannelStr]
 
 # Used by the IO module
 FileLike = typing.IO[typing.Any]
