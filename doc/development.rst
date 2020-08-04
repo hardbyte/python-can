@@ -8,12 +8,23 @@ Contributing
 Contribute to source code, documentation, examples and report issues:
 https://github.com/hardbyte/python-can
 
+Note that the latest released version on PyPi may be significantly behind the
+``develop`` branch. Please open any feature requests against the ``develop`` branch
+
 There is also a `python-can <https://groups.google.com/forum/#!forum/python-can>`__
 mailing list for development discussion.
 
 Some more information about the internals of this library can be found
 in the chapter :ref:`internalapi`.
 There is also additional information on extending the ``can.io`` module.
+
+
+Pre-releases
+------------
+
+The latest pre-release can be installed with::
+
+    pip install --upgrade --pre python-can
 
 
 
@@ -90,7 +101,7 @@ The modules in ``python-can`` are:
 Creating a new Release
 ----------------------
 
-- Release from the ``master`` branch.
+- Release from the ``master`` branch (except for pre-releases).
 - Update the library version in ``__init__.py`` using `semantic versioning <http://semver.org>`__.
 - Check if any deprecations are pending.
 - Run all tests and examples against available hardware.
