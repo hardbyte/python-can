@@ -29,6 +29,7 @@ extras_require = {
     "seeedstudio": ["pyserial>=3.0"],
     "serial": ["pyserial~=3.0"],
     "neovi": ["python-ics>=2.12"],
+    "cantact": ["cantact>=0.0.7"],
 }
 
 setup(
@@ -78,7 +79,6 @@ setup(
     python_requires=">=3.6",
     install_requires=[
         "wrapt~=1.10",
-        "aenum",
         'windows-curses;platform_system=="Windows"',
         "filelock",
         "mypy_extensions >= 0.4.0, < 0.5.0",

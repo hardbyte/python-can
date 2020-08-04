@@ -11,7 +11,7 @@ import can
 import logging
 import threading
 from time import time
-from aenum import Enum, auto
+from enum import Enum, auto
 
 from can.broadcastmanager import ThreadBasedCyclicSendTask
 from can.message import Message
