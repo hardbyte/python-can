@@ -63,7 +63,7 @@ class Notifier:
         """
         try:
             reader = bus.fileno()
-        except NotImplementedError as e:
+        except NotImplementedError:
             # Bus doesn't support fileno
             reader = None
 
