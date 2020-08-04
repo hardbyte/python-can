@@ -4,7 +4,7 @@ Definition of constants for vxlapi.
 
 # Import Python Modules
 # ==============================
-from enum import Enum
+from enum import IntEnum
 
 
 MAX_MSG_LEN = 8
@@ -12,44 +12,44 @@ XL_CAN_MAX_DATA_LEN = 64
 XL_INVALID_PORTHANDLE = -1
 
 
-class XL_AC_Flags(Enum):
+class XL_AC_Flags(IntEnum):
     XL_ACTIVATE_NONE = 0
     XL_ACTIVATE_RESET_CLOCK = 8
 
 
-class XL_AcceptanceFilter(Enum):
+class XL_AcceptanceFilter(IntEnum):
     XL_CAN_STD = 1
     XL_CAN_EXT = 2
 
 
-class XL_BusCapabilities(Enum):
+class XL_BusCapabilities(IntEnum):
     XL_BUS_COMPATIBLE_CAN = 1
     XL_BUS_ACTIVE_CAP_CAN = 65536
 
 
-class XL_BusStatus(Enum):
+class XL_BusStatus(IntEnum):
     XL_CHIPSTAT_BUSOFF = 1
     XL_CHIPSTAT_ERROR_PASSIVE = 2
     XL_CHIPSTAT_ERROR_WARNING = 4
     XL_CHIPSTAT_ERROR_ACTIVE = 8
 
 
-class XL_BusTypes(Enum):
+class XL_BusTypes(IntEnum):
     XL_BUS_TYPE_NONE = 0
     XL_BUS_TYPE_CAN = 1
 
 
-class XL_CANFD_BusParams_CanOpMode(Enum):
+class XL_CANFD_BusParams_CanOpMode(IntEnum):
     XL_BUS_PARAMS_CANOPMODE_CAN20 = 1
     XL_BUS_PARAMS_CANOPMODE_CANFD = 2
     XL_BUS_PARAMS_CANOPMODE_CANFD_NO_ISO = 8
 
 
-class XL_CANFD_ConfigOptions(Enum):
+class XL_CANFD_ConfigOptions(IntEnum):
     CANFD_CONFOPT_NO_ISO = 8
 
 
-class XL_CANFD_RX_EV_ERROR_errorCode(Enum):
+class XL_CANFD_RX_EV_ERROR_errorCode(IntEnum):
     XL_CAN_ERRC_BIT_ERROR = 1
     XL_CAN_ERRC_FORM_ERROR = 2
     XL_CAN_ERRC_STUFF_ERROR = 3
@@ -61,7 +61,7 @@ class XL_CANFD_RX_EV_ERROR_errorCode(Enum):
     XL_CAN_ERRC_EXCPT_ERROR = 9
 
 
-class XL_CANFD_RX_EventTags(Enum):
+class XL_CANFD_RX_EventTags(IntEnum):
     XL_SYNC_PULSE = 11
     XL_CAN_EV_TAG_RX_OK = 1024
     XL_CAN_EV_TAG_RX_ERROR = 1025
@@ -71,7 +71,7 @@ class XL_CANFD_RX_EventTags(Enum):
     XL_CAN_EV_TAG_CHIP_STATE = 1033
 
 
-class XL_CANFD_RX_MessageFlags(Enum):
+class XL_CANFD_RX_MessageFlags(IntEnum):
     XL_CAN_RXMSG_FLAG_NONE = 0
     XL_CAN_RXMSG_FLAG_EDL = 1
     XL_CAN_RXMSG_FLAG_BRS = 2
@@ -83,12 +83,12 @@ class XL_CANFD_RX_MessageFlags(Enum):
     XL_CAN_RXMSG_FLAG_TE = 16384
 
 
-class XL_CANFD_TX_EventTags(Enum):
+class XL_CANFD_TX_EventTags(IntEnum):
     XL_CAN_EV_TAG_TX_MSG = 1088  # =0x0440
     XL_CAN_EV_TAG_TX_ERRFR = 1089  # =0x0441
 
 
-class XL_CANFD_TX_MessageFlags(Enum):
+class XL_CANFD_TX_MessageFlags(IntEnum):
     XL_CAN_TXMSG_FLAG_NONE = 0
     XL_CAN_TXMSG_FLAG_EDL = 1
     XL_CAN_TXMSG_FLAG_BRS = 2
@@ -97,7 +97,7 @@ class XL_CANFD_TX_MessageFlags(Enum):
     XL_CAN_TXMSG_FLAG_WAKEUP = 512
 
 
-class XL_ChannelCapabilities(Enum):
+class XL_ChannelCapabilities(IntEnum):
     XL_CHANNEL_FLAG_TIME_SYNC_RUNNING = 1
     XL_CHANNEL_FLAG_NO_HWSYNC_SUPPORT = 1024
     XL_CHANNEL_FLAG_SPDIF_CAPABLE = 16384
@@ -106,7 +106,7 @@ class XL_ChannelCapabilities(Enum):
     XL_CHANNEL_FLAG_CANFD_ISO_SUPPORT = 2147483648
 
 
-class XL_EventTags(Enum):
+class XL_EventTags(IntEnum):
     XL_NO_COMMAND = 0
     XL_RECEIVE_MSG = 1
     XL_CHIP_STATE = 4
@@ -117,14 +117,14 @@ class XL_EventTags(Enum):
     XL_APPLICATION_NOTIFICATION = 15
 
 
-class XL_InterfaceVersion(Enum):
+class XL_InterfaceVersion(IntEnum):
     XL_INTERFACE_VERSION_V2 = 2
     XL_INTERFACE_VERSION_V3 = 3
     XL_INTERFACE_VERSION = XL_INTERFACE_VERSION_V3
     XL_INTERFACE_VERSION_V4 = 4
 
 
-class XL_MessageFlags(Enum):
+class XL_MessageFlags(IntEnum):
     XL_CAN_MSG_FLAG_NONE = 0
     XL_CAN_MSG_FLAG_ERROR_FRAME = 1
     XL_CAN_MSG_FLAG_OVERRUN = 2
@@ -138,18 +138,18 @@ class XL_MessageFlags(Enum):
     XL_EVENT_FLAG_OVERRUN = 1
 
 
-class XL_MessageFlagsExtended(Enum):
+class XL_MessageFlagsExtended(IntEnum):
     XL_CAN_EXT_MSG_ID = 2147483648
 
 
-class XL_OutputMode(Enum):
+class XL_OutputMode(IntEnum):
     XL_OUTPUT_MODE_SILENT = 0
     XL_OUTPUT_MODE_NORMAL = 1
     XL_OUTPUT_MODE_TX_OFF = 2
     XL_OUTPUT_MODE_SJA_1000_SILENT = 3
 
 
-class XL_Sizes(Enum):
+class XL_Sizes(IntEnum):
     XL_MAX_LENGTH = 31
     XL_MAX_APPNAME = 32
     XL_MAX_NAME_LENGTH = 48
@@ -158,7 +158,7 @@ class XL_Sizes(Enum):
     XL_APPLCONFIG_MAX_CHANNELS = 256
 
 
-class XL_Status(Enum):
+class XL_Status(IntEnum):
     XL_SUCCESS = 0  # =0x0000
     XL_PENDING = 1  # =0x0001
     XL_ERR_QUEUE_IS_EMPTY = 10  # =0x000A
@@ -206,13 +206,13 @@ class XL_Status(Enum):
     XL_ERR_UNKNOWN_FLAG = 518  # =0x206
 
 
-class XL_TimeSyncNewValue(Enum):
+class XL_TimeSyncNewValue(IntEnum):
     XL_SET_TIMESYNC_NO_CHANGE = 0
     XL_SET_TIMESYNC_ON = 1
     XL_SET_TIMESYNC_OFF = 2
 
 
-class XL_HardwareType(Enum):
+class XL_HardwareType(IntEnum):
     XL_HWTYPE_NONE = 0
     XL_HWTYPE_VIRTUAL = 1
     XL_HWTYPE_CANCARDX = 2

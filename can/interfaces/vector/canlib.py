@@ -178,14 +178,14 @@ class VectorBus(BusABC):
                     app_name, channel, xldefine.XL_BusTypes.XL_BUS_TYPE_CAN
                 )
                 LOG.debug("Channel index %d found", channel)
-                idx = xldriver.xlGetChannelIndex(hw_type.value, hw_index, hw_channel)
+                idx = xldriver.xlGetChannelIndex(hw_type, hw_index, hw_channel)
                 if idx < 0:
                     # Undocumented behavior! See issue #353.
                     # If hardware is unavailable, this function returns -1.
                     # Raise an exception as if the driver
                     # would have signalled XL_ERR_HW_NOT_PRESENT.
                     raise VectorError(
-                        xldefine.XL_Status.XL_ERR_HW_NOT_PRESENT.value,
+                        xldefine.XL_Status.XL_ERR_HW_NOT_PRESENT,
                         xldefine.XL_Status.XL_ERR_HW_NOT_PRESENT.name,
                         "xlGetChannelIndex",
                     )
@@ -208,8 +208,8 @@ class VectorBus(BusABC):
                 self.mask,
                 permission_mask,
                 rx_queue_size,
-                xldefine.XL_InterfaceVersion.XL_INTERFACE_VERSION_V4.value,
-                xldefine.XL_BusTypes.XL_BUS_TYPE_CAN.value,
+                xldefine.XL_InterfaceVersion.XL_INTERFACE_VERSION_V4,
+                xldefine.XL_BusTypes.XL_BUS_TYPE_CAN,
             )
         else:
             xldriver.xlOpenPort(
@@ -218,8 +218,8 @@ class VectorBus(BusABC):
                 self.mask,
                 permission_mask,
                 rx_queue_size,
-                xldefine.XL_InterfaceVersion.XL_INTERFACE_VERSION.value,
-                xldefine.XL_BusTypes.XL_BUS_TYPE_CAN.value,
+                xldefine.XL_InterfaceVersion.XL_INTERFACE_VERSION,
+                xldefine.XL_BusTypes.XL_BUS_TYPE_CAN,
             )
         LOG.debug(
             "Open Port: PortHandle: %d, PermissionMask: 0x%X",
@@ -286,10 +286,7 @@ class VectorBus(BusABC):
 
         try:
             xldriver.xlActivateChannel(
-                self.port_handle,
-                self.mask,
-                xldefine.XL_BusTypes.XL_BUS_TYPE_CAN.value,
-                0,
+                self.port_handle, self.mask, xldefine.XL_BusTypes.XL_BUS_TYPE_CAN, 0
             )
         except VectorError:
             self.shutdown()
@@ -323,9 +320,9 @@ class VectorBus(BusABC):
                             self.mask,
                             can_filter["can_id"],
                             can_filter["can_mask"],
-                            xldefine.XL_AcceptanceFilter.XL_CAN_EXT.value
+                            xldefine.XL_AcceptanceFilter.XL_CAN_EXT
                             if can_filter.get("extended")
-                            else xldefine.XL_AcceptanceFilter.XL_CAN_STD.value,
+                            else xldefine.XL_AcceptanceFilter.XL_CAN_STD,
                         )
                 except VectorError as exc:
                     LOG.warning("Could not set filters: %s", exc)
@@ -345,14 +342,14 @@ class VectorBus(BusABC):
                 self.mask,
                 0x0,
                 0x0,
-                xldefine.XL_AcceptanceFilter.XL_CAN_EXT.value,
+                xldefine.XL_AcceptanceFilter.XL_CAN_EXT,
             )
             xldriver.xlCanSetChannelAcceptance(
                 self.port_handle,
                 self.mask,
                 0x0,
                 0x0,
-                xldefine.XL_AcceptanceFilter.XL_CAN_STD.value,
+                xldefine.XL_AcceptanceFilter.XL_CAN_STD,
             )
         except VectorError as exc:
             LOG.warning("Could not reset filters: %s", exc)
@@ -370,7 +367,7 @@ class VectorBus(BusABC):
                     msg = self._recv_can()
 
             except VectorError as exc:
-                if exc.error_code != xldefine.XL_Status.XL_ERR_QUEUE_IS_EMPTY.value:
+                if exc.error_code != xldefine.XL_Status.XL_ERR_QUEUE_IS_EMPTY:
                     raise
             else:
                 if msg:
@@ -396,16 +393,10 @@ class VectorBus(BusABC):
         xl_can_rx_event = xlclass.XLcanRxEvent()
         xldriver.xlCanReceive(self.port_handle, xl_can_rx_event)
 
-        if (
-            xl_can_rx_event.tag
-            == xldefine.XL_CANFD_RX_EventTags.XL_CAN_EV_TAG_RX_OK.value
-        ):
+        if xl_can_rx_event.tag == xldefine.XL_CANFD_RX_EventTags.XL_CAN_EV_TAG_RX_OK:
             is_rx = True
             data_struct = xl_can_rx_event.tagData.canRxOkMsg
-        elif (
-            xl_can_rx_event.tag
-            == xldefine.XL_CANFD_RX_EventTags.XL_CAN_EV_TAG_TX_OK.value
-        ):
+        elif xl_can_rx_event.tag == xldefine.XL_CANFD_RX_EventTags.XL_CAN_EV_TAG_TX_OK:
             is_rx = False
             data_struct = xl_can_rx_event.tagData.canTxOkMsg
         else:
@@ -422,22 +413,20 @@ class VectorBus(BusABC):
             timestamp=timestamp + self._time_offset,
             arbitration_id=msg_id & 0x1FFFFFFF,
             is_extended_id=bool(
-                msg_id & xldefine.XL_MessageFlagsExtended.XL_CAN_EXT_MSG_ID.value
+                msg_id & xldefine.XL_MessageFlagsExtended.XL_CAN_EXT_MSG_ID
             ),
             is_remote_frame=bool(
-                flags & xldefine.XL_CANFD_RX_MessageFlags.XL_CAN_RXMSG_FLAG_RTR.value
+                flags & xldefine.XL_CANFD_RX_MessageFlags.XL_CAN_RXMSG_FLAG_RTR
             ),
             is_error_frame=bool(
-                flags & xldefine.XL_CANFD_RX_MessageFlags.XL_CAN_RXMSG_FLAG_EF.value
+                flags & xldefine.XL_CANFD_RX_MessageFlags.XL_CAN_RXMSG_FLAG_EF
             ),
-            is_fd=bool(
-                flags & xldefine.XL_CANFD_RX_MessageFlags.XL_CAN_RXMSG_FLAG_EDL.value
-            ),
+            is_fd=bool(flags & xldefine.XL_CANFD_RX_MessageFlags.XL_CAN_RXMSG_FLAG_EDL),
             bitrate_switch=bool(
-                flags & xldefine.XL_CANFD_RX_MessageFlags.XL_CAN_RXMSG_FLAG_BRS.value
+                flags & xldefine.XL_CANFD_RX_MessageFlags.XL_CAN_RXMSG_FLAG_BRS
             ),
             error_state_indicator=bool(
-                flags & xldefine.XL_CANFD_RX_MessageFlags.XL_CAN_RXMSG_FLAG_ESI.value
+                flags & xldefine.XL_CANFD_RX_MessageFlags.XL_CAN_RXMSG_FLAG_ESI
             ),
             is_rx=is_rx,
             channel=channel,
@@ -451,7 +440,7 @@ class VectorBus(BusABC):
         event_count = ctypes.c_uint(1)
         xldriver.xlReceive(self.port_handle, event_count, xl_event)
 
-        if xl_event.tag != xldefine.XL_EventTags.XL_RECEIVE_MSG.value:
+        if xl_event.tag != xldefine.XL_EventTags.XL_RECEIVE_MSG:
             self.handle_can_event(xl_event)
             return
 
@@ -465,16 +454,16 @@ class VectorBus(BusABC):
             timestamp=timestamp + self._time_offset,
             arbitration_id=msg_id & 0x1FFFFFFF,
             is_extended_id=bool(
-                msg_id & xldefine.XL_MessageFlagsExtended.XL_CAN_EXT_MSG_ID.value
+                msg_id & xldefine.XL_MessageFlagsExtended.XL_CAN_EXT_MSG_ID
             ),
             is_remote_frame=bool(
-                flags & xldefine.XL_MessageFlags.XL_CAN_MSG_FLAG_REMOTE_FRAME.value
+                flags & xldefine.XL_MessageFlags.XL_CAN_MSG_FLAG_REMOTE_FRAME
             ),
             is_error_frame=bool(
-                flags & xldefine.XL_MessageFlags.XL_CAN_MSG_FLAG_ERROR_FRAME.value
+                flags & xldefine.XL_MessageFlags.XL_CAN_MSG_FLAG_ERROR_FRAME
             ),
             is_rx=not bool(
-                flags & xldefine.XL_MessageFlags.XL_CAN_MSG_FLAG_TX_COMPLETED.value
+                flags & xldefine.XL_MessageFlags.XL_CAN_MSG_FLAG_TX_COMPLETED
             ),
             is_fd=False,
             dlc=dlc,
@@ -539,14 +528,14 @@ class VectorBus(BusABC):
     def _build_xl_event(msg: Message) -> xlclass.XLevent:
         msg_id = msg.arbitration_id
         if msg.is_extended_id:
-            msg_id |= xldefine.XL_MessageFlagsExtended.XL_CAN_EXT_MSG_ID.value
+            msg_id |= xldefine.XL_MessageFlagsExtended.XL_CAN_EXT_MSG_ID
 
         flags = 0
         if msg.is_remote_frame:
-            flags |= xldefine.XL_MessageFlags.XL_CAN_MSG_FLAG_REMOTE_FRAME.value
+            flags |= xldefine.XL_MessageFlags.XL_CAN_MSG_FLAG_REMOTE_FRAME
 
         xl_event = xlclass.XLevent()
-        xl_event.tag = xldefine.XL_EventTags.XL_TRANSMIT_MSG.value
+        xl_event.tag = xldefine.XL_EventTags.XL_TRANSMIT_MSG
         xl_event.tagData.msg.id = msg_id
         xl_event.tagData.msg.dlc = msg.dlc
         xl_event.tagData.msg.flags = flags
@@ -573,18 +562,18 @@ class VectorBus(BusABC):
     def _build_xl_can_tx_event(msg: Message) -> xlclass.XLcanTxEvent:
         msg_id = msg.arbitration_id
         if msg.is_extended_id:
-            msg_id |= xldefine.XL_MessageFlagsExtended.XL_CAN_EXT_MSG_ID.value
+            msg_id |= xldefine.XL_MessageFlagsExtended.XL_CAN_EXT_MSG_ID
 
         flags = 0
         if msg.is_fd:
-            flags |= xldefine.XL_CANFD_TX_MessageFlags.XL_CAN_TXMSG_FLAG_EDL.value
+            flags |= xldefine.XL_CANFD_TX_MessageFlags.XL_CAN_TXMSG_FLAG_EDL
         if msg.bitrate_switch:
-            flags |= xldefine.XL_CANFD_TX_MessageFlags.XL_CAN_TXMSG_FLAG_BRS.value
+            flags |= xldefine.XL_CANFD_TX_MessageFlags.XL_CAN_TXMSG_FLAG_BRS
         if msg.is_remote_frame:
-            flags |= xldefine.XL_CANFD_TX_MessageFlags.XL_CAN_TXMSG_FLAG_RTR.value
+            flags |= xldefine.XL_CANFD_TX_MessageFlags.XL_CAN_TXMSG_FLAG_RTR
 
         xl_can_tx_event = xlclass.XLcanTxEvent()
-        xl_can_tx_event.tag = xldefine.XL_CANFD_TX_EventTags.XL_CAN_EV_TAG_TX_MSG.value
+        xl_can_tx_event.tag = xldefine.XL_CANFD_TX_EventTags.XL_CAN_EV_TAG_TX_MSG
         xl_can_tx_event.transId = 0xFFFF
 
         xl_can_tx_event.tagData.canMsg.canId = msg_id
@@ -605,7 +594,7 @@ class VectorBus(BusABC):
     def reset(self):
         xldriver.xlDeactivateChannel(self.port_handle, self.mask)
         xldriver.xlActivateChannel(
-            self.port_handle, self.mask, xldefine.XL_BusTypes.XL_BUS_TYPE_CAN.value, 0
+            self.port_handle, self.mask, xldefine.XL_BusTypes.XL_BUS_TYPE_CAN, 0
         )
 
     @staticmethod
@@ -616,7 +605,7 @@ class VectorBus(BusABC):
         for channel_config in channel_configs:
             if (
                 not channel_config.channelBusCapabilities
-                & xldefine.XL_BusCapabilities.XL_BUS_ACTIVE_CAP_CAN.value
+                & xldefine.XL_BusCapabilities.XL_BUS_ACTIVE_CAP_CAN
             ):
                 continue
             LOG.info(
@@ -631,7 +620,7 @@ class VectorBus(BusABC):
                     "channel": channel_config.channelIndex,
                     "supports_fd": bool(
                         channel_config.channelBusCapabilities
-                        & xldefine.XL_ChannelCapabilities.XL_CHANNEL_FLAG_CANFD_ISO_SUPPORT.value
+                        & xldefine.XL_ChannelCapabilities.XL_CHANNEL_FLAG_CANFD_ISO_SUPPORT
                     ),
                 }
             )
@@ -670,12 +659,7 @@ class VectorBus(BusABC):
         hw_channel = ctypes.c_uint()
 
         xldriver.xlGetApplConfig(
-            app_name.encode(),
-            app_channel,
-            hw_type,
-            hw_index,
-            hw_channel,
-            bus_type.value,
+            app_name.encode(), app_channel, hw_type, hw_index, hw_channel, bus_type
         )
         return xldefine.XL_HardwareType(hw_type.value), hw_index.value, hw_channel.value
 
@@ -708,12 +692,7 @@ class VectorBus(BusABC):
             XL_BusTypes.XL_BUS_TYPE_CAN for most cases.
         """
         xldriver.xlSetApplConfig(
-            app_name.encode(),
-            app_channel,
-            hw_type.value,
-            hw_index,
-            hw_channel,
-            bus_type.value,
+            app_name.encode(), app_channel, hw_type, hw_index, hw_channel, bus_type
         )
 
     def set_timer_rate(self, timer_rate_ms: int) -> None:
