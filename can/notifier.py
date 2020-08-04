@@ -61,24 +61,26 @@ class Notifier:
         :param bus:
             CAN bus instance.
         """
+        reader: int = -1
         try:
             reader = bus.fileno()
         except NotImplementedError:
-            # Bus doesn't support fileno
-            reader = None
+            # Bus doesn't support fileno, we fall back to thread based reader
+            pass
 
-        if self._loop is not None and reader is not None and reader >= 0:
-            # Use file descriptor to watch for messages
+        if self._loop is not None and reader >= 0:
+            # Use bus file descriptor to watch for messages
             self._loop.add_reader(reader, self._on_message_available, bus)
+            self._readers.append(reader)
         else:
-            reader = threading.Thread(
+            reader_thread = threading.Thread(
                 target=self._rx_thread,
                 args=(bus,),
                 name='can.notifier for bus "{}"'.format(bus.channel_info),
             )
-            reader.daemon = True
-            reader.start()
-        self._readers.append(reader)
+            reader_thread.daemon = True
+            reader_thread.start()
+            self._readers.append(reader_thread)
 
     def stop(self, timeout: float = 5):
         """Stop notifying Listeners when new :class:`~can.Message` objects arrive
