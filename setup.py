@@ -7,6 +7,7 @@ python-can requires the setuptools package to be installed.
 
 from __future__ import absolute_import
 
+import platform
 from os import listdir
 from os.path import isfile, join
 import re
@@ -31,7 +32,7 @@ extras_require = {
 
 tests_require = [
     'mock~=2.0',
-    'pytest~=4.3',
+    'pytest~=4.6',
     'pytest-timeout~=1.3',
     'pytest-cov~=2.8',
     # coveragepy==5.0 fails with `Safety level may not be changed inside a transaction`
@@ -52,7 +53,6 @@ extras_require['test'] = tests_require
 # See https://pypi.org/project/pytest-runner/#conditional-requirement
 needs_pytest = {"pytest", "test", "ptr"}.intersection(sys.argv)
 pytest_runner = ["pytest-runner"] if needs_pytest else []
-
 
 setup(
     # Description
