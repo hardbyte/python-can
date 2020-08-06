@@ -8,7 +8,7 @@ from __future__ import absolute_import
 
 import logging
 
-__version__ = "3.3.4-alpha0"
+__version__ = "3.3.4-alpha1"
 
 log = logging.getLogger('can')
 

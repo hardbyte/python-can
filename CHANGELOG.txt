@@ -8,7 +8,6 @@ Last call for Python2 support.
 * #879 Updating incorrect api documentation.
 * #885 Fix recursion message in Message.__getattr__
 * #845 Fix socketcan issue
-* #788 Fix issue with extended_id
 
 
 Version 3.3.3
