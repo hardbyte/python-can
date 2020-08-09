@@ -462,7 +462,7 @@ class IXXATBus(BusABC):
             else:
                 if (UniqueHardwareId is None) or (
                     self._device_info.UniqueHardwareId.AsChar
-                    == UniqueHardwareId.encode('ascii')
+                    == UniqueHardwareId.encode("ascii")
                 ):
                     break
                 else:
