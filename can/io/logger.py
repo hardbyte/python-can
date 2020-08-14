@@ -71,7 +71,7 @@ class Logger(BaseIOHandler, Listener):  # pylint: disable=abstract-method
             )
             Logger.fetched_plugins = True
 
-        suffix = pathlib.PurePath(filename).suffix
+        suffix = pathlib.PurePath(filename).suffix.lower()
         try:
             return Logger.message_writers[suffix](filename, *args, **kwargs)
         except KeyError:
