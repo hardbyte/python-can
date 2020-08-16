@@ -328,10 +328,12 @@ class IXXATBus(BusABC):
                 else:
                     raise VCIDeviceNotFoundError("Unique HW ID {} not connected or not available.".format(UniqueHardwareId))
             else:
-                if (UniqueHardwareId is None) or (self._device_info.UniqueHardwareId.AsChar == bytes(UniqueHardwareId, 'ascii')):
+                if (UniqueHardwareId is None) or (
+                        self._device_info.UniqueHardwareId.AsChar == UniqueHardwareId.encode("ascii")):
                     break
                 else:
-                    log.debug("Ignoring IXXAT with hardware id '%s'.", self._device_info.UniqueHardwareId.AsChar.decode("ascii"))
+                    log.debug("Ignoring IXXAT with hardware id '%s'.",
+                              self._device_info.UniqueHardwareId.AsChar.decode("ascii"))
         _canlib.vciEnumDeviceClose(self._device_handle)
         _canlib.vciDeviceOpen(ctypes.byref(self._device_info.VciObjectId), ctypes.byref(self._device_handle))
         log.info("Using unique HW ID %s", self._device_info.UniqueHardwareId.AsChar)
