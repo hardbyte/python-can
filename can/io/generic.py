@@ -3,7 +3,7 @@ Contains a generic class for file IO.
 """
 
 from abc import ABCMeta
-from typing import Optional, cast
+from typing import Optional, cast, Union, TextIO, BinaryIO
 
 import can
 import can.typechecking
@@ -52,6 +52,12 @@ class BaseIOHandler(metaclass=ABCMeta):
 # pylint: disable=abstract-method,too-few-public-methods
 class MessageWriter(BaseIOHandler, can.Listener, metaclass=ABCMeta):
     """The base class for all writers."""
+
+
+# pylint: disable=abstract-method,too-few-public-methods
+class FileIOMessageWriter(MessageWriter, metaclass=ABCMeta):
+    """The base class for all writers."""
+    file: Union[TextIO, BinaryIO]
 
 
 # pylint: disable=too-few-public-methods

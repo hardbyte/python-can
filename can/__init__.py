@@ -24,7 +24,7 @@ class CanError(IOError):
 
 from .listener import Listener, BufferedReader, RedirectReader, AsyncBufferedReader
 
-from .io import Logger, RotatingFileLogger, Printer, LogReader, MessageSync
+from .io import Logger, SizedRotatingCanLogger, Printer, LogReader, MessageSync
 from .io import ASCWriter, ASCReader
 from .io import BLFReader, BLFWriter
 from .io import CanutilsLogReader, CanutilsLogWriter

@@ -75,7 +75,10 @@ create log files with different file types of the messages received.
 .. autoclass:: can.Logger
     :members:
 
-.. autoclass:: can.RotatingFileLogger
+.. autoclass:: can.io.BaseRotatingCanLogger
+    :members:
+
+.. autoclass:: can.SizedRotatingCanLogger
     :members:
 
 

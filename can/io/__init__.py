@@ -4,7 +4,7 @@ and Writers based off the file extension.
 """
 
 # Generic
-from .logger import Logger, RotatingFileLogger
+from .logger import Logger, BaseRotatingCanLogger, SizedRotatingCanLogger
 from .player import LogReader, MessageSync
 
 # Format specific
