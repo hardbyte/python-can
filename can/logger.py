@@ -20,7 +20,7 @@ import socket
 from datetime import datetime
 
 import can
-from can import Bus, BusState, Logger
+from can import Bus, BusState, Logger, SizedRotatingCanLogger
 
 
 def main():
@@ -34,6 +34,15 @@ def main():
         "--file_name",
         dest="log_file",
         help="""Path and base log filename, for supported types see can.Logger.""",
+        default=None,
+    )
+
+    parser.add_argument(
+        "-s",
+        "--file_size",
+        dest="file_size",
+        type=int,
+        help="""Maximum file size in bytes. Rotate log file when size threshold is reached.""",
         default=None,
     )
 
@@ -142,7 +151,11 @@ def main():
 
     print(f"Connected to {bus.__class__.__name__}: {bus.channel_info}")
     print(f"Can Logger (Started on {datetime.now()})")
-    logger = Logger(results.log_file)
+
+    if results.file_size:
+        logger = SizedRotatingCanLogger(base_filename=results.log_file, max_bytes=results.file_size)
+    else:
+        logger = Logger(filename=results.log_file)
 
     try:
         while True:
