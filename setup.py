@@ -114,7 +114,7 @@ setup(
         'wrapt~=1.10',
         'aenum',
         'typing;python_version<"3.5"',
-        'windows-curses;platform_system=="Windows"'
+        'windows-curses;platform_system=="Windows"',
     ],
     setup_requires=pytest_runner,
     extras_require=extras_require,
