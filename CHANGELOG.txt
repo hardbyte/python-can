@@ -3,6 +3,7 @@ Version 3.3.4
 
 Last call for Python2 support.
 
+* #846 Use inter-process mutex to prevent concurrent neoVI device open.
 * #901 Fix iteration in Bus.stop_all_periodic_tasks
 * #850 Fix socket.error is a deprecated alias of OSError used on Python versions lower than 3.3.
 * #879 Updating incorrect api documentation.
@@ -15,7 +16,6 @@ Version 3.3.3
 
 Backported fixes from 4.x development branch which targets Python 3.
 
-* #846 Use inter-process mutex to prevent concurrent neoVI device open.
 * #798 Backport caching msg.data value in neovi interface.
 * #796 Fix Vector CANlib treatment of empty app name.
 * #771 Handle empty CSV file.
