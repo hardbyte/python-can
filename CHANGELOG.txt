@@ -11,6 +11,7 @@ Version 3.3.3
 
 Backported fixes from 4.x development branch which targets Python 3.
 
+* #846 Use inter-process mutex to prevent concurrent neoVI device open.
 * #798 Backport caching msg.data value in neovi interface.
 * #796 Fix Vector CANlib treatment of empty app name.
 * #771 Handle empty CSV file.
