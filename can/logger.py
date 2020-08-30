@@ -153,7 +153,9 @@ def main():
     print(f"Can Logger (Started on {datetime.now()})")
 
     if results.file_size:
-        logger = SizedRotatingCanLogger(base_filename=results.log_file, max_bytes=results.file_size)
+        logger = SizedRotatingCanLogger(
+            base_filename=results.log_file, max_bytes=results.file_size
+        )
     else:
         logger = Logger(filename=results.log_file)
 

@@ -119,11 +119,18 @@ class BaseRotatingCanLogger(Listener, ABC):
     namer: Optional[Callable] = None
     rotator: Optional[Callable] = None
     rollover_count: int = 0
-    writer: FileIOMessageWriter
+    _writer: Optional[FileIOMessageWriter] = None
 
     def __init__(self, *args, **kwargs):
         self.writer_args = args
         self.writer_kwargs = kwargs
+
+    @property
+    def writer(self) -> FileIOMessageWriter:
+        if not self._writer:
+            raise ValueError("Attempt to access writer failed.")
+
+        return self._writer
 
     def rotation_filename(self, default_name: StringPathLike):
         """Modify the filename of a log file when rotating.
@@ -176,7 +183,7 @@ class BaseRotatingCanLogger(Listener, ABC):
 
         self.writer.on_message_received(msg)
 
-    def get_new_writer(self, filename: StringPathLike) -> FileIOMessageWriter:
+    def get_new_writer(self, filename: StringPathLike):
         """Instantiate a new writer.
 
         :param filename:
@@ -193,7 +200,10 @@ class BaseRotatingCanLogger(Listener, ABC):
                 f'Log format with suffix"{suffix}" is '
                 f"not supported by {self.__class__.__name__}."
             )
-        return writer_class(filename, *self.writer_args, **self.writer_kwargs)
+        else:
+            self._writer = writer_class(
+                filename, *self.writer_args, **self.writer_kwargs
+            )
 
     def stop(self):
         """Stop handling new messages.
@@ -227,7 +237,7 @@ class SizedRotatingCanLogger(BaseRotatingCanLogger):
 
     Example::
 
-        from can import Notifier, RotatingFileLogger
+        from can import Notifier, SizedRotatingCanLogger
         from can.interfaces.vector import VectorBus
 
         bus = VectorBus(channel=[0], app_name="CANape", fd=True)
@@ -248,7 +258,6 @@ class SizedRotatingCanLogger(BaseRotatingCanLogger):
       * .txt :class:`can.Printer`
 
     The log files may be incomplete until `stop()` is called due to buffering.
-
     """
 
     def __init__(
@@ -261,17 +270,16 @@ class SizedRotatingCanLogger(BaseRotatingCanLogger):
         :param max_bytes:
             The size threshold at which a new log file shall be created. If set to 0, no
             rollover will be performed.
-
         """
         super(SizedRotatingCanLogger, self).__init__(*args, **kwargs)
 
         self.base_filename = os.path.abspath(base_filename)
         self.max_bytes = max_bytes
 
-        self.writer = self.get_new_writer(self.base_filename)
+        self.get_new_writer(self.base_filename)
 
     def should_rollover(self, msg: Message) -> bool:
-        if self.max_bytes == 0:
+        if self.max_bytes <= 0:
             return False
 
         if self.writer.file.tell() >= self.max_bytes:
@@ -287,7 +295,7 @@ class SizedRotatingCanLogger(BaseRotatingCanLogger):
         dfn = self.rotation_filename(self._default_name())
         self.rotate(sfn, dfn)
 
-        self.writer = self.get_new_writer(self.base_filename)
+        self.get_new_writer(self.base_filename)
 
     def _default_name(self) -> StringPathLike:
         """Generate the default rotation filename."""
