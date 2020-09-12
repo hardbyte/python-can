@@ -90,7 +90,7 @@ class GsUsbBus(can.BusABC):
         msg = can.Message()
         msg.arbitration_id = frame.arbitration_id
         msg.dlc = frame.can_dlc
-        msg.data = bytearray(frame.data)[0:msg.dlc]
+        msg.data = bytearray(frame.data)[0 : msg.dlc]
         msg.timestamp = frame.timestamp
         msg.channel = self.channel_info
         msg.is_extended_id = frame.is_extended_id
