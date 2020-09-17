@@ -15,10 +15,10 @@ import can
 from .data.example_data import generate_message
 
 
-class TestBaseRotatingCanLogger:
+class TestBaseRotatingLogger:
     @staticmethod
     def _get_instance(*args, **kwargs):
-        class SubClass(can.io.BaseRotatingCanLogger):
+        class SubClass(can.io.BaseRotatingLogger):
             """Subclass that implements abstract methods for testing."""
 
             def should_rollover(self, msg):
@@ -30,25 +30,25 @@ class TestBaseRotatingCanLogger:
         return SubClass(*args, **kwargs)
 
     def test_import(self):
-        assert hasattr(can.io, "BaseRotatingCanLogger")
+        assert hasattr(can.io, "BaseRotatingLogger")
 
     def test_attributes(self):
-        assert issubclass(can.io.BaseRotatingCanLogger, can.Listener)
-        assert hasattr(can.io.BaseRotatingCanLogger, "supported_writers")
-        assert hasattr(can.io.BaseRotatingCanLogger, "namer")
-        assert hasattr(can.io.BaseRotatingCanLogger, "rotator")
-        assert hasattr(can.io.BaseRotatingCanLogger, "rollover_count")
-        assert hasattr(can.io.BaseRotatingCanLogger, "writer")
-        assert hasattr(can.io.BaseRotatingCanLogger, "rotation_filename")
-        assert hasattr(can.io.BaseRotatingCanLogger, "rotate")
-        assert hasattr(can.io.BaseRotatingCanLogger, "on_message_received")
-        assert hasattr(can.io.BaseRotatingCanLogger, "get_new_writer")
-        assert hasattr(can.io.BaseRotatingCanLogger, "stop")
-        assert hasattr(can.io.BaseRotatingCanLogger, "should_rollover")
-        assert hasattr(can.io.BaseRotatingCanLogger, "do_rollover")
+        assert issubclass(can.io.BaseRotatingLogger, can.Listener)
+        assert hasattr(can.io.BaseRotatingLogger, "supported_writers")
+        assert hasattr(can.io.BaseRotatingLogger, "namer")
+        assert hasattr(can.io.BaseRotatingLogger, "rotator")
+        assert hasattr(can.io.BaseRotatingLogger, "rollover_count")
+        assert hasattr(can.io.BaseRotatingLogger, "writer")
+        assert hasattr(can.io.BaseRotatingLogger, "rotation_filename")
+        assert hasattr(can.io.BaseRotatingLogger, "rotate")
+        assert hasattr(can.io.BaseRotatingLogger, "on_message_received")
+        assert hasattr(can.io.BaseRotatingLogger, "get_new_writer")
+        assert hasattr(can.io.BaseRotatingLogger, "stop")
+        assert hasattr(can.io.BaseRotatingLogger, "should_rollover")
+        assert hasattr(can.io.BaseRotatingLogger, "do_rollover")
 
     def test_supported_writers(self):
-        supported_writers = can.io.BaseRotatingCanLogger.supported_writers
+        supported_writers = can.io.BaseRotatingLogger.supported_writers
         assert supported_writers[".asc"] == can.ASCWriter
         assert supported_writers[".blf"] == can.BLFWriter
         assert supported_writers[".csv"] == can.CSVWriter
@@ -198,25 +198,25 @@ class TestBaseRotatingCanLogger:
             logger_instance.stop()
 
 
-class TestSizedRotatingCanLogger:
+class TestSizedRotatingLogger:
     def test_import(self):
-        assert hasattr(can.io, "SizedRotatingCanLogger")
-        assert hasattr(can, "SizedRotatingCanLogger")
+        assert hasattr(can.io, "SizedRotatingLogger")
+        assert hasattr(can, "SizedRotatingLogger")
 
     def test_attributes(self):
-        assert issubclass(can.SizedRotatingCanLogger, can.io.BaseRotatingCanLogger)
-        assert hasattr(can.SizedRotatingCanLogger, "supported_writers")
-        assert hasattr(can.SizedRotatingCanLogger, "namer")
-        assert hasattr(can.SizedRotatingCanLogger, "rotator")
-        assert hasattr(can.SizedRotatingCanLogger, "should_rollover")
-        assert hasattr(can.SizedRotatingCanLogger, "do_rollover")
+        assert issubclass(can.SizedRotatingLogger, can.io.BaseRotatingLogger)
+        assert hasattr(can.SizedRotatingLogger, "supported_writers")
+        assert hasattr(can.SizedRotatingLogger, "namer")
+        assert hasattr(can.SizedRotatingLogger, "rotator")
+        assert hasattr(can.SizedRotatingLogger, "should_rollover")
+        assert hasattr(can.SizedRotatingLogger, "do_rollover")
 
     def test_create_instance(self):
         base_filename = "mylogfile.ASC"
         max_bytes = 512
 
         with tempfile.TemporaryDirectory() as temp_dir:
-            logger_instance = can.SizedRotatingCanLogger(
+            logger_instance = can.SizedRotatingLogger(
                 base_filename=os.path.join(temp_dir, base_filename), max_bytes=max_bytes
             )
             assert Path(logger_instance.base_filename).name == base_filename
@@ -231,7 +231,7 @@ class TestSizedRotatingCanLogger:
         max_bytes = 512
 
         with tempfile.TemporaryDirectory() as temp_dir:
-            logger_instance = can.SizedRotatingCanLogger(
+            logger_instance = can.SizedRotatingLogger(
                 base_filename=os.path.join(temp_dir, base_filename), max_bytes=max_bytes
             )
             msg = generate_message(0x123)
@@ -256,7 +256,7 @@ class TestSizedRotatingCanLogger:
         msg = generate_message(0x123)
 
         with tempfile.TemporaryDirectory() as temp_dir:
-            logger_instance = can.SizedRotatingCanLogger(
+            logger_instance = can.SizedRotatingLogger(
                 base_filename=os.path.join(temp_dir, base_filename), max_bytes=max_bytes
             )
             for _ in range(128):

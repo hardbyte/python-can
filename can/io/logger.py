@@ -81,7 +81,7 @@ class Logger(BaseIOHandler, Listener):  # pylint: disable=abstract-method
             ) from None
 
 
-class BaseRotatingCanLogger(Listener, ABC):
+class BaseRotatingLogger(Listener, ABC):
     """
     Base class for rotating CAN loggers. This class is not meant to be
     instantiated directly. Subclasses must implement the `should_rollover`
@@ -224,7 +224,7 @@ class BaseRotatingCanLogger(Listener, ABC):
         ...
 
 
-class SizedRotatingCanLogger(BaseRotatingCanLogger):
+class SizedRotatingLogger(BaseRotatingLogger):
     """Log CAN messages to a sequence of files with a given maximum size.
 
     The logger creates a log file with the given `base_filename`. When the
@@ -237,12 +237,12 @@ class SizedRotatingCanLogger(BaseRotatingCanLogger):
 
     Example::
 
-        from can import Notifier, SizedRotatingCanLogger
+        from can import Notifier, SizedRotatingLogger
         from can.interfaces.vector import VectorBus
 
         bus = VectorBus(channel=[0], app_name="CANape", fd=True)
 
-        logger = SizedRotatingCanLogger(
+        logger = SizedRotatingLogger(
             base_filename="my_logfile.asc",
             max_bytes=5 * 1024 ** 2,  # =5MB
         )
@@ -250,7 +250,7 @@ class SizedRotatingCanLogger(BaseRotatingCanLogger):
 
         notifier = Notifier(bus=bus, listeners=[logger])
 
-    The SizedRotatingCanLogger currently supports the formats
+    The SizedRotatingLogger currently supports the formats
       * .asc: :class:`can.ASCWriter`
       * .blf :class:`can.BLFWriter`
       * .csv: :class:`can.CSVWriter`
@@ -271,7 +271,7 @@ class SizedRotatingCanLogger(BaseRotatingCanLogger):
             The size threshold at which a new log file shall be created. If set to 0, no
             rollover will be performed.
         """
-        super(SizedRotatingCanLogger, self).__init__(*args, **kwargs)
+        super(SizedRotatingLogger, self).__init__(*args, **kwargs)
 
         self.base_filename = os.path.abspath(base_filename)
         self.max_bytes = max_bytes

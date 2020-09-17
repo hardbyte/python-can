@@ -20,7 +20,7 @@ import socket
 from datetime import datetime
 
 import can
-from can import Bus, BusState, Logger, SizedRotatingCanLogger
+from can import Bus, BusState, Logger, SizedRotatingLogger
 
 
 def main():
@@ -153,7 +153,7 @@ def main():
     print(f"Can Logger (Started on {datetime.now()})")
 
     if results.file_size:
-        logger = SizedRotatingCanLogger(
+        logger = SizedRotatingLogger(
             base_filename=results.log_file, max_bytes=results.file_size
         )
     else:
