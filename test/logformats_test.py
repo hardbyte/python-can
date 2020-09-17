@@ -36,6 +36,36 @@ from .message_helper import ComparingMessagesTestCase
 logging.basicConfig(level=logging.DEBUG)
 
 
+class ReaderWriterExtensionTest(unittest.TestCase):
+    message_writers_and_readers = {}
+    for suffix, writer in can.Logger.message_writers.items():
+        message_writers_and_readers[suffix] = (
+            writer,
+            can.LogReader.message_readers.get(suffix),
+        )
+
+    def test_extension_matching(self):
+        for suffix, (writer, reader) in self.message_writers_and_readers.items():
+            suffix_variants = [
+                suffix.upper(),
+                suffix.lower(),
+                "".join([c.upper() if i % 2 else c for i, c in enumerate(suffix)]),
+            ]
+            for suffix_variant in suffix_variants:
+                tmp_file = tempfile.NamedTemporaryFile(
+                    suffix=suffix_variant, delete=False
+                )
+                tmp_file.close()
+                try:
+                    with can.Logger(tmp_file.name) as logger:
+                        assert type(logger) == writer
+                    if reader is not None:
+                        with can.LogReader(tmp_file.name) as player:
+                            assert type(player) == reader
+                finally:
+                    os.remove(tmp_file.name)
+
+
 class ReaderWriterTest(unittest.TestCase, ComparingMessagesTestCase, metaclass=ABCMeta):
     """Tests a pair of writer and reader by writing all data first and
     then reading all data and checking if they could be reconstructed

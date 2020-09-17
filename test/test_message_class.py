@@ -5,11 +5,14 @@ import unittest
 import sys
 from math import isinf, isnan
 from copy import copy, deepcopy
+import pickle
 
 from hypothesis import given, settings, reproduce_failure
 import hypothesis.strategies as st
 
 from can import Message
+
+from .message_helper import ComparingMessagesTestCase
 
 
 class TestMessageClass(unittest.TestCase):
@@ -83,6 +86,32 @@ class TestMessageClass(unittest.TestCase):
                 self.assertTrue(message.equals(other, timestamp_delta=None))
                 self.assertTrue(message.equals(other))
                 self.assertTrue(message.equals(other, timestamp_delta=0))
+
+
+class MessageSerialization(unittest.TestCase, ComparingMessagesTestCase):
+    def __init__(self, *args, **kwargs):
+        unittest.TestCase.__init__(self, *args, **kwargs)
+        ComparingMessagesTestCase.__init__(
+            self, allowed_timestamp_delta=0.016, preserves_channel=True
+        )
+
+    def test_serialization(self):
+        message = Message(
+            timestamp=1.0,
+            arbitration_id=0x401,
+            is_extended_id=False,
+            is_remote_frame=False,
+            is_error_frame=False,
+            channel=1,
+            dlc=6,
+            data=bytearray([0x01, 0x02, 0x03, 0x04, 0x05, 0x06]),
+            is_fd=False,
+        )
+
+        serialized = pickle.dumps(message, -1)
+        deserialized = pickle.loads(serialized)
+
+        self.assertMessageEqual(message, deserialized)
 
 
 if __name__ == "__main__":
