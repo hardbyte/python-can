@@ -23,7 +23,8 @@ BACKENDS = {
     'vector':           ('can.interfaces.vector',           'VectorBus'),
     'slcan':            ('can.interfaces.slcan',            'slcanBus'),
     'canalystii':       ('can.interfaces.canalystii',       'CANalystIIBus'),
-    'systec':           ('can.interfaces.systec',           'UcanBus')
+    'systec':           ('can.interfaces.systec',           'UcanBus'),
+    'etas':             ('can.interfaces.etas',             'EtasBus')
 }
 
 BACKENDS.update({

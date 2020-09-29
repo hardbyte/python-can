@@ -78,6 +78,10 @@ neoVI
 
 See :doc:`interfaces/neovi`.
 
+ETAS
+~~~~~
+
+See :ref:`etas-installation`.
 
 Installing python-can in development mode
 -----------------------------------------
