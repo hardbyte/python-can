@@ -104,6 +104,11 @@ If ``python-can`` is already installed, the CANtact backend can be installed sep
 
 Additional CANtact documentation is available at https://cantact.io.
 
+ETAS
+~~~~
+
+See :ref:`etas-installation`.
+
 Installing python-can in development mode
 -----------------------------------------
 

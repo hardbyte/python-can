@@ -27,6 +27,7 @@ The available interfaces are:
    interfaces/canalystii
    interfaces/systec
    interfaces/seeedstudio
+   interfaces/etas
 
 Additional interfaces can be added via a plugin interface. An external package
 can register a new interface by using the ``can.interface`` entry point in its setup.py.

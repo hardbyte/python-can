@@ -28,3 +28,5 @@ Jan Goeteyn
 "ykzheng" <wishdo@gmail.com>
 Lear Corporation
 Nick Black <dank@qemfd.net>
+Philipp Ahrendt
+Vincent Mailhol <mailhol.vincent@wanadoo.fr>
