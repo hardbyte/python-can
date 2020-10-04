@@ -7,7 +7,6 @@ python-can requires the setuptools package to be installed.
 
 from __future__ import absolute_import
 
-import platform
 from os import listdir
 from os.path import isfile, join
 import re
@@ -67,6 +66,7 @@ setup(
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: Implementation :: CPython",
         "Programming Language :: Python :: Implementation :: PyPy",
         "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
