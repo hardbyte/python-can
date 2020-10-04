@@ -26,12 +26,12 @@ with open('README.rst', 'r') as f:
 # Dependencies
 extras_require = {
     'serial':   ['pyserial~=3.0'],
-    'neovi':    ['python-ics>=2.12']
+    'neovi':    ['python-ics>=2.12', 'filelock']
 }
 
 tests_require = [
     'mock~=2.0',
-    'pytest~=4.3',
+    'pytest~=4.6',
     'pytest-timeout~=1.3',
     'pytest-cov~=2.8',
     # coveragepy==5.0 fails with `Safety level may not be changed inside a transaction`
@@ -53,7 +53,6 @@ extras_require['test'] = tests_require
 needs_pytest = {"pytest", "test", "ptr"}.intersection(sys.argv)
 pytest_runner = ["pytest-runner"] if needs_pytest else []
 
-
 setup(
     # Description
     name="python-can",
@@ -67,6 +66,7 @@ setup(
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: Implementation :: CPython",
         "Programming Language :: Python :: Implementation :: PyPy",
         "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",

@@ -1,3 +1,17 @@
+Version 3.3.4
+====
+
+Last call for Python2 support.
+
+* #916 Vector: Skip channels without CAN support
+* #846 Use inter-process mutex to prevent concurrent neoVI device open.
+* #901 Fix iteration in Bus.stop_all_periodic_tasks
+* #850 Fix socket.error is a deprecated alias of OSError used on Python versions lower than 3.3.
+* #879 Updating incorrect api documentation.
+* #885 Fix recursion message in Message.__getattr__
+* #845 Fix socketcan issue
+
+
 Version 3.3.3
 ====
 

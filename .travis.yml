@@ -25,6 +25,7 @@ env:
 install:
   - if [[ "$TEST_SOCKETCAN" ]]; then sudo bash test/open_vcan.sh ; fi
   - travis_retry pip install .[test]
+  - pip freeze
 
 script:
   - |
@@ -52,6 +53,14 @@ jobs:
 
     # Unit Testing Stage
 
+    # testing socketcan on Trusty & Python 2.7, since it is not available on Xenial
+    - stage: test
+      name: Socketcan
+      os: linux
+      dist: trusty
+      python: "2.7"
+      sudo: required
+      env: TEST_SOCKETCAN=TRUE
     # testing socketcan on Trusty & Python 3.6, since it is not available on Xenial
     - stage: test
       name: Socketcan
