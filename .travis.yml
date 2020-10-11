@@ -24,8 +24,6 @@ env:
 
 install:
   - if [[ "$TEST_SOCKETCAN" ]]; then sudo bash test/open_vcan.sh ; fi
-  - travis_retry pip install -U pip
-  - travis_retry pip install -U pip wheel setuptools
   - travis_retry pip install .[test]
   - pip freeze
 
@@ -100,6 +98,7 @@ jobs:
       name: "PyPi Deployment"
       python: "3.7"
       before_install:
+        - travis_retry pip install -U pip
         - travis_retry pip install -U wheel setuptools
       deploy:
         provider: pypi
