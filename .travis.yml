@@ -12,7 +12,7 @@ python:
   - "2.7"
   - "3.6"
   - "3.7"
-  - 3.8-dev
+  - "3.8"
   - nightly
   # PyPy:
   - pypy # Python 2.7
@@ -24,6 +24,7 @@ env:
 
 install:
   - if [[ "$TEST_SOCKETCAN" ]]; then sudo bash test/open_vcan.sh ; fi
+  - travis_retry pip install -U pip wheel setuptools
   - travis_retry pip install .[test]
   - pip freeze
 
