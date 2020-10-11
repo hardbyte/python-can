@@ -35,8 +35,17 @@ class XL_BusStatus(IntEnum):
 
 
 class XL_BusTypes(IntEnum):
-    XL_BUS_TYPE_NONE = 0
-    XL_BUS_TYPE_CAN = 1
+    XL_BUS_TYPE_NONE = 0  # =0x00000000
+    XL_BUS_TYPE_CAN = 1  # =0x00000001
+    XL_BUS_TYPE_LIN = 2  # =0x00000002
+    XL_BUS_TYPE_FLEXRAY = 4  # =0x00000004
+    XL_BUS_TYPE_AFDX = 8  # =0x00000008
+    XL_BUS_TYPE_MOST = 16  # =0x00000010
+    XL_BUS_TYPE_DAIO = 64  # =0x00000040
+    XL_BUS_TYPE_J1708 = 256  # =0x00000100
+    XL_BUS_TYPE_KLINE = 2048  # =0x00000800
+    XL_BUS_TYPE_ETHERNET = 4096  # =0x00001000
+    XL_BUS_TYPE_A429 = 8192  # =0x00002000
 
 
 class XL_CANFD_BusParams_CanOpMode(IntEnum):
@@ -106,6 +115,10 @@ class XL_ChannelCapabilities(IntEnum):
     XL_CHANNEL_FLAG_CANFD_ISO_SUPPORT = 2147483648
 
 
+class XL_EventFlags(IntEnum):
+    XL_EVENT_FLAG_OVERRUN = 1
+
+
 class XL_EventTags(IntEnum):
     XL_NO_COMMAND = 0
     XL_RECEIVE_MSG = 1
@@ -135,7 +148,6 @@ class XL_MessageFlags(IntEnum):
     XL_CAN_MSG_FLAG_TX_COMPLETED = 64
     XL_CAN_MSG_FLAG_TX_REQUEST = 128
     XL_CAN_MSG_FLAG_SRR_BIT_DOM = 512
-    XL_EVENT_FLAG_OVERRUN = 1
 
 
 class XL_MessageFlagsExtended(IntEnum):
@@ -266,4 +278,6 @@ class XL_HardwareType(IntEnum):
     XL_HWTYPE_VN5430 = 109
     XL_HWTYPE_VN1530 = 112
     XL_HWTYPE_VN1531 = 113
-    XL_MAX_HWTYPE = 113
+    XL_HWTYPE_VX1161A = 114
+    XL_HWTYPE_VX1161B = 115
+    XL_MAX_HWTYPE = 119

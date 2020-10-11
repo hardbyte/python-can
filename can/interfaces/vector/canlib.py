@@ -102,7 +102,7 @@ class VectorBus(BusABC):
         :param int serial:
             Serial number of the hardware to be used.
             If set, the channel parameter refers to the channels ONLY on the specified hardware.
-            If set, the app_name is unused.
+            If set, the app_name does not have to be previously defined in Vector Hardware Config.
         :param bool fd:
             If CAN-FD frames should be supported.
         :param int data_bitrate:
@@ -175,7 +175,7 @@ class VectorBus(BusABC):
             if app_name:
                 # Get global channel index from application channel
                 hw_type, hw_index, hw_channel = self.get_application_config(
-                    app_name, channel, xldefine.XL_BusTypes.XL_BUS_TYPE_CAN
+                    app_name, channel
                 )
                 LOG.debug("Channel index %d found", channel)
                 idx = xldriver.xlGetChannelIndex(hw_type, hw_index, hw_channel)
@@ -615,13 +615,24 @@ class VectorBus(BusABC):
             )
             configs.append(
                 {
+                    # data for use in VectorBus.__init__():
                     "interface": "vector",
-                    "app_name": None,
-                    "channel": channel_config.channelIndex,
+                    "channel": channel_config.hwChannel,
+                    "serial": channel_config.serialNumber,
+                    # data for use in VectorBus.set_application_config():
+                    "hw_type": xldefine.XL_HardwareType(channel_config.hwType),
+                    "hw_index": channel_config.hwIndex,
+                    "hw_channel": channel_config.hwChannel,
+                    # additional information:
                     "supports_fd": bool(
-                        channel_config.channelBusCapabilities
+                        channel_config.channelCapabilities
                         & xldefine.XL_ChannelCapabilities.XL_CHANNEL_FLAG_CANFD_ISO_SUPPORT
                     ),
+                    "isOnBus": bool(channel_config.isOnBus),
+                    "name": channel_config.name.decode(),
+                    "channelIndex": channel_config.channelIndex,
+                    "channelMask": channel_config.channelMask,
+                    "transceiverName": channel_config.transceiverName.decode(),
                 }
             )
         return configs
@@ -637,7 +648,7 @@ class VectorBus(BusABC):
 
     @staticmethod
     def get_application_config(
-        app_name: str, app_channel: int, bus_type: xldefine.XL_BusTypes
+        app_name: str, app_channel: int
     ) -> Tuple[xldefine.XL_HardwareType, int, int]:
         """Retrieve information for an application in Vector Hardware Configuration.
 
@@ -645,8 +656,6 @@ class VectorBus(BusABC):
             The name of the application.
         :param app_channel:
             The channel of the application.
-        :param bus_type:
-            The bus type Enum e.g. `XL_BusTypes.XL_BUS_TYPE_CAN`
         :return:
             Returns a tuple of the hardware type, the hardware index and the
             hardware channel.
@@ -659,7 +668,12 @@ class VectorBus(BusABC):
         hw_channel = ctypes.c_uint()
 
         xldriver.xlGetApplConfig(
-            app_name.encode(), app_channel, hw_type, hw_index, hw_channel, bus_type
+            app_name.encode(),
+            app_channel,
+            hw_type,
+            hw_index,
+            hw_channel,
+            xldefine.XL_BusTypes.XL_BUS_TYPE_CAN,
         )
         return xldefine.XL_HardwareType(hw_type.value), hw_index.value, hw_channel.value
 
@@ -670,9 +684,18 @@ class VectorBus(BusABC):
         hw_type: xldefine.XL_HardwareType,
         hw_index: int,
         hw_channel: int,
-        bus_type: xldefine.XL_BusTypes,
+        **kwargs,
     ) -> None:
         """Modify the application settings in Vector Hardware Configuration.
+
+        This method can also be used with a channel config dictionary::
+
+            import can
+            from can.interfaces.vector import VectorBus
+
+            configs = can.detect_available_configs(interfaces=['vector'])
+            cfg = configs[0]
+            VectorBus.set_application_config(app_name="MyApplication", app_channel=0, **cfg)
 
         :param app_name:
             The name of the application. Creates a new application if it does
@@ -687,12 +710,14 @@ class VectorBus(BusABC):
             hardware type are present.
         :param hw_channel:
             The channel index of the interface.
-        :param bus_type:
-            The bus type of the interfaces, which should be
-            XL_BusTypes.XL_BUS_TYPE_CAN for most cases.
         """
         xldriver.xlSetApplConfig(
-            app_name.encode(), app_channel, hw_type, hw_index, hw_channel, bus_type
+            app_name.encode(),
+            app_channel,
+            hw_type,
+            hw_index,
+            hw_channel,
+            xldefine.XL_BusTypes.XL_BUS_TYPE_CAN,
         )
 
     def set_timer_rate(self, timer_rate_ms: int) -> None:
