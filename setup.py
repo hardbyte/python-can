@@ -78,6 +78,7 @@ setup(
     # see https://www.python.org/dev/peps/pep-0345/#version-specifiers
     python_requires=">=3.6",
     install_requires=[
+        "setuptools",
         "wrapt~=1.10",
         'windows-curses;platform_system=="Windows"',
         "filelock",
