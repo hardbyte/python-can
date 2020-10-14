@@ -158,7 +158,7 @@ class Notifier:
 
     def remove_listener(self, listener: Listener):
         """Remove a listener from the notification list. This method
-        trows an exception if the given listener is not part of the
+        throws an exception if the given listener is not part of the
         stored listeners.
 
         :param listener: Listener to be removed from the list to be notified
