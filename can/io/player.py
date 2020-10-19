@@ -70,7 +70,7 @@ class LogReader(BaseIOHandler):
             )
             LogReader.fetched_plugins = True
 
-        suffix = pathlib.PurePath(filename).suffix
+        suffix = pathlib.PurePath(filename).suffix.lower()
         try:
             return LogReader.message_readers[suffix](filename, *args, **kwargs)
         except KeyError:

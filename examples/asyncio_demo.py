@@ -48,7 +48,7 @@ async def main():
     bus.shutdown()
 
 
-if __name__ == "__main":
+if __name__ == "__main__":
     try:
         # Get the default event loop
         LOOP = asyncio.get_event_loop()

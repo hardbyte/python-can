@@ -57,10 +57,10 @@ the CPU intensive polling that will otherwise have be used.
 IXXAT
 ~~~~~
 
-To install ``python-can`` using the IXXAT VCI V3 SDK as the backend:
+To install ``python-can`` using the IXXAT VCI V3 or V4 SDK as the backend:
 
-1. Install `IXXAT's latest Windows VCI V3 SDK
-   drivers <http://www.ixxat.com/support/file-and-documents-download/drivers/vci-v3-driver-download>`__.
+1. Install `IXXAT's latest Windows VCI V3 SDK or VCI V4 SDK (Win10)
+   drivers <https://www.ixxat.com/technical-support/resources/downloads-and-documentation?ordercode=1.01.0281.12001>`__.
 
 2. Test that IXXAT's own tools (i.e. MiniMon) work to ensure the driver
    is properly installed and that the hardware is working.
@@ -89,6 +89,20 @@ To install ``python-can`` using the XL Driver Library as the backend:
    ``vxlapi64.dll`` into your working directory.
 
 3. Use Vector Hardware Configuration to assign a channel to your application.
+
+CANtact
+~~~~~~~
+
+CANtact is supported on Linux, Windows, and macOS. 
+To install ``python-can`` using the CANtact driver backend:
+
+``python3 -m pip install "python-can[cantact]"``
+
+If ``python-can`` is already installed, the CANtact backend can be installed seperately:
+
+``python3 -m pip install cantact``
+
+Additional CANtact documentation is available at https://cantact.io.
 
 Installing python-can in development mode
 -----------------------------------------
