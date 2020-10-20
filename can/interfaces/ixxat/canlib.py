@@ -800,3 +800,24 @@ def _format_can_status(status_flags: int):
         return "CAN status message: {}".format(", ".join(states))
     else:
         return "Empty CAN status message"
+
+
+def get_ixxat_hwids():
+    """Get a list of hardware ids of all available IXXAT devices."""
+    hwids = []
+    device_handle = HANDLE()
+    device_info = structures.VCIDEVICEINFO()
+
+    _canlib.vciEnumDeviceOpen(ctypes.byref(device_handle))
+    while True:
+        try:
+            _canlib.vciEnumDeviceNext(
+                device_handle, ctypes.byref(device_info)
+            )
+        except StopIteration:
+            break
+        else:
+            hwids.append(device_info.UniqueHardwareId.AsChar.decode("ascii"))
+    _canlib.vciEnumDeviceClose(device_handle)
+
+    return hwids
