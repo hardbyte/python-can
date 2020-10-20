@@ -811,9 +811,7 @@ def get_ixxat_hwids():
     _canlib.vciEnumDeviceOpen(ctypes.byref(device_handle))
     while True:
         try:
-            _canlib.vciEnumDeviceNext(
-                device_handle, ctypes.byref(device_info)
-            )
+            _canlib.vciEnumDeviceNext(device_handle, ctypes.byref(device_info))
         except StopIteration:
             break
         else:
