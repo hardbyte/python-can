@@ -1,9 +1,9 @@
 .. _gs_usb:
 
-CAN driver based on WCID for Geschwister Schneider USB/CAN devices and bytewerk.org candleLight USB CAN interfaces
+CAN driver for Geschwister Schneider USB/CAN devices and bytewerk.org candleLight USB CAN interfaces
 ==================================================================================================================
 
-Windows/Linux/Mac CAN driver based on WCID for Geschwister Schneider USB/CAN devices and candleLight USB CAN interfaces.
+Windows/Linux/Mac CAN driver based on usbfs or WinUSB WCID for Geschwister Schneider USB/CAN devices and candleLight USB CAN interfaces.
 
 Install: ``pip install "python-can[gs_usb]"``
 
@@ -29,7 +29,21 @@ Supported platform
 
 Windows, Linux and Mac.
 
-Note: Since ``pyusb`` is used, ``libusb-win32`` usb driver is required to be installed in Windows
+Note: Since ``pyusb`` with ```libusb0``` as backend is used, ``libusb-win32`` usb driver is required to be installed in Windows.
+
+
+Supplementary Info on ``gs_usb``
+-----------------------------------
+
+The firmware implementation for Geschwister Schneider USB/CAN devices and candleLight USB CAN can be found in `candle-usb/candleLight_fw <https://github.com/candle-usb/candleLight_fw>`_.
+The Linux kernel driver can be found in `linux/drivers/net/can/usb/gs_usb.c <https://github.com/torvalds/linux/blob/master/drivers/net/can/usb/gs_usb.c>`_.
+
+The ``gs_usb`` interface in ``PythonCan`` relys on upstream ``gs_usb`` package, which can be found in `https://pypi.org/project/gs-usb/ <https://pypi.org/project/gs-usb/>`_ or `https://github.com/jxltom/gs_usb <https://github.com/jxltom/gs_usb>`_.
+The ``gs_usb`` package is using ``pyusb`` as backend, which brings better crossplatform compatibility.
+
+Note: The bitrate ``10K``, ``20K``, ``50K``, ``83.333K``, ``100K``, ``125K``, ``250K``, ``500K``, ``800K`` and ``1M`` are supported in this interface, as implemented in the upstream ``gs_usb`` package's ``set_bitrate`` method.
+
+Note: Message filtering is not supported in Geschwister Schneider USB/CAN devices and bytewerk.org candleLight USB CAN interfaces.
 
 Bus
 ---
