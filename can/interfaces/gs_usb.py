@@ -56,7 +56,10 @@ class GsUsbBus(can.BusABC):
         frame.timestamp_us = int(msg.timestamp * 1000000)
         frame.data = list(msg.data)
 
-        self.gs_usb.send(frame)
+        try:
+            self.gs_usb.send(frame)
+        except usb.core.USBError:
+            raise can.CanError("The message can not be sent")
 
     def _recv_internal(
         self, timeout: Optional[float]
