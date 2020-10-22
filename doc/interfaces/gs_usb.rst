@@ -7,7 +7,15 @@ Windows/Linux/Mac CAN driver based on WCID for Geschwister Schneider USB/CAN dev
 
 Install: ``pip install "python-can[gs_usb]"``
 
-Usage: pass ``bus`` and ``address`` to open the device. The parameters can be got by ``pyusb``
+Usage: pass ``bus`` and ``address`` to open the device. The parameters can be got by ``pyusb`` as shown below:
+
+::
+
+    import usb
+    import can
+
+    dev = usb.core.find(idVendor=0x1D50, idProduct=0x606F)
+    bus = can.Bus(bustype="gs_usb", channel=dev.product, bus=dev.bus, address=dev.address, bitrate=250000)
 
 
 Supported devices
