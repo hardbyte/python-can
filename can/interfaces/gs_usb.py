@@ -34,7 +34,8 @@ class GsUsbBus(can.BusABC):
         """Transmit a message to the CAN bus.
 
         :param Message msg: A message object.
-        :param timeout: timeout is not used here
+        :param timeout: timeout is not supported.
+            The function won't return until message is sent or exception is raised.
 
         :raises can.CanError:
             if the message could not be sent
