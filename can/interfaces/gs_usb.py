@@ -69,7 +69,6 @@ class GsUsbBus(can.BusABC):
         :param float timeout: seconds to wait for a message,
                               see :meth:`~can.BusABC.send`
                               0 and None will be converted to minimum value 1ms.
-                              float will be finally converted to integer.
 
         :return:
             1.  a message that was read or None on timeout
