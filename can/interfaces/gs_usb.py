@@ -5,7 +5,10 @@ from gs_usb.gs_usb_frame import GsUsbFrame
 from gs_usb.constants import CAN_ERR_FLAG, CAN_RTR_FLAG, CAN_EFF_FLAG, CAN_MAX_DLC
 import can
 import usb
+import logging
 
+
+logger = logging.getLogger(__name__)
 
 class GsUsbBus(can.BusABC):
     def __init__(self, channel, bus, address, bitrate, can_filters=None, **kwargs):
