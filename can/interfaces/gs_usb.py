@@ -47,11 +47,13 @@ class GsUsbBus(can.BusABC):
         if msg.is_error_frame:
             can_id = can_id | CAN_ERR_FLAG
 
+        # Pad message data
+        msg.data.extend([0x00] * (CAN_MAX_DLC - len(msg.data)))
+        
         frame = GsUsbFrame()
         frame.can_id = can_id
         frame.can_dlc = msg.dlc
         frame.timestamp_us = int(msg.timestamp * 1000000)
-        msg.data.extend([0x00] * (CAN_MAX_DLC - len(msg.data)))
         frame.data = list(msg.data)
 
         self.gs_usb.send(frame)
