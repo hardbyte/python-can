@@ -104,7 +104,7 @@ class GsUsbBus(can.BusABC):
             is_error_frame=frame.is_error_frame,
             channel=self.channel_info,
             dlc=frame.can_dlc,
-            data=bytearray(frame.data)[0 : msg.dlc],
+            data=bytearray(frame.data)[0 : frame.can_dlc],
             is_rx=True,
         )
 
