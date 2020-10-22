@@ -86,16 +86,18 @@ class GsUsbBus(can.BusABC):
         if not self.gs_usb.read(frame=frame, timeout_ms=timeout_ms):
             return None, False
 
-        msg = can.Message()
-        msg.arbitration_id = frame.arbitration_id
-        msg.dlc = frame.can_dlc
-        msg.data = bytearray(frame.data)[0 : msg.dlc]
-        msg.timestamp = frame.timestamp
-        msg.channel = self.channel_info
-        msg.is_extended_id = frame.is_extended_id
-        msg.is_remote_frame = frame.is_remote_frame
-        msg.is_error_frame = frame.is_error_frame
-        msg.is_rx = True
+        msg = can.Message(
+            timestamp=frame.timestamp,
+            arbitration_id=frame.arbitration_id,
+            is_extended_id=frame.can_dlc,
+            is_remote_frame=frame.is_remote_frame,
+            is_error_frame=frame.is_error_frame,
+            channel=self.channel_info,
+            dlc=frame.can_dlc,
+            data=bytearray(frame.data)[0 : msg.dlc],
+            is_rx=True,
+        )
+
         return msg, False
 
     def shutdown(self):
