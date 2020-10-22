@@ -10,6 +10,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class GsUsbBus(can.BusABC):
     def __init__(self, channel, bus, address, bitrate, can_filters=None, **kwargs):
         """
@@ -53,7 +54,7 @@ class GsUsbBus(can.BusABC):
 
         # Pad message data
         msg.data.extend([0x00] * (CAN_MAX_DLC - len(msg.data)))
-        
+
         frame = GsUsbFrame()
         frame.can_id = can_id
         frame.can_dlc = msg.dlc
