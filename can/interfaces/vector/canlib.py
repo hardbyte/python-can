@@ -609,9 +609,7 @@ class VectorBus(BusABC):
             ):
                 continue
             LOG.info(
-                "Channel index %d: %s",
-                channel_config.channelIndex,
-                channel_config.name.decode("ascii"),
+                "Channel index %d: %s", channel_config.channelIndex, channel_config.name
             )
             configs.append(
                 {
@@ -620,7 +618,7 @@ class VectorBus(BusABC):
                     "channel": channel_config.hwChannel,
                     "serial": channel_config.serialNumber,
                     # data for use in VectorBus.set_application_config():
-                    "hw_type": xldefine.XL_HardwareType(channel_config.hwType),
+                    "hw_type": channel_config.hwType,
                     "hw_index": channel_config.hwIndex,
                     "hw_channel": channel_config.hwChannel,
                     # additional information:
@@ -628,11 +626,7 @@ class VectorBus(BusABC):
                         channel_config.channelCapabilities
                         & xldefine.XL_ChannelCapabilities.XL_CHANNEL_FLAG_CANFD_ISO_SUPPORT
                     ),
-                    "isOnBus": bool(channel_config.isOnBus),
-                    "name": channel_config.name.decode(),
-                    "channelIndex": channel_config.channelIndex,
-                    "channelMask": channel_config.channelMask,
-                    "transceiverName": channel_config.transceiverName.decode(),
+                    "vector_channel_config": channel_config,
                 }
             )
         return configs
@@ -735,7 +729,23 @@ class VectorBus(BusABC):
         xldriver.xlSetTimerRate(self.port_handle, timer_rate_10us)
 
 
-def get_channel_configs() -> List[xlclass.XLchannelConfig]:
+class VectorChannelConfig(typing.NamedTuple):
+    name: str
+    hwType: xldefine.XL_HardwareType
+    hwIndex: int
+    hwChannel: int
+    channelIndex: int
+    channelMask: int
+    channelCapabilities: xldefine.XL_ChannelCapabilities
+    channelBusCapabilities: xldefine.XL_BusCapabilities
+    isOnBus: bool
+    connectedBusType: xldefine.XL_BusTypes
+    serialNumber: int
+    articleNumber: int
+    transceiverName: str
+
+
+def get_channel_configs() -> List[VectorChannelConfig]:
     if xldriver is None:
         return []
     driver_config = xlclass.XLdriverConfig()
@@ -745,4 +755,28 @@ def get_channel_configs() -> List[xlclass.XLchannelConfig]:
         xldriver.xlCloseDriver()
     except VectorError:
         pass
-    return [driver_config.channel[i] for i in range(driver_config.channelCount)]
+
+    channel_list: List[VectorChannelConfig] = []
+    for i in range(driver_config.channelCount):
+        xlcc: xlclass.XLchannelConfig = driver_config.channel[i]
+        vcc = VectorChannelConfig(
+            name=xlcc.name.decode(),
+            hwType=xldefine.XL_HardwareType(xlcc.hwType),
+            hwIndex=xlcc.hwIndex,
+            hwChannel=xlcc.hwChannel,
+            channelIndex=xlcc.channelIndex,
+            channelMask=xlcc.channelMask,
+            channelCapabilities=xldefine.XL_ChannelCapabilities(
+                xlcc.channelCapabilities
+            ),
+            channelBusCapabilities=xldefine.XL_BusCapabilities(
+                xlcc.channelBusCapabilities
+            ),
+            isOnBus=bool(xlcc.isOnBus),
+            connectedBusType=xldefine.XL_BusTypes(xlcc.connectedBusType),
+            serialNumber=xlcc.serialNumber,
+            articleNumber=xlcc.articleNumber,
+            transceiverName=xlcc.transceiverName.decode(),
+        )
+        channel_list.append(vcc)
+    return channel_list

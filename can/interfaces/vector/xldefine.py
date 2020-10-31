@@ -4,7 +4,7 @@ Definition of constants for vxlapi.
 
 # Import Python Modules
 # ==============================
-from enum import IntEnum
+from enum import IntEnum, IntFlag
 
 
 MAX_MSG_LEN = 8
@@ -22,7 +22,7 @@ class XL_AcceptanceFilter(IntEnum):
     XL_CAN_EXT = 2
 
 
-class XL_BusCapabilities(IntEnum):
+class XL_BusCapabilities(IntFlag):
     XL_BUS_COMPATIBLE_CAN = 1
     XL_BUS_ACTIVE_CAP_CAN = 65536
 
@@ -106,7 +106,7 @@ class XL_CANFD_TX_MessageFlags(IntEnum):
     XL_CAN_TXMSG_FLAG_WAKEUP = 512
 
 
-class XL_ChannelCapabilities(IntEnum):
+class XL_ChannelCapabilities(IntFlag):
     XL_CHANNEL_FLAG_TIME_SYNC_RUNNING = 1
     XL_CHANNEL_FLAG_NO_HWSYNC_SUPPORT = 1024
     XL_CHANNEL_FLAG_SPDIF_CAPABLE = 16384
