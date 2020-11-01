@@ -4,7 +4,7 @@ Definition of constants for vxlapi.
 
 # Import Python Modules
 # ==============================
-from enum import IntEnum
+from enum import IntEnum, IntFlag
 
 
 MAX_MSG_LEN = 8
@@ -22,7 +22,7 @@ class XL_AcceptanceFilter(IntEnum):
     XL_CAN_EXT = 2
 
 
-class XL_BusCapabilities(IntEnum):
+class XL_BusCapabilities(IntFlag):
     XL_BUS_COMPATIBLE_CAN = 1
     XL_BUS_ACTIVE_CAP_CAN = 65536
 
@@ -35,8 +35,17 @@ class XL_BusStatus(IntEnum):
 
 
 class XL_BusTypes(IntEnum):
-    XL_BUS_TYPE_NONE = 0
-    XL_BUS_TYPE_CAN = 1
+    XL_BUS_TYPE_NONE = 0  # =0x00000000
+    XL_BUS_TYPE_CAN = 1  # =0x00000001
+    XL_BUS_TYPE_LIN = 2  # =0x00000002
+    XL_BUS_TYPE_FLEXRAY = 4  # =0x00000004
+    XL_BUS_TYPE_AFDX = 8  # =0x00000008
+    XL_BUS_TYPE_MOST = 16  # =0x00000010
+    XL_BUS_TYPE_DAIO = 64  # =0x00000040
+    XL_BUS_TYPE_J1708 = 256  # =0x00000100
+    XL_BUS_TYPE_KLINE = 2048  # =0x00000800
+    XL_BUS_TYPE_ETHERNET = 4096  # =0x00001000
+    XL_BUS_TYPE_A429 = 8192  # =0x00002000
 
 
 class XL_CANFD_BusParams_CanOpMode(IntEnum):
@@ -97,13 +106,17 @@ class XL_CANFD_TX_MessageFlags(IntEnum):
     XL_CAN_TXMSG_FLAG_WAKEUP = 512
 
 
-class XL_ChannelCapabilities(IntEnum):
+class XL_ChannelCapabilities(IntFlag):
     XL_CHANNEL_FLAG_TIME_SYNC_RUNNING = 1
     XL_CHANNEL_FLAG_NO_HWSYNC_SUPPORT = 1024
     XL_CHANNEL_FLAG_SPDIF_CAPABLE = 16384
     XL_CHANNEL_FLAG_CANFD_BOSCH_SUPPORT = 536870912
     XL_CHANNEL_FLAG_CMACTLICENSE_SUPPORT = 1073741824
     XL_CHANNEL_FLAG_CANFD_ISO_SUPPORT = 2147483648
+
+
+class XL_EventFlags(IntEnum):
+    XL_EVENT_FLAG_OVERRUN = 1
 
 
 class XL_EventTags(IntEnum):
@@ -135,7 +148,6 @@ class XL_MessageFlags(IntEnum):
     XL_CAN_MSG_FLAG_TX_COMPLETED = 64
     XL_CAN_MSG_FLAG_TX_REQUEST = 128
     XL_CAN_MSG_FLAG_SRR_BIT_DOM = 512
-    XL_EVENT_FLAG_OVERRUN = 1
 
 
 class XL_MessageFlagsExtended(IntEnum):
@@ -266,4 +278,6 @@ class XL_HardwareType(IntEnum):
     XL_HWTYPE_VN5430 = 109
     XL_HWTYPE_VN1530 = 112
     XL_HWTYPE_VN1531 = 113
-    XL_MAX_HWTYPE = 113
+    XL_HWTYPE_VX1161A = 114
+    XL_HWTYPE_VX1161B = 115
+    XL_MAX_HWTYPE = 119
