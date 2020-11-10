@@ -55,7 +55,7 @@ VCI documentation, section "Message filters" for more info.
 
 List available devices
 -----------------
-In case you have multiple IXXAT devices connected, you have to select them by using their unique hardware id.
+In case you have connected multiple IXXAT devices, you have to select them by using their unique hardware id.
 To get a list of all connected IXXAT you can use the function ``get_ixxat_hwids()`` as demonstrated below:
 
     >>> from can.interfaces.ixxat import get_ixxat_hwids
