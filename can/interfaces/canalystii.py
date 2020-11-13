@@ -2,6 +2,7 @@ from ctypes import *
 import logging
 import platform
 from can import BusABC, Message
+from typing import List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -74,30 +75,44 @@ class CANalystIIBus(BusABC):
         self,
         channel,
         device=0,
-        bitrate=None,
-        Timing0=None,
-        Timing1=None,
+        bitrate: Optional(int, List, Tuple) = None,
+        Timing0: Optional(int, List, Tuple) = None,
+        Timing1: Optional(int, List, Tuple) = None,
         can_filters=None,
         **kwargs,
     ):
         """
 
         :param channel: channel number
+        :type channel: int, list, tuple
         :param device: device number
         :param bitrate: CAN network bandwidth (bits/s)
+        :type bitrate: int, list, tuple, None
         :param Timing0: customize the timing register if bitrate is not specified
+        :type Timing0: int, List, Tuple, None
         :param Timing1:
+        :type Timing1: int, List, Tuple, None
         :param can_filters: filters for packet
         """
         super().__init__(channel=channel, can_filters=can_filters, **kwargs)
 
         if isinstance(channel, (list, tuple)):
             self.channels = channel
+
         elif isinstance(channel, int):
             self.channels = [channel]
         else:
             # Assume comma separated string of channels
             self.channels = [int(ch.strip()) for ch in channel.split(",")]
+
+        if bitrate is None:
+            if isinstance(Timing0, int):
+                Timing0 = [Timing0] * len(self.channels)
+            if isinstance(Timing1, int):
+                Timing1 = [Timing1] * len(self.channels)
+
+        elif isinstance(bitrate, int):
+            bitrate = [bitrate] * len(self.channels)
 
         self.device = device
 
@@ -106,32 +121,40 @@ class CANalystIIBus(BusABC):
         )
 
         if bitrate is not None:
-            try:
-                Timing0, Timing1 = TIMING_DICT[bitrate]
-            except KeyError:
-                raise ValueError("Bitrate is not supported")
+            Timing0 = []
+            Timing1 = []
 
-        if Timing0 is None or Timing1 is None:
+            for brate in bitrate:
+                try:
+                    t0, t1 = TIMING_DICT[brate]
+                    Timing0 += [t0]
+                    Timing1 += [t1]
+                except KeyError:
+                    raise ValueError("Bitrate is not supported ({0})".format(brate))
+
+        if not Timing0 or not Timing1:
             raise ValueError("Timing registers are not set")
-
-        self.init_config = VCI_INIT_CONFIG(0, 0xFFFFFFFF, 0, 1, Timing0, Timing1, 0)
 
         if CANalystII.VCI_OpenDevice(VCI_USBCAN2, self.device, 0) == STATUS_ERR:
             logger.error("VCI_OpenDevice Error")
 
-        for channel in self.channels:
+        self.init_config = []
+
+        for i, chan in enumerate(self.channels):
+            t0 = Timing0[i]
+            t1 = Timing1[i]
+            init_config = VCI_INIT_CONFIG(0, 0xFFFFFFFF, 0, 1, t0, t1, 0)
+
             status = CANalystII.VCI_InitCAN(
-                VCI_USBCAN2, self.device, channel, byref(self.init_config)
+                VCI_USBCAN2, self.device, chan, byref(init_config)
             )
+
             if status == STATUS_ERR:
                 logger.error("VCI_InitCAN Error")
                 self.shutdown()
                 return
 
-            if CANalystII.VCI_StartCAN(VCI_USBCAN2, self.device, channel) == STATUS_ERR:
-                logger.error("VCI_StartCAN Error")
-                self.shutdown()
-                return
+            self.init_config += [init_config]
 
     def send(self, msg, timeout=None):
         """
@@ -164,28 +187,39 @@ class CANalystIIBus(BusABC):
             VCI_USBCAN2, self.device, channel, byref(raw_message), 1
         )
 
-    def _recv_internal(self, timeout=None):
+    def _recv_internal(self, timeout=None, channel=None):
         """
 
         :param timeout: float in seconds
+        :param channel: channel number to receive from.
         :return:
         """
         raw_message = VCI_CAN_OBJ()
 
         timeout = -1 if timeout is None else int(timeout * 1000)
 
+        if channel is None:
+            channel = self.channels[0]
+
+        elif len(self.channels) == 1:
+            channel = self.channels[0]
+
+        if channel not in self.channels:
+            raise ValueError("channel must be set when using multiple channels.")
+
         status = CANalystII.VCI_Receive(
-            VCI_USBCAN2, self.device, self.channels[0], byref(raw_message), 1, timeout
+            VCI_USBCAN2, self.device, channel, byref(raw_message), 1, timeout
         )
         if status <= STATUS_ERR:
             return None, False
+
         else:
             return (
                 Message(
                     timestamp=raw_message.TimeStamp if raw_message.TimeFlag else 0.0,
                     arbitration_id=raw_message.ID,
                     is_remote_frame=raw_message.RemoteFlag,
-                    channel=0,
+                    channel=channel,
                     dlc=raw_message.DataLen,
                     data=raw_message.Data,
                 ),
