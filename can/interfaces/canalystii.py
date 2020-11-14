@@ -2,16 +2,16 @@ from ctypes import *
 import logging
 import platform
 from can import BusABC, Message
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 
 logger = logging.getLogger(__name__)
 
 
 class VCI_INIT_CONFIG(Structure):
     _fields_ = [
-        ("AccCode", c_int32),
-        ("AccMask", c_int32),
-        ("Reserved", c_int32),
+        ("AccCode", c_ulong),
+        ("AccMask", c_ulong),
+        ("Reserved", c_ulong),
         ("Filter", c_ubyte),
         ("Timing0", c_ubyte),
         ("Timing1", c_ubyte),
@@ -28,10 +28,37 @@ class VCI_CAN_OBJ(Structure):
         ("RemoteFlag", c_byte),
         ("ExternFlag", c_byte),
         ("DataLen", c_byte),
-        ("Data", c_ubyte * 8),
+        ("Data", c_byte * 8),
         ("Reserved", c_byte * 3),
     ]
 
+
+# typedef  struct  _VCI_BOARD_INFO{
+# 		USHORT	hw_Version;
+# 		USHORT	fw_Version;
+# 		USHORT	dr_Version;
+# 		USHORT	in_Version;
+# 		USHORT	irq_Num;
+# 		BYTE	can_Num;
+# 		CHAR	str_Serial_Num[20];
+# 		CHAR	str_hw_Type[40];
+# 		USHORT	Reserved[4];
+# } VCI_BOARD_INFO,*PVCI_BOARD_INFO;
+class _VCI_BOARD_INFO(Structure):
+    _fields_ = [
+        ('hw_Version', c_ushort),
+        ('fw_Version', c_ushort),
+        ('dr_Version', c_ushort),
+        ('in_Version', c_ushort),
+        ('irq_Num', c_ushort),
+        ('can_Num', c_byte),
+        ('str_Serial_Num', c_char * 20),
+        ('str_hw_Type', c_char * 40),
+        ('Reserved', c_ushort * 4)
+    ]
+
+
+VCI_BOARD_INFO = _VCI_BOARD_INFO
 
 VCI_USBCAN2 = 4
 
@@ -75,9 +102,9 @@ class CANalystIIBus(BusABC):
         self,
         channel,
         device=0,
-        bitrate: Optional(int, List, Tuple) = None,
-        Timing0: Optional(int, List, Tuple) = None,
-        Timing1: Optional(int, List, Tuple) = None,
+        bitrate=None,
+        Timing0=None,
+        Timing1=None,
         can_filters=None,
         **kwargs,
     ):
@@ -135,6 +162,14 @@ class CANalystIIBus(BusABC):
         if not Timing0 or not Timing1:
             raise ValueError("Timing registers are not set")
 
+        try:
+            CANalystII.VCI_UsbDeviceReset(VCI_USBCAN2, self.device, 0)
+        except:
+            pass
+
+        self._b_info = VCI_BOARD_INFO()
+        CANalystII.VCI_ReadBoardInfo(VCI_USBCAN2, device, byref(self._b_info))
+
         if CANalystII.VCI_OpenDevice(VCI_USBCAN2, self.device, 0) == STATUS_ERR:
             logger.error("VCI_OpenDevice Error")
 
@@ -154,38 +189,70 @@ class CANalystIIBus(BusABC):
                 self.shutdown()
                 return
 
+            CANalystII.VCI_StartCAN(VCI_USBCAN2, self.device, chan)
+
             self.init_config += [init_config]
+
+    def board_info(self):
+        return dict(
+            hardware_version=self._b_info.hw_Version,
+            firmware_version=self._b_info.fw_Version,
+            driver_version=self._b_info.dr_Version,
+            library_version=self._b_info.in_Version,
+            irq=self._b_info.irq_Num,
+            num_can_interfaces=self._b_info.can_Num,
+            serial_number=str(self._b_info.str_Serial_Num, encoding='ascii'),
+            hardware_type=str(self._b_info.str_hw_Type, encoding='ascii')
+        )
 
     def send(self, msg, timeout=None):
         """
-
         :param msg: message to send
         :param timeout: timeout is not used here
         :return:
         """
-        extern_flag = 1 if msg.is_extended_id else 0
-        raw_message = VCI_CAN_OBJ(
-            msg.arbitration_id,
-            0,
-            0,
-            1,
-            msg.is_remote_frame,
-            extern_flag,
-            msg.dlc,
-            (c_ubyte * 8)(*msg.data),
-            (c_byte * 3)(*[0, 0, 0]),
-        )
 
-        if msg.channel is not None:
-            channel = msg.channel
-        elif len(self.channels) == 1:
-            channel = self.channels[0]
-        else:
-            raise ValueError("msg.channel must be set when using multiple channels.")
+        if not isinstance(msg, (list, tuple)):
+            msg = [msg]
 
-        CANalystII.VCI_Transmit(
-            VCI_USBCAN2, self.device, channel, byref(raw_message), 1
-        )
+        channels = {}
+        for message in msg:
+            if message.channel is not None:
+                channel = message.channel
+            elif len(self.channels) == 1:
+                channel = self.channels[0]
+            else:
+                raise ValueError("msg.channel must be set when using multiple channels.")
+
+            if channel not in channels:
+                channels[channel] = 0
+
+            channels[channel] += 1
+
+        for channel, count in channels.items():
+            can_objs = (VCI_CAN_OBJ * count)()
+            offset = 0
+
+            for i, message in enumerate(msg):
+                if message.channel is not None and message.channel != channel:
+                    offset += 1
+                    continue
+
+                can_objs[i - offset].ID = message.arbitration_id
+                can_objs[i - offset].ExternFlag = int(message.is_extended_id)
+                can_objs[i - offset].SendType = 1
+                can_objs[i - offset].RemoteFlag = int(message.is_remote_frame)
+                can_objs[i - offset].DataLen = message.dlc
+                for j in range(message.dlc):
+                    can_objs[i - offset].Data[j] = message.data[j]
+
+            CANalystII.VCI_Transmit(
+                VCI_USBCAN2,
+                self.device,
+                channel,
+                byref(can_objs),
+                count
+            )
 
     def _recv_internal(self, timeout=None, channel=None):
         """
@@ -194,7 +261,7 @@ class CANalystIIBus(BusABC):
         :param channel: channel number to receive from.
         :return:
         """
-        raw_message = VCI_CAN_OBJ()
+        raw_message = (VCI_CAN_OBJ * 1)()
 
         timeout = -1 if timeout is None else int(timeout * 1000)
 
@@ -207,24 +274,24 @@ class CANalystIIBus(BusABC):
         if channel not in self.channels:
             raise ValueError("channel must be set when using multiple channels.")
 
-        status = CANalystII.VCI_Receive(
-            VCI_USBCAN2, self.device, channel, byref(raw_message), 1, timeout
-        )
-        if status <= STATUS_ERR:
+        if not CANalystII.VCI_GetReceiveNum(VCI_USBCAN2, self.device, channel):
             return None, False
 
-        else:
-            return (
-                Message(
-                    timestamp=raw_message.TimeStamp if raw_message.TimeFlag else 0.0,
-                    arbitration_id=raw_message.ID,
-                    is_remote_frame=raw_message.RemoteFlag,
-                    channel=channel,
-                    dlc=raw_message.DataLen,
-                    data=raw_message.Data,
-                ),
-                False,
-            )
+        CANalystII.VCI_Receive(
+            VCI_USBCAN2, self.device, channel, byref(raw_message), 1, timeout
+        )
+
+        return (
+            Message(
+                timestamp=raw_message[0].TimeStamp if raw_message[0].TimeFlag else 0.0,
+                arbitration_id=raw_message[0].ID,
+                is_remote_frame=raw_message[0].RemoteFlag,
+                channel=channel,
+                dlc=raw_message[0].DataLen,
+                data=raw_message[0].Data,
+            ),
+            False,
+        )
 
     def flush_tx_buffer(self):
         for channel in self.channels:
