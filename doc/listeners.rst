@@ -30,6 +30,24 @@ readers are also documented here.
     completely unchanged message again, since some properties are not (yet)
     supported by some file formats.
 
+.. note ::
+
+    Additional file formats for both reading/writing log files can be added via
+    a plugin reader/writer. An external package can register a new reader
+    by using the ``can.io.message_reader`` entry point. Similarly, a writer can
+    be added using the ``can.io.message_writer`` entry point.
+
+    The format of the entry point is ``reader_name=module:classname`` where ``classname``
+    is a :class:`can.io.generic.BaseIOHandler` concrete implementation.
+
+    ::
+
+     entry_points={
+         'can.io.message_reader': [
+            '.asc = my_package.io.asc:ASCReader'
+        ]
+     },
+
 
 BufferedReader
 --------------
@@ -55,6 +73,12 @@ The :class:`can.Logger` uses the following :class:`can.Listener` types to
 create log files with different file types of the messages received.
 
 .. autoclass:: can.Logger
+    :members:
+
+.. autoclass:: can.io.BaseRotatingLogger
+    :members:
+
+.. autoclass:: can.SizedRotatingLogger
     :members:
 
 

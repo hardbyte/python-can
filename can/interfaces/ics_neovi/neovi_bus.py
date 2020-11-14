@@ -11,7 +11,9 @@ Implementation references:
 import logging
 import os
 import tempfile
-from collections import deque
+from collections import deque, defaultdict
+from itertools import cycle
+from threading import Event
 
 from can import Message, CanError, BusABC
 
@@ -55,6 +57,7 @@ except ImportError as ie:
 # Use inter-process mutex to prevent concurrent device open.
 # When neoVI server is enabled, there is an issue with concurrent device open.
 open_lock = FileLock(os.path.join(tempfile.gettempdir(), "neovi.lock"))
+description_id = cycle(range(1, 0x8000))
 
 
 class ICSApiError(CanError):
@@ -155,15 +158,24 @@ class NeoViBus(BusABC):
         with open_lock:
             ics.open_device(self.dev)
 
-        if "bitrate" in kwargs:
-            for channel in self.channels:
-                ics.set_bit_rate(self.dev, kwargs.get("bitrate"), channel)
-
-        fd = kwargs.get("fd", False)
-        if fd:
-            if "data_bitrate" in kwargs:
+        try:
+            if "bitrate" in kwargs:
                 for channel in self.channels:
-                    ics.set_fd_bit_rate(self.dev, kwargs.get("data_bitrate"), channel)
+                    ics.set_bit_rate(self.dev, kwargs.get("bitrate"), channel)
+
+            if kwargs.get("fd", False):
+                if "data_bitrate" in kwargs:
+                    for channel in self.channels:
+                        ics.set_fd_bit_rate(
+                            self.dev, kwargs.get("data_bitrate"), channel
+                        )
+        except ics.RuntimeError as re:
+            logger.error(re)
+            err = ICSApiError(*ics.get_last_api_error(self.dev))
+            try:
+                self.shutdown()
+            finally:
+                raise err
 
         self._use_system_timestamp = bool(kwargs.get("use_system_timestamp", False))
         self._receive_own_messages = kwargs.get("receive_own_messages", True)
@@ -176,6 +188,7 @@ class NeoViBus(BusABC):
         logger.info("Using device: {}".format(self.channel_info))
 
         self.rx_buffer = deque()
+        self.message_receipts = defaultdict(Event)
 
     @staticmethod
     def channel_to_netid(channel_name_or_id):
@@ -199,10 +212,10 @@ class NeoViBus(BusABC):
         :return: ics device serial string
         :rtype: str
         """
-        a0000 = 604661760
-        if device.SerialNumber >= a0000:
+        if int("AA0000", 36) < device.SerialNumber < int("ZZZZZZ", 36):
             return ics.base36enc(device.SerialNumber)
-        return str(device.SerialNumber)
+        else:
+            return str(device.SerialNumber)
 
     def shutdown(self):
         super().shutdown()
@@ -261,9 +274,18 @@ class NeoViBus(BusABC):
         for ics_msg in messages:
             if ics_msg.NetworkID not in self.channels:
                 continue
+
             is_tx = bool(ics_msg.StatusBitField & ics.SPY_STATUS_TX_MSG)
-            if not self._receive_own_messages and is_tx:
-                continue
+
+            if is_tx:
+                if bool(ics_msg.StatusBitField & ics.SPY_STATUS_GLOBAL_ERR):
+                    continue
+                if ics_msg.DescriptionID:
+                    receipt_key = (ics_msg.ArbIDOrHeader, ics_msg.DescriptionID)
+                    self.message_receipts[receipt_key].set()
+                if not self._receive_own_messages:
+                    continue
+
             self.rx_buffer.append(ics_msg)
         if errors:
             logger.warning("%d error(s) found", errors)
@@ -306,6 +328,7 @@ class NeoViBus(BusABC):
                 dlc=ics_msg.NumberBytesData,
                 is_extended_id=bool(ics_msg.StatusBitField & ics.SPY_STATUS_XTD_FRAME),
                 is_fd=is_fd,
+                is_rx=not bool(ics_msg.StatusBitField & ics.SPY_STATUS_TX_MSG),
                 is_remote_frame=bool(
                     ics_msg.StatusBitField & ics.SPY_STATUS_REMOTE_FRAME
                 ),
@@ -325,6 +348,7 @@ class NeoViBus(BusABC):
                 dlc=ics_msg.NumberBytesData,
                 is_extended_id=bool(ics_msg.StatusBitField & ics.SPY_STATUS_XTD_FRAME),
                 is_fd=is_fd,
+                is_rx=not bool(ics_msg.StatusBitField & ics.SPY_STATUS_TX_MSG),
                 is_remote_frame=bool(
                     ics_msg.StatusBitField & ics.SPY_STATUS_REMOTE_FRAME
                 ),
@@ -341,7 +365,19 @@ class NeoViBus(BusABC):
             return None, False
         return msg, False
 
-    def send(self, msg, timeout=None):
+    def send(self, msg, timeout=0):
+        """Transmit a message to the CAN bus.
+
+        :param Message msg: A message object.
+
+        :param float timeout:
+            If > 0, wait up to this many seconds for message to be ACK'ed.
+            If timeout is exceeded, an exception will be raised.
+            None blocks indefinitely.
+
+        :raises can.CanError:
+            if the message could not be sent
+        """
         if not ics.validate_hobject(self.dev):
             raise CanError("bus not open")
         message = ics.SpyMessage()
@@ -361,11 +397,12 @@ class NeoViBus(BusABC):
                 flag3 |= ics.SPY_STATUS3_CANFD_ESI
 
         message.ArbIDOrHeader = msg.arbitration_id
-        message.NumberBytesData = len(msg.data)
-        message.Data = tuple(msg.data[:8])
-        if msg.is_fd and len(msg.data) > 8:
+        msg_data = msg.data
+        message.NumberBytesData = len(msg_data)
+        message.Data = tuple(msg_data[:8])
+        if msg.is_fd and len(msg_data) > 8:
             message.ExtraDataPtrEnabled = 1
-            message.ExtraDataPtr = tuple(msg.data)
+            message.ExtraDataPtr = tuple(msg_data)
         message.StatusBitField = flag0
         message.StatusBitField2 = 0
         message.StatusBitField3 = flag3
@@ -376,7 +413,20 @@ class NeoViBus(BusABC):
         else:
             raise ValueError("msg.channel must be set when using multiple channels.")
 
+        msg_desc_id = next(description_id)
+        message.DescriptionID = msg_desc_id
+        receipt_key = (msg.arbitration_id, msg_desc_id)
+
+        if timeout != 0:
+            self.message_receipts[receipt_key].clear()
+
         try:
             ics.transmit_messages(self.dev, message)
         except ics.RuntimeError:
             raise ICSApiError(*ics.get_last_api_error(self.dev))
+
+        # If timeout is set, wait for ACK
+        # This requires a notifier for the bus or
+        # some other thread calling recv periodically
+        if timeout != 0 and not self.message_receipts[receipt_key].wait(timeout):
+            raise CanError("Transmit timeout")

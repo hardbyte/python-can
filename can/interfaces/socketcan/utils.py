@@ -2,17 +2,16 @@
 Defines common socketcan functions.
 """
 
-from typing import cast, Iterable, Optional
-import can.typechecking as typechecking
-
+import errno
 import logging
 import os
-import errno
+import re
 import struct
 import subprocess
-import re
+from typing import cast, Iterable, Optional
 
 from can.interfaces.socketcan.constants import CAN_EFF_FLAG
+import can.typechecking as typechecking
 
 log = logging.getLogger(__name__)
 
@@ -46,16 +45,14 @@ def find_available_interfaces() -> Iterable[str]:
     """Returns the names of all open can/vcan interfaces using
     the ``ip link list`` command. If the lookup fails, an error
     is logged to the console and an empty list is returned.
-
-    :rtype: an iterable of :class:`str`
     """
 
     try:
-        # it might be good to add "type vcan", but that might (?) exclude physical can devices
+        # adding "type vcan" would exclude physical can devices
         command = ["ip", "-o", "link", "list", "up"]
         output = subprocess.check_output(command, universal_newlines=True)
 
-    except Exception as e:  # subprocess.CalledProcessError was too specific
+    except Exception as e:  # subprocess.CalledProcessError is too specific
         log.error("failed to fetch opened can devices: %s", e)
         return []
 
@@ -63,29 +60,23 @@ def find_available_interfaces() -> Iterable[str]:
         # log.debug("find_available_interfaces(): output=\n%s", output)
         # output contains some lines like "1: vcan42: <NOARP,UP,LOWER_UP> ..."
         # extract the "vcan42" of each line
-        interface_names = [line.split(": ", 3)[1] for line in output.splitlines()]
-        log.debug("find_available_interfaces(): detected: %s", interface_names)
-        return filter(_PATTERN_CAN_INTERFACE.match, interface_names)
+        interfaces = [line.split(": ", 3)[1] for line in output.splitlines()]
+        log.debug(
+            "find_available_interfaces(): detected these interfaces (before filtering): %s",
+            interfaces,
+        )
+        return filter(_PATTERN_CAN_INTERFACE.match, interfaces)
 
 
-def error_code_to_str(code: int) -> str:
+def error_code_to_str(code: Optional[int]) -> str:
     """
     Converts a given error code (errno) to a useful and human readable string.
 
-    :param int code: a possibly invalid/unknown error code
-    :rtype: str
+    :param code: a possibly invalid/unknown error code
     :returns: a string explaining and containing the given error code, or a string
               explaining that the errorcode is unknown if that is the case
     """
+    name = errno.errorcode.get(code, "UNKNOWN")  # type: ignore
+    description = os.strerror(code) if code is not None else "NO DESCRIPTION AVAILABLE"
 
-    try:
-        name = errno.errorcode[code]
-    except KeyError:
-        name = "UNKNOWN"
-
-    try:
-        description = os.strerror(code)
-    except ValueError:
-        description = "no description available"
-
-    return "{} (errno {}): {}".format(name, code, description)
+    return f"{name} (errno {code}): {description}"

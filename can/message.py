@@ -42,6 +42,7 @@ class Message:
         "dlc",
         "data",
         "is_fd",
+        "is_rx",
         "bitrate_switch",
         "error_state_indicator",
         "__weakref__",  # support weak references to messages
@@ -58,6 +59,7 @@ class Message:
         dlc: Optional[int] = None,
         data: Optional[typechecking.CanData] = None,
         is_fd: bool = False,
+        is_rx: bool = True,
         bitrate_switch: bool = False,
         error_state_indicator: bool = False,
         check: bool = False,
@@ -81,6 +83,7 @@ class Message:
         self.is_error_frame = is_error_frame
         self.channel = channel
         self.is_fd = is_fd
+        self.is_rx = is_rx
         self.bitrate_switch = bitrate_switch
         self.error_state_indicator = error_state_indicator
 
@@ -114,6 +117,7 @@ class Message:
         flag_string = " ".join(
             [
                 "X" if self.is_extended_id else "S",
+                "Rx" if self.is_rx else "Tx",
                 "E" if self.is_error_frame else " ",
                 "R" if self.is_remote_frame else " ",
                 "F" if self.is_fd else " ",
@@ -159,6 +163,9 @@ class Message:
             "is_extended_id={}".format(self.is_extended_id),
         ]
 
+        if not self.is_rx:
+            args.append("is_rx=False")
+
         if self.is_remote_frame:
             args.append("is_remote_frame={}".format(self.is_remote_frame))
 
@@ -198,6 +205,7 @@ class Message:
             dlc=self.dlc,
             data=self.data,
             is_fd=self.is_fd,
+            is_rx=self.is_rx,
             bitrate_switch=self.bitrate_switch,
             error_state_indicator=self.error_state_indicator,
         )
@@ -214,6 +222,7 @@ class Message:
             dlc=self.dlc,
             data=deepcopy(self.data, memo),
             is_fd=self.is_fd,
+            is_rx=self.is_rx,
             bitrate_switch=self.bitrate_switch,
             error_state_indicator=self.error_state_indicator,
         )
@@ -280,7 +289,10 @@ class Message:
                 )
 
     def equals(
-        self, other: "Message", timestamp_delta: Optional[Union[float, int]] = 1.0e-6
+        self,
+        other: "Message",
+        timestamp_delta: Optional[Union[float, int]] = 1.0e-6,
+        check_direction: bool = True,
     ) -> bool:
         """
         Compares a given message with this one.
@@ -289,6 +301,8 @@ class Message:
 
         :param timestamp_delta: the maximum difference at which two timestamps are
                                 still considered equal or None to not compare timestamps
+
+        :param check_direction: do we compare the messages' directions (Tx/Rx)
 
         :return: True iff the given message equals this one
         """
@@ -304,6 +318,7 @@ class Message:
                     timestamp_delta is None
                     or abs(self.timestamp - other.timestamp) <= timestamp_delta
                 )
+                and (self.is_rx == other.is_rx or not check_direction)
                 and self.arbitration_id == other.arbitration_id
                 and self.is_extended_id == other.is_extended_id
                 and self.dlc == other.dlc

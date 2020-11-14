@@ -8,6 +8,8 @@ import pathlib
 from time import time, sleep
 import typing
 
+from pkg_resources import iter_entry_points
+
 if typing.TYPE_CHECKING:
     import can
 
@@ -44,24 +46,33 @@ class LogReader(BaseIOHandler):
         arguments are passed on to the returned instance.
     """
 
+    fetched_plugins = False
+    message_readers = {
+        ".asc": ASCReader,
+        ".blf": BLFReader,
+        ".csv": CSVReader,
+        ".db": SqliteReader,
+        ".log": CanutilsLogReader,
+    }
+
     @staticmethod
     def __new__(cls, filename: "can.typechecking.StringPathLike", *args, **kwargs):
         """
         :param filename: the filename/path of the file to read from
         :raises ValueError: if the filename's suffix is of an unknown file type
         """
-        suffix = pathlib.PurePath(filename).suffix
+        if not LogReader.fetched_plugins:
+            LogReader.message_readers.update(
+                {
+                    reader.name: reader.load()
+                    for reader in iter_entry_points("can.io.message_reader")
+                }
+            )
+            LogReader.fetched_plugins = True
 
-        lookup = {
-            ".asc": ASCReader,
-            ".blf": BLFReader,
-            ".csv": CSVReader,
-            ".db": SqliteReader,
-            ".log": CanutilsLogReader,
-        }
-        suffix = pathlib.PurePath(filename).suffix
+        suffix = pathlib.PurePath(filename).suffix.lower()
         try:
-            return lookup[suffix](filename, *args, **kwargs)
+            return LogReader.message_readers[suffix](filename, *args, **kwargs)
         except KeyError:
             raise ValueError(
                 f'No read support for this unknown log format "{suffix}"'
