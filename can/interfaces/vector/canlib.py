@@ -32,7 +32,7 @@ except ImportError:
 # Import Modules
 # ==============
 from can import BusABC, Message
-from can.util import len2dlc, dlc2len, deprecated_args_alias
+from can.util import len2dlc, dlc2len, deprecated_args_alias, time_perfcounter_correlation
 from .exceptions import VectorError
 
 # Define Module Logger
@@ -295,11 +295,14 @@ class VectorBus(BusABC):
         # Calculate time offset for absolute timestamps
         offset = xlclass.XLuint64()
         try:
+            ts, perfcounter = time_perfcounter_correlation()
             try:
                 xldriver.xlGetSyncTime(self.port_handle, offset)
             except VectorError:
                 xldriver.xlGetChannelTime(self.port_handle, self.mask, offset)
-            self._time_offset = time.time() - offset.value * 1e-9
+            current_perfcounter = time.perf_counter()
+            now = ts + (current_perfcounter - perfcounter)
+            self._time_offset = now - offset.value * 1e-9
         except VectorError:
             self._time_offset = 0.0
 

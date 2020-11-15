@@ -4,6 +4,7 @@ Utilities and configuration file parsing.
 import functools
 import warnings
 from typing import Dict, Optional, Union
+from time import time, perf_counter
 
 from can import typechecking
 
@@ -325,6 +326,24 @@ def rename_kwargs(func_name, kwargs, aliases):
             else:
                 warnings.warn("{} is deprecated".format(alias), DeprecationWarning)
 
+def time_perfcounter_correlation():
+    """ on Windows platform this will help with the accuracy of using the time.time fucntion.
+
+    Returns
+    -------
+    t, performance_counter : (time.time, float)
+        time.time value and perf_counter value when the time.time is updated
+
+    """
+    if platform.system() == "Windows":
+        t0 = time()
+        while 1:
+            t1, performance_counter = time(), perf_counter()
+            if t1 != t0:
+                break
+    else:
+        return time(), perf_counter()
+    return t1, performance_counter
 
 if __name__ == "__main__":
     print("Searching for configuration named:")
