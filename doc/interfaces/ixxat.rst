@@ -53,6 +53,16 @@ The can_id/mask must be specified according to IXXAT behaviour, that is
 bit 0 of can_id/mask parameters represents the RTR field in CAN frame. See IXXAT
 VCI documentation, section "Message filters" for more info.
 
+List available devices
+-----------------
+In case you have connected multiple IXXAT devices, you have to select them by using their unique hardware id.
+To get a list of all connected IXXAT you can use the function ``get_ixxat_hwids()`` as demonstrated below:
+
+    >>> from can.interfaces.ixxat import get_ixxat_hwids
+    >>> for hwid in get_ixxat_hwids(): print("Found IXXAT with hardware id '%s'." % hwid)
+    Found IXXAT with hardware id 'HW441489'.
+    Found IXXAT with hardware id 'HW107422'.
+
 
 Internals
 ---------
