@@ -326,6 +326,7 @@ def rename_kwargs(func_name, kwargs, aliases):
             else:
                 warnings.warn("{} is deprecated".format(alias), DeprecationWarning)
 
+
 def time_perfcounter_correlation():
     """ on Windows platform this will help with the accuracy of using the time.time fucntion.
 
@@ -344,6 +345,7 @@ def time_perfcounter_correlation():
     else:
         return time(), perf_counter()
     return t1, performance_counter
+
 
 if __name__ == "__main__":
     print("Searching for configuration named:")
