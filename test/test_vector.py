@@ -249,11 +249,7 @@ class TestVectorBus(unittest.TestCase):
 
     def test_get_application_config(self) -> None:
         canlib.xldriver.xlGetApplConfig = Mock()
-        canlib.VectorBus.get_application_config(
-            app_name="CANalyzer",
-            app_channel=0,
-            bus_type=xldefine.XL_BusTypes.XL_BUS_TYPE_CAN,
-        )
+        canlib.VectorBus.get_application_config(app_name="CANalyzer", app_channel=0)
         assert canlib.xldriver.xlGetApplConfig.called
 
     def test_set_application_config(self) -> None:
@@ -264,7 +260,6 @@ class TestVectorBus(unittest.TestCase):
             hw_type=xldefine.XL_HardwareType.XL_HWTYPE_VN1610,
             hw_index=0,
             hw_channel=0,
-            bus_type=xldefine.XL_BusTypes.XL_BUS_TYPE_CAN,
         )
         assert canlib.xldriver.xlSetApplConfig.called
 
