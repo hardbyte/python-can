@@ -10,7 +10,7 @@ pull_request_rules:
     actions:
       merge:
         method: merge
-        strict: true
+        strict: smart+fasttrack
   - name: Request Brian to review changes on core api.
     conditions:
       - "-files~=^can/interfaces/$"
