@@ -6,6 +6,9 @@ Example .asc files:
     - under `test/data/logfile.asc`
 """
 
+from typing import cast, Any, Generator, IO, List, Optional, Union, Dict
+from can import typechecking
+
 from datetime import datetime
 import time
 import logging
@@ -32,7 +35,11 @@ class ASCReader(BaseIOHandler):
     TODO: turn relative timestamps back to absolute form
     """
 
-    def __init__(self, file, base="hex"):
+    def __init__(
+        self,
+        file: Union[typechecking.FileLike, typechecking.StringPathLike],
+        base: str = "hex",
+    ) -> None:
         """
         :param file: a path-like object or as file-like object to read from
                      If this is a file-like object, is has to opened in text
@@ -42,116 +49,169 @@ class ASCReader(BaseIOHandler):
                      this value will be overwritten. Default "hex".
         """
         super().__init__(file, mode="r")
+
+        if not self.file:
+            raise ValueError("The given file cannot be None")
         self.base = base
+        self._converted_base = self._check_base(base)
+        self.date = None
+        self.timestamps_format = None
+        self.internal_events_logged = None
 
-    @staticmethod
-    def _extract_can_id(str_can_id, base):
+    def _extract_header(self):
+        for line in self.file:
+            line = line.strip()
+            lower_case = line.lower()
+            if lower_case.startswith("date"):
+                self.date = line[5:]
+            elif lower_case.startswith("base"):
+                try:
+                    _, base, _, timestamp_format = line.split()
+                except ValueError:
+                    raise Exception("Unsupported header string format: {}".format(line))
+                self.base = base
+                self._converted_base = self._check_base(self.base)
+                self.timestamps_format = timestamp_format
+            elif lower_case.endswith("internal events logged"):
+                self.internal_events_logged = not lower_case.startswith("no")
+                # Currently the last line in the header which is parsed
+                break
+            else:
+                break
+
+    def _extract_can_id(self, str_can_id: str, msg_kwargs: Dict[str, Any]) -> None:
         if str_can_id[-1:].lower() == "x":
-            is_extended = True
-            can_id = int(str_can_id[0:-1], base)
+            msg_kwargs["is_extended_id"] = True
+            can_id = int(str_can_id[0:-1], self._converted_base)
         else:
-            is_extended = False
-            can_id = int(str_can_id, base)
-        return can_id, is_extended
+            msg_kwargs["is_extended_id"] = False
+            can_id = int(str_can_id, self._converted_base)
+        msg_kwargs["arbitration_id"] = can_id
 
     @staticmethod
-    def _check_base(base):
+    def _check_base(base: str) -> int:
         if base not in ["hex", "dec"]:
             raise ValueError('base should be either "hex" or "dec"')
         return BASE_DEC if base == "dec" else BASE_HEX
 
-    def __iter__(self):
-        base = self._check_base(self.base)
-        for line in self.file:
-            # logger.debug("ASCReader: parsing line: '%s'", line.splitlines()[0])
-            if line.split(" ")[0] == "base":
-                base = self._check_base(line.split(" ")[1])
+    def _process_data_string(
+        self, data_str: str, data_length: int, msg_kwargs: Dict[str, Any]
+    ) -> None:
+        frame = bytearray()
+        data = data_str.split()
+        for byte in data[:data_length]:
+            frame.append(int(byte, self._converted_base))
+        msg_kwargs["data"] = frame
 
+    def _process_classic_can_frame(
+        self, line: str, msg_kwargs: Dict[str, Any]
+    ) -> Message:
+
+        # CAN error frame
+        if line.strip()[0:10].lower() == "errorframe":
+            # Error Frame
+            msg_kwargs["is_error_frame"] = True
+        else:
+            abr_id_str, dir, rest_of_message = line.split(None, 2)
+            msg_kwargs["is_rx"] = dir == "Rx"
+            self._extract_can_id(abr_id_str, msg_kwargs)
+
+            if rest_of_message[0].lower() == "r":
+                # CAN Remote Frame
+                msg_kwargs["is_remote_frame"] = True
+                remote_data = rest_of_message.split()
+                if len(remote_data) > 1:
+                    dlc_str = remote_data[1]
+                    if dlc_str.isdigit():
+                        msg_kwargs["dlc"] = int(dlc_str, self._converted_base)
+            else:
+                # Classic CAN Message
+                try:
+                    # There is data after DLC
+                    _, dlc_str, data = rest_of_message.split(None, 2)
+                except ValueError:
+                    # No data after DLC
+                    _, dlc_str = rest_of_message.split(None, 1)
+                    data = ""
+
+                dlc = int(dlc_str, self._converted_base)
+                msg_kwargs["dlc"] = dlc
+                self._process_data_string(data, dlc, msg_kwargs)
+
+        return Message(**msg_kwargs)
+
+    def _process_fd_can_frame(self, line: str, msg_kwargs: Dict[str, Any]) -> Message:
+        channel, dir, rest_of_message = line.split(None, 2)
+        # See ASCWriter
+        msg_kwargs["channel"] = int(channel) - 1
+        msg_kwargs["is_rx"] = dir == "Rx"
+
+        # CAN FD error frame
+        if rest_of_message.strip()[:10].lower() == "errorframe":
+            # Error Frame
+            # TODO: maybe use regex to parse BRS, ESI, etc?
+            msg_kwargs["is_error_frame"] = True
+        else:
+            can_id_str, frame_name_or_brs, rest_of_message = rest_of_message.split(
+                None, 2
+            )
+
+            if frame_name_or_brs.isdigit():
+                brs = frame_name_or_brs
+                esi, dlc_str, data_length_str, data = rest_of_message.split(None, 3)
+            else:
+                brs, esi, dlc_str, data_length_str, data = rest_of_message.split(
+                    None, 4
+                )
+
+            self._extract_can_id(can_id_str, msg_kwargs)
+            msg_kwargs["bitrate_switch"] = brs == "1"
+            msg_kwargs["error_state_indicator"] = esi == "1"
+            dlc = int(dlc_str, self._converted_base)
+            msg_kwargs["dlc"] = dlc
+            data_length = int(data_length_str)
+
+            # CAN remote Frame
+            msg_kwargs["is_remote_frame"] = data_length == 0
+
+            self._process_data_string(data, data_length, msg_kwargs)
+
+        return Message(**msg_kwargs)
+
+    def __iter__(self) -> Generator[Message, None, None]:
+        # This is guaranteed to not be None since we raise ValueError in __init__
+        self.file = cast(IO[Any], self.file)
+        self._extract_header()
+
+        for line in self.file:
             temp = line.strip()
             if not temp or not temp[0].isdigit():
+                # Could be a comment
                 continue
-            is_fd = False
+            msg_kwargs = {}
             try:
-                timestamp, channel, dummy = temp.split(
-                    None, 2
-                )  # , frameType, dlc, frameData
+                timestamp, channel, rest_of_message = temp.split(None, 2)
+                timestamp = float(timestamp)
+                msg_kwargs["timestamp"] = timestamp
                 if channel == "CANFD":
-                    timestamp, _, channel, _, dummy = temp.split(None, 4)
-                    is_fd = True
+                    msg_kwargs["is_fd"] = True
+                elif channel.isdigit():
+                    # See ASCWriter
+                    msg_kwargs["channel"] = int(channel) - 1
+                else:
+                    # Not a CAN message. Possible values include "statistic", J1939TP
+                    continue
             except ValueError:
-                # we parsed an empty comment
+                # Some other unprocessed or unknown format
                 continue
-            timestamp = float(timestamp)
-            try:
-                # See ASCWriter
-                channel = int(channel) - 1
-            except ValueError:
-                pass
-            if dummy.strip()[0:10].lower() == "errorframe":
-                msg = Message(timestamp=timestamp, is_error_frame=True, channel=channel)
-                yield msg
-            elif (
-                not isinstance(channel, int)
-                or dummy.strip()[0:10].lower() == "statistic:"
-                or dummy.split(None, 1)[0] == "J1939TP"
-            ):
-                pass
-            elif dummy[-1:].lower() == "r":
-                can_id_str, _ = dummy.split(None, 1)
-                can_id_num, is_extended_id = self._extract_can_id(can_id_str, base)
-                msg = Message(
-                    timestamp=timestamp,
-                    arbitration_id=can_id_num & CAN_ID_MASK,
-                    is_extended_id=is_extended_id,
-                    is_remote_frame=True,
-                    channel=channel,
-                )
-                yield msg
-            else:
-                brs = None
-                esi = None
-                data_length = 0
-                try:
-                    # this only works if dlc > 0 and thus data is available
-                    if not is_fd:
-                        can_id_str, _, _, dlc, data = dummy.split(None, 4)
-                    else:
-                        can_id_str, frame_name, brs, esi, dlc, data_length, data = dummy.split(
-                            None, 6
-                        )
-                        if frame_name.isdigit():
-                            # Empty frame_name
-                            can_id_str, brs, esi, dlc, data_length, data = dummy.split(
-                                None, 5
-                            )
-                except ValueError:
-                    # but if not, we only want to get the stuff up to the dlc
-                    can_id_str, _, _, dlc = dummy.split(None, 3)
-                    # and we set data to an empty sequence manually
-                    data = ""
-                dlc = int(dlc, base)
-                if is_fd:
-                    # For fd frames, dlc and data length might not be equal and
-                    # data_length is the actual size of the data
-                    dlc = int(data_length)
-                frame = bytearray()
-                data = data.split()
-                for byte in data[0:dlc]:
-                    frame.append(int(byte, base))
-                can_id_num, is_extended_id = self._extract_can_id(can_id_str, base)
 
-                yield Message(
-                    timestamp=timestamp,
-                    arbitration_id=can_id_num & CAN_ID_MASK,
-                    is_extended_id=is_extended_id,
-                    is_remote_frame=False,
-                    dlc=dlc,
-                    data=frame,
-                    is_fd=is_fd,
-                    channel=channel,
-                    bitrate_switch=is_fd and brs == "1",
-                    error_state_indicator=is_fd and esi == "1",
-                )
+            if "is_fd" not in msg_kwargs:
+                msg = self._process_classic_can_frame(rest_of_message, msg_kwargs)
+            else:
+                msg = self._process_fd_can_frame(rest_of_message, msg_kwargs)
+            if msg is not None:
+                yield msg
+
         self.stop()
 
 
@@ -164,7 +224,7 @@ class ASCWriter(BaseIOHandler, Listener):
     It the first message does not have a timestamp, it is set to zero.
     """
 
-    FORMAT_MESSAGE = "{channel}  {id:<15} Rx   {dtype} {data}"
+    FORMAT_MESSAGE = "{channel}  {id:<15} {dir:<4} {dtype} {data}"
     FORMAT_MESSAGE_FD = " ".join(
         [
             "CANFD",
@@ -173,7 +233,7 @@ class ASCWriter(BaseIOHandler, Listener):
             "{id:>8}  {symbolic_name:>32}",
             "{brs}",
             "{esi}",
-            "{dlc}",
+            "{dlc:x}",
             "{data_length:>2}",
             "{data}",
             "{message_duration:>8}",
@@ -189,7 +249,11 @@ class ASCWriter(BaseIOHandler, Listener):
     FORMAT_DATE = "%a %b %d %I:%M:%S.{} %p %Y"
     FORMAT_EVENT = "{timestamp: 9.6f} {message}\n"
 
-    def __init__(self, file, channel=1):
+    def __init__(
+        self,
+        file: Union[typechecking.FileLike, typechecking.StringPathLike],
+        channel: int = 1,
+    ) -> None:
         """
         :param file: a path-like object or as file-like object to write to
                      If this is a file-like object, is has to opened in text
@@ -198,6 +262,9 @@ class ASCWriter(BaseIOHandler, Listener):
                         have a channel set
         """
         super().__init__(file, mode="w")
+        if not self.file:
+            raise ValueError("The given file cannot be None")
+
         self.channel = channel
 
         # write start of file header
@@ -208,24 +275,29 @@ class ASCWriter(BaseIOHandler, Listener):
 
         # the last part is written with the timestamp of the first message
         self.header_written = False
-        self.last_timestamp = None
-        self.started = None
+        self.last_timestamp = 0.0
+        self.started = 0.0
 
-    def stop(self):
+    def stop(self) -> None:
+        # This is guaranteed to not be None since we raise ValueError in __init__
+        self.file = cast(IO[Any], self.file)
         if not self.file.closed:
             self.file.write("End TriggerBlock\n")
         super().stop()
 
-    def log_event(self, message, timestamp=None):
+    def log_event(self, message: str, timestamp: Optional[float] = None) -> None:
         """Add a message to the log file.
 
-        :param str message: an arbitrary message
-        :param float timestamp: the absolute timestamp of the event
+        :param message: an arbitrary message
+        :param timestamp: the absolute timestamp of the event
         """
 
         if not message:  # if empty or None
             logger.debug("ASCWriter: ignoring empty message")
             return
+        # This is guaranteed to not be None since we raise ValueError in __init__
+        self.file = cast(IO[Any], self.file)
+
         # this is the case for the very first message:
         if not self.header_written:
             self.last_timestamp = timestamp or 0.0
@@ -246,16 +318,16 @@ class ASCWriter(BaseIOHandler, Listener):
         line = self.FORMAT_EVENT.format(timestamp=timestamp, message=message)
         self.file.write(line)
 
-    def on_message_received(self, msg):
+    def on_message_received(self, msg: Message) -> None:
 
         if msg.is_error_frame:
             self.log_event("{}  ErrorFrame".format(self.channel), msg.timestamp)
             return
         if msg.is_remote_frame:
-            dtype = "r"
-            data = []
+            dtype = "r {:x}".format(msg.dlc)  # New after v8.5
+            data: List[str] = []
         else:
-            dtype = "d {}".format(msg.dlc)
+            dtype = "d {:x}".format(msg.dlc)
             data = ["{:02X}".format(byte) for byte in msg.data]
         arb_id = "{:X}".format(msg.arbitration_id)
         if msg.is_extended_id:
@@ -276,7 +348,7 @@ class ASCWriter(BaseIOHandler, Listener):
             serialized = self.FORMAT_MESSAGE_FD.format(
                 channel=channel,
                 id=arb_id,
-                dir="Rx",
+                dir="Rx" if msg.is_rx else "Tx",
                 symbolic_name="",
                 brs=1 if msg.bitrate_switch else 0,
                 esi=1 if msg.error_state_indicator else 0,
@@ -294,6 +366,10 @@ class ASCWriter(BaseIOHandler, Listener):
             )
         else:
             serialized = self.FORMAT_MESSAGE.format(
-                channel=channel, id=arb_id, dtype=dtype, data=" ".join(data)
+                channel=channel,
+                id=arb_id,
+                dir="Rx" if msg.is_rx else "Tx",
+                dtype=dtype,
+                data=" ".join(data),
             )
         self.log_event(serialized, msg.timestamp)

@@ -18,6 +18,8 @@ XLhandle = ctypes.c_void_p
 XLstatus = ctypes.c_short
 XLportHandle = ctypes.c_long
 XLeventTag = ctypes.c_ubyte
+XLstringType = ctypes.c_char_p
+
 
 # structure for XL_RECEIVE_MSG, XL_TRANSMIT_MSG
 class s_xl_can_msg(ctypes.Structure):

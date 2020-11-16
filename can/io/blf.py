@@ -91,6 +91,7 @@ REMOTE_FLAG = 0x80
 EDL = 0x1
 BRS = 0x2
 ESI = 0x4
+DIR = 0x1
 
 TIME_TEN_MICS = 0x00000001
 TIME_ONE_NANS = 0x00000002
@@ -174,7 +175,7 @@ class BLFReader(BaseIOHandler):
 
             if obj_type == LOG_CONTAINER:
                 method, uncompressed_size = LOG_CONTAINER_STRUCT.unpack_from(obj_data)
-                container_data = memoryview(obj_data)[LOG_CONTAINER_STRUCT.size :]
+                container_data = obj_data[LOG_CONTAINER_STRUCT.size :]
                 if method == NO_COMPRESSION:
                     data = container_data
                 elif method == ZLIB_DEFLATE:
@@ -219,6 +220,14 @@ class BLFReader(BaseIOHandler):
         # Loop until a struct unpack raises an exception
         while True:
             self._pos = pos
+            # Find next object after padding (depends on object type)
+            try:
+                pos = data.index(b"LOBJ", pos, pos + 8)
+            except ValueError:
+                if pos + 8 > max_pos:
+                    # Not enough data in container
+                    return
+                raise BLFParseError("Could not find next object")
             header = unpack_obj_header_base(data, pos)
             # print(header)
             signature, _, header_version, obj_size, obj_type = header
@@ -227,9 +236,6 @@ class BLFReader(BaseIOHandler):
 
             # Calculate position of next object
             next_pos = pos + obj_size
-            if obj_type != CAN_FD_MESSAGE_64:
-                # Add padding bytes
-                next_pos += obj_size % 4
             if next_pos > max_pos:
                 # This object continues in the next container
                 return
@@ -258,6 +264,7 @@ class BLFReader(BaseIOHandler):
                     arbitration_id=can_id & 0x1FFFFFFF,
                     is_extended_id=bool(can_id & CAN_MSG_EXT),
                     is_remote_frame=bool(flags & REMOTE_FLAG),
+                    is_rx=not bool(flags & DIR),
                     dlc=dlc,
                     data=can_data[:dlc],
                     channel=channel - 1,
@@ -279,15 +286,24 @@ class BLFReader(BaseIOHandler):
                 )
             elif obj_type == CAN_FD_MESSAGE:
                 members = unpack_can_fd_msg(data, pos)
-                channel, flags, dlc, can_id, _, _, fd_flags, valid_bytes, can_data = (
-                    members
-                )
+                (
+                    channel,
+                    flags,
+                    dlc,
+                    can_id,
+                    _,
+                    _,
+                    fd_flags,
+                    valid_bytes,
+                    can_data,
+                ) = members
                 yield Message(
                     timestamp=timestamp,
                     arbitration_id=can_id & 0x1FFFFFFF,
                     is_extended_id=bool(can_id & CAN_MSG_EXT),
                     is_remote_frame=bool(flags & REMOTE_FLAG),
                     is_fd=bool(fd_flags & 0x1),
+                    is_rx=not bool(flags & DIR),
                     bitrate_switch=bool(fd_flags & 0x2),
                     error_state_indicator=bool(fd_flags & 0x4),
                     dlc=dlc2len(dlc),
@@ -399,6 +415,8 @@ class BLFWriter(BaseIOHandler, Listener):
         if msg.is_extended_id:
             arb_id |= CAN_MSG_EXT
         flags = REMOTE_FLAG if msg.is_remote_frame else 0
+        if not msg.is_rx:
+            flags |= DIR
         can_data = bytes(msg.data)
 
         if msg.is_error_frame:

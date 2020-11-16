@@ -61,23 +61,26 @@ class Notifier:
         :param bus:
             CAN bus instance.
         """
-        if (
-            self._loop is not None
-            and hasattr(bus, "fileno")
-            and bus.fileno() >= 0  # type: ignore
-        ):
-            # Use file descriptor to watch for messages
-            reader = bus.fileno()  # type: ignore
+        reader: int = -1
+        try:
+            reader = bus.fileno()
+        except NotImplementedError:
+            # Bus doesn't support fileno, we fall back to thread based reader
+            pass
+
+        if self._loop is not None and reader >= 0:
+            # Use bus file descriptor to watch for messages
             self._loop.add_reader(reader, self._on_message_available, bus)
+            self._readers.append(reader)
         else:
-            reader = threading.Thread(
+            reader_thread = threading.Thread(
                 target=self._rx_thread,
                 args=(bus,),
                 name='can.notifier for bus "{}"'.format(bus.channel_info),
             )
-            reader.daemon = True
-            reader.start()
-        self._readers.append(reader)
+            reader_thread.daemon = True
+            reader_thread.start()
+            self._readers.append(reader_thread)
 
     def stop(self, timeout: float = 5):
         """Stop notifying Listeners when new :class:`~can.Message` objects arrive
@@ -118,9 +121,9 @@ class Notifier:
             self.exception = exc
             if self._loop is not None:
                 self._loop.call_soon_threadsafe(self._on_error, exc)
-            else:
-                self._on_error(exc)
-            raise
+                raise
+            elif not self._on_error(exc):
+                raise
 
     def _on_message_available(self, bus: BusABC):
         msg = bus.recv(0)
@@ -134,10 +137,15 @@ class Notifier:
                 # Schedule coroutine
                 self._loop.create_task(res)
 
-    def _on_error(self, exc: Exception):
-        for listener in self.listeners:
-            if hasattr(listener, "on_error"):
-                listener.on_error(exc)
+    def _on_error(self, exc: Exception) -> bool:
+        listeners_with_on_error = [
+            listener for listener in self.listeners if hasattr(listener, "on_error")
+        ]
+
+        for listener in listeners_with_on_error:
+            listener.on_error(exc)
+
+        return bool(listeners_with_on_error)
 
     def add_listener(self, listener: Listener):
         """Add new Listener to the notification list.
@@ -150,7 +158,7 @@ class Notifier:
 
     def remove_listener(self, listener: Listener):
         """Remove a listener from the notification list. This method
-        trows an exception if the given listener is not part of the
+        throws an exception if the given listener is not part of the
         stored listeners.
 
         :param listener: Listener to be removed from the list to be notified
