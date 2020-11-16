@@ -492,12 +492,17 @@ class KvaserBus(BusABC):
         canBusOn(self._write_handle)
 
         timer = ctypes.c_uint(0)
-        ts, perfcounter = time_perfcounter_correlation()
         try:
-            kvReadTimer(self._read_handle, ctypes.byref(timer))
-            current_perfcounter = time.perf_counter()
-            now = ts + (current_perfcounter - perfcounter)
-            self._timestamp_offset = now - (timer.value * TIMESTAMP_FACTOR)
+            if time.get_clock_info("time").resolution > 1e-5:
+                ts, perfcounter = time_perfcounter_correlation()
+                kvReadTimer(self._read_handle, ctypes.byref(timer))
+                current_perfcounter = time.perf_counter()
+                now = ts + (current_perfcounter - perfcounter)
+                self._timestamp_offset = now - (timer.value * TIMESTAMP_FACTOR)
+            else:
+                kvReadTimer(self._read_handle, ctypes.byref(timer))
+                self._timestamp_offset = time.time() - (timer.value * TIMESTAMP_FACTOR)
+
         except Exception as exc:
             # timer is usually close to 0
             log.info(str(exc))

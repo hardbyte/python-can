@@ -328,17 +328,26 @@ def rename_kwargs(func_name, kwargs, aliases):
 
 
 def time_perfcounter_correlation():
-    """ on Windows platform this will help with the accuracy of using the time.time fucntion.
+    """ Get the `perf_counter` value nearest to when time.time() is updated if the `time.time` on
+    this platform has a resolution higher than 10us. This is tipical for the Windows platform
+    were the beste resolution is ~500us.
 
-    Returns
-    -------
-    t, performance_counter : (time.time, float)
-        time.time value and perf_counter value when the time.time is updated
+    On non Windows platforms the current time and perf_counter is directly returned since the
+    resolution is tipical ~1us.
+
+    Note this value is based on when `time.time()` is observed to update from Python, it is not
+    directly returned by the operating system.
+
+    :return:
+        (t, performance_counter) time.time value and perf_counter value when the time.time
+        is updated
 
     """
-    if platform.system() == "Windows":
+
+    # use this if the resolution is higher than 10us
+    if time.get_clock_info("time").resolution > 1e-5:
         t0 = time()
-        while 1:
+        while True:
             t1, performance_counter = time(), perf_counter()
             if t1 != t0:
                 break
