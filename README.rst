@@ -37,6 +37,10 @@ python-can
    :target: https://codecov.io/gh/hardbyte/python-can/branch/develop
    :alt: Test coverage reports on Codecov.io
 
+.. image:: https://img.shields.io/endpoint.svg?url=https://gh.mergify.io/badges/hardbyte/python-can&style=flat
+   :target: https://mergify.io
+   :alt: Mergify Status
+
 The **C**\ ontroller **A**\ rea **N**\ etwork is a bus standard designed
 to allow microcontrollers and devices to communicate with each other. It
 has priority based bus arbitration and reliable deterministic
