@@ -309,16 +309,23 @@ class CANalystIIBus(BusABC):
 
             res += [frames_sent]
 
-    def available(self, channel):
+    def available(
+        self,
+        channel: int = None
+    ) -> int:
         """
         Check the number of frames waiting to be received.
 
-        :param channel: channle number you want to check
-        :type channel: int
+        :param channel: channel number you want to check.
+            If you only have a single channel initilized you can leave this parameter at it's default of `None`
+        :type channel: int, None
 
         :return: number of available frames
         :rtype: int
         """
+        if channel is None:
+            channel = self.channels[0]
+
         return CANalystII.VCI_GetReceiveNum(VCI_USBCAN2, self.device, channel)
 
     def _recv_internal(self, timeout):
@@ -330,7 +337,7 @@ class CANalystIIBus(BusABC):
         channel: Optional[int] = None
     ) -> Optional[Message]:
         """
-        Receive CAN Frames(s)
+        Receive CAN Frame(s)
 
         :param timeout: fractional seconds or `None` to block until a packet has been received
         :type timeout: float, None
