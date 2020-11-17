@@ -69,16 +69,12 @@ class BusABC(metaclass=ABCMeta):
 
     def recv(
         self,
-        timeout: Optional[float] = None,
-        channel: Optional[int] = None
+        timeout: Optional[float] = None
     ) -> Optional[Message]:
         """Block waiting for a message from the Bus.
 
         :param timeout:
             seconds to wait for a message or None to wait indefinitely
-
-        :param channel:
-            can interface number. used on the CANalyst II adapter
 
         :return:
             None on timeout or a :class:`Message` object.
@@ -90,10 +86,8 @@ class BusABC(metaclass=ABCMeta):
 
         while True:
             # try to get a message
-            try:
-                msg, already_filtered = self._recv_internal(timeout=time_left, channel=channel)
-            except TypeError:
-                msg, already_filtered = self._recv_internal(timeout=time_left)
+
+            msg, already_filtered = self._recv_internal(timeout=time_left)
 
             # return it, if it matches
             if msg and (already_filtered or self._matches_filters(msg)):
@@ -117,8 +111,7 @@ class BusABC(metaclass=ABCMeta):
 
     def _recv_internal(
         self,
-        timeout: Optional[float],
-        channel: Optional[int] = None
+        timeout: Optional[float]
     ) -> Tuple[Optional[Message], bool]:
         """
         Read a message from the bus and tell whether it was filtered.
@@ -146,9 +139,6 @@ class BusABC(metaclass=ABCMeta):
 
         :param float timeout: seconds to wait for a message,
                               see :meth:`~can.BusABC.send`
-
-        :param int channel: optional channel number to receive on.
-                            used for the CANalyst II adapter
 
         :return:
             1.  a message that was read or None on timeout

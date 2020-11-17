@@ -2,7 +2,7 @@ from ctypes import *
 import logging
 import platform
 from can import BusABC, Message
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union, Dict
 
 logger = logging.getLogger(__name__)
 
@@ -100,32 +100,51 @@ except OSError as e:
 class CANalystIIBus(BusABC):
     def __init__(
         self,
-        channel,
-        device=0,
-        bitrate=None,
-        Timing0=None,
-        Timing1=None,
+        channel: Union[int, List, Tuple, str],
+        device: int = 0,
+        bitrate: Optional[int, List, Tuple] = None,
+        Timing0: Optional[int, List, Tuple] = None,
+        Timing1: Optional[int, List, Tuple] = None,
         can_filters=None,
         **kwargs,
     ):
         """
+        CANalystII Interface
 
-        :param channel: channel number
+        :param channel: The indexes of the channel(s) to initilize.
+            If only a single channel is to be initilized you can pass an `int`,
+            otherwise you will need to pass a list of channel numbers.
         :type channel: int, list, tuple
-        :param device: device number
-        :param bitrate: CAN network bandwidth (bits/s)
+
+        :param device: device index. If there is more then one adapter the index number will be
+            incremented by one for each additional adapter.
+        :type device: int
+
+        :param bitrate: CAN network bandwidth (bits/s).
+            If you have more then a single channel supplied then you will want to pass a list of bitrates,
+            one for each channel
         :type bitrate: int, list, tuple, None
-        :param Timing0: customize the timing register if bitrate is not specified
-        :type Timing0: int, List, Tuple, None
-        :param Timing1:
-        :type Timing1: int, List, Tuple, None
+
+        :param Timing0: customize the timing register if bitrate is not specified.
+            If you have more then a single channel supplied then you will want to pass a list of Timing0 values,
+            one for each channel
+        :type Timing0: int, list, tuple, None
+
+        :param Timing1: customize the timing register if bitrate is not specified.
+            If you have more then a single channel supplied then you will want to pass a list of Timing1 values,
+            one for each channel
+        :type Timing1: int, list, tuple, None
+
         :param can_filters: filters for packet
         """
+
+        if CANalystII is None:
+            raise RuntimeError('CANalystII library failed to load.')
+
         super().__init__(channel=channel, can_filters=can_filters, **kwargs)
 
         if isinstance(channel, (list, tuple)):
             self.channels = channel
-
         elif isinstance(channel, int):
             self.channels = [channel]
         else:
@@ -181,19 +200,47 @@ class CANalystIIBus(BusABC):
             init_config = VCI_INIT_CONFIG(0, 0xFFFFFFFF, 0, 1, t0, t1, 0)
 
             status = CANalystII.VCI_InitCAN(
-                VCI_USBCAN2, self.device, chan, byref(init_config)
+                VCI_USBCAN2,
+                self.device,
+                chan,
+                byref(init_config)
             )
 
             if status == STATUS_ERR:
-                logger.error("VCI_InitCAN Error")
+                logger.error("VCI_InitCAN Error ({0})".format(chan))
                 self.shutdown()
                 return
 
-            CANalystII.VCI_StartCAN(VCI_USBCAN2, self.device, chan)
+            status = CANalystII.VCI_StartCAN(
+                VCI_USBCAN2,
+                self.device,
+                chan
+            )
+
+            if status == STATUS_ERR:
+                logger.error("VCI_StartCAN Error ({0})".format(chan))
+                self.shutdown()
+                return
 
             self.init_config += [init_config]
 
-    def board_info(self):
+    def board_info(self) -> Dict:
+        """
+        Adapter Information
+
+        :return: dictionary containing the following keys
+
+            * `hardware_version`: `int`
+            * `firmware_version`: `int`
+            * `driver_version`: `int`
+            * `library_version`: `int`
+            * `irq`: `int`
+            * `num_can_interfaces`: `int`
+            * `serial_number`: `str`
+            * `hardware_type`: `str`
+
+        :rtype: dict
+        """
         return dict(
             hardware_version=self._b_info.hw_Version,
             firmware_version=self._b_info.fw_Version,
@@ -207,11 +254,15 @@ class CANalystIIBus(BusABC):
 
     def send(self, msg, timeout=None):
         """
-        :param msg: message to send
-        :param timeout: timeout is not used here
-        :return:
-        """
+        Send CAN Frame(s)
 
+        :param msg: message to send or a list of messages to be sent
+        :type msg: :class:`can.Message`, list(:class:`can.Message`)
+
+        :param timeout: timeout is not used here
+        :return: list containing the number of frames sent for each channel
+        :rtype: list(int)
+        """
         if not isinstance(msg, (list, tuple)):
             msg = [msg]
 
@@ -228,6 +279,8 @@ class CANalystIIBus(BusABC):
                 channels[channel] = 0
 
             channels[channel] += 1
+
+        res = []
 
         for channel, count in channels.items():
             can_objs = (VCI_CAN_OBJ * count)()
@@ -246,7 +299,7 @@ class CANalystIIBus(BusABC):
                 for j in range(message.dlc):
                     can_objs[i - offset].Data[j] = message.data[j]
 
-            CANalystII.VCI_Transmit(
+            frames_sent = CANalystII.VCI_Transmit(
                 VCI_USBCAN2,
                 self.device,
                 channel,
@@ -254,12 +307,42 @@ class CANalystIIBus(BusABC):
                 count
             )
 
-    def _recv_internal(self, timeout=None, channel=None):
-        """
+            res += [frames_sent]
 
-        :param timeout: float in seconds
+    def available(self, channel):
+        """
+        Check the number of frames waiting to be received.
+
+        :param channel: channle number you want to check
+        :type channel: int
+
+        :return: number of available frames
+        :rtype: int
+        """
+        return CANalystII.VCI_GetReceiveNum(VCI_USBCAN2, self.device, channel)
+
+    def _recv_internal(self, timeout):
+        return self.recv(timeout=timeout), False
+
+    def recv(
+        self,
+        timeout: Optional[float] = None,
+        channel: Optional[int] = None
+    ) -> Optional[Message]:
+        """
+        Receive CAN Frames(s)
+
+        :param timeout: fractional seconds or `None` to block until a packet has been received
+        :type timeout: float, None
+
         :param channel: channel number to receive from.
-        :return:
+            If only a single channel has been initilized this can be left at it's default of `None`.
+        :type channel: int, None
+
+        :returns: received message
+        :rtype: :class:`can.Message`
+
+        :raises: `ValueError` if supplied channel has not been initilized.
         """
         raw_message = (VCI_CAN_OBJ * 1)()
 
@@ -268,30 +351,25 @@ class CANalystIIBus(BusABC):
         if channel is None:
             channel = self.channels[0]
 
-        elif len(self.channels) == 1:
-            channel = self.channels[0]
-
         if channel not in self.channels:
-            raise ValueError("channel must be set when using multiple channels.")
+            raise ValueError("channel {0} has not been initilized".format(channel))
 
-        if not CANalystII.VCI_GetReceiveNum(VCI_USBCAN2, self.device, channel):
-            return None, False
+        if not self.available(channel):
+            return
 
         CANalystII.VCI_Receive(
             VCI_USBCAN2, self.device, channel, byref(raw_message), 1, timeout
         )
 
-        return (
-            Message(
+        return Message(
                 timestamp=raw_message[0].TimeStamp if raw_message[0].TimeFlag else 0.0,
                 arbitration_id=raw_message[0].ID,
-                is_remote_frame=raw_message[0].RemoteFlag,
+                is_remote_frame=bool(raw_message[0].RemoteFlag),
+                is_extended_id=bool(raw_message[0].ExternFlag),
                 channel=channel,
                 dlc=raw_message[0].DataLen,
                 data=raw_message[0].Data,
-            ),
-            False,
-        )
+            )
 
     def flush_tx_buffer(self):
         for channel in self.channels:
