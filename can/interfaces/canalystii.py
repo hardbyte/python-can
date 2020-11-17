@@ -376,4 +376,11 @@ class CANalystIIBus(BusABC):
             CANalystII.VCI_ClearBuffer(VCI_USBCAN2, self.device, channel)
 
     def shutdown(self):
+        # stops receiving new frames
+        for channel in self.channels:
+            try:
+                CANalystII.VCI_ResetCAN(VCI_USBCAN2, self.device, channel)
+            except:
+                pass
+
         CANalystII.VCI_CloseDevice(VCI_USBCAN2, self.device)
