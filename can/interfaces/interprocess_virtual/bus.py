@@ -78,13 +78,11 @@ class GeneralPurposeMulticastBus:
         # Look up multicast group address in name server and find out IP version
         self._addrinfo = socket.getaddrinfo(group, None)[0]
         self.ip_version = 4 if self._addrinfo[0] == socket.AF_INET else 6
-
-        self._socket_send = self._create_send_socket()
         self._send_destination = (self._addrinfo[4][0], self.port)  # TODO might be replaceable
 
-        self._socket_receive = self._create_receive_socket()
+        self._socket = self._create_socket()
 
-    def _create_send_socket(self):
+    def _create_socket(self):
         sock = socket.socket(self._addrinfo[0], socket.SOCK_DGRAM)
 
         # set TTL
@@ -95,25 +93,19 @@ class GeneralPurposeMulticastBus:
         else:
             sock.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_MULTICAST_HOPS, ttl_bin)
 
-        return sock
-
-    def _create_receive_socket(self):
-        sock = socket.socket(self._addrinfo[0], socket.SOCK_DGRAM)
-
         # Allow multiple programs to access that address + port
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
         # Bind it to the port
         sock.bind(('', self.port))
 
-        # Join group
-        group_bin = socket.inet_pton(self._addrinfo[0], self._addrinfo[4][0])
-
+        # Join the multicast group
+        group_as_binary = socket.inet_pton(self._addrinfo[0], self._addrinfo[4][0])
         if self.ip_version == 4:
-            request = group_bin + struct.pack('=I', socket.INADDR_ANY)
+            request = group_as_binary + struct.pack('=I', socket.INADDR_ANY)
             sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, request)
         else:
-            request = group_bin + struct.pack('@I', 0)
+            request = group_as_binary + struct.pack('@I', 0)
             sock.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_JOIN_GROUP, request)
 
         return sock
@@ -127,10 +119,10 @@ class GeneralPurposeMulticastBus:
                      a readable buffer (like a bytearray)
         """
         if not count:
-            self._socket_send.sendto(data, self._send_destination)
+            self._socket.sendto(data, self._send_destination)
         else:
             data = memoryview(data)[start:start+count]
-            self._socket_send.sendto(data, self._send_destination)
+            self._socket.sendto(data, self._send_destination)
 
     def recv(self, timeout):
         """
@@ -144,21 +136,21 @@ class GeneralPurposeMulticastBus:
         try:
             # get all sockets that are ready (can be a list with a single value
             # being self.socket or an empty list if self.socket is not ready)
-            ready_receive_sockets, _, _ = select.select([self._socket_receive], [], [], timeout)
+            ready_receive_sockets, _, _ = select.select([self._socket], [], [], timeout)
         except socket.error as exc:
             # something bad happened (e.g. the interface went down)
             raise can.CanError("Failed to receive: %s" % exc)
 
         if ready_receive_sockets:  # not empty
             # fetch data & source address
-            data, sender = self._socket_receive.recvfrom(self.max_buffer)
+            data, sender = self._socket.recvfrom(self.max_buffer)
 
             # fetch timestamp
             # TODO maybe use https://stackoverflow.com/a/13308900/3753684
             # see:           https://stackoverflow.com/a/46330410/3753684
             binary_structure = "@LL"
             SIOCGSTAMP = 0x8906
-            res = fcntl.ioctl(self._socket_receive, SIOCGSTAMP, struct.pack(binary_structure, 0, 0))
+            res = fcntl.ioctl(self._socket, SIOCGSTAMP, struct.pack(binary_structure, 0, 0))
             seconds, microseconds = struct.unpack(binary_structure, res)
             timestamp = seconds + microseconds * 1e-6
 
@@ -173,14 +165,9 @@ class GeneralPurposeMulticastBus:
         Never throws errors and only logs them.
         """
         try:
-            self._socket_send.close()
+            self._socket.close()
         except OSError as exception:
-            log.error("could not close sending socket: %s", exception)
-
-        try:
-            self._socket_receive.close()
-        except OSError as exception:
-            log.error("could not close receiving socket: %s", exception)
+            log.error("could not close IP socket: %s", exception)
 
 
 if __name__ == "__main__":
