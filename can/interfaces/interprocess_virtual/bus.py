@@ -8,20 +8,20 @@ import time
 
 log = logging.getLogger(__name__)
 
+import can
+from can import BusABC
+
+from .utils import pack_message, unpack_message
+
 # TODO find alternative?
 try:
     import fcntl
 except ImportError:
     log.error("fcntl not available on this platform")
 
-import can
-from can import BusABC
-
-from utils import pack_message, unpack_message
-
 
 class InterprocessVirtualBus(BusABC):
-    """A virtual interface that allows to communicate between multiple processes.
+    """A virtual interface that allows to communicate between multiple processes using Multicast IP.
     """
 
     DEFAULT_GROUP_IPv4 = '225.0.0.250'
@@ -80,7 +80,7 @@ class GeneralPurposeMulticastBus:
         self.ip_version = 4 if self._addrinfo[0] == socket.AF_INET else 6
 
         self._socket_send = self._create_send_socket()
-        self._send_destination = (self._addrinfo[4][0], self.port) # TODO might be replaceable
+        self._send_destination = (self._addrinfo[4][0], self.port)  # TODO might be replaceable
 
         self._socket_receive = self._create_receive_socket()
 
@@ -149,7 +149,7 @@ class GeneralPurposeMulticastBus:
             # something bad happened (e.g. the interface went down)
             raise can.CanError("Failed to receive: %s" % exc)
 
-        if ready_receive_sockets: # not empty
+        if ready_receive_sockets:  # not empty
             # fetch data & source address
             data, sender = self._socket_receive.recvfrom(self.max_buffer)
 
@@ -169,6 +169,8 @@ class GeneralPurposeMulticastBus:
 
     def shutdown(self):
         """Close all sockets and free up any resources.
+
+        Never throws errors and only logs them.
         """
         try:
             self._socket_send.close()

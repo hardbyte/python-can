@@ -14,14 +14,16 @@ import pytest
 import random
 
 import can
+from can.interfaces.interprocess_virtual import InterprocessVirtualBus
 
-from .config import *
+from .config import IS_CI, TEST_INTERFACE_SOCKETCAN, TEST_CAN_FD
 
 
 class Back2BackTestCase(unittest.TestCase):
-    """
-    Use two interfaces connected to the same CAN bus and test them against
-    each other.
+    """Use two interfaces connected to the same CAN bus and test them against each other.
+
+    This very class declaration runs the test on the *virtual* interface but subclasses can be created for
+    other buses.
     """
 
     BITRATE = 500000
@@ -126,12 +128,9 @@ class Back2BackTestCase(unittest.TestCase):
         self._send_and_receive(msg)
 
     def test_message_direction(self):
-        # Verify that own message received has is_rx set to False while message
-        # received on the other virtual interfaces have is_rx set to True
-        if self.INTERFACE_1 != "virtual":
-            raise unittest.SkipTest(
-                "Message direction not yet implemented for socketcan"
-            )
+        """Verify that own message received has is_rx set to False while message
+        received on the other virtual interfaces have is_rx set to True.
+        """
         bus3 = can.Bus(
             channel=self.CHANNEL_2,
             bustype=self.INTERFACE_2,
@@ -142,7 +141,8 @@ class Back2BackTestCase(unittest.TestCase):
         )
         try:
             msg = can.Message(
-                is_extended_id=False, arbitration_id=0x300, data=[2, 1, 3]
+                is_extended_id=False, arbitration_id=0x300, data=[2, 1, 3],
+                is_rx=False,
             )
             bus3.send(msg)
             recv_msg_bus1 = self.bus1.recv(self.TIMEOUT)
@@ -151,14 +151,12 @@ class Back2BackTestCase(unittest.TestCase):
 
             self.assertTrue(recv_msg_bus1.is_rx)
             self.assertTrue(recv_msg_bus2.is_rx)
-            self.assertFalse(self_recv_msg_bus3.is_rx)
+            self.assertTrue(self_recv_msg_bus3.is_rx)
         finally:
             bus3.shutdown()
 
     def test_unique_message_instances(self):
         # Verify that we have a different instances of message for each bus
-        if self.INTERFACE_1 != "virtual":
-            raise unittest.SkipTest("Not relevant for socketcan")
         bus3 = can.Bus(
             channel=self.CHANNEL_2,
             bustype=self.INTERFACE_2,
@@ -212,9 +210,29 @@ class BasicTestSocketCan(Back2BackTestCase):
     INTERFACE_2 = "socketcan"
     CHANNEL_2 = "vcan0"
 
+    def test_message_direction(self):
+        raise unittest.SkipTest("not implemented for socketcan")
+
+
+class BasicTestInterprocessVirtualBus_IPv4(Back2BackTestCase):
+
+    INTERFACE_1 = "interprocess_virtual"
+    CHANNEL_1 = InterprocessVirtualBus.DEFAULT_GROUP_IPv4
+    INTERFACE_2 = "interprocess_virtual"
+    CHANNEL_2 = InterprocessVirtualBus.DEFAULT_GROUP_IPv4
+
+
+class BasicTestInterprocessVirtualBus_IPv6(Back2BackTestCase):
+
+    INTERFACE_1 = "interprocess_virtual"
+    CHANNEL_1 = InterprocessVirtualBus.DEFAULT_GROUP_IPv6
+    INTERFACE_2 = "interprocess_virtual"
+    CHANNEL_2 = InterprocessVirtualBus.DEFAULT_GROUP_IPv6
+
 
 @unittest.skipUnless(TEST_INTERFACE_SOCKETCAN, "skip testing of socketcan")
 class SocketCanBroadcastChannel(unittest.TestCase):
+
     def setUp(self):
         self.broadcast_bus = can.Bus(channel="", bustype="socketcan")
         self.regular_bus = can.Bus(channel="vcan0", bustype="socketcan")
@@ -236,6 +254,7 @@ class SocketCanBroadcastChannel(unittest.TestCase):
 
 
 class TestThreadSafeBus(Back2BackTestCase):
+
     def setUp(self):
         self.bus1 = can.ThreadSafeBus(
             channel=self.CHANNEL_1,
