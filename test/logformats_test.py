@@ -27,12 +27,43 @@ from .data.example_data import (
     TEST_MESSAGES_BASE,
     TEST_MESSAGES_REMOTE_FRAMES,
     TEST_MESSAGES_ERROR_FRAMES,
+    TEST_MESSAGES_CAN_FD,
     TEST_COMMENTS,
     sort_messages,
 )
 from .message_helper import ComparingMessagesTestCase
 
 logging.basicConfig(level=logging.DEBUG)
+
+
+class ReaderWriterExtensionTest(unittest.TestCase):
+    message_writers_and_readers = {}
+    for suffix, writer in can.Logger.message_writers.items():
+        message_writers_and_readers[suffix] = (
+            writer,
+            can.LogReader.message_readers.get(suffix),
+        )
+
+    def test_extension_matching(self):
+        for suffix, (writer, reader) in self.message_writers_and_readers.items():
+            suffix_variants = [
+                suffix.upper(),
+                suffix.lower(),
+                "".join([c.upper() if i % 2 else c for i, c in enumerate(suffix)]),
+            ]
+            for suffix_variant in suffix_variants:
+                tmp_file = tempfile.NamedTemporaryFile(
+                    suffix=suffix_variant, delete=False
+                )
+                tmp_file.close()
+                try:
+                    with can.Logger(tmp_file.name) as logger:
+                        assert type(logger) == writer
+                    if reader is not None:
+                        with can.LogReader(tmp_file.name) as player:
+                            assert type(player) == reader
+                finally:
+                    os.remove(tmp_file.name)
 
 
 class ReaderWriterTest(unittest.TestCase, ComparingMessagesTestCase, metaclass=ABCMeta):
@@ -89,13 +120,13 @@ class ReaderWriterTest(unittest.TestCase, ComparingMessagesTestCase, metaclass=A
                                          ignored, if *preserves_channel* is True
         """
         # get all test messages
-        self.original_messages = TEST_MESSAGES_BASE
+        self.original_messages = list(TEST_MESSAGES_BASE)
         if check_remote_frames:
             self.original_messages += TEST_MESSAGES_REMOTE_FRAMES
         if check_error_frames:
             self.original_messages += TEST_MESSAGES_ERROR_FRAMES
         if check_fd:
-            self.original_messages += []  # TODO: add TEST_MESSAGES_CAN_FD
+            self.original_messages += TEST_MESSAGES_CAN_FD
 
         # sort them so that for example ASCWriter does not "fix" any messages with timestamp 0.0
         self.original_messages = sort_messages(self.original_messages)
@@ -337,49 +368,260 @@ class TestAscFileFormat(ReaderWriterTest):
         super()._setup_instance_helper(
             can.ASCWriter,
             can.ASCReader,
-            check_fd=False,
+            check_fd=True,
             check_comments=True,
             preserves_channel=False,
             adds_default_channel=0,
         )
 
+    def _read_log_file(self, filename):
+        logfile = os.path.join(os.path.dirname(__file__), "data", filename)
+        with can.ASCReader(logfile) as reader:
+            return list(reader)
+
+    def test_can_message(self):
+        expected_messages = [
+            can.Message(
+                timestamp=2.5010,
+                arbitration_id=0xC8,
+                is_extended_id=False,
+                is_rx=False,
+                channel=1,
+                dlc=8,
+                data=[9, 8, 7, 6, 5, 4, 3, 2],
+            ),
+            can.Message(
+                timestamp=17.876708,
+                arbitration_id=0x6F9,
+                is_extended_id=False,
+                channel=0,
+                dlc=0x8,
+                data=[5, 0xC, 0, 0, 0, 0, 0, 0],
+            ),
+        ]
+        actual = self._read_log_file("test_CanMessage.asc")
+        self.assertMessagesEqual(actual, expected_messages)
+
+    def test_can_remote_message(self):
+        expected_messages = [
+            can.Message(
+                timestamp=2.510001,
+                arbitration_id=0x100,
+                is_extended_id=False,
+                channel=1,
+                is_remote_frame=True,
+            ),
+            can.Message(
+                timestamp=2.520002,
+                arbitration_id=0x200,
+                is_extended_id=False,
+                is_rx=False,
+                channel=2,
+                is_remote_frame=True,
+            ),
+            can.Message(
+                timestamp=2.584921,
+                arbitration_id=0x300,
+                is_extended_id=False,
+                channel=3,
+                dlc=8,
+                is_remote_frame=True,
+            ),
+        ]
+        actual = self._read_log_file("test_CanRemoteMessage.asc")
+        self.assertMessagesEqual(actual, expected_messages)
+
+    def test_can_fd_remote_message(self):
+        expected_messages = [
+            can.Message(
+                timestamp=30.300981,
+                arbitration_id=0x50005,
+                channel=2,
+                dlc=5,
+                is_rx=False,
+                is_fd=True,
+                is_remote_frame=True,
+                error_state_indicator=True,
+            )
+        ]
+        actual = self._read_log_file("test_CanFdRemoteMessage.asc")
+        self.assertMessagesEqual(actual, expected_messages)
+
+    def test_can_fd_message(self):
+        expected_messages = [
+            can.Message(
+                timestamp=30.005021,
+                arbitration_id=0x300,
+                is_extended_id=False,
+                channel=0,
+                dlc=8,
+                data=[0x11, 0xC2, 3, 4, 5, 6, 7, 8],
+                is_fd=True,
+                bitrate_switch=True,
+            ),
+            can.Message(
+                timestamp=30.005041,
+                arbitration_id=0x1C4D80A7,
+                channel=1,
+                dlc=8,
+                is_rx=False,
+                data=[0x12, 0xC2, 3, 4, 5, 6, 7, 8],
+                is_fd=True,
+                error_state_indicator=True,
+            ),
+            can.Message(
+                timestamp=30.005071,
+                arbitration_id=0x30A,
+                is_extended_id=False,
+                channel=2,
+                dlc=8,
+                data=[1, 2, 3, 4, 5, 6, 7, 8],
+                is_fd=True,
+                bitrate_switch=True,
+                error_state_indicator=True,
+            ),
+        ]
+        actual = self._read_log_file("test_CanFdMessage.asc")
+        self.assertMessagesEqual(actual, expected_messages)
+
+    def test_can_fd_message_64(self):
+        expected_messages = [
+            can.Message(
+                timestamp=30.506898,
+                arbitration_id=0x4EE,
+                is_extended_id=False,
+                channel=3,
+                dlc=0xF,
+                data=[0xA1, 2, 3, 4] + 59 * [0] + [0x64],
+                is_fd=True,
+                error_state_indicator=True,
+            ),
+            can.Message(
+                timestamp=31.506898,
+                arbitration_id=0x1C4D80A7,
+                channel=3,
+                dlc=0xF,
+                data=[0xB1, 2, 3, 4] + 59 * [0] + [0x64],
+                is_fd=True,
+                bitrate_switch=True,
+            ),
+        ]
+        actual = self._read_log_file("test_CanFdMessage64.asc")
+        self.assertMessagesEqual(actual, expected_messages)
+
+    def test_can_and_canfd_error_frames(self):
+        expected_messages = [
+            can.Message(timestamp=2.501000, channel=0, is_error_frame=True),
+            can.Message(timestamp=3.501000, channel=0, is_error_frame=True),
+            can.Message(timestamp=4.501000, channel=1, is_error_frame=True),
+            can.Message(
+                timestamp=30.806898,
+                channel=4,
+                is_rx=False,
+                is_error_frame=True,
+                is_fd=True,
+            ),
+        ]
+        actual = self._read_log_file("test_CanErrorFrames.asc")
+        self.assertMessagesEqual(actual, expected_messages)
+
 
 class TestBlfFileFormat(ReaderWriterTest):
-    """Tests can.BLFWriter and can.BLFReader"""
+    """Tests can.BLFWriter and can.BLFReader.
+    
+    Uses log files created by Toby Lorenz:
+    https://bitbucket.org/tobylorenz/vector_blf/src/master/src/Vector/BLF/tests/unittests/events_from_binlog/
+    """
 
     def _setup_instance(self):
         super()._setup_instance_helper(
             can.BLFWriter,
             can.BLFReader,
             binary_file=True,
-            check_fd=False,
+            check_fd=True,
             check_comments=False,
+            test_append=True,
             allowed_timestamp_delta=1.0e-6,
             preserves_channel=False,
             adds_default_channel=0,
         )
 
-    def test_read_known_file(self):
-        logfile = os.path.join(os.path.dirname(__file__), "data", "logfile.blf")
+    def _read_log_file(self, filename):
+        logfile = os.path.join(os.path.dirname(__file__), "data", filename)
         with can.BLFReader(logfile) as reader:
-            messages = list(reader)
+            return list(reader)
 
-        expected = [
-            can.Message(
-                timestamp=1.0,
-                is_extended_id=False,
-                arbitration_id=0x64,
-                data=[0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8],
-            ),
-            can.Message(
-                timestamp=73.0,
-                is_extended_id=True,
-                arbitration_id=0x1FFFFFFF,
-                is_error_frame=True,
-            ),
-        ]
+    def test_can_message(self):
+        expected = can.Message(
+            timestamp=2459565876.494607,
+            arbitration_id=0x4444444,
+            is_extended_id=False,
+            channel=0x1110,
+            dlc=0x33,
+            data=[0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC],
+        )
+        actual = self._read_log_file("test_CanMessage.blf")
+        self.assertMessagesEqual(actual, [expected] * 2)
+        self.assertEqual(actual[0].channel, expected.channel)
 
-        self.assertMessagesEqual(messages, expected)
+    def test_can_message_2(self):
+        expected = can.Message(
+            timestamp=2459565876.494607,
+            arbitration_id=0x4444444,
+            is_extended_id=False,
+            channel=0x1110,
+            dlc=0x33,
+            data=[0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC],
+        )
+        actual = self._read_log_file("test_CanMessage2.blf")
+        self.assertMessagesEqual(actual, [expected] * 2)
+        self.assertEqual(actual[0].channel, expected.channel)
+
+    def test_can_fd_message(self):
+        expected = can.Message(
+            timestamp=2459565876.494607,
+            arbitration_id=0x4444444,
+            is_extended_id=False,
+            channel=0x1110,
+            dlc=64,
+            is_fd=True,
+            bitrate_switch=True,
+            error_state_indicator=True,
+            data=range(64),
+        )
+        actual = self._read_log_file("test_CanFdMessage.blf")
+        self.assertMessagesEqual(actual, [expected] * 2)
+        self.assertEqual(actual[0].channel, expected.channel)
+
+    def test_can_fd_message_64(self):
+        expected = can.Message(
+            timestamp=2459565876.494607,
+            arbitration_id=0x15555555,
+            is_extended_id=False,
+            is_remote_frame=True,
+            channel=0x10,
+            dlc=64,
+            is_fd=True,
+            bitrate_switch=True,
+            error_state_indicator=True,
+        )
+        actual = self._read_log_file("test_CanFdMessage64.blf")
+        self.assertMessagesEqual(actual, [expected] * 2)
+        self.assertEqual(actual[0].channel, expected.channel)
+
+    def test_can_error_frame_ext(self):
+        expected = can.Message(
+            timestamp=2459565876.494607,
+            is_error_frame=True,
+            arbitration_id=0x19999999,
+            is_extended_id=True,
+            channel=0x1110,
+            dlc=0x66,
+            data=[0xCC, 0xDD, 0xEE, 0xFF, 0x11, 0x22, 0x33, 0x44],
+        )
+        actual = self._read_log_file("test_CanErrorFrameExt.blf")
+        self.assertMessagesEqual(actual, [expected] * 2)
+        self.assertEqual(actual[0].channel, expected.channel)
 
 
 class TestCanutilsFileFormat(ReaderWriterTest):
@@ -459,7 +701,10 @@ class TestSqliteDatabaseFormat(ReaderWriterTest):
 
 
 class TestPrinter(unittest.TestCase):
-    """Tests that can.Printer does not crash"""
+    """Tests that can.Printer does not crash
+
+    TODO test append mode
+    """
 
     # TODO add CAN FD messages
     messages = (

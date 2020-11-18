@@ -1,5 +1,3 @@
-# coding: utf-8
-
 """
 Interfaces contain low level implementations that interact with CAN hardware.
 """
@@ -22,9 +20,12 @@ BACKENDS = {
     "neovi": ("can.interfaces.ics_neovi", "NeoViBus"),
     "vector": ("can.interfaces.vector", "VectorBus"),
     "slcan": ("can.interfaces.slcan", "slcanBus"),
+    "robotell": ("can.interfaces.robotell", "robotellBus"),
     "canalystii": ("can.interfaces.canalystii", "CANalystIIBus"),
     "systec": ("can.interfaces.systec", "UcanBus"),
     "seeedstudio": ("can.interfaces.seeedstudio", "SeeedBus"),
+    "cantact": ("can.interfaces.cantact", "CantactBus"),
+    "gs_usb": ("can.interfaces.gs_usb", "GsUsbBus"),
 }
 
 BACKENDS.update(
@@ -34,6 +35,4 @@ BACKENDS.update(
     }
 )
 
-VALID_INTERFACES = frozenset(
-    list(BACKENDS.keys()) + ["socketcan_native", "socketcan_ctypes"]
-)
+VALID_INTERFACES = frozenset(list(BACKENDS.keys()))

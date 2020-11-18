@@ -1,16 +1,26 @@
 SocketCAN
 =========
 
-The full documentation for socketcan can be found in the kernel docs at
-`networking/can.txt <https://www.kernel.org/doc/Documentation/networking/can.txt>`_.
+The `SocketCAN`_ documentation can be found in the Linux kernel docs at
+``networking`` directory. Quoting from the SocketCAN Linux documentation::
 
+> The socketcan package is an implementation of CAN protocols
+> (Controller Area Network) for Linux.  CAN is a networking technology
+> which has widespread use in automation, embedded devices, and
+> automotive fields.  While there have been other CAN implementations
+> for Linux based on character devices, SocketCAN uses the Berkeley
+> socket API, the Linux network stack and implements the CAN device
+> drivers as network interfaces.  The CAN socket API has been designed
+> as similar as possible to the TCP/IP protocols to allow programmers,
+> familiar with network programming, to easily learn how to use CAN
+> sockets.
 
-.. note::
+.. important::
 
-    Versions before 2.2 had two different implementations named
+    `python-can` versions before 2.2 had two different implementations named
     ``socketcan_ctypes`` and ``socketcan_native``. These are now
     deprecated and the aliases to ``socketcan`` will be removed in
-    version 4.0.  3.x releases raise a DeprecationWarning.
+    version 4.0. 3.x releases raise a DeprecationWarning.
 
 
 Socketcan Quickstart
@@ -53,7 +63,8 @@ existing ``can0`` interface with a bitrate of 1MB:
 PCAN
 ~~~~
 
-Kernels >= 3.4 supports the PCAN adapters natively via :doc:`/interfaces/socketcan`, so there is no need to install any drivers. The CAN interface can be brought like so:
+Kernels >= 3.4 supports the PCAN adapters natively via :doc:`/interfaces/socketcan`,
+so there is no need to install any drivers. The CAN interface can be brought like so:
 
 ::
 
@@ -61,12 +72,22 @@ Kernels >= 3.4 supports the PCAN adapters natively via :doc:`/interfaces/socketc
     sudo modprobe peak_pci
     sudo ip link set can0 up type can bitrate 500000
 
+Intrepid
+~~~~~~~~
+
+The Intrepid Control Systems, Inc provides several devices (e.g. ValueCAN) as well
+as Linux module and user-space daemon to make it possible to use them via SocketCAN.
+
+Refer to below repositories for installation instructions:
+
+- `Intrepid kernel module`_
+- `Intrepid user-space daemon`_
+
 Send Test Message
 ^^^^^^^^^^^^^^^^^
 
-The `can-utils <https://github.com/linux-can/can-utils>`_ library for linux
-includes a script `cansend` which is useful to send known payloads. For
-example to send a message on `vcan0`:
+The `can-utils`_ library for Linux includes a `cansend` tool which is useful to
+send known payloads. For example to send a message on `vcan0`:
 
 .. code-block:: bash
 
@@ -138,7 +159,7 @@ To spam a bus:
 
     def producer(id):
         """:param id: Spam the bus with messages including the data id."""
-        bus = can.interface.Bus(channel=channel, bustype=bustype)
+        bus = can.Bus(channel=channel, interface=bustype)
         for i in range(10):
             msg = can.Message(arbitration_id=0xc0ffee, data=[id, i, 0, 1, 3, 1, 4, 1], is_extended_id=False)
             bus.send(msg)
@@ -170,8 +191,7 @@ function:
 
     import can
 
-    can_interface = 'vcan0'
-    bus = can.interface.Bus(can_interface, bustype='socketcan')
+    bus = can.Bus(channel='vcan0', interface='socketcan')
     message = bus.recv()
 
 By default, this performs a blocking read, which means ``bus.recv()`` won't
@@ -204,30 +224,39 @@ socket api. This allows the cyclic transmission of CAN messages at given interva
 The overhead for periodic message sending is extremely low as all the heavy lifting occurs
 within the linux kernel.
 
-send_periodic()
-~~~~~~~~~~~~~~~
+The :class:`~can.BusABC` initialized for `socketcan` interface transparently handles
+scheduling of CAN messages to Linux BCM via :meth:`~can.BusABC.send_periodic`:
 
-An example that uses the send_periodic is included in ``python-can/examples/cyclic.py``
+.. code-block:: python
 
-The object returned can be used to halt, alter or cancel the periodic message task.
+    with can.interface.Bus(interface="socketcan", channel="can0") as bus:
+        task = bus.send_periodic(...)
+
+More examples that uses :meth:`~can.BusABC.send_periodic` are included
+in ``python-can/examples/cyclic.py``.
+
+The `task` object returned by :meth:`~can.BusABC.send_periodic` can be used to halt,
+alter or cancel the periodic message task:
 
 .. autoclass:: can.interfaces.socketcan.CyclicSendTask
-
+    :members:
 
 Bus
 ---
 
+The :class:`~can.interfaces.socketcan.SocketcanBus` specializes :class:`~can.BusABC`
+to ensure usage of SocketCAN Linux API. The most important differences are:
+
+- usage of SocketCAN BCM for periodic messages scheduling;
+- filtering of CAN messages on Linux kernel level.
+
 .. autoclass:: can.interfaces.socketcan.SocketcanBus
+    :members:
+    :inherited-members:
 
-   .. method:: recv(timeout=None)
+.. External references
 
-      Block waiting for a message from the Bus.
-
-      :param float timeout:
-          seconds to wait for a message or None to wait indefinitely
-
-      :rtype: can.Message or None
-      :return:
-          None on timeout or a :class:`can.Message` object.
-      :raises can.CanError:
-          if an error occurred while reading
+.. _SocketCAN: https://www.kernel.org/doc/Documentation/networking/can.txt
+.. _Intrepid kernel module: https://github.com/intrepidcs/intrepid-socketcan-kernel-module
+.. _Intrepid user-space daemon: https://github.com/intrepidcs/icsscand
+.. _can-utils: https://github.com/linux-can/can-utils

@@ -5,7 +5,7 @@ PCAN Basic API
 
 Interface to `Peak-System <https://www.peak-system.com/?&L=1/>`__'s PCAN-Basic API.
 
-Windows driver: https://www.peak-system.com/Downloads.76.0.html?&L=1
+Windows driver: https://www.peak-system.com/Downloads.76.0.html?&L=1 (also supported on cygwin)
 
 Linux driver: https://www.peak-system.com/fileadmin/media/linux/index.htm#download and https://www.peak-system.com/Downloads.76.0.html?&L=1 (PCAN-Basic API (Linux))
 

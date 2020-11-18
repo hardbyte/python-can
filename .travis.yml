@@ -11,7 +11,7 @@ python:
   # CPython; only 3.6 is supported
   - "3.6"
   - "3.7"
-  - 3.8-dev
+  - "3.8"
   - nightly
   # PyPy:
   - pypy3
@@ -21,25 +21,19 @@ env:
 
 install:
   - if [[ "$TEST_SOCKETCAN" ]]; then sudo bash test/open_vcan.sh ; fi
-  - travis_retry pip install .[test]
+  - python setup.py install
 
 script:
   - |
+    # install tox
+    pip install tox
     # Run the tests
-    python setup.py test
-    # preserve the error code
-    RETURN_CODE=$?
-    # Upload the coverage to codecov.io
-    codecov -X gcov
-    # set error code
-    (exit $RETURN_CODE);
-
+    tox -e travis
 
 jobs:
   allow_failures:
     # we allow all dev & nightly builds to fail, since these python versions might
     # still be very unstable
-    - python: 3.8-dev
     - python: nightly
 
   include:
@@ -80,10 +74,43 @@ jobs:
       before_install:
         - travis_retry pip install -r requirements-lint.txt
       script:
+        # -------------
+        # pylint checking:
         # Slowly enable all pylint warnings by adding addressed classes of
         # warnings to the .pylintrc-wip file to prevent them from being
         # re-introduced
-        - pylint --rcfile=.pylintrc-wip can/
+        # check the entire main codebase
+        - pylint --rcfile=.pylintrc-wip can/**.py
+        - pylint --rcfile=.pylintrc setup.py
+        - pylint --rcfile=.pylintrc doc.conf
+        # check the scripts folder
+        - find scripts -type f -name "*.py" | xargs pylint --rcfile=.pylintrc
+        # check the examples
+        - find examples -type f -name "*.py" | xargs pylint --rcfile=.pylintrc-wip
+        # -------------
+        # mypy checking:
+        - mypy
+          --python-version=3.7
+          --ignore-missing-imports
+          --no-implicit-optional
+          can/bit_timing.py
+          can/broadcastmanager.py
+          can/bus.py
+          can/interface.py
+          can/interfaces/slcan.py
+          can/interfaces/socketcan/**.py
+          can/interfaces/virtual.py
+          can/listener.py
+          can/logger.py
+          can/message.py
+          can/notifier.py
+          can/player.py
+          can/thread_safe_bus.py
+          can/typechecking.py
+          can/util.py
+          can/io/**.py
+          scripts/**.py
+          examples/**.py
     - stage: linter
       name: "Formatting Checks"
       python: "3.7"

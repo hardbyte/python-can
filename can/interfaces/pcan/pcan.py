@@ -1,5 +1,3 @@
-# coding: utf-8
-
 """
 Enable basic CAN over a PCAN USB device.
 """
@@ -7,6 +5,7 @@ Enable basic CAN over a PCAN USB device.
 import logging
 import time
 
+from typing import Optional
 from can import CanError, Message, BusABC
 from can.bus import BusState
 from can.util import len2dlc, dlc2len
@@ -17,8 +16,9 @@ try:
     import uptime
     import datetime
 
+    # boottime() and fromtimestamp() are timezone offset, so the difference is not.
     boottimeEpoch = (
-        uptime.boottime() - datetime.datetime.utcfromtimestamp(0)
+        uptime.boottime() - datetime.datetime.fromtimestamp(0)
     ).total_seconds()
 except ImportError:
     boottimeEpoch = 0
@@ -210,6 +210,13 @@ class PcanBus(BusABC):
             result = self.m_objPCANBasic.Initialize(
                 self.m_PcanHandle, pcan_bitrate, hwtype, ioport, interrupt
             )
+
+        if result != PCAN_ERROR_OK:
+            raise PcanError(self._get_formatted_error(result))
+
+        result = self.m_objPCANBasic.SetValue(
+            self.m_PcanHandle, PCAN_ALLOW_ERROR_FRAMES, PCAN_PARAMETER_ON
+        )
 
         if result != PCAN_ERROR_OK:
             raise PcanError(self._get_formatted_error(result))
@@ -426,9 +433,7 @@ class PcanBus(BusABC):
             CANMsg.MSGTYPE = msgType
 
             # if a remote frame will be sent, data bytes are not important.
-            if msg.is_remote_frame:
-                CANMsg.MSGTYPE = msgType.value | PCAN_MESSAGE_RTR.value
-            else:
+            if not msg.is_remote_frame:
                 # copy data
                 for i in range(CANMsg.LEN):
                     CANMsg.DATA[i] = msg.data[i]
@@ -475,6 +480,65 @@ class PcanBus(BusABC):
             self.m_objPCANBasic.SetValue(
                 self.m_PcanHandle, PCAN_LISTEN_ONLY, PCAN_PARAMETER_ON
             )
+
+    @staticmethod
+    def _detect_available_configs():
+        channels = []
+        try:
+            library_handle = PCANBasic()
+        except OSError:
+            return channels
+        interfaces = []
+        for i in range(16):
+            interfaces.append(
+                {
+                    "id": TPCANHandle(PCAN_PCIBUS1.value + i),
+                    "name": "PCAN_PCIBUS" + str(i + 1),
+                }
+            )
+        for i in range(16):
+            interfaces.append(
+                {
+                    "id": TPCANHandle(PCAN_USBBUS1.value + i),
+                    "name": "PCAN_USBBUS" + str(i + 1),
+                }
+            )
+        for i in range(2):
+            interfaces.append(
+                {
+                    "id": TPCANHandle(PCAN_PCCBUS1.value + i),
+                    "name": "PCAN_PCCBUS" + str(i + 1),
+                }
+            )
+        for i in range(16):
+            interfaces.append(
+                {
+                    "id": TPCANHandle(PCAN_LANBUS1.value + i),
+                    "name": "PCAN_LANBUS" + str(i + 1),
+                }
+            )
+        for i in interfaces:
+            error, value = library_handle.GetValue(i["id"], PCAN_CHANNEL_CONDITION)
+            if error != PCAN_ERROR_OK or value != PCAN_CHANNEL_AVAILABLE:
+                continue
+            has_fd = False
+            error, value = library_handle.GetValue(i["id"], PCAN_CHANNEL_FEATURES)
+            if error == PCAN_ERROR_OK:
+                has_fd = bool(value & FEATURE_FD_CAPABLE)
+            channels.append(
+                {"interface": "pcan", "channel": i["name"], "supports_fd": has_fd}
+            )
+        return channels
+
+    def status_string(self) -> Optional[str]:
+        """
+        Query the PCAN bus status.
+        :return: The status in string.
+        """
+        if self.status() in PCAN_DICT_STATUS:
+            return PCAN_DICT_STATUS[self.status()]
+        else:
+            return None
 
 
 class PcanError(CanError):

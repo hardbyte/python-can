@@ -1,5 +1,3 @@
-# coding: utf-8
-
 """
 This Listener simply prints to stdout / the terminal or a file.
 """
@@ -22,15 +20,18 @@ class Printer(BaseIOHandler, Listener):
                               standard out
     """
 
-    def __init__(self, file=None):
+    def __init__(self, file=None, append=False):
         """
         :param file: an optional path-like object or as file-like object to "print"
                      to instead of writing to standard out (stdout)
                      If this is a file-like object, is has to opened in text
                      write mode, not binary write mode.
+        :param bool append: if set to `True` messages are appended to
+                            the file, else the file is truncated
         """
         self.write_to_file = file is not None
-        super().__init__(file, mode="w")
+        mode = "a" if append else "w"
+        super().__init__(file, mode=mode)
 
     def on_message_received(self, msg):
         if self.write_to_file:

@@ -15,6 +15,7 @@ The available interfaces are:
    interfaces/kvaser
    interfaces/serial
    interfaces/slcan
+   interfaces/robotell
    interfaces/ixxat
    interfaces/pcan
    interfaces/usb2can
@@ -25,6 +26,8 @@ The available interfaces are:
    interfaces/virtual
    interfaces/canalystii
    interfaces/systec
+   interfaces/seeedstudio
+   interfaces/gs_usb
 
 Additional interfaces can be added via a plugin interface. An external package
 can register a new interface by using the ``can.interface`` entry point in its setup.py.
