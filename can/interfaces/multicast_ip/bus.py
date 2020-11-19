@@ -89,10 +89,8 @@ class MulticastIpBus(BusABC):
         if not self.is_fd and message.is_fd:
             raise RuntimeError("cannot send FD message over bus with CAN FD disabled")
 
-        # TODO: use timeout
-
         data = pack_message(message)
-        self.multicast.send(data)
+        self.multicast.send(data, timeout)
 
     def shutdown(self) -> None:
         self.multicast.shutdown()
@@ -140,7 +138,11 @@ class GeneralPurposeMulticastIpBus:
         ancillary_data_size = struct.calcsize(self.received_timestamp_struct)
         self.received_ancillary_buffer_size = socket.CMSG_SPACE(ancillary_data_size)
 
+        # used by send()
+        self._last_send_timeout: Optional[float] = None
+
     def _create_socket(self, address_family: socket.AddressFamily) -> socket.socket:
+        # create a UDP socket
         sock = socket.socket(address_family, socket.SOCK_DGRAM)
 
         # set TTL
@@ -175,6 +177,7 @@ class GeneralPurposeMulticastIpBus:
     def send(
         self,
         data: ReadableBytesLike,
+        timeout: Optional[float] = None,
         start: int = 0,
         count: Optional[int] = None,
     ) -> None:
@@ -182,18 +185,30 @@ class GeneralPurposeMulticastIpBus:
 
         If `count` is set to an integer, only so many bytes beginning with `start` (inclusive) are sent.
 
+        :param timeout: the timeout in seconds after which an Exception is raised is sending has failed
         :param data: the data to be sent
         :param start: where to start the slice to be sent
         :param count: how many bytes to send or `None` to send everything
+        :raises OSError: if an error occurred while writing to the underlying socket
+        :raises socket.timeout: if the timeout ran out before sending was completed (this is a subclass of
+                                *OSError*)
         """
         if not count:
-            self._socket.sendto(data, self._send_destination)
+            data_out = data
         else:
-            data = memoryview(data)[start : start + count]
-            self._socket.sendto(data, self._send_destination)
+            data_out = memoryview(data)[start : start + count]
+
+        if timeout != self._last_send_timeout:
+            self._last_send_timeout = timeout
+            # this applies to all blocking calls on the socket, but sending is the only one that is blocking
+            self._socket.settimeout(timeout)
+
+        bytes_sent = self._socket.sendto(data_out, self._send_destination)
+        if bytes_sent < len(data_out):
+            raise socket.timeout()
 
     def recv(
-        self, timeout: Optional[float]
+        self, timeout: Optional[float] = None
     ) -> Optional[Tuple[bytes, IP_ADDRESS_INFO, float]]:
         """
         Receive up to **max_buffer** bytes.
@@ -216,7 +231,7 @@ class GeneralPurposeMulticastIpBus:
             (
                 raw_message_data,
                 ancillary_data,
-                flags,
+                _,  # flags
                 sender_address,
             ) = self._socket.recvmsg(self.max_buffer, self.received_ancillary_buffer_size)
 
