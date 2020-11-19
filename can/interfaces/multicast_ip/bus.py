@@ -26,12 +26,17 @@ IPv4_ADDRESS_INFO = Tuple[str, int]  # address, port
 IPv6_ADDRESS_INFO = Tuple[str, int, int, int]  # address, port, flowinfo, scope_id
 IP_ADDRESS_INFO = Union[IPv4_ADDRESS_INFO, IPv6_ADDRESS_INFO]
 
+# constants
+SO_TIMESTAMPNS = 35
+
 
 class MulticastIpBus(BusABC):
     """A virtual interface that allows to communicate between multiple processes using UDP over Multicast IP.
 
     It supports IPv4 and IPv6, specified via the channel. This means that the channel is a multicast IP
     address. You can also specify the port and TTL (*time to live*).
+
+    Platforms: Unix (including Linux 2.6.22+), not Windows
 
     This bus does not support filtering based on message IDs on the kernel level.
     """
@@ -130,21 +135,30 @@ class GeneralPurposeMulticastIpBus:
         self._send_destination = (self.group, self.port)
         self._socket = self._create_socket(address_family)
 
+        # used in recv()
+        self.received_timestamp_struct = "@II"
+        ancillary_data_size = struct.calcsize(self.received_timestamp_struct)
+        self.received_ancillary_buffer_size = socket.CMSG_SPACE(ancillary_data_size)
+
     def _create_socket(self, address_family: socket.AddressFamily) -> socket.socket:
         sock = socket.socket(address_family, socket.SOCK_DGRAM)
 
         # set TTL
-        ttl_bin = struct.pack("@i", self.ttl)
-
+        ttl_as_binary = struct.pack("@I", self.ttl)
         if self.ip_version == 4:
-            sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, ttl_bin)
+            sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, ttl_as_binary)
         else:
-            sock.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_MULTICAST_HOPS, ttl_bin)
+            sock.setsockopt(
+                socket.IPPROTO_IPV6, socket.IPV6_MULTICAST_HOPS, ttl_as_binary
+            )
 
         # Allow multiple programs to access that address + port
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-        # Bind it to the port
+        # set how to receive timestamps
+        sock.setsockopt(socket.SOL_SOCKET, SO_TIMESTAMPNS, 1)
+
+        # Bind it to the port (ony any interface)
         sock.bind(("", self.port))
 
         # Join the multicast group
@@ -199,21 +213,24 @@ class GeneralPurposeMulticastIpBus:
 
         if ready_receive_sockets:  # not empty
             # fetch data & source address
-            sender: IP_ADDRESS_INFO
-            data, sender = self._socket.recvfrom(self.max_buffer)
+            (
+                raw_message_data,
+                ancillary_data,
+                flags,
+                sender_address,
+            ) = self._socket.recvmsg(self.max_buffer, self.received_ancillary_buffer_size)
 
-            # fetch timestamp
-            # TODO maybe use https://stackoverflow.com/a/13308900/3753684
-            # see:           https://stackoverflow.com/a/46330410/3753684
-            binary_structure = "@LL"
-            SIOCGSTAMP = 0x8906
-            res = fcntl.ioctl(
-                self._socket, SIOCGSTAMP, struct.pack(binary_structure, 0, 0)
-            )
-            seconds, microseconds = struct.unpack(binary_structure, res)
-            timestamp = seconds + microseconds * 1.0e-6
+            # fetch timestamp; this is configured in in _create_socket()
+            assert len(ancillary_data) == 1, "only requested a single extra field"
+            cmsg_level, cmsg_type, cmsg_data = ancillary_data[0]
+            assert (
+                cmsg_level == socket.SOL_SOCKET and cmsg_type == SO_TIMESTAMPNS
+            ), "received control message type that was not requested"
+            # see https://man7.org/linux/man-pages/man3/timespec.3.html -> struct timespec for details
+            seconds, nanoseconds = struct.unpack(self.received_timestamp_struct, cmsg_data)
+            timestamp = seconds + nanoseconds * 1.0e-9
 
-            return data, sender, timestamp
+            return raw_message_data, sender_address, timestamp
 
         # socket wasn't readable or timeout occurred
         return None
@@ -232,9 +249,7 @@ class GeneralPurposeMulticastIpBus:
 def main() -> None:
     with MulticastIpBus(
         channel=MulticastIpBus.DEFAULT_GROUP_IPv6
-    ) as bus_1, MulticastIpBus(
-        channel=MulticastIpBus.DEFAULT_GROUP_IPv6
-    ) as bus_2:
+    ) as bus_1, MulticastIpBus(channel=MulticastIpBus.DEFAULT_GROUP_IPv6) as bus_2:
 
         notifier = can.Notifier(bus_2, [can.Printer()])
 
