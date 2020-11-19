@@ -110,13 +110,7 @@ class MulticastIpBus(BusABC):
 class GeneralPurposeMulticastIpBus:
     """A general purpose send and receive handler for multicast over IP/UDP."""
 
-    def __init__(
-        self,
-        group: str,
-        port: int,
-        ttl: int,
-        max_buffer: int = 4096,
-    ) -> None:
+    def __init__(self, group: str, port: int, ttl: int, max_buffer: int = 4096) -> None:
         self.group = group
         self.port = port
         self.ttl = ttl

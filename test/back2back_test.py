@@ -134,10 +134,7 @@ class Back2BackTestCase(unittest.TestCase):
         received on the other virtual interfaces have is_rx set to `True`.
         """
         msg = can.Message(
-            is_extended_id=False,
-            arbitration_id=0x300,
-            data=[2, 1, 3],
-            is_rx=False,
+            is_extended_id=False, arbitration_id=0x300, data=[2, 1, 3], is_rx=False
         )
         self.bus1.send(msg)
         self_recv_msg = self.bus2.recv(self.TIMEOUT)
@@ -159,10 +156,7 @@ class Back2BackTestCase(unittest.TestCase):
         )
         try:
             msg = can.Message(
-                is_extended_id=False,
-                arbitration_id=0x300,
-                data=[2, 1, 3],
-                is_rx=False,
+                is_extended_id=False, arbitration_id=0x300, data=[2, 1, 3], is_rx=False
             )
             bus3.send(msg)
             self_recv_msg_bus3 = bus3.recv(self.TIMEOUT)

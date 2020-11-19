@@ -86,7 +86,7 @@ setup(
         "filelock",
         "mypy_extensions >= 0.4.0, < 0.5.0",
         'pywin32;platform_system=="Windows"',
-        'msgpack~=1.0.0;platform_system!="Windows"'
+        'msgpack~=1.0.0;platform_system!="Windows"',
     ],
     extras_require=extras_require,
 )
