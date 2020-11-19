@@ -5,18 +5,17 @@
 This module tests two virtual buses attached to each other.
 """
 
-import sys
 import unittest
 from time import sleep
 from multiprocessing.dummy import Pool as ThreadPool
+import random
 
 import pytest
-import random
 
 import can
 from can.interfaces.multicast_ip import MulticastIpBus
 
-from .config import IS_CI, TEST_INTERFACE_SOCKETCAN, TEST_CAN_FD
+from .config import IS_CI, IS_UNIX, TEST_INTERFACE_SOCKETCAN, TEST_CAN_FD
 
 
 class Back2BackTestCase(unittest.TestCase):
@@ -227,6 +226,7 @@ class BasicTestSocketCan(Back2BackTestCase):
     CHANNEL_2 = "vcan0"
 
 
+@unittest.skipUnless(IS_UNIX, "only supported on Unix systems")
 class BasicTestInterprocessVirtualBusIPv4(Back2BackTestCase):
 
     INTERFACE_1 = "multicast_ip"
@@ -239,6 +239,7 @@ class BasicTestInterprocessVirtualBusIPv4(Back2BackTestCase):
             super().test_unique_message_instances()
 
 
+@unittest.skipUnless(IS_UNIX, "only supported on Unix systems")
 class BasicTestInterprocessVirtualBusIPv6(Back2BackTestCase):
 
     INTERFACE_1 = "multicast_ip"

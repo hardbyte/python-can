@@ -5,10 +5,19 @@ Defines common functions.
 from typing import Any
 from typing import Dict
 
-import msgpack
-
 from can import Message
 from can.typechecking import ReadableBytesLike
+
+try:
+    import msgpack
+except ImportError:
+    msgpack = None
+
+
+def check_msgpack_installed() -> None:
+    """Raises a `RuntimeError` if `msgpack` is not installed."""
+    if msgpack is None:
+        raise RuntimeError("msgpack not installed")
 
 
 def pack_message(message: Message) -> bytes:
@@ -17,6 +26,7 @@ def pack_message(message: Message) -> bytes:
 
     :param message: the message to be packed
     """
+    check_msgpack_installed()
     as_dict = {
         "timestamp": message.timestamp,
         "arbitration_id": message.arbitration_id,
@@ -47,6 +57,7 @@ def unpack_message(
     :raise ValueError: if `check` is true and the message metadata is invalid in some way
     :raise Exception: if there was another problem while unpacking
     """
+    check_msgpack_installed()
     as_dict = msgpack.unpackb(data, raw=False)
     if replace is not None:
         as_dict.update(replace)

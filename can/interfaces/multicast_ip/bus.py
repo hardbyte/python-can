@@ -13,12 +13,7 @@ from can import BusABC
 from can.typechecking import AutoDetectedConfig
 from can.typechecking import ReadableBytesLike
 
-from .utils import pack_message, unpack_message
-
-try:
-    import fcntl
-except ImportError:
-    log.error("fcntl not available on this platform")
+from .utils import pack_message, unpack_message, check_msgpack_installed
 
 
 # see socket.getaddrinfo()
@@ -65,6 +60,8 @@ class MulticastIpBus(BusABC):
         :param can_filters:
             See :meth:`can.BusABC.set_filters`.
         """
+        check_msgpack_installed()
+
         if receive_own_messages:
             raise NotImplementedError("receiving own messages is not yet implemented")
 
