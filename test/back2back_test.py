@@ -127,7 +127,9 @@ class Back2BackTestCase(unittest.TestCase):
         msg = can.Message(is_extended_id=False, arbitration_id=0x300, data=[4, 5, 6])
         self._send_and_receive(msg)
 
-    @unittest.skip("TODO: how shall this be treated if sending messages locally? should be done uniformly")
+    @unittest.skip(
+        "TODO: how shall this be treated if sending messages locally? should be done uniformly"
+    )
     def test_message_is_rx(self):
         """Verify that received messages have is_rx set to `False` while messages
         received on the other virtual interfaces have is_rx set to `True`.
@@ -143,7 +145,9 @@ class Back2BackTestCase(unittest.TestCase):
         self.assertIsNotNone(self_recv_msg)
         self.assertTrue(self_recv_msg.is_rx)
 
-    @unittest.skip("TODO: how shall this be treated if sending messages locally? should be done uniformly")
+    @unittest.skip(
+        "TODO: how shall this be treated if sending messages locally? should be done uniformly"
+    )
     def test_message_is_rx_receive_own_messages(self):
         """The same as `test_message_direction` but testing with `receive_own_messages=True`."""
         bus3 = can.Bus(

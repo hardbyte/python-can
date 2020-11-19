@@ -232,7 +232,9 @@ class GeneralPurposeMulticastIpBus:
                 ancillary_data,
                 _,  # flags
                 sender_address,
-            ) = self._socket.recvmsg(self.max_buffer, self.received_ancillary_buffer_size)
+            ) = self._socket.recvmsg(
+                self.max_buffer, self.received_ancillary_buffer_size
+            )
 
             # fetch timestamp; this is configured in in _create_socket()
             assert len(ancillary_data) == 1, "only requested a single extra field"
@@ -241,7 +243,9 @@ class GeneralPurposeMulticastIpBus:
                 cmsg_level == socket.SOL_SOCKET and cmsg_type == SO_TIMESTAMPNS
             ), "received control message type that was not requested"
             # see https://man7.org/linux/man-pages/man3/timespec.3.html -> struct timespec for details
-            seconds, nanoseconds = struct.unpack(self.received_timestamp_struct, cmsg_data)
+            seconds, nanoseconds = struct.unpack(
+                self.received_timestamp_struct, cmsg_data
+            )
             timestamp = seconds + nanoseconds * 1.0e-9
 
             return raw_message_data, sender_address, timestamp
