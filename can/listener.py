@@ -120,8 +120,7 @@ class BufferedReader(Listener):
             return None
 
     def stop(self):
-        """Prohibits any more additions to this reader.
-        """
+        """Prohibits any more additions to this reader."""
         self.is_stopped = True
 
 

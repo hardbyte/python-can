@@ -388,8 +388,7 @@ class BusABC(metaclass=ABCMeta):
         return False
 
     def flush_tx_buffer(self):
-        """Discard every message that may be queued in the output buffer(s).
-        """
+        """Discard every message that may be queued in the output buffer(s)."""
 
     def shutdown(self):
         """

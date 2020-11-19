@@ -530,8 +530,7 @@ class TPCANMsgFDMac(Structure):
 
 
 class PCANBasic:
-    """PCAN-Basic API class implementation
-    """
+    """PCAN-Basic API class implementation"""
 
     def __init__(self):
         # Loads the PCANBasic.dll and checks if driver is available
@@ -590,25 +589,25 @@ class PCANBasic:
     def InitializeFD(self, Channel, BitrateFD):
 
         """
-          Initializes a FD capable PCAN Channel
+              Initializes a FD capable PCAN Channel
 
-        Parameters:
-          Channel  : The handle of a FD capable PCAN Channel
-          BitrateFD : The speed for the communication (FD bit rate string)
+            Parameters:
+              Channel  : The handle of a FD capable PCAN Channel
+              BitrateFD : The speed for the communication (FD bit rate string)
 
-    Remarks:
-      See PCAN_BR_* values.
-          * parameter and values must be separated by '='
-          * Couples of Parameter/value must be separated by ','
-          * Following Parameter must be filled out: f_clock, data_brp, data_sjw, data_tseg1, data_tseg2,
-            nom_brp, nom_sjw, nom_tseg1, nom_tseg2.
-          * Following Parameters are optional (not used yet): data_ssp_offset, nom_samp
+        Remarks:
+          See PCAN_BR_* values.
+              * parameter and values must be separated by '='
+              * Couples of Parameter/value must be separated by ','
+              * Following Parameter must be filled out: f_clock, data_brp, data_sjw, data_tseg1, data_tseg2,
+                nom_brp, nom_sjw, nom_tseg1, nom_tseg2.
+              * Following Parameters are optional (not used yet): data_ssp_offset, nom_samp
 
-        Example:
-          f_clock=80000000,nom_brp=10,nom_tseg1=5,nom_tseg2=2,nom_sjw=1,data_brp=4,data_tseg1=7,data_tseg2=2,data_sjw=1
+            Example:
+              f_clock=80000000,nom_brp=10,nom_tseg1=5,nom_tseg2=2,nom_sjw=1,data_brp=4,data_tseg1=7,data_tseg2=2,data_sjw=1
 
-        Returns:
-          A TPCANStatus error code
+            Returns:
+              A TPCANStatus error code
         """
         try:
             res = self.__m_dllBasic.CAN_InitializeFD(Channel, BitrateFD)

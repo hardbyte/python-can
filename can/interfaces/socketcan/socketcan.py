@@ -133,7 +133,7 @@ CAN_FRAME_HEADER_STRUCT = struct.Struct("=IBB2x")
 
 
 def build_can_frame(msg: Message) -> bytes:
-    """ CAN frame packing/unpacking (see 'struct can_frame' in <linux/can.h>)
+    """CAN frame packing/unpacking (see 'struct can_frame' in <linux/can.h>)
     /**
      * struct can_frame - basic CAN frame structure
      * @can_id:  the CAN ID of the frame and CAN_*_FLAG flags, see above.
@@ -446,10 +446,7 @@ class CyclicSendTask(
 
 
 class MultiRateCyclicSendTask(CyclicSendTask):
-    """Exposes more of the full power of the TX_SETUP opcode.
-
-
-    """
+    """Exposes more of the full power of the TX_SETUP opcode."""
 
     def __init__(
         self,
@@ -583,7 +580,7 @@ def capture_message(
 
 
 class SocketcanBus(BusABC):
-    """ A SocketCAN interface to CAN.
+    """A SocketCAN interface to CAN.
 
     It implements :meth:`can.BusABC._detect_available_configs` to search for
     available interfaces.

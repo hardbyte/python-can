@@ -61,17 +61,17 @@ else:
 
 
 def __vciFormatErrorExtended(library_instance, function, HRESULT, arguments):
-    """ Format a VCI error and attach failed function, decoded HRESULT and arguments
-        :param CLibrary library_instance:
-            Mapped instance of IXXAT vcinpl library
-        :param callable function:
-            Failed function
-        :param HRESULT HRESULT:
-            HRESULT returned by vcinpl call
-        :param arguments:
-            Arbitrary arguments tuple
-        :return:
-            Formatted string
+    """Format a VCI error and attach failed function, decoded HRESULT and arguments
+    :param CLibrary library_instance:
+        Mapped instance of IXXAT vcinpl library
+    :param callable function:
+        Failed function
+    :param HRESULT HRESULT:
+        HRESULT returned by vcinpl call
+    :param arguments:
+        Arbitrary arguments tuple
+    :return:
+        Formatted string
     """
     # TODO: make sure we don't generate another exception
     return "{} - arguments were {}".format(
@@ -80,15 +80,15 @@ def __vciFormatErrorExtended(library_instance, function, HRESULT, arguments):
 
 
 def __vciFormatError(library_instance, function, HRESULT):
-    """ Format a VCI error and attach failed function and decoded HRESULT
-        :param CLibrary library_instance:
-            Mapped instance of IXXAT vcinpl library
-        :param callable function:
-            Failed function
-        :param HRESULT HRESULT:
-            HRESULT returned by vcinpl call
-        :return:
-            Formatted string
+    """Format a VCI error and attach failed function and decoded HRESULT
+    :param CLibrary library_instance:
+        Mapped instance of IXXAT vcinpl library
+    :param callable function:
+        Failed function
+    :param HRESULT HRESULT:
+        HRESULT returned by vcinpl call
+    :return:
+        Formatted string
     """
     buf = ctypes.create_string_buffer(constants.VCI_MAX_ERRSTRLEN)
     ctypes.memset(buf, 0, constants.VCI_MAX_ERRSTRLEN)

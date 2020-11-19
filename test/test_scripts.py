@@ -62,8 +62,7 @@ class CanScriptTest(unittest.TestCase, metaclass=ABCMeta):
 
     @abstractmethod
     def _import(self):
-        """Returns the modue of the script that has a main() function.
-        """
+        """Returns the modue of the script that has a main() function."""
         pass
 
 

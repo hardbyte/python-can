@@ -100,9 +100,9 @@ class TestVectorBus(unittest.TestCase):
 
         can.interfaces.vector.canlib.xldriver.xlCanFdSetConfiguration.assert_not_called()
         can.interfaces.vector.canlib.xldriver.xlCanSetChannelBitrate.assert_called()
-        xlCanSetChannelBitrate_args = can.interfaces.vector.canlib.xldriver.xlCanSetChannelBitrate.call_args[
-            0
-        ]
+        xlCanSetChannelBitrate_args = (
+            can.interfaces.vector.canlib.xldriver.xlCanSetChannelBitrate.call_args[0]
+        )
         self.assertEqual(xlCanSetChannelBitrate_args[2], 200000)
 
     def test_bus_creation_fd(self) -> None:
@@ -152,9 +152,9 @@ class TestVectorBus(unittest.TestCase):
         can.interfaces.vector.canlib.xldriver.xlCanFdSetConfiguration.assert_called()
         can.interfaces.vector.canlib.xldriver.xlCanSetChannelBitrate.assert_not_called()
 
-        xlCanFdSetConfiguration_args = can.interfaces.vector.canlib.xldriver.xlCanFdSetConfiguration.call_args[
-            0
-        ]
+        xlCanFdSetConfiguration_args = (
+            can.interfaces.vector.canlib.xldriver.xlCanFdSetConfiguration.call_args[0]
+        )
         canFdConf = xlCanFdSetConfiguration_args[2]
         self.assertEqual(canFdConf.arbitrationBitRate, 500000)
         self.assertEqual(canFdConf.dataBitRate, 2000000)
