@@ -141,7 +141,9 @@ class Back2BackTestCase(unittest.TestCase):
         )
         try:
             msg = can.Message(
-                is_extended_id=False, arbitration_id=0x300, data=[2, 1, 3],
+                is_extended_id=False,
+                arbitration_id=0x300,
+                data=[2, 1, 3],
                 is_rx=False,
             )
             bus3.send(msg)
@@ -232,7 +234,6 @@ class BasicTestInterprocessVirtualBus_IPv6(Back2BackTestCase):
 
 @unittest.skipUnless(TEST_INTERFACE_SOCKETCAN, "skip testing of socketcan")
 class SocketCanBroadcastChannel(unittest.TestCase):
-
     def setUp(self):
         self.broadcast_bus = can.Bus(channel="", bustype="socketcan")
         self.regular_bus = can.Bus(channel="vcan0", bustype="socketcan")
@@ -254,7 +255,6 @@ class SocketCanBroadcastChannel(unittest.TestCase):
 
 
 class TestThreadSafeBus(Back2BackTestCase):
-
     def setUp(self):
         self.bus1 = can.ThreadSafeBus(
             channel=self.CHANNEL_1,
