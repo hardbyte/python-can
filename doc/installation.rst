@@ -98,7 +98,7 @@ To install ``python-can`` using the CANtact driver backend:
 
 ``python3 -m pip install "python-can[cantact]"``
 
-If ``python-can`` is already installed, the CANtact backend can be installed seperately:
+If ``python-can`` is already installed, the CANtact backend can be installed separately:
 
 ``python3 -m pip install cantact``
 
