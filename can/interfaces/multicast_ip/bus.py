@@ -58,19 +58,20 @@ class MulticastIpBus(BusABC):
         :param channel: An IPv4/IPv6 multicast address.
                         See `Wikipedia <https://en.wikipedia.org/wiki/IP_multicast>`__ for more details.
         :param receive_own_messages:
-            If transmitted messages should also be received by this bus.
+            If transmitted messages should also be received by this bus. CURRENTLY UNSUPPORTED.
         :param fd:
             If CAN-FD frames should be supported. If set to false, an error will be raised upon sending such a
             frame and such received frames will be ignored.
         :param can_filters:
             See :meth:`can.BusABC.set_filters`.
         """
+        if receive_own_messages:
+            raise NotImplementedError("receiving own messages is not yet implemented")
+
         super().__init__(channel, **kwargs)
 
         self.is_fd = is_fd
-        self.multicast = GeneralPurposeMulticastIpBus(
-            channel, port, ttl, receive_own_messages
-        )
+        self.multicast = GeneralPurposeMulticastIpBus(channel, port, ttl)
 
     def _recv_internal(self, timeout: Optional[float]):
         result = self.multicast.recv(timeout)
@@ -117,13 +118,11 @@ class GeneralPurposeMulticastIpBus:
         group: str,
         port: int,
         ttl: int,
-        receive_own_messages: bool,
         max_buffer: int = 4096,
     ) -> None:
         self.group = group
         self.port = port
         self.ttl = ttl
-        self.receive_own_messages = receive_own_messages  # TODO actually use this
         self.max_buffer = max_buffer
 
         # Look up multicast group address in name server and find out IP version of the first suitable target
