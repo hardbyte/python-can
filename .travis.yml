@@ -1,35 +1,35 @@
 language: python
 
 # Linux setup
-dist: xenial
+dist: focal
 
 cache:
   directories:
   - "$HOME/.cache/pip"
 
 python:
-  # CPython; only 3.6 is supported
+  # CPython
   - "3.6"
   - "3.7"
   - "3.8"
+  - "3.9"
+  - "3.10-dev"
   - nightly
   # PyPy:
   - pypy3
 
-env:
-
-
 install:
   - if [[ "$TEST_SOCKETCAN" ]]; then sudo bash test/open_vcan.sh ; fi
-  - python setup.py install
+  - travis_retry python setup.py install
 
 script:
   - |
     # install tox
-    pip install tox
+    travis_retry pip install tox
     # Run the tests
     tox -e travis
 
+# in addition to the above jobs also run:
 jobs:
   allow_failures:
     # we allow all dev & nightly builds to fail, since these python versions might
@@ -55,12 +55,12 @@ jobs:
     # testing on OSX
     - stage: test
       os: osx
-      osx_image: xcode8.3
-      python: 3.6-dev
+      osx_image: xcode11.2  # Python 3.7.4 running on macOS 10.14.4
+      language: shell       # 'language: python' is an error on Travis CI macOS
 
     - stage: documentation
       name: "Sphinx Build"
-      python: "3.7"
+      python: "3.9"
       before_install:
         - travis_retry pip install -r doc/doc-requirements.txt
       script:
@@ -70,7 +70,7 @@ jobs:
         - python -m sphinx -an doc build
     - stage: linter
       name: "Linter Checks"
-      python: "3.7"
+      python: "3.9"
       before_install:
         - travis_retry pip install -r requirements-lint.txt
       script:
@@ -113,14 +113,14 @@ jobs:
           examples/**.py
     - stage: linter
       name: "Formatting Checks"
-      python: "3.7"
+      python: "3.9"
       before_install:
         - travis_retry pip install -r requirements-lint.txt
       script:
         - black --check --verbose .
     - stage: deploy
       name: "PyPi Deployment"
-      python: "3.7"
+      python: "3.9"
       deploy:
         provider: pypi
         user: hardbyte
