@@ -125,8 +125,9 @@ class CANalystIIBus(BusABC):
 
         self.channel = channel
         self.device = device
-        self.channel_info = "CANalyst-II: device {}, channels {}".format(
-            self.device, self.channel
+        self.channel_info = "CANalyst-II: device {}, channel {}".format(
+            self.device,
+            self.channel
         )
 
         if bitrate is not None:
@@ -145,10 +146,8 @@ class CANalystIIBus(BusABC):
                 pass
 
             b_info = VCI_BOARD_INFO()
-            CANalystII.VCI_ReadBoardInfo(VCI_USBCAN2, device, byref(b_info))
-
-            if CANalystII.VCI_OpenDevice(VCI_USBCAN2, self.device, 0) == STATUS_ERR:
-                logger.error("VCI_OpenDevice Error")
+            if CANalystII.VCI_ReadBoardInfo(VCI_USBCAN2, device, byref(b_info)) == STATUS_ERR:
+                logger.error("VCI_ReadBoardInfo Error")
 
             self._b_info = dict(
                 hardware_version=b_info.hw_Version,
@@ -160,6 +159,9 @@ class CANalystIIBus(BusABC):
                 serial_number=str(b_info.str_Serial_Num, encoding='ascii'),
                 hardware_type=str(b_info.str_hw_Type, encoding='ascii')
             )
+
+            if CANalystII.VCI_OpenDevice(VCI_USBCAN2, self.device, 0) == STATUS_ERR:
+                raise ValueError('Unable to open interface, the device number supplied may be incorrect')
 
             _in_use[device] = []
         else:
@@ -185,9 +187,8 @@ class CANalystIIBus(BusABC):
         )
 
         if status == STATUS_ERR:
-            logger.error("VCI_InitCAN Error ({0})".format(channel))
             self.shutdown()
-            return
+            raise ValueError("VCI_InitCAN Error, incorrect channel number?")
 
         status = CANalystII.VCI_StartCAN(
             VCI_USBCAN2,
@@ -196,7 +197,7 @@ class CANalystIIBus(BusABC):
         )
 
         if status == STATUS_ERR:
-            logger.error("VCI_StartCAN Error ({0})".format(channel))
+            logger.error("VCI_StartCAN Error, device:{0} channel:{1}".format(device, channel))
             self.shutdown()
             return
 
