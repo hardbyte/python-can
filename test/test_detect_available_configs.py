@@ -6,12 +6,11 @@ This module tests :meth:`can.BusABC._detect_available_configs` and
 :meth:`can.BusABC.detect_available_configs`.
 """
 
-import sys
 import unittest
 
 from can import detect_available_configs
 
-from .config import IS_LINUX, IS_CI, TEST_INTERFACE_SOCKETCAN
+from .config import IS_CI, IS_UNIX, TEST_INTERFACE_SOCKETCAN
 
 
 class TestDetectAvailableConfigs(unittest.TestCase):
@@ -30,19 +29,31 @@ class TestDetectAvailableConfigs(unittest.TestCase):
         for config in configs:
             self.assertIn("interface", config)
             self.assertIn("channel", config)
-            self.assertIsInstance(config["interface"], str)
 
     def test_content_virtual(self):
         configs = detect_available_configs(interfaces="virtual")
+        self.assertGreaterEqual(len(configs), 1)
         for config in configs:
             self.assertEqual(config["interface"], "virtual")
+
+    def test_content_multicast_ip(self):
+        configs = detect_available_configs(interfaces="multicast_ip")
+        for config in configs:
+            self.assertEqual(config["interface"], "multicast_ip")
 
     def test_content_socketcan(self):
         configs = detect_available_configs(interfaces="socketcan")
         for config in configs:
             self.assertEqual(config["interface"], "socketcan")
 
-    @unittest.skipUnless(TEST_INTERFACE_SOCKETCAN, "socketcan is not tested")
+    def test_count_multicast_ip(self):
+        configs = detect_available_configs(interfaces="multicast_ip")
+        if IS_UNIX:
+            self.assertGreaterEqual(len(configs), 2)
+        else:
+            self.assertEqual(len(configs), 0)
+
+    @unittest.skipUnless(TEST_INTERFACE_SOCKETCAN and IS_CI, "this setup is very specific")
     def test_socketcan_on_ci_server(self):
         configs = detect_available_configs(interfaces="socketcan")
         self.assertGreaterEqual(len(configs), 1)

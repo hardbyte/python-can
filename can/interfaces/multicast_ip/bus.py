@@ -101,16 +101,20 @@ class MulticastIpBus(BusABC):
 
     @staticmethod
     def _detect_available_configs() -> List[AutoDetectedConfig]:
-        return [
-            {
-                "interface": "interprocess_virtual",
-                "channel": MulticastIpBus.DEFAULT_GROUP_IPv6,
-            },
-            {
-                "interface": "interprocess_virtual",
-                "channel": MulticastIpBus.DEFAULT_GROUP_IPv4,
-            },
-        ]
+        if hasattr(socket, "CMSG_SPACE"):
+            return [
+                {
+                    "interface": "multicast_ip",
+                    "channel": MulticastIpBus.DEFAULT_GROUP_IPv6,
+                },
+                {
+                    "interface": "multicast_ip",
+                    "channel": MulticastIpBus.DEFAULT_GROUP_IPv4,
+                },
+            ]
+
+        # else, this interface cannot be used
+        return []
 
 
 class GeneralPurposeMulticastIpBus:
@@ -124,11 +128,20 @@ class GeneralPurposeMulticastIpBus:
 
         # Look up multicast group address in name server and find out IP version of the first suitable target
         # and then get the address family of it (socket.AF_INET or socket.AF_INET6)
-        # TODO: loop through them
-        address_family: socket.AddressFamily = socket.getaddrinfo(group, self.port, type=socket.SOCK_DGRAM)[0][0]
-        self.ip_version = 4 if address_family == socket.AF_INET else 6
-        self._send_destination = (self.group, self.port)
-        self._socket = self._create_socket(address_family)
+        connection_candidates = socket.getaddrinfo(group, self.port, type=socket.SOCK_DGRAM)
+        sock = None
+        for connection_candidate in connection_candidates:
+            address_family: socket.AddressFamily = connection_candidate[0]
+            self.ip_version = 4 if address_family == socket.AF_INET else 6
+            try:
+                sock = self._create_socket(address_family)
+            except OSError as error:
+                log.info(f"could not connect to the multicast IP network of candidate %s; reason: {error}",
+                         connection_candidates)
+        if sock is not None:
+            self._socket = sock
+        else:
+            raise RuntimeError("could not connect to a multicast IP network")
 
         # used in recv()
         self.received_timestamp_struct = "@II"
@@ -136,6 +149,7 @@ class GeneralPurposeMulticastIpBus:
         self.received_ancillary_buffer_size = socket.CMSG_SPACE(ancillary_data_size)
 
         # used by send()
+        self._send_destination = (self.group, self.port)
         self._last_send_timeout: Optional[float] = None
 
     def _create_socket(self, address_family: socket.AddressFamily) -> socket.socket:
