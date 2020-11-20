@@ -328,18 +328,18 @@ def rename_kwargs(func_name, kwargs, aliases):
 
 
 def time_perfcounter_correlation():
-    """ Get the `perf_counter` value nearest to when time.time() is updated if the `time.time` on
-    this platform has a resolution higher than 10us. This is tipical for the Windows platform
-    were the beste resolution is ~500us.
+    """Get the `perf_counter` value nearest to when time.time() is updated 
+    
+    Computed if the default timer used by `time.time` on this platform has a resolution
+    higher than 10μs, otherwise the current time and perf_counter is directly returned. 
+    This was chosen as typical timer resolution on Linux/macOS is ~1μs, and the Windows
+    platform can vary from ~500μs to 10ms. 
+    
+    Note this value is based on when `time.time()` is observed to update from Python, 
+    it is not directly returned by the operating system.
 
-    On non Windows platforms the current time and perf_counter is directly returned since the
-    resolution is tipical ~1us.
-
-    Note this value is based on when `time.time()` is observed to update from Python, it is not
-    directly returned by the operating system.
-
-    :return:
-        (t, performance_counter) time.time value and perf_counter value when the time.time
+    :returns:
+        (t, performance_counter) time.time value and time.perf_counter value when the time.time
         is updated
 
     """
