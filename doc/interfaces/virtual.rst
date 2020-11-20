@@ -1,12 +1,12 @@
+.. _virtual_interface_doc:
+
 Virtual
 =======
 
-The virtual interface can be used as a way to write OS and driver independent
-tests.
-
-A virtual CAN bus that can be used for automatic tests. Any Bus instances
-connecting to the same channel (in the same python program) will get each
-others messages.
+The virtual interface can be used as a way to write OS and driver independent tests.
+Any `VirtualBus` instances connecting to the same channel (from within the same Python
+process) will get each others messages.
+If messages shall be sent across process or host borders, consider using the :ref:`multicast_ip_doc`.
 
 
 .. code-block:: python
@@ -21,3 +21,10 @@ others messages.
     msg2 = bus2.recv()
 
     assert msg1 == msg2
+
+
+Bus class documentation
+-----------------------
+
+.. autoclass:: can.interfaces.virtual.VirtualBus
+    :members:

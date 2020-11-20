@@ -2,7 +2,6 @@ import logging
 import select
 import socket
 import struct
-import time
 
 from typing import List, Optional, Tuple, Union
 
@@ -28,19 +27,55 @@ SO_TIMESTAMPNS = 35
 class MulticastIpBus(BusABC):
     """A virtual interface that allows to communicate between multiple processes using UDP over Multicast IP.
 
-    It supports IPv4 and IPv6, specified via the channel. This means that the channel is a multicast IP
-    address. You can also specify the port and the IPv6 *hop limit*/the IPv4 TTL (*time to live*).
-    It runs on UDP to have the lowest possible latency.
-
-    Supported Platforms: It should work on must Unix systems (including Linux 2.6.22+) but not on Windows.
+    It supports IPv4 and IPv6, specified via the channel (which really is just a multicast IP address as a
+    string). You can also specify the port and the IPv6 *hop limit*/the IPv4 *time to live* (TTL).
 
     This bus does not support filtering based on message IDs on the kernel level but instead provides it in
     user space (in Python) as a fallback.
 
-    TODO: doc DEFAULT_GROUP_IPv4/DEFAULT_GROUP_IPv6
+    Both default addresses should allow for multi-host CAN networks in a normal local area network (LAN) where
+    multicast is enabled.
+
+    .. note::
+        The auto-detection of available interfaces (see) is implemented using heuristic that checks if the
+        required socket operations are available. It then returns two configurations, one based on
+        the :attr:`~MulticastIpBus.DEFAULT_GROUP_IPv6` address and another one based on
+        the :attr:`~MulticastIpBus.DEFAULT_GROUP_IPv4` address.
+
+    .. warning::
+        The parameter `receive_own_messages` is currently unsupported and setting it to `True` will raise an
+        exception.
+
+    :param channel: An multicast IPv4 address (in `224.0.0.0/4`) or an IPv6 address (in `ff00::/8`).
+                    This defines which version of IP is used. See
+                    `Wikipedia ("Multicast address") <https://en.wikipedia.org/wiki/Multicast_address>`__
+                    for more details on the addressing schemes.
+                    Defaults to :attr:`~MulticastIpBus.DEFAULT_GROUP_IPv6`.
+    :param port: The IP port to read from and write to.
+    :param hop_limit: The hop limit in IPv6 or in IPv4 the time to live (TTL).
+    :param receive_own_messages: If transmitted messages should also be received by this bus.
+                                 CURRENTLY UNSUPPORTED.
+    :param fd:
+        If CAN-FD frames should be supported. If set to false, an error will be raised upon sending such a
+        frame and such received frames will be ignored.
+    :param can_filters: See :meth:`~can.BusABC.set_filters`.
+
+    :attr:
+
+    :raises RuntimeError: If the *msgpack*-dependency is not available. It should be installed on all
+                          non Windows platforms via the `setup.py` requirements.
+    :raises NotImplementedError: If the `receive_own_messages` is passed as `True`.
     """
 
-    DEFAULT_GROUP_IPv4 = "225.0.0.250"
+    #: An arbitrary IPv4 multicast address with "administrative" scope, i.e. only to be routed within
+    #: administrative organizational boundaries and not beyond it.
+    #: It should allow for multi-host CAN networks in a normal IPv4 LAN.
+    #: This is provided as a default fallback channel if IPv6 is (still) not supported.
+    DEFAULT_GROUP_IPv4 = "239.74.163.2"
+
+    #: An arbitrary IPv6 multicast address with "site-local" scope, i.e. only to be routed within the local
+    #: physical network and not beyond it. It should allow for multi-host CAN networks in a normal IPv6 LAN.
+    #: This is the default channel and should work with most modern routers if multicast is allowed.
     DEFAULT_GROUP_IPv6 = "ff15:7079:7468:6f6e:6465:6d6f:6d63:6173"
 
     def __init__(
@@ -52,20 +87,6 @@ class MulticastIpBus(BusABC):
         fd: bool = True,
         **kwargs,
     ) -> None:
-        """Creates a new interprocess virtual bus.
-
-        :param channel: An IPv4/IPv6 multicast address.
-                        See `Wikipedia <https://en.wikipedia.org/wiki/IP_multicast>`__ for more details.
-        :param port: The IP port to read from and write to.
-        :param hop_limit: The hop limit in IPv6 or in IPv4 the time to live (TTL).
-        :param receive_own_messages:
-            If transmitted messages should also be received by this bus. CURRENTLY UNSUPPORTED.
-        :param fd:
-            If CAN-FD frames should be supported. If set to false, an error will be raised upon sending such a
-            frame and such received frames will be ignored.
-        :param can_filters:
-            See :meth:`can.BusABC.set_filters`.
-        """
         check_msgpack_installed()
 
         if receive_own_messages:
@@ -74,10 +95,10 @@ class MulticastIpBus(BusABC):
         super().__init__(channel, **kwargs)
 
         self.is_fd = fd
-        self.multicast = GeneralPurposeMulticastIpBus(channel, port, hop_limit)
+        self._multicast = GeneralPurposeMulticastIpBus(channel, port, hop_limit)
 
     def _recv_internal(self, timeout: Optional[float]):
-        result = self.multicast.recv(timeout)
+        result = self._multicast.recv(timeout)
         if not result:
             return None, False
 
@@ -94,10 +115,18 @@ class MulticastIpBus(BusABC):
             raise RuntimeError("cannot send FD message over bus with CAN FD disabled")
 
         data = pack_message(message)
-        self.multicast.send(data, timeout)
+        self._multicast.send(data, timeout)
+
+    def fileno(self) -> int:
+        """Provides the internally used file descriptor of the socket or `-1` if not available."""
+        return self._multicast.fileno()
 
     def shutdown(self) -> None:
-        self.multicast.shutdown()
+        """Close all sockets and free up any resources.
+
+        Never throws errors and only logs them.
+        """
+        self._multicast.shutdown()
 
     @staticmethod
     def _detect_available_configs() -> List[AutoDetectedConfig]:
@@ -294,6 +323,10 @@ class GeneralPurposeMulticastIpBus:
         # socket wasn't readable or timeout occurred
         return None
 
+    def fileno(self) -> int:
+        """Provides the internally used file descriptor of the socket or `-1` if not available."""
+        return self._socket.fileno()
+
     def shutdown(self) -> None:
         """Close all sockets and free up any resources.
 
@@ -303,20 +336,3 @@ class GeneralPurposeMulticastIpBus:
             self._socket.close()
         except OSError as exception:
             log.error("could not close IP socket: %s", exception)
-
-
-def main() -> None:
-    with MulticastIpBus(
-        channel=MulticastIpBus.DEFAULT_GROUP_IPv6
-    ) as bus_1, MulticastIpBus(channel=MulticastIpBus.DEFAULT_GROUP_IPv6) as bus_2:
-
-        notifier = can.Notifier(bus_2, [can.Printer()])
-
-        message = can.Message(arbitration_id=0x123, data=[1, 2, 3])
-        bus_1.send(message)
-
-        time.sleep(2)
-
-
-if __name__ == "__main__":
-    main()
