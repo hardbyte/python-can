@@ -29,11 +29,15 @@ class MulticastIpBus(BusABC):
     """A virtual interface that allows to communicate between multiple processes using UDP over Multicast IP.
 
     It supports IPv4 and IPv6, specified via the channel. This means that the channel is a multicast IP
-    address. You can also specify the port and TTL (*time to live*).
+    address. You can also specify the port and the IPv6 *hop limit*/the IPv4 TTL (*time to live*).
+    It runs on UDP to have the lowest possible latency.
 
-    Platforms: Unix (including Linux 2.6.22+), not Windows
+    Supported Platforms: It should work on must Unix systems (including Linux 2.6.22+) but not on Windows.
 
-    This bus does not support filtering based on message IDs on the kernel level.
+    This bus does not support filtering based on message IDs on the kernel level but instead provides it in
+    user space (in Python) as a fallback.
+
+    TODO: doc DEFAULT_GROUP_IPv4/DEFAULT_GROUP_IPv6
     """
 
     DEFAULT_GROUP_IPv4 = "225.0.0.250"
@@ -43,15 +47,17 @@ class MulticastIpBus(BusABC):
         self,
         channel: str = DEFAULT_GROUP_IPv6,
         port: int = 43113,
-        ttl: int = 1,
+        hop_limit: int = 1,
         receive_own_messages: bool = False,
-        is_fd: bool = True,
+        fd: bool = True,
         **kwargs,
     ) -> None:
         """Creates a new interprocess virtual bus.
 
         :param channel: An IPv4/IPv6 multicast address.
                         See `Wikipedia <https://en.wikipedia.org/wiki/IP_multicast>`__ for more details.
+        :param port: The IP port to read from and write to.
+        :param hop_limit: The hop limit in IPv6 or in IPv4 the time to live (TTL).
         :param receive_own_messages:
             If transmitted messages should also be received by this bus. CURRENTLY UNSUPPORTED.
         :param fd:
@@ -67,8 +73,8 @@ class MulticastIpBus(BusABC):
 
         super().__init__(channel, **kwargs)
 
-        self.is_fd = is_fd
-        self.multicast = GeneralPurposeMulticastIpBus(channel, port, ttl)
+        self.is_fd = fd
+        self.multicast = GeneralPurposeMulticastIpBus(channel, port, hop_limit)
 
     def _recv_internal(self, timeout: Optional[float]):
         result = self.multicast.recv(timeout)
@@ -110,15 +116,16 @@ class MulticastIpBus(BusABC):
 class GeneralPurposeMulticastIpBus:
     """A general purpose send and receive handler for multicast over IP/UDP."""
 
-    def __init__(self, group: str, port: int, ttl: int, max_buffer: int = 4096) -> None:
+    def __init__(self, group: str, port: int, hop_limit: int, max_buffer: int = 4096) -> None:
         self.group = group
         self.port = port
-        self.ttl = ttl
+        self.hop_limit = hop_limit
         self.max_buffer = max_buffer
 
         # Look up multicast group address in name server and find out IP version of the first suitable target
         # and then get the address family of it (socket.AF_INET or socket.AF_INET6)
-        address_family: socket.AddressFamily = socket.getaddrinfo(group, None)[0][0]
+        # TODO: loop through them
+        address_family: socket.AddressFamily = socket.getaddrinfo(group, self.port, type=socket.SOCK_DGRAM)[0][0]
         self.ip_version = 4 if address_family == socket.AF_INET else 6
         self._send_destination = (self.group, self.port)
         self._socket = self._create_socket(address_family)
@@ -132,37 +139,58 @@ class GeneralPurposeMulticastIpBus:
         self._last_send_timeout: Optional[float] = None
 
     def _create_socket(self, address_family: socket.AddressFamily) -> socket.socket:
-        # create a UDP socket
+        """Creates a new socket. This might fail and raise an exception!
+
+        :param address_family: whether this is of type `socket.AF_INET` or `socket.AF_INET6`
+        :raises OSError: if the socket could not be opened or configured correctly; in this case, it is
+                         guaranteed to be closed/cleaned up
+        """
+        # create the UDP socket
+        # this might already fail but then there is nothing to clean up
         sock = socket.socket(address_family, socket.SOCK_DGRAM)
 
-        # set TTL
-        ttl_as_binary = struct.pack("@I", self.ttl)
-        if self.ip_version == 4:
-            sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, ttl_as_binary)
-        else:
-            sock.setsockopt(
-                socket.IPPROTO_IPV6, socket.IPV6_MULTICAST_HOPS, ttl_as_binary
-            )
+        # configure the socket
+        try:
 
-        # Allow multiple programs to access that address + port
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            # set hop limit / TTL
+            ttl_as_binary = struct.pack("@I", self.hop_limit)
+            if self.ip_version == 4:
+                sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, ttl_as_binary)
+            else:
+                sock.setsockopt(
+                    socket.IPPROTO_IPV6, socket.IPV6_MULTICAST_HOPS, ttl_as_binary
+                )
 
-        # set how to receive timestamps
-        sock.setsockopt(socket.SOL_SOCKET, SO_TIMESTAMPNS, 1)
+            # Allow multiple programs to access that address + port
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-        # Bind it to the port (ony any interface)
-        sock.bind(("", self.port))
+            # set how to receive timestamps
+            sock.setsockopt(socket.SOL_SOCKET, SO_TIMESTAMPNS, 1)
 
-        # Join the multicast group
-        group_as_binary = socket.inet_pton(address_family, self.group)
-        if self.ip_version == 4:
-            request = group_as_binary + struct.pack("=I", socket.INADDR_ANY)
-            sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, request)
-        else:
-            request = group_as_binary + struct.pack("@I", 0)
-            sock.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_JOIN_GROUP, request)
+            # Bind it to the port (ony any interface)
+            sock.bind(("", self.port))
 
-        return sock
+            # Join the multicast group
+            group_as_binary = socket.inet_pton(address_family, self.group)
+            if self.ip_version == 4:
+                request = group_as_binary + struct.pack("@I", socket.INADDR_ANY)
+                sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, request)
+            else:
+                request = group_as_binary + struct.pack("@I", 0)
+                sock.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_JOIN_GROUP, request)
+
+            return sock
+
+        except OSError as error:
+            # clean up the incompletely configured but opened socket
+            try:
+                sock.close()
+            except OSError as close_error:
+                # ignore but log any failures in here
+                log.warning("Could not close partly configured socket: %s", close_error)
+
+            # still raise the error
+            raise error
 
     def send(
         self,
