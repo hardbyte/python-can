@@ -120,7 +120,9 @@ class MulticastIpBus(BusABC):
 class GeneralPurposeMulticastIpBus:
     """A general purpose send and receive handler for multicast over IP/UDP."""
 
-    def __init__(self, group: str, port: int, hop_limit: int, max_buffer: int = 4096) -> None:
+    def __init__(
+        self, group: str, port: int, hop_limit: int, max_buffer: int = 4096
+    ) -> None:
         self.group = group
         self.port = port
         self.hop_limit = hop_limit
@@ -128,7 +130,9 @@ class GeneralPurposeMulticastIpBus:
 
         # Look up multicast group address in name server and find out IP version of the first suitable target
         # and then get the address family of it (socket.AF_INET or socket.AF_INET6)
-        connection_candidates = socket.getaddrinfo(group, self.port, type=socket.SOCK_DGRAM)
+        connection_candidates = socket.getaddrinfo(
+            group, self.port, type=socket.SOCK_DGRAM
+        )
         sock = None
         for connection_candidate in connection_candidates:
             address_family: socket.AddressFamily = connection_candidate[0]
@@ -136,8 +140,10 @@ class GeneralPurposeMulticastIpBus:
             try:
                 sock = self._create_socket(address_family)
             except OSError as error:
-                log.info(f"could not connect to the multicast IP network of candidate %s; reason: {error}",
-                         connection_candidates)
+                log.info(
+                    f"could not connect to the multicast IP network of candidate %s; reason: {error}",
+                    connection_candidates,
+                )
         if sock is not None:
             self._socket = sock
         else:
@@ -169,7 +175,9 @@ class GeneralPurposeMulticastIpBus:
             # set hop limit / TTL
             ttl_as_binary = struct.pack("@I", self.hop_limit)
             if self.ip_version == 4:
-                sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, ttl_as_binary)
+                sock.setsockopt(
+                    socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, ttl_as_binary
+                )
             else:
                 sock.setsockopt(
                     socket.IPPROTO_IPV6, socket.IPV6_MULTICAST_HOPS, ttl_as_binary

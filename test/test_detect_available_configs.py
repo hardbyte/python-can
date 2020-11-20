@@ -53,7 +53,9 @@ class TestDetectAvailableConfigs(unittest.TestCase):
         else:
             self.assertEqual(len(configs), 0)
 
-    @unittest.skipUnless(TEST_INTERFACE_SOCKETCAN and IS_CI, "this setup is very specific")
+    @unittest.skipUnless(
+        TEST_INTERFACE_SOCKETCAN and IS_CI, "this setup is very specific"
+    )
     def test_socketcan_on_ci_server(self):
         configs = detect_available_configs(interfaces="socketcan")
         self.assertGreaterEqual(len(configs), 1)
