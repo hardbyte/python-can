@@ -236,8 +236,8 @@ class BasicTestInterprocessVirtualBusIPv4(Back2BackTestCase):
 @unittest.skipUnless(IS_UNIX, "only supported on Unix systems")
 class BasicTestInterprocessVirtualBusIPv6(Back2BackTestCase):
 
-    # Use an "Admin-local" IPv6 multicast address on Travis CI to make it work
-    _MULTICAST_IPv6_ADDRESS = "ff14:7079:7468:6f6e:6465:6d6f:6d63:6173" if IS_TRAVIS \
+    # Use an IPv6 multicast address equivalent to the IPv4 "local scope" on Travis CI to make it work there
+    _MULTICAST_IPv6_ADDRESS = "ff13:7079:7468:6f6e:6465:6d6f:6d63:6173" if IS_TRAVIS \
         else MulticastIpBus.DEFAULT_GROUP_IPv6
 
     INTERFACE_1 = "multicast_ip"
