@@ -247,33 +247,22 @@ class GeneralPurposeMulticastIpBus:
         self,
         data: ReadableBytesLike,
         timeout: Optional[float] = None,
-        start: int = 0,
-        count: Optional[int] = None,
     ) -> None:
         """Send this data to all participants. This call blocks.
 
-        If `count` is set to an integer, only so many bytes beginning with `start` (inclusive) are sent.
-
         :param timeout: the timeout in seconds after which an Exception is raised is sending has failed
         :param data: the data to be sent
-        :param start: where to start the slice to be sent
-        :param count: how many bytes to send or `None` to send everything
         :raises OSError: if an error occurred while writing to the underlying socket
         :raises socket.timeout: if the timeout ran out before sending was completed (this is a subclass of
                                 *OSError*)
         """
-        if not count:
-            data_out = data
-        else:
-            data_out = memoryview(data)[start : start + count]
-
         if timeout != self._last_send_timeout:
             self._last_send_timeout = timeout
             # this applies to all blocking calls on the socket, but sending is the only one that is blocking
             self._socket.settimeout(timeout)
 
-        bytes_sent = self._socket.sendto(data_out, self._send_destination)
-        if bytes_sent < len(data_out):
+        bytes_sent = self._socket.sendto(data, self._send_destination)
+        if bytes_sent < len(data):
             raise socket.timeout()
 
     def recv(
