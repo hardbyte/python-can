@@ -448,6 +448,8 @@ class CANalystIIBus(BusABC):
         :rtype: dict
         """
         status = VCI_CAN_STATUS()
+        # not all variations of the ControlCAN library have the
+        # VCI_ReadCANStatus function
         try:
             CANalystII.VCI_ReadCANStatus(
                 VCI_USBCAN2,
@@ -455,7 +457,6 @@ class CANalystIIBus(BusABC):
                 self.channel,
                 byref(status)
             )
-
         except:
             pass
 
@@ -483,6 +484,9 @@ class CANalystIIBus(BusABC):
         :rtype: dict
         """
         error_info = VCI_ERR_INFO()
+
+        # not all variations of the ControlCAN library have the
+        # VCI_ReadErrInfo function
         try:
             CANalystII.VCI_ReadErrInfo(
                 VCI_USBCAN2,
