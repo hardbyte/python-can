@@ -4,7 +4,7 @@ Utilities and configuration file parsing.
 import functools
 import warnings
 from typing import Dict, Optional, Union
-from time import time, perf_counter
+from time import time, perf_counter, get_clock_info
 
 from can import typechecking
 
@@ -345,7 +345,7 @@ def time_perfcounter_correlation():
     """
 
     # use this if the resolution is higher than 10us
-    if time.get_clock_info("time").resolution > 1e-5:
+    if get_clock_info("time").resolution > 1e-5:
         t0 = time()
         while True:
             t1, performance_counter = time(), perf_counter()
