@@ -53,7 +53,9 @@ class Back2BackTestCase(unittest.TestCase):
         self.bus1.shutdown()
         self.bus2.shutdown()
 
-    def _check_received_message(self, recv_msg: can.Message, sent_msg: can.Message) -> None:
+    def _check_received_message(
+        self, recv_msg: can.Message, sent_msg: can.Message
+    ) -> None:
         self.assertIsNotNone(
             recv_msg, "No message was received on %s" % self.INTERFACE_2
         )
@@ -237,8 +239,11 @@ class BasicTestInterprocessVirtualBusIPv4(Back2BackTestCase):
 class BasicTestInterprocessVirtualBusIPv6(Back2BackTestCase):
 
     # Use an IPv6 multicast address equivalent to the IPv4 "local scope" on Travis CI to make it work there
-    _MULTICAST_IPv6_ADDRESS = "ff13:7079:7468:6f6e:6465:6d6f:6d63:6173" if IS_TRAVIS \
+    _MULTICAST_IPv6_ADDRESS = (
+        "ff13:7079:7468:6f6e:6465:6d6f:6d63:6173"
+        if IS_TRAVIS
         else MulticastIpBus.DEFAULT_GROUP_IPv6
+    )
 
     INTERFACE_1 = "multicast_ip"
     CHANNEL_1 = _MULTICAST_IPv6_ADDRESS
