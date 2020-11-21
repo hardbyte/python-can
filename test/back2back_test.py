@@ -235,20 +235,17 @@ class BasicTestInterprocessVirtualBusIPv4(Back2BackTestCase):
             super().test_unique_message_instances()
 
 
-@unittest.skipUnless(IS_UNIX, "only supported on Unix systems")
+# this doesn't even work for loopback multicast addresses on Travis CI; for example, see
+# https://travis-ci.org/github/hardbyte/python-can/builds/745065503
+@unittest.skipUnless(
+    IS_UNIX and not IS_TRAVIS, "only supported on Unix systems (but not on Travis CI)"
+)
 class BasicTestInterprocessVirtualBusIPv6(Back2BackTestCase):
 
-    # Use an loopback IPv6 multicast address on Travis CI to make it work there
-    _MULTICAST_IPv6_ADDRESS = (
-        "ff11:7079:7468:6f6e:6465:6d6f:6d63:6173"
-        if IS_TRAVIS
-        else MulticastIpBus.DEFAULT_GROUP_IPv6
-    )
-
     INTERFACE_1 = "multicast_ip"
-    CHANNEL_1 = _MULTICAST_IPv6_ADDRESS
+    CHANNEL_1 = MulticastIpBus.DEFAULT_GROUP_IPv6
     INTERFACE_2 = "multicast_ip"
-    CHANNEL_2 = _MULTICAST_IPv6_ADDRESS
+    CHANNEL_2 = MulticastIpBus.DEFAULT_GROUP_IPv6
 
     def test_unique_message_instances(self):
         with self.assertRaises(NotImplementedError):
