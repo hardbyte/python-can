@@ -30,6 +30,7 @@ extras_require = {
     "serial": ["pyserial~=3.0"],
     "neovi": ["python-ics>=2.12"],
     "cantact": ["cantact>=0.0.7"],
+    "gs_usb": ["gs_usb>=0.2.1"],
 }
 
 setup(
@@ -78,6 +79,8 @@ setup(
     # see https://www.python.org/dev/peps/pep-0345/#version-specifiers
     python_requires=">=3.6",
     install_requires=[
+        # Setuptools provides pkg_resources which python-can makes use of.
+        "setuptools",
         "wrapt~=1.10",
         'windows-curses;platform_system=="Windows"',
         "filelock",
