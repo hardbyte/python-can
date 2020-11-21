@@ -67,16 +67,16 @@ class MulticastIpBus(BusABC):
     :raises NotImplementedError: If the `receive_own_messages` is passed as `True`.
     """
 
+    #: An arbitrary IPv6 multicast address with "site-local" scope, i.e. only to be routed within the local
+    #: physical network and not beyond it. It should allow for multi-host CAN networks in a normal IPv6 LAN.
+    #: This is the default channel and should work with most modern routers if multicast is allowed.
+    DEFAULT_GROUP_IPv6 = "ff15:7079:7468:6f6e:6465:6d6f:6d63:6173"
+
     #: An arbitrary IPv4 multicast address with "administrative" scope, i.e. only to be routed within
     #: administrative organizational boundaries and not beyond it.
     #: It should allow for multi-host CAN networks in a normal IPv4 LAN.
     #: This is provided as a default fallback channel if IPv6 is (still) not supported.
     DEFAULT_GROUP_IPv4 = "239.74.163.2"
-
-    #: An arbitrary IPv6 multicast address with "site-local" scope, i.e. only to be routed within the local
-    #: physical network and not beyond it. It should allow for multi-host CAN networks in a normal IPv6 LAN.
-    #: This is the default channel and should work with most modern routers if multicast is allowed.
-    DEFAULT_GROUP_IPv6 = "ff15:7079:7468:6f6e:6465:6d6f:6d63:6173"
 
     def __init__(
         self,

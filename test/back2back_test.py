@@ -15,7 +15,7 @@ import pytest
 import can
 from can.interfaces.multicast_ip import MulticastIpBus
 
-from .config import IS_CI, IS_UNIX, TEST_INTERFACE_SOCKETCAN, TEST_CAN_FD
+from .config import IS_CI, IS_UNIX, IS_TRAVIS, TEST_INTERFACE_SOCKETCAN, TEST_CAN_FD
 
 
 class Back2BackTestCase(unittest.TestCase):
@@ -53,7 +53,7 @@ class Back2BackTestCase(unittest.TestCase):
         self.bus1.shutdown()
         self.bus2.shutdown()
 
-    def _check_received_message(self, recv_msg, sent_msg):
+    def _check_received_message(self, recv_msg: can.Message, sent_msg: can.Message) -> None:
         self.assertIsNotNone(
             recv_msg, "No message was received on %s" % self.INTERFACE_2
         )
@@ -67,7 +67,7 @@ class Back2BackTestCase(unittest.TestCase):
         if not sent_msg.is_remote_frame:
             self.assertSequenceEqual(recv_msg.data, sent_msg.data)
 
-    def _send_and_receive(self, msg):
+    def _send_and_receive(self, msg: can.Message) -> None:
         # Send with bus 1, receive with bus 2
         self.bus1.send(msg)
         recv_msg = self.bus2.recv(self.TIMEOUT)
@@ -236,10 +236,14 @@ class BasicTestInterprocessVirtualBusIPv4(Back2BackTestCase):
 @unittest.skipUnless(IS_UNIX, "only supported on Unix systems")
 class BasicTestInterprocessVirtualBusIPv6(Back2BackTestCase):
 
+    # Use an "Admin-local" IPv6 multicast address on Travis CI to make it work
+    _MULTICAST_IPv6_ADDRESS = "ff14:7079:7468:6f6e:6465:6d6f:6d63:6173" if IS_TRAVIS \
+        else MulticastIpBus.DEFAULT_GROUP_IPv6
+
     INTERFACE_1 = "multicast_ip"
-    CHANNEL_1 = MulticastIpBus.DEFAULT_GROUP_IPv6
+    CHANNEL_1 = _MULTICAST_IPv6_ADDRESS
     INTERFACE_2 = "multicast_ip"
-    CHANNEL_2 = MulticastIpBus.DEFAULT_GROUP_IPv6
+    CHANNEL_2 = _MULTICAST_IPv6_ADDRESS
 
     def test_unique_message_instances(self):
         with self.assertRaises(NotImplementedError):

@@ -12,7 +12,7 @@ import platform
 from os import environ as environment
 
 
-def env(name):  # type: bool
+def env(name: str) -> bool:
     return environment.get(name, "").lower() in ("yes", "true", "t", "1")
 
 
