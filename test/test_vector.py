@@ -14,7 +14,13 @@ from unittest.mock import Mock
 import pytest
 
 import can
-from can.interfaces.vector import canlib, xldefine, xlclass, VectorError
+from can.interfaces.vector import (
+    canlib,
+    xldefine,
+    xlclass,
+    VectorError,
+    VectorChannelConfig,
+)
 
 
 class TestVectorBus(unittest.TestCase):
@@ -294,6 +300,23 @@ class TestVectorBus(unittest.TestCase):
 
         with pytest.raises(VectorError):
             raise exc_unpickled
+
+
+class TestVectorChannelConfig:
+    def test_attributes(self):
+        assert hasattr(VectorChannelConfig, "name")
+        assert hasattr(VectorChannelConfig, "hwType")
+        assert hasattr(VectorChannelConfig, "hwIndex")
+        assert hasattr(VectorChannelConfig, "hwChannel")
+        assert hasattr(VectorChannelConfig, "channelIndex")
+        assert hasattr(VectorChannelConfig, "channelMask")
+        assert hasattr(VectorChannelConfig, "channelCapabilities")
+        assert hasattr(VectorChannelConfig, "channelBusCapabilities")
+        assert hasattr(VectorChannelConfig, "isOnBus")
+        assert hasattr(VectorChannelConfig, "connectedBusType")
+        assert hasattr(VectorChannelConfig, "serialNumber")
+        assert hasattr(VectorChannelConfig, "articleNumber")
+        assert hasattr(VectorChannelConfig, "transceiverName")
 
 
 def xlGetApplConfig(
