@@ -2,7 +2,8 @@ from ctypes import *
 import logging
 import platform
 from can import BusABC, Message
-from typing import Optional, Dict
+from typing import Optional, Dict, Union
+from ..typechecking import CanFilters
 
 logger = logging.getLogger(__name__)
 
@@ -125,22 +126,22 @@ _in_use = {}
 class CANalystIIBus(BusABC):
     def __init__(
         self,
-        channel: int,
+        channel: Union[int, str],
         device: int = 0,
         bitrate: Optional[int] = None,
         Timing0: Optional[int] = None,
         Timing1: Optional[int] = None,
-        can_filters=None,
+        can_filters: CanFilters = None,
         **kwargs,
     ):
         """
         CANalystII Interface
 
         :param channel: channel number to use
-        :type channel: int
+        :type channel: int, str
 
-        :param device: device index. If there is more then one adapter the index number will be
-            incremented by one for each additional adapter.
+        :param device: device index. If there is more then one adapter the index number
+            will be incremented by one for each additional adapter.
         :type device: int
 
         :param bitrate: CAN network bandwidth (bits/s).
@@ -153,38 +154,51 @@ class CANalystIIBus(BusABC):
         :type Timing1: int, optional
 
         :param can_filters: filters for packet
+        :type can_filters: CanFilters
         """
 
         if CANalystII is None:
             raise RuntimeError('CANalystII library failed to load.')
+
+        if (
+            isinstance(channel, (list, tuple)) or
+            (isinstance(channel, str) and not channel.isdigit())
+        ):
+            raise ValueError(
+                'This class no longer supports multiple channels, '
+                'create an instance for each channel'
+            )
+
+        channel = int(channel)
 
         super().__init__(channel=channel, can_filters=can_filters, **kwargs)
 
         self.channel = channel
         self.device = device
         self.channel_info = "CANalyst-II: device {}, channel {}".format(
-            self.device,
-            self.channel
+            device,
+            channel
         )
 
-        if bitrate is not None:
-            if bitrate in TIMING_DICT:
-                Timing0, Timing1 = TIMING_DICT[bitrate]
-            else:
-                raise ValueError("Bitrate is not supported ({0})".format(bitrate))
-
-        if None in (Timing0, Timing1):
-            raise ValueError("Timing registers are not set")
-
         if device not in _in_use:
+            # this has exception catching because not all of the variations
+            # of the ControlCAN library have this function available.
+            # The ones that do have it available seem to have less issues
+            # when resetting the device before opening it.
             try:
-                CANalystII.VCI_UsbDeviceReset(VCI_USBCAN2, self.device, 0)
+                CANalystII.VCI_UsbDeviceReset(VCI_USBCAN2, device, 0)
             except:
                 pass
 
             b_info = VCI_BOARD_INFO()
-            if CANalystII.VCI_ReadBoardInfo(VCI_USBCAN2, device, byref(b_info)) == STATUS_ERR:
-                logger.error("VCI_ReadBoardInfo Error")
+            status = CANalystII.VCI_ReadBoardInfo(
+                VCI_USBCAN2,
+                device,
+                byref(b_info)
+            )
+
+            if status != STATUS_OK:
+                logger.error("VCI_ReadBoardInfo Error ({0})".format(status))
 
             self._b_info = dict(
                 hardware_version=b_info.hw_Version,
@@ -197,8 +211,13 @@ class CANalystIIBus(BusABC):
                 hardware_type=str(b_info.str_hw_Type, encoding='ascii')
             )
 
-            if CANalystII.VCI_OpenDevice(VCI_USBCAN2, self.device, 0) == STATUS_ERR:
-                raise ValueError('Unable to open interface, the device number supplied may be incorrect')
+            status = CANalystII.VCI_OpenDevice(VCI_USBCAN2, self.device, 0)
+
+            if status != STATUS_OK:
+                raise ValueError(
+                    'Unable to open interface, the device number '
+                    'supplied may be incorrect ({0})'.format(status)
+                )
 
             _in_use[device] = []
         else:
@@ -214,7 +233,68 @@ class CANalystIIBus(BusABC):
 
         _in_use[device] += [self]
 
-        self.init_config = VCI_INIT_CONFIG(0, 0xFFFFFFFF, 0, 1, Timing0, Timing1, 0)
+        init_config = VCI_INIT_CONFIG()
+        init_config.AccMask = 0xFFFFFFFF
+        init_config.Filter = 1
+
+        # autodetect bitrate
+        if bitrate is None and Timing0 is None and Timing1 is None:
+            logger.info('autodetecting bitrate')
+            for bitrate, (Timing0, Timing1) in TIMING_DICT.items():
+                logger.info('bitrate autodetect: {0}'.format(bitrate))
+                init_config.Timing0 = Timing0
+                init_config.Timing1 = Timing1
+
+                status = CANalystII.VCI_InitCAN(
+                    VCI_USBCAN2,
+                    device,
+                    channel,
+                    byref(init_config)
+                )
+
+                if status != STATUS_OK:
+                    continue
+
+                status = CANalystII.VCI_StartCAN(
+                    VCI_USBCAN2,
+                    device,
+                    channel
+                )
+
+                if status != STATUS_OK:
+                    continue
+
+                msg = self.recv(timeout=0.5)
+
+                CANalystII.VCI_ResetCAN(
+                    VCI_USBCAN2,
+                    device,
+                    channel
+                )
+
+                if msg is not None:
+                    logger.info('bitrate detected: {0}'.format(bitrate))
+                    bitrate = None
+                    break
+            else:
+                self.shutdown()
+                raise ValueError('Failed to autodetect bitrate')
+
+        if bitrate is not None:
+            if bitrate in TIMING_DICT:
+                Timing0, Timing1 = TIMING_DICT[bitrate]
+            else:
+                self.shutdown()
+                raise ValueError("Bitrate is not supported ({0})".format(bitrate))
+
+        if None in (Timing0, Timing1):
+            self.shutdown()
+            raise ValueError("Timing registers are not set")
+
+        init_config.Timing0 = Timing0
+        init_config.Timing1 = Timing1
+
+        self.init_config = init_config
 
         status = CANalystII.VCI_InitCAN(
             VCI_USBCAN2,
@@ -223,9 +303,12 @@ class CANalystIIBus(BusABC):
             byref(self.init_config)
         )
 
-        if status == STATUS_ERR:
+        if status != STATUS_OK:
             self.shutdown()
-            raise ValueError("VCI_InitCAN Error, incorrect channel number?")
+            raise ValueError(
+                "VCI_InitCAN Error, incorrect channel "
+                "number? ({0})".format(status)
+            )
 
         status = CANalystII.VCI_StartCAN(
             VCI_USBCAN2,
@@ -233,8 +316,11 @@ class CANalystIIBus(BusABC):
             channel
         )
 
-        if status == STATUS_ERR:
-            logger.error("VCI_StartCAN Error, device:{0} channel:{1}".format(device, channel))
+        if status != STATUS_OK:
+            logger.error(
+                "VCI_StartCAN Error ({0}), device:{1} "
+                "channel:{2}".format(device, channel, status)
+            )
             self.shutdown()
             return
 
@@ -257,7 +343,7 @@ class CANalystIIBus(BusABC):
         """
         return {key: value for key, value in self._b_info.items()}
 
-    def send(self, msg, timeout=None):
+    def send(self, msg: Message, timeout=None):
         """
         Send CAN Frame
 
@@ -273,8 +359,15 @@ class CANalystIIBus(BusABC):
 
         can_objs = (VCI_CAN_OBJ * 1)()
 
-        can_objs[0].ID = msg.arbitration_id
-        can_objs[0].ExternFlag = int(msg.is_extended_id)
+        arbitration_id = msg.arbitration_id
+        if arbitration_id & 0x80000000:
+            extended = 1
+            arbitration_id &= 0x7FFFFFFF
+        else:
+            extended = int(msg.is_extended_id)
+
+        can_objs[0].ID = arbitration_id
+        can_objs[0].ExternFlag = extended
         can_objs[0].SendType = 1
         can_objs[0].RemoteFlag = int(msg.is_remote_frame)
         can_objs[0].DataLen = msg.dlc
@@ -389,7 +482,7 @@ class CANalystIIBus(BusABC):
             is_extended_id=bool(raw_message[0].ExternFlag),
             channel=self.channel,
             dlc=raw_message[0].DataLen,
-            data=[raw_message[0].Data[i] for i in range(raw_message[0].DataLen)],
+            data=bytearray([raw_message[0].Data[i] for i in range(raw_message[0].DataLen)]),
         )
 
         return message, False
@@ -399,10 +492,7 @@ class CANalystIIBus(BusABC):
 
     def shutdown(self):
         # stops receiving new frames
-        try:
-            CANalystII.VCI_ResetCAN(VCI_USBCAN2, self.device, self.channel)
-        except:
-            pass
+        CANalystII.VCI_ResetCAN(VCI_USBCAN2, self.device, self.channel)
 
         _in_use[self.device].remove(self)
 
