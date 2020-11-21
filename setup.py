@@ -83,7 +83,7 @@ setup(
         "wrapt~=1.10",
         'windows-curses;platform_system=="Windows"',
         "filelock",
-        "mypy_extensions >= 0.4.0, < 0.5.0",
+        "mypy_extensions>=0.4.0,<0.5.0",
         'pywin32;platform_system=="Windows"',
     ],
     extras_require=extras_require,
