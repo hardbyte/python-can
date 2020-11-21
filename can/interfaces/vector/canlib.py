@@ -11,23 +11,14 @@ import logging
 import time
 import os
 from typing import List, Optional, Tuple
+from ...events import (
+    CreateEvent,
+    WaitForSingleObject,
+    INFINITE
+)
 
 import typing
 
-try:
-    # Try builtin Python 3 Windows API
-    from _winapi import WaitForSingleObject, INFINITE
-
-    HAS_EVENTS = True
-except ImportError:
-    try:
-        # Try pywin32 package
-        from win32event import WaitForSingleObject, INFINITE
-
-        HAS_EVENTS = True
-    except ImportError:
-        # Use polling instead
-        HAS_EVENTS = False
 
 # Import Modules
 # ==============
@@ -278,11 +269,9 @@ class VectorBus(BusABC):
         tx_receipts = 1 if receive_own_messages else 0
         xldriver.xlCanSetChannelMode(self.port_handle, self.mask, tx_receipts, 0)
 
-        if HAS_EVENTS:
-            self.event_handle = xlclass.XLhandle()
+        self.event_handle = CreateEvent(None, 0, 0, None)
+        if self.event_handle is not None:
             xldriver.xlSetNotification(self.port_handle, self.event_handle, 1)
-        else:
-            LOG.info("Install pywin32 to avoid polling")
 
         try:
             xldriver.xlActivateChannel(
@@ -377,14 +366,14 @@ class VectorBus(BusABC):
             if end_time is not None and time.time() > end_time:
                 return None, self._is_filtered
 
-            if HAS_EVENTS:
+            if self.event_handle is not None:
                 # Wait for receive event to occur
                 if end_time is None:
                     time_left_ms = INFINITE
                 else:
                     time_left = end_time - time.time()
                     time_left_ms = max(0, int(time_left * 1000))
-                WaitForSingleObject(self.event_handle.value, time_left_ms)
+                WaitForSingleObject(self.event_handle, time_left_ms)
             else:
                 # Wait a short time until we try again
                 time.sleep(self.poll_interval)

@@ -18,14 +18,12 @@ import abc
 import logging
 import threading
 import time
-
-# try to import win32event for event-based cyclic send task(needs pywin32 package)
-try:
-    import win32event
-
-    HAS_EVENTS = True
-except ImportError:
-    HAS_EVENTS = False
+from .events import (
+    CreateWaitableTimer,
+    CancelWaitableTimer,
+    SetWaitableTimer,
+    WaitForSingleObject
+)
 
 log = logging.getLogger("can.bcm")
 
@@ -230,15 +228,13 @@ class ThreadBasedCyclicSendTask(
         self.end_time = time.perf_counter() + duration if duration else None
         self.on_error = on_error
 
-        if HAS_EVENTS:
-            self.period_ms: int = int(round(period * 1000, 0))
-            self.event = win32event.CreateWaitableTimer(None, False, None)
+        self.period_ms: int = int(round(period * 1000, 0))
+        self.event = CreateWaitableTimer(None, False, None)
 
         self.start()
 
     def stop(self):
-        if HAS_EVENTS:
-            win32event.CancelWaitableTimer(self.event.handle)
+        CancelWaitableTimer(self.event)
         self.stopped = True
 
     def start(self):
@@ -248,10 +244,14 @@ class ThreadBasedCyclicSendTask(
             self.thread = threading.Thread(target=self._run, name=name)
             self.thread.daemon = True
 
-            if HAS_EVENTS:
-                win32event.SetWaitableTimer(
-                    self.event.handle, 0, self.period_ms, None, None, False
-                )
+            SetWaitableTimer(
+                self.event,
+                0,
+                self.period_ms,
+                None,
+                None,
+                False
+            )
 
             self.thread.start()
 
@@ -274,9 +274,4 @@ class ThreadBasedCyclicSendTask(
                 break
             msg_index = (msg_index + 1) % len(self.messages)
 
-            if HAS_EVENTS:
-                win32event.WaitForSingleObject(self.event.handle, self.period_ms)
-            else:
-                # Compensate for the time it takes to send the message
-                delay = self.period - (time.perf_counter() - started)
-                time.sleep(max(0.0, delay))
+            WaitForSingleObject(self.event, self.period_ms, started)

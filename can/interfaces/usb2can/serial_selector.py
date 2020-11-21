@@ -4,9 +4,10 @@
 import logging
 
 try:
-    import win32com.client
+    import pysetupdi
+
 except ImportError:
-    logging.warning("win32com.client module required for usb2can")
+    logging.warning("pysetupdi required for usb2can")
     raise
 
 
@@ -48,8 +49,11 @@ def find_serial_devices(serial_matcher="ED"):
 
     :rtype: List[str]
     """
-    objWMIService = win32com.client.Dispatch("WbemScripting.SWbemLocator")
-    objSWbemServices = objWMIService.ConnectServer(".", "root\\cimv2")
-    items = objSWbemServices.ExecQuery("SELECT * FROM Win32_USBControllerDevice")
-    ids = (item.Dependent.strip('"')[-8:] for item in items)
-    return [e for e in ids if e.startswith(serial_matcher)]
+    res = set()
+    for device in pysetupdi.devices(enumerator='USB'):
+        instance_id = device.instance_id.strip('"')[-8:]
+        if instance_id.startswith(serial_matcher):
+            res.add(instance_id)
+
+    return [ins_id for ins_id in res]
+

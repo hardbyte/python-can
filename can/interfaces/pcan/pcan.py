@@ -23,22 +23,12 @@ try:
 except ImportError:
     boottimeEpoch = 0
 
-try:
-    # Try builtin Python 3 Windows API
-    from _overlapped import CreateEvent
-    from _winapi import WaitForSingleObject, WAIT_OBJECT_0, INFINITE
-
-    HAS_EVENTS = True
-except ImportError:
-    try:
-        # Try pywin32 package
-        from win32event import CreateEvent
-        from win32event import WaitForSingleObject, WAIT_OBJECT_0, INFINITE
-
-        HAS_EVENTS = True
-    except ImportError:
-        # Use polling instead
-        HAS_EVENTS = False
+from ...events import (
+    CreateEvent,
+    WaitForSingleObject,
+    WAIT_OBJECT_0,
+    INFINITE
+)
 
 # Set up logging
 log = logging.getLogger("can.pcan")
@@ -221,8 +211,8 @@ class PcanBus(BusABC):
         if result != PCAN_ERROR_OK:
             raise PcanError(self._get_formatted_error(result))
 
-        if HAS_EVENTS:
-            self._recv_event = CreateEvent(None, 0, 0, None)
+        self._recv_event = CreateEvent(None, 0, 0, None)
+        if self._recv_event is not None:
             result = self.m_objPCANBasic.SetValue(
                 self.m_PcanHandle, PCAN_RECEIVE_EVENT, self._recv_event
             )
@@ -315,7 +305,7 @@ class PcanBus(BusABC):
             else:
                 result = self.m_objPCANBasic.Read(self.m_PcanHandle)
             if result[0] == PCAN_ERROR_QRCVEMPTY:
-                if HAS_EVENTS:
+                if self._recv_event is not None:
                     result = None
                     val = WaitForSingleObject(self._recv_event, timeout_ms)
                     if val != WAIT_OBJECT_0:
