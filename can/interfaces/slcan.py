@@ -256,7 +256,9 @@ class slcanBus(BusABC):
         try:
             return self.serialPortOrig.fileno()
         except io.UnsupportedOperation:
-            raise NotImplementedError("fileno is not implemented using current CAN bus on this platform")
+            raise NotImplementedError(
+                "fileno is not implemented using current CAN bus on this platform"
+            )
 
     def get_version(
         self, timeout: Optional[float]
