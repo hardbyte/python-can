@@ -58,6 +58,47 @@ except OSError as e:
     logger.info("Cannot load CANalystII library")
 
 
+class CANalystIIException(Exception):
+    errno = None
+    msg = ''
+
+    def __init__(self, msg=None, errno=None):
+        if msg is not None:
+            self.msg = msg
+        if errno is not None:
+            self.errno = errno
+
+    def __str__(self):
+        return self.msg + ' ' + '({0})'.format(self.errno)
+
+
+class CANalystIIStartupError(CANalystIIException):
+    pass
+
+
+class CanalystIIBitrateDetectFailed(CANalystIIException):
+    msg = 'Failed to detect bitrate.'
+    errno = 1000
+
+
+class CanalystIIChannelInUse(CANalystIIException):
+    msg = 'Channel {0} already in use for device {1}'
+    errno = 1001
+
+    def __init__(self, device, channel):
+        self.msg = self.msg.format(device, channel)
+        CANalystIIException.__init__(self)
+
+
+class CanalystIIInvalidTimings(CANalystIIException):
+    msg = 'Timing registers are not set.'
+    errno = 1002
+
+
+class CanalystIIBitrateNotSupported(CANalystIIException):
+    msg = 'Bitrate is not supported.'
+
+
 class VCI_INIT_CONFIG(Structure):
     _fields_ = [
         ("AccCode", c_ulong),
@@ -124,6 +165,13 @@ _in_use = {}
 
 
 class CANalystIIBus(BusABC):
+    CANalystIIException = CANalystIIException
+    CANalystIIStartupError = CANalystIIStartupError
+    CanalystIIBitrateDetectFailed = CanalystIIBitrateDetectFailed
+    CanalystIIChannelInUse = CanalystIIChannelInUse
+    CanalystIIInvalidTimings = CanalystIIInvalidTimings
+    CanalystIIBitrateNotSupported = CanalystIIBitrateNotSupported
+
     def __init__(
         self,
         channel: Union[int, str],
@@ -155,6 +203,9 @@ class CANalystIIBus(BusABC):
 
         :param can_filters: filters for packet
         :type can_filters: CanFilters
+
+        :raises: RuntimeError, ValueError, CANalystIIStartupError, CanalystIIChannelInUse,
+            CanalystIIBitrateDetectFailed, CanalystIIBitrateNotSupported
         """
 
         if CANalystII is None:
@@ -214,21 +265,18 @@ class CANalystIIBus(BusABC):
             status = CANalystII.VCI_OpenDevice(VCI_USBCAN2, self.device, 0)
 
             if status != STATUS_OK:
-                raise ValueError(
+                raise CANalystIIStartupError(
                     'Unable to open interface, the device number '
-                    'supplied may be incorrect ({0})'.format(status)
+                    'supplied may be incorrect',
+                    status
                 )
 
             _in_use[device] = []
         else:
             for cb in _in_use[device]:
                 if cb.channel == channel:
-                    raise ValueError(
-                        'Channel {0} already in use for device {1}'.format(
-                            channel,
-                            device
-                        )
-                    )
+                    raise CanalystIIChannelInUse(channel,  device)
+
             self._b_info = _in_use[device][0].board_info
 
         _in_use[device] += [self]
@@ -274,22 +322,21 @@ class CANalystIIBus(BusABC):
 
                 if msg is not None:
                     logger.info('bitrate detected: {0}'.format(bitrate))
-                    bitrate = None
                     break
             else:
                 self.shutdown()
-                raise ValueError('Failed to autodetect bitrate')
+                raise CanalystIIBitrateDetectFailed()
 
-        if bitrate is not None:
+        elif bitrate is not None:
             if bitrate in TIMING_DICT:
                 Timing0, Timing1 = TIMING_DICT[bitrate]
             else:
                 self.shutdown()
-                raise ValueError("Bitrate is not supported ({0})".format(bitrate))
+                raise CanalystIIBitrateNotSupported(errno=bitrate)
 
-        if None in (Timing0, Timing1):
+        elif None in (Timing0, Timing1):
             self.shutdown()
-            raise ValueError("Timing registers are not set")
+            raise CanalystIIInvalidTimings()
 
         init_config.Timing0 = Timing0
         init_config.Timing1 = Timing1
@@ -305,9 +352,9 @@ class CANalystIIBus(BusABC):
 
         if status != STATUS_OK:
             self.shutdown()
-            raise ValueError(
-                "VCI_InitCAN Error, incorrect channel "
-                "number? ({0})".format(status)
+            raise CANalystIIStartupError(
+                "VCI_InitCAN Error, incorrect channel number?",
+                status
             )
 
         status = CANalystII.VCI_StartCAN(
@@ -319,10 +366,9 @@ class CANalystIIBus(BusABC):
         if status != STATUS_OK:
             logger.error(
                 "VCI_StartCAN Error ({0}), device:{1} "
-                "channel:{2}".format(device, channel, status)
+                "channel:{2}".format(status, device, channel)
             )
-            self.shutdown()
-            return
+            logger.info('receiving failed to start, only able to transmit.')
 
     def board_info(self) -> Dict:
         """
