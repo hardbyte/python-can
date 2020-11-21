@@ -10,6 +10,21 @@ VCI_USBCAN2 = 4
 STATUS_OK = 0x01
 STATUS_ERR = 0x00
 
+ERR_CAN_OVERFLOW = 0x0001
+ERR_CAN_ERRALARM = 0x0002
+ERR_CAN_PASSIVE = 0x0004
+ERR_CAN_LOSE = 0x0008
+ERR_CAN_BUSERR = 0x0010
+
+ERR_DEVICEOPENED = 0x0100
+ERR_DEVICEOPEN = 0x0200
+ERR_DEVICENOTOPEN = 0x0400
+ERR_BUFFEROVERFLOW = 0x0800
+ERR_DEVICENOTEXIST = 0x1000
+ERR_LOADKERNELDLL = 0x2000
+ERR_CMDFAILED = 0x4000
+ERR_BUFFERCREATE = 0x8000
+
 TIMING_DICT = {
     5000: (0xBF, 0xFF),
     10000: (0x31, 0x1C),
@@ -79,6 +94,28 @@ class VCI_BOARD_INFO(Structure):
         ('str_Serial_Num', c_char * 20),
         ('str_hw_Type', c_char * 40),
         ('Reserved', c_ushort * 4)
+    ]
+
+
+class VCI_CAN_STATUS(Structure):
+    _fields_ = [
+        ('ErrInterrupt', c_ubyte),
+        ('regMode', c_ubyte),
+        ('regStatus', c_ubyte),
+        ('regALCapture', c_ubyte),
+        ('regECCapture', c_ubyte),
+        ('regEWLimit', c_ubyte),
+        ('regRECounter', c_ubyte),
+        ('regTECounter', c_ubyte),
+        ('Reserved', c_ulong)
+    ]
+
+
+class VCI_ERR_INFO(Structure):
+    _fields_ = [
+        ('ErrCode;', c_uint),
+        ('Passive_ErrData', c_byte * 3),
+        ('ArLost_ErrData', c_byte)
     ]
 
 
@@ -253,6 +290,75 @@ class CANalystIIBus(BusABC):
         )
 
         return bool(frames_sent)
+
+    def status(self) -> Dict:
+        """
+        CAN Status
+
+        returns a dictionary with the following keys
+
+            * `err_interrupt`
+            * `mode`
+            * `status`
+            * `al_capture`
+            * `ec_capture`
+            * `ew_limit`
+            * `rx_count`
+            * `tx_count`
+
+        :rtype: dict
+        """
+        status = VCI_CAN_STATUS()
+        try:
+            CANalystII.VCI_ReadCANStatus(
+                VCI_USBCAN2,
+                self.device,
+                self.channel,
+                byref(status)
+            )
+
+        except:
+            pass
+
+        return dict(
+            err_interrupt=status.ErrInterrupt,
+            mode=status.regMode,
+            status=status.regStatus,
+            al_capture=status.regALCapture,
+            ec_capture=status.regECCapture,
+            ew_limit=status.regEWLimit,
+            rx_count=status.regRECounter,
+            tx_count=status.regTECounter
+        )
+
+    def error_info(self) -> Dict:
+        """
+        CAN Error
+
+        returns a dictionary with the following keys
+
+        `error_code`
+        `passive_err_data`
+        `ar_lost_err_data`
+
+        :rtype: dict
+        """
+        error_info = VCI_ERR_INFO()
+        try:
+            CANalystII.VCI_ReadErrInfo(
+                VCI_USBCAN2,
+                self.device,
+                self.channel,
+                byref(error_info)
+            )
+        except:
+            pass
+
+        return dict(
+            error_code=error_info.ErrCode,
+            passive_err_data=error_info.Passive_ErrData,
+            ar_lost_err_data=error_info.ArLost_ErrData
+        )
 
     def available(self) -> int:
         """
