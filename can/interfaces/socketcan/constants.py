@@ -1,5 +1,3 @@
-# coding: utf-8
-
 """
 Defines shared CAN constants.
 """

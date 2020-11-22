@@ -1,14 +1,12 @@
-# coding: utf-8
-
 """
 PCAN-Basic API
 
 Author: Keneth Wagner
-Last change: 13.11.2017 Wagner
+Last change: 02.07.2020 Wagner
 
 Language: Python 2.7, 3.5
 
-Copyright (C) 1999-2017 PEAK-System Technik GmbH, Darmstadt, Germany
+Copyright (C) 1999-2020  PEAK-System Technik GmbH, Darmstadt, Germany
 http://www.peak-system.com
 """
 
@@ -16,6 +14,10 @@ from ctypes import *
 from string import *
 import platform
 import logging
+
+if platform.system() == "Windows":
+    import winreg
+
 
 logger = logging.getLogger("can.pcan")
 
@@ -155,6 +157,9 @@ PCAN_ERROR_ILLPARAMTYPE = TPCANStatus(0x04000)  # Invalid parameter
 PCAN_ERROR_ILLPARAMVAL = TPCANStatus(0x08000)  # Invalid parameter value
 PCAN_ERROR_UNKNOWN = TPCANStatus(0x10000)  # Unknown error
 PCAN_ERROR_ILLDATA = TPCANStatus(0x20000)  # Invalid data, function, or action
+PCAN_ERROR_ILLMODE = TPCANStatus(
+    0x80000
+)  # Driver object state is wrong for the attempted operation
 PCAN_ERROR_CAUTION = TPCANStatus(
     0x2000000
 )  # An operation was successfully carried out, however, irregularities were registered
@@ -181,7 +186,7 @@ PCAN_VIRTUAL = TPCANDevice(
 PCAN_LAN = TPCANDevice(0x08)  # PCAN Gateway devices
 
 # PCAN parameters
-PCAN_DEVICE_NUMBER = TPCANParameter(0x01)  # PCAN-USB device number parameter
+PCAN_DEVICE_ID = TPCANParameter(0x01)  # PCAN-USB device identifier parameter
 PCAN_5VOLTS_POWER = TPCANParameter(0x02)  # PCAN-PC Card 5-Volt power parameter
 PCAN_RECEIVE_EVENT = TPCANParameter(0x03)  # PCAN receive event handler parameter
 PCAN_MESSAGE_FILTER = TPCANParameter(0x04)  # PCAN message filter parameter
@@ -261,6 +266,18 @@ PCAN_IO_DIGITAL_SET = TPCANParameter(
 )  # Value assigned to a 32 digital I/O pins of a PCAN-USB Chip - Multiple digital I/O pins to 1 = High
 PCAN_IO_DIGITAL_CLEAR = TPCANParameter(0x27)  # Clear multiple digital I/O pins to 0
 PCAN_IO_ANALOG_VALUE = TPCANParameter(0x28)  # Get value of a single analog input pin
+PCAN_FIRMWARE_VERSION = TPCANParameter(
+    0x29
+)  # Get the version of the firmware used by the device associated with a PCAN-Channel
+PCAN_ATTACHED_CHANNELS_COUNT = TPCANParameter(
+    0x2A
+)  # Get the amount of PCAN channels attached to a system
+PCAN_ATTACHED_CHANNELS = TPCANParameter(
+    0x2B
+)  # Get information about PCAN channels attached to a system
+
+# DEPRECATED parameters
+PCAN_DEVICE_NUMBER = PCAN_DEVICE_ID  # DEPRECATED. Use PCAN_DEVICE_ID instead
 
 # PCAN parameter values
 PCAN_PARAMETER_OFF = int(0x00)  # The PCAN parameter is not set (inactive)
@@ -321,6 +338,14 @@ FEATURE_IO_CAPABLE = int(
 
 SERVICE_STATUS_STOPPED = int(0x01)  # The service is not running
 SERVICE_STATUS_RUNNING = int(0x04)  # The service is running
+
+# Other constants
+MAX_LENGTH_HARDWARE_NAME = int(
+    33
+)  # Maximum length of the name of a device: 32 characters + terminator
+MAX_LENGTH_VERSION_STRING = int(
+    18
+)  # Maximum length of a version string: 17 characters + terminator
 
 # PCAN message types
 PCAN_MESSAGE_STANDARD = TPCANMessageType(
@@ -401,6 +426,38 @@ PCAN_TYPE_DNG = TPCANType(0x02)  # PCAN-Dongle 82C200
 PCAN_TYPE_DNG_EPP = TPCANType(0x03)  # PCAN-Dongle EPP 82C200
 PCAN_TYPE_DNG_SJA = TPCANType(0x05)  # PCAN-Dongle SJA1000
 PCAN_TYPE_DNG_SJA_EPP = TPCANType(0x06)  # PCAN-Dongle EPP SJA1000
+
+# string description of the error codes
+PCAN_DICT_STATUS = {
+    PCAN_ERROR_OK: "OK",
+    PCAN_ERROR_XMTFULL: "XMTFULL",
+    PCAN_ERROR_OVERRUN: "OVERRUN",
+    PCAN_ERROR_BUSLIGHT: "BUSLIGHT",
+    PCAN_ERROR_BUSHEAVY: "BUSHEAVY",
+    PCAN_ERROR_BUSWARNING: "BUSWARNING",
+    PCAN_ERROR_BUSPASSIVE: "BUSPASSIVE",
+    PCAN_ERROR_BUSOFF: "BUSOFF",
+    PCAN_ERROR_ANYBUSERR: "ANYBUSERR",
+    PCAN_ERROR_QRCVEMPTY: "QRCVEMPTY",
+    PCAN_ERROR_QOVERRUN: "QOVERRUN",
+    PCAN_ERROR_QXMTFULL: "QXMTFULL",
+    PCAN_ERROR_REGTEST: "ERR_REGTEST",
+    PCAN_ERROR_NODRIVER: "NODRIVER",
+    PCAN_ERROR_HWINUSE: "HWINUSE",
+    PCAN_ERROR_NETINUSE: "NETINUSE",
+    PCAN_ERROR_ILLHW: "ILLHW",
+    PCAN_ERROR_ILLNET: "ILLNET",
+    PCAN_ERROR_ILLCLIENT: "ILLCLIENT",
+    PCAN_ERROR_ILLHANDLE: "ILLHANDLE",
+    PCAN_ERROR_RESOURCE: "ERR_RESOURCE",
+    PCAN_ERROR_ILLPARAMTYPE: "ILLPARAMTYPE",
+    PCAN_ERROR_ILLPARAMVAL: "ILLPARAMVAL",
+    PCAN_ERROR_UNKNOWN: "UNKNOWN",
+    PCAN_ERROR_ILLDATA: "ILLDATA",
+    PCAN_ERROR_CAUTION: "CAUTION",
+    PCAN_ERROR_INITIALIZE: "ERR_INITIALIZE",
+    PCAN_ERROR_ILLOPERATION: "ILLOPERATION",
+}
 
 
 class TPCANMsg(Structure):
@@ -490,6 +547,22 @@ class TPCANMsgFDMac(Structure):
     ]  # Data of the message (DATA[0]..DATA[63])
 
 
+class TPCANChannelInformation(Structure):
+    """
+    Describes an available PCAN channel
+    """
+
+    _fields_ = [
+        ("channel_handle", TPCANHandle),  # PCAN channel handle
+        ("device_type", TPCANDevice),  # Kind of PCAN device
+        ("controller_number", c_ubyte),  # CAN-Controller number
+        ("device_features", c_uint),  # Device capabilities flag (see FEATURE_*)
+        ("device_name", c_char * MAX_LENGTH_HARDWARE_NAME),  # Device name
+        ("device_id", c_uint),  # Device number
+        ("channel_condition", c_uint),
+    ]  # Availability status of a PCAN-Channel
+
+
 # ///////////////////////////////////////////////////////////
 # PCAN-Basic API function declarations
 # ///////////////////////////////////////////////////////////
@@ -500,9 +573,21 @@ class PCANBasic:
     """
 
     def __init__(self):
-        # Loads the PCANBasic.dll
+        # Loads the PCANBasic.dll and checks if driver is available
         if platform.system() == "Windows":
             self.__m_dllBasic = windll.LoadLibrary("PCANBasic")
+            aReg = winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE)
+            try:
+                aKey = winreg.OpenKey(aReg, r"SOFTWARE\PEAK-System\PEAK-Drivers")
+                winreg.CloseKey(aKey)
+            except WindowsError:
+                logger.error("Exception: The PEAK-driver couldn't be found!")
+            finally:
+                winreg.CloseKey(aReg)
+        elif "CYGWIN" in platform.system():
+            self.__m_dllBasic = cdll.LoadLibrary("PCANBasic.dll")
+            # Unfortunately cygwin python has no winreg module, so we can't
+            # check for the registry key.
         elif platform.system() == "Darwin":
             self.__m_dllBasic = cdll.LoadLibrary("libPCBUSB.dylib")
         else:
@@ -780,7 +865,7 @@ class PCANBasic:
           A touple with 2 values
         """
         try:
-            if Parameter in {
+            if Parameter in (
                 PCAN_API_VERSION,
                 PCAN_HARDWARE_NAME,
                 PCAN_CHANNEL_VERSION,
@@ -788,15 +873,24 @@ class PCANBasic:
                 PCAN_TRACE_LOCATION,
                 PCAN_BITRATE_INFO_FD,
                 PCAN_IP_ADDRESS,
-            }:
+                PCAN_FIRMWARE_VERSION,
+            ):
                 mybuffer = create_string_buffer(256)
+            elif Parameter == PCAN_ATTACHED_CHANNELS:
+                res = self.GetValue(Channel, PCAN_ATTACHED_CHANNELS_COUNT)
+                if TPCANStatus(res[0]) != PCAN_ERROR_OK:
+                    return (TPCANStatus(res[0]),)
+                mybuffer = (TPCANChannelInformation * res[1])()
             else:
                 mybuffer = c_int(0)
 
             res = self.__m_dllBasic.CAN_GetValue(
                 Channel, Parameter, byref(mybuffer), sizeof(mybuffer)
             )
-            return TPCANStatus(res), mybuffer.value
+            if Parameter == PCAN_ATTACHED_CHANNELS:
+                return TPCANStatus(res), mybuffer
+            else:
+                return TPCANStatus(res), mybuffer.value
         except:
             logger.error("Exception on PCANBasic.GetValue")
             raise
@@ -822,7 +916,7 @@ class PCANBasic:
           A TPCANStatus error code
         """
         try:
-            if Parameter in {PCAN_LOG_LOCATION, PCAN_LOG_TEXT, PCAN_TRACE_LOCATION}:
+            if Parameter in (PCAN_LOG_LOCATION, PCAN_LOG_TEXT, PCAN_TRACE_LOCATION):
                 mybuffer = create_string_buffer(256)
             else:
                 mybuffer = c_int(0)

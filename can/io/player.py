@@ -1,13 +1,17 @@
-# coding: utf-8
-
 """
 This module contains the generic :class:`LogReader` as
 well as :class:`MessageSync` which plays back messages
 in the recorded order an time intervals.
 """
 
+import pathlib
 from time import time, sleep
-import logging
+import typing
+
+from pkg_resources import iter_entry_points
+
+if typing.TYPE_CHECKING:
+    import can
 
 from .generic import BaseIOHandler
 from .asc import ASCReader
@@ -15,8 +19,6 @@ from .blf import BLFReader
 from .canutils import CanutilsLogReader
 from .csv import CSVReader
 from .sqlite import SqliteReader
-
-log = logging.getLogger("can.io.player")
 
 
 class LogReader(BaseIOHandler):
@@ -44,46 +46,65 @@ class LogReader(BaseIOHandler):
         arguments are passed on to the returned instance.
     """
 
+    fetched_plugins = False
+    message_readers = {
+        ".asc": ASCReader,
+        ".blf": BLFReader,
+        ".csv": CSVReader,
+        ".db": SqliteReader,
+        ".log": CanutilsLogReader,
+    }
+
     @staticmethod
-    def __new__(cls, filename, *args, **kwargs):
+    def __new__(cls, filename: "can.typechecking.StringPathLike", *args, **kwargs):
         """
-        :param str filename: the filename/path the file to read from
+        :param filename: the filename/path of the file to read from
+        :raises ValueError: if the filename's suffix is of an unknown file type
         """
-        if filename.endswith(".asc"):
-            return ASCReader(filename, *args, **kwargs)
-        elif filename.endswith(".blf"):
-            return BLFReader(filename, *args, **kwargs)
-        elif filename.endswith(".csv"):
-            return CSVReader(filename, *args, **kwargs)
-        elif filename.endswith(".db"):
-            return SqliteReader(filename, *args, **kwargs)
-        elif filename.endswith(".log"):
-            return CanutilsLogReader(filename, *args, **kwargs)
-        else:
-            raise NotImplementedError(
-                "No read support for this log format: {}".format(filename)
+        if not LogReader.fetched_plugins:
+            LogReader.message_readers.update(
+                {
+                    reader.name: reader.load()
+                    for reader in iter_entry_points("can.io.message_reader")
+                }
             )
+            LogReader.fetched_plugins = True
+
+        suffix = pathlib.PurePath(filename).suffix.lower()
+        try:
+            return LogReader.message_readers[suffix](filename, *args, **kwargs)
+        except KeyError:
+            raise ValueError(
+                f'No read support for this unknown log format "{suffix}"'
+            ) from None
 
 
-class MessageSync:
+class MessageSync:  # pylint: disable=too-few-public-methods
     """
     Used to iterate over some given messages in the recorded time.
     """
 
-    def __init__(self, messages, timestamps=True, gap=0.0001, skip=60):
+    def __init__(
+        self,
+        messages: typing.Iterable["can.Message"],
+        timestamps: bool = True,
+        gap: float = 0.0001,
+        skip: float = 60.0,
+    ) -> None:
         """Creates an new **MessageSync** instance.
 
-        :param Iterable[can.Message] messages: An iterable of :class:`can.Message` instances.
-        :param bool timestamps: Use the messages' timestamps. If False, uses the *gap* parameter as the time between messages.
-        :param float gap: Minimum time between sent messages in seconds
-        :param float skip: Skip periods of inactivity greater than this (in seconds).
+        :param messages: An iterable of :class:`can.Message` instances.
+        :param timestamps: Use the messages' timestamps. If False, uses the *gap* parameter
+                           as the time between messages.
+        :param gap: Minimum time between sent messages in seconds
+        :param skip: Skip periods of inactivity greater than this (in seconds).
         """
         self.raw_messages = messages
         self.timestamps = timestamps
         self.gap = gap
         self.skip = skip
 
-    def __iter__(self):
+    def __iter__(self) -> typing.Generator["can.Message", None, None]:
         playback_start_time = time()
         recorded_start_time = None
 

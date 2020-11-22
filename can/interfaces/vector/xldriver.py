@@ -1,5 +1,3 @@
-# coding: utf-8
-
 """
 Ctypes wrapper module for Vector CAN Interface on win32/win64 systems.
 
@@ -29,7 +27,7 @@ _xlapi_dll = ctypes.windll.LoadLibrary(DLL_NAME)
 # ctypes wrapping for API functions
 xlGetErrorString = _xlapi_dll.xlGetErrorString
 xlGetErrorString.argtypes = [xlclass.XLstatus]
-xlGetErrorString.restype = ctypes.c_char_p
+xlGetErrorString.restype = xlclass.XLstringType
 
 
 def check_status(result, function, arguments):
@@ -65,6 +63,18 @@ xlGetApplConfig.argtypes = [
 xlGetApplConfig.restype = xlclass.XLstatus
 xlGetApplConfig.errcheck = check_status
 
+xlSetApplConfig = _xlapi_dll.xlSetApplConfig
+xlSetApplConfig.argtypes = [
+    ctypes.c_char_p,
+    ctypes.c_uint,
+    ctypes.c_uint,
+    ctypes.c_uint,
+    ctypes.c_uint,
+    ctypes.c_uint,
+]
+xlSetApplConfig.restype = xlclass.XLstatus
+xlSetApplConfig.errcheck = check_status
+
 xlGetChannelIndex = _xlapi_dll.xlGetChannelIndex
 xlGetChannelIndex.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_int]
 xlGetChannelIndex.restype = ctypes.c_int
@@ -90,6 +100,15 @@ xlGetSyncTime = _xlapi_dll.xlGetSyncTime
 xlGetSyncTime.argtypes = [xlclass.XLportHandle, ctypes.POINTER(xlclass.XLuint64)]
 xlGetSyncTime.restype = xlclass.XLstatus
 xlGetSyncTime.errcheck = check_status
+
+xlGetChannelTime = _xlapi_dll.xlGetChannelTime
+xlGetChannelTime.argtypes = [
+    xlclass.XLportHandle,
+    xlclass.XLaccess,
+    ctypes.POINTER(xlclass.XLuint64),
+]
+xlGetChannelTime.restype = xlclass.XLstatus
+xlGetChannelTime.errcheck = check_status
 
 xlClosePort = _xlapi_dll.xlClosePort
 xlClosePort.argtypes = [xlclass.XLportHandle]
@@ -222,3 +241,21 @@ xlCanSetChannelOutput = _xlapi_dll.xlCanSetChannelOutput
 xlCanSetChannelOutput.argtypes = [xlclass.XLportHandle, xlclass.XLaccess, ctypes.c_char]
 xlCanSetChannelOutput.restype = xlclass.XLstatus
 xlCanSetChannelOutput.errcheck = check_status
+
+xlPopupHwConfig = _xlapi_dll.xlPopupHwConfig
+xlPopupHwConfig.argtypes = [ctypes.c_char_p, ctypes.c_uint]
+xlPopupHwConfig.restype = xlclass.XLstatus
+xlPopupHwConfig.errcheck = check_status
+
+xlSetTimerRate = _xlapi_dll.xlSetTimerRate
+xlSetTimerRate.argtypes = [xlclass.XLportHandle, ctypes.c_ulong]
+xlSetTimerRate.restype = xlclass.XLstatus
+xlSetTimerRate.errcheck = check_status
+
+xlGetEventString = _xlapi_dll.xlGetEventString
+xlGetEventString.argtypes = [ctypes.POINTER(xlclass.XLevent)]
+xlGetEventString.restype = xlclass.XLstringType
+
+xlCanGetEventString = _xlapi_dll.xlCanGetEventString
+xlCanGetEventString.argtypes = [ctypes.POINTER(xlclass.XLcanRxEvent)]
+xlCanGetEventString.restype = xlclass.XLstringType

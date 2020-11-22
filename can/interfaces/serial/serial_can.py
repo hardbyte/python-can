@@ -1,5 +1,3 @@
-# coding: utf-8
-
 """
 A text based interface. For example use over serial ports like
 "/dev/ttyS1" or "/dev/ttyUSB0" on Linux machines or "COM1" on Windows.
@@ -22,6 +20,11 @@ except ImportError:
         "the serial module installed!"
     )
     serial = None
+
+try:
+    from serial.tools import list_ports
+except ImportError:
+    list_ports = None
 
 
 class SerialBus(BusABC):
@@ -164,3 +167,15 @@ class SerialBus(BusABC):
             return self.ser.fileno()
         # Return an invalid file descriptor on Windows
         return -1
+
+    @staticmethod
+    def _detect_available_configs():
+        channels = []
+        serial_ports = []
+
+        if list_ports:
+            serial_ports = list_ports.comports()
+
+        for port in serial_ports:
+            channels.append({"interface": "serial", "channel": port.device})
+        return channels

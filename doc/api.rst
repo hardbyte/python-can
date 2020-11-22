@@ -11,7 +11,7 @@ A form of CAN interface is also required.
 
 .. toctree::
    :maxdepth: 1
-   
+
    bus
    message
    listeners
@@ -25,7 +25,7 @@ Utilities
 ---------
 
 
-.. automethod:: can.detect_available_configs
+.. autofunction:: can.detect_available_configs
 
 
 .. _notifier:
@@ -33,7 +33,7 @@ Utilities
 Notifier
 --------
 
-The Notifier object is used as a message distributor for a bus.
+The Notifier object is used as a message distributor for a bus. Notifier creates a thread to read messages from the bus and distributes them to listeners.
 
 .. autoclass:: can.Notifier
     :members:

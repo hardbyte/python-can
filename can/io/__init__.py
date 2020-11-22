@@ -1,12 +1,10 @@
-# coding: utf-8
-
 """
 Read and write CAN bus messages using a range of Readers
 and Writers based off the file extension.
 """
 
 # Generic
-from .logger import Logger
+from .logger import Logger, BaseRotatingLogger, SizedRotatingLogger
 from .player import LogReader, MessageSync
 
 # Format specific

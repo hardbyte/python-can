@@ -1,9 +1,10 @@
 #!/usr/bin/env python
-# coding: utf-8
+"""
+Setup script for the `can` package.
+Learn more at https://github.com/hardbyte/python-can/
+"""
 
-"""
-python-can requires the setuptools package to be installed.
-"""
+# pylint: disable=invalid-name
 
 from __future__ import absolute_import
 
@@ -11,7 +12,6 @@ from os import listdir
 from os.path import isfile, join
 import re
 import logging
-import sys
 from setuptools import setup, find_packages
 
 logging.basicConfig(level=logging.WARNING)
@@ -28,26 +28,10 @@ with open("README.rst", "r") as f:
 extras_require = {
     "seeedstudio": ["pyserial>=3.0"],
     "serial": ["pyserial~=3.0"],
-    "neovi": ["python-ics>=2.12", "filelock"],
+    "neovi": ["filelock", "python-ics>=2.12"],
+    "cantact": ["cantact>=0.0.7"],
+    "gs_usb": ["gs_usb>=0.2.1"],
 }
-
-tests_require = [
-    "pytest~=4.3",
-    "pytest-timeout~=1.3",
-    "pytest-cov~=2.6",
-    "codecov~=2.0",
-    "hypothesis",
-] + extras_require["serial"]
-
-extras_require["test"] = tests_require
-
-# Check for 'pytest-runner' only if setup.py was invoked with 'test'.
-# This optimizes setup.py for cases when pytest-runner is not needed,
-# using the approach that is suggested upstream.
-#
-# See https://pypi.org/project/pytest-runner/#conditional-requirement
-needs_pytest = {"pytest", "test", "ptr"}.intersection(sys.argv)
-pytest_runner = ["pytest-runner"] if needs_pytest else []
 
 setup(
     # Description
@@ -60,6 +44,7 @@ setup(
         "Programming Language :: Python",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: Implementation :: CPython",
         "Programming Language :: Python :: Implementation :: PyPy",
         "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
@@ -80,16 +65,11 @@ setup(
         "Topic :: System :: Hardware :: Hardware Drivers",
         "Topic :: Utilities",
     ],
-    # Code
     version=version,
-    packages=find_packages(exclude=["test", "doc", "scripts", "examples"]),
+    packages=find_packages(exclude=["test*", "doc", "scripts", "examples"]),
     scripts=list(filter(isfile, (join("scripts/", f) for f in listdir("scripts/")))),
-    # Author
-    author="Brian Thorne",
-    author_email="brian@thorne.link",
-    # License
+    author="Python CAN contributors",
     license="LGPL v3",
-    # Package data
     package_data={
         "": ["README.rst", "CONTRIBUTORS.txt", "LICENSE.txt", "CHANGELOG.txt"],
         "doc": ["*.*"],
@@ -99,12 +79,12 @@ setup(
     # see https://www.python.org/dev/peps/pep-0345/#version-specifiers
     python_requires=">=3.6",
     install_requires=[
+        # Setuptools provides pkg_resources which python-can makes use of.
+        "setuptools",
         "wrapt~=1.10",
-        "aenum",
         'windows-curses;platform_system=="Windows"',
-        "filelock",
+        "mypy_extensions>=0.4.0,<0.5.0",
+        'pywin32;platform_system=="Windows"',
     ],
-    setup_requires=pytest_runner,
     extras_require=extras_require,
-    tests_require=tests_require,
 )

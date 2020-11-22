@@ -1,5 +1,3 @@
-# coding: utf-8
-
 """
 To Support the Seeed USB-Can analyzer interface. The device will appear
 as a serial port, for example "/dev/ttyUSB0" on Linux machines
@@ -10,6 +8,7 @@ SKU 114991193
 
 import logging
 import struct
+import io
 from time import time
 from can import BusABC, Message
 
@@ -264,7 +263,7 @@ class SeeedBus(BusABC):
         return None, None
 
     def fileno(self):
-        if hasattr(self.ser, "fileno"):
+        try:
             return self.ser.fileno()
-        # Return an invalid file descriptor on Windows
-        return -1
+        except io.UnsupportedOperation:
+            raise NotImplementedError("fileno is not implemented using current CAN bus")

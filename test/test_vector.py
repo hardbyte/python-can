@@ -6,15 +6,15 @@ Test for Vector Interface
 """
 
 import ctypes
-import time
-import logging
+import os
+import pickle
 import unittest
 from unittest.mock import Mock
 
 import pytest
 
 import can
-from can.interfaces.vector import canlib, xldefine, xlclass
+from can.interfaces.vector import canlib, xldefine, xlclass, VectorError
 
 
 class TestVectorBus(unittest.TestCase):
@@ -54,12 +54,6 @@ class TestVectorBus(unittest.TestCase):
         can.interfaces.vector.canlib.xldriver.xlClosePort = Mock(return_value=0)
         can.interfaces.vector.canlib.xldriver.xlCloseDriver = Mock()
 
-        # receiver functions
-        can.interfaces.vector.canlib.xldriver.xlReceive = Mock(side_effect=xlReceive)
-        can.interfaces.vector.canlib.xldriver.xlCanReceive = Mock(
-            side_effect=xlCanReceive
-        )
-
         # sender functions
         can.interfaces.vector.canlib.xldriver.xlCanTransmit = Mock(return_value=0)
         can.interfaces.vector.canlib.xldriver.xlCanTransmitEx = Mock(return_value=0)
@@ -76,7 +70,7 @@ class TestVectorBus(unittest.TestCase):
             self.bus = None
 
     def test_bus_creation(self) -> None:
-        self.bus = can.Bus(channel=0, bustype="vector")
+        self.bus = can.Bus(channel=0, bustype="vector", _testing=True)
         self.assertIsInstance(self.bus, canlib.VectorBus)
         can.interfaces.vector.canlib.xldriver.xlOpenDriver.assert_called()
         can.interfaces.vector.canlib.xldriver.xlGetApplConfig.assert_called()
@@ -92,7 +86,7 @@ class TestVectorBus(unittest.TestCase):
         can.interfaces.vector.canlib.xldriver.xlCanSetChannelBitrate.assert_not_called()
 
     def test_bus_creation_bitrate(self) -> None:
-        self.bus = can.Bus(channel=0, bustype="vector", bitrate=200000)
+        self.bus = can.Bus(channel=0, bustype="vector", bitrate=200000, _testing=True)
         self.assertIsInstance(self.bus, canlib.VectorBus)
         can.interfaces.vector.canlib.xldriver.xlOpenDriver.assert_called()
         can.interfaces.vector.canlib.xldriver.xlGetApplConfig.assert_called()
@@ -112,7 +106,7 @@ class TestVectorBus(unittest.TestCase):
         self.assertEqual(xlCanSetChannelBitrate_args[2], 200000)
 
     def test_bus_creation_fd(self) -> None:
-        self.bus = can.Bus(channel=0, bustype="vector", fd=True)
+        self.bus = can.Bus(channel=0, bustype="vector", fd=True, _testing=True)
         self.assertIsInstance(self.bus, canlib.VectorBus)
         can.interfaces.vector.canlib.xldriver.xlOpenDriver.assert_called()
         can.interfaces.vector.canlib.xldriver.xlGetApplConfig.assert_called()
@@ -135,12 +129,13 @@ class TestVectorBus(unittest.TestCase):
             fd=True,
             bitrate=500000,
             data_bitrate=2000000,
-            sjwAbr=10,
-            tseg1Abr=11,
-            tseg2Abr=12,
-            sjwDbr=13,
-            tseg1Dbr=14,
-            tseg2Dbr=15,
+            sjw_abr=10,
+            tseg1_abr=11,
+            tseg2_abr=12,
+            sjw_dbr=13,
+            tseg1_dbr=14,
+            tseg2_dbr=15,
+            _testing=True,
         )
         self.assertIsInstance(self.bus, canlib.VectorBus)
         can.interfaces.vector.canlib.xldriver.xlOpenDriver.assert_called()
@@ -171,19 +166,45 @@ class TestVectorBus(unittest.TestCase):
         self.assertEqual(canFdConf.tseg2Dbr, 15)
 
     def test_receive(self) -> None:
-        self.bus = can.Bus(channel=0, bustype="vector")
+        can.interfaces.vector.canlib.xldriver.xlReceive = Mock(side_effect=xlReceive)
+        self.bus = can.Bus(channel=0, bustype="vector", _testing=True)
         self.bus.recv(timeout=0.05)
         can.interfaces.vector.canlib.xldriver.xlReceive.assert_called()
         can.interfaces.vector.canlib.xldriver.xlCanReceive.assert_not_called()
 
     def test_receive_fd(self) -> None:
-        self.bus = can.Bus(channel=0, bustype="vector", fd=True)
+        can.interfaces.vector.canlib.xldriver.xlCanReceive = Mock(
+            side_effect=xlCanReceive
+        )
+        self.bus = can.Bus(channel=0, bustype="vector", fd=True, _testing=True)
         self.bus.recv(timeout=0.05)
         can.interfaces.vector.canlib.xldriver.xlReceive.assert_not_called()
         can.interfaces.vector.canlib.xldriver.xlCanReceive.assert_called()
 
+    def test_receive_non_msg_event(self) -> None:
+        can.interfaces.vector.canlib.xldriver.xlReceive = Mock(
+            side_effect=xlReceive_chipstate
+        )
+        self.bus = can.Bus(channel=0, bustype="vector", _testing=True)
+        self.bus.handle_can_event = Mock()
+        self.bus.recv(timeout=0.05)
+        can.interfaces.vector.canlib.xldriver.xlReceive.assert_called()
+        can.interfaces.vector.canlib.xldriver.xlCanReceive.assert_not_called()
+        self.bus.handle_can_event.assert_called()
+
+    def test_receive_fd_non_msg_event(self) -> None:
+        can.interfaces.vector.canlib.xldriver.xlCanReceive = Mock(
+            side_effect=xlCanReceive_chipstate
+        )
+        self.bus = can.Bus(channel=0, bustype="vector", fd=True, _testing=True)
+        self.bus.handle_canfd_event = Mock()
+        self.bus.recv(timeout=0.05)
+        can.interfaces.vector.canlib.xldriver.xlReceive.assert_not_called()
+        can.interfaces.vector.canlib.xldriver.xlCanReceive.assert_called()
+        self.bus.handle_canfd_event.assert_called()
+
     def test_send(self) -> None:
-        self.bus = can.Bus(channel=0, bustype="vector")
+        self.bus = can.Bus(channel=0, bustype="vector", _testing=True)
         msg = can.Message(
             arbitration_id=0xC0FFEF, data=[1, 2, 3, 4, 5, 6, 7, 8], is_extended_id=True
         )
@@ -192,7 +213,7 @@ class TestVectorBus(unittest.TestCase):
         can.interfaces.vector.canlib.xldriver.xlCanTransmitEx.assert_not_called()
 
     def test_send_fd(self) -> None:
-        self.bus = can.Bus(channel=0, bustype="vector", fd=True)
+        self.bus = can.Bus(channel=0, bustype="vector", fd=True, _testing=True)
         msg = can.Message(
             arbitration_id=0xC0FFEF, data=[1, 2, 3, 4, 5, 6, 7, 8], is_extended_id=True
         )
@@ -201,22 +222,78 @@ class TestVectorBus(unittest.TestCase):
         can.interfaces.vector.canlib.xldriver.xlCanTransmitEx.assert_called()
 
     def test_flush_tx_buffer(self) -> None:
-        self.bus = can.Bus(channel=0, bustype="vector")
+        self.bus = can.Bus(channel=0, bustype="vector", _testing=True)
         self.bus.flush_tx_buffer()
         can.interfaces.vector.canlib.xldriver.xlCanFlushTransmitQueue.assert_called()
 
     def test_shutdown(self) -> None:
-        self.bus = can.Bus(channel=0, bustype="vector")
+        self.bus = can.Bus(channel=0, bustype="vector", _testing=True)
         self.bus.shutdown()
         can.interfaces.vector.canlib.xldriver.xlDeactivateChannel.assert_called()
         can.interfaces.vector.canlib.xldriver.xlClosePort.assert_called()
         can.interfaces.vector.canlib.xldriver.xlCloseDriver.assert_called()
 
-    def test_reset(self):
-        self.bus = can.Bus(channel=0, bustype="vector")
+    def test_reset(self) -> None:
+        self.bus = can.Bus(channel=0, bustype="vector", _testing=True)
         self.bus.reset()
         can.interfaces.vector.canlib.xldriver.xlDeactivateChannel.assert_called()
         can.interfaces.vector.canlib.xldriver.xlActivateChannel.assert_called()
+
+    def test_popup_hw_cfg(self) -> None:
+        canlib.xldriver.xlPopupHwConfig = Mock()
+        canlib.VectorBus.popup_vector_hw_configuration(10)
+        assert canlib.xldriver.xlPopupHwConfig.called
+        args, kwargs = canlib.xldriver.xlPopupHwConfig.call_args
+        assert isinstance(args[0], ctypes.c_char_p)
+        assert isinstance(args[1], ctypes.c_uint)
+
+    def test_get_application_config(self) -> None:
+        canlib.xldriver.xlGetApplConfig = Mock()
+        canlib.VectorBus.get_application_config(app_name="CANalyzer", app_channel=0)
+        assert canlib.xldriver.xlGetApplConfig.called
+
+    def test_set_application_config(self) -> None:
+        canlib.xldriver.xlSetApplConfig = Mock()
+        canlib.VectorBus.set_application_config(
+            app_name="CANalyzer",
+            app_channel=0,
+            hw_type=xldefine.XL_HardwareType.XL_HWTYPE_VN1610,
+            hw_index=0,
+            hw_channel=0,
+        )
+        assert canlib.xldriver.xlSetApplConfig.called
+
+    def test_set_timer_rate(self) -> None:
+        canlib.xldriver.xlSetTimerRate = Mock()
+        bus: canlib.VectorBus = can.Bus(
+            channel=0, bustype="vector", fd=True, _testing=True
+        )
+        bus.set_timer_rate(timer_rate_ms=1)
+        assert canlib.xldriver.xlSetTimerRate.called
+
+    def test_called_without_testing_argument(self) -> None:
+        """This tests if an exception is thrown when we are not running on Windows."""
+        if os.name != "nt":
+            with self.assertRaises(OSError):
+                # do not set the _testing argument, since it supresses the exception
+                can.Bus(channel=0, bustype="vector")
+
+    def test_vector_error_pickle(self) -> None:
+        error_code = 118
+        error_string = "XL_ERROR"
+        function = "function_name"
+
+        exc = VectorError(error_code, error_string, function)
+
+        # pickle and unpickle
+        p = pickle.dumps(exc)
+        exc_unpickled: VectorError = pickle.loads(p)
+
+        self.assertEqual(str(exc), str(exc_unpickled))
+        self.assertEqual(error_code, exc_unpickled.error_code)
+
+        with pytest.raises(VectorError):
+            raise exc_unpickled
 
 
 def xlGetApplConfig(
@@ -294,6 +371,32 @@ def xlCanReceive(
     event.chanIndex = 0
     for idx, value in enumerate([1, 2, 3, 4, 5, 6, 7, 8]):
         event.tagData.canRxOkMsg.data[idx] = value
+    return 0
+
+
+def xlReceive_chipstate(
+    port_handle: xlclass.XLportHandle,
+    event_count_p: ctypes.POINTER(ctypes.c_uint),
+    event: ctypes.POINTER(xlclass.XLevent),
+) -> int:
+    event.tag = xldefine.XL_EventTags.XL_CHIP_STATE.value
+    event.tagData.chipState.busStatus = 8
+    event.tagData.chipState.rxErrorCounter = 0
+    event.tagData.chipState.txErrorCounter = 0
+    event.timeStamp = 0
+    event.chanIndex = 2
+    return 0
+
+
+def xlCanReceive_chipstate(
+    port_handle: xlclass.XLportHandle, event: ctypes.POINTER(xlclass.XLcanRxEvent)
+) -> int:
+    event.tag = xldefine.XL_CANFD_RX_EventTags.XL_CAN_EV_TAG_CHIP_STATE.value
+    event.tagData.canChipState.busStatus = 8
+    event.tagData.canChipState.rxErrorCounter = 0
+    event.tagData.canChipState.txErrorCounter = 0
+    event.timeStamp = 0
+    event.chanIndex = 2
     return 0
 
 
