@@ -77,7 +77,6 @@ setup(
     # Installation
     # see https://www.python.org/dev/peps/pep-0345/#version-specifiers
     python_requires=">=3.6",
-    dependency_links=['https://github.com/gwangyi/pysetupdi/tarball/master#egg=pysetupdi-2018.10.22'],
     install_requires=[
         # Setuptools provides pkg_resources which python-can makes use of.
         "setuptools",
@@ -85,7 +84,6 @@ setup(
         'windows-curses;platform_system=="Windows"',
         "filelock",
         "mypy_extensions >= 0.4.0, < 0.5.0",
-        'pysetupdi;platform_system=="Windows"',
     ],
     extras_require=extras_require,
 )
