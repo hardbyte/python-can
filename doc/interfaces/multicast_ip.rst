@@ -10,9 +10,9 @@ which can only passes messages within a single process but does not require a ne
 It runs on UDP to have the lowest possible latency (as opposed to using TCP).
 
 .. note::
-    There are cases in which multicast IP is not an option, e.g. because it is unsupported or
-    blocked intermediate by routers. In this case you can also consider using the related tool
-    `python-can-remote <https://github.com/christiansandberg/python-can-remote>`_.
+    For an overview over the different virtual buses in this library and beyond, please refer
+    to :ref:`other_virtual_interfaces`. That section also describes important limitations of
+    current virtual interfaces.
 
 Please refer to the `Bus class documentation`_ below for configuration options and useful resources
 for specifying multicast IP addresses.
@@ -49,7 +49,7 @@ from ``bus_1`` ot ``bus_2``:
             time.sleep(2.0)
 
 
-Bus class documentation
+Bus Class Documentation
 -----------------------
 
 .. autoclass:: can.interfaces.multicast_ip.MulticastIpBus
