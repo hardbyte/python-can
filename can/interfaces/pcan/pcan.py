@@ -316,9 +316,13 @@ class PcanBus(BusABC):
         result = None
         while result is None:
             if self.fd:
-                result = self.m_objPCANBasic.ReadFD(self.m_PcanHandle, self.mac_use_standard_message)
+                result = self.m_objPCANBasic.ReadFD(
+                    self.m_PcanHandle, self.mac_use_standard_message
+                )
             else:
-                result = self.m_objPCANBasic.Read(self.m_PcanHandle, self.mac_use_standard_message)
+                result = self.m_objPCANBasic.Read(
+                    self.m_PcanHandle, self.mac_use_standard_message
+                )
             if result[0] == PCAN_ERROR_QRCVEMPTY:
                 if HAS_EVENTS:
                     result = None
