@@ -170,6 +170,10 @@ class PcanBus(BusABC):
             that the controller can resynchronize every bit.
             In the range (1..16).
             Ignored if not using CAN-FD.
+            
+        :param bool mac_use_standard_message:
+            Whether to use the standard message (TPCANMsg) when
+            communicating with the PCAN driver.
 
         """
         self.channel_info = channel
@@ -182,6 +186,7 @@ class PcanBus(BusABC):
 
         self.m_objPCANBasic = PCANBasic()
         self.m_PcanHandle = globals()[channel]
+        self.mac_use_standard_message = kwargs.get("mac_use_standard_message", False)
 
         if state is BusState.ACTIVE or state is BusState.PASSIVE:
             self.state = state
@@ -311,9 +316,9 @@ class PcanBus(BusABC):
         result = None
         while result is None:
             if self.fd:
-                result = self.m_objPCANBasic.ReadFD(self.m_PcanHandle)
+                result = self.m_objPCANBasic.ReadFD(self.m_PcanHandle, self.mac_use_standard_message)
             else:
-                result = self.m_objPCANBasic.Read(self.m_PcanHandle)
+                result = self.m_objPCANBasic.Read(self.m_PcanHandle, self.mac_use_standard_message)
             if result[0] == PCAN_ERROR_QRCVEMPTY:
                 if HAS_EVENTS:
                     result = None
@@ -401,7 +406,7 @@ class PcanBus(BusABC):
 
         if self.fd:
             # create a TPCANMsg message structure
-            if platform.system() == "Darwin":
+            if platform.system() == "Darwin" and not self.mac_use_standard_message:
                 CANMsg = TPCANMsgFDMac()
             else:
                 CANMsg = TPCANMsgFD()
@@ -422,7 +427,7 @@ class PcanBus(BusABC):
 
         else:
             # create a TPCANMsg message structure
-            if platform.system() == "Darwin":
+            if platform.system() == "Darwin" and not self.mac_use_standard_message:
                 CANMsg = TPCANMsgMac()
             else:
                 CANMsg = TPCANMsg()

@@ -716,7 +716,7 @@ class PCANBasic:
             logger.error("Exception on PCANBasic.GetStatus")
             raise
 
-    def Read(self, Channel):
+    def Read(self, Channel, mac_use_standard_message=False):
 
         """
           Reads a CAN message from the receive queue of a PCAN Channel
@@ -731,12 +731,13 @@ class PCANBasic:
 
         Parameters:
           Channel  : A TPCANHandle representing a PCAN Channel
+          mac_use_standard_message : Whether to use standard message size on OSX
 
         Returns:
           A touple with three values
         """
         try:
-            if platform.system() == "Darwin":
+            if platform.system() == "Darwin" and not mac_use_standard_message:
                 msg = TPCANMsgMac()
                 timestamp = TPCANTimestampMac()
             else:
@@ -748,7 +749,7 @@ class PCANBasic:
             logger.error("Exception on PCANBasic.Read")
             raise
 
-    def ReadFD(self, Channel):
+    def ReadFD(self, Channel, mac_use_standard_message=False):
 
         """
           Reads a CAN message from the receive queue of a FD capable PCAN Channel
@@ -763,12 +764,13 @@ class PCANBasic:
 
         Parameters:
           Channel  : The handle of a FD capable PCAN Channel
+          mac_use_standard_message : Whether to use standard message size on OSX
 
         Returns:
           A touple with three values
         """
         try:
-            if platform.system() == "Darwin":
+            if platform.system() == "Darwin" and not mac_use_standard_message:
                 msg = TPCANMsgFDMac()
             else:
                 msg = TPCANMsgFD()
