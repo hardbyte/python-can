@@ -20,7 +20,7 @@ IPv4_ADDRESS_INFO = Tuple[str, int]  # address, port
 IPv6_ADDRESS_INFO = Tuple[str, int, int, int]  # address, port, flowinfo, scope_id
 IP_ADDRESS_INFO = Union[IPv4_ADDRESS_INFO, IPv6_ADDRESS_INFO]
 
-# constants
+# Additional constants for the interaction with Unix kernels
 SO_TIMESTAMPNS = 35
 
 

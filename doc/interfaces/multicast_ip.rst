@@ -3,16 +3,21 @@
 Multicast IP Interface
 ======================
 
-This module implements transport of CAN and CAN FD messages over UDP on Multicast IPv4 and IPv6.
-This virtual interface allows to communicate between multiple processes and even hosts.
+This module implements transport of CAN and CAN FD messages over UDP via Multicast IPv4 and IPv6.
+This virtual interface allows for communication between multiple processes and even hosts.
 This differentiates it from the :ref:`virtual_interface_doc` interface,
 which can only passes messages within a single process but does not require a network stack.
-It runs on UDP to have the lowest possible latency (as opposed to using TCP).
+
+It runs on UDP to have the lowest possible latency (as opposed to using TCP), and because
+normal IP multicast is inherently unreliable, as the recipients are unknown.
+This enables ad-hoc networks that do not require a central server but is also formally and
+unreliable network. In practice however, local area networks (LANs) should most often be
+sufficiently reliable for this interface to function properly.
 
 .. note::
     For an overview over the different virtual buses in this library and beyond, please refer
-    to :ref:`other_virtual_interfaces`. That section also describes important limitations of
-    current virtual interfaces.
+    to the section :ref:`other_virtual_interfaces`. It also describes important limitations
+    of this interface.
 
 Please refer to the `Bus class documentation`_ below for configuration options and useful resources
 for specifying multicast IP addresses.
@@ -26,7 +31,7 @@ Example
 -------
 
 This example should print a single line indicating that a CAN message was successfully sent
-from ``bus_1`` ot ``bus_2``:
+from ``bus_1`` to ``bus_2``:
 
 .. code-block:: python
 
