@@ -36,7 +36,10 @@ try:
             ('Data4', _UBYTE * 8)
         ]
 
-        def __init__(self, guid="{00000000-0000-0000-0000-000000000000}"):
+        def __init__(
+            self,
+            guid="{00000000-0000-0000-0000-000000000000}"
+        ):
             super().__init__()
             ret = _ole32.CLSIDFromString(
                 ctypes.create_unicode_buffer(guid),
@@ -84,9 +87,18 @@ try:
         enumerator = ctypes.create_unicode_buffer('USB')
 
         guid = GUID()
-        _ole32.CLSIDFromString("{A5DCBF10-6530-11D2-901F-00C04FB951ED}", ctypes.byref(guid))
+        _ole32.CLSIDFromString(
+            "{A5DCBF10-6530-11D2-901F-00C04FB951ED}",
+            ctypes.byref(guid)
+        )
 
-        hDevInfo = _SetupDiGetClassDevsW(guid, enumerator, None, flags)
+        hDevInfo = _SetupDiGetClassDevsW(
+            guid,
+            enumerator,
+            None,
+            flags
+        )
+
         if hDevInfo == INVALID_HANDLE_VALUE:
             raise ctypes.WinError()
 
@@ -105,11 +117,12 @@ try:
                     break
                 else:
                     raise ctypes.WinError(err)
+            
             i += 1
 
             prop_type = _ULONG()
             required_size = _ULONG()
-            if not _SetupDiGetDevicePropertyW(
+            _SetupDiGetDevicePropertyW(
                 hDevInfo,
                 ctypes.byref(deviceInfoData),
                 ctypes.byref(DEVPKEY_Device_InstanceId),
@@ -118,24 +131,27 @@ try:
                 0,
                 ctypes.byref(required_size),
                 0
-            ):
-                err_no = ctypes.GetLastError()
-                if err_no == ERROR_INSUFFICIENT_BUFFER:
-                    instance_id_buffer = ctypes.create_string_buffer(required_size.value)
-                    if _setupapi.SetupDiGetDevicePropertyW(
-                            hDevInfo,
-                            ctypes.byref(deviceInfoData),
-                            ctypes.byref(DEVPKEY_Device_InstanceId),
-                            ctypes.byref(prop_type),
-                            ctypes.byref(instance_id_buffer),
-                            required_size.value,
-                            ctypes.byref(required_size),
-                            0
-                    ):
-                        yield instance_id_buffer.value
+            )
 
-                    else:
-                        raise ctypes.WinError()
+            if required_size.value == 0:
+                continue
+
+            instance_id_buffer = ctypes.create_string_buffer(
+                required_size.value
+            )
+
+            _setupapi.SetupDiGetDevicePropertyW(
+                hDevInfo,
+                ctypes.byref(deviceInfoData),
+                ctypes.byref(DEVPKEY_Device_InstanceId),
+                ctypes.byref(prop_type),
+                instance_id_buffer,
+                required_size.value,
+                ctypes.byref(required_size),
+                0
+            )
+
+            yield instance_id_buffer.value
 
         _SetupDiDestroyDeviceInfoList(hDevInfo)
 
