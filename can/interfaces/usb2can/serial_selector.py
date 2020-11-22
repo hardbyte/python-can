@@ -137,7 +137,7 @@ try:
                     else:
                         raise ctypes.WinError()
 
-            _SetupDiDestroyDeviceInfoList(hDevInfo)
+        _SetupDiDestroyDeviceInfoList(hDevInfo)
 
 
 except ImportError:
@@ -190,4 +190,3 @@ def find_serial_devices(serial_matcher="ED"):
             res.add(instance_id)
 
     return [ins_id for ins_id in res]
-
