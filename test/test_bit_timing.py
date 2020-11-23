@@ -44,6 +44,32 @@ def test_sja1000():
     assert timing.btr0 == 0x00
     assert timing.btr1 == 0x14
 
+    timing = can.BitTiming(f_clock=8000000, bitrate=500000)
+    assert timing.f_clock == 8000000
+    assert timing.bitrate == 500000
+    assert timing.brp == 1
+    assert timing.nbt == 16
+    assert timing.tseg1 == 14
+    assert timing.tseg2 == 1
+    assert timing.sjw == 1
+    assert timing.nof_samples == 1
+    assert timing.sample_point == 93.75
+    assert timing.btr0 == 0x00
+    assert timing.btr1 == 0x0D
+
+    timing = can.BitTiming(f_clock=8000000, bitrate=500000, sample_point=87.5)
+    assert timing.f_clock == 8000000
+    assert timing.bitrate == 500000
+    assert timing.brp == 1
+    assert timing.nbt == 16
+    assert timing.tseg1 == 14
+    assert timing.tseg2 == 1
+    assert timing.sjw == 1
+    assert timing.nof_samples == 1
+    assert timing.sample_point == 87.5
+    assert timing.btr0 == 0x00
+    assert timing.btr1 == 0x1C
+
 
 def test_can_fd():
     timing = can.BitTiming(
@@ -89,4 +115,14 @@ def test_string_representation():
     assert (
         str(timing)
         == "1000000 bits/s, sample point: 75.00%, BRP: 1, TSEG1: 5, TSEG2: 2, SJW: 1, BTR: 0014h"
+    )
+    timing = can.BitTiming(f_clock=8000000, bitrate=500000)
+    assert (
+        str(timing)
+        == "500000 bits/s, sample point: 93.75%, BRP: 1, TSEG1: 14, TSEG2: 1, SJW: 1, BTR: 000Dh"
+    )
+    timing = can.BitTiming(f_clock=8000000, bitrate=500000, sample_point=87.5)
+    assert (
+        str(timing)
+        == "500000 bits/s, sample point: 87.50%, BRP: 1, TSEG1: 13, TSEG2: 2, SJW: 1, BTR: 001Ch"
     )

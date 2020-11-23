@@ -108,27 +108,24 @@ class BitTiming:
         self._sample_point = sample_point
 
     def _calc_timings(self):
-        if (
-            self._brp is not None or
-            self._sjw is not None or
-            self._tseg1 is not None or
-            self._tseg2 is not None
-        ):
-            return
-
         if self._f_clock is None:
             raise ValueError('The f_clock is needed in order to calculate the timings')
 
-        close_low = 0
-        close_high = 99999999999999
         high_sample = 0
         low_sample = 0
         low = (0, 0, 0, 0)
         high = (0, 0, 0, 0)
-        sample = 0
         res = None
 
         for can_brp, can_sjw, can_tseg1, can_tseg2 in self._calc:
+            if (
+                (self._brp is not None and can_brp != self._brp) or
+                (self._sjw is not None and can_sjw != self._sjw) or
+                (self._tseg1 is not None and can_tseg1 != self._tseg1) or
+                (self._tseg2 is not None and can_tseg2 != self._tseg2)
+            ):
+                continue
+
             b = self._f_clock / (can_brp * (1 + can_tseg1 + can_tseg2))
             s = ((can_tseg1 + 1) / (1 + can_tseg1 + can_tseg2)) * 100.0
 
@@ -142,57 +139,46 @@ class BitTiming:
                     )
                     break
 
-                elif s > sample:
-                    res = (
+                elif (
+                    self._sample_point is None or
+                    (low_sample - self._sample_point > s - self._sample_point)
+                ):
+                    low_sample = s
+                    low = (
                         can_brp,
                         can_sjw,
                         can_tseg1,
                         can_tseg2
                     )
-                    sample = s
+                elif (
+                    self._sample_point is None or
+                    (high_sample - self._sample_point > s - self._sample_point)
+                ):
+                    high_sample = s
+                    high = (
+                        can_brp,
+                        can_sjw,
+                        can_tseg1,
+                        can_tseg2
+                    )
 
-            elif res is None:
-                if close_low < b < self._bitrate:
-                    if (
-                        self._sample_point is None or
-                        (high_sample - self._sample_point > s - self._sample_point)
-                    ):
-                        low_sample = s
-                        close_low = b
-                        low = (
-                            can_brp,
-                            can_sjw,
-                            can_tseg1,
-                            can_tseg2
-                        )
-
-                elif close_high > b > self._bitrate:
-                    if (
-                        self._sample_point is None or
-                        (high_sample - self._sample_point > s - self._sample_point)
-                    ):
-                        high_sample = s
-                        close_high = b
-                        high = (
-                            can_brp,
-                            can_sjw,
-                            can_tseg1,
-                            can_tseg2
-                        )
         if res is None:
             if self._sample_point is not None:
-                if low_sample - self._sample_point < high_sample - self._sample_point:
+                if (
+                    low != (0, 0, 0, 0) and
+                    low_sample - self._sample_point < high_sample - self._sample_point
+                ):
                     res = low
-                else:
+                elif high != (0, 0, 0, 0):
                     res = high
-
-            elif (
-                    self._bitrate - close_low < close_high - self._bitrate and
-                    low_sample > high_sample
-            ):
+                else:
+                    return
+            elif high != (0, 0, 0, 0):
+                res = high
+            elif low != (0, 0, 0, 0):
                 res = low
             else:
-                res = high
+                return
 
         self._brp, self._sjw, self._tseg1, self._tseg2 = res
 
@@ -377,9 +363,29 @@ class BitTiming:
 
 
 if __name__ == '__main__':
-    btiming = BitTiming(500000, 8000000)
+    btiming = BitTiming(500000, 8000000, btr0=0xC0, sample_point=50.0)
     print(btiming)
     print()
 
-    btiming = BitTiming(500000, 8000000, sample_point=87.5)
+    btiming = BitTiming(500000, 8000000, btr1=0x76, sample_point=50.0)
+    print(btiming)
+    print()
+
+    btiming = BitTiming(500000, 8000000, brp=0x1, sample_point=50.0)
+    print(btiming)
+    print()
+
+    btiming = BitTiming(500000, 8000000, sjw=0x4, sample_point=75.0)
+    print(btiming)
+    print()
+
+    btiming = BitTiming(500000, 8000000, tseg2=0x8)
+    print(btiming)
+    print()
+
+    btiming = BitTiming(500000, 8000000, tseg1=0x7, sample_point=50.0)
+    print(btiming)
+    print()
+
+    btiming = BitTiming(500000, 8000000, sample_point=50.0)
     print(btiming)
