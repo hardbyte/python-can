@@ -10,8 +10,8 @@ which can only passes messages within a single process but does not require a ne
 
 It runs on UDP to have the lowest possible latency (as opposed to using TCP), and because
 normal IP multicast is inherently unreliable, as the recipients are unknown.
-This enables ad-hoc networks that do not require a central server but is also formally and
-unreliable network. In practice however, local area networks (LANs) should most often be
+This enables ad-hoc networks that do not require a central server but is also a so-called
+*unreliable network*. In practice however, local area networks (LANs) should most often be
 sufficiently reliable for this interface to function properly.
 
 .. note::

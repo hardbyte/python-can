@@ -5,8 +5,8 @@ virtual CAN interface for testing purposes.
 Any VirtualBus instances connecting to the same channel
 and reside in the same process will receive the same messages.
 """
+
 from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
-from can import typechecking
 
 from copy import deepcopy
 import logging
@@ -33,8 +33,7 @@ channels_lock = RLock()
 
 class VirtualBus(BusABC):
     """
-    A virtual CAN bus using an internal message queue. It can be
-    used for example for testing.
+    A virtual CAN bus using an internal message queue. It can be used for example for testing.
 
     In this interface, a channel is an arbitrary object used as
     an identifier for connected buses.
@@ -47,6 +46,11 @@ class VirtualBus(BusABC):
         The timeout when sending a message applies to each receiver
         individually. This means that sending can block up to 5 seconds
         if a message is sent to 5 receivers with the timeout set to 1.0.
+
+    .. warning::
+        This interface guarantees reliable delivery and message ordering, but does *not* implement rate
+        limiting or ID arbitration/prioritization under high loads. Please refer to the section
+        :ref:`other_virtual_interfaces` for more information on this and a comparison to alternatives.
     """
 
     def __init__(

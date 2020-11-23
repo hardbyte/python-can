@@ -46,6 +46,11 @@ class MulticastIpBus(BusABC):
         The parameter `receive_own_messages` is currently unsupported and setting it to `True` will raise an
         exception.
 
+    .. warning::
+        This interface does not make guarantees on reliable delivery and message ordering, and also does not
+        implement rate limiting or ID arbitration/prioritization under high loads. Please refer to the section
+        :ref:`other_virtual_interfaces` for more information on this and a comparison to alternatives.
+
     :param channel: An multicast IPv4 address (in `224.0.0.0/4`) or an IPv6 address (in `ff00::/8`).
                     This defines which version of IP is used. See
                     `Wikipedia ("Multicast address") <https://en.wikipedia.org/wiki/Multicast_address>`__
