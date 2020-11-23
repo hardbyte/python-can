@@ -24,14 +24,6 @@ class BitTiming:
     """
 
     sync_seg = 1
-    # generator that produces all possible combinations of brp, sjw, tseg1 and tseg2
-    _calc = [
-        (can_brp, can_sjw, can_tseg1, can_tseg2)
-        for can_brp in range(1, 65)  # baudrate prescalar (1-64)
-        for can_sjw in range(1, 5)  # synchronization jump width (1-4)
-        for can_tseg1 in range(1, 17)  # prop_seg + phase_seg1 (1-16)
-        for can_tseg2 in range(1, 9)  # phase_seg2 (1-8)
-    ]
 
     def __init__(
         self,
@@ -117,7 +109,15 @@ class BitTiming:
         high = (0, 0, 0, 0)
         res = None
 
-        for can_brp, can_sjw, can_tseg1, can_tseg2 in self._calc:
+        calc = (
+            (can_brp, can_sjw, can_tseg1, can_tseg2)
+            for can_brp in range(1, 65)  # baudrate prescalar (1-64)
+            for can_sjw in range(1, 5)  # synchronization jump width (1-4)
+            for can_tseg1 in range(1, 17)  # prop_seg + phase_seg1 (1-16)
+            for can_tseg2 in range(1, 9)  # phase_seg2 (1-8)
+        )
+
+        for can_brp, can_sjw, can_tseg1, can_tseg2 in calc:
             if (
                 (self._brp is not None and can_brp != self._brp) or
                 (self._sjw is not None and can_sjw != self._sjw) or
