@@ -80,7 +80,7 @@ setup(
     python_requires=">=3.6",
     install_requires=[
         # Note setuptools provides pkg_resources which python-can makes use of, but we assume it is already installed
-        #"setuptools",
+        # "setuptools",
         "wrapt~=1.10",
         'windows-curses;platform_system=="Windows"',
         "mypy_extensions>=0.4.0,<0.5.0",
