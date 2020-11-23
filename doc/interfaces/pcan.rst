@@ -5,11 +5,11 @@ PCAN Basic API
 
 Interface to `Peak-System <https://www.peak-system.com/?&L=1/>`__'s PCAN-Basic API.
 
-Windows driver: https://www.peak-system.com/Downloads.76.0.html?&L=1 (also supported on cygwin)
+The required drivers can be downloaded here:
 
-Linux driver: https://www.peak-system.com/fileadmin/media/linux/index.htm#download and https://www.peak-system.com/Downloads.76.0.html?&L=1 (PCAN-Basic API (Linux))
-
-Mac driver: http://www.mac-can.com
+- `Windows <https://www.peak-system.com/Downloads.76.0.html?&L=1>`__ (also supported on *Cygwin*)
+- `Linux <https://www.peak-system.com/Downloads.76.0.html?&L=1>`__ (`also works without <https://www.peak-system.com/fileadmin/media/linux/index.htm>`__, see also :ref:`pcandoc linux installation`)
+- `macOS <http://www.mac-can.com>`__
 
 Configuration
 -------------
@@ -42,6 +42,8 @@ Valid ``channel`` values:
     PCAN_LANBUSx
 
 Where ``x`` should be replaced with the desired channel number starting at 1.
+
+.. _pcandoc linux installation:
 
 Linux installation
 ------------------
