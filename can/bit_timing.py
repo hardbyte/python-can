@@ -109,58 +109,55 @@ class BitTiming:
         high = (0, 0, 0, 0)
         res = None
 
-        calc = (
+        calc = [
             (can_brp, can_sjw, can_tseg1, can_tseg2)
             for can_brp in range(1, 65)  # baudrate prescalar (1-64)
             for can_sjw in range(1, 5)  # synchronization jump width (1-4)
             for can_tseg1 in range(1, 17)  # prop_seg + phase_seg1 (1-16)
             for can_tseg2 in range(1, 9)  # phase_seg2 (1-8)
-        )
+            if (
+                self._f_clock / (can_brp * (1 + can_tseg1 + can_tseg2)) == self._bitrate and
+                (self._brp is None or can_brp == self._brp) and
+                (self._sjw is None or can_sjw == self._sjw) and
+                (self._tseg1 is None or can_tseg1 == self._tseg1) and
+                (self._tseg2 is None or can_tseg2 == self._tseg2)
+            )
+        ]
 
         for can_brp, can_sjw, can_tseg1, can_tseg2 in calc:
-            if (
-                (self._brp is not None and can_brp != self._brp) or
-                (self._sjw is not None and can_sjw != self._sjw) or
-                (self._tseg1 is not None and can_tseg1 != self._tseg1) or
-                (self._tseg2 is not None and can_tseg2 != self._tseg2)
-            ):
-                continue
-
-            b = self._f_clock / (can_brp * (1 + can_tseg1 + can_tseg2))
             s = ((can_tseg1 + 1) / (1 + can_tseg1 + can_tseg2)) * 100.0
 
-            if b == self._bitrate:
-                if self._sample_point is not None and s == self._sample_point:
-                    res = (
-                        can_brp,
-                        can_sjw,
-                        can_tseg1,
-                        can_tseg2
-                    )
-                    break
+            if self._sample_point is not None and s == self._sample_point:
+                res = (
+                    can_brp,
+                    can_sjw,
+                    can_tseg1,
+                    can_tseg2
+                )
+                break
 
-                elif (
-                    self._sample_point is None or
-                    (low_sample - self._sample_point > s - self._sample_point)
-                ):
-                    low_sample = s
-                    low = (
-                        can_brp,
-                        can_sjw,
-                        can_tseg1,
-                        can_tseg2
-                    )
-                elif (
-                    self._sample_point is None or
-                    (high_sample - self._sample_point > s - self._sample_point)
-                ):
-                    high_sample = s
-                    high = (
-                        can_brp,
-                        can_sjw,
-                        can_tseg1,
-                        can_tseg2
-                    )
+            elif (
+                self._sample_point is None or
+                (low_sample - self._sample_point > s - self._sample_point)
+            ):
+                low_sample = s
+                low = (
+                    can_brp,
+                    can_sjw,
+                    can_tseg1,
+                    can_tseg2
+                )
+            elif (
+                self._sample_point is None or
+                (high_sample - self._sample_point > s - self._sample_point)
+            ):
+                high_sample = s
+                high = (
+                    can_brp,
+                    can_sjw,
+                    can_tseg1,
+                    can_tseg2
+                )
 
         if res is None:
             if self._sample_point is not None:
