@@ -108,6 +108,14 @@ class BitTiming:
         self._sample_point = sample_point
 
     def _calc_timings(self):
+        if (
+            self._brp is not None or
+            self._sjw is not None or
+            self._tseg1 is not None or
+            self._tseg2 is not None
+        ):
+            return
+
         if self._f_clock is None:
             raise ValueError('The f_clock is needed in order to calculate the timings')
 
