@@ -248,11 +248,7 @@ class GeneralPurposeMulticastIpBus:
             # still raise the error
             raise error
 
-    def send(
-        self,
-        data: ReadableBytesLike,
-        timeout: Optional[float] = None,
-    ) -> None:
+    def send(self, data: ReadableBytesLike, timeout: Optional[float] = None) -> None:
         """Send this data to all participants. This call blocks.
 
         :param timeout: the timeout in seconds after which an Exception is raised is sending has failed
