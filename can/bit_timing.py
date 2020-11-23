@@ -345,14 +345,23 @@ class BitTiming:
             kwargs["f_clock"] = self._f_clock
         if self._bitrate:
             kwargs["bitrate"] = self._bitrate
-        if self._brp:
-            kwargs["brp"] = self._brp
-        if self._tseg1:
-            kwargs["tseg1"] = self._tseg1
-        if self._tseg2:
-            kwargs["tseg2"] = self._tseg2
-        if self._sjw:
-            kwargs["sjw"] = self._sjw
+        try:
+            kwargs["brp"] = self.brp
+        except ValueError:
+            pass
+        try:
+            kwargs["tseg1"] = self.tseg1
+        except ValueError:
+            pass
+        try:
+            kwargs["tseg2"] = self.tseg2
+        except ValueError:
+            pass
+        try:
+            kwargs["sjw"] = self.sjw
+        except ValueError:
+            pass
+
         if self._nof_samples != 1:
             kwargs["nof_samples"] = self._nof_samples
         args = ", ".join(f"{key}={value}" for key, value in kwargs.items())
