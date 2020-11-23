@@ -24,10 +24,12 @@ class BitTiming:
     """
 
     sync_seg = 1
+    # +- % for the bitrate when calculating the timings
+    calc_error_margin: float = 1.0
 
     def __init__(
         self,
-        bitrate: Optional[Union[int, float]] = None,
+        bitrate: Optional[int] = None,
         f_clock: Optional[int] = None,
         brp: Optional[int] = None,
         tseg1: Optional[int] = None,
@@ -51,7 +53,7 @@ class BitTiming:
         500000 bits/s, sample point: 87.50%, BRP: 1, TSEG1: 13, TSEG2: 2, SJW: 1, BTR: 001Ch
         >>>can_interface = CANalystIIBus(0, Timing0=btiming.btr0, Timing1=btiming.btr1)
 
-        :param int, float bitrate:
+        :param int bitrate:
             Bitrate in bits/s.
         :param int f_clock:
             The CAN system clock frequency in Hz.
@@ -103,31 +105,54 @@ class BitTiming:
         if self._f_clock is None:
             raise ValueError('The f_clock is needed in order to calculate the timings')
 
-        high_sample = 0
-        low_sample = 0
-        low = (0, 0, 0, 0)
-        high = (0, 0, 0, 0)
+        sample = 0
         res = None
+        last_bitrate = 0
 
-        calc = [
-            (can_brp, can_sjw, can_tseg1, can_tseg2)
-            for can_brp in range(1, 65)  # baudrate prescalar (1-64)
-            for can_sjw in range(1, 5)  # synchronization jump width (1-4)
-            for can_tseg1 in range(1, 17)  # prop_seg + phase_seg1 (1-16)
-            for can_tseg2 in range(1, 9)  # phase_seg2 (1-8)
-            if (
-                self._f_clock / (can_brp * (1 + can_tseg1 + can_tseg2)) == self._bitrate and
-                (self._brp is None or can_brp == self._brp) and
-                (self._sjw is None or can_sjw == self._sjw) and
-                (self._tseg1 is None or can_tseg1 == self._tseg1) and
-                (self._tseg2 is None or can_tseg2 == self._tseg2)
-            )
-        ]
+        def _get_calc(error_margin):
+            high_bitrate = int(self._bitrate * (1.0 + (error_margin / 100.0)))
+            low_bitrate = int(self._bitrate * (1.0 - (error_margin / 100.0)))
+            return [
+                (c_brp, c_sjw, c_tseg1, c_tseg2)
+                for c_brp in range(1, 65)  # baudrate prescalar (1-64)
+                for c_sjw in range(1, 5)  # synchronization jump width (1-4)
+                for c_tseg1 in range(1, 17)  # prop_seg + phase_seg1 (1-16)
+                for c_tseg2 in range(1, 9)  # phase_seg2 (1-8)
+                if (
+                    low_bitrate < int(self._f_clock / (c_brp * (1 + c_tseg1 + c_tseg2))) < high_bitrate and
+                    (self._brp is None or c_brp == self._brp) and
+                    (self._sjw is None or c_sjw == self._sjw) and
+                    (self._tseg1 is None or c_tseg1 == self._tseg1) and
+                    (self._tseg2 is None or c_tseg2 == self._tseg2)
+                )
+            ]
+
+        calc = _get_calc(0)
+        if not calc:
+            calc = _get_calc(self.calc_error_margin)
 
         for can_brp, can_sjw, can_tseg1, can_tseg2 in calc:
             s = ((can_tseg1 + 1) / (1 + can_tseg1 + can_tseg2)) * 100.0
 
-            if self._sample_point is not None and s == self._sample_point:
+            if self._sample_point is None:
+                bitrate = int(self._f_clock / (can_brp * (1 + can_tseg1 + can_tseg2)))
+
+                if s < sample:
+                    continue
+                if (
+                    not last_bitrate or
+                    self._bitrate - last_bitrate <= self._bitrate - bitrate
+                ):
+                    last_bitrate = bitrate
+                    sample = s
+                    res = (
+                        can_brp,
+                        can_sjw,
+                        can_tseg1,
+                        can_tseg2
+                    )
+
+            elif s == self._sample_point:
                 res = (
                     can_brp,
                     can_sjw,
@@ -136,48 +161,11 @@ class BitTiming:
                 )
                 break
 
-            elif (
-                self._sample_point is None or
-                (low_sample - self._sample_point > s - self._sample_point)
-            ):
-                low_sample = s
-                low = (
-                    can_brp,
-                    can_sjw,
-                    can_tseg1,
-                    can_tseg2
-                )
-            elif (
-                self._sample_point is None or
-                (high_sample - self._sample_point > s - self._sample_point)
-            ):
-                high_sample = s
-                high = (
-                    can_brp,
-                    can_sjw,
-                    can_tseg1,
-                    can_tseg2
-                )
-
         if res is None:
-            if self._sample_point is not None:
-                if (
-                    low != (0, 0, 0, 0) and
-                    low_sample - self._sample_point < high_sample - self._sample_point
-                ):
-                    res = low
-                elif high != (0, 0, 0, 0):
-                    res = high
-                else:
-                    return
-            elif high != (0, 0, 0, 0):
-                res = high
-            elif low != (0, 0, 0, 0):
-                res = low
-            else:
-                return
+            return
 
         self._brp, self._sjw, self._tseg1, self._tseg2 = res
+        self._bitrate = int(self._f_clock / (self._brp * (1 + self._tseg1 + self._tseg2)))
 
     @property
     def nbt(self) -> int:
@@ -301,10 +289,6 @@ class BitTiming:
     def __str__(self) -> str:
         segments = []
         try:
-            segments.append(f"{self.bitrate} bits/s")
-        except ValueError:
-            pass
-        try:
             segments.append(f"sample point: {self.sample_point:.2f}%")
         except ValueError:
             pass
@@ -328,14 +312,18 @@ class BitTiming:
             segments.append(f"BTR: {self.btr0:02X}{self.btr1:02X}h")
         except ValueError:
             pass
+
+        try:
+            segments.insert(0, f"{self.bitrate} bits/s")
+        except ValueError:
+            pass
+
         return ", ".join(segments)
 
     def __repr__(self) -> str:
         kwargs = {}
         if self._f_clock:
             kwargs["f_clock"] = self._f_clock
-        if self._bitrate:
-            kwargs["bitrate"] = self._bitrate
         try:
             kwargs["brp"] = self.brp
         except ValueError:
@@ -353,6 +341,9 @@ class BitTiming:
         except ValueError:
             pass
 
+        if self._bitrate:
+            kwargs["bitrate"] = self._bitrate
+
         if self._nof_samples != 1:
             kwargs["nof_samples"] = self._nof_samples
         args = ", ".join(f"{key}={value}" for key, value in kwargs.items())
@@ -360,6 +351,10 @@ class BitTiming:
 
 
 if __name__ == '__main__':
+    btiming = BitTiming(33000, 8000000)
+    print(btiming)
+    print()
+
     btiming = BitTiming(500000, 8000000, btr0=0xC0, sample_point=50.0)
     print(btiming)
     print()
