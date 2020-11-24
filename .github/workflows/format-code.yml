@@ -1,6 +1,9 @@
 name: Format Code
 
-on: [push, pull_request]
+on:
+  pull_request:
+    paths:
+    - '**.py'
 
 jobs:
   build:
@@ -27,4 +30,3 @@ jobs:
         message: "Format code with black"
         # Ref https://git-scm.com/docs/git-add#_examples
         add: './\*.py'
-
