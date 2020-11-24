@@ -35,7 +35,10 @@ extras_require = {
 
 setup(
     # Description
-    name="python-can", url="https://github.com/hardbyte/python-can", description="Controller Area Network interface module for Python", long_description=long_description,
+    name="python-can",
+    url="https://github.com/hardbyte/python-can",
+    description="Controller Area Network interface module for Python",
+    long_description=long_description,
     classifiers=[
         # a list of all available ones: https://pypi.org/classifiers/
         "Programming Language :: Python",
