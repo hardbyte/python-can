@@ -29,4 +29,4 @@ jobs:
       with:
         message: "Format code with black"
         # Ref https://git-scm.com/docs/git-add#_examples
-        add: './\*.py'
+        add: './*.py'
