@@ -15,7 +15,14 @@ import pytest
 import can
 from can.interfaces.multicast_ip import MulticastIpBus
 
-from .config import IS_CI, IS_UNIX, IS_TRAVIS, TEST_INTERFACE_SOCKETCAN, TEST_CAN_FD
+from .config import (
+    IS_CI,
+    IS_UNIX,
+    IS_OSX,
+    IS_TRAVIS,
+    TEST_INTERFACE_SOCKETCAN,
+    TEST_CAN_FD,
+)
 
 
 class Back2BackTestCase(unittest.TestCase):
@@ -222,7 +229,12 @@ class BasicTestSocketCan(Back2BackTestCase):
     CHANNEL_2 = "vcan0"
 
 
-@unittest.skipUnless(IS_UNIX, "only supported on Unix systems")
+# this doesn't even work on Travis CI for macOS; for example, see
+# https://travis-ci.org/github/hardbyte/python-can/jobs/745389871
+@unittest.skipUnless(
+    IS_UNIX and not (IS_TRAVIS and IS_OSX),
+    "only supported on Unix systems (but not on Travis CI on macOS)",
+)
 class BasicTestInterprocessVirtualBusIPv4(Back2BackTestCase):
 
     INTERFACE_1 = "multicast_ip"
