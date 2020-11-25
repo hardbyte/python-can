@@ -4,6 +4,7 @@ Defines common functions.
 
 from typing import Any
 from typing import Dict
+from typing import Optional
 
 from can import Message
 from can.typechecking import ReadableBytesLike
@@ -44,7 +45,7 @@ def pack_message(message: Message) -> bytes:
 
 
 def unpack_message(
-    data: ReadableBytesLike, replace: Dict[str, Any] = None, check: bool = False
+    data: ReadableBytesLike, replace: Optional[Dict[str, Any]] = None, check: bool = False
 ) -> Message:
     """Unpack a can.Message from a msgpack byte blob.
 

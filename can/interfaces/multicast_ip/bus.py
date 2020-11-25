@@ -10,7 +10,6 @@ log = logging.getLogger(__name__)
 import can
 from can import BusABC
 from can.typechecking import AutoDetectedConfig
-from can.typechecking import ReadableBytesLike
 
 from .utils import pack_message, unpack_message, check_msgpack_installed
 
@@ -164,7 +163,7 @@ class GeneralPurposeMulticastIpBus:
 
         # Look up multicast group address in name server and find out IP version of the first suitable target
         # and then get the address family of it (socket.AF_INET or socket.AF_INET6)
-        connection_candidates = socket.getaddrinfo(
+        connection_candidates = socket.getaddrinfo(  # type: ignore
             group, self.port, type=socket.SOCK_DGRAM
         )
         sock = None
@@ -248,7 +247,7 @@ class GeneralPurposeMulticastIpBus:
             # still raise the error
             raise error
 
-    def send(self, data: ReadableBytesLike, timeout: Optional[float] = None) -> None:
+    def send(self, data: bytes, timeout: Optional[float] = None) -> None:
         """Send this data to all participants. This call blocks.
 
         :param timeout: the timeout in seconds after which an Exception is raised is sending has failed
