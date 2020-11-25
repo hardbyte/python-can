@@ -405,15 +405,8 @@ class CANalystIIBus(BusABC):
 
         can_objs = (VCI_CAN_OBJ * 1)()
 
-        arbitration_id = msg.arbitration_id
-        if arbitration_id & 0x80000000:
-            extended = 1
-            arbitration_id &= 0x7FFFFFFF
-        else:
-            extended = int(msg.is_extended_id)
-
-        can_objs[0].ID = arbitration_id
-        can_objs[0].ExternFlag = extended
+        can_objs[0].ID = msg.arbitration_id
+        can_objs[0].ExternFlag = int(msg.is_extended_id)
         can_objs[0].SendType = 1
         can_objs[0].RemoteFlag = int(msg.is_remote_frame)
         can_objs[0].DataLen = msg.dlc
@@ -503,6 +496,7 @@ class CANalystIIBus(BusABC):
             ar_lost_err_data=error_info.ArLost_ErrData
         )
 
+    @property
     def available(self) -> int:
         """
         Check the number of frames waiting to be received.
