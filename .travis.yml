@@ -35,6 +35,8 @@ jobs:
     # we allow all dev & nightly builds to fail, since these python versions might
     # still be very unstable
     - python: nightly
+    # Allow arm64 builds to fail
+    - arch: arm64
 
   include:
     # Note no matrix support when using stages.
