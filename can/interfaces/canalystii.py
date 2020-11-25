@@ -4,6 +4,7 @@ import platform
 from can import BusABC, Message
 from typing import Optional, Dict, Union
 from ..typechecking import CanFilters
+from .. import CanError
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +59,7 @@ except OSError as e:
     logger.info("Cannot load CANalystII library")
 
 
-class CANalystIIException(Exception):
+class CANalystIIException(CanError):
     errno = None
     msg = ''
 
@@ -67,6 +68,8 @@ class CANalystIIException(Exception):
             self.msg = msg
         if errno is not None:
             self.errno = errno
+
+        CanError.__init__(self)
 
     def __str__(self):
         return self.msg + ' ' + '({0})'.format(self.errno)
@@ -410,7 +413,7 @@ class CANalystIIBus(BusABC):
         can_objs[0].SendType = 1
         can_objs[0].RemoteFlag = int(msg.is_remote_frame)
         can_objs[0].DataLen = msg.dlc
-        for j in range(msg.dlc):
+        for j in range(len(msg.data)):
             can_objs[0].Data[j] = msg.data[j]
 
         frames_sent = CANalystII.VCI_Transmit(
