@@ -185,6 +185,7 @@ class CANalystIIBus(BusABC):
                     timestamp=raw_message.TimeStamp if raw_message.TimeFlag else 0.0,
                     arbitration_id=raw_message.ID,
                     is_remote_frame=raw_message.RemoteFlag,
+                    is_extended_id=raw_message.ExternFlag,
                     channel=0,
                     dlc=raw_message.DataLen,
                     data=raw_message.Data,
