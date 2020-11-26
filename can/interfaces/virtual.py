@@ -120,15 +120,15 @@ class VirtualBus(BusABC):
             raise CanError("Could not send message to one or more recipients")
 
     def shutdown(self) -> None:
-        self._check_if_open()
-        self._open = False
+        if self._open:
+            self._open = False
 
-        with channels_lock:
-            self.channel.remove(self.queue)
+            with channels_lock:
+                self.channel.remove(self.queue)
 
-            # remove if empty
-            if not self.channel:
-                del channels[self.channel_id]
+                # remove if empty
+                if not self.channel:
+                    del channels[self.channel_id]
 
     @staticmethod
     def _detect_available_configs():

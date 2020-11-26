@@ -92,7 +92,12 @@ class Back2BackTestCase(unittest.TestCase):
         self._check_received_message(recv_msg, msg)
 
     def test_no_message(self):
+        """Tests that there is no message being received if none was sent."""
         self.assertIsNone(self.bus1.recv(0.1))
+
+    def test_multiple_shutdown(self):
+        """Tests whether shutting down ``bus1`` twice does not throw any errors."""
+        self.bus1.shutdown()
 
     @unittest.skipIf(
         IS_CI,
@@ -218,6 +223,16 @@ class Back2BackTestCase(unittest.TestCase):
             data=[0xFF] * 48,
         )
         self._send_and_receive(msg)
+
+    def test_fileno(self):
+        """Test is the values returned by fileno() are valid."""
+        try:
+            fileno = self.bus1.fileno()
+        except NotImplementedError:
+            pass  # allow it to be left non-implemented
+        else:
+            self.assertIsNotNone(fileno)
+            self.assertTrue(fileno == -1 or fileno > 0)
 
 
 @unittest.skipUnless(TEST_INTERFACE_SOCKETCAN, "skip testing of socketcan")
