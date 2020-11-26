@@ -11,7 +11,18 @@ install:
   - if [[ "$TEST_SOCKETCAN" ]]; then sudo bash test/open_vcan.sh ; fi
   - travis_retry python setup.py install
 
+script:
+  - |
+    # install tox
+    travis_retry pip install tox
+    # Run the tests
+    tox -e travis
+
 jobs:
+  allow_failures:
+    # Allow arm64 builds to fail
+    - arch: arm64
+
   include:
     # Stages with the same name get run in parallel.
     # Jobs within a stage can also be named.
@@ -20,16 +31,28 @@ jobs:
     - stage: test
       name: Socketcan
       os: linux
+      arch: amd64
       dist: trusty
       python: "3.6"
       sudo: required
       env: TEST_SOCKETCAN=TRUE
-      script:
-        - |
-          # install tox
-          travis_retry pip install tox
-          # Run the tests
-          tox -e travis
+
+    # arm64 builds
+    - stage: test
+      name: Linux arm64
+      os: linux
+      arch: arm64
+      language: generic
+      sudo: required
+      addons:
+        apt:
+          update: true
+      env: HOST_ARM64=TRUE
+      before_install:
+        - sudo apt install -y python3 python3-pip
+        # Travis doesn't seem to provide Python binaries yet for this arch
+        - sudo update-alternatives --install /usr/bin/python python $(which python3) 10
+        - sudo update-alternatives --install /usr/bin/pip pip $(which pip3) 10
 
     - stage: documentation
       name: "Sphinx Build"
