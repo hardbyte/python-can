@@ -10,6 +10,7 @@ Interface for slcan compatible interfaces (win32/linux).
 from typing import Any, Optional, Tuple
 from .. import typechecking
 
+import io
 import time
 import logging
 
@@ -252,10 +253,12 @@ class slcanBus(BusABC):
         self.serialPortOrig.close()
 
     def fileno(self) -> int:
-        if hasattr(self.serialPortOrig, "fileno"):
+        try:
             return self.serialPortOrig.fileno()
-        # Return an invalid file descriptor on Windows
-        return -1
+        except io.UnsupportedOperation:
+            raise NotImplementedError(
+                "fileno is not implemented using current CAN bus on this platform"
+            )
 
     def get_version(
         self, timeout: Optional[float]

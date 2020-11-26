@@ -28,8 +28,9 @@ with open("README.rst", "r") as f:
 extras_require = {
     "seeedstudio": ["pyserial>=3.0"],
     "serial": ["pyserial~=3.0"],
-    "neovi": ["python-ics>=2.12"],
+    "neovi": ["filelock", "python-ics>=2.12"],
     "cantact": ["cantact>=0.0.7"],
+    "gs_usb": ["gs_usb>=0.2.1"],
 }
 
 setup(
@@ -78,12 +79,12 @@ setup(
     # see https://www.python.org/dev/peps/pep-0345/#version-specifiers
     python_requires=">=3.6",
     install_requires=[
-        # Setuptools provides pkg_resources which python-can makes use of.
-        "setuptools",
+        # Note setuptools provides pkg_resources which python-can makes use of, 
+        # but we assume it is already installed.
+        # "setuptools",
         "wrapt~=1.10",
         'windows-curses;platform_system=="Windows"',
-        "filelock",
-        "mypy_extensions >= 0.4.0, < 0.5.0",
+        "mypy_extensions>=0.4.0,<0.5.0",
         'pywin32;platform_system=="Windows"',
     ],
     extras_require=extras_require,
