@@ -1,4 +1,4 @@
 """
 """
 
-from can.interfaces.kvaser.canlib import *
+from .canlib import *

@@ -6,8 +6,7 @@ Socket CAN is recommended under Unix/Linux systems.
 from ctypes import *
 from struct import *
 import logging
-
-import can
+from ... import CanError
 
 log = logging.getLogger("can.usb2can")
 
@@ -98,7 +97,7 @@ class Usb2CanAbstractionLayer:
             result = self.__m_dllBasic.CanalOpen(config_ascii, flags)
         except Exception as ex:
             # catch any errors thrown by this call and re-raise
-            raise can.CanError(
+            raise CanError(
                 'CanalOpen() failed, configuration: "{}", error: {}'.format(
                     configuration, ex
                 )
@@ -108,7 +107,7 @@ class Usb2CanAbstractionLayer:
             # (see https://grodansparadis.gitbooks.io/the-vscp-daemon/canal_interface_specification.html)
             # raise an error if the return code is <= 0
             if result <= 0:
-                raise can.CanError(
+                raise CanError(
                     'CanalOpen() failed, configuration: "{}", return code: {}'.format(
                         configuration, result
                     )
@@ -130,7 +129,7 @@ class Usb2CanAbstractionLayer:
             return res
         except:
             log.warning("Sending error")
-            raise can.CanError("Failed to transmit frame")
+            raise CanError("Failed to transmit frame")
 
     def receive(self, handle, msg):
         try:

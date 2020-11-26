@@ -6,7 +6,7 @@ import time
 import logging
 from unittest.mock import Mock
 
-from can import BusABC, Message
+from .. import BusABC, Message
 
 logger = logging.getLogger(__name__)
 

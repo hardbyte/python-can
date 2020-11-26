@@ -4,17 +4,18 @@ Contains the ABC bus implementation and its documentation.
 
 from typing import cast, Any, Iterator, List, Optional, Sequence, Tuple, Union
 
-import can.typechecking
+from . import typechecking
 
 from abc import ABCMeta, abstractmethod
-import can
+
 import logging
 import threading
 from time import time
 from enum import Enum, auto
 
-from can.broadcastmanager import ThreadBasedCyclicSendTask
-from can.message import Message
+from . import broadcastmanager
+from .broadcastmanager import ThreadBasedCyclicSendTask
+from .message import Message
 
 LOG = logging.getLogger(__name__)
 
@@ -44,7 +45,7 @@ class BusABC(metaclass=ABCMeta):
     def __init__(
         self,
         channel: Any,
-        can_filters: Optional[can.typechecking.CanFilters] = None,
+        can_filters: Optional[typechecking.CanFilters] = None,
         **kwargs: object
     ):
         """Construct and open a CAN bus instance of the specified type.
@@ -61,7 +62,7 @@ class BusABC(metaclass=ABCMeta):
         :param dict kwargs:
             Any backend dependent configurations are passed in this dictionary
         """
-        self._periodic_tasks: List[can.broadcastmanager.CyclicSendTaskABC] = []
+        self._periodic_tasks: List[broadcastmanager.CyclicSendTaskABC] = []
         self.set_filters(can_filters)
 
     def __str__(self) -> str:
@@ -176,7 +177,7 @@ class BusABC(metaclass=ABCMeta):
         period: float,
         duration: Optional[float] = None,
         store_task: bool = True,
-    ) -> can.broadcastmanager.CyclicSendTaskABC:
+    ) -> broadcastmanager.CyclicSendTaskABC:
         """Start sending messages at a given period on this bus.
 
         The task will be active until one of the following conditions are met:
@@ -246,7 +247,7 @@ class BusABC(metaclass=ABCMeta):
         msgs: Union[Sequence[Message], Message],
         period: float,
         duration: Optional[float] = None,
-    ) -> can.broadcastmanager.CyclicSendTaskABC:
+    ) -> broadcastmanager.CyclicSendTaskABC:
         """Default implementation of periodic message sending using threading.
 
         Override this method to enable a more efficient backend specific approach.
@@ -306,7 +307,7 @@ class BusABC(metaclass=ABCMeta):
                 yield msg
 
     @property
-    def filters(self) -> Optional[can.typechecking.CanFilters]:
+    def filters(self) -> Optional[typechecking.CanFilters]:
         """
         Modify the filters of this bus. See :meth:`~can.BusABC.set_filters`
         for details.
@@ -314,10 +315,10 @@ class BusABC(metaclass=ABCMeta):
         return self._filters
 
     @filters.setter
-    def filters(self, filters: Optional[can.typechecking.CanFilters]):
+    def filters(self, filters: Optional[typechecking.CanFilters]):
         self.set_filters(filters)
 
-    def set_filters(self, filters: Optional[can.typechecking.CanFilters] = None):
+    def set_filters(self, filters: Optional[typechecking.CanFilters] = None):
         """Apply filtering to all messages received by this Bus.
 
         All messages that match at least one filter are returned.
@@ -342,7 +343,7 @@ class BusABC(metaclass=ABCMeta):
         self._filters = filters or None
         self._apply_filters(self._filters)
 
-    def _apply_filters(self, filters: Optional[can.typechecking.CanFilters]):
+    def _apply_filters(self, filters: Optional[typechecking.CanFilters]):
         """
         Hook for applying the filters to the underlying kernel or
         hardware if supported/implemented by the interface.
@@ -370,7 +371,7 @@ class BusABC(metaclass=ABCMeta):
         for _filter in self._filters:
             # check if this filter even applies to the message
             if "extended" in _filter:
-                _filter = cast(can.typechecking.CanFilterExtended, _filter)
+                _filter = cast(typechecking.CanFilterExtended, _filter)
                 if _filter["extended"] != msg.is_extended_id:
                     continue
 
@@ -418,7 +419,7 @@ class BusABC(metaclass=ABCMeta):
         raise NotImplementedError("Property is not implemented.")
 
     @staticmethod
-    def _detect_available_configs() -> List[can.typechecking.AutoDetectedConfig]:
+    def _detect_available_configs() -> List[typechecking.AutoDetectedConfig]:
         """Detect all configurations/channels that this interface could
         currently connect with.
 

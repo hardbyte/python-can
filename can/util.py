@@ -5,7 +5,7 @@ import functools
 import warnings
 from typing import Dict, Optional, Union
 
-from can import typechecking
+from . import typechecking
 
 import json
 import os
@@ -15,8 +15,12 @@ import re
 import logging
 from configparser import ConfigParser
 
-import can
-from can.interfaces import VALID_INTERFACES
+from .interfaces import VALID_INTERFACES
+from . import (
+    rc,
+    BitTiming,
+    log
+)
 
 log = logging.getLogger("can.util")
 
@@ -159,7 +163,7 @@ def load_config(
     # use the given dict for default values
     config_sources = [
         given_config,
-        can.rc,
+        rc,
         lambda _context: load_environment_config(  # pylint: disable=unnecessary-lambda
             _context
         ),
@@ -216,9 +220,9 @@ def load_config(
             del config[key]
     if timing_conf:
         timing_conf["bitrate"] = config.get("bitrate")
-        config["timing"] = can.BitTiming(**timing_conf)
+        config["timing"] = BitTiming(**timing_conf)
 
-    can.log.debug("can config: {}".format(config))
+    log.debug("can config: {}".format(config))
     return config
 
 

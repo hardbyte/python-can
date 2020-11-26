@@ -8,7 +8,7 @@ recording CAN traces.
 import logging
 import struct
 
-from can import BusABC, Message
+from ... import BusABC, Message
 
 logger = logging.getLogger("can.serial")
 

@@ -11,8 +11,8 @@ TODO: This module could use https://docs.python.org/2/library/csv.html#module-cs
 
 from base64 import b64encode, b64decode
 
-from can.message import Message
-from can.listener import Listener
+from ..message import Message
+from ..listener import Listener
 from .generic import BaseIOHandler
 
 

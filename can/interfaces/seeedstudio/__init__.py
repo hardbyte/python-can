@@ -1,4 +1,4 @@
 """
 """
 
-from can.interfaces.seeedstudio.seeedstudio import SeeedBus
+from .seeedstudio import SeeedBus

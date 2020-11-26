@@ -15,7 +15,7 @@ from collections import deque, defaultdict
 from itertools import cycle
 from threading import Event
 
-from can import Message, CanError, BusABC
+from ... import Message, CanError, BusABC
 
 logger = logging.getLogger(__name__)
 

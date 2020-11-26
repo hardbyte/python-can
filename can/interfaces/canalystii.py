@@ -1,7 +1,7 @@
 from ctypes import *
 import logging
 import platform
-from can import BusABC, Message
+from .. import BusABC, Message
 
 logger = logging.getLogger(__name__)
 

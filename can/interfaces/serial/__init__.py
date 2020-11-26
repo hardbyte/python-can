@@ -1,4 +1,4 @@
 """
 """
 
-from can.interfaces.serial.serial_can import SerialBus as Bus
+from .serial_can import SerialBus as Bus

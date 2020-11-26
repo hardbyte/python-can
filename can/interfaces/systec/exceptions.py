@@ -1,5 +1,5 @@
 from .constants import ReturnCode
-from can import CanError
+from ... import CanError
 
 
 class UcanException(CanError):

@@ -1,7 +1,7 @@
 """
 """
 
-from can import CanError
+from ... import CanError
 
 
 class VectorError(CanError):

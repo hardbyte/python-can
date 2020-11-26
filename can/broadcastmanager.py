@@ -7,12 +7,12 @@ The main entry point to these classes should be through
 
 from typing import Optional, Sequence, Tuple, Union, Callable, TYPE_CHECKING
 
-from can import typechecking
+from . import typechecking
 
 if TYPE_CHECKING:
-    from can.bus import BusABC
+    from .bus import BusABC
 
-from can.message import Message
+from .message import Message
 
 import abc
 import logging

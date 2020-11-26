@@ -6,8 +6,8 @@ It is is compatible with "candump -L" from the canutils program
 
 import logging
 
-from can.message import Message
-from can.listener import Listener
+from ..message import Message
+from ..listener import Listener
 from .generic import BaseIOHandler
 
 

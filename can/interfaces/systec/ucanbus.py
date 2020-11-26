@@ -1,7 +1,7 @@
 import logging
 from threading import Event
 
-from can import BusABC, BusState, Message
+from ... import BusABC, BusState, Message
 
 from .constants import *
 from .structures import *

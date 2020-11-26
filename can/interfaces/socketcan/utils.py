@@ -10,8 +10,8 @@ import struct
 import subprocess
 from typing import cast, Iterable, Optional
 
-from can.interfaces.socketcan.constants import CAN_EFF_FLAG
-import can.typechecking as typechecking
+from .constants import CAN_EFF_FLAG
+from ... import typechecking
 
 log = logging.getLogger(__name__)
 

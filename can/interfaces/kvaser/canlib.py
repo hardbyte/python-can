@@ -11,8 +11,8 @@ import time
 import logging
 import ctypes
 
-from can import CanError, BusABC
-from can import Message
+from ... import CanError, BusABC
+from ... import Message
 from . import constants as canstat
 from . import structures
 

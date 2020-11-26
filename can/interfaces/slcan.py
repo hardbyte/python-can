@@ -8,12 +8,12 @@ Interface for slcan compatible interfaces (win32/linux).
 """
 
 from typing import Any, Optional, Tuple
-from can import typechecking
+from .. import typechecking
 
 import time
 import logging
 
-from can import BusABC, Message
+from .. import BusABC, Message
 
 logger = logging.getLogger(__name__)
 

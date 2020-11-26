@@ -6,9 +6,9 @@ import logging
 import time
 
 from typing import Optional
-from can import CanError, Message, BusABC
-from can.bus import BusState
-from can.util import len2dlc, dlc2len
+from ... import CanError, Message, BusABC
+from ...bus import BusState
+from ...util import len2dlc, dlc2len
 from .basic import *
 
 try:

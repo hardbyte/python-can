@@ -31,8 +31,8 @@ except ImportError:
 
 # Import Modules
 # ==============
-from can import BusABC, Message
-from can.util import len2dlc, dlc2len, deprecated_args_alias
+from ... import BusABC, Message
+from ...util import len2dlc, dlc2len, deprecated_args_alias
 from .exceptions import VectorError
 
 # Define Module Logger

@@ -9,8 +9,13 @@ import sys
 import argparse
 from datetime import datetime
 
-import can
-from can import Bus, LogReader, MessageSync
+from . import (
+    Bus,
+    LogReader,
+    MessageSync,
+    VALID_INTERFACES,
+    set_logging_level
+)
 
 
 def main():
@@ -49,7 +54,7 @@ def main():
         dest="interface",
         help="""Specify the backend CAN interface to use. If left blank,
                         fall back to reading from configuration files.""",
-        choices=can.VALID_INTERFACES,
+        choices=VALID_INTERFACES,
     )
 
     parser.add_argument(
@@ -113,7 +118,7 @@ def main():
     logging_level_name = ["critical", "error", "warning", "info", "debug", "subdebug"][
         min(5, verbosity)
     ]
-    can.set_logging_level(logging_level_name)
+    set_logging_level(logging_level_name)
 
     error_frames = results.error_frames
 

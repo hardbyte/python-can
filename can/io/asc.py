@@ -7,7 +7,7 @@ Example .asc files:
 """
 
 from typing import cast, Any, Generator, IO, List, Optional, Union, Dict
-from can import typechecking
+from .. import typechecking
 
 from datetime import datetime
 import time

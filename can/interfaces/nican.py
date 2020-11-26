@@ -17,7 +17,7 @@ import ctypes
 import logging
 import sys
 
-from can import CanError, BusABC, Message
+from .. import CanError, BusABC, Message
 
 logger = logging.getLogger(__name__)
 

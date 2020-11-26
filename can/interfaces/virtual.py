@@ -6,7 +6,7 @@ Any VirtualBus instances connecting to the same channel
 and reside in the same process will receive the same messages.
 """
 from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
-from can import typechecking
+from .. import typechecking
 
 from copy import deepcopy
 import logging
@@ -15,9 +15,9 @@ import queue
 from threading import RLock
 from random import randint
 
-from can import CanError
-from can.bus import BusABC
-from can.message import Message
+from .. import CanError
+from ..bus import BusABC
+from ..message import Message
 
 logger = logging.getLogger(__name__)
 

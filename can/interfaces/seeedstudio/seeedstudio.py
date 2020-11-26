@@ -10,7 +10,7 @@ import logging
 import struct
 import io
 from time import time
-from can import BusABC, Message
+from ... import BusABC, Message
 
 logger = logging.getLogger("seeedbus")
 

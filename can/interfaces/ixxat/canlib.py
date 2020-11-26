@@ -16,12 +16,12 @@ import functools
 import logging
 import sys
 
-from can import BusABC, Message
-from can.broadcastmanager import (
+from ... import BusABC, Message
+from ...broadcastmanager import (
     LimitedDurationCyclicSendTaskABC,
     RestartableCyclicTaskABC,
 )
-from can.ctypesutil import CLibrary, HANDLE, PHANDLE, HRESULT as ctypes_HRESULT
+from ...ctypesutil import CLibrary, HANDLE, PHANDLE, HRESULT as ctypes_HRESULT
 
 from . import constants, structures
 from .exceptions import *

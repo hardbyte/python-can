@@ -4,7 +4,7 @@ This Listener simply prints to stdout / the terminal or a file.
 
 import logging
 
-from can.listener import Listener
+from ..listener import Listener
 from .generic import BaseIOHandler
 
 log = logging.getLogger("can.io.printer")

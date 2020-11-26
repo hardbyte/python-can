@@ -5,7 +5,7 @@ This interface is for Windows only, otherwise use socketCAN.
 import logging
 from ctypes import byref
 
-from can import BusABC, Message, CanError
+from ... import BusABC, Message, CanError
 from .usb2canabstractionlayer import *
 from .serial_selector import find_serial_devices
 

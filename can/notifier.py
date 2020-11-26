@@ -4,9 +4,9 @@ This module contains the implementation of :class:`~can.Notifier`.
 
 from typing import Iterable, List, Optional, Union
 
-from can.bus import BusABC
-from can.listener import Listener
-from can.message import Message
+from .bus import BusABC
+from .listener import Listener
+from .message import Message
 
 import threading
 import logging

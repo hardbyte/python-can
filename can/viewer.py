@@ -28,8 +28,11 @@ import sys
 import time
 from typing import Dict, List, Tuple, Union
 
-import can
-from can import __version__
+from . import (
+    __version__,
+    VALID_INTERFACES,
+    Bus
+)
 
 logger = logging.getLogger("can.serial")
 
@@ -455,7 +458,7 @@ def parse_args(args):
         "--interface",
         dest="interface",
         help="R|Specify the backend CAN interface to use.",
-        choices=sorted(can.VALID_INTERFACES),
+        choices=sorted(VALID_INTERFACES),
     )
 
     # Print help message when no arguments are given
@@ -551,7 +554,7 @@ def main():  # pragma: no cover
         config["data_bitrate"] = parsed_args.data_bitrate
 
     # Create a CAN-Bus interface
-    bus = can.Bus(parsed_args.channel, **config)
+    bus = Bus(parsed_args.channel, **config)
     # print('Connected to {}: {}'.format(bus.__class__.__name__, bus.channel_info))
 
     curses.wrapper(CanViewer, bus, data_structs)

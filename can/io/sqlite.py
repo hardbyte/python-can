@@ -9,8 +9,8 @@ import threading
 import logging
 import sqlite3
 
-from can.listener import BufferedReader
-from can.message import Message
+from ..listener import BufferedReader
+from ..message import Message
 from .generic import BaseIOHandler
 
 log = logging.getLogger("can.io.sqlite")

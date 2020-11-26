@@ -5,7 +5,7 @@ Interface for Chinese Robotell compatible interfaces (win32/linux).
 import time
 import logging
 
-from can import BusABC, Message
+from .. import BusABC, Message
 
 logger = logging.getLogger(__name__)
 

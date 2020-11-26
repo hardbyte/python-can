@@ -26,17 +26,17 @@ try:
 except ImportError:
     log.error("fcntl not available on this platform")
 
-
-import can
-from can import Message, BusABC
-from can.broadcastmanager import (
+from ... import CanError
+from ... import Message, BusABC
+from ...broadcastmanager import (
     ModifiableCyclicTaskABC,
     RestartableCyclicTaskABC,
     LimitedDurationCyclicSendTaskABC,
 )
-from can.typechecking import CanFilters
-from can.interfaces.socketcan.constants import *  # CAN_RAW, CAN_*_FLAG
-from can.interfaces.socketcan.utils import pack_filters, find_available_interfaces
+from ... import typechecking
+from ...typechecking import CanFilters
+from .constants import *  # CAN_RAW, CAN_*_FLAG
+from .utils import pack_filters, find_available_interfaces
 
 # Setup BCM struct
 def bcm_header_factory(
@@ -274,15 +274,15 @@ def send_bcm(bcm_socket: socket.socket, data: bytes) -> int:
         )
 
         if e.errno == errno.EINVAL:
-            raise can.CanError(
+            raise CanError(
                 base + "You are probably referring to a non-existing frame."
             )
 
         elif e.errno == errno.ENETDOWN:
-            raise can.CanError(base + "The CAN interface appears to be down.")
+            raise CanError(base + "The CAN interface appears to be down.")
 
         elif e.errno == errno.EBADF:
-            raise can.CanError(base + "The CAN socket appears to be closed.")
+            raise CanError(base + "The CAN socket appears to be closed.")
 
         else:
             raise e
@@ -527,7 +527,7 @@ def capture_message(
             cf, _, msg_flags, _ = sock.recvmsg(CANFD_MTU)
             channel = None
     except socket.error as exc:
-        raise can.CanError("Error receiving: %s" % exc)
+        raise CanError("Error receiving: %s" % exc)
 
     can_id, can_dlc, flags, data = dissect_can_frame(cf)
     # log.debug('Received: can_id=%x, can_dlc=%x, data=%s', can_id, can_dlc, data)
@@ -669,7 +669,7 @@ class SocketcanBus(BusABC):
             ready_receive_sockets, _, _ = select.select([self.socket], [], [], timeout)
         except socket.error as exc:
             # something bad happened (e.g. the interface went down)
-            raise can.CanError(f"Failed to receive: {exc}")
+            raise CanError(f"Failed to receive: {exc}")
 
         if ready_receive_sockets:  # not empty
             get_channel = self.channel == ""
@@ -690,7 +690,7 @@ class SocketcanBus(BusABC):
             Wait up to this many seconds for the transmit queue to be ready.
             If not given, the call may fail immediately.
 
-        :raises can.CanError:
+        :raises CanError:
             if the message could not be written.
         """
         log.debug("We've been asked to write a message to the bus")
@@ -718,7 +718,7 @@ class SocketcanBus(BusABC):
             data = data[sent:]
             time_left = timeout - (time.time() - started)
 
-        raise can.CanError("Transmit buffer full")
+        raise CanError("Transmit buffer full")
 
     def _send_once(self, data: bytes, channel: Optional[str] = None) -> int:
         try:
@@ -728,7 +728,7 @@ class SocketcanBus(BusABC):
             else:
                 sent = self.socket.send(data)
         except socket.error as exc:
-            raise can.CanError("Failed to transmit: %s" % exc)
+            raise CanError("Failed to transmit: %s" % exc)
         return sent
 
     def _send_periodic_internal(
@@ -786,7 +786,7 @@ class SocketcanBus(BusABC):
             self._bcm_sockets[channel] = create_bcm_socket(self.channel)
         return self._bcm_sockets[channel]
 
-    def _apply_filters(self, filters: Optional[can.typechecking.CanFilters]) -> None:
+    def _apply_filters(self, filters: Optional[typechecking.CanFilters]) -> None:
         try:
             self.socket.setsockopt(SOL_CAN_RAW, CAN_RAW_FILTER, pack_filters(filters))
         except socket.error as error:
@@ -803,7 +803,7 @@ class SocketcanBus(BusABC):
         return self.socket.fileno()
 
     @staticmethod
-    def _detect_available_configs() -> List[can.typechecking.AutoDetectedConfig]:
+    def _detect_available_configs() -> List[typechecking.AutoDetectedConfig]:
         return [
             {"interface": "socketcan", "channel": channel}
             for channel in find_available_interfaces()

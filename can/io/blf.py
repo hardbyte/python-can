@@ -19,9 +19,9 @@ import time
 import logging
 from typing import List
 
-from can.message import Message
-from can.listener import Listener
-from can.util import len2dlc, dlc2len, channel2int
+from ..message import Message
+from ..listener import Listener
+from ..util import len2dlc, dlc2len, channel2int
 from .generic import BaseIOHandler
 
 

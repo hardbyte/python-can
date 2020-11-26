@@ -1,4 +1,4 @@
 """
 """
 
-from can.interfaces.systec.ucanbus import UcanBus
+from .ucanbus import UcanBus

@@ -1,4 +1,4 @@
 """
 """
 
-from can.interfaces.pcan.pcan import PcanBus
+from .pcan import PcanBus
