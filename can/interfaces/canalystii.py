@@ -392,7 +392,7 @@ class CANalystIIBus(BusABC):
         """
         return {key: value for key, value in self._b_info.items()}
 
-    def send(self, msg: Message, timeout=None):
+    def send(self, msg: Message, timeout=None) -> None:
         """
         Send CAN Frame
 
@@ -402,8 +402,9 @@ class CANalystIIBus(BusABC):
         :param timeout: timeout is not used here
         :type timeout: None
 
-        :return: `True` if frame was sent else `False`
-        :rtype: bool
+        :rtype: None
+
+        :raises: `CanError` if unable to send the message
         """
 
         can_objs = (VCI_CAN_OBJ * 1)()
@@ -413,6 +414,7 @@ class CANalystIIBus(BusABC):
         can_objs[0].SendType = 1
         can_objs[0].RemoteFlag = int(msg.is_remote_frame)
         can_objs[0].DataLen = msg.dlc
+
         for j in range(len(msg.data)):
             can_objs[0].Data[j] = msg.data[j]
 
@@ -424,7 +426,14 @@ class CANalystIIBus(BusABC):
             1
         )
 
-        return bool(frames_sent)
+        if not frames_sent:
+            raise CanError(
+                'Unable to send message '
+                '(device: {0}, channel: {1})'.format(
+                    self.device,
+                    self.channel
+                )
+            )
 
     def status(self) -> Dict:
         """
@@ -534,10 +543,10 @@ class CANalystIIBus(BusABC):
 
         return message, False
 
-    def flush_tx_buffer(self):
+    def flush_tx_buffer(self) -> None:
         CANalystII.VCI_ClearBuffer(VCI_USBCAN2, self.device, self.channel)
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         # stops receiving new frames
         CANalystII.VCI_ResetCAN(VCI_USBCAN2, self.device, self.channel)
 
