@@ -8,7 +8,7 @@ Any `VirtualBus` instances connecting to the same channel (from within the same 
 process) will receive each others messages.
 
 If messages shall be sent across process or host borders, consider using the
-:ref:`multicast_ip_doc` and refer to (:ref:`the next section <other_virtual_interfaces>`)
+:ref:`udp_multicast_doc` and refer to (:ref:`the next section <other_virtual_interfaces>`)
 for a comparison and general discussion of different virtual interfaces.
 
 .. _other_virtual_interfaces:
@@ -25,24 +25,24 @@ Comparison
 
 The following table compares some known virtual interfaces:
 
-+--------------------------------------------------+-----------------------------------------------------------------------+---------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------+
-| **Name**                                         | **Availability**                                                      |           **Applicability**           |                                                           **Implementation**                                                           |
-|                                                  |                                                                       +-----------+-------------+-------------+--------------------+---------------------------------------------+---------------------------------------------------------------------+
-|                                                  |                                                                       | **Within  | **Between   | **Via (IP)  | **Without Central  | **Transport                                 | **Serialization                                                     |
-|                                                  |                                                                       | Process** | Processes** | Networks**  | Server**           | Technology**                                | Format**                                                            |
-+--------------------------------------------------+-----------------------------------------------------------------------+-----------+-------------+-------------+--------------------+---------------------------------------------+---------------------------------------------------------------------+
-| ``virtual`` (this)                               | *included*                                                            | ✓         | ✗           | ✗           | ✓                  | Singleton & Mutex                           | none                                                                |
-|                                                  |                                                                       |           |             |             |                    | (reliable)                                  |                                                                     |
-+--------------------------------------------------+-----------------------------------------------------------------------+-----------+-------------+-------------+--------------------+---------------------------------------------+---------------------------------------------------------------------+
-| ``multicast_ip`` (:ref:`doc <multicast_ip_doc>`) | *included*                                                            | ✓         | ✓           | ✓           | ✓                  | UDP via IP multicast                        | custom using `msgpack <https://pypi.org/project/msgpack-python/>`__ |
-|                                                  |                                                                       |           |             |             |                    | (unreliable)                                |                                                                     |
-+--------------------------------------------------+-----------------------------------------------------------------------+-----------+-------------+-------------+--------------------+---------------------------------------------+---------------------------------------------------------------------+
-| *christiansandberg/                              | `external <https://github.com/christiansandberg/python-can-remote>`__ | ✓         | ✓           | ✓           | ✗                  | Websockets via TCP/IP                       | custom binary                                                       |
-| python-can-remote*                               |                                                                       |           |             |             |                    | (reliable)                                  |                                                                     |
-+--------------------------------------------------+-----------------------------------------------------------------------+-----------+-------------+-------------+--------------------+---------------------------------------------+---------------------------------------------------------------------+
-| *windelbouwman/                                  | `external <https://github.com/windelbouwman/virtualcan>`__            | ✓         | ✓           | ✓           | ✗                  | `ZeroMQ <https://zeromq.org/>`__ via TCP/IP | custom binary [#f1]_                                                |
-| virtualcan*                                      |                                                                       |           |             |             |                    | (reliable)                                  |                                                                     |
-+--------------------------------------------------+-----------------------------------------------------------------------+-----------+-------------+-------------+--------------------+---------------------------------------------+---------------------------------------------------------------------+
++----------------------------------------------------+-----------------------------------------------------------------------+---------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------+
+| **Name**                                           | **Availability**                                                      |           **Applicability**           |                                                           **Implementation**                                                           |
+|                                                    |                                                                       +-----------+-------------+-------------+--------------------+---------------------------------------------+---------------------------------------------------------------------+
+|                                                    |                                                                       | **Within  | **Between   | **Via (IP)  | **Without Central  | **Transport                                 | **Serialization                                                     |
+|                                                    |                                                                       | Process** | Processes** | Networks**  | Server**           | Technology**                                | Format**                                                            |
++----------------------------------------------------+-----------------------------------------------------------------------+-----------+-------------+-------------+--------------------+---------------------------------------------+---------------------------------------------------------------------+
+| ``virtual`` (this)                                 | *included*                                                            | ✓         | ✗           | ✗           | ✓                  | Singleton & Mutex                           | none                                                                |
+|                                                    |                                                                       |           |             |             |                    | (reliable)                                  |                                                                     |
++----------------------------------------------------+-----------------------------------------------------------------------+-----------+-------------+-------------+--------------------+---------------------------------------------+---------------------------------------------------------------------+
+| ``udp_multicast`` (:ref:`doc <udp_multicast_doc>`) | *included*                                                            | ✓         | ✓           | ✓           | ✓                  | UDP via IP multicast                        | custom using `msgpack <https://pypi.org/project/msgpack-python/>`__ |
+|                                                    |                                                                       |           |             |             |                    | (unreliable)                                |                                                                     |
++----------------------------------------------------+-----------------------------------------------------------------------+-----------+-------------+-------------+--------------------+---------------------------------------------+---------------------------------------------------------------------+
+| *christiansandberg/                                | `external <https://github.com/christiansandberg/python-can-remote>`__ | ✓         | ✓           | ✓           | ✗                  | Websockets via TCP/IP                       | custom binary                                                       |
+| python-can-remote*                                 |                                                                       |           |             |             |                    | (reliable)                                  |                                                                     |
++----------------------------------------------------+-----------------------------------------------------------------------+-----------+-------------+-------------+--------------------+---------------------------------------------+---------------------------------------------------------------------+
+| *windelbouwman/                                    | `external <https://github.com/windelbouwman/virtualcan>`__            | ✓         | ✓           | ✓           | ✗                  | `ZeroMQ <https://zeromq.org/>`__ via TCP/IP | custom binary [#f1]_                                                |
+| virtualcan*                                        |                                                                       |           |             |             |                    | (reliable)                                  |                                                                     |
++----------------------------------------------------+-----------------------------------------------------------------------+-----------+-------------+-------------+--------------------+---------------------------------------------+---------------------------------------------------------------------+
 
 .. [#f1]
     As the only option in this list, this implements interoperability with other languages
@@ -57,21 +57,21 @@ Common Limitations
 **Guaranteed delivery** and **message ordering** is one major point of difference:
 While in a physical CAN network, a message is either sent or in queue (or an explicit error occurred),
 this may not be the case for virtual networks.
-The ``multicast_ip`` bus for example, drops this property for the benefit of lower
+The ``udp_multicast`` bus for example, drops this property for the benefit of lower
 latencies by using unreliable UDP/IP instead of reliable TCP/IP (and because normal IP multicast
 is inherently unreliable, as the recipients are unknown by design). The other three buses faithfully
 model a physical CAN network in this regard: They ensure that all recipients actually receive
 (and acknowledge each message), much like in a physical CAN network. They also ensure that
 messages are relayed in the order they have arrived at the central server and that messages
 arrive at the recipients exactly once. Both is not guaranteed to hold for the best-effort
-``multicast_ip`` bus as it uses UDP/IP as a transport layer.
+``udp_multicast`` bus as it uses UDP/IP as a transport layer.
 
 **Central servers** are, however, required by the external tools to provide these guarantees.
 That central servers receives and distributes the CAN messages to all other bus participants,
 which is avoided in a real physical CAN network.
 The first intra-process ``virtual`` interface does not require this by simply using a shared
 object within the process, where it is much easier to make guarantees about message passing.
-The ``multicast_ip`` bus also does not require such a server.
+The ``udp_multicast`` bus also does not require such a server.
 
 **Arbitration and throughput** are two interrelated functions/properties of CAN networks which
 are typically abstracted from in virtual interfaces. In all four interfaces, an unlimited amount

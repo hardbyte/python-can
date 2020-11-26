@@ -1,4 +1,4 @@
-.. _multicast_ip_doc:
+.. _udp_multicast_doc:
 
 Multicast IP Interface
 ======================
@@ -37,11 +37,11 @@ from ``bus_1`` to ``bus_2``:
 
         import time
         import can
-        from can.interfaces.multicast_ip import MulticastIpBus
+        from can.interfaces.udp_multicast import UdpMulticastBus
 
-        # The bus can be created using the can.Bus wrapper class or using MulticastIpBus directly
-        with can.Bus(channel=MulticastIpBus.DEFAULT_GROUP_IPv6, bustype='multicast_ip') as bus_1, \
-                MulticastIpBus(channel=MulticastIpBus.DEFAULT_GROUP_IPv6) as bus_2:
+        # The bus can be created using the can.Bus wrapper class or using UdpMulticastBus directly
+        with can.Bus(channel=UdpMulticastBus.DEFAULT_GROUP_IPv6, bustype='multicast_ip') as bus_1, \
+                UdpMulticastBus(channel=UdpMulticastBus.DEFAULT_GROUP_IPv6) as bus_2:
 
             # register a callback on the second bus that prints messages to the standard out
             notifier = can.Notifier(bus_2, [can.Printer()])
@@ -57,6 +57,6 @@ from ``bus_1`` to ``bus_2``:
 Bus Class Documentation
 -----------------------
 
-.. autoclass:: can.interfaces.multicast_ip.MulticastIpBus
+.. autoclass:: can.interfaces.udp_multicast.UdpMulticastBus
     :members:
     :exclude-members: send

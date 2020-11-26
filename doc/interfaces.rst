@@ -16,7 +16,7 @@ The available interfaces are:
    interfaces/iscan
    interfaces/ixxat
    interfaces/kvaser
-   interfaces/multicast_ip
+   interfaces/udp_multicast
    interfaces/neovi
    interfaces/nican
    interfaces/pcan

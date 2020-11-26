@@ -13,7 +13,7 @@ import random
 import pytest
 
 import can
-from can.interfaces.multicast_ip import MulticastIpBus
+from can.interfaces.udp_multicast import UdpMulticastBus
 
 from .config import (
     IS_CI,
@@ -235,12 +235,12 @@ class BasicTestSocketCan(Back2BackTestCase):
     IS_UNIX and not (IS_TRAVIS and IS_OSX),
     "only supported on Unix systems (but not on Travis CI on macOS)",
 )
-class BasicTestInterprocessVirtualBusIPv4(Back2BackTestCase):
+class BasicTestUdpMulticastBusIPv4(Back2BackTestCase):
 
-    INTERFACE_1 = "multicast_ip"
-    CHANNEL_1 = MulticastIpBus.DEFAULT_GROUP_IPv4
-    INTERFACE_2 = "multicast_ip"
-    CHANNEL_2 = MulticastIpBus.DEFAULT_GROUP_IPv4
+    INTERFACE_1 = "udp_multicast"
+    CHANNEL_1 = UdpMulticastBus.DEFAULT_GROUP_IPv4
+    INTERFACE_2 = "udp_multicast"
+    CHANNEL_2 = UdpMulticastBus.DEFAULT_GROUP_IPv4
 
     def test_unique_message_instances(self):
         with self.assertRaises(NotImplementedError):
@@ -252,12 +252,12 @@ class BasicTestInterprocessVirtualBusIPv4(Back2BackTestCase):
 @unittest.skipUnless(
     IS_UNIX and not IS_TRAVIS, "only supported on Unix systems (but not on Travis CI)"
 )
-class BasicTestInterprocessVirtualBusIPv6(Back2BackTestCase):
+class BasicTestUdpMulticastBusIPv6(Back2BackTestCase):
 
-    INTERFACE_1 = "multicast_ip"
-    CHANNEL_1 = MulticastIpBus.DEFAULT_GROUP_IPv6
-    INTERFACE_2 = "multicast_ip"
-    CHANNEL_2 = MulticastIpBus.DEFAULT_GROUP_IPv6
+    INTERFACE_1 = "udp_multicast"
+    CHANNEL_1 = UdpMulticastBus.DEFAULT_GROUP_IPv6
+    INTERFACE_2 = "udp_multicast"
+    CHANNEL_2 = UdpMulticastBus.DEFAULT_GROUP_IPv6
 
     def test_unique_message_instances(self):
         with self.assertRaises(NotImplementedError):

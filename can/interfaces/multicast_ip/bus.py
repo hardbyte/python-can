@@ -23,7 +23,7 @@ IP_ADDRESS_INFO = Union[IPv4_ADDRESS_INFO, IPv6_ADDRESS_INFO]
 SO_TIMESTAMPNS = 35
 
 
-class MulticastIpBus(BusABC):
+class UdpMulticastBus(BusABC):
     """A virtual interface that allows to communicate between multiple processes using UDP over Multicast IP.
 
     It supports IPv4 and IPv6, specified via the channel (which really is just a multicast IP address as a
@@ -38,8 +38,8 @@ class MulticastIpBus(BusABC):
     .. note::
         The auto-detection of available interfaces (see) is implemented using heuristic that checks if the
         required socket operations are available. It then returns two configurations, one based on
-        the :attr:`~MulticastIpBus.DEFAULT_GROUP_IPv6` address and another one based on
-        the :attr:`~MulticastIpBus.DEFAULT_GROUP_IPv4` address.
+        the :attr:`~UdpMulticastBus.DEFAULT_GROUP_IPv6` address and another one based on
+        the :attr:`~UdpMulticastBus.DEFAULT_GROUP_IPv4` address.
 
     .. warning::
         The parameter `receive_own_messages` is currently unsupported and setting it to `True` will raise an
@@ -54,7 +54,7 @@ class MulticastIpBus(BusABC):
                     This defines which version of IP is used. See
                     `Wikipedia ("Multicast address") <https://en.wikipedia.org/wiki/Multicast_address>`__
                     for more details on the addressing schemes.
-                    Defaults to :attr:`~MulticastIpBus.DEFAULT_GROUP_IPv6`.
+                    Defaults to :attr:`~UdpMulticastBus.DEFAULT_GROUP_IPv6`.
     :param port: The IP port to read from and write to.
     :param hop_limit: The hop limit in IPv6 or in IPv4 the time to live (TTL).
     :param receive_own_messages: If transmitted messages should also be received by this bus.
@@ -99,7 +99,7 @@ class MulticastIpBus(BusABC):
         super().__init__(channel, **kwargs)
 
         self.is_fd = fd
-        self._multicast = GeneralPurposeMulticastIpBus(channel, port, hop_limit)
+        self._multicast = GeneralPurposeUdpMulticastBus(channel, port, hop_limit)
 
     def _recv_internal(self, timeout: Optional[float]):
         result = self._multicast.recv(timeout)
@@ -137,12 +137,12 @@ class MulticastIpBus(BusABC):
         if hasattr(socket, "CMSG_SPACE"):
             return [
                 {
-                    "interface": "multicast_ip",
-                    "channel": MulticastIpBus.DEFAULT_GROUP_IPv6,
+                    "interface": "udp_multicast",
+                    "channel": UdpMulticastBus.DEFAULT_GROUP_IPv6,
                 },
                 {
-                    "interface": "multicast_ip",
-                    "channel": MulticastIpBus.DEFAULT_GROUP_IPv4,
+                    "interface": "udp_multicast",
+                    "channel": UdpMulticastBus.DEFAULT_GROUP_IPv4,
                 },
             ]
 
@@ -150,7 +150,7 @@ class MulticastIpBus(BusABC):
         return []
 
 
-class GeneralPurposeMulticastIpBus:
+class GeneralPurposeUdpMulticastBus:
     """A general purpose send and receive handler for multicast over IP/UDP."""
 
     def __init__(

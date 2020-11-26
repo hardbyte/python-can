@@ -36,18 +36,18 @@ class TestDetectAvailableConfigs(unittest.TestCase):
         for config in configs:
             self.assertEqual(config["interface"], "virtual")
 
-    def test_content_multicast_ip(self):
-        configs = detect_available_configs(interfaces="multicast_ip")
+    def test_content_udp_multicast(self):
+        configs = detect_available_configs(interfaces="udp_multicast")
         for config in configs:
-            self.assertEqual(config["interface"], "multicast_ip")
+            self.assertEqual(config["interface"], "udp_multicast")
 
     def test_content_socketcan(self):
         configs = detect_available_configs(interfaces="socketcan")
         for config in configs:
             self.assertEqual(config["interface"], "socketcan")
 
-    def test_count_multicast_ip(self):
-        configs = detect_available_configs(interfaces="multicast_ip")
+    def test_count_udp_multicast(self):
+        configs = detect_available_configs(interfaces="udp_multicast")
         if IS_UNIX:
             self.assertGreaterEqual(len(configs), 2)
         else:
