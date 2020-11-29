@@ -1,72 +1,15 @@
 from typing import Optional, Union
 
-_UINT_MAX = 65535
-
-
-def _clamp(val, lo, hi):
-    return min(max(val, lo), hi)
-
-
-def _do_div(n, base):
-    res = n % base
-    return res
-
 
 def _get_cia_sample_point(bitrate):
     if bitrate > 800000:
-        sampl_pt = 750
+        sampl_pt = 75.0
     elif bitrate > 500000:
-        sampl_pt = 800
+        sampl_pt = 80.0
     else:
-        sampl_pt = 875
+        sampl_pt = 87.5
 
     return sampl_pt
-    
-
-class _BT(object):
-    """Internal use"""
-
-    def __init__(
-        self,
-        bitrate,
-        sample_point=0.0
-    ):
-        self.tq = 0
-        self.prop_seg = 0
-        self.phase_seg1 = 0
-        self.phase_seg2 = 0
-        self.sjw = 0
-        self.brp = 0
-        self.bitrate = bitrate
-        self.sp = 0
-        self.nbr = bitrate
-
-        if sample_point:
-            self.nsp = sample_point
-        else:
-            self.nsp = _get_cia_sample_point(bitrate)
-
-    @property
-    def nominal_bitrate(self):
-        return self.nbr
-
-    @property
-    def nominal_sample_point(self):
-        return self.nsp / 10.0
-
-    @property
-    def sample_point(self):
-        return self.sp / 10.0
-
-    @property
-    def sample_point_error(self):
-        spt_error = abs(self.nsp - self.sample_point)
-        return 100.0 * spt_error / self.nsp
-
-    @property
-    def bitrate_error(self):
-        rate_error = abs(self.nbr - self.bitrate)
-        return 100.0 * rate_error / self.nbr
 
 
 class TimingConst(object):
@@ -110,7 +53,6 @@ class BitTiming:
     """
 
     sync_seg = 1
-    can_calc_max_error = 50
 
     TimingConst = TimingConst
 
@@ -125,7 +67,8 @@ class BitTiming:
         nof_samples: int = 1,
         btr0: Optional[int] = None,
         btr1: Optional[int] = None,
-        sample_point: Optional[Union[int, float]] = None
+        sample_point: Optional[Union[int, float]] = None,
+        calc_tolerance: float = 0.5
     ):
         """
         Calculates the timings needed for most interfaces
@@ -188,136 +131,102 @@ class BitTiming:
             raise ValueError("nof_samples must be 1 or 3")
 
         self._sample_point = sample_point
+        self._calc_tolerance = calc_tolerance
 
-    def __can_update_spt(
-            self,
-            timing_const,
-            spt_nominal,
-            tseg,
-            tseg1_ptr,
-            tseg2_ptr,
-            spt_error_ptr
-    ):
-        best_spt_error = _UINT_MAX
-        best_spt = 0
-        i = 0
+        self._prop_seg = None
+        self._phase_seg1 = None
+        self._phase_seg2 = None
 
-        while i <= 1:
-            i += 1
-            tseg2 = tseg + self.sync_seg - (spt_nominal * (tseg + self.sync_seg)) / 1000 - i
-            tseg2 = _clamp(tseg2, timing_const.tseg2_min, timing_const.tseg2_max)
-            tseg1 = tseg - tseg2
-            if tseg1 > timing_const.tseg1_max:
-                tseg1 = timing_const.tseg1_max
-                tseg2 = tseg - tseg1
+    def __can_calc_bittiming(self, timing_const):
+        nominal_bitrate = self._bitrate
 
-            spt = 1000 * (tseg + self.sync_seg - tseg2) / (tseg + self.sync_seg)
-            spt_error = abs(spt_nominal - spt)
+        nominal_sample_point = self._sample_point
 
-            if spt <= spt_nominal and spt_error < best_spt_error:
-                best_spt = spt
-                best_spt_error = spt_error
-                tseg1_ptr = tseg1
-                tseg2_ptr = tseg2
+        if nominal_sample_point is None:
+            nominal_sample_point = _get_cia_sample_point(nominal_bitrate)
 
-        if spt_error_ptr:
-            spt_error_ptr = best_spt_error
+        match = None
 
-        return best_spt, int(tseg1_ptr), int(tseg2_ptr), spt_error_ptr
+        tmp = timing_const.f_clock / nominal_bitrate
+        for brp in range(timing_const.brp_min, timing_const.brp_max + 1, timing_const.brp_inc):
+            tmp2 = tmp / brp
+            btq = int(round(tmp2))
 
-    def __can_calc_bittiming(self, bt, timing_const):
-        best_rate_error = _UINT_MAX
-        spt_error = 0  # difference between current and nominal value */
-        best_spt_error = _UINT_MAX
-        best_tseg = 0  # current best value for tseg */
-        best_brp = 0  # current best value for brp */
-        tseg1 = 0
-        tseg2 = 0
+            if 4 <= btq <= 32:
+                err = -(tmp2 / btq - 1)
+                err = round(err * 10000) / 100.0
 
-        #  tseg even = round down, odd = round up */
-        tseg = (timing_const.tseg1_max + timing_const.tseg2_max) * 2 + 1
+                if abs(err) > self._calc_tolerance:
+                    continue
 
-        while tseg >= (timing_const.tseg1_min + timing_const.tseg2_min) * 2:
-            tseg -= 1
-            tsegall = self.sync_seg + tseg / 2
+                for tseg1 in range(timing_const.tseg1_min, timing_const.tseg1_max + 1):
+                    tseg2 = btq - tseg1
+                    if (
+                        tseg1 < tseg2 or
+                        tseg2 > timing_const.tseg2_max or
+                        tseg2 < timing_const.tseg2_min
+                    ):
+                        continue
 
-            #  Compute all possible tseg choices (tseg=tseg1+tseg2) */
-            brp = timing_const.f_clock / (tsegall * bt.nbr) + tseg % 2
+                    tseg2 -= 1
 
-            #  choose brp step which is possible in system */
-            brp = (brp / timing_const.brp_inc) * timing_const.brp_inc
-            if brp < timing_const.brp_min or brp > timing_const.brp_max:
-                continue
+                    sample_point = round(tseg1 / btq * 10000) / 100.0
+                    bitrate = round(nominal_bitrate * (1 - err))
+                    tq = brp * 1000 * 1000 * 1000
+                    tq %= timing_const.f_clock
+                    prop_seg = tseg1 // 2
+                    phase_seg1 = tseg1 - prop_seg
+                    phase_seg2 = tseg2
 
-            rate = timing_const.f_clock / (brp * tsegall)
-            rate_error = abs(bt.nbr - rate)
+                    if not self._sjw or not timing_const.sjw_max:
+                        sjw = 1
+                    else:
+                        sjw = self._sjw
+                        #  bt->sjw is at least 1 -> sanitize upper bound to sjw_max */
+                        if sjw > timing_const.sjw_max:
+                            sjw = timing_const.sjw_max
+                        #  bt->sjw must not be higher than tseg2 */
+                        if tseg2 < sjw:
+                            continue
 
-            #  tseg brp biterror */
-            if rate_error > best_rate_error:
-                continue
+                    if bitrate == nominal_bitrate and sample_point == nominal_sample_point:
+                        match = (err, bitrate, prop_seg, phase_seg1, phase_seg2, brp, tseg1, tseg2, sjw)
+                        break
 
-            #  reset sample point error if we have a better bitrate */
-            if rate_error < best_rate_error:
-                best_spt_error = _UINT_MAX
+                    elif match is None:
+                        match = (err, bitrate, prop_seg, phase_seg1, phase_seg2, brp, tseg1, tseg2, sjw)
 
-            tseg1, tseg2, spt_error = self.__can_update_spt(
-                timing_const,
-                bt.nsp,
-                tseg / 2,
-                tseg1,
-                tseg2,
-                spt_error
-            )[1:]
+                    elif match[0] > err:
+                        match = (err, bitrate, prop_seg, phase_seg1, phase_seg2, brp, tseg1, tseg2, sjw)
 
-            if spt_error > best_spt_error:
-                continue
+                else:
+                    continue
 
-            best_spt_error = spt_error
-            best_rate_error = rate_error
-            best_tseg = tseg / 2
-            best_brp = brp
-
-            if rate_error == 0 and spt_error == 0:
                 break
 
-        if best_rate_error:
-            #  Error in one-tenth of a percent */
-            rate_error = (best_rate_error * 1000) / bt.bitrate
-            if rate_error > self.can_calc_max_error:
-                return False
+        if match is None:
+            return False
 
-        #  real sample point */
-        bt.sp = self.__can_update_spt(
-            timing_const,
-            bt.nsp,
-            best_tseg,
+        (
+            bitrate,
+            prop_seg,
+            phase_seg1,
+            phase_seg2,
+            brp,
             tseg1,
             tseg2,
-            None
-        )[0]
+            sjw
+        ) = match[1:]
 
-        v64 = best_brp * 1000 * 1000 * 1000
-        v64 = _do_div(v64, timing_const.f_clock)
-        bt.tq = int(v64)
-        bt.prop_seg = int(tseg1 / 2)
-        bt.phase_seg1 = tseg1 - bt.prop_seg
-        bt.phase_seg2 = tseg2
-
-        #  check for sjw user settings */
-        if not bt.sjw or not timing_const.sjw_max:
-            bt.sjw = 1
-        else:
-            #  bt->sjw is at least 1 -> sanitize upper bound to sjw_max */
-            if bt.sjw > timing_const.sjw_max:
-                bt.sjw = timing_const.sjw_max
-            #  bt->sjw must not be higher than tseg2 */
-            if tseg2 < bt.sjw:
-                bt.sjw = int(tseg2)
-
-        bt.brp = int(best_brp)
-
-        #  real bit-rate */
-        bt.bitrate = int(timing_const.f_clock / (bt.brp * (self.sync_seg + tseg1 + tseg2)))
+        self._bitrate = bitrate
+        self._prop_seg = prop_seg
+        self._phase_seg1 = phase_seg1
+        self._phase_seg2 = phase_seg2
+        self._brp = brp
+        self._tseg1 = tseg1
+        self._tseg2 = tseg2
+        self._sjw = sjw
+        self._f_clock = timing_const.f_clock
 
         return True
 
@@ -334,41 +243,7 @@ class BitTiming:
         
         :raises: ValueError if not able to calculate the timings
         """
-        if self._bitrate is None:
-            return
-        
-        if self._bt is not None:
-            return True
-                
-        bitrate_nominal = self._bitrate
-        spt_nominal = self._sample_point
-        
-        if spt_nominal is None:
-            spt_nominal = 0
-        
-        bt = _BT(
-            bitrate=bitrate_nominal,
-            sample_point=spt_nominal
-        )
-
-        if not self.__can_calc_bittiming(bt, timing_const):
-            return False
-
-        if not bt.sample_point:
-            return False
-
-        self._bitrate = bt.bitrate
-        self._sample_point = bt.sample_point
-
-        self._tseg1 = bt.prop_seg + bt.phase_seg1
-        self._tseg2 = bt.phase_seg2
-        self._brp = bt.brp
-        self._sjw = bt.sjw
-        self._f_clock = timing_const.f_clock
-        
-        self._bt = bt
-
-        return True
+        return self.__can_calc_bittiming(timing_const)
 
     @property
     def nbt(self) -> int:
@@ -440,14 +315,17 @@ class BitTiming:
     @property
     def sample_point(self) -> float:
         """Sample point in percent."""
-        return 100.0 * (self.nbt - self.tseg2) / self.nbt
+        tmp = self.f_clock / self.bitrate
+        tmp2 = tmp / self.brp
+        btq = int(round(tmp2))
+        return round(self.tseg1 / btq * 10000) / 100.0
 
     @property
     def btr0(self) -> int:
         sjw = self.sjw
         brp = self.brp
 
-        if self._bt is None:
+        if None in (self._prop_seg, self._phase_seg1, self._phase_seg2):
             if brp < 1 or brp > 64:
                 raise ValueError("brp must be 1 - 64")
             if sjw < 1 or sjw > 4:
@@ -457,8 +335,8 @@ class BitTiming:
 
         else:
             btr0 = (
-                ((int(self._bt.brp) - 1) & 0x3f) |
-                (((int(self._bt.sjw) - 1) & 0x3) << 6)
+                ((brp - 1) & 0x3f) |
+                (((sjw - 1) & 0x3) << 6)
             )
 
         return btr0
@@ -469,7 +347,7 @@ class BitTiming:
         tseg1 = self.tseg1
         tseg2 = self.tseg2
 
-        if self._bt is None:
+        if None in (self._prop_seg, self._phase_seg1, self._phase_seg2):
             if tseg1 < 1 or tseg1 > 16:
                 raise ValueError("tseg1 must be 1 - 16")
             if tseg2 < 1 or tseg2 > 8:
@@ -478,84 +356,96 @@ class BitTiming:
             btr1 = sam << 7 | (tseg2 - 1) << 4 | tseg1 - 1
         else:
             btr1 = (
-                ((int(self._bt.prop_seg) + int(self._bt.phase_seg1) - 1) & 0xf) |
-                (((int(self._bt.phase_seg2) - 1) & 0x7) << 4)
+                ((self._prop_seg + self._phase_seg1 - 1) & 0xf) |
+                (((self._phase_seg2 - 1) & 0x7) << 4)
             )
 
         return btr1
 
     @property
     def can_br(self):
-        if self._bt is not None:
-            br = (
-                (int(self._bt.phase_seg2) - 1) |
-                ((int(self._bt.phase_seg1) - 1) << 4) |
-                ((int(self._bt.prop_seg) - 1) << 8) |
-                ((int(self._bt.sjw) - 1) << 12) |
-                ((int(self._bt.brp) - 1) << 16)
-            )
-            return br
+        if None in (self._phase_seg1, self._phase_seg2, self._prop_seg, self._sjw, self._brp):
+            return
+
+        br = (
+            (self._phase_seg2 - 1) |
+            ((self._phase_seg1 - 1) << 4) |
+            ((self._prop_seg - 1) << 8) |
+            ((self._sjw - 1) << 12) |
+            ((self._brp - 1) << 16)
+        )
+        return br
 
     @property
     def can_ctrl(self):
-        if self._bt is not None:
-            ctrl = (
-                ((int(self._bt.brp) - 1) << 24) |
-                ((int(self._bt.sjw) - 1) << 22) |
-                ((int(self._bt.phase_seg1) - 1) << 19) |
-                ((int(self._bt.phase_seg2) - 1) << 16) |
-                ((int(self._bt.prop_seg) - 1) << 0)
-            )
+        if None in (self._phase_seg1, self._phase_seg2, self._prop_seg, self._sjw, self._brp):
+            return
 
-            return ctrl
+        ctrl = (
+            ((self._brp - 1) << 24) |
+            ((self._sjw - 1) << 22) |
+            ((self._phase_seg1 - 1) << 19) |
+            ((self._phase_seg2 - 1) << 16) |
+            ((self._prop_seg - 1) << 0)
+        )
+
+        return ctrl
 
     @property
     def cnf1(self):
-        if self._bt is not None:
-            return ((int(self._bt.sjw) - 1) << 6) | (int(self._bt.brp) - 1)
+        if None in (self._brp, self._sjw):
+            return
+
+        return ((self._sjw - 1) << 6) | (self._brp - 1)
 
     @property
     def cnf2(self):
-        if self._bt is not None:
-            return 0x80 | ((int(self._bt.phase_seg1) - 1) << 3) | (int(self._bt.prop_seg) - 1)
+        if None in (self._phase_seg1, self._prop_seg):
+            return
+
+        return 0x80 | ((self._phase_seg1 - 1) << 3) | (self._prop_seg - 1)
 
     @property
     def cnf3(self):
-        if self._bt is not None:
-            return int(self._bt.phase_seg2) - 1
+        if self._phase_seg2 is not None:
+            return self._phase_seg2 - 1
 
     @property
     def canbtc(self):
-        if self._bt is not None:
-            can_btc = (int(self._bt.phase_seg2) - 1) & 0x7
-            can_btc |= ((int(self._bt.phase_seg1) + int(self._bt.prop_seg) - 1) & 0xF) << 3
-            can_btc |= ((int(self._bt.sjw) - 1) & 0x3) << 8
-            can_btc |= ((int(self._bt.brp) - 1) & 0xFF) << 16
+        if None in (self._phase_seg1, self._phase_seg2, self._prop_seg, self._sjw, self._brp):
+            return
 
-            return can_btc
+        can_btc = (self._phase_seg2 - 1) & 0x7
+        can_btc |= ((self._phase_seg1 + self._prop_seg - 1) & 0xF) << 3
+        can_btc |= ((self._sjw - 1) & 0x3) << 8
+        can_btc |= ((self._brp - 1) & 0xFF) << 16
+
+        return can_btc
 
     @property
     def cibcr(self):
-        if self._bt is not None:
-            def _bcr_tseg1(x):
-                return (x & 0x0f) << 20
+        if None in (self._phase_seg1, self._phase_seg2, self._prop_seg, self._sjw, self._brp):
+            return
 
-            def _bcr_bpr(x):
-                return (x & 0x3ff) << 8
+        def _bcr_tseg1(x):
+            return (x & 0x0f) << 20
 
-            def _bcr_sjw(x):
-                return (x & 0x3) << 4
+        def _bcr_bpr(x):
+            return (x & 0x3ff) << 8
 
-            def _bcr_tseg2(x):
-                return x & 0x07
+        def _bcr_sjw(x):
+            return (x & 0x3) << 4
 
-            bcr = (
-                _bcr_tseg1(int(self._bt.phase_seg1) + int(self._bt.prop_seg) - 1) |
-                _bcr_bpr(int(self._bt.brp) - 1) |
-                _bcr_sjw(int(self._bt.sjw) - 1) |
-                _bcr_tseg2(int(self._bt.phase_seg2) - 1)
-            )
-            return bcr << 8
+        def _bcr_tseg2(x):
+            return x & 0x07
+
+        bcr = (
+            _bcr_tseg1(self._phase_seg1 + self._prop_seg - 1) |
+            _bcr_bpr(self._brp - 1) |
+            _bcr_sjw(self._sjw - 1) |
+            _bcr_tseg2(self._phase_seg2 - 1)
+        )
+        return bcr << 8
 
     def __str__(self) -> str:
         segments = []
@@ -785,39 +675,63 @@ if __name__ == '__main__':
 
     classes = [
         sja1000Const,
-        mscan_32Const,
-        mscan_33Const,
-        mscan_333Const,
-        mscan_33333333Const,
-        mscan_mpc5121_1Const,
-        mscan_mpc5121_2Const,
-        at91_ronetixConst,
-        at91_100Const,
-        flexcan_mx28Const,
-        flexcan_mx6Const,
-        flexcan_49Const,
-        flexcan_66Const,
-        flexcan_665Const,
-        flexcan_666Const,
-        flexcan_vybridConst,
-        mcp251x_8Const,
-        mcp251x_16Const,
-        ti_heccConst,
-        rcar_canConst
+        # mscan_32Const,
+        # mscan_33Const,
+        # mscan_333Const,
+        # mscan_33333333Const,
+        # mscan_mpc5121_1Const,
+        # mscan_mpc5121_2Const,
+        # at91_ronetixConst,
+        # at91_100Const,
+        # flexcan_mx28Const,
+        # flexcan_mx6Const,
+        # flexcan_49Const,
+        # flexcan_66Const,
+        # flexcan_665Const,
+        # flexcan_666Const,
+        # flexcan_vybridConst,
+        # mcp251x_8Const,
+        # mcp251x_16Const,
+        # ti_heccConst,
+        # rcar_canConst
     ]
 
-    for brate in common_bitrates:
-        for cls in classes:
-            name = cls.__name__.replace('Const', '')
-            btiming = BitTiming(brate)
-            if btiming.calc_bit_timing(cls):
-                print(name, btiming)
+    TIMING_DICT = {
+        5000: (0xBF, 0xFF, 64.00),
+        10000: (0x31, 0x1C, 81.25),
+        20000: (0x18, 0x1C, 81.25),
+        33330: (0x09, 0x6F, 66.67),
+        40000: (0x87, 0xFF, 64.00),
+        50000: (0x09, 0x1C, 81.25),
+        66660: (0x04, 0x6F, 66.67),
+        80000: (0x83, 0xFF, 64.00),
+        83330: (0x03, 0x6F, 66.67),
+        100000: (0x04, 0x1C, 81.25),
+        125000: (0x03, 0x1C, 81.25),
+        200000: (0x81, 0xFA, 55.0),
+        250000: (0x01, 0x1C, 81.25),
+        400000: (0x80, 0xFA, 55.0),
+        500000: (0x00, 0x1C, 81.25),
+        666000: (0x80, 0xB6, 58.33),
+        800000: (0x00, 0x16, 70.0),
+        1000000: (0x00, 0x14, 62.5),
+    }
+
+    for cls in classes:
+        name = cls.__name__.replace('Const', '')
+        for brate, (t0, t1, smpl) in TIMING_DICT.items():
+            btiming = BitTiming(bitrate=brate, sample_point=smpl)
+            btiming2 = BitTiming(f_clock=cls.f_clock, bitrate=brate, btr0=t0, btr1=t1)
+            if btiming.calc_bit_timing(cls()):
+                print(name, 'calculated', btiming)
+                print(name, 'from table', btiming2)
 
                 print(
                     'BTR0 BTR1',
                     hex(btiming.btr0)[2:].upper().zfill(2),
                     hex(btiming.btr1)[2:].upper().zfill(2)
                 )
+
                 print(
                     'CAN_BR',
                     hex(btiming.can_br)[2:].upper().zfill(8)
@@ -842,5 +756,8 @@ if __name__ == '__main__':
                 )
             else:
                 print(name, 'timings could not be calculated')
+                print(name, btiming2)
+                print(smpl, btiming2.sample_point)
+
 
             print()
