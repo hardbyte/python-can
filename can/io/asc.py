@@ -246,6 +246,7 @@ class ASCWriter(BaseIOHandler, Listener):
             "{bit_timing_conf_ext_data:>8}",
         ]
     )
+    FORMAT_START_OF_FILE_DATE = "%a %b %d %I:%M:%S.%f %p %Y"
     FORMAT_DATE = "%a %b %d %I:%M:%S.{} %p %Y"
     FORMAT_EVENT = "{timestamp: 9.6f} {message}\n"
 
@@ -268,7 +269,7 @@ class ASCWriter(BaseIOHandler, Listener):
         self.channel = channel
 
         # write start of file header
-        now = datetime.now().strftime("%a %b %d %I:%M:%S.%f %p %Y")
+        now = datetime.now().strftime(self.FORMAT_START_OF_FILE_DATE)
         self.file.write("date %s\n" % now)
         self.file.write("base hex  timestamps absolute\n")
         self.file.write("internal events logged\n")
