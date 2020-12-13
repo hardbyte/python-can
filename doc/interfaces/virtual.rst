@@ -45,9 +45,9 @@ The following table compares some known virtual interfaces:
 +----------------------------------------------------+-----------------------------------------------------------------------+-----------+-------------+-------------+--------------------+---------------------------------------------+---------------------------------------------------------------------+
 
 .. [#f1]
-    As the only option in this list, this implements interoperability with other languages
-    out of the box. For the others (expect the first intra-process one), other programs written
-    in potentially different languages could probably effortlessly interface with the bus
+    The only option in this list that implements interoperability with other languages
+    out of the box. For the others (except the first intra-process one), other programs written
+    in potentially different languages could effortlessly interface with the bus
     once they mimic the serialization format. The last one, however, has already implemented
     the entire bus functionality in  *C++* and *Rust*, besides the Python variant.
 
@@ -66,19 +66,19 @@ messages are relayed in the order they have arrived at the central server and th
 arrive at the recipients exactly once. Both is not guaranteed to hold for the best-effort
 ``udp_multicast`` bus as it uses UDP/IP as a transport layer.
 
-**Central servers** are, however, required by the external tools to provide these guarantees.
-That central servers receives and distributes the CAN messages to all other bus participants,
-which is avoided in a real physical CAN network.
-The first intra-process ``virtual`` interface does not require this by simply using a shared
-object within the process, where it is much easier to make guarantees about message passing.
-The ``udp_multicast`` bus also does not require such a server.
+**Central servers** are, however, required by interfaces 3 and 4 (the external tools) to provide
+these guarantees of message delivery and message ordering. The central servers receive and distribute
+the CAN messages to all other bus participants, unlike in a real physical CAN network.
+The first intra-process ``virtual`` interface only runs within one Python process, effectively the
+Python instance of :class:`VirtualBus` acts as a central server. Notably the ``udp_multicast`` bus
+does not require a central server.
 
 **Arbitration and throughput** are two interrelated functions/properties of CAN networks which
-are typically abstracted from in virtual interfaces. In all four interfaces, an unlimited amount
+are typically abstracted in virtual interfaces. In all four interfaces, an unlimited amount
 of messages can be sent per unit of time (given the computational power of the machines and
 networks that are involved). In a real CAN/CAN FD networks, however, throughput is usually much
 more restricted and prioritization of arbitration IDs is thus an important feature once the bus
-is starting to get saturated. None of the interfaces presented above supports any sort of throttling
+is starting to get saturated. None of the interfaces presented above support any sort of throttling
 or ID arbitration under high loads.
 
 Example

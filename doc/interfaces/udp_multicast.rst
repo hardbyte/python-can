@@ -25,7 +25,7 @@ for specifying multicast IP addresses.
 Supported Platforms
 -------------------
 
-It should work on must Unix systems (including Linux with kernel 2.6.22+) but currently not on Windows.
+It should work on most Unix systems (including Linux with kernel 2.6.22+) but currently not on Windows.
 
 Example
 -------
@@ -40,7 +40,7 @@ from ``bus_1`` to ``bus_2``:
         from can.interfaces.udp_multicast import UdpMulticastBus
 
         # The bus can be created using the can.Bus wrapper class or using UdpMulticastBus directly
-        with can.Bus(channel=UdpMulticastBus.DEFAULT_GROUP_IPv6, bustype='multicast_ip') as bus_1, \
+        with can.Bus(channel=UdpMulticastBus.DEFAULT_GROUP_IPv6, bustype='udp_multicast') as bus_1, \
                 UdpMulticastBus(channel=UdpMulticastBus.DEFAULT_GROUP_IPv6) as bus_2:
 
             # register a callback on the second bus that prints messages to the standard out

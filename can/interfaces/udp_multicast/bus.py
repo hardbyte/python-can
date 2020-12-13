@@ -24,7 +24,7 @@ SO_TIMESTAMPNS = 35
 
 
 class UdpMulticastBus(BusABC):
-    """A virtual interface that allows to communicate between multiple processes using UDP over Multicast IP.
+    """A virtual interface for CAN communications between multiple processes using UDP over Multicast IP.
 
     It supports IPv4 and IPv6, specified via the channel (which really is just a multicast IP address as a
     string). You can also specify the port and the IPv6 *hop limit*/the IPv4 *time to live* (TTL).
@@ -50,7 +50,7 @@ class UdpMulticastBus(BusABC):
         implement rate limiting or ID arbitration/prioritization under high loads. Please refer to the section
         :ref:`other_virtual_interfaces` for more information on this and a comparison to alternatives.
 
-    :param channel: An multicast IPv4 address (in `224.0.0.0/4`) or an IPv6 address (in `ff00::/8`).
+    :param channel: A multicast IPv4 address (in `224.0.0.0/4`) or an IPv6 address (in `ff00::/8`).
                     This defines which version of IP is used. See
                     `Wikipedia ("Multicast address") <https://en.wikipedia.org/wiki/Multicast_address>`__
                     for more details on the addressing schemes.
@@ -63,8 +63,6 @@ class UdpMulticastBus(BusABC):
         If CAN-FD frames should be supported. If set to false, an error will be raised upon sending such a
         frame and such received frames will be ignored.
     :param can_filters: See :meth:`~can.BusABC.set_filters`.
-
-    :attr:
 
     :raises RuntimeError: If the *msgpack*-dependency is not available. It should be installed on all
                           non Windows platforms via the `setup.py` requirements.
@@ -222,7 +220,7 @@ class GeneralPurposeUdpMulticastBus:
             # set how to receive timestamps
             sock.setsockopt(socket.SOL_SOCKET, SO_TIMESTAMPNS, 1)
 
-            # Bind it to the port (ony any interface)
+            # Bind it to the port (on any interface)
             sock.bind(("", self.port))
 
             # Join the multicast group
@@ -248,7 +246,7 @@ class GeneralPurposeUdpMulticastBus:
             raise error
 
     def send(self, data: bytes, timeout: Optional[float] = None) -> None:
-        """Send this data to all participants. This call blocks.
+        """Send data to all group members. This call blocks.
 
         :param timeout: the timeout in seconds after which an Exception is raised is sending has failed
         :param data: the data to be sent
@@ -271,8 +269,11 @@ class GeneralPurposeUdpMulticastBus:
         """
         Receive up to **max_buffer** bytes.
 
-        :param timeout: the timeout in seconds after which `None` is returned if not data arrived
-        :returns: `None` on timeout or the data alongside the sender of the data and a timestamp in seconds
+        :param timeout: the timeout in seconds after which `None` is returned if no data arrived
+        :returns: `None` on timeout, or a 3-tuple comprised of:
+            - received data,
+            - the sender of the data, and
+            - a timestamp in seconds
         """
         # get all sockets that are ready (can be a list with a single value
         # being self.socket or an empty list if self.socket is not ready)
