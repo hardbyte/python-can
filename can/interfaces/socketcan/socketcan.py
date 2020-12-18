@@ -593,6 +593,7 @@ class SocketcanBus(BusABC):
         self,
         channel: str = "",
         receive_own_messages: bool = False,
+        local_loopback: bool = True,
         fd: bool = False,
         can_filters: Optional[CanFilters] = None,
         **kwargs,
@@ -613,6 +614,8 @@ class SocketcanBus(BusABC):
             channel using :attr:`can.Message.channel`.
         :param receive_own_messages:
             If transmitted messages should also be received by this bus.
+        :param local_loopback:
+            If local loopback should be enabledon this bus.
         :param fd:
             If CAN-FD frames should be supported.
         :param can_filters:
@@ -625,6 +628,14 @@ class SocketcanBus(BusABC):
         self._is_filtered = False
         self._task_id = 0
         self._task_id_guard = threading.Lock()
+
+        # set the local_loopback parameter
+        try:
+            self.socket.setsockopt(
+                SOL_CAN_RAW, CAN_RAW_LOOPBACK, 1 if local_loopback else 0
+            )
+        except socket.error as error:
+            log.error("Could not set local loopback flag(%s)", error)
 
         # set the receive_own_messages parameter
         try:
@@ -648,7 +659,10 @@ class SocketcanBus(BusABC):
             log.error("Could not enable error frames (%s)", error)
 
         bind_socket(self.socket, channel)
-        kwargs.update({"receive_own_messages": receive_own_messages, "fd": fd})
+        kwargs.update({
+            "receive_own_messages": receive_own_messages,
+            "fd": fd, 
+            "local_loopback": local_loopback})
         super().__init__(channel=channel, can_filters=can_filters, **kwargs)
 
     def shutdown(self) -> None:
