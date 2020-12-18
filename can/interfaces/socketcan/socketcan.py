@@ -615,7 +615,7 @@ class SocketcanBus(BusABC):
         :param receive_own_messages:
             If transmitted messages should also be received by this bus.
         :param local_loopback:
-            If local loopback should be enabledon this bus.
+            If local loopback should be enabled on this bus.
         :param fd:
             If CAN-FD frames should be supported.
         :param can_filters:
