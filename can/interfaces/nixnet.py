@@ -7,7 +7,7 @@ Implementation references:
     NI-XNET Hardware and Software Manual: https://www.ni.com/pdf/manuals/372840h.pdf
     NI-XNET Python implementation: https://github.com/ni/nixnet-python
 
-Author: Javier Rubio Giménez(jvrr20@gmail.com)
+Authors: Javier Rubio Giménez <jvrr20@gmail.com>, Jose A. Escobar <joseleescobar@hotmail.com>
 """
 
 import logging
