@@ -128,9 +128,10 @@ class NiXNETcanBus(BusABC):
 
     def _recv_internal(self, timeout):
         try:
-            fr = self.__session_receive.frames.read(4, timeout=0.0)
-            for f in fr:
-                self._rx_queue.append(f)
+            if len(self._rx_queue)==0:
+                fr = self.__session_receive.frames.read(4, timeout=0)
+                for f in fr:
+                    self._rx_queue.append(f)
             can_frame = self._rx_queue.pop(0)
 
             # Timestamp should be converted from raw frame format(100ns increment from(12:00 a.m. January 1 1601 Coordinated
@@ -179,11 +180,10 @@ class NiXNETcanBus(BusABC):
         elif msg.is_error_frame:
             type_message = constants.FrameType.CAN_BUS_ERROR
         elif msg.is_fd:
-            type_message = constants.FrameType.CANFDBRS_DATA
-            # if msg.bitrate_switch:
-            #    type_message = constants.FrameType.CANFDBRS_DATA
-            # else:
-            #    type_message = constants.FrameType.CANFD_DATA
+            if msg.bitrate_switch:
+               type_message = constants.FrameType.CANFDBRS_DATA
+            else:
+               type_message = constants.FrameType.CANFD_DATA
         else:
             type_message = constants.FrameType.CAN_DATA
 
