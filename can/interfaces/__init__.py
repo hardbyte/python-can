@@ -27,7 +27,7 @@ BACKENDS = {
     "seeedstudio": ("can.interfaces.seeedstudio", "SeeedBus"),
     "cantact": ("can.interfaces.cantact", "CantactBus"),
     "gs_usb": ("can.interfaces.gs_usb", "GsUsbBus"),
-    "nixnet": ("can.interfaces.nixnet", "NiXNETcanBus"),	
+    "nixnet": ("can.interfaces.nixnet", "NiXNETcanBus"),
 }
 
 BACKENDS.update(

@@ -128,7 +128,7 @@ class NiXNETcanBus(BusABC):
 
     def _recv_internal(self, timeout):
         try:
-            if len(self._rx_queue)==0:
+            if len(self._rx_queue) == 0:
                 fr = self.__session_receive.frames.read(4, timeout=0)
                 for f in fr:
                     self._rx_queue.append(f)
@@ -181,9 +181,9 @@ class NiXNETcanBus(BusABC):
             type_message = constants.FrameType.CAN_BUS_ERROR
         elif msg.is_fd:
             if msg.bitrate_switch:
-               type_message = constants.FrameType.CANFDBRS_DATA
+                type_message = constants.FrameType.CANFDBRS_DATA
             else:
-               type_message = constants.FrameType.CANFD_DATA
+                type_message = constants.FrameType.CANFD_DATA
         else:
             type_message = constants.FrameType.CAN_DATA
 
