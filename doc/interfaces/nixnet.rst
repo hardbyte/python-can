@@ -8,8 +8,6 @@ This interface adds support for NI-XNET CAN controllers by `National Instruments
 
     NI-XNET only seems to support windows platforms.
 
-.. warning::
-
 
 Bus
 ---
