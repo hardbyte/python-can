@@ -17,6 +17,7 @@ BACKENDS = {
     "nican": ("can.interfaces.nican", "NicanBus"),
     "iscan": ("can.interfaces.iscan", "IscanBus"),
     "virtual": ("can.interfaces.virtual", "VirtualBus"),
+    "udp_multicast": ("can.interfaces.udp_multicast", "UdpMulticastBus"),
     "neovi": ("can.interfaces.ics_neovi", "NeoViBus"),
     "vector": ("can.interfaces.vector", "VectorBus"),
     "slcan": ("can.interfaces.slcan", "slcanBus"),

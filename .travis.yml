@@ -35,6 +35,8 @@ jobs:
     # we allow all dev & nightly builds to fail, since these python versions might
     # still be very unstable
     - python: nightly
+    # Allow arm64 builds to fail
+    - arch: arm64
 
   include:
     # Note no matrix support when using stages.
@@ -47,10 +49,28 @@ jobs:
     - stage: test
       name: Socketcan
       os: linux
+      arch: amd64
       dist: trusty
       python: "3.6"
       sudo: required
       env: TEST_SOCKETCAN=TRUE
+
+    # arm64 builds
+    - stage: test
+      name: Linux arm64
+      os: linux
+      arch: arm64
+      language: generic
+      sudo: required
+      addons:
+        apt:
+          update: true
+      env: HOST_ARM64=TRUE
+      before_install:
+        - sudo apt install -y python3 python3-pip
+        # Travis doesn't seem to provide Python binaries yet for this arch
+        - sudo update-alternatives --install /usr/bin/python python $(which python3) 10
+        - sudo update-alternatives --install /usr/bin/pip pip $(which pip3) 10
 
     # testing on OSX
     - stage: test
@@ -97,6 +117,7 @@ jobs:
           can/broadcastmanager.py
           can/bus.py
           can/interface.py
+          can/interfaces/udp_multicast/**.py
           can/interfaces/slcan.py
           can/interfaces/socketcan/**.py
           can/interfaces/virtual.py

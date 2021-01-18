@@ -196,7 +196,7 @@ def load_config(
     if "bitrate" in config:
         config["bitrate"] = int(config["bitrate"])
     if "fd" in config:
-        config["fd"] = config["fd"] not in ("0", "False", "false")
+        config["fd"] = config["fd"] not in ("0", "False", "false", False)
     if "data_bitrate" in config:
         config["data_bitrate"] = int(config["data_bitrate"])
 

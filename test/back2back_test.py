@@ -5,23 +5,31 @@
 This module tests two virtual buses attached to each other.
 """
 
-import sys
 import unittest
 from time import sleep
 from multiprocessing.dummy import Pool as ThreadPool
-
-import pytest
 import random
 
-import can
+import pytest
 
-from .config import *
+import can
+from can.interfaces.udp_multicast import UdpMulticastBus
+
+from .config import (
+    IS_CI,
+    IS_UNIX,
+    IS_OSX,
+    IS_TRAVIS,
+    TEST_INTERFACE_SOCKETCAN,
+    TEST_CAN_FD,
+)
 
 
 class Back2BackTestCase(unittest.TestCase):
-    """
-    Use two interfaces connected to the same CAN bus and test them against
-    each other.
+    """Use two interfaces connected to the same CAN bus and test them against each other.
+
+    This very class declaration runs the test on the *virtual* interface but subclasses can be created for
+    other buses.
     """
 
     BITRATE = 500000
@@ -52,7 +60,9 @@ class Back2BackTestCase(unittest.TestCase):
         self.bus1.shutdown()
         self.bus2.shutdown()
 
-    def _check_received_message(self, recv_msg, sent_msg):
+    def _check_received_message(
+        self, recv_msg: can.Message, sent_msg: can.Message
+    ) -> None:
         self.assertIsNotNone(
             recv_msg, "No message was received on %s" % self.INTERFACE_2
         )
@@ -66,7 +76,7 @@ class Back2BackTestCase(unittest.TestCase):
         if not sent_msg.is_remote_frame:
             self.assertSequenceEqual(recv_msg.data, sent_msg.data)
 
-    def _send_and_receive(self, msg):
+    def _send_and_receive(self, msg: can.Message) -> None:
         # Send with bus 1, receive with bus 2
         self.bus1.send(msg)
         recv_msg = self.bus2.recv(self.TIMEOUT)
@@ -82,7 +92,12 @@ class Back2BackTestCase(unittest.TestCase):
         self._check_received_message(recv_msg, msg)
 
     def test_no_message(self):
+        """Tests that there is no message being received if none was sent."""
         self.assertIsNone(self.bus1.recv(0.1))
+
+    def test_multiple_shutdown(self):
+        """Tests whether shutting down ``bus1`` twice does not throw any errors."""
+        self.bus1.shutdown()
 
     @unittest.skipIf(
         IS_CI,
@@ -125,13 +140,26 @@ class Back2BackTestCase(unittest.TestCase):
         msg = can.Message(is_extended_id=False, arbitration_id=0x300, data=[4, 5, 6])
         self._send_and_receive(msg)
 
-    def test_message_direction(self):
-        # Verify that own message received has is_rx set to False while message
-        # received on the other virtual interfaces have is_rx set to True
-        if self.INTERFACE_1 != "virtual":
-            raise unittest.SkipTest(
-                "Message direction not yet implemented for socketcan"
-            )
+    @unittest.skip(
+        "TODO: how shall this be treated if sending messages locally? should be done uniformly"
+    )
+    def test_message_is_rx(self):
+        """Verify that received messages have is_rx set to `False` while messages
+        received on the other virtual interfaces have is_rx set to `True`.
+        """
+        msg = can.Message(
+            is_extended_id=False, arbitration_id=0x300, data=[2, 1, 3], is_rx=False
+        )
+        self.bus1.send(msg)
+        self_recv_msg = self.bus2.recv(self.TIMEOUT)
+        self.assertIsNotNone(self_recv_msg)
+        self.assertTrue(self_recv_msg.is_rx)
+
+    @unittest.skip(
+        "TODO: how shall this be treated if sending messages locally? should be done uniformly"
+    )
+    def test_message_is_rx_receive_own_messages(self):
+        """The same as `test_message_direction` but testing with `receive_own_messages=True`."""
         bus3 = can.Bus(
             channel=self.CHANNEL_2,
             bustype=self.INTERFACE_2,
@@ -142,23 +170,18 @@ class Back2BackTestCase(unittest.TestCase):
         )
         try:
             msg = can.Message(
-                is_extended_id=False, arbitration_id=0x300, data=[2, 1, 3]
+                is_extended_id=False, arbitration_id=0x300, data=[2, 1, 3], is_rx=False
             )
             bus3.send(msg)
-            recv_msg_bus1 = self.bus1.recv(self.TIMEOUT)
-            recv_msg_bus2 = self.bus2.recv(self.TIMEOUT)
             self_recv_msg_bus3 = bus3.recv(self.TIMEOUT)
-
-            self.assertTrue(recv_msg_bus1.is_rx)
-            self.assertTrue(recv_msg_bus2.is_rx)
-            self.assertFalse(self_recv_msg_bus3.is_rx)
+            self.assertTrue(self_recv_msg_bus3.is_rx)
         finally:
             bus3.shutdown()
 
     def test_unique_message_instances(self):
-        # Verify that we have a different instances of message for each bus
-        if self.INTERFACE_1 != "virtual":
-            raise unittest.SkipTest("Not relevant for socketcan")
+        """Verify that we have a different instances of message for each bus even with
+        `receive_own_messages=True`.
+        """
         bus3 = can.Bus(
             channel=self.CHANNEL_2,
             bustype=self.INTERFACE_2,
@@ -185,14 +208,12 @@ class Back2BackTestCase(unittest.TestCase):
         finally:
             bus3.shutdown()
 
-    @unittest.skipUnless(TEST_CAN_FD, "Don't test CAN-FD")
     def test_fd_message(self):
         msg = can.Message(
             is_fd=True, is_extended_id=True, arbitration_id=0x56789, data=[0xFF] * 64
         )
         self._send_and_receive(msg)
 
-    @unittest.skipUnless(TEST_CAN_FD, "Don't test CAN-FD")
     def test_fd_message_with_brs(self):
         msg = can.Message(
             is_fd=True,
@@ -203,6 +224,16 @@ class Back2BackTestCase(unittest.TestCase):
         )
         self._send_and_receive(msg)
 
+    def test_fileno(self):
+        """Test is the values returned by fileno() are valid."""
+        try:
+            fileno = self.bus1.fileno()
+        except NotImplementedError:
+            pass  # allow it to be left non-implemented
+        else:
+            self.assertIsNotNone(fileno)
+            self.assertTrue(fileno == -1 or fileno > 0)
+
 
 @unittest.skipUnless(TEST_INTERFACE_SOCKETCAN, "skip testing of socketcan")
 class BasicTestSocketCan(Back2BackTestCase):
@@ -211,6 +242,41 @@ class BasicTestSocketCan(Back2BackTestCase):
     CHANNEL_1 = "vcan0"
     INTERFACE_2 = "socketcan"
     CHANNEL_2 = "vcan0"
+
+
+# this doesn't even work on Travis CI for macOS; for example, see
+# https://travis-ci.org/github/hardbyte/python-can/jobs/745389871
+@unittest.skipUnless(
+    IS_UNIX and not (IS_TRAVIS and IS_OSX),
+    "only supported on Unix systems (but not on Travis CI on macOS)",
+)
+class BasicTestUdpMulticastBusIPv4(Back2BackTestCase):
+
+    INTERFACE_1 = "udp_multicast"
+    CHANNEL_1 = UdpMulticastBus.DEFAULT_GROUP_IPv4
+    INTERFACE_2 = "udp_multicast"
+    CHANNEL_2 = UdpMulticastBus.DEFAULT_GROUP_IPv4
+
+    def test_unique_message_instances(self):
+        with self.assertRaises(NotImplementedError):
+            super().test_unique_message_instances()
+
+
+# this doesn't even work for loopback multicast addresses on Travis CI; for example, see
+# https://travis-ci.org/github/hardbyte/python-can/builds/745065503
+@unittest.skipUnless(
+    IS_UNIX and not IS_TRAVIS, "only supported on Unix systems (but not on Travis CI)"
+)
+class BasicTestUdpMulticastBusIPv6(Back2BackTestCase):
+
+    INTERFACE_1 = "udp_multicast"
+    CHANNEL_1 = UdpMulticastBus.DEFAULT_GROUP_IPv6
+    INTERFACE_2 = "udp_multicast"
+    CHANNEL_2 = UdpMulticastBus.DEFAULT_GROUP_IPv6
+
+    def test_unique_message_instances(self):
+        with self.assertRaises(NotImplementedError):
+            super().test_unique_message_instances()
 
 
 @unittest.skipUnless(TEST_INTERFACE_SOCKETCAN, "skip testing of socketcan")
