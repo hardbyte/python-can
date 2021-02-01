@@ -19,6 +19,7 @@ The available interfaces are:
    interfaces/udp_multicast
    interfaces/neovi
    interfaces/nican
+   interfaces/nixnet
    interfaces/pcan
    interfaces/robotell
    interfaces/seeedstudio

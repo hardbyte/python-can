@@ -31,6 +31,7 @@ extras_require = {
     "neovi": ["filelock", "python-ics>=2.12"],
     "cantact": ["cantact>=0.0.7"],
     "gs_usb": ["gs_usb>=0.2.1"],
+    "nixnet": ["nixnet>=0.3.1"],
 }
 
 setup(
