@@ -281,12 +281,13 @@ class PcanBus(BusABC):
         if result != PCAN_ERROR_OK:
             raise PcanError(self._get_formatted_error(result))
 
-        result = self.m_objPCANBasic.SetValue(
-            self.m_PcanHandle, PCAN_ALLOW_ERROR_FRAMES, PCAN_PARAMETER_ON
-        )
+        if platform.system() != "Darwin":
+            result = self.m_objPCANBasic.SetValue(
+                self.m_PcanHandle, PCAN_ALLOW_ERROR_FRAMES, PCAN_PARAMETER_ON
+            )
 
-        if result != PCAN_ERROR_OK:
-            raise PcanError(self._get_formatted_error(result))
+            if result != PCAN_ERROR_OK:
+                raise PcanError(self._get_formatted_error(result))
 
         if HAS_EVENTS:
             self._recv_event = CreateEvent(None, 0, 0, None)
@@ -503,10 +504,7 @@ class PcanBus(BusABC):
 
         if self.fd:
             # create a TPCANMsg message structure
-            if platform.system() == "Darwin":
-                CANMsg = TPCANMsgFDMac()
-            else:
-                CANMsg = TPCANMsgFD()
+            CANMsg = TPCANMsgFD()
 
             # configure the message. ID, Length of data, message type and data
             CANMsg.ID = msg.arbitration_id
@@ -524,10 +522,7 @@ class PcanBus(BusABC):
 
         else:
             # create a TPCANMsg message structure
-            if platform.system() == "Darwin":
-                CANMsg = TPCANMsgMac()
-            else:
-                CANMsg = TPCANMsg()
+            CANMsg = TPCANMsg()
 
             # configure the message. ID, Length of data, message type and data
             CANMsg.ID = msg.arbitration_id
