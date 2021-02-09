@@ -676,6 +676,7 @@ class VectorBus(BusABC):
         hw_type = ctypes.c_uint()
         hw_index = ctypes.c_uint()
         hw_channel = ctypes.c_uint()
+        app_channel = ctypes.c_uint(app_channel)
 
         xldriver.xlGetApplConfig(
             app_name.encode(),
