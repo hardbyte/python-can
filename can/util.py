@@ -4,6 +4,7 @@ Utilities and configuration file parsing.
 import functools
 import warnings
 from typing import Dict, Optional, Union
+from time import time, perf_counter, get_clock_info
 
 from can import typechecking
 
@@ -195,7 +196,7 @@ def load_config(
     if "bitrate" in config:
         config["bitrate"] = int(config["bitrate"])
     if "fd" in config:
-        config["fd"] = config["fd"] not in ("0", "False", "false")
+        config["fd"] = config["fd"] not in ("0", "False", "false", False)
     if "data_bitrate" in config:
         config["data_bitrate"] = int(config["data_bitrate"])
 
@@ -324,6 +325,35 @@ def rename_kwargs(func_name, kwargs, aliases):
                 kwargs[new] = value
             else:
                 warnings.warn("{} is deprecated".format(alias), DeprecationWarning)
+
+
+def time_perfcounter_correlation():
+    """Get the `perf_counter` value nearest to when time.time() is updated
+
+    Computed if the default timer used by `time.time` on this platform has a resolution
+    higher than 10μs, otherwise the current time and perf_counter is directly returned.
+    This was chosen as typical timer resolution on Linux/macOS is ~1μs, and the Windows
+    platform can vary from ~500μs to 10ms.
+
+    Note this value is based on when `time.time()` is observed to update from Python,
+    it is not directly returned by the operating system.
+
+    :returns:
+        (t, performance_counter) time.time value and time.perf_counter value when the time.time
+        is updated
+
+    """
+
+    # use this if the resolution is higher than 10us
+    if get_clock_info("time").resolution > 1e-5:
+        t0 = time()
+        while True:
+            t1, performance_counter = time(), perf_counter()
+            if t1 != t0:
+                break
+    else:
+        return time(), perf_counter()
+    return t1, performance_counter
 
 
 if __name__ == "__main__":
