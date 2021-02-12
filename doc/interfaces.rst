@@ -28,6 +28,7 @@ The available interfaces are:
    interfaces/socketcan
    interfaces/systec
    interfaces/usb2can
+   interfaces/usb2can_libusb
    interfaces/vector
    interfaces/virtual
 
