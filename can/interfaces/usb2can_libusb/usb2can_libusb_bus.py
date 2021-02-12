@@ -6,11 +6,18 @@ The interface will bind by default to the first device with VID
 import logging
 from ctypes import byref
 
-from can import BusABC, Message, CanError, BitTiming
-from .can_8dev_usb_device import *
+from can import BusABC, Message, BitTiming
+from .can_8dev_usb_utils import *
 
 # Set up logging
 log = logging.getLogger("can.usb2can_libusb")
+
+try:
+    from .can_8dev_usb_device import *
+except NameError:
+    log.warning(
+        "The PyUSB module is not installed, but it is required for USB2Can_LibUSB support. Install it using `python3 -m pip install pyusb`"
+    )
 
 
 def message_convert_tx(msg):
