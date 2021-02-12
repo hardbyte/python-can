@@ -13,6 +13,7 @@ BACKENDS = {
     "serial": ("can.interfaces.serial.serial_can", "SerialBus"),
     "pcan": ("can.interfaces.pcan", "PcanBus"),
     "usb2can": ("can.interfaces.usb2can", "Usb2canBus"),
+    "usb2can_libusb": ("can.interfaces.usb2can_libusb", "Usb2CanLibUsbBus"),
     "ixxat": ("can.interfaces.ixxat", "IXXATBus"),
     "nican": ("can.interfaces.nican", "NicanBus"),
     "iscan": ("can.interfaces.iscan", "IscanBus"),
