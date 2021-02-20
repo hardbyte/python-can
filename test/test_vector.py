@@ -305,7 +305,7 @@ def xlGetApplConfig(
     bus_type: ctypes.c_uint,
 ) -> int:
     hw_type.value = 1
-    hw_channel.value = app_channel
+    hw_channel.value = 0
     return 0
 
 
