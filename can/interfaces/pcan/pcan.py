@@ -90,7 +90,8 @@ class PcanBus(BusABC):
         and :meth:`~can.interface.pcan.PcanBus.status` methods.
 
         :param str channel:
-            The can interface name. An example would be 'PCAN_USBBUS1'
+            The can interface name. An example would be 'PCAN_USBBUS1'.
+            Alternatively the value can an int with the numerical value.
             Default is 'PCAN_USBBUS1'
 
         :param can.bus.BusState state:
@@ -180,8 +181,11 @@ class PcanBus(BusABC):
         ioport = 0x02A0
         interrupt = 11
 
+        if type(channel) != int:
+            channel = globals()[channel]
+
         self.m_objPCANBasic = PCANBasic()
-        self.m_PcanHandle = globals()[channel]
+        self.m_PcanHandle = channel
 
         if state is BusState.ACTIVE or state is BusState.PASSIVE:
             self.state = state
