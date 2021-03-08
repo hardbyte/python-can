@@ -589,7 +589,7 @@ class PCANBasic:
             # Unfortunately cygwin python has no winreg module, so we can't
             # check for the registry key.
         elif platform.system() == "Darwin":
-            self.__m_dllBasic = cdll.LoadLibrary("libPCBUSB.dylib")
+            self.__m_dllBasic = cdll.LoadLibrary(util.find_library("libPCBUSB.dylib"))
         else:
             self.__m_dllBasic = cdll.LoadLibrary("libpcanbasic.so")
         if self.__m_dllBasic is None:
