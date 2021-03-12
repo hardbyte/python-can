@@ -24,6 +24,7 @@ IS_ERROR_FRAME = 4
 IS_REMOTE_FRAME = 2
 IS_ID_TYPE = 1
 
+
 class CanalError(Enum):
     SUCCESS = 0
     BAUDRATE = 1

@@ -141,7 +141,11 @@ class Usb2canBus(BusABC):
 
         if status == CanalError.SUCCESS:
             rx = message_convert_rx(messagerx)
-        elif status in (CanalError.RCV_EMPTY, CanalError.TIMEOUT, CanalError.FIFO_EMPTY):
+        elif status in (
+            CanalError.RCV_EMPTY,
+            CanalError.TIMEOUT,
+            CanalError.FIFO_EMPTY,
+        ):
             rx = None
         else:
             log.error("Canal Error %s", status)
