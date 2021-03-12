@@ -297,6 +297,41 @@ class PcanBus(BusABC):
         status = self.m_objPCANBasic.Reset(self.m_PcanHandle)
         return status == PCAN_ERROR_OK
 
+    def get_device_number(self):
+        """
+        Return the PCAN device number.
+
+        :rtype: int
+        :return: PCAN device number
+        """
+        error, value = self.m_objPCANBasic.GetValue(
+            self.m_PcanHandle, PCAN_DEVICE_NUMBER
+        )
+        if error != PCAN_ERROR_OK:
+            return None
+        return value
+
+    def set_device_number(self, device_number):
+        """
+        Set the PCAN device number.
+
+        :param device_number: new PCAN device number
+        :rtype: bool
+        :return: True if device number set successfully
+        """
+        try:
+            if (
+                self.m_objPCANBasic.SetValue(
+                    self.m_PcanHandle, PCAN_DEVICE_NUMBER, int(device_number)
+                )
+                != PCAN_ERROR_OK
+            ):
+                raise ValueError
+        except ValueError:
+            log.error("Invalid value '%s' for device number.", device_number)
+            return False
+        return True
+
     def _recv_internal(self, timeout):
 
         if HAS_EVENTS:
