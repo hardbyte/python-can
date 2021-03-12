@@ -5,6 +5,7 @@ Socket CAN is recommended under Unix/Linux systems.
 
 from ctypes import *
 from struct import *
+from enum import Enum
 import logging
 
 import can
@@ -23,9 +24,45 @@ IS_ERROR_FRAME = 4
 IS_REMOTE_FRAME = 2
 IS_ID_TYPE = 1
 
-CANAL_ERROR_SUCCESS = 0
-CANAL_ERROR_RCV_EMPTY = 19
-CANAL_ERROR_TIMEOUT = 32
+class CanalError(Enum):
+    SUCCESS = 0
+    BAUDRATE = 1
+    BUS_OFF = 2
+    BUS_PASSIVE = 3
+    BUS_WARNING = 4
+    CAN_ID = 5
+    CAN_MESSAGE = 6
+    CHANNEL = 7
+    FIFO_EMPTY = 8
+    FIFO_FULL = 9
+    FIFO_SIZE = 10
+    FIFO_WAIT = 11
+    GENERIC = 12
+    HARDWARE = 13
+    INIT_FAIL = 14
+    INIT_MISSING = 15
+    INIT_READY = 16
+    NOT_SUPPORTED = 17
+    OVERRUN = 18
+    RCV_EMPTY = 19
+    REGISTER = 20
+    TRM_FULL = 21
+    ERRFRM_STUFF = 22
+    ERRFRM_FORM = 23
+    ERRFRM_ACK = 24
+    ERRFRM_BIT1 = 25
+    ERRFRM_BIT0 = 26
+    ERRFRM_CRC = 27
+    LIBRARY = 28
+    PROCADDRESS = 29
+    ONLY_ONE_INSTANCE = 30
+    SUB_DRIVER = 31
+    TIMEOUT = 32
+    NOT_OPEN = 33
+    PARAMETER = 34
+    MEMORY = 35
+    INTERNAL = 36
+    COMMUNICATION = 37
 
 
 class CanalStatistics(Structure):
@@ -119,7 +156,7 @@ class Usb2CanAbstractionLayer:
     def close(self, handle):
         try:
             res = self.__m_dllBasic.CanalClose(handle)
-            return res
+            return CanalError(res)
         except:
             log.warning("Failed to close")
             raise
@@ -127,7 +164,7 @@ class Usb2CanAbstractionLayer:
     def send(self, handle, msg):
         try:
             res = self.__m_dllBasic.CanalSend(handle, msg)
-            return res
+            return CanalError(res)
         except:
             log.warning("Sending error")
             raise can.CanError("Failed to transmit frame")
@@ -135,7 +172,7 @@ class Usb2CanAbstractionLayer:
     def receive(self, handle, msg):
         try:
             res = self.__m_dllBasic.CanalReceive(handle, msg)
-            return res
+            return CanalError(res)
         except:
             log.warning("Receive error")
             raise
@@ -143,7 +180,7 @@ class Usb2CanAbstractionLayer:
     def blocking_send(self, handle, msg, timeout):
         try:
             res = self.__m_dllBasic.CanalBlockingSend(handle, msg, timeout)
-            return res
+            return CanalError(res)
         except:
             log.warning("Blocking send error")
             raise
@@ -151,7 +188,7 @@ class Usb2CanAbstractionLayer:
     def blocking_receive(self, handle, msg, timeout):
         try:
             res = self.__m_dllBasic.CanalBlockingReceive(handle, msg, timeout)
-            return res
+            return CanalError(res)
         except:
             log.warning("Blocking Receive Failed")
             raise
@@ -159,7 +196,7 @@ class Usb2CanAbstractionLayer:
     def get_status(self, handle, status):
         try:
             res = self.__m_dllBasic.CanalGetStatus(handle, status)
-            return res
+            return CanalError(res)
         except:
             log.warning("Get status failed")
             raise
@@ -167,7 +204,7 @@ class Usb2CanAbstractionLayer:
     def get_statistics(self, handle, statistics):
         try:
             res = self.__m_dllBasic.CanalGetStatistics(handle, statistics)
-            return res
+            return CanalError(res)
         except:
             log.warning("Get Statistics failed")
             raise
