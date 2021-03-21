@@ -73,6 +73,75 @@ pcan_fd_parameter_list = [
     "data_sjw",
 ]
 
+pcan_channel_names = {
+    "PCAN_NONEBUS"             : PCAN_NONEBUS,
+
+    "PCAN_ISABUS1"             : PCAN_ISABUS1,
+    "PCAN_ISABUS2"             : PCAN_ISABUS2,
+    "PCAN_ISABUS3"             : PCAN_ISABUS3,
+    "PCAN_ISABUS4"             : PCAN_ISABUS4,
+    "PCAN_ISABUS5"             : PCAN_ISABUS5,
+    "PCAN_ISABUS6"             : PCAN_ISABUS6,
+    "PCAN_ISABUS7"             : PCAN_ISABUS7,
+    "PCAN_ISABUS8"             : PCAN_ISABUS8,
+
+    "PCAN_DNGBUS1"             : PCAN_DNGBUS1,
+
+    "PCAN_PCIBUS1"             : PCAN_PCIBUS1,
+    "PCAN_PCIBUS2"             : PCAN_PCIBUS2,
+    "PCAN_PCIBUS3"             : PCAN_PCIBUS3,
+    "PCAN_PCIBUS4"             : PCAN_PCIBUS4,
+    "PCAN_PCIBUS5"             : PCAN_PCIBUS5,
+    "PCAN_PCIBUS6"             : PCAN_PCIBUS6,
+    "PCAN_PCIBUS7"             : PCAN_PCIBUS7,
+    "PCAN_PCIBUS8"             : PCAN_PCIBUS8,
+    "PCAN_PCIBUS9"             : PCAN_PCIBUS9,
+    "PCAN_PCIBUS10"            : PCAN_PCIBUS10,
+    "PCAN_PCIBUS11"            : PCAN_PCIBUS11,
+    "PCAN_PCIBUS12"            : PCAN_PCIBUS12,
+    "PCAN_PCIBUS13"            : PCAN_PCIBUS13,
+    "PCAN_PCIBUS14"            : PCAN_PCIBUS14,
+    "PCAN_PCIBUS15"            : PCAN_PCIBUS15,
+    "PCAN_PCIBUS16"            : PCAN_PCIBUS16,
+
+    "PCAN_USBBUS1"             : PCAN_USBBUS1,
+    "PCAN_USBBUS2"             : PCAN_USBBUS2,
+    "PCAN_USBBUS3"             : PCAN_USBBUS3,
+    "PCAN_USBBUS4"             : PCAN_USBBUS4,
+    "PCAN_USBBUS5"             : PCAN_USBBUS5,
+    "PCAN_USBBUS6"             : PCAN_USBBUS6,
+    "PCAN_USBBUS7"             : PCAN_USBBUS7,
+    "PCAN_USBBUS8"             : PCAN_USBBUS8,
+    "PCAN_USBBUS9"             : PCAN_USBBUS9,
+    "PCAN_USBBUS10"            : PCAN_USBBUS10,
+    "PCAN_USBBUS11"            : PCAN_USBBUS11,
+    "PCAN_USBBUS12"            : PCAN_USBBUS12,
+    "PCAN_USBBUS13"            : PCAN_USBBUS13,
+    "PCAN_USBBUS14"            : PCAN_USBBUS14,
+    "PCAN_USBBUS15"            : PCAN_USBBUS15,
+    "PCAN_USBBUS16"            : PCAN_USBBUS16,
+
+    "PCAN_PCCBUS1"             : PCAN_PCCBUS1,
+    "PCAN_PCCBUS2"             : PCAN_PCCBUS2,
+
+    "PCAN_LANBUS1"             : PCAN_LANBUS1,
+    "PCAN_LANBUS2"             : PCAN_LANBUS2,
+    "PCAN_LANBUS3"             : PCAN_LANBUS3,
+    "PCAN_LANBUS4"             : PCAN_LANBUS4,
+    "PCAN_LANBUS5"             : PCAN_LANBUS5,
+    "PCAN_LANBUS6"             : PCAN_LANBUS6,
+    "PCAN_LANBUS7"             : PCAN_LANBUS7,
+    "PCAN_LANBUS8"             : PCAN_LANBUS8,
+    "PCAN_LANBUS9"             : PCAN_LANBUS9,
+    "PCAN_LANBUS10"            : PCAN_LANBUS10,
+    "PCAN_LANBUS11"            : PCAN_LANBUS11,
+    "PCAN_LANBUS12"            : PCAN_LANBUS12,
+    "PCAN_LANBUS13"            : PCAN_LANBUS13,
+    "PCAN_LANBUS14"            : PCAN_LANBUS14,
+    "PCAN_LANBUS15"            : PCAN_LANBUS15,
+    "PCAN_LANBUS16"            : PCAN_LANBUS16
+}
+
 
 class PcanBus(BusABC):
     def __init__(
@@ -91,7 +160,7 @@ class PcanBus(BusABC):
 
         :param str channel:
             The can interface name. An example would be 'PCAN_USBBUS1'.
-            Alternatively the value can an int with the numerical value.
+            Alternatively the value can be an int with the numerical value.
             Default is 'PCAN_USBBUS1'
 
         :param can.bus.BusState state:
@@ -182,7 +251,7 @@ class PcanBus(BusABC):
         interrupt = 11
 
         if type(channel) != int:
-            channel = globals()[channel]
+            channel = pcan_channel_names[channel]
 
         self.m_objPCANBasic = PCANBasic()
         self.m_PcanHandle = channel
