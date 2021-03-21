@@ -242,7 +242,7 @@ class PcanBus(BusABC):
             Ignored if not using CAN-FD.
 
         """
-        self.channel_info = channel
+        self.channel_info = str(channel)
         self.fd = kwargs.get("fd", False)
         pcan_bitrate = pcan_bitrate_objs.get(bitrate, PCAN_BAUD_500K)
 
