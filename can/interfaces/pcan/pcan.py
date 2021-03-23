@@ -253,12 +253,12 @@ class PcanBus(BusABC):
                 # Toggle the lowest set bit
                 n ^= masked_value
 
-        stsReturn = self.m_objPCANBasic.GetErrorText(error, 0)
+        stsReturn = self.m_objPCANBasic.GetErrorText(error, 0x9)
         if stsReturn[0] != PCAN_ERROR_OK:
             strings = []
 
             for b in bits(error):
-                stsReturn = self.m_objPCANBasic.GetErrorText(b, 0)
+                stsReturn = self.m_objPCANBasic.GetErrorText(b, 0x9)
                 if stsReturn[0] != PCAN_ERROR_OK:
                     text = "An error occurred. Error-code's text ({0:X}h) couldn't be retrieved".format(
                         error
