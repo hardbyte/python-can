@@ -104,6 +104,7 @@ class LimitedDurationCyclicSendTaskABC(CyclicSendTaskABC):
         messages: Union[Sequence[Message], Message],
         period: float,
         duration: Optional[float],
+        count: Optional[int],
     ):
         """Message send task with a defined duration and period.
 
@@ -113,9 +114,13 @@ class LimitedDurationCyclicSendTaskABC(CyclicSendTaskABC):
         :param duration:
             Approximate duration in seconds to continue sending messages. If
             no duration is provided, the task will continue indefinitely.
+        :param count:
+            The number of messages to send before stopping. If
+            no count is provided, the task will continue indefinitely.
         """
         super().__init__(messages, period)
         self.duration = duration
+        self.count = count
 
 
 class RestartableCyclicTaskABC(CyclicSendTaskABC):
@@ -207,6 +212,7 @@ class ThreadBasedCyclicSendTask(
         messages: Union[Sequence[Message], Message],
         period: float,
         duration: Optional[float] = None,
+        count: Optional[int] = None,
         on_error: Optional[Callable[[Exception], bool]] = None,
     ):
         """Transmits `messages` with a `period` seconds for `duration` seconds on a `bus`.
@@ -222,12 +228,13 @@ class ThreadBasedCyclicSendTask(
                          it shall return either ``True`` or ``False`` depending
                          on desired behaviour of `ThreadBasedCyclicSendTask`.
         """
-        super().__init__(messages, period, duration)
+        super().__init__(messages, period, duration, count)
         self.bus = bus
         self.send_lock = lock
         self.stopped = True
         self.thread = None
         self.end_time = time.perf_counter() + duration if duration else None
+        self.end_count = count if count else None
         self.on_error = on_error
 
         if HAS_EVENTS:
@@ -257,6 +264,7 @@ class ThreadBasedCyclicSendTask(
 
     def _run(self):
         msg_index = 0
+        count = 0
         while not self.stopped:
             # Prevent calling bus.send from multiple threads
             with self.send_lock:
@@ -272,7 +280,10 @@ class ThreadBasedCyclicSendTask(
                         break
             if self.end_time is not None and time.perf_counter() >= self.end_time:
                 break
+            if self.end_count is not None and count >= self.end_count:
+                break
             msg_index = (msg_index + 1) % len(self.messages)
+            count += 1
 
             if HAS_EVENTS:
                 win32event.WaitForSingleObject(self.event.handle, self.period_ms)

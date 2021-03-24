@@ -175,6 +175,7 @@ class BusABC(metaclass=ABCMeta):
         msgs: Union[Sequence[Message], Message],
         period: float,
         duration: Optional[float] = None,
+        count: Optional[int] = None,
         store_task: bool = True,
     ) -> can.broadcastmanager.CyclicSendTaskABC:
         """Start sending messages at a given period on this bus.
@@ -194,6 +195,9 @@ class BusABC(metaclass=ABCMeta):
         :param duration:
             Approximate duration in seconds to continue sending messages. If
             no duration is provided, the task will continue indefinitely.
+        :param count:
+            The number of messages to send before stopping. If
+            no count is provided, the task will continue indefinitely.
         :param store_task:
             If True (the default) the task will be attached to this Bus instance.
             Disable to instead manage tasks manually.
@@ -222,7 +226,7 @@ class BusABC(metaclass=ABCMeta):
                 raise ValueError("Must be either a list, tuple, or a Message")
         if not msgs:
             raise ValueError("Must be at least a list or tuple of length 1")
-        task = self._send_periodic_internal(msgs, period, duration)
+        task = self._send_periodic_internal(msgs, period, duration, count)
         # we wrap the task's stop method to also remove it from the Bus's list of tasks
         original_stop_method = task.stop
 
@@ -246,6 +250,7 @@ class BusABC(metaclass=ABCMeta):
         msgs: Union[Sequence[Message], Message],
         period: float,
         duration: Optional[float] = None,
+        count: Optional[int] = None,
     ) -> can.broadcastmanager.CyclicSendTaskABC:
         """Default implementation of periodic message sending using threading.
 
@@ -258,6 +263,9 @@ class BusABC(metaclass=ABCMeta):
         :param duration:
             The duration between sending each message at the given rate. If
             no duration is provided, the task will continue indefinitely.
+        :param count:
+            The number of messages to send before stopping. If
+            no count is provided, the task will continue indefinitely.
         :return:
             A started task instance. Note the task can be stopped (and
             depending on the backend modified) by calling the :meth:`stop`
@@ -269,7 +277,7 @@ class BusABC(metaclass=ABCMeta):
                 threading.Lock()
             )  # pylint: disable=attribute-defined-outside-init
         task = ThreadBasedCyclicSendTask(
-            self, self._lock_send_periodic, msgs, period, duration
+            self, self._lock_send_periodic, msgs, period, duration, count
         )
         return task
 
