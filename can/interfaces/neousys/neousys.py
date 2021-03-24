@@ -1,4 +1,4 @@
-""" Neousys WDT_DIO CAN driver """
+""" Neousys CAN bus driver """
 
 #
 # This kind of interface can be found for example on Neousys POC-551VTC
@@ -18,7 +18,7 @@
 # pylint: disable=R1725
 
 import warnings
-import threading
+import queue
 import logging
 import platform
 import time
@@ -83,46 +83,46 @@ class NeousysCanBitClk(Structure):
     ]
 
 
-WDT_CAN_MSG_CALLBACK = CFUNCTYPE(None, POINTER(NeousysCanMsg), c_uint)
-WDT_CAN_STATUS_CALLBACK = CFUNCTYPE(None, c_uint)
+NEOUSYS_CAN_MSG_CALLBACK = CFUNCTYPE(None, POINTER(NeousysCanMsg), c_uint)
+NEOUSYS_CAN_STATUS_CALLBACK = CFUNCTYPE(None, c_uint)
 
-WDT_CAN_MSG_EXTENDED_ID = 0x0004
-WDT_CAN_MSG_REMOTE_FRAME = 0x0040
-WDT_CAN_MSG_DATA_NEW = 0x0080
-WDT_CAN_MSG_DATA_LOST = 0x0100
+NEOUSYS_CAN_MSG_EXTENDED_ID = 0x0004
+NEOUSYS_CAN_MSG_REMOTE_FRAME = 0x0040
+NEOUSYS_CAN_MSG_DATA_NEW = 0x0080
+NEOUSYS_CAN_MSG_DATA_LOST = 0x0100
 
-WDT_CAN_MSG_USE_ID_FILTER = 0x00000008
-WDT_CAN_MSG_USE_DIR_FILTER = (
-    0x00000010 | WDT_CAN_MSG_USE_ID_FILTER
+NEOUSYS_CAN_MSG_USE_ID_FILTER = 0x00000008
+NEOUSYS_CAN_MSG_USE_DIR_FILTER = (
+    0x00000010 | NEOUSYS_CAN_MSG_USE_ID_FILTER
 )  # only accept the direction specified in the message type
-WDT_CAN_MSG_USE_EXT_FILTER = (
-    0x00000020 | WDT_CAN_MSG_USE_ID_FILTER
+NEOUSYS_CAN_MSG_USE_EXT_FILTER = (
+    0x00000020 | NEOUSYS_CAN_MSG_USE_ID_FILTER
 )  # filters on only extended identifiers
 
-WDT_CAN_STATUS_BUS_OFF = 0x00000080
-WDT_CAN_STATUS_EWARN = (
+NEOUSYS_CAN_STATUS_BUS_OFF = 0x00000080
+NEOUSYS_CAN_STATUS_EWARN = (
     0x00000040  # can controller error level has reached warning level.
 )
-WDT_CAN_STATUS_EPASS = (
+NEOUSYS_CAN_STATUS_EPASS = (
     0x00000020  # can controller error level has reached error passive level.
 )
-WDT_CAN_STATUS_LEC_STUFF = 0x00000001  # a bit stuffing error has occurred.
-WDT_CAN_STATUS_LEC_FORM = 0x00000002  # a formatting error has occurred.
-WDT_CAN_STATUS_LEC_ACK = 0x00000003  # an acknowledge error has occurred.
-WDT_CAN_STATUS_LEC_BIT1 = (
+NEOUSYS_CAN_STATUS_LEC_STUFF = 0x00000001  # a bit stuffing error has occurred.
+NEOUSYS_CAN_STATUS_LEC_FORM = 0x00000002  # a formatting error has occurred.
+NEOUSYS_CAN_STATUS_LEC_ACK = 0x00000003  # an acknowledge error has occurred.
+NEOUSYS_CAN_STATUS_LEC_BIT1 = (
     0x00000004  # the bus remained a bit level of 1 for longer than is allowed.
 )
-WDT_CAN_STATUS_LEC_BIT0 = (
+NEOUSYS_CAN_STATUS_LEC_BIT0 = (
     0x00000005  # the bus remained a bit level of 0 for longer than is allowed.
 )
-WDT_CAN_STATUS_LEC_CRC = 0x00000006  # a crc error has occurred.
-WDT_CAN_STATUS_LEC_MASK = (
+NEOUSYS_CAN_STATUS_LEC_CRC = 0x00000006  # a crc error has occurred.
+NEOUSYS_CAN_STATUS_LEC_MASK = (
     0x00000007  # this is the mask for the can last error code (lec).
 )
 
 
 class NeousysBus(BusABC):
-    """ Neousys WDT_DIO Canbus Class"""
+    """ Neousys CAN bus Class"""
 
     def __init__(self, channel, device=0, bitrate=500000, **kwargs):
         """
@@ -146,34 +146,27 @@ class NeousysBus(BusABC):
 
             self.device = device
 
-            self.channel_info = "Neousys WDT_DIO Can: device {}, channel {}".format(
+            self.channel_info = "Neousys Can: device {}, channel {}".format(
                 self.device, self.channel
             )
 
-            self.lock = threading.Lock()
-            self.recv_msg_array = []
+            self.queue = queue.Queue()
 
             # Init with accept all and wanted bitrate
             self.init_config = NeousysCanSetup(
-                bitrate, WDT_CAN_MSG_USE_ID_FILTER, 0, 0
+                bitrate, NEOUSYS_CAN_MSG_USE_ID_FILTER, 0, 0
             )
 
-            # These can be needed in some old 2.x consepts not needed in 3.6 though
-            # self.canlib.CAN_RegisterReceived.argtypes = [c_uint, WDT_CAN_MSG_CALLBACK]
-            # self.canlib.CAN_RegisterReceived.restype = c_int
-            # self.canlib.CAN_RegisterStatus.argtypes = [c_uint, WDT_CAN_STATUS_CALLBACK]
-            # self.canlib.CAN_RegisterStatus.restype = c_int
-
-            self._neousys_wdt_recv_cb = WDT_CAN_MSG_CALLBACK(self._neousys_wdt_recv_cb)
-            self._neousys_wdt_status_cb = WDT_CAN_STATUS_CALLBACK(
-                self._neousys_wdt_status_cb
+            self._neousys_recv_cb = NEOUSYS_CAN_MSG_CALLBACK(self._neousys_recv_cb)
+            self._neousys_status_cb = NEOUSYS_CAN_STATUS_CALLBACK(
+                self._neousys_status_cb
             )
 
-            if self.canlib.CAN_RegisterReceived(0, self._neousys_wdt_recv_cb) == 0:
-                logger.error("Neousys WDT_DIO CANBus Setup receive callback")
+            if self.canlib.CAN_RegisterReceived(0, self._neousys_recv_cb) == 0:
+                logger.error("Neousys CAN bus Setup receive callback")
 
-            if self.canlib.CAN_RegisterStatus(0, self._neousys_wdt_status_cb) == 0:
-                logger.error("Neousys WDT_DIO CANBus Setup status callback")
+            if self.canlib.CAN_RegisterStatus(0, self._neousys_status_cb) == 0:
+                logger.error("Neousys CAN bus Setup status callback")
 
             if (
                 self.canlib.CAN_Setup(
@@ -181,15 +174,13 @@ class NeousysBus(BusABC):
                 )
                 == 0
             ):
-                logger.error("Neousys WDT_DIO CANBus Setup Error")
+                logger.error("Neousys CAN bus Setup Error")
 
             if self.canlib.CAN_Start(channel) == 0:
-                logger.error("Neousys WDT_DIO CANBus Start Error")
+                logger.error("Neousys CAN bus Start Error")
 
         except OSError as error:
-            logger.info(
-                "Cannot Neousys WDT_DIO CANBus dll or share object: %d", format(error)
-            )
+            logger.info("Cannot Neousys CAN bus dll or share object: %d", format(error))
 
     def send(self, msg, timeout=None):
         """
@@ -199,28 +190,24 @@ class NeousysBus(BusABC):
         """
 
         if self.canlib is None:
-            logger.error("Can't send msg as Neousys WDT_DIO DLL/SO is not loaded")
+            logger.error("Can't send msg as Neousys DLL/SO is not loaded")
         else:
             tx_msg = NeousysCanMsg(
                 msg.arbitration_id, 0, 0, msg.dlc, (c_ubyte * 8)(*msg.data)
             )
 
             if self.canlib.CAN_Send(self.channel, byref(tx_msg), sizeof(tx_msg)) == 0:
-                logger.error("Neousys WDT_DIO Can can't send message")
+                logger.error("Neousys Can can't send message")
 
     def _recv_internal(self, timeout):
         msg = None
 
-        # If there is message waiting in array
-        # pass it as new message
-        if len(self.recv_msg_array) > 0:
-            self.lock.acquire()
-            msg = self.recv_msg_array.pop(0)
-            self.lock.release()
+        if not self.queue.empty():
+            msg = self.queue.get()
 
         return msg, False
 
-    def _neousys_wdt_recv_cb(self, msg, sizeof_msg):
+    def _neousys_recv_cb(self, msg, sizeof_msg):
         """
         :param msg struct CAN_MSG
         :param sizeof_msg message number
@@ -231,14 +218,14 @@ class NeousysBus(BusABC):
 
         msg_bytes = bytearray(msg.contents.data)
 
-        if msg.contents.flags & WDT_CAN_MSG_REMOTE_FRAME:
+        if msg.contents.flags & NEOUSYS_CAN_MSG_REMOTE_FRAME:
             remote_frame = True
 
-        if msg.contents.flags & WDT_CAN_MSG_EXTENDED_ID:
+        if msg.contents.flags & NEOUSYS_CAN_MSG_EXTENDED_ID:
             extended_frame = True
 
-        if msg.contents.flags & WDT_CAN_MSG_DATA_LOST:
-            logger.error("_neousys_wdt_recv_cb flag CAN_MSG_DATA_LOST")
+        if msg.contents.flags & NEOUSYS_CAN_MSG_DATA_LOST:
+            logger.error("_neousys_recv_cb flag CAN_MSG_DATA_LOST")
 
         msg = Message(
             timestamp=time.time(),
@@ -253,17 +240,30 @@ class NeousysBus(BusABC):
         # Reading happens in Callback function and
         # with Python-CAN it happens polling
         # so cache stuff in array to for poll
-        self.lock.acquire()
-        self.recv_msg_array.append(msg)
-        self.lock.release()
+        if not self.queue.full():
+            self.queue.put(msg)
+        else:
+            logger.error("Neousys message Queue is full")
 
-    def _neousys_wdt_status_cb(self, status):
+    def _neousys_status_cb(self, status):
         """
         :param status BUS Status
         :return:
         """
-        logger.info("%s _neousys_wdt_status_cb: %d", self.init_config, status)
+        logger.info("%s _neousys_status_cb: %d", self.init_config, status)
 
     def shutdown(self):
         if self.canlib is not None:
             self.canlib.CAN_Stop(self.channel)
+
+    def fileno(self):
+        # Return an invalid file descriptor as not used
+        return -1
+
+    @staticmethod
+    def _detect_available_configs():
+        channels = []
+
+        # There is only one channel
+        channels.append({"interface": "neousys", "channel": 0})
+        return channels

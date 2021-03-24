@@ -1,3 +1,3 @@
-""" Neousys WDT_DIO CAN driver """
+""" Neousys CAN bus driver """
 
 from can.interfaces.neousys.neousys import NeousysBus
