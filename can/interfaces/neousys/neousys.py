@@ -120,6 +120,18 @@ NEOUSYS_CAN_STATUS_LEC_MASK = (
     0x00000007  # this is the mask for the can last error code (lec).
 )
 
+NEOUSYS_CANLIB = None
+
+try:
+    if platform.system() == "Windows":
+        NEOUSYS_CANLIB = WinDLL("./WDT_DIO.dll")
+    else:
+        NEOUSYS_CANLIB = CDLL("libwdt_dio.so")
+        logger.info("Loaded Neousys WDT_DIO Can driver")
+except OSError as error:
+    logger.info("Cannot Neousys CAN bus dll or share object: %d", format(error))
+    # NEOUSYS_CANLIB = None
+
 
 class NeousysBus(BusABC):
     """ Neousys CAN bus Class"""
@@ -132,16 +144,7 @@ class NeousysBus(BusABC):
         """
         super(NeousysBus, self).__init__(channel, **kwargs)
 
-        self.canlib = None
-
-        try:
-            if platform.system() == "Windows":
-                self.canlib = WinDLL("./WDT_DIO.dll")
-            else:
-                self.canlib = CDLL("libwdt_dio.so")
-
-            logger.info("Loaded Neousys WDT_DIO Can driver")
-
+        if NEOUSYS_CANLIB is not None:
             self.channel = channel
 
             self.device = device
@@ -162,25 +165,22 @@ class NeousysBus(BusABC):
                 self._neousys_status_cb
             )
 
-            if self.canlib.CAN_RegisterReceived(0, self._neousys_recv_cb) == 0:
+            if NEOUSYS_CANLIB.CAN_RegisterReceived(0, self._neousys_recv_cb) == 0:
                 logger.error("Neousys CAN bus Setup receive callback")
 
-            if self.canlib.CAN_RegisterStatus(0, self._neousys_status_cb) == 0:
+            if NEOUSYS_CANLIB.CAN_RegisterStatus(0, self._neousys_status_cb) == 0:
                 logger.error("Neousys CAN bus Setup status callback")
 
             if (
-                self.canlib.CAN_Setup(
+                NEOUSYS_CANLIB.CAN_Setup(
                     channel, byref(self.init_config), sizeof(self.init_config)
                 )
                 == 0
             ):
                 logger.error("Neousys CAN bus Setup Error")
 
-            if self.canlib.CAN_Start(channel) == 0:
+            if NEOUSYS_CANLIB.CAN_Start(channel) == 0:
                 logger.error("Neousys CAN bus Start Error")
-
-        except OSError as error:
-            logger.info("Cannot Neousys CAN bus dll or share object: %d", format(error))
 
     def send(self, msg, timeout=None):
         """
@@ -189,14 +189,17 @@ class NeousysBus(BusABC):
         :return:
         """
 
-        if self.canlib is None:
+        if NEOUSYS_CANLIB is None:
             logger.error("Can't send msg as Neousys DLL/SO is not loaded")
         else:
             tx_msg = NeousysCanMsg(
                 msg.arbitration_id, 0, 0, msg.dlc, (c_ubyte * 8)(*msg.data)
             )
 
-            if self.canlib.CAN_Send(self.channel, byref(tx_msg), sizeof(tx_msg)) == 0:
+            if (
+                NEOUSYS_CANLIB.CAN_Send(self.channel, byref(tx_msg), sizeof(tx_msg))
+                == 0
+            ):
                 logger.error("Neousys Can can't send message")
 
     def _recv_internal(self, timeout):
@@ -253,8 +256,8 @@ class NeousysBus(BusABC):
         logger.info("%s _neousys_status_cb: %d", self.init_config, status)
 
     def shutdown(self):
-        if self.canlib is not None:
-            self.canlib.CAN_Stop(self.channel)
+        if NEOUSYS_CANLIB is not None:
+            NEOUSYS_CANLIB.CAN_Stop(self.channel)
 
     def fileno(self):
         # Return an invalid file descriptor as not used
