@@ -94,9 +94,9 @@ class Message:
         else:
             try:
                 self.data = bytearray(data)
-            except TypeError:
+            except TypeError as error:
                 err = "Couldn't create message from {} ({})".format(data, type(data))
-                raise TypeError(err)
+                raise TypeError(err) from error
 
         if dlc is None:
             self.dlc = len(self.data)

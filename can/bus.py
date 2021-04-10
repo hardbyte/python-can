@@ -103,8 +103,8 @@ class BusABC(metaclass=ABCMeta):
 
                 if time_left > 0:
                     continue
-                else:
-                    return None
+
+                return None
 
     def _recv_internal(
         self, timeout: Optional[float]

@@ -42,7 +42,7 @@ class LibraryMixin:
                 "Could not map function '{}' from library {}".format(
                     func_name, self._name
                 )
-            )
+            ) from None
 
         setattr(symbol, "_name", func_name)
         log.debug(

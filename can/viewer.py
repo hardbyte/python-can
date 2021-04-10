@@ -21,6 +21,7 @@
 # e-mail   :  lauszus@gmail.com
 
 import argparse
+import errno
 import logging
 import os
 import struct
@@ -93,7 +94,7 @@ class CanViewer:
                 break
 
             # Clear by pressing 'c'
-            elif key == ord("c"):
+            if key == ord("c"):
                 self.ids = {}
                 self.start_time = None
                 self.scroll = 0
@@ -461,8 +462,6 @@ def parse_args(args):
     # Print help message when no arguments are given
     if not args:
         parser.print_help(sys.stderr)
-        import errno
-
         raise SystemExit(errno.EINVAL)
 
     parsed_args = parser.parse_args(args)

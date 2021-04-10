@@ -29,7 +29,7 @@ def _get_class_for_interface(interface):
     try:
         module_name, class_name = BACKENDS[interface]
     except KeyError:
-        raise NotImplementedError("CAN interface '{}' not supported".format(interface))
+        raise NotImplementedError("CAN interface '{}' not supported".format(interface)) from None
 
     # Import the correct interface module
     try:
@@ -39,7 +39,7 @@ def _get_class_for_interface(interface):
             "Cannot import module {} for CAN interface '{}': {}".format(
                 module_name, interface, e
             )
-        )
+        ) from None
 
     # Get the correct class
     try:
@@ -49,7 +49,7 @@ def _get_class_for_interface(interface):
             "Cannot import class {} from module {} for CAN interface '{}': {}".format(
                 class_name, module_name, interface, e
             )
-        )
+        ) from None
 
     return bus_class
 
