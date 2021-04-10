@@ -29,7 +29,9 @@ def _get_class_for_interface(interface):
     try:
         module_name, class_name = BACKENDS[interface]
     except KeyError:
-        raise NotImplementedError("CAN interface '{}' not supported".format(interface)) from None
+        raise NotImplementedError(
+            "CAN interface '{}' not supported".format(interface)
+        ) from None
 
     # Import the correct interface module
     try:
