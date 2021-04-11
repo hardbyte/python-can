@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.experimental }} # See: https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idcontinue-on-error
     strategy:
       matrix:
