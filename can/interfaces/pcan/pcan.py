@@ -620,16 +620,19 @@ class PcanBus(BusABC):
                 }
             )
         for i in interfaces:
-            error, value = library_handle.GetValue(i["id"], PCAN_CHANNEL_CONDITION)
-            if error != PCAN_ERROR_OK or value != PCAN_CHANNEL_AVAILABLE:
-                continue
-            has_fd = False
-            error, value = library_handle.GetValue(i["id"], PCAN_CHANNEL_FEATURES)
-            if error == PCAN_ERROR_OK:
-                has_fd = bool(value & FEATURE_FD_CAPABLE)
-            channels.append(
-                {"interface": "pcan", "channel": i["name"], "supports_fd": has_fd}
-            )
+            try:
+                error, value = library_handle.GetValue(i["id"], PCAN_CHANNEL_CONDITION)
+                if error != PCAN_ERROR_OK or value != PCAN_CHANNEL_AVAILABLE:
+                    continue
+                has_fd = False
+                error, value = library_handle.GetValue(i["id"], PCAN_CHANNEL_FEATURES)
+                if error == PCAN_ERROR_OK:
+                    has_fd = bool(value & FEATURE_FD_CAPABLE)
+                channels.append(
+                    {"interface": "pcan", "channel": i["name"], "supports_fd": has_fd}
+                )
+            except AttributeError:  # Ignore if this fails for some interfaces
+                pass
         return channels
 
     def status_string(self) -> Optional[str]:
