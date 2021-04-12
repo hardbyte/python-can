@@ -16,7 +16,7 @@ def env(name: str) -> bool:
     return environment.get(name, "").lower() in ("yes", "true", "t", "1")
 
 
-# ############################## Continuos integration
+# ############################## Continuous integration
 
 # see here for the environment variables that are set on the CI servers:
 #   - https://docs.travis-ci.com/user/environment-variables/
@@ -24,12 +24,13 @@ def env(name: str) -> bool:
 
 IS_TRAVIS = env("TRAVIS")
 IS_APPVEYOR = env("APPVEYOR")
+IS_GITHUB_ACTIONS = env("GITHUB_ACTIONS")
 
-IS_CI = IS_TRAVIS or IS_APPVEYOR or env("CI") or env("CONTINUOUS_INTEGRATION")
+IS_CI = IS_TRAVIS or IS_APPVEYOR or IS_GITHUB_ACTIONS or env("CI") or env("CONTINUOUS_INTEGRATION")
 
-if IS_APPVEYOR and IS_TRAVIS:
+if IS_APPVEYOR and IS_TRAVIS and IS_GITHUB_ACTIONS:
     raise EnvironmentError(
-        "IS_APPVEYOR and IS_TRAVIS cannot be both True at the same time"
+        "only one of IS_APPVEYOR and IS_TRAVIS and GITHUB_ACTIONS max be True at the same time"
     )
 
 
