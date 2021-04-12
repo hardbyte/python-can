@@ -17,6 +17,7 @@ BACKENDS = {
     "nican": ("can.interfaces.nican", "NicanBus"),
     "iscan": ("can.interfaces.iscan", "IscanBus"),
     "virtual": ("can.interfaces.virtual", "VirtualBus"),
+    "udp_multicast": ("can.interfaces.udp_multicast", "UdpMulticastBus"),
     "neovi": ("can.interfaces.ics_neovi", "NeoViBus"),
     "vector": ("can.interfaces.vector", "VectorBus"),
     "slcan": ("can.interfaces.slcan", "slcanBus"),
@@ -26,6 +27,7 @@ BACKENDS = {
     "seeedstudio": ("can.interfaces.seeedstudio", "SeeedBus"),
     "cantact": ("can.interfaces.cantact", "CantactBus"),
     "gs_usb": ("can.interfaces.gs_usb", "GsUsbBus"),
+    "nixnet": ("can.interfaces.nixnet", "NiXNETcanBus"),
 }
 
 BACKENDS.update(

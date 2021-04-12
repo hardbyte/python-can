@@ -13,6 +13,7 @@ import ctypes
 
 from can import CanError, BusABC
 from can import Message
+from can.util import time_perfcounter_correlation
 from . import constants as canstat
 from . import structures
 
@@ -492,11 +493,20 @@ class KvaserBus(BusABC):
 
         timer = ctypes.c_uint(0)
         try:
-            kvReadTimer(self._read_handle, ctypes.byref(timer))
+            if time.get_clock_info("time").resolution > 1e-5:
+                ts, perfcounter = time_perfcounter_correlation()
+                kvReadTimer(self._read_handle, ctypes.byref(timer))
+                current_perfcounter = time.perf_counter()
+                now = ts + (current_perfcounter - perfcounter)
+                self._timestamp_offset = now - (timer.value * TIMESTAMP_FACTOR)
+            else:
+                kvReadTimer(self._read_handle, ctypes.byref(timer))
+                self._timestamp_offset = time.time() - (timer.value * TIMESTAMP_FACTOR)
+
         except Exception as exc:
             # timer is usually close to 0
             log.info(str(exc))
-        self._timestamp_offset = time.time() - (timer.value * TIMESTAMP_FACTOR)
+            self._timestamp_offset = time.time() - (timer.value * TIMESTAMP_FACTOR)
 
         self._is_filtered = False
         super().__init__(channel=channel, can_filters=can_filters, **kwargs)

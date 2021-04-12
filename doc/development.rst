@@ -69,11 +69,10 @@ These steps are a guideline on how to add a new backend to python-can.
 - Implement the central part of the backend: the bus class that extends
   :class:`can.BusABC`.
   See :ref:`businternals` for more info on this one!
-- Register your backend bus class in ``can.interface.BACKENDS`` and
-  ``can.interfaces.VALID_INTERFACES`` in ``can.interfaces.__init__.py``.
+- Register your backend bus class in ``BACKENDS`` in the file ``can.interfaces.__init__.py``.
 - Add docs where appropriate. At a minimum add to ``doc/interfaces.rst`` and add
   a new interface specific document in ``doc/interface/*``.
-- Update ``doc/scripts.rst`` accordingly.
+  Also, don't forget to document your classes, methods and function with docstrings.
 - Add tests in ``test/*`` where appropriate.
 
 

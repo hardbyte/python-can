@@ -93,6 +93,7 @@ jobs:
           can/broadcastmanager.py
           can/bus.py
           can/interface.py
+          can/interfaces/udp_multicast/**.py
           can/interfaces/slcan.py
           can/interfaces/socketcan/**.py
           can/interfaces/virtual.py

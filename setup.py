@@ -31,6 +31,7 @@ extras_require = {
     "neovi": ["filelock", "python-ics>=2.12"],
     "cantact": ["cantact>=0.0.7"],
     "gs_usb": ["gs_usb>=0.2.1"],
+    "nixnet": ["nixnet>=0.3.1"],
 }
 
 setup(
@@ -86,6 +87,7 @@ setup(
         'windows-curses;platform_system=="Windows"',
         "mypy_extensions>=0.4.0,<0.5.0",
         'pywin32;platform_system=="Windows"',
+        'msgpack~=1.0.0;platform_system!="Windows"',
     ],
     extras_require=extras_require,
 )

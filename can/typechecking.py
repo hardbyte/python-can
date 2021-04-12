@@ -36,3 +36,5 @@ BusConfig = typing.NewType("BusConfig", dict)
 AutoDetectedConfig = mypy_extensions.TypedDict(
     "AutoDetectedConfig", {"interface": str, "channel": Channel}
 )
+
+ReadableBytesLike = typing.Union[bytes, bytearray, memoryview]
