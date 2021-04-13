@@ -36,7 +36,7 @@ from unittest.mock import patch
 import pytest
 
 import can
-from can.viewer import KEY_ESC, KEY_SPACE, CanViewer, parse_args
+from can.viewer import CanViewer, parse_args
 
 
 # Allow the curses module to be missing (e.g. on PyPy on Windows)
@@ -81,6 +81,8 @@ class StdscrDummy:
         pass
 
     def getch(self):
+        assert curses is not None
+
         self.key_counter += 1
         if self.key_counter == 1:
             # Send invalid key
@@ -88,9 +90,9 @@ class StdscrDummy:
         elif self.key_counter == 2:
             return ord("c")  # Clear
         elif self.key_counter == 3:
-            return KEY_SPACE  # Pause
+            return curses.ascii.SP  # Pause
         elif self.key_counter == 4:
-            return KEY_SPACE  # Unpause
+            return curses.ascii.SP  # Unpause
         elif self.key_counter == 5:
             return ord("s")  # Sort
 
@@ -101,7 +103,7 @@ class StdscrDummy:
         elif self.key_counter <= 200:
             return curses.KEY_UP
 
-        return KEY_ESC
+        return curses.ascii.ESC
 
 
 @unittest.skipUnless(CURSES_AVAILABLE, "curses might be missing on some platforms")
