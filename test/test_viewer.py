@@ -24,7 +24,6 @@
 # e-mail   :  lauszus@gmail.com
 
 import argparse
-import curses
 import math
 import os
 import random
@@ -38,6 +37,15 @@ import pytest
 
 import can
 from can.viewer import KEY_ESC, KEY_SPACE, CanViewer, parse_args
+
+
+# Allow the curses module to be missing (e.g. on PyPy on Windows)
+try:
+    import curses
+    CURSES_AVAILABLE = True
+except ImportError:
+    curses = None  # type: ignore
+    CURSES_AVAILABLE = False
 
 
 # noinspection SpellCheckingInspection,PyUnusedLocal
@@ -95,6 +103,7 @@ class StdscrDummy:
         return KEY_ESC
 
 
+@unittest.skipUnless(CURSES_AVAILABLE, "curses might be missing on some platforms")
 class CanViewerTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
