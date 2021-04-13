@@ -25,8 +25,8 @@ python-can
    :target: https://python-can.readthedocs.io/en/stable/
    :alt: Documentation
 
-.. |build_travis| image:: https://img.shields.io/travis/hardbyte/python-can/develop.svg?label=Travis%20CI
-   :target: https://travis-ci.org/hardbyte/python-can/branches
+.. |build_travis| image:: https://img.shields.io/travis/com/hardbyte/python-can/develop.svg?label=Travis%20CI
+   :target: https://travis-ci.com/hardbyte/python-can
    :alt: Travis CI Server for develop branch
 
 .. |build_appveyor| image:: https://img.shields.io/appveyor/ci/hardbyte/python-can/develop.svg?label=AppVeyor
