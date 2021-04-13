@@ -84,7 +84,7 @@ setup(
         # but we assume it is already installed.
         # "setuptools",
         "wrapt~=1.10",
-        'windows-curses;platform_system=="Windows"',
+        'windows-curses;platform_system=="Windows" and platform_python_implementation!="CPython"',
         "mypy_extensions>=0.4.0,<0.5.0",
         'pywin32;platform_system=="Windows"',
         'msgpack~=1.0.0;platform_system!="Windows"',
