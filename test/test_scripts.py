@@ -31,7 +31,7 @@ class CanScriptTest(unittest.TestCase, metaclass=ABCMeta):
                 subprocess.check_output(
                     command.split(),
                     stderr=subprocess.STDOUT,
-                    encoding='utf-8',
+                    encoding="utf-8",
                     shell=IS_WINDOWS,
                 )
             except subprocess.CalledProcessError as e:
