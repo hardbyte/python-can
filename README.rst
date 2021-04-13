@@ -1,13 +1,17 @@
 python-can
 ==========
 
-|release| |downloads| |downloads_monthly| |formatter|
+|release| |python_implementation| |downloads| |downloads_monthly| |formatter|
 
-|docs| |build_travis| |build_appveyor| |coverage|
+|docs| |build_travis| |build_appveyor| |coverage| |mergify|
 
 .. |release| image:: https://img.shields.io/pypi/v/python-can.svg
    :target: https://pypi.python.org/pypi/python-can/
    :alt: Latest Version on PyPi
+
+.. |python_implementation| image:: https://img.shields.io/pypi/implementation/python-can
+   :target: https://pypi.python.org/pypi/python-can/
+   :alt: Supported Python implementations
 
 .. |downloads| image:: https://pepy.tech/badge/python-can
    :target: https://pepy.tech/project/python-can
@@ -37,7 +41,7 @@ python-can
    :target: https://codecov.io/gh/hardbyte/python-can/branch/develop
    :alt: Test coverage reports on Codecov.io
 
-.. image:: https://img.shields.io/endpoint.svg?url=https://gh.mergify.io/badges/hardbyte/python-can&style=flat
+.. |mergify| image:: https://img.shields.io/endpoint.svg?url=https://gh.mergify.io/badges/hardbyte/python-can&style=flat
    :target: https://mergify.io
    :alt: Mergify Status
 
