@@ -42,6 +42,7 @@ from can.viewer import KEY_ESC, KEY_SPACE, CanViewer, parse_args
 # Allow the curses module to be missing (e.g. on PyPy on Windows)
 try:
     import curses
+
     CURSES_AVAILABLE = True
 except ImportError:
     curses = None  # type: ignore
