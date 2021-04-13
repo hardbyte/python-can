@@ -30,10 +30,13 @@ def inc(value):
         return value
 
 
-@unittest.skipIf(
+skip_on_unreliable_platforms = unittest.skipIf(
     IS_APPVEYOR or (IS_TRAVIS and IS_OSX) or (IS_GITHUB_ACTIONS and not IS_LINUX),
     "this environment's timings are too unpredictable",
 )
+
+
+@skip_on_unreliable_platforms
 class TestMessageSync(unittest.TestCase, ComparingMessagesTestCase):
     def __init__(self, *args, **kwargs):
         unittest.TestCase.__init__(self, *args, **kwargs)
@@ -93,29 +96,28 @@ class TestMessageSync(unittest.TestCase, ComparingMessagesTestCase):
         self.assertMessagesEqual(messages, collected)
 
 
-if not IS_APPVEYOR:  # this environment's timings are too unpredictable
+@skip_on_unreliable_platforms
+@pytest.mark.timeout(inc(0.3))
+@pytest.mark.parametrize(
+    "timestamp_1,timestamp_2", [(0.0, 0.0), (0.0, 0.01), (0.01, 0.0)]
+)
+def test_gap(timestamp_1, timestamp_2):
+    """This method is alone so it can be parameterized."""
+    messages = [
+        Message(arbitration_id=0x1, timestamp=timestamp_1),
+        Message(arbitration_id=0x2, timestamp=timestamp_2),
+    ]
+    sync = MessageSync(messages, gap=0.1)
 
-    @pytest.mark.timeout(inc(0.3))
-    @pytest.mark.parametrize(
-        "timestamp_1,timestamp_2", [(0.0, 0.0), (0.0, 0.01), (0.01, 0.0)]
-    )
-    def test_gap(timestamp_1, timestamp_2):
-        """This method is alone so it can be parameterized."""
-        messages = [
-            Message(arbitration_id=0x1, timestamp=timestamp_1),
-            Message(arbitration_id=0x2, timestamp=timestamp_2),
-        ]
-        sync = MessageSync(messages, gap=0.1)
+    gc.disable()
+    before = time()
+    collected = list(sync)
+    after = time()
+    gc.enable()
+    took = after - before
 
-        gc.disable()
-        before = time()
-        collected = list(sync)
-        after = time()
-        gc.enable()
-        took = after - before
-
-        assert 0.1 <= took < inc(0.3)
-        assert messages == collected
+    assert 0.1 <= took < inc(0.3)
+    assert messages == collected
 
 
 if __name__ == "__main__":
