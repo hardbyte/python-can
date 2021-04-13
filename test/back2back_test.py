@@ -22,6 +22,7 @@ from .config import (
     IS_TRAVIS,
     TEST_INTERFACE_SOCKETCAN,
     TEST_CAN_FD,
+    IS_PYPY,
 )
 
 
@@ -319,7 +320,7 @@ class TestThreadSafeBus(Back2BackTestCase):
             single_handle=True,
         )
 
-    @pytest.mark.timeout(5.0)
+    @pytest.mark.timeout(180.0 if IS_PYPY else 5.0)
     def test_concurrent_writes(self):
         sender_pool = ThreadPool(100)
         receiver_pool = ThreadPool(100)
@@ -337,7 +338,7 @@ class TestThreadSafeBus(Back2BackTestCase):
             self.bus1.send(msg)
 
         def receiver(_):
-            return self.bus2.recv(timeout=2.0)
+            return self.bus2.recv()
 
         sender_pool.map_async(sender, workload)
         for msg in receiver_pool.map(receiver, len(workload) * [None]):
@@ -350,7 +351,7 @@ class TestThreadSafeBus(Back2BackTestCase):
         receiver_pool.close()
         receiver_pool.join()
 
-    @pytest.mark.timeout(5.0)
+    @pytest.mark.timeout(180.0 if IS_PYPY else 5.0)
     def test_filtered_bus(self):
         sender_pool = ThreadPool(100)
         receiver_pool = ThreadPool(100)
@@ -378,7 +379,7 @@ class TestThreadSafeBus(Back2BackTestCase):
             self.bus1.send(msg)
 
         def receiver(_):
-            return self.bus2.recv(timeout=2.0)
+            return self.bus2.recv()
 
         sender_pool.map_async(sender, workload)
         received_msgs = receiver_pool.map(receiver, 500 * [None])

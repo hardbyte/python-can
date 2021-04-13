@@ -57,6 +57,8 @@ if (IS_WINDOWS and IS_LINUX) or (IS_LINUX and IS_OSX) or (IS_WINDOWS and IS_OSX)
         + '(platform.system() == "{}")'.format(platform.system())
     )
 
+# ############################## Implementations
+IS_PYPY = platform.python_implementation() == "PyPy"
 
 # ############################## What tests to run
 
