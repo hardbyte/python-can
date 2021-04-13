@@ -38,9 +38,9 @@ try:
     import curses
     from curses.ascii import ESC as KEY_ESC, SP as KEY_SPACE
 except ImportError:
-    # Probably on windows
+    # Probably on Windows while windows-curses is not installed (e.g. in PyPy)
     logger.warning(
-        "You won't be able to use the viewer program without " "curses installed!"
+        "You won't be able to use the viewer program without curses installed!"
     )
     curses = None  # type: ignore
 
