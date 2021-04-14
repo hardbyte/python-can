@@ -123,8 +123,7 @@ class RestartableCyclicTaskABC(CyclicSendTaskABC):
 
     @abc.abstractmethod
     def start(self):
-        """Restart a stopped periodic task.
-        """
+        """Restart a stopped periodic task."""
 
 
 class ModifiableCyclicTaskABC(CyclicSendTaskABC):
@@ -170,8 +169,7 @@ class ModifiableCyclicTaskABC(CyclicSendTaskABC):
 
 
 class MultiRateCyclicSendTaskABC(CyclicSendTaskABC):
-    """A Cyclic send task that supports switches send frequency after a set time.
-    """
+    """A Cyclic send task that supports switches send frequency after a set time."""
 
     def __init__(
         self,

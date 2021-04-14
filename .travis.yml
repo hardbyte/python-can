@@ -1,49 +1,31 @@
 language: python
 
 # Linux setup
-dist: xenial
+dist: focal
 
 cache:
   directories:
   - "$HOME/.cache/pip"
 
-python:
-  # CPython; only 3.6 is supported
-  - "3.6"
-  - "3.7"
-  - "3.8"
-  - nightly
-  # PyPy:
-  - pypy3
-
-env:
-
-
 install:
   - if [[ "$TEST_SOCKETCAN" ]]; then sudo bash test/open_vcan.sh ; fi
-  - python setup.py install
+  - travis_retry python setup.py install
 
 script:
   - |
     # install tox
-    pip install tox
+    travis_retry pip install tox
     # Run the tests
     tox -e travis
 
 jobs:
   allow_failures:
-    # we allow all dev & nightly builds to fail, since these python versions might
-    # still be very unstable
-    - python: nightly
     # Allow arm64 builds to fail
     - arch: arm64
 
   include:
-    # Note no matrix support when using stages.
     # Stages with the same name get run in parallel.
     # Jobs within a stage can also be named.
-
-    # Unit Testing Stage
 
     # testing socketcan on Trusty & Python 3.6, since it is not available on Xenial
     - stage: test
@@ -72,15 +54,9 @@ jobs:
         - sudo update-alternatives --install /usr/bin/python python $(which python3) 10
         - sudo update-alternatives --install /usr/bin/pip pip $(which pip3) 10
 
-    # testing on OSX
-    - stage: test
-      os: osx
-      osx_image: xcode8.3
-      python: 3.6-dev
-
     - stage: documentation
       name: "Sphinx Build"
-      python: "3.7"
+      python: "3.9"
       before_install:
         - travis_retry pip install -r doc/doc-requirements.txt
       script:
@@ -90,7 +66,7 @@ jobs:
         - python -m sphinx -an doc build
     - stage: linter
       name: "Linter Checks"
-      python: "3.7"
+      python: "3.9"
       before_install:
         - travis_retry pip install -r requirements-lint.txt
       script:
@@ -132,16 +108,9 @@ jobs:
           can/io/**.py
           scripts/**.py
           examples/**.py
-    - stage: linter
-      name: "Formatting Checks"
-      python: "3.7"
-      before_install:
-        - travis_retry pip install -r requirements-lint.txt
-      script:
-        - black --check --verbose .
     - stage: deploy
       name: "PyPi Deployment"
-      python: "3.7"
+      python: "3.9"
       deploy:
         provider: pypi
         user: hardbyte

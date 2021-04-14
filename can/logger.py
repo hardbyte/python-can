@@ -18,6 +18,7 @@ import sys
 import argparse
 import socket
 from datetime import datetime
+import errno
 
 import can
 from can import Bus, BusState, Logger, SizedRotatingLogger
@@ -107,8 +108,6 @@ def main():
     # print help message when no arguments wre given
     if len(sys.argv) < 2:
         parser.print_help(sys.stderr)
-        import errno
-
         raise SystemExit(errno.EINVAL)
 
     results = parser.parse_args()

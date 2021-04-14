@@ -22,6 +22,7 @@ from .config import (
     IS_TRAVIS,
     TEST_INTERFACE_SOCKETCAN,
     TEST_CAN_FD,
+    IS_PYPY,
 )
 
 
@@ -247,8 +248,8 @@ class BasicTestSocketCan(Back2BackTestCase):
 # this doesn't even work on Travis CI for macOS; for example, see
 # https://travis-ci.org/github/hardbyte/python-can/jobs/745389871
 @unittest.skipUnless(
-    IS_UNIX and not (IS_TRAVIS and IS_OSX),
-    "only supported on Unix systems (but not on Travis CI on macOS)",
+    IS_UNIX and not IS_OSX,
+    "only supported on Unix systems (but not on macOS at Travis CI and GitHub Actions)",
 )
 class BasicTestUdpMulticastBusIPv4(Back2BackTestCase):
 
@@ -265,7 +266,8 @@ class BasicTestUdpMulticastBusIPv4(Back2BackTestCase):
 # this doesn't even work for loopback multicast addresses on Travis CI; for example, see
 # https://travis-ci.org/github/hardbyte/python-can/builds/745065503
 @unittest.skipUnless(
-    IS_UNIX and not IS_TRAVIS, "only supported on Unix systems (but not on Travis CI)"
+    IS_UNIX and not (IS_TRAVIS or IS_OSX),
+    "only supported on Unix systems (but not on Travis CI; and not an macOS at GitHub Actions)",
 )
 class BasicTestUdpMulticastBusIPv6(Back2BackTestCase):
 
@@ -318,7 +320,7 @@ class TestThreadSafeBus(Back2BackTestCase):
             single_handle=True,
         )
 
-    @pytest.mark.timeout(5.0)
+    @pytest.mark.timeout(180.0 if IS_PYPY else 5.0)
     def test_concurrent_writes(self):
         sender_pool = ThreadPool(100)
         receiver_pool = ThreadPool(100)
@@ -336,7 +338,7 @@ class TestThreadSafeBus(Back2BackTestCase):
             self.bus1.send(msg)
 
         def receiver(_):
-            return self.bus2.recv(timeout=2.0)
+            return self.bus2.recv()
 
         sender_pool.map_async(sender, workload)
         for msg in receiver_pool.map(receiver, len(workload) * [None]):
@@ -349,7 +351,7 @@ class TestThreadSafeBus(Back2BackTestCase):
         receiver_pool.close()
         receiver_pool.join()
 
-    @pytest.mark.timeout(5.0)
+    @pytest.mark.timeout(180.0 if IS_PYPY else 5.0)
     def test_filtered_bus(self):
         sender_pool = ThreadPool(100)
         receiver_pool = ThreadPool(100)
@@ -377,7 +379,7 @@ class TestThreadSafeBus(Back2BackTestCase):
             self.bus1.send(msg)
 
         def receiver(_):
-            return self.bus2.recv(timeout=2.0)
+            return self.bus2.recv()
 
         sender_pool.map_async(sender, workload)
         received_msgs = receiver_pool.map(receiver, 500 * [None])

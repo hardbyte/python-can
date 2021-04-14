@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+import sys
 import unittest
 import time
 import asyncio
@@ -40,6 +41,7 @@ class NotifierTest(unittest.TestCase):
 
 
 class AsyncNotifierTest(unittest.TestCase):
+    @unittest.skipIf(sys.version_info >= (3, 10), "tracked in #1005")
     def test_asyncio_notifier(self):
         loop = asyncio.get_event_loop()
         bus = can.Bus("test", bustype="virtual", receive_own_messages=True)

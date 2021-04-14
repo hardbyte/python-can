@@ -528,7 +528,7 @@ class TestAscFileFormat(ReaderWriterTest):
 
 class TestBlfFileFormat(ReaderWriterTest):
     """Tests can.BLFWriter and can.BLFReader.
-    
+
     Uses log files created by Toby Lorenz:
     https://bitbucket.org/tobylorenz/vector_blf/src/master/src/Vector/BLF/tests/unittests/events_from_binlog/
     """

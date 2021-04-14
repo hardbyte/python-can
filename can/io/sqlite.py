@@ -80,8 +80,7 @@ class SqliteReader(BaseIOHandler):
         return (SqliteReader._assemble_message(frame) for frame in result)
 
     def stop(self):
-        """Closes the connection to the database.
-        """
+        """Closes the connection to the database."""
         super().stop()
         self._conn.close()
 

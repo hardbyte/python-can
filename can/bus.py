@@ -103,8 +103,8 @@ class BusABC(metaclass=ABCMeta):
 
                 if time_left > 0:
                     continue
-                else:
-                    return None
+
+                return None
 
     def _recv_internal(
         self, timeout: Optional[float]
@@ -388,8 +388,7 @@ class BusABC(metaclass=ABCMeta):
         return False
 
     def flush_tx_buffer(self):
-        """Discard every message that may be queued in the output buffer(s).
-        """
+        """Discard every message that may be queued in the output buffer(s)."""
 
     def shutdown(self):
         """

@@ -538,8 +538,7 @@ class KvaserBus(BusABC):
                 pass
 
     def flush_tx_buffer(self):
-        """ Wipeout the transmit buffer on the Kvaser.
-        """
+        """Wipeout the transmit buffer on the Kvaser."""
         canIoCtl(self._write_handle, canstat.canIOCTL_FLUSH_TX_BUFFER, 0, 0)
 
     def _recv_internal(self, timeout=None):
@@ -659,7 +658,7 @@ class KvaserBus(BusABC):
 
         :returns: bus statistics.
         :rtype: can.interfaces.kvaser.structures.BusStatistics
-         """
+        """
         canRequestBusStatistics(self._write_handle)
         stats = structures.BusStatistics()
         canGetBusStatistics(

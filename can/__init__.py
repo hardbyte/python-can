@@ -17,9 +17,7 @@ rc: Dict[str, Any] = dict()
 
 
 class CanError(IOError):
-    """Indicates an error with the CAN network.
-
-    """
+    """Indicates an error with the CAN network."""
 
 
 from .listener import Listener, BufferedReader, RedirectReader, AsyncBufferedReader
