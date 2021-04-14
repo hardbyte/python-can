@@ -36,7 +36,7 @@ IS_CI = (
 
 if IS_APPVEYOR and IS_TRAVIS and IS_GITHUB_ACTIONS:
     raise EnvironmentError(
-        "only one of IS_APPVEYOR and IS_TRAVIS and GITHUB_ACTIONS max be True at the same time"
+        "only one of IS_APPVEYOR and IS_TRAVIS and GITHUB_ACTIONS may be True at the same time"
     )
 
 
