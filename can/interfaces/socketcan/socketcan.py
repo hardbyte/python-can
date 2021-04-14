@@ -613,6 +613,11 @@ class SocketcanBus(BusABC):
             If transmitted messages should also be received by this bus.
         :param local_loopback:
             If local loopback should be enabled on this bus.
+            Please note that local loopback does not mean that messages sent
+            on a socket will be readable on the same socket, they will only
+            be readable on other open sockets on the same machine. More info
+            can be read on the socketcan documentation:
+            See https://www.kernel.org/doc/html/latest/networking/can.html#socketcan-local-loopback1
         :param fd:
             If CAN-FD frames should be supported.
         :param can_filters:
