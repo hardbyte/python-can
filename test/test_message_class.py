@@ -38,7 +38,10 @@ class TestMessageClass(unittest.TestCase):
         error_state_indicator=st.booleans(),
     )
     # The first run may take a second on CI runners and will hit the deadline
-    @settings(max_examples=2000, deadline=None if IS_GITHUB_ACTIONS else timedelta(milliseconds=500))
+    @settings(
+        max_examples=2000,
+        deadline=None if IS_GITHUB_ACTIONS else timedelta(milliseconds=500),
+    )
     def test_methods(self, **kwargs):
         is_valid = not (
             (
