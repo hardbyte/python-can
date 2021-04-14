@@ -6,6 +6,7 @@ import sys
 from math import isinf, isnan
 from copy import copy, deepcopy
 import pickle
+from datetime import timedelta
 
 from hypothesis import given, settings
 import hypothesis.strategies as st
@@ -13,6 +14,7 @@ import hypothesis.strategies as st
 from can import Message
 
 from .message_helper import ComparingMessagesTestCase
+from .config import IS_GITHUB_ACTIONS
 
 
 class TestMessageClass(unittest.TestCase):
@@ -36,7 +38,7 @@ class TestMessageClass(unittest.TestCase):
         error_state_indicator=st.booleans(),
     )
     # The first run may take a second on CI runners and will hit the deadline
-    @settings(max_examples=2000, deadline=None)
+    @settings(max_examples=2000, deadline=None if IS_GITHUB_ACTIONS else timedelta(milliseconds=500))
     def test_methods(self, **kwargs):
         is_valid = not (
             (
