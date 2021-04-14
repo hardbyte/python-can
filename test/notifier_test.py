@@ -41,7 +41,6 @@ class NotifierTest(unittest.TestCase):
 
 
 class AsyncNotifierTest(unittest.TestCase):
-
     @unittest.skipIf(sys.version_info >= (3, 10), "tracked in #1005")
     def test_asyncio_notifier(self):
         loop = asyncio.get_event_loop()
