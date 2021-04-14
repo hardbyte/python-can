@@ -14,6 +14,7 @@ from .config import TEST_INTERFACE_SOCKETCAN
 @unittest.skipUnless(TEST_INTERFACE_SOCKETCAN, "skip testing of socketcan")
 class LocalLoopbackSocketCan(unittest.TestCase):
     """ test local_loopback functionality"""
+
     BITRATE = 500000
     TIMEOUT = 0.1
 
@@ -31,11 +32,13 @@ class LocalLoopbackSocketCan(unittest.TestCase):
         self._recv_bus.shutdown()
 
     def test_sending_message_with_loopback_enabled(self):
-        """ test that sending messages with local_loopback=True produces output even
-            on the local device """
+        """test that sending messages with local_loopback=True produces output even
+        on the local device"""
         loopback_send_bus = can.Bus(
-            interface=self.INTERFACE_1, channel=self.CHANNEL_1, bitrate=self.BITRATE,
-            local_loopback=True
+            interface=self.INTERFACE_1,
+            channel=self.CHANNEL_1,
+            bitrate=self.BITRATE,
+            local_loopback=True,
         )
         try:
             msg = can.Message(arbitration_id=0x123, is_extended_id=False)
@@ -46,11 +49,13 @@ class LocalLoopbackSocketCan(unittest.TestCase):
             loopback_send_bus.shutdown()
 
     def test_sending_message_without_loopback_enabled(self):
-        """ test that sending messages with local_loopback=False does not produce output
-            on the local device """
+        """test that sending messages with local_loopback=False does not produce output
+        on the local device"""
         noloopback_send_bus = can.Bus(
-            interface=self.INTERFACE_1, channel=self.CHANNEL_1, bitrate=self.BITRATE,
-            local_loopback=False
+            interface=self.INTERFACE_1,
+            channel=self.CHANNEL_1,
+            bitrate=self.BITRATE,
+            local_loopback=False,
         )
         try:
             msg = can.Message(arbitration_id=0x123, is_extended_id=False)
