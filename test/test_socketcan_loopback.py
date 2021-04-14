@@ -45,6 +45,8 @@ class LocalLoopbackSocketCan(unittest.TestCase):
             loopback_send_bus.send(msg)
             recv_msg = self._recv_bus.recv(self.TIMEOUT)
             self.assertIsNotNone(recv_msg)
+            recv_msg_lb = loopback_send_bus.recv(self.TIMEOUT)
+            self.assertIsNone(recv_msg_lb)
         finally:
             loopback_send_bus.shutdown()
 
@@ -62,6 +64,8 @@ class LocalLoopbackSocketCan(unittest.TestCase):
             noloopback_send_bus.send(msg)
             recv_msg = self._recv_bus.recv(self.TIMEOUT)
             self.assertIsNone(recv_msg)
+            recv_msg_nlb = noloopback_send_bus.recv(self.TIMEOUT)
+            self.assertIsNone(recv_msg_nlb)
         finally:
             noloopback_send_bus.shutdown()
 
