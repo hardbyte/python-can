@@ -7,7 +7,7 @@ from math import isinf, isnan
 from copy import copy, deepcopy
 import pickle
 
-from hypothesis import given, settings, reproduce_failure
+from hypothesis import given, settings
 import hypothesis.strategies as st
 
 from can import Message
@@ -35,7 +35,8 @@ class TestMessageClass(unittest.TestCase):
         bitrate_switch=st.booleans(),
         error_state_indicator=st.booleans(),
     )
-    @settings(max_examples=2000)
+    # The first run may take a second on CI runners and will hit the deadline
+    @settings(max_examples=2000, deadline=None)
     def test_methods(self, **kwargs):
         is_valid = not (
             (
