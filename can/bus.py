@@ -443,7 +443,7 @@ class BusABC(metaclass=ABCMeta):
 
 
 class _SelfRemovingCyclicTask(CyclicSendTaskABC, ABC):
-    """Removes itself from as bus. Only needed for typing :meth:`Bus._periodic_tasks`. Do not instantiate."""
+    """Removes itself from a bus. Only needed for typing :meth:`Bus._periodic_tasks`. Do not instantiate."""
 
     def stop(self, remove_task: bool = True) -> None:
         raise NotImplementedError()
