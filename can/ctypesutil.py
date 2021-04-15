@@ -22,14 +22,19 @@ except AttributeError:
 
 
 class CLibrary(_LibBase):  # type: ignore
-
     def __init__(self, library_or_path: Union[str, ctypes.CDLL]) -> None:
         if isinstance(library_or_path, str):
             super().__init__(library_or_path)
         else:
             super().__init__(library_or_path._name, library_or_path._handle)
 
-    def map_symbol(self, func_name: str, restype: Any = None, argtypes: Tuple[Any, ...] = (), errcheck: Optional[Callable[..., Any]] = None) -> Any:
+    def map_symbol(
+        self,
+        func_name: str,
+        restype: Any = None,
+        argtypes: Tuple[Any, ...] = (),
+        errcheck: Optional[Callable[..., Any]] = None,
+    ) -> Any:
         """
         Map and return a symbol (function) from a C library. A reference to the
         mapped symbol is also held in the instance
@@ -50,7 +55,9 @@ class CLibrary(_LibBase):  # type: ignore
         try:
             symbol: Any = prototype((func_name, self))
         except AttributeError:
-            raise ImportError(f"Could not map function '{func_name}' from library {self._name}") from None
+            raise ImportError(
+                f'Could not map function "{func_name}" from library {self._name}'
+            ) from None
 
         symbol._name = func_name
         log.debug(
@@ -69,6 +76,7 @@ if sys.platform == "win32":
     HRESULT = ctypes.HRESULT
 
 elif sys.platform == "cygwin":
+
     class HRESULT(ctypes.c_long):
         pass
 

@@ -49,7 +49,9 @@ class CyclicSendTaskABC(CyclicTask):
     Message send task with defined period
     """
 
-    def __init__(self, messages: Union[Sequence[Message], Message], period: float) -> None:
+    def __init__(
+        self, messages: Union[Sequence[Message], Message], period: float
+    ) -> None:
         """
         :param messages:
             The messages to be sent periodically.
@@ -225,7 +227,9 @@ class ThreadBasedCyclicSendTask(
         self.send_lock = lock
         self.stopped = True
         self.thread: Optional[threading.Thread] = None
-        self.end_time: Optional[float] = time.perf_counter() + duration if duration else None
+        self.end_time: Optional[float] = (
+            time.perf_counter() + duration if duration else None
+        )
         self.on_error = on_error
 
         if HAS_EVENTS:
