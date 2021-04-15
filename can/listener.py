@@ -145,11 +145,9 @@ class AsyncBufferedReader(Listener):
                 "and has no effect starting with Python 3.10",
                 DeprecationWarning,
             )
-            if sys.version_info >= (3, 10):
-                self.buffer = asyncio.Queue()
+            if sys.version_info < (3, 10):
+                self.buffer = asyncio.Queue(kwargs["loop"])
                 return
-            self.buffer = asyncio.Queue(kwargs["loop"])
-            return
 
         self.buffer = asyncio.Queue()
 
