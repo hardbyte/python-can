@@ -3,7 +3,7 @@ python-can
 
 |release| |python_implementation| |downloads| |downloads_monthly| |formatter|
 
-|docs| |build_travis| |build_appveyor| |coverage| |mergify|
+|docs| |build_travis| |coverage| |mergify|
 
 .. |release| image:: https://img.shields.io/pypi/v/python-can.svg
    :target: https://pypi.python.org/pypi/python-can/
@@ -32,10 +32,6 @@ python-can
 .. |build_travis| image:: https://img.shields.io/travis/com/hardbyte/python-can/develop.svg?label=Travis%20CI
    :target: https://travis-ci.com/hardbyte/python-can
    :alt: Travis CI Server for develop branch
-
-.. |build_appveyor| image:: https://img.shields.io/appveyor/ci/hardbyte/python-can/develop.svg?label=AppVeyor
-   :target: https://ci.appveyor.com/project/hardbyte/python-can/history
-   :alt: AppVeyor CI Server for develop branch
 
 .. |coverage| image:: https://codecov.io/gh/hardbyte/python-can/branch/develop/graph/badge.svg
    :target: https://codecov.io/gh/hardbyte/python-can/branch/develop
