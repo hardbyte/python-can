@@ -3,12 +3,13 @@
 
 """
 """
-
+import asyncio
 import unittest
 import random
 import logging
 import tempfile
 import os
+import warnings
 from os.path import join, dirname
 
 import can
@@ -155,6 +156,17 @@ class ListenerTest(BusTest):
         self.assertIsNotNone(a_listener.get_message(0.1))
         a_listener.stop()
         self.assertIsNotNone(a_listener.get_message(0.1))
+
+
+def test_deprecated_loop_arg(recwarn):
+    warnings.simplefilter("always")
+    can.AsyncBufferedReader(loop=asyncio.get_event_loop())
+    assert len(recwarn) == 1
+    assert recwarn.pop(DeprecationWarning)
+
+    # assert that no warning is shown when loop argument is not used
+    can.AsyncBufferedReader()
+    assert len(recwarn) == 0
 
 
 if __name__ == "__main__":
