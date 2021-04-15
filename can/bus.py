@@ -151,7 +151,7 @@ class BusABC(metaclass=ABCMeta):
         raise NotImplementedError("Trying to read from a write only bus?")
 
     @abstractmethod
-    def send(self, msg: Message, timeout: Optional[float] = None):
+    def send(self, msg: Message, timeout: Optional[float] = None) -> None:
         """Transmit a message to the CAN bus.
 
         Override this method to enable the transmit path.
@@ -273,7 +273,7 @@ class BusABC(metaclass=ABCMeta):
         )
         return task
 
-    def stop_all_periodic_tasks(self, remove_tasks=True):
+    def stop_all_periodic_tasks(self, remove_tasks=True) -> None:
         """Stop sending any messages that were started using **bus.send_periodic**.
 
         .. note::
@@ -317,7 +317,7 @@ class BusABC(metaclass=ABCMeta):
     def filters(self, filters: Optional[can.typechecking.CanFilters]):
         self.set_filters(filters)
 
-    def set_filters(self, filters: Optional[can.typechecking.CanFilters] = None):
+    def set_filters(self, filters: Optional[can.typechecking.CanFilters] = None) -> None:
         """Apply filtering to all messages received by this Bus.
 
         All messages that match at least one filter are returned.
@@ -342,7 +342,7 @@ class BusABC(metaclass=ABCMeta):
         self._filters = filters or None
         self._apply_filters(self._filters)
 
-    def _apply_filters(self, filters: Optional[can.typechecking.CanFilters]):
+    def _apply_filters(self, filters: Optional[can.typechecking.CanFilters]) -> None:
         """
         Hook for applying the filters to the underlying kernel or
         hardware if supported/implemented by the interface.
@@ -387,10 +387,10 @@ class BusABC(metaclass=ABCMeta):
         # nothing matched
         return False
 
-    def flush_tx_buffer(self):
+    def flush_tx_buffer(self) -> None:
         """Discard every message that may be queued in the output buffer(s)."""
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         """
         Called to carry out any interface specific cleanup required
         in shutting down a bus.
