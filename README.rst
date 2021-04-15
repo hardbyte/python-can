@@ -74,11 +74,11 @@ Features
 - support for many different backends (see the `docs <https://python-can.readthedocs.io/en/stable/interfaces.html>`__)
 - receiving, sending, and periodically sending messages
 - normal and extended arbitration IDs
-- limited `CAN FD <https://en.wikipedia.org/wiki/CAN_FD>`__ support
+- `CAN FD <https://en.wikipedia.org/wiki/CAN_FD>`__ support
 - many different loggers and readers supporting playback: ASC (CANalyzer format), BLF (Binary Logging Format by Vector), CSV, SQLite and Canutils log
 - efficient in-kernel or in-hardware filtering of messages on supported interfaces
-- bus configuration reading from file or environment variables
-- CLI tools for working with CAN buses (see the `docs <https://python-can.readthedocs.io/en/stable/scripts.html>`__)
+- bus configuration reading from a file or from environment variables
+- command line tools for working with CAN buses (see the `docs <https://python-can.readthedocs.io/en/stable/scripts.html>`__)
 - more
 
 
