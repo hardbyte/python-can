@@ -25,12 +25,7 @@ def env(name: str) -> bool:
 IS_TRAVIS = env("TRAVIS")
 IS_GITHUB_ACTIONS = env("GITHUB_ACTIONS")
 
-IS_CI = (
-    IS_TRAVIS
-    or IS_GITHUB_ACTIONS
-    or env("CI")
-    or env("CONTINUOUS_INTEGRATION")
-)
+IS_CI = IS_TRAVIS or IS_GITHUB_ACTIONS or env("CI") or env("CONTINUOUS_INTEGRATION")
 
 if IS_TRAVIS and IS_GITHUB_ACTIONS:
     raise EnvironmentError(
