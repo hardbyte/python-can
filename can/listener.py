@@ -1,7 +1,8 @@
 """
 This module contains the implementation of `can.Listener` and some readers.
 """
-
+import sys
+import warnings
 from typing import AsyncIterator, Awaitable, Optional
 
 from can.message import Message
@@ -135,9 +136,20 @@ class AsyncBufferedReader(Listener):
             print(msg)
     """
 
-    def __init__(self, loop: Optional[asyncio.events.AbstractEventLoop] = None):
-        # set to "infinite" size
-        self.buffer: "asyncio.Queue[Message]" = asyncio.Queue(loop=loop)
+    def __init__(self, **kwargs):
+        self.buffer: "asyncio.Queue[Message]"
+
+        if "loop" in kwargs.keys():
+            warnings.warn(
+                "The 'loop' argument is deprecated since python-can 4.0.0 "
+                "and has no effect starting with Python 3.10",
+                DeprecationWarning,
+            )
+            if sys.version_info < (3, 10):
+                self.buffer = asyncio.Queue(loop=kwargs["loop"])
+                return
+
+        self.buffer = asyncio.Queue()
 
     def on_message_received(self, msg: Message):
         """Append a message to the buffer.
