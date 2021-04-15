@@ -14,7 +14,7 @@ import pytest
 
 from can import MessageSync, Message
 
-from .config import IS_CI, IS_APPVEYOR, IS_TRAVIS, IS_OSX, IS_GITHUB_ACTIONS, IS_LINUX
+from .config import IS_CI, IS_TRAVIS, IS_OSX, IS_GITHUB_ACTIONS, IS_LINUX
 from .message_helper import ComparingMessagesTestCase
 from .data.example_data import TEST_MESSAGES_BASE
 
@@ -31,7 +31,7 @@ def inc(value):
 
 
 skip_on_unreliable_platforms = unittest.skipIf(
-    IS_APPVEYOR or (IS_TRAVIS and IS_OSX) or (IS_GITHUB_ACTIONS and not IS_LINUX),
+    (IS_TRAVIS and IS_OSX) or (IS_GITHUB_ACTIONS and not IS_LINUX),
     "this environment's timings are too unpredictable",
 )
 
