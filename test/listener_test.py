@@ -161,8 +161,9 @@ class ListenerTest(BusTest):
 def test_deprecated_loop_arg(recwarn):
     warnings.simplefilter("always")
     can.AsyncBufferedReader(loop=asyncio.get_event_loop())
-    assert len(recwarn) == 1
+    assert len(recwarn) > 0
     assert recwarn.pop(DeprecationWarning)
+    recwarn.clear()
 
     # assert that no warning is shown when loop argument is not used
     can.AsyncBufferedReader()
