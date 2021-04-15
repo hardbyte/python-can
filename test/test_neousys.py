@@ -1,10 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-"""
-Test for Neousys Interface
-"""
-
 import ctypes
 import os
 import pickle
