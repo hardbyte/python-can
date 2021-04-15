@@ -273,7 +273,7 @@ class BusABC(metaclass=ABCMeta):
         )
         return task
 
-    def stop_all_periodic_tasks(self, remove_tasks=True) -> None:
+    def stop_all_periodic_tasks(self, remove_tasks=True):
         """Stop sending any messages that were started using **bus.send_periodic**.
 
         .. note::
