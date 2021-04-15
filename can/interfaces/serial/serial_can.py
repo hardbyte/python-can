@@ -162,7 +162,7 @@ class SerialBus(BusABC):
                     return msg, False
 
                 else:
-                    raise RuntimeError(f"TODO, see issue #1000; rxd_byte = {rxd_byte}")  # TODO
+                    raise RuntimeError(f"TODO, see issue #1000; locals = {locals()}")  # TODO
 
             else:
                 return None, False
