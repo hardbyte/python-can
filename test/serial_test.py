@@ -14,6 +14,11 @@ import can
 from can.interfaces.serial.serial_can import SerialBus
 
 from .message_helper import ComparingMessagesTestCase
+from .config import IS_PYPY
+
+
+# Mentioned in #1010
+TIMEOUT = 0.5 if IS_PYPY else 0.1  # 0.1 is the default set in SerialBus
 
 
 class SerialDummy:
@@ -145,7 +150,7 @@ class SimpleSerialTest(unittest.TestCase, SimpleSerialTestBase):
         self.mock_serial.return_value.write = self.serial_dummy.write
         self.mock_serial.return_value.read = self.serial_dummy.read
         self.addCleanup(self.patcher.stop)
-        self.bus = SerialBus("bus")
+        self.bus = SerialBus("bus", timeout=TIMEOUT)
 
     def tearDown(self):
         self.serial_dummy.reset()
@@ -157,7 +162,7 @@ class SimpleSerialLoopTest(unittest.TestCase, SimpleSerialTestBase):
         SimpleSerialTestBase.__init__(self)
 
     def setUp(self):
-        self.bus = SerialBus("loop://")
+        self.bus = SerialBus("loop://", timeout=TIMEOUT)
 
     def tearDown(self):
         self.bus.shutdown()
