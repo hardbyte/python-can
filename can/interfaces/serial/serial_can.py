@@ -42,7 +42,13 @@ class SerialBus(BusABC):
     """
 
     def __init__(
-        self, channel: str, baudrate: int = 115200, timeout: float = 0.1, rtscts: bool = False, *args, **kwargs
+        self,
+        channel: str,
+        baudrate: int = 115200,
+        timeout: float = 0.1,
+        rtscts: bool = False,
+        *args,
+        **kwargs,
     ) -> None:
         """
         :param channel:
@@ -120,7 +126,9 @@ class SerialBus(BusABC):
         # Write to serial device
         self._ser.write(byte_msg)
 
-    def _recv_internal(self, timeout: Optional[float]) -> Tuple[Optional[Message], bool]:
+    def _recv_internal(
+        self, timeout: Optional[float]
+    ) -> Tuple[Optional[Message], bool]:
         """
         Read a message from the serial device.
 
@@ -179,6 +187,5 @@ class SerialBus(BusABC):
     @staticmethod
     def _detect_available_configs() -> List[AutoDetectedConfig]:
         return [
-            {"interface": "serial", "channel": port.device}
-            for port in list_comports()
+            {"interface": "serial", "channel": port.device} for port in list_comports()
         ]

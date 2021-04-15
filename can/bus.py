@@ -317,7 +317,9 @@ class BusABC(metaclass=ABCMeta):
     def filters(self, filters: Optional[can.typechecking.CanFilters]):
         self.set_filters(filters)
 
-    def set_filters(self, filters: Optional[can.typechecking.CanFilters] = None) -> None:
+    def set_filters(
+        self, filters: Optional[can.typechecking.CanFilters] = None
+    ) -> None:
         """Apply filtering to all messages received by this Bus.
 
         All messages that match at least one filter are returned.
