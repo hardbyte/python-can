@@ -528,7 +528,9 @@ def capture_message(
     """
     # Fetching the Arb ID, DLC and Data
     try:
-        cf, ancillary_data, msg_flags, addr = sock.recvmsg(CANFD_MTU, RECEIVED_ANCILLARY_BUFFER_SIZE)
+        cf, ancillary_data, msg_flags, addr = sock.recvmsg(
+            CANFD_MTU, RECEIVED_ANCILLARY_BUFFER_SIZE
+        )
         if get_channel:
             channel = addr[0] if isinstance(addr, tuple) else addr
         else:
@@ -542,7 +544,7 @@ def capture_message(
     assert len(ancillary_data) == 1, "only requested a single extra field"
     cmsg_level, cmsg_type, cmsg_data = ancillary_data[0]
     assert (
-            cmsg_level == socket.SOL_SOCKET and cmsg_type == SO_TIMESTAMPNS
+        cmsg_level == socket.SOL_SOCKET and cmsg_type == SO_TIMESTAMPNS
     ), "received control message type that was not requested"
     # see https://man7.org/linux/man-pages/man3/timespec.3.html -> struct timespec for details
     seconds, nanoseconds = RECEIVED_TIMESTAMP_STRUCT.unpack_from(cmsg_data)
