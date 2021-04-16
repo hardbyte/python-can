@@ -29,6 +29,7 @@ except ImportError:
 
 try:
     from socket import CMSG_SPACE
+
     CMSG_SPACE_available = True
 except ImportError:
     CMSG_SPACE_available = False
