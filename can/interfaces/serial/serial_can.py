@@ -138,7 +138,7 @@ class SerialBus(BusABC):
                 This parameter will be ignored. The timeout value of the channel is used.
 
         :returns:
-            Received message and False (because not filtering as taken place).
+            Received message and `False` (because no filtering as taken place).
 
             .. warning::
                 Flags like is_extended_id, is_remote_frame and is_error_frame
@@ -152,27 +152,34 @@ class SerialBus(BusABC):
                 s = self._ser.read(4)
                 timestamp = struct.unpack("<I", s)[0]
                 dlc = ord(self._ser.read())
+                if dlc > 8:
+                    raise CanError("received DLC may not exceed 8 bytes")
 
                 s = self._ser.read(4)
-                arb_id = struct.unpack("<I", s)[0]
+                arbitration_id = struct.unpack("<I", s)[0]
+                if arbitration_id >= 0x20000000:
+                    raise CanError(
+                        "received arbitration id may not exceed 2^29 (0x20000000)"
+                    )
 
                 data = self._ser.read(dlc)
 
-                rxd_byte = ord(self._ser.read())
-                if rxd_byte == 0xBB:
+                delimiter_byte = ord(self._ser.read())
+                if delimiter_byte == 0xBB:
                     # received message data okay
                     msg = Message(
+                        # TODO: We are only guessing that they are milliseconds
                         timestamp=timestamp / 1000,
-                        arbitration_id=arb_id,
+                        arbitration_id=arbitration_id,
                         dlc=dlc,
                         data=data,
                     )
                     return msg, False
 
                 else:
-                    raise RuntimeError(
-                        f"TODO, see issue #1000; locals = {locals()}"
-                    )  # TODO
+                    raise CanError(
+                        f"invalid delimiter byte while reading message: {delimiter_byte}"
+                    )
 
             else:
                 return None, False
