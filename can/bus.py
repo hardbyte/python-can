@@ -172,7 +172,7 @@ class BusABC(metaclass=ABCMeta):
 
     def send_periodic(
         self,
-        msgs: Union[Message, Union[List[Message], Tuple[Message, ...]]],
+        msgs: Union[Message, Sequence[Message]],
         period: float,
         duration: Optional[float] = None,
         store_task: bool = True,
@@ -217,11 +217,12 @@ class BusABC(metaclass=ABCMeta):
         """
         if isinstance(msgs, Message):
             msgs = [msgs]
-        elif isinstance(msgs, (list, tuple)):
-            if not msgs:
-                raise ValueError("Must be a list or tuple at least of length 1")
+        elif isinstance(msgs, Sequence):
+            # A Sequence does not necessarily provide __bool__ we need to use len()
+            if len(msgs) == 0:
+                raise ValueError("Must be a sequence at least of length 1")
         else:
-            raise ValueError("Must be either a list, tuple, or a Message")
+            raise ValueError("Must be either a message or a sequence of messages")
 
         # Create a backend specific task; will be patched to a _SelfRemovingCyclicTask later
         task = cast(
