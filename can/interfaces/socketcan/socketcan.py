@@ -494,6 +494,8 @@ def bind_socket(sock: socket.socket, channel: str = "can0") -> None:
 
     :param sock:
         The socket to be bound
+    :param channel:
+        The channel / interface to ind to
     :raises OSError:
         If the specified interface isn't found.
     """
@@ -517,24 +519,25 @@ def capture_message(
     """
     # Fetching the Arb ID, DLC and Data
     try:
+        cf, ancillary_data, msg_flags, addr = sock.recvmsg(CANFD_MTU, RECEIVED_ANCILLARY_BUFFER_SIZE)
         if get_channel:
-            cf, _, msg_flags, addr = sock.recvmsg(CANFD_MTU)
             channel = addr[0] if isinstance(addr, tuple) else addr
         else:
-            cf, _, msg_flags, _ = sock.recvmsg(CANFD_MTU)
             channel = None
-    except socket.error as exc:
-        raise can.CanError("Error receiving: %s" % exc)
+    except socket.error as error:
+        raise can.CanError(f"Error receiving: {error}")
 
     can_id, can_dlc, flags, data = dissect_can_frame(cf)
-    # log.debug('Received: can_id=%x, can_dlc=%x, data=%s', can_id, can_dlc, data)
 
     # Fetching the timestamp
-    binary_structure = "@LL"
-    res = fcntl.ioctl(sock.fileno(), SIOCGSTAMP, struct.pack(binary_structure, 0, 0))
-
-    seconds, microseconds = struct.unpack(binary_structure, res)
-    timestamp = seconds + microseconds * 1e-6
+    assert len(ancillary_data) == 1, "only requested a single extra field"
+    cmsg_level, cmsg_type, cmsg_data = ancillary_data[0]
+    assert (
+            cmsg_level == socket.SOL_SOCKET and cmsg_type == SO_TIMESTAMPNS
+    ), "received control message type that was not requested"
+    # see https://man7.org/linux/man-pages/man3/timespec.3.html -> struct timespec for details
+    seconds, nanoseconds = RECEIVED_TIMESTAMP_STRUCT.unpack_from(cmsg_data)
+    timestamp = seconds + nanoseconds * 1e-9
 
     # EXT, RTR, ERR flags -> boolean attributes
     #   /* special address description flags for the CAN_ID */
@@ -574,9 +577,12 @@ def capture_message(
         data=data,
     )
 
-    # log_rx.debug('Received: %s', msg)
-
     return msg
+
+
+# Constants needed for precise handling of timestamps
+RECEIVED_TIMESTAMP_STRUCT = struct.Struct("@II")
+RECEIVED_ANCILLARY_BUFFER_SIZE = socket.CMSG_SPACE(RECEIVED_TIMESTAMP_STRUCT.size)
 
 
 class SocketcanBus(BusABC):
@@ -647,7 +653,7 @@ class SocketcanBus(BusABC):
         except socket.error as error:
             log.error("Could not receive own messages (%s)", error)
 
-        # enable CAN-FD frames
+        # enable CAN-FD frames if desired
         if fd:
             try:
                 self.socket.setsockopt(SOL_CAN_RAW, CAN_RAW_FD_FRAMES, 1)
@@ -659,6 +665,13 @@ class SocketcanBus(BusABC):
             self.socket.setsockopt(SOL_CAN_RAW, CAN_RAW_ERR_FILTER, 0x1FFFFFFF)
         except socket.error as error:
             log.error("Could not enable error frames (%s)", error)
+
+        # enable nanosecond resolution timestamping
+        # we can always do this since
+        #  1) is is guaranteed to be at least as precise as without
+        #  2) it is available since Linux 2.6.22, and CAN support was only added afterward
+        #     so this is always supported by the kernel
+        self.socket.setsockopt(socket.SOL_SOCKET, SO_TIMESTAMPNS, 1)
 
         bind_socket(self.socket, channel)
         kwargs.update(

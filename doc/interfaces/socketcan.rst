@@ -18,9 +18,8 @@ The `SocketCAN`_ documentation can be found in the Linux kernel docs at
 .. important::
 
     `python-can` versions before 2.2 had two different implementations named
-    ``socketcan_ctypes`` and ``socketcan_native``. These are now
-    deprecated and the aliases to ``socketcan`` will be removed in
-    version 4.0. 3.x releases raise a DeprecationWarning.
+    ``socketcan_ctypes`` and ``socketcan_native``. These were removed in
+    version 4.0.0 after a deprecation period.
 
 
 Socketcan Quickstart
@@ -248,7 +247,8 @@ The :class:`~can.interfaces.socketcan.SocketcanBus` specializes :class:`~can.Bus
 to ensure usage of SocketCAN Linux API. The most important differences are:
 
 - usage of SocketCAN BCM for periodic messages scheduling;
-- filtering of CAN messages on Linux kernel level.
+- filtering of CAN messages on Linux kernel level;
+- usage of nanosecond timings form the kernel.
 
 .. autoclass:: can.interfaces.socketcan.SocketcanBus
     :members:

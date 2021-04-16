@@ -2,6 +2,9 @@
 Defines shared CAN constants.
 """
 
+# Generic socket constants
+SO_TIMESTAMPNS = 35
+
 CAN_ERR_FLAG = 0x20000000
 CAN_RTR_FLAG = 0x40000000
 CAN_EFF_FLAG = 0x80000000
