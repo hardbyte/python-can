@@ -27,6 +27,14 @@ except ImportError:
     log.error("fcntl not available on this platform")
 
 
+try:
+    from socket import CMSG_SPACE
+    CMSG_SPACE_available = True
+except ImportError:
+    CMSG_SPACE_available = False
+    log.error("socket.CMSG_SPACE not available on this platform")
+
+
 import can
 from can import Message, BusABC
 from can.broadcastmanager import (
@@ -37,6 +45,7 @@ from can.broadcastmanager import (
 from can.typechecking import CanFilters
 from can.interfaces.socketcan.constants import *  # CAN_RAW, CAN_*_FLAG
 from can.interfaces.socketcan.utils import pack_filters, find_available_interfaces
+
 
 # Setup BCM struct
 def bcm_header_factory(
@@ -581,8 +590,9 @@ def capture_message(
 
 
 # Constants needed for precise handling of timestamps
-RECEIVED_TIMESTAMP_STRUCT = struct.Struct("@II")
-RECEIVED_ANCILLARY_BUFFER_SIZE = socket.CMSG_SPACE(RECEIVED_TIMESTAMP_STRUCT.size)
+if CMSG_SPACE_available:
+    RECEIVED_TIMESTAMP_STRUCT = struct.Struct("@II")
+    RECEIVED_ANCILLARY_BUFFER_SIZE = CMSG_SPACE(RECEIVED_TIMESTAMP_STRUCT.size)
 
 
 class SocketcanBus(BusABC):
