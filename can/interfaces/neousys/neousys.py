@@ -10,12 +10,11 @@
 # with Windows but you have to replace with correct named DLL
 #
 
-# pylint: disable=R0903
-# pylint: disable=R0902
-# pylint: disable=C0413
-# pylint: disable=E0202
-# pylint: disable=W0611
-# pylint: disable=R1725
+# pylint: disable=too-few-public-methods
+# pylint: disable=too-many-instance-attributes
+# pylint: disable=wrong-import-position
+# pylint: disable=method-hidden
+# pylint: disable=unused-import
 
 import warnings
 import queue
