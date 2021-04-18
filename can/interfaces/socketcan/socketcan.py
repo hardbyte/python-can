@@ -505,7 +505,7 @@ def bind_socket(sock: socket.socket, channel: str = "can0") -> None:
     :param sock:
         The socket to be bound
     :param channel:
-        The channel / interface to ind to
+        The channel / interface to bind to
     :raises OSError:
         If the specified interface isn't found.
     """
