@@ -248,7 +248,7 @@ to ensure usage of SocketCAN Linux API. The most important differences are:
 
 - usage of SocketCAN BCM for periodic messages scheduling;
 - filtering of CAN messages on Linux kernel level;
-- usage of nanosecond timings form the kernel.
+- usage of nanosecond timings from the kernel.
 
 .. autoclass:: can.interfaces.socketcan.SocketcanBus
     :members:
