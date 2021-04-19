@@ -19,7 +19,12 @@ A clear and concise description of what you expected to happen.
 
 
 **Additional context**
-  
+
+OS-version:
+Python version:
+python-can version:
+python-can interface/s:
+
 <!-- Add any other context about the problem here. -->
   
 <details><summary>Traceback and logs</summary>
