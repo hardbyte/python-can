@@ -29,7 +29,7 @@ A clear and concise description of what you expected to happen.
   
 <!-- Code examples can be included: -->
 ```python
-  def func():
-      return 'hello, world!'
+def func():
+    return 'hello, world!'
 ```
 </details>
