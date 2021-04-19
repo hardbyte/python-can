@@ -89,22 +89,7 @@ jobs:
           --python-version=3.7
           --ignore-missing-imports
           --no-implicit-optional
-          can/bit_timing.py
-          can/broadcastmanager.py
-          can/bus.py
-          can/interface.py
-          can/interfaces/udp_multicast/**.py
-          can/interfaces/slcan.py
-          can/interfaces/socketcan/**.py
-          can/interfaces/virtual.py
-          can/listener.py
-          can/logger.py
-          can/message.py
-          can/notifier.py
-          can/player.py
-          can/thread_safe_bus.py
-          can/typechecking.py
-          can/util.py
+          can/*.py
           can/io/**.py
           scripts/**.py
           examples/**.py

@@ -74,7 +74,7 @@ class Message:
                       Possible problems include the `dlc` field not matching the length of `data`
                       or creating a message with both `is_remote_frame` and `is_error_frame` set to `True`.
 
-        :raises ValueError: iff `check` is set to `True` and one or more arguments were invalid
+        :raises ValueError: if and only if `check` is set to `True` and one or more arguments were invalid
         """
         self.timestamp = timestamp
         self.arbitration_id = arbitration_id
@@ -95,7 +95,7 @@ class Message:
             try:
                 self.data = bytearray(data)
             except TypeError as error:
-                err = "Couldn't create message from {} ({})".format(data, type(data))
+                err = f"Couldn't create message from {data} ({type(data)})"
                 raise TypeError(err) from error
 
         if dlc is None:
