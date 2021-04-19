@@ -6,23 +6,40 @@ import ctypes
 import logging
 import sys
 
+from typing import Any, Callable, Optional, Tuple, Union
+
 log = logging.getLogger("can.ctypesutil")
 
 __all__ = ["CLibrary", "HANDLE", "PHANDLE", "HRESULT"]
 
+
 try:
-    _LibBase = ctypes.WinDLL
+    _LibBase = ctypes.WinDLL  # type: ignore
+    _FUNCTION_TYPE = ctypes.WINFUNCTYPE  # type: ignore
 except AttributeError:
     _LibBase = ctypes.CDLL
+    _FUNCTION_TYPE = ctypes.CFUNCTYPE
 
 
-class LibraryMixin:
-    def map_symbol(self, func_name, restype=None, argtypes=(), errcheck=None):
+class CLibrary(_LibBase):  # type: ignore
+    def __init__(self, library_or_path: Union[str, ctypes.CDLL]) -> None:
+        if isinstance(library_or_path, str):
+            super().__init__(library_or_path)
+        else:
+            super().__init__(library_or_path._name, library_or_path._handle)
+
+    def map_symbol(
+        self,
+        func_name: str,
+        restype: Any = None,
+        argtypes: Tuple[Any, ...] = (),
+        errcheck: Optional[Callable[..., Any]] = None,
+    ) -> Any:
         """
         Map and return a symbol (function) from a C library. A reference to the
         mapped symbol is also held in the instance
 
-        :param str func_name:
+        :param func_name:
             symbol_name
         :param ctypes.c_* restype:
             function result type (i.e. ctypes.c_ulong...), defaults to void
@@ -32,67 +49,36 @@ class LibraryMixin:
             optional error checking function, see ctypes docs for _FuncPtr
         """
         if argtypes:
-            prototype = self.function_type(restype, *argtypes)
+            prototype = _FUNCTION_TYPE(restype, *argtypes)
         else:
-            prototype = self.function_type(restype)
+            prototype = _FUNCTION_TYPE(restype)
         try:
-            symbol = prototype((func_name, self))
+            symbol: Any = prototype((func_name, self))
         except AttributeError:
             raise ImportError(
-                "Could not map function '{}' from library {}".format(
-                    func_name, self._name
-                )
+                f'Could not map function "{func_name}" from library {self._name}'
             ) from None
 
-        setattr(symbol, "_name", func_name)
+        symbol._name = func_name
         log.debug(
             f'Wrapped function "{func_name}", result type: {type(restype)}, error_check {errcheck}'
         )
 
-        if errcheck:
+        if errcheck is not None:
             symbol.errcheck = errcheck
 
-        setattr(self, func_name, symbol)
+        self.func_name = symbol
+
         return symbol
 
 
-class CLibrary_Win32(_LibBase, LibraryMixin):
-    " Basic ctypes.WinDLL derived class + LibraryMixin "
-
-    def __init__(self, library_or_path):
-        if isinstance(library_or_path, str):
-            super().__init__(library_or_path)
-        else:
-            super().__init__(library_or_path._name, library_or_path._handle)
-
-    @property
-    def function_type(self):
-        return ctypes.WINFUNCTYPE
-
-
-class CLibrary_Unix(ctypes.CDLL, LibraryMixin):
-    " Basic ctypes.CDLL derived class + LibraryMixin "
-
-    def __init__(self, library_or_path):
-        if isinstance(library_or_path, str):
-            super().__init__(library_or_path)
-        else:
-            super().__init__(library_or_path._name, library_or_path._handle)
-
-    @property
-    def function_type(self):
-        return ctypes.CFUNCTYPE
-
-
 if sys.platform == "win32":
-    CLibrary = CLibrary_Win32
     HRESULT = ctypes.HRESULT
-else:
-    CLibrary = CLibrary_Unix
-    if sys.platform == "cygwin":
-        # Define HRESULT for cygwin
-        class HRESULT(ctypes.c_long):
-            pass
+
+elif sys.platform == "cygwin":
+
+    class HRESULT(ctypes.c_long):
+        pass
 
 
 # Common win32 definitions
