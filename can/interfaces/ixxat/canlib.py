@@ -437,9 +437,9 @@ class IXXATBus(BusABC):
         log.info("Got configuration of: %s", kwargs)
         # Configuration options
         bitrate = kwargs.get("bitrate", 500000)
-        UniqueHardwareId = kwargs.get("uniquehardwareid", None)
-        rxFifoSize = kwargs.get("rxfifosize", 16)
-        txFifoSize = kwargs.get("txfifosize", 16)
+        UniqueHardwareId = kwargs.get("UniqueHardwareId", None)
+        rxFifoSize = kwargs.get("rxFifoSize", 16)
+        txFifoSize = kwargs.get("txFifoSize", 16)
         self._receive_own_messages = kwargs.get("receive_own_messages", False)
         # Usually comes as a string from the config file
         channel = int(channel)
