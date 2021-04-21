@@ -4,7 +4,7 @@ Utilities and configuration file parsing.
 
 import functools
 import warnings
-from typing import Any, Callable, cast, Dict, Iterable, List, Tuple, Optional, Union
+from typing import Any, Callable, cast, Dict, Iterable, Tuple, Optional, Union
 from time import time, perf_counter, get_clock_info
 import json
 import os
