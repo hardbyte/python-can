@@ -31,7 +31,7 @@ FileLike = typing.IO[typing.Any]
 StringPathLike = typing.Union[str, "os.PathLike[str]"]
 AcceptedIOType = typing.Optional[typing.Union[FileLike, StringPathLike]]
 
-BusConfig = typing.NewType("BusConfig", dict)
+BusConfig = typing.NewType("BusConfig", typing.Dict[str, typing.Any])
 
 AutoDetectedConfig = mypy_extensions.TypedDict(
     "AutoDetectedConfig", {"interface": str, "channel": Channel}

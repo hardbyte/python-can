@@ -4,7 +4,7 @@ Utilities and configuration file parsing.
 
 import functools
 import warnings
-from typing import Any, Dict, Tuple, Optional
+from typing import Any, Callable, cast, Dict, Iterable, List, Tuple, Optional, Union
 from time import time, perf_counter, get_clock_info
 import json
 import os
@@ -156,16 +156,19 @@ def load_config(
     config = {}
 
     # use the given dict for default values
-    config_sources = [
-        given_config,
-        can.rc,
-        lambda _context: load_environment_config(  # pylint: disable=unnecessary-lambda
-            _context
-        ),
-        lambda _context: load_environment_config(),
-        lambda _context: load_file_config(path, _context),
-        lambda _context: load_file_config(path),
-    ]
+    config_sources = cast(
+        Iterable[Union[Dict[str, Any], Callable[[Any], Dict[str, Any]]]],
+        [
+            given_config,
+            can.rc,
+            lambda _context: load_environment_config(  # pylint: disable=unnecessary-lambda
+                _context
+            ),
+            lambda _context: load_environment_config(),
+            lambda _context: load_file_config(path, _context),
+            lambda _context: load_file_config(path),
+        ],
+    )
 
     # Slightly complex here to only search for the file config if required
     for cfg in config_sources:
@@ -216,7 +219,8 @@ def load_config(
         config["timing"] = can.BitTiming(**timing_conf)
 
     can.log.debug("can config: %s", config)
-    return config
+
+    return cast(typechecking.BusConfig, config)
 
 
 def set_logging_level(level_name: str) -> None:
