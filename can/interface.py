@@ -10,6 +10,7 @@ import logging
 from .bus import BusABC
 from .util import load_config
 from .interfaces import BACKENDS
+from .exceptions import CanBackEndError
 
 log = logging.getLogger("can.interface")
 log_autodetect = log.getChild("detect_available_configs")
@@ -22,7 +23,7 @@ def _get_class_for_interface(interface):
     :raises:
         NotImplementedError if the interface is not known
     :raises:
-        ImportError     if there was a problem while importing the
+        CanBackEndError if there was a problem while importing the
                         interface or the bus class within that
     """
     # Find the correct backend
@@ -37,7 +38,7 @@ def _get_class_for_interface(interface):
     try:
         module = importlib.import_module(module_name)
     except Exception as e:
-        raise ImportError(
+        raise CanBackEndError(
             "Cannot import module {} for CAN interface '{}': {}".format(
                 module_name, interface, e
             )
@@ -47,7 +48,7 @@ def _get_class_for_interface(interface):
     try:
         bus_class = getattr(module, class_name)
     except Exception as e:
-        raise ImportError(
+        raise CanBackEndError(
             "Cannot import class {} from module {} for CAN interface '{}': {}".format(
                 class_name, module_name, interface, e
             )
@@ -79,8 +80,11 @@ class Bus(BusABC):  # pylint disable=abstract-method
             Should contain an ``interface`` key with a valid interface name. If not,
             it is completed using :meth:`can.util.load_config`.
 
-        :raises: NotImplementedError
-            if the ``interface`` isn't recognized
+        :raises: can.CanBackEndError
+            if the ``interface`` isn't recognized or cannot be loaded
+
+        :raises: can.CanInitializationError
+            if the bus cannot be instantiated
 
         :raises: ValueError
             if the ``channel`` could not be determined
@@ -148,7 +152,7 @@ def detect_available_configs(interfaces=None):
 
         try:
             bus_class = _get_class_for_interface(interface)
-        except ImportError:
+        except CanBackEndError:
             log_autodetect.debug(
                 'interface "%s" can not be loaded for detection of available configurations',
                 interface,

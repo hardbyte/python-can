@@ -24,13 +24,14 @@ class CanBackEndError(CanError):
     """Indicates an error related to the backend (e.g. driver/OS/library).
 
     Example scenarios:
-      - The driver is not present or has the wrong version
+      - The interface does not exist
       - The interface is unsupported on the current platform
+      - The driver is not present or has the wrong version
     """
 
 
 class CanInitializationError(CanError):
-    """Indicates an error the occurred while initializing a :class:`can.Bus`.
+    """Indicates an error the occurred while initializing a :class:`can.BusABC`.
 
     Example scenarios:
       - Try to open a non-existent device and/or channel

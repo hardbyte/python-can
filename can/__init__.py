@@ -8,7 +8,7 @@ messages on a can bus.
 import logging
 from typing import Dict, Any
 
-__version__ = "4.0.0-dev0"
+__version__ = "4.0.0-dev"
 
 log = logging.getLogger("can")
 

@@ -56,6 +56,8 @@ class CyclicSendTaskABC(CyclicTask):
         :param messages:
             The messages to be sent periodically.
         :param period: The rate in seconds at which to send the messages.
+
+        :raises ValueError: If the given messages are invalid
         """
         messages = self._check_and_convert_messages(messages)
 
@@ -74,7 +76,9 @@ class CyclicSendTaskABC(CyclicTask):
         Performs error checking to ensure that all Messages have the same
         arbitration ID and channel.
 
-        Should be called when the cyclic task is initialized
+        Should be called when the cyclic task is initialized.
+
+        :raises ValueError: If the given messages are invalid
         """
         if not isinstance(messages, (list, tuple)):
             if isinstance(messages, Message):
@@ -115,6 +119,8 @@ class LimitedDurationCyclicSendTaskABC(CyclicSendTaskABC):
         :param duration:
             Approximate duration in seconds to continue sending messages. If
             no duration is provided, the task will continue indefinitely.
+
+        :raises ValueError: If the given messages are invalid
         """
         super().__init__(messages, period)
         self.duration = duration
@@ -139,6 +145,8 @@ class ModifiableCyclicTaskABC(CyclicSendTaskABC):
         cyclic messages hasn't changed.
 
         Should be called when modify_data is called in the cyclic task.
+
+        :raises ValueError: If the given messages are invalid
         """
         if len(self.messages) != len(messages):
             raise ValueError(
@@ -163,6 +171,8 @@ class ModifiableCyclicTaskABC(CyclicSendTaskABC):
             Note: The number of new cyclic messages to be sent must be equal
             to the original number of messages originally specified for this
             task.
+
+        :raises ValueError: If the given messages are invalid
         """
         messages = self._check_and_convert_messages(messages)
         self._check_modified_messages(messages)
@@ -190,6 +200,8 @@ class MultiRateCyclicSendTaskABC(CyclicSendTaskABC):
         :param count:
         :param initial_period:
         :param subsequent_period:
+
+        :raises ValueError: If the given messages are invalid
         """
         super().__init__(messages, subsequent_period)
         self._channel = channel
@@ -221,6 +233,8 @@ class ThreadBasedCyclicSendTask(
                          error happened on a `bus` while sending `messages`,
                          it shall return either ``True`` or ``False`` depending
                          on desired behaviour of `ThreadBasedCyclicSendTask`.
+
+        :raises ValueError: If the given messages are invalid
         """
         super().__init__(messages, period, duration)
         self.bus = bus

@@ -41,7 +41,6 @@ class Listener(metaclass=ABCMeta):
         """This method is called to handle the given message.
 
         :param msg: the delivered message
-
         """
 
     def __call__(self, msg: Message):
@@ -65,7 +64,6 @@ class Listener(metaclass=ABCMeta):
 class RedirectReader(Listener):
     """
     A RedirectReader sends all received messages to another Bus.
-
     """
 
     def __init__(self, bus: BusABC):
@@ -86,13 +84,13 @@ class BufferedReader(Listener):
     Putting in messages after :meth:`~can.BufferedReader.stop` has been called will raise
     an exception, see :meth:`~can.BufferedReader.on_message_received`.
 
-    :attr bool is_stopped: ``True`` if the reader has been stopped
+    :attr is_stopped: ``True`` if the reader has been stopped
     """
 
     def __init__(self):
         # set to "infinite" size
         self.buffer = SimpleQueue()
-        self.is_stopped = False
+        self.is_stopped: bool = False
 
     def on_message_received(self, msg: Message):
         """Append a message to the buffer.
