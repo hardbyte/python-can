@@ -3,18 +3,14 @@
 
 import unittest
 import time
-try:
-    import asyncio
-except ImportError:
-    asyncio = None
+import asyncio
 
 import can
 
 
 class NotifierTest(unittest.TestCase):
-
     def test_single_bus(self):
-        bus = can.Bus('test', bustype='virtual', receive_own_messages=True)
+        bus = can.Bus("test", bustype="virtual", receive_own_messages=True)
         reader = can.BufferedReader()
         notifier = can.Notifier(bus, [reader], 0.1)
         msg = can.Message()
@@ -24,8 +20,8 @@ class NotifierTest(unittest.TestCase):
         bus.shutdown()
 
     def test_multiple_bus(self):
-        bus1 = can.Bus(0, bustype='virtual', receive_own_messages=True)
-        bus2 = can.Bus(1, bustype='virtual', receive_own_messages=True)
+        bus1 = can.Bus(0, bustype="virtual", receive_own_messages=True)
+        bus2 = can.Bus(1, bustype="virtual", receive_own_messages=True)
         reader = can.BufferedReader()
         notifier = can.Notifier([bus1, bus2], [reader], 0.1)
         msg = can.Message()
@@ -44,11 +40,9 @@ class NotifierTest(unittest.TestCase):
 
 
 class AsyncNotifierTest(unittest.TestCase):
-
-    @unittest.skipIf(asyncio is None, 'Test requires asyncio')
     def test_asyncio_notifier(self):
         loop = asyncio.get_event_loop()
-        bus = can.Bus('test', bustype='virtual', receive_own_messages=True)
+        bus = can.Bus("test", bustype="virtual", receive_own_messages=True)
         reader = can.AsyncBufferedReader()
         notifier = can.Notifier(bus, [reader], 0.1, loop=loop)
         msg = can.Message()
@@ -60,6 +54,5 @@ class AsyncNotifierTest(unittest.TestCase):
         bus.shutdown()
 
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

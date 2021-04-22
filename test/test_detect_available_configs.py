@@ -6,53 +6,63 @@ This module tests :meth:`can.BusABC._detect_available_configs` and
 :meth:`can.BusABC.detect_available_configs`.
 """
 
-from __future__ import absolute_import
-
-import sys
 import unittest
-if sys.version_info.major > 2:
-    basestring = str
 
 from can import detect_available_configs
 
-from .config import IS_LINUX, IS_CI
+from .config import IS_CI, IS_UNIX, TEST_INTERFACE_SOCKETCAN
 
 
 class TestDetectAvailableConfigs(unittest.TestCase):
-
     def test_count_returned(self):
         # At least virtual has to always return at least one interface
-        self.assertGreaterEqual (len(detect_available_configs()                         ), 1)
-        self.assertEqual        (len(detect_available_configs(interfaces=[])            ), 0)
-        self.assertGreaterEqual (len(detect_available_configs(interfaces='virtual')     ), 1)
-        self.assertGreaterEqual (len(detect_available_configs(interfaces=['virtual'])   ), 1)
-        self.assertGreaterEqual (len(detect_available_configs(interfaces=None)          ), 1)
+        self.assertGreaterEqual(len(detect_available_configs()), 1)
+        self.assertEqual(len(detect_available_configs(interfaces=[])), 0)
+        self.assertGreaterEqual(len(detect_available_configs(interfaces="virtual")), 1)
+        self.assertGreaterEqual(
+            len(detect_available_configs(interfaces=["virtual"])), 1
+        )
+        self.assertGreaterEqual(len(detect_available_configs(interfaces=None)), 1)
 
     def test_general_values(self):
         configs = detect_available_configs()
         for config in configs:
-            self.assertIn('interface', config)
-            self.assertIn('channel', config)
-            self.assertIsInstance(config['interface'], basestring)
+            self.assertIn("interface", config)
+            self.assertIn("channel", config)
 
     def test_content_virtual(self):
-        configs = detect_available_configs(interfaces='virtual')
+        configs = detect_available_configs(interfaces="virtual")
+        self.assertGreaterEqual(len(configs), 1)
         for config in configs:
-            self.assertEqual(config['interface'], 'virtual')
+            self.assertEqual(config["interface"], "virtual")
+
+    def test_content_udp_multicast(self):
+        configs = detect_available_configs(interfaces="udp_multicast")
+        for config in configs:
+            self.assertEqual(config["interface"], "udp_multicast")
 
     def test_content_socketcan(self):
-        configs = detect_available_configs(interfaces='socketcan')
+        configs = detect_available_configs(interfaces="socketcan")
         for config in configs:
-            self.assertEqual(config['interface'], 'socketcan')
+            self.assertEqual(config["interface"], "socketcan")
 
-    @unittest.skipUnless(IS_LINUX and IS_CI, "socketcan is only available on Linux")
+    def test_count_udp_multicast(self):
+        configs = detect_available_configs(interfaces="udp_multicast")
+        if IS_UNIX:
+            self.assertGreaterEqual(len(configs), 2)
+        else:
+            self.assertEqual(len(configs), 0)
+
+    @unittest.skipUnless(
+        TEST_INTERFACE_SOCKETCAN and IS_CI, "this setup is very specific"
+    )
     def test_socketcan_on_ci_server(self):
-        configs = detect_available_configs(interfaces='socketcan')
+        configs = detect_available_configs(interfaces="socketcan")
         self.assertGreaterEqual(len(configs), 1)
-        self.assertIn('vcan0', [config['channel'] for config in configs])
+        self.assertIn("vcan0", [config["channel"] for config in configs])
 
-    # see TestSocketCanHelpers.test_find_available_interfaces()
+    # see TestSocketCanHelpers.test_find_available_interfaces() too
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

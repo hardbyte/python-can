@@ -1,17 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-from __future__ import print_function
 
 import unittest
 import threading
-try:
-    import queue
-except ImportError:
-    import Queue as queue
+import queue
 import random
-
 import logging
+
 logging.getLogger(__file__).setLevel(logging.WARNING)
 
 # make a random bool:
@@ -19,11 +15,11 @@ rbool = lambda: bool(round(random.random()))
 
 import can
 
-channel = 'vcan0'
-can.rc['interface'] = 'virtual'
+channel = "vcan0"
+can.rc["interface"] = "virtual"
 
 
-@unittest.skipIf('interface' not in can.rc, "Need a CAN interface")
+@unittest.skipIf("interface" not in can.rc, "Need a CAN interface")
 class ControllerAreaNetworkTestCase(unittest.TestCase):
     """
     This test ensures that what messages go in to the bus is what comes out.
@@ -43,9 +39,10 @@ class ControllerAreaNetworkTestCase(unittest.TestCase):
     extended_flags = [rbool() for _ in range(num_messages)]
 
     ids = list(range(num_messages))
-    data = list(bytearray([random.randrange(0, 2 ** 8 - 1)
-                           for a in range(random.randrange(9))])
-                for b in range(num_messages))
+    data = list(
+        bytearray([random.randrange(0, 2 ** 8 - 1) for a in range(random.randrange(9))])
+        for b in range(num_messages)
+    )
 
     def producer(self, ready_event, msg_read):
         self.client_bus = can.interface.Bus(channel=channel)
@@ -56,9 +53,9 @@ class ControllerAreaNetworkTestCase(unittest.TestCase):
                 is_remote_frame=self.remote_flags[i],
                 is_error_frame=self.error_flags[i],
                 is_extended_id=self.extended_flags[i],
-                data=self.data[i]
+                data=self.data[i],
             )
-            #logging.debug("writing message: {}".format(m))
+            # logging.debug("writing message: {}".format(m))
             if msg_read is not None:
                 # Don't send until the other thread is ready
                 msg_read.wait()
@@ -99,7 +96,7 @@ class ControllerAreaNetworkTestCase(unittest.TestCase):
             msg_read.set()
             msg = self.server_bus.recv(timeout=0.5)
             self.assertIsNotNone(msg, "Didn't receive a message")
-            #logging.debug("Received message {} with data: {}".format(i, msg.data))
+            # logging.debug("Received message {} with data: {}".format(i, msg.data))
 
             self.assertEqual(msg.is_extended_id, self.extended_flags[i])
             if not msg.is_remote_frame:
@@ -115,5 +112,6 @@ class ControllerAreaNetworkTestCase(unittest.TestCase):
         self.server_bus.flush_tx_buffer()
         self.server_bus.shutdown()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

@@ -1,5 +1,3 @@
-# coding: utf-8
-
 import logging
 import sys
 
@@ -21,7 +19,9 @@ def check_valid_rx_can_msg(result):
     :return: True if a valid CAN messages was received, otherwise False.
     :rtype: bool
     """
-    return (result.value == ReturnCode.SUCCESSFUL) or (result.value > ReturnCode.WARNING)
+    return (result.value == ReturnCode.SUCCESSFUL) or (
+        result.value > ReturnCode.WARNING
+    )
 
 
 def check_tx_ok(result):
@@ -37,7 +37,9 @@ def check_tx_ok(result):
 
     .. :seealso: :const:`ReturnCode.WARN_TXLIMIT`
     """
-    return (result.value == ReturnCode.SUCCESSFUL) or (result.value > ReturnCode.WARNING)
+    return (result.value == ReturnCode.SUCCESSFUL) or (
+        result.value > ReturnCode.WARNING
+    )
 
 
 def check_tx_success(result):
@@ -81,7 +83,9 @@ def check_error(result):
     :return: True if a function returned error, otherwise False.
     :rtype: bool
     """
-    return (result.value != ReturnCode.SUCCESSFUL) and (result.value < ReturnCode.WARNING)
+    return (result.value != ReturnCode.SUCCESSFUL) and (
+        result.value < ReturnCode.WARNING
+    )
 
 
 def check_error_cmd(result):
@@ -113,7 +117,7 @@ else:
 
     try:
         # Select the proper dll architecture
-        lib = WinDLL('usbcan64.dll' if sys.maxsize > 2 ** 32 else 'usbcan32.dll')
+        lib = WinDLL("usbcan64.dll" if sys.maxsize > 2 ** 32 else "usbcan32.dll")
 
         # BOOL PUBLIC UcanSetDebugMode (DWORD dwDbgLevel_p, _TCHAR* pszFilePathName_p, DWORD dwFlags_p);
         UcanSetDebugMode = lib.UcanSetDebugMode
@@ -149,7 +153,17 @@ else:
         #    DWORD dwProductCodeLow_p, DWORD dwProductCodeHigh_p);
         UcanEnumerateHardware = lib.UcanEnumerateHardware
         UcanEnumerateHardware.restype = DWORD
-        UcanEnumerateHardware.argtypes = [EnumCallback, LPVOID, BOOL, BYTE, BYTE, DWORD, DWORD, DWORD, DWORD]
+        UcanEnumerateHardware.argtypes = [
+            EnumCallback,
+            LPVOID,
+            BOOL,
+            BYTE,
+            BYTE,
+            DWORD,
+            DWORD,
+            DWORD,
+            DWORD,
+        ]
 
         # BYTE PUBLIC UcanInitHardwareEx (Handle* pUcanHandle_p, BYTE bDeviceNr_p,
         #   CallbackFktEx fpCallbackFktEx_p, void* pCallbackArg_p);
@@ -176,8 +190,12 @@ else:
         #   ChannelInfo* pCanInfoCh0_p, ChannelInfo* pCanInfoCh1_p);
         UcanGetHardwareInfoEx2 = lib.UcanGetHardwareInfoEx2
         UcanGetHardwareInfoEx2.restype = ReturnCode
-        UcanGetHardwareInfoEx2.argtypes = [Handle, POINTER(HardwareInfoEx), POINTER(ChannelInfo),
-                                           POINTER(ChannelInfo)]
+        UcanGetHardwareInfoEx2.argtypes = [
+            Handle,
+            POINTER(HardwareInfoEx),
+            POINTER(ChannelInfo),
+            POINTER(ChannelInfo),
+        ]
         UcanGetHardwareInfoEx2.errcheck = check_result
 
         # BYTE PUBLIC UcanInitCanEx2 (Handle UcanHandle_p, BYTE bChannel_p, tUcaninit_canParam* pinit_canParam_p);
@@ -210,7 +228,12 @@ else:
         #   CanMsg* pCanMsg_p, DWORD* pdwCount_p);
         UcanReadCanMsgEx = lib.UcanReadCanMsgEx
         UcanReadCanMsgEx.restype = ReturnCode
-        UcanReadCanMsgEx.argtypes = [Handle, POINTER(BYTE), POINTER(CanMsg), POINTER(DWORD)]
+        UcanReadCanMsgEx.argtypes = [
+            Handle,
+            POINTER(BYTE),
+            POINTER(CanMsg),
+            POINTER(DWORD),
+        ]
         UcanReadCanMsgEx.errcheck = check_result
 
         # BYTE PUBLIC UcanWriteCanMsgEx (Handle UcanHandle_p, BYTE bChannel_p,
@@ -291,10 +314,11 @@ else:
         log.warning("Cannot load SYSTEC ucan library: %s.", ex)
 
 
-class UcanServer(object):
+class UcanServer:
     """
     UcanServer is a Python wrapper class for using the usbcan32.dll / usbcan64.dll.
     """
+
     _modules_found = []
     _connect_control_ref = None
 
@@ -304,7 +328,7 @@ class UcanServer(object):
         self._hw_is_initialized = False
         self._ch_is_initialized = {
             Channel.CHANNEL_CH0: False,
-            Channel.CHANNEL_CH1: False
+            Channel.CHANNEL_CH1: False,
         }
         self._callback_ref = CallbackFktEx(self._callback)
         if self._connect_control_ref is None:
@@ -343,16 +367,33 @@ class UcanServer(object):
 
     @classmethod
     def _enum_callback(cls, index, is_used, hw_info_ex, init_info, arg):
-        cls._modules_found.append((index, bool(is_used), hw_info_ex.contents, init_info.contents))
+        cls._modules_found.append(
+            (index, bool(is_used), hw_info_ex.contents, init_info.contents)
+        )
 
     @classmethod
-    def enumerate_hardware(cls, device_number_low=0, device_number_high=-1, serial_low=0, serial_high=-1,
-                           product_code_low=0, product_code_high=-1, enum_used_devices=False):
+    def enumerate_hardware(
+        cls,
+        device_number_low=0,
+        device_number_high=-1,
+        serial_low=0,
+        serial_high=-1,
+        product_code_low=0,
+        product_code_high=-1,
+        enum_used_devices=False,
+    ):
         cls._modules_found = []
-        UcanEnumerateHardware(cls._enum_callback_ref, None, enum_used_devices,
-                              device_number_low, device_number_high,
-                              serial_low, serial_high,
-                              product_code_low, product_code_high)
+        UcanEnumerateHardware(
+            cls._enum_callback_ref,
+            None,
+            enum_used_devices,
+            device_number_low,
+            device_number_high,
+            serial_low,
+            serial_high,
+            product_code_low,
+            product_code_high,
+        )
         return cls._modules_found
 
     def init_hardware(self, serial=None, device_number=ANY_MODULE):
@@ -365,14 +406,27 @@ class UcanServer(object):
         if not self._hw_is_initialized:
             # initialize hardware either by device number or serial
             if serial is None:
-                UcanInitHardwareEx(byref(self._handle), device_number, self._callback_ref, None)
+                UcanInitHardwareEx(
+                    byref(self._handle), device_number, self._callback_ref, None
+                )
             else:
-                UcanInitHardwareEx2(byref(self._handle), serial, self._callback_ref, None)
+                UcanInitHardwareEx2(
+                    byref(self._handle), serial, self._callback_ref, None
+                )
             self._hw_is_initialized = True
 
-    def init_can(self, channel=Channel.CHANNEL_CH0, BTR=Baudrate.BAUD_1MBit, baudrate=BaudrateEx.BAUDEX_USE_BTR01,
-                 AMR=AMR_ALL, ACR=ACR_ALL, mode=Mode.MODE_NORMAL, OCR=OutputControl.OCR_DEFAULT,
-                 rx_buffer_entries=DEFAULT_BUFFER_ENTRIES, tx_buffer_entries=DEFAULT_BUFFER_ENTRIES):
+    def init_can(
+        self,
+        channel=Channel.CHANNEL_CH0,
+        BTR=Baudrate.BAUD_1MBit,
+        baudrate=BaudrateEx.BAUDEX_USE_BTR01,
+        AMR=AMR_ALL,
+        ACR=ACR_ALL,
+        mode=Mode.MODE_NORMAL,
+        OCR=OutputControl.OCR_DEFAULT,
+        rx_buffer_entries=DEFAULT_BUFFER_ENTRIES,
+        tx_buffer_entries=DEFAULT_BUFFER_ENTRIES,
+    ):
         """
         Initializes a specific CAN channel of a device.
 
@@ -388,7 +442,9 @@ class UcanServer(object):
         :param int tx_buffer_entries: The number of maximum entries in the transmit buffer.
         """
         if not self._ch_is_initialized.get(channel, False):
-            init_param = InitCanParam(mode, BTR, OCR, AMR, ACR, baudrate, rx_buffer_entries, tx_buffer_entries)
+            init_param = InitCanParam(
+                mode, BTR, OCR, AMR, ACR, baudrate, rx_buffer_entries, tx_buffer_entries
+            )
             UcanInitCanEx2(self._handle, channel, init_param)
             self._ch_is_initialized[channel] = True
 
@@ -407,7 +463,7 @@ class UcanServer(object):
         c_can_msg = (CanMsg * count)()
         c_count = DWORD(count)
         UcanReadCanMsgEx(self._handle, byref(c_channel), c_can_msg, byref(c_count))
-        return c_can_msg[:c_count.value], c_channel.value
+        return c_can_msg[: c_count.value], c_channel.value
 
     def write_can_msg(self, channel, can_msg):
         """
@@ -493,7 +549,9 @@ class UcanServer(object):
         """
         hw_info_ex = HardwareInfoEx()
         can_info_ch0, can_info_ch1 = ChannelInfo(), ChannelInfo()
-        UcanGetHardwareInfoEx2(self._handle, byref(hw_info_ex), byref(can_info_ch0), byref(can_info_ch1))
+        UcanGetHardwareInfoEx2(
+            self._handle, byref(hw_info_ex), byref(can_info_ch0), byref(can_info_ch1)
+        )
         return hw_info_ex, can_info_ch0, can_info_ch1
 
     def get_fw_version(self):
@@ -534,7 +592,7 @@ class UcanServer(object):
         c_can_msg = (CanMsg * count)()
         c_count = DWORD(count)
         UcanReadCyclicCanMsg(self._handle, byref(c_channel), c_can_msg, c_count)
-        return c_can_msg[:c_count.value]
+        return c_can_msg[: c_count.value]
 
     def enable_cyclic_can_msg(self, channel, flags):
         """
@@ -570,7 +628,9 @@ class UcanServer(object):
         """
         tx_error_counter = DWORD(0)
         rx_error_counter = DWORD(0)
-        UcanGetCanErrorCounter(self._handle, channel, byref(tx_error_counter), byref(rx_error_counter))
+        UcanGetCanErrorCounter(
+            self._handle, channel, byref(tx_error_counter), byref(rx_error_counter)
+        )
         return tx_error_counter, rx_error_counter
 
     def set_tx_timeout(self, channel, timeout):
@@ -593,7 +653,11 @@ class UcanServer(object):
         """
         # shutdown each channel if it's initialized
         for _channel, is_initialized in self._ch_is_initialized.items():
-            if is_initialized and (_channel == channel or channel == Channel.CHANNEL_ALL or shutdown_hardware):
+            if is_initialized and (
+                _channel == channel
+                or channel == Channel.CHANNEL_ALL
+                or shutdown_hardware
+            ):
                 UcanDeinitCanEx(self._handle, _channel)
                 self._ch_is_initialized[_channel] = False
 
@@ -651,8 +715,13 @@ class UcanServer(object):
             CanStatus.CANERR_OVERRUN: "Rx-buffer is full",
             CanStatus.CANERR_XMTFULL: "Tx-buffer is full",
         }
-        return "OK" if can_status == CanStatus.CANERR_OK \
-            else ", ".join(msg for status, msg in status_msgs.items() if can_status & status)
+        return (
+            "OK"
+            if can_status == CanStatus.CANERR_OK
+            else ", ".join(
+                msg for status, msg in status_msgs.items() if can_status & status
+            )
+        )
 
     @staticmethod
     def get_baudrate_message(baudrate):
@@ -729,7 +798,9 @@ class UcanServer(object):
             ProductCode.PRODCODE_PID_RESERVED1: "Reserved",
             ProductCode.PRODCODE_PID_RESERVED2: "Reserved",
         }
-        return product_code_msgs.get(product_code & PRODCODE_MASK_PID, "Product code is unknown")
+        return product_code_msgs.get(
+            product_code & PRODCODE_MASK_PID, "Product code is unknown"
+        )
 
     @classmethod
     def convert_to_major_ver(cls, version):
@@ -775,8 +846,10 @@ class UcanServer(object):
         :return: True if equal or higher, otherwise False.
         :rtype: bool
         """
-        return (cls.convert_to_major_ver(version) > cmp_major) or \
-               (cls.convert_to_major_ver(version) == cmp_major and cls.convert_to_minor_ver(version) >= cmp_minor)
+        return (cls.convert_to_major_ver(version) > cmp_major) or (
+            cls.convert_to_major_ver(version) == cmp_major
+            and cls.convert_to_minor_ver(version) >= cmp_minor
+        )
 
     @classmethod
     def check_is_systec(cls, hw_info_ex):
@@ -788,7 +861,9 @@ class UcanServer(object):
         :return: True when the module is a systec USB-CANmodul, otherwise False.
         :rtype: bool
         """
-        return (hw_info_ex.m_dwProductCode & PRODCODE_MASK_PID) >= ProductCode.PRODCODE_PID_MULTIPORT
+        return (
+            hw_info_ex.m_dwProductCode & PRODCODE_MASK_PID
+        ) >= ProductCode.PRODCODE_PID_MULTIPORT
 
     @classmethod
     def check_is_G4(cls, hw_info_ex):
@@ -824,8 +899,9 @@ class UcanServer(object):
         :return: True when the module does support cyclic CAN messages, otherwise False.
         :rtype: bool
         """
-        return cls.check_is_systec(hw_info_ex) and \
-               cls.check_version_is_equal_or_higher(hw_info_ex.m_dwFwVersionEx, 3, 6)
+        return cls.check_is_systec(hw_info_ex) and cls.check_version_is_equal_or_higher(
+            hw_info_ex.m_dwFwVersionEx, 3, 6
+        )
 
     @classmethod
     def check_support_two_channel(cls, hw_info_ex):
@@ -837,7 +913,9 @@ class UcanServer(object):
         :return: True when the module (logical device) does support two CAN channels, otherwise False.
         :rtype: bool
         """
-        return cls.check_is_systec(hw_info_ex) and (hw_info_ex.m_dwProductCode & PRODCODE_PID_TWO_CHA)
+        return cls.check_is_systec(hw_info_ex) and (
+            hw_info_ex.m_dwProductCode & PRODCODE_PID_TWO_CHA
+        )
 
     @classmethod
     def check_support_term_resistor(cls, hw_info_ex):
@@ -861,9 +939,17 @@ class UcanServer(object):
         :return: True when the module supports a user I/O port, otherwise False.
         :rtype: bool
         """
-        return ((hw_info_ex.m_dwProductCode & PRODCODE_MASK_PID) != ProductCode.PRODCODE_PID_BASIC) \
-               and ((hw_info_ex.m_dwProductCode & PRODCODE_MASK_PID) != ProductCode.PRODCODE_PID_RESERVED1) \
-               and cls.check_version_is_equal_or_higher(hw_info_ex.m_dwFwVersionEx, 2, 16)
+        return (
+            (
+                (hw_info_ex.m_dwProductCode & PRODCODE_MASK_PID)
+                != ProductCode.PRODCODE_PID_BASIC
+            )
+            and (
+                (hw_info_ex.m_dwProductCode & PRODCODE_MASK_PID)
+                != ProductCode.PRODCODE_PID_RESERVED1
+            )
+            and cls.check_version_is_equal_or_higher(hw_info_ex.m_dwFwVersionEx, 2, 16)
+        )
 
     @classmethod
     def check_support_rb_user_port(cls, hw_info_ex):
@@ -899,8 +985,9 @@ class UcanServer(object):
         :return: True when the module does support the usage of the USB-CANnetwork driver, otherwise False.
         :rtype: bool
         """
-        return cls.check_is_systec(hw_info_ex) and \
-               cls.check_version_is_equal_or_higher(hw_info_ex.m_dwFwVersionEx, 3, 8)
+        return cls.check_is_systec(hw_info_ex) and cls.check_version_is_equal_or_higher(
+            hw_info_ex.m_dwFwVersionEx, 3, 8
+        )
 
     @classmethod
     def calculate_amr(cls, is_extended, from_id, to_id, rtr_only=False, rtr_too=True):
@@ -915,8 +1002,14 @@ class UcanServer(object):
         :return: Value for AMR.
         :rtype: int
         """
-        return (((from_id ^ to_id) << 3) | (0x7 if rtr_too and not rtr_only else 0x3)) if is_extended else \
-            (((from_id ^ to_id) << 21) | (0x1FFFFF if rtr_too and not rtr_only else 0xFFFFF))
+        return (
+            (((from_id ^ to_id) << 3) | (0x7 if rtr_too and not rtr_only else 0x3))
+            if is_extended
+            else (
+                ((from_id ^ to_id) << 21)
+                | (0x1FFFFF if rtr_too and not rtr_only else 0xFFFFF)
+            )
+        )
 
     @classmethod
     def calculate_acr(cls, is_extended, from_id, to_id, rtr_only=False, rtr_too=True):
@@ -931,8 +1024,11 @@ class UcanServer(object):
         :return: Value for ACR.
         :rtype: int
         """
-        return (((from_id & to_id) << 3) | (0x04 if rtr_only else 0)) if is_extended else \
-            (((from_id & to_id) << 21) | (0x100000 if rtr_only else 0))
+        return (
+            (((from_id & to_id) << 3) | (0x04 if rtr_only else 0))
+            if is_extended
+            else (((from_id & to_id) << 21) | (0x100000 if rtr_only else 0))
+        )
 
     def _connect_control(self, event, param, arg):
         """
@@ -947,7 +1043,7 @@ class UcanServer(object):
         - CbEvent.EVENT_FATALDISCON: USB-CAN-Handle of the disconnected module
         :param arg: Additional parameter defined with :meth:`init_hardware_ex` (not used in this wrapper class).
         """
-        log.debug("Event: %s, Param: %s" % (event, param))
+        log.debug("Event: %s, Param: %s", event, param)
 
         if event == CbEvent.EVENT_FATALDISCON:
             self.fatal_disconnect_event(param)
@@ -966,7 +1062,7 @@ class UcanServer(object):
             CAN channel (:data:`Channel.CHANNEL_CH0`, :data:`Channel.CHANNEL_CH1` or :data:`Channel.CHANNEL_ANY`).
         :param arg: Additional parameter defined with :meth:`init_hardware_ex`.
         """
-        log.debug("Handle: %s, Event: %s, Channel: %s" % (handle, event, channel))
+        log.debug("Handle: %s, Event: %s, Channel: %s", handle, event, channel)
 
         if event == CbEvent.EVENT_INITHW:
             self.init_hw_event()
@@ -987,7 +1083,6 @@ class UcanServer(object):
 
         .. note:: To be overridden by subclassing.
         """
-        pass
 
     def init_can_event(self, channel):
         """
@@ -997,7 +1092,6 @@ class UcanServer(object):
 
         .. note:: To be overridden by subclassing.
         """
-        pass
 
     def can_msg_received_event(self, channel):
         """
@@ -1009,7 +1103,6 @@ class UcanServer(object):
 
         .. note:: To be overridden by subclassing.
         """
-        pass
 
     def status_event(self, channel):
         """
@@ -1021,7 +1114,6 @@ class UcanServer(object):
 
         .. note:: To be overridden by subclassing.
         """
-        pass
 
     def deinit_can_event(self, channel):
         """
@@ -1031,7 +1123,6 @@ class UcanServer(object):
 
         .. note:: To be overridden by subclassing.
         """
-        pass
 
     def deinit_hw_event(self):
         """
@@ -1039,7 +1130,6 @@ class UcanServer(object):
 
         .. note:: To be overridden by subclassing.
         """
-        pass
 
     def connect_event(self):
         """
@@ -1047,7 +1137,6 @@ class UcanServer(object):
 
         .. note:: To be overridden by subclassing.
         """
-        pass
 
     def disconnect_event(self):
         """
@@ -1055,7 +1144,6 @@ class UcanServer(object):
 
         .. note:: To be overridden by subclassing.
         """
-        pass
 
     def fatal_disconnect_event(self, device_number):
         """
@@ -1067,7 +1155,6 @@ class UcanServer(object):
 
         .. note:: To be overridden by subclassing.
         """
-        pass
 
 
 UcanServer._enum_callback_ref = EnumCallback(UcanServer._enum_callback)

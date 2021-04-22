@@ -1,9 +1,10 @@
 #!/usr/bin/env python
-# coding: utf-8
+"""
+Setup script for the `can` package.
+Learn more at https://github.com/hardbyte/python-can/
+"""
 
-"""
-python-can requires the setuptools package to be installed.
-"""
+# pylint: disable=invalid-name
 
 from __future__ import absolute_import
 
@@ -15,32 +16,23 @@ from setuptools import setup, find_packages
 
 logging.basicConfig(level=logging.WARNING)
 
-with open('can/__init__.py', 'r') as fd:
-    version = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
-                        fd.read(), re.MULTILINE).group(1)
+with open("can/__init__.py", "r") as fd:
+    version = re.search(
+        r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]', fd.read(), re.MULTILINE
+    ).group(1)
 
-with open('README.rst', 'r') as f:
+with open("README.rst", "r") as f:
     long_description = f.read()
 
 # Dependencies
 extras_require = {
-    'serial':   ['pyserial~=3.0'],
-    'neovi':    ['python-ics>=2.12']
+    "seeedstudio": ["pyserial>=3.0"],
+    "serial": ["pyserial~=3.0"],
+    "neovi": ["filelock", "python-ics>=2.12"],
+    "cantact": ["cantact>=0.0.7"],
+    "gs_usb": ["gs_usb>=0.2.1"],
+    "nixnet": ["nixnet>=0.3.1"],
 }
-
-tests_require = [
-    'mock~=2.0',
-    'pytest~=4.3',
-    'pytest-timeout~=1.3',
-    'pytest-cov~=2.6',
-    'codecov~=2.0',
-    'future',
-    'six',
-    'hypothesis'
-] + extras_require['serial']
-
-extras_require['test'] = tests_require
-
 
 setup(
     # Description
@@ -51,10 +43,9 @@ setup(
     classifiers=[
         # a list of all available ones: https://pypi.org/classifiers/
         "Programming Language :: Python",
-        "Programming Language :: Python :: 2.7",
-        "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: Implementation :: CPython",
         "Programming Language :: Python :: Implementation :: PyPy",
         "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
@@ -73,38 +64,30 @@ setup(
         "Topic :: System :: Monitoring",
         "Topic :: System :: Networking",
         "Topic :: System :: Hardware :: Hardware Drivers",
-        "Topic :: Utilities"
+        "Topic :: Utilities",
     ],
-
-    # Code
     version=version,
-    packages=find_packages(exclude=["test", "doc", "scripts", "examples"]),
+    packages=find_packages(exclude=["test*", "doc", "scripts", "examples"]),
     scripts=list(filter(isfile, (join("scripts/", f) for f in listdir("scripts/")))),
-
-    # Author
-    author="Brian Thorne",
-    author_email="brian@thorne.link",
-
-    # License
+    author="Python CAN contributors",
     license="LGPL v3",
-
-    # Package data
     package_data={
         "": ["README.rst", "CONTRIBUTORS.txt", "LICENSE.txt", "CHANGELOG.txt"],
         "doc": ["*.*"],
-        "examples": ["*.py"]
+        "examples": ["*.py"],
     },
-
     # Installation
     # see https://www.python.org/dev/peps/pep-0345/#version-specifiers
-    python_requires=">=2.7",
+    python_requires=">=3.6",
     install_requires=[
-        'wrapt~=1.10',
-        'aenum',
-        'typing;python_version<"3.5"',
-        'windows-curses;platform_system=="Windows"',
+        # Note setuptools provides pkg_resources which python-can makes use of,
+        # but we assume it is already installed.
+        # "setuptools",
+        "wrapt~=1.10",
+        'windows-curses;platform_system=="Windows" and platform_python_implementation=="CPython"',
+        "mypy_extensions>=0.4.0,<0.5.0",
+        'pywin32;platform_system=="Windows" and platform_python_implementation=="CPython"',
+        'msgpack~=1.0.0;platform_system!="Windows"',
     ],
-    setup_requires=["pytest-runner"],
     extras_require=extras_require,
-    tests_require=tests_require
 )

@@ -5,28 +5,34 @@
 This module contains various configuration for the tests.
 
 Some tests are skipped when run on a CI server because they are not
-reproducible, see #243 (https://github.com/hardbyte/python-can/issues/243).
+reproducible, see for example #243 and #940.
 """
 
 import platform
 from os import environ as environment
 
 
-# ############################## Continuos integration
+def env(name: str) -> bool:
+    return environment.get(name, "").lower() in ("yes", "true", "t", "1")
+
+
+# ############################## Continuous integration
 
 # see here for the environment variables that are set on the CI servers:
 #   - https://docs.travis-ci.com/user/environment-variables/
-#   - https://www.appveyor.com/docs/environment-variables/
+#   - https://docs.github.com/en/actions/reference/environment-variables#default-environment-variables
 
-IS_TRAVIS = environment.get('TRAVIS', '').lower() == 'true'
-IS_APPVEYOR = environment.get('APPVEYOR', '').lower() == 'true'
+IS_TRAVIS = env("TRAVIS")
+IS_GITHUB_ACTIONS = env("GITHUB_ACTIONS")
 
-IS_CI = IS_TRAVIS or IS_APPVEYOR or \
-        environment.get('CI', '').lower() == 'true' or \
-        environment.get('CONTINUOUS_INTEGRATION', '').lower() == 'true'
+IS_CI = IS_TRAVIS or IS_GITHUB_ACTIONS or env("CI") or env("CONTINUOUS_INTEGRATION")
 
-if IS_APPVEYOR and IS_TRAVIS:
-    raise EnvironmentError("IS_APPVEYOR and IS_TRAVIS cannot be both True at the same time")
+if IS_TRAVIS and IS_GITHUB_ACTIONS:
+    raise EnvironmentError(
+        f"only one of IS_TRAVIS ({IS_TRAVIS}) and IS_GITHUB_ACTIONS ({IS_GITHUB_ACTIONS}) may be True at the "
+        "same time"
+    )
+
 
 # ############################## Platforms
 
@@ -35,18 +41,22 @@ IS_WINDOWS = "windows" in _sys or ("win" in _sys and "darwin" not in _sys)
 IS_LINUX = "linux" in _sys
 IS_OSX = "darwin" in _sys
 IS_UNIX = IS_LINUX or IS_OSX
+del _sys
 
 if (IS_WINDOWS and IS_LINUX) or (IS_LINUX and IS_OSX) or (IS_WINDOWS and IS_OSX):
     raise EnvironmentError(
-        "only one of IS_WINDOWS ({}), IS_LINUX ({}) and IS_OSX ({}) ".format(IS_WINDOWS, IS_LINUX, IS_OSX) +
-        "can be True at the same time " +
-        '(platform.system() == "{}")'.format(platform.system())
+        f"only one of IS_WINDOWS ({IS_WINDOWS}), IS_LINUX ({IS_LINUX}) and IS_OSX ({IS_OSX}) "
+        f'can be True at the same time (platform.system() == "{platform.system()}")'
     )
-elif not IS_WINDOWS and not IS_LINUX and not IS_OSX:
-    raise EnvironmentError("one of IS_WINDOWS, IS_LINUX, IS_OSX has to be True")
+
+
+# ############################## Implementations
+
+IS_PYPY = platform.python_implementation() == "PyPy"
+
 
 # ############################## What tests to run
 
 TEST_CAN_FD = True
 
-TEST_INTERFACE_SOCKETCAN = IS_CI and IS_LINUX
+TEST_INTERFACE_SOCKETCAN = IS_LINUX and env("TEST_SOCKETCAN")

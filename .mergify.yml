@@ -1,0 +1,27 @@
+pull_request_rules:
+  - name: Automatic merge passing PR on up to date branch with approving CR
+    conditions:
+      - "#approved-reviews-by>=1"
+      - "#review-requested=0"
+      - "#changes-requested-reviews-by=0"
+      - "status-success=Travis CI - Pull Request"
+      - "label!=work-in-progress"
+    actions:
+      merge:
+        method: merge
+        strict: smart+fasttrack
+  - name: Request Brian to review changes on core api.
+    conditions:
+      - "-files~=^can/interfaces/$"
+      - "-closed"
+      - "author!=hardbyte"
+    actions:
+      request_reviews:
+        users:
+          - hardbyte
+
+  - name: delete head branch after merge
+    conditions:
+      - merged
+    actions:
+      delete_head_branch: {}

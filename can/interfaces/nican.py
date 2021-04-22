@@ -1,5 +1,3 @@
-# coding: utf-8
-
 """
 NI-CAN interface module.
 
@@ -23,35 +21,35 @@ from can import CanError, BusABC, Message
 
 logger = logging.getLogger(__name__)
 
-NC_SUCCESS =            0
-NC_ERR_TIMEOUT =        1
-TIMEOUT_ERROR_CODE =    -1074388991
+NC_SUCCESS = 0
+NC_ERR_TIMEOUT = 1
+TIMEOUT_ERROR_CODE = -1074388991
 
-NC_DURATION_INFINITE =  0xFFFFFFFF
+NC_DURATION_INFINITE = 0xFFFFFFFF
 
-NC_OP_START =           0x80000001
-NC_OP_STOP  =           0x80000002
-NC_OP_RESET =           0x80000003
+NC_OP_START = 0x80000001
+NC_OP_STOP = 0x80000002
+NC_OP_RESET = 0x80000003
 
-NC_FRMTYPE_REMOTE =     1
-NC_FRMTYPE_COMM_ERR =   2
+NC_FRMTYPE_REMOTE = 1
+NC_FRMTYPE_COMM_ERR = 2
 
-NC_ST_READ_AVAIL =      0x00000001
-NC_ST_WRITE_SUCCESS =   0x00000002
-NC_ST_ERROR =           0x00000010
-NC_ST_WARNING =         0x00000020
+NC_ST_READ_AVAIL = 0x00000001
+NC_ST_WRITE_SUCCESS = 0x00000002
+NC_ST_ERROR = 0x00000010
+NC_ST_WARNING = 0x00000020
 
-NC_ATTR_BAUD_RATE =     0x80000007
+NC_ATTR_BAUD_RATE = 0x80000007
 NC_ATTR_START_ON_OPEN = 0x80000006
-NC_ATTR_READ_Q_LEN =    0x80000013
-NC_ATTR_WRITE_Q_LEN =   0x80000014
-NC_ATTR_CAN_COMP_STD =  0x80010001
-NC_ATTR_CAN_MASK_STD =  0x80010002
-NC_ATTR_CAN_COMP_XTD =  0x80010003
-NC_ATTR_CAN_MASK_XTD =  0x80010004
+NC_ATTR_READ_Q_LEN = 0x80000013
+NC_ATTR_WRITE_Q_LEN = 0x80000014
+NC_ATTR_CAN_COMP_STD = 0x80010001
+NC_ATTR_CAN_MASK_STD = 0x80010002
+NC_ATTR_CAN_COMP_XTD = 0x80010003
+NC_ATTR_CAN_MASK_XTD = 0x80010004
 NC_ATTR_LOG_COMM_ERRS = 0x8001000A
 
-NC_FL_CAN_ARBID_XTD =   0x20000000
+NC_FL_CAN_ARBID_XTD = 0x20000000
 
 CanData = ctypes.c_ubyte * 8
 
@@ -65,6 +63,7 @@ class RxMessageStruct(ctypes.Structure):
         ("dlc", ctypes.c_ubyte),
         ("data", CanData),
     ]
+
 
 class TxMessageStruct(ctypes.Structure):
     _fields_ = [
@@ -98,7 +97,11 @@ if sys.platform == "win32":
         logger.error("Failed to load NI-CAN driver: %s", e)
     else:
         nican.ncConfig.argtypes = [
-            ctypes.c_char_p, ctypes.c_ulong, ctypes.c_void_p, ctypes.c_void_p]
+            ctypes.c_char_p,
+            ctypes.c_ulong,
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+        ]
         nican.ncConfig.errcheck = check_status
         nican.ncOpenObject.argtypes = [ctypes.c_char_p, ctypes.c_void_p]
         nican.ncOpenObject.errcheck = check_status
@@ -108,13 +111,17 @@ if sys.platform == "win32":
         nican.ncRead.errcheck = check_status
         nican.ncWrite.errcheck = check_status
         nican.ncWaitForState.argtypes = [
-            ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_void_p]
+            ctypes.c_ulong,
+            ctypes.c_ulong,
+            ctypes.c_ulong,
+            ctypes.c_void_p,
+        ]
         nican.ncWaitForState.errcheck = check_status
-        nican.ncStatusToString.argtypes = [
-            ctypes.c_int, ctypes.c_uint, ctypes.c_char_p]
+        nican.ncStatusToString.argtypes = [ctypes.c_int, ctypes.c_uint, ctypes.c_char_p]
 else:
     nican = None
     logger.warning("NI-CAN interface is only available on Windows systems")
+
 
 class NicanBus(BusABC):
     """
@@ -129,7 +136,9 @@ class NicanBus(BusABC):
 
     """
 
-    def __init__(self, channel, can_filters=None, bitrate=None, log_errors=True, **kwargs):
+    def __init__(
+        self, channel, can_filters=None, bitrate=None, log_errors=True, **kwargs
+    ):
         """
         :param str channel:
             Name of the object to open (e.g. 'CAN0')
@@ -150,42 +159,47 @@ class NicanBus(BusABC):
 
         """
         if nican is None:
-            raise ImportError("The NI-CAN driver could not be loaded. "
-                              "Check that you are using 32-bit Python on Windows.")
+            raise ImportError(
+                "The NI-CAN driver could not be loaded. "
+                "Check that you are using 32-bit Python on Windows."
+            )
 
         self.channel = channel
         self.channel_info = "NI-CAN: " + channel
         if not isinstance(channel, bytes):
             channel = channel.encode()
 
-        config = [
-            (NC_ATTR_START_ON_OPEN, True),
-            (NC_ATTR_LOG_COMM_ERRS, log_errors)
-        ]
+        config = [(NC_ATTR_START_ON_OPEN, True), (NC_ATTR_LOG_COMM_ERRS, log_errors)]
 
         if not can_filters:
             logger.info("Filtering has been disabled")
-            config.extend([
-                (NC_ATTR_CAN_COMP_STD, 0),
-                (NC_ATTR_CAN_MASK_STD, 0),
-                (NC_ATTR_CAN_COMP_XTD, 0),
-                (NC_ATTR_CAN_MASK_XTD, 0)
-            ])
+            config.extend(
+                [
+                    (NC_ATTR_CAN_COMP_STD, 0),
+                    (NC_ATTR_CAN_MASK_STD, 0),
+                    (NC_ATTR_CAN_COMP_XTD, 0),
+                    (NC_ATTR_CAN_MASK_XTD, 0),
+                ]
+            )
         else:
             for can_filter in can_filters:
                 can_id = can_filter["can_id"]
                 can_mask = can_filter["can_mask"]
                 logger.info("Filtering on ID 0x%X, mask 0x%X", can_id, can_mask)
                 if can_filter.get("extended"):
-                    config.extend([
-                        (NC_ATTR_CAN_COMP_XTD, can_id | NC_FL_CAN_ARBID_XTD),
-                        (NC_ATTR_CAN_MASK_XTD, can_mask)
-                    ])
+                    config.extend(
+                        [
+                            (NC_ATTR_CAN_COMP_XTD, can_id | NC_FL_CAN_ARBID_XTD),
+                            (NC_ATTR_CAN_MASK_XTD, can_mask),
+                        ]
+                    )
                 else:
-                    config.extend([
-                        (NC_ATTR_CAN_COMP_STD, can_id),
-                        (NC_ATTR_CAN_MASK_STD, can_mask),
-                    ])
+                    config.extend(
+                        [
+                            (NC_ATTR_CAN_COMP_STD, can_id),
+                            (NC_ATTR_CAN_MASK_STD, can_mask),
+                        ]
+                    )
 
         if bitrate:
             config.append((NC_ATTR_BAUD_RATE, bitrate))
@@ -193,17 +207,23 @@ class NicanBus(BusABC):
         AttrList = ctypes.c_ulong * len(config)
         attr_id_list = AttrList(*(row[0] for row in config))
         attr_value_list = AttrList(*(row[1] for row in config))
-        nican.ncConfig(channel,
-                       len(config),
-                       ctypes.byref(attr_id_list),
-                       ctypes.byref(attr_value_list))
+        nican.ncConfig(
+            channel,
+            len(config),
+            ctypes.byref(attr_id_list),
+            ctypes.byref(attr_value_list),
+        )
 
         self.handle = ctypes.c_ulong()
         nican.ncOpenObject(channel, ctypes.byref(self.handle))
 
-        super(NicanBus, self).__init__(channel=channel,
-            can_filters=can_filters, bitrate=bitrate,
-            log_errors=log_errors, **kwargs)
+        super().__init__(
+            channel=channel,
+            can_filters=can_filters,
+            bitrate=bitrate,
+            log_errors=log_errors,
+            **kwargs
+        )
 
     def _recv_internal(self, timeout):
         """
@@ -223,7 +243,8 @@ class NicanBus(BusABC):
         state = ctypes.c_ulong()
         try:
             nican.ncWaitForState(
-                self.handle, NC_ST_READ_AVAIL, timeout, ctypes.byref(state))
+                self.handle, NC_ST_READ_AVAIL, timeout, ctypes.byref(state)
+            )
         except NicanError as e:
             if e.error_code == TIMEOUT_ERROR_CODE:
                 return None, True
@@ -241,14 +262,16 @@ class NicanBus(BusABC):
         if not is_error_frame:
             arb_id &= 0x1FFFFFFF
         dlc = raw_msg.dlc
-        msg = Message(timestamp=timestamp,
-                      channel=self.channel,
-                      is_remote_frame=is_remote_frame,
-                      is_error_frame=is_error_frame,
-                      is_extended_id=is_extended,
-                      arbitration_id=arb_id,
-                      dlc=dlc,
-                      data=raw_msg.data[:dlc])
+        msg = Message(
+            timestamp=timestamp,
+            channel=self.channel,
+            is_remote_frame=is_remote_frame,
+            is_error_frame=is_error_frame,
+            is_extended_id=is_extended,
+            arbitration_id=arb_id,
+            dlc=dlc,
+            data=raw_msg.data[:dlc],
+        )
         return msg, True
 
     def send(self, msg, timeout=None):
@@ -265,20 +288,18 @@ class NicanBus(BusABC):
         arb_id = msg.arbitration_id
         if msg.is_extended_id:
             arb_id |= NC_FL_CAN_ARBID_XTD
-        raw_msg = TxMessageStruct(arb_id,
-                                  bool(msg.is_remote_frame),
-                                  msg.dlc,
-                                  CanData(*msg.data))
-        nican.ncWrite(
-            self.handle, ctypes.sizeof(raw_msg), ctypes.byref(raw_msg))
+        raw_msg = TxMessageStruct(
+            arb_id, bool(msg.is_remote_frame), msg.dlc, CanData(*msg.data)
+        )
+        nican.ncWrite(self.handle, ctypes.sizeof(raw_msg), ctypes.byref(raw_msg))
 
         # TODO:
         # ncWaitForState can not be called here if the recv() method is called
         # from a different thread, which is a very common use case.
         # Maybe it is possible to use ncCreateNotification instead but seems a
         # bit overkill at the moment.
-        #state = ctypes.c_ulong()
-        #nican.ncWaitForState(
+        # state = ctypes.c_ulong()
+        # nican.ncWaitForState(
         #    self.handle, NC_ST_WRITE_SUCCESS, int(timeout * 1000), ctypes.byref(state))
 
     def reset(self):
@@ -293,22 +314,12 @@ class NicanBus(BusABC):
         """Close object."""
         nican.ncCloseObject(self.handle)
 
-    __set_filters_has_been_called = False
-    def set_filters(self, can_filers=None):
-        """Unsupported. See note on :class:`~can.interfaces.nican.NicanBus`.
-        """
-        if self.__set_filters_has_been_called:
-            logger.warn("using filters is not supported like this, see note on NicanBus")
-        else:
-            # allow the constructor to call this without causing a warning
-            self.__set_filters_has_been_called = True
-
 
 class NicanError(CanError):
     """Error from NI-CAN driver."""
 
     def __init__(self, function, error_code, arguments):
-        super(NicanError, self).__init__()
+        super().__init__()
         #: Status code
         self.error_code = error_code
         #: Function that failed
@@ -318,4 +329,6 @@ class NicanError(CanError):
 
     def __str__(self):
         return "Function %s failed:\n%s" % (
-            self.function.__name__, get_error_message(self.error_code))
+            self.function.__name__,
+            get_error_message(self.error_code),
+        )

@@ -3,24 +3,21 @@
 
 """
 """
-
-from __future__ import absolute_import, print_function
-
-from time import sleep
+import asyncio
 import unittest
 import random
 import logging
 import tempfile
-import sqlite3
 import os
+import warnings
 from os.path import join, dirname
 
 import can
 
 from .data.example_data import generate_message
 
-channel = 'virtual_channel_0'
-can.rc['interface'] = 'virtual'
+channel = "virtual_channel_0"
+can.rc["interface"] = "virtual"
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -29,37 +26,35 @@ random.seed(13339115)
 
 
 class ListenerImportTest(unittest.TestCase):
-
     def testClassesImportable(self):
-        self.assertTrue(hasattr(can, 'Listener'))
-        self.assertTrue(hasattr(can, 'BufferedReader'))
-        self.assertTrue(hasattr(can, 'Notifier'))
-        self.assertTrue(hasattr(can, 'Logger'))
+        self.assertTrue(hasattr(can, "Listener"))
+        self.assertTrue(hasattr(can, "BufferedReader"))
+        self.assertTrue(hasattr(can, "Notifier"))
+        self.assertTrue(hasattr(can, "Logger"))
 
-        self.assertTrue(hasattr(can, 'ASCWriter'))
-        self.assertTrue(hasattr(can, 'ASCReader'))
+        self.assertTrue(hasattr(can, "ASCWriter"))
+        self.assertTrue(hasattr(can, "ASCReader"))
 
-        self.assertTrue(hasattr(can, 'BLFReader'))
-        self.assertTrue(hasattr(can, 'BLFWriter'))
+        self.assertTrue(hasattr(can, "BLFReader"))
+        self.assertTrue(hasattr(can, "BLFWriter"))
 
-        self.assertTrue(hasattr(can, 'CSVReader'))
-        self.assertTrue(hasattr(can, 'CSVWriter'))
+        self.assertTrue(hasattr(can, "CSVReader"))
+        self.assertTrue(hasattr(can, "CSVWriter"))
 
-        self.assertTrue(hasattr(can, 'CanutilsLogWriter'))
-        self.assertTrue(hasattr(can, 'CanutilsLogReader'))
+        self.assertTrue(hasattr(can, "CanutilsLogWriter"))
+        self.assertTrue(hasattr(can, "CanutilsLogReader"))
 
-        self.assertTrue(hasattr(can, 'SqliteReader'))
-        self.assertTrue(hasattr(can, 'SqliteWriter'))
+        self.assertTrue(hasattr(can, "SqliteReader"))
+        self.assertTrue(hasattr(can, "SqliteWriter"))
 
-        self.assertTrue(hasattr(can, 'Printer'))
+        self.assertTrue(hasattr(can, "Printer"))
 
-        self.assertTrue(hasattr(can, 'LogReader'))
+        self.assertTrue(hasattr(can, "LogReader"))
 
-        self.assertTrue(hasattr(can, 'MessageSync'))
+        self.assertTrue(hasattr(can, "MessageSync"))
 
 
 class BusTest(unittest.TestCase):
-
     def setUp(self):
         self.bus = can.interface.Bus()
 
@@ -68,7 +63,6 @@ class BusTest(unittest.TestCase):
 
 
 class ListenerTest(BusTest):
-
     def testBasicListenerCanBeAddedToNotifier(self):
         a_listener = can.Printer()
         notifier = can.Notifier(self.bus, [a_listener], 0.1)
@@ -97,10 +91,14 @@ class ListenerTest(BusTest):
             try:
                 if extension == ".blf":
                     delete = False
-                    file_handler = open(join(dirname(__file__), "data/logfile.blf"))
+                    file_handler = open(
+                        join(dirname(__file__), "data", "test_CanMessage.blf")
+                    )
                 else:
                     delete = True
-                    file_handler = tempfile.NamedTemporaryFile(suffix=extension, delete=False)
+                    file_handler = tempfile.NamedTemporaryFile(
+                        suffix=extension, delete=False
+                    )
 
                 with file_handler as my_file:
                     filename = my_file.name
@@ -113,18 +111,22 @@ class ListenerTest(BusTest):
         test_filetype_to_instance(".asc", can.ASCReader)
         test_filetype_to_instance(".blf", can.BLFReader)
         test_filetype_to_instance(".csv", can.CSVReader)
-        test_filetype_to_instance(".db" , can.SqliteReader)
+        test_filetype_to_instance(".db", can.SqliteReader)
         test_filetype_to_instance(".log", can.CanutilsLogReader)
 
-        # test file extensions that are not supported
-        with self.assertRaisesRegexp(NotImplementedError, ".xyz_42"):
-            test_filetype_to_instance(".xyz_42", can.Printer)
+    def testPlayerTypeResolutionUnsupportedFileTypes(self):
+        for should_fail_with in ["", ".", ".some_unknown_extention_42"]:
+            with self.assertRaises(ValueError):
+                with can.LogReader(should_fail_with):  # make sure we close it anyways
+                    pass
 
     def testLoggerTypeResolution(self):
         def test_filetype_to_instance(extension, klass):
             print("testing: {}".format(extension))
             try:
-                with tempfile.NamedTemporaryFile(suffix=extension, delete=False) as my_file:
+                with tempfile.NamedTemporaryFile(
+                    suffix=extension, delete=False
+                ) as my_file:
                     filename = my_file.name
                 with can.Logger(filename) as writer:
                     self.assertIsInstance(writer, klass)
@@ -134,16 +136,18 @@ class ListenerTest(BusTest):
         test_filetype_to_instance(".asc", can.ASCWriter)
         test_filetype_to_instance(".blf", can.BLFWriter)
         test_filetype_to_instance(".csv", can.CSVWriter)
-        test_filetype_to_instance(".db" , can.SqliteWriter)
+        test_filetype_to_instance(".db", can.SqliteWriter)
         test_filetype_to_instance(".log", can.CanutilsLogWriter)
         test_filetype_to_instance(".txt", can.Printer)
 
-        # test file extensions that should use a fallback
-        test_filetype_to_instance("", can.Printer)
-        test_filetype_to_instance(".", can.Printer)
-        test_filetype_to_instance(".some_unknown_extention_42", can.Printer)
         with can.Logger(None) as logger:
             self.assertIsInstance(logger, can.Printer)
+
+    def testLoggerTypeResolutionUnsupportedFileTypes(self):
+        for should_fail_with in ["", ".", ".some_unknown_extention_42"]:
+            with self.assertRaises(ValueError):
+                with can.Logger(should_fail_with):  # make sure we close it anyways
+                    pass
 
     def testBufferedListenerReceives(self):
         a_listener = can.BufferedReader()
@@ -154,5 +158,17 @@ class ListenerTest(BusTest):
         self.assertIsNotNone(a_listener.get_message(0.1))
 
 
-if __name__ == '__main__':
+def test_deprecated_loop_arg(recwarn):
+    warnings.simplefilter("always")
+    can.AsyncBufferedReader(loop=asyncio.get_event_loop())
+    assert len(recwarn) > 0
+    assert recwarn.pop(DeprecationWarning)
+    recwarn.clear()
+
+    # assert that no warning is shown when loop argument is not used
+    can.AsyncBufferedReader()
+    assert len(recwarn) == 0
+
+
+if __name__ == "__main__":
     unittest.main()

@@ -43,10 +43,31 @@ module, while the following parameters are optional and are interpreted by IXXAT
 * ``extended`` (default False) Allow usage of extended IDs
 
 
+Filtering
+---------
+
+The CAN filters act as an allow list in IXXAT implementation, that is if you
+supply a non-empty filter list you must explicitly state EVERY frame you want
+to receive (including RTR field).
+The can_id/mask must be specified according to IXXAT behaviour, that is
+bit 0 of can_id/mask parameters represents the RTR field in CAN frame. See IXXAT
+VCI documentation, section "Message filters" for more info.
+
+List available devices
+-----------------
+In case you have connected multiple IXXAT devices, you have to select them by using their unique hardware id.
+To get a list of all connected IXXAT you can use the function ``get_ixxat_hwids()`` as demonstrated below:
+
+    >>> from can.interfaces.ixxat import get_ixxat_hwids
+    >>> for hwid in get_ixxat_hwids(): print("Found IXXAT with hardware id '%s'." % hwid)
+    Found IXXAT with hardware id 'HW441489'.
+    Found IXXAT with hardware id 'HW107422'.
+
+
 Internals
 ---------
 
-The IXXAT :class:`~can.BusABC` object is a farly straightforward interface
+The IXXAT :class:`~can.BusABC` object is a fairly straightforward interface
 to the IXXAT VCI library. It can open a specific device ID or use the
 first one found.
 
@@ -58,10 +79,3 @@ explicitly instantiated by the caller.
 
 RX and TX FIFO sizes are configurable with ``rxFifoSize`` and ``txFifoSize``
 options, defaulting at 16 for both.
-
-The CAN filters act as a "whitelist" in IXXAT implementation, that is if you
-supply a non-empty filter list you must explicitly state EVERY frame you want
-to receive (including RTR field).
-The can_id/mask must be specified according to IXXAT behaviour, that is
-bit 0 of can_id/mask parameters represents the RTR field in CAN frame. See IXXAT
-VCI documentation, section "Message filters" for more info.

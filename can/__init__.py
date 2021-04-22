@@ -1,28 +1,24 @@
-# coding: utf-8
-
 """
-``can`` is an object-orient Controller Area Network (CAN) interface module.
+The ``can`` package provides controller area network support for
+Python developers; providing common abstractions to
+different hardware devices, and a suite of utilities for sending and receiving
+messages on a can bus.
 """
-
-from __future__ import absolute_import
 
 import logging
+from typing import Dict, Any
 
-__version__ = "4.0.0.dev0"
+__version__ = "4.0.0-dev0"
 
-log = logging.getLogger('can')
+log = logging.getLogger("can")
 
-rc = dict()
+rc: Dict[str, Any] = dict()
+
+from .listener import Listener, BufferedReader, RedirectReader, AsyncBufferedReader
 
 from .exceptions import CanError, CanBackEndError, CanInitializationError, CanOperationError, CanTimeoutError
 
-from .listener import Listener, BufferedReader, RedirectReader
-try:
-    from .listener import AsyncBufferedReader
-except ImportError:
-    pass
-
-from .io import Logger, Printer, LogReader, MessageSync
+from .io import Logger, SizedRotatingLogger, Printer, LogReader, MessageSync
 from .io import ASCWriter, ASCReader
 from .io import BLFReader, BLFWriter
 from .io import CanutilsLogReader, CanutilsLogWriter
@@ -38,10 +34,12 @@ from .notifier import Notifier
 from .interfaces import VALID_INTERFACES
 from . import interface
 from .interface import Bus, detect_available_configs
+from .bit_timing import BitTiming
 
-from .broadcastmanager import send_periodic, \
-    CyclicSendTaskABC, \
-    LimitedDurationCyclicSendTaskABC, \
-    ModifiableCyclicTaskABC, \
-    MultiRateCyclicSendTaskABC, \
-    RestartableCyclicTaskABC
+from .broadcastmanager import (
+    CyclicSendTaskABC,
+    LimitedDurationCyclicSendTaskABC,
+    ModifiableCyclicTaskABC,
+    MultiRateCyclicSendTaskABC,
+    RestartableCyclicTaskABC,
+)

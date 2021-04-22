@@ -11,7 +11,7 @@ In Code
 -------
 
 The ``can`` object exposes an ``rc`` dictionary which can be used to set
-the **interface** and **channel** before importing from ``can.interfaces``.
+the **interface** and **channel**.
 
 ::
 
@@ -19,7 +19,7 @@ the **interface** and **channel** before importing from ``can.interfaces``.
     can.rc['interface'] = 'socketcan'
     can.rc['channel'] = 'vcan0'
     can.rc['bitrate'] = 500000
-    from can.interfaces.interface import Bus
+    from can.interface import Bus
 
     bus = Bus()
 
@@ -43,9 +43,9 @@ On Linux systems the config file is searched in the following paths:
 
 On Windows systems the config file is searched in the following paths:
 
-#. ``~/can.conf``
+#. ``%USERPROFILE%/can.conf``
 #. ``can.ini`` (current working directory)
-#. ``$APPDATA/can.ini``
+#. ``%APPDATA%/can.ini``
 
 The configuration file sets the default interface and channel:
 
@@ -79,7 +79,7 @@ The configuration can also contain additional sections (or context):
 
 ::
 
-    from can.interfaces.interface import Bus
+    from can.interface import Bus
 
     hs_bus = Bus(context='HS')
     ms_bus = Bus(context='MS')
@@ -92,6 +92,13 @@ Configuration can be pulled from these environmental variables:
     * CAN_INTERFACE
     * CAN_CHANNEL
     * CAN_BITRATE
+    * CAN_CONFIG
+
+The ``CAN_CONFIG`` environment variable allows to set any bus configuration using JSON.
+
+For example:
+
+``CAN_INTERFACE=socketcan CAN_CONFIG={"receive_own_messages": true, "fd": true}``
 
 
 Interface Names
@@ -125,4 +132,8 @@ Lookup table of interface names:
 | ``"vector"``        | :doc:`interfaces/vector`            |
 +---------------------+-------------------------------------+
 | ``"virtual"``       | :doc:`interfaces/virtual`           |
++---------------------+-------------------------------------+
+| ``"canalystii"``    | :doc:`interfaces/canalystii`        |
++---------------------+-------------------------------------+
+| ``"systec"``        | :doc:`interfaces/systec`            |
 +---------------------+-------------------------------------+

@@ -1,20 +1,121 @@
+Version 4.0.0
+====
+
+(In development)
+
+
+Version 3.3.4
+====
+
+Last call for Python2 support.
+
+* #850 Fix socket.error is a deprecated alias of OSError used on Python versions lower than 3.3.
+
+Version 3.3.3
+====
+
+Backported fixes from 4.x development branch which targets Python 3.
+
+* #798 Backport caching msg.data value in neovi interface.
+* #796 Fix Vector CANlib treatment of empty app name.
+* #771 Handle empty CSV file.
+* #741 ASCII reader can now handle FD frames.
+* #740 Exclude test packages from distribution.
+* #713 RTR crash fix in canutils log reader parsing RTR frames.
+* #701 Skip J1939 messages in ASC Reader.
+* #690 Exposes a configuration option to allow the CAN message player to send error frames
+  (and sets the default to not send error frames).
+* #638 Fixes the semantics provided by periodic tasks in SocketCAN interface.
+* #628 Avoid padding CAN_FD_MESSAGE_64 objects to 4 bytes.
+* #617 Fixes the broken CANalyst-II interface.
+* #605 Socketcan BCM status fix.
+
+
+Version 3.3.2
+====
+
+Minor bug fix release addressing issue in PCAN RTR.
+
+Version 3.3.1
+====
+
+Minor fix to setup.py to only require pytest-runner when necessary.
+
+Version 3.3.0
+====
+
+* Adding CAN FD 64 frame support to blf reader
+* Updates to installation instructions
+* Clean up bits generator in PCAN interface #588
+* Minor fix to use latest tools when building wheels on travis.
+
+Version 3.2.1
+====
+
+* CAN FD 64 frame support to blf reader
+* Minor fix to use latest tools when building wheels on travis.
+* Updates links in documentation.
+
 Version 3.2.0
 ====
 
-Support has been removed for Python 3.4
 
 Major features
 --------------
 
-- FD support added for Pcan in PR #537
+* FD support added for Pcan by @bmeisels with input from
+  @markuspi, @christiansandberg & @felixdivo in PR #537
+* This is the last version of python-can which will support Python 2.7
+  and Python 3.5. Support has been removed for Python 3.4 in this
+  release in PR #532
 
 Other notable changes
 ---------------------
 
-- This release should automatically be published to PyPi by travis. #535
-- BusState is now an enum. #533
-- A guide has been added for new io formats. #548
-- Finish moving from nose to pytest #550
+* #533 BusState is now an enum.
+* #535 This release should automatically be published to PyPi by travis.
+* #577 Travis-ci now uses stages.
+* #548 A guide has been added for new io formats.
+* #550 Finish moving from nose to pytest.
+* #558 Fix installation on Windows.
+* #561 Tests for MessageSync added.
+
+General fixes, cleanup and docs changes can be found on the GitHub milestone
+https://github.com/hardbyte/python-can/milestone/7?closed=1
+
+Pulls: #522, #526, #527, #536, #540, #546, #547, #548, #533, #559, #569, #571, #572, #575
+
+Backend Specific Changes
+------------------------
+
+pcan
+~~~~
+
+* FD
+
+slcan
+~~~~
+
+* ability to set custom can speed instead of using predefined speed values. #553
+
+socketcan
+~~~~
+
+* Bug fix to properly support 32bit systems. #573
+
+usb2can
+~~~~
+
+* slightly better error handling
+* multiple serial devices can be found
+* support for the `_detect_available_configs()` API
+
+Pulls #511, #535
+
+vector
+~~~~
+
+* handle `app_name`. #525
 
 Version 3.1.1
 ====
@@ -31,20 +132,20 @@ Two new interfaces this release:
 Other notable changes
 ---------------------
 
-- #477 The kvaser interface now supports bus statistics via a custom bus method.
-- #434 neovi now supports receiving own messages
-- #490 Adding option to override the neovi library name
-- #488 Allow simultaneous access to IXXAT cards
-- #447 Improvements to serial interface:
+* #477 The kvaser interface now supports bus statistics via a custom bus method.
+* #434 neovi now supports receiving own messages
+* #490 Adding option to override the neovi library name
+* #488 Allow simultaneous access to IXXAT cards
+* #447 Improvements to serial interface:
   * to allow receiving partial messages
   * to fix issue with  DLC of remote frames
   * addition of unit tests
-- #497 Small API changes to `Message` and added unit tests
-- #471 Fix CAN FD issue in kvaser interface
-- #462 Fix `Notifier` issue with asyncio
-- #481 Fix PCAN support on OSX
-- #455 Fix to `Message` initializer
-- Small bugfixes and improvements
+* #497 Small API changes to `Message` and added unit tests
+* #471 Fix CAN FD issue in kvaser interface
+* #462 Fix `Notifier` issue with asyncio
+* #481 Fix PCAN support on OSX
+* #455 Fix to `Message` initializer
+* Small bugfixes and improvements
 
 Version 3.1.0
 ====

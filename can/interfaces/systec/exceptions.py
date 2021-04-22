@@ -1,33 +1,34 @@
-# coding: utf-8
-
 from .constants import ReturnCode
 from can import CanError
 
 
 class UcanException(CanError):
     """ Base class for USB can errors. """
+
     def __init__(self, result, func, arguments):
         self.result = result.value
         self.func = func
         self.arguments = arguments
-        self.return_msgs = NotImplemented
+        self.return_msgs = {}
+        super().__init__()
 
     def __str__(self):
-        return "Function %s returned %d: %s" % \
-               (self.func.__name__, self.result, self.return_msgs.get(self.result, "unknown"))
+        message = self.return_msgs.get(self.result, "unknown")
+        return f"Function {self.func.__name__} returned {self.result}: {message}"
 
 
 class UcanError(UcanException):
     """ Exception class for errors from USB-CAN-library. """
+
     def __init__(self, result, func, arguments):
-        super(UcanError, self).__init__(result, func, arguments)
+        super().__init__(result, func, arguments)
         self.return_msgs = {
             ReturnCode.ERR_RESOURCE: "could not created a resource (memory, handle, ...)",
             ReturnCode.ERR_MAXMODULES: "the maximum number of opened modules is reached",
             ReturnCode.ERR_HWINUSE: "the specified module is already in use",
             ReturnCode.ERR_ILLVERSION: "the software versions of the module and library are incompatible",
             ReturnCode.ERR_ILLHW: "the module with the specified device number is not connected "
-                                          "(or used by an other application)",
+            "(or used by an other application)",
             ReturnCode.ERR_ILLHANDLE: "wrong USB-CAN-Handle handed over to the function",
             ReturnCode.ERR_ILLPARAM: "wrong parameter handed over to the function",
             ReturnCode.ERR_BUSY: "instruction can not be processed at this time",
@@ -46,8 +47,9 @@ class UcanError(UcanException):
 
 class UcanCmdError(UcanException):
     """ Exception class for errors from firmware in USB-CANmodul."""
+
     def __init__(self, result, func, arguments):
-        super(UcanCmdError, self).__init__(result, func, arguments)
+        super().__init__(result, func, arguments)
         self.return_msgs = {
             ReturnCode.ERRCMD_NOTEQU: "the received response does not match to the transmitted command",
             ReturnCode.ERRCMD_REGTST: "no access to the CAN controller",
@@ -57,20 +59,21 @@ class UcanCmdError(UcanException):
             ReturnCode.ERRCMD_RESERVED2: "reserved",
             ReturnCode.ERRCMD_RESERVED3: "reserved",
             ReturnCode.ERRCMD_ILLBDR: "illegal baud rate value specified in BTR0/BTR1 for systec "
-                                              "USB-CANmoduls",
+            "USB-CANmoduls",
             ReturnCode.ERRCMD_NOTINIT: "CAN channel is not initialized",
             ReturnCode.ERRCMD_ALREADYINIT: "CAN channel is already initialized",
             ReturnCode.ERRCMD_ILLSUBCMD: "illegal sub-command specified",
             ReturnCode.ERRCMD_ILLIDX: "illegal index specified (e.g. index for cyclic CAN messages)",
             ReturnCode.ERRCMD_RUNNING: "cyclic CAN message(s) can not be defined because transmission of "
-                                               "cyclic CAN messages is already running",
+            "cyclic CAN messages is already running",
         }
 
 
 class UcanWarning(UcanException):
     """ Exception class for warnings, the function has been executed anyway. """
+
     def __init__(self, result, func, arguments):
-        super(UcanWarning, self).__init__(result, func, arguments)
+        super().__init__(result, func, arguments)
         self.return_msgs = {
             ReturnCode.WARN_NODATA: "no CAN messages received",
             ReturnCode.WARN_SYS_RXOVERRUN: "overrun in receive buffer of the kernel driver",
@@ -78,12 +81,12 @@ class UcanWarning(UcanException):
             ReturnCode.WARN_RESERVED1: "reserved",
             ReturnCode.WARN_RESERVED2: "reserved",
             ReturnCode.WARN_FW_TXOVERRUN: "overrun in transmit buffer of the firmware (but this CAN message "
-                                                  "was successfully stored in buffer of the ibrary)",
+            "was successfully stored in buffer of the ibrary)",
             ReturnCode.WARN_FW_RXOVERRUN: "overrun in receive buffer of the firmware (but this CAN message "
-                                                  "was successfully read)",
+            "was successfully read)",
             ReturnCode.WARN_FW_TXMSGLOST: "reserved",
             ReturnCode.WARN_NULL_PTR: "pointer is NULL",
             ReturnCode.WARN_TXLIMIT: "not all CAN messages could be stored to the transmit buffer in "
-                                             "USB-CAN-library",
-            ReturnCode.WARN_BUSY: "reserved"
+            "USB-CAN-library",
+            ReturnCode.WARN_BUSY: "reserved",
         }

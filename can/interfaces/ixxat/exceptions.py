@@ -1,5 +1,3 @@
-# coding: utf-8
-
 """
 Ctypes wrapper module for IXXAT Virtual CAN Interface V3 on win32 systems
 
@@ -9,21 +7,32 @@ Copyright (C) 2019 Marcel Kanter <marcel.kanter@googlemail.com>
 
 from can import CanError, CanBackEndError, CanInitializationError, CanOperationError, CanTimeoutError
 
+__all__ = [
+    "VCITimeout",
+    "VCIError",
+    "VCIRxQueueEmptyError",
+    "VCIBusOffError",
+    "VCIDeviceNotFoundError",
+]
 
 class VCITimeout(CanTimeoutError):
     """ Wraps the VCI_E_TIMEOUT error """
-    pass
 
 
 class VCIError(CanOperationError):
     """ Try to display errors that occur within the wrapped C library nicely. """
-    pass
 
 
 class VCIRxQueueEmptyError(VCIError):
     """ Wraps the VCI_E_RXQUEUE_EMPTY error """
+
     def __init__(self):
-        super(VCIRxQueueEmptyError, self).__init__("Receive queue is empty")
+        super().__init__("Receive queue is empty")
+
+
+class VCIBusOffError(VCIError):
+    def __init__(self):
+        super().__init__("Controller is in BUSOFF state")
 
 
 class VCIDeviceNotFoundError(CanInitializationError):

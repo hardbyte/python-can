@@ -1,5 +1,3 @@
-# coding: utf-8
-
 """
 Ctypes wrapper module for Vector CAN Interface on win32/win64 systems.
 
@@ -10,17 +8,22 @@ Authors: Julien Grave <grave.jul@gmail.com>, Christian Sandberg
 # ==============================
 import ctypes
 import logging
-import sys
 import time
+import os
+from typing import List, Optional, Tuple
+
+import typing
 
 try:
     # Try builtin Python 3 Windows API
     from _winapi import WaitForSingleObject, INFINITE
+
     HAS_EVENTS = True
 except ImportError:
     try:
         # Try pywin32 package
         from win32event import WaitForSingleObject, INFINITE
+
         HAS_EVENTS = True
     except ImportError:
         # Use polling instead
@@ -28,30 +31,64 @@ except ImportError:
 
 # Import Modules
 # ==============
-from can import BusABC, Message, CanError
-from can.util import len2dlc, dlc2len
+from can import BusABC, Message
+from can.util import (
+    len2dlc,
+    dlc2len,
+    deprecated_args_alias,
+    time_perfcounter_correlation,
+)
 from .exceptions import VectorError
 
 # Define Module Logger
 # ====================
 LOG = logging.getLogger(__name__)
 
+# Import Vector API module
+# ========================
+from . import xldefine, xlclass
+
 # Import safely Vector API module for Travis tests
-vxlapi = None
+xldriver = None
 try:
-    from . import vxlapi
+    from . import xldriver
 except Exception as exc:
-    LOG.warning('Could not import vxlapi: %s', exc)
+    LOG.warning("Could not import vxlapi: %s", exc)
 
 
 class VectorBus(BusABC):
     """The CAN Bus implemented for the Vector interface."""
 
-    def __init__(self, channel, can_filters=None, poll_interval=0.01,
-                 receive_own_messages=False,
-                 bitrate=None, rx_queue_size=2**14, app_name="CANalyzer",
-                 serial=None, fd=False, data_bitrate=None, sjwAbr=2, tseg1Abr=6,
-                 tseg2Abr=3, sjwDbr=2, tseg1Dbr=6, tseg2Dbr=3, **kwargs):
+    deprecated_args = dict(
+        sjwAbr="sjw_abr",
+        tseg1Abr="tseg1_abr",
+        tseg2Abr="tseg2_abr",
+        sjwDbr="sjw_dbr",
+        tseg1Dbr="tseg1_dbr",
+        tseg2Dbr="tseg2_dbr",
+    )
+
+    @deprecated_args_alias(**deprecated_args)
+    def __init__(
+        self,
+        channel,
+        can_filters=None,
+        poll_interval=0.01,
+        receive_own_messages=False,
+        bitrate=None,
+        rx_queue_size=2 ** 14,
+        app_name="CANalyzer",
+        serial=None,
+        fd=False,
+        data_bitrate=None,
+        sjw_abr=2,
+        tseg1_abr=6,
+        tseg2_abr=3,
+        sjw_dbr=2,
+        tseg1_dbr=6,
+        tseg2_dbr=3,
+        **kwargs,
+    ):
         """
         :param list channel:
             The channel indexes to create this bus with.
@@ -70,15 +107,33 @@ class VectorBus(BusABC):
         :param int serial:
             Serial number of the hardware to be used.
             If set, the channel parameter refers to the channels ONLY on the specified hardware.
-            If set, the app_name is unused.
+            If set, the app_name does not have to be previously defined in Vector Hardware Config.
         :param bool fd:
             If CAN-FD frames should be supported.
         :param int data_bitrate:
             Which bitrate to use for data phase in CAN FD.
             Defaults to arbitration bitrate.
+        :param int sjw_abr:
+            Bus timing value sample jump width (arbitration).
+        :param int tseg1_abr:
+            Bus timing value tseg1 (arbitration)
+        :param int tseg2_abr:
+            Bus timing value tseg2 (arbitration)
+        :param int sjw_dbr:
+            Bus timing value sample jump width (data)
+        :param int tseg1_dbr:
+            Bus timing value tseg1 (data)
+        :param int tseg2_dbr:
+            Bus timing value tseg2 (data)
         """
-        if vxlapi is None:
+        if os.name != "nt" and not kwargs.get("_testing", False):
+            raise OSError(
+                f'The Vector interface is only supported on Windows, but you are running "{os.name}"'
+            )
+
+        if xldriver is None:
             raise ImportError("The Vector API has not been loaded")
+
         self.poll_interval = poll_interval
         if isinstance(channel, (list, tuple)):
             self.channels = channel
@@ -86,10 +141,12 @@ class VectorBus(BusABC):
             self.channels = [channel]
         else:
             # Assume comma separated string of channels
-            self.channels = [int(ch.strip()) for ch in channel.split(',')]
-        self._app_name = app_name.encode() if app_name is not None else ''
-        self.channel_info = 'Application %s: %s' % (
-            app_name, ', '.join('CAN %d' % (ch + 1) for ch in self.channels))
+            self.channels = [int(ch.strip()) for ch in channel.split(",")]
+        self._app_name = app_name.encode() if app_name is not None else b""
+        self.channel_info = "Application %s: %s" % (
+            app_name,
+            ", ".join("CAN %d" % (ch + 1) for ch in self.channels),
+        )
 
         if serial is not None:
             app_name = None
@@ -99,16 +156,20 @@ class VectorBus(BusABC):
                 if channel_config.serialNumber == serial:
                     if channel_config.hwChannel in self.channels:
                         channel_index.append(channel_config.channelIndex)
-            if len(channel_index) > 0:
+            if channel_index:
                 if len(channel_index) != len(self.channels):
-                    LOG.info("At least one defined channel wasn't found on the specified hardware.")
+                    LOG.info(
+                        "At least one defined channel wasn't found on the specified hardware."
+                    )
                 self.channels = channel_index
             else:
                 # Is there any better way to raise the error?
-                raise Exception("None of the configured channels could be found on the specified hardware.")
+                raise Exception(
+                    "None of the configured channels could be found on the specified hardware."
+                )
 
-        vxlapi.xlOpenDriver()
-        self.port_handle = vxlapi.XLportHandle(vxlapi.XL_INVALID_PORTHANDLE)
+        xldriver.xlOpenDriver()
+        self.port_handle = xlclass.XLportHandle(xldefine.XL_INVALID_PORTHANDLE)
         self.mask = 0
         self.fd = fd
         # Get channels masks
@@ -118,22 +179,21 @@ class VectorBus(BusABC):
         for channel in self.channels:
             if app_name:
                 # Get global channel index from application channel
-                hw_type = ctypes.c_uint(0)
-                hw_index = ctypes.c_uint(0)
-                hw_channel = ctypes.c_uint(0)
-                vxlapi.xlGetApplConfig(self._app_name, channel, hw_type, hw_index,
-                                       hw_channel, vxlapi.XL_BUS_TYPE_CAN)
-                LOG.debug('Channel index %d found', channel)
-                idx = vxlapi.xlGetChannelIndex(hw_type.value, hw_index.value,
-                                               hw_channel.value)
+                hw_type, hw_index, hw_channel = self.get_application_config(
+                    app_name, channel
+                )
+                LOG.debug("Channel index %d found", channel)
+                idx = xldriver.xlGetChannelIndex(hw_type, hw_index, hw_channel)
                 if idx < 0:
                     # Undocumented behavior! See issue #353.
                     # If hardware is unavailable, this function returns -1.
                     # Raise an exception as if the driver
                     # would have signalled XL_ERR_HW_NOT_PRESENT.
-                    raise VectorError(vxlapi.XL_ERR_HW_NOT_PRESENT,
-                                      "XL_ERR_HW_NOT_PRESENT",
-                                      "xlGetChannelIndex")
+                    raise VectorError(
+                        xldefine.XL_Status.XL_ERR_HW_NOT_PRESENT,
+                        xldefine.XL_Status.XL_ERR_HW_NOT_PRESENT.name,
+                        "xlGetChannelIndex",
+                    )
             else:
                 # Channel already given as global channel
                 idx = channel
@@ -142,86 +202,144 @@ class VectorBus(BusABC):
             self.index_to_channel[idx] = channel
             self.mask |= mask
 
-        permission_mask = vxlapi.XLaccess()
+        permission_mask = xlclass.XLaccess()
         # Set mask to request channel init permission if needed
         if bitrate or fd:
             permission_mask.value = self.mask
         if fd:
-            vxlapi.xlOpenPort(self.port_handle, self._app_name, self.mask,
-                              permission_mask, rx_queue_size,
-                              vxlapi.XL_INTERFACE_VERSION_V4, vxlapi.XL_BUS_TYPE_CAN)
+            xldriver.xlOpenPort(
+                self.port_handle,
+                self._app_name,
+                self.mask,
+                permission_mask,
+                rx_queue_size,
+                xldefine.XL_InterfaceVersion.XL_INTERFACE_VERSION_V4,
+                xldefine.XL_BusTypes.XL_BUS_TYPE_CAN,
+            )
         else:
-            vxlapi.xlOpenPort(self.port_handle, self._app_name, self.mask,
-                              permission_mask, rx_queue_size,
-                              vxlapi.XL_INTERFACE_VERSION, vxlapi.XL_BUS_TYPE_CAN)
+            xldriver.xlOpenPort(
+                self.port_handle,
+                self._app_name,
+                self.mask,
+                permission_mask,
+                rx_queue_size,
+                xldefine.XL_InterfaceVersion.XL_INTERFACE_VERSION,
+                xldefine.XL_BusTypes.XL_BUS_TYPE_CAN,
+            )
         LOG.debug(
-            'Open Port: PortHandle: %d, PermissionMask: 0x%X',
-            self.port_handle.value, permission_mask.value)
+            "Open Port: PortHandle: %d, PermissionMask: 0x%X",
+            self.port_handle.value,
+            permission_mask.value,
+        )
 
         if permission_mask.value == self.mask:
             if fd:
-                self.canFdConf = vxlapi.XLcanFdConf()
+                self.canFdConf = xlclass.XLcanFdConf()
                 if bitrate:
-                    self.canFdConf.arbitrationBitRate = ctypes.c_uint(bitrate)
+                    self.canFdConf.arbitrationBitRate = int(bitrate)
                 else:
-                    self.canFdConf.arbitrationBitRate = ctypes.c_uint(500000)
-                self.canFdConf.sjwAbr = ctypes.c_uint(sjwAbr)
-                self.canFdConf.tseg1Abr = ctypes.c_uint(tseg1Abr)
-                self.canFdConf.tseg2Abr = ctypes.c_uint(tseg2Abr)
+                    self.canFdConf.arbitrationBitRate = 500000
+                self.canFdConf.sjwAbr = int(sjw_abr)
+                self.canFdConf.tseg1Abr = int(tseg1_abr)
+                self.canFdConf.tseg2Abr = int(tseg2_abr)
                 if data_bitrate:
-                    self.canFdConf.dataBitRate = ctypes.c_uint(data_bitrate)
+                    self.canFdConf.dataBitRate = int(data_bitrate)
                 else:
                     self.canFdConf.dataBitRate = self.canFdConf.arbitrationBitRate
-                self.canFdConf.sjwDbr = ctypes.c_uint(sjwDbr)
-                self.canFdConf.tseg1Dbr = ctypes.c_uint(tseg1Dbr)
-                self.canFdConf.tseg2Dbr = ctypes.c_uint(tseg2Dbr)
-                
-                vxlapi.xlCanFdSetConfiguration(self.port_handle, self.mask, self.canFdConf)
-                LOG.info('SetFdConfig.: ABaudr.=%u, DBaudr.=%u', self.canFdConf.arbitrationBitRate, self.canFdConf.dataBitRate)
-                LOG.info('SetFdConfig.: sjwAbr=%u, tseg1Abr=%u, tseg2Abr=%u', self.canFdConf.sjwAbr, self.canFdConf.tseg1Abr, self.canFdConf.tseg2Abr)
-                LOG.info('SetFdConfig.: sjwDbr=%u, tseg1Dbr=%u, tseg2Dbr=%u', self.canFdConf.sjwDbr, self.canFdConf.tseg1Dbr, self.canFdConf.tseg2Dbr)
+                self.canFdConf.sjwDbr = int(sjw_dbr)
+                self.canFdConf.tseg1Dbr = int(tseg1_dbr)
+                self.canFdConf.tseg2Dbr = int(tseg2_dbr)
+
+                xldriver.xlCanFdSetConfiguration(
+                    self.port_handle, self.mask, self.canFdConf
+                )
+                LOG.info(
+                    "SetFdConfig.: ABaudr.=%u, DBaudr.=%u",
+                    self.canFdConf.arbitrationBitRate,
+                    self.canFdConf.dataBitRate,
+                )
+                LOG.info(
+                    "SetFdConfig.: sjwAbr=%u, tseg1Abr=%u, tseg2Abr=%u",
+                    self.canFdConf.sjwAbr,
+                    self.canFdConf.tseg1Abr,
+                    self.canFdConf.tseg2Abr,
+                )
+                LOG.info(
+                    "SetFdConfig.: sjwDbr=%u, tseg1Dbr=%u, tseg2Dbr=%u",
+                    self.canFdConf.sjwDbr,
+                    self.canFdConf.tseg1Dbr,
+                    self.canFdConf.tseg2Dbr,
+                )
             else:
                 if bitrate:
-                    vxlapi.xlCanSetChannelBitrate(self.port_handle, permission_mask, bitrate)
-                    LOG.info('SetChannelBitrate: baudr.=%u',bitrate)
+                    xldriver.xlCanSetChannelBitrate(
+                        self.port_handle, permission_mask, bitrate
+                    )
+                    LOG.info("SetChannelBitrate: baudr.=%u", bitrate)
         else:
-            LOG.info('No init access!')
+            LOG.info("No init access!")
 
         # Enable/disable TX receipts
         tx_receipts = 1 if receive_own_messages else 0
-        vxlapi.xlCanSetChannelMode(self.port_handle, self.mask, tx_receipts, 0)
+        xldriver.xlCanSetChannelMode(self.port_handle, self.mask, tx_receipts, 0)
 
         if HAS_EVENTS:
-            self.event_handle = vxlapi.XLhandle()
-            vxlapi.xlSetNotification(self.port_handle, self.event_handle, 1)
+            self.event_handle = xlclass.XLhandle()
+            xldriver.xlSetNotification(self.port_handle, self.event_handle, 1)
         else:
-            LOG.info('Install pywin32 to avoid polling')
+            LOG.info("Install pywin32 to avoid polling")
 
         try:
-            vxlapi.xlActivateChannel(self.port_handle, self.mask,
-                                     vxlapi.XL_BUS_TYPE_CAN, 0)
+            xldriver.xlActivateChannel(
+                self.port_handle, self.mask, xldefine.XL_BusTypes.XL_BUS_TYPE_CAN, 0
+            )
         except VectorError:
             self.shutdown()
             raise
 
         # Calculate time offset for absolute timestamps
-        offset = vxlapi.XLuint64()
-        vxlapi.xlGetSyncTime(self.port_handle, offset)
-        self._time_offset = time.time() - offset.value * 1e-9
+        offset = xlclass.XLuint64()
+        try:
+            if time.get_clock_info("time").resolution > 1e-5:
+                ts, perfcounter = time_perfcounter_correlation()
+                try:
+                    xldriver.xlGetSyncTime(self.port_handle, offset)
+                except VectorError:
+                    xldriver.xlGetChannelTime(self.port_handle, self.mask, offset)
+                current_perfcounter = time.perf_counter()
+                now = ts + (current_perfcounter - perfcounter)
+                self._time_offset = now - offset.value * 1e-9
+            else:
+                try:
+                    xldriver.xlGetSyncTime(self.port_handle, offset)
+                except VectorError:
+                    xldriver.xlGetChannelTime(self.port_handle, self.mask, offset)
+                self._time_offset = time.time() - offset.value * 1e-9
+
+        except VectorError:
+            self._time_offset = 0.0
 
         self._is_filtered = False
-        super(VectorBus, self).__init__(channel=channel, can_filters=can_filters, **kwargs)
+        super().__init__(channel=channel, can_filters=can_filters, **kwargs)
 
     def _apply_filters(self, filters):
         if filters:
             # Only up to one filter per ID type allowed
-            if len(filters) == 1 or (len(filters) == 2 and
-                    filters[0].get("extended") != filters[1].get("extended")):
+            if len(filters) == 1 or (
+                len(filters) == 2
+                and filters[0].get("extended") != filters[1].get("extended")
+            ):
                 try:
                     for can_filter in filters:
-                        vxlapi.xlCanSetChannelAcceptance(self.port_handle, self.mask,
-                            can_filter["can_id"], can_filter["can_mask"],
-                            vxlapi.XL_CAN_EXT if can_filter.get("extended") else vxlapi.XL_CAN_STD)
+                        xldriver.xlCanSetChannelAcceptance(
+                            self.port_handle,
+                            self.mask,
+                            can_filter["can_id"],
+                            can_filter["can_mask"],
+                            xldefine.XL_AcceptanceFilter.XL_CAN_EXT
+                            if can_filter.get("extended")
+                            else xldefine.XL_AcceptanceFilter.XL_CAN_STD,
+                        )
                 except VectorError as exc:
                     LOG.warning("Could not set filters: %s", exc)
                     # go to fallback
@@ -235,79 +353,49 @@ class VectorBus(BusABC):
         # fallback: reset filters
         self._is_filtered = False
         try:
-            vxlapi.xlCanSetChannelAcceptance(self.port_handle, self.mask, 0x0, 0x0, vxlapi.XL_CAN_EXT)
-            vxlapi.xlCanSetChannelAcceptance(self.port_handle, self.mask, 0x0, 0x0, vxlapi.XL_CAN_STD)
+            xldriver.xlCanSetChannelAcceptance(
+                self.port_handle,
+                self.mask,
+                0x0,
+                0x0,
+                xldefine.XL_AcceptanceFilter.XL_CAN_EXT,
+            )
+            xldriver.xlCanSetChannelAcceptance(
+                self.port_handle,
+                self.mask,
+                0x0,
+                0x0,
+                xldefine.XL_AcceptanceFilter.XL_CAN_STD,
+            )
         except VectorError as exc:
             LOG.warning("Could not reset filters: %s", exc)
 
-    def _recv_internal(self, timeout):
+    def _recv_internal(
+        self, timeout: Optional[float]
+    ) -> Tuple[Optional[Message], bool]:
         end_time = time.time() + timeout if timeout is not None else None
 
-        if self.fd:
-            event = vxlapi.XLcanRxEvent()
-        else:
-            event = vxlapi.XLevent()
-            event_count = ctypes.c_uint()
-
         while True:
-            if self.fd:
-                try:
-                    vxlapi.xlCanReceive(self.port_handle, event)
-                except VectorError as exc:
-                    if exc.error_code != vxlapi.XL_ERR_QUEUE_IS_EMPTY:
-                        raise
+            try:
+                if self.fd:
+                    msg = self._recv_canfd()
                 else:
-                    if event.tag == vxlapi.XL_CAN_EV_TAG_RX_OK or event.tag == vxlapi.XL_CAN_EV_TAG_TX_OK:
-                        msg_id = event.tagData.canRxOkMsg.canId
-                        dlc = dlc2len(event.tagData.canRxOkMsg.dlc)
-                        flags = event.tagData.canRxOkMsg.msgFlags
-                        timestamp = event.timeStamp * 1e-9
-                        channel = self.index_to_channel.get(event.chanIndex)
-                        msg = Message(
-                            timestamp=timestamp + self._time_offset,
-                            arbitration_id=msg_id & 0x1FFFFFFF,
-                            is_extended_id=bool(msg_id & vxlapi.XL_CAN_EXT_MSG_ID),
-                            is_remote_frame=bool(flags & vxlapi.XL_CAN_RXMSG_FLAG_RTR),
-                            is_error_frame=bool(flags & vxlapi.XL_CAN_RXMSG_FLAG_EF),
-                            is_fd=bool(flags & vxlapi.XL_CAN_RXMSG_FLAG_EDL),
-                            error_state_indicator=bool(flags & vxlapi.XL_CAN_RXMSG_FLAG_ESI),
-                            bitrate_switch=bool(flags & vxlapi.XL_CAN_RXMSG_FLAG_BRS),
-                            dlc=dlc,
-                            data=event.tagData.canRxOkMsg.data[:dlc],
-                            channel=channel)
-                        return msg, self._is_filtered
-            else:
-                event_count.value = 1
-                try:
-                    vxlapi.xlReceive(self.port_handle, event_count, event)
-                except VectorError as exc:
-                    if exc.error_code != vxlapi.XL_ERR_QUEUE_IS_EMPTY:
-                        raise
-                else:
-                    if event.tag == vxlapi.XL_RECEIVE_MSG:
-                        msg_id = event.tagData.msg.id
-                        dlc = event.tagData.msg.dlc
-                        flags = event.tagData.msg.flags
-                        timestamp = event.timeStamp * 1e-9
-                        channel = self.index_to_channel.get(event.chanIndex)
-                        msg = Message(
-                            timestamp=timestamp + self._time_offset,
-                            arbitration_id=msg_id & 0x1FFFFFFF,
-                            is_extended_id=bool(msg_id & vxlapi.XL_CAN_EXT_MSG_ID),
-                            is_remote_frame=bool(flags & vxlapi.XL_CAN_MSG_FLAG_REMOTE_FRAME),
-                            is_error_frame=bool(flags & vxlapi.XL_CAN_MSG_FLAG_ERROR_FRAME),
-                            is_fd=False,
-                            dlc=dlc,
-                            data=event.tagData.msg.data[:dlc],
-                            channel=channel)
-                        return msg, self._is_filtered
+                    msg = self._recv_can()
 
+            except VectorError as exc:
+                if exc.error_code != xldefine.XL_Status.XL_ERR_QUEUE_IS_EMPTY:
+                    raise
+            else:
+                if msg:
+                    return msg, self._is_filtered
+
+            # if no message was received, wait or return on timeout
             if end_time is not None and time.time() > end_time:
                 return None, self._is_filtered
 
             if HAS_EVENTS:
                 # Wait for receive event to occur
-                if timeout is None:
+                if end_time is None:
                     time_left_ms = INFINITE
                 else:
                     time_left = end_time - time.time()
@@ -317,92 +405,394 @@ class VectorBus(BusABC):
                 # Wait a short time until we try again
                 time.sleep(self.poll_interval)
 
-    def send(self, msg, timeout=None):
-        msg_id = msg.arbitration_id
+    def _recv_canfd(self) -> Optional[Message]:
+        xl_can_rx_event = xlclass.XLcanRxEvent()
+        xldriver.xlCanReceive(self.port_handle, xl_can_rx_event)
 
+        if xl_can_rx_event.tag == xldefine.XL_CANFD_RX_EventTags.XL_CAN_EV_TAG_RX_OK:
+            is_rx = True
+            data_struct = xl_can_rx_event.tagData.canRxOkMsg
+        elif xl_can_rx_event.tag == xldefine.XL_CANFD_RX_EventTags.XL_CAN_EV_TAG_TX_OK:
+            is_rx = False
+            data_struct = xl_can_rx_event.tagData.canTxOkMsg
+        else:
+            self.handle_canfd_event(xl_can_rx_event)
+            return
+
+        msg_id = data_struct.canId
+        dlc = dlc2len(data_struct.dlc)
+        flags = data_struct.msgFlags
+        timestamp = xl_can_rx_event.timeStamp * 1e-9
+        channel = self.index_to_channel.get(xl_can_rx_event.chanIndex)
+
+        msg = Message(
+            timestamp=timestamp + self._time_offset,
+            arbitration_id=msg_id & 0x1FFFFFFF,
+            is_extended_id=bool(
+                msg_id & xldefine.XL_MessageFlagsExtended.XL_CAN_EXT_MSG_ID
+            ),
+            is_remote_frame=bool(
+                flags & xldefine.XL_CANFD_RX_MessageFlags.XL_CAN_RXMSG_FLAG_RTR
+            ),
+            is_error_frame=bool(
+                flags & xldefine.XL_CANFD_RX_MessageFlags.XL_CAN_RXMSG_FLAG_EF
+            ),
+            is_fd=bool(flags & xldefine.XL_CANFD_RX_MessageFlags.XL_CAN_RXMSG_FLAG_EDL),
+            bitrate_switch=bool(
+                flags & xldefine.XL_CANFD_RX_MessageFlags.XL_CAN_RXMSG_FLAG_BRS
+            ),
+            error_state_indicator=bool(
+                flags & xldefine.XL_CANFD_RX_MessageFlags.XL_CAN_RXMSG_FLAG_ESI
+            ),
+            is_rx=is_rx,
+            channel=channel,
+            dlc=dlc,
+            data=data_struct.data[:dlc],
+        )
+        return msg
+
+    def _recv_can(self) -> Optional[Message]:
+        xl_event = xlclass.XLevent()
+        event_count = ctypes.c_uint(1)
+        xldriver.xlReceive(self.port_handle, event_count, xl_event)
+
+        if xl_event.tag != xldefine.XL_EventTags.XL_RECEIVE_MSG:
+            self.handle_can_event(xl_event)
+            return
+
+        msg_id = xl_event.tagData.msg.id
+        dlc = xl_event.tagData.msg.dlc
+        flags = xl_event.tagData.msg.flags
+        timestamp = xl_event.timeStamp * 1e-9
+        channel = self.index_to_channel.get(xl_event.chanIndex)
+
+        msg = Message(
+            timestamp=timestamp + self._time_offset,
+            arbitration_id=msg_id & 0x1FFFFFFF,
+            is_extended_id=bool(
+                msg_id & xldefine.XL_MessageFlagsExtended.XL_CAN_EXT_MSG_ID
+            ),
+            is_remote_frame=bool(
+                flags & xldefine.XL_MessageFlags.XL_CAN_MSG_FLAG_REMOTE_FRAME
+            ),
+            is_error_frame=bool(
+                flags & xldefine.XL_MessageFlags.XL_CAN_MSG_FLAG_ERROR_FRAME
+            ),
+            is_rx=not bool(
+                flags & xldefine.XL_MessageFlags.XL_CAN_MSG_FLAG_TX_COMPLETED
+            ),
+            is_fd=False,
+            dlc=dlc,
+            data=xl_event.tagData.msg.data[:dlc],
+            channel=channel,
+        )
+        return msg
+
+    def handle_can_event(self, event: xlclass.XLevent) -> None:
+        """Handle non-message CAN events.
+
+        Method is called by :meth:`~can.interfaces.vector.VectorBus._recv_internal`
+        when `event.tag` is not `XL_RECEIVE_MSG`. Subclasses can implement this method.
+
+        :param event: XLevent that could have a `XL_CHIP_STATE`, `XL_TIMER` or `XL_SYNC_PULSE` tag.
+        :return: None
+        """
+        pass
+
+    def handle_canfd_event(self, event: xlclass.XLcanRxEvent) -> None:
+        """Handle non-message CAN FD events.
+
+        Method is called by :meth:`~can.interfaces.vector.VectorBus._recv_internal`
+        when `event.tag` is not `XL_CAN_EV_TAG_RX_OK` or `XL_CAN_EV_TAG_TX_OK`.
+        Subclasses can implement this method.
+
+        :param event: `XLcanRxEvent` that could have a `XL_CAN_EV_TAG_RX_ERROR`, `XL_CAN_EV_TAG_TX_ERROR`,
+            `XL_TIMER` or `XL_CAN_EV_TAG_CHIP_STATE` tag.
+        :return: None
+        """
+        pass
+
+    def send(self, msg: Message, timeout: typing.Optional[float] = None):
+        self._send_sequence([msg])
+
+    def _send_sequence(self, msgs: typing.Sequence[Message]) -> int:
+        """Send messages and return number of successful transmissions."""
+        if self.fd:
+            return self._send_can_fd_msg_sequence(msgs)
+        else:
+            return self._send_can_msg_sequence(msgs)
+
+    def _get_tx_channel_mask(self, msgs: typing.Sequence[Message]) -> int:
+        if len(msgs) == 1:
+            return self.channel_masks.get(msgs[0].channel, self.mask)
+        else:
+            return self.mask
+
+    def _send_can_msg_sequence(self, msgs: typing.Sequence[Message]) -> int:
+        """Send CAN messages and return number of successful transmissions."""
+        mask = self._get_tx_channel_mask(msgs)
+        message_count = ctypes.c_uint(len(msgs))
+
+        xl_event_array = (xlclass.XLevent * message_count.value)(
+            *map(self._build_xl_event, msgs)
+        )
+
+        xldriver.xlCanTransmit(self.port_handle, mask, message_count, xl_event_array)
+        return message_count.value
+
+    @staticmethod
+    def _build_xl_event(msg: Message) -> xlclass.XLevent:
+        msg_id = msg.arbitration_id
         if msg.is_extended_id:
-            msg_id |= vxlapi.XL_CAN_EXT_MSG_ID
+            msg_id |= xldefine.XL_MessageFlagsExtended.XL_CAN_EXT_MSG_ID
 
         flags = 0
+        if msg.is_remote_frame:
+            flags |= xldefine.XL_MessageFlags.XL_CAN_MSG_FLAG_REMOTE_FRAME
 
-        # If channel has been specified, try to send only to that one.
-        # Otherwise send to all channels
-        mask = self.channel_masks.get(msg.channel, self.mask)
+        xl_event = xlclass.XLevent()
+        xl_event.tag = xldefine.XL_EventTags.XL_TRANSMIT_MSG
+        xl_event.tagData.msg.id = msg_id
+        xl_event.tagData.msg.dlc = msg.dlc
+        xl_event.tagData.msg.flags = flags
+        xl_event.tagData.msg.data = tuple(msg.data)
 
-        if self.fd:
-            if msg.is_fd:
-                flags |= vxlapi.XL_CAN_TXMSG_FLAG_EDL
-            if msg.bitrate_switch:
-                flags |= vxlapi.XL_CAN_TXMSG_FLAG_BRS
-            if msg.is_remote_frame:
-                flags |= vxlapi.XL_CAN_TXMSG_FLAG_RTR
-                        
-            message_count = 1
-            MsgCntSent = ctypes.c_uint(1)
-            
-            XLcanTxEvent = vxlapi.XLcanTxEvent()
-            XLcanTxEvent.tag = vxlapi.XL_CAN_EV_TAG_TX_MSG
-            XLcanTxEvent.transId = 0xffff
-            
-            XLcanTxEvent.tagData.canMsg.canId = msg_id
-            XLcanTxEvent.tagData.canMsg.msgFlags = flags
-            XLcanTxEvent.tagData.canMsg.dlc = len2dlc(msg.dlc)
-            for idx, value in enumerate(msg.data):
-                XLcanTxEvent.tagData.canMsg.data[idx] = value
-            vxlapi.xlCanTransmitEx(self.port_handle, mask, message_count, MsgCntSent, XLcanTxEvent)
+        return xl_event
 
-        else:
-            if msg.is_remote_frame:
-                flags |= vxlapi.XL_CAN_MSG_FLAG_REMOTE_FRAME
+    def _send_can_fd_msg_sequence(self, msgs: typing.Sequence[Message]) -> int:
+        """Send CAN FD messages and return number of successful transmissions."""
+        mask = self._get_tx_channel_mask(msgs)
+        message_count = len(msgs)
 
-            message_count = ctypes.c_uint(1)
-            
-            xl_event = vxlapi.XLevent()
-            xl_event.tag = vxlapi.XL_TRANSMIT_MSG
-            
-            xl_event.tagData.msg.id = msg_id
-            xl_event.tagData.msg.dlc = msg.dlc
-            xl_event.tagData.msg.flags = flags
-            for idx, value in enumerate(msg.data):
-                xl_event.tagData.msg.data[idx] = value
-            vxlapi.xlCanTransmit(self.port_handle, mask, message_count, xl_event)
+        xl_can_tx_event_array = (xlclass.XLcanTxEvent * message_count)(
+            *map(self._build_xl_can_tx_event, msgs)
+        )
 
-        
+        msg_count_sent = ctypes.c_uint(0)
+        xldriver.xlCanTransmitEx(
+            self.port_handle, mask, message_count, msg_count_sent, xl_can_tx_event_array
+        )
+        return msg_count_sent.value
+
+    @staticmethod
+    def _build_xl_can_tx_event(msg: Message) -> xlclass.XLcanTxEvent:
+        msg_id = msg.arbitration_id
+        if msg.is_extended_id:
+            msg_id |= xldefine.XL_MessageFlagsExtended.XL_CAN_EXT_MSG_ID
+
+        flags = 0
+        if msg.is_fd:
+            flags |= xldefine.XL_CANFD_TX_MessageFlags.XL_CAN_TXMSG_FLAG_EDL
+        if msg.bitrate_switch:
+            flags |= xldefine.XL_CANFD_TX_MessageFlags.XL_CAN_TXMSG_FLAG_BRS
+        if msg.is_remote_frame:
+            flags |= xldefine.XL_CANFD_TX_MessageFlags.XL_CAN_TXMSG_FLAG_RTR
+
+        xl_can_tx_event = xlclass.XLcanTxEvent()
+        xl_can_tx_event.tag = xldefine.XL_CANFD_TX_EventTags.XL_CAN_EV_TAG_TX_MSG
+        xl_can_tx_event.transId = 0xFFFF
+
+        xl_can_tx_event.tagData.canMsg.canId = msg_id
+        xl_can_tx_event.tagData.canMsg.msgFlags = flags
+        xl_can_tx_event.tagData.canMsg.dlc = len2dlc(msg.dlc)
+        xl_can_tx_event.tagData.canMsg.data = tuple(msg.data)
+
+        return xl_can_tx_event
+
     def flush_tx_buffer(self):
-        vxlapi.xlCanFlushTransmitQueue(self.port_handle, self.mask)
+        xldriver.xlCanFlushTransmitQueue(self.port_handle, self.mask)
 
     def shutdown(self):
-        vxlapi.xlDeactivateChannel(self.port_handle, self.mask)
-        vxlapi.xlClosePort(self.port_handle)
-        vxlapi.xlCloseDriver()
-        
+        xldriver.xlDeactivateChannel(self.port_handle, self.mask)
+        xldriver.xlClosePort(self.port_handle)
+        xldriver.xlCloseDriver()
+
     def reset(self):
-        vxlapi.xlDeactivateChannel(self.port_handle, self.mask)
-        vxlapi.xlActivateChannel(self.port_handle, self.mask,
-                                     vxlapi.XL_BUS_TYPE_CAN, 0)
+        xldriver.xlDeactivateChannel(self.port_handle, self.mask)
+        xldriver.xlActivateChannel(
+            self.port_handle, self.mask, xldefine.XL_BusTypes.XL_BUS_TYPE_CAN, 0
+        )
 
     @staticmethod
     def _detect_available_configs():
         configs = []
         channel_configs = get_channel_configs()
-        LOG.info('Found %d channels', len(channel_configs))
+        LOG.info("Found %d channels", len(channel_configs))
         for channel_config in channel_configs:
-            LOG.info('Channel index %d: %s',
-                     channel_config.channelIndex,
-                     channel_config.name.decode('ascii'))
-            configs.append({'interface': 'vector',
-                            'app_name': None,
-                            'channel': channel_config.channelIndex})
+            if (
+                not channel_config.channelBusCapabilities
+                & xldefine.XL_BusCapabilities.XL_BUS_ACTIVE_CAP_CAN
+            ):
+                continue
+            LOG.info(
+                "Channel index %d: %s", channel_config.channelIndex, channel_config.name
+            )
+            configs.append(
+                {
+                    # data for use in VectorBus.__init__():
+                    "interface": "vector",
+                    "channel": channel_config.hwChannel,
+                    "serial": channel_config.serialNumber,
+                    # data for use in VectorBus.set_application_config():
+                    "hw_type": channel_config.hwType,
+                    "hw_index": channel_config.hwIndex,
+                    "hw_channel": channel_config.hwChannel,
+                    # additional information:
+                    "supports_fd": bool(
+                        channel_config.channelCapabilities
+                        & xldefine.XL_ChannelCapabilities.XL_CHANNEL_FLAG_CANFD_ISO_SUPPORT
+                    ),
+                    "vector_channel_config": channel_config,
+                }
+            )
         return configs
 
-def get_channel_configs():
-    if vxlapi is None:
+    @staticmethod
+    def popup_vector_hw_configuration(wait_for_finish: int = 0) -> None:
+        """Open vector hardware configuration window.
+
+        :param int wait_for_finish:
+            Time to wait for user input in milliseconds.
+        """
+        xldriver.xlPopupHwConfig(ctypes.c_char_p(), ctypes.c_uint(wait_for_finish))
+
+    @staticmethod
+    def get_application_config(
+        app_name: str, app_channel: int
+    ) -> Tuple[xldefine.XL_HardwareType, int, int]:
+        """Retrieve information for an application in Vector Hardware Configuration.
+
+        :param app_name:
+            The name of the application.
+        :param app_channel:
+            The channel of the application.
+        :return:
+            Returns a tuple of the hardware type, the hardware index and the
+            hardware channel.
+        :raises VectorError:
+            Raises a VectorError when the application name does not exist in
+            Vector Hardware Configuration.
+        """
+        hw_type = ctypes.c_uint()
+        hw_index = ctypes.c_uint()
+        hw_channel = ctypes.c_uint()
+
+        xldriver.xlGetApplConfig(
+            app_name.encode(),
+            app_channel,
+            hw_type,
+            hw_index,
+            hw_channel,
+            xldefine.XL_BusTypes.XL_BUS_TYPE_CAN,
+        )
+        return xldefine.XL_HardwareType(hw_type.value), hw_index.value, hw_channel.value
+
+    @staticmethod
+    def set_application_config(
+        app_name: str,
+        app_channel: int,
+        hw_type: xldefine.XL_HardwareType,
+        hw_index: int,
+        hw_channel: int,
+        **kwargs,
+    ) -> None:
+        """Modify the application settings in Vector Hardware Configuration.
+
+        This method can also be used with a channel config dictionary::
+
+            import can
+            from can.interfaces.vector import VectorBus
+
+            configs = can.detect_available_configs(interfaces=['vector'])
+            cfg = configs[0]
+            VectorBus.set_application_config(app_name="MyApplication", app_channel=0, **cfg)
+
+        :param app_name:
+            The name of the application. Creates a new application if it does
+            not exist yet.
+        :param app_channel:
+            The channel of the application.
+        :param hw_type:
+            The hardware type of the interface.
+            E.g XL_HardwareType.XL_HWTYPE_VIRTUAL
+        :param hw_index:
+            The index of the interface if multiple interface with the same
+            hardware type are present.
+        :param hw_channel:
+            The channel index of the interface.
+        """
+        xldriver.xlSetApplConfig(
+            app_name.encode(),
+            app_channel,
+            hw_type,
+            hw_index,
+            hw_channel,
+            xldefine.XL_BusTypes.XL_BUS_TYPE_CAN,
+        )
+
+    def set_timer_rate(self, timer_rate_ms: int) -> None:
+        """Set the cyclic event rate of the port.
+
+        Once set, the port will generate a cyclic event with the tag XL_EventTags.XL_TIMER.
+        This timer can be used to keep an application alive. See XL Driver Library Description
+        for more information
+
+        :param timer_rate_ms:
+            The timer rate in ms. The minimal timer rate is 1ms, a value of 0 deactivates
+            the timer events.
+        """
+        timer_rate_10us = timer_rate_ms * 100
+        xldriver.xlSetTimerRate(self.port_handle, timer_rate_10us)
+
+
+class VectorChannelConfig(typing.NamedTuple):
+    name: str
+    hwType: xldefine.XL_HardwareType
+    hwIndex: int
+    hwChannel: int
+    channelIndex: int
+    channelMask: int
+    channelCapabilities: xldefine.XL_ChannelCapabilities
+    channelBusCapabilities: xldefine.XL_BusCapabilities
+    isOnBus: bool
+    connectedBusType: xldefine.XL_BusTypes
+    serialNumber: int
+    articleNumber: int
+    transceiverName: str
+
+
+def get_channel_configs() -> List[VectorChannelConfig]:
+    if xldriver is None:
         return []
-    driver_config = vxlapi.XLdriverConfig()
+    driver_config = xlclass.XLdriverConfig()
     try:
-        vxlapi.xlOpenDriver()
-        vxlapi.xlGetDriverConfig(driver_config)
-        vxlapi.xlCloseDriver()
-    except:
+        xldriver.xlOpenDriver()
+        xldriver.xlGetDriverConfig(driver_config)
+        xldriver.xlCloseDriver()
+    except VectorError:
         pass
-    return [driver_config.channel[i] for i in range(driver_config.channelCount)]
+
+    channel_list: List[VectorChannelConfig] = []
+    for i in range(driver_config.channelCount):
+        xlcc: xlclass.XLchannelConfig = driver_config.channel[i]
+        vcc = VectorChannelConfig(
+            name=xlcc.name.decode(),
+            hwType=xldefine.XL_HardwareType(xlcc.hwType),
+            hwIndex=xlcc.hwIndex,
+            hwChannel=xlcc.hwChannel,
+            channelIndex=xlcc.channelIndex,
+            channelMask=xlcc.channelMask,
+            channelCapabilities=xldefine.XL_ChannelCapabilities(
+                xlcc.channelCapabilities
+            ),
+            channelBusCapabilities=xldefine.XL_BusCapabilities(
+                xlcc.channelBusCapabilities
+            ),
+            isOnBus=bool(xlcc.isOnBus),
+            connectedBusType=xldefine.XL_BusTypes(xlcc.connectedBusType),
+            serialNumber=xlcc.serialNumber,
+            articleNumber=xlcc.articleNumber,
+            transceiverName=xlcc.transceiverName.decode(),
+        )
+        channel_list.append(vcc)
+    return channel_list
