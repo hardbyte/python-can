@@ -5,7 +5,13 @@ Copyright (C) 2016 Giuseppe Corbelli <giuseppe.corbelli@weightpack.com>
 Copyright (C) 2019 Marcel Kanter <marcel.kanter@googlemail.com>
 """
 
-from can import CanError, CanBackEndError, CanInitializationError, CanOperationError, CanTimeoutError
+from can import (
+    CanError,
+    CanBackEndError,
+    CanInitializationError,
+    CanOperationError,
+    CanTimeoutError,
+)
 
 __all__ = [
     "VCITimeout",
@@ -14,6 +20,7 @@ __all__ = [
     "VCIBusOffError",
     "VCIDeviceNotFoundError",
 ]
+
 
 class VCITimeout(CanTimeoutError):
     """ Wraps the VCI_E_TIMEOUT error """

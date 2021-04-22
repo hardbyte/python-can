@@ -16,7 +16,13 @@ rc: Dict[str, Any] = dict()
 
 from .listener import Listener, BufferedReader, RedirectReader, AsyncBufferedReader
 
-from .exceptions import CanError, CanBackEndError, CanInitializationError, CanOperationError, CanTimeoutError
+from .exceptions import (
+    CanError,
+    CanBackEndError,
+    CanInitializationError,
+    CanOperationError,
+    CanTimeoutError,
+)
 
 from .io import Logger, SizedRotatingLogger, Printer, LogReader, MessageSync
 from .io import ASCWriter, ASCReader

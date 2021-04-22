@@ -114,7 +114,7 @@ def __check_status(result, function, arguments):
         # Real return value is an unsigned long
         result = ctypes.c_ulong(result).value
 
-    #print(hex(result), function)
+    # print(hex(result), function)
 
     if result == constants.VCI_E_TIMEOUT:
         raise VCITimeout("Function {} timed out".format(function._name))
@@ -443,13 +443,13 @@ class IXXATBus(BusABC):
 
         if bitrate not in self.CHANNEL_BITRATES[0]:
             raise ValueError("Invalid bitrate {}".format(bitrate))
-        
+
         if rxFifoSize <= 0:
             raise ValueError("rxFifoSize must be > 0")
-        
+
         if txFifoSize <= 0:
             raise ValueError("txFifoSize must be > 0")
-        
+
         if channel < 0:
             raise ValueError("channel number must be >= 0")
 
@@ -514,11 +514,11 @@ class IXXATBus(BusABC):
 
         try:
             _canlib.canChannelOpen(
-            self._device_handle,
-            channel,
-            constants.FALSE,
-            ctypes.byref(self._channel_handle),
-        )
+                self._device_handle,
+                channel,
+                constants.FALSE,
+                ctypes.byref(self._channel_handle),
+            )
         except:
             raise CanInitializationError("Could not open and initialize channel.")
 
@@ -710,7 +710,7 @@ class IXXATBus(BusABC):
     def send(self, msg, timeout=None):
         """
         Sends a message on the bus. The interface may buffer the message.
-        
+
         :param can.Message msg:
             The message to send.
         :param float timeout:
