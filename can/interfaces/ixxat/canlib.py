@@ -13,6 +13,7 @@ import ctypes
 import functools
 import logging
 import sys
+from typing import Optional
 
 from can import BusABC, Message
 from can.exceptions import *
@@ -113,8 +114,6 @@ def __check_status(result, function, arguments):
     if isinstance(result, int):
         # Real return value is an unsigned long
         result = ctypes.c_ulong(result).value
-
-    # print(hex(result), function)
 
     if result == constants.VCI_E_TIMEOUT:
         raise VCITimeout("Function {} timed out".format(function._name))
@@ -459,6 +458,7 @@ class IXXATBus(BusABC):
         self._channel_handle = HANDLE()
         self._channel_capabilities = structures.CANCAPABILITIES()
         self._message = structures.CANMSG()
+        self._payload = (ctypes.c_byte * 8)()
 
         # Search for supplied device
         if UniqueHardwareId is None:
@@ -707,13 +707,13 @@ class IXXATBus(BusABC):
 
         return rx_msg, True
 
-    def send(self, msg, timeout=None):
+    def send(self, msg: Message, timeout: Optional[float] = None) -> None:
         """
         Sends a message on the bus. The interface may buffer the message.
 
-        :param can.Message msg:
+        :param msg:
             The message to send.
-        :param float timeout:
+        :param timeout:
             Timeout after some time.
         :raise:
             :class:CanTimeoutError
