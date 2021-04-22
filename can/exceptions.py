@@ -1,12 +1,20 @@
 """
-Exception classes.
+There are several specific :class:`Exception` classes to allow user
+code to react to specific scenarios related to CAN busses::
+
+    Exception (Python standard library)
+     +-- ...
+     +-- CanError (python-can)
+         +-- CanBackendError
+         +-- CanInitializationError
+         +-- CanOperationError
+         +-- CanTimeoutError
+
 """
 
 
 class CanError(Exception):
     """Base class for all can related exceptions."""
-
-    pass
 
 
 class CanBackEndError(CanError):
@@ -14,8 +22,6 @@ class CanBackEndError(CanError):
     Examples:
     - A call to a library function results in an unexpected return value
     """
-
-    pass
 
 
 class CanInitializationError(CanError):
@@ -25,16 +31,10 @@ class CanInitializationError(CanError):
     - Try to use an invalid setting, which is ok by value, but not ok for the interface
     """
 
-    pass
-
 
 class CanOperationError(CanError):
     """Indicates an error while in operation."""
 
-    pass
-
 
 class CanTimeoutError(CanError):
     """Indicates a timeout of an operation."""
-
-    pass

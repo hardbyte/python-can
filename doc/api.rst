@@ -41,10 +41,6 @@ The Notifier object is used as a message distributor for a bus. Notifier creates
 Errors
 ------
 
-| CanError
-|     CanBackendError
-|     CanInitializationError
-|     CanOperationError
-|     CanTimeoutError
-
 .. automodule:: can.exceptions
+    :members:
+    :show-inheritance:
