@@ -500,8 +500,8 @@ class IXXATBus(BusABC):
                 ctypes.byref(self._device_info.VciObjectId),
                 ctypes.byref(self._device_handle),
             )
-        except:
-            raise CanInitializationError("Could not open device.")
+        except Exception as exception:
+            raise CanInitializationError(f"Could not open device: {exception}")
 
         log.info("Using unique HW ID %s", self._device_info.UniqueHardwareId.AsChar)
 
@@ -519,8 +519,8 @@ class IXXATBus(BusABC):
                 constants.FALSE,
                 ctypes.byref(self._channel_handle),
             )
-        except:
-            raise CanInitializationError("Could not open and initialize channel.")
+        except Exception as exception:
+            raise CanInitializationError(f"Could not open and initialize channel: {exception}")
 
         # Signal TX/RX events when at least one frame has been handled
         _canlib.canChannelInitialize(self._channel_handle, rxFifoSize, 1, txFifoSize, 1)

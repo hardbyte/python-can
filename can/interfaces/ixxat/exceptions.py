@@ -6,8 +6,6 @@ Copyright (C) 2019 Marcel Kanter <marcel.kanter@googlemail.com>
 """
 
 from can import (
-    CanError,
-    CanBackEndError,
     CanInitializationError,
     CanOperationError,
     CanTimeoutError,

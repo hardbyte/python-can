@@ -52,7 +52,7 @@ class CanOperationError(CanError):
 
 
 class CanTimeoutError(CanError, TimeoutError):
-    """Indicates a timeout of an operation.
+    """Indicates the timeout of an operation.
 
     Example scenarios:
       - Some message could not be sent after the timeout elapsed
