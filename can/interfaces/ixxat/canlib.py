@@ -520,7 +520,9 @@ class IXXATBus(BusABC):
                 ctypes.byref(self._channel_handle),
             )
         except Exception as exception:
-            raise CanInitializationError(f"Could not open and initialize channel: {exception}")
+            raise CanInitializationError(
+                f"Could not open and initialize channel: {exception}"
+            )
 
         # Signal TX/RX events when at least one frame has been handled
         _canlib.canChannelInitialize(self._channel_handle, rxFifoSize, 1, txFifoSize, 1)
