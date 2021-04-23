@@ -79,10 +79,8 @@ jobs:
         - pylint --rcfile=.pylintrc-wip can/**.py
         - pylint --rcfile=.pylintrc setup.py
         - pylint --rcfile=.pylintrc doc.conf
-        # check the scripts folder
-        - find scripts -type f -name "*.py" | xargs pylint --rcfile=.pylintrc
-        # check the examples
-        - find examples -type f -name "*.py" | xargs pylint --rcfile=.pylintrc-wip
+        - pylint --rcfile=.pylintrc scripts/**.py
+        - pylint --rcfile=.pylintrc examples/**.py
         # -------------
         # mypy checking:
         - mypy
