@@ -53,6 +53,7 @@ class ASCReader(BaseIOHandler):
         self.base = base
         self._converted_base = self._check_base(base)
         self.date = None
+        # TODO - what is this used for? The ASC Writer only prints `absolute`
         self.timestamps_format = None
         self.internal_events_logged = None
 
@@ -72,6 +73,14 @@ class ASCReader(BaseIOHandler):
                 self.timestamps_format = timestamp_format
             elif lower_case.endswith("internal events logged"):
                 self.internal_events_logged = not lower_case.startswith("no")
+            # grab absolute timestamp
+            elif lower_case.startswith("begin triggerblock"):
+                try:
+                    _, _, start_time = lower_case.split(None, 2)
+                    start_time = datetime.strptime(start_time, "%a %b %m %I:%M:%S.%f %p %Y").timestamp()
+                except ValueError:
+                    start_time = 0.0
+                self.start_time = start_time
                 # Currently the last line in the header which is parsed
                 break
             else:
@@ -183,23 +192,13 @@ class ASCReader(BaseIOHandler):
 
         for line in self.file:
             temp = line.strip()
-            
-            #check for timestamp
-            if "begin triggerblock" in temp.lower():
-                try:
-                    _, _, start_time = temp.split(None, 2)
-                    start_time = datetime.strptime(start_time, "%a %b %m %I:%M:%S.%f %p %Y").timestamp()
-                except ValueError:
-                    start_time = 0.0
-                continue
-
             if not temp or not temp[0].isdigit():
                 # Could be a comment
                 continue
             msg_kwargs = {}
             try:
                 timestamp, channel, rest_of_message = temp.split(None, 2)
-                timestamp = float(timestamp)
+                timestamp = float(timestamp) + self.start_time
                 msg_kwargs["timestamp"] = timestamp
                 if channel == "CANFD":
                     msg_kwargs["is_fd"] = True
