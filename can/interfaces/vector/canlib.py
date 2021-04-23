@@ -516,9 +516,7 @@ class VectorBus(BusABC):
         self._send_sequence([msg])
 
     def change_bitrate(self, bitrate: int) -> None:
-        xldriver.xlCanSetChannelBitrate(
-            self.port_handle, self.mask, bitrate
-        )
+        xldriver.xlCanSetChannelBitrate(self.port_handle, self.mask, bitrate)
         LOG.info("SetChannelBitrate: baudr.=%u", bitrate)
 
     def _send_sequence(self, msgs: typing.Sequence[Message]) -> int:
