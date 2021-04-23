@@ -31,14 +31,15 @@ class ASCReader(BaseIOHandler):
     """
     Iterator of CAN messages from a ASC logging file. Meta data (comments,
     bus statistics, J1939 Transport Protocol messages) is ignored.
-
-    TODO: turn relative timestamps back to absolute form
     """
+
+    FORMAT_START_OF_FILE_DATE = "%a %b %d %I:%M:%S.%f %p %Y"
 
     def __init__(
         self,
         file: Union[typechecking.FileLike, typechecking.StringPathLike],
         base: str = "hex",
+        relative_timestamp: bool = True,
     ) -> None:
         """
         :param file: a path-like object or as file-like object to read from
@@ -47,6 +48,9 @@ class ASCReader(BaseIOHandler):
         :param base: Select the base(hex or dec) of id and data.
                      If the header of the asc file contains base information,
                      this value will be overwritten. Default "hex".
+        :param relative_timestamp: Select whether the timestamps are
+                     `relative` (starting at 0.0) or `absolute` (starting at
+                     the system time). Default `True = relative`.
         """
         super().__init__(file, mode="r")
 
@@ -54,7 +58,9 @@ class ASCReader(BaseIOHandler):
             raise ValueError("The given file cannot be None")
         self.base = base
         self._converted_base = self._check_base(base)
+        self.relative_timestamp = relative_timestamp
         self.date = None
+        # TODO - what is this used for? The ASC Writer only prints `absolute`
         self.timestamps_format = None
         self.internal_events_logged = None
 
@@ -74,6 +80,22 @@ class ASCReader(BaseIOHandler):
                 self.timestamps_format = timestamp_format
             elif lower_case.endswith("internal events logged"):
                 self.internal_events_logged = not lower_case.startswith("no")
+            elif lower_case.startswith("// version"):
+                # the test files include `// version 9.0.0` - not sure what this is
+                continue
+            # grab absolute timestamp
+            elif lower_case.startswith("begin triggerblock"):
+                try:
+                    _, _, start_time = lower_case.split(None, 2)
+                    start_time = datetime.strptime(
+                        start_time, self.FORMAT_START_OF_FILE_DATE
+                    ).timestamp()
+                except ValueError:
+                    start_time = 0.0
+                if self.relative_timestamp:
+                    self.start_time = 0.0
+                else:
+                    self.start_time = start_time
                 # Currently the last line in the header which is parsed
                 break
             else:
@@ -191,7 +213,7 @@ class ASCReader(BaseIOHandler):
             msg_kwargs = {}
             try:
                 timestamp, channel, rest_of_message = temp.split(None, 2)
-                timestamp = float(timestamp)
+                timestamp = float(timestamp) + self.start_time
                 msg_kwargs["timestamp"] = timestamp
                 if channel == "CANFD":
                     msg_kwargs["is_fd"] = True
