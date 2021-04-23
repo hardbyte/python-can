@@ -77,7 +77,9 @@ class ASCReader(BaseIOHandler):
             elif lower_case.startswith("begin triggerblock"):
                 try:
                     _, _, start_time = lower_case.split(None, 2)
-                    start_time = datetime.strptime(start_time, "%a %b %m %I:%M:%S.%f %p %Y").timestamp()
+                    start_time = datetime.strptime(
+                        start_time, "%a %b %m %I:%M:%S.%f %p %Y"
+                    ).timestamp()
                 except ValueError:
                     start_time = 0.0
                 self.start_time = start_time
