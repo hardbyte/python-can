@@ -314,6 +314,19 @@ class BusABC(metaclass=ABCMeta):
             if msg is not None:
                 yield msg
 
+    @abstractmethod
+    def change_bitrate(self, bitrate: int) -> None:
+        """Changes the bitrate of the underlying bus.
+
+        Override this method to enable runtime bitrate changes.
+
+        :param int bitrate: the new bitrate to set.
+
+        :raises can.CanError:
+            if the message could not be sent
+        """
+        raise NotImplementedError("Device not capable of runtime bitrate change")
+
     @property
     def filters(self) -> Optional[can.typechecking.CanFilters]:
         """
