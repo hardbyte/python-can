@@ -139,7 +139,18 @@ disable=print-statement,
         deprecated-sys-function,
         exception-escape,
         comprehension-escape,
-        abstract-class-instantiated  # needed when instantiating can.Bus
+        abstract-class-instantiated,  # needed when instantiating can.Bus
+        wrong-import-position,
+        wrong-import-order,
+        missing-module-docstring,
+        missing-class-docstring,
+        missing-function-docstring,
+        too-many-arguments,
+        invalid-name,
+        abstract-method,
+        too-few-public-methods,
+        no-else-raise
+
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
