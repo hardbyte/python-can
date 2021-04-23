@@ -19,23 +19,20 @@ class SoftwareTestCase(unittest.TestCase):
             bus = can.Bus(interface="ixxat", channel=0)
             bus.shutdown()
         except ImportError:
-            raise (unittest.SkipTest())
-
-    def tearDown(self):
-        pass
+            raise unittest.SkipTest("not available on this platform")
 
     def test_bus_creation(self):
         # channel must be >= 0
         with self.assertRaises(ValueError):
-            bus = can.Bus(interface="ixxat", channel=-1)
+            can.Bus(interface="ixxat", channel=-1)
 
         # rxFifoSize must be > 0
         with self.assertRaises(ValueError):
-            bus = can.Bus(interface="ixxat", channel=0, rxFifoSize=0)
+            can.Bus(interface="ixxat", channel=0, rxFifoSize=0)
 
         # txFifoSize must be > 0
         with self.assertRaises(ValueError):
-            bus = can.Bus(interface="ixxat", channel=0, txFifoSize=0)
+            can.Bus(interface="ixxat", channel=0, txFifoSize=0)
 
 
 class HardwareTestCase(unittest.TestCase):
@@ -48,22 +45,17 @@ class HardwareTestCase(unittest.TestCase):
             bus = can.Bus(interface="ixxat", channel=0)
             bus.shutdown()
         except ImportError:
-            raise (unittest.SkipTest())
-
-    def tearDown(self):
-        pass
+            raise unittest.SkipTest("not available on this platform")
 
     def test_bus_creation(self):
         # non-existent channel -> use arbitrary high value
         with self.assertRaises(can.CanInitializationError):
-            bus = can.Bus(interface="ixxat", channel=0xFFFF)
+            can.Bus(interface="ixxat", channel=0xFFFF)
 
     def test_send_after_shutdown(self):
-        bus = can.Bus(interface="ixxat", channel=0)
-        msg = can.Message(arbitration_id=0x3FF, dlc=0)
-        bus.shutdown()
-        with self.assertRaises(can.CanOperationError):
-            bus.send(msg)
+        with can.Bus(interface="ixxat", channel=0) as bus:
+            with self.assertRaises(can.CanOperationError):
+                bus.send(can.Message(arbitration_id=0x3FF, dlc=0))
 
 
 if __name__ == "__main__":
