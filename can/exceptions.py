@@ -46,9 +46,9 @@ class CanOperationError(CanError):
     Example scenarios:
       - A call to a library function results in an unexpected return value
       - An invalid message was received
-      - Attempted to send an invalid message
+      - The driver rejected a message that was meant to be sent
       - Cyclic redundancy check (CRC) failed
-      - Message remained unacknowledged
+      - A message remained unacknowledged
     """
 
 
