@@ -33,11 +33,13 @@ class ASCReader(BaseIOHandler):
     bus statistics, J1939 Transport Protocol messages) is ignored.
     """
 
+    FORMAT_START_OF_FILE_DATE = "%a %b %d %I:%M:%S.%f %p %Y"
+
     def __init__(
         self,
         file: Union[typechecking.FileLike, typechecking.StringPathLike],
         base: str = "hex",
-        relative: bool = True,
+        relative_timestamp: bool = True,
     ) -> None:
         """
         :param file: a path-like object or as file-like object to read from
@@ -46,9 +48,9 @@ class ASCReader(BaseIOHandler):
         :param base: Select the base(hex or dec) of id and data.
                      If the header of the asc file contains base information,
                      this value will be overwritten. Default "hex".
-        :param relative: Select whether the timestamps are `relative` (starting
-                     at 0.0) of `absolute` (starting at the system time). 
-                     Default `True = relative`.
+        :param relative_timestamp: Select whether the timestamps are 
+                     `relative` (starting at 0.0) or `absolute` (starting at
+                     the system time). Default `True = relative`.
         """
         super().__init__(file, mode="r")
 
@@ -56,7 +58,7 @@ class ASCReader(BaseIOHandler):
             raise ValueError("The given file cannot be None")
         self.base = base
         self._converted_base = self._check_base(base)
-        self.relative_timestamp = relative
+        self.relative_timestamp = relative_timestamp
         self.date = None
         # TODO - what is this used for? The ASC Writer only prints `absolute`
         self.timestamps_format = None
@@ -78,12 +80,15 @@ class ASCReader(BaseIOHandler):
                 self.timestamps_format = timestamp_format
             elif lower_case.endswith("internal events logged"):
                 self.internal_events_logged = not lower_case.startswith("no")
+            elif lower_case.startswith("// version"):
+                # the test files include `// version 9.0.0` - not sure what this is
+                continue
             # grab absolute timestamp
             elif lower_case.startswith("begin triggerblock"):
                 try:
                     _, _, start_time = lower_case.split(None, 2)
                     start_time = datetime.strptime(
-                        start_time, "%a %b %m %I:%M:%S.%f %p %Y"
+                        start_time, self.FORMAT_START_OF_FILE_DATE
                     ).timestamp()
                 except ValueError:
                     start_time = 0.0
