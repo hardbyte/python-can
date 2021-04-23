@@ -15,9 +15,38 @@ For example, validating typical arguments and parameters might result in a
 :class:`ValueError`. This should be documented for the function at hand.
 """
 
+from typing import Optional
+
 
 class CanError(Exception):
-    """Base class for all CAN related exceptions."""
+    """Base class for all CAN related exceptions.
+
+    If specified, the error code is automatically prepended to the message:
+
+    >>> # With an error code:
+    >>> error = CanError(message="Failed to do the thing", error_code=42)
+    >>> str(error)
+    'Failed to do the thing [Error Code 42]'
+    >>>
+    >>> # Missing the error code:
+    >>> plain_error = CanError(message="Something went wrong ...")
+    >>> str(plain_error)
+    'Something went wrong ...'
+
+    :param error_code:
+        An optional error code to narrow down the cause of the fault
+
+    :arg error_code:
+        An optional error code to narrow down the cause of the fault
+    """
+
+    def __init__(
+        self, message: str = "", error_code: Optional[int] = None, *args, **kwargs
+    ) -> None:
+        self.error_code = error_code
+        super().__init__(
+            message if error_code is None else f"{message} [Error Code {error_code}]"
+        )
 
 
 class CanBackEndError(CanError):
