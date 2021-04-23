@@ -48,7 +48,7 @@ class ASCReader(BaseIOHandler):
         :param base: Select the base(hex or dec) of id and data.
                      If the header of the asc file contains base information,
                      this value will be overwritten. Default "hex".
-        :param relative_timestamp: Select whether the timestamps are 
+        :param relative_timestamp: Select whether the timestamps are
                      `relative` (starting at 0.0) or `absolute` (starting at
                      the system time). Default `True = relative`.
         """

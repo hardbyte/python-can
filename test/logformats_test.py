@@ -366,7 +366,7 @@ class TestAscFileFormat(ReaderWriterTest):
     """Tests can.ASCWriter and can.ASCReader"""
 
     FORMAT_START_OF_FILE_DATE = "%a %b %d %I:%M:%S.%f %p %Y"
-    
+
     def _setup_instance(self):
         super()._setup_instance_helper(
             can.ASCWriter,
@@ -385,8 +385,8 @@ class TestAscFileFormat(ReaderWriterTest):
     def test_absolute_time(self):
         time_from_file = "Sat Sep 30 10:06:13.191 PM 2017"
         start_time = datetime.strptime(
-                        time_from_file, self.FORMAT_START_OF_FILE_DATE
-                    ).timestamp()
+            time_from_file, self.FORMAT_START_OF_FILE_DATE
+        ).timestamp()
 
         expected_messages = [
             can.Message(
