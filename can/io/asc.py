@@ -37,6 +37,7 @@ class ASCReader(BaseIOHandler):
         self,
         file: Union[typechecking.FileLike, typechecking.StringPathLike],
         base: str = "hex",
+        relative: bool = True,
     ) -> None:
         """
         :param file: a path-like object or as file-like object to read from
@@ -45,6 +46,9 @@ class ASCReader(BaseIOHandler):
         :param base: Select the base(hex or dec) of id and data.
                      If the header of the asc file contains base information,
                      this value will be overwritten. Default "hex".
+        :param relative: Select whether the timestamps are `relative` (starting
+                     at 0.0) of `absolute` (starting at the system time). 
+                     Default `True = relative`.
         """
         super().__init__(file, mode="r")
 
@@ -52,6 +56,7 @@ class ASCReader(BaseIOHandler):
             raise ValueError("The given file cannot be None")
         self.base = base
         self._converted_base = self._check_base(base)
+        self.relative_timestamp = relative
         self.date = None
         # TODO - what is this used for? The ASC Writer only prints `absolute`
         self.timestamps_format = None
@@ -82,7 +87,10 @@ class ASCReader(BaseIOHandler):
                     ).timestamp()
                 except ValueError:
                     start_time = 0.0
-                self.start_time = start_time
+                if self.relative_timestamp:
+                    self.start_time = 0.0
+                else:
+                    self.start_time = start_time
                 # Currently the last line in the header which is parsed
                 break
             else:
