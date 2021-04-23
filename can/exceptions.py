@@ -23,8 +23,8 @@ class CanError(Exception):
 
     If specified, the error code is automatically prepended to the message:
 
-    >>> # With an error code:
-    >>> error = CanError(message="Failed to do the thing", error_code=42)
+    >>> # With an error code (it also works with a specific error):
+    >>> error = CanOperationError(message="Failed to do the thing", error_code=42)
     >>> str(error)
     'Failed to do the thing [Error Code 42]'
     >>>
