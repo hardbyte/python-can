@@ -56,7 +56,7 @@ def _get_class_for_interface(interface):
     return bus_class
 
 
-class Bus(BusABC):  # pylint disable=abstract-method
+class Bus(BusABC):  # pylint: disable=abstract-method
     """Bus wrapper with configuration loading.
 
     Instantiates a CAN Bus of the given ``interface``, falls back to reading a
