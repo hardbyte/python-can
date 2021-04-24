@@ -2,7 +2,7 @@
 This module contains the implementation of :class:`~can.Notifier`.
 """
 
-from typing import Iterable, List, Optional, Union
+from typing import Any, cast, Iterable, List, Optional, Union, Awaitable
 
 from can.bus import BusABC
 from can.listener import Listener
@@ -23,7 +23,7 @@ class Notifier:
         listeners: Iterable[Listener],
         timeout: float = 1.0,
         loop: Optional[asyncio.AbstractEventLoop] = None,
-    ):
+    ) -> None:
         """Manages the distribution of :class:`can.Message` instances to listeners.
 
         Supports multiple buses and listeners.
@@ -39,7 +39,7 @@ class Notifier:
         :param timeout: An optional maximum number of seconds to wait for any message.
         :param loop: An :mod:`asyncio` event loop to schedule listeners in.
         """
-        self.listeners = list(listeners)
+        self.listeners: List[Listener] = list(listeners)
         self.bus = bus
         self.timeout = timeout
         self._loop = loop
@@ -55,7 +55,7 @@ class Notifier:
         for bus in buses:
             self.add_bus(bus)
 
-    def add_bus(self, bus: BusABC):
+    def add_bus(self, bus: BusABC) -> None:
         """Add a bus for notification.
 
         :param bus:
@@ -82,7 +82,7 @@ class Notifier:
             reader_thread.start()
             self._readers.append(reader_thread)
 
-    def stop(self, timeout: float = 5):
+    def stop(self, timeout: float = 5) -> None:
         """Stop notifying Listeners when new :class:`~can.Message` objects arrive
         and call :meth:`~can.Listener.stop` on each Listener.
 
@@ -104,7 +104,7 @@ class Notifier:
             if hasattr(listener, "stop"):
                 listener.stop()
 
-    def _rx_thread(self, bus: BusABC):
+    def _rx_thread(self, bus: BusABC) -> None:
         msg = None
         try:
             while self._running:
@@ -125,15 +125,15 @@ class Notifier:
             elif not self._on_error(exc):
                 raise
 
-    def _on_message_available(self, bus: BusABC):
+    def _on_message_available(self, bus: BusABC) -> None:
         msg = bus.recv(0)
         if msg is not None:
             self._on_message_received(msg)
 
-    def _on_message_received(self, msg: Message):
+    def _on_message_received(self, msg: Message) -> None:
         for callback in self.listeners:
-            res = callback(msg)
-            if self._loop is not None and asyncio.iscoroutine(res):
+            res = cast(Optional[Awaitable[Any]], callback(msg))
+            if res is not None and self._loop is not None and asyncio.iscoroutine(res):
                 # Schedule coroutine
                 self._loop.create_task(res)
 
@@ -147,7 +147,7 @@ class Notifier:
 
         return bool(listeners_with_on_error)
 
-    def add_listener(self, listener: Listener):
+    def add_listener(self, listener: Listener) -> None:
         """Add new Listener to the notification list.
         If it is already present, it will be called two times
         each time a message arrives.
@@ -156,7 +156,7 @@ class Notifier:
         """
         self.listeners.append(listener)
 
-    def remove_listener(self, listener: Listener):
+    def remove_listener(self, listener: Listener) -> None:
         """Remove a listener from the notification list. This method
         throws an exception if the given listener is not part of the
         stored listeners.

@@ -3,7 +3,7 @@ Contains a generic class for file IO.
 """
 
 from abc import ABCMeta
-from typing import Optional, cast, Union, TextIO, BinaryIO
+from typing import Any, Optional, cast, Union, TextIO, BinaryIO, Type
 
 import can
 import can.typechecking
@@ -39,8 +39,9 @@ class BaseIOHandler(metaclass=ABCMeta):
     def __enter__(self) -> "BaseIOHandler":
         return self
 
-    def __exit__(self, *args) -> None:
+    def __exit__(self, exc_type: Type, exc_val: Any, exc_tb: Any) -> Any:
         self.stop()
+        return False
 
     def stop(self) -> None:
         """Closes the undelying file-like object and flushes it, if it was opened in write mode."""

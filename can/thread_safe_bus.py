@@ -14,7 +14,7 @@ from .interface import Bus
 
 
 try:
-    from contextlib import nullcontext  # type: ignore
+    from contextlib import nullcontext
 
 except ImportError:
 

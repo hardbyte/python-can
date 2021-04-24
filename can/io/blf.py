@@ -19,9 +19,10 @@ import time
 import logging
 from typing import List
 
-from can.message import Message
-from can.listener import Listener
-from can.util import len2dlc, dlc2len, channel2int
+from ..message import Message
+from ..listener import Listener
+from ..util import len2dlc, dlc2len, channel2int
+from ..typechecking import AcceptedIOType
 from .generic import BaseIOHandler
 
 
@@ -342,8 +343,12 @@ class BLFWriter(BaseIOHandler, Listener):
     application_id = 5
 
     def __init__(
-        self, file, append: bool = False, channel: int = 1, compression_level: int = -1
-    ):
+        self,
+        file: AcceptedIOType,
+        append: bool = False,
+        channel: int = 1,
+        compression_level: int = -1,
+    ) -> None:
         """
         :param file: a path-like object or as file-like object to write to
                      If this is a file-like object, is has to opened in mode "wb+".
