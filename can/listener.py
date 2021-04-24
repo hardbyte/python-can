@@ -4,7 +4,7 @@ This module contains the implementation of `can.Listener` and some readers.
 
 import sys
 import warnings
-from typing import Any, AsyncIterator, Awaitable, Callable, Optional
+from typing import Any, AsyncIterator, Awaitable, Optional
 
 from can.message import Message
 from can.bus import BusABC
