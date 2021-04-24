@@ -23,6 +23,8 @@ except AttributeError:
 
 class CLibrary(_LibBase):  # type: ignore
     def __init__(self, library_or_path: Union[str, ctypes.CDLL]) -> None:
+        self.func_name: Any
+
         if isinstance(library_or_path, str):
             super().__init__(library_or_path)
         else:
@@ -53,23 +55,22 @@ class CLibrary(_LibBase):  # type: ignore
         else:
             prototype = _FUNCTION_TYPE(restype)
         try:
-            symbol: Any = prototype((func_name, self))
+            self.func_name = prototype((func_name, self))
         except AttributeError:
             raise ImportError(
                 f'Could not map function "{func_name}" from library {self._name}'
             ) from None
 
-        symbol._name = func_name
+        self.func_name._name = func_name  # pylint: disable=protected-access
         log.debug(
-            f'Wrapped function "{func_name}", result type: {type(restype)}, error_check {errcheck}'
+            'Wrapped function "%s", result type: %s, error_check %s',
+            func_name, type(restype), errcheck
         )
 
         if errcheck is not None:
-            symbol.errcheck = errcheck
+            self.func_name.errcheck = errcheck
 
-        self.func_name = symbol
-
-        return symbol
+        return self.func_name
 
 
 if sys.platform == "win32":

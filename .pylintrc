@@ -149,7 +149,15 @@ disable=print-statement,
         invalid-name,
         abstract-method,
         too-few-public-methods,
-        no-else-raise
+        no-else-raise,
+        no-else-return,
+        too-many-locals,
+        too-many-instance-attributes,
+        too-many-branches,
+        too-many-statements,
+        fixme,
+        duplicate-code,
+        cyclic-import
 
 
 # Enable the message, report, category or checker with the given id(s). You can
