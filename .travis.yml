@@ -86,9 +86,6 @@ jobs:
         # -------------
         # mypy checking:
         - mypy
-          --python-version=3.7
-          --ignore-missing-imports
-          --no-implicit-optional
           can/*.py
           can/io/**.py
           scripts/**.py
