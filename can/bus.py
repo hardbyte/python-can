@@ -314,8 +314,14 @@ class BusABC(metaclass=ABCMeta):
             if msg is not None:
                 yield msg
 
+    @property
     @abstractmethod
-    def change_bitrate(self, bitrate: int) -> None:
+    def bitrate(self) -> int:
+        raise NotImplementedError("Device must implement bitrate")
+
+    @bitrate.setter
+    @abstractmethod
+    def bitrate(self, bitrate: int) -> None:
         """Changes the bitrate of the underlying bus.
 
         Override this method to enable runtime bitrate changes.

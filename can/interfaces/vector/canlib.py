@@ -233,6 +233,7 @@ class VectorBus(BusABC):
         )
 
         if permission_mask.value == self.mask:
+            self.bitrate = bitrate
             if fd:
                 self.canFdConf = xlclass.XLcanFdConf()
                 if bitrate:
@@ -515,7 +516,12 @@ class VectorBus(BusABC):
     def send(self, msg: Message, timeout: typing.Optional[float] = None):
         self._send_sequence([msg])
 
-    def change_bitrate(self, bitrate: int) -> None:
+    @property
+    def bitrate(self) -> int:
+        return self.bitrate
+        
+    @bitrate.setter
+    def bitrate(self, bitrate: int) -> None:
         xldriver.xlCanSetChannelBitrate(self.port_handle, self.mask, bitrate)
         LOG.info("SetChannelBitrate: baudr.=%u", bitrate)
 
