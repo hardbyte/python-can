@@ -79,7 +79,9 @@ class TestMessageClass(unittest.TestCase):
         self.assertGreater(len("{}".format(message)), 0)
         _ = "{}".format(message)
         with self.assertRaises(Exception):
-            _ = "{somespec}".format(message)  # pylint: disable=missing-format-argument-key
+            _ = "{somespec}".format(
+                message
+            )  # pylint: disable=missing-format-argument-key
         if sys.version_info.major > 2:
             self.assertEqual(bytearray(bytes(message)), kwargs["data"])
 
