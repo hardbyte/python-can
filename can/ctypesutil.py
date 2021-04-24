@@ -64,7 +64,9 @@ class CLibrary(_LibBase):  # type: ignore
         self.func_name._name = func_name  # pylint: disable=protected-access
         log.debug(
             'Wrapped function "%s", result type: %s, error_check %s',
-            func_name, type(restype), errcheck
+            func_name,
+            type(restype),
+            errcheck,
         )
 
         if errcheck is not None:
