@@ -76,7 +76,7 @@ jobs:
         # warnings to the .pylintrc-wip file to prevent them from being
         # re-introduced
         # check the entire main codebase
-        - pylint --rcfile=.pylintrc-wip can/**.py
+        - pylint --rcfile=.pylintrc can/**.py
         - pylint --rcfile=.pylintrc setup.py
         - pylint --rcfile=.pylintrc doc.conf
         - pylint --rcfile=.pylintrc scripts/**.py
