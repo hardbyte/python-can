@@ -48,7 +48,7 @@ class Message:
         "__weakref__",  # support weak references to messages
     )
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-locals
         self,
         timestamp: float = 0.0,
         arbitration_id: int = 0,

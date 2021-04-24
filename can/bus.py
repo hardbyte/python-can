@@ -451,7 +451,7 @@ class _SelfRemovingCyclicTask(CyclicSendTaskABC, ABC):
     Only needed for typing :meth:`Bus._periodic_tasks`. Do not instantiate.
     """
 
-    def stop(
+    def stop(  # pylint: disable=arguments-differ
         self, remove_task: bool = True
-    ) -> None:  # pylint: disable=arguments-differ
+    ) -> None:
         raise NotImplementedError()
