@@ -72,15 +72,8 @@ jobs:
       script:
         # -------------
         # pylint checking:
-        # Slowly enable all pylint warnings by adding addressed classes of
-        # warnings to the .pylintrc-wip file to prevent them from being
-        # re-introduced
-        # check the entire main codebase
-        - pylint --rcfile=.pylintrc can/**.py
-        - pylint --rcfile=.pylintrc setup.py
-        - pylint --rcfile=.pylintrc doc.conf
-        - pylint --rcfile=.pylintrc scripts/**.py
-        - pylint --rcfile=.pylintrc examples/**.py
+        # check the entire main codebase (except the tests)
+        - pylint --rcfile=.pylintrc can/**.py setup.py doc.conf scripts/**.py examples/**.py
         # -------------
         # mypy checking:
         - mypy
