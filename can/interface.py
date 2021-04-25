@@ -10,7 +10,7 @@ import logging
 from .bus import BusABC
 from .util import load_config
 from .interfaces import BACKENDS
-from .exceptions import CanBackEndError
+from .exceptions import CanInterfaceNotImplementedError
 
 log = logging.getLogger("can.interface")
 log_autodetect = log.getChild("detect_available_configs")
@@ -38,7 +38,7 @@ def _get_class_for_interface(interface):
     try:
         module = importlib.import_module(module_name)
     except Exception as e:
-        raise CanBackEndError(
+        raise CanInterfaceNotImplementedError(
             "Cannot import module {} for CAN interface '{}': {}".format(
                 module_name, interface, e
             )
@@ -48,7 +48,7 @@ def _get_class_for_interface(interface):
     try:
         bus_class = getattr(module, class_name)
     except Exception as e:
-        raise CanBackEndError(
+        raise CanInterfaceNotImplementedError(
             "Cannot import class {} from module {} for CAN interface '{}': {}".format(
                 class_name, module_name, interface, e
             )
@@ -152,9 +152,9 @@ def detect_available_configs(interfaces=None):
 
         try:
             bus_class = _get_class_for_interface(interface)
-        except CanBackEndError:
+        except CanInterfaceNotImplementedError:
             log_autodetect.debug(
-                'interface "%s" can not be loaded for detection of available configurations',
+                'interface "%s" cannot be loaded for detection of available configurations',
                 interface,
             )
             continue

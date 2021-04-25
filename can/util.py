@@ -17,7 +17,7 @@ from configparser import ConfigParser
 import can
 from .interfaces import VALID_INTERFACES
 from . import typechecking
-from .exceptions import CanBackEndError
+from .exceptions import CanInterfaceNotImplementedError
 
 log = logging.getLogger("can.util")
 
@@ -191,7 +191,9 @@ def load_config(
             config[key] = None
 
     if config["interface"] not in VALID_INTERFACES:
-        raise CanBackEndError(f'Invalid CAN Bus Type "{config["interface"]}"')
+        raise CanInterfaceNotImplementedError(
+            f'Unknown interface type "{config["interface"]}"'
+        )
 
     if "bitrate" in config:
         config["bitrate"] = int(config["bitrate"])

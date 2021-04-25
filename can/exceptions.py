@@ -6,13 +6,13 @@ code to react to specific scenarios related to CAN busses::
      +-- ...
      +-- CanError (python-can)
          +-- CanBackendError
-         +-- CanInitializationError
+         +-- CanInterfaceNotImplementedError
          +-- CanOperationError
          +-- CanTimeoutError
 
 Keep in mind that some functions and methods may raise different exceptions.
 For example, validating typical arguments and parameters might result in a
-:class:`ValueError`. This should be documented for the function at hand.
+:class:`ValueError`. This should always be documented for the function at hand.
 """
 
 from typing import Optional
@@ -49,18 +49,23 @@ class CanError(Exception):
         )
 
 
-class CanBackEndError(CanError):
-    """Indicates an error related to the backend (e.g. driver/OS/library).
+class CanInterfaceNotImplementedError(CanError, NotImplementedError):
+    """Indicates that the interface is not supported on the current platform.
 
     Example scenarios:
-      - The interface does not exist
-      - The interface is unsupported on the current platform
-      - The driver is not present or has the wrong version
+      - No interface with that name exists
+      - The interface is unsupported on the current operating system or interpreter
+      - The driver could not be found or has the wrong version
     """
 
 
 class CanInitializationError(CanError):
     """Indicates an error the occurred while initializing a :class:`can.BusABC`.
+
+    If initialization fails due to a driver or platform missing/being unsupported,
+    a :class:`can.CanInterfaceNotImplementedError` is raised instead.
+    If initialization fails due to a value being out of range, a :class:`ValueError`
+    is raised.
 
     Example scenarios:
       - Try to open a non-existent device and/or channel

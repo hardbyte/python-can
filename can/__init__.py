@@ -18,7 +18,7 @@ from .listener import Listener, BufferedReader, RedirectReader, AsyncBufferedRea
 
 from .exceptions import (
     CanError,
-    CanBackEndError,
+    CanInterfaceNotImplementedError,
     CanInitializationError,
     CanOperationError,
     CanTimeoutError,
