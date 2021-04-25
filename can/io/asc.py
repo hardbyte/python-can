@@ -85,16 +85,17 @@ class ASCReader(BaseIOHandler):
                 continue
             # grab absolute timestamp
             elif lower_case.startswith("begin triggerblock"):
-                try:
-                    _, _, start_time = lower_case.split(None, 2)
-                    start_time = datetime.strptime(
-                        start_time, self.FORMAT_START_OF_FILE_DATE
-                    ).timestamp()
-                except ValueError:
-                    start_time = 0.0
                 if self.relative_timestamp:
                     self.start_time = 0.0
                 else:
+                    try:
+                        _, _, start_time = lower_case.split(None, 2)
+                        start_time = datetime.strptime(
+                            start_time, self.FORMAT_START_OF_FILE_DATE
+                        ).timestamp()
+                    except (ValueError, OSError):
+                        # `OSError` to handle non-POSIX capable timestamps
+                        start_time = 0.0
                     self.start_time = start_time
                 # Currently the last line in the header which is parsed
                 break

@@ -56,7 +56,7 @@ def _get_class_for_interface(interface):
     return bus_class
 
 
-class Bus(BusABC):  # pylint disable=abstract-method
+class Bus(BusABC):  # pylint: disable=abstract-method
     """Bus wrapper with configuration loading.
 
     Instantiates a CAN Bus of the given ``interface``, falls back to reading a
@@ -64,7 +64,9 @@ class Bus(BusABC):  # pylint disable=abstract-method
     """
 
     @staticmethod
-    def __new__(cls, channel=None, *args, **kwargs):
+    def __new__(
+        cls, channel=None, *args, **kwargs
+    ):  # pylint: disable=keyword-arg-before-vararg
         """
         Takes the same arguments as :class:`can.BusABC.__init__`.
         Some might have a special meaning, see below.
@@ -158,8 +160,8 @@ def detect_available_configs(interfaces=None):
         # get available channels
         try:
             available = list(
-                bus_class._detect_available_configs()
-            )  # pylint: disable=protected-access
+                bus_class._detect_available_configs()  # pylint: disable=protected-access
+            )
         except NotImplementedError:
             log_autodetect.debug(
                 'interface "%s" does not support detection of available configurations',
