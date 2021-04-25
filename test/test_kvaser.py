@@ -4,11 +4,9 @@
 """
 """
 
-import ctypes
 import time
-import logging
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import pytest
 

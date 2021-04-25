@@ -4,7 +4,6 @@
 
 import unittest
 import threading
-import queue
 import random
 import logging
 
