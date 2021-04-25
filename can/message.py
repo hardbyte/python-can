@@ -6,7 +6,7 @@ This module contains the implementation of :class:`can.Message`.
     starting with Python 3.7.
 """
 
-from typing import Optional, Union
+from typing import Optional
 
 from . import typechecking
 
@@ -48,7 +48,7 @@ class Message:
         "__weakref__",  # support weak references to messages
     )
 
-    def __init__(  # pylint: disable=too-many-locals
+    def __init__(  # pylint: disable=too-many-locals, too-many-arguments
         self,
         timestamp: float = 0.0,
         arbitration_id: int = 0,
@@ -230,11 +230,11 @@ class Message:
         )
         return new
 
-    def _check(self):
+    def _check(self):  # pylint: disable=too-many-branches; it's still simple code
         """Checks if the message parameters are valid.
         Assumes that the types are already correct.
 
-        :raises ValueError: iff one or more attributes are invalid
+        :raises ValueError: if and only if one or more attributes are invalid
         """
 
         if self.timestamp < 0.0:
@@ -263,15 +263,11 @@ class Message:
         if self.is_fd:
             if self.dlc > 64:
                 raise ValueError(
-                    "DLC was {} but it should be <= 64 for CAN FD frames".format(
-                        self.dlc
-                    )
+                    f"DLC was {self.dlc} but it should be <= 64 for CAN FD frames"
                 )
         elif self.dlc > 8:
             raise ValueError(
-                "DLC was {} but it should be <= 8 for normal CAN frames".format(
-                    self.dlc
-                )
+                f"DLC was {self.dlc} but it should be <= 8 for normal CAN frames"
             )
 
         if self.is_remote_frame:
@@ -293,7 +289,7 @@ class Message:
     def equals(
         self,
         other: "Message",
-        timestamp_delta: Optional[Union[float, int]] = 1.0e-6,
+        timestamp_delta: Optional[float] = 1.0e-6,
         check_direction: bool = True,
     ) -> bool:
         """
