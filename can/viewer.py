@@ -142,8 +142,8 @@ class CanViewer:
     # Unpack the data and then convert it into SI-units
     @staticmethod
     def unpack_data(
-        cmd, cmd_to_struct, data
-    ):  # type: (int, Dict, bytes) -> List[Union[float, int]]
+        cmd: int, cmd_to_struct: Dict, data: bytes
+    ) -> List[float]:
         if not cmd_to_struct or not data:
             # These messages do not contain a data package
             return []
@@ -259,7 +259,7 @@ class CanViewer:
 
     def draw_line(self, row, col, txt, *args):
         if row - self.scroll < 0:
-            # Skip if we have scrolled passed the line
+            # Skip if we have scrolled past the line
             return
         try:
             self.stdscr.addstr(row - self.scroll, col, txt, *args)
@@ -286,7 +286,6 @@ class CanViewer:
             self.draw_can_bus_message(self.ids[key]["msg"])
 
 
-# noinspection PyProtectedMember
 class SmartFormatter(argparse.HelpFormatter):
     def _get_default_metavar_for_optional(self, action):
         return action.dest.upper()
@@ -327,18 +326,12 @@ class SmartFormatter(argparse.HelpFormatter):
 
     def _fill_text(self, text, width, indent):
         if text.startswith("R|"):
-            # noinspection PyTypeChecker
             return "".join(indent + line + "\n" for line in text[2:].splitlines())
         else:
             return super()._fill_text(text, width, indent)
 
 
 def parse_args(args):
-    # Python versions >= 3.5
-    kwargs = {}
-    if sys.version_info[0] * 10 + sys.version_info[1] >= 35:  # pragma: no cover
-        kwargs = {"allow_abbrev": False}
-
     # Parse command line arguments
     parser = argparse.ArgumentParser(
         "python -m can.viewer",
@@ -355,7 +348,7 @@ def parse_args(args):
         "\n        +---------+-------------------------+",
         formatter_class=SmartFormatter,
         add_help=False,
-        **kwargs
+        allow_abbrev=False,
     )
 
     optional = parser.add_argument_group("Optional arguments")
@@ -371,7 +364,7 @@ def parse_args(args):
         version="%(prog)s (version {version})".format(version=__version__),
     )
 
-    # Copied from: https://github.com/hardbyte/python-can/blob/develop/can/logger.py
+    # Copied from: can/logger.py
     optional.add_argument(
         "-b",
         "--bitrate",
@@ -469,9 +462,7 @@ def parse_args(args):
 
     can_filters = []
     if parsed_args.filter:
-        # print('Adding filter/s', parsed_args.filter)
         for flt in parsed_args.filter:
-            # print(filter)
             if ":" in flt:
                 _ = flt.split(":")
                 can_id, can_mask = int(_[0], base=16), int(_[1], base=16)
@@ -502,9 +493,7 @@ def parse_args(args):
     # In order to convert from raw integer value the real units are multiplied with the values and
     # similarly the values
     # are divided by the value in order to convert from real units to raw integer values.
-    data_structs = (
-        {}
-    )  # type: Dict[Union[int, Tuple[int, ...]], Union[struct.Struct, Tuple, None]]
+    data_structs: Dict[Union[int, Tuple[int, ...]], Union[struct.Struct, Tuple, None]] = {}
     if parsed_args.decode:
         if os.path.isfile(parsed_args.decode[0]):
             with open(parsed_args.decode[0], "r") as f:
@@ -519,7 +508,7 @@ def parse_args(args):
             key, fmt = int(tmp[0], base=16), tmp[1]
 
             # The scaling
-            scaling = []  # type: list
+            scaling: List[float] = []
             for t in tmp[2:]:
                 # First try to convert to int, if that fails, then convert to a float
                 try:
@@ -531,12 +520,11 @@ def parse_args(args):
                 data_structs[key] = (struct.Struct(fmt),) + tuple(scaling)
             else:
                 data_structs[key] = struct.Struct(fmt)
-            # print(data_structs[key])
 
     return parsed_args, can_filters, data_structs
 
 
-def main():  # pragma: no cover
+def main():
     parsed_args, can_filters, data_structs = parse_args(sys.argv[1:])
 
     config = {"single_handle": True}
