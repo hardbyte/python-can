@@ -19,10 +19,11 @@ import argparse
 import socket
 from datetime import datetime
 import errno
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import can
-from can import Bus, BusState, Logger, SizedRotatingLogger
+from . import Bus, BusState, Logger, SizedRotatingLogger
+from .typechecking import CanFilter, CanFilters
 
 
 def _create_base_argument_parser(parser: argparse.ArgumentParser):
@@ -72,14 +73,35 @@ def _create_bus(parsed_args: Any, **kwargs: Any) -> can.Bus:
     if parsed_args.data_bitrate:
         config["data_bitrate"] = parsed_args.data_bitrate
 
-    return Bus(parsed_args.channel, **config)
+    return Bus(parsed_args.channel, **config)  # type: ignore
+
+
+def _parse_filters(parsed_args: Any) -> CanFilters:
+    can_filters: List[CanFilter] = []
+
+    if parsed_args.filter:
+        print(f"Adding filter(s): {parsed_args.filter}")
+        for filt in parsed_args.filter:
+            if ":" in filt:
+                parts = filt.split(":")
+                can_id = int(parts[0], base=16)
+                can_mask = int(parts[1], base=16)
+            elif "~" in filt:
+                parts = filt.split("~")
+                can_id = int(parts[0], base=16) | 0x20000000  # CAN_INV_FILTER
+                can_mask = int(parts[1], base=16) & socket.CAN_ERR_FLAG
+            else:
+                raise argparse.ArgumentError(None, "Invalid filter argument")
+            can_filters.append({"can_id": can_id, "can_mask": can_mask})
+
+    return can_filters
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
         "python -m can.logger",
         description="Log CAN traffic, printing messages to stdout or to a given file.",
-    )  # pylint: disable=R0801; the following lines are not duplicates
+    )
 
     _create_base_argument_parser(parser)
 
@@ -136,20 +158,7 @@ def main() -> None:
 
     results = parser.parse_args()
 
-    can_filters = []
-    if results.filter:
-        print(f"Adding filter(s): {results.filter}")
-        for filt in results.filter:
-            if ":" in filt:
-                _ = filt.split(":")
-                can_id, can_mask = int(_[0], base=16), int(_[1], base=16)
-            elif "~" in filt:
-                can_id, can_mask = filt.split("~")
-                can_id = int(can_id, base=16) | 0x20000000  # CAN_INV_FILTER
-                can_mask = int(can_mask, base=16) & socket.CAN_ERR_FLAG
-            can_filters.append({"can_id": can_id, "can_mask": can_mask})
-
-    bus = _create_bus(results, can_filters=can_filters)
+    bus = _create_bus(results, can_filters=_parse_filters(results))
 
     if results.active:
         bus.state = BusState.ACTIVE
@@ -164,7 +173,7 @@ def main() -> None:
             base_filename=results.log_file, max_bytes=results.file_size
         )
     else:
-        logger = Logger(filename=results.log_file)
+        logger = Logger(filename=results.log_file)  # type: ignore
 
     try:
         while True:

@@ -72,9 +72,10 @@ disable=invalid-name,
         too-many-statements,
         no-else-raise,
         wildcard-import,
-        fixme,
         no-else-return,
+        fixme,  # We deliberately use TODO/FIXME inline
         abstract-class-instantiated,  # Needed for can.Bus
+        duplicate-code,  # Needed due to https://github.com/PyCQA/pylint/issues/214
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option

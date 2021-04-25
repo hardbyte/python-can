@@ -9,8 +9,9 @@ import sys
 import argparse
 from datetime import datetime
 import errno
+from typing import cast, Iterable
 
-from can import LogReader, MessageSync
+from can import LogReader, Message, MessageSync
 
 
 from .logger import _create_base_argument_parser, _create_bus
@@ -91,7 +92,7 @@ def main() -> None:
     reader = LogReader(results.infile)
 
     in_sync = MessageSync(
-        reader, timestamps=results.timestamps, gap=results.gap, skip=results.skip
+        cast(Iterable[Message], reader), timestamps=results.timestamps, gap=results.gap, skip=results.skip
     )
 
     print(f"Can LogReader (Started on {datetime.now()})")

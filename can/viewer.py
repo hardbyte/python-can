@@ -31,6 +31,8 @@ from typing import Dict, List, Tuple, Union
 
 import can
 from can import __version__
+from .logger import _create_bus, _parse_filters
+
 
 logger = logging.getLogger("can.serial")
 
@@ -453,6 +455,15 @@ def parse_args(args):
         choices=sorted(can.VALID_INTERFACES),
     )
 
+    parser.add_argument(
+        "-v",
+        action="count",
+        dest="verbosity",
+        help="""How much information do you want to see at the command line?
+                        You can add several of these e.g., -vv is DEBUG""",
+        default=2,
+    )
+
     # Print help message when no arguments are given
     if not args:
         parser.print_help(sys.stderr)
@@ -460,19 +471,7 @@ def parse_args(args):
 
     parsed_args = parser.parse_args(args)
 
-    can_filters = []
-    if parsed_args.filter:
-        for flt in parsed_args.filter:
-            if ":" in flt:
-                _ = flt.split(":")
-                can_id, can_mask = int(_[0], base=16), int(_[1], base=16)
-            elif "~" in flt:
-                can_id, can_mask = flt.split("~")
-                can_id = int(can_id, base=16) | 0x20000000  # CAN_INV_FILTER
-                can_mask = int(can_mask, base=16) & 0x20000000  # socket.CAN_ERR_FLAG
-            else:
-                raise argparse.ArgumentError(None, "Invalid filter argument")
-            can_filters.append({"can_id": can_id, "can_mask": can_mask})
+    can_filters = _parse_filters(parse_args)
 
     # Dictionary used to convert between Python values and C structs represented as Python strings.
     # If the value is 'None' then the message does not contain any data package.
@@ -527,21 +526,9 @@ def parse_args(args):
 def main() -> None:
     parsed_args, can_filters, data_structs = parse_args(sys.argv[1:])
 
-    config = {"single_handle": True}
-    if can_filters:
-        config["can_filters"] = can_filters
-    if parsed_args.interface:
-        config["interface"] = parsed_args.interface
-    if parsed_args.bitrate:
-        config["bitrate"] = parsed_args.bitrate
-    if parsed_args.fd:
-        config["fd"] = True
-    if parsed_args.data_bitrate:
-        config["data_bitrate"] = parsed_args.data_bitrate
-
-    # Create a CAN-Bus interface
-    bus = can.Bus(parsed_args.channel, **config)
-    # print('Connected to {}: {}'.format(bus.__class__.__name__, bus.channel_info))
+    additional_config = {"can_filters": can_filters} if can_filters else {}
+    bus = _create_bus(parsed_args.channel, **additional_config)
+    # print(f"Connected to {bus.__class__.__name__}: {bus.channel_info}")
 
     curses.wrapper(CanViewer, bus, data_structs)
 
