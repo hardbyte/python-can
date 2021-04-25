@@ -132,7 +132,7 @@ class Notifier:
 
     def _on_message_received(self, msg: Message) -> None:
         for callback in self.listeners:
-            res = cast(Optional[Awaitable[Any]], callback(msg))
+            res = cast(Union[None, Optional[Awaitable[Any]]], callback(msg))
             if res is not None and self._loop is not None and asyncio.iscoroutine(res):
                 # Schedule coroutine
                 self._loop.create_task(res)
