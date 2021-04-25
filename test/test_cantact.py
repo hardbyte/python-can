@@ -5,12 +5,7 @@
 Tests for CANtact interfaces
 """
 
-import time
-import logging
 import unittest
-from unittest.mock import Mock, patch
-
-import pytest
 
 import can
 from can.interfaces import cantact

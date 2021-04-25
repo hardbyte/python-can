@@ -19,7 +19,7 @@ logger = logging.getLogger("can.Notifier")
 class Notifier:
     def __init__(
         self,
-        bus: BusABC,
+        bus: Union[BusABC, List[BusABC]],
         listeners: Iterable[Listener],
         timeout: float = 1.0,
         loop: Optional[asyncio.AbstractEventLoop] = None,
@@ -52,8 +52,8 @@ class Notifier:
 
         self._readers: List[Union[int, threading.Thread]] = []
         buses = self.bus if isinstance(self.bus, list) else [self.bus]
-        for bus in buses:
-            self.add_bus(bus)
+        for each_bus in buses:
+            self.add_bus(each_bus)
 
     def add_bus(self, bus: BusABC) -> None:
         """Add a bus for notification.
@@ -117,7 +117,7 @@ class Notifier:
                         else:
                             self._on_message_received(msg)
                 msg = bus.recv(self.timeout)
-        except Exception as exc:
+        except Exception as exc:  # pylint: disable=broad-except
             self.exception = exc
             if self._loop is not None:
                 self._loop.call_soon_threadsafe(self._on_error, exc)
