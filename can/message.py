@@ -48,7 +48,7 @@ class Message:
         "__weakref__",  # support weak references to messages
     )
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-locals
         self,
         timestamp: float = 0.0,
         arbitration_id: int = 0,
@@ -72,9 +72,11 @@ class Message:
                       Thus, the caller must prevent the creation of invalid messages or
                       set this parameter to `True`, to raise an Error on invalid inputs.
                       Possible problems include the `dlc` field not matching the length of `data`
-                      or creating a message with both `is_remote_frame` and `is_error_frame` set to `True`.
+                      or creating a message with both `is_remote_frame` and `is_error_frame` set
+                      to `True`.
 
-        :raises ValueError: if and only if `check` is set to `True` and one or more arguments were invalid
+        :raises ValueError:
+            if and only if `check` is set to `True` and one or more arguments were invalid
         """
         self.timestamp = timestamp
         self.arbitration_id = arbitration_id

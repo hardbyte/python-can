@@ -737,9 +737,11 @@ class TestPrinter(unittest.TestCase):
     TODO test append mode
     """
 
-    # TODO add CAN FD messages
     messages = (
-        TEST_MESSAGES_BASE + TEST_MESSAGES_REMOTE_FRAMES + TEST_MESSAGES_ERROR_FRAMES
+        TEST_MESSAGES_BASE
+        + TEST_MESSAGES_REMOTE_FRAMES
+        + TEST_MESSAGES_ERROR_FRAMES
+        + TEST_MESSAGES_CAN_FD
     )
 
     def test_not_crashes_with_stdout(self):
