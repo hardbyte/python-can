@@ -24,37 +24,8 @@ import can
 from can import Bus, BusState, Logger, SizedRotatingLogger
 
 
-def main():
-    parser = argparse.ArgumentParser(
-        "python -m can.logger",
-        description="Log CAN traffic, printing messages to stdout or to a given file.",
-    )
-
-    parser.add_argument(
-        "-f",
-        "--file_name",
-        dest="log_file",
-        help="""Path and base log filename, for supported types see can.Logger.""",
-        default=None,
-    )
-
-    parser.add_argument(
-        "-s",
-        "--file_size",
-        dest="file_size",
-        type=int,
-        help="""Maximum file size in bytes. Rotate log file when size threshold is reached.""",
-        default=None,
-    )
-
-    parser.add_argument(
-        "-v",
-        action="count",
-        dest="verbosity",
-        help="""How much information do you want to see at the command line?
-                        You can add several of these e.g., -vv is DEBUG""",
-        default=2,
-    )
+def _create_base_argument_parser(parser: argparse.ArgumentParser):
+    """Adds common options to an argument parser."""
 
     parser.add_argument(
         "-c",
@@ -74,17 +45,7 @@ def main():
     )
 
     parser.add_argument(
-        "--filter",
-        help="""Comma separated filters can be specified for the given CAN interface:
-        <can_id>:<can_mask> (matches when <received_can_id> & mask == can_id & mask)
-        <can_id>~<can_mask> (matches when <received_can_id> & mask != can_id & mask)
-    """,
-        nargs=argparse.REMAINDER,
-        default="",
-    )
-
-    parser.add_argument(
-        "-b", "--bitrate", type=int, help="""Bitrate to use for the CAN bus."""
+        "-b", "--bitrate", type=int, help="Bitrate to use for the CAN bus."
     )
 
     parser.add_argument("--fd", help="Activate CAN-FD support", action="store_true")
@@ -92,7 +53,52 @@ def main():
     parser.add_argument(
         "--data_bitrate",
         type=int,
-        help="""Bitrate to use for the data phase in case of CAN-FD.""",
+        help="Bitrate to use for the data phase in case of CAN-FD.",
+    )
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        "python -m can.logger",
+        description="Log CAN traffic, printing messages to stdout or to a given file.",
+    )
+
+    _create_base_argument_parser(parser)
+
+    parser.add_argument(
+        "-f",
+        "--file_name",
+        dest="log_file",
+        help="Path and base log filename, for supported types see can.Logger.",
+        default=None,
+    )
+
+    parser.add_argument(
+        "-s",
+        "--file_size",
+        dest="file_size",
+        type=int,
+        help="Maximum file size in bytes. Rotate log file when size threshold is reached.",
+        default=None,
+    )
+
+    parser.add_argument(
+        "-v",
+        action="count",
+        dest="verbosity",
+        help="""How much information do you want to see at the command line?
+                        You can add several of these e.g., -vv is DEBUG""",
+        default=2,
+    )
+
+    parser.add_argument(
+        "--filter",
+        help="""Comma separated filters can be specified for the given CAN interface:
+        <can_id>:<can_mask> (matches when <received_can_id> & mask == can_id & mask)
+        <can_id>~<can_mask> (matches when <received_can_id> & mask != can_id & mask)
+    """,
+        nargs=argparse.REMAINDER,
+        default="",
     )
 
     state_group = parser.add_mutually_exclusive_group(required=False)
@@ -105,7 +111,7 @@ def main():
         "--passive", help="Start the bus as passive.", action="store_true"
     )
 
-    # print help message when no arguments wre given
+    # print help message when no arguments were given
     if len(sys.argv) < 2:
         parser.print_help(sys.stderr)
         raise SystemExit(errno.EINVAL)

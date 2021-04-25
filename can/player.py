@@ -14,16 +14,21 @@ import can
 from can import Bus, LogReader, MessageSync
 
 
-def main():
+from .logger import _create_base_argument_parser
+
+
+def main() -> None:
     parser = argparse.ArgumentParser(
         "python -m can.player", description="Replay CAN traffic."
     )
+
+    _create_base_argument_parser(parser)
 
     parser.add_argument(
         "-f",
         "--file_name",
         dest="log_file",
-        help="""Path and base log filename, for supported types see can.LogReader.""",
+        help="Path and base log filename, for supported types see can.LogReader.",
         default=None,
     )
 
@@ -34,35 +39,6 @@ def main():
         help="""Also print can frames to stdout.
                         You can add several of these to enable debugging""",
         default=2,
-    )
-
-    parser.add_argument(
-        "-c",
-        "--channel",
-        help='''Most backend interfaces require some sort of channel.
-    For example with the serial interface the channel might be a rfcomm device: "/dev/rfcomm0"
-    With the socketcan interfaces valid channel examples include: "can0", "vcan0"''',
-    )
-
-    parser.add_argument(
-        "-i",
-        "--interface",
-        dest="interface",
-        help="""Specify the backend CAN interface to use. If left blank,
-                        fall back to reading from configuration files.""",
-        choices=can.VALID_INTERFACES,
-    )
-
-    parser.add_argument(
-        "-b", "--bitrate", type=int, help="""Bitrate to use for the CAN bus."""
-    )
-
-    parser.add_argument("--fd", help="Activate CAN-FD support", action="store_true")
-
-    parser.add_argument(
-        "--data_bitrate",
-        type=int,
-        help="""Bitrate to use for the data phase in case of CAN-FD.""",
     )
 
     parser.add_argument(
@@ -82,7 +58,7 @@ def main():
         "-g",
         "--gap",
         type=float,
-        help="""<s> minimum time between replayed frames""",
+        help="<s> minimum time between replayed frames",
         default=0.0001,
     )
     parser.add_argument(
@@ -90,7 +66,7 @@ def main():
         "--skip",
         type=float,
         default=60 * 60 * 24,
-        help="""<s> skip gaps greater than 's' seconds""",
+        help="<s> skip gaps greater than 's' seconds",
     )
 
     parser.add_argument(
