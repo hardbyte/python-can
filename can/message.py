@@ -14,7 +14,7 @@ from copy import deepcopy
 from math import isinf, isnan
 
 
-class Message:
+class Message:  # pylint: disable=too-many-instance-attributes; OK for a dataclass
     """
     The :class:`~can.Message` object is used to represent CAN messages for
     sending, receiving and other purposes like converting between different

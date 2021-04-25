@@ -524,7 +524,7 @@ def parse_args(args):
     return parsed_args, can_filters, data_structs
 
 
-def main():
+def main() -> None:
     parsed_args, can_filters, data_structs = parse_args(sys.argv[1:])
 
     config = {"single_handle": True}
