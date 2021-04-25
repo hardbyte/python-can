@@ -73,7 +73,7 @@ jobs:
         # -------------
         # pylint checking:
         # check the entire main codebase (except the tests)
-        - pylint --rcfile=.pylintrc can/**.py setup.py doc.conf scripts/**.py examples/**.py
+        - pylint can/**.py setup.py doc.conf scripts/**.py examples/**.py
         # -------------
         # mypy checking:
         - mypy
