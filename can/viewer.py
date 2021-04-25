@@ -377,7 +377,7 @@ def parse_args(args):
     optional.add_argument(
         "--data_bitrate",
         type=int,
-        help="""Bitrate to use for the data phase in case of CAN-FD.""",
+        help="Bitrate to use for the data phase in case of CAN-FD.",
     )
 
     optional.add_argument(

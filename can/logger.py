@@ -19,6 +19,7 @@ import argparse
 import socket
 from datetime import datetime
 import errno
+from typing import Any, Dict
 
 import can
 from can import Bus, BusState, Logger, SizedRotatingLogger
@@ -57,11 +58,28 @@ def _create_base_argument_parser(parser: argparse.ArgumentParser):
     )
 
 
+def _create_bus(parsed_args: Any, **kwargs: Any) -> can.Bus:
+    logging_level_names = ["critical", "error", "warning", "info", "debug", "subdebug"]
+    can.set_logging_level(logging_level_names[min(5, parsed_args.verbosity)])
+
+    config: Dict[str, Any] = {"single_handle": True, **kwargs}
+    if parsed_args.interface:
+        config["interface"] = parsed_args.interface
+    if parsed_args.bitrate:
+        config["bitrate"] = parsed_args.bitrate
+    if parsed_args.fd:
+        config["fd"] = True
+    if parsed_args.data_bitrate:
+        config["data_bitrate"] = parsed_args.data_bitrate
+
+    return Bus(parsed_args.channel, **config)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         "python -m can.logger",
         description="Log CAN traffic, printing messages to stdout or to a given file.",
-    )
+    )  # pylint: disable=R0801; the following lines are not duplicates
 
     _create_base_argument_parser(parser)
 
@@ -118,13 +136,6 @@ def main() -> None:
 
     results = parser.parse_args()
 
-    verbosity = results.verbosity
-
-    logging_level_name = ["critical", "error", "warning", "info", "debug", "subdebug"][
-        min(5, verbosity)
-    ]
-    can.set_logging_level(logging_level_name)
-
     can_filters = []
     if results.filter:
         print(f"Adding filter(s): {results.filter}")
@@ -138,16 +149,7 @@ def main() -> None:
                 can_mask = int(can_mask, base=16) & socket.CAN_ERR_FLAG
             can_filters.append({"can_id": can_id, "can_mask": can_mask})
 
-    config = {"can_filters": can_filters, "single_handle": True}
-    if results.interface:
-        config["interface"] = results.interface
-    if results.bitrate:
-        config["bitrate"] = results.bitrate
-    if results.fd:
-        config["fd"] = True
-    if results.data_bitrate:
-        config["data_bitrate"] = results.data_bitrate
-    bus = Bus(results.channel, **config)
+    bus = _create_bus(results, can_filters=can_filters)
 
     if results.active:
         bus.state = BusState.ACTIVE

@@ -10,11 +10,10 @@ import argparse
 from datetime import datetime
 import errno
 
-import can
-from can import Bus, LogReader, MessageSync
+from can import LogReader, MessageSync
 
 
-from .logger import _create_base_argument_parser
+from .logger import _create_base_argument_parser, _create_bus
 
 
 def main() -> None:
@@ -85,23 +84,9 @@ def main() -> None:
 
     verbosity = results.verbosity
 
-    logging_level_name = ["critical", "error", "warning", "info", "debug", "subdebug"][
-        min(5, verbosity)
-    ]
-    can.set_logging_level(logging_level_name)
-
     error_frames = results.error_frames
 
-    config = {"single_handle": True}
-    if results.interface:
-        config["interface"] = results.interface
-    if results.bitrate:
-        config["bitrate"] = results.bitrate
-    if results.fd:
-        config["fd"] = True
-    if results.data_bitrate:
-        config["data_bitrate"] = results.data_bitrate
-    bus = Bus(results.channel, **config)
+    bus = _create_bus(results)
 
     reader = LogReader(results.infile)
 
