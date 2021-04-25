@@ -187,8 +187,8 @@ class MultiRateCyclicSendTaskABC(CyclicSendTaskABC):
         self,
         channel: typechecking.Channel,
         messages: Union[Sequence[Message], Message],
-        count: int,
-        initial_period: float,
+        count: int,  # pylint: disable=unused-argument
+        initial_period: float,  # pylint: disable=unused-argument
         subsequent_period: float,
     ) -> None:
         """
@@ -279,7 +279,7 @@ class ThreadBasedCyclicSendTask(
                 started = time.perf_counter()
                 try:
                     self.bus.send(self.messages[msg_index])
-                except Exception as exc:
+                except Exception as exc:  # pylint: disable=broad-except
                     log.exception(exc)
                     if self.on_error:
                         if not self.on_error(exc):

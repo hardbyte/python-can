@@ -279,9 +279,9 @@ class BusABC(metaclass=ABCMeta):
         """
         if not hasattr(self, "_lock_send_periodic"):
             # Create a send lock for this bus, but not for buses which override this method
-            self._lock_send_periodic = (
+            self._lock_send_periodic = (  # pylint: disable=attribute-defined-outside-init
                 threading.Lock()
-            )  # pylint: disable=attribute-defined-outside-init
+            )
         task = ThreadBasedCyclicSendTask(
             self, self._lock_send_periodic, msgs, period, duration
         )
@@ -451,7 +451,12 @@ class BusABC(metaclass=ABCMeta):
 
 
 class _SelfRemovingCyclicTask(CyclicSendTaskABC, ABC):
-    """Removes itself from a bus. Only needed for typing :meth:`Bus._periodic_tasks`. Do not instantiate."""
+    """Removes itself from a bus.
 
-    def stop(self, remove_task: bool = True) -> None:
+    Only needed for typing :meth:`Bus._periodic_tasks`. Do not instantiate.
+    """
+
+    def stop(  # pylint: disable=arguments-differ
+        self, remove_task: bool = True
+    ) -> None:
         raise NotImplementedError()
