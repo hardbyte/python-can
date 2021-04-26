@@ -13,7 +13,7 @@ from pkg_resources import iter_entry_points
 if typing.TYPE_CHECKING:
     import can
 
-from .generic import BaseIOHandler
+from .generic import BaseIOHandler, MessageReader
 from .asc import ASCReader
 from .blf import BLFReader
 from .canutils import CanutilsLogReader
@@ -56,7 +56,12 @@ class LogReader(BaseIOHandler):
     }
 
     @staticmethod
-    def __new__(cls, filename: "can.typechecking.StringPathLike", *args, **kwargs):
+    def __new__(  # type: ignore
+        cls: typing.Any,
+        filename: "can.typechecking.StringPathLike",
+        *args: typing.Any,
+        **kwargs: typing.Any,
+    ) -> MessageReader:
         """
         :param filename: the filename/path of the file to read from
         :raises ValueError: if the filename's suffix is of an unknown file type
@@ -72,7 +77,10 @@ class LogReader(BaseIOHandler):
 
         suffix = pathlib.PurePath(filename).suffix.lower()
         try:
-            return LogReader.message_readers[suffix](filename, *args, **kwargs)
+            return typing.cast(
+                MessageReader,
+                LogReader.message_readers[suffix](filename, *args, **kwargs),
+            )
         except KeyError:
             raise ValueError(
                 f'No read support for this unknown log format "{suffix}"'

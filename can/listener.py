@@ -1,9 +1,10 @@
 """
 This module contains the implementation of `can.Listener` and some readers.
 """
+
 import sys
 import warnings
-from typing import AsyncIterator, Awaitable, Optional
+from typing import Any, AsyncIterator, Awaitable, Optional
 
 from can.message import Message
 from can.bus import BusABC
@@ -37,22 +38,22 @@ class Listener(metaclass=ABCMeta):
     """
 
     @abstractmethod
-    def on_message_received(self, msg: Message):
+    def on_message_received(self, msg: Message) -> None:
         """This method is called to handle the given message.
 
         :param msg: the delivered message
         """
 
-    def __call__(self, msg: Message):
+    def __call__(self, msg: Message) -> None:
         self.on_message_received(msg)
 
-    def on_error(self, exc: Exception):
+    def on_error(self, exc: Exception) -> None:
         """This method is called to handle any exception in the receive thread.
 
         :param exc: The exception causing the thread to stop
         """
 
-    def stop(self):
+    def stop(self) -> None:
         """
         Stop handling new messages, carry out any final tasks to ensure
         data is persisted and cleanup any open resources.
@@ -66,10 +67,10 @@ class RedirectReader(Listener):
     A RedirectReader sends all received messages to another Bus.
     """
 
-    def __init__(self, bus: BusABC):
+    def __init__(self, bus: BusABC) -> None:
         self.bus = bus
 
-    def on_message_received(self, msg: Message):
+    def on_message_received(self, msg: Message) -> None:
         self.bus.send(msg)
 
 
@@ -87,12 +88,12 @@ class BufferedReader(Listener):
     :attr is_stopped: ``True`` if the reader has been stopped
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         # set to "infinite" size
-        self.buffer = SimpleQueue()
+        self.buffer: SimpleQueue[Message] = SimpleQueue()
         self.is_stopped: bool = False
 
-    def on_message_received(self, msg: Message):
+    def on_message_received(self, msg: Message) -> None:
         """Append a message to the buffer.
 
         :raises: BufferError
@@ -118,7 +119,7 @@ class BufferedReader(Listener):
         except Empty:
             return None
 
-    def stop(self):
+    def stop(self) -> None:
         """Prohibits any more additions to this reader."""
         self.is_stopped = True
 
@@ -134,7 +135,7 @@ class AsyncBufferedReader(Listener):
             print(msg)
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         self.buffer: "asyncio.Queue[Message]"
 
         if "loop" in kwargs.keys():
@@ -149,7 +150,7 @@ class AsyncBufferedReader(Listener):
 
         self.buffer = asyncio.Queue()
 
-    def on_message_received(self, msg: Message):
+    def on_message_received(self, msg: Message) -> None:
         """Append a message to the buffer.
 
         Must only be called inside an event loop!

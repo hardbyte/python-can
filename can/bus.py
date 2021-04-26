@@ -328,7 +328,7 @@ class BusABC(metaclass=ABCMeta):
         return self._filters
 
     @filters.setter
-    def filters(self, filters: Optional[can.typechecking.CanFilters]):
+    def filters(self, filters: Optional[can.typechecking.CanFilters]) -> None:
         self.set_filters(filters)
 
     def set_filters(
@@ -426,7 +426,7 @@ class BusABC(metaclass=ABCMeta):
         return BusState.ACTIVE
 
     @state.setter
-    def state(self, new_state: BusState):
+    def state(self, new_state: BusState) -> None:
         """
         Set the new state of the hardware
         """
