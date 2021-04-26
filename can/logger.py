@@ -74,7 +74,7 @@ def _append_filter_argument(
         "\n      <can_id>~<can_mask> (matches when <received_can_id> & mask != can_id & mask)"
         "\nFx to show only frames with ID 0x100 to 0x103 and 0x200 to 0x20F:"
         "\n      python -m can.viewer -f 100:7FC 200:7F0"
-        "\nNote that the ID and mask are alway interpreted as hex values",
+        "\nNote that the ID and mask are always interpreted as hex values",
         metavar="{<can_id>:<can_mask>,<can_id>~<can_mask>}",
         nargs=argparse.ONE_OR_MORE,
         default="",
@@ -112,7 +112,7 @@ def _parse_filters(parsed_args: Any) -> CanFilters:
             elif "~" in filt:
                 parts = filt.split("~")
                 can_id = int(parts[0], base=16) | 0x20000000  # CAN_INV_FILTER
-                can_mask = int(parts[1], base=16) & socket.CAN_ERR_FLAG
+                can_mask = int(parts[1], base=16) & 0x20000000  # socket.CAN_ERR_FLAG
             else:
                 raise argparse.ArgumentError(None, "Invalid filter argument")
             can_filters.append({"can_id": can_id, "can_mask": can_mask})
