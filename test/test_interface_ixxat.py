@@ -18,7 +18,7 @@ class SoftwareTestCase(unittest.TestCase):
         try:
             bus = can.Bus(interface="ixxat", channel=0)
             bus.shutdown()
-        except ImportError:
+        except can.CanInterfaceNotImplementedError:
             raise unittest.SkipTest("not available on this platform")
 
     def test_bus_creation(self):
@@ -44,7 +44,7 @@ class HardwareTestCase(unittest.TestCase):
         try:
             bus = can.Bus(interface="ixxat", channel=0)
             bus.shutdown()
-        except ImportError:
+        except can.CanInterfaceNotImplementedError:
             raise unittest.SkipTest("not available on this platform")
 
     def test_bus_creation(self):
