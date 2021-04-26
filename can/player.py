@@ -92,7 +92,10 @@ def main() -> None:
     reader = LogReader(results.infile)
 
     in_sync = MessageSync(
-        cast(Iterable[Message], reader), timestamps=results.timestamps, gap=results.gap, skip=results.skip
+        cast(Iterable[Message], reader),
+        timestamps=results.timestamps,
+        gap=results.gap,
+        skip=results.skip,
     )
 
     print(f"Can LogReader (Started on {datetime.now()})")

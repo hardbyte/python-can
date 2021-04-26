@@ -143,9 +143,7 @@ class CanViewer:
 
     # Unpack the data and then convert it into SI-units
     @staticmethod
-    def unpack_data(
-        cmd: int, cmd_to_struct: Dict, data: bytes
-    ) -> List[float]:
+    def unpack_data(cmd: int, cmd_to_struct: Dict, data: bytes) -> List[float]:
         if not cmd_to_struct or not data:
             # These messages do not contain a data package
             return []
@@ -480,7 +478,9 @@ def parse_args(args):
     # In order to convert from raw integer value the real units are multiplied with the values and
     # similarly the values
     # are divided by the value in order to convert from real units to raw integer values.
-    data_structs: Dict[Union[int, Tuple[int, ...]], Union[struct.Struct, Tuple, None]] = {}
+    data_structs: Dict[
+        Union[int, Tuple[int, ...]], Union[struct.Struct, Tuple, None]
+    ] = {}
     if parsed_args.decode:
         if os.path.isfile(parsed_args.decode[0]):
             with open(parsed_args.decode[0], "r") as f:
