@@ -59,11 +59,11 @@ def _create_base_argument_parser(parser: argparse.ArgumentParser) -> None:
     )
 
 
-def _append_filter_argument(parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup]) -> None:
+def _append_filter_argument(parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup], *args, **kwargs) -> None:
     """Adds the ``filter`` option to an argument parser."""
 
     parser.add_argument(
-        "-f",
+        *args,
         "--filter",
         help="R|Space separated CAN filters for the given CAN interface:"
              "\n      <can_id>:<can_mask> (matches when <received_can_id> & mask == can_id & mask)"
@@ -74,6 +74,7 @@ def _append_filter_argument(parser: Union[argparse.ArgumentParser, argparse._Arg
         metavar="{<can_id>:<can_mask>,<can_id>~<can_mask>}",
         nargs=argparse.ONE_OR_MORE,
         default="",
+        **kwargs,
     )
 
 

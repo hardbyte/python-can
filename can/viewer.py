@@ -431,7 +431,7 @@ def parse_args(args):
         default="",
     )
 
-    _append_filter_argument(optional)
+    _append_filter_argument(optional, "-f")
 
     optional.add_argument(
         "-i",
