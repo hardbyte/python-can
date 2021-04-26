@@ -66,9 +66,9 @@ class Bus(BusABC):  # pylint: disable=abstract-method
     """
 
     @staticmethod
-    def __new__(  # type: ignore
+    def __new__(  # type: ignore  # pylint: disable=keyword-arg-before-vararg
         cls: Any, channel: Optional[Channel] = None, *args: Any, **kwargs: Any
-    ) -> BusABC:  # pylint: disable=keyword-arg-before-vararg
+    ) -> BusABC:
         """
         Takes the same arguments as :class:`can.BusABC.__init__`.
         Some might have a special meaning, see below.
