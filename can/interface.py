@@ -22,9 +22,8 @@ def _get_class_for_interface(interface):
 
     :raises:
         NotImplementedError if the interface is not known
-    :raises:
-        CanBackEndError if there was a problem while importing the
-                        interface or the bus class within that
+    :raises CanInterfaceNotImplementedError:
+         if there was a problem while importing the interface or the bus class within that
     """
     # Find the correct backend
     try:
@@ -82,7 +81,7 @@ class Bus(BusABC):  # pylint: disable=abstract-method
             Should contain an ``interface`` key with a valid interface name. If not,
             it is completed using :meth:`can.util.load_config`.
 
-        :raises: can.CanBackEndError
+        :raises: can.CanInterfaceNotImplementedError
             if the ``interface`` isn't recognized or cannot be loaded
 
         :raises: can.CanInitializationError

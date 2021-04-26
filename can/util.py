@@ -149,7 +149,7 @@ def load_config(
         All unused values are passed from ``config`` over to this.
 
     :raises:
-        CanBackEndError if the ``interface`` isn't recognized
+        CanInterfaceNotImplementedError if the ``interface`` isn't recognized
     """
 
     # start with an empty dict to apply filtering to all sources

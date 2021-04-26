@@ -66,7 +66,7 @@ class BusABC(metaclass=ABCMeta):
             Any backend dependent configurations are passed in this dictionary
 
         :raises ValueError: If parameters are out of range
-        :raises can.CanBackEndError: If the driver cannot be accessed
+        :raises can.CanInterfaceNotImplementedError: If the driver cannot be accessed
         :raises can.CanInitializationError: If the bus cannot be initialized
         """
         self._periodic_tasks: List[_SelfRemovingCyclicTask] = []

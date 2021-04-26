@@ -5,7 +5,7 @@ code to react to specific scenarios related to CAN busses::
     Exception (Python standard library)
      +-- ...
      +-- CanError (python-can)
-         +-- CanBackendError
+         +-- CanInterfaceNotImplementedError
          +-- CanInterfaceNotImplementedError
          +-- CanOperationError
          +-- CanTimeoutError
