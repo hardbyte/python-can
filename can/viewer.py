@@ -31,7 +31,7 @@ from typing import Dict, List, Tuple, Union
 
 import can
 from can import __version__
-from .logger import _create_bus, _parse_filters
+from .logger import _create_bus, _parse_filters, _append_filter_argument
 
 
 logger = logging.getLogger("can.serial")
@@ -433,19 +433,7 @@ def parse_args(args):
         default="",
     )
 
-    optional.add_argument(
-        "-f",
-        "--filter",
-        help="R|Space separated CAN filters for the given CAN interface:"
-        "\n      <can_id>:<can_mask> (matches when <received_can_id> & mask == can_id & mask)"
-        "\n      <can_id>~<can_mask> (matches when <received_can_id> & mask != can_id & mask)"
-        "\nFx to show only frames with ID 0x100 to 0x103 and 0x200 to 0x20F:"
-        "\n      python -m can.viewer -f 100:7FC 200:7F0"
-        "\nNote that the ID and mask are alway interpreted as hex values",
-        metavar="{<can_id>:<can_mask>,<can_id>~<can_mask>}",
-        nargs=argparse.ONE_OR_MORE,
-        default="",
-    )
+    _append_filter_argument(optional)
 
     optional.add_argument(
         "-i",
@@ -471,7 +459,7 @@ def parse_args(args):
 
     parsed_args = parser.parse_args(args)
 
-    can_filters = _parse_filters(parse_args)
+    can_filters = _parse_filters(parsed_args)
 
     # Dictionary used to convert between Python values and C structs represented as Python strings.
     # If the value is 'None' then the message does not contain any data package.

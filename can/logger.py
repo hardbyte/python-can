@@ -19,14 +19,14 @@ import argparse
 import socket
 from datetime import datetime
 import errno
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
 import can
 from . import Bus, BusState, Logger, SizedRotatingLogger
 from .typechecking import CanFilter, CanFilters
 
 
-def _create_base_argument_parser(parser: argparse.ArgumentParser):
+def _create_base_argument_parser(parser: argparse.ArgumentParser) -> None:
     """Adds common options to an argument parser."""
 
     parser.add_argument(
@@ -56,6 +56,24 @@ def _create_base_argument_parser(parser: argparse.ArgumentParser):
         "--data_bitrate",
         type=int,
         help="Bitrate to use for the data phase in case of CAN-FD.",
+    )
+
+
+def _append_filter_argument(parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup]) -> None:
+    """Adds the ``filter`` option to an argument parser."""
+
+    parser.add_argument(
+        "-f",
+        "--filter",
+        help="R|Space separated CAN filters for the given CAN interface:"
+             "\n      <can_id>:<can_mask> (matches when <received_can_id> & mask == can_id & mask)"
+             "\n      <can_id>~<can_mask> (matches when <received_can_id> & mask != can_id & mask)"
+             "\nFx to show only frames with ID 0x100 to 0x103 and 0x200 to 0x20F:"
+             "\n      python -m can.viewer -f 100:7FC 200:7F0"
+             "\nNote that the ID and mask are alway interpreted as hex values",
+        metavar="{<can_id>:<can_mask>,<can_id>~<can_mask>}",
+        nargs=argparse.ONE_OR_MORE,
+        default="",
     )
 
 
@@ -131,15 +149,7 @@ def main() -> None:
         default=2,
     )
 
-    parser.add_argument(
-        "--filter",
-        help="""Comma separated filters can be specified for the given CAN interface:
-        <can_id>:<can_mask> (matches when <received_can_id> & mask == can_id & mask)
-        <can_id>~<can_mask> (matches when <received_can_id> & mask != can_id & mask)
-    """,
-        nargs=argparse.REMAINDER,
-        default="",
-    )
+    _append_filter_argument(parser)
 
     state_group = parser.add_mutually_exclusive_group(required=False)
     state_group.add_argument(
