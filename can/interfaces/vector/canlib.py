@@ -519,7 +519,7 @@ class VectorBus(BusABC):
     @property
     def bitrate(self) -> int:
         return self.bitrate
-        
+
     @bitrate.setter
     def bitrate(self, bitrate: int) -> None:
         xldriver.xlCanSetChannelBitrate(self.port_handle, self.mask, bitrate)
