@@ -16,7 +16,7 @@ import sys
 from typing import Optional
 
 from can import BusABC, Message
-from can.exceptions import *
+from can.exceptions import CanInterfaceNotImplementedError, CanInitializationError
 from can.broadcastmanager import (
     LimitedDurationCyclicSendTaskABC,
     RestartableCyclicTaskABC,
@@ -426,7 +426,7 @@ class IXXATBus(BusABC):
             Channel bitrate in bit/s
         """
         if _canlib is None:
-            raise ImportError(
+            raise CanInterfaceNotImplementedError(
                 "The IXXAT VCI library has not been initialized. Check the logs for more details."
             )
         log.info("CAN Filters: %s", can_filters)
