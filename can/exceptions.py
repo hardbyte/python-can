@@ -41,7 +41,9 @@ class CanError(Exception):
     """
 
     def __init__(
-        self, message: str = "", error_code: Optional[int] = None, *args, **kwargs
+        self,
+        message: str = "",
+        error_code: Optional[int] = None,
     ) -> None:
         self.error_code = error_code
         super().__init__(
