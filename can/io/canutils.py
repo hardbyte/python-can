@@ -139,8 +139,7 @@ class CanutilsLogWriter(BaseIOHandler, Listener):
                     "(%f) %s %s#R\n" % (timestamp, channel, arbitration_id_str)
                 )
             else:
-                data = ["{:02X}".format(byte) for byte in msg.data]
                 self.file.write(
                     "(%f) %s %s#%s\n"
-                    % (timestamp, channel, arbitration_id_str, "".join(data))
+                    % (timestamp, channel, arbitration_id_str, msg.data.hex().upper())
                 )
