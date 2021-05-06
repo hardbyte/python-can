@@ -18,6 +18,8 @@ CAN_ERR_FLAG = 0x20000000
 CAN_ERR_BUSERROR = 0x00000080
 CAN_ERR_DLC = 8
 
+CANFD_BRS = 0x01
+CANFD_ESI = 0x02
 
 class CanutilsLogReader(BaseIOHandler):
     """
@@ -47,12 +49,23 @@ class CanutilsLogReader(BaseIOHandler):
 
             timestamp, channel, frame = temp.split()
             timestamp = float(timestamp[1:-1])
-            canId, data = frame.split("#")
+            canId, data = frame.split("#", maxsplit=1)
             if channel.isdigit():
                 channel = int(channel)
 
             isExtended = len(canId) > 3
             canId = int(canId, 16)
+
+            is_fd = False
+            brs = False
+            esi = False
+
+            if data and data[0] == "#":
+                is_fd = True
+                fd_flags = int(data[1])
+                brs = bool(fd_flags & CANFD_BRS)
+                esi = bool(fd_flags & CANFD_ESI)
+                data = data[2:]
 
             if data and data[0].lower() == "r":
                 isRemoteFrame = True
@@ -79,6 +92,9 @@ class CanutilsLogReader(BaseIOHandler):
                     arbitration_id=canId & 0x1FFFFFFF,
                     is_extended_id=isExtended,
                     is_remote_frame=isRemoteFrame,
+                    is_fd=is_fd,
+                    bitrate_switch=brs,
+                    error_state_indicator=esi,
                     dlc=dlc,
                     data=dataBin,
                     channel=channel,
@@ -126,20 +142,25 @@ class CanutilsLogWriter(BaseIOHandler, Listener):
 
         channel = msg.channel if msg.channel is not None else self.channel
 
-        if msg.is_error_frame:
-            self.file.write(
-                "(%f) %s %08X#0000000000000000\n"
-                % (timestamp, channel, CAN_ERR_FLAG | CAN_ERR_BUSERROR)
-            )
-        else:
-            arbitration_id_str = ("%08X" if msg.is_extended_id else "%03X") % msg.arbitration_id
+        framestr = "(%f) %s" % (timestamp, channel)
 
-            if msg.is_remote_frame:
-                self.file.write(
-                    "(%f) %s %s#R\n" % (timestamp, channel, arbitration_id_str)
-                )
-            else:
-                self.file.write(
-                    "(%f) %s %s#%s\n"
-                    % (timestamp, channel, arbitration_id_str, msg.data.hex().upper())
-                )
+        if msg.is_error_frame:
+            framestr += " %08X#" % (CAN_ERR_FLAG | CAN_ERR_BUSERROR)
+        elif msg.is_extended_id:
+            framestr += " %08X#" % (msg.arbitration_id)
+        else:
+            framestr += " %03X#" % (msg.arbitration_id)
+
+        if msg.is_remote_frame:
+            framestr += "R\n"
+        else:
+            if msg.is_fd:
+                fd_flags = 0
+                if msg.bitrate_switch:
+                    fd_flags |= CANFD_BRS
+                if msg.error_state_indicator:
+                    fd_flags |= CANFD_ESI
+                framestr += "#%X" % fd_flags
+            framestr += "%s\n" % (msg.data.hex().upper())
+
+        self.file.write(framestr)

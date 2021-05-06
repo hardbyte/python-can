@@ -662,7 +662,7 @@ class TestCanutilsFileFormat(ReaderWriterTest):
         super()._setup_instance_helper(
             can.CanutilsLogWriter,
             can.CanutilsLogReader,
-            check_fd=False,
+            check_fd=True,
             test_append=True,
             check_comments=False,
             preserves_channel=False,
