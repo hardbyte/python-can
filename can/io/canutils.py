@@ -131,26 +131,16 @@ class CanutilsLogWriter(BaseIOHandler, Listener):
                 "(%f) %s %08X#0000000000000000\n"
                 % (timestamp, channel, CAN_ERR_FLAG | CAN_ERR_BUSERROR)
             )
-
-        elif msg.is_remote_frame:
-            if msg.is_extended_id:
-                self.file.write(
-                    "(%f) %s %08X#R\n" % (timestamp, channel, msg.arbitration_id)
-                )
-            else:
-                self.file.write(
-                    "(%f) %s %03X#R\n" % (timestamp, channel, msg.arbitration_id)
-                )
-
         else:
-            data = ["{:02X}".format(byte) for byte in msg.data]
-            if msg.is_extended_id:
+            arbitration_id_str = ("%08X" if msg.is_extended_id else "%03X") % msg.arbitration_id
+
+            if msg.is_remote_frame:
                 self.file.write(
-                    "(%f) %s %08X#%s\n"
-                    % (timestamp, channel, msg.arbitration_id, "".join(data))
+                    "(%f) %s %s#R\n" % (timestamp, channel, arbitration_id_str)
                 )
             else:
+                data = ["{:02X}".format(byte) for byte in msg.data]
                 self.file.write(
-                    "(%f) %s %03X#%s\n"
-                    % (timestamp, channel, msg.arbitration_id, "".join(data))
+                    "(%f) %s %s#%s\n"
+                    % (timestamp, channel, arbitration_id_str, "".join(data))
                 )
