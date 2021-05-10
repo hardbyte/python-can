@@ -1,14 +1,14 @@
 """
 See the :class:`Logger` class.
 """
+
 import os
 import pathlib
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Optional, Callable
+from typing import Any, cast, Callable, Optional
 
 from pkg_resources import iter_entry_points
-from can.typechecking import StringPathLike
 
 from ..message import Message
 from ..listener import Listener
@@ -19,6 +19,7 @@ from .canutils import CanutilsLogWriter
 from .csv import CSVWriter
 from .sqlite import SqliteWriter
 from .printer import Printer
+from ..typechecking import StringPathLike
 
 
 class Logger(BaseIOHandler, Listener):  # pylint: disable=abstract-method
@@ -53,7 +54,9 @@ class Logger(BaseIOHandler, Listener):  # pylint: disable=abstract-method
     }
 
     @staticmethod
-    def __new__(cls, filename: Optional[StringPathLike], *args, **kwargs):
+    def __new__(  # type: ignore
+        cls: Any, filename: Optional[StringPathLike], *args: Any, **kwargs: Any
+    ) -> Listener:
         """
         :param filename: the filename/path of the file to write to,
                          may be a path-like object or None to
@@ -74,7 +77,9 @@ class Logger(BaseIOHandler, Listener):  # pylint: disable=abstract-method
 
         suffix = pathlib.PurePath(filename).suffix.lower()
         try:
-            return Logger.message_writers[suffix](filename, *args, **kwargs)
+            return cast(
+                Listener, Logger.message_writers[suffix](filename, *args, **kwargs)
+            )
         except KeyError:
             raise ValueError(
                 f'No write support for this unknown log format "{suffix}"'
@@ -116,12 +121,12 @@ class BaseRotatingLogger(Listener, ABC):
         ".log": CanutilsLogWriter,
         ".txt": Printer,
     }
-    namer: Optional[Callable] = None
-    rotator: Optional[Callable] = None
+    namer: Optional[Callable[[StringPathLike], StringPathLike]] = None
+    rotator: Optional[Callable[[StringPathLike, StringPathLike], None]] = None
     rollover_count: int = 0
     _writer: Optional[FileIOMessageWriter] = None
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.writer_args = args
         self.writer_kwargs = kwargs
 
@@ -132,7 +137,7 @@ class BaseRotatingLogger(Listener, ABC):
 
         return self._writer
 
-    def rotation_filename(self, default_name: StringPathLike):
+    def rotation_filename(self, default_name: StringPathLike) -> StringPathLike:
         """Modify the filename of a log file when rotating.
 
         This is provided so that a custom filename can be provided.
@@ -145,12 +150,11 @@ class BaseRotatingLogger(Listener, ABC):
             The default name for the log file.
         """
         if not callable(self.namer):
-            result = default_name
-        else:
-            result = self.namer(default_name)
-        return result
+            return default_name
 
-    def rotate(self, source: StringPathLike, dest: StringPathLike):
+        return self.namer(default_name)
+
+    def rotate(self, source: StringPathLike, dest: StringPathLike) -> None:
         """When rotating, rotate the current log.
 
         The default implementation calls the 'rotator' attribute of the
@@ -171,7 +175,7 @@ class BaseRotatingLogger(Listener, ABC):
         else:
             self.rotator(source, dest)
 
-    def on_message_received(self, msg: Message):
+    def on_message_received(self, msg: Message) -> None:
         """This method is called to handle the given message.
 
         :param msg:
@@ -183,7 +187,7 @@ class BaseRotatingLogger(Listener, ABC):
 
         self.writer.on_message_received(msg)
 
-    def get_new_writer(self, filename: StringPathLike):
+    def get_new_writer(self, filename: StringPathLike) -> None:
         """Instantiate a new writer.
 
         :param filename:
@@ -205,7 +209,7 @@ class BaseRotatingLogger(Listener, ABC):
                 filename, *self.writer_args, **self.writer_kwargs
             )
 
-    def stop(self):
+    def stop(self) -> None:
         """Stop handling new messages.
 
         Carry out any final tasks to ensure
@@ -216,12 +220,10 @@ class BaseRotatingLogger(Listener, ABC):
     @abstractmethod
     def should_rollover(self, msg: Message) -> bool:
         """Determine if the rollover conditions are met."""
-        ...
 
     @abstractmethod
-    def do_rollover(self):
+    def do_rollover(self) -> None:
         """Perform rollover."""
-        ...
 
 
 class SizedRotatingLogger(BaseRotatingLogger):
@@ -261,8 +263,12 @@ class SizedRotatingLogger(BaseRotatingLogger):
     """
 
     def __init__(
-        self, base_filename: StringPathLike, max_bytes: int = 0, *args, **kwargs
-    ):
+        self,
+        base_filename: StringPathLike,
+        max_bytes: int = 0,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
         """
         :param base_filename:
             A path-like object for the base filename. The log file format is defined by
@@ -287,7 +293,7 @@ class SizedRotatingLogger(BaseRotatingLogger):
 
         return False
 
-    def do_rollover(self):
+    def do_rollover(self) -> None:
         if self.writer:
             self.writer.stop()
 

@@ -38,7 +38,12 @@ The Notifier object is used as a message distributor for a bus. Notifier creates
 .. autoclass:: can.Notifier
     :members:
 
+
+.. _errors:
+
 Errors
 ------
 
-.. autoclass:: can.CanError
+.. automodule:: can.exceptions
+    :members:
+    :show-inheritance:
