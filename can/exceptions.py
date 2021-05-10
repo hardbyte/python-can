@@ -21,7 +21,7 @@ from typing import Optional
 class CanError(Exception):
     """Base class for all CAN related exceptions.
 
-    If specified, the error code is automatically prepended to the message:
+    If specified, the error code is automatically appended to the message:
 
     >>> # With an error code (it also works with a specific error):
     >>> error = CanOperationError(message="Failed to do the thing", error_code=42)
