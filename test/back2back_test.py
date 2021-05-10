@@ -2,11 +2,11 @@
 # coding: utf-8
 
 """
-This module tests two virtual buses attached to each other.
+This module tests two buses attached to each other.
 """
 
 import unittest
-from time import sleep
+from time import sleep, time
 from multiprocessing.dummy import Pool as ThreadPool
 import random
 
@@ -234,6 +234,34 @@ class Back2BackTestCase(unittest.TestCase):
         else:
             self.assertIsNotNone(fileno)
             self.assertTrue(fileno == -1 or fileno > 0)
+
+    def test_timestamp_is_absolute(self):
+        """Tests that the timestamp that is returned is an absolute one."""
+        self.bus2.send(can.Message())
+        message = self.bus1.recv(self.TIMEOUT)
+        # The allowed delta is still quite large to make this work on the CI server
+        self.assertAlmostEqual(message.timestamp, time(), delta=self.TIMEOUT)
+
+    def test_sub_second_timestamp_resolution(self):
+        """Tests that the timestamp that is returned has sufficient resolution.
+
+        The property that the timestamp has resolution below seconds is
+        checked on two messages to reduce the probability of both having
+        a timestamp of exactly a full second by accident to a negligible
+        level.
+
+        This is a regression test that was added for #1021.
+        """
+        self.bus2.send(can.Message())
+        sleep(0.01)
+        self.bus2.send(can.Message())
+
+        recv_msg_1 = self.bus1.recv(self.TIMEOUT)
+        recv_msg_2 = self.bus1.recv(self.TIMEOUT)
+
+        sub_second_fraction_1 = recv_msg_1.timestamp % 1
+        sub_second_fraction_2 = recv_msg_2.timestamp % 1
+        self.assertGreater(sub_second_fraction_1 + sub_second_fraction_2, 0)
 
 
 @unittest.skipUnless(TEST_INTERFACE_SOCKETCAN, "skip testing of socketcan")
