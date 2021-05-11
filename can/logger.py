@@ -63,8 +63,8 @@ def _append_filter_argument(
         argparse.ArgumentParser,
         argparse._ArgumentGroup,  # pylint: disable=protected-access
     ],
-    *args,
-    **kwargs,
+    *args: str,
+    **kwargs: Any,
 ) -> None:
     """Adds the ``filter`` option to an argument parser."""
 
