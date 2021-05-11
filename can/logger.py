@@ -16,7 +16,6 @@ Dynamic Controls 2010
 
 import sys
 import argparse
-import socket
 from datetime import datetime
 import errno
 from typing import Any, Dict, List, Union
@@ -60,7 +59,10 @@ def _create_base_argument_parser(parser: argparse.ArgumentParser) -> None:
 
 
 def _append_filter_argument(
-    parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup],
+    parser: Union[
+        argparse.ArgumentParser,
+        argparse._ArgumentGroup,  # pylint: disable=protected-access
+    ],
     *args,
     **kwargs,
 ) -> None:
