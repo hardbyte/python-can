@@ -21,6 +21,7 @@ CAN_ERR_DLC = 8
 CANFD_BRS = 0x01
 CANFD_ESI = 0x02
 
+
 class CanutilsLogReader(BaseIOHandler):
     """
     Iterator over CAN messages from a .log Logging File (candump -L).
