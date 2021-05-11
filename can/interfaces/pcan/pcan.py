@@ -281,13 +281,19 @@ class PcanBus(BusABC):
         if result != PCAN_ERROR_OK:
             raise PcanError(self._get_formatted_error(result))
 
-        if platform.system() != "Darwin":
-            result = self.m_objPCANBasic.SetValue(
-                self.m_PcanHandle, PCAN_ALLOW_ERROR_FRAMES, PCAN_PARAMETER_ON
-            )
+        result = self.m_objPCANBasic.SetValue(
+            self.m_PcanHandle, PCAN_ALLOW_ERROR_FRAMES, PCAN_PARAMETER_ON
+        )
 
-            if result != PCAN_ERROR_OK:
+        if result != PCAN_ERROR_OK:
+            if platform.system() != "Darwin":
                 raise PcanError(self._get_formatted_error(result))
+            else:
+                # TODO Remove Filter when MACCan actually supports it:
+                #  https://github.com/mac-can/PCBUSB-Library/
+                log.debug(
+                    "Ignoring error. PCAN_ALLOW_ERROR_FRAMES is still unsupported by OSX Library PCANUSB v0.10"
+                )
 
         if HAS_EVENTS:
             self._recv_event = CreateEvent(None, 0, 0, None)

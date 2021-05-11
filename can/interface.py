@@ -6,24 +6,26 @@ CyclicSendTasks.
 
 import importlib
 import logging
+from typing import Any, cast, Iterable, Type, Optional, Union, List
 
 from .bus import BusABC
 from .util import load_config
 from .interfaces import BACKENDS
+from .exceptions import CanInterfaceNotImplementedError
+from .typechecking import AutoDetectedConfig, Channel
 
 log = logging.getLogger("can.interface")
 log_autodetect = log.getChild("detect_available_configs")
 
 
-def _get_class_for_interface(interface):
+def _get_class_for_interface(interface: str) -> Type[BusABC]:
     """
     Returns the main bus class for the given interface.
 
     :raises:
         NotImplementedError if the interface is not known
-    :raises:
-        ImportError     if there was a problem while importing the
-                        interface or the bus class within that
+    :raises CanInterfaceNotImplementedError:
+         if there was a problem while importing the interface or the bus class within that
     """
     # Find the correct backend
     try:
@@ -37,7 +39,7 @@ def _get_class_for_interface(interface):
     try:
         module = importlib.import_module(module_name)
     except Exception as e:
-        raise ImportError(
+        raise CanInterfaceNotImplementedError(
             "Cannot import module {} for CAN interface '{}': {}".format(
                 module_name, interface, e
             )
@@ -47,13 +49,13 @@ def _get_class_for_interface(interface):
     try:
         bus_class = getattr(module, class_name)
     except Exception as e:
-        raise ImportError(
+        raise CanInterfaceNotImplementedError(
             "Cannot import class {} from module {} for CAN interface '{}': {}".format(
                 class_name, module_name, interface, e
             )
         ) from None
 
-    return bus_class
+    return cast(Type[BusABC], bus_class)
 
 
 class Bus(BusABC):  # pylint: disable=abstract-method
@@ -64,9 +66,9 @@ class Bus(BusABC):  # pylint: disable=abstract-method
     """
 
     @staticmethod
-    def __new__(
-        cls, channel=None, *args, **kwargs
-    ):  # pylint: disable=keyword-arg-before-vararg
+    def __new__(  # type: ignore  # pylint: disable=keyword-arg-before-vararg
+        cls: Any, channel: Optional[Channel] = None, *args: Any, **kwargs: Any
+    ) -> BusABC:
         """
         Takes the same arguments as :class:`can.BusABC.__init__`.
         Some might have a special meaning, see below.
@@ -81,8 +83,11 @@ class Bus(BusABC):  # pylint: disable=abstract-method
             Should contain an ``interface`` key with a valid interface name. If not,
             it is completed using :meth:`can.util.load_config`.
 
-        :raises: NotImplementedError
-            if the ``interface`` isn't recognized
+        :raises: can.CanInterfaceNotImplementedError
+            if the ``interface`` isn't recognized or cannot be loaded
+
+        :raises: can.CanInitializationError
+            if the bus cannot be instantiated
 
         :raises: ValueError
             if the ``channel`` could not be determined
@@ -113,12 +118,16 @@ class Bus(BusABC):  # pylint: disable=abstract-method
 
         if channel is None:
             # Use the default channel for the backend
-            return cls(*args, **kwargs)
+            bus = cls(*args, **kwargs)
         else:
-            return cls(channel, *args, **kwargs)
+            bus = cls(channel, *args, **kwargs)
+
+        return cast(BusABC, bus)
 
 
-def detect_available_configs(interfaces=None):
+def detect_available_configs(
+    interfaces: Union[None, str, Iterable[str]] = None
+) -> List[AutoDetectedConfig]:
     """Detect all configurations/channels that the interfaces could
     currently connect with.
 
@@ -150,9 +159,9 @@ def detect_available_configs(interfaces=None):
 
         try:
             bus_class = _get_class_for_interface(interface)
-        except ImportError:
+        except CanInterfaceNotImplementedError:
             log_autodetect.debug(
-                'interface "%s" can not be loaded for detection of available configurations',
+                'interface "%s" cannot be loaded for detection of available configurations',
                 interface,
             )
             continue

@@ -15,8 +15,9 @@ import logging
 from configparser import ConfigParser
 
 import can
-from can.interfaces import VALID_INTERFACES
-from can import typechecking
+from .interfaces import VALID_INTERFACES
+from . import typechecking
+from .exceptions import CanInterfaceNotImplementedError
 
 log = logging.getLogger("can.util")
 
@@ -147,7 +148,8 @@ def load_config(
 
         All unused values are passed from ``config`` over to this.
 
-    :raises NotImplementedError: if the ``interface`` name is unknown
+    :raises:
+        CanInterfaceNotImplementedError if the ``interface`` name isn't recognized
     """
 
     # Start with an empty dict to apply filtering to all sources
@@ -202,7 +204,9 @@ def _create_bus_config(config: Dict[str, Any]) -> typechecking.BusConfig:
             config[key] = None
 
     if config["interface"] not in VALID_INTERFACES:
-        raise NotImplementedError(f'Invalid CAN Bus Type "{config["interface"]}"')
+        raise CanInterfaceNotImplementedError(
+            f'Unknown interface type "{config["interface"]}"'
+        )
 
     if "bitrate" in config:
         config["bitrate"] = int(config["bitrate"])

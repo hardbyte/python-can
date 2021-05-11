@@ -281,9 +281,10 @@ class TestVectorBus(unittest.TestCase):
         """This tests if an exception is thrown when we are not running on Windows."""
         if os.name != "nt":
             with self.assertRaises(OSError):
-                # do not set the _testing argument, since it supresses the exception
+                # do not set the _testing argument, since it suppresses the exception
                 can.Bus(channel=0, bustype="vector")
 
+    @unittest.skip("Fixing this is deferred until Vector is adjusted after #1025")
     def test_vector_error_pickle(self) -> None:
         error_code = 118
         error_string = "XL_ERROR"

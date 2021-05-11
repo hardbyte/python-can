@@ -8,7 +8,7 @@ Implementation references:
 TODO: We could implement this interface such that setting other filters
       could work when the initial filters were set to zero using the
       software fallback. Or could the software filters even be changed
-      after the connection was opened? We need to document that bahaviour!
+      after the connection was opened? We need to document that behaviour!
       See also the IXXAT interface.
 
 """
