@@ -1,8 +1,6 @@
 """
 Ctypes wrapper module for IXXAT Virtual CAN Interface V3 on win32 systems
 
-Copyright (C) 2016 Giuseppe Corbelli <giuseppe.corbelli@weightpack.com>
-
 TODO: We could implement this interface such that setting other filters
       could work when the initial filters were set to zero using the
       software fallback. Or could the software filters even be changed
@@ -15,8 +13,10 @@ import ctypes
 import functools
 import logging
 import sys
+from typing import Optional
 
 from can import BusABC, Message
+from can.exceptions import CanInterfaceNotImplementedError, CanInitializationError
 from can.broadcastmanager import (
     LimitedDurationCyclicSendTaskABC,
     RestartableCyclicTaskABC,
@@ -44,12 +44,8 @@ vciFormatError = None
 
 # main ctypes instance
 _canlib = None
-if sys.platform == "win32":
-    try:
-        _canlib = CLibrary("vcinpl")
-    except Exception as e:
-        log.warning("Cannot load IXXAT vcinpl library: %s", e)
-elif sys.platform == "cygwin":
+# TODO: Use ECI driver for linux
+if sys.platform == "win32" or sys.platform == "cygwin":
     try:
         _canlib = CLibrary("vcinpl.dll")
     except Exception as e:
@@ -430,7 +426,7 @@ class IXXATBus(BusABC):
             Channel bitrate in bit/s
         """
         if _canlib is None:
-            raise ImportError(
+            raise CanInterfaceNotImplementedError(
                 "The IXXAT VCI library has not been initialized. Check the logs for more details."
             )
         log.info("CAN Filters: %s", can_filters)
@@ -446,6 +442,15 @@ class IXXATBus(BusABC):
 
         if bitrate not in self.CHANNEL_BITRATES[0]:
             raise ValueError("Invalid bitrate {}".format(bitrate))
+
+        if rxFifoSize <= 0:
+            raise ValueError("rxFifoSize must be > 0")
+
+        if txFifoSize <= 0:
+            raise ValueError("txFifoSize must be > 0")
+
+        if channel < 0:
+            raise ValueError("channel number must be >= 0")
 
         self._device_handle = HANDLE()
         self._device_info = structures.VCIDEVICEINFO()
@@ -489,10 +494,15 @@ class IXXATBus(BusABC):
                         self._device_info.UniqueHardwareId.AsChar.decode("ascii"),
                     )
         _canlib.vciEnumDeviceClose(self._device_handle)
-        _canlib.vciDeviceOpen(
-            ctypes.byref(self._device_info.VciObjectId),
-            ctypes.byref(self._device_handle),
-        )
+
+        try:
+            _canlib.vciDeviceOpen(
+                ctypes.byref(self._device_info.VciObjectId),
+                ctypes.byref(self._device_handle),
+            )
+        except Exception as exception:
+            raise CanInitializationError(f"Could not open device: {exception}")
+
         log.info("Using unique HW ID %s", self._device_info.UniqueHardwareId.AsChar)
 
         log.info(
@@ -501,12 +511,19 @@ class IXXATBus(BusABC):
             rxFifoSize,
             txFifoSize,
         )
-        _canlib.canChannelOpen(
-            self._device_handle,
-            channel,
-            constants.FALSE,
-            ctypes.byref(self._channel_handle),
-        )
+
+        try:
+            _canlib.canChannelOpen(
+                self._device_handle,
+                channel,
+                constants.FALSE,
+                ctypes.byref(self._channel_handle),
+            )
+        except Exception as exception:
+            raise CanInitializationError(
+                f"Could not open and initialize channel: {exception}"
+            )
+
         # Signal TX/RX events when at least one frame has been handled
         _canlib.canChannelInitialize(self._channel_handle, rxFifoSize, 1, txFifoSize, 1)
         _canlib.canChannelActivate(self._channel_handle, constants.TRUE)
@@ -631,7 +648,6 @@ class IXXATBus(BusABC):
                     if self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_DATA:
                         data_received = True
                         break
-
                     elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_INFO:
                         log.info(
                             CAN_INFO_MESSAGES.get(
@@ -693,8 +709,18 @@ class IXXATBus(BusABC):
 
         return rx_msg, True
 
-    def send(self, msg, timeout=None):
+    def send(self, msg: Message, timeout: Optional[float] = None) -> None:
+        """
+        Sends a message on the bus. The interface may buffer the message.
 
+        :param msg:
+            The message to send.
+        :param timeout:
+            Timeout after some time.
+        :raise:
+            :class:CanTimeoutError
+            :class:CanOperationError
+        """
         # This system is not designed to be very efficient
         message = structures.CANMSG()
         message.uMsgInfo.Bits.type = constants.CAN_MSGTYPE_DATA
@@ -711,6 +737,7 @@ class IXXATBus(BusABC):
             _canlib.canChannelSendMessage(
                 self._channel_handle, int(timeout * 1000), message
             )
+
         else:
             _canlib.canChannelPostMessage(self._channel_handle, message)
 

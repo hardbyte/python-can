@@ -6,21 +6,23 @@ messages on a can bus.
 """
 
 import logging
-
 from typing import Dict, Any
 
-__version__ = "4.0.0-dev"
+__version__ = "4.0.0-dev.2"
 
 log = logging.getLogger("can")
 
 rc: Dict[str, Any] = dict()
 
-
-class CanError(IOError):
-    """Indicates an error with the CAN network."""
-
-
 from .listener import Listener, BufferedReader, RedirectReader, AsyncBufferedReader
+
+from .exceptions import (
+    CanError,
+    CanInterfaceNotImplementedError,
+    CanInitializationError,
+    CanOperationError,
+    CanTimeoutError,
+)
 
 from .io import Logger, SizedRotatingLogger, Printer, LogReader, MessageSync
 from .io import ASCWriter, ASCReader

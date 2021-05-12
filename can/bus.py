@@ -31,7 +31,11 @@ class BusABC(metaclass=ABCMeta):
     """The CAN Bus Abstract Base Class that serves as the basis
     for all concrete interfaces.
 
-    This class may be used as an iterator over the received messages.
+    This class may be used as an iterator over the received messages
+    and as a context manager for auto-closing the bus when done using it.
+
+    Please refer to :ref:`errors` for possible exceptions that may be
+    thrown by certain operations on this bus.
     """
 
     #: a string describing the underlying bus and/or channel
@@ -60,6 +64,10 @@ class BusABC(metaclass=ABCMeta):
 
         :param dict kwargs:
             Any backend dependent configurations are passed in this dictionary
+
+        :raises ValueError: If parameters are out of range
+        :raises can.CanInterfaceNotImplementedError: If the driver cannot be accessed
+        :raises can.CanInitializationError: If the bus cannot be initialized
         """
         self._periodic_tasks: List[_SelfRemovingCyclicTask] = []
         self.set_filters(can_filters)
@@ -73,10 +81,9 @@ class BusABC(metaclass=ABCMeta):
         :param timeout:
             seconds to wait for a message or None to wait indefinitely
 
-        :return:
-            None on timeout or a :class:`Message` object.
-        :raises can.CanError:
-            if an error occurred while reading
+        :return: ``None`` on timeout or a :class:`Message` object.
+
+        :raises can.CanOperationError: If an error occurred while reading
         """
         start = time()
         time_left = timeout
@@ -141,8 +148,7 @@ class BusABC(metaclass=ABCMeta):
             2.  a bool that is True if message filtering has already
                 been done and else False
 
-        :raises can.CanError:
-            if an error occurred while reading
+        :raises can.CanOperationError: If an error occurred while reading
         :raises NotImplementedError:
             if the bus provides it's own :meth:`~can.BusABC.recv`
             implementation (legacy implementation)
@@ -165,8 +171,7 @@ class BusABC(metaclass=ABCMeta):
             Might not be supported by all interfaces.
             None blocks indefinitely.
 
-        :raises can.CanError:
-            if the message could not be sent
+        :raises can.CanOperationError: If an error occurred while sending
         """
         raise NotImplementedError("Trying to write to a readonly bus?")
 
@@ -336,7 +341,7 @@ class BusABC(metaclass=ABCMeta):
         messages are matched.
 
         Calling without passing any filters will reset the applied
-        filters to `None`.
+        filters to ``None``.
 
         :param filters:
             A iterable of dictionaries each containing a "can_id",

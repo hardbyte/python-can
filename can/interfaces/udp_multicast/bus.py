@@ -181,7 +181,7 @@ class GeneralPurposeUdpMulticastBus:
             raise RuntimeError("could not connect to a multicast IP network")
 
         # used in recv()
-        self.received_timestamp_struct = "@II"
+        self.received_timestamp_struct = "@ll"
         ancillary_data_size = struct.calcsize(self.received_timestamp_struct)
         self.received_ancillary_buffer_size = socket.CMSG_SPACE(ancillary_data_size)
 
@@ -306,6 +306,10 @@ class GeneralPurposeUdpMulticastBus:
             seconds, nanoseconds = struct.unpack(
                 self.received_timestamp_struct, cmsg_data
             )
+            if nanoseconds >= 1e9:
+                raise can.CanError(
+                    f"Timestamp nanoseconds field was out of range: {nanoseconds} not less than 1e9"
+                )
             timestamp = seconds + nanoseconds * 1.0e-9
 
             return raw_message_data, sender_address, timestamp

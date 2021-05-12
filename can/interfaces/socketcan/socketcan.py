@@ -549,6 +549,10 @@ def capture_message(
     ), "received control message type that was not requested"
     # see https://man7.org/linux/man-pages/man3/timespec.3.html -> struct timespec for details
     seconds, nanoseconds = RECEIVED_TIMESTAMP_STRUCT.unpack_from(cmsg_data)
+    if nanoseconds >= 1e9:
+        raise can.CanError(
+            f"Timestamp nanoseconds field was out of range: {nanoseconds} not less than 1e9"
+        )
     timestamp = seconds + nanoseconds * 1e-9
 
     # EXT, RTR, ERR flags -> boolean attributes
@@ -594,7 +598,7 @@ def capture_message(
 
 # Constants needed for precise handling of timestamps
 if CMSG_SPACE_available:
-    RECEIVED_TIMESTAMP_STRUCT = struct.Struct("@II")
+    RECEIVED_TIMESTAMP_STRUCT = struct.Struct("@ll")
     RECEIVED_ANCILLARY_BUFFER_SIZE = CMSG_SPACE(RECEIVED_TIMESTAMP_STRUCT.size)
 
 
