@@ -315,21 +315,18 @@ class BusABC(metaclass=ABCMeta):
                 yield msg
 
     @property
-    @abstractmethod
     def bitrate(self) -> int:
+        """Bitrate of the underlying bus in bits/s
+        """
         raise NotImplementedError("Device must implement bitrate")
 
     @bitrate.setter
-    @abstractmethod
     def bitrate(self, bitrate: int) -> None:
         """Changes the bitrate of the underlying bus.
 
         Override this method to enable runtime bitrate changes.
 
-        :param int bitrate: the new bitrate to set.
-
-        :raises can.CanError:
-            if the message could not be sent
+        :param int bitrate: the new bitrate to set in bits/s.
         """
         raise NotImplementedError("Device not capable of runtime bitrate change")
 
