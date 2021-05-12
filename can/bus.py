@@ -316,8 +316,7 @@ class BusABC(metaclass=ABCMeta):
 
     @property
     def bitrate(self) -> int:
-        """Bitrate of the underlying bus in bits/s
-        """
+        """Bitrate of the underlying bus in bits/s"""
         raise NotImplementedError("Device must implement bitrate")
 
     @bitrate.setter
