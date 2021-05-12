@@ -163,7 +163,7 @@ class VectorBus(BusABC):
                     )
                 self.channels = channel_index
             else:
-                #TODO - Is there any better way to raise the error?
+                # TODO - Is there any better way to raise the error?
                 raise Exception(
                     "None of the configured channels could be found on the specified hardware."
                 )
