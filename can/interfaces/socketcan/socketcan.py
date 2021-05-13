@@ -21,6 +21,24 @@ log = logging.getLogger(__name__)
 log_tx = log.getChild("tx")
 log_rx = log.getChild("rx")
 
+can_config_lib = ctypes.util.find_library("socketcan123")
+if can_config_lib:
+    class BitrateTiming(ctypes.Structure):
+        _fields_ = [("bitrate", ctypes.c_uint32),
+                    ("sample_point", ctypes.c_uint32),
+                    ("tq", ctypes.c_uint32),
+                    ("prop_seg", ctypes.c_uint32),
+                    ("phase_seg1", ctypes.c_uint32),
+                    ("phase_seg2", ctypes.c_uint32),
+                    ("sjw", ctypes.c_uint32),
+                    ("brp", ctypes.c_uint32)]
+
+    can_config = ctypes.cdll.LoadLibrary(can_config_lib)
+else:
+    can_config = None
+    can_config_error = "Dynamic bitrate changes not possible. Please install libsocketcan2."
+    log.error(can_config_error)
+
 try:
     import fcntl
 except ImportError:
@@ -267,7 +285,7 @@ def dissect_can_frame(frame: bytes) -> Tuple[int, int, int, bytes]:
 
 def create_bcm_socket(channel: str) -> socket.socket:
     """create a broadcast manager socket and connect to the given interface"""
-    s = socket.socket(PF_CAN, socket.SOCK_DGRAM, CAN_BCM)
+    s = socket.socket(socket.PF_CAN, socket.SOCK_DGRAM, socket.CAN_BCM)
     s.connect((channel,))
     return s
 
@@ -491,7 +509,7 @@ def create_socket() -> socket.socket:
     """Creates a raw CAN socket. The socket will
     be returned unbound to any interface.
     """
-    sock = socket.socket(PF_CAN, socket.SOCK_RAW, CAN_RAW)
+    sock = socket.socket(socket.PF_CAN, socket.SOCK_RAW, socket.CAN_RAW)
 
     log.info("Created a socket")
 
@@ -853,6 +871,31 @@ class SocketcanBus(BusABC):
             {"interface": "socketcan", "channel": channel}
             for channel in find_available_interfaces()
         ]
+
+    @property
+    def bitrate(self) -> int:
+        if can_config:
+            bitrate_timing = BitrateTiming()
+            error = can_config.can_get_bittiming(self.channel.encode(), ctypes.pointer(bitrate_timing))
+            if error == -1:
+                log.error("likely need to run as sudo to be able to set the bitrate")
+                return None
+            return bitrate_timing.bitrate
+        else:
+            #TODO - better error?
+            raise NotImplementedError(can_config_error)
+
+    @bitrate.setter
+    def bitrate(self, bitrate: int) -> None:
+        if can_config:
+            can_config.can_do_stop(self.channel.encode())
+            error = can_config.can_set_bitrate(self.channel.encode(), bitrate)
+            can_config.can_do_start(self.channel.encode())
+            if error == -1:
+                log.error("likely need to run as sudo to be able to set the bitrate")
+        else:
+            #TODO - better error?
+            raise NotImplementedError(can_config_error)
 
 
 if __name__ == "__main__":
