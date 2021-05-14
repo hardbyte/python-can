@@ -21,7 +21,7 @@ log = logging.getLogger(__name__)
 log_tx = log.getChild("tx")
 log_rx = log.getChild("rx")
 
-can_config_lib = ctypes.util.find_library("socketcan123")
+can_config_lib = ctypes.util.find_library("socketcan")
 if can_config_lib:
 
     class BitrateTiming(ctypes.Structure):
