@@ -23,20 +23,25 @@ log_rx = log.getChild("rx")
 
 can_config_lib = ctypes.util.find_library("socketcan123")
 if can_config_lib:
+
     class BitrateTiming(ctypes.Structure):
-        _fields_ = [("bitrate", ctypes.c_uint32),
-                    ("sample_point", ctypes.c_uint32),
-                    ("tq", ctypes.c_uint32),
-                    ("prop_seg", ctypes.c_uint32),
-                    ("phase_seg1", ctypes.c_uint32),
-                    ("phase_seg2", ctypes.c_uint32),
-                    ("sjw", ctypes.c_uint32),
-                    ("brp", ctypes.c_uint32)]
+        _fields_ = [
+            ("bitrate", ctypes.c_uint32),
+            ("sample_point", ctypes.c_uint32),
+            ("tq", ctypes.c_uint32),
+            ("prop_seg", ctypes.c_uint32),
+            ("phase_seg1", ctypes.c_uint32),
+            ("phase_seg2", ctypes.c_uint32),
+            ("sjw", ctypes.c_uint32),
+            ("brp", ctypes.c_uint32),
+        ]
 
     can_config = ctypes.cdll.LoadLibrary(can_config_lib)
 else:
     can_config = None
-    can_config_error = "Dynamic bitrate changes not possible. Please install libsocketcan2."
+    can_config_error = (
+        "Dynamic bitrate changes not possible. Please install libsocketcan2."
+    )
     log.error(can_config_error)
 
 try:
@@ -876,13 +881,15 @@ class SocketcanBus(BusABC):
     def bitrate(self) -> int:
         if can_config:
             bitrate_timing = BitrateTiming()
-            error = can_config.can_get_bittiming(self.channel.encode(), ctypes.pointer(bitrate_timing))
+            error = can_config.can_get_bittiming(
+                self.channel.encode(), ctypes.pointer(bitrate_timing)
+            )
             if error == -1:
                 log.error("likely need to run as sudo to be able to set the bitrate")
                 return None
             return bitrate_timing.bitrate
         else:
-            #TODO - better error?
+            # TODO - better error?
             raise NotImplementedError(can_config_error)
 
     @bitrate.setter
@@ -894,7 +901,7 @@ class SocketcanBus(BusABC):
             if error == -1:
                 log.error("likely need to run as sudo to be able to set the bitrate")
         else:
-            #TODO - better error?
+            # TODO - better error?
             raise NotImplementedError(can_config_error)
 
 
