@@ -31,7 +31,7 @@ xlGetErrorString.restype = xlclass.XLstringType
 
 
 def check_status(result, function, arguments):
-    if result > 0:
+    if result not in [0, 1, 10]:  # success, pending and empty queue
         raise VectorError(result, xlGetErrorString(result).decode(), function.__name__)
     return result
 
