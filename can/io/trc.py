@@ -2,7 +2,12 @@
 
 """
 Reader and writer for can logging files in peak trc format
-"""
+
+See https://www.peak-system.com/produktcd/Pdf/English/PEAK_CAN_TRC_File_Format.pdf
+for file format description
+
+Version 1.1 will be implemented as it is most commonly used
+""" # noqa
 
 from __future__ import absolute_import
 
