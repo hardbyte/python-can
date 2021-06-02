@@ -1,12 +1,11 @@
 #!/usr/bin/env python
+
 """
 Setup script for the `can` package.
 Learn more at https://github.com/hardbyte/python-can/
 """
 
 # pylint: disable=invalid-name
-
-from __future__ import absolute_import
 
 from os import listdir
 from os.path import isfile, join
