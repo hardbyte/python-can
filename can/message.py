@@ -298,10 +298,8 @@ class Message:
         Compares a given message with this one.
 
         :param other: the message to compare with
-
         :param timestamp_delta: the maximum difference in seconds at which two timestamps are
                                 still considered equal or `None` to not compare timestamps
-
         :param check_direction: whether to compare the messages' directions (Tx/Rx)
 
         :return: True if and only if the given message equals this one
