@@ -36,7 +36,6 @@ class TestPCANBus(unittest.TestCase):
             self.bus = None
 
     def test_bus_creation(self) -> None:
-        print("test")
         self.bus = can.Bus(bustype="pcan")
         self.assertIsInstance(self.bus, pcan.PcanBus)
         self.MockPCANBasic.assert_called_once()
