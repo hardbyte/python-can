@@ -52,6 +52,10 @@ def load_file_config(
         name of the section to read configuration from.
     """
     config = ConfigParser()
+
+    # make sure to not transform the entries such that capitalization is preserved
+    config.optionxform = lambda entry: entry  # type: ignore
+
     if path is None:
         config.read([os.path.expanduser(path) for path in CONFIG_FILES])
     else:
