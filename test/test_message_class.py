@@ -51,7 +51,7 @@ class TestMessageClass(unittest.TestCase):
             or (kwargs["arbitration_id"] >= 0x800 and not kwargs["is_extended_id"])
             or kwargs["arbitration_id"] >= 0x20000000
             or kwargs["arbitration_id"] < 0
-            or (kwargs["is_remote_frame"] and kwargs["is_error_frame"])
+            or (kwargs["is_remote_frame"] and (kwargs["is_fd"] or kwargs["is_error_frame"]))
             or (kwargs["is_remote_frame"] and len(kwargs["data"] or []) > 0)
             or (
                 (kwargs["bitrate_switch"] or kwargs["error_state_indicator"])
