@@ -52,6 +52,7 @@ class Listener(metaclass=ABCMeta):
 
         :param exc: The exception causing the thread to stop
         """
+        raise NotImplementedError()
 
     def stop(self) -> None:
         """

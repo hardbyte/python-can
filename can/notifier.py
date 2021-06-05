@@ -127,6 +127,7 @@ class Notifier:
                 # If it was not handled, raise the exception here
                 raise
             else:
+                # It was handled, so only log it
                 logger.info("suppressed exception: %s", exc)
 
     def _on_message_available(self, bus: BusABC) -> None:
@@ -146,14 +147,18 @@ class Notifier:
 
         :returns: ``True`` if and only if at least one handler was called
         """
-        listeners_with_on_error = [
-            listener for listener in self.listeners if hasattr(listener, "on_error")
-        ]
+        was_handled = False
 
-        for listener in listeners_with_on_error:
-            listener.on_error(exc)
+        for listener in self.listeners:
+            if hasattr(listener, "on_error"):
+                try:
+                    listener.on_error(exc)
+                except NotImplementedError:
+                    pass
+                else:
+                    was_handled = True
 
-        return bool(listeners_with_on_error)
+        return was_handled
 
     def add_listener(self, listener: Listener) -> None:
         """Add new Listener to the notification list.
