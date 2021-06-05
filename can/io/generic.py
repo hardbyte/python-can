@@ -3,19 +3,20 @@ Contains a generic class for file IO.
 """
 
 from abc import ABCMeta
-from typing import Any, Optional, cast, Union, TextIO, BinaryIO, Type
+from typing import Any, Optional, cast, Iterable, Union, TextIO, BinaryIO, Type, ContextManager
+from typing_extensions import Literal
 
 import can
 import can.typechecking
 
 
-class BaseIOHandler(metaclass=ABCMeta):
+class BaseIOHandler(ContextManager, metaclass=ABCMeta):
     """A generic file handler that can be used for reading and writing.
 
     Can be used as a context manager.
 
     :attr Optional[FileLike] file:
-        the file-like object that is kept internally, or None if none
+        the file-like object that is kept internally, or `None` if none
         was opened
     """
 
@@ -39,7 +40,7 @@ class BaseIOHandler(metaclass=ABCMeta):
     def __enter__(self) -> "BaseIOHandler":
         return self
 
-    def __exit__(self, exc_type: Type, exc_val: Any, exc_tb: Any) -> Any:
+    def __exit__(self, exc_type: Type, exc_val: Any, exc_tb: Any) -> Literal[False]:
         self.stop()
         return False
 
@@ -63,5 +64,5 @@ class FileIOMessageWriter(MessageWriter, metaclass=ABCMeta):
 
 
 # pylint: disable=too-few-public-methods
-class MessageReader(BaseIOHandler, metaclass=ABCMeta):
+class MessageReader(BaseIOHandler, Iterable, metaclass=ABCMeta):
     """The base class for all readers."""
