@@ -44,7 +44,7 @@ class BaseIOHandler(metaclass=ABCMeta):
         return False
 
     def stop(self) -> None:
-        """Closes the undelying file-like object and flushes it, if it was opened in write mode."""
+        """Closes the underlying file-like object and flushes it, if it was opened in write mode."""
         if self.file is not None:
             # this also implies a flush()
             self.file.close()
