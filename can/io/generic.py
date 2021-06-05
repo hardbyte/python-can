@@ -3,7 +3,17 @@ Contains a generic class for file IO.
 """
 
 from abc import ABCMeta
-from typing import Any, Optional, cast, Iterable, Union, TextIO, BinaryIO, Type, ContextManager
+from typing import (
+    Any,
+    Optional,
+    cast,
+    Iterable,
+    Union,
+    TextIO,
+    BinaryIO,
+    Type,
+    ContextManager,
+)
 from typing_extensions import Literal
 
 import can
