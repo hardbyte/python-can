@@ -4,7 +4,6 @@ Contains a generic class for file IO.
 
 from abc import ABCMeta
 from typing import (
-    Any,
     Optional,
     cast,
     Iterable,
@@ -15,6 +14,7 @@ from typing import (
     ContextManager,
 )
 from typing_extensions import Literal
+from types import TracebackType
 
 import can
 import can.typechecking
@@ -50,7 +50,12 @@ class BaseIOHandler(ContextManager, metaclass=ABCMeta):
     def __enter__(self) -> "BaseIOHandler":
         return self
 
-    def __exit__(self, exc_type: Type, exc_val: Any, exc_tb: Any) -> Literal[False]:
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> Literal[False]:
         self.stop()
         return False
 
