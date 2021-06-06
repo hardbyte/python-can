@@ -1,6 +1,4 @@
-"""
-Contains a generic class for file IO.
-"""
+"""Contains generic base classes for file IO."""
 
 from abc import ABCMeta
 from typing import (
@@ -25,10 +23,12 @@ class BaseIOHandler(ContextManager, metaclass=ABCMeta):
 
     Can be used as a context manager.
 
-    :attr Optional[FileLike] file:
+    :attr file:
         the file-like object that is kept internally, or `None` if none
         was opened
     """
+
+    file: Optional[can.typechecking.FileLike]
 
     def __init__(self, file: can.typechecking.AcceptedIOType, mode: str = "rt") -> None:
         """
