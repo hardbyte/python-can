@@ -11,13 +11,6 @@ install:
   - if [[ "$TEST_SOCKETCAN" ]]; then sudo bash test/open_vcan.sh ; fi
   - travis_retry sudo python setup.py install
 
-script:
-  - |
-    # install tox
-    travis_retry sudo pip install tox
-    # Run the tests
-    tox -e travis
-
 jobs:
   allow_failures:
     # Allow arm64 builds to fail
@@ -36,6 +29,12 @@ jobs:
       python: "3.6"
       sudo: required
       env: TEST_SOCKETCAN=TRUE
+      script:
+        - |
+          # install tox
+          travis_retry pip install tox
+          # Run the tests
+          tox -e travis
 
     # arm64 builds
     - stage: test
@@ -53,6 +52,13 @@ jobs:
         # Travis doesn't seem to provide Python binaries yet for this arch
         - sudo update-alternatives --install /usr/bin/python python $(which python3) 10
         - sudo update-alternatives --install /usr/bin/pip pip $(which pip3) 10
+      script:
+        # same as in the Socketcan job but with elevated privileges
+        - |
+          # install tox
+          travis_retry sudo pip install tox
+          # Run the tests
+          sudo tox -e travis
 
     - stage: documentation
       name: "Sphinx Build"
