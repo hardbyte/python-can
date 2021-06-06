@@ -9,7 +9,7 @@ cache:
 
 install:
   - if [[ "$TEST_SOCKETCAN" ]]; then sudo bash test/open_vcan.sh ; fi
-  - travis_retry python setup.py install
+  - travis_retry sudo python setup.py install
 
 script:
   - |
