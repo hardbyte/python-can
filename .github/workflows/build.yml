@@ -32,6 +32,10 @@ jobs:
     - name: Test with pytest via tox
       run: |
         tox -e gh
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v1
+      with:
+        fail_ci_if_error: true
 
   format:
     runs-on: ubuntu-latest
