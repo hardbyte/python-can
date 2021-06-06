@@ -8,8 +8,7 @@ cache:
   - "$HOME/.cache/pip"
 
 install:
-  - if [[ "$TEST_SOCKETCAN" ]]; then sudo bash test/open_vcan.sh ; fi
-  - travis_retry sudo python setup.py install
+  - travis_retry python setup.py install
 
 jobs:
   allow_failures:
@@ -31,6 +30,7 @@ jobs:
       env: TEST_SOCKETCAN=TRUE
       script:
         - |
+          if [[ "$TEST_SOCKETCAN" ]]; then sudo bash test/open_vcan.sh ; fi
           # install tox
           travis_retry pip install tox
           # Run the tests
@@ -52,9 +52,12 @@ jobs:
         # Travis doesn't seem to provide Python binaries yet for this arch
         - sudo update-alternatives --install /usr/bin/python python $(which python3) 10
         - sudo update-alternatives --install /usr/bin/pip pip $(which pip3) 10
+      # The below is the same as in the Socketcan job but with elevated privileges
+      install:
+        - travis_retry sudo python setup.py install
       script:
-        # same as in the Socketcan job but with elevated privileges
         - |
+          if [[ "$TEST_SOCKETCAN" ]]; then sudo bash test/open_vcan.sh ; fi
           # install tox
           travis_retry sudo pip install tox
           # Run the tests
