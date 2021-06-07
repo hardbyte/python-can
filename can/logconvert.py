@@ -57,7 +57,7 @@ def main():
         logger = Logger(filename=results.output)
 
     try:
-        for m in reader:
+        for m in reader:  # pylint: disable=not-an-iterable
             logger(m)
     except KeyboardInterrupt:
         pass
