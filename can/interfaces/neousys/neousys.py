@@ -141,7 +141,7 @@ class NeousysBus(BusABC):
         """
         :param channel: channel number
         :param device: device number
-        :param bitrate: bit rate. Renamed to bitrate in next release.
+        :param bitrate: bit rate.
         """
         super().__init__(channel, **kwargs)
 
