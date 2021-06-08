@@ -17,7 +17,7 @@
 import queue
 import logging
 import platform
-import time
+from time import time
 
 from ctypes import (
     byref,
@@ -177,11 +177,10 @@ class NeousysBus(BusABC):
         if NEOUSYS_CANLIB.CAN_Start(channel) == 0:
             raise CanInitializationError("Neousys CAN bus Start Error")
 
-    def send(self, msg, timeout=None):
+    def send(self, msg, timeout=None) -> None:
         """
         :param msg: message to send
         :param timeout: timeout is not used here
-        :return:
         """
 
         tx_msg = NeousysCanMsg(
@@ -197,28 +196,20 @@ class NeousysBus(BusABC):
         except queue.Empty:
             return None, False
 
-    def _neousys_recv_cb(self, msg, sizeof_msg):
+    def _neousys_recv_cb(self, msg, sizeof_msg) -> None:
         """
-        :param msg struct CAN_MSG
-        :param sizeof_msg message number
-        :return:
+        :param msg: struct CAN_MSG
+        :param sizeof_msg: message number
         """
-        remote_frame = False
-        extended_frame = False
-
         msg_bytes = bytearray(msg.contents.data)
-
-        if msg.contents.flags & NEOUSYS_CAN_MSG_REMOTE_FRAME:
-            remote_frame = True
-
-        if msg.contents.flags & NEOUSYS_CAN_MSG_EXTENDED_ID:
-            extended_frame = True
+        remote_frame = bool(msg.contents.flags & NEOUSYS_CAN_MSG_REMOTE_FRAME)
+        extended_frame = bool(msg.contents.flags & NEOUSYS_CAN_MSG_EXTENDED_ID)
 
         if msg.contents.flags & NEOUSYS_CAN_MSG_DATA_LOST:
             logger.error("_neousys_recv_cb flag CAN_MSG_DATA_LOST")
 
         msg = Message(
-            timestamp=time.time(),
+            timestamp=time(),
             arbitration_id=msg.contents.id,
             is_remote_frame=remote_frame,
             is_extended_id=extended_frame,
@@ -235,19 +226,14 @@ class NeousysBus(BusABC):
         except queue.Full:
             raise CanOperationError("Neousys message Queue is full") from None
 
-    def _neousys_status_cb(self, status):
+    def _neousys_status_cb(self, status) -> None:
         """
-        :param status BUS Status
-        :return:
+        :param status: BUS Status
         """
         logger.info("%s _neousys_status_cb: %d", self.init_config, status)
 
     def shutdown(self):
         NEOUSYS_CANLIB.CAN_Stop(self.channel)
-
-    def fileno(self):
-        # Return an invalid file descriptor as not used
-        return -1
 
     @staticmethod
     def _detect_available_configs():
