@@ -228,7 +228,9 @@ class Message:  # pylint: disable=too-many-instance-attributes; OK for a datacla
             error_state_indicator=self.error_state_indicator,
         )
 
-    def _check(self) -> None:  # pylint: disable=too-many-branches; it's still simple code
+    def _check(
+        self,
+    ) -> None:  # pylint: disable=too-many-branches; it's still simple code
         """Checks if the message parameters are valid.
 
         Assumes that the attribute types are already correct.
