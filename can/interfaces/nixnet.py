@@ -1,4 +1,3 @@
-
 """
 NI-XNET interface module.
 
