@@ -192,7 +192,7 @@ class NeousysBus(BusABC):
 
     def _recv_internal(self, timeout):
         try:
-            return self.queue.get(), False
+            return self.queue.get(block=True, timeout=timeout), False
         except queue.Empty:
             return None, False
 
