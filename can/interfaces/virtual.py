@@ -59,7 +59,7 @@ class VirtualBus(BusABC):
         channel: Any = None,
         receive_own_messages: bool = False,
         rx_queue_size: int = 0,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         super().__init__(
             channel=channel, receive_own_messages=receive_own_messages, **kwargs
