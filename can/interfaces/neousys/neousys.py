@@ -13,10 +13,7 @@
 # pylint: disable=too-few-public-methods
 # pylint: disable=too-many-instance-attributes
 # pylint: disable=wrong-import-position
-# pylint: disable=method-hidden
-# pylint: disable=unused-import
 
-import warnings
 import queue
 import logging
 import platform
@@ -33,11 +30,13 @@ from ctypes import (
     Structure,
 )
 
-if platform.system() == "Windows":
+try:
     from ctypes import WinDLL
-else:
+except ImportError:
     from ctypes import CDLL
+
 from can import BusABC, Message
+from ...exceptions import CanInitializationError, CanOperationError, CanInterfaceNotImplementedError
 
 
 logger = logging.getLogger(__name__)
@@ -126,14 +125,13 @@ try:
         NEOUSYS_CANLIB = WinDLL("./WDT_DIO.dll")
     else:
         NEOUSYS_CANLIB = CDLL("libwdt_dio.so")
-        logger.info("Loaded Neousys WDT_DIO Can driver")
+    logger.info("Loaded Neousys WDT_DIO Can driver")
 except OSError as error:
-    logger.info("Cannot Neousys CAN bus dll or share object: %d", format(error))
-    # NEOUSYS_CANLIB = None
+    logger.info("Cannot load Neousys CAN bus dll or shared object: %d", format(error))
 
 
 class NeousysBus(BusABC):
-    """ Neousys CAN bus Class"""
+    """Neousys CAN bus Class"""
 
     def __init__(self, channel, device=0, bitrate=500000, **kwargs):
         """
@@ -143,43 +141,41 @@ class NeousysBus(BusABC):
         """
         super().__init__(channel, **kwargs)
 
-        if NEOUSYS_CANLIB is not None:
-            self.channel = channel
+        if NEOUSYS_CANLIB is None:
+            raise CanInterfaceNotImplementedError("Neousys WDT_DIO Can driver missing")
 
-            self.device = device
+        self.channel = channel
+        self.device = device
+        self.channel_info = f"Neousys Can: device {self.device}, channel {self.channel}"
 
-            self.channel_info = "Neousys Can: device {}, channel {}".format(
-                self.device, self.channel
+        self.queue = queue.Queue()
+
+        # Init with accept all and wanted bitrate
+        self.init_config = NeousysCanSetup(
+            bitrate, NEOUSYS_CAN_MSG_USE_ID_FILTER, 0, 0
+        )
+
+        self._neousys_recv_cb = NEOUSYS_CAN_MSG_CALLBACK(self._neousys_recv_cb)
+        self._neousys_status_cb = NEOUSYS_CAN_STATUS_CALLBACK(
+            self._neousys_status_cb
+        )
+
+        if NEOUSYS_CANLIB.CAN_RegisterReceived(0, self._neousys_recv_cb) == 0:
+            raise CanInitializationError("Neousys CAN bus Setup receive callback")
+
+        if NEOUSYS_CANLIB.CAN_RegisterStatus(0, self._neousys_status_cb) == 0:
+            raise CanInitializationError("Neousys CAN bus Setup status callback")
+
+        if (
+            NEOUSYS_CANLIB.CAN_Setup(
+                channel, byref(self.init_config), sizeof(self.init_config)
             )
+            == 0
+        ):
+            raise CanInitializationError("Neousys CAN bus Setup Error")
 
-            self.queue = queue.Queue()
-
-            # Init with accept all and wanted bitrate
-            self.init_config = NeousysCanSetup(
-                bitrate, NEOUSYS_CAN_MSG_USE_ID_FILTER, 0, 0
-            )
-
-            self._neousys_recv_cb = NEOUSYS_CAN_MSG_CALLBACK(self._neousys_recv_cb)
-            self._neousys_status_cb = NEOUSYS_CAN_STATUS_CALLBACK(
-                self._neousys_status_cb
-            )
-
-            if NEOUSYS_CANLIB.CAN_RegisterReceived(0, self._neousys_recv_cb) == 0:
-                logger.error("Neousys CAN bus Setup receive callback")
-
-            if NEOUSYS_CANLIB.CAN_RegisterStatus(0, self._neousys_status_cb) == 0:
-                logger.error("Neousys CAN bus Setup status callback")
-
-            if (
-                NEOUSYS_CANLIB.CAN_Setup(
-                    channel, byref(self.init_config), sizeof(self.init_config)
-                )
-                == 0
-            ):
-                logger.error("Neousys CAN bus Setup Error")
-
-            if NEOUSYS_CANLIB.CAN_Start(channel) == 0:
-                logger.error("Neousys CAN bus Start Error")
+        if NEOUSYS_CANLIB.CAN_Start(channel) == 0:
+            raise CanInitializationError("Neousys CAN bus Start Error")
 
     def send(self, msg, timeout=None):
         """
@@ -188,26 +184,18 @@ class NeousysBus(BusABC):
         :return:
         """
 
-        if NEOUSYS_CANLIB is None:
-            logger.error("Can't send msg as Neousys DLL/SO is not loaded")
-        else:
-            tx_msg = NeousysCanMsg(
-                msg.arbitration_id, 0, 0, msg.dlc, (c_ubyte * 8)(*msg.data)
-            )
+        tx_msg = NeousysCanMsg(
+            msg.arbitration_id, 0, 0, msg.dlc, (c_ubyte * 8)(*msg.data)
+        )
 
-            if (
-                NEOUSYS_CANLIB.CAN_Send(self.channel, byref(tx_msg), sizeof(tx_msg))
-                == 0
-            ):
-                logger.error("Neousys Can can't send message")
+        if NEOUSYS_CANLIB.CAN_Send(self.channel, byref(tx_msg), sizeof(tx_msg)) == 0:
+            raise CanOperationError("Neousys Can can't send message")
 
     def _recv_internal(self, timeout):
-        msg = None
-
-        if not self.queue.empty():
-            msg = self.queue.get()
-
-        return msg, False
+        try:
+            return self.queue.get(), False
+        except queue.Empty:
+            return None, False
 
     def _neousys_recv_cb(self, msg, sizeof_msg):
         """
@@ -242,10 +230,10 @@ class NeousysBus(BusABC):
         # Reading happens in Callback function and
         # with Python-CAN it happens polling
         # so cache stuff in array to for poll
-        if not self.queue.full():
+        try:
             self.queue.put(msg)
-        else:
-            logger.error("Neousys message Queue is full")
+        except queue.Full:
+            raise CanOperationError("Neousys message Queue is full") from None
 
     def _neousys_status_cb(self, status):
         """
@@ -255,8 +243,7 @@ class NeousysBus(BusABC):
         logger.info("%s _neousys_status_cb: %d", self.init_config, status)
 
     def shutdown(self):
-        if NEOUSYS_CANLIB is not None:
-            NEOUSYS_CANLIB.CAN_Stop(self.channel)
+        NEOUSYS_CANLIB.CAN_Stop(self.channel)
 
     def fileno(self):
         # Return an invalid file descriptor as not used
@@ -264,8 +251,5 @@ class NeousysBus(BusABC):
 
     @staticmethod
     def _detect_available_configs():
-        channels = []
-
         # There is only one channel
-        channels.append({"interface": "neousys", "channel": 0})
-        return channels
+        return [{"interface": "neousys", "channel": 0}]
