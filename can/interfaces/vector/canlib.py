@@ -39,6 +39,7 @@ from can.util import (
     time_perfcounter_correlation,
 )
 from .exceptions import VectorError
+from can.typechecking import AutoDetectedConfig
 
 # Define Module Logger
 # ====================
@@ -88,7 +89,7 @@ class VectorBus(BusABC):
         tseg1_dbr=6,
         tseg2_dbr=3,
         **kwargs,
-    ):
+    ) -> None:
         """
         :param list channel:
             The channel indexes to create this bus with.
@@ -322,7 +323,7 @@ class VectorBus(BusABC):
         self._is_filtered = False
         super().__init__(channel=channel, can_filters=can_filters, **kwargs)
 
-    def _apply_filters(self, filters):
+    def _apply_filters(self, filters) -> None:
         if filters:
             # Only up to one filter per ID type allowed
             if len(filters) == 1 or (
@@ -599,22 +600,22 @@ class VectorBus(BusABC):
 
         return xl_can_tx_event
 
-    def flush_tx_buffer(self):
+    def flush_tx_buffer(self) -> None:
         xldriver.xlCanFlushTransmitQueue(self.port_handle, self.mask)
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         xldriver.xlDeactivateChannel(self.port_handle, self.mask)
         xldriver.xlClosePort(self.port_handle)
         xldriver.xlCloseDriver()
 
-    def reset(self):
+    def reset(self) -> None:
         xldriver.xlDeactivateChannel(self.port_handle, self.mask)
         xldriver.xlActivateChannel(
             self.port_handle, self.mask, xldefine.XL_BusTypes.XL_BUS_TYPE_CAN, 0
         )
 
     @staticmethod
-    def _detect_available_configs():
+    def _detect_available_configs() -> List[AutoDetectedConfig]:
         configs = []
         channel_configs = get_channel_configs()
         LOG.info("Found %d channels", len(channel_configs))
