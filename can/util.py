@@ -153,14 +153,14 @@ def load_config(
         All unused values are passed from ``config`` over to this.
 
     :raises:
-        CanInterfaceNotImplementedError if the ``interface`` isn't recognized
+        CanInterfaceNotImplementedError if the ``interface`` name isn't recognized
     """
 
-    # start with an empty dict to apply filtering to all sources
+    # Start with an empty dict to apply filtering to all sources
     given_config = config or {}
     config = {}
 
-    # use the given dict for default values
+    # Use the given dict for default values
     config_sources = cast(
         Iterable[Union[Dict[str, Any], Callable[[Any], Dict[str, Any]]]],
         [
@@ -189,6 +189,19 @@ def load_config(
             if key not in config:
                 config[key] = cfg[key]
 
+    bus_config = _create_bus_config(config)
+    can.log.debug("can config: %s", bus_config)
+    return bus_config
+
+
+def _create_bus_config(config: Dict[str, Any]) -> typechecking.BusConfig:
+    """Validates some config values, performs compatibility mappings and creates specific
+    structures (e.g. for bit timings).
+
+    :param config: The raw config as specified by the user
+    :return: A config that can be used by a :class:`~can.BusABC`
+    :raises NotImplementedError: if the ``interface`` is unknown
+    """
     # substitute None for all values not found
     for key in REQUIRED_KEYS:
         if key not in config:
@@ -224,8 +237,6 @@ def load_config(
     if timing_conf:
         timing_conf["bitrate"] = config["bitrate"]
         config["timing"] = can.BitTiming(**timing_conf)
-
-    can.log.debug("can config: %s", config)
 
     return cast(typechecking.BusConfig, config)
 
