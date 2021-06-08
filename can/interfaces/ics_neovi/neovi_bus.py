@@ -113,7 +113,7 @@ class ICSInitializationError(ICSApiError, CanInitializationError):
     pass
 
 
-class ICSOperationError(ICSApiError, CanInitializationError):
+class ICSOperationError(ICSApiError, CanOperationError):
     pass
 
 
