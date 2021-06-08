@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# coding: utf-8
 
 """
 This module contains a helper for writing test cases that need to compare messages.
