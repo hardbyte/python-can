@@ -67,20 +67,15 @@ class CANLIBError(CanError):
     """
 
     def __init__(self, function, error_code, arguments):
-        super().__init__()
-        self.error_code = error_code
+        message = CANLIBError._get_error_message(error_code)
+        super().__init__(f"Function {function.__name__} failed - {message}", error_code)
         self.function = function
         self.arguments = arguments
 
-    def __str__(self):
-        return "Function %s failed - %s" % (
-            self.function.__name__,
-            self.__get_error_message(),
-        )
-
-    def __get_error_message(self):
+    @staticmethod
+    def _get_error_message(error_code: int) -> str:
         errmsg = ctypes.create_string_buffer(128)
-        canGetErrorText(self.error_code, errmsg, len(errmsg))
+        canGetErrorText(error_code, errmsg, len(errmsg))
         return errmsg.value.decode("ascii")
 
 
