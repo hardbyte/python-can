@@ -680,8 +680,9 @@ class KvaserBus(BusABC):
         num_channels = ctypes.c_int(0)
         try:
             canGetNumberOfChannels(ctypes.byref(num_channels))
-        except CANLIBError:
+        except (CANLIBError, NameError):
             pass
+
         return [
             {"interface": "kvaser", "channel": channel}
             for channel in range(num_channels.value)
