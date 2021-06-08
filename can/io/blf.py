@@ -312,7 +312,23 @@ class BLFReader(BaseIOHandler):
                     channel=channel - 1,
                 )
             elif obj_type == CAN_FD_MESSAGE_64:
-                channel, dlc, valid_bytes, _, can_id, _, fd_flags, _, _, _, _, _, direction, _, _ = unpack_can_fd_64_msg(data, pos)
+                (
+                    channel,
+                    dlc,
+                    valid_bytes,
+                    _,
+                    can_id,
+                    _,
+                    fd_flags,
+                    _,
+                    _,
+                    _,
+                    _,
+                    _,
+                    direction,
+                    _,
+                    _,
+                ) = unpack_can_fd_64_msg(data, pos)
                 pos += can_fd_64_msg_size
                 yield Message(
                     timestamp=timestamp,
