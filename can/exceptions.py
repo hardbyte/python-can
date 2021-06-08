@@ -6,7 +6,7 @@ code to react to specific scenarios related to CAN busses::
      +-- ...
      +-- CanError (python-can)
          +-- CanInterfaceNotImplementedError
-         +-- CanInterfaceNotImplementedError
+         +-- CanInitializationError
          +-- CanOperationError
          +-- CanTimeoutError
 
