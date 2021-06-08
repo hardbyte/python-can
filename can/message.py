@@ -76,7 +76,7 @@ class Message:  # pylint: disable=too-many-instance-attributes; OK for a datacla
                       to `True`.
 
         :raises ValueError:
-            if and only if `check` is set to `True` and one or more arguments were invalid
+            If and only if `check` is set to `True` and one or more arguments were invalid
         """
         self.timestamp = timestamp
         self.arbitration_id = arbitration_id
@@ -191,13 +191,13 @@ class Message:  # pylint: disable=too-many-instance-attributes; OK for a datacla
         if not format_spec:
             return self.__str__()
         else:
-            raise ValueError("non empty format_specs are not supported")
+            raise ValueError("non-empty format_specs are not supported")
 
     def __bytes__(self) -> bytes:
         return bytes(self.data)
 
     def __copy__(self) -> "Message":
-        new = Message(
+        return Message(
             timestamp=self.timestamp,
             arbitration_id=self.arbitration_id,
             is_extended_id=self.is_extended_id,
@@ -211,10 +211,9 @@ class Message:  # pylint: disable=too-many-instance-attributes; OK for a datacla
             bitrate_switch=self.bitrate_switch,
             error_state_indicator=self.error_state_indicator,
         )
-        return new
 
     def __deepcopy__(self, memo: dict) -> "Message":
-        new = Message(
+        return Message(
             timestamp=self.timestamp,
             arbitration_id=self.arbitration_id,
             is_extended_id=self.is_extended_id,
@@ -228,13 +227,13 @@ class Message:  # pylint: disable=too-many-instance-attributes; OK for a datacla
             bitrate_switch=self.bitrate_switch,
             error_state_indicator=self.error_state_indicator,
         )
-        return new
 
-    def _check(self):  # pylint: disable=too-many-branches; it's still simple code
+    def _check(self) -> None:  # pylint: disable=too-many-branches; it's still simple code
         """Checks if the message parameters are valid.
-        Assumes that the types are already correct.
 
-        :raises ValueError: if and only if one or more attributes are invalid
+        Assumes that the attribute types are already correct.
+
+        :raises ValueError: If and only if one or more attributes are invalid
         """
 
         if self.timestamp < 0.0:
@@ -244,10 +243,13 @@ class Message:  # pylint: disable=too-many-instance-attributes; OK for a datacla
         if isnan(self.timestamp):
             raise ValueError("the timestamp may not be NaN")
 
-        if self.is_remote_frame and self.is_error_frame:
-            raise ValueError(
-                "a message cannot be a remote and an error frame at the sane time"
-            )
+        if self.is_remote_frame:
+            if self.is_error_frame:
+                raise ValueError(
+                    "a message cannot be a remote and an error frame at the sane time"
+                )
+            if self.is_fd:
+                raise ValueError("CAN FD does not support remote frames")
 
         if self.arbitration_id < 0:
             raise ValueError("arbitration IDs may not be negative")
@@ -296,13 +298,11 @@ class Message:  # pylint: disable=too-many-instance-attributes; OK for a datacla
         Compares a given message with this one.
 
         :param other: the message to compare with
+        :param timestamp_delta: the maximum difference in seconds at which two timestamps are
+                                still considered equal or `None` to not compare timestamps
+        :param check_direction: whether to compare the messages' directions (Tx/Rx)
 
-        :param timestamp_delta: the maximum difference at which two timestamps are
-                                still considered equal or None to not compare timestamps
-
-        :param check_direction: do we compare the messages' directions (Tx/Rx)
-
-        :return: True iff the given message equals this one
+        :return: True if and only if the given message equals this one
         """
         # see https://github.com/hardbyte/python-can/pull/413 for a discussion
         # on why a delta of 1.0e-6 was chosen

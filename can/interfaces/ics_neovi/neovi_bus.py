@@ -14,8 +14,15 @@ import tempfile
 from collections import deque, defaultdict
 from itertools import cycle
 from threading import Event
+from warnings import warn
 
-from can import Message, CanError, BusABC
+from can import Message, BusABC
+from ...exceptions import (
+    CanError,
+    CanTimeoutError,
+    CanOperationError,
+    CanInitializationError,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -76,25 +83,38 @@ class ICSApiError(CanError):
 
     def __init__(
         self,
-        error_number,
-        description_short,
-        description_long,
-        severity,
-        restart_needed,
+        error_code: int,
+        description_short: str,
+        description_long: str,
+        severity: int,
+        restart_needed: int,
     ):
-        super().__init__(description_short)
-        self.error_number = error_number
+        super().__init__(f"{description_short} {description_long}", error_code)
         self.description_short = description_short
         self.description_long = description_long
         self.severity = severity
         self.restart_needed = restart_needed == 1
 
-    def __str__(self):
-        return "{} {}".format(self.description_short, self.description_long)
+    @property
+    def error_number(self) -> int:
+        """Deprecated. Renamed to :attr:`can.CanError.error_code`."""
+        warn(
+            "ICSApiError::error_number has been renamed to error_code defined by CanError",
+            DeprecationWarning,
+        )
+        return self.error_code
 
     @property
-    def is_critical(self):
+    def is_critical(self) -> bool:
         return self.severity == self.ICS_SPY_ERR_CRITICAL
+
+
+class ICSInitializationError(ICSApiError, CanInitializationError):
+    pass
+
+
+class ICSOperationError(ICSApiError, CanOperationError):
+    pass
 
 
 class NeoViBus(BusABC):
@@ -130,6 +150,12 @@ class NeoViBus(BusABC):
             Defaults to arbitration bitrate.
         :param override_library_name:
             Absolute path or relative path to the library including filename.
+
+        :raise ImportError:
+            If *python-ics* is not available
+        :raise CanInitializationError:
+            If the bus could not be set up.
+            May or may not be a :class:`~ICSInitializationError`.
         """
         if ics is None:
             raise ImportError("Please install python-ics")
@@ -171,7 +197,7 @@ class NeoViBus(BusABC):
                         )
         except ics.RuntimeError as re:
             logger.error(re)
-            err = ICSApiError(*ics.get_last_api_error(self.dev))
+            err = ICSInitializationError(*ics.get_last_api_error(self.dev))
             try:
                 self.shutdown()
             finally:
@@ -246,6 +272,11 @@ class NeoViBus(BusABC):
         ]
 
     def _find_device(self, type_filter=None, serial=None):
+        """Returns the first matching device or raises an error.
+
+        :raise CanInitializationError:
+            If not matching device could be found
+        """
         if type_filter is not None:
             devices = ics.find_devices(type_filter)
         else:
@@ -253,8 +284,7 @@ class NeoViBus(BusABC):
 
         for device in devices:
             if serial is None or self.get_serial_number(device) == str(serial):
-                dev = device
-                break
+                return device
         else:
             msg = ["No device"]
 
@@ -263,8 +293,7 @@ class NeoViBus(BusABC):
             if serial is not None:
                 msg.append("with serial {}".format(serial))
             msg.append("found.")
-            raise Exception(" ".join(msg))
-        return dev
+            raise CanInitializationError(" ".join(msg))
 
     def _process_msg_queue(self, timeout=0.1):
         try:
@@ -291,7 +320,7 @@ class NeoViBus(BusABC):
             logger.warning("%d error(s) found", errors)
 
             for msg in ics.get_error_messages(self.dev):
-                error = ICSApiError(*msg)
+                error = ICSOperationError(*msg)
                 logger.warning(error)
 
     def _get_timestamp_for_msg(self, ics_msg):
@@ -375,11 +404,16 @@ class NeoViBus(BusABC):
             If timeout is exceeded, an exception will be raised.
             None blocks indefinitely.
 
-        :raises can.CanError:
-            if the message could not be sent
+        :raises ValueError:
+            if the message is invalid
+        :raises can.CanTimeoutError:
+            if sending timed out
+        :raises CanOperationError:
+            If the bus is closed or the message could otherwise not be sent.
+            May or may not be a :class:`~ICSOperationError`.
         """
         if not ics.validate_hobject(self.dev):
-            raise CanError("bus not open")
+            raise CanOperationError("bus not open")
         message = ics.SpyMessage()
 
         flag0 = 0
@@ -423,10 +457,10 @@ class NeoViBus(BusABC):
         try:
             ics.transmit_messages(self.dev, message)
         except ics.RuntimeError:
-            raise ICSApiError(*ics.get_last_api_error(self.dev))
+            raise ICSOperationError(*ics.get_last_api_error(self.dev))
 
         # If timeout is set, wait for ACK
         # This requires a notifier for the bus or
         # some other thread calling recv periodically
         if timeout != 0 and not self.message_receipts[receipt_key].wait(timeout):
-            raise CanError("Transmit timeout")
+            raise CanTimeoutError("Transmit timeout")
