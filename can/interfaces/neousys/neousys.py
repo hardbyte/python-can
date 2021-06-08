@@ -36,7 +36,11 @@ except ImportError:
     from ctypes import CDLL
 
 from can import BusABC, Message
-from ...exceptions import CanInitializationError, CanOperationError, CanInterfaceNotImplementedError
+from ...exceptions import (
+    CanInitializationError,
+    CanOperationError,
+    CanInterfaceNotImplementedError,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -151,14 +155,10 @@ class NeousysBus(BusABC):
         self.queue = queue.Queue()
 
         # Init with accept all and wanted bitrate
-        self.init_config = NeousysCanSetup(
-            bitrate, NEOUSYS_CAN_MSG_USE_ID_FILTER, 0, 0
-        )
+        self.init_config = NeousysCanSetup(bitrate, NEOUSYS_CAN_MSG_USE_ID_FILTER, 0, 0)
 
         self._neousys_recv_cb = NEOUSYS_CAN_MSG_CALLBACK(self._neousys_recv_cb)
-        self._neousys_status_cb = NEOUSYS_CAN_STATUS_CALLBACK(
-            self._neousys_status_cb
-        )
+        self._neousys_status_cb = NEOUSYS_CAN_STATUS_CALLBACK(self._neousys_status_cb)
 
         if NEOUSYS_CANLIB.CAN_RegisterReceived(0, self._neousys_recv_cb) == 0:
             raise CanInitializationError("Neousys CAN bus Setup receive callback")
