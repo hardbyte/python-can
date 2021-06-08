@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# coding: utf-8
 
 """
 This test module test the separate reader/writer combinations of the can.io.*
