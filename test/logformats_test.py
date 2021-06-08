@@ -632,6 +632,7 @@ class TestBlfFileFormat(ReaderWriterTest):
             channel=0x10,
             dlc=64,
             is_fd=True,
+            is_rx=False,
             bitrate_switch=True,
             error_state_indicator=True,
         )
