@@ -8,6 +8,7 @@ Similar to canplayer in the can-utils package.
 import sys
 import argparse
 from datetime import datetime
+import errno
 
 import can
 from can import Bus, LogReader, MessageSync
@@ -102,8 +103,6 @@ def main():
     # print help message when no arguments were given
     if len(sys.argv) < 2:
         parser.print_help(sys.stderr)
-        import errno
-
         raise SystemExit(errno.EINVAL)
 
     results = parser.parse_args()

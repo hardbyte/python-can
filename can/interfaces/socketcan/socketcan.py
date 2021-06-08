@@ -27,6 +27,15 @@ except ImportError:
     log.error("fcntl not available on this platform")
 
 
+try:
+    from socket import CMSG_SPACE
+
+    CMSG_SPACE_available = True
+except ImportError:
+    CMSG_SPACE_available = False
+    log.error("socket.CMSG_SPACE not available on this platform")
+
+
 import can
 from can import Message, BusABC
 from can.broadcastmanager import (
@@ -37,6 +46,7 @@ from can.broadcastmanager import (
 from can.typechecking import CanFilters
 from can.interfaces.socketcan.constants import *  # CAN_RAW, CAN_*_FLAG
 from can.interfaces.socketcan.utils import pack_filters, find_available_interfaces
+
 
 # Setup BCM struct
 def bcm_header_factory(
@@ -133,7 +143,7 @@ CAN_FRAME_HEADER_STRUCT = struct.Struct("=IBB2x")
 
 
 def build_can_frame(msg: Message) -> bytes:
-    """ CAN frame packing/unpacking (see 'struct can_frame' in <linux/can.h>)
+    """CAN frame packing/unpacking (see 'struct can_frame' in <linux/can.h>)
     /**
      * struct can_frame - basic CAN frame structure
      * @can_id:  the CAN ID of the frame and CAN_*_FLAG flags, see above.
@@ -446,10 +456,7 @@ class CyclicSendTask(
 
 
 class MultiRateCyclicSendTask(CyclicSendTask):
-    """Exposes more of the full power of the TX_SETUP opcode.
-
-
-    """
+    """Exposes more of the full power of the TX_SETUP opcode."""
 
     def __init__(
         self,
@@ -497,6 +504,8 @@ def bind_socket(sock: socket.socket, channel: str = "can0") -> None:
 
     :param sock:
         The socket to be bound
+    :param channel:
+        The channel / interface to bind to
     :raises OSError:
         If the specified interface isn't found.
     """
@@ -520,24 +529,31 @@ def capture_message(
     """
     # Fetching the Arb ID, DLC and Data
     try:
+        cf, ancillary_data, msg_flags, addr = sock.recvmsg(
+            CANFD_MTU, RECEIVED_ANCILLARY_BUFFER_SIZE
+        )
         if get_channel:
-            cf, _, msg_flags, addr = sock.recvmsg(CANFD_MTU)
             channel = addr[0] if isinstance(addr, tuple) else addr
         else:
-            cf, _, msg_flags, _ = sock.recvmsg(CANFD_MTU)
             channel = None
-    except socket.error as exc:
-        raise can.CanError("Error receiving: %s" % exc)
+    except socket.error as error:
+        raise can.CanError(f"Error receiving: {error}")
 
     can_id, can_dlc, flags, data = dissect_can_frame(cf)
-    # log.debug('Received: can_id=%x, can_dlc=%x, data=%s', can_id, can_dlc, data)
 
     # Fetching the timestamp
-    binary_structure = "@LL"
-    res = fcntl.ioctl(sock.fileno(), SIOCGSTAMP, struct.pack(binary_structure, 0, 0))
-
-    seconds, microseconds = struct.unpack(binary_structure, res)
-    timestamp = seconds + microseconds * 1e-6
+    assert len(ancillary_data) == 1, "only requested a single extra field"
+    cmsg_level, cmsg_type, cmsg_data = ancillary_data[0]
+    assert (
+        cmsg_level == socket.SOL_SOCKET and cmsg_type == SO_TIMESTAMPNS
+    ), "received control message type that was not requested"
+    # see https://man7.org/linux/man-pages/man3/timespec.3.html -> struct timespec for details
+    seconds, nanoseconds = RECEIVED_TIMESTAMP_STRUCT.unpack_from(cmsg_data)
+    if nanoseconds >= 1e9:
+        raise can.CanError(
+            f"Timestamp nanoseconds field was out of range: {nanoseconds} not less than 1e9"
+        )
+    timestamp = seconds + nanoseconds * 1e-9
 
     # EXT, RTR, ERR flags -> boolean attributes
     #   /* special address description flags for the CAN_ID */
@@ -577,13 +593,17 @@ def capture_message(
         data=data,
     )
 
-    # log_rx.debug('Received: %s', msg)
-
     return msg
 
 
+# Constants needed for precise handling of timestamps
+if CMSG_SPACE_available:
+    RECEIVED_TIMESTAMP_STRUCT = struct.Struct("@ll")
+    RECEIVED_ANCILLARY_BUFFER_SIZE = CMSG_SPACE(RECEIVED_TIMESTAMP_STRUCT.size)
+
+
 class SocketcanBus(BusABC):
-    """ A SocketCAN interface to CAN.
+    """A SocketCAN interface to CAN.
 
     It implements :meth:`can.BusABC._detect_available_configs` to search for
     available interfaces.
@@ -593,6 +613,7 @@ class SocketcanBus(BusABC):
         self,
         channel: str = "",
         receive_own_messages: bool = False,
+        local_loopback: bool = True,
         fd: bool = False,
         can_filters: Optional[CanFilters] = None,
         **kwargs,
@@ -613,6 +634,13 @@ class SocketcanBus(BusABC):
             channel using :attr:`can.Message.channel`.
         :param receive_own_messages:
             If transmitted messages should also be received by this bus.
+        :param local_loopback:
+            If local loopback should be enabled on this bus.
+            Please note that local loopback does not mean that messages sent
+            on a socket will be readable on the same socket, they will only
+            be readable on other open sockets on the same machine. More info
+            can be read on the socketcan documentation:
+            See https://www.kernel.org/doc/html/latest/networking/can.html#socketcan-local-loopback1
         :param fd:
             If CAN-FD frames should be supported.
         :param can_filters:
@@ -626,6 +654,14 @@ class SocketcanBus(BusABC):
         self._task_id = 0
         self._task_id_guard = threading.Lock()
 
+        # set the local_loopback parameter
+        try:
+            self.socket.setsockopt(
+                SOL_CAN_RAW, CAN_RAW_LOOPBACK, 1 if local_loopback else 0
+            )
+        except socket.error as error:
+            log.error("Could not set local loopback flag(%s)", error)
+
         # set the receive_own_messages parameter
         try:
             self.socket.setsockopt(
@@ -634,7 +670,7 @@ class SocketcanBus(BusABC):
         except socket.error as error:
             log.error("Could not receive own messages (%s)", error)
 
-        # enable CAN-FD frames
+        # enable CAN-FD frames if desired
         if fd:
             try:
                 self.socket.setsockopt(SOL_CAN_RAW, CAN_RAW_FD_FRAMES, 1)
@@ -647,8 +683,21 @@ class SocketcanBus(BusABC):
         except socket.error as error:
             log.error("Could not enable error frames (%s)", error)
 
+        # enable nanosecond resolution timestamping
+        # we can always do this since
+        #  1) is is guaranteed to be at least as precise as without
+        #  2) it is available since Linux 2.6.22, and CAN support was only added afterward
+        #     so this is always supported by the kernel
+        self.socket.setsockopt(socket.SOL_SOCKET, SO_TIMESTAMPNS, 1)
+
         bind_socket(self.socket, channel)
-        kwargs.update({"receive_own_messages": receive_own_messages, "fd": fd})
+        kwargs.update(
+            {
+                "receive_own_messages": receive_own_messages,
+                "fd": fd,
+                "local_loopback": local_loopback,
+            }
+        )
         super().__init__(channel=channel, can_filters=can_filters, **kwargs)
 
     def shutdown(self) -> None:

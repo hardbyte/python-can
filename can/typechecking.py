@@ -6,10 +6,10 @@ import typing
 if typing.TYPE_CHECKING:
     import os
 
-import mypy_extensions
+import typing_extensions
 
-CanFilter = mypy_extensions.TypedDict("CanFilter", {"can_id": int, "can_mask": int})
-CanFilterExtended = mypy_extensions.TypedDict(
+CanFilter = typing_extensions.TypedDict("CanFilter", {"can_id": int, "can_mask": int})
+CanFilterExtended = typing_extensions.TypedDict(
     "CanFilterExtended", {"can_id": int, "can_mask": int, "extended": bool}
 )
 CanFilters = typing.Sequence[typing.Union[CanFilter, CanFilterExtended]]
@@ -31,9 +31,9 @@ FileLike = typing.IO[typing.Any]
 StringPathLike = typing.Union[str, "os.PathLike[str]"]
 AcceptedIOType = typing.Optional[typing.Union[FileLike, StringPathLike]]
 
-BusConfig = typing.NewType("BusConfig", dict)
+BusConfig = typing.NewType("BusConfig", typing.Dict[str, typing.Any])
 
-AutoDetectedConfig = mypy_extensions.TypedDict(
+AutoDetectedConfig = typing_extensions.TypedDict(
     "AutoDetectedConfig", {"interface": str, "channel": Channel}
 )
 

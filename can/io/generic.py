@@ -1,23 +1,34 @@
-"""
-Contains a generic class for file IO.
-"""
+"""Contains generic base classes for file IO."""
 
 from abc import ABCMeta
-from typing import Optional, cast, Union, TextIO, BinaryIO
+from typing import (
+    Optional,
+    cast,
+    Iterable,
+    Union,
+    TextIO,
+    BinaryIO,
+    Type,
+    ContextManager,
+)
+from typing_extensions import Literal
+from types import TracebackType
 
 import can
 import can.typechecking
 
 
-class BaseIOHandler(metaclass=ABCMeta):
+class BaseIOHandler(ContextManager, metaclass=ABCMeta):
     """A generic file handler that can be used for reading and writing.
 
     Can be used as a context manager.
 
-    :attr Optional[FileLike] file:
-        the file-like object that is kept internally, or None if none
+    :attr file:
+        the file-like object that is kept internally, or `None` if none
         was opened
     """
+
+    file: Optional[can.typechecking.FileLike]
 
     def __init__(self, file: can.typechecking.AcceptedIOType, mode: str = "rt") -> None:
         """
@@ -39,11 +50,17 @@ class BaseIOHandler(metaclass=ABCMeta):
     def __enter__(self) -> "BaseIOHandler":
         return self
 
-    def __exit__(self, *args) -> None:
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> Literal[False]:
         self.stop()
+        return False
 
     def stop(self) -> None:
-        """Closes the undelying file-like object and flushes it, if it was opened in write mode."""
+        """Closes the underlying file-like object and flushes it, if it was opened in write mode."""
         if self.file is not None:
             # this also implies a flush()
             self.file.close()
@@ -62,5 +79,5 @@ class FileIOMessageWriter(MessageWriter, metaclass=ABCMeta):
 
 
 # pylint: disable=too-few-public-methods
-class MessageReader(BaseIOHandler, metaclass=ABCMeta):
+class MessageReader(BaseIOHandler, Iterable, metaclass=ABCMeta):
     """The base class for all readers."""

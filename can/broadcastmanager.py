@@ -36,7 +36,7 @@ class CyclicTask:
     """
 
     @abc.abstractmethod
-    def stop(self):
+    def stop(self) -> None:
         """Cancel this periodic task.
 
         :raises can.CanError:
@@ -49,11 +49,15 @@ class CyclicSendTaskABC(CyclicTask):
     Message send task with defined period
     """
 
-    def __init__(self, messages: Union[Sequence[Message], Message], period: float):
+    def __init__(
+        self, messages: Union[Sequence[Message], Message], period: float
+    ) -> None:
         """
         :param messages:
             The messages to be sent periodically.
         :param period: The rate in seconds at which to send the messages.
+
+        :raises ValueError: If the given messages are invalid
         """
         messages = self._check_and_convert_messages(messages)
 
@@ -72,7 +76,9 @@ class CyclicSendTaskABC(CyclicTask):
         Performs error checking to ensure that all Messages have the same
         arbitration ID and channel.
 
-        Should be called when the cyclic task is initialized
+        Should be called when the cyclic task is initialized.
+
+        :raises ValueError: If the given messages are invalid
         """
         if not isinstance(messages, (list, tuple)):
             if isinstance(messages, Message):
@@ -104,7 +110,7 @@ class LimitedDurationCyclicSendTaskABC(CyclicSendTaskABC):
         messages: Union[Sequence[Message], Message],
         period: float,
         duration: Optional[float],
-    ):
+    ) -> None:
         """Message send task with a defined duration and period.
 
         :param messages:
@@ -113,6 +119,8 @@ class LimitedDurationCyclicSendTaskABC(CyclicSendTaskABC):
         :param duration:
             Approximate duration in seconds to continue sending messages. If
             no duration is provided, the task will continue indefinitely.
+
+        :raises ValueError: If the given messages are invalid
         """
         super().__init__(messages, period)
         self.duration = duration
@@ -122,15 +130,14 @@ class RestartableCyclicTaskABC(CyclicSendTaskABC):
     """Adds support for restarting a stopped cyclic task"""
 
     @abc.abstractmethod
-    def start(self):
-        """Restart a stopped periodic task.
-        """
+    def start(self) -> None:
+        """Restart a stopped periodic task."""
 
 
 class ModifiableCyclicTaskABC(CyclicSendTaskABC):
     """Adds support for modifying a periodic message"""
 
-    def _check_modified_messages(self, messages: Tuple[Message, ...]):
+    def _check_modified_messages(self, messages: Tuple[Message, ...]) -> None:
         """Helper function to perform error checking when modifying the data in
         the cyclic task.
 
@@ -138,6 +145,8 @@ class ModifiableCyclicTaskABC(CyclicSendTaskABC):
         cyclic messages hasn't changed.
 
         Should be called when modify_data is called in the cyclic task.
+
+        :raises ValueError: If the given messages are invalid
         """
         if len(self.messages) != len(messages):
             raise ValueError(
@@ -150,7 +159,7 @@ class ModifiableCyclicTaskABC(CyclicSendTaskABC):
                 "from when the task was created"
             )
 
-    def modify_data(self, messages: Union[Sequence[Message], Message]):
+    def modify_data(self, messages: Union[Sequence[Message], Message]) -> None:
         """Update the contents of the periodically sent messages, without
         altering the timing.
 
@@ -162,6 +171,8 @@ class ModifiableCyclicTaskABC(CyclicSendTaskABC):
             Note: The number of new cyclic messages to be sent must be equal
             to the original number of messages originally specified for this
             task.
+
+        :raises ValueError: If the given messages are invalid
         """
         messages = self._check_and_convert_messages(messages)
         self._check_modified_messages(messages)
@@ -170,17 +181,16 @@ class ModifiableCyclicTaskABC(CyclicSendTaskABC):
 
 
 class MultiRateCyclicSendTaskABC(CyclicSendTaskABC):
-    """A Cyclic send task that supports switches send frequency after a set time.
-    """
+    """A Cyclic send task that supports switches send frequency after a set time."""
 
     def __init__(
         self,
         channel: typechecking.Channel,
         messages: Union[Sequence[Message], Message],
-        count: int,
-        initial_period: float,
+        count: int,  # pylint: disable=unused-argument
+        initial_period: float,  # pylint: disable=unused-argument
         subsequent_period: float,
-    ):
+    ) -> None:
         """
         Transmits a message `count` times at `initial_period` then continues to
         transmit messages at `subsequent_period`.
@@ -190,6 +200,8 @@ class MultiRateCyclicSendTaskABC(CyclicSendTaskABC):
         :param count:
         :param initial_period:
         :param subsequent_period:
+
+        :raises ValueError: If the given messages are invalid
         """
         super().__init__(messages, subsequent_period)
         self._channel = channel
@@ -208,12 +220,12 @@ class ThreadBasedCyclicSendTask(
         period: float,
         duration: Optional[float] = None,
         on_error: Optional[Callable[[Exception], bool]] = None,
-    ):
+    ) -> None:
         """Transmits `messages` with a `period` seconds for `duration` seconds on a `bus`.
 
         The `on_error` is called if any error happens on `bus` while sending `messages`.
         If `on_error` present, and returns ``False`` when invoked, thread is
-        stopped immediately, otherwise, thread continuiously tries to send `messages`
+        stopped immediately, otherwise, thread continuously tries to send `messages`
         ignoring errors on a `bus`. Absence of `on_error` means that thread exits immediately
         on error.
 
@@ -221,27 +233,31 @@ class ThreadBasedCyclicSendTask(
                          error happened on a `bus` while sending `messages`,
                          it shall return either ``True`` or ``False`` depending
                          on desired behaviour of `ThreadBasedCyclicSendTask`.
+
+        :raises ValueError: If the given messages are invalid
         """
         super().__init__(messages, period, duration)
         self.bus = bus
         self.send_lock = lock
         self.stopped = True
-        self.thread = None
-        self.end_time = time.perf_counter() + duration if duration else None
+        self.thread: Optional[threading.Thread] = None
+        self.end_time: Optional[float] = (
+            time.perf_counter() + duration if duration else None
+        )
         self.on_error = on_error
 
         if HAS_EVENTS:
-            self.period_ms: int = int(round(period * 1000, 0))
+            self.period_ms = int(round(period * 1000, 0))
             self.event = win32event.CreateWaitableTimer(None, False, None)
 
         self.start()
 
-    def stop(self):
+    def stop(self) -> None:
         if HAS_EVENTS:
             win32event.CancelWaitableTimer(self.event.handle)
         self.stopped = True
 
-    def start(self):
+    def start(self) -> None:
         self.stopped = False
         if self.thread is None or not self.thread.is_alive():
             name = "Cyclic send task for 0x%X" % (self.messages[0].arbitration_id)
@@ -255,7 +271,7 @@ class ThreadBasedCyclicSendTask(
 
             self.thread.start()
 
-    def _run(self):
+    def _run(self) -> None:
         msg_index = 0
         while not self.stopped:
             # Prevent calling bus.send from multiple threads
@@ -263,7 +279,7 @@ class ThreadBasedCyclicSendTask(
                 started = time.perf_counter()
                 try:
                     self.bus.send(self.messages[msg_index])
-                except Exception as exc:
+                except Exception as exc:  # pylint: disable=broad-except
                     log.exception(exc)
                     if self.on_error:
                         if not self.on_error(exc):

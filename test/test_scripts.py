@@ -28,7 +28,12 @@ class CanScriptTest(unittest.TestCase, metaclass=ABCMeta):
         """
         for command in self._commands():
             try:
-                subprocess.check_output(command.split(), stderr=subprocess.STDOUT)
+                subprocess.check_output(
+                    command.split(),
+                    stderr=subprocess.STDOUT,
+                    encoding="utf-8",
+                    shell=IS_WINDOWS,
+                )
             except subprocess.CalledProcessError as e:
                 return_code = e.returncode
                 output = e.output
@@ -62,8 +67,7 @@ class CanScriptTest(unittest.TestCase, metaclass=ABCMeta):
 
     @abstractmethod
     def _import(self):
-        """Returns the modue of the script that has a main() function.
-        """
+        """Returns the modue of the script that has a main() function."""
         pass
 
 

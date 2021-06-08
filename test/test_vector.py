@@ -14,7 +14,13 @@ from unittest.mock import Mock
 import pytest
 
 import can
-from can.interfaces.vector import canlib, xldefine, xlclass, VectorError
+from can.interfaces.vector import (
+    canlib,
+    xldefine,
+    xlclass,
+    VectorError,
+    VectorChannelConfig,
+)
 
 
 class TestVectorBus(unittest.TestCase):
@@ -100,9 +106,9 @@ class TestVectorBus(unittest.TestCase):
 
         can.interfaces.vector.canlib.xldriver.xlCanFdSetConfiguration.assert_not_called()
         can.interfaces.vector.canlib.xldriver.xlCanSetChannelBitrate.assert_called()
-        xlCanSetChannelBitrate_args = can.interfaces.vector.canlib.xldriver.xlCanSetChannelBitrate.call_args[
-            0
-        ]
+        xlCanSetChannelBitrate_args = (
+            can.interfaces.vector.canlib.xldriver.xlCanSetChannelBitrate.call_args[0]
+        )
         self.assertEqual(xlCanSetChannelBitrate_args[2], 200000)
 
     def test_bus_creation_fd(self) -> None:
@@ -152,9 +158,9 @@ class TestVectorBus(unittest.TestCase):
         can.interfaces.vector.canlib.xldriver.xlCanFdSetConfiguration.assert_called()
         can.interfaces.vector.canlib.xldriver.xlCanSetChannelBitrate.assert_not_called()
 
-        xlCanFdSetConfiguration_args = can.interfaces.vector.canlib.xldriver.xlCanFdSetConfiguration.call_args[
-            0
-        ]
+        xlCanFdSetConfiguration_args = (
+            can.interfaces.vector.canlib.xldriver.xlCanFdSetConfiguration.call_args[0]
+        )
         canFdConf = xlCanFdSetConfiguration_args[2]
         self.assertEqual(canFdConf.arbitrationBitRate, 500000)
         self.assertEqual(canFdConf.dataBitRate, 2000000)
@@ -275,7 +281,7 @@ class TestVectorBus(unittest.TestCase):
         """This tests if an exception is thrown when we are not running on Windows."""
         if os.name != "nt":
             with self.assertRaises(OSError):
-                # do not set the _testing argument, since it supresses the exception
+                # do not set the _testing argument, since it suppresses the exception
                 can.Bus(channel=0, bustype="vector")
 
     def test_vector_error_pickle(self) -> None:
@@ -294,6 +300,23 @@ class TestVectorBus(unittest.TestCase):
 
         with pytest.raises(VectorError):
             raise exc_unpickled
+
+
+class TestVectorChannelConfig:
+    def test_attributes(self):
+        assert hasattr(VectorChannelConfig, "name")
+        assert hasattr(VectorChannelConfig, "hwType")
+        assert hasattr(VectorChannelConfig, "hwIndex")
+        assert hasattr(VectorChannelConfig, "hwChannel")
+        assert hasattr(VectorChannelConfig, "channelIndex")
+        assert hasattr(VectorChannelConfig, "channelMask")
+        assert hasattr(VectorChannelConfig, "channelCapabilities")
+        assert hasattr(VectorChannelConfig, "channelBusCapabilities")
+        assert hasattr(VectorChannelConfig, "isOnBus")
+        assert hasattr(VectorChannelConfig, "connectedBusType")
+        assert hasattr(VectorChannelConfig, "serialNumber")
+        assert hasattr(VectorChannelConfig, "articleNumber")
+        assert hasattr(VectorChannelConfig, "transceiverName")
 
 
 def xlGetApplConfig(

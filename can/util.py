@@ -1,12 +1,11 @@
 """
 Utilities and configuration file parsing.
 """
+
 import functools
 import warnings
-from typing import Dict, Optional, Union
-
-from can import typechecking
-
+from typing import Any, Callable, cast, Dict, Iterable, Tuple, Optional, Union
+from time import time, perf_counter, get_clock_info
 import json
 import os
 import os.path
@@ -16,7 +15,9 @@ import logging
 from configparser import ConfigParser
 
 import can
-from can.interfaces import VALID_INTERFACES
+from .interfaces import VALID_INTERFACES
+from . import typechecking
+from .exceptions import CanInterfaceNotImplementedError
 
 log = logging.getLogger("can.util")
 
@@ -51,6 +52,10 @@ def load_file_config(
         name of the section to read configuration from.
     """
     config = ConfigParser()
+
+    # make sure to not transform the entries such that capitalization is preserved
+    config.optionxform = lambda entry: entry  # type: ignore
+
     if path is None:
         config.read([os.path.expanduser(path) for path in CONFIG_FILES])
     else:
@@ -88,9 +93,8 @@ def load_environment_config(context: Optional[str] = None) -> Dict[str, str]:
         "bitrate": "CAN_BITRATE",
     }
 
-    context_suffix = "_{}".format(context) if context else ""
-
-    can_config_key = "CAN_CONFIG" + context_suffix
+    context_suffix = f"_{context}" if context else ""
+    can_config_key = f"CAN_CONFIG{context_suffix}"
     config: Dict[str, str] = json.loads(os.environ.get(can_config_key, "{}"))
 
     for key, val in mapper.items():
@@ -103,7 +107,7 @@ def load_environment_config(context: Optional[str] = None) -> Dict[str, str]:
 
 def load_config(
     path: Optional[typechecking.AcceptedIOType] = None,
-    config=None,
+    config: Optional[Dict[str, Any]] = None,
     context: Optional[str] = None,
 ) -> typechecking.BusConfig:
     """
@@ -149,7 +153,7 @@ def load_config(
         All unused values are passed from ``config`` over to this.
 
     :raises:
-        NotImplementedError if the ``interface`` isn't recognized
+        CanInterfaceNotImplementedError if the ``interface`` isn't recognized
     """
 
     # start with an empty dict to apply filtering to all sources
@@ -157,16 +161,19 @@ def load_config(
     config = {}
 
     # use the given dict for default values
-    config_sources = [
-        given_config,
-        can.rc,
-        lambda _context: load_environment_config(  # pylint: disable=unnecessary-lambda
-            _context
-        ),
-        lambda _context: load_environment_config(),
-        lambda _context: load_file_config(path, _context),
-        lambda _context: load_file_config(path),
-    ]
+    config_sources = cast(
+        Iterable[Union[Dict[str, Any], Callable[[Any], Dict[str, Any]]]],
+        [
+            given_config,
+            can.rc,
+            lambda _context: load_environment_config(  # pylint: disable=unnecessary-lambda
+                _context
+            ),
+            lambda _context: load_environment_config(),
+            lambda _context: load_file_config(path, _context),
+            lambda _context: load_file_config(path),
+        ],
+    )
 
     # Slightly complex here to only search for the file config if required
     for cfg in config_sources:
@@ -188,8 +195,8 @@ def load_config(
             config[key] = None
 
     if config["interface"] not in VALID_INTERFACES:
-        raise NotImplementedError(
-            "Invalid CAN Bus Type - {}".format(config["interface"])
+        raise CanInterfaceNotImplementedError(
+            f'Unknown interface type "{config["interface"]}"'
         )
 
     if "bitrate" in config:
@@ -215,30 +222,33 @@ def load_config(
             timing_conf[key] = int(config[key], base=0)
             del config[key]
     if timing_conf:
-        timing_conf["bitrate"] = config.get("bitrate")
+        timing_conf["bitrate"] = config["bitrate"]
         config["timing"] = can.BitTiming(**timing_conf)
 
-    can.log.debug("can config: {}".format(config))
-    return config
+    can.log.debug("can config: %s", config)
+
+    return cast(typechecking.BusConfig, config)
 
 
-def set_logging_level(level_name: Optional[str] = None):
-    """Set the logging level for the "can" logger.
-    Expects one of: 'critical', 'error', 'warning', 'info', 'debug', 'subdebug'
+def set_logging_level(level_name: str) -> None:
+    """Set the logging level for the `"can"` logger.
+
+    :param level_name: One of: `'critical'`, `'error'`, `'warning'`, `'info'`,
+    `'debug'`, `'subdebug'`, or the value `None` (=default). Defaults to `'debug'`.
     """
     can_logger = logging.getLogger("can")
 
     try:
-        can_logger.setLevel(getattr(logging, level_name.upper()))  # type: ignore
+        can_logger.setLevel(getattr(logging, level_name.upper()))
     except AttributeError:
         can_logger.setLevel(logging.DEBUG)
-    log.debug("Logging set to {}".format(level_name))
+    log.debug("Logging set to %s", level_name)
 
 
 def len2dlc(length: int) -> int:
     """Calculate the DLC from data length.
 
-    :param int length: Length in number of bytes (0-64)
+    :param length: Length in number of bytes (0-64)
 
     :returns: DLC (0-15)
     """
@@ -260,20 +270,17 @@ def dlc2len(dlc: int) -> int:
     return CAN_FD_DLC[dlc] if dlc <= 15 else 64
 
 
-def channel2int(channel: Optional[Union[typechecking.Channel]]) -> Optional[int]:
+def channel2int(channel: Optional[typechecking.Channel]) -> Optional[int]:
     """Try to convert the channel to an integer.
 
     :param channel:
-        Channel string (e.g. can0, CAN1) or integer
+        Channel string (e.g. `"can0"`, `"CAN1"`) or an integer
 
-    :returns: Channel integer or `None` if unsuccessful
+    :returns: Channel integer or ``None`` if unsuccessful
     """
-    if channel is None:
-        return None
     if isinstance(channel, int):
         return channel
-    # String and byte objects have a lower() method
-    if hasattr(channel, "lower"):
+    if isinstance(channel, str):
         match = re.match(r".*(\d+)$", channel)
         if match:
             return int(match.group(1))
@@ -298,7 +305,7 @@ def deprecated_args_alias(**aliases):
     def deco(f):
         @functools.wraps(f)
         def wrapper(*args, **kwargs):
-            rename_kwargs(f.__name__, kwargs, aliases)
+            _rename_kwargs(f.__name__, kwargs, aliases)
             return f(*args, **kwargs)
 
         return wrapper
@@ -306,24 +313,51 @@ def deprecated_args_alias(**aliases):
     return deco
 
 
-def rename_kwargs(func_name, kwargs, aliases):
+def _rename_kwargs(
+    func_name: str, kwargs: Dict[str, str], aliases: Dict[str, str]
+) -> None:
     """Helper function for `deprecated_args_alias`"""
     for alias, new in aliases.items():
         if alias in kwargs:
             value = kwargs.pop(alias)
             if new is not None:
-                warnings.warn(
-                    "{} is deprecated; use {}".format(alias, new), DeprecationWarning
-                )
+                warnings.warn(f"{alias} is deprecated; use {new}", DeprecationWarning)
                 if new in kwargs:
                     raise TypeError(
-                        "{} received both {} (deprecated) and {}".format(
-                            func_name, alias, new
-                        )
+                        f"{func_name} received both {alias} (deprecated) and {new}"
                     )
                 kwargs[new] = value
             else:
                 warnings.warn("{} is deprecated".format(alias), DeprecationWarning)
+
+
+def time_perfcounter_correlation() -> Tuple[float, float]:
+    """Get the `perf_counter` value nearest to when time.time() is updated
+
+    Computed if the default timer used by `time.time` on this platform has a resolution
+    higher than 10μs, otherwise the current time and perf_counter is directly returned.
+    This was chosen as typical timer resolution on Linux/macOS is ~1μs, and the Windows
+    platform can vary from ~500μs to 10ms.
+
+    Note this value is based on when `time.time()` is observed to update from Python,
+    it is not directly returned by the operating system.
+
+    :returns:
+        (t, performance_counter) time.time value and time.perf_counter value when the time.time
+        is updated
+
+    """
+
+    # use this if the resolution is higher than 10us
+    if get_clock_info("time").resolution > 1e-5:
+        t0 = time()
+        while True:
+            t1, performance_counter = time(), perf_counter()
+            if t1 != t0:
+                break
+    else:
+        return time(), perf_counter()
+    return t1, performance_counter
 
 
 if __name__ == "__main__":

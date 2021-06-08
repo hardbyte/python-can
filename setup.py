@@ -1,12 +1,11 @@
 #!/usr/bin/env python
+
 """
 Setup script for the `can` package.
 Learn more at https://github.com/hardbyte/python-can/
 """
 
 # pylint: disable=invalid-name
-
-from __future__ import absolute_import
 
 from os import listdir
 from os.path import isfile, join
@@ -31,6 +30,7 @@ extras_require = {
     "neovi": ["filelock", "python-ics>=2.12"],
     "cantact": ["cantact>=0.0.7"],
     "gs_usb": ["gs_usb>=0.2.1"],
+    "nixnet": ["nixnet>=0.3.1"],
 }
 
 setup(
@@ -83,9 +83,9 @@ setup(
         # but we assume it is already installed.
         # "setuptools",
         "wrapt~=1.10",
-        'windows-curses;platform_system=="Windows"',
-        "mypy_extensions>=0.4.0,<0.5.0",
-        'pywin32;platform_system=="Windows"',
+        'windows-curses;platform_system=="Windows" and platform_python_implementation=="CPython"',
+        "typing_extensions>=3.10.0.0",
+        'pywin32;platform_system=="Windows" and platform_python_implementation=="CPython"',
         'msgpack~=1.0.0;platform_system!="Windows"',
     ],
     extras_require=extras_require,

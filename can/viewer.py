@@ -21,6 +21,7 @@
 # e-mail   :  lauszus@gmail.com
 
 import argparse
+import errno
 import logging
 import os
 import struct
@@ -37,9 +38,9 @@ try:
     import curses
     from curses.ascii import ESC as KEY_ESC, SP as KEY_SPACE
 except ImportError:
-    # Probably on windows
+    # Probably on Windows while windows-curses is not installed (e.g. in PyPy)
     logger.warning(
-        "You won't be able to use the viewer program without " "curses installed!"
+        "You won't be able to use the viewer program without curses installed!"
     )
     curses = None  # type: ignore
 
@@ -59,7 +60,8 @@ class CanViewer:
         # Get the window dimensions - used for resizing the window
         self.y, self.x = self.stdscr.getmaxyx()
 
-        # Do not wait for key inputs, disable the cursor and choose the background color automatically
+        # Do not wait for key inputs, disable the cursor and choose the background color
+        # automatically
         self.stdscr.nodelay(True)
         curses.curs_set(0)
         curses.use_default_colors()
@@ -93,7 +95,7 @@ class CanViewer:
                 break
 
             # Clear by pressing 'c'
-            elif key == ord("c"):
+            if key == ord("c"):
                 self.ids = {}
                 self.start_time = None
                 self.scroll = 0
@@ -164,8 +166,8 @@ class CanViewer:
                     values = list(as_struct_t.unpack(data))
 
                 return values
-        else:
-            raise ValueError("Unknown command: 0x{:02X}".format(cmd))
+
+        raise ValueError("Unknown command: 0x{:02X}".format(cmd))
 
     def draw_can_bus_message(self, msg, sorting=False):
         # Use the CAN-Bus ID as the key in the dict
@@ -461,8 +463,6 @@ def parse_args(args):
     # Print help message when no arguments are given
     if not args:
         parser.print_help(sys.stderr)
-        import errno
-
         raise SystemExit(errno.EINVAL)
 
     parsed_args = parser.parse_args(args)
@@ -499,7 +499,8 @@ def parse_args(args):
     # f = float (32-bits), d = double (64-bits)
     #
     # An optional conversion from real units to integers can be given as additional arguments.
-    # In order to convert from raw integer value the real units are multiplied with the values and similarly the values
+    # In order to convert from raw integer value the real units are multiplied with the values and
+    # similarly the values
     # are divided by the value in order to convert from real units to raw integer values.
     data_structs = (
         {}
