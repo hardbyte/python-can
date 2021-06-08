@@ -17,7 +17,12 @@ from threading import Event
 from warnings import warn
 
 from can import Message, BusABC
-from ...exceptions import CanError, CanTimeoutError, CanOperationError, CanInitializationError
+from ...exceptions import (
+    CanError,
+    CanTimeoutError,
+    CanOperationError,
+    CanInitializationError,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +98,10 @@ class ICSApiError(CanError):
     @property
     def error_number(self) -> int:
         """Deprecated. Renamed to :attr:`can.CanError.error_code`."""
-        warn("ICSApiError::error_number has been renamed to error_code defined by CanError", DeprecationWarning)
+        warn(
+            "ICSApiError::error_number has been renamed to error_code defined by CanError",
+            DeprecationWarning,
+        )
         return self.error_code
 
     @property
