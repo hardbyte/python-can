@@ -10,6 +10,14 @@ cache:
 install:
   - travis_retry python setup.py install
 
+script:
+  - |
+    if [[ "$TEST_SOCKETCAN" ]]; then sudo bash test/open_vcan.sh ; fi
+    # install tox
+    travis_retry pip install tox
+    # Run the tests
+    tox -e travis
+
 jobs:
   allow_failures:
     # Allow arm64 builds to fail
@@ -28,13 +36,6 @@ jobs:
       python: "3.6"
       sudo: required
       env: TEST_SOCKETCAN=TRUE
-      script:
-        - |
-          if [[ "$TEST_SOCKETCAN" ]]; then sudo bash test/open_vcan.sh ; fi
-          # install tox
-          travis_retry pip install tox
-          # Run the tests
-          tox -e travis
 
     # arm64 builds
     - stage: test
