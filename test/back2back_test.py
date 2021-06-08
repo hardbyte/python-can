@@ -88,6 +88,8 @@ class Back2BackTestCase(unittest.TestCase):
         # Add 1 to arbitration ID to make it a different message
         msg.arbitration_id += 1
         self.bus2.send(msg)
+        # Some buses may receive their own messages. Remove it from the queue
+        self.bus2.recv(0)
         recv_msg = self.bus1.recv(self.TIMEOUT)
         self._check_received_message(recv_msg, msg)
 
@@ -151,6 +153,8 @@ class Back2BackTestCase(unittest.TestCase):
             is_extended_id=False, arbitration_id=0x300, data=[2, 1, 3], is_rx=False
         )
         self.bus1.send(msg)
+        # Some buses may receive their own messages. Remove it from the queue
+        self.bus1.recv(0)
         self_recv_msg = self.bus2.recv(self.TIMEOUT)
         self.assertIsNotNone(self_recv_msg)
         self.assertTrue(self_recv_msg.is_rx)
@@ -237,6 +241,8 @@ class Back2BackTestCase(unittest.TestCase):
     def test_timestamp_is_absolute(self):
         """Tests that the timestamp that is returned is an absolute one."""
         self.bus2.send(can.Message())
+        # Some buses may receive their own messages. Remove it from the queue
+        self.bus2.recv(0)
         message = self.bus1.recv(self.TIMEOUT)
         # The allowed delta is still quite large to make this work on the CI server
         self.assertAlmostEqual(message.timestamp, time(), delta=self.TIMEOUT)
@@ -261,6 +267,10 @@ class Back2BackTestCase(unittest.TestCase):
         sub_second_fraction_1 = recv_msg_1.timestamp % 1
         sub_second_fraction_2 = recv_msg_2.timestamp % 1
         self.assertGreater(sub_second_fraction_1 + sub_second_fraction_2, 0)
+
+        # Some buses may receive their own messages. Remove it from the queue
+        self.bus2.recv(0)
+        self.bus2.recv(0)
 
 
 @unittest.skipUnless(TEST_INTERFACE_SOCKETCAN, "skip testing of socketcan")
