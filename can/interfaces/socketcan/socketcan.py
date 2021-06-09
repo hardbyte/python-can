@@ -712,7 +712,9 @@ class SocketcanBus(BusABC):
             ready_receive_sockets, _, _ = select.select([self.socket], [], [], timeout)
         except socket.error as error:
             # something bad happened (e.g. the interface went down)
-            raise can.CanOperationError(f"Failed to receive: {error.strerror}", error.errno)
+            raise can.CanOperationError(
+                f"Failed to receive: {error.strerror}", error.errno
+            )
 
         if ready_receive_sockets:  # not empty
             get_channel = self.channel == ""
@@ -771,7 +773,9 @@ class SocketcanBus(BusABC):
             else:
                 sent = self.socket.send(data)
         except socket.error as error:
-            raise can.CanOperationError(f"Failed to transmit: {error.strerror}", error.errno)
+            raise can.CanOperationError(
+                f"Failed to transmit: {error.strerror}", error.errno
+            )
         return sent
 
     def _send_periodic_internal(
