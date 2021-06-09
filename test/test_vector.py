@@ -19,6 +19,8 @@ from can.interfaces.vector import (
     xldefine,
     xlclass,
     VectorError,
+    VectorInitializationError,
+    VectorOperationError,
     VectorChannelConfig,
 )
 
@@ -285,21 +287,43 @@ class TestVectorBus(unittest.TestCase):
                 can.Bus(channel=0, bustype="vector")
 
     def test_vector_error_pickle(self) -> None:
-        error_code = 118
-        error_string = "XL_ERROR"
-        function = "function_name"
+        for error_type in [VectorError, VectorInitializationError, VectorOperationError]:
+            with self.subTest(f"error_type = {error_type.__name__}"):
 
-        exc = VectorError(error_code, error_string, function)
+                error_code = 118
+                error_string = "XL_ERROR"
+                function = "function_name"
 
-        # pickle and unpickle
-        p = pickle.dumps(exc)
-        exc_unpickled: VectorError = pickle.loads(p)
+                exc = error_type(error_code, error_string, function)
 
-        self.assertEqual(str(exc), str(exc_unpickled))
-        self.assertEqual(error_code, exc_unpickled.error_code)
+                # pickle and unpickle
+                p = pickle.dumps(exc)
+                exc_unpickled: VectorError = pickle.loads(p)
 
-        with pytest.raises(VectorError):
-            raise exc_unpickled
+                self.assertEqual(str(exc), str(exc_unpickled))
+                self.assertEqual(error_code, exc_unpickled.error_code)
+
+                with pytest.raises(error_type):
+                    raise exc_unpickled
+
+    def test_vector_subteype_error_from_generic(self) -> None:
+        for error_type in [VectorInitializationError, VectorOperationError]:
+            with self.subTest(f"error_type = {error_type.__name__}"):
+
+                error_code = 118
+                error_string = "XL_ERROR"
+                function = "function_name"
+
+                generic = VectorError(error_code, error_string, function)
+
+                # pickle and unpickle
+                specififc: VectorError = error_type.from_generic(generic)
+
+                self.assertEqual(str(generic), str(specififc))
+                self.assertEqual(error_code, specififc.error_code)
+
+                with pytest.raises(error_type):
+                    raise specififc
 
 
 class TestVectorChannelConfig:
