@@ -91,7 +91,9 @@ class SeeedBus(BusABC):
         """
 
         if serial is None:
-            raise can.CanInterfaceNotImplementedError("the serial module is not installed")
+            raise can.CanInterfaceNotImplementedError(
+                "the serial module is not installed"
+            )
 
         self.bit_rate = bitrate
         self.frame_type = frame_type
@@ -291,7 +293,9 @@ class SeeedBus(BusABC):
             except serial.PortNotOpenError as error:
                 raise can.CanOperationError("reading from closed port") from error
             except serial.SerialException as exception:
-                raise can.CanOperationError("failed to read message information") from exception
+                raise can.CanOperationError(
+                    "failed to read message information"
+                ) from exception
 
         return None, None
 
@@ -299,5 +303,7 @@ class SeeedBus(BusABC):
         try:
             return self.ser.fileno()
         except io.UnsupportedOperation as excption:
-            logger.info("fileno is not implemented using current CAN bus: %s", str(excption))
+            logger.info(
+                "fileno is not implemented using current CAN bus: %s", str(excption)
+            )
             return -1
