@@ -282,8 +282,8 @@ class TestVectorBus(unittest.TestCase):
     def test_called_without_testing_argument(self) -> None:
         """This tests if an exception is thrown when we are not running on Windows."""
         if os.name != "nt":
-            with self.assertRaises(OSError):
-                # do not set the _testing argument, since it suppresses the exception
+            with self.assertRaises(can.CanInterfaceNotImplementedError):
+                # do not set the _testing argument, since it would suppress the exception
                 can.Bus(channel=0, bustype="vector")
 
     def test_vector_error_pickle(self) -> None:
