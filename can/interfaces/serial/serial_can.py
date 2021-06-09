@@ -12,7 +12,12 @@ import struct
 from typing import Any, List, Tuple, Optional
 
 from can import BusABC, Message
-from can import CanInterfaceNotImplementedError, CanInitializationError, CanOperationError, CanTimeoutError
+from can import (
+    CanInterfaceNotImplementedError,
+    CanInitializationError,
+    CanOperationError,
+    CanTimeoutError,
+)
 from can.typechecking import AutoDetectedConfig
 
 logger = logging.getLogger("can.serial")
@@ -85,7 +90,9 @@ class SerialBus(BusABC):
                 channel, baudrate=baudrate, timeout=timeout, rtscts=rtscts
             )
         except ValueError as error:
-            raise CanInitializationError("could not create the serial device") from error
+            raise CanInitializationError(
+                "could not create the serial device"
+            ) from error
 
         super().__init__(channel, *args, **kwargs)
 
