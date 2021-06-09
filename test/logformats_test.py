@@ -316,7 +316,7 @@ class ReaderWriterTest(unittest.TestCase, ComparingMessagesTestCase, metaclass=A
             try:
                 writer = self.writer_constructor(self.test_file_name)
             except TypeError:
-                # is the is still a problem, raise the initial error
+                # if it is still a problem, raise the initial error
                 raise e
         with writer:
             for message in second_part:
