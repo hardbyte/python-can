@@ -225,18 +225,23 @@ class NiXNETcanBus(BusABC):
     @staticmethod
     def _detect_available_configs():
         configs = []
-        nixnet_system = system.System()
-        for can_intf in nixnet_system.intf_refs_can:
-            logger.info("Channel index %d: %s", can_intf.port_num, str(can_intf))
-            configs.append(
-                {
-                    "interface": "nixnet",
-                    "channel": str(can_intf),
-                    "can_term_available": can_intf.can_term_cap
-                    == constants.CanTermCap.YES,
-                }
-            )
-        nixnet_system.close()
+
+        try:
+            with system.System() as nixnet_system:
+                for interface in nixnet_system.intf_refs_can:
+                    cahnnel = str(interface)
+                    logger.debug("Found channel index %d: %s", interface.port_num, cahnnel)
+                    configs.append(
+                        {
+                            "interface": "nixnet",
+                            "channel": cahnnel,
+                            "can_term_available": interface.can_term_cap
+                            == constants.CanTermCap.YES,
+                        }
+                    )
+        except XnetNotFoundError as error:
+            logger.debug("An error occured while searching for configs: %s", str(error))
+
         return configs
 
 
