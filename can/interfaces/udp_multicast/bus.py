@@ -92,7 +92,9 @@ class UdpMulticastBus(BusABC):
         check_msgpack_installed()
 
         if receive_own_messages:
-            raise can.CanInterfaceNotImplementedError("receiving own messages is not yet implemented")
+            raise can.CanInterfaceNotImplementedError(
+                "receiving own messages is not yet implemented"
+            )
 
         super().__init__(channel, **kwargs)
 
@@ -106,9 +108,13 @@ class UdpMulticastBus(BusABC):
 
         data, _, timestamp = result
         try:
-            can_message = unpack_message(data, replace={"timestamp": timestamp}, check=True)
+            can_message = unpack_message(
+                data, replace={"timestamp": timestamp}, check=True
+            )
         except Exception as exception:
-            raise can.CanOperationError("could not unpack received message") from exception
+            raise can.CanOperationError(
+                "could not unpack received message"
+            ) from exception
 
         if not self.is_fd and can_message.is_fd:
             return None, False
@@ -117,7 +123,9 @@ class UdpMulticastBus(BusABC):
 
     def send(self, message: can.Message, timeout: Optional[float] = None) -> None:
         if not self.is_fd and message.is_fd:
-            raise can.CanOperationError("cannot send FD message over bus with CAN FD disabled")
+            raise can.CanOperationError(
+                "cannot send FD message over bus with CAN FD disabled"
+            )
 
         data = pack_message(message)
         self._multicast.send(data, timeout)
@@ -184,7 +192,9 @@ class GeneralPurposeUdpMulticastBus:
         if sock is not None:
             self._socket = sock
         else:
-            raise can.CanInitializationError("could not connect to a multicast IP network")
+            raise can.CanInitializationError(
+                "could not connect to a multicast IP network"
+            )
 
         # used in recv()
         self.received_timestamp_struct = "@ll"
@@ -251,7 +261,9 @@ class GeneralPurposeUdpMulticastBus:
                 log.warning("Could not close partly configured socket: %s", close_error)
 
             # still raise the error
-            raise can.CanInitializationError("could not create or configure socket") from error
+            raise can.CanInitializationError(
+                "could not create or configure socket"
+            ) from error
 
     def send(self, data: bytes, timeout: Optional[float] = None) -> None:
         """Send data to all group members. This call blocks.
@@ -291,7 +303,9 @@ class GeneralPurposeUdpMulticastBus:
             ready_receive_sockets, _, _ = select.select([self._socket], [], [], timeout)
         except socket.error as exc:
             # something bad (not a timeout) happened (e.g. the interface went down)
-            raise can.CanOperationError(f"Failed to wait for IP/UDP socket: {exc}") from exc
+            raise can.CanOperationError(
+                f"Failed to wait for IP/UDP socket: {exc}"
+            ) from exc
 
         if ready_receive_sockets:  # not empty
             # fetch data & source address
