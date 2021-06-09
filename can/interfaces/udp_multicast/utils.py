@@ -7,6 +7,7 @@ from typing import Dict
 from typing import Optional
 
 from can import Message
+from can import CanInterfaceNotImplementedError
 from can.typechecking import ReadableBytesLike
 
 try:
@@ -16,9 +17,9 @@ except ImportError:
 
 
 def check_msgpack_installed() -> None:
-    """Raises a `RuntimeError` if `msgpack` is not installed."""
+    """Raises a :class:`can.CanInterfaceNotImplementedError` if `msgpack` is not installed."""
     if msgpack is None:
-        raise RuntimeError("msgpack not installed")
+        raise CanInterfaceNotImplementedError("msgpack not installed")
 
 
 def pack_message(message: Message) -> bytes:

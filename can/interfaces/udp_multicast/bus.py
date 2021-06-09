@@ -92,7 +92,7 @@ class UdpMulticastBus(BusABC):
         check_msgpack_installed()
 
         if receive_own_messages:
-            raise NotImplementedError("receiving own messages is not yet implemented")
+            raise can.CanInterfaceNotImplementedError("receiving own messages is not yet implemented")
 
         super().__init__(channel, **kwargs)
 
@@ -105,7 +105,10 @@ class UdpMulticastBus(BusABC):
             return None, False
 
         data, _, timestamp = result
-        can_message = unpack_message(data, replace={"timestamp": timestamp})
+        try:
+            can_message = unpack_message(data, replace={"timestamp": timestamp}, check=True)
+        except Exception as exception:
+            raise can.CanOperationError("could not unpack received message") from exception
 
         if not self.is_fd and can_message.is_fd:
             return None, False
@@ -114,7 +117,7 @@ class UdpMulticastBus(BusABC):
 
     def send(self, message: can.Message, timeout: Optional[float] = None) -> None:
         if not self.is_fd and message.is_fd:
-            raise RuntimeError("cannot send FD message over bus with CAN FD disabled")
+            raise can.CanOperationError("cannot send FD message over bus with CAN FD disabled")
 
         data = pack_message(message)
         self._multicast.send(data, timeout)
@@ -149,7 +152,10 @@ class UdpMulticastBus(BusABC):
 
 
 class GeneralPurposeUdpMulticastBus:
-    """A general purpose send and receive handler for multicast over IP/UDP."""
+    """A general purpose send and receive handler for multicast over IP/UDP.
+
+    However, it raises CAN-specific exceptions for convenience.
+    """
 
     def __init__(
         self, group: str, port: int, hop_limit: int, max_buffer: int = 4096
@@ -178,7 +184,7 @@ class GeneralPurposeUdpMulticastBus:
         if sock is not None:
             self._socket = sock
         else:
-            raise RuntimeError("could not connect to a multicast IP network")
+            raise can.CanInitializationError("could not connect to a multicast IP network")
 
         # used in recv()
         self.received_timestamp_struct = "@ll"
@@ -193,8 +199,10 @@ class GeneralPurposeUdpMulticastBus:
         """Creates a new socket. This might fail and raise an exception!
 
         :param address_family: whether this is of type `socket.AF_INET` or `socket.AF_INET6`
-        :raises OSError: if the socket could not be opened or configured correctly; in this case, it is
-                         guaranteed to be closed/cleaned up
+
+        :raises can.CanInitializationError:
+            if the socket could not be opened or configured correctly; in this case, it is
+            guaranteed to be closed/cleaned up
         """
         # create the UDP socket
         # this might already fail but then there is nothing to clean up
@@ -243,7 +251,7 @@ class GeneralPurposeUdpMulticastBus:
                 log.warning("Could not close partly configured socket: %s", close_error)
 
             # still raise the error
-            raise error
+            raise can.CanInitializationError("could not create or configure socket") from error
 
     def send(self, data: bytes, timeout: Optional[float] = None) -> None:
         """Send data to all group members. This call blocks.
@@ -283,7 +291,7 @@ class GeneralPurposeUdpMulticastBus:
             ready_receive_sockets, _, _ = select.select([self._socket], [], [], timeout)
         except socket.error as exc:
             # something bad (not a timeout) happened (e.g. the interface went down)
-            raise can.CanError(f"Failed to wait for IP/UDP socket: {exc}")
+            raise can.CanOperationError(f"Failed to wait for IP/UDP socket: {exc}") from exc
 
         if ready_receive_sockets:  # not empty
             # fetch data & source address
