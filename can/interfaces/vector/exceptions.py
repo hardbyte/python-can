@@ -17,14 +17,12 @@ class VectorError(CanError):
 
 
 class VectorInitializationError(VectorError, CanInitializationError):
-
     @staticmethod
     def from_generic(error: VectorError) -> "VectorInitializationError":
         return VectorInitializationError(*error._args)
 
 
 class VectorOperationError(VectorError, CanOperationError):
-
     @staticmethod
     def from_generic(error: VectorError) -> "VectorOperationError":
         return VectorOperationError(*error._args)

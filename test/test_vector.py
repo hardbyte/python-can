@@ -287,7 +287,11 @@ class TestVectorBus(unittest.TestCase):
                 can.Bus(channel=0, bustype="vector")
 
     def test_vector_error_pickle(self) -> None:
-        for error_type in [VectorError, VectorInitializationError, VectorOperationError]:
+        for error_type in [
+            VectorError,
+            VectorInitializationError,
+            VectorOperationError,
+        ]:
             with self.subTest(f"error_type = {error_type.__name__}"):
 
                 error_code = 118
