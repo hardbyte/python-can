@@ -255,10 +255,10 @@ class CyclicSocketCan(unittest.TestCase):
         time.sleep(0.1)
 
         # Try to start it again, task_id is not incremented in this case
-        with self.assertRaises(ValueError) as ctx:
+        with self.assertRaises(can.CanOperationError) as ctx:
             task_a.start()
         self.assertEqual(
-            "A periodic task for Task ID 1 is already in progress by SocketCAN Linux layer",
+            "A periodic task for task ID 1 is already in progress by the SocketCAN Linux layer",
             str(ctx.exception),
         )
 
