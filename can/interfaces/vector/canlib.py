@@ -10,7 +10,7 @@ import ctypes
 import logging
 import time
 import os
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Sequence, Union
 
 import typing
 
@@ -38,6 +38,7 @@ from can.util import (
     deprecated_args_alias,
     time_perfcounter_correlation,
 )
+from can.typechecking import CanFilters
 from .exceptions import VectorError
 
 # Define Module Logger
@@ -71,59 +72,64 @@ class VectorBus(BusABC):
     @deprecated_args_alias(**deprecated_args)
     def __init__(
         self,
-        channel,
-        can_filters=None,
-        poll_interval=0.01,
-        receive_own_messages=False,
-        bitrate=None,
-        rx_queue_size=2 ** 14,
-        app_name="CANalyzer",
-        serial=None,
-        fd=False,
-        data_bitrate=None,
-        sjw_abr=2,
-        tseg1_abr=6,
-        tseg2_abr=3,
-        sjw_dbr=2,
-        tseg1_dbr=6,
-        tseg2_dbr=3,
+        channel: Union[int, Sequence[int], str],
+        can_filters: Optional[CanFilters] = None,
+        poll_interval: float = 0.01,
+        receive_own_messages: bool = False,
+        bitrate: int = None,
+        rx_queue_size: int = 2 ** 14,
+        app_name: str = "CANalyzer",
+        serial: int = None,
+        fd: bool = False,
+        data_bitrate: int = None,
+        sjw_abr: int = 2,
+        tseg1_abr: int = 6,
+        tseg2_abr: int = 3,
+        sjw_dbr: int = 2,
+        tseg1_dbr: int = 6,
+        tseg2_dbr: int = 3,
         **kwargs,
-    ):
+    ) -> None:
         """
-        :param list channel:
+        :param channel:
             The channel indexes to create this bus with.
             Can also be a single integer or a comma separated string.
-        :param float poll_interval:
+        :param can_filters:
+            See :class:`can.BusABC`.
+        :param receive_own_messages:
+            See :class:`can.BusABC`.
+        :param poll_interval:
             Poll interval in seconds.
-        :param int bitrate:
+        :param bitrate:
             Bitrate in bits/s.
-        :param int rx_queue_size:
+        :param rx_queue_size:
             Number of messages in receive queue (power of 2).
-            CAN: range 16…32768
-            CAN-FD: range 8192…524288
-        :param str app_name:
-            Name of application in Hardware Config.
-            If set to None, the channel should be a global channel index.
-        :param int serial:
+            CAN: range `16…32768`
+            CAN-FD: range `8192…524288`
+        :param app_name:
+            Name of application in the hardware config.
+            If set to `None`, the channel should be a global channel index.
+        :param serial:
             Serial number of the hardware to be used.
             If set, the channel parameter refers to the channels ONLY on the specified hardware.
-            If set, the app_name does not have to be previously defined in Vector Hardware Config.
-        :param bool fd:
+            If set, the app_name does not have to be previously defined in the Vector hardware
+            config.
+        :param fd:
             If CAN-FD frames should be supported.
-        :param int data_bitrate:
+        :param data_bitrate:
             Which bitrate to use for data phase in CAN FD.
             Defaults to arbitration bitrate.
-        :param int sjw_abr:
+        :param sjw_abr:
             Bus timing value sample jump width (arbitration).
-        :param int tseg1_abr:
+        :param tseg1_abr:
             Bus timing value tseg1 (arbitration)
-        :param int tseg2_abr:
+        :param tseg2_abr:
             Bus timing value tseg2 (arbitration)
-        :param int sjw_dbr:
+        :param sjw_dbr:
             Bus timing value sample jump width (data)
-        :param int tseg1_dbr:
+        :param tseg1_dbr:
             Bus timing value tseg1 (data)
-        :param int tseg2_dbr:
+        :param tseg2_dbr:
             Bus timing value tseg2 (data)
         """
         if os.name != "nt" and not kwargs.get("_testing", False):
@@ -135,13 +141,17 @@ class VectorBus(BusABC):
             raise ImportError("The Vector API has not been loaded")
 
         self.poll_interval = poll_interval
-        if isinstance(channel, (list, tuple)):
-            self.channels = channel
-        elif isinstance(channel, int):
-            self.channels = [channel]
-        else:
+
+        if isinstance(channel, str):  # must be checked before generic Sequence
             # Assume comma separated string of channels
             self.channels = [int(ch.strip()) for ch in channel.split(",")]
+        elif isinstance(channel, int):
+            self.channels = [channel]
+        elif isinstance(channel, Sequence):
+            self.channels = channel
+        else:
+            raise TypeError(f"Invalid type for channels parameter: {type(channel).__name__}")
+
         self._app_name = app_name.encode() if app_name is not None else b""
         self.channel_info = "Application %s: %s" % (
             app_name,
