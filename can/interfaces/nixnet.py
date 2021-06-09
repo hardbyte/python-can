@@ -230,7 +230,9 @@ class NiXNETcanBus(BusABC):
             with system.System() as nixnet_system:
                 for interface in nixnet_system.intf_refs_can:
                     cahnnel = str(interface)
-                    logger.debug("Found channel index %d: %s", interface.port_num, cahnnel)
+                    logger.debug(
+                        "Found channel index %d: %s", interface.port_num, cahnnel
+                    )
                     configs.append(
                         {
                             "interface": "nixnet",
