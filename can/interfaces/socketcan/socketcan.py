@@ -278,24 +278,19 @@ def send_bcm(bcm_socket: socket.socket, data: bytes) -> int:
     """
     try:
         return bcm_socket.send(data)
-    except OSError as e:
-        base = "Couldn't send CAN BCM frame. OS Error {}: {}\n".format(
-            e.errno, e.strerror
-        )
+    except OSError as error:
+        base = f"Couldn't send CAN BCM frame due to OS Error: {error.strerror}"
 
-        if e.errno == errno.EINVAL:
-            raise can.CanError(
-                base + "You are probably referring to a non-existing frame."
-            )
-
-        elif e.errno == errno.ENETDOWN:
-            raise can.CanError(base + "The CAN interface appears to be down.")
-
-        elif e.errno == errno.EBADF:
-            raise can.CanError(base + "The CAN socket appears to be closed.")
-
+        if error.errno == errno.EINVAL:
+            specific_message = " You are probably referring to a non-existing frame."
+        elif error.errno == errno.ENETDOWN:
+            specific_message = " The CAN interface appears to be down."
+        elif error.errno == errno.EBADF:
+            specific_message = " The CAN socket appears to be closed."
         else:
-            raise e
+            specific_message = ""
+
+        raise can.CanOperationError(base + specific_message, error.errno) from error
 
 
 def _compose_arbitration_id(message: Message) -> int:
@@ -330,7 +325,7 @@ class CyclicSendTask(
         messages: Union[Sequence[Message], Message],
         period: float,
         duration: Optional[float] = None,
-    ):
+    ) -> None:
         """Construct and :meth:`~start` a task.
 
         :param bcm_socket: An open BCM socket on the desired CAN channel.
@@ -378,7 +373,7 @@ class CyclicSendTask(
         log.debug("Sending BCM command")
         send_bcm(self.bcm_socket, header + body)
 
-    def _check_bcm_task(self):
+    def _check_bcm_task(self) -> None:
         # Do a TX_READ on a task ID, and check if we get EINVAL. If so,
         # then we are referring to a CAN message with the existing ID
         check_header = build_bcm_header(
@@ -394,14 +389,13 @@ class CyclicSendTask(
         )
         try:
             self.bcm_socket.send(check_header)
-        except OSError as e:
-            if e.errno != errno.EINVAL:
-                raise e
+        except OSError as error:
+            if error.errno != errno.EINVAL:
+                raise can.CanOperationError("failed to check", error.errno) from error
         else:
-            raise ValueError(
-                "A periodic task for Task ID {} is already in progress by SocketCAN Linux layer".format(
-                    self.task_id
-                )
+            raise can.CanOperationError(
+                f"A periodic task for task ID {self.task_id} is already in progress "
+                "by the SocketCAN Linux layer"
             )
 
     def stop(self) -> None:
@@ -537,7 +531,7 @@ def capture_message(
         else:
             channel = None
     except socket.error as error:
-        raise can.CanError(f"Error receiving: {error}")
+        raise can.CanOperationError(f"Error receiving: {error.strerror}", error.errno)
 
     can_id, can_dlc, flags, data = dissect_can_frame(cf)
 
@@ -550,7 +544,7 @@ def capture_message(
     # see https://man7.org/linux/man-pages/man3/timespec.3.html -> struct timespec for details
     seconds, nanoseconds = RECEIVED_TIMESTAMP_STRUCT.unpack_from(cmsg_data)
     if nanoseconds >= 1e9:
-        raise can.CanError(
+        raise can.CanOperationError(
             f"Timestamp nanoseconds field was out of range: {nanoseconds} not less than 1e9"
         )
     timestamp = seconds + nanoseconds * 1e-9
@@ -716,9 +710,9 @@ class SocketcanBus(BusABC):
             # get all sockets that are ready (can be a list with a single value
             # being self.socket or an empty list if self.socket is not ready)
             ready_receive_sockets, _, _ = select.select([self.socket], [], [], timeout)
-        except socket.error as exc:
+        except socket.error as error:
             # something bad happened (e.g. the interface went down)
-            raise can.CanError(f"Failed to receive: {exc}")
+            raise can.CanOperationError(f"Failed to receive: {error.strerror}", error.errno)
 
         if ready_receive_sockets:  # not empty
             get_channel = self.channel == ""
@@ -767,7 +761,7 @@ class SocketcanBus(BusABC):
             data = data[sent:]
             time_left = timeout - (time.time() - started)
 
-        raise can.CanError("Transmit buffer full")
+        raise can.CanOperationError("Transmit buffer full")
 
     def _send_once(self, data: bytes, channel: Optional[str] = None) -> int:
         try:
@@ -776,8 +770,8 @@ class SocketcanBus(BusABC):
                 sent = self.socket.sendto(data, (channel,))
             else:
                 sent = self.socket.send(data)
-        except socket.error as exc:
-            raise can.CanError("Failed to transmit: %s" % exc)
+        except socket.error as error:
+            raise can.CanOperationError(f"Failed to transmit: {error.strerror}", error.errno)
         return sent
 
     def _send_periodic_internal(
