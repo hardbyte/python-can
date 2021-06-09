@@ -670,8 +670,7 @@ class VectorBus(BusABC):
             hardware channel.
 
         :raises can.interfaces.vector.VectorInitializationError:
-            Raises a VectorError when the application name does not exist in
-            Vector Hardware Configuration.
+            If the application name does not exist in the Vector hardware configuration.
         """
         hw_type = ctypes.c_uint()
         hw_index = ctypes.c_uint()
@@ -722,8 +721,7 @@ class VectorBus(BusABC):
             The channel index of the interface.
 
         :raises can.interfaces.vector.VectorInitializationError:
-            Raises a VectorError when the application name does not exist in
-            Vector Hardware Configuration.
+            If the application name does not exist in the Vector hardware configuration.
         """
         xldriver.xlSetApplConfig(
             app_name.encode(),
