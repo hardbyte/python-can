@@ -1,7 +1,6 @@
-"""
-"""
+"""Exception/error declarations for the vector interface."""
 
-from can import CanError
+from can import CanError, CanInitializationError, CanOperationError
 
 
 class VectorError(CanError):
@@ -14,4 +13,18 @@ class VectorError(CanError):
         self._args = error_code, error_string, function
 
     def __reduce__(self):
-        return VectorError, self._args, {}
+        return type(self), self._args, {}
+
+
+class VectorInitializationError(VectorError, CanInitializationError):
+
+    @staticmethod
+    def from_generic(error: VectorError) -> "VectorInitializationError":
+        return VectorInitializationError(*error._args)
+
+
+class VectorOperationError(VectorError, CanOperationError):
+
+    @staticmethod
+    def from_generic(error: VectorError) -> "VectorOperationError":
+        return VectorOperationError(*error._args)
