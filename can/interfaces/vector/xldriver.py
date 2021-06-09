@@ -33,14 +33,18 @@ xlGetErrorString.restype = xlclass.XLstringType
 def check_status_operation(result, function, arguments):
     """Check the status and raise a :class:`VectorOperationError` on error."""
     if result > 0:
-        raise VectorOperationError(result, xlGetErrorString(result).decode(), function.__name__)
+        raise VectorOperationError(
+            result, xlGetErrorString(result).decode(), function.__name__
+        )
     return result
 
 
 def check_status_initialization(result, function, arguments):
     """Check the status and raise a :class:`VectorInitializationError` on error."""
     if result > 0:
-        raise VectorInitializationError(result, xlGetErrorString(result).decode(), function.__name__)
+        raise VectorInitializationError(
+            result, xlGetErrorString(result).decode(), function.__name__
+        )
     return result
 
 
