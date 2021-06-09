@@ -19,7 +19,15 @@ logger = logging.getLogger(__name__)
 
 if sys.platform == "win32":
     try:
-        from nixnet import session, types, constants, errors, system, database, XnetError
+        from nixnet import (
+            session,
+            types,
+            constants,
+            errors,
+            system,
+            database,
+            XnetError,
+        )
     except ImportError:
         logger.error("Error, NIXNET python module cannot be loaded.")
         raise ImportError()
