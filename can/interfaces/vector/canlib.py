@@ -150,7 +150,9 @@ class VectorBus(BusABC):
         elif isinstance(channel, Sequence):
             self.channels = channel
         else:
-            raise TypeError(f"Invalid type for channels parameter: {type(channel).__name__}")
+            raise TypeError(
+                f"Invalid type for channels parameter: {type(channel).__name__}"
+            )
 
         self._app_name = app_name.encode() if app_name is not None else b""
         self.channel_info = "Application %s: %s" % (
