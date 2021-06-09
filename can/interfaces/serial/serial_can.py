@@ -11,7 +11,8 @@ import logging
 import struct
 from typing import Any, List, Tuple, Optional
 
-from can import BusABC, Message, CanError
+from can import BusABC, Message
+from can import CanInterfaceNotImplementedError, CanInitializationError, CanOperationError, CanTimeoutError
 from can.typechecking import AutoDetectedConfig
 
 logger = logging.getLogger("can.serial")
@@ -67,14 +68,24 @@ class SerialBus(BusABC):
         :param rtscts:
             turn hardware handshake (RTS/CTS) on and off
 
+        :raises can.CanInitializationError: If the given parameters are invalid.
+        :raises can.CanInterfaceNotImplementedError: If the serial module is not installed.
         """
+
+        if not serial:
+            raise CanInterfaceNotImplementedError("the serial module is not installed")
+
         if not channel:
-            raise ValueError("Must specify a serial port.")
+            raise TypeError("Must specify a serial port.")
 
         self.channel_info = f"Serial interface: {channel}"
-        self._ser = serial.serial_for_url(
-            channel, baudrate=baudrate, timeout=timeout, rtscts=rtscts
-        )
+
+        try:
+            self._ser = serial.serial_for_url(
+                channel, baudrate=baudrate, timeout=timeout, rtscts=rtscts
+            )
+        except ValueError as error:
+            raise CanInitializationError("could not create the serial device") from error
 
         super().__init__(channel, *args, **kwargs)
 
@@ -124,7 +135,12 @@ class SerialBus(BusABC):
         byte_msg.append(0xBB)
 
         # Write to serial device
-        self._ser.write(byte_msg)
+        try:
+            self._ser.write(byte_msg)
+        except serial.PortNotOpenError as error:
+            raise CanOperationError("writing to closed port") from error
+        except serial.SerialTimeoutException as error:
+            raise CanTimeoutError() from error
 
     def _recv_internal(
         self, timeout: Optional[float]
@@ -153,12 +169,12 @@ class SerialBus(BusABC):
                 timestamp = struct.unpack("<I", s)[0]
                 dlc = ord(self._ser.read())
                 if dlc > 8:
-                    raise CanError("received DLC may not exceed 8 bytes")
+                    raise ValueError("received DLC may not exceed 8 bytes")
 
                 s = self._ser.read(4)
                 arbitration_id = struct.unpack("<I", s)[0]
                 if arbitration_id >= 0x20000000:
-                    raise CanError(
+                    raise ValueError(
                         "received arbitration id may not exceed 2^29 (0x20000000)"
                     )
 
@@ -177,7 +193,7 @@ class SerialBus(BusABC):
                     return msg, False
 
                 else:
-                    raise CanError(
+                    raise CanOperationError(
                         f"invalid delimiter byte while reading message: {delimiter_byte}"
                     )
 
@@ -185,7 +201,7 @@ class SerialBus(BusABC):
                 return None, False
 
         except serial.SerialException as error:
-            raise CanError("could not read from serial") from error
+            raise CanOperationError("could not read from serial") from error
 
     def fileno(self) -> int:
         if hasattr(self._ser, "fileno"):
