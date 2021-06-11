@@ -30,7 +30,7 @@ except ImportError:
 log = logging.getLogger("can.bcm")
 
 
-class CyclicTask:
+class CyclicTask(abc.ABC):
     """
     Abstract Base for all cyclic tasks.
     """

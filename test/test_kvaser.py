@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# coding: utf-8
 
 """
 """
@@ -20,6 +19,7 @@ class KvaserTest(unittest.TestCase):
         canlib.canGetNumberOfChannels = KvaserTest.canGetNumberOfChannels
         canlib.canOpenChannel = Mock(return_value=0)
         canlib.canIoCtl = Mock(return_value=0)
+        canlib.canIoCtlInit = Mock(return_value=0)
         canlib.kvReadTimer = Mock()
         canlib.canSetBusParams = Mock()
         canlib.canSetBusParamsFd = Mock()
