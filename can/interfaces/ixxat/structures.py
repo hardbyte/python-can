@@ -68,6 +68,20 @@ class VCIDEVICEINFO(ctypes.Structure):
 PVCIDEVICEINFO = ctypes.POINTER(VCIDEVICEINFO)
 
 
+class CANBTP(ctypes.Structure):
+    _fields_ = [
+        ("dwMode", ctypes.c_uint32),
+        ("dwBPS", ctypes.c_uint32),
+        ("wTS1", ctypes.c_uint16),
+        ("wTS2", ctypes.c_uint16),
+        ("wSJW", ctypes.c_uint16),
+        ("wTDO", ctypes.c_uint16),
+    ]
+
+
+PCANBTP = ctypes.POINTER(CANBTP)
+
+
 class CANLINESTATUS(ctypes.Structure):
     _fields_ = [
         ("bOpMode", ctypes.c_uint8),
@@ -79,6 +93,21 @@ class CANLINESTATUS(ctypes.Structure):
 
 
 PCANLINESTATUS = ctypes.POINTER(CANLINESTATUS)
+
+
+class CANLINESTATUS2(ctypes.Structure):
+    _fields_ = [
+        ("bOpMode", ctypes.c_uint8),
+        ("bExMode", ctypes.c_uint8),
+        ("bBusLoad", ctypes.c_uint8),
+        ("bReserved", ctypes.c_uint8),
+        ("sBtpSdr", ctypes.c_uint32),
+        ("sBtpFdr", ctypes.c_uint32),
+        ("dwStatus", ctypes.c_uint32),
+    ]
+
+
+PCANLINESTATUS2 = ctypes.POINTER(CANLINESTATUS2)
 
 
 class CANCHANSTATUS(ctypes.Structure):
@@ -111,6 +140,30 @@ class CANCAPABILITIES(ctypes.Structure):
 PCANCAPABILITIES = ctypes.POINTER(CANCAPABILITIES)
 
 
+class CANCAPABILITIES2(ctypes.Structure):
+    _fields_ = [
+        ("wCtrlType", ctypes.c_uint16),
+        ("wBusCoupling", ctypes.c_uint16),
+        ("dwFeatures", ctypes.c_uint32),
+        ("dwCanClkFreq", ctypes.c_uint32),
+        ("sSdrRangeMin", CANBTP),
+        ("sSdrRangeMax", CANBTP),
+        ("sFdrRangeMin", CANBTP),
+        ("sFdrRangeMax", CANBTP),
+        ("dwTscClkFreq", ctypes.c_uint32),
+        ("dwTscDivisor", ctypes.c_uint32),
+        ("dwCmsClkFreq", ctypes.c_uint32),
+        ("dwCmsDivisor", ctypes.c_uint32),
+        ("dwCmsMaxTicks", ctypes.c_uint32),
+        ("dwDtxClkFreq", ctypes.c_uint32),
+        ("dwDtxDivisor", ctypes.c_uint32),
+        ("dwDtxMaxTicks", ctypes.c_uint32),
+    ]
+
+
+PCANCAPABILITIES2 = ctypes.POINTER(CANCAPABILITIES2)
+
+
 class CANMSGINFO(ctypes.Union):
     class Bytes(ctypes.Structure):
         _fields_ = [
@@ -124,8 +177,11 @@ class CANMSGINFO(ctypes.Union):
         _fields_ = [
             ("type", ctypes.c_uint32, 8),
             ("ssm", ctypes.c_uint32, 1),
-            ("hi", ctypes.c_uint32, 2),
-            ("res", ctypes.c_uint32, 5),
+            ("hpm", ctypes.c_uint32, 1),
+            ("edl", ctypes.c_uint32, 1),
+            ("fdr", ctypes.c_uint32, 1),
+            ("esi", ctypes.c_uint32, 1),
+            ("res", ctypes.c_uint32, 3),
             ("dlc", ctypes.c_uint32, 4),
             ("ovr", ctypes.c_uint32, 1),
             ("srr", ctypes.c_uint32, 1),
@@ -152,6 +208,19 @@ class CANMSG(ctypes.Structure):
 PCANMSG = ctypes.POINTER(CANMSG)
 
 
+class CANMSG2(ctypes.Structure):
+    _fields_ = [
+        ("dwTime", ctypes.c_uint32),
+        ("_rsvd_", ctypes.c_uint32),
+        ("dwMsgId", ctypes.c_uint32),
+        ("uMsgInfo", CANMSGINFO),
+        ("abData", ctypes.c_uint8 * 64),
+    ]
+
+
+PCANMSG2 = ctypes.POINTER(CANMSG2)
+
+
 class CANCYCLICTXMSG(ctypes.Structure):
     _fields_ = [
         ("wCycleTime", ctypes.c_uint16),
@@ -164,3 +233,17 @@ class CANCYCLICTXMSG(ctypes.Structure):
 
 
 PCANCYCLICTXMSG = ctypes.POINTER(CANCYCLICTXMSG)
+
+
+class CANCYCLICTXMSG2(ctypes.Structure):
+    _fields_ = [
+        ("wCycleTime", ctypes.c_uint16),
+        ("bIncrMode", ctypes.c_uint8),
+        ("bByteIndex", ctypes.c_uint8),
+        ("dwMsgId", ctypes.c_uint32),
+        ("uMsgInfo", CANMSGINFO),
+        ("abData", ctypes.c_uint8 * 64),
+    ]
+
+
+PCANCYCLICTXMSG2 = ctypes.POINTER(CANCYCLICTXMSG2)

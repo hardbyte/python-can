@@ -3,6 +3,7 @@ Ctypes wrapper module for IXXAT Virtual CAN Interface V3 on win32 systems
 
 Copyright (C) 2016 Giuseppe Corbelli <giuseppe.corbelli@weightpack.com>
 """
+from .structures import CANBTP
 
 FALSE = 0
 TRUE = 1
@@ -32,6 +33,37 @@ CAN_BT0_800KB = 0x00
 CAN_BT1_800KB = 0x16
 CAN_BT0_1000KB = 0x00
 CAN_BT1_1000KB = 0x14
+
+CAN_BT01_5KB = (0x3F, 0x7F)
+CAN_BT01_10KB = (0x31, 0x1C)
+CAN_BT01_20KB = (0x18, 0x1C)
+CAN_BT01_50KB = (0x09, 0x1C)
+CAN_BT01_100KB = (0x04, 0x1C)
+CAN_BT01_125KB = (0x03, 0x1C)
+CAN_BT01_250KB = (0x01, 0x1C)
+CAN_BT01_500KB = (0x00, 0x1C)
+CAN_BT01_800KB = (0x00, 0x16)
+CAN_BT01_1000KB = (0x00, 0x14)
+
+CAN_BTP_EMPTY = CANBTP(0, 0, 0, 0, 0, 0)
+CAN_BTP_5KB = CANBTP(0, 5000, 17, 8, 1, 0)
+CAN_BTP_10KB = CANBTP(0, 10000, 14, 2, 1, 0)
+CAN_BTP_20KB = CANBTP(0, 20000, 14, 2, 1, 0)
+CAN_BTP_50KB = CANBTP(0, 50000, 14, 2, 1, 0)
+CAN_BTP_100KB = CANBTP(0, 100000, 14, 2, 1, 0)
+CAN_BTP_125KB = CANBTP(0, 125000, 14, 2, 1, 0)
+CAN_BTP_250KB = CANBTP(0, 250000, 14, 2, 1, 0)
+CAN_BTP_500KB = CANBTP(0, 500000, 14, 2, 1, 0)
+CAN_BTP_800KB = CANBTP(0, 800000, 8, 2, 1, 0)
+CAN_BTP_1000KB = CANBTP(0, 1000000, 6, 2, 1, 0)
+
+CAN_BTP_DBR_SL_1000KB = CANBTP(0, 1000000, 1600, 400, 400, 1600)
+CAN_BTP_DBR_SL_2000KB = CANBTP(0, 2000000, 1600, 400, 400, 1600)
+CAN_BTP_DBR_SL_4000KB = CANBTP(0, 4000000, 800, 200, 200, 800)
+CAN_BTP_DBR_SL_5000KB = CANBTP(0, 5000000, 600, 200, 200, 600)
+CAN_BTP_DBR_SL_6667KB = CANBTP(0, 6666666, 400, 200, 200, 402)
+CAN_BTP_DBR_SL_8000KB = CANBTP(0, 8000000, 400, 100, 100, 250)
+CAN_BTP_DBR_SL_10000KB = CANBTP(0, 10000000, 300, 100, 100, 200)
 
 # Facilities/severities
 SEV_INFO = 0x40000000
@@ -119,6 +151,12 @@ CAN_OPMODE_ERRFRAME = 0x04
 CAN_OPMODE_LISTONLY = 0x08
 CAN_OPMODE_LOWSPEED = 0x10
 
+# Extended operating modes
+CAN_EXMODE_DISABLED = 0x00  # no extended operation
+CAN_EXMODE_EXTDATA = 0x01  # extended data length
+CAN_EXMODE_FASTDATA = 0x02  # fast data bit rate
+CAN_EXMODE_NONISO = 0x04  # non ISO conform frames
+
 # Message types
 CAN_MSGTYPE_DATA = 0
 CAN_MSGTYPE_INFO = 1
@@ -143,6 +181,88 @@ CAN_ERROR_BIT = 4  # bit error
 CAN_ERROR_CRC = 6  # CRC error
 CAN_ERROR_OTHER = 7  # other (unspecified) error
 
-# acceptance code and mask to reject all CAN IDs
+# Filter selection
+CAN_FILTER_STD = 1  # select standard filter (11-bit)
+CAN_FILTER_EXT = 2  # select extended filter (29-bit)
+
+# Filter mode
+CAN_FILTER_VOID = 0x00  # invalid or unknown filter mode (do not use for initialization)
+CAN_FILTER_LOCK = 0x01  # lock filter (inhibit all IDs)
+CAN_FILTER_PASS = 0x02  # bypass filter (pass all IDs)
+CAN_FILTER_INCL = 0x03  # inclusive filtering (pass registered IDs)
+CAN_FILTER_EXCL = 0x04  # exclusive filtering (inhibit registered IDs)
+
+# additional filter mode flag for ICanChannel2 initialization
+CAN_FILTER_SRRA = 0x80  # pass self-rec messages from all channels
+
 CAN_ACC_MASK_NONE = 0xFFFFFFFF
 CAN_ACC_CODE_NONE = 0x80000000
+
+CAN_EDLC_XLT = [0, 1, 2, 3, 4, 5, 6, 7, 8, 12, 16, 20, 24, 32, 48, 64]
+CAN_ELEN_XLT = [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    9,
+    9,
+    9,
+    10,
+    10,
+    10,
+    10,
+    11,
+    11,
+    11,
+    11,
+    12,
+    12,
+    12,
+    12,
+    13,
+    13,
+    13,
+    13,
+    13,
+    13,
+    13,
+    13,
+    14,
+    14,
+    14,
+    14,
+    14,
+    14,
+    14,
+    14,
+    14,
+    14,
+    14,
+    14,
+    14,
+    14,
+    14,
+    14,
+    15,
+    15,
+    15,
+    15,
+    15,
+    15,
+    15,
+    15,
+    15,
+    15,
+    15,
+    15,
+    15,
+    15,
+    15,
+    15,
+]
