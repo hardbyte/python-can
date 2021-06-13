@@ -1,12 +1,14 @@
 """
-This interface is for Windows only, otherwise use socketCAN.
+This interface is for Windows only, otherwise use SocketCAN.
 """
 
 import logging
 from ctypes import byref
+from typing import Optional
 
-from can import BusABC, Message, CanError
-from .usb2canabstractionlayer import *
+from can import BusABC, Message, CanInitializationError, CanOperationError
+from .usb2canabstractionlayer import Usb2CanAbstractionLayer, CanalMsg, CanalError
+from .usb2canabstractionlayer import flags_t, IS_ERROR_FRAME, IS_REMOTE_FRAME, IS_ID_TYPE
 from .serial_selector import find_serial_devices
 
 # Set up logging
@@ -102,15 +104,15 @@ class Usb2canBus(BusABC):
         if not device_id:
             devices = find_serial_devices()
             if not devices:
-                raise CanError("could not automatically find any device")
+                raise CanInitializationError("could not automatically find any device")
             device_id = devices[0]
 
         # convert to kb/s and cap: max rate is 1000 kb/s
         baudrate = min(int(bitrate // 1000), 1000)
 
-        self.channel_info = "USB2CAN device {}".format(device_id)
+        self.channel_info = f"USB2CAN device {device_id}"
 
-        connector = "{}; {}".format(device_id, baudrate)
+        connector = f"{device_id}; {baudrate}"
         self.handle = self.can.open(connector, flags_t)
 
         super().__init__(
@@ -126,7 +128,7 @@ class Usb2canBus(BusABC):
             status = self.can.send(self.handle, byref(tx))
 
         if status != CanalError.SUCCESS:
-            raise CanError("could not send message: status == {}".format(status))
+            raise CanOperationError("could not send message", error_code=status)
 
     def _recv_internal(self, timeout):
 
@@ -148,8 +150,7 @@ class Usb2canBus(BusABC):
         ):
             rx = None
         else:
-            log.error("Canal Error %s", status)
-            rx = None
+            raise CanOperationError("could not receive message", error_code=status)
 
         return rx, False
 
@@ -157,28 +158,28 @@ class Usb2canBus(BusABC):
         """
         Shuts down connection to the device safely.
 
-        :raise cam.CanError: is closing the connection did not work
+        :raise cam.CanOperationError: is closing the connection did not work
         """
         status = self.can.close(self.handle)
 
         if status != CanalError.SUCCESS:
-            raise CanError("could not shut down bus: status == {}".format(status))
+            raise CanOperationError("could not shut down bus", error_code=status)
 
     @staticmethod
     def _detect_available_configs():
         return Usb2canBus.detect_available_configs()
 
     @staticmethod
-    def detect_available_configs(serial_matcher=None):
+    def detect_available_configs(serial_matcher: Optional[str] = None):
         """
-        Uses the Windows Management Instrumentation to identify serial devices.
+        Uses the *Windows Management Instrumentation* to identify serial devices.
 
-        :param str serial_matcher (optional):
+        :param serial_matcher:
             search string for automatic detection of the device serial
         """
-        if serial_matcher:
-            channels = find_serial_devices(serial_matcher)
-        else:
+        if serial_matcher is None:
             channels = find_serial_devices()
+        else:
+            channels = find_serial_devices(serial_matcher)
 
         return [{"interface": "usb2can", "channel": c} for c in channels]
