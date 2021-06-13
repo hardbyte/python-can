@@ -112,8 +112,8 @@ class VectorBus(BusABC):
         :param serial:
             Serial number of the hardware to be used.
             If set, the channel parameter refers to the channels ONLY on the specified hardware.
-            If set, the app_name does not have to be previously defined in the Vector hardware
-            config.
+            If set, the app_name does not have to be previously defined in Vector Hardware
+            Configuration.
         :param fd:
             If CAN-FD frames should be supported.
         :param data_bitrate:
