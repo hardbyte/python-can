@@ -107,13 +107,13 @@ class VectorBus(BusABC):
             CAN: range `16…32768`
             CAN-FD: range `8192…524288`
         :param app_name:
-            Name of application in Vector Hardware Configuration.
+            Name of application in *Vector Hardware Config*.
             If set to `None`, the channel should be a global channel index.
         :param serial:
             Serial number of the hardware to be used.
             If set, the channel parameter refers to the channels ONLY on the specified hardware.
-            If set, the app_name does not have to be previously defined in Vector Hardware
-            Configuration.
+            If set, the `app_name` does not have to be previously defined in
+            *Vector Hardware Config*.
         :param fd:
             If CAN-FD frames should be supported.
         :param data_bitrate:
