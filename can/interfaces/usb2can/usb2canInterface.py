@@ -8,7 +8,12 @@ from typing import Optional
 
 from can import BusABC, Message, CanInitializationError, CanOperationError
 from .usb2canabstractionlayer import Usb2CanAbstractionLayer, CanalMsg, CanalError
-from .usb2canabstractionlayer import flags_t, IS_ERROR_FRAME, IS_REMOTE_FRAME, IS_ID_TYPE
+from .usb2canabstractionlayer import (
+    flags_t,
+    IS_ERROR_FRAME,
+    IS_REMOTE_FRAME,
+    IS_ID_TYPE,
+)
 from .serial_selector import find_serial_devices
 
 # Set up logging
@@ -92,7 +97,7 @@ class Usb2canBus(BusABC):
         flags=0x00000008,
         *args,
         bitrate=500000,
-        **kwargs
+        **kwargs,
     ):
 
         self.can = Usb2CanAbstractionLayer(dll)

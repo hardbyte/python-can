@@ -182,7 +182,9 @@ class Usb2CanAbstractionLayer:
 
     def blocking_receive(self, handle, msg, timeout) -> CanalError:
         with error_check("Blocking Receive Failed"):
-            return CanalError(self.__m_dllBasic.CanalBlockingReceive(handle, msg, timeout))
+            return CanalError(
+                self.__m_dllBasic.CanalBlockingReceive(handle, msg, timeout)
+            )
 
     def get_status(self, handle, status) -> CanalError:
         with error_check("Get status failed"):
