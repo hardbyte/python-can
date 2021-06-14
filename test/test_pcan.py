@@ -6,15 +6,14 @@ import ctypes
 import unittest
 from unittest import mock
 from unittest.mock import Mock
-from can.bus import BusState
-from can.interfaces.pcan.basic import *
-from can.interfaces.pcan import PcanBus
-from parameterized import parameterized
 
 import pytest
+from parameterized import parameterized
 
 import can
-from can.interfaces.pcan import pcan
+from can.bus import BusState
+from can.interfaces.pcan.basic import *
+from can.interfaces.pcan import PcanBus, PcanError
 
 
 class TestPCANBus(unittest.TestCase):
@@ -37,7 +36,7 @@ class TestPCANBus(unittest.TestCase):
 
     def test_bus_creation(self) -> None:
         self.bus = can.Bus(bustype="pcan")
-        self.assertIsInstance(self.bus, pcan.PcanBus)
+        self.assertIsInstance(self.bus, PcanBus)
         self.MockPCANBasic.assert_called_once()
         self.mock_pcan.Initialize.assert_called_once()
         self.mock_pcan.InitializeFD.assert_not_called()
@@ -45,11 +44,11 @@ class TestPCANBus(unittest.TestCase):
     def test_bus_creation_state_error(self) -> None:
         with self.assertRaises(ctypes.ArgumentError):
             self.bus = can.Bus(bustype="pcan", state=BusState.ERROR)
-            self.assertIsInstance(self.bus, pcan.PcanBus)
+            self.assertIsInstance(self.bus, PcanBus)
 
     def test_bus_creation_fd(self) -> None:
         self.bus = can.Bus(bustype="pcan", fd=True)
-        self.assertIsInstance(self.bus, pcan.PcanBus)
+        self.assertIsInstance(self.bus, PcanBus)
         self.MockPCANBasic.assert_called_once()
         self.mock_pcan.Initialize.assert_not_called()
         self.mock_pcan.InitializeFD.assert_called_once()
@@ -254,7 +253,7 @@ class TestPCANBus(unittest.TestCase):
             arbitration_id=0xC0FFEF, data=[1, 2, 3, 4, 5, 6, 7, 8], is_extended_id=True
         )
 
-        with self.assertRaises(pcan.PcanError):
+        with self.assertRaises(PcanError):
             self.bus.send(msg)
 
     @parameterized.expand([("on", True), ("off", False)])
