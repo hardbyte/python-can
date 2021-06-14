@@ -31,6 +31,7 @@ extras_require = {
     "cantact": ["cantact>=0.0.7"],
     "gs_usb": ["gs_usb>=0.2.1"],
     "nixnet": ["nixnet>=0.3.1"],
+    "pcan": ["uptime~=3.0.1"],
 }
 
 setup(
