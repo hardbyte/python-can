@@ -85,6 +85,7 @@ class CanOperationError(CanError):
       - The driver rejected a message that was meant to be sent
       - Cyclic redundancy check (CRC) failed
       - A message remained unacknowledged
+      - A buffer is full
     """
 
 
