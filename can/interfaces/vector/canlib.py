@@ -10,9 +10,7 @@ import ctypes
 import logging
 import time
 import os
-from typing import List, Optional, Tuple, Sequence, Union
-
-import typing
+from typing import List, NamedTuple, Optional, Tuple, Sequence, Union
 
 try:
     # Try builtin Python 3 Windows API
@@ -31,22 +29,24 @@ except ImportError:
 
 # Import Modules
 # ==============
-from can import BusABC, Message
+from can import BusABC, Message, CanInterfaceNotImplementedError, CanInitializationError
 from can.util import (
     len2dlc,
     dlc2len,
     deprecated_args_alias,
     time_perfcounter_correlation,
 )
-from can.typechecking import CanFilters
+from can.typechecking import AutoDetectedConfig, CanFilters
+
 from .exceptions import VectorError
 
 # Define Module Logger
 # ====================
 LOG = logging.getLogger(__name__)
 
-# Import Vector API module
-# ========================
+# Import Vector API modules
+# =========================
+from .exceptions import VectorError, VectorInitializationError, VectorOperationError
 from . import xldefine, xlclass
 
 # Import safely Vector API module for Travis tests
@@ -131,14 +131,20 @@ class VectorBus(BusABC):
             Bus timing value tseg1 (data)
         :param tseg2_dbr:
             Bus timing value tseg2 (data)
+
+        :raise can.CanInterfaceNotImplementedError:
+            If the current operating system is not supported or the driver could not be loaded.
+        :raise can.CanInitializationError:
+            If the bus could not be set up.
+            This may or may not be a :class:`can.interfaces.vector.VectorInitializationError`.
         """
         if os.name != "nt" and not kwargs.get("_testing", False):
-            raise OSError(
+            raise CanInterfaceNotImplementedError(
                 f'The Vector interface is only supported on Windows, but you are running "{os.name}"'
             )
 
         if xldriver is None:
-            raise ImportError("The Vector API has not been loaded")
+            raise CanInterfaceNotImplementedError("The Vector API has not been loaded")
 
         self.poll_interval = poll_interval
 
@@ -176,7 +182,7 @@ class VectorBus(BusABC):
                 self.channels = channel_index
             else:
                 # Is there any better way to raise the error?
-                raise Exception(
+                raise CanInitializationError(
                     "None of the configured channels could be found on the specified hardware."
                 )
 
@@ -201,7 +207,7 @@ class VectorBus(BusABC):
                     # If hardware is unavailable, this function returns -1.
                     # Raise an exception as if the driver
                     # would have signalled XL_ERR_HW_NOT_PRESENT.
-                    raise VectorError(
+                    raise VectorInitializationError(
                         xldefine.XL_Status.XL_ERR_HW_NOT_PRESENT,
                         xldefine.XL_Status.XL_ERR_HW_NOT_PRESENT.name,
                         "xlGetChannelIndex",
@@ -305,9 +311,9 @@ class VectorBus(BusABC):
             xldriver.xlActivateChannel(
                 self.port_handle, self.mask, xldefine.XL_BusTypes.XL_BUS_TYPE_CAN, 0
             )
-        except VectorError:
+        except VectorOperationError as error:
             self.shutdown()
-            raise
+            raise VectorInitializationError.from_generic(error) from None
 
         # Calculate time offset for absolute timestamps
         offset = xlclass.XLuint64()
@@ -316,7 +322,7 @@ class VectorBus(BusABC):
                 ts, perfcounter = time_perfcounter_correlation()
                 try:
                     xldriver.xlGetSyncTime(self.port_handle, offset)
-                except VectorError:
+                except VectorInitializationError:
                     xldriver.xlGetChannelTime(self.port_handle, self.mask, offset)
                 current_perfcounter = time.perf_counter()
                 now = ts + (current_perfcounter - perfcounter)
@@ -324,17 +330,17 @@ class VectorBus(BusABC):
             else:
                 try:
                     xldriver.xlGetSyncTime(self.port_handle, offset)
-                except VectorError:
+                except VectorInitializationError:
                     xldriver.xlGetChannelTime(self.port_handle, self.mask, offset)
                 self._time_offset = time.time() - offset.value * 1e-9
 
-        except VectorError:
+        except VectorInitializationError:
             self._time_offset = 0.0
 
         self._is_filtered = False
         super().__init__(channel=channel, can_filters=can_filters, **kwargs)
 
-    def _apply_filters(self, filters):
+    def _apply_filters(self, filters) -> None:
         if filters:
             # Only up to one filter per ID type allowed
             if len(filters) == 1 or (
@@ -352,7 +358,7 @@ class VectorBus(BusABC):
                             if can_filter.get("extended")
                             else xldefine.XL_AcceptanceFilter.XL_CAN_STD,
                         )
-                except VectorError as exc:
+                except VectorOperationError as exc:
                     LOG.warning("Could not set filters: %s", exc)
                     # go to fallback
                 else:
@@ -379,7 +385,7 @@ class VectorBus(BusABC):
                 0x0,
                 xldefine.XL_AcceptanceFilter.XL_CAN_STD,
             )
-        except VectorError as exc:
+        except VectorOperationError as exc:
             LOG.warning("Could not reset filters: %s", exc)
 
     def _recv_internal(
@@ -394,7 +400,7 @@ class VectorBus(BusABC):
                 else:
                     msg = self._recv_can()
 
-            except VectorError as exc:
+            except VectorOperationError as exc:
                 if exc.error_code != xldefine.XL_Status.XL_ERR_QUEUE_IS_EMPTY:
                     raise
             else:
@@ -437,7 +443,7 @@ class VectorBus(BusABC):
         timestamp = xl_can_rx_event.timeStamp * 1e-9
         channel = self.index_to_channel.get(xl_can_rx_event.chanIndex)
 
-        msg = Message(
+        return Message(
             timestamp=timestamp + self._time_offset,
             arbitration_id=msg_id & 0x1FFFFFFF,
             is_extended_id=bool(
@@ -461,7 +467,6 @@ class VectorBus(BusABC):
             dlc=dlc,
             data=data_struct.data[:dlc],
         )
-        return msg
 
     def _recv_can(self) -> Optional[Message]:
         xl_event = xlclass.XLevent()
@@ -478,7 +483,7 @@ class VectorBus(BusABC):
         timestamp = xl_event.timeStamp * 1e-9
         channel = self.index_to_channel.get(xl_event.chanIndex)
 
-        msg = Message(
+        return Message(
             timestamp=timestamp + self._time_offset,
             arbitration_id=msg_id & 0x1FFFFFFF,
             is_extended_id=bool(
@@ -498,7 +503,6 @@ class VectorBus(BusABC):
             data=xl_event.tagData.msg.data[:dlc],
             channel=channel,
         )
-        return msg
 
     def handle_can_event(self, event: xlclass.XLevent) -> None:
         """Handle non-message CAN events.
@@ -507,9 +511,7 @@ class VectorBus(BusABC):
         when `event.tag` is not `XL_RECEIVE_MSG`. Subclasses can implement this method.
 
         :param event: XLevent that could have a `XL_CHIP_STATE`, `XL_TIMER` or `XL_SYNC_PULSE` tag.
-        :return: None
         """
-        pass
 
     def handle_canfd_event(self, event: xlclass.XLcanRxEvent) -> None:
         """Handle non-message CAN FD events.
@@ -520,27 +522,25 @@ class VectorBus(BusABC):
 
         :param event: `XLcanRxEvent` that could have a `XL_CAN_EV_TAG_RX_ERROR`, `XL_CAN_EV_TAG_TX_ERROR`,
             `XL_TIMER` or `XL_CAN_EV_TAG_CHIP_STATE` tag.
-        :return: None
         """
-        pass
 
-    def send(self, msg: Message, timeout: typing.Optional[float] = None):
+    def send(self, msg: Message, timeout: Optional[float] = None):
         self._send_sequence([msg])
 
-    def _send_sequence(self, msgs: typing.Sequence[Message]) -> int:
+    def _send_sequence(self, msgs: Sequence[Message]) -> int:
         """Send messages and return number of successful transmissions."""
         if self.fd:
             return self._send_can_fd_msg_sequence(msgs)
         else:
             return self._send_can_msg_sequence(msgs)
 
-    def _get_tx_channel_mask(self, msgs: typing.Sequence[Message]) -> int:
+    def _get_tx_channel_mask(self, msgs: Sequence[Message]) -> int:
         if len(msgs) == 1:
             return self.channel_masks.get(msgs[0].channel, self.mask)
         else:
             return self.mask
 
-    def _send_can_msg_sequence(self, msgs: typing.Sequence[Message]) -> int:
+    def _send_can_msg_sequence(self, msgs: Sequence[Message]) -> int:
         """Send CAN messages and return number of successful transmissions."""
         mask = self._get_tx_channel_mask(msgs)
         message_count = ctypes.c_uint(len(msgs))
@@ -571,7 +571,7 @@ class VectorBus(BusABC):
 
         return xl_event
 
-    def _send_can_fd_msg_sequence(self, msgs: typing.Sequence[Message]) -> int:
+    def _send_can_fd_msg_sequence(self, msgs: Sequence[Message]) -> int:
         """Send CAN FD messages and return number of successful transmissions."""
         mask = self._get_tx_channel_mask(msgs)
         message_count = len(msgs)
@@ -611,22 +611,22 @@ class VectorBus(BusABC):
 
         return xl_can_tx_event
 
-    def flush_tx_buffer(self):
+    def flush_tx_buffer(self) -> None:
         xldriver.xlCanFlushTransmitQueue(self.port_handle, self.mask)
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         xldriver.xlDeactivateChannel(self.port_handle, self.mask)
         xldriver.xlClosePort(self.port_handle)
         xldriver.xlCloseDriver()
 
-    def reset(self):
+    def reset(self) -> None:
         xldriver.xlDeactivateChannel(self.port_handle, self.mask)
         xldriver.xlActivateChannel(
             self.port_handle, self.mask, xldefine.XL_BusTypes.XL_BUS_TYPE_CAN, 0
         )
 
     @staticmethod
-    def _detect_available_configs():
+    def _detect_available_configs() -> List[AutoDetectedConfig]:
         configs = []
         channel_configs = get_channel_configs()
         LOG.info("Found %d channels", len(channel_configs))
@@ -663,7 +663,7 @@ class VectorBus(BusABC):
     def popup_vector_hw_configuration(wait_for_finish: int = 0) -> None:
         """Open vector hardware configuration window.
 
-        :param int wait_for_finish:
+        :param wait_for_finish:
             Time to wait for user input in milliseconds.
         """
         xldriver.xlPopupHwConfig(ctypes.c_char_p(), ctypes.c_uint(wait_for_finish))
@@ -681,9 +681,9 @@ class VectorBus(BusABC):
         :return:
             Returns a tuple of the hardware type, the hardware index and the
             hardware channel.
-        :raises VectorError:
-            Raises a VectorError when the application name does not exist in
-            Vector Hardware Configuration.
+
+        :raises can.interfaces.vector.VectorInitializationError:
+            If the application name does not exist in the Vector hardware configuration.
         """
         hw_type = ctypes.c_uint()
         hw_index = ctypes.c_uint()
@@ -732,6 +732,9 @@ class VectorBus(BusABC):
             hardware type are present.
         :param hw_channel:
             The channel index of the interface.
+
+        :raises can.interfaces.vector.VectorInitializationError:
+            If the application name does not exist in the Vector hardware configuration.
         """
         xldriver.xlSetApplConfig(
             app_name.encode(),
@@ -757,7 +760,7 @@ class VectorBus(BusABC):
         xldriver.xlSetTimerRate(self.port_handle, timer_rate_10us)
 
 
-class VectorChannelConfig(typing.NamedTuple):
+class VectorChannelConfig(NamedTuple):
     name: str
     hwType: xldefine.XL_HardwareType
     hwIndex: int
