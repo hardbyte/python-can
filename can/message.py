@@ -6,7 +6,7 @@ This module contains the implementation of :class:`can.Message`.
     starting with Python 3.7.
 """
 
-from typing import Optional, Union
+from typing import Optional
 
 from . import typechecking
 
@@ -14,7 +14,7 @@ from copy import deepcopy
 from math import isinf, isnan
 
 
-class Message:
+class Message:  # pylint: disable=too-many-instance-attributes; OK for a dataclass
     """
     The :class:`~can.Message` object is used to represent CAN messages for
     sending, receiving and other purposes like converting between different
@@ -48,7 +48,7 @@ class Message:
         "__weakref__",  # support weak references to messages
     )
 
-    def __init__(  # pylint: disable=too-many-locals
+    def __init__(  # pylint: disable=too-many-locals, too-many-arguments
         self,
         timestamp: float = 0.0,
         arbitration_id: int = 0,
@@ -228,7 +228,9 @@ class Message:
             error_state_indicator=self.error_state_indicator,
         )
 
-    def _check(self) -> None:
+    def _check(
+        self,
+    ) -> None:  # pylint: disable=too-many-branches; it's still simple code
         """Checks if the message parameters are valid.
 
         Assumes that the attribute types are already correct.
@@ -291,7 +293,7 @@ class Message:
     def equals(
         self,
         other: "Message",
-        timestamp_delta: Optional[Union[float, int]] = 1.0e-6,
+        timestamp_delta: Optional[float] = 1.0e-6,
         check_direction: bool = True,
     ) -> bool:
         """
