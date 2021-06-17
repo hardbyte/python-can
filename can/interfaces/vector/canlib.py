@@ -175,7 +175,7 @@ class VectorBus(BusABC):
                     )
                 self.channels = channel_index
             else:
-                # Is there any better way to raise the error?
+                # TODO - Is there any better way to raise the error?
                 raise Exception(
                     "None of the configured channels could be found on the specified hardware."
                 )
@@ -245,6 +245,8 @@ class VectorBus(BusABC):
         )
 
         if permission_mask.value == self.mask:
+            self._init_access = True
+            self._bitrate = bitrate
             if fd:
                 self.canFdConf = xlclass.XLcanFdConf()
                 if bitrate:
@@ -289,6 +291,7 @@ class VectorBus(BusABC):
                     )
                     LOG.info("SetChannelBitrate: baudr.=%u", bitrate)
         else:
+            self._init_access = False
             LOG.info("No init access!")
 
         # Enable/disable TX receipts
@@ -526,6 +529,25 @@ class VectorBus(BusABC):
 
     def send(self, msg: Message, timeout: typing.Optional[float] = None):
         self._send_sequence([msg])
+
+    @property
+    def bitrate(self) -> int:
+        return self._bitrate
+
+    @bitrate.setter
+    def bitrate(self, bitrate: int) -> None:
+        if self._init_access:
+            if self.fd:
+                self.canFdConf.arbitrationBitRate = bitrate
+                xldriver.xlCanFdSetConfiguration(
+                    self.port_handle, self.mask, self.canFdConf
+                )
+            else:
+                xldriver.xlCanSetChannelBitrate(self.port_handle, self.mask, bitrate)
+            self._bitrate = bitrate
+            LOG.info("SetChannelBitrate: baudr.=%u", bitrate)
+        else:
+            LOG.error("No init access!")
 
     def _send_sequence(self, msgs: typing.Sequence[Message]) -> int:
         """Send messages and return number of successful transmissions."""
