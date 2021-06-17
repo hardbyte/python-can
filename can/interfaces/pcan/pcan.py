@@ -4,6 +4,7 @@ Enable basic CAN over a PCAN USB device.
 
 import logging
 import time
+from datetime import datetime
 
 from typing import Optional
 from can import CanError, Message, BusABC
@@ -11,16 +12,22 @@ from can.bus import BusState
 from can.util import len2dlc, dlc2len
 from .basic import *
 
+
+# Set up logging
+log = logging.getLogger("can.pcan")
+
+
 try:
     # use the "uptime" library if available
     import uptime
-    import datetime
 
     # boottime() and fromtimestamp() are timezone offset, so the difference is not.
-    boottimeEpoch = (
-        uptime.boottime() - datetime.datetime.fromtimestamp(0)
-    ).total_seconds()
-except ImportError:
+    boottimeEpoch = (uptime.boottime() - datetime.fromtimestamp(0)).total_seconds()
+except ImportError as error:
+    log.warning(
+        "uptime library not available, timestamps are relative to boot time and not to Epoch UTC",
+        exc_info=True,
+    )
     boottimeEpoch = 0
 
 try:
@@ -39,9 +46,6 @@ except ImportError:
     except ImportError:
         # Use polling instead
         HAS_EVENTS = False
-
-# Set up logging
-log = logging.getLogger("can.pcan")
 
 
 pcan_bitrate_objs = {

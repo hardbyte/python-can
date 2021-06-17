@@ -29,25 +29,24 @@ Kvaser
 
 To install ``python-can`` using the Kvaser CANLib SDK as the backend:
 
-1. Install the `latest stable release of
-   Python <http://python.org/download/>`__.
+1. Install `Kvaser's latest Windows CANLib drivers <https://www.kvaser.com/download/>`__.
 
-2. Install `Kvaser's latest Windows CANLib
-   drivers <http://www.kvaser.com/en/downloads.html>`__.
-
-3. Test that Kvaser's own tools work to ensure the driver is properly
+2. Test that Kvaser's own tools work to ensure the driver is properly
    installed and that the hardware is working.
 
 PCAN
 ~~~~
 
-Download and install the latest driver for your interface from
-`PEAK-System's download page <http://www.peak-system.com/Support.55.0.html?&L=1>`__.
+Download and install the latest driver for your interface:
+
+- `Windows <https://www.peak-system.com/Downloads.76.0.html?&L=1>`__ (also supported on *Cygwin*)
+- `Linux <https://www.peak-system.com/Downloads.76.0.html?&L=1>`__ (`also works without <https://www.peak-system.com/fileadmin/media/linux/index.htm>`__, see also :ref:`pcandoc linux installation`)
+- `macOS <https://www.mac-can.com>`__
 
 Note that PCANBasic API timestamps count seconds from system startup. To
 convert these to epoch times, the uptime library is used. If it is not
 available, the times are returned as number of seconds from system
-startup. To install the uptime library, run ``pip install uptime``.
+startup. To install the uptime library, run ``pip install python-can[pcan]``.
 
 This library can take advantage of the `Python for Windows Extensions
 <https://github.com/mhammond/pywin32>`__ library if installed.
@@ -69,7 +68,7 @@ NI-CAN
 ~~~~~~
 
 Download and install the NI-CAN drivers from
-`National Instruments <http://www.ni.com/downloads/ni-drivers/>`__.
+`National Instruments <https://www.ni.com/de-de/support/downloads/drivers>`__.
 
 Currently the driver only supports 32-bit Python on Windows.
 
@@ -102,7 +101,7 @@ If ``python-can`` is already installed, the CANtact backend can be installed sep
 
 ``python3 -m pip install cantact``
 
-Additional CANtact documentation is available at https://cantact.io.
+Additional CANtact documentation is available at `cantact.io <https://cantact.io>`__.
 
 Installing python-can in development mode
 -----------------------------------------
@@ -114,5 +113,4 @@ reinstall. Download or clone the source repository then:
 ::
 
     python setup.py develop
-
 

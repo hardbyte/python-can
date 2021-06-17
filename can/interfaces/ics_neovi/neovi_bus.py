@@ -457,7 +457,7 @@ class NeoViBus(BusABC):
         try:
             ics.transmit_messages(self.dev, message)
         except ics.RuntimeError:
-            raise ICSOperationError(*ics.get_last_api_error(self.dev))
+            raise ICSOperationError(*ics.get_last_api_error(self.dev)) from None
 
         # If timeout is set, wait for ACK
         # This requires a notifier for the bus or
