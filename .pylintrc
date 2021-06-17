@@ -19,7 +19,7 @@ ignore-patterns=
 
 # Use multiple processes to speed up Pylint. Specifying 0 will auto-detect the
 # number of processors available to use.
-jobs=1
+jobs=0
 
 # Control the amount of potential inferred values when inferring a single
 # object. This can help the performance when dealing with large functions or
@@ -63,25 +63,19 @@ confidence=
 disable=invalid-name,
         missing-docstring,
         empty-docstring,
-        too-many-lines,
         wrong-import-order,
-        ungrouped-imports,
         wrong-import-position,
-        too-many-instance-attributes,
         too-few-public-methods,
         too-many-public-methods,
         too-many-branches,
-        too-many-arguments,
         too-many-locals,
         too-many-statements,
         no-else-raise,
         wildcard-import,
-        fixme,
         no-else-return,
-        abstract-method,
-        abstract-class-instantiated,
-        cyclic-import,
-        duplicate-code,
+        fixme,  # We deliberately use TODO/FIXME inline
+        abstract-class-instantiated,  # Needed for can.Bus
+        duplicate-code,  # Needed due to https://github.com/PyCQA/pylint/issues/214
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
@@ -475,10 +469,10 @@ valid-metaclass-classmethod-first-arg=cls
 [DESIGN]
 
 # Maximum number of arguments for function / method.
-max-args=5
+max-args=10
 
 # Maximum number of attributes for a class (see R0902).
-max-attributes=7
+max-attributes=10
 
 # Maximum number of boolean expressions in an if statement.
 max-bool-expr=5
