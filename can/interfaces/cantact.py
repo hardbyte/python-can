@@ -25,7 +25,7 @@ class CantactBus(BusABC):
     def _detect_available_configs():
         try:
             interface = cantact.Interface()
-        except NameError:
+        except (NameError, SystemError):
             # couldn't import cantact, so no configurations are available
             return []
 
