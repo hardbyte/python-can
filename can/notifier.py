@@ -145,7 +145,7 @@ class Notifier:
     def _on_error(self, exc: Exception) -> bool:
         """Calls ``on_error()`` for all listeners if they implement it.
 
-        :returns: ``True`` if and only if at least one handler was called
+        :returns: ``True`` if at least one error handler was called.
         """
         was_handled = False
 
