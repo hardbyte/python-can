@@ -19,7 +19,7 @@ def main():
         "-o",
         "--output",
         dest="output",
-        help="""Output filename, type dependent on suffix see can.LogReader.""",
+        help="Output filename, type dependent on suffix see can.LogReader.",
         default=None,
         required=True,
     )
