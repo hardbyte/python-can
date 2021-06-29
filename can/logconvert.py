@@ -11,7 +11,6 @@ from can import LogReader, Logger, SizedRotatingLogger
 
 def main():
     parser = argparse.ArgumentParser(
-        "python -m can.logconvert",
         description="Convert a log file from one format to another.",
     )
 
