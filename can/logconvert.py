@@ -60,8 +60,9 @@ def main():
         for m in reader:  # pylint: disable=not-an-iterable
             logger(m)
     except KeyboardInterrupt:
-        pass
+        sys.exit(1)
     finally:
+        reader.stop()
         logger.stop()
 
 
