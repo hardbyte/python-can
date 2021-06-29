@@ -29,7 +29,7 @@ def main():
         "--file_size",
         dest="file_size",
         type=int,
-        help="""Maximum file size in bytes. Rotate log file when size threshold is reached.""",
+        help="Maximum file size in bytes. Rotate log file when size threshold is reached.",
         default=None,
     )
 
