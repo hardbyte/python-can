@@ -34,7 +34,7 @@ def main():
         "input",
         metavar="INFILE",
         type=str,
-        help="Input filename. Type dependent on suffix see can.LogReader.",
+        help="Input filename. The type is dependent on the suffix, see can.LogReader.",
     )
 
     parser.add_argument(
