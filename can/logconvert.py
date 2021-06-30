@@ -15,15 +15,6 @@ def main():
     )
 
     parser.add_argument(
-        "-o",
-        "--output",
-        dest="output",
-        help="Output filename, type dependent on suffix see can.LogReader.",
-        default=None,
-        required=True,
-    )
-
-    parser.add_argument(
         "-s",
         "--file_size",
         dest="file_size",
@@ -33,27 +24,29 @@ def main():
     )
 
     parser.add_argument(
-        "infile",
-        metavar="input-file",
+        "input",
+        metavar="INFILE",
         type=str,
-        help="Log file to convert from. For supported types see can.LogReader.",
+        help="Input filename. Type dependent on suffix see can.LogReader.",
     )
 
-    # print help message when no arguments were given
-    if len(sys.argv) < 2:
-        parser.print_help(sys.stderr)
-        raise SystemExit(errno.EINVAL)
+    parser.add_argument(
+        "output",
+        metavar="OUTFILE",
+        type=str,
+        help="Output filename. Type dependent on suffix see can.LogReader.",
+    )
 
-    results = parser.parse_args()
+    args = parser.parse_args()
 
-    reader = LogReader(results.infile)
+    reader = LogReader(args.input)
 
-    if results.file_size:
+    if args.file_size:
         logger = SizedRotatingLogger(
-            base_filename=results.output, max_bytes=results.file_size
+            base_filename=args.output, max_bytes=args.file_size
         )
     else:
-        logger = Logger(filename=results.output)
+        logger = Logger(filename=args.output)
 
     try:
         for m in reader:  # pylint: disable=not-an-iterable
