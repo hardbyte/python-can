@@ -41,7 +41,7 @@ def main():
         "output",
         metavar="OUTFILE",
         type=str,
-        help="Output filename. Type dependent on suffix see can.LogReader.",
+        help="Output filename. The type is dependent on the suffix, see can.Logger.",
     )
 
     args = parser.parse_args()
