@@ -73,7 +73,7 @@ class MessageWriter(BaseIOHandler, can.Listener, metaclass=ABCMeta):
 
 # pylint: disable=abstract-method,too-few-public-methods
 class FileIOMessageWriter(MessageWriter, metaclass=ABCMeta):
-    """The base class for all writers."""
+    """A specialized base class for all writers with file descriptors."""
 
     file: Union[TextIO, BinaryIO]
 
