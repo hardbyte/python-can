@@ -6,7 +6,7 @@ Interface for slcan over usb (slusb) (win32/macos/linux).
 from typing import Any, Optional, Tuple
 from can import typechecking
 
-import io
+import struct
 import time
 import logging
 
@@ -25,16 +25,15 @@ class slUSBcanBus(BusABC):
 
     # the supported bitrates and their commands
     _BITRATES = {
-        10000: "S0",
-        20000: "S1",
-        50000: "S2",
-        100000: "S3",
-        125000: "S4",
-        250000: "S5",
-        500000: "S6",
-        750000: "S7",
-        1000000: "S8",
-        83300: "S9",
+        10000: b'S\x00',
+        20000: b'S\x01',
+        50000: b'S\x02',
+        100000: b'S\x03',
+        125000: b'S\x04',
+        250000: b'S\x05',
+        500000: b'S\x06',
+        750000: b'S\x07',
+        1000000: b'S\x08'
     }
 
     _OK = b"\r"
@@ -102,17 +101,18 @@ class slUSBcanBus(BusABC):
                 + "."
             )
 
-    def set_bitrate_reg(self, btr: str) -> None:
+    def set_bitrate_reg(self, btr: bytes) -> None:
         """
         :param btr:
             BTR register value to set custom can speed
         """
         self.close()
-        self._write("S" + btr)
+        self._write(btr)
         self.open()
 
-    def _write(self, string: str, timeout: int=0) -> None:
-        self.dev.write(0x1, string.encode() + self.LINE_TERMINATOR)
+    def _write(self, payload: bytes, timeout: int=0) -> None:
+        payload = payload + self.LINE_TERMINATOR
+        self.dev.write(0x1,  payload)
 
     def _read(self, timeout: Optional[float]) -> Optional[str]:
 
@@ -139,10 +139,10 @@ class slUSBcanBus(BusABC):
         del self._buffer[:]
 
     def open(self) -> None:
-        self._write("O")
+        self._write(b'O')
 
     def close(self) -> None:
-        self._write("C")
+        self._write(b'C')
 
     def _recv_internal(
         self, timeout: Optional[float]
@@ -194,18 +194,23 @@ class slUSBcanBus(BusABC):
         return None, False
 
     def send(self, msg: Message, timeout: Optional[float] = None) -> None:
+
         if msg.is_remote_frame:
             if msg.is_extended_id:
-                sendStr = "R%08X%d" % (msg.arbitration_id, msg.dlc)
+                header = ord('R')
             else:
-                sendStr = "r%03X%d" % (msg.arbitration_id, msg.dlc)
+                header = ord('r')
+            payload = struct.pack('<BHB', header, msg.arbitration_id, msg.dlc)
         else:
             if msg.is_extended_id:
-                sendStr = "T%08X%d" % (msg.arbitration_id, msg.dlc)
+                header = ord('T')
             else:
-                sendStr = "t%03X%d" % (msg.arbitration_id, msg.dlc)
-            sendStr += "".join(["%02X" % b for b in msg.data])
-        self._write(sendStr, timeout)
+                header = ord('t')
+            payload = struct.pack('<BHB', header, msg.arbitration_id, msg.dlc) + \
+                bytes(msg.data)
+        print(msg.arbitration_id)
+        print(payload)
+        self._write(payload, timeout)
 
     def shutdown(self) -> None:
         self.close()
@@ -229,7 +234,7 @@ class slUSBcanBus(BusABC):
             int hw_version is the hardware version or None on timeout
             int sw_version is the software version or None on timeout
         """
-        cmd = "V"
+        cmd = b'V'
         self._write(cmd)
 
         start = time.time()
@@ -265,7 +270,7 @@ class slUSBcanBus(BusABC):
         :return:
             None on timeout or a str object.
         """
-        cmd = "N"
+        cmd = b'N'
         self._write(cmd)
 
         start = time.time()
