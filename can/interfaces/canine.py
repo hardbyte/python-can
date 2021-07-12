@@ -1,5 +1,5 @@
 """
-Interface for slcan over usb (slusb) (win32/macos/linux).
+Interface for CANine over USB (win32/macos/linux).
 
 """
 
@@ -23,9 +23,9 @@ from can import BusABC, Message
 logger = logging.getLogger(__name__)
 
 
-class slUSBcanBus(BusABC):
+class CANineBus(BusABC):
     """
-    slcan interface
+    CANine bus class
     """
 
     # the supported bitrates and their commands
@@ -215,7 +215,7 @@ class slUSBcanBus(BusABC):
     def get_version(
         self, timeout: Optional[float]
     ) -> Tuple[Optional[int], Optional[int]]:
-        """Get HW and SW version of the slcan interface.
+        """Get HW and SW version of the adapter fw.
 
         :param timeout:
             seconds to wait for version or None to wait indefinitely
