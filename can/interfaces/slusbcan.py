@@ -118,10 +118,11 @@ class slUSBcanBus(BusABC):
     def _write(self, payload: bytes, timeout: int=0) -> None:
         # can only send single packet frames for now
         # TODO: update for CAN-FD
-        payload = b'\001' + payload
+        payload = b'\000' + payload
         self.dev.write(0x1,  payload)
 
     def _read(self, timeout: Optional[float]) -> Optional[str]:
+        # TODO: Reception should be asynchronous and use timeout
         packet = self.dev.read(0x81, 64)
         remaining_packets = packet[0]
         payload = packet[:1]
@@ -155,24 +156,20 @@ class slUSBcanBus(BusABC):
 
         if payload[0] == b'T':
             # extended frame
-            canId = int(payload[1:5])
-            dlc = int(payload[5])
+            canId, dlc = struct.unpack('<HB', payload[1:6])
             extended = True
             frame = payload[6:dlc+6]
         elif payload[0] == b't':
             # normal frame
-            canId = int(payload[1:3])
-            dlc = int(payload[3])
+            canId, dlc = struct.unpack('<HB', payload[1:4])
             frame = payload[4:dlc+4]
         elif payload[0] == b'r':
             # remote frame
-            canId = int(payload[1:3])
-            dlc = int(payload[3])
+            canId, dlc = struct.unpack('<HB', payload[1:4])
             remote = True
         elif payload[0] == b'R':
             # remote extended frame
-            canId = int(payload[1:5])
-            dlc = int(payload[5])
+            canId, dlc = struct.unpack('<HB', payload[1:6])
             extended = True
             remote = True
 
