@@ -8,14 +8,14 @@ import can
 class slcanTestCase(unittest.TestCase):
     def setUp(self):
         self.bus = can.Bus("loop://", bustype="canine", sleep_after_open=0)
-        self.dev = self.bus.serialPortOrig
-        #self.dev.read(self.serial.in_waiting)
+        self.dev = self.bus.dev
+        self.dev.read()
 
     def tearDown(self):
         self.bus.shutdown()
 
     def test_recv_extended(self):
-        self.serial.write(b"T12ABCDEF2AA55\r")
+        self.dev.write(0x1, b"T12ABCDEF2AA55\r")
         msg = self.bus.recv(0)
         self.assertIsNotNone(msg)
         self.assertEqual(msg.arbitration_id, 0x12ABCDEF)
@@ -29,11 +29,11 @@ class slcanTestCase(unittest.TestCase):
             arbitration_id=0x12ABCDEF, is_extended_id=True, data=[0xAA, 0x55]
         )
         self.bus.send(msg)
-        data = self.serial.read(self.serial.in_waiting)
+        data = self.dev.read()
         self.assertEqual(data, b"T12ABCDEF2AA55\r")
 
     def test_recv_standard(self):
-        self.serial.write(b"t4563112233\r")
+        self.dev.write(b"t4563112233\r")
         msg = self.bus.recv(0)
         self.assertIsNotNone(msg)
         self.assertEqual(msg.arbitration_id, 0x456)
@@ -47,11 +47,11 @@ class slcanTestCase(unittest.TestCase):
             arbitration_id=0x456, is_extended_id=False, data=[0x11, 0x22, 0x33]
         )
         self.bus.send(msg)
-        data = self.serial.read(self.serial.in_waiting)
+        data = self.dev.read()
         self.assertEqual(data, b"t4563112233\r")
 
     def test_recv_standard_remote(self):
-        self.serial.write(b"r1238\r")
+        self.dev.write(b"r1238\r")
         msg = self.bus.recv(0)
         self.assertIsNotNone(msg)
         self.assertEqual(msg.arbitration_id, 0x123)
@@ -64,11 +64,11 @@ class slcanTestCase(unittest.TestCase):
             arbitration_id=0x123, is_extended_id=False, is_remote_frame=True, dlc=8
         )
         self.bus.send(msg)
-        data = self.serial.read(self.serial.in_waiting)
+        data = self.dev.read()
         self.assertEqual(data, b"r1238\r")
 
     def test_recv_extended_remote(self):
-        self.serial.write(b"R12ABCDEF6\r")
+        self.dev.write(b"R12ABCDEF6\r")
         msg = self.bus.recv(0)
         self.assertIsNotNone(msg)
         self.assertEqual(msg.arbitration_id, 0x12ABCDEF)
@@ -81,15 +81,15 @@ class slcanTestCase(unittest.TestCase):
             arbitration_id=0x12ABCDEF, is_extended_id=True, is_remote_frame=True, dlc=6
         )
         self.bus.send(msg)
-        data = self.serial.read(self.serial.in_waiting)
+        data = self.dev.read()
         self.assertEqual(data, b"R12ABCDEF6\r")
 
     def test_partial_recv(self):
-        self.serial.write(b"T12ABCDEF")
+        self.dev.write(b"T12ABCDEF")
         msg = self.bus.recv(0)
         self.assertIsNone(msg)
 
-        self.serial.write(b"2AA55\rT12")
+        self.dev.write(b"2AA55\rT12")
         msg = self.bus.recv(0)
         self.assertIsNotNone(msg)
         self.assertEqual(msg.arbitration_id, 0x12ABCDEF)
@@ -101,12 +101,12 @@ class slcanTestCase(unittest.TestCase):
         msg = self.bus.recv(0)
         self.assertIsNone(msg)
 
-        self.serial.write(b"ABCDEF2AA55\r")
+        self.dev.write(b"ABCDEF2AA55\r")
         msg = self.bus.recv(0)
         self.assertIsNotNone(msg)
 
     def test_version(self):
-        self.serial.write(b"V1013\r")
+        self.dev.write(b"V1013\r")
         hw_ver, sw_ver = self.bus.get_version(0)
         self.assertEqual(hw_ver, 10)
         self.assertEqual(sw_ver, 13)
@@ -116,7 +116,7 @@ class slcanTestCase(unittest.TestCase):
         self.assertIsNone(sw_ver)
 
     def test_serial_number(self):
-        self.serial.write(b"NA123\r")
+        self.dev.write(b"NA123\r")
         sn = self.bus.get_serial_number(0)
         self.assertEqual(sn, "A123")
 
