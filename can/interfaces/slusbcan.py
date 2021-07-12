@@ -3,6 +3,11 @@ Interface for slcan over usb (slusb) (win32/macos/linux).
 
 """
 
+# USB Packet format
+# {remaining packets in sequence}{partial frame data}
+# or
+# 0{command}{CAN frame}
+
 from typing import Any, Optional, Tuple
 from can import typechecking
 
@@ -111,29 +116,22 @@ class slUSBcanBus(BusABC):
         self.open()
 
     def _write(self, payload: bytes, timeout: int=0) -> None:
-        payload = payload + self.LINE_TERMINATOR
+        # can only send single packet frames for now
+        # TODO: update for CAN-FD
+        payload = b'\001' + payload
         self.dev.write(0x1,  payload)
 
     def _read(self, timeout: Optional[float]) -> Optional[str]:
+        packet = self.dev.read(0x81, 64)
+        remaining_packets = packet[0]
+        payload = packet[:1]
 
-        start = time.time()
-        time_left = timeout
-        while not (ord(self._OK) in self._buffer or ord(self._ERROR) in self._buffer):
-            self._buffer.extend(self.dev.read(0x81, 64))
-            if timeout:
-                time_left = timeout - (time.time() - start)
-                if time_left > 0:
-                    continue
-                else:
-                    return None
-        
-         # return first message
-        for i in range(len(self._buffer)):
-            if self._buffer[i] == ord(self._OK) or self._buffer[i] == ord(self._ERROR):
-                string = self._buffer[: i + 1].decode()
-                del self._buffer[: i + 1]
-                break
-        return string
+        for i in reversed(range(remaining_packets)):
+            packet = self.dev.read(0x81, 64)
+            assert(i == packet[0])
+            payload = payload + packet[:1]
+
+        return payload
 
     def flush(self) -> None:
         del self._buffer[:]
@@ -153,45 +151,41 @@ class slUSBcanBus(BusABC):
         extended = False
         frame = []
 
-        string = self._read(timeout)
+        payload = self._read(timeout)
 
-        if not string:
-            pass
-        elif string[0] == "T":
+        if payload[0] == b'T':
             # extended frame
-            canId = int(string[1:9], 16)
-            dlc = int(string[9])
+            canId = int(payload[1:5])
+            dlc = int(payload[5])
             extended = True
-            for i in range(0, dlc):
-                frame.append(int(string[10 + i * 2 : 12 + i * 2], 16))
-        elif string[0] == "t":
+            frame = payload[6:dlc+6]
+        elif payload[0] == b't':
             # normal frame
-            canId = int(string[1:4], 16)
-            dlc = int(string[4])
-            for i in range(0, dlc):
-                frame.append(int(string[5 + i * 2 : 7 + i * 2], 16))
-        elif string[0] == "r":
+            canId = int(payload[1:3])
+            dlc = int(payload[3])
+            frame = payload[4:dlc+4]
+        elif payload[0] == b'r':
             # remote frame
-            canId = int(string[1:4], 16)
-            dlc = int(string[4])
+            canId = int(payload[1:3])
+            dlc = int(payload[3])
             remote = True
-        elif string[0] == "R":
+        elif payload[0] == b'R':
             # remote extended frame
-            canId = int(string[1:9], 16)
-            dlc = int(string[9])
+            canId = int(payload[1:5])
+            dlc = int(payload[5])
             extended = True
             remote = True
-        if canId is not None:
-            msg = Message(
-                arbitration_id=canId,
-                is_extended_id=extended,
-                timestamp=time.time(),  # Better than nothing...
-                is_remote_frame=remote,
-                dlc=dlc,
-                data=frame,
-            )
-            return msg, False
-        return None, False
+
+        msg = Message(
+            arbitration_id=canId,
+            is_extended_id=extended,
+            timestamp=time.time(),  # Better than nothing...
+            is_remote_frame=remote,
+            dlc=dlc,
+            data=frame,
+        )
+
+        return msg, False
 
     def send(self, msg: Message, timeout: Optional[float] = None) -> None:
 
@@ -260,37 +254,3 @@ class slUSBcanBus(BusABC):
                     continue
                 else:
                     return None, None
-
-    def get_serial_number(self, timeout: Optional[float]) -> Optional[str]:
-        """Get serial number of the slcan interface.
-
-        :param timeout:
-            seconds to wait for serial number or None to wait indefinitely
-
-        :return:
-            None on timeout or a str object.
-        """
-        cmd = b'N'
-        self._write(cmd)
-
-        start = time.time()
-        time_left = timeout
-        while True:
-            string = self._read(time_left)
-
-            if not string:
-                pass
-            elif string[0] == cmd and len(string) == 6:
-                serial_number = string[1:-1]
-                return serial_number
-            # if timeout is None, try indefinitely
-            if timeout is None:
-                continue
-            # try next one only if there still is time, and with
-            # reduced timeout
-            else:
-                time_left = timeout - (time.time() - start)
-                if time_left > 0:
-                    continue
-                else:
-                    return None
