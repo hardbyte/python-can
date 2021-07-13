@@ -41,11 +41,6 @@ class CANineBus(BusABC):
         1000000: b'S\x08'
     }
 
-    _OK = b"\r"
-    _ERROR = b"\a"
-
-    LINE_TERMINATOR = b"\r"
-
     def __init__(
         self,
         channel: typechecking.ChannelStr,
@@ -83,9 +78,6 @@ class CANineBus(BusABC):
             self.set_bitrate(bitrate)
         if btr is not None:
             self.set_bitrate_reg(btr)
-
-        #cfg = dev.get_active_configuration()
-        #intf = cfg[(0,0)]
 
         self.open()
 
@@ -235,26 +227,6 @@ class CANineBus(BusABC):
         cmd = b'V'
         self._write(cmd)
 
-        start = time.time()
-        time_left = timeout
-        while True:
-            string = self._read(time_left)
-
-            if not string:
-                pass
-            elif string[0] == cmd and len(string) == 6:
-                # convert ASCII coded version
-                hw_version = int(string[1:3])
-                sw_version = int(string[3:5])
-                return hw_version, sw_version
-            # if timeout is None, try indefinitely
-            if timeout is None:
-                continue
-            # try next one only if there still is time, and with
-            # reduced timeout
-            else:
-                time_left = timeout - (time.time() - start)
-                if time_left > 0:
-                    continue
-                else:
-                    return None, None
+        payload = self._read(timeout)
+        assert(payload[0] == ord(b'V'))
+        return struct.unpack('>HH', payload[1:5])
