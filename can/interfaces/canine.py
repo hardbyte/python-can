@@ -151,20 +151,20 @@ class CANineBus(BusABC):
 
         if payload[0] == ord(b'T'):
             # extended frame
-            canId, dlc = struct.unpack('>LB', payload[1:6])
+            canId, dlc = struct.unpack('<LB', payload[1:6])
             extended = True
             frame = payload[6:dlc+6]
         elif payload[0] == ord(b't'):
             # normal frame
-            canId, dlc = struct.unpack('>HB', payload[1:4])
+            canId, dlc = struct.unpack('<HB', payload[1:4])
             frame = payload[4:dlc+4]
         elif payload[0] == ord(b'r'):
             # remote frame
-            canId, dlc = struct.unpack('>HB', payload[1:4])
+            canId, dlc = struct.unpack('<HB', payload[1:4])
             remote = True
         elif payload[0] == ord(b'R'):
             # remote extended frame
-            canId, dlc = struct.unpack('>LB', payload[1:6])
+            canId, dlc = struct.unpack('<LB', payload[1:6])
             extended = True
             remote = True
 
@@ -184,18 +184,18 @@ class CANineBus(BusABC):
         if msg.is_remote_frame:
             if msg.is_extended_id:
                 header = ord('R')
-                encoding = '>BLB'
+                encoding = '<BLB'
             else:
                 header = ord('r')
-                encoding = '>BHB'
+                encoding = '<BHB'
             payload = struct.pack(encoding, header, msg.arbitration_id, msg.dlc)
         else:
             if msg.is_extended_id:
                 header = ord('T')
-                encoding = '>BLB'
+                encoding = '<BLB'
             else:
                 header = ord('t')
-                encoding = '>BHB'
+                encoding = '<BHB'
             payload = struct.pack(encoding, header, msg.arbitration_id, msg.dlc) + \
                 bytes(msg.data)
         self._write(payload, timeout)
@@ -227,4 +227,4 @@ class CANineBus(BusABC):
 
         payload = self._read(timeout)
         assert(payload[0] == ord(b'V'))
-        return struct.unpack('>HH', payload[1:5])
+        return struct.unpack('<HH', payload[1:5])
