@@ -149,20 +149,20 @@ class CANineBus(BusABC):
 
         payload = self._read(timeout)
 
-        if payload[0] == b'T':
+        if payload[0] == ord(b'T'):
             # extended frame
             canId, dlc = struct.unpack('<LB', payload[1:6])
             extended = True
             frame = payload[6:dlc+6]
-        elif payload[0] == b't':
+        elif payload[0] == ord(b't'):
             # normal frame
             canId, dlc = struct.unpack('<HB', payload[1:4])
             frame = payload[4:dlc+4]
-        elif payload[0] == b'r':
+        elif payload[0] == ord(b'r'):
             # remote frame
             canId, dlc = struct.unpack('<HB', payload[1:4])
             remote = True
-        elif payload[0] == b'R':
+        elif payload[0] == ord(b'R'):
             # remote extended frame
             canId, dlc = struct.unpack('<LB', payload[1:6])
             extended = True
