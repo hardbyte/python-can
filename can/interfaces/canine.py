@@ -125,12 +125,12 @@ class CANineBus(BusABC):
         # TODO: Reception should be asynchronous and use timeout
         packet = self.dev.read(0x81, 64)
         remaining_packets = packet[0]
-        payload = packet[:1]
+        payload = packet[1:]
 
         for i in reversed(range(remaining_packets)):
             packet = self.dev.read(0x81, 64)
             assert(i == packet[0])
-            payload = payload + packet[:1]
+            payload = payload + packet[1:]
 
         return payload
 
@@ -156,7 +156,7 @@ class CANineBus(BusABC):
 
         if payload[0] == b'T':
             # extended frame
-            canId, dlc = struct.unpack('<HB', payload[1:6])
+            canId, dlc = struct.unpack('<LB', payload[1:6])
             extended = True
             frame = payload[6:dlc+6]
         elif payload[0] == b't':
@@ -169,7 +169,7 @@ class CANineBus(BusABC):
             remote = True
         elif payload[0] == b'R':
             # remote extended frame
-            canId, dlc = struct.unpack('<HB', payload[1:6])
+            canId, dlc = struct.unpack('<LB', payload[1:6])
             extended = True
             remote = True
 
@@ -191,7 +191,7 @@ class CANineBus(BusABC):
                 header = ord('R')
             else:
                 header = ord('r')
-            payload = struct.pack('<BHB', header, msg.arbitration_id, msg.dlc)
+            payload = struct.pack('<BLB', header, msg.arbitration_id, msg.dlc)
         else:
             if msg.is_extended_id:
                 header = ord('T')
