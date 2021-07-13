@@ -3,6 +3,7 @@
 
 import unittest
 import can
+import struct
 from unittest.mock import Mock
 
 
@@ -15,8 +16,12 @@ class canineTestCase(unittest.TestCase):
     def tearDown(self):
         self.bus.shutdown()
 
+    def test_encode(self):
+        packed = struct.pack('>L', 0x12ABCDEF)
+        self.assertTrue(packed, b'\x12\xab\xcd\xef')
+
     def test_recv_extended(self):
-        self.dev.write(0x1, b"\x00T12ABCDEF2AA55")
+        self.dev.write(0x1, b"\x00T\x12\xab\xcd\xef\x02\xAA\x55")
         msg = self.bus.recv(0)
         self.assertIsNotNone(msg)
         self.assertEqual(msg.arbitration_id, 0x12ABCDEF)
@@ -31,10 +36,10 @@ class canineTestCase(unittest.TestCase):
         )
         self.bus.send(msg)
         data = self.dev.read(0x81, 64)
-        self.assertEqual(data, b'\x00T\xef\xcd\xab\x12\x02\xaaU')
+        self.assertEqual(data, b'\x00T\x12\xab\xcd\xef\x02\xaaU')
 
     def test_recv_standard(self):
-        self.dev.write(0x1, b"\x00t\x04\x05\x06\x03\x01\x01\x02\x02\x03\x03")
+        self.dev.write(0x1, b"\x00t\x04\x56\x03\x11\x22\x33")
         msg = self.bus.recv(0)
         self.assertIsNotNone(msg)
         self.assertEqual(msg.arbitration_id, 0x456)
@@ -49,10 +54,10 @@ class canineTestCase(unittest.TestCase):
         )
         self.bus.send(msg)
         data = self.dev.read(0x81, 64)
-        self.assertEqual(data, b'\x00tV\x04\x03\x11"3')
+        self.assertEqual(data, b'\x00t\x04\x56\x03\x11\x22\x33')
 
     def test_recv_standard_remote(self):
-        self.dev.write(0x1, b"\x00r\x01\x02\x03\x08")
+        self.dev.write(0x1, b"\x00r\x01\x23\x08")
         msg = self.bus.recv(0)
         self.assertIsNotNone(msg)
         self.assertEqual(msg.arbitration_id, 0x123)
@@ -66,10 +71,10 @@ class canineTestCase(unittest.TestCase):
         )
         self.bus.send(msg)
         data = self.dev.read(0x81, 64)
-        self.assertEqual(data, b"\x00r#\x01\x08")
+        self.assertEqual(data, b"\x00r\x01\x23\x08")
 
     def test_recv_extended_remote(self):
-        self.dev.write(0x1, b"\x00R\xef\xcd\xab\x12\x06")
+        self.dev.write(0x1, b"\x00R\x12\xab\xcd\xef\x06")
         msg = self.bus.recv(0)
         self.assertIsNotNone(msg)
         self.assertEqual(msg.arbitration_id, 0x12ABCDEF)
@@ -83,35 +88,39 @@ class canineTestCase(unittest.TestCase):
         )
         self.bus.send(msg)
         data = self.dev.read(0x81, 64)
-        self.assertEqual(data, b"\x00R\xef\xcd\xab\x12\x06")
+        self.assertEqual(data, b"\x00R\x12\xab\xcd\xef\x06")
 
     def test_version(self):
-        self.dev.write(0x1, b"0V1013")
+        self.dev.write(0x1, b"\x00V\x00\x0A\x00\x0D")
+        self.dev.freeze()
         hw_ver, sw_ver = self.bus.get_version(0)
         self.assertEqual(hw_ver, 10)
         self.assertEqual(sw_ver, 13)
-
-        hw_ver, sw_ver = self.bus.get_version(0)
-        self.assertIsNone(hw_ver)
-        self.assertIsNone(sw_ver)
-
+        self.dev.unfreeze()
+        
 
 class MockUSB:
 
     def __init__(self):
         self.val = None
         self._ctx = Mock()
+        self._frozen = False
 
     def write(self, ep, val):
-        self.val = val
+        if not self._frozen:
+            self.val = val
 
     def read(self, ep, length):
-        val = self.val
-        self.val = None
         return self.val
 
     def set_configuration(self):
         pass
+
+    def freeze(self):
+        self._frozen = True
+
+    def unfreeze(self):
+        self._frozen = False
 
 
 if __name__ == "__main__":
