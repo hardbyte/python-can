@@ -51,7 +51,7 @@ class CANineBus(BusABC):
         channel: typechecking.ChannelStr,
         bitrate: Optional[int] = None,
         btr: Optional[str] = None,
-        sleep_after_open: float = 2,
+        usb_dev=None,
         **kwargs: Any
     ) -> None:
         """
@@ -69,9 +69,10 @@ class CANineBus(BusABC):
 
         self._buffer = bytearray()
 
-        time.sleep(sleep_after_open)
-
-        dev = usb.core.find(idProduct=0xc1b0)
+        if usb_dev:
+            dev = usb_dev
+        else:
+            dev = usb.core.find(idProduct=0xc1b0)
         assert(dev is not None)
         dev.set_configuration()
         self.dev = dev
@@ -126,11 +127,13 @@ class CANineBus(BusABC):
         packet = self.dev.read(0x81, 64)
         remaining_packets = packet[0]
         payload = packet[1:]
+        assert(remaining_packets == 0)
 
-        for i in reversed(range(remaining_packets)):
-            packet = self.dev.read(0x81, 64)
-            assert(i == packet[0])
-            payload = payload + packet[1:]
+        # for i in reversed(range(remaining_packets)):
+        #     packet = self.dev.read(0x81, 64)
+        #     if i != packet[0]:
+        #         return None
+        #     payload = payload + packet[1:]
 
         return payload
 
@@ -189,15 +192,19 @@ class CANineBus(BusABC):
         if msg.is_remote_frame:
             if msg.is_extended_id:
                 header = ord('R')
+                encoding = '<BLB'
             else:
                 header = ord('r')
-            payload = struct.pack('<BLB', header, msg.arbitration_id, msg.dlc)
+                encoding = '<BHB'
+            payload = struct.pack(encoding, header, msg.arbitration_id, msg.dlc)
         else:
             if msg.is_extended_id:
                 header = ord('T')
+                encoding = '<BLB'
             else:
                 header = ord('t')
-            payload = struct.pack('<BHB', header, msg.arbitration_id, msg.dlc) + \
+                encoding = '<BHB'
+            payload = struct.pack(encoding, header, msg.arbitration_id, msg.dlc) + \
                 bytes(msg.data)
         print(msg.arbitration_id)
         print(payload)

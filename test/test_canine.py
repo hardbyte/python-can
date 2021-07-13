@@ -3,19 +3,20 @@
 
 import unittest
 import can
+from unittest.mock import Mock
 
 
-class slcanTestCase(unittest.TestCase):
+class canineTestCase(unittest.TestCase):
     def setUp(self):
-        self.bus = can.Bus("loop://", bustype="canine", sleep_after_open=0)
+        self.bus = can.Bus("loop://", bustype="canine", usb_dev=MockUSB())
         self.dev = self.bus.dev
-        self.dev.read()
+        self.dev.read(0x81, 64)
 
     def tearDown(self):
         self.bus.shutdown()
 
     def test_recv_extended(self):
-        self.dev.write(0x1, b"T12ABCDEF2AA55\r")
+        self.dev.write(0x1, b"\x00T12ABCDEF2AA55")
         msg = self.bus.recv(0)
         self.assertIsNotNone(msg)
         self.assertEqual(msg.arbitration_id, 0x12ABCDEF)
@@ -29,11 +30,11 @@ class slcanTestCase(unittest.TestCase):
             arbitration_id=0x12ABCDEF, is_extended_id=True, data=[0xAA, 0x55]
         )
         self.bus.send(msg)
-        data = self.dev.read()
-        self.assertEqual(data, b"T12ABCDEF2AA55\r")
+        data = self.dev.read(0x81, 64)
+        self.assertEqual(data, b'\x00T\xef\xcd\xab\x12\x02\xaaU')
 
     def test_recv_standard(self):
-        self.dev.write(b"t4563112233\r")
+        self.dev.write(0x1, b"\x00t\x04\x05\x06\x03\x01\x01\x02\x02\x03\x03")
         msg = self.bus.recv(0)
         self.assertIsNotNone(msg)
         self.assertEqual(msg.arbitration_id, 0x456)
@@ -47,11 +48,11 @@ class slcanTestCase(unittest.TestCase):
             arbitration_id=0x456, is_extended_id=False, data=[0x11, 0x22, 0x33]
         )
         self.bus.send(msg)
-        data = self.dev.read()
-        self.assertEqual(data, b"t4563112233\r")
+        data = self.dev.read(0x81, 64)
+        self.assertEqual(data, b'\x00tV\x04\x03\x11"3')
 
     def test_recv_standard_remote(self):
-        self.dev.write(b"r1238\r")
+        self.dev.write(0x1, b"\x00r\x01\x02\x03\x08")
         msg = self.bus.recv(0)
         self.assertIsNotNone(msg)
         self.assertEqual(msg.arbitration_id, 0x123)
@@ -64,11 +65,11 @@ class slcanTestCase(unittest.TestCase):
             arbitration_id=0x123, is_extended_id=False, is_remote_frame=True, dlc=8
         )
         self.bus.send(msg)
-        data = self.dev.read()
-        self.assertEqual(data, b"r1238\r")
+        data = self.dev.read(0x81, 64)
+        self.assertEqual(data, b"\x00r#\x01\x08")
 
     def test_recv_extended_remote(self):
-        self.dev.write(b"R12ABCDEF6\r")
+        self.dev.write(0x1, b"\x00R\xef\xcd\xab\x12\x06")
         msg = self.bus.recv(0)
         self.assertIsNotNone(msg)
         self.assertEqual(msg.arbitration_id, 0x12ABCDEF)
@@ -81,32 +82,11 @@ class slcanTestCase(unittest.TestCase):
             arbitration_id=0x12ABCDEF, is_extended_id=True, is_remote_frame=True, dlc=6
         )
         self.bus.send(msg)
-        data = self.dev.read()
-        self.assertEqual(data, b"R12ABCDEF6\r")
-
-    def test_partial_recv(self):
-        self.dev.write(b"T12ABCDEF")
-        msg = self.bus.recv(0)
-        self.assertIsNone(msg)
-
-        self.dev.write(b"2AA55\rT12")
-        msg = self.bus.recv(0)
-        self.assertIsNotNone(msg)
-        self.assertEqual(msg.arbitration_id, 0x12ABCDEF)
-        self.assertEqual(msg.is_extended_id, True)
-        self.assertEqual(msg.is_remote_frame, False)
-        self.assertEqual(msg.dlc, 2)
-        self.assertSequenceEqual(msg.data, [0xAA, 0x55])
-
-        msg = self.bus.recv(0)
-        self.assertIsNone(msg)
-
-        self.dev.write(b"ABCDEF2AA55\r")
-        msg = self.bus.recv(0)
-        self.assertIsNotNone(msg)
+        data = self.dev.read(0x81, 64)
+        self.assertEqual(data, b"\x00R\xef\xcd\xab\x12\x06")
 
     def test_version(self):
-        self.dev.write(b"V1013\r")
+        self.dev.write(0x1, b"0V1013")
         hw_ver, sw_ver = self.bus.get_version(0)
         self.assertEqual(hw_ver, 10)
         self.assertEqual(sw_ver, 13)
@@ -115,13 +95,23 @@ class slcanTestCase(unittest.TestCase):
         self.assertIsNone(hw_ver)
         self.assertIsNone(sw_ver)
 
-    def test_serial_number(self):
-        self.dev.write(b"NA123\r")
-        sn = self.bus.get_serial_number(0)
-        self.assertEqual(sn, "A123")
 
-        sn = self.bus.get_serial_number(0)
-        self.assertIsNone(sn)
+class MockUSB:
+
+    def __init__(self):
+        self.val = None
+        self._ctx = Mock()
+
+    def write(self, ep, val):
+        self.val = val
+
+    def read(self, ep, length):
+        val = self.val
+        self.val = None
+        return self.val
+
+    def set_configuration(self):
+        pass
 
 
 if __name__ == "__main__":
