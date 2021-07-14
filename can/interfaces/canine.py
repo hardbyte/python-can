@@ -68,7 +68,6 @@ class CANineBus(BusABC):
             dev = usb_dev
         else:
             dev = usb.core.find(idProduct=0xc1b0)
-        assert(dev is not None)
         dev.set_configuration()
         self.dev = dev
 
@@ -111,21 +110,16 @@ class CANineBus(BusABC):
     def _write(self, payload: bytes, timeout: int=0) -> None:
         # can only send single packet frames for now
         # TODO: update for CAN-FD
-        payload = b'\000' + payload
+        payload = b'\x00' + payload
         self.dev.write(0x1,  payload)
 
     def _read(self, timeout: Optional[float]) -> Optional[str]:
         # TODO: Reception should be asynchronous and use timeout
+        # TODO: handle multiple packets sequence
         packet = self.dev.read(0x81, 64)
         remaining_packets = packet[0]
+        assert(remaining_packets == 0) # avoid multi-packet sequence for now
         payload = packet[1:]
-        assert(remaining_packets == 0)
-
-        # for i in reversed(range(remaining_packets)):
-        #     packet = self.dev.read(0x81, 64)
-        #     if i != packet[0]:
-        #         return None
-        #     payload = payload + packet[1:]
 
         return payload
 
@@ -167,6 +161,8 @@ class CANineBus(BusABC):
             canId, dlc = struct.unpack('<LB', payload[1:6])
             extended = True
             remote = True
+        else:
+            raise ConnectionError("Unknown frame type identifier")
 
         msg = Message(
             arbitration_id=canId,
@@ -176,7 +172,6 @@ class CANineBus(BusABC):
             dlc=dlc,
             data=frame,
         )
-
         return msg, False
 
     def send(self, msg: Message, timeout: Optional[float] = None) -> None:
