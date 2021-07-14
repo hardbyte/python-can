@@ -124,7 +124,6 @@ def _parse_filters(parsed_args: Any) -> CanFilters:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        "python -m can.logger",
         description="Log CAN traffic, printing messages to stdout or to a given file.",
     )
 
