@@ -292,10 +292,10 @@ class SeeedBus(BusABC):
 
             except serial.PortNotOpenError as error:
                 raise can.CanOperationError("reading from closed port") from error
-            except serial.SerialException as exception:
+            except serial.SerialException as error:
                 raise can.CanOperationError(
                     "failed to read message information"
-                ) from exception
+                ) from error
 
         return None, None
 
@@ -303,7 +303,7 @@ class SeeedBus(BusABC):
         try:
             return self.ser.fileno()
         except io.UnsupportedOperation as excption:
-            logger.info(
+            logger.warning(
                 "fileno is not implemented using current CAN bus: %s", str(excption)
             )
             return -1
