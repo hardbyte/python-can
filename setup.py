@@ -1,12 +1,11 @@
 #!/usr/bin/env python
+
 """
 Setup script for the `can` package.
 Learn more at https://github.com/hardbyte/python-can/
 """
 
 # pylint: disable=invalid-name
-
-from __future__ import absolute_import
 
 from os import listdir
 from os.path import isfile, join
@@ -32,6 +31,7 @@ extras_require = {
     "cantact": ["cantact>=0.0.7"],
     "gs_usb": ["gs_usb>=0.2.1"],
     "nixnet": ["nixnet>=0.3.1"],
+    "pcan": ["uptime~=3.0.1"],
 }
 
 setup(
@@ -46,6 +46,9 @@ setup(
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Natural Language :: English",
         "Programming Language :: Python :: Implementation :: CPython",
         "Programming Language :: Python :: Implementation :: PyPy",
         "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
@@ -84,9 +87,9 @@ setup(
         # but we assume it is already installed.
         # "setuptools",
         "wrapt~=1.10",
-        'windows-curses;platform_system=="Windows"',
-        "mypy_extensions>=0.4.0,<0.5.0",
-        'pywin32;platform_system=="Windows"',
+        'windows-curses;platform_system=="Windows" and platform_python_implementation=="CPython"',
+        "typing_extensions>=3.10.0.0",
+        'pywin32;platform_system=="Windows" and platform_python_implementation=="CPython"',
         'msgpack~=1.0.0;platform_system!="Windows"',
     ],
     extras_require=extras_require,

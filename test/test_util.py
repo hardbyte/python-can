@@ -1,7 +1,7 @@
 import unittest
 import warnings
 
-from can.util import rename_kwargs
+from can.util import _rename_kwargs
 
 
 class RenameKwargsTest(unittest.TestCase):
@@ -11,7 +11,7 @@ class RenameKwargsTest(unittest.TestCase):
 
         # Test that we do get the DeprecationWarning when called with deprecated kwargs
         with self.assertWarnsRegex(DeprecationWarning, "is deprecated"):
-            rename_kwargs("unit_test", kwargs, aliases)
+            _rename_kwargs("unit_test", kwargs, aliases)
 
         # Test that the aliases contains the deprecated values and
         # the obsolete kwargs have been removed
@@ -23,7 +23,7 @@ class RenameKwargsTest(unittest.TestCase):
         # Cause all warnings to always be triggered.
         warnings.simplefilter("error", DeprecationWarning)
         try:
-            rename_kwargs("unit_test", kwargs, aliases)
+            _rename_kwargs("unit_test", kwargs, aliases)
         finally:
             warnings.resetwarnings()
 

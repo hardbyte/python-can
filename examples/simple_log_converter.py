@@ -18,7 +18,7 @@ def main():
     with can.LogReader(sys.argv[1]) as reader:
         with can.Logger(sys.argv[2]) as writer:
 
-            for msg in reader:
+            for msg in reader:  # pylint: disable=not-an-iterable
                 writer.on_message_received(msg)
 
 

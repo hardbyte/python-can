@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# coding: utf-8
 
 """
 This test module test the separate reader/writer combinations of the can.io.*
@@ -11,7 +10,6 @@ different writer/reader pairs - e.g., some don't handle error frames and
 comments.
 
 TODO: correctly set preserves_channel and adds_default_channel
-TODO: implement CAN FD support testing
 """
 
 import logging
@@ -20,6 +18,7 @@ import tempfile
 import os
 from abc import abstractmethod, ABCMeta
 from itertools import zip_longest
+from datetime import datetime
 
 import can
 
@@ -316,7 +315,7 @@ class ReaderWriterTest(unittest.TestCase, ComparingMessagesTestCase, metaclass=A
             try:
                 writer = self.writer_constructor(self.test_file_name)
             except TypeError:
-                # is the is still a problem, raise the initial error
+                # if it is still a problem, raise the initial error
                 raise e
         with writer:
             for message in second_part:
@@ -364,6 +363,8 @@ class ReaderWriterTest(unittest.TestCase, ComparingMessagesTestCase, metaclass=A
 class TestAscFileFormat(ReaderWriterTest):
     """Tests can.ASCWriter and can.ASCReader"""
 
+    FORMAT_START_OF_FILE_DATE = "%a %b %d %I:%M:%S.%f %p %Y"
+
     def _setup_instance(self):
         super()._setup_instance_helper(
             can.ASCWriter,
@@ -374,10 +375,38 @@ class TestAscFileFormat(ReaderWriterTest):
             adds_default_channel=0,
         )
 
-    def _read_log_file(self, filename):
+    def _read_log_file(self, filename, **kwargs):
         logfile = os.path.join(os.path.dirname(__file__), "data", filename)
-        with can.ASCReader(logfile) as reader:
+        with can.ASCReader(logfile, **kwargs) as reader:
             return list(reader)
+
+    def test_absolute_time(self):
+        time_from_file = "Sat Sep 30 10:06:13.191 PM 2017"
+        start_time = datetime.strptime(
+            time_from_file, self.FORMAT_START_OF_FILE_DATE
+        ).timestamp()
+
+        expected_messages = [
+            can.Message(
+                timestamp=2.5010 + start_time,
+                arbitration_id=0xC8,
+                is_extended_id=False,
+                is_rx=False,
+                channel=1,
+                dlc=8,
+                data=[9, 8, 7, 6, 5, 4, 3, 2],
+            ),
+            can.Message(
+                timestamp=17.876708 + start_time,
+                arbitration_id=0x6F9,
+                is_extended_id=False,
+                channel=0,
+                dlc=0x8,
+                data=[5, 0xC, 0, 0, 0, 0, 0, 0],
+            ),
+        ]
+        actual = self._read_log_file("test_CanMessage.asc", relative_timestamp=False)
+        self.assertMessagesEqual(actual, expected_messages)
 
     def test_can_message(self):
         expected_messages = [
@@ -528,7 +557,7 @@ class TestAscFileFormat(ReaderWriterTest):
 
 class TestBlfFileFormat(ReaderWriterTest):
     """Tests can.BLFWriter and can.BLFReader.
-    
+
     Uses log files created by Toby Lorenz:
     https://bitbucket.org/tobylorenz/vector_blf/src/master/src/Vector/BLF/tests/unittests/events_from_binlog/
     """
@@ -602,6 +631,7 @@ class TestBlfFileFormat(ReaderWriterTest):
             channel=0x10,
             dlc=64,
             is_fd=True,
+            is_rx=False,
             bitrate_switch=True,
             error_state_indicator=True,
         )
@@ -631,7 +661,7 @@ class TestCanutilsFileFormat(ReaderWriterTest):
         super()._setup_instance_helper(
             can.CanutilsLogWriter,
             can.CanutilsLogReader,
-            check_fd=False,
+            check_fd=True,
             test_append=True,
             check_comments=False,
             preserves_channel=False,
@@ -706,9 +736,11 @@ class TestPrinter(unittest.TestCase):
     TODO test append mode
     """
 
-    # TODO add CAN FD messages
     messages = (
-        TEST_MESSAGES_BASE + TEST_MESSAGES_REMOTE_FRAMES + TEST_MESSAGES_ERROR_FRAMES
+        TEST_MESSAGES_BASE
+        + TEST_MESSAGES_REMOTE_FRAMES
+        + TEST_MESSAGES_ERROR_FRAMES
+        + TEST_MESSAGES_CAN_FD
     )
 
     def test_not_crashes_with_stdout(self):

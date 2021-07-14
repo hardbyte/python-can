@@ -14,7 +14,15 @@ from unittest.mock import Mock
 import pytest
 
 import can
-from can.interfaces.vector import canlib, xldefine, xlclass, VectorError
+from can.interfaces.vector import (
+    canlib,
+    xldefine,
+    xlclass,
+    VectorError,
+    VectorInitializationError,
+    VectorOperationError,
+    VectorChannelConfig,
+)
 
 
 class TestVectorBus(unittest.TestCase):
@@ -100,9 +108,9 @@ class TestVectorBus(unittest.TestCase):
 
         can.interfaces.vector.canlib.xldriver.xlCanFdSetConfiguration.assert_not_called()
         can.interfaces.vector.canlib.xldriver.xlCanSetChannelBitrate.assert_called()
-        xlCanSetChannelBitrate_args = can.interfaces.vector.canlib.xldriver.xlCanSetChannelBitrate.call_args[
-            0
-        ]
+        xlCanSetChannelBitrate_args = (
+            can.interfaces.vector.canlib.xldriver.xlCanSetChannelBitrate.call_args[0]
+        )
         self.assertEqual(xlCanSetChannelBitrate_args[2], 200000)
 
     def test_bus_creation_fd(self) -> None:
@@ -152,9 +160,9 @@ class TestVectorBus(unittest.TestCase):
         can.interfaces.vector.canlib.xldriver.xlCanFdSetConfiguration.assert_called()
         can.interfaces.vector.canlib.xldriver.xlCanSetChannelBitrate.assert_not_called()
 
-        xlCanFdSetConfiguration_args = can.interfaces.vector.canlib.xldriver.xlCanFdSetConfiguration.call_args[
-            0
-        ]
+        xlCanFdSetConfiguration_args = (
+            can.interfaces.vector.canlib.xldriver.xlCanFdSetConfiguration.call_args[0]
+        )
         canFdConf = xlCanFdSetConfiguration_args[2]
         self.assertEqual(canFdConf.arbitrationBitRate, 500000)
         self.assertEqual(canFdConf.dataBitRate, 2000000)
@@ -274,26 +282,69 @@ class TestVectorBus(unittest.TestCase):
     def test_called_without_testing_argument(self) -> None:
         """This tests if an exception is thrown when we are not running on Windows."""
         if os.name != "nt":
-            with self.assertRaises(OSError):
-                # do not set the _testing argument, since it supresses the exception
+            with self.assertRaises(can.CanInterfaceNotImplementedError):
+                # do not set the _testing argument, since it would suppress the exception
                 can.Bus(channel=0, bustype="vector")
 
     def test_vector_error_pickle(self) -> None:
-        error_code = 118
-        error_string = "XL_ERROR"
-        function = "function_name"
+        for error_type in [
+            VectorError,
+            VectorInitializationError,
+            VectorOperationError,
+        ]:
+            with self.subTest(f"error_type = {error_type.__name__}"):
 
-        exc = VectorError(error_code, error_string, function)
+                error_code = 118
+                error_string = "XL_ERROR"
+                function = "function_name"
 
-        # pickle and unpickle
-        p = pickle.dumps(exc)
-        exc_unpickled: VectorError = pickle.loads(p)
+                exc = error_type(error_code, error_string, function)
 
-        self.assertEqual(str(exc), str(exc_unpickled))
-        self.assertEqual(error_code, exc_unpickled.error_code)
+                # pickle and unpickle
+                p = pickle.dumps(exc)
+                exc_unpickled: VectorError = pickle.loads(p)
 
-        with pytest.raises(VectorError):
-            raise exc_unpickled
+                self.assertEqual(str(exc), str(exc_unpickled))
+                self.assertEqual(error_code, exc_unpickled.error_code)
+
+                with pytest.raises(error_type):
+                    raise exc_unpickled
+
+    def test_vector_subteype_error_from_generic(self) -> None:
+        for error_type in [VectorInitializationError, VectorOperationError]:
+            with self.subTest(f"error_type = {error_type.__name__}"):
+
+                error_code = 118
+                error_string = "XL_ERROR"
+                function = "function_name"
+
+                generic = VectorError(error_code, error_string, function)
+
+                # pickle and unpickle
+                specififc: VectorError = error_type.from_generic(generic)
+
+                self.assertEqual(str(generic), str(specififc))
+                self.assertEqual(error_code, specififc.error_code)
+
+                with pytest.raises(error_type):
+                    raise specififc
+
+
+class TestVectorChannelConfig:
+    def test_attributes(self):
+        assert hasattr(VectorChannelConfig, "name")
+        assert hasattr(VectorChannelConfig, "hwType")
+        assert hasattr(VectorChannelConfig, "hwIndex")
+        assert hasattr(VectorChannelConfig, "hwChannel")
+        assert hasattr(VectorChannelConfig, "channelIndex")
+        assert hasattr(VectorChannelConfig, "channelMask")
+        assert hasattr(VectorChannelConfig, "channelCapabilities")
+        assert hasattr(VectorChannelConfig, "channelBusCapabilities")
+        assert hasattr(VectorChannelConfig, "isOnBus")
+        assert hasattr(VectorChannelConfig, "connectedBusType")
+        assert hasattr(VectorChannelConfig, "serialNumber")
+        assert hasattr(VectorChannelConfig, "articleNumber")
+        assert hasattr(VectorChannelConfig, "transceiverName")
 
 
 def xlGetApplConfig(

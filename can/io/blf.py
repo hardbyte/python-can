@@ -19,9 +19,10 @@ import time
 import logging
 from typing import List
 
-from can.message import Message
-from can.listener import Listener
-from can.util import len2dlc, dlc2len, channel2int
+from ..message import Message
+from ..listener import Listener
+from ..util import len2dlc, dlc2len, channel2int
+from ..typechecking import AcceptedIOType
 from .generic import BaseIOHandler
 
 
@@ -311,8 +312,23 @@ class BLFReader(BaseIOHandler):
                     channel=channel - 1,
                 )
             elif obj_type == CAN_FD_MESSAGE_64:
-                members = unpack_can_fd_64_msg(data, pos)[:7]
-                channel, dlc, valid_bytes, _, can_id, _, fd_flags = members
+                (
+                    channel,
+                    dlc,
+                    valid_bytes,
+                    _,
+                    can_id,
+                    _,
+                    fd_flags,
+                    _,
+                    _,
+                    _,
+                    _,
+                    _,
+                    direction,
+                    _,
+                    _,
+                ) = unpack_can_fd_64_msg(data, pos)
                 pos += can_fd_64_msg_size
                 yield Message(
                     timestamp=timestamp,
@@ -320,6 +336,7 @@ class BLFReader(BaseIOHandler):
                     is_extended_id=bool(can_id & CAN_MSG_EXT),
                     is_remote_frame=bool(fd_flags & 0x0010),
                     is_fd=bool(fd_flags & 0x1000),
+                    is_rx=not direction,
                     bitrate_switch=bool(fd_flags & 0x2000),
                     error_state_indicator=bool(fd_flags & 0x4000),
                     dlc=dlc2len(dlc),
@@ -342,8 +359,12 @@ class BLFWriter(BaseIOHandler, Listener):
     application_id = 5
 
     def __init__(
-        self, file, append: bool = False, channel: int = 1, compression_level: int = -1
-    ):
+        self,
+        file: AcceptedIOType,
+        append: bool = False,
+        channel: int = 1,
+        compression_level: int = -1,
+    ) -> None:
         """
         :param file: a path-like object or as file-like object to write to
                      If this is a file-like object, is has to opened in mode "wb+".

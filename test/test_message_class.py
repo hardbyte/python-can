@@ -6,13 +6,15 @@ import sys
 from math import isinf, isnan
 from copy import copy, deepcopy
 import pickle
+from datetime import timedelta
 
-from hypothesis import given, settings, reproduce_failure
+from hypothesis import given, settings
 import hypothesis.strategies as st
 
 from can import Message
 
 from .message_helper import ComparingMessagesTestCase
+from .config import IS_GITHUB_ACTIONS
 
 
 class TestMessageClass(unittest.TestCase):
@@ -35,7 +37,11 @@ class TestMessageClass(unittest.TestCase):
         bitrate_switch=st.booleans(),
         error_state_indicator=st.booleans(),
     )
-    @settings(max_examples=2000)
+    # The first run may take a second on CI runners and will hit the deadline
+    @settings(
+        max_examples=2000,
+        deadline=None if IS_GITHUB_ACTIONS else timedelta(milliseconds=500),
+    )
     def test_methods(self, **kwargs):
         is_valid = not (
             (
@@ -45,7 +51,10 @@ class TestMessageClass(unittest.TestCase):
             or (kwargs["arbitration_id"] >= 0x800 and not kwargs["is_extended_id"])
             or kwargs["arbitration_id"] >= 0x20000000
             or kwargs["arbitration_id"] < 0
-            or (kwargs["is_remote_frame"] and kwargs["is_error_frame"])
+            or (
+                kwargs["is_remote_frame"]
+                and (kwargs["is_fd"] or kwargs["is_error_frame"])
+            )
             or (kwargs["is_remote_frame"] and len(kwargs["data"] or []) > 0)
             or (
                 (kwargs["bitrate_switch"] or kwargs["error_state_indicator"])
@@ -73,7 +82,9 @@ class TestMessageClass(unittest.TestCase):
         self.assertGreater(len("{}".format(message)), 0)
         _ = "{}".format(message)
         with self.assertRaises(Exception):
-            _ = "{somespec}".format(message)
+            _ = "{somespec}".format(
+                message
+            )  # pylint: disable=missing-format-argument-key
         if sys.version_info.major > 2:
             self.assertEqual(bytearray(bytes(message)), kwargs["data"])
 

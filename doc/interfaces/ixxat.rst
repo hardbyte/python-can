@@ -54,12 +54,13 @@ bit 0 of can_id/mask parameters represents the RTR field in CAN frame. See IXXAT
 VCI documentation, section "Message filters" for more info.
 
 List available devices
------------------
+----------------------
 In case you have connected multiple IXXAT devices, you have to select them by using their unique hardware id.
 To get a list of all connected IXXAT you can use the function ``get_ixxat_hwids()`` as demonstrated below:
 
     >>> from can.interfaces.ixxat import get_ixxat_hwids
-    >>> for hwid in get_ixxat_hwids(): print("Found IXXAT with hardware id '%s'." % hwid)
+    >>> for hwid in get_ixxat_hwids():
+    ...     print("Found IXXAT with hardware id '%s'." % hwid)
     Found IXXAT with hardware id 'HW441489'.
     Found IXXAT with hardware id 'HW107422'.
 
@@ -71,11 +72,11 @@ The IXXAT :class:`~can.BusABC` object is a fairly straightforward interface
 to the IXXAT VCI library. It can open a specific device ID or use the
 first one found.
 
-The frame exchange *do not involve threads* in the background but is
+The frame exchange *does not involve threads* in the background but is
 explicitly instantiated by the caller.
 
 - ``recv()`` is a blocking call with optional timeout.
 - ``send()`` is not blocking but may raise a VCIError if the TX FIFO is full
 
 RX and TX FIFO sizes are configurable with ``rxFifoSize`` and ``txFifoSize``
-options, defaulting at 16 for both.
+options, defaulting to 16 for both.

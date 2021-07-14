@@ -1,5 +1,3 @@
-# coding: utf-8
-
 """
 NI-XNET interface module.
 
@@ -21,7 +19,15 @@ logger = logging.getLogger(__name__)
 
 if sys.platform == "win32":
     try:
-        from nixnet import session, types, constants, errors, system, database
+        from nixnet import (
+            session,
+            types,
+            constants,
+            errors,
+            system,
+            database,
+            XnetError,
+        )
     except ImportError:
         logger.error("Error, NIXNET python module cannot be loaded.")
         raise ImportError()
@@ -227,18 +233,25 @@ class NiXNETcanBus(BusABC):
     @staticmethod
     def _detect_available_configs():
         configs = []
-        nixnet_system = system.System()
-        for can_intf in nixnet_system.intf_refs_can:
-            logger.info("Channel index %d: %s", can_intf.port_num, str(can_intf))
-            configs.append(
-                {
-                    "interface": "nixnet",
-                    "channel": str(can_intf),
-                    "can_term_available": can_intf.can_term_cap
-                    == constants.CanTermCap.YES,
-                }
-            )
-        nixnet_system.close()
+
+        try:
+            with system.System() as nixnet_system:
+                for interface in nixnet_system.intf_refs_can:
+                    cahnnel = str(interface)
+                    logger.debug(
+                        "Found channel index %d: %s", interface.port_num, cahnnel
+                    )
+                    configs.append(
+                        {
+                            "interface": "nixnet",
+                            "channel": cahnnel,
+                            "can_term_available": interface.can_term_cap
+                            == constants.CanTermCap.YES,
+                        }
+                    )
+        except XnetError as error:
+            logger.debug("An error occured while searching for configs: %s", str(error))
+
         return configs
 
 

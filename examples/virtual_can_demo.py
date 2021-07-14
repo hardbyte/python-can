@@ -10,7 +10,7 @@ from concurrent.futures import ProcessPoolExecutor
 import can
 
 
-def producer(thread_id: int, message_count: int = 16):
+def producer(thread_id: int, message_count: int = 16) -> None:
     """Spam the bus with messages including the data id.
 
     :param thread_id: the id of the thread/process

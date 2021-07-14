@@ -162,7 +162,7 @@ class TestBaseRotatingLogger:
         with tempfile.TemporaryDirectory() as temp_dir:
             logger_instance.get_new_writer(os.path.join(temp_dir, "file.ASC"))
 
-            """Test without rollover"""
+            # Test without rollover
             should_rollover = Mock(return_value=False)
             do_rollover = Mock()
             writers_on_message_received = Mock()
@@ -178,7 +178,7 @@ class TestBaseRotatingLogger:
             do_rollover.assert_not_called()
             writers_on_message_received.assert_called_with(msg)
 
-            """Test with rollover"""
+            # Test with rollover
             should_rollover = Mock(return_value=True)
             do_rollover = Mock()
             writers_on_message_received = Mock()

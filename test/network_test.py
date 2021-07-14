@@ -1,10 +1,8 @@
 #!/usr/bin/env python
-# coding: utf-8
 
 
 import unittest
 import threading
-import queue
 import random
 import logging
 

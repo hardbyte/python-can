@@ -38,10 +38,10 @@ class SocketCANTest(unittest.TestCase):
     ):
         """This tests a 32-bit platform (ex. Debian Stretch on i386), where:
 
-            * sizeof(long) == 4
-            * sizeof(long long) == 8
-            * alignof(long) == 4
-            * alignof(long long) == 4
+        * sizeof(long) == 4
+        * sizeof(long long) == 8
+        * alignof(long) == 4
+        * alignof(long long) == 4
         """
 
         def side_effect_ctypes_sizeof(value):
@@ -107,10 +107,10 @@ class SocketCANTest(unittest.TestCase):
     ):
         """This tests a 32-bit platform (ex. Raspbian Stretch on armv7l), where:
 
-            * sizeof(long) == 4
-            * sizeof(long long) == 8
-            * alignof(long) == 4
-            * alignof(long long) == 8
+        * sizeof(long) == 4
+        * sizeof(long long) == 8
+        * alignof(long) == 4
+        * alignof(long long) == 8
         """
 
         def side_effect_ctypes_sizeof(value):
@@ -176,10 +176,10 @@ class SocketCANTest(unittest.TestCase):
     ):
         """This tests a 64-bit platform (ex. Ubuntu 18.04 on x86_64), where:
 
-            * sizeof(long) == 8
-            * sizeof(long long) == 8
-            * alignof(long) == 8
-            * alignof(long long) == 8
+        * sizeof(long) == 8
+        * sizeof(long long) == 8
+        * alignof(long) == 8
+        * alignof(long long) == 8
         """
 
         def side_effect_ctypes_sizeof(value):
@@ -245,12 +245,13 @@ class SocketCANTest(unittest.TestCase):
         "Should only run on platforms where sizeof(long) == 4 and alignof(long) == 4",
     )
     def test_build_bcm_header_sizeof_long_4_alignof_long_4(self):
-        expected_result = b""
-        expected_result += b"\x02\x00\x00\x00\x00\x00\x00\x00"
-        expected_result += b"\x00\x00\x00\x00\x00\x00\x00\x00"
-        expected_result += b"\x00\x00\x00\x00\x00\x00\x00\x00"
-        expected_result += b"\x00\x00\x00\x00\x01\x04\x00\x00"
-        expected_result += b"\x01\x00\x00\x00\x00\x00\x00\x00"
+        expected_result = (
+            b"\x02\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x01\x04\x00\x00"
+            b"\x01\x00\x00\x00\x00\x00\x00\x00"
+        )
 
         self.assertEqual(
             expected_result,
@@ -274,14 +275,15 @@ class SocketCANTest(unittest.TestCase):
         "Should only run on platforms where sizeof(long) == 8 and alignof(long) == 8",
     )
     def test_build_bcm_header_sizeof_long_8_alignof_long_8(self):
-        expected_result = b""
-        expected_result += b"\x02\x00\x00\x00\x00\x00\x00\x00"
-        expected_result += b"\x00\x00\x00\x00\x00\x00\x00\x00"
-        expected_result += b"\x00\x00\x00\x00\x00\x00\x00\x00"
-        expected_result += b"\x00\x00\x00\x00\x00\x00\x00\x00"
-        expected_result += b"\x00\x00\x00\x00\x00\x00\x00\x00"
-        expected_result += b"\x00\x00\x00\x00\x00\x00\x00\x00"
-        expected_result += b"\x01\x04\x00\x00\x01\x00\x00\x00"
+        expected_result = (
+            b"\x02\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x01\x04\x00\x00\x01\x00\x00\x00"
+        )
 
         self.assertEqual(
             expected_result,

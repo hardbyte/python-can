@@ -1,12 +1,11 @@
 #!/usr/bin/env python
-# coding: utf-8
 
 """
-This module tests two virtual buses attached to each other.
+This module tests two buses attached to each other.
 """
 
 import unittest
-from time import sleep
+from time import sleep, time
 from multiprocessing.dummy import Pool as ThreadPool
 import random
 
@@ -22,6 +21,7 @@ from .config import (
     IS_TRAVIS,
     TEST_INTERFACE_SOCKETCAN,
     TEST_CAN_FD,
+    IS_PYPY,
 )
 
 
@@ -88,6 +88,8 @@ class Back2BackTestCase(unittest.TestCase):
         # Add 1 to arbitration ID to make it a different message
         msg.arbitration_id += 1
         self.bus2.send(msg)
+        # Some buses may receive their own messages. Remove it from the queue
+        self.bus2.recv(0)
         recv_msg = self.bus1.recv(self.TIMEOUT)
         self._check_received_message(recv_msg, msg)
 
@@ -151,6 +153,8 @@ class Back2BackTestCase(unittest.TestCase):
             is_extended_id=False, arbitration_id=0x300, data=[2, 1, 3], is_rx=False
         )
         self.bus1.send(msg)
+        # Some buses may receive their own messages. Remove it from the queue
+        self.bus1.recv(0)
         self_recv_msg = self.bus2.recv(self.TIMEOUT)
         self.assertIsNotNone(self_recv_msg)
         self.assertTrue(self_recv_msg.is_rx)
@@ -234,6 +238,40 @@ class Back2BackTestCase(unittest.TestCase):
             self.assertIsNotNone(fileno)
             self.assertTrue(fileno == -1 or fileno > 0)
 
+    def test_timestamp_is_absolute(self):
+        """Tests that the timestamp that is returned is an absolute one."""
+        self.bus2.send(can.Message())
+        # Some buses may receive their own messages. Remove it from the queue
+        self.bus2.recv(0)
+        message = self.bus1.recv(self.TIMEOUT)
+        # The allowed delta is still quite large to make this work on the CI server
+        self.assertAlmostEqual(message.timestamp, time(), delta=self.TIMEOUT)
+
+    def test_sub_second_timestamp_resolution(self):
+        """Tests that the timestamp that is returned has sufficient resolution.
+
+        The property that the timestamp has resolution below seconds is
+        checked on two messages to reduce the probability of both having
+        a timestamp of exactly a full second by accident to a negligible
+        level.
+
+        This is a regression test that was added for #1021.
+        """
+        self.bus2.send(can.Message())
+        sleep(0.01)
+        self.bus2.send(can.Message())
+
+        recv_msg_1 = self.bus1.recv(self.TIMEOUT)
+        recv_msg_2 = self.bus1.recv(self.TIMEOUT)
+
+        sub_second_fraction_1 = recv_msg_1.timestamp % 1
+        sub_second_fraction_2 = recv_msg_2.timestamp % 1
+        self.assertGreater(sub_second_fraction_1 + sub_second_fraction_2, 0)
+
+        # Some buses may receive their own messages. Remove it from the queue
+        self.bus2.recv(0)
+        self.bus2.recv(0)
+
 
 @unittest.skipUnless(TEST_INTERFACE_SOCKETCAN, "skip testing of socketcan")
 class BasicTestSocketCan(Back2BackTestCase):
@@ -247,8 +285,8 @@ class BasicTestSocketCan(Back2BackTestCase):
 # this doesn't even work on Travis CI for macOS; for example, see
 # https://travis-ci.org/github/hardbyte/python-can/jobs/745389871
 @unittest.skipUnless(
-    IS_UNIX and not (IS_TRAVIS and IS_OSX),
-    "only supported on Unix systems (but not on Travis CI on macOS)",
+    IS_UNIX and not IS_OSX,
+    "only supported on Unix systems (but not on macOS at Travis CI and GitHub Actions)",
 )
 class BasicTestUdpMulticastBusIPv4(Back2BackTestCase):
 
@@ -265,7 +303,8 @@ class BasicTestUdpMulticastBusIPv4(Back2BackTestCase):
 # this doesn't even work for loopback multicast addresses on Travis CI; for example, see
 # https://travis-ci.org/github/hardbyte/python-can/builds/745065503
 @unittest.skipUnless(
-    IS_UNIX and not IS_TRAVIS, "only supported on Unix systems (but not on Travis CI)"
+    IS_UNIX and not (IS_TRAVIS or IS_OSX),
+    "only supported on Unix systems (but not on Travis CI; and not an macOS at GitHub Actions)",
 )
 class BasicTestUdpMulticastBusIPv6(Back2BackTestCase):
 
@@ -318,7 +357,7 @@ class TestThreadSafeBus(Back2BackTestCase):
             single_handle=True,
         )
 
-    @pytest.mark.timeout(5.0)
+    @pytest.mark.timeout(180.0 if IS_PYPY else 5.0)
     def test_concurrent_writes(self):
         sender_pool = ThreadPool(100)
         receiver_pool = ThreadPool(100)
@@ -336,7 +375,7 @@ class TestThreadSafeBus(Back2BackTestCase):
             self.bus1.send(msg)
 
         def receiver(_):
-            return self.bus2.recv(timeout=2.0)
+            return self.bus2.recv()
 
         sender_pool.map_async(sender, workload)
         for msg in receiver_pool.map(receiver, len(workload) * [None]):
@@ -349,7 +388,7 @@ class TestThreadSafeBus(Back2BackTestCase):
         receiver_pool.close()
         receiver_pool.join()
 
-    @pytest.mark.timeout(5.0)
+    @pytest.mark.timeout(180.0 if IS_PYPY else 5.0)
     def test_filtered_bus(self):
         sender_pool = ThreadPool(100)
         receiver_pool = ThreadPool(100)
@@ -377,7 +416,7 @@ class TestThreadSafeBus(Back2BackTestCase):
             self.bus1.send(msg)
 
         def receiver(_):
-            return self.bus2.recv(timeout=2.0)
+            return self.bus2.recv()
 
         sender_pool.map_async(sender, workload)
         received_msgs = receiver_pool.map(receiver, 500 * [None])

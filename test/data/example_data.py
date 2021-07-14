@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# coding: utf-8
 
 """
 This module contains some example data, like messages of different
@@ -112,8 +111,6 @@ TEST_MESSAGES_CAN_FD = sort_messages(
     [
         Message(is_fd=True, data=range(64)),
         Message(is_fd=True, data=range(8)),
-        Message(is_fd=True, bitrate_switch=True, is_remote_frame=True),
-        Message(is_fd=True, error_state_indicator=True, is_remote_frame=True),
         Message(is_fd=True, data=range(8), bitrate_switch=True),
         Message(is_fd=True, data=range(8), error_state_indicator=True),
     ]

@@ -1,14 +1,11 @@
 #!/usr/bin/env python
-# coding: utf-8
 
 """
 """
 
-import ctypes
 import time
-import logging
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import pytest
 
@@ -22,6 +19,7 @@ class KvaserTest(unittest.TestCase):
         canlib.canGetNumberOfChannels = KvaserTest.canGetNumberOfChannels
         canlib.canOpenChannel = Mock(return_value=0)
         canlib.canIoCtl = Mock(return_value=0)
+        canlib.canIoCtlInit = Mock(return_value=0)
         canlib.kvReadTimer = Mock()
         canlib.canSetBusParams = Mock()
         canlib.canSetBusParamsFd = Mock()

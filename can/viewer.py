@@ -21,6 +21,7 @@
 # e-mail   :  lauszus@gmail.com
 
 import argparse
+import errno
 import logging
 import os
 import struct
@@ -30,6 +31,8 @@ from typing import Dict, List, Tuple, Union
 
 import can
 from can import __version__
+from .logger import _create_bus, _parse_filters, _append_filter_argument
+
 
 logger = logging.getLogger("can.serial")
 
@@ -37,9 +40,9 @@ try:
     import curses
     from curses.ascii import ESC as KEY_ESC, SP as KEY_SPACE
 except ImportError:
-    # Probably on windows
+    # Probably on Windows while windows-curses is not installed (e.g. in PyPy)
     logger.warning(
-        "You won't be able to use the viewer program without " "curses installed!"
+        "You won't be able to use the viewer program without curses installed!"
     )
     curses = None  # type: ignore
 
@@ -59,7 +62,8 @@ class CanViewer:
         # Get the window dimensions - used for resizing the window
         self.y, self.x = self.stdscr.getmaxyx()
 
-        # Do not wait for key inputs, disable the cursor and choose the background color automatically
+        # Do not wait for key inputs, disable the cursor and choose the background color
+        # automatically
         self.stdscr.nodelay(True)
         curses.curs_set(0)
         curses.use_default_colors()
@@ -93,7 +97,7 @@ class CanViewer:
                 break
 
             # Clear by pressing 'c'
-            elif key == ord("c"):
+            if key == ord("c"):
                 self.ids = {}
                 self.start_time = None
                 self.scroll = 0
@@ -139,9 +143,7 @@ class CanViewer:
 
     # Unpack the data and then convert it into SI-units
     @staticmethod
-    def unpack_data(
-        cmd, cmd_to_struct, data
-    ):  # type: (int, Dict, bytes) -> List[Union[float, int]]
+    def unpack_data(cmd: int, cmd_to_struct: Dict, data: bytes) -> List[float]:
         if not cmd_to_struct or not data:
             # These messages do not contain a data package
             return []
@@ -164,8 +166,8 @@ class CanViewer:
                     values = list(as_struct_t.unpack(data))
 
                 return values
-        else:
-            raise ValueError("Unknown command: 0x{:02X}".format(cmd))
+
+        raise ValueError("Unknown command: 0x{:02X}".format(cmd))
 
     def draw_can_bus_message(self, msg, sorting=False):
         # Use the CAN-Bus ID as the key in the dict
@@ -257,7 +259,7 @@ class CanViewer:
 
     def draw_line(self, row, col, txt, *args):
         if row - self.scroll < 0:
-            # Skip if we have scrolled passed the line
+            # Skip if we have scrolled past the line
             return
         try:
             self.stdscr.addstr(row - self.scroll, col, txt, *args)
@@ -284,7 +286,6 @@ class CanViewer:
             self.draw_can_bus_message(self.ids[key]["msg"])
 
 
-# noinspection PyProtectedMember
 class SmartFormatter(argparse.HelpFormatter):
     def _get_default_metavar_for_optional(self, action):
         return action.dest.upper()
@@ -325,18 +326,12 @@ class SmartFormatter(argparse.HelpFormatter):
 
     def _fill_text(self, text, width, indent):
         if text.startswith("R|"):
-            # noinspection PyTypeChecker
             return "".join(indent + line + "\n" for line in text[2:].splitlines())
         else:
             return super()._fill_text(text, width, indent)
 
 
 def parse_args(args):
-    # Python versions >= 3.5
-    kwargs = {}
-    if sys.version_info[0] * 10 + sys.version_info[1] >= 35:  # pragma: no cover
-        kwargs = {"allow_abbrev": False}
-
     # Parse command line arguments
     parser = argparse.ArgumentParser(
         "python -m can.viewer",
@@ -353,7 +348,7 @@ def parse_args(args):
         "\n        +---------+-------------------------+",
         formatter_class=SmartFormatter,
         add_help=False,
-        **kwargs
+        allow_abbrev=False,
     )
 
     optional = parser.add_argument_group("Optional arguments")
@@ -369,7 +364,7 @@ def parse_args(args):
         version="%(prog)s (version {version})".format(version=__version__),
     )
 
-    # Copied from: https://github.com/hardbyte/python-can/blob/develop/can/logger.py
+    # Copied from: can/logger.py
     optional.add_argument(
         "-b",
         "--bitrate",
@@ -382,7 +377,7 @@ def parse_args(args):
     optional.add_argument(
         "--data_bitrate",
         type=int,
-        help="""Bitrate to use for the data phase in case of CAN-FD.""",
+        help="Bitrate to use for the data phase in case of CAN-FD.",
     )
 
     optional.add_argument(
@@ -436,19 +431,7 @@ def parse_args(args):
         default="",
     )
 
-    optional.add_argument(
-        "-f",
-        "--filter",
-        help="R|Space separated CAN filters for the given CAN interface:"
-        "\n      <can_id>:<can_mask> (matches when <received_can_id> & mask == can_id & mask)"
-        "\n      <can_id>~<can_mask> (matches when <received_can_id> & mask != can_id & mask)"
-        "\nFx to show only frames with ID 0x100 to 0x103 and 0x200 to 0x20F:"
-        "\n      python -m can.viewer -f 100:7FC 200:7F0"
-        "\nNote that the ID and mask are alway interpreted as hex values",
-        metavar="{<can_id>:<can_mask>,<can_id>~<can_mask>}",
-        nargs=argparse.ONE_OR_MORE,
-        default="",
-    )
+    _append_filter_argument(optional, "-f")
 
     optional.add_argument(
         "-i",
@@ -458,30 +441,23 @@ def parse_args(args):
         choices=sorted(can.VALID_INTERFACES),
     )
 
+    parser.add_argument(
+        "-v",
+        action="count",
+        dest="verbosity",
+        help="""How much information do you want to see at the command line?
+                        You can add several of these e.g., -vv is DEBUG""",
+        default=2,
+    )
+
     # Print help message when no arguments are given
     if not args:
         parser.print_help(sys.stderr)
-        import errno
-
         raise SystemExit(errno.EINVAL)
 
     parsed_args = parser.parse_args(args)
 
-    can_filters = []
-    if parsed_args.filter:
-        # print('Adding filter/s', parsed_args.filter)
-        for flt in parsed_args.filter:
-            # print(filter)
-            if ":" in flt:
-                _ = flt.split(":")
-                can_id, can_mask = int(_[0], base=16), int(_[1], base=16)
-            elif "~" in flt:
-                can_id, can_mask = flt.split("~")
-                can_id = int(can_id, base=16) | 0x20000000  # CAN_INV_FILTER
-                can_mask = int(can_mask, base=16) & 0x20000000  # socket.CAN_ERR_FLAG
-            else:
-                raise argparse.ArgumentError(None, "Invalid filter argument")
-            can_filters.append({"can_id": can_id, "can_mask": can_mask})
+    can_filters = _parse_filters(parsed_args)
 
     # Dictionary used to convert between Python values and C structs represented as Python strings.
     # If the value is 'None' then the message does not contain any data package.
@@ -499,11 +475,12 @@ def parse_args(args):
     # f = float (32-bits), d = double (64-bits)
     #
     # An optional conversion from real units to integers can be given as additional arguments.
-    # In order to convert from raw integer value the real units are multiplied with the values and similarly the values
+    # In order to convert from raw integer value the real units are multiplied with the values and
+    # similarly the values
     # are divided by the value in order to convert from real units to raw integer values.
-    data_structs = (
-        {}
-    )  # type: Dict[Union[int, Tuple[int, ...]], Union[struct.Struct, Tuple, None]]
+    data_structs: Dict[
+        Union[int, Tuple[int, ...]], Union[struct.Struct, Tuple, None]
+    ] = {}
     if parsed_args.decode:
         if os.path.isfile(parsed_args.decode[0]):
             with open(parsed_args.decode[0], "r") as f:
@@ -518,7 +495,7 @@ def parse_args(args):
             key, fmt = int(tmp[0], base=16), tmp[1]
 
             # The scaling
-            scaling = []  # type: list
+            scaling: List[float] = []
             for t in tmp[2:]:
                 # First try to convert to int, if that fails, then convert to a float
                 try:
@@ -530,29 +507,16 @@ def parse_args(args):
                 data_structs[key] = (struct.Struct(fmt),) + tuple(scaling)
             else:
                 data_structs[key] = struct.Struct(fmt)
-            # print(data_structs[key])
 
     return parsed_args, can_filters, data_structs
 
 
-def main():  # pragma: no cover
+def main() -> None:
     parsed_args, can_filters, data_structs = parse_args(sys.argv[1:])
 
-    config = {"single_handle": True}
-    if can_filters:
-        config["can_filters"] = can_filters
-    if parsed_args.interface:
-        config["interface"] = parsed_args.interface
-    if parsed_args.bitrate:
-        config["bitrate"] = parsed_args.bitrate
-    if parsed_args.fd:
-        config["fd"] = True
-    if parsed_args.data_bitrate:
-        config["data_bitrate"] = parsed_args.data_bitrate
-
-    # Create a CAN-Bus interface
-    bus = can.Bus(parsed_args.channel, **config)
-    # print('Connected to {}: {}'.format(bus.__class__.__name__, bus.channel_info))
+    additional_config = {"can_filters": can_filters} if can_filters else {}
+    bus = _create_bus(parsed_args.channel, **additional_config)
+    # print(f"Connected to {bus.__class__.__name__}: {bus.channel_info}")
 
     curses.wrapper(CanViewer, bus, data_structs)
 

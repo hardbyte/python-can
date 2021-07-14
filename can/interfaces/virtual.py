@@ -15,16 +15,17 @@ import queue
 from threading import RLock
 from random import randint
 
-from can import CanError
+from can import CanOperationError
 from can.bus import BusABC
 from can.message import Message
+from can.typechecking import AutoDetectedConfig
 
 logger = logging.getLogger(__name__)
 
 
 # Channels are lists of queues, one for each connection
 if TYPE_CHECKING:
-    # https://mypy.readthedocs.io/en/stable/common_issues.html#using-classes-that-are-generic-in-stubs-but-not-at-runtime
+    # https://mypy.readthedocs.io/en/stable/runtime_troubles.html#using-classes-that-are-generic-in-stubs-but-not-at-runtime
     channels: Dict[Optional[Any], List[queue.Queue[Message]]] = {}
 else:
     channels = {}
@@ -58,7 +59,7 @@ class VirtualBus(BusABC):
         channel: Any = None,
         receive_own_messages: bool = False,
         rx_queue_size: int = 0,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         super().__init__(
             channel=channel, receive_own_messages=receive_own_messages, **kwargs
@@ -81,12 +82,12 @@ class VirtualBus(BusABC):
             self.channel.append(self.queue)
 
     def _check_if_open(self) -> None:
-        """Raises CanError if the bus is not open.
+        """Raises :class:`~can.CanOperationError` if the bus is not open.
 
         Has to be called in every method that accesses the bus.
         """
         if not self._open:
-            raise CanError("Operation on closed bus")
+            raise CanOperationError("Cannot operate on a closed bus")
 
     def _recv_internal(
         self, timeout: Optional[float]
@@ -116,8 +117,9 @@ class VirtualBus(BusABC):
                 bus_queue.put(msg_copy, block=True, timeout=timeout)
             except queue.Full:
                 all_sent = False
+
         if not all_sent:
-            raise CanError("Could not send message to one or more recipients")
+            raise CanOperationError("Could not send message to one or more recipients")
 
     def shutdown(self) -> None:
         if self._open:
@@ -131,7 +133,7 @@ class VirtualBus(BusABC):
                     del channels[self.channel_id]
 
     @staticmethod
-    def _detect_available_configs():
+    def _detect_available_configs() -> List[AutoDetectedConfig]:
         """
         Returns all currently used channels as well as
         one other currently unused channel.
@@ -146,7 +148,9 @@ class VirtualBus(BusABC):
             available_channels = list(channels.keys())
 
         # find a currently unused channel
-        get_extra = lambda: "channel-{}".format(randint(0, 9999))
+        def get_extra():
+            return f"channel-{randint(0, 9999)}"
+
         extra = get_extra()
         while extra in available_channels:
             extra = get_extra()
