@@ -453,7 +453,10 @@ class BusABC(metaclass=ABCMeta):
         """
         Calculate the load of the interface in the last 1s or specified interval of time
 
-        :return: a int representing the load of the interface in bytes
+        :param interval:
+            Seconds to capture packets
+
+        :return: a int representing the load of the interface in bits
         """
         start_time = time()
         count = 0
@@ -461,18 +464,23 @@ class BusABC(metaclass=ABCMeta):
         while time() < start_time + interval:
             temp_buffer.append(self.recv(interval))
         for msg in temp_buffer:
-            if msg is not None and isinstance(can.Message, msg):
+            if msg is not None and isinstance(msg, can.Message):
                 count += len(msg.data)
-        return count
+        return count * 8
 
-    def calc_load_percentage(self, interval: float = 1.0) -> float:
+    def calc_load_percentage(self, bitrate, interval: float = 1.0) -> float:
         """
         Calculate the load of the interface in the last 1s or specified interval of time
 
+        :param bitrate:
+            The fixed bitrate of the interface
+
+        :param interval:
+            Seconds to capture packets
+
         :return: a float representing the load of the interface as a percentage
         """
-        raise NotImplementedError()
-        # return self.calc_load(interval) / self.bitrate
+        return self.calc_load(interval) / bitrate
 
 
 class _SelfRemovingCyclicTask(CyclicSendTaskABC, ABC):
