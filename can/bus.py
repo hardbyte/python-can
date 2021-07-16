@@ -465,8 +465,12 @@ class BusABC(metaclass=ABCMeta):
             temp_buffer.append(self.recv(interval))
         for msg in temp_buffer:
             if msg is not None and isinstance(msg, can.Message):
-                count += len(msg.data)
-        return count * 8
+                count += 8 * len(msg.data)
+                if msg.is_extended_id:
+                    count += 29
+                else:
+                    count += 11
+        return count
 
     def calc_load_percentage(self, bitrate, interval: float = 1.0) -> float:
         """
