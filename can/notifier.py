@@ -121,9 +121,14 @@ class Notifier:
             self.exception = exc
             if self._loop is not None:
                 self._loop.call_soon_threadsafe(self._on_error, exc)
+                # Raise anyways
                 raise
             elif not self._on_error(exc):
+                # If it was not handled, raise the exception here
                 raise
+            else:
+                # It was handled, so only log it
+                logger.info("suppressed exception: %s", exc)
 
     def _on_message_available(self, bus: BusABC) -> None:
         msg = bus.recv(0)
@@ -138,14 +143,22 @@ class Notifier:
                 self._loop.create_task(res)
 
     def _on_error(self, exc: Exception) -> bool:
-        listeners_with_on_error = [
-            listener for listener in self.listeners if hasattr(listener, "on_error")
-        ]
+        """Calls ``on_error()`` for all listeners if they implement it.
 
-        for listener in listeners_with_on_error:
-            listener.on_error(exc)
+        :returns: ``True`` if at least one error handler was called.
+        """
+        was_handled = False
 
-        return bool(listeners_with_on_error)
+        for listener in self.listeners:
+            if hasattr(listener, "on_error"):
+                try:
+                    listener.on_error(exc)
+                except NotImplementedError:
+                    pass
+                else:
+                    was_handled = True
+
+        return was_handled
 
     def add_listener(self, listener: Listener) -> None:
         """Add new Listener to the notification list.

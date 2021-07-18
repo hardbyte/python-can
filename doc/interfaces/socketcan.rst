@@ -240,6 +240,12 @@ alter or cancel the periodic message task:
 .. autoclass:: can.interfaces.socketcan.CyclicSendTask
     :members:
 
+Buffer Sizes
+------------
+
+Currently, the sending buffer size cannot be adjusted by this library.
+However, `this issue <https://github.com/hardbyte/python-can/issues/657#issuecomment-516504797>`__ describes how to change it via the command line/shell.
+
 Bus
 ---
 

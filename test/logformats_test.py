@@ -10,7 +10,6 @@ different writer/reader pairs - e.g., some don't handle error frames and
 comments.
 
 TODO: correctly set preserves_channel and adds_default_channel
-TODO: implement CAN FD support testing
 """
 
 import logging

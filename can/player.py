@@ -13,14 +13,11 @@ from typing import cast, Iterable
 
 from can import LogReader, Message, MessageSync
 
-
 from .logger import _create_base_argument_parser, _create_bus
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        "python -m can.player", description="Replay CAN traffic."
-    )
+    parser = argparse.ArgumentParser(description="Replay CAN traffic.")
 
     _create_base_argument_parser(parser)
 
@@ -87,31 +84,27 @@ def main() -> None:
 
     error_frames = results.error_frames
 
-    bus = _create_bus(results)
+    with _create_bus(results) as bus:
+        with LogReader(results.infile) as reader:
 
-    reader = LogReader(results.infile)
+            in_sync = MessageSync(
+                cast(Iterable[Message], reader),
+                timestamps=results.timestamps,
+                gap=results.gap,
+                skip=results.skip,
+            )
 
-    in_sync = MessageSync(
-        cast(Iterable[Message], reader),
-        timestamps=results.timestamps,
-        gap=results.gap,
-        skip=results.skip,
-    )
+            print(f"Can LogReader (Started on {datetime.now()})")
 
-    print(f"Can LogReader (Started on {datetime.now()})")
-
-    try:
-        for m in in_sync:
-            if m.is_error_frame and not error_frames:
-                continue
-            if verbosity >= 3:
-                print(m)
-            bus.send(m)
-    except KeyboardInterrupt:
-        pass
-    finally:
-        bus.shutdown()
-        reader.stop()
+            try:
+                for message in in_sync:
+                    if message.is_error_frame and not error_frames:
+                        continue
+                    if verbosity >= 3:
+                        print(message)
+                    bus.send(message)
+            except KeyboardInterrupt:
+                pass
 
 
 if __name__ == "__main__":
