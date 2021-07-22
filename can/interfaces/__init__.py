@@ -2,6 +2,11 @@
 Interfaces contain low level implementations that interact with CAN hardware.
 """
 
+try:
+    from importlib.metadata import entry_points
+except ImportError:
+    from pkg_resources import iter_entry_points as entry_points
+
 # interface_name => (module, classname)
 BACKENDS = {
     "kvaser": ("can.interfaces.kvaser", "KvaserBus"),
@@ -26,5 +31,12 @@ BACKENDS = {
     "nixnet": ("can.interfaces.nixnet", "NiXNETcanBus"),
     "neousys": ("can.interfaces.neousys", "NeousysBus"),
 }
+
+BACKENDS.update(
+    {
+        interface.name: (interface.module_name, interface.attrs[0])
+        for interface in entry_points("can.interface")
+    }
+)
 
 VALID_INTERFACES = frozenset(list(BACKENDS.keys()))
