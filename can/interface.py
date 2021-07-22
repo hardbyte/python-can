@@ -18,7 +18,7 @@ log = logging.getLogger("can.interface")
 log_autodetect = log.getChild("detect_available_configs")
 
 
-def _get_class_for_interface(interface: str) -> Type[BusABC]:
+def _get_class_for_interface(interface: str, installed_interfaces: dict = None) -> Type[BusABC]:
     """
     Returns the main bus class for the given interface.
 
@@ -28,8 +28,10 @@ def _get_class_for_interface(interface: str) -> Type[BusABC]:
          if there was a problem while importing the interface or the bus class within that
     """
     # Find the correct backend
+    if not isinstance(installed_interfaces, dict):
+        installed_interfaces = BACKENDS
     try:
-        module_name, class_name = BACKENDS[interface]
+        module_name, class_name = installed_interfaces[interface]
     except KeyError:
         raise NotImplementedError(
             "CAN interface '{}' not supported".format(interface)
@@ -149,6 +151,13 @@ def detect_available_configs(
 
     # Figure out where to search
     if interfaces is None:
+        try:
+            from importlib.metadata import entry_points  # If this works, the interfaces have probably been loaded
+        except ImportError:
+            from pkg_resources import iter_entry_points as entry_points
+            entry = entry_points("can.interface")
+            BACKENDS.update({interface.name: (interface.module_name, interface.attrs[0])
+                             for interface in entry})
         interfaces = BACKENDS
     elif isinstance(interfaces, str):
         interfaces = (interfaces,)
@@ -158,7 +167,7 @@ def detect_available_configs(
     for interface in interfaces:
 
         try:
-            bus_class = _get_class_for_interface(interface)
+            bus_class = _get_class_for_interface(interface, installed_interfaces=BACKENDS)
         except CanInterfaceNotImplementedError:
             log_autodetect.debug(
                 'interface "%s" cannot be loaded for detection of available configurations',
