@@ -30,8 +30,9 @@ BACKENDS = {
 try:
     from importlib.metadata import entry_points
     entry = entry_points()
-    BACKENDS.update({interface.name: tuple(interface.value.split(':')) for interface in entry['can.interface']})
-except:
+    if 'can.interface' in entry:
+        BACKENDS.update({interface.name: tuple(interface.value.split(':')) for interface in entry['can.interface']})
+except ImportError:
     from pkg_resources import iter_entry_points as entry_points
     entry = entry_points("can.interface")
     BACKENDS.update({interface.name: (interface.module_name, interface.attrs[0]) for interface in entry})
