@@ -15,7 +15,7 @@ import logging
 from configparser import ConfigParser
 
 import can
-from .interfaces import VALID_INTERFACES, BACKENDS
+from .interfaces import VALID_INTERFACES
 from . import typechecking
 from .exceptions import CanInterfaceNotImplementedError
 
@@ -207,19 +207,10 @@ def _create_bus_config(config: Dict[str, Any]) -> typechecking.BusConfig:
         if key not in config:
             config[key] = None
 
-    # if config["interface"] not in VALID_INTERFACES:
-    if config["interface"] not in BACKENDS.keys():
-        try:
-            from importlib.metadata import entry_points  # If this works, the interfaces have probably been loaded
-        except ImportError:
-            from pkg_resources import iter_entry_points as entry_points
-            entry = entry_points("can.interface")
-            BACKENDS.update({interface.name: (interface.module_name, interface.attrs[0])
-                             for interface in entry})
-        if config["interface"] not in BACKENDS.keys():
-            raise CanInterfaceNotImplementedError(
-                f'Unknown interface type "{config["interface"]}"'
-            )
+    if config["interface"] not in VALID_INTERFACES:
+        raise CanInterfaceNotImplementedError(
+            f'Unknown interface type "{config["interface"]}"'
+        )
 
     if "bitrate" in config:
         config["bitrate"] = int(config["bitrate"])
