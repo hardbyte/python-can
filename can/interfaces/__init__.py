@@ -33,8 +33,8 @@ try:
     if 'can.interface' in entry:
         BACKENDS.update({interface.name: tuple(interface.value.split(':')) for interface in entry['can.interface']})
 except ImportError:
-    from pkg_resources import iter_entry_points as entry_points
-    entry = entry_points("can.interface")
+    from pkg_resources import iter_entry_points
+    entry = iter_entry_points("can.interface")
     BACKENDS.update({interface.name: (interface.module_name, interface.attrs[0]) for interface in entry})
 
 VALID_INTERFACES = frozenset(list(BACKENDS.keys()))
