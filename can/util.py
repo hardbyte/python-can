@@ -32,7 +32,8 @@ CONFIG_FILES = ["~/can.conf"]
 if platform.system() == "Linux":
     CONFIG_FILES.extend(["/etc/can.conf", "~/.can", "~/.canrc"])
 elif platform.system() == "Windows" or platform.python_implementation() == "IronPython":
-    CONFIG_FILES.extend(["can.ini", os.path.join(os.getenv("APPDATA", ""), "can.ini")])
+    CONFIG_FILES.extend(["can.ini", os.path.join(
+        os.getenv("APPDATA", ""), "can.ini")])
 
 
 def load_file_config(
@@ -232,7 +233,10 @@ def _create_bus_config(config: Dict[str, Any]) -> typechecking.BusConfig:
         "btr1",
     ):
         if key in config:
-            timing_conf[key] = int(config[key], base=0)
+            _config_value = config[key]
+            if not isinstance(_config_value, int):
+                _config_value = int(_config_value, base=0)
+            timing_conf[key] = _config_value
             del config[key]
     if timing_conf:
         timing_conf["bitrate"] = config["bitrate"]
@@ -332,14 +336,16 @@ def _rename_kwargs(
         if alias in kwargs:
             value = kwargs.pop(alias)
             if new is not None:
-                warnings.warn(f"{alias} is deprecated; use {new}", DeprecationWarning)
+                warnings.warn(
+                    f"{alias} is deprecated; use {new}", DeprecationWarning)
                 if new in kwargs:
                     raise TypeError(
                         f"{func_name} received both {alias} (deprecated) and {new}"
                     )
                 kwargs[new] = value
             else:
-                warnings.warn("{} is deprecated".format(alias), DeprecationWarning)
+                warnings.warn("{} is deprecated".format(
+                    alias), DeprecationWarning)
 
 
 def time_perfcounter_correlation() -> Tuple[float, float]:
