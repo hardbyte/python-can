@@ -275,8 +275,6 @@ class PcanBus(BusABC):
                     f_clock = f"f_clock={timings.f_clock}"
                 except ValueError as e:
                     raise PcanError(str(e))
-            else:
-                raise PcanError("parameter f_clock seems to be missing.")
 
             fd_parameters_values = [f_clock] + [
                 "{}={}".format(key, kwargs.get(key, None))
