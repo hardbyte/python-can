@@ -5,13 +5,13 @@ Enable basic CAN over a PCAN USB device.
 import logging
 import time
 from datetime import datetime
-
 from typing import Optional
-from can import CanError, Message, BusABC
-from can.bus import BusState
-from can.util import len2dlc, dlc2len
-from .basic import *
 
+from can import BitTiming, BusABC, CanError, Message
+from can.bus import BusState
+from can.util import dlc2len, len2dlc
+
+from .basic import *
 
 # Set up logging
 log = logging.getLogger("can.pcan")
@@ -25,7 +25,8 @@ try:
     if uptime.boottime() is None:
         boottimeEpoch = 0
     else:
-        boottimeEpoch = (uptime.boottime() - datetime.fromtimestamp(0)).total_seconds()
+        boottimeEpoch = (uptime.boottime() -
+                         datetime.fromtimestamp(0)).total_seconds()
 except ImportError as error:
     log.warning(
         "uptime library not available, timestamps are relative to boot time and not to Epoch UTC",
@@ -36,14 +37,14 @@ except ImportError as error:
 try:
     # Try builtin Python 3 Windows API
     from _overlapped import CreateEvent
-    from _winapi import WaitForSingleObject, WAIT_OBJECT_0, INFINITE
+    from _winapi import INFINITE, WAIT_OBJECT_0, WaitForSingleObject
 
     HAS_EVENTS = True
 except ImportError:
     try:
         # Try pywin32 package
-        from win32event import CreateEvent
-        from win32event import WaitForSingleObject, WAIT_OBJECT_0, INFINITE
+        from win32event import (INFINITE, WAIT_OBJECT_0, CreateEvent,
+                                WaitForSingleObject)
 
         HAS_EVENTS = True
     except ImportError:
@@ -263,11 +264,19 @@ class PcanBus(BusABC):
             raise ArgumentError("BusState must be Active or Passive")
 
         if self.fd:
-            f_clock_val = kwargs.get("f_clock", None)
-            if f_clock_val is None:
-                f_clock = "{}={}".format("f_clock_mhz", kwargs.get("f_clock_mhz", None))
+            f_clock = ""
+            if "f_clock" in kwargs:
+                f_clock = f"f_clock={kwargs['f_clock']}"
+            elif "f_clock_mhz" in kwargs:
+                f_clock = f"f_clock_mhz={kwargs['f_clock_mhz']}"
+            elif "timing" in kwargs:
+                timings: BitTiming = kwargs["timing"]
+                try:
+                    f_clock = f"f_clock={timings.f_clock}"
+                except ValueError as e:
+                    raise PcanError(str(e))
             else:
-                f_clock = "{}={}".format("f_clock", kwargs.get("f_clock", None))
+                raise PcanError("parameter f_clock seems to be missing.")
 
             fd_parameters_values = [f_clock] + [
                 "{}={}".format(key, kwargs.get(key, None))
@@ -417,7 +426,8 @@ class PcanBus(BusABC):
 
         if HAS_EVENTS:
             # We will utilize events for the timeout handling
-            timeout_ms = int(timeout * 1000) if timeout is not None else INFINITE
+            timeout_ms = int(
+                timeout * 1000) if timeout is not None else INFINITE
         elif timeout is not None:
             # Calculate max time
             end_time = time.perf_counter() + timeout
@@ -471,7 +481,8 @@ class PcanBus(BusABC):
 
         if self.fd:
             dlc = dlc2len(theMsg.DLC)
-            timestamp = boottimeEpoch + (itsTimeStamp.value / (1000.0 * 1000.0))
+            timestamp = boottimeEpoch + \
+                (itsTimeStamp.value / (1000.0 * 1000.0))
         else:
             dlc = theMsg.LEN
             timestamp = boottimeEpoch + (
@@ -554,7 +565,8 @@ class PcanBus(BusABC):
             result = self.m_objPCANBasic.Write(self.m_PcanHandle, CANMsg)
 
         if result != PCAN_ERROR_OK:
-            raise PcanError("Failed to send: " + self._get_formatted_error(result))
+            raise PcanError("Failed to send: " +
+                            self._get_formatted_error(result))
 
     def flash(self, flash):
         """
@@ -629,15 +641,18 @@ class PcanBus(BusABC):
             )
         for i in interfaces:
             try:
-                error, value = library_handle.GetValue(i["id"], PCAN_CHANNEL_CONDITION)
+                error, value = library_handle.GetValue(
+                    i["id"], PCAN_CHANNEL_CONDITION)
                 if error != PCAN_ERROR_OK or value != PCAN_CHANNEL_AVAILABLE:
                     continue
                 has_fd = False
-                error, value = library_handle.GetValue(i["id"], PCAN_CHANNEL_FEATURES)
+                error, value = library_handle.GetValue(
+                    i["id"], PCAN_CHANNEL_FEATURES)
                 if error == PCAN_ERROR_OK:
                     has_fd = bool(value & FEATURE_FD_CAPABLE)
                 channels.append(
-                    {"interface": "pcan", "channel": i["name"], "supports_fd": has_fd}
+                    {"interface": "pcan",
+                        "channel": i["name"], "supports_fd": has_fd}
                 )
             except AttributeError:  # Ignore if this fails for some interfaces
                 pass
