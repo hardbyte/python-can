@@ -32,6 +32,9 @@ class VCI_CAN_OBJ(Structure):
     ]
 
 
+SENDTYPE_ALLOW_RETRY = 0  # Retry send if there is bus contention
+SENDTYPE_ONE_SHOT = 1  # Drop the message if transmission fails first time
+
 VCI_USBCAN2 = 4
 
 STATUS_OK = 0x01
@@ -145,7 +148,7 @@ class CANalystIIBus(BusABC):
             msg.arbitration_id,
             0,
             0,
-            1,
+            SENDTYPE_ALLOW_RETRY,
             msg.is_remote_frame,
             extern_flag,
             msg.dlc,
