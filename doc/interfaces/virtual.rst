@@ -20,4 +20,5 @@ others messages.
     bus1.send(msg1)
     msg2 = bus2.recv()
 
-    assert msg1 == msg2
+    # msg.timestamp and msg.channel are different.
+    assert msg1.data == msg2.data
