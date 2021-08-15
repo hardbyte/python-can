@@ -515,7 +515,7 @@ def main() -> None:
     parsed_args, can_filters, data_structs = parse_args(sys.argv[1:])
 
     additional_config = {"can_filters": can_filters} if can_filters else {}
-    bus = _create_bus(parsed_args.channel, **additional_config)
+    bus = _create_bus(parsed_args, **additional_config)
     # print(f"Connected to {bus.__class__.__name__}: {bus.channel_info}")
 
     curses.wrapper(CanViewer, bus, data_structs)
