@@ -441,7 +441,7 @@ def parse_args(args):
         choices=sorted(can.VALID_INTERFACES),
     )
 
-    parser.add_argument(
+    optional.add_argument(
         "-v",
         action="count",
         dest="verbosity",
