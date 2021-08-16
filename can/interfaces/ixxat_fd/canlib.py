@@ -650,7 +650,8 @@ class IXXATBus(BusABC):
                 _canlib.canChannelPeekMessage(
                     self._channel_handle, ctypes.byref(self._message)
                 )
-            except (VCITimeout, VCIRxQueueEmptyError):
+            except (VCITimeout, VCIRxQueueEmptyError, VCIError):
+                # VCIError means no frame available (canChannelPeekMessage returned different from zero)
                 return None, True
             else:
                 if self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_DATA:
