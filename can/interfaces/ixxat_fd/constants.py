@@ -119,6 +119,11 @@ CAN_OPMODE_ERRFRAME = 0x04
 CAN_OPMODE_LISTONLY = 0x08
 CAN_OPMODE_LOWSPEED = 0x10
 
+# Extended operating modes
+CAN_EXMODE_EXTDATALEN = 0x01
+CAN_EXMODE_FASTDATA = 0x02
+CAN_EXMODE_NONISOCANFD = 0x04
+
 # Message types
 CAN_MSGTYPE_DATA = 0
 CAN_MSGTYPE_INFO = 1
@@ -146,3 +151,36 @@ CAN_ERROR_OTHER = 7  # other (unspecified) error
 # acceptance code and mask to reject all CAN IDs
 CAN_ACC_MASK_NONE = 0xFFFFFFFF
 CAN_ACC_CODE_NONE = 0x80000000
+
+# BTMODEs
+CAN_BTMODE_RAW = 0x00000001 # raw mode
+CAN_BTMODE_TSM = 0x00000002 # triple sampling mode
+
+
+CAN_FILTER_VOID = 0x00 # invalid or unknown filter mode (do not use for initialization)
+CAN_FILTER_LOCK = 0x01 # lock filter (inhibit all IDs)
+CAN_FILTER_PASS = 0x02 # bypass filter (pass all IDs)
+CAN_FILTER_INCL = 0x03 # inclusive filtering (pass registered IDs)
+CAN_FILTER_EXCL = 0x04 # exclusive filtering (inhibit registered IDs)
+
+
+CAN_MSGFLAGS_DLC = 0x0F # [bit 0] data length code
+CAN_MSGFLAGS_OVR = 0x10 # [bit 4] data overrun flag
+CAN_MSGFLAGS_SRR = 0x20 # [bit 5] self reception request
+CAN_MSGFLAGS_RTR = 0x40 # [bit 6] remote transmission request
+CAN_MSGFLAGS_EXT = 0x80 # [bit 7] frame format (0=11-bit, 1=29-bit)
+
+
+CAN_MSGFLAGS2_SSM = 0x01 # [bit 0] single shot mode
+CAN_MSGFLAGS2_HPM = 0x02 # [bit 1] high priority message
+CAN_MSGFLAGS2_EDL = 0x04 # [bit 2] extended data length
+CAN_MSGFLAGS2_FDR = 0x08 # [bit 3] fast data bit rate
+CAN_MSGFLAGS2_ESI = 0x10 # [bit 4] error state indicator
+CAN_MSGFLAGS2_RES = 0xE0 # [bit 5..7] reserved bits
+
+
+CAN_ACCEPT_REJECT   = 0x00 # message not accepted
+CAN_ACCEPT_ALWAYS   = 0xFF # message always accepted
+CAN_ACCEPT_FILTER_1 = 0x01 # message accepted by filter 1
+CAN_ACCEPT_FILTER_2 = 0x02 # message accepted by filter 2
+CAN_ACCEPT_PASSEXCL = 0x03 # message passes exclusion filter
