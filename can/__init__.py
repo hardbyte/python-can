@@ -8,7 +8,7 @@ messages on a can bus.
 import logging
 from typing import Dict, Any
 
-__version__ = "4.0.0"
+__version__ = "4.0.0-dev.0"
 
 log = logging.getLogger("can")
 
@@ -24,6 +24,7 @@ from .exceptions import (
     CanTimeoutError,
 )
 
+
 from .util import set_logging_level
 
 from .message import Message
@@ -34,7 +35,6 @@ from .interfaces import VALID_INTERFACES
 from . import interface
 from .interface import Bus, detect_available_configs
 from .bit_timing import BitTiming
-
 from .io import Logger, SizedRotatingLogger, Printer, LogReader, MessageSync
 from .io import ASCWriter, ASCReader
 from .io import BLFReader, BLFWriter
