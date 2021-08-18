@@ -122,6 +122,7 @@ CAN_OPMODE_LISTONLY = 0x08
 CAN_OPMODE_LOWSPEED = 0x10
 
 # Extended operating modes
+CAN_EXMODE_DISABLED = 0x00
 CAN_EXMODE_EXTDATALEN = 0x01
 CAN_EXMODE_FASTDATA = 0x02
 CAN_EXMODE_NONISOCANFD = 0x04
@@ -186,6 +187,26 @@ CAN_ACCEPT_ALWAYS   = 0xFF # message always accepted
 CAN_ACCEPT_FILTER_1 = 0x01 # message accepted by filter 1
 CAN_ACCEPT_FILTER_2 = 0x02 # message accepted by filter 2
 CAN_ACCEPT_PASSEXCL = 0x03 # message passes exclusion filter
+
+
+CAN_FEATURE_STDOREXT   = 0x00000001 # 11 OR 29 bit (exclusive)
+CAN_FEATURE_STDANDEXT  = 0x00000002 # 11 AND 29 bit (simultaneous)
+CAN_FEATURE_RMTFRAME   = 0x00000004 # reception of remote frames
+CAN_FEATURE_ERRFRAME   = 0x00000008 # reception of error frames
+CAN_FEATURE_BUSLOAD    = 0x00000010 # bus load measurement
+CAN_FEATURE_IDFILTER   = 0x00000020 # exact message filter
+CAN_FEATURE_LISTONLY   = 0x00000040 # listen only mode
+CAN_FEATURE_SCHEDULER  = 0x00000080 # cyclic message scheduler
+CAN_FEATURE_GENERRFRM  = 0x00000100 # error frame generation
+CAN_FEATURE_DELAYEDTX  = 0x00000200 # delayed message transmitter
+CAN_FEATURE_SINGLESHOT = 0x00000400 # single shot mode
+CAN_FEATURE_HIGHPRIOR  = 0x00000800 # high priority message
+CAN_FEATURE_AUTOBAUD   = 0x00001000 # automatic bit rate detection
+CAN_FEATURE_EXTDATA    = 0x00002000 # extended data length (CANFD)
+CAN_FEATURE_FASTDATA   = 0x00004000 # fast data bit rate (CANFD)
+CAN_FEATURE_ISOFRAME   = 0x00008000 # ISO conform frame (CANFD)
+CAN_FEATURE_NONISOFRM  = 0x00010000 # non ISO conform frame (CANFD) (different CRC computation)
+CAN_FEATURE_64BITTSC   = 0x00020000 # 64-bit time stamp counter
 
 
 CAN_BITRATE_PRESETS = {

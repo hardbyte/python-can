@@ -412,6 +412,7 @@ class IXXATBus(BusABC):
         UniqueHardwareId = kwargs.get("UniqueHardwareId", None)
         rxFifoSize = kwargs.get("rxFifoSize", 1024)
         txFifoSize = kwargs.get("txFifoSize", 128)
+        extended = kwargs.get("extended", False)
         self._receive_own_messages = kwargs.get("receive_own_messages", False)
         # Usually comes as a string from the config file
         channel = int(channel)
@@ -518,20 +519,45 @@ class IXXATBus(BusABC):
             self._device_handle, channel, ctypes.byref(self._control_handle)
         )
 
+        _canlib.canControlGetCaps(
+            self._control_handle, ctypes.byref(self._channel_capabilities)
+        )
+
+        # check capabilities
+        bOpMode = constants.CAN_OPMODE_UNDEFINED
+        if (self._channel_capabilities.dwFeatures & constants.CAN_FEATURE_STDANDEXT) != 0:
+            # controller supportes CAN_OPMODE_STANDARD and CAN_OPMODE_EXTENDED at the same time
+            bOpMode |= constants.CAN_OPMODE_STANDARD # enable both 11 bits reception
+            if extended: # parameter from configuration
+                bOpMode |= constants.CAN_OPMODE_EXTENDED # enable 29 bits reception
+        elif (self._channel_capabilities.dwFeatures & constants.CAN_FEATURE_STDANDEXT) != 0:
+            log.warning("Channel %d capabilities allow either basic or extended IDs, but not both. using %s according to parameter [extended=%s]",
+                channel,
+                "extended" if extended else "basic",
+                "True" if extended else "False",
+            )
+            bOpMode |= constants.CAN_OPMODE_EXTENDED if extended else constants.CAN_OPMODE_STANDARD
+
+        if (self._channel_capabilities.dwFeatures & constants.CAN_FEATURE_ERRFRAME) != 0:
+            bOpMode |= constants.CAN_OPMODE_ERRFRAME
+
+        bExMode = constants.CAN_EXMODE_DISABLED
+        if (self._channel_capabilities.dwFeatures & constants.CAN_FEATURE_EXTDATA) != 0:
+            bExMode |= constants.CAN_EXMODE_EXTDATALEN
+
+        if (self._channel_capabilities.dwFeatures & constants.CAN_FEATURE_FASTDATA) != 0:
+            bExMode |= constants.CAN_EXMODE_FASTDATA
+
         _canlib.canControlInitialize(
             self._control_handle,
-            constants.CAN_OPMODE_STANDARD | constants.CAN_OPMODE_EXTENDED | constants.CAN_OPMODE_ERRFRAME,
-            constants.CAN_EXMODE_FASTDATA | constants.CAN_EXMODE_EXTDATALEN,
+            bOpMode,
+            bExMode,
             constants.CAN_FILTER_PASS,
             constants.CAN_FILTER_PASS,
             0,
             0,
             ctypes.byref(pBtpSDR),
             ctypes.byref(pBtpFDR)
-        )
-
-        _canlib.canControlGetCaps(
-            self._control_handle, ctypes.byref(self._channel_capabilities)
         )
 
         # With receive messages, this field contains the relative reception time of
