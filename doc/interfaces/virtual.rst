@@ -20,5 +20,5 @@ others messages.
     bus1.send(msg1)
     msg2 = bus2.recv()
 
-    # msg.timestamp and msg.channel are different.
-    assert msg1.data == msg2.data
+    # msg.timestamp and msg.channel are different
+    assert msg1.data == msg2.data, "msg data didn't match"
