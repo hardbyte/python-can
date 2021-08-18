@@ -80,3 +80,15 @@ explicitly instantiated by the caller.
 
 RX and TX FIFO sizes are configurable with ``rxFifoSize`` and ``txFifoSize``
 options, defaulting to 16 for both.
+
+
+CAN FD
+------
+
+Experimental support for CAN-FD can be enabled by using interface name "ixxat_fd" instead of "ixxat".
+
+Additional parameters when using this interface are:
+
+* ``data_bitrate`` (defaults to same value passed for bitrate) Channel data bitrate (to use when
+message bitrate_switch is used).
+
