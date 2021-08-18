@@ -383,39 +383,6 @@ class IXXATBus(BusABC):
 
     """
 
-    CHANNEL_BITRATES = {
-        0: {
-            10000: constants.CAN_BT0_10KB,
-            20000: constants.CAN_BT0_20KB,
-            50000: constants.CAN_BT0_50KB,
-            100000: constants.CAN_BT0_100KB,
-            125000: constants.CAN_BT0_125KB,
-            250000: constants.CAN_BT0_250KB,
-            500000: constants.CAN_BT0_500KB,
-            666000: constants.CAN_BT0_667KB,
-            666666: constants.CAN_BT0_667KB,
-            666667: constants.CAN_BT0_667KB,
-            667000: constants.CAN_BT0_667KB,
-            800000: constants.CAN_BT0_800KB,
-            1000000: constants.CAN_BT0_1000KB,
-        },
-        1: {
-            10000: constants.CAN_BT1_10KB,
-            20000: constants.CAN_BT1_20KB,
-            50000: constants.CAN_BT1_50KB,
-            100000: constants.CAN_BT1_100KB,
-            125000: constants.CAN_BT1_125KB,
-            250000: constants.CAN_BT1_250KB,
-            500000: constants.CAN_BT1_500KB,
-            666000: constants.CAN_BT1_667KB,
-            666666: constants.CAN_BT1_667KB,
-            666667: constants.CAN_BT1_667KB,
-            667000: constants.CAN_BT1_667KB,
-            800000: constants.CAN_BT1_800KB,
-            1000000: constants.CAN_BT1_1000KB,
-        },
-    }
-
     def __init__(self, channel, can_filters=None, **kwargs):
         """
         :param int channel:
@@ -441,6 +408,7 @@ class IXXATBus(BusABC):
         log.info("Got configuration of: %s", kwargs)
         # Configuration options
         bitrate = kwargs.get("bitrate", 500000)
+        data_bitrate = kwargs.get("data_bitrate", bitrate)
         UniqueHardwareId = kwargs.get("UniqueHardwareId", None)
         rxFifoSize = kwargs.get("rxFifoSize", 1024)
         txFifoSize = kwargs.get("txFifoSize", 128)
@@ -448,7 +416,10 @@ class IXXATBus(BusABC):
         # Usually comes as a string from the config file
         channel = int(channel)
 
-        if bitrate not in self.CHANNEL_BITRATES[0]:
+        if bitrate not in constants.CAN_BITRATE_PRESETS:
+            raise ValueError("Invalid bitrate {}".format(bitrate))
+
+        if data_bitrate not in constants.CAN_DATABITRATE_PRESETS:
             raise ValueError("Invalid bitrate {}".format(bitrate))
 
         if rxFifoSize <= 0:
@@ -536,27 +507,16 @@ class IXXATBus(BusABC):
         _canlib.canChannelInitialize(self._channel_handle, rxFifoSize, 1, txFifoSize, 1, 0, constants.CAN_FILTER_PASS)
         _canlib.canChannelActivate(self._channel_handle, constants.TRUE)
 
-        log.info("Initializing control %d bitrate %d", channel, bitrate)
+        pBtpSDR = constants.CAN_BITRATE_PRESETS[bitrate]
+        pBtpFDR = constants.CAN_DATABITRATE_PRESETS[data_bitrate]
+        log.info("Initializing control %d with SDR={%s}, FDR={%s}",
+                 channel,
+                 pBtpSDR,
+                 pBtpFDR,
+        )
         _canlib.canControlOpen(
             self._device_handle, channel, ctypes.byref(self._control_handle)
         )
-        # TODO: fill from parametters
-        # TODO: confirm 500/2000
-        pBtpSDR = structures.CANBTP()
-        pBtpSDR.dwMode = 0 #constants.CAN_BTMODE_RAW
-        pBtpSDR.dwBPS = 500000
-        pBtpSDR.wTS1 = 6400
-        pBtpSDR.wTS2 = 1600
-        pBtpSDR.wSJW = 1600
-        pBtpSDR.wTDO = 0
-
-        pBtpFDR = structures.CANBTP()
-        pBtpFDR.dwMode = 0 #constants.CAN_BTMODE_RAW
-        pBtpFDR.dwBPS = 2000000
-        pBtpFDR.wTS1 = 1600
-        pBtpFDR.wTS2 =  400
-        pBtpFDR.wSJW =  400
-        pBtpFDR.wTDO = 1600
 
         _canlib.canControlInitialize(
             self._control_handle,

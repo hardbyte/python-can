@@ -4,6 +4,8 @@ Ctypes wrapper module for IXXAT Virtual CAN Interface V3 on win32 systems
 Copyright (C) 2016 Giuseppe Corbelli <giuseppe.corbelli@weightpack.com>
 """
 
+from . import structures
+
 FALSE = 0
 TRUE = 1
 
@@ -184,3 +186,21 @@ CAN_ACCEPT_ALWAYS   = 0xFF # message always accepted
 CAN_ACCEPT_FILTER_1 = 0x01 # message accepted by filter 1
 CAN_ACCEPT_FILTER_2 = 0x02 # message accepted by filter 2
 CAN_ACCEPT_PASSEXCL = 0x03 # message passes exclusion filter
+
+
+CAN_BITRATE_PRESETS = {
+     500000: structures.CANBTP(dwMode=0, dwBPS= 500000, wTS1=6400, wTS2=1600, wSJW=1600, wTDO=0),  # SP = 80,0%
+    1000000: structures.CANBTP(dwMode=0, dwBPS=1000000, wTS1=6400, wTS2=1600, wSJW=1600, wTDO=0),  # SP = 80,0%
+}
+
+CAN_DATABITRATE_PRESETS = {
+     1000000: structures.CANBTP(dwMode=0, dwBPS= 1000000, wTS1=1600, wTS2= 400, wSJW= 400, wTDO=1600), # SP = 80,0%
+     2000000: structures.CANBTP(dwMode=0, dwBPS= 2000000, wTS1=1600, wTS2= 400, wSJW= 400, wTDO=1600), # SP = 80,0%
+     4000000: structures.CANBTP(dwMode=0, dwBPS= 4000000, wTS1= 800, wTS2= 200, wSJW= 200, wTDO= 800), # SP = 80,0%
+     5000000: structures.CANBTP(dwMode=0, dwBPS= 5000000, wTS1= 600, wTS2= 200, wSJW= 200, wTDO= 600), # SP = 75,0%
+     6666666: structures.CANBTP(dwMode=0, dwBPS= 6666666, wTS1= 400, wTS2= 200, wSJW= 200, wTDO= 402), # SP = 66,7%
+     8000000: structures.CANBTP(dwMode=0, dwBPS= 8000000, wTS1= 400, wTS2= 100, wSJW= 100, wTDO= 250), # SP = 80,0%
+    10000000: structures.CANBTP(dwMode=0, dwBPS=10000000, wTS1= 300, wTS2= 100, wSJW= 100, wTDO= 200), # SP = 75,0%
+}
+
+

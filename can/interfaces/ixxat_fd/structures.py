@@ -180,6 +180,9 @@ class CANBTP(ctypes.Structure):
         ("wTDO", ctypes.c_uint16),   # transceiver delay offset (SSP offset) in quanta (0 = disabled, 0xFFFF = simplified SSP positioning)
     ]
 
+    def __str__(self):
+        return "dwMode=%d, dwBPS=%d, wTS1=%d,  wTS2=%d, wSJW=%d, wTDO=%d" % (self.dwMode, self.dwBPS, self.wTS1, self.wTS2, self.wSJW, self.wTDO)
+
 
 PCANBTP = ctypes.POINTER(CANBTP)
 
