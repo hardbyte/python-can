@@ -188,6 +188,16 @@ class CanViewer:
             elif msg.dlc != self.ids[key]["msg"].dlc:
                 length_changed = True
 
+                # Clear the old data bytes when the length of the new message is shorter
+                if msg.dlc < self.ids[key]["msg"].dlc:
+                    self.draw_line(
+                        self.ids[key]["row"],
+                        # Start drawing at the last byte that is not in the new message
+                        52 + msg.dlc * 3,
+                        # Draw spaces where the old bytes were drawn
+                        " " * ((self.ids[key]["msg"].dlc - msg.dlc) * 3 - 1),
+                    )
+
             if new_id_added or length_changed:
                 # Increment the index if it was just added, but keep it if the length just changed
                 row = len(self.ids) + 1 if new_id_added else self.ids[key]["row"]
@@ -441,7 +451,7 @@ def parse_args(args):
         choices=sorted(can.VALID_INTERFACES),
     )
 
-    parser.add_argument(
+    optional.add_argument(
         "-v",
         action="count",
         dest="verbosity",
@@ -515,7 +525,7 @@ def main() -> None:
     parsed_args, can_filters, data_structs = parse_args(sys.argv[1:])
 
     additional_config = {"can_filters": can_filters} if can_filters else {}
-    bus = _create_bus(parsed_args.channel, **additional_config)
+    bus = _create_bus(parsed_args, **additional_config)
     # print(f"Connected to {bus.__class__.__name__}: {bus.channel_info}")
 
     curses.wrapper(CanViewer, bus, data_structs)
