@@ -179,7 +179,15 @@ try:
     _canlib.map_symbol(
         "canChannelInitialize",
         ctypes.c_long,
-        (HANDLE, ctypes.c_uint16, ctypes.c_uint16, ctypes.c_uint16, ctypes.c_uint16, ctypes.c_uint32, ctypes.c_uint8),
+        (
+            HANDLE,
+            ctypes.c_uint16,
+            ctypes.c_uint16,
+            ctypes.c_uint16,
+            ctypes.c_uint16,
+            ctypes.c_uint32,
+            ctypes.c_uint8,
+        ),
         __check_status,
     )
     # EXTERN_C HRESULT VCIAPI canChannelActivate( IN HANDLE hCanChn, IN BOOL   fEnable );
@@ -242,7 +250,17 @@ try:
     _canlib.map_symbol(
         "canControlInitialize",
         ctypes.c_long,
-        (HANDLE, ctypes.c_uint8, ctypes.c_uint8, ctypes.c_uint8, ctypes.c_uint8, ctypes.c_uint32, ctypes.c_uint32, structures.PCANBTP, structures.PCANBTP),
+        (
+            HANDLE,
+            ctypes.c_uint8,
+            ctypes.c_uint8,
+            ctypes.c_uint8,
+            ctypes.c_uint8,
+            ctypes.c_uint32,
+            ctypes.c_uint32,
+            structures.PCANBTP,
+            structures.PCANBTP,
+        ),
         __check_status,
     )
     # EXTERN_C HRESULT VCIAPI canControlClose( IN HANDLE hCanCtl );
@@ -408,7 +426,7 @@ class IXXATBus(BusABC):
         log.info("Got configuration of: %s", kwargs)
         # Configuration options
         bitrate = kwargs.get("bitrate", 500000)
-        data_bitrate = kwargs.get("data_bitrate", bitrate)
+        data_bitrate = kwargs.get("data_bitrate", 2000000)
         UniqueHardwareId = kwargs.get("UniqueHardwareId", None)
         rxFifoSize = kwargs.get("rxFifoSize", 1024)
         txFifoSize = kwargs.get("txFifoSize", 128)
@@ -505,15 +523,24 @@ class IXXATBus(BusABC):
             )
 
         # Signal TX/RX events when at least one frame has been handled
-        _canlib.canChannelInitialize(self._channel_handle, rxFifoSize, 1, txFifoSize, 1, 0, constants.CAN_FILTER_PASS)
+        _canlib.canChannelInitialize(
+            self._channel_handle,
+            rxFifoSize,
+            1,
+            txFifoSize,
+            1,
+            0,
+            constants.CAN_FILTER_PASS,
+        )
         _canlib.canChannelActivate(self._channel_handle, constants.TRUE)
 
         pBtpSDR = constants.CAN_BITRATE_PRESETS[bitrate]
         pBtpFDR = constants.CAN_DATABITRATE_PRESETS[data_bitrate]
-        log.info("Initializing control %d with SDR={%s}, FDR={%s}",
-                 channel,
-                 pBtpSDR,
-                 pBtpFDR,
+        log.info(
+            "Initializing control %d with SDR={%s}, FDR={%s}",
+            channel,
+            pBtpSDR,
+            pBtpFDR,
         )
         _canlib.canControlOpen(
             self._device_handle, channel, ctypes.byref(self._control_handle)
@@ -525,27 +552,40 @@ class IXXATBus(BusABC):
 
         # check capabilities
         bOpMode = constants.CAN_OPMODE_UNDEFINED
-        if (self._channel_capabilities.dwFeatures & constants.CAN_FEATURE_STDANDEXT) != 0:
+        if (
+            self._channel_capabilities.dwFeatures & constants.CAN_FEATURE_STDANDEXT
+        ) != 0:
             # controller supportes CAN_OPMODE_STANDARD and CAN_OPMODE_EXTENDED at the same time
-            bOpMode |= constants.CAN_OPMODE_STANDARD # enable both 11 bits reception
-            if extended: # parameter from configuration
-                bOpMode |= constants.CAN_OPMODE_EXTENDED # enable 29 bits reception
-        elif (self._channel_capabilities.dwFeatures & constants.CAN_FEATURE_STDANDEXT) != 0:
-            log.warning("Channel %d capabilities allow either basic or extended IDs, but not both. using %s according to parameter [extended=%s]",
+            bOpMode |= constants.CAN_OPMODE_STANDARD  # enable both 11 bits reception
+            if extended:  # parameter from configuration
+                bOpMode |= constants.CAN_OPMODE_EXTENDED  # enable 29 bits reception
+        elif (
+            self._channel_capabilities.dwFeatures & constants.CAN_FEATURE_STDANDEXT
+        ) != 0:
+            log.warning(
+                "Channel %d capabilities allow either basic or extended IDs, but not both. using %s according to parameter [extended=%s]",
                 channel,
                 "extended" if extended else "basic",
                 "True" if extended else "False",
             )
-            bOpMode |= constants.CAN_OPMODE_EXTENDED if extended else constants.CAN_OPMODE_STANDARD
+            bOpMode |= (
+                constants.CAN_OPMODE_EXTENDED
+                if extended
+                else constants.CAN_OPMODE_STANDARD
+            )
 
-        if (self._channel_capabilities.dwFeatures & constants.CAN_FEATURE_ERRFRAME) != 0:
+        if (
+            self._channel_capabilities.dwFeatures & constants.CAN_FEATURE_ERRFRAME
+        ) != 0:
             bOpMode |= constants.CAN_OPMODE_ERRFRAME
 
         bExMode = constants.CAN_EXMODE_DISABLED
         if (self._channel_capabilities.dwFeatures & constants.CAN_FEATURE_EXTDATA) != 0:
             bExMode |= constants.CAN_EXMODE_EXTDATALEN
 
-        if (self._channel_capabilities.dwFeatures & constants.CAN_FEATURE_FASTDATA) != 0:
+        if (
+            self._channel_capabilities.dwFeatures & constants.CAN_FEATURE_FASTDATA
+        ) != 0:
             bExMode |= constants.CAN_EXMODE_FASTDATA
 
         _canlib.canControlInitialize(
@@ -557,7 +597,7 @@ class IXXATBus(BusABC):
             0,
             0,
             ctypes.byref(pBtpSDR),
-            ctypes.byref(pBtpFDR)
+            ctypes.byref(pBtpFDR),
         )
 
         # With receive messages, this field contains the relative reception time of
@@ -566,7 +606,7 @@ class IXXATBus(BusABC):
         # frequency [1/s] = dwClockFreq / dwTscDivisor
         # We explicitly cast to float for Python 2.x users
         self._tick_resolution = float(
-            self._channel_capabilities.dwTscClkFreq # TODO confirm
+            self._channel_capabilities.dwTscClkFreq  # TODO confirm
             / self._channel_capabilities.dwTscDivisor
         )
 
@@ -620,12 +660,12 @@ class IXXATBus(BusABC):
             return 1
 
     def flush_tx_buffer(self):
-        """ Flushes the transmit buffer on the IXXAT """
+        """Flushes the transmit buffer on the IXXAT"""
         # TODO #64: no timeout?
         _canlib.canChannelWaitTxEvent(self._channel_handle, constants.INFINITE)
 
     def _recv_internal(self, timeout):
-        """ Read a message from IXXAT device. """
+        """Read a message from IXXAT device."""
 
         # TODO: handling CAN error messages?
         data_received = False
@@ -721,7 +761,7 @@ class IXXATBus(BusABC):
             is_extended_id=bool(self._message.uMsgInfo.Bits.ext),
             arbitration_id=self._message.dwMsgId,
             dlc=data_len,
-            data=self._message.abData[: data_len],
+            data=self._message.abData[:data_len],
             channel=self.channel,
         )
 
@@ -748,10 +788,12 @@ class IXXATBus(BusABC):
         message.uMsgInfo.Bits.fdr = 1 if msg.bitrate_switch else 0
         message.uMsgInfo.Bits.edl = 1 if msg.is_fd else 0
         message.dwMsgId = msg.arbitration_id
-        if msg.dlc: # this dlc means number of bytes of payload
+        if msg.dlc:  # this dlc means number of bytes of payload
             message.uMsgInfo.Bits.dlc = can.util.len2dlc(msg.dlc)
             data_len_dif = msg.dlc - len(msg.data)
-            data = msg.data + bytearray([0] * data_len_dif) # pad with zeros until required length
+            data = msg.data + bytearray(
+                [0] * data_len_dif
+            )  # pad with zeros until required length
             adapter = (ctypes.c_uint8 * msg.dlc).from_buffer(data)
             ctypes.memmove(message.abData, adapter, msg.dlc)
 
@@ -770,7 +812,9 @@ class IXXATBus(BusABC):
             _canlib.canSchedulerOpen(self._device_handle, self.channel, self._scheduler)
             caps = structures.CANCAPABILITIES2()
             _canlib.canSchedulerGetCaps(self._scheduler, caps)
-            self._scheduler_resolution = float(caps.dwCmsClkFreq) / caps.dwCmsDivisor # TODO: confirm
+            self._scheduler_resolution = (
+                float(caps.dwCmsClkFreq) / caps.dwCmsDivisor
+            )  # TODO: confirm
             _canlib.canSchedulerActivate(self._scheduler, constants.TRUE)
         return CyclicSendTask(
             self._scheduler, msg, period, duration, self._scheduler_resolution

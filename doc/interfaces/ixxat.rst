@@ -89,6 +89,6 @@ Experimental support for CAN-FD can be enabled by using interface name "ixxat_fd
 
 Additional parameters when using this interface are:
 
-* ``data_bitrate`` (defaults to same value passed for bitrate) Channel data bitrate (to use when
+* ``data_bitrate`` (defaults to 2Mbps) Channel data bitrate (to use when
 message bitrate_switch is used).
 
