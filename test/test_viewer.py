@@ -30,6 +30,7 @@ import random
 import struct
 import time
 import unittest
+from collections import defaultdict
 from typing import Dict, Tuple, Union
 from unittest.mock import patch
 
@@ -53,6 +54,7 @@ except ImportError:
 class StdscrDummy:
     def __init__(self):
         self.key_counter = 0
+        self.draw_buffer = defaultdict(dict)
 
     @staticmethod
     def clear():
@@ -65,13 +67,18 @@ class StdscrDummy:
     @staticmethod
     def getmaxyx():
         # Set y-value, so scrolling gets tested
-        return 1, 1
+        # Set x-value, so the text will fit in the window
+        return 1, 100
 
-    @staticmethod
-    def addstr(row, col, txt, *args):
+    def addstr(self, row, col, txt, *args):
         assert row >= 0
         assert col >= 0
         assert txt is not None
+
+        # Save the text written into the buffer
+        for i, t in enumerate(txt):
+            self.draw_buffer[row][col + i] = t
+
         # Raise an exception 50 % of the time, so we can make sure the code handles it
         if random.random() < 0.5:
             raise curses.error
@@ -114,7 +121,7 @@ class CanViewerTest(unittest.TestCase):
         random.seed(0)
 
     def setUp(self):
-        stdscr = StdscrDummy()
+        self.stdscr_dummy = StdscrDummy()
         config = {"interface": "virtual", "receive_own_messages": True}
         bus = can.Bus(**config)
         data_structs = None
@@ -145,7 +152,7 @@ class CanViewerTest(unittest.TestCase):
             patch_resizeterm.start()
             self.addCleanup(patch_resizeterm.stop)
 
-        self.can_viewer = CanViewer(stdscr, bus, data_structs, testing=True)
+        self.can_viewer = CanViewer(self.stdscr_dummy, bus, data_structs, testing=True)
 
     def tearDown(self):
         # Run the viewer after the test, this is done, so we can receive the CAN-Bus messages and make sure that they
@@ -213,6 +220,11 @@ class CanViewerTest(unittest.TestCase):
                 if _id["msg"].arbitration_id == 0x101:
                     # Check if the counter is reset when the length has changed
                     self.assertEqual(_id["count"], 1)
+
+                    # Make sure the line has been cleared after the shorted message was send
+                    for col, v in self.stdscr_dummy.draw_buffer[_id["row"]].items():
+                        if col >= 52 + _id["msg"].dlc * 3:
+                            self.assertEqual(v, " ")
                 elif _id["msg"].arbitration_id == 0x123456:
                     # Check if the counter is incremented
                     if _id["dt"] == 0:
