@@ -1,3 +1,4 @@
+import os
 from ctypes import *
 import logging
 import platform
@@ -59,10 +60,11 @@ TIMING_DICT = {
 }
 
 try:
+    module_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)))
     if platform.system() == "Windows":
-        CANalystII = WinDLL("./ControlCAN.dll")
+        CANalystII = WinDLL(os.path.join(module_dir, "ControlCAN.dll"))
     else:
-        CANalystII = CDLL("./libcontrolcan.so")
+        CANalystII = CDLL(os.path.join(module_dir, "libcontrolcan.so"))
     logger.info("Loaded CANalystII library")
 except OSError as e:
     CANalystII = None
