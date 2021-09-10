@@ -11,7 +11,7 @@ Implementation references:
 import logging
 import os
 import tempfile
-from collections import deque, defaultdict
+from collections import deque, defaultdict, Counter
 from itertools import cycle
 from threading import Event
 from warnings import warn
@@ -89,7 +89,7 @@ class ICSApiError(CanError):
         severity: int,
         restart_needed: int,
     ):
-        super().__init__(f"{description_short} {description_long}", error_code)
+        super().__init__(f"{description_short}. {description_long}", error_code)
         self.description_short = description_short
         self.description_long = description_long
         self.severity = severity
@@ -319,9 +319,12 @@ class NeoViBus(BusABC):
         if errors:
             logger.warning("%d error(s) found", errors)
 
-            for msg in ics.get_error_messages(self.dev):
-                error = ICSOperationError(*msg)
-                logger.warning(error)
+            for msg, count in Counter(ics.get_error_messages(self.dev)).items():
+                error = ICSApiError(*msg)
+                if count > 1:
+                    logger.warning(f"{error} (Repeated {count} times)")
+                else:
+                    logger.warning(error)
 
     def _get_timestamp_for_msg(self, ics_msg):
         if self._use_system_timestamp:
