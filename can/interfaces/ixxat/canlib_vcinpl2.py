@@ -37,7 +37,7 @@ __all__ = [
     "vciFormatError",
 ]
 
-log = logging.getLogger("can.ixxat_fd")
+log = logging.getLogger("can.ixxat")
 
 from time import perf_counter as _timer_function
 
@@ -417,6 +417,12 @@ class IXXATBus(BusABC):
 
         :param int bitrate:
             Channel bitrate in bit/s
+
+        :param int data_bitrate:
+            Channel bitrate in bit/s (only in CAN-Fd if baudrate switch enabled).
+
+        :param int extended:
+            Default False, enables the capability to use extended IDs.
         """
         if _canlib is None:
             raise CanInterfaceNotImplementedError(

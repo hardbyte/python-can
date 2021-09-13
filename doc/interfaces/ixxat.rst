@@ -38,9 +38,13 @@ module, while the following parameters are optional and are interpreted by IXXAT
 
 * ``bitrate`` (default 500000) Channel bitrate
 * ``UniqueHardwareId`` (default first device) Unique hardware ID of the IXXAT device
-* ``rxFifoSize`` (default 16) Number of RX mailboxes
-* ``txFifoSize`` (default 16) Number of TX mailboxes
+* ``rxFifoSize`` (default 16 for CAN, 1024 for CAN-FD) Number of RX mailboxes
+* ``txFifoSize`` (default 16 for CAN, 128 for CAN-FD) Number of TX mailboxes
 * ``extended`` (default False) Allow usage of extended IDs
+* ``fd`` Enable CAN-FD capabilities.
+* ``data_bitrate`` (defaults to 2Mbps) Channel data bitrate (to use when
+message bitrate_switch is used).
+
 
 
 Filtering
@@ -80,15 +84,4 @@ explicitly instantiated by the caller.
 
 RX and TX FIFO sizes are configurable with ``rxFifoSize`` and ``txFifoSize``
 options, defaulting to 16 for both.
-
-
-CAN FD
-------
-
-Experimental support for CAN-FD can be enabled by using interface name "ixxat_fd" instead of "ixxat".
-
-Additional parameters when using this interface are:
-
-* ``data_bitrate`` (defaults to 2Mbps) Channel data bitrate (to use when
-message bitrate_switch is used).
 
