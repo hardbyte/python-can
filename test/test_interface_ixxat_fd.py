@@ -1,5 +1,5 @@
 """
-Unittest for ixxat_fd interface.
+Unittest for ixxat interface using fd option.
 
 Run only this test:
 python setup.py test --addopts "--verbose -s test/test_interface_ixxat_fd.py"
@@ -16,7 +16,7 @@ class SoftwareTestCase(unittest.TestCase):
 
     def setUp(self):
         try:
-            bus = can.Bus(interface="ixxat_fd", channel=0)
+            bus = can.Bus(interface="ixxat", fd=True, channel=0)
             bus.shutdown()
         except can.CanInterfaceNotImplementedError:
             raise unittest.SkipTest("not available on this platform")
@@ -24,15 +24,15 @@ class SoftwareTestCase(unittest.TestCase):
     def test_bus_creation(self):
         # channel must be >= 0
         with self.assertRaises(ValueError):
-            can.Bus(interface="ixxat_fd", channel=-1)
+            can.Bus(interface="ixxat", fd=True, channel=-1)
 
         # rxFifoSize must be > 0
         with self.assertRaises(ValueError):
-            can.Bus(interface="ixxat_fd", channel=0, rxFifoSize=0)
+            can.Bus(interface="ixxat", fd=True, channel=0, rxFifoSize=0)
 
         # txFifoSize must be > 0
         with self.assertRaises(ValueError):
-            can.Bus(interface="ixxat_fd", channel=0, txFifoSize=0)
+            can.Bus(interface="ixxat", fd=True, channel=0, txFifoSize=0)
 
 
 class HardwareTestCase(unittest.TestCase):
@@ -42,7 +42,7 @@ class HardwareTestCase(unittest.TestCase):
 
     def setUp(self):
         try:
-            bus = can.Bus(interface="ixxat_fd", channel=0)
+            bus = can.Bus(interface="ixxat", fd=True, channel=0)
             bus.shutdown()
         except can.CanInterfaceNotImplementedError:
             raise unittest.SkipTest("not available on this platform")
@@ -50,10 +50,10 @@ class HardwareTestCase(unittest.TestCase):
     def test_bus_creation(self):
         # non-existent channel -> use arbitrary high value
         with self.assertRaises(can.CanInitializationError):
-            can.Bus(interface="ixxat_fd", channel=0xFFFF)
+            can.Bus(interface="ixxat", fd=True, channel=0xFFFF)
 
     def test_send_after_shutdown(self):
-        with can.Bus(interface="ixxat_fd", channel=0) as bus:
+        with can.Bus(interface="ixxat", fd=True, channel=0) as bus:
             with self.assertRaises(can.CanOperationError):
                 bus.send(can.Message(arbitration_id=0x3FF, dlc=0))
 
