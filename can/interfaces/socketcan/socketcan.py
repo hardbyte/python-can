@@ -610,6 +610,7 @@ class SocketcanBus(BusABC):
         local_loopback: bool = True,
         fd: bool = False,
         can_filters: Optional[CanFilters] = None,
+        ignore_rx_error_frames=False,
         **kwargs,
     ) -> None:
         """Creates a new socketcan bus.
@@ -639,6 +640,8 @@ class SocketcanBus(BusABC):
             If CAN-FD frames should be supported.
         :param can_filters:
             See :meth:`can.BusABC.set_filters`.
+        :param ignore_rx_error_frames:
+            If incoming error frames should be discarded.
         """
         self.socket = create_socket()
         self.channel = channel
@@ -671,11 +674,12 @@ class SocketcanBus(BusABC):
             except socket.error as error:
                 log.error("Could not enable CAN-FD frames (%s)", error)
 
-        # enable error frames
-        try:
-            self.socket.setsockopt(SOL_CAN_RAW, CAN_RAW_ERR_FILTER, 0x1FFFFFFF)
-        except socket.error as error:
-            log.error("Could not enable error frames (%s)", error)
+        if not ignore_rx_error_frames:
+            # enable error frames
+            try:
+                self.socket.setsockopt(SOL_CAN_RAW, CAN_RAW_ERR_FILTER, 0x1FFFFFFF)
+            except socket.error as error:
+                log.error("Could not enable error frames (%s)", error)
 
         # enable nanosecond resolution timestamping
         # we can always do this since
