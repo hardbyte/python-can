@@ -50,8 +50,8 @@ def find_serial_devices(serial_matcher: str = "") -> List[str]:
     objWMIService = win32com.client.Dispatch("WbemScripting.SWbemLocator")
     objSWbemServices = objWMIService.ConnectServer(".", "root\\cimv2")
     query = "SELECT * FROM CIM_LogicalDevice where Name LIKE '%USB2CAN%'"
-    usbs = objSWbemServices.ExecQuery(query)
-    serial_numbers = [usb.DeviceID.split("\\")[-1] for usb in usbs]
+    devices = objSWbemServices.ExecQuery(query)
+    serial_numbers = [device.DeviceID.split("\\")[-1] for device in devices]
     if serial_matcher:
         return [sn for sn in serial_numbers if serial_matcher in sn]
     return serial_numbers
