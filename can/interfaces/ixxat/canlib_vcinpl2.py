@@ -175,7 +175,14 @@ try:
         (HANDLE, ctypes.c_uint32, ctypes.c_long, PHANDLE),
         __check_status,
     )
-    # EXTERN_C HRESULT VCIAPI canChannelInitialize( IN HANDLE hCanChn, IN UINT16 wRxFifoSize, IN UINT16 wRxThreshold, IN UINT16 wTxFifoSize, IN UINT16 wTxThreshold );
+    # EXTERN_C HRESULT VCIAPI
+    #   canChannelInitialize( IN HANDLE hCanChn,
+    #                         IN UINT16 wRxFifoSize,
+    #                         IN UINT16 wRxThreshold,
+    #                         IN UINT16 wTxFifoSize,
+    #                         IN UINT16 wTxThreshold,
+    #                         IN UINT32 dwFilterSize,
+    #                         IN UINT8  bFilterMode );
     _canlib.map_symbol(
         "canChannelInitialize",
         ctypes.c_long,
@@ -196,14 +203,14 @@ try:
     )
     # HRESULT canChannelClose( HANDLE hChannel )
     _canlib.map_symbol("canChannelClose", ctypes.c_long, (HANDLE,), __check_status)
-    # EXTERN_C HRESULT VCIAPI canChannelReadMessage( IN  HANDLE  hCanChn, IN  UINT32  dwMsTimeout, OUT PCANMSG pCanMsg );
+    # EXTERN_C HRESULT VCIAPI canChannelReadMessage( IN  HANDLE  hCanChn, IN  UINT32  dwMsTimeout, OUT PCANMSG2 pCanMsg );
     _canlib.map_symbol(
         "canChannelReadMessage",
         ctypes.c_long,
         (HANDLE, ctypes.c_uint32, structures.PCANMSG2),
         __check_status,
     )
-    # HRESULT canChannelPeekMessage(HANDLE hChannel,PCANMSG pCanMsg );
+    # HRESULT canChannelPeekMessage(HANDLE hChannel,PCANMSG2 pCanMsg );
     _canlib.map_symbol(
         "canChannelPeekMessage",
         ctypes.c_long,
@@ -224,14 +231,14 @@ try:
         (HANDLE, ctypes.c_uint32),
         __check_status,
     )
-    # HRESULT canChannelPostMessage (HANDLE hChannel, PCANMSG pCanMsg );
+    # HRESULT canChannelPostMessage (HANDLE hChannel, PCANMSG2 pCanMsg );
     _canlib.map_symbol(
         "canChannelPostMessage",
         ctypes.c_long,
         (HANDLE, structures.PCANMSG2),
         __check_status,
     )
-    # HRESULT canChannelSendMessage (HANDLE hChannel, UINT32 dwMsTimeout, PCANMSG pCanMsg );
+    # HRESULT canChannelSendMessage (HANDLE hChannel, UINT32 dwMsTimeout, PCANMSG2 pCanMsg );
     _canlib.map_symbol(
         "canChannelSendMessage",
         ctypes.c_long,
@@ -246,7 +253,16 @@ try:
         (HANDLE, ctypes.c_uint32, PHANDLE),
         __check_status,
     )
-    # EXTERN_C HRESULT VCIAPI canControlInitialize( IN HANDLE hCanCtl, IN UINT8  bMode, IN UINT8  bBtr0, IN UINT8  bBtr1 );
+    # EXTERN_C HRESULT VCIAPI
+    #   canControlInitialize( IN HANDLE  hCanCtl,
+    #                         IN UINT8   bOpMode,
+    #                         IN UINT8   bExMode,
+    #                         IN UINT8   bSFMode,
+    #                         IN UINT8   bEFMode,
+    #                         IN UINT32  dwSFIds,
+    #                         IN UINT32  dwEFIds,
+    #                         IN PCANBTP pBtpSDR,
+    #                         IN PCANBTP pBtpFDR );
     _canlib.map_symbol(
         "canControlInitialize",
         ctypes.c_long,
@@ -271,14 +287,14 @@ try:
     _canlib.map_symbol(
         "canControlStart", ctypes.c_long, (HANDLE, ctypes.c_long), __check_status
     )
-    # EXTERN_C HRESULT VCIAPI canControlGetStatus( IN  HANDLE         hCanCtl, OUT PCANLINESTATUS pStatus );
+    # EXTERN_C HRESULT VCIAPI canControlGetStatus( IN  HANDLE hCanCtl, OUT PCANLINESTATUS2 pStatus );
     _canlib.map_symbol(
         "canControlGetStatus",
         ctypes.c_long,
         (HANDLE, structures.PCANLINESTATUS2),
         __check_status,
     )
-    # EXTERN_C HRESULT VCIAPI canControlGetCaps( IN  HANDLE           hCanCtl, OUT PCANCAPABILITIES pCanCaps );
+    # EXTERN_C HRESULT VCIAPI canControlGetCaps( IN  HANDLE hCanCtl, OUT PCANCAPABILITIES2 pCanCaps );
     _canlib.map_symbol(
         "canControlGetCaps",
         ctypes.c_long,
@@ -315,7 +331,7 @@ try:
     )
     # EXTERN_C HRESULT canSchedulerClose (HANDLE hScheduler );
     _canlib.map_symbol("canSchedulerClose", ctypes.c_long, (HANDLE,), __check_status)
-    # EXTERN_C HRESULT canSchedulerGetCaps (HANDLE hScheduler, PCANCAPABILITIES pCaps );
+    # EXTERN_C HRESULT canSchedulerGetCaps (HANDLE hScheduler, PCANCAPABILITIES2 pCaps );
     _canlib.map_symbol(
         "canSchedulerGetCaps",
         ctypes.c_long,
@@ -326,7 +342,7 @@ try:
     _canlib.map_symbol(
         "canSchedulerActivate", ctypes.c_long, (HANDLE, ctypes.c_int), __check_status
     )
-    # EXTERN_C HRESULT canSchedulerAddMessage (HANDLE hScheduler, PCANCYCLICTXMSG pMessage, PUINT32 pdwIndex );
+    # EXTERN_C HRESULT canSchedulerAddMessage (HANDLE hScheduler, PCANCYCLICTXMSG2 pMessage, PUINT32 pdwIndex );
     _canlib.map_symbol(
         "canSchedulerAddMessage",
         ctypes.c_long,
@@ -612,7 +628,7 @@ class IXXATBus(BusABC):
         # frequency [1/s] = dwClockFreq / dwTscDivisor
         # We explicitly cast to float for Python 2.x users
         self._tick_resolution = float(
-            self._channel_capabilities.dwTscClkFreq  # TODO confirm
+            self._channel_capabilities.dwTscClkFreq
             / self._channel_capabilities.dwTscDivisor
         )
 
@@ -764,6 +780,13 @@ class IXXATBus(BusABC):
             timestamp=self._message.dwTime
             / self._tick_resolution,  # Relative time in s
             is_remote_frame=bool(self._message.uMsgInfo.Bits.rtr),
+            is_fd=bool(self._message.uMsgInfo.Bits.edl),
+            is_rx=True,
+            is_error_frame=bool(
+                self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_ERROR
+            ),
+            bitrate_switch=bool(self._message.uMsgInfo.Bits.fdr),
+            error_state_indicator=bool(self._message.uMsgInfo.Bits.esi),
             is_extended_id=bool(self._message.uMsgInfo.Bits.ext),
             arbitration_id=self._message.dwMsgId,
             dlc=data_len,
@@ -787,11 +810,16 @@ class IXXATBus(BusABC):
         """
         # This system is not designed to be very efficient
         message = structures.CANMSG2()
-        message.uMsgInfo.Bits.type = constants.CAN_MSGTYPE_DATA
+        message.uMsgInfo.Bits.type = (
+            constants.CAN_MSGTYPE_ERROR
+            if msg.is_error_frame
+            else constants.CAN_MSGTYPE_DATA
+        )
         message.uMsgInfo.Bits.rtr = 1 if msg.is_remote_frame else 0
         message.uMsgInfo.Bits.ext = 1 if msg.is_extended_id else 0
         message.uMsgInfo.Bits.srr = 1 if self._receive_own_messages else 0
         message.uMsgInfo.Bits.fdr = 1 if msg.bitrate_switch else 0
+        message.uMsgInfo.Bits.esi = 1 if msg.error_state_indicator else 0
         message.uMsgInfo.Bits.edl = 1 if msg.is_fd else 0
         message.dwMsgId = msg.arbitration_id
         if msg.dlc:  # this dlc means number of bytes of payload
