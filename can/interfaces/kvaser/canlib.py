@@ -319,17 +319,21 @@ if __canlib is not None:
         errcheck=__check_status_operation,
     )
 
-    kvFlashLeds = __get_canlib_function("kvFlashLeds",
-                                        argtypes=[c_canHandle, ctypes.c_int,
-                                                  ctypes.c_int],
-                                        restype=ctypes.c_short,
-                                        errcheck=__check_status)
+    kvFlashLeds = __get_canlib_function(
+        "kvFlashLeds",
+        argtypes=[c_canHandle, ctypes.c_int, ctypes.c_int],
+        restype=ctypes.c_short,
+        errcheck=__check_status,
+    )
 
     if sys.platform == "win32":
-        canGetVersionEx = __get_canlib_function("canGetVersionEx",
-                                                argtypes=[ctypes.c_uint],
-                                                restype=ctypes.c_uint,
-                                                errcheck=__check_status)
+        canGetVersionEx = __get_canlib_function(
+            "canGetVersionEx",
+            argtypes=[ctypes.c_uint],
+            restype=ctypes.c_uint,
+            errcheck=__check_status,
+        )
+
 
 def init_kvaser_library():
     if __canlib is not None:
