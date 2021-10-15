@@ -106,12 +106,12 @@ VCI_E_DISCONNECTED = SEV_VCI_ERROR | 0x0019
 VCI_E_WRONG_FLASHFWVERSION = SEV_VCI_ERROR | 0x001A
 
 # Controller status
-CAN_STATUS_TXPEND = 0x01
-CAN_STATUS_OVRRUN = 0x02
-CAN_STATUS_ERRLIM = 0x04
-CAN_STATUS_BUSOFF = 0x08
-CAN_STATUS_ININIT = 0x10
-CAN_STATUS_BUSCERR = 0x20
+CAN_STATUS_TXPEND = 0x01  # transmission pending
+CAN_STATUS_OVRRUN = 0x02  # data overrun occurred
+CAN_STATUS_ERRLIM = 0x04  # error warning limit exceeded
+CAN_STATUS_BUSOFF = 0x08  # bus off status
+CAN_STATUS_ININIT = 0x10  # init mode active
+CAN_STATUS_BUSCERR = 0x20  # bus coupling error
 
 # Controller operating modes
 CAN_OPMODE_UNDEFINED = 0x00
@@ -167,6 +167,7 @@ CAN_FILTER_INCL = 0x03  # inclusive filtering (pass registered IDs)
 CAN_FILTER_EXCL = 0x04  # exclusive filtering (inhibit registered IDs)
 
 
+# message information flags (used by <CANMSGINFO.Bytes.bFlags>)
 CAN_MSGFLAGS_DLC = 0x0F  # [bit 0] data length code
 CAN_MSGFLAGS_OVR = 0x10  # [bit 4] data overrun flag
 CAN_MSGFLAGS_SRR = 0x20  # [bit 5] self reception request
@@ -174,6 +175,7 @@ CAN_MSGFLAGS_RTR = 0x40  # [bit 6] remote transmission request
 CAN_MSGFLAGS_EXT = 0x80  # [bit 7] frame format (0=11-bit, 1=29-bit)
 
 
+# extended message information flags (used by <CANMSGINFO.Bytes.bFlags2>)
 CAN_MSGFLAGS2_SSM = 0x01  # [bit 0] single shot mode
 CAN_MSGFLAGS2_HPM = 0x02  # [bit 1] high priority message
 CAN_MSGFLAGS2_EDL = 0x04  # [bit 2] extended data length
