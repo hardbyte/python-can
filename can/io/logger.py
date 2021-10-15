@@ -21,7 +21,7 @@ from pkg_resources import iter_entry_points
 from ..message import Message
 from ..listener import Listener
 from .generic import BaseIOHandler, FileIOMessageWriter
-from .asc import ASCWriter
+from .asc import ASCWriter, CompressedASCWriter
 from .blf import BLFWriter
 from .canutils import CanutilsLogWriter
 from .csv import CSVWriter
@@ -36,6 +36,7 @@ class Logger(BaseIOHandler, Listener):  # pylint: disable=abstract-method
 
     The format is determined from the file format which can be one of:
       * .asc: :class:`can.ASCWriter`
+      * .asc.gz: :class:`can.CompressedASCWriter`
       * .blf :class:`can.BLFWriter`
       * .csv: :class:`can.CSVWriter`
       * .db: :class:`can.SqliteWriter`
@@ -54,6 +55,7 @@ class Logger(BaseIOHandler, Listener):  # pylint: disable=abstract-method
     fetched_plugins = False
     message_writers = {
         ".asc": ASCWriter,
+        ".asc,gz": CompressedASCWriter,
         ".blf": BLFWriter,
         ".csv": CSVWriter,
         ".db": SqliteWriter,

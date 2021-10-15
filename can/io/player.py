@@ -14,7 +14,7 @@ if typing.TYPE_CHECKING:
     import can
 
 from .generic import BaseIOHandler, MessageReader
-from .asc import ASCReader
+from .asc import ASCReader, CompressedASCReader
 from .blf import BLFReader
 from .canutils import CanutilsLogReader
 from .csv import CSVReader
@@ -27,6 +27,7 @@ class LogReader(BaseIOHandler):
 
     The format is determined from the file format which can be one of:
       * .asc
+      * .asc.gz
       * .blf
       * .csv
       * .db
@@ -49,6 +50,7 @@ class LogReader(BaseIOHandler):
     fetched_plugins = False
     message_readers = {
         ".asc": ASCReader,
+        ".asc.gz": CompressedASCReader,
         ".blf": BLFReader,
         ".csv": CSVReader,
         ".db": SqliteReader,

@@ -8,7 +8,7 @@ from .logger import Logger, BaseRotatingLogger, SizedRotatingLogger
 from .player import LogReader, MessageSync
 
 # Format specific
-from .asc import ASCWriter, ASCReader
+from .asc import ASCWriter, ASCReader, CompressedASCWriter, CompressedASCReader
 from .blf import BLFReader, BLFWriter
 from .canutils import CanutilsLogReader, CanutilsLogWriter
 from .csv import CSVWriter, CSVReader
