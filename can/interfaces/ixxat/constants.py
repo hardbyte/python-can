@@ -114,12 +114,13 @@ CAN_STATUS_ININIT = 0x10  # init mode active
 CAN_STATUS_BUSCERR = 0x20  # bus coupling error
 
 # Controller operating modes
-CAN_OPMODE_UNDEFINED = 0x00
-CAN_OPMODE_STANDARD = 0x01
-CAN_OPMODE_EXTENDED = 0x02
-CAN_OPMODE_ERRFRAME = 0x04
-CAN_OPMODE_LISTONLY = 0x08
-CAN_OPMODE_LOWSPEED = 0x10
+CAN_OPMODE_UNDEFINED = 0x00  # undefined
+CAN_OPMODE_STANDARD = 0x01  # reception of 11-bit id messages
+CAN_OPMODE_EXTENDED = 0x02  # reception of 29-bit id messages
+CAN_OPMODE_ERRFRAME = 0x04  # reception of error frames
+CAN_OPMODE_LISTONLY = 0x08  # listen only mode (TX passive)
+CAN_OPMODE_LOWSPEED = 0x10  # use low speed bus interface
+CAN_OPMODE_AUTOBAUD = 0x20  # automatic bit rate detection
 
 # Extended operating modes
 CAN_EXMODE_DISABLED = 0x00
