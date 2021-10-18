@@ -70,11 +70,13 @@ PVCIDEVICEINFO = ctypes.POINTER(VCIDEVICEINFO)
 
 class CANLINESTATUS(ctypes.Structure):
     _fields_ = [
+        # current CAN operating mode. Value is a logical combination of
+        # one or more CAN_OPMODE_xxx constants
         ("bOpMode", ctypes.c_uint8),
-        ("bBtReg0", ctypes.c_uint8),
-        ("bBtReg1", ctypes.c_uint8),
-        ("bBusLoad", ctypes.c_uint8),
-        ("dwStatus", ctypes.c_uint32),
+        ("bBtReg0", ctypes.c_uint8),  # current bus timing register 0 value
+        ("bBtReg1", ctypes.c_uint8),  # current bus timing register 1 value
+        ("bBusLoad", ctypes.c_uint8),  # average bus load in percent (0..100)
+        ("dwStatus", ctypes.c_uint32),  # status of the CAN controller (see CAN_STATUS_)
     ]
 
 
@@ -83,11 +85,11 @@ PCANLINESTATUS = ctypes.POINTER(CANLINESTATUS)
 
 class CANCHANSTATUS(ctypes.Structure):
     _fields_ = [
-        ("sLineStatus", CANLINESTATUS),
-        ("fActivated", ctypes.c_uint32),
-        ("fRxOverrun", ctypes.c_uint32),
-        ("bRxFifoLoad", ctypes.c_uint8),
-        ("bTxFifoLoad", ctypes.c_uint8),
+        ("sLineStatus", CANLINESTATUS),  # current CAN line status
+        ("fActivated", ctypes.c_uint32),  # TRUE if the channel is activated
+        ("fRxOverrun", ctypes.c_uint32),  # TRUE if receive FIFO overrun occurred
+        ("bRxFifoLoad", ctypes.c_uint8),  # receive FIFO load in percent (0..100)
+        ("bTxFifoLoad", ctypes.c_uint8),  # transmit FIFO load in percent (0..100)
     ]
 
 
