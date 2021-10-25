@@ -59,7 +59,7 @@ def _create_base_argument_parser(parser: argparse.ArgumentParser) -> None:
 
     parser.add_argument(
         "app_name",
-        help='''App name can be necessary in the initializer. For example with Vector.''',
+        help="""App name can be necessary in the initializer. For example with Vector.""",
     )
 
 
