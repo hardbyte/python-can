@@ -55,7 +55,7 @@ class Logger(BaseIOHandler, Listener):  # pylint: disable=abstract-method
     fetched_plugins = False
     message_writers = {
         ".asc": ASCWriter,
-        ".asc,gz": CompressedASCWriter,
+        ".asc.gz": CompressedASCWriter,
         ".blf": BLFWriter,
         ".csv": CSVWriter,
         ".db": SqliteWriter,
