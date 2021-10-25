@@ -116,7 +116,10 @@ class BufferedReader(Listener):
         :return: the Message if there is one, or None if there is not.
         """
         try:
-            return self.buffer.get(block=not self.is_stopped, timeout=timeout)
+            if self.is_stopped:
+                return self.buffer.get(block=False)
+            else:
+                return self.buffer.get(block=True, timeout=timeout)
         except Empty:
             return None
 
