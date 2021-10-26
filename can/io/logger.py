@@ -234,7 +234,7 @@ class SizedRotatingLogger(BaseRotatingLogger):
     by adding a timestamp and the rollover count. A new log file is then
     created and written to.
 
-    This behavior can be customized by setting the ´namer´ and `rotator`
+    This behavior can be customized by setting the `namer` and `rotator`
     attribute.
 
     Example::
@@ -259,7 +259,8 @@ class SizedRotatingLogger(BaseRotatingLogger):
       * .log :class:`can.CanutilsLogWriter`
       * .txt :class:`can.Printer`
 
-    The log files may be incomplete until `stop()` is called due to buffering.
+    The log files on disk may be incomplete until :meth:`~can.Listener.stop`
+    is called due to buffering.
     """
 
     def __init__(
