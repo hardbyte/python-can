@@ -77,6 +77,13 @@ class FileIOMessageWriter(MessageWriter, metaclass=ABCMeta):
 
     file: Union[TextIO, BinaryIO]
 
+    def __init__(self, file: Union[can.typechecking.FileLike, TextIO, BinaryIO], mode: str = "rt") -> None:
+        # Not possible with the type signature, but be verbose for user friendliness
+        if file is None:
+            raise ValueError("The given file cannot be None")
+
+        super().__init__(file, mode)
+
 
 # pylint: disable=too-few-public-methods
 class MessageReader(BaseIOHandler, Iterable, metaclass=ABCMeta):
