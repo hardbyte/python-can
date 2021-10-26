@@ -130,7 +130,9 @@ class TestBaseRotatingLogger:
     def test_stop(self, tmp_path):
         """Test if stop() method of writer is called."""
         with self._get_instance(tmp_path) as logger_instance:
-            logger_instance._writer = logger_instance._get_new_writer(tmp_path / "file.ASC")
+            logger_instance._writer = logger_instance._get_new_writer(
+                tmp_path / "file.ASC"
+            )
 
             # replace stop method of writer with Mock
             original_stop = logger_instance.writer.stop
