@@ -58,7 +58,7 @@ def _create_base_argument_parser(parser: argparse.ArgumentParser) -> None:
     )
 
     parser.add_argument(
-        "app_name",
+        "--app_name",
         help="""App name can be necessary in the initializer. For example with Vector.""",
     )
 
@@ -102,7 +102,7 @@ def _create_bus(parsed_args: Any, **kwargs: Any) -> can.Bus:
         config["fd"] = True
     if parsed_args.data_bitrate:
         config["data_bitrate"] = parsed_args.data_bitrate
-    if parse_args.app_name:
+    if parsed_args.app_name:
         config["app_name"] = parsed_args.app_name
 
     return Bus(parsed_args.channel, **config)  # type: ignore
