@@ -129,13 +129,11 @@ class TestBaseRotatingLogger:
 
     def test_stop(self, tmp_path):
         """Test if stop() method of writer is called."""
-        logger_instance = self._get_instance(tmp_path)
-
-        with tempfile.TemporaryDirectory() as temp_dir:
-            logger_instance._get_new_writer(os.path.join(temp_dir, "file.ASC"))
+        with self._get_instance(tmp_path) as logger_instance:
+            logger_instance._writer = logger_instance._get_new_writer(tmp_path / "file.ASC")
 
             # replace stop method of writer with Mock
-            org_stop = logger_instance.writer.stop
+            original_stop = logger_instance.writer.stop
             mock_stop = Mock()
             logger_instance.writer.stop = mock_stop
 
@@ -143,7 +141,7 @@ class TestBaseRotatingLogger:
             mock_stop.assert_called()
 
             # close file.ASC to enable cleanup of temp_dir
-            org_stop()
+            original_stop()
 
     def test_on_message_received(self, tmp_path):
         logger_instance = self._get_instance(tmp_path)
@@ -198,73 +196,69 @@ class TestSizedRotatingLogger:
         assert hasattr(can.SizedRotatingLogger, "should_rollover")
         assert hasattr(can.SizedRotatingLogger, "do_rollover")
 
-    def test_create_instance(self):
+    def test_create_instance(self, tmp_path):
         base_filename = "mylogfile.ASC"
         max_bytes = 512
 
-        with tempfile.TemporaryDirectory() as temp_dir:
-            logger_instance = can.SizedRotatingLogger(
-                base_filename=os.path.join(temp_dir, base_filename), max_bytes=max_bytes
-            )
-            assert Path(logger_instance.base_filename).name == base_filename
-            assert logger_instance.max_bytes == max_bytes
-            assert logger_instance.rollover_count == 0
-            assert isinstance(logger_instance.writer, can.ASCWriter)
+        logger_instance = can.SizedRotatingLogger(
+            base_filename=tmp_path / base_filename, max_bytes=max_bytes
+        )
+        assert Path(logger_instance.base_filename).name == base_filename
+        assert logger_instance.max_bytes == max_bytes
+        assert logger_instance.rollover_count == 0
+        assert isinstance(logger_instance.writer, can.ASCWriter)
 
-            logger_instance.stop()
+        logger_instance.stop()
 
-    def test_should_rollover(self):
+    def test_should_rollover(self, tmp_path):
         base_filename = "mylogfile.ASC"
         max_bytes = 512
 
-        with tempfile.TemporaryDirectory() as temp_dir:
-            logger_instance = can.SizedRotatingLogger(
-                base_filename=os.path.join(temp_dir, base_filename), max_bytes=max_bytes
-            )
-            msg = generate_message(0x123)
-            do_rollover = Mock()
-            logger_instance.do_rollover = do_rollover
+        logger_instance = can.SizedRotatingLogger(
+            base_filename=tmp_path / base_filename, max_bytes=max_bytes
+        )
+        msg = generate_message(0x123)
+        do_rollover = Mock()
+        logger_instance.do_rollover = do_rollover
 
-            logger_instance.writer.file.tell = Mock(return_value=511)
-            assert logger_instance.should_rollover(msg) is False
-            logger_instance.on_message_received(msg)
-            do_rollover.assert_not_called()
+        logger_instance.writer.file.tell = Mock(return_value=511)
+        assert logger_instance.should_rollover(msg) is False
+        logger_instance.on_message_received(msg)
+        do_rollover.assert_not_called()
 
-            logger_instance.writer.file.tell = Mock(return_value=512)
-            assert logger_instance.should_rollover(msg) is True
-            logger_instance.on_message_received(msg)
-            do_rollover.assert_called()
+        logger_instance.writer.file.tell = Mock(return_value=512)
+        assert logger_instance.should_rollover(msg) is True
+        logger_instance.on_message_received(msg)
+        do_rollover.assert_called()
 
-            logger_instance.stop()
+        logger_instance.stop()
 
-    def test_logfile_size(self):
+    def test_logfile_size(self, tmp_path):
         base_filename = "mylogfile.ASC"
         max_bytes = 1024
         msg = generate_message(0x123)
 
-        with tempfile.TemporaryDirectory() as temp_dir:
-            logger_instance = can.SizedRotatingLogger(
-                base_filename=os.path.join(temp_dir, base_filename), max_bytes=max_bytes
-            )
+        logger_instance = can.SizedRotatingLogger(
+            base_filename=tmp_path / base_filename, max_bytes=max_bytes
+        )
+        for _ in range(128):
+            logger_instance.on_message_received(msg)
+
+        for file_path in os.listdir(tmp_path):
+            assert os.path.getsize(tmp_path / file_path) <= 1100
+
+        logger_instance.stop()
+
+    def test_logfile_size_context_manager(self, tmp_path):
+        base_filename = "mylogfile.ASC"
+        max_bytes = 1024
+        msg = generate_message(0x123)
+
+        with can.SizedRotatingLogger(
+            base_filename=tmp_path / base_filename, max_bytes=max_bytes
+        ) as logger_instance:
             for _ in range(128):
                 logger_instance.on_message_received(msg)
 
-            for file_path in os.listdir(temp_dir):
-                assert os.path.getsize(os.path.join(temp_dir, file_path)) <= 1100
-
-            logger_instance.stop()
-
-    def test_logfile_size_context_manager(self):
-        base_filename = "mylogfile.ASC"
-        max_bytes = 1024
-        msg = generate_message(0x123)
-
-        with tempfile.TemporaryDirectory() as temp_dir:
-            with can.SizedRotatingLogger(
-                base_filename=os.path.join(temp_dir, base_filename), max_bytes=max_bytes
-            ) as logger_instance:
-                for _ in range(128):
-                    logger_instance.on_message_received(msg)
-
-                for file_path in os.listdir(temp_dir):
-                    assert os.path.getsize(os.path.join(temp_dir, file_path)) <= 1100
+            for file_path in os.listdir(tmp_path):
+                assert os.path.getsize(os.path.join(tmp_path, file_path)) <= 1100
