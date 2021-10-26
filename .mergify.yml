@@ -1,7 +1,7 @@
 queue_rules:
   - name: default
     conditions:
-      - "status-success=Travis CI - Pull Request"
+      - "status-success=test,format"  # "GitHub Actions works slightly differently [...], only the job name is used."
 
 pull_request_rules:
   - name: Automatic merge passing PR on up to date branch with approving CR
@@ -10,7 +10,7 @@ pull_request_rules:
       - "#approved-reviews-by>=1"
       - "#review-requested=0"
       - "#changes-requested-reviews-by=0"
-      - "status-success=Travis CI - Pull Request"
+      - "status-success=test,format"
       - "label!=work-in-progress"
     actions:
       queue:
