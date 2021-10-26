@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-# coding: utf-8
 
 """
 Test rotating loggers
 """
+
 import os
 from pathlib import Path
 import tempfile
@@ -17,12 +17,12 @@ from .data.example_data import generate_message
 
 class TestBaseRotatingLogger:
     @staticmethod
-    def _get_instance(*args, **kwargs):
+    def _get_instance(*args, **kwargs) -> can.io.BaseRotatingLogger:
         class SubClass(can.io.BaseRotatingLogger):
             """Subclass that implements abstract methods for testing."""
 
-            def should_rollover(self, msg):
-                ...
+            def should_rollover(self, msg: can.Message) -> bool:
+                return False
 
             def do_rollover(self):
                 ...
@@ -266,3 +266,20 @@ class TestSizedRotatingLogger:
                 assert os.path.getsize(os.path.join(temp_dir, file_path)) <= 1100
 
             logger_instance.stop()
+
+    def test_logfile_size_context_manager(self):
+        base_filename = "mylogfile.ASC"
+        max_bytes = 1024
+        msg = generate_message(0x123)
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with can.SizedRotatingLogger(
+                base_filename=os.path.join(temp_dir, base_filename), max_bytes=max_bytes
+            ) as logger_instance:
+                for _ in range(128):
+                    logger_instance.on_message_received(msg)
+
+                for file_path in os.listdir(temp_dir):
+                    assert os.path.getsize(os.path.join(temp_dir, file_path)) <= 1100
+
+                logger_instance.stop()
