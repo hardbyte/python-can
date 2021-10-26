@@ -670,7 +670,7 @@ class TestCanutilsFileFormat(ReaderWriterTest):
 
 
 class TestCsvFileFormat(ReaderWriterTest):
-    """Tests can.ASCWriter and can.ASCReader"""
+    """Tests can.CSVWriter and can.CSVReader"""
 
     def _setup_instance(self):
         super()._setup_instance_helper(
@@ -731,7 +731,7 @@ class TestSqliteDatabaseFormat(ReaderWriterTest):
 
 
 class TestPrinter(unittest.TestCase):
-    """Tests that can.Printer does not crash
+    """Tests that can.Printer does not crash.
 
     TODO test append mode
     """
