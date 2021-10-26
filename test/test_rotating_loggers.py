@@ -45,7 +45,6 @@ class TestBaseRotatingLogger:
         assert hasattr(can.io.BaseRotatingLogger, "rotation_filename")
         assert hasattr(can.io.BaseRotatingLogger, "rotate")
         assert hasattr(can.io.BaseRotatingLogger, "on_message_received")
-        assert hasattr(can.io.BaseRotatingLogger, "get_new_writer")
         assert hasattr(can.io.BaseRotatingLogger, "stop")
         assert hasattr(can.io.BaseRotatingLogger, "should_rollover")
         assert hasattr(can.io.BaseRotatingLogger, "do_rollover")

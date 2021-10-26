@@ -7,7 +7,6 @@ Example .asc files:
 """
 
 from typing import cast, Any, Generator, IO, List, Optional, Union, Dict
-from can import typechecking
 
 from datetime import datetime
 import time
@@ -16,7 +15,8 @@ import logging
 from ..message import Message
 from ..listener import Listener
 from ..util import channel2int
-from .generic import BaseIOHandler
+from .generic import BaseIOHandler, FileIOMessageWriter
+from ..typechecking import AcceptedIOType
 
 
 CAN_MSG_EXT = 0x80000000
@@ -37,7 +37,7 @@ class ASCReader(BaseIOHandler):
 
     def __init__(
         self,
-        file: Union[typechecking.FileLike, typechecking.StringPathLike],
+        file: AcceptedIOType,
         base: str = "hex",
         relative_timestamp: bool = True,
     ) -> None:
@@ -238,7 +238,7 @@ class ASCReader(BaseIOHandler):
         self.stop()
 
 
-class ASCWriter(BaseIOHandler, Listener):
+class ASCWriter(FileIOMessageWriter, Listener):
     """Logs CAN data to an ASCII log file (.asc).
 
     The measurement starts with the timestamp of the first registered message.
@@ -275,7 +275,7 @@ class ASCWriter(BaseIOHandler, Listener):
 
     def __init__(
         self,
-        file: Union[typechecking.FileLike, typechecking.StringPathLike],
+        file: AcceptedIOType,
         channel: int = 1,
     ) -> None:
         """
@@ -286,8 +286,6 @@ class ASCWriter(BaseIOHandler, Listener):
                         have a channel set
         """
         super().__init__(file, mode="w")
-        if not self.file:
-            raise ValueError("The given file cannot be None")
 
         self.channel = channel
 
@@ -304,7 +302,6 @@ class ASCWriter(BaseIOHandler, Listener):
 
     def stop(self) -> None:
         # This is guaranteed to not be None since we raise ValueError in __init__
-        self.file = cast(IO[Any], self.file)
         if not self.file.closed:
             self.file.write("End TriggerBlock\n")
         super().stop()

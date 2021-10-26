@@ -202,13 +202,15 @@ class BaseRotatingLogger(Listener, BaseIOHandler, ABC):
         if self._writer is not None:
             self._writer.stop()
 
-        logger = Logger(
-            filename, *self.writer_args, **self.writer_kwargs
-        )
+        logger = Logger(filename, *self.writer_args, **self.writer_kwargs)
         if isinstance(logger, FileIOMessageWriter):
             return logger
+        elif isinstance(logger, Printer) and logger.file is not None:
+            return cast(FileIOMessageWriter, logger)
         else:
-            raise Exception("The Logger corresponding to the arguments is not a FileIOMessageWriter")
+            raise Exception(
+                "The Logger corresponding to the arguments is not a FileIOMessageWriter or can.Printer"
+            )
 
     def stop(self) -> None:
         """Stop handling new messages.

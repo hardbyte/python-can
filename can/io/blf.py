@@ -23,7 +23,7 @@ from ..message import Message
 from ..listener import Listener
 from ..util import len2dlc, dlc2len, channel2int
 from ..typechecking import AcceptedIOType
-from .generic import BaseIOHandler
+from .generic import BaseIOHandler, FileIOMessageWriter
 
 
 class BLFParseError(Exception):
@@ -139,7 +139,7 @@ class BLFReader(BaseIOHandler):
     silently ignored.
     """
 
-    def __init__(self, file):
+    def __init__(self, file: AcceptedIOType) -> None:
         """
         :param file: a path-like object or as file-like object to read from
                      If this is a file-like object, is has to opened in binary
@@ -347,7 +347,7 @@ class BLFReader(BaseIOHandler):
             pos = next_pos
 
 
-class BLFWriter(BaseIOHandler, Listener):
+class BLFWriter(FileIOMessageWriter, Listener):
     """
     Logs CAN data to a Binary Logging File compatible with Vector's tools.
     """
