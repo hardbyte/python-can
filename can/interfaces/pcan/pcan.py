@@ -557,7 +557,9 @@ class PcanBus(BusABC):
             result = self.m_objPCANBasic.Write(self.m_PcanHandle, CANMsg)
 
         if result != PCAN_ERROR_OK:
-            raise PcanCanOperationError("Failed to send: " + self._get_formatted_error(result))
+            raise PcanCanOperationError(
+                "Failed to send: " + self._get_formatted_error(result)
+            )
 
     def flash(self, flash):
         """

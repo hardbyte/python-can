@@ -290,7 +290,8 @@ class TestPCANBus(unittest.TestCase):
             call_list = self.mock_pcan.SetValue.call_args_list
             last_call_args_list = call_list[-1][0]
             self.assertEqual(
-                last_call_args_list, (PCAN_USBBUS1, PCAN_LISTEN_ONLY, expected_parameter)
+                last_call_args_list,
+                (PCAN_USBBUS1, PCAN_LISTEN_ONLY, expected_parameter),
             )
 
     def test_detect_available_configs(self) -> None:
