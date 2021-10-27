@@ -7,7 +7,11 @@ import logging
 from unittest.mock import Mock
 
 from can import BusABC, Message
-from ..exceptions import CanInitializationError, CanInterfaceNotImplementedError, error_check
+from ..exceptions import (
+    CanInitializationError,
+    CanInterfaceNotImplementedError,
+    error_check,
+)
 
 logger = logging.getLogger(__name__)
 
