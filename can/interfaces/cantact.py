@@ -7,7 +7,7 @@ import logging
 from unittest.mock import Mock
 
 from can import BusABC, Message
-from ..exceptions import CanInitializationError, error_check
+from ..exceptions import CanInitializationError, CanInterfaceNotImplementedError, error_check
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +63,7 @@ class CantactBus(BusABC):
             self.interface = MockInterface()
         else:
             if cantact is None:
-                raise CanInitializationError(
+                raise CanInterfaceNotImplementedError(
                     "The CANtact module is not installed. Install it using `python -m pip install cantact`"
                 )
             with error_check(
