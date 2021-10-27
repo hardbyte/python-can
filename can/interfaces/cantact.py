@@ -7,14 +7,16 @@ import logging
 from unittest.mock import Mock
 
 from can import BusABC, Message
+from ..exceptions import CanInitializationError, error_check
 
 logger = logging.getLogger(__name__)
 
 try:
     import cantact
 except ImportError:
+    cantact = None
     logger.warning(
-        "The CANtact module is not installed. Install it using `python3 -m pip install cantact`"
+        "The CANtact module is not installed. Install it using `python -m pip install cantact`"
     )
 
 
@@ -26,7 +28,7 @@ class CantactBus(BusABC):
         try:
             interface = cantact.Interface()
         except (NameError, SystemError):
-            # couldn't import cantact, so no configurations are available
+            logger.debug("Could not import cantact, so no configurations are available")
             return []
 
         channels = []
@@ -42,7 +44,7 @@ class CantactBus(BusABC):
         monitor=False,
         bit_timing=None,
         _testing=False,
-        **kwargs
+        **kwargs,
     ):
         """
         :param int channel:
@@ -58,36 +60,45 @@ class CantactBus(BusABC):
         if _testing:
             self.interface = MockInterface()
         else:
-            self.interface = cantact.Interface()
+            if cantact is None:
+                raise CanInitializationError(
+                    "The CANtact module is not installed. Install it using `python -m pip install cantact`"
+                )
+            with error_check(
+                "Cannot create the cantact.Interface", CanInitializationError
+            ):
+                self.interface = cantact.Interface()
 
         self.channel = int(channel)
-        self.channel_info = "CANtact: ch:%s" % channel
+        self.channel_info = f"CANtact: ch:{channel}"
 
-        # configure the interface
-        if bit_timing is None:
-            # use bitrate
-            self.interface.set_bitrate(int(channel), int(bitrate))
-        else:
-            # use custom bit timing
-            self.interface.set_bit_timing(
-                int(channel),
-                int(bit_timing.brp),
-                int(bit_timing.tseg1),
-                int(bit_timing.tseg2),
-                int(bit_timing.sjw),
-            )
-        self.interface.set_enabled(int(channel), True)
-        self.interface.set_monitor(int(channel), monitor)
-        self.interface.start()
+        # Configure the interface
+        with error_check("Cannot setup the cantact.Interface", CanInitializationError):
+            if bit_timing is None:
+                # use bitrate
+                self.interface.set_bitrate(int(channel), int(bitrate))
+            else:
+                # use custom bit timing
+                self.interface.set_bit_timing(
+                    int(channel),
+                    int(bit_timing.brp),
+                    int(bit_timing.tseg1),
+                    int(bit_timing.tseg2),
+                    int(bit_timing.sjw),
+                )
+            self.interface.set_enabled(int(channel), True)
+            self.interface.set_monitor(int(channel), monitor)
+            self.interface.start()
 
         super().__init__(
             channel=channel, bitrate=bitrate, poll_interval=poll_interval, **kwargs
         )
 
     def _recv_internal(self, timeout):
-        frame = self.interface.recv(int(timeout * 1000))
+        with error_check("Cannot receive message"):
+            frame = self.interface.recv(int(timeout * 1000))
         if frame is None:
-            # timeout occured
+            # timeout occurred
             return None, False
 
         msg = Message(
@@ -103,31 +114,33 @@ class CantactBus(BusABC):
         return msg, False
 
     def send(self, msg, timeout=None):
-        self.interface.send(
-            self.channel,
-            msg.arbitration_id,
-            bool(msg.is_extended_id),
-            bool(msg.is_remote_frame),
-            msg.dlc,
-            msg.data,
-        )
+        with error_check("Cannot send message"):
+            self.interface.send(
+                self.channel,
+                msg.arbitration_id,
+                bool(msg.is_extended_id),
+                bool(msg.is_remote_frame),
+                msg.dlc,
+                msg.data,
+            )
 
     def shutdown(self):
-        self.interface.stop()
+        with error_check("Cannot shutdown interface"):
+            self.interface.stop()
 
 
 def mock_recv(timeout):
     if timeout > 0:
-        frame = {}
-        frame["id"] = 0x123
-        frame["extended"] = False
-        frame["timestamp"] = time.time()
-        frame["loopback"] = False
-        frame["rtr"] = False
-        frame["dlc"] = 8
-        frame["data"] = [1, 2, 3, 4, 5, 6, 7, 8]
-        frame["channel"] = 0
-        return frame
+        return {
+            "id": 0x123,
+            "extended": False,
+            "timestamp": time.time(),
+            "loopback": False,
+            "rtr": False,
+            "dlc": 8,
+            "data": [1, 2, 3, 4, 5, 6, 7, 8],
+            "channel": 0,
+        }
     else:
         # simulate timeout when timeout = 0
         return None
@@ -144,7 +157,6 @@ class MockInterface:
     set_bit_timing = Mock()
     set_enabled = Mock()
     set_monitor = Mock()
-    start = Mock()
     stop = Mock()
     send = Mock()
     channel_count = Mock(return_value=1)
