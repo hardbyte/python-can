@@ -56,10 +56,10 @@ class robotellBus(BusABC):
     ):
         """
         :param str channel:
-            port of underlying serial or usb device (e.g. /dev/ttyUSB0, COM8, ...)
-            Must not be empty.
+            port of underlying serial or usb device (e.g. ``/dev/ttyUSB0``, ``COM8``, ...)
+            Must not be empty. Can also end with ``@115200`` (or similarly) to specify the baudrate.
         :param int ttyBaudrate:
-            baudrate of underlying serial or usb device
+            baudrate of underlying serial or usb device (Ignored if set via the ``channel`` parameter)
         :param int bitrate:
             CAN Bitrate in bit/s. Value is stored in the adapter and will be used as default if no bitrate is specified
         :param bool rtscts:
