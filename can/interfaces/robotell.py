@@ -106,9 +106,7 @@ class robotellBus(BusABC):
         if bitrate <= self._MAX_CAN_BAUD:
             self._writeconfig(self._CAN_BAUD_ID, bitrate)
         else:
-            raise ValueError(
-                f"Invalid bitrate, must be less than {self._MAX_CAN_BAUD}"
-            )
+            raise ValueError(f"Invalid bitrate, must be less than {self._MAX_CAN_BAUD}")
 
     def set_auto_retransmit(self, retrans_flag):
         """
@@ -212,8 +210,7 @@ class robotellBus(BusABC):
         newmsg = self._readmessage(not self._loopback_test, True, 1)
         if newmsg is None:
             logger.warning(
-                "Timeout waiting for response when writing config value %d",
-                configid
+                "Timeout waiting for response when writing config value %d", configid
             )
 
     def _readmessage(self, flushold, cfgchannel, timeout):
@@ -271,7 +268,7 @@ class robotellBus(BusABC):
                 else:
                     logger.warning(
                         "Invalid message structure length %d, ignoring message",
-                        len(newmsg)
+                        len(newmsg),
                     )
 
             # Check if we have a message in the desired queue - if so copy and return
