@@ -2,15 +2,18 @@
 Enable basic CAN over a PCAN USB device.
 """
 
+from .basic import *  # Do this first since the wildcard imports a lot
+
 import logging
 import time
 from datetime import datetime
 
 from typing import Optional
-from can import CanError, Message, BusABC
-from can.bus import BusState
-from can.util import len2dlc, dlc2len
-from .basic import *
+
+from ...message import Message
+from ...bus import BusABC, BusState
+from ...util import len2dlc, dlc2len
+from ...exceptions import CanError, CanOperationError, CanInitializationError
 
 
 # Set up logging
@@ -251,7 +254,7 @@ class PcanBus(BusABC):
         ioport = 0x02A0
         interrupt = 11
 
-        if type(channel) != int:
+        if not isinstance(channel, int):
             channel = pcan_channel_names[channel]
 
         self.m_objPCANBasic = PCANBasic()
@@ -260,7 +263,7 @@ class PcanBus(BusABC):
         if state is BusState.ACTIVE or state is BusState.PASSIVE:
             self.state = state
         else:
-            raise ArgumentError("BusState must be Active or Passive")
+            raise ValueError("BusState must be Active or Passive")
 
         if self.fd:
             f_clock_val = kwargs.get("f_clock", None)
@@ -286,7 +289,7 @@ class PcanBus(BusABC):
             )
 
         if result != PCAN_ERROR_OK:
-            raise PcanError(self._get_formatted_error(result))
+            raise PcanCanInitializationError(self._get_formatted_error(result))
 
         result = self.m_objPCANBasic.SetValue(
             self.m_PcanHandle, PCAN_ALLOW_ERROR_FRAMES, PCAN_PARAMETER_ON
@@ -294,7 +297,7 @@ class PcanBus(BusABC):
 
         if result != PCAN_ERROR_OK:
             if platform.system() != "Darwin":
-                raise PcanError(self._get_formatted_error(result))
+                raise PcanCanInitializationError(self._get_formatted_error(result))
             else:
                 # TODO Remove Filter when MACCan actually supports it:
                 #  https://github.com/mac-can/PCBUSB-Library/
@@ -308,7 +311,7 @@ class PcanBus(BusABC):
                 self.m_PcanHandle, PCAN_RECEIVE_EVENT, self._recv_event
             )
             if result != PCAN_ERROR_OK:
-                raise PcanError(self._get_formatted_error(result))
+                raise PcanCanInitializationError(self._get_formatted_error(result))
 
         super().__init__(channel=channel, state=state, bitrate=bitrate, *args, **kwargs)
 
@@ -407,7 +410,7 @@ class PcanBus(BusABC):
                 )
                 != PCAN_ERROR_OK
             ):
-                raise ValueError
+                raise ValueError()
         except ValueError:
             log.error("Invalid value '%s' for device number.", device_number)
             return False
@@ -445,7 +448,7 @@ class PcanBus(BusABC):
                 log.warning(self._get_formatted_error(result[0]))
                 return None, False
             elif result[0] != PCAN_ERROR_OK:
-                raise PcanError(self._get_formatted_error(result[0]))
+                raise PcanCanOperationError(self._get_formatted_error(result[0]))
 
         theMsg = result[1]
         itsTimeStamp = result[2]
@@ -554,7 +557,7 @@ class PcanBus(BusABC):
             result = self.m_objPCANBasic.Write(self.m_PcanHandle, CANMsg)
 
         if result != PCAN_ERROR_OK:
-            raise PcanError("Failed to send: " + self._get_formatted_error(result))
+            raise PcanCanOperationError("Failed to send: " + self._get_formatted_error(result))
 
     def flash(self, flash):
         """
@@ -655,6 +658,12 @@ class PcanBus(BusABC):
 
 
 class PcanError(CanError):
-    """
-    A generic error on a PCAN bus.
-    """
+    """A generic error on a PCAN bus."""
+
+
+class PcanCanOperationError(CanOperationError, PcanError):
+    """Like :class:`can.exceptions.CanOperationError`, but specific to Pcan."""
+
+
+class PcanCanInitializationError(CanInitializationError, PcanError):
+    """Like :class:`can.exceptions.CanInitializationError`, but specific to Pcan."""

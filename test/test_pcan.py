@@ -42,9 +42,8 @@ class TestPCANBus(unittest.TestCase):
         self.mock_pcan.InitializeFD.assert_not_called()
 
     def test_bus_creation_state_error(self) -> None:
-        with self.assertRaises(ctypes.ArgumentError):
-            self.bus = can.Bus(bustype="pcan", state=BusState.ERROR)
-            self.assertIsInstance(self.bus, PcanBus)
+        with self.assertRaises(ValueError):
+            can.Bus(bustype="pcan", state=BusState.ERROR)
 
     def test_bus_creation_fd(self) -> None:
         self.bus = can.Bus(bustype="pcan", fd=True)
@@ -66,18 +65,18 @@ class TestPCANBus(unittest.TestCase):
         ]
     )
     def test_get_formatted_error(self, name, status1, status2, expected_result: str):
+        with self.subTest(name):
+            self.bus = can.Bus(bustype="pcan")
+            self.mock_pcan.GetErrorText = Mock(
+                side_effect=[
+                    (status1, expected_result.encode("utf-8", errors="replace")),
+                    (status2, expected_result.encode("utf-8", errors="replace")),
+                ]
+            )
 
-        self.bus = can.Bus(bustype="pcan")
-        self.mock_pcan.GetErrorText = Mock(
-            side_effect=[
-                (status1, expected_result.encode("utf-8", errors="replace")),
-                (status2, expected_result.encode("utf-8", errors="replace")),
-            ]
-        )
+            complete_text = self.bus._get_formatted_error(PCAN_ERROR_BUSHEAVY)
 
-        complete_text = self.bus._get_formatted_error(PCAN_ERROR_BUSHEAVY)
-
-        self.assertEqual(complete_text, expected_result)
+            self.assertEqual(complete_text, expected_result)
 
     def test_status(self) -> None:
         self.bus = can.Bus(bustype="pcan")
@@ -88,43 +87,47 @@ class TestPCANBus(unittest.TestCase):
         [("no_error", PCAN_ERROR_OK, True), ("error", PCAN_ERROR_UNKNOWN, False)]
     )
     def test_status_is_ok(self, name, status, expected_result) -> None:
-        self.mock_pcan.GetStatus = Mock(return_value=status)
-        self.bus = can.Bus(bustype="pcan")
-        self.assertEqual(self.bus.status_is_ok(), expected_result)
-        self.mock_pcan.GetStatus.assert_called_once_with(PCAN_USBBUS1)
+        with self.subTest(name):
+            self.mock_pcan.GetStatus = Mock(return_value=status)
+            self.bus = can.Bus(bustype="pcan")
+            self.assertEqual(self.bus.status_is_ok(), expected_result)
+            self.mock_pcan.GetStatus.assert_called_once_with(PCAN_USBBUS1)
 
     @parameterized.expand(
         [("no_error", PCAN_ERROR_OK, True), ("error", PCAN_ERROR_UNKNOWN, False)]
     )
     def test_reset(self, name, status, expected_result) -> None:
-        self.mock_pcan.Reset = Mock(return_value=status)
-        self.bus = can.Bus(bustype="pcan", fd=True)
-        self.assertEqual(self.bus.reset(), expected_result)
-        self.mock_pcan.Reset.assert_called_once_with(PCAN_USBBUS1)
+        with self.subTest(name):
+            self.mock_pcan.Reset = Mock(return_value=status)
+            self.bus = can.Bus(bustype="pcan", fd=True)
+            self.assertEqual(self.bus.reset(), expected_result)
+            self.mock_pcan.Reset.assert_called_once_with(PCAN_USBBUS1)
 
     @parameterized.expand(
         [("no_error", PCAN_ERROR_OK, 1), ("error", PCAN_ERROR_UNKNOWN, None)]
     )
     def test_get_device_number(self, name, status, expected_result) -> None:
-        self.mock_pcan.GetValue = Mock(return_value=(status, 1))
-        self.bus = can.Bus(bustype="pcan", fd=True)
-        self.assertEqual(self.bus.get_device_number(), expected_result)
-        self.mock_pcan.GetValue.assert_called_once_with(
-            PCAN_USBBUS1, PCAN_DEVICE_NUMBER
-        )
+        with self.subTest(name):
+            self.mock_pcan.GetValue = Mock(return_value=(status, 1))
+            self.bus = can.Bus(bustype="pcan", fd=True)
+            self.assertEqual(self.bus.get_device_number(), expected_result)
+            self.mock_pcan.GetValue.assert_called_once_with(
+                PCAN_USBBUS1, PCAN_DEVICE_NUMBER
+            )
 
     @parameterized.expand(
         [("no_error", PCAN_ERROR_OK, True), ("error", PCAN_ERROR_UNKNOWN, False)]
     )
     def test_set_device_number(self, name, status, expected_result) -> None:
-        self.bus = can.Bus(bustype="pcan")
-        self.mock_pcan.SetValue = Mock(return_value=status)
-        self.assertEqual(self.bus.set_device_number(3), expected_result)
-        # check last SetValue call
-        self.assertEqual(
-            self.mock_pcan.SetValue.call_args_list[-1][0],
-            (PCAN_USBBUS1, PCAN_DEVICE_NUMBER, 3),
-        )
+        with self.subTest(name):
+            self.bus = can.Bus(bustype="pcan")
+            self.mock_pcan.SetValue = Mock(return_value=status)
+            self.assertEqual(self.bus.set_device_number(3), expected_result)
+            # check last SetValue call
+            self.assertEqual(
+                self.mock_pcan.SetValue.call_args_list[-1][0],
+                (PCAN_USBBUS1, PCAN_DEVICE_NUMBER, 3),
+            )
 
     def test_recv(self):
         data = (ctypes.c_ubyte * 8)(*[x for x in range(8)])
@@ -219,32 +222,33 @@ class TestPCANBus(unittest.TestCase):
         ]
     )
     def test_send_type(self, name, msg_type, expected_value) -> None:
-        (
-            is_extended_id,
-            is_remote_frame,
-            is_error_frame,
-            is_fd,
-            bitrate_switch,
-            error_state_indicator,
-        ) = msg_type
+        with self.subTest(name):
+            (
+                is_extended_id,
+                is_remote_frame,
+                is_error_frame,
+                is_fd,
+                bitrate_switch,
+                error_state_indicator,
+            ) = msg_type
 
-        self.mock_pcan.Write = Mock(return_value=PCAN_ERROR_OK)
+            self.mock_pcan.Write = Mock(return_value=PCAN_ERROR_OK)
 
-        self.bus = can.Bus(bustype="pcan")
-        msg = can.Message(
-            arbitration_id=0xC0FFEF,
-            data=[1, 2, 3, 4, 5, 6, 7, 8],
-            is_extended_id=is_extended_id,
-            is_remote_frame=is_remote_frame,
-            is_error_frame=is_error_frame,
-            bitrate_switch=bitrate_switch,
-            error_state_indicator=error_state_indicator,
-            is_fd=is_fd,
-        )
-        self.bus.send(msg)
-        # self.mock_m_objPCANBasic.Write.assert_called_once()
-        CANMsg = self.mock_pcan.Write.call_args_list[0][0][1]
-        self.assertEqual(CANMsg.MSGTYPE, expected_value.value)
+            self.bus = can.Bus(bustype="pcan")
+            msg = can.Message(
+                arbitration_id=0xC0FFEF,
+                data=[1, 2, 3, 4, 5, 6, 7, 8],
+                is_extended_id=is_extended_id,
+                is_remote_frame=is_remote_frame,
+                is_error_frame=is_error_frame,
+                bitrate_switch=bitrate_switch,
+                error_state_indicator=error_state_indicator,
+                is_fd=is_fd,
+            )
+            self.bus.send(msg)
+            # self.mock_m_objPCANBasic.Write.assert_called_once()
+            CANMsg = self.mock_pcan.Write.call_args_list[0][0][1]
+            self.assertEqual(CANMsg.MSGTYPE, expected_value.value)
 
     def test_send_error(self) -> None:
         self.mock_pcan.Write = Mock(return_value=PCAN_ERROR_BUSHEAVY)
@@ -258,13 +262,14 @@ class TestPCANBus(unittest.TestCase):
 
     @parameterized.expand([("on", True), ("off", False)])
     def test_flash(self, name, flash) -> None:
-        self.bus = can.Bus(bustype="pcan")
-        self.bus.flash(flash)
-        call_list = self.mock_pcan.SetValue.call_args_list
-        last_call_args_list = call_list[-1][0]
-        self.assertEqual(
-            last_call_args_list, (PCAN_USBBUS1, PCAN_CHANNEL_IDENTIFYING, flash)
-        )
+        with self.subTest(name):
+            self.bus = can.Bus(bustype="pcan")
+            self.bus.flash(flash)
+            call_list = self.mock_pcan.SetValue.call_args_list
+            last_call_args_list = call_list[-1][0]
+            self.assertEqual(
+                last_call_args_list, (PCAN_USBBUS1, PCAN_CHANNEL_IDENTIFYING, flash)
+            )
 
     def test_shutdown(self) -> None:
         self.bus = can.Bus(bustype="pcan")
@@ -278,14 +283,15 @@ class TestPCANBus(unittest.TestCase):
         ]
     )
     def test_state(self, name, bus_state: BusState, expected_parameter) -> None:
-        self.bus = can.Bus(bustype="pcan")
+        with self.subTest(name):
+            self.bus = can.Bus(bustype="pcan")
 
-        self.bus.state = bus_state
-        call_list = self.mock_pcan.SetValue.call_args_list
-        last_call_args_list = call_list[-1][0]
-        self.assertEqual(
-            last_call_args_list, (PCAN_USBBUS1, PCAN_LISTEN_ONLY, expected_parameter)
-        )
+            self.bus.state = bus_state
+            call_list = self.mock_pcan.SetValue.call_args_list
+            last_call_args_list = call_list[-1][0]
+            self.assertEqual(
+                last_call_args_list, (PCAN_USBBUS1, PCAN_LISTEN_ONLY, expected_parameter)
+            )
 
     def test_detect_available_configs(self) -> None:
         self.mock_pcan.GetValue = Mock(
@@ -296,10 +302,11 @@ class TestPCANBus(unittest.TestCase):
 
     @parameterized.expand([("valid", PCAN_ERROR_OK, "OK"), ("invalid", 0x00005, None)])
     def test_status_string(self, name, status, expected_result) -> None:
-        self.bus = can.Bus(bustype="pcan")
-        self.mock_pcan.GetStatus = Mock(return_value=status)
-        self.assertEqual(self.bus.status_string(), expected_result)
-        self.mock_pcan.GetStatus.assert_called()
+        with self.subTest(name):
+            self.bus = can.Bus(bustype="pcan")
+            self.mock_pcan.GetStatus = Mock(return_value=status)
+            self.assertEqual(self.bus.status_string(), expected_result)
+            self.mock_pcan.GetStatus.assert_called()
 
 
 if __name__ == "__main__":

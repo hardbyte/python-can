@@ -8,17 +8,12 @@
 #
 #  ------------------------------------------------------------------
 #  Author : Keneth Wagner
-#  Last change: 14.01.2021 Wagner
-#
-#  Language: Python 2.7, 3.7
 #  ------------------------------------------------------------------
 #
 #  Copyright (C) 1999-2021  PEAK-System Technik GmbH, Darmstadt
 #  more Info at http://www.peak-system.com
-#
 
 # Module Imports
-#
 from ctypes import *
 from ctypes.util import find_library
 from string import *
@@ -601,8 +596,7 @@ class PCANBasic:
         Interrupt=c_ushort(0),
     ):
 
-        """
-          Initializes a PCAN Channel
+        """Initializes a PCAN Channel
 
         Parameters:
           Channel  : A TPCANHandle representing a PCAN Channel
@@ -627,8 +621,7 @@ class PCANBasic:
     #
     def InitializeFD(self, Channel, BitrateFD):
 
-        """
-          Initializes a FD capable PCAN Channel
+        """Initializes a FD capable PCAN Channel
 
         Parameters:
           Channel  : The handle of a FD capable PCAN Channel
@@ -659,8 +652,7 @@ class PCANBasic:
     #
     def Uninitialize(self, Channel):
 
-        """
-          Uninitializes one or all PCAN Channels initialized by CAN_Initialize
+        """Uninitializes one or all PCAN Channels initialized by CAN_Initialize
 
         Remarks:
           Giving the TPCANHandle value "PCAN_NONEBUS", uninitialize all initialized channels
@@ -682,8 +674,7 @@ class PCANBasic:
     #
     def Reset(self, Channel):
 
-        """
-          Resets the receive and transmit queues of the PCAN Channel
+        """Resets the receive and transmit queues of the PCAN Channel
 
         Remarks:
           A reset of the CAN controller is not performed
@@ -705,8 +696,7 @@ class PCANBasic:
     #
     def GetStatus(self, Channel):
 
-        """
-          Gets the current status of a PCAN Channel
+        """Gets the current status of a PCAN Channel
 
         Parameters:
           Channel  : A TPCANHandle representing a PCAN Channel
@@ -725,8 +715,7 @@ class PCANBasic:
     #
     def Read(self, Channel):
 
-        """
-          Reads a CAN message from the receive queue of a PCAN Channel
+        """Reads a CAN message from the receive queue of a PCAN Channel
 
         Remarks:
           The return value of this method is a 3-touple, where
@@ -740,7 +729,7 @@ class PCANBasic:
           Channel  : A TPCANHandle representing a PCAN Channel
 
         Returns:
-          A touple with three values
+          A tuple with three values
         """
         try:
             msg = TPCANMsg()
@@ -755,8 +744,7 @@ class PCANBasic:
     #
     def ReadFD(self, Channel):
 
-        """
-          Reads a CAN message from the receive queue of a FD capable PCAN Channel
+        """Reads a CAN message from the receive queue of a FD capable PCAN Channel
 
         Remarks:
           The return value of this method is a 3-touple, where
@@ -770,7 +758,7 @@ class PCANBasic:
           Channel  : The handle of a FD capable PCAN Channel
 
         Returns:
-          A touple with three values
+          A tuple with three values
         """
         try:
             msg = TPCANMsgFD()
@@ -785,8 +773,7 @@ class PCANBasic:
     #
     def Write(self, Channel, MessageBuffer):
 
-        """
-          Transmits a CAN message
+        """Transmits a CAN message
 
         Parameters:
           Channel      : A TPCANHandle representing a PCAN Channel
@@ -806,8 +793,7 @@ class PCANBasic:
     #
     def WriteFD(self, Channel, MessageBuffer):
 
-        """
-          Transmits a CAN message over a FD capable PCAN Channel
+        """Transmits a CAN message over a FD capable PCAN Channel
 
         Parameters:
           Channel      : The handle of a FD capable PCAN Channel
@@ -827,8 +813,7 @@ class PCANBasic:
     #
     def FilterMessages(self, Channel, FromID, ToID, Mode):
 
-        """
-          Configures the reception filter
+        """Configures the reception filter
 
         Remarks:
           The message filter will be expanded with every call to this function.
@@ -855,8 +840,7 @@ class PCANBasic:
     #
     def GetValue(self, Channel, Parameter):
 
-        """
-          Retrieves a PCAN Channel value
+        """Retrieves a PCAN Channel value
 
         Remarks:
           Parameters can be present or not according with the kind
@@ -872,7 +856,7 @@ class PCANBasic:
           Parameter : The TPCANParameter parameter to get
 
         Returns:
-          A touple with 2 values
+          A tuple with 2 values
         """
         try:
             if (
@@ -912,9 +896,8 @@ class PCANBasic:
     #
     def SetValue(self, Channel, Parameter, Buffer):
 
-        """
-          Returns a descriptive text of a given TPCANStatus error
-          code, in any desired language
+        """Returns a descriptive text of a given TPCANStatus error
+        code, in any desired language
 
         Remarks:
           Parameters can be present or not according with the kind
@@ -951,8 +934,7 @@ class PCANBasic:
 
     def GetErrorText(self, Error, Language=0):
 
-        """
-          Configures or sets a PCAN Channel value
+        """Configures or sets a PCAN Channel value
 
         Remarks:
 
@@ -969,7 +951,7 @@ class PCANBasic:
           Language : Indicates a 'Primary language ID' (Default is Neutral(0))
 
         Returns:
-          A touple with 2 values
+          A tuple with 2 values
         """
         try:
             mybuffer = create_string_buffer(256)
@@ -981,8 +963,7 @@ class PCANBasic:
 
     def LookUpChannel(self, Parameters):
 
-        """
-            Finds a PCAN-Basic channel that matches with the given parameters
+        """Finds a PCAN-Basic channel that matches with the given parameters
 
         Remarks:
 
@@ -995,7 +976,7 @@ class PCANBasic:
                            to be matched within a PCAN-Basic channel
 
         Returns:
-          A touple with 2 values
+          A tuple with 2 values
         """
         try:
             mybuffer = TPCANHandle(0)
