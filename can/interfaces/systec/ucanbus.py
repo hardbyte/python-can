@@ -2,6 +2,7 @@ import logging
 from threading import Event
 
 from can import BusABC, BusState, Message
+from ...exceptions import CanError, CanInitializationError
 
 from .constants import *
 from .structures import *
@@ -91,8 +92,12 @@ class UcanBus(BusABC):
         """
         try:
             self._ucan = Ucan()
-        except Exception:
-            raise ImportError("The SYSTEC ucan library has not been initialized.")
+        except CanError as error:
+            raise error
+        except Exception as exception:
+            raise CanInitializationError(
+                "The SYSTEC ucan library has not been initialized."
+            ) from exception
 
         self.channel = int(channel)
         device_number = int(kwargs.get("device_number", ANY_MODULE))
