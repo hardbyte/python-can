@@ -27,8 +27,10 @@ class CantactBus(BusABC):
     def _detect_available_configs():
         try:
             interface = cantact.Interface()
-        except (NameError, SystemError):
-            logger.debug("Could not import cantact, so no configurations are available")
+        except (NameError, SystemError, AttributeError):
+            logger.debug(
+                "Could not import or instantiate cantact, so no configurations are available"
+            )
             return []
 
         channels = []
