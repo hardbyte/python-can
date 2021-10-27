@@ -59,7 +59,7 @@ class slcanBus(BusABC):
         btr: Optional[str] = None,
         sleep_after_open: float = _SLEEP_AFTER_SERIAL_OPEN,
         rtscts: bool = False,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """
         :raise ValueError: if both *bitrate* and *btr* are set
