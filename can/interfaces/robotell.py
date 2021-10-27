@@ -6,6 +6,7 @@ import time
 import logging
 
 from can import BusABC, Message
+from ..exceptions import CanInterfaceNotImplementedError
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +66,8 @@ class robotellBus(BusABC):
         :param bool rtscts:
             turn hardware handshake (RTS/CTS) on and off
         """
+        if serial is None:
+            raise CanInterfaceNotImplementedError("The serial module is not installed")
 
         if not channel:  # if None or empty
             raise TypeError("Must specify a serial port.")
@@ -74,7 +77,7 @@ class robotellBus(BusABC):
             channel, baudrate=ttyBaudrate, rtscts=rtscts
         )
 
-        ## Disable flushing queued config ACKs on lookup channel (for unit tests)
+        # Disable flushing queued config ACKs on lookup channel (for unit tests)
         self._loopback_test = channel == "loop://"
 
         self._rxbuffer = bytearray()  # raw bytes from the serial port
@@ -104,7 +107,7 @@ class robotellBus(BusABC):
             self._writeconfig(self._CAN_BAUD_ID, bitrate)
         else:
             raise ValueError(
-                "Invalid bitrate, must be less than " + str(self._MAX_CAN_BAUD)
+                f"Invalid bitrate, must be less than {self._MAX_CAN_BAUD}"
             )
 
     def set_auto_retransmit(self, retrans_flag):
@@ -119,8 +122,8 @@ class robotellBus(BusABC):
         :param bool auto_man:
             Enable/disable automatic bus management
         """
-        ## Not sure what "automatic bus managemenet" does. Does not seem to control
-        ## automatic ACK of CAN frames (listen only mode)
+        # Not sure what "automatic bus management" does. Does not seem to control
+        # automatic ACK of CAN frames (listen only mode)
         self._writeconfig(self._CAN_ABOM_ID, 1 if auto_man else 0)
 
     def set_serial_rate(self, serial_bps):
@@ -161,7 +164,7 @@ class robotellBus(BusABC):
             return 4
         if configid == self._CAN_READ_SERIAL1 or configid <= self._CAN_READ_SERIAL2:
             return 8
-        if configid >= self._CAN_FILTER_BASE_ID and configid <= self._CAN_FILTER_MAX_ID:
+        if self._CAN_FILTER_BASE_ID <= configid <= self._CAN_FILTER_MAX_ID:
             return 8
         return 0
 
@@ -178,9 +181,7 @@ class robotellBus(BusABC):
         newmsg = self._readmessage(not self._loopback_test, True, timeout)
         if newmsg is None:
             logger.warning(
-                "Timeout waiting for response when reading config value {:04X}.".format(
-                    configid
-                )
+                f"Timeout waiting for response when reading config value {configid:04X}."
             )
             return None
         return newmsg[4:12]
@@ -211,8 +212,8 @@ class robotellBus(BusABC):
         newmsg = self._readmessage(not self._loopback_test, True, 1)
         if newmsg is None:
             logger.warning(
-                "Timeout waiting for response when writing config value "
-                + str(configid)
+                "Timeout waiting for response when writing config value %d",
+                configid
             )
 
     def _readmessage(self, flushold, cfgchannel, timeout):
@@ -261,7 +262,7 @@ class robotellBus(BusABC):
                         cs = (cs + newmsg[idx]) & 0xFF
                     if newmsg[16] == cs:
                         # OK, valid message - place it in the correct queue
-                        if newmsg[13] == 0xFF:  ## Check for config channel
+                        if newmsg[13] == 0xFF:  # Check for config channel
                             self._configmsg.append(newmsg)
                         else:
                             self._rxmsg.append(newmsg)
@@ -269,9 +270,8 @@ class robotellBus(BusABC):
                         logger.warning("Incorrect message checksum, discarded message")
                 else:
                     logger.warning(
-                        "Invalid message structure length "
-                        + str(len(newmsg))
-                        + ", ignoring message"
+                        "Invalid message structure length %d, ignoring message",
+                        len(newmsg)
                     )
 
             # Check if we have a message in the desired queue - if so copy and return
