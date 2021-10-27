@@ -3,13 +3,15 @@ Interface for slcan compatible interfaces (win32/linux).
 """
 
 from typing import Any, Optional, Tuple
-from can import typechecking
 
 import io
 import time
 import logging
 
 from can import BusABC, Message
+from ..exceptions import CanInterfaceNotImplementedError, CanOperationError
+from can import typechecking
+
 
 logger = logging.getLogger(__name__)
 
@@ -62,11 +64,11 @@ class slcanBus(BusABC):
         """
         :raise ValueError: if both *bitrate* and *btr* are set
 
-        :param channel:
-            port of underlying serial or usb device (e.g. /dev/ttyUSB0, COM8, ...)
-            Must not be empty.
-        :param ttyBaudrate:
-            baudrate of underlying serial or usb device
+        :param str channel:
+            port of underlying serial or usb device (e.g. ``/dev/ttyUSB0``, ``COM8``, ...)
+            Must not be empty. Can also end with ``@115200`` (or similarly) to specify the baudrate.
+        :param int ttyBaudrate:
+            baudrate of underlying serial or usb device (Ignored if set via the ``channel`` parameter)
         :param bitrate:
             Bitrate in bit/s
         :param btr:
@@ -78,6 +80,8 @@ class slcanBus(BusABC):
         :param rtscts:
             turn hardware handshake (RTS/CTS) on and off
         """
+        if serial is None:
+            raise CanInterfaceNotImplementedError("The serial module is not installed")
 
         if not channel:  # if None or empty
             raise TypeError("Must specify a serial port.")
@@ -115,11 +119,8 @@ class slcanBus(BusABC):
         if bitrate in self._BITRATES:
             self._write(self._BITRATES[bitrate])
         else:
-            raise ValueError(
-                "Invalid bitrate, choose one of "
-                + (", ".join(str(k) for k in self._BITRATES.keys()))
-                + "."
-            )
+            bitrates = ", ".join(str(k) for k in self._BITRATES.keys())
+            raise ValueError(f"Invalid bitrate, choose one of {bitrates}.")
         self.open()
 
     def set_bitrate_reg(self, btr: str) -> None:
@@ -215,6 +216,7 @@ class slcanBus(BusABC):
             dlc = int(string[9])
             extended = True
             remote = True
+
         if canId is not None:
             msg = Message(
                 arbitration_id=canId,
@@ -254,6 +256,8 @@ class slcanBus(BusABC):
             raise NotImplementedError(
                 "fileno is not implemented using current CAN bus on this platform"
             )
+        except Exception as exception:
+            raise CanOperationError("Cannot fetch fileno") from exception
 
     def get_version(
         self, timeout: Optional[float]
@@ -299,10 +303,10 @@ class slcanBus(BusABC):
         """Get serial number of the slcan interface.
 
         :param timeout:
-            seconds to wait for serial number or None to wait indefinitely
+            seconds to wait for serial number or ``None`` to wait indefinitely
 
         :return:
-            None on timeout or a str object.
+            ``None`` on timeout or a :class:`~builtin.str` object.
         """
         cmd = "N"
         self._write(cmd)
