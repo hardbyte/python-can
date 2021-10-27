@@ -83,9 +83,7 @@ setup(
     # see https://www.python.org/dev/peps/pep-0345/#version-specifiers
     python_requires=">=3.6",
     install_requires=[
-        # Note setuptools provides pkg_resources which python-can makes use of,
-        # but we assume it is already installed.
-        # "setuptools",
+        "setuptools",
         "wrapt~=1.10",
         'windows-curses;platform_system=="Windows" and platform_python_implementation=="CPython"',
         "typing_extensions>=3.10.0.0",
