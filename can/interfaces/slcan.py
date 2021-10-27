@@ -1,10 +1,5 @@
 """
 Interface for slcan compatible interfaces (win32/linux).
-
-.. note::
-
-    Linux users can use slcand or socketcan as well.
-
 """
 
 from typing import Any, Optional, Tuple
