@@ -35,7 +35,7 @@ class UcanError(UcanException):
         ReturnCode.ERR_HWINUSE: "the specified module is already in use",
         ReturnCode.ERR_ILLVERSION: "the software versions of the module and library are incompatible",
         ReturnCode.ERR_ILLHW: "the module with the specified device number is not connected "
-                              "(or used by an other application)",
+        "(or used by an other application)",
         ReturnCode.ERR_ILLHANDLE: "wrong USB-CAN-Handle handed over to the function",
         ReturnCode.ERR_ILLPARAM: "wrong parameter handed over to the function",
         ReturnCode.ERR_BUSY: "instruction can not be processed at this time",
