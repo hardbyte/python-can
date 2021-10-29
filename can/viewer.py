@@ -53,11 +53,14 @@ class CanViewer:
         self.bus = bus
         self.data_structs = data_structs
 
-        # Initialise the ID dictionary, start timestamp, scroll and variable for pausing the viewer
+        # Initialise the ID dictionary, Previous values dict, start timestamp,
+        # scroll and variables for pausing the viewer and enabling byte highlighting
         self.ids = {}
         self.start_time = None
         self.scroll = 0
         self.paused = False
+        self.highlight_changed_bytes = False
+        self.previous_values = {}
 
         # Get the window dimensions - used for resizing the window
         self.y, self.x = self.stdscr.getmaxyx()
@@ -70,6 +73,8 @@ class CanViewer:
 
         # Used to color error frames red
         curses.init_pair(1, curses.COLOR_RED, -1)
+        # Used to color changed bytes
+        curses.init_pair(2, curses.COLOR_CYAN, curses.COLOR_BLUE)
 
         if not testing:  # pragma: no cover
             self.run()
@@ -101,6 +106,11 @@ class CanViewer:
                 self.ids = {}
                 self.start_time = None
                 self.scroll = 0
+                self.draw_header()
+
+            # Toggle byte change highlighting pressing 'h'
+            elif key == ord('h'):
+                self.highlight_changed_bytes = not self.highlight_changed_bytes
                 self.draw_header()
 
             # Sort by pressing 's'
@@ -241,14 +251,35 @@ class CanViewer:
         )
         self.draw_line(self.ids[key]["row"], 35, arbitration_id_string, color)
         self.draw_line(self.ids[key]["row"], 47, str(msg.dlc), color)
+
+        try:
+            previous_byte_values = self.previous_values[key]
+        except KeyError:  # no row of previous values exists for the current message ID
+            # initialise a row to store the values for comparison next time
+            self.previous_values[key] = dict()
+            previous_byte_values = self.previous_values[key]
         for i, b in enumerate(msg.data):
             col = 52 + i * 3
             if col > self.x - 2:
                 # Data does not fit
                 self.draw_line(self.ids[key]["row"], col - 4, "...", color)
                 break
+            if self.highlight_changed_bytes:
+                try:
+                    if b != previous_byte_values[i]:
+                        data_color = curses.color_pair(2)  # set colour to highlight a changed value
+                    else:
+                        data_color = color
+                except KeyError:
+                    # previous entry for byte didnt exist - default to rest of line colour
+                    data_color = color
+                finally:
+                    # write the new value to the previous values dict for next time
+                    previous_byte_values[i] = b
+            else:
+                data_color = color
             text = "{:02X}".format(b)
-            self.draw_line(self.ids[key]["row"], col, text, color)
+            self.draw_line(self.ids[key]["row"], col, text, data_color)
 
         if self.data_structs:
             try:
@@ -286,6 +317,8 @@ class CanViewer:
         self.draw_line(0, 35, "ID", curses.A_BOLD)
         self.draw_line(0, 47, "DLC", curses.A_BOLD)
         self.draw_line(0, 52, "Data", curses.A_BOLD)
+        if self.highlight_changed_bytes:  # indicate that byte change highlighting is enabled
+            self.draw_line(0, 57, '(changed)', curses.color_pair(2))
         if self.data_structs:  # Only draw if the dictionary is not empty
             self.draw_line(0, 77, "Parsed values", curses.A_BOLD)
 
@@ -353,6 +386,7 @@ def parse_args(args):
         "\n        | ESQ/q   | Exit the viewer         |"
         "\n        | c       | Clear the stored frames |"
         "\n        | s       | Sort the stored frames  |"
+        '\n        | h       | Toggle byte highlights  |'
         "\n        | SPACE   | Pause the viewer        |"
         "\n        | UP/DOWN | Scroll the viewer       |"
         "\n        +---------+-------------------------+",
