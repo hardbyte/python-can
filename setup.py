@@ -28,6 +28,7 @@ extras_require = {
     "seeedstudio": ["pyserial>=3.0"],
     "serial": ["pyserial~=3.0"],
     "neovi": ["filelock", "python-ics>=2.12"],
+    "canalystii": ["canalystii>=0.1.0"],
     "cantact": ["cantact>=0.0.7"],
     "gs_usb": ["gs_usb>=0.2.1"],
     "nixnet": ["nixnet>=0.3.1"],
