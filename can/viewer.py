@@ -318,9 +318,12 @@ class CanViewer:
         self.draw_line(0, 35, "ID", curses.A_BOLD)
         self.draw_line(0, 47, "DLC", curses.A_BOLD)
         self.draw_line(0, 52, "Data", curses.A_BOLD)
-        if self.highlight_changed_bytes:  # Indicate that byte change highlighting is enabled
+
+        # Indicate that byte change highlighting is enabled
+        if self.highlight_changed_bytes:
             self.draw_line(0, 57, "(changed)", curses.color_pair(2))
-        if self.data_structs:  # Only draw if the dictionary is not empty
+        # Only draw if the dictionary is not empty
+        if self.data_structs:
             self.draw_line(0, 77, "Parsed values", curses.A_BOLD)
 
     def redraw_screen(self):
