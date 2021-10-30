@@ -498,6 +498,14 @@ def parse_args(args):
         default=2,
     )
 
+    # suppressed as the user doesn't need to change it
+    optional.add_argument(
+        "--app_name",
+        dest="app_name",
+        help=argparse.SUPPRESS,
+        default="python-can-viewer",
+    )
+
     # Print help message when no arguments are given
     if not args:
         parser.print_help(sys.stderr)
