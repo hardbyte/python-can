@@ -109,7 +109,7 @@ class CanViewer:
                 self.draw_header()
 
             # Toggle byte change highlighting pressing 'h'
-            elif key == ord('h'):
+            elif key == ord("h"):
                 self.highlight_changed_bytes = not self.highlight_changed_bytes
                 self.draw_header()
 
@@ -267,7 +267,8 @@ class CanViewer:
             if self.highlight_changed_bytes:
                 try:
                     if b != previous_byte_values[i]:
-                        data_color = curses.color_pair(2)  # set colour to highlight a changed value
+                        # set colour to highlight a changed value
+                        data_color = curses.color_pair(2)
                     else:
                         data_color = color
                 except KeyError:
@@ -317,8 +318,8 @@ class CanViewer:
         self.draw_line(0, 35, "ID", curses.A_BOLD)
         self.draw_line(0, 47, "DLC", curses.A_BOLD)
         self.draw_line(0, 52, "Data", curses.A_BOLD)
-        if self.highlight_changed_bytes:  # indicate that byte change highlighting is enabled
-            self.draw_line(0, 57, '(changed)', curses.color_pair(2))
+        if self.highlight_changed_bytes:  # Indicate that byte change highlighting is enabled
+            self.draw_line(0, 57, "(changed)", curses.color_pair(2))
         if self.data_structs:  # Only draw if the dictionary is not empty
             self.draw_line(0, 77, "Parsed values", curses.A_BOLD)
 
@@ -386,7 +387,7 @@ def parse_args(args):
         "\n        | ESQ/q   | Exit the viewer         |"
         "\n        | c       | Clear the stored frames |"
         "\n        | s       | Sort the stored frames  |"
-        '\n        | h       | Toggle byte highlights  |'
+        "\n        | h       | Toggle byte highlights  |"
         "\n        | SPACE   | Pause the viewer        |"
         "\n        | UP/DOWN | Scroll the viewer       |"
         "\n        +---------+-------------------------+",
