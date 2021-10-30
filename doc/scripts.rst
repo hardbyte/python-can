@@ -39,7 +39,7 @@ SPACE - Pause the viewer
 UP/DOWN - Scroll the viewer
 
 .. image:: images/viewer_changed_bytes_highlighting.png
-    :width: 100%
+    :width: 50%
 
 A byte in the data field is highlighted blue if the value is different from the last time the message was received.
 
