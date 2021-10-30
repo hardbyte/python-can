@@ -30,7 +30,8 @@ A screenshot of the application can be seen below:
 
 The first column is the number of times a frame with the particular ID that has been received, next is the timestamp of the frame relative to the first received message. The third column is the time between the current frame relative to the previous one. Next is the length of the frame, the data and then the decoded data converted according to the ``-d`` argument. The top red row indicates an error frame. 
 There are several keyboard shortcuts that can be used with the viewer script, they function as follows:
-ESCAPE - Quit the viewer script
+
+* ESCAPE - Quit the viewer script
 * q - as ESCAPE
 * c - Clear the stored frames
 * s - Sort the stored frames
