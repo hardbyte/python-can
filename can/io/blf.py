@@ -233,7 +233,8 @@ class BLFReader(BaseIOHandler):
             # print(header)
             signature, _, header_version, obj_size, obj_type = header
             if signature != b"LOBJ":
-                raise BLFParseError()
+                if signature != b"BJ \x00" and signature != b"ANoe":
+                    raise BLFParseError()
 
             # Calculate position of next object
             next_pos = pos + obj_size
