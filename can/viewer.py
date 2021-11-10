@@ -111,6 +111,9 @@ class CanViewer:
             # Toggle byte change highlighting pressing 'h'
             elif key == ord("h"):
                 self.highlight_changed_bytes = not self.highlight_changed_bytes
+                if not self.highlight_changed_bytes:
+                    # empty the previous values dict when leaving higlighting mode
+                    self.previous_values.clear()
                 self.draw_header()
 
             # Sort by pressing 's'
@@ -384,16 +387,16 @@ def parse_args(args):
         "python -m can.viewer",
         description="A simple CAN viewer terminal application written in Python",
         epilog="R|Shortcuts: "
-        "\n        +---------+-------------------------+"
-        "\n        |   Key   |       Description       |"
-        "\n        +---------+-------------------------+"
-        "\n        | ESQ/q   | Exit the viewer         |"
-        "\n        | c       | Clear the stored frames |"
-        "\n        | s       | Sort the stored frames  |"
+        "\n        +---------+-------------------------------+"
+        "\n        |   Key   |       Description             |"
+        "\n        +---------+-------------------------------+"
+        "\n        | ESQ/q   | Exit the viewer               |"
+        "\n        | c       | Clear the stored frames       |"
+        "\n        | s       | Sort the stored frames        |"
         "\n        | h       | Toggle highlight byte changes |"
-        "\n        | SPACE   | Pause the viewer        |"
-        "\n        | UP/DOWN | Scroll the viewer       |"
-        "\n        +---------+-------------------------+",
+        "\n        | SPACE   | Pause the viewer              |"
+        "\n        | UP/DOWN | Scroll the viewer             |"
+        "\n        +---------+-------------------------------+",
         formatter_class=SmartFormatter,
         add_help=False,
         allow_abbrev=False,
@@ -534,6 +537,7 @@ def parse_args(args):
     # In order to convert from raw integer value the real units are multiplied with the values and
     # similarly the values
     # are divided by the value in order to convert from real units to raw integer values.
+
     data_structs: Dict[
         Union[int, Tuple[int, ...]], Union[struct.Struct, Tuple, None]
     ] = {}
