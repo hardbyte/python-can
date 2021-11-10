@@ -390,7 +390,7 @@ def parse_args(args):
         "\n        | ESQ/q   | Exit the viewer         |"
         "\n        | c       | Clear the stored frames |"
         "\n        | s       | Sort the stored frames  |"
-        "\n        | h       | Toggle byte highlights  |"
+        "\n        | h       | Toggle highlight byte changes |"
         "\n        | SPACE   | Pause the viewer        |"
         "\n        | UP/DOWN | Scroll the viewer       |"
         "\n        +---------+-------------------------+",
