@@ -290,7 +290,7 @@ class CanViewer:
     def redraw_screen(self):
         # Trigger a complete redraw
         self.draw_header()
-        for ids, key in self.ids.items():
+        for key, ids in self.ids.items():
             self.draw_can_bus_message(ids["msg"])
 
 
