@@ -1,3 +1,4 @@
+import time
 from typing import Any, List, Optional, Tuple
 
 import can
@@ -122,8 +123,22 @@ class EtasBus(can.BusABC):
         # Common
 
         timerCapabilities = OCI_TimerCapabilities()
-        OCI_GetTimerCapabilities(self.ctrl, ctypes.byref(timerCapabilities))
+        ec = OCI_GetTimerCapabilities(self.ctrl, ctypes.byref(timerCapabilities))
+        if ec != 0x0:
+            raise can.exceptions.CanInitializationError(
+                f"OCI_GetTimerCapabilities failed with error 0x{ec:X}"
+            )
         self.tickFrequency = timerCapabilities.tickFrequency  # clock ticks per second
+
+        # all timestamps are hardware timestamps relative to powerup
+        # calculate an offset to make them relative to epoch
+        now = OCI_Time()
+        ec = OCI_GetTimerValue(self.ctrl, ctypes.byref(now))
+        if ec != 0x0:
+            raise can.exceptions.CanInitializationError(
+                f"OCI_GetTimerValue failed with error 0x{ec:X}"
+            )
+        self.timeOffset = time.time() - (float(now.value) / self.tickFrequency)
 
         self.channel_info = channel
 
@@ -163,7 +178,8 @@ class EtasBus(can.BusABC):
             if m.type == OCI_CANFDRX_MESSAGE.value:
                 msg = can.Message(
                     timestamp=float(m.data.canFDRxMessage.timeStamp)
-                    / self.tickFrequency,
+                    / self.tickFrequency
+                    + self.timeOffset,
                     arbitration_id=m.data.canFDRxMessage.frameID,
                     is_extended_id=bool(
                         m.data.canFDRxMessage.flags & OCI_CAN_MSG_FLAG_EXTENDED
@@ -187,7 +203,8 @@ class EtasBus(can.BusABC):
                 )
             elif m.type == OCI_CAN_RX_MESSAGE.value:
                 msg = can.Message(
-                    timestamp=float(m.data.rxMessage.timeStamp) / self.tickFrequency,
+                    timestamp=float(m.data.rxMessage.timeStamp) / self.tickFrequency
+                    + self.timeOffset,
                     arbitration_id=m.data.rxMessage.frameID,
                     is_extended_id=bool(
                         m.data.rxMessage.flags & OCI_CAN_MSG_FLAG_EXTENDED

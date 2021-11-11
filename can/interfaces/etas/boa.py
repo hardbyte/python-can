@@ -231,6 +231,13 @@ OCI_GetTimerCapabilities.argtypes = [
 ]
 OCI_GetTimerCapabilities.restype = OCI_ErrorCode
 
+OCI_GetTimerValue = _oci.OCI_GetTimerValue
+OCI_GetTimerValue.argtypes = [
+    OCI_ControllerHandle,
+    ctypes.POINTER(OCI_Time),
+]
+OCI_GetTimerValue.restype = OCI_ErrorCode
+
 # OCI CAN
 
 # OCI CAN - CAN-FD

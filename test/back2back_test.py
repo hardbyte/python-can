@@ -337,6 +337,11 @@ class BasicTestEtas(Back2BackTestCase):
         INTERFACE_2 = "etas"
         CHANNEL_2 = configs[2]["channel"]
 
+    def test_unique_message_instances(self):
+        self.skipTest(
+            "creating a second instance of a channel with differing self-reception settings is not supported"
+        )
+
 
 @unittest.skipUnless(TEST_INTERFACE_SOCKETCAN, "skip testing of socketcan")
 class SocketCanBroadcastChannel(unittest.TestCase):
