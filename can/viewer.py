@@ -31,7 +31,12 @@ from typing import Dict, List, Tuple, Union
 
 import can
 from can import __version__
-from .logger import _create_bus, _parse_filters, _append_filter_argument
+from .logger import (
+    _create_bus,
+    _parse_filters,
+    _append_filter_argument,
+    _create_base_argument_parser,
+)
 
 
 logger = logging.getLogger("can.serial")
@@ -282,7 +287,7 @@ class CanViewer:
                     previous_byte_values[i] = b
             else:
                 data_color = color
-            text = "{:02X}".format(b)
+            text = f"{b:02X}"
             self.draw_line(self.ids[key]["row"], col, text, data_color)
 
         if self.data_structs:
@@ -402,6 +407,10 @@ def parse_args(args):
         allow_abbrev=False,
     )
 
+    # Generate the standard arguments:
+    # Channel, bitrate, data_bitrate, interface, app_name, CAN-FD support
+    _create_base_argument_parser(parser)
+
     optional = parser.add_argument_group("Optional arguments")
 
     optional.add_argument(
@@ -413,31 +422,6 @@ def parse_args(args):
         action="version",
         help="Show program's version number and exit",
         version="%(prog)s (version {version})".format(version=__version__),
-    )
-
-    # Copied from: can/logger.py
-    optional.add_argument(
-        "-b",
-        "--bitrate",
-        type=int,
-        help="""Bitrate to use for the given CAN interface""",
-    )
-
-    optional.add_argument("--fd", help="Activate CAN-FD support", action="store_true")
-
-    optional.add_argument(
-        "--data_bitrate",
-        type=int,
-        help="Bitrate to use for the data phase in case of CAN-FD.",
-    )
-
-    optional.add_argument(
-        "-c",
-        "--channel",
-        help="""Most backend interfaces require some sort of channel.
-                          For example with the serial interface the channel might be a rfcomm device: "/dev/rfcomm0"
-                          with the socketcan interfaces valid channel examples include: "can0", "vcan0".
-                          (default: use default for the specified interface)""",
     )
 
     optional.add_argument(
@@ -485,28 +469,12 @@ def parse_args(args):
     _append_filter_argument(optional, "-f")
 
     optional.add_argument(
-        "-i",
-        "--interface",
-        dest="interface",
-        help="R|Specify the backend CAN interface to use.",
-        choices=sorted(can.VALID_INTERFACES),
-    )
-
-    optional.add_argument(
         "-v",
         action="count",
         dest="verbosity",
         help="""How much information do you want to see at the command line?
                         You can add several of these e.g., -vv is DEBUG""",
         default=2,
-    )
-
-    # suppressed as the user doesn't need to change it
-    optional.add_argument(
-        "--app_name",
-        dest="app_name",
-        help=argparse.SUPPRESS,
-        default="python-can-viewer",
     )
 
     # Print help message when no arguments are given
