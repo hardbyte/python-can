@@ -151,7 +151,7 @@ class PcanBus(BusABC):
         state=BusState.ACTIVE,
         bitrate=500000,
         *args,
-        **kwargs
+        **kwargs,
     ):
         """A PCAN USB interface to CAN.
 
@@ -251,7 +251,7 @@ class PcanBus(BusABC):
         ioport = 0x02A0
         interrupt = 11
 
-        if type(channel) != int:
+        if isinstance(channel, int):
             channel = pcan_channel_names[channel]
 
         self.m_objPCANBasic = PCANBasic()
@@ -265,12 +265,12 @@ class PcanBus(BusABC):
         if self.fd:
             f_clock_val = kwargs.get("f_clock", None)
             if f_clock_val is None:
-                f_clock = "{}={}".format("f_clock_mhz", kwargs.get("f_clock_mhz", None))
+                f_clock = f"f_clock_mhz={kwargs.get('f_clock_mhz', None)}"
             else:
-                f_clock = "{}={}".format("f_clock", kwargs.get("f_clock", None))
+                f_clock = f"f_clock={f_clock_val}"
 
             fd_parameters_values = [f_clock] + [
-                "{}={}".format(key, kwargs.get(key, None))
+                f"{key}={kwargs.get(key, None)}"
                 for key in pcan_fd_parameter_list
                 if kwargs.get(key, None) is not None
             ]
@@ -299,7 +299,8 @@ class PcanBus(BusABC):
                 # TODO Remove Filter when MACCan actually supports it:
                 #  https://github.com/mac-can/PCBUSB-Library/
                 log.debug(
-                    "Ignoring error. PCAN_ALLOW_ERROR_FRAMES is still unsupported by OSX Library PCANUSB v0.10"
+                    "Ignoring error. PCAN_ALLOW_ERROR_FRAMES is still unsupported by OSX Library "
+                    "PCANUSB v0.10"
                 )
 
         if HAS_EVENTS:
@@ -341,8 +342,9 @@ class PcanBus(BusABC):
             for b in bits(error):
                 stsReturn = self.m_objPCANBasic.GetErrorText(b, 0x9)
                 if stsReturn[0] != PCAN_ERROR_OK:
-                    text = "An error occurred. Error-code's text ({0:X}h) couldn't be retrieved".format(
-                        error
+                    text = (
+                        f"An error occurred. Error-code's text ({error:X}h) couldn't be"
+                        f" retrieved"
                     )
                 else:
                     text = stsReturn[1].decode("utf-8", errors="replace")

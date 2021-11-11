@@ -39,7 +39,7 @@ class CantactBus(BusABC):
 
         channels = []
         for i in range(0, interface.channel_count()):
-            channels.append({"interface": "cantact", "channel": "ch:%d" % i})
+            channels.append({"interface": "cantact", "channel": f"ch:{i}"})
         return channels
 
     def __init__(

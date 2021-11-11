@@ -121,13 +121,13 @@ class UdpMulticastBus(BusABC):
 
         return can_message, False
 
-    def send(self, message: can.Message, timeout: Optional[float] = None) -> None:
-        if not self.is_fd and message.is_fd:
+    def send(self, msg: can.Message, timeout: Optional[float] = None) -> None:
+        if not self.is_fd and msg.is_fd:
             raise can.CanOperationError(
                 "cannot send FD message over bus with CAN FD disabled"
             )
 
-        data = pack_message(message)
+        data = pack_message(msg)
         self._multicast.send(data, timeout)
 
     def fileno(self) -> int:
@@ -186,8 +186,9 @@ class GeneralPurposeUdpMulticastBus:
                 sock = self._create_socket(address_family)
             except OSError as error:
                 log.info(
-                    f"could not connect to the multicast IP network of candidate %s; reason: {error}",
+                    "could not connect to the multicast IP network of candidate %s; reason: %s",
                     connection_candidates,
+                    error,
                 )
         if sock is not None:
             self._socket = sock

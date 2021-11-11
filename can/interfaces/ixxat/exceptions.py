@@ -21,15 +21,15 @@ __all__ = [
 
 
 class VCITimeout(CanTimeoutError):
-    """ Wraps the VCI_E_TIMEOUT error """
+    """Wraps the VCI_E_TIMEOUT error"""
 
 
 class VCIError(CanOperationError):
-    """ Try to display errors that occur within the wrapped C library nicely. """
+    """Try to display errors that occur within the wrapped C library nicely."""
 
 
 class VCIRxQueueEmptyError(VCIError):
-    """ Wraps the VCI_E_RXQUEUE_EMPTY error """
+    """Wraps the VCI_E_RXQUEUE_EMPTY error"""
 
     def __init__(self):
         super().__init__("Receive queue is empty")
