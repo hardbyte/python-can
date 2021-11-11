@@ -9,7 +9,12 @@ import time
 import logging
 
 from can import BusABC, Message
-from ..exceptions import CanInterfaceNotImplementedError, CanInitializationError, CanOperationError, error_check
+from ..exceptions import (
+    CanInterfaceNotImplementedError,
+    CanInitializationError,
+    CanOperationError,
+    error_check,
+)
 from can import typechecking
 
 
@@ -153,7 +158,9 @@ class slcanBus(BusABC):
             # if we still don't have a complete message, do a blocking read
             start = time.time()
             time_left = timeout
-            while not (ord(self._OK) in self._buffer or ord(self._ERROR) in self._buffer):
+            while not (
+                ord(self._OK) in self._buffer or ord(self._ERROR) in self._buffer
+            ):
                 self.serialPortOrig.timeout = time_left
                 byte = self.serialPortOrig.read()
                 if byte:
