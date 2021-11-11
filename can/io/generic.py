@@ -43,6 +43,7 @@ class BaseIOHandler(ContextManager, metaclass=ABCMeta):
             # file is None or some file-like object
             self.file = cast(Optional[can.typechecking.FileLike], file)
         else:
+            # pylint: disable=consider-using-with
             # file is some path-like object
             self.file = open(cast(can.typechecking.StringPathLike, file), mode)
 

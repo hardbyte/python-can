@@ -67,7 +67,7 @@ class VirtualBus(BusABC):
 
         # the channel identifier may be an arbitrary object
         self.channel_id = channel
-        self.channel_info = "Virtual bus channel {}".format(self.channel_id)
+        self.channel_info = f"Virtual bus channel {self.channel_id}"
         self.receive_own_messages = receive_own_messages
         self._open = True
 

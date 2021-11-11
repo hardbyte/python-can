@@ -132,7 +132,8 @@ class BaseRotatingLogger(Listener, BaseIOHandler, ABC):
         self.writer_args = args
         self.writer_kwargs = kwargs
 
-        self._writer: FileIOMessageWriter = None  # type: ignore  # Expected to be set by the subclass
+        # Expected to be set by the subclass
+        self._writer: FileIOMessageWriter = None  # type: ignore
 
     @property
     def writer(self) -> FileIOMessageWriter:
@@ -209,7 +210,8 @@ class BaseRotatingLogger(Listener, BaseIOHandler, ABC):
             return cast(FileIOMessageWriter, logger)
         else:
             raise Exception(
-                "The Logger corresponding to the arguments is not a FileIOMessageWriter or can.Printer"
+                "The Logger corresponding to the arguments is not a FileIOMessageWriter or "
+                "can.Printer"
             )
 
     def stop(self) -> None:
@@ -283,8 +285,8 @@ class SizedRotatingLogger(BaseRotatingLogger):
     def __init__(
         self,
         base_filename: StringPathLike,
-        max_bytes: int = 0,
         *args: Any,
+        max_bytes: int = 0,
         **kwargs: Any,
     ) -> None:
         """
