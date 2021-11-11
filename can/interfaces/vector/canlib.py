@@ -38,8 +38,6 @@ from can.util import (
 )
 from can.typechecking import AutoDetectedConfig, CanFilters
 
-from .exceptions import VectorError
-
 # Define Module Logger
 # ====================
 LOG = logging.getLogger(__name__)
@@ -140,7 +138,8 @@ class VectorBus(BusABC):
         """
         if os.name != "nt" and not kwargs.get("_testing", False):
             raise CanInterfaceNotImplementedError(
-                f'The Vector interface is only supported on Windows, but you are running "{os.name}"'
+                f"The Vector interface is only supported on Windows, "
+                f'but you are running "{os.name}"'
             )
 
         if xldriver is None:
@@ -163,7 +162,7 @@ class VectorBus(BusABC):
         self._app_name = app_name.encode() if app_name is not None else b""
         self.channel_info = "Application %s: %s" % (
             app_name,
-            ", ".join("CAN %d" % (ch + 1) for ch in self.channels),
+            ", ".join(f"CAN {ch + 1}" for ch in self.channels),
         )
 
         if serial is not None:
@@ -358,8 +357,8 @@ class VectorBus(BusABC):
                             if can_filter.get("extended")
                             else xldefine.XL_AcceptanceFilter.XL_CAN_STD,
                         )
-                except VectorOperationError as exc:
-                    LOG.warning("Could not set filters: %s", exc)
+                except VectorOperationError as exception:
+                    LOG.warning("Could not set filters: %s", exception)
                     # go to fallback
                 else:
                     self._is_filtered = True
@@ -400,8 +399,8 @@ class VectorBus(BusABC):
                 else:
                     msg = self._recv_can()
 
-            except VectorOperationError as exc:
-                if exc.error_code != xldefine.XL_Status.XL_ERR_QUEUE_IS_EMPTY:
+            except VectorOperationError as exception:
+                if exception.error_code != xldefine.XL_Status.XL_ERR_QUEUE_IS_EMPTY:
                     raise
             else:
                 if msg:
@@ -435,7 +434,7 @@ class VectorBus(BusABC):
             data_struct = xl_can_rx_event.tagData.canTxOkMsg
         else:
             self.handle_canfd_event(xl_can_rx_event)
-            return
+            return None
 
         msg_id = data_struct.canId
         dlc = dlc2len(data_struct.dlc)
@@ -475,7 +474,7 @@ class VectorBus(BusABC):
 
         if xl_event.tag != xldefine.XL_EventTags.XL_RECEIVE_MSG:
             self.handle_can_event(xl_event)
-            return
+            return None
 
         msg_id = xl_event.tagData.msg.id
         dlc = xl_event.tagData.msg.dlc
@@ -520,8 +519,8 @@ class VectorBus(BusABC):
         when `event.tag` is not `XL_CAN_EV_TAG_RX_OK` or `XL_CAN_EV_TAG_TX_OK`.
         Subclasses can implement this method.
 
-        :param event: `XLcanRxEvent` that could have a `XL_CAN_EV_TAG_RX_ERROR`, `XL_CAN_EV_TAG_TX_ERROR`,
-            `XL_TIMER` or `XL_CAN_EV_TAG_CHIP_STATE` tag.
+        :param event: `XLcanRxEvent` that could have a `XL_CAN_EV_TAG_RX_ERROR`,
+            `XL_CAN_EV_TAG_TX_ERROR`, `XL_TIMER` or `XL_CAN_EV_TAG_CHIP_STATE` tag.
         """
 
     def send(self, msg: Message, timeout: Optional[float] = None):

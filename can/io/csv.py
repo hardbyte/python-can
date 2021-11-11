@@ -13,61 +13,8 @@ from base64 import b64encode, b64decode
 
 from can.message import Message
 from can.listener import Listener
-from .generic import BaseIOHandler
-
-
-class CSVWriter(BaseIOHandler, Listener):
-    """Writes a comma separated text file with a line for
-    each message. Includes a header line.
-
-    The columns are as follows:
-
-    ================ ======================= ===============
-    name of column   format description      example
-    ================ ======================= ===============
-    timestamp        decimal float           1483389946.197
-    arbitration_id   hex                     0x00dadada
-    extended         1 == True, 0 == False   1
-    remote           1 == True, 0 == False   0
-    error            1 == True, 0 == False   0
-    dlc              int                     6
-    data             base64 encoded          WzQyLCA5XQ==
-    ================ ======================= ===============
-
-    Each line is terminated with a platform specific line separator.
-    """
-
-    def __init__(self, file, append=False):
-        """
-        :param file: a path-like object or a file-like object to write to.
-                     If this is a file-like object, is has to open in text
-                     write mode, not binary write mode.
-        :param bool append: if set to `True` messages are appended to
-                            the file and no header line is written, else
-                            the file is truncated and starts with a newly
-                            written header line
-        """
-        mode = "a" if append else "w"
-        super().__init__(file, mode=mode)
-
-        # Write a header row
-        if not append:
-            self.file.write("timestamp,arbitration_id,extended,remote,error,dlc,data\n")
-
-    def on_message_received(self, msg):
-        row = ",".join(
-            [
-                repr(msg.timestamp),  # cannot use str() here because that is rounding
-                hex(msg.arbitration_id),
-                "1" if msg.is_extended_id else "0",
-                "1" if msg.is_remote_frame else "0",
-                "1" if msg.is_error_frame else "0",
-                str(msg.dlc),
-                b64encode(msg.data).decode("utf8"),
-            ]
-        )
-        self.file.write(row)
-        self.file.write("\n")
+from .generic import BaseIOHandler, FileIOMessageWriter
+from ..typechecking import AcceptedIOType
 
 
 class CSVReader(BaseIOHandler):
@@ -79,7 +26,7 @@ class CSVReader(BaseIOHandler):
     Any line separator is accepted.
     """
 
-    def __init__(self, file):
+    def __init__(self, file: AcceptedIOType) -> None:
         """
         :param file: a path-like object or as file-like object to read from
                      If this is a file-like object, is has to opened in text
@@ -112,3 +59,57 @@ class CSVReader(BaseIOHandler):
             )
 
         self.stop()
+
+
+class CSVWriter(FileIOMessageWriter, Listener):
+    """Writes a comma separated text file with a line for
+    each message. Includes a header line.
+
+    The columns are as follows:
+
+    ================ ======================= ===============
+    name of column   format description      example
+    ================ ======================= ===============
+    timestamp        decimal float           1483389946.197
+    arbitration_id   hex                     0x00dadada
+    extended         1 == True, 0 == False   1
+    remote           1 == True, 0 == False   0
+    error            1 == True, 0 == False   0
+    dlc              int                     6
+    data             base64 encoded          WzQyLCA5XQ==
+    ================ ======================= ===============
+
+    Each line is terminated with a platform specific line separator.
+    """
+
+    def __init__(self, file: AcceptedIOType, append: bool = False) -> None:
+        """
+        :param file: a path-like object or a file-like object to write to.
+                     If this is a file-like object, is has to open in text
+                     write mode, not binary write mode.
+        :param bool append: if set to `True` messages are appended to
+                            the file and no header line is written, else
+                            the file is truncated and starts with a newly
+                            written header line
+        """
+        mode = "a" if append else "w"
+        super().__init__(file, mode=mode)
+
+        # Write a header row
+        if not append:
+            self.file.write("timestamp,arbitration_id,extended,remote,error,dlc,data\n")
+
+    def on_message_received(self, msg: Message) -> None:
+        row = ",".join(
+            [
+                repr(msg.timestamp),  # cannot use str() here because that is rounding
+                hex(msg.arbitration_id),
+                "1" if msg.is_extended_id else "0",
+                "1" if msg.is_remote_frame else "0",
+                "1" if msg.is_error_frame else "0",
+                str(msg.dlc),
+                b64encode(msg.data).decode("utf8"),
+            ]
+        )
+        self.file.write(row)
+        self.file.write("\n")

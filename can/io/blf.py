@@ -23,7 +23,7 @@ from ..message import Message
 from ..listener import Listener
 from ..util import len2dlc, dlc2len, channel2int
 from ..typechecking import AcceptedIOType
-from .generic import BaseIOHandler
+from .generic import BaseIOHandler, FileIOMessageWriter
 
 
 class BLFParseError(Exception):
@@ -139,7 +139,7 @@ class BLFReader(BaseIOHandler):
     silently ignored.
     """
 
-    def __init__(self, file):
+    def __init__(self, file: AcceptedIOType) -> None:
         """
         :param file: a path-like object or as file-like object to read from
                      If this is a file-like object, is has to opened in binary
@@ -228,7 +228,7 @@ class BLFReader(BaseIOHandler):
                 if pos + 8 > max_pos:
                     # Not enough data in container
                     return
-                raise BLFParseError("Could not find next object")
+                raise BLFParseError("Could not find next object") from None
             header = unpack_obj_header_base(data, pos)
             # print(header)
             signature, _, header_version, obj_size, obj_type = header
@@ -258,7 +258,7 @@ class BLFReader(BaseIOHandler):
             factor = 1e-5 if flags == 1 else 1e-9
             timestamp = timestamp * factor + start_timestamp
 
-            if obj_type == CAN_MESSAGE or obj_type == CAN_MESSAGE2:
+            if obj_type in (CAN_MESSAGE, CAN_MESSAGE2):
                 channel, flags, dlc, can_id, can_data = unpack_can_msg(data, pos)
                 yield Message(
                     timestamp=timestamp,
@@ -347,7 +347,7 @@ class BLFReader(BaseIOHandler):
             pos = next_pos
 
 
-class BLFWriter(BaseIOHandler, Listener):
+class BLFWriter(FileIOMessageWriter, Listener):
     """
     Logs CAN data to a Binary Logging File compatible with Vector's tools.
     """

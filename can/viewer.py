@@ -185,7 +185,7 @@ class CanViewer:
 
                 return values
 
-        raise ValueError("Unknown command: 0x{:02X}".format(cmd))
+        raise ValueError(f"Unknown command: 0x{cmd:02X}")
 
     def draw_can_bus_message(self, msg, sorting=False):
         # Use the CAN-Bus ID as the key in the dict
@@ -251,12 +251,10 @@ class CanViewer:
         self.draw_line(
             self.ids[key]["row"],
             8,
-            "{0:.6f}".format(self.ids[key]["msg"].timestamp - self.start_time),
+            f"{self.ids[key]['msg'].timestamp - self.start_time:.6f}",
             color,
         )
-        self.draw_line(
-            self.ids[key]["row"], 23, "{0:.6f}".format(self.ids[key]["dt"]), color
-        )
+        self.draw_line(self.ids[key]["row"], 23, f"{self.ids[key]['dt']:.6f}", color)
         self.draw_line(self.ids[key]["row"], 35, arbitration_id_string, color)
         self.draw_line(self.ids[key]["row"], 47, str(msg.dlc), color)
 
@@ -297,7 +295,7 @@ class CanViewer:
                     msg.arbitration_id, self.data_structs, msg.data
                 ):
                     if isinstance(x, float):
-                        values_list.append("{0:.6f}".format(x))
+                        values_list.append(f"{x:.6f}")
                     else:
                         values_list.append(str(x))
                 values_string = " ".join(values_list)
@@ -337,8 +335,8 @@ class CanViewer:
     def redraw_screen(self):
         # Trigger a complete redraw
         self.draw_header()
-        for key in self.ids:
-            self.draw_can_bus_message(self.ids[key]["msg"])
+        for key, ids in self.ids.items():
+            self.draw_can_bus_message(ids["msg"])
 
 
 class SmartFormatter(argparse.HelpFormatter):
@@ -350,12 +348,12 @@ class SmartFormatter(argparse.HelpFormatter):
         return super()._format_usage(usage, actions, groups, "Usage: ")
 
     def _format_args(self, action, default_metavar):
-        if action.nargs != argparse.REMAINDER and action.nargs != argparse.ONE_OR_MORE:
+        if action.nargs not in (argparse.REMAINDER, argparse.ONE_OR_MORE):
             return super()._format_args(action, default_metavar)
 
         # Use the metavar if "REMAINDER" or "ONE_OR_MORE" is set
         get_metavar = self._metavar_formatter(action, default_metavar)
-        return "%s" % get_metavar(1)
+        return str(get_metavar(1))
 
     def _format_action_invocation(self, action):
         if not action.option_strings or action.nargs == 0:
@@ -368,9 +366,9 @@ class SmartFormatter(argparse.HelpFormatter):
             args_string = self._format_args(action, default)
             for i, option_string in enumerate(action.option_strings):
                 if i == len(action.option_strings) - 1:
-                    parts.append("%s %s" % (option_string, args_string))
+                    parts.append(f"{option_string} {args_string}")
                 else:
-                    parts.append("%s" % option_string)
+                    parts.append(str(option_string))
             return ", ".join(parts)
 
     def _split_lines(self, text, width):
@@ -421,7 +419,7 @@ def parse_args(args):
         "--version",
         action="version",
         help="Show program's version number and exit",
-        version="%(prog)s (version {version})".format(version=__version__),
+        version=f"%(prog)s (version {__version__})",
     )
 
     optional.add_argument(
@@ -511,7 +509,7 @@ def parse_args(args):
     ] = {}
     if parsed_args.decode:
         if os.path.isfile(parsed_args.decode[0]):
-            with open(parsed_args.decode[0], "r") as f:
+            with open(parsed_args.decode[0], "r", encoding="utf-8") as f:
                 structs = f.readlines()
         else:
             structs = parsed_args.decode

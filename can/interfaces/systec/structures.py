@@ -268,7 +268,7 @@ class HardwareInfoEx(Structure):
     ]
 
     def __init__(self):
-        super(HardwareInfoEx, self).__init__(sizeof(HardwareInfoEx))
+        super().__init__(sizeof(HardwareInfoEx))
 
     def __eq__(self, other):
         if not isinstance(other, HardwareInfoEx):

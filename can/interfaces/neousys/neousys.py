@@ -47,7 +47,7 @@ logger = logging.getLogger(__name__)
 
 
 class NeousysCanSetup(Structure):
-    """ C CAN Setup struct """
+    """C CAN Setup struct"""
 
     _fields_ = [
         ("bitRate", c_uint),
@@ -58,7 +58,7 @@ class NeousysCanSetup(Structure):
 
 
 class NeousysCanMsg(Structure):
-    """ C CAN Message struct """
+    """C CAN Message struct"""
 
     _fields_ = [
         ("id", c_uint),
@@ -75,7 +75,7 @@ class NeousysCanMsg(Structure):
 # valid:1~4, Resynchronization Jump Width in time quanta
 # valid:1~1023, CAN_CLK divider used to determine time quanta
 class NeousysCanBitClk(Structure):
-    """ C CAN BIT Clock struct """
+    """C CAN BIT Clock struct"""
 
     _fields_ = [
         ("syncPropPhase1Seg", c_ushort),

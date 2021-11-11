@@ -11,7 +11,7 @@ import subprocess
 from typing import cast, Iterable, Optional
 
 from can.interfaces.socketcan.constants import CAN_EFF_FLAG
-import can.typechecking as typechecking
+from can import typechecking
 
 log = logging.getLogger(__name__)
 

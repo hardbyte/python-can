@@ -604,12 +604,12 @@ class IXXATBus(BusABC):
             return 1
 
     def flush_tx_buffer(self):
-        """ Flushes the transmit buffer on the IXXAT """
+        """Flushes the transmit buffer on the IXXAT"""
         # TODO #64: no timeout?
         _canlib.canChannelWaitTxEvent(self._channel_handle, constants.INFINITE)
 
     def _recv_internal(self, timeout):
-        """ Read a message from IXXAT device. """
+        """Read a message from IXXAT device."""
 
         # TODO: handling CAN error messages?
         data_received = False

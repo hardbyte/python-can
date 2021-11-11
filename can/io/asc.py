@@ -6,8 +6,7 @@ Example .asc files:
     - under `test/data/logfile.asc`
 """
 
-from typing import cast, Any, Generator, IO, List, Optional, Union, Dict
-from can import typechecking
+from typing import cast, Any, Generator, IO, List, Optional, Dict
 
 from datetime import datetime
 import time
@@ -16,7 +15,8 @@ import logging
 from ..message import Message
 from ..listener import Listener
 from ..util import channel2int
-from .generic import BaseIOHandler
+from .generic import BaseIOHandler, FileIOMessageWriter
+from ..typechecking import AcceptedIOType
 
 
 CAN_MSG_EXT = 0x80000000
@@ -37,7 +37,7 @@ class ASCReader(BaseIOHandler):
 
     def __init__(
         self,
-        file: Union[typechecking.FileLike, typechecking.StringPathLike],
+        file: AcceptedIOType,
         base: str = "hex",
         relative_timestamp: bool = True,
     ) -> None:
@@ -73,8 +73,10 @@ class ASCReader(BaseIOHandler):
             elif lower_case.startswith("base"):
                 try:
                     _, base, _, timestamp_format = line.split()
-                except ValueError:
-                    raise Exception("Unsupported header string format: {}".format(line))
+                except ValueError as exception:
+                    raise Exception(
+                        f"Unsupported header string format: {line}"
+                    ) from exception
                 self.base = base
                 self._converted_base = self._check_base(self.base)
                 self.timestamps_format = timestamp_format
@@ -135,8 +137,8 @@ class ASCReader(BaseIOHandler):
             # Error Frame
             msg_kwargs["is_error_frame"] = True
         else:
-            abr_id_str, dir, rest_of_message = line.split(None, 2)
-            msg_kwargs["is_rx"] = dir == "Rx"
+            abr_id_str, direction, rest_of_message = line.split(None, 2)
+            msg_kwargs["is_rx"] = direction == "Rx"
             self._extract_can_id(abr_id_str, msg_kwargs)
 
             if rest_of_message[0].lower() == "r":
@@ -164,10 +166,10 @@ class ASCReader(BaseIOHandler):
         return Message(**msg_kwargs)
 
     def _process_fd_can_frame(self, line: str, msg_kwargs: Dict[str, Any]) -> Message:
-        channel, dir, rest_of_message = line.split(None, 2)
+        channel, direction, rest_of_message = line.split(None, 2)
         # See ASCWriter
         msg_kwargs["channel"] = int(channel) - 1
-        msg_kwargs["is_rx"] = dir == "Rx"
+        msg_kwargs["is_rx"] = direction == "Rx"
 
         # CAN FD error frame
         if rest_of_message.strip()[:10].lower() == "errorframe":
@@ -238,7 +240,7 @@ class ASCReader(BaseIOHandler):
         self.stop()
 
 
-class ASCWriter(BaseIOHandler, Listener):
+class ASCWriter(FileIOMessageWriter, Listener):
     """Logs CAN data to an ASCII log file (.asc).
 
     The measurement starts with the timestamp of the first registered message.
@@ -275,7 +277,7 @@ class ASCWriter(BaseIOHandler, Listener):
 
     def __init__(
         self,
-        file: Union[typechecking.FileLike, typechecking.StringPathLike],
+        file: AcceptedIOType,
         channel: int = 1,
     ) -> None:
         """
@@ -286,14 +288,12 @@ class ASCWriter(BaseIOHandler, Listener):
                         have a channel set
         """
         super().__init__(file, mode="w")
-        if not self.file:
-            raise ValueError("The given file cannot be None")
 
         self.channel = channel
 
         # write start of file header
         now = datetime.now().strftime(self.FORMAT_START_OF_FILE_DATE)
-        self.file.write("date %s\n" % now)
+        self.file.write(f"date {now}\n")
         self.file.write("base hex  timestamps absolute\n")
         self.file.write("internal events logged\n")
 
@@ -304,7 +304,6 @@ class ASCWriter(BaseIOHandler, Listener):
 
     def stop(self) -> None:
         # This is guaranteed to not be None since we raise ValueError in __init__
-        self.file = cast(IO[Any], self.file)
         if not self.file.closed:
             self.file.write("End TriggerBlock\n")
         super().stop()
@@ -330,7 +329,7 @@ class ASCWriter(BaseIOHandler, Listener):
             formatted_date = time.strftime(
                 self.FORMAT_DATE.format(mlsec), time.localtime(self.last_timestamp)
             )
-            self.file.write("Begin Triggerblock %s\n" % formatted_date)
+            self.file.write(f"Begin Triggerblock {formatted_date}\n")
             self.header_written = True
             self.log_event("Start of measurement")  # caution: this is a recursive call!
         # Use last known timestamp if unknown
@@ -345,15 +344,15 @@ class ASCWriter(BaseIOHandler, Listener):
     def on_message_received(self, msg: Message) -> None:
 
         if msg.is_error_frame:
-            self.log_event("{}  ErrorFrame".format(self.channel), msg.timestamp)
+            self.log_event(f"{self.channel}  ErrorFrame", msg.timestamp)
             return
         if msg.is_remote_frame:
-            dtype = "r {:x}".format(msg.dlc)  # New after v8.5
+            dtype = f"r {msg.dlc:x}"  # New after v8.5
             data: List[str] = []
         else:
-            dtype = "d {:x}".format(msg.dlc)
-            data = ["{:02X}".format(byte) for byte in msg.data]
-        arb_id = "{:X}".format(msg.arbitration_id)
+            dtype = f"d {msg.dlc:x}"
+            data = [f"{byte:02X}" for byte in msg.data]
+        arb_id = f"{msg.arbitration_id:X}"
         if msg.is_extended_id:
             arb_id += "x"
         channel = channel2int(msg.channel)
