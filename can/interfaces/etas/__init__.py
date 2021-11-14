@@ -3,7 +3,7 @@ import time
 from typing import Dict, List, Optional, Tuple
 
 import can
-from ...exceptions import CanInitializationError, CanOperationError
+from ...exceptions import CanInitializationError
 from .boa import *
 
 
@@ -22,29 +22,17 @@ class EtasBus(can.BusABC):
 
         nodeRange = CSI_NodeRange(CSI_NODE_MIN, CSI_NODE_MAX)
         self.tree = ctypes.POINTER(CSI_Tree)()
-        ec = CSI_CreateProtocolTree(
-            ctypes.c_char_p(b""), nodeRange, ctypes.byref(self.tree)
-        )
-        if ec != 0x0:
-            raise CanInitializationError(
-                f"CSI_CreateProtocolTree failed with error 0x{ec:X}"
-            )
+        CSI_CreateProtocolTree(ctypes.c_char_p(b""), nodeRange, ctypes.byref(self.tree))
 
         oci_can_v = BOA_Version(1, 4, 0, 0)
 
-        # Common
-
         self.ctrl = OCI_ControllerHandle()
-        ec = OCI_CreateCANControllerNoSearch(
+        OCI_CreateCANControllerNoSearch(
             channel.encode(),
             ctypes.byref(oci_can_v),
             self.tree,
             ctypes.byref(self.ctrl),
         )
-        if ec != 0x0:
-            raise CanInitializationError(
-                f"OCI_CreateCANControllerNoSearch failed with error 0x{ec:X}"
-            )
 
         ctrlConf = OCI_CANConfiguration()
         ctrlConf.baudrate = bitrate
@@ -98,13 +86,9 @@ class EtasBus(can.BusABC):
         else:
             rxQConf.selfReceptionMode = OCI_SELF_RECEPTION_OFF
         self.rxQueue = OCI_QueueHandle()
-        ec = OCI_CreateCANRxQueue(
+        OCI_CreateCANRxQueue(
             self.ctrl, ctypes.byref(rxQConf), ctypes.byref(self.rxQueue)
         )
-        if ec != 0x0:
-            raise CanInitializationError(
-                f"OCI_CreateCANRxQueue failed with error 0x{ec:X}"
-            )
 
         self._oci_filters = None
         self.filters = can_filters
@@ -114,32 +98,20 @@ class EtasBus(can.BusABC):
         txQConf = OCI_CANTxQueueConfiguration()
         txQConf.reserved = 0
         self.txQueue = OCI_QueueHandle()
-        ec = OCI_CreateCANTxQueue(
+        OCI_CreateCANTxQueue(
             self.ctrl, ctypes.byref(txQConf), ctypes.byref(self.txQueue)
         )
-        if ec != 0x0:
-            raise CanInitializationError(
-                f"OCI_CreateCANTxQueue failed with error 0x{ec:X}"
-            )
 
         # Common
 
         timerCapabilities = OCI_TimerCapabilities()
-        ec = OCI_GetTimerCapabilities(self.ctrl, ctypes.byref(timerCapabilities))
-        if ec != 0x0:
-            raise CanInitializationError(
-                f"OCI_GetTimerCapabilities failed with error 0x{ec:X}"
-            )
+        OCI_GetTimerCapabilities(self.ctrl, ctypes.byref(timerCapabilities))
         self.tickFrequency = timerCapabilities.tickFrequency  # clock ticks per second
 
         # all timestamps are hardware timestamps relative to the CAN device powerup
         # calculate an offset to make them relative to epoch
         now = OCI_Time()
-        ec = OCI_GetTimerValue(self.ctrl, ctypes.byref(now))
-        if ec != 0x0:
-            raise CanInitializationError(
-                f"OCI_GetTimerValue failed with error 0x{ec:X}"
-            )
+        OCI_GetTimerValue(self.ctrl, ctypes.byref(now))
         self.timeOffset = time.time() - (float(now.value) / self.tickFrequency)
 
         self.channel_info = channel
@@ -156,7 +128,7 @@ class EtasBus(can.BusABC):
             t = OCI_Time(round(timeout * self.tickFrequency))
         else:  # wait indefinitely
             t = OCI_NO_TIME
-        ec = OCI_ReadCANDataEx(
+        OCI_ReadCANDataEx(
             self.rxQueue,
             t,
             ociMsgs,
@@ -164,10 +136,6 @@ class EtasBus(can.BusABC):
             ctypes.byref(count),
             None,
         )
-        if ec != 0x0:
-            text = ctypes.create_string_buffer(500)
-            OCI_GetError(self.ctrl, ec, text, 500)
-            raise CanOperationError(f"OCI_ReadCANDataEx failed with error 0x{ec:X}")
 
         msg = None
 
@@ -245,17 +213,11 @@ class EtasBus(can.BusABC):
             if msg.bitrate_switch:
                 ociTxMsg.flags |= OCI_CAN_MSG_FLAG_FD_DATA_BIT_RATE
 
-        ec = OCI_WriteCANDataEx(self.txQueue, OCI_NO_TIME, ociMsgs, 1, None)
-        if ec != 0x0:
-            raise CanOperationError(f"OCI_WriteCANDataEx failed with error 0x{ec:X}")
+        OCI_WriteCANDataEx(self.txQueue, OCI_NO_TIME, ociMsgs, 1, None)
 
     def _apply_filters(self, filters: Optional[can.typechecking.CanFilters]) -> None:
         if self._oci_filters:
-            ec = OCI_RemoveCANFrameFilterEx(self.rxQueue, self._oci_filters, 1)
-            if ec != 0x0:
-                raise CanOperationError(
-                    f"OCI_RemoveCANFrameFilterEx failed with error 0x{ec:X}"
-                )
+            OCI_RemoveCANFrameFilterEx(self.rxQueue, self._oci_filters, 1)
 
         # "accept all" filter
         if filters is None:
@@ -280,68 +242,36 @@ class EtasBus(can.BusABC):
                 f.flagsMask |= OCI_CAN_MSG_FLAG_EXTENDED
             self._oci_filters[i].contents = f
 
-        ec = OCI_AddCANFrameFilterEx(
-            self.rxQueue, self._oci_filters, len(self._oci_filters)
-        )
-        if ec != 0x0:
-            raise CanOperationError(
-                f"OCI_AddCANFrameFilterEx failed with error 0x{ec:X}"
-            )
+        OCI_AddCANFrameFilterEx(self.rxQueue, self._oci_filters, len(self._oci_filters))
 
     def flush_tx_buffer(self) -> None:
-        ec = OCI_ResetQueue(self.txQueue)
-        if ec != 0x0:
-            raise CanOperationError(f"OCI_ResetQueue failed with error 0x{ec:X}")
+        OCI_ResetQueue(self.txQueue)
 
     def shutdown(self) -> None:
         # Cleanup TX
         if self.txQueue:
-            ec = OCI_DestroyCANTxQueue(self.txQueue)
-            if ec != 0x0:
-                raise CanOperationError(
-                    f"OCI_DestroyCANTxQueue failed with error 0x{ec:X}"
-                )
+            OCI_DestroyCANTxQueue(self.txQueue)
             self.txQueue = None
 
         # Cleanup RX
         if self.rxQueue:
-            ec = OCI_DestroyCANRxQueue(self.rxQueue)
-            if ec != 0x0:
-                raise CanOperationError(
-                    f"OCI_DestroyCANRxQueue failed with error 0x{ec:X}"
-                )
+            OCI_DestroyCANRxQueue(self.rxQueue)
             self.rxQueue = None
 
         # Cleanup common
         if self.ctrl:
-            ec = OCI_CloseCANController(self.ctrl)
-            if ec != 0x0:
-                raise CanOperationError(
-                    f"OCI_CloseCANController failed with error 0x{ec:X}"
-                )
-            ec = OCI_DestroyCANController(self.ctrl)
-            if ec != 0x0:
-                raise CanOperationError(
-                    f"OCI_DestroyCANController failed with error 0x{ec:X}"
-                )
+            OCI_CloseCANController(self.ctrl)
+            OCI_DestroyCANController(self.ctrl)
             self.ctrl = None
 
         if self.tree:
-            ec = CSI_DestroyProtocolTree(self.tree)
-            if ec != 0x0:
-                raise CanOperationError(
-                    f"CSI_DestroyProtocolTree failed with error 0x{ec:X}"
-                )
+            CSI_DestroyProtocolTree(self.tree)
             self.tree = None
 
     @property
     def state(self) -> can.BusState:
         status = OCI_CANControllerStatus()
-        ec = OCI_GetCANControllerStatus(self.ctrl, ctypes.byref(status))
-        if ec != 0x0:
-            raise CanOperationError(
-                f"OCI_GetCANControllerStatus failed with error 0x{ec:X}"
-            )
+        OCI_GetCANControllerStatus(self.ctrl, ctypes.byref(status))
         if status.stateCode & OCI_CAN_STATE_ACTIVE:
             return can.BusState.ACTIVE
         elif status.stateCode & OCI_CAN_STATE_PASSIVE:
@@ -362,11 +292,7 @@ class EtasBus(can.BusABC):
     def _detect_available_configs() -> List[can.typechecking.AutoDetectedConfig]:
         nodeRange = CSI_NodeRange(CSI_NODE_MIN, CSI_NODE_MAX)
         tree = ctypes.POINTER(CSI_Tree)()
-        ec = CSI_CreateProtocolTree(ctypes.c_char_p(b""), nodeRange, ctypes.byref(tree))
-        if ec != 0x0:
-            raise CanOperationError(
-                f"CSI_CreateProtocolTree failed with error 0x{ec:X}"
-            )
+        CSI_CreateProtocolTree(ctypes.c_char_p(b""), nodeRange, ctypes.byref(tree))
 
         nodes: Dict[str, str] = []
 
@@ -385,10 +311,6 @@ class EtasBus(can.BusABC):
 
         _findNodes(tree, "ETAS:/")
 
-        ec = CSI_DestroyProtocolTree(tree)
-        if ec != 0x0:
-            raise CanOperationError(
-                f"CSI_DestroyProtocolTree failed with error 0x{ec:X}"
-            )
+        CSI_DestroyProtocolTree(tree)
 
         return nodes

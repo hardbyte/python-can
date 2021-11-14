@@ -1,5 +1,7 @@
 import ctypes
 
+from ...exceptions import CanInitializationError, CanOperationError
+
 try:
     # try to load libraries from the system default paths
     _csi = ctypes.windll.LoadLibrary("dll-csiBind")
@@ -14,6 +16,26 @@ except FileNotFoundError:
         path = "C:/Program Files/ETAS/BOA_V2/Bin/x64/Dll/Framework/"
     _csi = ctypes.windll.LoadLibrary(path + "dll-csiBind")
     _oci = ctypes.windll.LoadLibrary(path + "dll-ocdProxy")
+
+
+# define helper functions to use with errcheck
+
+
+def errcheck_init(result, func, _arguments):
+    # unfortunately, we can't use OCI_GetError here
+    # because we don't always have a handle to use
+    # text = ctypes.create_string_buffer(500)
+    # OCI_GetError(self.ctrl, ec, text, 500)
+    if result != 0x0:
+        raise CanInitializationError(f"{func.__name__} failed with error 0x{result:X}")
+    return result
+
+
+def errcheck_oper(result, func, _arguments):
+    if result != 0x0:
+        raise CanOperationError(f"{func.__name__} failed with error 0x{result:X}")
+    return result
+
 
 # Common (BOA)
 
@@ -103,12 +125,14 @@ CSI_CreateProtocolTree.argtypes = [
     ctypes.POINTER(ctypes.POINTER(CSI_Tree)),
 ]
 CSI_CreateProtocolTree.restype = BOA_ResultCode
+CSI_CreateProtocolTree.errcheck = errcheck_init
 
 CSI_DestroyProtocolTree = _csi.CSI_DestroyProtocolTree
 CSI_DestroyProtocolTree.argtypes = [
     ctypes.POINTER(CSI_Tree),
 ]
 CSI_DestroyProtocolTree.restype = BOA_ResultCode
+CSI_DestroyProtocolTree.errcheck = errcheck_oper
 
 # Open Controller Interface (OCI)
 
@@ -158,6 +182,7 @@ OCI_GetError.argtypes = [
     ctypes.c_uint32,
 ]
 OCI_GetError.restype = OCI_ErrorCode
+OCI_GetError.errcheck = errcheck_oper
 
 # OCI Common - Queue Handling
 
@@ -185,6 +210,7 @@ class OCI_QueueEventMessage(ctypes.Structure):
 OCI_ResetQueue = _oci.OCI_ResetQueue
 OCI_ResetQueue.argtypes = [OCI_QueueHandle]
 OCI_ResetQueue.restype = OCI_ErrorCode
+OCI_ResetQueue.errcheck = errcheck_oper
 
 # OCI Common - Timer Handling
 
@@ -230,6 +256,7 @@ OCI_GetTimerCapabilities.argtypes = [
     ctypes.POINTER(OCI_TimerCapabilities),
 ]
 OCI_GetTimerCapabilities.restype = OCI_ErrorCode
+OCI_GetTimerCapabilities.errcheck = errcheck_init
 
 OCI_GetTimerValue = _oci.OCI_GetTimerValue
 OCI_GetTimerValue.argtypes = [
@@ -237,6 +264,7 @@ OCI_GetTimerValue.argtypes = [
     ctypes.POINTER(OCI_Time),
 ]
 OCI_GetTimerValue.restype = OCI_ErrorCode
+OCI_GetTimerValue.errcheck = errcheck_oper
 
 # OCI CAN
 
@@ -384,6 +412,7 @@ OCI_CreateCANControllerNoSearch.argtypes = [
     ctypes.POINTER(OCI_ControllerHandle),
 ]
 OCI_CreateCANControllerNoSearch.restype = OCI_ErrorCode
+OCI_CreateCANControllerNoSearch.errcheck = errcheck_init
 
 OCI_OpenCANController = _oci.OCI_OpenCANController
 OCI_OpenCANController.argtypes = [
@@ -392,14 +421,18 @@ OCI_OpenCANController.argtypes = [
     ctypes.POINTER(OCI_CANControllerProperties),
 ]
 OCI_OpenCANController.restype = OCI_ErrorCode
+# no .errcheck, since we tolerate OCI_WARN_PARAM_ADAPTED warning
+# OCI_OpenCANController.errcheck = errcheck_init
 
 OCI_CloseCANController = _oci.OCI_CloseCANController
 OCI_CloseCANController.argtypes = [OCI_ControllerHandle]
 OCI_CloseCANController.restype = OCI_ErrorCode
+OCI_CloseCANController.errcheck = errcheck_oper
 
 OCI_DestroyCANController = _oci.OCI_DestroyCANController
 OCI_DestroyCANController.argtypes = [OCI_ControllerHandle]
 OCI_DestroyCANController.restype = OCI_ErrorCode
+OCI_DestroyCANController.errcheck = errcheck_oper
 
 OCI_AdaptCANConfiguration = _oci.OCI_AdaptCANConfiguration
 OCI_AdaptCANConfiguration.argtypes = [
@@ -407,6 +440,7 @@ OCI_AdaptCANConfiguration.argtypes = [
     ctypes.POINTER(OCI_CANConfiguration),
 ]
 OCI_AdaptCANConfiguration.restype = OCI_ErrorCode
+OCI_AdaptCANConfiguration.errcheck = errcheck_oper
 
 OCI_GetCANControllerCapabilities = _oci.OCI_GetCANControllerCapabilities
 OCI_GetCANControllerCapabilities.argtypes = [
@@ -414,6 +448,7 @@ OCI_GetCANControllerCapabilities.argtypes = [
     ctypes.POINTER(OCI_CANControllerCapabilities),
 ]
 OCI_GetCANControllerCapabilities.restype = OCI_ErrorCode
+OCI_GetCANControllerCapabilities.errcheck = errcheck_init
 
 OCI_GetCANControllerStatus = _oci.OCI_GetCANControllerStatus
 OCI_GetCANControllerStatus.argtypes = [
@@ -421,6 +456,7 @@ OCI_GetCANControllerStatus.argtypes = [
     ctypes.POINTER(OCI_CANControllerStatus),
 ]
 OCI_GetCANControllerStatus.restype = OCI_ErrorCode
+OCI_GetCANControllerStatus.errcheck = errcheck_oper
 
 
 # OCI CAN - Filter
@@ -444,14 +480,6 @@ class OCI_CANRxFilterEx(ctypes.Structure):
     ]
 
 
-OCI_AddCANFrameFilter = _oci.OCI_AddCANFrameFilter
-OCI_AddCANFrameFilter.argtypes = [
-    OCI_QueueHandle,
-    ctypes.POINTER(OCI_CANRxFilter),
-    ctypes.c_uint32,
-]
-OCI_AddCANFrameFilter.restype = OCI_ErrorCode
-
 OCI_AddCANFrameFilterEx = _oci.OCI_AddCANFrameFilterEx
 OCI_AddCANFrameFilterEx.argtypes = [
     OCI_QueueHandle,
@@ -459,6 +487,7 @@ OCI_AddCANFrameFilterEx.argtypes = [
     ctypes.c_uint32,
 ]
 OCI_AddCANFrameFilterEx.restype = OCI_ErrorCode
+OCI_AddCANFrameFilterEx.errcheck = errcheck_oper
 
 OCI_RemoveCANFrameFilterEx = _oci.OCI_RemoveCANFrameFilterEx
 OCI_RemoveCANFrameFilterEx.argtypes = [
@@ -467,6 +496,7 @@ OCI_RemoveCANFrameFilterEx.argtypes = [
     ctypes.c_uint32,
 ]
 OCI_RemoveCANFrameFilterEx.restype = OCI_ErrorCode
+OCI_RemoveCANFrameFilterEx.errcheck = errcheck_oper
 
 # OCI CAN - Messages
 
@@ -623,10 +653,12 @@ OCI_CreateCANRxQueue.argtypes = [
     ctypes.POINTER(OCI_QueueHandle),
 ]
 OCI_CreateCANRxQueue.restype = OCI_ErrorCode
+OCI_CreateCANRxQueue.errcheck = errcheck_init
 
 OCI_DestroyCANRxQueue = _oci.OCI_DestroyCANRxQueue
 OCI_DestroyCANRxQueue.argtypes = [OCI_QueueHandle]
 OCI_DestroyCANRxQueue.restype = OCI_ErrorCode
+OCI_DestroyCANRxQueue.errcheck = errcheck_oper
 
 OCI_CreateCANTxQueue = _oci.OCI_CreateCANTxQueue
 OCI_CreateCANTxQueue.argtypes = [
@@ -635,20 +667,12 @@ OCI_CreateCANTxQueue.argtypes = [
     ctypes.POINTER(OCI_QueueHandle),
 ]
 OCI_CreateCANTxQueue.restype = OCI_ErrorCode
+OCI_CreateCANTxQueue.errcheck = errcheck_init
 
 OCI_DestroyCANTxQueue = _oci.OCI_DestroyCANTxQueue
 OCI_DestroyCANTxQueue.argtypes = [OCI_QueueHandle]
 OCI_DestroyCANTxQueue.restype = OCI_ErrorCode
-
-OCI_WriteCANData = _oci.OCI_WriteCANData
-OCI_WriteCANData.argtypes = [
-    OCI_QueueHandle,
-    OCI_Time,
-    ctypes.POINTER(OCI_CANMessage),
-    ctypes.c_uint32,
-    ctypes.POINTER(ctypes.c_uint32),
-]
-OCI_WriteCANData.restype = OCI_ErrorCode
+OCI_DestroyCANTxQueue.errcheck = errcheck_oper
 
 OCI_WriteCANDataEx = _oci.OCI_WriteCANDataEx
 OCI_WriteCANDataEx.argtypes = [
@@ -659,6 +683,7 @@ OCI_WriteCANDataEx.argtypes = [
     ctypes.POINTER(ctypes.c_uint32),
 ]
 OCI_WriteCANDataEx.restype = OCI_ErrorCode
+OCI_WriteCANDataEx.errcheck = errcheck_oper
 
 OCI_ReadCANDataEx = _oci.OCI_ReadCANDataEx
 OCI_ReadCANDataEx.argtypes = [
@@ -670,3 +695,4 @@ OCI_ReadCANDataEx.argtypes = [
     ctypes.POINTER(ctypes.c_uint32),
 ]
 OCI_ReadCANDataEx.restype = OCI_ErrorCode
+OCI_ReadCANDataEx.errcheck = errcheck_oper
