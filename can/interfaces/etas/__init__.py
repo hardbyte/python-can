@@ -147,24 +147,22 @@ class EtasBus(can.BusABC):
     def _recv_internal(
         self, timeout: Optional[float]
     ) -> Tuple[Optional[can.Message], bool]:
-        canMessages = (ctypes.POINTER(OCI_CANMessageEx) * 1)()
-
-        m = OCI_CANMessageEx()
-        canMessages[0].contents = m
+        ociMsgs = (ctypes.POINTER(OCI_CANMessageEx) * 1)()
+        ociMsg = OCI_CANMessageEx()
+        ociMsgs[0] = ctypes.pointer(ociMsg)
 
         count = ctypes.c_uint32()
-        remaining = ctypes.c_uint32()
-        if timeout is not None:
+        if timeout is not None:  # wait for specified time
             t = OCI_Time(round(timeout * self.tickFrequency))
-        else:
+        else:  # wait indefinitely
             t = OCI_NO_TIME
         ec = OCI_ReadCANDataEx(
             self.rxQueue,
             t,
-            canMessages,
+            ociMsgs,
             1,
             ctypes.byref(count),
-            ctypes.byref(remaining),
+            None,
         )
         if ec != 0x0:
             text = ctypes.create_string_buffer(500)
@@ -174,52 +172,44 @@ class EtasBus(can.BusABC):
         msg = None
 
         if count.value != 0:
-            m = canMessages[0].contents
-            if m.type == OCI_CANFDRX_MESSAGE.value:
+            if ociMsg.type == OCI_CANFDRX_MESSAGE.value:
+                ociRxMsg = ociMsg.data.canFDRxMessage
                 msg = can.Message(
-                    timestamp=float(m.data.canFDRxMessage.timeStamp)
-                    / self.tickFrequency
+                    timestamp=float(ociRxMsg.timeStamp) / self.tickFrequency
                     + self.timeOffset,
-                    arbitration_id=m.data.canFDRxMessage.frameID,
-                    is_extended_id=bool(
-                        m.data.canFDRxMessage.flags & OCI_CAN_MSG_FLAG_EXTENDED
-                    ),
+                    arbitration_id=ociRxMsg.frameID,
+                    is_extended_id=bool(ociRxMsg.flags & OCI_CAN_MSG_FLAG_EXTENDED),
                     is_remote_frame=bool(
-                        m.data.canFDRxMessage.flags & OCI_CAN_MSG_FLAG_REMOTE_FRAME
+                        ociRxMsg.flags & OCI_CAN_MSG_FLAG_REMOTE_FRAME
                     ),
                     # is_error_frame=False,
                     # channel=None,
-                    dlc=m.data.canFDRxMessage.size,
-                    data=m.data.canFDRxMessage.data[0 : m.data.canFDRxMessage.size],
+                    dlc=ociRxMsg.size,
+                    data=ociRxMsg.data[0 : ociRxMsg.size],
                     is_fd=True,
-                    is_rx=not bool(
-                        m.data.canFDRxMessage.flags & OCI_CAN_MSG_FLAG_SELFRECEPTION
-                    ),
+                    is_rx=not bool(ociRxMsg.flags & OCI_CAN_MSG_FLAG_SELFRECEPTION),
                     bitrate_switch=bool(
-                        m.data.canFDRxMessage.flags & OCI_CAN_MSG_FLAG_FD_DATA_BIT_RATE
+                        ociRxMsg.flags & OCI_CAN_MSG_FLAG_FD_DATA_BIT_RATE
                     ),
                     # error_state_indicator=False,
                     # check=False,
                 )
-            elif m.type == OCI_CAN_RX_MESSAGE.value:
+            elif ociMsg.type == OCI_CAN_RX_MESSAGE.value:
+                ociRxMsg = ociMsg.data.rxMessage
                 msg = can.Message(
-                    timestamp=float(m.data.rxMessage.timeStamp) / self.tickFrequency
+                    timestamp=float(ociRxMsg.timeStamp) / self.tickFrequency
                     + self.timeOffset,
-                    arbitration_id=m.data.rxMessage.frameID,
-                    is_extended_id=bool(
-                        m.data.rxMessage.flags & OCI_CAN_MSG_FLAG_EXTENDED
-                    ),
+                    arbitration_id=ociRxMsg.frameID,
+                    is_extended_id=bool(ociRxMsg.flags & OCI_CAN_MSG_FLAG_EXTENDED),
                     is_remote_frame=bool(
-                        m.data.rxMessage.flags & OCI_CAN_MSG_FLAG_REMOTE_FRAME
+                        ociRxMsg.flags & OCI_CAN_MSG_FLAG_REMOTE_FRAME
                     ),
                     # is_error_frame=False,
                     # channel=None,
-                    dlc=m.data.rxMessage.dlc,
-                    data=m.data.rxMessage.data[0 : m.data.rxMessage.dlc],
+                    dlc=ociRxMsg.dlc,
+                    data=ociRxMsg.data[0 : ociRxMsg.dlc],
                     # is_fd=False,
-                    is_rx=not bool(
-                        m.data.rxMessage.flags & OCI_CAN_MSG_FLAG_SELFRECEPTION
-                    ),
+                    is_rx=not bool(ociRxMsg.flags & OCI_CAN_MSG_FLAG_SELFRECEPTION),
                     # bitrate_switch=False,
                     # error_state_indicator=False,
                     # check=False,
@@ -228,37 +218,34 @@ class EtasBus(can.BusABC):
         return (msg, True)
 
     def send(self, msg: can.Message, timeout: Optional[float] = None) -> None:
-        canMessages = (ctypes.POINTER(OCI_CANMessageEx) * 1)()
-
-        m = OCI_CANMessageEx()
+        ociMsgs = (ctypes.POINTER(OCI_CANMessageEx) * 1)()
+        ociMsg = OCI_CANMessageEx()
+        ociMsgs[0] = ctypes.pointer(ociMsg)
 
         if msg.is_fd:
-            m.type = OCI_CANFDTX_MESSAGE
-            m.data.canFDTxMessage.frameID = msg.arbitration_id
-            m.data.canFDTxMessage.flags = 0
-            if msg.is_extended_id:
-                m.data.canFDTxMessage.flags |= OCI_CAN_MSG_FLAG_EXTENDED
-            if msg.is_remote_frame:
-                m.data.canFDTxMessage.flags |= OCI_CAN_MSG_FLAG_REMOTE_FRAME
-            m.data.canFDTxMessage.flags |= OCI_CAN_MSG_FLAG_FD_DATA
-            if msg.bitrate_switch:
-                m.data.canFDTxMessage.flags |= OCI_CAN_MSG_FLAG_FD_DATA_BIT_RATE
-            m.data.canFDTxMessage.size = msg.dlc
-            m.data.canFDTxMessage.data = tuple(msg.data)
+            ociMsg.type = OCI_CANFDTX_MESSAGE
+            ociTxMsg = ociMsg.data.canFDTxMessage
+            ociTxMsg.size = msg.dlc
         else:
-            m.type = OCI_CAN_TX_MESSAGE
-            m.data.txMessage.frameID = msg.arbitration_id
-            m.data.txMessage.flags = 0
-            if msg.is_extended_id:
-                m.data.txMessage.flags |= OCI_CAN_MSG_FLAG_EXTENDED
-            if msg.is_remote_frame:
-                m.data.txMessage.flags |= OCI_CAN_MSG_FLAG_REMOTE_FRAME
-            m.data.txMessage.dlc = msg.dlc
-            m.data.txMessage.data = tuple(msg.data)
+            ociMsg.type = OCI_CAN_TX_MESSAGE
+            ociTxMsg = ociMsg.data.txMessage
+            ociTxMsg.dlc = msg.dlc
 
-        canMessages[0].contents = m
+        # set fields common to CAN / CAN-FD
+        ociTxMsg.frameID = msg.arbitration_id
+        ociTxMsg.flags = 0
+        if msg.is_extended_id:
+            ociTxMsg.flags |= OCI_CAN_MSG_FLAG_EXTENDED
+        if msg.is_remote_frame:
+            ociTxMsg.flags |= OCI_CAN_MSG_FLAG_REMOTE_FRAME
+        ociTxMsg.data = tuple(msg.data)
 
-        ec = OCI_WriteCANDataEx(self.txQueue, OCI_NO_TIME, canMessages, 1, None)
+        if msg.is_fd:
+            ociTxMsg.flags |= OCI_CAN_MSG_FLAG_FD_DATA
+            if msg.bitrate_switch:
+                ociTxMsg.flags |= OCI_CAN_MSG_FLAG_FD_DATA_BIT_RATE
+
+        ec = OCI_WriteCANDataEx(self.txQueue, OCI_NO_TIME, ociMsgs, 1, None)
         if ec != 0x0:
             raise CanOperationError(f"OCI_WriteCANDataEx failed with error 0x{ec:X}")
 
