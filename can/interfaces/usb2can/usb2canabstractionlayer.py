@@ -6,9 +6,9 @@ Socket CAN is recommended under Unix/Linux systems.
 from ctypes import *
 from enum import IntEnum
 import logging
-from contextlib import contextmanager
 
 import can
+from ...exceptions import error_check
 
 log = logging.getLogger("can.usb2can")
 
@@ -100,14 +100,6 @@ class CanalMsg(Structure):
         ("data", c_ubyte * 8),
         ("timestamp", c_ulong),
     ]
-
-
-@contextmanager
-def error_check(error_message: str) -> None:
-    try:
-        yield
-    except Exception as error:
-        raise can.CanOperationError(error_message) from error
 
 
 class Usb2CanAbstractionLayer:

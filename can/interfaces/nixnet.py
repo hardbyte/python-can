@@ -31,7 +31,7 @@ if sys.platform == "win32":
             XnetError,
         )
     except ImportError as error:
-        raise ImportError("Error, NIXNET python module cannot be loaded") from error
+        raise ImportError("NIXNET python module cannot be loaded") from error
 else:
     raise NotImplementedError("NiXNET only supported on Win32 platforms")
 

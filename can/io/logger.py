@@ -6,7 +6,15 @@ import os
 import pathlib
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Any, cast, Callable, Optional
+from typing import (
+    Any,
+    Optional,
+    Callable,
+    cast,
+    Type,
+)
+from types import TracebackType
+
 
 from pkg_resources import iter_entry_points
 
@@ -86,64 +94,59 @@ class Logger(BaseIOHandler, Listener):  # pylint: disable=abstract-method
             ) from None
 
 
-class BaseRotatingLogger(Listener, ABC):
+class BaseRotatingLogger(Listener, BaseIOHandler, ABC):
     """
     Base class for rotating CAN loggers. This class is not meant to be
-    instantiated directly. Subclasses must implement the `should_rollover`
+    instantiated directly. Subclasses must implement the :attr:`should_rollover`
     and `do_rollover` methods according to their rotation strategy.
 
     The rotation behavior can be further customized by the user by setting
-    the `namer` and `rotator´ attributes after instantiating the subclass.
+    the :attr:`namer` and :attr:`rotator` attributes after instantiating the subclass.
 
     These attributes as well as the methods `rotation_filename` and `rotate`
     and the corresponding docstrings are carried over from the python builtin
     `BaseRotatingHandler`.
 
-    :attr Optional[Callable] namer:
-        If this attribute is set to a callable, the rotation_filename() method
+    Subclasses must set the `_writer` attribute upon initialization.
+
+    :attr namer:
+        If this attribute is set to a callable, the :meth:`rotation_filename` method
         delegates to this callable. The parameters passed to the callable are
-        those passed to rotation_filename().
-    :attr Optional[Callable] rotator:
-        If this attribute is set to a callable, the rotate() method delegates
+        those passed to :meth:`rotation_filename`.
+    :attr rotator:
+        If this attribute is set to a callable, the :meth:`rotate` method delegates
         to this callable. The parameters passed to the callable are those
-        passed to rotate().
-    :attr int rollover_count:
+        passed to :meth:`rotate`.
+    :attr rollover_count:
         An integer counter to track the number of rollovers.
-    :attr FileIOMessageWriter writer:
-        This attribute holds an instance of a writer class which manages the
-        actual file IO.
     """
 
-    supported_writers = {
-        ".asc": ASCWriter,
-        ".blf": BLFWriter,
-        ".csv": CSVWriter,
-        ".log": CanutilsLogWriter,
-        ".txt": Printer,
-    }
     namer: Optional[Callable[[StringPathLike], StringPathLike]] = None
     rotator: Optional[Callable[[StringPathLike, StringPathLike], None]] = None
     rollover_count: int = 0
-    _writer: Optional[FileIOMessageWriter] = None
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
+        Listener.__init__(self)
+        BaseIOHandler.__init__(self, None)
+
         self.writer_args = args
         self.writer_kwargs = kwargs
 
+        # Expected to be set by the subclass
+        self._writer: FileIOMessageWriter = None  # type: ignore
+
     @property
     def writer(self) -> FileIOMessageWriter:
-        if not self._writer:
-            raise ValueError("Attempt to access writer failed.")
-
+        """This attribute holds an instance of a writer class which manages the actual file IO."""
         return self._writer
 
     def rotation_filename(self, default_name: StringPathLike) -> StringPathLike:
         """Modify the filename of a log file when rotating.
 
         This is provided so that a custom filename can be provided.
-        The default implementation calls the 'namer' attribute of the
+        The default implementation calls the :attr:`namer` attribute of the
         handler, if it's callable, passing the default name to
-        it. If the attribute isn't callable (the default is None), the name
+        it. If the attribute isn't callable (the default is `None`), the name
         is returned unchanged.
 
         :param default_name:
@@ -157,17 +160,17 @@ class BaseRotatingLogger(Listener, ABC):
     def rotate(self, source: StringPathLike, dest: StringPathLike) -> None:
         """When rotating, rotate the current log.
 
-        The default implementation calls the 'rotator' attribute of the
+        The default implementation calls the :attr:`rotator` attribute of the
         handler, if it's callable, passing the source and dest arguments to
-        it. If the attribute isn't callable (the default is None), the source
+        it. If the attribute isn't callable (the default is `None`), the source
         is simply renamed to the destination.
 
         :param source:
             The source filename. This is normally the base
-            filename, e.g. 'test.log'
+            filename, e.g. `"test.log"`
         :param dest:
             The destination filename. This is normally
-            what the source is rotated to, e.g. 'test_#001.log'.
+            what the source is rotated to, e.g. `"test_#001.log"`.
         """
         if not callable(self.rotator):
             if os.path.exists(source):
@@ -187,8 +190,8 @@ class BaseRotatingLogger(Listener, ABC):
 
         self.writer.on_message_received(msg)
 
-    def get_new_writer(self, filename: StringPathLike) -> None:
-        """Instantiate a new writer.
+    def _get_new_writer(self, filename: StringPathLike) -> FileIOMessageWriter:
+        """Instantiate a new writer after stopping the old one.
 
         :param filename:
             Path-like object that specifies the location and name of the log file.
@@ -196,17 +199,19 @@ class BaseRotatingLogger(Listener, ABC):
         :return:
             An instance of a writer class.
         """
-        suffix = pathlib.Path(filename).suffix.lower()
-        try:
-            writer_class = self.supported_writers[suffix]
-        except KeyError:
-            raise ValueError(
-                f'Log format with suffix"{suffix}" is '
-                f"not supported by {self.__class__.__name__}."
-            )
+        # Close the old writer first
+        if self._writer is not None:
+            self._writer.stop()
+
+        logger = Logger(filename, *self.writer_args, **self.writer_kwargs)
+        if isinstance(logger, FileIOMessageWriter):
+            return logger
+        elif isinstance(logger, Printer) and logger.file is not None:
+            return cast(FileIOMessageWriter, logger)
         else:
-            self._writer = writer_class(
-                filename, *self.writer_args, **self.writer_kwargs
+            raise Exception(
+                "The Logger corresponding to the arguments is not a FileIOMessageWriter or "
+                "can.Printer"
             )
 
     def stop(self) -> None:
@@ -216,6 +221,17 @@ class BaseRotatingLogger(Listener, ABC):
         data is persisted and cleanup any open resources.
         """
         self.writer.stop()
+
+    def __enter__(self) -> "BaseRotatingLogger":
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> bool:
+        return self._writer.__exit__(exc_type, exc_val, exc_tb)
 
     @abstractmethod
     def should_rollover(self, msg: Message) -> bool:
@@ -234,8 +250,8 @@ class SizedRotatingLogger(BaseRotatingLogger):
     by adding a timestamp and the rollover count. A new log file is then
     created and written to.
 
-    This behavior can be customized by setting the ´namer´ and `rotator`
-    attribute.
+    This behavior can be customized by setting the :attr:`namer` and
+    :attr:`rotator` attribute.
 
     Example::
 
@@ -257,16 +273,20 @@ class SizedRotatingLogger(BaseRotatingLogger):
       * .blf :class:`can.BLFWriter`
       * .csv: :class:`can.CSVWriter`
       * .log :class:`can.CanutilsLogWriter`
-      * .txt :class:`can.Printer`
+      * .txt :class:`can.Printer` (if pointing to a file)
 
-    The log files may be incomplete until `stop()` is called due to buffering.
+    .. note::
+        The :class:`can.SqliteWriter` is not supported yet.
+
+    The log files on disk may be incomplete due to buffering until
+    :meth:`~can.Listener.stop` is called.
     """
 
     def __init__(
         self,
         base_filename: StringPathLike,
-        max_bytes: int = 0,
         *args: Any,
+        max_bytes: int = 0,
         **kwargs: Any,
     ) -> None:
         """
@@ -277,12 +297,12 @@ class SizedRotatingLogger(BaseRotatingLogger):
             The size threshold at which a new log file shall be created. If set to 0, no
             rollover will be performed.
         """
-        super(SizedRotatingLogger, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         self.base_filename = os.path.abspath(base_filename)
         self.max_bytes = max_bytes
 
-        self.get_new_writer(self.base_filename)
+        self._writer = self._get_new_writer(self.base_filename)
 
     def should_rollover(self, msg: Message) -> bool:
         if self.max_bytes <= 0:
@@ -301,7 +321,7 @@ class SizedRotatingLogger(BaseRotatingLogger):
         dfn = self.rotation_filename(self._default_name())
         self.rotate(sfn, dfn)
 
-        self.get_new_writer(self.base_filename)
+        self._writer = self._get_new_writer(self.base_filename)
 
     def _default_name(self) -> StringPathLike:
         """Generate the default rotation filename."""

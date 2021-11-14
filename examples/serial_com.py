@@ -42,7 +42,7 @@ def receive(bus, stop_event):
     while not stop_event.is_set():
         rx_msg = bus.recv(1)
         if rx_msg is not None:
-            print("rx: {}".format(rx_msg))
+            print(f"rx: {rx_msg}")
     print("Stopped receiving messages")
 
 

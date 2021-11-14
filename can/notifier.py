@@ -76,7 +76,7 @@ class Notifier:
             reader_thread = threading.Thread(
                 target=self._rx_thread,
                 args=(bus,),
-                name='can.notifier for bus "{}"'.format(bus.channel_info),
+                name=f'can.notifier for bus "{bus.channel_info}"',
             )
             reader_thread.daemon = True
             reader_thread.start()

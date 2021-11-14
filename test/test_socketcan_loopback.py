@@ -13,7 +13,7 @@ from .config import TEST_INTERFACE_SOCKETCAN
 
 @unittest.skipUnless(TEST_INTERFACE_SOCKETCAN, "skip testing of socketcan")
 class LocalLoopbackSocketCan(unittest.TestCase):
-    """ test local_loopback functionality"""
+    """test local_loopback functionality"""
 
     BITRATE = 500000
     TIMEOUT = 0.1

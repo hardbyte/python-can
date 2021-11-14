@@ -226,8 +226,8 @@ class NeoViBus(BusABC):
                 channel = getattr(ics, netid)
             else:
                 raise ValueError(
-                    "channel must be an integer or " "a valid ICS channel name"
-                )
+                    "channel must be an integer or a valid ICS channel name"
+                ) from None
         return channel
 
     @staticmethod

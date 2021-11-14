@@ -8,8 +8,8 @@ import logging
 
 from can.message import Message
 from can.listener import Listener
-from .generic import BaseIOHandler
-
+from .generic import BaseIOHandler, FileIOMessageWriter
+from ..typechecking import AcceptedIOType
 
 log = logging.getLogger("can.io.canutils")
 
@@ -32,7 +32,7 @@ class CanutilsLogReader(BaseIOHandler):
         ``(0.0) vcan0 001#8d00100100820100``
     """
 
-    def __init__(self, file):
+    def __init__(self, file: AcceptedIOType) -> None:
         """
         :param file: a path-like object or as file-like object to read from
                      If this is a file-like object, is has to opened in text
@@ -105,7 +105,7 @@ class CanutilsLogReader(BaseIOHandler):
         self.stop()
 
 
-class CanutilsLogWriter(BaseIOHandler, Listener):
+class CanutilsLogWriter(FileIOMessageWriter, Listener):
     """Logs CAN data to an ASCII log file (.log).
     This class is is compatible with "candump -L".
 
@@ -114,7 +114,7 @@ class CanutilsLogWriter(BaseIOHandler, Listener):
     It the first message does not have a timestamp, it is set to zero.
     """
 
-    def __init__(self, file, channel="vcan0", append=False):
+    def __init__(self, file: AcceptedIOType, channel="vcan0", append=False):
         """
         :param file: a path-like object or as file-like object to write to
                      If this is a file-like object, is has to opened in text

@@ -109,11 +109,11 @@ class Message:  # pylint: disable=too-many-instance-attributes; OK for a datacla
             self._check()
 
     def __str__(self) -> str:
-        field_strings = ["Timestamp: {0:>15.6f}".format(self.timestamp)]
+        field_strings = [f"Timestamp: {self.timestamp:>15.6f}"]
         if self.is_extended_id:
-            arbitration_id_string = "ID: {0:08x}".format(self.arbitration_id)
+            arbitration_id_string = f"ID: {self.arbitration_id:08x}"
         else:
-            arbitration_id_string = "ID: {0:04x}".format(self.arbitration_id)
+            arbitration_id_string = f"ID: {self.arbitration_id:04x}"
         field_strings.append(arbitration_id_string.rjust(12, " "))
 
         flag_string = " ".join(
@@ -130,22 +130,22 @@ class Message:  # pylint: disable=too-many-instance-attributes; OK for a datacla
 
         field_strings.append(flag_string)
 
-        field_strings.append("DLC: {0:2d}".format(self.dlc))
+        field_strings.append("DLC: {self.dlc:2d}")
         data_strings = []
         if self.data is not None:
             for index in range(0, min(self.dlc, len(self.data))):
-                data_strings.append("{0:02x}".format(self.data[index]))
+                data_strings.append(f"{self.data[index]:02x}")
         if data_strings:  # if not empty
             field_strings.append(" ".join(data_strings).ljust(24, " "))
         else:
             field_strings.append(" " * 24)
 
         if (self.data is not None) and (self.data.isalnum()):
-            field_strings.append("'{}'".format(self.data.decode("utf-8", "replace")))
+            field_strings.append(f"'{self.data.decode('utf-8', 'replace')}'")
 
         if self.channel is not None:
             try:
-                field_strings.append("Channel: {}".format(self.channel))
+                field_strings.append(f"Channel: {self.channel}")
             except UnicodeEncodeError:
                 pass
 
@@ -160,32 +160,32 @@ class Message:  # pylint: disable=too-many-instance-attributes; OK for a datacla
 
     def __repr__(self) -> str:
         args = [
-            "timestamp={}".format(self.timestamp),
-            "arbitration_id={:#x}".format(self.arbitration_id),
-            "is_extended_id={}".format(self.is_extended_id),
+            f"timestamp={self.timestamp}",
+            f"arbitration_id={self.arbitration_id:#x}",
+            f"is_extended_id={self.is_extended_id}",
         ]
 
         if not self.is_rx:
             args.append("is_rx=False")
 
         if self.is_remote_frame:
-            args.append("is_remote_frame={}".format(self.is_remote_frame))
+            args.append(f"is_remote_frame={self.is_remote_frame}")
 
         if self.is_error_frame:
-            args.append("is_error_frame={}".format(self.is_error_frame))
+            args.append(f"is_error_frame={self.is_error_frame}")
 
         if self.channel is not None:
-            args.append("channel={!r}".format(self.channel))
+            args.append(f"channel={self.channel!r}")
 
-        data = ["{:#02x}".format(byte) for byte in self.data]
-        args += ["dlc={}".format(self.dlc), "data=[{}]".format(", ".join(data))]
+        data = [f"{byte:#02x}" for byte in self.data]
+        args += [f"dlc={self.dlc}", f"data=[{', '.join(data)}]"]
 
         if self.is_fd:
             args.append("is_fd=True")
-            args.append("bitrate_switch={}".format(self.bitrate_switch))
-            args.append("error_state_indicator={}".format(self.error_state_indicator))
+            args.append(f"bitrate_switch={self.bitrate_switch}")
+            args.append(f"error_state_indicator={self.error_state_indicator}")
 
-        return "can.Message({})".format(", ".join(args))
+        return f"can.Message({', '.join(args)})"
 
     def __format__(self, format_spec: Optional[str]) -> str:
         if not format_spec:

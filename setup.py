@@ -15,12 +15,12 @@ from setuptools import setup, find_packages
 
 logging.basicConfig(level=logging.WARNING)
 
-with open("can/__init__.py", "r") as fd:
+with open("can/__init__.py", "r", encoding="utf-8") as fd:
     version = re.search(
         r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]', fd.read(), re.MULTILINE
     ).group(1)
 
-with open("README.rst", "r") as f:
+with open("README.rst", "r", encoding="utf-8") as f:
     long_description = f.read()
 
 # Dependencies
@@ -28,6 +28,7 @@ extras_require = {
     "seeedstudio": ["pyserial>=3.0"],
     "serial": ["pyserial~=3.0"],
     "neovi": ["filelock", "python-ics>=2.12"],
+    "canalystii": ["canalystii>=0.1.0"],
     "cantact": ["cantact>=0.0.7"],
     "gs_usb": ["gs_usb>=0.2.1"],
     "nixnet": ["nixnet>=0.3.1"],
@@ -83,9 +84,7 @@ setup(
     # see https://www.python.org/dev/peps/pep-0345/#version-specifiers
     python_requires=">=3.6",
     install_requires=[
-        # Note setuptools provides pkg_resources which python-can makes use of,
-        # but we assume it is already installed.
-        # "setuptools",
+        "setuptools",
         "wrapt~=1.10",
         'windows-curses;platform_system=="Windows" and platform_python_implementation=="CPython"',
         "typing_extensions>=3.10.0.0",

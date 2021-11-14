@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# coding: utf-8
 
 import unittest
 from unittest.mock import Mock, patch
@@ -32,6 +31,7 @@ class SystecTest(unittest.TestCase):
         ucan.UcanDeinitHardware = Mock()
         ucan.UcanWriteCanMsgEx = Mock()
         ucan.UcanResetCanEx = Mock()
+        ucan._UCAN_INITIALIZED = True  # Fake this
         self.bus = can.Bus(bustype="systec", channel=0, bitrate=125000)
 
     def test_bus_creation(self):
