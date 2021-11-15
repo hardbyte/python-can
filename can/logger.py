@@ -57,10 +57,7 @@ def _create_base_argument_parser(parser: argparse.ArgumentParser) -> None:
         help="Bitrate to use for the data phase in case of CAN-FD.",
     )
 
-    parser.add_argument(
-        "--app_name",
-        help="""App name can be necessary in the initializer. For example with Vector.""",
-    )
+    parser.add_argument("extra_args", nargs=argparse.REMAINDER)
 
 
 def _append_filter_argument(
@@ -102,8 +99,6 @@ def _create_bus(parsed_args: Any, **kwargs: Any) -> can.Bus:
         config["fd"] = True
     if parsed_args.data_bitrate:
         config["data_bitrate"] = parsed_args.data_bitrate
-    if parsed_args.app_name:
-        config["app_name"] = parsed_args.app_name
 
     return Bus(parsed_args.channel, **config)  # type: ignore
 
@@ -127,6 +122,19 @@ def _parse_filters(parsed_args: Any) -> CanFilters:
             can_filters.append({"can_id": can_id, "can_mask": can_mask})
 
     return can_filters
+
+
+def _parse_additonal_config(unknown_args):
+    additional_config = dict(
+        (
+            (
+                arg.split("=", 1)[0].lstrip("--").replace("-", "_"),
+                arg.split("=", 1)[1],
+            )
+            for arg in unknown_args
+        )
+    )
+    return additional_config
 
 
 def main() -> None:
@@ -179,9 +187,9 @@ def main() -> None:
         parser.print_help(sys.stderr)
         raise SystemExit(errno.EINVAL)
 
-    results = parser.parse_args()
-
-    bus = _create_bus(results, can_filters=_parse_filters(results))
+    results, unknown_args = parser.parse_known_args()
+    additional_config = _parse_additonal_config(unknown_args)
+    bus = _create_bus(results, can_filters=_parse_filters(results), **additional_config)
 
     if results.active:
         bus.state = BusState.ACTIVE
