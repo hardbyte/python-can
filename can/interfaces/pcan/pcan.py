@@ -2,11 +2,10 @@
 Enable basic CAN over a PCAN USB device.
 """
 
-from .basic import *  # Do this first since the wildcard imports a lot
-
 import logging
 import time
 from datetime import datetime
+import platform
 
 from typing import Optional
 
@@ -14,6 +13,46 @@ from ...message import Message
 from ...bus import BusABC, BusState
 from ...util import len2dlc, dlc2len
 from ...exceptions import CanError, CanOperationError, CanInitializationError
+
+
+from .basic import (
+    PCAN_BITRATES,
+    PCAN_FD_PARAMETER_LIST,
+    PCAN_CHANNEL_NAMES,
+    PCAN_BAUD_500K,
+    PCAN_TYPE_ISA,
+    PCANBasic,
+    PCAN_ERROR_OK,
+    PCAN_ALLOW_ERROR_FRAMES,
+    PCAN_PARAMETER_ON,
+    PCAN_RECEIVE_EVENT,
+    PCAN_DEVICE_NUMBER,
+    PCAN_ERROR_QRCVEMPTY,
+    PCAN_ERROR_BUSLIGHT,
+    PCAN_ERROR_BUSHEAVY,
+    PCAN_MESSAGE_EXTENDED,
+    PCAN_MESSAGE_RTR,
+    PCAN_MESSAGE_FD,
+    PCAN_MESSAGE_BRS,
+    PCAN_MESSAGE_ESI,
+    PCAN_MESSAGE_ERRFRAME,
+    PCAN_MESSAGE_STANDARD,
+    TPCANMsgFD,
+    TPCANMsg,
+    PCAN_CHANNEL_IDENTIFYING,
+    PCAN_LISTEN_ONLY,
+    PCAN_PARAMETER_OFF,
+    TPCANHandle,
+    PCAN_PCIBUS1,
+    PCAN_USBBUS1,
+    PCAN_PCCBUS1,
+    PCAN_LANBUS1,
+    PCAN_CHANNEL_CONDITION,
+    PCAN_CHANNEL_AVAILABLE,
+    PCAN_CHANNEL_FEATURES,
+    FEATURE_FD_CAPABLE,
+    PCAN_DICT_STATUS,
+)
 
 
 # Set up logging
@@ -52,99 +91,6 @@ except ImportError:
     except ImportError:
         # Use polling instead
         HAS_EVENTS = False
-
-
-pcan_bitrate_objs = {
-    1000000: PCAN_BAUD_1M,
-    800000: PCAN_BAUD_800K,
-    500000: PCAN_BAUD_500K,
-    250000: PCAN_BAUD_250K,
-    125000: PCAN_BAUD_125K,
-    100000: PCAN_BAUD_100K,
-    95000: PCAN_BAUD_95K,
-    83000: PCAN_BAUD_83K,
-    50000: PCAN_BAUD_50K,
-    47000: PCAN_BAUD_47K,
-    33000: PCAN_BAUD_33K,
-    20000: PCAN_BAUD_20K,
-    10000: PCAN_BAUD_10K,
-    5000: PCAN_BAUD_5K,
-}
-
-
-pcan_fd_parameter_list = [
-    "nom_brp",
-    "nom_tseg1",
-    "nom_tseg2",
-    "nom_sjw",
-    "data_brp",
-    "data_tseg1",
-    "data_tseg2",
-    "data_sjw",
-]
-
-pcan_channel_names = {
-    "PCAN_NONEBUS": PCAN_NONEBUS,
-    "PCAN_ISABUS1": PCAN_ISABUS1,
-    "PCAN_ISABUS2": PCAN_ISABUS2,
-    "PCAN_ISABUS3": PCAN_ISABUS3,
-    "PCAN_ISABUS4": PCAN_ISABUS4,
-    "PCAN_ISABUS5": PCAN_ISABUS5,
-    "PCAN_ISABUS6": PCAN_ISABUS6,
-    "PCAN_ISABUS7": PCAN_ISABUS7,
-    "PCAN_ISABUS8": PCAN_ISABUS8,
-    "PCAN_DNGBUS1": PCAN_DNGBUS1,
-    "PCAN_PCIBUS1": PCAN_PCIBUS1,
-    "PCAN_PCIBUS2": PCAN_PCIBUS2,
-    "PCAN_PCIBUS3": PCAN_PCIBUS3,
-    "PCAN_PCIBUS4": PCAN_PCIBUS4,
-    "PCAN_PCIBUS5": PCAN_PCIBUS5,
-    "PCAN_PCIBUS6": PCAN_PCIBUS6,
-    "PCAN_PCIBUS7": PCAN_PCIBUS7,
-    "PCAN_PCIBUS8": PCAN_PCIBUS8,
-    "PCAN_PCIBUS9": PCAN_PCIBUS9,
-    "PCAN_PCIBUS10": PCAN_PCIBUS10,
-    "PCAN_PCIBUS11": PCAN_PCIBUS11,
-    "PCAN_PCIBUS12": PCAN_PCIBUS12,
-    "PCAN_PCIBUS13": PCAN_PCIBUS13,
-    "PCAN_PCIBUS14": PCAN_PCIBUS14,
-    "PCAN_PCIBUS15": PCAN_PCIBUS15,
-    "PCAN_PCIBUS16": PCAN_PCIBUS16,
-    "PCAN_USBBUS1": PCAN_USBBUS1,
-    "PCAN_USBBUS2": PCAN_USBBUS2,
-    "PCAN_USBBUS3": PCAN_USBBUS3,
-    "PCAN_USBBUS4": PCAN_USBBUS4,
-    "PCAN_USBBUS5": PCAN_USBBUS5,
-    "PCAN_USBBUS6": PCAN_USBBUS6,
-    "PCAN_USBBUS7": PCAN_USBBUS7,
-    "PCAN_USBBUS8": PCAN_USBBUS8,
-    "PCAN_USBBUS9": PCAN_USBBUS9,
-    "PCAN_USBBUS10": PCAN_USBBUS10,
-    "PCAN_USBBUS11": PCAN_USBBUS11,
-    "PCAN_USBBUS12": PCAN_USBBUS12,
-    "PCAN_USBBUS13": PCAN_USBBUS13,
-    "PCAN_USBBUS14": PCAN_USBBUS14,
-    "PCAN_USBBUS15": PCAN_USBBUS15,
-    "PCAN_USBBUS16": PCAN_USBBUS16,
-    "PCAN_PCCBUS1": PCAN_PCCBUS1,
-    "PCAN_PCCBUS2": PCAN_PCCBUS2,
-    "PCAN_LANBUS1": PCAN_LANBUS1,
-    "PCAN_LANBUS2": PCAN_LANBUS2,
-    "PCAN_LANBUS3": PCAN_LANBUS3,
-    "PCAN_LANBUS4": PCAN_LANBUS4,
-    "PCAN_LANBUS5": PCAN_LANBUS5,
-    "PCAN_LANBUS6": PCAN_LANBUS6,
-    "PCAN_LANBUS7": PCAN_LANBUS7,
-    "PCAN_LANBUS8": PCAN_LANBUS8,
-    "PCAN_LANBUS9": PCAN_LANBUS9,
-    "PCAN_LANBUS10": PCAN_LANBUS10,
-    "PCAN_LANBUS11": PCAN_LANBUS11,
-    "PCAN_LANBUS12": PCAN_LANBUS12,
-    "PCAN_LANBUS13": PCAN_LANBUS13,
-    "PCAN_LANBUS14": PCAN_LANBUS14,
-    "PCAN_LANBUS15": PCAN_LANBUS15,
-    "PCAN_LANBUS16": PCAN_LANBUS16,
-}
 
 
 class PcanBus(BusABC):
@@ -248,14 +194,14 @@ class PcanBus(BusABC):
         """
         self.channel_info = str(channel)
         self.fd = kwargs.get("fd", False)
-        pcan_bitrate = pcan_bitrate_objs.get(bitrate, PCAN_BAUD_500K)
+        pcan_bitrate = PCAN_BITRATES.get(bitrate, PCAN_BAUD_500K)
 
         hwtype = PCAN_TYPE_ISA
         ioport = 0x02A0
         interrupt = 11
 
         if not isinstance(channel, int):
-            channel = pcan_channel_names[channel]
+            channel = PCAN_CHANNEL_NAMES[channel]
 
         self.m_objPCANBasic = PCANBasic()
         self.m_PcanHandle = channel
@@ -274,7 +220,7 @@ class PcanBus(BusABC):
 
             fd_parameters_values = [f_clock] + [
                 "{}={}".format(key, kwargs.get(key, None))
-                for key in pcan_fd_parameter_list
+                for key in PCAN_FD_PARAMETER_LIST
                 if kwargs.get(key, None) is not None
             ]
 
@@ -651,11 +597,12 @@ class PcanBus(BusABC):
     def status_string(self) -> Optional[str]:
         """
         Query the PCAN bus status.
-        :return: The status in string.
+
+        :return: The status description, if any was found.
         """
-        if self.status() in PCAN_DICT_STATUS:
+        try:
             return PCAN_DICT_STATUS[self.status()]
-        else:
+        except KeyError:
             return None
 
 
