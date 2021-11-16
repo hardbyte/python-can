@@ -46,9 +46,7 @@ class SqliteReader(BaseIOHandler):
         self.table_name = table_name
 
     def __iter__(self):
-        for frame_data in self._cursor.execute(
-            "SELECT * FROM {}".format(self.table_name)
-        ):
+        for frame_data in self._cursor.execute(f"SELECT * FROM {self.table_name}"):
             yield SqliteReader._assemble_message(frame_data)
 
     @staticmethod
@@ -66,7 +64,7 @@ class SqliteReader(BaseIOHandler):
 
     def __len__(self):
         # this might not run in constant time
-        result = self._cursor.execute("SELECT COUNT(*) FROM {}".format(self.table_name))
+        result = self._cursor.execute(f"SELECT COUNT(*) FROM {self.table_name}")
         return int(result.fetchone()[0])
 
     def read_all(self):
@@ -74,9 +72,7 @@ class SqliteReader(BaseIOHandler):
 
         :rtype: Generator[can.Message]
         """
-        result = self._cursor.execute(
-            "SELECT * FROM {}".format(self.table_name)
-        ).fetchall()
+        result = self._cursor.execute(f"SELECT * FROM {self.table_name}").fetchall()
         return (SqliteReader._assemble_message(frame) for frame in result)
 
     def stop(self):
@@ -164,20 +160,16 @@ class SqliteWriter(BaseIOHandler, BufferedReader):
 
         # create table structure
         self._conn.cursor().execute(
-            """
-        CREATE TABLE IF NOT EXISTS {}
-        (
-          ts REAL,
-          arbitration_id INTEGER,
-          extended INTEGER,
-          remote INTEGER,
-          error INTEGER,
-          dlc INTEGER,
-          data BLOB
-        )
-        """.format(
-                self.table_name
-            )
+            f"""CREATE TABLE IF NOT EXISTS {self.table_name}
+            (
+              ts REAL,
+              arbitration_id INTEGER,
+              extended INTEGER,
+              remote INTEGER,
+              error INTEGER,
+              dlc INTEGER,
+              data BLOB
+            )"""
         )
         self._conn.commit()
 
@@ -209,9 +201,9 @@ class SqliteWriter(BaseIOHandler, BufferedReader):
                         or len(messages) > self.MAX_BUFFER_SIZE_BEFORE_WRITES
                     ):
                         break
-                    else:
-                        # just go on
-                        msg = self.get_message(self.GET_MESSAGE_TIMEOUT)
+
+                    # just go on
+                    msg = self.get_message(self.GET_MESSAGE_TIMEOUT)
 
                 count = len(messages)
                 if count > 0:

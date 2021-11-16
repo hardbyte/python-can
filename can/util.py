@@ -344,8 +344,7 @@ def _rename_kwargs(
                     )
                 kwargs[new] = value
             else:
-                warnings.warn("{} is deprecated".format(
-                    alias), DeprecationWarning)
+                warnings.warn(f"{alias} is deprecated", DeprecationWarning)
 
 
 def time_perfcounter_correlation() -> Tuple[float, float]:

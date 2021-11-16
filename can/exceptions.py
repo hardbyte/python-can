@@ -15,7 +15,11 @@ For example, validating typical arguments and parameters might result in a
 :class:`ValueError`. This should always be documented for the function at hand.
 """
 
+
+from contextlib import contextmanager
+
 from typing import Optional
+from typing import Type
 
 
 class CanError(Exception):
@@ -96,3 +100,18 @@ class CanTimeoutError(CanError, TimeoutError):
       - Some message could not be sent after the timeout elapsed
       - No message was read within the given time
     """
+
+
+@contextmanager
+def error_check(
+    error_message: Optional[str] = None,
+    exception_type: Type[CanError] = CanOperationError,
+) -> None:
+    """Catches any exceptions and turns them into the new type while preserving the stack trace."""
+    try:
+        yield
+    except Exception as error:
+        if error_message is None:
+            raise exception_type(str(error)) from error
+        else:
+            raise exception_type(error_message) from error

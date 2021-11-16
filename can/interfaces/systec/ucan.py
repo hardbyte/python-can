@@ -4,6 +4,8 @@ import sys
 from ctypes import byref
 from ctypes import c_wchar_p as LPWSTR
 
+from ...exceptions import CanInterfaceNotImplementedError
+
 from .constants import *
 from .structures import *
 from .exceptions import *
@@ -110,6 +112,7 @@ def check_result(result, func, arguments):
     return result
 
 
+_UCAN_INITIALIZED = False
 if os.name != "nt":
     log.warning("SYSTEC ucan library does not work on %s platform.", sys.platform)
 else:
@@ -310,6 +313,8 @@ else:
         UcanEnableCyclicCanMsg.argtypes = [Handle, BYTE, DWORD]
         UcanEnableCyclicCanMsg.errcheck = check_result
 
+        _UCAN_INITIALIZED = True
+
     except Exception as ex:
         log.warning("Cannot load SYSTEC ucan library: %s.", ex)
 
@@ -323,6 +328,11 @@ class UcanServer:
     _connect_control_ref = None
 
     def __init__(self):
+        if not _UCAN_INITIALIZED:
+            raise CanInterfaceNotImplementedError(
+                "The interface could not be loaded on the current platform"
+            )
+
         self._handle = Handle(INVALID_HANDLE)
         self._is_initialized = False
         self._hw_is_initialized = False

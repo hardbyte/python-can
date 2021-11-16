@@ -29,7 +29,9 @@ Supported platform
 
 Windows, Linux and Mac.
 
-Note: Since ``pyusb`` with ```libusb0``` as backend is used, ``libusb-win32`` usb driver is required to be installed in Windows.
+.. note::
+
+   The backend driver depends on `pyusb <https://pyusb.github.io/pyusb/>` so a ``pyusb`` backend driver library such as ``libusb`` must be installed. On Windows a tool such as `Zadig <https://zadig.akeo.ie/>` can be used to set the USB device driver to ``libusb-win32``.
 
 
 Supplementary Info on ``gs_usb``

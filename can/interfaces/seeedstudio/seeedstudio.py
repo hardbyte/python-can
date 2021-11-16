@@ -113,7 +113,7 @@ class SeeedBus(BusABC):
                 "could not create the serial device"
             ) from error
 
-        super(SeeedBus, self).__init__(channel=channel, *args, **kwargs)
+        super().__init__(channel=channel, *args, **kwargs)
         self.init_frame()
 
     def shutdown(self):
