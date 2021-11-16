@@ -14,7 +14,7 @@ class IXXATBus(BusABC):
     This class only delegates to related implementation (in calib_vcinpl or canlib_vcinpl2) class depending on fd user option.
     """
 
-    def __init__(self, channel, can_filters=None, **kwargs):
+    def __init__(self, channel, can_filters=None, fd=False, **kwargs):
         """
         :param int channel:
             The Channel id to create this bus with.
@@ -28,8 +28,8 @@ class IXXATBus(BusABC):
         :param int UniqueHardwareId:
             UniqueHardwareId to connect (optional, will use the first found if not supplied)
 
-        : param bool fd:
-        Default False, enables CAN-FD usage.
+        :param bool fd:
+            Default False, enables CAN-FD usage.
 
         :param int bitrate:
             Channel bitrate in bit/s
@@ -41,10 +41,8 @@ class IXXATBus(BusABC):
             Default False, enables the capability to use extended IDs.
 
         """
-        if kwargs.get("fd", False):
-            self.bus = vcinpl2.IXXATBus(channel, can_filters=None, **kwargs)
-        else:
-            self.bus = vcinpl.IXXATBus(channel, can_filters=None, **kwargs)
+        bus_class = vcinpl2.IXXATBus if fd else vcinpl.IXXATBus
+        self.bus = bus_class(channel, can_filters=can_filters, fd=fd, **kwargs)
 
     def flush_tx_buffer(self):
         """Flushes the transmit buffer on the IXXAT"""

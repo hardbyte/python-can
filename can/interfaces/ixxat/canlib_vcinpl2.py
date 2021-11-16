@@ -13,7 +13,7 @@ import ctypes
 import functools
 import logging
 import sys
-from typing import Optional
+from typing import Optional, Callable
 
 from can import BusABC, Message
 from can.exceptions import CanInterfaceNotImplementedError, CanInitializationError
@@ -39,7 +39,7 @@ __all__ = [
 
 log = logging.getLogger("can.ixxat")
 
-from time import perf_counter as _timer_function
+from time import perf_counter
 
 # Hack to have vciFormatError as a free function, see below
 vciFormatError = None
@@ -58,45 +58,47 @@ else:
     log.warning("IXXAT VCI library does not work on %s platform", sys.platform)
 
 
-def __vciFormatErrorExtended(library_instance, function, HRESULT, arguments):
+def __vciFormatErrorExtended(
+    library_instance: CLibrary, function: Callable, vret: int, args: tuple
+):
     """Format a VCI error and attach failed function, decoded HRESULT and arguments
     :param CLibrary library_instance:
         Mapped instance of IXXAT vcinpl library
     :param callable function:
         Failed function
-    :param HRESULT HRESULT:
+    :param HRESULT vret:
         HRESULT returned by vcinpl call
-    :param arguments:
+    :param args:
         Arbitrary arguments tuple
     :return:
         Formatted string
     """
     # TODO: make sure we don't generate another exception
     return "{} - arguments were {}".format(
-        __vciFormatError(library_instance, function, HRESULT), arguments
+        __vciFormatError(library_instance, function, vret), args
     )
 
 
-def __vciFormatError(library_instance, function, HRESULT):
+def __vciFormatError(library_instance: CLibrary, function: Callable, vret: int):
     """Format a VCI error and attach failed function and decoded HRESULT
     :param CLibrary library_instance:
         Mapped instance of IXXAT vcinpl library
     :param callable function:
         Failed function
-    :param HRESULT HRESULT:
+    :param HRESULT vret:
         HRESULT returned by vcinpl call
     :return:
         Formatted string
     """
     buf = ctypes.create_string_buffer(constants.VCI_MAX_ERRSTRLEN)
     ctypes.memset(buf, 0, constants.VCI_MAX_ERRSTRLEN)
-    library_instance.vciFormatError(HRESULT, buf, constants.VCI_MAX_ERRSTRLEN)
+    library_instance.vciFormatError(vret, buf, constants.VCI_MAX_ERRSTRLEN)
     return "function {} failed ({})".format(
         function._name, buf.value.decode("utf-8", "replace")
     )
 
 
-def __check_status(result, function, arguments):
+def __check_status(result, function, args):
     """
     Check the result of a vcinpl function call and raise appropriate exception
     in case of an error. Used as errcheck function when mapping C functions
@@ -105,7 +107,7 @@ def __check_status(result, function, arguments):
             Function call numeric result
         :param callable function:
             Called function
-        :param arguments:
+        :param args:
             Arbitrary arguments tuple
         :raise:
             :class:VCITimeout
@@ -114,7 +116,7 @@ def __check_status(result, function, arguments):
             :class:VCIError
     """
     if isinstance(result, int):
-        # Real return value is an unsigned long
+        # Real return value is an unsigned long, the following line converts the number to unsigned
         result = ctypes.c_ulong(result).value
 
     if result == constants.VCI_E_TIMEOUT:
@@ -417,7 +419,19 @@ class IXXATBus(BusABC):
 
     """
 
-    def __init__(self, channel, can_filters=None, **kwargs):
+    def __init__(
+        self,
+        channel,
+        can_filters=None,
+        bitrate=500000,
+        data_bitrate=2000000,
+        extended=False,
+        UniqueHardwareId=None,
+        rxFifoSize=1024,
+        txFifoSize=128,
+        receive_own_messages=False,
+        **kwargs,
+    ):
         """
         :param int channel:
             The Channel id to create this bus with.
@@ -447,13 +461,7 @@ class IXXATBus(BusABC):
         log.info("CAN Filters: %s", can_filters)
         log.info("Got configuration of: %s", kwargs)
         # Configuration options
-        bitrate = kwargs.get("bitrate", 500000)
-        data_bitrate = kwargs.get("data_bitrate", 2000000)
-        UniqueHardwareId = kwargs.get("UniqueHardwareId", None)
-        rxFifoSize = kwargs.get("rxFifoSize", 1024)
-        txFifoSize = kwargs.get("txFifoSize", 128)
-        extended = kwargs.get("extended", False)
-        self._receive_own_messages = kwargs.get("receive_own_messages", False)
+        self._receive_own_messages = receive_own_messages
         # Usually comes as a string from the config file
         channel = int(channel)
 
@@ -626,8 +634,7 @@ class IXXATBus(BusABC):
         # the message in ticks. The resolution of a tick can be calculated from the fields
         # dwClockFreq and dwTscDivisor of the structure  CANCAPABILITIES in accordance with the following formula:
         # frequency [1/s] = dwClockFreq / dwTscDivisor
-        # We explicitly cast to float for Python 2.x users
-        self._tick_resolution = float(
+        self._tick_resolution = (
             self._channel_capabilities.dwTscClkFreq
             / self._channel_capabilities.dwTscDivisor
         )
@@ -712,7 +719,7 @@ class IXXATBus(BusABC):
             else:
                 timeout_ms = int(timeout * 1000)
                 remaining_ms = timeout_ms
-                t0 = _timer_function()
+                t0 = perf_counter()
 
             while True:
                 try:
@@ -720,7 +727,7 @@ class IXXATBus(BusABC):
                         self._channel_handle, remaining_ms, ctypes.byref(self._message)
                     )
                 except (VCITimeout, VCIRxQueueEmptyError):
-                    # Ignore the 2 errors, the timeout is handled manually with the _timer_function()
+                    # Ignore the 2 errors, the timeout is handled manually with the perf_counter()
                     pass
                 else:
                     # See if we got a data or info/error messages
@@ -765,7 +772,7 @@ class IXXATBus(BusABC):
                         log.warning("Unexpected message info type")
 
                 if t0 is not None:
-                    remaining_ms = timeout_ms - int((_timer_function() - t0) * 1000)
+                    remaining_ms = timeout_ms - int((perf_counter() - t0) * 1000)
                     if remaining_ms < 0:
                         break
 
@@ -847,7 +854,7 @@ class IXXATBus(BusABC):
             caps = structures.CANCAPABILITIES2()
             _canlib.canSchedulerGetCaps(self._scheduler, caps)
             self._scheduler_resolution = (
-                float(caps.dwCmsClkFreq) / caps.dwCmsDivisor
+                caps.dwCmsClkFreq / caps.dwCmsDivisor
             )  # TODO: confirm
             _canlib.canSchedulerActivate(self._scheduler, constants.TRUE)
         return CyclicSendTask(
