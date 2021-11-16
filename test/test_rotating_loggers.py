@@ -6,10 +6,7 @@ Test rotating loggers
 
 import os
 from pathlib import Path
-import tempfile
 from unittest.mock import Mock
-
-import pytest
 
 import can
 from .data.example_data import generate_message
@@ -90,7 +87,7 @@ class TestBaseRotatingLogger:
         assert os.path.exists(source) is False
         assert os.path.exists(dest) is False
 
-        logger_instance._get_new_writer(source)
+        logger_instance._writer = logger_instance._get_new_writer(source)
         logger_instance.stop()
 
         assert os.path.exists(source) is True
@@ -113,7 +110,7 @@ class TestBaseRotatingLogger:
         assert os.path.exists(source) is False
         assert os.path.exists(dest) is False
 
-        logger_instance._get_new_writer(source)
+        logger_instance._writer = logger_instance._get_new_writer(source)
         logger_instance.stop()
 
         assert os.path.exists(source) is True
