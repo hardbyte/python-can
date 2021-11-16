@@ -7,6 +7,8 @@ import can
 import usb
 import logging
 
+from ..exceptions import CanInitializationError, CanOperationError
+
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +24,7 @@ class GsUsbBus(can.BusABC):
         """
         gs_usb = GsUsb.find(bus=bus, address=address)
         if not gs_usb:
-            raise can.CanError("Can not find device {}".format(channel))
+            raise CanInitializationError(f"Cannot find device {channel}")
         self.gs_usb = gs_usb
         self.channel_info = channel
 
@@ -38,7 +40,7 @@ class GsUsbBus(can.BusABC):
         :param timeout: timeout is not supported.
             The function won't return until message is sent or exception is raised.
 
-        :raises can.CanError:
+        :raises CanOperationError:
             if the message could not be sent
         """
         can_id = msg.arbitration_id
@@ -64,7 +66,7 @@ class GsUsbBus(can.BusABC):
         try:
             self.gs_usb.send(frame)
         except usb.core.USBError:
-            raise can.CanError("The message can not be sent")
+            raise CanOperationError("The message could not be sent")
 
     def _recv_internal(
         self, timeout: Optional[float]
@@ -76,6 +78,8 @@ class GsUsbBus(can.BusABC):
         :meth:`~can.BusABC.set_filters` do not match and the call has
         not yet timed out.
 
+        Never raises an error/exception.
+
         :param float timeout: seconds to wait for a message,
                               see :meth:`~can.BusABC.send`
                               0 and None will be converted to minimum value 1ms.
@@ -85,9 +89,6 @@ class GsUsbBus(can.BusABC):
             2.  a bool that is True if message filtering has already
                 been done and else False. In this interface it is always False
                 since filtering is not available
-
-        :raises can.CanError:
-            if an error occurred while reading
         """
         frame = GsUsbFrame()
 
@@ -111,8 +112,4 @@ class GsUsbBus(can.BusABC):
         return msg, False
 
     def shutdown(self):
-        """
-        Called to carry out any interface specific cleanup required
-        in shutting down a bus.
-        """
         self.gs_usb.stop()

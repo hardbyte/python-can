@@ -9,12 +9,15 @@ import pickle
 from datetime import timedelta
 
 from hypothesis import given, settings
+import hypothesis.errors
 import hypothesis.strategies as st
 
 from can import Message
 
 from .message_helper import ComparingMessagesTestCase
-from .config import IS_GITHUB_ACTIONS
+from .config import IS_GITHUB_ACTIONS, IS_WINDOWS, IS_PYPY
+
+import pytest
 
 
 class TestMessageClass(unittest.TestCase):
@@ -41,6 +44,11 @@ class TestMessageClass(unittest.TestCase):
     @settings(
         max_examples=2000,
         deadline=None if IS_GITHUB_ACTIONS else timedelta(milliseconds=500),
+    )
+    @pytest.mark.xfail(
+        IS_WINDOWS and IS_PYPY,
+        raises=hypothesis.errors.Flaky,
+        reason="Hypothesis generates inconistent timestamp floats on Windows+PyPy-3.7",
     )
     def test_methods(self, **kwargs):
         is_valid = not (

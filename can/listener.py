@@ -116,7 +116,10 @@ class BufferedReader(Listener):
         :return: the Message if there is one, or None if there is not.
         """
         try:
-            return self.buffer.get(block=not self.is_stopped, timeout=timeout)
+            if self.is_stopped:
+                return self.buffer.get(block=False)
+            else:
+                return self.buffer.get(block=True, timeout=timeout)
         except Empty:
             return None
 
@@ -139,7 +142,7 @@ class AsyncBufferedReader(Listener):
     def __init__(self, **kwargs: Any) -> None:
         self.buffer: "asyncio.Queue[Message]"
 
-        if "loop" in kwargs.keys():
+        if "loop" in kwargs:
             warnings.warn(
                 "The 'loop' argument is deprecated since python-can 4.0.0 "
                 "and has no effect starting with Python 3.10",

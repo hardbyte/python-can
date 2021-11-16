@@ -51,6 +51,7 @@ class IXXATBus(BusABC):
         return self.bus.flush_tx_buffer()
 
     def _recv_internal(self, timeout):
+        """Read a message from IXXAT device."""
         return self.bus._recv_internal(timeout)
 
     def send(self, msg: Message, timeout: Optional[float] = None) -> None:

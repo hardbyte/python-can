@@ -713,11 +713,7 @@ def get_channel_info(channel):
         ctypes.sizeof(number),
     )
 
-    return "%s, S/N %d (#%d)" % (
-        name.value.decode("ascii"),
-        serial.value,
-        number.value + 1,
-    )
+    return f"{name.value.decode('ascii')}, S/N {serial.value} (#{number.value + 1})"
 
 
 init_kvaser_library()

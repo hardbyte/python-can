@@ -1,16 +1,24 @@
+queue_rules:
+  - name: default
+    conditions:
+      - "status-success=test"  # "GitHub Actions works slightly differently [...], only the job name is used."
+      - "status-success=format"
+
 pull_request_rules:
   - name: Automatic merge passing PR on up to date branch with approving CR
     conditions:
+      - "base=develop"
       - "#approved-reviews-by>=1"
       - "#review-requested=0"
       - "#changes-requested-reviews-by=0"
-      - "status-success=Travis CI - Pull Request"
+      - "status-success=test"
+      - "status-success=format"
       - "label!=work-in-progress"
     actions:
-      merge:
-        method: merge
-        strict: smart+fasttrack
-  - name: Request Brian to review changes on core api.
+      queue:
+        name: default
+
+  - name: Request Brian to review changes to the core API
     conditions:
       - "-files~=^can/interfaces/$"
       - "-closed"
@@ -20,7 +28,7 @@ pull_request_rules:
         users:
           - hardbyte
 
-  - name: delete head branch after merge
+  - name: Delete head branch after merge
     conditions:
       - merged
     actions:
