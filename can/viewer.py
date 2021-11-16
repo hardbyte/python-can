@@ -31,7 +31,12 @@ from typing import Dict, List, Tuple, Union
 
 import can
 from can import __version__
-from .logger import _create_bus, _parse_filters, _append_filter_argument
+from .logger import (
+    _create_bus,
+    _parse_filters,
+    _append_filter_argument,
+    _create_base_argument_parser,
+)
 
 
 logger = logging.getLogger("can.serial")
@@ -53,11 +58,14 @@ class CanViewer:
         self.bus = bus
         self.data_structs = data_structs
 
-        # Initialise the ID dictionary, start timestamp, scroll and variable for pausing the viewer
+        # Initialise the ID dictionary, Previous values dict, start timestamp,
+        # scroll and variables for pausing the viewer and enabling byte highlighting
         self.ids = {}
         self.start_time = None
         self.scroll = 0
         self.paused = False
+        self.highlight_changed_bytes = False
+        self.previous_values = {}
 
         # Get the window dimensions - used for resizing the window
         self.y, self.x = self.stdscr.getmaxyx()
@@ -70,6 +78,8 @@ class CanViewer:
 
         # Used to color error frames red
         curses.init_pair(1, curses.COLOR_RED, -1)
+        # Used to color changed bytes
+        curses.init_pair(2, curses.COLOR_CYAN, curses.COLOR_BLUE)
 
         if not testing:  # pragma: no cover
             self.run()
@@ -101,6 +111,14 @@ class CanViewer:
                 self.ids = {}
                 self.start_time = None
                 self.scroll = 0
+                self.draw_header()
+
+            # Toggle byte change highlighting pressing 'h'
+            elif key == ord("h"):
+                self.highlight_changed_bytes = not self.highlight_changed_bytes
+                if not self.highlight_changed_bytes:
+                    # empty the previous values dict when leaving higlighting mode
+                    self.previous_values.clear()
                 self.draw_header()
 
             # Sort by pressing 's'
@@ -239,14 +257,36 @@ class CanViewer:
         self.draw_line(self.ids[key]["row"], 23, f"{self.ids[key]['dt']:.6f}", color)
         self.draw_line(self.ids[key]["row"], 35, arbitration_id_string, color)
         self.draw_line(self.ids[key]["row"], 47, str(msg.dlc), color)
+
+        try:
+            previous_byte_values = self.previous_values[key]
+        except KeyError:  # no row of previous values exists for the current message ID
+            # initialise a row to store the values for comparison next time
+            self.previous_values[key] = dict()
+            previous_byte_values = self.previous_values[key]
         for i, b in enumerate(msg.data):
             col = 52 + i * 3
             if col > self.x - 2:
                 # Data does not fit
                 self.draw_line(self.ids[key]["row"], col - 4, "...", color)
                 break
+            if self.highlight_changed_bytes:
+                try:
+                    if b != previous_byte_values[i]:
+                        # set colour to highlight a changed value
+                        data_color = curses.color_pair(2)
+                    else:
+                        data_color = color
+                except KeyError:
+                    # previous entry for byte didnt exist - default to rest of line colour
+                    data_color = color
+                finally:
+                    # write the new value to the previous values dict for next time
+                    previous_byte_values[i] = b
+            else:
+                data_color = color
             text = f"{b:02X}"
-            self.draw_line(self.ids[key]["row"], col, text, color)
+            self.draw_line(self.ids[key]["row"], col, text, data_color)
 
         if self.data_structs:
             try:
@@ -284,7 +324,12 @@ class CanViewer:
         self.draw_line(0, 35, "ID", curses.A_BOLD)
         self.draw_line(0, 47, "DLC", curses.A_BOLD)
         self.draw_line(0, 52, "Data", curses.A_BOLD)
-        if self.data_structs:  # Only draw if the dictionary is not empty
+
+        # Indicate that byte change highlighting is enabled
+        if self.highlight_changed_bytes:
+            self.draw_line(0, 57, "(changed)", curses.color_pair(2))
+        # Only draw if the dictionary is not empty
+        if self.data_structs:
             self.draw_line(0, 77, "Parsed values", curses.A_BOLD)
 
     def redraw_screen(self):
@@ -345,19 +390,24 @@ def parse_args(args):
         "python -m can.viewer",
         description="A simple CAN viewer terminal application written in Python",
         epilog="R|Shortcuts: "
-        "\n        +---------+-------------------------+"
-        "\n        |   Key   |       Description       |"
-        "\n        +---------+-------------------------+"
-        "\n        | ESQ/q   | Exit the viewer         |"
-        "\n        | c       | Clear the stored frames |"
-        "\n        | s       | Sort the stored frames  |"
-        "\n        | SPACE   | Pause the viewer        |"
-        "\n        | UP/DOWN | Scroll the viewer       |"
-        "\n        +---------+-------------------------+",
+        "\n        +---------+-------------------------------+"
+        "\n        |   Key   |       Description             |"
+        "\n        +---------+-------------------------------+"
+        "\n        | ESQ/q   | Exit the viewer               |"
+        "\n        | c       | Clear the stored frames       |"
+        "\n        | s       | Sort the stored frames        |"
+        "\n        | h       | Toggle highlight byte changes |"
+        "\n        | SPACE   | Pause the viewer              |"
+        "\n        | UP/DOWN | Scroll the viewer             |"
+        "\n        +---------+-------------------------------+",
         formatter_class=SmartFormatter,
         add_help=False,
         allow_abbrev=False,
     )
+
+    # Generate the standard arguments:
+    # Channel, bitrate, data_bitrate, interface, app_name, CAN-FD support
+    _create_base_argument_parser(parser)
 
     optional = parser.add_argument_group("Optional arguments")
 
@@ -370,31 +420,6 @@ def parse_args(args):
         action="version",
         help="Show program's version number and exit",
         version=f"%(prog)s (version {__version__})",
-    )
-
-    # Copied from: can/logger.py
-    optional.add_argument(
-        "-b",
-        "--bitrate",
-        type=int,
-        help="""Bitrate to use for the given CAN interface""",
-    )
-
-    optional.add_argument("--fd", help="Activate CAN-FD support", action="store_true")
-
-    optional.add_argument(
-        "--data_bitrate",
-        type=int,
-        help="Bitrate to use for the data phase in case of CAN-FD.",
-    )
-
-    optional.add_argument(
-        "-c",
-        "--channel",
-        help="""Most backend interfaces require some sort of channel.
-                          For example with the serial interface the channel might be a rfcomm device: "/dev/rfcomm0"
-                          with the socketcan interfaces valid channel examples include: "can0", "vcan0".
-                          (default: use default for the specified interface)""",
     )
 
     optional.add_argument(
@@ -442,14 +467,6 @@ def parse_args(args):
     _append_filter_argument(optional, "-f")
 
     optional.add_argument(
-        "-i",
-        "--interface",
-        dest="interface",
-        help="R|Specify the backend CAN interface to use.",
-        choices=sorted(can.VALID_INTERFACES),
-    )
-
-    optional.add_argument(
         "-v",
         action="count",
         dest="verbosity",
@@ -486,6 +503,7 @@ def parse_args(args):
     # In order to convert from raw integer value the real units are multiplied with the values and
     # similarly the values
     # are divided by the value in order to convert from real units to raw integer values.
+
     data_structs: Dict[
         Union[int, Tuple[int, ...]], Union[struct.Struct, Tuple, None]
     ] = {}

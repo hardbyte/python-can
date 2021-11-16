@@ -102,7 +102,12 @@ class StdscrDummy:
             return curses.ascii.SP  # Unpause
         elif self.key_counter == 5:
             return ord("s")  # Sort
-
+        # Turn on byte highlighting (toggle)
+        elif self.key_counter == 6:
+            return ord("h")
+        # Turn off byte highlighting (toggle)
+        elif self.key_counter == 7:
+            return ord("h")
         # Keep scrolling until it exceeds the number of messages
         elif self.key_counter <= 100:
             return curses.KEY_DOWN
