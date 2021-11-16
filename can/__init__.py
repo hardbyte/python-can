@@ -12,7 +12,7 @@ __version__ = "4.0.0-dev.2"
 
 log = logging.getLogger("can")
 
-rc: Dict[str, Any] = dict()
+rc: Dict[str, Any] = {}
 
 from .listener import Listener, BufferedReader, RedirectReader, AsyncBufferedReader
 

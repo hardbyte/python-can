@@ -53,7 +53,7 @@ class CANalystIIBus(BusABC):
         elif isinstance(channel, int):
             self.channels = [channel]
         else:  # Sequence[int]
-            self.channels = [c for c in channel]
+            self.channels = list(channel)
 
         self.rx_queue = collections.deque(
             maxlen=rx_queue_size
