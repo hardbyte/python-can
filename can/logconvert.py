@@ -45,23 +45,21 @@ def main():
 
     args = parser.parse_args()
 
-    reader = LogReader(args.input)
+    with LogReader(args.input) as reader:
 
-    if args.file_size:
-        logger = SizedRotatingLogger(
-            base_filename=args.output, max_bytes=args.file_size
-        )
-    else:
-        logger = Logger(filename=args.output)
+        if args.file_size:
+            logger = SizedRotatingLogger(
+                base_filename=args.output, max_bytes=args.file_size
+            )
+        else:
+            logger = Logger(filename=args.output)
 
-    try:
-        for m in reader:  # pylint: disable=not-an-iterable
-            logger(m)
-    except KeyboardInterrupt:
-        sys.exit(1)
-    finally:
-        reader.stop()
-        logger.stop()
+        with logger:
+            try:
+                for m in reader:  # pylint: disable=not-an-iterable
+                    logger(m)
+            except KeyboardInterrupt:
+                sys.exit(1)
 
 
 if __name__ == "__main__":
