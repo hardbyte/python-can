@@ -125,16 +125,10 @@ def _parse_filters(parsed_args: Any) -> CanFilters:
 
 
 def _parse_additonal_config(unknown_args):
-    additional_config = dict(
-        (
-            (
-                arg.split("=", 1)[0].lstrip("--").replace("-", "_"),
-                arg.split("=", 1)[1],
-            )
-            for arg in unknown_args
-        )
+    return dict(
+        (arg.split("=", 1)[0].lstrip("--").replace("-", "_"), arg.split("=", 1)[1])
+        for arg in unknown_args
     )
-    return additional_config
 
 
 def main() -> None:
