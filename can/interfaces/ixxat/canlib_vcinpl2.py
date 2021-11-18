@@ -13,7 +13,7 @@ import ctypes
 import functools
 import logging
 import sys
-from typing import Optional, Callable
+from typing import Optional, Callable, Tuple
 
 from can import BusABC, Message
 from can.exceptions import CanInterfaceNotImplementedError, CanInitializationError
@@ -59,7 +59,7 @@ else:
 
 
 def __vciFormatErrorExtended(
-    library_instance: CLibrary, function: Callable, vret: int, args: tuple
+    library_instance: CLibrary, function: Callable, vret: int, args: Tuple
 ):
     """Format a VCI error and attach failed function, decoded HRESULT and arguments
     :param CLibrary library_instance:
