@@ -57,7 +57,15 @@ def _create_base_argument_parser(parser: argparse.ArgumentParser) -> None:
         help="Bitrate to use for the data phase in case of CAN-FD.",
     )
 
-    parser.add_argument("extra_args", nargs=argparse.REMAINDER)
+    parser.add_argument(
+        "extra_args",
+        nargs=argparse.REMAINDER,
+        help="""\
+        The remainding arguments will be use for the interface initialisation.
+        For example, `-i vector -c 1 --app-name=MyCanApp` is the equivalent to 
+        opening the bus with `Bus('vector', channel=1, app_name='MyCanApp')`
+        """,
+    )
 
 
 def _append_filter_argument(
