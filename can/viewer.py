@@ -36,6 +36,7 @@ from .logger import (
     _parse_filters,
     _append_filter_argument,
     _create_base_argument_parser,
+    _parse_additonal_config,
 )
 
 
@@ -480,7 +481,7 @@ def parse_args(args):
         parser.print_help(sys.stderr)
         raise SystemExit(errno.EINVAL)
 
-    parsed_args = parser.parse_args(args)
+    parsed_args, unknown_args = parser.parse_known_args(args)
 
     can_filters = _parse_filters(parsed_args)
 
@@ -534,13 +535,15 @@ def parse_args(args):
             else:
                 data_structs[key] = struct.Struct(fmt)
 
-    return parsed_args, can_filters, data_structs
+    additional_config = _parse_additonal_config(unknown_args)
+    return parsed_args, can_filters, data_structs, additional_config
 
 
 def main() -> None:
-    parsed_args, can_filters, data_structs = parse_args(sys.argv[1:])
+    parsed_args, can_filters, data_structs, additional_config = parse_args(sys.argv[1:])
 
-    additional_config = {"can_filters": can_filters} if can_filters else {}
+    if can_filters:
+        additional_config.update({"can_filters": can_filters})
     bus = _create_bus(parsed_args, **additional_config)
     # print(f"Connected to {bus.__class__.__name__}: {bus.channel_info}")
 
