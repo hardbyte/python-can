@@ -21,7 +21,7 @@ from pkg_resources import iter_entry_points
 from ..message import Message
 from ..listener import Listener
 from .generic import BaseIOHandler, FileIOMessageWriter
-from .asc import ASCWriter, CompressedASCWriter
+from .asc import ASCWriter, GzipASCWriter
 from .blf import BLFWriter
 from .canutils import CanutilsLogWriter
 from .csv import CSVWriter
@@ -55,7 +55,7 @@ class Logger(BaseIOHandler, Listener):  # pylint: disable=abstract-method
     fetched_plugins = False
     message_writers = {
         ".asc": ASCWriter,
-        ".asc.gz": CompressedASCWriter,
+        ".asc.gz": GzipASCWriter,
         ".blf": BLFWriter,
         ".csv": CSVWriter,
         ".db": SqliteWriter,
@@ -85,7 +85,7 @@ class Logger(BaseIOHandler, Listener):  # pylint: disable=abstract-method
             )
             Logger.fetched_plugins = True
 
-        suffix = pathlib.PurePath(filename).suffix.lower()
+        suffix = "".join(s.lower() for s in pathlib.PurePath(filename).suffixes)
         try:
             return cast(
                 Listener, Logger.message_writers[suffix](filename, *args, **kwargs)

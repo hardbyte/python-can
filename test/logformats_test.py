@@ -11,7 +11,7 @@ comments.
 
 TODO: correctly set preserves_channel and adds_default_channel
 """
-
+import gzip
 import logging
 import unittest
 import tempfile
@@ -553,6 +553,34 @@ class TestAscFileFormat(ReaderWriterTest):
         ]
         actual = self._read_log_file("test_CanErrorFrames.asc")
         self.assertMessagesEqual(actual, expected_messages)
+
+
+class TestGzipASCFileFormat(ReaderWriterTest):
+    """Tests can.GzipASCWriter and can.GzipASCReader"""
+
+    def _setup_instance(self):
+        super()._setup_instance_helper(
+            can.GzipASCWriter,
+            can.GzipASCReader,
+            binary_file=True,
+            check_comments=True,
+            preserves_channel=False,
+            adds_default_channel=0,
+        )
+
+    def assertIncludesComments(self, filename):
+        """
+        Ensures that all comments are literally contained in the given file.
+
+        :param filename: the path-like object to use
+        """
+        if self.original_comments:
+            # read the entire outout file
+            with gzip.open(filename, "rt" if self.binary_file else "r") as file:
+                output_contents = file.read()
+            # check each, if they can be found in there literally
+            for comment in self.original_comments:
+                self.assertIn(comment, output_contents)
 
 
 class TestBlfFileFormat(ReaderWriterTest):

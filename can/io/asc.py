@@ -6,12 +6,13 @@ Example .asc files:
     - under `test/data/logfile.asc`
 """
 import gzip
-from typing import cast, Any, Generator, IO, List, Optional, Dict
+from typing import cast, Any, Generator, IO, List, Optional, Dict, Union
 
 from datetime import datetime
 import time
 import logging
 
+from .. import typechecking
 from ..message import Message
 from ..listener import Listener
 from ..util import channel2int
@@ -398,7 +399,7 @@ class ASCWriter(FileIOMessageWriter, Listener):
         self.log_event(serialized, msg.timestamp)
 
 
-class CompressedASCReader(ASCReader):
+class GzipASCReader(ASCReader):
     """Gzipped version of :class:`~can.ASCReader`"""
 
     def __init__(
@@ -418,12 +419,21 @@ class CompressedASCReader(ASCReader):
                      `relative` (starting at 0.0) or `absolute` (starting at
                      the system time). Default `True = relative`.
         """
-        super(CompressedASCReader, self).__init__(
+        self._fileobj = None
+        if file is not None and (hasattr(file, "read") and hasattr(file, "write")):
+            # file is None or some file-like object
+            self._fileobj = file
+        super(GzipASCReader, self).__init__(
             gzip.open(file, mode="rt"), base, relative_timestamp
         )
 
+    def stop(self) -> None:
+        super(GzipASCReader, self).stop()
+        if self._fileobj is not None:
+            self._fileobj.close()
 
-class CompressedASCWriter(ASCWriter):
+
+class GzipASCWriter(ASCWriter):
     """Gzipped version of :class:`~can.ASCWriter`"""
 
     def __init__(
@@ -441,6 +451,15 @@ class CompressedASCWriter(ASCWriter):
         :param compresslevel: Gzip compresslevel, see
                               :class:`~gzip.GzipFile` for details. The default is 6.
         """
-        super(CompressedASCWriter, self).__init__(
+        self._fileobj = None
+        if file is not None and (hasattr(file, "read") and hasattr(file, "write")):
+            # file is None or some file-like object
+            self._fileobj = file
+        super(GzipASCWriter, self).__init__(
             gzip.open(file, mode="wt", compresslevel=compresslevel), channel
         )
+
+    def stop(self) -> None:
+        super(GzipASCWriter, self).stop()
+        if self._fileobj is not None:
+            self._fileobj.close()
