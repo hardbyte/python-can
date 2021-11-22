@@ -1,8 +1,8 @@
 """
-ICS NeoVi interface module.
+Intrepid Control Systems (ICS) neoVI interface module.
 
 python-ics is a Python wrapper around the API provided by Intrepid Control
-Systems for communicating with their NeoVI range of devices.
+Systems for communicating with their neoVI range of devices.
 
 Implementation references:
 * https://github.com/intrepidcs/python_ics
@@ -30,7 +30,7 @@ try:
     import ics
 except ImportError as ie:
     logger.warning(
-        "You won't be able to use the ICS NeoVi can backend without the "
+        "You won't be able to use the ICS neoVI can backend without the "
         "python-ics module installed!: %s",
         ie,
     )
@@ -42,7 +42,7 @@ try:
 except ImportError as ie:
 
     logger.warning(
-        "Using ICS NeoVi can backend without the "
+        "Using ICS neoVI can backend without the "
         "filelock module installed may cause some issues!: %s",
         ie,
     )
