@@ -264,6 +264,7 @@ class slcanBus(BusABC):
         self._write(sendStr)
 
     def shutdown(self) -> None:
+        super().shutdown()
         self.close()
         with error_check("Could not close serial socket"):
             self.serialPortOrig.close()

@@ -122,6 +122,7 @@ class VirtualBus(BusABC):
             raise CanOperationError("Could not send message to one or more recipients")
 
     def shutdown(self) -> None:
+        super().shutdown()
         if self._open:
             self._open = False
 

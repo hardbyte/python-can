@@ -120,6 +120,7 @@ class SeeedBus(BusABC):
         """
         Close the serial interface.
         """
+        super().shutdown()
         self.ser.close()
 
     def init_frame(self, timeout=None):

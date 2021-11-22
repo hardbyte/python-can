@@ -221,6 +221,7 @@ class NiXNETcanBus(BusABC):
 
     def shutdown(self):
         """Close object."""
+        super().shutdown()
         self.__session_send.flush()
         self.__session_receive.flush()
 

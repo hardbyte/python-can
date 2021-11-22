@@ -131,6 +131,7 @@ class CantactBus(BusABC):
             )
 
     def shutdown(self):
+        super().shutdown()
         with error_check("Cannot shutdown interface"):
             self.interface.stop()
 

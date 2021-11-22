@@ -643,6 +643,7 @@ class KvaserBus(BusABC):
             log.error("Could not flash LEDs (%s)", e)
 
     def shutdown(self):
+        super().shutdown()
         # Wait for transmit queue to be cleared
         try:
             canWriteSync(self._write_handle, 100)
