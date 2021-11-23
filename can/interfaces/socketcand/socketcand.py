@@ -18,8 +18,6 @@ import traceback
 from collections import deque
 
 log = logging.getLogger(__name__)
-log.setLevel(logging.INFO)
-
 
 def convert_ascii_message_to_can_message(ascii_message: str) -> can.Message:
     if not ascii_message.startswith("< frame ") or not ascii_message.endswith(" >"):
