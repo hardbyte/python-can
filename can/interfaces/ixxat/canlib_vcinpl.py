@@ -22,6 +22,7 @@ from can.broadcastmanager import (
     RestartableCyclicTaskABC,
 )
 from can.ctypesutil import CLibrary, HANDLE, PHANDLE, HRESULT as ctypes_HRESULT
+from can.util import deprecated_args_alias
 
 from . import constants, structures
 from .exceptions import *
@@ -410,14 +411,19 @@ class IXXATBus(BusABC):
         },
     }
 
+    @deprecated_args_alias(
+        UniqueHardwareId="unique_hardware_id",
+        rxFifoSize="rx_fifo_size",
+        txFifoSize="tx_fifo_size",
+    )
     def __init__(
         self,
         channel,
         can_filters=None,
         bitrate=500000,
-        UniqueHardwareId=None,
-        rxFifoSize=16,
-        txFifoSize=16,
+        unique_hardware_id=None,
+        rx_fifo_size=16,
+        tx_fifo_size=16,
         receive_own_messages=False,
         **kwargs,
     ):
@@ -431,8 +437,8 @@ class IXXATBus(BusABC):
         :param bool receive_own_messages:
             Enable self-reception of sent messages.
 
-        :param int UniqueHardwareId:
-            UniqueHardwareId to connect (optional, will use the first found if not supplied)
+        :param int unique_hardware_id:
+            unique_hardware_id to connect (optional, will use the first found if not supplied)
 
         :param int bitrate:
             Channel bitrate in bit/s
@@ -451,11 +457,11 @@ class IXXATBus(BusABC):
         if bitrate not in self.CHANNEL_BITRATES[0]:
             raise ValueError("Invalid bitrate {}".format(bitrate))
 
-        if rxFifoSize <= 0:
-            raise ValueError("rxFifoSize must be > 0")
+        if rx_fifo_size <= 0:
+            raise ValueError("rx_fifo_size must be > 0")
 
-        if txFifoSize <= 0:
-            raise ValueError("txFifoSize must be > 0")
+        if tx_fifo_size <= 0:
+            raise ValueError("tx_fifo_size must be > 0")
 
         if channel < 0:
             raise ValueError("channel number must be >= 0")
@@ -469,10 +475,10 @@ class IXXATBus(BusABC):
         self._payload = (ctypes.c_byte * 8)()
 
         # Search for supplied device
-        if UniqueHardwareId is None:
+        if unique_hardware_id is None:
             log.info("Searching for first available device")
         else:
-            log.info("Searching for unique HW ID %s", UniqueHardwareId)
+            log.info("Searching for unique HW ID %s", unique_hardware_id)
         _canlib.vciEnumDeviceOpen(ctypes.byref(self._device_handle))
         while True:
             try:
@@ -480,20 +486,20 @@ class IXXATBus(BusABC):
                     self._device_handle, ctypes.byref(self._device_info)
                 )
             except StopIteration:
-                if UniqueHardwareId is None:
+                if unique_hardware_id is None:
                     raise VCIDeviceNotFoundError(
                         "No IXXAT device(s) connected or device(s) in use by other process(es)."
                     )
                 else:
                     raise VCIDeviceNotFoundError(
                         "Unique HW ID {} not connected or not available.".format(
-                            UniqueHardwareId
+                            unique_hardware_id
                         )
                     )
             else:
-                if (UniqueHardwareId is None) or (
+                if (unique_hardware_id is None) or (
                     self._device_info.UniqueHardwareId.AsChar
-                    == bytes(UniqueHardwareId, "ascii")
+                    == bytes(unique_hardware_id, "ascii")
                 ):
                     break
                 else:
@@ -516,8 +522,8 @@ class IXXATBus(BusABC):
         log.info(
             "Initializing channel %d in shared mode, %d rx buffers, %d tx buffers",
             channel,
-            rxFifoSize,
-            txFifoSize,
+            rx_fifo_size,
+            tx_fifo_size,
         )
 
         try:
@@ -533,7 +539,9 @@ class IXXATBus(BusABC):
             )
 
         # Signal TX/RX events when at least one frame has been handled
-        _canlib.canChannelInitialize(self._channel_handle, rxFifoSize, 1, txFifoSize, 1)
+        _canlib.canChannelInitialize(
+            self._channel_handle, rx_fifo_size, 1, tx_fifo_size, 1
+        )
         _canlib.canChannelActivate(self._channel_handle, constants.TRUE)
 
         log.info("Initializing control %d bitrate %d", channel, bitrate)
@@ -592,7 +600,7 @@ class IXXATBus(BusABC):
 
         # Usually you get back 3 messages like "CAN initialized" ecc...
         # Clear the FIFO by filter them out with low timeout
-        for _ in range(rxFifoSize):
+        for _ in range(rx_fifo_size):
             try:
                 _canlib.canChannelReadMessage(
                     self._channel_handle, 0, ctypes.byref(self._message)

@@ -24,6 +24,7 @@ from can.broadcastmanager import (
 from can.ctypesutil import CLibrary, HANDLE, PHANDLE, HRESULT as ctypes_HRESULT
 
 import can.util
+from can.util import deprecated_args_alias
 
 from . import constants, structures
 from .exceptions import *
@@ -115,10 +116,6 @@ def __check_status(result, function, args):
             :class:StopIteration
             :class:VCIError
     """
-    if isinstance(result, int):
-        # Real return value is an unsigned long, the following line converts the number to unsigned
-        result = ctypes.c_ulong(result).value
-
     if result == constants.VCI_E_TIMEOUT:
         raise VCITimeout("Function {} timed out".format(function._name))
     elif result == constants.VCI_E_RXQUEUE_EMPTY:
@@ -134,9 +131,10 @@ def __check_status(result, function, args):
 
 
 try:
+    hresult_type = ctypes.c_ulong
     # Map all required symbols and initialize library ---------------------------
     # HRESULT VCIAPI vciInitialize ( void );
-    _canlib.map_symbol("vciInitialize", ctypes.c_long, (), __check_status)
+    _canlib.map_symbol("vciInitialize", hresult_type, (), __check_status)
 
     # void VCIAPI vciFormatError (HRESULT hrError, PCHAR pszText, UINT32 dwsize);
     try:
@@ -152,28 +150,28 @@ try:
     vciFormatError = functools.partial(__vciFormatError, _canlib)
 
     # HRESULT VCIAPI vciEnumDeviceOpen( OUT PHANDLE hEnum );
-    _canlib.map_symbol("vciEnumDeviceOpen", ctypes.c_long, (PHANDLE,), __check_status)
+    _canlib.map_symbol("vciEnumDeviceOpen", hresult_type, (PHANDLE,), __check_status)
     # HRESULT VCIAPI vciEnumDeviceClose ( IN HANDLE hEnum );
-    _canlib.map_symbol("vciEnumDeviceClose", ctypes.c_long, (HANDLE,), __check_status)
+    _canlib.map_symbol("vciEnumDeviceClose", hresult_type, (HANDLE,), __check_status)
     # HRESULT VCIAPI vciEnumDeviceNext( IN  HANDLE hEnum, OUT PVCIDEVICEINFO pInfo );
     _canlib.map_symbol(
         "vciEnumDeviceNext",
-        ctypes.c_long,
+        hresult_type,
         (HANDLE, structures.PVCIDEVICEINFO),
         __check_status,
     )
 
     # HRESULT VCIAPI vciDeviceOpen( IN  REFVCIID rVciid, OUT PHANDLE  phDevice );
     _canlib.map_symbol(
-        "vciDeviceOpen", ctypes.c_long, (structures.PVCIID, PHANDLE), __check_status
+        "vciDeviceOpen", hresult_type, (structures.PVCIID, PHANDLE), __check_status
     )
     # HRESULT vciDeviceClose( HANDLE hDevice )
-    _canlib.map_symbol("vciDeviceClose", ctypes.c_long, (HANDLE,), __check_status)
+    _canlib.map_symbol("vciDeviceClose", hresult_type, (HANDLE,), __check_status)
 
     # HRESULT VCIAPI canChannelOpen( IN  HANDLE  hDevice, IN  UINT32  dwCanNo, IN  BOOL    fExclusive, OUT PHANDLE phCanChn );
     _canlib.map_symbol(
         "canChannelOpen",
-        ctypes.c_long,
+        hresult_type,
         (HANDLE, ctypes.c_uint32, ctypes.c_long, PHANDLE),
         __check_status,
     )
@@ -187,7 +185,7 @@ try:
     #                         IN UINT8  bFilterMode );
     _canlib.map_symbol(
         "canChannelInitialize",
-        ctypes.c_long,
+        hresult_type,
         (
             HANDLE,
             ctypes.c_uint16,
@@ -201,49 +199,49 @@ try:
     )
     # EXTERN_C HRESULT VCIAPI canChannelActivate( IN HANDLE hCanChn, IN BOOL   fEnable );
     _canlib.map_symbol(
-        "canChannelActivate", ctypes.c_long, (HANDLE, ctypes.c_long), __check_status
+        "canChannelActivate", hresult_type, (HANDLE, ctypes.c_long), __check_status
     )
     # HRESULT canChannelClose( HANDLE hChannel )
-    _canlib.map_symbol("canChannelClose", ctypes.c_long, (HANDLE,), __check_status)
+    _canlib.map_symbol("canChannelClose", hresult_type, (HANDLE,), __check_status)
     # EXTERN_C HRESULT VCIAPI canChannelReadMessage( IN  HANDLE  hCanChn, IN  UINT32  dwMsTimeout, OUT PCANMSG2 pCanMsg );
     _canlib.map_symbol(
         "canChannelReadMessage",
-        ctypes.c_long,
+        hresult_type,
         (HANDLE, ctypes.c_uint32, structures.PCANMSG2),
         __check_status,
     )
     # HRESULT canChannelPeekMessage(HANDLE hChannel,PCANMSG2 pCanMsg );
     _canlib.map_symbol(
         "canChannelPeekMessage",
-        ctypes.c_long,
+        hresult_type,
         (HANDLE, structures.PCANMSG2),
         __check_status,
     )
     # HRESULT canChannelWaitTxEvent (HANDLE hChannel UINT32 dwMsTimeout );
     _canlib.map_symbol(
         "canChannelWaitTxEvent",
-        ctypes.c_long,
+        hresult_type,
         (HANDLE, ctypes.c_uint32),
         __check_status,
     )
     # HRESULT canChannelWaitRxEvent (HANDLE hChannel, UINT32 dwMsTimeout );
     _canlib.map_symbol(
         "canChannelWaitRxEvent",
-        ctypes.c_long,
+        hresult_type,
         (HANDLE, ctypes.c_uint32),
         __check_status,
     )
     # HRESULT canChannelPostMessage (HANDLE hChannel, PCANMSG2 pCanMsg );
     _canlib.map_symbol(
         "canChannelPostMessage",
-        ctypes.c_long,
+        hresult_type,
         (HANDLE, structures.PCANMSG2),
         __check_status,
     )
     # HRESULT canChannelSendMessage (HANDLE hChannel, UINT32 dwMsTimeout, PCANMSG2 pCanMsg );
     _canlib.map_symbol(
         "canChannelSendMessage",
-        ctypes.c_long,
+        hresult_type,
         (HANDLE, ctypes.c_uint32, structures.PCANMSG2),
         __check_status,
     )
@@ -251,7 +249,7 @@ try:
     # EXTERN_C HRESULT VCIAPI canControlOpen( IN  HANDLE  hDevice, IN  UINT32  dwCanNo, OUT PHANDLE phCanCtl );
     _canlib.map_symbol(
         "canControlOpen",
-        ctypes.c_long,
+        hresult_type,
         (HANDLE, ctypes.c_uint32, PHANDLE),
         __check_status,
     )
@@ -267,7 +265,7 @@ try:
     #                         IN PCANBTP pBtpFDR );
     _canlib.map_symbol(
         "canControlInitialize",
-        ctypes.c_long,
+        hresult_type,
         (
             HANDLE,
             ctypes.c_uint8,
@@ -282,93 +280,93 @@ try:
         __check_status,
     )
     # EXTERN_C HRESULT VCIAPI canControlClose( IN HANDLE hCanCtl );
-    _canlib.map_symbol("canControlClose", ctypes.c_long, (HANDLE,), __check_status)
+    _canlib.map_symbol("canControlClose", hresult_type, (HANDLE,), __check_status)
     # EXTERN_C HRESULT VCIAPI canControlReset( IN HANDLE hCanCtl );
-    _canlib.map_symbol("canControlReset", ctypes.c_long, (HANDLE,), __check_status)
+    _canlib.map_symbol("canControlReset", hresult_type, (HANDLE,), __check_status)
     # EXTERN_C HRESULT VCIAPI canControlStart( IN HANDLE hCanCtl, IN BOOL   fStart );
     _canlib.map_symbol(
-        "canControlStart", ctypes.c_long, (HANDLE, ctypes.c_long), __check_status
+        "canControlStart", hresult_type, (HANDLE, ctypes.c_long), __check_status
     )
     # EXTERN_C HRESULT VCIAPI canControlGetStatus( IN  HANDLE hCanCtl, OUT PCANLINESTATUS2 pStatus );
     _canlib.map_symbol(
         "canControlGetStatus",
-        ctypes.c_long,
+        hresult_type,
         (HANDLE, structures.PCANLINESTATUS2),
         __check_status,
     )
     # EXTERN_C HRESULT VCIAPI canControlGetCaps( IN  HANDLE hCanCtl, OUT PCANCAPABILITIES2 pCanCaps );
     _canlib.map_symbol(
         "canControlGetCaps",
-        ctypes.c_long,
+        hresult_type,
         (HANDLE, structures.PCANCAPABILITIES2),
         __check_status,
     )
     # EXTERN_C HRESULT VCIAPI canControlSetAccFilter( IN HANDLE hCanCtl, IN BOOL   fExtend, IN UINT32 dwCode, IN UINT32 dwMask );
     _canlib.map_symbol(
         "canControlSetAccFilter",
-        ctypes.c_long,
+        hresult_type,
         (HANDLE, ctypes.c_int, ctypes.c_uint32, ctypes.c_uint32),
         __check_status,
     )
     # EXTERN_C HRESULT canControlAddFilterIds (HANDLE hControl, BOOL fExtended, UINT32 dwCode, UINT32 dwMask);
     _canlib.map_symbol(
         "canControlAddFilterIds",
-        ctypes.c_long,
+        hresult_type,
         (HANDLE, ctypes.c_int, ctypes.c_uint32, ctypes.c_uint32),
         __check_status,
     )
     # EXTERN_C HRESULT canControlRemFilterIds (HANDLE hControl, BOOL fExtendend, UINT32 dwCode, UINT32 dwMask );
     _canlib.map_symbol(
         "canControlRemFilterIds",
-        ctypes.c_long,
+        hresult_type,
         (HANDLE, ctypes.c_int, ctypes.c_uint32, ctypes.c_uint32),
         __check_status,
     )
     # EXTERN_C HRESULT canSchedulerOpen (HANDLE hDevice, UINT32 dwCanNo, PHANDLE phScheduler );
     _canlib.map_symbol(
         "canSchedulerOpen",
-        ctypes.c_long,
+        hresult_type,
         (HANDLE, ctypes.c_uint32, PHANDLE),
         __check_status,
     )
     # EXTERN_C HRESULT canSchedulerClose (HANDLE hScheduler );
-    _canlib.map_symbol("canSchedulerClose", ctypes.c_long, (HANDLE,), __check_status)
+    _canlib.map_symbol("canSchedulerClose", hresult_type, (HANDLE,), __check_status)
     # EXTERN_C HRESULT canSchedulerGetCaps (HANDLE hScheduler, PCANCAPABILITIES2 pCaps );
     _canlib.map_symbol(
         "canSchedulerGetCaps",
-        ctypes.c_long,
+        hresult_type,
         (HANDLE, structures.PCANCAPABILITIES2),
         __check_status,
     )
     # EXTERN_C HRESULT canSchedulerActivate ( HANDLE hScheduler, BOOL fEnable );
     _canlib.map_symbol(
-        "canSchedulerActivate", ctypes.c_long, (HANDLE, ctypes.c_int), __check_status
+        "canSchedulerActivate", hresult_type, (HANDLE, ctypes.c_int), __check_status
     )
     # EXTERN_C HRESULT canSchedulerAddMessage (HANDLE hScheduler, PCANCYCLICTXMSG2 pMessage, PUINT32 pdwIndex );
     _canlib.map_symbol(
         "canSchedulerAddMessage",
-        ctypes.c_long,
+        hresult_type,
         (HANDLE, structures.PCANCYCLICTXMSG2, ctypes.POINTER(ctypes.c_uint32)),
         __check_status,
     )
     # EXTERN_C HRESULT canSchedulerRemMessage (HANDLE hScheduler, UINT32 dwIndex );
     _canlib.map_symbol(
         "canSchedulerRemMessage",
-        ctypes.c_long,
+        hresult_type,
         (HANDLE, ctypes.c_uint32),
         __check_status,
     )
     # EXTERN_C HRESULT canSchedulerStartMessage (HANDLE hScheduler, UINT32 dwIndex, UINT16 dwCount );
     _canlib.map_symbol(
         "canSchedulerStartMessage",
-        ctypes.c_long,
+        hresult_type,
         (HANDLE, ctypes.c_uint32, ctypes.c_uint16),
         __check_status,
     )
     # EXTERN_C HRESULT canSchedulerStopMessage (HANDLE hScheduler, UINT32 dwIndex );
     _canlib.map_symbol(
         "canSchedulerStopMessage",
-        ctypes.c_long,
+        hresult_type,
         (HANDLE, ctypes.c_uint32),
         __check_status,
     )
@@ -419,16 +417,28 @@ class IXXATBus(BusABC):
 
     """
 
+    @deprecated_args_alias(
+        UniqueHardwareId="unique_hardware_id",
+        rxFifoSize="rx_fifo_size",
+        txFifoSize="tx_fifo_size",
+    )
     def __init__(
         self,
         channel,
         can_filters=None,
         bitrate=500000,
+        sjw_abr: int = None,
+        tseg1_abr: int = None,
+        tseg2_abr: int = None,
         data_bitrate=2000000,
+        sjw_dbr: int = None,
+        tseg1_dbr: int = None,
+        tseg2_dbr: int = None,
+        ssp_dbr: int = None,
         extended=False,
-        UniqueHardwareId=None,
-        rxFifoSize=1024,
-        txFifoSize=128,
+        unique_hardware_id=None,
+        rx_fifo_size=1024,
+        tx_fifo_size=128,
         receive_own_messages=False,
         **kwargs,
     ):
@@ -442,8 +452,8 @@ class IXXATBus(BusABC):
         :param bool receive_own_messages:
             Enable self-reception of sent messages.
 
-        :param int UniqueHardwareId:
-            UniqueHardwareId to connect (optional, will use the first found if not supplied)
+        :param int unique_hardware_id:
+            unique_hardware_id to connect (optional, will use the first found if not supplied)
 
         :param int bitrate:
             Channel bitrate in bit/s
@@ -453,6 +463,28 @@ class IXXATBus(BusABC):
 
         :param int extended:
             Default False, enables the capability to use extended IDs.
+
+        :param int sjw_abr:
+            Bus timing value sample jump width (arbitration).
+
+        :param int tseg1_abr:
+            Bus timing value tseg1 (arbitration)
+
+        :param int tseg2_abr:
+            Bus timing value tseg2 (arbitration)
+
+        :param int sjw_dbr:
+            Bus timing value sample jump width (data)
+
+        :param int tseg1_dbr:
+            Bus timing value tseg1 (data)
+
+        :param int tseg2_dbr:
+            Bus timing value tseg2 (data)
+
+        :param int ssp_dbr:
+            Bus timing value tseg2 (data)
+
         """
         if _canlib is None:
             raise CanInterfaceNotImplementedError(
@@ -465,17 +497,28 @@ class IXXATBus(BusABC):
         # Usually comes as a string from the config file
         channel = int(channel)
 
-        if bitrate not in constants.CAN_BITRATE_PRESETS:
-            raise ValueError("Invalid bitrate {}".format(bitrate))
+        if bitrate not in constants.CAN_BITRATE_PRESETS and (
+            tseg1_abr is None or tseg2_abr is None or sjw_abr is None
+        ):
+            raise ValueError(
+                "To use bitrate {} (that has not predefined preset) is mandatory to use also parameters tseg1_abr, tseg2_abr and swj_abr".format(
+                    bitrate
+                )
+            )
+        if data_bitrate not in constants.CAN_DATABITRATE_PRESETS and (
+            tseg1_dbr is None or tseg2_dbr is None or sjw_dbr is None
+        ):
+            raise ValueError(
+                "To use data_bitrate {} (that has not predefined preset) is mandatory to use also parameters tseg1_dbr, tseg2_dbr and swj_dbr".format(
+                    data_bitrate
+                )
+            )
 
-        if data_bitrate not in constants.CAN_DATABITRATE_PRESETS:
-            raise ValueError("Invalid bitrate {}".format(bitrate))
+        if rx_fifo_size <= 0:
+            raise ValueError("rx_fifo_size must be > 0")
 
-        if rxFifoSize <= 0:
-            raise ValueError("rxFifoSize must be > 0")
-
-        if txFifoSize <= 0:
-            raise ValueError("txFifoSize must be > 0")
+        if tx_fifo_size <= 0:
+            raise ValueError("tx_fifo_size must be > 0")
 
         if channel < 0:
             raise ValueError("channel number must be >= 0")
@@ -489,10 +532,10 @@ class IXXATBus(BusABC):
         self._payload = (ctypes.c_byte * 64)()
 
         # Search for supplied device
-        if UniqueHardwareId is None:
+        if unique_hardware_id is None:
             log.info("Searching for first available device")
         else:
-            log.info("Searching for unique HW ID %s", UniqueHardwareId)
+            log.info("Searching for unique HW ID %s", unique_hardware_id)
         _canlib.vciEnumDeviceOpen(ctypes.byref(self._device_handle))
         while True:
             try:
@@ -500,20 +543,20 @@ class IXXATBus(BusABC):
                     self._device_handle, ctypes.byref(self._device_info)
                 )
             except StopIteration:
-                if UniqueHardwareId is None:
+                if unique_hardware_id is None:
                     raise VCIDeviceNotFoundError(
                         "No IXXAT device(s) connected or device(s) in use by other process(es)."
                     )
                 else:
                     raise VCIDeviceNotFoundError(
                         "Unique HW ID {} not connected or not available.".format(
-                            UniqueHardwareId
+                            unique_hardware_id
                         )
                     )
             else:
-                if (UniqueHardwareId is None) or (
+                if (unique_hardware_id is None) or (
                     self._device_info.UniqueHardwareId.AsChar
-                    == bytes(UniqueHardwareId, "ascii")
+                    == bytes(unique_hardware_id, "ascii")
                 ):
                     break
                 else:
@@ -536,8 +579,8 @@ class IXXATBus(BusABC):
         log.info(
             "Initializing channel %d in shared mode, %d rx buffers, %d tx buffers",
             channel,
-            rxFifoSize,
-            txFifoSize,
+            rx_fifo_size,
+            tx_fifo_size,
         )
 
         try:
@@ -555,17 +598,32 @@ class IXXATBus(BusABC):
         # Signal TX/RX events when at least one frame has been handled
         _canlib.canChannelInitialize(
             self._channel_handle,
-            rxFifoSize,
+            rx_fifo_size,
             1,
-            txFifoSize,
+            tx_fifo_size,
             1,
             0,
             constants.CAN_FILTER_PASS,
         )
         _canlib.canChannelActivate(self._channel_handle, constants.TRUE)
 
-        pBtpSDR = constants.CAN_BITRATE_PRESETS[bitrate]
-        pBtpFDR = constants.CAN_DATABITRATE_PRESETS[data_bitrate]
+        pBtpSDR = IXXATBus._canptb_build(
+            defaults=constants.CAN_BITRATE_PRESETS,
+            bitrate=bitrate,
+            tseg1=tseg1_abr,
+            tseg2=tseg2_abr,
+            sjw=sjw_abr,
+            ssp=0,
+        )
+        pBtpFDR = IXXATBus._canptb_build(
+            defaults=constants.CAN_DATABITRATE_PRESETS,
+            bitrate=data_bitrate,
+            tseg1=tseg1_dbr,
+            tseg2=tseg2_dbr,
+            sjw=sjw_dbr,
+            ssp=ssp_dbr if ssp_dbr is not None else tseg1_dbr,
+        )
+
         log.info(
             "Initializing control %d with SDR={%s}, FDR={%s}",
             channel,
@@ -670,7 +728,7 @@ class IXXATBus(BusABC):
 
         # Usually you get back 3 messages like "CAN initialized" ecc...
         # Clear the FIFO by filter them out with low timeout
-        for _ in range(rxFifoSize):
+        for _ in range(rx_fifo_size):
             try:
                 _canlib.canChannelReadMessage(
                     self._channel_handle, 0, ctypes.byref(self._message)
@@ -679,6 +737,31 @@ class IXXATBus(BusABC):
                 break
 
         super().__init__(channel=channel, can_filters=None, **kwargs)
+
+    @staticmethod
+    def _canptb_build(defaults, bitrate, tseg1, tseg2, sjw, ssp):
+        if bitrate in defaults:
+            d = defaults[bitrate]
+            if tseg1 is None:
+                tseg1 = d.wTS1
+            if tseg2 is None:
+                tseg2 = d.wTS2
+            if sjw is None:
+                sjw = d.wSJW
+            if ssp is None:
+                ssp = d.wTDO
+            dw_mode = d.dwMode
+        else:
+            dw_mode = 0
+
+        return structures.CANBTP(
+            dwMode=dw_mode,
+            dwBPS=bitrate,
+            wTS1=tseg1,
+            wTS2=tseg2,
+            wSJW=sjw,
+            wTDO=ssp,
+        )
 
     def _inWaiting(self):
         try:
