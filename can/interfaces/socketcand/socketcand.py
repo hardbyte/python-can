@@ -4,8 +4,6 @@ see https://github.com/linux-can/socketcand
 
 Author: Marvin Seiler
 
-Language: Python 3.7
-
 Copyright (C) 2021  DOMOLOGIC GmbH
 http://www.domologic.de
 """
