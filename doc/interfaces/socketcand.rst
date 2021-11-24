@@ -4,9 +4,9 @@ socketcand Interface
 ====================
 `Socketcand <https://github.com/linux-can/socketcand>`__ is part of the 
 `Linux-CAN <https://github.com/linux-can>`__ project, providing a 
-Network-to-CAN bridge as Linux damon. It implements a specific TCP/IP 
-based communication `protocol <https://github.com/linux-can/socketcand/blob/master/doc/protocol.md>`__
-to transfer CAN frames and control commands via TCP/IP.
+Network-to-CAN bridge as Linux damon. It implements a specific
+`TCP/IP based communication protocol <https://github.com/linux-can/socketcand/blob/master/doc/protocol.md>`__
+to transfer CAN frames and control commands.
 
 The main advantage compared to UDP-based protocols (e.g. virtual interface)
 is, that TCP guarantees delivery and that the message order is kept.
