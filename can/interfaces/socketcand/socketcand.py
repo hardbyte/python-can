@@ -2,7 +2,7 @@
 Interface to socketcand
 see https://github.com/linux-can/socketcand
 
-Author: Marvin Seiler
+Author: Marvin Seiler, Gerrit Telkamp
 
 Copyright (C) 2021  DOMOLOGIC GmbH
 http://www.domologic.de
@@ -17,13 +17,13 @@ from collections import deque
 
 log = logging.getLogger(__name__)
 
-def convert_ascii_message_to_can_message(ascii_message: str) -> can.Message:
-    if not ascii_message.startswith("< frame ") or not ascii_message.endswith(" >"):
-        log.warning(f"Could not parse ascii message: {ascii_message}")
+def convert_ascii_message_to_can_message(ascii_msg: str) -> can.Message:
+    if not ascii_msg.startswith("< frame ") or not ascii_msg.endswith(" >"):
+        log.warning(f"Could not parse ascii message: {ascii_msg}")
         return None
     else:
-        # frame_string = ascii_message.removeprefix("< frame ").removesuffix(" >")
-        frame_string = ascii_message[8:-2]
+        # frame_string = ascii_msg.removeprefix("< frame ").removesuffix(" >")
+        frame_string = ascii_msg[8:-2]
         parts = frame_string.split(" ", 3)
         can_id, timestamp = int(parts[0], 16), float(parts[1])
 
@@ -43,8 +43,8 @@ def convert_can_message_to_ascii_message(can_message: can.Message) -> str:
     data = can_message.data
     length = can_message.dlc
     bytes_string = " ".join("{:x}".format(x) for x in data[0:length])
-    ascii_message = f"< send {can_id:X} {length:X} {bytes_string} >"
-    return ascii_message
+    ascii_msg = f"< send {can_id:X} {length:X} {bytes_string} >"
+    return ascii_msg
 
 
 def connect_to_server(s, host, port):
@@ -71,11 +71,15 @@ class SocketCanDaemonBus(can.BusABC):
         self.__message_buffer = deque()
         self.__receive_buffer = ""  # i know string is not the most efficient here
         connect_to_server(self.__socket, self.__host, self.__port)
+        self._expect_msg("< hi >")
+        
         log.info(
             f"SocketCanDaemonBus: connected with address {self.__socket.getsockname()}"
         )
         self._tcp_send(f"< open {channel} >")
+        self._expect_msg("< ok >")
         self._tcp_send(f"< rawmode >")
+        self._expect_msg("< ok >")
         super().__init__(channel=channel, can_filters=can_filters)
 
     def _recv_internal(self, timeout):
@@ -100,11 +104,11 @@ class SocketCanDaemonBus(can.BusABC):
                 log.debug("Socket not ready")
                 return None, False
 
-            ascii_message = self.__socket.recv(1024).decode(
+            ascii_msg = self.__socket.recv(1024).decode(
                 "ascii"
             )  # may contain multiple messages
-            self.__receive_buffer += ascii_message
-            log.debug(f"Received Ascii Message: {ascii_message}")
+            self.__receive_buffer += ascii_msg
+            log.debug(f"Received Ascii Message: {ascii_msg}")
             buffer_view = self.__receive_buffer
             chars_processed_successfully = 0
             while True:
@@ -152,13 +156,24 @@ class SocketCanDaemonBus(can.BusABC):
             log.error(f"Failed to receive: {exc}  {traceback.format_exc()}")
             raise can.CanError(f"Failed to receive: {exc}  {traceback.format_exc()}")
 
-    def _tcp_send(self, message: str):
-        log.debug(f"Sending Tcp Message: '{message}'")
-        self.__socket.sendall(message.encode("ascii"))
 
-    def send(self, message, timeout=None):
-        ascii_message = convert_can_message_to_ascii_message(message)
-        self._tcp_send(ascii_message)
+    def _tcp_send(self, msg: str):
+        log.debug(f"Sending TCP Message: '{msg}'")
+        self.__socket.sendall(msg.encode("ascii"))
+
+
+    def _expect_msg(self, msg):
+        ascii_msg = self.__socket.recv(256).decode(
+            "ascii"
+        )
+        if not ascii_msg == msg:
+            raise can.CanError(f"{msg} message expected!")
+
+
+    def send(self, msg, timeout=None):
+        ascii_msg = convert_can_message_to_ascii_message(msg)
+        self._tcp_send(ascii_msg)
+
 
     def shutdown(self):
         self.stop_all_periodic_tasks()
