@@ -16,7 +16,7 @@ daemon running on a remote Raspberry Pi:
 
 .. code-block:: python
 
-	import can
+    import can
 
     bus = can.interface.Bus(bustype='socketcand', host="10.0.16.15", port=29536, channel="can0")
 
