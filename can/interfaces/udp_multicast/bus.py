@@ -139,6 +139,7 @@ class UdpMulticastBus(BusABC):
 
         Never throws errors and only logs them.
         """
+        super().shutdown()
         self._multicast.shutdown()
 
     @staticmethod

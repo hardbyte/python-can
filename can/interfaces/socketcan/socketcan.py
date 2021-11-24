@@ -696,7 +696,7 @@ class SocketcanBus(BusABC):
 
     def shutdown(self) -> None:
         """Stops all active periodic tasks and closes the socket."""
-        self.stop_all_periodic_tasks()
+        super().shutdown()
         for channel, bcm_socket in self._bcm_sockets.items():
             log.debug("Closing bcm socket for channel %s", channel)
             bcm_socket.close()

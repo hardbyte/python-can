@@ -112,4 +112,5 @@ class GsUsbBus(can.BusABC):
         return msg, False
 
     def shutdown(self):
+        super().shutdown()
         self.gs_usb.stop()

@@ -614,6 +614,7 @@ class VectorBus(BusABC):
         xldriver.xlCanFlushTransmitQueue(self.port_handle, self.mask)
 
     def shutdown(self) -> None:
+        super().shutdown()
         xldriver.xlDeactivateChannel(self.port_handle, self.mask)
         xldriver.xlClosePort(self.port_handle)
         xldriver.xlCloseDriver()

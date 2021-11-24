@@ -367,6 +367,7 @@ class robotellBus(BusABC):
         )
 
     def shutdown(self):
+        super().shutdown()
         self.serialPortOrig.close()
 
     def fileno(self):

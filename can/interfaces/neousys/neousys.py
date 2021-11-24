@@ -233,6 +233,7 @@ class NeousysBus(BusABC):
         logger.info("%s _neousys_status_cb: %d", self.init_config, status)
 
     def shutdown(self):
+        super().shutdown()
         NEOUSYS_CANLIB.CAN_Stop(self.channel)
 
     @staticmethod

@@ -165,6 +165,7 @@ class Usb2canBus(BusABC):
 
         :raise cam.CanOperationError: is closing the connection did not work
         """
+        super().shutdown()
         status = self.can.close(self.handle)
 
         if status != CanalError.SUCCESS:

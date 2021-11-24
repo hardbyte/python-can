@@ -312,6 +312,7 @@ class UcanBus(BusABC):
         """
         Shuts down all CAN interfaces and hardware interface.
         """
+        super().shutdown()
         try:
             self._ucan.shutdown()
         except Exception as exception:

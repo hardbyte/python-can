@@ -100,6 +100,7 @@ class SerialBus(BusABC):
         """
         Close the serial interface.
         """
+        super().shutdown()
         self._ser.close()
 
     def send(self, msg: Message, timeout: Optional[float] = None) -> None:
