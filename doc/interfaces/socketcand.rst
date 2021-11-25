@@ -37,13 +37,16 @@ The output may look like this:
     Timestamp: 1637791111.609763    ID: 0000031d    X Rx                DLC:  8    16 27 d8 3d fe d8 31 24
     Timestamp: 1637791111.634630    ID: 00000587    X Rx                DLC:  8    4e 06 85 23 6f 81 2b 65
 
+Socketcand Quickstart
+---------------------
+
 The following section will show how to get the stuff installed on a Raspberry Pi with a MCP2515-based
 CAN interface, e.g. available from Waveshare: https://www.waveshare.com/rs485-can-hat.htm .
 
 Install CAN Interface for a MCP2515 based interface on a Raspberry Pi
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Add the following lines to ``/boot/config.txt``. Please take care on the frequencsy of the crystal on your MCP2515 board:
+Add the following lines to ``/boot/config.txt``. Please take care on the frequency of the crystal on your MCP2515 board:
 ::
     dtparam=spi=on
     dtoverlay=mcp2515-can0,oscillator=12000000,interrupt=25,spimaxfrequency=1000000
@@ -75,7 +78,7 @@ Enable ``systemd-networkd`` on reboot and start it immediately (if it was not al
 
 
 Build socketcand from source
-::::::::::::::::::::::::::::
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: bash
 
@@ -90,14 +93,14 @@ Build socketcand from source
 
 
 Install socketcand
-::::::::::::::::::
+~~~~~~~~~~~~~~~~~~
 .. code-block:: bash
 
     make install
 
 
 Run socketcand
-::::::::::::::
+~~~~~~~~~~~~~~
 .. code-block:: bash
 
     ./socketcand -v -i can0
