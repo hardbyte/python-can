@@ -43,8 +43,7 @@ def convert_can_message_to_ascii_message(can_message: can.Message) -> str:
     data = can_message.data
     length = can_message.dlc
     bytes_string = " ".join("{:x}".format(x) for x in data[0:length])
-    ascii_msg = f"< send {can_id:X} {length:X} {bytes_string} >"
-    return ascii_msg
+    return f"< send {can_id:X} {length:X} {bytes_string} >"
 
 
 def connect_to_server(s, host, port):
