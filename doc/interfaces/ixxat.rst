@@ -89,6 +89,6 @@ explicitly instantiated by the caller.
 - ``recv()`` is a blocking call with optional timeout.
 - ``send()`` is not blocking but may raise a VCIError if the TX FIFO is full
 
-RX and TX FIFO sizes are configurable with ``rxFifoSize`` and ``txFifoSize``
+RX and TX FIFO sizes are configurable with ``rx_fifo_size`` and ``tx_fifo_size``
 options, defaulting to 16 for both.
 
