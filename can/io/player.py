@@ -14,7 +14,7 @@ if typing.TYPE_CHECKING:
     import can
 
 from .generic import BaseIOHandler, MessageReader
-from .asc import ASCReader
+from .asc import ASCReader, GzipASCReader
 from .blf import BLFReader
 from .canutils import CanutilsLogReader
 from .csv import CSVReader
@@ -27,6 +27,7 @@ class LogReader(BaseIOHandler):
 
     The format is determined from the file format which can be one of:
       * .asc
+      * .asc.gz
       * .blf
       * .csv
       * .db
@@ -49,6 +50,7 @@ class LogReader(BaseIOHandler):
     fetched_plugins = False
     message_readers = {
         ".asc": ASCReader,
+        ".asc.gz": GzipASCReader,
         ".blf": BLFReader,
         ".csv": CSVReader,
         ".db": SqliteReader,
@@ -75,7 +77,7 @@ class LogReader(BaseIOHandler):
             )
             LogReader.fetched_plugins = True
 
-        suffix = pathlib.PurePath(filename).suffix.lower()
+        suffix = "".join(s.lower() for s in pathlib.PurePath(filename).suffixes)
         try:
             return typing.cast(
                 MessageReader,

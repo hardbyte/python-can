@@ -5,13 +5,14 @@ Example .asc files:
     - https://bitbucket.org/tobylorenz/vector_asc/src/47556e1a6d32c859224ca62d075e1efcc67fa690/src/Vector/ASC/tests/unittests/data/CAN_Log_Trigger_3_2.asc?at=master&fileviewer=file-view-default
     - under `test/data/logfile.asc`
 """
-
-from typing import cast, Any, Generator, IO, List, Optional, Dict
+import gzip
+from typing import cast, Any, Generator, IO, List, Optional, Dict, Union
 
 from datetime import datetime
 import time
 import logging
 
+from .. import typechecking
 from ..message import Message
 from ..listener import Listener
 from ..util import channel2int
@@ -396,3 +397,69 @@ class ASCWriter(FileIOMessageWriter, Listener):
                 data=" ".join(data),
             )
         self.log_event(serialized, msg.timestamp)
+
+
+class GzipASCReader(ASCReader):
+    """Gzipped version of :class:`~can.ASCReader`"""
+
+    def __init__(
+        self,
+        file: Union[typechecking.FileLike, typechecking.StringPathLike],
+        base: str = "hex",
+        relative_timestamp: bool = True,
+    ):
+        """
+        :param file: a path-like object or as file-like object to read from
+                     If this is a file-like object, is has to opened in text
+                     read mode, not binary read mode.
+        :param base: Select the base(hex or dec) of id and data.
+                     If the header of the asc file contains base information,
+                     this value will be overwritten. Default "hex".
+        :param relative_timestamp: Select whether the timestamps are
+                     `relative` (starting at 0.0) or `absolute` (starting at
+                     the system time). Default `True = relative`.
+        """
+        self._fileobj = None
+        if file is not None and (hasattr(file, "read") and hasattr(file, "write")):
+            # file is None or some file-like object
+            self._fileobj = file
+        super(GzipASCReader, self).__init__(
+            gzip.open(file, mode="rt"), base, relative_timestamp
+        )
+
+    def stop(self) -> None:
+        super(GzipASCReader, self).stop()
+        if self._fileobj is not None:
+            self._fileobj.close()
+
+
+class GzipASCWriter(ASCWriter):
+    """Gzipped version of :class:`~can.ASCWriter`"""
+
+    def __init__(
+        self,
+        file: Union[typechecking.FileLike, typechecking.StringPathLike],
+        channel: int = 1,
+        compresslevel: int = 6,
+    ):
+        """
+        :param file: a path-like object or as file-like object to write to
+                     If this is a file-like object, is has to opened in text
+                     write mode, not binary write mode.
+        :param channel: a default channel to use when the message does not
+                        have a channel set
+        :param compresslevel: Gzip compresslevel, see
+                              :class:`~gzip.GzipFile` for details. The default is 6.
+        """
+        self._fileobj = None
+        if file is not None and (hasattr(file, "read") and hasattr(file, "write")):
+            # file is None or some file-like object
+            self._fileobj = file
+        super(GzipASCWriter, self).__init__(
+            gzip.open(file, mode="wt", compresslevel=compresslevel), channel
+        )
+
+    def stop(self) -> None:
+        super(GzipASCWriter, self).stop()
+        if self._fileobj is not None:
+            self._fileobj.close()
