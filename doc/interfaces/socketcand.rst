@@ -41,7 +41,8 @@ Socketcand Quickstart
 ---------------------
 
 The following section will show how to get the stuff installed on a Raspberry Pi with a MCP2515-based
-CAN interface, e.g. available from Waveshare: https://www.waveshare.com/rs485-can-hat.htm .
+CAN interface, e.g. available from `Waveshare <https://www.waveshare.com/rs485-can-hat.htm>`__.
+However, it will also work with any other socketcan device.
 
 Install CAN Interface for a MCP2515 based interface on a Raspberry Pi
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
