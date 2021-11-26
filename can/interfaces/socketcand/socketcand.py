@@ -32,6 +32,7 @@ from collections import deque
 
 log = logging.getLogger(__name__)
 
+
 def convert_ascii_message_to_can_message(ascii_msg: str) -> can.Message:
     if not ascii_msg.startswith("< frame ") or not ascii_msg.endswith(" >"):
         log.warning(f"Could not parse ascii message: {ascii_msg}")
@@ -86,7 +87,7 @@ class SocketCanDaemonBus(can.BusABC):
         self.__receive_buffer = ""  # i know string is not the most efficient here
         connect_to_server(self.__socket, self.__host, self.__port)
         self._expect_msg("< hi >")
-        
+
         log.info(
             f"SocketCanDaemonBus: connected with address {self.__socket.getsockname()}"
         )
@@ -170,24 +171,18 @@ class SocketCanDaemonBus(can.BusABC):
             log.error(f"Failed to receive: {exc}  {traceback.format_exc()}")
             raise can.CanError(f"Failed to receive: {exc}  {traceback.format_exc()}")
 
-
     def _tcp_send(self, msg: str):
         log.debug(f"Sending TCP Message: '{msg}'")
         self.__socket.sendall(msg.encode("ascii"))
 
-
     def _expect_msg(self, msg):
-        ascii_msg = self.__socket.recv(256).decode(
-            "ascii"
-        )
+        ascii_msg = self.__socket.recv(256).decode("ascii")
         if not ascii_msg == msg:
             raise can.CanError(f"{msg} message expected!")
-
 
     def send(self, msg, timeout=None):
         ascii_msg = convert_can_message_to_ascii_message(msg)
         self._tcp_send(ascii_msg)
-
 
     def shutdown(self):
         self.stop_all_periodic_tasks()
