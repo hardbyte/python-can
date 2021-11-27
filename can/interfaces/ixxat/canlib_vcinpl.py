@@ -418,14 +418,13 @@ class IXXATBus(BusABC):
     )
     def __init__(
         self,
-        channel,
+        channel: int,
         can_filters=None,
-        bitrate=500000,
-        unique_hardware_id=None,
-        rx_fifo_size=16,
-        tx_fifo_size=16,
-        receive_own_messages=False,
-        **kwargs,
+        receive_own_messages: bool = False,
+        unique_hardware_id: int = None,
+        rx_fifo_size: int = 16,
+        tx_fifo_size: int = 16,
+        bitrate: int = 500000,
     ):
         """
         :param int channel:
@@ -440,6 +439,12 @@ class IXXATBus(BusABC):
         :param int unique_hardware_id:
             unique_hardware_id to connect (optional, will use the first found if not supplied)
 
+        :param int rx_fifo_size:
+            Receive fifo size (default 16)
+
+        :param int tx_fifo_size:
+            Transmit fifo size (default 16)
+
         :param int bitrate:
             Channel bitrate in bit/s
         """
@@ -448,7 +453,6 @@ class IXXATBus(BusABC):
                 "The IXXAT VCI library has not been initialized. Check the logs for more details."
             )
         log.info("CAN Filters: %s", can_filters)
-        log.info("Got configuration of: %s", kwargs)
         # Configuration options
         self._receive_own_messages = receive_own_messages
         # Usually comes as a string from the config file

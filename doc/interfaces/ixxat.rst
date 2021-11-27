@@ -36,14 +36,14 @@ Python-can will search for the first IXXAT device available and open the first c
 ``interface`` and ``channel`` parameters are interpreted by frontend ``can.interfaces.interface``
 module, while the following parameters are optional and are interpreted by IXXAT implementation.
 
-* ``bitrate`` (default 500000) Channel bitrate
+* ``receive_own_messages`` (default False) Enable self-reception of sent messages.
 * ``unique_hardware_id`` (default first device) Unique hardware ID of the IXXAT device
+* ``extended`` (default False) Allow usage of extended IDs
+* ``fd`` (default False) Enable CAN-FD capabilities.
 * ``rx_fifo_size`` (default 16 for CAN, 1024 for CAN-FD) Number of RX mailboxes
 * ``tx_fifo_size`` (default 16 for CAN, 128 for CAN-FD) Number of TX mailboxes
-* ``extended`` (default False) Allow usage of extended IDs
-* ``fd`` Enable CAN-FD capabilities.
-* ``data_bitrate`` (defaults to 2Mbps) Channel data bitrate (to use when
-message bitrate_switch is used).
+* ``bitrate`` (default 500000) Channel bitrate.
+* ``data_bitrate`` (defaults to 2Mbps) Channel data bitrate (only canfd, to use when message bitrate_switch is used).
 * ``sjw_abr`` (optional, only canfd) Bus timing value sample jump width (arbitration).
 * ``tseg1_abr`` (optional, only canfd) Bus timing value tseg1 (arbitration).
 * ``tseg2_abr`` (optional, only canfd) Bus timing value tseg2 (arbitration).

@@ -424,23 +424,22 @@ class IXXATBus(BusABC):
     )
     def __init__(
         self,
-        channel,
+        channel: int,
         can_filters=None,
-        bitrate=500000,
+        receive_own_messages: int = False,
+        unique_hardware_id: int = None,
+        extended: bool = False,
+        rx_fifo_size: int = 1024,
+        tx_fifo_size: int = 128,
+        bitrate: int = 500000,
+        data_bitrate: int = 2000000,
         sjw_abr: int = None,
         tseg1_abr: int = None,
         tseg2_abr: int = None,
-        data_bitrate=2000000,
         sjw_dbr: int = None,
         tseg1_dbr: int = None,
         tseg2_dbr: int = None,
         ssp_dbr: int = None,
-        extended=False,
-        unique_hardware_id=None,
-        rx_fifo_size=1024,
-        tx_fifo_size=128,
-        receive_own_messages=False,
-        **kwargs,
     ):
         """
         :param int channel:
@@ -455,14 +454,20 @@ class IXXATBus(BusABC):
         :param int unique_hardware_id:
             unique_hardware_id to connect (optional, will use the first found if not supplied)
 
+        :param int extended:
+            Default False, enables the capability to use extended IDs.
+
+        :param int rx_fifo_size:
+            Receive fifo size (default 1024)
+
+        :param int tx_fifo_size:
+            Transmit fifo size (default 128)
+
         :param int bitrate:
             Channel bitrate in bit/s
 
         :param int data_bitrate:
             Channel bitrate in bit/s (only in CAN-Fd if baudrate switch enabled).
-
-        :param int extended:
-            Default False, enables the capability to use extended IDs.
 
         :param int sjw_abr:
             Bus timing value sample jump width (arbitration).
@@ -477,13 +482,13 @@ class IXXATBus(BusABC):
             Bus timing value sample jump width (data)
 
         :param int tseg1_dbr:
-            Bus timing value tseg1 (data)
+            Bus timing value tseg1 (data). Only takes effect with fd and bitrate switch enabled.
 
         :param int tseg2_dbr:
-            Bus timing value tseg2 (data)
+            Bus timing value tseg2 (data). Only takes effect with fd and bitrate switch enabled.
 
         :param int ssp_dbr:
-            Bus timing value tseg2 (data)
+            Secondary sample point (data). Only takes effect with fd and bitrate switch enabled.
 
         """
         if _canlib is None:
@@ -491,7 +496,6 @@ class IXXATBus(BusABC):
                 "The IXXAT VCI library has not been initialized. Check the logs for more details."
             )
         log.info("CAN Filters: %s", can_filters)
-        log.info("Got configuration of: %s", kwargs)
         # Configuration options
         self._receive_own_messages = receive_own_messages
         # Usually comes as a string from the config file
