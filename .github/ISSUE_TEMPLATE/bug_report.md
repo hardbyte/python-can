@@ -7,34 +7,35 @@ assignees: ''
 
 ---
 
-**Describe the bug**
-A clear and concise description of what the bug is.
-
-**To Reproduce**
-Steps to reproduce the behavior (please add longer code examples below):
+### Describe the bug
+<!-- A clear and concise description of what the bug is. -->
 
 
-**Expected behavior**
-A clear and concise description of what you expected to happen.
+### To Reproduce
+<!-- Steps to reproduce the behavior. Please add longer code examples below. -->
 
 
-**Additional context**
+### Expected behavior
+<!-- A clear and concise description of what you expected to happen. -->
 
-OS-version:
+
+### Additional context
+
+OS and version:
 Python version:
 python-can version:
-python-can interface/s:
+python-can interface/s (if applicable):
 
 <!-- Add any other context about the problem here. -->
-  
+
 <details><summary>Traceback and logs</summary>
-<!-- have to be followed by an empty line! -->
-  
+<!-- Has to be followed by an empty line! -->
+
 <!-- More details such as a minimal script to demonstrate the bug, relevant logs and any tracebacks go here. -->
-  
+
 <!-- Code examples can be included: -->
 ```python
 def func():
-    return 'hello, world!'
+    return "hello, world!"
 ```
 </details>
