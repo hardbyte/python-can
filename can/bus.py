@@ -450,7 +450,8 @@ class BusABC(metaclass=ABCMeta):
     def fileno(self) -> int:
         raise NotImplementedError("fileno is not implemented using current CAN bus")
 
-    def list_adapters(self) -> List[Any]:
+    @classmethod
+    def list_adapters(cls) -> List[Any]:
         """ Lists all adapters for this interface. The adapter identifier can be used to open a specific adapter.
 
         MAY NOT BE IMPLEMENTED BY ALL INTERFACES

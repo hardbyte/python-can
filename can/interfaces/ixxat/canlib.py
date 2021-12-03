@@ -21,7 +21,7 @@ from can.broadcastmanager import (
     LimitedDurationCyclicSendTaskABC,
     RestartableCyclicTaskABC,
 )
-from can.ctypesutil import CLibrary, HANDLE, PHANDLE, HRESULT as ctypes_HRESULT
+from can.ctypesutil import CLibrary, HANDLE, PHANDLE, HRESULT
 
 from . import constants, structures
 from .exceptions import *
@@ -136,7 +136,7 @@ try:
 
     # void VCIAPI vciFormatError (HRESULT hrError, PCHAR pszText, UINT32 dwsize);
     _canlib.map_symbol(
-        "vciFormatError", None, (ctypes_HRESULT, ctypes.c_char_p, ctypes.c_uint32)
+        "vciFormatError", None, (HRESULT, ctypes.c_char_p, ctypes.c_uint32)
     )
     # Hack to have vciFormatError as a free function
     vciFormatError = functools.partial(__vciFormatError, _canlib)
@@ -490,8 +490,7 @@ class IXXATBus(BusABC):
                     )
             else:
                 if (adapter is None) or (
-                    self._device_info.UniqueHardwareId.AsChar
-                    == bytes(adapter, "ascii")
+                    self._device_info.UniqueHardwareId.AsChar == bytes(adapter, "ascii")
                 ):
                     break
                 else:
@@ -768,7 +767,8 @@ class IXXATBus(BusABC):
         _canlib.canControlClose(self._control_handle)
         _canlib.vciDeviceClose(self._device_handle)
 
-    def list_adapters():
+    @classmethod
+    def list_adapters(cls):
         """Get a list of hardware ids of all available IXXAT adapters."""
         adapters = []
         device_handle = HANDLE()
