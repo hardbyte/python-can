@@ -774,6 +774,11 @@ class IXXATBus(BusABC):
         device_handle = HANDLE()
         device_info = structures.VCIDEVICEINFO()
 
+        if _canlib is None:
+            raise CanInterfaceNotImplementedError(
+                "The IXXAT VCI library has not been initialized. Check the logs for more details."
+            )
+
         _canlib.vciEnumDeviceOpen(ctypes.byref(device_handle))
         while True:
             try:

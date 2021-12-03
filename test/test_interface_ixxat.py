@@ -9,6 +9,7 @@ import can
 import sys
 
 from can.interfaces.ixxat import IXXATBus
+from can.exceptions import CanInterfaceNotImplementedError
 
 
 class SoftwareTestCase(unittest.TestCase):
@@ -38,8 +39,12 @@ class SoftwareTestCase(unittest.TestCase):
             can.Bus(interface="ixxat", channel=0xFFFF)
 
     def test_adapter_enumeration(self):
-        # Enumeration of adapters should always work and the result should support len and be iterable
-        adapters = IXXATBus.list_adapters()
+        # Enumeration of adapters should always work (if the driver is installed) and the result should support len and be iterable
+        try:
+            adapters = IXXATBus.list_adapters()
+        except CanInterfaceNotImplementedError:
+            raise unittest.SkipTest("Maybe the driver is not installed.")
+
         n = 0
         for adapter in adapters:
             n += 1
@@ -58,20 +63,28 @@ class HardwareTestCase(unittest.TestCase):
 
     def test_bus_creation(self):
         # Test the enumeration of all adapters by opening and closing each adapter
-        adapters = IXXATBus.list_adapters()
+        try:
+            adapters = IXXATBus.list_adapters()
+        except CanInterfaceNotImplementedError:
+            raise unittest.SkipTest("Maybe the driver is not installed.")
+
         for adapter in adapters:
             bus = can.Bus(interface="ixxat", adapter=adapter)
             bus.shutdown()
 
     def test_send_after_shutdown(self):
         # At least one adapter is needed, skip the test if none can be found
-        adapters = IXXATBus.list_adapters()
+        try:
+            adapters = IXXATBus.list_adapters()
+        except CanInterfaceNotImplementedError:
+            raise unittest.SkipTest("Maybe the driver is not installed.")
+
         if len(adapters) == 0:
             raise unittest.SkipTest("No adapters found")
 
         bus = can.Bus(interface="ixxat", channel=0)
         msg = can.Message(arbitration_id=0x3FF, dlc=0)
-        # Intentionally close the bus now and try to send afterwards. This should lead to an Exception
+        # Intentionally close the bus now and try to send afterwards. This should lead to an CanOperationError
         bus.shutdown()
         with self.assertRaises(can.CanOperationError):
             bus.send(msg)

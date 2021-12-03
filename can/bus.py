@@ -452,7 +452,7 @@ class BusABC(metaclass=ABCMeta):
 
     @classmethod
     def list_adapters(cls) -> List[Any]:
-        """ Lists all adapters for this interface. The adapter identifier can be used to open a specific adapter.
+        """Lists all adapters for this interface. The adapter identifier can be used to open a specific adapter.
 
         MAY NOT BE IMPLEMENTED BY ALL INTERFACES
         """
