@@ -417,6 +417,18 @@ class NeoViBus(BusABC):
         """
         if not ics.validate_hobject(self.dev):
             raise CanOperationError("bus not open")
+
+        # Check for valid DLC to avoid passing extra long data to the driver
+        if msg.is_fd:
+            if msg.dlc > 64:
+                raise ValueError(
+                    f"DLC was {msg.dlc} but it should be <= 64 for CAN FD frames"
+                )
+        elif msg.dlc > 8:
+            raise ValueError(
+                f"DLC was {msg.dlc} but it should be <= 8 for normal CAN frames"
+            )
+
         message = ics.SpyMessage()
 
         flag0 = 0
@@ -434,8 +446,8 @@ class NeoViBus(BusABC):
                 flag3 |= ics.SPY_STATUS3_CANFD_ESI
 
         message.ArbIDOrHeader = msg.arbitration_id
-        msg_data = msg.data
-        message.NumberBytesData = len(msg_data)
+        msg_data = msg.data[: msg.dlc]
+        message.NumberBytesData = msg.dlc
         message.Data = tuple(msg_data[:8])
         if msg.is_fd and len(msg_data) > 8:
             message.ExtraDataPtrEnabled = 1
