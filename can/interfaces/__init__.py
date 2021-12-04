@@ -25,6 +25,7 @@ BACKENDS = {
     "gs_usb": ("can.interfaces.gs_usb", "GsUsbBus"),
     "nixnet": ("can.interfaces.nixnet", "NiXNETcanBus"),
     "neousys": ("can.interfaces.neousys", "NeousysBus"),
+    "cfuc": ("can.interfaces.cfuc","cfucBus"),
 }
 
 try:

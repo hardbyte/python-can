@@ -33,6 +33,7 @@ extras_require = {
     "gs_usb": ["gs_usb>=0.2.1"],
     "nixnet": ["nixnet>=0.3.1"],
     "pcan": ["uptime~=3.0.1"],
+    "cfuc": ["pyserial~=3.0"],
 }
 
 setup(
