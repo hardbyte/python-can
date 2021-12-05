@@ -103,6 +103,22 @@ class TestPlayerScript(CanScriptTest):
         return module
 
 
+class TestLogconvertScript(CanScriptTest):
+    def _commands(self):
+        commands = [
+            "python -m can.logconvert --help",
+            "python scripts/can_logconvert.py --help",
+        ]
+        if IS_UNIX:
+            commands += ["can_logconvert.py --help"]
+        return commands
+
+    def _import(self):
+        import can.logconvert as module
+
+        return module
+
+
 # TODO add #390
 
 
