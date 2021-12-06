@@ -3,7 +3,7 @@
 IXXAT Virtual CAN Interface
 ===========================
 
-Interface to `IXXAT <http://www.ixxat.com/>`__ Virtual CAN Interface V3 SDK. Works on Windows.
+Interface to `IXXAT <http://www.ixxat.com/>`__ Virtual CAN Interface SDK. Works on Windows.
 
 The Linux ECI SDK is currently unsupported, however on Linux some devices are
 supported with :doc:`socketcan`.
@@ -26,21 +26,21 @@ Bus
 
 Configuration file
 ------------------
+
 The simplest configuration file would be::
 
     [default]
     interface = ixxat
     channel = 0
 
-Python-can will search for the first IXXAT device available and open the first channel.
+Python-can will search for the first IXXAT adapter available and open the first channel.
 ``interface`` and ``channel`` parameters are interpreted by frontend ``can.interfaces.interface``
 module, while the following parameters are optional and are interpreted by IXXAT implementation.
 
 * ``bitrate`` (default 500000) Channel bitrate
-* ``UniqueHardwareId`` (default first device) Unique hardware ID of the IXXAT device
+* ``adapter`` (default first adapter) Unique hardware ID of the IXXAT device
 * ``rxFifoSize`` (default 16) Number of RX mailboxes
 * ``txFifoSize`` (default 16) Number of TX mailboxes
-* ``extended`` (default False) Allow usage of extended IDs
 
 
 Filtering
@@ -55,14 +55,15 @@ VCI documentation, section "Message filters" for more info.
 
 List available devices
 ----------------------
-In case you have connected multiple IXXAT devices, you have to select them by using their unique hardware id.
-To get a list of all connected IXXAT you can use the function ``get_ixxat_hwids()`` as demonstrated below:
 
-    >>> from can.interfaces.ixxat import get_ixxat_hwids
-    >>> for hwid in get_ixxat_hwids():
-    ...     print("Found IXXAT with hardware id '%s'." % hwid)
-    Found IXXAT with hardware id 'HW441489'.
-    Found IXXAT with hardware id 'HW107422'.
+In case you have connected multiple IXXAT adapters, you have to select them by using their unique hardware id.
+To get a list of all connected IXXAT adapters you can use the function ``list_adapters()`` as demonstrated below:
+
+    >>> from can.interfaces.ixxat import IXXATBus
+    >>> for hwid in IXXATBus.list_adapters():
+    ...     print("Found IXXAT adapter with hardware id '%s'." % hwid)
+    Found IXXAT adapter with hardware id 'HW441489'.
+    Found IXXAT adapter with hardware id 'HW107422'.
 
 
 Internals

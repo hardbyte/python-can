@@ -21,7 +21,7 @@ from can.broadcastmanager import (
     LimitedDurationCyclicSendTaskABC,
     RestartableCyclicTaskABC,
 )
-from can.ctypesutil import CLibrary, HANDLE, PHANDLE, HRESULT as ctypes_HRESULT
+from can.ctypesutil import CLibrary, HANDLE, PHANDLE, HRESULT
 
 from . import constants, structures
 from .exceptions import *
@@ -136,7 +136,7 @@ try:
 
     # void VCIAPI vciFormatError (HRESULT hrError, PCHAR pszText, UINT32 dwsize);
     _canlib.map_symbol(
-        "vciFormatError", None, (ctypes_HRESULT, ctypes.c_char_p, ctypes.c_uint32)
+        "vciFormatError", None, (HRESULT, ctypes.c_char_p, ctypes.c_uint32)
     )
     # Hack to have vciFormatError as a free function
     vciFormatError = functools.partial(__vciFormatError, _canlib)
@@ -408,7 +408,7 @@ class IXXATBus(BusABC):
         },
     }
 
-    def __init__(self, channel, can_filters=None, **kwargs):
+    def __init__(self, channel=0, can_filters=None, **kwargs):
         """
         :param int channel:
             The Channel id to create this bus with.
@@ -416,14 +416,20 @@ class IXXATBus(BusABC):
         :param list can_filters:
             See :meth:`can.BusABC.set_filters`.
 
-        :param bool receive_own_messages:
-            Enable self-reception of sent messages.
-
-        :param int UniqueHardwareId:
-            UniqueHardwareId to connect (optional, will use the first found if not supplied)
-
         :param int bitrate:
             Channel bitrate in bit/s
+
+        :param String adapter:
+            adapter to connect (optional, will use the first found if not supplied)
+
+        :param int rxFifoSize:
+            Set the receive FIFO size to this value.
+
+        :param int txFifoSize:
+            Set the transmit FIFO size to this value.
+
+        :param bool receive_own_messages:
+            Enable self-reception of sent messages.
         """
         if _canlib is None:
             raise CanInterfaceNotImplementedError(
@@ -433,7 +439,7 @@ class IXXATBus(BusABC):
         log.info("Got configuration of: %s", kwargs)
         # Configuration options
         bitrate = kwargs.get("bitrate", 500000)
-        UniqueHardwareId = kwargs.get("UniqueHardwareId", None)
+        adapter = kwargs.get("adapter", None)
         rxFifoSize = kwargs.get("rxFifoSize", 16)
         txFifoSize = kwargs.get("txFifoSize", 16)
         self._receive_own_messages = kwargs.get("receive_own_messages", False)
@@ -461,10 +467,10 @@ class IXXATBus(BusABC):
         self._payload = (ctypes.c_byte * 8)()
 
         # Search for supplied device
-        if UniqueHardwareId is None:
-            log.info("Searching for first available device")
+        if adapter is None:
+            log.info("Searching for first available adapter")
         else:
-            log.info("Searching for unique HW ID %s", UniqueHardwareId)
+            log.info("Searching for adapter %s", adapter)
         _canlib.vciEnumDeviceOpen(ctypes.byref(self._device_handle))
         while True:
             try:
@@ -472,20 +478,19 @@ class IXXATBus(BusABC):
                     self._device_handle, ctypes.byref(self._device_info)
                 )
             except StopIteration:
-                if UniqueHardwareId is None:
+                if adapter is None:
                     raise VCIDeviceNotFoundError(
                         "No IXXAT device(s) connected or device(s) in use by other process(es)."
                     )
                 else:
                     raise VCIDeviceNotFoundError(
                         "Unique HW ID {} not connected or not available.".format(
-                            UniqueHardwareId
+                            adapter
                         )
                     )
             else:
-                if (UniqueHardwareId is None) or (
-                    self._device_info.UniqueHardwareId.AsChar
-                    == bytes(UniqueHardwareId, "ascii")
+                if (adapter is None) or (
+                    self._device_info.UniqueHardwareId.AsChar == bytes(adapter, "ascii")
                 ):
                     break
                 else:
@@ -762,6 +767,30 @@ class IXXATBus(BusABC):
         _canlib.canControlClose(self._control_handle)
         _canlib.vciDeviceClose(self._device_handle)
 
+    @classmethod
+    def list_adapters(cls):
+        """Get a list of hardware ids of all available IXXAT adapters."""
+        adapters = []
+        device_handle = HANDLE()
+        device_info = structures.VCIDEVICEINFO()
+
+        if _canlib is None:
+            raise CanInterfaceNotImplementedError(
+                "The IXXAT VCI library has not been initialized. Check the logs for more details."
+            )
+
+        _canlib.vciEnumDeviceOpen(ctypes.byref(device_handle))
+        while True:
+            try:
+                _canlib.vciEnumDeviceNext(device_handle, ctypes.byref(device_info))
+            except StopIteration:
+                break
+            else:
+                adapters.append(device_info.UniqueHardwareId.AsChar.decode("ascii"))
+        _canlib.vciEnumDeviceClose(device_handle)
+
+        return adapters
+
 
 class CyclicSendTask(LimitedDurationCyclicSendTaskABC, RestartableCyclicTaskABC):
     """A message in the cyclic transmit list."""
@@ -827,22 +856,3 @@ def _format_can_status(status_flags: int):
         return "CAN status message: {}".format(", ".join(states))
     else:
         return "Empty CAN status message"
-
-
-def get_ixxat_hwids():
-    """Get a list of hardware ids of all available IXXAT devices."""
-    hwids = []
-    device_handle = HANDLE()
-    device_info = structures.VCIDEVICEINFO()
-
-    _canlib.vciEnumDeviceOpen(ctypes.byref(device_handle))
-    while True:
-        try:
-            _canlib.vciEnumDeviceNext(device_handle, ctypes.byref(device_info))
-        except StopIteration:
-            break
-        else:
-            hwids.append(device_info.UniqueHardwareId.AsChar.decode("ascii"))
-    _canlib.vciEnumDeviceClose(device_handle)
-
-    return hwids
