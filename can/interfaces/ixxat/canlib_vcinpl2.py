@@ -440,6 +440,7 @@ class IXXATBus(BusABC):
         tseg1_dbr: int = None,
         tseg2_dbr: int = None,
         ssp_dbr: int = None,
+        **kwargs,
     ):
         """
         :param channel:

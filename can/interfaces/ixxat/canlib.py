@@ -110,6 +110,7 @@ class IXXATBus(BusABC):
                 tseg1_dbr=tseg1_dbr,
                 tseg2_dbr=tseg2_dbr,
                 ssp_dbr=ssp_dbr,
+                **kwargs
             )
         else:
             if rx_fifo_size is None:
@@ -125,6 +126,7 @@ class IXXATBus(BusABC):
                 rx_fifo_size=rx_fifo_size,
                 tx_fifo_size=tx_fifo_size,
                 bitrate=bitrate,
+                **kwargs
             )
 
     def flush_tx_buffer(self):

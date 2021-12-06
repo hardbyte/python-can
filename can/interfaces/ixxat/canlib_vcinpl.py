@@ -426,6 +426,7 @@ class IXXATBus(BusABC):
         rx_fifo_size: int = 16,
         tx_fifo_size: int = 16,
         bitrate: int = 500000,
+        **kwargs,
     ):
         """
         :param channel:
