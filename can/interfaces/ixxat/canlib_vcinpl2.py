@@ -428,7 +428,7 @@ class IXXATBus(BusABC):
         can_filters=None,
         receive_own_messages: int = False,
         unique_hardware_id: int = None,
-        extended: bool = False,
+        extended: bool = True,
         rx_fifo_size: int = 1024,
         tx_fifo_size: int = 128,
         bitrate: int = 500000,
@@ -455,7 +455,7 @@ class IXXATBus(BusABC):
             unique_hardware_id to connect (optional, will use the first found if not supplied)
 
         :param int extended:
-            Default False, enables the capability to use extended IDs.
+            Default True, enables the capability to use extended IDs.
 
         :param int rx_fifo_size:
             Receive fifo size (default 1024)

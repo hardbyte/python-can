@@ -422,6 +422,7 @@ class IXXATBus(BusABC):
         can_filters=None,
         receive_own_messages: bool = False,
         unique_hardware_id: int = None,
+        extended: bool = True,
         rx_fifo_size: int = 16,
         tx_fifo_size: int = 16,
         bitrate: int = 500000,
@@ -438,6 +439,9 @@ class IXXATBus(BusABC):
 
         :param int unique_hardware_id:
             unique_hardware_id to connect (optional, will use the first found if not supplied)
+
+        :param int extended:
+            Default True, enables the capability to use extended IDs.
 
         :param int rx_fifo_size:
             Receive fifo size (default 16)
@@ -552,11 +556,16 @@ class IXXATBus(BusABC):
         _canlib.canControlOpen(
             self._device_handle, channel, ctypes.byref(self._control_handle)
         )
+
+        # compute opmode before control initialize
+        opmode = constants.CAN_OPMODE_STANDARD | constants.CAN_OPMODE_ERRFRAME
+        if extended:
+            opmode |= constants.CAN_OPMODE_EXTENDED
+
+        # control initialize
         _canlib.canControlInitialize(
             self._control_handle,
-            constants.CAN_OPMODE_STANDARD
-            | constants.CAN_OPMODE_EXTENDED
-            | constants.CAN_OPMODE_ERRFRAME,
+            opmode,
             self.CHANNEL_BITRATES[0][bitrate],
             self.CHANNEL_BITRATES[1][bitrate],
         )

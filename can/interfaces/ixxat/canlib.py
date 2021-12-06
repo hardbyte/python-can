@@ -20,7 +20,7 @@ class IXXATBus(BusABC):
         can_filters=None,
         receive_own_messages: bool = False,
         unique_hardware_id: int = None,
-        extended: bool = False,
+        extended: bool = True,
         fd: bool = False,
         rx_fifo_size: int = None,
         tx_fifo_size: int = None,
@@ -49,7 +49,7 @@ class IXXATBus(BusABC):
             UniqueHardwareId to connect (optional, will use the first found if not supplied)
 
         :param int extended:
-            Default False, enables the capability to use extended IDs.
+            Default True, enables the capability to use extended IDs.
 
         :param bool fd:
             Default False, enables CAN-FD usage.
@@ -121,6 +121,7 @@ class IXXATBus(BusABC):
                 can_filters=can_filters,
                 receive_own_messages=receive_own_messages,
                 unique_hardware_id=unique_hardware_id,
+                extended=extended,
                 rx_fifo_size=rx_fifo_size,
                 tx_fifo_size=tx_fifo_size,
                 bitrate=bitrate,
