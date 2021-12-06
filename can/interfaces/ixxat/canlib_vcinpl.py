@@ -428,28 +428,28 @@ class IXXATBus(BusABC):
         bitrate: int = 500000,
     ):
         """
-        :param int channel:
+        :param channel:
             The Channel id to create this bus with.
 
-        :param list can_filters:
+        :param can_filters:
             See :meth:`can.BusABC.set_filters`.
 
-        :param bool receive_own_messages:
+        :param receive_own_messages:
             Enable self-reception of sent messages.
 
-        :param int unique_hardware_id:
+        :param unique_hardware_id:
             unique_hardware_id to connect (optional, will use the first found if not supplied)
 
-        :param int extended:
+        :param extended:
             Default True, enables the capability to use extended IDs.
 
-        :param int rx_fifo_size:
+        :param rx_fifo_size:
             Receive fifo size (default 16)
 
-        :param int tx_fifo_size:
+        :param tx_fifo_size:
             Transmit fifo size (default 16)
 
-        :param int bitrate:
+        :param bitrate:
             Channel bitrate in bit/s
         """
         if _canlib is None:

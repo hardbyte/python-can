@@ -442,52 +442,52 @@ class IXXATBus(BusABC):
         ssp_dbr: int = None,
     ):
         """
-        :param int channel:
+        :param channel:
             The Channel id to create this bus with.
 
-        :param list can_filters:
+        :param can_filters:
             See :meth:`can.BusABC.set_filters`.
 
-        :param bool receive_own_messages:
+        :param receive_own_messages:
             Enable self-reception of sent messages.
 
-        :param int unique_hardware_id:
+        :param unique_hardware_id:
             unique_hardware_id to connect (optional, will use the first found if not supplied)
 
-        :param int extended:
+        :param extended:
             Default True, enables the capability to use extended IDs.
 
-        :param int rx_fifo_size:
+        :param rx_fifo_size:
             Receive fifo size (default 1024)
 
-        :param int tx_fifo_size:
+        :param tx_fifo_size:
             Transmit fifo size (default 128)
 
-        :param int bitrate:
+        :param bitrate:
             Channel bitrate in bit/s
 
-        :param int data_bitrate:
+        :param data_bitrate:
             Channel bitrate in bit/s (only in CAN-Fd if baudrate switch enabled).
 
-        :param int sjw_abr:
+        :param sjw_abr:
             Bus timing value sample jump width (arbitration).
 
-        :param int tseg1_abr:
+        :param tseg1_abr:
             Bus timing value tseg1 (arbitration)
 
-        :param int tseg2_abr:
+        :param tseg2_abr:
             Bus timing value tseg2 (arbitration)
 
-        :param int sjw_dbr:
+        :param sjw_dbr:
             Bus timing value sample jump width (data)
 
-        :param int tseg1_dbr:
+        :param tseg1_dbr:
             Bus timing value tseg1 (data). Only takes effect with fd and bitrate switch enabled.
 
-        :param int tseg2_dbr:
+        :param tseg2_dbr:
             Bus timing value tseg2 (data). Only takes effect with fd and bitrate switch enabled.
 
-        :param int ssp_dbr:
+        :param ssp_dbr:
             Secondary sample point (data). Only takes effect with fd and bitrate switch enabled.
 
         """
