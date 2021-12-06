@@ -427,7 +427,7 @@ class IXXATBus(BusABC):
         channel: int,
         can_filters=None,
         receive_own_messages: int = False,
-        unique_hardware_id: int = None,
+        unique_hardware_id: Optional[int] = None,
         extended: bool = True,
         rx_fifo_size: int = 1024,
         tx_fifo_size: int = 128,
