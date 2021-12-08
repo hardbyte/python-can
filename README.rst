@@ -18,7 +18,7 @@ python-can
    :alt: Downloads on PePy
 
 .. |downloads_monthly| image:: https://pepy.tech/badge/python-can/month
-   :target: https://pepy.tech/project/python-can/month
+   :target: https://pepy.tech/project/python-can
    :alt: Monthly downloads on PePy
 
 .. |formatter| image:: https://img.shields.io/badge/code%20style-black-000000.svg
