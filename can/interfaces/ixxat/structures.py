@@ -4,6 +4,7 @@ Ctypes wrapper module for IXXAT Virtual CAN Interface V4 on win32 systems
 Copyright (C) 2016 Giuseppe Corbelli <giuseppe.corbelli@weightpack.com>
 """
 
+import binascii
 import ctypes
 
 
@@ -155,10 +156,15 @@ PCANMSGINFO = ctypes.POINTER(CANMSGINFO)
 class CANMSG(ctypes.Structure):
     _fields_ = [
         ("dwTime", ctypes.c_uint32),
+        # CAN ID of the message in Intel format (aligned right) without RTR bit.
         ("dwMsgId", ctypes.c_uint32),
         ("uMsgInfo", CANMSGINFO),
         ("abData", ctypes.c_uint8 * 8),
     ]
+    def __str__(self):
+        return """ID: 0x{0:04x}{1} DLC: {2:02d} DATA: {3}""".format(
+            self.dwMsgId, "[RTR]" if self.uMsgInfo.Bits.rtr else "", self.uMsgInfo.Bits.dlc, binascii.hexlify(self.abData, ' ')
+        )
 
 
 PCANMSG = ctypes.POINTER(CANMSG)
