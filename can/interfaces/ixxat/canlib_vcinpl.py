@@ -780,9 +780,10 @@ class IXXATBus(BusABC):
             _canlib.canChannelSendMessage(
                 self._channel_handle, int(timeout * 1000), message
             )
-
         else:
             _canlib.canChannelPostMessage(self._channel_handle, message)
+        # Want to log outgoing messages?
+        # log.log(self.RECV_LOGGING_LEVEL, "Sent: %s", message)
 
     def _send_periodic_internal(self, msg, period, duration=None):
         """Send a message using built-in cyclic transmit list functionality."""
