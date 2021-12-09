@@ -175,7 +175,6 @@ CAN_MSGFLAGS_SRR = 0x20  # [bit 5] self reception request
 CAN_MSGFLAGS_RTR = 0x40  # [bit 6] remote transmission request
 CAN_MSGFLAGS_EXT = 0x80  # [bit 7] frame format (0=11-bit, 1=29-bit)
 
-
 # extended message information flags (used by <CANMSGINFO.Bytes.[bFlags2|bAddFlags]>)
 CAN_MSGFLAGS2_SSM = 0x01  # [bit 0] single shot mode
 CAN_MSGFLAGS2_HPM = 0x02  # [bit 1] high priority message
@@ -258,3 +257,5 @@ CAN_DATABITRATE_PRESETS = {
         dwMode=0, dwBPS=10000000, wTS1=300, wTS2=100, wSJW=100, wTDO=200
     ),  # SP = 75,0%
 }
+=======
+>>>>>>> f22f775 (Format code with black)
