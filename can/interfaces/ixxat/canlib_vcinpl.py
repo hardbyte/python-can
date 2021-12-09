@@ -679,8 +679,8 @@ class IXXATBus(BusABC):
                         "Unknown CAN error message code {}".format(self._message.abData[0])
                     ))
                     log.warning(
-                        "CAN message flags bFlags2 0x%02X bflags 0x%02X",
-                        self._message.uMsgInfo.Bytes.bFlags2,
+                        "CAN message flags bAddFlags/bFlags2 0x%02X bflags 0x%02X",
+                        self._message.uMsgInfo.Bytes.bAddFlags,
                         self._message.uMsgInfo.Bytes.bFlags
                     )
             elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_TIMEOVR:
