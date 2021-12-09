@@ -1,5 +1,5 @@
 """
-Ctypes wrapper module for IXXAT Virtual CAN Interface V3 on win32 systems
+Ctypes wrapper module for IXXAT Virtual CAN Interface V4 on win32 systems
 
 Copyright (C) 2016 Giuseppe Corbelli <giuseppe.corbelli@weightpack.com>
 """
@@ -175,7 +175,7 @@ CAN_MSGFLAGS_RTR = 0x40  # [bit 6] remote transmission request
 CAN_MSGFLAGS_EXT = 0x80  # [bit 7] frame format (0=11-bit, 1=29-bit)
 
 
-# extended message information flags (used by <CANMSGINFO.Bytes.bFlags2>)
+# extended message information flags (used by <CANMSGINFO.Bytes.[bFlags2|bAddFlags]>)
 CAN_MSGFLAGS2_SSM = 0x01  # [bit 0] single shot mode
 CAN_MSGFLAGS2_HPM = 0x02  # [bit 1] high priority message
 CAN_MSGFLAGS2_EDL = 0x04  # [bit 2] extended data length
