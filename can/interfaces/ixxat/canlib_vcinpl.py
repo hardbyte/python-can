@@ -646,7 +646,7 @@ class IXXATBus(BusABC):
             recv_function = functools.partial(_canlib.canChannelPeekMessage, self._channel_handle, ctypes.byref(self._message))
         else:
             # Wait if no message available
-            timeout = constants.INFINITE if (timeout is None or timeout < 0) else int(timeout * 1000)
+            timeout_ms = constants.INFINITE if (timeout is None or timeout < 0) else int(timeout * 1000)
             recv_function = functools.partial(_canlib.canChannelReadMessage, self._channel_handle, timeout_ms, ctypes.byref(self._message))
 
         try:
@@ -679,7 +679,7 @@ class IXXATBus(BusABC):
             elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_TIMEOVR:
                 pass
             else:
-                log.warn("Unexpected message info type 0x%X", self._message.uMsgInfo.Bits.type)
+                log.warning("Unexpected message info type 0x%X", self._message.uMsgInfo.Bits.type)
         finally:
             # Check hard errors
             status = structures.CANLINESTATUS()
