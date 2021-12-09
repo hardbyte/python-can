@@ -16,6 +16,7 @@ import sys
 from typing import Optional, Callable, Tuple
 
 from can import BusABC, Message
+from can.bus import BusState
 from can.exceptions import CanInterfaceNotImplementedError, CanInitializationError
 from can.broadcastmanager import (
     LimitedDurationCyclicSendTaskABC,
@@ -38,7 +39,6 @@ __all__ = [
 
 log = logging.getLogger("can.ixxat")
 
-from time import perf_counter
 
 # Hack to have vciFormatError as a free function, see below
 vciFormatError = None
@@ -224,6 +224,13 @@ try:
         ctypes.c_long,
         (HANDLE, ctypes.c_uint32, structures.PCANMSG),
         __check_status,
+    )
+    # HRESULT canChannelGetStatus (HANDLE hCanChn, PCANCHANSTATUS pStatus );
+    _canlib.map_symbol(
+        "canChannelGetStatus",
+        ctypes.c_long,
+        (HANDLE, structures.PCANCHANSTATUS),
+        __check_status
     )
 
     # EXTERN_C HRESULT VCIAPI canControlOpen( IN  HANDLE  hDevice, IN  UINT32  dwCanNo, OUT PHANDLE phCanCtl );
@@ -767,8 +774,32 @@ class IXXATBus(BusABC):
             _canlib.canSchedulerClose(self._scheduler)
         _canlib.canChannelClose(self._channel_handle)
         _canlib.canControlStart(self._control_handle, constants.FALSE)
+        _canlib.canControlReset(self._control_handle)
         _canlib.canControlClose(self._control_handle)
         _canlib.vciDeviceClose(self._device_handle)
+
+    @property
+    def state(self) -> BusState:
+        """
+        Return the current state of the hardware
+        """
+        status = structures.CANLINESTATUS()
+        _canlib.canControlGetStatus(self._control_handle, ctypes.byref(status))
+        if status.bOpMode == constants.CAN_OPMODE_LISTONLY:
+            return BusState.PASSIVE
+
+        error_byte_1 = status.dwStatus & 0x0F
+        # CAN_STATUS_BUSOFF = 0x08  # bus off status
+        if error_byte_1 & constants.CAN_STATUS_BUSOFF:
+            return BusState.ERROR
+
+        error_byte_2 = status.dwStatus & 0xF0
+        # CAN_STATUS_BUSCERR  = 0x20  # bus coupling error
+        if error_byte_2 & constants.CAN_STATUS_BUSCERR:
+            raise BusState.ERROR
+
+        return BusState.ACTIVE
+# ~class IXXATBus(BusABC): ---------------------------------------------------
 
 
 class CyclicSendTask(LimitedDurationCyclicSendTaskABC, RestartableCyclicTaskABC):
