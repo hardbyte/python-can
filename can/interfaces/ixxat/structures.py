@@ -1,5 +1,5 @@
 """
-Ctypes wrapper module for IXXAT Virtual CAN Interface V3 on win32 systems
+Ctypes wrapper module for IXXAT Virtual CAN Interface V4 on win32 systems
 
 Copyright (C) 2016 Giuseppe Corbelli <giuseppe.corbelli@weightpack.com>
 """
@@ -118,7 +118,7 @@ class CANMSGINFO(ctypes.Union):
             (
                 "bAddFlags",
                 ctypes.c_uint8,
-            ),  # extended flags (see CAN_MSGFLAGS2_ constants)
+            ),  # extended flags (see CAN_MSGFLAGS2_ constants). AKA bFlags2 in VCI v4
             ("bFlags", ctypes.c_uint8),  # flags (see CAN_MSGFLAGS_ constants)
             ("bAccept", ctypes.c_uint8),  # accept code (see CAN_ACCEPT_ constants)
         ]
