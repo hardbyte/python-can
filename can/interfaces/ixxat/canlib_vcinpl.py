@@ -639,85 +639,64 @@ class IXXATBus(BusABC):
 
     def _recv_internal(self, timeout):
         """Read a message from IXXAT device."""
-
-        # TODO: handling CAN error messages?
         data_received = False
 
-        if timeout == 0:
+        if self._inWaiting() or timeout == 0:
             # Peek without waiting
-            try:
-                _canlib.canChannelPeekMessage(
-                    self._channel_handle, ctypes.byref(self._message)
-                )
-            except (VCITimeout, VCIRxQueueEmptyError):
-                return None, True
-            else:
-                if self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_DATA:
-                    data_received = True
+            recv_function = functools.partial(_canlib.canChannelPeekMessage, self._channel_handle, ctypes.byref(self._message))
         else:
             # Wait if no message available
-            if timeout is None or timeout < 0:
-                remaining_ms = constants.INFINITE
-                t0 = None
-            else:
-                timeout_ms = int(timeout * 1000)
-                remaining_ms = timeout_ms
-                t0 = perf_counter()
+            timeout = constants.INFINITE if (timeout is None or timeout < 0) else int(timeout * 1000)
+            recv_function = functools.partial(_canlib.canChannelReadMessage, self._channel_handle, timeout_ms, ctypes.byref(self._message))
 
-            while True:
-                try:
-                    _canlib.canChannelReadMessage(
-                        self._channel_handle, remaining_ms, ctypes.byref(self._message)
-                    )
-                except (VCITimeout, VCIRxQueueEmptyError):
-                    # Ignore the 2 errors, the timeout is handled manually with the perf_counter()
-                    pass
+        try:
+            recv_function()
+        except (VCITimeout, VCIRxQueueEmptyError) as e:
+            # Ignore the 2 errors, overall timeout is handled by BusABC.recv
+            pass
+        else:
+            # See if we got a data or info/error messages
+            if self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_DATA:
+                data_received = True
+            elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_INFO:
+                log.info(CAN_INFO_MESSAGES.get(
+                    self._message.abData[0],
+                    "Unknown CAN info message code {}".format(self._message.abData[0])
+                ))
+            elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_ERROR:
+                if self._message.uMsgInfo.Bytes.bFlags & constants.CAN_MSGFLAGS_OVR:
+                    log.warning("CAN error: data overrun")
                 else:
-                    # See if we got a data or info/error messages
-                    if self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_DATA:
-                        data_received = True
-                        break
-                    elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_INFO:
-                        log.info(
-                            CAN_INFO_MESSAGES.get(
-                                self._message.abData[0],
-                                "Unknown CAN info message code {}".format(
-                                    self._message.abData[0]
-                                ),
-                            )
-                        )
-
-                    elif (
-                        self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_ERROR
-                    ):
-                        log.warning(
-                            CAN_ERROR_MESSAGES.get(
-                                self._message.abData[0],
-                                "Unknown CAN error message code {}".format(
-                                    self._message.abData[0]
-                                ),
-                            )
-                        )
-
-                    elif (
-                        self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_STATUS
-                    ):
-                        log.info(_format_can_status(self._message.abData[0]))
-                        if self._message.abData[0] & constants.CAN_STATUS_BUSOFF:
-                            raise VCIBusOffError()
-
-                    elif (
-                        self._message.uMsgInfo.Bits.type
-                        == constants.CAN_MSGTYPE_TIMEOVR
-                    ):
-                        pass
-                    else:
-                        log.warning("Unexpected message info type")
-
-                if t0 is not None:
-                    remaining_ms = timeout_ms - int((perf_counter() - t0) * 1000)
-                    if remaining_ms < 0:
-                        break
+                    log.warning(CAN_ERROR_MESSAGES.get(
+                        self._message.abData[0],
+                        "Unknown CAN error message code {}".format(self._message.abData[0])
+                    ))
+                    log.warning(
+                        "CAN message flags bFlags2 0x%02X bflags 0x%02X",
+                        self._message.uMsgInfo.Bytes.bFlags2,
+                        self._message.uMsgInfo.Bytes.bFlags
+                    )
+            elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_TIMEOVR:
+                pass
+            else:
+                log.warn("Unexpected message info type 0x%X", self._message.uMsgInfo.Bits.type)
+        finally:
+            # Check hard errors
+            status = structures.CANLINESTATUS()
+            _canlib.canControlGetStatus(self._control_handle, ctypes.byref(status))
+            error_byte_1 = status.dwStatus & 0x0F
+            error_byte_2 = status.dwStatus & 0xF0
+            if error_byte_1 > constants.CAN_STATUS_TXPEND:
+                # CAN_STATUS_OVRRUN   = 0x02  # data overrun occurred
+                # CAN_STATUS_ERRLIM   = 0x04  # error warning limit exceeded
+                if error_byte_1 & constants.CAN_STATUS_OVRRUN:
+                    raise VCIError("Data overrun occurred")
+                elif error_byte_1 & constants.CAN_STATUS_ERRLIM:
+                    raise VCIError("Error warning limit exceeded")
+            elif error_byte_2 > constants.CAN_STATUS_ININIT:
+                # CAN_STATUS_BUSCERR  = 0x20  # bus coupling error
+                if error_byte_2 & constants.CAN_STATUS_BUSCERR:
+                    raise VCIError("Bus coupling error")
 
         if not data_received:
             # Timed out / can message type is not DATA

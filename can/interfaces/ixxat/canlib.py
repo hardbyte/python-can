@@ -2,6 +2,7 @@ import can.interfaces.ixxat.canlib_vcinpl as vcinpl
 import can.interfaces.ixxat.canlib_vcinpl2 as vcinpl2
 
 from can import BusABC, Message
+
 from typing import Optional
 
 
