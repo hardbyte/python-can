@@ -1,5 +1,5 @@
 """
-Ctypes wrapper module for IXXAT Virtual CAN Interface V3 on win32 systems
+Ctypes wrapper module for IXXAT Virtual CAN Interface V4 on win32 systems
 
 TODO: We could implement this interface such that setting other filters
       could work when the initial filters were set to zero using the
