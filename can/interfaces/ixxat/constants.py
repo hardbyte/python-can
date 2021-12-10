@@ -257,5 +257,3 @@ CAN_DATABITRATE_PRESETS = {
         dwMode=0, dwBPS=10000000, wTS1=300, wTS2=100, wSJW=100, wTDO=200
     ),  # SP = 75,0%
 }
-=======
->>>>>>> f22f775 (Format code with black)
