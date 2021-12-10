@@ -167,7 +167,7 @@ class CANMSG(ctypes.Structure):
             self.dwMsgId,
             "[RTR]" if self.uMsgInfo.Bits.rtr else "",
             self.uMsgInfo.Bits.dlc,
-            binascii.hexlify(self.abData, ' ')
+            binascii.hexlify(self.abData, " "),
         )
 
 

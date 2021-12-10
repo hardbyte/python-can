@@ -230,7 +230,7 @@ try:
         "canChannelGetStatus",
         ctypes.c_long,
         (HANDLE, structures.PCANCHANSTATUS),
-        __check_status
+        __check_status,
     )
 
     # EXTERN_C HRESULT VCIAPI canControlOpen( IN  HANDLE  hDevice, IN  UINT32  dwCanNo, OUT PHANDLE phCanCtl );
@@ -531,7 +531,9 @@ class IXXATBus(BusABC):
                 ctypes.byref(self._device_handle),
             )
         except Exception as exception:
-            raise CanInitializationError(f"Could not open device: {exception}") from exception
+            raise CanInitializationError(
+                f"Could not open device: {exception}"
+            ) from exception
 
         log.info("Using unique HW ID %s", self._device_info.UniqueHardwareId.AsChar)
 
@@ -702,7 +704,7 @@ class IXXATBus(BusABC):
                     log.warning(
                         "CAN message flags bAddFlags/bFlags2 0x%02X bflags 0x%02X",
                         self._message.uMsgInfo.Bytes.bAddFlags,
-                        self._message.uMsgInfo.Bytes.bFlags
+                        self._message.uMsgInfo.Bytes.bFlags,
                     )
             elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_TIMEOVR:
                 pass
@@ -828,6 +830,8 @@ class IXXATBus(BusABC):
             raise BusState.ERROR
 
         return BusState.ACTIVE
+
+
 # ~class IXXATBus(BusABC): ---------------------------------------------------
 
 
