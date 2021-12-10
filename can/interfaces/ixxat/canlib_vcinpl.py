@@ -518,11 +518,11 @@ class IXXATBus(BusABC):
                     == bytes(unique_hardware_id, "ascii")
                 ):
                     break
-                else:
-                    log.debug(
-                        "Ignoring IXXAT with hardware id '%s'.",
-                        self._device_info.UniqueHardwareId.AsChar.decode("ascii"),
-                    )
+
+                log.debug(
+                    "Ignoring IXXAT with hardware id '%s'.",
+                    self._device_info.UniqueHardwareId.AsChar.decode("ascii"),
+                )
         _canlib.vciEnumDeviceClose(self._device_handle)
 
         try:
@@ -531,7 +531,7 @@ class IXXATBus(BusABC):
                 ctypes.byref(self._device_handle),
             )
         except Exception as exception:
-            raise CanInitializationError(f"Could not open device: {exception}")
+            raise CanInitializationError(f"Could not open device: {exception}") from exception
 
         log.info("Using unique HW ID %s", self._device_info.UniqueHardwareId.AsChar)
 
@@ -552,7 +552,7 @@ class IXXATBus(BusABC):
         except Exception as exception:
             raise CanInitializationError(
                 f"Could not open and initialize channel: {exception}"
-            )
+            ) from exception
 
         # Signal TX/RX events when at least one frame has been handled
         _canlib.canChannelInitialize(
@@ -671,7 +671,7 @@ class IXXATBus(BusABC):
 
         try:
             recv_function()
-        except (VCITimeout, VCIRxQueueEmptyError) as e:
+        except (VCITimeout, VCIRxQueueEmptyError):
             # Ignore the 2 errors, overall timeout is handled by BusABC.recv
             pass
         else:
@@ -785,7 +785,7 @@ class IXXATBus(BusABC):
         # Want to log outgoing messages?
         # log.log(self.RECV_LOGGING_LEVEL, "Sent: %s", message)
 
-    def _send_periodic_internal(self, msg, period, duration=None):
+    def _send_periodic_internal(self, msgs, period, duration=None):
         """Send a message using built-in cyclic transmit list functionality."""
         if self._scheduler is None:
             self._scheduler = HANDLE()
@@ -795,7 +795,7 @@ class IXXATBus(BusABC):
             self._scheduler_resolution = caps.dwClockFreq / caps.dwCmsDivisor
             _canlib.canSchedulerActivate(self._scheduler, constants.TRUE)
         return CyclicSendTask(
-            self._scheduler, msg, period, duration, self._scheduler_resolution
+            self._scheduler, msgs, period, duration, self._scheduler_resolution
         )
 
     def shutdown(self):

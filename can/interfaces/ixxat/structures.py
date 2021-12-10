@@ -161,9 +161,13 @@ class CANMSG(ctypes.Structure):
         ("uMsgInfo", CANMSGINFO),
         ("abData", ctypes.c_uint8 * 8),
     ]
-    def __str__(self):
+
+    def __str__(self) -> str:
         return """ID: 0x{0:04x}{1} DLC: {2:02d} DATA: {3}""".format(
-            self.dwMsgId, "[RTR]" if self.uMsgInfo.Bits.rtr else "", self.uMsgInfo.Bits.dlc, binascii.hexlify(self.abData, ' ')
+            self.dwMsgId,
+            "[RTR]" if self.uMsgInfo.Bits.rtr else "",
+            self.uMsgInfo.Bits.dlc,
+            binascii.hexlify(self.abData, ' ')
         )
 
 
