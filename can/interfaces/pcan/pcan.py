@@ -106,7 +106,7 @@ class PcanBus(BusABC):
         state=BusState.ACTIVE,
         bitrate=500000,
         *args,
-        **kwargs
+        **kwargs,
     ):
         """A PCAN USB interface to CAN.
 
@@ -214,15 +214,13 @@ class PcanBus(BusABC):
 
         error, value = self.m_objPCANBasic.GetValue(PCAN_NONEBUS, PCAN_API_VERSION)
         if error != PCAN_ERROR_OK:
-            raise CanInitializationError(
-                F"Failed to read pcan basic api version"
-            )
+            raise CanInitializationError(f"Failed to read pcan basic api version")
 
-        apv = version.parse(value.decode('ascii'))
+        apv = version.parse(value.decode("ascii"))
         if apv < MIN_PCAN_API_VERSION:
             raise CanInitializationError(
-                F"Minimum version of pcan api is {MIN_PCAN_API_VERSION}."
-                F" Installed version is {apv}. Consider upgrade of pcan basic package"
+                f"Minimum version of pcan api is {MIN_PCAN_API_VERSION}."
+                f" Installed version is {apv}. Consider upgrade of pcan basic package"
             )
 
         if state is BusState.ACTIVE or state is BusState.PASSIVE:
