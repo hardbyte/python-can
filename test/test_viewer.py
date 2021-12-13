@@ -102,7 +102,12 @@ class StdscrDummy:
             return curses.ascii.SP  # Unpause
         elif self.key_counter == 5:
             return ord("s")  # Sort
-
+        # Turn on byte highlighting (toggle)
+        elif self.key_counter == 6:
+            return ord("h")
+        # Turn off byte highlighting (toggle)
+        elif self.key_counter == 7:
+            return ord("h")
         # Keep scrolling until it exceeds the number of messages
         elif self.key_counter <= 100:
             return curses.KEY_DOWN
@@ -376,19 +381,19 @@ class CanViewerTest(unittest.TestCase):
             )
 
     def test_parse_args(self):
-        parsed_args, _, _ = parse_args(["-b", "250000"])
+        parsed_args, _, _, _ = parse_args(["-b", "250000"])
         self.assertEqual(parsed_args.bitrate, 250000)
 
-        parsed_args, _, _ = parse_args(["--bitrate", "500000"])
+        parsed_args, _, _, _ = parse_args(["--bitrate", "500000"])
         self.assertEqual(parsed_args.bitrate, 500000)
 
-        parsed_args, _, _ = parse_args(["-c", "can0"])
+        parsed_args, _, _, _ = parse_args(["-c", "can0"])
         self.assertEqual(parsed_args.channel, "can0")
 
-        parsed_args, _, _ = parse_args(["--channel", "PCAN_USBBUS1"])
+        parsed_args, _, _, _ = parse_args(["--channel", "PCAN_USBBUS1"])
         self.assertEqual(parsed_args.channel, "PCAN_USBBUS1")
 
-        parsed_args, _, data_structs = parse_args(["-d", "100:<L"])
+        parsed_args, _, data_structs, _ = parse_args(["-d", "100:<L"])
         self.assertEqual(parsed_args.decode, ["100:<L"])
 
         self.assertIsInstance(data_structs, dict)
@@ -401,7 +406,7 @@ class CanViewerTest(unittest.TestCase):
         f = open("test.txt", "w")
         f.write("100:<BB\n101:<HH\n")
         f.close()
-        parsed_args, _, data_structs = parse_args(["-d", "test.txt"])
+        parsed_args, _, data_structs, _ = parse_args(["-d", "test.txt"])
 
         self.assertIsInstance(data_structs, dict)
         self.assertEqual(len(data_structs), 2)
@@ -415,7 +420,7 @@ class CanViewerTest(unittest.TestCase):
         self.assertEqual(data_structs[0x101].size, 4)
         os.remove("test.txt")
 
-        parsed_args, _, data_structs = parse_args(
+        parsed_args, _, data_structs, _ = parse_args(
             ["--decode", "100:<LH:10.:100.", "101:<ff", "102:<Bf:1:57.3"]
         )
         self.assertEqual(
@@ -448,14 +453,14 @@ class CanViewerTest(unittest.TestCase):
         self.assertEqual(data_structs[0x102][1], 1)
         self.assertAlmostEqual(data_structs[0x102][2], 57.3)
 
-        parsed_args, can_filters, _ = parse_args(["-f", "100:7FF"])
+        parsed_args, can_filters, _, _ = parse_args(["-f", "100:7FF"])
         self.assertEqual(parsed_args.filter, ["100:7FF"])
         self.assertIsInstance(can_filters, list)
         self.assertIsInstance(can_filters[0], dict)
         self.assertEqual(can_filters[0]["can_id"], 0x100)
         self.assertEqual(can_filters[0]["can_mask"], 0x7FF)
 
-        parsed_args, can_filters, _ = parse_args(["-f", "101:7FF", "102:7FC"])
+        parsed_args, can_filters, _, _ = parse_args(["-f", "101:7FF", "102:7FC"])
         self.assertEqual(parsed_args.filter, ["101:7FF", "102:7FC"])
         self.assertIsInstance(can_filters, list)
         self.assertIsInstance(can_filters[0], dict)
@@ -468,17 +473,17 @@ class CanViewerTest(unittest.TestCase):
         with self.assertRaises(argparse.ArgumentError):
             parse_args(["-f", "101,7FF"])
 
-        parsed_args, can_filters, _ = parse_args(["--filter", "100~7FF"])
+        parsed_args, can_filters, _, _ = parse_args(["--filter", "100~7FF"])
         self.assertEqual(parsed_args.filter, ["100~7FF"])
         self.assertIsInstance(can_filters, list)
         self.assertIsInstance(can_filters[0], dict)
         self.assertEqual(can_filters[0]["can_id"], 0x100 | 0x20000000)
         self.assertEqual(can_filters[0]["can_mask"], 0x7FF & 0x20000000)
 
-        parsed_args, _, _ = parse_args(["-i", "socketcan"])
+        parsed_args, _, _, _ = parse_args(["-i", "socketcan"])
         self.assertEqual(parsed_args.interface, "socketcan")
 
-        parsed_args, _, _ = parse_args(["--interface", "pcan"])
+        parsed_args, _, _, _ = parse_args(["--interface", "pcan"])
         self.assertEqual(parsed_args.interface, "pcan")
 
         # Make sure it exits with the correct error code when displaying the help page

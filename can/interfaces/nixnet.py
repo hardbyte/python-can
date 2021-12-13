@@ -30,7 +30,7 @@ if sys.platform == "win32":
         )
     except ImportError:
         logger.error("Error, NIXNET python module cannot be loaded.")
-        raise ImportError()
+        raise
 else:
     logger.error("NI-XNET interface is only available on Windows systems")
     raise NotImplementedError("NiXNET is not supported on not Win32 platforms")
@@ -221,6 +221,7 @@ class NiXNETcanBus(BusABC):
 
     def shutdown(self):
         """Close object."""
+        super().shutdown()
         self.__session_send.flush()
         self.__session_receive.flush()
 

@@ -25,7 +25,7 @@ import can  # pylint: disable=wrong-import-position
 # built documents.
 #
 # The short X.Y version.
-version = can.__version__.split("-")[0]
+version = can.__version__.split("-", maxsplit=1)[0]
 release = can.__version__
 
 # General information about the project.

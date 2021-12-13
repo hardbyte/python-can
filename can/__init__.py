@@ -12,7 +12,7 @@ __version__ = "4.0.0-dev.2"
 
 log = logging.getLogger("can")
 
-rc: Dict[str, Any] = dict()
+rc: Dict[str, Any] = {}
 
 from .listener import Listener, BufferedReader, RedirectReader, AsyncBufferedReader
 
@@ -25,7 +25,7 @@ from .exceptions import (
 )
 
 from .io import Logger, SizedRotatingLogger, Printer, LogReader, MessageSync
-from .io import ASCWriter, ASCReader
+from .io import ASCWriter, ASCReader, GzipASCWriter, GzipASCReader
 from .io import BLFReader, BLFWriter
 from .io import CanutilsLogReader, CanutilsLogWriter
 from .io import CSVWriter, CSVReader

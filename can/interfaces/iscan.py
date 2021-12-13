@@ -152,6 +152,7 @@ class IscanBus(BusABC):
         iscan.isCAN_TransmitMessageEx(self.channel, ctypes.byref(raw_msg))
 
     def shutdown(self) -> None:
+        super().shutdown()
         iscan.isCAN_CloseDevice(self.channel)
 
 

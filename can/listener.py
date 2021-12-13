@@ -142,7 +142,7 @@ class AsyncBufferedReader(Listener):
     def __init__(self, **kwargs: Any) -> None:
         self.buffer: "asyncio.Queue[Message]"
 
-        if "loop" in kwargs.keys():
+        if "loop" in kwargs:
             warnings.warn(
                 "The 'loop' argument is deprecated since python-can 4.0.0 "
                 "and has no effect starting with Python 3.10",

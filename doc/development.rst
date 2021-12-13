@@ -72,8 +72,12 @@ These steps are a guideline on how to add a new backend to python-can.
 - Register your backend bus class in ``BACKENDS`` in the file ``can.interfaces.__init__.py``.
 - Add docs where appropriate. At a minimum add to ``doc/interfaces.rst`` and add
   a new interface specific document in ``doc/interface/*``.
-  Also, don't forget to document your classes, methods and function with docstrings.
+  It should document the supported platforms and also the hardware/software it requires.
+  A small snippet of how to install the dependencies would also be useful to get people started without much friction.
+- Also, don't forget to document your classes, methods and function with docstrings.
 - Add tests in ``test/*`` where appropriate.
+  To get started, have a look at ``back2back_test.py``:
+  Simply add a test case like ``BasicTestSocketCan`` and some basic tests will be executed for the new interface.
 
 
 Code Structure
@@ -104,7 +108,7 @@ Creating a new Release
 - Update the library version in ``__init__.py`` using `semantic versioning <http://semver.org>`__.
 - Check if any deprecations are pending.
 - Run all tests and examples against available hardware.
-- Update `CONTRIBUTORS.txt` with any new contributors.
+- Update ``CONTRIBUTORS.txt`` with any new contributors.
 - For larger changes update ``doc/history.rst``.
 - Sanity check that documentation has stayed inline with code.
 - Create a temporary virtual environment. Run ``python setup.py install`` and ``tox``.

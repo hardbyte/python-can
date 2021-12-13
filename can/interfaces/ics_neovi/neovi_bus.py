@@ -1,8 +1,8 @@
 """
-ICS NeoVi interface module.
+Intrepid Control Systems (ICS) neoVI interface module.
 
 python-ics is a Python wrapper around the API provided by Intrepid Control
-Systems for communicating with their NeoVI range of devices.
+Systems for communicating with their neoVI range of devices.
 
 Implementation references:
 * https://github.com/intrepidcs/python_ics
@@ -30,7 +30,7 @@ try:
     import ics
 except ImportError as ie:
     logger.warning(
-        "You won't be able to use the ICS NeoVi can backend without the "
+        "You won't be able to use the ICS neoVI can backend without the "
         "python-ics module installed!: %s",
         ie,
     )
@@ -42,7 +42,7 @@ try:
 except ImportError as ie:
 
     logger.warning(
-        "Using ICS NeoVi can backend without the "
+        "Using ICS neoVI can backend without the "
         "filelock module installed may cause some issues!: %s",
         ie,
     )
@@ -226,8 +226,8 @@ class NeoViBus(BusABC):
                 channel = getattr(ics, netid)
             else:
                 raise ValueError(
-                    "channel must be an integer or " "a valid ICS channel name"
-                )
+                    "channel must be an integer or a valid ICS channel name"
+                ) from None
         return channel
 
     @staticmethod
@@ -417,6 +417,18 @@ class NeoViBus(BusABC):
         """
         if not ics.validate_hobject(self.dev):
             raise CanOperationError("bus not open")
+
+        # Check for valid DLC to avoid passing extra long data to the driver
+        if msg.is_fd:
+            if msg.dlc > 64:
+                raise ValueError(
+                    f"DLC was {msg.dlc} but it should be <= 64 for CAN FD frames"
+                )
+        elif msg.dlc > 8:
+            raise ValueError(
+                f"DLC was {msg.dlc} but it should be <= 8 for normal CAN frames"
+            )
+
         message = ics.SpyMessage()
 
         flag0 = 0
@@ -434,8 +446,8 @@ class NeoViBus(BusABC):
                 flag3 |= ics.SPY_STATUS3_CANFD_ESI
 
         message.ArbIDOrHeader = msg.arbitration_id
-        msg_data = msg.data
-        message.NumberBytesData = len(msg_data)
+        msg_data = msg.data[: msg.dlc]
+        message.NumberBytesData = msg.dlc
         message.Data = tuple(msg_data[:8])
         if msg.is_fd and len(msg_data) > 8:
             message.ExtraDataPtrEnabled = 1

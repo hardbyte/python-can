@@ -411,6 +411,7 @@ class BusABC(metaclass=ABCMeta):
         Called to carry out any interface specific cleanup required
         in shutting down a bus.
         """
+        self.stop_all_periodic_tasks()
 
     def __enter__(self):
         return self

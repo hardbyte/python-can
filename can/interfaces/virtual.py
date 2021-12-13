@@ -67,7 +67,7 @@ class VirtualBus(BusABC):
 
         # the channel identifier may be an arbitrary object
         self.channel_id = channel
-        self.channel_info = "Virtual bus channel {}".format(self.channel_id)
+        self.channel_info = f"Virtual bus channel {self.channel_id}"
         self.receive_own_messages = receive_own_messages
         self._open = True
 
@@ -122,6 +122,7 @@ class VirtualBus(BusABC):
             raise CanOperationError("Could not send message to one or more recipients")
 
     def shutdown(self) -> None:
+        super().shutdown()
         if self._open:
             self._open = False
 
