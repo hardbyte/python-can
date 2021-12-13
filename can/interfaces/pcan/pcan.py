@@ -9,6 +9,8 @@ import platform
 
 from typing import Optional
 
+from packaging import version
+
 from ...message import Message
 from ...bus import BusABC, BusState
 from ...util import len2dlc, dlc2len
@@ -19,6 +21,7 @@ from .basic import (
     PCAN_BITRATES,
     PCAN_FD_PARAMETER_LIST,
     PCAN_CHANNEL_NAMES,
+    PCAN_NONEBUS,
     PCAN_BAUD_500K,
     PCAN_TYPE_ISA,
     PCANBasic,
@@ -26,6 +29,7 @@ from .basic import (
     PCAN_ALLOW_ERROR_FRAMES,
     PCAN_PARAMETER_ON,
     PCAN_RECEIVE_EVENT,
+    PCAN_API_VERSION,
     PCAN_DEVICE_NUMBER,
     PCAN_ERROR_QRCVEMPTY,
     PCAN_ERROR_BUSLIGHT,
@@ -57,6 +61,8 @@ from .basic import (
 
 # Set up logging
 log = logging.getLogger("can.pcan")
+
+MIN_PCAN_API_VERSION = version.parse("4.2.0")
 
 
 try:
@@ -205,6 +211,19 @@ class PcanBus(BusABC):
 
         self.m_objPCANBasic = PCANBasic()
         self.m_PcanHandle = channel
+
+        error, value = self.m_objPCANBasic.GetValue(PCAN_NONEBUS, PCAN_API_VERSION)
+        if error != PCAN_ERROR_OK:
+            raise CanInitializationError(
+                F"Failed to read pcan basic api version"
+            )
+
+        apv = version.parse(value.decode('ascii'))
+        if apv < MIN_PCAN_API_VERSION:
+            raise CanInitializationError(
+                F"Minimum version of pcan api is {MIN_PCAN_API_VERSION}."
+                F" Installed version is {apv}. Consider upgrade of pcan basic package"
+            )
 
         if state is BusState.ACTIVE or state is BusState.PASSIVE:
             self.state = state
