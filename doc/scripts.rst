@@ -39,3 +39,8 @@ The full usage page can be seen below:
 
 .. command-output:: python -m can.viewer -h
 
+
+can.logconvert
+----------
+
+.. command-output:: python -m can.logconvert -h
