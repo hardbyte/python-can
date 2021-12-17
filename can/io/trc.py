@@ -77,6 +77,20 @@ class TRCReader(BaseIOHandler):
             else:
                 break
 
+    def _parse_msg(self, line):
+        cols = line.split()
+        try:
+            msg = Message()
+            msg.timestamp = float(cols[1]) / 1000
+            msg.arbitration_id = int(cols[4], 16)
+            msg.is_extended_id = len(cols[4]) > 4
+            msg.channel = int(cols[3])
+            msg.dlc = int(cols[7])
+            msg.data = bytearray([int(cols[i + 8], 16) for i in range(msg.dlc)])
+            return msg
+        except IndexError:
+            logger.warning(F"TRCReader: Failed to parse message '{line}'")
+
     def __iter__(self) -> Generator[Message, None, None]:
         # This is guaranteed to not be None since we raise ValueError in __init__
         self.file = cast(IO[Any], self.file)
@@ -88,18 +102,9 @@ class TRCReader(BaseIOHandler):
                 # Comment line
                 continue
 
-            cols = temp.split()
-            try:
-                msg = Message()
-                msg.timestamp = float(cols[1]) / 1000
-                msg.arbitration_id = int(cols[4], 16)
-                msg.is_extended_id = len(cols[4]) > 4
-                msg.channel = int(cols[3])
-                msg.dlc = int(cols[7])
-                msg.data = bytearray([int(cols[i + 8], 16) for i in range(msg.dlc)])
+            msg = self._parse_msg(temp)
+            if msg is not None:
                 yield msg
-            except IndexError:
-                logger.warning(F"TRCReader: Failed to parse message '{temp}'")
 
 
 class TRCWriter(BaseIOHandler, Listener):
