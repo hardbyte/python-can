@@ -71,7 +71,7 @@ class TRCReader(BaseIOHandler):
                 try:
                     self.file_version = line.split('=')[1]
                 except IndexError:
-                    logger.debug(F"TRCReader: Failed to parse version")
+                    logger.debug("TRCReader: Failed to parse version")
             elif line.startswith(";"):
                 continue
             else:
