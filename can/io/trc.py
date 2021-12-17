@@ -82,6 +82,26 @@ class TRCReader(BaseIOHandler):
         self.file = cast(IO[Any], self.file)
         self._extract_header()
 
+        for line in self.file:
+            temp = line.strip()
+            if temp.startswith(';'):
+                # Comment line
+                continue
+
+            cols = temp.split()
+            try:
+                msg = Message()
+                msg.timestamp = float(cols[1]) / 1000
+                msg.arbitration_id = int(cols[4], 16)
+                msg.is_extended_id = len(cols[4]) > 4
+                msg.channel = int(cols[3])
+                msg.dlc = int(cols[7])
+                msg.data = bytearray([int(cols[i + 8], 16) for i in range(msg.dlc)])
+                yield msg
+            except IndexError:
+                logger.warning(F"TRCReader: Failed to parse message '{temp}'")
+
+
 class TRCWriter(BaseIOHandler, Listener):
     """Logs CAN data to text file (.trc).
 
