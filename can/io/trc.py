@@ -75,7 +75,7 @@ class TRCReader(BaseIOHandler):
             elif line.startswith(";"):
                 continue
             else:
-                break
+                return line
 
     def _parse_msg(self, line):
         cols = line.split()
@@ -94,7 +94,11 @@ class TRCReader(BaseIOHandler):
     def __iter__(self) -> Generator[Message, None, None]:
         # This is guaranteed to not be None since we raise ValueError in __init__
         self.file = cast(IO[Any], self.file)
-        self._extract_header()
+        first_line = self._extract_header()
+
+        msg = self._parse_msg(first_line)
+        if msg is not None:
+            yield msg
 
         for line in self.file:
             temp = line.strip()
