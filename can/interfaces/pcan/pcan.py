@@ -212,12 +212,7 @@ class PcanBus(BusABC):
         self.m_objPCANBasic = PCANBasic()
         self.m_PcanHandle = channel
 
-        apv = self.get_api_version()
-        if apv < MIN_PCAN_API_VERSION:
-            raise CanInitializationError(
-                f"Minimum version of pcan api is {MIN_PCAN_API_VERSION}."
-                f" Installed version is {apv}. Consider upgrade of pcan basic package"
-            )
+        self.check_api_version()
 
         if state is BusState.ACTIVE or state is BusState.PASSIVE:
             self.state = state
@@ -323,6 +318,14 @@ class PcanBus(BusABC):
             raise CanInitializationError(f"Failed to read pcan basic api version")
 
         return version.parse(value.decode("ascii"))
+
+    def check_api_version(self):
+        apv = self.get_api_version()
+        if apv < MIN_PCAN_API_VERSION:
+            raise CanInitializationError(
+                f"Minimum version of pcan api is {MIN_PCAN_API_VERSION}."
+                f" Installed version is {apv}. Consider upgrade of pcan basic package"
+            )
 
     def status(self):
         """
