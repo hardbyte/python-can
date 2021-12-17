@@ -71,6 +71,11 @@ class TestPCANBus(unittest.TestCase):
         with self.assertRaises(CanInitializationError):
             self.bus = can.Bus(bustype="pcan")
 
+    def test_api_version_read_fail(self) -> None:
+        self.mock_pcan.GetValue = Mock(return_value=(PCAN_ERROR_ILLOPERATION, None))
+        with self.assertRaises(CanInitializationError):
+            self.bus = can.Bus(bustype="pcan")
+
     @parameterized.expand(
         [
             ("no_error", PCAN_ERROR_OK, PCAN_ERROR_OK, "some ok text 1"),
