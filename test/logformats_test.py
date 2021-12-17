@@ -783,6 +783,65 @@ class TestPrinter(unittest.TestCase):
                     printer(message)
 
 
+class TestTrcFileFormat(ReaderWriterTest):
+    """Tests can.TRCWriter and can.TRCReader"""
+
+    def _setup_instance(self):
+        super()._setup_instance_helper(
+            can.TRCWriter,
+            can.TRCReader,
+            check_fd=False,
+            check_comments=False,
+            preserves_channel=False,
+            allowed_timestamp_delta=0.001,
+            adds_default_channel=0,
+        )
+
+    @unittest.skip("not implemented")
+    def test_path_like_explicit_stop(self):
+        pass
+
+    @unittest.skip("not implemented")
+    def test_path_like_context_manager(self):
+        pass
+        
+    @unittest.skip("not implemented")
+    def test_file_like_explicit_stop(self):
+        pass
+
+    @unittest.skip("not implemented")
+    def test_file_like_context_manager(self):
+        pass
+
+    def _read_log_file(self, filename, **kwargs):
+        logfile = os.path.join(os.path.dirname(__file__), "data", filename)
+        with can.TRCReader(logfile, **kwargs) as reader:
+            return list(reader)
+
+    def test_can_message(self):
+        expected_messages = [
+            can.Message(
+                timestamp=2.5010,
+                arbitration_id=0xC8,
+                is_extended_id=False,
+                is_rx=False,
+                channel=1,
+                dlc=8,
+                data=[9, 8, 7, 6, 5, 4, 3, 2],
+            ),
+            can.Message(
+                timestamp=17.876708,
+                arbitration_id=0x6F9,
+                is_extended_id=False,
+                channel=0,
+                dlc=0x8,
+                data=[5, 0xC, 0, 0, 0, 0, 0, 0],
+            ),
+        ]
+        actual = self._read_log_file("test_CanMessage.trc")
+        self.assertMessagesEqual(actual, expected_messages)
+
+
 # this excludes the base class from being executed as a test case itself
 del ReaderWriterTest
 
