@@ -61,9 +61,18 @@ class TRCReader(BaseIOHandler):
         if not self.file:
             raise ValueError("The given file cannot be None")
 
+        self.file_version = None
+
     def _extract_header(self):
         for line in self.file:
-            if line.startswith(";"):
+            line = line.strip()
+            if line.startswith(";$FILEVERSION"):
+                logger.debug(F"TRCReader: Found file version '{line}'")
+                try:
+                    self.file_version = line.split('=')[1]
+                except IndexError:
+                    logger.debug(F"TRCReader: Failed to parse version")
+            elif line.startswith(";"):
                 continue
             else:
                 break
