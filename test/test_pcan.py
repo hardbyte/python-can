@@ -27,6 +27,7 @@ class TestPCANBus(unittest.TestCase):
         self.mock_pcan.InitializeFD = Mock(return_value=PCAN_ERROR_OK)
         self.mock_pcan.SetValue = Mock(return_value=PCAN_ERROR_OK)
         self.mock_pcan.GetValue = self._mockGetValue
+        self.PCAN_API_VERSION_SIM = "4.2"
 
         self.bus = None
 
@@ -41,7 +42,7 @@ class TestPCANBus(unittest.TestCase):
         Only a subset of parameters are supported.
         """
         if Parameter == PCAN_API_VERSION:
-            return PCAN_ERROR_OK, "4.2".encode("ascii")
+            return PCAN_ERROR_OK, self.PCAN_API_VERSION_SIM.encode("ascii")
         raise NotImplementedError(
             f"No mock return value specified for parameter {Parameter}"
         )
