@@ -7,7 +7,7 @@ See https://www.peak-system.com/produktcd/Pdf/English/PEAK_CAN_TRC_File_Format.p
 for file format description
 
 Version 1.1 will be implemented as it is most commonly used
-""" # noqa
+"""  # noqa
 
 from __future__ import absolute_import
 
@@ -17,7 +17,7 @@ from ..listener import Listener
 from .generic import BaseIOHandler
 
 
-logger = logging.getLogger('can.io.trc')
+logger = logging.getLogger("can.io.trc")
 
 
 # Format for trace file header.
@@ -55,7 +55,7 @@ class TRCReader(BaseIOHandler):
                      If this is a file-like object, is has to opened in text
                      read mode, not binary read mode.
         """
-        super(TRCReader, self).__init__(file, mode='r')
+        super(TRCReader, self).__init__(file, mode="r")
 
     def __iter__(self):
         pass
@@ -78,7 +78,7 @@ class TRCWriter(BaseIOHandler, Listener):
         :param channel: a default channel to use when the message does not
                         have a channel set
         """
-        super(TRCWriter, self).__init__(file, mode='w')
+        super(TRCWriter, self).__init__(file, mode="w")
         self.channel = channel
 
     def on_message_received(self, msg):
