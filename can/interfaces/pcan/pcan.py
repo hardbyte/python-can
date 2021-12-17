@@ -212,11 +212,7 @@ class PcanBus(BusABC):
         self.m_objPCANBasic = PCANBasic()
         self.m_PcanHandle = channel
 
-        error, value = self.m_objPCANBasic.GetValue(PCAN_NONEBUS, PCAN_API_VERSION)
-        if error != PCAN_ERROR_OK:
-            raise CanInitializationError(f"Failed to read pcan basic api version")
-
-        apv = version.parse(value.decode("ascii"))
+        apv = self.get_api_version()
         if apv < MIN_PCAN_API_VERSION:
             raise CanInitializationError(
                 f"Minimum version of pcan api is {MIN_PCAN_API_VERSION}."
@@ -320,6 +316,13 @@ class PcanBus(BusABC):
             complete_text = stsReturn[1].decode("utf-8", errors="replace")
 
         return complete_text
+
+    def get_api_version(self):
+        error, value = self.m_objPCANBasic.GetValue(PCAN_NONEBUS, PCAN_API_VERSION)
+        if error != PCAN_ERROR_OK:
+            raise CanInitializationError(f"Failed to read pcan basic api version")
+
+        return version.parse(value.decode("ascii"))
 
     def status(self):
         """
