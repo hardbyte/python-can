@@ -87,6 +87,7 @@ class TRCReader(BaseIOHandler):
             msg.channel = int(cols[3])
             msg.dlc = int(cols[7])
             msg.data = bytearray([int(cols[i + 8], 16) for i in range(msg.dlc)])
+            msg.is_rx = cols[5] == 'Rx'
             return msg
         except IndexError:
             logger.warning(F"TRCReader: Failed to parse message '{line}'")
