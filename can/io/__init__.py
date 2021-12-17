@@ -14,3 +14,4 @@ from .canutils import CanutilsLogReader, CanutilsLogWriter
 from .csv import CSVWriter, CSVReader
 from .sqlite import SqliteReader, SqliteWriter
 from .printer import Printer
+from .trc import TRCReader, TRCWriter

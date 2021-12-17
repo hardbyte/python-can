@@ -27,6 +27,7 @@ from .canutils import CanutilsLogWriter
 from .csv import CSVWriter
 from .sqlite import SqliteWriter
 from .printer import Printer
+from .trc import TRCWriter
 from ..typechecking import StringPathLike
 
 
@@ -42,6 +43,7 @@ class Logger(BaseIOHandler, Listener):  # pylint: disable=abstract-method
       * .db: :class:`can.SqliteWriter`
       * .log :class:`can.CanutilsLogWriter`
       * .txt :class:`can.Printer`
+      * .trc :class:`can.TRCWriter`
 
     The **filename** may also be *None*, to fall back to :class:`can.Printer`.
 
@@ -61,6 +63,7 @@ class Logger(BaseIOHandler, Listener):  # pylint: disable=abstract-method
         ".db": SqliteWriter,
         ".log": CanutilsLogWriter,
         ".txt": Printer,
+        ".trc": TRCWriter,
     }
 
     @staticmethod
