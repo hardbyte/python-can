@@ -57,8 +57,21 @@ Filtering
 '''''''''
 
 Message filtering can be set up for each bus. Where the interface supports it, this is carried
-out in the hardware or kernel layer - not in Python.
+out in the hardware or kernel layer - not in Python. All messages that match at least one filter
+are returned.
 
+Example defining two filters, one to pass 11-bit ID ``0x451``, the other to pass 29-bit ID ``0xA0000``:
+
+.. code-block:: python
+
+    filters = [
+        {"can_id": 0x451, "can_mask": 0x7FF, "extended": False},
+        {"can_id": 0xA0000, "can_mask": 0x1FFFFFFF, "extended": True},
+    ]
+    bus = can.interface.Bus(channel="can0", bustype="socketcan", can_filters=filters)
+
+
+See :meth:`~can.BusABC.set_filters` for the implementation.
 
 Thread safe bus
 ---------------
@@ -67,7 +80,7 @@ This thread safe version of the :class:`~can.BusABC` class can be used by multip
 Sending and receiving is locked separately to avoid unnecessary delays.
 Conflicting calls are executed by blocking until the bus is accessible.
 
-It can be used exactly like the normal :class:`~can.BusABC`:
+It can be used exactly like the normal :class:`~can.BusABC`::
 
     # 'socketcan' is only an example interface, it works with all the others too
     my_bus = can.ThreadSafeBus(interface='socketcan', channel='vcan0')

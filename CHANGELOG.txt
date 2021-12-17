@@ -1,16 +1,15 @@
+Version 4.0.0
+====
+
+(In development)
+
+
 Version 3.3.4
 ====
 
 Last call for Python2 support.
 
-* #916 Vector: Skip channels without CAN support
-* #846 Use inter-process mutex to prevent concurrent neoVI device open.
-* #901 Fix iteration in Bus.stop_all_periodic_tasks
 * #850 Fix socket.error is a deprecated alias of OSError used on Python versions lower than 3.3.
-* #879 Updating incorrect api documentation.
-* #885 Fix recursion message in Message.__getattr__
-* #845 Fix socketcan issue
-
 
 Version 3.3.3
 ====
@@ -50,8 +49,16 @@ Version 3.3.0
 * Clean up bits generator in PCAN interface #588
 * Minor fix to use latest tools when building wheels on travis.
 
+Version 3.2.1
+====
+
+* CAN FD 64 frame support to blf reader
+* Minor fix to use latest tools when building wheels on travis.
+* Updates links in documentation.
+
 Version 3.2.0
 ====
+
 
 Major features
 --------------

@@ -51,6 +51,145 @@ class CyclicSocketCan(unittest.TestCase):
         self._send_bus.shutdown()
         self._recv_bus.shutdown()
 
+    def test_cyclic_initializer_list(self):
+        messages = []
+        messages.append(
+            can.Message(
+                arbitration_id=0x401,
+                data=[0x11, 0x11, 0x11, 0x11, 0x11, 0x11],
+                is_extended_id=False,
+            )
+        )
+        messages.append(
+            can.Message(
+                arbitration_id=0x401,
+                data=[0x22, 0x22, 0x22, 0x22, 0x22, 0x22],
+                is_extended_id=False,
+            )
+        )
+        messages.append(
+            can.Message(
+                arbitration_id=0x401,
+                data=[0x33, 0x33, 0x33, 0x33, 0x33, 0x33],
+                is_extended_id=False,
+            )
+        )
+        messages.append(
+            can.Message(
+                arbitration_id=0x401,
+                data=[0x44, 0x44, 0x44, 0x44, 0x44, 0x44],
+                is_extended_id=False,
+            )
+        )
+        messages.append(
+            can.Message(
+                arbitration_id=0x401,
+                data=[0x55, 0x55, 0x55, 0x55, 0x55, 0x55],
+                is_extended_id=False,
+            )
+        )
+
+        task = self._send_bus.send_periodic(messages, self.PERIOD)
+        self.assertIsInstance(task, can.broadcastmanager.CyclicSendTaskABC)
+
+        results = []
+        for _ in range(len(messages) * 2):
+            result = self._recv_bus.recv(self.PERIOD * 2)
+            if result:
+                results.append(result)
+
+        task.stop()
+
+        # Find starting index for each
+        start_index = self._find_start_index(messages, results[0])
+        self.assertTrue(start_index != -1)
+
+        # Now go through the partitioned results and assert that they're equal
+        for rx_index, rx_message in enumerate(results):
+            tx_message = messages[start_index]
+
+            self.assertIsNotNone(rx_message)
+            self.assertEqual(tx_message.arbitration_id, rx_message.arbitration_id)
+            self.assertEqual(tx_message.dlc, rx_message.dlc)
+            self.assertEqual(tx_message.data, rx_message.data)
+            self.assertEqual(tx_message.is_extended_id, rx_message.is_extended_id)
+            self.assertEqual(tx_message.is_remote_frame, rx_message.is_remote_frame)
+            self.assertEqual(tx_message.is_error_frame, rx_message.is_error_frame)
+            self.assertEqual(tx_message.is_fd, rx_message.is_fd)
+
+            start_index = (start_index + 1) % len(messages)
+
+    def test_cyclic_initializer_tuple(self):
+        messages = []
+        messages.append(
+            can.Message(
+                arbitration_id=0x401,
+                data=[0x11, 0x11, 0x11, 0x11, 0x11, 0x11],
+                is_extended_id=False,
+            )
+        )
+        messages.append(
+            can.Message(
+                arbitration_id=0x401,
+                data=[0x22, 0x22, 0x22, 0x22, 0x22, 0x22],
+                is_extended_id=False,
+            )
+        )
+        messages.append(
+            can.Message(
+                arbitration_id=0x401,
+                data=[0x33, 0x33, 0x33, 0x33, 0x33, 0x33],
+                is_extended_id=False,
+            )
+        )
+        messages.append(
+            can.Message(
+                arbitration_id=0x401,
+                data=[0x44, 0x44, 0x44, 0x44, 0x44, 0x44],
+                is_extended_id=False,
+            )
+        )
+        messages.append(
+            can.Message(
+                arbitration_id=0x401,
+                data=[0x55, 0x55, 0x55, 0x55, 0x55, 0x55],
+                is_extended_id=False,
+            )
+        )
+        messages = tuple(messages)
+
+        self.assertIsInstance(messages, tuple)
+
+        task = self._send_bus.send_periodic(messages, self.PERIOD)
+        self.assertIsInstance(task, can.broadcastmanager.CyclicSendTaskABC)
+
+        results = []
+        for _ in range(len(messages) * 2):
+            result = self._recv_bus.recv(self.PERIOD * 2)
+            if result:
+                results.append(result)
+
+        task.stop()
+
+        # Find starting index for each
+        start_index = self._find_start_index(messages, results[0])
+        self.assertTrue(start_index != -1)
+
+        # Now go through the partitioned results and assert that they're equal
+        for rx_index, rx_message in enumerate(results):
+            tx_message = messages[start_index]
+
+            self.assertIsNotNone(rx_message)
+            self.assertEqual(tx_message.arbitration_id, rx_message.arbitration_id)
+            self.assertEqual(tx_message.dlc, rx_message.dlc)
+            self.assertEqual(tx_message.data, rx_message.data)
+            self.assertEqual(tx_message.is_extended_id, rx_message.is_extended_id)
+            self.assertEqual(tx_message.is_remote_frame, rx_message.is_remote_frame)
+            self.assertEqual(tx_message.is_error_frame, rx_message.is_error_frame)
+            self.assertEqual(tx_message.is_fd, rx_message.is_fd)
+
+            start_index = (start_index + 1) % len(messages)
+
     def test_cyclic_initializer_message(self):
         message = can.Message(
             arbitration_id=0x401,
@@ -78,7 +217,54 @@ class CyclicSocketCan(unittest.TestCase):
             self.assertEqual(tx_message.is_error_frame, rx_message.is_error_frame)
             self.assertEqual(tx_message.is_fd, rx_message.is_fd)
 
-    def test_create_same_id_raises_exception(self):
+    def test_cyclic_initializer_invalid_none(self):
+        with self.assertRaises(ValueError):
+            task = self._send_bus.send_periodic(None, self.PERIOD)
+
+    def test_cyclic_initializer_invalid_empty_list(self):
+        with self.assertRaises(ValueError):
+            task = self._send_bus.send_periodic([], self.PERIOD)
+
+    def test_cyclic_initializer_different_arbitration_ids(self):
+        messages = []
+        messages.append(
+            can.Message(
+                arbitration_id=0x401,
+                data=[0x11, 0x11, 0x11, 0x11, 0x11, 0x11],
+                is_extended_id=False,
+            )
+        )
+        messages.append(
+            can.Message(
+                arbitration_id=0x3E1,
+                data=[0xEE, 0xEE, 0xEE, 0xEE, 0xEE, 0xEE],
+                is_extended_id=False,
+            )
+        )
+        with self.assertRaises(ValueError):
+            task = self._send_bus.send_periodic(messages, self.PERIOD)
+
+    def test_start_already_started_task(self):
+        messages_a = can.Message(
+            arbitration_id=0x401,
+            data=[0x11, 0x11, 0x11, 0x11, 0x11, 0x11],
+            is_extended_id=False,
+        )
+
+        task_a = self._send_bus.send_periodic(messages_a, self.PERIOD)
+        time.sleep(0.1)
+
+        # Try to start it again, task_id is not incremented in this case
+        with self.assertRaises(can.CanOperationError) as ctx:
+            task_a.start()
+        self.assertEqual(
+            "A periodic task for task ID 1 is already in progress by the SocketCAN Linux layer",
+            str(ctx.exception),
+        )
+
+        task_a.stop()
+
+    def test_create_same_id(self):
         messages_a = can.Message(
             arbitration_id=0x401,
             data=[0x11, 0x11, 0x11, 0x11, 0x11, 0x11],
@@ -91,13 +277,163 @@ class CyclicSocketCan(unittest.TestCase):
             is_extended_id=False,
         )
 
-        task_a = self._send_bus.send_periodic(messages_a, 1)
+        task_a = self._send_bus.send_periodic(messages_a, self.PERIOD)
         self.assertIsInstance(task_a, can.broadcastmanager.CyclicSendTaskABC)
+        task_b = self._send_bus.send_periodic(messages_b, self.PERIOD)
+        self.assertIsInstance(task_b, can.broadcastmanager.CyclicSendTaskABC)
 
-        # The second one raises a ValueError when we attempt to create a new
-        # Task, since it has the same arbitration ID.
-        with self.assertRaises(ValueError):
-            task_b = self._send_bus.send_periodic(messages_b, 1)
+        time.sleep(self.PERIOD * 4)
+
+        task_a.stop()
+        task_b.stop()
+
+        msgs = []
+        for _ in range(4):
+            msg = self._recv_bus.recv(self.PERIOD * 2)
+            self.assertIsNotNone(msg)
+
+            msgs.append(msg)
+
+        self.assertTrue(len(msgs) >= 4)
+
+        # Both messages should be recevied on the bus,
+        # even with the same arbitration id
+        msg_a_data_present = msg_b_data_present = False
+        for rx_message in msgs:
+            self.assertTrue(
+                rx_message.arbitration_id
+                == messages_a.arbitration_id
+                == messages_b.arbitration_id
+            )
+            if rx_message.data == messages_a.data:
+                msg_a_data_present = True
+            if rx_message.data == messages_b.data:
+                msg_b_data_present = True
+
+        self.assertTrue(msg_a_data_present)
+        self.assertTrue(msg_b_data_present)
+
+    def test_modify_data_list(self):
+        messages_odd = []
+        messages_odd.append(
+            can.Message(
+                arbitration_id=0x401,
+                data=[0x11, 0x11, 0x11, 0x11, 0x11, 0x11],
+                is_extended_id=False,
+            )
+        )
+        messages_odd.append(
+            can.Message(
+                arbitration_id=0x401,
+                data=[0x33, 0x33, 0x33, 0x33, 0x33, 0x33],
+                is_extended_id=False,
+            )
+        )
+        messages_odd.append(
+            can.Message(
+                arbitration_id=0x401,
+                data=[0x55, 0x55, 0x55, 0x55, 0x55, 0x55],
+                is_extended_id=False,
+            )
+        )
+        messages_even = []
+        messages_even.append(
+            can.Message(
+                arbitration_id=0x401,
+                data=[0x22, 0x22, 0x22, 0x22, 0x22, 0x22],
+                is_extended_id=False,
+            )
+        )
+        messages_even.append(
+            can.Message(
+                arbitration_id=0x401,
+                data=[0x44, 0x44, 0x44, 0x44, 0x44, 0x44],
+                is_extended_id=False,
+            )
+        )
+        messages_even.append(
+            can.Message(
+                arbitration_id=0x401,
+                data=[0x66, 0x66, 0x66, 0x66, 0x66, 0x66],
+                is_extended_id=False,
+            )
+        )
+
+        task = self._send_bus.send_periodic(messages_odd, self.PERIOD)
+        self.assertIsInstance(task, can.broadcastmanager.ModifiableCyclicTaskABC)
+
+        results_odd = []
+        results_even = []
+        for _ in range(len(messages_odd) * 2):
+            result = self._recv_bus.recv(self.PERIOD * 2)
+            if result:
+                results_odd.append(result)
+
+        task.modify_data(messages_even)
+        for _ in range(len(messages_even) * 2):
+            result = self._recv_bus.recv(self.PERIOD * 2)
+            if result:
+                results_even.append(result)
+
+        task.stop()
+
+        # Make sure we received some messages
+        self.assertTrue(len(results_even) != 0)
+        self.assertTrue(len(results_odd) != 0)
+
+        # Find starting index for each
+        start_index_even = self._find_start_index(messages_even, results_even[0])
+        self.assertTrue(start_index_even != -1)
+
+        start_index_odd = self._find_start_index(messages_odd, results_odd[0])
+        self.assertTrue(start_index_odd != -1)
+
+        # Now go through the partitioned results and assert that they're equal
+        for rx_index, rx_message in enumerate(results_even):
+            tx_message = messages_even[start_index_even]
+
+            self.assertEqual(tx_message.arbitration_id, rx_message.arbitration_id)
+            self.assertEqual(tx_message.dlc, rx_message.dlc)
+            self.assertEqual(tx_message.data, rx_message.data)
+            self.assertEqual(tx_message.is_extended_id, rx_message.is_extended_id)
+            self.assertEqual(tx_message.is_remote_frame, rx_message.is_remote_frame)
+            self.assertEqual(tx_message.is_error_frame, rx_message.is_error_frame)
+            self.assertEqual(tx_message.is_fd, rx_message.is_fd)
+
+            start_index_even = (start_index_even + 1) % len(messages_even)
+
+            if rx_index != 0:
+                prev_rx_message = results_even[rx_index - 1]
+                # Assert timestamps are within the expected period
+                self.assertTrue(
+                    abs(
+                        (rx_message.timestamp - prev_rx_message.timestamp) - self.PERIOD
+                    )
+                    <= self.DELTA
+                )
+
+        for rx_index, rx_message in enumerate(results_odd):
+            tx_message = messages_odd[start_index_odd]
+
+            self.assertEqual(tx_message.arbitration_id, rx_message.arbitration_id)
+            self.assertEqual(tx_message.dlc, rx_message.dlc)
+            self.assertEqual(tx_message.data, rx_message.data)
+            self.assertEqual(tx_message.is_extended_id, rx_message.is_extended_id)
+            self.assertEqual(tx_message.is_remote_frame, rx_message.is_remote_frame)
+            self.assertEqual(tx_message.is_error_frame, rx_message.is_error_frame)
+            self.assertEqual(tx_message.is_fd, rx_message.is_fd)
+
+            start_index_odd = (start_index_odd + 1) % len(messages_odd)
+
+            if rx_index != 0:
+                prev_rx_message = results_odd[rx_index - 1]
+                # Assert timestamps are within the expected period
+                self.assertTrue(
+                    abs(
+                        (rx_message.timestamp - prev_rx_message.timestamp) - self.PERIOD
+                    )
+                    <= self.DELTA
+                )
 
     def test_modify_data_message(self):
         message_odd = can.Message(
@@ -170,6 +506,70 @@ class CyclicSocketCan(unittest.TestCase):
                     )
                     <= self.DELTA
                 )
+
+    def test_modify_data_invalid(self):
+        message = can.Message(
+            arbitration_id=0x401,
+            data=[0x11, 0x11, 0x11, 0x11, 0x11, 0x11],
+            is_extended_id=False,
+        )
+        task = self._send_bus.send_periodic(message, self.PERIOD)
+        self.assertIsInstance(task, can.broadcastmanager.ModifiableCyclicTaskABC)
+
+        time.sleep(2 * self.PERIOD)
+
+        with self.assertRaises(ValueError):
+            task.modify_data(None)
+
+    def test_modify_data_unequal_lengths(self):
+        message = can.Message(
+            arbitration_id=0x401,
+            data=[0x11, 0x11, 0x11, 0x11, 0x11, 0x11],
+            is_extended_id=False,
+        )
+        new_messages = []
+        new_messages.append(
+            can.Message(
+                arbitration_id=0x401,
+                data=[0x11, 0x11, 0x11, 0x11, 0x11, 0x11],
+                is_extended_id=False,
+            )
+        )
+        new_messages.append(
+            can.Message(
+                arbitration_id=0x401,
+                data=[0x22, 0x22, 0x22, 0x22, 0x22, 0x22],
+                is_extended_id=False,
+            )
+        )
+
+        task = self._send_bus.send_periodic(message, self.PERIOD)
+        self.assertIsInstance(task, can.broadcastmanager.ModifiableCyclicTaskABC)
+
+        time.sleep(2 * self.PERIOD)
+
+        with self.assertRaises(ValueError):
+            task.modify_data(new_messages)
+
+    def test_modify_data_different_arbitration_id_than_original(self):
+        old_message = can.Message(
+            arbitration_id=0x401,
+            data=[0x11, 0x11, 0x11, 0x11, 0x11, 0x11],
+            is_extended_id=False,
+        )
+        new_message = can.Message(
+            arbitration_id=0x3E1,
+            data=[0xEE, 0xEE, 0xEE, 0xEE, 0xEE, 0xEE],
+            is_extended_id=False,
+        )
+
+        task = self._send_bus.send_periodic(old_message, self.PERIOD)
+        self.assertIsInstance(task, can.broadcastmanager.ModifiableCyclicTaskABC)
+
+        time.sleep(2 * self.PERIOD)
+
+        with self.assertRaises(ValueError):
+            task.modify_data(new_message)
 
     def test_stop_all_periodic_tasks_and_remove_task(self):
         message_a = can.Message(

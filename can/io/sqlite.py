@@ -1,14 +1,9 @@
-# coding: utf-8
-
 """
 Implements an SQL database writer and reader for storing CAN messages.
 
 .. note:: The database schema is given in the documentation of the loggers.
 """
 
-from __future__ import absolute_import
-
-import sys
 import time
 import threading
 import logging
@@ -18,11 +13,7 @@ from can.listener import BufferedReader
 from can.message import Message
 from .generic import BaseIOHandler
 
-log = logging.getLogger('can.io.sqlite')
-
-if sys.version_info.major < 3:
-    # legacy fallback for Python 2
-    memoryview = buffer
+log = logging.getLogger("can.io.sqlite")
 
 
 class SqliteReader(BaseIOHandler):
@@ -49,13 +40,13 @@ class SqliteReader(BaseIOHandler):
                      do not accept file-like objects as the `file` parameter.
                      It also runs in ``append=True`` mode all the time.
         """
-        super(SqliteReader, self).__init__(file=None)
+        super().__init__(file=None)
         self._conn = sqlite3.connect(file)
         self._cursor = self._conn.cursor()
         self.table_name = table_name
 
     def __iter__(self):
-        for frame_data in self._cursor.execute("SELECT * FROM {}".format(self.table_name)):
+        for frame_data in self._cursor.execute(f"SELECT * FROM {self.table_name}"):
             yield SqliteReader._assemble_message(frame_data)
 
     @staticmethod
@@ -68,12 +59,12 @@ class SqliteReader(BaseIOHandler):
             is_error_frame=bool(is_error),
             arbitration_id=can_id,
             dlc=dlc,
-            data=data
+            data=data,
         )
 
     def __len__(self):
         # this might not run in constant time
-        result = self._cursor.execute("SELECT COUNT(*) FROM {}".format(self.table_name))
+        result = self._cursor.execute(f"SELECT COUNT(*) FROM {self.table_name}")
         return int(result.fetchone()[0])
 
     def read_all(self):
@@ -81,13 +72,12 @@ class SqliteReader(BaseIOHandler):
 
         :rtype: Generator[can.Message]
         """
-        result = self._cursor.execute("SELECT * FROM {}".format(self.table_name)).fetchall()
+        result = self._cursor.execute(f"SELECT * FROM {self.table_name}").fetchall()
         return (SqliteReader._assemble_message(frame) for frame in result)
 
     def stop(self):
-        """Closes the connection to the database.
-        """
-        super(SqliteReader, self).stop()
+        """Closes the connection to the database."""
+        super().stop()
         self._conn.close()
 
 
@@ -145,14 +135,18 @@ class SqliteWriter(BaseIOHandler, BufferedReader):
         .. warning:: In contrary to all other readers/writers the Sqlite handlers
                      do not accept file-like objects as the `file` parameter.
         """
-        super(SqliteWriter, self).__init__(file=None)
+        super().__init__(file=None)
         self.table_name = table_name
         self._db_filename = file
         self._stop_running_event = threading.Event()
+        self._conn = None
         self._writer_thread = threading.Thread(target=self._db_writer_thread)
         self._writer_thread.start()
         self.num_frames = 0
         self.last_write = time.time()
+        self._insert_template = (
+            f"INSERT INTO {self.table_name} VALUES (?, ?, ?, ?, ?, ?, ?)"
+        )
 
     def _create_db(self):
         """Creates a new databae or opens a connection to an existing one.
@@ -165,56 +159,58 @@ class SqliteWriter(BaseIOHandler, BufferedReader):
         self._conn = sqlite3.connect(self._db_filename)
 
         # create table structure
-        self._conn.cursor().execute("""
-        CREATE TABLE IF NOT EXISTS {}
-        (
-          ts REAL,
-          arbitration_id INTEGER,
-          extended INTEGER,
-          remote INTEGER,
-          error INTEGER,
-          dlc INTEGER,
-          data BLOB
+        self._conn.cursor().execute(
+            f"""CREATE TABLE IF NOT EXISTS {self.table_name}
+            (
+              ts REAL,
+              arbitration_id INTEGER,
+              extended INTEGER,
+              remote INTEGER,
+              error INTEGER,
+              dlc INTEGER,
+              data BLOB
+            )"""
         )
-        """.format(self.table_name))
         self._conn.commit()
-
-        self._insert_template = "INSERT INTO {} VALUES (?, ?, ?, ?, ?, ?, ?)".format(self.table_name)
 
     def _db_writer_thread(self):
         self._create_db()
 
         try:
             while True:
-                messages = [] # reset buffer
+                messages = []  # reset buffer
 
                 msg = self.get_message(self.GET_MESSAGE_TIMEOUT)
                 while msg is not None:
-                    #log.debug("SqliteWriter: buffering message")
+                    # log.debug("SqliteWriter: buffering message")
 
-                    messages.append((
-                        msg.timestamp,
-                        msg.arbitration_id,
-                        msg.is_extended_id,
-                        msg.is_remote_frame,
-                        msg.is_error_frame,
-                        msg.dlc,
-                        memoryview(msg.data)
-                    ))
+                    messages.append(
+                        (
+                            msg.timestamp,
+                            msg.arbitration_id,
+                            msg.is_extended_id,
+                            msg.is_remote_frame,
+                            msg.is_error_frame,
+                            msg.dlc,
+                            memoryview(msg.data),
+                        )
+                    )
 
-                    if time.time() - self.last_write > self.MAX_TIME_BETWEEN_WRITES or \
-                       len(messages) > self.MAX_BUFFER_SIZE_BEFORE_WRITES:
-                       break
-                    else:
-                        # just go on
-                        msg = self.get_message(self.GET_MESSAGE_TIMEOUT)
+                    if (
+                        time.time() - self.last_write > self.MAX_TIME_BETWEEN_WRITES
+                        or len(messages) > self.MAX_BUFFER_SIZE_BEFORE_WRITES
+                    ):
+                        break
+
+                    # just go on
+                    msg = self.get_message(self.GET_MESSAGE_TIMEOUT)
 
                 count = len(messages)
                 if count > 0:
                     with self._conn:
-                        #log.debug("Writing %d frames to db", count)
+                        # log.debug("Writing %d frames to db", count)
                         self._conn.executemany(self._insert_template, messages)
-                        self._conn.commit() # make the changes visible to the entire database
+                        self._conn.commit()  # make the changes visible to the entire database
                     self.num_frames += count
                     self.last_write = time.time()
 

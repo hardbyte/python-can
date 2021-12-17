@@ -1,13 +1,10 @@
-# coding: utf-8
-
-from __future__ import print_function, absolute_import
-
 from threading import RLock
 
 try:
     # Only raise an exception on instantiation but allow module
     # to be imported
     from wrapt import ObjectProxy
+
     import_exc = None
 except ImportError as exc:
     ObjectProxy = object
@@ -20,7 +17,8 @@ try:
     from contextlib import nullcontext
 
 except ImportError:
-    class nullcontext(object):
+
+    class nullcontext:  # type: ignore
         """A context manager that does nothing at all.
         A fallback for Python 3.7's :class:`contextlib.nullcontext` manager.
         """
@@ -35,7 +33,7 @@ except ImportError:
             pass
 
 
-class ThreadSafeBus(ObjectProxy):
+class ThreadSafeBus(ObjectProxy):  # pylint: disable=abstract-method
     """
     Contains a thread safe :class:`can.BusABC` implementation that
     wraps around an existing interface instance. All public methods
@@ -56,21 +54,27 @@ class ThreadSafeBus(ObjectProxy):
         if import_exc is not None:
             raise import_exc
 
-        super(ThreadSafeBus, self).__init__(Bus(*args, **kwargs))
+        super().__init__(Bus(*args, **kwargs))
 
         # now, BusABC.send_periodic() does not need a lock anymore, but the
         # implementation still requires a context manager
+        # pylint: disable=protected-access
         self.__wrapped__._lock_send_periodic = nullcontext()
+        # pylint: enable=protected-access
 
         # init locks for sending and receiving separately
         self._lock_send = RLock()
         self._lock_recv = RLock()
 
-    def recv(self, timeout=None, *args, **kwargs):
+    def recv(
+        self, timeout=None, *args, **kwargs
+    ):  # pylint: disable=keyword-arg-before-vararg
         with self._lock_recv:
             return self.__wrapped__.recv(timeout=timeout, *args, **kwargs)
 
-    def send(self, msg, timeout=None, *args, **kwargs):
+    def send(
+        self, msg, timeout=None, *args, **kwargs
+    ):  # pylint: disable=keyword-arg-before-vararg
         with self._lock_send:
             return self.__wrapped__.send(msg, timeout=timeout, *args, **kwargs)
 
@@ -87,7 +91,9 @@ class ThreadSafeBus(ObjectProxy):
         with self._lock_recv:
             self.__wrapped__.filters = filters
 
-    def set_filters(self, filters=None, *args, **kwargs):
+    def set_filters(
+        self, filters=None, *args, **kwargs
+    ):  # pylint: disable=keyword-arg-before-vararg
         with self._lock_recv:
             return self.__wrapped__.set_filters(filters=filters, *args, **kwargs)
 

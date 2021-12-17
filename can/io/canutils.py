@@ -1,28 +1,25 @@
-# coding: utf-8
-
 """
 This module works with CAN data in ASCII log files (*.log).
 It is is compatible with "candump -L" from the canutils program
 (https://github.com/linux-can/can-utils).
 """
 
-from __future__ import absolute_import, division
-
-import time
-import datetime
 import logging
 
 from can.message import Message
 from can.listener import Listener
-from .generic import BaseIOHandler
+from .generic import BaseIOHandler, FileIOMessageWriter
+from ..typechecking import AcceptedIOType
 
+log = logging.getLogger("can.io.canutils")
 
-log = logging.getLogger('can.io.canutils')
+CAN_MSG_EXT = 0x80000000
+CAN_ERR_FLAG = 0x20000000
+CAN_ERR_BUSERROR = 0x00000080
+CAN_ERR_DLC = 8
 
-CAN_MSG_EXT         = 0x80000000
-CAN_ERR_FLAG        = 0x20000000
-CAN_ERR_BUSERROR    = 0x00000080
-CAN_ERR_DLC         = 8
+CANFD_BRS = 0x01
+CANFD_ESI = 0x02
 
 
 class CanutilsLogReader(BaseIOHandler):
@@ -35,13 +32,13 @@ class CanutilsLogReader(BaseIOHandler):
         ``(0.0) vcan0 001#8d00100100820100``
     """
 
-    def __init__(self, file):
+    def __init__(self, file: AcceptedIOType) -> None:
         """
         :param file: a path-like object or as file-like object to read from
                      If this is a file-like object, is has to opened in text
                      read mode, not binary read mode.
         """
-        super(CanutilsLogReader, self).__init__(file, mode='r')
+        super().__init__(file, mode="r")
 
     def __iter__(self):
         for line in self.file:
@@ -53,42 +50,62 @@ class CanutilsLogReader(BaseIOHandler):
 
             timestamp, channel, frame = temp.split()
             timestamp = float(timestamp[1:-1])
-            canId, data = frame.split('#')
+            canId, data = frame.split("#", maxsplit=1)
             if channel.isdigit():
                 channel = int(channel)
 
-            if len(canId) > 3:
-                isExtended = True
-            else:
-                isExtended = False
+            isExtended = len(canId) > 3
             canId = int(canId, 16)
-            dataBin = None
-            if data and data[0].lower() == 'r':
+
+            is_fd = False
+            brs = False
+            esi = False
+
+            if data and data[0] == "#":
+                is_fd = True
+                fd_flags = int(data[1])
+                brs = bool(fd_flags & CANFD_BRS)
+                esi = bool(fd_flags & CANFD_ESI)
+                data = data[2:]
+
+            if data and data[0].lower() == "r":
                 isRemoteFrame = True
+
                 if len(data) > 1:
                     dlc = int(data[1:])
                 else:
                     dlc = 0
+
+                dataBin = None
             else:
                 isRemoteFrame = False
 
                 dlc = len(data) // 2
                 dataBin = bytearray()
                 for i in range(0, len(data), 2):
-                    dataBin.append(int(data[i:(i + 2)], 16))
+                    dataBin.append(int(data[i : (i + 2)], 16))
 
             if canId & CAN_ERR_FLAG and canId & CAN_ERR_BUSERROR:
                 msg = Message(timestamp=timestamp, is_error_frame=True)
             else:
-                msg = Message(timestamp=timestamp, arbitration_id=canId & 0x1FFFFFFF,
-                              is_extended_id=isExtended, is_remote_frame=isRemoteFrame,
-                              dlc=dlc, data=dataBin, channel=channel)
+                msg = Message(
+                    timestamp=timestamp,
+                    arbitration_id=canId & 0x1FFFFFFF,
+                    is_extended_id=isExtended,
+                    is_remote_frame=isRemoteFrame,
+                    is_fd=is_fd,
+                    bitrate_switch=brs,
+                    error_state_indicator=esi,
+                    dlc=dlc,
+                    data=dataBin,
+                    channel=channel,
+                )
             yield msg
 
         self.stop()
 
 
-class CanutilsLogWriter(BaseIOHandler, Listener):
+class CanutilsLogWriter(FileIOMessageWriter, Listener):
     """Logs CAN data to an ASCII log file (.log).
     This class is is compatible with "candump -L".
 
@@ -97,7 +114,7 @@ class CanutilsLogWriter(BaseIOHandler, Listener):
     It the first message does not have a timestamp, it is set to zero.
     """
 
-    def __init__(self, file, channel="vcan0", append=False):
+    def __init__(self, file: AcceptedIOType, channel="vcan0", append=False):
         """
         :param file: a path-like object or as file-like object to write to
                      If this is a file-like object, is has to opened in text
@@ -107,8 +124,8 @@ class CanutilsLogWriter(BaseIOHandler, Listener):
         :param bool append: if set to `True` messages are appended to
                             the file, else the file is truncated
         """
-        mode = 'a' if append else 'w'
-        super(CanutilsLogWriter, self).__init__(file, mode=mode)
+        mode = "a" if append else "w"
+        super().__init__(file, mode=mode)
 
         self.channel = channel
         self.last_timestamp = None
@@ -116,7 +133,7 @@ class CanutilsLogWriter(BaseIOHandler, Listener):
     def on_message_received(self, msg):
         # this is the case for the very first message:
         if self.last_timestamp is None:
-            self.last_timestamp = (msg.timestamp or 0.0)
+            self.last_timestamp = msg.timestamp or 0.0
 
         # figure out the correct timestamp
         if msg.timestamp is None or msg.timestamp < self.last_timestamp:
@@ -126,18 +143,25 @@ class CanutilsLogWriter(BaseIOHandler, Listener):
 
         channel = msg.channel if msg.channel is not None else self.channel
 
+        framestr = "(%f) %s" % (timestamp, channel)
+
         if msg.is_error_frame:
-            self.file.write("(%f) %s %08X#0000000000000000\n" % (timestamp, channel, CAN_ERR_FLAG | CAN_ERR_BUSERROR))
-
-        elif msg.is_remote_frame:
-            if msg.is_extended_id:
-                self.file.write("(%f) %s %08X#R\n" % (timestamp, channel, msg.arbitration_id))
-            else:
-                self.file.write("(%f) %s %03X#R\n" % (timestamp, channel, msg.arbitration_id))
-
+            framestr += " %08X#" % (CAN_ERR_FLAG | CAN_ERR_BUSERROR)
+        elif msg.is_extended_id:
+            framestr += " %08X#" % (msg.arbitration_id)
         else:
-            data = ["{:02X}".format(byte) for byte in msg.data]
-            if msg.is_extended_id:
-                self.file.write("(%f) %s %08X#%s\n" % (timestamp, channel, msg.arbitration_id, ''.join(data)))
-            else:
-                self.file.write("(%f) %s %03X#%s\n" % (timestamp, channel, msg.arbitration_id, ''.join(data)))
+            framestr += " %03X#" % (msg.arbitration_id)
+
+        if msg.is_remote_frame:
+            framestr += "R\n"
+        else:
+            if msg.is_fd:
+                fd_flags = 0
+                if msg.bitrate_switch:
+                    fd_flags |= CANFD_BRS
+                if msg.error_state_indicator:
+                    fd_flags |= CANFD_ESI
+                framestr += "#%X" % fd_flags
+            framestr += "%s\n" % (msg.data.hex().upper())
+
+        self.file.write(framestr)

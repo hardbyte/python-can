@@ -1,7 +1,7 @@
 Vector
 ======
 
-This interface adds support for CAN controllers by `Vector`_.
+This interface adds support for CAN controllers by `Vector`_. Only Windows is supported.
 
 By default this library uses the channel configuration for CANalyzer.
 To use a different application, open Vector Hardware Config program and create
