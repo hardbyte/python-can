@@ -12,6 +12,7 @@ from parameterized import parameterized
 
 import can
 from can.bus import BusState
+from can.exceptions import CanInitializationError
 from can.interfaces.pcan.basic import *
 from can.interfaces.pcan import PcanBus, PcanError
 
@@ -64,6 +65,11 @@ class TestPCANBus(unittest.TestCase):
         self.MockPCANBasic.assert_called_once()
         self.mock_pcan.Initialize.assert_not_called()
         self.mock_pcan.InitializeFD.assert_called_once()
+
+    def test_api_version_error(self) -> None:
+        self.PCAN_API_VERSION_SIM = "1.0"
+        with self.assertRaises(CanInitializationError):
+            self.bus = can.Bus(bustype="pcan")
 
     @parameterized.expand(
         [
