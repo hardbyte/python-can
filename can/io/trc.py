@@ -9,10 +9,11 @@ for file format description
 Version 1.1 will be implemented as it is most commonly used
 """  # noqa
 
-from __future__ import absolute_import
+from typing import cast, Any, Generator, IO
 
 import logging
 
+from ..message import Message
 from ..listener import Listener
 from .generic import BaseIOHandler
 
@@ -57,9 +58,20 @@ class TRCReader(BaseIOHandler):
         """
         super(TRCReader, self).__init__(file, mode="r")
 
-    def __iter__(self):
-        pass
+        if not self.file:
+            raise ValueError("The given file cannot be None")
 
+    def _extract_header(self):
+        for line in self.file:
+            if line.startswith(";"):
+                continue
+            else:
+                break
+
+    def __iter__(self) -> Generator[Message, None, None]:
+        # This is guaranteed to not be None since we raise ValueError in __init__
+        self.file = cast(IO[Any], self.file)
+        self._extract_header()
 
 class TRCWriter(BaseIOHandler, Listener):
     """Logs CAN data to text file (.trc).
