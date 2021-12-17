@@ -112,6 +112,8 @@ class TRCReader(BaseIOHandler):
             if msg is not None:
                 yield msg
 
+        self.stop()
+
 
 class TRCWriter(BaseIOHandler, Listener):
     """Logs CAN data to text file (.trc).
