@@ -120,8 +120,11 @@ class TestPCANBus(unittest.TestCase):
     )
     def test_get_device_number(self, name, status, expected_result) -> None:
         with self.subTest(name):
-            self.mock_pcan.GetValue = Mock(return_value=(status, 1))
             self.bus = can.Bus(bustype="pcan", fd=True)
+            # Mock GetValue after creation of bus to use first mock of
+            # GetValue in constructor
+            self.mock_pcan.GetValue = Mock(return_value=(status, 1))
+
             self.assertEqual(self.bus.get_device_number(), expected_result)
             self.mock_pcan.GetValue.assert_called_once_with(
                 PCAN_USBBUS1, PCAN_DEVICE_NUMBER
