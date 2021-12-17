@@ -67,9 +67,9 @@ class TRCReader(BaseIOHandler):
         for line in self.file:
             line = line.strip()
             if line.startswith(";$FILEVERSION"):
-                logger.debug(F"TRCReader: Found file version '{line}'")
+                logger.debug(f"TRCReader: Found file version '{line}'")
                 try:
-                    self.file_version = line.split('=')[1]
+                    self.file_version = line.split("=")[1]
                 except IndexError:
                     logger.debug("TRCReader: Failed to parse version")
             elif line.startswith(";"):
@@ -87,10 +87,10 @@ class TRCReader(BaseIOHandler):
             msg.channel = int(cols[3])
             msg.dlc = int(cols[7])
             msg.data = bytearray([int(cols[i + 8], 16) for i in range(msg.dlc)])
-            msg.is_rx = cols[5] == 'Rx'
+            msg.is_rx = cols[5] == "Rx"
             return msg
         except IndexError:
-            logger.warning(F"TRCReader: Failed to parse message '{line}'")
+            logger.warning(f"TRCReader: Failed to parse message '{line}'")
 
     def __iter__(self) -> Generator[Message, None, None]:
         # This is guaranteed to not be None since we raise ValueError in __init__
@@ -104,7 +104,7 @@ class TRCReader(BaseIOHandler):
 
         for line in self.file:
             temp = line.strip()
-            if temp.startswith(';'):
+            if temp.startswith(";"):
                 # Comment line
                 continue
 

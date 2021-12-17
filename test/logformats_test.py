@@ -804,7 +804,7 @@ class TestTrcFileFormat(ReaderWriterTest):
     @unittest.skip("not implemented")
     def test_path_like_context_manager(self):
         pass
-        
+
     @unittest.skip("not implemented")
     def test_file_like_explicit_stop(self):
         pass
