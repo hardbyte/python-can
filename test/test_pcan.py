@@ -26,6 +26,7 @@ class TestPCANBus(unittest.TestCase):
         self.mock_pcan.Initialize.return_value = PCAN_ERROR_OK
         self.mock_pcan.InitializeFD = Mock(return_value=PCAN_ERROR_OK)
         self.mock_pcan.SetValue = Mock(return_value=PCAN_ERROR_OK)
+        self.mock_pcan.GetValue = self._mockGetValue
 
         self.bus = None
 
@@ -33,6 +34,17 @@ class TestPCANBus(unittest.TestCase):
         if self.bus:
             self.bus.shutdown()
             self.bus = None
+
+    def _mockGetValue(self, Channel, Parameter):
+        """
+        This method is used as mock for GetValue method of PCANBasic object.
+        Only a subset of parameters are supported.
+        """
+        if Parameter == PCAN_API_VERSION:
+            return PCAN_ERROR_OK, "4.2".encode("ascii")
+        raise NotImplementedError(
+            f"No mock return value specified for parameter {Parameter}"
+        )
 
     def test_bus_creation(self) -> None:
         self.bus = can.Bus(bustype="pcan")
