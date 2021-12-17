@@ -97,9 +97,10 @@ class TRCReader(BaseIOHandler):
         self.file = cast(IO[Any], self.file)
         first_line = self._extract_header()
 
-        msg = self._parse_msg(first_line)
-        if msg is not None:
-            yield msg
+        if first_line is not None:
+            msg = self._parse_msg(first_line)
+            if msg is not None:
+                yield msg
 
         for line in self.file:
             temp = line.strip()
