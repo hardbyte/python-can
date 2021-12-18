@@ -150,6 +150,7 @@ class TRCWriter(BaseIOHandler, Listener):
         self.msgnr = 0
         self.first_timestamp = 0.0
         self.file_version = TRCFileVersion.V2_1
+        self._format_message = self._format_message_init
 
     def _write_line_binary(self, line):
         self.file.write((line + "\r\n").encode("ascii"))
@@ -213,6 +214,37 @@ class TRCWriter(BaseIOHandler, Listener):
             ]
         )
 
+    def _format_message_by_format(self, msg, channel):
+        if msg.is_extended_id:
+            arb_id = f"{msg.arbitration_id:07X}"
+        else:
+            arb_id = f"{msg.arbitration_id:04X}"
+
+        data = [f"{byte:02X}" for byte in msg.data]
+
+        serialized = self._msg_fmt_string.format(
+                msgnr=self.msgnr,
+                time=(msg.timestamp - self.first_timestamp) * 1000,
+                channel=channel,
+                id=arb_id,
+                dir="Rx" if msg.is_rx else "Tx",
+                dlc=msg.dlc,
+                data=" ".join(data),
+            )
+        return serialized
+
+    def _format_message_init(self, msg, channel):
+        if self.file_version == TRCFileVersion.V1_0:
+            self._format_message = self._format_message_by_format
+            self._msg_fmt_string = self.FORMAT_MESSAGE_V1_0
+        elif self.file_version == TRCFileVersion.V2_1:
+            self._format_message = self._format_message_by_format
+            self._msg_fmt_string = self.FORMAT_MESSAGE
+        else:
+            raise NotImplementedError("File format is not supported")
+
+        return self._format_message(msg, channel)
+
     def write_header(self, timestamp):
         # write start of file header
         reftime = datetime(year=1899, month=12, day=30)
@@ -243,13 +275,6 @@ class TRCWriter(BaseIOHandler, Listener):
         if msg.is_remote_frame:
             logger.warning("TRCWriter: Logging remote frames is not implemented")
             return
-        else:
-            data = [f"{byte:02X}" for byte in msg.data]
-
-        if msg.is_extended_id:
-            arb_id = f"{msg.arbitration_id:07X}"
-        else:
-            arb_id = f"{msg.arbitration_id:04X}"
 
         channel = channel2int(msg.channel)
         if channel is None:
@@ -262,14 +287,6 @@ class TRCWriter(BaseIOHandler, Listener):
             logger.warning("TRCWriter: Logging CAN FD is not implemented")
             return
         else:
-            serialized = self.FORMAT_MESSAGE.format(
-                msgnr=self.msgnr,
-                time=(msg.timestamp - self.first_timestamp) * 1000,
-                channel=channel,
-                id=arb_id,
-                dir="Rx" if msg.is_rx else "Tx",
-                dlc=msg.dlc,
-                data=" ".join(data),
-            )
+            serialized = self._format_message(msg, channel)
             self.msgnr += 1
         self.log_event(serialized, msg.timestamp)
