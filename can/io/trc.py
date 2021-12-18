@@ -11,6 +11,7 @@ Version 1.1 will be implemented as it is most commonly used
 
 from typing import cast, Any, Generator, IO, Optional
 from datetime import datetime, timedelta
+from enum import Enum
 import os
 import logging
 
@@ -21,6 +22,16 @@ from .generic import BaseIOHandler
 
 
 logger = logging.getLogger("can.io.trc")
+
+
+class TRCFileVersion(Enum):
+    UNKNOWN = 0
+    V1_0 = 100
+    V1_1 = 101
+    V1_2 = 102
+    V1_3 = 103
+    V2_0 = 200
+    V2_1 = 201
 
 
 class TRCReader(BaseIOHandler):
@@ -35,6 +46,7 @@ class TRCReader(BaseIOHandler):
                      read mode, not binary read mode.
         """
         super(TRCReader, self).__init__(file, mode="r")
+        self.file_version = TRCFileVersion.UNKNOWN
 
         if not self.file:
             raise ValueError("The given file cannot be None")
@@ -124,6 +136,7 @@ class TRCWriter(BaseIOHandler, Listener):
         self.header_written = False
         self.msgnr = 0
         self.first_timestamp = 0.0
+        self.file_version = TRCFileVersion.V2_1
 
     def _write_line(self, line):
         self.file.write((line + "\r\n").encode("ascii"))
