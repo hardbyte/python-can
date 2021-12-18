@@ -128,6 +128,10 @@ class TRCWriter(BaseIOHandler, Listener):
     def _write_line(self, line):
         self.file.write((line + "\r\n").encode("ascii"))
 
+    def _write_lines(self, lines: list):
+        for line in lines:
+            self._write_line(line)
+
     def _write_header_V2_1(self, header_time, starttime):
         milliseconds = int(
             (header_time.seconds * 1000) + (header_time.microseconds / 1000)
@@ -149,16 +153,14 @@ class TRCWriter(BaseIOHandler, Listener):
         self._write_line(
             ";-------------------------------------------------------------------------------"
         )
-        self._write_line(";   Message   Time    Type    ID     Rx/Tx")
-        self._write_line(";   Number    Offset  |  Bus  [hex]  |  Reserved")
-        self._write_line(";   |         [ms]    |  |    |      |  |  Data Length Code")
-        self._write_line(
-            ";   |         |       |  |    |      |  |  |    Data [hex] ..."
-        )
-        self._write_line(";   |         |       |  |    |      |  |  |    |")
-        self._write_line(
-            ";---+-- ------+------ +- +- --+----- +- +- +--- +- -- -- -- -- -- -- --"
-        )
+        self._write_lines([
+            ";   Message   Time    Type    ID     Rx/Tx",
+            ";   Number    Offset  |  Bus  [hex]  |  Reserved",
+            ";   |         [ms]    |  |    |      |  |  Data Length Code",
+            ";   |         |       |  |    |      |  |  |    Data [hex] ...",
+            ";   |         |       |  |    |      |  |  |    |",
+            ";---+-- ------+------ +- +- --+----- +- +- +--- +- -- -- -- -- -- -- --",
+        ])
 
     def write_header(self, timestamp):
         # write start of file header
