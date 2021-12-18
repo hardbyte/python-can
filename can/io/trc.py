@@ -138,12 +138,12 @@ class TRCWriter(BaseIOHandler, Listener):
     def __init__(self, file, channel: int = 1):
         """
         :param file: a path-like object or as file-like object to write to
-                     If this is a file-like object, is has to opened in text
-                     write mode, not binary write mode.
+                     If this is a file-like object, is has to opened in binary
+                     write mode, not text write mode.
         :param channel: a default channel to use when the message does not
                         have a channel set
         """
-        super(TRCWriter, self).__init__(file, mode="w")
+        super(TRCWriter, self).__init__(file, mode="wb")
         self.channel = channel
         if type(file) is str:
             self.filepath = os.path.abspath(file)
@@ -169,7 +169,7 @@ class TRCWriter(BaseIOHandler, Listener):
                 ),
                 filepath=self.filepath,
                 starttime=starttime.strftime("%d.%m.%Y %H:%M:%S"),
-            )
+            ).encode('ascii')
         )
         self.header_written = True
 
@@ -177,7 +177,7 @@ class TRCWriter(BaseIOHandler, Listener):
         if not self.header_written:
             self.write_header(timestamp)
 
-        self.file.write(f"{message}\n")
+        self.file.write(f"{message}\r\n".encode('ascii'))
 
     def on_message_received(self, msg: Message) -> None:
 
