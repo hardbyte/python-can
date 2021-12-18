@@ -31,9 +31,6 @@ logger = logging.getLogger("can.io.trc")
 # - filepath: full path to log file
 # - starttime: starttime of trace formatted as %d.%m.%Y %H:%M:%S
 FMT_TRC_HEADER_VER_2_1 = """\
-;$FILEVERSION=2.1
-;$STARTTIME={days}.{milliseconds}
-;$COLUMNS=N,O,T,B,I,d,R,L,D
 ;
 ;   {filepath}
 ;
@@ -157,12 +154,23 @@ class TRCWriter(BaseIOHandler, Listener):
     def _write_line(self, line):
         self.file.write((line + '\r\n').encode('ascii'))
 
+    def _write_header_V2_1(self, header_time, starttime):
+        milliseconds = int(
+            (header_time.seconds * 1000) + (header_time.microseconds / 1000)
+        )
+
+        self._write_line(';$FILEVERSION=2.1')
+        self._write_line(f';$STARTTIME={header_time.days}.{milliseconds}')
+        self._write_line(';$COLUMNS=N,O,T,B,I,d,R,L,D')
+
     def write_header(self, timestamp):
         # write start of file header
         reftime = datetime(year=1899, month=12, day=30)
         self.first_timestamp = timestamp
         starttime = datetime.now() + timedelta(seconds=timestamp)
         header_time = starttime - reftime
+
+        self._write_header_V2_1(header_time, starttime)
 
         self.file.write(
             FMT_TRC_HEADER_VER_2_1.format(
