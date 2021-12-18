@@ -790,28 +790,14 @@ class TestTrcFileFormat(ReaderWriterTest):
         super()._setup_instance_helper(
             can.TRCWriter,
             can.TRCReader,
+            check_remote_frames=False,
+            check_error_frames=False,
             check_fd=False,
             check_comments=False,
             preserves_channel=False,
             allowed_timestamp_delta=0.001,
             adds_default_channel=0,
         )
-
-    @unittest.skip("not implemented")
-    def test_path_like_explicit_stop(self):
-        pass
-
-    @unittest.skip("not implemented")
-    def test_path_like_context_manager(self):
-        pass
-
-    @unittest.skip("not implemented")
-    def test_file_like_explicit_stop(self):
-        pass
-
-    @unittest.skip("not implemented")
-    def test_file_like_context_manager(self):
-        pass
 
     def _read_log_file(self, filename, **kwargs):
         logfile = os.path.join(os.path.dirname(__file__), "data", filename)
