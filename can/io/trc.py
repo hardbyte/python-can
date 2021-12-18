@@ -152,11 +152,14 @@ class TRCWriter(BaseIOHandler, Listener):
         starttime = datetime.now() + timedelta(seconds=timestamp)
         header_time = starttime - reftime
 
-        self.file.write(FMT_TRC_HEADER_VER_2_1.format(
-            days=header_time.days,
-            milliseconds=int((header_time.seconds * 1000) + (header_time.microseconds / 1000)),
-            filepath=self.filepath,
-            starttime=starttime.strftime("%d.%m.%Y %H:%M:%S"),
+        self.file.write(
+            FMT_TRC_HEADER_VER_2_1.format(
+                days=header_time.days,
+                milliseconds=int(
+                    (header_time.seconds * 1000) + (header_time.microseconds / 1000)
+                ),
+                filepath=self.filepath,
+                starttime=starttime.strftime("%d.%m.%Y %H:%M:%S"),
             )
         )
         self.header_written = True
