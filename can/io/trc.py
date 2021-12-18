@@ -131,7 +131,9 @@ class TRCWriter(BaseIOHandler, Listener):
     If the first message does not have a timestamp, it is set to zero.
     """
 
-    FORMAT_MESSAGE = "{msgnr:>7} {time:13.3f} DT {channel:>2} {id:>8} {dir:>2} -  {dlc:<4} {data}"
+    FORMAT_MESSAGE = (
+        "{msgnr:>7} {time:13.3f} DT {channel:>2} {id:>8} {dir:>2} -  {dlc:<4} {data}"
+    )
 
     def __init__(self, file, channel: int = 1):
         """
@@ -207,7 +209,7 @@ class TRCWriter(BaseIOHandler, Listener):
         else:
             serialized = self.FORMAT_MESSAGE.format(
                 msgnr=self.msgnr,
-                time=(msg.timestamp-self.first_timestamp) * 1000,
+                time=(msg.timestamp - self.first_timestamp) * 1000,
                 channel=channel,
                 id=arb_id,
                 dir="Rx" if msg.is_rx else "Tx",
