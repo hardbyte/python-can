@@ -153,14 +153,16 @@ class TRCWriter(BaseIOHandler, Listener):
         self._write_line(
             ";-------------------------------------------------------------------------------"
         )
-        self._write_lines([
-            ";   Message   Time    Type    ID     Rx/Tx",
-            ";   Number    Offset  |  Bus  [hex]  |  Reserved",
-            ";   |         [ms]    |  |    |      |  |  Data Length Code",
-            ";   |         |       |  |    |      |  |  |    Data [hex] ...",
-            ";   |         |       |  |    |      |  |  |    |",
-            ";---+-- ------+------ +- +- --+----- +- +- +--- +- -- -- -- -- -- -- --",
-        ])
+        self._write_lines(
+            [
+                ";   Message   Time    Type    ID     Rx/Tx",
+                ";   Number    Offset  |  Bus  [hex]  |  Reserved",
+                ";   |         [ms]    |  |    |      |  |  Data Length Code",
+                ";   |         |       |  |    |      |  |  |    Data [hex] ...",
+                ";   |         |       |  |    |      |  |  |    |",
+                ";---+-- ------+------ +- +- --+----- +- +- +--- +- -- -- -- -- -- -- --",
+            ]
+        )
 
     def write_header(self, timestamp):
         # write start of file header
