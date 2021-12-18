@@ -154,6 +154,9 @@ class TRCWriter(BaseIOHandler, Listener):
         self.msgnr = 0
         self.first_timestamp = 0.0
 
+    def _write_line(self, line):
+        self.file.write((line + '\r\n').encode('ascii'))
+
     def write_header(self, timestamp):
         # write start of file header
         reftime = datetime(year=1899, month=12, day=30)
@@ -177,7 +180,7 @@ class TRCWriter(BaseIOHandler, Listener):
         if not self.header_written:
             self.write_header(timestamp)
 
-        self.file.write(f"{message}\r\n".encode('ascii'))
+        self._write_line(message)
 
     def on_message_received(self, msg: Message) -> None:
 
