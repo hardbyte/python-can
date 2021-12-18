@@ -136,7 +136,9 @@ class TRCWriter(BaseIOHandler, Listener):
             self.filepath = "Unknown"
             self._write_line = self._write_line_text
             logger.warning("TRCWriter: Text mode io can result in wrong line endings")
-            logger.debug(f"TRCWriter: Text mode io line ending setting: {file.newlines}")
+            logger.debug(
+                f"TRCWriter: Text mode io line ending setting: {file.newlines}"
+            )
         else:
             self.filepath = "Unknown"
             self._write_line = self._write_line_binary
