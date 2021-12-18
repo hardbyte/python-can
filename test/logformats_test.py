@@ -827,6 +827,12 @@ class TestTrcFileFormat(ReaderWriterTest):
         actual = self._read_log_file("test_CanMessage.trc")
         self.assertMessagesEqual(actual, expected_messages)
 
+    def test_not_supported_version(self):
+        with self.assertRaises(NotImplementedError):
+            writer = can.TRCWriter("test.trc")
+            writer.file_version = can.TRCFileVersion.UNKNOWN
+            writer.on_message_received(can.Message())
+
 
 # this excludes the base class from being executed as a test case itself
 del ReaderWriterTest
