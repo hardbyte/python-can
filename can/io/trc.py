@@ -16,6 +16,7 @@ import logging
 
 from ..message import Message
 from ..listener import Listener
+from ..util import channel2int
 from .generic import BaseIOHandler
 
 
@@ -130,6 +131,8 @@ class TRCWriter(BaseIOHandler, Listener):
     If the first message does not have a timestamp, it is set to zero.
     """
 
+    FORMAT_MESSAGE = "{msgnr:>7} {time:13.3f} DT {channel:>2} {id:>8} {dir:>2} -  {dlc:<4} {data}"
+
     def __init__(self, file, channel: int = 1):
         """
         :param file: a path-like object or as file-like object to write to
@@ -146,10 +149,13 @@ class TRCWriter(BaseIOHandler, Listener):
             self.filepath = "Unknown"
 
         self.header_written = False
+        self.msgnr = 0
+        self.first_timestamp = 0.0
 
     def write_header(self, timestamp):
         # write start of file header
         reftime = datetime(year=1899, month=12, day=30)
+        self.first_timestamp = timestamp
         starttime = datetime.now() + timedelta(seconds=timestamp)
         header_time = starttime - reftime
 
@@ -173,12 +179,37 @@ class TRCWriter(BaseIOHandler, Listener):
         if msg.is_error_frame:
             logger.warning("TRCWriter: Logging error frames is not implemented")
             return
+
         if msg.is_remote_frame:
             logger.warning("TRCWriter: Logging remote frames is not implemented")
             return
+        else:
+            data = [f"{byte:02X}" for byte in msg.data]
+
+        if msg.is_extended_id:
+            arb_id = f"{msg.arbitration_id:07X}"
+        else:
+            arb_id = f"{msg.arbitration_id:04X}"
+
+        channel = channel2int(msg.channel)
+        if channel is None:
+            channel = self.channel
+        else:
+            # Many interfaces start channel numbering at 0 which is invalid
+            channel += 1
 
         if msg.is_fd:
             logger.warning("TRCWriter: Logging CAN FD is not implemented")
             return
-
-        self.log_event("", msg.timestamp)
+        else:
+            serialized = self.FORMAT_MESSAGE.format(
+                msgnr=self.msgnr,
+                time=(msg.timestamp-self.first_timestamp) * 1000,
+                channel=channel,
+                id=arb_id,
+                dir="Rx" if msg.is_rx else "Tx",
+                dlc=msg.dlc,
+                data=" ".join(data),
+            )
+            self.msgnr += 1
+        self.log_event(serialized, msg.timestamp)
