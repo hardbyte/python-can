@@ -30,7 +30,7 @@ from .io import BLFReader, BLFWriter
 from .io import CanutilsLogReader, CanutilsLogWriter
 from .io import CSVWriter, CSVReader
 from .io import SqliteWriter, SqliteReader
-from .io import TRCReader, TRCWriter
+from .io import TRCReader, TRCWriter, TRCFileVersion
 
 from .util import set_logging_level
 
