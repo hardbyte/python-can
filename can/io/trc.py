@@ -118,9 +118,7 @@ class TRCWriter(BaseIOHandler, Listener):
     FORMAT_MESSAGE = (
         "{msgnr:>7} {time:13.3f} DT {channel:>2} {id:>8} {dir:>2} -  {dlc:<4} {data}"
     )
-    FORMAT_MESSAGE_V1_0 = (
-        "{msgnr:>6}) {time:7.0f} {id:>8} {dlc:<1} {data}"
-    )
+    FORMAT_MESSAGE_V1_0 = "{msgnr:>6}) {time:7.0f} {id:>8} {dlc:<1} {data}"
 
     def __init__(self, file, channel: int = 1):
         """
@@ -223,14 +221,14 @@ class TRCWriter(BaseIOHandler, Listener):
         data = [f"{byte:02X}" for byte in msg.data]
 
         serialized = self._msg_fmt_string.format(
-                msgnr=self.msgnr,
-                time=(msg.timestamp - self.first_timestamp) * 1000,
-                channel=channel,
-                id=arb_id,
-                dir="Rx" if msg.is_rx else "Tx",
-                dlc=msg.dlc,
-                data=" ".join(data),
-            )
+            msgnr=self.msgnr,
+            time=(msg.timestamp - self.first_timestamp) * 1000,
+            channel=channel,
+            id=arb_id,
+            dir="Rx" if msg.is_rx else "Tx",
+            dlc=msg.dlc,
+            data=" ".join(data),
+        )
         return serialized
 
     def _format_message_init(self, msg, channel):
