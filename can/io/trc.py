@@ -197,7 +197,10 @@ class TRCWriter(BaseIOHandler, Listener):
         starttime = datetime.now() + timedelta(seconds=timestamp)
         header_time = starttime - reftime
 
-        self._write_header_V2_1(header_time, starttime)
+        if self.file_version == TRCFileVersion.V2_1:
+            self._write_header_V2_1(header_time, starttime)
+        else:
+            raise NotImplementedError("File format is not supported")
         self.header_written = True
 
     def log_event(self, message: str, timestamp: Optional[float] = None) -> None:
