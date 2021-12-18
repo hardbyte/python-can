@@ -12,6 +12,7 @@ Version 1.1 will be implemented as it is most commonly used
 from typing import cast, Any, Generator, IO, Optional
 from datetime import datetime, timedelta
 from enum import Enum
+from io import TextIOWrapper
 import os
 import logging
 
@@ -130,16 +131,25 @@ class TRCWriter(BaseIOHandler, Listener):
         self.channel = channel
         if type(file) is str:
             self.filepath = os.path.abspath(file)
+            self._write_line = self._write_line_binary
+        elif type(file) is TextIOWrapper:
+            self.filepath = "Unknown"
+            self._write_line = self._write_line_text
+            logger.warning("TRCWriter: Text mode io can result in wrong line endings")
         else:
             self.filepath = "Unknown"
+            self._write_line = self._write_line_binary
 
         self.header_written = False
         self.msgnr = 0
         self.first_timestamp = 0.0
         self.file_version = TRCFileVersion.V2_1
 
-    def _write_line(self, line):
+    def _write_line_binary(self, line):
         self.file.write((line + "\r\n").encode("ascii"))
+
+    def _write_line_text(self, line):
+        self.file.write(line + "\r\n")
 
     def _write_lines(self, lines: list):
         for line in lines:
