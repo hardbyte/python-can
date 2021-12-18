@@ -23,23 +23,6 @@ from .generic import BaseIOHandler
 logger = logging.getLogger("can.io.trc")
 
 
-# Format for trace file header.
-#
-# Fields:
-# - days: Number of days that have passed since 30. December 1899
-# - milliseconds: milliseconds since 00:00:00 of day
-# - filepath: full path to log file
-# - starttime: starttime of trace formatted as %d.%m.%Y %H:%M:%S
-FMT_TRC_HEADER_VER_2_1 = """\
-;   Message   Time    Type    ID     Rx/Tx
-;   Number    Offset  |  Bus  [hex]  |  Reserved
-;   |         [ms]    |  |    |      |  |  Data Length Code
-;   |         |       |  |    |      |  |  |    Data [hex] ...
-;   |         |       |  |    |      |  |  |    | 
-;---+-- ------+------ +- +- --+----- +- +- +--- +- -- -- -- -- -- -- --
-"""
-
-
 class TRCReader(BaseIOHandler):
     """
     Iterator of CAN messages from a TRC logging file.
@@ -162,6 +145,12 @@ class TRCWriter(BaseIOHandler, Listener):
         self._write_line(';   Bus   Name            Connection               Protocol')
         self._write_line(';   N/A   N/A             N/A                      N/A')
         self._write_line(';-------------------------------------------------------------------------------')
+        self._write_line(';   Message   Time    Type    ID     Rx/Tx')
+        self._write_line(';   Number    Offset  |  Bus  [hex]  |  Reserved')
+        self._write_line(';   |         [ms]    |  |    |      |  |  Data Length Code')
+        self._write_line(';   |         |       |  |    |      |  |  |    Data [hex] ...')
+        self._write_line(';   |         |       |  |    |      |  |  |    |')
+        self._write_line(';---+-- ------+------ +- +- --+----- +- +- +--- +- -- -- -- -- -- -- --')
 
     def write_header(self, timestamp):
         # write start of file header
@@ -171,17 +160,6 @@ class TRCWriter(BaseIOHandler, Listener):
         header_time = starttime - reftime
 
         self._write_header_V2_1(header_time, starttime)
-
-        self.file.write(
-            FMT_TRC_HEADER_VER_2_1.format(
-                days=header_time.days,
-                milliseconds=int(
-                    (header_time.seconds * 1000) + (header_time.microseconds / 1000)
-                ),
-                filepath=self.filepath,
-                starttime=starttime.strftime("%d.%m.%Y %H:%M:%S"),
-            ).encode('ascii')
-        )
         self.header_written = True
 
     def log_event(self, message: str, timestamp: Optional[float] = None) -> None:
