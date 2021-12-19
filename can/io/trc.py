@@ -68,9 +68,18 @@ class TRCReader(BaseIOHandler):
             elif line.startswith(";"):
                 continue
             else:
-                return line
+                break
 
-    def _parse_msg(self, cols):
+        if self.file_version == TRCFileVersion.UNKNOWN:
+            raise NotImplementedError("File version not fully implemented for reading")
+        elif self.file_version == TRCFileVersion.V2_1:
+            self._parse_cols = self._parse_cols_V2_1
+        else:
+            raise NotImplementedError("File version not fully implemented for reading")
+
+        return line
+
+    def _parse_msg_V2_1(self, cols):
         msg = Message()
         msg.timestamp = float(cols[1]) / 1000
         msg.arbitration_id = int(cols[4], 16)
@@ -81,16 +90,19 @@ class TRCReader(BaseIOHandler):
         msg.is_rx = cols[5] == "Rx"
         return msg
 
+    def _parse_cols_V2_1(self, cols):
+        dtype = cols[2]
+        if dtype == 'DT':
+            return self._parse_msg_V2_1(cols)
+        else:
+            logger.info(f"TRCReader: Unsupported type '{dtype}'")
+            return None
+
     def _parse_line(self, line):
         logger.debug(f"TRCReader: Parse '{line}'")
         try:
             cols = line.split()
-            dtype = cols[2]
-            if dtype == 'DT':
-                return self._parse_msg(cols)
-            else:
-                logger.info(f"TRCReader: Unsupported type '{dtype}'")
-                return None
+            return self._parse_cols(cols)
         except IndexError:
             logger.warning(f"TRCReader: Failed to parse message '{line}'")
             return None
