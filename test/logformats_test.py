@@ -832,6 +832,7 @@ class TestTrcFileFormat(ReaderWriterTest):
     @parameterized.expand(
         [
             ("V1_0", "test_CanMessage_V1_0_BUS1.trc", False),
+            ("V1_1", "test_CanMessage_V1_1.trc", True),
             ("V2_1", "test_CanMessage_V2_1.trc", True),
         ]
     )
