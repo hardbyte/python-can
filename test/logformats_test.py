@@ -785,8 +785,14 @@ class TestPrinter(unittest.TestCase):
                     printer(message)
 
 
-class TestTrcFileFormat(ReaderWriterTest):
-    """Tests can.TRCWriter and can.TRCReader"""
+class TestTrcFileFormatBase(ReaderWriterTest):
+    """
+    Base class for Tests with can.TRCWriter and can.TRCReader
+
+    .. note::
+        This class is prevented from being executed as a test
+        case itself by a *del* statement in at the end of the file.
+    """
 
     def _setup_instance(self):
         super()._setup_instance_helper(
@@ -805,6 +811,10 @@ class TestTrcFileFormat(ReaderWriterTest):
         logfile = os.path.join(os.path.dirname(__file__), "data", filename)
         with can.TRCReader(logfile, **kwargs) as reader:
             return list(reader)
+
+
+class TestTrcFileFormatGen(TestTrcFileFormatBase):
+    """Generic tests for can.TRCWriter and can.TRCReader with different file versions"""
 
     def test_can_message(self):
         expected_messages = [
@@ -887,8 +897,23 @@ class TestTrcFileFormat(ReaderWriterTest):
             writer.on_message_received(can.Message())
 
 
+class TestTrcFileFormatV1_0(TestTrcFileFormatBase):
+    """Tests can.TRCWriter and can.TRCReader with file version 1.0"""
+
+    @staticmethod
+    def Writer(filename):
+        writer = can.TRCWriter(filename)
+        writer.file_version = can.TRCFileVersion.V1_0
+        return writer
+
+    def _setup_instance(self):
+        super()._setup_instance()
+        self.writer_constructor = TestTrcFileFormatV1_0.Writer
+
+
 # this excludes the base class from being executed as a test case itself
 del ReaderWriterTest
+del TestTrcFileFormatBase
 
 
 if __name__ == "__main__":
