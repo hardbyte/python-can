@@ -14,6 +14,7 @@ TODO: correctly set preserves_channel and adds_default_channel
 import gzip
 import logging
 import unittest
+from parameterized import parameterized
 import tempfile
 import os
 from abc import abstractmethod, ABCMeta
@@ -826,6 +827,50 @@ class TestTrcFileFormat(ReaderWriterTest):
         ]
         actual = self._read_log_file("test_CanMessage.trc")
         self.assertMessagesEqual(actual, expected_messages)
+
+    @parameterized.expand(
+        [
+            ("V2_1", "test_CanMessage_V2_1.trc"),
+        ]
+    )
+    def test_can_message_versions(self, name, filename):
+        with self.subTest(name):
+            def msg_std(timestamp):
+                return can.Message(
+                    timestamp=timestamp,
+                    arbitration_id=0x000,
+                    is_extended_id=False,
+                    is_rx=False,
+                    channel=1,
+                    dlc=8,
+                    data=[0, 0, 0, 0, 0, 0, 0, 0],
+                )
+
+            def msg_ext(timestamp):
+                return can.Message(
+                    timestamp=timestamp,
+                    arbitration_id=0x100,
+                    is_extended_id=True,
+                    is_rx=False,
+                    channel=1,
+                    dlc=8,
+                    data=[0, 0, 0, 0, 0, 0, 0, 0],
+                )
+
+            expected_messages = [
+                msg_ext(17.5354),
+                msg_ext(17.7003),
+                msg_ext(17.8738),
+                msg_std(19.2954),
+                msg_std(19.5006),
+                msg_std(19.7052),
+                msg_ext(20.5927),
+                msg_ext(20.7986),
+                msg_ext(20.9560),
+                msg_ext(21.0971),
+            ]
+            actual = self._read_log_file(filename)
+            self.assertMessagesEqual(actual, expected_messages)
 
     def test_not_supported_version(self):
         with self.assertRaises(NotImplementedError):
