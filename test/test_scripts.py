@@ -7,6 +7,8 @@ This module tests that the scripts are all callable.
 
 import subprocess
 import unittest
+from unittest import mock
+from unittest.mock import Mock
 import sys
 import errno
 from abc import ABCMeta, abstractmethod
@@ -85,6 +87,24 @@ class TestLoggerScript(CanScriptTest):
         import can.logger as module
 
         return module
+
+    def test_log_virtual(self):
+        import can
+        msg = can.Message(arbitration_id=0xc0ffee,
+            data=[0, 25, 0, 1, 3, 1, 4, 1],
+            is_extended_id=True)
+
+        patcher = mock.patch("can.interfaces.virtual.VirtualBus", spec=True)
+        self.MockVirtualBus = patcher.start()
+        self.addCleanup(patcher.stop)
+        self.mock_virtual_bus = self.MockVirtualBus.return_value
+        self.mock_virtual_bus.recv = Mock(side_effect=[msg, KeyboardInterrupt])
+
+        module = self._import()
+
+        sys.argv = [sys.argv[0], "-i", "virtual"]
+        module.main()
+        self.MockVirtualBus.assert_called_once()
 
 
 class TestPlayerScript(CanScriptTest):
