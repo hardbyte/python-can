@@ -165,6 +165,7 @@ class ReaderWriterTest(unittest.TestCase, ComparingMessagesTestCase, metaclass=A
         os.remove(self.test_file_name)
         del self.test_file_name
 
+    @unittest.skip("not implemented")
     def test_path_like_explicit_stop(self):
         """testing with path-like and explicit stop() call"""
 
@@ -830,32 +831,37 @@ class TestTrcFileFormat(ReaderWriterTest):
 
     @parameterized.expand(
         [
-            ("V2_1", "test_CanMessage_V2_1.trc"),
+            ("V1_0", "test_CanMessage_V1_0_BUS1.trc", False),
+            ("V2_1", "test_CanMessage_V2_1.trc", True),
         ]
     )
-    def test_can_message_versions(self, name, filename):
+    def test_can_message_versions(self, name, filename, is_rx_support):
         with self.subTest(name):
             def msg_std(timestamp):
-                return can.Message(
+                msg = can.Message(
                     timestamp=timestamp,
                     arbitration_id=0x000,
                     is_extended_id=False,
-                    is_rx=False,
                     channel=1,
                     dlc=8,
                     data=[0, 0, 0, 0, 0, 0, 0, 0],
                 )
+                if is_rx_support:
+                    msg.is_rx = False
+                return msg
 
             def msg_ext(timestamp):
-                return can.Message(
+                msg = can.Message(
                     timestamp=timestamp,
                     arbitration_id=0x100,
                     is_extended_id=True,
-                    is_rx=False,
                     channel=1,
                     dlc=8,
                     data=[0, 0, 0, 0, 0, 0, 0, 0],
                 )
+                if is_rx_support:
+                    msg.is_rx = False
+                return msg
 
             expected_messages = [
                 msg_ext(17.5354),
