@@ -34,6 +34,13 @@ class TestLoggerScriptModule(unittest.TestCase):
         self.MockLoggerUse = self.MockLogger
         self.loggerToUse = self.mock_logger
 
+        # Patch SizedRotatingLogger object
+        patcher_logger_sized = mock.patch("can.logger.SizedRotatingLogger", spec=True)
+        self.MockLoggerSized = patcher_logger_sized.start()
+        self.addCleanup(patcher_logger_sized.stop)
+        self.mock_logger_sized = self.MockLoggerSized.return_value
+        self.mock_logger_sized.stop = Mock()
+
         self.testmsg = can.Message(
             arbitration_id=0xC0FFEE, data=[0, 25, 0, 1, 3, 1, 4, 1], is_extended_id=True
         )
@@ -86,6 +93,16 @@ class TestLoggerScriptModule(unittest.TestCase):
         can.logger.main()
         self.assertSuccessfullCleanup()
         self.mock_logger.assert_called_once()
+
+    def test_log_virtual_sizedlogger(self):
+        self.mock_virtual_bus.recv = Mock(side_effect=[self.testmsg, KeyboardInterrupt])
+        self.MockLoggerUse = self.MockLoggerSized
+        self.loggerToUse = self.mock_logger_sized
+
+        sys.argv = self.baseargs + ["--file_size", "1000000"]
+        can.logger.main()
+        self.assertSuccessfullCleanup()
+        self.mock_logger_sized.assert_called_once()
 
 
 if __name__ == "__main__":
