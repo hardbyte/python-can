@@ -80,6 +80,7 @@ class TRCReader(BaseIOHandler):
         return msg
 
     def _parse_line(self, line):
+        logger.debug(f"TRCReader: Parse '{line}'")
         try:
             cols = line.split()
             self._parse_msg(cols)
