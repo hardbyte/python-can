@@ -83,9 +83,14 @@ class TRCReader(BaseIOHandler):
         logger.debug(f"TRCReader: Parse '{line}'")
         try:
             cols = line.split()
-            self._parse_msg(cols)
+            dtype = cols[2]
+            if dtype == 'DT':
+                return self._parse_msg(cols)
+            else:
+                return None
         except IndexError:
             logger.warning(f"TRCReader: Failed to parse message '{line}'")
+            return None
 
     def __iter__(self) -> Generator[Message, None, None]:
         # This is guaranteed to not be None since we raise ValueError in __init__
