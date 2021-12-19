@@ -71,13 +71,33 @@ class TRCReader(BaseIOHandler):
                 break
 
         if self.file_version == TRCFileVersion.UNKNOWN:
-            raise NotImplementedError("File version not fully implemented for reading")
+            logger.info(
+                "TRCReader: No file version was found, so version 1.0 is assumed"
+            )
+            self._parse_cols = self._parse_msg_V1_0
+        elif self.file_version == TRCFileVersion.V1_0:
+            self._parse_cols = self._parse_msg_V1_0
         elif self.file_version == TRCFileVersion.V2_1:
             self._parse_cols = self._parse_cols_V2_1
         else:
             raise NotImplementedError("File version not fully implemented for reading")
 
         return line
+
+    def _parse_msg_V1_0(self, cols):
+        arbit_id = cols[2]
+        if arbit_id == "FFFFFFFF":
+            logger.info("TRCReader: Dropping bus info line")
+            return None
+
+        msg = Message()
+        msg.timestamp = float(cols[1]) / 1000
+        msg.arbitration_id = int(arbit_id, 16)
+        msg.is_extended_id = len(arbit_id) > 4
+        msg.channel = 1
+        msg.dlc = int(cols[3])
+        msg.data = bytearray([int(cols[i + 4], 16) for i in range(msg.dlc)])
+        return msg
 
     def _parse_msg_V2_1(self, cols):
         msg = Message()
