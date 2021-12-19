@@ -31,6 +31,7 @@ class TestLoggerScriptModule(unittest.TestCase):
         self.mock_logger.stop = Mock()
 
         import can.logger as module
+
         self.module = module
 
         self.testmsg = can.Message(
