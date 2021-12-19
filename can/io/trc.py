@@ -87,6 +87,7 @@ class TRCReader(BaseIOHandler):
             if dtype == 'DT':
                 return self._parse_msg(cols)
             else:
+                logger.info(f"TRCReader: Unsupported type '{dtype}'")
                 return None
         except IndexError:
             logger.warning(f"TRCReader: Failed to parse message '{line}'")
