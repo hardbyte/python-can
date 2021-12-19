@@ -100,12 +100,14 @@ class TestLoggerScript(CanScriptTest):
         self.addCleanup(patcher.stop)
         self.mock_virtual_bus = self.MockVirtualBus.return_value
         self.mock_virtual_bus.recv = Mock(side_effect=[msg, KeyboardInterrupt])
+        self.mock_virtual_bus.shutdown = Mock()
 
         module = self._import()
 
         sys.argv = [sys.argv[0], "-i", "virtual"]
         module.main()
         self.MockVirtualBus.assert_called_once()
+        self.mock_virtual_bus.shutdown.assert_called_once()
 
 
 class TestPlayerScript(CanScriptTest):
