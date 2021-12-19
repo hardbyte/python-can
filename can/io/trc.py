@@ -52,15 +52,17 @@ class TRCReader(BaseIOHandler):
         if not self.file:
             raise ValueError("The given file cannot be None")
 
-        self.file_version = None
-
     def _extract_header(self):
         for line in self.file:
             line = line.strip()
             if line.startswith(";$FILEVERSION"):
                 logger.debug(f"TRCReader: Found file version '{line}'")
                 try:
-                    self.file_version = line.split("=")[1]
+                    file_version = line.split("=")[1]
+                    if file_version == "2.1":
+                        self.file_version = TRCFileVersion.V2_1
+                    else:
+                        self.file_version = TRCFileVersion.UNKNOWN
                 except IndexError:
                     logger.debug("TRCReader: Failed to parse version")
             elif line.startswith(";"):
