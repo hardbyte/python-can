@@ -35,6 +35,8 @@ class TestLoggerScriptModule(unittest.TestCase):
             arbitration_id=0xC0FFEE, data=[0, 25, 0, 1, 3, 1, 4, 1], is_extended_id=True
         )
 
+        self.baseargs = [sys.argv[0], "-i", "virtual"]
+
     def assertSuccessfullCleanup(self):
         self.MockVirtualBus.assert_called_once()
         self.mock_virtual_bus.shutdown.assert_called_once()
@@ -45,7 +47,7 @@ class TestLoggerScriptModule(unittest.TestCase):
     def test_log_virtual(self):
         self.mock_virtual_bus.recv = Mock(side_effect=[self.testmsg, KeyboardInterrupt])
 
-        sys.argv = [sys.argv[0], "-i", "virtual"]
+        sys.argv = self.baseargs
         can.logger.main()
         self.assertSuccessfullCleanup()
         self.mock_logger.assert_called_once()
@@ -53,7 +55,7 @@ class TestLoggerScriptModule(unittest.TestCase):
     def test_log_virtual_active(self):
         self.mock_virtual_bus.recv = Mock(side_effect=[self.testmsg, KeyboardInterrupt])
 
-        sys.argv = [sys.argv[0], "-i", "virtual", "--active"]
+        sys.argv = self.baseargs + ["--active"]
         can.logger.main()
         self.assertSuccessfullCleanup()
         self.mock_logger.assert_called_once()
@@ -62,7 +64,7 @@ class TestLoggerScriptModule(unittest.TestCase):
     def test_log_virtual_passive(self):
         self.mock_virtual_bus.recv = Mock(side_effect=[self.testmsg, KeyboardInterrupt])
 
-        sys.argv = [sys.argv[0], "-i", "virtual", "--passive"]
+        sys.argv = self.baseargs + ["--passive"]
         can.logger.main()
         self.assertSuccessfullCleanup()
         self.mock_logger.assert_called_once()
