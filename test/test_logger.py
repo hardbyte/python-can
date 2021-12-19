@@ -70,6 +70,20 @@ class TestLoggerScriptModule(unittest.TestCase):
         self.mock_logger.assert_called_once()
         self.assertEqual(self.mock_virtual_bus.state, can.BusState.PASSIVE)
 
+    def test_log_virtual_with_config(self):
+        self.mock_virtual_bus.recv = Mock(side_effect=[self.testmsg, KeyboardInterrupt])
+
+        sys.argv = self.baseargs + [
+            "--bitrate",
+            "250000",
+            "--fd",
+            "--data_bitrate",
+            "2000000",
+        ]
+        can.logger.main()
+        self.assertSuccessfullCleanup()
+        self.mock_logger.assert_called_once()
+
 
 if __name__ == "__main__":
     unittest.main()
