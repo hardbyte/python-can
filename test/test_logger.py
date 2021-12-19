@@ -31,6 +31,9 @@ class TestLoggerScriptModule(unittest.TestCase):
         self.mock_logger = self.MockLogger.return_value
         self.mock_logger.stop = Mock()
 
+        self.MockLoggerUse = self.MockLogger
+        self.loggerToUse = self.mock_logger
+
         self.testmsg = can.Message(
             arbitration_id=0xC0FFEE, data=[0, 25, 0, 1, 3, 1, 4, 1], is_extended_id=True
         )
@@ -41,8 +44,8 @@ class TestLoggerScriptModule(unittest.TestCase):
         self.MockVirtualBus.assert_called_once()
         self.mock_virtual_bus.shutdown.assert_called_once()
 
-        self.MockLogger.assert_called_once()
-        self.mock_logger.stop.assert_called_once()
+        self.MockLoggerUse.assert_called_once()
+        self.loggerToUse.stop.assert_called_once()
 
     def test_log_virtual(self):
         self.mock_virtual_bus.recv = Mock(side_effect=[self.testmsg, KeyboardInterrupt])
