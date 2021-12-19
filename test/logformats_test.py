@@ -837,6 +837,7 @@ class TestTrcFileFormat(ReaderWriterTest):
     )
     def test_can_message_versions(self, name, filename, is_rx_support):
         with self.subTest(name):
+
             def msg_std(timestamp):
                 msg = can.Message(
                     timestamp=timestamp,

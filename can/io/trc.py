@@ -112,7 +112,7 @@ class TRCReader(BaseIOHandler):
 
     def _parse_cols_V2_1(self, cols):
         dtype = cols[2]
-        if dtype == 'DT':
+        if dtype == "DT":
             return self._parse_msg_V2_1(cols)
         else:
             logger.info(f"TRCReader: Unsupported type '{dtype}'")
