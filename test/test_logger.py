@@ -10,6 +10,7 @@ from unittest import mock
 from unittest.mock import Mock
 import sys
 import can
+import can.logger
 
 from .config import *
 
@@ -24,15 +25,11 @@ class TestLoggerScriptModule(unittest.TestCase):
         self.mock_virtual_bus.shutdown = Mock()
 
         # Patch Logger object
-        patcher_logger = mock.patch("can.Logger", spec=True)
+        patcher_logger = mock.patch("can.logger.Logger", spec=True)
         self.MockLogger = patcher_logger.start()
         self.addCleanup(patcher_logger.stop)
         self.mock_logger = self.MockLogger.return_value
         self.mock_logger.stop = Mock()
-
-        import can.logger as module
-
-        self.module = module
 
         self.testmsg = can.Message(
             arbitration_id=0xC0FFEE, data=[0, 25, 0, 1, 3, 1, 4, 1], is_extended_id=True
@@ -49,7 +46,7 @@ class TestLoggerScriptModule(unittest.TestCase):
         self.mock_virtual_bus.recv = Mock(side_effect=[self.testmsg, KeyboardInterrupt])
 
         sys.argv = [sys.argv[0], "-i", "virtual"]
-        self.module.main()
+        can.logger.main()
         self.assertSuccessfullCleanup()
         self.mock_logger.assert_called_once()
 
