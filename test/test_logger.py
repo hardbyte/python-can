@@ -50,6 +50,24 @@ class TestLoggerScriptModule(unittest.TestCase):
         self.assertSuccessfullCleanup()
         self.mock_logger.assert_called_once()
 
+    def test_log_virtual_active(self):
+        self.mock_virtual_bus.recv = Mock(side_effect=[self.testmsg, KeyboardInterrupt])
+
+        sys.argv = [sys.argv[0], "-i", "virtual", "--active"]
+        can.logger.main()
+        self.assertSuccessfullCleanup()
+        self.mock_logger.assert_called_once()
+        self.assertEqual(self.mock_virtual_bus.state, can.BusState.ACTIVE)
+
+    def test_log_virtual_passive(self):
+        self.mock_virtual_bus.recv = Mock(side_effect=[self.testmsg, KeyboardInterrupt])
+
+        sys.argv = [sys.argv[0], "-i", "virtual", "--passive"]
+        can.logger.main()
+        self.assertSuccessfullCleanup()
+        self.mock_logger.assert_called_once()
+        self.assertEqual(self.mock_virtual_bus.state, can.BusState.PASSIVE)
+
 
 if __name__ == "__main__":
     unittest.main()
