@@ -103,6 +103,10 @@ class TRCReader(BaseIOHandler):
                 # Comment line
                 continue
 
+            if len(temp) == 0:
+                # Empty line
+                continue
+
             msg = self._parse_line(temp)
             if msg is not None:
                 yield msg
