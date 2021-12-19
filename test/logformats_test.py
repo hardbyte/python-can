@@ -886,6 +886,20 @@ class TestTrcFileFormat(ReaderWriterTest):
             writer.on_message_received(can.Message())
 
 
+class TestTrcFileFormatV1_0(TestTrcFileFormat):
+    """Tests can.TRCWriter and can.TRCReader with file version 1.0"""
+
+    @staticmethod
+    def Writer(filename):
+        writer = can.TRCWriter(filename)
+        writer.file_version = can.TRCFileVersion.V1_0
+        return writer
+
+    def _setup_instance(self):
+        super()._setup_instance()
+        self.writer_constructor = TestTrcFileFormatV1_0.Writer
+
+
 # this excludes the base class from being executed as a test case itself
 del ReaderWriterTest
 
