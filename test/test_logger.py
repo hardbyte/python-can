@@ -37,16 +37,19 @@ class TestLoggerScriptModule(unittest.TestCase):
             arbitration_id=0xC0FFEE, data=[0, 25, 0, 1, 3, 1, 4, 1], is_extended_id=True
         )
 
-    def test_log_virtual(self):
-        self.mock_virtual_bus.recv = Mock(side_effect=[self.testmsg, KeyboardInterrupt])
-
-        sys.argv = [sys.argv[0], "-i", "virtual"]
-        self.module.main()
+    def assertSuccessfullCleanup(self):
         self.MockVirtualBus.assert_called_once()
         self.mock_virtual_bus.shutdown.assert_called_once()
 
         self.MockLogger.assert_called_once()
         self.mock_logger.stop.assert_called_once()
+
+    def test_log_virtual(self):
+        self.mock_virtual_bus.recv = Mock(side_effect=[self.testmsg, KeyboardInterrupt])
+
+        sys.argv = [sys.argv[0], "-i", "virtual"]
+        self.module.main()
+        self.assertSuccessfullCleanup()
 
 
 if __name__ == "__main__":
