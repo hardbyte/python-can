@@ -95,19 +95,19 @@ class TestLoggerScript(CanScriptTest):
             arbitration_id=0xC0FFEE, data=[0, 25, 0, 1, 3, 1, 4, 1], is_extended_id=True
         )
 
-        patcher = mock.patch("can.interfaces.virtual.VirtualBus", spec=True)
-        self.MockVirtualBus = patcher.start()
-        self.addCleanup(patcher.stop)
-        self.mock_virtual_bus = self.MockVirtualBus.return_value
-        self.mock_virtual_bus.recv = Mock(side_effect=[msg, KeyboardInterrupt])
-        self.mock_virtual_bus.shutdown = Mock()
+        patcher_virtual_bus = mock.patch("can.interfaces.virtual.VirtualBus", spec=True)
+        self.MockVirtualBus = patcher_virtual_bus.start()
+        self.addCleanup(patcher_virtual_bus.stop)
+        mock_virtual_bus = self.MockVirtualBus.return_value
+        mock_virtual_bus.recv = Mock(side_effect=[msg, KeyboardInterrupt])
+        mock_virtual_bus.shutdown = Mock()
 
         module = self._import()
 
         sys.argv = [sys.argv[0], "-i", "virtual"]
         module.main()
         self.MockVirtualBus.assert_called_once()
-        self.mock_virtual_bus.shutdown.assert_called_once()
+        mock_virtual_bus.shutdown.assert_called_once()
 
 
 class TestPlayerScript(CanScriptTest):
