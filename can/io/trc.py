@@ -68,18 +68,21 @@ class TRCReader(BaseIOHandler):
             else:
                 return line
 
-    def _parse_msg(self, line):
-        cols = line.split()
+    def _parse_msg(self, cols):
+        msg = Message()
+        msg.timestamp = float(cols[1]) / 1000
+        msg.arbitration_id = int(cols[4], 16)
+        msg.is_extended_id = len(cols[4]) > 4
+        msg.channel = int(cols[3])
+        msg.dlc = int(cols[7])
+        msg.data = bytearray([int(cols[i + 8], 16) for i in range(msg.dlc)])
+        msg.is_rx = cols[5] == "Rx"
+        return msg
+
+    def _parse_line(self, line):
         try:
-            msg = Message()
-            msg.timestamp = float(cols[1]) / 1000
-            msg.arbitration_id = int(cols[4], 16)
-            msg.is_extended_id = len(cols[4]) > 4
-            msg.channel = int(cols[3])
-            msg.dlc = int(cols[7])
-            msg.data = bytearray([int(cols[i + 8], 16) for i in range(msg.dlc)])
-            msg.is_rx = cols[5] == "Rx"
-            return msg
+            cols = line.split()
+            self._parse_msg(cols)
         except IndexError:
             logger.warning(f"TRCReader: Failed to parse message '{line}'")
 
@@ -89,7 +92,7 @@ class TRCReader(BaseIOHandler):
         first_line = self._extract_header()
 
         if first_line is not None:
-            msg = self._parse_msg(first_line)
+            msg = self._parse_line(first_line)
             if msg is not None:
                 yield msg
 
@@ -99,7 +102,7 @@ class TRCReader(BaseIOHandler):
                 # Comment line
                 continue
 
-            msg = self._parse_msg(temp)
+            msg = self._parse_line(temp)
             if msg is not None:
                 yield msg
 
