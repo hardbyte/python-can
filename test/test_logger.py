@@ -50,6 +50,7 @@ class TestLoggerScriptModule(unittest.TestCase):
         sys.argv = [sys.argv[0], "-i", "virtual"]
         self.module.main()
         self.assertSuccessfullCleanup()
+        self.mock_logger.assert_called_once()
 
 
 if __name__ == "__main__":
