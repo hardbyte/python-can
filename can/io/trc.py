@@ -59,7 +59,9 @@ class TRCReader(BaseIOHandler):
                 logger.debug(f"TRCReader: Found file version '{line}'")
                 try:
                     file_version = line.split("=")[1]
-                    if file_version == "2.1":
+                    if file_version == "1.1":
+                        self.file_version = TRCFileVersion.V1_1
+                    elif file_version == "2.1":
                         self.file_version = TRCFileVersion.V2_1
                     else:
                         self.file_version = TRCFileVersion.UNKNOWN
@@ -77,6 +79,8 @@ class TRCReader(BaseIOHandler):
             self._parse_cols = self._parse_msg_V1_0
         elif self.file_version == TRCFileVersion.V1_0:
             self._parse_cols = self._parse_msg_V1_0
+        elif self.file_version == TRCFileVersion.V1_1:
+            self._parse_cols = self._parse_cols_V1_1
         elif self.file_version == TRCFileVersion.V2_1:
             self._parse_cols = self._parse_cols_V2_1
         else:
@@ -99,6 +103,19 @@ class TRCReader(BaseIOHandler):
         msg.data = bytearray([int(cols[i + 4], 16) for i in range(msg.dlc)])
         return msg
 
+    def _parse_msg_V1_1(self, cols):
+        arbit_id = cols[3]
+
+        msg = Message()
+        msg.timestamp = float(cols[1]) / 1000
+        msg.arbitration_id = int(arbit_id, 16)
+        msg.is_extended_id = len(arbit_id) > 4
+        msg.channel = 1
+        msg.dlc = int(cols[4])
+        msg.data = bytearray([int(cols[i + 5], 16) for i in range(msg.dlc)])
+        msg.is_rx = cols[2] == "Rx"
+        return msg
+
     def _parse_msg_V2_1(self, cols):
         msg = Message()
         msg.timestamp = float(cols[1]) / 1000
@@ -109,6 +126,14 @@ class TRCReader(BaseIOHandler):
         msg.data = bytearray([int(cols[i + 8], 16) for i in range(msg.dlc)])
         msg.is_rx = cols[5] == "Rx"
         return msg
+
+    def _parse_cols_V1_1(self, cols):
+        dtype = cols[2]
+        if dtype == "Tx" or dtype == "Rx":
+            return self._parse_msg_V1_1(cols)
+        else:
+            logger.info(f"TRCReader: Unsupported type '{dtype}'")
+            return None
 
     def _parse_cols_V2_1(self, cols):
         dtype = cols[2]
