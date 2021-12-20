@@ -144,7 +144,7 @@ class IXXATBus(BusABC):
         return self.bus.send(msg, timeout)
 
     def _send_periodic_internal(self, msgs, period, duration=None):
-        return self.bus._send_periodic_internal(msg, period, duration)
+        return self.bus._send_periodic_internal(msgs, period, duration)
 
     def shutdown(self):
         return self.bus.shutdown()
