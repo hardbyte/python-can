@@ -41,12 +41,15 @@ class TestPlayerScriptModule(unittest.TestCase):
     def test_play_virtual(self):
         sys.argv = self.baseargs + [self.logfile]
         can.player.main()
+        # TODO: add test two messages sent
         self.assertEqual(self.MockSleep.call_count, 2)
         self.assertSuccessfullCleanup()
 
     def test_play_virtual_verbose(self):
         sys.argv = self.baseargs + ["-v", self.logfile]
         can.player.main()
+        # TODO: add test two messages sent
+        # TODO: add test message was printed
         self.assertEqual(self.MockSleep.call_count, 2)
         self.assertSuccessfullCleanup()
 
@@ -55,8 +58,14 @@ class TestPlayerScriptModule(unittest.TestCase):
 
         sys.argv = self.baseargs + [self.logfile]
         can.player.main()
+        # TODO: add test one message sent
         self.assertEqual(self.MockSleep.call_count, 1)
         self.assertSuccessfullCleanup()
+
+    def test_play_error_frame(self):
+        # TODO: implement
+        sys.argv = self.baseargs + ["--error-frames", self.logfile]
+        can.player.main()
 
 
 if __name__ == "__main__":
