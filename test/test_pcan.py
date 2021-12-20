@@ -68,8 +68,16 @@ class TestPCANBus(unittest.TestCase):
 
     def test_api_version_low(self) -> None:
         self.PCAN_API_VERSION_SIM = "1.0"
-        with self.assertLogs('can.pcan', level='WARNING') as cm:
+        with self.assertLogs("can.pcan", level="WARNING") as cm:
             self.bus = can.Bus(bustype="pcan")
+            found_version_warning = False
+            for i in cm.output:
+                if "version" in i and "pcan" in i:
+                    found_version_warning = True
+            self.assertTrue(
+                found_version_warning,
+                f"No warning was logged for incompatible api version {cm.output}",
+            )
 
     def test_api_version_read_fail(self) -> None:
         self.mock_pcan.GetValue = Mock(return_value=(PCAN_ERROR_ILLOPERATION, None))
