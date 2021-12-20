@@ -41,11 +41,13 @@ class TestPlayerScriptModule(unittest.TestCase):
     def test_play_virtual(self):
         sys.argv = self.baseargs + [self.logfile]
         can.player.main()
+        self.assertEqual(self.MockSleep.call_count, 2)
         self.assertSuccessfullCleanup()
 
     def test_play_virtual_verbose(self):
         sys.argv = self.baseargs + ["-v", self.logfile]
         can.player.main()
+        self.assertEqual(self.MockSleep.call_count, 2)
         self.assertSuccessfullCleanup()
 
 
