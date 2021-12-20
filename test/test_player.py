@@ -25,6 +25,11 @@ class TestPlayerScriptModule(unittest.TestCase):
         self.mock_virtual_bus = self.MockVirtualBus.return_value
         self.mock_virtual_bus.shutdown = Mock()
 
+        # Patch time sleep object
+        patcher_sleep = mock.patch("can.io.player.sleep", spec=True)
+        self.MockSleep = patcher_sleep.start()
+        self.addCleanup(patcher_sleep.stop)
+
         self.baseargs = [sys.argv[0], "-i", "virtual"]
         self.logfile = os.path.join(
             os.path.dirname(__file__), "data", "test_CanMessage.asc"
