@@ -166,7 +166,7 @@ class CANMSG(ctypes.Structure):
             self.dwMsgId,
             "[RTR]" if self.uMsgInfo.Bits.rtr else "",
             self.uMsgInfo.Bits.dlc,
-            memoryview(self.abData)[:self.uMsgInfo.Bits.dlc].hex(sep=" "),
+            memoryview(self.abData)[: self.uMsgInfo.Bits.dlc].hex(sep=" "),
         )
 
 

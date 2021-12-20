@@ -694,7 +694,7 @@ class IXXATBus(BusABC):
                     log.warning(
                         CAN_ERROR_MESSAGES.get(
                             self._message.abData[0],
-                            f"Unknown CAN error message code {self._message.abData[0]}"
+                            f"Unknown CAN error message code {self._message.abData[0]}",
                         )
                     )
                     log.warning(
