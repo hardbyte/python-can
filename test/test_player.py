@@ -50,6 +50,14 @@ class TestPlayerScriptModule(unittest.TestCase):
         self.assertEqual(self.MockSleep.call_count, 2)
         self.assertSuccessfullCleanup()
 
+    def test_play_virtual_exit(self):
+        self.MockSleep.side_effect = KeyboardInterrupt
+
+        sys.argv = self.baseargs + [self.logfile]
+        can.player.main()
+        self.assertEqual(self.MockSleep.call_count, 1)
+        self.assertSuccessfullCleanup()
+
 
 if __name__ == "__main__":
     unittest.main()
