@@ -4,7 +4,6 @@ Ctypes wrapper module for IXXAT Virtual CAN Interface V4 on win32 systems
 Copyright (C) 2016 Giuseppe Corbelli <giuseppe.corbelli@weightpack.com>
 """
 
-import binascii
 import ctypes
 
 
@@ -167,7 +166,7 @@ class CANMSG(ctypes.Structure):
             self.dwMsgId,
             "[RTR]" if self.uMsgInfo.Bits.rtr else "",
             self.uMsgInfo.Bits.dlc,
-            binascii.hexlify(self.abData, " "),
+            memoryview(self.abData)[:self.uMsgInfo.Bits.dlc].hex(sep=" "),
         )
 
 
