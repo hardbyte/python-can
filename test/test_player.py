@@ -43,6 +43,11 @@ class TestPlayerScriptModule(unittest.TestCase):
         can.player.main()
         self.assertSuccessfullCleanup()
 
+    def test_play_virtual_verbose(self):
+        sys.argv = self.baseargs + ["-v", self.logfile]
+        can.player.main()
+        self.assertSuccessfullCleanup()
+
 
 if __name__ == "__main__":
     unittest.main()
