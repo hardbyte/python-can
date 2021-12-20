@@ -826,9 +826,7 @@ class IXXATBus(BusABC):
                         log.info(
                             CAN_INFO_MESSAGES.get(
                                 self._message.abData[0],
-                                "Unknown CAN info message code {}".format(
-                                    self._message.abData[0]
-                                ),
+                                f"Unknown CAN info message code {self._message.abData[0]}"
                             )
                         )
 
@@ -838,9 +836,7 @@ class IXXATBus(BusABC):
                         log.warning(
                             CAN_ERROR_MESSAGES.get(
                                 self._message.abData[0],
-                                "Unknown CAN error message code {}".format(
-                                    self._message.abData[0]
-                                ),
+                                f"Unknown CAN error message code {self._message.abData[0]}"
                             )
                         )
 
