@@ -26,7 +26,9 @@ class TestPlayerScriptModule(unittest.TestCase):
         self.mock_virtual_bus.shutdown = Mock()
 
         self.baseargs = [sys.argv[0], "-i", "virtual"]
-        self.logfile = os.path.join(os.path.dirname(__file__), "data", "test_CanMessage.asc")
+        self.logfile = os.path.join(
+            os.path.dirname(__file__), "data", "test_CanMessage.asc"
+        )
 
     def assertSuccessfullCleanup(self):
         self.MockVirtualBus.assert_called_once()
