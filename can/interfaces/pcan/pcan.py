@@ -322,7 +322,7 @@ class PcanBus(BusABC):
     def check_api_version(self):
         apv = self.get_api_version()
         if apv < MIN_PCAN_API_VERSION:
-            raise CanInitializationError(
+            log.warning(
                 f"Minimum version of pcan api is {MIN_PCAN_API_VERSION}."
                 f" Installed version is {apv}. Consider upgrade of pcan basic package"
             )

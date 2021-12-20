@@ -66,9 +66,9 @@ class TestPCANBus(unittest.TestCase):
         self.mock_pcan.Initialize.assert_not_called()
         self.mock_pcan.InitializeFD.assert_called_once()
 
-    def test_api_version_error(self) -> None:
+    def test_api_version_low(self) -> None:
         self.PCAN_API_VERSION_SIM = "1.0"
-        with self.assertRaises(CanInitializationError):
+        with self.assertLogs('can.pcan', level='WARNING') as cm:
             self.bus = can.Bus(bustype="pcan")
 
     def test_api_version_read_fail(self) -> None:
