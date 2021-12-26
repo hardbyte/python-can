@@ -10,6 +10,7 @@ from unittest import mock
 from unittest.mock import Mock
 import os
 import sys
+import io
 import can
 import can.player
 
@@ -48,8 +49,10 @@ class TestPlayerScriptModule(unittest.TestCase):
 
     def test_play_virtual_verbose(self):
         sys.argv = self.baseargs + ["-v", self.logfile]
-        can.player.main()
-        # TODO: add test message was printed
+        with unittest.mock.patch('sys.stdout', new_callable=io.StringIO) as mock_stdout:
+            can.player.main()
+        self.assertIn('09 08 07 06 05 04 03 02', mock_stdout.getvalue())
+        self.assertIn('05 0c 00 00 00 00 00 00', mock_stdout.getvalue())
         self.assertEqual(self.mock_virtual_bus.send.call_count, 2)
         self.assertEqual(self.MockSleep.call_count, 2)
         self.assertSuccessfullCleanup()
