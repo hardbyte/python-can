@@ -66,10 +66,25 @@ class TestPlayerScriptModule(unittest.TestCase):
         self.assertEqual(self.MockSleep.call_count, 2)
         self.assertSuccessfullCleanup()
 
-    def test_play_error_frame(self):
-        # TODO: implement
-        sys.argv = self.baseargs + ["--error-frames", self.logfile]
+    def test_play_skip_error_frame(self):
+        logfile = os.path.join(
+            os.path.dirname(__file__), "data", "logfile_errorframes.asc"
+        )
+        sys.argv = self.baseargs + ["-v", logfile]
         can.player.main()
+        self.assertEqual(self.mock_virtual_bus.send.call_count, 9)
+        self.assertEqual(self.MockSleep.call_count, 12)
+        self.assertSuccessfullCleanup()
+
+    def test_play_error_frame(self):
+        logfile = os.path.join(
+            os.path.dirname(__file__), "data", "logfile_errorframes.asc"
+        )
+        sys.argv = self.baseargs + ["-v", "--error-frames", logfile]
+        can.player.main()
+        self.assertEqual(self.mock_virtual_bus.send.call_count, 12)
+        self.assertEqual(self.MockSleep.call_count, 12)
+        self.assertSuccessfullCleanup()
 
 
 if __name__ == "__main__":
