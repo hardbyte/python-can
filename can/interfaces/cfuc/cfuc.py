@@ -14,6 +14,13 @@ from . import can_calc_bittiming
 
 from can import BusABC, Message
 
+from can import (
+    CanInterfaceNotImplementedError,
+    CanInitializationError,
+    CanOperationError,
+    CanTimeoutError,
+)
+
 logger = logging.getLogger("can.serial")
 
 try:
@@ -236,15 +243,19 @@ class cfucBus(BusABC):
 
         self.ser.write(frame)
 
+        super().__init__(channel, *args, **kwargs)
         # super(cfucBus, self).__init__(channel=channel, *args, **kwargs)
+
 
     def shutdown(self):
         """
         Close the serial interface.
         """
+        super().shutdown()
         self.ser.close()
 
-    def send(self, msg, timeout=None):
+
+    def send(self, msg: Message, timeout=None):
         """
         Send a message over the serial device.
 
@@ -264,6 +275,7 @@ class cfucBus(BusABC):
             a_id = struct.pack("<I", msg.arbitration_id)
         except struct.error:
             raise ValueError("Arbitration Id is out of range")
+
         a_ex = b"\x00\x00\x00\x40" if (msg.is_extended_id) else b"\x00\x00\x00\x00"
         a_rmt = b"\x00\x00\x00\x20" if (msg.is_remote_frame) else b"\x00\x00\x00\x00"
 
@@ -307,9 +319,12 @@ class cfucBus(BusABC):
         # uint8_t can_data[64]; /* Data CAN buffer */
         for i in range(0, msg.dlc):
             byte_msg.append(msg.data[i])
+
         for i in range(msg.dlc, 64):
             byte_msg.extend(b"\x00")
+            
         self.ser.write(byte_msg)
+
 
     def _recv_internal(self, timeout):
         """
