@@ -49,18 +49,18 @@ class TestPlayerScriptModule(unittest.TestCase):
     def test_play_virtual_verbose(self):
         sys.argv = self.baseargs + ["-v", self.logfile]
         can.player.main()
-        # TODO: add test two messages sent
         # TODO: add test message was printed
+        self.assertEqual(self.mock_virtual_bus.send.call_count, 2)
         self.assertEqual(self.MockSleep.call_count, 2)
         self.assertSuccessfullCleanup()
 
     def test_play_virtual_exit(self):
-        self.MockSleep.side_effect = KeyboardInterrupt
+        self.MockSleep.side_effect = [None, KeyboardInterrupt]
 
         sys.argv = self.baseargs + [self.logfile]
         can.player.main()
-        # TODO: add test one message sent
-        self.assertEqual(self.MockSleep.call_count, 1)
+        self.assertEqual(self.mock_virtual_bus.send.call_count, 1)
+        self.assertEqual(self.MockSleep.call_count, 2)
         self.assertSuccessfullCleanup()
 
     def test_play_error_frame(self):
