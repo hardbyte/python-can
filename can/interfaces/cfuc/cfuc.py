@@ -50,9 +50,6 @@ ADLC = {
     14: 0x000E0000,
     15: 0x000F0000,
 }
-# class UCAN_FRAME_TYPE(enum.Enum):
-#    UCAN_FD_INIT = 0
-#    Mon = 1
 
 class UCAN_FRAME_TYPE(enum.Enum):
    UCAN_FD_INIT = 0 # init CAN with all parameters, open in mode specified in init data. Frame direction USB->CAN*/
