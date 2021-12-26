@@ -88,10 +88,10 @@ class cfucBus(BusABC):
         DataTimeSeg2Value=1,
     ):
 
-        byte_msg = bytearray()
 
-        UCAN_FD_INIT = struct.pack("<I", int(0x0))
+        UCAN_FD_INIT = struct.pack("<I", UCAN_FRAME_TYPE.UCAN_FD_INIT.value)
         ClockDivider = struct.pack("<I", int(0x0))
+
         if IsFD:
             if IsBRS:
                 FrameFormat = struct.pack("<I", int(0x00000300))  # fd + brs
@@ -121,25 +121,26 @@ class cfucBus(BusABC):
         ExtFiltersNbr = struct.pack("<I", int(0x00000000))
         TxFifoQueueMode = struct.pack("<I", int(0x00000000))
 
-        byte_msg = self.append_int32(byte_msg, UCAN_FD_INIT)
-        byte_msg = self.append_int32(byte_msg, ClockDivider)
-        byte_msg = self.append_int32(byte_msg, FrameFormat)
-        byte_msg = self.append_int32(byte_msg, AutoRetransmission)
-        byte_msg = self.append_int32(byte_msg, TransmitPause)
-        byte_msg = self.append_int32(byte_msg, ProtocolException)
-        byte_msg = self.append_int32(byte_msg, NominalPrescaler)
-        byte_msg = self.append_int32(byte_msg, NominalSyncJumpWidth)
-        byte_msg = self.append_int32(byte_msg, NominalTimeSeg1)
-        byte_msg = self.append_int32(byte_msg, NominalTimeSeg2)
-        byte_msg = self.append_int32(byte_msg, DataPrescaler)
-        byte_msg = self.append_int32(byte_msg, DataSyncJumpWidth)
-        byte_msg = self.append_int32(byte_msg, DataTimeSeg1)
-        byte_msg = self.append_int32(byte_msg, DataTimeSeg2)
-        byte_msg = self.append_int32(byte_msg, StdFiltersNbr)
-        byte_msg = self.append_int32(byte_msg, ExtFiltersNbr)
-        byte_msg = self.append_int32(byte_msg, TxFifoQueueMode)
+        byte_msg = bytearray(UCAN_FD_INIT)
+        byte_msg += ClockDivider
+        byte_msg += FrameFormat
+        byte_msg += AutoRetransmission
+        byte_msg += TransmitPause
+        byte_msg += ProtocolException
+        byte_msg += NominalPrescaler
+        byte_msg += NominalSyncJumpWidth
+        byte_msg += NominalTimeSeg1
+        byte_msg += NominalTimeSeg2
+        byte_msg += DataPrescaler
+        byte_msg += DataSyncJumpWidth
+        byte_msg += DataTimeSeg1
+        byte_msg += DataTimeSeg2
+        byte_msg += StdFiltersNbr
+        byte_msg += ExtFiltersNbr
+        byte_msg += TxFifoQueueMode
 
         return byte_msg
+
 
     """
     Enable basic can communication over a serial.
@@ -405,7 +406,6 @@ class cfucBus(BusABC):
             can_tx_header_MessageMarker = self._read(4)
 
             can_data = bytearray(self.ser.read(64))
-            print(can_data)
 
             dlc = list(ADLC.values()).index(can_tx_header_DataLength)
 
