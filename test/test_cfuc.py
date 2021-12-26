@@ -47,8 +47,8 @@ class CFUCTestCase(unittest.TestCase):
         Tests the transfer of init frame
         """
         self.bus = can.Bus(bustype="cfuc", channel="loop://", CANBaudRate=250000, IsFD=True, FDDataBaudRate=500000)
-        msg = self.bus.recv(None)
-        self.assertIsNotNone(msg)
+        msg_init = self.bus.recv(None)
+        self.assertIsNotNone(msg_init)
 
 
     def test_serial(self):
@@ -92,15 +92,16 @@ class CFUCTestCase(unittest.TestCase):
         Tests the transfer of standart CAN frame
         """
         self.bus = can.Bus(bustype="cfuc", channel="loop://", CANBaudRate=250000, IsFD=True, FDDataBaudRate=500000)
-        msg = self.bus.recv(None)
+        msg_init = self.bus.recv(None)
 
-        msg = can.Message(
+        msg_send = can.Message(
             arbitration_id=0x12ABCDEF, is_extended_id=False, data=[0xAA, 0x55]
         )
-        self.bus.send(msg)
+        self.bus.send(msg_send)
 
-        msg = self.bus.recv(None)
-        self.assertFalse(msg.is_extended_id)  # standart / extended field      
+        msg_recv = self.bus.recv(None)
+        self.assertFalse(msg_recv.is_extended_id)  # standart / extended field      
+        self.assertEqual(msg_recv, msg_send)
     
 
     def test_tx_fd_frame(self):
@@ -108,16 +109,17 @@ class CFUCTestCase(unittest.TestCase):
         Tests the transfer of Flexible Data-Rate CAN frame
         """
         self.bus = can.Bus(bustype="cfuc", channel="loop://", CANBaudRate=250000, IsFD=True, FDDataBaudRate=500000)
-        msg = self.bus.recv(None)
+        msg_init = self.bus.recv(None)
 
-        msg = can.Message(
+        msg_send = can.Message(
             arbitration_id=0x12ABCDEF, is_extended_id=True, is_fd = True, data=[0xAA, 0x55]
         )
-        self.bus.send(msg)
+        self.bus.send(msg_send)
 
-        msg = self.bus.recv(None)
-        self.assertTrue(msg.is_extended_id)
-        self.assertTrue(msg.is_fd)
+        msg_recv = self.bus.recv(None)
+        self.assertTrue(msg_recv.is_extended_id)
+        self.assertTrue(msg_recv.is_fd)
+        self.assertEqual(msg_recv, msg_send)
                                                                                    #len           #ErrorState    #BitRateSwitch     #FDFormat
 #        b'\x02\x00\x00\x00\xef\xcd\xab\x12\x00\x00\x00@\x00 \x00\x00\x00\x00\ x00\x02\x00\x00\ x00\x00\x00\x00 \x00\x00\x00\x00\ x00\x00\x00\x00\ x00\x00\x00\x00\ x00\x00\x00\xaaU\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
     #    b'\x02\x00\x00\x00\xef\xcd\xab\x12\x00\x00\x00 \x00 \x00\x00\x00\x00\ x00\x00\x02\x00\ x00\x00\x00\x00 \x00\x00\x00\x00\ x00\x00\x00\x00\ x00\x00\x00\x00\ x00\x00\x00\x00\xaaU\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'

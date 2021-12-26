@@ -11,7 +11,7 @@ from typing import Optional
 import logging
 import struct
 from . import can_calc_bittiming
-
+import enum
 from can import BusABC, Message
 
 from can import (
@@ -50,6 +50,19 @@ ADLC = {
     14: 0x000E0000,
     15: 0x000F0000,
 }
+# class UCAN_FRAME_TYPE(enum.Enum):
+#    UCAN_FD_INIT = 0
+#    Mon = 1
+
+class UCAN_FRAME_TYPE(enum.Enum):
+   UCAN_FD_INIT = 0 # init CAN with all parameters, open in mode specified in init data. Frame direction USB->CAN*/
+   UCAN_FD_DEINIT = 1 # deinit CAN, close CAN connection. Frame direction USB->CAN*/
+   UCAN_FD_TX = 2 # send new frame on CAN network. Frame direction USB->CAN  */
+   UCAN_FD_SAVE_CONFIG = 3 # saves CAN config to NVM USB->CAN*/
+   UCAN_FD_GO_TO_BOOTLOADER = 4 # go to USB bootloader USB->CAN*/
+   UCAN_FD_GET_CAN_STATUS = 5 # request status USB->CAN*/
+   UCAN_FD_RX = 6 # new CAN frame received on network. Frame direction CAN->USB*/
+   UCAN_FD_ACK = 7 # gets CAN status from CONVERTER. Also ACK resposne for all frames form USB. Frame direction CAN->USB */
 
 
 class cfucBus(BusABC):
@@ -57,8 +70,6 @@ class cfucBus(BusABC):
     Enable can communication over a ucan CFUC device.
 
     """
-
-    can_frame_count = 0
 
     def append_int32(self, dest, source):
         for i in range(0, 4):
@@ -200,8 +211,6 @@ class cfucBus(BusABC):
             channel, baudrate=115200, timeout=0.1, rtscts=False
         )
 
-        self.can_frame_count = 0
-
         self.ser.reset_input_buffer()
         self.ser.reset_output_buffer()
 
@@ -325,6 +334,47 @@ class cfucBus(BusABC):
             
         self.ser.write(byte_msg)
 
+    def _read(self, length):
+        rx_buffer = bytearray(self.ser.read(4))
+        rx_length = len(rx_buffer)
+
+        if length == rx_length:
+            result = (struct.unpack("<I", rx_buffer))[0]
+            return result
+        else:
+            return -1
+
+    def _read_rx_frame(self) -> Message:
+        # read ucan_can_rx_def structure
+
+        # read FDCAN_RxHeaderTypeDef structure
+        can_rx_header_Identifier = self._read(4)
+        can_rx_header_IdType = self._read(4)
+        can_rx_header_RxFrameType = self._read(4)
+        can_rx_header_DataLength = self._read(4)
+        can_rx_header_ErrorStateIndicator = self._read(4)
+        can_rx_header_BitRateSwitch = self._read(4)
+        can_rx_header_FDFormat = self._read(4)
+        can_rx_header_RxTimestamp = self._read(4)
+        can_rx_header_FilterIndex = self._read(4)
+        can_rx_header_IsFilterMatchingFrame = self._read(4)
+
+        #read Data CAN buffer
+        can_data = bytearray(self.ser.read(64))
+
+        #read Flasg and Errors
+        packed_flags_and_error_counters = self._read(4)        
+        
+        dlc = list(ADLC.values()).index(can_rx_header_DataLength)
+
+        msg = Message(
+            timestamp = can_rx_header_RxTimestamp / 1000,
+            arbitration_id = can_rx_header_Identifier,
+            dlc = dlc,
+            data = can_data,
+        )
+        return msg
+
 
     def _recv_internal(self, timeout):
         """
@@ -346,44 +396,44 @@ class cfucBus(BusABC):
         :rtype:
             can.Message, bool
         """
-        if self.can_frame_count == 0:
-            # ser.read can return an empty string
-            # or raise a SerialException
-            try:
-                rx_byte = self.ser.read(4)
-                rx_byte = (struct.unpack("<I", rx_byte))[0]
-            except serial.SerialException:
-                return None, False
-            if rx_byte == 0x06:  # UCAN_FD_RX:
-                s = bytearray(self.ser.read(4))
-                self.can_frame_count = (struct.unpack("<I", s))[0]
-            # else
-            if (self.can_frame_count > 0) & (self.can_frame_count < 10):
-                self.can_frame_count = self.can_frame_count - 1
-                s = bytearray(self.ser.read(4))
-                arb_id = (struct.unpack("<I", s))[0]  # Identifier
-                s = bytearray(self.ser.read(8))  # IdType #RxFrameType
-                s = bytearray(self.ser.read(4))  # DataLength
-                len = (struct.unpack("<I", s))[0]
-                dlc = list(ADLC.values()).index(len)
-                s = bytearray(self.ser.read(4))  # ErrorStateIndicator
-                s = bytearray(self.ser.read(4))  # BitRateSwitch
-                s = bytearray(self.ser.read(4))  # FDFormat
-                s = bytearray(self.ser.read(4))  # RxTimestamp
-                timestamp = (struct.unpack("<I", s))[0]
-                s = bytearray(self.ser.read(4))  # FilterIndex
-                s = bytearray(self.ser.read(4))  # IsFilterMatchingFrame
-                data = bytearray(self.ser.read(64))  # can_data
-                # packed_flags_and_error_counters
-                s = bytearray(self.ser.read(4))
+        frame_type = self._read(4)
 
-                msg = Message(
-                    timestamp=timestamp / 1000,
-                    arbitration_id=arb_id,
-                    dlc=dlc,
-                    data=data,
-                )
-                return msg, False
-            else:
-                self.can_frame_count = 0
-                return None, False
+
+        if frame_type == UCAN_FRAME_TYPE.UCAN_FD_TX.value:
+            can_tx_header = self._read(4)
+
+            # read FDCAN_TxHeaderTypeDef structure
+            can_tx_header_Identifier = self._read(4)
+            can_tx_header_IdType = self._read(4)
+            can_tx_header_TxFrameType = self._read(4)
+            can_tx_header_DataLength = self._read(4)
+            can_tx_header_ErrorStateIndicator = self._read(4)
+            can_tx_header_BitRateSwitch = self._read(4)
+            can_tx_header_FDFormat = self._read(4)
+            can_tx_header_TxEventFifoControl = self._read(4)
+            can_tx_header_MessageMarker = self._read(4)
+
+            can_data = bytearray(self.ser.read(64))
+            print(can_data)
+
+            dlc = list(ADLC.values()).index(can_tx_header_DataLength)
+
+            msg = Message(
+                arbitration_id = can_tx_header,
+                dlc = dlc,
+                data = can_data,
+            )
+            return msg, False
+
+
+        if frame_type == UCAN_FRAME_TYPE.UCAN_FD_RX.value:
+            can_frame_count = self._read(4)
+            results = list()
+
+            for i in range(can_frame_count):
+                results.append(self._read_rx_frame())
+
+            return tuple(results), False
+
+
+        return None, False
