@@ -23,7 +23,7 @@ class TestPlayerScriptModule(unittest.TestCase):
         self.MockVirtualBus = patcher_virtual_bus.start()
         self.addCleanup(patcher_virtual_bus.stop)
         self.mock_virtual_bus = self.MockVirtualBus.return_value
-        self.mock_virtual_bus.shutdown = Mock()
+        self.mock_virtual_bus.__enter__ = Mock(return_value=self.mock_virtual_bus)
 
         # Patch time sleep object
         patcher_sleep = mock.patch("can.io.player.sleep", spec=True)
@@ -37,11 +37,12 @@ class TestPlayerScriptModule(unittest.TestCase):
 
     def assertSuccessfullCleanup(self):
         self.MockVirtualBus.assert_called_once()
+        self.mock_virtual_bus.__exit__.assert_called_once()
 
     def test_play_virtual(self):
         sys.argv = self.baseargs + [self.logfile]
         can.player.main()
-        # TODO: add test two messages sent
+        self.assertEqual(self.mock_virtual_bus.send.call_count, 2)
         self.assertEqual(self.MockSleep.call_count, 2)
         self.assertSuccessfullCleanup()
 
