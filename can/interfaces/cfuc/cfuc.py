@@ -332,7 +332,7 @@ class cfucBus(BusABC):
         self.ser.write(byte_msg)
 
     def _read(self, length):
-        rx_buffer = bytearray(self.ser.read(4))
+        rx_buffer = bytearray(self.ser.read(length))
         rx_length = len(rx_buffer)
 
         if length == rx_length:
