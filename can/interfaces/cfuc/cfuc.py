@@ -276,7 +276,7 @@ class cfucBus(BusABC):
 
         """
 
-        UCAN_FD_TX = struct.pack("<I", int(0x2))
+        frame_type = struct.pack("<I", UCAN_FRAME_TYPE.UCAN_FD_TX.value)
         try:
             a_id = struct.pack("<I", msg.arbitration_id)
         except struct.error:
@@ -288,19 +288,13 @@ class cfucBus(BusABC):
         a_dlc = struct.pack("<I", int(ADLC[msg.dlc]))
 
         # copy all structs to byte stream
-        byte_msg = bytearray()
         # UCAN_FRAME_TYPE frame_type; /*!< Frame type is @ref UCAN_FD_TX.*/
-        for i in range(0, 4):
-            byte_msg.append(UCAN_FD_TX[i])
+        byte_msg = bytearray(frame_type)
         # FDCAN_TxHeaderTypeDef can_tx_header; /*!< FDCAN Tx event FIFO structure definition @ref FDCAN_TxHeaderTypeDef.*/
-        for i in range(0, 4):
-            byte_msg.append(a_id[i])
-        for i in range(0, 4):
-            byte_msg.append(a_ex[i])
-        for i in range(0, 4):
-            byte_msg.append(a_rmt[i])
-        for i in range(0, 4):
-            byte_msg.append(a_dlc[i])
+        byte_msg += a_id
+        byte_msg += a_ex
+        byte_msg += a_rmt
+        byte_msg += a_dlc
 
         if msg.error_state_indicator == False:
             # ErrorStateIndicator FDCAN_ESI_PASSIVE
@@ -330,6 +324,7 @@ class cfucBus(BusABC):
             byte_msg.extend(b"\x00")
             
         self.ser.write(byte_msg)
+
 
     def _read(self, length):
         rx_buffer = bytearray(self.ser.read(length))
@@ -397,7 +392,6 @@ class cfucBus(BusABC):
 
 
         if frame_type == UCAN_FRAME_TYPE.UCAN_FD_TX.value:
-            can_tx_header = self._read(4)
 
             # read FDCAN_TxHeaderTypeDef structure
             can_tx_header_Identifier = self._read(4)
@@ -416,7 +410,7 @@ class cfucBus(BusABC):
             dlc = list(ADLC.values()).index(can_tx_header_DataLength)
 
             msg = Message(
-                arbitration_id = can_tx_header,
+                arbitration_id = can_tx_header_Identifier,
                 dlc = dlc,
                 data = can_data,
             )
