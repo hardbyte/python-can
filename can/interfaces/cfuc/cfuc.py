@@ -352,6 +352,10 @@ class cfucBus(BusABC):
             arbitration_id = can_rx_header_Identifier,
             dlc = dlc,
             data = can_data,
+            is_fd = True if can_rx_header_FDFormat else False,
+            is_extended_id = True if can_rx_header_IdType else False,
+            bitrate_switch= True if can_rx_header_BitRateSwitch else False,
+            is_remote_frame= True if can_rx_header_RxFrameType else False,
         )
         return msg
 
@@ -402,6 +406,8 @@ class cfucBus(BusABC):
                 data = can_data,
                 is_fd = True if can_tx_header_FDFormat else False,
                 is_extended_id = True if can_tx_header_IdType else False,
+                bitrate_switch= True if can_tx_header_BitRateSwitch else False,
+                is_remote_frame= True if can_tx_header_TxFrameType else False,
             )
             return msg, False
 
