@@ -400,6 +400,8 @@ class cfucBus(BusABC):
                 arbitration_id = can_tx_header_Identifier,
                 dlc = dlc,
                 data = can_data,
+                is_fd = True if can_tx_header_FDFormat else False,
+                is_extended_id = True if can_tx_header_IdType else False,
             )
             return msg, False
 
