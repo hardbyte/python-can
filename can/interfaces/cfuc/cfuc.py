@@ -78,18 +78,17 @@ class cfucBus(BusABC):
         IsFD=False,
         IsBRS=False,
         IsAutoRetransmission=False,
-        NominalPrescalerValue=1,
-        NominalSyncJumpWidthValue=1,
-        NominalTimeSeg1Value=13,
-        NominalTimeSeg2Value=2,
-        DataPrescalerValue=1,
-        DataSyncJumpWidthValue=1,
-        DataTimeSeg1Value=1,
-        DataTimeSeg2Value=1,
+        NominalPrescaler: int = 1,
+        NominalSyncJumpWidthValue: int = 1,
+        NominalTimeSeg1Value: int = 13,
+        NominalTimeSeg2Value: int = 2,
+        DataPrescalerValue: int = 1,
+        DataSyncJumpWidthValue: int = 1,
+        DataTimeSeg1Value: int = 1,
+        DataTimeSeg2Value: int = 1,
     ):
 
-
-        UCAN_FD_INIT = struct.pack("<I", UCAN_FRAME_TYPE.UCAN_FD_INIT.value)
+        UCAN_FD_INIT = bytearray(b'\x00\x00\x00\x00')
         ClockDivider = struct.pack("<I", int(0x0))
 
         if IsFD:
@@ -98,49 +97,35 @@ class cfucBus(BusABC):
             else:
                 FrameFormat = struct.pack("<I", int(0x00000200))  # fd
         else:
-            FrameFormat = struct.pack("<I", int(0x00000000))  # clasic
+            FrameFormat = bytearray(b'\x00\x00\x00\x00')  # clasic
 
         if IsAutoRetransmission == False:
-            AutoRetransmission = struct.pack("<I", int(0x00000000))
+            AutoRetransmission = bytearray(b'\x00')
         else:
-            AutoRetransmission = struct.pack("<I", int(0x00000001))
+            AutoRetransmission = bytearray(b'\x01')
 
-        TransmitPause = struct.pack("<I", int(0x00000000))
-        ProtocolException = struct.pack("<I", int(0x00000000))
+        byte_msg = UCAN_FD_INIT  #UCAN_FD_INIT
+        byte_msg += ClockDivider  #ClockDivider
+        byte_msg += FrameFormat #FrameFormat
+        byte_msg += bytearray(b'\x00\x00\x00\x00') #Mode
+        byte_msg += AutoRetransmission #AutoRetransmission
+        byte_msg += bytearray(b'\x00') #TransmitPause
+        byte_msg += bytearray(b'\x00') #ProtocolException
+        byte_msg += bytearray(b'\x01') #bug - empty byte, fillup byte
+        byte_msg += struct.pack("<I", int(NominalPrescaler)) #NominalPrescaler
+        byte_msg += int(NominalSyncJumpWidthValue).to_bytes(4, 'little') #NominalSyncJumpWidth
+        byte_msg += int(NominalTimeSeg1Value).to_bytes(4, 'little') #NominalTimeSeg1
+        byte_msg += int(NominalTimeSeg2Value).to_bytes(4, 'little') #NominalTimeSeg2
+        byte_msg += int(1).to_bytes(4, 'little') #DataPrescaler
+        byte_msg += int(1).to_bytes(4, 'little') #DataSyncJumpWidth
+        byte_msg += int(1).to_bytes(4, 'little') #DataTimeSeg1
+        byte_msg += int(1).to_bytes(4, 'little') #DataTimeSeg2
+        byte_msg += bytearray(b'\x00\x00\x00\x00') #StdFiltersNbr
+        byte_msg += bytearray(b'\x00\x00\x00\x00') #ExtFiltersNbr
+        byte_msg += bytearray(b'\x00\x00\x00\x00') #TxFifoQueueMode
 
-        NominalPrescaler = struct.pack("<I", NominalPrescalerValue)
-        NominalSyncJumpWidth = struct.pack("<I", NominalSyncJumpWidthValue)
-        NominalTimeSeg1 = struct.pack("<I", NominalTimeSeg1Value)
-        NominalTimeSeg2 = struct.pack("<I", NominalTimeSeg2Value)
-        DataPrescaler = struct.pack("<I", DataPrescalerValue)
-        DataSyncJumpWidth = struct.pack("<I", DataSyncJumpWidthValue)
-        DataTimeSeg1 = struct.pack("<I", DataTimeSeg1Value)
-        DataTimeSeg2 = struct.pack("<I", DataTimeSeg2Value)
-
-        StdFiltersNbr = struct.pack("<I", int(0x00000000))
-        ExtFiltersNbr = struct.pack("<I", int(0x00000000))
-        TxFifoQueueMode = struct.pack("<I", int(0x00000000))
-
-        byte_msg = bytearray(UCAN_FD_INIT)
-        byte_msg += ClockDivider
-        byte_msg += FrameFormat
-        byte_msg += AutoRetransmission
-        byte_msg += TransmitPause
-        byte_msg += ProtocolException
-        byte_msg += NominalPrescaler
-        byte_msg += NominalSyncJumpWidth
-        byte_msg += NominalTimeSeg1
-        byte_msg += NominalTimeSeg2
-        byte_msg += DataPrescaler
-        byte_msg += DataSyncJumpWidth
-        byte_msg += DataTimeSeg1
-        byte_msg += DataTimeSeg2
-        byte_msg += StdFiltersNbr
-        byte_msg += ExtFiltersNbr
-        byte_msg += TxFifoQueueMode
-
+        print(byte_msg)
         return byte_msg
-
 
     """
     Enable basic can communication over a serial.
@@ -283,8 +268,8 @@ class cfucBus(BusABC):
         except struct.error:
             raise ValueError("Arbitration Id is out of range")
 
-        a_ex = b"\x00\x00\x00\x40" if (msg.is_extended_id) else b"\x00\x00\x00\x00"
-        a_rmt = b"\x00\x00\x00\x20" if (msg.is_remote_frame) else b"\x00\x00\x00\x00"
+        a_ex = bytearray(b'\x00\x00\x00\x40') if (msg.is_extended_id) else bytearray(b'\x00\x00\x00\x00')
+        a_rmt = bytearray(b'\x00\x00\x00\x20') if (msg.is_remote_frame) else bytearray(b'\x00\x00\x00\x00')
 
         a_dlc = struct.pack("<I", int(ADLC[msg.dlc]))
 
@@ -299,31 +284,33 @@ class cfucBus(BusABC):
 
         if msg.error_state_indicator == False:
             # ErrorStateIndicator FDCAN_ESI_PASSIVE
-            byte_msg.extend(b"\x00\x00\x00\x00")
+            byte_msg += bytearray(b'\x00\x00\x00\x00')
         else:
             # ErrorStateIndicator FDCAN_ESI_ACTIVE
-            byte_msg.extend(b"\x00\x00\x00\x80")
+            byte_msg += bytearray(b'\x00\x00\x00\x80')
 
         if msg.bitrate_switch == False:
-            byte_msg.extend(b"\x00\x00\x00\x00")  # BitRateSwitch FDCAN_BRS_OFF
+            byte_msg += bytearray(b'\x00\x00\x00\x00')  # BitRateSwitch FDCAN_BRS_OFF
         else:
-            byte_msg.extend(b"\x00\x00\x10\x00")  # BitRateSwitch FDCAN_BRS_ON
+            byte_msg += bytearray(b'\x00\x00\x10\x00')  # BitRateSwitch FDCAN_BRS_ON
 
         if msg.is_fd == False:
-            byte_msg.extend(b"\x00\x00\x00\x00")  # FDFormat FDCAN_CLASSIC_CAN
+            byte_msg += bytearray(b'\x00\x00\x00\x00')  # FDFormat FDCAN_CLASSIC_CAN
         else:
-            byte_msg.extend(b"\x00\x00\x20\x00")  # FDFormat FDCAN_FD_CAN
+            byte_msg += bytearray(b'\x00\x00\x20\x00')  # FDFormat FDCAN_FD_CAN
 
-        byte_msg.extend(b"\x00\x00\x00\x00")  # TxEventFifoControl
-        byte_msg.extend(b"\x00\x00\x00\x00")  # MessageMarker
+        byte_msg += bytearray(b'\x00\x00\x00\x00')  # TxEventFifoControl
+        byte_msg += bytearray(b'\x00\x00\x00\x00')  # MessageMarker
 
         # uint8_t can_data[64]; /* Data CAN buffer */
         for i in range(0, msg.dlc):
             byte_msg.append(msg.data[i])
 
         for i in range(msg.dlc, 64):
-            byte_msg.extend(b"\x00")
+            byte_msg += bytearray(b'\x00')
             
+        print("LEN: ", len(byte_msg))
+        print("MSG: ", byte_msg)
         self.ser.write(byte_msg)
 
 
