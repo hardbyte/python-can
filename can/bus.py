@@ -344,7 +344,7 @@ class BusABC(metaclass=ABCMeta):
         filters to ``None``.
 
         :param filters:
-            A iterable of dictionaries each containing a "can_id",
+            An iterable of dictionaries each containing a "can_id",
             a "can_mask", and an optional "extended" key.
 
             >>> [{"can_id": 0x11, "can_mask": 0x21, "extended": False}]
@@ -354,6 +354,9 @@ class BusABC(metaclass=ABCMeta):
             If ``extended`` is set as well, it only matches messages where
             ``<received_is_extended> == extended``. Else it matches every
             messages based only on the arbitration ID and mask.
+
+            The utility function :func:`~can.create_filter` is provided
+            to generate suitable filters.
         """
         self._filters = filters or None
         self._apply_filters(self._filters)

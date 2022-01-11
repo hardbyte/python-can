@@ -8,9 +8,13 @@ if typing.TYPE_CHECKING:
 
 import typing_extensions
 
-CanFilter = typing_extensions.TypedDict("CanFilter", {"can_id": int, "can_mask": int})
+CanFilter = typing_extensions.TypedDict(
+    "CanFilter",
+    {"can_id": int, "can_mask": int, "extended": typing_extensions.Literal[False]},
+)
 CanFilterExtended = typing_extensions.TypedDict(
-    "CanFilterExtended", {"can_id": int, "can_mask": int, "extended": bool}
+    "CanFilterExtended",
+    {"can_id": int, "can_mask": int, "extended": typing_extensions.Literal[True]},
 )
 CanFilters = typing.Sequence[typing.Union[CanFilter, CanFilterExtended]]
 

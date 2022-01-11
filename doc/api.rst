@@ -27,6 +27,8 @@ Utilities
 
 .. autofunction:: can.detect_available_configs
 
+.. autofunction:: can.create_filter
+
 
 .. _notifier:
 

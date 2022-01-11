@@ -371,6 +371,49 @@ def time_perfcounter_correlation() -> Tuple[float, float]:
     return t1, performance_counter
 
 
+def create_filter(
+    accepted_std_ids: Iterable[int], accepted_ext_ids: Iterable[int]
+) -> typechecking.CanFilters:
+    """Calculate CAN filter settings for given arbitration IDs.
+
+    :param accepted_std_ids:
+        An iterable of standard arbitration IDs (11bit) to be accepted.
+    :param accepted_ext_ids:
+        An iterable of extended arbitration IDs (29bit) to be accepted.
+    :returns:
+        CAN filters to be used with :meth:`~can.BusABC.set_filters`.
+    """
+    std_code = 0x7FF
+    std_mask = 0x7FF
+    _std_mem = 0x7FF
+
+    ext_code = 0x1FFFFFFF
+    ext_mask = 0x1FFFFFFF
+    _ext_mem = 0x1FFFFFFF
+
+    for can_id in accepted_std_ids:
+        if not (0 <= can_id <= 0x7FF):
+            raise ValueError(f"Invalid CAN ID {can_id}")
+
+        if std_code != 0x7FF:
+            _std_mem = ~(std_code ^ can_id) & 0x7FF
+        std_code &= can_id
+        std_mask &= _std_mem
+
+    for can_id in accepted_ext_ids:
+        if not (0 <= can_id <= 0x1FFFFFFF):
+            raise ValueError(f"Invalid Extended CAN ID {can_id}")
+        if ext_code != 0x1FFFFFFF:
+            _ext_mem = ~(ext_code ^ can_id) & 0x1FFFFFFF
+        ext_code &= can_id
+        ext_mask &= _ext_mem
+
+    return [
+        {"can_id": std_code, "can_mask": std_mask, "extended": False},
+        {"can_id": ext_code, "can_mask": ext_mask, "extended": True},
+    ]
+
+
 if __name__ == "__main__":
     print("Searching for configuration named:")
     print("\n".join(CONFIG_FILES))

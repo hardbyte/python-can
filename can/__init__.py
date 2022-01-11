@@ -31,7 +31,7 @@ from .io import CanutilsLogReader, CanutilsLogWriter
 from .io import CSVWriter, CSVReader
 from .io import SqliteWriter, SqliteReader
 
-from .util import set_logging_level
+from .util import set_logging_level, create_filter
 
 from .message import Message
 from .bus import BusABC, BusState
