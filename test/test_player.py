@@ -14,7 +14,6 @@ import io
 import can
 import can.player
 
-from .config import *
 
 
 class TestPlayerScriptModule(unittest.TestCase):
