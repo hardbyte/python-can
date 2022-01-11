@@ -34,7 +34,7 @@ class TestPlayerScriptModule(unittest.TestCase):
             os.path.dirname(__file__), "data", "test_CanMessage.asc"
         )
 
-    def assertSuccessfullCleanup(self):
+    def assertSuccessfulCleanup(self):
         self.MockVirtualBus.assert_called_once()
         self.mock_virtual_bus.__exit__.assert_called_once()
 
@@ -43,7 +43,7 @@ class TestPlayerScriptModule(unittest.TestCase):
         can.player.main()
         self.assertEqual(self.mock_virtual_bus.send.call_count, 2)
         self.assertEqual(self.MockSleep.call_count, 2)
-        self.assertSuccessfullCleanup()
+        self.assertSuccessfulCleanup()
 
     def test_play_virtual_verbose(self):
         sys.argv = self.baseargs + ["-v", self.logfile]
@@ -53,7 +53,7 @@ class TestPlayerScriptModule(unittest.TestCase):
         self.assertIn("05 0c 00 00 00 00 00 00", mock_stdout.getvalue())
         self.assertEqual(self.mock_virtual_bus.send.call_count, 2)
         self.assertEqual(self.MockSleep.call_count, 2)
-        self.assertSuccessfullCleanup()
+        self.assertSuccessfulCleanup()
 
     def test_play_virtual_exit(self):
         self.MockSleep.side_effect = [None, KeyboardInterrupt]
@@ -62,7 +62,7 @@ class TestPlayerScriptModule(unittest.TestCase):
         can.player.main()
         self.assertEqual(self.mock_virtual_bus.send.call_count, 1)
         self.assertEqual(self.MockSleep.call_count, 2)
-        self.assertSuccessfullCleanup()
+        self.assertSuccessfulCleanup()
 
     def test_play_skip_error_frame(self):
         logfile = os.path.join(
@@ -72,7 +72,7 @@ class TestPlayerScriptModule(unittest.TestCase):
         can.player.main()
         self.assertEqual(self.mock_virtual_bus.send.call_count, 9)
         self.assertEqual(self.MockSleep.call_count, 12)
-        self.assertSuccessfullCleanup()
+        self.assertSuccessfulCleanup()
 
     def test_play_error_frame(self):
         logfile = os.path.join(
@@ -82,7 +82,7 @@ class TestPlayerScriptModule(unittest.TestCase):
         can.player.main()
         self.assertEqual(self.mock_virtual_bus.send.call_count, 12)
         self.assertEqual(self.MockSleep.call_count, 12)
-        self.assertSuccessfullCleanup()
+        self.assertSuccessfulCleanup()
 
 
 if __name__ == "__main__":
