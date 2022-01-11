@@ -15,7 +15,6 @@ import can
 import can.player
 
 
-
 class TestPlayerScriptModule(unittest.TestCase):
     def setUp(self) -> None:
         # Patch VirtualBus object
