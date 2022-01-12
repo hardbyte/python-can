@@ -22,6 +22,7 @@ from .exceptions import (
     CanInitializationError,
     CanOperationError,
     CanTimeoutError,
+    CanBitRateError,
 )
 
 from .io import Logger, SizedRotatingLogger, Printer, LogReader, MessageSync
