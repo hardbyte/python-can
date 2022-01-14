@@ -13,16 +13,11 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         experimental: [false]
-        python-version: ["3.6", "3.7", "3.8", "3.9", "pypy-3.7"]
+        python-version: ["3.6", "3.7", "3.8", "3.9", "3.10", "pypy-3.7"]
         include:
-          # Skipping Py 3.10 on Windows until windows-curses has a cp310 wheel,
-          # see https://github.com/zephyrproject-rtos/windows-curses/issues/26
           - os: ubuntu-latest
-            experimental: false
-            python-version: "3.10"
-          - os: macos-latest
-            experimental: false
-            python-version: "3.10"
+            experimental: true
+            python-version: "3.11.0-alpha - 3.11.0"
       fail-fast: false
     steps:
     - uses: actions/checkout@v2
