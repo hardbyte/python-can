@@ -90,6 +90,7 @@ setup(
         "typing_extensions>=3.10.0.0",
         'pywin32;platform_system=="Windows" and platform_python_implementation=="CPython"',
         'msgpack~=1.0.0;platform_system!="Windows"',
+        "packaging",
     ],
     extras_require=extras_require,
 )
