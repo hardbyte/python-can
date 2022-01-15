@@ -14,6 +14,7 @@ TODO: correctly set preserves_channel and adds_default_channel
 import gzip
 import logging
 import unittest
+from parameterized import parameterized
 import tempfile
 import os
 from abc import abstractmethod, ABCMeta
@@ -164,6 +165,7 @@ class ReaderWriterTest(unittest.TestCase, ComparingMessagesTestCase, metaclass=A
         os.remove(self.test_file_name)
         del self.test_file_name
 
+    @unittest.skip("not implemented")
     def test_path_like_explicit_stop(self):
         """testing with path-like and explicit stop() call"""
 
@@ -783,8 +785,14 @@ class TestPrinter(unittest.TestCase):
                     printer(message)
 
 
-class TestTrcFileFormat(ReaderWriterTest):
-    """Tests can.TRCWriter and can.TRCReader"""
+class TestTrcFileFormatBase(ReaderWriterTest):
+    """
+    Base class for Tests with can.TRCWriter and can.TRCReader
+
+    .. note::
+        This class is prevented from being executed as a test
+        case itself by a *del* statement in at the end of the file.
+    """
 
     def _setup_instance(self):
         super()._setup_instance_helper(
@@ -803,6 +811,10 @@ class TestTrcFileFormat(ReaderWriterTest):
         logfile = os.path.join(os.path.dirname(__file__), "data", filename)
         with can.TRCReader(logfile, **kwargs) as reader:
             return list(reader)
+
+
+class TestTrcFileFormatGen(TestTrcFileFormatBase):
+    """Generic tests for can.TRCWriter and can.TRCReader with different file versions"""
 
     def test_can_message(self):
         expected_messages = [
@@ -827,9 +839,81 @@ class TestTrcFileFormat(ReaderWriterTest):
         actual = self._read_log_file("test_CanMessage.trc")
         self.assertMessagesEqual(actual, expected_messages)
 
+    @parameterized.expand(
+        [
+            ("V1_0", "test_CanMessage_V1_0_BUS1.trc", False),
+            ("V1_1", "test_CanMessage_V1_1.trc", True),
+            ("V2_1", "test_CanMessage_V2_1.trc", True),
+        ]
+    )
+    def test_can_message_versions(self, name, filename, is_rx_support):
+        with self.subTest(name):
+
+            def msg_std(timestamp):
+                msg = can.Message(
+                    timestamp=timestamp,
+                    arbitration_id=0x000,
+                    is_extended_id=False,
+                    channel=1,
+                    dlc=8,
+                    data=[0, 0, 0, 0, 0, 0, 0, 0],
+                )
+                if is_rx_support:
+                    msg.is_rx = False
+                return msg
+
+            def msg_ext(timestamp):
+                msg = can.Message(
+                    timestamp=timestamp,
+                    arbitration_id=0x100,
+                    is_extended_id=True,
+                    channel=1,
+                    dlc=8,
+                    data=[0, 0, 0, 0, 0, 0, 0, 0],
+                )
+                if is_rx_support:
+                    msg.is_rx = False
+                return msg
+
+            expected_messages = [
+                msg_ext(17.5354),
+                msg_ext(17.7003),
+                msg_ext(17.8738),
+                msg_std(19.2954),
+                msg_std(19.5006),
+                msg_std(19.7052),
+                msg_ext(20.5927),
+                msg_ext(20.7986),
+                msg_ext(20.9560),
+                msg_ext(21.0971),
+            ]
+            actual = self._read_log_file(filename)
+            self.assertMessagesEqual(actual, expected_messages)
+
+    def test_not_supported_version(self):
+        with self.assertRaises(NotImplementedError):
+            writer = can.TRCWriter("test.trc")
+            writer.file_version = can.TRCFileVersion.UNKNOWN
+            writer.on_message_received(can.Message())
+
+
+class TestTrcFileFormatV1_0(TestTrcFileFormatBase):
+    """Tests can.TRCWriter and can.TRCReader with file version 1.0"""
+
+    @staticmethod
+    def Writer(filename):
+        writer = can.TRCWriter(filename)
+        writer.file_version = can.TRCFileVersion.V1_0
+        return writer
+
+    def _setup_instance(self):
+        super()._setup_instance()
+        self.writer_constructor = TestTrcFileFormatV1_0.Writer
+
 
 # this excludes the base class from being executed as a test case itself
 del ReaderWriterTest
+del TestTrcFileFormatBase
 
 
 if __name__ == "__main__":
