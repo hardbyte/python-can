@@ -62,7 +62,7 @@ class TestPlayerScriptModule(unittest.TestCase):
             data=[0x5, 0xC, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0],
         )
         self.assertEqual(self.MockSleep.call_count, 2)
-        if sys.version_info.major > 3 or sys.version_info.minor >= 8:
+        if sys.version_info >= (3, 8):
             # The args argument was introduced with python 3.8
             self.assertTrue(
                 msg1.equals(self.mock_virtual_bus.send.mock_calls[0].args[0])
