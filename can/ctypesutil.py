@@ -14,7 +14,7 @@ __all__ = ["CLibrary", "HANDLE", "PHANDLE", "HRESULT"]
 
 
 try:
-    _LibBase =  ctypes.WinDLL  # type: ignore
+    _LibBase = ctypes.WinDLL  # type: ignore
     _FUNCTION_TYPE = ctypes.WINFUNCTYPE  # type: ignore
 except AttributeError:
     _LibBase = ctypes.CDLL
