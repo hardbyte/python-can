@@ -64,8 +64,12 @@ class TestPlayerScriptModule(unittest.TestCase):
         self.assertEqual(self.MockSleep.call_count, 2)
         if sys.version_info.major > 3 or sys.version_info.minor >= 8:
             # The args argument was introduced with python 3.8
-            self.assertTrue(msg1.equals(self.mock_virtual_bus.send.mock_calls[0].args[0]))
-            self.assertTrue(msg2.equals(self.mock_virtual_bus.send.mock_calls[1].args[0]))
+            self.assertTrue(
+                msg1.equals(self.mock_virtual_bus.send.mock_calls[0].args[0])
+            )
+            self.assertTrue(
+                msg2.equals(self.mock_virtual_bus.send.mock_calls[1].args[0])
+            )
         self.assertSuccessfulCleanup()
 
     def test_play_virtual_verbose(self):
