@@ -41,8 +41,29 @@ class TestPlayerScriptModule(unittest.TestCase):
     def test_play_virtual(self):
         sys.argv = self.baseargs + [self.logfile]
         can.player.main()
-        self.assertEqual(self.mock_virtual_bus.send.call_count, 2)
+        msg1 = can.Message(
+            timestamp=2.501,
+            arbitration_id=0xC8,
+            is_extended_id=False,
+            is_fd=False,
+            is_rx=False,
+            channel=1,
+            dlc=8,
+            data=[0x9, 0x8, 0x7, 0x6, 0x5, 0x4, 0x3, 0x2],
+        )
+        msg2 = can.Message(
+            timestamp=17.876708,
+            arbitration_id=0x6F9,
+            is_extended_id=False,
+            is_fd=False,
+            is_rx=True,
+            channel=0,
+            dlc=8,
+            data=[0x5, 0xC, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0],
+        )
         self.assertEqual(self.MockSleep.call_count, 2)
+        self.assertTrue(msg1.equals(self.mock_virtual_bus.send.mock_calls[0].args[0]))
+        self.assertTrue(msg2.equals(self.mock_virtual_bus.send.mock_calls[1].args[0]))
         self.assertSuccessfulCleanup()
 
     def test_play_virtual_verbose(self):
