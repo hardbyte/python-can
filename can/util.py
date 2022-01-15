@@ -232,7 +232,7 @@ def _create_bus_config(config: Dict[str, Any]) -> typechecking.BusConfig:
         "btr1",
     ):
         if key in config:
-            timing_conf[key] = int(config[key], base=0)
+            timing_conf[key] = int(str(config[key]), base=0)
             del config[key]
     if timing_conf:
         timing_conf["bitrate"] = config["bitrate"]
