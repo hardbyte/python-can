@@ -219,7 +219,7 @@ class TRCWriter(BaseIOHandler, Listener):
 
         self.header_written = False
         self.msgnr = 0
-        self.first_timestamp = 0.0
+        self.first_timestamp = None
         self.file_version = TRCFileVersion.V2_1
         self._format_message = self._format_message_init
 
@@ -319,7 +319,6 @@ class TRCWriter(BaseIOHandler, Listener):
     def write_header(self, timestamp):
         # write start of file header
         reftime = datetime(year=1899, month=12, day=30)
-        self.first_timestamp = timestamp
         starttime = datetime.now() + timedelta(seconds=timestamp)
         header_time = starttime - reftime
 
@@ -338,6 +337,8 @@ class TRCWriter(BaseIOHandler, Listener):
         self._write_line(message)
 
     def on_message_received(self, msg: Message) -> None:
+        if self.first_timestamp is None:
+            self.first_timestamp = msg.timestamp
 
         if msg.is_error_frame:
             logger.warning("TRCWriter: Logging error frames is not implemented")
