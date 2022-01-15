@@ -68,12 +68,7 @@ class cfucBus(BusABC):
 
     """
 
-    def append_int32(self, dest, source):
-        for i in range(0, 4):
-            dest.append(source[i])
-        return dest
-
-    def consturct_init_frame(
+    def _consturct_init_frame(
         self,
         IsFD=False,
         IsBRS=False,
@@ -87,8 +82,12 @@ class cfucBus(BusABC):
         DataTimeSeg1Value: int = 1,
         DataTimeSeg2Value: int = 1,
     ):
+        """
+        Generate an initialization frame for CFUC device.
 
-        UCAN_FD_INIT = bytearray(b'\x00\x00\x00\x00')
+        """
+
+        FrameType = struct.pack("<I", UCAN_FRAME_TYPE.UCAN_FD_INIT.value)
         ClockDivider = struct.pack("<I", int(0x0))
 
         if IsFD:
@@ -104,28 +103,28 @@ class cfucBus(BusABC):
         else:
             AutoRetransmission = bytearray(b'\x01')
 
-        byte_msg = UCAN_FD_INIT  #UCAN_FD_INIT
+        byte_msg =  bytearray(FrameType)  #UCAN_FD_INIT
         byte_msg += ClockDivider  #ClockDivider
         byte_msg += FrameFormat #FrameFormat
-        byte_msg += bytearray(b'\x00\x00\x00\x00') #Mode
+        byte_msg += struct.pack("<I", int(0)) #Mode
         byte_msg += AutoRetransmission #AutoRetransmission
         byte_msg += bytearray(b'\x00') #TransmitPause
         byte_msg += bytearray(b'\x00') #ProtocolException
-        byte_msg += bytearray(b'\x01') #bug - empty byte, fillup byte
-        byte_msg += struct.pack("<I", int(NominalPrescaler)) #NominalPrescaler
-        byte_msg += int(NominalSyncJumpWidthValue).to_bytes(4, 'little') #NominalSyncJumpWidth
-        byte_msg += int(NominalTimeSeg1Value).to_bytes(4, 'little') #NominalTimeSeg1
-        byte_msg += int(NominalTimeSeg2Value).to_bytes(4, 'little') #NominalTimeSeg2
-        byte_msg += int(1).to_bytes(4, 'little') #DataPrescaler
-        byte_msg += int(1).to_bytes(4, 'little') #DataSyncJumpWidth
-        byte_msg += int(1).to_bytes(4, 'little') #DataTimeSeg1
-        byte_msg += int(1).to_bytes(4, 'little') #DataTimeSeg2
+        byte_msg += bytearray(b'\x00') #bug - empty byte, fillup byte
+        byte_msg += struct.pack("<I", NominalPrescaler) #NominalPrescaler
+        byte_msg += struct.pack("<I", NominalSyncJumpWidthValue) #NominalSyncJumpWidth
+        byte_msg += struct.pack("<I", NominalTimeSeg1Value) #NominalTimeSeg1
+        byte_msg += struct.pack("<I", NominalTimeSeg2Value) #NominalTimeSeg2
+        byte_msg += struct.pack("<I", int(1)) #DataPrescaler
+        byte_msg += struct.pack("<I", int(1)) #DataSyncJumpWidth
+        byte_msg += struct.pack("<I", int(1)) #DataTimeSeg1
+        byte_msg += struct.pack("<I", int(1)) #DataTimeSeg2
         byte_msg += bytearray(b'\x00\x00\x00\x00') #StdFiltersNbr
         byte_msg += bytearray(b'\x00\x00\x00\x00') #ExtFiltersNbr
         byte_msg += bytearray(b'\x00\x00\x00\x00') #TxFifoQueueMode
 
-        print(byte_msg)
         return byte_msg
+
 
     """
     Enable basic can communication over a serial.
@@ -219,7 +218,7 @@ class cfucBus(BusABC):
             DataPrescalerValue = bt.brp
             DataSyncJumpWidthValue = bt.sjw
 
-        frame = self.consturct_init_frame(
+        init_frame = self._consturct_init_frame(
             IsFD,
             IsBRS,
             IsAutoRetransmission,
@@ -233,7 +232,7 @@ class cfucBus(BusABC):
             DataTimeSeg2Value,
         )
 
-        self.ser.write(frame)
+        self.ser.write(init_frame)
 
         super().__init__(channel, *args, **kwargs)
         # super(cfucBus, self).__init__(channel=channel, *args, **kwargs)
@@ -262,7 +261,7 @@ class cfucBus(BusABC):
 
         """
 
-        frame_type = struct.pack("<I", UCAN_FRAME_TYPE.UCAN_FD_TX.value)
+        FrameType = struct.pack("<I", UCAN_FRAME_TYPE.UCAN_FD_TX.value)
         try:
             a_id = struct.pack("<I", msg.arbitration_id)
         except struct.error:
@@ -275,7 +274,7 @@ class cfucBus(BusABC):
 
         # copy all structs to byte stream
         # UCAN_FRAME_TYPE frame_type; /*!< Frame type is @ref UCAN_FD_TX.*/
-        byte_msg = bytearray(frame_type)
+        byte_msg = bytearray(FrameType)
         # FDCAN_TxHeaderTypeDef can_tx_header; /*!< FDCAN Tx event FIFO structure definition @ref FDCAN_TxHeaderTypeDef.*/
         byte_msg += a_id
         byte_msg += a_ex
@@ -309,8 +308,6 @@ class cfucBus(BusABC):
         for i in range(msg.dlc, 64):
             byte_msg += bytearray(b'\x00')
             
-        print("LEN: ", len(byte_msg))
-        print("MSG: ", byte_msg)
         self.ser.write(byte_msg)
 
 
@@ -323,6 +320,7 @@ class cfucBus(BusABC):
             return result
         else:
             return -1
+
 
     def _read_rx_frame(self) -> Message:
         # read ucan_can_rx_def structure
@@ -382,7 +380,6 @@ class cfucBus(BusABC):
         """
         frame_type = self._read(4)
 
-
         if frame_type == UCAN_FRAME_TYPE.UCAN_FD_TX.value:
 
             # read FDCAN_TxHeaderTypeDef structure
@@ -411,7 +408,6 @@ class cfucBus(BusABC):
             )
             return msg, False
 
-
         if frame_type == UCAN_FRAME_TYPE.UCAN_FD_RX.value:
             can_frame_count = self._read(4)
             results = list()
@@ -420,6 +416,5 @@ class cfucBus(BusABC):
                 results.append(self._read_rx_frame())
 
             return tuple(results), False
-
 
         return None, False
