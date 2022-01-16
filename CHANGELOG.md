@@ -10,8 +10,8 @@ Statistics of the final diff: About 200 files changed due to ~22k additions and 
 
 This changelog diligently lists the major changes but does not promise to be the complete list of changes.
 Therefore, users are strongly advised to thoroughly test their programs against this new version.
-Re-reading the documentation for you interfaces might be helpful too as limitations and capabilities might have changed or are more explicit.
-While we did try to avoid breaking changes, in some cases it was not feasible and in particular many implementation details have changed.
+Re-reading the documentation for your interfaces might be helpful too as limitations and capabilities might have changed or are more explicit.
+While we did try to avoid breaking changes, in some cases it was not feasible and in particular, many implementation details have changed.
 
 Major features
 --------------
