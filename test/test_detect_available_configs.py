@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# coding: utf-8
 
 """
 This module tests :meth:`can.BusABC._detect_available_configs` and
