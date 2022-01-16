@@ -180,7 +180,7 @@ Behind the scenes & Quality assurance
   * Use the [mypy](https://github.com/python/mypy) static type checker (#598, #651)
   * Use [tox](https://tox.wiki/en/latest/) for testing (#582, #833, #870)
   * Use [Mergify](https://mergify.com/) (#821, #835, #937)
-  * Switch between various CI providers, abandoned [AppVeyor](https://www.appveyor.com/) (#1009) and [Travis CI](https://travis-ci.org/), ended up with [GitHub Actions](https://docs.github.com/en/actions) only (#827)
+  * Switch between various CI providers, abandoned [AppVeyor](https://www.appveyor.com/) (#1009) and partly [Travis CI](https://travis-ci.org/), ended up with [GitHub Actions](https://docs.github.com/en/actions) only (#827)
   * Use the [black](https://black.readthedocs.io/en/stable/) auto-formatter (#950)
   * [Good test coverage](https://app.codecov.io/gh/hardbyte/python-can/branch/develop) for all but the interfaces
 * Testing: Many of the new features directly added tests, and coverage of existing code was improved too (for example: #1031, #581, #585, #586, #942, #1196, #1198)
