@@ -72,9 +72,9 @@ class cfucBus(BusABC):
         self,
         IsFD=False,
         IsBRS=False,
-        IsAutoRetransmission=False,
-        NominalPrescaler: int = 1,
-        NominalSyncJumpWidthValue: int = 1,
+        IsAutoRetransmission=True,
+        NominalPrescaler: int = 90,
+        NominalSyncJumpWidthValue: int = 128,
         NominalTimeSeg1Value: int = 13,
         NominalTimeSeg2Value: int = 2,
         DataPrescalerValue: int = 1,
@@ -235,7 +235,6 @@ class cfucBus(BusABC):
         self.ser.write(init_frame)
 
         super().__init__(channel, *args, **kwargs)
-        # super(cfucBus, self).__init__(channel=channel, *args, **kwargs)
 
 
     def shutdown(self):
@@ -323,8 +322,6 @@ class cfucBus(BusABC):
 
 
     def _read_rx_frame(self) -> Message:
-        # read ucan_can_rx_def structure
-
         # read FDCAN_RxHeaderTypeDef structure
         can_rx_header_Identifier = self._read(4)
         can_rx_header_IdType = self._read(4)
@@ -358,6 +355,34 @@ class cfucBus(BusABC):
         return msg
 
 
+    def _read_tx_frame(self) -> Message:
+        # read FDCAN_TxHeaderTypeDef structure
+        can_tx_header_Identifier = self._read(4)
+        can_tx_header_IdType = self._read(4)
+        can_tx_header_TxFrameType = self._read(4)
+        can_tx_header_DataLength = self._read(4)
+        can_tx_header_ErrorStateIndicator = self._read(4)
+        can_tx_header_BitRateSwitch = self._read(4)
+        can_tx_header_FDFormat = self._read(4)
+        can_tx_header_TxEventFifoControl = self._read(4)
+        can_tx_header_MessageMarker = self._read(4)
+
+        can_data = bytearray(self.ser.read(64))
+
+        dlc = list(ADLC.values()).index(can_tx_header_DataLength)
+
+        msg = Message(
+            arbitration_id = can_tx_header_Identifier,
+            dlc = dlc,
+            data = can_data,
+            is_fd = True if can_tx_header_FDFormat else False,
+            is_extended_id = True if can_tx_header_IdType else False,
+            bitrate_switch= True if can_tx_header_BitRateSwitch else False,
+            is_remote_frame= True if can_tx_header_TxFrameType else False,
+        )
+        return msg, False
+
+
     def _recv_internal(self, timeout):
         """
         Read a message from the serial device.
@@ -378,39 +403,15 @@ class cfucBus(BusABC):
         :rtype:
             can.Message, bool
         """
-        frame_type = self._read(4)
+        frame_type = self._read(4) # read frame type 
 
         if frame_type == UCAN_FRAME_TYPE.UCAN_FD_TX.value:
-
-            # read FDCAN_TxHeaderTypeDef structure
-            can_tx_header_Identifier = self._read(4)
-            can_tx_header_IdType = self._read(4)
-            can_tx_header_TxFrameType = self._read(4)
-            can_tx_header_DataLength = self._read(4)
-            can_tx_header_ErrorStateIndicator = self._read(4)
-            can_tx_header_BitRateSwitch = self._read(4)
-            can_tx_header_FDFormat = self._read(4)
-            can_tx_header_TxEventFifoControl = self._read(4)
-            can_tx_header_MessageMarker = self._read(4)
-
-            can_data = bytearray(self.ser.read(64))
-
-            dlc = list(ADLC.values()).index(can_tx_header_DataLength)
-
-            msg = Message(
-                arbitration_id = can_tx_header_Identifier,
-                dlc = dlc,
-                data = can_data,
-                is_fd = True if can_tx_header_FDFormat else False,
-                is_extended_id = True if can_tx_header_IdType else False,
-                bitrate_switch= True if can_tx_header_BitRateSwitch else False,
-                is_remote_frame= True if can_tx_header_TxFrameType else False,
-            )
-            return msg, False
-
-        if frame_type == UCAN_FRAME_TYPE.UCAN_FD_RX.value:
-            can_frame_count = self._read(4)
+            results = self._read_tx_frame()
+            return results, False
+            
+        elif frame_type == UCAN_FRAME_TYPE.UCAN_FD_RX.value: # if its UCAN_FD_RX
             results = list()
+            can_frame_count = self._read(4) # read frame count
 
             for i in range(can_frame_count):
                 results.append(self._read_rx_frame())
