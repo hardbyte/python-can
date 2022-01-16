@@ -3,6 +3,187 @@ Version 4.0.0
 
 TL;DR: This release includes a ton of improvements from 2.5 years of development! 🎉 Test thoroughly after switching.
 
+For more than two years, there was no major release of *python-can*.
+However, development was very much active over most of this time, and many parts were switched out and improved.
+Over this time, over 530 issues and PRs have been resolved or merged, and discussions took place in even more.
+Statistics of the final diff: About 200 files changed due to ~22k additions and ~7k deletions from more than thirty contributors.
+
+This changelog diligently lists the major changes but does not promise to be the complete list of changes.
+Therefore, users are strongly advised to thoroughly test their programs against this new version.
+Re-reading the documentation for you interfaces might be helpful too as limitations and capabilities might have changed or are more explicit.
+While we did try to avoid breaking changes, in some cases it was not feasible and in particular many implementation details have changed.
+
+Major features
+--------------
+
+* Type hints for the core library and some interfaces (#652 and many others)
+* Support for Python 3.7-3.10+ only (dropped support for Python 2.* and 3.5-3.6) (#528 and many others)
+* [Granular and unified exceptions](https://python-can.readthedocs.io/en/develop/api.html#errors) (#356, #562, #1025; overview in #1046)
+* [Support for automatic configuration detection](https://python-can.readthedocs.io/en/develop/api.html#can.detect_available_configs) in most interfaces (#303, #640, #641, #811, #1077, #1085)
+* Better alignment of interfaces and IO to common conventions and semantics
+
+New interfaces
+--------------
+
+* udp_multicast (#644)
+* robotell (#731)
+* cantact (#853)
+* gs_usb (#905)
+* nixnet (#968, #1154)
+* neousys (#980, #1076)
+* socketcand (#1140)
+* etas (#1144)
+
+Improved interfaces
+-------------------
+
+* socketcan
+  * Support for multiple Cyclic Messages in Tasks (#610)
+  * Socketcan crash when attempting to stop CyclicSendTask with same arbitration ID (#605, #638, #720)
+  * Relax restriction of arbitration ID uniqueness for CyclicSendTask (#721, #785, #930)
+  * Add nanosecond resolution time stamping to socketcan (#938, #1015)
+  * Add support for changing the loopback flag (#960)
+  * Socketcan timestamps are missing sub-second precision (#1021, #1029)
+  * Add parameter to ignore CAN error frames (#1128)
+* socketcan_ctypes
+  * Removed and replaced by socketcan after deprecation period
+* socketcan_native
+  * Removed and replaced by socketcan after deprecation period
+* vector
+  * Add chip state API (#635)
+  * Add methods to handle non message events (#708)
+  * Implement XLbusParams (#718)
+  * Add support for VN8900 xlGetChannelTime function (#732, #733)
+  * Add vector hardware config popup (#774)
+  * Fix Vector CANlib treatment of empty app name (#796, #814)
+  * Make VectorError pickleable (#848)
+  * Add methods get_application_config(), set_application_config() and set_timer_rate() to VectorBus (#849)
+  * Interface arguments are now lowercase (#858)
+  * Fix errors using multiple Vector devices (#898, #971, #977)
+  * Add more interface information to channel config (#917)
+  * Improve timestamp accuracy on Windows (#934, #936)
+  * Fix error with VN8900 (#1184)
+* PCAN
+  * Do not incorrectly reset CANMsg.MSGTYPE on remote frame (#659, #681)
+  * Add support for error frames (#711)
+  * Added keycheck for windows platform for better error message (#724)
+  * Added status_string method to return simple status strings (#725)
+  * Fix timestamp timezone offset (#777, #778)
+  * Add [Cygwin](https://www.cygwin.com/) support (#840) 
+  * Update PCAN basic Python file to February 7, 2020 (#929)
+  * Fix compatibility with the latest macOS SDK (#947, #948, #957, #976)
+  * Allow numerical channel specifier (#981, #982)
+  * macOS: Try to find libPCBUSB.dylib before loading it (#983, #984)
+  * Disable command PCAN_ALLOW_ERROR_FRAMES on macOS (#985)
+  * Force english error messages (#986, #993, #994)
+  * Add set/get device number (#987)
+  * Timestamps are silently incorrect on Windows without uptime installed (#1053, #1093)
+  * Implement check for minimum version of pcan library (#1065, #1188)
+  * Handle case where uptime is imported successfully but returns None (#1102, #1103)
+* slcan
+  * Fix bitrate setting (#691)
+  * Fix fileno crash on Windows (#924)
+* ics_neovi
+  * Filter out Tx error messages (#854)
+  * Adding support for send timeout (#855)
+  * Raising more precise API error when set bitrate fails (#865)
+  * Omit the transmit exception cause for brevity (#1086)
+  * Raise ValueError if message data is over max frame length (#1177, #1181)
+  * Setting is_error_frame message property (#1189)
+* ixxat
+  * Raise exception on busoff in recv() (#856)
+  * Add support for 666 kbit/s bitrate (#911)
+  * Add function to list hwids of available devices (#926)
+  * Add CAN FD support (#1119)
+* seeed
+  * Fix fileno crash on Windows (#902)
+* kvaser
+  * Improve timestamp accuracy on Windows (#934, #936)
+* usb2can
+  * Fix "Error 8" on Windows and provide better error messages (#989)
+* serial
+  * Fix "TypeError: cannot unpack non-iterable NoneType" and more robust error handling (#1000, #1010)
+* canalystii
+  * Fix is_extended_id (#1006)
+  * Fix transmitting onto a busy bus (#1114)
+  * Replace binary library with python driver (#726, #1127)
+
+Other API changes and improvements
+----------------------------------
+
+* CAN FD frame support is pretty complete (#963)
+  * ASCWriter (#604) and ASCReader (#741)
+  * Canutils reader and writer (#1042)
+  * Logger, viewer and player tools can handle CAN FD (#632)
+  * Many bugfixes and more testing coverage
+* IO
+  * Log rotation (#648, #874, #881, #1147)
+  * Add [plugin support to can.io Reader/Writer](https://python-can.readthedocs.io/en/develop/listeners.html#listener) (#783)
+  * ASCReader/Writer enhancements (#820)
+  * Adding absolute timestamps to ASC reader (#761)
+  * Support other base number (radix) at ASCReader (#764)
+  * Add [logconvert script](https://python-can.readthedocs.io/en/develop/scripts.html#can-logconvert) (#1072, #1194)
+  * Adding support for gzipped ASC logging file (.asc.gz) (#1138)
+  * Improve [IO class hierarchy](https://python-can.readthedocs.io/en/develop/internal-api.html#module-can.io.generic) (#1147)
+* An [overview over various "virtual" interfaces](https://python-can.readthedocs.io/en/develop/interfaces/virtual.html#other-virtual-interfaces) (#644)
+* Make ThreadBasedCyclicSendTask event based & improve timing accuracy (#656)
+* Ignore error frames in can.player by default, add --error-frames option (#690)
+* Add __eq__ method to can.Message (#737, #747)
+* Add an error callback to ThreadBasedCyclicSendTask (#743, #781)
+* Add direction to CAN messages (#773, #779, #780, #852, #966)
+* Notifier no longer raises handled exceptions in rx_thread (#775, #789) but does so if no listener handles them (#1039, #1040)
+* Changes to serial device number decoding (#869)
+* Add a default fileno function to the BusABC (#877)
+* Disallow Messages to simultaneously be "FD" and "remote" (#1049)
+* Speed up interface plugin imports by removing pkg_resources (#1110)
+* Avoid flooding the logger with many errors when they are the same (#1125)
+* Allowing for extra config arguments in can.logger (#1142, #1170)
+* Add changed byte highlighting to viewer.py (#1159)
+
+Other Bugfixes
+--------------
+
+* BLF PDU padding (#459)
+* stop_all_periodic_tasks skipping every other task (#634, #637, #645)
+* Preserve capitalization when reading config files (#702, #1062)
+* ASCReader: Skip J1939Tp messages (#701)
+* Fix crash in Canutils Log Reader when parsing RTR frames (#713)
+* Various problems with the installation of the library
+* ASCWriter: Fix date format to show correct day of month (#754)
+* Fixes that some BLF files can't be read ( #763, #765)
+* Seek for start of object instead of calculating it (#786, #803, #806)
+* Only import winreg when on Windows (#800, #802)
+* Find the correct Reader/Writer independently of the file extension case (#895)
+* RecursionError when unpickling message object (#804, #885, #904)
+* Move "filelock" to neovi dependencies (#943)
+* Bus() with "fd" parameter as type bool always resolved to fd-enabled configuration (#954, #956)
+* Asyncio code hits error due to deprecated loop parameter (#1005, #1013)
+* Catch time before 1970 in ASCReader (#1034)
+* Fix a bug where error handlers were not called correctly (#1116)
+* Improved user interface of viewer script (#1118)
+* Correct app_name argument in logger (#1151)
+* Calling stop_all_periodic_tasks() in BusABC.shutdown() and all interfaces call it on shutdown (#1174)
+* Timing configurations do not allow int (#1175)
+* Some smaller bugfixes are not listed here since the problems were never part of a proper release
+
+Behind the scenes & Quality assurance
+-------------------------------------
+
+* We publish both source distributions (`sdist`) and binary wheels (`bdist_wheel`) (#1059, #1071)
+* Many interfaces were partly rewritten to modernize the code or to better handle errors
+* Performance improvements
+* Dependencies have changed
+* Derive type information in Sphinx docs directly from type hints (#654)
+* Better documentation in many, many places; This includes the examples, README and python-can developer resources
+* Add issue templates (#1008, #1017, #1018, #1178)
+* Many continuous integration (CI) discussions & improvements (for example: #951, #940, #1032)
+  * Use the [mypy](https://github.com/python/mypy) static type checker (#598, #651)
+  * Use [tox](https://tox.wiki/en/latest/) for testing (#582, #833, #870)
+  * Use [Mergify](https://mergify.com/) (#821, #835, #937)
+  * Switch between various CI providers, abandoned [AppVeyor](https://www.appveyor.com/) (#1009) and [Travis CI](https://travis-ci.org/), ended up with [GitHub Actions](https://docs.github.com/en/actions) only (#827)
+  * Use the [black](https://black.readthedocs.io/en/stable/) auto-formatter (#950)
+  * [Good test coverage](https://app.codecov.io/gh/hardbyte/python-can/branch/develop) for all but the interfaces
+* Testing: Many of the new features directly added tests, and coverage of existing code was improved too (for example: #1031, #581, #585, #586, #942, #1196, #1198)
 
 Version 3.3.4
 ====
