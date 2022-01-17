@@ -87,6 +87,7 @@ Improved interfaces
   * Filter out Tx error messages (#854)
   * Adding support for send timeout (#855)
   * Raising more precise API error when set bitrate fails (#865)
+  * Avoid flooding the logger with many errors when they are the same (#1125)
   * Omit the transmit exception cause for brevity (#1086)
   * Raise ValueError if message data is over max frame length (#1177, #1181)
   * Setting is_error_frame message property (#1189)
@@ -136,7 +137,6 @@ Other API changes and improvements
 * Add a default fileno function to the BusABC (#877)
 * Disallow Messages to simultaneously be "FD" and "remote" (#1049)
 * Speed up interface plugin imports by removing pkg_resources (#1110)
-* Avoid flooding the logger with many errors when they are the same (#1125)
 * Allowing for extra config arguments in can.logger (#1142, #1170)
 * Add changed byte highlighting to viewer.py (#1159)
 
