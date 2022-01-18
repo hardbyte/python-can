@@ -129,7 +129,6 @@ Other API changes and improvements
 * An [overview over various "virtual" interfaces](https://python-can.readthedocs.io/en/develop/interfaces/virtual.html#other-virtual-interfaces) (#644)
 * Make ThreadBasedCyclicSendTask event based & improve timing accuracy (#656)
 * Ignore error frames in can.player by default, add --error-frames option (#690)
-* Add __eq__ method to can.Message (#737, #747)
 * Add an error callback to ThreadBasedCyclicSendTask (#743, #781)
 * Add direction to CAN messages (#773, #779, #780, #852, #966)
 * Notifier no longer raises handled exceptions in rx_thread (#775, #789) but does so if no listener handles them (#1039, #1040)
