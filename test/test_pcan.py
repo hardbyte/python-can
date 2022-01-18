@@ -12,6 +12,7 @@ from parameterized import parameterized
 
 import can
 from can.bus import BusState
+from can.exceptions import CanInitializationError
 from can.interfaces.pcan.basic import *
 from can.interfaces.pcan import PcanBus, PcanError
 
@@ -26,6 +27,8 @@ class TestPCANBus(unittest.TestCase):
         self.mock_pcan.Initialize.return_value = PCAN_ERROR_OK
         self.mock_pcan.InitializeFD = Mock(return_value=PCAN_ERROR_OK)
         self.mock_pcan.SetValue = Mock(return_value=PCAN_ERROR_OK)
+        self.mock_pcan.GetValue = self._mockGetValue
+        self.PCAN_API_VERSION_SIM = "4.2"
 
         self.bus = None
 
@@ -33,6 +36,17 @@ class TestPCANBus(unittest.TestCase):
         if self.bus:
             self.bus.shutdown()
             self.bus = None
+
+    def _mockGetValue(self, channel, parameter):
+        """
+        This method is used as mock for GetValue method of PCANBasic object.
+        Only a subset of parameters are supported.
+        """
+        if parameter == PCAN_API_VERSION:
+            return PCAN_ERROR_OK, self.PCAN_API_VERSION_SIM.encode("ascii")
+        raise NotImplementedError(
+            f"No mock return value specified for parameter {parameter}"
+        )
 
     def test_bus_creation(self) -> None:
         self.bus = can.Bus(bustype="pcan")
@@ -51,6 +65,24 @@ class TestPCANBus(unittest.TestCase):
         self.MockPCANBasic.assert_called_once()
         self.mock_pcan.Initialize.assert_not_called()
         self.mock_pcan.InitializeFD.assert_called_once()
+
+    def test_api_version_low(self) -> None:
+        self.PCAN_API_VERSION_SIM = "1.0"
+        with self.assertLogs("can.pcan", level="WARNING") as cm:
+            self.bus = can.Bus(bustype="pcan")
+            found_version_warning = False
+            for i in cm.output:
+                if "version" in i and "pcan" in i:
+                    found_version_warning = True
+            self.assertTrue(
+                found_version_warning,
+                f"No warning was logged for incompatible api version {cm.output}",
+            )
+
+    def test_api_version_read_fail(self) -> None:
+        self.mock_pcan.GetValue = Mock(return_value=(PCAN_ERROR_ILLOPERATION, None))
+        with self.assertRaises(CanInitializationError):
+            self.bus = can.Bus(bustype="pcan")
 
     @parameterized.expand(
         [
@@ -108,8 +140,11 @@ class TestPCANBus(unittest.TestCase):
     )
     def test_get_device_number(self, name, status, expected_result) -> None:
         with self.subTest(name):
-            self.mock_pcan.GetValue = Mock(return_value=(status, 1))
             self.bus = can.Bus(bustype="pcan", fd=True)
+            # Mock GetValue after creation of bus to use first mock of
+            # GetValue in constructor
+            self.mock_pcan.GetValue = Mock(return_value=(status, 1))
+
             self.assertEqual(self.bus.get_device_number(), expected_result)
             self.mock_pcan.GetValue.assert_called_once_with(
                 PCAN_USBBUS1, PCAN_DEVICE_NUMBER

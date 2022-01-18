@@ -1,7 +1,9 @@
+#!/usr/bin/env python
+
 import unittest
 import warnings
 
-from can.util import _rename_kwargs
+from can.util import _create_bus_config, _rename_kwargs
 
 
 class RenameKwargsTest(unittest.TestCase):
@@ -47,3 +49,18 @@ class RenameKwargsTest(unittest.TestCase):
         aliases = {"old_a": "a", "old_b": "b", "z": None}
         with self.assertRaises(TypeError):
             self._test(kwargs, aliases)
+
+
+class TestBusConfig(unittest.TestCase):
+    base_config = dict(interface="socketcan", bitrate=500_000)
+
+    def test_timing_can_use_int(self):
+        """
+        Test that an exception is not raised when using
+        integers for timing values in config.
+        """
+        timing_conf = dict(tseg1=5, tseg2=10, sjw=25)
+        try:
+            _create_bus_config({**self.base_config, **timing_conf})
+        except TypeError as e:
+            self.fail(e)
