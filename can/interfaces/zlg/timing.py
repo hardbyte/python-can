@@ -28,7 +28,7 @@ class ZlgBitTiming(BitTiming):
             }
         super().__init__(**kwargs)
     
-    def timing(self, bitrate=None, force=False):
+    def timing(self, bitrate=None, force=False) -> ZCAN_BIT_TIMING:
         if bitrate in self.speeds:
             return self.speeds[bitrate]
         elif force:
@@ -40,3 +40,8 @@ class ZlgBitTiming(BitTiming):
             )
         else:
             raise CanBitRateError(f'Unsupported {bitrate=}')
+
+    @property
+    def bitrates(self) -> list[int]:
+        return self.speeds.keys()
+    
