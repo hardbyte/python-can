@@ -3,7 +3,7 @@ This module contains the generic :class:`LogReader` as
 well as :class:`MessageSync` which plays back messages
 in the recorded order an time intervals.
 """
-
+import gzip
 import pathlib
 from time import time, sleep
 import typing
@@ -14,7 +14,7 @@ if typing.TYPE_CHECKING:
     import can
 
 from .generic import BaseIOHandler, MessageReader
-from .asc import ASCReader, GzipASCReader
+from .asc import ASCReader
 from .blf import BLFReader
 from .canutils import CanutilsLogReader
 from .csv import CSVReader
@@ -27,11 +27,12 @@ class LogReader(BaseIOHandler):
 
     The format is determined from the file format which can be one of:
       * .asc
-      * .asc.gz
       * .blf
       * .csv
       * .db
       * .log
+
+      Or any of the above compressed using gzip (.gz)
 
     Exposes a simple iterator interface, to use simply:
 
@@ -50,7 +51,6 @@ class LogReader(BaseIOHandler):
     fetched_plugins = False
     message_readers = {
         ".asc": ASCReader,
-        ".asc.gz": GzipASCReader,
         ".blf": BLFReader,
         ".csv": CSVReader,
         ".db": SqliteReader,
@@ -77,7 +77,11 @@ class LogReader(BaseIOHandler):
             )
             LogReader.fetched_plugins = True
 
-        suffix = "".join(s.lower() for s in pathlib.PurePath(filename).suffixes)
+        suffix = pathlib.PurePath(filename).suffix.lower()
+
+        if suffix == ".gz":
+            suffix, filename = LogReader.unzip(filename)
+
         try:
             return typing.cast(
                 MessageReader,
@@ -87,6 +91,23 @@ class LogReader(BaseIOHandler):
             raise ValueError(
                 f'No read support for this unknown log format "{suffix}"'
             ) from None
+
+    @staticmethod
+    def unzip(zipfile: "can.typechecking.StringPathLike"):
+        """
+        Return the suffix and io object of the decompressed file.
+        """
+        real_suffix = pathlib.Path(zipfile).suffixes[-2].lower()
+        file = gzip.open(zipfile, "rt")
+
+        # Re-open in binary mode if file not readable.
+        try:
+            file.read()
+            file.seek(0)
+        except UnicodeDecodeError:
+            file = gzip.open(zipfile, "rb")
+
+        return real_suffix, file
 
 
 class MessageSync:  # pylint: disable=too-few-public-methods
