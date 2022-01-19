@@ -75,7 +75,7 @@ setup(
     author="python-can contributors",
     license="LGPL v3",
     package_data={
-        "": ["README.rst", "CONTRIBUTORS.txt", "LICENSE.txt", "CHANGELOG.txt"],
+        "": ["README.rst", "CONTRIBUTORS.txt", "LICENSE.txt", "CHANGELOG.md"],
         "doc": ["*.*"],
         "examples": ["*.py"],
     },
