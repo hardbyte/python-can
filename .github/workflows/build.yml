@@ -41,6 +41,7 @@ jobs:
 
   static-code-analysis:
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python
@@ -53,23 +54,18 @@ jobs:
         pip install -e .
         pip install -r requirements-lint.txt
     - name: mypy 3.7
-      continue-on-error: true
       run: |
         mypy --python-version 3.7 .
     - name: mypy 3.8
-      continue-on-error: true
       run: |
         mypy --python-version 3.8 .
     - name: mypy 3.9
-      continue-on-error: true
       run: |
         mypy --python-version 3.9 .
     - name: mypy 3.10
-      continue-on-error: true
       run: |
         mypy --python-version 3.10 .
     - name: pylint
-      continue-on-error: true
       run: |
         pylint --rcfile=.pylintrc \
         can/**.py \
