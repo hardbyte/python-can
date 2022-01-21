@@ -45,7 +45,10 @@ class BaseIOHandler(ContextManager, metaclass=ABCMeta):
         else:
             # pylint: disable=consider-using-with
             # file is some path-like object
-            self.file = open(cast(can.typechecking.StringPathLike, file), mode)
+            self.file = cast(
+                can.typechecking.FileLike,
+                open(cast(can.typechecking.StringPathLike, file), mode),
+            )
 
         # for multiple inheritance
         super().__init__()
@@ -80,9 +83,7 @@ class FileIOMessageWriter(MessageWriter, metaclass=ABCMeta):
 
     file: Union[TextIO, BinaryIO]
 
-    def __init__(
-        self, file: Union[can.typechecking.FileLike, TextIO, BinaryIO], mode: str = "rt"
-    ) -> None:
+    def __init__(self, file: can.typechecking.AcceptedIOType, mode: str = "rt") -> None:
         # Not possible with the type signature, but be verbose for user friendliness
         if file is None:
             raise ValueError("The given file cannot be None")

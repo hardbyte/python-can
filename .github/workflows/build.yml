@@ -39,6 +39,41 @@ jobs:
       with:
         fail_ci_if_error: true
 
+  static-code-analysis:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: "3.10"
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .
+        pip install -r requirements-lint.txt
+    - name: mypy 3.7
+      run: |
+        mypy --python-version 3.7 .
+    - name: mypy 3.8
+      run: |
+        mypy --python-version 3.8 .
+    - name: mypy 3.9
+      run: |
+        mypy --python-version 3.9 .
+    - name: mypy 3.10
+      run: |
+        mypy --python-version 3.10 .
+    - name: pylint
+      run: |
+        pylint --rcfile=.pylintrc \
+        can/**.py \
+        setup.py \
+        doc.conf \
+        scripts/**.py \
+        examples/**.py
+
   format:
     runs-on: ubuntu-latest
     steps:

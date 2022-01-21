@@ -17,7 +17,7 @@ import zlib
 import datetime
 import time
 import logging
-from typing import List
+from typing import List, BinaryIO
 
 from ..message import Message
 from ..listener import Listener
@@ -138,6 +138,8 @@ class BLFReader(BaseIOHandler):
     Only CAN messages and error frames are supported. Other object types are
     silently ignored.
     """
+
+    file: BinaryIO
 
     def __init__(self, file: AcceptedIOType) -> None:
         """
@@ -351,6 +353,8 @@ class BLFWriter(FileIOMessageWriter, Listener):
     """
     Logs CAN data to a Binary Logging File compatible with Vector's tools.
     """
+
+    file: BinaryIO
 
     #: Max log container size of uncompressed data
     max_container_size = 128 * 1024
