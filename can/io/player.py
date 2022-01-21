@@ -80,7 +80,7 @@ class LogReader(BaseIOHandler):
         suffix = pathlib.PurePath(filename).suffix.lower()
 
         if suffix == ".gz":
-            suffix, filename = LogReader.unzip(filename)
+            suffix, filename = LogReader.decompress(filename)
 
         try:
             return typing.cast(
@@ -93,21 +93,16 @@ class LogReader(BaseIOHandler):
             ) from None
 
     @staticmethod
-    def unzip(zipfile: "can.typechecking.StringPathLike"):
+    def decompress(
+        filename: "can.typechecking.StringPathLike",
+    ) -> typing.Tuple[str, typing.IO[typing.Any]]:
         """
         Return the suffix and io object of the decompressed file.
         """
-        real_suffix = pathlib.Path(zipfile).suffixes[-2].lower()
-        file = gzip.open(zipfile, "rt")
+        real_suffix = pathlib.Path(filename).suffixes[-2].lower()
+        mode = "rb" if real_suffix == ".blf" else "rt"
 
-        # Re-open in binary mode if file not readable.
-        try:
-            file.read()
-            file.seek(0)
-        except UnicodeDecodeError:
-            file = gzip.open(zipfile, "rb")
-
-        return real_suffix, file
+        return real_suffix, gzip.open(filename, mode)
 
 
 class MessageSync:  # pylint: disable=too-few-public-methods
