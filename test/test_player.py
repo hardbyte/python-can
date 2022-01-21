@@ -15,6 +15,9 @@ import can.player
 
 
 class TestPlayerScriptModule(unittest.TestCase):
+
+    logfile = os.path.join(os.path.dirname(__file__), "data", "test_CanMessage.asc")
+
     def setUp(self) -> None:
         # Patch VirtualBus object
         patcher_virtual_bus = mock.patch("can.interfaces.virtual.VirtualBus", spec=True)
@@ -29,9 +32,6 @@ class TestPlayerScriptModule(unittest.TestCase):
         self.addCleanup(patcher_sleep.stop)
 
         self.baseargs = [sys.argv[0], "-i", "virtual"]
-        self.logfile = os.path.join(
-            os.path.dirname(__file__), "data", "test_CanMessage.asc"
-        )
 
     def assertSuccessfulCleanup(self):
         self.MockVirtualBus.assert_called_once()
@@ -109,6 +109,14 @@ class TestPlayerScriptModule(unittest.TestCase):
         self.assertEqual(self.mock_virtual_bus.send.call_count, 12)
         self.assertEqual(self.MockSleep.call_count, 12)
         self.assertSuccessfulCleanup()
+
+
+class TestPlayerCompressedFile(TestPlayerScriptModule):
+    """
+    Re-run tests using a compressed file.
+    """
+
+    logfile = os.path.join(os.path.dirname(__file__), "data", "test_CanMessage.asc.gz")
 
 
 if __name__ == "__main__":
