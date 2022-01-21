@@ -218,6 +218,8 @@ class ASCReader(BaseIOHandler):
                 line,
                 re.ASCII | re.IGNORECASE,
             ):
+                # line might be a comment, chip status,
+                # J1939 message or some other unsupported event
                 continue
 
             msg_kwargs: Dict[str, Union[float, bool, int]] = {}
