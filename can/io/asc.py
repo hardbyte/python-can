@@ -6,7 +6,8 @@ Example .asc files:
     - under `test/data/logfile.asc`
 """
 import gzip
-from typing import cast, Any, Generator, IO, List, Optional, Dict, Union, TextIO
+import re
+from typing import Any, Generator, List, Optional, Dict, Union, TextIO
 
 from datetime import datetime
 import time
@@ -85,8 +86,8 @@ class ASCReader(BaseIOHandler):
                 self.timestamps_format = timestamp_format
             elif lower_case.endswith("internal events logged"):
                 self.internal_events_logged = not lower_case.startswith("no")
-            elif lower_case.startswith("// version"):
-                # the test files include `// version 9.0.0` - not sure what this is
+            elif lower_case.startswith("//"):
+                # ignore comments
                 continue
             # grab absolute timestamp
             elif lower_case.startswith("begin triggerblock"):
@@ -210,14 +211,18 @@ class ASCReader(BaseIOHandler):
         self._extract_header()
 
         for line in self.file:
-            temp = line.strip()
-            if not temp or not temp[0].isdigit():
-                # Could be a comment
+            line = line.strip()
+
+            if not re.match(
+                r"\d+\.\d+\s+(\d+\s+(\w+\s+(Tx|Rx)|ErrorFrame)|CANFD)",
+                line,
+                re.ASCII | re.IGNORECASE,
+            ):
                 continue
 
             msg_kwargs: Dict[str, Union[float, bool, int]] = {}
             try:
-                _timestamp, channel, rest_of_message = temp.split(None, 2)
+                _timestamp, channel, rest_of_message = line.split(None, 2)
                 timestamp = float(_timestamp) + self.start_time
                 msg_kwargs["timestamp"] = timestamp
                 if channel == "CANFD":
