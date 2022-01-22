@@ -44,7 +44,6 @@ setup(
     classifiers=[
         # a list of all available ones: https://pypi.org/classifiers/
         "Programming Language :: Python",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
@@ -73,16 +72,16 @@ setup(
     version=version,
     packages=find_packages(exclude=["test*", "doc", "scripts", "examples"]),
     scripts=list(filter(isfile, (join("scripts/", f) for f in listdir("scripts/")))),
-    author="Python CAN contributors",
+    author="python-can contributors",
     license="LGPL v3",
     package_data={
-        "": ["README.rst", "CONTRIBUTORS.txt", "LICENSE.txt", "CHANGELOG.txt"],
+        "": ["README.rst", "CONTRIBUTORS.txt", "LICENSE.txt", "CHANGELOG.md"],
         "doc": ["*.*"],
         "examples": ["*.py"],
     },
     # Installation
     # see https://www.python.org/dev/peps/pep-0345/#version-specifiers
-    python_requires=">=3.6",
+    python_requires=">=3.7",
     install_requires=[
         "setuptools",
         "wrapt~=1.10",

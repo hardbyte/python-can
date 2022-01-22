@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """
 Test functions in `can.interfaces.socketcan.socketcan`.
 """

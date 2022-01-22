@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """
 Unittest for ixxat interface using fd option.
 

@@ -6,7 +6,8 @@ Example .asc files:
     - under `test/data/logfile.asc`
 """
 import gzip
-from typing import cast, Any, Generator, IO, List, Optional, Dict, Union
+import re
+from typing import Any, Generator, List, Optional, Dict, Union, TextIO
 
 from datetime import datetime
 import time
@@ -33,6 +34,8 @@ class ASCReader(BaseIOHandler):
     Iterator of CAN messages from a ASC logging file. Meta data (comments,
     bus statistics, J1939 Transport Protocol messages) is ignored.
     """
+
+    file: TextIO
 
     FORMAT_START_OF_FILE_DATE = "%a %b %d %I:%M:%S.%f %p %Y"
 
@@ -83,8 +86,8 @@ class ASCReader(BaseIOHandler):
                 self.timestamps_format = timestamp_format
             elif lower_case.endswith("internal events logged"):
                 self.internal_events_logged = not lower_case.startswith("no")
-            elif lower_case.startswith("// version"):
-                # the test files include `// version 9.0.0` - not sure what this is
+            elif lower_case.startswith("//"):
+                # ignore comments
                 continue
             # grab absolute timestamp
             elif lower_case.startswith("begin triggerblock"):
@@ -205,19 +208,24 @@ class ASCReader(BaseIOHandler):
         return Message(**msg_kwargs)
 
     def __iter__(self) -> Generator[Message, None, None]:
-        # This is guaranteed to not be None since we raise ValueError in __init__
-        self.file = cast(IO[Any], self.file)
         self._extract_header()
 
         for line in self.file:
-            temp = line.strip()
-            if not temp or not temp[0].isdigit():
-                # Could be a comment
+            line = line.strip()
+
+            if not re.match(
+                r"\d+\.\d+\s+(\d+\s+(\w+\s+(Tx|Rx)|ErrorFrame)|CANFD)",
+                line,
+                re.ASCII | re.IGNORECASE,
+            ):
+                # line might be a comment, chip status,
+                # J1939 message or some other unsupported event
                 continue
-            msg_kwargs = {}
+
+            msg_kwargs: Dict[str, Union[float, bool, int]] = {}
             try:
-                timestamp, channel, rest_of_message = temp.split(None, 2)
-                timestamp = float(timestamp) + self.start_time
+                _timestamp, channel, rest_of_message = line.split(None, 2)
+                timestamp = float(_timestamp) + self.start_time
                 msg_kwargs["timestamp"] = timestamp
                 if channel == "CANFD":
                     msg_kwargs["is_fd"] = True
@@ -249,6 +257,8 @@ class ASCWriter(FileIOMessageWriter, Listener):
     it gets assigned the timestamp that was written for the last message.
     It the first message does not have a timestamp, it is set to zero.
     """
+
+    file: TextIO
 
     FORMAT_MESSAGE = "{channel}  {id:<15} {dir:<4} {dtype} {data}"
     FORMAT_MESSAGE_FD = " ".join(
@@ -319,8 +329,6 @@ class ASCWriter(FileIOMessageWriter, Listener):
         if not message:  # if empty or None
             logger.debug("ASCWriter: ignoring empty message")
             return
-        # This is guaranteed to not be None since we raise ValueError in __init__
-        self.file = cast(IO[Any], self.file)
 
         # this is the case for the very first message:
         if not self.header_written:

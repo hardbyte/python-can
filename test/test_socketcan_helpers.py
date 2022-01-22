@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# coding: utf-8
 
 """
 Tests helpers in `can.interfaces.socketcan.socketcan_common`.
