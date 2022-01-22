@@ -8,7 +8,9 @@ This module tests the functions inside of logger.py
 import unittest
 from unittest import mock
 from unittest.mock import Mock
+import gzip
 import sys
+import tempfile
 import can
 import can.logger
 
@@ -103,6 +105,39 @@ class TestLoggerScriptModule(unittest.TestCase):
         can.logger.main()
         self.assertSuccessfullCleanup()
         self.mock_logger_sized.assert_called_once()
+
+
+class TestLoggerCompressedFile(unittest.TestCase):
+    def setUp(self) -> None:
+        # Patch VirtualBus object
+        self.patcher_virtual_bus = mock.patch(
+            "can.interfaces.virtual.VirtualBus", spec=True
+        )
+        self.MockVirtualBus = self.patcher_virtual_bus.start()
+        self.mock_virtual_bus = self.MockVirtualBus.return_value
+
+        self.testmsg = can.Message(
+            arbitration_id=0xC0FFEE, data=[0, 25, 0, 1, 3, 1, 4, 1], is_extended_id=True
+        )
+
+        self.baseargs = [sys.argv[0], "-i", "virtual"]
+
+    def test_compressed_logfile(self):
+        """
+        Basic test to verify Logger is able to write gzip files.
+        """
+        self.mock_virtual_bus.recv = Mock(side_effect=[self.testmsg, KeyboardInterrupt])
+
+        with tempfile.NamedTemporaryFile(suffix=".log.gz", delete=True) as compressed:
+            sys.argv = self.baseargs + ["--file_name", compressed.name]
+            can.logger.main()
+            with gzip.open(compressed.name, "rt") as decompressed:
+                last_line = decompressed.readlines()[-1]
+
+        self.assertEqual(last_line, "(0.000000) vcan0 00C0FFEE#0019000103010401\n")
+
+    def tearDown(self) -> None:
+        self.patcher_virtual_bus.stop()
 
 
 if __name__ == "__main__":
