@@ -20,6 +20,7 @@ from ..message import Message
 from ..listener import Listener
 from ..util import channel2int
 from .generic import BaseIOHandler
+from ..typechecking import AcceptedIOType
 
 
 logger = logging.getLogger("can.io.trc")
@@ -42,7 +43,7 @@ class TRCReader(BaseIOHandler):
 
     file: TextIO
 
-    def __init__(self, file):
+    def __init__(self, file: AcceptedIOType) -> None:
         """
         :param file: a path-like object or as file-like object to read from
                      If this is a file-like object, is has to opened in text
@@ -197,7 +198,7 @@ class TRCWriter(BaseIOHandler, Listener):
     )
     FORMAT_MESSAGE_V1_0 = "{msgnr:>6}) {time:7.0f} {id:>8} {dlc:<1} {data}"
 
-    def __init__(self, file, channel: int = 1):
+    def __init__(self, file: AcceptedIOType, channel: int = 1) -> None:
         """
         :param file: a path-like object or as file-like object to write to
                      If this is a file-like object, is has to opened in binary
