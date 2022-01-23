@@ -192,6 +192,7 @@ class TRCWriter(BaseIOHandler, Listener):
     """
 
     file: TextIO
+    first_timestamp: Optional[float]
 
     FORMAT_MESSAGE = (
         "{msgnr:>7} {time:13.3f} DT {channel:>2} {id:>8} {dir:>2} -  {dlc:<4} {data}"
