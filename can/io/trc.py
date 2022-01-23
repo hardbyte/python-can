@@ -156,8 +156,6 @@ class TRCReader(BaseIOHandler):
             return None
 
     def __iter__(self) -> Generator[Message, None, None]:
-        # This is guaranteed to not be None since we raise ValueError in __init__
-        self.file = cast(IO[Any], self.file)
         first_line = self._extract_header()
 
         if first_line is not None:
