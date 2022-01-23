@@ -229,17 +229,17 @@ class TRCWriter(BaseIOHandler, Listener):
         self.file_version = TRCFileVersion.V2_1
         self._format_message = self._format_message_init
 
-    def _write_line_binary(self, line):
+    def _write_line_binary(self, line) -> None:
         self.file.write((line + "\r\n").encode("ascii"))
 
-    def _write_line_text(self, line):
+    def _write_line_text(self, line) -> None:
         self.file.write(line + "\r\n")
 
-    def _write_lines(self, lines: list):
+    def _write_lines(self, lines: list) -> None:
         for line in lines:
             self._write_line(line)
 
-    def _write_header_V1_0(self, starttime):
+    def _write_header_V1_0(self, starttime) -> None:
         self._write_line(
             ";##########################################################################"
         )
@@ -259,7 +259,7 @@ class TRCWriter(BaseIOHandler, Listener):
         self._write_line(";    |     |        |    |  |")
         self._write_line(";----+- ---+--- ----+--- + -+ -- -- ...")
 
-    def _write_header_V2_1(self, header_time, starttime):
+    def _write_header_V2_1(self, header_time, starttime) -> None:
         milliseconds = int(
             (header_time.seconds * 1000) + (header_time.microseconds / 1000)
         )
@@ -322,7 +322,7 @@ class TRCWriter(BaseIOHandler, Listener):
 
         return self._format_message(msg, channel)
 
-    def write_header(self, timestamp):
+    def write_header(self, timestamp) -> None:
         # write start of file header
         reftime = datetime(year=1899, month=12, day=30)
         starttime = datetime.now() + timedelta(seconds=timestamp)
