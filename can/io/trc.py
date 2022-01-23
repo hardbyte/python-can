@@ -9,7 +9,7 @@ for file format description
 Version 1.1 will be implemented as it is most commonly used
 """  # noqa
 
-from typing import cast, Any, Generator, IO, Optional
+from typing import cast, Any, Generator, IO, Optional, TextIO
 from datetime import datetime, timedelta
 from enum import Enum
 from io import TextIOWrapper
@@ -39,6 +39,8 @@ class TRCReader(BaseIOHandler):
     """
     Iterator of CAN messages from a TRC logging file.
     """
+
+    file: TextIO
 
     def __init__(self, file):
         """
@@ -187,6 +189,8 @@ class TRCWriter(BaseIOHandler, Listener):
     it gets assigned the timestamp that was written for the last message.
     If the first message does not have a timestamp, it is set to zero.
     """
+
+    file: TextIO
 
     FORMAT_MESSAGE = (
         "{msgnr:>7} {time:13.3f} DT {channel:>2} {id:>8} {dir:>2} -  {dlc:<4} {data}"
