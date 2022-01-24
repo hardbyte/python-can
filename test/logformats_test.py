@@ -48,6 +48,7 @@ class ReaderWriterExtensionTest(unittest.TestCase):
             suffix_variants = [
                 suffix.upper(),
                 suffix.lower(),
+                f"can.msg.ext{suffix}",
                 "".join([c.upper() if i % 2 else c for i, c in enumerate(suffix)]),
             ]
             for suffix_variant in suffix_variants:
