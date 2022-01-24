@@ -24,9 +24,9 @@ class ZlgCanBus(BusABC):
             f'{self.__class__.__name__}{device}:{channel}@{bitrate}'
         if bitrate != data_bitrate:
             self.channel_info += f'/{data_bitrate}'
-        self._dev_type = ZCAN_DEVICE_TYPE(DeviceType.value)
-        self._dev_index = ZCAN_DEVICE_INDEX(int(device))
-        self._dev_channel = ZCAN_CHANNEL(int(channel))
+        self._dev_type = DeviceType.value
+        self._dev_index = int(device)
+        self._dev_channel = int(channel)
         self._opened = self.open(bitrate, data_bitrate)
         if not self._opened:
             raise CanInitializationError(f'Failed to open {self.channel_info}')
@@ -98,7 +98,7 @@ class ZlgCanBus(BusABC):
             ts      = c_uint32(int(time.time())),
             id      = msg.arbitration_id,
             info    = info,
-            chn     = self._dev_channel.value,
+            chn     = self._dev_channel,
             len     = msg.dlc
         )
         if msg.is_fd:
@@ -159,7 +159,7 @@ class ZlgCanBus(BusABC):
                 )
 
     def open(self, bitrate, data_bitrate):
-        timing = ZlgBitTiming(self._dev_type.value)
+        timing = ZlgBitTiming(self._dev_type)
         if not vci_device_open(self._dev_type, self._dev_index):
             return False
         if not vci_channel_open(

@@ -18,10 +18,6 @@ from ctypes import cdll, byref, Structure
 log = logging.getLogger('can.zlg')
 lib = cdll.LoadLibrary('libusbcanfd.so')
 
-ZCAN_DEVICE_TYPE  = c_uint32
-ZCAN_DEVICE_INDEX = c_uint32
-ZCAN_CHANNEL      = c_uint32
-
 
 @unique
 class ZCAN_DEVICE(Enum):
@@ -125,25 +121,25 @@ class ZCANFD_INIT(Structure):
     ]
 
 
-def vci_device_open(type_, index) -> bool:
-    ret = lib.VCI_OpenDevice(type_, index)
+def vci_device_open(dt, di) -> bool:
+    ret = lib.VCI_OpenDevice(c_uint32(dt), c_uint32(di))
     if ret == 0:
-        log.error(f'Failed to open device {type_}:{index} !')
+        log.error(f'Failed to open device {dt}:{di} !')
     else:
-        log.info(f'Open device {type_}:{index} successfully!')
+        log.info(f'Open device {dt}:{di} successfully!')
     return ret != 0
 
 
-def vci_device_close(type_, index) -> bool:
-    ret = lib.VCI_CloseDevice(type_, index)
+def vci_device_close(dt, di) -> bool:
+    ret = lib.VCI_CloseDevice(c_uint32(dt), c_uint32(di))
     if ret == 0:
-        log.error(f'Failed to open device {type_}:{index}')
+        log.error(f'Failed to open device {dt}:{di}')
     else:
-        log.info(f'Open device {type_}:{index} successfully')
+        log.info(f'Open device {dt}:{di} successfully')
     return ret != 0
 
 
-def vci_channel_open(type_, index, channel,
+def vci_channel_open(dt, di, ch,
                      clock,
                      atiming,
                      dtiming=None,
@@ -154,89 +150,86 @@ def vci_channel_open(type_, index, channel,
     init.clk    =   clock
     init.atim   =   atiming
     init.dtim   =   dtiming or atiming
-    ret = lib.VCI_InitCAN(type_, index, channel, byref(init))
+    ret = lib.VCI_InitCAN(c_uint32(dt), c_uint32(di), c_uint32(ch), byref(init))
     if ret == 0:
-        log.error(f'CH{channel.value}: Initialize failed')
+        log.error(f'CH{ch}: Initialize failed')
     else:
-        log.info(f'CH{channel.value}: Initialized')
-        ret = lib.VCI_StartCAN(type_, index, channel)
+        log.info(f'CH{ch}: Initialized')
+        ret = lib.VCI_StartCAN(c_uint32(dt), c_uint32(di), c_uint32(ch))
         if ret == 0:
-            log.error(f'CH{channel.value}: Start failed')
+            log.error(f'CH{ch}: Start failed')
         else:
-            log.info(f'CH{channel.value}: Started')
+            log.info(f'CH{ch}: Started')
     return ret != 0
 
-def vci_channel_close(type_, index, channel) -> bool:
-    ret = lib.VCI_ResetCAN(type_, index, channel)
+def vci_channel_close(dt, di, ch) -> bool:
+    ret = lib.VCI_ResetCAN(c_uint32(dt), c_uint32(di), c_uint32(ch))
     if ret == 0:
-        log.error(f'CH{channel.value}: Close failed')
+        log.error(f'CH{ch}: Close failed')
     else:
-        log.info(f'CH{channel.value}: Closed')
+        log.info(f'CH{ch}: Closed')
     return ret != 0
 
 
-def vci_channel_read_info(type_, index, channel, info) -> bool:
-    ret = lib.VCI_ReadErrInfo(type_, index, channel, byref(info))
+def vci_channel_read_info(dt, di, ch, info) -> bool:
+    ret = lib.VCI_ReadErrInfo(c_uint32(dt), c_uint32(di), c_uint32(ch), byref(info))
     if ret == 0:
-        log.error(f'CH{channel.value}: Failed to read error infomation')
+        log.error(f'CH{ch}: Failed to read error infomation')
     else:
-        log.info(f'CH{channel.value}: Read error infomation successfully')
+        log.info(f'CH{ch}: Read error infomation successfully')
     return ret != 0
 
 
-def vci_channel_enable_tres(type_, index, channel, value) -> bool:
+def vci_channel_enable_tres(dt, di, ch, value) -> bool:
     tres = ZCAN_TRES(enable=ZCAN_TRES.ON if value else ZCAN_TRES.OFF)
-    ret = lib.VCI_SetReference(type_, index, channel, ZCAN_REF.TRES.value, byref(tres))
+    ret = lib.VCI_SetReference(c_uint32(dt), c_uint32(di), c_uint32(ch), ZCAN_REF.TRES.value, byref(tres))
     if ret == 0:
-        log.error(f'CH{channel.value}: Failed to {"enable" if value else "disable"} '
+        log.error(f'CH{ch}: Failed to {"enable" if value else "disable"} '
                   f'termination resistor')
     else:
-        log.info(f'CH{channel.value}: {"Enable" if value else "Disable"} '
+        log.info(f'CH{ch}: {"Enable" if value else "Disable"} '
                  f'termination resistor successfully')
     return ret != 0
 
 
-def vci_can_send(type_, index, channel, msgs, count) -> int:
-    ret = lib.VCI_Transmit(type_, index, channel, byref(msgs), count)
+def vci_can_send(dt, di, ch, msgs, count) -> int:
+    ret = lib.VCI_Transmit(c_uint32(dt), c_uint32(di), c_uint32(ch), byref(msgs), count)
     if ret == 0:
-        log.error(f'CH{channel.value}: Failed to send CAN message(s)')
+        log.error(f'CH{ch}: Failed to send CAN message(s)')
     else:
-        log.debug(f'CH{channel.value}: Sent {len(msgs)} CAN message(s)')
+        log.debug(f'CH{ch}: Sent {len(msgs)} CAN message(s)')
     return ret
 
 
-def vci_canfd_send(type_, index, channel, msgs, count) -> int:
-    ret = lib.VCI_TransmitFD(type_, index, channel, byref(msgs), count)
+def vci_canfd_send(dt, di, ch, msgs, count) -> int:
+    ret = lib.VCI_TransmitFD(c_uint32(dt), c_uint32(di), c_uint32(ch), byref(msgs), count)
     if ret == 0:
-        log.error(f'CH{channel.value}: Failed to send CANFD message(s)')
+        log.error(f'CH{ch}: Failed to send CANFD message(s)')
     else:
-        log.debug(f'CH{channel.value}: Sent {len(msgs)} CANFD message(s)')
+        log.debug(f'CH{ch}: Sent {len(msgs)} CANFD message(s)')
     return ret
 
 
-def vci_can_recv(type_, index, channel, msgs, count, timeout) -> int:
-    ret = lib.VCI_Receive(type_, index, channel, byref(msgs), count, timeout)
-    log.debug(f'CH{channel.value}: Received {len(msgs)} CAN message(s)')
+def vci_can_recv(dt, di, ch, msgs, count, timeout) -> int:
+    ret = lib.VCI_Receive(c_uint32(dt), c_uint32(di), c_uint32(ch), byref(msgs), count, timeout)
+    log.debug(f'CH{ch}: Received {len(msgs)} CAN message(s)')
     return ret
 
 
-def vci_canfd_recv(type_, index, channel, msgs, count, timeout) -> int:
-    ret = lib.VCI_ReceiveFD(type_, index, channel, byref(msgs), count, timeout)
-    log.debug(f'CH{channel.value}: Received {len(msgs)} CANFD message(s)')
+def vci_canfd_recv(dt, di, ch, msgs, count, timeout) -> int:
+    ret = lib.VCI_ReceiveFD(c_uint32(dt), c_uint32(di), c_uint32(ch), byref(msgs), count, timeout)
+    log.debug(f'CH{ch}: Received {len(msgs)} CANFD message(s)')
     return ret
 
 
-def vci_can_get_recv_num(type_, index, channel) -> int:
-    ret = lib.VCI_GetReceiveNum(type_, index, channel)
-    log.debug(f'CH{channel.value}: {ret} CAN message(s) in FIFO')
+def vci_can_get_recv_num(dt, di, ch) -> int:
+    ret = lib.VCI_GetReceiveNum(c_uint32(dt), c_uint32(di), c_uint32(ch))
+    log.debug(f'CH{ch}: {ret} CAN message(s) in FIFO')
     return ret
 
 
-def vci_canfd_get_recv_num(type_, index, channel) -> int:
-    if isinstance(channel, c_uint32):
-        channel = c_uint32(channel.value | 0x80000000)
-    else:
-        channel = c_uint32(int(channel) | 0x80000000)
-    ret = lib.VCI_GetReceiveNum(type_, index, channel)
-    log.debug(f'CH{channel.value&0x7FFF_FFFF}: {ret} CANFD message(s) in FIFO')
+def vci_canfd_get_recv_num(dt, di, ch) -> int:
+    ch = ch | 0x80000000
+    ret = lib.VCI_GetReceiveNum(c_uint32(dt), c_uint32(di), c_uint32(ch))
+    log.debug(f'CH{ch&0x7FFF_FFFF}: {ret} CANFD message(s) in FIFO')
     return ret
