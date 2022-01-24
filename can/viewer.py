@@ -300,17 +300,8 @@ class CanViewer:
                     else:
                         values_list.append(str(x))
                 values_string = " ".join(values_list)
-
-                try:
-                    previousLength = self.ids[key]["previous_values_string_length"]
-                except KeyError:
-                    previousLength = 0
-
-                # Save length of string before adding spaces, such that the line is only blanked when necessary
-                self.ids[key]["previous_values_string_length"] = len(values_string)
-
-                if len(values_string) < previousLength:
-                    values_string += " " * (previousLength - len(values_string))
+                self.ids[key]["values_string_length"] = len(values_string)
+                values_string += " " * (self.x - len(values_string))
 
                 self.draw_line(self.ids[key]["row"], 77, values_string, color)
             except (ValueError, struct.error):

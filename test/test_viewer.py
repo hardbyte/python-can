@@ -243,9 +243,9 @@ class CanViewerTest(unittest.TestCase):
                         if col >= 52 + _id["msg"].dlc * 3:
                             self.assertEqual(v, " ")
                 elif _id["msg"].arbitration_id == 0x102:
-                    # Make sure the line has been cleared after the shorted message was send
+                    # Make sure the parsed values have been cleared after the shorted message was send
                     for col, v in self.stdscr_dummy.draw_buffer[_id["row"]].items():
-                        if col >= 77 + _id["previous_values_string_length"]:
+                        if col >= 77 + _id["values_string_length"]:
                             self.assertEqual(v, " ")
                 elif _id["msg"].arbitration_id == 0x123456:
                     # Check if the counter is incremented
