@@ -10,6 +10,7 @@ TODO: This module could use https://docs.python.org/2/library/csv.html#module-cs
 """
 
 from base64 import b64encode, b64decode
+from typing import TextIO
 
 from can.message import Message
 from can.listener import Listener
@@ -81,6 +82,8 @@ class CSVWriter(FileIOMessageWriter, Listener):
 
     Each line is terminated with a platform specific line separator.
     """
+
+    file: TextIO
 
     def __init__(self, file: AcceptedIOType, append: bool = False) -> None:
         """

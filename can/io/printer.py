@@ -4,7 +4,7 @@ This Listener simply prints to stdout / the terminal or a file.
 
 import logging
 
-from typing import Optional
+from typing import Optional, cast, TextIO
 
 from ..message import Message
 from ..listener import Listener
@@ -24,6 +24,8 @@ class Printer(BaseIOHandler, Listener):
                          standard out
     """
 
+    file: Optional[TextIO]
+
     def __init__(
         self, file: Optional[AcceptedIOType] = None, append: bool = False
     ) -> None:
@@ -35,12 +37,11 @@ class Printer(BaseIOHandler, Listener):
         :param append: If set to `True` messages, are appended to the file,
                        else the file is truncated
         """
-        self.write_to_file = file is not None
         mode = "a" if append else "w"
         super().__init__(file, mode=mode)
 
     def on_message_received(self, msg: Message) -> None:
-        if self.write_to_file:
+        if self.file is not None:
             self.file.write(str(msg) + "\n")
         else:
             print(msg)

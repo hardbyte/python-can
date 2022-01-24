@@ -554,6 +554,9 @@ class TestAscFileFormat(ReaderWriterTest):
         actual = self._read_log_file("test_CanErrorFrames.asc")
         self.assertMessagesEqual(actual, expected_messages)
 
+    def test_ignore_comments(self):
+        _msg_list = self._read_log_file("logfile.asc")
+
 
 class TestGzipASCFileFormat(ReaderWriterTest):
     """Tests can.GzipASCWriter and can.GzipASCReader"""
