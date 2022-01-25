@@ -309,7 +309,7 @@ class TestVectorBus(unittest.TestCase):
                 with pytest.raises(error_type):
                     raise exc_unpickled
 
-    def test_vector_subteype_error_from_generic(self) -> None:
+    def test_vector_subtype_error_from_generic(self) -> None:
         for error_type in [VectorInitializationError, VectorOperationError]:
             with self.subTest(f"error_type = {error_type.__name__}"):
 
@@ -320,13 +320,13 @@ class TestVectorBus(unittest.TestCase):
                 generic = VectorError(error_code, error_string, function)
 
                 # pickle and unpickle
-                specififc: VectorError = error_type.from_generic(generic)
+                specific: VectorError = error_type.from_generic(generic)
 
-                self.assertEqual(str(generic), str(specififc))
-                self.assertEqual(error_code, specififc.error_code)
+                self.assertEqual(str(generic), str(specific))
+                self.assertEqual(error_code, specific.error_code)
 
                 with pytest.raises(error_type):
-                    raise specififc
+                    raise specific
 
 
 class TestVectorChannelConfig:

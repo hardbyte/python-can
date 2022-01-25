@@ -1,3 +1,4 @@
+# type: ignore
 """
 Ctypes wrapper module for Vector CAN Interface on win32/win64 systems.
 
