@@ -22,6 +22,7 @@ from can.interfaces.vector import (
     VectorOperationError,
     VectorChannelConfig,
 )
+from test.config import IS_WINDOWS
 
 
 class TestVectorBus(unittest.TestCase):
@@ -327,6 +328,11 @@ class TestVectorBus(unittest.TestCase):
 
                 with pytest.raises(error_type):
                     raise specific
+
+    @unittest.skipUnless(IS_WINDOWS, "Windows specific test")
+    def test_winapi_availability(self) -> None:
+        self.assertIsNotNone(canlib.WaitForSingleObject)
+        self.assertIsNotNone(canlib.INFINITE)
 
 
 class TestVectorChannelConfig:

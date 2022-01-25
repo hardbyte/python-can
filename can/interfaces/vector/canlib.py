@@ -19,6 +19,7 @@ try:
 
     HAS_EVENTS = True
 except ImportError:
+    WaitForSingleObject, INFINITE = None, None
     HAS_EVENTS = False
 
 # Import Modules
@@ -67,12 +68,12 @@ class VectorBus(BusABC):
         channel: Union[int, Sequence[int], str],
         can_filters: Optional[CanFilters] = None,
         poll_interval: float = 0.01,
-        receive_own_messages: Optional[bool] = False,
+        receive_own_messages: bool = False,
         bitrate: Optional[int] = None,
         rx_queue_size: int = 2 ** 14,
         app_name: Optional[str] = "CANalyzer",
         serial: Optional[int] = None,
-        fd: Optional[bool] = False,
+        fd: bool = False,
         data_bitrate: Optional[int] = None,
         sjw_abr: int = 2,
         tseg1_abr: int = 6,
