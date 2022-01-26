@@ -11,8 +11,20 @@ import logging
 import time
 import os
 from types import ModuleType
-from typing import List, NamedTuple, Optional, Tuple, Sequence, Union, Any, Dict
+from typing import (
+    List,
+    NamedTuple,
+    Optional,
+    Tuple,
+    Sequence,
+    Union,
+    Any,
+    Dict,
+    Callable,
+)
 
+WaitForSingleObject: Optional[Callable[[int, int], int]]
+INFINITE: Optional[int]
 try:
     # Try builtin Python 3 Windows API
     from _winapi import WaitForSingleObject, INFINITE
