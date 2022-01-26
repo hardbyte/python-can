@@ -102,7 +102,6 @@ class Logger(BaseIOHandler, Listener):  # pylint: disable=abstract-method
                 f'No write support for this unknown log format "{suffix}"'
             ) from None
 
-
     @staticmethod
     def compress(filename: StringPathLike) -> Tuple[str, IO[Any]]:
         """
@@ -114,7 +113,6 @@ class Logger(BaseIOHandler, Listener):  # pylint: disable=abstract-method
 
         return real_suffix, gzip.open(filename, mode)
 
-      
     def on_message_received(self, msg: Message) -> None:
         pass
 
