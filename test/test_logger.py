@@ -8,8 +8,8 @@ import unittest
 from unittest import mock
 from unittest.mock import Mock
 import gzip
+import os
 import sys
-import tempfile
 import can
 import can.logger
 
@@ -118,24 +118,25 @@ class TestLoggerCompressedFile(unittest.TestCase):
         self.testmsg = can.Message(
             arbitration_id=0xC0FFEE, data=[0, 25, 0, 1, 3, 1, 4, 1], is_extended_id=True
         )
-
         self.baseargs = [sys.argv[0], "-i", "virtual"]
+
+        self.testfile = open("coffee.log.gz", "w+")
 
     def test_compressed_logfile(self):
         """
         Basic test to verify Logger is able to write gzip files.
         """
         self.mock_virtual_bus.recv = Mock(side_effect=[self.testmsg, KeyboardInterrupt])
-
-        with tempfile.NamedTemporaryFile(suffix=".log.gz", delete=True) as compressed:
-            sys.argv = self.baseargs + ["--file_name", compressed.name]
-            can.logger.main()
-            with gzip.open(compressed.name, "rt") as decompressed:
-                last_line = decompressed.readlines()[-1]
+        sys.argv = self.baseargs + ["--file_name", self.testfile.name]
+        can.logger.main()
+        with gzip.open(self.testfile.name, "rt") as testlog:
+            last_line = testlog.readlines()[-1]
 
         self.assertEqual(last_line, "(0.000000) vcan0 00C0FFEE#0019000103010401\n")
 
     def tearDown(self) -> None:
+        self.testfile.close()
+        os.remove(self.testfile.name)
         self.patcher_virtual_bus.stop()
 
 
