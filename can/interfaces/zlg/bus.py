@@ -31,6 +31,8 @@ class ZlgCanBus(BusABC):
         if not self._opened:
             raise CanInitializationError(f'Failed to open {self.channel_info}')
         self.tres = bool(tres)
+        self.dlc = kwargs.get('dlc', None)
+        self.padding = kwargs.get('padding', None)
         super().__init__(int(channel), **kwargs)
 
     @property
@@ -84,6 +86,20 @@ class ZlgCanBus(BusABC):
         )
     
     def _to_raw(self, msg):
+        msg_data = bytes(msg.data)
+        data_size = len(msg_data)
+        if self.dlc and data_size < self.dlc:       # Bus DLC First
+            padding_size = self.dlc - data_size
+        elif data_size < msg.dlc:                   # Msg DLC Second
+            padding_size = msg.dlc - data_size
+        else:
+            padding_size = 0
+        if padding_size > 0:
+            if self.padding:
+                msg_data += bytes([self.padding[0]] * padding_size)
+            else:
+                msg_data += bytes([0] * padding_size)
+            data_size += padding_size
         info = ZCAN_MSG_INFO(
             txm = False,
             fmt = msg.is_fd,
@@ -99,13 +115,13 @@ class ZlgCanBus(BusABC):
             id      = msg.arbitration_id,
             info    = info,
             chn     = self._dev_channel,
-            len     = msg.dlc
+            len     = data_size
         )
         if msg.is_fd:
             raw = ZCAN_FD_MSG(header=header)
         else:
             raw = ZCAN_20_MSG(header=header)
-        ctypes.memmove(raw.dat, bytes(msg.data), msg.dlc)
+        ctypes.memmove(raw.dat, msg_data, data_size)
         return raw
     
     def _recv_internal(self, timeout):
