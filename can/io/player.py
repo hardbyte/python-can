@@ -95,7 +95,7 @@ class LogReader(BaseIOHandler):
     @staticmethod
     def decompress(
         filename: "can.typechecking.StringPathLike",
-    ) -> typing.Tuple[str, typing.IO[typing.Any]]:
+    ) -> typing.Tuple[str, typing.Union[str, typing.Any]]:
         """
         Return the suffix and io object of the decompressed file.
         """

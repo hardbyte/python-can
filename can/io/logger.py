@@ -7,15 +7,8 @@ import pathlib
 from abc import ABC, abstractmethod
 from datetime import datetime
 import gzip
-from typing import (
-    Any,
-    Optional,
-    Callable,
-    cast,
-    IO,
-    Type,
-    Tuple,
-)
+from typing import Any, Optional, Callable, TextIO, Type, Tuple, Union, cast
+
 from types import TracebackType
 
 from typing_extensions import Literal
@@ -103,7 +96,7 @@ class Logger(BaseIOHandler, Listener):  # pylint: disable=abstract-method
             ) from None
 
     @staticmethod
-    def compress(filename: StringPathLike) -> Tuple[str, IO[Any]]:
+    def compress(filename: StringPathLike) -> Tuple[str, Union[str, Any]]:
         """
         Return the suffix and io object of the decompressed file.
         File will automatically recompress upon close.
