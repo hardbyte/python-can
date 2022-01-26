@@ -114,7 +114,9 @@ class CanutilsLogWriter(FileIOMessageWriter, Listener):
     It the first message does not have a timestamp, it is set to zero.
     """
 
-    def __init__(self, file: AcceptedIOType, channel="vcan0", append=False):
+    def __init__(
+        self, file: AcceptedIOType, channel: str = "vcan0", append: bool = False
+    ):
         """
         :param file: a path-like object or as file-like object to write to
                      If this is a file-like object, is has to opened in text

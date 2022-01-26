@@ -3,7 +3,7 @@ python-can
 
 |release| |python_implementation| |downloads| |downloads_monthly| |formatter|
 
-|docs| |build_travis| |coverage| |mergify|
+|docs| |github-actions| |build_travis| |coverage| |mergify|
 
 .. |release| image:: https://img.shields.io/pypi/v/python-can.svg
    :target: https://pypi.python.org/pypi/python-can/
@@ -28,6 +28,10 @@ python-can
 .. |docs| image:: https://readthedocs.org/projects/python-can/badge/?version=stable
    :target: https://python-can.readthedocs.io/en/stable/
    :alt: Documentation
+
+.. |github-actions| image:: https://github.com/hardbyte/python-can/actions/workflows/build.yml/badge.svg?branch=develop
+   :target: https://github.com/hardbyte/python-can/actions/workflows/build.yml
+   :alt: Github Actions workflow status
 
 .. |build_travis| image:: https://img.shields.io/travis/com/hardbyte/python-can/develop.svg?label=Travis%20CI
    :target: https://travis-ci.com/hardbyte/python-can
@@ -86,7 +90,7 @@ Example usage
     import can
 
     # create a bus instance
-    # many other interfaces are supported as well (see below)
+    # many other interfaces are supported as well (see documentation)
     bus = can.Bus(interface='socketcan',
                   channel='vcan0',
                   receive_own_messages=True)
@@ -98,7 +102,7 @@ Example usage
 
     # iterate over received messages
     for msg in bus:
-        print("{:X}: {}".format(msg.arbitration_id, msg.data))
+        print(f"{msg.arbitration_id:X}: {msg.data}")
 
     # or use an asynchronous notifier
     notifier = can.Notifier(bus, [can.Logger("recorded.log"), can.Printer()])

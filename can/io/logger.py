@@ -18,7 +18,7 @@ from typing import (
 )
 from types import TracebackType
 
-
+from typing_extensions import Literal
 from pkg_resources import iter_entry_points
 
 from ..message import Message
@@ -102,6 +102,7 @@ class Logger(BaseIOHandler, Listener):  # pylint: disable=abstract-method
                 f'No write support for this unknown log format "{suffix}"'
             ) from None
 
+
     @staticmethod
     def compress(filename: StringPathLike) -> Tuple[str, IO[Any]]:
         """
@@ -112,6 +113,10 @@ class Logger(BaseIOHandler, Listener):  # pylint: disable=abstract-method
         mode = "ab" if real_suffix == ".blf" else "at"
 
         return real_suffix, gzip.open(filename, mode)
+
+      
+    def on_message_received(self, msg: Message) -> None:
+        pass
 
 
 class BaseRotatingLogger(Listener, BaseIOHandler, ABC):
@@ -250,7 +255,7 @@ class BaseRotatingLogger(Listener, BaseIOHandler, ABC):
         exc_type: Optional[Type[BaseException]],
         exc_val: Optional[BaseException],
         exc_tb: Optional[TracebackType],
-    ) -> bool:
+    ) -> Literal[False]:
         return self._writer.__exit__(exc_type, exc_val, exc_tb)
 
     @abstractmethod

@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """
 This module tests sending messages on socketcan with and without local_loopback flag
 
