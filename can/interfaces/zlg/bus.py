@@ -18,17 +18,17 @@ class ZlgCanBus(BusABC):
         :param device: device index, [0, 1,,,]
         :param tres: enable/disable termination resistor on specified channel
         """
-        bitrate = int(kwargs.get('bitrate', 500000))
-        data_bitrate = int(kwargs.get('data_bitrate', bitrate))
+        self.bitrate = kwargs.get('bitrate', 500000)
+        self.data_bitrate = kwargs.get('data_bitrate', None)
         self.channel_info = \
-            f'{self.__class__.__name__}{device}:{channel}@{bitrate}'
-        if bitrate != data_bitrate:
-            self.channel_info += f'/{data_bitrate}'
+            f'{self.__class__.__name__}{device}:{channel}@{self.bitrate}'
+        if self.data_bitrate:
+            self.channel_info += f'/{self.data_bitrate}'
         self._dev_type = DeviceType.value
         self._dev_index = int(device)
         self._dev_channel = int(channel)
-        self._opened = self.open(bitrate, data_bitrate)
-        if not self._opened:
+        self.is_opened = self.open()
+        if not self.is_opened:
             raise CanInitializationError(f'Failed to open {self.channel_info}')
         self.tres = bool(tres)
         self.dlc = kwargs.get('dlc', None)
@@ -152,7 +152,9 @@ class ZlgCanBus(BusABC):
         return None, self.filters is None
 
     def send(self, msg, timeout=None) -> None:
-        timeout = c_uint32(int((timeout or 0)*1000))
+        timeout = c_uint32(int((timeout or 0)*2000))
+        if self.data_bitrate and not msg.is_fd: # Force FD if data_bitrate
+            msg.is_fd = True
         if msg.is_fd:
             tx_buf = (ZCAN_FD_MSG * 1)()
             tx_buf[0] = self._to_raw(msg)
@@ -174,15 +176,19 @@ class ZlgCanBus(BusABC):
                     f'Failed to send CAN message {msg.arbitration_id:03X}!'
                 )
 
-    def open(self, bitrate, data_bitrate):
+    def open(self):
         timing = ZlgBitTiming(self._dev_type)
+        clock = timing.f_clock
+        bitrate = timing.timing(self.bitrate)
+        if self.data_bitrate:
+            data_bitrate = timing.timing(self.data_bitrate)
+        else:
+            data_bitrate = bitrate
         if not vci_device_open(self._dev_type, self._dev_index):
             return False
         if not vci_channel_open(
             self._dev_type, self._dev_index, self._dev_channel,
-            timing.f_clock,
-            timing.timing(bitrate),
-            timing.timing(data_bitrate)
+            clock, bitrate, data_bitrate
         ):
             vci_device_close(self._dev_type, self._dev_index)
             return False
