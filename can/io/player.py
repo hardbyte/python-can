@@ -32,7 +32,9 @@ class LogReader(BaseIOHandler):
       * .db
       * .log
 
-      Or any of the above compressed using gzip (.gz)
+    Gzip compressed files can be used as long as the original
+    files suffix is one of the above (e.g. filename.asc.gz).
+
 
     Exposes a simple iterator interface, to use simply:
 
