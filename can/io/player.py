@@ -3,7 +3,7 @@ This module contains the generic :class:`LogReader` as
 well as :class:`MessageSync` which plays back messages
 in the recorded order an time intervals.
 """
-
+import gzip
 import pathlib
 from time import time, sleep
 import typing
@@ -14,7 +14,7 @@ if typing.TYPE_CHECKING:
     import can
 
 from .generic import BaseIOHandler, MessageReader
-from .asc import ASCReader, GzipASCReader
+from .asc import ASCReader
 from .blf import BLFReader
 from .canutils import CanutilsLogReader
 from .csv import CSVReader
@@ -25,13 +25,16 @@ class LogReader(BaseIOHandler):
     """
     Replay logged CAN messages from a file.
 
-    The format is determined from the file format which can be one of:
+    The format is determined from the file suffix which can be one of:
       * .asc
-      * .asc.gz
       * .blf
       * .csv
       * .db
       * .log
+
+    Gzip compressed files can be used as long as the original
+    files suffix is one of the above (e.g. filename.asc.gz).
+
 
     Exposes a simple iterator interface, to use simply:
 
@@ -50,7 +53,6 @@ class LogReader(BaseIOHandler):
     fetched_plugins = False
     message_readers = {
         ".asc": ASCReader,
-        ".asc.gz": GzipASCReader,
         ".blf": BLFReader,
         ".csv": CSVReader,
         ".db": SqliteReader,
@@ -77,7 +79,11 @@ class LogReader(BaseIOHandler):
             )
             LogReader.fetched_plugins = True
 
-        suffix = "".join(s.lower() for s in pathlib.PurePath(filename).suffixes)
+        suffix = pathlib.PurePath(filename).suffix.lower()
+
+        if suffix == ".gz":
+            suffix, filename = LogReader.decompress(filename)
+
         try:
             return typing.cast(
                 MessageReader,
@@ -87,6 +93,18 @@ class LogReader(BaseIOHandler):
             raise ValueError(
                 f'No read support for this unknown log format "{suffix}"'
             ) from None
+
+    @staticmethod
+    def decompress(
+        filename: "can.typechecking.StringPathLike",
+    ) -> typing.Tuple[str, typing.Union[str, typing.Any]]:
+        """
+        Return the suffix and io object of the decompressed file.
+        """
+        real_suffix = pathlib.Path(filename).suffixes[-2].lower()
+        mode = "rb" if real_suffix == ".blf" else "rt"
+
+        return real_suffix, gzip.open(filename, mode)
 
 
 class MessageSync:  # pylint: disable=too-few-public-methods

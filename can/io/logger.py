@@ -6,13 +6,9 @@ import os
 import pathlib
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import (
-    Any,
-    Optional,
-    Callable,
-    cast,
-    Type,
-)
+import gzip
+from typing import Any, Optional, Callable, TextIO, Type, Tuple, Union, cast
+
 from types import TracebackType
 
 from typing_extensions import Literal
@@ -21,7 +17,7 @@ from pkg_resources import iter_entry_points
 from ..message import Message
 from ..listener import Listener
 from .generic import BaseIOHandler, FileIOMessageWriter
-from .asc import ASCWriter, GzipASCWriter
+from .asc import ASCWriter
 from .blf import BLFWriter
 from .canutils import CanutilsLogWriter
 from .csv import CSVWriter
@@ -34,14 +30,17 @@ class Logger(BaseIOHandler, Listener):  # pylint: disable=abstract-method
     """
     Logs CAN messages to a file.
 
-    The format is determined from the file format which can be one of:
+    The format is determined from the file suffix which can be one of:
       * .asc: :class:`can.ASCWriter`
-      * .asc.gz: :class:`can.CompressedASCWriter`
       * .blf :class:`can.BLFWriter`
       * .csv: :class:`can.CSVWriter`
       * .db: :class:`can.SqliteWriter`
       * .log :class:`can.CanutilsLogWriter`
       * .txt :class:`can.Printer`
+
+    Any of these formats can be used with gzip compression by appending
+    the suffix .gz (e.g. filename.asc.gz). However, third-party tools might not
+    be able to read these files.
 
     The **filename** may also be *None*, to fall back to :class:`can.Printer`.
 
@@ -55,7 +54,6 @@ class Logger(BaseIOHandler, Listener):  # pylint: disable=abstract-method
     fetched_plugins = False
     message_writers = {
         ".asc": ASCWriter,
-        ".asc.gz": GzipASCWriter,
         ".blf": BLFWriter,
         ".csv": CSVWriter,
         ".db": SqliteWriter,
@@ -85,7 +83,11 @@ class Logger(BaseIOHandler, Listener):  # pylint: disable=abstract-method
             )
             Logger.fetched_plugins = True
 
-        suffix = "".join(s.lower() for s in pathlib.PurePath(filename).suffixes)
+        suffix = pathlib.PurePath(filename).suffix.lower()
+
+        if suffix == ".gz":
+            suffix, filename = Logger.compress(filename)
+
         try:
             return cast(
                 Listener, Logger.message_writers[suffix](filename, *args, **kwargs)
@@ -94,6 +96,17 @@ class Logger(BaseIOHandler, Listener):  # pylint: disable=abstract-method
             raise ValueError(
                 f'No write support for this unknown log format "{suffix}"'
             ) from None
+
+    @staticmethod
+    def compress(filename: StringPathLike) -> Tuple[str, Union[str, Any]]:
+        """
+        Return the suffix and io object of the decompressed file.
+        File will automatically recompress upon close.
+        """
+        real_suffix = pathlib.Path(filename).suffixes[-2].lower()
+        mode = "ab" if real_suffix == ".blf" else "at"
+
+        return real_suffix, gzip.open(filename, mode)
 
     def on_message_received(self, msg: Message) -> None:
         pass

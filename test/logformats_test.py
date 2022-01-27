@@ -11,7 +11,6 @@ comments.
 
 TODO: correctly set preserves_channel and adds_default_channel
 """
-import gzip
 import logging
 import unittest
 import tempfile
@@ -48,6 +47,7 @@ class ReaderWriterExtensionTest(unittest.TestCase):
             suffix_variants = [
                 suffix.upper(),
                 suffix.lower(),
+                f"can.msg.ext{suffix}",
                 "".join([c.upper() if i % 2 else c for i, c in enumerate(suffix)]),
             ]
             for suffix_variant in suffix_variants:
@@ -556,34 +556,6 @@ class TestAscFileFormat(ReaderWriterTest):
 
     def test_ignore_comments(self):
         _msg_list = self._read_log_file("logfile.asc")
-
-
-class TestGzipASCFileFormat(ReaderWriterTest):
-    """Tests can.GzipASCWriter and can.GzipASCReader"""
-
-    def _setup_instance(self):
-        super()._setup_instance_helper(
-            can.GzipASCWriter,
-            can.GzipASCReader,
-            binary_file=True,
-            check_comments=True,
-            preserves_channel=False,
-            adds_default_channel=0,
-        )
-
-    def assertIncludesComments(self, filename):
-        """
-        Ensures that all comments are literally contained in the given file.
-
-        :param filename: the path-like object to use
-        """
-        if self.original_comments:
-            # read the entire outout file
-            with gzip.open(filename, "rt" if self.binary_file else "r") as file:
-                output_contents = file.read()
-            # check each, if they can be found in there literally
-            for comment in self.original_comments:
-                self.assertIn(comment, output_contents)
 
 
 class TestBlfFileFormat(ReaderWriterTest):

@@ -26,7 +26,7 @@ from .exceptions import (
 )
 
 from .io import Logger, SizedRotatingLogger, Printer, LogReader, MessageSync
-from .io import ASCWriter, ASCReader, GzipASCWriter, GzipASCReader
+from .io import ASCWriter, ASCReader
 from .io import BLFReader, BLFWriter
 from .io import CanutilsLogReader, CanutilsLogWriter
 from .io import CSVWriter, CSVReader
