@@ -5,9 +5,6 @@ from typing import (
     Optional,
     cast,
     Iterable,
-    Union,
-    TextIO,
-    BinaryIO,
     Type,
     ContextManager,
 )
@@ -76,15 +73,17 @@ class BaseIOHandler(ContextManager, metaclass=ABCMeta):
 class MessageWriter(BaseIOHandler, can.Listener, metaclass=ABCMeta):
     """The base class for all writers."""
 
+    file: Optional[can.typechecking.FileLike]
+
 
 # pylint: disable=abstract-method,too-few-public-methods
 class FileIOMessageWriter(MessageWriter, metaclass=ABCMeta):
     """A specialized base class for all writers with file descriptors."""
 
-    file: Union[TextIO, BinaryIO]
+    file: can.typechecking.FileLike
 
     def __init__(self, file: can.typechecking.AcceptedIOType, mode: str = "rt") -> None:
-        # Not possible with the type signature, but be verbose for user friendliness
+        # Not possible with the type signature, but be verbose for user-friendliness
         if file is None:
             raise ValueError("The given file cannot be None")
 
@@ -92,5 +91,5 @@ class FileIOMessageWriter(MessageWriter, metaclass=ABCMeta):
 
 
 # pylint: disable=too-few-public-methods
-class MessageReader(BaseIOHandler, Iterable, metaclass=ABCMeta):
+class MessageReader(BaseIOHandler, Iterable[can.Message], metaclass=ABCMeta):
     """The base class for all readers."""
