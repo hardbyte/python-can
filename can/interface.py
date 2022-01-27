@@ -48,7 +48,8 @@ def _get_class_for_interface(interface: str) -> Type[BusABC]:
         bus_class = getattr(module, class_name)
     except Exception as e:
         raise CanInterfaceNotImplementedError(
-            f"Cannot import class {class_name} from module {module_name} for CAN interface '{interface}': {e}"
+            f"Cannot import class {class_name} from module {module_name} for CAN interface '{interface}': "
+            f"{e}"
         ) from None
 
     return cast(Type[BusABC], bus_class)
