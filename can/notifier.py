@@ -2,30 +2,28 @@
 This module contains the implementation of :class:`~can.Notifier`.
 """
 
+import asyncio
+import logging
+import threading
+import time
 from typing import Any, Callable, cast, Iterable, List, Optional, Union, Awaitable
 
 from can.bus import BusABC
 from can.listener import Listener
 from can.message import Message
 
-import threading
-import logging
-import time
-import asyncio
-
 logger = logging.getLogger("can.Notifier")
-
 
 Listenable = Union[Listener, Callable[[Message], None]]
 
 
 class Notifier:
     def __init__(
-        self,
-        bus: Union[BusABC, List[BusABC]],
-        listeners: Iterable[Listenable],
-        timeout: float = 1.0,
-        loop: Optional[asyncio.AbstractEventLoop] = None,
+            self,
+            bus: Union[BusABC, List[BusABC]],
+            listeners: Iterable[Listenable],
+            timeout: float = 1.0,
+            loop: Optional[asyncio.AbstractEventLoop] = None,
     ) -> None:
         """Manages the distribution of :class:`~can.Message` instances to listeners.
 
@@ -105,8 +103,8 @@ class Notifier:
                 # reader is a file descriptor
                 self._loop.remove_reader(reader)
         for listener in self.listeners:
-            if hasattr(listener, "stop"):
-                listener.stop()
+            # Mypy prefers this over a hasattr(...) check
+            getattr(listener, "stop", lambda: None)()
 
     def _rx_thread(self, bus: BusABC) -> None:
         msg = None
@@ -154,9 +152,10 @@ class Notifier:
         was_handled = False
 
         for listener in self.listeners:
-            if hasattr(listener, "on_error"):
+            on_error = getattr(listener, "on_error", None)  # Mypy prefers this over hasattr(...)
+            if on_error is not None:
                 try:
-                    listener.on_error(exc)
+                    on_error(exc)
                 except NotImplementedError:
                     pass
                 else:
