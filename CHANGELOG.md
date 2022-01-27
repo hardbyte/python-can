@@ -63,6 +63,7 @@ Improved interfaces
   * Add more interface information to channel config (#917)
   * Improve timestamp accuracy on Windows (#934, #936)
   * Fix error with VN8900 (#1184)
+  * Add static typing (#1229)
 * PCAN
   * Do not incorrectly reset CANMsg.MSGTYPE on remote frame (#659, #681)
   * Add support for error frames (#711)
@@ -118,9 +119,10 @@ Other API changes and improvements
   * Logger, viewer and player tools can handle CAN FD (#632)
   * Many bugfixes and more testing coverage
 * IO
-  * Log rotation (#648, #874, #881, #1147)
+  * [Log rotation](https://python-can.readthedocs.io/en/develop/listeners.html#can.SizedRotatingLogger) (#648, #874, #881, #1147)
+  * Transparent (de)compression of [gzip](https://docs.python.org/3/library/gzip.html) files for all formats (#1221)
   * Add [plugin support to can.io Reader/Writer](https://python-can.readthedocs.io/en/develop/listeners.html#listener) (#783)
-  * ASCReader/Writer enhancements (#820)
+  * ASCReader/Writer enhancements like increased robustness (#820, #1223)
   * Adding absolute timestamps to ASC reader (#761)
   * Support other base number (radix) at ASCReader (#764)
   * Add [logconvert script](https://python-can.readthedocs.io/en/develop/scripts.html#can-logconvert) (#1072, #1194)
@@ -135,7 +137,7 @@ Other API changes and improvements
 * Changes to serial device number decoding (#869)
 * Add a default fileno function to the BusABC (#877)
 * Disallow Messages to simultaneously be "FD" and "remote" (#1049)
-* Speed up interface plugin imports by removing pkg_resources (#1110)
+* Speed up interface plugin imports by avoiding pkg_resources (#1110)
 * Allowing for extra config arguments in can.logger (#1142, #1170)
 * Add changed byte highlighting to viewer.py (#1159)
 * Change DLC to DL in Message.\_\_str\_\_() (#1212)
@@ -180,7 +182,7 @@ Behind the scenes & Quality assurance
   * Use the [mypy](https://github.com/python/mypy) static type checker (#598, #651)
   * Use [tox](https://tox.wiki/en/latest/) for testing (#582, #833, #870)
   * Use [Mergify](https://mergify.com/) (#821, #835, #937)
-  * Switch between various CI providers, abandoned [AppVeyor](https://www.appveyor.com/) (#1009) and partly [Travis CI](https://travis-ci.org/), ended up with [GitHub Actions](https://docs.github.com/en/actions) only (#827)
+  * Switch between various CI providers, abandoned [AppVeyor](https://www.appveyor.com/) (#1009) and partly [Travis CI](https://travis-ci.org/), ended up with mostly [GitHub Actions](https://docs.github.com/en/actions) (#827, #1224)
   * Use the [black](https://black.readthedocs.io/en/stable/) auto-formatter (#950)
   * [Good test coverage](https://app.codecov.io/gh/hardbyte/python-can/branch/develop) for all but the interfaces
 * Testing: Many of the new features directly added tests, and coverage of existing code was improved too (for example: #1031, #581, #585, #586, #942, #1196, #1198)
