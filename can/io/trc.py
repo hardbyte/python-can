@@ -199,8 +199,8 @@ class TRCWriter(FileIOMessageWriter):
     def __init__(self, file: AcceptedIOType, channel: int = 1) -> None:
         """
         :param file: a path-like object or as file-like object to write to
-                     If this is a file-like object, is has to opened in binary
-                     write mode, not text write mode.
+                     If this is a file-like object, is has to opened in text
+                     write mode, not binary write mode.
         :param channel: a default channel to use when the message does not
                         have a channel set
         """
@@ -208,17 +208,14 @@ class TRCWriter(FileIOMessageWriter):
         self.channel = channel
         if type(file) is str:
             self.filepath = os.path.abspath(file)
-            self._write_line = self._write_line_binary
         elif type(file) is TextIOWrapper:
             self.filepath = "Unknown"
-            self._write_line = self._write_line_text
             logger.warning("TRCWriter: Text mode io can result in wrong line endings")
             logger.debug(
                 f"TRCWriter: Text mode io line ending setting: {file.newlines}"
             )
         else:
             self.filepath = "Unknown"
-            self._write_line = self._write_line_binary
 
         self.header_written = False
         self.msgnr = 0
@@ -226,10 +223,7 @@ class TRCWriter(FileIOMessageWriter):
         self.file_version = TRCFileVersion.V2_1
         self._format_message = self._format_message_init
 
-    def _write_line_binary(self, line: str) -> None:
-        self.file.write((line + "\r\n").encode("ascii"))
-
-    def _write_line_text(self, line: str) -> None:
+    def _write_line(self, line: str) -> None:
         self.file.write(line + "\r\n")
 
     def _write_lines(self, lines: list) -> None:
