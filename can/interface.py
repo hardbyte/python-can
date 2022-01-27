@@ -32,7 +32,7 @@ def _get_class_for_interface(interface: str) -> Type[BusABC]:
         module_name, class_name = BACKENDS[interface]
     except KeyError:
         raise NotImplementedError(
-            "CAN interface '{}' not supported".format(interface)
+            f"CAN interface '{interface}' not supported"
         ) from None
 
     # Import the correct interface module
@@ -40,9 +40,7 @@ def _get_class_for_interface(interface: str) -> Type[BusABC]:
         module = importlib.import_module(module_name)
     except Exception as e:
         raise CanInterfaceNotImplementedError(
-            "Cannot import module {} for CAN interface '{}': {}".format(
-                module_name, interface, e
-            )
+            f"Cannot import module {module_name} for CAN interface '{interface}': {e}"
         ) from None
 
     # Get the correct class
@@ -50,9 +48,7 @@ def _get_class_for_interface(interface: str) -> Type[BusABC]:
         bus_class = getattr(module, class_name)
     except Exception as e:
         raise CanInterfaceNotImplementedError(
-            "Cannot import class {} from module {} for CAN interface '{}': {}".format(
-                class_name, module_name, interface, e
-            )
+            f"Cannot import class {class_name} from module {module_name} for CAN interface '{interface}': {e}"
         ) from None
 
     return cast(Type[BusABC], bus_class)
