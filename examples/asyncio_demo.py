@@ -5,7 +5,10 @@ This example demonstrates how to use async IO with python-can.
 """
 
 import asyncio
+from typing import List
+
 import can
+from can.notifier import Listenable
 
 
 def print_message(msg: can.Message) -> None:
@@ -20,7 +23,7 @@ async def main() -> None:
         reader = can.AsyncBufferedReader()
         logger = can.Logger("logfile.asc")
 
-        listeners = [
+        listeners: List[Listenable] = [
             print_message,  # Callback function
             reader,  # AsyncBufferedReader() listener
             logger,  # Regular Listener object
