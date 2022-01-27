@@ -2,7 +2,7 @@
 This module contains the implementation of :class:`~can.Notifier`.
 """
 
-from typing import Any, cast, Iterable, List, Optional, Union, Awaitable
+from typing import Any, Callable, cast, Iterable, List, Optional, Union, Awaitable
 
 from can.bus import BusABC
 from can.listener import Listener
@@ -16,15 +16,18 @@ import asyncio
 logger = logging.getLogger("can.Notifier")
 
 
+Listenable = Union[Listener, Callable[[Message], None]]
+
+
 class Notifier:
     def __init__(
         self,
         bus: Union[BusABC, List[BusABC]],
-        listeners: Iterable[Listener],
+        listeners: Iterable[Listenable],
         timeout: float = 1.0,
         loop: Optional[asyncio.AbstractEventLoop] = None,
     ) -> None:
-        """Manages the distribution of :class:`can.Message` instances to listeners.
+        """Manages the distribution of :class:`~can.Message` instances to listeners.
 
         Supports multiple buses and listeners.
 
@@ -35,11 +38,12 @@ class Notifier:
 
 
         :param bus: A :ref:`bus` or a list of buses to listen to.
-        :param listeners: An iterable of :class:`~can.Listener`
-        :param timeout: An optional maximum number of seconds to wait for any message.
-        :param loop: An :mod:`asyncio` event loop to schedule listeners in.
+        :param listeners:
+            An iterable of :class:`~can.Listener` or callables that receive a :class:`~can.Message` and return nothing.
+        :param timeout: An optional maximum number of seconds to wait for any :class:`~can.Message`.
+        :param loop: An :mod:`asyncio` event loop to schedule the ``listeners`` in.
         """
-        self.listeners: List[Listener] = list(listeners)
+        self.listeners: List[Listenable] = list(listeners)
         self.bus = bus
         self.timeout = timeout
         self._loop = loop
