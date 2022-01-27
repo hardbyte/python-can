@@ -90,7 +90,7 @@ Example usage
     import can
 
     # create a bus instance
-    # many other interfaces are supported as well (see below)
+    # many other interfaces are supported as well (see documentation)
     bus = can.Bus(interface='socketcan',
                   channel='vcan0',
                   receive_own_messages=True)
@@ -102,7 +102,7 @@ Example usage
 
     # iterate over received messages
     for msg in bus:
-        print("{:X}: {}".format(msg.arbitration_id, msg.data))
+        print(f"{msg.arbitration_id:X}: {msg.data}")
 
     # or use an asynchronous notifier
     notifier = can.Notifier(bus, [can.Logger("recorded.log"), can.Printer()])

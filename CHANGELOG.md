@@ -138,6 +138,7 @@ Other API changes and improvements
 * Speed up interface plugin imports by removing pkg_resources (#1110)
 * Allowing for extra config arguments in can.logger (#1142, #1170)
 * Add changed byte highlighting to viewer.py (#1159)
+* Change DLC to DL in Message.\_\_str\_\_() (#1212)
 
 Other Bugfixes
 --------------

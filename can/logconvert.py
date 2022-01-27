@@ -12,7 +12,7 @@ from can import LogReader, Logger, SizedRotatingLogger
 class ArgumentParser(argparse.ArgumentParser):
     def error(self, message):
         self.print_help(sys.stderr)
-        self.exit(errno.EINVAL, "%s: error: %s\n" % (self.prog, message))
+        self.exit(errno.EINVAL, f"{self.prog}: error: {message}\n")
 
 
 def main():

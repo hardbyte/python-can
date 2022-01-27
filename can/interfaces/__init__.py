@@ -51,4 +51,4 @@ except ImportError:
         }
     )
 
-VALID_INTERFACES = frozenset(list(BACKENDS.keys()))
+VALID_INTERFACES = frozenset(BACKENDS.keys())

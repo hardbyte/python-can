@@ -14,6 +14,7 @@ Keep in mind that some functions and methods may raise different exceptions.
 For example, validating typical arguments and parameters might result in a
 :class:`ValueError`. This should always be documented for the function at hand.
 """
+
 import sys
 from contextlib import contextmanager
 
@@ -114,7 +115,7 @@ def error_check(
     """Catches any exceptions and turns them into the new type while preserving the stack trace."""
     try:
         yield
-    except Exception as error:
+    except Exception as error:  # pylint: disable=broad-except
         if error_message is None:
             raise exception_type(str(error)) from error
         else:
