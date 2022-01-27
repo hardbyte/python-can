@@ -106,7 +106,7 @@ class Bus(BusABC):  # pylint: disable=abstract-method
         # resolve the bus class to use for that interface
         cls = _get_class_for_interface(kwargs["interface"])
 
-        # remove the 'interface' key so it doesn't get passed to the backend
+        # remove the "interface" key, so it doesn't get passed to the backend
         del kwargs["interface"]
 
         # make sure the bus can handle this config format
