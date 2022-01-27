@@ -17,13 +17,12 @@ import zlib
 import datetime
 import time
 import logging
-from typing import List, BinaryIO
+from typing import List, BinaryIO, Generator, Union
 
 from ..message import Message
-from ..listener import Listener
 from ..util import len2dlc, dlc2len, channel2int
-from ..typechecking import AcceptedIOType
-from .generic import BaseIOHandler, FileIOMessageWriter
+from ..typechecking import StringPathLike
+from .generic import FileIOMessageWriter, MessageReader
 
 
 class BLFParseError(Exception):
@@ -131,7 +130,7 @@ def systemtime_to_timestamp(systemtime):
         return 0
 
 
-class BLFReader(BaseIOHandler):
+class BLFReader(MessageReader):
     """
     Iterator of CAN messages from a Binary Logging File.
 
@@ -141,7 +140,7 @@ class BLFReader(BaseIOHandler):
 
     file: BinaryIO
 
-    def __init__(self, file: AcceptedIOType) -> None:
+    def __init__(self, file: Union[StringPathLike, BinaryIO]) -> None:
         """
         :param file: a path-like object or as file-like object to read from
                      If this is a file-like object, is has to opened in binary
@@ -162,7 +161,7 @@ class BLFReader(BaseIOHandler):
         self._tail = b""
         self._pos = 0
 
-    def __iter__(self):
+    def __iter__(self) -> Generator[Message, None, None]:
         while True:
             data = self.file.read(OBJ_HEADER_BASE_STRUCT.size)
             if not data:
@@ -349,7 +348,7 @@ class BLFReader(BaseIOHandler):
             pos = next_pos
 
 
-class BLFWriter(FileIOMessageWriter, Listener):
+class BLFWriter(FileIOMessageWriter):
     """
     Logs CAN data to a Binary Logging File compatible with Vector's tools.
     """
@@ -364,7 +363,7 @@ class BLFWriter(FileIOMessageWriter, Listener):
 
     def __init__(
         self,
-        file: AcceptedIOType,
+        file: Union[StringPathLike, BinaryIO],
         append: bool = False,
         channel: int = 1,
         compression_level: int = -1,

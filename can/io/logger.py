@@ -7,7 +7,7 @@ import pathlib
 from abc import ABC, abstractmethod
 from datetime import datetime
 import gzip
-from typing import Any, Optional, Callable, TextIO, Type, Tuple, Union, cast
+from typing import Any, Optional, Callable, Type, Tuple, cast, Dict
 
 from types import TracebackType
 
@@ -16,17 +16,17 @@ from pkg_resources import iter_entry_points
 
 from ..message import Message
 from ..listener import Listener
-from .generic import BaseIOHandler, FileIOMessageWriter
+from .generic import BaseIOHandler, FileIOMessageWriter, MessageWriter
 from .asc import ASCWriter
 from .blf import BLFWriter
 from .canutils import CanutilsLogWriter
 from .csv import CSVWriter
 from .sqlite import SqliteWriter
 from .printer import Printer
-from ..typechecking import StringPathLike
+from ..typechecking import StringPathLike, FileLike, AcceptedIOType
 
 
-class Logger(BaseIOHandler, Listener):  # pylint: disable=abstract-method
+class Logger(MessageWriter):  # pylint: disable=abstract-method
     """
     Logs CAN messages to a file.
 
@@ -52,7 +52,7 @@ class Logger(BaseIOHandler, Listener):  # pylint: disable=abstract-method
     """
 
     fetched_plugins = False
-    message_writers = {
+    message_writers: Dict[str, Type[MessageWriter]] = {
         ".asc": ASCWriter,
         ".blf": BLFWriter,
         ".csv": CSVWriter,
@@ -64,7 +64,7 @@ class Logger(BaseIOHandler, Listener):  # pylint: disable=abstract-method
     @staticmethod
     def __new__(  # type: ignore
         cls: Any, filename: Optional[StringPathLike], *args: Any, **kwargs: Any
-    ) -> Listener:
+    ) -> MessageWriter:
         """
         :param filename: the filename/path of the file to write to,
                          may be a path-like object or None to
@@ -85,20 +85,19 @@ class Logger(BaseIOHandler, Listener):  # pylint: disable=abstract-method
 
         suffix = pathlib.PurePath(filename).suffix.lower()
 
+        file_or_filename: AcceptedIOType = filename
         if suffix == ".gz":
-            suffix, filename = Logger.compress(filename)
+            suffix, file_or_filename = Logger.compress(filename)
 
         try:
-            return cast(
-                Listener, Logger.message_writers[suffix](filename, *args, **kwargs)
-            )
+            return Logger.message_writers[suffix](file_or_filename, *args, **kwargs)
         except KeyError:
             raise ValueError(
                 f'No write support for this unknown log format "{suffix}"'
             ) from None
 
     @staticmethod
-    def compress(filename: StringPathLike) -> Tuple[str, Union[str, Any]]:
+    def compress(filename: StringPathLike) -> Tuple[str, FileLike]:
         """
         Return the suffix and io object of the decompressed file.
         File will automatically recompress upon close.

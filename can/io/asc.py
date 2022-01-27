@@ -12,12 +12,10 @@ from datetime import datetime
 import time
 import logging
 
-from .. import typechecking
 from ..message import Message
-from ..listener import Listener
 from ..util import channel2int
-from .generic import BaseIOHandler, FileIOMessageWriter
-from ..typechecking import AcceptedIOType
+from .generic import FileIOMessageWriter, MessageReader
+from ..typechecking import StringPathLike
 
 
 CAN_MSG_EXT = 0x80000000
@@ -28,7 +26,7 @@ BASE_DEC = 10
 logger = logging.getLogger("can.io.asc")
 
 
-class ASCReader(BaseIOHandler):
+class ASCReader(MessageReader):
     """
     Iterator of CAN messages from a ASC logging file. Meta data (comments,
     bus statistics, J1939 Transport Protocol messages) is ignored.
@@ -40,7 +38,7 @@ class ASCReader(BaseIOHandler):
 
     def __init__(
         self,
-        file: AcceptedIOType,
+        file: Union[StringPathLike, TextIO],
         base: str = "hex",
         relative_timestamp: bool = True,
     ) -> None:
@@ -248,7 +246,7 @@ class ASCReader(BaseIOHandler):
         self.stop()
 
 
-class ASCWriter(FileIOMessageWriter, Listener):
+class ASCWriter(FileIOMessageWriter):
     """Logs CAN data to an ASCII log file (.asc).
 
     The measurement starts with the timestamp of the first registered message.
@@ -287,7 +285,7 @@ class ASCWriter(FileIOMessageWriter, Listener):
 
     def __init__(
         self,
-        file: AcceptedIOType,
+        file: Union[StringPathLike, TextIO],
         channel: int = 1,
     ) -> None:
         """
