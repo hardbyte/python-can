@@ -4,21 +4,13 @@ This module contains the implementation of `can.Listener` and some readers.
 
 import sys
 import warnings
+import asyncio
+from abc import ABCMeta, abstractmethod
+from queue import SimpleQueue, Empty
 from typing import Any, AsyncIterator, Awaitable, Optional
 
 from can.message import Message
 from can.bus import BusABC
-
-from abc import ABCMeta, abstractmethod
-
-try:
-    # Python 3.7
-    from queue import SimpleQueue, Empty
-except ImportError:
-    # Python 3.0 - 3.6
-    from queue import Queue as SimpleQueue, Empty  # type: ignore
-
-import asyncio
 
 
 class Listener(metaclass=ABCMeta):
@@ -36,6 +28,9 @@ class Listener(metaclass=ABCMeta):
         # Important to ensure all outputs are flushed
         listener.stop()
     """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        pass
 
     @abstractmethod
     def on_message_received(self, msg: Message) -> None:
@@ -68,7 +63,8 @@ class RedirectReader(Listener):
     A RedirectReader sends all received messages to another Bus.
     """
 
-    def __init__(self, bus: BusABC) -> None:
+    def __init__(self, bus: BusABC, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
         self.bus = bus
 
     def on_message_received(self, msg: Message) -> None:
@@ -89,7 +85,9 @@ class BufferedReader(Listener):
     :attr is_stopped: ``True`` if the reader has been stopped
     """
 
-    def __init__(self) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+
         # set to "infinite" size
         self.buffer: SimpleQueue[Message] = SimpleQueue()
         self.is_stopped: bool = False
@@ -139,7 +137,9 @@ class AsyncBufferedReader(Listener):
             print(msg)
     """
 
-    def __init__(self, **kwargs: Any) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+
         self.buffer: "asyncio.Queue[Message]"
 
         if "loop" in kwargs:
