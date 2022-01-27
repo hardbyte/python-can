@@ -37,7 +37,8 @@ class Notifier:
 
         :param bus: A :ref:`bus` or a list of buses to listen to.
         :param listeners:
-            An iterable of :class:`~can.Listener` or callables that receive a :class:`~can.Message` and return nothing.
+            An iterable of :class:`~can.Listener` or callables that receive a :class:`~can.Message`
+            and return nothing.
         :param timeout: An optional maximum number of seconds to wait for any :class:`~can.Message`.
         :param loop: An :mod:`asyncio` event loop to schedule the ``listeners`` in.
         """
