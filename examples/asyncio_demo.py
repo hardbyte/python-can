@@ -19,7 +19,7 @@ def print_message(msg: can.Message) -> None:
 async def main() -> None:
     """The main function that runs in the loop."""
 
-    with can.Bus("vcan0", bustype="virtual", receive_own_messages=True) as bus:
+    with can.Bus(interface="virtual", channel="my_channel_0", receive_own_messages=True) as bus:
         reader = can.AsyncBufferedReader()
         logger = can.Logger("logfile.asc")
 
