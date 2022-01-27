@@ -58,7 +58,7 @@ class Listener(metaclass=ABCMeta):
         """
 
 
-class RedirectReader(Listener):
+class RedirectReader(Listener):  # pylint: disable=abstract-method
     """
     A RedirectReader sends all received messages to another Bus.
     """
@@ -71,7 +71,7 @@ class RedirectReader(Listener):
         self.bus.send(msg)
 
 
-class BufferedReader(Listener):
+class BufferedReader(Listener):  # pylint: disable=abstract-method
     """
     A BufferedReader is a subclass of :class:`~can.Listener` which implements a
     **message buffer**: that is, when the :class:`can.BufferedReader` instance is
@@ -126,7 +126,7 @@ class BufferedReader(Listener):
         self.is_stopped = True
 
 
-class AsyncBufferedReader(Listener):
+class AsyncBufferedReader(Listener):  # pylint: disable=abstract-method
     """A message buffer for use with :mod:`asyncio`.
 
     See :ref:`asyncio` for how to use with :class:`can.Notifier`.
