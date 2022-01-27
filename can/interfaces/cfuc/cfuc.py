@@ -349,8 +349,9 @@ class cfucBus(BusABC):
             data = can_data,
             is_fd = True if can_rx_header_FDFormat else False,
             is_extended_id = True if can_rx_header_IdType else False,
-            bitrate_switch= True if can_rx_header_BitRateSwitch else False,
-            is_remote_frame= True if can_rx_header_RxFrameType else False,
+            bitrate_switch = True if can_rx_header_BitRateSwitch else False,
+            is_remote_frame = True if can_rx_header_RxFrameType else False,
+            error_state_indicator = True if can_rx_header_ErrorStateIndicator else False,
         )
         return msg
 
@@ -379,6 +380,7 @@ class cfucBus(BusABC):
             is_extended_id = True if can_tx_header_IdType else False,
             bitrate_switch= True if can_tx_header_BitRateSwitch else False,
             is_remote_frame= True if can_tx_header_TxFrameType else False,
+            error_state_indicator = True if can_tx_header_ErrorStateIndicator else False,
         )
         return msg, False
 
@@ -409,7 +411,7 @@ class cfucBus(BusABC):
             results = self._read_tx_frame()
             return results, False
             
-        elif frame_type == UCAN_FRAME_TYPE.UCAN_FD_RX.value: # if its UCAN_FD_RX
+        elif frame_type == UCAN_FRAME_TYPE.UCAN_FD_RX.value:
             results = list()
             can_frame_count = self._read(4) # read frame count
 
@@ -417,5 +419,11 @@ class cfucBus(BusABC):
                 results.append(self._read_rx_frame())
 
             return tuple(results), False
+        
+        elif frame_type == -1:
+            return None, False
+
+        # else:
+        #     print("ERROR", frame_type)
 
         return None, False
