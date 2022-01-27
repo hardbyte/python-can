@@ -236,8 +236,11 @@ class CanViewer:  # pylint: disable=too-many-instance-attributes
             self.ids[key]["count"] += 1
 
         # Format the CAN-Bus ID as a hex value
-        arbitration_id_string = "0x{0:0{1}X}".format(  # pylint: disable=consider-using-f-string
-            msg.arbitration_id, 8 if msg.is_extended_id else 3,
+        arbitration_id_string = (
+            "0x{0:0{1}X}".format(  # pylint: disable=consider-using-f-string
+                msg.arbitration_id,
+                8 if msg.is_extended_id else 3,
+            )
         )
 
         # Use red for error frames
