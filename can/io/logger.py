@@ -38,7 +38,9 @@ class Logger(BaseIOHandler, Listener):  # pylint: disable=abstract-method
       * .log :class:`can.CanutilsLogWriter`
       * .txt :class:`can.Printer`
 
-    Or any of the above compressed using gzip (.gz)
+    Any of these formats can be used with gzip compression by appending 
+    the suffix .gz (e.g. filename.asc.gz). However, third-party tools might not 
+    be able to read these files.
 
     The **filename** may also be *None*, to fall back to :class:`can.Printer`.
 
