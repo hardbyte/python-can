@@ -30,7 +30,7 @@ class Logger(BaseIOHandler, Listener):  # pylint: disable=abstract-method
     """
     Logs CAN messages to a file.
 
-    The format is determined from the file format which can be one of:
+    The format is determined from the file suffix which can be one of:
       * .asc: :class:`can.ASCWriter`
       * .blf :class:`can.BLFWriter`
       * .csv: :class:`can.CSVWriter`
