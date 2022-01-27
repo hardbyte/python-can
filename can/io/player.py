@@ -25,7 +25,7 @@ class LogReader(BaseIOHandler):
     """
     Replay logged CAN messages from a file.
 
-    The format is determined from the file format which can be one of:
+    The format is determined from the file suffix which can be one of:
       * .asc
       * .blf
       * .csv
