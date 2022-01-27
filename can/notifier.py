@@ -14,14 +14,14 @@ from can.message import Message
 
 logger = logging.getLogger("can.Notifier")
 
-Listenable = Union[Listener, Callable[[Message], None]]
+MessageRecipient = Union[Listener, Callable[[Message], None]]
 
 
 class Notifier:
     def __init__(
         self,
         bus: Union[BusABC, List[BusABC]],
-        listeners: Iterable[Listenable],
+        listeners: Iterable[MessageRecipient],
         timeout: float = 1.0,
         loop: Optional[asyncio.AbstractEventLoop] = None,
     ) -> None:
@@ -42,7 +42,7 @@ class Notifier:
         :param timeout: An optional maximum number of seconds to wait for any :class:`~can.Message`.
         :param loop: An :mod:`asyncio` event loop to schedule the ``listeners`` in.
         """
-        self.listeners: List[Listenable] = list(listeners)
+        self.listeners: List[MessageRecipient] = list(listeners)
         self.bus = bus
         self.timeout = timeout
         self._loop = loop

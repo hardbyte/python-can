@@ -8,7 +8,7 @@ import asyncio
 from typing import List
 
 import can
-from can.notifier import Listenable
+from can.notifier import MessageRecipient
 
 
 def print_message(msg: can.Message) -> None:
@@ -25,7 +25,7 @@ async def main() -> None:
         reader = can.AsyncBufferedReader()
         logger = can.Logger("logfile.asc")
 
-        listeners: List[Listenable] = [
+        listeners: List[MessageRecipient] = [
             print_message,  # Callback function
             reader,  # AsyncBufferedReader() listener
             logger,  # Regular Listener object
