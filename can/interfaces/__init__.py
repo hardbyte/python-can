@@ -40,10 +40,7 @@ try:
         entries = entry_points().get("can.interface", [])
 
     BACKENDS.update(
-        {
-            interface.name: tuple(interface.value.split(":"))
-            for interface in entries
-        }
+        {interface.name: tuple(interface.value.split(":")) for interface in entries}
     )
 except ImportError:
     from pkg_resources import iter_entry_points
