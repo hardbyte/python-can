@@ -19,11 +19,11 @@ Listenable = Union[Listener, Callable[[Message], None]]
 
 class Notifier:
     def __init__(
-            self,
-            bus: Union[BusABC, List[BusABC]],
-            listeners: Iterable[Listenable],
-            timeout: float = 1.0,
-            loop: Optional[asyncio.AbstractEventLoop] = None,
+        self,
+        bus: Union[BusABC, List[BusABC]],
+        listeners: Iterable[Listenable],
+        timeout: float = 1.0,
+        loop: Optional[asyncio.AbstractEventLoop] = None,
     ) -> None:
         """Manages the distribution of :class:`~can.Message` instances to listeners.
 
@@ -152,7 +152,9 @@ class Notifier:
         was_handled = False
 
         for listener in self.listeners:
-            on_error = getattr(listener, "on_error", None)  # Mypy prefers this over hasattr(...)
+            on_error = getattr(
+                listener, "on_error", None
+            )  # Mypy prefers this over hasattr(...)
             if on_error is not None:
                 try:
                     on_error(exc)
