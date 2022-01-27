@@ -41,16 +41,13 @@ class NotifierTest(unittest.TestCase):
 class AsyncNotifierTest(unittest.TestCase):
     def test_asyncio_notifier(self):
         async def run_it():
-            loop = asyncio.get_running_loop()
-            bus = can.Bus("test", bustype="virtual", receive_own_messages=True)
-            reader = can.AsyncBufferedReader()
-            notifier = can.Notifier(bus, [reader], 0.1, loop=loop)
-            msg = can.Message()
-            bus.send(msg)
-            recv_msg = await asyncio.wait_for(reader.get_message(), 1.0)
-            self.assertIsNotNone(recv_msg)
-            notifier.stop()
-            bus.shutdown()
+            with can.Bus("test", bustype="virtual", receive_own_messages=True) as bus:
+                reader = can.AsyncBufferedReader()
+                notifier = can.Notifier(bus, [reader], 0.1, loop=asyncio.get_running_loop())
+                bus.send(can.Message())
+                recv_msg = await asyncio.wait_for(reader.get_message(), 0.5)
+                self.assertIsNotNone(recv_msg)
+                notifier.stop()
 
         asyncio.run(run_it())
 
