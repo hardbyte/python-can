@@ -4,17 +4,16 @@ This Listener simply prints to stdout / the terminal or a file.
 
 import logging
 
-from typing import Optional, cast, TextIO
+from typing import Optional, TextIO, Union
 
 from ..message import Message
-from ..listener import Listener
-from .generic import BaseIOHandler
-from ..typechecking import AcceptedIOType
+from .generic import MessageWriter
+from ..typechecking import StringPathLike
 
 log = logging.getLogger("can.io.printer")
 
 
-class Printer(BaseIOHandler, Listener):
+class Printer(MessageWriter):
     """
     The Printer class is a subclass of :class:`~can.Listener` which simply prints
     any messages it receives to the terminal (stdout). A message is turned into a
@@ -27,7 +26,7 @@ class Printer(BaseIOHandler, Listener):
     file: Optional[TextIO]
 
     def __init__(
-        self, file: Optional[AcceptedIOType] = None, append: bool = False
+        self, file: Optional[Union[StringPathLike, TextIO]] = None, append: bool = False
     ) -> None:
         """
         :param file: An optional path-like object or a file-like object to "print"
