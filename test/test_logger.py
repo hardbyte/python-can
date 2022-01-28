@@ -132,7 +132,7 @@ class TestLoggerCompressedFile(unittest.TestCase):
         with gzip.open(self.testfile.name, "rt") as testlog:
             last_line = testlog.readlines()[-1]
 
-        self.assertEqual(last_line, "(0.000000) vcan0 00C0FFEE#0019000103010401\n")
+        self.assertEqual(last_line, "(0.000000) vcan0 00C0FFEE#0019000103010401 R\n")
 
     def tearDown(self) -> None:
         self.testfile.close()
