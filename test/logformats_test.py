@@ -165,7 +165,6 @@ class ReaderWriterTest(unittest.TestCase, ComparingMessagesTestCase, metaclass=A
         os.remove(self.test_file_name)
         del self.test_file_name
 
-    @unittest.skip("not implemented")
     def test_path_like_explicit_stop(self):
         """testing with path-like and explicit stop() call"""
 
