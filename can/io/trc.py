@@ -9,7 +9,7 @@ for file format description
 Version 1.1 will be implemented as it is most commonly used
 """  # noqa
 
-from typing import Generator, Optional, TextIO
+from typing import Generator, Optional, Union, TextIO
 from datetime import datetime, timedelta
 from enum import Enum
 from io import TextIOWrapper
@@ -19,7 +19,7 @@ import logging
 from ..message import Message
 from ..util import channel2int
 from .generic import FileIOMessageWriter, MessageReader
-from ..typechecking import AcceptedIOType
+from ..typechecking import StringPathLike
 
 
 logger = logging.getLogger("can.io.trc")
@@ -42,7 +42,10 @@ class TRCReader(MessageReader):
 
     file: TextIO
 
-    def __init__(self, file: AcceptedIOType) -> None:
+    def __init__(
+        self,
+        file: Union[StringPathLike, TextIO],
+    ) -> None:
         """
         :param file: a path-like object or as file-like object to read from
                      If this is a file-like object, is has to opened in text
@@ -196,7 +199,11 @@ class TRCWriter(FileIOMessageWriter):
     )
     FORMAT_MESSAGE_V1_0 = "{msgnr:>6}) {time:7.0f} {id:>8} {dlc:<1} {data}"
 
-    def __init__(self, file: AcceptedIOType, channel: int = 1) -> None:
+    def __init__(
+        self,
+        file: Union[StringPathLike, TextIO],
+        channel: int = 1,
+    ) -> None:
         """
         :param file: a path-like object or as file-like object to write to
                      If this is a file-like object, is has to opened in text
