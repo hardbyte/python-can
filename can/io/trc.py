@@ -211,7 +211,7 @@ class TRCWriter(FileIOMessageWriter):
         :param channel: a default channel to use when the message does not
                         have a channel set
         """
-        super(TRCWriter, self).__init__(file, mode="wb")
+        super(TRCWriter, self).__init__(file, mode="w")
         self.channel = channel
         if type(file) is str:
             self.filepath = os.path.abspath(file)
