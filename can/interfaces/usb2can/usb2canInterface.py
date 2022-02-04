@@ -103,7 +103,7 @@ class Usb2canBus(BusABC):
         self.can = Usb2CanAbstractionLayer(dll)
 
         # get the serial number of the device
-        device_id = kwargs.get("serial", d=channel)
+        device_id = kwargs.get("serial", channel)
 
         # search for a serial number if the device_id is None or empty
         if not device_id:
