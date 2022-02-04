@@ -49,7 +49,7 @@ The CANalyst-II interface was contributed by Shaoyu Meng in 2018.
 Support for CAN within Python
 -----------------------------
 
-Python natively supports the CAN protocol from version 3.3 on, if running on Linux:
+Python natively supports the CAN protocol from version 3.3 on, if running on Linux (with a sufficiently new kernel):
 
 ==============  ==============================================================  ====
 Python version  Feature                                                         Link
@@ -58,4 +58,5 @@ Python version  Feature                                                         
 3.4             Broadcast Management (BCM) commands are natively supported      `Docs <https://docs.python.org/3/library/socket.html#socket.CAN_BCM>`__
 3.5             CAN FD support                                                  `Docs <https://docs.python.org/3/library/socket.html#socket.CAN_RAW_FD_FRAMES>`__
 3.7             Support for CAN ISO-TP                                          `Docs <https://docs.python.org/3/library/socket.html#socket.CAN_ISOTP>`__
+3.9             Native support for joining CAN filters                          `Docs <https://docs.python.org/3/library/socket.html#socket.CAN_RAW_JOIN_FILTERS>`__
 ==============  ==============================================================  ====
