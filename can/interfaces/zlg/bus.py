@@ -110,9 +110,17 @@ class ZlgCanBus(BusABC):
     
     def _recv_internal(self, timeout):
         timeout = c_uint32(int((timeout or 0)*1000))
-        if vci_can_get_recv_num(
+        can_msg_count = vci_can_get_recv_num(
             self._dev_type, self._dev_index, self._dev_channel
-        ) > 0:
+        )
+        canfd_msg_count = vci_canfd_get_recv_num(
+            self._dev_type, self._dev_index, self._dev_channel
+        )
+        if can_msg_count > 0 and canfd_msg_count > 0:
+            recv_can = can_msg_count > canfd_msg_count
+        else:
+            recv_can = can_msg_count > 0
+        if recv_can:
             rx_buf = (ZCAN_20_MSG * 1)()
             if vci_can_recv(
                 self._dev_type, self._dev_index, self._dev_channel,
@@ -121,9 +129,7 @@ class ZlgCanBus(BusABC):
                 return self._from_raw(rx_buf[0]), self.filters is None
             else:
                 raise CanOperationError('Failed to receive message!')
-        if vci_canfd_get_recv_num(
-            self._dev_type, self._dev_index, self._dev_channel
-        ) > 0:
+        elif canfd_msg_count > 0:
             rx_buf = (ZCAN_FD_MSG * 1)()
             if vci_canfd_recv(
                 self._dev_type, self._dev_index, self._dev_channel,
