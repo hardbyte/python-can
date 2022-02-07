@@ -94,7 +94,7 @@ class Usb2canBus(BusABC):
         channel=None,
         dll="usb2can.dll",
         flags=0x00000008,
-        *args,
+        *_,
         bitrate=500000,
         **kwargs,
     ):
@@ -119,9 +119,7 @@ class Usb2canBus(BusABC):
         connector = f"{device_id}; {baudrate}"
         self.handle = self.can.open(connector, flags)
 
-        super().__init__(
-            channel=channel, dll=dll, flags=flags, bitrate=bitrate, *args, **kwargs
-        )
+        super().__init__(channel=channel, **kwargs)
 
     def send(self, msg, timeout=None):
         tx = message_convert_tx(msg)
