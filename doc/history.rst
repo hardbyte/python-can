@@ -46,6 +46,34 @@ The CAN viewer terminal script was contributed by Kristian Sloth Lauszus in 2018
 
 The CANalyst-II interface was contributed by Shaoyu Meng in 2018.
 
+@deonvdw added support for the Robotell interface in 2019.
+
+Felix Divo and Karl Ding added type hints for the core library and many
+interfaces leading up to the 4.0 release.
+
+Eric Evenchick added support for the CANtact devices in 2020.
+
+Felix Divo added an interprocess virtual bus interface in 2020.
+
+@jxltom added the gs_usb interface in 2020 supporting Geschwister Schneider USB/CAN devices
+and bytewerk.org candleLight USB CAN devices such as candlelight, canable, cantact, etc.
+
+@jaesc added the nixnet interface in 2021 supporting NI-XNET devices from National Instruments.
+
+Tuukka Pasanen @illuusio added the neousys interface in 2021.
+
+Francisco Javier Burgos Maciá @fjburgos added ixxat FD support.
+
+@domologic contributed a socketcand interface in 2021.
+
+Felix N @felixn contributed the ETAS interface in 2021.
+
+Felix Divo unified exception handling across every interface in the lead up to
+the 4.0 release.
+
+Felix Divo prepared the python-can 4.0 release.
+
+
 Support for CAN within Python
 -----------------------------
 
