@@ -302,6 +302,9 @@ class CanViewer:  # pylint: disable=too-many-instance-attributes
                     else:
                         values_list.append(str(x))
                 values_string = " ".join(values_list)
+                self.ids[key]["values_string_length"] = len(values_string)
+                values_string += " " * (self.x - len(values_string))
+
                 self.draw_line(self.ids[key]["row"], 77, values_string, color)
             except (ValueError, struct.error):
                 pass

@@ -188,6 +188,16 @@ class CanViewerTest(unittest.TestCase):
         msg = can.Message(arbitration_id=0x101, data=data, is_extended_id=False)
         self.can_viewer.bus.send(msg)
 
+        # Send non-CANopen message with long parsed data length
+        data = [255, 255]
+        msg = can.Message(arbitration_id=0x102, data=data, is_extended_id=False)
+        self.can_viewer.bus.send(msg)
+
+        # Send the same command, but with shorter parsed data length
+        data = [0, 0]
+        msg = can.Message(arbitration_id=0x102, data=data, is_extended_id=False)
+        self.can_viewer.bus.send(msg)
+
         # Message with extended id
         data = [1, 2, 3, 4, 5, 6, 7, 8]
         msg = can.Message(arbitration_id=0x123456, data=data, is_extended_id=True)
@@ -210,6 +220,8 @@ class CanViewerTest(unittest.TestCase):
             # For converting the EMCY and HEARTBEAT messages
             0x080 + 0x01: struct.Struct("<HBLB"),
             0x700 + 0x7F: struct.Struct("<B"),
+            # Shorter parsed data length
+            0x102: struct.Struct("<BB"),
             # Big-endian and float test
             0x123456: struct.Struct(">ff"),
         }
@@ -228,6 +240,11 @@ class CanViewerTest(unittest.TestCase):
                     # Make sure the line has been cleared after the shorted message was send
                     for col, v in self.stdscr_dummy.draw_buffer[_id["row"]].items():
                         if col >= 52 + _id["msg"].dlc * 3:
+                            self.assertEqual(v, " ")
+                elif _id["msg"].arbitration_id == 0x102:
+                    # Make sure the parsed values have been cleared after the shorted message was send
+                    for col, v in self.stdscr_dummy.draw_buffer[_id["row"]].items():
+                        if col >= 77 + _id["values_string_length"]:
                             self.assertEqual(v, " ")
                 elif _id["msg"].arbitration_id == 0x123456:
                     # Check if the counter is incremented
