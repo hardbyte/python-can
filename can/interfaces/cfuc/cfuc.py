@@ -68,6 +68,15 @@ class cfucBus(BusABC):
 
     """
 
+    def _construct_bootloader_frame(self):
+        FrameType = struct.pack("<I", UCAN_FRAME_TYPE.UCAN_FD_GO_TO_BOOTLOADER.value)
+        byte_msg =  bytearray(FrameType)  #UCAN_FD_GO_TO_BOOTLOADER
+        return byte_msg
+
+    def go_to_bootloader(self):
+        frame = self._construct_bootloader_frame()
+        self.ser.write(frame)
+
     def _consturct_init_frame(
         self,
         IsFD=False,
