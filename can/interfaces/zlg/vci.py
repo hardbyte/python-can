@@ -44,10 +44,6 @@ class ZCAN_REF(Enum):
     TTX_SETTING =   0x16    # Timing send settins
     TTX_ENABLE  =   0x17    # Timing send enable
 
-    @property
-    def value(self) -> c_uint32:
-        return c_uint32(super().value)
-
 
 class ZCAN_TRES(Structure): # Termination resistor
     ON  = 1
@@ -181,8 +177,9 @@ def vci_channel_read_info(dt, di, ch, info) -> bool:
 
 
 def vci_channel_enable_tres(dt, di, ch, value) -> bool:
+    ref = ZCAN_REF.TRES.value
     tres = ZCAN_TRES(enable=ZCAN_TRES.ON if value else ZCAN_TRES.OFF)
-    ret = lib.VCI_SetReference(c_uint32(dt), c_uint32(di), c_uint32(ch), ZCAN_REF.TRES.value, byref(tres))
+    ret = lib.VCI_SetReference(c_uint32(dt), c_uint32(di), c_uint32(ch), c_uint32(ref), byref(tres))
     if ret == 0:
         log.error(f'CH{ch}: Failed to {"enable" if value else "disable"} '
                   f'termination resistor')
@@ -193,7 +190,7 @@ def vci_channel_enable_tres(dt, di, ch, value) -> bool:
 
 
 def vci_can_send(dt, di, ch, msgs, count) -> int:
-    ret = lib.VCI_Transmit(c_uint32(dt), c_uint32(di), c_uint32(ch), byref(msgs), count)
+    ret = lib.VCI_Transmit(c_uint32(dt), c_uint32(di), c_uint32(ch), byref(msgs), c_uint32(count))
     if ret == 0:
         log.error(f'CH{ch}: Failed to send CAN message(s)')
     else:
@@ -202,7 +199,7 @@ def vci_can_send(dt, di, ch, msgs, count) -> int:
 
 
 def vci_canfd_send(dt, di, ch, msgs, count) -> int:
-    ret = lib.VCI_TransmitFD(c_uint32(dt), c_uint32(di), c_uint32(ch), byref(msgs), count)
+    ret = lib.VCI_TransmitFD(c_uint32(dt), c_uint32(di), c_uint32(ch), byref(msgs), c_uint32(count))
     if ret == 0:
         log.error(f'CH{ch}: Failed to send CANFD message(s)')
     else:
@@ -211,13 +208,13 @@ def vci_canfd_send(dt, di, ch, msgs, count) -> int:
 
 
 def vci_can_recv(dt, di, ch, msgs, count, timeout) -> int:
-    ret = lib.VCI_Receive(c_uint32(dt), c_uint32(di), c_uint32(ch), byref(msgs), count, timeout)
+    ret = lib.VCI_Receive(c_uint32(dt), c_uint32(di), c_uint32(ch), byref(msgs), c_uint32(count), c_uint32(timeout))
     log.debug(f'CH{ch}: Received {len(msgs)} CAN message(s)')
     return ret
 
 
 def vci_canfd_recv(dt, di, ch, msgs, count, timeout) -> int:
-    ret = lib.VCI_ReceiveFD(c_uint32(dt), c_uint32(di), c_uint32(ch), byref(msgs), count, timeout)
+    ret = lib.VCI_ReceiveFD(c_uint32(dt), c_uint32(di), c_uint32(ch), byref(msgs), c_uint32(count), c_uint32(timeout))
     log.debug(f'CH{ch}: Received {len(msgs)} CANFD message(s)')
     return ret
 

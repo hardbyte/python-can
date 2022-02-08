@@ -1,7 +1,7 @@
 import time
 import ctypes
 
-from can import BitTiming, BusABC, BusState, Message
+from can import BusABC, BusState, Message
 from can import CanInitializationError, CanOperationError
 
 from .vci import *
@@ -27,6 +27,7 @@ class ZlgCanBus(BusABC):
         self._dev_type = DeviceType.value
         self._dev_index = int(device)
         self._dev_channel = int(channel)
+        self._dev_timestamp = time.time()
         self.is_opened = self.open()
         if not self.is_opened:
             raise CanInitializationError(f'Failed to open {self.channel_info}')
@@ -95,7 +96,7 @@ class ZlgCanBus(BusABC):
             # pad
         )
         header = ZCAN_MSG_HDR(
-            ts      = c_uint32(int(time.time())),
+            ts      = (int(time.time() - self._dev_timestamp) * 1000) & 0xFFFF_FFFF,
             id      = msg.arbitration_id,
             info    = info,
             chn     = self._dev_channel,
@@ -109,7 +110,7 @@ class ZlgCanBus(BusABC):
         return raw
     
     def _recv_internal(self, timeout):
-        timeout = c_uint32(int((timeout or 0)*1000))
+        timeout = int(timeout or 0) * 1000
         can_msg_count = vci_can_get_recv_num(
             self._dev_type, self._dev_index, self._dev_channel
         )
@@ -142,7 +143,7 @@ class ZlgCanBus(BusABC):
         return None, self.filters is None
 
     def send(self, msg, timeout=None) -> None:
-        timeout = c_uint32(int((timeout or 0)*2000))
+        timeout = int(timeout or 0) * 1000
         if self.data_bitrate and not msg.is_fd: # Force FD if data_bitrate
             msg.is_fd = True
         if msg.is_fd:
