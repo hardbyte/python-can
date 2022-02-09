@@ -38,6 +38,21 @@ But the count of filters is limited to 64 in official driver.
 Although 128 standard ID filters and 64 extended ID filters supported in MCU.
 
 
+Tx/Rx timeout
+-------------
+You've to set tx timeout by VCI_SetReference(), since no timeout argument in 
+VCI_Transmit|FD(). And the maximum tx timeout is 4000ms, 
+limited by firmware, as explained officially. 
+
+And rx timeout is just delay, not aware of coming data in VCI_Receive|FD() API.
+E.g. if rx_timeout is 2s and received data in 1s, you got data after 2s.
+
+In this interface implementation, to avoid above Tx/Rx limitations, 
+both tx and rx timeout is implemented by software. 
+So you can set timeout to ``None`` in send() or recv() to wait indefinitely.
+Or other values to wait for an actual timeout.
+
+
 Note
 ----
 1. Before using this interface

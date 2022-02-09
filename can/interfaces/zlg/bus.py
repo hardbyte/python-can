@@ -2,7 +2,7 @@ import time
 import ctypes
 
 from can import BusABC, BusState, Message
-from can import CanInitializationError, CanOperationError
+from can import CanInitializationError, CanOperationError, CanTimeoutError
 
 from .vci import *
 from .timing import ZlgBitTiming
@@ -109,8 +109,24 @@ class ZlgCanBus(BusABC):
         ctypes.memmove(raw.dat, bytes(msg.data), msg.dlc)
         return raw
     
-    def _recv_internal(self, timeout):
-        timeout = int(timeout or 0) * 1000
+    def _recv_one(self, fd, timeout) -> Message:
+        rx_buf = (ZCAN_FD_MSG * 1)() if fd else (ZCAN_20_MSG * 1)()
+        if fd:
+            ret = vci_canfd_recv(
+                self._dev_type, self._dev_index, self._dev_channel,
+                rx_buf, len(rx_buf), 100
+            )
+        else:
+            ret = vci_can_recv(
+                self._dev_type, self._dev_index, self._dev_channel,
+                rx_buf, len(rx_buf), timeout
+            )
+        if ret > 0:
+            return self._from_raw(rx_buf[0])
+        else:
+            return None
+
+    def _recv_from_fd(self) -> bool:
         can_msg_count = vci_can_get_recv_num(
             self._dev_type, self._dev_index, self._dev_channel
         )
@@ -118,56 +134,68 @@ class ZlgCanBus(BusABC):
             self._dev_type, self._dev_index, self._dev_channel
         )
         if can_msg_count > 0 and canfd_msg_count > 0:
-            recv_can = can_msg_count > canfd_msg_count
+            return canfd_msg_count > can_msg_count
+        elif can_msg_count == 0 and canfd_msg_count == 0:
+            return bool(self.data_bitrate)
         else:
-            recv_can = can_msg_count > 0
-        if recv_can:
-            rx_buf = (ZCAN_20_MSG * 1)()
-            if vci_can_recv(
-                self._dev_type, self._dev_index, self._dev_channel,
-                rx_buf, len(rx_buf), timeout
-            ) > 0:
-                return self._from_raw(rx_buf[0]), self.filters is None
+            return canfd_msg_count > 0
+    
+    def _recv_internal(self, timeout):
+        while timeout is None:
+            if msg := self._recv_one(self._recv_from_fd(), 1000):
+                return msg, self.filters is None
+        else:
+            t1 = time.time()
+            while (time.time() - t1) <= timeout or timeout < 0.001:
+                # It's just delay, not aware of coming data in VCI_Receive|FD
+                recv_timeout = max(min(1000, int(timeout * 1000)), 10)
+                if msg := self._recv_one(self._recv_from_fd(), recv_timeout):
+                    return msg, self.filters is None
+                elif timeout < 0.001:
+                    return None, self.filters is None
             else:
-                raise CanOperationError('Failed to receive message!')
-        elif canfd_msg_count > 0:
-            rx_buf = (ZCAN_FD_MSG * 1)()
-            if vci_canfd_recv(
-                self._dev_type, self._dev_index, self._dev_channel,
-                rx_buf, len(rx_buf), timeout
-            ) > 0:
-                return self._from_raw(rx_buf[0]), self.filters is None
-            else:
-                raise CanOperationError('Failed to receive CANFD message!')
-        time.sleep(.0001)    # Avoid high CPU usage if no message received
-        return None, self.filters is None
-
-    def send(self, msg, timeout=None) -> None:
-        timeout = int(timeout or 0) * 1000
-        if self.data_bitrate and not msg.is_fd: # Force FD if data_bitrate
-            msg.is_fd = True
+                raise CanTimeoutError(f'Receive timeout!')
+    
+    def _send_one(self, msg) -> int:
+        tx_buf = (ZCAN_FD_MSG * 1)() if msg.is_fd else (ZCAN_20_MSG * 1)()
+        tx_buf[0] = self._to_raw(msg)
         if msg.is_fd:
-            tx_buf = (ZCAN_FD_MSG * 1)()
-            tx_buf[0] = self._to_raw(msg)
-            if not vci_canfd_send(
+            return vci_canfd_send(
                 self._dev_type, self._dev_index, self._dev_channel,
                 tx_buf, len(tx_buf)
-            ):
-                raise CanOperationError(
-                    f'Failed to send CANFD message {msg.arbitration_id:03X}!'
-                )
+            )
         else:
-            tx_buf = (ZCAN_20_MSG * 1)()
-            tx_buf[0] = self._to_raw(msg)
-            if not vci_can_send(
+            return vci_can_send(
                 self._dev_type, self._dev_index, self._dev_channel,
                 tx_buf, len(tx_buf)
-            ):
-                raise CanOperationError(
-                    f'Failed to send CAN message {msg.arbitration_id:03X}!'
+            )
+    
+    def _send_internal(self, msg, timeout=None) -> None:
+        while timeout is None:
+            if self._send_one(msg):
+                return
+        else:
+            t1 = time.time()
+            while (time.time() - t1) < timeout:
+                if self._send_one(msg):
+                    return
+            else:
+                raise CanTimeoutError(
+                    f'Send message {msg.arbitration_id:03X} timeout!'
                 )
+    
+    def send(self, msg, timeout=None) -> None:
+        # The maximum tx timeout is 4000ms, limited by firmware, as explained officially
+        dev_timeout = 4000 if timeout is None else 100
+        vci_channel_set_tx_timout(
+            self._dev_type, self._dev_index, self._dev_channel,
+            dev_timeout
+        )
+        if self.data_bitrate: # Force FD if data_bitrate
+            msg.is_fd = True
+        self._send_internal(msg, timeout)
 
-    def open(self):
+    def open(self) -> bool:
         timing = ZlgBitTiming(self._dev_type)
         clock = timing.f_clock
         bitrate = timing.timing(self.bitrate)
