@@ -1,5 +1,6 @@
 import time
 import ctypes
+import platform
 
 from can import BusABC, BusState, Message
 from can import CanInitializationError, CanOperationError, CanTimeoutError
@@ -18,6 +19,8 @@ class ZlgCanBus(BusABC):
         :param device: device index, [0, 1,,,]
         :param tres: enable/disable termination resistor on specified channel
         """
+        if platform.system() != "Linux":
+            raise CanInitializationError(f'Only Linux is supported currently')
         self.bitrate = kwargs.get('bitrate', 500000)
         self.data_bitrate = kwargs.get('data_bitrate', None)
         self.channel_info = \

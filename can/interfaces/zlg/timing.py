@@ -1,6 +1,3 @@
-import time
-import ctypes
-
 from can import BitTiming, CanInitializationError, CanBitRateError
 from .vci import ZCAN_BIT_TIMING, ZCAN_DEVICE
 
