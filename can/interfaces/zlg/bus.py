@@ -112,24 +112,8 @@ class ZlgCanBus(BusABC):
         ctypes.memmove(raw.dat, bytes(msg.data), msg.dlc)
         return raw
     
-    def _recv_one(self, fd, timeout) -> Message:
-        rx_buf = (ZCAN_FD_MSG * 1)() if fd else (ZCAN_20_MSG * 1)()
-        if fd:
-            ret = vci_canfd_recv(
-                self._dev_type, self._dev_index, self._dev_channel,
-                rx_buf, len(rx_buf), 100
-            )
-        else:
-            ret = vci_can_recv(
-                self._dev_type, self._dev_index, self._dev_channel,
-                rx_buf, len(rx_buf), timeout
-            )
-        if ret > 0:
-            return self._from_raw(rx_buf[0])
-        else:
-            return None
-
-    def _recv_from_fd(self) -> bool:
+    def _available_msgs(self) -> tuple[bool, int]:
+        '''Return (is_fd, buffered_msg_count)'''
         can_msg_count = vci_can_get_recv_num(
             self._dev_type, self._dev_index, self._dev_channel
         )
@@ -137,25 +121,48 @@ class ZlgCanBus(BusABC):
             self._dev_type, self._dev_index, self._dev_channel
         )
         if can_msg_count > 0 and canfd_msg_count > 0:
-            return canfd_msg_count > can_msg_count
+            if canfd_msg_count > can_msg_count:
+                return True, canfd_msg_count
+            else:
+                return False, can_msg_count
         elif can_msg_count == 0 and canfd_msg_count == 0:
-            return bool(self.data_bitrate)
+            return bool(self.data_bitrate), 0
         else:
-            return canfd_msg_count > 0
-    
+            return canfd_msg_count > 0, canfd_msg_count or can_msg_count
+
+    def _recv_one(self, fd) -> Message:
+        delay = 1  # ZLG cann't comfirm what's happen if delay == 0
+        rx_buf = (ZCAN_FD_MSG * 1)() if fd else (ZCAN_20_MSG * 1)()
+        if fd:
+            ret = vci_canfd_recv(
+                self._dev_type, self._dev_index, self._dev_channel,
+                rx_buf, len(rx_buf), delay
+            )
+        else:
+            ret = vci_can_recv(
+                self._dev_type, self._dev_index, self._dev_channel,
+                rx_buf, len(rx_buf), delay
+            )
+        if ret > 0:
+            return self._from_raw(rx_buf[0])
+        else:
+            return None
+
     def _recv_internal(self, timeout):
-        while timeout is None:
-            if msg := self._recv_one(self._recv_from_fd(), 1000):
-                return msg, self.filters is None
-        else:
-            t1 = time.time()
-            while (time.time() - t1) <= timeout or timeout < 0.001:
-                # It's just delay, not aware of coming data in VCI_Receive|FD
-                recv_timeout = max(min(1000, int(timeout * 1000)), 10)
-                if msg := self._recv_one(self._recv_from_fd(), recv_timeout):
+        t1 = time.time()
+        while True:
+            is_fd, msg_count = self._available_msgs()
+            if msg_count:
+                if msg := self._recv_one(is_fd):
                     return msg, self.filters is None
-                elif timeout < 0.001:
-                    return None, self.filters is None
+                else:
+                    raise CanOperationError(f'Failed to receive!')
+            elif timeout is None:
+                time.sleep(0.001)
+            elif timeout < 0.001:
+                return None, self.filters is None
+            elif (time.time() - t1) < timeout:
+                time.sleep(0.001)
             else:
                 raise CanTimeoutError(f'Receive timeout!')
     
@@ -179,8 +186,10 @@ class ZlgCanBus(BusABC):
                 return
         else:
             t1 = time.time()
-            while (time.time() - t1) < timeout:
+            while (time.time() - t1) < timeout or timeout < 0.001:
                 if self._send_one(msg):
+                    return
+                elif timeout < 0.001:
                     return
             else:
                 raise CanTimeoutError(
@@ -189,8 +198,8 @@ class ZlgCanBus(BusABC):
     
     def send(self, msg, timeout=None) -> None:
         # The maximum tx timeout is 4000ms, limited by firmware, as explained officially
-        dev_timeout = 4000 if timeout is None else 100
-        vci_channel_set_tx_timout(
+        dev_timeout = 4000 if timeout is None else 10
+        vci_channel_set_tx_timeout(
             self._dev_type, self._dev_index, self._dev_channel,
             dev_timeout
         )

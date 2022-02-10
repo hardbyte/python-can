@@ -195,7 +195,7 @@ def vci_channel_enable_tres(dt, di, ch, value) -> bool:
     return ret != 0
 
 
-def vci_channel_set_tx_timout(dt, di, ch, value) -> bool:
+def vci_channel_set_tx_timeout(dt, di, ch, value) -> bool:
     ref = ZCAN_REF.TX_TIMEOUT.value
     timeout = ZCAN_TX_TIMEOUT(value=value)
     ret = lib.VCI_SetReference(c_uint32(dt), c_uint32(di), c_uint32(ch), c_uint32(ref), byref(timeout))
@@ -224,14 +224,14 @@ def vci_canfd_send(dt, di, ch, msgs, count) -> int:
     return ret
 
 
-def vci_can_recv(dt, di, ch, msgs, count, timeout) -> int:
-    ret = lib.VCI_Receive(c_uint32(dt), c_uint32(di), c_uint32(ch), byref(msgs), c_uint32(count), c_uint32(timeout))
+def vci_can_recv(dt, di, ch, msgs, count, delay) -> int:
+    ret = lib.VCI_Receive(c_uint32(dt), c_uint32(di), c_uint32(ch), byref(msgs), c_uint32(count), c_uint32(delay))
     log.debug(f'CH{ch}: Received {ret} CAN message(s)')
     return ret
 
 
-def vci_canfd_recv(dt, di, ch, msgs, count, timeout) -> int:
-    ret = lib.VCI_ReceiveFD(c_uint32(dt), c_uint32(di), c_uint32(ch), byref(msgs), c_uint32(count), c_uint32(timeout))
+def vci_canfd_recv(dt, di, ch, msgs, count, delay) -> int:
+    ret = lib.VCI_ReceiveFD(c_uint32(dt), c_uint32(di), c_uint32(ch), byref(msgs), c_uint32(count), c_uint32(delay))
     log.debug(f'CH{ch}: Received {ret} CAN-FD message(s)')
     return ret
 
