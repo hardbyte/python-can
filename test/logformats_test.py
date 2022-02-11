@@ -557,6 +557,9 @@ class TestAscFileFormat(ReaderWriterTest):
     def test_ignore_comments(self):
         _msg_list = self._read_log_file("logfile.asc")
 
+    def test_no_triggerblock(self):
+        _msg_list = self._read_log_file("issue_1256.asc")
+
 
 class TestBlfFileFormat(ReaderWriterTest):
     """Tests can.BLFWriter and can.BLFReader.
