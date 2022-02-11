@@ -9,7 +9,6 @@ from typing import Optional
 from can import BusABC, Message, CanInitializationError, CanOperationError
 from .usb2canabstractionlayer import Usb2CanAbstractionLayer, CanalMsg, CanalError
 from .usb2canabstractionlayer import (
-    flags_t,
     IS_ERROR_FRAME,
     IS_REMOTE_FRAME,
     IS_ID_TYPE,
@@ -95,7 +94,7 @@ class Usb2canBus(BusABC):
         channel=None,
         dll="usb2can.dll",
         flags=0x00000008,
-        *args,
+        *_,
         bitrate=500000,
         **kwargs,
     ):
@@ -118,11 +117,9 @@ class Usb2canBus(BusABC):
         self.channel_info = f"USB2CAN device {device_id}"
 
         connector = f"{device_id}; {baudrate}"
-        self.handle = self.can.open(connector, flags_t)
+        self.handle = self.can.open(connector, flags)
 
-        super().__init__(
-            channel=channel, dll=dll, flags_t=flags_t, bitrate=bitrate, *args, **kwargs
-        )
+        super().__init__(channel=channel, **kwargs)
 
     def send(self, msg, timeout=None):
         tx = message_convert_tx(msg)
