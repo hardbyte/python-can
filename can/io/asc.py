@@ -13,7 +13,7 @@ import time
 import logging
 
 from ..message import Message
-from ..util import channel2int
+from ..util import channel2int, len2dlc, dlc2len
 from .generic import FileIOMessageWriter, MessageReader
 from ..typechecking import StringPathLike
 
@@ -194,11 +194,20 @@ class ASCReader(MessageReader):
             msg_kwargs["bitrate_switch"] = brs == "1"
             msg_kwargs["error_state_indicator"] = esi == "1"
             dlc = int(dlc_str, self._converted_base)
-            msg_kwargs["dlc"] = dlc
             data_length = int(data_length_str)
-
-            # CAN remote Frame
-            msg_kwargs["is_remote_frame"] = data_length == 0
+            if data_length == 0:
+                # CAN remote Frame
+                msg_kwargs["is_remote_frame"] = True
+                msg_kwargs["dlc"] = dlc
+            else:
+                if dlc2len(dlc) != data_length:
+                    logger.warning(
+                        "DLC vs Data Length mismatch %d[%d] != %d",
+                        dlc,
+                        dlc2len(dlc),
+                        data_length,
+                    )
+                msg_kwargs["dlc"] = data_length
 
             self._process_data_string(data, data_length, msg_kwargs)
 
@@ -381,8 +390,8 @@ class ASCWriter(FileIOMessageWriter):
                 symbolic_name="",
                 brs=1 if msg.bitrate_switch else 0,
                 esi=1 if msg.error_state_indicator else 0,
-                dlc=msg.dlc,
-                data_length=len(data),
+                dlc=len2dlc(msg.dlc),
+                data_length=len(msg.data),
                 data=" ".join(data),
                 message_duration=0,
                 message_length=0,
