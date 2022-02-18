@@ -1,14 +1,12 @@
 #!/usr/bin/env python
-# coding: utf-8
 
 """
 This module tests cyclic send tasks.
 """
 
-from __future__ import absolute_import
-
 from time import sleep
 import unittest
+from unittest.mock import MagicMock
 import gc
 
 import can
@@ -18,17 +16,23 @@ from .message_helper import ComparingMessagesTestCase
 
 
 class SimpleCyclicSendTaskTest(unittest.TestCase, ComparingMessagesTestCase):
-
     def __init__(self, *args, **kwargs):
         unittest.TestCase.__init__(self, *args, **kwargs)
-        ComparingMessagesTestCase.__init__(self, allowed_timestamp_delta=0.016, preserves_channel=True)
+        ComparingMessagesTestCase.__init__(
+            self, allowed_timestamp_delta=0.016, preserves_channel=True
+        )
 
-    @unittest.skipIf(IS_CI, "the timing sensitive behaviour cannot be reproduced reliably on a CI server")
+    @unittest.skipIf(
+        IS_CI,
+        "the timing sensitive behaviour cannot be reproduced reliably on a CI server",
+    )
     def test_cycle_time(self):
-        msg = can.Message(is_extended_id=False, arbitration_id=0x123, data=[0, 1, 2, 3, 4, 5, 6, 7])
+        msg = can.Message(
+            is_extended_id=False, arbitration_id=0x123, data=[0, 1, 2, 3, 4, 5, 6, 7]
+        )
 
-        with can.interface.Bus(bustype='virtual') as bus1:
-            with can.interface.Bus(bustype='virtual') as bus2:
+        with can.interface.Bus(bustype="virtual") as bus1:
+            with can.interface.Bus(bustype="virtual") as bus2:
 
                 # disabling the garbage collector makes the time readings more reliable
                 gc.disable()
@@ -39,8 +43,12 @@ class SimpleCyclicSendTaskTest(unittest.TestCase, ComparingMessagesTestCase):
                 sleep(2)
                 size = bus2.queue.qsize()
                 # About 100 messages should have been transmitted
-                self.assertTrue(80 <= size <= 120,
-                                '100 +/- 20 messages should have been transmitted. But queue contained {}'.format(size))
+                self.assertTrue(
+                    80 <= size <= 120,
+                    "100 +/- 20 messages should have been transmitted. But queue contained {}".format(
+                        size
+                    ),
+                )
                 last_msg = bus2.recv()
                 next_last_msg = bus2.recv()
 
@@ -59,10 +67,14 @@ class SimpleCyclicSendTaskTest(unittest.TestCase, ComparingMessagesTestCase):
                 self.assertMessageEqual(msg, last_msg)
 
     def test_removing_bus_tasks(self):
-        bus = can.interface.Bus(bustype='virtual')
+        bus = can.interface.Bus(bustype="virtual")
         tasks = []
         for task_i in range(10):
-            msg = can.Message(is_extended_id=False, arbitration_id=0x123, data=[0, 1, 2, 3, 4, 5, 6, 7])
+            msg = can.Message(
+                is_extended_id=False,
+                arbitration_id=0x123,
+                data=[0, 1, 2, 3, 4, 5, 6, 7],
+            )
             msg.arbitration_id = task_i
             task = bus.send_periodic(msg, 0.1, 1)
             tasks.append(task)
@@ -78,10 +90,14 @@ class SimpleCyclicSendTaskTest(unittest.TestCase, ComparingMessagesTestCase):
         bus.shutdown()
 
     def test_managed_tasks(self):
-        bus = can.interface.Bus(bustype='virtual', receive_own_messages=True)
+        bus = can.interface.Bus(bustype="virtual", receive_own_messages=True)
         tasks = []
         for task_i in range(3):
-            msg = can.Message(is_extended_id=False, arbitration_id=0x123, data=[0, 1, 2, 3, 4, 5, 6, 7])
+            msg = can.Message(
+                is_extended_id=False,
+                arbitration_id=0x123,
+                data=[0, 1, 2, 3, 4, 5, 6, 7],
+            )
             msg.arbitration_id = task_i
             task = bus.send_periodic(msg, 0.1, 10, store_task=False)
             tasks.append(task)
@@ -104,10 +120,14 @@ class SimpleCyclicSendTaskTest(unittest.TestCase, ComparingMessagesTestCase):
         bus.shutdown()
 
     def test_stopping_perodic_tasks(self):
-        bus = can.interface.Bus(bustype='virtual')
+        bus = can.interface.Bus(bustype="virtual")
         tasks = []
         for task_i in range(10):
-            msg = can.Message(is_extended_id=False, arbitration_id=0x123, data=[0, 1, 2, 3, 4, 5, 6, 7])
+            msg = can.Message(
+                is_extended_id=False,
+                arbitration_id=0x123,
+                data=[0, 1, 2, 3, 4, 5, 6, 7],
+            )
             msg.arbitration_id = task_i
             task = bus.send_periodic(msg, 0.1, 1)
             tasks.append(task)
@@ -131,6 +151,44 @@ class SimpleCyclicSendTaskTest(unittest.TestCase, ComparingMessagesTestCase):
 
         bus.shutdown()
 
+    @unittest.skipIf(IS_CI, "fails randomly when run on CI server")
+    def test_thread_based_cyclic_send_task(self):
+        bus = can.ThreadSafeBus(bustype="virtual")
+        msg = can.Message(
+            is_extended_id=False, arbitration_id=0x123, data=[0, 1, 2, 3, 4, 5, 6, 7]
+        )
 
-if __name__ == '__main__':
+        # good case, bus is up
+        on_error_mock = MagicMock(return_value=False)
+        task = can.broadcastmanager.ThreadBasedCyclicSendTask(
+            bus, bus._lock_send_periodic, msg, 0.1, 3, on_error_mock
+        )
+        task.start()
+        sleep(1)
+        on_error_mock.assert_not_called()
+        task.stop()
+        bus.shutdown()
+
+        # bus has been shutted down
+        on_error_mock = MagicMock(return_value=False)
+        task = can.broadcastmanager.ThreadBasedCyclicSendTask(
+            bus, bus._lock_send_periodic, msg, 0.1, 3, on_error_mock
+        )
+        task.start()
+        sleep(1)
+        self.assertEqual(on_error_mock.call_count, 1)
+        task.stop()
+
+        # bus is still shutted down, but on_error returns True
+        on_error_mock = MagicMock(return_value=True)
+        task = can.broadcastmanager.ThreadBasedCyclicSendTask(
+            bus, bus._lock_send_periodic, msg, 0.1, 3, on_error_mock
+        )
+        task.start()
+        sleep(1)
+        self.assertTrue(on_error_mock.call_count > 1)
+        task.stop()
+
+
+if __name__ == "__main__":
     unittest.main()

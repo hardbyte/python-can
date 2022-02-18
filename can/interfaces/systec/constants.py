@@ -1,5 +1,3 @@
-# coding: utf-8
-
 from ctypes import c_ubyte as BYTE, c_ushort as WORD, c_ulong as DWORD
 
 #: Maximum number of modules that are supported.
@@ -364,6 +362,7 @@ class OutputControl(BYTE):
     These values are only important for GW-001 and GW-002.
     They does not have an effect on systec USB-CANmoduls.
     """
+
     #: default OCR value for the standard USB-CANmodul GW-001/GW-002
     OCR_DEFAULT = 0x1A
     #: OCR value for RS485 interface and galvanic isolation
@@ -433,42 +432,45 @@ class ResetFlags(DWORD):
     RESET_FIRMWARE = 0xFFFFFFFF
 
     #: no reset of all message counters
-    RESET_NO_COUNTER_ALL = (RESET_NO_TXCOUNTER | RESET_NO_RXCOUNTER)
+    RESET_NO_COUNTER_ALL = RESET_NO_TXCOUNTER | RESET_NO_RXCOUNTER
     #: no reset of transmit message buffers at communication level (firmware, kernel and library)
-    RESET_NO_TXBUFFER_COMM = (RESET_NO_TXBUFFER_DLL | 0x40 | RESET_NO_TXBUFFER_FW)
+    RESET_NO_TXBUFFER_COMM = RESET_NO_TXBUFFER_DLL | 0x40 | RESET_NO_TXBUFFER_FW
     #: no reset of receive message buffers at communication level (firmware, kernel and library)
-    RESET_NO_RXBUFFER_COMM = (RESET_NO_RXBUFFER_DLL | RESET_NO_RXBUFFER_SYS | RESET_NO_RXBUFFER_FW)
+    RESET_NO_RXBUFFER_COMM = (
+        RESET_NO_RXBUFFER_DLL | RESET_NO_RXBUFFER_SYS | RESET_NO_RXBUFFER_FW
+    )
     #: no reset of all transmit message buffers
-    RESET_NO_TXBUFFER_ALL = (RESET_NO_TXBUFFER_CH | RESET_NO_TXBUFFER_COMM)
+    RESET_NO_TXBUFFER_ALL = RESET_NO_TXBUFFER_CH | RESET_NO_TXBUFFER_COMM
     #: no reset of all receive message buffers
-    RESET_NO_RXBUFFER_ALL = (RESET_NO_RXBUFFER_CH | RESET_NO_RXBUFFER_COMM)
+    RESET_NO_RXBUFFER_ALL = RESET_NO_RXBUFFER_CH | RESET_NO_RXBUFFER_COMM
     #: no reset of all message buffers at communication level (firmware, kernel and library)
-    RESET_NO_BUFFER_COMM = (RESET_NO_TXBUFFER_COMM | RESET_NO_RXBUFFER_COMM)
+    RESET_NO_BUFFER_COMM = RESET_NO_TXBUFFER_COMM | RESET_NO_RXBUFFER_COMM
     #: no reset of all message buffers
-    RESET_NO_BUFFER_ALL = (RESET_NO_TXBUFFER_ALL | RESET_NO_RXBUFFER_ALL)
+    RESET_NO_BUFFER_ALL = RESET_NO_TXBUFFER_ALL | RESET_NO_RXBUFFER_ALL
     #: reset of the CAN status only
-    RESET_ONLY_STATUS = (0xFFFF & ~RESET_NO_STATUS)
+    RESET_ONLY_STATUS = 0xFFFF & ~RESET_NO_STATUS
     #: reset of the CAN controller only
-    RESET_ONLY_CANCTRL = (0xFFFF & ~RESET_NO_CANCTRL)
+    RESET_ONLY_CANCTRL = 0xFFFF & ~RESET_NO_CANCTRL
     #: reset of the transmit buffer in firmware only
-    RESET_ONLY_TXBUFFER_FW = (0xFFFF & ~RESET_NO_TXBUFFER_FW)
+    RESET_ONLY_TXBUFFER_FW = 0xFFFF & ~RESET_NO_TXBUFFER_FW
     #: reset of the receive buffer in firmware only
-    RESET_ONLY_RXBUFFER_FW = (0xFFFF & ~RESET_NO_RXBUFFER_FW)
+    RESET_ONLY_RXBUFFER_FW = 0xFFFF & ~RESET_NO_RXBUFFER_FW
     #: reset of the specified channel of the receive buffer only
-    RESET_ONLY_RXCHANNEL_BUFF = (0xFFFF & ~RESET_NO_RXBUFFER_CH)
+    RESET_ONLY_RXCHANNEL_BUFF = 0xFFFF & ~RESET_NO_RXBUFFER_CH
     #: reset of the specified channel of the transmit buffer only
-    RESET_ONLY_TXCHANNEL_BUFF = (0xFFFF & ~RESET_NO_TXBUFFER_CH)
+    RESET_ONLY_TXCHANNEL_BUFF = 0xFFFF & ~RESET_NO_TXBUFFER_CH
     #: reset of the receive buffer and receive message counter only
-    RESET_ONLY_RX_BUFF = (0xFFFF & ~(RESET_NO_RXBUFFER_ALL | RESET_NO_RXCOUNTER))
+    RESET_ONLY_RX_BUFF = 0xFFFF & ~(RESET_NO_RXBUFFER_ALL | RESET_NO_RXCOUNTER)
     #: reset of the receive buffer and receive message counter (for GW-002) only
-    RESET_ONLY_RX_BUFF_GW002 = (0xFFFF & ~(RESET_NO_RXBUFFER_ALL | RESET_NO_RXCOUNTER |
-                                                  RESET_NO_TXBUFFER_FW))
+    RESET_ONLY_RX_BUFF_GW002 = 0xFFFF & ~(
+        RESET_NO_RXBUFFER_ALL | RESET_NO_RXCOUNTER | RESET_NO_TXBUFFER_FW
+    )
     #: reset of the transmit buffer and transmit message counter only
-    RESET_ONLY_TX_BUFF = (0xFFFF & ~(RESET_NO_TXBUFFER_ALL | RESET_NO_TXCOUNTER))
+    RESET_ONLY_TX_BUFF = 0xFFFF & ~(RESET_NO_TXBUFFER_ALL | RESET_NO_TXCOUNTER)
     #: reset of all buffers and all message counters only
-    RESET_ONLY_ALL_BUFF = (RESET_ONLY_RX_BUFF & RESET_ONLY_TX_BUFF)
+    RESET_ONLY_ALL_BUFF = RESET_ONLY_RX_BUFF & RESET_ONLY_TX_BUFF
     #: reset of all message counters only
-    RESET_ONLY_ALL_COUNTER = (0xFFFF & ~RESET_NO_COUNTER_ALL)
+    RESET_ONLY_ALL_COUNTER = 0xFFFF & ~RESET_NO_COUNTER_ALL
 
 
 PRODCODE_PID_TWO_CHA = 0x1
@@ -480,7 +482,7 @@ PRODCODE_PID_RESVD = 0x40
 
 PRODCODE_MASK_DID = 0xFFFF0000
 PRODCODE_MASK_PID = 0xFFFF
-PRODCODE_MASK_PIDG3 = (PRODCODE_MASK_PID & 0xFFFFFFBF)
+PRODCODE_MASK_PIDG3 = PRODCODE_MASK_PID & 0xFFFFFFBF
 
 
 class ProductCode(WORD):
@@ -597,11 +599,11 @@ class PendingFlags(BYTE):
     #: number of pending CAN messages in transmit buffer of firmware
     PENDING_FLAG_TX_FW = 0x40
     #: number of pending CAN messages in all receive buffers
-    PENDING_FLAG_RX_ALL = (PENDING_FLAG_RX_DLL | PENDING_FLAG_RX_SYS | PENDING_FLAG_RX_FW)
+    PENDING_FLAG_RX_ALL = PENDING_FLAG_RX_DLL | PENDING_FLAG_RX_SYS | PENDING_FLAG_RX_FW
     #: number of pending CAN messages in all transmit buffers
-    PENDING_FLAG_TX_ALL = (PENDING_FLAG_TX_DLL | PENDING_FLAG_TX_SYS | PENDING_FLAG_TX_FW)
+    PENDING_FLAG_TX_ALL = PENDING_FLAG_TX_DLL | PENDING_FLAG_TX_SYS | PENDING_FLAG_TX_FW
     #: number of pending CAN messages in all buffers
-    PENDING_FLAG_ALL = (PENDING_FLAG_RX_ALL | PENDING_FLAG_TX_ALL)
+    PENDING_FLAG_ALL = PENDING_FLAG_RX_ALL | PENDING_FLAG_TX_ALL
 
 
 class Mode(BYTE):

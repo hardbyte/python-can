@@ -1,11 +1,8 @@
 #!/usr/bin/env python
-# coding: utf-8
 
 """
 This module tests that the scripts are all callable.
 """
-
-from __future__ import absolute_import
 
 import subprocess
 import unittest
@@ -16,10 +13,7 @@ from abc import ABCMeta, abstractmethod
 from .config import *
 
 
-class CanScriptTest(unittest.TestCase):
-
-    __metaclass__ = ABCMeta
-
+class CanScriptTest(unittest.TestCase, metaclass=ABCMeta):
     @classmethod
     def setUpClass(cls):
         # clean up the argument list so the call to the main() functions
@@ -33,7 +27,12 @@ class CanScriptTest(unittest.TestCase):
         """
         for command in self._commands():
             try:
-                subprocess.check_output(command.split(), stderr=subprocess.STDOUT)
+                subprocess.check_output(
+                    command.split(),
+                    stderr=subprocess.STDOUT,
+                    encoding="utf-8",
+                    shell=IS_WINDOWS,
+                )
             except subprocess.CalledProcessError as e:
                 return_code = e.returncode
                 output = e.output
@@ -42,9 +41,13 @@ class CanScriptTest(unittest.TestCase):
                 output = "-- NO OUTPUT --"
 
             allowed = [0, errno.EINVAL]
-            self.assertIn(return_code, allowed,
-                    'Calling "{}" failed (exit code was {} and not SUCCESS/0 or EINVAL/22):\n{}'
-                    .format(command, return_code, output))
+            self.assertIn(
+                return_code,
+                allowed,
+                'Calling "{}" failed (exit code was {} and not SUCCESS/0 or EINVAL/22):\n{}'.format(
+                    command, return_code, output
+                ),
+            )
 
     def test_does_not_crash(self):
         # test import
@@ -63,17 +66,15 @@ class CanScriptTest(unittest.TestCase):
 
     @abstractmethod
     def _import(self):
-        """Returns the modue of the script that has a main() function.
-        """
+        """Returns the modue of the script that has a main() function."""
         pass
 
 
 class TestLoggerScript(CanScriptTest):
-
     def _commands(self):
         commands = [
             "python -m can.logger --help",
-            "python scripts/can_logger.py --help"
+            "python scripts/can_logger.py --help",
         ]
         if IS_UNIX:
             commands += ["can_logger.py --help"]
@@ -81,15 +82,15 @@ class TestLoggerScript(CanScriptTest):
 
     def _import(self):
         import can.logger as module
+
         return module
 
 
 class TestPlayerScript(CanScriptTest):
-
     def _commands(self):
         commands = [
             "python -m can.player --help",
-            "python scripts/can_player.py --help"
+            "python scripts/can_player.py --help",
         ]
         if IS_UNIX:
             commands += ["can_player.py --help"]
@@ -97,6 +98,23 @@ class TestPlayerScript(CanScriptTest):
 
     def _import(self):
         import can.player as module
+
+        return module
+
+
+class TestLogconvertScript(CanScriptTest):
+    def _commands(self):
+        commands = [
+            "python -m can.logconvert --help",
+            "python scripts/can_logconvert.py --help",
+        ]
+        if IS_UNIX:
+            commands += ["can_logconvert.py --help"]
+        return commands
+
+    def _import(self):
+        import can.logconvert as module
+
         return module
 
 
@@ -104,8 +122,8 @@ class TestPlayerScript(CanScriptTest):
 
 
 # this excludes the base class from being executed as a test case itself
-del(CanScriptTest)
+del CanScriptTest
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

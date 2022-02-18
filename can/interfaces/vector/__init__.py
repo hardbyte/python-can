@@ -1,7 +1,5 @@
-# coding: utf-8
-
 """
 """
 
-from .canlib import VectorBus
-from .exceptions import VectorError
+from .canlib import VectorBus, VectorChannelConfig
+from .exceptions import VectorError, VectorOperationError, VectorInitializationError

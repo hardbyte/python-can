@@ -1,6 +1,4 @@
-# coding: utf-8
-
 """
 """
 
-from can.interfaces.pcan.pcan import PcanBus
+from can.interfaces.pcan.pcan import PcanBus, PcanError

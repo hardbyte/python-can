@@ -1,29 +1,19 @@
-# coding: utf-8
-
 """
 This module contains the implementation of `can.Listener` and some readers.
 """
 
+import sys
+import warnings
+import asyncio
 from abc import ABCMeta, abstractmethod
+from queue import SimpleQueue, Empty
+from typing import Any, AsyncIterator, Awaitable, Optional
 
-try:
-    # Python 3.7
-    from queue import SimpleQueue, Empty
-except ImportError:
-    try:
-        # Python 3.0 - 3.6
-        from queue import Queue as SimpleQueue, Empty
-    except ImportError:
-        # Python 2
-        from Queue import Queue as SimpleQueue, Empty
-
-try:
-    import asyncio
-except ImportError:
-    asyncio = None
+from can.message import Message
+from can.bus import BusABC
 
 
-class Listener(object):
+class Listener(metaclass=ABCMeta):
     """The basic listener that can be called directly to handle some
     CAN message::
 
@@ -39,27 +29,27 @@ class Listener(object):
         listener.stop()
     """
 
-    __metaclass__ = ABCMeta
-
-    @abstractmethod
-    def on_message_received(self, msg):
-        """This method is called to handle the given message.
-
-        :param can.Message msg: the delivered message
-
-        """
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         pass
 
-    def __call__(self, msg):
-        return self.on_message_received(msg)
+    @abstractmethod
+    def on_message_received(self, msg: Message) -> None:
+        """This method is called to handle the given message.
 
-    def on_error(self, exc):
-        """This method is called to handle any exception in the receive thread.
-
-        :param Exception exc: The exception causing the thread to stop
+        :param msg: the delivered message
         """
 
-    def stop(self):
+    def __call__(self, msg: Message) -> None:
+        self.on_message_received(msg)
+
+    def on_error(self, exc: Exception) -> None:
+        """This method is called to handle any exception in the receive thread.
+
+        :param exc: The exception causing the thread to stop
+        """
+        raise NotImplementedError()
+
+    def stop(self) -> None:
         """
         Stop handling new messages, carry out any final tasks to ensure
         data is persisted and cleanup any open resources.
@@ -68,20 +58,20 @@ class Listener(object):
         """
 
 
-class RedirectReader(Listener):
+class RedirectReader(Listener):  # pylint: disable=abstract-method
     """
     A RedirectReader sends all received messages to another Bus.
-
     """
 
-    def __init__(self, bus):
+    def __init__(self, bus: BusABC, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
         self.bus = bus
 
-    def on_message_received(self, msg):
+    def on_message_received(self, msg: Message) -> None:
         self.bus.send(msg)
 
 
-class BufferedReader(Listener):
+class BufferedReader(Listener):  # pylint: disable=abstract-method
     """
     A BufferedReader is a subclass of :class:`~can.Listener` which implements a
     **message buffer**: that is, when the :class:`can.BufferedReader` instance is
@@ -89,18 +79,20 @@ class BufferedReader(Listener):
     be serviced. The messages can then be fetched with
     :meth:`~can.BufferedReader.get_message`.
 
-    Putting in messages after :meth:`~can.BufferedReader.stop` has be called will raise
+    Putting in messages after :meth:`~can.BufferedReader.stop` has been called will raise
     an exception, see :meth:`~can.BufferedReader.on_message_received`.
 
-    :attr bool is_stopped: ``True`` iff the reader has been stopped
+    :attr is_stopped: ``True`` if the reader has been stopped
     """
 
-    def __init__(self):
-        # set to "infinite" size
-        self.buffer = SimpleQueue()
-        self.is_stopped = False
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
 
-    def on_message_received(self, msg):
+        # set to "infinite" size
+        self.buffer: SimpleQueue[Message] = SimpleQueue()
+        self.is_stopped: bool = False
+
+    def on_message_received(self, msg: Message) -> None:
         """Append a message to the buffer.
 
         :raises: BufferError
@@ -111,64 +103,76 @@ class BufferedReader(Listener):
         else:
             self.buffer.put(msg)
 
-    def get_message(self, timeout=0.5):
+    def get_message(self, timeout: float = 0.5) -> Optional[Message]:
         """
         Attempts to retrieve the latest message received by the instance. If no message is
         available it blocks for given timeout or until a message is received, or else
         returns None (whichever is shorter). This method does not block after
         :meth:`can.BufferedReader.stop` has been called.
 
-        :param float timeout: The number of seconds to wait for a new message.
-        :rytpe: can.Message or None
-        :return: the message if there is one, or None if there is not.
+        :param timeout: The number of seconds to wait for a new message.
+        :return: the Message if there is one, or None if there is not.
         """
         try:
-            return self.buffer.get(block=not self.is_stopped, timeout=timeout)
+            if self.is_stopped:
+                return self.buffer.get(block=False)
+            else:
+                return self.buffer.get(block=True, timeout=timeout)
         except Empty:
             return None
 
-    def stop(self):
-        """Prohibits any more additions to this reader.
-        """
+    def stop(self) -> None:
+        """Prohibits any more additions to this reader."""
         self.is_stopped = True
 
 
-if asyncio is not None:
-    class AsyncBufferedReader(Listener):
-        """A message buffer for use with :mod:`asyncio`.
+class AsyncBufferedReader(Listener):  # pylint: disable=abstract-method
+    """A message buffer for use with :mod:`asyncio`.
 
-        See :ref:`asyncio` for how to use with :class:`can.Notifier`.
-        
-        Can also be used as an asynchronous iterator::
+    See :ref:`asyncio` for how to use with :class:`can.Notifier`.
 
-            async for msg in reader:
-                print(msg)
+    Can also be used as an asynchronous iterator::
+
+        async for msg in reader:
+            print(msg)
+    """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+
+        self.buffer: "asyncio.Queue[Message]"
+
+        if "loop" in kwargs:
+            warnings.warn(
+                "The 'loop' argument is deprecated since python-can 4.0.0 "
+                "and has no effect starting with Python 3.10",
+                DeprecationWarning,
+            )
+            if sys.version_info < (3, 10):
+                self.buffer = asyncio.Queue(loop=kwargs["loop"])
+                return
+
+        self.buffer = asyncio.Queue()
+
+    def on_message_received(self, msg: Message) -> None:
+        """Append a message to the buffer.
+
+        Must only be called inside an event loop!
         """
+        self.buffer.put_nowait(msg)
 
-        def __init__(self, loop=None):
-            # set to "infinite" size
-            self.buffer = asyncio.Queue(loop=loop)
+    async def get_message(self) -> Message:
+        """
+        Retrieve the latest message when awaited for::
 
-        def on_message_received(self, msg):
-            """Append a message to the buffer.
-            
-            Must only be called inside an event loop!
-            """
-            self.buffer.put_nowait(msg)
+            msg = await reader.get_message()
 
-        def get_message(self):
-            """
-            Retrieve the latest message when awaited for::
-            
-                msg = await reader.get_message()
+        :return: The CAN message.
+        """
+        return await self.buffer.get()
 
-            :rtype: can.Message
-            :return: The CAN message.
-            """
-            return self.buffer.get()
+    def __aiter__(self) -> AsyncIterator[Message]:
+        return self
 
-        def __aiter__(self):
-            return self
-        
-        def __anext__(self):
-            return self.buffer.get()
+    def __anext__(self) -> Awaitable[Message]:
+        return self.buffer.get()

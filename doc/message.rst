@@ -145,6 +145,13 @@ Message
         Indicates that this message is a CAN FD message.
 
 
+    .. attribute:: is_rx
+
+        :type: bool
+
+        Indicates whether this message is a transmitted (Tx) or received (Rx) frame
+
+
     .. attribute:: bitrate_switch
 
         :type: bool

@@ -1,18 +1,22 @@
 #!/usr/bin/env python
-# coding: utf-8
 
 import unittest
 import sys
 from math import isinf, isnan
 from copy import copy, deepcopy
 import pickle
+from datetime import timedelta
 
-from hypothesis import given, settings, reproduce_failure
+from hypothesis import given, settings
+import hypothesis.errors
 import hypothesis.strategies as st
 
 from can import Message
 
 from .message_helper import ComparingMessagesTestCase
+from .config import IS_GITHUB_ACTIONS, IS_WINDOWS, IS_PYPY
+
+import pytest
 
 
 class TestMessageClass(unittest.TestCase):
@@ -33,43 +37,63 @@ class TestMessageClass(unittest.TestCase):
         data=st.one_of(st.binary(min_size=0, max_size=8), st.none()),
         is_fd=st.booleans(),
         bitrate_switch=st.booleans(),
-        error_state_indicator=st.booleans()
+        error_state_indicator=st.booleans(),
     )
-    @settings(max_examples=2000)
+    # The first run may take a second on CI runners and will hit the deadline
+    @settings(
+        max_examples=2000,
+        deadline=None if IS_GITHUB_ACTIONS else timedelta(milliseconds=500),
+    )
+    @pytest.mark.xfail(
+        IS_WINDOWS and IS_PYPY,
+        raises=hypothesis.errors.Flaky,
+        reason="Hypothesis generates inconistent timestamp floats on Windows+PyPy-3.7",
+    )
     def test_methods(self, **kwargs):
         is_valid = not (
-            (not kwargs['is_remote_frame'] and (len(kwargs['data'] or []) != kwargs['dlc'])) or
-            (kwargs['arbitration_id'] >= 0x800 and not kwargs['is_extended_id']) or
-            kwargs['arbitration_id'] >= 0x20000000 or
-            kwargs['arbitration_id'] < 0 or
-            (kwargs['is_remote_frame'] and kwargs['is_error_frame']) or
-            (kwargs['is_remote_frame'] and len(kwargs['data'] or []) > 0) or
-            ((kwargs['bitrate_switch'] or kwargs['error_state_indicator']) and not kwargs['is_fd']) or
-            isnan(kwargs['timestamp']) or
-            isinf(kwargs['timestamp'])
+            (
+                not kwargs["is_remote_frame"]
+                and (len(kwargs["data"] or []) != kwargs["dlc"])
+            )
+            or (kwargs["arbitration_id"] >= 0x800 and not kwargs["is_extended_id"])
+            or kwargs["arbitration_id"] >= 0x20000000
+            or kwargs["arbitration_id"] < 0
+            or (
+                kwargs["is_remote_frame"]
+                and (kwargs["is_fd"] or kwargs["is_error_frame"])
+            )
+            or (kwargs["is_remote_frame"] and len(kwargs["data"] or []) > 0)
+            or (
+                (kwargs["bitrate_switch"] or kwargs["error_state_indicator"])
+                and not kwargs["is_fd"]
+            )
+            or isnan(kwargs["timestamp"])
+            or isinf(kwargs["timestamp"])
         )
 
         # this should return normally and not throw an exception
         message = Message(check=is_valid, **kwargs)
 
-        if kwargs['data'] is None or kwargs['is_remote_frame']:
-            kwargs['data'] = bytearray()
+        if kwargs["data"] is None or kwargs["is_remote_frame"]:
+            kwargs["data"] = bytearray()
 
-        if not is_valid and not kwargs['is_remote_frame']:
+        if not is_valid and not kwargs["is_remote_frame"]:
             with self.assertRaises(ValueError):
                 Message(check=True, **kwargs)
 
         self.assertGreater(len(str(message)), 0)
         self.assertGreater(len(message.__repr__()), 0)
         if is_valid:
-            self.assertEqual(len(message), kwargs['dlc'])
+            self.assertEqual(len(message), kwargs["dlc"])
         self.assertTrue(bool(message))
         self.assertGreater(len("{}".format(message)), 0)
         _ = "{}".format(message)
         with self.assertRaises(Exception):
-            _ = "{somespec}".format(message)
+            _ = "{somespec}".format(
+                message
+            )  # pylint: disable=missing-format-argument-key
         if sys.version_info.major > 2:
-            self.assertEqual(bytearray(bytes(message)), kwargs['data'])
+            self.assertEqual(bytearray(bytes(message)), kwargs["data"])
 
         # check copies and equalities
         if is_valid:
