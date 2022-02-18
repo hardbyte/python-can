@@ -103,6 +103,8 @@ Improved interfaces
   * Improve timestamp accuracy on Windows (#934, #936)
 * usb2can
   * Fix "Error 8" on Windows and provide better error messages (#989)
+  * Fix crash on initialization (#1248, #1249)
+  * Pass flags instead of flags_t type upon initialization (#1252)
 * serial
   * Fix "TypeError: cannot unpack non-iterable NoneType" and more robust error handling (#1000, #1010)
 * canalystii
@@ -122,7 +124,7 @@ Other API changes and improvements
   * [Log rotation](https://python-can.readthedocs.io/en/develop/listeners.html#can.SizedRotatingLogger) (#648, #874, #881, #1147)
   * Transparent (de)compression of [gzip](https://docs.python.org/3/library/gzip.html) files for all formats (#1221)
   * Add [plugin support to can.io Reader/Writer](https://python-can.readthedocs.io/en/develop/listeners.html#listener) (#783)
-  * ASCReader/Writer enhancements like increased robustness (#820, #1223)
+  * ASCReader/Writer enhancements like increased robustness (#820, #1223, #1256, #1257)
   * Adding absolute timestamps to ASC reader (#761)
   * Support other base number (radix) at ASCReader (#764)
   * Add [logconvert script](https://python-can.readthedocs.io/en/develop/scripts.html#can-logconvert) (#1072, #1194)
@@ -167,6 +169,7 @@ Other Bugfixes
 * Calling stop_all_periodic_tasks() in BusABC.shutdown() and all interfaces call it on shutdown (#1174)
 * Timing configurations do not allow int (#1175)
 * Some smaller bugfixes are not listed here since the problems were never part of a proper release
+* ASCReader & ASCWriter using DLC as data length (#1245, #1246)
 
 Behind the scenes & Quality assurance
 -------------------------------------
