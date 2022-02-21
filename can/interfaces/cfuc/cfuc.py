@@ -119,15 +119,15 @@ class cfucBus(BusABC):
         byte_msg += AutoRetransmission #AutoRetransmission
         byte_msg += bytearray(b'\x00') #TransmitPause
         byte_msg += bytearray(b'\x00') #ProtocolException
-        byte_msg += bytearray(b'\x00') #bug - empty byte, fillup byte
+        byte_msg += bytearray(b'\x00') #empty/fillup byte
         byte_msg += struct.pack("<I", NominalPrescaler) #NominalPrescaler
         byte_msg += struct.pack("<I", NominalSyncJumpWidthValue) #NominalSyncJumpWidth
         byte_msg += struct.pack("<I", NominalTimeSeg1Value) #NominalTimeSeg1
         byte_msg += struct.pack("<I", NominalTimeSeg2Value) #NominalTimeSeg2
-        byte_msg += struct.pack("<I", int(1)) #DataPrescaler
-        byte_msg += struct.pack("<I", int(1)) #DataSyncJumpWidth
-        byte_msg += struct.pack("<I", int(1)) #DataTimeSeg1
-        byte_msg += struct.pack("<I", int(1)) #DataTimeSeg2
+        byte_msg += struct.pack("<I", int(DataPrescalerValue)) #DataPrescaler
+        byte_msg += struct.pack("<I", int(DataSyncJumpWidthValue)) #DataSyncJumpWidth
+        byte_msg += struct.pack("<I", int(DataTimeSeg1Value)) #DataTimeSeg1
+        byte_msg += struct.pack("<I", int(DataTimeSeg2Value)) #DataTimeSeg2
         byte_msg += bytearray(b'\x00\x00\x00\x00') #StdFiltersNbr
         byte_msg += bytearray(b'\x00\x00\x00\x00') #ExtFiltersNbr
         byte_msg += bytearray(b'\x00\x00\x00\x00') #TxFifoQueueMode
@@ -226,10 +226,15 @@ class cfucBus(BusABC):
             DataTimeSeg2Value = bt.phase_seg2
             DataPrescalerValue = bt.brp
             DataSyncJumpWidthValue = bt.sjw
+        else:
+            DataTimeSeg1Value = 1
+            DataTimeSeg2Value = 1
+            DataPrescalerValue = 1
+            DataSyncJumpWidthValue = 1      
 
         init_frame = self._consturct_init_frame(
             IsFD,
-            IsBRS,
+            True,
             IsAutoRetransmission,
             NominalPrescalerValue,
             NominalSyncJumpWidthValue,
@@ -429,10 +434,5 @@ class cfucBus(BusABC):
 
             return tuple(results), False
         
-        elif frame_type == -1:
+        else:
             return None, False
-
-        # else:
-        #     print("ERROR", frame_type)
-
-        return None, False
