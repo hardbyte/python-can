@@ -22,7 +22,7 @@ _ecomlib = None
 try:
     _ecomlib = CLibrary("ecommlib64.dll")
     if _ecomlib is None:
-        raise CanInterfaceNotImplementedError('CLibrary not loaded.')
+        raise CanInterfaceNotImplementedError("CLibrary not loaded.")
 except Exception as e:
     log.error(f"Cannot load ECOMM library: {e}")
 
@@ -351,7 +351,9 @@ class EcomBus(BusABC):
             rx_msg = None
         return rx_msg
 
-    def _recv_internal(self, timeout: Optional[float]) -> Tuple[Optional[Message], bool]:
+    def _recv_internal(
+        self, timeout: Optional[float]
+    ) -> Tuple[Optional[Message], bool]:
         """
         Read a message from the bus and tell whether it was filtered.
         This methods may be called by :meth:`~can.BusABC.recv`
