@@ -1,13 +1,17 @@
 python-can
 ==========
 
-|release| |python_implementation| |downloads| |downloads_monthly| |formatter|
+|release| |conda forge release| |python_implementation| |downloads| |downloads_monthly| |formatter|
 
 |docs| |github-actions| |build_travis| |coverage| |mergify|
 
 .. |release| image:: https://img.shields.io/pypi/v/python-can.svg
    :target: https://pypi.python.org/pypi/python-can/
    :alt: Latest Version on PyPi
+   
+.. |conda forge release| image:: https://img.shields.io/conda/vn/conda-forge/python-can
+   :target: https://anaconda.org/conda-forge/python-can
+   :alt: Latest Version on Conda Forge
 
 .. |python_implementation| image:: https://img.shields.io/pypi/implementation/python-can
    :target: https://pypi.python.org/pypi/python-can/
