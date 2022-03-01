@@ -51,7 +51,12 @@ class CanutilsLogReader(MessageReader):
                 continue
 
             channel_string: str
-            timestamp_string, channel_string, frame = temp.split()
+            if temp[-2:].lower() in (" r", " t"):
+                timestamp_string, channel_string, frame, is_rx_string = temp.split()
+                is_rx = is_rx_string.strip().lower() == "r"
+            else:
+                timestamp_string, channel_string, frame = temp.split()
+                is_rx = True
             timestamp = float(timestamp_string[1:-1])
             can_id_string, data = frame.split("#", maxsplit=1)
 
@@ -101,6 +106,7 @@ class CanutilsLogReader(MessageReader):
                     is_extended_id=is_extended,
                     is_remote_frame=is_remote_frame,
                     is_fd=is_fd,
+                    is_rx=is_rx,
                     bitrate_switch=brs,
                     error_state_indicator=esi,
                     dlc=dlc,
@@ -164,8 +170,13 @@ class CanutilsLogWriter(FileIOMessageWriter):
         else:
             framestr += " %03X#" % (msg.arbitration_id)
 
+        if msg.is_error_frame:
+            eol = "\n"
+        else:
+            eol = " R\n" if msg.is_rx else " T\n"
+
         if msg.is_remote_frame:
-            framestr += "R\n"
+            framestr += f"R{eol}"
         else:
             if msg.is_fd:
                 fd_flags = 0
@@ -174,6 +185,6 @@ class CanutilsLogWriter(FileIOMessageWriter):
                 if msg.error_state_indicator:
                     fd_flags |= CANFD_ESI
                 framestr += "#%X" % fd_flags
-            framestr += "%s\n" % (msg.data.hex().upper())
+            framestr += f"{msg.data.hex().upper()}{eol}"
 
         self.file.write(framestr)
