@@ -1,7 +1,7 @@
 from typing import Optional, Tuple
 
 from gs_usb.gs_usb import GsUsb
-from gs_usb.gs_usb_frame import GsUsbFrame
+from gs_usb.gs_usb_frame import GsUsbFrame, GS_USB_NONE_ECHO_ID
 from gs_usb.constants import CAN_ERR_FLAG, CAN_RTR_FLAG, CAN_EFF_FLAG, CAN_MAX_DLC
 import can
 import usb
@@ -14,17 +14,29 @@ logger = logging.getLogger(__name__)
 
 
 class GsUsbBus(can.BusABC):
-    def __init__(self, channel, bus, address, bitrate, can_filters=None, **kwargs):
+    def __init__(self, channel, bitrate, index=None, bus=None, address=None, can_filters=None, **kwargs):
         """
         :param channel: usb device name
+        :param index: device number if using automatic scan, starting from 0.
+            If specified, bus/address shall not be provided.
         :param bus: number of the bus that the device is connected to
         :param address: address of the device on the bus it is connected to
         :param can_filters: not supported
         :param bitrate: CAN network bandwidth (bits/s)
         """
-        gs_usb = GsUsb.find(bus=bus, address=address)
-        if not gs_usb:
-            raise CanInitializationError(f"Cannot find device {channel}")
+        if (index is not None) and ((bus or address) is not None):
+            raise CanInitializationError(f"index and bus/address cannot be used simultaneously")
+
+        if index is not None:
+            devs = GsUsb.scan()
+            if len(devs) < index:
+                raise CanInitializationError(f"Cannot find device {index}. Devices found: {len(devs)}")
+            gs_usb = devs[index]
+        else:
+            gs_usb = GsUsb.find(bus=bus, address=address)
+            if not gs_usb:
+                raise CanInitializationError(f"Cannot find device {channel}")
+
         self.gs_usb = gs_usb
         self.channel_info = channel
 
@@ -106,7 +118,7 @@ class GsUsbBus(can.BusABC):
             channel=self.channel_info,
             dlc=frame.can_dlc,
             data=bytearray(frame.data)[0 : frame.can_dlc],
-            is_rx=True,
+            is_rx=frame.echo_id == GS_USB_NONE_ECHO_ID,
         )
 
         return msg, False
