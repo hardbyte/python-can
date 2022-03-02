@@ -292,7 +292,7 @@ def channel2int(channel: Optional[typechecking.Channel]) -> Optional[int]:
     if isinstance(channel, int):
         return channel
     if isinstance(channel, str):
-        match = re.match(r".*(\d+)$", channel)
+        match = re.match(r".*?(\d+)$", channel)
         if match:
             return int(match.group(1))
     return None
