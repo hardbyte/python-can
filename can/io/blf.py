@@ -100,8 +100,8 @@ TIME_ONE_NANS = 0x00000002
 def timestamp_to_systemtime(timestamp):
     if timestamp is None or timestamp < 631152000:
         # Probably not a Unix timestamp
-        return (0, 0, 0, 0, 0, 0, 0, 0)
-    t = datetime.datetime.fromtimestamp(timestamp)
+        return 0, 0, 0, 0, 0, 0, 0, 0
+    t = datetime.datetime.fromtimestamp(round(timestamp, 3))
     return (
         t.year,
         t.month,
@@ -110,7 +110,7 @@ def timestamp_to_systemtime(timestamp):
         t.hour,
         t.minute,
         t.second,
-        int(round(t.microsecond / 1000.0)),
+        t.microsecond // 1000,
     )
 
 

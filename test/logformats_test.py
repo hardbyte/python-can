@@ -20,6 +20,7 @@ from itertools import zip_longest
 from datetime import datetime
 
 import can
+from can.io import blf
 
 from .data.example_data import (
     TEST_MESSAGES_BASE,
@@ -658,6 +659,16 @@ class TestBlfFileFormat(ReaderWriterTest):
         actual = self._read_log_file("test_CanErrorFrameExt.blf")
         self.assertMessagesEqual(actual, [expected] * 2)
         self.assertEqual(actual[0].channel, expected.channel)
+
+    def test_timestamp_to_systemtime(self):
+        self.assertEqual(
+            (2021, 11, 2, 9, 20, 17, 5, 999),
+            blf.timestamp_to_systemtime(1636485425.998908),
+        )
+        self.assertEqual(
+            (2021, 11, 2, 9, 20, 17, 6, 0),
+            blf.timestamp_to_systemtime(1636485425.999908),
+        )
 
 
 class TestCanutilsFileFormat(ReaderWriterTest):
