@@ -661,13 +661,15 @@ class TestBlfFileFormat(ReaderWriterTest):
         self.assertEqual(actual[0].channel, expected.channel)
 
     def test_timestamp_to_systemtime(self):
-        self.assertEqual(
-            (2021, 11, 2, 9, 20, 17, 5, 999),
-            blf.timestamp_to_systemtime(1636485425.998908),
+        self.assertAlmostEqual(
+            1636485425.999,
+            blf.systemtime_to_timestamp(blf.timestamp_to_systemtime(1636485425.998908)),
+            places=3,
         )
-        self.assertEqual(
-            (2021, 11, 2, 9, 20, 17, 6, 0),
-            blf.timestamp_to_systemtime(1636485425.999908),
+        self.assertAlmostEqual(
+            1636485426.0,
+            blf.systemtime_to_timestamp(blf.timestamp_to_systemtime(1636485425.999908)),
+            places=3,
         )
 
 
