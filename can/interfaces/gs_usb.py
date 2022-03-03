@@ -112,7 +112,7 @@ class GsUsbBus(can.BusABC):
         msg = can.Message(
             timestamp=frame.timestamp,
             arbitration_id=frame.arbitration_id,
-            is_extended_id=frame.can_dlc,
+            is_extended_id=frame.is_extended_id,
             is_remote_frame=frame.is_remote_frame,
             is_error_frame=frame.is_error_frame,
             channel=self.channel_info,
