@@ -51,6 +51,7 @@ ADLC = {
     15: 0x000F0000,
 }
 
+UCAN_RX_FRAME_DEF_CAN_COUNT_MAX = 10
 class UCAN_FRAME_TYPE(enum.Enum):
    UCAN_FD_INIT = 0 # init CAN with all parameters, open in mode specified in init data. Frame direction USB->CAN*/
    UCAN_FD_DEINIT = 1 # deinit CAN, close CAN connection. Frame direction USB->CAN*/
@@ -431,7 +432,10 @@ class cfucBus(BusABC):
 
             for i in range(can_frame_count):
                 results.append(self._read_rx_frame())
-
+            
+            for i in range(UCAN_RX_FRAME_DEF_CAN_COUNT_MAX - can_frame_count):
+                self._read_rx_frame() # drop empty frames
+            
             return tuple(results), False
         
         else:
