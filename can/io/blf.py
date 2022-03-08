@@ -17,12 +17,15 @@ import zlib
 import datetime
 import time
 import logging
-from typing import List, BinaryIO, Generator, Union
+from typing import List, BinaryIO, Generator, Union, Tuple, Optional, cast
 
 from ..message import Message
 from ..util import len2dlc, dlc2len, channel2int
 from ..typechecking import StringPathLike
 from .generic import FileIOMessageWriter, MessageReader
+
+
+TSystemTime = Tuple[int, int, int, int, int, int, int, int]
 
 
 class BLFParseError(Exception):
@@ -97,11 +100,11 @@ TIME_TEN_MICS = 0x00000001
 TIME_ONE_NANS = 0x00000002
 
 
-def timestamp_to_systemtime(timestamp):
+def timestamp_to_systemtime(timestamp: float) -> TSystemTime:
     if timestamp is None or timestamp < 631152000:
         # Probably not a Unix timestamp
-        return (0, 0, 0, 0, 0, 0, 0, 0)
-    t = datetime.datetime.fromtimestamp(timestamp)
+        return 0, 0, 0, 0, 0, 0, 0, 0
+    t = datetime.datetime.fromtimestamp(round(timestamp, 3))
     return (
         t.year,
         t.month,
@@ -110,11 +113,11 @@ def timestamp_to_systemtime(timestamp):
         t.hour,
         t.minute,
         t.second,
-        int(round(t.microsecond / 1000.0)),
+        t.microsecond // 1000,
     )
 
 
-def systemtime_to_timestamp(systemtime):
+def systemtime_to_timestamp(systemtime: TSystemTime) -> float:
     try:
         t = datetime.datetime(
             systemtime[0],
@@ -125,7 +128,7 @@ def systemtime_to_timestamp(systemtime):
             systemtime[6],
             systemtime[7] * 1000,
         )
-        return time.mktime(t.timetuple()) + systemtime[7] / 1000.0
+        return t.timestamp()
     except ValueError:
         return 0
 
@@ -154,8 +157,8 @@ class BLFReader(MessageReader):
         self.file_size = header[10]
         self.uncompressed_size = header[11]
         self.object_count = header[12]
-        self.start_timestamp = systemtime_to_timestamp(header[14:22])
-        self.stop_timestamp = systemtime_to_timestamp(header[22:30])
+        self.start_timestamp = systemtime_to_timestamp(cast(TSystemTime, header[14:22]))
+        self.stop_timestamp = systemtime_to_timestamp(cast(TSystemTime, header[22:30]))
         # Read rest of header
         self.file.read(header[1] - FILE_HEADER_STRUCT.size)
         self._tail = b""
@@ -405,8 +408,12 @@ class BLFWriter(FileIOMessageWriter):
                 raise BLFParseError("Unexpected file format")
             self.uncompressed_size = header[11]
             self.object_count = header[12]
-            self.start_timestamp = systemtime_to_timestamp(header[14:22])
-            self.stop_timestamp = systemtime_to_timestamp(header[22:30])
+            self.start_timestamp: Optional[float] = systemtime_to_timestamp(
+                cast(TSystemTime, header[14:22])
+            )
+            self.stop_timestamp: Optional[float] = systemtime_to_timestamp(
+                cast(TSystemTime, header[22:30])
+            )
             # Jump to the end of the file
             self.file.seek(0, 2)
         else:
