@@ -1,3 +1,5 @@
+import errno
+from fcntl import ioctl
 import logging
 import select
 import socket
@@ -21,6 +23,7 @@ IP_ADDRESS_INFO = Union[IPv4_ADDRESS_INFO, IPv6_ADDRESS_INFO]
 
 # Additional constants for the interaction with Unix kernels
 SO_TIMESTAMPNS = 35
+SIOCGSTAMP = 0x8906
 
 
 class UdpMulticastBus(BusABC):
@@ -200,8 +203,13 @@ class GeneralPurposeUdpMulticastBus:
 
         # used in recv()
         self.received_timestamp_struct = "@ll"
-        ancillary_data_size = struct.calcsize(self.received_timestamp_struct)
-        self.received_ancillary_buffer_size = socket.CMSG_SPACE(ancillary_data_size)
+        self.received_timestamp_struct_size = struct.calcsize(
+            self.received_timestamp_struct
+        )
+        if self.timestamp_nanosecond:
+            self.received_ancillary_buffer_size = socket.CMSG_SPACE(
+                self.received_timestamp_struct_size
+            )
 
         # used by send()
         self._send_destination = (self.group, self.port)
@@ -238,7 +246,15 @@ class GeneralPurposeUdpMulticastBus:
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
             # set how to receive timestamps
-            sock.setsockopt(socket.SOL_SOCKET, SO_TIMESTAMPNS, 1)
+            try:
+                sock.setsockopt(socket.SOL_SOCKET, SO_TIMESTAMPNS, 1)
+            except OSError as error:
+                if error.errno == errno.ENOPROTOOPT:  # It is unavailable on macOS
+                    self.timestamp_nanosecond = False
+                else:
+                    raise error
+            else:
+                self.timestamp_nanosecond = True
 
             # Bind it to the port (on any interface)
             sock.bind(("", self.port))
@@ -320,21 +336,36 @@ class GeneralPurposeUdpMulticastBus:
                 self.max_buffer, self.received_ancillary_buffer_size
             )
 
-            # fetch timestamp; this is configured in in _create_socket()
-            assert len(ancillary_data) == 1, "only requested a single extra field"
-            cmsg_level, cmsg_type, cmsg_data = ancillary_data[0]
-            assert (
-                cmsg_level == socket.SOL_SOCKET and cmsg_type == SO_TIMESTAMPNS
-            ), "received control message type that was not requested"
-            # see https://man7.org/linux/man-pages/man3/timespec.3.html -> struct timespec for details
-            seconds, nanoseconds = struct.unpack(
-                self.received_timestamp_struct, cmsg_data
-            )
-            if nanoseconds >= 1e9:
-                raise can.CanError(
-                    f"Timestamp nanoseconds field was out of range: {nanoseconds} not less than 1e9"
+            # fetch timestamp; this is configured in _create_socket()
+            if self.timestamp_nanosecond:
+                assert len(ancillary_data) == 1, "only requested a single extra field"
+                cmsg_level, cmsg_type, cmsg_data = ancillary_data[0]
+                assert (
+                    cmsg_level == socket.SOL_SOCKET and cmsg_type == SO_TIMESTAMPNS
+                ), "received control message type that was not requested"
+                # see https://man7.org/linux/man-pages/man3/timespec.3.html -> struct timespec for details
+                seconds, nanoseconds = struct.unpack(
+                    self.received_timestamp_struct, cmsg_data
                 )
-            timestamp = seconds + nanoseconds * 1.0e-9
+                if nanoseconds >= 1e9:
+                    raise can.CanError(
+                        f"Timestamp nanoseconds field was out of range: {nanoseconds} not less than 1e9"
+                    )
+                timestamp = seconds + nanoseconds * 1.0e-9
+            else:
+                result_buffer = ioctl(
+                    self._socket.fileno(),
+                    SIOCGSTAMP,
+                    bytes(self.received_timestamp_struct_size),
+                )
+                seconds, microseconds = struct.unpack(
+                    self.received_timestamp_struct, result_buffer
+                )
+                if microseconds >= 1e6:
+                    raise can.CanError(
+                        f"Timestamp microseconds field was out of range: {microseconds} not less than 1e6"
+                    )
+                timestamp = seconds + microseconds * 1e-6
 
             return raw_message_data, sender_address, timestamp
 
