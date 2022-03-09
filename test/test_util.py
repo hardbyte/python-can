@@ -73,5 +73,6 @@ class TestChannel2Int(unittest.TestCase):
         self.assertEqual(1, channel2int("vcan1"))
         self.assertEqual(12, channel2int("vcan12"))
         self.assertEqual(3, channel2int(3))
+        self.assertEqual(42, channel2int("42"))
         self.assertEqual(None, channel2int("can"))
         self.assertEqual(None, channel2int("can0a"))
