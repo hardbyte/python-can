@@ -1,9 +1,13 @@
 import errno
-from fcntl import ioctl
 import logging
 import select
 import socket
 import struct
+
+try:
+    from fcntl import ioctl
+except ModuleNotFoundError:
+    pass
 
 from typing import List, Optional, Tuple, Union
 
