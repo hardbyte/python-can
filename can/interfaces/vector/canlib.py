@@ -82,7 +82,7 @@ class VectorBus(BusABC):
         poll_interval: float = 0.01,
         receive_own_messages: bool = False,
         bitrate: Optional[int] = None,
-        rx_queue_size: int = 2 ** 14,
+        rx_queue_size: int = 2**14,
         app_name: Optional[str] = "CANalyzer",
         serial: Optional[int] = None,
         fd: bool = False,
