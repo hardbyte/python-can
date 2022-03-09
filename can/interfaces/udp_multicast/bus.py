@@ -342,6 +342,7 @@ class GeneralPurposeUdpMulticastBus:
 
             # fetch timestamp; this is configured in _create_socket()
             if self.timestamp_nanosecond:
+                # Very similar to timestamp handling in can/interfaces/socketcan/socketcan.py -> capture_message()
                 assert len(ancillary_data) == 1, "only requested a single extra field"
                 cmsg_level, cmsg_type, cmsg_data = ancillary_data[0]
                 assert (
