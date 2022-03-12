@@ -14,7 +14,16 @@ logger = logging.getLogger(__name__)
 
 
 class GsUsbBus(can.BusABC):
-    def __init__(self, channel, bitrate, index=None, bus=None, address=None, can_filters=None, **kwargs):
+    def __init__(
+        self,
+        channel,
+        bitrate,
+        index=None,
+        bus=None,
+        address=None,
+        can_filters=None,
+        **kwargs,
+    ):
         """
         :param channel: usb device name
         :param index: device number if using automatic scan, starting from 0.
@@ -25,12 +34,16 @@ class GsUsbBus(can.BusABC):
         :param bitrate: CAN network bandwidth (bits/s)
         """
         if (index is not None) and ((bus or address) is not None):
-            raise CanInitializationError(f"index and bus/address cannot be used simultaneously")
+            raise CanInitializationError(
+                f"index and bus/address cannot be used simultaneously"
+            )
 
         if index is not None:
             devs = GsUsb.scan()
-            if len(devs) < index:
-                raise CanInitializationError(f"Cannot find device {index}. Devices found: {len(devs)}")
+            if len(devs) <= index:
+                raise CanInitializationError(
+                    f"Cannot find device {index}. Devices found: {len(devs)}"
+                )
             gs_usb = devs[index]
         else:
             gs_usb = GsUsb.find(bus=bus, address=address)
