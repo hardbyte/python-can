@@ -2,7 +2,7 @@
 Contains the ABC bus implementation and its documentation.
 """
 
-from typing import cast, Any, Iterator, List, Optional, Sequence, Tuple, Union
+from typing import cast, Any, Callable, Iterator, List, Optional, Sequence, Tuple, Union
 
 import can.typechecking
 
@@ -181,6 +181,7 @@ class BusABC(metaclass=ABCMeta):
         period: float,
         duration: Optional[float] = None,
         store_task: bool = True,
+        on_error: Optional[Callable[[Exception], bool]] = None,
     ) -> can.broadcastmanager.CyclicSendTaskABC:
         """Start sending messages at a given period on this bus.
 
@@ -191,6 +192,9 @@ class BusABC(metaclass=ABCMeta):
         - the Bus instance is shutdown
         - :meth:`BusABC.stop_all_periodic_tasks()` is called
         - the task's :meth:`CyclicTask.stop()` method is called.
+        - an error while sending and the (optional) `on_error` callback does
+          not return `True`. If the callback is not specified the task is
+          deactivated on error.
 
         :param msgs:
             Message(s) to transmit
@@ -202,6 +206,10 @@ class BusABC(metaclass=ABCMeta):
         :param store_task:
             If True (the default) the task will be attached to this Bus instance.
             Disable to instead manage tasks manually.
+        :param on_error:
+            Callable that accepts an exception if any error happened on a `bus`
+            while sending `msgs`, it shall return either ``True`` or ``False``
+            depending on desired behaviour of `ThreadBasedCyclicSendTask`.
         :return:
             A started task instance. Note the task can be stopped (and depending on
             the backend modified) by calling the task's :meth:`stop` method.
@@ -232,7 +240,7 @@ class BusABC(metaclass=ABCMeta):
         # Create a backend specific task; will be patched to a _SelfRemovingCyclicTask later
         task = cast(
             _SelfRemovingCyclicTask,
-            self._send_periodic_internal(msgs, period, duration),
+            self._send_periodic_internal(msgs, period, duration, on_error),
         )
 
         # we wrap the task's stop method to also remove it from the Bus's list of tasks
@@ -260,6 +268,7 @@ class BusABC(metaclass=ABCMeta):
         msgs: Union[Sequence[Message], Message],
         period: float,
         duration: Optional[float] = None,
+        on_error: Optional[Callable[[Exception], bool]] = None,
     ) -> can.broadcastmanager.CyclicSendTaskABC:
         """Default implementation of periodic message sending using threading.
 
@@ -272,6 +281,10 @@ class BusABC(metaclass=ABCMeta):
         :param duration:
             The duration between sending each message at the given rate. If
             no duration is provided, the task will continue indefinitely.
+        :param on_error:
+            Callable that accepts an exception if any error happened on a `bus`
+            while sending `msgs`, it shall return either ``True`` or ``False``
+            depending on desired behaviour of `ThreadBasedCyclicSendTask`.
         :return:
             A started task instance. Note the task can be stopped (and
             depending on the backend modified) by calling the :meth:`stop`
@@ -283,7 +296,7 @@ class BusABC(metaclass=ABCMeta):
                 threading.Lock()
             )
         task = ThreadBasedCyclicSendTask(
-            self, self._lock_send_periodic, msgs, period, duration
+            self, self._lock_send_periodic, msgs, period, duration, on_error
         )
         return task
 
