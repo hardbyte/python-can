@@ -53,34 +53,33 @@ class CFUCTestCase(unittest.TestCase):
         self.assertIsNotNone(msg_init)
 
 
-    def test_serial(self):
-        """
-        Tests the correctness of reading and sending through serial
-        """
-        self.bus = can.Bus(bustype="cfuc", channel="loop://", CANBaudRate=250000, IsFD=True, FDDataBaudRate=500000)
-        
-        # skip init frame
-        self.serial = self.bus.ser
-
-        msg_to_send = can.Message(arbitration_id=0x12ABCDEF, is_extended_id=True, data=[0xAA, 0x55])
-        self.bus.send(msg_to_send)
-
-        msg_template = b'\x02\x00\x00\x00\xef\xcd\xab\x12\x00\x00\x00@\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xaaU\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-
-        msg_recv = self.serial.read(self.serial.in_waiting)
-        self.assertEqual(msg_recv, msg_template)
-
-
     def test_tx_frame_extended(self):
         """
         Tests the transfer of extented CAN frame
         """
-        self.bus = can.Bus(bustype="cfuc", channel="loop://", CANBaudRate=250000, IsFD=True, FDDataBaudRate=500000)
+        self.bus = can.Bus(
+        bustype="cfuc", 
+        channel="loop://", 
+        CANBaudRate=100000, 
+        IsFD=True, 
+        FDDataBaudRate=500000, 
+        )
 
-        msg_send = can.Message(arbitration_id=0x12ABCDEF, is_extended_id=True, data=[0xAA, 0x55])
+        
+        self.serial = self.bus.ser
+        msg_init = self.serial.read(self.serial.in_waiting)
+
+        msg_send = can.Message(
+        arbitration_id=0xAAABBCC, 
+        data=[0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 1,1],
+        is_extended_id=True, 
+        is_fd=True, 
+        bitrate_switch=True
+        )
+
         self.bus.send(msg_send)
 
-        msg_recv = self.bus.recv(None)
+        msg_recv = self.bus.recv()
         self.assertEqual(msg_recv[0].arbitration_id, msg_send.arbitration_id)
         self.assertEqual(msg_recv[0].is_extended_id, msg_send.is_extended_id)
         self.assertEqual(msg_recv[0].is_fd, msg_send.is_fd)
@@ -93,6 +92,9 @@ class CFUCTestCase(unittest.TestCase):
         Tests the transfer of standart CAN frame
         """
         self.bus = can.Bus(bustype="cfuc", channel="loop://", CANBaudRate=250000, IsFD=True, FDDataBaudRate=500000)
+
+        self.serial = self.bus.ser
+        msg_init = self.serial.read(self.serial.in_waiting)
         
         msg_send = can.Message(arbitration_id=0x12ABCDEF, is_extended_id=False, data=[0xAA, 0x55])
         self.bus.send(msg_send)
@@ -109,6 +111,9 @@ class CFUCTestCase(unittest.TestCase):
         Tests the transfer of Flexible Data-Rate CAN frame
         """
         self.bus = can.Bus(bustype="cfuc", channel="loop://", CANBaudRate=250000, IsFD=True, FDDataBaudRate=500000)
+        
+        self.serial = self.bus.ser
+        msg_init = self.serial.read(self.serial.in_waiting)
 
         msg_send = can.Message(arbitration_id=0x12ABCDEF, is_extended_id=True, is_fd = True, data=[0xAA, 0x55])
         self.bus.send(msg_send)
