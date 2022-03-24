@@ -206,6 +206,12 @@ class cfucBus(BusABC):
         self.ser.reset_input_buffer()
         self.ser.reset_output_buffer()
 
+        if CANBaudRate < 100000:
+            raise ValueError("Baudrate must be equal to or greater than 100kbit/s")
+
+        if CANBaudRate > 37000000:
+            raise ValueError("Baudrate must be equal to or less than 37000kbit/s")
+
         if CANBaudRate != 0:
             bt = can_calc_bittiming.bt()
             bt.bitrate = CANBaudRate
