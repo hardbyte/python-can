@@ -77,8 +77,8 @@ class Logger(MessageWriter):  # pylint: disable=abstract-method
     ) -> MessageWriter:
         """
         :param filename: the filename/path of the file to write to,
-                    may be a path-like object or None to
-                    instantiate a :class:`~can.Printer`
+                        may be a path-like object or None to
+                        instantiate a :class:`~can.Printer`
         :raises ValueError: if the filename's suffix is of an unknown file type
         """
         if filename is None:
