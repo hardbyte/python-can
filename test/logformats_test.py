@@ -174,7 +174,6 @@ class ReaderWriterTest(unittest.TestCase, ComparingMessagesTestCase, metaclass=A
         writer = self.writer_constructor(self.test_file_name)
         self._write_all(writer)
         self._ensure_fsync(writer)
-
         writer.stop()
         if hasattr(writer.file, "closed"):
             self.assertTrue(writer.file.closed)

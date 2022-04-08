@@ -1,11 +1,8 @@
-# coding: utf-8
-
 """
 See the :class:`Logger` class.
 """
 
 import os
-import logging
 import pathlib
 from abc import ABC, abstractmethod
 from datetime import datetime
@@ -35,8 +32,6 @@ except ImportError:
     # be careful when using MF4Writer, it might NameError
     pass
 
-log = logging.getLogger("can.io.logger")
-
 
 class Logger(MessageWriter):  # pylint: disable=abstract-method
     """
@@ -61,7 +56,7 @@ class Logger(MessageWriter):  # pylint: disable=abstract-method
     The log files may be incomplete until `stop()` is called due to buffering.
 
     .. note::
-        This class itself is just a dispatcher, and any positional an keyword
+        This class itself is just a dispatcher, and any positional and keyword
         arguments are passed on to the returned instance.
     """
 
@@ -81,28 +76,13 @@ class Logger(MessageWriter):  # pylint: disable=abstract-method
         cls: Any, filename: Optional[StringPathLike], *args: Any, **kwargs: Any
     ) -> MessageWriter:
         """
-        :type filename: str or None or path-like
-        :param filename: the filename/path the file to write to,
-                         may be a path-like object if the target logger supports
-                         it, and may be None to instantiate a :class:`~can.Printer`
-
+        :param filename: the filename/path of the file to write to,
+                    may be a path-like object or None to
+                    instantiate a :class:`~can.Printer`
+        :raises ValueError: if the filename's suffix is of an unknown file type
         """
-        if filename:
-            if filename.endswith(".asc"):
-                return ASCWriter(filename, *args, **kwargs)
-            elif filename.endswith(".blf"):
-                return BLFWriter(filename, *args, **kwargs)
-            elif filename.endswith(".csv"):
-                return CSVWriter(filename, *args, **kwargs)
-            elif filename.endswith(".db"):
-                return SqliteWriter(filename, *args, **kwargs)
-            elif filename.endswith(".log"):
-                return CanutilsLogWriter(filename, *args, **kwargs)
-            elif filename.endswith(".mf4"):
-                if MF4Writer is not None:
-                    return MF4Writer(filename, *args, **kwargs)
-                else:
-                    log.info('Could not import MF4 logger, falling pack to can.Printer')
+        if filename is None:
+            return Printer(*args, **kwargs)
 
         if not Logger.fetched_plugins:
             Logger.message_writers.update(
