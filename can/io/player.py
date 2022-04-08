@@ -23,8 +23,7 @@ from ..message import Message
 try:
     from .mf4 import MF4Reader
 except ImportError:
-    # be careful when using MF4Writer, it might NameError
-    pass
+    MF4Reader = None
 
 
 class LogReader(MessageReader):

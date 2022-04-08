@@ -29,8 +29,7 @@ from ..typechecking import StringPathLike, FileLike, AcceptedIOType
 try:
     from .mf4 import MF4Writer
 except ImportError:
-    # be careful when using MF4Writer, it might NameError
-    pass
+    MF4Writer = None
 
 
 class Logger(MessageWriter):  # pylint: disable=abstract-method
@@ -69,6 +68,7 @@ class Logger(MessageWriter):  # pylint: disable=abstract-method
         ".log": CanutilsLogWriter,
         ".trc": TRCWriter,
         ".txt": Printer,
+        ".mf4": MF4Writer,
     }
 
     @staticmethod

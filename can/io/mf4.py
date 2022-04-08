@@ -15,7 +15,8 @@ from ..util import channel2int
 from .generic import BaseIOHandler
 
 try:
-    from asammdf import MDF4, Signal
+    from asammdf import Signal
+    from asammdf.mdf import MDF4
     import numpy as np
 
     ASAMMDF_AVAILABLE = True
@@ -93,9 +94,9 @@ class MF4Writer(BaseIOHandler, Listener):
         :param database: optional path to a DBC or ARXML file that contains
                             message description.
         """
-        super().__init__(file, mode="r+b")
+        super().__init__(file, mode="w+b")
         now = datetime.now()
-        self._mdf = MDF4()
+        self._mdf = MDF4(original_name=None)
         self._mdf.header.start_time = now
         self.last_timestamp = self._start_time = now.timestamp()
 
