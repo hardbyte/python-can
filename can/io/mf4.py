@@ -8,6 +8,7 @@ the ASAM MDF standard (see https://www.asam.net/standards/detail/mdf/)
 from datetime import datetime
 from pathlib import Path
 import logging
+from hashlib import md5
 
 from ..message import Message
 from ..listener import Listener
@@ -18,7 +19,7 @@ try:
     from asammdf import Signal
     from asammdf.mdf import MDF4
     from asammdf.blocks.v4_blocks import SourceInformation
-    from asammdf.blocks.v4_constants import BUS_TYPE_CAN, SOURCE_TOOL
+    from asammdf.blocks.v4_constants import BUS_TYPE_CAN, SOURCE_BUS
     import numpy as np
 
     ASAMMDF_AVAILABLE = True
@@ -106,14 +107,15 @@ class MF4Writer(BaseIOHandler, Listener):
             database = Path(database).resolve()
             if database.exists():
                 data = database.read_bytes()
-                attachment = data, database.name
+                attachment = data, database.name, md5(data).digest()
             else:
                 attachment = None
         else:
             attachment = None
 
+        attachment = None
         acquisition_source = SourceInformation(
-            source_type=SOURCE_TOOL, bus_type=BUS_TYPE_CAN
+            source_type=SOURCE_BUS, bus_type=BUS_TYPE_CAN
         )
 
         # standard frames group
