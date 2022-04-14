@@ -17,6 +17,8 @@ from .generic import BaseIOHandler
 try:
     from asammdf import Signal
     from asammdf.mdf import MDF4
+    from asammdf.blocks.v4_blocks import SourceInformation
+    from asammdf.blocks.v4_constants import BUS_TYPE_CAN, SOURCE_TOOL
     import numpy as np
 
     ASAMMDF_AVAILABLE = True
@@ -110,6 +112,10 @@ class MF4Writer(BaseIOHandler, Listener):
         else:
             attachment = None
 
+        acquisition_source = SourceInformation(
+            source_type=SOURCE_TOOL, bus_type=BUS_TYPE_CAN
+        )
+
         # standard frames group
         self._mdf.append(
             Signal(
@@ -117,6 +123,7 @@ class MF4Writer(BaseIOHandler, Listener):
                 samples=np.array([], dtype=STD_DTYPE),
                 timestamps=np.array([], dtype="<f8"),
                 attachment=attachment,
+                source=acquisition_source,
             )
         )
 
