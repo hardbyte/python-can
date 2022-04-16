@@ -180,6 +180,7 @@ class GeneralPurposeUdpMulticastBus:
         self.port = port
         self.hop_limit = hop_limit
         self.max_buffer = max_buffer
+        self.timestamp_nanosecond = False  # This might be set by _create_socket(); False will always work
 
         # Look up multicast group address in name server and find out IP version of the first suitable target
         # and then get the address family of it (socket.AF_INET or socket.AF_INET6)
@@ -214,6 +215,8 @@ class GeneralPurposeUdpMulticastBus:
             self.received_ancillary_buffer_size = socket.CMSG_SPACE(
                 self.received_timestamp_struct_size
             )
+        else:
+            self.received_ancillary_buffer_size = 0
 
         # used by send()
         self._send_destination = (self.group, self.port)
