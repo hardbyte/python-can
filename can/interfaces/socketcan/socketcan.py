@@ -829,7 +829,7 @@ class SocketcanBus(BusABC):
 
     def _get_next_task_id(self) -> int:
         with self._task_id_guard:
-            self._task_id = (self._task_id + 1) % (2 ** 32 - 1)
+            self._task_id = (self._task_id + 1) % (2**32 - 1)
             return self._task_id
 
     def _get_bcm_socket(self, channel: str) -> socket.socket:
