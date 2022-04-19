@@ -180,7 +180,9 @@ class GeneralPurposeUdpMulticastBus:
         self.port = port
         self.hop_limit = hop_limit
         self.max_buffer = max_buffer
-        self.timestamp_nanosecond = False  # This might be set by _create_socket(); False will always work
+
+        # `False` will always work, no matter the setup. This might be changed by _create_socket().
+        self.timestamp_nanosecond = False
 
         # Look up multicast group address in name server and find out IP version of the first suitable target
         # and then get the address family of it (socket.AF_INET or socket.AF_INET6)
@@ -295,18 +297,22 @@ class GeneralPurposeUdpMulticastBus:
 
         :param timeout: the timeout in seconds after which an Exception is raised is sending has failed
         :param data: the data to be sent
-        :raises OSError: if an error occurred while writing to the underlying socket
-        :raises socket.timeout: if the timeout ran out before sending was completed (this is a subclass of
-                                *OSError*)
+        :raises can.CanOperationError: if an error occurred while writing to the underlying socket
+        :raises can.CanTimeoutError: if the timeout ran out before sending was completed
         """
         if timeout != self._last_send_timeout:
             self._last_send_timeout = timeout
             # this applies to all blocking calls on the socket, but sending is the only one that is blocking
             self._socket.settimeout(timeout)
 
-        bytes_sent = self._socket.sendto(data, self._send_destination)
-        if bytes_sent < len(data):
-            raise socket.timeout()
+        try:
+            bytes_sent = self._socket.sendto(data, self._send_destination)
+            if bytes_sent < len(data):
+                raise TimeoutError()
+        except TimeoutError:
+            raise can.CanTimeoutError() from None
+        except OSError as error:
+            raise can.CanOperationError("failed to send via socket") from error
 
     def recv(
         self, timeout: Optional[float] = None
@@ -346,17 +352,21 @@ class GeneralPurposeUdpMulticastBus:
             # fetch timestamp; this is configured in _create_socket()
             if self.timestamp_nanosecond:
                 # Very similar to timestamp handling in can/interfaces/socketcan/socketcan.py -> capture_message()
-                assert len(ancillary_data) == 1, "only requested a single extra field"
+                if len(ancillary_data) != 1:
+                    raise can.CanOperationError(
+                        "Only requested a single extra field but got a different amount"
+                    )
                 cmsg_level, cmsg_type, cmsg_data = ancillary_data[0]
-                assert (
-                    cmsg_level == socket.SOL_SOCKET and cmsg_type == SO_TIMESTAMPNS
-                ), "received control message type that was not requested"
+                if cmsg_level != socket.SOL_SOCKET or cmsg_type != SO_TIMESTAMPNS:
+                    raise can.CanOperationError(
+                        "received control message type that was not requested"
+                    )
                 # see https://man7.org/linux/man-pages/man3/timespec.3.html -> struct timespec for details
                 seconds, nanoseconds = struct.unpack(
                     self.received_timestamp_struct, cmsg_data
                 )
                 if nanoseconds >= 1e9:
-                    raise can.CanError(
+                    raise can.CanOperationError(
                         f"Timestamp nanoseconds field was out of range: {nanoseconds} not less than 1e9"
                     )
                 timestamp = seconds + nanoseconds * 1.0e-9
@@ -370,7 +380,7 @@ class GeneralPurposeUdpMulticastBus:
                     self.received_timestamp_struct, result_buffer
                 )
                 if microseconds >= 1e6:
-                    raise can.CanError(
+                    raise can.CanOperationError(
                         f"Timestamp microseconds field was out of range: {microseconds} not less than 1e6"
                     )
                 timestamp = seconds + microseconds * 1e-6
