@@ -685,7 +685,7 @@ class VectorBus(BusABC):
     @staticmethod
     def get_application_config(
         app_name: str, app_channel: int
-    ) -> Tuple[xldefine.XL_HardwareType, int, int]:
+    ) -> Tuple[Union[int, xldefine.XL_HardwareType], int, int]:
         """Retrieve information for an application in Vector Hardware Configuration.
 
         :param app_name:
@@ -702,26 +702,31 @@ class VectorBus(BusABC):
         if xldriver is None:
             raise CanInterfaceNotImplementedError("The Vector API has not been loaded")
 
-        hw_type = ctypes.c_uint()
-        hw_index = ctypes.c_uint()
-        hw_channel = ctypes.c_uint()
+        _hw_type = ctypes.c_uint()
+        _hw_index = ctypes.c_uint()
+        _hw_channel = ctypes.c_uint()
         _app_channel = ctypes.c_uint(app_channel)
 
         xldriver.xlGetApplConfig(
             app_name.encode(),
             _app_channel,
-            hw_type,
-            hw_index,
-            hw_channel,
+            _hw_type,
+            _hw_index,
+            _hw_channel,
             xldefine.XL_BusTypes.XL_BUS_TYPE_CAN,
         )
-        return xldefine.XL_HardwareType(hw_type.value), hw_index.value, hw_channel.value
+        try:
+            hw_type = xldefine.XL_HardwareType(_hw_type.value)
+        except ValueError:
+            hw_type = _hw_type.value
+
+        return hw_type, _hw_index.value, _hw_channel.value
 
     @staticmethod
     def set_application_config(
         app_name: str,
         app_channel: int,
-        hw_type: xldefine.XL_HardwareType,
+        hw_type: Union[int, xldefine.XL_HardwareType],
         hw_index: int,
         hw_channel: int,
         **kwargs: Any,
@@ -783,7 +788,7 @@ class VectorBus(BusABC):
 
 class VectorChannelConfig(NamedTuple):
     name: str
-    hwType: xldefine.XL_HardwareType
+    hwType: Union[int, xldefine.XL_HardwareType]
     hwIndex: int
     hwChannel: int
     channelIndex: int
@@ -811,9 +816,15 @@ def get_channel_configs() -> List[VectorChannelConfig]:
     channel_list: List[VectorChannelConfig] = []
     for i in range(driver_config.channelCount):
         xlcc: xlclass.XLchannelConfig = driver_config.channel[i]
+
+        try:
+            hw_type = xldefine.XL_HardwareType(xlcc.hwType)
+        except ValueError:
+            hw_type = xlcc.hwType
+
         vcc = VectorChannelConfig(
             name=xlcc.name.decode(),
-            hwType=xldefine.XL_HardwareType(xlcc.hwType),
+            hwType=hw_type,
             hwIndex=xlcc.hwIndex,
             hwChannel=xlcc.hwChannel,
             channelIndex=xlcc.channelIndex,
