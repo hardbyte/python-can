@@ -232,7 +232,7 @@ def _create_bus_config(config: Dict[str, Any]) -> typechecking.BusConfig:
         "btr1",
     ):
         if key in config:
-            timing_conf[key] = int(config[key], base=0)
+            timing_conf[key] = int(str(config[key]), base=0)
             del config[key]
     if timing_conf:
         timing_conf["bitrate"] = config["bitrate"]
@@ -292,7 +292,7 @@ def channel2int(channel: Optional[typechecking.Channel]) -> Optional[int]:
     if isinstance(channel, int):
         return channel
     if isinstance(channel, str):
-        match = re.match(r".*(\d+)$", channel)
+        match = re.match(r".*?(\d+)$", channel)
         if match:
             return int(match.group(1))
     return None
@@ -339,7 +339,7 @@ def _rename_kwargs(
                     )
                 kwargs[new] = value
             else:
-                warnings.warn("{} is deprecated".format(alias), DeprecationWarning)
+                warnings.warn(f"{alias} is deprecated", DeprecationWarning)
 
 
 def time_perfcounter_correlation() -> Tuple[float, float]:

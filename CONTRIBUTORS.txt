@@ -1,11 +1,13 @@
+https://github.com/hardbyte/python-can/graphs/contributors
+
 Ben Powell
-Brian Thorne <hardbyte@gmail.com>
+Brian Thorne
 Geert Linders
 Mark Catley
-Phillip Dixon <pdixon@dynamiccontrols.com>
+Phillip Dixon
 Rose Lu
 Karl van Workum
-Albert Bloomfield <albert.bloomfield@ampeletricvehicles.com>
+Albert Bloomfield
 Sam Bristow
 Ethan Zonca
 Robert Kaye
@@ -15,16 +17,68 @@ Tynan McAuley
 Bruno Pennati
 Jack Jester-Weinstein
 Joshua Villyard
-Giuseppe Corbelli <giuseppe.corbelli@weightpack.com>
+Giuseppe Corbelli
 Christian Sandberg
-Eduard Bröcker <eduard@gmx.de>
+Eduard Bröcker
 Boris Wenzlaff
 Pierre-Luc Tessier Gagné
-Felix Divo <felix.divo@gmail.com>
-Kristian Sloth Lauszus <lauszus@gmail.com>
-Shaoyu Meng <shaoyu@life-foundry.com>
-Alexander Mueller<XelaRellum@web.de>
+Felix Divo
+Kristian Sloth Lauszus
+Shaoyu Meng
+Alexander Mueller
 Jan Goeteyn
-"ykzheng" <wishdo@gmail.com>
+ykzheng
 Lear Corporation
-Nick Black <dank@qemfd.net>
+Nick Black
+Francisco Javier Burgos Macia
+Felix Nieuwenhuizen
+@marcel-kanter
+@bessman
+@koberbe
+@tamenol
+@deonvdw
+@ptoews
+@chrisoro
+@sou1hacker
+@auden-rovellequartz
+@typecprint
+@tysonite
+@Joey5337
+@Aajn
+@josko7452
+@leventerevesz
+@ericevenchick
+@ixygo
+@Gussy
+@altendky
+@philsc
+@rliebscher
+@jxltom
+@kdschlosser
+@tojoh511
+@s0kr4t3s
+@jaesc
+@NiallDarwin
+@sdorre
+@gordon-epc
+@willson556
+@jjguti
+@wiboticalex
+@illuusio
+@cperkulator
+@simontegelid
+@DawidRosinski
+@fabiocrestani
+@ChrisSweetKT
+@ausserlesh
+@wbarnha
+@projectgus
+@samsmith94
+@alexey
+@MattWoodhead
+@nbusser
+@domologic
+@fjburgos
+@pkess
+@felixn
+@Tbruno25

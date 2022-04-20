@@ -3,34 +3,37 @@ This module contains the generic :class:`LogReader` as
 well as :class:`MessageSync` which plays back messages
 in the recorded order an time intervals.
 """
-
+import gzip
 import pathlib
 from time import time, sleep
 import typing
 
 from pkg_resources import iter_entry_points
 
-if typing.TYPE_CHECKING:
-    import can
-
-from .generic import BaseIOHandler, MessageReader
+from .generic import MessageReader
 from .asc import ASCReader
 from .blf import BLFReader
 from .canutils import CanutilsLogReader
 from .csv import CSVReader
 from .sqlite import SqliteReader
+from ..typechecking import StringPathLike, FileLike, AcceptedIOType
+from ..message import Message
 
 
-class LogReader(BaseIOHandler):
+class LogReader(MessageReader):
     """
     Replay logged CAN messages from a file.
 
-    The format is determined from the file format which can be one of:
+    The format is determined from the file suffix which can be one of:
       * .asc
       * .blf
       * .csv
       * .db
       * .log
+
+    Gzip compressed files can be used as long as the original
+    files suffix is one of the above (e.g. filename.asc.gz).
+
 
     Exposes a simple iterator interface, to use simply:
 
@@ -47,7 +50,7 @@ class LogReader(BaseIOHandler):
     """
 
     fetched_plugins = False
-    message_readers = {
+    message_readers: typing.Dict[str, typing.Type[MessageReader]] = {
         ".asc": ASCReader,
         ".blf": BLFReader,
         ".csv": CSVReader,
@@ -58,7 +61,7 @@ class LogReader(BaseIOHandler):
     @staticmethod
     def __new__(  # type: ignore
         cls: typing.Any,
-        filename: "can.typechecking.StringPathLike",
+        filename: StringPathLike,
         *args: typing.Any,
         **kwargs: typing.Any,
     ) -> MessageReader:
@@ -76,15 +79,31 @@ class LogReader(BaseIOHandler):
             LogReader.fetched_plugins = True
 
         suffix = pathlib.PurePath(filename).suffix.lower()
+
+        file_or_filename: AcceptedIOType = filename
+        if suffix == ".gz":
+            suffix, file_or_filename = LogReader.decompress(filename)
         try:
-            return typing.cast(
-                MessageReader,
-                LogReader.message_readers[suffix](filename, *args, **kwargs),
-            )
+            return LogReader.message_readers[suffix](file_or_filename, *args, **kwargs)
         except KeyError:
             raise ValueError(
                 f'No read support for this unknown log format "{suffix}"'
             ) from None
+
+    @staticmethod
+    def decompress(
+        filename: StringPathLike,
+    ) -> typing.Tuple[str, typing.Union[str, FileLike]]:
+        """
+        Return the suffix and io object of the decompressed file.
+        """
+        real_suffix = pathlib.Path(filename).suffixes[-2].lower()
+        mode = "rb" if real_suffix == ".blf" else "rt"
+
+        return real_suffix, gzip.open(filename, mode)
+
+    def __iter__(self) -> typing.Generator[Message, None, None]:
+        pass
 
 
 class MessageSync:  # pylint: disable=too-few-public-methods
@@ -94,7 +113,7 @@ class MessageSync:  # pylint: disable=too-few-public-methods
 
     def __init__(
         self,
-        messages: typing.Iterable["can.Message"],
+        messages: typing.Iterable[Message],
         timestamps: bool = True,
         gap: float = 0.0001,
         skip: float = 60.0,
@@ -112,7 +131,7 @@ class MessageSync:  # pylint: disable=too-few-public-methods
         self.gap = gap
         self.skip = skip
 
-    def __iter__(self) -> typing.Generator["can.Message", None, None]:
+    def __iter__(self) -> typing.Generator[Message, None, None]:
         playback_start_time = time()
         recorded_start_time = None
 

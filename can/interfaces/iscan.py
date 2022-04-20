@@ -152,6 +152,7 @@ class IscanBus(BusABC):
         iscan.isCAN_TransmitMessageEx(self.channel, ctypes.byref(raw_msg))
 
     def shutdown(self) -> None:
+        super().shutdown()
         iscan.isCAN_CloseDevice(self.channel)
 
 
@@ -186,12 +187,12 @@ class IscanError(CanError):
 
     def __init__(self, function, error_code: int, arguments) -> None:
         try:
-            description = ": " + self.ERROR_CODES[self.error_code]
+            description = ": " + self.ERROR_CODES[error_code]
         except KeyError:
             description = ""
 
         super().__init__(
-            f"Function {self.function.__name__} failed{description}",
+            f"Function {function.__name__} failed{description}",
             error_code=error_code,
         )
 

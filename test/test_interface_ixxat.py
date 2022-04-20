@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """
 Unittest for ixxat interface.
 
@@ -26,13 +28,13 @@ class SoftwareTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             can.Bus(interface="ixxat", channel=-1)
 
-        # rxFifoSize must be > 0
+        # rx_fifo_size must be > 0
         with self.assertRaises(ValueError):
-            can.Bus(interface="ixxat", channel=0, rxFifoSize=0)
+            can.Bus(interface="ixxat", channel=0, rx_fifo_size=0)
 
-        # txFifoSize must be > 0
+        # tx_fifo_size must be > 0
         with self.assertRaises(ValueError):
-            can.Bus(interface="ixxat", channel=0, txFifoSize=0)
+            can.Bus(interface="ixxat", channel=0, tx_fifo_size=0)
 
 
 class HardwareTestCase(unittest.TestCase):

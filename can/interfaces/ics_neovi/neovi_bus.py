@@ -1,8 +1,8 @@
 """
-ICS NeoVi interface module.
+Intrepid Control Systems (ICS) neoVI interface module.
 
 python-ics is a Python wrapper around the API provided by Intrepid Control
-Systems for communicating with their NeoVI range of devices.
+Systems for communicating with their neoVI range of devices.
 
 Implementation references:
 * https://github.com/intrepidcs/python_ics
@@ -11,7 +11,7 @@ Implementation references:
 import logging
 import os
 import tempfile
-from collections import deque, defaultdict
+from collections import deque, defaultdict, Counter
 from itertools import cycle
 from threading import Event
 from warnings import warn
@@ -30,7 +30,7 @@ try:
     import ics
 except ImportError as ie:
     logger.warning(
-        "You won't be able to use the ICS NeoVi can backend without the "
+        "You won't be able to use the ICS neoVI can backend without the "
         "python-ics module installed!: %s",
         ie,
     )
@@ -42,7 +42,7 @@ try:
 except ImportError as ie:
 
     logger.warning(
-        "Using ICS NeoVi can backend without the "
+        "Using ICS neoVI can backend without the "
         "filelock module installed may cause some issues!: %s",
         ie,
     )
@@ -89,7 +89,7 @@ class ICSApiError(CanError):
         severity: int,
         restart_needed: int,
     ):
-        super().__init__(f"{description_short} {description_long}", error_code)
+        super().__init__(f"{description_short}. {description_long}", error_code)
         self.description_short = description_short
         self.description_long = description_long
         self.severity = severity
@@ -226,8 +226,8 @@ class NeoViBus(BusABC):
                 channel = getattr(ics, netid)
             else:
                 raise ValueError(
-                    "channel must be an integer or " "a valid ICS channel name"
-                )
+                    "channel must be an integer or a valid ICS channel name"
+                ) from None
         return channel
 
     @staticmethod
@@ -319,9 +319,12 @@ class NeoViBus(BusABC):
         if errors:
             logger.warning("%d error(s) found", errors)
 
-            for msg in ics.get_error_messages(self.dev):
-                error = ICSOperationError(*msg)
-                logger.warning(error)
+            for msg, count in Counter(ics.get_error_messages(self.dev)).items():
+                error = ICSApiError(*msg)
+                if count > 1:
+                    logger.warning(f"{error} (Repeated {count} times)")
+                else:
+                    logger.warning(error)
 
     def _get_timestamp_for_msg(self, ics_msg):
         if self._use_system_timestamp:
@@ -361,6 +364,9 @@ class NeoViBus(BusABC):
                 is_remote_frame=bool(
                     ics_msg.StatusBitField & ics.SPY_STATUS_REMOTE_FRAME
                 ),
+                is_error_frame=bool(
+                    ics_msg.StatusBitField2 & ics.SPY_STATUS2_ERROR_FRAME
+                ),
                 error_state_indicator=bool(
                     ics_msg.StatusBitField3 & ics.SPY_STATUS3_CANFD_ESI
                 ),
@@ -380,6 +386,9 @@ class NeoViBus(BusABC):
                 is_rx=not bool(ics_msg.StatusBitField & ics.SPY_STATUS_TX_MSG),
                 is_remote_frame=bool(
                     ics_msg.StatusBitField & ics.SPY_STATUS_REMOTE_FRAME
+                ),
+                is_error_frame=bool(
+                    ics_msg.StatusBitField2 & ics.SPY_STATUS2_ERROR_FRAME
                 ),
                 channel=ics_msg.NetworkID,
             )
@@ -414,6 +423,18 @@ class NeoViBus(BusABC):
         """
         if not ics.validate_hobject(self.dev):
             raise CanOperationError("bus not open")
+
+        # Check for valid DLC to avoid passing extra long data to the driver
+        if msg.is_fd:
+            if msg.dlc > 64:
+                raise ValueError(
+                    f"DLC was {msg.dlc} but it should be <= 64 for CAN FD frames"
+                )
+        elif msg.dlc > 8:
+            raise ValueError(
+                f"DLC was {msg.dlc} but it should be <= 8 for normal CAN frames"
+            )
+
         message = ics.SpyMessage()
 
         flag0 = 0
@@ -431,8 +452,8 @@ class NeoViBus(BusABC):
                 flag3 |= ics.SPY_STATUS3_CANFD_ESI
 
         message.ArbIDOrHeader = msg.arbitration_id
-        msg_data = msg.data
-        message.NumberBytesData = len(msg_data)
+        msg_data = msg.data[: msg.dlc]
+        message.NumberBytesData = msg.dlc
         message.Data = tuple(msg_data[:8])
         if msg.is_fd and len(msg_data) > 8:
             message.ExtraDataPtrEnabled = 1

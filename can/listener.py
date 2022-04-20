@@ -4,21 +4,13 @@ This module contains the implementation of `can.Listener` and some readers.
 
 import sys
 import warnings
+import asyncio
+from abc import ABCMeta, abstractmethod
+from queue import SimpleQueue, Empty
 from typing import Any, AsyncIterator, Awaitable, Optional
 
 from can.message import Message
 from can.bus import BusABC
-
-from abc import ABCMeta, abstractmethod
-
-try:
-    # Python 3.7
-    from queue import SimpleQueue, Empty
-except ImportError:
-    # Python 3.0 - 3.6
-    from queue import Queue as SimpleQueue, Empty  # type: ignore
-
-import asyncio
 
 
 class Listener(metaclass=ABCMeta):
@@ -36,6 +28,9 @@ class Listener(metaclass=ABCMeta):
         # Important to ensure all outputs are flushed
         listener.stop()
     """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        pass
 
     @abstractmethod
     def on_message_received(self, msg: Message) -> None:
@@ -63,19 +58,20 @@ class Listener(metaclass=ABCMeta):
         """
 
 
-class RedirectReader(Listener):
+class RedirectReader(Listener):  # pylint: disable=abstract-method
     """
     A RedirectReader sends all received messages to another Bus.
     """
 
-    def __init__(self, bus: BusABC) -> None:
+    def __init__(self, bus: BusABC, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
         self.bus = bus
 
     def on_message_received(self, msg: Message) -> None:
         self.bus.send(msg)
 
 
-class BufferedReader(Listener):
+class BufferedReader(Listener):  # pylint: disable=abstract-method
     """
     A BufferedReader is a subclass of :class:`~can.Listener` which implements a
     **message buffer**: that is, when the :class:`can.BufferedReader` instance is
@@ -89,7 +85,9 @@ class BufferedReader(Listener):
     :attr is_stopped: ``True`` if the reader has been stopped
     """
 
-    def __init__(self) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+
         # set to "infinite" size
         self.buffer: SimpleQueue[Message] = SimpleQueue()
         self.is_stopped: bool = False
@@ -116,7 +114,10 @@ class BufferedReader(Listener):
         :return: the Message if there is one, or None if there is not.
         """
         try:
-            return self.buffer.get(block=not self.is_stopped, timeout=timeout)
+            if self.is_stopped:
+                return self.buffer.get(block=False)
+            else:
+                return self.buffer.get(block=True, timeout=timeout)
         except Empty:
             return None
 
@@ -125,7 +126,7 @@ class BufferedReader(Listener):
         self.is_stopped = True
 
 
-class AsyncBufferedReader(Listener):
+class AsyncBufferedReader(Listener):  # pylint: disable=abstract-method
     """A message buffer for use with :mod:`asyncio`.
 
     See :ref:`asyncio` for how to use with :class:`can.Notifier`.
@@ -136,10 +137,12 @@ class AsyncBufferedReader(Listener):
             print(msg)
     """
 
-    def __init__(self, **kwargs: Any) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+
         self.buffer: "asyncio.Queue[Message]"
 
-        if "loop" in kwargs.keys():
+        if "loop" in kwargs:
             warnings.warn(
                 "The 'loop' argument is deprecated since python-can 4.0.0 "
                 "and has no effect starting with Python 3.10",

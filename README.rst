@@ -3,7 +3,7 @@ python-can
 
 |release| |python_implementation| |downloads| |downloads_monthly| |formatter|
 
-|docs| |build_travis| |coverage| |mergify|
+|docs| |github-actions| |build_travis| |coverage| |mergify|
 
 .. |release| image:: https://img.shields.io/pypi/v/python-can.svg
    :target: https://pypi.python.org/pypi/python-can/
@@ -18,7 +18,7 @@ python-can
    :alt: Downloads on PePy
 
 .. |downloads_monthly| image:: https://pepy.tech/badge/python-can/month
-   :target: https://pepy.tech/project/python-can/month
+   :target: https://pepy.tech/project/python-can
    :alt: Monthly downloads on PePy
 
 .. |formatter| image:: https://img.shields.io/badge/code%20style-black-000000.svg
@@ -28,6 +28,10 @@ python-can
 .. |docs| image:: https://readthedocs.org/projects/python-can/badge/?version=stable
    :target: https://python-can.readthedocs.io/en/stable/
    :alt: Documentation
+
+.. |github-actions| image:: https://github.com/hardbyte/python-can/actions/workflows/build.yml/badge.svg?branch=develop
+   :target: https://github.com/hardbyte/python-can/actions/workflows/build.yml
+   :alt: Github Actions workflow status
 
 .. |build_travis| image:: https://img.shields.io/travis/com/hardbyte/python-can/develop.svg?label=Travis%20CI
    :target: https://travis-ci.com/hardbyte/python-can
@@ -51,15 +55,14 @@ Python developers; providing common abstractions to
 different hardware devices, and a suite of utilities for sending and receiving
 messages on a can bus.
 
-The library currently supports Python 3.6+ as well as PyPy 3 and runs
-on Mac, Linux and Windows.
+The library currently supports CPython as well as PyPy and runs on Mac, Linux and Windows.
 
 ==============================  ===========
 Library Version                 Python
 ------------------------------  -----------
   2.x                           2.6+, 3.4+
   3.x                           2.7+, 3.5+
-  4.x *(currently on develop)*  3.6+
+  4.x *(currently on develop)*  3.7+
 ==============================  ===========
 
 
@@ -87,7 +90,7 @@ Example usage
     import can
 
     # create a bus instance
-    # many other interfaces are supported as well (see below)
+    # many other interfaces are supported as well (see documentation)
     bus = can.Bus(interface='socketcan',
                   channel='vcan0',
                   receive_own_messages=True)
@@ -99,7 +102,7 @@ Example usage
 
     # iterate over received messages
     for msg in bus:
-        print("{:X}: {}".format(msg.arbitration_id, msg.data))
+        print(f"{msg.arbitration_id:X}: {msg.data}")
 
     # or use an asynchronous notifier
     notifier = can.Notifier(bus, [can.Logger("recorded.log"), can.Printer()])

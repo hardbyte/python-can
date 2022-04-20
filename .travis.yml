@@ -74,23 +74,6 @@ jobs:
         #   -a Write all files
         #   -n nitpicky
         - python -m sphinx -an doc build
-    - stage: linter
-      name: "Linter Checks"
-      python: "3.9"
-      before_install:
-        - travis_retry pip install -r requirements-lint.txt
-      script:
-        # -------------
-        # pylint checking:
-        # check the entire main codebase (except the tests)
-        - pylint --rcfile=.pylintrc can/**.py setup.py doc.conf scripts/**.py examples/**.py
-        # -------------
-        # mypy checking:
-        - mypy
-          can/*.py
-          can/io/**.py
-          scripts/**.py
-          examples/**.py
     - stage: deploy
       name: "PyPi Deployment"
       python: "3.9"

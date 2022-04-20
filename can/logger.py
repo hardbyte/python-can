@@ -57,6 +57,16 @@ def _create_base_argument_parser(parser: argparse.ArgumentParser) -> None:
         help="Bitrate to use for the data phase in case of CAN-FD.",
     )
 
+    parser.add_argument(
+        "extra_args",
+        nargs=argparse.REMAINDER,
+        help="""\
+        The remaining arguments will be used for the interface initialisation.
+        For example, `-i vector -c 1 --app-name=MyCanApp` is the equivalent to 
+        opening the bus with `Bus('vector', channel=1, app_name='MyCanApp')`
+        """,
+    )
+
 
 def _append_filter_argument(
     parser: Union[
@@ -122,6 +132,13 @@ def _parse_filters(parsed_args: Any) -> CanFilters:
     return can_filters
 
 
+def _parse_additonal_config(unknown_args):
+    return dict(
+        (arg.split("=", 1)[0].lstrip("--").replace("-", "_"), arg.split("=", 1)[1])
+        for arg in unknown_args
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Log CAN traffic, printing messages to stdout or to a given file.",
@@ -172,9 +189,9 @@ def main() -> None:
         parser.print_help(sys.stderr)
         raise SystemExit(errno.EINVAL)
 
-    results = parser.parse_args()
-
-    bus = _create_bus(results, can_filters=_parse_filters(results))
+    results, unknown_args = parser.parse_known_args()
+    additional_config = _parse_additonal_config(unknown_args)
+    bus = _create_bus(results, can_filters=_parse_filters(results), **additional_config)
 
     if results.active:
         bus.state = BusState.ACTIVE

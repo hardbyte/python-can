@@ -610,6 +610,7 @@ class SocketcanBus(BusABC):
         local_loopback: bool = True,
         fd: bool = False,
         can_filters: Optional[CanFilters] = None,
+        ignore_rx_error_frames=False,
         **kwargs,
     ) -> None:
         """Creates a new socketcan bus.
@@ -639,6 +640,8 @@ class SocketcanBus(BusABC):
             If CAN-FD frames should be supported.
         :param can_filters:
             See :meth:`can.BusABC.set_filters`.
+        :param ignore_rx_error_frames:
+            If incoming error frames should be discarded.
         """
         self.socket = create_socket()
         self.channel = channel
@@ -671,11 +674,12 @@ class SocketcanBus(BusABC):
             except socket.error as error:
                 log.error("Could not enable CAN-FD frames (%s)", error)
 
-        # enable error frames
-        try:
-            self.socket.setsockopt(SOL_CAN_RAW, CAN_RAW_ERR_FILTER, 0x1FFFFFFF)
-        except socket.error as error:
-            log.error("Could not enable error frames (%s)", error)
+        if not ignore_rx_error_frames:
+            # enable error frames
+            try:
+                self.socket.setsockopt(SOL_CAN_RAW, CAN_RAW_ERR_FILTER, 0x1FFFFFFF)
+            except socket.error as error:
+                log.error("Could not enable error frames (%s)", error)
 
         # enable nanosecond resolution timestamping
         # we can always do this since
@@ -696,7 +700,7 @@ class SocketcanBus(BusABC):
 
     def shutdown(self) -> None:
         """Stops all active periodic tasks and closes the socket."""
-        self.stop_all_periodic_tasks()
+        super().shutdown()
         for channel, bcm_socket in self._bcm_sockets.items():
             log.debug("Closing bcm socket for channel %s", channel)
             bcm_socket.close()
@@ -825,7 +829,7 @@ class SocketcanBus(BusABC):
 
     def _get_next_task_id(self) -> int:
         with self._task_id_guard:
-            self._task_id = (self._task_id + 1) % (2 ** 32 - 1)
+            self._task_id = (self._task_id + 1) % (2**32 - 1)
             return self._task_id
 
     def _get_bcm_socket(self, channel: str) -> socket.socket:

@@ -318,6 +318,31 @@ class BasicTestUdpMulticastBusIPv6(Back2BackTestCase):
             super().test_unique_message_instances()
 
 
+TEST_INTERFACE_ETAS = False
+try:
+    bus_class = can.interface._get_class_for_interface("etas")
+    TEST_INTERFACE_ETAS = True
+except can.exceptions.CanInterfaceNotImplementedError:
+    pass
+
+
+@unittest.skipUnless(TEST_INTERFACE_ETAS, "skip testing of etas interface")
+class BasicTestEtas(Back2BackTestCase):
+
+    if TEST_INTERFACE_ETAS:
+        configs = can.interface.detect_available_configs(interfaces="etas")
+
+        INTERFACE_1 = "etas"
+        CHANNEL_1 = configs[0]["channel"]
+        INTERFACE_2 = "etas"
+        CHANNEL_2 = configs[2]["channel"]
+
+    def test_unique_message_instances(self):
+        self.skipTest(
+            "creating a second instance of a channel with differing self-reception settings is not supported"
+        )
+
+
 @unittest.skipUnless(TEST_INTERFACE_SOCKETCAN, "skip testing of socketcan")
 class SocketCanBroadcastChannel(unittest.TestCase):
     def setUp(self):

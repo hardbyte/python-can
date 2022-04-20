@@ -643,6 +643,7 @@ class KvaserBus(BusABC):
             log.error("Could not flash LEDs (%s)", e)
 
     def shutdown(self):
+        super().shutdown()
         # Wait for transmit queue to be cleared
         try:
             canWriteSync(self._write_handle, 100)
@@ -713,11 +714,7 @@ def get_channel_info(channel):
         ctypes.sizeof(number),
     )
 
-    return "%s, S/N %d (#%d)" % (
-        name.value.decode("ascii"),
-        serial.value,
-        number.value + 1,
-    )
+    return f"{name.value.decode('ascii')}, S/N {serial.value} (#{number.value + 1})"
 
 
 init_kvaser_library()

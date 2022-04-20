@@ -42,14 +42,14 @@ def receive(bus, stop_event):
     while not stop_event.is_set():
         rx_msg = bus.recv(1)
         if rx_msg is not None:
-            print("rx: {}".format(rx_msg))
+            print(f"rx: {rx_msg}")
     print("Stopped receiving messages")
 
 
 def main():
-    """Controles the sender and receiver."""
-    with can.interface.Bus(bustype="serial", channel="/dev/ttyS10") as server:
-        with can.interface.Bus(bustype="serial", channel="/dev/ttyS11") as client:
+    """Controls the sender and receiver."""
+    with can.interface.Bus(interface="serial", channel="/dev/ttyS10") as server:
+        with can.interface.Bus(interface="serial", channel="/dev/ttyS11") as client:
 
             tx_msg = can.Message(
                 arbitration_id=0x01,

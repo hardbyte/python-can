@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """
 This module tests multiple message cyclic send tasks.
 """

@@ -1,6 +1,6 @@
 """Types for mypy type-checking
 """
-
+import gzip
 import typing
 
 if typing.TYPE_CHECKING:
@@ -27,9 +27,9 @@ ChannelInt = int
 Channel = typing.Union[ChannelInt, ChannelStr]
 
 # Used by the IO module
-FileLike = typing.IO[typing.Any]
+FileLike = typing.Union[typing.TextIO, typing.BinaryIO, gzip.GzipFile]
 StringPathLike = typing.Union[str, "os.PathLike[str]"]
-AcceptedIOType = typing.Optional[typing.Union[FileLike, StringPathLike]]
+AcceptedIOType = typing.Union[FileLike, StringPathLike]
 
 BusConfig = typing.NewType("BusConfig", typing.Dict[str, typing.Any])
 

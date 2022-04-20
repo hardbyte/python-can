@@ -8,15 +8,17 @@ import time
 import threading
 import logging
 import sqlite3
+from typing import Generator
 
 from can.listener import BufferedReader
 from can.message import Message
-from .generic import BaseIOHandler
+from .generic import MessageWriter, MessageReader
+from ..typechecking import StringPathLike
 
 log = logging.getLogger("can.io.sqlite")
 
 
-class SqliteReader(BaseIOHandler):
+class SqliteReader(MessageReader):
     """
     Reads recorded CAN messages from a simple SQL database.
 
@@ -30,9 +32,9 @@ class SqliteReader(BaseIOHandler):
     .. note:: The database schema is given in the documentation of the loggers.
     """
 
-    def __init__(self, file, table_name="messages"):
+    def __init__(self, file: StringPathLike, table_name: str = "messages") -> None:
         """
-        :param file: a `str` or since Python 3.7 a path like object that points
+        :param file: a `str`  path like object that points
                      to the database file to use
         :param str table_name: the name of the table to look for the messages
 
@@ -45,10 +47,8 @@ class SqliteReader(BaseIOHandler):
         self._cursor = self._conn.cursor()
         self.table_name = table_name
 
-    def __iter__(self):
-        for frame_data in self._cursor.execute(
-            "SELECT * FROM {}".format(self.table_name)
-        ):
+    def __iter__(self) -> Generator[Message, None, None]:
+        for frame_data in self._cursor.execute(f"SELECT * FROM {self.table_name}"):
             yield SqliteReader._assemble_message(frame_data)
 
     @staticmethod
@@ -66,7 +66,7 @@ class SqliteReader(BaseIOHandler):
 
     def __len__(self):
         # this might not run in constant time
-        result = self._cursor.execute("SELECT COUNT(*) FROM {}".format(self.table_name))
+        result = self._cursor.execute(f"SELECT COUNT(*) FROM {self.table_name}")
         return int(result.fetchone()[0])
 
     def read_all(self):
@@ -74,9 +74,7 @@ class SqliteReader(BaseIOHandler):
 
         :rtype: Generator[can.Message]
         """
-        result = self._cursor.execute(
-            "SELECT * FROM {}".format(self.table_name)
-        ).fetchall()
+        result = self._cursor.execute(f"SELECT * FROM {self.table_name}").fetchall()
         return (SqliteReader._assemble_message(frame) for frame in result)
 
     def stop(self):
@@ -85,7 +83,7 @@ class SqliteReader(BaseIOHandler):
         self._conn.close()
 
 
-class SqliteWriter(BaseIOHandler, BufferedReader):
+class SqliteWriter(MessageWriter, BufferedReader):
     """Logs received CAN data to a simple SQL database.
 
     The sqlite database may already exist, otherwise it will
@@ -130,9 +128,9 @@ class SqliteWriter(BaseIOHandler, BufferedReader):
     MAX_BUFFER_SIZE_BEFORE_WRITES = 500
     """Maximum number of messages to buffer before writing to the database"""
 
-    def __init__(self, file, table_name="messages"):
+    def __init__(self, file: StringPathLike, table_name: str = "messages") -> None:
         """
-        :param file: a `str` or since Python 3.7 a path like object that points
+        :param file: a `str` or path like object that points
                      to the database file to use
         :param str table_name: the name of the table to store messages in
 
@@ -164,20 +162,16 @@ class SqliteWriter(BaseIOHandler, BufferedReader):
 
         # create table structure
         self._conn.cursor().execute(
-            """
-        CREATE TABLE IF NOT EXISTS {}
-        (
-          ts REAL,
-          arbitration_id INTEGER,
-          extended INTEGER,
-          remote INTEGER,
-          error INTEGER,
-          dlc INTEGER,
-          data BLOB
-        )
-        """.format(
-                self.table_name
-            )
+            f"""CREATE TABLE IF NOT EXISTS {self.table_name}
+            (
+              ts REAL,
+              arbitration_id INTEGER,
+              extended INTEGER,
+              remote INTEGER,
+              error INTEGER,
+              dlc INTEGER,
+              data BLOB
+            )"""
         )
         self._conn.commit()
 
@@ -209,9 +203,9 @@ class SqliteWriter(BaseIOHandler, BufferedReader):
                         or len(messages) > self.MAX_BUFFER_SIZE_BEFORE_WRITES
                     ):
                         break
-                    else:
-                        # just go on
-                        msg = self.get_message(self.GET_MESSAGE_TIMEOUT)
+
+                    # just go on
+                    msg = self.get_message(self.GET_MESSAGE_TIMEOUT)
 
                 count = len(messages)
                 if count > 0:
@@ -237,4 +231,4 @@ class SqliteWriter(BaseIOHandler, BufferedReader):
         BufferedReader.stop(self)
         self._stop_running_event.set()
         self._writer_thread.join()
-        BaseIOHandler.stop(self)
+        MessageReader.stop(self)

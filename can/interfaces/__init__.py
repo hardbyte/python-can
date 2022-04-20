@@ -2,10 +2,6 @@
 Interfaces contain low level implementations that interact with CAN hardware.
 """
 
-import warnings
-from pkg_resources import iter_entry_points
-
-
 # interface_name => (module, classname)
 BACKENDS = {
     "kvaser": ("can.interfaces.kvaser", "KvaserBus"),
@@ -29,13 +25,32 @@ BACKENDS = {
     "gs_usb": ("can.interfaces.gs_usb", "GsUsbBus"),
     "nixnet": ("can.interfaces.nixnet", "NiXNETcanBus"),
     "neousys": ("can.interfaces.neousys", "NeousysBus"),
+    "etas": ("can.interfaces.etas", "EtasBus"),
+    "socketcand": ("can.interfaces.socketcand", "SocketCanDaemonBus"),
 }
 
-BACKENDS.update(
-    {
-        interface.name: (interface.module_name, interface.attrs[0])
-        for interface in iter_entry_points("can.interface")
-    }
-)
+try:
+    from importlib.metadata import entry_points
 
-VALID_INTERFACES = frozenset(list(BACKENDS.keys()))
+    try:
+        entries = entry_points(group="can.interface")
+    except TypeError:
+        # Fallback for Python <3.10
+        # See https://docs.python.org/3/library/importlib.metadata.html#entry-points, "Compatibility Note"
+        entries = entry_points().get("can.interface", [])
+
+    BACKENDS.update(
+        {interface.name: tuple(interface.value.split(":")) for interface in entries}
+    )
+except ImportError:
+    from pkg_resources import iter_entry_points
+
+    entry = iter_entry_points("can.interface")
+    BACKENDS.update(
+        {
+            interface.name: (interface.module_name, interface.attrs[0])
+            for interface in entry
+        }
+    )
+
+VALID_INTERFACES = frozenset(BACKENDS.keys())
