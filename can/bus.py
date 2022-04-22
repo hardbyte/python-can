@@ -46,10 +46,10 @@ class BusABC(metaclass=ABCMeta):
 
     @abstractmethod
     def __init__(
-            self,
-            channel: Any,
-            can_filters: Optional[can.typechecking.CanFilters] = None,
-            **kwargs: object
+        self,
+        channel: Any,
+        can_filters: Optional[can.typechecking.CanFilters] = None,
+        **kwargs: object
     ):
         """Construct and open a CAN bus instance of the specified type.
 
@@ -114,7 +114,7 @@ class BusABC(metaclass=ABCMeta):
                 return None
 
     def _recv_internal(
-            self, timeout: Optional[float]
+        self, timeout: Optional[float]
     ) -> Tuple[Optional[Message], bool]:
         """
         Read a message from the bus and tell whether it was filtered.
@@ -176,11 +176,11 @@ class BusABC(metaclass=ABCMeta):
         raise NotImplementedError("Trying to write to a readonly bus?")
 
     def send_periodic(
-            self,
-            msgs: Union[Message, Sequence[Message]],
-            period: float,
-            duration: Optional[float] = None,
-            store_task: bool = True,
+        self,
+        msgs: Union[Message, Sequence[Message]],
+        period: float,
+        duration: Optional[float] = None,
+        store_task: bool = True,
     ) -> can.broadcastmanager.CyclicSendTaskABC:
         """Start sending messages at a given period on this bus.
 
@@ -256,10 +256,10 @@ class BusABC(metaclass=ABCMeta):
         return task
 
     def _send_periodic_internal(
-            self,
-            msgs: Union[Sequence[Message], Message],
-            period: float,
-            duration: Optional[float] = None,
+        self,
+        msgs: Union[Sequence[Message], Message],
+        period: float,
+        duration: Optional[float] = None,
     ) -> can.broadcastmanager.CyclicSendTaskABC:
         """Default implementation of periodic message sending using threading.
 
@@ -332,7 +332,7 @@ class BusABC(metaclass=ABCMeta):
         self.set_filters(filters)
 
     def set_filters(
-            self, filters: Optional[can.typechecking.CanFilters] = None
+        self, filters: Optional[can.typechecking.CanFilters] = None
     ) -> None:
         """Apply filtering to all messages received by this Bus.
 
@@ -495,6 +495,6 @@ class _SelfRemovingCyclicTask(CyclicSendTaskABC, ABC):
     """
 
     def stop(  # pylint: disable=arguments-differ
-            self, remove_task: bool = True
+        self, remove_task: bool = True
     ) -> None:
         raise NotImplementedError()
