@@ -266,6 +266,19 @@ class cfucBus(BusABC):
         self.ser.close()
 
 
+    def _get_DLC(self, dlc):
+        if dlc < 0:  raise ValueError("DLC are intended to be greater than zero")
+        if dlc > 64: raise ValueError("DLC above 15 are not supported")
+        if dlc > 48: return int(ADLC[15])
+        if dlc > 32: return int(ADLC[14])
+        if dlc > 24: return int(ADLC[13])
+        if dlc > 20: return int(ADLC[12])
+        if dlc > 16: return int(ADLC[11])
+        if dlc > 12: return int(ADLC[10])
+        if dlc > 8:  return int(ADLC[9])
+        return int(ADLC[dlc])
+
+
     def send(self, msg: Message, timeout=None):
         """
         Send a message over the serial device.
@@ -290,7 +303,7 @@ class cfucBus(BusABC):
         a_ex = bytearray(b'\x00\x00\x00\x40') if (msg.is_extended_id) else bytearray(b'\x00\x00\x00\x00')
         a_rmt = bytearray(b'\x00\x00\x00\x20') if (msg.is_remote_frame) else bytearray(b'\x00\x00\x00\x00')
 
-        a_dlc = struct.pack("<I", int(ADLC[msg.dlc]))
+        a_dlc = struct.pack("<I", self._get_DLC(msg.dlc))
 
         # copy all structs to byte stream
         # UCAN_FRAME_TYPE frame_type; /*!< Frame type is @ref UCAN_FD_TX.*/
