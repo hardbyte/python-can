@@ -15,16 +15,16 @@ jobs:
         experimental: [false]
         python-version: ["3.7", "3.8", "3.9", "3.10", "pypy-3.7", "pypy-3.8"]
         # Do not test on Python 3.11 pre-releases since wrapt causes problems: https://github.com/GrahamDumpleton/wrapt/issues/196
-        # include:
+        include:
           # Only test on a single configuration while there are just pre-releases
-          # - os: ubuntu-latest
-          #  experimental: true
-          #  python-version: "3.11.0-alpha.3"
+          - os: ubuntu-latest
+            experimental: true
+            python-version:  "3.11.0-alpha - 3.11.0"
       fail-fast: false
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v3
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
@@ -44,7 +44,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v3
       with:
         python-version: "3.10"
     - name: Install dependencies
@@ -78,7 +78,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v3
       with:
         python-version: "3.10"
     - name: Install dependencies
