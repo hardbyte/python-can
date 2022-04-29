@@ -715,6 +715,8 @@ class VectorBus(BusABC):
             _hw_channel,
             xldefine.XL_BusTypes.XL_BUS_TYPE_CAN,
         )
+
+        hw_type: Union[int, xldefine.XL_HardwareType]
         try:
             hw_type = xldefine.XL_HardwareType(_hw_type.value)
         except ValueError:
