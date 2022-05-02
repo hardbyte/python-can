@@ -82,7 +82,7 @@ class FileIOMessageWriter(MessageWriter, metaclass=ABCMeta):
 
     file: can.typechecking.FileLike
 
-    def __init__(self, file: can.typechecking.AcceptedIOType, mode: str = "rt") -> None:
+    def __init__(self, file: can.typechecking.AcceptedIOType, mode: str = "wt") -> None:
         # Not possible with the type signature, but be verbose for user-friendliness
         if file is None:
             raise ValueError("The given file cannot be None")
