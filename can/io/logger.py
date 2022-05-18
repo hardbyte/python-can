@@ -100,7 +100,10 @@ class Logger(MessageWriter):  # pylint: disable=abstract-method
             suffix, file_or_filename = Logger.compress(filename, *args, **kwargs)
 
         try:
-            return Logger.message_writers[suffix](file_or_filename, *args, **kwargs)
+            LoggerType = Logger.message_writers[suffix]
+            if LoggerType is None:
+                raise (ValueError(f'failed to import logger for extension "{suffix}"'))
+            return LoggerType(file_or_filename, *args, **kwargs)
         except KeyError:
             raise ValueError(
                 f'No write support for this unknown log format "{suffix}"'

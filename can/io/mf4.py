@@ -22,10 +22,7 @@ try:
     from asammdf.blocks.v4_constants import BUS_TYPE_CAN, SOURCE_BUS
     import numpy as np
 
-    ASAMMDF_AVAILABLE = True
-
 except ImportError as error:
-    ASAMMDF_AVAILABLE = False
     raise error
 
 
