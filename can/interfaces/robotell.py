@@ -2,6 +2,7 @@
 Interface for Chinese Robotell compatible interfaces (win32/linux).
 """
 
+import io
 import time
 import logging
 
@@ -367,10 +368,12 @@ class robotellBus(BusABC):
         self.serialPortOrig.close()
 
     def fileno(self):
-        if hasattr(self.serialPortOrig, "fileno"):
+        try:
             return self.serialPortOrig.fileno()
-        # Return an invalid file descriptor on Windows
-        return -1
+        except io.UnsupportedOperation:
+            raise NotImplementedError("fileno is not implemented using current CAN bus on this platform")
+        except Exception as exception:
+            raise CanOperationError("Cannot fetch fileno") from exception
 
     def get_serial_number(self, timeout):
         """Get serial number of the slcan interface.
