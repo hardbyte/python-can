@@ -371,7 +371,9 @@ class robotellBus(BusABC):
         try:
             return self.serialPortOrig.fileno()
         except io.UnsupportedOperation:
-            raise NotImplementedError("fileno is not implemented using current CAN bus on this platform")
+            raise NotImplementedError(
+                "fileno is not implemented using current CAN bus on this platform"
+            )
         except Exception as exception:
             raise CanOperationError("Cannot fetch fileno") from exception
 
