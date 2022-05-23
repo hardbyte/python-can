@@ -940,6 +940,9 @@ class robotellTestCase(unittest.TestCase):
             ),
         )
 
+    def test_when_no_fileno(self):
+        with self.assertRaises(NotImplementedError):
+            self.bus.fileno()
 
 if __name__ == "__main__":
     unittest.main()
