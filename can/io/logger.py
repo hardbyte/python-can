@@ -217,8 +217,8 @@ class BaseRotatingLogger(Listener, BaseIOHandler, ABC):
             An instance of a writer class.
         """
         # Close the old writer first
-        if self._writer is not None:
-            self._writer.stop()
+        # if self._writer is not None:
+        #     self._writer.stop()
 
         logger = Logger(filename, *self.writer_args, **self.writer_kwargs)
         if isinstance(logger, FileIOMessageWriter):
