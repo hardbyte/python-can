@@ -944,5 +944,6 @@ class robotellTestCase(unittest.TestCase):
         with self.assertRaises(NotImplementedError):
             self.bus.fileno()
 
+
 if __name__ == "__main__":
     unittest.main()
