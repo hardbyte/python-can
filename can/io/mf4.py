@@ -13,7 +13,7 @@ from hashlib import md5
 from ..message import Message
 from ..listener import Listener
 from ..util import channel2int
-from .generic import BaseIOHandler
+from .generic import MessageReader, MessageWriter
 
 try:
     from asammdf import Signal
@@ -76,7 +76,7 @@ FD_DLC2LEN = {value: key for key, value in FD_LEN2DLC.items()}
 logger = logging.getLogger("can.io.mf4")
 
 
-class MF4Writer(BaseIOHandler, Listener):
+class MF4Writer(MessageWriter, Listener):
     """Logs CAN data to an ASAM Measurement Data File v4 (.mf4).
 
     MF4Writer does not support append mode.
@@ -220,7 +220,7 @@ class MF4Writer(BaseIOHandler, Listener):
             self._mdf.extend(0, sigs)
 
 
-class MF4Reader(BaseIOHandler):
+class MF4Reader(MessageReader):
     """
     Iterator of CAN messages from a MF4 logging file.
 

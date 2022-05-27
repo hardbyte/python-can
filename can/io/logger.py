@@ -26,10 +26,13 @@ from .printer import Printer
 from .trc import TRCWriter
 from ..typechecking import StringPathLike, FileLike, AcceptedIOType
 
+MF4Writer: Optional[Type[MessageWriter]] = None
 try:
-    from .mf4 import MF4Writer
+    from .mf4 import MF4Writer as _MF4Writer
+
+    MF4Writer = _MF4Writer
 except ImportError:
-    MF4Writer = None
+    pass
 
 
 class Logger(MessageWriter):  # pylint: disable=abstract-method
@@ -60,7 +63,7 @@ class Logger(MessageWriter):  # pylint: disable=abstract-method
     """
 
     fetched_plugins = False
-    message_writers: Dict[str, Type[MessageWriter]] = {
+    message_writers: Dict[str, Optional[Type[MessageWriter]]] = {
         ".asc": ASCWriter,
         ".blf": BLFWriter,
         ".csv": CSVWriter,

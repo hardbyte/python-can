@@ -20,10 +20,14 @@ from .trc import TRCReader
 from ..typechecking import StringPathLike, FileLike, AcceptedIOType
 from ..message import Message
 
+
+MF4Reader: typing.Optional[typing.Type[MessageReader]] = None
 try:
-    from .mf4 import MF4Reader
+    from .mf4 import MF4Reader as _MF4Reader
+
+    MF4Reader = _MF4Reader
 except ImportError:
-    MF4Reader = None
+    pass
 
 
 class LogReader(MessageReader):
@@ -58,7 +62,7 @@ class LogReader(MessageReader):
     """
 
     fetched_plugins = False
-    message_readers: typing.Dict[str, typing.Type[MessageReader]] = {
+    message_readers: typing.Dict[str, typing.Optional[typing.Type[MessageReader]]] = {
         ".asc": ASCReader,
         ".blf": BLFReader,
         ".csv": CSVReader,
@@ -94,11 +98,14 @@ class LogReader(MessageReader):
         if suffix == ".gz":
             suffix, file_or_filename = LogReader.decompress(filename)
         try:
-            return LogReader.message_readers[suffix](file_or_filename, *args, **kwargs)
+            ReaderType = LogReader.message_readers[suffix]
         except KeyError:
             raise ValueError(
                 f'No read support for this unknown log format "{suffix}"'
             ) from None
+        if ReaderType is None:
+            raise ImportError(f"failed to import reader for extension {suffix}")
+        return ReaderType(file_or_filename, *args, **kwargs)
 
     @staticmethod
     def decompress(
