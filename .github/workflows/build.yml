@@ -14,7 +14,6 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
         experimental: [false]
         python-version: ["3.7", "3.8", "3.9", "3.10", "pypy-3.7", "pypy-3.8"]
-        # Do not test on Python 3.11 pre-releases since wrapt causes problems: https://github.com/GrahamDumpleton/wrapt/issues/196
         include:
           # Only test on a single configuration while there are just pre-releases
           - os: ubuntu-latest
