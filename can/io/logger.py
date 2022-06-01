@@ -208,7 +208,10 @@ class BaseRotatingLogger(Listener, BaseIOHandler, ABC):
         self.writer.on_message_received(msg)
 
     def _get_new_writer(self, filename: StringPathLike) -> FileIOMessageWriter:
-        """Instantiate a new writer after stopping the old one.
+        """Instantiate a new writer.
+
+        .. note::
+            The :attr:`self.writer` should be closed prior to calling this function.
 
         :param filename:
             Path-like object that specifies the location and name of the log file.
@@ -216,9 +219,6 @@ class BaseRotatingLogger(Listener, BaseIOHandler, ABC):
         :return:
             An instance of a writer class.
         """
-        # Close the old writer first
-        if self._writer is not None:
-            self._writer.stop()
 
         logger = Logger(filename, *self.writer_args, **self.writer_kwargs)
         if isinstance(logger, FileIOMessageWriter):
