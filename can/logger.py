@@ -164,6 +164,15 @@ def main() -> None:
     )
 
     parser.add_argument(
+        '-a',
+        '--append',
+        dest='append_mode',
+        type=bool,
+        help='Whether to overwrite or append to an existing log file if it exists.',
+        default=False
+    )
+
+    parser.add_argument(
         "-v",
         action="count",
         dest="verbosity",
@@ -201,12 +210,10 @@ def main() -> None:
     print(f"Connected to {bus.__class__.__name__}: {bus.channel_info}")
     print(f"Can Logger (Started on {datetime.now()})")
 
-    options = {'append': True}
-
+    options = {'append': results.append_mode}
     if results.file_size:
         logger = SizedRotatingLogger(
-            base_filename=results.log_file, max_bytes=results.file_size,
-            **options
+            base_filename=results.log_file, max_bytes=results.file_size, **options
         )
     else:
         logger = Logger(filename=results.log_file, **options)  # type: ignore
