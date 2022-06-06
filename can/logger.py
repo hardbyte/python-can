@@ -166,6 +166,7 @@ def main() -> None:
     parser.add_argument(
         '-a',
         '--append',
+        # action=argparse.BooleanOptionalAction,  # Use when Python>=3.9
         dest='append_mode',
         type=bool,
         help='Whether to overwrite or append to an existing log file if it exists.',
@@ -209,6 +210,29 @@ def main() -> None:
 
     print(f"Connected to {bus.__class__.__name__}: {bus.channel_info}")
     print(f"Can Logger (Started on {datetime.now()})")
+
+    # argparser.py in Python 3.7.11 does not properly consider boolean arguments passed
+    # in from the command line. If a boolean is passed in, the variable must be converted
+    # to an integer 0 (False) or 1 (True). Once the project goes to a minimum of
+    # Python 3.9, the BooleanOptionalAction, this will no longer be required (Please do
+    # not use this as a reason to advocate a minimum Python version of 3.9).
+    boolean_args = ['-a', '--append']
+    args = sys.argv[1:]
+    for i, bool_arg in enumerate(boolean_args):
+        for j, arg in enumerate(args):
+            if bool_arg == arg:
+                # Make sure the length of args is long enough to check the action
+                if len(args) >= j+1:
+                    action = args[j+1]
+                else:
+                    break
+                # Consider the action, and update the results to accurately embody request
+                if action == '0' or action == 'False':
+                    results.append_mode = False
+                elif action == '1' or action == 'True':
+                    results.append_mode = True
+                else:
+                    pass
 
     options = {'append': results.append_mode}
     if results.file_size:
