@@ -169,7 +169,10 @@ def main() -> None:
         # action=argparse.BooleanOptionalAction,  # Use when Python>=3.9
         dest='append_mode',
         type=bool,
-        help='Whether to overwrite or append to an existing log file if it exists.',
+        help='A boolean option for ehether to overwrite or append to an existing log file '
+             'if it exists. To append to an existing log file, pass `True` or `1`. To '
+             'overwrite an existing log file, pass `False`, `0`, or do not add the -a '
+             'argument.',
         default=False
     )
 
