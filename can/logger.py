@@ -164,15 +164,15 @@ def main() -> None:
     )
 
     parser.add_argument(
-        '-a',
-        '--append',
-        # action=argparse.BooleanOptionalAction,  # Use when Python>=3.9
-        dest='append_mode',
+        "-a",
+        "--append",
+        # "action"=argparse.BooleanOptionalAction,  # Use when Python>=3.9
+        dest="append_mode",
         type=bool,
-        help='A boolean option for ehether to overwrite or append to an existing log file '
-             'if it exists. To append to an existing log file, pass `True` or `1`. To '
-             'overwrite an existing log file, pass `False`, `0`, or do not add the -a '
-             'argument.',
+        help="A boolean option for whether to overwrite or append to an existing log "
+             "file if it exists. To append to an existing log file, pass `True` or `1`. "
+             "To overwrite an existing log file, pass `False`, `0`, or do not add the -a "
+             "argument. E.g. -a True or -a False.",
         default=False
     )
 
@@ -217,24 +217,25 @@ def main() -> None:
     # argparser.py in Python 3.7.11 does not properly consider boolean arguments passed
     # in from the command line. If a boolean is passed in, the variable must be converted
     # to an integer 0 (False) or 1 (True). Once the project goes to a minimum of
-    # Python 3.9, the BooleanOptionalAction, this will no longer be required (Please do
-    # not use this as a reason to advocate a minimum Python version of 3.9).
+    # Python 3.9, the BooleanOptionalAction can be used and the following code block will
+    # no longer be required (Please do not use this as a reason to advocate a minimum
+    # Python version of 3.9).
     boolean_args = ['-a', '--append']
     args = sys.argv[1:]
     for i, bool_arg in enumerate(boolean_args):
         for j, arg in enumerate(args):
             if bool_arg == arg:
-                # Make sure the length of args is long enough to check the action, e.g.
+                # Make sure the length of args is long enough to check the toggle, e.g.
                 # stop an index error from occurring.
                 # argparse.py should have already caught this, but this is a double check
                 if len(args)-1 >= j+1:
-                    action = args[j+1]
+                    toggle = args[j+1]
                 else:
                     break
                 # Consider the action, and update the results to accurately embody request
-                if action == '0' or action == 'False':
+                if toggle == '0' or toggle == 'False':
                     results.append_mode = False
-                elif action == '1' or action == 'True':
+                elif toggle == '1' or toggle == 'True':
                     results.append_mode = True
                 else:
                     pass
