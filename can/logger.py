@@ -221,8 +221,10 @@ def main() -> None:
     for i, bool_arg in enumerate(boolean_args):
         for j, arg in enumerate(args):
             if bool_arg == arg:
-                # Make sure the length of args is long enough to check the action
-                if len(args) >= j+1:
+                # Make sure the length of args is long enough to check the action, e.g.
+                # stop an index error from occurring.
+                # argparse.py should have already caught this, but this is a double check
+                if len(args)-1 >= j+1:
                     action = args[j+1]
                 else:
                     break
