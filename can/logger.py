@@ -231,7 +231,7 @@ def main() -> None:
     # minimum Python version of 3.9).
     boolean_args = ['-a', '--append']
     args = sys.argv[1:]
-    for i, bool_arg in enumerate(boolean_args):
+    for _, bool_arg in enumerate(boolean_args):
         for j, arg in enumerate(args):
             if bool_arg == arg:
                 # Make sure the length of args is long enough to check the
@@ -244,9 +244,9 @@ def main() -> None:
                     break
                 # Consider the action, and update the results to accurately
                 # embody request.
-                if toggle == '0' or toggle == 'False':
+                if toggle in ('0', 'False'):
                     results.append_mode = False
-                elif toggle == '1' or toggle == 'True':
+                elif toggle in ('1', 'True'):
                     results.append_mode = True
                 else:
                     pass
