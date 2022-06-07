@@ -31,10 +31,10 @@ def _create_base_argument_parser(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "-c",
         "--channel",
-        help=r'Most backend interfaces require some sort of channel. For '
-             r'example with the serial interface the channel might be a rfcomm'
-             r' device: "/dev/rfcomm0". With the socketcan interface valid '
-             r'channel examples include: "can0", "vcan0".',
+        help=r"Most backend interfaces require some sort of channel. For "
+        r"example with the serial interface the channel might be a rfcomm"
+        r' device: "/dev/rfcomm0". With the socketcan interface valid '
+        r'channel examples include: "can0", "vcan0".',
     )
 
     parser.add_argument(
@@ -50,8 +50,7 @@ def _create_base_argument_parser(parser: argparse.ArgumentParser) -> None:
         "-b", "--bitrate", type=int, help="Bitrate to use for the CAN bus."
     )
 
-    parser.add_argument(
-        "--fd", help="Activate CAN-FD support", action="store_true")
+    parser.add_argument("--fd", help="Activate CAN-FD support", action="store_true")
 
     parser.add_argument(
         "--data_bitrate",
@@ -63,9 +62,9 @@ def _create_base_argument_parser(parser: argparse.ArgumentParser) -> None:
         "extra_args",
         nargs=argparse.REMAINDER,
         help=r"The remaining arguments will be used for the interface "
-             r"initialisation. For example, `-i vector -c 1 --app-name="
-             r"MyCanApp` is the equivalent to opening the bus with `Bus("
-             r"'vector', channel=1, app_name='MyCanApp')",
+        r"initialisation. For example, `-i vector -c 1 --app-name="
+        r"MyCanApp` is the equivalent to opening the bus with `Bus("
+        r"'vector', channel=1, app_name='MyCanApp')",
     )
 
 
@@ -84,9 +83,9 @@ def _append_filter_argument(
         "--filter",
         help="R|Space separated CAN filters for the given CAN interface:"
         "\n      <can_id>:<can_mask> (matches when <received_can_id> & mask =="
-             " can_id & mask)"
+        " can_id & mask)"
         "\n      <can_id>~<can_mask> (matches when <received_can_id> & mask !="
-             " can_id & mask)"
+        " can_id & mask)"
         "\nFx to show only frames with ID 0x100 to 0x103 and 0x200 to 0x20F:"
         "\n      python -m can.viewer -f 100:7FC 200:7F0"
         "\nNote that the ID and mask are always interpreted as hex values",
@@ -98,8 +97,7 @@ def _append_filter_argument(
 
 
 def _create_bus(parsed_args: Any, **kwargs: Any) -> can.Bus:
-    logging_level_names = \
-        ["critical", "error", "warning", "info", "debug", "subdebug"]
+    logging_level_names = ["critical", "error", "warning", "info", "debug", "subdebug"]
     can.set_logging_level(logging_level_names[min(5, parsed_args.verbosity)])
 
     config: Dict[str, Any] = {"single_handle": True, **kwargs}
@@ -128,8 +126,7 @@ def _parse_filters(parsed_args: Any) -> CanFilters:
             elif "~" in filt:
                 parts = filt.split("~")
                 can_id = int(parts[0], base=16) | 0x20000000  # CAN_INV_FILTER
-                can_mask = \
-                    int(parts[1], base=16) & 0x20000000  # socket.CAN_ERR_FLAG
+                can_mask = int(parts[1], base=16) & 0x20000000  # socket.CAN_ERR_FLAG
             else:
                 raise argparse.ArgumentError(None, "Invalid filter argument")
             can_filters.append({"can_id": can_id, "can_mask": can_mask})
@@ -139,14 +136,15 @@ def _parse_filters(parsed_args: Any) -> CanFilters:
 
 def _parse_additonal_config(unknown_args):
     return dict(
-        (arg.split("=", 1)[0].lstrip("--").replace("-", "_"),
-         arg.split("=", 1)[1]) for arg in unknown_args)
+        (arg.split("=", 1)[0].lstrip("--").replace("-", "_"), arg.split("=", 1)[1])
+        for arg in unknown_args
+    )
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Log CAN traffic, printing messages to stdout or to a "
-                    "given file.",
+        "given file.",
     )
 
     _create_base_argument_parser(parser)
@@ -165,7 +163,7 @@ def main() -> None:
         dest="file_size",
         type=int,
         help="Maximum file size in bytes. Rotate log file when size threshold "
-             "is reached.",
+        "is reached.",
         default=None,
     )
 
@@ -176,11 +174,11 @@ def main() -> None:
         dest="append_mode",
         type=bool,
         help="A boolean option for whether to overwrite or append to an "
-             "existing log file if it exists. To append to an existing log "
-             "file, pass `True` or `1`. To overwrite an existing log file, "
-             "pass `False`, `0`, or do not add the -a argument. E.g. -a True "
-             "or -a False.",
-        default=False
+        "existing log file if it exists. To append to an existing log "
+        "file, pass `True` or `1`. To overwrite an existing log file, "
+        "pass `False`, `0`, or do not add the -a argument. E.g. -a True "
+        "or -a False.",
+        default=False,
     )
 
     parser.add_argument(
@@ -211,8 +209,7 @@ def main() -> None:
 
     results, unknown_args = parser.parse_known_args()
     additional_config = _parse_additonal_config(unknown_args)
-    bus = _create_bus(
-        results, can_filters=_parse_filters(results), **additional_config)
+    bus = _create_bus(results, can_filters=_parse_filters(results), **additional_config)
 
     if results.active:
         bus.state = BusState.ACTIVE
@@ -229,7 +226,7 @@ def main() -> None:
     # `BooleanOptionalAction` can be used and the following code block will no
     # longer be required (Please do not use this as a reason to advocate a
     # minimum Python version of 3.9).
-    boolean_args = ['-a', '--append']
+    boolean_args = ["-a", "--append"]
     args = sys.argv[1:]
     for _, bool_arg in enumerate(boolean_args):
         for j, arg in enumerate(args):
@@ -238,24 +235,24 @@ def main() -> None:
                 # toggle, e.g. stop an index error from occurring.
                 # argparse.py should have already caught this, but this is a
                 # double check.
-                if len(args)-1 >= j+1:
-                    toggle = args[j+1]
+                if len(args) - 1 >= j + 1:
+                    toggle = args[j + 1]
                 else:
                     break
                 # Consider the action, and update the results to accurately
                 # embody request.
-                if toggle in ('0', 'False'):
+                if toggle in ("0", "False"):
                     results.append_mode = False
-                elif toggle in ('1', 'True'):
+                elif toggle in ("1", "True"):
                     results.append_mode = True
                 else:
                     pass
 
-    options = {'append': results.append_mode}
+    options = {"append": results.append_mode}
     if results.file_size:
-        logger = SizedRotatingLogger(base_filename=results.log_file,
-                                     max_bytes=results.file_size,
-                                     **options)
+        logger = SizedRotatingLogger(
+            base_filename=results.log_file, max_bytes=results.file_size, **options
+        )
     else:
         logger = Logger(filename=results.log_file, **options)  # type: ignore
 
