@@ -53,6 +53,9 @@ class RenameKwargsTest(unittest.TestCase):
 
 class TestBusConfig(unittest.TestCase):
     base_config = dict(interface="socketcan", bitrate=500_000)
+    port_alpha_config = dict(interface="socketcan", bitrate=500_000, port="fail123")
+    port_to_high_config = dict(interface="socketcan", bitrate=500_000, port="999999")
+    port_wrong_type_config = dict(interface="socketcan", bitrate=500_000, port=(1234,))
 
     def test_timing_can_use_int(self):
         """
@@ -64,6 +67,9 @@ class TestBusConfig(unittest.TestCase):
             _create_bus_config({**self.base_config, **timing_conf})
         except TypeError as e:
             self.fail(e)
+        self.assertRaises(ValueError, _create_bus_config({**self.port_alpha_config, **timing_conf}))
+        self.assertRaises(ValueError, _create_bus_config({**self.port_to_high_config, **timing_conf}))
+        self.assertRaises(TypeError, _create_bus_config({**self.port_wrong_type_config, **timing_conf}))
 
 
 class TestChannel2Int(unittest.TestCase):
