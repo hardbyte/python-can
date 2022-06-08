@@ -202,9 +202,9 @@ class ASCReader(MessageReader):
                     _, dlc_str = rest_of_message.split(None, 1)
                     data = ""
 
-                dlc = int(dlc_str, self._converted_base)
+                dlc = dlc2len(int(dlc_str, self._converted_base))
                 msg_kwargs["dlc"] = dlc
-                self._process_data_string(data, dlc, msg_kwargs)
+                self._process_data_string(data, min(8, dlc), msg_kwargs)
 
         return Message(**msg_kwargs)
 
