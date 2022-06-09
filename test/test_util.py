@@ -67,9 +67,9 @@ class TestBusConfig(unittest.TestCase):
             _create_bus_config({**self.base_config, **timing_conf})
         except TypeError as e:
             self.fail(e)
-        self.assertRaises(ValueError, _create_bus_config({**self.port_alpha_config, **timing_conf}))
-        self.assertRaises(ValueError, _create_bus_config({**self.port_to_high_config, **timing_conf}))
-        self.assertRaises(TypeError, _create_bus_config({**self.port_wrong_type_config, **timing_conf}))
+        self.assertRaises(ValueError, _create_bus_config, {**self.port_alpha_config, **timing_conf})
+        self.assertRaises(ValueError, _create_bus_config, {**self.port_to_high_config, **timing_conf})
+        self.assertRaises(TypeError, _create_bus_config, {**self.port_wrong_type_config, **timing_conf})
 
 
 class TestChannel2Int(unittest.TestCase):
