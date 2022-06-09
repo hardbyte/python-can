@@ -158,8 +158,8 @@ def main() -> None:
     )
 
     parser.add_argument(
-        "--a",
         "--append",
+        "--a",
         help="Append to the log file if it already exists.",
         action="store_true",
     )
@@ -212,7 +212,7 @@ def main() -> None:
     print(f"Connected to {bus.__class__.__name__}: {bus.channel_info}")
     print(f"Can Logger (Started on {datetime.now()})")
 
-    options = {"append": results.a}
+    options = {"append": results.append}
     if results.file_size:
         logger = SizedRotatingLogger(
             base_filename=results.log_file, max_bytes=results.file_size, **options
