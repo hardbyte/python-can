@@ -157,10 +157,12 @@ def main() -> None:
         default=None,
     )
 
-    parser.add_argument("--a",
-                        "--append",
-                        help="Append to the log file if it already exists.",
-                        action="store_true")
+    parser.add_argument(
+        "--a",
+        "--append",
+        help="Append to the log file if it already exists.",
+        action="store_true",
+    )
 
     parser.add_argument(
         "-s",
