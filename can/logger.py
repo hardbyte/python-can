@@ -157,6 +157,11 @@ def main() -> None:
         default=None,
     )
 
+    parser.add_argument("--a",
+                        "--append",
+                        help="Append to the log file if it already exists.",
+                        action="store_true")
+
     parser.add_argument(
         "-s",
         "--file_size",
@@ -165,20 +170,6 @@ def main() -> None:
         help="Maximum file size in bytes. Rotate log file when size threshold "
         "is reached.",
         default=None,
-    )
-
-    parser.add_argument(
-        "-a",
-        "--append",
-        # "action"=argparse.BooleanOptionalAction,  # Use when Python>=3.9
-        dest="append_mode",
-        type=bool,
-        help="A boolean option for whether to overwrite or append to an "
-        "existing log file if it exists. To append to an existing log "
-        "file, pass `True` or `1`. To overwrite an existing log file, "
-        "pass `False`, `0`, or do not add the -a argument. E.g. -a True "
-        "or -a False.",
-        default=False,
     )
 
     parser.add_argument(
@@ -219,36 +210,7 @@ def main() -> None:
     print(f"Connected to {bus.__class__.__name__}: {bus.channel_info}")
     print(f"Can Logger (Started on {datetime.now()})")
 
-    # argparser.py in Python 3.7.11 does not properly consider boolean
-    # arguments passed in from the command line. If a boolean is passed in,
-    # the variable must be converted to an integer 0 (False) or 1 (True).
-    # Once the project goes to a minimum of Python 3.9, the
-    # `BooleanOptionalAction` can be used and the following code block will no
-    # longer be required (Please do not use this as a reason to advocate a
-    # minimum Python version of 3.9).
-    boolean_args = ["-a", "--append"]
-    args = sys.argv[1:]
-    for _, bool_arg in enumerate(boolean_args):
-        for j, arg in enumerate(args):
-            if bool_arg == arg:
-                # Make sure the length of args is long enough to check the
-                # toggle, e.g. stop an index error from occurring.
-                # argparse.py should have already caught this, but this is a
-                # double check.
-                if len(args) - 1 >= j + 1:
-                    toggle = args[j + 1]
-                else:
-                    break
-                # Consider the action, and update the results to accurately
-                # embody request.
-                if toggle in ("0", "False"):
-                    results.append_mode = False
-                elif toggle in ("1", "True"):
-                    results.append_mode = True
-                else:
-                    pass
-
-    options = {"append": results.append_mode}
+    options = {"append": results.a}
     if results.file_size:
         logger = SizedRotatingLogger(
             base_filename=results.log_file, max_bytes=results.file_size, **options
