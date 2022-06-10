@@ -108,7 +108,7 @@ class TestLoggerScriptModule(unittest.TestCase):
         self.assertSuccessfullCleanup()
         self.mock_logger_sized.assert_called_once()
 
-    def test_parse_additonal_config(self):
+    def test_parse_additional_config(self):
         unknown_args = [
             "--app-name=CANalyzer",
             "--serial=5555",
@@ -116,7 +116,7 @@ class TestLoggerScriptModule(unittest.TestCase):
             "--false-boolean=False",
             "--offset=1.5",
         ]
-        parsed_args = can.logger._parse_additonal_config(unknown_args)
+        parsed_args = can.logger._parse_additional_config(unknown_args)
 
         assert "app_name" in parsed_args
         assert parsed_args["app_name"] == "CANalyzer"
@@ -140,7 +140,7 @@ class TestLoggerScriptModule(unittest.TestCase):
         assert parsed_args["offset"] == 1.5
 
         with pytest.raises(ValueError):
-            can.logger._parse_additonal_config(["--wrong-format"])
+            can.logger._parse_additional_config(["--wrong-format"])
 
         with pytest.raises(ValueError):
             can.logger._parse_additonal_config(["-wrongformat=value"])

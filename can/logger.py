@@ -132,7 +132,7 @@ def _parse_filters(parsed_args: Any) -> CanFilters:
     return can_filters
 
 
-def _parse_additonal_config(
+def _parse_additional_config(
     unknown_args: Sequence[str],
 ) -> Dict[str, Union[str, int, float, bool]]:
     for arg in unknown_args:
@@ -211,7 +211,7 @@ def main() -> None:
         raise SystemExit(errno.EINVAL)
 
     results, unknown_args = parser.parse_known_args()
-    additional_config = _parse_additonal_config(unknown_args)
+    additional_config = _parse_additional_config(unknown_args)
     bus = _create_bus(results, can_filters=_parse_filters(results), **additional_config)
 
     if results.active:
