@@ -13,7 +13,7 @@ from typing import cast, Iterable
 
 from can import LogReader, Message, MessageSync
 
-from .logger import _create_base_argument_parser, _create_bus
+from .logger import _create_base_argument_parser, _create_bus, _parse_additional_config
 
 
 def main() -> None:
@@ -78,13 +78,14 @@ def main() -> None:
         parser.print_help(sys.stderr)
         raise SystemExit(errno.EINVAL)
 
-    results = parser.parse_args()
+    results, unknown_args = parser.parse_known_args()
+    additional_config = _parse_additional_config(unknown_args)
 
     verbosity = results.verbosity
 
     error_frames = results.error_frames
 
-    with _create_bus(results) as bus:
+    with _create_bus(results, **additional_config) as bus:
         with LogReader(results.infile) as reader:
 
             in_sync = MessageSync(
