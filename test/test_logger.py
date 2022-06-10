@@ -143,13 +143,13 @@ class TestLoggerScriptModule(unittest.TestCase):
             can.logger._parse_additional_config(["--wrong-format"])
 
         with pytest.raises(ValueError):
-            can.logger._parse_additonal_config(["-wrongformat=value"])
+            can.logger._parse_additional_config(["-wrongformat=value"])
 
         with pytest.raises(ValueError):
-            can.logger._parse_additonal_config(["--wrongformat=value1 value2"])
+            can.logger._parse_additional_config(["--wrongformat=value1 value2"])
 
         with pytest.raises(ValueError):
-            can.logger._parse_additonal_config(["wrongformat="])
+            can.logger._parse_additional_config(["wrongformat="])
 
 
 class TestLoggerCompressedFile(unittest.TestCase):
