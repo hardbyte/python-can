@@ -10,6 +10,9 @@ from unittest.mock import Mock
 import gzip
 import os
 import sys
+
+import pytest
+
 import can
 import can.logger
 
@@ -110,6 +113,7 @@ class TestLoggerScriptModule(unittest.TestCase):
             "--app-name=CANalyzer",
             "--serial=5555",
             "--receive-own-messages=True",
+            "--false-boolean=False",
             "--offset=1.5",
         ]
         parsed_args = can.logger._parse_additonal_config(unknown_args)
@@ -126,8 +130,26 @@ class TestLoggerScriptModule(unittest.TestCase):
             and parsed_args["receive_own_messages"] is True
         )
 
+        assert "false_boolean" in parsed_args
+        assert (
+            isinstance(parsed_args["false_boolean"], bool)
+            and parsed_args["false_boolean"] is False
+        )
+
         assert "offset" in parsed_args
         assert parsed_args["offset"] == 1.5
+
+        with pytest.raises(ValueError):
+            can.logger._parse_additonal_config(["--wrong-format"])
+
+        with pytest.raises(ValueError):
+            can.logger._parse_additonal_config(["-wrongformat=value"])
+
+        with pytest.raises(ValueError):
+            can.logger._parse_additonal_config(["--wrongformat=value1 value2"])
+
+        with pytest.raises(ValueError):
+            can.logger._parse_additonal_config(["wrongformat="])
 
 
 class TestLoggerCompressedFile(unittest.TestCase):

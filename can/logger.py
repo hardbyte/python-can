@@ -135,6 +135,10 @@ def _parse_filters(parsed_args: Any) -> CanFilters:
 def _parse_additonal_config(
     unknown_args: Sequence[str],
 ) -> Dict[str, Union[str, int, float, bool]]:
+    for arg in unknown_args:
+        if not re.match(r"^--[a-zA-Z\-]*?=\S*?$", arg):
+            raise ValueError(f"Parsing argument {arg} failed")
+
     def _split_arg(_arg: str) -> Tuple[str, str]:
         left, right = _arg.split("=", 1)
         return left.lstrip("--").replace("-", "_"), right
