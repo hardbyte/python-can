@@ -14,7 +14,7 @@ from can.message import Message
 
 logger = logging.getLogger("can.Notifier")
 
-MessageRecipient = Union[Listener, Callable[[Message], None]]
+MessageRecipient = Union[Listener, Callable[[Message], Union[Awaitable[None], None]]]
 
 
 class Notifier:
@@ -140,7 +140,7 @@ class Notifier:
 
     def _on_message_received(self, msg: Message) -> None:
         for callback in self.listeners:
-            res = cast(Union[None, Optional[Awaitable[Any]]], callback(msg))
+            res = callback(msg)
             if res is not None and self._loop is not None and asyncio.iscoroutine(res):
                 # Schedule coroutine
                 self._loop.create_task(res)
