@@ -166,7 +166,7 @@ class Notifier:
 
         return was_handled
 
-    def add_listener(self, listener: Listener) -> None:
+    def add_listener(self, listener: MessageRecipient) -> None:
         """Add new Listener to the notification list.
         If it is already present, it will be called two times
         each time a message arrives.
@@ -175,7 +175,7 @@ class Notifier:
         """
         self.listeners.append(listener)
 
-    def remove_listener(self, listener: Listener) -> None:
+    def remove_listener(self, listener: MessageRecipient) -> None:
         """Remove a listener from the notification list. This method
         throws an exception if the given listener is not part of the
         stored listeners.
