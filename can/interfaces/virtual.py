@@ -59,6 +59,7 @@ class VirtualBus(BusABC):
         channel: Any = None,
         receive_own_messages: bool = False,
         rx_queue_size: int = 0,
+        preserve_timestamps: bool = False,
         **kwargs: Any,
     ) -> None:
         super().__init__(
@@ -67,8 +68,9 @@ class VirtualBus(BusABC):
 
         # the channel identifier may be an arbitrary object
         self.channel_id = channel
-        self.channel_info = "Virtual bus channel {}".format(self.channel_id)
+        self.channel_info = f"Virtual bus channel {self.channel_id}"
         self.receive_own_messages = receive_own_messages
+        self.preserve_timestamps = preserve_timestamps
         self._open = True
 
         with channels_lock:
@@ -103,7 +105,7 @@ class VirtualBus(BusABC):
     def send(self, msg: Message, timeout: Optional[float] = None) -> None:
         self._check_if_open()
 
-        timestamp = time.time()
+        timestamp = msg.timestamp if self.preserve_timestamps else time.time()
         # Add message to all listening on this channel
         all_sent = True
         for bus_queue in self.channel:
@@ -122,6 +124,7 @@ class VirtualBus(BusABC):
             raise CanOperationError("Could not send message to one or more recipients")
 
     def shutdown(self) -> None:
+        super().shutdown()
         if self._open:
             self._open = False
 

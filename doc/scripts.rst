@@ -28,7 +28,21 @@ A screenshot of the application can be seen below:
 .. image:: images/viewer.png
     :width: 100%
 
-The first column is the number of times a frame with the particular ID that has been received, next is the timestamp of the frame relative to the first received message. The third column is the time between the current frame relative to the previous one. Next is the length of the frame, the data and then the decoded data converted according to the ``-d`` argument. The top red row indicates an error frame.
+The first column is the number of times a frame with the particular ID that has been received, next is the timestamp of the frame relative to the first received message. The third column is the time between the current frame relative to the previous one. Next is the length of the frame, the data and then the decoded data converted according to the ``-d`` argument. The top red row indicates an error frame. 
+There are several keyboard shortcuts that can be used with the viewer script, they function as follows:
+
+* ESCAPE - Quit the viewer script
+* q - as ESCAPE
+* c - Clear the stored frames
+* s - Sort the stored frames
+* h - Toggle highlighting of changed bytes in the data field - see the below image
+* SPACE - Pause the viewer
+* UP/DOWN - Scroll the viewer
+
+.. image:: images/viewer_changed_bytes_highlighting.png
+    :width: 50%
+
+A byte in the data field is highlighted blue if the value is different from the last time the message was received.
 
 Command line arguments
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -39,3 +53,8 @@ The full usage page can be seen below:
 
 .. command-output:: python -m can.viewer -h
 
+
+can.logconvert
+----------
+
+.. command-output:: python -m can.logconvert -h

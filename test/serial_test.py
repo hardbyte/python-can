@@ -136,6 +136,24 @@ class SimpleSerialTestBase(ComparingMessagesTestCase):
         msg = can.Message(timestamp=-1)
         self.assertRaises(ValueError, self.bus.send, msg)
 
+    def test_when_no_fileno(self):
+        """
+        Tests for the fileno method catching the missing pyserial implementeation on the Windows platform
+        """
+        try:
+            fileno = self.bus.fileno()
+        except NotImplementedError:
+            pass  # allow it to be left non-implemented for Windows platform
+        else:
+            fileno.__gt__ = (
+                lambda self, compare: True
+            )  # Current platform implements fileno, so get the mock to respond to a greater than comparison
+            self.assertIsNotNone(fileno)
+            self.assertFalse(
+                fileno == -1
+            )  # forcing the value to -1 is the old way of managing fileno on Windows but it is not compatible with notifiers
+            self.assertTrue(fileno > 0)
+
 
 class SimpleSerialTest(unittest.TestCase, SimpleSerialTestBase):
     def __init__(self, *args, **kwargs):

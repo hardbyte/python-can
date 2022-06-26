@@ -1,9 +1,9 @@
-NEOVI Interface
-==================
+neoVI
+=====
 
 .. warning::
 
-    This ``ICS NeoVI`` documentation is a work in progress. Feedback and revisions
+    This ``ICS neoVI`` documentation is a work in progress. Feedback and revisions
     are most welcome!
 
 
@@ -14,7 +14,7 @@ wrapper on Windows.
 
 Installation
 ------------
-This neovi interface requires the installation of the ICS neoVI DLL and python-ics
+This neoVI interface requires the installation of the ICS neoVI DLL and python-ics
 package.
 
 - Download and install the Intrepid Product Drivers

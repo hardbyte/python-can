@@ -47,7 +47,7 @@ logger = logging.getLogger(__name__)
 
 
 class NeousysCanSetup(Structure):
-    """ C CAN Setup struct """
+    """C CAN Setup struct"""
 
     _fields_ = [
         ("bitRate", c_uint),
@@ -58,7 +58,7 @@ class NeousysCanSetup(Structure):
 
 
 class NeousysCanMsg(Structure):
-    """ C CAN Message struct """
+    """C CAN Message struct"""
 
     _fields_ = [
         ("id", c_uint),
@@ -75,7 +75,7 @@ class NeousysCanMsg(Structure):
 # valid:1~4, Resynchronization Jump Width in time quanta
 # valid:1~1023, CAN_CLK divider used to determine time quanta
 class NeousysCanBitClk(Structure):
-    """ C CAN BIT Clock struct """
+    """C CAN BIT Clock struct"""
 
     _fields_ = [
         ("syncPropPhase1Seg", c_ushort),
@@ -131,7 +131,7 @@ try:
         NEOUSYS_CANLIB = CDLL("libwdt_dio.so")
     logger.info("Loaded Neousys WDT_DIO Can driver")
 except OSError as error:
-    logger.info("Cannot load Neousys CAN bus dll or shared object: %d", format(error))
+    logger.info("Cannot load Neousys CAN bus dll or shared object: %s", error)
 
 
 class NeousysBus(BusABC):
@@ -233,6 +233,7 @@ class NeousysBus(BusABC):
         logger.info("%s _neousys_status_cb: %d", self.init_config, status)
 
     def shutdown(self):
+        super().shutdown()
         NEOUSYS_CANLIB.CAN_Stop(self.channel)
 
     @staticmethod

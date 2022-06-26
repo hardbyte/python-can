@@ -1,20 +1,22 @@
 """
 Interface for slcan compatible interfaces (win32/linux).
-
-.. note::
-
-    Linux users can use slcand or socketcan as well.
-
 """
 
 from typing import Any, Optional, Tuple
-from can import typechecking
 
 import io
 import time
 import logging
 
 from can import BusABC, Message
+from ..exceptions import (
+    CanInterfaceNotImplementedError,
+    CanInitializationError,
+    CanOperationError,
+    error_check,
+)
+from can import typechecking
+
 
 logger = logging.getLogger(__name__)
 
@@ -62,16 +64,14 @@ class slcanBus(BusABC):
         btr: Optional[str] = None,
         sleep_after_open: float = _SLEEP_AFTER_SERIAL_OPEN,
         rtscts: bool = False,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """
-        :raise ValueError: if both *bitrate* and *btr* are set
-
-        :param channel:
-            port of underlying serial or usb device (e.g. /dev/ttyUSB0, COM8, ...)
-            Must not be empty.
-        :param ttyBaudrate:
-            baudrate of underlying serial or usb device
+        :param str channel:
+            port of underlying serial or usb device (e.g. ``/dev/ttyUSB0``, ``COM8``, ...)
+            Must not be empty. Can also end with ``@115200`` (or similarly) to specify the baudrate.
+        :param int ttyBaudrate:
+            baudrate of underlying serial or usb device (Ignored if set via the ``channel`` parameter)
         :param bitrate:
             Bitrate in bit/s
         :param btr:
@@ -82,28 +82,37 @@ class slcanBus(BusABC):
             Time to wait in seconds after opening serial connection
         :param rtscts:
             turn hardware handshake (RTS/CTS) on and off
+
+        :raise ValueError: if both ``bitrate`` and ``btr`` are set or the channel is invalid
+        :raise CanInterfaceNotImplementedError: if the serial module is missing
+        :raise CanInitializationError: if the underlying serial connection could not be established
         """
+        if serial is None:
+            raise CanInterfaceNotImplementedError("The serial module is not installed")
 
         if not channel:  # if None or empty
-            raise TypeError("Must specify a serial port.")
+            raise ValueError("Must specify a serial port.")
         if "@" in channel:
             (channel, baudrate) = channel.split("@")
             ttyBaudrate = int(baudrate)
-        self.serialPortOrig = serial.serial_for_url(
-            channel, baudrate=ttyBaudrate, rtscts=rtscts
-        )
+
+        with error_check(exception_type=CanInitializationError):
+            self.serialPortOrig = serial.serial_for_url(
+                channel, baudrate=ttyBaudrate, rtscts=rtscts
+            )
 
         self._buffer = bytearray()
 
         time.sleep(sleep_after_open)
 
-        if bitrate is not None and btr is not None:
-            raise ValueError("Bitrate and btr mutually exclusive.")
-        if bitrate is not None:
-            self.set_bitrate(bitrate)
-        if btr is not None:
-            self.set_bitrate_reg(btr)
-        self.open()
+        with error_check(exception_type=CanInitializationError):
+            if bitrate is not None and btr is not None:
+                raise ValueError("Bitrate and btr mutually exclusive.")
+            if bitrate is not None:
+                self.set_bitrate(bitrate)
+            if btr is not None:
+                self.set_bitrate_reg(btr)
+            self.open()
 
         super().__init__(
             channel, ttyBaudrate=115200, bitrate=None, rtscts=False, **kwargs
@@ -111,20 +120,19 @@ class slcanBus(BusABC):
 
     def set_bitrate(self, bitrate: int) -> None:
         """
-        :raise ValueError: if both *bitrate* is not among the possible values
-
         :param bitrate:
             Bitrate in bit/s
+
+        :raise ValueError: if ``bitrate`` is not among the possible values
         """
-        self.close()
         if bitrate in self._BITRATES:
-            self._write(self._BITRATES[bitrate])
+            bitrate_code = self._BITRATES[bitrate]
         else:
-            raise ValueError(
-                "Invalid bitrate, choose one of "
-                + (", ".join(str(k) for k in self._BITRATES.keys()))
-                + "."
-            )
+            bitrates = ", ".join(str(k) for k in self._BITRATES.keys())
+            raise ValueError(f"Invalid bitrate, choose one of {bitrates}.")
+
+        self.close()
+        self._write(bitrate_code)
         self.open()
 
     def set_bitrate_reg(self, btr: str) -> None:
@@ -137,33 +145,38 @@ class slcanBus(BusABC):
         self.open()
 
     def _write(self, string: str) -> None:
-        self.serialPortOrig.write(string.encode() + self.LINE_TERMINATOR)
-        self.serialPortOrig.flush()
+        with error_check("Could not write to serial device"):
+            self.serialPortOrig.write(string.encode() + self.LINE_TERMINATOR)
+            self.serialPortOrig.flush()
 
     def _read(self, timeout: Optional[float]) -> Optional[str]:
 
-        # first read what is already in receive buffer
-        while self.serialPortOrig.in_waiting:
-            self._buffer += self.serialPortOrig.read()
-        # if we still don't have a complete message, do a blocking read
-        start = time.time()
-        time_left = timeout
-        while not (ord(self._OK) in self._buffer or ord(self._ERROR) in self._buffer):
-            self.serialPortOrig.timeout = time_left
-            byte = self.serialPortOrig.read()
-            if byte:
-                self._buffer += byte
-            # if timeout is None, try indefinitely
-            if timeout is None:
-                continue
-            # try next one only if there still is time, and with
-            # reduced timeout
-            else:
-                time_left = timeout - (time.time() - start)
-                if time_left > 0:
+        with error_check("Could not read from serial device"):
+            # first read what is already in receive buffer
+            while self.serialPortOrig.in_waiting:
+                self._buffer += self.serialPortOrig.read()
+            # if we still don't have a complete message, do a blocking read
+            start = time.time()
+            time_left = timeout
+            while not (
+                ord(self._OK) in self._buffer or ord(self._ERROR) in self._buffer
+            ):
+                self.serialPortOrig.timeout = time_left
+                byte = self.serialPortOrig.read()
+                if byte:
+                    self._buffer += byte
+                # if timeout is None, try indefinitely
+                if timeout is None:
                     continue
+                # try next one only if there still is time, and with
+                # reduced timeout
                 else:
-                    return None
+                    time_left = timeout - (time.time() - start)
+                    if time_left > 0:
+                        continue
+                    else:
+                        return None
+
         # return first message
         for i in range(len(self._buffer)):
             if self._buffer[i] == ord(self._OK) or self._buffer[i] == ord(self._ERROR):
@@ -174,8 +187,9 @@ class slcanBus(BusABC):
 
     def flush(self) -> None:
         del self._buffer[:]
-        while self.serialPortOrig.in_waiting:
-            self.serialPortOrig.read()
+        with error_check("Could not flush"):
+            while self.serialPortOrig.in_waiting:
+                self.serialPortOrig.read()
 
     def open(self) -> None:
         self._write("O")
@@ -220,6 +234,7 @@ class slcanBus(BusABC):
             dlc = int(string[9])
             extended = True
             remote = True
+
         if canId is not None:
             msg = Message(
                 arbitration_id=canId,
@@ -249,8 +264,10 @@ class slcanBus(BusABC):
         self._write(sendStr)
 
     def shutdown(self) -> None:
+        super().shutdown()
         self.close()
-        self.serialPortOrig.close()
+        with error_check("Could not close serial socket"):
+            self.serialPortOrig.close()
 
     def fileno(self) -> int:
         try:
@@ -259,6 +276,8 @@ class slcanBus(BusABC):
             raise NotImplementedError(
                 "fileno is not implemented using current CAN bus on this platform"
             )
+        except Exception as exception:
+            raise CanOperationError("Cannot fetch fileno") from exception
 
     def get_version(
         self, timeout: Optional[float]
@@ -304,10 +323,10 @@ class slcanBus(BusABC):
         """Get serial number of the slcan interface.
 
         :param timeout:
-            seconds to wait for serial number or None to wait indefinitely
+            seconds to wait for serial number or ``None`` to wait indefinitely
 
         :return:
-            None on timeout or a str object.
+            ``None`` on timeout or a :class:`~builtin.str` object.
         """
         cmd = "N"
         self._write(cmd)

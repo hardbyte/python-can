@@ -375,4 +375,5 @@ class NicanBus(BusABC):
 
     def shutdown(self) -> None:
         """Close object."""
+        super().shutdown()
         nican.ncCloseObject(self.handle)

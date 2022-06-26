@@ -5,9 +5,6 @@ from typing import (
     Optional,
     cast,
     Iterable,
-    Union,
-    TextIO,
-    BinaryIO,
     Type,
     ContextManager,
 )
@@ -30,7 +27,9 @@ class BaseIOHandler(ContextManager, metaclass=ABCMeta):
 
     file: Optional[can.typechecking.FileLike]
 
-    def __init__(self, file: can.typechecking.AcceptedIOType, mode: str = "rt") -> None:
+    def __init__(
+        self, file: Optional[can.typechecking.AcceptedIOType], mode: str = "rt"
+    ) -> None:
         """
         :param file: a path-like object to open a file, a file-like object
                      to be used as a file or `None` to not use a file at all
@@ -41,8 +40,12 @@ class BaseIOHandler(ContextManager, metaclass=ABCMeta):
             # file is None or some file-like object
             self.file = cast(Optional[can.typechecking.FileLike], file)
         else:
+            # pylint: disable=consider-using-with
             # file is some path-like object
-            self.file = open(cast(can.typechecking.StringPathLike, file), mode)
+            self.file = cast(
+                can.typechecking.FileLike,
+                open(cast(can.typechecking.StringPathLike, file), mode),
+            )
 
         # for multiple inheritance
         super().__init__()
@@ -70,14 +73,23 @@ class BaseIOHandler(ContextManager, metaclass=ABCMeta):
 class MessageWriter(BaseIOHandler, can.Listener, metaclass=ABCMeta):
     """The base class for all writers."""
 
+    file: Optional[can.typechecking.FileLike]
+
 
 # pylint: disable=abstract-method,too-few-public-methods
 class FileIOMessageWriter(MessageWriter, metaclass=ABCMeta):
     """A specialized base class for all writers with file descriptors."""
 
-    file: Union[TextIO, BinaryIO]
+    file: can.typechecking.FileLike
+
+    def __init__(self, file: can.typechecking.AcceptedIOType, mode: str = "wt") -> None:
+        # Not possible with the type signature, but be verbose for user-friendliness
+        if file is None:
+            raise ValueError("The given file cannot be None")
+
+        super().__init__(file, mode)
 
 
 # pylint: disable=too-few-public-methods
-class MessageReader(BaseIOHandler, Iterable, metaclass=ABCMeta):
+class MessageReader(BaseIOHandler, Iterable[can.Message], metaclass=ABCMeta):
     """The base class for all readers."""

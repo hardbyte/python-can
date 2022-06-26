@@ -1,4 +1,4 @@
-/* This promela model was used to verify the concurrent design of the bus object. */
+/* This promela model was used to verify a past design of the bus object. */
 
 bool lock = false;
 

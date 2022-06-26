@@ -25,7 +25,7 @@ for specifying multicast IP addresses.
 Supported Platforms
 -------------------
 
-It should work on most Unix systems (including Linux with kernel 2.6.22+) but currently not on Windows.
+It should work on most Unix systems (including Linux with kernel 2.6.22+ and macOS) but currently not on Windows.
 
 Example
 -------

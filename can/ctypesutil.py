@@ -1,7 +1,7 @@
+# type: ignore
 """
 This module contains common `ctypes` utils.
 """
-
 import ctypes
 import logging
 import sys
@@ -14,14 +14,14 @@ __all__ = ["CLibrary", "HANDLE", "PHANDLE", "HRESULT"]
 
 
 try:
-    _LibBase = ctypes.WinDLL  # type: ignore
-    _FUNCTION_TYPE = ctypes.WINFUNCTYPE  # type: ignore
+    _LibBase = ctypes.WinDLL
+    _FUNCTION_TYPE = ctypes.WINFUNCTYPE
 except AttributeError:
     _LibBase = ctypes.CDLL
     _FUNCTION_TYPE = ctypes.CFUNCTYPE
 
 
-class CLibrary(_LibBase):  # type: ignore
+class CLibrary(_LibBase):
     def __init__(self, library_or_path: Union[str, ctypes.CDLL]) -> None:
         self.func_name: Any
 
@@ -55,13 +55,13 @@ class CLibrary(_LibBase):  # type: ignore
         else:
             prototype = _FUNCTION_TYPE(restype)
         try:
-            self.func_name = prototype((func_name, self))
+            func = prototype((func_name, self))
         except AttributeError:
             raise ImportError(
                 f'Could not map function "{func_name}" from library {self._name}'
             ) from None
 
-        self.func_name._name = func_name  # pylint: disable=protected-access
+        func._name = func_name  # pylint: disable=protected-access
         log.debug(
             'Wrapped function "%s", result type: %s, error_check %s',
             func_name,
@@ -70,9 +70,10 @@ class CLibrary(_LibBase):  # type: ignore
         )
 
         if errcheck is not None:
-            self.func_name.errcheck = errcheck
+            func.errcheck = errcheck
 
-        return self.func_name
+        setattr(self, func_name, func)
+        return func
 
 
 if sys.platform == "win32":

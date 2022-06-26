@@ -31,9 +31,10 @@ def _create_base_argument_parser(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "-c",
         "--channel",
-        help='''Most backend interfaces require some sort of channel.
-    For example with the serial interface the channel might be a rfcomm device: "/dev/rfcomm0"
-    With the socketcan interfaces valid channel examples include: "can0", "vcan0"''',
+        help=r"Most backend interfaces require some sort of channel. For "
+        r"example with the serial interface the channel might be a rfcomm"
+        r' device: "/dev/rfcomm0". With the socketcan interface valid '
+        r'channel examples include: "can0", "vcan0".',
     )
 
     parser.add_argument(
@@ -57,6 +58,15 @@ def _create_base_argument_parser(parser: argparse.ArgumentParser) -> None:
         help="Bitrate to use for the data phase in case of CAN-FD.",
     )
 
+    parser.add_argument(
+        "extra_args",
+        nargs=argparse.REMAINDER,
+        help=r"The remaining arguments will be used for the interface "
+        r"initialisation. For example, `-i vector -c 1 --app-name="
+        r"MyCanApp` is the equivalent to opening the bus with `Bus("
+        r"'vector', channel=1, app_name='MyCanApp')",
+    )
+
 
 def _append_filter_argument(
     parser: Union[
@@ -72,8 +82,10 @@ def _append_filter_argument(
         *args,
         "--filter",
         help="R|Space separated CAN filters for the given CAN interface:"
-        "\n      <can_id>:<can_mask> (matches when <received_can_id> & mask == can_id & mask)"
-        "\n      <can_id>~<can_mask> (matches when <received_can_id> & mask != can_id & mask)"
+        "\n      <can_id>:<can_mask> (matches when <received_can_id> & mask =="
+        " can_id & mask)"
+        "\n      <can_id>~<can_mask> (matches when <received_can_id> & mask !="
+        " can_id & mask)"
         "\nFx to show only frames with ID 0x100 to 0x103 and 0x200 to 0x20F:"
         "\n      python -m can.viewer -f 100:7FC 200:7F0"
         "\nNote that the ID and mask are always interpreted as hex values",
@@ -122,9 +134,17 @@ def _parse_filters(parsed_args: Any) -> CanFilters:
     return can_filters
 
 
+def _parse_additonal_config(unknown_args):
+    return dict(
+        (arg.split("=", 1)[0].lstrip("--").replace("-", "_"), arg.split("=", 1)[1])
+        for arg in unknown_args
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Log CAN traffic, printing messages to stdout or to a given file.",
+        description="Log CAN traffic, printing messages to stdout or to a "
+        "given file.",
     )
 
     _create_base_argument_parser(parser)
@@ -138,11 +158,20 @@ def main() -> None:
     )
 
     parser.add_argument(
+        "-a",
+        "--append",
+        dest="append",
+        help="Append to the log file if it already exists.",
+        action="store_true",
+    )
+
+    parser.add_argument(
         "-s",
         "--file_size",
         dest="file_size",
         type=int,
-        help="Maximum file size in bytes. Rotate log file when size threshold is reached.",
+        help="Maximum file size in bytes. Rotate log file when size threshold "
+        "is reached.",
         default=None,
     )
 
@@ -172,9 +201,9 @@ def main() -> None:
         parser.print_help(sys.stderr)
         raise SystemExit(errno.EINVAL)
 
-    results = parser.parse_args()
-
-    bus = _create_bus(results, can_filters=_parse_filters(results))
+    results, unknown_args = parser.parse_known_args()
+    additional_config = _parse_additonal_config(unknown_args)
+    bus = _create_bus(results, can_filters=_parse_filters(results), **additional_config)
 
     if results.active:
         bus.state = BusState.ACTIVE
@@ -184,12 +213,13 @@ def main() -> None:
     print(f"Connected to {bus.__class__.__name__}: {bus.channel_info}")
     print(f"Can Logger (Started on {datetime.now()})")
 
+    options = {"append": results.append}
     if results.file_size:
         logger = SizedRotatingLogger(
-            base_filename=results.log_file, max_bytes=results.file_size
+            base_filename=results.log_file, max_bytes=results.file_size, **options
         )
     else:
-        logger = Logger(filename=results.log_file)  # type: ignore
+        logger = Logger(filename=results.log_file, **options)  # type: ignore
 
     try:
         while True:
