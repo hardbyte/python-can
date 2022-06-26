@@ -32,7 +32,7 @@ class canineTestCase(unittest.TestCase):
         )
         self.bus.send(msg)
         data = self.dev.read(0x81, 64)
-        self.assertEqual(data, b'\x00T\xef\xcd\xab\x12\x02\xaaU')
+        self.assertEqual(data, b"\x00T\xef\xcd\xab\x12\x02\xaaU")
 
     def test_recv_standard(self):
         self.dev.write(0x1, b"\x00t\x56\x04\x03\x11\x22\x33")
@@ -50,7 +50,7 @@ class canineTestCase(unittest.TestCase):
         )
         self.bus.send(msg)
         data = self.dev.read(0x81, 64)
-        self.assertEqual(data, b'\x00tV\x04\x03\x11\x22\x33')
+        self.assertEqual(data, b"\x00tV\x04\x03\x11\x22\x33")
 
     def test_recv_standard_remote(self):
         self.dev.write(0x1, b"\x00r\x23\x01\x08")
@@ -93,10 +93,9 @@ class canineTestCase(unittest.TestCase):
         self.assertEqual(hw_ver, 10)
         self.assertEqual(sw_ver, 13)
         self.dev.unfreeze()
-        
+
 
 class MockUSB:
-
     def __init__(self):
         self.val = None
         self._ctx = Mock()

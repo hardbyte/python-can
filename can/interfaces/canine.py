@@ -30,15 +30,15 @@ class CANineBus(BusABC):
 
     # the supported bitrates and their commands
     _BITRATES = {
-        10000: b'S\x00',
-        20000: b'S\x01',
-        50000: b'S\x02',
-        100000: b'S\x03',
-        125000: b'S\x04',
-        250000: b'S\x05',
-        500000: b'S\x06',
-        750000: b'S\x07',
-        1000000: b'S\x08'
+        10000: b"S\x00",
+        20000: b"S\x01",
+        50000: b"S\x02",
+        100000: b"S\x03",
+        125000: b"S\x04",
+        250000: b"S\x05",
+        500000: b"S\x06",
+        750000: b"S\x07",
+        1000000: b"S\x08",
     }
 
     def __init__(
@@ -67,7 +67,7 @@ class CANineBus(BusABC):
         if usb_dev:
             dev = usb_dev
         else:
-            dev = usb.core.find(idProduct=0xc1b0)
+            dev = usb.core.find(idProduct=0xC1B0)
         dev.set_configuration()
         self.dev = dev
 
@@ -107,18 +107,18 @@ class CANineBus(BusABC):
         self._write(btr)
         self.open()
 
-    def _write(self, payload: bytes, timeout: int=0) -> None:
+    def _write(self, payload: bytes, timeout: int = 0) -> None:
         # can only send single packet frames for now
         # TODO: update for CAN-FD
-        payload = b'\x00' + payload
-        self.dev.write(0x1,  payload)
+        payload = b"\x00" + payload
+        self.dev.write(0x1, payload)
 
     def _read(self, timeout: Optional[float]) -> Optional[str]:
         # TODO: Reception should be asynchronous and use timeout
         # TODO: handle multiple packets sequence
         packet = self.dev.read(0x81, 64)
         remaining_packets = packet[0]
-        assert(remaining_packets == 0) # avoid multi-packet sequence for now
+        assert remaining_packets == 0  # avoid multi-packet sequence for now
         payload = packet[1:]
 
         return payload
@@ -127,10 +127,10 @@ class CANineBus(BusABC):
         del self._buffer[:]
 
     def open(self) -> None:
-        self._write(b'O')
+        self._write(b"O")
 
     def close(self) -> None:
-        self._write(b'C')
+        self._write(b"C")
 
     def _recv_internal(
         self, timeout: Optional[float]
@@ -143,22 +143,22 @@ class CANineBus(BusABC):
 
         payload = self._read(timeout)
 
-        if payload[0] == ord(b'T'):
+        if payload[0] == ord(b"T"):
             # extended frame
-            canId, dlc = struct.unpack('<LB', payload[1:6])
+            canId, dlc = struct.unpack("<LB", payload[1:6])
             extended = True
-            frame = payload[6:dlc+6]
-        elif payload[0] == ord(b't'):
+            frame = payload[6 : dlc + 6]
+        elif payload[0] == ord(b"t"):
             # normal frame
-            canId, dlc = struct.unpack('<HB', payload[1:4])
-            frame = payload[4:dlc+4]
-        elif payload[0] == ord(b'r'):
+            canId, dlc = struct.unpack("<HB", payload[1:4])
+            frame = payload[4 : dlc + 4]
+        elif payload[0] == ord(b"r"):
             # remote frame
-            canId, dlc = struct.unpack('<HB', payload[1:4])
+            canId, dlc = struct.unpack("<HB", payload[1:4])
             remote = True
-        elif payload[0] == ord(b'R'):
+        elif payload[0] == ord(b"R"):
             # remote extended frame
-            canId, dlc = struct.unpack('<LB', payload[1:6])
+            canId, dlc = struct.unpack("<LB", payload[1:6])
             extended = True
             remote = True
         else:
@@ -178,21 +178,22 @@ class CANineBus(BusABC):
 
         if msg.is_remote_frame:
             if msg.is_extended_id:
-                header = ord('R')
-                encoding = '<BLB'
+                header = ord("R")
+                encoding = "<BLB"
             else:
-                header = ord('r')
-                encoding = '<BHB'
+                header = ord("r")
+                encoding = "<BHB"
             payload = struct.pack(encoding, header, msg.arbitration_id, msg.dlc)
         else:
             if msg.is_extended_id:
-                header = ord('T')
-                encoding = '<BLB'
+                header = ord("T")
+                encoding = "<BLB"
             else:
-                header = ord('t')
-                encoding = '<BHB'
-            payload = struct.pack(encoding, header, msg.arbitration_id, msg.dlc) + \
-                bytes(msg.data)
+                header = ord("t")
+                encoding = "<BHB"
+            payload = struct.pack(
+                encoding, header, msg.arbitration_id, msg.dlc
+            ) + bytes(msg.data)
         self._write(payload, timeout)
 
     def shutdown(self) -> None:
@@ -217,9 +218,9 @@ class CANineBus(BusABC):
             int hw_version is the hardware version or None on timeout
             int sw_version is the software version or None on timeout
         """
-        cmd = b'V'
+        cmd = b"V"
         self._write(cmd)
 
         payload = self._read(timeout)
-        assert(payload[0] == ord(b'V'))
-        return struct.unpack('<HH', payload[1:5])
+        assert payload[0] == ord(b"V")
+        return struct.unpack("<HH", payload[1:5])
