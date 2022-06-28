@@ -95,6 +95,15 @@ class ICSApiError(CanError):
         self.severity = severity
         self.restart_needed = restart_needed == 1
 
+    def __reduce__(self):
+        return type(self), (
+            self.error_code,
+            self.description_short,
+            self.description_long,
+            self.severity,
+            self.restart_needed,
+        )
+
     @property
     def error_number(self) -> int:
         """Deprecated. Renamed to :attr:`can.CanError.error_code`."""
