@@ -206,6 +206,10 @@ class PcanBus(BusABC):
             In the range (1..16).
             Ignored if not using CAN-FD.
 
+        :param bool auto_reset:
+            Enable automatic recovery in bus off scenario.
+            Resetting the driver takes ~500ms during which
+            it will not be responsive.
         """
         self.m_objPCANBasic = PCANBasic()
 
@@ -275,6 +279,14 @@ class PcanBus(BusABC):
                 log.debug(
                     "Ignoring error. PCAN_ALLOW_ERROR_FRAMES is still unsupported by OSX Library PCANUSB v0.10"
                 )
+
+        if kwargs.get("auto_reset", False):
+            result = self.m_objPCANBasic.SetValue(
+                self.m_PcanHandle, PCAN_BUSOFF_AUTORESET, PCAN_PARAMETER_ON
+            )
+
+            if result != PCAN_ERROR_OK:
+                raise PcanCanInitializationError(self._get_formatted_error(result))
 
         if HAS_EVENTS:
             self._recv_event = CreateEvent(None, 0, 0, None)
