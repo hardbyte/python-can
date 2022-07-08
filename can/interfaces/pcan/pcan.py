@@ -103,6 +103,7 @@ class PcanBus(BusABC):
     def __init__(
         self,
         channel="PCAN_USBBUS1",
+        device_id=None,
         state=BusState.ACTIVE,
         bitrate=500000,
         *args,
@@ -118,6 +119,14 @@ class PcanBus(BusABC):
             The can interface name. An example would be 'PCAN_USBBUS1'.
             Alternatively the value can be an int with the numerical value.
             Default is 'PCAN_USBBUS1'
+
+        :param int device_id:
+            Select the PCAN interface based on its ID. The device ID is a 8/32bit
+            value that can be configured for each PCAN device. If you set the
+            device_id parameter, it takes precedence over the channel parameter.
+            The constructor searches all connected interfaces and initializes the
+            first one that matches the parameter value. If no device is found,
+            an exception is raised.
 
         :param can.bus.BusState state:
             BusState of the channel.
@@ -198,6 +207,15 @@ class PcanBus(BusABC):
             Ignored if not using CAN-FD.
 
         """
+        self.m_objPCANBasic = PCANBasic()
+
+        if device_id is not None:
+            channel = self._find_channel_by_dev_id(device_id)
+
+            if channel is None:
+                err_msg = "Cannot find a channel with ID {:08x}".format(device_id)
+                raise ValueError(err_msg)
+
         self.channel_info = str(channel)
         self.fd = kwargs.get("fd", False)
         pcan_bitrate = PCAN_BITRATES.get(bitrate, PCAN_BAUD_500K)
@@ -209,7 +227,6 @@ class PcanBus(BusABC):
         if not isinstance(channel, int):
             channel = PCAN_CHANNEL_NAMES[channel]
 
-        self.m_objPCANBasic = PCANBasic()
         self.m_PcanHandle = channel
 
         self.check_api_version()
@@ -268,6 +285,26 @@ class PcanBus(BusABC):
                 raise PcanCanInitializationError(self._get_formatted_error(result))
 
         super().__init__(channel=channel, state=state, bitrate=bitrate, *args, **kwargs)
+
+    def _find_channel_by_dev_id(self, device_id):
+        """
+        Iterates over all possible channels to find a channel that matches the device
+        ID. This method is somewhat brute force, but the Basic API only offers a
+        suitable API call since V4.4.0.
+
+        :param device_id: The device_id for which to search for
+        :return: The name of a PCAN channel that matches the device ID, or None if
+            no channel can be found.
+        """
+        for ch_name, ch_handle in PCAN_CHANNEL_NAMES.items():
+            err, cur_dev_id = self.m_objPCANBasic.GetValue(ch_handle, PCAN_DEVICE_NUMBER)
+            if err != PCAN_ERROR_OK:
+                continue
+
+            if cur_dev_id == device_id:
+                return ch_name
+
+        return None
 
     def _get_formatted_error(self, error):
         """

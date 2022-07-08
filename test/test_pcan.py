@@ -344,6 +344,24 @@ class TestPCANBus(unittest.TestCase):
             self.assertEqual(self.bus.status_string(), expected_result)
             self.mock_pcan.GetStatus.assert_called()
 
+    @parameterized.expand([(0x0, 'error'), (0x42, 'PCAN_USBBUS8')])
+    def test_constructor_with_device_id(self, dev_id, expected_result):
+        def get_value_side_effect(handle, param):
+            if param == PCAN_API_VERSION:
+                return PCAN_ERROR_OK, self.PCAN_API_VERSION_SIM.encode("ascii")
+
+            if handle in (PCAN_USBBUS8, PCAN_USBBUS14):
+                return 0, 0x42
+            else:
+                return PCAN_ERROR_ILLHW, 0x0
+        self.mock_pcan.GetValue = Mock(side_effect=get_value_side_effect)
+
+        if expected_result == 'error':
+            self.assertRaises(ValueError, can.Bus, bustype="pcan", device_id=dev_id)
+        else:
+            self.bus = can.Bus(bustype="pcan", device_id=dev_id)
+            self.assertEqual(expected_result, self.bus.channel_info)
+
 
 if __name__ == "__main__":
     unittest.main()
