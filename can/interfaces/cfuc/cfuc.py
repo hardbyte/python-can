@@ -77,6 +77,7 @@ class cfucBus(BusABC):
     def go_to_bootloader(self):
         frame = self._construct_bootloader_frame()
         self.ser.write(frame)
+        self.shutdown()
 
     def _consturct_init_frame(
         self,
