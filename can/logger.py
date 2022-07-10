@@ -43,7 +43,7 @@ def _create_base_argument_parser(parser: argparse.ArgumentParser) -> None:
         dest="interface",
         help="""Specify the backend CAN interface to use. If left blank,
                         fall back to reading from configuration files.""",
-        choices=can.VALID_INTERFACES,
+        choices=sorted(can.VALID_INTERFACES),
     )
 
     parser.add_argument(
