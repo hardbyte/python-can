@@ -56,6 +56,7 @@ from .basic import (
     PCAN_CHANNEL_FEATURES,
     FEATURE_FD_CAPABLE,
     PCAN_DICT_STATUS,
+    PCAN_BUSOFF_AUTORESET
 )
 
 

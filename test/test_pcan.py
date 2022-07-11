@@ -363,6 +363,16 @@ class TestPCANBus(unittest.TestCase):
             self.bus = can.Bus(bustype="pcan", device_id=dev_id)
             self.assertEqual(expected_result, self.bus.channel_info)
 
+    def test_bus_creation_auto_reset(self):
+        self.bus = can.Bus(bustype="pcan", auto_reset=True)
+        self.assertIsInstance(self.bus, PcanBus)
+        self.MockPCANBasic.assert_called_once()
+
+    def test_auto_reset_init_fault(self):
+        self.mock_pcan.SetValue = Mock(return_value=PCAN_ERROR_INITIALIZE)
+        with self.assertRaises(CanInitializationError):
+            self.bus = can.Bus(bustype="pcan", auto_reset=True)
+
 
 if __name__ == "__main__":
     unittest.main()
