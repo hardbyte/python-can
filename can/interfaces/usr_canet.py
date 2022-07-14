@@ -1,8 +1,12 @@
-from typing import Optional, Dict, Any, Tuple
 import socket
+import struct
+from typing import Optional, Dict, Any, Tuple
+from can import BitTiming, BusABC, Message, typechecking
+from can.typechecking import CanFilters
 
 
 class UsrCanetBus(BusABC):
+
     def __init__(self,
                  host: str = '127.0.0.1',
                  port: int = 20001,
@@ -48,7 +52,7 @@ class UsrCanetBus(BusABC):
         raw_message = frame_information + frame_id + frame_data         # Combine to make full message
 
         # Set timeout for sending
-         if timeout is not None:
+        if timeout is not None:
             self.s.settimeout(timeout)
 
         self.s.send(raw_message)
@@ -73,6 +77,9 @@ class UsrCanetBus(BusABC):
         except TimeoutError:
             return (None, False)
 
+        # Check received length
+        if len(data) == 0:
+            return (None, False)
         # Decode CAN frame
         CAN_FRAME = struct.Struct('>BI8s')
         frame_info, can_id, can_data = CAN_FRAME.unpack_from(data)
