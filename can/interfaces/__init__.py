@@ -27,6 +27,7 @@ BACKENDS = {
     "neousys": ("can.interfaces.neousys", "NeousysBus"),
     "etas": ("can.interfaces.etas", "EtasBus"),
     "socketcand": ("can.interfaces.socketcand", "SocketCanDaemonBus"),
+    "usr_canet": ("can.interfaces.usr_canet", "UsrCanetBus"),
 }
 
 try:

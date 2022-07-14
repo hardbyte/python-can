@@ -11,6 +11,7 @@ The available interfaces are:
 .. toctree::
    :maxdepth: 1
 
+   interfaces/usr_canet
    interfaces/canalystii
    interfaces/etas
    interfaces/gs_usb
