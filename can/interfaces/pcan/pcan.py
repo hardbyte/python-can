@@ -288,7 +288,7 @@ class PcanBus(BusABC):
 
     def _find_channel_by_dev_id(self, device_id):
         """
-        Iterates over all possible channels to find a channel that matches the device
+        Iterate over all possible channels to find a channel that matches the device
         ID. This method is somewhat brute force, but the Basic API only offers a
         suitable API call since V4.4.0.
 
