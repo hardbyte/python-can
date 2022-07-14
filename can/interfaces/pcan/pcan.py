@@ -297,7 +297,9 @@ class PcanBus(BusABC):
             no channel can be found.
         """
         for ch_name, ch_handle in PCAN_CHANNEL_NAMES.items():
-            err, cur_dev_id = self.m_objPCANBasic.GetValue(ch_handle, PCAN_DEVICE_NUMBER)
+            err, cur_dev_id = self.m_objPCANBasic.GetValue(
+                ch_handle, PCAN_DEVICE_NUMBER
+            )
             if err != PCAN_ERROR_OK:
                 continue
 
