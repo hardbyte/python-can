@@ -1,5 +1,7 @@
 import socket
 import struct
+import logging
+from time import sleep
 from typing import Optional, Dict, Any, Tuple
 from can import BitTiming, BusABC, Message, typechecking
 from can.typechecking import CanFilters
@@ -11,6 +13,8 @@ class UsrCanetBus(BusABC):
                  host: str = '127.0.0.1',
                  port: int = 20001,
                  can_filters: Optional[typechecking.CanFilters] = None,
+                 reconnect=True,
+                 reconnect_delay=2,
                  **kwargs: Dict[str, Any]):
         """
 
@@ -20,13 +24,31 @@ class UsrCanetBus(BusABC):
             TCP port of the corresponding CANbus port on the device configured.
         :param can_filters:
             Passed in for super class' filter.
+        :param reconnect:
+            Determine if want to reconnect after socket received an error.
+        :param reconnect_delay:
+            Determine how long to wait before retrying to reconnect.
         """
 
         super().__init__(can_filters=can_filters, **kwargs, channel=0)
 
+        self.reconnect = reconnect
+        self.host = host
+        self.port = port
+        self.connected = False
+        self.reconnect_delay = reconnect_delay
+
         # Create a socket and connect to host
-        self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.s.connect((host, port))
+        while not self.connected:
+            try:
+                self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                self.s.connect((host, port))
+                self.connected = True
+            except socket.error as e:
+                self.connected = False
+                logging.error(f"Could not reconnect: {e}. Retrying...")
+                self.s.close()
+                sleep(reconnect_delay)
 
     def send(self, msg: Message, timeout: Optional[float] = None) -> None:
         """Send a CAN message to the bus
@@ -55,7 +77,28 @@ class UsrCanetBus(BusABC):
         if timeout is not None:
             self.s.settimeout(timeout)
 
-        self.s.send(raw_message)
+        try:
+            self.s.send(raw_message)
+        except TimeoutError:
+            self.s.settimeout(None)
+            return(None, False)
+        except socket.error as e:
+            self.connected = False
+            logging.error(f"Socket error: {e}")
+            if self.reconnect:
+                while not self.connected:
+                    try:
+                        logging.error("Reconnecting...")
+                        self.s.close()
+                        self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                        self.s.connect((self.host, self.port))
+                        self.connected = True
+                        logging.error("Reconnected.")
+                    except Exception as e:
+                        logging.error(f"Could not reconnect: {e}. Retrying...")
+                        sleep(self.reconnect_delay)
+            else:
+                return(None, False)
 
         # Reset timeout
         if timeout is not None:
@@ -72,14 +115,37 @@ class UsrCanetBus(BusABC):
         # Set timeout and receive data
         if timeout is not None:
             self.s.settimeout(timeout)
-        try:
-            data = self.s.recv(1024)
-        except TimeoutError:
-            return (None, False)
+
+        flag_success = False
+        while not flag_success:
+            try:
+                data = self.s.recv(1024)
+                flag_success = True
+            except TimeoutError:
+                self.s.settimeout(None)
+                return(None, False)
+            except socket.error as e:
+                self.connected = False
+                logging.error(f"Socket error: {e}")
+                if self.reconnect:
+                    while not self.connected:
+                        try:
+                            logging.error("Reconnecting...")
+                            self.s.close()
+                            self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                            self.s.connect((self.host, self.port))
+                            self.connected = True
+                            logging.error("Reconnected.")
+                        except Exception as e:
+                            logging.error(f"Could not reconnect: {e}. Retrying...")
+                            sleep(self.reconnect_delay)
+                else:
+                    return (None, False)
 
         # Check received length
         if len(data) == 0:
             return (None, False)
+
         # Decode CAN frame
         CAN_FRAME = struct.Struct('>BI8s')
         frame_info, can_id, can_data = CAN_FRAME.unpack_from(data)
@@ -91,6 +157,7 @@ class UsrCanetBus(BusABC):
                           data=can_data, dlc=dlc,
                           is_extended_id=is_extended_id,
                           is_remote_frame=is_remote_frame)
+
         # Reset timeout
         if timeout is not None:
             self.s.settimeout(None)
@@ -100,6 +167,5 @@ class UsrCanetBus(BusABC):
         """Close down the socket and release resources immediately."""
 
         super().shutdown()
-        self.s.shutdown(socket.SHUT_RDWR)
         self.s.close()
 
