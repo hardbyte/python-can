@@ -24,10 +24,6 @@ class UsrCanetBus(BusABC):
             TCP port of the corresponding CANbus port on the device configured.
         :param can_filters:
             Passed in for super class' filter.
-        :param reconnect:
-            Determine if want to reconnect after socket received an error.
-        :param reconnect_delay:
-            Determine how long to wait before retrying to reconnect.
         """
 
         super().__init__(can_filters=can_filters, **kwargs, channel=0)
@@ -119,7 +115,7 @@ class UsrCanetBus(BusABC):
         flag_success = False
         while not flag_success:
             try:
-                data = self.s.recv(1024)
+                data = self.s.recv(13)
                 flag_success = True
             except TimeoutError:
                 self.s.settimeout(None)
