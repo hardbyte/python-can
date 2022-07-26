@@ -173,8 +173,8 @@ class ZCanBus(BusABC):
             The index 0 is configuration for channel 0, index 1 is configuration for channel 1, and so on.
             When the system is Windows, the config key is:
                 clock: [Optional] The clock of channel.
-                arb_baudrate: [Must] The arbitration phase baudrate.
-                data_baudrate: [Optional] The data phase baudrate, default is arb_baudrate.
+                baudrate: [Must] The data phase baudrate.
+                arb_baudrate: [Optional] The arbitration phase baudrate, default is baudrate.
                 initenal_resistance: [Optional] the terminal resistance enable status, optional value{1:enable|0:disable}
                 mode: [Optional] The can mode, defined in ZCANCanMode, default is NORMAL
                 filter: [Optional] The filter mode, defined in ZCANCanFilter, default is DOUBLE
