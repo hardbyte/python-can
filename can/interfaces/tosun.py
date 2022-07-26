@@ -8,8 +8,7 @@ import ctypes
 from can import CanInitializationError
 from can.bus import LOG
 
-from tosun import TSCanMessage, TSCanFdMessage, TSMasterException, TosunDevice, TSMasterMessageType, \
-    TSReadTxRxMode
+from tosun import TSCanMessage, TSCanFdMessage, TSMasterException, TosunDevice, TSMasterMessageType
 
 
 def tosun_convert_msg(msg):
@@ -66,11 +65,13 @@ class TosunBus(can.BusABC):
                  configs: Union[List[dict], Tuple[dict]],
                  fifo_status: str = 'enable',
                  turbo_enable: bool = False,
+                 receive_own_messages=True,
                  channel: Any = None,
                  rx_queue_size: Optional[int] = None,
                  can_filters: Optional[can.typechecking.CanFilters] = None,
                  **kwargs: object):
         super().__init__(channel, can_filters, **kwargs)
+        self.receive_own_messages = receive_own_messages
 
         if isinstance(channel, list):
             self.channels = channel
@@ -138,7 +139,7 @@ class TosunBus(can.BusABC):
         for channel in self.available:
             if self.device.com_enabled:
                 success, chl_index, is_remote, is_extend, dlc, can_id, timestamp, data = \
-                    self.device.fifo_receive_msg(channel, TSReadTxRxMode.TX_RX_MESSAGES, TSMasterMessageType.CAN)
+                    self.device.fifo_receive_msg(channel, self.receive_own_messages, TSMasterMessageType.CAN)
                 if success:
                     self.rx_queue.append(
                         can.Message(
@@ -153,7 +154,7 @@ class TosunBus(can.BusABC):
                         )
                     )
                 success, chl_index, is_remote, is_extend, is_edl, is_brs, dlc, can_id, timestamp, data = \
-                    self.device.fifo_receive_msg(channel, TSReadTxRxMode.TX_RX_MESSAGES, TSMasterMessageType.CAN_FD)
+                    self.device.fifo_receive_msg(channel, self.receive_own_messages, TSMasterMessageType.CAN_FD)
                 if success:
                     self.rx_queue.append(
                         can.Message(
@@ -169,9 +170,9 @@ class TosunBus(can.BusABC):
 
                         )
                     )
-            can_msg, can_num = self.device.tsfifo_receive_msgs(channel, buffer_size, TSReadTxRxMode.TX_RX_MESSAGES,
+            can_msg, can_num = self.device.tsfifo_receive_msgs(channel, buffer_size, self.receive_own_messages,
                                                                TSMasterMessageType.CAN)
-            can_msgfd, canfd_num = self.device.tsfifo_receive_msgs(channel, buffer_size, TSReadTxRxMode.TX_RX_MESSAGES,
+            can_msgfd, canfd_num = self.device.tsfifo_receive_msgs(channel, buffer_size, self.receive_own_messages,
                                                                    TSMasterMessageType.CAN_FD)
             if can_num:
                 LOG.debug(f'TOSUN-CAN: can message received: {can_num}.')
