@@ -51,7 +51,7 @@ def tosun_convert_msg(msg):
                              (0x04 if msg.is_extended_id else 0x00)
         result.FDLC = msg.dlc
         result.FIdentifier = msg.arbitration_id
-        result.FTimeUs = msg.timestamp
+        result.FTimeUs = int(msg.timestamp)
         for index, item in enumerate(msg.data):
             result.FData[index] = item
         return result
@@ -135,51 +135,55 @@ class TosunBus(can.BusABC):
             return raw_msg, False
         return tosun_convert_msg(raw_msg), False
 
-    def poll_received_messages(self, timeout, buffer_size=50):
+    def poll_received_messages(self, timeout):
         for channel in self.available:
+            can_num = self.device.fifo_read_buffer_count(channel, TSMasterMessageType.CAN)
+            canfd_num = self.device.fifo_read_buffer_count(channel, TSMasterMessageType.CAN_FD)
             if self.device.com_enabled:
-                success, chl_index, is_remote, is_extend, dlc, can_id, timestamp, data = \
-                    self.device.fifo_receive_msg(channel, self.receive_own_messages, TSMasterMessageType.CAN)
-                if success:
-                    self.rx_queue.append(
-                        can.Message(
-                            timestamp=timestamp,
-                            arbitration_id=can_id,
-                            is_extended_id=is_extend,
-                            is_remote_frame=is_remote,
-                            channel=chl_index,
-                            dlc=dlc,
-                            data=[int(i) for i in data.split(',')],
-                            is_fd=False,
+                if can_num:
+                    success, chl_index, is_remote, is_extend, dlc, can_id, timestamp, data = \
+                        self.device.fifo_receive_msg(channel, self.receive_own_messages, TSMasterMessageType.CAN)
+                    if success:
+                        self.rx_queue.append(
+                            can.Message(
+                                timestamp=timestamp,
+                                arbitration_id=can_id,
+                                is_extended_id=is_extend,
+                                is_remote_frame=is_remote,
+                                channel=chl_index,
+                                dlc=dlc,
+                                data=[int(i) for i in data.split(',')],
+                                is_fd=False,
+                            )
                         )
-                    )
-                success, chl_index, is_remote, is_extend, is_edl, is_brs, dlc, can_id, timestamp, data = \
-                    self.device.fifo_receive_msg(channel, self.receive_own_messages, TSMasterMessageType.CAN_FD)
-                if success:
-                    self.rx_queue.append(
-                        can.Message(
-                            timestamp=timestamp,
-                            arbitration_id=can_id,
-                            is_extended_id=is_extend,
-                            is_remote_frame=is_remote,
-                            channel=chl_index,
-                            dlc=dlc,
-                            data=[int(i) for i in data.split(',')],
-                            is_fd=True,
-                            bitrate_switch=is_brs,
+                if canfd_num:
+                    success, chl_index, is_remote, is_extend, is_edl, is_brs, dlc, can_id, timestamp, data = \
+                        self.device.fifo_receive_msg(channel, self.receive_own_messages, TSMasterMessageType.CAN_FD)
+                    if success:
+                        self.rx_queue.append(
+                            can.Message(
+                                timestamp=timestamp,
+                                arbitration_id=can_id,
+                                is_extended_id=is_extend,
+                                is_remote_frame=is_remote,
+                                channel=chl_index,
+                                dlc=dlc,
+                                data=[int(i) for i in data.split(',')],
+                                is_fd=True,
+                                bitrate_switch=is_brs,
 
+                            )
                         )
-                    )
-            can_msg, can_num = self.device.tsfifo_receive_msgs(channel, buffer_size, self.receive_own_messages,
-                                                               TSMasterMessageType.CAN)
-            can_msgfd, canfd_num = self.device.tsfifo_receive_msgs(channel, buffer_size, self.receive_own_messages,
-                                                                   TSMasterMessageType.CAN_FD)
             if can_num:
+                can_msg, can_num = self.device.tsfifo_receive_msgs(channel, can_num, self.receive_own_messages,
+                                                                   TSMasterMessageType.CAN)
                 LOG.debug(f'TOSUN-CAN: can message received: {can_num}.')
                 self.rx_queue.extend(
                     can_msg[i] for i in range(can_num)
                 )
             if canfd_num:
+                can_msgfd, canfd_num = self.device.tsfifo_receive_msgs(channel, canfd_num, self.receive_own_messages,
+                                                                       TSMasterMessageType.CAN_FD)
                 LOG.debug(f'ZLG-CAN: canfd message received: {canfd_num}.')
                 self.rx_queue.extend(
                     can_msgfd[i] for i in range(canfd_num)
@@ -213,14 +217,14 @@ class TosunBus(can.BusABC):
     def fileno(self) -> int:
         warnings.warn('Not supported by Tosun device.', DeprecationWarning, 2)
 
-    def cyclic_send(self, msg: can.Message, period: int):
-        pass
-
-    def del_cyclic_send(self, msg: can.Message):
-        pass
-
-    def configure_can_regs(self):
-        self.device.tsapp_configure_can_register()
+    # def cyclic_send(self, msg: can.Message, period: int):
+    #     pass
+    #
+    # def del_cyclic_send(self, msg: can.Message):
+    #     pass
+    #
+    # def configure_can_regs(self):
+    #     self.device.tsapp_configure_can_register()
 
     def __enter__(self):
         self.device.connect()
