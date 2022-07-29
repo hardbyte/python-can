@@ -100,21 +100,21 @@ class TosunBus(can.BusABC):
                 LOG.warn(f'TOSUN-CAN: channel:{chl} not initialized.')
                 return
 
-            baudrate = config.get('baudrate', None)
-            if baudrate is None:
-                raise CanInitializationError('TOSUN-CAN: baudrate is required.')
-
+            bitrate = config.get('bitrate', None)
+            if bitrate is None:
+                raise CanInitializationError('TOSUN-CAN: bitrate is required.')
+            # data_bitrate
             del config['baudrate']
-            baudrate = int(baudrate / 1000)
-            config['kbaudrate'] = baudrate
+            bitrate = int(bitrate / 1000)
+            config['kbaudrate'] = bitrate
 
-            arb_baudrate = config.get('arb_baudrate', None)
-            if arb_baudrate is None:
-                arb_kbaudrate = baudrate
+            data_bitrate = config.get('data_bitrate', None)
+            if data_bitrate is None:
+                data_bitrate = bitrate
             else:
-                del config['arb_baudrate']
-                arb_kbaudrate = int(arb_baudrate / 1000)
-            config['arb_kbaudrate'] = arb_kbaudrate
+                del config['data_bitrate']
+                data_bitrate = int(data_bitrate / 1000)
+            config['db_kbaudrate'] = data_bitrate
 
             self.device.configure_baudrate(chl, **config)
 
@@ -247,7 +247,7 @@ if __name__ == '__main__':
                'hw_subtype': TSDeviceSubType.TC1016,
                'hw_name': 'TC1016'}
     with TosunBus([mapping, ], configs=[
-            {'baudrate': 500_000, 'initenal_resistance': 1}
+            {'bitrate': 500_000, 'initenal_resistance': 1}
         ],
         # with_com=True
     ) as bus:

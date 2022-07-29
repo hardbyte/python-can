@@ -173,8 +173,8 @@ class ZCanBus(BusABC):
             The index 0 is configuration for channel 0, index 1 is configuration for channel 1, and so on.
             When the system is Windows, the config key is:
                 clock: [Optional] The clock of channel.
-                baudrate: [Must] The data phase baudrate.
-                arb_baudrate: [Optional] The arbitration phase baudrate, default is baudrate.
+                bitrate: [Must] The arbitration phase baudrate.
+                data_bitrate: [Optional] The data phase baudrate, default is baudrate.
                 initenal_resistance: [Optional] the terminal resistance enable status, optional value{1:enable|0:disable}
                 mode: [Optional] The can mode, defined in ZCANCanMode, default is NORMAL
                 filter: [Optional] The filter mode, defined in ZCANCanFilter, default is DOUBLE
@@ -254,18 +254,18 @@ class ZCanBus(BusABC):
                     init_config['dbit_timing'] = dbit_timing
                     del config['dbit_timing']
 
-                baudrate = config.get('baudrate', None)
-                if baudrate is None:
-                    raise CanInitializationError('ZLG-CAN: baudrate is required.')
-                del config['baudrate']
-                config['canfd_dbit_baud_rate'] = baudrate
+                bitrate = config.get('bitrate', None)
+                if bitrate is None:
+                    raise CanInitializationError('ZLG-CAN: bitrate is required.')
+                del config['bitrate']
+                config['canfd_abit_baud_rate'] = bitrate
 
-                arb_baudrate = config.get('arb_baudrate', None)
-                if arb_baudrate is None:
-                    config['canfd_abit_baud_rate'] = baudrate
+                data_bitrate = config.get('data_bitrate', None)
+                if data_bitrate is None:
+                    config['canfd_dbit_baud_rate'] = bitrate
                 else:
-                    del config['arb_baudrate']
-                    config['canfd_abit_baud_rate'] = arb_baudrate
+                    del config['data_bitrate']
+                    config['canfd_dbit_baud_rate'] = data_bitrate
 
                 self.device.SetValue(channel, **config)
             self.device.InitCAN(channel, **init_config)
