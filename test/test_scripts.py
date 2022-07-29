@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# coding: utf-8
 
 """
 This module tests that the scripts are all callable.
@@ -99,6 +98,22 @@ class TestPlayerScript(CanScriptTest):
 
     def _import(self):
         import can.player as module
+
+        return module
+
+
+class TestLogconvertScript(CanScriptTest):
+    def _commands(self):
+        commands = [
+            "python -m can.logconvert --help",
+            "python scripts/can_logconvert.py --help",
+        ]
+        if IS_UNIX:
+            commands += ["can_logconvert.py --help"]
+        return commands
+
+    def _import(self):
+        import can.logconvert as module
 
         return module
 

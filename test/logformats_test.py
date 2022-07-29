@@ -11,7 +11,6 @@ comments.
 
 TODO: correctly set preserves_channel and adds_default_channel
 """
-import gzip
 import logging
 import unittest
 import tempfile
@@ -21,6 +20,7 @@ from itertools import zip_longest
 from datetime import datetime
 
 import can
+from can.io import blf
 
 from .data.example_data import (
     TEST_MESSAGES_BASE,
@@ -48,6 +48,7 @@ class ReaderWriterExtensionTest(unittest.TestCase):
             suffix_variants = [
                 suffix.upper(),
                 suffix.lower(),
+                f"can.msg.ext{suffix}",
                 "".join([c.upper() if i % 2 else c for i, c in enumerate(suffix)]),
             ]
             for suffix_variant in suffix_variants:
@@ -520,7 +521,7 @@ class TestAscFileFormat(ReaderWriterTest):
                 arbitration_id=0x4EE,
                 is_extended_id=False,
                 channel=3,
-                dlc=0xF,
+                dlc=64,
                 data=[0xA1, 2, 3, 4] + 59 * [0] + [0x64],
                 is_fd=True,
                 error_state_indicator=True,
@@ -529,7 +530,7 @@ class TestAscFileFormat(ReaderWriterTest):
                 timestamp=31.506898,
                 arbitration_id=0x1C4D80A7,
                 channel=3,
-                dlc=0xF,
+                dlc=64,
                 data=[0xB1, 2, 3, 4] + 59 * [0] + [0x64],
                 is_fd=True,
                 bitrate_switch=True,
@@ -554,33 +555,14 @@ class TestAscFileFormat(ReaderWriterTest):
         actual = self._read_log_file("test_CanErrorFrames.asc")
         self.assertMessagesEqual(actual, expected_messages)
 
+    def test_ignore_comments(self):
+        _msg_list = self._read_log_file("logfile.asc")
 
-class TestGzipASCFileFormat(ReaderWriterTest):
-    """Tests can.GzipASCWriter and can.GzipASCReader"""
+    def test_no_triggerblock(self):
+        _msg_list = self._read_log_file("issue_1256.asc")
 
-    def _setup_instance(self):
-        super()._setup_instance_helper(
-            can.GzipASCWriter,
-            can.GzipASCReader,
-            binary_file=True,
-            check_comments=True,
-            preserves_channel=False,
-            adds_default_channel=0,
-        )
-
-    def assertIncludesComments(self, filename):
-        """
-        Ensures that all comments are literally contained in the given file.
-
-        :param filename: the path-like object to use
-        """
-        if self.original_comments:
-            # read the entire outout file
-            with gzip.open(filename, "rt" if self.binary_file else "r") as file:
-                output_contents = file.read()
-            # check each, if they can be found in there literally
-            for comment in self.original_comments:
-                self.assertIn(comment, output_contents)
+    def test_can_dlc_greater_than_8(self):
+        _msg_list = self._read_log_file("issue_1299.asc")
 
 
 class TestBlfFileFormat(ReaderWriterTest):
@@ -680,6 +662,18 @@ class TestBlfFileFormat(ReaderWriterTest):
         actual = self._read_log_file("test_CanErrorFrameExt.blf")
         self.assertMessagesEqual(actual, [expected] * 2)
         self.assertEqual(actual[0].channel, expected.channel)
+
+    def test_timestamp_to_systemtime(self):
+        self.assertAlmostEqual(
+            1636485425.999,
+            blf.systemtime_to_timestamp(blf.timestamp_to_systemtime(1636485425.998908)),
+            places=3,
+        )
+        self.assertAlmostEqual(
+            1636485426.0,
+            blf.systemtime_to_timestamp(blf.timestamp_to_systemtime(1636485425.999908)),
+            places=3,
+        )
 
 
 class TestCanutilsFileFormat(ReaderWriterTest):

@@ -95,6 +95,15 @@ class ICSApiError(CanError):
         self.severity = severity
         self.restart_needed = restart_needed == 1
 
+    def __reduce__(self):
+        return type(self), (
+            self.error_code,
+            self.description_short,
+            self.description_long,
+            self.severity,
+            self.restart_needed,
+        )
+
     @property
     def error_number(self) -> int:
         """Deprecated. Renamed to :attr:`can.CanError.error_code`."""
@@ -364,6 +373,9 @@ class NeoViBus(BusABC):
                 is_remote_frame=bool(
                     ics_msg.StatusBitField & ics.SPY_STATUS_REMOTE_FRAME
                 ),
+                is_error_frame=bool(
+                    ics_msg.StatusBitField2 & ics.SPY_STATUS2_ERROR_FRAME
+                ),
                 error_state_indicator=bool(
                     ics_msg.StatusBitField3 & ics.SPY_STATUS3_CANFD_ESI
                 ),
@@ -383,6 +395,9 @@ class NeoViBus(BusABC):
                 is_rx=not bool(ics_msg.StatusBitField & ics.SPY_STATUS_TX_MSG),
                 is_remote_frame=bool(
                     ics_msg.StatusBitField & ics.SPY_STATUS_REMOTE_FRAME
+                ),
+                is_error_frame=bool(
+                    ics_msg.StatusBitField2 & ics.SPY_STATUS2_ERROR_FRAME
                 ),
                 channel=ics_msg.NetworkID,
             )
@@ -417,6 +432,18 @@ class NeoViBus(BusABC):
         """
         if not ics.validate_hobject(self.dev):
             raise CanOperationError("bus not open")
+
+        # Check for valid DLC to avoid passing extra long data to the driver
+        if msg.is_fd:
+            if msg.dlc > 64:
+                raise ValueError(
+                    f"DLC was {msg.dlc} but it should be <= 64 for CAN FD frames"
+                )
+        elif msg.dlc > 8:
+            raise ValueError(
+                f"DLC was {msg.dlc} but it should be <= 8 for normal CAN frames"
+            )
+
         message = ics.SpyMessage()
 
         flag0 = 0
@@ -434,8 +461,8 @@ class NeoViBus(BusABC):
                 flag3 |= ics.SPY_STATUS3_CANFD_ESI
 
         message.ArbIDOrHeader = msg.arbitration_id
-        msg_data = msg.data
-        message.NumberBytesData = len(msg_data)
+        msg_data = msg.data[: msg.dlc]
+        message.NumberBytesData = msg.dlc
         message.Data = tuple(msg_data[:8])
         if msg.is_fd and len(msg_data) > 8:
             message.ExtraDataPtrEnabled = 1

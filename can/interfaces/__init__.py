@@ -26,19 +26,23 @@ BACKENDS = {
     "nixnet": ("can.interfaces.nixnet", "NiXNETcanBus"),
     "neousys": ("can.interfaces.neousys", "NeousysBus"),
     "cfuc": ("can.interfaces.cfuc","cfucBus"),
+    "etas": ("can.interfaces.etas", "EtasBus"),
+    "socketcand": ("can.interfaces.socketcand", "SocketCanDaemonBus"),
 }
 
 try:
     from importlib.metadata import entry_points
 
-    entry = entry_points()
-    if "can.interface" in entry:
-        BACKENDS.update(
-            {
-                interface.name: tuple(interface.value.split(":"))
-                for interface in entry["can.interface"]
-            }
-        )
+    try:
+        entries = entry_points(group="can.interface")
+    except TypeError:
+        # Fallback for Python <3.10
+        # See https://docs.python.org/3/library/importlib.metadata.html#entry-points, "Compatibility Note"
+        entries = entry_points().get("can.interface", [])
+
+    BACKENDS.update(
+        {interface.name: tuple(interface.value.split(":")) for interface in entries}
+    )
 except ImportError:
     from pkg_resources import iter_entry_points
 
@@ -50,4 +54,4 @@ except ImportError:
         }
     )
 
-VALID_INTERFACES = frozenset(list(BACKENDS.keys()))
+VALID_INTERFACES = frozenset(BACKENDS.keys())

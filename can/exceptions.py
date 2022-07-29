@@ -15,11 +15,16 @@ For example, validating typical arguments and parameters might result in a
 :class:`ValueError`. This should always be documented for the function at hand.
 """
 
-
+import sys
 from contextlib import contextmanager
 
 from typing import Optional
 from typing import Type
+
+if sys.version_info >= (3, 9):
+    from collections.abc import Generator
+else:
+    from typing import Generator
 
 
 class CanError(Exception):
@@ -106,11 +111,11 @@ class CanTimeoutError(CanError, TimeoutError):
 def error_check(
     error_message: Optional[str] = None,
     exception_type: Type[CanError] = CanOperationError,
-) -> None:
+) -> Generator[None, None, None]:
     """Catches any exceptions and turns them into the new type while preserving the stack trace."""
     try:
         yield
-    except Exception as error:
+    except Exception as error:  # pylint: disable=broad-except
         if error_message is None:
             raise exception_type(str(error)) from error
         else:
