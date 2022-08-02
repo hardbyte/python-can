@@ -1,4 +1,5 @@
 import collections
+import time
 import warnings
 from typing import List, Optional, Tuple, Any, Union
 
@@ -206,7 +207,9 @@ class TosunBus(can.BusABC):
 
         return None, False
 
-    def send(self, msg: can.Message, timeout: Optional[float] = None, sync: bool = True) -> None:
+    def send(self, msg: can.Message, timeout: Optional[float] = 50, sync: bool = True) -> None:
+        if msg.channel is None:
+            msg.channel = self.available[0]
         msg = tosun_convert_msg(msg)
         self.device.transmit(msg, sync, timeout=timeout)
 

@@ -316,7 +316,10 @@ class ZCanBus(BusABC):
     def send(self, msg: Message, timeout: Optional[float] = None, **kwargs) -> None:
         channel = msg.channel
         if channel not in self.available:
-            raise CanOperationError(f'Channel: {channel} not in {self.available}')
+            if len(self.available) == 0:
+                raise CanOperationError(f'Channel: {channel} not in {self.available}')
+            if channel is None:
+                channel = self.available[0]
         is_merge = self.device.MergeEnabled() if hasattr(self.device, 'MergeEnabled') else False
         if is_merge:
             return self.device.TransmitData(zlg_convert_msg(msg, channel=channel, is_merge=is_merge, **kwargs), 1)
