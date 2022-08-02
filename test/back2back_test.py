@@ -321,11 +321,12 @@ class BasicTestUdpMulticastBusIPv4(Back2BackTestCase):
     "only supported on Unix systems (but not on Travis CI; and not on macOS at GitHub Actions)",
 )
 class BasicTestUdpMulticastBusIPv6(Back2BackTestCase):
+    HOST_LOCAL_MCAST_GROUP_IPv6 = "ff11:7079:7468:6f6e:6465:6d6f:6d63:6173"
 
     INTERFACE_1 = "udp_multicast"
-    CHANNEL_1 = UdpMulticastBus.DEFAULT_GROUP_IPv6
+    CHANNEL_1 = HOST_LOCAL_MCAST_GROUP_IPv6
     INTERFACE_2 = "udp_multicast"
-    CHANNEL_2 = UdpMulticastBus.DEFAULT_GROUP_IPv6
+    CHANNEL_2 = HOST_LOCAL_MCAST_GROUP_IPv6
 
     def test_unique_message_instances(self):
         with self.assertRaises(NotImplementedError):
