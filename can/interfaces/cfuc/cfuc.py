@@ -51,6 +51,25 @@ ADLC = {
     15: 0x000F0000,
 }
 
+DLC_TO_BYTES = {
+    0: 0,
+    1: 1,
+    2: 2,
+    3: 3,
+    4: 4,
+    5: 5,
+    6: 6,
+    7: 7,
+    8: 8,
+    9: 12,
+    10: 16,
+    11: 20,
+    12: 24,
+    13: 32,
+    14: 48,
+    15: 64 
+}
+
 UCAN_RX_FRAME_DEF_CAN_COUNT_MAX = 10
 class UCAN_FRAME_TYPE(enum.Enum):
    UCAN_FD_INIT = 0 # init CAN with all parameters, open in mode specified in init data. Frame direction USB->CAN*/
@@ -375,7 +394,8 @@ class cfucBus(BusABC):
         #read Flasg and Errors
         packed_flags_and_error_counters = self._read(4)        
         
-        dlc = list(ADLC.values()).index(can_rx_header_DataLength)
+        tmp = hex(can_rx_header_DataLength)
+        dlc = DLC_TO_BYTES[int(tmp[2], base=16)]
 
         msg = Message(
             timestamp = can_rx_header_RxTimestamp / 1000,
@@ -405,7 +425,8 @@ class cfucBus(BusABC):
 
         can_data = bytearray(self.ser.read(64))
 
-        dlc = list(ADLC.values()).index(can_tx_header_DataLength)
+        tmp = hex(can_tx_header_DataLength)
+        dlc = DLC_TO_BYTES[int(tmp[2], base=16)]
 
         msg = Message(
             arbitration_id = can_tx_header_Identifier,
