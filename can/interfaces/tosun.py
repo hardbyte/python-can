@@ -125,7 +125,7 @@ class TosunBus(can.BusABC):
             self.device.set_receive_fifo_status(fifo_status)
         except TSMasterException as e:
             LOG.warning(e)
-        # self.device.connect()
+        self.device.connect()
         self.rx_queue = collections.deque(
             maxlen=rx_queue_size
         )  # type: Deque[Any]               # channel, raw_msg
@@ -184,7 +184,6 @@ class TosunBus(can.BusABC):
                         )
             else:
                 if can_num or canfd_num:
-                    print('can_num:', can_num, 'canfd_num:', canfd_num)
                     if can_num < canfd_num:
                         can_msgfd, canfd_num = self.device.tsfifo_receive_msgs(channel, canfd_num,
                                                                                self.receive_own_messages,
@@ -200,6 +199,8 @@ class TosunBus(can.BusABC):
                         self.rx_queue.extend(
                             can_msg[i] for i in range(can_num)
                         )
+                    self.device.fifo_clear_receive_buffers(channel, TSMasterMessageType.CAN)
+                    self.device.fifo_clear_receive_buffers(channel, TSMasterMessageType.CAN_FD)
 
     def _recv_internal(self, timeout: Optional[float]) -> Tuple[Optional[can.Message], bool]:
 
@@ -241,7 +242,6 @@ class TosunBus(can.BusABC):
     #     self.device.tsapp_configure_can_register()
 
     def __enter__(self):
-        self.device.connect()
         return self
 
     def shutdown(self) -> None:
