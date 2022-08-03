@@ -34,10 +34,11 @@ def tosun_convert_msg(msg):
             channel=msg.FIdxChn,
             dlc=msg.FDLC,
             data=bytes(msg.FData),
-            is_fd=False,
+            is_fd=msg.FFDProperties & 0x01,
             is_rx=False if msg.FProperties & 0x01 else True,
             bitrate_switch=msg.FFDProperties & 0x02,
             error_state_indicator=msg.FFDProperties & 0x04,
+            is_error_frame=msg.FProperties & 0x80
         )
     elif isinstance(msg, can.Message):
         if msg.is_fd:
@@ -105,7 +106,7 @@ class TosunBus(can.BusABC):
             if bitrate is None:
                 raise CanInitializationError('TOSUN-CAN: bitrate is required.')
             # data_bitrate
-            del config['baudrate']
+            del config['bitrate']
             bitrate = int(bitrate / 1000)
             config['kbaudrate'] = bitrate
 
@@ -141,7 +142,10 @@ class TosunBus(can.BusABC):
             can_num = self.device.fifo_read_buffer_count(channel, TSMasterMessageType.CAN)
             canfd_num = self.device.fifo_read_buffer_count(channel, TSMasterMessageType.CAN_FD)
             if self.device.com_enabled:
-                if can_num:
+                # if can_num:
+                LOG.debug(f'TOSUN-CAN: can message received: {can_num}.')
+                while can_num > 0:
+                    can_num -= 1
                     success, chl_index, is_remote, is_extend, dlc, can_id, timestamp, data = \
                         self.device.fifo_receive_msg(channel, self.receive_own_messages, TSMasterMessageType.CAN)
                     if success:
@@ -157,7 +161,10 @@ class TosunBus(can.BusABC):
                                 is_fd=False,
                             )
                         )
-                if canfd_num:
+                # if canfd_num:
+                LOG.debug(f'TOSUN-CAN: canfd message received: {canfd_num}.')
+                while canfd_num > 0:
+                    canfd_num -= 1
                     success, chl_index, is_remote, is_extend, is_edl, is_brs, dlc, can_id, timestamp, data = \
                         self.device.fifo_receive_msg(channel, self.receive_own_messages, TSMasterMessageType.CAN_FD)
                     if success:
@@ -175,20 +182,24 @@ class TosunBus(can.BusABC):
 
                             )
                         )
-            if can_num:
-                can_msg, can_num = self.device.tsfifo_receive_msgs(channel, can_num, self.receive_own_messages,
-                                                                   TSMasterMessageType.CAN)
-                LOG.debug(f'TOSUN-CAN: can message received: {can_num}.')
-                self.rx_queue.extend(
-                    can_msg[i] for i in range(can_num)
-                )
-            if canfd_num:
-                can_msgfd, canfd_num = self.device.tsfifo_receive_msgs(channel, canfd_num, self.receive_own_messages,
-                                                                       TSMasterMessageType.CAN_FD)
-                LOG.debug(f'ZLG-CAN: canfd message received: {canfd_num}.')
-                self.rx_queue.extend(
-                    can_msgfd[i] for i in range(canfd_num)
-                )
+            else:
+                if can_num or canfd_num:
+                    print('can_num:', can_num, 'canfd_num:', canfd_num)
+                    if can_num < canfd_num:
+                        can_msgfd, canfd_num = self.device.tsfifo_receive_msgs(channel, canfd_num,
+                                                                               self.receive_own_messages,
+                                                                               TSMasterMessageType.CAN_FD)
+                        LOG.debug(f'TOSUN-CAN: canfd message received: {canfd_num}.')
+                        self.rx_queue.extend(
+                            can_msgfd[i] for i in range(canfd_num)
+                        )
+                    else:
+                        can_msg, can_num = self.device.tsfifo_receive_msgs(channel, can_num, self.receive_own_messages,
+                                                                           TSMasterMessageType.CAN)
+                        LOG.debug(f'TOSUN-CAN: can message received: {can_num}.')
+                        self.rx_queue.extend(
+                            can_msg[i] for i in range(can_num)
+                        )
 
     def _recv_internal(self, timeout: Optional[float]) -> Tuple[Optional[can.Message], bool]:
 
