@@ -531,7 +531,6 @@ class BLFWriter(FileIOMessageWriter):
         self._buffer_size += obj_size + padding_size
         self.object_count += 1
         if self._buffer_size >= self.max_container_size:
-            print("Flush the buffer to a file. Larger than max container!")
             self._flush()
 
     def _flush(self):
