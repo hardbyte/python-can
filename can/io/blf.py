@@ -533,7 +533,6 @@ class BLFWriter(FileIOMessageWriter):
 
         self._buffer_size += obj_size + padding_size
         self.object_count += 1
-        a = len(zlib.compress(memoryview(b"".join(self._buffer)), 1))
         if self._buffer_size >= self.max_container_size:
             self._flush()
 
