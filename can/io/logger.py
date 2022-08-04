@@ -325,7 +325,14 @@ class SizedRotatingLogger(BaseRotatingLogger):
         if self.max_bytes <= 0:
             return False
 
+        value = self.writer.file.tell()
+
+        if value != 144:
+            print("NOT 144!")
+
         if self.writer.file.tell() >= self.max_bytes:
+            print('Rollover: {} bytes'.format(value))
+            print('Buffer size: {} bytes'.format(self._writer._buffer_size))
             return True
 
         return False
