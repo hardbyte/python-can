@@ -17,7 +17,7 @@ import zlib
 import datetime
 import time
 import logging
-from typing import List, BinaryIO, Generator, Union, Tuple, Optional, cast
+from typing import List, BinaryIO, Generator, Union, Tuple, Optional, cast, Any
 
 from ..message import Message
 from ..util import len2dlc, dlc2len, channel2int
@@ -358,9 +358,6 @@ class BLFWriter(FileIOMessageWriter):
 
     file: BinaryIO
 
-    #: Max log container size of uncompressed data
-    max_container_size = 128 * 1024
-
     #: Application identifier for the log writer
     application_id = 5
 
@@ -370,6 +367,7 @@ class BLFWriter(FileIOMessageWriter):
         append: bool = False,
         channel: int = 1,
         compression_level: int = -1,
+        **options: Any,
     ) -> None:
         """
         :param file: a path-like object or as file-like object to write to
@@ -400,6 +398,11 @@ class BLFWriter(FileIOMessageWriter):
         self.compression_level = compression_level
         self._buffer: List[bytes] = []
         self._buffer_size = 0
+        #: Max log container size of uncompressed data
+        if "max_container_size" in options:
+            self.max_container_size = options["max_container_size"]
+        else:
+            self.max_container_size = 128 * 1024  # bytes
         if append:
             # Parse file header
             data = self.file.read(FILE_HEADER_STRUCT.size)
@@ -530,6 +533,7 @@ class BLFWriter(FileIOMessageWriter):
 
         self._buffer_size += obj_size + padding_size
         self.object_count += 1
+        a = len(zlib.compress(memoryview(b"".join(self._buffer)), 1))
         if self._buffer_size >= self.max_container_size:
             self._flush()
 

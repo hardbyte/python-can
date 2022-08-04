@@ -325,19 +325,8 @@ class SizedRotatingLogger(BaseRotatingLogger):
         if self.max_bytes <= 0:
             return False
 
-        # The blf writer initially writes the header (144 bytes) of data to the
-        # file, but then does not write again until the buffer size becomes
-        # larger than the max container size and is flushed to the file. This
-        # results in two cases: (1) the requested file size is less than 144
-        # bytes and files are spam written, or (2) the size of the buffer that
-        # goes into the file is consistently the max container size. Therefore,
-        # the buffer size must be checked for the blf writer specifically.
-        if (
-            self.writer.file.tell() >= self.max_bytes
-            or self._writer._buffer_size >= self.max_bytes
-        ):
+        if self.writer.file.tell() >= self.max_bytes:
             print("file.tell(): {} bytes".format(self.writer.file.tell()))
-            print("Buffer size: {} bytes".format(self._writer._buffer_size))
             return True
 
         return False

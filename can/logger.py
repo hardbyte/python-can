@@ -215,6 +215,7 @@ def main() -> None:
 
     options = {"append": results.append}
     if results.file_size:
+        options["max_container_size"] = results.file_size  # bytes
         logger = SizedRotatingLogger(
             base_filename=results.log_file, max_bytes=results.file_size, **options
         )
