@@ -87,7 +87,7 @@ class CSVWriter(FileIOMessageWriter):
     file: TextIO
 
     def __init__(
-        self, file: Union[StringPathLike, TextIO], append: bool = False
+        self, file: Union[StringPathLike, TextIO], append: bool = False, **options
     ) -> None:
         """
         :param file: a path-like object or a file-like object to write to.
