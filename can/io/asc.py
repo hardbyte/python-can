@@ -346,6 +346,8 @@ class ASCWriter(FileIOMessageWriter):
     )
     # Use trigger start time to replace file start time
     FORMAT_START_OF_FILE_DATE = "%a %b %d %I:%M:%S.%f %p %Y"
+    FORMAT_DATE = "%a %b %d %I:%M:%S.{} %p %Y"
+    FORMAT_EVENT = "{timestamp: 9.6f} {message}\n"
 
     def __init__(
         self,
@@ -366,9 +368,9 @@ class ASCWriter(FileIOMessageWriter):
         # write start of file header
         now = datetime.now().strftime(self.FORMAT_START_OF_FILE_DATE)
         # Note: CANoe requires that the microsecond field only have 3 digits
-        idx = now.index('.')  # Find the index in the string of the decimal
+        idx = now.index(".")  # Find the index in the string of the decimal
         # Keep decimal and first three ms digits (4), remove remaining digits
-        now = now.replace(now[idx+4:now[idx:].index(' ') + idx], '')
+        now = now.replace(now[idx + 4 : now[idx:].index(" ") + idx], "")
         self.file.write(f"date {now}\n")
         self.file.write("base hex  timestamps absolute\n")
         self.file.write("internal events logged\n")
@@ -406,7 +408,7 @@ class ASCWriter(FileIOMessageWriter):
             # changed 2022-08-04, moved file start header here to be one.
             self.file.write(f"date {formatted_date}\n")
             self.file.write("base hex  timestamps absolute\n")
-            self.file.write("internal events logged\n")            
+            self.file.write("internal events logged\n")
             self.file.write(f"Begin Triggerblock {formatted_date}\n")
             self.header_written = True
             self.log_event("Start of measurement")  # caution: this is a recursive call!
