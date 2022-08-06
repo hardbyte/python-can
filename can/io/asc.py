@@ -363,7 +363,7 @@ class ASCWriter(FileIOMessageWriter):
         """
         if "append" in kwargs:
             if kwargs["append"]:
-                raise Exception(
+                raise TypeError(
                     f"{self.__class__.__name__} is currently not "
                     f"equipped to append messages to an existing "
                     f"file."

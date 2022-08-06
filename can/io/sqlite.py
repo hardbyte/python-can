@@ -141,7 +141,7 @@ class SqliteWriter(MessageWriter, BufferedReader):
         """
         if "append" in kwargs:
             if kwargs["append"]:
-                raise Exception(
+                raise TypeError(
                     "The append argument should not be used in "
                     "conjunction with the SqliteWriter."
                 )
