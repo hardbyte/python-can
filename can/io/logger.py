@@ -226,15 +226,10 @@ class BaseRotatingLogger(Listener, BaseIOHandler, ABC):
             return logger
         elif isinstance(logger, Printer) and logger.file is not None:
             return cast(FileIOMessageWriter, logger)
-        elif isinstance(logger, can.io.SqliteWriter):
-            raise Exception(
-                "The SqliteWriter is not available in conjunction"
-                "with the sized rotating logger."
-            )
         else:
             raise Exception(
-                "The Logger corresponding to the arguments is not a FileIOMessageWriter or "
-                "can.Printer"
+                f"The Logger, {logger.__class__.__name__}, corresponding to "
+                f"the arguments is not a FileIOMessageWriter or can.Printer"
             )
 
     def stop(self) -> None:
