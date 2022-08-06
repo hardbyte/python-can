@@ -129,7 +129,7 @@ class SqliteWriter(MessageWriter, BufferedReader):
     """Maximum number of messages to buffer before writing to the database"""
 
     def __init__(
-        self, file: StringPathLike, table_name: str = "messages", **options: Any
+        self, file: StringPathLike, table_name: str = "messages", **kwargs: Any
     ) -> None:
         """
         :param file: a `str` or path like object that points
