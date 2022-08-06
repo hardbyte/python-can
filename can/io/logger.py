@@ -228,7 +228,7 @@ class BaseRotatingLogger(Listener, BaseIOHandler, ABC):
             return cast(FileIOMessageWriter, logger)
         else:
             raise Exception(
-                f"The log format \"{os.path.splitext(filename)[-1]}\" is not "
+                f'The log format "{os.path.splitext(filename)[-1]}" is not '
                 f"supported by {self.__class__.__name__}"
             )
 
