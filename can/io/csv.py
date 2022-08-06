@@ -10,7 +10,7 @@ TODO: This module could use https://docs.python.org/2/library/csv.html#module-cs
 """
 
 from base64 import b64encode, b64decode
-from typing import TextIO, Generator, Union
+from typing import TextIO, Generator, Union, Any
 
 from can.message import Message
 from .generic import FileIOMessageWriter, MessageReader
@@ -87,7 +87,7 @@ class CSVWriter(FileIOMessageWriter):
     file: TextIO
 
     def __init__(
-        self, file: Union[StringPathLike, TextIO], append: bool = False, **options
+        self, file: Union[StringPathLike, TextIO], append: bool = False, **options: Any
     ) -> None:
         """
         :param file: a path-like object or a file-like object to write to.
