@@ -228,8 +228,8 @@ class BaseRotatingLogger(Listener, BaseIOHandler, ABC):
             return cast(FileIOMessageWriter, logger)
         else:
             raise Exception(
-                f"The Logger, {logger.__class__.__name__}, corresponding to "
-                f"the arguments is not a FileIOMessageWriter or can.Printer"
+                f"The log format \".{filename.split('.')[-1]}\" is not "
+                f"supported by {self.__class__.__name__}"
             )
 
     def stop(self) -> None:

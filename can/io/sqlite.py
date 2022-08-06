@@ -139,12 +139,11 @@ class SqliteWriter(MessageWriter, BufferedReader):
         .. warning:: In contrary to all other readers/writers the Sqlite handlers
                      do not accept file-like objects as the `file` parameter.
         """
-        if "append" in kwargs:
-            if kwargs["append"]:
-                raise TypeError(
-                    "The append argument should not be used in "
-                    "conjunction with the SqliteWriter."
-                )
+        if kwargs.get("append", False):
+            raise TypeError(
+                f"The append argument should not be used in "
+                f"conjunction with the {self.__class__.__name__}."
+            )
         super().__init__(file=None)
         self.table_name = table_name
         self._db_filename = file

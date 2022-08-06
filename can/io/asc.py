@@ -349,10 +349,7 @@ class ASCWriter(FileIOMessageWriter):
     FORMAT_EVENT = "{timestamp: 9.6f} {message}\n"
 
     def __init__(
-        self,
-        file: Union[StringPathLike, TextIO],
-        channel: int = 1,
-        **kwargs: Any,
+        self, file: Union[StringPathLike, TextIO], channel: int = 1, **kwargs: Any,
     ) -> None:
         """
         :param file: a path-like object or as file-like object to write to
@@ -361,13 +358,11 @@ class ASCWriter(FileIOMessageWriter):
         :param channel: a default channel to use when the message does not
                         have a channel set
         """
-        if "append" in kwargs:
-            if kwargs["append"]:
-                raise TypeError(
-                    f"{self.__class__.__name__} is currently not "
-                    f"equipped to append messages to an existing "
-                    f"file."
-                )
+        if kwargs.get("append", False):
+            raise TypeError(
+                f"{self.__class__.__name__} is currently not equipped to "
+                f"append messages to an existing file."
+            )
         super().__init__(file, mode="w")
 
         self.channel = channel
