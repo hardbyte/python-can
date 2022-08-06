@@ -352,7 +352,7 @@ class ASCWriter(FileIOMessageWriter):
         self,
         file: Union[StringPathLike, TextIO],
         channel: int = 1,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         """
         :param file: a path-like object or as file-like object to write to
