@@ -203,7 +203,7 @@ class ZCanBus(BusABC):
 
         cfg_length = len(configs)
         if cfg_length == 0:
-            raise CanInitializationError('ZLG-CAN: Configuration list or tuple of dict is required.')
+            raise CanInitializationError('ZLG-CAN - Configuration list or tuple of dict is required.')
 
         self.rx_queue = collections.deque(
             maxlen=rx_queue_size
@@ -213,7 +213,7 @@ class ZCanBus(BusABC):
         self.device.OpenDevice(device_type, device_index)
         self.channels = self.device.channels
         self.available = []
-        self.channel_info = f"ZLG-CAN: device {device_index}, channels {self.channels}"
+        self.channel_info = f"ZLG-CAN - device {device_index}, channels {self.channels}"
         # {'mode': 0|1(NORMAL|LISTEN_ONLY), 'filter': 0|1(DOUBLE|SINGLE), 'acc_code': 0x0, 'acc_mask': 0xFFFFFFFF,
         # 'brp': 0, 'abit_timing': 0, 'dbit_timing': 0}
 
@@ -221,7 +221,7 @@ class ZCanBus(BusABC):
             try:
                 config: dict = configs[index]
             except IndexError:
-                LOG.warn(f'ZLG-CAN: channel:{channel} not initialized.')
+                LOG.warn(f'ZLG-CAN - channel:{channel} not initialized.')
                 return
             init_config = {}
             if platform.system().lower() == 'windows':
@@ -256,7 +256,7 @@ class ZCanBus(BusABC):
 
                 bitrate = config.get('bitrate', None)
                 if bitrate is None:
-                    raise CanInitializationError('ZLG-CAN: bitrate is required.')
+                    raise CanInitializationError('ZLG-CAN - bitrate is required.')
                 del config['bitrate']
                 config['canfd_abit_baud_rate'] = bitrate
 
@@ -286,12 +286,12 @@ class ZCanBus(BusABC):
             can_num = self.device.GetReceiveNum(channel, ZCANMessageType.CAN)
             canfd_num = self.device.GetReceiveNum(channel, ZCANMessageType.CANFD)
             if can_num:
-                LOG.debug(f'ZLG-CAN: can message received: {can_num}.')
+                LOG.debug(f'ZLG-CAN - can message received: {can_num}.')
                 self.rx_queue.extend(
                     (channel, raw_msg) for raw_msg in self.device.Receive(channel, can_num, timeout)
                 )
             if canfd_num:
-                LOG.debug(f'ZLG-CAN: canfd message received: {canfd_num}.')
+                LOG.debug(f'ZLG-CAN - canfd message received: {canfd_num}.')
                 self.rx_queue.extend(
                     (channel, raw_msg) for raw_msg in self.device.ReceiveFD(channel, canfd_num, timeout)
                 )
