@@ -336,6 +336,7 @@ class ZCanBus(BusABC):
         warnings.warn('Not supported by ZLG-CAN device.', DeprecationWarning, 2)
 
     def shutdown(self) -> None:
+        LOG.debug('ZLG-CAN - shutdown.')
         super().shutdown()
         self.device.CloseDevice()
 

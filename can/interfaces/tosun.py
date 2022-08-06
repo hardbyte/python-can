@@ -121,11 +121,12 @@ class TosunBus(can.BusABC):
             self.device.configure_baudrate(chl, **config)
 
         self.device.turbo_mode(turbo_enable)
+        self.device.connect()
         try:
             self.device.set_receive_fifo_status(fifo_status)
-        except TSMasterException as e:
-            LOG.warning(e)
-        self.device.connect()
+        except TSMasterException:
+            self.device.set_receive_fifo_status(fifo_status)
+
         self.rx_queue = collections.deque(
             maxlen=rx_queue_size
         )  # type: Deque[Any]               # channel, raw_msg
@@ -245,6 +246,7 @@ class TosunBus(can.BusABC):
         return self
 
     def shutdown(self) -> None:
+        LOG.debug('TSMaster - shutdown.')
         super().shutdown()
         self.device.finalize()
 
