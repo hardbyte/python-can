@@ -14,6 +14,7 @@ from types import TracebackType
 from typing_extensions import Literal
 from pkg_resources import iter_entry_points
 
+import can.io
 from ..message import Message
 from ..listener import Listener
 from .generic import BaseIOHandler, FileIOMessageWriter, MessageWriter
@@ -225,6 +226,11 @@ class BaseRotatingLogger(Listener, BaseIOHandler, ABC):
             return logger
         elif isinstance(logger, Printer) and logger.file is not None:
             return cast(FileIOMessageWriter, logger)
+        elif isinstance(logger, can.io.SqliteWriter):
+            raise Exception(
+                "The SqliteWriter is not available in conjunction"
+                "with the sized rotating logger."
+            )
         else:
             raise Exception(
                 "The Logger corresponding to the arguments is not a FileIOMessageWriter or "

@@ -8,7 +8,7 @@ import time
 import threading
 import logging
 import sqlite3
-from typing import Generator
+from typing import Generator, Any
 
 from can.listener import BufferedReader
 from can.message import Message
@@ -128,7 +128,9 @@ class SqliteWriter(MessageWriter, BufferedReader):
     MAX_BUFFER_SIZE_BEFORE_WRITES = 500
     """Maximum number of messages to buffer before writing to the database"""
 
-    def __init__(self, file: StringPathLike, table_name: str = "messages") -> None:
+    def __init__(
+        self, file: StringPathLike, table_name: str = "messages", **options: Any
+    ) -> None:
         """
         :param file: a `str` or path like object that points
                      to the database file to use
