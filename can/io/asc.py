@@ -349,7 +349,10 @@ class ASCWriter(FileIOMessageWriter):
     FORMAT_EVENT = "{timestamp: 9.6f} {message}\n"
 
     def __init__(
-        self, file: Union[StringPathLike, TextIO], channel: int = 1, **kwargs: Any,
+        self,
+        file: Union[StringPathLike, TextIO],
+        channel: int = 1,
+        **kwargs: Any,
     ) -> None:
         """
         :param file: a path-like object or as file-like object to write to
