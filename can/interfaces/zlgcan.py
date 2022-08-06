@@ -156,8 +156,8 @@ def zlg_convert_msg(msg, **kwargs):                        # channel=None, trans
 class ZCanBus(BusABC):
 
     def __init__(self,
+                 channel: Union[int, Sequence[int], str] = None, *,
                  device_type: ZCANDeviceType,
-                 channel: Union[int, Sequence[int], str] = None,
                  device_index: int = 0,
                  rx_queue_size: Optional[int] = None,
                  configs: Union[list, tuple] = None,

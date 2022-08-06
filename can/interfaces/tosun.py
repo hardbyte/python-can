@@ -63,12 +63,12 @@ def tosun_convert_msg(msg):
 
 class TosunBus(can.BusABC):
 
-    def __init__(self, mappings: list[dict],
+    def __init__(self, channel: Any = None, *,
+                 mappings: list[dict],
                  configs: Union[List[dict], Tuple[dict]],
                  fifo_status: str = 'enable',
                  turbo_enable: bool = False,
                  receive_own_messages=True,
-                 channel: Any = None,
                  rx_queue_size: Optional[int] = None,
                  can_filters: Optional[can.typechecking.CanFilters] = None,
                  **kwargs: object):
