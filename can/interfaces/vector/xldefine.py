@@ -318,3 +318,9 @@ class XL_HardwareType(IntEnum):
     XL_HWTYPE_VX1161A = 114
     XL_HWTYPE_VX1161B = 115
     XL_MAX_HWTYPE = 120
+
+
+class XL_SyncPulseSource(IntEnum):
+    XL_SYNC_PULSE_EXTERNAL = 0
+    XL_SYNC_PULSE_OUR = 1
+    XL_SYNC_PULSE_OUR_SHARED = 2

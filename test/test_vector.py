@@ -68,6 +68,9 @@ class TestVectorBus(unittest.TestCase):
 
         # various functions
         can.interfaces.vector.canlib.xldriver.xlCanFlushTransmitQueue = Mock()
+        can.interfaces.vector.canlib.xldriver.xlSetTimerRate = Mock()
+        can.interfaces.vector.canlib.xldriver.xlGenerateSyncPulse = Mock()
+        can.interfaces.vector.canlib.xldriver.xlFlushReceiveQueue = Mock()
         can.interfaces.vector.canlib.WaitForSingleObject = Mock()
 
         self.bus = None
@@ -272,12 +275,32 @@ class TestVectorBus(unittest.TestCase):
         assert canlib.xldriver.xlSetApplConfig.called
 
     def test_set_timer_rate(self) -> None:
-        canlib.xldriver.xlSetTimerRate = Mock()
         bus: canlib.VectorBus = can.Bus(
             channel=0, bustype="vector", fd=True, _testing=True
         )
         bus.set_timer_rate(timer_rate_ms=1)
         assert canlib.xldriver.xlSetTimerRate.called
+
+    def test_flush_rx_buffer(self) -> None:
+        bus: canlib.VectorBus = can.Bus(
+            channel=0, bustype="vector", fd=True, _testing=True
+        )
+        bus.flush_rx_buffer()
+        assert canlib.xldriver.xlFlushReceiveQueue.called
+
+    def test_request_chip_state(self) -> None:
+        bus: canlib.VectorBus = can.Bus(
+            channel=0, bustype="vector", fd=True, _testing=True
+        )
+        bus.request_chip_state()
+        assert canlib.xldriver.xlCanRequestChipState.called
+
+    def test_generate_sync_pulse(self) -> None:
+        bus: canlib.VectorBus = can.Bus(
+            channel=0, bustype="vector", fd=True, _testing=True
+        )
+        bus.generate_sync_pulse()
+        assert canlib.xldriver.xlGenerateSyncPulse.called
 
     def test_called_without_testing_argument(self) -> None:
         """This tests if an exception is thrown when we are not running on Windows."""

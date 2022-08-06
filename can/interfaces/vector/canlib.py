@@ -521,6 +521,22 @@ class VectorBus(BusABC):
         :param event: XLevent that could have a `XL_CHIP_STATE`, `XL_TIMER` or `XL_SYNC_PULSE` tag.
         """
 
+        # example implementation for processing a chipstate event
+        if event.tag == xldefine.XL_EventTags.XL_CHIP_STATE.value:
+            _bus_status = xldefine.XL_BusStatus(event.tagData.chipState.busStatus)
+            _tx_error_counter = event.tagData.chipState.txErrorCounter
+            _rx_error_counter = event.tagData.chipState.rxErrorCounter
+            return
+
+        # example implementation for processing a sync pulse event
+        if event.tag == xldefine.XL_EventTags.XL_SYNC_PULSE.value:
+            _event_timestamp = event.timeStamp * 1e-9 + self._time_offset
+            _sync_trigger = xldefine.XL_SyncPulseSource(
+                event.tagData.syncPulse.pulseCode
+            )
+            _sync_time = event.tagData.syncPulse.time
+            return
+
     def handle_canfd_event(self, event: xlclass.XLcanRxEvent) -> None:
         """Handle non-message CAN FD events.
 
@@ -531,6 +547,32 @@ class VectorBus(BusABC):
         :param event: `XLcanRxEvent` that could have a `XL_CAN_EV_TAG_RX_ERROR`,
             `XL_CAN_EV_TAG_TX_ERROR`, `XL_TIMER` or `XL_CAN_EV_TAG_CHIP_STATE` tag.
         """
+
+        # example implementation for processing a chipstate event
+        if event.tag == xldefine.XL_CANFD_RX_EventTags.XL_CAN_EV_TAG_CHIP_STATE.value:
+            _bus_status = xldefine.XL_BusStatus(event.tagData.canChipState.busStatus)
+            _tx_error_counter = event.tagData.canChipState.txErrorCounter
+            _rx_error_counter = event.tagData.canChipState.rxErrorCounter
+            return
+
+        # example implementation for processing a sync pulse event
+        if event.tag == xldefine.XL_CANFD_RX_EventTags.XL_SYNC_PULSE.value:
+            _event_timestamp = event.timeStamp * 1e-9 + self._time_offset
+            _sync_trigger = xldefine.XL_SyncPulseSource(
+                event.tagData.canSyncPulse.triggerSource
+            )
+            _sync_time = event.tagData.canSyncPulse.time
+            return
+
+        # example implementation for processing a bus error
+        if event.tag in (
+            xldefine.XL_CANFD_RX_EventTags.XL_CAN_EV_TAG_RX_ERROR,
+            xldefine.XL_CANFD_RX_EventTags.XL_CAN_EV_TAG_TX_ERROR,
+        ):
+            _error_code = xldefine.XL_CANFD_RX_EV_ERROR_errorCode(
+                event.tagData.canError.errorCode
+            )
+            return
 
     def send(self, msg: Message, timeout: Optional[float] = None) -> None:
         self._send_sequence([msg])
@@ -620,6 +662,10 @@ class VectorBus(BusABC):
         xl_can_tx_event.tagData.canMsg.data = tuple(msg.data)
 
         return xl_can_tx_event
+
+    def flush_rx_buffer(self) -> None:
+        """Flush the receive queue."""
+        self.xldriver.xlFlushReceiveQueue(self.port_handle)
 
     def flush_tx_buffer(self) -> None:
         self.xldriver.xlCanFlushTransmitQueue(self.port_handle, self.mask)
@@ -779,6 +825,20 @@ class VectorBus(BusABC):
         """
         timer_rate_10us = timer_rate_ms * 100
         self.xldriver.xlSetTimerRate(self.port_handle, timer_rate_10us)
+
+    def request_chip_state(self) -> None:
+        """This function requests a CAN controller chipstate for all selected channels.
+        For each channel an XL_CHIPSTATE event can be received by implementing
+        VectorBus.handle_can_event() or VectorBus.handle_canfd_event().
+        """
+        xldriver.xlCanRequestChipState(self.port_handle, self.mask)
+
+    def generate_sync_pulse(self) -> None:
+        """This function generates a sync pulse at the hardware synchronization line
+        (hardware party line) with a maximum frequency of 10 Hz. It is only allowed
+        to generate a sync pulse at one channel and at one device at the same time.
+        """
+        xldriver.xlGenerateSyncPulse(self.port_handle, self.mask)
 
 
 class VectorChannelConfig(NamedTuple):
