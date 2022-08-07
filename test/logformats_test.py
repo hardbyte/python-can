@@ -311,7 +311,7 @@ class ReaderWriterTest(unittest.TestCase, ComparingMessagesTestCase, metaclass=A
         # use append mode for second half
         try:
             writer = self.writer_constructor(self.test_file_name, append=True)
-        except TypeError as e:
+        except ValueError as e:
             # maybe "append" is not a formal parameter (this is the case for SqliteWriter)
             try:
                 writer = self.writer_constructor(self.test_file_name)
