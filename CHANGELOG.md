@@ -1,3 +1,34 @@
+Version 4.1.0 (WIP)
+====
+
+Bug Fixes
+---------
+
+* Fix BLF timestamp conversion (#1266, #1273)
+* Fix channel2int conversion (#1268, #1269)
+* Fix failure to initiate the Neousys DLL (#1281)
+* Fix AttributeError in IscanError (#1292, #1293)
+* Add missing vector devices (#1296)
+* Fix timestamp handling in udp_multicast on macOS (#1275, #1278)
+* Set default mode for FileIOMessageWriter to wt instead of rt (#1303)
+* Fix fileno error on Windows (#1312, #1313, #1333)
+* Remove redundant ``writer.stop()`` call that throws error (#1316, #1317)
+* Fix error for DLC > 8 in ASCReader (#1299, #1301)
+* Detect and cast types of CLI ``extra_args`` (#1280, #1328)
+
+Features
+--------
+
+* Add direction support to canutils logger (#1244)
+* Use common CAN interface names in canutils logfile (#1271)
+* Improve gs_usb usability and fix loopback frames (#1270)
+* Add ``-a, --append`` option to logger CLI API (#1326, #1327, #1361)
+* Allow ICSApiError to be pickled and un-pickled (#1341)
+* Sort interface names in CLI API to make documentation reproducible (#1342)
+* Exclude repository-configuration from git-archive (#1343)
+* Add device_id parameter to PcanBus constructor (#1346)
+* Find USB2CAN Serial Number by USB Name (#1129)
+
 Version 4.0.0
 ====
 
