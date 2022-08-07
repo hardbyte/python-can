@@ -76,31 +76,21 @@ class Back2BackTestCase(unittest.TestCase):
         if not sent_msg.is_remote_frame:
             self.assertSequenceEqual(recv_msg.data, sent_msg.data)
 
-    def _send_and_receive(self, msg: can.Message, bus_clear_timeout: float = 0) -> None:
+    def _send_and_receive(self, msg: can.Message) -> None:
         # Send with bus 1, receive with bus 2
-        print(f"Send on Bus 1: {msg}")
         self.bus1.send(msg)
-
         recv_msg = self.bus2.recv(self.TIMEOUT)
-        print(f"Received on Bus 2: {recv_msg}")
         self._check_received_message(recv_msg, msg)
-
         # Some buses may receive their own messages. Remove it from the queue
-        cleared_msg = self.bus1.recv(bus_clear_timeout)
-        print(f"Bus 1 msg cleared: {cleared_msg}")
+        self.bus1.recv(0)
 
         # Send with bus 2, receive with bus 1
         # Add 1 to arbitration ID to make it a different message
         msg.arbitration_id += 1
-        print(f"Send on Bus 2: {msg}")
         self.bus2.send(msg)
-
         # Some buses may receive their own messages. Remove it from the queue
-        cleared_msg = self.bus2.recv(bus_clear_timeout)
-        print(f"Bus 2 msg cleared: {cleared_msg}")
-
+        self.bus2.recv(0)
         recv_msg = self.bus1.recv(self.TIMEOUT)
-        print(f"Received on Bus 1: {recv_msg}")
         self._check_received_message(recv_msg, msg)
 
     def test_no_message(self):
@@ -151,10 +141,6 @@ class Back2BackTestCase(unittest.TestCase):
     def test_dlc_less_than_eight(self):
         msg = can.Message(is_extended_id=False, arbitration_id=0x300, data=[4, 5, 6])
         self._send_and_receive(msg)
-
-    def test_dlc_less_than_eight_with_clear_timeout(self):
-        msg = can.Message(is_extended_id=False, arbitration_id=0x300, data=[4, 5, 6])
-        self._send_and_receive(msg, bus_clear_timeout=0.3)
 
     @unittest.skip(
         "TODO: how shall this be treated if sending messages locally? should be done uniformly"
