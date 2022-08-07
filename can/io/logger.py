@@ -6,6 +6,8 @@ import os
 import pathlib
 from abc import ABC, abstractmethod
 from datetime import datetime
+import time
+import warnings
 import gzip
 from typing import Any, Optional, Callable, Type, Tuple, cast, Dict
 
@@ -259,7 +261,121 @@ class BaseRotatingLogger(Listener, BaseIOHandler, ABC):
         """Perform rollover."""
 
 
-class SizedRotatingLogger(BaseRotatingLogger):
+class RotatingLogger(BaseRotatingLogger):
+    """Log CAN messages to a sequence of files with a given maximum size.
+
+    The logger creates a log file with the given `base_filename`. When the
+    size threshold is reached the current log file is closed and renamed
+    by adding a timestamp and the rollover count. A new log file is then
+    created and written to.
+
+    This behavior can be customized by setting the :attr:`namer` and
+    :attr:`rotator` attribute.
+
+    Example::
+
+        from can import Notifier, SizedRotatingLogger
+        from can.interfaces.vector import VectorBus
+
+        bus = VectorBus(channel=[0], app_name="CANape", fd=True)
+
+        logger = SizedRotatingLogger(
+            base_filename="my_logfile.asc",
+            max_bytes=5 * 1024 ** 2,  # =5MB
+        )
+        logger.rollover_count = 23  # start counter at 23
+
+        notifier = Notifier(bus=bus, listeners=[logger])
+
+    The SizedRotatingLogger currently supports the formats
+      * .asc: :class:`can.ASCWriter`
+      * .blf :class:`can.BLFWriter`
+      * .csv: :class:`can.CSVWriter`
+      * .log :class:`can.CanutilsLogWriter`
+      * .txt :class:`can.Printer` (if pointing to a file)
+
+    .. note::
+        The :class:`can.SqliteWriter` is not supported yet.
+
+    The log files on disk may be incomplete due to buffering until
+    :meth:`~can.Listener.stop` is called.
+    """
+
+    last_rollover_time = time.time()
+
+    def __init__(
+        self,
+        base_filename: StringPathLike,
+        *args: Any,
+        max_bytes: int = 0,
+        delta_t: int = 0,
+        **kwargs: Any,
+    ) -> None:
+        """
+        :param base_filename:
+            A path-like object for the base filename. The log file format is
+            defined by the suffix of `base_filename`.
+        :param max_bytes:
+            The size threshold at which a new log file shall be created. If set
+            less than or equal to 0, no rollover will be performed.
+        :param delta_t:
+            The elapsed time threshold at which a new log file shall be
+            created. If set less than or equal to 0, no rollover will be
+            performed.
+        """
+        super().__init__(*args, **kwargs)
+
+        self.base_filename = os.path.abspath(base_filename)
+
+        # Rotation parameters
+        self.max_bytes = max_bytes  # Maximum bytes for rotation (bytes)
+        self.delta_t = delta_t  # Time difference between rotation (seconds)
+
+        self._writer = self._get_new_writer(self.base_filename)
+
+    def should_rollover(self, msg: Message) -> bool:
+        # Check to see if a file rollover should occur based on file size
+        # (bytes) and elapsed time (seconds) since last rollover.
+        if self.max_bytes <= 0 and self.delta_t <= 0:
+            return False
+
+        # Check to see if the file size is greater than max bytes
+        if self.writer.file.tell() >= self.max_bytes > 0:
+            return True
+        # Check to see if elapsed time is greater than delta_t
+        now = time.time()
+        if now - self.last_rollover_time > self.delta_t > 0:
+            self.last_rollover_time = now
+            return True
+
+        return False
+
+    def do_rollover(self) -> None:
+        # Perform the file rollover.
+        if self.writer:
+            self.writer.stop()
+
+        sfn = self.base_filename
+        dfn = self.rotation_filename(self._default_name())
+        self.rotate(sfn, dfn)
+
+        self._writer = self._get_new_writer(self.base_filename)
+
+    def _default_name(self) -> StringPathLike:
+        """Generate the default rotation filename."""
+        path = pathlib.Path(self.base_filename)
+        new_name = (
+            path.stem
+            + "_"
+            + datetime.now().strftime("%Y-%m-%dT%H%M%S")
+            + "_"
+            + f"#{self.rollover_count:03}"
+            + path.suffix
+        )
+        return str(path.parent / new_name)
+
+
+class SizedRotatingLogger(RotatingLogger):
     """Log CAN messages to a sequence of files with a given maximum size.
 
     The logger creates a log file with the given `base_filename`. When the
@@ -314,41 +430,12 @@ class SizedRotatingLogger(BaseRotatingLogger):
             The size threshold at which a new log file shall be created. If set to 0, no
             rollover will be performed.
         """
-        super().__init__(*args, **kwargs)
-
-        self.base_filename = os.path.abspath(base_filename)
-        self.max_bytes = max_bytes
-
-        self._writer = self._get_new_writer(self.base_filename)
-
-    def should_rollover(self, msg: Message) -> bool:
-        if self.max_bytes <= 0:
-            return False
-
-        if self.writer.file.tell() >= self.max_bytes:
-            return True
-
-        return False
-
-    def do_rollover(self) -> None:
-        if self.writer:
-            self.writer.stop()
-
-        sfn = self.base_filename
-        dfn = self.rotation_filename(self._default_name())
-        self.rotate(sfn, dfn)
-
-        self._writer = self._get_new_writer(self.base_filename)
-
-    def _default_name(self) -> StringPathLike:
-        """Generate the default rotation filename."""
-        path = pathlib.Path(self.base_filename)
-        new_name = (
-            path.stem
-            + "_"
-            + datetime.now().strftime("%Y-%m-%dT%H%M%S")
-            + "_"
-            + f"#{self.rollover_count:03}"
-            + path.suffix
+        # This object is deprecated as of 4.1 and will be removed in 5.0.
+        warnings.simplefilter("always", DeprecationWarning)
+        warnings.warn(
+            "SizedRotatingLogger is being replaced with the "
+            "generalized RotatingLogger in python-can 5.0.",
+            DeprecationWarning,
         )
-        return str(path.parent / new_name)
+        # Initialize self as a RotatingLogger
+        super().__init__(base_filename, *args, max_bytes=max_bytes, **kwargs)

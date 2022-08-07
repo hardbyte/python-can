@@ -21,7 +21,7 @@ import errno
 from typing import Any, Dict, List, Union, Sequence, Tuple
 
 import can
-from . import Bus, BusState, Logger, SizedRotatingLogger
+from . import Bus, BusState, Logger, SizedRotatingLogger, RotatingLogger
 from .typechecking import CanFilter, CanFilters
 
 
@@ -193,7 +193,16 @@ def main() -> None:
         type=int,
         help="Maximum file size in bytes. Rotate log file when size threshold "
         "is reached.",
-        default=None,
+        default=0,
+    )
+
+    parser.add_argument(
+        "-t",
+        "--time_difference",
+        dest="delta_t",
+        type=int,
+        help="Time difference in seconds between file rollover.",
+        default=0,
     )
 
     parser.add_argument(
@@ -235,9 +244,12 @@ def main() -> None:
     print(f"Can Logger (Started on {datetime.now()})")
 
     options = {"append": results.append}
-    if results.file_size:
-        logger = SizedRotatingLogger(
-            base_filename=results.log_file, max_bytes=results.file_size, **options
+    if results.file_size or results.delta_t:
+        logger = RotatingLogger(
+            base_filename=results.log_file,
+            max_bytes=results.file_size,
+            delta_t=results.delta_t,
+            **options,
         )
     else:
         logger = Logger(filename=results.log_file, **options)  # type: ignore
