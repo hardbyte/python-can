@@ -831,14 +831,14 @@ class VectorBus(BusABC):
         For each channel an XL_CHIPSTATE event can be received by implementing
         VectorBus.handle_can_event() or VectorBus.handle_canfd_event().
         """
-        xldriver.xlCanRequestChipState(self.port_handle, self.mask)
+        self.xldriver.xlCanRequestChipState(self.port_handle, self.mask)
 
     def generate_sync_pulse(self) -> None:
         """This function generates a sync pulse at the hardware synchronization line
         (hardware party line) with a maximum frequency of 10 Hz. It is only allowed
         to generate a sync pulse at one channel and at one device at the same time.
         """
-        xldriver.xlGenerateSyncPulse(self.port_handle, self.mask)
+        self.xldriver.xlGenerateSyncPulse(self.port_handle, self.mask)
 
 
 class VectorChannelConfig(NamedTuple):
