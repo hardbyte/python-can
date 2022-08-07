@@ -28,7 +28,9 @@ except ImportError:
     MF4Reader = None
 
 
-_OPTIONAL_READERS: typing_extensions.Final[typing.Dict[str, typing.Type[MessageReader]]] = {}
+_OPTIONAL_READERS: typing_extensions.Final[
+    typing.Dict[str, typing.Type[MessageReader]]
+] = {}
 if MF4Reader:
     _OPTIONAL_READERS[".mf4"] = MF4Reader
 
