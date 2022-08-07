@@ -362,7 +362,7 @@ class ASCWriter(FileIOMessageWriter):
                         have a channel set
         """
         if kwargs.get("append", False):
-            raise TypeError(
+            raise ValueError(
                 f"{self.__class__.__name__} is currently not equipped to "
                 f"append messages to an existing file."
             )

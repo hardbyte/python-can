@@ -140,7 +140,7 @@ class SqliteWriter(MessageWriter, BufferedReader):
                      do not accept file-like objects as the `file` parameter.
         """
         if kwargs.get("append", False):
-            raise TypeError(
+            raise ValueError(
                 f"The append argument should not be used in "
                 f"conjunction with the {self.__class__.__name__}."
             )
