@@ -58,11 +58,12 @@ ERR_DTYPE = np.dtype(
 
 RTR_DTYPE = np.dtype(
     [
-        ("CAN_DataFrame.BusChannel", "<u1"),
-        ("CAN_DataFrame.ID", "<u4"),
-        ("CAN_DataFrame.IDE", "<u1"),
-        ("CAN_DataFrame.DLC", "<u1"),
-        ("CAN_DataFrame.Dir", "<u1"),
+        ("CAN_RemoteFrame.BusChannel", "<u1"),
+        ("CAN_RemoteFrame.ID", "<u4"),
+        ("CAN_RemoteFrame.IDE", "<u1"),
+        ("CAN_RemoteFrame.DLC", "<u1"),
+        ("CAN_RemoteFrame.DataLength", "<u1"),
+        ("CAN_RemoteFrame.Dir", "<u1"),
     ]
 )
 
@@ -145,20 +146,23 @@ class MF4Writer(FileIOMessageWriter):
                 samples=np.array([], dtype=ERR_DTYPE),
                 timestamps=np.array([], dtype="<f8"),
                 attachment=attachment,
+                source=acquisition_source,
             )
         )
 
         # remote frames group
         self._mdf.append(
             Signal(
-                name="CAN_DataFrame",
+                name="CAN_RemoteFrame",
                 samples=np.array([], dtype=RTR_DTYPE),
                 timestamps=np.array([], dtype="<f8"),
                 attachment=attachment,
+                source=acquisition_source,
             )
         )
 
-        self._buffer = np.zeros(1, dtype=STD_DTYPE)
+        self._std_buffer = np.zeros(1, dtype=STD_DTYPE)
+        self._err_buffer = np.zeros(1, dtype=ERR_DTYPE)
         self._rtr_buffer = np.zeros(1, dtype=RTR_DTYPE)
 
     def stop(self) -> None:
@@ -169,41 +173,6 @@ class MF4Writer(FileIOMessageWriter):
     def on_message_received(self, msg: Message) -> None:
         channel = channel2int(msg.channel)
 
-        buffer = self._buffer
-        rtr_buffer = self._rtr_buffer
-
-        if msg.is_remote_frame:
-            if channel is not None:
-                rtr_buffer["CAN_DataFrame.BusChannel"] = channel
-
-            rtr_buffer["CAN_DataFrame.ID"] = msg.arbitration_id
-            rtr_buffer["CAN_DataFrame.IDE"] = int(msg.is_extended_id)
-            rtr_buffer["CAN_DataFrame.DLC"] = msg.dlc
-
-        else:
-            if channel is not None:
-                buffer["CAN_DataFrame.BusChannel"] = channel
-
-            buffer["CAN_DataFrame.ID"] = msg.arbitration_id
-            buffer["CAN_DataFrame.IDE"] = int(msg.is_extended_id)
-            data = msg.data
-            size = len(data)
-            buffer["CAN_DataFrame.DataLength"] = size
-            buffer["CAN_DataFrame.DataBytes"][0, :size] = data
-            if msg.is_fd:
-                buffer["CAN_DataFrame.DLC"] = len2dlc(msg.dlc)
-                buffer["CAN_DataFrame.ESI"] = int(msg.error_state_indicator)
-                buffer["CAN_DataFrame.BRS"] = int(msg.bitrate_switch)
-                buffer["CAN_DataFrame.EDL"] = 1
-            else:
-                buffer["CAN_DataFrame.DLC"] = msg.dlc
-                buffer["CAN_DataFrame.ESI"] = 0
-                buffer["CAN_DataFrame.BRS"] = 0
-                buffer["CAN_DataFrame.EDL"] = 0
-
-            self._buffer = np.zeros(1, dtype=STD_DTYPE)
-            self._rtr_buffer = np.zeros(1, dtype=RTR_DTYPE)
-
         timestamp = msg.timestamp
         if timestamp is None:
             timestamp = self.last_timestamp
@@ -213,16 +182,71 @@ class MF4Writer(FileIOMessageWriter):
         timestamp -= self._start_time
 
         if msg.is_remote_frame:
-            sigs = [(np.array([timestamp]), None), (rtr_buffer, None)]
-        else:
-            sigs = [(np.array([timestamp]), None), (buffer, None)]
+            if channel is not None:
+                self._rtr_buffer["CAN_RemoteFrame.BusChannel"] = channel
 
-        if msg.is_remote_frame:
+            self._rtr_buffer["CAN_RemoteFrame.ID"] = msg.arbitration_id
+            self._rtr_buffer["CAN_RemoteFrame.IDE"] = int(msg.is_extended_id)
+            self._rtr_buffer["CAN_RemoteFrame.Dir"] = 0 if msg.is_rx else 1
+            self._rtr_buffer["CAN_RemoteFrame.DLC"] = msg.dlc
+
+            sigs = [(np.array([timestamp]), None), (self._rtr_buffer, None)]
             self._mdf.extend(2, sigs)
+
         elif msg.is_error_frame:
+            if channel is not None:
+                self._err_buffer["CAN_ErrorFrame.BusChannel"] = channel
+
+            self._err_buffer["CAN_ErrorFrame.ID"] = msg.arbitration_id
+            self._err_buffer["CAN_ErrorFrame.IDE"] = int(msg.is_extended_id)
+            self._err_buffer["CAN_ErrorFrame.Dir"] = 0 if msg.is_rx else 1
+            data = msg.data
+            size = len(data)
+            self._err_buffer["CAN_ErrorFrame.DataLength"] = size
+            self._err_buffer["CAN_ErrorFrame.DataBytes"][0, :size] = data
+            if msg.is_fd:
+                self._err_buffer["CAN_ErrorFrame.DLC"] = len2dlc(msg.dlc)
+                self._err_buffer["CAN_ErrorFrame.ESI"] = int(msg.error_state_indicator)
+                self._err_buffer["CAN_ErrorFrame.BRS"] = int(msg.bitrate_switch)
+                self._err_buffer["CAN_ErrorFrame.EDL"] = 1
+            else:
+                self._err_buffer["CAN_ErrorFrame.DLC"] = msg.dlc
+                self._err_buffer["CAN_ErrorFrame.ESI"] = 0
+                self._err_buffer["CAN_ErrorFrame.BRS"] = 0
+                self._err_buffer["CAN_ErrorFrame.EDL"] = 0
+
+            sigs = [(np.array([timestamp]), None), (self._err_buffer, None)]
             self._mdf.extend(1, sigs)
+
         else:
+            if channel is not None:
+                self._std_buffer["CAN_DataFrame.BusChannel"] = channel
+
+            self._std_buffer["CAN_DataFrame.ID"] = msg.arbitration_id
+            self._std_buffer["CAN_DataFrame.IDE"] = int(msg.is_extended_id)
+            self._std_buffer["CAN_DataFrame.Dir"] = 0 if msg.is_rx else 1
+            data = msg.data
+            size = len(data)
+            self._std_buffer["CAN_DataFrame.DataLength"] = size
+            self._std_buffer["CAN_DataFrame.DataBytes"][0, :size] = data
+            if msg.is_fd:
+                self._std_buffer["CAN_DataFrame.DLC"] = len2dlc(msg.dlc)
+                self._std_buffer["CAN_DataFrame.ESI"] = int(msg.error_state_indicator)
+                self._std_buffer["CAN_DataFrame.BRS"] = int(msg.bitrate_switch)
+                self._std_buffer["CAN_DataFrame.EDL"] = 1
+            else:
+                self._std_buffer["CAN_DataFrame.DLC"] = msg.dlc
+                self._std_buffer["CAN_DataFrame.ESI"] = 0
+                self._std_buffer["CAN_DataFrame.BRS"] = 0
+                self._std_buffer["CAN_DataFrame.EDL"] = 0
+
+            sigs = [(np.array([timestamp]), None), (self._std_buffer, None)]
             self._mdf.extend(0, sigs)
+
+        # reset buffer structure
+        self._std_buffer = np.zeros(1, dtype=STD_DTYPE)
+        self._err_buffer = np.zeros(1, dtype=ERR_DTYPE)
+        self._rtr_buffer = np.zeros(1, dtype=RTR_DTYPE)
 
 
 class MF4Reader(MessageReader):
@@ -269,12 +293,16 @@ class MF4Reader(MessageReader):
                     record_count=1,
                 )
 
-                if sample["CAN_DataFrame.EDL"] == 0:
+                try:
+                    channel = int(sample["CAN_DataFrame.BusChannel"][0])
+                except ValueError:
+                    channel = None
 
-                    is_extended_id = bool(sample["CAN_DataFrame.IDE"])
-                    channel = sample["CAN_DataFrame.ID"]
-                    arbitration_id = int(sample["CAN_DataFrame.ID"])
-                    size = int(sample["CAN_DataFrame.DataLength"])
+                if sample["CAN_DataFrame.EDL"] == 0:
+                    is_extended_id = bool(sample["CAN_DataFrame.IDE"][0])
+                    arbitration_id = int(sample["CAN_DataFrame.ID"][0])
+                    is_rx = int(sample["CAN_DataFrame.Dir"][0]) == 0
+                    size = int(sample["CAN_DataFrame.DataLength"][0])
                     dlc = int(sample["CAN_DataFrame.DLC"][0])
                     data = sample["CAN_DataFrame.DataBytes"][0, :size].tobytes()
 
@@ -285,20 +313,21 @@ class MF4Reader(MessageReader):
                         is_fd=False,
                         is_extended_id=is_extended_id,
                         channel=channel,
+                        is_rx=is_rx,
                         arbitration_id=arbitration_id,
                         data=data,
                         dlc=dlc,
                     )
 
                 else:
-                    is_extended_id = bool(sample["CAN_DataFrame.IDE"])
-                    channel = sample["CAN_DataFrame.ID"]
-                    arbitration_id = int(sample["CAN_DataFrame.ID"])
-                    size = int(sample["CAN_DataFrame.DataLength"])
+                    is_extended_id = bool(sample["CAN_DataFrame.IDE"][0])
+                    arbitration_id = int(sample["CAN_DataFrame.ID"][0])
+                    is_rx = int(sample["CAN_DataFrame.Dir"][0]) == 0
+                    size = int(sample["CAN_DataFrame.DataLength"][0])
                     dlc = dlc2len(sample["CAN_DataFrame.DLC"][0])
                     data = sample["CAN_DataFrame.DataBytes"][0, :size].tobytes()
-                    error_state_indicator = bool(sample["CAN_DataFrame.ESI"])
-                    bitrate_switch = bool(sample["CAN_DataFrame.BRS"])
+                    error_state_indicator = bool(sample["CAN_DataFrame.ESI"][0])
+                    bitrate_switch = bool(sample["CAN_DataFrame.BRS"][0])
 
                     msg = Message(
                         timestamp=timestamp + self.start_timestamp,
@@ -308,6 +337,7 @@ class MF4Reader(MessageReader):
                         is_extended_id=is_extended_id,
                         channel=channel,
                         arbitration_id=arbitration_id,
+                        is_rx=is_rx,
                         data=data,
                         dlc=dlc,
                         bitrate_switch=bitrate_switch,
@@ -328,13 +358,17 @@ class MF4Reader(MessageReader):
                     record_count=1,
                 )
 
-                if sample["CAN_ErrorFrame.EDL"] == 0:
+                try:
+                    channel = int(sample["CAN_ErrorFrame.BusChannel"][0])
+                except ValueError:
+                    channel = None
 
-                    is_extended_id = bool(sample["CAN_ErrorFrame.IDE"])
-                    channel = sample["CAN_ErrorFrame.ID"]
-                    arbitration_id = int(sample["CAN_ErrorFrame.ID"])
-                    size = int(sample["CAN_ErrorFrame.DataLength"])
-                    dlc = int(sample["CAN_ErrorFrame.DLC"])
+                if sample["CAN_ErrorFrame.EDL"] == 0:
+                    is_extended_id = bool(sample["CAN_ErrorFrame.IDE"][0])
+                    arbitration_id = int(sample["CAN_ErrorFrame.ID"][0])
+                    is_rx = int(sample["CAN_ErrorFrame.Dir"][0]) == 0
+                    size = int(sample["CAN_ErrorFrame.DataLength"][0])
+                    dlc = int(sample["CAN_ErrorFrame.DLC"][0])
                     data = sample["CAN_ErrorFrame.DataBytes"][0, :size].tobytes()
 
                     msg = Message(
@@ -345,19 +379,20 @@ class MF4Reader(MessageReader):
                         is_extended_id=is_extended_id,
                         channel=channel,
                         arbitration_id=arbitration_id,
+                        is_rx=is_rx,
                         data=data,
                         dlc=dlc,
                     )
 
                 else:
-                    is_extended_id = bool(sample["CAN_ErrorFrame.IDE"])
-                    channel = sample["CAN_ErrorFrame.ID"]
-                    arbitration_id = int(sample["CAN_ErrorFrame.ID"])
-                    size = int(sample["CAN_ErrorFrame.DataLength"])
-                    dlc = dlc2len(sample["CAN_ErrorFrame.DLC"])
+                    is_extended_id = bool(sample["CAN_ErrorFrame.IDE"][0])
+                    arbitration_id = int(sample["CAN_ErrorFrame.ID"][0])
+                    is_rx = int(sample["CAN_ErrorFrame.Dir"][0]) == 0
+                    size = int(sample["CAN_ErrorFrame.DataLength"][0])
+                    dlc = dlc2len(sample["CAN_ErrorFrame.DLC"][0])
                     data = sample["CAN_ErrorFrame.DataBytes"][0, :size].tobytes()
-                    error_state_indicator = bool(sample["CAN_ErrorFrame.ESI"])
-                    bitrate_switch = bool(sample["CAN_ErrorFrame.BRS"])
+                    error_state_indicator = bool(sample["CAN_ErrorFrame.ESI"][0])
+                    bitrate_switch = bool(sample["CAN_ErrorFrame.BRS"][0])
 
                     msg = Message(
                         timestamp=timestamp + self.start_timestamp,
@@ -367,6 +402,7 @@ class MF4Reader(MessageReader):
                         is_extended_id=is_extended_id,
                         channel=channel,
                         arbitration_id=arbitration_id,
+                        is_rx=is_rx,
                         data=data,
                         dlc=dlc,
                         bitrate_switch=bitrate_switch,
@@ -379,17 +415,22 @@ class MF4Reader(MessageReader):
             # remote frames
             else:
                 sample = self._mdf.get(
-                    "CAN_DataFrame",
+                    "CAN_RemoteFrame",
                     group=group_index,
                     raw=True,
                     record_offset=rtr_counter,
                     record_count=1,
                 )
 
-                is_extended_id = bool(sample["CAN_DataFrame.IDE"])
-                channel = sample["CAN_DataFrame.ID"]
-                arbitration_id = int(sample["CAN_DataFrame.ID"])
-                dlc = int(sample["CAN_DataFrame.DLC"])
+                try:
+                    channel = int(sample["CAN_RemoteFrame.BusChannel"][0])
+                except ValueError:
+                    channel = None
+
+                is_extended_id = bool(sample["CAN_RemoteFrame.IDE"][0])
+                arbitration_id = int(sample["CAN_RemoteFrame.ID"][0])
+                is_rx = int(sample["CAN_RemoteFrame.Dir"][0]) == 0
+                dlc = int(sample["CAN_RemoteFrame.DLC"][0])
 
                 msg = Message(
                     timestamp=timestamp + self.start_timestamp,
@@ -399,6 +440,7 @@ class MF4Reader(MessageReader):
                     is_extended_id=is_extended_id,
                     channel=channel,
                     arbitration_id=arbitration_id,
+                    is_rx=is_rx,
                     dlc=dlc,
                 )
 
