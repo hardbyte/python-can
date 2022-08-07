@@ -1,7 +1,7 @@
 """
 This module contains the generic :class:`LogReader` as
 well as :class:`MessageSync` which plays back messages
-in the recorded order an time intervals.
+in the recorded order and time intervals.
 """
 import gzip
 import pathlib
@@ -20,14 +20,16 @@ from .trc import TRCReader
 from ..typechecking import StringPathLike, FileLike, AcceptedIOType
 from ..message import Message
 
-
-MF4Reader: typing.Optional[typing.Type[MessageReader]] = None
+MF4Reader: typing.Optional[typing.Type[MessageReader]]
 try:
-    from .mf4 import MF4Reader as _MF4Reader
-
-    MF4Reader = _MF4Reader
+    from .mf4 import MF4Reader
 except ImportError:
-    pass
+    MF4Reader = None
+
+
+_OPTIONAL_READERS: typing.Final[typing.Dict[str, typing.Type[MessageReader]]] = {}
+if MF4Reader:
+    _OPTIONAL_READERS[".mf4"] = MF4Reader
 
 
 class LogReader(MessageReader):
@@ -40,7 +42,7 @@ class LogReader(MessageReader):
       * .csv
       * .db
       * .log
-      * .mf4
+      * .mf4 (optional, depends on asammdf)
       * .trc
 
     Gzip compressed files can be used as long as the original
@@ -68,8 +70,8 @@ class LogReader(MessageReader):
         ".csv": CSVReader,
         ".db": SqliteReader,
         ".log": CanutilsLogReader,
-        ".mf4": MF4Reader,
         ".trc": TRCReader,
+        **_OPTIONAL_READERS,
     }
 
     @staticmethod

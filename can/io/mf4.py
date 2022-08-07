@@ -9,21 +9,18 @@ from datetime import datetime
 from pathlib import Path
 import logging
 from hashlib import md5
+from typing import Any, Union, BinaryIO, Optional
 
 from ..message import Message
-from ..listener import Listener
-from ..util import channel2int
-from .generic import MessageReader, MessageWriter
+from ..typechecking import StringPathLike
+from ..util import channel2int, len2dlc, dlc2len
+from .generic import MessageReader, FileIOMessageWriter
 
-try:
-    from asammdf import Signal
-    from asammdf.mdf import MDF4
-    from asammdf.blocks.v4_blocks import SourceInformation
-    from asammdf.blocks.v4_constants import BUS_TYPE_CAN, SOURCE_BUS
-    import numpy as np
-
-except ImportError as error:
-    raise error
+from asammdf import Signal
+from asammdf.mdf import MDF4
+from asammdf.blocks.v4_blocks import SourceInformation
+from asammdf.blocks.v4_constants import BUS_TYPE_CAN, SOURCE_BUS
+import numpy as np
 
 
 CAN_MSG_EXT = 0x80000000
@@ -69,14 +66,10 @@ RTR_DTYPE = np.dtype(
     ]
 )
 
-FD_LEN2DLC = {12: 9, 16: 10, 20: 11, 24: 12, 32: 13, 48: 14, 64: 15}
-
-FD_DLC2LEN = {value: key for key, value in FD_LEN2DLC.items()}
-
 logger = logging.getLogger("can.io.mf4")
 
 
-class MF4Writer(MessageWriter, Listener):
+class MF4Writer(FileIOMessageWriter):
     """Logs CAN data to an ASAM Measurement Data File v4 (.mf4).
 
     MF4Writer does not support append mode.
@@ -86,7 +79,12 @@ class MF4Writer(MessageWriter, Listener):
     It the first message does not have a timestamp, it is set to zero.
     """
 
-    def __init__(self, file, database=None):
+    def __init__(
+        self,
+        file: Union[StringPathLike, BinaryIO],
+        database: Optional[StringPathLike] = None,
+        **kwargs: Any,
+    ) -> None:
         """
         :param file: a path-like object or as file-like object to write to
                         If this is a file-like object, is has to be opened in
@@ -94,6 +92,12 @@ class MF4Writer(MessageWriter, Listener):
         :param database: optional path to a DBC or ARXML file that contains
                             message description.
         """
+        if kwargs.get("append", False):
+            raise ValueError(
+                f"{self.__class__.__name__} is currently not equipped to "
+                f"append messages to an existing file."
+            )
+
         super().__init__(file, mode="w+b")
         now = datetime.now()
         self._mdf = MDF4(original_name=None)
@@ -110,7 +114,6 @@ class MF4Writer(MessageWriter, Listener):
         else:
             attachment = None
 
-        attachment = None
         acquisition_source = SourceInformation(
             source_type=SOURCE_BUS, bus_type=BUS_TYPE_CAN
         )
@@ -186,7 +189,7 @@ class MF4Writer(MessageWriter, Listener):
             buffer["CAN_DataFrame.DataLength"] = size
             buffer["CAN_DataFrame.DataBytes"][0, :size] = data
             if msg.is_fd:
-                buffer["CAN_DataFrame.DLC"] = FD_LEN2DLC[msg.dlc]
+                buffer["CAN_DataFrame.DLC"] = len2dlc(msg.dlc)
                 buffer["CAN_DataFrame.ESI"] = int(msg.error_state_indicator)
                 buffer["CAN_DataFrame.BRS"] = int(msg.bitrate_switch)
                 buffer["CAN_DataFrame.EDL"] = 1
@@ -290,10 +293,10 @@ class MF4Reader(MessageReader):
                     channel = sample["CAN_DataFrame.ID"]
                     arbitration_id = int(sample["CAN_DataFrame.ID"])
                     size = int(sample["CAN_DataFrame.DataLength"])
-                    dlc = FD_DLC2LEN(sample["CAN_DataFrame.DLC"])
+                    dlc = dlc2len(sample["CAN_DataFrame.DLC"])
                     data = sample["CAN_DataFrame.DataBytes"][0, :size].tobytes()
-                    error_state_indicator = int(sample["CAN_DataFrame.ESI"])
-                    bitrate_switch = int(sample["CAN_DataFrame.BRS"])
+                    error_state_indicator = bool(sample["CAN_DataFrame.ESI"])
+                    bitrate_switch = bool(sample["CAN_DataFrame.BRS"])
 
                     msg = Message(
                         timestamp=timestamp + self.start_timestamp,
@@ -349,10 +352,10 @@ class MF4Reader(MessageReader):
                     channel = sample["CAN_ErrorFrame.ID"]
                     arbitration_id = int(sample["CAN_ErrorFrame.ID"])
                     size = int(sample["CAN_ErrorFrame.DataLength"])
-                    dlc = FD_DLC2LEN(sample["CAN_ErrorFrame.DLC"])
+                    dlc = dlc2len(sample["CAN_ErrorFrame.DLC"])
                     data = sample["CAN_ErrorFrame.DataBytes"][0, :size].tobytes()
-                    error_state_indicator = int(sample["CAN_ErrorFrame.ESI"])
-                    bitrate_switch = int(sample["CAN_ErrorFrame.BRS"])
+                    error_state_indicator = bool(sample["CAN_ErrorFrame.ESI"])
+                    bitrate_switch = bool(sample["CAN_ErrorFrame.BRS"])
 
                     msg = Message(
                         timestamp=timestamp + self.start_timestamp,

@@ -11,7 +11,7 @@ from typing import Any, Optional, Callable, Type, Tuple, cast, Dict, Set
 
 from types import TracebackType
 
-from typing_extensions import Literal
+from typing_extensions import Literal, Final
 from pkg_resources import iter_entry_points
 
 from ..message import Message
@@ -26,13 +26,16 @@ from .printer import Printer
 from .trc import TRCWriter
 from ..typechecking import StringPathLike, FileLike, AcceptedIOType
 
-MF4Writer: Optional[Type[MessageWriter]] = None
+MF4Writer: Optional[Type[FileIOMessageWriter]]
 try:
-    from .mf4 import MF4Writer as _MF4Writer
-
-    MF4Writer = _MF4Writer
+    from .mf4 import MF4Writer
 except ImportError:
-    pass
+    MF4Writer = None
+
+
+_OPTIONAL_WRITERS: Final[Dict[str, Type[MessageWriter]]] = {}
+if MF4Writer:
+    _OPTIONAL_WRITERS[".mf4"] = MF4Writer
 
 
 class Logger(MessageWriter):  # pylint: disable=abstract-method
@@ -47,7 +50,7 @@ class Logger(MessageWriter):  # pylint: disable=abstract-method
       * .log :class:`can.CanutilsLogWriter`
       * .trc :class:`can.TRCWriter`
       * .txt :class:`can.Printer`
-      * .mf4 :class:`can.MF4Writer`
+      * .mf4 :class:`can.MF4Writer` (optional, depends on asammdf)
 
     Any of these formats can be used with gzip compression by appending
     the suffix .gz (e.g. filename.asc.gz). However, third-party tools might not
@@ -63,7 +66,7 @@ class Logger(MessageWriter):  # pylint: disable=abstract-method
     """
 
     fetched_plugins = False
-    message_writers: Dict[str, Optional[Type[MessageWriter]]] = {
+    message_writers: Dict[str, Type[MessageWriter]] = {
         ".asc": ASCWriter,
         ".blf": BLFWriter,
         ".csv": CSVWriter,
@@ -71,7 +74,7 @@ class Logger(MessageWriter):  # pylint: disable=abstract-method
         ".log": CanutilsLogWriter,
         ".trc": TRCWriter,
         ".txt": Printer,
-        ".mf4": MF4Writer,
+        **_OPTIONAL_WRITERS,
     }
 
     @staticmethod

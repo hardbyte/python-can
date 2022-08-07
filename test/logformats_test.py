@@ -35,6 +35,11 @@ from .message_helper import ComparingMessagesTestCase
 
 logging.basicConfig(level=logging.DEBUG)
 
+try:
+    from can import MF4Writer, MF4Reader
+except ImportError:
+    MF4Writer, MF4Reader = None, None
+
 
 class ReaderWriterExtensionTest(unittest.TestCase):
     def _get_suffix_case_variants(self, suffix):
@@ -723,26 +728,19 @@ class TestCsvFileFormat(ReaderWriterTest):
         )
 
 
-try:
-    from can import MF4Writer, MF4Reader
-except ImportError:
-    # seems to unsupported on this platform
-    # see GitHub issue #696: MF4 does not run on PyPy
-    pass
-else:
+@unittest.skipIf(MF4Writer is None, "MF4 is unavailable")
+class TestMF4FileFormat(ReaderWriterTest):
+    """Tests can.MF4Writer and can.MF4Reader"""
 
-    class TestMF4FileFormat(ReaderWriterTest):
-        """Tests can.MF4Writer and can.MF4Reader"""
-
-        def _setup_instance(self):
-            super()._setup_instance_helper(
-                MF4Writer,
-                MF4Reader,
-                binary_file=True,
-                check_comments=False,
-                preserves_channel=False,
-                adds_default_channel=0,
-            )
+    def _setup_instance(self):
+        super()._setup_instance_helper(
+            MF4Writer,
+            MF4Reader,
+            binary_file=True,
+            check_comments=False,
+            preserves_channel=False,
+            adds_default_channel=0,
+        )
 
 
 class TestSqliteDatabaseFormat(ReaderWriterTest):
