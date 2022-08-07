@@ -739,6 +739,7 @@ class TestMF4FileFormat(ReaderWriterTest):
             binary_file=True,
             check_comments=False,
             preserves_channel=False,
+            allowed_timestamp_delta=1e-4,
             adds_default_channel=0,
         )
 
