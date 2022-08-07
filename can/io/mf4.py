@@ -9,7 +9,7 @@ from datetime import datetime
 from pathlib import Path
 import logging
 from hashlib import md5
-from typing import Any, Union, BinaryIO, Optional
+from typing import Any, Union, BinaryIO, Optional, Generator
 
 from ..message import Message
 from ..typechecking import StringPathLike
@@ -17,7 +17,7 @@ from ..util import channel2int, len2dlc, dlc2len
 from .generic import MessageReader, FileIOMessageWriter
 
 from asammdf import Signal
-from asammdf.mdf import MDF4
+from asammdf.mdf import MDF
 from asammdf.blocks.v4_blocks import SourceInformation
 from asammdf.blocks.v4_constants import BUS_TYPE_CAN, SOURCE_BUS
 import numpy as np
@@ -83,14 +83,21 @@ class MF4Writer(FileIOMessageWriter):
         self,
         file: Union[StringPathLike, BinaryIO],
         database: Optional[StringPathLike] = None,
+        compression_level: int = 2,
         **kwargs: Any,
     ) -> None:
         """
-        :param file: a path-like object or as file-like object to write to
-                        If this is a file-like object, is has to be opened in
-                        binary write mode, not text write mode.
-        :param database: optional path to a DBC or ARXML file that contains
-                            message description.
+        :param file:
+            A path-like object or as file-like object to write to.
+            If this is a file-like object, is has to be opened in
+            binary write mode, not text write mode.
+        :param database:
+            optional path to a DBC or ARXML file that contains message description.
+        :param compression_level:
+            compression option as integer (default 2)
+            * 0 - no compression
+            * 1 - deflate (slower, but produces smaller files)
+            * 2 - transposition + deflate (slowest, but produces the smallest files)
         """
         if kwargs.get("append", False):
             raise ValueError(
@@ -100,9 +107,11 @@ class MF4Writer(FileIOMessageWriter):
 
         super().__init__(file, mode="w+b")
         now = datetime.now()
-        self._mdf = MDF4(original_name=None)
+        self._mdf = MDF(version="4.10")
         self._mdf.header.start_time = now
         self.last_timestamp = self._start_time = now.timestamp()
+
+        self._compression_level = compression_level
 
         if database:
             database = Path(database).resolve()
@@ -152,19 +161,12 @@ class MF4Writer(FileIOMessageWriter):
         self._buffer = np.zeros(1, dtype=STD_DTYPE)
         self._rtr_buffer = np.zeros(1, dtype=RTR_DTYPE)
 
-    def stop(self, compression=2):
-        """
-        :param file: compression option as integer (default 2)
-                        * 0 - no compression
-                        * 1 - deflate (slower, but produces smaller files)
-                        * 2 - transposition + deflate (slowest, but produces
-                        the smallest files)
-        """
-        self._mdf.save(self.file, compression=compression)
+    def stop(self) -> None:
+        self._mdf.save(self.file, compression=self._compression_level)
         self._mdf.close()
         super(MF4Writer, self).stop()
 
-    def on_message_received(self, msg):
+    def on_message_received(self, msg: Message) -> None:
         channel = channel2int(msg.channel)
 
         buffer = self._buffer
@@ -229,7 +231,7 @@ class MF4Reader(MessageReader):
 
     """
 
-    def __init__(self, file):
+    def __init__(self, file: Union[StringPathLike, BinaryIO]) -> None:
         """
         :param file: a path-like object or as file-like object to read from
                         If this is a file-like object, is has to be opened in
@@ -237,11 +239,11 @@ class MF4Reader(MessageReader):
         """
         super().__init__(file, mode="rb")
 
-        self._mdf = MDF4(file)
+        self._mdf = MDF(file)
 
         self.start_timestamp = self._mdf.header.start_time.timestamp()
 
-        masters = [self._mdf.get_master(i, copy_master=False) for i in range(3)]
+        masters = [self._mdf.get_master(i) for i in range(3)]
 
         masters = [
             np.core.records.fromarrays((master, np.ones(len(master)) * i))
@@ -250,7 +252,7 @@ class MF4Reader(MessageReader):
 
         self.masters = np.sort(np.concatenate(masters))
 
-    def __iter__(self):
+    def __iter__(self) -> Generator[Message, None, None]:
         standard_counter = 0
         error_counter = 0
         rtr_counter = 0
@@ -273,7 +275,7 @@ class MF4Reader(MessageReader):
                     channel = sample["CAN_DataFrame.ID"]
                     arbitration_id = int(sample["CAN_DataFrame.ID"])
                     size = int(sample["CAN_DataFrame.DataLength"])
-                    dlc = int(sample["CAN_DataFrame.DLC"])
+                    dlc = int(sample["CAN_DataFrame.DLC"][0])
                     data = sample["CAN_DataFrame.DataBytes"][0, :size].tobytes()
 
                     msg = Message(
@@ -293,7 +295,7 @@ class MF4Reader(MessageReader):
                     channel = sample["CAN_DataFrame.ID"]
                     arbitration_id = int(sample["CAN_DataFrame.ID"])
                     size = int(sample["CAN_DataFrame.DataLength"])
-                    dlc = dlc2len(sample["CAN_DataFrame.DLC"])
+                    dlc = dlc2len(sample["CAN_DataFrame.DLC"][0])
                     data = sample["CAN_DataFrame.DataBytes"][0, :size].tobytes()
                     error_state_indicator = bool(sample["CAN_DataFrame.ESI"])
                     bitrate_switch = bool(sample["CAN_DataFrame.BRS"])
@@ -406,6 +408,6 @@ class MF4Reader(MessageReader):
 
         self.stop()
 
-    def stop(self):
+    def stop(self) -> None:
         self._mdf.close()
         super().stop()
