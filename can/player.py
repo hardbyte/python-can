@@ -79,7 +79,7 @@ def main() -> None:
         raise SystemExit(errno.EINVAL)
 
     results, unknown_args = parser.parse_known_args()
-    additional_config = _parse_additional_config(unknown_args)
+    additional_config = _parse_additional_config([*results.extra_args, *unknown_args])
 
     verbosity = results.verbosity
 

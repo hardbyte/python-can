@@ -352,6 +352,7 @@ class ASCWriter(FileIOMessageWriter):
         self,
         file: Union[StringPathLike, TextIO],
         channel: int = 1,
+        *args: Any,
         **kwargs: Any,
     ) -> None:
         """

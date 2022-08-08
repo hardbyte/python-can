@@ -5,7 +5,7 @@ It is is compatible with "candump -L" from the canutils program
 """
 
 import logging
-from typing import Generator, TextIO, Union
+from typing import Generator, TextIO, Union, Any
 
 from can.message import Message
 from .generic import FileIOMessageWriter, MessageReader
@@ -132,6 +132,8 @@ class CanutilsLogWriter(FileIOMessageWriter):
         file: Union[StringPathLike, TextIO],
         channel: str = "vcan0",
         append: bool = False,
+        *args: Any,
+        **kwargs: Any,
     ):
         """
         :param file: a path-like object or as file-like object to write to

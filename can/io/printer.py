@@ -4,7 +4,7 @@ This Listener simply prints to stdout / the terminal or a file.
 
 import logging
 
-from typing import Optional, TextIO, Union
+from typing import Optional, TextIO, Union, Any
 
 from ..message import Message
 from .generic import MessageWriter
@@ -26,7 +26,11 @@ class Printer(MessageWriter):
     file: Optional[TextIO]
 
     def __init__(
-        self, file: Optional[Union[StringPathLike, TextIO]] = None, append: bool = False
+        self,
+        file: Optional[Union[StringPathLike, TextIO]] = None,
+        append: bool = False,
+        *args: Any,
+        **kwargs: Any
     ) -> None:
         """
         :param file: An optional path-like object or a file-like object to "print"
