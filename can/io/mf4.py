@@ -6,6 +6,7 @@ the ASAM MDF standard (see https://www.asam.net/standards/detail/mdf/)
 """
 
 from datetime import datetime
+from io import BufferedIOBase, BytesIO
 from pathlib import Path
 import logging
 from hashlib import md5
@@ -18,6 +19,7 @@ from .generic import MessageReader, FileIOMessageWriter
 
 from asammdf import Signal
 from asammdf.mdf import MDF
+from asammdf.blocks.mdf_v4 import MDF4
 from asammdf.blocks.v4_blocks import SourceInformation
 from asammdf.blocks.v4_constants import BUS_TYPE_CAN, SOURCE_BUS
 import numpy as np
@@ -263,7 +265,11 @@ class MF4Reader(MessageReader):
         """
         super().__init__(file, mode="rb")
 
-        self._mdf = MDF(file)
+        self._mdf: MDF4
+        if isinstance(file, BufferedIOBase):
+            self._mdf = MDF(BytesIO(file.read()))
+        else:
+            self._mdf = MDF(file)
 
         self.start_timestamp = self._mdf.header.start_time.timestamp()
 
