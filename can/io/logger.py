@@ -14,6 +14,7 @@ from types import TracebackType
 from typing_extensions import Literal
 from pkg_resources import iter_entry_points
 
+import can.io
 from ..message import Message
 from ..listener import Listener
 from .generic import BaseIOHandler, FileIOMessageWriter, MessageWriter
@@ -227,8 +228,8 @@ class BaseRotatingLogger(Listener, BaseIOHandler, ABC):
             return cast(FileIOMessageWriter, logger)
         else:
             raise Exception(
-                "The Logger corresponding to the arguments is not a FileIOMessageWriter or "
-                "can.Printer"
+                f"The log format \"{''.join(pathlib.Path(filename).suffixes[-2:])}"
+                f'" is not supported by {self.__class__.__name__}'
             )
 
     def stop(self) -> None:
