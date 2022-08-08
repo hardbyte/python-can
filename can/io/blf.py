@@ -566,6 +566,10 @@ class BLFWriter(FileIOMessageWriter):
         self.uncompressed_size += LOG_CONTAINER_STRUCT.size
         self.uncompressed_size += len(uncompressed_data)
 
+    def file_size(self) -> int:
+        """Return an estimate of the current file size in bytes."""
+        return self.file.tell() + self._buffer_size
+
     def stop(self):
         """Stops logging and closes the file."""
         self._flush()
