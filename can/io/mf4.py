@@ -87,6 +87,7 @@ class MF4Writer(FileIOMessageWriter):
         file: Union[StringPathLike, BinaryIO],
         database: Optional[StringPathLike] = None,
         compression_level: int = 2,
+        *args: Any,
         **kwargs: Any,
     ) -> None:
         """
@@ -255,6 +256,7 @@ class MF4Reader(MessageReader):
     """
     Iterator of CAN messages from a MF4 logging file.
 
+    The MF4Reader only supports MF4 files that were recorded with python-can.
     """
 
     def __init__(self, file: Union[StringPathLike, BinaryIO]) -> None:
