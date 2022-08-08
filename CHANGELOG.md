@@ -26,6 +26,7 @@ Features
 * Allow ICSApiError to be pickled and un-pickled (#1341)
 * Sort interface names in CLI API to make documentation reproducible (#1342)
 * Exclude repository-configuration from git-archive (#1343)
+* Add py.typed file for PEP 561 compliance (#1344)
 * Add device_id parameter to PcanBus constructor (#1346)
 * Find USB2CAN Serial Number by USB Name (#1129)
 
