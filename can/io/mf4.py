@@ -10,7 +10,7 @@ from io import BufferedIOBase, BytesIO
 from pathlib import Path
 import logging
 from hashlib import md5
-from typing import Any, Union, BinaryIO, Optional, Generator
+from typing import Any, Union, BinaryIO, Optional, Generator, cast
 
 from ..message import Message
 from ..typechecking import StringPathLike
@@ -111,7 +111,7 @@ class MF4Writer(FileIOMessageWriter):
 
         super().__init__(file, mode="w+b")
         now = datetime.now()
-        self._mdf = MDF(version="4.10")
+        self._mdf = cast(MDF4, MDF(version="4.10"))
         self._mdf.header.start_time = now
         self.last_timestamp = self._start_time = now.timestamp()
 
@@ -167,6 +167,11 @@ class MF4Writer(FileIOMessageWriter):
         self._std_buffer = np.zeros(1, dtype=STD_DTYPE)
         self._err_buffer = np.zeros(1, dtype=ERR_DTYPE)
         self._rtr_buffer = np.zeros(1, dtype=RTR_DTYPE)
+
+    def file_size(self) -> int:
+        """Return an estimate of the current file size in bytes."""
+        # TODO: find solution without accessing private attributes of asammdf
+        return cast(int, self._mdf._tempfile.tell())
 
     def stop(self) -> None:
         self._mdf.save(self.file, compression=self._compression_level)
