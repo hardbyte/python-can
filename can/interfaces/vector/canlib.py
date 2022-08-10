@@ -10,6 +10,7 @@ import ctypes
 import logging
 import time
 import os
+import typing_extensions
 from types import ModuleType
 from typing import (
     List,
@@ -93,6 +94,7 @@ class VectorBus(BusABC):
         sjw_dbr: int = 2,
         tseg1_dbr: int = 6,
         tseg2_dbr: int = 3,
+        ensure_init_access: bool = False,
         **kwargs: Any,
     ) -> None:
         """
@@ -136,6 +138,10 @@ class VectorBus(BusABC):
             Bus timing value tseg1 (data)
         :param tseg2_dbr:
             Bus timing value tseg2 (data)
+        :param ensure_init_access:
+            Raise Exception if the application does not get init access.
+            Applications with init access may change bus settings.
+            Only one application on the channel can get init access.
 
         :raise can.CanInterfaceNotImplementedError:
             If the current operating system is not supported or the driver could not be loaded.
@@ -230,80 +236,56 @@ class VectorBus(BusABC):
 
         permission_mask = xlclass.XLaccess()
         # Set mask to request channel init permission if needed
-        if bitrate or fd:
+        if bitrate or fd or ensure_init_access:
             permission_mask.value = self.mask
-        if fd:
-            self.xldriver.xlOpenPort(
-                self.port_handle,
-                self._app_name,
-                self.mask,
-                permission_mask,
-                rx_queue_size,
-                xldefine.XL_InterfaceVersion.XL_INTERFACE_VERSION_V4,
-                xldefine.XL_BusTypes.XL_BUS_TYPE_CAN,
-            )
-        else:
-            self.xldriver.xlOpenPort(
-                self.port_handle,
-                self._app_name,
-                self.mask,
-                permission_mask,
-                rx_queue_size,
-                xldefine.XL_InterfaceVersion.XL_INTERFACE_VERSION,
-                xldefine.XL_BusTypes.XL_BUS_TYPE_CAN,
+
+        interface_version = (
+            xldefine.XL_InterfaceVersion.XL_INTERFACE_VERSION_V4
+            if fd
+            else xldefine.XL_InterfaceVersion.XL_INTERFACE_VERSION
+        )
+
+        self.xldriver.xlOpenPort(
+            self.port_handle,
+            self._app_name,
+            self.mask,
+            permission_mask,
+            rx_queue_size,
+            interface_version,
+            xldefine.XL_BusTypes.XL_BUS_TYPE_CAN,
+        )
+
+        self.permission_mask = permission_mask.value
+        if ensure_init_access and self.permission_mask != self.mask:
+            raise VectorInitializationError(
+                xldefine.XL_Status.XL_ERR_INVALID_ACCESS,
+                "Init access was requested but not received.",
+                "xlOpenPort",
             )
         LOG.debug(
             "Open Port: PortHandle: %d, PermissionMask: 0x%X",
             self.port_handle.value,
-            permission_mask.value,
+            self.permission_mask,
         )
 
-        if permission_mask.value == self.mask:
+        for channel in self.channels:
             if fd:
-                self.canFdConf = xlclass.XLcanFdConf()
-                if bitrate:
-                    self.canFdConf.arbitrationBitRate = int(bitrate)
-                else:
-                    self.canFdConf.arbitrationBitRate = 500000
-                self.canFdConf.sjwAbr = int(sjw_abr)
-                self.canFdConf.tseg1Abr = int(tseg1_abr)
-                self.canFdConf.tseg2Abr = int(tseg2_abr)
-                if data_bitrate:
-                    self.canFdConf.dataBitRate = int(data_bitrate)
-                else:
-                    self.canFdConf.dataBitRate = self.canFdConf.arbitrationBitRate
-                self.canFdConf.sjwDbr = int(sjw_dbr)
-                self.canFdConf.tseg1Dbr = int(tseg1_dbr)
-                self.canFdConf.tseg2Dbr = int(tseg2_dbr)
-
-                self.xldriver.xlCanFdSetConfiguration(
-                    self.port_handle, self.mask, self.canFdConf
+                self.set_bitrate_canfd(
+                    channel=channel,
+                    bitrate=bitrate,
+                    data_bitrate=data_bitrate,
+                    sjw_abr=sjw_abr,
+                    tseg1_abr=tseg1_abr,
+                    tseg2_abr=tseg2_abr,
+                    sjw_dbr=sjw_dbr,
+                    tseg1_dbr=tseg1_dbr,
+                    tseg2_dbr=tseg2_dbr,
                 )
-                LOG.info(
-                    "SetFdConfig.: ABaudr.=%u, DBaudr.=%u",
-                    self.canFdConf.arbitrationBitRate,
-                    self.canFdConf.dataBitRate,
+            elif bitrate:
+                self.set_bitrate_can(
+                    channel=channel,
+                    bitrate=bitrate,
                 )
-                LOG.info(
-                    "SetFdConfig.: sjwAbr=%u, tseg1Abr=%u, tseg2Abr=%u",
-                    self.canFdConf.sjwAbr,
-                    self.canFdConf.tseg1Abr,
-                    self.canFdConf.tseg2Abr,
-                )
-                LOG.info(
-                    "SetFdConfig.: sjwDbr=%u, tseg1Dbr=%u, tseg2Dbr=%u",
-                    self.canFdConf.sjwDbr,
-                    self.canFdConf.tseg1Dbr,
-                    self.canFdConf.tseg2Dbr,
-                )
-            else:
-                if bitrate:
-                    self.xldriver.xlCanSetChannelBitrate(
-                        self.port_handle, permission_mask, bitrate
-                    )
-                    LOG.info("SetChannelBitrate: baudr.=%u", bitrate)
-        else:
-            LOG.info("No init access!")
 
         # Enable/disable TX receipts
         tx_receipts = 1 if receive_own_messages else 0
@@ -521,22 +503,6 @@ class VectorBus(BusABC):
         :param event: XLevent that could have a `XL_CHIP_STATE`, `XL_TIMER` or `XL_SYNC_PULSE` tag.
         """
 
-        # example implementation for processing a chipstate event
-        if event.tag == xldefine.XL_EventTags.XL_CHIP_STATE.value:
-            _bus_status = xldefine.XL_BusStatus(event.tagData.chipState.busStatus)
-            _tx_error_counter = event.tagData.chipState.txErrorCounter
-            _rx_error_counter = event.tagData.chipState.rxErrorCounter
-            return
-
-        # example implementation for processing a sync pulse event
-        if event.tag == xldefine.XL_EventTags.XL_SYNC_PULSE.value:
-            _event_timestamp = event.timeStamp * 1e-9 + self._time_offset
-            _sync_trigger = xldefine.XL_SyncPulseSource(
-                event.tagData.syncPulse.pulseCode
-            )
-            _sync_time = event.tagData.syncPulse.time
-            return
-
     def handle_canfd_event(self, event: xlclass.XLcanRxEvent) -> None:
         """Handle non-message CAN FD events.
 
@@ -547,32 +513,6 @@ class VectorBus(BusABC):
         :param event: `XLcanRxEvent` that could have a `XL_CAN_EV_TAG_RX_ERROR`,
             `XL_CAN_EV_TAG_TX_ERROR`, `XL_TIMER` or `XL_CAN_EV_TAG_CHIP_STATE` tag.
         """
-
-        # example implementation for processing a chipstate event
-        if event.tag == xldefine.XL_CANFD_RX_EventTags.XL_CAN_EV_TAG_CHIP_STATE.value:
-            _bus_status = xldefine.XL_BusStatus(event.tagData.canChipState.busStatus)
-            _tx_error_counter = event.tagData.canChipState.txErrorCounter
-            _rx_error_counter = event.tagData.canChipState.rxErrorCounter
-            return
-
-        # example implementation for processing a sync pulse event
-        if event.tag == xldefine.XL_CANFD_RX_EventTags.XL_SYNC_PULSE.value:
-            _event_timestamp = event.timeStamp * 1e-9 + self._time_offset
-            _sync_trigger = xldefine.XL_SyncPulseSource(
-                event.tagData.canSyncPulse.triggerSource
-            )
-            _sync_time = event.tagData.canSyncPulse.time
-            return
-
-        # example implementation for processing a bus error
-        if event.tag in (
-            xldefine.XL_CANFD_RX_EventTags.XL_CAN_EV_TAG_RX_ERROR,
-            xldefine.XL_CANFD_RX_EventTags.XL_CAN_EV_TAG_TX_ERROR,
-        ):
-            _error_code = xldefine.XL_CANFD_RX_EV_ERROR_errorCode(
-                event.tagData.canError.errorCode
-            )
-            return
 
     def send(self, msg: Message, timeout: Optional[float] = None) -> None:
         self._send_sequence([msg])
@@ -840,6 +780,233 @@ class VectorBus(BusABC):
         """
         self.xldriver.xlGenerateSyncPulse(self.port_handle, self.mask)
 
+    def init_access(self, channel: int) -> bool:
+        """Return True if the application has InitAccess on the given channel.
+
+        :param channel:
+            The channel as an integer value. This corresponds to the ``channel`` argument
+            in :meth:`~can.interfaces.vector.VectorBus.__init__`.
+        """
+        try:
+            channel_mask = self.channel_masks[channel]
+        except KeyError:
+            raise ValueError(
+                f'Channel "{channel}" is not a valid channel. '
+                f"Available channels: {', '.join([str(c) for c in self.channel_masks])}."
+            )
+        return bool(channel_mask & self.permission_mask)
+
+    def set_bitrate_can(
+        self,
+        channel: int,
+        bitrate: int,
+        sjw: Optional[int] = None,
+        tseg1: Optional[int] = None,
+        tseg2: Optional[int] = None,
+        sam: int = 1,
+    ) -> None:
+        kwargs = [sjw, tseg1, tseg2]
+        if any(kwargs) and not all(kwargs):
+            raise ValueError(
+                f"Either all of {sjw=}, {tseg1=}, {tseg2=} must be set or None of them."
+            )
+
+        # set parameters if channel has init access
+        if self.init_access(channel):
+            if any(kwargs):
+                chip_params = xlclass.XLchipParams()
+                chip_params.bitRate = bitrate
+                chip_params.sjw = sjw
+                chip_params.tseg1 = tseg1
+                chip_params.tseg2 = tseg2
+                chip_params.sam = sam
+                self.xldriver.xlCanSetChannelParams(
+                    self.port_handle,
+                    self.channel_masks[channel],
+                    chip_params,
+                )
+                LOG.info(
+                    "xlCanSetChannelParams: baudr.=%u, sjwAbr=%u, tseg1Abr=%u, tseg2Abr=%u",
+                    chip_params.bitRate,
+                    chip_params.sjw,
+                    chip_params.tseg1,
+                    chip_params.tseg2,
+                )
+            else:
+                self.xldriver.xlCanSetChannelBitrate(
+                    self.port_handle,
+                    self.channel_masks[channel],
+                    bitrate,
+                )
+                LOG.info("SetChannelBitrate: baudr.=%u", bitrate)
+            return
+
+        # if channel does not have init access, check bitrate is correct already
+        for vcc in get_channel_configs():
+            # find the right channel
+            if self.channel_masks[channel] != vcc.channelMask:
+                continue
+
+            # check if all settings are correct
+            if all(
+                [
+                    vcc.busParams.bus_type is xldefine.XL_BusTypes.XL_BUS_TYPE_CAN,
+                    xldefine.XL_CANFD_BusParams_CanOpMode.XL_BUS_PARAMS_CANOPMODE_CAN20
+                    in vcc.busParams.can_params["can_op_mode"],
+                    vcc.busParams.can_params["bitrate"] == bitrate,
+                ]
+            ):
+                # channel settings are acceptable
+                return
+
+        raise VectorInitializationError(
+            error_code=xldefine.XL_Status.XL_ERR_INVALID_ACCESS,
+            error_string=f"Channel {channel} did not receive init access. Unable to set bitrate.",
+            function="VectorBus.set_bitrate_can",
+        )
+
+    def set_bitrate_canfd(
+        self,
+        channel: int,
+        bitrate: Optional[int] = None,
+        data_bitrate: Optional[int] = None,
+        sjw_abr: int = 2,
+        tseg1_abr: int = 6,
+        tseg2_abr: int = 3,
+        sjw_dbr: int = 2,
+        tseg1_dbr: int = 6,
+        tseg2_dbr: int = 3,
+    ) -> None:
+        # set parameters if channel has init access
+        if self.init_access(channel):
+            canfd_conf = xlclass.XLcanFdConf()
+            if bitrate:
+                canfd_conf.arbitrationBitRate = int(bitrate)
+            else:
+                canfd_conf.arbitrationBitRate = 500_000
+            canfd_conf.sjwAbr = int(sjw_abr)
+            canfd_conf.tseg1Abr = int(tseg1_abr)
+            canfd_conf.tseg2Abr = int(tseg2_abr)
+            if data_bitrate:
+                canfd_conf.dataBitRate = int(data_bitrate)
+            else:
+                canfd_conf.dataBitRate = int(canfd_conf.arbitrationBitRate)
+            canfd_conf.sjwDbr = int(sjw_dbr)
+            canfd_conf.tseg1Dbr = int(tseg1_dbr)
+            canfd_conf.tseg2Dbr = int(tseg2_dbr)
+            self.xldriver.xlCanFdSetConfiguration(
+                self.port_handle, self.channel_masks[channel], canfd_conf
+            )
+            LOG.info(
+                "SetFdConfig.: ABaudr.=%u, DBaudr.=%u",
+                canfd_conf.arbitrationBitRate,
+                canfd_conf.dataBitRate,
+            )
+            LOG.info(
+                "SetFdConfig.: sjwAbr=%u, tseg1Abr=%u, tseg2Abr=%u",
+                canfd_conf.sjwAbr,
+                canfd_conf.tseg1Abr,
+                canfd_conf.tseg2Abr,
+            )
+            LOG.info(
+                "SetFdConfig.: sjwDbr=%u, tseg1Dbr=%u, tseg2Dbr=%u",
+                canfd_conf.sjwDbr,
+                canfd_conf.tseg1Dbr,
+                canfd_conf.tseg2Dbr,
+            )
+            return
+
+        # if channel does not have init access, check bitrate is correct already
+        for vcc in get_channel_configs():
+            # find the right channel
+            if self.channel_masks[channel] != vcc.channelMask:
+                continue
+
+            # check if all settings are correct
+            if all(
+                [
+                    vcc.busParams.bus_type is xldefine.XL_BusTypes.XL_BUS_TYPE_CAN,
+                    xldefine.XL_CANFD_BusParams_CanOpMode.XL_BUS_PARAMS_CANOPMODE_CANFD
+                    in vcc.busParams.can_params["can_op_mode"],
+                    vcc.busParams.canfd_params["bitrate"] == bitrate,
+                    vcc.busParams.canfd_params["data_bitrate"] == data_bitrate,
+                    vcc.busParams.canfd_params["tseg1_abr"] == tseg1_abr,
+                    vcc.busParams.canfd_params["tseg2_abr"] == tseg2_abr,
+                    vcc.busParams.canfd_params["tseg1_dbr"] == tseg1_dbr,
+                    vcc.busParams.canfd_params["tseg2_dbr"] == tseg2_dbr,
+                ]
+            ):
+                # channel settings are acceptable
+                return
+
+        raise VectorInitializationError(
+            error_code=xldefine.XL_Status.XL_ERR_INVALID_ACCESS,
+            error_string=f"Channel {channel} did not receive init access. Unable to set bitrate.",
+            function="VectorBus.set_bitrate_canfd",
+        )
+
+
+class _CanParams(typing_extensions.TypedDict):
+    bitrate: int
+    sjw: int
+    tseg1: int
+    tseg2: int
+    sam: int
+    output_mode: xldefine.XL_OutputMode
+    can_op_mode: xldefine.XL_CANFD_BusParams_CanOpMode
+
+
+class _CanFdParams(typing_extensions.TypedDict):
+    bitrate: int
+    data_bitrate: int
+    sjw_abr: int
+    tseg1_abr: int
+    tseg2_abr: int
+    sam_abr: int
+    sjw_dbr: int
+    tseg1_dbr: int
+    tseg2_dbr: int
+    output_mode: xldefine.XL_OutputMode
+    can_op_mode: xldefine.XL_CANFD_BusParams_CanOpMode
+
+
+class VectorBusParams(NamedTuple):
+    bus_type: xldefine.XL_BusTypes
+    can_params: _CanParams
+    canfd_params: _CanFdParams
+
+    @classmethod
+    def from_bus_params(cls, bus_params: xlclass.XLbusParams) -> "VectorBusParams":
+        return cls(
+            bus_type=xldefine.XL_BusTypes(bus_params.busType),
+            can_params={
+                "bitrate": bus_params.data.can.bitRate,
+                "sjw": bus_params.data.can.sjw,
+                "tseg1": bus_params.data.can.tseg1,
+                "tseg2": bus_params.data.can.tseg2,
+                "sam": bus_params.data.can.sam,
+                "output_mode": xldefine.XL_OutputMode(bus_params.data.can.outputMode),
+                "can_op_mode": xldefine.XL_CANFD_BusParams_CanOpMode(
+                    bus_params.data.can.canOpMode
+                ),
+            },
+            canfd_params={
+                "bitrate": bus_params.data.canFD.arbitrationBitRate,
+                "data_bitrate": bus_params.data.canFD.dataBitRate,
+                "sjw_abr": bus_params.data.canFD.sjwAbr,
+                "tseg1_abr": bus_params.data.canFD.tseg1Abr,
+                "tseg2_abr": bus_params.data.canFD.tseg2Abr,
+                "sam_abr": bus_params.data.canFD.samAbr,
+                "sjw_dbr": bus_params.data.canFD.sjwDbr,
+                "tseg1_dbr": bus_params.data.canFD.tseg1Dbr,
+                "tseg2_dbr": bus_params.data.canFD.tseg2Dbr,
+                "output_mode": xldefine.XL_OutputMode(bus_params.data.canFD.outputMode),
+                "can_op_mode": xldefine.XL_CANFD_BusParams_CanOpMode(
+                    bus_params.data.canFD.canOpMode
+                ),
+            },
+        )
+
 
 class VectorChannelConfig(NamedTuple):
     name: str
@@ -852,6 +1019,9 @@ class VectorChannelConfig(NamedTuple):
     channelBusCapabilities: xldefine.XL_BusCapabilities
     isOnBus: bool
     connectedBusType: xldefine.XL_BusTypes
+    busParams: VectorBusParams
+    driverVersion: str
+    interfaceVersion: xldefine.XL_InterfaceVersion
     serialNumber: int
     articleNumber: int
     transceiverName: str
@@ -886,6 +1056,11 @@ def get_channel_configs() -> List[VectorChannelConfig]:
             ),
             isOnBus=bool(xlcc.isOnBus),
             connectedBusType=xldefine.XL_BusTypes(xlcc.connectedBusType),
+            busParams=VectorBusParams.from_bus_params(xlcc.busParams),
+            driverVersion=".".join(
+                [str(x) for x in xlcc.driverVersion.to_bytes(4, "little")]
+            ),
+            interfaceVersion=xldefine.XL_InterfaceVersion(xlcc.interfaceVersion),
             serialNumber=xlcc.serialNumber,
             articleNumber=xlcc.articleNumber,
             transceiverName=xlcc.transceiverName.decode(),

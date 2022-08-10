@@ -64,7 +64,7 @@ class XL_BusTypes(IntFlag):
     XL_BUS_TYPE_A429 = 8192  # =0x00002000
 
 
-class XL_CANFD_BusParams_CanOpMode(IntEnum):
+class XL_CANFD_BusParams_CanOpMode(IntFlag):
     XL_BUS_PARAMS_CANOPMODE_CAN20 = 1
     XL_BUS_PARAMS_CANOPMODE_CANFD = 2
     XL_BUS_PARAMS_CANOPMODE_CANFD_NO_ISO = 8
