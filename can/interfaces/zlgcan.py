@@ -208,69 +208,71 @@ class ZCanBus(BusABC):
         self.rx_queue = collections.deque(
             maxlen=rx_queue_size
         )  # type: Deque[Tuple[int, Any]]               # channel, raw_msg
+        try:
+            self.device = ZCAN()
+            self.device.OpenDevice(device_type, device_index)
+            self.channels = self.device.channels
+            self.available = []
+            self.channel_info = f"ZLG-CAN - device {device_index}, channels {self.channels}"
+            # {'mode': 0|1(NORMAL|LISTEN_ONLY), 'filter': 0|1(DOUBLE|SINGLE), 'acc_code': 0x0, 'acc_mask': 0xFFFFFFFF,
+            # 'brp': 0, 'abit_timing': 0, 'dbit_timing': 0}
 
-        self.device = ZCAN()
-        self.device.OpenDevice(device_type, device_index)
-        self.channels = self.device.channels
-        self.available = []
-        self.channel_info = f"ZLG-CAN - device {device_index}, channels {self.channels}"
-        # {'mode': 0|1(NORMAL|LISTEN_ONLY), 'filter': 0|1(DOUBLE|SINGLE), 'acc_code': 0x0, 'acc_mask': 0xFFFFFFFF,
-        # 'brp': 0, 'abit_timing': 0, 'dbit_timing': 0}
+            for index, channel in enumerate(self.channels):
+                try:
+                    config: dict = configs[index]
+                except IndexError:
+                    LOG.warn(f'ZLG-CAN - channel:{channel} not initialized.')
+                    return
+                init_config = {}
+                if platform.system().lower() == 'windows':
+                    mode = config.get('mode', None)
+                    if mode:
+                        init_config['mode'] = mode
+                        del config['mode']
+                    filter = config.get('filter', None)
+                    if filter:
+                        init_config['filter'] = filter
+                        del config['filter']
+                    acc_code = config.get('acc_code', None)
+                    if acc_code:
+                        init_config['acc_code'] = acc_code
+                        del config['acc_code']
+                    acc_mask = config.get('acc_mask', None)
+                    if acc_mask:
+                        init_config['acc_mask'] = acc_mask
+                        del config['acc_mask']
+                    brp = config.get('brp', None)
+                    if brp:
+                        init_config['brp'] = brp
+                        del config['brp']
+                    abit_timing = config.get('dbit_timing', None)
+                    if abit_timing:
+                        init_config['abit_timing'] = abit_timing
+                        del config['abit_timing']
+                    dbit_timing = config.get('dbit_timing', None)
+                    if dbit_timing:
+                        init_config['dbit_timing'] = dbit_timing
+                        del config['dbit_timing']
 
-        for index, channel in enumerate(self.channels):
-            try:
-                config: dict = configs[index]
-            except IndexError:
-                LOG.warn(f'ZLG-CAN - channel:{channel} not initialized.')
-                return
-            init_config = {}
-            if platform.system().lower() == 'windows':
-                mode = config.get('mode', None)
-                if mode:
-                    init_config['mode'] = mode
-                    del config['mode']
-                filter = config.get('filter', None)
-                if filter:
-                    init_config['filter'] = filter
-                    del config['filter']
-                acc_code = config.get('acc_code', None)
-                if acc_code:
-                    init_config['acc_code'] = acc_code
-                    del config['acc_code']
-                acc_mask = config.get('acc_mask', None)
-                if acc_mask:
-                    init_config['acc_mask'] = acc_mask
-                    del config['acc_mask']
-                brp = config.get('brp', None)
-                if brp:
-                    init_config['brp'] = brp
-                    del config['brp']
-                abit_timing = config.get('dbit_timing', None)
-                if abit_timing:
-                    init_config['abit_timing'] = abit_timing
-                    del config['abit_timing']
-                dbit_timing = config.get('dbit_timing', None)
-                if dbit_timing:
-                    init_config['dbit_timing'] = dbit_timing
-                    del config['dbit_timing']
+                    bitrate = config.get('bitrate', None)
+                    if bitrate is None:
+                        raise CanInitializationError('ZLG-CAN - bitrate is required.')
+                    del config['bitrate']
+                    config['canfd_abit_baud_rate'] = bitrate
 
-                bitrate = config.get('bitrate', None)
-                if bitrate is None:
-                    raise CanInitializationError('ZLG-CAN - bitrate is required.')
-                del config['bitrate']
-                config['canfd_abit_baud_rate'] = bitrate
+                    data_bitrate = config.get('data_bitrate', None)
+                    if data_bitrate is None:
+                        config['canfd_dbit_baud_rate'] = bitrate
+                    else:
+                        del config['data_bitrate']
+                        config['canfd_dbit_baud_rate'] = data_bitrate
 
-                data_bitrate = config.get('data_bitrate', None)
-                if data_bitrate is None:
-                    config['canfd_dbit_baud_rate'] = bitrate
-                else:
-                    del config['data_bitrate']
-                    config['canfd_dbit_baud_rate'] = data_bitrate
-
-                self.device.SetValue(channel, **config)
-            self.device.InitCAN(channel, **init_config)
-            self.device.StartCAN(channel)
-            self.available.append(channel)
+                    self.device.SetValue(channel, **config)
+                self.device.InitCAN(channel, **init_config)
+                self.device.StartCAN(channel)
+                self.available.append(channel)
+        except ZCANException as e:
+            raise CanInitializationError(e)
 
     # def _apply_filters(self, filters: Optional[can.typechecking.CanFilters]) -> None:
     #     pass
@@ -282,19 +284,22 @@ class ZCanBus(BusABC):
         return zlg_convert_msg(raw_msg, channel=channel), False
 
     def poll_received_messages(self, timeout):
-        for channel in self.available:
-            can_num = self.device.GetReceiveNum(channel, ZCANMessageType.CAN)
-            canfd_num = self.device.GetReceiveNum(channel, ZCANMessageType.CANFD)
-            if can_num:
-                LOG.debug(f'ZLG-CAN - can message received: {can_num}.')
-                self.rx_queue.extend(
-                    (channel, raw_msg) for raw_msg in self.device.Receive(channel, can_num, timeout)
-                )
-            if canfd_num:
-                LOG.debug(f'ZLG-CAN - canfd message received: {canfd_num}.')
-                self.rx_queue.extend(
-                    (channel, raw_msg) for raw_msg in self.device.ReceiveFD(channel, canfd_num, timeout)
-                )
+        try:
+            for channel in self.available:
+                can_num = self.device.GetReceiveNum(channel, ZCANMessageType.CAN)
+                canfd_num = self.device.GetReceiveNum(channel, ZCANMessageType.CANFD)
+                if can_num:
+                    LOG.debug(f'ZLG-CAN - can message received: {can_num}.')
+                    self.rx_queue.extend(
+                        (channel, raw_msg) for raw_msg in self.device.Receive(channel, can_num, timeout)
+                    )
+                if canfd_num:
+                    LOG.debug(f'ZLG-CAN - canfd message received: {canfd_num}.')
+                    self.rx_queue.extend(
+                        (channel, raw_msg) for raw_msg in self.device.ReceiveFD(channel, canfd_num, timeout)
+                    )
+        except ZCANException as e:
+            raise CanOperationError(e)
 
     def _recv_internal(self, timeout: Optional[float]) -> Tuple[Optional[Message], bool]:
 
@@ -314,19 +319,22 @@ class ZCanBus(BusABC):
         return None, False
 
     def send(self, msg: Message, timeout: Optional[float] = None, **kwargs) -> None:
-        channel = msg.channel
-        if channel not in self.available:
-            if len(self.available) == 0:
-                raise CanOperationError(f'Channel: {channel} not in {self.available}')
-            if channel is None:
-                channel = self.available[0]
-        is_merge = self.device.MergeEnabled() if hasattr(self.device, 'MergeEnabled') else False
-        if is_merge:
-            return self.device.TransmitData(zlg_convert_msg(msg, channel=channel, is_merge=is_merge, **kwargs), 1)
-        else:
-            if msg.is_fd:
-                return self.device.TransmitFD(channel, zlg_convert_msg(msg, channel=channel, is_merge=is_merge, **kwargs), 1)
-            return self.device.Transmit(channel, zlg_convert_msg(msg, channel=channel, is_merge=is_merge, **kwargs), 1)
+        try:
+            channel = msg.channel
+            if channel not in self.available:
+                if len(self.available) == 0:
+                    raise CanOperationError(f'Channel: {channel} not in {self.available}')
+                if channel is None:
+                    channel = self.available[0]
+            is_merge = self.device.MergeEnabled() if hasattr(self.device, 'MergeEnabled') else False
+            if is_merge:
+                return self.device.TransmitData(zlg_convert_msg(msg, channel=channel, is_merge=is_merge, **kwargs), 1)
+            else:
+                if msg.is_fd:
+                    return self.device.TransmitFD(channel, zlg_convert_msg(msg, channel=channel, is_merge=is_merge, **kwargs), 1)
+                return self.device.Transmit(channel, zlg_convert_msg(msg, channel=channel, is_merge=is_merge, **kwargs), 1)
+        except ZCANException as e:
+            raise CanOperationError(e)
 
     @staticmethod
     def _detect_available_configs():                    # -> List[can.typechecking.AutoDetectedConfig]:

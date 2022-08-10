@@ -81,55 +81,58 @@ class TosunBus(can.BusABC):
             self.channels = []
         if 'with_com' not in kwargs:
             kwargs['with_com'] = False
-        self.device = TosunDevice(self.channels, **kwargs)
-        count = self.device.channel_count('can', len(mappings))
-        assert count == len(mappings)
-        self.available = []
-        for _mapping in mappings:
-            _mapping = self.device.mapping_instance(**_mapping)
-            self.device.set_mapping(_mapping)
-            if _mapping.FMappingDisabled is False:
-                chl_index = _mapping.FAppChannelIndex
-                if isinstance(chl_index, ctypes.c_int):
-                    self.available.append(chl_index.value)
-                else:
-                    self.available.append(chl_index)
-
-        for index, chl in enumerate(self.available):
-            try:
-                config: dict = configs[index]
-            except IndexError:
-                LOG.warn(f'TOSUN-CAN - channel:{chl} not initialized.')
-                return
-
-            bitrate = config.get('bitrate', None)
-            if bitrate is None:
-                raise CanInitializationError('TOSUN-CAN - bitrate is required.')
-            # data_bitrate
-            del config['bitrate']
-            bitrate = int(bitrate / 1000)
-            config['kbaudrate'] = bitrate
-
-            data_bitrate = config.get('data_bitrate', None)
-            if data_bitrate is None:
-                data_bitrate = bitrate
-            else:
-                del config['data_bitrate']
-                data_bitrate = int(data_bitrate / 1000)
-            config['db_kbaudrate'] = data_bitrate
-
-            self.device.configure_baudrate(chl, **config)
-
-        self.device.turbo_mode(turbo_enable)
-        self.device.connect()
         try:
-            self.device.set_receive_fifo_status(fifo_status)
-        except TSMasterException:
-            self.device.set_receive_fifo_status(fifo_status)
+            self.device = TosunDevice(self.channels, **kwargs)
+            count = self.device.channel_count('can', len(mappings))
+            assert count == len(mappings)
+            self.available = []
+            for _mapping in mappings:
+                _mapping = self.device.mapping_instance(**_mapping)
+                self.device.set_mapping(_mapping)
+                if _mapping.FMappingDisabled is False:
+                    chl_index = _mapping.FAppChannelIndex
+                    if isinstance(chl_index, ctypes.c_int):
+                        self.available.append(chl_index.value)
+                    else:
+                        self.available.append(chl_index)
 
-        self.rx_queue = collections.deque(
-            maxlen=rx_queue_size
-        )  # type: Deque[Any]               # channel, raw_msg
+            for index, chl in enumerate(self.available):
+                try:
+                    config: dict = configs[index]
+                except IndexError:
+                    LOG.warn(f'TOSUN-CAN - channel:{chl} not initialized.')
+                    return
+
+                bitrate = config.get('bitrate', None)
+                if bitrate is None:
+                    raise CanInitializationError('TOSUN-CAN - bitrate is required.')
+                # data_bitrate
+                del config['bitrate']
+                bitrate = int(bitrate / 1000)
+                config['kbaudrate'] = bitrate
+
+                data_bitrate = config.get('data_bitrate', None)
+                if data_bitrate is None:
+                    data_bitrate = bitrate
+                else:
+                    del config['data_bitrate']
+                    data_bitrate = int(data_bitrate / 1000)
+                config['db_kbaudrate'] = data_bitrate
+
+                self.device.configure_baudrate(chl, **config)
+
+            self.device.turbo_mode(turbo_enable)
+            self.device.connect()
+            try:
+                self.device.set_receive_fifo_status(fifo_status)
+            except TSMasterException:
+                self.device.set_receive_fifo_status(fifo_status)
+
+            self.rx_queue = collections.deque(
+                maxlen=rx_queue_size
+            )  # type: Deque[Any]               # channel, raw_msg
+        except TSMasterException as e:
+            raise can.CanOperationError(e)
 
     def _recv_from_queue(self) -> Tuple[can.Message, bool]:
         """Return a message from the internal receive queue"""
@@ -139,69 +142,72 @@ class TosunBus(can.BusABC):
         return tosun_convert_msg(raw_msg), False
 
     def poll_received_messages(self, timeout):
-        for channel in self.available:
-            can_num = self.device.fifo_read_buffer_count(channel, TSMasterMessageType.CAN)
-            canfd_num = self.device.fifo_read_buffer_count(channel, TSMasterMessageType.CAN_FD)
-            if self.device.com_enabled:
-                # if can_num:
-                LOG.debug(f'TOSUN-CAN - can message received: {can_num}.')
-                while can_num > 0:
-                    can_num -= 1
-                    success, chl_index, is_remote, is_extend, dlc, can_id, timestamp, data = \
-                        self.device.fifo_receive_msg(channel, self.receive_own_messages, TSMasterMessageType.CAN)
-                    if success:
-                        self.rx_queue.append(
-                            can.Message(
-                                timestamp=timestamp,
-                                arbitration_id=can_id,
-                                is_extended_id=is_extend,
-                                is_remote_frame=is_remote,
-                                channel=chl_index,
-                                dlc=dlc,
-                                data=[int(i) for i in data.split(',')],
-                                is_fd=False,
+        try:
+            for channel in self.available:
+                can_num = self.device.fifo_read_buffer_count(channel, TSMasterMessageType.CAN)
+                canfd_num = self.device.fifo_read_buffer_count(channel, TSMasterMessageType.CAN_FD)
+                if self.device.com_enabled:
+                    # if can_num:
+                    LOG.debug(f'TOSUN-CAN - can message received: {can_num}.')
+                    while can_num > 0:
+                        can_num -= 1
+                        success, chl_index, is_remote, is_extend, dlc, can_id, timestamp, data = \
+                            self.device.fifo_receive_msg(channel, self.receive_own_messages, TSMasterMessageType.CAN)
+                        if success:
+                            self.rx_queue.append(
+                                can.Message(
+                                    timestamp=timestamp,
+                                    arbitration_id=can_id,
+                                    is_extended_id=is_extend,
+                                    is_remote_frame=is_remote,
+                                    channel=chl_index,
+                                    dlc=dlc,
+                                    data=[int(i) for i in data.split(',')],
+                                    is_fd=False,
+                                )
                             )
-                        )
-                # if canfd_num:
-                LOG.debug(f'TOSUN-CAN - canfd message received: {canfd_num}.')
-                while canfd_num > 0:
-                    canfd_num -= 1
-                    success, chl_index, is_remote, is_extend, is_edl, is_brs, dlc, can_id, timestamp, data = \
-                        self.device.fifo_receive_msg(channel, self.receive_own_messages, TSMasterMessageType.CAN_FD)
-                    if success:
-                        self.rx_queue.append(
-                            can.Message(
-                                timestamp=timestamp,
-                                arbitration_id=can_id,
-                                is_extended_id=is_extend,
-                                is_remote_frame=is_remote,
-                                channel=chl_index,
-                                dlc=dlc,
-                                data=[int(i) for i in data.split(',')],
-                                is_fd=True,
-                                bitrate_switch=is_brs,
+                    # if canfd_num:
+                    LOG.debug(f'TOSUN-CAN - canfd message received: {canfd_num}.')
+                    while canfd_num > 0:
+                        canfd_num -= 1
+                        success, chl_index, is_remote, is_extend, is_edl, is_brs, dlc, can_id, timestamp, data = \
+                            self.device.fifo_receive_msg(channel, self.receive_own_messages, TSMasterMessageType.CAN_FD)
+                        if success:
+                            self.rx_queue.append(
+                                can.Message(
+                                    timestamp=timestamp,
+                                    arbitration_id=can_id,
+                                    is_extended_id=is_extend,
+                                    is_remote_frame=is_remote,
+                                    channel=chl_index,
+                                    dlc=dlc,
+                                    data=[int(i) for i in data.split(',')],
+                                    is_fd=True,
+                                    bitrate_switch=is_brs,
 
+                                )
                             )
-                        )
-            else:
-                if can_num or canfd_num:
-                    if can_num < canfd_num:
-                        can_msgfd, canfd_num = self.device.tsfifo_receive_msgs(channel, canfd_num,
-                                                                               self.receive_own_messages,
-                                                                               TSMasterMessageType.CAN_FD)
-                        LOG.debug(f'TOSUN-CAN - canfd message received: {canfd_num}.')
-                        self.rx_queue.extend(
-                            can_msgfd[i] for i in range(canfd_num)
-                        )
-                    else:
-                        can_msg, can_num = self.device.tsfifo_receive_msgs(channel, can_num, self.receive_own_messages,
-                                                                           TSMasterMessageType.CAN)
-                        LOG.debug(f'TOSUN-CAN - can message received: {can_num}.')
-                        self.rx_queue.extend(
-                            can_msg[i] for i in range(can_num)
-                        )
-                    self.device.fifo_clear_receive_buffers(channel, TSMasterMessageType.CAN)
-                    self.device.fifo_clear_receive_buffers(channel, TSMasterMessageType.CAN_FD)
+                else:
+                    if can_num or canfd_num:
+                        if can_num < canfd_num:
+                            can_msgfd, canfd_num = self.device.tsfifo_receive_msgs(channel, canfd_num,
+                                                                                   self.receive_own_messages,
+                                                                                   TSMasterMessageType.CAN_FD)
+                            LOG.debug(f'TOSUN-CAN - canfd message received: {canfd_num}.')
+                            self.rx_queue.extend(
+                                can_msgfd[i] for i in range(canfd_num)
+                            )
+                        else:
+                            can_msg, can_num = self.device.tsfifo_receive_msgs(channel, can_num, self.receive_own_messages,
+                                                                               TSMasterMessageType.CAN)
+                            LOG.debug(f'TOSUN-CAN - can message received: {can_num}.')
+                            self.rx_queue.extend(
+                                can_msg[i] for i in range(can_num)
+                            )
+                        self.device.fifo_clear_receive_buffers(channel, TSMasterMessageType.CAN)
+                        self.device.fifo_clear_receive_buffers(channel, TSMasterMessageType.CAN_FD)
+        except TSMasterException as e:
+            raise can.CanOperationError(e)
 
     def _recv_internal(self, timeout: Optional[float]) -> Tuple[Optional[can.Message], bool]:
 
@@ -221,10 +227,13 @@ class TosunBus(can.BusABC):
         return None, False
 
     def send(self, msg: can.Message, timeout: Optional[float] = 50, sync: bool = True) -> None:
-        if msg.channel is None:
-            msg.channel = self.available[0]
-        msg = tosun_convert_msg(msg)
-        self.device.transmit(msg, sync, timeout=timeout)
+        try:
+            if msg.channel is None:
+                msg.channel = self.available[0]
+            msg = tosun_convert_msg(msg)
+            self.device.transmit(msg, sync, timeout=timeout)
+        except TSMasterException as e:
+            raise can.CanOperationError(e)
 
     @staticmethod
     def _detect_available_configs() -> List[can.typechecking.AutoDetectedConfig]:
