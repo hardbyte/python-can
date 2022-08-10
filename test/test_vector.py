@@ -334,9 +334,6 @@ class TestVectorBus(unittest.TestCase):
             assert tx_msg.equals(rx_msg, timestamp_delta=None)
 
     def test_receive_fd(self) -> None:
-        while _find_channel_configuration(100, 0).isOnBus:
-            time.sleep(0.1)
-            print("wait for bus")
         self.bus = canlib.VectorBus(
             app_name="test_receive_fd",
             channel=0,
