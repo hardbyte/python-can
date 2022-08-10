@@ -781,7 +781,7 @@ class VectorBus(BusABC):
         self.xldriver.xlGenerateSyncPulse(self.port_handle, self.mask)
 
     def init_access(self, channel: int) -> bool:
-        """Return True if the application has InitAccess on the given channel.
+        """Return True if the application has init access on the given channel.
 
         :param channel:
             The channel as an integer value. This corresponds to the ``channel`` argument
@@ -808,7 +808,7 @@ class VectorBus(BusABC):
         kwargs = [sjw, tseg1, tseg2]
         if any(kwargs) and not all(kwargs):
             raise ValueError(
-                f"Either all of {sjw=}, {tseg1=}, {tseg2=} must be set or None of them."
+                f"Either all of sjw, tseg1, tseg2 must be set or None of them."
             )
 
         # set parameters if channel has init access
