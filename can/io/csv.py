@@ -28,7 +28,12 @@ class CSVReader(MessageReader):
 
     file: TextIO
 
-    def __init__(self, file: Union[StringPathLike, TextIO]) -> None:
+    def __init__(
+        self,
+        file: Union[StringPathLike, TextIO],
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
         """
         :param file: a path-like object or as file-like object to read from
                      If this is a file-like object, is has to opened in text
@@ -91,7 +96,7 @@ class CSVWriter(FileIOMessageWriter):
         file: Union[StringPathLike, TextIO],
         append: bool = False,
         *args: Any,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """
         :param file: a path-like object or a file-like object to write to.

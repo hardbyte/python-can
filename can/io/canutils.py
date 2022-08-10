@@ -9,7 +9,7 @@ from typing import Generator, TextIO, Union, Any
 
 from can.message import Message
 from .generic import FileIOMessageWriter, MessageReader
-from ..typechecking import AcceptedIOType, StringPathLike
+from ..typechecking import StringPathLike
 
 log = logging.getLogger("can.io.canutils")
 
@@ -34,7 +34,12 @@ class CanutilsLogReader(MessageReader):
 
     file: TextIO
 
-    def __init__(self, file: Union[StringPathLike, TextIO]) -> None:
+    def __init__(
+        self,
+        file: Union[StringPathLike, TextIO],
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
         """
         :param file: a path-like object or as file-like object to read from
                      If this is a file-like object, is has to opened in text

@@ -63,10 +63,10 @@ def _create_base_argument_parser(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "extra_args",
         nargs=argparse.REMAINDER,
-        help=r"The remaining arguments will be used for the interface and "
-        r"logger initialisation. For example, `-i vector -c 1 --app-name="
-        r"MyCanApp` is the equivalent to opening the bus with `Bus("
-        r"'vector', channel=1, app_name='MyCanApp')",
+        help="The remaining arguments will be used for the interface and "
+        "logger/player initialisation. "
+        "For example, `-i vector -c 1 --app-name=MyCanApp` is the equivalent "
+        "to opening the bus with `Bus('vector', channel=1, app_name='MyCanApp')",
     )
 
 

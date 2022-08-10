@@ -32,7 +32,13 @@ class SqliteReader(MessageReader):
     .. note:: The database schema is given in the documentation of the loggers.
     """
 
-    def __init__(self, file: StringPathLike, table_name: str = "messages") -> None:
+    def __init__(
+        self,
+        file: StringPathLike,
+        table_name: str = "messages",
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
         """
         :param file: a `str`  path like object that points
                      to the database file to use
