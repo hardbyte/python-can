@@ -326,7 +326,7 @@ class SizedRotatingLogger(BaseRotatingLogger):
         if self.max_bytes <= 0:
             return False
 
-        if self.writer.file.tell() >= self.max_bytes:
+        if self.writer.file_size() >= self.max_bytes:
             return True
 
         return False

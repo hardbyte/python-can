@@ -17,7 +17,7 @@ import zlib
 import datetime
 import time
 import logging
-from typing import List, BinaryIO, Generator, Union, Tuple, Optional, cast
+from typing import List, BinaryIO, Generator, Union, Tuple, Optional, cast, Any
 
 from ..message import Message
 from ..util import len2dlc, dlc2len, channel2int
@@ -370,6 +370,8 @@ class BLFWriter(FileIOMessageWriter):
         append: bool = False,
         channel: int = 1,
         compression_level: int = -1,
+        *args: Any,
+        **kwargs: Any
     ) -> None:
         """
         :param file: a path-like object or as file-like object to write to
@@ -400,6 +402,9 @@ class BLFWriter(FileIOMessageWriter):
         self.compression_level = compression_level
         self._buffer: List[bytes] = []
         self._buffer_size = 0
+        # If max container size is located in kwargs, then update the instance
+        if kwargs.get("max_container_size", False):
+            self.max_container_size = kwargs["max_container_size"]
         if append:
             # Parse file header
             data = self.file.read(FILE_HEADER_STRUCT.size)
@@ -565,6 +570,10 @@ class BLFWriter(FileIOMessageWriter):
         self.uncompressed_size += OBJ_HEADER_BASE_STRUCT.size
         self.uncompressed_size += LOG_CONTAINER_STRUCT.size
         self.uncompressed_size += len(uncompressed_data)
+
+    def file_size(self) -> int:
+        """Return an estimate of the current file size in bytes."""
+        return self.file.tell() + self._buffer_size
 
     def stop(self):
         """Stops logging and closes the file."""
