@@ -10,6 +10,9 @@ from unittest.mock import Mock
 import gzip
 import os
 import sys
+
+import pytest
+
 import can
 import can.logger
 
@@ -104,6 +107,49 @@ class TestLoggerScriptModule(unittest.TestCase):
         can.logger.main()
         self.assertSuccessfullCleanup()
         self.mock_logger_sized.assert_called_once()
+
+    def test_parse_additional_config(self):
+        unknown_args = [
+            "--app-name=CANalyzer",
+            "--serial=5555",
+            "--receive-own-messages=True",
+            "--false-boolean=False",
+            "--offset=1.5",
+        ]
+        parsed_args = can.logger._parse_additional_config(unknown_args)
+
+        assert "app_name" in parsed_args
+        assert parsed_args["app_name"] == "CANalyzer"
+
+        assert "serial" in parsed_args
+        assert parsed_args["serial"] == 5555
+
+        assert "receive_own_messages" in parsed_args
+        assert (
+            isinstance(parsed_args["receive_own_messages"], bool)
+            and parsed_args["receive_own_messages"] is True
+        )
+
+        assert "false_boolean" in parsed_args
+        assert (
+            isinstance(parsed_args["false_boolean"], bool)
+            and parsed_args["false_boolean"] is False
+        )
+
+        assert "offset" in parsed_args
+        assert parsed_args["offset"] == 1.5
+
+        with pytest.raises(ValueError):
+            can.logger._parse_additional_config(["--wrong-format"])
+
+        with pytest.raises(ValueError):
+            can.logger._parse_additional_config(["-wrongformat=value"])
+
+        with pytest.raises(ValueError):
+            can.logger._parse_additional_config(["--wrongformat=value1 value2"])
+
+        with pytest.raises(ValueError):
+            can.logger._parse_additional_config(["wrongformat="])
 
 
 class TestLoggerCompressedFile(unittest.TestCase):
