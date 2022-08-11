@@ -347,9 +347,7 @@ class RotatingLogger(BaseRotatingLogger):
         if self.writer.file_size() >= self.max_bytes > 0:
             return True
         # Check to see if elapsed time is greater than delta_t
-        now = time.time()
-        if now - self.last_rollover_time > self.delta_t > 0:
-            self.last_rollover_time = now
+        if time.time() - self.last_rollover_time > self.delta_t > 0:
             return True
 
         return False
@@ -358,6 +356,9 @@ class RotatingLogger(BaseRotatingLogger):
         # Perform the file rollover.
         if self.writer:
             self.writer.stop()
+
+        # Reset the time since last rollover
+        self.last_rollover_time = time.time()
 
         sfn = self.base_filename
         dfn = self.rotation_filename(self._default_name())
