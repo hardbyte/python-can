@@ -38,7 +38,7 @@ def pack_filters(can_filters: Optional[typechecking.CanFilters] = None) -> bytes
     return struct.pack(can_filter_fmt, *filter_data)
 
 
-_PATTERN_CAN_INTERFACE = re.compile(r"(sl|v)?can\d+")
+_PATTERN_CAN_INTERFACE = re.compile(r"(sl|v|vx)?can\d+")
 
 
 def find_available_interfaces() -> Iterable[str]:
