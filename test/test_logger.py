@@ -103,7 +103,7 @@ class TestLoggerScriptModule(unittest.TestCase):
         self.MockLoggerUse = self.MockLoggerSized
         self.loggerToUse = self.mock_logger_sized
 
-        sys.argv = self.baseargs + ["--file_size", "1000000"]
+        sys.argv = self.baseargs + ["-f file.log"] + ["--file_size", "1000000"]
         can.logger.main()
         self.assertSuccessfullCleanup()
         self.mock_logger_sized.assert_called_once()
