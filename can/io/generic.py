@@ -89,6 +89,10 @@ class FileIOMessageWriter(MessageWriter, metaclass=ABCMeta):
 
         super().__init__(file, mode)
 
+    def file_size(self) -> int:
+        """Return an estimate of the current file size in bytes."""
+        return self.file.tell()
+
 
 # pylint: disable=too-few-public-methods
 class MessageReader(BaseIOHandler, Iterable[can.Message], metaclass=ABCMeta):

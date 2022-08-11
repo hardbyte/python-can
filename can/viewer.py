@@ -35,7 +35,7 @@ from .logger import (
     _parse_filters,
     _append_filter_argument,
     _create_base_argument_parser,
-    _parse_additonal_config,
+    _parse_additional_config,
 )
 
 
@@ -540,7 +540,7 @@ def parse_args(args):
             else:
                 data_structs[key] = struct.Struct(fmt)
 
-    additional_config = _parse_additonal_config(unknown_args)
+    additional_config = _parse_additional_config(unknown_args)
     return parsed_args, can_filters, data_structs, additional_config
 
 
