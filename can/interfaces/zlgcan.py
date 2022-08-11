@@ -272,7 +272,7 @@ class ZCanBus(BusABC):
                 self.device.StartCAN(channel)
                 self.available.append(channel)
         except ZCANException as e:
-            raise CanInitializationError(e)
+            raise CanInitializationError(str(e))
 
     # def _apply_filters(self, filters: Optional[can.typechecking.CanFilters]) -> None:
     #     pass
@@ -299,7 +299,7 @@ class ZCanBus(BusABC):
                         (channel, raw_msg) for raw_msg in self.device.ReceiveFD(channel, canfd_num, timeout)
                     )
         except ZCANException as e:
-            raise CanOperationError(e)
+            raise CanOperationError(str(e))
 
     def _recv_internal(self, timeout: Optional[float]) -> Tuple[Optional[Message], bool]:
 
@@ -334,7 +334,7 @@ class ZCanBus(BusABC):
                     return self.device.TransmitFD(channel, zlg_convert_msg(msg, channel=channel, is_merge=is_merge, **kwargs), 1)
                 return self.device.Transmit(channel, zlg_convert_msg(msg, channel=channel, is_merge=is_merge, **kwargs), 1)
         except ZCANException as e:
-            raise CanOperationError(e)
+            raise CanOperationError(str(e))
 
     @staticmethod
     def _detect_available_configs():                    # -> List[can.typechecking.AutoDetectedConfig]:

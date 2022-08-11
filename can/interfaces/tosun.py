@@ -1,7 +1,7 @@
 import collections
 import time
 import warnings
-from typing import List, Optional, Tuple, Any, Union
+from typing import List, Optional, Tuple, Union, Deque, Any
 
 import can
 import can.typechecking
@@ -132,7 +132,7 @@ class TosunBus(can.BusABC):
                 maxlen=rx_queue_size
             )  # type: Deque[Any]               # channel, raw_msg
         except TSMasterException as e:
-            raise can.CanOperationError(e)
+            raise can.CanOperationError(str(e))
 
     def _recv_from_queue(self) -> Tuple[can.Message, bool]:
         """Return a message from the internal receive queue"""
@@ -207,7 +207,7 @@ class TosunBus(can.BusABC):
                         self.device.fifo_clear_receive_buffers(channel, TSMasterMessageType.CAN)
                         self.device.fifo_clear_receive_buffers(channel, TSMasterMessageType.CAN_FD)
         except TSMasterException as e:
-            raise can.CanOperationError(e)
+            raise can.CanOperationError(str(e))
 
     def _recv_internal(self, timeout: Optional[float]) -> Tuple[Optional[can.Message], bool]:
 
@@ -271,7 +271,7 @@ if __name__ == '__main__':
                'hw_chl_idx': TSChannelIndex.CHN1,
                'hw_subtype': TSDeviceSubType.TC1016,
                'hw_name': 'TC1016'}
-    with TosunBus([mapping, ], configs=[
+    with TosunBus(mappings=[mapping, ], configs=[
             {'bitrate': 500_000, 'initenal_resistance': 1}
         ],
         # with_com=True

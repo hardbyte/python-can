@@ -28,7 +28,7 @@ BACKENDS = {
     "etas": ("can.interfaces.etas", "EtasBus"),
     "socketcand": ("can.interfaces.socketcand", "SocketCanDaemonBus"),
     "zlgcan": ("can.interfaces.zlgcan", "ZCanBus"),
-    "tosun": ("can.interfaces.tosun", "TosuBus"),
+    "tosun": ("can.interfaces.tosun", "TosunBus"),
 }
 
 try:
