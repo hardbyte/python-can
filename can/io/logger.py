@@ -16,6 +16,7 @@ from types import TracebackType
 from typing_extensions import Literal
 from pkg_resources import iter_entry_points
 
+import can.io
 from ..message import Message
 from ..listener import Listener
 from .generic import BaseIOHandler, FileIOMessageWriter, MessageWriter
@@ -229,8 +230,8 @@ class BaseRotatingLogger(Listener, BaseIOHandler, ABC):
             return cast(FileIOMessageWriter, logger)
         else:
             raise Exception(
-                "The Logger corresponding to the arguments is not a FileIOMessageWriter or "
-                "can.Printer"
+                f"The log format \"{''.join(pathlib.Path(filename).suffixes[-2:])}"
+                f'" is not supported by {self.__class__.__name__}'
             )
 
     def stop(self) -> None:
@@ -340,7 +341,7 @@ class RotatingLogger(BaseRotatingLogger):
             return False
 
         # Check to see if the file size is greater than max bytes
-        if self.writer.file.tell() >= self.max_bytes > 0:
+        if self.writer.file_size() >= self.max_bytes > 0:
             return True
         # Check to see if elapsed time is greater than delta_t
         now = time.time()

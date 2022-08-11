@@ -191,8 +191,9 @@ def main() -> None:
         "--file_size",
         dest="file_size",
         type=int,
-        help="Maximum file size in bytes. Rotate log file when size threshold "
-        "is reached.",
+        help="Maximum file size in bytes (or for the case of blf, maximum "
+        "buffer size before compression and flush to file). Rotate log "
+        "file when size threshold is reached.",
         default=0,
     )
 
