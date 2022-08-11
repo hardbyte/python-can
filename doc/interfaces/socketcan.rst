@@ -62,7 +62,7 @@ CAN over Serial / SLCAN
 
 SLCAN adapters can be used directly via :doc:`/interfaces/slcan`, or
 via :doc:`/interfaces/socketcan` with some help from the ``slcand`` utility
-which can be found in the `can-utils <https://github.com/linux-can/can-utils>` package.
+which can be found in the `can-utils <https://github.com/linux-can/can-utils>`_ package.
 
 To create a socketcan interface for an SLCAN adapter run the following:
 
