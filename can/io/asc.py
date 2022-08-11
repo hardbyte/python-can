@@ -344,7 +344,6 @@ class ASCWriter(FileIOMessageWriter):
             "{bit_timing_conf_ext_data:>8}",
         ]
     )
-    # Use trigger start time to replace file start time
     FORMAT_START_OF_FILE_DATE = "%a %b %d %I:%M:%S.%f %p %Y"
     FORMAT_DATE = "%a %b %d %I:%M:%S.{} %p %Y"
     FORMAT_EVENT = "{timestamp: 9.6f} {message}\n"
@@ -411,10 +410,6 @@ class ASCWriter(FileIOMessageWriter):
             formatted_date = time.strftime(
                 self.FORMAT_DATE.format(mlsec), time.localtime(self.last_timestamp)
             )
-            # changed 2022-08-04, moved file start header here to be one.
-            self.file.write(f"date {formatted_date}\n")
-            self.file.write("base hex  timestamps absolute\n")
-            self.file.write("internal events logged\n")
             self.file.write(f"Begin Triggerblock {formatted_date}\n")
             self.header_written = True
             self.log_event("Start of measurement")  # caution: this is a recursive call!
