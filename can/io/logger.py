@@ -263,10 +263,13 @@ class BaseRotatingLogger(Listener, BaseIOHandler, ABC):
 
 
 class RotatingLogger(BaseRotatingLogger):
-    """Log CAN messages to a sequence of files with a given maximum size.
+    """Log CAN messages to a sequence of files with a given maximum size,
+    a specified amount of time or a combination of both. When both max size
+    (bytes) and rollover time (seconds) are provided, the rollover trigger
+    is caused by the first to occur.
 
-    The logger creates a log file with the given `base_filename`. When the
-    size threshold is reached the current log file is closed and renamed
+    The logger creates a log file with the given `base_filename`. When a size
+    or time threshold is reached the current log file is closed and renamed
     by adding a timestamp and the rollover count. A new log file is then
     created and written to.
 
