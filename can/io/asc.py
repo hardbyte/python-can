@@ -372,6 +372,10 @@ class ASCWriter(FileIOMessageWriter):
 
         # write start of file header
         now = datetime.now().strftime(self.FORMAT_START_OF_FILE_DATE)
+        # Note: CANoe requires that the microsecond field only have 3 digits
+        idx = now.index(".")  # Find the index in the string of the decimal
+        # Keep decimal and first three ms digits (4), remove remaining digits
+        now = now.replace(now[idx + 4 : now[idx:].index(" ") + idx], "")
         self.file.write(f"date {now}\n")
         self.file.write("base hex  timestamps absolute\n")
         self.file.write("internal events logged\n")
