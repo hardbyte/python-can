@@ -212,15 +212,20 @@ def _create_bus_config(config: Dict[str, Any]) -> typechecking.BusConfig:
             f'Unknown interface type "{config["interface"]}"'
         )
     if "port" in config:
-        if isinstance(config["port"], str):
+        # convert port to integer if necessary
+        if isinstance(config["port"], int):
+            port = config["port"]
+        elif isinstance(config["port"], str):
             if config["port"].isnumeric():
-                config["port"] = int(config["port"])
+                config["port"] = port = int(config["port"])
             else:
                 raise ValueError("Port config must be a number!")
-        elif not isinstance(config["port"], int):
+        else:
             raise TypeError("Port config must be string or integer!")
-        if not 0 < int(config["port"]) < 65535:
+
+        if not 0 < port < 65535:
             raise ValueError("Port config must be inside 0-65535 range!")
+
     if "bitrate" in config:
         config["bitrate"] = int(config["bitrate"])
     if "fd" in config:
