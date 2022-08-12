@@ -93,7 +93,7 @@ class SocketCanDaemonBus(can.BusABC):
             ready_receive_sockets, _, _ = select.select(
                 [self.__socket], [], [], timeout
             )
-        except socket.error as exc:
+        except OSError as exc:
             # something bad happened (e.g. the interface went down)
             log.error(f"Failed to receive: {exc}")
             raise can.CanError(f"Failed to receive: {exc}")
