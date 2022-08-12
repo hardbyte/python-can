@@ -7,6 +7,7 @@ from typing import (
     Iterable,
     Type,
     ContextManager,
+    Any,
 )
 from typing_extensions import Literal
 from types import TracebackType
@@ -28,7 +29,11 @@ class BaseIOHandler(ContextManager, metaclass=ABCMeta):
     file: Optional[can.typechecking.FileLike]
 
     def __init__(
-        self, file: Optional[can.typechecking.AcceptedIOType], mode: str = "rt"
+        self,
+        file: Optional[can.typechecking.AcceptedIOType],
+        mode: str = "rt",
+        *args: Any,
+        **kwargs: Any
     ) -> None:
         """
         :param file: a path-like object to open a file, a file-like object
@@ -82,7 +87,13 @@ class FileIOMessageWriter(MessageWriter, metaclass=ABCMeta):
 
     file: can.typechecking.FileLike
 
-    def __init__(self, file: can.typechecking.AcceptedIOType, mode: str = "wt") -> None:
+    def __init__(
+        self,
+        file: can.typechecking.AcceptedIOType,
+        mode: str = "wt",
+        *args: Any,
+        **kwargs: Any
+    ) -> None:
         # Not possible with the type signature, but be verbose for user-friendliness
         if file is None:
             raise ValueError("The given file cannot be None")

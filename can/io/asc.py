@@ -39,6 +39,8 @@ class ASCReader(MessageReader):
         file: Union[StringPathLike, TextIO],
         base: str = "hex",
         relative_timestamp: bool = True,
+        *args: Any,
+        **kwargs: Any,
     ) -> None:
         """
         :param file: a path-like object or as file-like object to read from
@@ -352,6 +354,7 @@ class ASCWriter(FileIOMessageWriter):
         self,
         file: Union[StringPathLike, TextIO],
         channel: int = 1,
+        *args: Any,
         **kwargs: Any,
     ) -> None:
         """
