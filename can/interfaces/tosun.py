@@ -67,7 +67,7 @@ class TosunBus(can.BusABC):
                  mappings: list[dict],
                  configs: Union[List[dict], Tuple[dict]],
                  fifo_status: str = 'enable',
-                 turbo_enable: bool = False,
+                 turbo_enable: bool = True,
                  receive_own_messages=True,
                  rx_queue_size: Optional[int] = None,
                  can_filters: Optional[can.typechecking.CanFilters] = None,
