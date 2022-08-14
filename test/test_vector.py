@@ -8,7 +8,6 @@ import ctypes
 import os
 import pickle
 import random
-import time
 import unittest
 from typing import List
 from unittest.mock import Mock
@@ -25,6 +24,7 @@ from can.interfaces.vector import (
     VectorOperationError,
     VectorChannelConfig,
 )
+from can.interfaces.vector.canlib import VectorBusParams
 from test.config import IS_WINDOWS
 
 MOCK = True
@@ -585,7 +585,7 @@ class TestVectorBus(unittest.TestCase):
             bustype="vector",
             _testing=True,
         )
-        self.bus.generate_sync_pulse()
+        self.bus.generate_sync_pulse(channel=0)
 
         if MOCK:
             assert canlib.xldriver.xlGenerateSyncPulse.called
@@ -668,6 +668,62 @@ class TestVectorChannelConfig:
         assert hasattr(VectorChannelConfig, "serialNumber")
         assert hasattr(VectorChannelConfig, "articleNumber")
         assert hasattr(VectorChannelConfig, "transceiverName")
+
+
+class TestVectorBusParams:
+    def test_attributes(self):
+        assert hasattr(VectorBusParams, "bus_type")
+        assert hasattr(VectorBusParams, "can_params")
+        assert hasattr(VectorBusParams, "canfd_params")
+
+    def test_from_bus_params(self):
+        # test CAN
+        can_bus_params_bytes = bytes.fromhex(
+            "01 00 00 00 20 a1 07 00 01 04 03 01 01 00 00 00 "
+            "00 00 00 00 01 00 00 00 00 68 89 09 00 00 00 00"
+        )
+        can_bus_params = xlclass.XLbusParams.from_buffer_copy(can_bus_params_bytes)
+        bus_params = VectorBusParams.from_bus_params(can_bus_params)
+        assert bus_params.bus_type is xldefine.XL_BusTypes.XL_BUS_TYPE_CAN
+        assert bus_params.can_params["bitrate"] == 500_000
+        assert bus_params.can_params["sjw"] == 1
+        assert bus_params.can_params["tseg1"] == 4
+        assert bus_params.can_params["tseg2"] == 3
+        assert bus_params.can_params["sam"] == 1
+        assert (
+            bus_params.can_params["output_mode"]
+            is xldefine.XL_OutputMode.XL_OUTPUT_MODE_NORMAL
+        )
+        assert (
+            bus_params.can_params["can_op_mode"]
+            is xldefine.XL_CANFD_BusParams_CanOpMode.XL_BUS_PARAMS_CANOPMODE_CAN20
+        )
+
+        # test CAN FD
+        canfd_bus_params_bytes = bytes.fromhex(
+            "01 00 00 00 20 a1 07 00 02 06 03 01 01 02 06 03 "
+            "80 84 1e 00 06 00 00 00 00 68 89 09 00 00 00 00"
+        )
+        canfd_bus_params = xlclass.XLbusParams.from_buffer_copy(canfd_bus_params_bytes)
+        bus_params = VectorBusParams.from_bus_params(canfd_bus_params)
+        assert bus_params.bus_type is xldefine.XL_BusTypes.XL_BUS_TYPE_CAN
+        assert bus_params.canfd_params["bitrate"] == 500_000
+        assert bus_params.canfd_params["data_bitrate"] == 2_000_000
+        assert bus_params.canfd_params["sjw_abr"] == 2
+        assert bus_params.canfd_params["tseg1_abr"] == 6
+        assert bus_params.canfd_params["tseg2_abr"] == 3
+        assert bus_params.canfd_params["sam_abr"] == 1
+        assert bus_params.canfd_params["sjw_dbr"] == 2
+        assert bus_params.canfd_params["tseg1_dbr"] == 6
+        assert bus_params.canfd_params["tseg2_dbr"] == 3
+        assert (
+            bus_params.canfd_params["output_mode"]
+            is xldefine.XL_OutputMode.XL_OUTPUT_MODE_NORMAL
+        )
+        assert (
+            xldefine.XL_CANFD_BusParams_CanOpMode.XL_BUS_PARAMS_CANOPMODE_CANFD
+            in bus_params.canfd_params["can_op_mode"]
+        )
 
 
 def xlGetApplConfig(
