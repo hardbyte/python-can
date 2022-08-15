@@ -771,6 +771,10 @@ class VectorBus(BusABC):
         """Generate a sync pulse at the hardware synchronization line
         (hardware party line) with a maximum frequency of 10 Hz. It is only allowed
         to generate a sync pulse at one channel and at one device at the same time.
+
+        :param channel:
+            The channel as an integer value. This corresponds to the ``channel`` argument
+            in :meth:`~can.interfaces.vector.VectorBus.__init__`.
         """
         try:
             channel_mask = self.channel_masks[channel]
@@ -857,7 +861,7 @@ class VectorBus(BusABC):
                     self.channel_masks[channel],
                     bitrate,
                 )
-                LOG.info("SetChannelBitrate: baudr.=%u", bitrate)
+                LOG.info("xlCanSetChannelBitrate: baudr.=%u", bitrate)
             return
 
         # if channel does not have init access, check whether bitrate is correct already
@@ -876,7 +880,7 @@ class VectorBus(BusABC):
         raise VectorInitializationError(
             error_code=xldefine.XL_Status.XL_ERR_INVALID_ACCESS,
             error_string=f"Channel {channel} did not receive init access. Unable to set bitrate.",
-            function="VectorBus.set_bitrate_can",
+            function="VectorBus._set_bitrate_can",
         )
 
     def _set_bitrate_canfd(
@@ -912,18 +916,18 @@ class VectorBus(BusABC):
                 self.port_handle, self.channel_masks[channel], canfd_conf
             )
             LOG.info(
-                "SetFdConfig.: ABaudr.=%u, DBaudr.=%u",
+                "xlCanFdSetConfiguration.: ABaudr.=%u, DBaudr.=%u",
                 canfd_conf.arbitrationBitRate,
                 canfd_conf.dataBitRate,
             )
             LOG.info(
-                "SetFdConfig.: sjwAbr=%u, tseg1Abr=%u, tseg2Abr=%u",
+                "xlCanFdSetConfiguration.: sjwAbr=%u, tseg1Abr=%u, tseg2Abr=%u",
                 canfd_conf.sjwAbr,
                 canfd_conf.tseg1Abr,
                 canfd_conf.tseg2Abr,
             )
             LOG.info(
-                "SetFdConfig.: sjwDbr=%u, tseg1Dbr=%u, tseg2Dbr=%u",
+                "xlCanFdSetConfiguration.: sjwDbr=%u, tseg1Dbr=%u, tseg2Dbr=%u",
                 canfd_conf.sjwDbr,
                 canfd_conf.tseg1Dbr,
                 canfd_conf.tseg2Dbr,
@@ -951,7 +955,7 @@ class VectorBus(BusABC):
         raise VectorInitializationError(
             error_code=xldefine.XL_Status.XL_ERR_INVALID_ACCESS,
             error_string=f"Channel {channel} did not receive init access. Unable to set bitrate.",
-            function="VectorBus.set_bitrate_canfd",
+            function="VectorBus._set_bitrate_canfd",
         )
 
 
