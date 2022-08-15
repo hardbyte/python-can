@@ -802,7 +802,7 @@ class VectorBus(BusABC):
             raise ValueError(
                 f'Channel "{channel}" is not a valid channel. '
                 f"Available channels: {', '.join([str(c) for c in self.channel_masks])}."
-            )
+            ) from None
 
     def _get_channel_config(self, channel: int) -> "VectorChannelConfig":
         channel_mask = self._get_channel_mask(channel)
