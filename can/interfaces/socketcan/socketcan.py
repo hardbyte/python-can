@@ -530,7 +530,7 @@ def capture_message(
             channel = addr[0] if isinstance(addr, tuple) else addr
         else:
             channel = None
-    except socket.error as error:
+    except OSError as error:
         raise can.CanOperationError(f"Error receiving: {error.strerror}", error.errno)
 
     can_id, can_dlc, flags, data = dissect_can_frame(cf)
@@ -656,7 +656,7 @@ class SocketcanBus(BusABC):
             self.socket.setsockopt(
                 SOL_CAN_RAW, CAN_RAW_LOOPBACK, 1 if local_loopback else 0
             )
-        except socket.error as error:
+        except OSError as error:
             log.error("Could not set local loopback flag(%s)", error)
 
         # set the receive_own_messages parameter
@@ -664,21 +664,21 @@ class SocketcanBus(BusABC):
             self.socket.setsockopt(
                 SOL_CAN_RAW, CAN_RAW_RECV_OWN_MSGS, 1 if receive_own_messages else 0
             )
-        except socket.error as error:
+        except OSError as error:
             log.error("Could not receive own messages (%s)", error)
 
         # enable CAN-FD frames if desired
         if fd:
             try:
                 self.socket.setsockopt(SOL_CAN_RAW, CAN_RAW_FD_FRAMES, 1)
-            except socket.error as error:
+            except OSError as error:
                 log.error("Could not enable CAN-FD frames (%s)", error)
 
         if not ignore_rx_error_frames:
             # enable error frames
             try:
                 self.socket.setsockopt(SOL_CAN_RAW, CAN_RAW_ERR_FILTER, 0x1FFFFFFF)
-            except socket.error as error:
+            except OSError as error:
                 log.error("Could not enable error frames (%s)", error)
 
         # enable nanosecond resolution timestamping
@@ -714,7 +714,7 @@ class SocketcanBus(BusABC):
             # get all sockets that are ready (can be a list with a single value
             # being self.socket or an empty list if self.socket is not ready)
             ready_receive_sockets, _, _ = select.select([self.socket], [], [], timeout)
-        except socket.error as error:
+        except OSError as error:
             # something bad happened (e.g. the interface went down)
             raise can.CanOperationError(
                 f"Failed to receive: {error.strerror}", error.errno
@@ -776,7 +776,7 @@ class SocketcanBus(BusABC):
                 sent = self.socket.sendto(data, (channel,))
             else:
                 sent = self.socket.send(data)
-        except socket.error as error:
+        except OSError as error:
             raise can.CanOperationError(
                 f"Failed to transmit: {error.strerror}", error.errno
             )
@@ -840,7 +840,7 @@ class SocketcanBus(BusABC):
     def _apply_filters(self, filters: Optional[can.typechecking.CanFilters]) -> None:
         try:
             self.socket.setsockopt(SOL_CAN_RAW, CAN_RAW_FILTER, pack_filters(filters))
-        except socket.error as error:
+        except OSError as error:
             # fall back to "software filtering" (= not in kernel)
             self._is_filtered = False
             log.error(

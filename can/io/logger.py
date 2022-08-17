@@ -305,8 +305,8 @@ class SizedRotatingLogger(BaseRotatingLogger):
     def __init__(
         self,
         base_filename: StringPathLike,
-        *args: Any,
         max_bytes: int = 0,
+        *args: Any,
         **kwargs: Any,
     ) -> None:
         """

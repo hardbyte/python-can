@@ -143,7 +143,12 @@ class BLFReader(MessageReader):
 
     file: BinaryIO
 
-    def __init__(self, file: Union[StringPathLike, BinaryIO]) -> None:
+    def __init__(
+        self,
+        file: Union[StringPathLike, BinaryIO],
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
         """
         :param file: a path-like object or as file-like object to read from
                      If this is a file-like object, is has to opened in binary
@@ -371,7 +376,7 @@ class BLFWriter(FileIOMessageWriter):
         channel: int = 1,
         compression_level: int = -1,
         *args: Any,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """
         :param file: a path-like object or as file-like object to write to
