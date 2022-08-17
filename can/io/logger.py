@@ -104,7 +104,9 @@ class Logger(MessageWriter):  # pylint: disable=abstract-method
         File will automatically recompress upon close.
         """
         real_suffix = pathlib.Path(filename).suffixes[-2].lower()
-        mode = "ab" if real_suffix == ".blf" else "at"
+        # Why is this setup to append by default?
+        # mode = "ab" if real_suffix == ".blf" else "at"
+        mode = "wb" if real_suffix == ".blf" else "wt"
 
         return real_suffix, gzip.open(filename, mode)
 

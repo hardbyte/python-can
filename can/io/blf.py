@@ -578,11 +578,12 @@ class BLFWriter(FileIOMessageWriter):
     def stop(self):
         """Stops logging and closes the file."""
         self._flush()
-        if self.file.seekable():
-            filesize = self.file.tell()
-            # Write header in the beginning of the file
-            self.file.seek(0)
-            self._write_header(filesize)
-        else:
-            LOG.error("Could not write BLF header since file is not seekable")
+        # Note: This does not appear to be necessary if the append option is not being used.
+        # if self.file.seekable():
+        #     filesize = self.file.tell()
+        #     # Write header in the beginning of the file
+        #     self.file.seek(0)  # TODO: fix the OSError that occurs here
+        #     self._write_header(filesize)
+        # else:
+        #     LOG.error("Could not write BLF header since file is not seekable")
         super().stop()
