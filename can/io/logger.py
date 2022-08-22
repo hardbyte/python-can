@@ -350,8 +350,8 @@ class SizedRotatingLogger(BaseRotatingLogger):
             _stem = path.stem
             _suffix = path.suffix
         elif len(path.suffixes) == 2:
-            _stem = path.parts[-1].split('.')[0]
-            _suffix = ''.join(path.suffixes)
+            _stem = path.parts[-1].split(".")[0]
+            _suffix = "".join(path.suffixes)
         else:
             raise ValueError("More than two suffixes are seen.")
         new_name = (
