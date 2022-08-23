@@ -584,7 +584,9 @@ class BLFWriter(FileIOMessageWriter):
         """Stops logging and closes the file."""
         self._flush()
         if self.file.seekable():
-            filesize = self.file.tell()  # == self.file.seek(0, 1) if type == gzip.GzipFile
+            filesize = (
+                self.file.tell()
+            )  # == self.file.seek(0, 1) if type == gzip.GzipFile
             if type(self.file) != gzip.GzipFile:
                 # Write header in the beginning of the file
                 self.file.seek(0)

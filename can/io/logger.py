@@ -98,13 +98,15 @@ class Logger(MessageWriter):  # pylint: disable=abstract-method
             ) from None
 
     @staticmethod
-    def compress(filename: StringPathLike, *args: Any, **kwargs: Any) -> Tuple[str, FileLike]:
+    def compress(
+        filename: StringPathLike, *args: Any, **kwargs: Any
+    ) -> Tuple[str, FileLike]:
         """
         Return the suffix and io object of the decompressed file.
         File will automatically recompress upon close.
         """
         real_suffix = pathlib.Path(filename).suffixes[-2].lower()
-        if kwargs.get('append', False):
+        if kwargs.get("append", False):
             mode = "ab" if real_suffix == ".blf" else "at"
         else:
             mode = "wb" if real_suffix == ".blf" else "wt"
