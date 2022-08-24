@@ -12,6 +12,7 @@ of uncompressed data each. This data contains the actual CAN messages and other
 objects types.
 """
 import gzip
+import os
 import struct
 import zlib
 import datetime
@@ -432,7 +433,8 @@ class BLFWriter(FileIOMessageWriter):
             self.start_timestamp = None
             self.stop_timestamp = None
             # Write a default header which will be updated when stopped
-            self._write_header(FILE_HEADER_SIZE)
+            # Temporarily removed for the sake of GzipFiles
+            # self._write_header(FILE_HEADER_SIZE)
 
     def _write_header(self, filesize):
         header = [b"LOGG", FILE_HEADER_SIZE, self.application_id, 0, 0, 0, 2, 6, 8, 1]
@@ -540,8 +542,9 @@ class BLFWriter(FileIOMessageWriter):
 
         self._buffer_size += obj_size + padding_size
         self.object_count += 1
-        if self._buffer_size >= self.max_container_size:
-            self._flush()
+        # Don't accidentally write to blf file prior to writing header
+        # if self._buffer_size >= self.max_container_size:
+        #     self._flush()
 
     def _flush(self):
         """Compresses and writes data in the buffer to file."""
@@ -582,15 +585,13 @@ class BLFWriter(FileIOMessageWriter):
 
     def stop(self):
         """Stops logging and closes the file."""
-        self._flush()
         if self.file.seekable():
-            filesize = (
-                self.file.tell()
-            )  # == self.file.seek(0, 1) if type == gzip.GzipFile
-            if type(self.file) != gzip.GzipFile:
-                # Write header in the beginning of the file
-                self.file.seek(0)
+            # For a GzipFile, the file currently must be empty prior to writing
+            # this final header, else an OSError will occur
+            filesize = self.file.tell()
+            self.file.seek(0)
             self._write_header(filesize)
         else:
             LOG.error("Could not write BLF header since file is not seekable")
+        self._flush()
         super().stop()
