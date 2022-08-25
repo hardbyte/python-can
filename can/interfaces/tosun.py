@@ -204,8 +204,7 @@ class TosunBus(can.BusABC):
                             self.rx_queue.extend(
                                 can_msg[i] for i in range(can_num)
                             )
-                        self.device.fifo_clear_receive_buffers(channel, TSMasterMessageType.CAN)
-                        self.device.fifo_clear_receive_buffers(channel, TSMasterMessageType.CAN_FD)
+                        self.clear_rx_buffer(channel)
         except TSMasterException as e:
             raise can.CanOperationError(str(e))
 
