@@ -2,8 +2,11 @@
 Interfaces contain low level implementations that interact with CAN hardware.
 """
 
+import sys
+from typing import Dict, Tuple
+
 # interface_name => (module, classname)
-BACKENDS = {
+BACKENDS: Dict[str, Tuple[str, ...]] = {
     "kvaser": ("can.interfaces.kvaser", "KvaserBus"),
     "socketcan": ("can.interfaces.socketcan", "SocketcanBus"),
     "serial": ("can.interfaces.serial.serial_can", "SerialBus"),
@@ -31,27 +34,21 @@ BACKENDS = {
     "tosun": ("can.interfaces.tosun", "TosunBus"),
 }
 
-try:
+if sys.version_info >= (3, 8):
     from importlib.metadata import entry_points
 
-    try:
-        entries = entry_points(group="can.interface")
-    except TypeError:
-        # Fallback for Python <3.10
-        # See https://docs.python.org/3/library/importlib.metadata.html#entry-points, "Compatibility Note"
-        entries = entry_points().get("can.interface", [])
-
+    entries = entry_points().get("can.interface", ())
     BACKENDS.update(
         {interface.name: tuple(interface.value.split(":")) for interface in entries}
     )
-except ImportError:
+else:
     from pkg_resources import iter_entry_points
 
-    entry = iter_entry_points("can.interface")
+    entries = iter_entry_points("can.interface")
     BACKENDS.update(
         {
             interface.name: (interface.module_name, interface.attrs[0])
-            for interface in entry
+            for interface in entries
         }
     )
 
