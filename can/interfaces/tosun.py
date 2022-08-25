@@ -209,6 +209,15 @@ class TosunBus(can.BusABC):
         except TSMasterException as e:
             raise can.CanOperationError(str(e))
 
+    def clear_rx_buffer(self, channel=None):
+        if channel:
+            self.device.fifo_clear_receive_buffers(channel, TSMasterMessageType.CAN)
+            self.device.fifo_clear_receive_buffers(channel, TSMasterMessageType.CAN_FD)
+        else:
+            for channel in self.available:
+                self.device.fifo_clear_receive_buffers(channel, TSMasterMessageType.CAN)
+                self.device.fifo_clear_receive_buffers(channel, TSMasterMessageType.CAN_FD)
+
     def _recv_internal(self, timeout: Optional[float]) -> Tuple[Optional[can.Message], bool]:
 
         if self.rx_queue:
