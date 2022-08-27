@@ -350,6 +350,6 @@ class SizedRotatingLogger(BaseRotatingLogger):
             + datetime.now().strftime("%Y-%m-%dT%H%M%S")
             + "_"
             + f"#{self.rollover_count:03}"
-            + "".join(pathlib.Path(self.base_filename).suffixes[-2:])
+            + "".join(path.suffixes[-2:])
         )
         return str(path.parent / new_name)
