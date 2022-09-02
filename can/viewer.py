@@ -540,7 +540,9 @@ def parse_args(args):
             else:
                 data_structs[key] = struct.Struct(fmt)
 
-    additional_config = _parse_additional_config(unknown_args)
+    additional_config = _parse_additional_config(
+        [*parsed_args.extra_args, *unknown_args]
+    )
     return parsed_args, can_filters, data_structs, additional_config
 
 
