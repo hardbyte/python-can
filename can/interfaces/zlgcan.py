@@ -226,31 +226,31 @@ class ZCanBus(BusABC):
                 init_config = {}
                 if platform.system().lower() == 'windows':
                     mode = config.get('mode', None)
-                    if mode:
+                    if mode is not None:
                         init_config['mode'] = mode
                         del config['mode']
                     filter = config.get('filter', None)
-                    if filter:
+                    if filter is not None:
                         init_config['filter'] = filter
                         del config['filter']
                     acc_code = config.get('acc_code', None)
-                    if acc_code:
+                    if acc_code is not None:
                         init_config['acc_code'] = acc_code
                         del config['acc_code']
                     acc_mask = config.get('acc_mask', None)
-                    if acc_mask:
+                    if acc_mask is not None:
                         init_config['acc_mask'] = acc_mask
                         del config['acc_mask']
                     brp = config.get('brp', None)
-                    if brp:
+                    if brp is not None:
                         init_config['brp'] = brp
                         del config['brp']
-                    abit_timing = config.get('dbit_timing', None)
-                    if abit_timing:
+                    abit_timing = config.get('abit_timing', None)
+                    if abit_timing is not None:
                         init_config['abit_timing'] = abit_timing
                         del config['abit_timing']
                     dbit_timing = config.get('dbit_timing', None)
-                    if dbit_timing:
+                    if dbit_timing is not None:
                         init_config['dbit_timing'] = dbit_timing
                         del config['dbit_timing']
 
@@ -266,8 +266,12 @@ class ZCanBus(BusABC):
                     else:
                         del config['data_bitrate']
                         config['canfd_dbit_baud_rate'] = data_bitrate
-
-                    self.device.SetValue(channel, **config)
+                    if hasattr(self.device, 'SetValue'):
+                        # try:
+                        #     self.device.SetValue(channel, **config)
+                        # except ZCANException:
+                        #     pass
+                        self.device.SetValue(channel, **config)
                 self.device.InitCAN(channel, **init_config)
                 self.device.StartCAN(channel)
                 self.available.append(channel)
