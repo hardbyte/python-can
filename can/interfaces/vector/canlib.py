@@ -21,6 +21,7 @@ from typing import (
     Any,
     Dict,
     Callable,
+    cast,
 )
 
 WaitForSingleObject: Optional[Callable[[int, int], int]]
@@ -43,7 +44,7 @@ from can.util import (
     deprecated_args_alias,
     time_perfcounter_correlation,
 )
-from can.typechecking import AutoDetectedConfig, CanFilters, Channel
+from can.typechecking import AutoDetectedConfig, CanFilters
 
 # Define Module Logger
 # ====================
@@ -152,6 +153,7 @@ class VectorBus(BusABC):
         if xldriver is None:
             raise CanInterfaceNotImplementedError("The Vector API has not been loaded")
         self.xldriver = xldriver  # keep reference so mypy knows it is not None
+        self.xldriver.xlOpenDriver()
 
         self.poll_interval = poll_interval
 
@@ -165,7 +167,7 @@ class VectorBus(BusABC):
             self.channels = [int(ch) for ch in channel]
         else:
             raise TypeError(
-                f"Invalid type for channels parameter: {type(channel).__name__}"
+                f"Invalid type for parameter 'channel': {type(channel).__name__}"
             )
 
         self._app_name = app_name.encode() if app_name is not None else b""
@@ -174,59 +176,26 @@ class VectorBus(BusABC):
             ", ".join(f"CAN {ch + 1}" for ch in self.channels),
         )
 
-        if serial is not None:
-            app_name = None
-            channel_index = []
-            channel_configs = get_channel_configs()
-            for channel_config in channel_configs:
-                if channel_config.serialNumber == serial:
-                    if channel_config.hwChannel in self.channels:
-                        channel_index.append(channel_config.channelIndex)
-            if channel_index:
-                if len(channel_index) != len(self.channels):
-                    LOG.info(
-                        "At least one defined channel wasn't found on the specified hardware."
-                    )
-                self.channels = channel_index
-            else:
-                # Is there any better way to raise the error?
-                raise CanInitializationError(
-                    "None of the configured channels could be found on the specified hardware."
-                )
+        channel_configs = get_channel_configs()
 
-        self.xldriver.xlOpenDriver()
-        self.port_handle = xlclass.XLportHandle(xldefine.XL_INVALID_PORTHANDLE)
         self.mask = 0
         self.fd = fd
-        # Get channels masks
-        self.channel_masks: Dict[Optional[Channel], int] = {}
-        self.index_to_channel = {}
+        self.channel_masks: Dict[int, int] = {}
+        self.index_to_channel: Dict[int, int] = {}
 
         for channel in self.channels:
-            if app_name:
-                # Get global channel index from application channel
-                hw_type, hw_index, hw_channel = self.get_application_config(
-                    app_name, channel
-                )
-                LOG.debug("Channel index %d found", channel)
-                idx = self.xldriver.xlGetChannelIndex(hw_type, hw_index, hw_channel)
-                if idx < 0:
-                    # Undocumented behavior! See issue #353.
-                    # If hardware is unavailable, this function returns -1.
-                    # Raise an exception as if the driver
-                    # would have signalled XL_ERR_HW_NOT_PRESENT.
-                    raise VectorInitializationError(
-                        xldefine.XL_Status.XL_ERR_HW_NOT_PRESENT,
-                        xldefine.XL_Status.XL_ERR_HW_NOT_PRESENT.name,
-                        "xlGetChannelIndex",
-                    )
-            else:
-                # Channel already given as global channel
-                idx = channel
-            mask = 1 << idx
-            self.channel_masks[channel] = mask
-            self.index_to_channel[idx] = channel
-            self.mask |= mask
+            channel_index = self._find_global_channel_idx(
+                channel=channel,
+                serial=serial,
+                app_name=app_name,
+                channel_configs=channel_configs,
+            )
+            LOG.debug("Channel index %d found", channel)
+
+            channel_mask = 1 << channel_index
+            self.channel_masks[channel] = channel_mask
+            self.index_to_channel[channel_index] = channel
+            self.mask |= channel_mask
 
         permission_mask = xlclass.XLaccess()
         # Set mask to request channel init permission if needed
@@ -239,6 +208,7 @@ class VectorBus(BusABC):
             else xldefine.XL_InterfaceVersion.XL_INTERFACE_VERSION
         )
 
+        self.port_handle = xlclass.XLportHandle(xldefine.XL_INVALID_PORTHANDLE)
         self.xldriver.xlOpenPort(
             self.port_handle,
             self._app_name,
@@ -314,6 +284,61 @@ class VectorBus(BusABC):
 
         self._is_filtered = False
         super().__init__(channel=channel, can_filters=can_filters, **kwargs)
+
+    def _find_global_channel_idx(
+        self,
+        channel: int,
+        serial: Optional[int],
+        app_name: Optional[str],
+        channel_configs: List["VectorChannelConfig"],
+    ) -> int:
+        if serial is not None:
+            hw_type: Optional[xldefine.XL_HardwareType] = None
+            for channel_config in channel_configs:
+                if channel_config.serialNumber != serial:
+                    continue
+
+                hw_type = xldefine.XL_HardwareType(channel_config.hwType)
+                if channel_config.hwChannel == channel:
+                    return channel_config.channelIndex
+
+            if hw_type is None:
+                err_msg = f"No interface with serial {serial} found."
+            else:
+                err_msg = f"Channel {channel} not found on interface {hw_type.name} ({serial})."
+            raise CanInitializationError(
+                err_msg, error_code=xldefine.XL_Status.XL_ERR_HW_NOT_PRESENT
+            )
+
+        if app_name:
+            hw_type, hw_index, hw_channel = self.get_application_config(
+                app_name, channel
+            )
+            idx = cast(
+                int, self.xldriver.xlGetChannelIndex(hw_type, hw_index, hw_channel)
+            )
+            if idx < 0:
+                # Undocumented behavior! See issue #353.
+                # If hardware is unavailable, this function returns -1.
+                # Raise an exception as if the driver
+                # would have signalled XL_ERR_HW_NOT_PRESENT.
+                raise VectorInitializationError(
+                    xldefine.XL_Status.XL_ERR_HW_NOT_PRESENT,
+                    xldefine.XL_Status.XL_ERR_HW_NOT_PRESENT.name,
+                    "xlGetChannelIndex",
+                )
+            return idx
+
+        # check if channel is a valid global channel index
+        for channel_config in channel_configs:
+            if channel == channel_config.channelIndex:
+                return channel
+
+        raise CanInitializationError(
+            f"Channel {channel} not found. The 'channel' parameter must be "
+            f"a valid global channel index if neither 'app_name' nor 'serial' were given.",
+            error_code=xldefine.XL_Status.XL_ERR_HW_NOT_PRESENT,
+        )
 
     def _set_bitrate_can(
         self,
@@ -603,7 +628,7 @@ class VectorBus(BusABC):
 
     def _get_tx_channel_mask(self, msgs: Sequence[Message]) -> int:
         if len(msgs) == 1:
-            return self.channel_masks.get(msgs[0].channel, self.mask)
+            return self.channel_masks.get(msgs[0].channel, self.mask)  # type: ignore[arg-type]
         else:
             return self.mask
 
