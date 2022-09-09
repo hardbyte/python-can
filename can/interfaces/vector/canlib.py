@@ -315,6 +315,98 @@ class VectorBus(BusABC):
         self._is_filtered = False
         super().__init__(channel=channel, can_filters=can_filters, **kwargs)
 
+    def _set_bitrate_can(
+        self,
+        channel: int,
+        bitrate: int,
+        sjw: Optional[int] = None,
+        tseg1: Optional[int] = None,
+        tseg2: Optional[int] = None,
+        sam: int = 1,
+    ) -> None:
+        kwargs = [sjw, tseg1, tseg2]
+        if any(kwargs) and not all(kwargs):
+            raise ValueError(
+                f"Either all of sjw, tseg1, tseg2 must be set or none of them."
+            )
+
+        # set parameters if channel has init access
+        if any(kwargs):
+            chip_params = xlclass.XLchipParams()
+            chip_params.bitRate = bitrate
+            chip_params.sjw = sjw
+            chip_params.tseg1 = tseg1
+            chip_params.tseg2 = tseg2
+            chip_params.sam = sam
+            self.xldriver.xlCanSetChannelParams(
+                self.port_handle,
+                self.channel_masks[channel],
+                chip_params,
+            )
+            LOG.info(
+                "xlCanSetChannelParams: baudr.=%u, sjwAbr=%u, tseg1Abr=%u, tseg2Abr=%u",
+                chip_params.bitRate,
+                chip_params.sjw,
+                chip_params.tseg1,
+                chip_params.tseg2,
+            )
+        else:
+            self.xldriver.xlCanSetChannelBitrate(
+                self.port_handle,
+                self.channel_masks[channel],
+                bitrate,
+            )
+            LOG.info("xlCanSetChannelBitrate: baudr.=%u", bitrate)
+
+    def _set_bitrate_canfd(
+        self,
+        channel: int,
+        bitrate: Optional[int] = None,
+        data_bitrate: Optional[int] = None,
+        sjw_abr: int = 2,
+        tseg1_abr: int = 6,
+        tseg2_abr: int = 3,
+        sjw_dbr: int = 2,
+        tseg1_dbr: int = 6,
+        tseg2_dbr: int = 3,
+    ) -> None:
+        # set parameters if channel has init access
+        canfd_conf = xlclass.XLcanFdConf()
+        if bitrate:
+            canfd_conf.arbitrationBitRate = int(bitrate)
+        else:
+            canfd_conf.arbitrationBitRate = 500_000
+        canfd_conf.sjwAbr = int(sjw_abr)
+        canfd_conf.tseg1Abr = int(tseg1_abr)
+        canfd_conf.tseg2Abr = int(tseg2_abr)
+        if data_bitrate:
+            canfd_conf.dataBitRate = int(data_bitrate)
+        else:
+            canfd_conf.dataBitRate = int(canfd_conf.arbitrationBitRate)
+        canfd_conf.sjwDbr = int(sjw_dbr)
+        canfd_conf.tseg1Dbr = int(tseg1_dbr)
+        canfd_conf.tseg2Dbr = int(tseg2_dbr)
+        self.xldriver.xlCanFdSetConfiguration(
+            self.port_handle, self.channel_masks[channel], canfd_conf
+        )
+        LOG.info(
+            "xlCanFdSetConfiguration.: ABaudr.=%u, DBaudr.=%u",
+            canfd_conf.arbitrationBitRate,
+            canfd_conf.dataBitRate,
+        )
+        LOG.info(
+            "xlCanFdSetConfiguration.: sjwAbr=%u, tseg1Abr=%u, tseg2Abr=%u",
+            canfd_conf.sjwAbr,
+            canfd_conf.tseg1Abr,
+            canfd_conf.tseg2Abr,
+        )
+        LOG.info(
+            "xlCanFdSetConfiguration.: sjwDbr=%u, tseg1Dbr=%u, tseg2Dbr=%u",
+            canfd_conf.sjwDbr,
+            canfd_conf.tseg1Dbr,
+            canfd_conf.tseg2Dbr,
+        )
+
     def _apply_filters(self, filters: Optional[CanFilters]) -> None:
         if filters:
             # Only up to one filter per ID type allowed
@@ -746,98 +838,6 @@ class VectorBus(BusABC):
         """
         timer_rate_10us = timer_rate_ms * 100
         self.xldriver.xlSetTimerRate(self.port_handle, timer_rate_10us)
-
-    def _set_bitrate_can(
-        self,
-        channel: int,
-        bitrate: int,
-        sjw: Optional[int] = None,
-        tseg1: Optional[int] = None,
-        tseg2: Optional[int] = None,
-        sam: int = 1,
-    ) -> None:
-        kwargs = [sjw, tseg1, tseg2]
-        if any(kwargs) and not all(kwargs):
-            raise ValueError(
-                f"Either all of sjw, tseg1, tseg2 must be set or None of them."
-            )
-
-        # set parameters if channel has init access
-        if any(kwargs):
-            chip_params = xlclass.XLchipParams()
-            chip_params.bitRate = bitrate
-            chip_params.sjw = sjw
-            chip_params.tseg1 = tseg1
-            chip_params.tseg2 = tseg2
-            chip_params.sam = sam
-            self.xldriver.xlCanSetChannelParams(
-                self.port_handle,
-                self.channel_masks[channel],
-                chip_params,
-            )
-            LOG.info(
-                "xlCanSetChannelParams: baudr.=%u, sjwAbr=%u, tseg1Abr=%u, tseg2Abr=%u",
-                chip_params.bitRate,
-                chip_params.sjw,
-                chip_params.tseg1,
-                chip_params.tseg2,
-            )
-        else:
-            self.xldriver.xlCanSetChannelBitrate(
-                self.port_handle,
-                self.channel_masks[channel],
-                bitrate,
-            )
-            LOG.info("xlCanSetChannelBitrate: baudr.=%u", bitrate)
-
-    def _set_bitrate_canfd(
-        self,
-        channel: int,
-        bitrate: Optional[int] = None,
-        data_bitrate: Optional[int] = None,
-        sjw_abr: int = 2,
-        tseg1_abr: int = 6,
-        tseg2_abr: int = 3,
-        sjw_dbr: int = 2,
-        tseg1_dbr: int = 6,
-        tseg2_dbr: int = 3,
-    ) -> None:
-        # set parameters if channel has init access
-        canfd_conf = xlclass.XLcanFdConf()
-        if bitrate:
-            canfd_conf.arbitrationBitRate = int(bitrate)
-        else:
-            canfd_conf.arbitrationBitRate = 500_000
-        canfd_conf.sjwAbr = int(sjw_abr)
-        canfd_conf.tseg1Abr = int(tseg1_abr)
-        canfd_conf.tseg2Abr = int(tseg2_abr)
-        if data_bitrate:
-            canfd_conf.dataBitRate = int(data_bitrate)
-        else:
-            canfd_conf.dataBitRate = int(canfd_conf.arbitrationBitRate)
-        canfd_conf.sjwDbr = int(sjw_dbr)
-        canfd_conf.tseg1Dbr = int(tseg1_dbr)
-        canfd_conf.tseg2Dbr = int(tseg2_dbr)
-        self.xldriver.xlCanFdSetConfiguration(
-            self.port_handle, self.channel_masks[channel], canfd_conf
-        )
-        LOG.info(
-            "xlCanFdSetConfiguration.: ABaudr.=%u, DBaudr.=%u",
-            canfd_conf.arbitrationBitRate,
-            canfd_conf.dataBitRate,
-        )
-        LOG.info(
-            "xlCanFdSetConfiguration.: sjwAbr=%u, tseg1Abr=%u, tseg2Abr=%u",
-            canfd_conf.sjwAbr,
-            canfd_conf.tseg1Abr,
-            canfd_conf.tseg2Abr,
-        )
-        LOG.info(
-            "xlCanFdSetConfiguration.: sjwDbr=%u, tseg1Dbr=%u, tseg2Dbr=%u",
-            canfd_conf.sjwDbr,
-            canfd_conf.tseg1Dbr,
-            canfd_conf.tseg2Dbr,
-        )
 
 
 class VectorChannelConfig(NamedTuple):
