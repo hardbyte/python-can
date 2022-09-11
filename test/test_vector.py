@@ -201,9 +201,9 @@ def test_bus_creation_fd_bitrate_timings_mocked(mock_xldriver) -> None:
     can.interfaces.vector.canlib.xldriver.xlOpenPort.assert_called()
     xlOpenPort_args = can.interfaces.vector.canlib.xldriver.xlOpenPort.call_args[0]
     assert (
-        xlOpenPort_args[5]
-        == xldefine.XL_InterfaceVersion.XL_INTERFACE_VERSION_V4.value,
+        xlOpenPort_args[5] == xldefine.XL_InterfaceVersion.XL_INTERFACE_VERSION_V4.value
     )
+
     assert xlOpenPort_args[6] == xldefine.XL_BusTypes.XL_BUS_TYPE_CAN.value
 
     can.interfaces.vector.canlib.xldriver.xlCanFdSetConfiguration.assert_called()
