@@ -881,16 +881,19 @@ class VectorChannelConfig(NamedTuple):
     transceiverName: str
 
 
-def get_channel_configs() -> List[VectorChannelConfig]:
-    if xldriver is None:
-        return []
+def _get_xl_driver_config() -> xlclass.XLdriverConfig:
     driver_config = xlclass.XLdriverConfig()
+    xldriver.xlOpenDriver()
+    xldriver.xlGetDriverConfig(driver_config)
+    xldriver.xlCloseDriver()
+    return driver_config
+
+
+def get_channel_configs() -> List[VectorChannelConfig]:
     try:
-        xldriver.xlOpenDriver()
-        xldriver.xlGetDriverConfig(driver_config)
-        xldriver.xlCloseDriver()
+        driver_config = _get_xl_driver_config()
     except VectorError:
-        pass
+        return []
 
     channel_list: List[VectorChannelConfig] = []
     for i in range(driver_config.channelCount):
