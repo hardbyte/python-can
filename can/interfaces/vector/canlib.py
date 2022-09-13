@@ -791,14 +791,24 @@ class VectorBus(BusABC):
         hw_channel = ctypes.c_uint()
         _app_channel = ctypes.c_uint(app_channel)
 
-        xldriver.xlGetApplConfig(
-            app_name.encode(),
-            _app_channel,
-            hw_type,
-            hw_index,
-            hw_channel,
-            xldefine.XL_BusTypes.XL_BUS_TYPE_CAN,
-        )
+        try:
+            xldriver.xlGetApplConfig(
+                app_name.encode(),
+                _app_channel,
+                hw_type,
+                hw_index,
+                hw_channel,
+                xldefine.XL_BusTypes.XL_BUS_TYPE_CAN,
+            )
+        except VectorError as e:
+            raise VectorInitializationError(
+                error_code=e.error_code,
+                error_string=(
+                    f"Vector HW Config: Channel '{app_channel}' of "
+                    f"application '{app_name}' is not assigned to any interface"
+                ),
+                function="xlGetApplConfig",
+            ) from None
         return xldefine.XL_HardwareType(hw_type.value), hw_index.value, hw_channel.value
 
     @staticmethod
