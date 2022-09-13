@@ -30,6 +30,7 @@ BACKENDS: Dict[str, Tuple[str, ...]] = {
     "neousys": ("can.interfaces.neousys", "NeousysBus"),
     "etas": ("can.interfaces.etas", "EtasBus"),
     "socketcand": ("can.interfaces.socketcand", "SocketCanDaemonBus"),
+    "ecom": ("can.interfaces.ecom", "EcomBus"),
 }
 
 if sys.version_info >= (3, 8):
