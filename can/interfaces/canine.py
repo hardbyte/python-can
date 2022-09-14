@@ -26,6 +26,8 @@ logger = logging.getLogger(__name__)
 class CANineBus(BusABC):
     """
     CANine bus class
+    CANine is a USB to CAN adapter evolved from canable.
+    https://github.com/tinymovr/CANine
     """
 
     # the supported bitrates and their commands
@@ -224,3 +226,17 @@ class CANineBus(BusABC):
         payload = self._read(timeout)
         assert payload[0] == ord(b"V")
         return struct.unpack("<HH", payload[1:5])
+
+    @staticmethod
+    def _detect_available_configs():
+        """
+        Identify CANine devices
+        """
+        devs = usb.core.find(idProduct=0xC1B0, find_all=True)
+        return [
+            {
+                "interface": "canine",
+                "channel": usb.util.get_string(dev, dev.iSerialNumber),
+            }
+            for dev in devs
+        ]
