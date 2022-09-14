@@ -13,14 +13,16 @@ Will filter for can frames with a can_id containing XXF03XXX.
 
 Dynamic Controls 2010
 """
-
+import re
 import sys
 import argparse
 from datetime import datetime
 import errno
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Union, Sequence, Tuple
 
 import can
+from can.io import BaseRotatingLogger
+from can.io.generic import MessageWriter
 from . import Bus, BusState, Logger, SizedRotatingLogger
 from .typechecking import CanFilter, CanFilters
 
@@ -43,7 +45,7 @@ def _create_base_argument_parser(parser: argparse.ArgumentParser) -> None:
         dest="interface",
         help="""Specify the backend CAN interface to use. If left blank,
                         fall back to reading from configuration files.""",
-        choices=can.VALID_INTERFACES,
+        choices=sorted(can.VALID_INTERFACES),
     )
 
     parser.add_argument(
@@ -61,10 +63,10 @@ def _create_base_argument_parser(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "extra_args",
         nargs=argparse.REMAINDER,
-        help=r"The remaining arguments will be used for the interface "
-        r"initialisation. For example, `-i vector -c 1 --app-name="
-        r"MyCanApp` is the equivalent to opening the bus with `Bus("
-        r"'vector', channel=1, app_name='MyCanApp')",
+        help="The remaining arguments will be used for the interface and "
+        "logger/player initialisation. "
+        "For example, `-i vector -c 1 --app-name=MyCanApp` is the equivalent "
+        "to opening the bus with `Bus('vector', channel=1, app_name='MyCanApp')",
     )
 
 
@@ -134,11 +136,32 @@ def _parse_filters(parsed_args: Any) -> CanFilters:
     return can_filters
 
 
-def _parse_additonal_config(unknown_args):
-    return dict(
-        (arg.split("=", 1)[0].lstrip("--").replace("-", "_"), arg.split("=", 1)[1])
-        for arg in unknown_args
-    )
+def _parse_additional_config(
+    unknown_args: Sequence[str],
+) -> Dict[str, Union[str, int, float, bool]]:
+    for arg in unknown_args:
+        if not re.match(r"^--[a-zA-Z\-]*?=\S*?$", arg):
+            raise ValueError(f"Parsing argument {arg} failed")
+
+    def _split_arg(_arg: str) -> Tuple[str, str]:
+        left, right = _arg.split("=", 1)
+        return left.lstrip("--").replace("-", "_"), right
+
+    args: Dict[str, Union[str, int, float, bool]] = {}
+    for key, string_val in map(_split_arg, unknown_args):
+        if re.match(r"^[-+]?\d+$", string_val):
+            # value is integer
+            args[key] = int(string_val)
+        elif re.match(r"^[-+]?\d*\.\d+$", string_val):
+            # value is float
+            args[key] = float(string_val)
+        elif re.match(r"^(?:True|False)$", string_val):
+            # value is bool
+            args[key] = string_val == "True"
+        else:
+            # value is string
+            args[key] = string_val
+    return args
 
 
 def main() -> None:
@@ -170,8 +193,9 @@ def main() -> None:
         "--file_size",
         dest="file_size",
         type=int,
-        help="Maximum file size in bytes. Rotate log file when size threshold "
-        "is reached.",
+        help="Maximum file size in bytes (or for the case of blf, maximum "
+        "buffer size before compression and flush to file). Rotate log "
+        "file when size threshold is reached.",
         default=None,
     )
 
@@ -202,7 +226,7 @@ def main() -> None:
         raise SystemExit(errno.EINVAL)
 
     results, unknown_args = parser.parse_known_args()
-    additional_config = _parse_additonal_config(unknown_args)
+    additional_config = _parse_additional_config([*results.extra_args, *unknown_args])
     bus = _create_bus(results, can_filters=_parse_filters(results), **additional_config)
 
     if results.active:
@@ -213,13 +237,20 @@ def main() -> None:
     print(f"Connected to {bus.__class__.__name__}: {bus.channel_info}")
     print(f"Can Logger (Started on {datetime.now()})")
 
-    options = {"append": results.append}
+    logger: Union[MessageWriter, BaseRotatingLogger]
     if results.file_size:
         logger = SizedRotatingLogger(
-            base_filename=results.log_file, max_bytes=results.file_size, **options
+            base_filename=results.log_file,
+            max_bytes=results.file_size,
+            append=results.append,
+            **additional_config,
         )
     else:
-        logger = Logger(filename=results.log_file, **options)  # type: ignore
+        logger = Logger(
+            filename=results.log_file,
+            append=results.append,
+            **additional_config,
+        )
 
     try:
         while True:

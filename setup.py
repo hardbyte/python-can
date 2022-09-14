@@ -79,6 +79,7 @@ setup(
         "": ["README.rst", "CONTRIBUTORS.txt", "LICENSE.txt", "CHANGELOG.md"],
         "doc": ["*.*"],
         "examples": ["*.py"],
+        "can": ["py.typed"],
     },
     # Installation
     # see https://www.python.org/dev/peps/pep-0345/#version-specifiers

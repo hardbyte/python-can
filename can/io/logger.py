@@ -14,6 +14,7 @@ from types import TracebackType
 from typing_extensions import Literal
 from pkg_resources import iter_entry_points
 
+import can.io
 from ..message import Message
 from ..listener import Listener
 from .generic import BaseIOHandler, FileIOMessageWriter, MessageWriter
@@ -87,7 +88,7 @@ class Logger(MessageWriter):  # pylint: disable=abstract-method
 
         file_or_filename: AcceptedIOType = filename
         if suffix == ".gz":
-            suffix, file_or_filename = Logger.compress(filename)
+            suffix, file_or_filename = Logger.compress(filename, *args, **kwargs)
 
         try:
             return Logger.message_writers[suffix](file_or_filename, *args, **kwargs)
@@ -97,13 +98,18 @@ class Logger(MessageWriter):  # pylint: disable=abstract-method
             ) from None
 
     @staticmethod
-    def compress(filename: StringPathLike) -> Tuple[str, FileLike]:
+    def compress(
+        filename: StringPathLike, *args: Any, **kwargs: Any
+    ) -> Tuple[str, FileLike]:
         """
         Return the suffix and io object of the decompressed file.
         File will automatically recompress upon close.
         """
         real_suffix = pathlib.Path(filename).suffixes[-2].lower()
-        mode = "ab" if real_suffix == ".blf" else "at"
+        if kwargs.get("append", False):
+            mode = "ab" if real_suffix == ".blf" else "at"
+        else:
+            mode = "wb" if real_suffix == ".blf" else "wt"
 
         return real_suffix, gzip.open(filename, mode)
 
@@ -227,8 +233,8 @@ class BaseRotatingLogger(Listener, BaseIOHandler, ABC):
             return cast(FileIOMessageWriter, logger)
         else:
             raise Exception(
-                "The Logger corresponding to the arguments is not a FileIOMessageWriter or "
-                "can.Printer"
+                f"The log format \"{''.join(pathlib.Path(filename).suffixes[-2:])}"
+                f'" is not supported by {self.__class__.__name__}'
             )
 
     def stop(self) -> None:
@@ -302,8 +308,8 @@ class SizedRotatingLogger(BaseRotatingLogger):
     def __init__(
         self,
         base_filename: StringPathLike,
-        *args: Any,
         max_bytes: int = 0,
+        *args: Any,
         **kwargs: Any,
     ) -> None:
         """
@@ -325,7 +331,7 @@ class SizedRotatingLogger(BaseRotatingLogger):
         if self.max_bytes <= 0:
             return False
 
-        if self.writer.file.tell() >= self.max_bytes:
+        if self.writer.file_size() >= self.max_bytes:
             return True
 
         return False
@@ -344,11 +350,11 @@ class SizedRotatingLogger(BaseRotatingLogger):
         """Generate the default rotation filename."""
         path = pathlib.Path(self.base_filename)
         new_name = (
-            path.stem
+            path.stem.split(".")[0]
             + "_"
             + datetime.now().strftime("%Y-%m-%dT%H%M%S")
             + "_"
             + f"#{self.rollover_count:03}"
-            + path.suffix
+            + "".join(path.suffixes[-2:])
         )
         return str(path.parent / new_name)
