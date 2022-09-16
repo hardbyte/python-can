@@ -11,10 +11,13 @@ Interface for CANine over USB (win32/macos/linux).
 from typing import Any, Optional, Tuple
 from can import typechecking
 
+from ..exceptions import error_check
+
 import struct
 import time
 import logging
 
+from usb import USBError
 import usb.core
 import usb.util
 
@@ -118,12 +121,19 @@ class CANineBus(BusABC):
     def _read(self, timeout: Optional[float]) -> Optional[str]:
         # TODO: Reception should be asynchronous and use timeout
         # TODO: handle multiple packets sequence
-        packet = self.dev.read(0x81, 64)
-        remaining_packets = packet[0]
-        assert remaining_packets == 0  # avoid multi-packet sequence for now
-        payload = packet[1:]
+        with error_check("Could not read from USB device"):
+            try:
+                packet = self.dev.read(0x81, 64)
+                remaining_packets = packet[0]
+                assert remaining_packets == 0  # avoid multi-packet sequence for now
+                payload = packet[1:]
 
-        return payload
+                return payload
+            except USBError as e:
+                # do we really need to check for token in string??
+                if "time" in str(e):
+                    return None
+                raise e
 
     def flush(self) -> None:
         del self._buffer[:]
@@ -145,7 +155,9 @@ class CANineBus(BusABC):
 
         payload = self._read(timeout)
 
-        if payload[0] == ord(b"T"):
+        if not payload:
+            return None, False
+        elif payload[0] == ord(b"T"):
             # extended frame
             canId, dlc = struct.unpack("<LB", payload[1:6])
             extended = True
