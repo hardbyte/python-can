@@ -21,9 +21,10 @@ import platform
 
 import logging
 
-if platform.system() == "Windows":
-    import winreg
+PLATFORM = platform.system()
 
+if PLATFORM == "Windows":
+    import winreg
 
 logger = logging.getLogger("can.pcan")
 

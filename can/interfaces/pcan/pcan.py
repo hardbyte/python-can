@@ -1,7 +1,6 @@
 """
 Enable basic CAN over a PCAN USB device.
 """
-
 import logging
 import time
 from datetime import datetime
@@ -18,6 +17,7 @@ from ...exceptions import CanError, CanOperationError, CanInitializationError
 
 
 from .basic import (
+    PLATFORM,
     PCAN_BITRATES,
     PCAN_FD_PARAMETER_LIST,
     PCAN_CHANNEL_NAMES,
@@ -64,7 +64,8 @@ from .basic import (
 log = logging.getLogger("can.pcan")
 
 MIN_PCAN_API_VERSION = version.parse("4.2.0")
-
+IS_WINDOWS = PLATFORM == "Windows"
+IS_LINUX = PLATFORM == "Linux"
 
 try:
     # use the "uptime" library if available
@@ -82,22 +83,33 @@ except ImportError as error:
     )
     boottimeEpoch = 0
 
-try:
-    # Try builtin Python 3 Windows API
-    from _overlapped import CreateEvent
-    from _winapi import WaitForSingleObject, WAIT_OBJECT_0, INFINITE
-
-    HAS_EVENTS = True
-except ImportError:
+if IS_WINDOWS:
     try:
-        # Try pywin32 package
-        from win32event import CreateEvent
-        from win32event import WaitForSingleObject, WAIT_OBJECT_0, INFINITE
+        # Try builtin Python 3 Windows API
+        from _overlapped import CreateEvent
+        from _winapi import WaitForSingleObject, WAIT_OBJECT_0, INFINITE
 
         HAS_EVENTS = True
     except ImportError:
-        # Use polling instead
+        try:
+            # Try pywin32 package
+            from win32event import CreateEvent
+            from win32event import WaitForSingleObject, WAIT_OBJECT_0, INFINITE
+
+            HAS_EVENTS = True
+        except ImportError:
+            # Use polling instead
+            HAS_EVENTS = False
+elif IS_LINUX:
+    try:
+        import errno
+        import os
+        import select
+
+        HAS_EVENTS = True
+    except Exception:
         HAS_EVENTS = False
+
 
 
 class PcanBus(BusABC):
@@ -290,14 +302,19 @@ class PcanBus(BusABC):
                 raise PcanCanInitializationError(self._get_formatted_error(result))
 
         if HAS_EVENTS:
-            self._recv_event = CreateEvent(None, 0, 0, None)
-            result = self.m_objPCANBasic.SetValue(
-                self.m_PcanHandle, PCAN_RECEIVE_EVENT, self._recv_event
-            )
+            if IS_WINDOWS:
+                self._recv_event = CreateEvent(None, 0, 0, None)
+                result = self.m_objPCANBasic.SetValue(
+                    self.m_PcanHandle, PCAN_RECEIVE_EVENT, self._recv_event
+                )
+            elif IS_LINUX:
+                result, self._recv_event = self.m_objPCANBasic.GetValue(self.m_PcanHandle, PCAN_RECEIVE_EVENT)
+
             if result != PCAN_ERROR_OK:
                 raise PcanCanInitializationError(self._get_formatted_error(result))
 
         super().__init__(channel=channel, state=state, bitrate=bitrate, *args, **kwargs)
+
 
     def _find_channel_by_dev_id(self, device_id):
         """
@@ -437,11 +454,26 @@ class PcanBus(BusABC):
             return False
         return True
 
+    def _read_message(self):
+        """Read a message using Basic API.
+
+        :return: a tuple containing the current CAN status, the received
+            message and the timestamp
+        :rtype: tuple
+        """
+        if self.fd:
+            return self.m_objPCANBasic.ReadFD(self.m_PcanHandle)
+
+        return self.m_objPCANBasic.Read(self.m_PcanHandle)
+
     def _recv_internal(self, timeout):
 
-        if HAS_EVENTS:
+        if HAS_EVENTS and IS_WINDOWS:
             # We will utilize events for the timeout handling
             timeout_ms = int(timeout * 1000) if timeout is not None else INFINITE
+        elif HAS_EVENTS and IS_LINUX:
+            # We will utilize events for the timeout handling
+            timeout_s = timeout if timeout != None else None
         elif timeout is not None:
             # Calculate max time
             end_time = time.perf_counter() + timeout
@@ -450,16 +482,19 @@ class PcanBus(BusABC):
 
         result = None
         while result is None:
-            if self.fd:
-                result = self.m_objPCANBasic.ReadFD(self.m_PcanHandle)
-            else:
-                result = self.m_objPCANBasic.Read(self.m_PcanHandle)
+
+            result = self._read_message()
+
             if result[0] == PCAN_ERROR_QRCVEMPTY:
-                if HAS_EVENTS:
-                    result = None
+                if HAS_EVENTS and IS_WINDOWS:
                     val = WaitForSingleObject(self._recv_event, timeout_ms)
                     if val != WAIT_OBJECT_0:
                         return None, False
+                elif HAS_EVENTS and IS_LINUX:
+                    recv, _, _ = select.select([self._recv_event], [], [], timeout_s)
+                    if self._recv_event not in recv:
+                        return None, False
+                    result = self._read_message()
                 elif timeout is not None and time.perf_counter() >= end_time:
                     return None, False
                 else:
@@ -593,6 +628,9 @@ class PcanBus(BusABC):
 
     def shutdown(self):
         super().shutdown()
+        if HAS_EVENTS and IS_LINUX:
+            self.m_objPCANBasic.SetValue(self.m_PcanHandle, PCAN_RECEIVE_EVENT, 0)
+
         self.m_objPCANBasic.Uninitialize(self.m_PcanHandle)
 
     @property
