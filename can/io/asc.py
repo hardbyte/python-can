@@ -39,6 +39,8 @@ class ASCReader(MessageReader):
         file: Union[StringPathLike, TextIO],
         base: str = "hex",
         relative_timestamp: bool = True,
+        *args: Any,
+        **kwargs: Any,
     ) -> None:
         """
         :param file: a path-like object or as file-like object to read from
@@ -202,9 +204,9 @@ class ASCReader(MessageReader):
                     _, dlc_str = rest_of_message.split(None, 1)
                     data = ""
 
-                dlc = int(dlc_str, self._converted_base)
+                dlc = dlc2len(int(dlc_str, self._converted_base))
                 msg_kwargs["dlc"] = dlc
-                self._process_data_string(data, dlc, msg_kwargs)
+                self._process_data_string(data, min(8, dlc), msg_kwargs)
 
         return Message(**msg_kwargs)
 
@@ -352,6 +354,8 @@ class ASCWriter(FileIOMessageWriter):
         self,
         file: Union[StringPathLike, TextIO],
         channel: int = 1,
+        *args: Any,
+        **kwargs: Any,
     ) -> None:
         """
         :param file: a path-like object or as file-like object to write to
@@ -360,12 +364,21 @@ class ASCWriter(FileIOMessageWriter):
         :param channel: a default channel to use when the message does not
                         have a channel set
         """
+        if kwargs.get("append", False):
+            raise ValueError(
+                f"{self.__class__.__name__} is currently not equipped to "
+                f"append messages to an existing file."
+            )
         super().__init__(file, mode="w")
 
         self.channel = channel
 
         # write start of file header
         now = datetime.now().strftime(self.FORMAT_START_OF_FILE_DATE)
+        # Note: CANoe requires that the microsecond field only have 3 digits
+        idx = now.index(".")  # Find the index in the string of the decimal
+        # Keep decimal and first three ms digits (4), remove remaining digits
+        now = now.replace(now[idx + 4 : now[idx:].index(" ") + idx], "")
         self.file.write(f"date {now}\n")
         self.file.write("base hex  timestamps absolute\n")
         self.file.write("internal events logged\n")

@@ -7,7 +7,15 @@ Windows/Linux/Mac CAN driver based on usbfs or WinUSB WCID for Geschwister Schne
 
 Install: ``pip install "python-can[gs_usb]"``
 
-Usage: pass ``bus`` and ``address`` to open the device. The parameters can be got by ``pyusb`` as shown below:
+Usage: pass device ``index`` (starting from 0) if using automatic device detection:
+
+::
+
+    import can
+
+    bus = can.Bus(bustype="gs_usb", channel=dev.product, index=0, bitrate=250000)
+
+Alternatively, pass ``bus`` and ``address`` to open a specific device. The parameters can be got by ``pyusb`` as shown below:
 
 ::
 

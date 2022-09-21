@@ -20,6 +20,7 @@ from itertools import zip_longest
 from datetime import datetime
 
 import can
+from can.io import blf
 
 from .data.example_data import (
     TEST_MESSAGES_BASE,
@@ -310,7 +311,7 @@ class ReaderWriterTest(unittest.TestCase, ComparingMessagesTestCase, metaclass=A
         # use append mode for second half
         try:
             writer = self.writer_constructor(self.test_file_name, append=True)
-        except TypeError as e:
+        except ValueError as e:
             # maybe "append" is not a formal parameter (this is the case for SqliteWriter)
             try:
                 writer = self.writer_constructor(self.test_file_name)
@@ -560,6 +561,9 @@ class TestAscFileFormat(ReaderWriterTest):
     def test_no_triggerblock(self):
         _msg_list = self._read_log_file("issue_1256.asc")
 
+    def test_can_dlc_greater_than_8(self):
+        _msg_list = self._read_log_file("issue_1299.asc")
+
 
 class TestBlfFileFormat(ReaderWriterTest):
     """Tests can.BLFWriter and can.BLFReader.
@@ -658,6 +662,18 @@ class TestBlfFileFormat(ReaderWriterTest):
         actual = self._read_log_file("test_CanErrorFrameExt.blf")
         self.assertMessagesEqual(actual, [expected] * 2)
         self.assertEqual(actual[0].channel, expected.channel)
+
+    def test_timestamp_to_systemtime(self):
+        self.assertAlmostEqual(
+            1636485425.999,
+            blf.systemtime_to_timestamp(blf.timestamp_to_systemtime(1636485425.998908)),
+            places=3,
+        )
+        self.assertAlmostEqual(
+            1636485426.0,
+            blf.systemtime_to_timestamp(blf.timestamp_to_systemtime(1636485425.999908)),
+            places=3,
+        )
 
 
 class TestCanutilsFileFormat(ReaderWriterTest):

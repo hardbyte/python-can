@@ -211,6 +211,20 @@ def _create_bus_config(config: Dict[str, Any]) -> typechecking.BusConfig:
         raise CanInterfaceNotImplementedError(
             f'Unknown interface type "{config["interface"]}"'
         )
+    if "port" in config:
+        # convert port to integer if necessary
+        if isinstance(config["port"], int):
+            port = config["port"]
+        elif isinstance(config["port"], str):
+            if config["port"].isnumeric():
+                config["port"] = port = int(config["port"])
+            else:
+                raise ValueError("Port config must be a number!")
+        else:
+            raise TypeError("Port config must be string or integer!")
+
+        if not 0 < port < 65535:
+            raise ValueError("Port config must be inside 0-65535 range!")
 
     if "bitrate" in config:
         config["bitrate"] = int(config["bitrate"])
@@ -292,7 +306,7 @@ def channel2int(channel: Optional[typechecking.Channel]) -> Optional[int]:
     if isinstance(channel, int):
         return channel
     if isinstance(channel, str):
-        match = re.match(r".*(\d+)$", channel)
+        match = re.match(r".*?(\d+)$", channel)
         if match:
             return int(match.group(1))
     return None

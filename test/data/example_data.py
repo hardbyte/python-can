@@ -179,7 +179,7 @@ def generate_message(arbitration_id):
     Generates a new message with the given ID, some random data
     and a non-extended ID.
     """
-    data = bytearray([random.randrange(0, 2 ** 8 - 1) for _ in range(8)])
+    data = bytearray([random.randrange(0, 2**8 - 1) for _ in range(8)])
     return Message(
         arbitration_id=arbitration_id,
         data=data,

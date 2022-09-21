@@ -131,7 +131,7 @@ try:
         NEOUSYS_CANLIB = CDLL("libwdt_dio.so")
     logger.info("Loaded Neousys WDT_DIO Can driver")
 except OSError as error:
-    logger.info("Cannot load Neousys CAN bus dll or shared object: %d", format(error))
+    logger.info("Cannot load Neousys CAN bus dll or shared object: %s", error)
 
 
 class NeousysBus(BusABC):

@@ -7,6 +7,7 @@ recording CAN traces.
 See the interface documentation for the format being used.
 """
 
+import io
 import logging
 import struct
 from typing import Any, List, Tuple, Optional
@@ -212,10 +213,14 @@ class SerialBus(BusABC):
             raise CanOperationError("could not read from serial") from error
 
     def fileno(self) -> int:
-        if hasattr(self._ser, "fileno"):
+        try:
             return self._ser.fileno()
-        # Return an invalid file descriptor on Windows
-        return -1
+        except io.UnsupportedOperation:
+            raise NotImplementedError(
+                "fileno is not implemented using current CAN bus on this platform"
+            )
+        except Exception as exception:
+            raise CanOperationError("Cannot fetch fileno") from exception
 
     @staticmethod
     def _detect_available_configs() -> List[AutoDetectedConfig]:
