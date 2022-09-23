@@ -15,7 +15,7 @@ from tosun import TSCanMessage, TSCanFdMessage, TSMasterException, TosunDevice, 
 def tosun_convert_msg(msg):
     if isinstance(msg, TSCanMessage):
         return can.Message(
-            timestamp=msg.FTimeUs,
+            timestamp=msg.FTimeUs / 1000,
             arbitration_id=msg.FIdentifier,
             is_extended_id=msg.FProperties & 0x04,
             is_remote_frame=msg.FProperties & 0x02,
@@ -27,7 +27,7 @@ def tosun_convert_msg(msg):
         )
     elif isinstance(msg, TSCanFdMessage):
         return can.Message(
-            timestamp=msg.FTimeUs,
+            timestamp=msg.FTimeUs / 1000,
             arbitration_id=msg.FIdentifier,
             is_extended_id=msg.FProperties & 0x04,
             is_remote_frame=msg.FProperties & 0x02,
@@ -53,7 +53,7 @@ def tosun_convert_msg(msg):
                              (0x04 if msg.is_extended_id else 0x00)
         result.FDLC = msg.dlc
         result.FIdentifier = msg.arbitration_id
-        result.FTimeUs = int(msg.timestamp)
+        result.FTimeUs = int(msg.timestamp * 1000)
         for index, item in enumerate(msg.data):
             result.FData[index] = item
         return result

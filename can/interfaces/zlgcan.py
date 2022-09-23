@@ -108,7 +108,7 @@ def zlg_convert_msg(msg, **kwargs):                        # channel=None, trans
         channel = kwargs.get('channel', None)
         assert channel is not None, 'channel required when convert ZLG CAN msg to std msg.'
         return Message(
-            timestamp=msg.timestamp,
+            timestamp=msg.timestamp / 1000,
             arbitration_id=msg.frame.can_id,
             is_extended_id=msg.frame.eff,
             is_remote_frame=msg.frame.rtr,
@@ -121,7 +121,7 @@ def zlg_convert_msg(msg, **kwargs):                        # channel=None, trans
         channel = kwargs.get('channel', None)
         assert channel is not None, 'channel required when convert ZLG CANFD msg to std msg.'
         return Message(
-            timestamp=msg.timestamp,
+            timestamp=msg.timestamp / 1000,
             arbitration_id=msg.frame.can_id,
             is_extended_id=msg.frame.eff,
             is_remote_frame=msg.frame.rtr,
@@ -137,7 +137,7 @@ def zlg_convert_msg(msg, **kwargs):                        # channel=None, trans
     elif isinstance(msg, ZCANDataObj):                                  # 合并接收CAN|CANFD报文转换
         data = msg.data.zcanCANFDData
         return Message(
-            timestamp=data.timeStamp,
+            timestamp=data.timeStamp / 1000,
             arbitration_id=data.frame.can_id,
             is_extended_id=data.frame.eff,
             is_remote_frame=data.frame.rtr,
