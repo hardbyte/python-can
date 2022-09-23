@@ -22,6 +22,7 @@ class ZlgBitTiming(BitTiming):
                 1_000_000: ZCAN_BIT_TIMING(tseg1=46, tseg2=11, sjw=3, brp=0),
                 2_000_000: ZCAN_BIT_TIMING(tseg1=10, tseg2=2, sjw=2, brp=1),
                 4_000_000: ZCAN_BIT_TIMING(tseg1=10, tseg2=2, sjw=2, brp=0),
+                5_000_000: ZCAN_BIT_TIMING(tseg1=7, tseg2=2, sjw=2, brp=0),
             }
         super().__init__(**kwargs)
     
