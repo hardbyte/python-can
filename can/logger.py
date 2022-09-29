@@ -21,7 +21,9 @@ import errno
 from typing import Any, Dict, List, Union, Sequence, Tuple
 
 import can
-from . import Bus, BusState, Logger, SizedRotatingLogger, RotatingLogger
+from can.io import BaseRotatingLogger
+from can.io.generic import MessageWriter
+from . import Bus, BusState, Logger, RotatingLogger
 from .typechecking import CanFilter, CanFilters
 
 
@@ -61,10 +63,10 @@ def _create_base_argument_parser(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "extra_args",
         nargs=argparse.REMAINDER,
-        help=r"The remaining arguments will be used for the interface "
-        r"initialisation. For example, `-i vector -c 1 --app-name="
-        r"MyCanApp` is the equivalent to opening the bus with `Bus("
-        r"'vector', channel=1, app_name='MyCanApp')",
+        help="The remaining arguments will be used for the interface and "
+        "logger/player initialisation. "
+        "For example, `-i vector -c 1 --app-name=MyCanApp` is the equivalent "
+        "to opening the bus with `Bus('vector', channel=1, app_name='MyCanApp')",
     )
 
 
@@ -233,7 +235,7 @@ def main() -> None:
         raise SystemExit(errno.EINVAL)
 
     results, unknown_args = parser.parse_known_args()
-    additional_config = _parse_additional_config(unknown_args)
+    additional_config = _parse_additional_config([*results.extra_args, *unknown_args])
     bus = _create_bus(results, can_filters=_parse_filters(results), **additional_config)
 
     if results.active:
@@ -244,16 +246,21 @@ def main() -> None:
     print(f"Connected to {bus.__class__.__name__}: {bus.channel_info}")
     print(f"Can Logger (Started on {datetime.now()})")
 
-    options = {"append": results.append}
-    if results.file_size or results.delta_t:
+    logger: Union[MessageWriter, BaseRotatingLogger]
+    if results.file_size:
         logger = RotatingLogger(
             base_filename=results.log_file,
             max_bytes=results.file_size,
             delta_t=results.delta_t,
-            **options,
+            append=results.append,
+            **additional_config,
         )
     else:
-        logger = Logger(filename=results.log_file, **options)  # type: ignore
+        logger = Logger(
+            filename=results.log_file,
+            append=results.append,
+            **additional_config,
+        )
 
     try:
         while True:

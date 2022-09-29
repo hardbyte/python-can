@@ -27,7 +27,7 @@ class TestPlayerScriptModule(unittest.TestCase):
         self.mock_virtual_bus.__enter__ = Mock(return_value=self.mock_virtual_bus)
 
         # Patch time sleep object
-        patcher_sleep = mock.patch("can.io.player.sleep", spec=True)
+        patcher_sleep = mock.patch("can.io.player.time.sleep", spec=True)
         self.MockSleep = patcher_sleep.start()
         self.addCleanup(patcher_sleep.stop)
 
@@ -60,7 +60,6 @@ class TestPlayerScriptModule(unittest.TestCase):
             dlc=8,
             data=[0x5, 0xC, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0],
         )
-        self.assertEqual(self.MockSleep.call_count, 2)
         if sys.version_info >= (3, 8):
             # The args argument was introduced with python 3.8
             self.assertTrue(
@@ -78,7 +77,6 @@ class TestPlayerScriptModule(unittest.TestCase):
         self.assertIn("09 08 07 06 05 04 03 02", mock_stdout.getvalue())
         self.assertIn("05 0c 00 00 00 00 00 00", mock_stdout.getvalue())
         self.assertEqual(self.mock_virtual_bus.send.call_count, 2)
-        self.assertEqual(self.MockSleep.call_count, 2)
         self.assertSuccessfulCleanup()
 
     def test_play_virtual_exit(self):
@@ -86,8 +84,7 @@ class TestPlayerScriptModule(unittest.TestCase):
 
         sys.argv = self.baseargs + [self.logfile]
         can.player.main()
-        self.assertEqual(self.mock_virtual_bus.send.call_count, 1)
-        self.assertEqual(self.MockSleep.call_count, 2)
+        assert self.mock_virtual_bus.send.call_count <= 2
         self.assertSuccessfulCleanup()
 
     def test_play_skip_error_frame(self):
@@ -97,7 +94,6 @@ class TestPlayerScriptModule(unittest.TestCase):
         sys.argv = self.baseargs + ["-v", logfile]
         can.player.main()
         self.assertEqual(self.mock_virtual_bus.send.call_count, 9)
-        self.assertEqual(self.MockSleep.call_count, 12)
         self.assertSuccessfulCleanup()
 
     def test_play_error_frame(self):
@@ -107,7 +103,6 @@ class TestPlayerScriptModule(unittest.TestCase):
         sys.argv = self.baseargs + ["-v", "--error-frames", logfile]
         can.player.main()
         self.assertEqual(self.mock_virtual_bus.send.call_count, 12)
-        self.assertEqual(self.MockSleep.call_count, 12)
         self.assertSuccessfulCleanup()
 
 
