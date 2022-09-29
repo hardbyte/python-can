@@ -327,9 +327,10 @@ class SizedRotatingLogger(BaseRotatingLogger):
 
         # BLFWriter specific
         _128_kb = 128 * 1024
-        if kwargs.get('max_container_size', 1) and max_bytes > 0:
-            kwargs['max_container_size'] = \
+        if kwargs.get("max_container_size", 1) and max_bytes > 0:
+            kwargs["max_container_size"] = (
                 _128_kb if max_bytes > _128_kb else max_bytes * 0.1
+            )
 
         self._writer = self._get_new_writer(self.base_filename)
 
