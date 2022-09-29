@@ -194,8 +194,9 @@ def main() -> None:
         dest="file_size",
         type=int,
         help="Maximum file size in bytes (or for the case of blf, maximum "
-        "buffer size before compression and flush to file). Rotate log "
-        "file when size threshold is reached.",
+        "buffer size before compression and flush to file). Rotate log file "
+        "when size threshold is reached. (If file_time is also given, then the "
+        "first of the two constraints to occur is what causes the rollover.)",
         default=0,
     )
 
@@ -204,7 +205,9 @@ def main() -> None:
         "--file_time",
         dest="file_time",
         type=int,
-        help="Maximum period in seconds before rotating log file.",
+        help="Maximum period in seconds before rotating log file. (If file_size"
+        "is also given, then the first of the two constraints to occur is"
+        "what causes the rollover.)",
         default=0,
     )
 
