@@ -108,6 +108,16 @@ class TestLoggerScriptModule(unittest.TestCase):
         self.assertSuccessfullCleanup()
         self.mock_logger_sized.assert_called_once()
 
+    def test_log_virtual_timedlogger(self):
+        self.mock_virtual_bus.recv = Mock(side_effect=[self.testmsg, KeyboardInterrupt])
+        self.MockLoggerUse = self.MockLoggerSized
+        self.loggerToUse = self.mock_logger_sized
+
+        sys.argv = self.baseargs + ["-f file.log"] + ["--file_time", "5"]
+        can.logger.main()
+        self.assertSuccessfullCleanup()
+        self.mock_logger_sized.assert_called_once()
+
     def test_parse_additional_config(self):
         unknown_args = [
             "--app-name=CANalyzer",
