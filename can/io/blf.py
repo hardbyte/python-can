@@ -359,6 +359,13 @@ class BLFReader(MessageReader):
 class BLFWriter(FileIOMessageWriter):
     """
     Logs CAN data to a Binary Logging File compatible with Vector's tools.
+
+    .. note::
+        The `buffer_size` will always stay under the `max_container_size`, which
+        is enforced at the end of the `_add_object` function. If the
+        `max_container_size > :attr:io.logger.RotatingLogger.max_bytes` then
+        the resulting file size will be less than described due to an
+        unaccounted compression of the buffer when writing to the file.
     """
 
     file: BinaryIO
