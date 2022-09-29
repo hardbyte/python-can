@@ -202,7 +202,7 @@ def main() -> None:
     parser.add_argument(
         "-t",
         "--time_difference",
-        dest="delta_t",
+        dest="max_seconds",
         type=int,
         help="Time difference in seconds between file rollover.",
         default=0,
@@ -251,7 +251,7 @@ def main() -> None:
         logger = RotatingLogger(
             base_filename=results.log_file,
             max_bytes=results.file_size,
-            delta_t=results.delta_t,
+            max_seconds=results.max_seconds,
             append=results.append,
             **additional_config,
         )

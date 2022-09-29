@@ -317,7 +317,7 @@ class RotatingLogger(BaseRotatingLogger):
         base_filename: StringPathLike,
         *args: Any,
         max_bytes: int = 0,
-        delta_t: int = 0,
+        max_seconds: int = 0,
         **kwargs: Any,
     ) -> None:
         """
@@ -327,7 +327,7 @@ class RotatingLogger(BaseRotatingLogger):
         :param max_bytes:
             The size threshold at which a new log file shall be created. If set
             less than or equal to 0, no rollover will be performed.
-        :param delta_t:
+        :param max_seconds:
             The elapsed time threshold at which a new log file shall be
             created. If set less than or equal to 0, no rollover will be
             performed.
@@ -338,21 +338,21 @@ class RotatingLogger(BaseRotatingLogger):
 
         # Rotation parameters
         self.max_bytes = max_bytes  # Maximum bytes for rotation (bytes)
-        self.delta_t = delta_t  # Time difference between rotation (seconds)
+        self.max_seconds = max_seconds  # Time difference between rotation (seconds)
 
         self._writer = self._get_new_writer(self.base_filename)
 
     def should_rollover(self, msg: Message) -> bool:
         # Check to see if a file rollover should occur based on file size
         # (bytes) and elapsed time (seconds) since last rollover.
-        if self.max_bytes <= 0 and self.delta_t <= 0:
+        if self.max_bytes <= 0 and self.max_seconds <= 0:
             return False
 
         # Check to see if the file size is greater than max bytes
         if self.writer.file_size() >= self.max_bytes > 0:
             return True
-        # Check to see if elapsed time is greater than delta_t
-        if time.time() - self.last_rollover_time > self.delta_t > 0:
+        # Check to see if elapsed time is greater than max seconds
+        if time.time() - self.last_rollover_time > self.max_seconds > 0:
             return True
 
         return False
