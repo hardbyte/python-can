@@ -201,10 +201,10 @@ def main() -> None:
 
     parser.add_argument(
         "-t",
-        "--time_difference",
-        dest="max_seconds",
+        "--file_time",
+        dest="file_time",
         type=int,
-        help="Time difference in seconds between file rollover.",
+        help="Maximum period in seconds before rotating log file.",
         default=0,
     )
 
@@ -247,11 +247,11 @@ def main() -> None:
     print(f"Can Logger (Started on {datetime.now()})")
 
     logger: Union[MessageWriter, BaseRotatingLogger]
-    if results.file_size:
+    if results.file_size or results.file_time:
         logger = RotatingLogger(
             base_filename=results.log_file,
             max_bytes=results.file_size,
-            max_seconds=results.max_seconds,
+            max_seconds=results.file_time,
             append=results.append,
             **additional_config,
         )
