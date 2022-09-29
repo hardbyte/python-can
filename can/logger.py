@@ -194,7 +194,9 @@ def main() -> None:
         dest="file_size",
         type=int,
         help="Maximum file size in bytes. Rotate log file when size threshold "
-        "is reached.",
+        "is reached. (The resulting file size is dependent on the logger "
+        "implementation and is not guaranteed to be exactly what is specified"
+        "here.)",
         default=None,
     )
 
