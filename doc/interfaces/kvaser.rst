@@ -46,3 +46,5 @@ This section contains Kvaser driver specific methods.
 
 
 .. automethod:: can.interfaces.kvaser.canlib.KvaserBus.get_stats
+.. autoclass::  can.interfaces.kvaser.structures.BusStatistics
+    :members:

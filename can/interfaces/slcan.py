@@ -323,10 +323,10 @@ class slcanBus(BusABC):
         """Get serial number of the slcan interface.
 
         :param timeout:
-            seconds to wait for serial number or ``None`` to wait indefinitely
+            seconds to wait for serial number or :obj:`None` to wait indefinitely
 
         :return:
-            ``None`` on timeout or a :class:`~builtin.str` object.
+            :obj:`None` on timeout or a :class:`str` object.
         """
         cmd = "N"
         self._write(cmd)

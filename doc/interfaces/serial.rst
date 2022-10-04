@@ -21,6 +21,8 @@ Bus
 
 .. autoclass:: can.interfaces.serial.serial_can.SerialBus
 
+    .. automethod:: _recv_internal
+
 Internals
 ---------
 The frames that will be sent and received over the serial interface consist of

@@ -20,7 +20,6 @@ Autoconfig Bus
 
 .. autoclass:: can.Bus
     :members:
-    :undoc-members:
 
 
 API
@@ -28,9 +27,17 @@ API
 
 .. autoclass:: can.BusABC
     :members:
-    :undoc-members:
 
     .. automethod:: __iter__
+    .. automethod:: _recv_internal
+    .. automethod:: _apply_filters
+    .. automethod:: _detect_available_configs
+    .. automethod:: _send_periodic_internal
+
+.. autoclass:: can.bus.BusState
+    :members:
+    :undoc-members:
+
 
 Transmitting
 ''''''''''''
