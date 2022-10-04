@@ -48,7 +48,7 @@ extensions = [
 ]
 
 # Now, you can use the alias name as a new role, e.g. :issue:`123`.
-extlinks = {"issue": ("https://github.com/hardbyte/python-can/issues/%s/", "issue ")}
+extlinks = {"issue": ("https://github.com/hardbyte/python-can/issues/%s/", "issue #%s")}
 
 intersphinx_mapping = {"python": ("https://docs.python.org/3/", None)}
 
