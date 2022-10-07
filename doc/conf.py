@@ -8,6 +8,8 @@ This file is execfile()d with the current directory set to its containing dir.
 
 import sys
 import os
+import ctypes
+from unittest.mock import MagicMock
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -15,6 +17,7 @@ import os
 sys.path.insert(0, os.path.abspath(".."))
 
 import can  # pylint: disable=wrong-import-position
+from can import ctypesutil
 
 # -- General configuration -----------------------------------------------------
 
@@ -122,6 +125,11 @@ nitpick_ignore = [
     ("py:class", "asyncio.events.AbstractEventLoop"),
     ("py:class", "_thread.allocate_lock"),
 ]
+
+# mock windows specific attributes
+autodoc_mock_imports = ["win32com"]
+ctypes.windll = MagicMock()
+ctypesutil.HRESULT = ctypes.c_long
 
 # -- Options for HTML output --------------------------------------------------
 
