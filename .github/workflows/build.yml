@@ -108,3 +108,4 @@ jobs:
       with:
         name: sphinx-out
         path: ./build/
+        retention-days: 5
