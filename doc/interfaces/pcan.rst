@@ -48,3 +48,4 @@ Bus
 ---
 
 .. autoclass:: can.interfaces.pcan.PcanBus
+    :members:

@@ -42,3 +42,7 @@ which inherits from :class:`~can.broadcastmanager.CyclicTask`.
 
 .. autoclass:: can.RestartableCyclicTaskABC
     :members:
+
+.. autoclass:: can.broadcastmanager.ThreadBasedCyclicSendTask
+    :members:
+

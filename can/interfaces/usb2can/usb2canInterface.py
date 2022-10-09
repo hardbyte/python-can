@@ -67,22 +67,22 @@ class Usb2canBus(BusABC):
     This interface only works on Windows.
     Please use socketcan on Linux.
 
-    :param str channel (optional):
+    :param channel:
         The device's serial number. If not provided, Windows Management Instrumentation
         will be used to identify the first such device.
 
-    :param int bitrate (optional):
+    :param bitrate:
         Bitrate of channel in bit/s. Values will be limited to a maximum of 1000 Kb/s.
         Default is 500 Kbs
 
-    :param int flags (optional):
+    :param flags:
         Flags to directly pass to open function of the usb2can abstraction layer.
 
-    :param str dll (optional):
+    :param dll:
         Path to the DLL with the CANAL API to load
         Defaults to 'usb2can.dll'
 
-    :param str serial (optional):
+    :param serial:
         Alias for `channel` that is provided for legacy reasons.
         If both `serial` and `channel` are set, `serial` will be used and
         channel will be ignored.
@@ -91,18 +91,19 @@ class Usb2canBus(BusABC):
 
     def __init__(
         self,
-        channel=None,
-        dll="usb2can.dll",
-        flags=0x00000008,
+        channel: Optional[str] = None,
+        dll: str = "usb2can.dll",
+        flags: int = 0x00000008,
         *_,
-        bitrate=500000,
+        bitrate: int = 500000,
+        serial: Optional[str] = None,
         **kwargs,
     ):
 
         self.can = Usb2CanAbstractionLayer(dll)
 
         # get the serial number of the device
-        device_id = kwargs.get("serial", channel)
+        device_id = serial or channel
 
         # search for a serial number if the device_id is None or empty
         if not device_id:
