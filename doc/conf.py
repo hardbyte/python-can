@@ -114,6 +114,9 @@ autodoc_default_flags = ["members", "show-inheritance"]
 # Keep cached intersphinx inventories indefinitely
 intersphinx_cache_limit = -1
 
+# location of typehints
+autodoc_typehints = "description"
+
 # disable specific warnings
 nitpick_ignore = [
     # Ignore warnings for type aliases. Remove once Sphinx supports PEP613
