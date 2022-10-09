@@ -7,14 +7,13 @@ import pathlib
 from abc import ABC, abstractmethod
 from datetime import datetime
 import gzip
-from typing import Any, Optional, Callable, Type, Tuple, cast, Dict
+from typing import Any, Optional, Callable, Type, Tuple, cast, Dict, Set
 
 from types import TracebackType
 
 from typing_extensions import Literal
 from pkg_resources import iter_entry_points
 
-import can.io
 from ..message import Message
 from ..listener import Listener
 from .generic import BaseIOHandler, FileIOMessageWriter, MessageWriter
@@ -131,8 +130,9 @@ class BaseRotatingLogger(Listener, BaseIOHandler, ABC):
     :class:`~logging.handlers.BaseRotatingHandler`.
 
     Subclasses must set the `_writer` attribute upon initialization.
-
     """
+
+    _supported_formats: Set[str] = set()
 
     #: If this attribute is set to a callable, the :meth:`~BaseRotatingLogger.rotation_filename`
     #: method delegates to this callable. The parameters passed to the callable are
@@ -224,17 +224,21 @@ class BaseRotatingLogger(Listener, BaseIOHandler, ABC):
         :return:
             An instance of a writer class.
         """
+        suffix = "".join(pathlib.Path(filename).suffixes[-2:]).lower()
 
-        logger = Logger(filename, *self.writer_args, **self.writer_kwargs)
-        if isinstance(logger, FileIOMessageWriter):
-            return logger
-        elif isinstance(logger, Printer) and logger.file is not None:
-            return cast(FileIOMessageWriter, logger)
-        else:
-            raise Exception(
-                f"The log format \"{''.join(pathlib.Path(filename).suffixes[-2:])}"
-                f'" is not supported by {self.__class__.__name__}'
-            )
+        if suffix in self._supported_formats:
+            logger = Logger(filename, *self.writer_args, **self.writer_kwargs)
+            if isinstance(logger, FileIOMessageWriter):
+                return logger
+            elif isinstance(logger, Printer) and logger.file is not None:
+                return cast(FileIOMessageWriter, logger)
+
+        raise Exception(
+            f'The log format "{suffix}" '
+            f"is not supported by {self.__class__.__name__}. "
+            f"{self.__class__.__name__} supports the following formats: "
+            f"{', '.join(self._supported_formats)}"
+        )
 
     def stop(self) -> None:
         """Stop handling new messages.
@@ -305,6 +309,8 @@ class SizedRotatingLogger(BaseRotatingLogger):
     The log files on disk may be incomplete due to buffering until
     :meth:`~can.Listener.stop` is called.
     """
+
+    _supported_formats = {".asc", ".blf", ".csv", ".log", ".txt"}
 
     def __init__(
         self,
