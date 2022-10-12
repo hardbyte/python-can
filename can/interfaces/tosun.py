@@ -17,8 +17,8 @@ def tosun_convert_msg(msg):
         return can.Message(
             timestamp=msg.FTimeUs / 1000,
             arbitration_id=msg.FIdentifier,
-            is_extended_id=msg.FProperties & 0x04,
-            is_remote_frame=msg.FProperties & 0x02,
+            is_extended_id=bool(msg.FProperties & 0x04),
+            is_remote_frame=bool(msg.FProperties & 0x02),
             channel=msg.FIdxChn,
             dlc=msg.FDLC,
             data=bytes(msg.FData),
@@ -29,16 +29,16 @@ def tosun_convert_msg(msg):
         return can.Message(
             timestamp=msg.FTimeUs / 1000,
             arbitration_id=msg.FIdentifier,
-            is_extended_id=msg.FProperties & 0x04,
-            is_remote_frame=msg.FProperties & 0x02,
+            is_extended_id=bool(msg.FProperties & 0x04),
+            is_remote_frame=bool(msg.FProperties & 0x02),
             channel=msg.FIdxChn,
             dlc=can.util.dlc2len(msg.FDLC),
             data=bytes(msg.FData)[:can.util.dlc2len(msg.FDLC)],
-            is_fd=msg.FFDProperties & 0x01,
+            is_fd=bool(msg.FFDProperties & 0x01),
             is_rx=False if msg.FProperties & 0x01 else True,
-            bitrate_switch=msg.FFDProperties & 0x02,
-            error_state_indicator=msg.FFDProperties & 0x04,
-            is_error_frame=msg.FProperties & 0x80
+            bitrate_switch=bool(msg.FFDProperties & 0x02),
+            error_state_indicator=bool(msg.FFDProperties & 0x04),
+            is_error_frame=bool(msg.FProperties & 0x80)
         )
     elif isinstance(msg, can.Message):
         if msg.is_fd:
