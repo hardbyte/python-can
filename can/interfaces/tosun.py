@@ -32,8 +32,8 @@ def tosun_convert_msg(msg):
             is_extended_id=msg.FProperties & 0x04,
             is_remote_frame=msg.FProperties & 0x02,
             channel=msg.FIdxChn,
-            dlc=msg.FDLC,
-            data=bytes(msg.FData),
+            dlc=can.util.dlc2len(msg.FDLC),
+            data=bytes(msg.FData)[:can.util.dlc2len(msg.FDLC)],
             is_fd=msg.FFDProperties & 0x01,
             is_rx=False if msg.FProperties & 0x01 else True,
             bitrate_switch=msg.FFDProperties & 0x02,
@@ -51,7 +51,7 @@ def tosun_convert_msg(msg):
         result.FProperties = 0x00 | (0x00 if msg.is_rx else 0x01) | \
                              (0x02 if msg.is_remote_frame else 0x00) | \
                              (0x04 if msg.is_extended_id else 0x00)
-        result.FDLC = msg.dlc
+        result.FDLC = can.util.len2dlc(msg.dlc)
         result.FIdentifier = msg.arbitration_id
         result.FTimeUs = int(msg.timestamp * 1000)
         for index, item in enumerate(msg.data):
