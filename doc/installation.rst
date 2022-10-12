@@ -103,6 +103,16 @@ If ``python-can`` is already installed, the CANtact backend can be installed sep
 
 Additional CANtact documentation is available at `cantact.io <https://cantact.io>`__.
 
+CanViewer
+~~~~~~~~~
+
+``python-can`` has support for showing a simple CAN viewer terminal application
+by running ``python -m can.viewer``. On Windows, this depends on the
+`windows-curses library <https://pypi.org/project/windows-curses/>`__ which can
+be installed with:
+
+``python -m pip install "python-can[viewer]"``
+
 Installing python-can in development mode
 -----------------------------------------
 

@@ -88,10 +88,10 @@ class UcanBus(BusABC):
         :raises ValueError:
             If invalid input parameter were passed.
 
-        :raises can.CanInterfaceNotImplementedError:
+        :raises ~can.exceptions.CanInterfaceNotImplementedError:
             If the platform is not supported.
 
-        :raises can.CanInitializationError:
+        :raises ~can.exceptions.CanInitializationError:
             If hardware or CAN interface initialization failed.
         """
         try:
@@ -181,7 +181,7 @@ class UcanBus(BusABC):
         :param float timeout:
             Transmit timeout in seconds (value 0 switches off the "auto delete")
 
-        :raises can.CanOperationError:
+        :raises ~can.exceptions.CanOperationError:
             If the message could not be sent.
         """
         try:
@@ -243,7 +243,7 @@ class UcanBus(BusABC):
         """
         Flushes the transmit buffer.
 
-        :raises can.CanError:
+        :raises ~can.exceptions.CanError:
             If flushing of the transmit buffer failed.
         """
         log.info("Flushing transmit buffer")
