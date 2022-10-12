@@ -29,7 +29,6 @@ class TestPCANBus(unittest.TestCase):
         self.mock_pcan.SetValue = Mock(return_value=PCAN_ERROR_OK)
         self.mock_pcan.GetValue = self._mockGetValue
         self.PCAN_API_VERSION_SIM = "4.2"
-
         self.bus = None
 
     def tearDown(self) -> None:
@@ -44,6 +43,8 @@ class TestPCANBus(unittest.TestCase):
         """
         if parameter == PCAN_API_VERSION:
             return PCAN_ERROR_OK, self.PCAN_API_VERSION_SIM.encode("ascii")
+        elif parameter == PCAN_RECEIVE_EVENT:
+            return PCAN_ERROR_OK, int.from_bytes(PCAN_RECEIVE_EVENT, "big")
         raise NotImplementedError(
             f"No mock return value specified for parameter {parameter}"
         )
