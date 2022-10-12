@@ -55,6 +55,6 @@ The full usage page can be seen below:
 
 
 can.logconvert
-----------
+--------------
 
 .. command-output:: python -m can.logconvert -h

@@ -402,7 +402,7 @@ class CyclicSendTask(
         """Stop a task by sending TX_DELETE message to Linux kernel.
 
         This will delete the entry for the transmission of the CAN-message
-        with the specified :attr:`~task_id` identifier. The message length
+        with the specified ``task_id`` identifier. The message length
         for the command TX_DELETE is {[bcm_msg_head]} (only the header).
         """
         log.debug("Stopping periodic task")
@@ -444,7 +444,7 @@ class CyclicSendTask(
         message to Linux kernel prior to scheduling.
 
         :raises ValueError:
-            If the task referenced by :attr:`~task_id` is already running.
+            If the task referenced by ``task_id`` is already running.
         """
         self._tx_setup(self.messages)
 
@@ -617,9 +617,10 @@ class SocketcanBus(BusABC):
 
         If setting some socket options fails, an error will be printed but no exception will be thrown.
         This includes enabling:
-         - that own messages should be received,
-         - CAN-FD frames and
-         - error frames.
+
+            - that own messages should be received,
+            - CAN-FD frames and
+            - error frames.
 
         :param channel:
             The can interface name with which to create this bus.
@@ -739,7 +740,7 @@ class SocketcanBus(BusABC):
             Wait up to this many seconds for the transmit queue to be ready.
             If not given, the call may fail immediately.
 
-        :raises can.CanError:
+        :raises ~can.exceptions.CanError:
             if the message could not be written.
         """
         log.debug("We've been asked to write a message to the bus")
