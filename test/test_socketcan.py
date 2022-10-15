@@ -238,8 +238,15 @@ class SocketCANTest(unittest.TestCase):
         self.assertEqual(expected_fields, BcmMsgHead._fields_)
 
     def test_build_bcm_header(self):
-        def _standard_size_little_endian_to_native(data: bytes, fmt: str) -> bytes:
-            aligned_data = struct.pack("@" + fmt[1:], *struct.unpack(fmt, data))
+        def _find_u32_fmt_char() -> str:
+            for _fmt in ("H", "I", "L", "Q"):
+                if struct.calcsize(_fmt) == 4:
+                    return _fmt
+
+        def _standard_size_little_endian_to_native(data: bytes) -> bytes:
+            std_le_fmt = "<IIIllllII"
+            native_fmt = "@" + std_le_fmt[1:].replace("I", _find_u32_fmt_char())
+            aligned_data = struct.pack(native_fmt, *struct.unpack(std_le_fmt, data))
             padded_data = aligned_data + b"\x00" * ((8 - len(aligned_data) % 8) % 8)
             return padded_data
 
@@ -248,8 +255,7 @@ class SocketCANTest(unittest.TestCase):
             b"\x00\x00\x00\x00\x00\x00\x00\x00"
             b"\x00\x00\x00\x00\x00\x00\x00\x00"
             b"\x00\x00\x00\x00\x01\x04\x00\x00"
-            b"\x01\x00\x00\x00",
-            fmt="<IIIllllII",
+            b"\x01\x00\x00\x00"
         )
 
         self.assertEqual(
