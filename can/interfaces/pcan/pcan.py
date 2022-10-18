@@ -109,7 +109,8 @@ elif IS_LINUX:
         HAS_EVENTS = True
     except Exception:
         HAS_EVENTS = False
-
+else:
+    HAS_EVENTS = False
 
 
 class PcanBus(BusABC):
