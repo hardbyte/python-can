@@ -206,6 +206,7 @@ class TestPCANBus(unittest.TestCase):
 
     @pytest.mark.timeout(3.0)
     def test_recv_no_message(self):
+        mock.patch("select.select", return_value=([],[],[]))
         self.mock_pcan.Read = Mock(return_value=(PCAN_ERROR_QRCVEMPTY, None, None))
         self.bus = can.Bus(bustype="pcan")
         self.assertEqual(self.bus.recv(timeout=0.5), None)
