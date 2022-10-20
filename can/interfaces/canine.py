@@ -98,23 +98,25 @@ class CANineBus(BusABC):
                 + "."
             )
 
-    def set_bitrate_reg(self, btr: bytes) -> None:
+    def _write(self, payload: bytes) -> None:
         """
-        :param btr:
-            BTR register value to set custom can speed
-        """
-        self.close()
-        self._write(btr)
-        self.open()
+        Write to the interface
 
-    def _write(self, payload: bytes, timeout: int = 0) -> None:
+        :param payload:
+            The payload to write as an array of bytes
+        """
         # can only send single packet frames for now
         # TODO: update for CAN-FD
         payload = b"\x00" + payload
         self.dev.write(0x1, payload)
 
     def _read(self, timeout: Optional[float]) -> Optional[str]:
-        # TODO: Reception should be asynchronous and use timeout
+        """
+        Read from the interface
+
+        :param timeout:
+            Optional read timeout in seconds
+        """
         # TODO: handle multiple packets sequence
         with error_check("Could not read from USB device"):
             try:
@@ -131,12 +133,27 @@ class CANineBus(BusABC):
                 raise e
 
     def flush(self) -> None:
+        """
+        Flush buffer and attempt to read all waiting messages from interface
+        """
         del self._buffer[:]
+        try:
+            p = self.dev.read()
+            if p:
+                p = self.dev.read()
+        except TimeoutError:
+            pass
 
     def open(self) -> None:
+        """
+        Write the token to open the interface
+        """
         self._write(b"O")
 
     def close(self) -> None:
+        """
+        Write the token to close the interface
+        """
         self._write(b"C")
 
     def _recv_internal(
@@ -206,6 +223,9 @@ class CANineBus(BusABC):
         self._write(payload, timeout)
 
     def shutdown(self) -> None:
+        """
+        Shutdown by closing the interface and freeing resources
+        """
         self.close()
         usb.util.dispose_resources(self.dev)
 
@@ -217,7 +237,7 @@ class CANineBus(BusABC):
     def get_version(
         self, timeout: Optional[float]
     ) -> Tuple[Optional[int], Optional[int]]:
-        """Get HW and SW version of the adapter fw.
+        """Get HW and SW version of the adapter.
 
         :param timeout:
             seconds to wait for version or None to wait indefinitely
