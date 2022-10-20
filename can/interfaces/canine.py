@@ -220,7 +220,7 @@ class CANineBus(BusABC):
             payload = struct.pack(
                 encoding, header, msg.arbitration_id, msg.dlc
             ) + bytes(msg.data)
-        self._write(payload, timeout)
+        self._write(payload)
 
     def shutdown(self) -> None:
         """
