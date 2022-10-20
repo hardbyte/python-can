@@ -48,40 +48,33 @@ class CANineBus(BusABC):
 
     def __init__(
         self,
-        channel: typechecking.ChannelStr,
+        channel: Optional[int],
         bitrate: Optional[int] = None,
-        btr: Optional[str] = None,
         usb_dev=None,
         **kwargs: Any
     ) -> None:
         """
-        :raise ValueError: if both *bitrate* and *btr* are set
-
+        :param channel:
+            Optional channel, corresponds to USB product ID
         :param bitrate:
             Bitrate in bit/s
-        :param btr:
-            BTR register value to set custom can speed
-        :param poll_interval:
-            Poll interval in seconds when reading messages
-        :param sleep_after_open:
-            Time to wait in seconds after opening connection
+        :param usb_dev:
+            A pyusb device to use
         """
 
         self._buffer = bytearray()
 
         if usb_dev:
             dev = usb_dev
+        elif channel:
+            dev = usb.core.find(idProduct=channel)
         else:
             dev = usb.core.find(idProduct=0xC1B0)
         dev.set_configuration()
         self.dev = dev
 
-        if bitrate is not None and btr is not None:
-            raise ValueError("Bitrate and btr mutually exclusive.")
         if bitrate is not None:
             self.set_bitrate(bitrate)
-        if btr is not None:
-            self.set_bitrate_reg(btr)
 
         self.open()
 
@@ -95,7 +88,9 @@ class CANineBus(BusABC):
             Bitrate in bit/s
         """
         if bitrate in self._BITRATES:
-            self.set_bitrate_reg(self._BITRATES[bitrate])
+            self.close()
+            self._write(self._BITRATES[bitrate])
+            self.open()
         else:
             raise ValueError(
                 "Invalid bitrate, choose one of "
