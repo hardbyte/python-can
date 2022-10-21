@@ -23,7 +23,7 @@ def tosun_convert_msg(msg):
             dlc=msg.FDLC,
             data=bytes(msg.FData),
             is_fd=False,
-            is_rx=False if msg.FProperties & 0x01 else True,
+            is_rx=not bool(msg.FProperties & 0x01),         # False if msg.FProperties & 0x01 else True,
         )
     elif isinstance(msg, TSCanFdMessage):
         return can.Message(
@@ -35,7 +35,7 @@ def tosun_convert_msg(msg):
             dlc=can.util.dlc2len(msg.FDLC),
             data=bytes(msg.FData)[:can.util.dlc2len(msg.FDLC)],
             is_fd=bool(msg.FFDProperties & 0x01),
-            is_rx=False if msg.FProperties & 0x01 else True,
+            is_rx=not bool(msg.FProperties & 0x01),         # False if msg.FProperties & 0x01 else True,
             bitrate_switch=bool(msg.FFDProperties & 0x02),
             error_state_indicator=bool(msg.FFDProperties & 0x04),
             is_error_frame=bool(msg.FProperties & 0x80)
@@ -193,6 +193,7 @@ class TosunBus(can.BusABC):
                             can_msgfd, canfd_num = self.device.tsfifo_receive_msgs(channel, canfd_num,
                                                                                    self.receive_own_messages,
                                                                                    TSMasterMessageType.CAN_FD)
+                            self.clear_rx_buffer(channel)
                             LOG.debug(f'TOSUN-CAN - canfd message received: {canfd_num}.')
                             self.rx_queue.extend(
                                 can_msgfd[i] for i in range(canfd_num)
@@ -200,11 +201,12 @@ class TosunBus(can.BusABC):
                         else:
                             can_msg, can_num = self.device.tsfifo_receive_msgs(channel, can_num, self.receive_own_messages,
                                                                                TSMasterMessageType.CAN)
+                            self.clear_rx_buffer(channel)
                             LOG.debug(f'TOSUN-CAN - can message received: {can_num}.')
                             self.rx_queue.extend(
                                 can_msg[i] for i in range(can_num)
                             )
-                        self.clear_rx_buffer(channel)
+                        # self.clear_rx_buffer(channel)
         except TSMasterException as e:
             raise can.CanOperationError(str(e))
 
