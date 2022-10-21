@@ -12,6 +12,7 @@ The available interfaces are:
    :maxdepth: 1
 
    interfaces/canalystii
+   interfaces/canine
    interfaces/etas
    interfaces/gs_usb
    interfaces/iscan
