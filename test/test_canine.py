@@ -7,7 +7,7 @@ import struct
 from unittest.mock import Mock
 
 
-class canineTestCase(unittest.TestCase):
+class CanineTestCase(unittest.TestCase):
     def setUp(self):
         self.bus = can.Bus("loop://", bustype="canine", usb_dev=MockUSB())
         self.dev = self.bus.dev
