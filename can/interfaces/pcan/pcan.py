@@ -493,9 +493,13 @@ class PcanBus(BusABC):
                         return None, False
                 elif HAS_EVENTS and IS_LINUX:
                     recv, _, _ = select.select([self._recv_event], [], [], timeout_s)
+                    log.error(recv)
+                    log.error(IS_LINUX)
                     if self._recv_event not in recv:
+                        log.error("Nothing received")
                         return None, False
                     result = self._read_message()
+                    log.error(f"oh recived something {result}")
                 elif timeout is not None and time.perf_counter() >= end_time:
                     return None, False
                 else:
