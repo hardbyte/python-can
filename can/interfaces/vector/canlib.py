@@ -876,6 +876,8 @@ class VectorBus(BusABC):
 
 
 class VectorChannelConfig(NamedTuple):
+    """NamedTuple which contains the channel properties from Vector XL API."""
+
     name: str
     hwType: xldefine.XL_HardwareType
     hwIndex: int
@@ -906,6 +908,7 @@ def _get_xl_driver_config() -> xlclass.XLdriverConfig:
 
 
 def get_channel_configs() -> List[VectorChannelConfig]:
+    """Read channel properties from Vector XL API."""
     try:
         driver_config = _get_xl_driver_config()
     except VectorError:
