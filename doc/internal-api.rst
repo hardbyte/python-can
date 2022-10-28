@@ -55,15 +55,15 @@ configuration into account.
 Bus Internals
 ~~~~~~~~~~~~~
 
-Several methods are not documented in the main :class:`can.BusABC`
+Several methods are not documented in the main :class:`can.Bus`
 as they are primarily useful for library developers as opposed to
 library users. This is the entire ABC bus class with all internal
 methods:
 
 .. autoclass:: can.BusABC
+    :members:
     :private-members:
     :special-members:
-    :noindex:
 
 
 
