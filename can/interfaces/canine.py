@@ -119,11 +119,18 @@ class CANineBus(BusABC):
         self.dev.write(0x1, payload)
 
     def _read(self, timeout: Optional[float]) -> Optional[str]:
-        # TODO: Reception should be asynchronous and use timeout
         # TODO: handle multiple packets sequence
+        # NOTE: pyusb specifies timeout in milliseconds. 
+        # in case you dont want to spend a full 
+        # hour finding this, here it is: 
+        # https://github.com/pyusb/pyusb/blob/777dea9d718e70d7323c821d4497c706b35742da/usb/core.py#L1014 .
+        if timeout == 0:
+            timeout_int = 1
+        else:
+            timeout_int = int(timeout*1000)
         with error_check("Could not read from USB device"):
             try:
-                packet = self.dev.read(0x81, 64)
+                packet = self.dev.read(0x81, 64, timeout_int)
                 remaining_packets = packet[0]
                 assert remaining_packets == 0  # avoid multi-packet sequence for now
                 payload = packet[1:]
