@@ -48,40 +48,33 @@ class CANineBus(BusABC):
 
     def __init__(
         self,
-        channel: typechecking.ChannelStr,
+        channel: Optional[int],
         bitrate: Optional[int] = None,
-        btr: Optional[str] = None,
         usb_dev=None,
         **kwargs: Any
     ) -> None:
         """
-        :raise ValueError: if both *bitrate* and *btr* are set
-
+        :param channel:
+            Optional channel, corresponds to USB product ID
         :param bitrate:
             Bitrate in bit/s
-        :param btr:
-            BTR register value to set custom can speed
-        :param poll_interval:
-            Poll interval in seconds when reading messages
-        :param sleep_after_open:
-            Time to wait in seconds after opening connection
+        :param usb_dev:
+            A pyusb device to use
         """
 
         self._buffer = bytearray()
 
         if usb_dev:
             dev = usb_dev
+        elif channel:
+            dev = usb.core.find(idProduct=channel)
         else:
             dev = usb.core.find(idProduct=0xC1B0)
         dev.set_configuration()
         self.dev = dev
 
-        if bitrate is not None and btr is not None:
-            raise ValueError("Bitrate and btr mutually exclusive.")
         if bitrate is not None:
             self.set_bitrate(bitrate)
-        if btr is not None:
-            self.set_bitrate_reg(btr)
 
         self.open()
 
@@ -95,7 +88,9 @@ class CANineBus(BusABC):
             Bitrate in bit/s
         """
         if bitrate in self._BITRATES:
-            self.set_bitrate_reg(self._BITRATES[bitrate])
+            self.close()
+            self._write(self._BITRATES[bitrate])
+            self.open()
         else:
             raise ValueError(
                 "Invalid bitrate, choose one of "
@@ -103,22 +98,25 @@ class CANineBus(BusABC):
                 + "."
             )
 
-    def set_bitrate_reg(self, btr: bytes) -> None:
+    def _write(self, payload: bytes) -> None:
         """
-        :param btr:
-            BTR register value to set custom can speed
-        """
-        self.close()
-        self._write(btr)
-        self.open()
+        Write to the interface
 
-    def _write(self, payload: bytes, timeout: int = 0) -> None:
+        :param payload:
+            The payload to write as an array of bytes
+        """
         # can only send single packet frames for now
         # TODO: update for CAN-FD
         payload = b"\x00" + payload
         self.dev.write(0x1, payload)
 
     def _read(self, timeout: Optional[float]) -> Optional[str]:
+        """
+        Read from the interface
+
+        :param timeout:
+            Optional read timeout in seconds
+        """
         # TODO: handle multiple packets sequence
         # NOTE: pyusb specifies timeout in milliseconds. 
         # in case you dont want to spend a full 
@@ -143,12 +141,27 @@ class CANineBus(BusABC):
                 raise e
 
     def flush(self) -> None:
+        """
+        Flush buffer and attempt to read all waiting messages from interface
+        """
         del self._buffer[:]
+        try:
+            p = self.dev.read()
+            if p:
+                p = self.dev.read()
+        except TimeoutError:
+            pass
 
     def open(self) -> None:
+        """
+        Write the token to open the interface
+        """
         self._write(b"O")
 
     def close(self) -> None:
+        """
+        Write the token to close the interface
+        """
         self._write(b"C")
 
     def _recv_internal(
@@ -215,9 +228,12 @@ class CANineBus(BusABC):
             payload = struct.pack(
                 encoding, header, msg.arbitration_id, msg.dlc
             ) + bytes(msg.data)
-        self._write(payload, timeout)
+        self._write(payload)
 
     def shutdown(self) -> None:
+        """
+        Shutdown by closing the interface and freeing resources
+        """
         self.close()
         usb.util.dispose_resources(self.dev)
 
@@ -229,7 +245,7 @@ class CANineBus(BusABC):
     def get_version(
         self, timeout: Optional[float]
     ) -> Tuple[Optional[int], Optional[int]]:
-        """Get HW and SW version of the adapter fw.
+        """Get HW and SW version of the adapter.
 
         :param timeout:
             seconds to wait for version or None to wait indefinitely

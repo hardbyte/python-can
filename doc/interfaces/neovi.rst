@@ -42,5 +42,6 @@ Bus
 ---
 
 .. autoclass:: can.interfaces.ics_neovi.NeoViBus
-
-
+.. autoexception:: can.interfaces.ics_neovi.ICSApiError
+.. autoexception:: can.interfaces.ics_neovi.ICSInitializationError
+.. autoexception:: can.interfaces.ics_neovi.ICSOperationError

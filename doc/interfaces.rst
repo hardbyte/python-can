@@ -12,6 +12,7 @@ The available interfaces are:
    :maxdepth: 1
 
    interfaces/canalystii
+   interfaces/canine
    interfaces/etas
    interfaces/gs_usb
    interfaces/iscan
@@ -26,6 +27,7 @@ The available interfaces are:
    interfaces/serial
    interfaces/slcan
    interfaces/socketcan
+   interfaces/socketcand
    interfaces/systec
    interfaces/udp_multicast
    interfaces/usb2can

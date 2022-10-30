@@ -1,7 +1,9 @@
+.. _SocketCAN:
+
 SocketCAN
 =========
 
-The `SocketCAN`_ documentation can be found in the Linux kernel docs at
+The SocketCAN documentation can be found in the `Linux kernel docs`_ at
 ``networking`` directory. Quoting from the SocketCAN Linux documentation::
 
 > The socketcan package is an implementation of CAN protocols
@@ -284,7 +286,7 @@ to ensure usage of SocketCAN Linux API. The most important differences are:
 
 .. External references
 
-.. _SocketCAN: https://www.kernel.org/doc/Documentation/networking/can.txt
+.. _Linux kernel docs: https://www.kernel.org/doc/Documentation/networking/can.txt
 .. _Intrepid kernel module: https://github.com/intrepidcs/intrepid-socketcan-kernel-module
 .. _Intrepid user-space daemon: https://github.com/intrepidcs/icsscand
 .. _can-utils: https://github.com/linux-can/can-utils

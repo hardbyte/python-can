@@ -39,7 +39,7 @@ class CyclicTask(abc.ABC):
     def stop(self) -> None:
         """Cancel this periodic task.
 
-        :raises can.CanError:
+        :raises ~can.exceptions.CanError:
             If stop is called on an already stopped task.
         """
 
