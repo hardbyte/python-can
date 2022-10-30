@@ -8,7 +8,7 @@ import time
 import threading
 import logging
 import sqlite3
-from typing import Generator
+from typing import Generator, Any
 
 from can.listener import BufferedReader
 from can.message import Message
@@ -25,14 +25,20 @@ class SqliteReader(MessageReader):
     This class can be iterated over or used to fetch all messages in the
     database with :meth:`~SqliteReader.read_all`.
 
-    Calling :func:`~builtin.len` on this object might not run in constant time.
+    Calling :func:`len` on this object might not run in constant time.
 
     :attr str table_name: the name of the database table used for storing the messages
 
     .. note:: The database schema is given in the documentation of the loggers.
     """
 
-    def __init__(self, file: StringPathLike, table_name: str = "messages") -> None:
+    def __init__(
+        self,
+        file: StringPathLike,
+        table_name: str = "messages",
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
         """
         :param file: a `str`  path like object that points
                      to the database file to use
@@ -128,7 +134,13 @@ class SqliteWriter(MessageWriter, BufferedReader):
     MAX_BUFFER_SIZE_BEFORE_WRITES = 500
     """Maximum number of messages to buffer before writing to the database"""
 
-    def __init__(self, file: StringPathLike, table_name: str = "messages") -> None:
+    def __init__(
+        self,
+        file: StringPathLike,
+        table_name: str = "messages",
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
         """
         :param file: a `str` or path like object that points
                      to the database file to use
@@ -137,6 +149,11 @@ class SqliteWriter(MessageWriter, BufferedReader):
         .. warning:: In contrary to all other readers/writers the Sqlite handlers
                      do not accept file-like objects as the `file` parameter.
         """
+        if kwargs.get("append", False):
+            raise ValueError(
+                f"The append argument should not be used in "
+                f"conjunction with the {self.__class__.__name__}."
+            )
         super().__init__(file=None)
         self.table_name = table_name
         self._db_filename = file

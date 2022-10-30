@@ -56,6 +56,7 @@ from .basic import (
     PCAN_CHANNEL_FEATURES,
     FEATURE_FD_CAPABLE,
     PCAN_DICT_STATUS,
+    PCAN_BUSOFF_AUTORESET,
 )
 
 
@@ -112,8 +113,8 @@ class PcanBus(BusABC):
         """A PCAN USB interface to CAN.
 
         On top of the usual :class:`~can.Bus` methods provided,
-        the PCAN interface includes the :meth:`~can.interface.pcan.PcanBus.flash`
-        and :meth:`~can.interface.pcan.PcanBus.status` methods.
+        the PCAN interface includes the :meth:`flash`
+        and :meth:`status` methods.
 
         :param str channel:
             The can interface name. An example would be 'PCAN_USBBUS1'.
@@ -206,6 +207,10 @@ class PcanBus(BusABC):
             In the range (1..16).
             Ignored if not using CAN-FD.
 
+        :param bool auto_reset:
+            Enable automatic recovery in bus off scenario.
+            Resetting the driver takes ~500ms during which
+            it will not be responsive.
         """
         self.m_objPCANBasic = PCANBasic()
 
@@ -275,6 +280,14 @@ class PcanBus(BusABC):
                 log.debug(
                     "Ignoring error. PCAN_ALLOW_ERROR_FRAMES is still unsupported by OSX Library PCANUSB v0.10"
                 )
+
+        if kwargs.get("auto_reset", False):
+            result = self.m_objPCANBasic.SetValue(
+                self.m_PcanHandle, PCAN_BUSOFF_AUTORESET, PCAN_PARAMETER_ON
+            )
+
+            if result != PCAN_ERROR_OK:
+                raise PcanCanInitializationError(self._get_formatted_error(result))
 
         if HAS_EVENTS:
             self._recv_event = CreateEvent(None, 0, 0, None)

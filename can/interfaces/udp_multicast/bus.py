@@ -332,7 +332,7 @@ class GeneralPurposeUdpMulticastBus:
             # get all sockets that are ready (can be a list with a single value
             # being self.socket or an empty list if self.socket is not ready)
             ready_receive_sockets, _, _ = select.select([self._socket], [], [], timeout)
-        except socket.error as exc:
+        except OSError as exc:
             # something bad (not a timeout) happened (e.g. the interface went down)
             raise can.CanOperationError(
                 f"Failed to wait for IP/UDP socket: {exc}"
