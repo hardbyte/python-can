@@ -67,9 +67,11 @@ class CANineBus(BusABC):
         if usb_dev:
             dev = usb_dev
         elif channel:
-            dev = usb.core.find(idProduct=channel)
+            # https://stackoverflow.com/a/209550
+            dev = usb.core.find(idProduct=int(channel, 0))
         else:
             dev = usb.core.find(idProduct=0xC1B0)
+        assert dev is not None, "Could not create CANine device"
         dev.set_configuration()
         self.dev = dev
 
