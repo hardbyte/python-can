@@ -45,6 +45,13 @@ class s_xl_chip_state(ctypes.Structure):
     ]
 
 
+class s_xl_sync_pulse(ctypes.Structure):
+    _fields_ = [
+        ("pulseCode", ctypes.c_ubyte),
+        ("time", XLuint64),
+    ]
+
+
 class s_xl_can_ev_chip_state(ctypes.Structure):
     _fields_ = [
         ("busStatus", ctypes.c_ubyte),
@@ -65,7 +72,11 @@ class s_xl_can_ev_sync_pulse(ctypes.Structure):
 
 # BASIC bus message structure
 class s_xl_tag_data(ctypes.Union):
-    _fields_ = [("msg", s_xl_can_msg), ("chipState", s_xl_chip_state)]
+    _fields_ = [
+        ("msg", s_xl_can_msg),
+        ("chipState", s_xl_chip_state),
+        ("syncPulse", s_xl_sync_pulse),
+    ]
 
 
 # CAN FD messages

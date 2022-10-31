@@ -14,9 +14,9 @@ def producer(thread_id: int, message_count: int = 16) -> None:
     """Spam the bus with messages including the data id.
 
     :param thread_id: the id of the thread/process
-    :param message_count: the number of messages that shall be send
+    :param message_count: the number of messages that shall be sent
     """
-    with can.Bus(bustype="socketcan", channel="vcan0") as bus:  # type: ignore
+    with can.Bus(interface="socketcan", channel="vcan0") as bus:  # type: ignore
         for i in range(message_count):
             msg = can.Message(
                 arbitration_id=0x0CF02200 + thread_id,

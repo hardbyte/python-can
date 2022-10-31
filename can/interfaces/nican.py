@@ -179,10 +179,8 @@ class NicanBus(BusABC):
     .. warning::
 
         This interface does implement efficient filtering of messages, but
-        the filters have to be set in :meth:`~can.interfaces.nican.NicanBus.__init__`
-        using the ``can_filters`` parameter. Using :meth:`~can.interfaces.nican.NicanBus.set_filters`
-        does not work.
-
+        the filters have to be set in ``__init__`` using the ``can_filters`` parameter.
+        Using :meth:`~can.BusABC.set_filters` does not work.
     """
 
     def __init__(
@@ -208,9 +206,9 @@ class NicanBus(BusABC):
             ``is_error_frame`` set to True and ``arbitration_id`` will identify
             the error (default True)
 
-        :raise can.CanInterfaceNotImplementedError:
+        :raise ~can.exceptions.CanInterfaceNotImplementedError:
             If the current operating system is not supported or the driver could not be loaded.
-        :raise can.interfaces.nican.NicanInitializationError:
+        :raise ~can.interfaces.nican.NicanInitializationError:
             If the bus could not be set up.
         """
         if nican is None:

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-Shows how the receive messages via polling.
+Shows how to receive messages via polling.
 """
 
 import can
@@ -11,11 +11,9 @@ from can.bus import BusState
 def receive_all():
     """Receives all messages and prints them to the console until Ctrl+C is pressed."""
 
-    with can.interface.Bus(
-        bustype="pcan", channel="PCAN_USBBUS1", bitrate=250000
-    ) as bus:
-        # bus = can.interface.Bus(bustype='ixxat', channel=0, bitrate=250000)
-        # bus = can.interface.Bus(bustype='vector', app_name='CANalyzer', channel=0, bitrate=250000)
+    with can.Bus(interface="pcan", channel="PCAN_USBBUS1", bitrate=250000) as bus:
+        # bus = can.Bus(interface='ixxat', channel=0, bitrate=250000)
+        # bus = can.Bus(interface='vector', app_name='CANalyzer', channel=0, bitrate=250000)
 
         # set to read-only, only supported on some interfaces
         bus.state = BusState.PASSIVE

@@ -272,3 +272,18 @@ xlGetEventString.restype = xlclass.XLstringType
 xlCanGetEventString = _xlapi_dll.xlCanGetEventString
 xlCanGetEventString.argtypes = [ctypes.POINTER(xlclass.XLcanRxEvent)]
 xlCanGetEventString.restype = xlclass.XLstringType
+
+xlGetReceiveQueueLevel = _xlapi_dll.xlGetReceiveQueueLevel
+xlGetReceiveQueueLevel.argtypes = [xlclass.XLportHandle, ctypes.POINTER(ctypes.c_int)]
+xlGetReceiveQueueLevel.restype = xlclass.XLstatus
+xlGetReceiveQueueLevel.errcheck = check_status_operation
+
+xlGenerateSyncPulse = _xlapi_dll.xlGenerateSyncPulse
+xlGenerateSyncPulse.argtypes = [xlclass.XLportHandle, xlclass.XLaccess]
+xlGenerateSyncPulse.restype = xlclass.XLstatus
+xlGenerateSyncPulse.errcheck = check_status_operation
+
+xlFlushReceiveQueue = _xlapi_dll.xlFlushReceiveQueue
+xlFlushReceiveQueue.argtypes = [xlclass.XLportHandle]
+xlFlushReceiveQueue.restype = xlclass.XLstatus
+xlFlushReceiveQueue.errcheck = check_status_operation

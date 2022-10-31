@@ -1,7 +1,9 @@
+.. _SocketCAN:
+
 SocketCAN
 =========
 
-The `SocketCAN`_ documentation can be found in the Linux kernel docs at
+The SocketCAN documentation can be found in the `Linux kernel docs`_ at
 ``networking`` directory. Quoting from the SocketCAN Linux documentation::
 
 > The socketcan package is an implementation of CAN protocols
@@ -56,6 +58,28 @@ existing ``can0`` interface with a bitrate of 1MB:
 .. code-block:: bash
 
     sudo ip link set can0 up type can bitrate 1000000
+
+CAN over Serial / SLCAN
+~~~~~~~~~~~~~~~~~~~~~~~
+
+SLCAN adapters can be used directly via :doc:`/interfaces/slcan`, or
+via :doc:`/interfaces/socketcan` with some help from the ``slcand`` utility
+which can be found in the `can-utils <https://github.com/linux-can/can-utils>`_ package.
+
+To create a socketcan interface for an SLCAN adapter run the following:
+
+.. code-block:: bash
+
+    slcand -f -o -c -s5 /dev/ttyAMA0
+    ip link set up slcan0
+
+Names of the interfaces created by ``slcand`` match the ``slcan\d+`` regex.
+If a custom name is required, it can be specified as the last argument. E.g.:
+
+.. code-block:: bash
+
+    slcand -f -o -c -s5 /dev/ttyAMA0 can0
+    ip link set up can0
 
 .. _socketcan-pcan:
 
@@ -262,7 +286,7 @@ to ensure usage of SocketCAN Linux API. The most important differences are:
 
 .. External references
 
-.. _SocketCAN: https://www.kernel.org/doc/Documentation/networking/can.txt
+.. _Linux kernel docs: https://www.kernel.org/doc/Documentation/networking/can.txt
 .. _Intrepid kernel module: https://github.com/intrepidcs/intrepid-socketcan-kernel-module
 .. _Intrepid user-space daemon: https://github.com/intrepidcs/icsscand
 .. _can-utils: https://github.com/linux-can/can-utils
