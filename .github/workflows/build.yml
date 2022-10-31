@@ -18,7 +18,7 @@ jobs:
           "3.8",
           "3.9",
           "3.10",
-          "3.11.0-alpha - 3.11.0",
+          "3.11",
           "pypy-3.7",
           "pypy-3.8",
           "pypy-3.9",
@@ -67,6 +67,9 @@ jobs:
     - name: mypy 3.10
       run: |
         mypy --python-version 3.10 .
+    - name: mypy 3.11
+      run: |
+        mypy --python-version 3.11 .
     - name: pylint
       run: |
         pylint --rcfile=.pylintrc \
