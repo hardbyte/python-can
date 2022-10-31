@@ -84,17 +84,17 @@ class Logger(MessageWriter):  # pylint: disable=abstract-method
             )
             Logger.fetched_plugins = True
 
-        suffix = pathlib.PurePath(filename).suffix.lower()
+        real_suffix = "".join(pathlib.Path(filename).suffixes[-2:]).lower()
 
         file_or_filename: AcceptedIOType = filename
-        if suffix == ".gz":
+        if ".gz" in real_suffix:
             suffix, file_or_filename = Logger.compress(filename)
 
         try:
-            return Logger.message_writers[suffix](file_or_filename, *args, **kwargs)
+            return Logger.message_writers[real_suffix](file_or_filename, *args, **kwargs)
         except KeyError:
             raise ValueError(
-                f'No write support for this unknown log format "{suffix}"'
+                f'No write support for this unknown log format "{real_suffix}"'
             ) from None
 
     @staticmethod
