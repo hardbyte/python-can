@@ -11,7 +11,7 @@ which consists of a header and some zlib compressed data, usually up to 128 kB
 of uncompressed data each. This data contains the actual CAN messages and other
 objects types.
 """
-import gzip
+
 import struct
 import zlib
 import datetime
@@ -395,11 +395,6 @@ class BLFWriter(FileIOMessageWriter):
             speed and compression (currently equivalent to level 6).
         """
         mode = "rb+" if append else "wb"
-        if type(file) == gzip.GzipFile:
-            raise ValueError(
-                f"The BLFWriter is currently incompatible with "
-                f"{gzip.GzipFile.__name__}s. Try using a different zip format."
-            )
         try:
             super().__init__(file, mode=mode)
         except FileNotFoundError:
