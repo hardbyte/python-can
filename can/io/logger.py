@@ -94,7 +94,7 @@ class Logger(MessageWriter):  # pylint: disable=abstract-method
 
         for log_writer_key in Logger.message_writers:
             if real_suffix in log_writer_key:
-                return Logger.message_writers[real_suffix](
+                return Logger.message_writers[log_writer_key](
                     file_or_filename, *args, **kwargs
                 )
             elif suffix in log_writer_key:
