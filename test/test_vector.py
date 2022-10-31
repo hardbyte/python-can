@@ -62,6 +62,7 @@ def mock_xldriver() -> None:
     # backup unmodified values
     real_xldriver = canlib.xldriver
     real_waitforsingleobject = canlib.WaitForSingleObject
+    real_has_events = canlib.HAS_EVENTS
 
     # set mock
     canlib.xldriver = xldriver_mock
@@ -72,6 +73,7 @@ def mock_xldriver() -> None:
     # cleanup
     canlib.xldriver = real_xldriver
     canlib.WaitForSingleObject = real_waitforsingleobject
+    canlib.HAS_EVENTS = real_has_events
 
 
 def test_bus_creation_mocked(mock_xldriver) -> None:
@@ -870,13 +872,14 @@ def xlGetChannelIndex(
 def xlOpenPort(
     port_handle_p: ctypes.POINTER(xlclass.XLportHandle),
     app_name_p: ctypes.c_char_p,
-    access_mask: xlclass.XLaccess,
-    permission_mask_p: ctypes.POINTER(xlclass.XLaccess),
+    access_mask: int,
+    permission_mask: xlclass.XLaccess,
     rx_queue_size: ctypes.c_uint,
     xl_interface_version: ctypes.c_uint,
     bus_type: ctypes.c_uint,
 ) -> int:
     port_handle_p.value = 0
+    permission_mask.value = access_mask
     return 0
 
 
