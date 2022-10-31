@@ -1,4 +1,4 @@
-Version 4.1.0 (WIP)
+Version 4.1.0
 ====
 
 Features
@@ -26,6 +26,11 @@ Features
 * The PCAN interface can be selected by its device ID instead 
   of just the channel name (#1346).
 * The PCAN Bus implementation supports auto bus-off reset (#1345).
+* SocketCAN: Make ``find_available_interfaces()`` find slcanX interfaces (#1369).
+* Vector: Add xlGetReceiveQueueLevel, xlGenerateSyncPulse and 
+  xlFlushReceiveQueue to xldriver (#1387).
+* Vector: Raise a CanInitializationError, if the CAN settings can not 
+  be applied according to the arguments of ``VectorBus.__init__`` (#1426).
 
 Bug Fixes
 ---------
@@ -45,6 +50,7 @@ Bug Fixes
 * Detect and cast types of CLI ``extra_args`` (#1280, #1328).
 * Fix ASC/CANoe incompatibility due to timestamp format (#1315, #1362).
 * Fix MessageSync timings (#1372, #1374).
+* Fix file name for compressed files in SizedRotatingLogger (#1382, #1683).
 
 Miscellaneous
 -------------
@@ -52,6 +58,17 @@ Miscellaneous
 * Allow ICSApiError to be pickled and un-pickled (#1341)
 * Sort interface names in CLI API to make documentation reproducible (#1342)
 * Exclude repository-configuration from git-archive (#1343)
+* Improve documentation (#1397, #1401, #1405, #1420, #1421)
+* Officially support Python 3.11 (#1423)
+
+Breaking Changes
+----------------
+
+* ``windows-curses`` was moved to optional dependencies (#1395). 
+  Use ``pip install python-can[viewer]`` if you are using the ``can.viewer`` 
+  script on Windows.
+* The attributes of ``can.interfaces.vector.VectorChannelConfig`` were renamed 
+  from camelCase to snake_case (#1422).
 
 Version 4.0.0
 ====
