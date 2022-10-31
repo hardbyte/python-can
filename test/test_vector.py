@@ -22,6 +22,7 @@ from can.interfaces.vector import (
     VectorOperationError,
     VectorChannelConfig,
 )
+from can.interfaces.vector import VectorBusParams, VectorCanParams, VectorCanFdParams
 from test.config import IS_WINDOWS
 
 XLDRIVER_FOUND = canlib.xldriver is not None
@@ -604,18 +605,49 @@ def test_winapi_availability() -> None:
 
 def test_vector_channel_config_attributes():
     assert hasattr(VectorChannelConfig, "name")
-    assert hasattr(VectorChannelConfig, "hwType")
-    assert hasattr(VectorChannelConfig, "hwIndex")
-    assert hasattr(VectorChannelConfig, "hwChannel")
-    assert hasattr(VectorChannelConfig, "channelIndex")
-    assert hasattr(VectorChannelConfig, "channelMask")
-    assert hasattr(VectorChannelConfig, "channelCapabilities")
-    assert hasattr(VectorChannelConfig, "channelBusCapabilities")
-    assert hasattr(VectorChannelConfig, "isOnBus")
-    assert hasattr(VectorChannelConfig, "connectedBusType")
-    assert hasattr(VectorChannelConfig, "serialNumber")
-    assert hasattr(VectorChannelConfig, "articleNumber")
-    assert hasattr(VectorChannelConfig, "transceiverName")
+    assert hasattr(VectorChannelConfig, "hw_type")
+    assert hasattr(VectorChannelConfig, "hw_index")
+    assert hasattr(VectorChannelConfig, "hw_channel")
+    assert hasattr(VectorChannelConfig, "channel_index")
+    assert hasattr(VectorChannelConfig, "channel_mask")
+    assert hasattr(VectorChannelConfig, "channel_capabilities")
+    assert hasattr(VectorChannelConfig, "channel_bus_capabilities")
+    assert hasattr(VectorChannelConfig, "is_on_bus")
+    assert hasattr(VectorChannelConfig, "bus_params")
+    assert hasattr(VectorChannelConfig, "connected_bus_type")
+    assert hasattr(VectorChannelConfig, "serial_number")
+    assert hasattr(VectorChannelConfig, "article_number")
+    assert hasattr(VectorChannelConfig, "transceiver_name")
+
+
+def test_vector_bus_params_attributes():
+    assert hasattr(VectorBusParams, "bus_type")
+    assert hasattr(VectorBusParams, "can")
+    assert hasattr(VectorBusParams, "canfd")
+
+
+def test_vector_can_params_attributes():
+    assert hasattr(VectorCanParams, "bitrate")
+    assert hasattr(VectorCanParams, "sjw")
+    assert hasattr(VectorCanParams, "tseg1")
+    assert hasattr(VectorCanParams, "tseg2")
+    assert hasattr(VectorCanParams, "sam")
+    assert hasattr(VectorCanParams, "output_mode")
+    assert hasattr(VectorCanParams, "can_op_mode")
+
+
+def test_vector_canfd_params_attributes():
+    assert hasattr(VectorCanFdParams, "bitrate")
+    assert hasattr(VectorCanFdParams, "data_bitrate")
+    assert hasattr(VectorCanFdParams, "sjw_abr")
+    assert hasattr(VectorCanFdParams, "tseg1_abr")
+    assert hasattr(VectorCanFdParams, "tseg2_abr")
+    assert hasattr(VectorCanFdParams, "sam_abr")
+    assert hasattr(VectorCanFdParams, "sjw_dbr")
+    assert hasattr(VectorCanFdParams, "tseg1_dbr")
+    assert hasattr(VectorCanFdParams, "tseg2_dbr")
+    assert hasattr(VectorCanFdParams, "output_mode")
+    assert hasattr(VectorCanFdParams, "can_op_mode")
 
 
 # *****************************************************************************

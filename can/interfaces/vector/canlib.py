@@ -295,12 +295,12 @@ class VectorBus(BusABC):
         if serial is not None:
             hw_type: Optional[xldefine.XL_HardwareType] = None
             for channel_config in channel_configs:
-                if channel_config.serialNumber != serial:
+                if channel_config.serial_number != serial:
                     continue
 
-                hw_type = xldefine.XL_HardwareType(channel_config.hwType)
-                if channel_config.hwChannel == channel:
-                    return channel_config.channelIndex
+                hw_type = xldefine.XL_HardwareType(channel_config.hw_type)
+                if channel_config.hw_channel == channel:
+                    return channel_config.channel_index
 
             if hw_type is None:
                 err_msg = f"No interface with serial {serial} found."
@@ -331,7 +331,7 @@ class VectorBus(BusABC):
 
         # check if channel is a valid global channel index
         for channel_config in channel_configs:
-            if channel == channel_config.channelIndex:
+            if channel == channel_config.channel_index:
                 return channel
 
         raise CanInitializationError(
@@ -727,26 +727,28 @@ class VectorBus(BusABC):
         LOG.info("Found %d channels", len(channel_configs))
         for channel_config in channel_configs:
             if (
-                not channel_config.channelBusCapabilities
+                not channel_config.channel_bus_capabilities
                 & xldefine.XL_BusCapabilities.XL_BUS_ACTIVE_CAP_CAN
             ):
                 continue
             LOG.info(
-                "Channel index %d: %s", channel_config.channelIndex, channel_config.name
+                "Channel index %d: %s",
+                channel_config.channel_index,
+                channel_config.name,
             )
             configs.append(
                 {
                     # data for use in VectorBus.__init__():
                     "interface": "vector",
-                    "channel": channel_config.hwChannel,
-                    "serial": channel_config.serialNumber,
+                    "channel": channel_config.hw_channel,
+                    "serial": channel_config.serial_number,
                     # data for use in VectorBus.set_application_config():
-                    "hw_type": channel_config.hwType,
-                    "hw_index": channel_config.hwIndex,
-                    "hw_channel": channel_config.hwChannel,
+                    "hw_type": channel_config.hw_type,
+                    "hw_index": channel_config.hw_index,
+                    "hw_channel": channel_config.hw_channel,
                     # additional information:
                     "supports_fd": bool(
-                        channel_config.channelCapabilities
+                        channel_config.channel_capabilities
                         & xldefine.XL_ChannelCapabilities.XL_CHANNEL_FLAG_CANFD_ISO_SUPPORT
                     ),
                     "vector_channel_config": channel_config,
@@ -875,22 +877,53 @@ class VectorBus(BusABC):
         self.xldriver.xlSetTimerRate(self.port_handle, timer_rate_10us)
 
 
+class VectorCanParams(NamedTuple):
+    bitrate: int
+    sjw: int
+    tseg1: int
+    tseg2: int
+    sam: int
+    output_mode: xldefine.XL_OutputMode
+    can_op_mode: xldefine.XL_CANFD_BusParams_CanOpMode
+
+
+class VectorCanFdParams(NamedTuple):
+    bitrate: int
+    data_bitrate: int
+    sjw_abr: int
+    tseg1_abr: int
+    tseg2_abr: int
+    sam_abr: int
+    sjw_dbr: int
+    tseg1_dbr: int
+    tseg2_dbr: int
+    output_mode: xldefine.XL_OutputMode
+    can_op_mode: xldefine.XL_CANFD_BusParams_CanOpMode
+
+
+class VectorBusParams(NamedTuple):
+    bus_type: xldefine.XL_BusTypes
+    can: VectorCanParams
+    canfd: VectorCanFdParams
+
+
 class VectorChannelConfig(NamedTuple):
     """NamedTuple which contains the channel properties from Vector XL API."""
 
     name: str
-    hwType: xldefine.XL_HardwareType
-    hwIndex: int
-    hwChannel: int
-    channelIndex: int
-    channelMask: int
-    channelCapabilities: xldefine.XL_ChannelCapabilities
-    channelBusCapabilities: xldefine.XL_BusCapabilities
-    isOnBus: bool
-    connectedBusType: xldefine.XL_BusTypes
-    serialNumber: int
-    articleNumber: int
-    transceiverName: str
+    hw_type: xldefine.XL_HardwareType
+    hw_index: int
+    hw_channel: int
+    channel_index: int
+    channel_mask: int
+    channel_capabilities: xldefine.XL_ChannelCapabilities
+    channel_bus_capabilities: xldefine.XL_BusCapabilities
+    is_on_bus: bool
+    connected_bus_type: xldefine.XL_BusTypes
+    bus_params: VectorBusParams
+    serial_number: int
+    article_number: int
+    transceiver_name: str
 
 
 def _get_xl_driver_config() -> xlclass.XLdriverConfig:
@@ -907,6 +940,38 @@ def _get_xl_driver_config() -> xlclass.XLdriverConfig:
     return driver_config
 
 
+def _read_bus_params_from_c_struct(bus_params: xlclass.XLbusParams) -> VectorBusParams:
+    return VectorBusParams(
+        bus_type=xldefine.XL_BusTypes(bus_params.busType),
+        can=VectorCanParams(
+            bitrate=bus_params.data.can.bitRate,
+            sjw=bus_params.data.can.sjw,
+            tseg1=bus_params.data.can.tseg1,
+            tseg2=bus_params.data.can.tseg2,
+            sam=bus_params.data.can.sam,
+            output_mode=xldefine.XL_OutputMode(bus_params.data.can.outputMode),
+            can_op_mode=xldefine.XL_CANFD_BusParams_CanOpMode(
+                bus_params.data.can.canOpMode
+            ),
+        ),
+        canfd=VectorCanFdParams(
+            bitrate=bus_params.data.canFD.arbitrationBitRate,
+            data_bitrate=bus_params.data.canFD.dataBitRate,
+            sjw_abr=bus_params.data.canFD.sjwAbr,
+            tseg1_abr=bus_params.data.canFD.tseg1Abr,
+            tseg2_abr=bus_params.data.canFD.tseg2Abr,
+            sam_abr=bus_params.data.canFD.samAbr,
+            sjw_dbr=bus_params.data.canFD.sjwDbr,
+            tseg1_dbr=bus_params.data.canFD.tseg1Dbr,
+            tseg2_dbr=bus_params.data.canFD.tseg2Dbr,
+            output_mode=xldefine.XL_OutputMode(bus_params.data.canFD.outputMode),
+            can_op_mode=xldefine.XL_CANFD_BusParams_CanOpMode(
+                bus_params.data.canFD.canOpMode
+            ),
+        ),
+    )
+
+
 def get_channel_configs() -> List[VectorChannelConfig]:
     """Read channel properties from Vector XL API."""
     try:
@@ -919,22 +984,23 @@ def get_channel_configs() -> List[VectorChannelConfig]:
         xlcc: xlclass.XLchannelConfig = driver_config.channel[i]
         vcc = VectorChannelConfig(
             name=xlcc.name.decode(),
-            hwType=xldefine.XL_HardwareType(xlcc.hwType),
-            hwIndex=xlcc.hwIndex,
-            hwChannel=xlcc.hwChannel,
-            channelIndex=xlcc.channelIndex,
-            channelMask=xlcc.channelMask,
-            channelCapabilities=xldefine.XL_ChannelCapabilities(
+            hw_type=xldefine.XL_HardwareType(xlcc.hwType),
+            hw_index=xlcc.hwIndex,
+            hw_channel=xlcc.hwChannel,
+            channel_index=xlcc.channelIndex,
+            channel_mask=xlcc.channelMask,
+            channel_capabilities=xldefine.XL_ChannelCapabilities(
                 xlcc.channelCapabilities
             ),
-            channelBusCapabilities=xldefine.XL_BusCapabilities(
+            channel_bus_capabilities=xldefine.XL_BusCapabilities(
                 xlcc.channelBusCapabilities
             ),
-            isOnBus=bool(xlcc.isOnBus),
-            connectedBusType=xldefine.XL_BusTypes(xlcc.connectedBusType),
-            serialNumber=xlcc.serialNumber,
-            articleNumber=xlcc.articleNumber,
-            transceiverName=xlcc.transceiverName.decode(),
+            is_on_bus=bool(xlcc.isOnBus),
+            bus_params=_read_bus_params_from_c_struct(xlcc.busParams),
+            connected_bus_type=xldefine.XL_BusTypes(xlcc.connectedBusType),
+            serial_number=xlcc.serialNumber,
+            article_number=xlcc.articleNumber,
+            transceiver_name=xlcc.transceiverName.decode(),
         )
         channel_list.append(vcc)
     return channel_list
