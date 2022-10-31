@@ -54,12 +54,12 @@ class Logger(MessageWriter):  # pylint: disable=abstract-method
 
     fetched_plugins = False
     message_writers: Dict[str, Type[MessageWriter]] = {
-        ".asc": ASCWriter,
-        ".blf": BLFWriter,
-        ".csv": CSVWriter,
-        ".db": SqliteWriter,
-        ".log": CanutilsLogWriter,
-        ".txt": Printer,
+        (".asc",): ASCWriter,
+        (".blf",): BLFWriter,
+        (".csv",): CSVWriter,
+        (".db",): SqliteWriter,
+        (".log",): CanutilsLogWriter,
+        (".txt",): Printer,
     }
 
     @staticmethod
@@ -89,10 +89,16 @@ class Logger(MessageWriter):  # pylint: disable=abstract-method
         file_or_filename: AcceptedIOType = filename
         if ".gz" in real_suffix:
             suffix, file_or_filename = Logger.compress(filename)
+        else:
+            suffix = real_suffix
 
-        try:
-            return Logger.message_writers[real_suffix](file_or_filename, *args, **kwargs)
-        except KeyError:
+        for log_writer_key in Logger.message_writers:
+            if real_suffix in log_writer_key:
+                return Logger.message_writers[real_suffix](file_or_filename, *args, **kwargs)
+            elif suffix in log_writer_key:
+                raise ValueError(f"The {Logger.message_writers[log_writer_key].__name__} does not "
+                                 f"currently support {real_suffix} files.")
+        else:
             raise ValueError(
                 f'No write support for this unknown log format "{real_suffix}"'
             ) from None
