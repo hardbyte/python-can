@@ -21,7 +21,7 @@ from usb import USBError
 import usb.core
 import usb.util
 
-from can import BusABC, Message
+from can import BusABC, Message, typechecking
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +48,7 @@ class CANineBus(BusABC):
 
     def __init__(
         self,
-        channel: Optional[str],
+        channel: typechecking.ChannelStr,
         bitrate: Optional[int] = None,
         usb_dev: Optional[usb.core.Device] = None,
         **kwargs: Any
@@ -66,9 +66,6 @@ class CANineBus(BusABC):
 
         if usb_dev:
             dev = usb_dev
-        elif channel:
-            # https://stackoverflow.com/a/209550
-            dev = usb.core.find(idProduct=int(channel, base=0))
         else:
             dev = usb.core.find(idProduct=0xC1B0)
         assert dev is not None, "Could not create CANine device"
