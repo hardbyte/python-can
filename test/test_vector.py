@@ -7,6 +7,7 @@ Test for Vector Interface
 import ctypes
 import functools
 import pickle
+import sys
 import time
 from unittest.mock import Mock
 
@@ -22,6 +23,7 @@ from can.interfaces.vector import (
     VectorOperationError,
     VectorChannelConfig,
 )
+from can.interfaces.vector import VectorBusParams, VectorCanParams, VectorCanFdParams
 from test.config import IS_WINDOWS
 
 XLDRIVER_FOUND = canlib.xldriver is not None
@@ -60,6 +62,7 @@ def mock_xldriver() -> None:
     # backup unmodified values
     real_xldriver = canlib.xldriver
     real_waitforsingleobject = canlib.WaitForSingleObject
+    real_has_events = canlib.HAS_EVENTS
 
     # set mock
     canlib.xldriver = xldriver_mock
@@ -70,6 +73,7 @@ def mock_xldriver() -> None:
     # cleanup
     canlib.xldriver = real_xldriver
     canlib.WaitForSingleObject = real_waitforsingleobject
+    canlib.HAS_EVENTS = real_has_events
 
 
 def test_bus_creation_mocked(mock_xldriver) -> None:
@@ -586,6 +590,9 @@ def test_vector_subtype_error_from_generic() -> None:
             raise specific
 
 
+@pytest.mark.skipif(
+    sys.byteorder != "little", reason="Test relies on little endian data."
+)
 def test_get_channel_configs() -> None:
     _original_func = canlib._get_xl_driver_config
     canlib._get_xl_driver_config = _get_predefined_xl_driver_config
@@ -604,18 +611,49 @@ def test_winapi_availability() -> None:
 
 def test_vector_channel_config_attributes():
     assert hasattr(VectorChannelConfig, "name")
-    assert hasattr(VectorChannelConfig, "hwType")
-    assert hasattr(VectorChannelConfig, "hwIndex")
-    assert hasattr(VectorChannelConfig, "hwChannel")
-    assert hasattr(VectorChannelConfig, "channelIndex")
-    assert hasattr(VectorChannelConfig, "channelMask")
-    assert hasattr(VectorChannelConfig, "channelCapabilities")
-    assert hasattr(VectorChannelConfig, "channelBusCapabilities")
-    assert hasattr(VectorChannelConfig, "isOnBus")
-    assert hasattr(VectorChannelConfig, "connectedBusType")
-    assert hasattr(VectorChannelConfig, "serialNumber")
-    assert hasattr(VectorChannelConfig, "articleNumber")
-    assert hasattr(VectorChannelConfig, "transceiverName")
+    assert hasattr(VectorChannelConfig, "hw_type")
+    assert hasattr(VectorChannelConfig, "hw_index")
+    assert hasattr(VectorChannelConfig, "hw_channel")
+    assert hasattr(VectorChannelConfig, "channel_index")
+    assert hasattr(VectorChannelConfig, "channel_mask")
+    assert hasattr(VectorChannelConfig, "channel_capabilities")
+    assert hasattr(VectorChannelConfig, "channel_bus_capabilities")
+    assert hasattr(VectorChannelConfig, "is_on_bus")
+    assert hasattr(VectorChannelConfig, "bus_params")
+    assert hasattr(VectorChannelConfig, "connected_bus_type")
+    assert hasattr(VectorChannelConfig, "serial_number")
+    assert hasattr(VectorChannelConfig, "article_number")
+    assert hasattr(VectorChannelConfig, "transceiver_name")
+
+
+def test_vector_bus_params_attributes():
+    assert hasattr(VectorBusParams, "bus_type")
+    assert hasattr(VectorBusParams, "can")
+    assert hasattr(VectorBusParams, "canfd")
+
+
+def test_vector_can_params_attributes():
+    assert hasattr(VectorCanParams, "bitrate")
+    assert hasattr(VectorCanParams, "sjw")
+    assert hasattr(VectorCanParams, "tseg1")
+    assert hasattr(VectorCanParams, "tseg2")
+    assert hasattr(VectorCanParams, "sam")
+    assert hasattr(VectorCanParams, "output_mode")
+    assert hasattr(VectorCanParams, "can_op_mode")
+
+
+def test_vector_canfd_params_attributes():
+    assert hasattr(VectorCanFdParams, "bitrate")
+    assert hasattr(VectorCanFdParams, "data_bitrate")
+    assert hasattr(VectorCanFdParams, "sjw_abr")
+    assert hasattr(VectorCanFdParams, "tseg1_abr")
+    assert hasattr(VectorCanFdParams, "tseg2_abr")
+    assert hasattr(VectorCanFdParams, "sam_abr")
+    assert hasattr(VectorCanFdParams, "sjw_dbr")
+    assert hasattr(VectorCanFdParams, "tseg1_dbr")
+    assert hasattr(VectorCanFdParams, "tseg2_dbr")
+    assert hasattr(VectorCanFdParams, "output_mode")
+    assert hasattr(VectorCanFdParams, "can_op_mode")
 
 
 # *****************************************************************************
@@ -834,13 +872,14 @@ def xlGetChannelIndex(
 def xlOpenPort(
     port_handle_p: ctypes.POINTER(xlclass.XLportHandle),
     app_name_p: ctypes.c_char_p,
-    access_mask: xlclass.XLaccess,
-    permission_mask_p: ctypes.POINTER(xlclass.XLaccess),
+    access_mask: int,
+    permission_mask: xlclass.XLaccess,
     rx_queue_size: ctypes.c_uint,
     xl_interface_version: ctypes.c_uint,
     bus_type: ctypes.c_uint,
 ) -> int:
     port_handle_p.value = 0
+    permission_mask.value = access_mask
     return 0
 
 
