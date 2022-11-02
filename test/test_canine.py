@@ -105,7 +105,7 @@ class MockUSB:
         if not self._frozen:
             self.val = val
 
-    def read(self, ep, length):
+    def read(self, ep, length, timeout=0):
         return self.val
 
     def set_configuration(self):
