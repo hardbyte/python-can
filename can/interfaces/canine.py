@@ -48,9 +48,9 @@ class CANineBus(BusABC):
 
     def __init__(
         self,
-        channel: Optional[int],
+        channel: Optional[str],
         bitrate: Optional[int] = None,
-        usb_dev=None,
+        usb_dev: Optional[usb.core.Device] = None,
         **kwargs: Any
     ) -> None:
         """
@@ -68,7 +68,7 @@ class CANineBus(BusABC):
             dev = usb_dev
         elif channel:
             # https://stackoverflow.com/a/209550
-            dev = usb.core.find(idProduct=int(channel, 0))
+            dev = usb.core.find(idProduct=int(channel, base=0))
         else:
             dev = usb.core.find(idProduct=0xC1B0)
         assert dev is not None, "Could not create CANine device"
@@ -112,7 +112,7 @@ class CANineBus(BusABC):
         payload = b"\x00" + payload
         self.dev.write(0x1, payload)
 
-    def _read(self, timeout: Optional[float]) -> Optional[str]:
+    def _read(self, timeout: Optional[float]) -> Any:
         """
         Read from the interface
 
@@ -124,13 +124,16 @@ class CANineBus(BusABC):
         # in case you dont want to spend a full
         # hour finding this, here it is:
         # https://github.com/pyusb/pyusb/blob/777dea9d718e70d7323c821d4497c706b35742da/usb/core.py#L1014 .
+        timeout_ms: int = 0
         if timeout == 0:
-            timeout_int = 1
-        else:
-            timeout_int = int(timeout * 1000)
+            timeout_ms = 1
+        elif timeout is None:
+            timeout_ms = 1000000
+        elif timeout > 0:
+            timeout_ms = int(timeout * 1000)
         with error_check("Could not read from USB device"):
             try:
-                packet = self.dev.read(0x81, 64, timeout_int)
+                packet = self.dev.read(0x81, 64, timeout_ms)
                 remaining_packets = packet[0]
                 assert remaining_packets == 0  # avoid multi-packet sequence for now
                 payload = packet[1:]
@@ -262,7 +265,8 @@ class CANineBus(BusABC):
 
         payload = self._read(timeout)
         assert payload[0] == ord(b"V")
-        return struct.unpack("<HH", payload[1:5])
+        hw_version, sw_version = struct.unpack("<HH", payload[1:5])
+        return hw_version, sw_version
 
     @staticmethod
     def _detect_available_configs():
