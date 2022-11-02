@@ -309,13 +309,14 @@ class PcanBus(BusABC):
                     self.m_PcanHandle, PCAN_RECEIVE_EVENT, self._recv_event
                 )
             elif IS_LINUX:
-                result, self._recv_event = self.m_objPCANBasic.GetValue(self.m_PcanHandle, PCAN_RECEIVE_EVENT)
+                result, self._recv_event = self.m_objPCANBasic.GetValue(
+                    self.m_PcanHandle, PCAN_RECEIVE_EVENT
+                )
 
             if result != PCAN_ERROR_OK:
                 raise PcanCanInitializationError(self._get_formatted_error(result))
 
         super().__init__(channel=channel, state=state, bitrate=bitrate, *args, **kwargs)
-
 
     def _find_channel_by_dev_id(self, device_id):
         """

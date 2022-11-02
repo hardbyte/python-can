@@ -5,7 +5,8 @@ Test for PCAN Interface
 import ctypes
 import unittest
 from unittest import mock
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
+
 
 import pytest
 from parameterized import parameterized
@@ -205,8 +206,8 @@ class TestPCANBus(unittest.TestCase):
         self.assertEqual(recv_msg.timestamp, 0)
 
     @pytest.mark.timeout(3.0)
-    def test_recv_no_message(self):
-        mock.patch("select.select", return_value=([],[],[]))
+    @patch("select.select", return_value=([],[],[]))
+    def test_recv_no_message(self, mock_select):
         self.mock_pcan.Read = Mock(return_value=(PCAN_ERROR_QRCVEMPTY, None, None))
         self.bus = can.Bus(bustype="pcan")
         self.assertEqual(self.bus.recv(timeout=0.5), None)
