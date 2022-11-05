@@ -58,7 +58,7 @@ class Logger(MessageWriter):  # pylint: disable=abstract-method
         (".csv",): CSVWriter,
         (".db",): SqliteWriter,
         (".log", ".log.gz"): CanutilsLogWriter,
-        (".txt", ".log.gz"): Printer,
+        (".txt", ".txt.gz"): Printer,
     }
 
     @staticmethod
@@ -83,13 +83,15 @@ class Logger(MessageWriter):  # pylint: disable=abstract-method
             )
             Logger.fetched_plugins = True
 
-        real_suffix = "".join(pathlib.Path(filename).suffixes[-2:]).lower()
+        path = pathlib.Path(filename)
+        real_suffix = "".join(path.suffixes[-2:]).lower()
+        suffix = path.suffix.lower()
 
         file_or_filename: AcceptedIOType = filename
-        if ".gz" in real_suffix:
+        if "gz" in real_suffix.split(".")[-1]:
             suffix, file_or_filename = Logger.compress(filename, *args, **kwargs)
-        else:
-            suffix = real_suffix
+        if real_suffix.index(suffix) != 0:
+            real_suffix = suffix
 
         for log_writer_key in Logger.message_writers:
             if real_suffix in log_writer_key:
