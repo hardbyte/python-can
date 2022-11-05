@@ -46,10 +46,10 @@ class ReaderWriterExtensionTest(unittest.TestCase):
     def test_extension_matching(self):
         for suffix, (writer, reader) in self.message_writers_and_readers.items():
             suffix_variants = [
-                suffix.upper(),
-                suffix.lower(),
-                f"can.msg.ext{suffix}",
-                "".join([c.upper() if i % 2 else c for i, c in enumerate(suffix)]),
+                suffix[0].upper(),
+                suffix[0].lower(),
+                f"can.msg.ext{suffix[0]}",
+                "".join([c.upper() if i % 2 else c for i, c in enumerate(suffix[0])]),
             ]
             for suffix_variant in suffix_variants:
                 tmp_file = tempfile.NamedTemporaryFile(
