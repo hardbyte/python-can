@@ -230,6 +230,7 @@ class TosunBus(can.BusABC):
     #     self.device.tsapp_configure_can_register()
 
     def __enter__(self):
+        self.device.disconnect()
         return self
 
     def shutdown(self) -> None:
