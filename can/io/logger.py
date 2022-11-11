@@ -57,8 +57,8 @@ class Logger(MessageWriter):  # pylint: disable=abstract-method
         (".blf",): BLFWriter,
         (".csv",): CSVWriter,
         (".db",): SqliteWriter,
-        (".log", ".log.gz"): CanutilsLogWriter,
-        (".txt", ".log.gz"): Printer,
+        (".log",): CanutilsLogWriter,
+        (".txt",): Printer,
     }
 
     @staticmethod
