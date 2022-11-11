@@ -59,18 +59,6 @@ Miscellaneous
    :show-inheritance:
    :class-doc-from: class
 
-.. autoclass:: can.interfaces.vector.canlib.VectorBusParams
-   :show-inheritance:
-   :class-doc-from: class
-
-.. autoclass:: can.interfaces.vector.canlib.VectorCanParams
-   :show-inheritance:
-   :class-doc-from: class
-
-.. autoclass:: can.interfaces.vector.canlib.VectorCanFdParams
-   :show-inheritance:
-   :class-doc-from: class
-
 .. autoclass:: can.interfaces.vector.xldefine.XL_HardwareType
    :show-inheritance:
    :member-order: bysource
@@ -90,18 +78,6 @@ Miscellaneous
    :undoc-members:
 
 .. autoclass:: can.interfaces.vector.xldefine.XL_BusTypes
-   :show-inheritance:
-   :member-order: bysource
-   :members:
-   :undoc-members:
-
-.. autoclass:: can.interfaces.vector.xldefine.XL_OutputMode
-   :show-inheritance:
-   :member-order: bysource
-   :members:
-   :undoc-members:
-
-.. autoclass:: can.interfaces.vector.xldefine.XL_CANFD_BusParams_CanOpMode
    :show-inheritance:
    :member-order: bysource
    :members:
