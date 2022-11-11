@@ -31,12 +31,10 @@ class TestSocketCanHelpers(unittest.TestCase):
         result = list(find_available_interfaces())
         self.assertGreaterEqual(len(result), 0)
         for entry in result:
-            self.assertRegex(entry, r"(sl|v|vx)?can\d+")
+            self.assertRegex(entry, r"v?can\d+")
         if TEST_INTERFACE_SOCKETCAN:
-            self.assertGreaterEqual(len(result), 3)
+            self.assertGreaterEqual(len(result), 1)
             self.assertIn("vcan0", result)
-            self.assertIn("vxcan0", result)
-            self.assertIn("slcan0", result)
 
 
 if __name__ == "__main__":
