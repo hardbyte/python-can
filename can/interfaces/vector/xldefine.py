@@ -64,7 +64,7 @@ class XL_BusTypes(IntFlag):
     XL_BUS_TYPE_A429 = 8192  # =0x00002000
 
 
-class XL_CANFD_BusParams_CanOpMode(IntFlag):
+class XL_CANFD_BusParams_CanOpMode(IntEnum):
     XL_BUS_PARAMS_CANOPMODE_CAN20 = 1
     XL_BUS_PARAMS_CANOPMODE_CANFD = 2
     XL_BUS_PARAMS_CANOPMODE_CANFD_NO_ISO = 8
@@ -318,9 +318,3 @@ class XL_HardwareType(IntEnum):
     XL_HWTYPE_VX1161A = 114
     XL_HWTYPE_VX1161B = 115
     XL_MAX_HWTYPE = 120
-
-
-class XL_SyncPulseSource(IntEnum):
-    XL_SYNC_PULSE_EXTERNAL = 0
-    XL_SYNC_PULSE_OUR = 1
-    XL_SYNC_PULSE_OUR_SHARED = 2
