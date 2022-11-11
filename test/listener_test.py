@@ -15,6 +15,9 @@ import can
 
 from .data.example_data import generate_message
 
+channel = "virtual_channel_0"
+can.rc["interface"] = "virtual"
+
 logging.basicConfig(level=logging.DEBUG)
 
 # makes the random number generator deterministic
@@ -52,15 +55,10 @@ class ListenerImportTest(unittest.TestCase):
 
 class BusTest(unittest.TestCase):
     def setUp(self):
-        # Save all can.rc defaults
-        self._can_rc = can.rc
-        can.rc = {"interface": "virtual"}
         self.bus = can.interface.Bus()
 
     def tearDown(self):
         self.bus.shutdown()
-        # Restore the defaults
-        can.rc = self._can_rc
 
 
 class ListenerTest(BusTest):

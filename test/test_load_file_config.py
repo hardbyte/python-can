@@ -11,7 +11,7 @@ import can
 class LoadFileConfigTest(unittest.TestCase):
     configuration = {
         "default": {"interface": "virtual", "channel": "0"},
-        "one": {"interface": "kvaser", "channel": "1"},
+        "one": {"interface": "virtual", "channel": "1"},
         "two": {"channel": "2"},
         "three": {"extra": "extra value"},
     }
