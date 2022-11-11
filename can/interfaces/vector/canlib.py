@@ -140,7 +140,7 @@ class VectorBus(BusABC):
 
         :raise ~can.exceptions.CanInterfaceNotImplementedError:
             If the current operating system is not supported or the driver could not be loaded.
-        :raise ~can.exceptions.CanInitializationError:
+        :raise can.exceptions.CanInitializationError:
             If the bus could not be set up.
             This may or may not be a :class:`~can.interfaces.vector.VectorInitializationError`.
         """
@@ -218,7 +218,6 @@ class VectorBus(BusABC):
             interface_version,
             xldefine.XL_BusTypes.XL_BUS_TYPE_CAN,
         )
-        self.permission_mask = permission_mask.value
 
         LOG.debug(
             "Open Port: PortHandle: %d, PermissionMask: 0x%X",
@@ -226,9 +225,8 @@ class VectorBus(BusABC):
             permission_mask.value,
         )
 
-        # set CAN settings
         for channel in self.channels:
-            if self._has_init_access(channel):
+            if permission_mask.value & self.channel_masks[channel]:
                 if fd:
                     self._set_bitrate_canfd(
                         channel=channel,
@@ -243,51 +241,6 @@ class VectorBus(BusABC):
                     )
                 elif bitrate:
                     self._set_bitrate_can(channel=channel, bitrate=bitrate)
-
-        # Check CAN settings
-        for channel in self.channels:
-            if kwargs.get("_testing", False):
-                # avoid check if xldriver is mocked for testing
-                break
-
-            bus_params = self._read_bus_params(channel)
-            if fd:
-                _canfd = bus_params.canfd
-                if not all(
-                    [
-                        bus_params.bus_type is xldefine.XL_BusTypes.XL_BUS_TYPE_CAN,
-                        _canfd.can_op_mode
-                        & xldefine.XL_CANFD_BusParams_CanOpMode.XL_BUS_PARAMS_CANOPMODE_CANFD,
-                        _canfd.bitrate == bitrate if bitrate else True,
-                        _canfd.sjw_abr == sjw_abr if bitrate else True,
-                        _canfd.tseg1_abr == tseg1_abr if bitrate else True,
-                        _canfd.tseg2_abr == tseg2_abr if bitrate else True,
-                        _canfd.data_bitrate == data_bitrate if data_bitrate else True,
-                        _canfd.sjw_dbr == sjw_dbr if data_bitrate else True,
-                        _canfd.tseg1_dbr == tseg1_dbr if data_bitrate else True,
-                        _canfd.tseg2_dbr == tseg2_dbr if data_bitrate else True,
-                    ]
-                ):
-                    raise CanInitializationError(
-                        f"The requested CAN FD settings could not be set for channel {channel}. "
-                        f"Another application might have set incompatible settings. "
-                        f"These are the currently active settings: {_canfd._asdict()}"
-                    )
-            else:
-                _can = bus_params.can
-                if not all(
-                    [
-                        bus_params.bus_type is xldefine.XL_BusTypes.XL_BUS_TYPE_CAN,
-                        _can.can_op_mode
-                        & xldefine.XL_CANFD_BusParams_CanOpMode.XL_BUS_PARAMS_CANOPMODE_CAN20,
-                        _can.bitrate == bitrate if bitrate else True,
-                    ]
-                ):
-                    raise CanInitializationError(
-                        f"The requested CAN settings could not be set for channel {channel}. "
-                        f"Another application might have set incompatible settings. "
-                        f"These are the currently active settings: {_can._asdict()}"
-                    )
 
         # Enable/disable TX receipts
         tx_receipts = 1 if receive_own_messages else 0
@@ -385,21 +338,6 @@ class VectorBus(BusABC):
             f"Channel {channel} not found. The 'channel' parameter must be "
             f"a valid global channel index if neither 'app_name' nor 'serial' were given.",
             error_code=xldefine.XL_Status.XL_ERR_HW_NOT_PRESENT,
-        )
-
-    def _has_init_access(self, channel: int) -> bool:
-        return bool(self.permission_mask & self.channel_masks[channel])
-
-    def _read_bus_params(self, channel: int) -> "VectorBusParams":
-        channel_mask = self.channel_masks[channel]
-
-        vcc_list = get_channel_configs()
-        for vcc in vcc_list:
-            if vcc.channel_mask == channel_mask:
-                return vcc.bus_params
-
-        raise CanInitializationError(
-            f"Channel configuration for channel {channel} not found."
         )
 
     def _set_bitrate_can(
