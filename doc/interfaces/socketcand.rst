@@ -28,8 +28,8 @@ daemon running on a remote Raspberry Pi:
     except KeyboardInterrupt:
       pass
 
-The output may look like this::
-
+The output may look like this:
+::
     Timestamp: 1637791111.209224    ID: 000006fd    X Rx                DLC:  8    c4 10 e3 2d 96 ff 25 6b
     Timestamp: 1637791111.233951    ID: 000001ad    X Rx                DLC:  4    4d 47 c7 64
     Timestamp: 1637791111.409415    ID: 000005f7    X Rx                DLC:  8    86 de e6 0f 42 55 5d 39
@@ -47,9 +47,8 @@ However, it will also work with any other socketcan device.
 Install CAN Interface for a MCP2515 based interface on a Raspberry Pi
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Add the following lines to ``/boot/config.txt``.
-Please take care on the frequency of the crystal on your MCP2515 board::
-
+Add the following lines to ``/boot/config.txt``. Please take care on the frequency of the crystal on your MCP2515 board:
+::
     dtparam=spi=on
     dtoverlay=mcp2515-can0,oscillator=12000000,interrupt=25,spimaxfrequency=1000000
 
@@ -107,8 +106,8 @@ Run socketcand
 
     ./socketcand -v -i can0
 
-During start, socketcand will prompt its IP address and port it listens to::
-
+During start, socketcand will prompt its IP address and port it listens to:
+::
     Verbose output activated
 
     Using network interface 'eth0'

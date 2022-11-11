@@ -372,8 +372,10 @@ class IXXATBus(BusABC):
     .. warning::
 
         This interface does implement efficient filtering of messages, but
-        the filters have to be set in ``__init__`` using the ``can_filters`` parameter.
-        Using :meth:`~can.BusABC.set_filters` does not work.
+        the filters have to be set in :meth:`~can.interfaces.ixxat.IXXATBus.__init__`
+        using the ``can_filters`` parameter. Using :meth:`~can.interfaces.ixxat.IXXATBus.set_filters`
+        does not work.
+
     """
 
     CHANNEL_BITRATES = {

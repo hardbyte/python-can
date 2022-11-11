@@ -138,11 +138,11 @@ class VectorBus(BusABC):
         :param tseg2_dbr:
             Bus timing value tseg2 (data)
 
-        :raise ~can.exceptions.CanInterfaceNotImplementedError:
+        :raise can.CanInterfaceNotImplementedError:
             If the current operating system is not supported or the driver could not be loaded.
-        :raise can.exceptions.CanInitializationError:
+        :raise can.CanInitializationError:
             If the bus could not be set up.
-            This may or may not be a :class:`~can.interfaces.vector.VectorInitializationError`.
+            This may or may not be a :class:`can.interfaces.vector.VectorInitializationError`.
         """
         if os.name != "nt" and not kwargs.get("_testing", False):
             raise CanInterfaceNotImplementedError(

@@ -7,8 +7,11 @@ import ctypes
 
 
 class BusStatistics(ctypes.Structure):
-    """This structure is used with the method
-    :meth:`~can.interfaces.kvaser.canlib.KvaserBus.get_stats`.
+    """
+    This structure is used with the method :meth:`KvaserBus.get_stats`.
+
+     .. seealso:: :meth:`KvaserBus.get_stats`
+
     """
 
     _fields_ = [

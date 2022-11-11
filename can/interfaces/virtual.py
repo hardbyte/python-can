@@ -40,7 +40,7 @@ class VirtualBus(BusABC):
     an identifier for connected buses.
 
     Implements :meth:`can.BusABC._detect_available_configs`; see
-    :meth:`_detect_available_configs` for how it
+    :meth:`can.VirtualBus._detect_available_configs` for how it
     behaves here.
 
     .. note::
@@ -84,7 +84,7 @@ class VirtualBus(BusABC):
             self.channel.append(self.queue)
 
     def _check_if_open(self) -> None:
-        """Raises :exc:`~can.exceptions.CanOperationError` if the bus is not open.
+        """Raises :class:`~can.CanOperationError` if the bus is not open.
 
         Has to be called in every method that accesses the bus.
         """

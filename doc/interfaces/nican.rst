@@ -21,7 +21,6 @@ Bus
 .. autoclass:: can.interfaces.nican.NicanBus
 
 .. autoexception:: can.interfaces.nican.NicanError
-.. autoexception:: can.interfaces.nican.NicanInitializationError
 
 
 .. _National Instruments: http://www.ni.com/can/

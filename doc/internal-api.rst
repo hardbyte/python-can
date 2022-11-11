@@ -70,7 +70,7 @@ methods:
 About the IO module
 -------------------
 
-Handling of the different file formats is implemented in ``can.io``.
+Handling of the different file formats is implemented in :mod:`can.io`.
 Each file/IO type is within a separate module and ideally implements both a *Reader* and a *Writer*.
 The reader usually extends :class:`can.io.generic.BaseIOHandler`, while
 the writer often additionally extends :class:`can.Listener`,

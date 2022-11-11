@@ -74,7 +74,7 @@ class CanInitializationError(CanError):
     """Indicates an error the occurred while initializing a :class:`can.BusABC`.
 
     If initialization fails due to a driver or platform missing/being unsupported,
-    a :exc:`~can.exceptions.CanInterfaceNotImplementedError` is raised instead.
+    a :class:`can.CanInterfaceNotImplementedError` is raised instead.
     If initialization fails due to a value being out of range, a :class:`ValueError`
     is raised.
 

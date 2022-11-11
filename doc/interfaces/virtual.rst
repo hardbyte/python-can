@@ -70,8 +70,8 @@ arrive at the recipients exactly once. Both is not guaranteed to hold for the be
 these guarantees of message delivery and message ordering. The central servers receive and distribute
 the CAN messages to all other bus participants, unlike in a real physical CAN network.
 The first intra-process ``virtual`` interface only runs within one Python process, effectively the
-Python instance of :class:`~can.interfaces.virtual.VirtualBus` acts as a central server.
-Notably the ``udp_multicast`` bus does not require a central server.
+Python instance of :class:`VirtualBus` acts as a central server. Notably the ``udp_multicast`` bus
+does not require a central server.
 
 **Arbitration and throughput** are two interrelated functions/properties of CAN networks which
 are typically abstracted in virtual interfaces. In all four interfaces, an unlimited amount
@@ -133,5 +133,3 @@ Bus Class Documentation
 
 .. autoclass:: can.interfaces.virtual.VirtualBus
     :members:
-
-    .. automethod:: _detect_available_configs

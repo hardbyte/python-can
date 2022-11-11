@@ -9,7 +9,6 @@ import logging
 
 import can
 from ...exceptions import error_check
-from ...typechecking import StringPathLike
 
 log = logging.getLogger("can.usb2can")
 
@@ -109,13 +108,12 @@ class Usb2CanAbstractionLayer:
     Documentation: http://www.8devices.com/media/products/usb2can/downloads/CANAL_API.pdf
     """
 
-    def __init__(self, dll: StringPathLike = "usb2can.dll") -> None:
+    def __init__(self, dll="usb2can.dll"):
         """
-        :param dll:
-            the path to the usb2can DLL to load
+        :type dll: str or path-like
+        :param dll (optional): the path to the usb2can DLL to load
 
-        :raises ~can.exceptions.CanInterfaceNotImplementedError:
-            if the DLL could not be loaded
+        :raises can.CanInterfaceNotImplementedError: if the DLL could not be loaded
         """
         try:
             self.__m_dllBasic = windll.LoadLibrary(dll)
@@ -130,15 +128,11 @@ class Usb2CanAbstractionLayer:
         """
         Opens a CAN connection using `CanalOpen()`.
 
-        :param configuration:
-            the configuration: "device_id; baudrate"
-        :param flags:
-            the flags to be set
-        :returns:
-            Valid handle for CANAL API functions on success
+        :param configuration: the configuration: "device_id; baudrate"
+        :param flags: the flags to be set
 
-        :raises ~can.exceptions.CanInterfaceNotImplementedError:
-            if any error occurred
+        :raises can.CanInitializationError: if any error occurred
+        :returns: Valid handle for CANAL API functions on success
         """
         try:
             # we need to convert this into bytes, since the underlying DLL cannot

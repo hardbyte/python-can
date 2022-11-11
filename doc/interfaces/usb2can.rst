@@ -86,5 +86,3 @@ Internals
 .. autoclass:: can.interfaces.usb2can.Usb2CanAbstractionLayer
    :members:
    :undoc-members:
-
-.. autoexception:: can.interfaces.usb2can.usb2canabstractionlayer.CanalError

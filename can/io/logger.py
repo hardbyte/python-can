@@ -120,31 +120,32 @@ class Logger(MessageWriter):  # pylint: disable=abstract-method
 class BaseRotatingLogger(Listener, BaseIOHandler, ABC):
     """
     Base class for rotating CAN loggers. This class is not meant to be
-    instantiated directly. Subclasses must implement the :meth:`should_rollover`
-    and :meth:`do_rollover` methods according to their rotation strategy.
+    instantiated directly. Subclasses must implement the :attr:`should_rollover`
+    and `do_rollover` methods according to their rotation strategy.
 
     The rotation behavior can be further customized by the user by setting
     the :attr:`namer` and :attr:`rotator` attributes after instantiating the subclass.
 
-    These attributes as well as the methods :meth:`rotation_filename` and :meth:`rotate`
+    These attributes as well as the methods `rotation_filename` and `rotate`
     and the corresponding docstrings are carried over from the python builtin
-    :class:`~logging.handlers.BaseRotatingHandler`.
+    `BaseRotatingHandler`.
 
     Subclasses must set the `_writer` attribute upon initialization.
 
+    :attr namer:
+        If this attribute is set to a callable, the :meth:`rotation_filename` method
+        delegates to this callable. The parameters passed to the callable are
+        those passed to :meth:`rotation_filename`.
+    :attr rotator:
+        If this attribute is set to a callable, the :meth:`rotate` method delegates
+        to this callable. The parameters passed to the callable are those
+        passed to :meth:`rotate`.
+    :attr rollover_count:
+        An integer counter to track the number of rollovers.
     """
 
-    #: If this attribute is set to a callable, the :meth:`~BaseRotatingLogger.rotation_filename`
-    #: method delegates to this callable. The parameters passed to the callable are
-    #: those passed to :meth:`~BaseRotatingLogger.rotation_filename`.
     namer: Optional[Callable[[StringPathLike], StringPathLike]] = None
-
-    #: If this attribute is set to a callable, the :meth:`~BaseRotatingLogger.rotate` method
-    #: delegates to this callable. The parameters passed to the callable are those
-    #: passed to :meth:`~BaseRotatingLogger.rotate`.
     rotator: Optional[Callable[[StringPathLike, StringPathLike], None]] = None
-
-    #: An integer counter to track the number of rollovers.
     rollover_count: int = 0
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -168,7 +169,7 @@ class BaseRotatingLogger(Listener, BaseIOHandler, ABC):
         This is provided so that a custom filename can be provided.
         The default implementation calls the :attr:`namer` attribute of the
         handler, if it's callable, passing the default name to
-        it. If the attribute isn't callable (the default is :obj:`None`), the name
+        it. If the attribute isn't callable (the default is `None`), the name
         is returned unchanged.
 
         :param default_name:
@@ -183,8 +184,8 @@ class BaseRotatingLogger(Listener, BaseIOHandler, ABC):
         """When rotating, rotate the current log.
 
         The default implementation calls the :attr:`rotator` attribute of the
-        handler, if it's callable, passing the `source` and `dest` arguments to
-        it. If the attribute isn't callable (the default is :obj:`None`), the source
+        handler, if it's callable, passing the source and dest arguments to
+        it. If the attribute isn't callable (the default is `None`), the source
         is simply renamed to the destination.
 
         :param source:
@@ -272,10 +273,8 @@ class SizedRotatingLogger(BaseRotatingLogger):
     by adding a timestamp and the rollover count. A new log file is then
     created and written to.
 
-    This behavior can be customized by setting the
-    :attr:`~can.io.BaseRotatingLogger.namer` and
-    :attr:`~can.io.BaseRotatingLogger.rotator`
-    attribute.
+    This behavior can be customized by setting the :attr:`namer` and
+    :attr:`rotator` attribute.
 
     Example::
 

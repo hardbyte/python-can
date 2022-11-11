@@ -74,10 +74,8 @@ class SerialBus(BusABC):
         :param rtscts:
             turn hardware handshake (RTS/CTS) on and off
 
-        :raises ~can.exceptions.CanInitializationError:
-            If the given parameters are invalid.
-        :raises ~can.exceptions.CanInterfaceNotImplementedError:
-            If the serial module is not installed.
+        :raises can.CanInitializationError: If the given parameters are invalid.
+        :raises can.CanInterfaceNotImplementedError: If the serial module is not installed.
         """
 
         if not serial:
@@ -165,10 +163,10 @@ class SerialBus(BusABC):
                 This parameter will be ignored. The timeout value of the channel is used.
 
         :returns:
-            Received message and :obj:`False` (because no filtering as taken place).
+            Received message and `False` (because no filtering as taken place).
 
             .. warning::
-                Flags like ``is_extended_id``, ``is_remote_frame`` and ``is_error_frame``
+                Flags like is_extended_id, is_remote_frame and is_error_frame
                 will not be set over this function, the flags in the return
                 message are the default values.
         """

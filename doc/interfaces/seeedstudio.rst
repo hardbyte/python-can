@@ -1,8 +1,9 @@
 .. _seeeddoc:
 
 
-Seeed Studio USB-CAN Analyzer
-=============================
+USB-CAN Analyzer
+================
+...by Seeed Studio
 
 SKU: 114991193
 

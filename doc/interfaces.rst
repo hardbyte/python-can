@@ -26,7 +26,6 @@ The available interfaces are:
    interfaces/serial
    interfaces/slcan
    interfaces/socketcan
-   interfaces/socketcand
    interfaces/systec
    interfaces/udp_multicast
    interfaces/usb2can
