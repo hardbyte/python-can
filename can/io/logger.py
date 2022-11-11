@@ -345,11 +345,11 @@ class SizedRotatingLogger(BaseRotatingLogger):
         """Generate the default rotation filename."""
         path = pathlib.Path(self.base_filename)
         new_name = (
-            path.stem.split(".")[0]
+            path.stem
             + "_"
             + datetime.now().strftime("%Y-%m-%dT%H%M%S")
             + "_"
             + f"#{self.rollover_count:03}"
-            + "".join(path.suffixes[-2:])
+            + path.suffix
         )
         return str(path.parent / new_name)
