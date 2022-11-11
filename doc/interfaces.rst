@@ -45,7 +45,7 @@ The *Interface Names* are listed in :doc:`configuration`.
 Plugin Interface
 ^^^^^^^^^^^^^^^^
 
-External packages can register new interfaces by using the ``can.interface`` entry point
+External packages can register a new interfaces by using the ``can.interface`` entry point
 in its project configuration. The format of the entry point depends on your project
 configuration format (*pyproject.toml*, *setup.cfg* or *setup.py*).
 
