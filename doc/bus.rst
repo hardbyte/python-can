@@ -15,11 +15,24 @@ and implements the :class:`~can.BusABC` API.
 
 A thread safe bus wrapper is also available, see `Thread safe bus`_.
 
+Autoconfig Bus
+''''''''''''''
+
 .. autoclass:: can.Bus
-    :class-doc-from: class
-    :show-inheritance:
     :members:
-    :inherited-members:
+
+
+API
+'''
+
+.. autoclass:: can.BusABC
+    :members:
+
+    .. automethod:: __iter__
+    .. automethod:: _recv_internal
+    .. automethod:: _apply_filters
+    .. automethod:: _detect_available_configs
+    .. automethod:: _send_periodic_internal
 
 .. autoclass:: can.bus.BusState
     :members:
@@ -68,7 +81,7 @@ Example defining two filters, one to pass 11-bit ID ``0x451``, the other to pass
 See :meth:`~can.BusABC.set_filters` for the implementation.
 
 Thread safe bus
-'''''''''''''''
+---------------
 
 This thread safe version of the :class:`~can.BusABC` class can be used by multiple threads at once.
 Sending and receiving is locked separately to avoid unnecessary delays.

@@ -48,7 +48,6 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.graphviz",
     "sphinxcontrib.programoutput",
-    "sphinx_inline_tabs",
     "sphinx_rtd_theme",
 ]
 

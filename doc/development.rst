@@ -35,8 +35,8 @@ The following assumes that the commands are executed from the root of the reposi
 
 The project can be built with::
 
-    pipx run build
-    pipx run twine check dist/*
+    pip install wheel
+    python setup.py sdist bdist_wheel
 
 The project can be installed in editable mode with::
 
@@ -44,7 +44,8 @@ The project can be installed in editable mode with::
 
 The unit tests can be run with::
 
-    pipx run tox -e py
+    pip install tox
+    tox -e py
 
 The documentation can be built with::
 
@@ -78,11 +79,6 @@ These steps are a guideline on how to add a new backend to python-can.
   To get started, have a look at ``back2back_test.py``:
   Simply add a test case like ``BasicTestSocketCan`` and some basic tests will be executed for the new interface.
 
-.. attention::
-    We strongly recommend using the :ref:`plugin interface` to extend python-can.
-    Publish a python package that contains your :class:`can.BusABC` subclass and use
-    it within the python-can API. We will mention your package inside this documentation
-    and add it as an optional dependency.
 
 Code Structure
 --------------

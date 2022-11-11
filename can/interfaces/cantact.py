@@ -59,7 +59,7 @@ class CantactBus(BusABC):
             Bitrate in bits/s
         :param bool monitor:
             If true, operate in listen-only monitoring mode
-        :param BitTiming bit_timing:
+        :param BitTiming bit_timing
             Optional BitTiming to use for custom bit timing setting. Overrides bitrate if not None.
         """
 
