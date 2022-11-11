@@ -7,7 +7,6 @@ Test for Vector Interface
 import ctypes
 import functools
 import pickle
-import sys
 import time
 from unittest.mock import Mock
 
@@ -588,9 +587,6 @@ def test_vector_subtype_error_from_generic() -> None:
             raise specific
 
 
-@pytest.mark.skipif(
-    sys.byteorder != "little", reason="Test relies on little endian data."
-)
 def test_get_channel_configs() -> None:
     _original_func = canlib._get_xl_driver_config
     canlib._get_xl_driver_config = _get_predefined_xl_driver_config
