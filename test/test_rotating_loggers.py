@@ -18,8 +18,6 @@ class TestBaseRotatingLogger:
         class SubClass(can.io.BaseRotatingLogger):
             """Subclass that implements abstract methods for testing."""
 
-            _supported_formats = {".asc", ".blf", ".csv", ".log", ".txt"}
-
             def __init__(self, *args, **kwargs) -> None:
                 super().__init__(*args, **kwargs)
                 self._writer = can.Printer(file=path / "__unused.txt")
