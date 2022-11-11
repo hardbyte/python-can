@@ -105,13 +105,13 @@ class BufferedReader(Listener):  # pylint: disable=abstract-method
 
     def get_message(self, timeout: float = 0.5) -> Optional[Message]:
         """
-        Attempts to retrieve the message that has been in the queue for the longest amount
-        of time (FIFO). If no message is available, it blocks for given timeout or until a
-        message is received (whichever is shorter), or else returns None. This method does
-        not block after :meth:`can.BufferedReader.stop` has been called.
+        Attempts to retrieve the latest message received by the instance. If no message is
+        available it blocks for given timeout or until a message is received, or else
+        returns None (whichever is shorter). This method does not block after
+        :meth:`can.BufferedReader.stop` has been called.
 
         :param timeout: The number of seconds to wait for a new message.
-        :return: the received :class:`can.Message` or `None`, if the queue is empty.
+        :return: the Message if there is one, or None if there is not.
         """
         try:
             if self.is_stopped:
