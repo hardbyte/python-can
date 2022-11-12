@@ -61,6 +61,8 @@ class Logger(MessageWriter):  # pylint: disable=abstract-method
         ".txt": Printer,
     }
 
+    incompatible_gzip = [".blf", ".db"]
+
     @staticmethod
     def __new__(  # type: ignore
         cls: Any, filename: Optional[StringPathLike], *args: Any, **kwargs: Any
@@ -105,6 +107,10 @@ class Logger(MessageWriter):  # pylint: disable=abstract-method
         File will automatically recompress upon close.
         """
         real_suffix = pathlib.Path(filename).suffixes[-2].lower()
+        if real_suffix in Logger.incompatible_gzip:
+            raise ValueError(
+                f"The file type {real_suffix} is currently incompatible with gzip."
+            )
         if kwargs.get("append", False):
             mode = "ab" if real_suffix == ".blf" else "at"
         else:
