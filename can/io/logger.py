@@ -61,8 +61,6 @@ class Logger(MessageWriter):  # pylint: disable=abstract-method
         ".txt": Printer,
     }
 
-    incompatible_gzip = [".blf", ".db"]
-
     @staticmethod
     def __new__(  # type: ignore
         cls: Any, filename: Optional[StringPathLike], *args: Any, **kwargs: Any
