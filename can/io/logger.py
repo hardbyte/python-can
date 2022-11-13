@@ -107,7 +107,7 @@ class Logger(MessageWriter):  # pylint: disable=abstract-method
         File will automatically recompress upon close.
         """
         real_suffix = pathlib.Path(filename).suffixes[-2].lower()
-        if real_suffix in Logger.incompatible_gzip:
+        if real_suffix in (".blf", ".db"):
             raise ValueError(
                 f"The file type {real_suffix} is currently incompatible with gzip."
             )
