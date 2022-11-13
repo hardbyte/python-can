@@ -51,6 +51,7 @@ Bug Fixes
 * Fix ASC/CANoe incompatibility due to timestamp format (#1315, #1362).
 * Fix MessageSync timings (#1372, #1374).
 * Fix file name for compressed files in SizedRotatingLogger (#1382, #1683).
+* Fix memory leak in neoVI bus where message_receipts grows with no limit (#1427).
 
 Miscellaneous
 -------------
