@@ -52,6 +52,7 @@ Bug Fixes
 * Fix MessageSync timings (#1372, #1374).
 * Fix file name for compressed files in SizedRotatingLogger (#1382, #1683).
 * Fix memory leak in neoVI bus where message_receipts grows with no limit (#1427).
+* Raise ValueError if gzip is used with incompatible log formats (#1429).
 
 Miscellaneous
 -------------
