@@ -33,6 +33,9 @@ extras_require = {
     "gs_usb": ["gs_usb>=0.2.1"],
     "nixnet": ["nixnet>=0.3.1"],
     "pcan": ["uptime~=3.0.1"],
+    "viewer": [
+        'windows-curses;platform_system=="Windows" and platform_python_implementation=="CPython"'
+    ],
 }
 
 setup(
@@ -41,14 +44,15 @@ setup(
     url="https://github.com/hardbyte/python-can",
     description="Controller Area Network interface module for Python",
     long_description=long_description,
+    long_description_content_type="text/x-rst",
     classifiers=[
         # a list of all available ones: https://pypi.org/classifiers/
         "Programming Language :: Python",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
         "Natural Language :: English",
         "Programming Language :: Python :: Implementation :: CPython",
         "Programming Language :: Python :: Implementation :: PyPy",
@@ -73,23 +77,24 @@ setup(
     version=version,
     packages=find_packages(exclude=["test*", "doc", "scripts", "examples"]),
     scripts=list(filter(isfile, (join("scripts/", f) for f in listdir("scripts/")))),
-    author="Python CAN contributors",
+    author="python-can contributors",
     license="LGPL v3",
     package_data={
-        "": ["README.rst", "CONTRIBUTORS.txt", "LICENSE.txt", "CHANGELOG.txt"],
+        "": ["README.rst", "CONTRIBUTORS.txt", "LICENSE.txt", "CHANGELOG.md"],
         "doc": ["*.*"],
         "examples": ["*.py"],
+        "can": ["py.typed"],
     },
     # Installation
     # see https://www.python.org/dev/peps/pep-0345/#version-specifiers
-    python_requires=">=3.6",
+    python_requires=">=3.7",
     install_requires=[
         "setuptools",
         "wrapt~=1.10",
-        'windows-curses;platform_system=="Windows" and platform_python_implementation=="CPython"',
         "typing_extensions>=3.10.0.0",
         'pywin32;platform_system=="Windows" and platform_python_implementation=="CPython"',
         'msgpack~=1.0.0;platform_system!="Windows"',
+        "packaging",
     ],
     extras_require=extras_require,
 )

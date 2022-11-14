@@ -32,7 +32,7 @@ def _get_class_for_interface(interface: str) -> Type[BusABC]:
         module_name, class_name = BACKENDS[interface]
     except KeyError:
         raise NotImplementedError(
-            "CAN interface '{}' not supported".format(interface)
+            f"CAN interface '{interface}' not supported"
         ) from None
 
     # Import the correct interface module
@@ -40,9 +40,7 @@ def _get_class_for_interface(interface: str) -> Type[BusABC]:
         module = importlib.import_module(module_name)
     except Exception as e:
         raise CanInterfaceNotImplementedError(
-            "Cannot import module {} for CAN interface '{}': {}".format(
-                module_name, interface, e
-            )
+            f"Cannot import module {module_name} for CAN interface '{interface}': {e}"
         ) from None
 
     # Get the correct class
@@ -50,9 +48,8 @@ def _get_class_for_interface(interface: str) -> Type[BusABC]:
         bus_class = getattr(module, class_name)
     except Exception as e:
         raise CanInterfaceNotImplementedError(
-            "Cannot import class {} from module {} for CAN interface '{}': {}".format(
-                class_name, module_name, interface, e
-            )
+            f"Cannot import class {class_name} from module {module_name} for CAN interface "
+            f"'{interface}': {e}"
         ) from None
 
     return cast(Type[BusABC], bus_class)
@@ -63,37 +60,44 @@ class Bus(BusABC):  # pylint: disable=abstract-method
 
     Instantiates a CAN Bus of the given ``interface``, falls back to reading a
     configuration file from default locations.
+
+    :param channel:
+        Channel identification. Expected type is backend dependent.
+        Set to ``None`` to let it be resolved automatically from the default
+        :ref:`configuration`.
+
+    :param interface:
+        See :ref:`interface names` for a list of supported interfaces.
+        Set to ``None`` to let it be resolved automatically from the default
+        :ref:`configuration`.
+
+    :param args:
+        ``interface`` specific positional arguments.
+
+    :param kwargs:
+        ``interface`` specific keyword arguments.
+
+    :raises ~can.exceptions.CanInterfaceNotImplementedError:
+        if the ``interface`` isn't recognized or cannot be loaded
+
+    :raises ~can.exceptions.CanInitializationError:
+        if the bus cannot be instantiated
+
+    :raises ValueError:
+        if the ``channel`` could not be determined
     """
 
     @staticmethod
     def __new__(  # type: ignore  # pylint: disable=keyword-arg-before-vararg
-        cls: Any, channel: Optional[Channel] = None, *args: Any, **kwargs: Any
+        cls: Any,
+        channel: Optional[Channel] = None,
+        interface: Optional[str] = None,
+        *args: Any,
+        **kwargs: Any,
     ) -> BusABC:
-        """
-        Takes the same arguments as :class:`can.BusABC.__init__`.
-        Some might have a special meaning, see below.
-
-        :param channel:
-            Set to ``None`` to let it be resolved automatically from the default
-            configuration. That might fail, see below.
-
-            Expected type is backend dependent.
-
-        :param dict kwargs:
-            Should contain an ``interface`` key with a valid interface name. If not,
-            it is completed using :meth:`can.util.load_config`.
-
-        :raises: can.CanInterfaceNotImplementedError
-            if the ``interface`` isn't recognized or cannot be loaded
-
-        :raises: can.CanInitializationError
-            if the bus cannot be instantiated
-
-        :raises: ValueError
-            if the ``channel`` could not be determined
-        """
-
         # figure out the rest of the configuration; this might raise an error
+        if interface is not None:
+            kwargs["interface"] = interface
         if channel is not None:
             kwargs["channel"] = channel
         if "context" in kwargs:
@@ -106,7 +110,7 @@ class Bus(BusABC):  # pylint: disable=abstract-method
         # resolve the bus class to use for that interface
         cls = _get_class_for_interface(kwargs["interface"])
 
-        # remove the 'interface' key so it doesn't get passed to the backend
+        # remove the "interface" key, so it doesn't get passed to the backend
         del kwargs["interface"]
 
         # make sure the bus can handle this config format

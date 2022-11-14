@@ -15,22 +15,16 @@ and implements the :class:`~can.BusABC` API.
 
 A thread safe bus wrapper is also available, see `Thread safe bus`_.
 
-Autoconfig Bus
-''''''''''''''
-
 .. autoclass:: can.Bus
+    :class-doc-from: class
+    :show-inheritance:
+    :members:
+    :inherited-members:
+
+.. autoclass:: can.bus.BusState
     :members:
     :undoc-members:
 
-
-API
-'''
-
-.. autoclass:: can.BusABC
-    :members:
-    :undoc-members:
-
-    .. automethod:: __iter__
 
 Transmitting
 ''''''''''''
@@ -74,13 +68,15 @@ Example defining two filters, one to pass 11-bit ID ``0x451``, the other to pass
 See :meth:`~can.BusABC.set_filters` for the implementation.
 
 Thread safe bus
----------------
+'''''''''''''''
 
 This thread safe version of the :class:`~can.BusABC` class can be used by multiple threads at once.
 Sending and receiving is locked separately to avoid unnecessary delays.
 Conflicting calls are executed by blocking until the bus is accessible.
 
-It can be used exactly like the normal :class:`~can.BusABC`::
+It can be used exactly like the normal :class:`~can.BusABC`:
+
+.. code-block:: python
 
     # 'socketcan' is only an example interface, it works with all the others too
     my_bus = can.ThreadSafeBus(interface='socketcan', channel='vcan0')

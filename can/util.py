@@ -211,6 +211,20 @@ def _create_bus_config(config: Dict[str, Any]) -> typechecking.BusConfig:
         raise CanInterfaceNotImplementedError(
             f'Unknown interface type "{config["interface"]}"'
         )
+    if "port" in config:
+        # convert port to integer if necessary
+        if isinstance(config["port"], int):
+            port = config["port"]
+        elif isinstance(config["port"], str):
+            if config["port"].isnumeric():
+                config["port"] = port = int(config["port"])
+            else:
+                raise ValueError("Port config must be a number!")
+        else:
+            raise TypeError("Port config must be string or integer!")
+
+        if not 0 < port < 65535:
+            raise ValueError("Port config must be inside 0-65535 range!")
 
     if "bitrate" in config:
         config["bitrate"] = int(config["bitrate"])
@@ -232,7 +246,7 @@ def _create_bus_config(config: Dict[str, Any]) -> typechecking.BusConfig:
         "btr1",
     ):
         if key in config:
-            timing_conf[key] = int(config[key], base=0)
+            timing_conf[key] = int(str(config[key]), base=0)
             del config[key]
     if timing_conf:
         timing_conf["bitrate"] = config["bitrate"]
@@ -244,8 +258,10 @@ def _create_bus_config(config: Dict[str, Any]) -> typechecking.BusConfig:
 def set_logging_level(level_name: str) -> None:
     """Set the logging level for the `"can"` logger.
 
-    :param level_name: One of: `'critical'`, `'error'`, `'warning'`, `'info'`,
-    `'debug'`, `'subdebug'`, or the value `None` (=default). Defaults to `'debug'`.
+    :param level_name:
+        One of: `'critical'`, `'error'`, `'warning'`, `'info'`,
+        `'debug'`, `'subdebug'`, or the value :obj:`None` (=default).
+        Defaults to `'debug'`.
     """
     can_logger = logging.getLogger("can")
 
@@ -292,7 +308,7 @@ def channel2int(channel: Optional[typechecking.Channel]) -> Optional[int]:
     if isinstance(channel, int):
         return channel
     if isinstance(channel, str):
-        match = re.match(r".*(\d+)$", channel)
+        match = re.match(r".*?(\d+)$", channel)
         if match:
             return int(match.group(1))
     return None
@@ -302,7 +318,7 @@ def deprecated_args_alias(**aliases):
     """Allows to rename/deprecate a function kwarg(s) and optionally
     have the deprecated kwarg(s) set as alias(es)
 
-    Example:
+    Example::
 
         @deprecated_args_alias(oldArg="new_arg", anotherOldArg="another_new_arg")
         def library_function(new_arg, another_new_arg):
@@ -311,6 +327,7 @@ def deprecated_args_alias(**aliases):
         @deprecated_args_alias(oldArg="new_arg", obsoleteOldArg=None)
         def library_function(new_arg):
             pass
+
     """
 
     def deco(f):

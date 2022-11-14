@@ -9,6 +9,8 @@ import platform
 
 from typing import Optional
 
+from packaging import version
+
 from ...message import Message
 from ...bus import BusABC, BusState
 from ...util import len2dlc, dlc2len
@@ -19,6 +21,7 @@ from .basic import (
     PCAN_BITRATES,
     PCAN_FD_PARAMETER_LIST,
     PCAN_CHANNEL_NAMES,
+    PCAN_NONEBUS,
     PCAN_BAUD_500K,
     PCAN_TYPE_ISA,
     PCANBasic,
@@ -26,6 +29,7 @@ from .basic import (
     PCAN_ALLOW_ERROR_FRAMES,
     PCAN_PARAMETER_ON,
     PCAN_RECEIVE_EVENT,
+    PCAN_API_VERSION,
     PCAN_DEVICE_NUMBER,
     PCAN_ERROR_QRCVEMPTY,
     PCAN_ERROR_BUSLIGHT,
@@ -52,11 +56,14 @@ from .basic import (
     PCAN_CHANNEL_FEATURES,
     FEATURE_FD_CAPABLE,
     PCAN_DICT_STATUS,
+    PCAN_BUSOFF_AUTORESET,
 )
 
 
 # Set up logging
 log = logging.getLogger("can.pcan")
+
+MIN_PCAN_API_VERSION = version.parse("4.2.0")
 
 
 try:
@@ -97,21 +104,30 @@ class PcanBus(BusABC):
     def __init__(
         self,
         channel="PCAN_USBBUS1",
+        device_id=None,
         state=BusState.ACTIVE,
         bitrate=500000,
         *args,
-        **kwargs
+        **kwargs,
     ):
         """A PCAN USB interface to CAN.
 
         On top of the usual :class:`~can.Bus` methods provided,
-        the PCAN interface includes the :meth:`~can.interface.pcan.PcanBus.flash`
-        and :meth:`~can.interface.pcan.PcanBus.status` methods.
+        the PCAN interface includes the :meth:`flash`
+        and :meth:`status` methods.
 
         :param str channel:
             The can interface name. An example would be 'PCAN_USBBUS1'.
             Alternatively the value can be an int with the numerical value.
             Default is 'PCAN_USBBUS1'
+
+        :param int device_id:
+            Select the PCAN interface based on its ID. The device ID is a 8/32bit
+            value that can be configured for each PCAN device. If you set the
+            device_id parameter, it takes precedence over the channel parameter.
+            The constructor searches all connected interfaces and initializes the
+            first one that matches the parameter value. If no device is found,
+            an exception is raised.
 
         :param can.bus.BusState state:
             BusState of the channel.
@@ -191,7 +207,20 @@ class PcanBus(BusABC):
             In the range (1..16).
             Ignored if not using CAN-FD.
 
+        :param bool auto_reset:
+            Enable automatic recovery in bus off scenario.
+            Resetting the driver takes ~500ms during which
+            it will not be responsive.
         """
+        self.m_objPCANBasic = PCANBasic()
+
+        if device_id is not None:
+            channel = self._find_channel_by_dev_id(device_id)
+
+            if channel is None:
+                err_msg = "Cannot find a channel with ID {:08x}".format(device_id)
+                raise ValueError(err_msg)
+
         self.channel_info = str(channel)
         self.fd = kwargs.get("fd", False)
         pcan_bitrate = PCAN_BITRATES.get(bitrate, PCAN_BAUD_500K)
@@ -203,8 +232,9 @@ class PcanBus(BusABC):
         if not isinstance(channel, int):
             channel = PCAN_CHANNEL_NAMES[channel]
 
-        self.m_objPCANBasic = PCANBasic()
         self.m_PcanHandle = channel
+
+        self.check_api_version()
 
         if state is BusState.ACTIVE or state is BusState.PASSIVE:
             self.state = state
@@ -251,6 +281,14 @@ class PcanBus(BusABC):
                     "Ignoring error. PCAN_ALLOW_ERROR_FRAMES is still unsupported by OSX Library PCANUSB v0.10"
                 )
 
+        if kwargs.get("auto_reset", False):
+            result = self.m_objPCANBasic.SetValue(
+                self.m_PcanHandle, PCAN_BUSOFF_AUTORESET, PCAN_PARAMETER_ON
+            )
+
+            if result != PCAN_ERROR_OK:
+                raise PcanCanInitializationError(self._get_formatted_error(result))
+
         if HAS_EVENTS:
             self._recv_event = CreateEvent(None, 0, 0, None)
             result = self.m_objPCANBasic.SetValue(
@@ -260,6 +298,28 @@ class PcanBus(BusABC):
                 raise PcanCanInitializationError(self._get_formatted_error(result))
 
         super().__init__(channel=channel, state=state, bitrate=bitrate, *args, **kwargs)
+
+    def _find_channel_by_dev_id(self, device_id):
+        """
+        Iterate over all possible channels to find a channel that matches the device
+        ID. This method is somewhat brute force, but the Basic API only offers a
+        suitable API call since V4.4.0.
+
+        :param device_id: The device_id for which to search for
+        :return: The name of a PCAN channel that matches the device ID, or None if
+            no channel can be found.
+        """
+        for ch_name, ch_handle in PCAN_CHANNEL_NAMES.items():
+            err, cur_dev_id = self.m_objPCANBasic.GetValue(
+                ch_handle, PCAN_DEVICE_NUMBER
+            )
+            if err != PCAN_ERROR_OK:
+                continue
+
+            if cur_dev_id == device_id:
+                return ch_name
+
+        return None
 
     def _get_formatted_error(self, error):
         """
@@ -303,6 +363,21 @@ class PcanBus(BusABC):
             complete_text = stsReturn[1].decode("utf-8", errors="replace")
 
         return complete_text
+
+    def get_api_version(self):
+        error, value = self.m_objPCANBasic.GetValue(PCAN_NONEBUS, PCAN_API_VERSION)
+        if error != PCAN_ERROR_OK:
+            raise CanInitializationError(f"Failed to read pcan basic api version")
+
+        return version.parse(value.decode("ascii"))
+
+    def check_api_version(self):
+        apv = self.get_api_version()
+        if apv < MIN_PCAN_API_VERSION:
+            log.warning(
+                f"Minimum version of pcan api is {MIN_PCAN_API_VERSION}."
+                f" Installed version is {apv}. Consider upgrade of pcan basic package"
+            )
 
     def status(self):
         """

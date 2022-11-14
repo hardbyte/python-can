@@ -17,13 +17,15 @@ import zlib
 import datetime
 import time
 import logging
-from typing import List
+from typing import List, BinaryIO, Generator, Union, Tuple, Optional, cast, Any
 
 from ..message import Message
-from ..listener import Listener
 from ..util import len2dlc, dlc2len, channel2int
-from ..typechecking import AcceptedIOType
-from .generic import BaseIOHandler, FileIOMessageWriter
+from ..typechecking import StringPathLike
+from .generic import FileIOMessageWriter, MessageReader
+
+
+TSystemTime = Tuple[int, int, int, int, int, int, int, int]
 
 
 class BLFParseError(Exception):
@@ -98,11 +100,11 @@ TIME_TEN_MICS = 0x00000001
 TIME_ONE_NANS = 0x00000002
 
 
-def timestamp_to_systemtime(timestamp):
+def timestamp_to_systemtime(timestamp: float) -> TSystemTime:
     if timestamp is None or timestamp < 631152000:
         # Probably not a Unix timestamp
-        return (0, 0, 0, 0, 0, 0, 0, 0)
-    t = datetime.datetime.fromtimestamp(timestamp)
+        return 0, 0, 0, 0, 0, 0, 0, 0
+    t = datetime.datetime.fromtimestamp(round(timestamp, 3))
     return (
         t.year,
         t.month,
@@ -111,11 +113,11 @@ def timestamp_to_systemtime(timestamp):
         t.hour,
         t.minute,
         t.second,
-        int(round(t.microsecond / 1000.0)),
+        t.microsecond // 1000,
     )
 
 
-def systemtime_to_timestamp(systemtime):
+def systemtime_to_timestamp(systemtime: TSystemTime) -> float:
     try:
         t = datetime.datetime(
             systemtime[0],
@@ -126,12 +128,12 @@ def systemtime_to_timestamp(systemtime):
             systemtime[6],
             systemtime[7] * 1000,
         )
-        return time.mktime(t.timetuple()) + systemtime[7] / 1000.0
+        return t.timestamp()
     except ValueError:
         return 0
 
 
-class BLFReader(BaseIOHandler):
+class BLFReader(MessageReader):
     """
     Iterator of CAN messages from a Binary Logging File.
 
@@ -139,7 +141,14 @@ class BLFReader(BaseIOHandler):
     silently ignored.
     """
 
-    def __init__(self, file: AcceptedIOType) -> None:
+    file: BinaryIO
+
+    def __init__(
+        self,
+        file: Union[StringPathLike, BinaryIO],
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
         """
         :param file: a path-like object or as file-like object to read from
                      If this is a file-like object, is has to opened in binary
@@ -153,14 +162,14 @@ class BLFReader(BaseIOHandler):
         self.file_size = header[10]
         self.uncompressed_size = header[11]
         self.object_count = header[12]
-        self.start_timestamp = systemtime_to_timestamp(header[14:22])
-        self.stop_timestamp = systemtime_to_timestamp(header[22:30])
+        self.start_timestamp = systemtime_to_timestamp(cast(TSystemTime, header[14:22]))
+        self.stop_timestamp = systemtime_to_timestamp(cast(TSystemTime, header[22:30]))
         # Read rest of header
         self.file.read(header[1] - FILE_HEADER_STRUCT.size)
         self._tail = b""
         self._pos = 0
 
-    def __iter__(self):
+    def __iter__(self) -> Generator[Message, None, None]:
         while True:
             data = self.file.read(OBJ_HEADER_BASE_STRUCT.size)
             if not data:
@@ -347,10 +356,12 @@ class BLFReader(BaseIOHandler):
             pos = next_pos
 
 
-class BLFWriter(FileIOMessageWriter, Listener):
+class BLFWriter(FileIOMessageWriter):
     """
     Logs CAN data to a Binary Logging File compatible with Vector's tools.
     """
+
+    file: BinaryIO
 
     #: Max log container size of uncompressed data
     max_container_size = 128 * 1024
@@ -360,10 +371,12 @@ class BLFWriter(FileIOMessageWriter, Listener):
 
     def __init__(
         self,
-        file: AcceptedIOType,
+        file: Union[StringPathLike, BinaryIO],
         append: bool = False,
         channel: int = 1,
         compression_level: int = -1,
+        *args: Any,
+        **kwargs: Any,
     ) -> None:
         """
         :param file: a path-like object or as file-like object to write to
@@ -394,6 +407,9 @@ class BLFWriter(FileIOMessageWriter, Listener):
         self.compression_level = compression_level
         self._buffer: List[bytes] = []
         self._buffer_size = 0
+        # If max container size is located in kwargs, then update the instance
+        if kwargs.get("max_container_size", False):
+            self.max_container_size = kwargs["max_container_size"]
         if append:
             # Parse file header
             data = self.file.read(FILE_HEADER_STRUCT.size)
@@ -402,8 +418,12 @@ class BLFWriter(FileIOMessageWriter, Listener):
                 raise BLFParseError("Unexpected file format")
             self.uncompressed_size = header[11]
             self.object_count = header[12]
-            self.start_timestamp = systemtime_to_timestamp(header[14:22])
-            self.stop_timestamp = systemtime_to_timestamp(header[22:30])
+            self.start_timestamp: Optional[float] = systemtime_to_timestamp(
+                cast(TSystemTime, header[14:22])
+            )
+            self.stop_timestamp: Optional[float] = systemtime_to_timestamp(
+                cast(TSystemTime, header[22:30])
+            )
             # Jump to the end of the file
             self.file.seek(0, 2)
         else:
@@ -555,6 +575,10 @@ class BLFWriter(FileIOMessageWriter, Listener):
         self.uncompressed_size += OBJ_HEADER_BASE_STRUCT.size
         self.uncompressed_size += LOG_CONTAINER_STRUCT.size
         self.uncompressed_size += len(uncompressed_data)
+
+    def file_size(self) -> int:
+        """Return an estimate of the current file size in bytes."""
+        return self.file.tell() + self._buffer_size
 
     def stop(self):
         """Stops logging and closes the file."""

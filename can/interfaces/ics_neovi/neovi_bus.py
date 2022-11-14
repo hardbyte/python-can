@@ -95,6 +95,15 @@ class ICSApiError(CanError):
         self.severity = severity
         self.restart_needed = restart_needed == 1
 
+    def __reduce__(self):
+        return type(self), (
+            self.error_code,
+            self.description_short,
+            self.description_long,
+            self.severity,
+            self.restart_needed,
+        )
+
     @property
     def error_number(self) -> int:
         """Deprecated. Renamed to :attr:`can.CanError.error_code`."""
@@ -309,8 +318,9 @@ class NeoViBus(BusABC):
             if is_tx:
                 if bool(ics_msg.StatusBitField & ics.SPY_STATUS_GLOBAL_ERR):
                     continue
-                if ics_msg.DescriptionID:
-                    receipt_key = (ics_msg.ArbIDOrHeader, ics_msg.DescriptionID)
+
+                receipt_key = (ics_msg.ArbIDOrHeader, ics_msg.DescriptionID)
+                if ics_msg.DescriptionID and receipt_key in self.message_receipts:
                     self.message_receipts[receipt_key].set()
                 if not self._receive_own_messages:
                     continue
@@ -364,6 +374,9 @@ class NeoViBus(BusABC):
                 is_remote_frame=bool(
                     ics_msg.StatusBitField & ics.SPY_STATUS_REMOTE_FRAME
                 ),
+                is_error_frame=bool(
+                    ics_msg.StatusBitField2 & ics.SPY_STATUS2_ERROR_FRAME
+                ),
                 error_state_indicator=bool(
                     ics_msg.StatusBitField3 & ics.SPY_STATUS3_CANFD_ESI
                 ),
@@ -383,6 +396,9 @@ class NeoViBus(BusABC):
                 is_rx=not bool(ics_msg.StatusBitField & ics.SPY_STATUS_TX_MSG),
                 is_remote_frame=bool(
                     ics_msg.StatusBitField & ics.SPY_STATUS_REMOTE_FRAME
+                ),
+                is_error_frame=bool(
+                    ics_msg.StatusBitField2 & ics.SPY_STATUS2_ERROR_FRAME
                 ),
                 channel=ics_msg.NetworkID,
             )
@@ -462,11 +478,10 @@ class NeoViBus(BusABC):
         else:
             raise ValueError("msg.channel must be set when using multiple channels.")
 
-        msg_desc_id = next(description_id)
-        message.DescriptionID = msg_desc_id
-        receipt_key = (msg.arbitration_id, msg_desc_id)
-
         if timeout != 0:
+            msg_desc_id = next(description_id)
+            message.DescriptionID = msg_desc_id
+            receipt_key = (msg.arbitration_id, msg_desc_id)
             self.message_receipts[receipt_key].clear()
 
         try:
@@ -477,5 +492,9 @@ class NeoViBus(BusABC):
         # If timeout is set, wait for ACK
         # This requires a notifier for the bus or
         # some other thread calling recv periodically
-        if timeout != 0 and not self.message_receipts[receipt_key].wait(timeout):
-            raise CanTimeoutError("Transmit timeout")
+        if timeout != 0:
+            got_receipt = self.message_receipts[receipt_key].wait(timeout)
+            # We no longer need this receipt, so no point keeping it in memory
+            del self.message_receipts[receipt_key]
+            if not got_receipt:
+                raise CanTimeoutError("Transmit timeout")

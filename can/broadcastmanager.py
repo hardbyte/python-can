@@ -19,7 +19,7 @@ import logging
 import threading
 import time
 
-# try to import win32event for event-based cyclic send task(needs pywin32 package)
+# try to import win32event for event-based cyclic send task (needs the pywin32 package)
 try:
     import win32event
 
@@ -39,7 +39,7 @@ class CyclicTask(abc.ABC):
     def stop(self) -> None:
         """Cancel this periodic task.
 
-        :raises can.CanError:
+        :raises ~can.exceptions.CanError:
             If stop is called on an already stopped task.
         """
 
@@ -260,7 +260,7 @@ class ThreadBasedCyclicSendTask(
     def start(self) -> None:
         self.stopped = False
         if self.thread is None or not self.thread.is_alive():
-            name = "Cyclic send task for 0x%X" % (self.messages[0].arbitration_id)
+            name = f"Cyclic send task for 0x{self.messages[0].arbitration_id:X}"
             self.thread = threading.Thread(target=self._run, name=name)
             self.thread.daemon = True
 

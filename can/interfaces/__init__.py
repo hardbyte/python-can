@@ -2,8 +2,11 @@
 Interfaces contain low level implementations that interact with CAN hardware.
 """
 
+import sys
+from typing import Dict, Tuple
+
 # interface_name => (module, classname)
-BACKENDS = {
+BACKENDS: Dict[str, Tuple[str, ...]] = {
     "kvaser": ("can.interfaces.kvaser", "KvaserBus"),
     "socketcan": ("can.interfaces.socketcan", "SocketcanBus"),
     "serial": ("can.interfaces.serial.serial_can", "SerialBus"),
@@ -25,29 +28,26 @@ BACKENDS = {
     "gs_usb": ("can.interfaces.gs_usb", "GsUsbBus"),
     "nixnet": ("can.interfaces.nixnet", "NiXNETcanBus"),
     "neousys": ("can.interfaces.neousys", "NeousysBus"),
+    "etas": ("can.interfaces.etas", "EtasBus"),
     "socketcand": ("can.interfaces.socketcand", "SocketCanDaemonBus"),
 }
 
-try:
+if sys.version_info >= (3, 8):
     from importlib.metadata import entry_points
 
-    entry = entry_points()
-    if "can.interface" in entry:
-        BACKENDS.update(
-            {
-                interface.name: tuple(interface.value.split(":"))
-                for interface in entry["can.interface"]
-            }
-        )
-except ImportError:
+    entries = entry_points().get("can.interface", ())
+    BACKENDS.update(
+        {interface.name: tuple(interface.value.split(":")) for interface in entries}
+    )
+else:
     from pkg_resources import iter_entry_points
 
-    entry = iter_entry_points("can.interface")
+    entries = iter_entry_points("can.interface")
     BACKENDS.update(
         {
             interface.name: (interface.module_name, interface.attrs[0])
-            for interface in entry
+            for interface in entries
         }
     )
 
-VALID_INTERFACES = frozenset(list(BACKENDS.keys()))
+VALID_INTERFACES = frozenset(BACKENDS.keys())

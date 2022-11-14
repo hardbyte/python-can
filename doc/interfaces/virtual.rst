@@ -70,8 +70,8 @@ arrive at the recipients exactly once. Both is not guaranteed to hold for the be
 these guarantees of message delivery and message ordering. The central servers receive and distribute
 the CAN messages to all other bus participants, unlike in a real physical CAN network.
 The first intra-process ``virtual`` interface only runs within one Python process, effectively the
-Python instance of :class:`VirtualBus` acts as a central server. Notably the ``udp_multicast`` bus
-does not require a central server.
+Python instance of :class:`~can.interfaces.virtual.VirtualBus` acts as a central server.
+Notably the ``udp_multicast`` bus does not require a central server.
 
 **Arbitration and throughput** are two interrelated functions/properties of CAN networks which
 are typically abstracted in virtual interfaces. In all four interfaces, an unlimited amount
@@ -85,7 +85,7 @@ Example
 -------
 
 .. code-block:: python
-    
+
     import can
 
     bus1 = can.interface.Bus('test', bustype='virtual')
@@ -100,9 +100,38 @@ Example
     assert msg1.data == msg2.data
     assert msg1.timestamp != msg2.timestamp
 
+.. code-block:: python
+
+    import can
+
+    bus1 = can.interface.Bus('test', bustype='virtual', preserve_timestamps=True)
+    bus2 = can.interface.Bus('test', bustype='virtual')
+
+    msg1 = can.Message(timestamp=1639740470.051948, arbitration_id=0xabcde, data=[1,2,3])
+
+    # Messages sent on bus1 will have their timestamps preserved when received
+    # on bus2
+    bus1.send(msg1)
+    msg2 = bus2.recv()
+
+    assert msg1.arbitration_id == msg2.arbitration_id
+    assert msg1.data == msg2.data
+    assert msg1.timestamp == msg2.timestamp
+
+    # Messages sent on bus2 will not have their timestamps preserved when
+    # received on bus1
+    bus2.send(msg1)
+    msg3 = bus1.recv()
+
+    assert msg1.arbitration_id == msg3.arbitration_id
+    assert msg1.data == msg3.data
+    assert msg1.timestamp != msg3.timestamp
+
 
 Bus Class Documentation
 -----------------------
 
 .. autoclass:: can.interfaces.virtual.VirtualBus
     :members:
+
+    .. automethod:: _detect_available_configs

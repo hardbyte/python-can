@@ -814,7 +814,7 @@ class PCANBasic:
         """Reads a CAN message from the receive queue of a PCAN Channel
 
         Remarks:
-          The return value of this method is a 3-touple, where
+          The return value of this method is a 3-tuple, where
           the first value is the result (TPCANStatus) of the method.
           The order of the values are:
           [0]: A TPCANStatus error code
@@ -843,7 +843,7 @@ class PCANBasic:
         """Reads a CAN message from the receive queue of a FD capable PCAN Channel
 
         Remarks:
-          The return value of this method is a 3-touple, where
+          The return value of this method is a 3-tuple, where
           the first value is the result (TPCANStatus) of the method.
           The order of the values are:
           [0]: A TPCANStatus error code
@@ -943,7 +943,7 @@ class PCANBasic:
           of Hardware (PCAN Channel) being used. If a parameter is not available,
           a PCAN_ERROR_ILLPARAMTYPE error will be returned.
 
-          The return value of this method is a 2-touple, where
+          The return value of this method is a 2-tuple, where
           the first value is the result (TPCANStatus) of the method and
           the second one, the asked value
 
@@ -1038,7 +1038,7 @@ class PCANBasic:
           Neutral (0x00), German (0x07), English (0x09), Spanish (0x0A),
           Italian (0x10) and French (0x0C)
 
-          The return value of this method is a 2-touple, where
+          The return value of this method is a 2-tuple, where
           the first value is the result (TPCANStatus) of the method and
           the second one, the error text
 
@@ -1063,7 +1063,7 @@ class PCANBasic:
 
         Remarks:
 
-          The return value of this method is a 2-touple, where
+          The return value of this method is a 2-tuple, where
           the first value is the result (TPCANStatus) of the method and
           the second one a TPCANHandle value
 

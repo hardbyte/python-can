@@ -1,6 +1,6 @@
 """Types for mypy type-checking
 """
-
+import gzip
 import typing
 
 if typing.TYPE_CHECKING:
@@ -8,7 +8,9 @@ if typing.TYPE_CHECKING:
 
 import typing_extensions
 
-CanFilter = typing_extensions.TypedDict("CanFilter", {"can_id": int, "can_mask": int})
+CanFilter: typing_extensions = typing_extensions.TypedDict(
+    "CanFilter", {"can_id": int, "can_mask": int}
+)
 CanFilterExtended = typing_extensions.TypedDict(
     "CanFilterExtended", {"can_id": int, "can_mask": int, "extended": bool}
 )
@@ -27,7 +29,7 @@ ChannelInt = int
 Channel = typing.Union[ChannelInt, ChannelStr]
 
 # Used by the IO module
-FileLike = typing.IO[typing.Any]
+FileLike = typing.Union[typing.TextIO, typing.BinaryIO, gzip.GzipFile]
 StringPathLike = typing.Union[str, "os.PathLike[str]"]
 AcceptedIOType = typing.Union[FileLike, StringPathLike]
 

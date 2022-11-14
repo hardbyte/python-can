@@ -9,7 +9,6 @@ from typing import Optional
 from can import BusABC, Message, CanInitializationError, CanOperationError
 from .usb2canabstractionlayer import Usb2CanAbstractionLayer, CanalMsg, CanalError
 from .usb2canabstractionlayer import (
-    flags_t,
     IS_ERROR_FRAME,
     IS_REMOTE_FRAME,
     IS_ID_TYPE,
@@ -68,22 +67,22 @@ class Usb2canBus(BusABC):
     This interface only works on Windows.
     Please use socketcan on Linux.
 
-    :param str channel (optional):
+    :param channel:
         The device's serial number. If not provided, Windows Management Instrumentation
         will be used to identify the first such device.
 
-    :param int bitrate (optional):
+    :param bitrate:
         Bitrate of channel in bit/s. Values will be limited to a maximum of 1000 Kb/s.
         Default is 500 Kbs
 
-    :param int flags (optional):
+    :param flags:
         Flags to directly pass to open function of the usb2can abstraction layer.
 
-    :param str dll (optional):
+    :param dll:
         Path to the DLL with the CANAL API to load
         Defaults to 'usb2can.dll'
 
-    :param str serial (optional):
+    :param serial:
         Alias for `channel` that is provided for legacy reasons.
         If both `serial` and `channel` are set, `serial` will be used and
         channel will be ignored.
@@ -92,18 +91,19 @@ class Usb2canBus(BusABC):
 
     def __init__(
         self,
-        channel=None,
-        dll="usb2can.dll",
-        flags=0x00000008,
-        *args,
-        bitrate=500000,
+        channel: Optional[str] = None,
+        dll: str = "usb2can.dll",
+        flags: int = 0x00000008,
+        *_,
+        bitrate: int = 500000,
+        serial: Optional[str] = None,
         **kwargs,
     ):
 
         self.can = Usb2CanAbstractionLayer(dll)
 
         # get the serial number of the device
-        device_id = kwargs.get("serial", d=channel)
+        device_id = serial or channel
 
         # search for a serial number if the device_id is None or empty
         if not device_id:
@@ -118,11 +118,9 @@ class Usb2canBus(BusABC):
         self.channel_info = f"USB2CAN device {device_id}"
 
         connector = f"{device_id}; {baudrate}"
-        self.handle = self.can.open(connector, flags_t)
+        self.handle = self.can.open(connector, flags)
 
-        super().__init__(
-            channel=channel, dll=dll, flags_t=flags_t, bitrate=bitrate, *args, **kwargs
-        )
+        super().__init__(channel=channel, **kwargs)
 
     def send(self, msg, timeout=None):
         tx = message_convert_tx(msg)

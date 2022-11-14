@@ -120,7 +120,7 @@ else:
 
     try:
         # Select the proper dll architecture
-        lib = WinDLL("usbcan64.dll" if sys.maxsize > 2 ** 32 else "usbcan32.dll")
+        lib = WinDLL("usbcan64.dll" if sys.maxsize > 2**32 else "usbcan32.dll")
 
         # BOOL PUBLIC UcanSetDebugMode (DWORD dwDbgLevel_p, _TCHAR* pszFilePathName_p, DWORD dwFlags_p);
         UcanSetDebugMode = lib.UcanSetDebugMode

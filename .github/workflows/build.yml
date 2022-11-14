@@ -13,21 +13,21 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         experimental: [false]
-        python-version: ["3.6", "3.7", "3.8", "3.9", "pypy-3.7"]
-        include:
-          # Skipping Py 3.10 on Windows until windows-curses has a cp310 wheel,
-          # see https://github.com/zephyrproject-rtos/windows-curses/issues/26
-          - os: ubuntu-latest
-            experimental: false
-            python-version: "3.10"
-          - os: macos-latest
-            experimental: false
-            python-version: "3.10"
+        python-version: [
+          "3.7",
+          "3.8",
+          "3.9",
+          "3.10",
+          "3.11",
+          "pypy-3.7",
+          "pypy-3.8",
+          "pypy-3.9",
+        ]
       fail-fast: false
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
@@ -38,16 +38,53 @@ jobs:
       run: |
         tox -e gh
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v1
+      uses: codecov/codecov-action@v3
       with:
         fail_ci_if_error: true
+
+  static-code-analysis:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.10"
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .
+        pip install -r requirements-lint.txt
+    - name: mypy 3.7
+      run: |
+        mypy --python-version 3.7 .
+    - name: mypy 3.8
+      run: |
+        mypy --python-version 3.8 .
+    - name: mypy 3.9
+      run: |
+        mypy --python-version 3.9 .
+    - name: mypy 3.10
+      run: |
+        mypy --python-version 3.10 .
+    - name: mypy 3.11
+      run: |
+        mypy --python-version 3.11 .
+    - name: pylint
+      run: |
+        pylint --rcfile=.pylintrc \
+        can/**.py \
+        setup.py \
+        doc.conf \
+        scripts/**.py \
+        examples/**.py
 
   format:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python 3.10
-      uses: actions/setup-python@v2
+    - uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v4
       with:
         python-version: "3.10"
     - name: Install dependencies
@@ -57,3 +94,38 @@ jobs:
     - name: Code Format Check with Black
       run: |
         black --check --verbose .
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.10"
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .[canalystii,gs_usb]
+        pip install -r doc/doc-requirements.txt
+    - name: Build documentation
+      run: |
+        python -m sphinx -an doc build
+    - uses: actions/upload-artifact@v3
+      with:
+        name: sphinx-out
+        path: ./build/
+        retention-days: 5
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+      - name: Build wheel and sdist
+        run: pipx run build
+      - name: Check build artifacts
+        run: pipx run twine check --strict dist/*

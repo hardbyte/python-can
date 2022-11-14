@@ -5,11 +5,9 @@ from typing import (
     Optional,
     cast,
     Iterable,
-    Union,
-    TextIO,
-    BinaryIO,
     Type,
     ContextManager,
+    Any,
 )
 from typing_extensions import Literal
 from types import TracebackType
@@ -31,7 +29,11 @@ class BaseIOHandler(ContextManager, metaclass=ABCMeta):
     file: Optional[can.typechecking.FileLike]
 
     def __init__(
-        self, file: Optional[can.typechecking.AcceptedIOType], mode: str = "rt"
+        self,
+        file: Optional[can.typechecking.AcceptedIOType],
+        mode: str = "rt",
+        *args: Any,
+        **kwargs: Any
     ) -> None:
         """
         :param file: a path-like object to open a file, a file-like object
@@ -45,7 +47,10 @@ class BaseIOHandler(ContextManager, metaclass=ABCMeta):
         else:
             # pylint: disable=consider-using-with
             # file is some path-like object
-            self.file = open(cast(can.typechecking.StringPathLike, file), mode)
+            self.file = cast(
+                can.typechecking.FileLike,
+                open(cast(can.typechecking.StringPathLike, file), mode),
+            )
 
         # for multiple inheritance
         super().__init__()
@@ -73,23 +78,33 @@ class BaseIOHandler(ContextManager, metaclass=ABCMeta):
 class MessageWriter(BaseIOHandler, can.Listener, metaclass=ABCMeta):
     """The base class for all writers."""
 
+    file: Optional[can.typechecking.FileLike]
+
 
 # pylint: disable=abstract-method,too-few-public-methods
 class FileIOMessageWriter(MessageWriter, metaclass=ABCMeta):
     """A specialized base class for all writers with file descriptors."""
 
-    file: Union[TextIO, BinaryIO]
+    file: can.typechecking.FileLike
 
     def __init__(
-        self, file: Union[can.typechecking.FileLike, TextIO, BinaryIO], mode: str = "rt"
+        self,
+        file: can.typechecking.AcceptedIOType,
+        mode: str = "wt",
+        *args: Any,
+        **kwargs: Any
     ) -> None:
-        # Not possible with the type signature, but be verbose for user friendliness
+        # Not possible with the type signature, but be verbose for user-friendliness
         if file is None:
             raise ValueError("The given file cannot be None")
 
         super().__init__(file, mode)
 
+    def file_size(self) -> int:
+        """Return an estimate of the current file size in bytes."""
+        return self.file.tell()
+
 
 # pylint: disable=too-few-public-methods
-class MessageReader(BaseIOHandler, Iterable, metaclass=ABCMeta):
+class MessageReader(BaseIOHandler, Iterable[can.Message], metaclass=ABCMeta):
     """The base class for all readers."""

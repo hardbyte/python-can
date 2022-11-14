@@ -1,12 +1,11 @@
 #!/usr/bin/env python
-# coding: utf-8
 
 """
 This module tests :class:`can.MessageSync`.
 """
 
 from copy import copy
-from time import time
+import time
 import gc
 
 import unittest
@@ -50,43 +49,40 @@ class TestMessageSync(unittest.TestCase, ComparingMessagesTestCase):
         # we need to reenable the garbage collector again
         gc.enable()
 
-    @pytest.mark.timeout(inc(0.2))
     def test_general(self):
         messages = [
             Message(timestamp=50.0),
             Message(timestamp=50.0),
             Message(timestamp=50.0 + 0.05),
-            Message(timestamp=50.0 + 0.05 + 0.08),
+            Message(timestamp=50.0 + 0.13),
             Message(timestamp=50.0),  # back in time
         ]
-        sync = MessageSync(messages, gap=0.0)
+        sync = MessageSync(messages, gap=0.0, skip=0.0)
 
-        start = time()
+        t_start = time.perf_counter()
         collected = []
         timings = []
         for message in sync:
+            t_now = time.perf_counter()
             collected.append(message)
-            now = time()
-            timings.append(now - start)
-            start = now
+            timings.append(t_now - t_start)
 
         self.assertMessagesEqual(messages, collected)
         self.assertEqual(len(timings), len(messages), "programming error in test code")
 
-        self.assertTrue(0.0 <= timings[0] < inc(0.005), str(timings[0]))
-        self.assertTrue(0.0 <= timings[1] < inc(0.005), str(timings[1]))
-        self.assertTrue(0.045 <= timings[2] < inc(0.055), str(timings[2]))
-        self.assertTrue(0.075 <= timings[3] < inc(0.085), str(timings[3]))
-        self.assertTrue(0.0 <= timings[4] < inc(0.005), str(timings[4]))
+        self.assertTrue(0.0 <= timings[0] < 0.0 + inc(0.02), str(timings[0]))
+        self.assertTrue(0.0 <= timings[1] < 0.0 + inc(0.02), str(timings[1]))
+        self.assertTrue(0.045 <= timings[2] < 0.05 + inc(0.02), str(timings[2]))
+        self.assertTrue(0.125 <= timings[3] < 0.13 + inc(0.02), str(timings[3]))
+        self.assertTrue(0.125 <= timings[4] < 0.13 + inc(0.02), str(timings[4]))
 
-    @pytest.mark.timeout(inc(0.1) * len(TEST_FEWER_MESSAGES))  # very conservative
     def test_skip(self):
         messages = copy(TEST_FEWER_MESSAGES)
         sync = MessageSync(messages, skip=0.005, gap=0.0)
 
-        before = time()
+        before = time.perf_counter()
         collected = list(sync)
-        after = time()
+        after = time.perf_counter()
         took = after - before
 
         # the handling of the messages itself also takes some time:
@@ -97,9 +93,8 @@ class TestMessageSync(unittest.TestCase, ComparingMessagesTestCase):
 
 
 @skip_on_unreliable_platforms
-@pytest.mark.timeout(inc(0.3))
 @pytest.mark.parametrize(
-    "timestamp_1,timestamp_2", [(0.0, 0.0), (0.0, 0.01), (0.01, 0.0)]
+    "timestamp_1,timestamp_2", [(0.0, 0.0), (0.0, 0.01), (0.01, 1.5)]
 )
 def test_gap(timestamp_1, timestamp_2):
     """This method is alone so it can be parameterized."""
@@ -107,16 +102,16 @@ def test_gap(timestamp_1, timestamp_2):
         Message(arbitration_id=0x1, timestamp=timestamp_1),
         Message(arbitration_id=0x2, timestamp=timestamp_2),
     ]
-    sync = MessageSync(messages, gap=0.1)
+    sync = MessageSync(messages, timestamps=False, gap=0.1)
 
     gc.disable()
-    before = time()
+    before = time.perf_counter()
     collected = list(sync)
-    after = time()
+    after = time.perf_counter()
     gc.enable()
     took = after - before
 
-    assert 0.1 <= took < inc(0.3)
+    assert 0.195 <= took < 0.2 + inc(0.02)
     assert messages == collected
 
 

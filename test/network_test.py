@@ -14,10 +14,8 @@ rbool = lambda: bool(round(random.random()))
 import can
 
 channel = "vcan0"
-can.rc["interface"] = "virtual"
 
 
-@unittest.skipIf("interface" not in can.rc, "Need a CAN interface")
 class ControllerAreaNetworkTestCase(unittest.TestCase):
     """
     This test ensures that what messages go in to the bus is what comes out.
@@ -38,9 +36,18 @@ class ControllerAreaNetworkTestCase(unittest.TestCase):
 
     ids = list(range(num_messages))
     data = list(
-        bytearray([random.randrange(0, 2 ** 8 - 1) for a in range(random.randrange(9))])
+        bytearray([random.randrange(0, 2**8 - 1) for a in range(random.randrange(9))])
         for b in range(num_messages)
     )
+
+    def setUp(self):
+        # Save all can.rc defaults
+        self._can_rc = can.rc
+        can.rc = {"interface": "virtual"}
+
+    def tearDown(self):
+        # Restore the defaults
+        can.rc = self._can_rc
 
     def producer(self, ready_event, msg_read):
         self.client_bus = can.interface.Bus(channel=channel)

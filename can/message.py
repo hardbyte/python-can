@@ -29,7 +29,7 @@ class Message:  # pylint: disable=too-many-instance-attributes; OK for a datacla
     :func:`~copy.copy`/:func:`~copy.deepcopy` is supported as well.
 
     Messages do not support "dynamic" attributes, meaning any others than the
-    documented ones, since it uses :attr:`~object.__slots__`.
+    documented ones, since it uses :obj:`~object.__slots__`.
     """
 
     __slots__ = (
@@ -130,7 +130,7 @@ class Message:  # pylint: disable=too-many-instance-attributes; OK for a datacla
 
         field_strings.append(flag_string)
 
-        field_strings.append(f"DLC: {self.dlc:2d}")
+        field_strings.append(f"DL: {self.dlc:2d}")
         data_strings = []
         if self.data is not None:
             for index in range(0, min(self.dlc, len(self.data))):
