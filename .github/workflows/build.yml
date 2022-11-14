@@ -45,7 +45,7 @@ jobs:
         flag-name: Unittests-${{ matrix.os }}-${{ matrix.python-version }}
         parallel: true
 
-  finish:
+  coveralls:
     needs: test
     runs-on: ubuntu-latest
     steps:
