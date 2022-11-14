@@ -13,7 +13,7 @@ import time
 import logging
 
 from ..message import Message
-from ..util import channel2int
+from ..util import channel2int, len2dlc, dlc2len
 from .generic import FileIOMessageWriter, MessageReader
 from ..typechecking import StringPathLike
 
@@ -34,13 +34,13 @@ class ASCReader(MessageReader):
 
     file: TextIO
 
-    FORMAT_START_OF_FILE_DATE = "%a %b %d %I:%M:%S.%f %p %Y"
-
     def __init__(
         self,
         file: Union[StringPathLike, TextIO],
         base: str = "hex",
         relative_timestamp: bool = True,
+        *args: Any,
+        **kwargs: Any,
     ) -> None:
         """
         :param file: a path-like object or as file-like object to read from
@@ -60,50 +60,94 @@ class ASCReader(MessageReader):
         self.base = base
         self._converted_base = self._check_base(base)
         self.relative_timestamp = relative_timestamp
-        self.date = None
+        self.date: Optional[str] = None
+        self.start_time = 0.0
         # TODO - what is this used for? The ASC Writer only prints `absolute`
-        self.timestamps_format = None
-        self.internal_events_logged = None
+        self.timestamps_format: Optional[str] = None
+        self.internal_events_logged = False
 
-    def _extract_header(self):
+    def _extract_header(self) -> None:
         for line in self.file:
             line = line.strip()
-            lower_case = line.lower()
-            if lower_case.startswith("date"):
-                self.date = line[5:]
-            elif lower_case.startswith("base"):
-                try:
-                    _, base, _, timestamp_format = line.split()
-                except ValueError as exception:
-                    raise Exception(
-                        f"Unsupported header string format: {line}"
-                    ) from exception
+
+            datetime_match = re.match(
+                r"date\s+\w+\s+(?P<datetime_string>.+)", line, re.IGNORECASE
+            )
+            base_match = re.match(
+                r"base\s+(?P<base>hex|dec)(?:\s+timestamps\s+"
+                r"(?P<timestamp_format>absolute|relative))?",
+                line,
+                re.IGNORECASE,
+            )
+            comment_match = re.match(r"//.*", line)
+            events_match = re.match(
+                r"(?P<no_events>no)?\s*internal\s+events\s+logged", line, re.IGNORECASE
+            )
+
+            if datetime_match:
+                self.date = datetime_match.group("datetime_string")
+                self.start_time = (
+                    0.0
+                    if self.relative_timestamp
+                    else self._datetime_to_timestamp(self.date)
+                )
+                continue
+
+            elif base_match:
+                base = base_match.group("base")
+                timestamp_format = base_match.group("timestamp_format")
                 self.base = base
                 self._converted_base = self._check_base(self.base)
-                self.timestamps_format = timestamp_format
-            elif lower_case.endswith("internal events logged"):
-                self.internal_events_logged = not lower_case.startswith("no")
-            elif lower_case.startswith("//"):
-                # ignore comments
+                self.timestamps_format = timestamp_format or "absolute"
                 continue
-            # grab absolute timestamp
-            elif lower_case.startswith("begin triggerblock"):
-                if self.relative_timestamp:
-                    self.start_time = 0.0
-                else:
-                    try:
-                        _, _, start_time = lower_case.split(None, 2)
-                        start_time = datetime.strptime(
-                            start_time, self.FORMAT_START_OF_FILE_DATE
-                        ).timestamp()
-                    except (ValueError, OSError):
-                        # `OSError` to handle non-POSIX capable timestamps
-                        start_time = 0.0
-                    self.start_time = start_time
-                # Currently the last line in the header which is parsed
+
+            elif comment_match:
+                continue
+
+            elif events_match:
+                self.internal_events_logged = events_match.group("no_events") is None
                 break
+
             else:
                 break
+
+    @staticmethod
+    def _datetime_to_timestamp(datetime_string: str) -> float:
+        # ugly locale independent solution
+        month_map = {
+            "Jan": 1,
+            "Feb": 2,
+            "Mar": 3,
+            "Apr": 4,
+            "May": 5,
+            "Jun": 6,
+            "Jul": 7,
+            "Aug": 8,
+            "Sep": 9,
+            "Oct": 10,
+            "Nov": 11,
+            "Dec": 12,
+            "Mär": 3,
+            "Mai": 5,
+            "Okt": 10,
+            "Dez": 12,
+        }
+        for name, number in month_map.items():
+            datetime_string = datetime_string.replace(name, str(number).zfill(2))
+
+        datetime_formats = (
+            "%m %d %I:%M:%S.%f %p %Y",
+            "%m %d %I:%M:%S %p %Y",
+            "%m %d %H:%M:%S.%f %Y",
+            "%m %d %H:%M:%S %Y",
+        )
+        for format_str in datetime_formats:
+            try:
+                return datetime.strptime(datetime_string, format_str).timestamp()
+            except ValueError:
+                continue
+
+        raise ValueError(f"Incompatible datetime string {datetime_string}")
 
     def _extract_can_id(self, str_can_id: str, msg_kwargs: Dict[str, Any]) -> None:
         if str_can_id[-1:].lower() == "x":
@@ -160,9 +204,9 @@ class ASCReader(MessageReader):
                     _, dlc_str = rest_of_message.split(None, 1)
                     data = ""
 
-                dlc = int(dlc_str, self._converted_base)
+                dlc = dlc2len(int(dlc_str, self._converted_base))
                 msg_kwargs["dlc"] = dlc
-                self._process_data_string(data, dlc, msg_kwargs)
+                self._process_data_string(data, min(8, dlc), msg_kwargs)
 
         return Message(**msg_kwargs)
 
@@ -194,11 +238,20 @@ class ASCReader(MessageReader):
             msg_kwargs["bitrate_switch"] = brs == "1"
             msg_kwargs["error_state_indicator"] = esi == "1"
             dlc = int(dlc_str, self._converted_base)
-            msg_kwargs["dlc"] = dlc
             data_length = int(data_length_str)
-
-            # CAN remote Frame
-            msg_kwargs["is_remote_frame"] = data_length == 0
+            if data_length == 0:
+                # CAN remote Frame
+                msg_kwargs["is_remote_frame"] = True
+                msg_kwargs["dlc"] = dlc
+            else:
+                if dlc2len(dlc) != data_length:
+                    logger.warning(
+                        "DLC vs Data Length mismatch %d[%d] != %d",
+                        dlc,
+                        dlc2len(dlc),
+                        data_length,
+                    )
+                msg_kwargs["dlc"] = data_length
 
             self._process_data_string(data, data_length, msg_kwargs)
 
@@ -209,6 +262,20 @@ class ASCReader(MessageReader):
 
         for line in self.file:
             line = line.strip()
+
+            trigger_match = re.match(
+                r"begin\s+triggerblock\s+\w+\s+(?P<datetime_string>.+)",
+                line,
+                re.IGNORECASE,
+            )
+            if trigger_match:
+                datetime_str = trigger_match.group("datetime_string")
+                self.start_time = (
+                    0.0
+                    if self.relative_timestamp
+                    else self._datetime_to_timestamp(datetime_str)
+                )
+                continue
 
             if not re.match(
                 r"\d+\.\d+\s+(\d+\s+(\w+\s+(Tx|Rx)|ErrorFrame)|CANFD)",
@@ -287,6 +354,8 @@ class ASCWriter(FileIOMessageWriter):
         self,
         file: Union[StringPathLike, TextIO],
         channel: int = 1,
+        *args: Any,
+        **kwargs: Any,
     ) -> None:
         """
         :param file: a path-like object or as file-like object to write to
@@ -295,12 +364,21 @@ class ASCWriter(FileIOMessageWriter):
         :param channel: a default channel to use when the message does not
                         have a channel set
         """
+        if kwargs.get("append", False):
+            raise ValueError(
+                f"{self.__class__.__name__} is currently not equipped to "
+                f"append messages to an existing file."
+            )
         super().__init__(file, mode="w")
 
         self.channel = channel
 
         # write start of file header
         now = datetime.now().strftime(self.FORMAT_START_OF_FILE_DATE)
+        # Note: CANoe requires that the microsecond field only have 3 digits
+        idx = now.index(".")  # Find the index in the string of the decimal
+        # Keep decimal and first three ms digits (4), remove remaining digits
+        now = now.replace(now[idx + 4 : now[idx:].index(" ") + idx], "")
         self.file.write(f"date {now}\n")
         self.file.write("base hex  timestamps absolute\n")
         self.file.write("internal events logged\n")
@@ -381,8 +459,8 @@ class ASCWriter(FileIOMessageWriter):
                 symbolic_name="",
                 brs=1 if msg.bitrate_switch else 0,
                 esi=1 if msg.error_state_indicator else 0,
-                dlc=msg.dlc,
-                data_length=len(data),
+                dlc=len2dlc(msg.dlc),
+                data_length=len(msg.data),
                 data=" ".join(data),
                 message_duration=0,
                 message_length=0,

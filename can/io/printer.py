@@ -4,7 +4,7 @@ This Listener simply prints to stdout / the terminal or a file.
 
 import logging
 
-from typing import Optional, TextIO, Union
+from typing import Optional, TextIO, Union, Any, cast
 
 from ..message import Message
 from .generic import MessageWriter
@@ -26,7 +26,11 @@ class Printer(MessageWriter):
     file: Optional[TextIO]
 
     def __init__(
-        self, file: Optional[Union[StringPathLike, TextIO]] = None, append: bool = False
+        self,
+        file: Optional[Union[StringPathLike, TextIO]] = None,
+        append: bool = False,
+        *args: Any,
+        **kwargs: Any
     ) -> None:
         """
         :param file: An optional path-like object or a file-like object to "print"
@@ -36,11 +40,18 @@ class Printer(MessageWriter):
         :param append: If set to `True` messages, are appended to the file,
                        else the file is truncated
         """
+        self.write_to_file = file is not None
         mode = "a" if append else "w"
         super().__init__(file, mode=mode)
 
     def on_message_received(self, msg: Message) -> None:
-        if self.file is not None:
-            self.file.write(str(msg) + "\n")
+        if self.write_to_file:
+            cast(TextIO, self.file).write(str(msg) + "\n")
         else:
             print(msg)
+
+    def file_size(self) -> int:
+        """Return an estimate of the current file size in bytes."""
+        if self.file is not None:
+            return self.file.tell()
+        return 0

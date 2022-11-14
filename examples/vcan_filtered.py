@@ -11,7 +11,7 @@ import can
 
 def main():
     """Send some messages to itself and apply filtering."""
-    with can.Bus(bustype="virtual", receive_own_messages=True) as bus:
+    with can.Bus(interface="virtual", receive_own_messages=True) as bus:
 
         can_filters = [{"can_id": 1, "can_mask": 0xF, "extended": True}]
         bus.set_filters(can_filters)

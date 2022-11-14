@@ -5,11 +5,11 @@ It is is compatible with "candump -L" from the canutils program
 """
 
 import logging
-from typing import Generator, TextIO, Union
+from typing import Generator, TextIO, Union, Any
 
 from can.message import Message
 from .generic import FileIOMessageWriter, MessageReader
-from ..typechecking import AcceptedIOType, StringPathLike
+from ..typechecking import StringPathLike
 
 log = logging.getLogger("can.io.canutils")
 
@@ -34,7 +34,12 @@ class CanutilsLogReader(MessageReader):
 
     file: TextIO
 
-    def __init__(self, file: Union[StringPathLike, TextIO]) -> None:
+    def __init__(
+        self,
+        file: Union[StringPathLike, TextIO],
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
         """
         :param file: a path-like object or as file-like object to read from
                      If this is a file-like object, is has to opened in text
@@ -51,7 +56,12 @@ class CanutilsLogReader(MessageReader):
                 continue
 
             channel_string: str
-            timestamp_string, channel_string, frame = temp.split()
+            if temp[-2:].lower() in (" r", " t"):
+                timestamp_string, channel_string, frame, is_rx_string = temp.split()
+                is_rx = is_rx_string.strip().lower() == "r"
+            else:
+                timestamp_string, channel_string, frame = temp.split()
+                is_rx = True
             timestamp = float(timestamp_string[1:-1])
             can_id_string, data = frame.split("#", maxsplit=1)
 
@@ -101,6 +111,7 @@ class CanutilsLogReader(MessageReader):
                     is_extended_id=is_extended,
                     is_remote_frame=is_remote_frame,
                     is_fd=is_fd,
+                    is_rx=is_rx,
                     bitrate_switch=brs,
                     error_state_indicator=esi,
                     dlc=dlc,
@@ -126,6 +137,8 @@ class CanutilsLogWriter(FileIOMessageWriter):
         file: Union[StringPathLike, TextIO],
         channel: str = "vcan0",
         append: bool = False,
+        *args: Any,
+        **kwargs: Any,
     ):
         """
         :param file: a path-like object or as file-like object to write to
@@ -154,6 +167,8 @@ class CanutilsLogWriter(FileIOMessageWriter):
             timestamp = msg.timestamp
 
         channel = msg.channel if msg.channel is not None else self.channel
+        if isinstance(channel, int) or isinstance(channel, str) and channel.isdigit():
+            channel = f"can{channel}"
 
         framestr = "(%f) %s" % (timestamp, channel)
 
@@ -164,8 +179,13 @@ class CanutilsLogWriter(FileIOMessageWriter):
         else:
             framestr += " %03X#" % (msg.arbitration_id)
 
+        if msg.is_error_frame:
+            eol = "\n"
+        else:
+            eol = " R\n" if msg.is_rx else " T\n"
+
         if msg.is_remote_frame:
-            framestr += "R\n"
+            framestr += f"R{eol}"
         else:
             if msg.is_fd:
                 fd_flags = 0
@@ -174,6 +194,6 @@ class CanutilsLogWriter(FileIOMessageWriter):
                 if msg.error_state_indicator:
                     fd_flags |= CANFD_ESI
                 framestr += "#%X" % fd_flags
-            framestr += "%s\n" % (msg.data.hex().upper())
+            framestr += f"{msg.data.hex().upper()}{eol}"
 
         self.file.write(framestr)

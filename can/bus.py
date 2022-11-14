@@ -66,8 +66,10 @@ class BusABC(metaclass=ABCMeta):
             Any backend dependent configurations are passed in this dictionary
 
         :raises ValueError: If parameters are out of range
-        :raises can.CanInterfaceNotImplementedError: If the driver cannot be accessed
-        :raises can.CanInitializationError: If the bus cannot be initialized
+        :raises ~can.exceptions.CanInterfaceNotImplementedError:
+            If the driver cannot be accessed
+        :raises ~can.exceptions.CanInitializationError:
+            If the bus cannot be initialized
         """
         self._periodic_tasks: List[_SelfRemovingCyclicTask] = []
         self.set_filters(can_filters)
@@ -81,9 +83,11 @@ class BusABC(metaclass=ABCMeta):
         :param timeout:
             seconds to wait for a message or None to wait indefinitely
 
-        :return: ``None`` on timeout or a :class:`Message` object.
+        :return:
+            :obj:`None` on timeout or a :class:`~can.Message` object.
 
-        :raises can.CanOperationError: If an error occurred while reading
+        :raises ~can.exceptions.CanOperationError:
+            If an error occurred while reading
         """
         start = time()
         time_left = timeout
@@ -148,7 +152,8 @@ class BusABC(metaclass=ABCMeta):
             2.  a bool that is True if message filtering has already
                 been done and else False
 
-        :raises can.CanOperationError: If an error occurred while reading
+        :raises ~can.exceptions.CanOperationError:
+            If an error occurred while reading
         :raises NotImplementedError:
             if the bus provides it's own :meth:`~can.BusABC.recv`
             implementation (legacy implementation)
@@ -171,7 +176,8 @@ class BusABC(metaclass=ABCMeta):
             Might not be supported by all interfaces.
             None blocks indefinitely.
 
-        :raises can.CanOperationError: If an error occurred while sending
+        :raises ~can.exceptions.CanOperationError:
+            If an error occurred while sending
         """
         raise NotImplementedError("Trying to write to a readonly bus?")
 
@@ -189,8 +195,8 @@ class BusABC(metaclass=ABCMeta):
         - the (optional) duration expires
         - the Bus instance goes out of scope
         - the Bus instance is shutdown
-        - :meth:`BusABC.stop_all_periodic_tasks()` is called
-        - the task's :meth:`CyclicTask.stop()` method is called.
+        - :meth:`stop_all_periodic_tasks` is called
+        - the task's :meth:`~can.broadcastmanager.CyclicTask.stop` method is called.
 
         :param msgs:
             Message(s) to transmit
@@ -204,7 +210,8 @@ class BusABC(metaclass=ABCMeta):
             Disable to instead manage tasks manually.
         :return:
             A started task instance. Note the task can be stopped (and depending on
-            the backend modified) by calling the task's :meth:`stop` method.
+            the backend modified) by calling the task's
+            :meth:`~can.broadcastmanager.CyclicTask.stop` method.
 
         .. note::
 
@@ -274,8 +281,8 @@ class BusABC(metaclass=ABCMeta):
             no duration is provided, the task will continue indefinitely.
         :return:
             A started task instance. Note the task can be stopped (and
-            depending on the backend modified) by calling the :meth:`stop`
-            method.
+            depending on the backend modified) by calling the
+            :meth:`~can.broadcastmanager.CyclicTask.stop` method.
         """
         if not hasattr(self, "_lock_send_periodic"):
             # Create a send lock for this bus, but not for buses which override this method
@@ -288,7 +295,7 @@ class BusABC(metaclass=ABCMeta):
         return task
 
     def stop_all_periodic_tasks(self, remove_tasks: bool = True) -> None:
-        """Stop sending any messages that were started using **bus.send_periodic**.
+        """Stop sending any messages that were started using :meth:`send_periodic`.
 
         .. note::
             The result is undefined if a single task throws an exception while being stopped.

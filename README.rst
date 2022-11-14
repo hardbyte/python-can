@@ -33,15 +33,15 @@ python-can
    :target: https://github.com/hardbyte/python-can/actions/workflows/build.yml
    :alt: Github Actions workflow status
 
-.. |build_travis| image:: https://img.shields.io/travis/com/hardbyte/python-can/develop.svg?label=Travis%20CI
-   :target: https://travis-ci.com/hardbyte/python-can
+.. |build_travis| image:: https://img.shields.io/travis/hardbyte/python-can/develop.svg?label=Travis%20CI
+   :target: https://app.travis-ci.com/github/hardbyte/python-can
    :alt: Travis CI Server for develop branch
 
 .. |coverage| image:: https://codecov.io/gh/hardbyte/python-can/branch/develop/graph/badge.svg
    :target: https://codecov.io/gh/hardbyte/python-can/branch/develop
    :alt: Test coverage reports on Codecov.io
 
-.. |mergify| image:: https://img.shields.io/endpoint.svg?url=https://gh.mergify.io/badges/hardbyte/python-can&style=flat
+.. |mergify| image:: https://img.shields.io/endpoint.svg?url=https://api.mergify.com/v1/badges/hardbyte/python-can&style=flat
    :target: https://mergify.io
    :alt: Mergify Status
 

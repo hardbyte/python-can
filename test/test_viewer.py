@@ -37,7 +37,7 @@ import pytest
 
 import can
 from can.viewer import CanViewer, parse_args
-
+from test.config import IS_CI
 
 # Allow the curses module to be missing (e.g. on PyPy on Windows)
 try:
@@ -188,6 +188,16 @@ class CanViewerTest(unittest.TestCase):
         msg = can.Message(arbitration_id=0x101, data=data, is_extended_id=False)
         self.can_viewer.bus.send(msg)
 
+        # Send non-CANopen message with long parsed data length
+        data = [255, 255]
+        msg = can.Message(arbitration_id=0x102, data=data, is_extended_id=False)
+        self.can_viewer.bus.send(msg)
+
+        # Send the same command, but with shorter parsed data length
+        data = [0, 0]
+        msg = can.Message(arbitration_id=0x102, data=data, is_extended_id=False)
+        self.can_viewer.bus.send(msg)
+
         # Message with extended id
         data = [1, 2, 3, 4, 5, 6, 7, 8]
         msg = can.Message(arbitration_id=0x123456, data=data, is_extended_id=True)
@@ -210,6 +220,8 @@ class CanViewerTest(unittest.TestCase):
             # For converting the EMCY and HEARTBEAT messages
             0x080 + 0x01: struct.Struct("<HBLB"),
             0x700 + 0x7F: struct.Struct("<B"),
+            # Shorter parsed data length
+            0x102: struct.Struct("<BB"),
             # Big-endian and float test
             0x123456: struct.Struct(">ff"),
         }
@@ -229,14 +241,20 @@ class CanViewerTest(unittest.TestCase):
                     for col, v in self.stdscr_dummy.draw_buffer[_id["row"]].items():
                         if col >= 52 + _id["msg"].dlc * 3:
                             self.assertEqual(v, " ")
+                elif _id["msg"].arbitration_id == 0x102:
+                    # Make sure the parsed values have been cleared after the shorted message was send
+                    for col, v in self.stdscr_dummy.draw_buffer[_id["row"]].items():
+                        if col >= 77 + _id["values_string_length"]:
+                            self.assertEqual(v, " ")
                 elif _id["msg"].arbitration_id == 0x123456:
                     # Check if the counter is incremented
                     if _id["dt"] == 0:
                         self.assertEqual(_id["count"], 1)
                     else:
-                        self.assertTrue(
-                            pytest.approx(_id["dt"], 0.1)
-                        )  # dt should be ~0.1 s
+                        if not IS_CI:  # do not test timing in CI
+                            assert _id["dt"] == pytest.approx(
+                                0.1, abs=5e-2
+                            )  # dt should be ~0.1 s
                         self.assertEqual(_id["count"], 2)
                 else:
                     # Make sure dt is 0
@@ -330,7 +348,7 @@ class CanViewerTest(unittest.TestCase):
 
         raw_data = self.pack_data(CANOPEN_TPDO2 + 1, data_structs, 12.34, 4.5, 6)
         parsed_data = CanViewer.unpack_data(CANOPEN_TPDO2 + 1, data_structs, raw_data)
-        self.assertTrue(pytest.approx(parsed_data, [12.34, 4.5, 6]))
+        assert parsed_data == pytest.approx([12.34, 4.5, 6])
         self.assertTrue(
             isinstance(parsed_data[0], float)
             and isinstance(parsed_data[1], float)
@@ -339,14 +357,14 @@ class CanViewerTest(unittest.TestCase):
 
         raw_data = self.pack_data(CANOPEN_TPDO3 + 1, data_structs, 123.45, 67.89)
         parsed_data = CanViewer.unpack_data(CANOPEN_TPDO3 + 1, data_structs, raw_data)
-        self.assertTrue(pytest.approx(parsed_data, [123.45, 67.89]))
+        assert parsed_data == pytest.approx([123.45, 67.89])
         self.assertTrue(all(isinstance(d, float) for d in parsed_data))
 
         raw_data = self.pack_data(
             CANOPEN_TPDO4 + 1, data_structs, math.pi / 2.0, math.pi
         )
         parsed_data = CanViewer.unpack_data(CANOPEN_TPDO4 + 1, data_structs, raw_data)
-        self.assertTrue(pytest.approx(parsed_data, [math.pi / 2.0, math.pi]))
+        assert parsed_data == pytest.approx([math.pi / 2.0, math.pi])
         self.assertTrue(all(isinstance(d, float) for d in parsed_data))
 
         raw_data = self.pack_data(CANOPEN_TPDO1 + 2, data_structs)

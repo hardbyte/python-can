@@ -200,3 +200,5 @@ Message
 
         Each of the bytes in the data field (when present) are represented as
         two-digit hexadecimal numbers.
+
+    .. automethod:: equals

@@ -5,7 +5,7 @@ in the recorded order an time intervals.
 """
 import gzip
 import pathlib
-from time import time, sleep
+import time
 import typing
 
 from pkg_resources import iter_entry_points
@@ -135,8 +135,9 @@ class MessageSync:  # pylint: disable=too-few-public-methods
         self.skip = skip
 
     def __iter__(self) -> typing.Generator[Message, None, None]:
-        playback_start_time = time()
+        t_wakeup = playback_start_time = time.perf_counter()
         recorded_start_time = None
+        t_skipped = 0.0
 
         for message in self.raw_messages:
 
@@ -145,15 +146,19 @@ class MessageSync:  # pylint: disable=too-few-public-methods
                 if recorded_start_time is None:
                     recorded_start_time = message.timestamp
 
-                now = time()
-                current_offset = now - playback_start_time
-                recorded_offset_from_start = message.timestamp - recorded_start_time
-                remaining_gap = max(0.0, recorded_offset_from_start - current_offset)
-
-                sleep_period = max(self.gap, min(self.skip, remaining_gap))
+                t_wakeup = playback_start_time + (
+                    message.timestamp - t_skipped - recorded_start_time
+                )
             else:
-                sleep_period = self.gap
+                t_wakeup += self.gap
 
-            sleep(sleep_period)
+            sleep_period = t_wakeup - time.perf_counter()
+
+            if self.skip and sleep_period > self.skip:
+                t_skipped += sleep_period - self.skip
+                sleep_period = self.skip
+
+            if sleep_period > 1e-4:
+                time.sleep(sleep_period)
 
             yield message

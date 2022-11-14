@@ -402,7 +402,7 @@ class CyclicSendTask(
         """Stop a task by sending TX_DELETE message to Linux kernel.
 
         This will delete the entry for the transmission of the CAN-message
-        with the specified :attr:`~task_id` identifier. The message length
+        with the specified ``task_id`` identifier. The message length
         for the command TX_DELETE is {[bcm_msg_head]} (only the header).
         """
         log.debug("Stopping periodic task")
@@ -444,7 +444,7 @@ class CyclicSendTask(
         message to Linux kernel prior to scheduling.
 
         :raises ValueError:
-            If the task referenced by :attr:`~task_id` is already running.
+            If the task referenced by ``task_id`` is already running.
         """
         self._tx_setup(self.messages)
 
@@ -530,7 +530,7 @@ def capture_message(
             channel = addr[0] if isinstance(addr, tuple) else addr
         else:
             channel = None
-    except socket.error as error:
+    except OSError as error:
         raise can.CanOperationError(f"Error receiving: {error.strerror}", error.errno)
 
     can_id, can_dlc, flags, data = dissect_can_frame(cf)
@@ -617,9 +617,10 @@ class SocketcanBus(BusABC):
 
         If setting some socket options fails, an error will be printed but no exception will be thrown.
         This includes enabling:
-         - that own messages should be received,
-         - CAN-FD frames and
-         - error frames.
+
+            - that own messages should be received,
+            - CAN-FD frames and
+            - error frames.
 
         :param channel:
             The can interface name with which to create this bus.
@@ -656,7 +657,7 @@ class SocketcanBus(BusABC):
             self.socket.setsockopt(
                 SOL_CAN_RAW, CAN_RAW_LOOPBACK, 1 if local_loopback else 0
             )
-        except socket.error as error:
+        except OSError as error:
             log.error("Could not set local loopback flag(%s)", error)
 
         # set the receive_own_messages parameter
@@ -664,21 +665,21 @@ class SocketcanBus(BusABC):
             self.socket.setsockopt(
                 SOL_CAN_RAW, CAN_RAW_RECV_OWN_MSGS, 1 if receive_own_messages else 0
             )
-        except socket.error as error:
+        except OSError as error:
             log.error("Could not receive own messages (%s)", error)
 
         # enable CAN-FD frames if desired
         if fd:
             try:
                 self.socket.setsockopt(SOL_CAN_RAW, CAN_RAW_FD_FRAMES, 1)
-            except socket.error as error:
+            except OSError as error:
                 log.error("Could not enable CAN-FD frames (%s)", error)
 
         if not ignore_rx_error_frames:
             # enable error frames
             try:
                 self.socket.setsockopt(SOL_CAN_RAW, CAN_RAW_ERR_FILTER, 0x1FFFFFFF)
-            except socket.error as error:
+            except OSError as error:
                 log.error("Could not enable error frames (%s)", error)
 
         # enable nanosecond resolution timestamping
@@ -714,7 +715,7 @@ class SocketcanBus(BusABC):
             # get all sockets that are ready (can be a list with a single value
             # being self.socket or an empty list if self.socket is not ready)
             ready_receive_sockets, _, _ = select.select([self.socket], [], [], timeout)
-        except socket.error as error:
+        except OSError as error:
             # something bad happened (e.g. the interface went down)
             raise can.CanOperationError(
                 f"Failed to receive: {error.strerror}", error.errno
@@ -739,7 +740,7 @@ class SocketcanBus(BusABC):
             Wait up to this many seconds for the transmit queue to be ready.
             If not given, the call may fail immediately.
 
-        :raises can.CanError:
+        :raises ~can.exceptions.CanError:
             if the message could not be written.
         """
         log.debug("We've been asked to write a message to the bus")
@@ -776,7 +777,7 @@ class SocketcanBus(BusABC):
                 sent = self.socket.sendto(data, (channel,))
             else:
                 sent = self.socket.send(data)
-        except socket.error as error:
+        except OSError as error:
             raise can.CanOperationError(
                 f"Failed to transmit: {error.strerror}", error.errno
             )
@@ -829,7 +830,7 @@ class SocketcanBus(BusABC):
 
     def _get_next_task_id(self) -> int:
         with self._task_id_guard:
-            self._task_id = (self._task_id + 1) % (2 ** 32 - 1)
+            self._task_id = (self._task_id + 1) % (2**32 - 1)
             return self._task_id
 
     def _get_bcm_socket(self, channel: str) -> socket.socket:
@@ -840,7 +841,7 @@ class SocketcanBus(BusABC):
     def _apply_filters(self, filters: Optional[can.typechecking.CanFilters]) -> None:
         try:
             self.socket.setsockopt(SOL_CAN_RAW, CAN_RAW_FILTER, pack_filters(filters))
-        except socket.error as error:
+        except OSError as error:
             # fall back to "software filtering" (= not in kernel)
             self._is_filtered = False
             log.error(
