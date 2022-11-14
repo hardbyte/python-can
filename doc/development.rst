@@ -108,7 +108,7 @@ The modules in ``python-can`` are:
 Creating a new Release
 ----------------------
 
-- Release from the ``master`` branch (except for pre-releases).
+- Release from the ``main`` branch (except for pre-releases).
 - Update the library version in ``__init__.py`` using `semantic versioning <http://semver.org>`__.
 - Check if any deprecations are pending.
 - Run all tests and examples against available hardware.

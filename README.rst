@@ -37,9 +37,9 @@ python-can
    :target: https://app.travis-ci.com/github/hardbyte/python-can
    :alt: Travis CI Server for develop branch
 
-.. |coverage| image:: https://codecov.io/gh/hardbyte/python-can/branch/develop/graph/badge.svg
-   :target: https://codecov.io/gh/hardbyte/python-can/branch/develop
-   :alt: Test coverage reports on Codecov.io
+.. |coverage| image:: https://coveralls.io/repos/github/hardbyte/python-can/badge.svg?branch=develop
+   :target: https://coveralls.io/github/hardbyte/python-can?branch=develop
+   :alt: Test coverage reports on Coveralls.io
 
 .. |mergify| image:: https://img.shields.io/endpoint.svg?url=https://api.mergify.com/v1/badges/hardbyte/python-can&style=flat
    :target: https://mergify.io
