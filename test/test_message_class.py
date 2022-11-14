@@ -42,7 +42,7 @@ class TestMessageClass(unittest.TestCase):
     # The first run may take a second on CI runners and will hit the deadline
     @settings(
         max_examples=2000,
-        suppress_health_check=HealthCheck.too_slow,
+        suppress_health_check=[HealthCheck.too_slow],
         deadline=None if IS_GITHUB_ACTIONS else timedelta(milliseconds=500),
     )
     @pytest.mark.xfail(
