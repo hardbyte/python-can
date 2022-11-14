@@ -1,5 +1,5 @@
 """
-Ctypes wrapper module for IXXAT Virtual CAN Interface V3 on win32 systems
+Ctypes wrapper module for IXXAT Virtual CAN Interface V4 on win32 systems
 
 Copyright (C) 2016 Giuseppe Corbelli <giuseppe.corbelli@weightpack.com>
 """
@@ -70,11 +70,13 @@ PVCIDEVICEINFO = ctypes.POINTER(VCIDEVICEINFO)
 
 class CANLINESTATUS(ctypes.Structure):
     _fields_ = [
+        # current CAN operating mode. Value is a logical combination of
+        # one or more CAN_OPMODE_xxx constants
         ("bOpMode", ctypes.c_uint8),
-        ("bBtReg0", ctypes.c_uint8),
-        ("bBtReg1", ctypes.c_uint8),
-        ("bBusLoad", ctypes.c_uint8),
-        ("dwStatus", ctypes.c_uint32),
+        ("bBtReg0", ctypes.c_uint8),  # current bus timing register 0 value
+        ("bBtReg1", ctypes.c_uint8),  # current bus timing register 1 value
+        ("bBusLoad", ctypes.c_uint8),  # average bus load in percent (0..100)
+        ("dwStatus", ctypes.c_uint32),  # status of the CAN controller (see CAN_STATUS_)
     ]
 
 
@@ -83,11 +85,11 @@ PCANLINESTATUS = ctypes.POINTER(CANLINESTATUS)
 
 class CANCHANSTATUS(ctypes.Structure):
     _fields_ = [
-        ("sLineStatus", CANLINESTATUS),
-        ("fActivated", ctypes.c_uint32),
-        ("fRxOverrun", ctypes.c_uint32),
-        ("bRxFifoLoad", ctypes.c_uint8),
-        ("bTxFifoLoad", ctypes.c_uint8),
+        ("sLineStatus", CANLINESTATUS),  # current CAN line status
+        ("fActivated", ctypes.c_uint32),  # TRUE if the channel is activated
+        ("fRxOverrun", ctypes.c_uint32),  # TRUE if receive FIFO overrun occurred
+        ("bRxFifoLoad", ctypes.c_uint8),  # receive FIFO load in percent (0..100)
+        ("bTxFifoLoad", ctypes.c_uint8),  # transmit FIFO load in percent (0..100)
     ]
 
 
@@ -118,7 +120,7 @@ class CANMSGINFO(ctypes.Union):
             (
                 "bAddFlags",
                 ctypes.c_uint8,
-            ),  # extended flags (see CAN_MSGFLAGS2_ constants)
+            ),  # extended flags (see CAN_MSGFLAGS2_ constants). AKA bFlags2 in VCI v4
             ("bFlags", ctypes.c_uint8),  # flags (see CAN_MSGFLAGS_ constants)
             ("bAccept", ctypes.c_uint8),  # accept code (see CAN_ACCEPT_ constants)
         ]
@@ -153,10 +155,19 @@ PCANMSGINFO = ctypes.POINTER(CANMSGINFO)
 class CANMSG(ctypes.Structure):
     _fields_ = [
         ("dwTime", ctypes.c_uint32),
+        # CAN ID of the message in Intel format (aligned right) without RTR bit.
         ("dwMsgId", ctypes.c_uint32),
         ("uMsgInfo", CANMSGINFO),
         ("abData", ctypes.c_uint8 * 8),
     ]
+
+    def __str__(self) -> str:
+        return """ID: 0x{0:04x}{1} DLC: {2:02d} DATA: {3}""".format(
+            self.dwMsgId,
+            "[RTR]" if self.uMsgInfo.Bits.rtr else "",
+            self.uMsgInfo.Bits.dlc,
+            memoryview(self.abData)[: self.uMsgInfo.Bits.dlc].hex(sep=" "),
+        )
 
 
 PCANMSG = ctypes.POINTER(CANMSG)
