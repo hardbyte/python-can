@@ -216,7 +216,8 @@ MF4 (Measurement Data Format v4)
 --------------------------------
 
 Implements support for MF4 (Measurement Data Format v4) which is a proprietary
-format from ASAM, widely used in many automotive software (Vector CANape, ETAS INCA, dSPACE ControlDesk, etc.).
+format from ASAM (Association for Standardization of Automation and Measuring Systems), widely used in 
+many automotive software (Vector CANape, ETAS INCA, dSPACE ControlDesk, etc.).
 
 The data is stored in a compressed format which makes it compact.
 
