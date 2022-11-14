@@ -1,5 +1,5 @@
 """
-Ctypes wrapper module for IXXAT Virtual CAN Interface V3 on win32 systems
+Ctypes wrapper module for IXXAT Virtual CAN Interface V4 on win32 systems
 
 Copyright (C) 2016 Giuseppe Corbelli <giuseppe.corbelli@weightpack.com>
 """
@@ -106,20 +106,21 @@ VCI_E_DISCONNECTED = SEV_VCI_ERROR | 0x0019
 VCI_E_WRONG_FLASHFWVERSION = SEV_VCI_ERROR | 0x001A
 
 # Controller status
-CAN_STATUS_TXPEND = 0x01
-CAN_STATUS_OVRRUN = 0x02
-CAN_STATUS_ERRLIM = 0x04
-CAN_STATUS_BUSOFF = 0x08
-CAN_STATUS_ININIT = 0x10
-CAN_STATUS_BUSCERR = 0x20
+CAN_STATUS_TXPEND = 0x01  # transmission pending
+CAN_STATUS_OVRRUN = 0x02  # data overrun occurred
+CAN_STATUS_ERRLIM = 0x04  # error warning limit exceeded
+CAN_STATUS_BUSOFF = 0x08  # bus off status
+CAN_STATUS_ININIT = 0x10  # init mode active
+CAN_STATUS_BUSCERR = 0x20  # bus coupling error
 
 # Controller operating modes
-CAN_OPMODE_UNDEFINED = 0x00
-CAN_OPMODE_STANDARD = 0x01
-CAN_OPMODE_EXTENDED = 0x02
-CAN_OPMODE_ERRFRAME = 0x04
-CAN_OPMODE_LISTONLY = 0x08
-CAN_OPMODE_LOWSPEED = 0x10
+CAN_OPMODE_UNDEFINED = 0x00  # undefined
+CAN_OPMODE_STANDARD = 0x01  # reception of 11-bit id messages
+CAN_OPMODE_EXTENDED = 0x02  # reception of 29-bit id messages
+CAN_OPMODE_ERRFRAME = 0x04  # reception of error frames
+CAN_OPMODE_LISTONLY = 0x08  # listen only mode (TX passive)
+CAN_OPMODE_LOWSPEED = 0x10  # use low speed bus interface
+CAN_OPMODE_AUTOBAUD = 0x20  # automatic bit rate detection
 
 # Extended operating modes
 CAN_EXMODE_DISABLED = 0x00
@@ -167,13 +168,14 @@ CAN_FILTER_INCL = 0x03  # inclusive filtering (pass registered IDs)
 CAN_FILTER_EXCL = 0x04  # exclusive filtering (inhibit registered IDs)
 
 
+# message information flags (used by <CANMSGINFO.Bytes.bFlags>)
 CAN_MSGFLAGS_DLC = 0x0F  # [bit 0] data length code
 CAN_MSGFLAGS_OVR = 0x10  # [bit 4] data overrun flag
 CAN_MSGFLAGS_SRR = 0x20  # [bit 5] self reception request
 CAN_MSGFLAGS_RTR = 0x40  # [bit 6] remote transmission request
 CAN_MSGFLAGS_EXT = 0x80  # [bit 7] frame format (0=11-bit, 1=29-bit)
 
-
+# extended message information flags (used by <CANMSGINFO.Bytes.[bFlags2|bAddFlags]>)
 CAN_MSGFLAGS2_SSM = 0x01  # [bit 0] single shot mode
 CAN_MSGFLAGS2_HPM = 0x02  # [bit 1] high priority message
 CAN_MSGFLAGS2_EDL = 0x04  # [bit 2] extended data length
