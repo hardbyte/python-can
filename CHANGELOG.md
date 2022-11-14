@@ -1,3 +1,77 @@
+Version 4.1.0
+====
+
+Features
+--------
+
+### IO
+
+* The canutils logger preserves message direction (#1244) 
+  and uses common interface names (e.g. can0) instead of just 
+  channel numbers (#1271).
+* The ``can.logger`` script accepts the ``-a, --append`` option 
+  to add new data to an existing log file (#1326, #1327, #1361).
+  Currently only the blf-, canutils- and csv-formats are supported.
+* All CLI ``extra_args`` are passed to the bus, logger 
+  and player initialisation (#1366).
+
+### Type Annotations
+* python-can now includes the ``py.typed`` marker to support type checking 
+  according to PEP 561 (#1344).
+
+### Interface Improvements
+* The gs_usb interface can be selected by device index instead 
+  of USB bus/address. Loopback frames are now correctly marked 
+  with the ``is_rx`` flag (#1270).
+* The PCAN interface can be selected by its device ID instead 
+  of just the channel name (#1346).
+* The PCAN Bus implementation supports auto bus-off reset (#1345).
+* SocketCAN: Make ``find_available_interfaces()`` find slcanX interfaces (#1369).
+* Vector: Add xlGetReceiveQueueLevel, xlGenerateSyncPulse and 
+  xlFlushReceiveQueue to xldriver (#1387).
+* Vector: Raise a CanInitializationError, if the CAN settings can not 
+  be applied according to the arguments of ``VectorBus.__init__`` (#1426).
+
+Bug Fixes
+---------
+
+* Improve robustness of USB2CAN serial number detection (#1129).
+* Fix channel2int conversion (#1268, #1269).
+* Fix BLF timestamp conversion (#1266, #1273).
+* Fix timestamp handling in udp_multicast on macOS (#1275, #1278).
+* Fix failure to initiate the Neousys DLL (#1281).
+* Fix AttributeError in IscanError (#1292, #1293).
+* Add missing vector devices (#1296).
+* Fix error for DLC > 8 in ASCReader (#1299, #1301).
+* Set default mode for FileIOMessageWriter to wt instead of rt (#1303).
+* Fix conversion for port number from config file (#1309).
+* Fix fileno error on Windows (#1312, #1313, #1333).
+* Remove redundant ``writer.stop()`` call that throws error (#1316, #1317).
+* Detect and cast types of CLI ``extra_args`` (#1280, #1328).
+* Fix ASC/CANoe incompatibility due to timestamp format (#1315, #1362).
+* Fix MessageSync timings (#1372, #1374).
+* Fix file name for compressed files in SizedRotatingLogger (#1382, #1683).
+* Fix memory leak in neoVI bus where message_receipts grows with no limit (#1427).
+* Raise ValueError if gzip is used with incompatible log formats (#1429).
+
+Miscellaneous
+-------------
+
+* Allow ICSApiError to be pickled and un-pickled (#1341)
+* Sort interface names in CLI API to make documentation reproducible (#1342)
+* Exclude repository-configuration from git-archive (#1343)
+* Improve documentation (#1397, #1401, #1405, #1420, #1421)
+* Officially support Python 3.11 (#1423)
+
+Breaking Changes
+----------------
+
+* ``windows-curses`` was moved to optional dependencies (#1395). 
+  Use ``pip install python-can[viewer]`` if you are using the ``can.viewer`` 
+  script on Windows.
+* The attributes of ``can.interfaces.vector.VectorChannelConfig`` were renamed 
+  from camelCase to snake_case (#1422).
+
 Version 4.0.0
 ====
 
