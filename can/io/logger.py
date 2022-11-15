@@ -23,6 +23,7 @@ from .canutils import CanutilsLogWriter
 from .csv import CSVWriter
 from .sqlite import SqliteWriter
 from .printer import Printer
+from .trc import TRCWriter
 from ..typechecking import StringPathLike, FileLike, AcceptedIOType
 
 
@@ -36,6 +37,7 @@ class Logger(MessageWriter):  # pylint: disable=abstract-method
       * .csv: :class:`can.CSVWriter`
       * .db: :class:`can.SqliteWriter`
       * .log :class:`can.CanutilsLogWriter`
+      * .trc :class:`can.TRCWriter`
       * .txt :class:`can.Printer`
 
     Any of these formats can be used with gzip compression by appending
@@ -58,6 +60,7 @@ class Logger(MessageWriter):  # pylint: disable=abstract-method
         ".csv": CSVWriter,
         ".db": SqliteWriter,
         ".log": CanutilsLogWriter,
+        ".trc": TRCWriter,
         ".txt": Printer,
     }
 

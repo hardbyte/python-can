@@ -16,6 +16,7 @@ from .blf import BLFReader
 from .canutils import CanutilsLogReader
 from .csv import CSVReader
 from .sqlite import SqliteReader
+from .trc import TRCReader
 from ..typechecking import StringPathLike, FileLike, AcceptedIOType
 from ..message import Message
 
@@ -30,6 +31,7 @@ class LogReader(MessageReader):
       * .csv
       * .db
       * .log
+      * .trc
 
     Gzip compressed files can be used as long as the original
     files suffix is one of the above (e.g. filename.asc.gz).
@@ -56,6 +58,7 @@ class LogReader(MessageReader):
         ".csv": CSVReader,
         ".db": SqliteReader,
         ".log": CanutilsLogReader,
+        ".trc": TRCReader,
     }
 
     @staticmethod
