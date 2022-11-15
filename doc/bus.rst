@@ -15,24 +15,30 @@ and implements the :class:`~can.BusABC` API.
 
 A thread safe bus wrapper is also available, see `Thread safe bus`_.
 
-.. autoclass:: can.Bus
-    :class-doc-from: class
-    :show-inheritance:
-    :members:
-    :inherited-members:
-
-.. autoclass:: can.bus.BusState
-    :members:
-    :undoc-members:
-
 
 Transmitting
 ''''''''''''
 
 Writing individual messages to the bus is done by calling the :meth:`~can.BusABC.send` method
-and passing a :class:`~can.Message` instance. Periodic sending is controlled by the
-:ref:`broadcast manager <bcm>`.
+and passing a :class:`~can.Message` instance.
 
+.. code-block:: python
+    :emphasize-lines: 8
+
+    with can.Bus() as bus:
+       msg = can.Message(
+           arbitration_id=0xC0FFEE,
+           data=[0, 25, 0, 1, 3, 1, 4, 1],
+           is_extended_id=True
+       )
+    try:
+        bus.send(msg)
+        print(f"Message sent on {bus.channel_info}")
+    except can.CanError:
+        print("Message NOT sent")
+
+
+Periodic sending is controlled by the :ref:`broadcast manager <bcm>`.
 
 Receiving
 '''''''''
@@ -40,11 +46,12 @@ Receiving
 Reading from the bus is achieved by either calling the :meth:`~can.BusABC.recv` method or
 by directly iterating over the bus::
 
-    for msg in bus:
-        print(msg.data)
+    with can.Bus() as bus:
+        for msg in bus:
+            print(msg.data)
 
-Alternatively the :class:`~can.Listener` api can be used, which is a list of :class:`~can.Listener`
-subclasses that receive notifications when new messages arrive.
+Alternatively the :ref:`listeners_doc` api can be used, which is a list of
+:class:`~can.Listener` instances that receive notifications when new messages arrive.
 
 
 Filtering
@@ -66,6 +73,20 @@ Example defining two filters, one to pass 11-bit ID ``0x451``, the other to pass
 
 
 See :meth:`~can.BusABC.set_filters` for the implementation.
+
+Bus API
+'''''''
+
+.. autoclass:: can.Bus
+    :class-doc-from: class
+    :show-inheritance:
+    :members:
+    :inherited-members:
+
+.. autoclass:: can.bus.BusState
+    :members:
+    :undoc-members:
+
 
 Thread safe bus
 '''''''''''''''

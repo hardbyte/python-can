@@ -1,3 +1,5 @@
+.. _listeners_doc:
+
 Listeners
 =========
 
@@ -11,6 +13,12 @@ message, or by calling the method **on_message_received**.
 
 Listeners are registered with :ref:`notifier` object(s) which ensure they are
 notified whenever a new message is received.
+
+.. literalinclude:: ../examples/print_notifier.py
+    :language: python
+    :linenos:
+    :emphasize-lines: 8,9
+
 
 Subclasses of Listener that do not override **on_message_received** will cause
 :class:`NotImplementedError` to be thrown when a message is received on
