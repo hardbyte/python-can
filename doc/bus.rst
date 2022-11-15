@@ -23,19 +23,19 @@ Writing individual messages to the bus is done by calling the :meth:`~can.BusABC
 and passing a :class:`~can.Message` instance.
 
 .. code-block:: python
-    :emphasize-lines: 8
+   :emphasize-lines: 8
 
-    with can.Bus() as bus:
+   with can.Bus() as bus:
        msg = can.Message(
            arbitration_id=0xC0FFEE,
            data=[0, 25, 0, 1, 3, 1, 4, 1],
            is_extended_id=True
        )
-    try:
-        bus.send(msg)
-        print(f"Message sent on {bus.channel_info}")
-    except can.CanError:
-        print("Message NOT sent")
+       try:
+           bus.send(msg)
+           print(f"Message sent on {bus.channel_info}")
+       except can.CanError:
+           print("Message NOT sent")
 
 
 Periodic sending is controlled by the :ref:`broadcast manager <bcm>`.
