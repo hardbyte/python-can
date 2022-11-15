@@ -3,6 +3,9 @@ Vector
 
 This interface adds support for CAN controllers by `Vector`_. Only Windows is supported.
 
+Configuration
+-------------
+
 By default this library uses the channel configuration for CANalyzer.
 To use a different application, open **Vector Hardware Configuration** program and create
 a new application and assign the channels you may want to use.
