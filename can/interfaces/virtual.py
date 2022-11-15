@@ -51,7 +51,7 @@ class VirtualBus(BusABC):
     .. warning::
         This interface guarantees reliable delivery and message ordering, but does *not* implement rate
         limiting or ID arbitration/prioritization under high loads. Please refer to the section
-        :ref:`other_virtual_interfaces` for more information on this and a comparison to alternatives.
+        :ref:`virtual_interfaces_doc` for more information on this and a comparison to alternatives.
     """
 
     def __init__(
