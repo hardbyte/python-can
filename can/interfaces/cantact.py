@@ -20,7 +20,7 @@ try:
 except ImportError:
     cantact = None
     logger.warning(
-        "The CANtact module is not installed. Install it using `python -m pip install cantact`"
+        "The CANtact module is not installed. Install it using `pip install cantact`"
     )
 
 

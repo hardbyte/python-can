@@ -1,7 +1,18 @@
-.. _listeners_doc:
 
-Listeners
-=========
+Reading and Writing Messages
+============================
+
+.. _notifier:
+
+Notifier
+--------
+
+The Notifier object is used as a message distributor for a bus. Notifier creates a thread to read messages from the bus and distributes them to listeners.
+
+.. autoclass:: can.Notifier
+    :members:
+
+.. _listeners_doc:
 
 Listener
 --------
