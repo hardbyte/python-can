@@ -1,6 +1,16 @@
 Version 4.1.0
 ====
 
+Breaking Changes
+----------------
+
+* ``windows-curses`` was moved to optional dependencies (#1395). 
+  Use ``pip install python-can[viewer]`` if you are using the ``can.viewer`` 
+  script on Windows.
+* The attributes of ``can.interfaces.vector.VectorChannelConfig`` were renamed 
+  from camelCase to snake_case (#1422).
+
+
 Features
 --------
 
@@ -14,6 +24,7 @@ Features
   Currently only the blf-, canutils- and csv-formats are supported.
 * All CLI ``extra_args`` are passed to the bus, logger 
   and player initialisation (#1366).
+* Initial support for TRC files (#1217)
 
 ### Type Annotations
 * python-can now includes the ``py.typed`` marker to support type checking 
@@ -63,15 +74,7 @@ Miscellaneous
 * Exclude repository-configuration from git-archive (#1343)
 * Improve documentation (#1397, #1401, #1405, #1420, #1421)
 * Officially support Python 3.11 (#1423)
-
-Breaking Changes
-----------------
-
-* ``windows-curses`` was moved to optional dependencies (#1395). 
-  Use ``pip install python-can[viewer]`` if you are using the ``can.viewer`` 
-  script on Windows.
-* The attributes of ``can.interfaces.vector.VectorChannelConfig`` were renamed 
-  from camelCase to snake_case (#1422).
+* Migrate code coverage reporting from Codecov to Coveralls (#1430)
 
 Version 4.0.0
 ====
