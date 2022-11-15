@@ -31,6 +31,7 @@ Features
   xlFlushReceiveQueue to xldriver (#1387).
 * Vector: Raise a CanInitializationError, if the CAN settings can not 
   be applied according to the arguments of ``VectorBus.__init__`` (#1426).
+* Ixxat bus now implements BusState api and detects errors (#1141)
 
 Bug Fixes
 ---------
