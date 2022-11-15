@@ -199,3 +199,20 @@ The following class can be used to read messages from BLF file:
 
 .. autoclass:: can.BLFReader
     :members:
+
+TRC
+----
+
+Implements basic support for the TRC file format.
+
+
+.. note::
+   Comments and contributions are welcome on what file versions might be relevant.
+
+.. autoclass:: can.TRCWriter
+    :members:
+
+The following class can be used to read messages from TRC file:
+
+.. autoclass:: can.TRCReader
+    :members:
