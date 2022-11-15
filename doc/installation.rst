@@ -2,8 +2,7 @@ Installation
 ============
 
 
-Install the ``can`` package with ``pip``/``poetry`` or similar:
-::
+Install the ``can`` package from PyPi with ``pip`` or similar::
 
     $ pip install python-can
 

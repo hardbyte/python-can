@@ -7,6 +7,15 @@ Here we document the odds and ends that are more helpful for creating your own i
 or listeners but generally shouldn't be required to interact with python-can.
 
 
+BusABC
+------
+
+The :class:`~can.BusABC` class, as the name suggests, provides an abstraction of a CAN bus.
+The bus provides a wrapper around a physical or virtual CAN Bus.
+
+An interface specific instance of the :class:`~can.BusABC` is created by the :class:`~can.Bus`
+class, see :ref:`bus` for the user facing API.
+
 .. _businternals:
 
 

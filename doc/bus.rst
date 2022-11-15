@@ -3,15 +3,15 @@
 Bus
 ---
 
-The :class:`~can.BusABC` class, as the name suggests, provides an abstraction of a CAN bus.
-The bus provides a wrapper around a physical or virtual CAN Bus.
-An interface specific instance of the :class:`~can.BusABC` is created by the :class:`~can.Bus`
-class, for example::
+The :class:`~can.Bus` provides a wrapper around a physical or virtual CAN Bus.
+
+An interface specific instance is created by instantiating the :class:`~can.Bus`
+class with a particular ``interface``, for example::
 
     vector_bus = can.Bus(interface='vector', ...)
 
-That bus is then able to handle the interface specific software/hardware interactions
-and implements the :class:`~can.BusABC` API.
+The created bus is then able to handle the interface specific software/hardware interactions
+while giving the user the same top level API.
 
 A thread safe bus wrapper is also available, see `Thread safe bus`_.
 
@@ -50,8 +50,8 @@ by directly iterating over the bus::
         for msg in bus:
             print(msg.data)
 
-Alternatively the :ref:`listeners_doc` api can be used, which is a list of
-:class:`~can.Listener` instances that receive notifications when new messages arrive.
+Alternatively the :ref:`listeners_doc` api can be used, which is a list of various
+:class:`~can.Listener` implementations that receive and handle messages from a :class:`~can.Notifier`.
 
 
 Filtering
