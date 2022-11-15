@@ -37,12 +37,14 @@ Brief example of the library in action: connecting to a CAN bus, creating and se
 Contents:
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    installation
    configuration
    api
    interfaces
+   virtual-interfaces
+   plugin-interface
    scripts
    development
    history
