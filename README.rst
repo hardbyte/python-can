@@ -119,9 +119,6 @@ Discussion
 If you run into bugs, you can file them in our
 `issue tracker <https://github.com/hardbyte/python-can/issues>`__ on GitHub.
 
-There is also a `python-can <https://groups.google.com/forum/#!forum/python-can>`__
-mailing list for development discussion.
-
 `Stackoverflow <https://stackoverflow.com/questions/tagged/can+python>`__ has several
 questions and answers tagged with ``python+can``.
 
