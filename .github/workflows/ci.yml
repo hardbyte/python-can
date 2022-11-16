@@ -143,3 +143,25 @@ jobs:
         run: pipx run build
       - name: Check build artifacts
         run: pipx run twine check --strict dist/*
+      - name: Save artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: python-can-dist
+          path: ./dist
+
+  upload_pypi:
+    needs: [build]
+    runs-on: ubuntu-latest
+
+    # upload to PyPI only on release
+    if: github.event.release && github.event.action == 'published'
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: python-can-dist
+          path: dist
+
+      - uses: pypa/gh-action-pypi-publish@v1.4.2
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
