@@ -28,7 +28,7 @@ WaitForSingleObject: Optional[Callable[[int, int], int]]
 INFINITE: Optional[int]
 try:
     # Try builtin Python 3 Windows API
-    from _winapi import WaitForSingleObject, INFINITE
+    from _winapi import WaitForSingleObject, INFINITE       # type: ignore
 
     HAS_EVENTS = True
 except ImportError:
