@@ -62,7 +62,7 @@ Library Version                 Python
 ------------------------------  -----------
   2.x                           2.6+, 3.4+
   3.x                           2.7+, 3.5+
-  4.x *(currently on develop)*  3.7+
+  4.x                           3.7+
 ==============================  ===========
 
 
@@ -74,7 +74,7 @@ Features
 - receiving, sending, and periodically sending messages
 - normal and extended arbitration IDs
 - `CAN FD <https://en.wikipedia.org/wiki/CAN_FD>`__ support
-- many different loggers and readers supporting playback: ASC (CANalyzer format), BLF (Binary Logging Format by Vector), CSV, SQLite and Canutils log
+- many different loggers and readers supporting playback: ASC (CANalyzer format), BLF (Binary Logging Format by Vector), TRC, CSV, SQLite, and Canutils log
 - efficient in-kernel or in-hardware filtering of messages on supported interfaces
 - bus configuration reading from a file or from environment variables
 - command line tools for working with CAN buses (see the `docs <https://python-can.readthedocs.io/en/stable/scripts.html>`__)
@@ -83,6 +83,8 @@ Features
 
 Example usage
 -------------
+
+``pip install python-can``
 
 .. code:: python
 
@@ -116,9 +118,6 @@ Discussion
 
 If you run into bugs, you can file them in our
 `issue tracker <https://github.com/hardbyte/python-can/issues>`__ on GitHub.
-
-There is also a `python-can <https://groups.google.com/forum/#!forum/python-can>`__
-mailing list for development discussion.
 
 `Stackoverflow <https://stackoverflow.com/questions/tagged/can+python>`__ has several
 questions and answers tagged with ``python+can``.

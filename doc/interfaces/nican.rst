@@ -1,7 +1,7 @@
-NI-CAN
-======
+National Instruments NI-CAN
+===========================
 
-This interface adds support for CAN controllers by `National Instruments`_.
+This interface adds support for NI-CAN controllers by `National Instruments`_.
 
 
 .. warning::

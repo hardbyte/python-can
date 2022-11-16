@@ -1,5 +1,5 @@
-History and Roadmap
-===================
+History
+=======
 
 Background
 ----------
