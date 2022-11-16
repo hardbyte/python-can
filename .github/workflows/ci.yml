@@ -1,7 +1,11 @@
 name: Tests
 
-on: [push, pull_request]
-
+on:
+  release:
+    types: [ published ]
+  pull_request:
+  push:
+    branches: [ develop, main ]
 env:
   PY_COLORS: "1"
 
