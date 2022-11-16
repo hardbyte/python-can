@@ -390,7 +390,7 @@ class SmartFormatter(argparse.HelpFormatter):
             return super()._fill_text(text, width, indent)
 
 
-def parse_args(args):
+def parse_args(args: List[str]) -> Tuple:
     # Parse command line arguments
     parser = argparse.ArgumentParser(
         "python -m can.viewer",
