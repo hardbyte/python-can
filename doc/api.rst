@@ -17,33 +17,9 @@ A form of CAN interface is also required.
    listeners
    asyncio
    bcm
+   errors
    bit_timing
+   utils
    internal-api
 
 
-Utilities
----------
-
-
-.. autofunction:: can.detect_available_configs
-
-
-.. _notifier:
-
-Notifier
---------
-
-The Notifier object is used as a message distributor for a bus. Notifier creates a thread to read messages from the bus and distributes them to listeners.
-
-.. autoclass:: can.Notifier
-    :members:
-
-
-.. _errors:
-
-Errors
-------
-
-.. automodule:: can.exceptions
-    :members:
-    :show-inheritance:

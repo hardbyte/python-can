@@ -825,9 +825,7 @@ class IXXATBus(BusABC):
                         log.info(
                             CAN_INFO_MESSAGES.get(
                                 self._message.abData[0],
-                                "Unknown CAN info message code {}".format(
-                                    self._message.abData[0]
-                                ),
+                                f"Unknown CAN info message code {self._message.abData[0]}",
                             )
                         )
 
@@ -837,9 +835,7 @@ class IXXATBus(BusABC):
                         log.warning(
                             CAN_ERROR_MESSAGES.get(
                                 self._message.abData[0],
-                                "Unknown CAN error message code {}".format(
-                                    self._message.abData[0]
-                                ),
+                                f"Unknown CAN error message code {self._message.abData[0]}",
                             )
                         )
 
@@ -933,7 +929,7 @@ class IXXATBus(BusABC):
         else:
             _canlib.canChannelPostMessage(self._channel_handle, message)
 
-    def _send_periodic_internal(self, msg, period, duration=None):
+    def _send_periodic_internal(self, msgs, period, duration=None):
         """Send a message using built-in cyclic transmit list functionality."""
         if self._scheduler is None:
             self._scheduler = HANDLE()
@@ -945,7 +941,7 @@ class IXXATBus(BusABC):
             )  # TODO: confirm
             _canlib.canSchedulerActivate(self._scheduler, constants.TRUE)
         return CyclicSendTask(
-            self._scheduler, msg, period, duration, self._scheduler_resolution
+            self._scheduler, msgs, period, duration, self._scheduler_resolution
         )
 
     def shutdown(self):

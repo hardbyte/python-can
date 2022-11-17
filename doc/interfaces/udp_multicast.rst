@@ -16,7 +16,7 @@ sufficiently reliable for this interface to function properly.
 
 .. note::
     For an overview over the different virtual buses in this library and beyond, please refer
-    to the section :ref:`other_virtual_interfaces`. It also describes important limitations
+    to the section :ref:`virtual_interfaces_doc`. It also describes important limitations
     of this interface.
 
 Please refer to the `Bus class documentation`_ below for configuration options and useful resources

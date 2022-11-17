@@ -3,36 +3,42 @@
 Bus
 ---
 
-The :class:`~can.BusABC` class, as the name suggests, provides an abstraction of a CAN bus.
-The bus provides a wrapper around a physical or virtual CAN Bus.
-An interface specific instance of the :class:`~can.BusABC` is created by the :class:`~can.Bus`
-class, for example::
+The :class:`~can.Bus` provides a wrapper around a physical or virtual CAN Bus.
+
+An interface specific instance is created by instantiating the :class:`~can.Bus`
+class with a particular ``interface``, for example::
 
     vector_bus = can.Bus(interface='vector', ...)
 
-That bus is then able to handle the interface specific software/hardware interactions
-and implements the :class:`~can.BusABC` API.
+The created bus is then able to handle the interface specific software/hardware interactions
+while giving the user the same top level API.
 
 A thread safe bus wrapper is also available, see `Thread safe bus`_.
-
-.. autoclass:: can.Bus
-    :class-doc-from: class
-    :show-inheritance:
-    :members:
-    :inherited-members:
-
-.. autoclass:: can.bus.BusState
-    :members:
-    :undoc-members:
 
 
 Transmitting
 ''''''''''''
 
 Writing individual messages to the bus is done by calling the :meth:`~can.BusABC.send` method
-and passing a :class:`~can.Message` instance. Periodic sending is controlled by the
-:ref:`broadcast manager <bcm>`.
+and passing a :class:`~can.Message` instance.
 
+.. code-block:: python
+   :emphasize-lines: 8
+
+   with can.Bus() as bus:
+       msg = can.Message(
+           arbitration_id=0xC0FFEE,
+           data=[0, 25, 0, 1, 3, 1, 4, 1],
+           is_extended_id=True
+       )
+       try:
+           bus.send(msg)
+           print(f"Message sent on {bus.channel_info}")
+       except can.CanError:
+           print("Message NOT sent")
+
+
+Periodic sending is controlled by the :ref:`broadcast manager <bcm>`.
 
 Receiving
 '''''''''
@@ -40,11 +46,12 @@ Receiving
 Reading from the bus is achieved by either calling the :meth:`~can.BusABC.recv` method or
 by directly iterating over the bus::
 
-    for msg in bus:
-        print(msg.data)
+    with can.Bus() as bus:
+        for msg in bus:
+            print(msg.data)
 
-Alternatively the :class:`~can.Listener` api can be used, which is a list of :class:`~can.Listener`
-subclasses that receive notifications when new messages arrive.
+Alternatively the :ref:`listeners_doc` api can be used, which is a list of various
+:class:`~can.Listener` implementations that receive and handle messages from a :class:`~can.Notifier`.
 
 
 Filtering
@@ -66,6 +73,20 @@ Example defining two filters, one to pass 11-bit ID ``0x451``, the other to pass
 
 
 See :meth:`~can.BusABC.set_filters` for the implementation.
+
+Bus API
+'''''''
+
+.. autoclass:: can.Bus
+    :class-doc-from: class
+    :show-inheritance:
+    :members:
+    :inherited-members:
+
+.. autoclass:: can.bus.BusState
+    :members:
+    :undoc-members:
+
 
 Thread safe bus
 '''''''''''''''
