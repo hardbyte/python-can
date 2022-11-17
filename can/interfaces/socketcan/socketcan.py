@@ -388,7 +388,9 @@ class CyclicSendTask(
             can_id=self.task_id,
             nframes=0,
         )
-        log.debug(f"Reading properties of (cyclic) transmission task id={self.task_id}", )
+        log.debug(
+            f"Reading properties of (cyclic) transmission task id={self.task_id}",
+        )
         try:
             self.bcm_socket.send(check_header)
         except OSError as error:
