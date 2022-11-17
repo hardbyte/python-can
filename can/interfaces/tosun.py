@@ -83,6 +83,7 @@ class TosunBus(can.BusABC):
             kwargs['with_com'] = False
         try:
             self.device = TosunDevice(self.channels, **kwargs)
+            self.device.disconnect()
             count = self.device.channel_count('can', len(mappings))
             assert count == len(mappings)
             self.available = []
@@ -230,7 +231,6 @@ class TosunBus(can.BusABC):
     #     self.device.tsapp_configure_can_register()
 
     def __enter__(self):
-        self.device.disconnect()
         return self
 
     def shutdown(self) -> None:
