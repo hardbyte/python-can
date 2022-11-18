@@ -349,7 +349,7 @@ class CyclicSendTask(
         self.task_id = task_id
         self._tx_setup(self.messages)
 
-    def _tx_setup(self, messages: Sequence[Message], raise_if_task_exists=True) -> None:
+    def _tx_setup(self, messages: Sequence[Message], raise_if_task_exists: bool =True) -> None:
         # Create a low level packed frame to pass to the kernel
         body = bytearray()
         self.flags = CAN_FD_FRAME if messages[0].is_fd else 0
