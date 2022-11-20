@@ -65,6 +65,7 @@ Bug Fixes
 * Fix file name for compressed files in SizedRotatingLogger (#1382, #1683).
 * Fix memory leak in neoVI bus where message_receipts grows with no limit (#1427).
 * Raise ValueError if gzip is used with incompatible log formats (#1429).
+* Allow restarting of transmission tasks for socketcan (#1440)
 
 Miscellaneous
 -------------
@@ -72,9 +73,10 @@ Miscellaneous
 * Allow ICSApiError to be pickled and un-pickled (#1341)
 * Sort interface names in CLI API to make documentation reproducible (#1342)
 * Exclude repository-configuration from git-archive (#1343)
-* Improve documentation (#1397, #1401, #1405, #1420, #1421)
+* Improve documentation (#1397, #1401, #1405, #1420, #1421, #1434)
 * Officially support Python 3.11 (#1423)
 * Migrate code coverage reporting from Codecov to Coveralls (#1430)
+* Migrate building docs and publishing releases to PyPi from Travis-CI to GitHub Actions (#1433)
 
 Version 4.0.0
 ====
