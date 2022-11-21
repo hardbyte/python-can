@@ -89,7 +89,8 @@ Example usage
     # import the library
     import can
 
-    # create a bus instance
+    # create a bus instance using 'with' statement,
+    # this will cause bus.shutdown() to be called on the block exit;
     # many other interfaces are supported as well (see documentation)
     with can.Bus(interface='socketcan',
                   channel='vcan0',
