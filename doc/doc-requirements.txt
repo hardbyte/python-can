@@ -1,4 +1,4 @@
 sphinx>=5.2.3
 sphinxcontrib-programoutput
-sphinx_rtd_theme
 sphinx-inline-tabs
+furo
