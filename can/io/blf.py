@@ -119,8 +119,13 @@ def timestamp_to_systemtime(timestamp: float) -> TSystemTime:
 
 def systemtime_to_timestamp(systemtime: TSystemTime) -> float:
     try:
+        year_adjusted = (
+            systemtime[0]
+            if systemtime[0] >= 1971
+            else systemtime[0] + (1971 - systemtime[0])
+        )
         t = datetime.datetime(
-            systemtime[0],
+            year_adjusted,
             systemtime[1],
             systemtime[3],
             systemtime[4],
