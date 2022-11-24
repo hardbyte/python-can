@@ -61,7 +61,7 @@ def load_file_config(
     else:
         config.read(path)
 
-    _config = {}
+    _config: Dict[str, str] = {}
 
     if config.has_section(section):
         _config.update(config.items(section))
