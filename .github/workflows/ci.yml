@@ -5,7 +5,7 @@ on:
     types: [ published ]
   pull_request:
   push:
-    branches: [ develop, main ]
+
 env:
   PY_COLORS: "1"
 
