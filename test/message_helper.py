@@ -31,8 +31,8 @@ class ComparingMessagesTestCase:
         if message_1.equals(message_2, timestamp_delta=self.allowed_timestamp_delta):
             return
         elif self.preserves_channel:
-            print("Comparing: message 1: {!r}".format(message_1))
-            print("           message 2: {!r}".format(message_2))
+            print(f"Comparing: message 1: {message_1!r}")
+            print(f"           message 2: {message_2!r}")
             self.fail(
                 "messages are unequal with allowed timestamp delta {}".format(
                     self.allowed_timestamp_delta
@@ -46,8 +46,8 @@ class ComparingMessagesTestCase:
             ):
                 return
             else:
-                print("Comparing: message 1: {!r}".format(message_1))
-                print("           message 2: {!r}".format(message_2))
+                print(f"Comparing: message 1: {message_1!r}")
+                print(f"           message 2: {message_2!r}")
                 self.fail(
                     "messages are unequal with allowed timestamp delta {} even when ignoring channels".format(
                         self.allowed_timestamp_delta

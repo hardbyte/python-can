@@ -515,7 +515,7 @@ def parse_args(args: List[str]) -> Tuple:
     ] = {}
     if parsed_args.decode:
         if os.path.isfile(parsed_args.decode[0]):
-            with open(parsed_args.decode[0], "r", encoding="utf-8") as f:
+            with open(parsed_args.decode[0], encoding="utf-8") as f:
                 structs = f.readlines()
         else:
             structs = parsed_args.decode
