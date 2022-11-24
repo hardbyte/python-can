@@ -87,8 +87,8 @@ class TestMessageClass(unittest.TestCase):
         if is_valid:
             self.assertEqual(len(message), kwargs["dlc"])
         self.assertTrue(bool(message))
-        self.assertGreater(len("{}".format(message)), 0)
-        _ = "{}".format(message)
+        self.assertGreater(len(f"{message}"), 0)
+        _ = f"{message}"
         with self.assertRaises(Exception):
             _ = "{somespec}".format(
                 message

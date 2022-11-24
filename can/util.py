@@ -64,7 +64,7 @@ def load_file_config(
     _config = {}
 
     if config.has_section(section):
-        _config.update(dict((key, val) for key, val in config.items(section)))
+        _config.update({key: val for key, val in config.items(section)})
 
     return _config
 

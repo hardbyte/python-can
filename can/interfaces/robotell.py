@@ -396,7 +396,7 @@ class robotellBus(BusABC):
 
         serial = ""
         for idx in range(0, 8, 2):
-            serial += "{:02X}{:02X}-".format(sn1[idx], sn1[idx + 1])
+            serial += f"{sn1[idx]:02X}{sn1[idx + 1]:02X}-"
         for idx in range(0, 4, 2):
-            serial += "{:02X}{:02X}-".format(sn2[idx], sn2[idx + 1])
+            serial += f"{sn2[idx]:02X}{sn2[idx + 1]:02X}-"
         return serial[:-1]

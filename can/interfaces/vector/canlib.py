@@ -171,7 +171,7 @@ class VectorBus(BusABC):
             )
 
         self._app_name = app_name.encode() if app_name is not None else b""
-        self.channel_info = "Application %s: %s" % (
+        self.channel_info = "Application {}: {}".format(
             app_name,
             ", ".join(f"CAN {ch + 1}" for ch in self.channels),
         )

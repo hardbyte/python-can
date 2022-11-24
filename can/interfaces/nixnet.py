@@ -124,7 +124,7 @@ class NiXNETcanBus(BusABC):
             ) from None
 
         self._is_filtered = False
-        super(NiXNETcanBus, self).__init__(
+        super().__init__(
             channel=channel,
             can_filters=can_filters,
             bitrate=bitrate,

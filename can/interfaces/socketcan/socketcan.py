@@ -68,7 +68,7 @@ def bcm_header_factory(
         # requirements of this field, then we must add padding bytes until we
         # are aligned
         while curr_stride % field_alignment != 0:
-            results.append(("pad_{}".format(pad_index), ctypes.c_uint8))
+            results.append((f"pad_{pad_index}", ctypes.c_uint8))
             pad_index += 1
             curr_stride += 1
 
@@ -84,7 +84,7 @@ def bcm_header_factory(
     # Add trailing padding to align to a multiple of the largest scalar member
     # in the structure
     while curr_stride % alignment != 0:
-        results.append(("pad_{}".format(pad_index), ctypes.c_uint8))
+        results.append((f"pad_{pad_index}", ctypes.c_uint8))
         pad_index += 1
         curr_stride += 1
 

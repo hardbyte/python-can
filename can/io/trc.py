@@ -1,5 +1,3 @@
-# coding: utf-8
-
 """
 Reader and writer for can logging files in peak trc format
 
@@ -51,7 +49,7 @@ class TRCReader(MessageReader):
                      If this is a file-like object, is has to opened in text
                      read mode, not binary read mode.
         """
-        super(TRCReader, self).__init__(file, mode="r")
+        super().__init__(file, mode="r")
         self.file_version = TRCFileVersion.UNKNOWN
 
         if not self.file:
@@ -211,7 +209,7 @@ class TRCWriter(FileIOMessageWriter):
         :param channel: a default channel to use when the message does not
                         have a channel set
         """
-        super(TRCWriter, self).__init__(file, mode="w")
+        super().__init__(file, mode="w")
         self.channel = channel
         if type(file) is str:
             self.filepath = os.path.abspath(file)

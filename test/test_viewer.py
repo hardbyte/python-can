@@ -302,7 +302,7 @@ class CanViewerTest(unittest.TestCase):
 
                 return struct_t.pack(*data)
         else:
-            raise ValueError("Unknown command: 0x{:02X}".format(cmd))
+            raise ValueError(f"Unknown command: 0x{cmd:02X}")
 
     def test_pack_unpack(self):
         CANOPEN_TPDO1 = 0x180
