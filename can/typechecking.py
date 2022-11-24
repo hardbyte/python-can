@@ -11,10 +11,14 @@ import typing_extensions
 CanFilter: typing_extensions = typing_extensions.TypedDict(
     "CanFilter", {"can_id": int, "can_mask": int}
 )
+
+
 class CanFilterExtended(typing_extensions.TypedDict):
     can_id: int
     can_mask: int
     extended: bool
+
+
 CanFilters = typing.Sequence[typing.Union[CanFilter, CanFilterExtended]]
 
 # TODO: Once buffer protocol support lands in typing, we should switch to that,
@@ -36,8 +40,10 @@ AcceptedIOType = typing.Union[FileLike, StringPathLike]
 
 BusConfig = typing.NewType("BusConfig", typing.Dict[str, typing.Any])
 
+
 class AutoDetectedConfig(typing_extensions.TypedDict):
     interface: str
     channel: Channel
+
 
 ReadableBytesLike = typing.Union[bytes, bytearray, memoryview]
