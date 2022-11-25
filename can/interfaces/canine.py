@@ -270,11 +270,15 @@ class CANineBus(BusABC):
         """
         Identify CANine devices
         """
-        devs = usb.core.find(idProduct=0xC1B0, find_all=True)
+        channels = []
+        try:
+            channels = usb.core.find(idProduct=0xC1B0, find_all=True)
+        except usb.core.NoBackendError:
+            pass
         return [
             {
                 "interface": "canine",
-                "channel": usb.util.get_string(dev, dev.iSerialNumber),
+                "channel": usb.util.get_string(channel, channel.iSerialNumber),
             }
-            for dev in devs
+            for channel in channels
         ]
