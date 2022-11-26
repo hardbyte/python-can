@@ -123,7 +123,11 @@ class TosunBus(can.BusABC):
                 self.device.configure_baudrate(chl, **config)
 
             self.device.turbo_mode(turbo_enable)
-            self.device.connect()
+            try:
+                self.device.connect()
+            except TSMasterException as e:
+                self.device.finalize()
+                raise can.CanOperationError(str(e))
             try:
                 self.device.set_receive_fifo_status(fifo_status)
             except TSMasterException:
