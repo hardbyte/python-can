@@ -663,7 +663,7 @@ class PCANBasic:
             try:
                 aKey = winreg.OpenKey(aReg, r"SOFTWARE\PEAK-System\PEAK-Drivers")
                 winreg.CloseKey(aKey)
-            except WindowsError:
+            except OSError:
                 logger.error("Exception: The PEAK-driver couldn't be found!")
             finally:
                 winreg.CloseKey(aReg)

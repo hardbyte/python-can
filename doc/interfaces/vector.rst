@@ -15,7 +15,9 @@ the bus or in a config file.
 Channel should be given as a list of channels starting at 0.
 
 Here is an example configuration file connecting to CAN 1 and CAN 2 for an
-application named "python-can"::
+application named "python-can":
+
+::
 
     [default]
     interface = vector

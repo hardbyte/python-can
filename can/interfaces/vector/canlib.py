@@ -28,7 +28,7 @@ WaitForSingleObject: Optional[Callable[[int, int], int]]
 INFINITE: Optional[int]
 try:
     # Try builtin Python 3 Windows API
-    from _winapi import WaitForSingleObject, INFINITE
+    from _winapi import WaitForSingleObject, INFINITE  # type: ignore
 
     HAS_EVENTS = True
 except ImportError:
@@ -171,7 +171,7 @@ class VectorBus(BusABC):
             )
 
         self._app_name = app_name.encode() if app_name is not None else b""
-        self.channel_info = "Application %s: %s" % (
+        self.channel_info = "Application {}: {}".format(
             app_name,
             ", ".join(f"CAN {ch + 1}" for ch in self.channels),
         )

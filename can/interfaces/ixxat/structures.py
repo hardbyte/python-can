@@ -162,7 +162,7 @@ class CANMSG(ctypes.Structure):
     ]
 
     def __str__(self) -> str:
-        return """ID: 0x{0:04x}{1} DLC: {2:02d} DATA: {3}""".format(
+        return """ID: 0x{:04x}{} DLC: {:02d} DATA: {}""".format(
             self.dwMsgId,
             "[RTR]" if self.uMsgInfo.Bits.rtr else "",
             self.uMsgInfo.Bits.dlc,

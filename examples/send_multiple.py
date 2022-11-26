@@ -16,7 +16,10 @@ def producer(thread_id: int, message_count: int = 16) -> None:
     :param thread_id: the id of the thread/process
     :param message_count: the number of messages that shall be sent
     """
-    with can.Bus(interface="socketcan", channel="vcan0") as bus:  # type: ignore
+
+    # this uses the default configuration (for example from environment variables, or a
+    # config file) see https://python-can.readthedocs.io/en/stable/configuration.html
+    with can.Bus() as bus:  # type: ignore
         for i in range(message_count):
             msg = can.Message(
                 arbitration_id=0x0CF02200 + thread_id,

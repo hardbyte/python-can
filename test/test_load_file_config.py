@@ -30,9 +30,9 @@ class LoadFileConfigTest(unittest.TestCase):
         ) as tmp_config_file:
             content = []
             for section in sections:
-                content.append("[{}]".format(section))
+                content.append(f"[{section}]")
                 for k, v in self.configuration[section].items():
-                    content.append("{} = {}".format(k, v))
+                    content.append(f"{k} = {v}")
             tmp_config_file.write("\n".join(content))
             return tmp_config_file.name
 

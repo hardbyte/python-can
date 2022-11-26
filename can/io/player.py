@@ -106,7 +106,7 @@ class LogReader(MessageReader):
         return real_suffix, gzip.open(filename, mode)
 
     def __iter__(self) -> typing.Generator[Message, None, None]:
-        pass
+        raise NotImplementedError()
 
 
 class MessageSync:  # pylint: disable=too-few-public-methods

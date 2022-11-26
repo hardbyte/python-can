@@ -141,7 +141,7 @@ class ReaderWriterTest(unittest.TestCase, ComparingMessagesTestCase, metaclass=A
             ]
             assert (
                 "log_event" in attrs
-            ), "cannot check comments with this writer: {}".format(writer_constructor)
+            ), f"cannot check comments with this writer: {writer_constructor}"
 
         # get all test comments
         self.original_comments = TEST_COMMENTS if check_comments else ()

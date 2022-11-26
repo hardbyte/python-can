@@ -410,8 +410,8 @@ class KvaserBus(BusABC):
 
         """
 
-        log.info("CAN Filters: {}".format(can_filters))
-        log.info("Got configuration of: {}".format(kwargs))
+        log.info(f"CAN Filters: {can_filters}")
+        log.info(f"Got configuration of: {kwargs}")
         bitrate = kwargs.get("bitrate", 500000)
         tseg1 = kwargs.get("tseg1", 0)
         tseg2 = kwargs.get("tseg2", 0)

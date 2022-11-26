@@ -171,8 +171,8 @@ class NeoViBus(BusABC):
 
         super().__init__(channel=channel, can_filters=can_filters, **kwargs)
 
-        logger.info("CAN Filters: {}".format(can_filters))
-        logger.info("Got configuration of: {}".format(kwargs))
+        logger.info(f"CAN Filters: {can_filters}")
+        logger.info(f"Got configuration of: {kwargs}")
 
         if "override_library_name" in kwargs:
             ics.override_library_name(kwargs.get("override_library_name"))
@@ -215,12 +215,12 @@ class NeoViBus(BusABC):
         self._use_system_timestamp = bool(kwargs.get("use_system_timestamp", False))
         self._receive_own_messages = kwargs.get("receive_own_messages", True)
 
-        self.channel_info = "%s %s CH:%s" % (
+        self.channel_info = "{} {} CH:{}".format(
             self.dev.Name,
             self.get_serial_number(self.dev),
             self.channels,
         )
-        logger.info("Using device: {}".format(self.channel_info))
+        logger.info(f"Using device: {self.channel_info}")
 
         self.rx_buffer = deque()
         self.message_receipts = defaultdict(Event)
@@ -230,7 +230,7 @@ class NeoViBus(BusABC):
         try:
             channel = int(channel_name_or_id)
         except ValueError:
-            netid = "NETID_{}".format(channel_name_or_id.upper())
+            netid = f"NETID_{channel_name_or_id.upper()}"
             if hasattr(ics, netid):
                 channel = getattr(ics, netid)
             else:
@@ -298,9 +298,9 @@ class NeoViBus(BusABC):
             msg = ["No device"]
 
             if type_filter is not None:
-                msg.append("with type {}".format(type_filter))
+                msg.append(f"with type {type_filter}")
             if serial is not None:
-                msg.append("with serial {}".format(serial))
+                msg.append(f"with serial {serial}")
             msg.append("found.")
             raise CanInitializationError(" ".join(msg))
 

@@ -119,7 +119,7 @@ def __check_status(result, function, args):
         result = ctypes.c_ulong(result).value
 
     if result == constants.VCI_E_TIMEOUT:
-        raise VCITimeout("Function {} timed out".format(function._name))
+        raise VCITimeout(f"Function {function._name} timed out")
     elif result == constants.VCI_E_RXQUEUE_EMPTY:
         raise VCIRxQueueEmptyError()
     elif result == constants.VCI_E_NO_MORE_ITEMS:
@@ -469,7 +469,7 @@ class IXXATBus(BusABC):
         channel = int(channel)
 
         if bitrate not in self.CHANNEL_BITRATES[0]:
-            raise ValueError("Invalid bitrate {}".format(bitrate))
+            raise ValueError(f"Invalid bitrate {bitrate}")
 
         if rx_fifo_size <= 0:
             raise ValueError("rx_fifo_size must be > 0")
@@ -887,7 +887,7 @@ def _format_can_status(status_flags: int):
             status_flags &= ~flag
 
     if status_flags:
-        states.append("unknown state 0x{:02x}".format(status_flags))
+        states.append(f"unknown state 0x{status_flags:02x}")
 
     if states:
         return "CAN status message: {}".format(", ".join(states))

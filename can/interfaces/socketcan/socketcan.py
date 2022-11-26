@@ -68,7 +68,7 @@ def bcm_header_factory(
         # requirements of this field, then we must add padding bytes until we
         # are aligned
         while curr_stride % field_alignment != 0:
-            results.append(("pad_{}".format(pad_index), ctypes.c_uint8))
+            results.append((f"pad_{pad_index}", ctypes.c_uint8))
             pad_index += 1
             curr_stride += 1
 
@@ -84,7 +84,7 @@ def bcm_header_factory(
     # Add trailing padding to align to a multiple of the largest scalar member
     # in the structure
     while curr_stride % alignment != 0:
-        results.append(("pad_{}".format(pad_index), ctypes.c_uint8))
+        results.append((f"pad_{pad_index}", ctypes.c_uint8))
         pad_index += 1
         curr_stride += 1
 
@@ -349,7 +349,9 @@ class CyclicSendTask(
         self.task_id = task_id
         self._tx_setup(self.messages)
 
-    def _tx_setup(self, messages: Sequence[Message]) -> None:
+    def _tx_setup(
+        self, messages: Sequence[Message], raise_if_task_exists: bool = True
+    ) -> None:
         # Create a low level packed frame to pass to the kernel
         body = bytearray()
         self.flags = CAN_FD_FRAME if messages[0].is_fd else 0
@@ -363,7 +365,8 @@ class CyclicSendTask(
             ival1 = 0.0
             ival2 = self.period
 
-        self._check_bcm_task()
+        if raise_if_task_exists:
+            self._check_bcm_task()
 
         header = build_bcm_transmit_header(
             self.task_id, count, ival1, ival2, self.flags, nframes=len(messages)
@@ -375,7 +378,7 @@ class CyclicSendTask(
 
     def _check_bcm_task(self) -> None:
         # Do a TX_READ on a task ID, and check if we get EINVAL. If so,
-        # then we are referring to a CAN message with the existing ID
+        # then we are referring to a CAN message with an existing ID
         check_header = build_bcm_header(
             opcode=CAN_BCM_TX_READ,
             flags=0,
@@ -387,12 +390,19 @@ class CyclicSendTask(
             can_id=self.task_id,
             nframes=0,
         )
+        log.debug(
+            f"Reading properties of (cyclic) transmission task id={self.task_id}",
+        )
         try:
             self.bcm_socket.send(check_header)
         except OSError as error:
             if error.errno != errno.EINVAL:
                 raise can.CanOperationError("failed to check", error.errno) from error
+            else:
+                log.debug("Invalid argument - transmission task not known to kernel")
         else:
+            # No exception raised - transmission task with this ID exists in kernel.
+            # Existence of an existing transmission task might not be a problem!
             raise can.CanOperationError(
                 f"A periodic task for task ID {self.task_id} is already in progress "
                 "by the SocketCAN Linux layer"
@@ -438,7 +448,7 @@ class CyclicSendTask(
         send_bcm(self.bcm_socket, header + body)
 
     def start(self) -> None:
-        """Start a periodic task by sending TX_SETUP message to Linux kernel.
+        """Restart a periodic task by sending TX_SETUP message to Linux kernel.
 
         It verifies presence of the particular BCM task through sending TX_READ
         message to Linux kernel prior to scheduling.
@@ -446,7 +456,7 @@ class CyclicSendTask(
         :raises ValueError:
             If the task referenced by ``task_id`` is already running.
         """
-        self._tx_setup(self.messages)
+        self._tx_setup(self.messages, raise_if_task_exists=False)
 
 
 class MultiRateCyclicSendTask(CyclicSendTask):
