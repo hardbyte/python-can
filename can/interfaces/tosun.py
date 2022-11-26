@@ -123,11 +123,7 @@ class TosunBus(can.BusABC):
                 self.device.configure_baudrate(chl, **config)
 
             self.device.turbo_mode(turbo_enable)
-            try:
-                self.device.connect()
-            except TSMasterException as e:
-                self.device.finalize()
-                raise can.CanOperationError(str(e))
+            self.device.connect()
             try:
                 self.device.set_receive_fifo_status(fifo_status)
             except TSMasterException:
@@ -137,6 +133,7 @@ class TosunBus(can.BusABC):
                 maxlen=rx_queue_size
             )  # type: Deque[Any]               # channel, raw_msg
         except TSMasterException as e:
+            self.device.finalize()
             raise can.CanOperationError(str(e))
 
     def _recv_from_queue(self) -> Tuple[can.Message, bool]:
