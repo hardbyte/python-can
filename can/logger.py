@@ -1,18 +1,3 @@
-"""
-logger.py logs CAN traffic to the terminal and to a file on disk.
-
-    logger.py can0
-
-See candump in the can-utils package for a C implementation.
-Efficient filtering has been implemented for the socketcan backend.
-For example the command
-
-    logger.py can0 F03000:FFF000
-
-Will filter for can frames with a can_id containing XXF03XXX.
-
-Dynamic Controls 2010
-"""
 import re
 import sys
 import argparse

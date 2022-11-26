@@ -117,7 +117,7 @@ def __check_status(result, function, args):
             :class:VCIError
     """
     if result == constants.VCI_E_TIMEOUT:
-        raise VCITimeout("Function {} timed out".format(function._name))
+        raise VCITimeout(f"Function {function._name} timed out")
     elif result == constants.VCI_E_RXQUEUE_EMPTY:
         raise VCIRxQueueEmptyError()
     elif result == constants.VCI_E_NO_MORE_ITEMS:
@@ -1011,7 +1011,7 @@ def _format_can_status(status_flags: int):
             status_flags &= ~flag
 
     if status_flags:
-        states.append("unknown state 0x{:02x}".format(status_flags))
+        states.append(f"unknown state 0x{status_flags:02x}")
 
     if states:
         return "CAN status message: {}".format(", ".join(states))
