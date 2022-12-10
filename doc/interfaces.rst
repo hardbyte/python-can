@@ -9,10 +9,10 @@ device is different, you should carefully go through your interface's
 documentation.
 
 .. note::
-   The *Interface Names* are listed in :doc:`configuration`.
+   The standard *Interface Names* are listed in :doc:`configuration`.
 
 
-The available hardware interfaces are:
+The standard available hardware interfaces of a normal python-can installation are:
 
 .. toctree::
    :maxdepth: 1
@@ -39,3 +39,5 @@ The available hardware interfaces are:
    interfaces/usb2can
    interfaces/vector
 
+
+Additional interface types can be added via the :ref:`plugin interface`, or by installing a module that utilises the :ref:`plugin interface`.
