@@ -52,3 +52,25 @@ create an instance of the bus in the **python-can** API:
 
     bus = can.Bus(interface="interface_name", channel=0)
 
+
+
+Example Interface Plugins
+---------------
+
+The table below lists interface drivers that can be added by installing additional modules that utilise the plugin API. These modules are optional dependencies of python-can.
+
+Note: The below modules are maintained by other authors and any issues should be reported in the relevant repository for that module.
+
++----------------------------+-------------------------------------------------------+
+| Name                       | Description                                           |
++============================+=======================================================+
+| `python-can-cvector`_      | Cython based version of the 'VectorBus'               |
++----------------------------+-------------------------------------------------------+
+| `python-can-remote`_       | CAN over network bridge                               |
++----------------------------+-------------------------------------------------------+
+| `python-can-sontheim`_     | CAN Driver for Sontheim CAN interfaces (e.g. CANfox)  |
++----------------------------+-------------------------------------------------------+
+
+.. _python-can-cvector: https://github.com/zariiii9003/python-can-cvector
+.. _python-can-remote: https://github.com/christiansandberg/python-can-remote
+.. _python-can-sontheim: https://github.com/MattWoodhead/python-can-sontheim
