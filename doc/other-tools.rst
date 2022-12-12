@@ -72,4 +72,4 @@ Other CAN related tools, programs etc.
 |
 |
 .. note::
-See also the available plugins for python-can in :doc:`plugin interface`.
+See also the available plugins for python-can in :ref:`plugin interface`.
