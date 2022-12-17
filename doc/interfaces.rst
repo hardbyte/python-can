@@ -40,4 +40,4 @@ The following hardware interfaces are included in python-can:
    interfaces/vector
 
 
-Additional interface types can be added via the :ref:`plugin interface`, or by installing a module that utilises the :ref:`plugin interface`.
+Additional interface types can be added via the :ref:`plugin interface`, or by installing a third party package that utilises the :ref:`plugin interface`.
