@@ -9,7 +9,7 @@ device is different, you should carefully go through your interface's
 documentation.
 
 .. note::
-   The standard *Interface Names* are listed in :doc:`configuration`.
+   The *Interface Names* are listed in :doc:`configuration`.
 
 
 The standard available hardware interfaces of a normal python-can installation are:
