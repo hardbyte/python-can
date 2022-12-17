@@ -12,7 +12,7 @@ documentation.
    The *Interface Names* are listed in :doc:`configuration`.
 
 
-The standard available hardware interfaces of a normal python-can installation are:
+The following hardware interfaces are included in python-can:
 
 .. toctree::
    :maxdepth: 1
