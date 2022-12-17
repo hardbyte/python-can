@@ -55,7 +55,7 @@ create an instance of the bus in the **python-can** API:
 
 
 Example Interface Plugins
----------------
+-------------------------
 
 The table below lists interface drivers that can be added by installing additional modules that utilise the plugin API. These modules are optional dependencies of python-can.
 
