@@ -40,10 +40,6 @@ extras_require = {
         'windows-curses;platform_system=="Windows" and platform_python_implementation=="CPython"'
     ],
 }
-# Add a tag that allows the user to install all optional dependencies at once
-extras_require["all_optional"] = set(
-    dep for deps in extras_require.values() for dep in deps
-)
 
 setup(
     # Description
