@@ -373,6 +373,16 @@ class TestPCANBus(unittest.TestCase):
         with self.assertRaises(CanInitializationError):
             self.bus = can.Bus(bustype="pcan", auto_reset=True)
 
+    def test_peak_fd_bus_constructor_regression(self):
+        # Tests that the following issue has been fixed:
+        # https://github.com/hardbyte/python-can/issues/1458
+        params = {'interface': 'pcan', 'fd': True, 'f_clock': 80000000, 'nom_brp': 1,
+                  'nom_tseg1': 129, 'nom_tseg2': 30, 'nom_sjw': 1, 'data_brp': 1,
+                  'data_tseg1': 9, 'data_tseg2': 6, 'data_sjw': 1, 'channel': 'PCAN_USBBUS1'}
+
+        can.Bus(**params)
+
+
 
 if __name__ == "__main__":
     unittest.main()
