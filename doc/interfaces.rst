@@ -9,10 +9,10 @@ device is different, you should carefully go through your interface's
 documentation.
 
 .. note::
-   The standard *Interface Names* are listed in :doc:`configuration`.
+   The *Interface Names* are listed in :doc:`configuration`.
 
 
-The standard available hardware interfaces of a normal python-can installation are:
+The following hardware interfaces are included in python-can:
 
 .. toctree::
    :maxdepth: 1
@@ -40,4 +40,4 @@ The standard available hardware interfaces of a normal python-can installation a
    interfaces/vector
 
 
-Additional interface types can be added via the :ref:`plugin interface`, or by installing a module that utilises the :ref:`plugin interface`.
+Additional interface types can be added via the :ref:`plugin interface`, or by installing a third party package that utilises the :ref:`plugin interface`.

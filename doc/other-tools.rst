@@ -4,7 +4,7 @@ Other CAN bus tools
 In order to keep the project maintainable, the scope of the package is limited to providing common
 abstractions to different hardware devices, and a basic suite of utilities for sending and
 receiving messages on a CAN bus. Other tools are available that either extend the functionality
-of python-can, or provide complementry features that an engineer dealing with CAN will find useful.
+of python-can, or provide complementary features that python-can users might find useful.
 
 Some of these tools are listed below for convenience.
 
