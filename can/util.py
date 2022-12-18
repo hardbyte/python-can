@@ -233,25 +233,6 @@ def _create_bus_config(config: Dict[str, Any]) -> typechecking.BusConfig:
     if "data_bitrate" in config:
         config["data_bitrate"] = int(config["data_bitrate"])
 
-    # Create bit timing configuration if given
-    timing_conf = {}
-    for key in (
-        "f_clock",
-        "brp",
-        "tseg1",
-        "tseg2",
-        "sjw",
-        "nof_samples",
-        "btr0",
-        "btr1",
-    ):
-        if key in config:
-            timing_conf[key] = int(str(config[key]), base=0)
-            del config[key]
-    if timing_conf:
-        timing_conf["bitrate"] = config["bitrate"]
-        config["timing"] = can.BitTiming(**timing_conf)
-
     return cast(typechecking.BusConfig, config)
 
 
