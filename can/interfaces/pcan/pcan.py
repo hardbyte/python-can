@@ -113,8 +113,8 @@ class PcanBus(BusABC):
         """A PCAN USB interface to CAN.
 
         On top of the usual :class:`~can.Bus` methods provided,
-        the PCAN interface includes the :meth:`~can.interface.pcan.PcanBus.flash`
-        and :meth:`~can.interface.pcan.PcanBus.status` methods.
+        the PCAN interface includes the :meth:`flash`
+        and :meth:`status` methods.
 
         :param str channel:
             The can interface name. An example would be 'PCAN_USBBUS1'.
@@ -218,7 +218,7 @@ class PcanBus(BusABC):
             channel = self._find_channel_by_dev_id(device_id)
 
             if channel is None:
-                err_msg = "Cannot find a channel with ID {:08x}".format(device_id)
+                err_msg = f"Cannot find a channel with ID {device_id:08x}"
                 raise ValueError(err_msg)
 
         self.channel_info = str(channel)
@@ -249,7 +249,7 @@ class PcanBus(BusABC):
                 f_clock = "{}={}".format("f_clock", kwargs.get("f_clock", None))
 
             fd_parameters_values = [f_clock] + [
-                "{}={}".format(key, kwargs.get(key, None))
+                f"{key}={kwargs.get(key, None)}"
                 for key in PCAN_FD_PARAMETER_LIST
                 if kwargs.get(key, None) is not None
             ]
@@ -350,7 +350,7 @@ class PcanBus(BusABC):
             for b in bits(error):
                 stsReturn = self.m_objPCANBasic.GetErrorText(b, 0x9)
                 if stsReturn[0] != PCAN_ERROR_OK:
-                    text = "An error occurred. Error-code's text ({0:X}h) couldn't be retrieved".format(
+                    text = "An error occurred. Error-code's text ({:X}h) couldn't be retrieved".format(
                         error
                     )
                 else:

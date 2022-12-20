@@ -1,31 +1,21 @@
 .. _ixxatdoc:
 
-IXXAT Virtual CAN Interface
-===========================
+IXXAT Virtual Communication Interface
+=====================================
 
-Interface to `IXXAT <http://www.ixxat.com/>`__ Virtual CAN Interface V3 SDK. Works on Windows.
+Interface to `IXXAT <http://www.ixxat.com/>`__ Virtual Communication Interface V3 SDK. Works on Windows.
 
 The Linux ECI SDK is currently unsupported, however on Linux some devices are
 supported with :doc:`socketcan`.
 
-The :meth:`~can.interfaces.ixxat.canlib.IXXATBus.send_periodic` method is supported
+The :meth:`~can.BusABC.send_periodic` method is supported
 natively through the on-board cyclic transmit list.
 Modifying cyclic messages is not possible. You will need to stop it, and then
 start a new periodic message.
 
 
-Bus
----
-
-.. autoclass:: can.interfaces.ixxat.IXXATBus
-    :members:
-
-.. autoclass:: can.interfaces.ixxat.canlib.CyclicSendTask
-    :members:
-
-
-Configuration file
-------------------
+Configuration
+-------------
 The simplest configuration file would be::
 
     [default]
@@ -74,6 +64,32 @@ To get a list of all connected IXXAT you can use the function ``get_ixxat_hwids(
     ...     print("Found IXXAT with hardware id '%s'." % hwid)
     Found IXXAT with hardware id 'HW441489'.
     Found IXXAT with hardware id 'HW107422'.
+
+
+Bus
+---
+
+.. autoclass:: can.interfaces.ixxat.IXXATBus
+    :members:
+
+Implementation based on vcinpl.dll
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: can.interfaces.ixxat.canlib_vcinpl.IXXATBus
+    :members:
+
+.. autoclass:: can.interfaces.ixxat.canlib_vcinpl.CyclicSendTask
+    :members:
+
+Implementation based on vcinpl2.dll
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: can.interfaces.ixxat.canlib_vcinpl2.IXXATBus
+    :members:
+
+.. autoclass:: can.interfaces.ixxat.canlib_vcinpl2.CyclicSendTask
+    :members:
+
 
 
 Internals

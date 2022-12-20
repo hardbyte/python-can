@@ -1,19 +1,21 @@
+.. _SocketCAN:
+
 SocketCAN
 =========
 
-The `SocketCAN`_ documentation can be found in the Linux kernel docs at
-``networking`` directory. Quoting from the SocketCAN Linux documentation::
+The SocketCAN documentation can be found in the `Linux kernel docs`_ in the
+``networking`` directory. Quoting from the SocketCAN Linux documentation:
 
-> The socketcan package is an implementation of CAN protocols
-> (Controller Area Network) for Linux.  CAN is a networking technology
-> which has widespread use in automation, embedded devices, and
-> automotive fields.  While there have been other CAN implementations
-> for Linux based on character devices, SocketCAN uses the Berkeley
-> socket API, the Linux network stack and implements the CAN device
-> drivers as network interfaces.  The CAN socket API has been designed
-> as similar as possible to the TCP/IP protocols to allow programmers,
-> familiar with network programming, to easily learn how to use CAN
-> sockets.
+   The socketcan package is an implementation of CAN protocols
+   (Controller Area Network) for Linux.  CAN is a networking technology
+   which has widespread use in automation, embedded devices, and
+   automotive fields.  While there have been other CAN implementations
+   for Linux based on character devices, SocketCAN uses the Berkeley
+   socket API, the Linux network stack and implements the CAN device
+   drivers as network interfaces.  The CAN socket API has been designed
+   as similar as possible to the TCP/IP protocols to allow programmers,
+   familiar with network programming, to easily learn how to use CAN
+   sockets.
 
 .. important::
 
@@ -284,7 +286,7 @@ to ensure usage of SocketCAN Linux API. The most important differences are:
 
 .. External references
 
-.. _SocketCAN: https://www.kernel.org/doc/Documentation/networking/can.txt
+.. _Linux kernel docs: https://www.kernel.org/doc/Documentation/networking/can.txt
 .. _Intrepid kernel module: https://github.com/intrepidcs/intrepid-socketcan-kernel-module
 .. _Intrepid user-space daemon: https://github.com/intrepidcs/icsscand
 .. _can-utils: https://github.com/linux-can/can-utils

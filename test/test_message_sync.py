@@ -87,7 +87,7 @@ class TestMessageSync(unittest.TestCase, ComparingMessagesTestCase):
 
         # the handling of the messages itself also takes some time:
         # ~0.001 s/message on a ThinkPad T560 laptop (Ubuntu 18.04, i5-6200U)
-        assert 0 < took < inc(len(messages) * (0.005 + 0.003)), "took: {}s".format(took)
+        assert 0 < took < inc(len(messages) * (0.005 + 0.003)), f"took: {took}s"
 
         self.assertMessagesEqual(messages, collected)
 

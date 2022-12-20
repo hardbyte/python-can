@@ -5,9 +5,10 @@ Interface for Chinese Robotell compatible interfaces (win32/linux).
 import io
 import time
 import logging
+from typing import Optional
 
 from can import BusABC, Message
-from ..exceptions import CanInterfaceNotImplementedError
+from ..exceptions import CanInterfaceNotImplementedError, CanOperationError
 
 logger = logging.getLogger(__name__)
 
@@ -377,12 +378,11 @@ class robotellBus(BusABC):
         except Exception as exception:
             raise CanOperationError("Cannot fetch fileno") from exception
 
-    def get_serial_number(self, timeout):
+    def get_serial_number(self, timeout: Optional[int]) -> Optional[str]:
         """Get serial number of the slcan interface.
-        :type timeout: int or None
+
         :param timeout:
             seconds to wait for serial number or None to wait indefinitely
-        :rtype str or None
         :return:
             None on timeout or a str object.
         """
@@ -396,7 +396,7 @@ class robotellBus(BusABC):
 
         serial = ""
         for idx in range(0, 8, 2):
-            serial += "{:02X}{:02X}-".format(sn1[idx], sn1[idx + 1])
+            serial += f"{sn1[idx]:02X}{sn1[idx + 1]:02X}-"
         for idx in range(0, 4, 2):
-            serial += "{:02X}{:02X}-".format(sn2[idx], sn2[idx + 1])
+            serial += f"{sn2[idx]:02X}{sn2[idx + 1]:02X}-"
         return serial[:-1]

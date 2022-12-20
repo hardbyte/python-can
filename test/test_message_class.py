@@ -7,7 +7,7 @@ from copy import copy, deepcopy
 import pickle
 from datetime import timedelta
 
-from hypothesis import given, settings
+from hypothesis import HealthCheck, given, settings
 import hypothesis.errors
 import hypothesis.strategies as st
 
@@ -42,12 +42,13 @@ class TestMessageClass(unittest.TestCase):
     # The first run may take a second on CI runners and will hit the deadline
     @settings(
         max_examples=2000,
+        suppress_health_check=[HealthCheck.too_slow],
         deadline=None if IS_GITHUB_ACTIONS else timedelta(milliseconds=500),
     )
     @pytest.mark.xfail(
         IS_WINDOWS and IS_PYPY,
         raises=hypothesis.errors.Flaky,
-        reason="Hypothesis generates inconistent timestamp floats on Windows+PyPy-3.7",
+        reason="Hypothesis generates inconsistent timestamp floats on Windows+PyPy-3.7",
     )
     def test_methods(self, **kwargs):
         is_valid = not (
@@ -86,8 +87,8 @@ class TestMessageClass(unittest.TestCase):
         if is_valid:
             self.assertEqual(len(message), kwargs["dlc"])
         self.assertTrue(bool(message))
-        self.assertGreater(len("{}".format(message)), 0)
-        _ = "{}".format(message)
+        self.assertGreater(len(f"{message}"), 0)
+        _ = f"{message}"
         with self.assertRaises(Exception):
             _ = "{somespec}".format(
                 message

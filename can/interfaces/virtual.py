@@ -40,7 +40,7 @@ class VirtualBus(BusABC):
     an identifier for connected buses.
 
     Implements :meth:`can.BusABC._detect_available_configs`; see
-    :meth:`can.VirtualBus._detect_available_configs` for how it
+    :meth:`_detect_available_configs` for how it
     behaves here.
 
     .. note::
@@ -51,7 +51,7 @@ class VirtualBus(BusABC):
     .. warning::
         This interface guarantees reliable delivery and message ordering, but does *not* implement rate
         limiting or ID arbitration/prioritization under high loads. Please refer to the section
-        :ref:`other_virtual_interfaces` for more information on this and a comparison to alternatives.
+        :ref:`virtual_interfaces_doc` for more information on this and a comparison to alternatives.
     """
 
     def __init__(
@@ -84,7 +84,7 @@ class VirtualBus(BusABC):
             self.channel.append(self.queue)
 
     def _check_if_open(self) -> None:
-        """Raises :class:`~can.CanOperationError` if the bus is not open.
+        """Raises :exc:`~can.exceptions.CanOperationError` if the bus is not open.
 
         Has to be called in every method that accesses the bus.
         """

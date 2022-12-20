@@ -8,6 +8,8 @@ This file is execfile()d with the current directory set to its containing dir.
 
 import sys
 import os
+import ctypes
+from unittest.mock import MagicMock
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -15,6 +17,7 @@ import os
 sys.path.insert(0, os.path.abspath(".."))
 
 import can  # pylint: disable=wrong-import-position
+from can import ctypesutil
 
 # -- General configuration -----------------------------------------------------
 
@@ -45,11 +48,11 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.graphviz",
     "sphinxcontrib.programoutput",
-    "sphinx_autodoc_typehints",
+    "sphinx_inline_tabs",
 ]
 
 # Now, you can use the alias name as a new role, e.g. :issue:`123`.
-extlinks = {"issue": ("https://github.com/hardbyte/python-can/issues/%s/", "issue ")}
+extlinks = {"issue": ("https://github.com/hardbyte/python-can/issues/%s/", "issue #%s")}
 
 intersphinx_mapping = {"python": ("https://docs.python.org/3/", None)}
 
@@ -111,11 +114,31 @@ autodoc_default_flags = ["members", "show-inheritance"]
 # Keep cached intersphinx inventories indefinitely
 intersphinx_cache_limit = -1
 
+# location of typehints
+autodoc_typehints = "description"
+
+# disable specific warnings
+nitpick_ignore = [
+    # Ignore warnings for type aliases. Remove once Sphinx supports PEP613
+    ("py:class", "can.typechecking.BusConfig"),
+    ("py:class", "can.typechecking.CanFilter"),
+    ("py:class", "can.typechecking.CanFilterExtended"),
+    ("py:class", "can.typechecking.AutoDetectedConfig"),
+    # intersphinx fails to reference some builtins
+    ("py:class", "asyncio.events.AbstractEventLoop"),
+    ("py:class", "_thread.allocate_lock"),
+]
+
+# mock windows specific attributes
+autodoc_mock_imports = ["win32com"]
+ctypes.windll = MagicMock()
+ctypesutil.HRESULT = ctypes.c_long
+
 # -- Options for HTML output --------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = "default"
+html_theme = "furo"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the

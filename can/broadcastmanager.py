@@ -39,7 +39,7 @@ class CyclicTask(abc.ABC):
     def stop(self) -> None:
         """Cancel this periodic task.
 
-        :raises can.CanError:
+        :raises ~can.exceptions.CanError:
             If stop is called on an already stopped task.
         """
 
@@ -248,7 +248,15 @@ class ThreadBasedCyclicSendTask(
 
         if HAS_EVENTS:
             self.period_ms = int(round(period * 1000, 0))
-            self.event = win32event.CreateWaitableTimer(None, False, None)
+            try:
+                self.event = win32event.CreateWaitableTimerEx(
+                    None,
+                    None,
+                    win32event.CREATE_WAITABLE_TIMER_HIGH_RESOLUTION,
+                    win32event.TIMER_ALL_ACCESS,
+                )
+            except (AttributeError, OSError):
+                self.event = win32event.CreateWaitableTimer(None, False, None)
 
         self.start()
 

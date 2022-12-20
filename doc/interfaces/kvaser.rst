@@ -20,7 +20,7 @@ Internals
 The Kvaser :class:`~can.Bus` object with a physical CAN Bus can be operated in two
 modes; ``single_handle`` mode with one shared bus handle used for both reading and
 writing to the CAN bus, or with two separate bus handles.
-Two separate handles are needed if receiving and sending messages are done in
+Two separate handles are needed if receiving and sending messages in
 different threads (see `Kvaser documentation
 <http://www.kvaser.com/canlib-webhelp/page_user_guide_threads_applications.html>`_).
 
@@ -40,9 +40,11 @@ in the ``recv`` method. If a message does not match any of the filters,
 
 
 Custom methods
-~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~
 
 This section contains Kvaser driver specific methods.
 
 
 .. automethod:: can.interfaces.kvaser.canlib.KvaserBus.get_stats
+.. autoclass::  can.interfaces.kvaser.structures.BusStatistics
+    :members:

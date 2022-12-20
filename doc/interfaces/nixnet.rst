@@ -1,12 +1,12 @@
-NI-XNET
-=======
+National Instruments NI-XNET
+============================
 
 This interface adds support for NI-XNET CAN controllers by `National Instruments`_.
 
 
-.. warning::
+.. note::
 
-    NI-XNET only seems to support windows platforms.
+    NI-XNET only supports windows platforms.
 
 
 Bus
