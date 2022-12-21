@@ -18,8 +18,8 @@ Example
 
     import can
 
-    bus1 = can.interface.Bus('test', bustype='virtual')
-    bus2 = can.interface.Bus('test', bustype='virtual')
+    bus1 = can.interface.Bus('test', interface='virtual')
+    bus2 = can.interface.Bus('test', interface='virtual')
 
     msg1 = can.Message(arbitration_id=0xabcde, data=[1,2,3])
     bus1.send(msg1)
@@ -34,8 +34,8 @@ Example
 
     import can
 
-    bus1 = can.interface.Bus('test', bustype='virtual', preserve_timestamps=True)
-    bus2 = can.interface.Bus('test', bustype='virtual')
+    bus1 = can.interface.Bus('test', interface='virtual', preserve_timestamps=True)
+    bus2 = can.interface.Bus('test', interface='virtual')
 
     msg1 = can.Message(timestamp=1639740470.051948, arbitration_id=0xabcde, data=[1,2,3])
 

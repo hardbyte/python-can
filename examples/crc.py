@@ -76,9 +76,7 @@ if __name__ == "__main__":
     for interface, channel in [("socketcan", "vcan0")]:
         print(f"Carrying out crc test with {interface} interface")
 
-        with can.Bus(  # type: ignore
-            interface=interface, channel=channel, bitrate=500000
-        ) as BUS:
+        with can.Bus(interface=interface, channel=channel, bitrate=500000) as BUS:
             crc_send(BUS)
 
     time.sleep(2)
