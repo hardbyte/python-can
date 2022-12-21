@@ -88,7 +88,7 @@ class Bus(BusABC):  # pylint: disable=abstract-method
     """
 
     @staticmethod
-    @deprecated_args_alias(bustype="interface")
+    @deprecated_args_alias(bustype="interface")  # Deprecated since python-can 4.2
     def __new__(  # type: ignore  # pylint: disable=keyword-arg-before-vararg
         cls: Any,
         channel: Optional[Channel] = None,
