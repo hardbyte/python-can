@@ -36,7 +36,11 @@ if sys.version_info >= (3, 8):
     from importlib.metadata import entry_points
 
     # See https://docs.python.org/3/library/importlib.metadata.html#entry-points, "Compatibility Note".
-    entries = entry_points(group="can.interface") if sys.version_info >= (3, 10) else entry_points().get("can.interface", ())
+    entries = (
+        entry_points(group="can.interface")
+        if sys.version_info >= (3, 10)
+        else entry_points().get("can.interface", ())
+    )
     BACKENDS.update(
         {interface.name: tuple(interface.value.split(":")) for interface in entries}
     )
