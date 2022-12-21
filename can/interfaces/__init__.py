@@ -6,7 +6,7 @@ import sys
 from typing import Dict, Tuple
 
 # interface_name => (module, classname)
-BACKENDS: Dict[str, Tuple[str, ...]] = {
+BACKENDS: Dict[str, Tuple[str, str]] = {
     "kvaser": ("can.interfaces.kvaser", "KvaserBus"),
     "socketcan": ("can.interfaces.socketcan", "SocketcanBus"),
     "serial": ("can.interfaces.serial.serial_can", "SerialBus"),
