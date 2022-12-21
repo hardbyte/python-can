@@ -6,7 +6,7 @@ import sys
 from typing import Dict, Tuple
 
 # interface_name => (module, classname)
-BACKENDS: Dict[str, Tuple[str, str]] = {
+BACKENDS: Dict[str, Tuple[str, str]] = cast(Dict[str, Tuple[str, str]], {
     "kvaser": ("can.interfaces.kvaser", "KvaserBus"),
     "socketcan": ("can.interfaces.socketcan", "SocketcanBus"),
     "serial": ("can.interfaces.serial.serial_can", "SerialBus"),
@@ -30,7 +30,7 @@ BACKENDS: Dict[str, Tuple[str, str]] = {
     "neousys": ("can.interfaces.neousys", "NeousysBus"),
     "etas": ("can.interfaces.etas", "EtasBus"),
     "socketcand": ("can.interfaces.socketcand", "SocketCanDaemonBus"),
-}
+})
 
 if sys.version_info >= (3, 8):
     from importlib.metadata import entry_points
