@@ -48,7 +48,9 @@ if sys.version_info >= (3, 8):
         BACKENDS.update(
             {
                 # This cast in wrong if interface.value is formatted badly, but we just fail later
-                interface.name: cast(Tuple[str, str], tuple(interface.value.split(":", maxsplit=1)))
+                interface.name: cast(
+                    Tuple[str, str], tuple(interface.value.split(":", maxsplit=1))
+                )
                 for interface in entry_points().get("can.interface", [])
             }
         )
