@@ -3,7 +3,7 @@ Interfaces contain low level implementations that interact with CAN hardware.
 """
 
 import sys
-from typing import cast, Dict, Iterable, Tuple
+from typing import cast, Dict, Tuple
 
 # interface_name => (module, classname)
 BACKENDS: Dict[str, Tuple[str, str]] = {
@@ -36,7 +36,6 @@ if sys.version_info >= (3, 8):
     from importlib.metadata import entry_points
 
     # See https://docs.python.org/3/library/importlib.metadata.html#entry-points, "Compatibility Note".
-    # The second variant causes a deprecation warning on Python >= 3.10.
     if sys.version_info >= (3, 10):
         BACKENDS.update(
             {
@@ -45,6 +44,7 @@ if sys.version_info >= (3, 8):
             }
         )
     else:
+        # The entry_points().get(...) causes a deprecation warning on Python >= 3.10.
         BACKENDS.update(
             {
                 # This cast in wrong if interface.value is formatted badly, but we just fail later
@@ -57,11 +57,10 @@ if sys.version_info >= (3, 8):
 else:
     from pkg_resources import iter_entry_points
 
-    entries = iter_entry_points("can.interface")
     BACKENDS.update(
         {
             interface.name: (interface.module_name, interface.attrs[0])
-            for interface in entries
+            for interface in iter_entry_points("can.interface")
         }
     )
 
