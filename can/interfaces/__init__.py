@@ -42,11 +42,17 @@ if sys.version_info >= (3, 8):
     # The second variant causes a deprecation warning on Python >= 3.10.
     if sys.version_info >= (3, 10):
         BACKENDS.update(
-            {interface.name: (interface.module, interface.attr) for interface in entry_points(group="can.interface")}
+            {
+                interface.name: (interface.module, interface.attr)
+                for interface in entry_points(group="can.interface")
+            }
         )
     else:
         BACKENDS.update(
-            {interface.name: tuple(interface.value.split(":")) for interface in entry_points().get("can.interface", [])}
+            {
+                interface.name: tuple(interface.value.split(":"))
+                for interface in entry_points().get("can.interface", [])
+            }
         )
 else:
     from pkg_resources import iter_entry_points
