@@ -39,14 +39,15 @@ if sys.version_info >= (3, 8):
     from importlib.metadata import entry_points, EntryPoint
 
     # See https://docs.python.org/3/library/importlib.metadata.html#entry-points, "Compatibility Note".
-    entries: Iterable[EntryPoint] = (  # type: ignore
-        entry_points(group="can.interface")
-        if sys.version_info >= (3, 10)
-        else entry_points().get("can.interface", [])
-    )
-    BACKENDS.update(
-        {interface.name: (interface.module, interface.attr) for interface in entries}
-    )
+    # The second variant causes a deprecation warning on Python >= 3.10.
+    if sys.version_info >= (3, 10):
+        BACKENDS.update(
+            {interface.name: (interface.module, interface.attr) for interface in entry_points(group="can.interface")}
+        )
+    else:
+        BACKENDS.update(
+            {interface.name: tuple(interface.value.split(":")) for interface in entry_points().get("can.interface", [])}
+        )
 else:
     from pkg_resources import iter_entry_points
 
