@@ -40,7 +40,7 @@ if sys.version_info >= (3, 8):
 
     entries = entry_points().get("can.interface", ())
     BACKENDS.update(
-        {interface.name: tuple(interface.value.split(":")) for interface in entries}
+        {interface.name: (interface.module, interface.attr) for interface in entries}
     )
 else:
     from pkg_resources import iter_entry_points
