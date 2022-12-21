@@ -47,7 +47,6 @@ if sys.version_info >= (3, 8):
         # The entry_points().get(...) causes a deprecation warning on Python >= 3.10.
         BACKENDS.update(
             {
-                # This cast in wrong if interface.value is formatted badly, but we just fail later
                 interface.name: cast(
                     Tuple[str, str], tuple(interface.value.split(":", maxsplit=1))
                 )
