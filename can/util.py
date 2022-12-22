@@ -227,12 +227,22 @@ def _create_bus_config(config: Dict[str, Any]) -> typechecking.BusConfig:
             raise ValueError("Port config must be inside 0-65535 range!")
 
     try:
-        config["timing"] = can.BitTimingFd(**config)
+        if set(typechecking.BitTimingFdDict.__annotations__).issubset(set(config)):
+            config["timing"] = can.BitTimingFd(
+                **{
+                    key: int(config[key])
+                    for key in typechecking.BitTimingFdDict.__annotations__
+                }
+            )
+        elif set(typechecking.BitTimingDict.__annotations__).issubset(set(config)):
+            config["timing"] = can.BitTiming(
+                **{
+                    key: int(config[key])
+                    for key in typechecking.BitTimingDict.__annotations__
+                }
+            )
     except (ValueError, TypeError):
-        try:
-            config["timing"] = can.BitTiming(**config)
-        except (ValueError, TypeError):
-            pass
+        pass
 
     if "bitrate" in config:
         config["bitrate"] = int(config["bitrate"])
