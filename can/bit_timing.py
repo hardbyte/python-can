@@ -58,21 +58,21 @@ class BitTiming(Mapping):
             "nof_samples": nof_samples,
         }
 
-        if not (5_000 <= bitrate <= 2_000_000):
+        if not 5_000 <= bitrate <= 2_000_000:
             raise ValueError(f"bitrate (={bitrate}) must be in [5,000...2,000,000].")
 
-        if not (1 <= tseg1 <= 16):
+        if not 1 <= tseg1 <= 16:
             raise ValueError(f"tseg1 (={tseg1}) must be in [1...16].")
 
-        if not (1 <= tseg2 <= 8):
+        if not 1 <= tseg2 <= 8:
             raise ValueError(f"tseg2 (={tseg2}) must be in [1...8].")
 
         nbt = self.nbt
-        if not (8 <= nbt <= 25):
+        if not 8 <= nbt <= 25:
             raise ValueError(f"nominal bit time (={nbt}) must be in [8...25].")
 
         brp = self.brp
-        if not (1 <= brp <= 64):
+        if not 1 <= brp <= 64:
             raise ValueError(f"bitrate prescaler (={brp}) must be in [1...64].")
 
         actual_bitrate = f_clock / (nbt * brp)
@@ -82,7 +82,7 @@ class BitTiming(Mapping):
                 f"from the requested bitrate (={bitrate})"
             )
 
-        if not (1 <= sjw <= 4):
+        if not 1 <= sjw <= 4:
             raise ValueError(f"sjw (={sjw}) must be in [1...4].")
 
         if sjw > tseg2:
@@ -165,7 +165,7 @@ class BitTiming(Mapping):
                     continue
 
         if not possible_solutions:
-            raise ValueError(f"No suitable bit timings found.")
+            raise ValueError("No suitable bit timings found.")
 
         return sorted(
             possible_solutions, key=lambda x: x.oscillator_tolerance, reverse=True
@@ -324,31 +324,32 @@ class BitTimingFd(Mapping):
             "data_sjw": data_sjw,
         }
 
-        if not (5_000 <= nom_bitrate <= 2_000_000):
+        if not 5_000 <= nom_bitrate <= 2_000_000:
             raise ValueError(
                 f"nom_bitrate (={nom_bitrate}) must be in [5,000...2,000,000]."
             )
 
-        if not (25_000 <= data_bitrate <= 8_000_000):
+        if not 25_000 <= data_bitrate <= 8_000_000:
             raise ValueError(
                 f"data_bitrate (={data_bitrate}) must be in [25,000...8,000,000]."
             )
 
         if data_bitrate < nom_bitrate:
             raise ValueError(
-                f"data_bitrate (={data_bitrate}) must be greater than or equal to nom_bitrate (={nom_bitrate})"
+                f"data_bitrate (={data_bitrate}) must be greater than or "
+                f"equal to nom_bitrate (={nom_bitrate})"
             )
 
-        if not (2 <= nom_tseg1 <= 256):
+        if not 2 <= nom_tseg1 <= 256:
             raise ValueError(f"nom_tseg1 (={nom_tseg1}) must be in [2...256].")
 
-        if not (1 <= nom_tseg2 <= 128):
+        if not 1 <= nom_tseg2 <= 128:
             raise ValueError(f"nom_tseg2 (={nom_tseg2}) must be in [1...128].")
 
-        if not (1 <= data_tseg1 <= 32):
+        if not 1 <= data_tseg1 <= 32:
             raise ValueError(f"data_tseg1 (={data_tseg1}) must be in [1...32].")
 
-        if not (1 <= data_tseg2 <= 16):
+        if not 1 <= data_tseg2 <= 16:
             raise ValueError(f"data_tseg2 (={data_tseg2}) must be in [1...16].")
 
         nbt = self.nbt
@@ -360,13 +361,13 @@ class BitTimingFd(Mapping):
             raise ValueError(f"data bit time (={dbt}) must be at least 8.")
 
         nom_brp = self.nom_brp
-        if not (1 <= nom_brp <= 256):
+        if not 1 <= nom_brp <= 256:
             raise ValueError(
                 f"nominal bitrate prescaler (={nom_brp}) must be in [1...256]."
             )
 
         data_brp = self.data_brp
-        if not (1 <= data_brp <= 256):
+        if not 1 <= data_brp <= 256:
             raise ValueError(
                 f"data bitrate prescaler (={data_brp}) must be in [1...256]."
             )
@@ -385,7 +386,7 @@ class BitTimingFd(Mapping):
                 f"from the requested bitrate (={data_bitrate})"
             )
 
-        if not (1 <= nom_sjw <= 128):
+        if not 1 <= nom_sjw <= 128:
             raise ValueError(f"nom_sjw (={nom_sjw}) must be in [1...128].")
 
         if nom_sjw > nom_tseg2:
@@ -393,7 +394,7 @@ class BitTimingFd(Mapping):
                 f"nom_sjw (={nom_sjw}) must not be greater than nom_tseg2 (={nom_tseg2})."
             )
 
-        if not (1 <= data_sjw <= 16):
+        if not 1 <= data_sjw <= 16:
             raise ValueError(f"data_sjw (={data_sjw}) must be in [1...128].")
 
         if data_sjw > data_tseg2:
@@ -421,46 +422,51 @@ class BitTimingFd(Mapping):
             )
 
         possible_solutions: List[BitTimingFd] = []
-        for nom_brp in range(1, 257):
-            nbt = round(int(f_clock / (nom_bitrate * nom_brp)))
-            if nbt < 8:
-                continue
 
-            nom_tseg1 = int(round(nom_sample_point / 100 * nbt)) - 1
-            nom_tseg2 = nbt - nom_tseg1 - 1
+        def _generate_bit_timings() -> Iterator[BitTimingFdDict]:
+            for nom_brp in range(1, 257):
+                nbt = round(int(f_clock / (nom_bitrate * nom_brp)))
+                if nbt < 8:
+                    continue
 
-            for nom_sjw in range(1, 129):
-                for data_brp in range(1, 257):
-                    dbt = round(int(f_clock / (data_bitrate * data_brp)))
-                    if dbt < 8:
-                        continue
+                nom_tseg1 = int(round(nom_sample_point / 100 * nbt)) - 1
+                nom_tseg2 = nbt - nom_tseg1 - 1
 
-                    data_tseg1 = int(round(data_sample_point / 100 * dbt)) - 1
-                    data_tseg2 = dbt - data_tseg1 - 1
-
-                    for data_sjw in range(1, 17):
-                        try:
-                            bt = BitTimingFd(
-                                f_clock=f_clock,
-                                nom_bitrate=nom_bitrate,
-                                nom_tseg1=nom_tseg1,
-                                nom_tseg2=nom_tseg2,
-                                nom_sjw=nom_sjw,
-                                data_bitrate=data_bitrate,
-                                data_tseg1=data_tseg1,
-                                data_tseg2=data_tseg2,
-                                data_sjw=data_sjw,
-                            )
-                            if (
-                                abs(bt.nom_sample_point - nom_sample_point) < 1
-                                and abs(bt.data_sample_point - bt.data_sample_point) < 1
-                            ):
-                                possible_solutions.append(bt)
-                        except ValueError:
+                for nom_sjw in range(1, 129):
+                    for data_brp in range(1, 257):
+                        dbt = round(int(f_clock / (data_bitrate * data_brp)))
+                        if dbt < 8:
                             continue
 
+                        data_tseg1 = int(round(data_sample_point / 100 * dbt)) - 1
+                        data_tseg2 = dbt - data_tseg1 - 1
+
+                        for data_sjw in range(1, 17):
+                            yield {
+                                "f_clock": f_clock,
+                                "nom_bitrate": nom_bitrate,
+                                "nom_tseg1": nom_tseg1,
+                                "nom_tseg2": nom_tseg2,
+                                "nom_sjw": nom_sjw,
+                                "data_bitrate": data_bitrate,
+                                "data_tseg1": data_tseg1,
+                                "data_tseg2": data_tseg2,
+                                "data_sjw": data_sjw,
+                            }
+
+        for bit_timings in _generate_bit_timings():
+            try:
+                bt = BitTimingFd(**bit_timings)
+                if (
+                    abs(bt.nom_sample_point - nom_sample_point) < 1
+                    and abs(bt.data_sample_point - bt.data_sample_point) < 1
+                ):
+                    possible_solutions.append(bt)
+            except ValueError:
+                continue
+
         if not possible_solutions:
-            raise ValueError(f"No suitable bit timings found.")
+            raise ValueError("No suitable bit timings found.")
 
         # prefer using the same prescaler for arbitration and data phase
         same_prescaler = list(
