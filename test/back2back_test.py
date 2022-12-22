@@ -43,14 +43,14 @@ class Back2BackTestCase(unittest.TestCase):
     def setUp(self):
         self.bus1 = can.Bus(
             channel=self.CHANNEL_1,
-            bustype=self.INTERFACE_1,
+            interface=self.INTERFACE_1,
             bitrate=self.BITRATE,
             fd=TEST_CAN_FD,
             single_handle=True,
         )
         self.bus2 = can.Bus(
             channel=self.CHANNEL_2,
-            bustype=self.INTERFACE_2,
+            interface=self.INTERFACE_2,
             bitrate=self.BITRATE,
             fd=TEST_CAN_FD,
             single_handle=True,
@@ -166,7 +166,7 @@ class Back2BackTestCase(unittest.TestCase):
         """The same as `test_message_direction` but testing with `receive_own_messages=True`."""
         bus3 = can.Bus(
             channel=self.CHANNEL_2,
-            bustype=self.INTERFACE_2,
+            interface=self.INTERFACE_2,
             bitrate=self.BITRATE,
             fd=TEST_CAN_FD,
             single_handle=True,
@@ -188,7 +188,7 @@ class Back2BackTestCase(unittest.TestCase):
         """
         bus3 = can.Bus(
             channel=self.CHANNEL_2,
-            bustype=self.INTERFACE_2,
+            interface=self.INTERFACE_2,
             bitrate=self.BITRATE,
             fd=TEST_CAN_FD,
             single_handle=True,
@@ -347,8 +347,8 @@ class BasicTestEtas(Back2BackTestCase):
 @unittest.skipUnless(TEST_INTERFACE_SOCKETCAN, "skip testing of socketcan")
 class SocketCanBroadcastChannel(unittest.TestCase):
     def setUp(self):
-        self.broadcast_bus = can.Bus(channel="", bustype="socketcan")
-        self.regular_bus = can.Bus(channel="vcan0", bustype="socketcan")
+        self.broadcast_bus = can.Bus(channel="", interface="socketcan")
+        self.regular_bus = can.Bus(channel="vcan0", interface="socketcan")
 
     def tearDown(self):
         self.broadcast_bus.shutdown()
@@ -370,14 +370,14 @@ class TestThreadSafeBus(Back2BackTestCase):
     def setUp(self):
         self.bus1 = can.ThreadSafeBus(
             channel=self.CHANNEL_1,
-            bustype=self.INTERFACE_1,
+            interface=self.INTERFACE_1,
             bitrate=self.BITRATE,
             fd=TEST_CAN_FD,
             single_handle=True,
         )
         self.bus2 = can.ThreadSafeBus(
             channel=self.CHANNEL_2,
-            bustype=self.INTERFACE_2,
+            interface=self.INTERFACE_2,
             bitrate=self.BITRATE,
             fd=TEST_CAN_FD,
             single_handle=True,

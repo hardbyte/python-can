@@ -45,6 +45,7 @@ Contents:
    interfaces
    virtual-interfaces
    plugin-interface
+   other-tools
    scripts
    development
    history

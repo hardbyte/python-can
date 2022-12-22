@@ -30,7 +30,7 @@ You can also specify the interface and channel for each Bus instance::
 
     import can
 
-    bus = can.interface.Bus(bustype='socketcan', channel='vcan0', bitrate=500000)
+    bus = can.interface.Bus(interface='socketcan', channel='vcan0', bitrate=500000)
 
 
 Configuration File
