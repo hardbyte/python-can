@@ -48,3 +48,24 @@ class AutoDetectedConfig(typing_extensions.TypedDict):
 
 
 ReadableBytesLike = typing.Union[bytes, bytearray, memoryview]
+
+
+class BitTimingDict(typing_extensions.TypedDict):
+    f_clock: int
+    bitrate: int
+    tseg1: int
+    tseg2: int
+    sjw: int
+    nof_samples: int
+
+
+class BitTimingFdDict(typing_extensions.TypedDict):
+    f_clock: int
+    nom_bitrate: int
+    nom_tseg1: int
+    nom_tseg2: int
+    nom_sjw: int
+    data_bitrate: int
+    data_tseg1: int
+    data_tseg2: int
+    data_sjw: int

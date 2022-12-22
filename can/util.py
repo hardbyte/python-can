@@ -226,6 +226,14 @@ def _create_bus_config(config: Dict[str, Any]) -> typechecking.BusConfig:
         if not 0 < port < 65535:
             raise ValueError("Port config must be inside 0-65535 range!")
 
+    try:
+        config["timing"] = can.BitTimingFd(**config)
+    except (ValueError, TypeError):
+        try:
+            config["timing"] = can.BitTiming(**config)
+        except (ValueError, TypeError):
+            pass
+
     if "bitrate" in config:
         config["bitrate"] = int(config["bitrate"])
     if "fd" in config:

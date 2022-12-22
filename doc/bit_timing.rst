@@ -44,6 +44,7 @@ using the config file:
 
 .. autoclass:: can.BitTiming
 
+.. autoclass:: can.BitTimingFd
 
 .. _Wikipedia: https://en.wikipedia.org/wiki/CAN_bus#Bit_timing
 .. _Kvaser: https://www.kvaser.com/about-can/the-can-protocol/can-bit-timing/
