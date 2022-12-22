@@ -6,8 +6,13 @@ from typing import List, Optional, Tuple, Union, Deque, Any
 import can
 import can.typechecking
 import ctypes
-from can import CanInitializationError
 from can.bus import LOG
+from can.exceptions import (
+    CanError,
+    CanInterfaceNotImplementedError,
+    CanOperationError,
+    CanInitializationError,
+)
 
 from tosun import TSCanMessage, TSCanFdMessage, TSMasterException, TosunDevice, TSMasterMessageType
 
@@ -208,8 +213,10 @@ class TosunBus(can.BusABC):
 
     def send(self, msg: can.Message, timeout: Optional[float] = 50, sync: bool = True) -> None:
         try:
-            if msg.channel is None:
+            if len(self.available) > 0 and msg.channel is None:
                 msg.channel = self.available[0]
+            if msg.channel not in self.available:
+                raise CanOperationError(f'Channel: {msg.channel} not in {self.available}')
             msg = tosun_convert_msg(msg)
             self.device.transmit(msg, sync, timeout=timeout)
         except TSMasterException as e:
