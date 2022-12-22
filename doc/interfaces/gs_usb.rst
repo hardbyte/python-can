@@ -14,7 +14,7 @@ Usage: pass device ``index`` (starting from 0) if using automatic device detecti
 
     import can
 
-    bus = can.Bus(bustype="gs_usb", channel=dev.product, index=0, bitrate=250000)
+    bus = can.Bus(interface="gs_usb", channel=dev.product, index=0, bitrate=250000)
 
 Alternatively, pass ``bus`` and ``address`` to open a specific device. The parameters can be got by ``pyusb`` as shown below:
 
@@ -25,7 +25,7 @@ Alternatively, pass ``bus`` and ``address`` to open a specific device. The param
 
     dev = usb.core.find(idVendor=0x1D50, idProduct=0x606F)
     bus = can.Bus(
-        bustype="gs_usb",
+        interface="gs_usb",
         channel=dev.product,
         bus=dev.bus,
         address=dev.address,

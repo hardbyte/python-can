@@ -658,7 +658,8 @@ class PCANBasic:
         #
         if platform.system() == "Windows":
             # Loads the API on Windows
-            self.__m_dllBasic = windll.LoadLibrary("PCANBasic")
+            _dll_path = find_library("PCANBasic")
+            self.__m_dllBasic = windll.LoadLibrary(_dll_path) if _dll_path else None
             aReg = winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE)
             try:
                 aKey = winreg.OpenKey(aReg, r"SOFTWARE\PEAK-System\PEAK-Drivers")

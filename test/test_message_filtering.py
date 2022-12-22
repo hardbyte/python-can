@@ -21,7 +21,7 @@ MATCH_ONLY_HIGHEST = [{"can_id": 0xFFFFFFFF, "can_mask": 0x1FFFFFFF, "extended":
 
 class TestMessageFiltering(unittest.TestCase):
     def setUp(self):
-        self.bus = Bus(bustype="virtual", channel="testy")
+        self.bus = Bus(interface="virtual", channel="testy")
 
     def tearDown(self):
         self.bus.shutdown()

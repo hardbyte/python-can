@@ -19,7 +19,7 @@ def print_message(msg: can.Message) -> None:
 async def main() -> None:
     """The main function that runs in the loop."""
 
-    with can.Bus(  # type: ignore
+    with can.Bus(
         interface="virtual", channel="my_channel_0", receive_own_messages=True
     ) as bus:
         reader = can.AsyncBufferedReader()

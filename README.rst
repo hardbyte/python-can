@@ -1,13 +1,17 @@
 python-can
 ==========
 
-|release| |python_implementation| |downloads| |downloads_monthly| |formatter|
+|pypi| |conda| |python_implementation| |downloads| |downloads_monthly|
 
-|docs| |github-actions| |build_travis| |coverage| |mergify|
+|docs| |github-actions| |build_travis| |coverage| |mergify| |formatter|
 
-.. |release| image:: https://img.shields.io/pypi/v/python-can.svg
+.. |pypi| image:: https://img.shields.io/pypi/v/python-can.svg
    :target: https://pypi.python.org/pypi/python-can/
    :alt: Latest Version on PyPi
+
+.. |conda| image:: https://img.shields.io/conda/v/conda-forge/python-can
+   :target: https://github.com/conda-forge/python-can-feedstock
+   :alt: Latest Version on conda-forge
 
 .. |python_implementation| image:: https://img.shields.io/pypi/implementation/python-can
    :target: https://pypi.python.org/pypi/python-can/
@@ -29,8 +33,8 @@ python-can
    :target: https://python-can.readthedocs.io/en/stable/
    :alt: Documentation
 
-.. |github-actions| image:: https://github.com/hardbyte/python-can/actions/workflows/build.yml/badge.svg?branch=develop
-   :target: https://github.com/hardbyte/python-can/actions/workflows/build.yml
+.. |github-actions| image:: https://github.com/hardbyte/python-can/actions/workflows/ci.yml/badge.svg
+   :target: https://github.com/hardbyte/python-can/actions/workflows/ci.yml
    :alt: Github Actions workflow status
 
 .. |build_travis| image:: https://img.shields.io/travis/hardbyte/python-can/develop.svg?label=Travis%20CI

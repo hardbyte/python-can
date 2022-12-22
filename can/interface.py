@@ -9,7 +9,7 @@ import logging
 from typing import Any, cast, Iterable, Type, Optional, Union, List
 
 from .bus import BusABC
-from .util import load_config
+from .util import load_config, deprecated_args_alias
 from .interfaces import BACKENDS
 from .exceptions import CanInterfaceNotImplementedError
 from .typechecking import AutoDetectedConfig, Channel
@@ -88,6 +88,7 @@ class Bus(BusABC):  # pylint: disable=abstract-method
     """
 
     @staticmethod
+    @deprecated_args_alias(bustype="interface")  # Deprecated since python-can 4.2
     def __new__(  # type: ignore  # pylint: disable=keyword-arg-before-vararg
         cls: Any,
         channel: Optional[Channel] = None,
