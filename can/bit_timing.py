@@ -4,18 +4,20 @@ from can.typechecking import BitTimingFdDict, BitTimingDict
 
 
 class BitTiming(Mapping):
-    """Representation of a bit timing configuration.
+    """Representation of a bit timing configuration for a CAN 2.0 bus.
 
-    The class can be constructed in various ways, depending on the information
-    available or the capabilities of the interfaces that need to be supported.
-
-    The preferred way is using bitrate, CAN clock frequency, TSEG1, TSEG2, SJW::
+    The class can be constructed in multiple ways, depending on the information
+    available. The preferred way is using bitrate, CAN clock frequency, tseg1, tseg2 and sjw::
 
         can.BitTiming(bitrate=1_000_000, f_clock=8_000_000, tseg1=5, tseg2=1, sjw=1)
 
-    It is also possible specify BTR registers directly::
+    It is also possible to specify BTR registers::
 
         can.BitTiming.from_registers(f_clock=8_000_000, btr0=0x00, btr1=0x14)
+
+    or to calculate the timings for a given sample point::
+
+        can.BitTiming.from_sample_point(f_clock=16_000_000, bitrate=500_000, sample_point=81.25)
     """
 
     def __init__(
@@ -305,6 +307,36 @@ class BitTiming(Mapping):
 
 
 class BitTimingFd(Mapping):
+    """Representation of a bit timing configuration for a CAN FD bus.
+
+    The class can be constructed in multiple ways, depending on the information
+    available. The preferred way is using bitrate, CAN clock frequency, tseg1, tseg2 and sjw
+    for both the arbitration (nominal) and data phase::
+
+        can.BitTimingFd(
+            f_clock=80_000_000,
+            nom_bitrate=1_000_000,
+            nom_tseg1=59,
+            nom_tseg2=20,
+            nom_sjw=10,
+            data_bitrate=8_000_000,
+            data_tseg1=6,
+            data_tseg2=3,
+            data_sjw=2,
+        )
+
+    It is also possible to calculate the timings for a given
+    pair of arbitration and data sample points::
+
+        can.BitTimingFd.from_sample_point(
+            f_clock=80_000_000,
+            nom_bitrate=1_000_000,
+            nom_sample_point=75.0,
+            data_bitrate=8_000_000,
+            data_sample_point=70.0,
+        )
+    """
+
     def __init__(
         self,
         f_clock: int,
@@ -416,6 +448,20 @@ class BitTimingFd(Mapping):
         data_bitrate: int,
         data_sample_point: float,
     ) -> "BitTimingFd":
+        """Create a BitTimingFd instance for a given nominal/data sample point pair.
+
+        :param int f_clock:
+            The CAN system clock frequency in Hz.
+            Usually the oscillator frequency divided by 2.
+        :param int nom_bitrate:
+            Nominal bitrate in bit/s.
+        :param int nom_sample_point:
+            The sample point value of the arbitration phase in percent.
+        :param int data_bitrate:
+            Data bitrate in bit/s.
+        :param int data_sample_point:
+            The sample point value of the data phase in percent.
+        """
         if nom_sample_point < 50.0:
             raise ValueError(
                 f"nom_sample_point (={nom_sample_point}) must not be below 50%."
@@ -499,58 +545,84 @@ class BitTimingFd(Mapping):
 
     @property
     def nom_bitrate(self) -> int:
+        """Nominal (arbitration phase) bitrate."""
         return self["nom_bitrate"]
 
     @property
     def nom_brp(self) -> int:
+        """Prescaler value for the arbitration phase."""
         return int(round(self.f_clock / (self.nom_bitrate * self.nbt)))
 
     @property
     def nbt(self) -> int:
+        """Number of time quanta in a bit of the arbitration phase."""
         return 1 + self.nom_tseg1 + self.nom_tseg2
 
     @property
     def nom_tseg1(self) -> int:
+        """Time segment 1 value of the arbitration phase.
+
+        This is the sum of the propagation time segment and the phase buffer segment 1.
+        """
         return self["nom_tseg1"]
 
     @property
     def nom_tseg2(self) -> int:
+        """Time segment 2 value of the arbitration phase. Also known as phase buffer segment 2."""
         return self["nom_tseg2"]
 
     @property
     def nom_sjw(self) -> int:
+        """Synchronization jump width of the arbitration phase.
+
+        The phase buffer segments may be shortened or lengthened by this value.
+        """
         return self["nom_sjw"]
 
     @property
     def nom_sample_point(self) -> float:
+        """Sample point of the arbitration phase in percent."""
         return 100.0 * (1 + self.nom_tseg1) / (1 + self.nom_tseg1 + self.nom_tseg2)
 
     @property
     def data_bitrate(self) -> int:
+        """Bitrate of the data phase in bit/s."""
         return self["data_bitrate"]
 
     @property
     def data_brp(self) -> int:
+        """Prescaler value for the data phase."""
         return int(round(self.f_clock / (self.data_bitrate * self.dbt)))
 
     @property
     def dbt(self) -> int:
+        """Number of time quanta in a bit of the data phase."""
         return 1 + self.data_tseg1 + self.data_tseg2
 
     @property
     def data_tseg1(self) -> int:
+        """TSEG1 value of the data phase.
+
+        This is the sum of the propagation time segment and the phase buffer segment 1.
+        """
         return self["data_tseg1"]
 
     @property
     def data_tseg2(self) -> int:
+        """TSEG2 value of the data phase. Also known as phase buffer segment 2."""
         return self["data_tseg2"]
 
     @property
     def data_sjw(self) -> int:
+        """Synchronization jump width of the data phase.
+
+        The phase buffer segments may be shortened or lengthened by this value.
+        """
         return self["data_sjw"]
 
     @property
     def data_sample_point(self) -> float:
+        """Sample point of the data phase in percent."""
         return 100.0 * (1 + self.data_tseg1) / (1 + self.data_tseg1 + self.data_tseg2)
 
     @property
