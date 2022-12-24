@@ -145,24 +145,29 @@ class BitTiming(Mapping):
         for brp in range(1, 65):
             nbt = round(int(f_clock / (bitrate * brp)))
             if nbt < 8:
+                break
+
+            actual_bitrate = f_clock / (nbt * brp)
+            if abs(actual_bitrate - bitrate) > bitrate / 256:
                 continue
 
             tseg1 = int(round(sample_point / 100 * nbt)) - 1
             tseg2 = nbt - tseg1 - 1
 
-            for sjw in range(1, 5):
-                try:
-                    bt = BitTiming(
-                        f_clock=f_clock,
-                        bitrate=bitrate,
-                        tseg1=tseg1,
-                        tseg2=tseg2,
-                        sjw=sjw,
-                    )
-                    if abs(bt.sample_point - sample_point) < 1:
-                        possible_solutions.append(bt)
-                except ValueError:
-                    continue
+            sjw = min(tseg2, 4)
+
+            try:
+                bt = BitTiming(
+                    f_clock=f_clock,
+                    bitrate=bitrate,
+                    tseg1=tseg1,
+                    tseg2=tseg2,
+                    sjw=sjw,
+                )
+                if abs(bt.sample_point - sample_point) < 1:
+                    possible_solutions.append(bt)
+            except ValueError:
+                continue
 
         if not possible_solutions:
             raise ValueError("No suitable bit timings found.")
@@ -229,8 +234,8 @@ class BitTiming(Mapping):
     def oscillator_tolerance(self) -> float:
         """Oscillator tolerance in percent."""
         df_clock_list = [
-            _oscillator_tolerance_criterion_1(nom_sjw=self.sjw, nbt=self.nbt),
-            _oscillator_tolerance_criterion_2(nbt=self.nbt, nom_tseg2=self.tseg2),
+            _oscillator_tolerance_condition_1(nom_sjw=self.sjw, nbt=self.nbt),
+            _oscillator_tolerance_condition_2(nbt=self.nbt, nom_tseg2=self.tseg2),
         ]
         return min(df_clock_list) * 100
 
@@ -423,47 +428,54 @@ class BitTimingFd(Mapping):
 
         possible_solutions: List[BitTimingFd] = []
 
-        def _generate_bit_timings() -> Iterator[BitTimingFdDict]:
-            for nom_brp in range(1, 257):
-                nbt = round(int(f_clock / (nom_bitrate * nom_brp)))
-                if nbt < 8:
+        for nom_brp in range(1, 257):
+            nbt = round(int(f_clock / (nom_bitrate * nom_brp)))
+            if nbt < 8:
+                break
+
+            actual_nom_bitrate = f_clock / (nbt * nom_brp)
+            if abs(actual_nom_bitrate - nom_bitrate) > nom_bitrate / 256:
+                continue
+
+            nom_tseg1 = int(round(nom_sample_point / 100 * nbt)) - 1
+            nom_tseg2 = nbt - nom_tseg1 - 1
+
+            nom_sjw = min(nom_tseg2, 128)
+
+            for data_brp in range(1, 257):
+                dbt = round(int(f_clock / (data_bitrate * data_brp)))
+                if dbt < 8:
+                    break
+
+                actual_data_bitrate = f_clock / (dbt * data_brp)
+                if abs(actual_data_bitrate - data_bitrate) > data_bitrate / 256:
                     continue
 
-                nom_tseg1 = int(round(nom_sample_point / 100 * nbt)) - 1
-                nom_tseg2 = nbt - nom_tseg1 - 1
+                data_tseg1 = int(round(data_sample_point / 100 * dbt)) - 1
+                data_tseg2 = dbt - data_tseg1 - 1
 
-                for nom_sjw in range(1, 129):
-                    for data_brp in range(1, 257):
-                        dbt = round(int(f_clock / (data_bitrate * data_brp)))
-                        if dbt < 8:
-                            continue
+                data_sjw = min(data_tseg2, 16)
 
-                        data_tseg1 = int(round(data_sample_point / 100 * dbt)) - 1
-                        data_tseg2 = dbt - data_tseg1 - 1
-
-                        for data_sjw in range(1, 17):
-                            yield {
-                                "f_clock": f_clock,
-                                "nom_bitrate": nom_bitrate,
-                                "nom_tseg1": nom_tseg1,
-                                "nom_tseg2": nom_tseg2,
-                                "nom_sjw": nom_sjw,
-                                "data_bitrate": data_bitrate,
-                                "data_tseg1": data_tseg1,
-                                "data_tseg2": data_tseg2,
-                                "data_sjw": data_sjw,
-                            }
-
-        for bit_timings in _generate_bit_timings():
-            try:
-                bt = BitTimingFd(**bit_timings)
-                if (
-                    abs(bt.nom_sample_point - nom_sample_point) < 1
-                    and abs(bt.data_sample_point - bt.data_sample_point) < 1
-                ):
-                    possible_solutions.append(bt)
-            except ValueError:
-                continue
+                bit_timings = {
+                    "f_clock": f_clock,
+                    "nom_bitrate": nom_bitrate,
+                    "nom_tseg1": nom_tseg1,
+                    "nom_tseg2": nom_tseg2,
+                    "nom_sjw": nom_sjw,
+                    "data_bitrate": data_bitrate,
+                    "data_tseg1": data_tseg1,
+                    "data_tseg2": data_tseg2,
+                    "data_sjw": data_sjw,
+                }
+                try:
+                    bt = BitTimingFd(**bit_timings)
+                    if (
+                        abs(bt.nom_sample_point - nom_sample_point) < 1
+                        and abs(bt.data_sample_point - bt.data_sample_point) < 1
+                    ):
+                        possible_solutions.append(bt)
+                except ValueError:
+                    continue
 
         if not possible_solutions:
             raise ValueError("No suitable bit timings found.")
@@ -479,8 +491,6 @@ class BitTimingFd(Mapping):
         for key, reverse in (
             (lambda x: x.data_brp, False),
             (lambda x: x.nom_brp, False),
-            (lambda x: x.data_sjw, True),
-            (lambda x: x.nom_sjw, True),
             (lambda x: x.oscillator_tolerance, True),
         ):
             possible_solutions.sort(key=key, reverse=reverse)
@@ -555,16 +565,16 @@ class BitTimingFd(Mapping):
     def oscillator_tolerance(self) -> float:
         """Oscillator tolerance in percent."""
         df_clock_list = [
-            _oscillator_tolerance_criterion_1(nom_sjw=self.nom_sjw, nbt=self.nbt),
-            _oscillator_tolerance_criterion_2(nbt=self.nbt, nom_tseg2=self.nom_tseg2),
-            _oscillator_tolerance_criterion_3(data_sjw=self.data_sjw, dbt=self.dbt),
-            _oscillator_tolerance_criterion_4(
+            _oscillator_tolerance_condition_1(nom_sjw=self.nom_sjw, nbt=self.nbt),
+            _oscillator_tolerance_condition_2(nbt=self.nbt, nom_tseg2=self.nom_tseg2),
+            _oscillator_tolerance_condition_3(data_sjw=self.data_sjw, dbt=self.dbt),
+            _oscillator_tolerance_condition_4(
                 data_tseg2=self.data_tseg2,
                 nbt=self.nbt,
                 data_brp=self.data_brp,
                 nom_brp=self.nom_brp,
             ),
-            _oscillator_tolerance_criterion_5(
+            _oscillator_tolerance_condition_5(
                 data_sjw=self.data_sjw,
                 data_brp=self.data_brp,
                 nom_brp=self.nom_brp,
@@ -650,25 +660,29 @@ class BitTimingFd(Mapping):
         return self._data.__iter__()
 
 
-def _oscillator_tolerance_criterion_1(nom_sjw: int, nbt: int) -> float:
-    return nom_sjw / (20 * nbt)
+def _oscillator_tolerance_condition_1(nom_sjw: int, nbt: int) -> float:
+    """Arbitration phase - resynchronization"""
+    return nom_sjw / (2 * 10 * nbt)
 
 
-def _oscillator_tolerance_criterion_2(nbt: int, nom_tseg2: int) -> float:
+def _oscillator_tolerance_condition_2(nbt: int, nom_tseg2: int) -> float:
+    """Arbitration phase - sampling of bit after error flag"""
     return nom_tseg2 / (2 * (13 * nbt - nom_tseg2))
 
 
-def _oscillator_tolerance_criterion_3(data_sjw: int, dbt: int) -> float:
-    return data_sjw / (20 * dbt)
+def _oscillator_tolerance_condition_3(data_sjw: int, dbt: int) -> float:
+    """Data phase - resynchronization"""
+    return data_sjw / (2 * 10 * dbt)
 
 
-def _oscillator_tolerance_criterion_4(
+def _oscillator_tolerance_condition_4(
     data_tseg2: int, nbt: int, data_brp: int, nom_brp: int
 ) -> float:
-    return data_tseg2 / (2 * ((2 * nbt - data_tseg2) * data_brp / nom_brp + 7 * nbt))
+    """Data phase - sampling of bit after error flag"""
+    return data_tseg2 / (2 * ((6 * nbt - data_tseg2) * data_brp / nom_brp + 7 * nbt))
 
 
-def _oscillator_tolerance_criterion_5(
+def _oscillator_tolerance_condition_5(
     data_sjw: int,
     data_brp: int,
     nom_brp: int,
@@ -677,6 +691,9 @@ def _oscillator_tolerance_criterion_5(
     nbt: int,
     dbt: int,
 ) -> float:
-    return (data_sjw - (nom_brp / data_brp - 1)) / (
-        2 * ((2 * nbt - nom_tseg2) * nom_brp / data_brp + data_tseg2 + 4 * dbt)
+    """Data phase - bit rate switch"""
+    max_correctable_phase_shift = data_sjw - max(0.0, nom_brp / data_brp - 1)
+    time_between_resync = 2 * (
+        (2 * nbt - nom_tseg2) * nom_brp / data_brp + data_tseg2 + 4 * dbt
     )
+    return max_correctable_phase_shift / time_between_resync
