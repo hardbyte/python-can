@@ -32,7 +32,6 @@ class BitTiming(Mapping):
         """
         :param int f_clock:
             The CAN system clock frequency in Hz.
-            Usually the oscillator frequency divided by 2.
         :param int bitrate:
             Bitrate in bit/s.
         :param int tseg1:
@@ -59,38 +58,48 @@ class BitTiming(Mapping):
             "sjw": sjw,
             "nof_samples": nof_samples,
         }
+        self._validate()
 
-        if not 5_000 <= bitrate <= 2_000_000:
-            raise ValueError(f"bitrate (={bitrate}) must be in [5,000...2,000,000].")
-
-        if not 1 <= tseg1 <= 16:
-            raise ValueError(f"tseg1 (={tseg1}) must be in [1...16].")
-
-        if not 1 <= tseg2 <= 8:
-            raise ValueError(f"tseg2 (={tseg2}) must be in [1...8].")
-
-        nbt = self.nbt
-        if not 8 <= nbt <= 25:
-            raise ValueError(f"nominal bit time (={nbt}) must be in [8...25].")
-
-        brp = self.brp
-        if not 1 <= brp <= 64:
-            raise ValueError(f"bitrate prescaler (={brp}) must be in [1...64].")
-
-        actual_bitrate = f_clock / (nbt * brp)
-        if abs(actual_bitrate - bitrate) > bitrate / 256:
+    def _validate(self) -> None:
+        if not 5_000 <= self.bitrate <= 2_000_000:
             raise ValueError(
-                f"the actual bitrate (={actual_bitrate}) diverges "
-                f"from the requested bitrate (={bitrate})"
+                f"bitrate (={self.bitrate}) must be in [5,000...2,000,000]."
             )
 
-        if not 1 <= sjw <= 4:
-            raise ValueError(f"sjw (={sjw}) must be in [1...4].")
+        if not 1 <= self.tseg1 <= 16:
+            raise ValueError(f"tseg1 (={self.tseg1}) must be in [1...16].")
 
-        if sjw > tseg2:
-            raise ValueError(f"sjw (={sjw}) must not be greater than tseg2 (={tseg2}).")
+        if not 1 <= self.tseg2 <= 8:
+            raise ValueError(f"tseg2 (={self.tseg2}) must be in [1...8].")
 
-        if nof_samples not in (1, 3):
+        if not 8 <= self.nbt <= 25:
+            raise ValueError(f"nominal bit time (={self.nbt}) must be in [8...25].")
+
+        if not 1 <= self.brp <= 64:
+            raise ValueError(f"bitrate prescaler (={self.brp}) must be in [1...64].")
+
+        effective_bitrate = self.f_clock / (self.nbt * self.brp)
+        if abs(effective_bitrate - self.bitrate) > self.bitrate / 256:
+            raise ValueError(
+                f"the effective bitrate (={effective_bitrate}) diverges "
+                f"from the requested bitrate (={self.bitrate})"
+            )
+
+        if not 1 <= self.sjw <= 4:
+            raise ValueError(f"sjw (={self.sjw}) must be in [1...4].")
+
+        if self.sjw > self.tseg2:
+            raise ValueError(
+                f"sjw (={self.sjw}) must not be greater than tseg2 (={self.tseg2})."
+            )
+
+        if self.sample_point < 50.0:
+            raise ValueError(
+                f"The sample point must be greater than or equal to 50% "
+                f"(sample_point={self.sample_point:.2f}%)."
+            )
+
+        if self.nof_samples not in (1, 3):
             raise ValueError("nof_samples must be 1 or 3")
 
     @classmethod
@@ -104,7 +113,6 @@ class BitTiming(Mapping):
 
         :param int f_clock:
             The CAN system clock frequency in Hz.
-            Usually the oscillator frequency divided by 2.
         :param int btr0:
             The BTR0 register value used by many CAN controllers.
         :param int btr1:
@@ -133,7 +141,6 @@ class BitTiming(Mapping):
 
         :param int f_clock:
             The CAN system clock frequency in Hz.
-            Usually the oscillator frequency divided by 2.
         :param int bitrate:
             Bitrate in bit/s.
         :param int sample_point:
@@ -149,8 +156,8 @@ class BitTiming(Mapping):
             if nbt < 8:
                 break
 
-            actual_bitrate = f_clock / (nbt * brp)
-            if abs(actual_bitrate - bitrate) > bitrate / 256:
+            effective_bitrate = f_clock / (nbt * brp)
+            if abs(effective_bitrate - bitrate) > bitrate / 256:
                 continue
 
             tseg1 = int(round(sample_point / 100 * nbt)) - 1
@@ -221,10 +228,7 @@ class BitTiming(Mapping):
 
     @property
     def f_clock(self) -> int:
-        """The CAN system clock frequency in Hz.
-
-        Usually the oscillator frequency divided by 2.
-        """
+        """The CAN system clock frequency in Hz."""
         return self["f_clock"]
 
     @property
@@ -305,6 +309,12 @@ class BitTiming(Mapping):
     def __iter__(self) -> Iterator[str]:
         return self._data.__iter__()
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, BitTiming):
+            return False
+
+        return self._data == other._data
+
 
 class BitTimingFd(Mapping):
     """Representation of a bit timing configuration for a CAN FD bus.
@@ -349,6 +359,42 @@ class BitTimingFd(Mapping):
         data_tseg2: int,
         data_sjw: int,
     ) -> None:
+        """
+        Initialize a BitTimingFd instance with the specified parameters.
+
+        :param int f_clock:
+            The CAN system clock frequency in Hz.
+
+        :param int nom_bitrate:
+            Nominal (arbitration) phase bitrate in bit/s.
+
+        :param int nom_tseg1:
+            Nominal phase Time segment 1, that is, the number of quanta from (but not including)
+            the Sync Segment to the sampling point.
+
+        :param int nom_tseg2:
+            Nominal phase Time segment 2, that is, the number of quanta from the sampling
+            point to the end of the bit.
+
+        :param int nom_sjw:
+            The Synchronization Jump Width for the nominal phase. This value determines
+            the maximum number of time quanta that the controller can resynchronize every bit.
+
+        :param int data_bitrate:
+            Data phase bitrate in bit/s.
+
+        :param int data_tseg1:
+            Data phase Time segment 1, that is, the number of quanta from (but not including)
+            the Sync Segment to the sampling point.
+
+        :param int data_tseg2:
+            Data phase Time segment 2, that is, the number of quanta from the sampling
+            point to the end of the bit.
+
+        :param int data_sjw:
+            The Synchronization Jump Width for the data phase. This value determines
+            the maximum number of time quanta that the controller can resynchronize every bit.
+        """
         self._data: BitTimingFdDict = {
             "f_clock": f_clock,
             "nom_bitrate": nom_bitrate,
@@ -360,83 +406,96 @@ class BitTimingFd(Mapping):
             "data_tseg2": data_tseg2,
             "data_sjw": data_sjw,
         }
+        self._validate()
 
-        if not 5_000 <= nom_bitrate <= 2_000_000:
+    def _validate(self) -> None:
+        if not 5_000 <= self.nom_bitrate <= 2_000_000:
             raise ValueError(
-                f"nom_bitrate (={nom_bitrate}) must be in [5,000...2,000,000]."
+                f"nom_bitrate (={self.nom_bitrate}) must be in [5,000...2,000,000]."
             )
 
-        if not 25_000 <= data_bitrate <= 8_000_000:
+        if not 25_000 <= self.data_bitrate <= 8_000_000:
             raise ValueError(
-                f"data_bitrate (={data_bitrate}) must be in [25,000...8,000,000]."
+                f"data_bitrate (={self.data_bitrate}) must be in [25,000...8,000,000]."
             )
 
-        if data_bitrate < nom_bitrate:
+        if self.data_bitrate < self.nom_bitrate:
             raise ValueError(
-                f"data_bitrate (={data_bitrate}) must be greater than or "
-                f"equal to nom_bitrate (={nom_bitrate})"
+                f"data_bitrate (={self.data_bitrate}) must be greater than or "
+                f"equal to nom_bitrate (={self.nom_bitrate})"
             )
 
-        if not 2 <= nom_tseg1 <= 256:
-            raise ValueError(f"nom_tseg1 (={nom_tseg1}) must be in [2...256].")
+        if not 2 <= self.nom_tseg1 <= 256:
+            raise ValueError(f"nom_tseg1 (={self.nom_tseg1}) must be in [2...256].")
 
-        if not 1 <= nom_tseg2 <= 128:
-            raise ValueError(f"nom_tseg2 (={nom_tseg2}) must be in [1...128].")
+        if not 1 <= self.nom_tseg2 <= 128:
+            raise ValueError(f"nom_tseg2 (={self.nom_tseg2}) must be in [1...128].")
 
-        if not 1 <= data_tseg1 <= 32:
-            raise ValueError(f"data_tseg1 (={data_tseg1}) must be in [1...32].")
+        if not 1 <= self.data_tseg1 <= 32:
+            raise ValueError(f"data_tseg1 (={self.data_tseg1}) must be in [1...32].")
 
-        if not 1 <= data_tseg2 <= 16:
-            raise ValueError(f"data_tseg2 (={data_tseg2}) must be in [1...16].")
+        if not 1 <= self.data_tseg2 <= 16:
+            raise ValueError(f"data_tseg2 (={self.data_tseg2}) must be in [1...16].")
 
-        nbt = self.nbt
-        if nbt < 8:
-            raise ValueError(f"nominal bit time (={nbt}) must be at least 8.")
+        if self.nbt < 8:
+            raise ValueError(f"nominal bit time (={self.nbt}) must be at least 8.")
 
-        dbt = self.dbt
-        if dbt < 8:
-            raise ValueError(f"data bit time (={dbt}) must be at least 8.")
+        if self.dbt < 8:
+            raise ValueError(f"data bit time (={self.dbt}) must be at least 8.")
 
-        nom_brp = self.nom_brp
-        if not 1 <= nom_brp <= 256:
+        if not 1 <= self.nom_brp <= 256:
             raise ValueError(
-                f"nominal bitrate prescaler (={nom_brp}) must be in [1...256]."
+                f"nominal bitrate prescaler (={self.nom_brp}) must be in [1...256]."
             )
 
         data_brp = self.data_brp
-        if not 1 <= data_brp <= 256:
+        if not 1 <= self.data_brp <= 256:
             raise ValueError(
-                f"data bitrate prescaler (={data_brp}) must be in [1...256]."
+                f"data bitrate prescaler (={self.data_brp}) must be in [1...256]."
             )
 
-        actual_nom_bitrate = f_clock / (nbt * nom_brp)
-        if abs(actual_nom_bitrate - nom_bitrate) > nom_bitrate / 256:
+        effective_nom_bitrate = self.f_clock / (self.nbt * self.nom_brp)
+        if abs(effective_nom_bitrate - self.nom_bitrate) > self.nom_bitrate / 256:
             raise ValueError(
-                f"the actual nominal bitrate (={actual_nom_bitrate}) diverges "
-                f"from the requested bitrate (={nom_bitrate})"
+                f"the effective nominal bitrate (={effective_nom_bitrate}) "
+                f"diverges from the requested bitrate (={self.nom_bitrate})"
             )
 
-        actual_data_bitrate = f_clock / (dbt * data_brp)
-        if abs(actual_data_bitrate - data_bitrate) > data_bitrate / 256:
+        effective_data_bitrate = self.f_clock / (self.dbt * data_brp)
+        if abs(effective_data_bitrate - self.data_bitrate) > self.data_bitrate / 256:
             raise ValueError(
-                f"the actual data bitrate (={actual_data_bitrate}) diverges "
-                f"from the requested bitrate (={data_bitrate})"
+                f"the effective data bitrate (={effective_data_bitrate}) "
+                f"diverges from the requested bitrate (={self.data_bitrate})"
             )
 
-        if not 1 <= nom_sjw <= 128:
-            raise ValueError(f"nom_sjw (={nom_sjw}) must be in [1...128].")
+        if not 1 <= self.nom_sjw <= 128:
+            raise ValueError(f"nom_sjw (={self.nom_sjw}) must be in [1...128].")
 
-        if nom_sjw > nom_tseg2:
+        if self.nom_sjw > self.nom_tseg2:
             raise ValueError(
-                f"nom_sjw (={nom_sjw}) must not be greater than nom_tseg2 (={nom_tseg2})."
+                f"nom_sjw (={self.nom_sjw}) must not be "
+                f"greater than nom_tseg2 (={self.nom_tseg2})."
             )
 
-        if not 1 <= data_sjw <= 16:
-            raise ValueError(f"data_sjw (={data_sjw}) must be in [1...128].")
+        if not 1 <= self.data_sjw <= 16:
+            raise ValueError(f"data_sjw (={self.data_sjw}) must be in [1...128].")
 
-        if data_sjw > data_tseg2:
+        if self.data_sjw > self.data_tseg2:
             raise ValueError(
-                f"data_sjw (={data_sjw}) must not be greater than data_tseg2 (={data_tseg2})."
+                f"data_sjw (={self.data_sjw}) must not be "
+                f"greater than data_tseg2 (={self.data_tseg2})."
+            )
+
+        if self.nom_sample_point < 50.0:
+            raise ValueError(
+                f"The arbitration sample point must be greater than or equal to 50% "
+                f"(nom_sample_point={self.nom_sample_point:.2f}%)."
+            )
+
+        if self.data_sample_point < 50.0:
+            raise ValueError(
+                f"The data sample point must be greater than or equal to 50% "
+                f"(data_sample_point={self.data_sample_point:.2f}%)."
             )
 
     @classmethod
@@ -452,7 +511,6 @@ class BitTimingFd(Mapping):
 
         :param int f_clock:
             The CAN system clock frequency in Hz.
-            Usually the oscillator frequency divided by 2.
         :param int nom_bitrate:
             Nominal bitrate in bit/s.
         :param int nom_sample_point:
@@ -479,8 +537,8 @@ class BitTimingFd(Mapping):
             if nbt < 8:
                 break
 
-            actual_nom_bitrate = f_clock / (nbt * nom_brp)
-            if abs(actual_nom_bitrate - nom_bitrate) > nom_bitrate / 256:
+            effective_nom_bitrate = f_clock / (nbt * nom_brp)
+            if abs(effective_nom_bitrate - nom_bitrate) > nom_bitrate / 256:
                 continue
 
             nom_tseg1 = int(round(nom_sample_point / 100 * nbt)) - 1
@@ -493,8 +551,8 @@ class BitTimingFd(Mapping):
                 if dbt < 8:
                     break
 
-                actual_data_bitrate = f_clock / (dbt * data_brp)
-                if abs(actual_data_bitrate - data_bitrate) > data_bitrate / 256:
+                effective_data_bitrate = f_clock / (dbt * data_brp)
+                if abs(effective_data_bitrate - data_bitrate) > data_bitrate / 256:
                     continue
 
                 data_tseg1 = int(round(data_sample_point / 100 * dbt)) - 1
@@ -627,10 +685,7 @@ class BitTimingFd(Mapping):
 
     @property
     def f_clock(self) -> int:
-        """The CAN system clock frequency in Hz.
-
-        Usually the oscillator frequency divided by 2.
-        """
+        """The CAN system clock frequency in Hz."""
         return self["f_clock"]
 
     @property
@@ -730,6 +785,12 @@ class BitTimingFd(Mapping):
 
     def __iter__(self) -> Iterator[str]:
         return self._data.__iter__()
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, BitTimingFd):
+            return False
+
+        return self._data == other._data
 
 
 def _oscillator_tolerance_condition_1(nom_sjw: int, nbt: int) -> float:

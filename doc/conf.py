@@ -120,6 +120,7 @@ autodoc_typehints = "description"
 # disable specific warnings
 nitpick_ignore = [
     # Ignore warnings for type aliases. Remove once Sphinx supports PEP613
+    ("py:class", "BusConfig"),
     ("py:class", "can.typechecking.BusConfig"),
     ("py:class", "can.typechecking.CanFilter"),
     ("py:class", "can.typechecking.CanFilterExtended"),

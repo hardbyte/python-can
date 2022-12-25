@@ -91,6 +91,77 @@ def test_from_btr():
     assert timing.btr1 == 0x14
 
 
+def test_from_sample_point():
+    timing = can.BitTiming.from_sample_point(
+        f_clock=16_000_000,
+        bitrate=500_000,
+        sample_point=69.0,
+    )
+    assert timing.f_clock == 16_000_000
+    assert timing.bitrate == 500_000
+    assert 68 < timing.sample_point < 70
+
+    fd_timing = can.BitTimingFd.from_sample_point(
+        f_clock=80_000_000,
+        nom_bitrate=1_000_000,
+        nom_sample_point=75.0,
+        data_bitrate=8_000_000,
+        data_sample_point=70.0,
+    )
+    assert fd_timing.f_clock == 80_000_000
+    assert fd_timing.nom_bitrate == 1_000_000
+    assert 74 < fd_timing.nom_sample_point < 76
+    assert fd_timing.data_bitrate == 8_000_000
+    assert 69 < fd_timing.data_sample_point < 71
+
+
+def test_equality():
+    t1 = can.BitTiming.from_registers(f_clock=8_000_000, btr0=0x00, btr1=0x14)
+    t2 = can.BitTiming(
+        f_clock=8_000_000, bitrate=1_000_000, tseg1=5, tseg2=2, sjw=1, nof_samples=1
+    )
+    t3 = can.BitTiming(
+        f_clock=16_000_000, bitrate=1_000_000, tseg1=5, tseg2=2, sjw=1, nof_samples=1
+    )
+    assert t1 == t2
+    assert t1 != t3
+    assert t2 != t3
+    assert t1 != 10
+
+    t4 = can.BitTimingFd(
+        f_clock=80_000_000,
+        nom_bitrate=500_000,
+        nom_tseg1=119,
+        nom_tseg2=40,
+        nom_sjw=40,
+        data_bitrate=2_000_000,
+        data_tseg1=29,
+        data_tseg2=10,
+        data_sjw=10,
+    )
+    t5 = can.BitTimingFd(
+        f_clock=80_000_000,
+        nom_bitrate=500_000,
+        nom_tseg1=119,
+        nom_tseg2=40,
+        nom_sjw=40,
+        data_bitrate=2_000_000,
+        data_tseg1=29,
+        data_tseg2=10,
+        data_sjw=10,
+    )
+    t6 = can.BitTimingFd.from_sample_point(
+        f_clock=80_000_000,
+        nom_bitrate=1_000_000,
+        nom_sample_point=75.0,
+        data_bitrate=8_000_000,
+        data_sample_point=70.0,
+    )
+    assert t4 == t5
+    assert t4 != t6
+    assert t4 != t1
+
+
 def test_string_representation():
     timing = can.BitTiming(f_clock=8000000, bitrate=1000000, tseg1=5, tseg2=2, sjw=1)
     assert str(timing) == (
