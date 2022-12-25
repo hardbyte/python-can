@@ -27,7 +27,7 @@ These parameters include:
 For example, consider a bit with a total duration of 8 TQ and a sample
 point at 75%. The values for TSEG1, TSEG2 and SJW would be 5, 2, and 2,
 respectively. The sample point would be 6 TQ after the start of the bit,
-leaving 2 TQ for the signal to stabilize before the end of the bit.
+leaving 2 TQ for the information processing by the bus nodes.
 
 .. note::
    The values for TSEG1, TSEG2 and SJW are chosen such that the
