@@ -12,9 +12,9 @@ of the communication system and the physical communication channel.
 
 These parameters include:
 
-* **tseg1**: The time segment (TSEG1) is the amount of time from the start
-  of the bit until the sample point. It is expressed in time quanta (TQ).
-* **tseg2**: The time segment (TSEG2) is the amount of time from the
+* **tseg1**: The time segment 1 (TSEG1) is the amount of time from the end
+  of the sync segment until the sample point. It is expressed in time quanta (TQ).
+* **tseg2**: The time segment 2 (TSEG2) is the amount of time from the
   sample point until the end of the bit. It is expressed in TQ.
 * **sjw**: The synchronization jump width (SJW) is the maximum number
   of TQ that the controller can resynchronize every bit.
@@ -39,19 +39,27 @@ leaving 2 TQ for the information processing by the bus nodes.
    different bit rates. As a result, there are two separate sample points
    to consider.
 
+Another important parameter is **f_clock**: The CAN system clock frequency
+in Hz. This frequency is used to derive the TQ size from the bit rate.
+The relationship is ``f_clock = (tseg1+tseg2+1) * bitrate * brp``.
+The bit rate prescaler value (``brp``) is usually determined by the controller
+and is chosen to ensure that the resulting bit time is an integer value.
+Typical CAN clock frequencies are 8-80 MHz.
+
 In most cases, the recommended settings for a predefined set of common
 bit rates will work just fine. In some cases, however, it may be necessary
 to specify custom bit timings. The :class:`can.BitTiming` and
 :class:`can.BitTimingFd` classes can be used for this purpose to specify
 bit timings in a relatively interface agnostic manner.
 
-It is possible to specify the same settings for a CAN 2.0 bus
+It is possible to specify CAN 2.0 bit timings
 using the config file:
 
 
 .. code-block:: none
 
     [default]
+    interface=canalystii
     f_clock=8000000
     bitrate=1000000
     tseg1=5
@@ -64,6 +72,7 @@ The same is possible for CAN FD:
 .. code-block:: none
 
     [default]
+    interface=pcan
     f_clock=80000000
     nom_bitrate=500000
     nom_tseg1=119
@@ -73,6 +82,8 @@ The same is possible for CAN FD:
     data_tseg1=29
     data_tseg2=10
     data_sjw=10
+
+Check :doc:`configuration` for more information about saving and loading configurations.
 
 
 .. autoclass:: can.BitTiming
