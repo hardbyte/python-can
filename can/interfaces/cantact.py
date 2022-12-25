@@ -88,10 +88,14 @@ class CantactBus(BusABC):
         with error_check("Cannot setup the cantact.Interface", CanInitializationError):
             if isinstance(timing, BitTiming):
                 if timing.f_clock != 24_000_000:
-                    raise CanInitializationError(
-                        f"timing.f_clock value {timing.f_clock} "
-                        "doesn't match expected device f_clock 24MHz."
-                    )
+                    try:
+                        # try different prescaler values
+                        timing = BitTiming(**{**timing, "f_clock": 24_000_000})
+                    except ValueError:
+                        raise CanInitializationError(
+                            f"timing.f_clock value {timing.f_clock} "
+                            "doesn't match expected device f_clock 24MHz."
+                        ) from None
                 # use custom bit timing
                 self.interface.set_bit_timing(
                     int(channel),
