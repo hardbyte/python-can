@@ -4,14 +4,16 @@ Interface for CANtact devices from Linklayer Labs
 
 import time
 import logging
+from typing import Optional, Union, Any
 from unittest.mock import Mock
 
-from can import BusABC, Message
+from can import BusABC, Message, BitTiming, BitTimingFd
 from ..exceptions import (
     CanInitializationError,
     CanInterfaceNotImplementedError,
     error_check,
 )
+from ..util import deprecated_args_alias
 
 logger = logging.getLogger(__name__)
 
@@ -42,16 +44,16 @@ class CantactBus(BusABC):
             channels.append({"interface": "cantact", "channel": f"ch:{i}"})
         return channels
 
+    @deprecated_args_alias(bit_timing="timing")
     def __init__(
         self,
-        channel,
-        bitrate=500000,
-        poll_interval=0.01,
-        monitor=False,
-        bit_timing=None,
-        _testing=False,
-        **kwargs,
-    ):
+        channel: int,
+        bitrate: int = 500000,
+        poll_interval: float = 0.01,
+        monitor: bool = False,
+        timing: Optional[Union[BitTiming, BitTimingFd]] = None,
+        **kwargs: Any,
+    ) -> None:
         """
         :param int channel:
             Channel number (zero indexed, labeled on multi-channel devices)
@@ -59,11 +61,15 @@ class CantactBus(BusABC):
             Bitrate in bits/s
         :param bool monitor:
             If true, operate in listen-only monitoring mode
-        :param BitTiming bit_timing:
-            Optional BitTiming to use for custom bit timing setting. Overrides bitrate if not None.
+        :param timing:
+            Optional :class:`~can.BitTiming` instance to use for custom bit timing setting.
+            If this argument is set then it overrides the bitrate argument. The
+            `f_clock` value of the timing instance must be set to 24_000_000 (24MHz)
+            for standard CAN.
+            CAN FD and the :class:`~can.BitTimingFd` class are not supported.
         """
 
-        if _testing:
+        if kwargs.get("_testing", False):
             self.interface = MockInterface()
         else:
             if cantact is None:
@@ -80,18 +86,28 @@ class CantactBus(BusABC):
 
         # Configure the interface
         with error_check("Cannot setup the cantact.Interface", CanInitializationError):
-            if bit_timing is None:
-                # use bitrate
-                self.interface.set_bitrate(int(channel), int(bitrate))
-            else:
+            if isinstance(timing, BitTiming):
+                if timing.f_clock != 24_000_000:
+                    raise CanInitializationError(
+                        f"timing.f_clock value {timing.f_clock} "
+                        "doesn't match expected device f_clock 24MHz."
+                    )
                 # use custom bit timing
                 self.interface.set_bit_timing(
                     int(channel),
-                    int(bit_timing.brp),
-                    int(bit_timing.tseg1),
-                    int(bit_timing.tseg2),
-                    int(bit_timing.sjw),
+                    int(timing.brp),
+                    int(timing.tseg1),
+                    int(timing.tseg2),
+                    int(timing.sjw),
                 )
+            elif isinstance(timing, BitTimingFd):
+                raise NotImplementedError(
+                    f"CAN FD is not supported by {self.__class__.__name__}."
+                )
+            else:
+                # use bitrate
+                self.interface.set_bitrate(int(channel), int(bitrate))
+
             self.interface.set_enabled(int(channel), True)
             self.interface.set_monitor(int(channel), monitor)
             self.interface.start()
