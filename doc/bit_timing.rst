@@ -84,6 +84,3 @@ The same is possible for CAN FD:
     :class-doc-from: both
     :show-inheritance:
     :members:
-
-.. _Wikipedia: https://en.wikipedia.org/wiki/CAN_bus#Bit_timing
-.. _Kvaser: https://www.kvaser.com/about-can/the-can-protocol/can-bit-timing/
