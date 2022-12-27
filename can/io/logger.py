@@ -90,7 +90,7 @@ class Logger(MessageWriter):  # pylint: disable=abstract-method
 
         file_or_filename: AcceptedIOType = filename
         if suffix == ".gz":
-            suffix, file_or_filename = Logger.compress(filename, *args, **kwargs)
+            suffix, file_or_filename = Logger.compress(filename, **kwargs)
 
         try:
             return Logger.message_writers[suffix](file_or_filename, *args, **kwargs)
@@ -100,9 +100,7 @@ class Logger(MessageWriter):  # pylint: disable=abstract-method
             ) from None
 
     @staticmethod
-    def compress(
-        filename: StringPathLike, *args: Any, **kwargs: Any
-    ) -> Tuple[str, FileLike]:
+    def compress(filename: StringPathLike, **kwargs: Any) -> Tuple[str, FileLike]:
         """
         Return the suffix and io object of the decompressed file.
         File will automatically recompress upon close.
@@ -184,7 +182,7 @@ class BaseRotatingLogger(Listener, BaseIOHandler, ABC):
         if not callable(self.namer):
             return default_name
 
-        return self.namer(default_name)
+        return self.namer(default_name)  # pylint: disable=not-callable
 
     def rotate(self, source: StringPathLike, dest: StringPathLike) -> None:
         """When rotating, rotate the current log.
@@ -205,7 +203,7 @@ class BaseRotatingLogger(Listener, BaseIOHandler, ABC):
             if os.path.exists(source):
                 os.rename(source, dest)
         else:
-            self.rotator(source, dest)
+            self.rotator(source, dest)  # pylint: disable=not-callable
 
     def on_message_received(self, msg: Message) -> None:
         """This method is called to handle the given message.

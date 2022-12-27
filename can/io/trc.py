@@ -7,7 +7,7 @@ for file format description
 Version 1.1 will be implemented as it is most commonly used
 """  # noqa
 
-from typing import Generator, Optional, Union, TextIO
+from typing import Generator, Optional, Union, TextIO, Callable, List
 from datetime import datetime, timedelta
 from enum import Enum
 from io import TextIOWrapper
@@ -55,11 +55,14 @@ class TRCReader(MessageReader):
         if not self.file:
             raise ValueError("The given file cannot be None")
 
+        self._parse_cols: Callable[[List[str]], Optional[Message]] = lambda x: None
+
     def _extract_header(self):
+        line = ""
         for line in self.file:
             line = line.strip()
             if line.startswith(";$FILEVERSION"):
-                logger.debug(f"TRCReader: Found file version '{line}'")
+                logger.debug("TRCReader: Found file version '%s'", line)
                 try:
                     file_version = line.split("=")[1]
                     if file_version == "1.1":
@@ -91,7 +94,7 @@ class TRCReader(MessageReader):
 
         return line
 
-    def _parse_msg_V1_0(self, cols):
+    def _parse_msg_V1_0(self, cols: List[str]) -> Optional[Message]:
         arbit_id = cols[2]
         if arbit_id == "FFFFFFFF":
             logger.info("TRCReader: Dropping bus info line")
@@ -106,7 +109,7 @@ class TRCReader(MessageReader):
         msg.data = bytearray([int(cols[i + 4], 16) for i in range(msg.dlc)])
         return msg
 
-    def _parse_msg_V1_1(self, cols):
+    def _parse_msg_V1_1(self, cols: List[str]) -> Optional[Message]:
         arbit_id = cols[3]
 
         msg = Message()
@@ -119,7 +122,7 @@ class TRCReader(MessageReader):
         msg.is_rx = cols[2] == "Rx"
         return msg
 
-    def _parse_msg_V2_1(self, cols):
+    def _parse_msg_V2_1(self, cols: List[str]) -> Optional[Message]:
         msg = Message()
         msg.timestamp = float(cols[1]) / 1000
         msg.arbitration_id = int(cols[4], 16)
@@ -130,29 +133,29 @@ class TRCReader(MessageReader):
         msg.is_rx = cols[5] == "Rx"
         return msg
 
-    def _parse_cols_V1_1(self, cols):
+    def _parse_cols_V1_1(self, cols: List[str]) -> Optional[Message]:
         dtype = cols[2]
-        if dtype == "Tx" or dtype == "Rx":
+        if dtype in ("Tx", "Rx"):
             return self._parse_msg_V1_1(cols)
         else:
-            logger.info(f"TRCReader: Unsupported type '{dtype}'")
+            logger.info("TRCReader: Unsupported type '%s'", dtype)
             return None
 
-    def _parse_cols_V2_1(self, cols):
+    def _parse_cols_V2_1(self, cols: List[str]) -> Optional[Message]:
         dtype = cols[2]
         if dtype == "DT":
             return self._parse_msg_V2_1(cols)
         else:
-            logger.info(f"TRCReader: Unsupported type '{dtype}'")
+            logger.info("TRCReader: Unsupported type '%s'", dtype)
             return None
 
-    def _parse_line(self, line):
-        logger.debug(f"TRCReader: Parse '{line}'")
+    def _parse_line(self, line: str) -> Optional[Message]:
+        logger.debug("TRCReader: Parse '%s'", line)
         try:
             cols = line.split()
             return self._parse_cols(cols)
         except IndexError:
-            logger.warning(f"TRCReader: Failed to parse message '{line}'")
+            logger.warning("TRCReader: Failed to parse message '%s'", line)
             return None
 
     def __iter__(self) -> Generator[Message, None, None]:
@@ -211,12 +214,12 @@ class TRCWriter(FileIOMessageWriter):
         """
         super().__init__(file, mode="w")
         self.channel = channel
-        if type(file) is str:
+        if isinstance(file, str):
             self.filepath = os.path.abspath(file)
-        elif type(file) is TextIOWrapper:
+        elif isinstance(file, TextIOWrapper):
             self.filepath = "Unknown"
             logger.warning("TRCWriter: Text mode io can result in wrong line endings")
-            logger.debug(
+            logger.debug(  # pylint: disable=logging-fstring-interpolation
                 f"TRCWriter: Text mode io line ending setting: {file.newlines}"
             )
         else:
@@ -226,6 +229,7 @@ class TRCWriter(FileIOMessageWriter):
         self.msgnr = 0
         self.first_timestamp = None
         self.file_version = TRCFileVersion.V2_1
+        self._msg_fmt_string = self.FORMAT_MESSAGE_V1_0
         self._format_message = self._format_message_init
 
     def _write_line(self, line: str) -> None:
@@ -316,7 +320,7 @@ class TRCWriter(FileIOMessageWriter):
         else:
             raise NotImplementedError("File format is not supported")
 
-        return self._format_message(msg, channel)
+        return self._format_message_by_format(msg, channel)
 
     def write_header(self, timestamp: float) -> None:
         # write start of file header
