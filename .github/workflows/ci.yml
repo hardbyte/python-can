@@ -93,9 +93,10 @@ jobs:
         can/**.py \
         can/io \
         setup.py \
-        doc.conf \
+        doc/conf.py \
         scripts/**.py \
-        examples/**.py
+        examples/**.py \
+        can/interfaces/socketcan
 
   format:
     runs-on: ubuntu-latest

@@ -22,12 +22,6 @@ log_tx = log.getChild("tx")
 log_rx = log.getChild("rx")
 
 try:
-    import fcntl
-except ImportError:
-    log.error("fcntl not available on this platform")
-
-
-try:
     from socket import CMSG_SPACE
 
     CMSG_SPACE_available = True
@@ -44,7 +38,7 @@ from can.broadcastmanager import (
     LimitedDurationCyclicSendTaskABC,
 )
 from can.typechecking import CanFilters
-from can.interfaces.socketcan.constants import *  # CAN_RAW, CAN_*_FLAG
+from can.interfaces.socketcan.constants import *  # pylint: disable=unused-wildcard-import
 from can.interfaces.socketcan.utils import pack_filters, find_available_interfaces
 
 
@@ -391,7 +385,7 @@ class CyclicSendTask(
             nframes=0,
         )
         log.debug(
-            f"Reading properties of (cyclic) transmission task id={self.task_id}",
+            "Reading properties of (cyclic) transmission task id=%d", self.task_id
         )
         try:
             self.bcm_socket.send(check_header)
@@ -625,8 +619,8 @@ class SocketcanBus(BusABC):
     ) -> None:
         """Creates a new socketcan bus.
 
-        If setting some socket options fails, an error will be printed but no exception will be thrown.
-        This includes enabling:
+        If setting some socket options fails, an error will be printed
+        but no exception will be thrown. This includes enabling:
 
             - that own messages should be received,
             - CAN-FD frames and
@@ -656,7 +650,7 @@ class SocketcanBus(BusABC):
         """
         self.socket = create_socket()
         self.channel = channel
-        self.channel_info = "socketcan channel '%s'" % channel
+        self.channel_info = f"socketcan channel '{channel}'"
         self._bcm_sockets: Dict[str, socket.socket] = {}
         self._is_filtered = False
         self._task_id = 0
@@ -830,7 +824,9 @@ class SocketcanBus(BusABC):
             general the message will be sent at the given rate until at
             least *duration* seconds.
         """
-        msgs = LimitedDurationCyclicSendTaskABC._check_and_convert_messages(msgs)
+        msgs = LimitedDurationCyclicSendTaskABC._check_and_convert_messages(  # pylint: disable=protected-access
+            msgs
+        )
 
         msgs_channel = str(msgs[0].channel) if msgs[0].channel else None
         bcm_socket = self._get_bcm_socket(msgs_channel or self.channel)
@@ -898,8 +894,6 @@ if __name__ == "__main__":
         msg = Message(arbitration_id=0x01, data=b"\x01\x02\x03")
         sender_socket.send(build_can_frame(msg))
         print("Sender sent a message.")
-
-    import threading
 
     e = threading.Event()
     threading.Thread(target=receiver, args=(e,)).start()

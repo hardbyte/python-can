@@ -52,7 +52,8 @@ def find_available_interfaces() -> Iterable[str]:
         command = ["ip", "-o", "link", "list", "up"]
         output = subprocess.check_output(command, text=True)
 
-    except Exception as e:  # subprocess.CalledProcessError is too specific
+    except Exception as e:  # pylint: disable=broad-except
+        # subprocess.CalledProcessError is too specific
         log.error("failed to fetch opened can devices: %s", e)
         return []
 
