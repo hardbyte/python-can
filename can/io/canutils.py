@@ -173,11 +173,11 @@ class CanutilsLogWriter(FileIOMessageWriter):
         framestr = f"({timestamp:f}) {channel}"
 
         if msg.is_error_frame:
-            framestr += " %08X#" % (CAN_ERR_FLAG | CAN_ERR_BUSERROR)
+            framestr += f" {CAN_ERR_FLAG | CAN_ERR_BUSERROR:08X}#"
         elif msg.is_extended_id:
-            framestr += " %08X#" % (msg.arbitration_id)
+            framestr += f" {msg.arbitration_id:08X}#"
         else:
-            framestr += " %03X#" % (msg.arbitration_id)
+            framestr += f" {msg.arbitration_id:03X}#"
 
         if msg.is_error_frame:
             eol = "\n"
@@ -193,7 +193,7 @@ class CanutilsLogWriter(FileIOMessageWriter):
                     fd_flags |= CANFD_BRS
                 if msg.error_state_indicator:
                     fd_flags |= CANFD_ESI
-                framestr += "#%X" % fd_flags
+                framestr += f"#{fd_flags:X}"
             framestr += f"{msg.data.hex().upper()}{eol}"
 
         self.file.write(framestr)

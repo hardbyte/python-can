@@ -91,6 +91,7 @@ jobs:
       run: |
         pylint --rcfile=.pylintrc \
         can/**.py \
+        can/io \
         setup.py \
         doc.conf \
         scripts/**.py \

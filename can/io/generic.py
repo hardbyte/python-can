@@ -28,7 +28,7 @@ class BaseIOHandler(ContextManager, metaclass=ABCMeta):
 
     file: Optional[can.typechecking.FileLike]
 
-    def __init__(
+    def __init__(  # pylint: disable=unused-argument
         self,
         file: Optional[can.typechecking.AcceptedIOType],
         mode: str = "rt",
@@ -49,7 +49,9 @@ class BaseIOHandler(ContextManager, metaclass=ABCMeta):
             # file is some path-like object
             self.file = cast(
                 can.typechecking.FileLike,
-                open(cast(can.typechecking.StringPathLike, file), mode),
+                open(  # pylint: disable=unspecified-encoding
+                    cast(can.typechecking.StringPathLike, file), mode
+                ),
             )
 
         # for multiple inheritance
