@@ -18,7 +18,7 @@ daemon running on a remote Raspberry Pi:
 
     import can
 
-    bus = can.interface.Bus(bustype='socketcand', host="10.0.16.15", port=29536, channel="can0")
+    bus = can.interface.Bus(interface='socketcand', host="10.0.16.15", port=29536, channel="can0")
 
     # loop until Ctrl-C
     try:
