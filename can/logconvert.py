@@ -48,9 +48,7 @@ def main():
     with LogReader(args.input) as reader:
 
         if args.file_size:
-            logger = RotatingLogger(
-                base_filename=args.output, max_bytes=args.file_size
-            )
+            logger = RotatingLogger(base_filename=args.output, max_bytes=args.file_size)
         else:
             logger = Logger(filename=args.output)
 
