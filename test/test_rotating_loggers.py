@@ -306,8 +306,9 @@ class TestRotatingLogger:
         logger_instance.on_message_received(msg)
         do_rollover.assert_not_called()
 
-        logger_instance.last_rollover_time = \
+        logger_instance.last_rollover_time = (
             logger_instance.last_rollover_time - max_seconds
+        )
         assert logger_instance.should_rollover(msg) is True
         logger_instance.on_message_received(msg)
         do_rollover.assert_called()
