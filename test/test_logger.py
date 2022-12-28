@@ -38,7 +38,7 @@ class TestLoggerScriptModule(unittest.TestCase):
         self.MockLoggerUse = self.MockLogger
         self.loggerToUse = self.mock_logger
 
-        # Patch SizedRotatingLogger object
+        # Patch RotatingLogger object
         patcher_logger_sized = mock.patch("can.logger.RotatingLogger", spec=True)
         self.MockLoggerSized = patcher_logger_sized.start()
         self.addCleanup(patcher_logger_sized.stop)
