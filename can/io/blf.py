@@ -146,7 +146,6 @@ class BLFReader(MessageReader):
     def __init__(
         self,
         file: Union[StringPathLike, BinaryIO],
-        *args: Any,
         **kwargs: Any,
     ) -> None:
         """
@@ -375,7 +374,6 @@ class BLFWriter(FileIOMessageWriter):
         append: bool = False,
         channel: int = 1,
         compression_level: int = -1,
-        *args: Any,
         **kwargs: Any,
     ) -> None:
         """

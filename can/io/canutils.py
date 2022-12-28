@@ -37,7 +37,6 @@ class CanutilsLogReader(MessageReader):
     def __init__(
         self,
         file: Union[StringPathLike, TextIO],
-        *args: Any,
         **kwargs: Any,
     ) -> None:
         """
@@ -137,7 +136,6 @@ class CanutilsLogWriter(FileIOMessageWriter):
         file: Union[StringPathLike, TextIO],
         channel: str = "vcan0",
         append: bool = False,
-        *args: Any,
         **kwargs: Any,
     ):
         """

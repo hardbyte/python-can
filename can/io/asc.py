@@ -39,7 +39,6 @@ class ASCReader(MessageReader):
         file: Union[StringPathLike, TextIO],
         base: str = "hex",
         relative_timestamp: bool = True,
-        *args: Any,
         **kwargs: Any,
     ) -> None:
         """
@@ -353,7 +352,6 @@ class ASCWriter(FileIOMessageWriter):
         self,
         file: Union[StringPathLike, TextIO],
         channel: int = 1,
-        *args: Any,
         **kwargs: Any,
     ) -> None:
         """

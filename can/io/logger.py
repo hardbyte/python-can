@@ -27,7 +27,7 @@ from .trc import TRCWriter
 from ..typechecking import StringPathLike, FileLike, AcceptedIOType
 
 
-class Logger(MessageWriter):  # pylint: disable=abstract-method
+class Logger(MessageWriter):
     """
     Logs CAN messages to a file.
 
@@ -66,7 +66,7 @@ class Logger(MessageWriter):  # pylint: disable=abstract-method
 
     @staticmethod
     def __new__(  # type: ignore
-        cls: Any, filename: Optional[StringPathLike], *args: Any, **kwargs: Any
+        cls: Any, filename: Optional[StringPathLike], **kwargs: Any
     ) -> MessageWriter:
         """
         :param filename: the filename/path of the file to write to,
@@ -75,7 +75,7 @@ class Logger(MessageWriter):  # pylint: disable=abstract-method
         :raises ValueError: if the filename's suffix is of an unknown file type
         """
         if filename is None:
-            return Printer(*args, **kwargs)
+            return Printer(**kwargs)
 
         if not Logger.fetched_plugins:
             Logger.message_writers.update(
@@ -93,7 +93,7 @@ class Logger(MessageWriter):  # pylint: disable=abstract-method
             suffix, file_or_filename = Logger.compress(filename, **kwargs)
 
         try:
-            return Logger.message_writers[suffix](file_or_filename, *args, **kwargs)
+            return Logger.message_writers[suffix](file=file_or_filename, **kwargs)
         except KeyError:
             raise ValueError(
                 f'No write support for this unknown log format "{suffix}"'
@@ -152,11 +152,10 @@ class BaseRotatingLogger(Listener, BaseIOHandler, ABC):
     #: An integer counter to track the number of rollovers.
     rollover_count: int = 0
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         Listener.__init__(self)
-        BaseIOHandler.__init__(self, None)
+        BaseIOHandler.__init__(self, file=None)
 
-        self.writer_args = args
         self.writer_kwargs = kwargs
 
         # Expected to be set by the subclass
@@ -232,7 +231,7 @@ class BaseRotatingLogger(Listener, BaseIOHandler, ABC):
         suffix = "".join(pathlib.Path(filename).suffixes[-2:]).lower()
 
         if suffix in self._supported_formats:
-            logger = Logger(filename, *self.writer_args, **self.writer_kwargs)
+            logger = Logger(filename=filename, **self.writer_kwargs)
             if isinstance(logger, FileIOMessageWriter):
                 return logger
             elif isinstance(logger, Printer) and logger.file is not None:
@@ -321,7 +320,6 @@ class SizedRotatingLogger(BaseRotatingLogger):
         self,
         base_filename: StringPathLike,
         max_bytes: int = 0,
-        *args: Any,
         **kwargs: Any,
     ) -> None:
         """
@@ -332,7 +330,7 @@ class SizedRotatingLogger(BaseRotatingLogger):
             The size threshold at which a new log file shall be created. If set to 0, no
             rollover will be performed.
         """
-        super().__init__(*args, **kwargs)
+        super().__init__(**kwargs)
 
         self.base_filename = os.path.abspath(base_filename)
         self.max_bytes = max_bytes
