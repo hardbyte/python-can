@@ -472,11 +472,12 @@ class SizedRotatingLogger(RotatingLogger):
             The size threshold at which a new log file shall be created. If set to 0, no
             rollover will be performed.
         """
-        # This object is deprecated as of 4.1 and will be removed in 5.0.
+        # This object is deprecated as of 4.2 and will be removed in 5.0.
         warnings.simplefilter("always", DeprecationWarning)
         warnings.warn(
-            "SizedRotatingLogger is being replaced with the "
-            "generalized RotatingLogger in python-can 5.0.",
+            "`can.io.SizedRotatingLogger` is deprecated as of v4.2. It will be "
+            "removed in v5.0. New features are not supported by this object. "
+            "Use the `can.io.RotatingLogger`. class instead",
             DeprecationWarning,
         )
         # Initialize self as a RotatingLogger
