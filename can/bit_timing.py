@@ -299,39 +299,16 @@ class BitTiming(Mapping):
         return sam << 7 | (self.tseg2 - 1) << 4 | self.tseg1 - 1
 
     def __str__(self) -> str:
-        segments = []
-        try:
-            segments.append(f"BR {self.bitrate} bit/s")
-        except ValueError:
-            pass
-        try:
-            segments.append(f"SP: {self.sample_point:.2f}%")
-        except ValueError:
-            pass
-        try:
-            segments.append(f"BRP: {self.brp}")
-        except ValueError:
-            pass
-        try:
-            segments.append(f"TSEG1: {self.tseg1}")
-        except ValueError:
-            pass
-        try:
-            segments.append(f"TSEG2: {self.tseg2}")
-        except ValueError:
-            pass
-        try:
-            segments.append(f"SJW: {self.sjw}")
-        except ValueError:
-            pass
-        try:
-            segments.append(f"BTR: {self.btr0:02X}{self.btr1:02X}h")
-        except ValueError:
-            pass
-        try:
-            segments.append(f"f_clock: {self.f_clock / 1e6:.0f}MHz")
-        except ValueError:
-            pass
+        segments = [
+            f"BR {self.bitrate} bit/s",
+            f"SP: {self.sample_point:.2f}%",
+            f"BRP: {self.brp}",
+            f"TSEG1: {self.tseg1}",
+            f"TSEG2: {self.tseg2}",
+            f"SJW: {self.sjw}",
+            f"BTR: {self.btr0:02X}{self.btr1:02X}h",
+            f"f_clock: {self.f_clock / 1e6:.0f}MHz",
+        ]
         return ", ".join(segments)
 
     def __repr__(self) -> str:
@@ -804,59 +781,21 @@ class BitTimingFd(Mapping):
         return max(0.0, min(df_clock_list) * 100)
 
     def __str__(self) -> str:
-        segments = []
-        try:
-            segments.append(f"NBR: {self.nom_bitrate} bit/s")
-        except ValueError:
-            pass
-        try:
-            segments.append(f"NSP: {self.nom_sample_point:.2f}%")
-        except ValueError:
-            pass
-        try:
-            segments.append(f"NBRP: {self.nom_brp}")
-        except ValueError:
-            pass
-        try:
-            segments.append(f"NTSEG1: {self.nom_tseg1}")
-        except ValueError:
-            pass
-        try:
-            segments.append(f"NTSEG2: {self.nom_tseg2}")
-        except ValueError:
-            pass
-        try:
-            segments.append(f"NSJW: {self.nom_sjw}")
-        except ValueError:
-            pass
-        try:
-            segments.append(f"DBR: {self.data_bitrate} bit/s")
-        except ValueError:
-            pass
-        try:
-            segments.append(f"DSP: {self.data_sample_point:.2f}%")
-        except ValueError:
-            pass
-        try:
-            segments.append(f"DBRP: {self.data_brp}")
-        except ValueError:
-            pass
-        try:
-            segments.append(f"DTSEG1: {self.data_tseg1}")
-        except ValueError:
-            pass
-        try:
-            segments.append(f"DTSEG2: {self.data_tseg2}")
-        except ValueError:
-            pass
-        try:
-            segments.append(f"DSJW: {self.data_sjw}")
-        except ValueError:
-            pass
-        try:
-            segments.append(f"f_clock: {self.f_clock / 1e6:.0f}MHz")
-        except ValueError:
-            pass
+        segments = [
+            f"NBR: {self.nom_bitrate} bit/s",
+            f"NSP: {self.nom_sample_point:.2f}%",
+            f"NBRP: {self.nom_brp}",
+            f"NTSEG1: {self.nom_tseg1}",
+            f"NTSEG2: {self.nom_tseg2}",
+            f"NSJW: {self.nom_sjw}",
+            f"DBR: {self.data_bitrate} bit/s",
+            f"DSP: {self.data_sample_point:.2f}%",
+            f"DBRP: {self.data_brp}",
+            f"DTSEG1: {self.data_tseg1}",
+            f"DTSEG2: {self.data_tseg2}",
+            f"DSJW: {self.data_sjw}",
+            f"f_clock: {self.f_clock / 1e6:.0f}MHz",
+        ]
         return ", ".join(segments)
 
     def __repr__(self) -> str:
