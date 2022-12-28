@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 nixnet: Optional[ModuleType] = None
 try:
-    import nixnet
+    import nixnet  # type: ignore
 except Exception as exc:
     logger.warning("Could not import nixnet: %s", exc)
 
