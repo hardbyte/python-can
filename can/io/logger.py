@@ -293,20 +293,38 @@ class RotatingLogger(BaseRotatingLogger):
 
     Example::
 
-        from can import Notifier, SizedRotatingLogger
+        from can import Notifier, RotatingLogger
         from can.interfaces.vector import VectorBus
 
         bus = VectorBus(channel=[0], app_name="CANape", fd=True)
 
-        logger = SizedRotatingLogger(
+        # Size constrained rollover
+        logger = RotatingLogger(
             base_filename="my_logfile.asc",
-            max_bytes=5 * 1024 ** 2,  # =5MB
+            max_bytes=5 * 1024 ** 2,  # = 5 MB
         )
         logger.rollover_count = 23  # start counter at 23
 
         notifier = Notifier(bus=bus, listeners=[logger])
 
-    The SizedRotatingLogger currently supports the formats
+    Example::
+
+        # Size or time constrained rollover (whichever limit occurs first)
+        logger = RotatingLogger(
+            base_filename="my_logfile.asc",
+            max_bytes=5 * 1024 ** 2,  # = 5 MB
+            max_seconds=5 * 60,       # = 5 minutes
+        )
+
+    Example::
+
+        # Time constrained rollover
+        logger = RotatingLogger(
+            base_filename="my_logfile.asc",
+            max_seconds=5 * 60,       # = 5 minutes
+        )
+
+    The RotatingLogger currently supports the formats
       * .asc: :class:`can.ASCWriter`
       * .blf :class:`can.BLFWriter`
       * .csv: :class:`can.CSVWriter`
