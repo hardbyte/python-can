@@ -340,14 +340,15 @@ class RotatingLogger(BaseRotatingLogger):
     :meth:`~can.Listener.stop` is called.
     """
 
+    _supported_formats = {".asc", ".blf", ".csv", ".log", ".txt"}
     last_rollover_time = time.time()
 
     def __init__(
         self,
         base_filename: StringPathLike,
-        *args: Any,
         max_bytes: int = 0,
         max_seconds: int = 0,
+        *args: Any,
         **kwargs: Any,
     ) -> None:
         """
@@ -483,4 +484,4 @@ class SizedRotatingLogger(RotatingLogger):
             DeprecationWarning,
         )
         # Initialize self as a RotatingLogger
-        super().__init__(base_filename, *args, max_bytes=max_bytes, **kwargs)
+        super().__init__(base_filename, max_bytes=max_bytes, *args, **kwargs)
