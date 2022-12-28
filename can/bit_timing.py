@@ -1,3 +1,4 @@
+import math
 from typing import List, Mapping, Iterator, cast
 
 from can.typechecking import BitTimingFdDict, BitTimingDict
@@ -139,6 +140,13 @@ class BitTiming(Mapping):
     ) -> "BitTiming":
         """Create a BitTiming instance for a sample point.
 
+        This function tries to find bit timings, which are close to the requested
+        sample point. It does not take physical bus properties into account, so the
+        calculated bus timings might not work properly for you.
+
+        The :func:`oscillator_tolerance` function might be helpful to evaluate the
+        bus timings.
+
         :param int f_clock:
             The CAN system clock frequency in Hz.
         :param int bitrate:
@@ -161,8 +169,10 @@ class BitTiming(Mapping):
                 continue
 
             tseg1 = int(round(sample_point / 100 * nbt)) - 1
-            tseg2 = nbt - tseg1 - 1
+            # limit tseg1, so tseg2 is at least 1 TQ
+            tseg1 = min(tseg1, nbt - 2)
 
+            tseg2 = nbt - tseg1 - 1
             sjw = min(tseg2, 4)
 
             try:
@@ -173,17 +183,23 @@ class BitTiming(Mapping):
                     tseg2=tseg2,
                     sjw=sjw,
                 )
-                if abs(bt.sample_point - sample_point) < 1:
-                    possible_solutions.append(bt)
+                possible_solutions.append(bt)
             except ValueError:
                 continue
 
         if not possible_solutions:
             raise ValueError("No suitable bit timings found.")
 
-        return sorted(
-            possible_solutions, key=lambda x: x.oscillator_tolerance, reverse=True
-        )[0]
+        # sort solutions
+        for key, reverse in (
+            # prefer low prescaler
+            (lambda x: x.brp, False),
+            # prefer low sample point deviation from requested values
+            (lambda x: abs(x.sample_point - sample_point), False),
+        ):
+            possible_solutions.sort(key=key, reverse=reverse)
+
+        return possible_solutions[0]
 
     @property
     def nbt(self) -> int:
@@ -199,6 +215,11 @@ class BitTiming(Mapping):
     def brp(self) -> int:
         """Bit Rate Prescaler."""
         return int(round(self.f_clock / (self.bitrate * self.nbt)))
+
+    @property
+    def tq(self) -> int:
+        """Time quantum in nanoseconds"""
+        return int(round(self.brp / self.f_clock * 1e9))
 
     @property
     def sjw(self) -> int:
@@ -236,14 +257,35 @@ class BitTiming(Mapping):
         """Sample point in percent."""
         return 100.0 * (1 + self.tseg1) / (1 + self.tseg1 + self.tseg2)
 
-    @property
-    def oscillator_tolerance(self) -> float:
-        """Oscillator tolerance in percent."""
+    def oscillator_tolerance(
+        self,
+        node_loop_delay_ns: float = 250.0,
+        bus_length_m: float = 10.0,
+    ) -> float:
+        """Oscillator tolerance in percent according to ISO 11898-1.
+
+        :param node_loop_delay_ns:
+            Transceiver loop delay in nanoseconds.
+        :param bus_length_m:
+            Bus length in meters.
+        """
+        delay_per_meter = 5
+        bidirectional_propagation_delay_ns = 2 * (
+            node_loop_delay_ns + delay_per_meter * bus_length_m
+        )
+
+        prop_seg = math.ceil(bidirectional_propagation_delay_ns / self.tq)
+        nom_phase_seg1 = self.tseg1 - prop_seg
+        nom_phase_seg2 = self.tseg2
         df_clock_list = [
             _oscillator_tolerance_condition_1(nom_sjw=self.sjw, nbt=self.nbt),
-            _oscillator_tolerance_condition_2(nbt=self.nbt, nom_tseg2=self.tseg2),
+            _oscillator_tolerance_condition_2(
+                nbt=self.nbt,
+                nom_phase_seg1=nom_phase_seg1,
+                nom_phase_seg2=nom_phase_seg2,
+            ),
         ]
-        return min(df_clock_list) * 100
+        return max(0.0, min(df_clock_list) * 100)
 
     @property
     def btr0(self) -> int:
@@ -288,10 +330,6 @@ class BitTiming(Mapping):
             pass
         try:
             segments.append(f"f_clock: {self.f_clock / 1e6:.0f}MHz")
-        except ValueError:
-            pass
-        try:
-            segments.append(f"df_clock: {self.oscillator_tolerance:.2f}%")
         except ValueError:
             pass
         return ", ".join(segments)
@@ -509,6 +547,13 @@ class BitTimingFd(Mapping):
     ) -> "BitTimingFd":
         """Create a BitTimingFd instance for a given nominal/data sample point pair.
 
+        This function tries to find bit timings, which are close to the requested
+        sample points. It does not take physical bus properties into account, so the
+        calculated bus timings might not work properly for you.
+
+        The :func:`oscillator_tolerance` function might be helpful to evaluate the
+        bus timings.
+
         :param int f_clock:
             The CAN system clock frequency in Hz.
         :param int nom_bitrate:
@@ -542,6 +587,8 @@ class BitTimingFd(Mapping):
                 continue
 
             nom_tseg1 = int(round(nom_sample_point / 100 * nbt)) - 1
+            # limit tseg1, so tseg2 is at least 1 TQ
+            nom_tseg1 = min(nom_tseg1, nbt - 2)
             nom_tseg2 = nbt - nom_tseg1 - 1
 
             nom_sjw = min(nom_tseg2, 128)
@@ -556,28 +603,25 @@ class BitTimingFd(Mapping):
                     continue
 
                 data_tseg1 = int(round(data_sample_point / 100 * dbt)) - 1
+                # limit tseg1, so tseg2 is at least 1 TQ
+                data_tseg1 = min(data_tseg1, dbt - 2)
                 data_tseg2 = dbt - data_tseg1 - 1
 
                 data_sjw = min(data_tseg2, 16)
 
-                bit_timings = {
-                    "f_clock": f_clock,
-                    "nom_bitrate": nom_bitrate,
-                    "nom_tseg1": nom_tseg1,
-                    "nom_tseg2": nom_tseg2,
-                    "nom_sjw": nom_sjw,
-                    "data_bitrate": data_bitrate,
-                    "data_tseg1": data_tseg1,
-                    "data_tseg2": data_tseg2,
-                    "data_sjw": data_sjw,
-                }
                 try:
-                    bt = BitTimingFd(**bit_timings)
-                    if (
-                        abs(bt.nom_sample_point - nom_sample_point) < 1
-                        and abs(bt.data_sample_point - bt.data_sample_point) < 1
-                    ):
-                        possible_solutions.append(bt)
+                    bt = BitTimingFd(
+                        f_clock=f_clock,
+                        nom_bitrate=nom_bitrate,
+                        nom_tseg1=nom_tseg1,
+                        nom_tseg2=nom_tseg2,
+                        nom_sjw=nom_sjw,
+                        data_bitrate=data_bitrate,
+                        data_tseg1=data_tseg1,
+                        data_tseg2=data_tseg2,
+                        data_sjw=data_sjw,
+                    )
+                    possible_solutions.append(bt)
                 except ValueError:
                     continue
 
@@ -591,11 +635,20 @@ class BitTimingFd(Mapping):
         if same_prescaler:
             possible_solutions = same_prescaler
 
-        # sort solutions: prefer high tolerance, low prescaler and high sjw
+        # sort solutions
         for key, reverse in (
-            (lambda x: x.data_brp, False),
-            (lambda x: x.nom_brp, False),
-            (lambda x: x.oscillator_tolerance, True),
+            # prefer low prescaler
+            (lambda x: x.nom_brp + x.data_brp, False),
+            # prefer same prescaler for arbitration and data
+            (lambda x: abs(x.nom_brp - x.data_brp), False),
+            # prefer low sample point deviation from requested values
+            (
+                lambda x: (
+                    abs(x.nom_sample_point - nom_sample_point)
+                    + abs(x.data_sample_point - data_sample_point)
+                ),
+                False,
+            ),
         ):
             possible_solutions.sort(key=key, reverse=reverse)
 
@@ -610,6 +663,11 @@ class BitTimingFd(Mapping):
     def nom_brp(self) -> int:
         """Prescaler value for the arbitration phase."""
         return int(round(self.f_clock / (self.nom_bitrate * self.nbt)))
+
+    @property
+    def nom_tq(self) -> int:
+        """Nominal time quantum in nanoseconds"""
+        return int(round(self.nom_brp / self.f_clock * 1e9))
 
     @property
     def nbt(self) -> int:
@@ -653,6 +711,11 @@ class BitTimingFd(Mapping):
         return int(round(self.f_clock / (self.data_bitrate * self.dbt)))
 
     @property
+    def data_tq(self) -> int:
+        """Data time quantum in nanoseconds"""
+        return int(round(self.data_brp / self.f_clock * 1e9))
+
+    @property
     def dbt(self) -> int:
         """Number of time quanta in a bit of the data phase."""
         return 1 + self.data_tseg1 + self.data_tseg2
@@ -688,16 +751,43 @@ class BitTimingFd(Mapping):
         """The CAN system clock frequency in Hz."""
         return self["f_clock"]
 
-    @property
-    def oscillator_tolerance(self) -> float:
-        """Oscillator tolerance in percent."""
+    def oscillator_tolerance(
+        self,
+        node_loop_delay_ns: float = 250.0,
+        bus_length_m: float = 10.0,
+    ) -> float:
+        """Oscillator tolerance in percent according to ISO 11898-1.
+
+        :param node_loop_delay_ns:
+            Transceiver loop delay in nanoseconds.
+        :param bus_length_m:
+            Bus length in meters.
+        """
+        delay_per_meter = 5
+        bidirectional_propagation_delay_ns = 2 * (
+            node_loop_delay_ns + delay_per_meter * bus_length_m
+        )
+
+        prop_seg = math.ceil(bidirectional_propagation_delay_ns / self.nom_tq)
+        nom_phase_seg1 = self.nom_tseg1 - prop_seg
+        nom_phase_seg2 = self.nom_tseg2
+
+        data_phase_seg2 = self.data_tseg2
+
         df_clock_list = [
             _oscillator_tolerance_condition_1(nom_sjw=self.nom_sjw, nbt=self.nbt),
-            _oscillator_tolerance_condition_2(nbt=self.nbt, nom_tseg2=self.nom_tseg2),
+            _oscillator_tolerance_condition_2(
+                nbt=self.nbt,
+                nom_phase_seg1=nom_phase_seg1,
+                nom_phase_seg2=nom_phase_seg2,
+            ),
             _oscillator_tolerance_condition_3(data_sjw=self.data_sjw, dbt=self.dbt),
             _oscillator_tolerance_condition_4(
-                data_tseg2=self.data_tseg2,
+                nom_phase_seg1=nom_phase_seg1,
+                nom_phase_seg2=nom_phase_seg2,
+                data_phase_seg2=data_phase_seg2,
                 nbt=self.nbt,
+                dbt=self.dbt,
                 data_brp=self.data_brp,
                 nom_brp=self.nom_brp,
             ),
@@ -705,8 +795,8 @@ class BitTimingFd(Mapping):
                 data_sjw=self.data_sjw,
                 data_brp=self.data_brp,
                 nom_brp=self.nom_brp,
-                data_tseg2=self.data_tseg2,
-                nom_tseg2=self.nom_tseg2,
+                data_phase_seg2=data_phase_seg2,
+                nom_phase_seg2=nom_phase_seg2,
                 nbt=self.nbt,
                 dbt=self.dbt,
             ),
@@ -767,10 +857,6 @@ class BitTimingFd(Mapping):
             segments.append(f"f_clock: {self.f_clock / 1e6:.0f}MHz")
         except ValueError:
             pass
-        try:
-            segments.append(f"df_clock: {self.oscillator_tolerance:.2f}%")
-        except ValueError:
-            pass
         return ", ".join(segments)
 
     def __repr__(self) -> str:
@@ -798,9 +884,11 @@ def _oscillator_tolerance_condition_1(nom_sjw: int, nbt: int) -> float:
     return nom_sjw / (2 * 10 * nbt)
 
 
-def _oscillator_tolerance_condition_2(nbt: int, nom_tseg2: int) -> float:
+def _oscillator_tolerance_condition_2(
+    nbt: int, nom_phase_seg1: int, nom_phase_seg2: int
+) -> float:
     """Arbitration phase - sampling of bit after error flag"""
-    return nom_tseg2 / (2 * (13 * nbt - nom_tseg2))
+    return min(nom_phase_seg1, nom_phase_seg2) / (2 * (13 * nbt - nom_phase_seg2))
 
 
 def _oscillator_tolerance_condition_3(data_sjw: int, dbt: int) -> float:
@@ -809,24 +897,32 @@ def _oscillator_tolerance_condition_3(data_sjw: int, dbt: int) -> float:
 
 
 def _oscillator_tolerance_condition_4(
-    data_tseg2: int, nbt: int, data_brp: int, nom_brp: int
+    nom_phase_seg1: int,
+    nom_phase_seg2: int,
+    data_phase_seg2: int,
+    nbt: int,
+    dbt: int,
+    data_brp: int,
+    nom_brp: int,
 ) -> float:
     """Data phase - sampling of bit after error flag"""
-    return data_tseg2 / (2 * ((6 * nbt - data_tseg2) * data_brp / nom_brp + 7 * nbt))
+    return min(nom_phase_seg1, nom_phase_seg2) / (
+        2 * ((6 * dbt - data_phase_seg2) * data_brp / nom_brp + 7 * nbt)
+    )
 
 
 def _oscillator_tolerance_condition_5(
     data_sjw: int,
     data_brp: int,
     nom_brp: int,
-    nom_tseg2: int,
-    data_tseg2: int,
+    nom_phase_seg2: int,
+    data_phase_seg2: int,
     nbt: int,
     dbt: int,
 ) -> float:
     """Data phase - bit rate switch"""
     max_correctable_phase_shift = data_sjw - max(0.0, nom_brp / data_brp - 1)
     time_between_resync = 2 * (
-        (2 * nbt - nom_tseg2) * nom_brp / data_brp + data_tseg2 + 4 * dbt
+        (2 * nbt - nom_phase_seg2) * nom_brp / data_brp + data_phase_seg2 + 4 * dbt
     )
     return max_correctable_phase_shift / time_between_resync

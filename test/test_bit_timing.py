@@ -114,6 +114,23 @@ def test_from_sample_point():
     assert fd_timing.data_bitrate == 8_000_000
     assert 69 < fd_timing.data_sample_point < 71
 
+    # check that there is a solution for every sample point
+    for sp in range(50, 100):
+        can.BitTiming.from_sample_point(
+            f_clock=16_000_000, bitrate=500_000, sample_point=sp
+        )
+
+    # check that there is a solution for every sample point
+    for nsp in range(50, 100):
+        for dsp in range(50, 100):
+            can.BitTimingFd.from_sample_point(
+                f_clock=80_000_000,
+                nom_bitrate=500_000,
+                nom_sample_point=nsp,
+                data_bitrate=2_000_000,
+                data_sample_point=dsp,
+            )
+
 
 def test_equality():
     t1 = can.BitTiming.from_registers(f_clock=8_000_000, btr0=0x00, btr1=0x14)
@@ -166,5 +183,22 @@ def test_string_representation():
     timing = can.BitTiming(f_clock=8000000, bitrate=1000000, tseg1=5, tseg2=2, sjw=1)
     assert str(timing) == (
         "BR 1000000 bit/s, SP: 75.00%, BRP: 1, TSEG1: 5, TSEG2: 2, SJW: 1, "
-        "BTR: 0014h, f_clock: 8MHz, df_clock: 0.62%"
+        "BTR: 0014h, f_clock: 8MHz"
+    )
+
+    fd_timing = can.BitTimingFd(
+        f_clock=80_000_000,
+        nom_bitrate=500_000,
+        nom_tseg1=119,
+        nom_tseg2=40,
+        nom_sjw=40,
+        data_bitrate=2_000_000,
+        data_tseg1=29,
+        data_tseg2=10,
+        data_sjw=10,
+    )
+    assert str(fd_timing) == (
+        "NBR: 500000 bit/s, NSP: 75.00%, NBRP: 1, NTSEG1: 119, NTSEG2: 40, NSJW: 40, "
+        "DBR: 2000000 bit/s, DSP: 75.00%, DBRP: 1, DTSEG1: 29, DTSEG2: 10, DSJW: 10, "
+        "f_clock: 80MHz"
     )
