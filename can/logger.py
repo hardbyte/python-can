@@ -190,8 +190,8 @@ def main() -> None:
         "--file_time",
         dest="file_time",
         type=int,
-        help="Maximum period in seconds before rotating log file. (If file_size"
-        "is also given, then the first of the two constraints to occur is"
+        help="Maximum period in seconds before rotating log file. (If file_size "
+        "is also given, then the first of the two constraints to occur is "
         "what causes the rollover.)",
         default=0,
     )
