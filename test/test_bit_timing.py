@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import pytest
 
 import can
 
@@ -202,3 +203,90 @@ def test_string_representation():
         "DBR: 2000000 bit/s, DSP: 75.00%, DBRP: 1, DTSEG1: 29, DTSEG2: 10, DSJW: 10, "
         "f_clock: 80MHz"
     )
+
+
+def test_repr():
+    timing = can.BitTiming(f_clock=8000000, bitrate=1000000, tseg1=5, tseg2=2, sjw=1)
+    assert repr(timing) == (
+        "can.BitTiming(f_clock=8000000, bitrate=1000000, tseg1=5, tseg2=2, sjw=1, nof_samples=1)"
+    )
+
+    fd_timing = can.BitTimingFd(
+        f_clock=80_000_000,
+        nom_bitrate=500_000,
+        nom_tseg1=119,
+        nom_tseg2=40,
+        nom_sjw=40,
+        data_bitrate=2_000_000,
+        data_tseg1=29,
+        data_tseg2=10,
+        data_sjw=10,
+    )
+    assert repr(fd_timing) == (
+        "can.BitTimingFd(f_clock=80000000, nom_bitrate=500000, nom_tseg1=119, nom_tseg2=40, "
+        "nom_sjw=40, data_bitrate=2000000, data_tseg1=29, data_tseg2=10, data_sjw=10)"
+    )
+
+
+def test_mapping():
+    timing = can.BitTiming(
+        f_clock=8_000_000, bitrate=1_000_000, tseg1=5, tseg2=2, sjw=1
+    )
+    timing_dict = dict(timing)
+    assert timing_dict["f_clock"] == timing["f_clock"]
+    assert timing_dict["bitrate"] == timing["bitrate"]
+    assert timing_dict["tseg1"] == timing["tseg1"]
+    assert timing_dict["tseg2"] == timing["tseg2"]
+    assert timing_dict["sjw"] == timing["sjw"]
+    assert timing == can.BitTiming(**timing_dict)
+
+    fd_timing = can.BitTimingFd(
+        f_clock=80_000_000,
+        nom_bitrate=500_000,
+        nom_tseg1=119,
+        nom_tseg2=40,
+        nom_sjw=40,
+        data_bitrate=2_000_000,
+        data_tseg1=29,
+        data_tseg2=10,
+        data_sjw=10,
+    )
+    fd_timing_dict = dict(fd_timing)
+    assert fd_timing_dict["f_clock"] == fd_timing["f_clock"]
+    assert fd_timing_dict["nom_bitrate"] == fd_timing["nom_bitrate"]
+    assert fd_timing_dict["nom_tseg1"] == fd_timing["nom_tseg1"]
+    assert fd_timing_dict["nom_tseg2"] == fd_timing["nom_tseg2"]
+    assert fd_timing_dict["nom_sjw"] == fd_timing["nom_sjw"]
+    assert fd_timing_dict["data_bitrate"] == fd_timing["data_bitrate"]
+    assert fd_timing_dict["data_tseg1"] == fd_timing["data_tseg1"]
+    assert fd_timing_dict["data_tseg2"] == fd_timing["data_tseg2"]
+    assert fd_timing_dict["data_sjw"] == fd_timing["data_sjw"]
+    assert fd_timing == can.BitTimingFd(**fd_timing_dict)
+
+
+def test_oscillator_tolerance():
+    timing = can.BitTiming(
+        f_clock=16_000_000, bitrate=500_000, tseg1=10, tseg2=5, sjw=4
+    )
+    osc_tol = timing.oscillator_tolerance(
+        node_loop_delay_ns=250,
+        bus_length_m=10.0,
+    )
+    assert osc_tol == pytest.approx(1.23, abs=1e-2)
+
+    fd_timing = can.BitTimingFd(
+        f_clock=80_000_000,
+        nom_bitrate=500_000,
+        nom_tseg1=27,
+        nom_tseg2=4,
+        nom_sjw=4,
+        data_bitrate=2_000_000,
+        data_tseg1=6,
+        data_tseg2=1,
+        data_sjw=1,
+    )
+    osc_tol = fd_timing.oscillator_tolerance(
+        node_loop_delay_ns=250,
+        bus_length_m=10.0,
+    )
+    assert osc_tol == pytest.approx(0.48543689320388345, abs=1e-2)
