@@ -288,8 +288,10 @@ class RotatingLogger(BaseRotatingLogger):
     by adding a timestamp and the rollover count. A new log file is then
     created and written to.
 
-    This behavior can be customized by setting the :attr:`namer` and
-    :attr:`rotator` attribute.
+    This behavior can be customized by setting the
+    :attr:`~can.io.BaseRotatingLogger.namer` and
+    :attr:`~can.io.BaseRotatingLogger.rotator`
+    attribute.
 
     Example::
 
