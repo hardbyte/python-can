@@ -212,6 +212,8 @@ class TestSizedRotatingLogger:
         logger_instance.stop()
 
     def test_should_rollover(self, tmp_path):
+        # NOTE: Move to TestRotatingLogger at v5.0 release when
+        # SizedRotatingLogger is removed.
         base_filename = "mylogfile.ASC"
         max_bytes = 512
 
@@ -235,6 +237,8 @@ class TestSizedRotatingLogger:
         logger_instance.stop()
 
     def test_logfile_size(self, tmp_path):
+        # NOTE: Move to TestRotatingLogger at v5.0 release when
+        # SizedRotatingLogger is removed.
         base_filename = "mylogfile.ASC"
         max_bytes = 1024
         msg = generate_message(0x123)
@@ -251,6 +255,8 @@ class TestSizedRotatingLogger:
         logger_instance.stop()
 
     def test_logfile_size_context_manager(self, tmp_path):
+        # NOTE: Move to TestRotatingLogger at v5.0 release when
+        # SizedRotatingLogger is removed.
         base_filename = "mylogfile.ASC"
         max_bytes = 1024
         msg = generate_message(0x123)
@@ -291,7 +297,7 @@ class TestRotatingLogger:
 
         logger_instance.stop()
 
-    def test_should_rollover(self, tmp_path):
+    def test_should_rollover_time(self, tmp_path):
         base_filename = "mylogfile.ASC"
         max_seconds = 300
 
