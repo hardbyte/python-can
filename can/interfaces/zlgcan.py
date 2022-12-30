@@ -16,51 +16,76 @@ from can.exceptions import (
 )
 from typing import Optional, Tuple, Sequence, Union, Deque, Any
 from can import BusABC, Message
-from zlgcan import ZCAN, ZCANDeviceType, ZCAN_Transmit_Data, ZCAN_TransmitFD_Data, ZCAN_Receive_Data, \
-    ZCAN_ReceiveFD_Data, ZCANDataObj, ZCANException, ZCANMessageType, ZCANCanTransType
+from zlgcan import ZCAN, ZCANDeviceType, ZCANException, ZCANMessageType, ZCANCanTransType
 
 logger = logging.getLogger(__name__)
-
-# AFTER_OPEN_DEVICE = [
-#     'tx_timeout',
-# ]
-#
-# BEFORE_INIT_CAN = [
-#     'canfd_standard',
-#     'protocol',
-#     'canfd_abit_baud_rate',
-#     'canfd_dbit_baud_rate',
-#     'baud_rate_custom',
-# ]
-#
-# AFTER_INIT_CAN = [
-#     'initenal_resistance',
-#     'filter_mode',
-#     'filter_start',
-#     'filter_end',
-#     'filter_ack',
-#     'filter_clear',
-# ]
-#
-# BEFOR_START_CAN = [
-#     'set_bus_usage_enable',
-#     'set_bus_usage_period',
-# ]
-#
-# AFTER_START_CAN = [
-#     'auto_send',
-#     'auto_send_canfd',
-#     'auto_send_param',
-#     'clear_auto_send',
-#     'apply_auto_send',
-#     'set_send_mode',
-# ]
-ZCAN_Transmit_Data_1 = (ZCAN_Transmit_Data * 1)
-ZCAN_TransmitFD_Data_1 = (ZCAN_TransmitFD_Data * 1)
-ZCANDataObj_1 = (ZCANDataObj * 1)
+_os = platform.system()
 
 
-def zlg_convert_msg(msg, **kwargs):                        # channel=None, trans_type=0, is_merge=False, **kwargs):
+def zlg_convert_msg(msg, **kwargs):
+    if _os.lower() == 'windows':
+        return _zlg_convert_msg_win(msg, **kwargs)
+    elif _os.lower() == 'linux':
+        return _zlg_convert_msg_linux(msg, **kwargs)
+    else:
+        raise ZCANException(f'Unsupported platform: {_os}')
+
+
+def _zlg_convert_msg_linux(msg, **kwargs):
+    from zlgcan.linux import ZCAN_CAN_FRAME, ZCAN_CANFD_FRAME, ZCAN_MSG_HEADER, ZCAN_MSG_INFO
+    if isinstance(msg, Message):
+        trans_type = kwargs.get('trans_type', ZCANCanTransType.NORMAL)
+        if msg.is_fd:
+            result = (ZCAN_CANFD_FRAME * 1)()
+            result[0].data = (ctypes.c_ubyte * 64)(*msg.data)
+        else:
+            result = (ZCAN_CAN_FRAME * 1)()
+            result[0].data = (ctypes.c_ubyte * msg.dlc)(*msg.data)
+        info = ZCAN_MSG_INFO()
+        info.mode = trans_type
+        info.is_fd = int(msg.is_fd)
+        info.is_remote = int(msg.is_remote_frame)
+        info.is_extend = int(msg.is_extended_id)
+        info.is_error = int(msg.is_error_frame)
+        info.bitrate_switch = int(msg.bitrate_switch)
+        info.error_status = int(msg.error_state_indicator)
+
+        header = ZCAN_MSG_HEADER()
+        header.id = msg.arbitration_id
+        header.info = info
+        header.channel = msg.channel
+        header.dlc = msg.dlc
+
+        result[0].header = header
+
+        return result
+    elif isinstance(msg, (ZCAN_CAN_FRAME, ZCAN_CANFD_FRAME)):
+        header = msg.header
+        info = header.info
+        return Message(
+            timestamp=header.timestamp / 1000,
+            arbitration_id=header.id,
+            is_extended_id=bool(info.is_extend),
+            is_remote_frame=bool(info.is_remote),
+            is_error_frame=bool(info.is_error),
+            channel=header.channel,
+            dlc=header.dlc,
+            data=bytes(msg.data),
+            is_fd=bool(info.is_fd),
+            is_rx=True,
+            bitrate_switch=bool(info.bitrate_switch),
+            error_state_indicator=bool(info.error_status),
+        )
+    else:
+        raise ZCANException(f'Unknown message type: {type(msg)}')
+
+
+def _zlg_convert_msg_win(msg, **kwargs):                        # channel=None, trans_type=0, is_merge=False, **kwargs):
+
+    from zlgcan.windows import ZCAN_Transmit_Data, ZCAN_TransmitFD_Data, ZCANDataObj, ZCAN_Receive_Data, ZCAN_ReceiveFD_Data
+    ZCAN_Transmit_Data_1 = (ZCAN_Transmit_Data * 1)
+    ZCAN_TransmitFD_Data_1 = (ZCAN_TransmitFD_Data * 1)
+    ZCANDataObj_1 = (ZCANDataObj * 1)
 
     if isinstance(msg, Message):                        # 发送报文转换
         is_merge = kwargs.get('is_merge', None)
@@ -175,7 +200,7 @@ class ZCanBus(BusABC):
                 clock: [Optional] The clock of channel.
                 bitrate: [Must] The arbitration phase baudrate.
                 data_bitrate: [Optional] The data phase baudrate, default is baudrate.
-                initenal_resistance: [Optional] the terminal resistance enable status, optional value{1:enable|0:disable}
+                initenal_resistance: [Optional] the terminal resistance enable status, optional value{1:enable|0:disable}, default: 1
                 mode: [Optional] The can mode, defined in ZCANCanMode, default is NORMAL
                 filter: [Optional] The filter mode, defined in ZCANCanFilter, default is DOUBLE
                 acc_code: [Optional] The frame filter acceptance code of SJA1000.
@@ -186,6 +211,7 @@ class ZCanBus(BusABC):
                 Other property value: please see: https://manual.zlg.cn/web/#/152/6364->设备属性, with out head "n/".
             When the system is Linux, the config key is:
                 clock: [Must] The clock of channel.
+                initenal_resistance: [Optional] the terminal resistance enable status, optional value{1:enable|0:disable}, default: 1
                 arb_tseg1: [Must] The phase buffer time segment1 of arbitration phase.
                 arb_tseg2: [Must] The phase buffer time segment2 of arbitration phase.
                 arb_sjw: [Must] The synchronization jump width of arbitration phase.
@@ -224,7 +250,7 @@ class ZCanBus(BusABC):
                     LOG.warn(f'ZLG-CAN - channel:{channel} not initialized.')
                     return
                 init_config = {}
-                if platform.system().lower() == 'windows':
+                if _os.lower() == 'windows':
                     mode = config.get('mode', None)
                     if mode is not None:
                         init_config['mode'] = mode
@@ -272,6 +298,8 @@ class ZCanBus(BusABC):
                         # except ZCANException:
                         #     pass
                         self.device.SetValue(channel, **config)
+                elif _os.lower() == 'linux':
+                    init_config = config
                 self.device.InitCAN(channel, **init_config)
                 self.device.StartCAN(channel)
                 self.available.append(channel)
