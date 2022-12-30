@@ -127,7 +127,7 @@ jobs:
         pip install -r doc/doc-requirements.txt
     - name: Build documentation
       run: |
-        python -m sphinx -an doc build
+        python -m sphinx -Wan doc build
     - uses: actions/upload-artifact@v3
       with:
         name: sphinx-out
