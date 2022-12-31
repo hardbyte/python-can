@@ -12,7 +12,7 @@ Windows, Linux and Mac.
 
 .. note::
 
-   The backend driver depends on `pyusb <https://pyusb.github.io/pyusb/>` so a ``pyusb`` backend driver library such as ``libusb`` must be installed. On Windows a tool such as `Zadig <https://zadig.akeo.ie/>` can be used to set the Canalyst-II USB device driver to ``libusb-win32``.
+   The backend driver depends on `pyusb <https://pyusb.github.io/pyusb/>`_ so a ``pyusb`` backend driver library such as ``libusb`` must be installed. On Windows a tool such as `Zadig <https://zadig.akeo.ie/>`_ can be used to set the Canalyst-II USB device driver to ``libusb-win32``.
 
 Limitations
 -----------

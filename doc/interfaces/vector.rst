@@ -3,6 +3,9 @@ Vector
 
 This interface adds support for CAN controllers by `Vector`_. Only Windows is supported.
 
+Configuration
+-------------
+
 By default this library uses the channel configuration for CANalyzer.
 To use a different application, open **Vector Hardware Configuration** program and create
 a new application and assign the channels you may want to use.
@@ -12,7 +15,9 @@ the bus or in a config file.
 Channel should be given as a list of channels starting at 0.
 
 Here is an example configuration file connecting to CAN 1 and CAN 2 for an
-application named "python-can"::
+application named "python-can":
+
+::
 
     [default]
     interface = vector
@@ -59,6 +64,18 @@ Miscellaneous
    :show-inheritance:
    :class-doc-from: class
 
+.. autoclass:: can.interfaces.vector.canlib.VectorBusParams
+   :show-inheritance:
+   :class-doc-from: class
+
+.. autoclass:: can.interfaces.vector.canlib.VectorCanParams
+   :show-inheritance:
+   :class-doc-from: class
+
+.. autoclass:: can.interfaces.vector.canlib.VectorCanFdParams
+   :show-inheritance:
+   :class-doc-from: class
+
 .. autoclass:: can.interfaces.vector.xldefine.XL_HardwareType
    :show-inheritance:
    :member-order: bysource
@@ -78,6 +95,18 @@ Miscellaneous
    :undoc-members:
 
 .. autoclass:: can.interfaces.vector.xldefine.XL_BusTypes
+   :show-inheritance:
+   :member-order: bysource
+   :members:
+   :undoc-members:
+
+.. autoclass:: can.interfaces.vector.xldefine.XL_OutputMode
+   :show-inheritance:
+   :member-order: bysource
+   :members:
+   :undoc-members:
+
+.. autoclass:: can.interfaces.vector.xldefine.XL_CANFD_BusParams_CanOpMode
    :show-inheritance:
    :member-order: bysource
    :members:

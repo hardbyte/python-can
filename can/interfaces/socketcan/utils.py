@@ -21,7 +21,7 @@ def pack_filters(can_filters: Optional[typechecking.CanFilters] = None) -> bytes
         # Pass all messages
         can_filters = [{"can_id": 0, "can_mask": 0}]
 
-    can_filter_fmt = "={}I".format(2 * len(can_filters))
+    can_filter_fmt = f"={2 * len(can_filters)}I"
     filter_data = []
     for can_filter in can_filters:
         can_id = can_filter["can_id"]
@@ -50,7 +50,7 @@ def find_available_interfaces() -> Iterable[str]:
     try:
         # adding "type vcan" would exclude physical can devices
         command = ["ip", "-o", "link", "list", "up"]
-        output = subprocess.check_output(command, universal_newlines=True)
+        output = subprocess.check_output(command, text=True)
 
     except Exception as e:  # subprocess.CalledProcessError is too specific
         log.error("failed to fetch opened can devices: %s", e)

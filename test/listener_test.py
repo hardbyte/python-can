@@ -88,7 +88,7 @@ class ListenerTest(BusTest):
 
     def testPlayerTypeResolution(self):
         def test_filetype_to_instance(extension, klass):
-            print("testing: {}".format(extension))
+            print(f"testing: {extension}")
             try:
                 if extension == ".blf":
                     delete = False
@@ -123,7 +123,7 @@ class ListenerTest(BusTest):
 
     def testLoggerTypeResolution(self):
         def test_filetype_to_instance(extension, klass):
-            print("testing: {}".format(extension))
+            print(f"testing: {extension}")
             try:
                 with tempfile.NamedTemporaryFile(
                     suffix=extension, delete=False

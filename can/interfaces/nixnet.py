@@ -9,31 +9,24 @@ Authors: Javier Rubio Giménez <jvrr20@gmail.com>, Jose A. Escobar <joseleescoba
 """
 
 import logging
-import sys
-import time
-import struct
+import os
+from types import ModuleType
+from typing import Optional
 
 from can import BusABC, Message
-from ..exceptions import CanInitializationError, CanOperationError
-
+from ..exceptions import (
+    CanInitializationError,
+    CanOperationError,
+    CanInterfaceNotImplementedError,
+)
 
 logger = logging.getLogger(__name__)
 
-if sys.platform == "win32":
-    try:
-        from nixnet import (
-            session,
-            types,
-            constants,
-            errors,
-            system,
-            database,
-            XnetError,
-        )
-    except ImportError as error:
-        raise ImportError("NIXNET python module cannot be loaded") from error
-else:
-    raise NotImplementedError("NiXNET only supported on Win32 platforms")
+nixnet: Optional[ModuleType] = None
+try:
+    import nixnet  # type: ignore
+except Exception as exc:
+    logger.warning("Could not import nixnet: %s", exc)
 
 
 class NiXNETcanBus(BusABC):
@@ -68,9 +61,18 @@ class NiXNETcanBus(BusABC):
             ``is_error_frame`` set to True and ``arbitration_id`` will identify
             the error (default True)
 
-        :raises can.exceptions.CanInitializationError:
+        :raises ~can.exceptions.CanInitializationError:
             If starting communication fails
         """
+        if os.name != "nt" and not kwargs.get("_testing", False):
+            raise CanInterfaceNotImplementedError(
+                f"The NI-XNET interface is only supported on Windows, "
+                f'but you are running "{os.name}"'
+            )
+
+        if nixnet is None:
+            raise CanInterfaceNotImplementedError("The NI-XNET API has not been loaded")
+
         self._rx_queue = []
         self.channel = channel
         self.channel_info = "NI-XNET: " + channel
@@ -88,10 +90,10 @@ class NiXNETcanBus(BusABC):
 
             # We need two sessions for this application, one to send frames and another to receive them
 
-            self.__session_send = session.FrameOutStreamSession(
+            self.__session_send = nixnet.session.FrameOutStreamSession(
                 channel, database_name=database_name
             )
-            self.__session_receive = session.FrameInStreamSession(
+            self.__session_receive = nixnet.session.FrameInStreamSession(
                 channel, database_name=database_name
             )
 
@@ -110,21 +112,21 @@ class NiXNETcanBus(BusABC):
                 self.__session_receive.intf.can_fd_baud_rate = fd_bitrate
 
             if can_termination:
-                self.__session_send.intf.can_term = constants.CanTerm.ON
-                self.__session_receive.intf.can_term = constants.CanTerm.ON
+                self.__session_send.intf.can_term = nixnet.constants.CanTerm.ON
+                self.__session_receive.intf.can_term = nixnet.constants.CanTerm.ON
 
             self.__session_receive.queue_size = 512
             # Once that all the parameters have been restarted, we start the sessions
             self.__session_send.start()
             self.__session_receive.start()
 
-        except errors.XnetError as error:
+        except nixnet.errors.XnetError as error:
             raise CanInitializationError(
                 f"{error.args[0]} ({error.error_type})", error.error_code
             ) from None
 
         self._is_filtered = False
-        super(NiXNETcanBus, self).__init__(
+        super().__init__(
             channel=channel,
             can_filters=can_filters,
             bitrate=bitrate,
@@ -145,13 +147,15 @@ class NiXNETcanBus(BusABC):
             msg = Message(
                 timestamp=can_frame.timestamp / 10000000.0 - 11644473600,
                 channel=self.channel,
-                is_remote_frame=can_frame.type == constants.FrameType.CAN_REMOTE,
-                is_error_frame=can_frame.type == constants.FrameType.CAN_BUS_ERROR,
+                is_remote_frame=can_frame.type == nixnet.constants.FrameType.CAN_REMOTE,
+                is_error_frame=can_frame.type
+                == nixnet.constants.FrameType.CAN_BUS_ERROR,
                 is_fd=(
-                    can_frame.type == constants.FrameType.CANFD_DATA
-                    or can_frame.type == constants.FrameType.CANFDBRS_DATA
+                    can_frame.type == nixnet.constants.FrameType.CANFD_DATA
+                    or can_frame.type == nixnet.constants.FrameType.CANFDBRS_DATA
                 ),
-                bitrate_switch=can_frame.type == constants.FrameType.CANFDBRS_DATA,
+                bitrate_switch=can_frame.type
+                == nixnet.constants.FrameType.CANFDBRS_DATA,
                 is_extended_id=can_frame.identifier.extended,
                 # Get identifier from CanIdentifier structure
                 arbitration_id=can_frame.identifier.identifier,
@@ -178,29 +182,29 @@ class NiXNETcanBus(BusABC):
             It does not wait for message to be ACKed currently.
         """
         if timeout is None:
-            timeout = constants.TIMEOUT_INFINITE
+            timeout = nixnet.constants.TIMEOUT_INFINITE
 
         if msg.is_remote_frame:
-            type_message = constants.FrameType.CAN_REMOTE
+            type_message = nixnet.constants.FrameType.CAN_REMOTE
         elif msg.is_error_frame:
-            type_message = constants.FrameType.CAN_BUS_ERROR
+            type_message = nixnet.constants.FrameType.CAN_BUS_ERROR
         elif msg.is_fd:
             if msg.bitrate_switch:
-                type_message = constants.FrameType.CANFDBRS_DATA
+                type_message = nixnet.constants.FrameType.CANFDBRS_DATA
             else:
-                type_message = constants.FrameType.CANFD_DATA
+                type_message = nixnet.constants.FrameType.CANFD_DATA
         else:
-            type_message = constants.FrameType.CAN_DATA
+            type_message = nixnet.constants.FrameType.CAN_DATA
 
-        can_frame = types.CanFrame(
-            types.CanIdentifier(msg.arbitration_id, msg.is_extended_id),
+        can_frame = nixnet.types.CanFrame(
+            nixnet.types.CanIdentifier(msg.arbitration_id, msg.is_extended_id),
             type=type_message,
             payload=msg.data,
         )
 
         try:
             self.__session_send.frames.write([can_frame], timeout)
-        except errors.XnetError as error:
+        except nixnet.errors.XnetError as error:
             raise CanOperationError(
                 f"{error.args[0]} ({error.error_type})", error.error_code
             ) from None
@@ -237,7 +241,7 @@ class NiXNETcanBus(BusABC):
         configs = []
 
         try:
-            with system.System() as nixnet_system:
+            with nixnet.system.System() as nixnet_system:
                 for interface in nixnet_system.intf_refs_can:
                     cahnnel = str(interface)
                     logger.debug(
@@ -248,10 +252,10 @@ class NiXNETcanBus(BusABC):
                             "interface": "nixnet",
                             "channel": cahnnel,
                             "can_term_available": interface.can_term_cap
-                            == constants.CanTermCap.YES,
+                            == nixnet.constants.CanTermCap.YES,
                         }
                     )
-        except XnetError as error:
+        except Exception as error:
             logger.debug("An error occured while searching for configs: %s", str(error))
 
         return configs

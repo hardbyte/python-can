@@ -170,7 +170,7 @@ class CanutilsLogWriter(FileIOMessageWriter):
         if isinstance(channel, int) or isinstance(channel, str) and channel.isdigit():
             channel = f"can{channel}"
 
-        framestr = "(%f) %s" % (timestamp, channel)
+        framestr = f"({timestamp:f}) {channel}"
 
         if msg.is_error_frame:
             framestr += " %08X#" % (CAN_ERR_FLAG | CAN_ERR_BUSERROR)

@@ -4,7 +4,7 @@ socketcand Interface
 ====================
 `Socketcand <https://github.com/linux-can/socketcand>`__ is part of the 
 `Linux-CAN <https://github.com/linux-can>`__ project, providing a 
-Network-to-CAN bridge as Linux damon. It implements a specific
+Network-to-CAN bridge as a Linux damon. It implements a specific
 `TCP/IP based communication protocol <https://github.com/linux-can/socketcand/blob/master/doc/protocol.md>`__
 to transfer CAN frames and control commands.
 
@@ -18,13 +18,13 @@ daemon running on a remote Raspberry Pi:
 
     import can
 
-    bus = can.interface.Bus(bustype='socketcand', host="10.0.16.15", port=29536, channel="can0")
+    bus = can.interface.Bus(interface='socketcand', host="10.0.16.15", port=29536, channel="can0")
 
     # loop until Ctrl-C
     try:
       while True:
         msg = bus.recv()
-        print (msg)
+        print(msg)
     except KeyboardInterrupt:
       pass
 

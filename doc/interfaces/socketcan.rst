@@ -3,19 +3,19 @@
 SocketCAN
 =========
 
-The SocketCAN documentation can be found in the `Linux kernel docs`_ at
-``networking`` directory. Quoting from the SocketCAN Linux documentation::
+The SocketCAN documentation can be found in the `Linux kernel docs`_ in the
+``networking`` directory. Quoting from the SocketCAN Linux documentation:
 
-> The socketcan package is an implementation of CAN protocols
-> (Controller Area Network) for Linux.  CAN is a networking technology
-> which has widespread use in automation, embedded devices, and
-> automotive fields.  While there have been other CAN implementations
-> for Linux based on character devices, SocketCAN uses the Berkeley
-> socket API, the Linux network stack and implements the CAN device
-> drivers as network interfaces.  The CAN socket API has been designed
-> as similar as possible to the TCP/IP protocols to allow programmers,
-> familiar with network programming, to easily learn how to use CAN
-> sockets.
+   The socketcan package is an implementation of CAN protocols
+   (Controller Area Network) for Linux.  CAN is a networking technology
+   which has widespread use in automation, embedded devices, and
+   automotive fields.  While there have been other CAN implementations
+   for Linux based on character devices, SocketCAN uses the Berkeley
+   socket API, the Linux network stack and implements the CAN device
+   drivers as network interfaces.  The CAN socket API has been designed
+   as similar as possible to the TCP/IP protocols to allow programmers,
+   familiar with network programming, to easily learn how to use CAN
+   sockets.
 
 .. important::
 
@@ -177,12 +177,12 @@ To spam a bus:
     import time
     import can
 
-    bustype = 'socketcan'
+    interface = 'socketcan'
     channel = 'vcan0'
 
     def producer(id):
         """:param id: Spam the bus with messages including the data id."""
-        bus = can.Bus(channel=channel, interface=bustype)
+        bus = can.Bus(channel=channel, interface=interface)
         for i in range(10):
             msg = can.Message(arbitration_id=0xc0ffee, data=[id, i, 0, 1, 3, 1, 4, 1], is_extended_id=False)
             bus.send(msg)

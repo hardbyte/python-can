@@ -15,12 +15,12 @@ from setuptools import setup, find_packages
 
 logging.basicConfig(level=logging.WARNING)
 
-with open("can/__init__.py", "r", encoding="utf-8") as fd:
+with open("can/__init__.py", encoding="utf-8") as fd:
     version = re.search(
         r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]', fd.read(), re.MULTILINE
     ).group(1)
 
-with open("README.rst", "r", encoding="utf-8") as f:
+with open("README.rst", encoding="utf-8") as f:
     long_description = f.read()
 
 # Dependencies
@@ -30,10 +30,13 @@ extras_require = {
     "neovi": ["filelock", "python-ics>=2.12"],
     "canalystii": ["canalystii>=0.1.0"],
     "cantact": ["cantact>=0.0.7"],
+    "cvector": ["python-can-cvector"],
     "gs_usb": ["gs_usb>=0.2.1"],
     "nixnet": ["nixnet>=0.3.1"],
     "pcan": ["uptime~=3.0.1"],
     "cfuc": ["pyserial~=3.0"],
+    "remote": ["python-can-remote"],
+    "sontheim": ["python-can-sontheim>=0.1.2"],
     "viewer": [
         'windows-curses;platform_system=="Windows" and platform_python_implementation=="CPython"'
     ],
@@ -53,6 +56,7 @@ setup(
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
         "Natural Language :: English",
         "Programming Language :: Python :: Implementation :: CPython",
         "Programming Language :: Python :: Implementation :: PyPy",
@@ -92,7 +96,7 @@ setup(
         "setuptools",
         "wrapt~=1.10",
         "typing_extensions>=3.10.0.0",
-        'pywin32;platform_system=="Windows" and platform_python_implementation=="CPython"',
+        'pywin32>=305;platform_system=="Windows" and platform_python_implementation=="CPython"',
         'msgpack~=1.0.0;platform_system!="Windows"',
         "packaging",
     ],

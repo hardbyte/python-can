@@ -61,10 +61,10 @@ def load_file_config(
     else:
         config.read(path)
 
-    _config = {}
+    _config: Dict[str, str] = {}
 
     if config.has_section(section):
-        _config.update(dict((key, val) for key, val in config.items(section)))
+        _config.update(config.items(section))
 
     return _config
 
@@ -232,25 +232,6 @@ def _create_bus_config(config: Dict[str, Any]) -> typechecking.BusConfig:
         config["fd"] = config["fd"] not in ("0", "False", "false", False)
     if "data_bitrate" in config:
         config["data_bitrate"] = int(config["data_bitrate"])
-
-    # Create bit timing configuration if given
-    timing_conf = {}
-    for key in (
-        "f_clock",
-        "brp",
-        "tseg1",
-        "tseg2",
-        "sjw",
-        "nof_samples",
-        "btr0",
-        "btr1",
-    ):
-        if key in config:
-            timing_conf[key] = int(str(config[key]), base=0)
-            del config[key]
-    if timing_conf:
-        timing_conf["bitrate"] = config["bitrate"]
-        config["timing"] = can.BitTiming(**timing_conf)
 
     return cast(typechecking.BusConfig, config)
 
