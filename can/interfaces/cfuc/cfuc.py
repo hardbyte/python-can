@@ -67,19 +67,21 @@ DLC_TO_BYTES = {
     12: 24,
     13: 32,
     14: 48,
-    15: 64 
+    15: 64,
 }
 
 UCAN_RX_FRAME_DEF_CAN_COUNT_MAX = 10
+
+
 class UCAN_FRAME_TYPE(enum.Enum):
-   UCAN_FD_INIT = 0 # init CAN with all parameters, open in mode specified in init data. Frame direction USB->CAN*/
-   UCAN_FD_DEINIT = 1 # deinit CAN, close CAN connection. Frame direction USB->CAN*/
-   UCAN_FD_TX = 2 # send new frame on CAN network. Frame direction USB->CAN  */
-   UCAN_FD_SAVE_CONFIG = 3 # saves CAN config to NVM USB->CAN*/
-   UCAN_FD_GO_TO_BOOTLOADER = 4 # go to USB bootloader USB->CAN*/
-   UCAN_FD_GET_CAN_STATUS = 5 # request status USB->CAN*/
-   UCAN_FD_RX = 6 # new CAN frame received on network. Frame direction CAN->USB*/
-   UCAN_FD_ACK = 7 # gets CAN status from CONVERTER. Also ACK resposne for all frames form USB. Frame direction CAN->USB */
+    UCAN_FD_INIT = 0  # init CAN with all parameters, open in mode specified in init data. Frame direction USB->CAN*/
+    UCAN_FD_DEINIT = 1  # deinit CAN, close CAN connection. Frame direction USB->CAN*/
+    UCAN_FD_TX = 2  # send new frame on CAN network. Frame direction USB->CAN  */
+    UCAN_FD_SAVE_CONFIG = 3  # saves CAN config to NVM USB->CAN*/
+    UCAN_FD_GO_TO_BOOTLOADER = 4  # go to USB bootloader USB->CAN*/
+    UCAN_FD_GET_CAN_STATUS = 5  # request status USB->CAN*/
+    UCAN_FD_RX = 6  # new CAN frame received on network. Frame direction CAN->USB*/
+    UCAN_FD_ACK = 7  # gets CAN status from CONVERTER. Also ACK resposne for all frames form USB. Frame direction CAN->USB */
 
 
 class cfucBus(BusABC):
@@ -90,7 +92,7 @@ class cfucBus(BusABC):
 
     def _construct_bootloader_frame(self):
         FrameType = struct.pack("<I", UCAN_FRAME_TYPE.UCAN_FD_GO_TO_BOOTLOADER.value)
-        byte_msg =  bytearray(FrameType)  #UCAN_FD_GO_TO_BOOTLOADER
+        byte_msg = bytearray(FrameType)  # UCAN_FD_GO_TO_BOOTLOADER
         return byte_msg
 
     def go_to_bootloader(self):
@@ -126,35 +128,34 @@ class cfucBus(BusABC):
             else:
                 FrameFormat = struct.pack("<I", int(0x00000200))  # fd
         else:
-            FrameFormat = bytearray(b'\x00\x00\x00\x00')  # clasic
+            FrameFormat = bytearray(b"\x00\x00\x00\x00")  # clasic
 
         if IsAutoRetransmission == False:
-            AutoRetransmission = bytearray(b'\x00')
+            AutoRetransmission = bytearray(b"\x00")
         else:
-            AutoRetransmission = bytearray(b'\x01')
+            AutoRetransmission = bytearray(b"\x01")
 
-        byte_msg =  bytearray(FrameType)  #UCAN_FD_INIT
-        byte_msg += ClockDivider  #ClockDivider
-        byte_msg += FrameFormat #FrameFormat
-        byte_msg += struct.pack("<I", int(0)) #Mode
-        byte_msg += AutoRetransmission #AutoRetransmission
-        byte_msg += bytearray(b'\x00') #TransmitPause
-        byte_msg += bytearray(b'\x00') #ProtocolException
-        byte_msg += bytearray(b'\x00') #empty/fillup byte
-        byte_msg += struct.pack("<I", NominalPrescaler) #NominalPrescaler
-        byte_msg += struct.pack("<I", NominalSyncJumpWidthValue) #NominalSyncJumpWidth
-        byte_msg += struct.pack("<I", NominalTimeSeg1Value) #NominalTimeSeg1
-        byte_msg += struct.pack("<I", NominalTimeSeg2Value) #NominalTimeSeg2
-        byte_msg += struct.pack("<I", int(DataPrescalerValue)) #DataPrescaler
-        byte_msg += struct.pack("<I", int(DataSyncJumpWidthValue)) #DataSyncJumpWidth
-        byte_msg += struct.pack("<I", int(DataTimeSeg1Value)) #DataTimeSeg1
-        byte_msg += struct.pack("<I", int(DataTimeSeg2Value)) #DataTimeSeg2
-        byte_msg += bytearray(b'\x00\x00\x00\x00') #StdFiltersNbr
-        byte_msg += bytearray(b'\x00\x00\x00\x00') #ExtFiltersNbr
-        byte_msg += bytearray(b'\x00\x00\x00\x00') #TxFifoQueueMode
+        byte_msg = bytearray(FrameType)  # UCAN_FD_INIT
+        byte_msg += ClockDivider  # ClockDivider
+        byte_msg += FrameFormat  # FrameFormat
+        byte_msg += struct.pack("<I", int(0))  # Mode
+        byte_msg += AutoRetransmission  # AutoRetransmission
+        byte_msg += bytearray(b"\x00")  # TransmitPause
+        byte_msg += bytearray(b"\x00")  # ProtocolException
+        byte_msg += bytearray(b"\x00")  # empty/fillup byte
+        byte_msg += struct.pack("<I", NominalPrescaler)  # NominalPrescaler
+        byte_msg += struct.pack("<I", NominalSyncJumpWidthValue)  # NominalSyncJumpWidth
+        byte_msg += struct.pack("<I", NominalTimeSeg1Value)  # NominalTimeSeg1
+        byte_msg += struct.pack("<I", NominalTimeSeg2Value)  # NominalTimeSeg2
+        byte_msg += struct.pack("<I", int(DataPrescalerValue))  # DataPrescaler
+        byte_msg += struct.pack("<I", int(DataSyncJumpWidthValue))  # DataSyncJumpWidth
+        byte_msg += struct.pack("<I", int(DataTimeSeg1Value))  # DataTimeSeg1
+        byte_msg += struct.pack("<I", int(DataTimeSeg2Value))  # DataTimeSeg2
+        byte_msg += bytearray(b"\x00\x00\x00\x00")  # StdFiltersNbr
+        byte_msg += bytearray(b"\x00\x00\x00\x00")  # ExtFiltersNbr
+        byte_msg += bytearray(b"\x00\x00\x00\x00")  # TxFifoQueueMode
 
         return byte_msg
-
 
     """
     Enable basic can communication over a serial.
@@ -257,7 +258,7 @@ class cfucBus(BusABC):
             DataTimeSeg1Value = 1
             DataTimeSeg2Value = 1
             DataPrescalerValue = 1
-            DataSyncJumpWidthValue = 1      
+            DataSyncJumpWidthValue = 1
 
         init_frame = self._consturct_init_frame(
             IsFD,
@@ -277,7 +278,6 @@ class cfucBus(BusABC):
 
         super().__init__(channel, *args, **kwargs)
 
-
     def shutdown(self):
         """
         Close the serial interface.
@@ -285,19 +285,26 @@ class cfucBus(BusABC):
         super().shutdown()
         self.ser.close()
 
-
     def _get_DLC(self, dlc):
-        if dlc < 0:  raise ValueError("DLC are intended to be greater than zero")
-        if dlc > 64: raise ValueError("DLC above 15 are not supported")
-        if dlc > 48: return int(ADLC[15])
-        if dlc > 32: return int(ADLC[14])
-        if dlc > 24: return int(ADLC[13])
-        if dlc > 20: return int(ADLC[12])
-        if dlc > 16: return int(ADLC[11])
-        if dlc > 12: return int(ADLC[10])
-        if dlc > 8:  return int(ADLC[9])
+        if dlc < 0:
+            raise ValueError("DLC are intended to be greater than zero")
+        if dlc > 64:
+            raise ValueError("DLC above 15 are not supported")
+        if dlc > 48:
+            return int(ADLC[15])
+        if dlc > 32:
+            return int(ADLC[14])
+        if dlc > 24:
+            return int(ADLC[13])
+        if dlc > 20:
+            return int(ADLC[12])
+        if dlc > 16:
+            return int(ADLC[11])
+        if dlc > 12:
+            return int(ADLC[10])
+        if dlc > 8:
+            return int(ADLC[9])
         return int(ADLC[dlc])
-
 
     def send(self, msg: Message, timeout=None):
         """
@@ -320,8 +327,16 @@ class cfucBus(BusABC):
         except struct.error:
             raise ValueError("Arbitration Id is out of range")
 
-        a_ex = bytearray(b'\x00\x00\x00\x40') if (msg.is_extended_id) else bytearray(b'\x00\x00\x00\x00')
-        a_rmt = bytearray(b'\x00\x00\x00\x20') if (msg.is_remote_frame) else bytearray(b'\x00\x00\x00\x00')
+        a_ex = (
+            bytearray(b"\x00\x00\x00\x40")
+            if (msg.is_extended_id)
+            else bytearray(b"\x00\x00\x00\x00")
+        )
+        a_rmt = (
+            bytearray(b"\x00\x00\x00\x20")
+            if (msg.is_remote_frame)
+            else bytearray(b"\x00\x00\x00\x00")
+        )
 
         a_dlc = struct.pack("<I", self._get_DLC(msg.dlc))
 
@@ -336,33 +351,32 @@ class cfucBus(BusABC):
 
         if msg.error_state_indicator == False:
             # ErrorStateIndicator FDCAN_ESI_PASSIVE
-            byte_msg += bytearray(b'\x00\x00\x00\x00')
+            byte_msg += bytearray(b"\x00\x00\x00\x00")
         else:
             # ErrorStateIndicator FDCAN_ESI_ACTIVE
-            byte_msg += bytearray(b'\x00\x00\x00\x80')
+            byte_msg += bytearray(b"\x00\x00\x00\x80")
 
         if msg.bitrate_switch == False:
-            byte_msg += bytearray(b'\x00\x00\x00\x00')  # BitRateSwitch FDCAN_BRS_OFF
+            byte_msg += bytearray(b"\x00\x00\x00\x00")  # BitRateSwitch FDCAN_BRS_OFF
         else:
-            byte_msg += bytearray(b'\x00\x00\x10\x00')  # BitRateSwitch FDCAN_BRS_ON
+            byte_msg += bytearray(b"\x00\x00\x10\x00")  # BitRateSwitch FDCAN_BRS_ON
 
         if msg.is_fd == False:
-            byte_msg += bytearray(b'\x00\x00\x00\x00')  # FDFormat FDCAN_CLASSIC_CAN
+            byte_msg += bytearray(b"\x00\x00\x00\x00")  # FDFormat FDCAN_CLASSIC_CAN
         else:
-            byte_msg += bytearray(b'\x00\x00\x20\x00')  # FDFormat FDCAN_FD_CAN
+            byte_msg += bytearray(b"\x00\x00\x20\x00")  # FDFormat FDCAN_FD_CAN
 
-        byte_msg += bytearray(b'\x00\x00\x00\x00')  # TxEventFifoControl
-        byte_msg += bytearray(b'\x00\x00\x00\x00')  # MessageMarker
+        byte_msg += bytearray(b"\x00\x00\x00\x00")  # TxEventFifoControl
+        byte_msg += bytearray(b"\x00\x00\x00\x00")  # MessageMarker
 
         # uint8_t can_data[64]; /* Data CAN buffer */
         for i in range(0, msg.dlc):
             byte_msg.append(msg.data[i])
 
         for i in range(msg.dlc, 64):
-            byte_msg += bytearray(b'\x00')
-            
-        self.ser.write(byte_msg)
+            byte_msg += bytearray(b"\x00")
 
+        self.ser.write(byte_msg)
 
     def _read(self, length):
         rx_buffer = bytearray(self.ser.read(length))
@@ -373,7 +387,6 @@ class cfucBus(BusABC):
             return result
         else:
             return -1
-
 
     def _read_rx_frame(self) -> Message:
         # read FDCAN_RxHeaderTypeDef structure
@@ -388,28 +401,27 @@ class cfucBus(BusABC):
         can_rx_header_FilterIndex = self._read(4)
         can_rx_header_IsFilterMatchingFrame = self._read(4)
 
-        #read Data CAN buffer
+        # read Data CAN buffer
         can_data = bytearray(self.ser.read(64))
 
-        #read Flasg and Errors
-        packed_flags_and_error_counters = self._read(4)        
-        
+        # read Flasg and Errors
+        packed_flags_and_error_counters = self._read(4)
+
         tmp = hex(can_rx_header_DataLength)
         dlc = DLC_TO_BYTES[int(tmp[2], base=16)]
 
         msg = Message(
-            timestamp = can_rx_header_RxTimestamp / 1000,
-            arbitration_id = can_rx_header_Identifier,
-            dlc = dlc,
-            data = can_data,
-            is_fd = True if can_rx_header_FDFormat else False,
-            is_extended_id = True if can_rx_header_IdType else False,
-            bitrate_switch = True if can_rx_header_BitRateSwitch else False,
-            is_remote_frame = True if can_rx_header_RxFrameType else False,
-            error_state_indicator = True if can_rx_header_ErrorStateIndicator else False,
+            timestamp=can_rx_header_RxTimestamp / 1000,
+            arbitration_id=can_rx_header_Identifier,
+            dlc=dlc,
+            data=can_data,
+            is_fd=True if can_rx_header_FDFormat else False,
+            is_extended_id=True if can_rx_header_IdType else False,
+            bitrate_switch=True if can_rx_header_BitRateSwitch else False,
+            is_remote_frame=True if can_rx_header_RxFrameType else False,
+            error_state_indicator=True if can_rx_header_ErrorStateIndicator else False,
         )
         return msg
-
 
     def _read_tx_frame(self) -> Message:
         # read FDCAN_TxHeaderTypeDef structure
@@ -429,17 +441,16 @@ class cfucBus(BusABC):
         dlc = DLC_TO_BYTES[int(tmp[2], base=16)]
 
         msg = Message(
-            arbitration_id = can_tx_header_Identifier,
-            dlc = dlc,
-            data = can_data,
-            is_fd = True if can_tx_header_FDFormat else False,
-            is_extended_id = True if can_tx_header_IdType else False,
-            bitrate_switch= True if can_tx_header_BitRateSwitch else False,
-            is_remote_frame= True if can_tx_header_TxFrameType else False,
-            error_state_indicator = True if can_tx_header_ErrorStateIndicator else False,
+            arbitration_id=can_tx_header_Identifier,
+            dlc=dlc,
+            data=can_data,
+            is_fd=True if can_tx_header_FDFormat else False,
+            is_extended_id=True if can_tx_header_IdType else False,
+            bitrate_switch=True if can_tx_header_BitRateSwitch else False,
+            is_remote_frame=True if can_tx_header_TxFrameType else False,
+            error_state_indicator=True if can_tx_header_ErrorStateIndicator else False,
         )
         return msg, False
-
 
     def _recv_internal(self, timeout):
         """
@@ -461,23 +472,23 @@ class cfucBus(BusABC):
         :rtype:
             can.Message, bool
         """
-        frame_type = self._read(4) # read frame type 
+        frame_type = self._read(4)  # read frame type
 
         if frame_type == UCAN_FRAME_TYPE.UCAN_FD_TX.value:
             results = self._read_tx_frame()
             return results, False
-            
+
         elif frame_type == UCAN_FRAME_TYPE.UCAN_FD_RX.value:
             results = list()
-            can_frame_count = self._read(4) # read frame count
+            can_frame_count = self._read(4)  # read frame count
 
             for i in range(can_frame_count):
                 results.append(self._read_rx_frame())
-            
+
             for i in range(UCAN_RX_FRAME_DEF_CAN_COUNT_MAX - can_frame_count):
-                self._read_rx_frame() # drop empty frames
-            
+                self._read_rx_frame()  # drop empty frames
+
             return tuple(results), False
-        
+
         else:
             return None, False
