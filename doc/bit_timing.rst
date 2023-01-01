@@ -92,8 +92,10 @@ Check :doc:`configuration` for more information about saving and loading configu
     :class-doc-from: both
     :show-inheritance:
     :members:
+    :member-order: bysource
 
 .. autoclass:: can.BitTimingFd
     :class-doc-from: both
     :show-inheritance:
     :members:
+    :member-order: bysource

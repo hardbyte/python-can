@@ -202,9 +202,9 @@ class BitTiming(Mapping):
         return possible_solutions[0]
 
     @property
-    def nbt(self) -> int:
-        """Nominal Bit Time."""
-        return 1 + self.tseg1 + self.tseg2
+    def f_clock(self) -> int:
+        """The CAN system clock frequency in Hz."""
+        return self["f_clock"]
 
     @property
     def bitrate(self) -> int:
@@ -222,9 +222,9 @@ class BitTiming(Mapping):
         return int(round(self.brp / self.f_clock * 1e9))
 
     @property
-    def sjw(self) -> int:
-        """Synchronization Jump Width."""
-        return self["sjw"]
+    def nbt(self) -> int:
+        """Nominal Bit Time."""
+        return 1 + self.tseg1 + self.tseg2
 
     @property
     def tseg1(self) -> int:
@@ -243,19 +243,30 @@ class BitTiming(Mapping):
         return self["tseg2"]
 
     @property
+    def sjw(self) -> int:
+        """Synchronization Jump Width."""
+        return self["sjw"]
+
+    @property
     def nof_samples(self) -> int:
         """Number of samples (1 or 3)."""
         return self["nof_samples"]
 
     @property
-    def f_clock(self) -> int:
-        """The CAN system clock frequency in Hz."""
-        return self["f_clock"]
-
-    @property
     def sample_point(self) -> float:
         """Sample point in percent."""
         return 100.0 * (1 + self.tseg1) / (1 + self.tseg1 + self.tseg2)
+
+    @property
+    def btr0(self) -> int:
+        """Bit timing register 0."""
+        return (self.sjw - 1) << 6 | self.brp - 1
+
+    @property
+    def btr1(self) -> int:
+        """Bit timing register 1."""
+        sam = 1 if self.nof_samples == 3 else 0
+        return sam << 7 | (self.tseg2 - 1) << 4 | self.tseg1 - 1
 
     def oscillator_tolerance(
         self,
@@ -286,17 +297,6 @@ class BitTiming(Mapping):
             ),
         ]
         return max(0.0, min(df_clock_list) * 100)
-
-    @property
-    def btr0(self) -> int:
-        """Bit timing register 0."""
-        return (self.sjw - 1) << 6 | self.brp - 1
-
-    @property
-    def btr1(self) -> int:
-        """Bit timing register 1."""
-        sam = 1 if self.nof_samples == 3 else 0
-        return sam << 7 | (self.tseg2 - 1) << 4 | self.tseg1 - 1
 
     def __str__(self) -> str:
         segments = [
@@ -632,6 +632,11 @@ class BitTimingFd(Mapping):
         return possible_solutions[0]
 
     @property
+    def f_clock(self) -> int:
+        """The CAN system clock frequency in Hz."""
+        return self["f_clock"]
+
+    @property
     def nom_bitrate(self) -> int:
         """Nominal (arbitration phase) bitrate."""
         return self["nom_bitrate"]
@@ -722,11 +727,6 @@ class BitTimingFd(Mapping):
     def data_sample_point(self) -> float:
         """Sample point of the data phase in percent."""
         return 100.0 * (1 + self.data_tseg1) / (1 + self.data_tseg1 + self.data_tseg2)
-
-    @property
-    def f_clock(self) -> int:
-        """The CAN system clock frequency in Hz."""
-        return self["f_clock"]
 
     def oscillator_tolerance(
         self,
