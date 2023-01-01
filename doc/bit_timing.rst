@@ -48,8 +48,8 @@ Typical CAN clock frequencies are 8-80 MHz.
 
 In most cases, the recommended settings for a predefined set of common
 bit rates will work just fine. In some cases, however, it may be necessary
-to specify custom bit timings. The :class:`can.BitTiming` and
-:class:`can.BitTimingFd` classes can be used for this purpose to specify
+to specify custom bit timings. The :class:`~can.BitTiming` and
+:class:`~can.BitTimingFd` classes can be used for this purpose to specify
 bit timings in a relatively interface agnostic manner.
 
 It is possible to specify CAN 2.0 bit timings
@@ -59,7 +59,6 @@ using the config file:
 .. code-block:: none
 
     [default]
-    interface=canalystii
     f_clock=8000000
     bitrate=1000000
     tseg1=5
@@ -72,7 +71,6 @@ The same is possible for CAN FD:
 .. code-block:: none
 
     [default]
-    interface=pcan
     f_clock=80000000
     nom_bitrate=500000
     nom_tseg1=119
@@ -82,6 +80,10 @@ The same is possible for CAN FD:
     data_tseg1=29
     data_tseg2=10
     data_sjw=10
+
+A :class:`dict` of the relevant config parameters can be easily obtained by calling
+``dict(timing)`` or ``{**timing}`` where ``timing`` is the :class:`~can.BitTiming` or
+:class:`~can.BitTimingFd` instance.
 
 Check :doc:`configuration` for more information about saving and loading configurations.
 
