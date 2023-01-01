@@ -1,7 +1,11 @@
 #!/usr/bin/env python
+
+import struct
+
 import pytest
 
 import can
+from can.interfaces.pcan.pcan import PCAN_BITRATES
 
 
 def test_sja1000():
@@ -90,10 +94,6 @@ def test_from_btr():
     assert timing.sample_point == 75
     assert timing.btr0 == 0x00
     assert timing.btr1 == 0x14
-
-
-import struct
-from can.interfaces.pcan.pcan import PCAN_BITRATES
 
 
 def test_btr_persistence():
