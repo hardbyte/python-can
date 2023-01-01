@@ -92,9 +92,9 @@ def test_from_btr():
     assert timing.btr1 == 0x14
 
 
-
 import struct
 from can.interfaces.pcan.pcan import PCAN_BITRATES
+
 
 def test_btr_persistence():
     f_clock = 8_000_000
@@ -104,6 +104,7 @@ def test_btr_persistence():
         t = can.BitTiming.from_registers(f_clock, btr0, btr1)
         assert t.btr0 == btr0
         assert t.btr1 == btr1
+
 
 def test_from_sample_point():
     timing = can.BitTiming.from_sample_point(
