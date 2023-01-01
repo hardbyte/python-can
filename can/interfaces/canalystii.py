@@ -21,7 +21,7 @@ class CANalystIIBus(BusABC):
         channel: Union[int, Sequence[int], str] = (0, 1),
         device: int = 0,
         bitrate: Optional[int] = None,
-        timing: Optional[BitTiming] = None,
+        timing: Optional[Union[BitTiming, BitTimingFd]] = None,
         can_filters: Optional[CanFilters] = None,
         rx_queue_size: Optional[int] = None,
         **kwargs: Dict[str, Any],
