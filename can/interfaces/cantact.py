@@ -48,7 +48,7 @@ class CantactBus(BusABC):
     def __init__(
         self,
         channel: int,
-        bitrate: int = 500000,
+        bitrate: int = 500_000,
         poll_interval: float = 0.01,
         monitor: bool = False,
         timing: Optional[Union[BitTiming, BitTimingFd]] = None,
