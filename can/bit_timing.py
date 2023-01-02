@@ -363,10 +363,14 @@ class BitTiming(Mapping):
         """
         # try the most simple solution first: another bitrate prescaler
         try:
-            brp = int(round(self.brp * f_clock / self.f_clock))
-            bt = BitTiming(**{**self, "f_clock": f_clock, "brp": brp})
-            if self.bitrate == bt.bitrate:
-                return bt
+            return BitTiming.from_bitrate_and_segments(
+                f_clock=f_clock,
+                bitrate=self.bitrate,
+                tseg1=self.tseg1,
+                tseg2=self.tseg2,
+                sjw=self.sjw,
+                nof_samples=self.nof_samples,
+            )
         except ValueError:
             pass
 
@@ -947,16 +951,17 @@ class BitTimingFd(Mapping):
         """
         # try the most simple solution first: another bitrate prescaler
         try:
-            nom_brp = int(round(self.nom_brp * f_clock / self.f_clock))
-            data_brp = int(round(self.data_brp * f_clock / self.f_clock))
-            bt = BitTimingFd(
-                **{**self, "f_clock": f_clock, "nom_brp": nom_brp, "data_brp": data_brp}
+            return BitTimingFd.from_bitrate_and_segments(
+                f_clock=f_clock,
+                nom_bitrate=self.nom_bitrate,
+                nom_tseg1=self.nom_tseg1,
+                nom_tseg2=self.nom_tseg2,
+                nom_sjw=self.nom_sjw,
+                data_bitrate=self.data_bitrate,
+                data_tseg1=self.data_tseg1,
+                data_tseg2=self.data_tseg2,
+                data_sjw=self.data_sjw,
             )
-            if (
-                self.nom_bitrate == bt.nom_bitrate
-                and self.data_bitrate == bt.data_bitrate
-            ):
-                return bt
         except ValueError:
             pass
 
