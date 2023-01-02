@@ -1,7 +1,7 @@
 """
 Utilities and configuration file parsing.
 """
-
+import copy
 import functools
 import json
 import logging
@@ -12,7 +12,17 @@ import re
 import warnings
 from configparser import ConfigParser
 from time import time, perf_counter, get_clock_info
-from typing import Any, Callable, cast, Dict, Iterable, Tuple, Optional, Union, overload
+from typing import (
+    Any,
+    Callable,
+    cast,
+    Dict,
+    Iterable,
+    Tuple,
+    Optional,
+    Union,
+    TypeVar,
+)
 
 import can
 from . import typechecking
@@ -342,34 +352,36 @@ def deprecated_args_alias(**aliases):
     return deco
 
 
-@overload
-def check_or_adjust_timing_clock(
-    timing: BitTiming, valid_clocks: Iterable[int]
-) -> BitTiming:
-    ...
+T = TypeVar("T", BitTiming, BitTimingFd)
 
 
-@overload
-def check_or_adjust_timing_clock(
-    timing: BitTimingFd, valid_clocks: Iterable[int]
-) -> BitTimingFd:
-    ...
+def check_or_adjust_timing_clock(timing: T, valid_clocks: Iterable[int]) -> T:
+    """Adjusts the given timing instance to have an *f_clock* value that is within the
+    allowed values specified by *valid_clocks*. If the *f_clock* value of timing is
+    already within *valid_clocks*, then *timing* is returned unchanged.
 
-
-def check_or_adjust_timing_clock(
-    timing: Union[BitTiming, BitTimingFd], valid_clocks: Iterable[int]
-) -> Union[BitTiming, BitTimingFd]:
+    :param timing:
+        The :class:`~can.BitTiming` or :class:`~can.BitTimingFd` instance to adjust.
+    :param valid_clocks:
+        An iterable of integers representing the valid *f_clock* values that the timing instance
+        can be changed to. The order of the values in *valid_clocks* determines the priority in
+        which they are tried, with earlier values being tried before later ones.
+    :return:
+        A new :class:`~can.BitTiming` or :class:`~can.BitTimingFd` instance with an
+        *f_clock* value within *valid_clocks*.
+    :raises ~can.exceptions.CanInitializationError:
+        If no compatible *f_clock* value can be found within *valid_clocks*.
+    """
     if timing.f_clock in valid_clocks:
-        return timing
-
-    timing_cls = timing.__class__
+        # create a copy so this function always returns a new instance
+        return copy.deepcopy(timing)
 
     for clock in valid_clocks:
         try:
-            # Try to use a different clock for the
-            adjusted_timing = timing_cls(**{**timing, "f_clock": clock})
+            # Try to use a different f_clock
+            adjusted_timing = timing.recreate_with_f_clock(clock)
             warnings.warn(
-                f"Adjusted f_clock in {timing_cls.__name__} from "
+                f"Adjusted f_clock in {timing.__class__.__name__} from "
                 f"{timing.f_clock} to {adjusted_timing.f_clock}"
             )
             return adjusted_timing
