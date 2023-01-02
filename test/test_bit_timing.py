@@ -11,10 +11,10 @@ from can.interfaces.pcan.pcan import PCAN_BITRATES
 def test_sja1000():
     """Test some values obtained using other bit timing calculators."""
     timing = can.BitTiming(
-        f_clock=8000000, bitrate=125000, tseg1=11, tseg2=4, sjw=2, nof_samples=3
+        f_clock=8_000_000, brp=4, tseg1=11, tseg2=4, sjw=2, nof_samples=3
     )
-    assert timing.f_clock == 8000000
-    assert timing.bitrate == 125000
+    assert timing.f_clock == 8_000_000
+    assert timing.bitrate == 125_000
     assert timing.brp == 4
     assert timing.nbt == 16
     assert timing.tseg1 == 11
@@ -25,9 +25,9 @@ def test_sja1000():
     assert timing.btr0 == 0x43
     assert timing.btr1 == 0xBA
 
-    timing = can.BitTiming(f_clock=8000000, bitrate=500000, tseg1=13, tseg2=2, sjw=1)
-    assert timing.f_clock == 8000000
-    assert timing.bitrate == 500000
+    timing = can.BitTiming(f_clock=8_000_000, brp=1, tseg1=13, tseg2=2, sjw=1)
+    assert timing.f_clock == 8_000_000
+    assert timing.bitrate == 500_000
     assert timing.brp == 1
     assert timing.nbt == 16
     assert timing.tseg1 == 13
@@ -38,9 +38,9 @@ def test_sja1000():
     assert timing.btr0 == 0x00
     assert timing.btr1 == 0x1C
 
-    timing = can.BitTiming(f_clock=8000000, bitrate=1000000, tseg1=5, tseg2=2, sjw=1)
-    assert timing.f_clock == 8000000
-    assert timing.bitrate == 1000000
+    timing = can.BitTiming(f_clock=8_000_000, brp=1, tseg1=5, tseg2=2, sjw=1)
+    assert timing.f_clock == 8_000_000
+    assert timing.bitrate == 1_000_000
     assert timing.brp == 1
     assert timing.nbt == 8
     assert timing.tseg1 == 5
@@ -52,14 +52,90 @@ def test_sja1000():
     assert timing.btr1 == 0x14
 
 
-def test_can_fd():
-    timing = can.BitTimingFd(
+def test_from_bitrate_and_segments():
+    timing = can.BitTiming.from_bitrate_and_segments(
+        f_clock=8_000_000, bitrate=125_000, tseg1=11, tseg2=4, sjw=2, nof_samples=3
+    )
+    assert timing.f_clock == 8_000_000
+    assert timing.bitrate == 125_000
+    assert timing.brp == 4
+    assert timing.nbt == 16
+    assert timing.tseg1 == 11
+    assert timing.tseg2 == 4
+    assert timing.sjw == 2
+    assert timing.nof_samples == 3
+    assert timing.sample_point == 75
+    assert timing.btr0 == 0x43
+    assert timing.btr1 == 0xBA
+
+    timing = can.BitTiming.from_bitrate_and_segments(
+        f_clock=8_000_000, bitrate=500_000, tseg1=13, tseg2=2, sjw=1
+    )
+    assert timing.f_clock == 8_000_000
+    assert timing.bitrate == 500_000
+    assert timing.brp == 1
+    assert timing.nbt == 16
+    assert timing.tseg1 == 13
+    assert timing.tseg2 == 2
+    assert timing.sjw == 1
+    assert timing.nof_samples == 1
+    assert timing.sample_point == 87.5
+    assert timing.btr0 == 0x00
+    assert timing.btr1 == 0x1C
+
+    timing = can.BitTiming.from_bitrate_and_segments(
+        f_clock=8_000_000, bitrate=1_000_000, tseg1=5, tseg2=2, sjw=1
+    )
+    assert timing.f_clock == 8_000_000
+    assert timing.bitrate == 1_000_000
+    assert timing.brp == 1
+    assert timing.nbt == 8
+    assert timing.tseg1 == 5
+    assert timing.tseg2 == 2
+    assert timing.sjw == 1
+    assert timing.nof_samples == 1
+    assert timing.sample_point == 75
+    assert timing.btr0 == 0x00
+    assert timing.btr1 == 0x14
+
+    timing = can.BitTimingFd.from_bitrate_and_segments(
         f_clock=80_000_000,
         nom_bitrate=500_000,
         nom_tseg1=119,
         nom_tseg2=40,
         nom_sjw=40,
         data_bitrate=2_000_000,
+        data_tseg1=29,
+        data_tseg2=10,
+        data_sjw=10,
+    )
+
+    assert timing.f_clock == 80_000_000
+    assert timing.nom_bitrate == 500_000
+    assert timing.nom_brp == 1
+    assert timing.nbt == 160
+    assert timing.nom_tseg1 == 119
+    assert timing.nom_tseg2 == 40
+    assert timing.nom_sjw == 40
+    assert timing.nom_sample_point == 75
+    assert timing.f_clock == 80_000_000
+    assert timing.data_bitrate == 2_000_000
+    assert timing.data_brp == 1
+    assert timing.dbt == 40
+    assert timing.data_tseg1 == 29
+    assert timing.data_tseg2 == 10
+    assert timing.data_sjw == 10
+    assert timing.data_sample_point == 75
+
+
+def test_can_fd():
+    timing = can.BitTimingFd(
+        f_clock=80_000_000,
+        nom_brp=1,
+        nom_tseg1=119,
+        nom_tseg2=40,
+        nom_sjw=40,
+        data_brp=1,
         data_tseg1=29,
         data_tseg2=10,
         data_sjw=10,
@@ -149,11 +225,9 @@ def test_from_sample_point():
 
 def test_equality():
     t1 = can.BitTiming.from_registers(f_clock=8_000_000, btr0=0x00, btr1=0x14)
-    t2 = can.BitTiming(
-        f_clock=8_000_000, bitrate=1_000_000, tseg1=5, tseg2=2, sjw=1, nof_samples=1
-    )
+    t2 = can.BitTiming(f_clock=8_000_000, brp=1, tseg1=5, tseg2=2, sjw=1, nof_samples=1)
     t3 = can.BitTiming(
-        f_clock=16_000_000, bitrate=1_000_000, tseg1=5, tseg2=2, sjw=1, nof_samples=1
+        f_clock=16_000_000, brp=2, tseg1=5, tseg2=2, sjw=1, nof_samples=1
     )
     assert t1 == t2
     assert t1 != t3
@@ -162,22 +236,22 @@ def test_equality():
 
     t4 = can.BitTimingFd(
         f_clock=80_000_000,
-        nom_bitrate=500_000,
+        nom_brp=1,
         nom_tseg1=119,
         nom_tseg2=40,
         nom_sjw=40,
-        data_bitrate=2_000_000,
+        data_brp=1,
         data_tseg1=29,
         data_tseg2=10,
         data_sjw=10,
     )
     t5 = can.BitTimingFd(
         f_clock=80_000_000,
-        nom_bitrate=500_000,
+        nom_brp=1,
         nom_tseg1=119,
         nom_tseg2=40,
         nom_sjw=40,
-        data_bitrate=2_000_000,
+        data_brp=1,
         data_tseg1=29,
         data_tseg2=10,
         data_sjw=10,
@@ -195,7 +269,7 @@ def test_equality():
 
 
 def test_string_representation():
-    timing = can.BitTiming(f_clock=8000000, bitrate=1000000, tseg1=5, tseg2=2, sjw=1)
+    timing = can.BitTiming(f_clock=8_000_000, brp=1, tseg1=5, tseg2=2, sjw=1)
     assert str(timing) == (
         "BR 1000000 bit/s, SP: 75.00%, BRP: 1, TSEG1: 5, TSEG2: 2, SJW: 1, "
         "BTR: 0014h, f_clock: 8MHz"
@@ -203,11 +277,11 @@ def test_string_representation():
 
     fd_timing = can.BitTimingFd(
         f_clock=80_000_000,
-        nom_bitrate=500_000,
+        nom_brp=1,
         nom_tseg1=119,
         nom_tseg2=40,
         nom_sjw=40,
-        data_bitrate=2_000_000,
+        data_brp=1,
         data_tseg1=29,
         data_tseg2=10,
         data_sjw=10,
@@ -220,35 +294,33 @@ def test_string_representation():
 
 
 def test_repr():
-    timing = can.BitTiming(f_clock=8000000, bitrate=1000000, tseg1=5, tseg2=2, sjw=1)
+    timing = can.BitTiming(f_clock=8_000_000, brp=1, tseg1=5, tseg2=2, sjw=1)
     assert repr(timing) == (
-        "can.BitTiming(f_clock=8000000, bitrate=1000000, tseg1=5, tseg2=2, sjw=1, nof_samples=1)"
+        "can.BitTiming(f_clock=8000000, brp=1, tseg1=5, tseg2=2, sjw=1, nof_samples=1)"
     )
 
     fd_timing = can.BitTimingFd(
         f_clock=80_000_000,
-        nom_bitrate=500_000,
+        nom_brp=1,
         nom_tseg1=119,
         nom_tseg2=40,
         nom_sjw=40,
-        data_bitrate=2_000_000,
+        data_brp=1,
         data_tseg1=29,
         data_tseg2=10,
         data_sjw=10,
     )
     assert repr(fd_timing) == (
-        "can.BitTimingFd(f_clock=80000000, nom_bitrate=500000, nom_tseg1=119, nom_tseg2=40, "
-        "nom_sjw=40, data_bitrate=2000000, data_tseg1=29, data_tseg2=10, data_sjw=10)"
+        "can.BitTimingFd(f_clock=80000000, nom_brp=1, nom_tseg1=119, nom_tseg2=40, "
+        "nom_sjw=40, data_brp=1, data_tseg1=29, data_tseg2=10, data_sjw=10)"
     )
 
 
 def test_mapping():
-    timing = can.BitTiming(
-        f_clock=8_000_000, bitrate=1_000_000, tseg1=5, tseg2=2, sjw=1
-    )
+    timing = can.BitTiming(f_clock=8_000_000, brp=1, tseg1=5, tseg2=2, sjw=1)
     timing_dict = dict(timing)
     assert timing_dict["f_clock"] == timing["f_clock"]
-    assert timing_dict["bitrate"] == timing["bitrate"]
+    assert timing_dict["brp"] == timing["brp"]
     assert timing_dict["tseg1"] == timing["tseg1"]
     assert timing_dict["tseg2"] == timing["tseg2"]
     assert timing_dict["sjw"] == timing["sjw"]
@@ -256,22 +328,22 @@ def test_mapping():
 
     fd_timing = can.BitTimingFd(
         f_clock=80_000_000,
-        nom_bitrate=500_000,
+        nom_brp=1,
         nom_tseg1=119,
         nom_tseg2=40,
         nom_sjw=40,
-        data_bitrate=2_000_000,
+        data_brp=1,
         data_tseg1=29,
         data_tseg2=10,
         data_sjw=10,
     )
     fd_timing_dict = dict(fd_timing)
     assert fd_timing_dict["f_clock"] == fd_timing["f_clock"]
-    assert fd_timing_dict["nom_bitrate"] == fd_timing["nom_bitrate"]
+    assert fd_timing_dict["nom_brp"] == fd_timing["nom_brp"]
     assert fd_timing_dict["nom_tseg1"] == fd_timing["nom_tseg1"]
     assert fd_timing_dict["nom_tseg2"] == fd_timing["nom_tseg2"]
     assert fd_timing_dict["nom_sjw"] == fd_timing["nom_sjw"]
-    assert fd_timing_dict["data_bitrate"] == fd_timing["data_bitrate"]
+    assert fd_timing_dict["data_brp"] == fd_timing["data_brp"]
     assert fd_timing_dict["data_tseg1"] == fd_timing["data_tseg1"]
     assert fd_timing_dict["data_tseg2"] == fd_timing["data_tseg2"]
     assert fd_timing_dict["data_sjw"] == fd_timing["data_sjw"]
@@ -279,9 +351,7 @@ def test_mapping():
 
 
 def test_oscillator_tolerance():
-    timing = can.BitTiming(
-        f_clock=16_000_000, bitrate=500_000, tseg1=10, tseg2=5, sjw=4
-    )
+    timing = can.BitTiming(f_clock=16_000_000, brp=2, tseg1=10, tseg2=5, sjw=4)
     osc_tol = timing.oscillator_tolerance(
         node_loop_delay_ns=250,
         bus_length_m=10.0,
@@ -290,11 +360,11 @@ def test_oscillator_tolerance():
 
     fd_timing = can.BitTimingFd(
         f_clock=80_000_000,
-        nom_bitrate=500_000,
+        nom_brp=5,
         nom_tseg1=27,
         nom_tseg2=4,
         nom_sjw=4,
-        data_bitrate=2_000_000,
+        data_brp=5,
         data_tseg1=6,
         data_tseg2=1,
         data_sjw=1,
@@ -303,4 +373,53 @@ def test_oscillator_tolerance():
         node_loop_delay_ns=250,
         bus_length_m=10.0,
     )
-    assert osc_tol == pytest.approx(0.48543689320388345, abs=1e-2)
+    assert osc_tol == pytest.approx(0.48, abs=1e-2)
+
+
+def test_recreate_with_f_clock():
+    timing_8mhz = can.BitTiming(f_clock=8_000_000, brp=1, tseg1=5, tseg2=2, sjw=1)
+    timing_16mhz = timing_8mhz.recreate_with_f_clock(f_clock=16_000_000)
+    assert timing_8mhz.bitrate == timing_16mhz.bitrate
+    assert timing_8mhz.sample_point == timing_16mhz.sample_point
+    assert (timing_8mhz.sjw / timing_8mhz.nbt) == pytest.approx(
+        timing_16mhz.sjw / timing_16mhz.nbt, abs=1e-3
+    )
+    assert timing_8mhz.nof_samples == timing_16mhz.nof_samples
+
+    timing_16mhz = can.BitTiming(
+        f_clock=16000000, brp=2, tseg1=12, tseg2=3, sjw=3, nof_samples=1
+    )
+    timing_8mhz = timing_16mhz.recreate_with_f_clock(f_clock=8_000_000)
+    assert timing_8mhz.bitrate == timing_16mhz.bitrate
+    assert timing_8mhz.sample_point == timing_16mhz.sample_point
+    assert (timing_8mhz.sjw / timing_8mhz.nbt) == pytest.approx(
+        timing_16mhz.sjw / timing_16mhz.nbt, abs=1e-2
+    )
+    assert timing_8mhz.nof_samples == timing_16mhz.nof_samples
+
+    fd_timing_80mhz = can.BitTimingFd(
+        f_clock=80_000_000,
+        nom_brp=5,
+        nom_tseg1=27,
+        nom_tseg2=4,
+        nom_sjw=4,
+        data_brp=5,
+        data_tseg1=6,
+        data_tseg2=1,
+        data_sjw=1,
+    )
+    fd_timing_60mhz = fd_timing_80mhz.recreate_with_f_clock(f_clock=60_000_000)
+    assert fd_timing_80mhz.nom_bitrate == fd_timing_60mhz.nom_bitrate
+    assert fd_timing_80mhz.nom_sample_point == pytest.approx(
+        fd_timing_60mhz.nom_sample_point, abs=1.0
+    )
+    assert (fd_timing_80mhz.nom_sjw / fd_timing_80mhz.nbt) == pytest.approx(
+        fd_timing_60mhz.nom_sjw / fd_timing_60mhz.nbt, abs=1e-2
+    )
+    assert fd_timing_80mhz.data_bitrate == fd_timing_60mhz.data_bitrate
+    assert fd_timing_80mhz.data_sample_point == pytest.approx(
+        fd_timing_60mhz.data_sample_point, abs=1.0
+    )
+    assert (fd_timing_80mhz.data_sjw / fd_timing_80mhz.dbt) == pytest.approx(
+        fd_timing_60mhz.data_sjw / fd_timing_60mhz.dbt, abs=1e-2
+    )

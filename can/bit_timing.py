@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 import math
 from typing import List, Mapping, Iterator, cast
 
@@ -8,9 +9,15 @@ class BitTiming(Mapping):
     """Representation of a bit timing configuration for a CAN 2.0 bus.
 
     The class can be constructed in multiple ways, depending on the information
-    available. The preferred way is using bitrate, CAN clock frequency, tseg1, tseg2 and sjw::
+    available. The preferred way is using CAN clock frequency, prescaler, tseg1, tseg2 and sjw::
 
-        can.BitTiming(bitrate=1_000_000, f_clock=8_000_000, tseg1=5, tseg2=1, sjw=1)
+        can.BitTiming(f_clock=8_000_000, brp=1, tseg1=5, tseg2=1, sjw=1)
+
+    Alternatively you can set the bitrate instead of the bit rate prescaler::
+
+        can.BitTiming.from_bitrate_and_segments(
+            f_clock=8_000_000, bitrate=1_000_000, tseg1=5, tseg2=1, sjw=1
+        )
 
     It is also possible to specify BTR registers::
 
@@ -18,13 +25,13 @@ class BitTiming(Mapping):
 
     or to calculate the timings for a given sample point::
 
-        can.BitTiming.from_sample_point(f_clock=16_000_000, bitrate=500_000, sample_point=81.25)
+        can.BitTiming.from_sample_point(f_clock=8_000_000, bitrate=1_000_000, sample_point=75.0)
     """
 
     def __init__(
         self,
         f_clock: int,
-        bitrate: int,
+        brp: int,
         tseg1: int,
         tseg2: int,
         sjw: int,
@@ -33,8 +40,8 @@ class BitTiming(Mapping):
         """
         :param int f_clock:
             The CAN system clock frequency in Hz.
-        :param int bitrate:
-            Bitrate in bit/s.
+        :param int brp:
+            Bit rate prescaler.
         :param int tseg1:
             Time segment 1, that is, the number of quanta from (but not including)
             the Sync Segment to the sampling point.
@@ -49,11 +56,12 @@ class BitTiming(Mapping):
             In this case, the bit will be sampled three quanta in a row,
             with the last sample being taken in the edge between TSEG1 and TSEG2.
             Three samples should only be used for relatively slow baudrates.
-
+        :raises ValueError:
+            if the arguments are invalid.
         """
         self._data: BitTimingDict = {
             "f_clock": f_clock,
-            "bitrate": bitrate,
+            "brp": brp,
             "tseg1": tseg1,
             "tseg2": tseg2,
             "sjw": sjw,
@@ -79,13 +87,6 @@ class BitTiming(Mapping):
         if not 1 <= self.brp <= 64:
             raise ValueError(f"bitrate prescaler (={self.brp}) must be in [1...64].")
 
-        effective_bitrate = self.f_clock / (self.nbt * self.brp)
-        if abs(effective_bitrate - self.bitrate) > self.bitrate / 256:
-            raise ValueError(
-                f"the effective bitrate (={effective_bitrate}) diverges "
-                f"from the requested bitrate (={self.bitrate})"
-            )
-
         if not 1 <= self.sjw <= 4:
             raise ValueError(f"sjw (={self.sjw}) must be in [1...4].")
 
@@ -104,13 +105,63 @@ class BitTiming(Mapping):
             raise ValueError("nof_samples must be 1 or 3")
 
     @classmethod
+    def from_bitrate_and_segments(
+        cls,
+        f_clock: int,
+        bitrate: int,
+        tseg1: int,
+        tseg2: int,
+        sjw: int,
+        nof_samples: int = 1,
+    ) -> "BitTiming":
+        """Create a :class:`~can.BitTiming` instance from bitrate and segment lengths.
+
+        :param int f_clock:
+            The CAN system clock frequency in Hz.
+        :param int bitrate:
+            Bitrate in bit/s.
+        :param int tseg1:
+            Time segment 1, that is, the number of quanta from (but not including)
+            the Sync Segment to the sampling point.
+        :param int tseg2:
+            Time segment 2, that is, the number of quanta from the sampling
+            point to the end of the bit.
+        :param int sjw:
+            The Synchronization Jump Width. Decides the maximum number of time quanta
+            that the controller can resynchronize every bit.
+        :param int nof_samples:
+            Either 1 or 3. Some CAN controllers can also sample each bit three times.
+            In this case, the bit will be sampled three quanta in a row,
+            with the last sample being taken in the edge between TSEG1 and TSEG2.
+            Three samples should only be used for relatively slow baudrates.
+        :raises ValueError:
+            if the arguments are invalid.
+        """
+        nbt = 1 + tseg1 + tseg2
+        brp = int(round(f_clock / (bitrate * nbt)))
+        effective_bitrate = f_clock / (nbt * brp)
+        if abs(effective_bitrate - bitrate) > bitrate / 256:
+            raise ValueError(
+                f"the effective bitrate (={effective_bitrate}) diverges "
+                f"from the requested bitrate (={bitrate})"
+            )
+        return cls(
+            f_clock=f_clock,
+            brp=brp,
+            tseg1=tseg1,
+            tseg2=tseg2,
+            sjw=sjw,
+            nof_samples=nof_samples,
+        )
+
+    @classmethod
     def from_registers(
         cls,
         f_clock: int,
         btr0: int,
         btr1: int,
     ) -> "BitTiming":
-        """Create a BitTiming instance from registers btr0 and btr1.
+        """Create a :class:`~can.BitTiming` instance from registers btr0 and btr1.
 
         :param int f_clock:
             The CAN system clock frequency in Hz.
@@ -118,15 +169,16 @@ class BitTiming(Mapping):
             The BTR0 register value used by many CAN controllers.
         :param int btr1:
             The BTR1 register value used by many CAN controllers.
+        :raises ValueError:
+            if the arguments are invalid.
         """
         brp = (btr0 & 0x3F) + 1
         sjw = (btr0 >> 6) + 1
         tseg1 = (btr1 & 0xF) + 1
         tseg2 = ((btr1 >> 4) & 0x7) + 1
         nof_samples = 3 if btr1 & 0x80 else 1
-        bitrate = f_clock // ((1 + tseg1 + tseg2) * brp)
         return cls(
-            bitrate=bitrate,
+            brp=brp,
             f_clock=f_clock,
             tseg1=tseg1,
             tseg2=tseg2,
@@ -138,7 +190,7 @@ class BitTiming(Mapping):
     def from_sample_point(
         cls, f_clock: int, bitrate: int, sample_point: float = 69.0
     ) -> "BitTiming":
-        """Create a BitTiming instance for a sample point.
+        """Create a :class:`~can.BitTiming` instance for a sample point.
 
         This function tries to find bit timings, which are close to the requested
         sample point. It does not take physical bus properties into account, so the
@@ -153,6 +205,8 @@ class BitTiming(Mapping):
             Bitrate in bit/s.
         :param int sample_point:
             The sample point value in percent.
+        :raises ValueError:
+            if the arguments are invalid.
         """
 
         if sample_point < 50.0:
@@ -178,7 +232,7 @@ class BitTiming(Mapping):
             try:
                 bt = BitTiming(
                     f_clock=f_clock,
-                    bitrate=bitrate,
+                    brp=brp,
                     tseg1=tseg1,
                     tseg2=tseg2,
                     sjw=sjw,
@@ -204,17 +258,17 @@ class BitTiming(Mapping):
     @property
     def f_clock(self) -> int:
         """The CAN system clock frequency in Hz."""
-        return self["f_clock"]
+        return self._data["f_clock"]
 
     @property
     def bitrate(self) -> int:
         """Bitrate in bits/s."""
-        return self["bitrate"]
+        return int(round(self.f_clock / (self.nbt * self.brp)))
 
     @property
     def brp(self) -> int:
         """Bit Rate Prescaler."""
-        return int(round(self.f_clock / (self.bitrate * self.nbt)))
+        return self._data["brp"]
 
     @property
     def tq(self) -> int:
@@ -232,7 +286,7 @@ class BitTiming(Mapping):
 
         The number of quanta from (but not including) the Sync Segment to the sampling point.
         """
-        return self["tseg1"]
+        return self._data["tseg1"]
 
     @property
     def tseg2(self) -> int:
@@ -240,17 +294,17 @@ class BitTiming(Mapping):
 
         The number of quanta from the sampling point to the end of the bit.
         """
-        return self["tseg2"]
+        return self._data["tseg2"]
 
     @property
     def sjw(self) -> int:
         """Synchronization Jump Width."""
-        return self["sjw"]
+        return self._data["sjw"]
 
     @property
     def nof_samples(self) -> int:
         """Number of samples (1 or 3)."""
-        return self["nof_samples"]
+        return self._data["nof_samples"]
 
     @property
     def sample_point(self) -> float:
@@ -275,9 +329,9 @@ class BitTiming(Mapping):
     ) -> float:
         """Oscillator tolerance in percent according to ISO 11898-1.
 
-        :param node_loop_delay_ns:
+        :param float node_loop_delay_ns:
             Transceiver loop delay in nanoseconds.
-        :param bus_length_m:
+        :param float bus_length_m:
             Bus length in meters.
         """
         delay_per_meter = 5
@@ -297,6 +351,40 @@ class BitTiming(Mapping):
             ),
         ]
         return max(0.0, min(df_clock_list) * 100)
+
+    def recreate_with_f_clock(self, f_clock: int) -> "BitTiming":
+        """Return a new :class:`~can.BitTiming` instance with the given *f_clock* but the same
+        bit rate and sample point.
+
+        :param int f_clock:
+            The CAN system clock frequency in Hz.
+        :raises ValueError:
+            if no suitable bit timings were found.
+        """
+        # try the most simple solution first: another bitrate prescaler
+        try:
+            brp = int(round(self.brp * f_clock / self.f_clock))
+            bt = BitTiming(**{**self, "f_clock": f_clock, "brp": brp})
+            if self.bitrate == bt.bitrate:
+                return bt
+        except ValueError:
+            pass
+
+        # create a new timing instance with the same sample point
+        bt = BitTiming.from_sample_point(
+            f_clock=f_clock, bitrate=self.bitrate, sample_point=self.sample_point
+        )
+        if abs(bt.sample_point - self.sample_point) > 1.0:
+            raise ValueError(
+                "f_clock change failed because of sample point discrepancy."
+            )
+        # adapt synchronization jump width, so it has the same size relative to bit time as self
+        sjw = int(round(self.sjw / self.nbt * bt.nbt))
+        sjw = max(1, min(4, bt.tseg2, sjw))
+        bt._data["sjw"] = sjw  # pylint: disable=protected-access
+        bt._data["nof_samples"] = self.nof_samples  # pylint: disable=protected-access
+        bt._validate()  # pylint: disable=protected-access
+        return bt
 
     def __str__(self) -> str:
         segments = [
@@ -335,10 +423,24 @@ class BitTimingFd(Mapping):
     """Representation of a bit timing configuration for a CAN FD bus.
 
     The class can be constructed in multiple ways, depending on the information
-    available. The preferred way is using bitrate, CAN clock frequency, tseg1, tseg2 and sjw
-    for both the arbitration (nominal) and data phase::
+    available. The preferred way is using CAN clock frequency, bit rate prescaler, tseg1,
+    tseg2 and sjw for both the arbitration (nominal) and data phase::
 
         can.BitTimingFd(
+            f_clock=80_000_000,
+            nom_brp=1,
+            nom_tseg1=59,
+            nom_tseg2=20,
+            nom_sjw=10,
+            data_brp=1,
+            data_tseg1=6,
+            data_tseg2=3,
+            data_sjw=2,
+        )
+
+    Alternatively you can set the bit rates instead of the bit rate prescalers::
+
+        can.BitTimingFd.from_bitrate_and_segments(
             f_clock=80_000_000,
             nom_bitrate=1_000_000,
             nom_tseg1=59,
@@ -365,11 +467,11 @@ class BitTimingFd(Mapping):
     def __init__(
         self,
         f_clock: int,
-        nom_bitrate: int,
+        nom_brp: int,
         nom_tseg1: int,
         nom_tseg2: int,
         nom_sjw: int,
-        data_bitrate: int,
+        data_brp: int,
         data_tseg1: int,
         data_tseg2: int,
         data_sjw: int,
@@ -379,44 +481,38 @@ class BitTimingFd(Mapping):
 
         :param int f_clock:
             The CAN system clock frequency in Hz.
-
-        :param int nom_bitrate:
-            Nominal (arbitration) phase bitrate in bit/s.
-
+        :param int nom_brp:
+            Nominal (arbitration) phase bitrate prescaler.
         :param int nom_tseg1:
             Nominal phase Time segment 1, that is, the number of quanta from (but not including)
             the Sync Segment to the sampling point.
-
         :param int nom_tseg2:
             Nominal phase Time segment 2, that is, the number of quanta from the sampling
             point to the end of the bit.
-
         :param int nom_sjw:
             The Synchronization Jump Width for the nominal phase. This value determines
             the maximum number of time quanta that the controller can resynchronize every bit.
-
-        :param int data_bitrate:
-            Data phase bitrate in bit/s.
-
+        :param int data_brp:
+            Data phase bitrate prescaler.
         :param int data_tseg1:
             Data phase Time segment 1, that is, the number of quanta from (but not including)
             the Sync Segment to the sampling point.
-
         :param int data_tseg2:
             Data phase Time segment 2, that is, the number of quanta from the sampling
             point to the end of the bit.
-
         :param int data_sjw:
             The Synchronization Jump Width for the data phase. This value determines
             the maximum number of time quanta that the controller can resynchronize every bit.
+        :raises ValueError:
+            if the arguments are invalid.
         """
         self._data: BitTimingFdDict = {
             "f_clock": f_clock,
-            "nom_bitrate": nom_bitrate,
+            "nom_brp": nom_brp,
             "nom_tseg1": nom_tseg1,
             "nom_tseg2": nom_tseg2,
             "nom_sjw": nom_sjw,
-            "data_bitrate": data_bitrate,
+            "data_brp": data_brp,
             "data_tseg1": data_tseg1,
             "data_tseg2": data_tseg2,
             "data_sjw": data_sjw,
@@ -463,24 +559,9 @@ class BitTimingFd(Mapping):
                 f"nominal bitrate prescaler (={self.nom_brp}) must be in [1...256]."
             )
 
-        data_brp = self.data_brp
         if not 1 <= self.data_brp <= 256:
             raise ValueError(
                 f"data bitrate prescaler (={self.data_brp}) must be in [1...256]."
-            )
-
-        effective_nom_bitrate = self.f_clock / (self.nbt * self.nom_brp)
-        if abs(effective_nom_bitrate - self.nom_bitrate) > self.nom_bitrate / 256:
-            raise ValueError(
-                f"the effective nominal bitrate (={effective_nom_bitrate}) "
-                f"diverges from the requested bitrate (={self.nom_bitrate})"
-            )
-
-        effective_data_bitrate = self.f_clock / (self.dbt * data_brp)
-        if abs(effective_data_bitrate - self.data_bitrate) > self.data_bitrate / 256:
-            raise ValueError(
-                f"the effective data bitrate (={effective_data_bitrate}) "
-                f"diverges from the requested bitrate (={self.data_bitrate})"
             )
 
         if not 1 <= self.nom_sjw <= 128:
@@ -514,6 +595,79 @@ class BitTimingFd(Mapping):
             )
 
     @classmethod
+    def from_bitrate_and_segments(
+        cls,
+        f_clock: int,
+        nom_bitrate: int,
+        nom_tseg1: int,
+        nom_tseg2: int,
+        nom_sjw: int,
+        data_bitrate: int,
+        data_tseg1: int,
+        data_tseg2: int,
+        data_sjw: int,
+    ) -> "BitTimingFd":
+        """
+        Create a :class:`~can.BitTimingFd` instance with the bitrates and segments lengths.
+
+        :param int f_clock:
+            The CAN system clock frequency in Hz.
+        :param int nom_bitrate:
+            Nominal (arbitration) phase bitrate in bit/s.
+        :param int nom_tseg1:
+            Nominal phase Time segment 1, that is, the number of quanta from (but not including)
+            the Sync Segment to the sampling point.
+        :param int nom_tseg2:
+            Nominal phase Time segment 2, that is, the number of quanta from the sampling
+            point to the end of the bit.
+        :param int nom_sjw:
+            The Synchronization Jump Width for the nominal phase. This value determines
+            the maximum number of time quanta that the controller can resynchronize every bit.
+        :param int data_bitrate:
+            Data phase bitrate in bit/s.
+        :param int data_tseg1:
+            Data phase Time segment 1, that is, the number of quanta from (but not including)
+            the Sync Segment to the sampling point.
+        :param int data_tseg2:
+            Data phase Time segment 2, that is, the number of quanta from the sampling
+            point to the end of the bit.
+        :param int data_sjw:
+            The Synchronization Jump Width for the data phase. This value determines
+            the maximum number of time quanta that the controller can resynchronize every bit.
+        :raises ValueError:
+            if the arguments are invalid.
+        """
+        nbt = 1 + nom_tseg1 + nom_tseg2
+        nom_brp = int(round(f_clock / (nom_bitrate * nbt)))
+        effective_nom_bitrate = f_clock / (nbt * nom_brp)
+        if abs(effective_nom_bitrate - nom_bitrate) > nom_bitrate / 256:
+            raise ValueError(
+                f"the effective nom. bitrate (={effective_nom_bitrate}) diverges "
+                f"from the requested nom. bitrate (={nom_bitrate})"
+            )
+
+        dbt = 1 + data_tseg1 + data_tseg2
+        data_brp = int(round(f_clock / (data_bitrate * dbt)))
+        effective_data_bitrate = f_clock / (dbt * data_brp)
+        if abs(effective_data_bitrate - data_bitrate) > data_bitrate / 256:
+            raise ValueError(
+                f"the effective data bitrate (={effective_data_bitrate}) diverges "
+                f"from the requested data bitrate (={data_bitrate})"
+            )
+
+        return cls(
+            f_clock=f_clock,
+            nom_brp=nom_brp,
+            nom_tseg1=nom_tseg1,
+            nom_tseg2=nom_tseg2,
+            nom_sjw=nom_sjw,
+            data_brp=data_brp,
+            data_tseg1=data_tseg1,
+            data_tseg2=data_tseg2,
+            data_sjw=data_sjw,
+        )
+
+    @classmethod
     def from_sample_point(
         cls,
         f_clock: int,
@@ -522,7 +676,7 @@ class BitTimingFd(Mapping):
         data_bitrate: int,
         data_sample_point: float,
     ) -> "BitTimingFd":
-        """Create a BitTimingFd instance for a given nominal/data sample point pair.
+        """Create a :class:`~can.BitTimingFd` instance for a given nominal/data sample point pair.
 
         This function tries to find bit timings, which are close to the requested
         sample points. It does not take physical bus properties into account, so the
@@ -541,6 +695,8 @@ class BitTimingFd(Mapping):
             Data bitrate in bit/s.
         :param int data_sample_point:
             The sample point value of the data phase in percent.
+        :raises ValueError:
+            if the arguments are invalid.
         """
         if nom_sample_point < 50.0:
             raise ValueError(
@@ -589,11 +745,11 @@ class BitTimingFd(Mapping):
                 try:
                     bt = BitTimingFd(
                         f_clock=f_clock,
-                        nom_bitrate=nom_bitrate,
+                        nom_brp=nom_brp,
                         nom_tseg1=nom_tseg1,
                         nom_tseg2=nom_tseg2,
                         nom_sjw=nom_sjw,
-                        data_bitrate=data_bitrate,
+                        data_brp=data_brp,
                         data_tseg1=data_tseg1,
                         data_tseg2=data_tseg2,
                         data_sjw=data_sjw,
@@ -634,17 +790,17 @@ class BitTimingFd(Mapping):
     @property
     def f_clock(self) -> int:
         """The CAN system clock frequency in Hz."""
-        return self["f_clock"]
+        return self._data["f_clock"]
 
     @property
     def nom_bitrate(self) -> int:
         """Nominal (arbitration phase) bitrate."""
-        return self["nom_bitrate"]
+        return int(round(self.f_clock / (self.nbt * self.nom_brp)))
 
     @property
     def nom_brp(self) -> int:
         """Prescaler value for the arbitration phase."""
-        return int(round(self.f_clock / (self.nom_bitrate * self.nbt)))
+        return self._data["nom_brp"]
 
     @property
     def nom_tq(self) -> int:
@@ -662,12 +818,12 @@ class BitTimingFd(Mapping):
 
         This is the sum of the propagation time segment and the phase buffer segment 1.
         """
-        return self["nom_tseg1"]
+        return self._data["nom_tseg1"]
 
     @property
     def nom_tseg2(self) -> int:
         """Time segment 2 value of the arbitration phase. Also known as phase buffer segment 2."""
-        return self["nom_tseg2"]
+        return self._data["nom_tseg2"]
 
     @property
     def nom_sjw(self) -> int:
@@ -675,7 +831,7 @@ class BitTimingFd(Mapping):
 
         The phase buffer segments may be shortened or lengthened by this value.
         """
-        return self["nom_sjw"]
+        return self._data["nom_sjw"]
 
     @property
     def nom_sample_point(self) -> float:
@@ -685,12 +841,12 @@ class BitTimingFd(Mapping):
     @property
     def data_bitrate(self) -> int:
         """Bitrate of the data phase in bit/s."""
-        return self["data_bitrate"]
+        return int(round(self.f_clock / (self.dbt * self.data_brp)))
 
     @property
     def data_brp(self) -> int:
         """Prescaler value for the data phase."""
-        return int(round(self.f_clock / (self.data_bitrate * self.dbt)))
+        return self._data["data_brp"]
 
     @property
     def data_tq(self) -> int:
@@ -708,12 +864,12 @@ class BitTimingFd(Mapping):
 
         This is the sum of the propagation time segment and the phase buffer segment 1.
         """
-        return self["data_tseg1"]
+        return self._data["data_tseg1"]
 
     @property
     def data_tseg2(self) -> int:
         """TSEG2 value of the data phase. Also known as phase buffer segment 2."""
-        return self["data_tseg2"]
+        return self._data["data_tseg2"]
 
     @property
     def data_sjw(self) -> int:
@@ -721,7 +877,7 @@ class BitTimingFd(Mapping):
 
         The phase buffer segments may be shortened or lengthened by this value.
         """
-        return self["data_sjw"]
+        return self._data["data_sjw"]
 
     @property
     def data_sample_point(self) -> float:
@@ -735,9 +891,9 @@ class BitTimingFd(Mapping):
     ) -> float:
         """Oscillator tolerance in percent according to ISO 11898-1.
 
-        :param node_loop_delay_ns:
+        :param float node_loop_delay_ns:
             Transceiver loop delay in nanoseconds.
-        :param bus_length_m:
+        :param float bus_length_m:
             Bus length in meters.
         """
         delay_per_meter = 5
@@ -779,6 +935,55 @@ class BitTimingFd(Mapping):
             ),
         ]
         return max(0.0, min(df_clock_list) * 100)
+
+    def recreate_with_f_clock(self, f_clock: int) -> "BitTimingFd":
+        """Return a new :class:`~can.BitTimingFd` instance with the given *f_clock* but the same
+        bit rates and sample points.
+
+        :param int f_clock:
+            The CAN system clock frequency in Hz.
+        :raises ValueError:
+            if no suitable bit timings were found.
+        """
+        # try the most simple solution first: another bitrate prescaler
+        try:
+            nom_brp = int(round(self.nom_brp * f_clock / self.f_clock))
+            data_brp = int(round(self.data_brp * f_clock / self.f_clock))
+            bt = BitTimingFd(
+                **{**self, "f_clock": f_clock, "nom_brp": nom_brp, "data_brp": data_brp}
+            )
+            if (
+                self.nom_bitrate == bt.nom_bitrate
+                and self.data_bitrate == bt.data_bitrate
+            ):
+                return bt
+        except ValueError:
+            pass
+
+        # create a new timing instance with the same sample points
+        bt = BitTimingFd.from_sample_point(
+            f_clock=f_clock,
+            nom_bitrate=self.nom_bitrate,
+            nom_sample_point=self.nom_sample_point,
+            data_bitrate=self.data_bitrate,
+            data_sample_point=self.data_sample_point,
+        )
+        if (
+            abs(bt.nom_sample_point - self.nom_sample_point) > 1.0
+            or abs(bt.data_sample_point - self.data_sample_point) > 1.0
+        ):
+            raise ValueError(
+                "f_clock change failed because of sample point discrepancy."
+            )
+        # adapt synchronization jump width, so it has the same size relative to bit time as self
+        nom_sjw = int(round(self.nom_sjw / self.nbt * bt.nbt))
+        nom_sjw = max(1, min(bt.nom_tseg2, nom_sjw))
+        bt._data["nom_sjw"] = nom_sjw  # pylint: disable=protected-access
+        data_sjw = int(round(self.data_sjw / self.dbt * bt.dbt))
+        data_sjw = max(1, min(bt.data_tseg2, data_sjw))
+        bt._data["data_sjw"] = data_sjw  # pylint: disable=protected-access
+        bt._validate()  # pylint: disable=protected-access
+        return bt
 
     def __str__(self) -> str:
         segments = [

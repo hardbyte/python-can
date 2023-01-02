@@ -42,7 +42,7 @@ leaving 2 TQ for the information processing by the bus nodes.
 Another important parameter is **f_clock**: The CAN system clock frequency
 in Hz. This frequency is used to derive the TQ size from the bit rate.
 The relationship is ``f_clock = (tseg1+tseg2+1) * bitrate * brp``.
-The bit rate prescaler value (``brp``) is usually determined by the controller
+The bit rate prescaler value **brp** is usually determined by the controller
 and is chosen to ensure that the resulting bit time is an integer value.
 Typical CAN clock frequencies are 8-80 MHz.
 
@@ -60,7 +60,7 @@ using the config file:
 
     [default]
     f_clock=8000000
-    bitrate=1000000
+    brp=1
     tseg1=5
     tseg2=2
     sjw=1
@@ -72,11 +72,11 @@ The same is possible for CAN FD:
 
     [default]
     f_clock=80000000
-    nom_bitrate=500000
+    nom_brp=1
     nom_tseg1=119
     nom_tseg2=40
     nom_sjw=40
-    data_bitrate=2000000
+    data_brp=1
     data_tseg1=29
     data_tseg2=10
     data_sjw=10

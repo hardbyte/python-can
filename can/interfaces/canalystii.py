@@ -72,8 +72,7 @@ class CANalystIIBus(BusABC):
             if isinstance(timing, BitTiming):
                 if timing.f_clock != 8_000_000:
                     try:
-                        # try different prescaler values
-                        timing = BitTiming(**{**timing, "f_clock": 8_000_000})
+                        timing = timing.recreate_with_f_clock(8_000_000)
                     except ValueError:
                         raise CanInitializationError(
                             f"timing.f_clock value {timing.f_clock} "

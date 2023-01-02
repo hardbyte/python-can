@@ -52,7 +52,7 @@ ReadableBytesLike = typing.Union[bytes, bytearray, memoryview]
 
 class BitTimingDict(typing_extensions.TypedDict):
     f_clock: int
-    bitrate: int
+    brp: int
     tseg1: int
     tseg2: int
     sjw: int
@@ -61,11 +61,11 @@ class BitTimingDict(typing_extensions.TypedDict):
 
 class BitTimingFdDict(typing_extensions.TypedDict):
     f_clock: int
-    nom_bitrate: int
+    nom_brp: int
     nom_tseg1: int
     nom_tseg2: int
     nom_sjw: int
-    data_bitrate: int
+    data_brp: int
     data_tseg1: int
     data_tseg2: int
     data_sjw: int

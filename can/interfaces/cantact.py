@@ -74,7 +74,8 @@ class CantactBus(BusABC):
         else:
             if cantact is None:
                 raise CanInterfaceNotImplementedError(
-                    "The CANtact module is not installed. Install it using `python -m pip install cantact`"
+                    "The CANtact module is not installed. "
+                    "Install it using `python -m pip install cantact`"
                 )
             with error_check(
                 "Cannot create the cantact.Interface", CanInitializationError
@@ -89,8 +90,7 @@ class CantactBus(BusABC):
             if isinstance(timing, BitTiming):
                 if timing.f_clock != 24_000_000:
                     try:
-                        # try different prescaler values
-                        timing = BitTiming(**{**timing, "f_clock": 24_000_000})
+                        timing = timing.recreate_with_f_clock(24_000_000)
                     except ValueError:
                         raise CanInitializationError(
                             f"timing.f_clock value {timing.f_clock} "
