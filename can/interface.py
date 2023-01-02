@@ -78,7 +78,7 @@ class Bus(BusABC):  # pylint: disable=abstract-method
         Set to ``None`` to let it be resolved automatically from the default
         :ref:`configuration`.
 
-    :param context:
+    :param config_context:
         Extra 'context', that is passed to config sources.
         This can be used to select a section other than 'default' in the configuration file.
 
@@ -100,12 +100,14 @@ class Bus(BusABC):  # pylint: disable=abstract-method
     """
 
     @staticmethod
-    @util.deprecated_args_alias(bustype="interface")  # Deprecated since python-can 4.2
+    @util.deprecated_args_alias(  # Deprecated since python-can 4.2
+        bustype="interface", context="config_context"
+    )
     def __new__(  # type: ignore
         cls: Any,
         channel: Optional[Channel] = None,
         interface: Optional[str] = None,
-        context: Optional[str] = None,
+        config_context: Optional[str] = None,
         ignore_config: bool = False,
         **kwargs: Any,
     ) -> BusABC:
@@ -116,7 +118,7 @@ class Bus(BusABC):  # pylint: disable=abstract-method
             kwargs["channel"] = channel
 
         if not ignore_config:
-            kwargs = util.load_config(config=kwargs, context=context)
+            kwargs = util.load_config(config=kwargs, context=config_context)
 
         # resolve the bus class to use for that interface
         cls = _get_class_for_interface(kwargs["interface"])
