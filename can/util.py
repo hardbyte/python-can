@@ -3,21 +3,23 @@ Utilities and configuration file parsing.
 """
 
 import functools
-import warnings
-from typing import Any, Callable, cast, Dict, Iterable, Tuple, Optional, Union
-from time import time, perf_counter, get_clock_info
 import json
+import logging
 import os
 import os.path
 import platform
 import re
-import logging
+import warnings
 from configparser import ConfigParser
+from time import time, perf_counter, get_clock_info
+from typing import Any, Callable, cast, Dict, Iterable, Tuple, Optional, Union, overload
 
 import can
-from .interfaces import VALID_INTERFACES
 from . import typechecking
+from .bit_timing import BitTiming, BitTimingFd
+from .exceptions import CanInitializationError
 from .exceptions import CanInterfaceNotImplementedError
+from .interfaces import VALID_INTERFACES
 
 log = logging.getLogger("can.util")
 
@@ -338,6 +340,47 @@ def deprecated_args_alias(**aliases):
         return wrapper
 
     return deco
+
+
+@overload
+def check_or_adjust_timing_clock(
+    timing: BitTiming, valid_clocks: Iterable[int]
+) -> BitTiming:
+    ...
+
+
+@overload
+def check_or_adjust_timing_clock(
+    timing: BitTimingFd, valid_clocks: Iterable[int]
+) -> BitTimingFd:
+    ...
+
+
+def check_or_adjust_timing_clock(
+    timing: Union[BitTiming, BitTimingFd], valid_clocks: Iterable[int]
+) -> Union[BitTiming, BitTimingFd]:
+    if timing.f_clock in valid_clocks:
+        return timing
+
+    timing_cls = timing.__class__
+
+    for clock in valid_clocks:
+        try:
+            # Try to use a different clock for the
+            adjusted_timing = timing_cls(**{**timing, "f_clock": clock})
+            warnings.warn(
+                f"Adjusted f_clock in {timing_cls.__name__} from "
+                f"{timing.f_clock} to {adjusted_timing.f_clock}"
+            )
+            return adjusted_timing
+        except ValueError:
+            pass
+
+    raise CanInitializationError(
+        f"The specified timing.f_clock value {timing.f_clock} "
+        f"doesn't match any of the allowed device f_clock values: "
+        f"{', '.join([str(f) for f in valid_clocks])}"
+    ) from None
 
 
 def _rename_kwargs(

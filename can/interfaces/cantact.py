@@ -13,7 +13,7 @@ from ..exceptions import (
     CanInterfaceNotImplementedError,
     error_check,
 )
-from ..util import deprecated_args_alias
+from ..util import deprecated_args_alias, check_or_adjust_timing_clock
 
 logger = logging.getLogger(__name__)
 
@@ -88,14 +88,8 @@ class CantactBus(BusABC):
         # Configure the interface
         with error_check("Cannot setup the cantact.Interface", CanInitializationError):
             if isinstance(timing, BitTiming):
-                if timing.f_clock != 24_000_000:
-                    try:
-                        timing = timing.recreate_with_f_clock(24_000_000)
-                    except ValueError:
-                        raise CanInitializationError(
-                            f"timing.f_clock value {timing.f_clock} "
-                            "doesn't match expected device f_clock 24MHz."
-                        ) from None
+                timing = check_or_adjust_timing_clock(timing, valid_clocks=[24_000_000])
+
                 # use custom bit timing
                 self.interface.set_bit_timing(
                     int(channel),

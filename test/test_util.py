@@ -3,7 +3,16 @@
 import unittest
 import warnings
 
-from can.util import _create_bus_config, _rename_kwargs, channel2int
+import pytest
+
+from can import BitTiming, BitTimingFd
+from can.util import (
+    _create_bus_config,
+    _rename_kwargs,
+    channel2int,
+    check_or_adjust_timing_clock,
+)
+from can.exceptions import CanInitializationError
 
 
 class RenameKwargsTest(unittest.TestCase):
@@ -90,3 +99,74 @@ class TestChannel2Int(unittest.TestCase):
         self.assertEqual(42, channel2int("42"))
         self.assertEqual(None, channel2int("can"))
         self.assertEqual(None, channel2int("can0a"))
+
+
+class TestCheckAdjustTimingClock(unittest.TestCase):
+    def test_adjust_timing(self):
+        timing = BitTiming(
+            f_clock=80_000_000, bitrate=500_000, tseg1=13, tseg2=2, sjw=1
+        )
+
+        # Check identity case
+        new_timing = check_or_adjust_timing_clock(timing, valid_clocks=[80_000_000])
+        assert timing == new_timing
+
+        new_timing = check_or_adjust_timing_clock(
+            timing, valid_clocks=[8_000_000, 24_000_000]
+        )
+
+        assert new_timing.__class__ == BitTiming
+        assert new_timing.f_clock == 8_000_000
+        assert new_timing.bitrate == timing.bitrate
+        assert new_timing.tseg1 == timing.tseg1
+        assert new_timing.tseg2 == timing.tseg2
+        assert new_timing.sjw == timing.sjw
+
+        # Check that order is preserved
+        new_timing = check_or_adjust_timing_clock(
+            timing, valid_clocks=[24_000_000, 8_000_000]
+        )
+        assert new_timing.f_clock == 24_000_000
+
+        # Check that order is preserved for all valid clock rates
+        new_timing = check_or_adjust_timing_clock(
+            timing, valid_clocks=[8_000, 24_000_000, 8_000_000]
+        )
+        assert new_timing.f_clock == 24_000_000
+
+        with pytest.raises(CanInitializationError):
+            check_or_adjust_timing_clock(timing, valid_clocks=[8_000, 16_000])
+
+    def test_adjust_timing_fd(self):
+        timing = BitTimingFd(
+            f_clock=160_000_000,
+            nom_bitrate=500_000,
+            nom_tseg1=119,
+            nom_tseg2=40,
+            nom_sjw=40,
+            data_bitrate=2_000_000,
+            data_tseg1=29,
+            data_tseg2=10,
+            data_sjw=10,
+        )
+
+        # Check identity case
+        new_timing = check_or_adjust_timing_clock(timing, valid_clocks=[160_000_000])
+        assert timing == new_timing
+
+        new_timing = check_or_adjust_timing_clock(
+            timing, valid_clocks=[8_000, 80_000_000]
+        )
+        assert new_timing.__class__ == BitTimingFd
+        assert new_timing.f_clock == 80_000_000
+        assert new_timing.nom_bitrate == 500_000
+        assert new_timing.nom_tseg1 == 119
+        assert new_timing.nom_tseg2 == 40
+        assert new_timing.nom_sjw == 40
+        assert new_timing.data_bitrate == 2_000_000
+        assert new_timing.data_tseg1 == 29
+        assert new_timing.data_tseg2 == 10
+        assert new_timing.data_sjw == 10
+
+        with pytest.raises(CanInitializationError):
+            check_or_adjust_timing_clock(timing, valid_clocks=[8_000, 16_000])

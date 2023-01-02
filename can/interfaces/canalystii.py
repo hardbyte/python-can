@@ -7,7 +7,7 @@ from typing import Any, Dict, Optional, Deque, Sequence, Tuple, Union
 from can import BitTiming, BusABC, Message, BitTimingFd
 from can.exceptions import CanTimeoutError, CanInitializationError
 from can.typechecking import CanFilters
-from can.util import deprecated_args_alias
+from can.util import deprecated_args_alias, check_or_adjust_timing_clock
 
 import canalystii as driver
 
@@ -70,15 +70,7 @@ class CANalystIIBus(BusABC):
         self.device = driver.CanalystDevice(device_index=device)
         for channel in self.channels:
             if isinstance(timing, BitTiming):
-                if timing.f_clock != 8_000_000:
-                    try:
-                        timing = timing.recreate_with_f_clock(8_000_000)
-                    except ValueError:
-                        raise CanInitializationError(
-                            f"timing.f_clock value {timing.f_clock} "
-                            "doesn't match expected device f_clock 8MHz."
-                        ) from None
-
+                timing = check_or_adjust_timing_clock(timing, valid_clocks=[8_000_000])
                 self.device.init(channel, timing0=timing.btr0, timing1=timing.btr1)
             elif isinstance(timing, BitTimingFd):
                 raise NotImplementedError(
