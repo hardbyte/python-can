@@ -70,6 +70,12 @@ class BitTiming(Mapping):
         self._validate()
 
     def _validate(self) -> None:
+        if not 8 <= self.nbt <= 25:
+            raise ValueError(f"nominal bit time (={self.nbt}) must be in [8...25].")
+
+        if not 1 <= self.brp <= 64:
+            raise ValueError(f"bitrate prescaler (={self.brp}) must be in [1...64].")
+
         if not 5_000 <= self.bitrate <= 2_000_000:
             raise ValueError(
                 f"bitrate (={self.bitrate}) must be in [5,000...2,000,000]."
@@ -80,12 +86,6 @@ class BitTiming(Mapping):
 
         if not 1 <= self.tseg2 <= 8:
             raise ValueError(f"tseg2 (={self.tseg2}) must be in [1...8].")
-
-        if not 8 <= self.nbt <= 25:
-            raise ValueError(f"nominal bit time (={self.nbt}) must be in [8...25].")
-
-        if not 1 <= self.brp <= 64:
-            raise ValueError(f"bitrate prescaler (={self.brp}) must be in [1...64].")
 
         if not 1 <= self.sjw <= 4:
             raise ValueError(f"sjw (={self.sjw}) must be in [1...4].")
@@ -137,15 +137,12 @@ class BitTiming(Mapping):
         :raises ValueError:
             if the arguments are invalid.
         """
-        nbt = 1 + tseg1 + tseg2
-        brp = int(round(f_clock / (bitrate * nbt)))
-        effective_bitrate = f_clock / (nbt * brp)
-        if abs(effective_bitrate - bitrate) > bitrate / 256:
-            raise ValueError(
-                f"the effective bitrate (={effective_bitrate}) diverges "
-                f"from the requested bitrate (={bitrate})"
-            )
-        return cls(
+        try:
+            brp = int(round(f_clock / (bitrate * (1 + tseg1 + tseg2))))
+        except ZeroDivisionError:
+            raise ValueError("Invalid inputs") from None
+
+        bt = cls(
             f_clock=f_clock,
             brp=brp,
             tseg1=tseg1,
@@ -153,6 +150,12 @@ class BitTiming(Mapping):
             sjw=sjw,
             nof_samples=nof_samples,
         )
+        if abs(bt.bitrate - bitrate) > bitrate / 256:
+            raise ValueError(
+                f"the effective bitrate (={bt.bitrate}) diverges "
+                f"from the requested bitrate (={bitrate})"
+            )
+        return bt
 
     @classmethod
     def from_registers(
@@ -524,6 +527,22 @@ class BitTimingFd(Mapping):
         self._validate()
 
     def _validate(self) -> None:
+        if self.nbt < 8:
+            raise ValueError(f"nominal bit time (={self.nbt}) must be at least 8.")
+
+        if self.dbt < 8:
+            raise ValueError(f"data bit time (={self.dbt}) must be at least 8.")
+
+        if not 1 <= self.nom_brp <= 256:
+            raise ValueError(
+                f"nominal bitrate prescaler (={self.nom_brp}) must be in [1...256]."
+            )
+
+        if not 1 <= self.data_brp <= 256:
+            raise ValueError(
+                f"data bitrate prescaler (={self.data_brp}) must be in [1...256]."
+            )
+
         if not 5_000 <= self.nom_bitrate <= 2_000_000:
             raise ValueError(
                 f"nom_bitrate (={self.nom_bitrate}) must be in [5,000...2,000,000]."
@@ -551,22 +570,6 @@ class BitTimingFd(Mapping):
 
         if not 1 <= self.data_tseg2 <= 16:
             raise ValueError(f"data_tseg2 (={self.data_tseg2}) must be in [1...16].")
-
-        if self.nbt < 8:
-            raise ValueError(f"nominal bit time (={self.nbt}) must be at least 8.")
-
-        if self.dbt < 8:
-            raise ValueError(f"data bit time (={self.dbt}) must be at least 8.")
-
-        if not 1 <= self.nom_brp <= 256:
-            raise ValueError(
-                f"nominal bitrate prescaler (={self.nom_brp}) must be in [1...256]."
-            )
-
-        if not 1 <= self.data_brp <= 256:
-            raise ValueError(
-                f"data bitrate prescaler (={self.data_brp}) must be in [1...256]."
-            )
 
         if not 1 <= self.nom_sjw <= 128:
             raise ValueError(f"nom_sjw (={self.nom_sjw}) must be in [1...128].")
@@ -641,25 +644,15 @@ class BitTimingFd(Mapping):
         :raises ValueError:
             if the arguments are invalid.
         """
-        nbt = 1 + nom_tseg1 + nom_tseg2
-        nom_brp = int(round(f_clock / (nom_bitrate * nbt)))
-        effective_nom_bitrate = f_clock / (nbt * nom_brp)
-        if abs(effective_nom_bitrate - nom_bitrate) > nom_bitrate / 256:
-            raise ValueError(
-                f"the effective nom. bitrate (={effective_nom_bitrate}) diverges "
-                f"from the requested nom. bitrate (={nom_bitrate})"
+        try:
+            nom_brp = int(round(f_clock / (nom_bitrate * (1 + nom_tseg1 + nom_tseg2))))
+            data_brp = int(
+                round(f_clock / (data_bitrate * (1 + data_tseg1 + data_tseg2)))
             )
+        except ZeroDivisionError:
+            raise ValueError("Invalid inputs.") from None
 
-        dbt = 1 + data_tseg1 + data_tseg2
-        data_brp = int(round(f_clock / (data_bitrate * dbt)))
-        effective_data_bitrate = f_clock / (dbt * data_brp)
-        if abs(effective_data_bitrate - data_bitrate) > data_bitrate / 256:
-            raise ValueError(
-                f"the effective data bitrate (={effective_data_bitrate}) diverges "
-                f"from the requested data bitrate (={data_bitrate})"
-            )
-
-        return cls(
+        bt = cls(
             f_clock=f_clock,
             nom_brp=nom_brp,
             nom_tseg1=nom_tseg1,
@@ -670,6 +663,20 @@ class BitTimingFd(Mapping):
             data_tseg2=data_tseg2,
             data_sjw=data_sjw,
         )
+
+        if abs(bt.nom_bitrate - nom_bitrate) > nom_bitrate / 256:
+            raise ValueError(
+                f"the effective nom. bitrate (={bt.nom_bitrate}) diverges "
+                f"from the requested nom. bitrate (={nom_bitrate})"
+            )
+
+        if abs(bt.data_bitrate - data_bitrate) > data_bitrate / 256:
+            raise ValueError(
+                f"the effective data bitrate (={bt.data_bitrate}) diverges "
+                f"from the requested data bitrate (={data_bitrate})"
+            )
+
+        return bt
 
     @classmethod
     def from_sample_point(
