@@ -5,7 +5,6 @@ Defines common socketcan functions.
 import errno
 import logging
 import os
-import re
 import struct
 import subprocess
 from typing import cast, Iterable, Optional
@@ -38,14 +37,14 @@ def pack_filters(can_filters: Optional[typechecking.CanFilters] = None) -> bytes
     return struct.pack(can_filter_fmt, *filter_data)
 
 
-_PATTERN_CAN_INTERFACE = re.compile(r"(sl|v|vx)?can\d+")
-
-
 def find_available_interfaces() -> Iterable[str]:
     """Returns the names of all open can/vcan interfaces using
     the ``ip link list`` command. If the lookup fails, an error
     is logged to the console and an empty list is returned.
     """
+
+    def clean_split(string_in: str, separator: str = None):
+        return [x for x in string_in.split(separator) if x != ""]
 
     try:
         # adding "type vcan" would exclude physical can devices
@@ -58,15 +57,18 @@ def find_available_interfaces() -> Iterable[str]:
         return []
 
     else:
-        # log.debug("find_available_interfaces(): output=\n%s", output)
-        # output contains some lines like "1: vcan42: <NOARP,UP,LOWER_UP> ..."
+        # output contains some lines like "1: vcan42: <NOARP,UP,LOWER_UP> ... link/can"
         # extract the "vcan42" of each line
-        interfaces = [line.split(": ", 3)[1] for line in output.splitlines()]
+        interfaces = [
+            line.split(": ", 3)[1]
+            for line in output.splitlines()
+            if clean_split(line, " ")[-1] == "link/can"
+        ]
         log.debug(
             "find_available_interfaces(): detected these interfaces (before filtering): %s",
             interfaces,
         )
-        return filter(_PATTERN_CAN_INTERFACE.match, interfaces)
+        return interfaces
 
 
 def error_code_to_str(code: Optional[int]) -> str:
