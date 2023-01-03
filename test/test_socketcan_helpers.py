@@ -5,6 +5,10 @@ Tests helpers in `can.interfaces.socketcan.socketcan_common`.
 """
 
 import unittest
+from unittest import mock
+
+from subprocess import CalledProcessError
+
 
 from can.interfaces.socketcan.utils import find_available_interfaces, error_code_to_str
 
@@ -28,7 +32,7 @@ class TestSocketCanHelpers(unittest.TestCase):
 
     @unittest.skipUnless(IS_LINUX, "socketcan is only available on Linux")
     def test_find_available_interfaces(self):
-        result = list(find_available_interfaces())
+        result = find_available_interfaces()
         self.assertGreaterEqual(len(result), 0)
         for entry in result:
             self.assertRegex(entry, r"(sl|v|vx)?can\d+")
@@ -37,6 +41,13 @@ class TestSocketCanHelpers(unittest.TestCase):
             self.assertIn("vcan0", result)
             self.assertIn("vxcan0", result)
             self.assertIn("slcan0", result)
+
+    def test_find_available_interfaces_exception(self):
+        with mock.patch("subprocess.check_output") as check_output:
+            check_output.side_effect = Exception("Something went wrong :-/")
+
+            result = find_available_interfaces()
+            self.assertEqual([], result)
 
 
 if __name__ == "__main__":
