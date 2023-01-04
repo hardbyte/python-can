@@ -59,11 +59,20 @@ List available devices
 In case you have connected multiple IXXAT devices, you have to select them by using their unique hardware id.
 To get a list of all connected IXXAT you can use the function ``get_ixxat_hwids()`` as demonstrated below:
 
-    >>> from can.interfaces.ixxat import get_ixxat_hwids
-    >>> for hwid in get_ixxat_hwids():
-    ...     print("Found IXXAT with hardware id '%s'." % hwid)
-    Found IXXAT with hardware id 'HW441489'.
-    Found IXXAT with hardware id 'HW107422'.
+    .. testsetup:: ixxat
+
+        from unittest.mock import Mock
+        import can.interfaces.ixxat
+        assert hasattr(can.interfaces.ixxat, "get_ixxat_hwids")
+        can.interfaces.ixxat.get_ixxat_hwids = Mock(side_effect=lambda: ['HW441489', 'HW107422'])
+
+    .. doctest:: ixxat
+
+        >>> from can.interfaces.ixxat import get_ixxat_hwids
+        >>> for hwid in get_ixxat_hwids():
+        ...     print("Found IXXAT with hardware id '%s'." % hwid)
+        Found IXXAT with hardware id 'HW441489'.
+        Found IXXAT with hardware id 'HW107422'.
 
 
 Bus
