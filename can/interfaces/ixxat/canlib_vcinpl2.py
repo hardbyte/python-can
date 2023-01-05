@@ -417,6 +417,8 @@ class IXXATBus(BusABC):
     """
 
     @deprecated_args_alias(
+        deprecation_start="4.0.0",
+        deprecation_end="5.0.0",
         UniqueHardwareId="unique_hardware_id",
         rxFifoSize="rx_fifo_size",
         txFifoSize="tx_fifo_size",
