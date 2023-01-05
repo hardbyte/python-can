@@ -295,26 +295,47 @@ def channel2int(channel: Optional[typechecking.Channel]) -> Optional[int]:
     return None
 
 
-def deprecated_args_alias(**aliases):
+def deprecated_args_alias(  # type: ignore
+    deprecation_start: str, deprecation_end: Optional[str] = None, **aliases
+):
     """Allows to rename/deprecate a function kwarg(s) and optionally
     have the deprecated kwarg(s) set as alias(es)
 
     Example::
 
-        @deprecated_args_alias(oldArg="new_arg", anotherOldArg="another_new_arg")
+        @deprecated_args_alias("1.2.0", oldArg="new_arg", anotherOldArg="another_new_arg")
         def library_function(new_arg, another_new_arg):
             pass
 
-        @deprecated_args_alias(oldArg="new_arg", obsoleteOldArg=None)
+        @deprecated_args_alias(
+            deprecation_start="1.2.0",
+            deprecation_end="3.0.0",
+            oldArg="new_arg",
+            obsoleteOldArg=None,
+        )
         def library_function(new_arg):
             pass
+
+    :param deprecation_start:
+        The *python-can* version, that introduced the :class:`DeprecationWarning`.
+    :param deprecation_end:
+        The *python-can* version, that marks the end of the deprecation period.
+    :param aliases:
+        keyword arguments, that map the deprecated argument names
+        to the new argument names or ``None``.
 
     """
 
     def deco(f):
         @functools.wraps(f)
         def wrapper(*args, **kwargs):
-            _rename_kwargs(f.__name__, kwargs, aliases)
+            _rename_kwargs(
+                func_name=f.__name__,
+                start=deprecation_start,
+                end=deprecation_end,
+                kwargs=kwargs,
+                aliases=aliases,
+            )
             return f(*args, **kwargs)
 
         return wrapper
@@ -323,21 +344,35 @@ def deprecated_args_alias(**aliases):
 
 
 def _rename_kwargs(
-    func_name: str, kwargs: Dict[str, str], aliases: Dict[str, str]
+    func_name: str,
+    start: str,
+    end: Optional[str],
+    kwargs: Dict[str, str],
+    aliases: Dict[str, str],
 ) -> None:
     """Helper function for `deprecated_args_alias`"""
     for alias, new in aliases.items():
         if alias in kwargs:
+            deprecation_notice = (
+                f"The '{alias}' argument is deprecated since python-can v{start}"
+            )
+            if end:
+                deprecation_notice += (
+                    f", and scheduled for removal in python-can v{end}"
+                )
+            deprecation_notice += "."
+
             value = kwargs.pop(alias)
             if new is not None:
-                warnings.warn(f"{alias} is deprecated; use {new}", DeprecationWarning)
+                deprecation_notice += f" Use '{new}' instead."
+
                 if new in kwargs:
                     raise TypeError(
-                        f"{func_name} received both {alias} (deprecated) and {new}"
+                        f"{func_name} received both '{alias}' (deprecated) and '{new}'."
                     )
                 kwargs[new] = value
-            else:
-                warnings.warn(f"{alias} is deprecated", DeprecationWarning)
+
+            warnings.warn(deprecation_notice, DeprecationWarning)
 
 
 def time_perfcounter_correlation() -> Tuple[float, float]:
