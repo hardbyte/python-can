@@ -58,11 +58,12 @@ def find_available_interfaces() -> List[str]:
     try:
         output_json = json.loads(output_str)
     except json.JSONDecodeError:
-        log.exception(f"Failed to parse ip link JSON output: {output_str}")
+        log.exception("Failed to parse ip link JSON output: %s", output_str)
         return []
 
     log.debug(
-        f"find_available_interfaces(): detected these interfaces (before filtering): {output_json}"
+        "find_available_interfaces(): detected these interfaces (before filtering): %s",
+        output_json,
     )
 
     interfaces = [i["ifname"] for i in output_json if i["link_type"] == "can"]
