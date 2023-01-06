@@ -15,7 +15,9 @@ logger = logging.getLogger(__name__)
 
 
 class CANalystIIBus(BusABC):
-    @deprecated_args_alias(bit_timing="timing")
+    @deprecated_args_alias(
+        deprecation_start="4.2.0", deprecation_end="5.0.0", bit_timing="timing"
+    )
     def __init__(
         self,
         channel: Union[int, Sequence[int], str] = (0, 1),
