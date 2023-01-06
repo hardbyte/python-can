@@ -60,12 +60,15 @@ class TestSocketCanHelpers(unittest.TestCase):
             check_output.return_value = ip_output
             ifs = find_available_interfaces()
 
-            self.assertEqual(ifs, ["vcan0", "mycustomCan123"])
+            self.assertEqual(["vcan0", "mycustomCan123"], ifs)
 
     def test_find_available_interfaces_exception(self):
         with mock.patch("subprocess.check_output") as check_output:
-            check_output.side_effect = Exception("Something went wrong :-/")
+            check_output.return_value = "<h1>Not JSON</h1>"
+            result = find_available_interfaces()
+            self.assertEqual([], result)
 
+            check_output.side_effect = Exception("Something went wrong :-/")
             result = find_available_interfaces()
             self.assertEqual([], result)
 

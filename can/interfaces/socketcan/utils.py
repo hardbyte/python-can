@@ -50,13 +50,18 @@ def find_available_interfaces() -> List[str]:
     try:
         command = ["ip", "-json", "link", "list", "up"]
         output_str = subprocess.check_output(command, text=True)
-    except Exception as e:  # subprocess.CalledProcessError is too specific
+    except Exception:  # subprocess.CalledProcessError is too specific
         log.exception("failed to fetch opened can devices from ip link")
         return []
 
-    output_json = json.loads(output_str)
+    try:
+        output_json = json.loads(output_str)
+    except json.JSONDecodeError:
+        log.exception(f"Failed to parse ip link JSON output: {output_str}")
+        return []
+
     log.debug(
-        f"find_available_interfaces(): detected these interfaces (before filtering): {output_str}"
+        f"find_available_interfaces(): detected these interfaces (before filtering): {output_json}"
     )
 
     interfaces = [i["ifname"] for i in output_json if i["link_type"] == "can"]
