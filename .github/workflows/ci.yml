@@ -91,10 +91,12 @@ jobs:
       run: |
         pylint --rcfile=.pylintrc \
         can/**.py \
+        can/io \
         setup.py \
-        doc.conf \
+        doc/conf.py \
         scripts/**.py \
-        examples/**.py
+        examples/**.py \
+        can/interfaces/socketcan
 
   format:
     runs-on: ubuntu-latest
@@ -127,7 +129,10 @@ jobs:
         pip install -r doc/doc-requirements.txt
     - name: Build documentation
       run: |
-        python -m sphinx -Wan doc build
+        python -m sphinx -Wan --keep-going doc build
+    - name: Run doctest
+      run: |
+        python -m sphinx -b doctest -W --keep-going doc build
     - uses: actions/upload-artifact@v3
       with:
         name: sphinx-out

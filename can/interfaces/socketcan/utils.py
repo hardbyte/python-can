@@ -50,7 +50,8 @@ def find_available_interfaces() -> List[str]:
     try:
         command = ["ip", "-json", "link", "list", "up"]
         output_str = subprocess.check_output(command, text=True)
-    except Exception:  # subprocess.CalledProcessError is too specific
+    except Exception:  # pylint: disable=broad-except
+        # subprocess.CalledProcessError is too specific
         log.exception("failed to fetch opened can devices from ip link")
         return []
 
