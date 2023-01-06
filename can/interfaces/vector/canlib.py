@@ -75,7 +75,11 @@ class VectorBus(BusABC):
         tseg2Dbr="tseg2_dbr",
     )
 
-    @deprecated_args_alias(**deprecated_args)
+    @deprecated_args_alias(
+        deprecation_start="4.0.0",
+        deprecation_end="5.0.0",
+        **deprecated_args,
+    )
     def __init__(
         self,
         channel: Union[int, Sequence[int], str],

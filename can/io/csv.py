@@ -31,7 +31,6 @@ class CSVReader(MessageReader):
     def __init__(
         self,
         file: Union[StringPathLike, TextIO],
-        *args: Any,
         **kwargs: Any,
     ) -> None:
         """
@@ -95,7 +94,6 @@ class CSVWriter(FileIOMessageWriter):
         self,
         file: Union[StringPathLike, TextIO],
         append: bool = False,
-        *args: Any,
         **kwargs: Any,
     ) -> None:
         """
