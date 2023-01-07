@@ -6,16 +6,19 @@ import logging
 import time
 from datetime import datetime
 import platform
-
 from typing import Optional
 
 from packaging import version
 
-from ...message import Message
-from ...bus import BusABC, BusState
-from ...util import len2dlc, dlc2len
-from ...exceptions import CanError, CanOperationError, CanInitializationError
-
+from can import (
+    BusABC,
+    BusState,
+    CanError,
+    CanOperationError,
+    CanInitializationError,
+    Message,
+)
+from can.util import len2dlc, dlc2len
 
 from .basic import (
     PCAN_BITRATES,
@@ -78,7 +81,6 @@ try:
 except ImportError as error:
     log.warning(
         "uptime library not available, timestamps are relative to boot time and not to Epoch UTC",
-        exc_info=True,
     )
     boottimeEpoch = 0
 
@@ -278,7 +280,7 @@ class PcanBus(BusABC):
                 # TODO Remove Filter when MACCan actually supports it:
                 #  https://github.com/mac-can/PCBUSB-Library/
                 log.debug(
-                    "Ignoring error. PCAN_ALLOW_ERROR_FRAMES is still unsupported by OSX Library PCANUSB v0.10"
+                    "Ignoring error. PCAN_ALLOW_ERROR_FRAMES is still unsupported by OSX Library PCANUSB v0.11.2"
                 )
 
         if kwargs.get("auto_reset", False):
@@ -624,6 +626,7 @@ class PcanBus(BusABC):
             library_handle = PCANBasic()
         except OSError:
             return channels
+
         interfaces = []
         for i in range(16):
             interfaces.append(
