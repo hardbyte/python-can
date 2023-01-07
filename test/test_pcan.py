@@ -3,6 +3,7 @@ Test for PCAN Interface
 """
 
 import ctypes
+import platform
 import unittest
 from unittest import mock
 from unittest.mock import Mock
@@ -330,11 +331,18 @@ class TestPCANBus(unittest.TestCase):
             )
 
     def test_detect_available_configs(self) -> None:
-        self.mock_pcan.GetValue = Mock(
-            return_value=(PCAN_ERROR_OK, PCAN_CHANNEL_AVAILABLE)
-        )
-        configs = PcanBus._detect_available_configs()
-        self.assertEqual(len(configs), 50)
+        if platform.system() == "Darwin":
+            self.mock_pcan.GetValue = Mock(
+                return_value=(PCAN_ERROR_OK, PCAN_CHANNEL_AVAILABLE)
+            )
+            configs = PcanBus._detect_available_configs()
+            self.assertEqual(len(configs), 50)
+        else:
+            # TODO: mock GetValue with proper value for PCAN_ATTACHED_CHANNELS
+            self.mock_pcan.GetValue = Mock(
+                return_value=(PCAN_ERROR_OK, (TPCANChannelInformation * 0)())
+            )
+            PcanBus._detect_available_configs()
 
     @parameterized.expand([("valid", PCAN_ERROR_OK, "OK"), ("invalid", 0x00005, None)])
     def test_status_string(self, name, status, expected_result) -> None:

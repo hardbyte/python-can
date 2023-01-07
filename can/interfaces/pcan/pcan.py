@@ -6,7 +6,7 @@ import logging
 import time
 from datetime import datetime
 import platform
-from typing import Optional
+from typing import Optional, List
 
 from packaging import version
 
@@ -60,6 +60,8 @@ from .basic import (
     FEATURE_FD_CAPABLE,
     PCAN_DICT_STATUS,
     PCAN_BUSOFF_AUTORESET,
+    PCAN_ATTACHED_CHANNELS,
+    TPCANChannelInformation,
 )
 
 
@@ -628,6 +630,21 @@ class PcanBus(BusABC):
             return channels
 
         interfaces = []
+
+        if platform.system() != "Darwin":
+            res, value = library_handle.GetValue(PCAN_NONEBUS, PCAN_ATTACHED_CHANNELS)
+            if res != PCAN_ERROR_OK:
+                return interfaces
+            channel_information: List[TPCANChannelInformation] = list(value)
+            for channel in channel_information:
+                channel_config = {
+                    "interface": "pcan",
+                    "channel": channel.device_name + str(channel.controller_number),
+                    "supports_fd": bool(channel.device_features & FEATURE_FD_CAPABLE),
+                }
+                interfaces.append(channel_config)
+            return interfaces
+
         for i in range(16):
             interfaces.append(
                 {
