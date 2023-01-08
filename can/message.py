@@ -6,7 +6,7 @@ This module contains the implementation of :class:`can.Message`.
     starting with Python 3.7.
 """
 
-from typing import Optional, Union
+from typing import Optional
 
 from . import typechecking
 
@@ -14,7 +14,7 @@ from copy import deepcopy
 from math import isinf, isnan
 
 
-class Message:
+class Message:  # pylint: disable=too-many-instance-attributes; OK for a dataclass
     """
     The :class:`~can.Message` object is used to represent CAN messages for
     sending, receiving and other purposes like converting between different
@@ -29,7 +29,7 @@ class Message:
     :func:`~copy.copy`/:func:`~copy.deepcopy` is supported as well.
 
     Messages do not support "dynamic" attributes, meaning any others than the
-    documented ones, since it uses :attr:`~object.__slots__`.
+    documented ones, since it uses :obj:`~object.__slots__`.
     """
 
     __slots__ = (
@@ -42,12 +42,13 @@ class Message:
         "dlc",
         "data",
         "is_fd",
+        "is_rx",
         "bitrate_switch",
         "error_state_indicator",
         "__weakref__",  # support weak references to messages
     )
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-locals, too-many-arguments
         self,
         timestamp: float = 0.0,
         arbitration_id: int = 0,
@@ -58,6 +59,7 @@ class Message:
         dlc: Optional[int] = None,
         data: Optional[typechecking.CanData] = None,
         is_fd: bool = False,
+        is_rx: bool = True,
         bitrate_switch: bool = False,
         error_state_indicator: bool = False,
         check: bool = False,
@@ -70,9 +72,11 @@ class Message:
                       Thus, the caller must prevent the creation of invalid messages or
                       set this parameter to `True`, to raise an Error on invalid inputs.
                       Possible problems include the `dlc` field not matching the length of `data`
-                      or creating a message with both `is_remote_frame` and `is_error_frame` set to `True`.
+                      or creating a message with both `is_remote_frame` and `is_error_frame` set
+                      to `True`.
 
-        :raises ValueError: iff `check` is set to `True` and one or more arguments were invalid
+        :raises ValueError:
+            If and only if `check` is set to `True` and one or more arguments were invalid
         """
         self.timestamp = timestamp
         self.arbitration_id = arbitration_id
@@ -81,6 +85,7 @@ class Message:
         self.is_error_frame = is_error_frame
         self.channel = channel
         self.is_fd = is_fd
+        self.is_rx = is_rx
         self.bitrate_switch = bitrate_switch
         self.error_state_indicator = error_state_indicator
 
@@ -91,9 +96,9 @@ class Message:
         else:
             try:
                 self.data = bytearray(data)
-            except TypeError:
-                err = "Couldn't create message from {} ({})".format(data, type(data))
-                raise TypeError(err)
+            except TypeError as error:
+                err = f"Couldn't create message from {data} ({type(data)})"
+                raise TypeError(err) from error
 
         if dlc is None:
             self.dlc = len(self.data)
@@ -104,16 +109,17 @@ class Message:
             self._check()
 
     def __str__(self) -> str:
-        field_strings = ["Timestamp: {0:>15.6f}".format(self.timestamp)]
+        field_strings = [f"Timestamp: {self.timestamp:>15.6f}"]
         if self.is_extended_id:
-            arbitration_id_string = "ID: {0:08x}".format(self.arbitration_id)
+            arbitration_id_string = f"ID: {self.arbitration_id:08x}"
         else:
-            arbitration_id_string = "ID: {0:04x}".format(self.arbitration_id)
+            arbitration_id_string = f"ID: {self.arbitration_id:04x}"
         field_strings.append(arbitration_id_string.rjust(12, " "))
 
         flag_string = " ".join(
             [
                 "X" if self.is_extended_id else "S",
+                "Rx" if self.is_rx else "Tx",
                 "E" if self.is_error_frame else " ",
                 "R" if self.is_remote_frame else " ",
                 "F" if self.is_fd else " ",
@@ -124,22 +130,22 @@ class Message:
 
         field_strings.append(flag_string)
 
-        field_strings.append("DLC: {0:2d}".format(self.dlc))
+        field_strings.append(f"DL: {self.dlc:2d}")
         data_strings = []
         if self.data is not None:
             for index in range(0, min(self.dlc, len(self.data))):
-                data_strings.append("{0:02x}".format(self.data[index]))
+                data_strings.append(f"{self.data[index]:02x}")
         if data_strings:  # if not empty
             field_strings.append(" ".join(data_strings).ljust(24, " "))
         else:
             field_strings.append(" " * 24)
 
         if (self.data is not None) and (self.data.isalnum()):
-            field_strings.append("'{}'".format(self.data.decode("utf-8", "replace")))
+            field_strings.append(f"'{self.data.decode('utf-8', 'replace')}'")
 
         if self.channel is not None:
             try:
-                field_strings.append("Channel: {}".format(self.channel))
+                field_strings.append(f"Channel: {self.channel}")
             except UnicodeEncodeError:
                 pass
 
@@ -154,41 +160,44 @@ class Message:
 
     def __repr__(self) -> str:
         args = [
-            "timestamp={}".format(self.timestamp),
-            "arbitration_id={:#x}".format(self.arbitration_id),
-            "is_extended_id={}".format(self.is_extended_id),
+            f"timestamp={self.timestamp}",
+            f"arbitration_id={self.arbitration_id:#x}",
+            f"is_extended_id={self.is_extended_id}",
         ]
 
+        if not self.is_rx:
+            args.append("is_rx=False")
+
         if self.is_remote_frame:
-            args.append("is_remote_frame={}".format(self.is_remote_frame))
+            args.append(f"is_remote_frame={self.is_remote_frame}")
 
         if self.is_error_frame:
-            args.append("is_error_frame={}".format(self.is_error_frame))
+            args.append(f"is_error_frame={self.is_error_frame}")
 
         if self.channel is not None:
-            args.append("channel={!r}".format(self.channel))
+            args.append(f"channel={self.channel!r}")
 
-        data = ["{:#02x}".format(byte) for byte in self.data]
-        args += ["dlc={}".format(self.dlc), "data=[{}]".format(", ".join(data))]
+        data = [f"{byte:#02x}" for byte in self.data]
+        args += [f"dlc={self.dlc}", f"data=[{', '.join(data)}]"]
 
         if self.is_fd:
             args.append("is_fd=True")
-            args.append("bitrate_switch={}".format(self.bitrate_switch))
-            args.append("error_state_indicator={}".format(self.error_state_indicator))
+            args.append(f"bitrate_switch={self.bitrate_switch}")
+            args.append(f"error_state_indicator={self.error_state_indicator}")
 
-        return "can.Message({})".format(", ".join(args))
+        return f"can.Message({', '.join(args)})"
 
     def __format__(self, format_spec: Optional[str]) -> str:
         if not format_spec:
             return self.__str__()
         else:
-            raise ValueError("non empty format_specs are not supported")
+            raise ValueError("non-empty format_specs are not supported")
 
     def __bytes__(self) -> bytes:
         return bytes(self.data)
 
     def __copy__(self) -> "Message":
-        new = Message(
+        return Message(
             timestamp=self.timestamp,
             arbitration_id=self.arbitration_id,
             is_extended_id=self.is_extended_id,
@@ -198,13 +207,13 @@ class Message:
             dlc=self.dlc,
             data=self.data,
             is_fd=self.is_fd,
+            is_rx=self.is_rx,
             bitrate_switch=self.bitrate_switch,
             error_state_indicator=self.error_state_indicator,
         )
-        return new
 
     def __deepcopy__(self, memo: dict) -> "Message":
-        new = Message(
+        return Message(
             timestamp=self.timestamp,
             arbitration_id=self.arbitration_id,
             is_extended_id=self.is_extended_id,
@@ -214,16 +223,17 @@ class Message:
             dlc=self.dlc,
             data=deepcopy(self.data, memo),
             is_fd=self.is_fd,
+            is_rx=self.is_rx,
             bitrate_switch=self.bitrate_switch,
             error_state_indicator=self.error_state_indicator,
         )
-        return new
 
-    def _check(self):
+    def _check(self) -> None:
         """Checks if the message parameters are valid.
-        Assumes that the types are already correct.
 
-        :raises ValueError: iff one or more attributes are invalid
+        Assumes that the attribute types are already correct.
+
+        :raises ValueError: If and only if one or more attributes are invalid
         """
 
         if self.timestamp < 0.0:
@@ -233,10 +243,13 @@ class Message:
         if isnan(self.timestamp):
             raise ValueError("the timestamp may not be NaN")
 
-        if self.is_remote_frame and self.is_error_frame:
-            raise ValueError(
-                "a message cannot be a remote and an error frame at the sane time"
-            )
+        if self.is_remote_frame:
+            if self.is_error_frame:
+                raise ValueError(
+                    "a message cannot be a remote and an error frame at the sane time"
+                )
+            if self.is_fd:
+                raise ValueError("CAN FD does not support remote frames")
 
         if self.arbitration_id < 0:
             raise ValueError("arbitration IDs may not be negative")
@@ -252,15 +265,11 @@ class Message:
         if self.is_fd:
             if self.dlc > 64:
                 raise ValueError(
-                    "DLC was {} but it should be <= 64 for CAN FD frames".format(
-                        self.dlc
-                    )
+                    f"DLC was {self.dlc} but it should be <= 64 for CAN FD frames"
                 )
         elif self.dlc > 8:
             raise ValueError(
-                "DLC was {} but it should be <= 8 for normal CAN frames".format(
-                    self.dlc
-                )
+                f"DLC was {self.dlc} but it should be <= 8 for normal CAN frames"
             )
 
         if self.is_remote_frame:
@@ -280,17 +289,20 @@ class Message:
                 )
 
     def equals(
-        self, other: "Message", timestamp_delta: Optional[Union[float, int]] = 1.0e-6
+        self,
+        other: "Message",
+        timestamp_delta: Optional[float] = 1.0e-6,
+        check_direction: bool = True,
     ) -> bool:
         """
         Compares a given message with this one.
 
         :param other: the message to compare with
+        :param timestamp_delta: the maximum difference in seconds at which two timestamps are
+                                still considered equal or `None` to not compare timestamps
+        :param check_direction: whether to compare the messages' directions (Tx/Rx)
 
-        :param timestamp_delta: the maximum difference at which two timestamps are
-                                still considered equal or None to not compare timestamps
-
-        :return: True iff the given message equals this one
+        :return: True if and only if the given message equals this one
         """
         # see https://github.com/hardbyte/python-can/pull/413 for a discussion
         # on why a delta of 1.0e-6 was chosen
@@ -304,6 +316,7 @@ class Message:
                     timestamp_delta is None
                     or abs(self.timestamp - other.timestamp) <= timestamp_delta
                 )
+                and (self.is_rx == other.is_rx or not check_direction)
                 and self.arbitration_id == other.arbitration_id
                 and self.is_extended_id == other.is_extended_id
                 and self.dlc == other.dlc

@@ -1,3 +1,5 @@
+.. _configuration:
+
 Configuration
 =============
 
@@ -11,7 +13,7 @@ In Code
 -------
 
 The ``can`` object exposes an ``rc`` dictionary which can be used to set
-the **interface** and **channel** before importing from ``can.interfaces``.
+the **interface** and **channel**.
 
 ::
 
@@ -19,7 +21,7 @@ the **interface** and **channel** before importing from ``can.interfaces``.
     can.rc['interface'] = 'socketcan'
     can.rc['channel'] = 'vcan0'
     can.rc['bitrate'] = 500000
-    from can.interfaces.interface import Bus
+    from can.interface import Bus
 
     bus = Bus()
 
@@ -28,7 +30,7 @@ You can also specify the interface and channel for each Bus instance::
 
     import can
 
-    bus = can.interface.Bus(bustype='socketcan', channel='vcan0', bitrate=500000)
+    bus = can.interface.Bus(interface='socketcan', channel='vcan0', bitrate=500000)
 
 
 Configuration File
@@ -43,9 +45,9 @@ On Linux systems the config file is searched in the following paths:
 
 On Windows systems the config file is searched in the following paths:
 
-#. ``~/can.conf``
+#. ``%USERPROFILE%/can.conf``
 #. ``can.ini`` (current working directory)
-#. ``$APPDATA/can.ini``
+#. ``%APPDATA%/can.ini``
 
 The configuration file sets the default interface and channel:
 
@@ -79,7 +81,7 @@ The configuration can also contain additional sections (or context):
 
 ::
 
-    from can.interfaces.interface import Bus
+    from can.interface import Bus
 
     hs_bus = Bus(context='HS')
     ms_bus = Bus(context='MS')
@@ -100,6 +102,7 @@ For example:
 
 ``CAN_INTERFACE=socketcan CAN_CONFIG={"receive_own_messages": true, "fd": true}``
 
+.. _interface names:
 
 Interface Names
 ---------------
@@ -109,31 +112,51 @@ Lookup table of interface names:
 +---------------------+-------------------------------------+
 | Name                | Documentation                       |
 +=====================+=====================================+
-| ``"socketcan"``     | :doc:`interfaces/socketcan`         |
+| ``"canalystii"``    | :doc:`interfaces/canalystii`        |
++---------------------+-------------------------------------+
+| ``"cantact"``       | :doc:`interfaces/cantact`           |
++---------------------+-------------------------------------+
+| ``"etas"``          | :doc:`interfaces/etas`              |
++---------------------+-------------------------------------+
+| ``"gs_usb"``        | :doc:`interfaces/gs_usb`            |
++---------------------+-------------------------------------+
+| ``"iscan"``         | :doc:`interfaces/iscan`             |
++---------------------+-------------------------------------+
+| ``"ixxat"``         | :doc:`interfaces/ixxat`             |
 +---------------------+-------------------------------------+
 | ``"kvaser"``        | :doc:`interfaces/kvaser`            |
++---------------------+-------------------------------------+
+| ``"neousys"``       | :doc:`interfaces/neousys`           |
++---------------------+-------------------------------------+
+| ``"neovi"``         | :doc:`interfaces/neovi`             |
++---------------------+-------------------------------------+
+| ``"nican"``         | :doc:`interfaces/nican`             |
++---------------------+-------------------------------------+
+| ``"nixnet"``        | :doc:`interfaces/nixnet`            |
++---------------------+-------------------------------------+
+| ``"pcan"``          | :doc:`interfaces/pcan`              |
++---------------------+-------------------------------------+
+| ``"robotell"``      | :doc:`interfaces/robotell`          |
++---------------------+-------------------------------------+
+| ``"seeedstudio"``   | :doc:`interfaces/seeedstudio`       |
 +---------------------+-------------------------------------+
 | ``"serial"``        | :doc:`interfaces/serial`            |
 +---------------------+-------------------------------------+
 | ``"slcan"``         | :doc:`interfaces/slcan`             |
 +---------------------+-------------------------------------+
-| ``"ixxat"``         | :doc:`interfaces/ixxat`             |
+| ``"socketcan"``     | :doc:`interfaces/socketcan`         |
 +---------------------+-------------------------------------+
-| ``"pcan"``          | :doc:`interfaces/pcan`              |
+| ``"socketcand"``    | :doc:`interfaces/socketcand`        |
++---------------------+-------------------------------------+
+| ``"systec"``        | :doc:`interfaces/systec`            |
++---------------------+-------------------------------------+
+| ``"udp_multicast"`` | :doc:`interfaces/udp_multicast`     |
 +---------------------+-------------------------------------+
 | ``"usb2can"``       | :doc:`interfaces/usb2can`           |
-+---------------------+-------------------------------------+
-| ``"nican"``         | :doc:`interfaces/nican`             |
-+---------------------+-------------------------------------+
-| ``"iscan"``         | :doc:`interfaces/iscan`             |
-+---------------------+-------------------------------------+
-| ``"neovi"``         | :doc:`interfaces/neovi`             |
 +---------------------+-------------------------------------+
 | ``"vector"``        | :doc:`interfaces/vector`            |
 +---------------------+-------------------------------------+
 | ``"virtual"``       | :doc:`interfaces/virtual`           |
 +---------------------+-------------------------------------+
-| ``"canalystii"``    | :doc:`interfaces/canalystii`        |
-+---------------------+-------------------------------------+
-| ``"systec"``        | :doc:`interfaces/systec`            |
-+---------------------+-------------------------------------+
+
+Additional interface types can be added via the :ref:`plugin interface`.

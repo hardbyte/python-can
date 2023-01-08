@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# coding: utf-8
 
 import shutil
 import tempfile
@@ -12,7 +11,7 @@ import can
 class LoadFileConfigTest(unittest.TestCase):
     configuration = {
         "default": {"interface": "virtual", "channel": "0"},
-        "one": {"interface": "virtual", "channel": "1"},
+        "one": {"interface": "kvaser", "channel": "1"},
         "two": {"channel": "2"},
         "three": {"extra": "extra value"},
     }
@@ -31,9 +30,9 @@ class LoadFileConfigTest(unittest.TestCase):
         ) as tmp_config_file:
             content = []
             for section in sections:
-                content.append("[{}]".format(section))
+                content.append(f"[{section}]")
                 for k, v in self.configuration[section].items():
-                    content.append("{} = {}".format(k, v))
+                    content.append(f"{k} = {v}")
             tmp_config_file.write("\n".join(content))
             return tmp_config_file.name
 

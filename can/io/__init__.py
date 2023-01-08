@@ -4,7 +4,7 @@ and Writers based off the file extension.
 """
 
 # Generic
-from .logger import Logger
+from .logger import Logger, BaseRotatingLogger, SizedRotatingLogger
 from .player import LogReader, MessageSync
 
 # Format specific
@@ -14,3 +14,4 @@ from .canutils import CanutilsLogReader, CanutilsLogWriter
 from .csv import CSVWriter, CSVReader
 from .sqlite import SqliteReader, SqliteWriter
 from .printer import Printer
+from .trc import TRCReader, TRCWriter, TRCFileVersion

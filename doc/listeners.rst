@@ -1,5 +1,18 @@
-Listeners
-=========
+
+Reading and Writing Messages
+============================
+
+.. _notifier:
+
+Notifier
+--------
+
+The Notifier object is used as a message distributor for a bus. Notifier creates a thread to read messages from the bus and distributes them to listeners.
+
+.. autoclass:: can.Notifier
+    :members:
+
+.. _listeners_doc:
 
 Listener
 --------
@@ -11,6 +24,12 @@ message, or by calling the method **on_message_received**.
 
 Listeners are registered with :ref:`notifier` object(s) which ensure they are
 notified whenever a new message is received.
+
+.. literalinclude:: ../examples/print_notifier.py
+    :language: python
+    :linenos:
+    :emphasize-lines: 8,9
+
 
 Subclasses of Listener that do not override **on_message_received** will cause
 :class:`NotImplementedError` to be thrown when a message is received on
@@ -29,6 +48,24 @@ readers are also documented here.
     Please note that writing and the reading a message might not always yield a
     completely unchanged message again, since some properties are not (yet)
     supported by some file formats.
+
+.. note ::
+
+    Additional file formats for both reading/writing log files can be added via
+    a plugin reader/writer. An external package can register a new reader
+    by using the ``can.io.message_reader`` entry point. Similarly, a writer can
+    be added using the ``can.io.message_writer`` entry point.
+
+    The format of the entry point is ``reader_name=module:classname`` where ``classname``
+    is a :class:`can.io.generic.BaseIOHandler` concrete implementation.
+
+    ::
+
+     entry_points={
+         'can.io.message_reader': [
+            '.asc = my_package.io.asc:ASCReader'
+        ]
+     },
 
 
 BufferedReader
@@ -55,6 +92,12 @@ The :class:`can.Logger` uses the following :class:`can.Listener` types to
 create log files with different file types of the messages received.
 
 .. autoclass:: can.Logger
+    :members:
+
+.. autoclass:: can.io.BaseRotatingLogger
+    :members:
+
+.. autoclass:: can.SizedRotatingLogger
     :members:
 
 
@@ -166,4 +209,21 @@ The data is stored in a compressed format which makes it very compact.
 The following class can be used to read messages from BLF file:
 
 .. autoclass:: can.BLFReader
+    :members:
+
+TRC
+----
+
+Implements basic support for the TRC file format.
+
+
+.. note::
+   Comments and contributions are welcome on what file versions might be relevant.
+
+.. autoclass:: can.TRCWriter
+    :members:
+
+The following class can be used to read messages from TRC file:
+
+.. autoclass:: can.TRCReader
     :members:

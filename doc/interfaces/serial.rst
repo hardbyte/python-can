@@ -21,6 +21,8 @@ Bus
 
 .. autoclass:: can.interfaces.serial.serial_can.SerialBus
 
+    .. automethod:: _recv_internal
+
 Internals
 ---------
 The frames that will be sent and received over the serial interface consist of
@@ -98,5 +100,5 @@ Examples of serial frames
 +----------------+---------------------+------+---------------------+--------------+
 | Start of frame | Timestamp           | DLC  | Arbitration ID      | End of frame |
 +================+=====================+======+=====================+==============+
-| 0xAA           | 0x66 0x73 0x00 0x00 | 0x00 | 0x01 0x00 0x00 0x00 | 0xBBS        |
+| 0xAA           | 0x66 0x73 0x00 0x00 | 0x00 | 0x01 0x00 0x00 0x00 | 0xBB         |
 +----------------+---------------------+------+---------------------+--------------+

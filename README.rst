@@ -1,20 +1,28 @@
 python-can
 ==========
 
-|release| |downloads| |downloads_monthly| |formatter|
+|pypi| |conda| |python_implementation| |downloads| |downloads_monthly|
 
-|docs| |build_travis| |build_appveyor| |coverage|
+|docs| |github-actions| |build_travis| |coverage| |mergify| |formatter|
 
-.. |release| image:: https://img.shields.io/pypi/v/python-can.svg
+.. |pypi| image:: https://img.shields.io/pypi/v/python-can.svg
    :target: https://pypi.python.org/pypi/python-can/
    :alt: Latest Version on PyPi
+
+.. |conda| image:: https://img.shields.io/conda/v/conda-forge/python-can
+   :target: https://github.com/conda-forge/python-can-feedstock
+   :alt: Latest Version on conda-forge
+
+.. |python_implementation| image:: https://img.shields.io/pypi/implementation/python-can
+   :target: https://pypi.python.org/pypi/python-can/
+   :alt: Supported Python implementations
 
 .. |downloads| image:: https://pepy.tech/badge/python-can
    :target: https://pepy.tech/project/python-can
    :alt: Downloads on PePy
 
 .. |downloads_monthly| image:: https://pepy.tech/badge/python-can/month
-   :target: https://pepy.tech/project/python-can/month
+   :target: https://pepy.tech/project/python-can
    :alt: Monthly downloads on PePy
 
 .. |formatter| image:: https://img.shields.io/badge/code%20style-black-000000.svg
@@ -25,17 +33,21 @@ python-can
    :target: https://python-can.readthedocs.io/en/stable/
    :alt: Documentation
 
+.. |github-actions| image:: https://github.com/hardbyte/python-can/actions/workflows/ci.yml/badge.svg
+   :target: https://github.com/hardbyte/python-can/actions/workflows/ci.yml
+   :alt: Github Actions workflow status
+
 .. |build_travis| image:: https://img.shields.io/travis/hardbyte/python-can/develop.svg?label=Travis%20CI
-   :target: https://travis-ci.org/hardbyte/python-can/branches
+   :target: https://app.travis-ci.com/github/hardbyte/python-can
    :alt: Travis CI Server for develop branch
 
-.. |build_appveyor| image:: https://img.shields.io/appveyor/ci/hardbyte/python-can/develop.svg?label=AppVeyor
-   :target: https://ci.appveyor.com/project/hardbyte/python-can/history
-   :alt: AppVeyor CI Server for develop branch
+.. |coverage| image:: https://coveralls.io/repos/github/hardbyte/python-can/badge.svg?branch=develop
+   :target: https://coveralls.io/github/hardbyte/python-can?branch=develop
+   :alt: Test coverage reports on Coveralls.io
 
-.. |coverage| image:: https://codecov.io/gh/hardbyte/python-can/branch/develop/graph/badge.svg
-   :target: https://codecov.io/gh/hardbyte/python-can/branch/develop
-   :alt: Test coverage reports on Codecov.io
+.. |mergify| image:: https://img.shields.io/endpoint.svg?url=https://api.mergify.com/v1/badges/hardbyte/python-can&style=flat
+   :target: https://mergify.io
+   :alt: Mergify Status
 
 The **C**\ ontroller **A**\ rea **N**\ etwork is a bus standard designed
 to allow microcontrollers and devices to communicate with each other. It
@@ -47,15 +59,14 @@ Python developers; providing common abstractions to
 different hardware devices, and a suite of utilities for sending and receiving
 messages on a can bus.
 
-The library currently supports Python 3.6+ as well as PyPy 3 and runs
-on Mac, Linux and Windows.
+The library currently supports CPython as well as PyPy and runs on Mac, Linux and Windows.
 
 ==============================  ===========
 Library Version                 Python
 ------------------------------  -----------
   2.x                           2.6+, 3.4+
   3.x                           2.7+, 3.5+
-  4.x *(currently on develop)*  3.6+
+  4.x                           3.7+
 ==============================  ===========
 
 
@@ -66,39 +77,42 @@ Features
 - support for many different backends (see the `docs <https://python-can.readthedocs.io/en/stable/interfaces.html>`__)
 - receiving, sending, and periodically sending messages
 - normal and extended arbitration IDs
-- limited `CAN FD <https://en.wikipedia.org/wiki/CAN_FD>`__ support
-- many different loggers and readers supporting playback: ASC (CANalyzer format), BLF (Binary Logging Format by Vector), CSV, SQLite and Canutils log
+- `CAN FD <https://en.wikipedia.org/wiki/CAN_FD>`__ support
+- many different loggers and readers supporting playback: ASC (CANalyzer format), BLF (Binary Logging Format by Vector), TRC, CSV, SQLite, and Canutils log
 - efficient in-kernel or in-hardware filtering of messages on supported interfaces
-- bus configuration reading from file or environment variables
-- CLI tools for working with CAN buses (see the `docs <https://python-can.readthedocs.io/en/stable/scripts.html>`__)
+- bus configuration reading from a file or from environment variables
+- command line tools for working with CAN buses (see the `docs <https://python-can.readthedocs.io/en/stable/scripts.html>`__)
 - more
 
 
 Example usage
 -------------
 
+``pip install python-can``
+
 .. code:: python
 
     # import the library
     import can
 
-    # create a bus instance
-    # many other interfaces are supported as well (see below)
-    bus = can.Bus(interface='socketcan',
+    # create a bus instance using 'with' statement,
+    # this will cause bus.shutdown() to be called on the block exit;
+    # many other interfaces are supported as well (see documentation)
+    with can.Bus(interface='socketcan',
                   channel='vcan0',
-                  receive_own_messages=True)
+                  receive_own_messages=True) as bus:
 
-    # send a message
-    message = can.Message(arbitration_id=123, is_extended_id=True,
-                          data=[0x11, 0x22, 0x33])
-    bus.send(message, timeout=0.2)
+       # send a message
+       message = can.Message(arbitration_id=123, is_extended_id=True,
+                             data=[0x11, 0x22, 0x33])
+       bus.send(message, timeout=0.2)
 
-    # iterate over received messages
-    for msg in bus:
-        print("{X}: {}".format(msg.arbitration_id, msg.data))
+       # iterate over received messages
+       for msg in bus:
+           print(f"{msg.arbitration_id:X}: {msg.data}")
 
-    # or use an asynchronous notifier
-    notifier = can.Notifier(bus, [can.Logger("recorded.log"), can.Printer()])
+       # or use an asynchronous notifier
+       notifier = can.Notifier(bus, [can.Logger("recorded.log"), can.Printer()])
 
 You can find more information in the documentation, online at
 `python-can.readthedocs.org <https://python-can.readthedocs.org/en/stable/>`__.
@@ -109,9 +123,6 @@ Discussion
 
 If you run into bugs, you can file them in our
 `issue tracker <https://github.com/hardbyte/python-can/issues>`__ on GitHub.
-
-There is also a `python-can <https://groups.google.com/forum/#!forum/python-can>`__
-mailing list for development discussion.
 
 `Stackoverflow <https://stackoverflow.com/questions/tagged/can+python>`__ has several
 questions and answers tagged with ``python+can``.

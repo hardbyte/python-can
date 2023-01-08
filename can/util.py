@@ -2,10 +2,10 @@
 Utilities and configuration file parsing.
 """
 
-from typing import Dict, Optional, Union
-
-from can import typechecking
-
+import functools
+import warnings
+from typing import Any, Callable, cast, Dict, Iterable, Tuple, Optional, Union
+from time import time, perf_counter, get_clock_info
 import json
 import os
 import os.path
@@ -15,7 +15,9 @@ import logging
 from configparser import ConfigParser
 
 import can
-from can.interfaces import VALID_INTERFACES
+from .interfaces import VALID_INTERFACES
+from . import typechecking
+from .exceptions import CanInterfaceNotImplementedError
 
 log = logging.getLogger("can.util")
 
@@ -50,15 +52,19 @@ def load_file_config(
         name of the section to read configuration from.
     """
     config = ConfigParser()
+
+    # make sure to not transform the entries such that capitalization is preserved
+    config.optionxform = lambda entry: entry  # type: ignore
+
     if path is None:
         config.read([os.path.expanduser(path) for path in CONFIG_FILES])
     else:
         config.read(path)
 
-    _config = {}
+    _config: Dict[str, str] = {}
 
     if config.has_section(section):
-        _config.update(dict((key, val) for key, val in config.items(section)))
+        _config.update(config.items(section))
 
     return _config
 
@@ -87,9 +93,8 @@ def load_environment_config(context: Optional[str] = None) -> Dict[str, str]:
         "bitrate": "CAN_BITRATE",
     }
 
-    context_suffix = "_{}".format(context) if context else ""
-
-    can_config_key = "CAN_CONFIG" + context_suffix
+    context_suffix = f"_{context}" if context else ""
+    can_config_key = f"CAN_CONFIG{context_suffix}"
     config: Dict[str, str] = json.loads(os.environ.get(can_config_key, "{}"))
 
     for key, val in mapper.items():
@@ -102,7 +107,7 @@ def load_environment_config(context: Optional[str] = None) -> Dict[str, str]:
 
 def load_config(
     path: Optional[typechecking.AcceptedIOType] = None,
-    config=None,
+    config: Optional[Dict[str, Any]] = None,
     context: Optional[str] = None,
 ) -> typechecking.BusConfig:
     """
@@ -148,24 +153,27 @@ def load_config(
         All unused values are passed from ``config`` over to this.
 
     :raises:
-        NotImplementedError if the ``interface`` isn't recognized
+        CanInterfaceNotImplementedError if the ``interface`` name isn't recognized
     """
 
-    # start with an empty dict to apply filtering to all sources
+    # Start with an empty dict to apply filtering to all sources
     given_config = config or {}
     config = {}
 
-    # use the given dict for default values
-    config_sources = [
-        given_config,
-        can.rc,
-        lambda _context: load_environment_config(  # pylint: disable=unnecessary-lambda
-            _context
-        ),
-        lambda _context: load_environment_config(),
-        lambda _context: load_file_config(path, _context),
-        lambda _context: load_file_config(path),
-    ]
+    # Use the given dict for default values
+    config_sources = cast(
+        Iterable[Union[Dict[str, Any], Callable[[Any], Dict[str, Any]]]],
+        [
+            given_config,
+            can.rc,
+            lambda _context: load_environment_config(  # pylint: disable=unnecessary-lambda
+                _context
+            ),
+            lambda _context: load_environment_config(),
+            lambda _context: load_file_config(path, _context),
+            lambda _context: load_file_config(path),
+        ],
+    )
 
     # Slightly complex here to only search for the file config if required
     for cfg in config_sources:
@@ -181,63 +189,74 @@ def load_config(
             if key not in config:
                 config[key] = cfg[key]
 
+    bus_config = _create_bus_config(config)
+    can.log.debug("can config: %s", bus_config)
+    return bus_config
+
+
+def _create_bus_config(config: Dict[str, Any]) -> typechecking.BusConfig:
+    """Validates some config values, performs compatibility mappings and creates specific
+    structures (e.g. for bit timings).
+
+    :param config: The raw config as specified by the user
+    :return: A config that can be used by a :class:`~can.BusABC`
+    :raises NotImplementedError: if the ``interface`` is unknown
+    """
     # substitute None for all values not found
     for key in REQUIRED_KEYS:
         if key not in config:
             config[key] = None
 
     if config["interface"] not in VALID_INTERFACES:
-        raise NotImplementedError(
-            "Invalid CAN Bus Type - {}".format(config["interface"])
+        raise CanInterfaceNotImplementedError(
+            f'Unknown interface type "{config["interface"]}"'
         )
+    if "port" in config:
+        # convert port to integer if necessary
+        if isinstance(config["port"], int):
+            port = config["port"]
+        elif isinstance(config["port"], str):
+            if config["port"].isnumeric():
+                config["port"] = port = int(config["port"])
+            else:
+                raise ValueError("Port config must be a number!")
+        else:
+            raise TypeError("Port config must be string or integer!")
+
+        if not 0 < port < 65535:
+            raise ValueError("Port config must be inside 0-65535 range!")
 
     if "bitrate" in config:
         config["bitrate"] = int(config["bitrate"])
     if "fd" in config:
-        config["fd"] = config["fd"] not in ("0", "False", "false")
+        config["fd"] = config["fd"] not in ("0", "False", "false", False)
     if "data_bitrate" in config:
         config["data_bitrate"] = int(config["data_bitrate"])
 
-    # Create bit timing configuration if given
-    timing_conf = {}
-    for key in (
-        "f_clock",
-        "brp",
-        "tseg1",
-        "tseg2",
-        "sjw",
-        "nof_samples",
-        "btr0",
-        "btr1",
-    ):
-        if key in config:
-            timing_conf[key] = int(config[key], base=0)
-            del config[key]
-    if timing_conf:
-        timing_conf["bitrate"] = config.get("bitrate")
-        config["timing"] = can.BitTiming(**timing_conf)
-
-    can.log.debug("can config: {}".format(config))
-    return config
+    return cast(typechecking.BusConfig, config)
 
 
-def set_logging_level(level_name: Optional[str] = None):
-    """Set the logging level for the "can" logger.
-    Expects one of: 'critical', 'error', 'warning', 'info', 'debug', 'subdebug'
+def set_logging_level(level_name: str) -> None:
+    """Set the logging level for the `"can"` logger.
+
+    :param level_name:
+        One of: `'critical'`, `'error'`, `'warning'`, `'info'`,
+        `'debug'`, `'subdebug'`, or the value :obj:`None` (=default).
+        Defaults to `'debug'`.
     """
     can_logger = logging.getLogger("can")
 
     try:
-        can_logger.setLevel(getattr(logging, level_name.upper()))  # type: ignore
+        can_logger.setLevel(getattr(logging, level_name.upper()))
     except AttributeError:
         can_logger.setLevel(logging.DEBUG)
-    log.debug("Logging set to {}".format(level_name))
+    log.debug("Logging set to %s", level_name)
 
 
 def len2dlc(length: int) -> int:
     """Calculate the DLC from data length.
 
-    :param int length: Length in number of bytes (0-64)
+    :param length: Length in number of bytes (0-64)
 
     :returns: DLC (0-15)
     """
@@ -259,24 +278,130 @@ def dlc2len(dlc: int) -> int:
     return CAN_FD_DLC[dlc] if dlc <= 15 else 64
 
 
-def channel2int(channel: Optional[Union[typechecking.Channel]]) -> Optional[int]:
+def channel2int(channel: Optional[typechecking.Channel]) -> Optional[int]:
     """Try to convert the channel to an integer.
 
     :param channel:
-        Channel string (e.g. can0, CAN1) or integer
+        Channel string (e.g. `"can0"`, `"CAN1"`) or an integer
 
-    :returns: Channel integer or `None` if unsuccessful
+    :returns: Channel integer or ``None`` if unsuccessful
     """
-    if channel is None:
-        return None
     if isinstance(channel, int):
         return channel
-    # String and byte objects have a lower() method
-    if hasattr(channel, "lower"):
-        match = re.match(r".*(\d+)$", channel)
+    if isinstance(channel, str):
+        match = re.match(r".*?(\d+)$", channel)
         if match:
             return int(match.group(1))
     return None
+
+
+def deprecated_args_alias(  # type: ignore
+    deprecation_start: str, deprecation_end: Optional[str] = None, **aliases
+):
+    """Allows to rename/deprecate a function kwarg(s) and optionally
+    have the deprecated kwarg(s) set as alias(es)
+
+    Example::
+
+        @deprecated_args_alias("1.2.0", oldArg="new_arg", anotherOldArg="another_new_arg")
+        def library_function(new_arg, another_new_arg):
+            pass
+
+        @deprecated_args_alias(
+            deprecation_start="1.2.0",
+            deprecation_end="3.0.0",
+            oldArg="new_arg",
+            obsoleteOldArg=None,
+        )
+        def library_function(new_arg):
+            pass
+
+    :param deprecation_start:
+        The *python-can* version, that introduced the :class:`DeprecationWarning`.
+    :param deprecation_end:
+        The *python-can* version, that marks the end of the deprecation period.
+    :param aliases:
+        keyword arguments, that map the deprecated argument names
+        to the new argument names or ``None``.
+
+    """
+
+    def deco(f):
+        @functools.wraps(f)
+        def wrapper(*args, **kwargs):
+            _rename_kwargs(
+                func_name=f.__name__,
+                start=deprecation_start,
+                end=deprecation_end,
+                kwargs=kwargs,
+                aliases=aliases,
+            )
+            return f(*args, **kwargs)
+
+        return wrapper
+
+    return deco
+
+
+def _rename_kwargs(
+    func_name: str,
+    start: str,
+    end: Optional[str],
+    kwargs: Dict[str, str],
+    aliases: Dict[str, str],
+) -> None:
+    """Helper function for `deprecated_args_alias`"""
+    for alias, new in aliases.items():
+        if alias in kwargs:
+            deprecation_notice = (
+                f"The '{alias}' argument is deprecated since python-can v{start}"
+            )
+            if end:
+                deprecation_notice += (
+                    f", and scheduled for removal in python-can v{end}"
+                )
+            deprecation_notice += "."
+
+            value = kwargs.pop(alias)
+            if new is not None:
+                deprecation_notice += f" Use '{new}' instead."
+
+                if new in kwargs:
+                    raise TypeError(
+                        f"{func_name} received both '{alias}' (deprecated) and '{new}'."
+                    )
+                kwargs[new] = value
+
+            warnings.warn(deprecation_notice, DeprecationWarning)
+
+
+def time_perfcounter_correlation() -> Tuple[float, float]:
+    """Get the `perf_counter` value nearest to when time.time() is updated
+
+    Computed if the default timer used by `time.time` on this platform has a resolution
+    higher than 10μs, otherwise the current time and perf_counter is directly returned.
+    This was chosen as typical timer resolution on Linux/macOS is ~1μs, and the Windows
+    platform can vary from ~500μs to 10ms.
+
+    Note this value is based on when `time.time()` is observed to update from Python,
+    it is not directly returned by the operating system.
+
+    :returns:
+        (t, performance_counter) time.time value and time.perf_counter value when the time.time
+        is updated
+
+    """
+
+    # use this if the resolution is higher than 10us
+    if get_clock_info("time").resolution > 1e-5:
+        t0 = time()
+        while True:
+            t1, performance_counter = time(), perf_counter()
+            if t1 != t0:
+                break
+    else:
+        return time(), perf_counter()
+    return t1, performance_counter
 
 
 if __name__ == "__main__":

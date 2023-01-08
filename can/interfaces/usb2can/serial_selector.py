@@ -2,6 +2,7 @@
 """
 
 import logging
+from typing import List
 
 try:
     import win32com.client
@@ -10,7 +11,7 @@ except ImportError:
     raise
 
 
-def WMIDateStringToDate(dtmDate):
+def WMIDateStringToDate(dtmDate) -> str:
     if dtmDate[4] == 0:
         strDateTime = dtmDate[5] + "/"
     else:
@@ -39,17 +40,18 @@ def WMIDateStringToDate(dtmDate):
     return strDateTime
 
 
-def find_serial_devices(serial_matcher="ED"):
+def find_serial_devices(serial_matcher: str = "") -> List[str]:
     """
     Finds a list of USB devices where the serial number (partially) matches the given string.
 
-    :param str serial_matcher (optional):
+    :param serial_matcher:
         only device IDs starting with this string are returned
-
-    :rtype: List[str]
     """
     objWMIService = win32com.client.Dispatch("WbemScripting.SWbemLocator")
     objSWbemServices = objWMIService.ConnectServer(".", "root\\cimv2")
-    items = objSWbemServices.ExecQuery("SELECT * FROM Win32_USBControllerDevice")
-    ids = (item.Dependent.strip('"')[-8:] for item in items)
-    return [e for e in ids if e.startswith(serial_matcher)]
+    query = "SELECT * FROM CIM_LogicalDevice where Name LIKE '%USB2CAN%'"
+    devices = objSWbemServices.ExecQuery(query)
+    serial_numbers = [device.DeviceID.split("\\")[-1] for device in devices]
+    if serial_matcher:
+        return [sn for sn in serial_numbers if serial_matcher in sn]
+    return serial_numbers

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# coding: utf-8
 
 import unittest
 import can
@@ -7,7 +6,7 @@ import can
 
 class slcanTestCase(unittest.TestCase):
     def setUp(self):
-        self.bus = can.Bus("loop://", bustype="slcan", sleep_after_open=0)
+        self.bus = can.Bus("loop://", interface="slcan", sleep_after_open=0)
         self.serial = self.bus.serialPortOrig
         self.serial.read(self.serial.in_waiting)
 

@@ -6,115 +6,143 @@ CyclicSendTasks.
 
 import importlib
 import logging
+from typing import Any, cast, Iterable, Type, Optional, Union, List
 
+from . import util
 from .bus import BusABC
-from .util import load_config
 from .interfaces import BACKENDS
+from .exceptions import CanInterfaceNotImplementedError
+from .typechecking import AutoDetectedConfig, Channel
 
 log = logging.getLogger("can.interface")
 log_autodetect = log.getChild("detect_available_configs")
 
 
-def _get_class_for_interface(interface):
+def _get_class_for_interface(interface: str) -> Type[BusABC]:
     """
     Returns the main bus class for the given interface.
 
     :raises:
         NotImplementedError if the interface is not known
-    :raises:
-        ImportError     if there was a problem while importing the
-                        interface or the bus class within that
+    :raises CanInterfaceNotImplementedError:
+         if there was a problem while importing the interface or the bus class within that
     """
     # Find the correct backend
     try:
         module_name, class_name = BACKENDS[interface]
     except KeyError:
-        raise NotImplementedError("CAN interface '{}' not supported".format(interface))
+        raise NotImplementedError(
+            f"CAN interface '{interface}' not supported"
+        ) from None
 
     # Import the correct interface module
     try:
         module = importlib.import_module(module_name)
     except Exception as e:
-        raise ImportError(
-            "Cannot import module {} for CAN interface '{}': {}".format(
-                module_name, interface, e
-            )
-        )
+        raise CanInterfaceNotImplementedError(
+            f"Cannot import module {module_name} for CAN interface '{interface}': {e}"
+        ) from None
 
     # Get the correct class
     try:
         bus_class = getattr(module, class_name)
     except Exception as e:
-        raise ImportError(
-            "Cannot import class {} from module {} for CAN interface '{}': {}".format(
-                class_name, module_name, interface, e
-            )
-        )
+        raise CanInterfaceNotImplementedError(
+            f"Cannot import class {class_name} from module {module_name} for CAN interface "
+            f"'{interface}': {e}"
+        ) from None
 
-    return bus_class
+    return cast(Type[BusABC], bus_class)
 
 
-class Bus(BusABC):  # pylint disable=abstract-method
+class Bus(BusABC):  # pylint: disable=abstract-method
     """Bus wrapper with configuration loading.
 
     Instantiates a CAN Bus of the given ``interface``, falls back to reading a
     configuration file from default locations.
+
+    .. note::
+        Please note that while the arguments provided to this class take precedence
+        over any existing values from configuration, it is possible that other parameters
+        from the configuration may be added to the bus instantiation.
+        This could potentially have unintended consequences. To prevent this,
+        you may use the *ignore_config* parameter to ignore any existing configurations.
+
+    :param channel:
+        Channel identification. Expected type is backend dependent.
+        Set to ``None`` to let it be resolved automatically from the default
+        :ref:`configuration`.
+
+    :param interface:
+        See :ref:`interface names` for a list of supported interfaces.
+        Set to ``None`` to let it be resolved automatically from the default
+        :ref:`configuration`.
+
+    :param config_context:
+        Extra 'context', that is passed to config sources.
+        This can be used to select a section other than 'default' in the configuration file.
+
+    :param ignore_config:
+        If ``True``, only the given arguments will be used for the bus instantiation. Existing
+        configuration sources will be ignored.
+
+    :param kwargs:
+        ``interface`` specific keyword arguments.
+
+    :raises ~can.exceptions.CanInterfaceNotImplementedError:
+        if the ``interface`` isn't recognized or cannot be loaded
+
+    :raises ~can.exceptions.CanInitializationError:
+        if the bus cannot be instantiated
+
+    :raises ValueError:
+        if the ``channel`` could not be determined
     """
 
     @staticmethod
-    def __new__(cls, channel=None, *args, **kwargs):
-        """
-        Takes the same arguments as :class:`can.BusABC.__init__`.
-        Some might have a special meaning, see below.
-
-        :param channel:
-            Set to ``None`` to let it be resloved automatically from the default
-            configuration. That might fail, see below.
-
-            Expected type is backend dependent.
-
-        :param dict kwargs:
-            Should contain an ``interface`` key with a valid interface name. If not,
-            it is completed using :meth:`can.util.load_config`.
-
-        :raises: NotImplementedError
-            if the ``interface`` isn't recognized
-
-        :raises: ValueError
-            if the ``channel`` could not be determined
-        """
-
+    @util.deprecated_args_alias(
+        deprecation_start="4.2.0",
+        deprecation_end="5.0.0",
+        bustype="interface",
+        context="config_context",
+    )
+    def __new__(  # type: ignore
+        cls: Any,
+        channel: Optional[Channel] = None,
+        interface: Optional[str] = None,
+        config_context: Optional[str] = None,
+        ignore_config: bool = False,
+        **kwargs: Any,
+    ) -> BusABC:
         # figure out the rest of the configuration; this might raise an error
+        if interface is not None:
+            kwargs["interface"] = interface
         if channel is not None:
             kwargs["channel"] = channel
-        if "context" in kwargs:
-            context = kwargs["context"]
-            del kwargs["context"]
-        else:
-            context = None
-        kwargs = load_config(config=kwargs, context=context)
+
+        if not ignore_config:
+            kwargs = util.load_config(config=kwargs, context=config_context)
 
         # resolve the bus class to use for that interface
         cls = _get_class_for_interface(kwargs["interface"])
 
-        # remove the 'interface' key so it doesn't get passed to the backend
+        # remove the "interface" key, so it doesn't get passed to the backend
         del kwargs["interface"]
 
         # make sure the bus can handle this config format
-        if "channel" not in kwargs:
-            raise ValueError("'channel' argument missing")
-        else:
-            channel = kwargs["channel"]
-            del kwargs["channel"]
-
+        channel = kwargs.pop("channel", channel)
         if channel is None:
             # Use the default channel for the backend
-            return cls(*args, **kwargs)
+            bus = cls(**kwargs)
         else:
-            return cls(channel, *args, **kwargs)
+            bus = cls(channel, **kwargs)
+
+        return cast(BusABC, bus)
 
 
-def detect_available_configs(interfaces=None):
+def detect_available_configs(
+    interfaces: Union[None, str, Iterable[str]] = None
+) -> List[AutoDetectedConfig]:
     """Detect all configurations/channels that the interfaces could
     currently connect with.
 
@@ -146,9 +174,9 @@ def detect_available_configs(interfaces=None):
 
         try:
             bus_class = _get_class_for_interface(interface)
-        except ImportError:
+        except CanInterfaceNotImplementedError:
             log_autodetect.debug(
-                'interface "%s" can not be loaded for detection of available configurations',
+                'interface "%s" cannot be loaded for detection of available configurations',
                 interface,
             )
             continue
@@ -156,8 +184,8 @@ def detect_available_configs(interfaces=None):
         # get available channels
         try:
             available = list(
-                bus_class._detect_available_configs()
-            )  # pylint: disable=protected-access
+                bus_class._detect_available_configs()  # pylint: disable=protected-access
+            )
         except NotImplementedError:
             log_autodetect.debug(
                 'interface "%s" does not support detection of available configurations',

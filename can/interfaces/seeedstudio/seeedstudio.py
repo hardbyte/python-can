@@ -8,7 +8,10 @@ SKU 114991193
 
 import logging
 import struct
+import io
 from time import time
+
+import can
 from can import BusABC, Message
 
 logger = logging.getLogger("seeedbus")
@@ -83,27 +86,41 @@ class SeeedBus(BusABC):
         :param bitrate
             CAN bus bit rate, selected from available list.
 
+        :raises can.CanInitializationError: If the given parameters are invalid.
+        :raises can.CanInterfaceNotImplementedError: If the serial module is not installed.
         """
+
+        if serial is None:
+            raise can.CanInterfaceNotImplementedError(
+                "the serial module is not installed"
+            )
+
         self.bit_rate = bitrate
         self.frame_type = frame_type
         self.op_mode = operation_mode
         self.filter_id = bytearray([0x00, 0x00, 0x00, 0x00])
         self.mask_id = bytearray([0x00, 0x00, 0x00, 0x00])
         if not channel:
-            raise ValueError("Must specify a serial port.")
+            raise can.CanInitializationError("Must specify a serial port.")
 
         self.channel_info = "Serial interface: " + channel
-        self.ser = serial.Serial(
-            channel, baudrate=baudrate, timeout=timeout, rtscts=False
-        )
+        try:
+            self.ser = serial.Serial(
+                channel, baudrate=baudrate, timeout=timeout, rtscts=False
+            )
+        except ValueError as error:
+            raise can.CanInitializationError(
+                "could not create the serial device"
+            ) from error
 
-        super(SeeedBus, self).__init__(channel=channel, *args, **kwargs)
+        super().__init__(channel=channel, *args, **kwargs)
         self.init_frame()
 
     def shutdown(self):
         """
         Close the serial interface.
         """
+        super().shutdown()
         self.ser.close()
 
     def init_frame(self, timeout=None):
@@ -132,7 +149,10 @@ class SeeedBus(BusABC):
         byte_msg.append(crc)
 
         logger.debug("init_frm:\t%s", byte_msg.hex())
-        self.ser.write(byte_msg)
+        try:
+            self.ser.write(byte_msg)
+        except Exception as error:
+            raise can.CanInitializationError("could send init frame") from error
 
     def flush_buffer(self):
         self.ser.flushInput()
@@ -159,7 +179,7 @@ class SeeedBus(BusABC):
         byte_msg.append(crc)
 
         logger.debug("status_frm:\t%s", byte_msg.hex())
-        self.ser.write(byte_msg)
+        self._write(byte_msg)
 
     def send(self, msg, timeout=None):
         """
@@ -196,7 +216,15 @@ class SeeedBus(BusABC):
         byte_msg.append(0x55)
 
         logger.debug("sending:\t%s", byte_msg.hex())
-        self.ser.write(byte_msg)
+        self._write(byte_msg)
+
+    def _write(self, byte_msg: bytearray) -> None:
+        try:
+            self.ser.write(byte_msg)
+        except serial.PortNotOpenError as error:
+            raise can.CanOperationError("writing to closed port") from error
+        except serial.SerialTimeoutException as error:
+            raise can.CanTimeoutError() from error
 
     def _recv_internal(self, timeout):
         """
@@ -219,50 +247,64 @@ class SeeedBus(BusABC):
             # or raise a SerialException
             rx_byte_1 = self.ser.read()
 
+        except serial.PortNotOpenError as error:
+            raise can.CanOperationError("reading from closed port") from error
         except serial.SerialException:
             return None, False
 
         if rx_byte_1 and ord(rx_byte_1) == 0xAA:
-            rx_byte_2 = ord(self.ser.read())
-            time_stamp = time()
-            if rx_byte_2 == 0x55:
-                status = bytearray([0xAA, 0x55])
-                status += bytearray(self.ser.read(18))
-                logger.debug("status resp:\t%s", status.hex())
+            try:
+                rx_byte_2 = ord(self.ser.read())
 
-            else:
-                length = int(rx_byte_2 & 0x0F)
-                is_extended = bool(rx_byte_2 & 0x20)
-                is_remote = bool(rx_byte_2 & 0x10)
-                if is_extended:
-                    s_3_4_5_6 = bytearray(self.ser.read(4))
-                    arb_id = (struct.unpack("<I", s_3_4_5_6))[0]
+                time_stamp = time()
+                if rx_byte_2 == 0x55:
+                    status = bytearray([0xAA, 0x55])
+                    status += bytearray(self.ser.read(18))
+                    logger.debug("status resp:\t%s", status.hex())
 
                 else:
-                    s_3_4 = bytearray(self.ser.read(2))
-                    arb_id = (struct.unpack("<H", s_3_4))[0]
+                    length = int(rx_byte_2 & 0x0F)
+                    is_extended = bool(rx_byte_2 & 0x20)
+                    is_remote = bool(rx_byte_2 & 0x10)
+                    if is_extended:
+                        s_3_4_5_6 = bytearray(self.ser.read(4))
+                        arb_id = (struct.unpack("<I", s_3_4_5_6))[0]
 
-                data = bytearray(self.ser.read(length))
-                end_packet = ord(self.ser.read())
-                if end_packet == 0x55:
-                    msg = Message(
-                        timestamp=time_stamp,
-                        arbitration_id=arb_id,
-                        is_extended_id=is_extended,
-                        is_remote_frame=is_remote,
-                        dlc=length,
-                        data=data,
-                    )
-                    logger.debug("recv message: %s", str(msg))
-                    return msg, False
+                    else:
+                        s_3_4 = bytearray(self.ser.read(2))
+                        arb_id = (struct.unpack("<H", s_3_4))[0]
 
-                else:
-                    return None, False
+                    data = bytearray(self.ser.read(length))
+                    end_packet = ord(self.ser.read())
+                    if end_packet == 0x55:
+                        msg = Message(
+                            timestamp=time_stamp,
+                            arbitration_id=arb_id,
+                            is_extended_id=is_extended,
+                            is_remote_frame=is_remote,
+                            dlc=length,
+                            data=data,
+                        )
+                        logger.debug("recv message: %s", str(msg))
+                        return msg, False
+
+                    else:
+                        return None, False
+
+            except serial.PortNotOpenError as error:
+                raise can.CanOperationError("reading from closed port") from error
+            except serial.SerialException as error:
+                raise can.CanOperationError(
+                    "failed to read message information"
+                ) from error
 
         return None, None
 
     def fileno(self):
-        if hasattr(self.ser, "fileno"):
+        try:
             return self.ser.fileno()
-        # Return an invalid file descriptor on Windows
-        return -1
+        except io.UnsupportedOperation as excption:
+            logger.warning(
+                "fileno is not implemented using current CAN bus: %s", str(excption)
+            )
+            return -1

@@ -1,25 +1,39 @@
-"""
-Contains a generic class for file IO.
-"""
-
+"""Contains generic base classes for file IO."""
+import locale
 from abc import ABCMeta
-from typing import Optional, cast
+from typing import (
+    Optional,
+    cast,
+    Iterable,
+    Type,
+    ContextManager,
+    Any,
+)
+from typing_extensions import Literal
+from types import TracebackType
 
 import can
 import can.typechecking
 
 
-class BaseIOHandler(metaclass=ABCMeta):
+class BaseIOHandler(ContextManager, metaclass=ABCMeta):
     """A generic file handler that can be used for reading and writing.
 
     Can be used as a context manager.
 
-    :attr Optional[FileLike] file:
-        the file-like object that is kept internally, or None if none
+    :attr file:
+        the file-like object that is kept internally, or `None` if none
         was opened
     """
 
-    def __init__(self, file: can.typechecking.AcceptedIOType, mode: str = "rt") -> None:
+    file: Optional[can.typechecking.FileLike]
+
+    def __init__(
+        self,
+        file: Optional[can.typechecking.AcceptedIOType],
+        mode: str = "rt",
+        **kwargs: Any,
+    ) -> None:
         """
         :param file: a path-like object to open a file, a file-like object
                      to be used as a file or `None` to not use a file at all
@@ -30,8 +44,19 @@ class BaseIOHandler(metaclass=ABCMeta):
             # file is None or some file-like object
             self.file = cast(Optional[can.typechecking.FileLike], file)
         else:
+            encoding: Optional[str] = (
+                None
+                if "b" in mode
+                else kwargs.get("encoding", locale.getpreferredencoding(False))
+            )
+            # pylint: disable=consider-using-with
             # file is some path-like object
-            self.file = open(cast(can.typechecking.StringPathLike, file), mode)
+            self.file = cast(
+                can.typechecking.FileLike,
+                open(
+                    cast(can.typechecking.StringPathLike, file), mode, encoding=encoding
+                ),
+            )
 
         # for multiple inheritance
         super().__init__()
@@ -39,21 +64,46 @@ class BaseIOHandler(metaclass=ABCMeta):
     def __enter__(self) -> "BaseIOHandler":
         return self
 
-    def __exit__(self, *args) -> None:
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> Literal[False]:
         self.stop()
+        return False
 
     def stop(self) -> None:
-        """Closes the undelying file-like object and flushes it, if it was opened in write mode."""
+        """Closes the underlying file-like object and flushes it, if it was opened in write mode."""
         if self.file is not None:
             # this also implies a flush()
             self.file.close()
 
 
-# pylint: disable=abstract-method,too-few-public-methods
 class MessageWriter(BaseIOHandler, can.Listener, metaclass=ABCMeta):
     """The base class for all writers."""
 
+    file: Optional[can.typechecking.FileLike]
 
-# pylint: disable=too-few-public-methods
-class MessageReader(BaseIOHandler, metaclass=ABCMeta):
+
+class FileIOMessageWriter(MessageWriter, metaclass=ABCMeta):
+    """A specialized base class for all writers with file descriptors."""
+
+    file: can.typechecking.FileLike
+
+    def __init__(
+        self, file: can.typechecking.AcceptedIOType, mode: str = "wt", **kwargs: Any
+    ) -> None:
+        # Not possible with the type signature, but be verbose for user-friendliness
+        if file is None:
+            raise ValueError("The given file cannot be None")
+
+        super().__init__(file, mode, **kwargs)
+
+    def file_size(self) -> int:
+        """Return an estimate of the current file size in bytes."""
+        return self.file.tell()
+
+
+class MessageReader(BaseIOHandler, Iterable[can.Message], metaclass=ABCMeta):
     """The base class for all readers."""

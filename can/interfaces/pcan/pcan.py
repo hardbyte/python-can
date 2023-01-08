@@ -4,21 +4,82 @@ Enable basic CAN over a PCAN USB device.
 
 import logging
 import time
+from datetime import datetime
+import platform
 
-from can import CanError, Message, BusABC
-from can.bus import BusState
-from can.util import len2dlc, dlc2len
-from .basic import *
+from typing import Optional
+
+from packaging import version
+
+from ...message import Message
+from ...bus import BusABC, BusState
+from ...util import len2dlc, dlc2len
+from ...exceptions import CanError, CanOperationError, CanInitializationError
+
+
+from .basic import (
+    PCAN_BITRATES,
+    PCAN_FD_PARAMETER_LIST,
+    PCAN_CHANNEL_NAMES,
+    PCAN_NONEBUS,
+    PCAN_BAUD_500K,
+    PCAN_TYPE_ISA,
+    PCANBasic,
+    PCAN_ERROR_OK,
+    PCAN_ALLOW_ERROR_FRAMES,
+    PCAN_PARAMETER_ON,
+    PCAN_RECEIVE_EVENT,
+    PCAN_API_VERSION,
+    PCAN_DEVICE_NUMBER,
+    PCAN_ERROR_QRCVEMPTY,
+    PCAN_ERROR_BUSLIGHT,
+    PCAN_ERROR_BUSHEAVY,
+    PCAN_MESSAGE_EXTENDED,
+    PCAN_MESSAGE_RTR,
+    PCAN_MESSAGE_FD,
+    PCAN_MESSAGE_BRS,
+    PCAN_MESSAGE_ESI,
+    PCAN_MESSAGE_ERRFRAME,
+    PCAN_MESSAGE_STANDARD,
+    TPCANMsgFD,
+    TPCANMsg,
+    PCAN_CHANNEL_IDENTIFYING,
+    PCAN_LISTEN_ONLY,
+    PCAN_PARAMETER_OFF,
+    TPCANHandle,
+    PCAN_PCIBUS1,
+    PCAN_USBBUS1,
+    PCAN_PCCBUS1,
+    PCAN_LANBUS1,
+    PCAN_CHANNEL_CONDITION,
+    PCAN_CHANNEL_AVAILABLE,
+    PCAN_CHANNEL_FEATURES,
+    FEATURE_FD_CAPABLE,
+    PCAN_DICT_STATUS,
+    PCAN_BUSOFF_AUTORESET,
+)
+
+
+# Set up logging
+log = logging.getLogger("can.pcan")
+
+MIN_PCAN_API_VERSION = version.parse("4.2.0")
+
 
 try:
     # use the "uptime" library if available
     import uptime
-    import datetime
 
-    boottimeEpoch = (
-        uptime.boottime() - datetime.datetime.utcfromtimestamp(0)
-    ).total_seconds()
-except ImportError:
+    # boottime() and fromtimestamp() are timezone offset, so the difference is not.
+    if uptime.boottime() is None:
+        boottimeEpoch = 0
+    else:
+        boottimeEpoch = (uptime.boottime() - datetime.fromtimestamp(0)).total_seconds()
+except ImportError as error:
+    log.warning(
+        "uptime library not available, timestamps are relative to boot time and not to Epoch UTC",
+        exc_info=True,
+    )
     boottimeEpoch = 0
 
 try:
@@ -38,58 +99,35 @@ except ImportError:
         # Use polling instead
         HAS_EVENTS = False
 
-# Set up logging
-log = logging.getLogger("can.pcan")
-
-
-pcan_bitrate_objs = {
-    1000000: PCAN_BAUD_1M,
-    800000: PCAN_BAUD_800K,
-    500000: PCAN_BAUD_500K,
-    250000: PCAN_BAUD_250K,
-    125000: PCAN_BAUD_125K,
-    100000: PCAN_BAUD_100K,
-    95000: PCAN_BAUD_95K,
-    83000: PCAN_BAUD_83K,
-    50000: PCAN_BAUD_50K,
-    47000: PCAN_BAUD_47K,
-    33000: PCAN_BAUD_33K,
-    20000: PCAN_BAUD_20K,
-    10000: PCAN_BAUD_10K,
-    5000: PCAN_BAUD_5K,
-}
-
-
-pcan_fd_parameter_list = [
-    "nom_brp",
-    "nom_tseg1",
-    "nom_tseg2",
-    "nom_sjw",
-    "data_brp",
-    "data_tseg1",
-    "data_tseg2",
-    "data_sjw",
-]
-
 
 class PcanBus(BusABC):
     def __init__(
         self,
         channel="PCAN_USBBUS1",
+        device_id=None,
         state=BusState.ACTIVE,
         bitrate=500000,
         *args,
-        **kwargs
+        **kwargs,
     ):
         """A PCAN USB interface to CAN.
 
         On top of the usual :class:`~can.Bus` methods provided,
-        the PCAN interface includes the :meth:`~can.interface.pcan.PcanBus.flash`
-        and :meth:`~can.interface.pcan.PcanBus.status` methods.
+        the PCAN interface includes the :meth:`flash`
+        and :meth:`status` methods.
 
         :param str channel:
-            The can interface name. An example would be 'PCAN_USBBUS1'
+            The can interface name. An example would be 'PCAN_USBBUS1'.
+            Alternatively the value can be an int with the numerical value.
             Default is 'PCAN_USBBUS1'
+
+        :param int device_id:
+            Select the PCAN interface based on its ID. The device ID is a 8/32bit
+            value that can be configured for each PCAN device. If you set the
+            device_id parameter, it takes precedence over the channel parameter.
+            The constructor searches all connected interfaces and initializes the
+            first one that matches the parameter value. If no device is found,
+            an exception is raised.
 
         :param can.bus.BusState state:
             BusState of the channel.
@@ -169,22 +207,39 @@ class PcanBus(BusABC):
             In the range (1..16).
             Ignored if not using CAN-FD.
 
+        :param bool auto_reset:
+            Enable automatic recovery in bus off scenario.
+            Resetting the driver takes ~500ms during which
+            it will not be responsive.
         """
-        self.channel_info = channel
+        self.m_objPCANBasic = PCANBasic()
+
+        if device_id is not None:
+            channel = self._find_channel_by_dev_id(device_id)
+
+            if channel is None:
+                err_msg = f"Cannot find a channel with ID {device_id:08x}"
+                raise ValueError(err_msg)
+
+        self.channel_info = str(channel)
         self.fd = kwargs.get("fd", False)
-        pcan_bitrate = pcan_bitrate_objs.get(bitrate, PCAN_BAUD_500K)
+        pcan_bitrate = PCAN_BITRATES.get(bitrate, PCAN_BAUD_500K)
 
         hwtype = PCAN_TYPE_ISA
         ioport = 0x02A0
         interrupt = 11
 
-        self.m_objPCANBasic = PCANBasic()
-        self.m_PcanHandle = globals()[channel]
+        if not isinstance(channel, int):
+            channel = PCAN_CHANNEL_NAMES[channel]
+
+        self.m_PcanHandle = channel
+
+        self.check_api_version()
 
         if state is BusState.ACTIVE or state is BusState.PASSIVE:
             self.state = state
         else:
-            raise ArgumentError("BusState must be Active or Passive")
+            raise ValueError("BusState must be Active or Passive")
 
         if self.fd:
             f_clock_val = kwargs.get("f_clock", None)
@@ -194,8 +249,8 @@ class PcanBus(BusABC):
                 f_clock = "{}={}".format("f_clock", kwargs.get("f_clock", None))
 
             fd_parameters_values = [f_clock] + [
-                "{}={}".format(key, kwargs.get(key, None))
-                for key in pcan_fd_parameter_list
+                f"{key}={kwargs.get(key, None)}"
+                for key in PCAN_FD_PARAMETER_LIST
                 if kwargs.get(key, None) is not None
             ]
 
@@ -210,7 +265,29 @@ class PcanBus(BusABC):
             )
 
         if result != PCAN_ERROR_OK:
-            raise PcanError(self._get_formatted_error(result))
+            raise PcanCanInitializationError(self._get_formatted_error(result))
+
+        result = self.m_objPCANBasic.SetValue(
+            self.m_PcanHandle, PCAN_ALLOW_ERROR_FRAMES, PCAN_PARAMETER_ON
+        )
+
+        if result != PCAN_ERROR_OK:
+            if platform.system() != "Darwin":
+                raise PcanCanInitializationError(self._get_formatted_error(result))
+            else:
+                # TODO Remove Filter when MACCan actually supports it:
+                #  https://github.com/mac-can/PCBUSB-Library/
+                log.debug(
+                    "Ignoring error. PCAN_ALLOW_ERROR_FRAMES is still unsupported by OSX Library PCANUSB v0.10"
+                )
+
+        if kwargs.get("auto_reset", False):
+            result = self.m_objPCANBasic.SetValue(
+                self.m_PcanHandle, PCAN_BUSOFF_AUTORESET, PCAN_PARAMETER_ON
+            )
+
+            if result != PCAN_ERROR_OK:
+                raise PcanCanInitializationError(self._get_formatted_error(result))
 
         if HAS_EVENTS:
             self._recv_event = CreateEvent(None, 0, 0, None)
@@ -218,9 +295,31 @@ class PcanBus(BusABC):
                 self.m_PcanHandle, PCAN_RECEIVE_EVENT, self._recv_event
             )
             if result != PCAN_ERROR_OK:
-                raise PcanError(self._get_formatted_error(result))
+                raise PcanCanInitializationError(self._get_formatted_error(result))
 
         super().__init__(channel=channel, state=state, bitrate=bitrate, *args, **kwargs)
+
+    def _find_channel_by_dev_id(self, device_id):
+        """
+        Iterate over all possible channels to find a channel that matches the device
+        ID. This method is somewhat brute force, but the Basic API only offers a
+        suitable API call since V4.4.0.
+
+        :param device_id: The device_id for which to search for
+        :return: The name of a PCAN channel that matches the device ID, or None if
+            no channel can be found.
+        """
+        for ch_name, ch_handle in PCAN_CHANNEL_NAMES.items():
+            err, cur_dev_id = self.m_objPCANBasic.GetValue(
+                ch_handle, PCAN_DEVICE_NUMBER
+            )
+            if err != PCAN_ERROR_OK:
+                continue
+
+            if cur_dev_id == device_id:
+                return ch_name
+
+        return None
 
     def _get_formatted_error(self, error):
         """
@@ -244,14 +343,14 @@ class PcanBus(BusABC):
                 # Toggle the lowest set bit
                 n ^= masked_value
 
-        stsReturn = self.m_objPCANBasic.GetErrorText(error, 0)
+        stsReturn = self.m_objPCANBasic.GetErrorText(error, 0x9)
         if stsReturn[0] != PCAN_ERROR_OK:
             strings = []
 
             for b in bits(error):
-                stsReturn = self.m_objPCANBasic.GetErrorText(b, 0)
+                stsReturn = self.m_objPCANBasic.GetErrorText(b, 0x9)
                 if stsReturn[0] != PCAN_ERROR_OK:
-                    text = "An error occurred. Error-code's text ({0:X}h) couldn't be retrieved".format(
+                    text = "An error occurred. Error-code's text ({:X}h) couldn't be retrieved".format(
                         error
                     )
                 else:
@@ -264,6 +363,21 @@ class PcanBus(BusABC):
             complete_text = stsReturn[1].decode("utf-8", errors="replace")
 
         return complete_text
+
+    def get_api_version(self):
+        error, value = self.m_objPCANBasic.GetValue(PCAN_NONEBUS, PCAN_API_VERSION)
+        if error != PCAN_ERROR_OK:
+            raise CanInitializationError(f"Failed to read pcan basic api version")
+
+        return version.parse(value.decode("ascii"))
+
+    def check_api_version(self):
+        apv = self.get_api_version()
+        if apv < MIN_PCAN_API_VERSION:
+            log.warning(
+                f"Minimum version of pcan api is {MIN_PCAN_API_VERSION}."
+                f" Installed version is {apv}. Consider upgrade of pcan basic package"
+            )
 
     def status(self):
         """
@@ -287,6 +401,41 @@ class PcanBus(BusABC):
         """
         status = self.m_objPCANBasic.Reset(self.m_PcanHandle)
         return status == PCAN_ERROR_OK
+
+    def get_device_number(self):
+        """
+        Return the PCAN device number.
+
+        :rtype: int
+        :return: PCAN device number
+        """
+        error, value = self.m_objPCANBasic.GetValue(
+            self.m_PcanHandle, PCAN_DEVICE_NUMBER
+        )
+        if error != PCAN_ERROR_OK:
+            return None
+        return value
+
+    def set_device_number(self, device_number):
+        """
+        Set the PCAN device number.
+
+        :param device_number: new PCAN device number
+        :rtype: bool
+        :return: True if device number set successfully
+        """
+        try:
+            if (
+                self.m_objPCANBasic.SetValue(
+                    self.m_PcanHandle, PCAN_DEVICE_NUMBER, int(device_number)
+                )
+                != PCAN_ERROR_OK
+            ):
+                raise ValueError()
+        except ValueError:
+            log.error("Invalid value '%s' for device number.", device_number)
+            return False
+        return True
 
     def _recv_internal(self, timeout):
 
@@ -320,7 +469,7 @@ class PcanBus(BusABC):
                 log.warning(self._get_formatted_error(result[0]))
                 return None, False
             elif result[0] != PCAN_ERROR_OK:
-                raise PcanError(self._get_formatted_error(result[0]))
+                raise PcanCanOperationError(self._get_formatted_error(result[0]))
 
         theMsg = result[1]
         itsTimeStamp = result[2]
@@ -392,10 +541,7 @@ class PcanBus(BusABC):
 
         if self.fd:
             # create a TPCANMsg message structure
-            if platform.system() == "Darwin":
-                CANMsg = TPCANMsgFDMac()
-            else:
-                CANMsg = TPCANMsgFD()
+            CANMsg = TPCANMsgFD()
 
             # configure the message. ID, Length of data, message type and data
             CANMsg.ID = msg.arbitration_id
@@ -413,10 +559,7 @@ class PcanBus(BusABC):
 
         else:
             # create a TPCANMsg message structure
-            if platform.system() == "Darwin":
-                CANMsg = TPCANMsgMac()
-            else:
-                CANMsg = TPCANMsg()
+            CANMsg = TPCANMsg()
 
             # configure the message. ID, Length of data, message type and data
             CANMsg.ID = msg.arbitration_id
@@ -435,7 +578,9 @@ class PcanBus(BusABC):
             result = self.m_objPCANBasic.Write(self.m_PcanHandle, CANMsg)
 
         if result != PCAN_ERROR_OK:
-            raise PcanError("Failed to send: " + self._get_formatted_error(result))
+            raise PcanCanOperationError(
+                "Failed to send: " + self._get_formatted_error(result)
+            )
 
     def flash(self, flash):
         """
@@ -509,20 +654,40 @@ class PcanBus(BusABC):
                 }
             )
         for i in interfaces:
-            error, value = library_handle.GetValue(i["id"], PCAN_CHANNEL_CONDITION)
-            if error != PCAN_ERROR_OK or value != PCAN_CHANNEL_AVAILABLE:
-                continue
-            has_fd = False
-            error, value = library_handle.GetValue(i["id"], PCAN_CHANNEL_FEATURES)
-            if error == PCAN_ERROR_OK:
-                has_fd = bool(value & FEATURE_FD_CAPABLE)
-            channels.append(
-                {"interface": "pcan", "channel": i["name"], "supports_fd": has_fd}
-            )
+            try:
+                error, value = library_handle.GetValue(i["id"], PCAN_CHANNEL_CONDITION)
+                if error != PCAN_ERROR_OK or value != PCAN_CHANNEL_AVAILABLE:
+                    continue
+                has_fd = False
+                error, value = library_handle.GetValue(i["id"], PCAN_CHANNEL_FEATURES)
+                if error == PCAN_ERROR_OK:
+                    has_fd = bool(value & FEATURE_FD_CAPABLE)
+                channels.append(
+                    {"interface": "pcan", "channel": i["name"], "supports_fd": has_fd}
+                )
+            except AttributeError:  # Ignore if this fails for some interfaces
+                pass
         return channels
+
+    def status_string(self) -> Optional[str]:
+        """
+        Query the PCAN bus status.
+
+        :return: The status description, if any was found.
+        """
+        try:
+            return PCAN_DICT_STATUS[self.status()]
+        except KeyError:
+            return None
 
 
 class PcanError(CanError):
-    """
-    A generic error on a PCAN bus.
-    """
+    """A generic error on a PCAN bus."""
+
+
+class PcanCanOperationError(CanOperationError, PcanError):
+    """Like :class:`can.exceptions.CanOperationError`, but specific to Pcan."""
+
+
+class PcanCanInitializationError(CanInitializationError, PcanError):
+    """Like :class:`can.exceptions.CanInitializationError`, but specific to Pcan."""

@@ -1,12 +1,18 @@
 """
-This interface is for Windows only, otherwise use socketCAN.
+This interface is for Windows only, otherwise use SocketCAN.
 """
 
 import logging
 from ctypes import byref
+from typing import Optional
 
-from can import BusABC, Message, CanError
-from .usb2canabstractionlayer import *
+from can import BusABC, Message, CanInitializationError, CanOperationError
+from .usb2canabstractionlayer import Usb2CanAbstractionLayer, CanalMsg, CanalError
+from .usb2canabstractionlayer import (
+    IS_ERROR_FRAME,
+    IS_REMOTE_FRAME,
+    IS_ID_TYPE,
+)
 from .serial_selector import find_serial_devices
 
 # Set up logging
@@ -61,22 +67,22 @@ class Usb2canBus(BusABC):
     This interface only works on Windows.
     Please use socketcan on Linux.
 
-    :param str channel (optional):
+    :param channel:
         The device's serial number. If not provided, Windows Management Instrumentation
         will be used to identify the first such device.
 
-    :param int bitrate (optional):
+    :param bitrate:
         Bitrate of channel in bit/s. Values will be limited to a maximum of 1000 Kb/s.
         Default is 500 Kbs
 
-    :param int flags (optional):
+    :param flags:
         Flags to directly pass to open function of the usb2can abstraction layer.
 
-    :param str dll (optional):
+    :param dll:
         Path to the DLL with the CANAL API to load
         Defaults to 'usb2can.dll'
 
-    :param str serial (optional):
+    :param serial:
         Alias for `channel` that is provided for legacy reasons.
         If both `serial` and `channel` are set, `serial` will be used and
         channel will be ignored.
@@ -85,37 +91,36 @@ class Usb2canBus(BusABC):
 
     def __init__(
         self,
-        channel=None,
-        dll="usb2can.dll",
-        flags=0x00000008,
-        *args,
-        bitrate=500000,
-        **kwargs
+        channel: Optional[str] = None,
+        dll: str = "usb2can.dll",
+        flags: int = 0x00000008,
+        *_,
+        bitrate: int = 500000,
+        serial: Optional[str] = None,
+        **kwargs,
     ):
 
         self.can = Usb2CanAbstractionLayer(dll)
 
         # get the serial number of the device
-        device_id = kwargs.get("serial", d=channel)
+        device_id = serial or channel
 
         # search for a serial number if the device_id is None or empty
         if not device_id:
             devices = find_serial_devices()
             if not devices:
-                raise CanError("could not automatically find any device")
+                raise CanInitializationError("could not automatically find any device")
             device_id = devices[0]
 
         # convert to kb/s and cap: max rate is 1000 kb/s
         baudrate = min(int(bitrate // 1000), 1000)
 
-        self.channel_info = "USB2CAN device {}".format(device_id)
+        self.channel_info = f"USB2CAN device {device_id}"
 
-        connector = "{}; {}".format(device_id, baudrate)
-        self.handle = self.can.open(connector, flags_t)
+        connector = f"{device_id}; {baudrate}"
+        self.handle = self.can.open(connector, flags)
 
-        super().__init__(
-            channel=channel, dll=dll, flags_t=flags_t, bitrate=bitrate, *args, **kwargs
-        )
+        super().__init__(channel=channel, **kwargs)
 
     def send(self, msg, timeout=None):
         tx = message_convert_tx(msg)
@@ -125,8 +130,8 @@ class Usb2canBus(BusABC):
         else:
             status = self.can.send(self.handle, byref(tx))
 
-        if status != CANAL_ERROR_SUCCESS:
-            raise CanError("could not send message: status == {}".format(status))
+        if status != CanalError.SUCCESS:
+            raise CanOperationError("could not send message", error_code=status)
 
     def _recv_internal(self, timeout):
 
@@ -139,13 +144,16 @@ class Usb2canBus(BusABC):
             time = 0 if timeout is None else int(timeout * 1000)
             status = self.can.blocking_receive(self.handle, byref(messagerx), time)
 
-        if status == CANAL_ERROR_SUCCESS:
+        if status == CanalError.SUCCESS:
             rx = message_convert_rx(messagerx)
-        elif status in (CANAL_ERROR_RCV_EMPTY, CANAL_ERROR_TIMEOUT):
+        elif status in (
+            CanalError.RCV_EMPTY,
+            CanalError.TIMEOUT,
+            CanalError.FIFO_EMPTY,
+        ):
             rx = None
         else:
-            log.error("Canal Error %s", status)
-            rx = None
+            raise CanOperationError("could not receive message", error_code=status)
 
         return rx, False
 
@@ -153,28 +161,29 @@ class Usb2canBus(BusABC):
         """
         Shuts down connection to the device safely.
 
-        :raise cam.CanError: is closing the connection did not work
+        :raise cam.CanOperationError: is closing the connection did not work
         """
+        super().shutdown()
         status = self.can.close(self.handle)
 
-        if status != CANAL_ERROR_SUCCESS:
-            raise CanError("could not shut down bus: status == {}".format(status))
+        if status != CanalError.SUCCESS:
+            raise CanOperationError("could not shut down bus", error_code=status)
 
     @staticmethod
     def _detect_available_configs():
         return Usb2canBus.detect_available_configs()
 
     @staticmethod
-    def detect_available_configs(serial_matcher=None):
+    def detect_available_configs(serial_matcher: Optional[str] = None):
         """
-        Uses the Windows Management Instrumentation to identify serial devices.
+        Uses the *Windows Management Instrumentation* to identify serial devices.
 
-        :param str serial_matcher (optional):
+        :param serial_matcher:
             search string for automatic detection of the device serial
         """
-        if serial_matcher:
-            channels = find_serial_devices(serial_matcher)
-        else:
+        if serial_matcher is None:
             channels = find_serial_devices()
+        else:
+            channels = find_serial_devices(serial_matcher)
 
         return [{"interface": "usb2can", "channel": c} for c in channels]

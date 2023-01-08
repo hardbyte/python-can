@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# coding: utf-8
 
 """
 This module tests that the scripts are all callable.
@@ -28,7 +27,12 @@ class CanScriptTest(unittest.TestCase, metaclass=ABCMeta):
         """
         for command in self._commands():
             try:
-                subprocess.check_output(command.split(), stderr=subprocess.STDOUT)
+                subprocess.check_output(
+                    command.split(),
+                    stderr=subprocess.STDOUT,
+                    encoding="utf-8",
+                    shell=IS_WINDOWS,
+                )
             except subprocess.CalledProcessError as e:
                 return_code = e.returncode
                 output = e.output
@@ -62,8 +66,7 @@ class CanScriptTest(unittest.TestCase, metaclass=ABCMeta):
 
     @abstractmethod
     def _import(self):
-        """Returns the modue of the script that has a main() function.
-        """
+        """Returns the modue of the script that has a main() function."""
         pass
 
 
@@ -95,6 +98,22 @@ class TestPlayerScript(CanScriptTest):
 
     def _import(self):
         import can.player as module
+
+        return module
+
+
+class TestLogconvertScript(CanScriptTest):
+    def _commands(self):
+        commands = [
+            "python -m can.logconvert --help",
+            "python scripts/can_logconvert.py --help",
+        ]
+        if IS_UNIX:
+            commands += ["can_logconvert.py --help"]
+        return commands
+
+    def _import(self):
+        import can.logconvert as module
 
         return module
 

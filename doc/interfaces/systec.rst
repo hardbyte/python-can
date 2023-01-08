@@ -28,12 +28,6 @@ The interface supports following devices:
 - USB-CANmodul1 G4,
 - USB-CANmodul2 G4.
 
-Bus
----
-
-.. autoclass:: can.interfaces.systec.ucanbus.UcanBus
-    :members:
-
 Configuration
 -------------
 
@@ -56,6 +50,14 @@ Optional parameters:
 * ``tx_buffer_entries`` (default 4096) The maximum number of entries in the transmit buffer
 * ``state`` (default BusState.ACTIVE) BusState of the channel
 * ``receive_own_messages`` (default False) If messages transmitted should also be received back
+
+
+Bus
+---
+
+.. autoclass:: can.interfaces.systec.ucanbus.UcanBus
+    :members:
+
 
 Internals
 ---------

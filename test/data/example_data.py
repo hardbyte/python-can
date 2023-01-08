@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# coding: utf-8
 
 """
 This module contains some example data, like messages of different
@@ -108,6 +107,16 @@ TEST_MESSAGES_BASE = sort_messages(
 )
 
 
+TEST_MESSAGES_CAN_FD = sort_messages(
+    [
+        Message(is_fd=True, data=range(64)),
+        Message(is_fd=True, data=range(8)),
+        Message(is_fd=True, data=range(8), bitrate_switch=True),
+        Message(is_fd=True, data=range(8), error_state_indicator=True),
+    ]
+)
+
+
 TEST_MESSAGES_REMOTE_FRAMES = sort_messages(
     [
         Message(
@@ -170,7 +179,7 @@ def generate_message(arbitration_id):
     Generates a new message with the given ID, some random data
     and a non-extended ID.
     """
-    data = bytearray([random.randrange(0, 2 ** 8 - 1) for _ in range(8)])
+    data = bytearray([random.randrange(0, 2**8 - 1) for _ in range(8)])
     return Message(
         arbitration_id=arbitration_id,
         data=data,

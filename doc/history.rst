@@ -1,5 +1,5 @@
-History and Roadmap
-===================
+History
+=======
 
 Background
 ----------
@@ -46,10 +46,38 @@ The CAN viewer terminal script was contributed by Kristian Sloth Lauszus in 2018
 
 The CANalyst-II interface was contributed by Shaoyu Meng in 2018.
 
+@deonvdw added support for the Robotell interface in 2019.
+
+Felix Divo and Karl Ding added type hints for the core library and many
+interfaces leading up to the 4.0 release.
+
+Eric Evenchick added support for the CANtact devices in 2020.
+
+Felix Divo added an interprocess virtual bus interface in 2020.
+
+@jxltom added the gs_usb interface in 2020 supporting Geschwister Schneider USB/CAN devices
+and bytewerk.org candleLight USB CAN devices such as candlelight, canable, cantact, etc.
+
+@jaesc added the nixnet interface in 2021 supporting NI-XNET devices from National Instruments.
+
+Tuukka Pasanen @illuusio added the neousys interface in 2021.
+
+Francisco Javier Burgos Maciá @fjburgos added ixxat FD support.
+
+@domologic contributed a socketcand interface in 2021.
+
+Felix N @felixn contributed the ETAS interface in 2021.
+
+Felix Divo unified exception handling across every interface in the lead up to
+the 4.0 release.
+
+Felix Divo prepared the python-can 4.0 release.
+
+
 Support for CAN within Python
 -----------------------------
 
-Python natively supports the CAN protocol from version 3.3 on, if running on Linux:
+Python natively supports the CAN protocol from version 3.3 on, if running on Linux (with a sufficiently new kernel):
 
 ==============  ==============================================================  ====
 Python version  Feature                                                         Link
@@ -58,4 +86,5 @@ Python version  Feature                                                         
 3.4             Broadcast Management (BCM) commands are natively supported      `Docs <https://docs.python.org/3/library/socket.html#socket.CAN_BCM>`__
 3.5             CAN FD support                                                  `Docs <https://docs.python.org/3/library/socket.html#socket.CAN_RAW_FD_FRAMES>`__
 3.7             Support for CAN ISO-TP                                          `Docs <https://docs.python.org/3/library/socket.html#socket.CAN_ISOTP>`__
+3.9             Native support for joining CAN filters                          `Docs <https://docs.python.org/3/library/socket.html#socket.CAN_RAW_JOIN_FILTERS>`__
 ==============  ==============================================================  ====

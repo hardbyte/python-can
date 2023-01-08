@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# coding: utf-8
 
 import unittest
 from unittest.mock import Mock, patch
@@ -32,7 +31,8 @@ class SystecTest(unittest.TestCase):
         ucan.UcanDeinitHardware = Mock()
         ucan.UcanWriteCanMsgEx = Mock()
         ucan.UcanResetCanEx = Mock()
-        self.bus = can.Bus(bustype="systec", channel=0, bitrate=125000)
+        ucan._UCAN_INITIALIZED = True  # Fake this
+        self.bus = can.Bus(interface="systec", channel=0, bitrate=125000)
 
     def test_bus_creation(self):
         self.assertIsInstance(self.bus, ucanbus.UcanBus)
@@ -136,7 +136,7 @@ class SystecTest(unittest.TestCase):
     @staticmethod
     def test_bus_defaults():
         ucan.UcanInitCanEx2.reset_mock()
-        bus = can.Bus(bustype="systec", channel=0)
+        bus = can.Bus(interface="systec", channel=0)
         ucan.UcanInitCanEx2.assert_called_once_with(
             bus._ucan._handle,
             0,
@@ -155,7 +155,7 @@ class SystecTest(unittest.TestCase):
     @staticmethod
     def test_bus_channel():
         ucan.UcanInitCanEx2.reset_mock()
-        bus = can.Bus(bustype="systec", channel=1)
+        bus = can.Bus(interface="systec", channel=1)
         ucan.UcanInitCanEx2.assert_called_once_with(
             bus._ucan._handle,
             1,
@@ -174,7 +174,7 @@ class SystecTest(unittest.TestCase):
     @staticmethod
     def test_bus_bitrate():
         ucan.UcanInitCanEx2.reset_mock()
-        bus = can.Bus(bustype="systec", channel=0, bitrate=125000)
+        bus = can.Bus(interface="systec", channel=0, bitrate=125000)
         ucan.UcanInitCanEx2.assert_called_once_with(
             bus._ucan._handle,
             0,
@@ -192,12 +192,12 @@ class SystecTest(unittest.TestCase):
 
     def test_bus_custom_bitrate(self):
         with self.assertRaises(ValueError):
-            can.Bus(bustype="systec", channel=0, bitrate=123456)
+            can.Bus(interface="systec", channel=0, bitrate=123456)
 
     @staticmethod
     def test_receive_own_messages():
         ucan.UcanInitCanEx2.reset_mock()
-        bus = can.Bus(bustype="systec", channel=0, receive_own_messages=True)
+        bus = can.Bus(interface="systec", channel=0, receive_own_messages=True)
         ucan.UcanInitCanEx2.assert_called_once_with(
             bus._ucan._handle,
             0,
@@ -216,7 +216,7 @@ class SystecTest(unittest.TestCase):
     @staticmethod
     def test_bus_passive_state():
         ucan.UcanInitCanEx2.reset_mock()
-        bus = can.Bus(bustype="systec", channel=0, state=can.BusState.PASSIVE)
+        bus = can.Bus(interface="systec", channel=0, state=can.BusState.PASSIVE)
         ucan.UcanInitCanEx2.assert_called_once_with(
             bus._ucan._handle,
             0,
@@ -235,7 +235,7 @@ class SystecTest(unittest.TestCase):
     @staticmethod
     def test_rx_buffer_entries():
         ucan.UcanInitCanEx2.reset_mock()
-        bus = can.Bus(bustype="systec", channel=0, rx_buffer_entries=1024)
+        bus = can.Bus(interface="systec", channel=0, rx_buffer_entries=1024)
         ucan.UcanInitCanEx2.assert_called_once_with(
             bus._ucan._handle,
             0,
@@ -254,7 +254,7 @@ class SystecTest(unittest.TestCase):
     @staticmethod
     def test_tx_buffer_entries():
         ucan.UcanInitCanEx2.reset_mock()
-        bus = can.Bus(bustype="systec", channel=0, tx_buffer_entries=1024)
+        bus = can.Bus(interface="systec", channel=0, tx_buffer_entries=1024)
         ucan.UcanInitCanEx2.assert_called_once_with(
             bus._ucan._handle,
             0,

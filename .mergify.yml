@@ -1,0 +1,25 @@
+queue_rules:
+  - name: default
+    conditions:
+      - "status-success=test"  # "GitHub Actions works slightly differently [...], only the job name is used."
+      - "status-success=format"
+
+pull_request_rules:
+  - name: Automatic merge passing PR on up to date branch with approving CR
+    conditions:
+      - "base=develop"
+      - "#approved-reviews-by>=1"
+      - "#review-requested=0"
+      - "#changes-requested-reviews-by=0"
+      - "status-success=test"
+      - "status-success=format"
+      - "label!=work-in-progress"
+    actions:
+      queue:
+        name: default
+
+  - name: Delete head branch after merge
+    conditions:
+      - merged
+    actions:
+      delete_head_branch: {}

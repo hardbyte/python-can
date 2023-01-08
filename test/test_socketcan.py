@@ -1,13 +1,12 @@
+#!/usr/bin/env python
+
 """
 Test functions in `can.interfaces.socketcan.socketcan`.
 """
-import unittest
-
-from unittest.mock import Mock
-from unittest.mock import patch
-from unittest.mock import call
-
 import ctypes
+import struct
+import unittest
+from unittest.mock import patch
 
 from can.interfaces.socketcan.socketcan import (
     bcm_header_factory,
@@ -38,10 +37,10 @@ class SocketCANTest(unittest.TestCase):
     ):
         """This tests a 32-bit platform (ex. Debian Stretch on i386), where:
 
-            * sizeof(long) == 4
-            * sizeof(long long) == 8
-            * alignof(long) == 4
-            * alignof(long long) == 4
+        * sizeof(long) == 4
+        * sizeof(long long) == 8
+        * alignof(long) == 4
+        * alignof(long long) == 4
         """
 
         def side_effect_ctypes_sizeof(value):
@@ -107,10 +106,10 @@ class SocketCANTest(unittest.TestCase):
     ):
         """This tests a 32-bit platform (ex. Raspbian Stretch on armv7l), where:
 
-            * sizeof(long) == 4
-            * sizeof(long long) == 8
-            * alignof(long) == 4
-            * alignof(long long) == 8
+        * sizeof(long) == 4
+        * sizeof(long long) == 8
+        * alignof(long) == 4
+        * alignof(long long) == 8
         """
 
         def side_effect_ctypes_sizeof(value):
@@ -176,10 +175,10 @@ class SocketCANTest(unittest.TestCase):
     ):
         """This tests a 64-bit platform (ex. Ubuntu 18.04 on x86_64), where:
 
-            * sizeof(long) == 8
-            * sizeof(long long) == 8
-            * alignof(long) == 8
-            * alignof(long long) == 8
+        * sizeof(long) == 8
+        * sizeof(long long) == 8
+        * alignof(long) == 8
+        * alignof(long long) == 8
         """
 
         def side_effect_ctypes_sizeof(value):
@@ -238,50 +237,26 @@ class SocketCANTest(unittest.TestCase):
         ]
         self.assertEqual(expected_fields, BcmMsgHead._fields_)
 
-    @unittest.skipIf(
-        not (
-            ctypes.sizeof(ctypes.c_long) == 4 and ctypes.alignment(ctypes.c_long) == 4
-        ),
-        "Should only run on platforms where sizeof(long) == 4 and alignof(long) == 4",
-    )
-    def test_build_bcm_header_sizeof_long_4_alignof_long_4(self):
-        expected_result = b""
-        expected_result += b"\x02\x00\x00\x00\x00\x00\x00\x00"
-        expected_result += b"\x00\x00\x00\x00\x00\x00\x00\x00"
-        expected_result += b"\x00\x00\x00\x00\x00\x00\x00\x00"
-        expected_result += b"\x00\x00\x00\x00\x01\x04\x00\x00"
-        expected_result += b"\x01\x00\x00\x00\x00\x00\x00\x00"
+    def test_build_bcm_header(self):
+        def _find_u32_fmt_char() -> str:
+            for _fmt in ("H", "I", "L", "Q"):
+                if struct.calcsize(_fmt) == 4:
+                    return _fmt
 
-        self.assertEqual(
-            expected_result,
-            build_bcm_header(
-                opcode=CAN_BCM_TX_DELETE,
-                flags=0,
-                count=0,
-                ival1_seconds=0,
-                ival1_usec=0,
-                ival2_seconds=0,
-                ival2_usec=0,
-                can_id=0x401,
-                nframes=1,
-            ),
+        def _standard_size_little_endian_to_native(data: bytes) -> bytes:
+            std_le_fmt = "<IIIllllII"
+            native_fmt = "@" + std_le_fmt[1:].replace("I", _find_u32_fmt_char())
+            aligned_data = struct.pack(native_fmt, *struct.unpack(std_le_fmt, data))
+            padded_data = aligned_data + b"\x00" * ((8 - len(aligned_data) % 8) % 8)
+            return padded_data
+
+        expected_result = _standard_size_little_endian_to_native(
+            b"\x02\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x01\x04\x00\x00"
+            b"\x01\x00\x00\x00"
         )
-
-    @unittest.skipIf(
-        not (
-            ctypes.sizeof(ctypes.c_long) == 8 and ctypes.alignment(ctypes.c_long) == 8
-        ),
-        "Should only run on platforms where sizeof(long) == 8 and alignof(long) == 8",
-    )
-    def test_build_bcm_header_sizeof_long_8_alignof_long_8(self):
-        expected_result = b""
-        expected_result += b"\x02\x00\x00\x00\x00\x00\x00\x00"
-        expected_result += b"\x00\x00\x00\x00\x00\x00\x00\x00"
-        expected_result += b"\x00\x00\x00\x00\x00\x00\x00\x00"
-        expected_result += b"\x00\x00\x00\x00\x00\x00\x00\x00"
-        expected_result += b"\x00\x00\x00\x00\x00\x00\x00\x00"
-        expected_result += b"\x00\x00\x00\x00\x00\x00\x00\x00"
-        expected_result += b"\x01\x04\x00\x00\x01\x00\x00\x00"
 
         self.assertEqual(
             expected_result,
