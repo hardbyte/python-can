@@ -61,7 +61,5 @@ def compute_xbr_checksum(message, counter):
 
 
 if __name__ == "__main__":
-    with can.Bus(  # type: ignore
-        "test", interface="virtual"
-    ) as BUS:
-        cyclic_checksum_send(BUS)
+    with can.Bus("test", interface="virtual") as _bus:
+        cyclic_checksum_send(_bus)

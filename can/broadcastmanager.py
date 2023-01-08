@@ -5,7 +5,7 @@ The main entry point to these classes should be through
 :meth:`can.BusABC.send_periodic`.
 """
 
-from typing import Callable, Optional, Sequence, Tuple, Union, Callable, TYPE_CHECKING
+from typing import Optional, Sequence, Tuple, Union, Callable, TYPE_CHECKING
 
 from can import typechecking
 
@@ -135,9 +135,16 @@ class RestartableCyclicTaskABC(CyclicSendTaskABC):
 
 
 class ModifiableCyclicTaskABC(CyclicSendTaskABC):
-    """Adds support for modifying a periodic message"""
+    def __init__(
+        self, messages: Union[Sequence[Message], Message], period: float
+    ) -> None:
+        """Adds support for modifying a periodic message"""
+        super().__init__(messages, period)
+        self.modifier_callback: Optional[Callable[[Message], Message]] = None
 
-    def _check_modifier_callback(self, modifier_callback):
+    def _check_modifier_callback(
+        self, modifier_callback: Optional[Callable[[Message], Message]]
+    ) -> None:
         if modifier_callback is not None:
             modified_msg = modifier_callback(self.messages[0])
 
@@ -220,7 +227,7 @@ class MultiRateCyclicSendTaskABC(CyclicSendTaskABC):
 
 
 class ThreadBasedCyclicSendTask(
-    ModifiableCyclicTaskABC, LimitedDurationCyclicSendTaskABC, RestartableCyclicTaskABC
+    LimitedDurationCyclicSendTaskABC, ModifiableCyclicTaskABC, RestartableCyclicTaskABC
 ):
     """Fallback cyclic send task using daemon thread."""
 

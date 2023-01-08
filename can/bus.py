@@ -294,7 +294,12 @@ class BusABC(metaclass=ABCMeta):
                 threading.Lock()
             )
         task = ThreadBasedCyclicSendTask(
-            self, self._lock_send_periodic, msgs, period, duration, modifier_callback
+            bus=self,
+            lock=self._lock_send_periodic,
+            messages=msgs,
+            period=period,
+            duration=duration,
+            modifier_callback=modifier_callback,
         )
         return task
 
