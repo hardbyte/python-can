@@ -47,6 +47,8 @@ from .basic import (
     PCAN_LISTEN_ONLY,
     PCAN_PARAMETER_OFF,
     TPCANHandle,
+    IS_LINUX,
+    IS_WINDOWS,
     PCAN_PCIBUS1,
     PCAN_USBBUS1,
     PCAN_PCCBUS1,
@@ -64,8 +66,6 @@ from .basic import (
 log = logging.getLogger("can.pcan")
 
 MIN_PCAN_API_VERSION = version.parse("4.2.0")
-IS_WINDOWS = PLATFORM == "Windows"
-IS_LINUX = PLATFORM == "Linux"
 
 try:
     # use the "uptime" library if available
