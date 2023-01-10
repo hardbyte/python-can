@@ -7,7 +7,15 @@ import ctypes
 import struct
 import unittest
 from unittest.mock import patch
+import can
 
+from can.interfaces.socketcan.constants import (
+    CAN_BCM_TX_DELETE,
+    CAN_BCM_TX_SETUP,
+    SETTIMER,
+    STARTTIMER,
+    TX_COUNTEVT,
+)
 from can.interfaces.socketcan.socketcan import (
     bcm_header_factory,
     build_bcm_header,
@@ -16,13 +24,7 @@ from can.interfaces.socketcan.socketcan import (
     build_bcm_update_header,
     BcmMsgHead,
 )
-from can.interfaces.socketcan.constants import (
-    CAN_BCM_TX_DELETE,
-    CAN_BCM_TX_SETUP,
-    SETTIMER,
-    STARTTIMER,
-    TX_COUNTEVT,
-)
+from .config import IS_LINUX, IS_PYPY
 
 
 class SocketCANTest(unittest.TestCase):
@@ -352,6 +354,21 @@ class SocketCANTest(unittest.TestCase):
         self.assertEqual(0, result.ival2_tv_usec)
         self.assertEqual(can_id, result.can_id)
         self.assertEqual(1, result.nframes)
+
+    @unittest.skipUnless(IS_LINUX and IS_PYPY, "Only test when run on Linux with PyPy")
+    def test_pypy_socketcan_support(self):
+        """Wait for PyPy raw CAN socket support
+
+        This test shall document raw CAN socket support under PyPy. Once this test fails, it is likely that PyPy
+        either implemented raw CAN socket support or at least changed the error that is thrown.
+        https://foss.heptapod.net/pypy/pypy/-/issues/3809
+        https://github.com/hardbyte/python-can/issues/1479
+        """
+        try:
+            can.Bus(interface="socketcan", channel="vcan0", bitrate=500000)
+        except OSError as e:
+            if "unknown address family" not in str(e):
+                raise
 
 
 if __name__ == "__main__":
