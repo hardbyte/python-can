@@ -38,10 +38,18 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install tox
+    - name: Setup SocketCAN
+      if: ${{ matrix.os == 'ubuntu-latest' }}
+      run: |
+        sudo apt-get -y install linux-modules-extra-$(uname -r)
+        sudo ./test/open_vcan.sh
     - name: Test with pytest via tox
       run: |
         tox -e gh
-
+      env:
+        # SocketCAN tests currently fail with PyPy because it does not support raw CAN sockets
+        # See: https://foss.heptapod.net/pypy/pypy/-/issues/3809
+        TEST_SOCKETCAN: "${{ matrix.os == 'ubuntu-latest' && ! startsWith(matrix.python-version, 'pypy' ) }}"
     - name: Coveralls Parallel
       uses: coverallsapp/github-action@master
       with:
