@@ -7,7 +7,7 @@ import warnings
 import asyncio
 from abc import ABCMeta, abstractmethod
 from queue import SimpleQueue, Empty
-from typing import Any, AsyncIterator, Awaitable, Optional
+from typing import Any, AsyncIterator, Optional
 
 from can.message import Message
 from can.bus import BusABC
@@ -126,7 +126,9 @@ class BufferedReader(Listener):  # pylint: disable=abstract-method
         self.is_stopped = True
 
 
-class AsyncBufferedReader(Listener):  # pylint: disable=abstract-method
+class AsyncBufferedReader(
+    Listener, AsyncIterator[Message]
+):  # pylint: disable=abstract-method
     """A message buffer for use with :mod:`asyncio`.
 
     See :ref:`asyncio` for how to use with :class:`can.Notifier`.
@@ -174,5 +176,5 @@ class AsyncBufferedReader(Listener):  # pylint: disable=abstract-method
     def __aiter__(self) -> AsyncIterator[Message]:
         return self
 
-    def __anext__(self) -> Awaitable[Message]:
-        return self.buffer.get()
+    async def __anext__(self) -> Message:
+        return await self.buffer.get()

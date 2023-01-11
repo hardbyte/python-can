@@ -4,10 +4,12 @@
 import logging
 from typing import List
 
+log = logging.getLogger("can.usb2can")
+
 try:
     import win32com.client
 except ImportError:
-    logging.warning("win32com.client module required for usb2can")
+    log.warning("win32com.client module required for usb2can")
     raise
 
 
