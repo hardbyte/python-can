@@ -446,7 +446,10 @@ class VectorBus(BusABC):
 
         if not settings_acceptable:
             active_settings = ", ".join(
-                [f"{key}: {val}" for key, val in bus_params.can._asdict().items()]
+                [
+                    f"{key}: {getattr(val, 'name', val)}"  # print int or Enum/Flag name
+                    for key, val in bus_params.can._asdict().items()
+                ]
             )
             raise CanInitializationError(
                 f"The requested CAN settings could not be set for channel {channel}. "
@@ -562,7 +565,10 @@ class VectorBus(BusABC):
 
         if not settings_acceptable:
             active_settings = ", ".join(
-                [f"{key}: {val}" for key, val in bus_params.canfd._asdict().items()]
+                [
+                    f"{key}: {getattr(val, 'name', val)}"  # print int or Enum/Flag name
+                    for key, val in bus_params.canfd._asdict().items()
+                ]
             )
             raise CanInitializationError(
                 f"The requested CAN FD settings could not be set for channel {channel}. "
