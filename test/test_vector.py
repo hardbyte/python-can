@@ -459,7 +459,7 @@ def test_reset_mocked(mock_xldriver) -> None:
 
 
 @pytest.mark.skipif(not XLDRIVER_FOUND, reason="Vector XL API is unavailable")
-def test_reset_mocked() -> None:
+def test_reset() -> None:
     bus = canlib.VectorBus(
         channel=0, serial=_find_virtual_can_serial(), interface="vector"
     )
@@ -696,7 +696,7 @@ def _find_virtual_can_serial() -> int:
     for i in range(xl_driver_config.channelCount):
         xl_channel_config: xlclass.XLchannelConfig = xl_driver_config.channel[i]
 
-        if xl_channel_config.transceiverName.decode() == "Virtual CAN":
+        if "Virtual CAN" in xl_channel_config.transceiverName.decode():
             return xl_channel_config.serialNumber
 
     raise LookupError("Vector virtual CAN not found")
