@@ -6,6 +6,7 @@ Test functions in `can.interfaces.socketcan.socketcan`.
 import ctypes
 import struct
 import unittest
+import warnings
 from unittest.mock import patch
 import can
 
@@ -368,7 +369,10 @@ class SocketCANTest(unittest.TestCase):
             can.Bus(interface="socketcan", channel="vcan0", bitrate=500000)
         except OSError as e:
             if "unknown address family" not in str(e):
-                raise
+                warnings.warn(
+                    "Please check if PyPy has implemented raw CAN socket support! "
+                    "See: https://foss.heptapod.net/pypy/pypy/-/issues/3809"
+                )
 
 
 if __name__ == "__main__":
