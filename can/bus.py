@@ -71,6 +71,7 @@ class BusABC(metaclass=ABCMeta):
         :raises ~can.exceptions.CanInitializationError:
             If the bus cannot be initialized
         """
+        self._is_shutdown: bool = False
         self._periodic_tasks: List[_SelfRemovingCyclicTask] = []
         self.set_filters(can_filters)
 
@@ -420,13 +421,26 @@ class BusABC(metaclass=ABCMeta):
         Called to carry out any interface specific cleanup required
         in shutting down a bus.
         """
+        if self._is_shutdown:
+            LOG.debug(f"{self.__class__} is already shut down")
+            return None
+
         self.stop_all_periodic_tasks()
+        self._is_shutdown = True
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.shutdown()
+
+    def __del__(self) -> None:
+        if self._is_shutdown:
+            return None
+
+        self.shutdown()
+        LOG.warn(f"{self.__class__} was not properly shut down")
+
 
     @property
     def state(self) -> BusState:
