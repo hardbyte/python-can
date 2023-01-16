@@ -338,7 +338,6 @@ class TestPCANBus(unittest.TestCase):
             configs = PcanBus._detect_available_configs()
             self.assertEqual(len(configs), 50)
         else:
-            # TODO: mock GetValue with proper value for PCAN_ATTACHED_CHANNELS
             value = (TPCANChannelInformation * 1).from_buffer_copy(
                 b"Q\x00\x05\x00\x01\x00\x00\x00PCAN-USB FD\x00\x00\x00\x00"
                 b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
