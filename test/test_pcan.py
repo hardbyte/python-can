@@ -339,10 +339,17 @@ class TestPCANBus(unittest.TestCase):
             self.assertEqual(len(configs), 50)
         else:
             # TODO: mock GetValue with proper value for PCAN_ATTACHED_CHANNELS
-            self.mock_pcan.GetValue = Mock(
-                return_value=(PCAN_ERROR_OK, (TPCANChannelInformation * 0)())
+            value = (TPCANChannelInformation * 1).from_buffer_copy(
+                b"Q\x00\x05\x00\x01\x00\x00\x00PCAN-USB FD\x00\x00\x00\x00"
+                b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+                b'\x00\x00\x00\x00\x00\x00\x003"\x11\x00\x01\x00\x00\x00'
             )
-            PcanBus._detect_available_configs()
+            self.mock_pcan.GetValue = Mock(return_value=(PCAN_ERROR_OK, value))
+            configs = PcanBus._detect_available_configs()
+            assert len(configs) == 1
+            assert configs[0]["interface"] == "pcan"
+            assert configs[0]["channel"] == "PCAN_USBBUS1"
+            assert configs[0]["supports_fd"]
 
     @parameterized.expand([("valid", PCAN_ERROR_OK, "OK"), ("invalid", 0x00005, None)])
     def test_status_string(self, name, status, expected_result) -> None:

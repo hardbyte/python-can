@@ -637,9 +637,15 @@ class PcanBus(BusABC):
                 return interfaces
             channel_information: List[TPCANChannelInformation] = list(value)
             for channel in channel_information:
+                # find channel name in PCAN_CHANNEL_NAMES by value
+                channel_name = next(
+                    _channel_name
+                    for _channel_name, channel_id in PCAN_CHANNEL_NAMES.items()
+                    if channel_id.value == channel.channel_handle
+                )
                 channel_config = {
                     "interface": "pcan",
-                    "channel": channel.device_name + str(channel.controller_number),
+                    "channel": channel_name,
                     "supports_fd": bool(channel.device_features & FEATURE_FD_CAPABLE),
                 }
                 interfaces.append(channel_config)
