@@ -474,7 +474,6 @@ class PcanBus(BusABC):
             # We will utilize events for the timeout handling
             timeout_ms = int(timeout * 1000) if timeout is not None else INFINITE
         elif HAS_EVENTS and IS_LINUX:
-            # We will utilize events for the timeout handling
             timeout_s = timeout if timeout != None else None
         elif timeout is not None:
             # Calculate max time
