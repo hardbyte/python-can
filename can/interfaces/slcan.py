@@ -152,6 +152,7 @@ class slcanBus(BusABC):
     def _read(self, timeout: Optional[float]) -> Optional[str]:
 
         with error_check("Could not read from serial device"):
+            self.serialPortOrig.timeout = timeout
             # first read what is already in receive buffer
             while self.serialPortOrig.in_waiting:
                 self._buffer += self.serialPortOrig.read()
@@ -161,7 +162,6 @@ class slcanBus(BusABC):
             while not (
                 ord(self._OK) in self._buffer or ord(self._ERROR) in self._buffer
             ):
-                self.serialPortOrig.timeout = time_left
                 byte = self.serialPortOrig.read()
                 if byte:
                     self._buffer += byte
