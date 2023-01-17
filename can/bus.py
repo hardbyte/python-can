@@ -422,8 +422,8 @@ class BusABC(metaclass=ABCMeta):
         in shutting down a bus.
         """
         if self._is_shutdown:
-            LOG.debug(f"{self.__class__} is already shut down")
-            return None
+            LOG.debug("%s is already shut down", self.__class__)
+            return
 
         self.stop_all_periodic_tasks()
         self._is_shutdown = True
@@ -436,10 +436,10 @@ class BusABC(metaclass=ABCMeta):
 
     def __del__(self) -> None:
         if self._is_shutdown:
-            return None
+            return
 
         self.shutdown()
-        LOG.warn(f"{self.__class__} was not properly shut down")
+        LOG.warning("%s was not properly shut down", self.__class__)
 
     @property
     def state(self) -> BusState:
