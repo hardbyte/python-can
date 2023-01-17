@@ -349,6 +349,12 @@ class TestPCANBus(unittest.TestCase):
             assert configs[0]["interface"] == "pcan"
             assert configs[0]["channel"] == "PCAN_USBBUS1"
             assert configs[0]["supports_fd"]
+            assert configs[0]["controller_number"] == 0
+            assert configs[0]["device_features"] == 1
+            assert configs[0]["device_id"] == 1122867
+            assert configs[0]["device_name"] == "PCAN-USB FD"
+            assert configs[0]["device_type"] == 5
+            assert configs[0]["channel_condition"] == 1
 
     @parameterized.expand([("valid", PCAN_ERROR_OK, "OK"), ("invalid", 0x00005, None)])
     def test_status_string(self, name, status, expected_result) -> None:

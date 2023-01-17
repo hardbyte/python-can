@@ -647,6 +647,12 @@ class PcanBus(BusABC):
                     "interface": "pcan",
                     "channel": channel_name,
                     "supports_fd": bool(channel.device_features & FEATURE_FD_CAPABLE),
+                    "controller_number": channel.controller_number,
+                    "device_features": channel.device_features,
+                    "device_id": channel.device_id,
+                    "device_name": channel.device_name.decode("latin-1"),
+                    "device_type": channel.device_type,
+                    "channel_condition": channel.channel_condition,
                 }
                 interfaces.append(channel_config)
             return interfaces
