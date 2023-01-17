@@ -14,6 +14,7 @@ def test_bus_ignore_config():
         _ = can.Bus(interface="virtual")
         assert can.util.load_config.called
 
+
 @patch.object(can.bus.BusABC, "shutdown")
 def test_bus_attempts_self_cleanup(mock_shutdown):
     bus = can.Bus(interface="virtual")

@@ -49,7 +49,7 @@ class BusABC(metaclass=ABCMeta):
         self,
         channel: Any,
         can_filters: Optional[can.typechecking.CanFilters] = None,
-        **kwargs: object
+        **kwargs: object,
     ):
         """Construct and open a CAN bus instance of the specified type.
 
@@ -440,7 +440,6 @@ class BusABC(metaclass=ABCMeta):
 
         self.shutdown()
         LOG.warn(f"{self.__class__} was not properly shut down")
-
 
     @property
     def state(self) -> BusState:
