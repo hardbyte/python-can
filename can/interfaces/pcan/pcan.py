@@ -6,16 +6,19 @@ import logging
 import time
 from datetime import datetime
 import platform
-
-from typing import Optional
+from typing import Optional, List
 
 from packaging import version
 
-from ...message import Message
-from ...bus import BusABC, BusState
-from ...util import len2dlc, dlc2len
-from ...exceptions import CanError, CanOperationError, CanInitializationError
-
+from can import (
+    BusABC,
+    BusState,
+    CanError,
+    CanOperationError,
+    CanInitializationError,
+    Message,
+)
+from can.util import len2dlc, dlc2len
 
 from .basic import (
     PCAN_BITRATES,
@@ -57,6 +60,8 @@ from .basic import (
     FEATURE_FD_CAPABLE,
     PCAN_DICT_STATUS,
     PCAN_BUSOFF_AUTORESET,
+    PCAN_ATTACHED_CHANNELS,
+    TPCANChannelInformation,
 )
 
 
@@ -78,7 +83,6 @@ try:
 except ImportError as error:
     log.warning(
         "uptime library not available, timestamps are relative to boot time and not to Epoch UTC",
-        exc_info=True,
     )
     boottimeEpoch = 0
 
@@ -278,7 +282,7 @@ class PcanBus(BusABC):
                 # TODO Remove Filter when MACCan actually supports it:
                 #  https://github.com/mac-can/PCBUSB-Library/
                 log.debug(
-                    "Ignoring error. PCAN_ALLOW_ERROR_FRAMES is still unsupported by OSX Library PCANUSB v0.10"
+                    "Ignoring error. PCAN_ALLOW_ERROR_FRAMES is still unsupported by OSX Library PCANUSB v0.11.2"
                 )
 
         if kwargs.get("auto_reset", False):
@@ -624,7 +628,35 @@ class PcanBus(BusABC):
             library_handle = PCANBasic()
         except OSError:
             return channels
+
         interfaces = []
+
+        if platform.system() != "Darwin":
+            res, value = library_handle.GetValue(PCAN_NONEBUS, PCAN_ATTACHED_CHANNELS)
+            if res != PCAN_ERROR_OK:
+                return interfaces
+            channel_information: List[TPCANChannelInformation] = list(value)
+            for channel in channel_information:
+                # find channel name in PCAN_CHANNEL_NAMES by value
+                channel_name = next(
+                    _channel_name
+                    for _channel_name, channel_id in PCAN_CHANNEL_NAMES.items()
+                    if channel_id.value == channel.channel_handle
+                )
+                channel_config = {
+                    "interface": "pcan",
+                    "channel": channel_name,
+                    "supports_fd": bool(channel.device_features & FEATURE_FD_CAPABLE),
+                    "controller_number": channel.controller_number,
+                    "device_features": channel.device_features,
+                    "device_id": channel.device_id,
+                    "device_name": channel.device_name.decode("latin-1"),
+                    "device_type": channel.device_type,
+                    "channel_condition": channel.channel_condition,
+                }
+                interfaces.append(channel_config)
+            return interfaces
+
         for i in range(16):
             interfaces.append(
                 {
