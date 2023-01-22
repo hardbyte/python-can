@@ -6,7 +6,7 @@ import time
 from datetime import datetime
 import platform
 
-from typing import Optional
+from typing import Optional, Tuple
 
 from packaging import version
 
@@ -17,7 +17,6 @@ from ...exceptions import CanError, CanOperationError, CanInitializationError
 
 
 from .basic import (
-    PLATFORM,
     PCAN_BITRATES,
     PCAN_FD_PARAMETER_LIST,
     PCAN_CHANNEL_NAMES,
@@ -83,6 +82,8 @@ except ImportError as error:
     )
     boottimeEpoch = 0
 
+HAS_EVENTS = False
+
 if IS_WINDOWS:
     try:
         # Try builtin Python 3 Windows API
@@ -91,15 +92,8 @@ if IS_WINDOWS:
 
         HAS_EVENTS = True
     except ImportError:
-        try:
-            # Try pywin32 package
-            from win32event import CreateEvent
-            from win32event import WaitForSingleObject, WAIT_OBJECT_0, INFINITE
+        pass
 
-            HAS_EVENTS = True
-        except ImportError:
-            # Use polling instead
-            HAS_EVENTS = False
 elif IS_LINUX:
     try:
         import errno
@@ -108,9 +102,7 @@ elif IS_LINUX:
 
         HAS_EVENTS = True
     except Exception:
-        HAS_EVENTS = False
-else:
-    HAS_EVENTS = False
+        pass
 
 
 class PcanBus(BusABC):
@@ -456,101 +448,96 @@ class PcanBus(BusABC):
             return False
         return True
 
-    def _read_message(self):
-        """Read a message using Basic API.
+    def _recv_internal(
+        self, timeout: Optional[float]
+    ) -> Tuple[Optional[Message], bool]:
+        end_time = time.time() + timeout if timeout is not None else None
 
-        :return: a tuple containing the current CAN status, the received
-            message and the timestamp
-        :rtype: tuple
-        """
-        if self.fd:
-            return self.m_objPCANBasic.ReadFD(self.m_PcanHandle)
+        while True:
+            if self.fd:
+                result, pcan_msg, pcan_timestamp = self.m_objPCANBasic.ReadFD(
+                    self.m_PcanHandle
+                )
+            else:
+                result, pcan_msg, pcan_timestamp = self.m_objPCANBasic.Read(
+                    self.m_PcanHandle
+                )
 
-        return self.m_objPCANBasic.Read(self.m_PcanHandle)
+            if result == PCAN_ERROR_OK:
+                # message received
+                break
 
-    def _recv_internal(self, timeout):
+            if result == PCAN_ERROR_QRCVEMPTY:
+                # receive queue is empty, wait or return on timeout
 
-        if HAS_EVENTS and IS_WINDOWS:
-            # We will utilize events for the timeout handling
-            timeout_ms = int(timeout * 1000) if timeout is not None else INFINITE
-        elif HAS_EVENTS and IS_LINUX:
-            timeout_s = timeout if timeout != None else None
-        elif timeout is not None:
-            # Calculate max time
-            end_time = time.perf_counter() + timeout
-
-        # log.debug("Trying to read a msg")
-
-        result = None
-        while result is None:
-
-            result = self._read_message()
-
-            if result[0] == PCAN_ERROR_QRCVEMPTY:
-                if HAS_EVENTS and IS_WINDOWS:
-                    val = WaitForSingleObject(self._recv_event, timeout_ms)
-                    if val != WAIT_OBJECT_0:
-                        return None, False
-                elif HAS_EVENTS and IS_LINUX:
-                    recv, _, _ = select.select([self._recv_event], [], [], timeout_s)
-                    if self._recv_event not in recv:
-                        return None, False
-                    result = self._read_message()
-                elif timeout is not None and time.perf_counter() >= end_time:
-                    return None, False
+                if end_time is None:
+                    time_left: Optional[float] = None
+                    timed_out = False
                 else:
-                    result = None
+                    time_left = max(0.0, end_time - time.time())
+                    timed_out = time_left == 0.0
+
+                if timed_out:
+                    return None, False
+
+                if not HAS_EVENTS:
+                    # polling mode
                     time.sleep(0.001)
-            elif result[0] & (PCAN_ERROR_BUSLIGHT | PCAN_ERROR_BUSHEAVY):
-                log.warning(self._get_formatted_error(result[0]))
-                return None, False
-            elif result[0] != PCAN_ERROR_OK:
-                raise PcanCanOperationError(self._get_formatted_error(result[0]))
+                    continue
 
-        theMsg = result[1]
-        itsTimeStamp = result[2]
+                if IS_WINDOWS:
+                    # Windows with event
+                    if time_left is None:
+                        time_left_ms = INFINITE
+                    else:
+                        time_left_ms = int(time_left * 1000)
+                    _ret = WaitForSingleObject(self._recv_event, time_left_ms)
+                    if _ret == WAIT_OBJECT_0:
+                        continue
 
-        # log.debug("Received a message")
+                elif IS_LINUX:
+                    # Linux with event
+                    recv, _, _ = select.select([self._recv_event], [], [], time_left)
+                    if self._recv_event in recv:
+                        continue
 
-        is_extended_id = (
-            theMsg.MSGTYPE & PCAN_MESSAGE_EXTENDED.value
-        ) == PCAN_MESSAGE_EXTENDED.value
-        is_remote_frame = (
-            theMsg.MSGTYPE & PCAN_MESSAGE_RTR.value
-        ) == PCAN_MESSAGE_RTR.value
-        is_fd = (theMsg.MSGTYPE & PCAN_MESSAGE_FD.value) == PCAN_MESSAGE_FD.value
-        bitrate_switch = (
-            theMsg.MSGTYPE & PCAN_MESSAGE_BRS.value
-        ) == PCAN_MESSAGE_BRS.value
-        error_state_indicator = (
-            theMsg.MSGTYPE & PCAN_MESSAGE_ESI.value
-        ) == PCAN_MESSAGE_ESI.value
-        is_error_frame = (
-            theMsg.MSGTYPE & PCAN_MESSAGE_ERRFRAME.value
-        ) == PCAN_MESSAGE_ERRFRAME.value
+            elif result & (PCAN_ERROR_BUSLIGHT | PCAN_ERROR_BUSHEAVY):
+                log.warning(self._get_formatted_error(result))
+
+            else:
+                raise PcanCanOperationError(self._get_formatted_error(result))
+
+            return None, False
+
+        is_extended_id = bool(pcan_msg.MSGTYPE & PCAN_MESSAGE_EXTENDED.value)
+        is_remote_frame = bool(pcan_msg.MSGTYPE & PCAN_MESSAGE_RTR.value)
+        is_fd = bool(pcan_msg.MSGTYPE & PCAN_MESSAGE_FD.value)
+        bitrate_switch = bool(pcan_msg.MSGTYPE & PCAN_MESSAGE_BRS.value)
+        error_state_indicator = bool(pcan_msg.MSGTYPE & PCAN_MESSAGE_ESI.value)
+        is_error_frame = bool(pcan_msg.MSGTYPE & PCAN_MESSAGE_ERRFRAME.value)
 
         if self.fd:
-            dlc = dlc2len(theMsg.DLC)
-            timestamp = boottimeEpoch + (itsTimeStamp.value / (1000.0 * 1000.0))
+            dlc = dlc2len(pcan_msg.DLC)
+            timestamp = boottimeEpoch + (pcan_timestamp.value / (1000.0 * 1000.0))
         else:
-            dlc = theMsg.LEN
+            dlc = pcan_msg.LEN
             timestamp = boottimeEpoch + (
                 (
-                    itsTimeStamp.micros
-                    + 1000 * itsTimeStamp.millis
-                    + 0x100000000 * 1000 * itsTimeStamp.millis_overflow
+                    pcan_timestamp.micros
+                    + 1000 * pcan_timestamp.millis
+                    + 0x100000000 * 1000 * pcan_timestamp.millis_overflow
                 )
                 / (1000.0 * 1000.0)
             )
 
         rx_msg = Message(
             timestamp=timestamp,
-            arbitration_id=theMsg.ID,
+            arbitration_id=pcan_msg.ID,
             is_extended_id=is_extended_id,
             is_remote_frame=is_remote_frame,
             is_error_frame=is_error_frame,
             dlc=dlc,
-            data=theMsg.DATA[:dlc],
+            data=pcan_msg.DATA[:dlc],
             is_fd=is_fd,
             bitrate_switch=bitrate_switch,
             error_state_indicator=error_state_indicator,
