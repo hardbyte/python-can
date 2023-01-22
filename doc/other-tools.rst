@@ -28,8 +28,8 @@ CAN Message protocols (implemented in Python)
       for performing UDS over CAN utilising the ISO TP protocol. This module has not been updated
       for some time. 
     * The `uds`_ module is another tool that implements the UDS protocol, although it does have
-	  extensions for performing UDS over CAN utilising the ISO TP protocol. This module has not
-	  been updated for some time.
+      extensions for performing UDS over CAN utilising the ISO TP protocol. This module has not
+      been updated for some time.
 #. XCP
     * The `pyxcp`_ module implements the Universal Measurement and Calibration Protocol (XCP).
       The purpose of XCP is to adjust parameters and acquire current values of internal

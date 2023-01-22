@@ -31,7 +31,7 @@ Interface
 
 A bus example::
 
-    bus = can.interface.Bus(bustype='seeedstudio', channel='/dev/ttyUSB0', bitrate=500000)
+    bus = can.interface.Bus(interface='seeedstudio', channel='/dev/ttyUSB0', bitrate=500000)
 
 
 

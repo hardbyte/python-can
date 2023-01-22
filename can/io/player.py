@@ -65,7 +65,6 @@ class LogReader(MessageReader):
     def __new__(  # type: ignore
         cls: typing.Any,
         filename: StringPathLike,
-        *args: typing.Any,
         **kwargs: typing.Any,
     ) -> MessageReader:
         """
@@ -87,7 +86,7 @@ class LogReader(MessageReader):
         if suffix == ".gz":
             suffix, file_or_filename = LogReader.decompress(filename)
         try:
-            return LogReader.message_readers[suffix](file_or_filename, *args, **kwargs)
+            return LogReader.message_readers[suffix](file=file_or_filename, **kwargs)
         except KeyError:
             raise ValueError(
                 f'No read support for this unknown log format "{suffix}"'
@@ -109,7 +108,7 @@ class LogReader(MessageReader):
         raise NotImplementedError()
 
 
-class MessageSync:  # pylint: disable=too-few-public-methods
+class MessageSync:
     """
     Used to iterate over some given messages in the recorded time.
     """

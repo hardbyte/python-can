@@ -77,7 +77,7 @@ def mock_xldriver() -> None:
 
 
 def test_bus_creation_mocked(mock_xldriver) -> None:
-    bus = can.Bus(channel=0, bustype="vector", _testing=True)
+    bus = can.Bus(channel=0, interface="vector", _testing=True)
     assert isinstance(bus, canlib.VectorBus)
     can.interfaces.vector.canlib.xldriver.xlOpenDriver.assert_called()
     can.interfaces.vector.canlib.xldriver.xlGetApplConfig.assert_called()
@@ -93,7 +93,7 @@ def test_bus_creation_mocked(mock_xldriver) -> None:
 
 @pytest.mark.skipif(not XLDRIVER_FOUND, reason="Vector XL API is unavailable")
 def test_bus_creation() -> None:
-    bus = can.Bus(channel=0, serial=_find_virtual_can_serial(), bustype="vector")
+    bus = can.Bus(channel=0, serial=_find_virtual_can_serial(), interface="vector")
     assert isinstance(bus, canlib.VectorBus)
     bus.shutdown()
 
@@ -112,7 +112,7 @@ def test_bus_creation() -> None:
 
 
 def test_bus_creation_bitrate_mocked(mock_xldriver) -> None:
-    bus = can.Bus(channel=0, bustype="vector", bitrate=200_000, _testing=True)
+    bus = can.Bus(channel=0, interface="vector", bitrate=200_000, _testing=True)
     assert isinstance(bus, canlib.VectorBus)
     can.interfaces.vector.canlib.xldriver.xlOpenDriver.assert_called()
     can.interfaces.vector.canlib.xldriver.xlGetApplConfig.assert_called()
@@ -133,7 +133,10 @@ def test_bus_creation_bitrate_mocked(mock_xldriver) -> None:
 @pytest.mark.skipif(not XLDRIVER_FOUND, reason="Vector XL API is unavailable")
 def test_bus_creation_bitrate() -> None:
     bus = can.Bus(
-        channel=0, serial=_find_virtual_can_serial(), bustype="vector", bitrate=200_000
+        channel=0,
+        serial=_find_virtual_can_serial(),
+        interface="vector",
+        bitrate=200_000,
     )
     assert isinstance(bus, canlib.VectorBus)
 
@@ -146,7 +149,7 @@ def test_bus_creation_bitrate() -> None:
 
 
 def test_bus_creation_fd_mocked(mock_xldriver) -> None:
-    bus = can.Bus(channel=0, bustype="vector", fd=True, _testing=True)
+    bus = can.Bus(channel=0, interface="vector", fd=True, _testing=True)
     assert isinstance(bus, canlib.VectorBus)
     can.interfaces.vector.canlib.xldriver.xlOpenDriver.assert_called()
     can.interfaces.vector.canlib.xldriver.xlGetApplConfig.assert_called()
@@ -165,7 +168,7 @@ def test_bus_creation_fd_mocked(mock_xldriver) -> None:
 @pytest.mark.skipif(not XLDRIVER_FOUND, reason="Vector XL API is unavailable")
 def test_bus_creation_fd() -> None:
     bus = can.Bus(
-        channel=0, serial=_find_virtual_can_serial(), bustype="vector", fd=True
+        channel=0, serial=_find_virtual_can_serial(), interface="vector", fd=True
     )
     assert isinstance(bus, canlib.VectorBus)
 
@@ -186,7 +189,7 @@ def test_bus_creation_fd() -> None:
 def test_bus_creation_fd_bitrate_timings_mocked(mock_xldriver) -> None:
     bus = can.Bus(
         channel=0,
-        bustype="vector",
+        interface="vector",
         fd=True,
         bitrate=500_000,
         data_bitrate=2_000_000,
@@ -232,7 +235,7 @@ def test_bus_creation_fd_bitrate_timings() -> None:
     bus = can.Bus(
         channel=0,
         serial=_find_virtual_can_serial(),
-        bustype="vector",
+        interface="vector",
         fd=True,
         bitrate=500_000,
         data_bitrate=2_000_000,
@@ -268,7 +271,7 @@ def test_bus_creation_fd_bitrate_timings() -> None:
 
 
 def test_send_mocked(mock_xldriver) -> None:
-    bus = can.Bus(channel=0, bustype="vector", _testing=True)
+    bus = can.Bus(channel=0, interface="vector", _testing=True)
     msg = can.Message(
         arbitration_id=0xC0FFEF, data=[1, 2, 3, 4, 5, 6, 7, 8], is_extended_id=True
     )
@@ -278,7 +281,7 @@ def test_send_mocked(mock_xldriver) -> None:
 
 
 def test_send_fd_mocked(mock_xldriver) -> None:
-    bus = can.Bus(channel=0, bustype="vector", fd=True, _testing=True)
+    bus = can.Bus(channel=0, interface="vector", fd=True, _testing=True)
     msg = can.Message(
         arbitration_id=0xC0FFEF, data=[1, 2, 3, 4, 5, 6, 7, 8], is_extended_id=True
     )
@@ -289,7 +292,7 @@ def test_send_fd_mocked(mock_xldriver) -> None:
 
 def test_receive_mocked(mock_xldriver) -> None:
     can.interfaces.vector.canlib.xldriver.xlReceive = Mock(side_effect=xlReceive)
-    bus = can.Bus(channel=0, bustype="vector", _testing=True)
+    bus = can.Bus(channel=0, interface="vector", _testing=True)
     bus.recv(timeout=0.05)
     can.interfaces.vector.canlib.xldriver.xlReceive.assert_called()
     can.interfaces.vector.canlib.xldriver.xlCanReceive.assert_not_called()
@@ -297,7 +300,7 @@ def test_receive_mocked(mock_xldriver) -> None:
 
 def test_receive_fd_mocked(mock_xldriver) -> None:
     can.interfaces.vector.canlib.xldriver.xlCanReceive = Mock(side_effect=xlCanReceive)
-    bus = can.Bus(channel=0, bustype="vector", fd=True, _testing=True)
+    bus = can.Bus(channel=0, interface="vector", fd=True, _testing=True)
     bus.recv(timeout=0.05)
     can.interfaces.vector.canlib.xldriver.xlReceive.assert_not_called()
     can.interfaces.vector.canlib.xldriver.xlCanReceive.assert_called()
@@ -305,8 +308,8 @@ def test_receive_fd_mocked(mock_xldriver) -> None:
 
 @pytest.mark.skipif(not XLDRIVER_FOUND, reason="Vector XL API is unavailable")
 def test_send_and_receive() -> None:
-    bus1 = can.Bus(channel=0, serial=_find_virtual_can_serial(), bustype="vector")
-    bus2 = can.Bus(channel=0, serial=_find_virtual_can_serial(), bustype="vector")
+    bus1 = can.Bus(channel=0, serial=_find_virtual_can_serial(), interface="vector")
+    bus2 = can.Bus(channel=0, serial=_find_virtual_can_serial(), interface="vector")
 
     msg_std = can.Message(
         channel=0, arbitration_id=0xFF, data=list(range(8)), is_extended_id=False
@@ -330,10 +333,10 @@ def test_send_and_receive() -> None:
 @pytest.mark.skipif(not XLDRIVER_FOUND, reason="Vector XL API is unavailable")
 def test_send_and_receive_fd() -> None:
     bus1 = can.Bus(
-        channel=0, serial=_find_virtual_can_serial(), fd=True, bustype="vector"
+        channel=0, serial=_find_virtual_can_serial(), fd=True, interface="vector"
     )
     bus2 = can.Bus(
-        channel=0, serial=_find_virtual_can_serial(), fd=True, bustype="vector"
+        channel=0, serial=_find_virtual_can_serial(), fd=True, interface="vector"
     )
 
     msg_std = can.Message(
@@ -367,7 +370,7 @@ def test_receive_non_msg_event_mocked(mock_xldriver) -> None:
     can.interfaces.vector.canlib.xldriver.xlReceive = Mock(
         side_effect=xlReceive_chipstate
     )
-    bus = can.Bus(channel=0, bustype="vector", _testing=True)
+    bus = can.Bus(channel=0, interface="vector", _testing=True)
     bus.handle_can_event = Mock()
     bus.recv(timeout=0.05)
     can.interfaces.vector.canlib.xldriver.xlReceive.assert_called()
@@ -378,7 +381,7 @@ def test_receive_non_msg_event_mocked(mock_xldriver) -> None:
 @pytest.mark.skipif(not XLDRIVER_FOUND, reason="Vector XL API is unavailable")
 def test_receive_non_msg_event() -> None:
     bus = canlib.VectorBus(
-        channel=0, serial=_find_virtual_can_serial(), bustype="vector"
+        channel=0, serial=_find_virtual_can_serial(), interface="vector"
     )
     bus.handle_can_event = Mock()
     bus.xldriver.xlCanRequestChipState(bus.port_handle, bus.channel_masks[0])
@@ -391,7 +394,7 @@ def test_receive_fd_non_msg_event_mocked(mock_xldriver) -> None:
     can.interfaces.vector.canlib.xldriver.xlCanReceive = Mock(
         side_effect=xlCanReceive_chipstate
     )
-    bus = can.Bus(channel=0, bustype="vector", fd=True, _testing=True)
+    bus = can.Bus(channel=0, interface="vector", fd=True, _testing=True)
     bus.handle_canfd_event = Mock()
     bus.recv(timeout=0.05)
     can.interfaces.vector.canlib.xldriver.xlReceive.assert_not_called()
@@ -402,7 +405,7 @@ def test_receive_fd_non_msg_event_mocked(mock_xldriver) -> None:
 @pytest.mark.skipif(not XLDRIVER_FOUND, reason="Vector XL API is unavailable")
 def test_receive_fd_non_msg_event() -> None:
     bus = canlib.VectorBus(
-        channel=0, serial=_find_virtual_can_serial(), fd=True, bustype="vector"
+        channel=0, serial=_find_virtual_can_serial(), fd=True, interface="vector"
     )
     bus.handle_canfd_event = Mock()
     bus.xldriver.xlCanRequestChipState(bus.port_handle, bus.channel_masks[0])
@@ -412,20 +415,20 @@ def test_receive_fd_non_msg_event() -> None:
 
 
 def test_flush_tx_buffer_mocked(mock_xldriver) -> None:
-    bus = can.Bus(channel=0, bustype="vector", _testing=True)
+    bus = can.Bus(channel=0, interface="vector", _testing=True)
     bus.flush_tx_buffer()
     can.interfaces.vector.canlib.xldriver.xlCanFlushTransmitQueue.assert_called()
 
 
 @pytest.mark.skipif(not XLDRIVER_FOUND, reason="Vector XL API is unavailable")
 def test_flush_tx_buffer() -> None:
-    bus = can.Bus(channel=0, serial=_find_virtual_can_serial(), bustype="vector")
+    bus = can.Bus(channel=0, serial=_find_virtual_can_serial(), interface="vector")
     bus.flush_tx_buffer()
     bus.shutdown()
 
 
 def test_shutdown_mocked(mock_xldriver) -> None:
-    bus = can.Bus(channel=0, bustype="vector", _testing=True)
+    bus = can.Bus(channel=0, interface="vector", _testing=True)
     bus.shutdown()
     can.interfaces.vector.canlib.xldriver.xlDeactivateChannel.assert_called()
     can.interfaces.vector.canlib.xldriver.xlClosePort.assert_called()
@@ -434,7 +437,7 @@ def test_shutdown_mocked(mock_xldriver) -> None:
 
 @pytest.mark.skipif(not XLDRIVER_FOUND, reason="Vector XL API is unavailable")
 def test_shutdown() -> None:
-    bus = can.Bus(channel=0, serial=_find_virtual_can_serial(), bustype="vector")
+    bus = can.Bus(channel=0, serial=_find_virtual_can_serial(), interface="vector")
 
     xl_channel_config = _find_xl_channel_config(
         serial=_find_virtual_can_serial(), channel=0
@@ -449,16 +452,16 @@ def test_shutdown() -> None:
 
 
 def test_reset_mocked(mock_xldriver) -> None:
-    bus = canlib.VectorBus(channel=0, bustype="vector", _testing=True)
+    bus = canlib.VectorBus(channel=0, interface="vector", _testing=True)
     bus.reset()
     can.interfaces.vector.canlib.xldriver.xlDeactivateChannel.assert_called()
     can.interfaces.vector.canlib.xldriver.xlActivateChannel.assert_called()
 
 
 @pytest.mark.skipif(not XLDRIVER_FOUND, reason="Vector XL API is unavailable")
-def test_reset_mocked() -> None:
+def test_reset() -> None:
     bus = canlib.VectorBus(
-        channel=0, serial=_find_virtual_can_serial(), bustype="vector"
+        channel=0, serial=_find_virtual_can_serial(), interface="vector"
     )
     bus.reset()
     bus.shutdown()
@@ -520,7 +523,7 @@ def test_set_and_get_application_config() -> None:
 
 def test_set_timer_mocked(mock_xldriver) -> None:
     canlib.xldriver.xlSetTimerRate = Mock()
-    bus = canlib.VectorBus(channel=0, bustype="vector", fd=True, _testing=True)
+    bus = canlib.VectorBus(channel=0, interface="vector", fd=True, _testing=True)
     bus.set_timer_rate(timer_rate_ms=1)
     assert canlib.xldriver.xlSetTimerRate.called
 
@@ -528,7 +531,7 @@ def test_set_timer_mocked(mock_xldriver) -> None:
 @pytest.mark.skipif(not XLDRIVER_FOUND, reason="Vector XL API is unavailable")
 def test_set_timer() -> None:
     bus = canlib.VectorBus(
-        channel=0, serial=_find_virtual_can_serial(), bustype="vector"
+        channel=0, serial=_find_virtual_can_serial(), interface="vector"
     )
     bus.handle_can_event = Mock()
     bus.set_timer_rate(timer_rate_ms=1)
@@ -546,7 +549,7 @@ def test_called_without_testing_argument() -> None:
     """This tests if an exception is thrown when we are not running on Windows."""
     with pytest.raises(can.CanInterfaceNotImplementedError):
         # do not set the _testing argument, since it would suppress the exception
-        can.Bus(channel=0, bustype="vector")
+        can.Bus(channel=0, interface="vector")
 
 
 def test_vector_error_pickle() -> None:
@@ -693,7 +696,7 @@ def _find_virtual_can_serial() -> int:
     for i in range(xl_driver_config.channelCount):
         xl_channel_config: xlclass.XLchannelConfig = xl_driver_config.channel[i]
 
-        if xl_channel_config.transceiverName.decode() == "Virtual CAN":
+        if "Virtual CAN" in xl_channel_config.transceiverName.decode():
             return xl_channel_config.serialNumber
 
     raise LookupError("Vector virtual CAN not found")

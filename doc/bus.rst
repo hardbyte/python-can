@@ -69,7 +69,7 @@ Example defining two filters, one to pass 11-bit ID ``0x451``, the other to pass
         {"can_id": 0x451, "can_mask": 0x7FF, "extended": False},
         {"can_id": 0xA0000, "can_mask": 0x1FFFFFFF, "extended": True},
     ]
-    bus = can.interface.Bus(channel="can0", bustype="socketcan", can_filters=filters)
+    bus = can.interface.Bus(channel="can0", interface="socketcan", can_filters=filters)
 
 
 See :meth:`~can.BusABC.set_filters` for the implementation.

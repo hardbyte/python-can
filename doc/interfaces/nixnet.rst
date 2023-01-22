@@ -12,9 +12,10 @@ This interface adds support for NI-XNET CAN controllers by `National Instruments
 Bus
 ---
 
-.. autoclass:: can.interfaces.nican.NiXNETcanBus
-
-.. autoexception:: can.interfaces.nican.NiXNETError
+.. autoclass:: can.interfaces.nixnet.NiXNETcanBus
+   :show-inheritance:
+   :member-order: bysource
+   :members:
 
 
 .. _National Instruments: http://www.ni.com/can/

@@ -19,7 +19,7 @@ def producer(thread_id: int, message_count: int = 16) -> None:
 
     # this uses the default configuration (for example from environment variables, or a
     # config file) see https://python-can.readthedocs.io/en/stable/configuration.html
-    with can.Bus() as bus:  # type: ignore
+    with can.Bus() as bus:
         for i in range(message_count):
             msg = can.Message(
                 arbitration_id=0x0CF02200 + thread_id,
