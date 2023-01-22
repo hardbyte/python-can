@@ -418,8 +418,9 @@ class BusABC(metaclass=ABCMeta):
 
     def shutdown(self) -> None:
         """
-        Called to carry out any interface specific cleanup required
-        in shutting down a bus.
+        Called to carry out any interface specific cleanup required in shutting down a bus.
+
+        This method can be safely called multiple times.
         """
         if self._is_shutdown:
             LOG.debug("%s is already shut down", self.__class__)
