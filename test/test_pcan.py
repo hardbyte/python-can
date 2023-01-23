@@ -6,7 +6,8 @@ import ctypes
 import platform
 import unittest
 from unittest import mock
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
+
 
 import pytest
 from parameterized import parameterized
@@ -30,7 +31,6 @@ class TestPCANBus(unittest.TestCase):
         self.mock_pcan.SetValue = Mock(return_value=PCAN_ERROR_OK)
         self.mock_pcan.GetValue = self._mockGetValue
         self.PCAN_API_VERSION_SIM = "4.2"
-
         self.bus = None
 
     def tearDown(self) -> None:
@@ -45,6 +45,8 @@ class TestPCANBus(unittest.TestCase):
         """
         if parameter == PCAN_API_VERSION:
             return PCAN_ERROR_OK, self.PCAN_API_VERSION_SIM.encode("ascii")
+        elif parameter == PCAN_RECEIVE_EVENT:
+            return PCAN_ERROR_OK, int.from_bytes(PCAN_RECEIVE_EVENT, "big")
         raise NotImplementedError(
             f"No mock return value specified for parameter {parameter}"
         )
@@ -205,7 +207,8 @@ class TestPCANBus(unittest.TestCase):
         self.assertEqual(recv_msg.timestamp, 0)
 
     @pytest.mark.timeout(3.0)
-    def test_recv_no_message(self):
+    @patch("select.select", return_value=([], [], []))
+    def test_recv_no_message(self, mock_select):
         self.mock_pcan.Read = Mock(return_value=(PCAN_ERROR_QRCVEMPTY, None, None))
         self.bus = can.Bus(interface="pcan")
         self.assertEqual(self.bus.recv(timeout=0.5), None)
