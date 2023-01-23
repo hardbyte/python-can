@@ -437,10 +437,14 @@ class BusABC(metaclass=ABCMeta):
         self.shutdown()
 
     def __del__(self) -> None:
-        if not self._is_shutdown:
-            # We do some best-effort cleanup if the user forgot to properly close the bus instance
-            self.shutdown()
-            LOG.warning("%s was not properly shut down", self.__class__)
+        try:
+            if not self._is_shutdown:
+                # We do some best-effort cleanup if the user forgot to properly close the bus instance
+                self.shutdown()
+                LOG.warning("%s was not properly shut down", self.__class__)
+        except Exception as e:
+            # Prevent unwanted output from being printed to stdout/stderr
+            LOG.debug(e)
 
     @property
     def state(self) -> BusState:
