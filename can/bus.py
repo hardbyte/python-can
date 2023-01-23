@@ -44,6 +44,8 @@ class BusABC(metaclass=ABCMeta):
     #: Log level for received messages
     RECV_LOGGING_LEVEL = 9
 
+    _is_shutdown: bool = False
+
     @abstractmethod
     def __init__(
         self,
@@ -71,7 +73,6 @@ class BusABC(metaclass=ABCMeta):
         :raises ~can.exceptions.CanInitializationError:
             If the bus cannot be initialized
         """
-        self._is_shutdown: bool = False
         self._periodic_tasks: List[_SelfRemovingCyclicTask] = []
         self.set_filters(can_filters)
 
