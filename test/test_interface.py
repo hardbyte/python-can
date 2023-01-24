@@ -23,7 +23,7 @@ def constructor(request):
 @pytest.fixture
 def interface(constructor):
     with patch.object(constructor, "__init__", return_value=None):
-            return constructor()
+        return constructor()
 
 
 @patch.object(can.bus.BusABC, "shutdown")
