@@ -14,7 +14,7 @@ linux such as a BeagleBone or RaspberryPi.
 More concretely, some example uses of the library:
 
 * Passively logging what occurs on a CAN bus. For example monitoring a
-  commercial vehicle using its **OBD-II** port.
+  commercial vehicle using its `OBD-II port <https://en.wikipedia.org/wiki/On-board_diagnostics#OBD-II>`__.
 
 * Testing of hardware that interacts via CAN. Modules found in
   modern cars, motorcycles, boats, and even wheelchairs have had components tested
