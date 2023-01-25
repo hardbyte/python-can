@@ -248,6 +248,7 @@ class EtasBus(can.BusABC):
         OCI_ResetQueue(self.txQueue)
 
     def shutdown(self) -> None:
+        super().shutdown()
         # Cleanup TX
         if self.txQueue:
             OCI_DestroyCANTxQueue(self.txQueue)
