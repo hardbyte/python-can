@@ -5,20 +5,21 @@ import logging
 import time
 from datetime import datetime
 import platform
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Union, Any
 
 from packaging import version
 
 from can import (
     BusABC,
     BusState,
+    BitTiming,
+    BitTimingFd,
+    Message,
     CanError,
     CanOperationError,
     CanInitializationError,
-    Message,
 )
-from can.util import len2dlc, dlc2len
-
+from can.util import check_or_adjust_timing_clock, dlc2len, len2dlc
 from .basic import (
     PCAN_BITRATES,
     PCAN_FD_PARAMETER_LIST,
@@ -61,6 +62,7 @@ from .basic import (
     FEATURE_FD_CAPABLE,
     PCAN_DICT_STATUS,
     PCAN_BUSOFF_AUTORESET,
+    TPCANBaudrate,
     PCAN_ATTACHED_CHANNELS,
     TPCANChannelInformation,
 )
@@ -112,12 +114,12 @@ elif IS_LINUX:
 class PcanBus(BusABC):
     def __init__(
         self,
-        channel="PCAN_USBBUS1",
-        device_id=None,
-        state=BusState.ACTIVE,
-        bitrate=500000,
-        *args,
-        **kwargs,
+        channel: str = "PCAN_USBBUS1",
+        device_id: Optional[int] = None,
+        state: BusState = BusState.ACTIVE,
+        timing: Optional[Union[BitTiming, BitTimingFd]] = None,
+        bitrate: int = 500000,
+        **kwargs: Any,
     ):
         """A PCAN USB interface to CAN.
 
@@ -141,6 +143,18 @@ class PcanBus(BusABC):
         :param can.bus.BusState state:
             BusState of the channel.
             Default is ACTIVE
+
+        :param timing:
+            An instance of :class:`~can.BitTiming` or :class:`~can.BitTimingFd`
+            to specify the bit timing parameters for the PCAN interface. If this parameter
+            is provided, it takes precedence over all other timing-related parameters.
+            If this parameter is not provided, the bit timing parameters can be specified
+            using the `bitrate` parameter for standard CAN or the `fd`, `f_clock`,
+            `f_clock_mhz`, `nom_brp`, `nom_tseg1`, `nom_tseg2`, `nom_sjw`, `data_brp`,
+            `data_tseg1`, `data_tseg2`, and `data_sjw` parameters for CAN FD.
+            Note that the `f_clock` value of the `timing` instance must be 8_000_000
+            for standard CAN or any of the following values for CAN FD: 20_000_000,
+            24_000_000, 30_000_000, 40_000_000, 60_000_000, 80_000_000.
 
         :param int bitrate:
             Bitrate of channel in bit/s.
@@ -231,8 +245,7 @@ class PcanBus(BusABC):
                 raise ValueError(err_msg)
 
         self.channel_info = str(channel)
-        self.fd = kwargs.get("fd", False)
-        pcan_bitrate = PCAN_BITRATES.get(bitrate, PCAN_BAUD_500K)
+        self.fd = isinstance(timing, BitTimingFd) if timing else kwargs.get("fd", False)
 
         hwtype = PCAN_TYPE_ISA
         ioport = 0x02A0
@@ -250,7 +263,41 @@ class PcanBus(BusABC):
         else:
             raise ValueError("BusState must be Active or Passive")
 
-        if self.fd:
+        if isinstance(timing, BitTimingFd):
+            valid_fd_f_clocks = [
+                20_000_000,
+                24_000_000,
+                30_000_000,
+                40_000_000,
+                60_000_000,
+                80_000_000,
+            ]
+            timing = check_or_adjust_timing_clock(
+                timing, sorted(valid_fd_f_clocks, reverse=True)
+            )
+            self.fd_bitrate = (
+                f"f_clock={timing.f_clock},"
+                f"nom_brp={timing.nom_brp},"
+                f"nom_tseg1={timing.nom_tseg1},"
+                f"nom_tseg2={timing.nom_tseg2},"
+                f"nom_sjw={timing.nom_sjw},"
+                f"data_brp={timing.data_brp},"
+                f"data_tseg1={timing.data_tseg1},"
+                f"data_tseg2={timing.data_tseg2},"
+                f"data_sjw={timing.data_sjw}"
+            ).encode("ascii")
+            result = self.m_objPCANBasic.InitializeFD(
+                self.m_PcanHandle, self.fd_bitrate
+            )
+
+        elif isinstance(timing, BitTiming):
+            timing = check_or_adjust_timing_clock(timing, [8_000_000])
+            pcan_bitrate = TPCANBaudrate(timing.btr0 << 8 | timing.btr1)
+            result = self.m_objPCANBasic.Initialize(
+                self.m_PcanHandle, pcan_bitrate, hwtype, ioport, interrupt
+            )
+
+        elif self.fd:
             f_clock_val = kwargs.get("f_clock", None)
             if f_clock_val is None:
                 f_clock = "{}={}".format("f_clock_mhz", kwargs.get("f_clock_mhz", None))
@@ -269,6 +316,7 @@ class PcanBus(BusABC):
                 self.m_PcanHandle, self.fd_bitrate
             )
         else:
+            pcan_bitrate = PCAN_BITRATES.get(bitrate, PCAN_BAUD_500K)
             result = self.m_objPCANBasic.Initialize(
                 self.m_PcanHandle, pcan_bitrate, hwtype, ioport, interrupt
             )
@@ -312,7 +360,7 @@ class PcanBus(BusABC):
             if result != PCAN_ERROR_OK:
                 raise PcanCanInitializationError(self._get_formatted_error(result))
 
-        super().__init__(channel=channel, state=state, bitrate=bitrate, *args, **kwargs)
+        super().__init__(channel=channel, state=state, bitrate=bitrate, **kwargs)
 
     def _find_channel_by_dev_id(self, device_id):
         """
