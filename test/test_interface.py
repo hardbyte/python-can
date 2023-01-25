@@ -22,12 +22,18 @@ def constructor(request):
 
 @pytest.fixture
 def interface(constructor):
-    with patch.object(constructor, "__init__", return_value=None):
-        return constructor()
+    class MockInterface(constructor):
+        def __init__(self):
+            pass
+
+        def __del__(self):
+            pass
+
+    return MockInterface()
 
 
 @patch.object(can.bus.BusABC, "shutdown")
-def test_all_interfaces_call_parent_shutdown(mock_shutdown, interface):
+def test_interface_calls_parent_shutdown(mock_shutdown, interface):
     try:
         interface.shutdown()
     except:
