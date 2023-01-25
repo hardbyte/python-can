@@ -1,23 +1,35 @@
 """
 Utilities and configuration file parsing.
 """
-
+import copy
 import functools
-import warnings
-from typing import Any, Callable, cast, Dict, Iterable, Tuple, Optional, Union
-from time import time, perf_counter, get_clock_info
 import json
+import logging
 import os
 import os.path
 import platform
 import re
-import logging
+import warnings
 from configparser import ConfigParser
+from time import time, perf_counter, get_clock_info
+from typing import (
+    Any,
+    Callable,
+    cast,
+    Dict,
+    Iterable,
+    Tuple,
+    Optional,
+    Union,
+    TypeVar,
+)
 
 import can
-from .interfaces import VALID_INTERFACES
 from . import typechecking
+from .bit_timing import BitTiming, BitTimingFd
+from .exceptions import CanInitializationError
 from .exceptions import CanInterfaceNotImplementedError
+from .interfaces import VALID_INTERFACES
 
 log = logging.getLogger("can.util")
 
@@ -226,6 +238,25 @@ def _create_bus_config(config: Dict[str, Any]) -> typechecking.BusConfig:
         if not 0 < port < 65535:
             raise ValueError("Port config must be inside 0-65535 range!")
 
+    if config.get("timing", None) is None:
+        try:
+            if set(typechecking.BitTimingFdDict.__annotations__).issubset(config):
+                config["timing"] = can.BitTimingFd(
+                    **{
+                        key: int(config[key])
+                        for key in typechecking.BitTimingFdDict.__annotations__
+                    }
+                )
+            elif set(typechecking.BitTimingDict.__annotations__).issubset(config):
+                config["timing"] = can.BitTiming(
+                    **{
+                        key: int(config[key])
+                        for key in typechecking.BitTimingDict.__annotations__
+                    }
+                )
+        except (ValueError, TypeError):
+            pass
+
     if "bitrate" in config:
         config["bitrate"] = int(config["bitrate"])
     if "fd" in config:
@@ -341,6 +372,49 @@ def deprecated_args_alias(  # type: ignore
         return wrapper
 
     return deco
+
+
+T = TypeVar("T", BitTiming, BitTimingFd)
+
+
+def check_or_adjust_timing_clock(timing: T, valid_clocks: Iterable[int]) -> T:
+    """Adjusts the given timing instance to have an *f_clock* value that is within the
+    allowed values specified by *valid_clocks*. If the *f_clock* value of timing is
+    already within *valid_clocks*, then *timing* is returned unchanged.
+
+    :param timing:
+        The :class:`~can.BitTiming` or :class:`~can.BitTimingFd` instance to adjust.
+    :param valid_clocks:
+        An iterable of integers representing the valid *f_clock* values that the timing instance
+        can be changed to. The order of the values in *valid_clocks* determines the priority in
+        which they are tried, with earlier values being tried before later ones.
+    :return:
+        A new :class:`~can.BitTiming` or :class:`~can.BitTimingFd` instance with an
+        *f_clock* value within *valid_clocks*.
+    :raises ~can.exceptions.CanInitializationError:
+        If no compatible *f_clock* value can be found within *valid_clocks*.
+    """
+    if timing.f_clock in valid_clocks:
+        # create a copy so this function always returns a new instance
+        return copy.deepcopy(timing)
+
+    for clock in valid_clocks:
+        try:
+            # Try to use a different f_clock
+            adjusted_timing = timing.recreate_with_f_clock(clock)
+            warnings.warn(
+                f"Adjusted f_clock in {timing.__class__.__name__} from "
+                f"{timing.f_clock} to {adjusted_timing.f_clock}"
+            )
+            return adjusted_timing
+        except ValueError:
+            pass
+
+    raise CanInitializationError(
+        f"The specified timing.f_clock value {timing.f_clock} "
+        f"doesn't match any of the allowed device f_clock values: "
+        f"{', '.join([str(f) for f in valid_clocks])}"
+    ) from None
 
 
 def _rename_kwargs(
