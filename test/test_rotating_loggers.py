@@ -212,6 +212,8 @@ class TestSizedRotatingLogger:
         logger_instance.stop()
 
     def test_should_rollover(self, tmp_path):
+        # NOTE: Move to TestRotatingLogger at v5.0 release when
+        # SizedRotatingLogger is removed.
         base_filename = "mylogfile.ASC"
         max_bytes = 512
 
@@ -235,6 +237,8 @@ class TestSizedRotatingLogger:
         logger_instance.stop()
 
     def test_logfile_size(self, tmp_path):
+        # NOTE: Move to TestRotatingLogger at v5.0 release when
+        # SizedRotatingLogger is removed.
         base_filename = "mylogfile.ASC"
         max_bytes = 1024
         msg = generate_message(0x123)
@@ -251,6 +255,8 @@ class TestSizedRotatingLogger:
         logger_instance.stop()
 
     def test_logfile_size_context_manager(self, tmp_path):
+        # NOTE: Move to TestRotatingLogger at v5.0 release when
+        # SizedRotatingLogger is removed.
         base_filename = "mylogfile.ASC"
         max_bytes = 1024
         msg = generate_message(0x123)
@@ -263,3 +269,54 @@ class TestSizedRotatingLogger:
 
             for file_path in os.listdir(tmp_path):
                 assert os.path.getsize(os.path.join(tmp_path, file_path)) <= 1100
+
+
+class TestRotatingLogger:
+    def test_import(self):
+        assert hasattr(can.io, "RotatingLogger")
+        assert hasattr(can, "RotatingLogger")
+
+    def test_attributes(self):
+        assert issubclass(can.RotatingLogger, can.io.BaseRotatingLogger)
+        assert hasattr(can.RotatingLogger, "namer")
+        assert hasattr(can.RotatingLogger, "rotator")
+        assert hasattr(can.RotatingLogger, "should_rollover")
+        assert hasattr(can.RotatingLogger, "do_rollover")
+
+    def test_create_instance(self, tmp_path):
+        base_filename = "mylogfile.ASC"
+        max_bytes = 512
+
+        logger_instance = can.SizedRotatingLogger(
+            base_filename=tmp_path / base_filename, max_bytes=max_bytes
+        )
+        assert Path(logger_instance.base_filename).name == base_filename
+        assert logger_instance.max_bytes == max_bytes
+        assert logger_instance.rollover_count == 0
+        assert isinstance(logger_instance.writer, can.ASCWriter)
+
+        logger_instance.stop()
+
+    def test_should_rollover_time(self, tmp_path):
+        base_filename = "mylogfile.ASC"
+        max_seconds = 300
+
+        logger_instance = can.RotatingLogger(
+            base_filename=tmp_path / base_filename, max_seconds=max_seconds
+        )
+        msg = generate_message(0x123)
+        do_rollover = Mock()
+        logger_instance.do_rollover = do_rollover
+
+        assert logger_instance.should_rollover(msg) is False
+        logger_instance.on_message_received(msg)
+        do_rollover.assert_not_called()
+
+        logger_instance.last_rollover_time = (
+            logger_instance.last_rollover_time - max_seconds
+        )
+        assert logger_instance.should_rollover(msg) is True
+        logger_instance.on_message_received(msg)
+        do_rollover.assert_called()
+
+        logger_instance.stop()

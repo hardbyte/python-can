@@ -6,7 +6,7 @@ import sys
 import argparse
 import errno
 
-from can import LogReader, Logger, SizedRotatingLogger
+from can import LogReader, Logger, RotatingLogger
 
 
 class ArgumentParser(argparse.ArgumentParser):
@@ -48,9 +48,7 @@ def main():
     with LogReader(args.input) as reader:
 
         if args.file_size:
-            logger = SizedRotatingLogger(
-                base_filename=args.output, max_bytes=args.file_size
-            )
+            logger = RotatingLogger(base_filename=args.output, max_bytes=args.file_size)
         else:
             logger = Logger(filename=args.output)
 

@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Union, Sequence, Tuple
 import can
 from can.io import BaseRotatingLogger
 from can.io.generic import MessageWriter
-from . import Bus, BusState, Logger, SizedRotatingLogger
+from . import Bus, BusState, Logger, RotatingLogger
 from .typechecking import CanFilter, CanFilters
 
 
@@ -186,6 +186,17 @@ def main() -> None:
     )
 
     parser.add_argument(
+        "-t",
+        "--file_time",
+        dest="file_time",
+        type=int,
+        help="Maximum period in seconds before rotating log file. (If file_size "
+        "is also given, then the first of the two constraints to occur is "
+        "what causes the rollover.)",
+        default=0,
+    )
+
+    parser.add_argument(
         "-v",
         action="count",
         dest="verbosity",
@@ -224,10 +235,11 @@ def main() -> None:
     print(f"Can Logger (Started on {datetime.now()})")
 
     logger: Union[MessageWriter, BaseRotatingLogger]
-    if results.file_size:
-        logger = SizedRotatingLogger(
+    if results.file_size or results.file_time:
+        logger = RotatingLogger(
             base_filename=results.log_file,
             max_bytes=results.file_size,
+            max_seconds=results.file_time,
             append=results.append,
             **additional_config,
         )

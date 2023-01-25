@@ -35,7 +35,14 @@ from . import interface
 from .interface import Bus, detect_available_configs
 from .bit_timing import BitTiming, BitTimingFd
 
-from .io import Logger, SizedRotatingLogger, Printer, LogReader, MessageSync
+from .io import (
+    Logger,
+    SizedRotatingLogger,
+    Printer,
+    LogReader,
+    MessageSync,
+    RotatingLogger,
+)
 from .io import ASCWriter, ASCReader
 from .io import BLFReader, BLFWriter
 from .io import CanutilsLogReader, CanutilsLogWriter
