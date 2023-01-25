@@ -427,8 +427,8 @@ class BusABC(metaclass=ABCMeta):
             LOG.debug("%s is already shut down", self.__class__)
             return
 
-        self.stop_all_periodic_tasks()
         self._is_shutdown = True
+        self.stop_all_periodic_tasks()
 
     def __enter__(self):
         return self
@@ -441,11 +441,8 @@ class BusABC(metaclass=ABCMeta):
             LOG.warning("%s was not properly shut down", self.__class__)
             # We do some best-effort cleanup if the user
             # forgot to properly close the bus instance
-            try:
-                self.shutdown()
-            except Exception as e:  # pylint: disable=W0703
-                # Prevent unwanted output from being printed to stdout/stderr
-                LOG.debug(e)
+            self.shutdown()
+
     @property
     def state(self) -> BusState:
         """
