@@ -24,6 +24,17 @@ These parameters include:
   The sample point depends on the bus length and propagation time as well
   as the information processing time of the nodes.
 
+.. figure:: images/bit_timing_light.svg
+   :align: center
+   :class: only-light
+
+.. figure:: images/bit_timing_dark.svg
+   :align: center
+   :class: only-dark
+
+   Bit Timing and Sample Point
+
+
 For example, consider a bit with a total duration of 8 TQ and a sample
 point at 75%. The values for TSEG1, TSEG2 and SJW would be 5, 2, and 2,
 respectively. The sample point would be 6 TQ after the start of the bit,
