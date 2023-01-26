@@ -1,6 +1,13 @@
 #!/usr/bin/env python
 
+import os
+import threading
+import time
 import unittest
+from platform import platform
+
+import pytest
+
 import can
 
 
@@ -121,6 +128,56 @@ class slcanTestCase(unittest.TestCase):
 
         sn = self.bus.get_serial_number(0)
         self.assertIsNone(sn)
+
+
+@pytest.fixture
+def pseudo_terminal():
+    import pty
+
+    main, peripheral = pty.openpty()
+
+    return main, peripheral
+
+
+@pytest.fixture
+def bus(pseudo_terminal):
+    _, peripheral = pseudo_terminal
+    return can.Bus(os.ttyname(peripheral), interface="slcan", sleep_after_open=0)
+
+
+@pytest.fixture
+def bus_writer(pseudo_terminal):
+    main, _ = pseudo_terminal
+    writer = os.fdopen(main, "wb")
+    return writer
+
+
+@pytest.mark.skipif("linux" not in platform().lower(), reason="Requires Linux")
+@pytest.mark.parametrize("timeout", [0.5, 1])
+def test_verify_recv_timeout(timeout, bus, bus_writer):
+    msg = b"Hello"
+    unterminated = msg
+    terminated = msg + b"\r"
+
+    def consecutive_writes():
+        bus_writer.write(terminated)
+        bus_writer.flush()
+        time.sleep(timeout / 2)
+        bus_writer.write(unterminated)
+        bus_writer.flush()
+
+    timeout_ms = int(timeout * 1_000)
+    allowable_timeout_error = timeout_ms / 200
+
+    writer_thread = threading.Thread(target=consecutive_writes)
+
+    start_time = time.time_ns()
+    writer_thread.start()
+    bus.recv(timeout)
+    stop_time = time.time_ns()
+
+    duration_ms = int((stop_time - start_time) / 1_000_000)
+    assert duration_ms - timeout_ms < allowable_timeout_error
 
 
 if __name__ == "__main__":
