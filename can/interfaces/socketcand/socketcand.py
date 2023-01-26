@@ -27,12 +27,16 @@ def convert_ascii_message_to_can_message(ascii_msg: str) -> can.Message:
         frame_string = ascii_msg[8:-2]
         parts = frame_string.split(" ", 3)
         can_id, timestamp = int(parts[0], 16), float(parts[1])
-        is_ext = (len(parts[0]) != 3)
+        is_ext = len(parts[0]) != 3
 
         data = bytearray.fromhex(parts[2])
         can_dlc = len(data)
         can_message = can.Message(
-            timestamp=timestamp, arbitration_id=can_id, data=data, dlc=can_dlc, is_extended_id=is_ext
+            timestamp=timestamp,
+            arbitration_id=can_id,
+            data=data,
+            dlc=can_dlc,
+            is_extended_id=is_ext,
         )
         return can_message
 
