@@ -70,6 +70,8 @@ class SocketCanDaemonBus(can.BusABC):
         self.__socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.__message_buffer = deque()
         self.__receive_buffer = ""  # i know string is not the most efficient here
+        self.channel = channel
+        self.channel_info = f"socketcand on {channel}@{host}:{port}"
         connect_to_server(self.__socket, self.__host, self.__port)
         self._expect_msg("< hi >")
 
