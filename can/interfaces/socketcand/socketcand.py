@@ -141,6 +141,8 @@ class SocketCanDaemonBus(can.BusABC):
                 if parsed_can_message is None:
                     log.warning(f"Invalid Frame: {single_message}")
                 else:
+                    parsed_can_message.channel = self.channel
+                    parsed_can_message.is_rx = True
                     self.__message_buffer.append(parsed_can_message)
                 buffer_view = buffer_view[end + 1 :]
 
