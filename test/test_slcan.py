@@ -148,28 +148,32 @@ def bus(pseudo_terminal):
 @pytest.fixture
 def bus_writer(pseudo_terminal):
     main, _ = pseudo_terminal
-    writer = os.fdopen(main, "wb")
-    return writer
+    return os.fdopen(main, "wb")
 
 
 @pytest.mark.skipif("linux" not in platform().lower(), reason="Requires Linux")
 @pytest.mark.parametrize("timeout", [0.5, 1])
 def test_verify_recv_timeout(timeout, bus, bus_writer):
-    msg = b"Hello"
-    unterminated = msg
-    terminated = msg + b"\r"
 
-    def consecutive_writes():
-        bus_writer.write(terminated)
+    # Recv timeout should always occur
+    # since the message is not delimited
+    msg = b"F00B4R"
+
+    def delayed_consecutive_writes():
+        bus_writer.write(msg)
         bus_writer.flush()
-        time.sleep(timeout / 2)
-        bus_writer.write(unterminated)
+
+        # Delay until we're close to the end of
+        # timeout before sending another message
+        time.sleep(timeout * 0.75)
+
+        bus_writer.write(msg)
         bus_writer.flush()
 
     timeout_ms = int(timeout * 1_000)
     allowable_timeout_error = timeout_ms / 200
 
-    writer_thread = threading.Thread(target=consecutive_writes)
+    writer_thread = threading.Thread(target=delayed_consecutive_writes)
 
     start_time = time.time_ns()
     writer_thread.start()
