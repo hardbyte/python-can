@@ -37,6 +37,7 @@ def convert_ascii_message_to_can_message(ascii_msg: str) -> can.Message:
             data=data,
             dlc=can_dlc,
             is_extended_id=is_ext,
+            is_rx=True,
         )
         return can_message
 
