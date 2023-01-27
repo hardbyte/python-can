@@ -150,40 +150,25 @@ class slcanBus(BusABC):
             self.serialPortOrig.flush()
 
     def _read(self, timeout: Optional[float]) -> Optional[str]:
+        _timeout = serial.Timeout(timeout)
 
         with error_check("Could not read from serial device"):
-            self.serialPortOrig.timeout = timeout
-            # first read what is already in receive buffer
-            while self.serialPortOrig.in_waiting:
-                self._buffer += self.serialPortOrig.read()
-            # if we still don't have a complete message, do a blocking read
-            start = time.time()
-            time_left = timeout
-            while not (
-                ord(self._OK) in self._buffer or ord(self._ERROR) in self._buffer
-            ):
-                byte = self.serialPortOrig.read()
-                if byte:
-                    self._buffer += byte
-                # if timeout is None, try indefinitely
-                if timeout is None:
-                    continue
-                # try next one only if there still is time, and with
-                # reduced timeout
+            while not _timeout.expired():
+                new_data = self.serialPortOrig.read_all()
+                if new_data:
+                    self._buffer.extend(new_data)
                 else:
-                    time_left = timeout - (time.time() - start)
-                    if time_left > 0:
-                        continue
-                    else:
-                        return None
+                    time.sleep(0.001)
+                    continue
 
-        # return first message
-        for i in range(len(self._buffer)):
-            if self._buffer[i] == ord(self._OK) or self._buffer[i] == ord(self._ERROR):
-                string = self._buffer[: i + 1].decode()
-                del self._buffer[: i + 1]
-                break
-        return string
+                for terminator in (self._ERROR, self._OK):
+                    if terminator in self._buffer:
+                        i = self._buffer.index(terminator) + 1
+                        string = self._buffer[:i].decode()
+                        del self._buffer[:i]
+                        return string
+
+            return None
 
     def flush(self) -> None:
         del self._buffer[:]
