@@ -227,7 +227,7 @@ class VectorBus(BusABC):
 
         interface_version = (
             xldefine.XL_InterfaceVersion.XL_INTERFACE_VERSION_V4
-            if fd
+            if self.fd
             else xldefine.XL_InterfaceVersion.XL_INTERFACE_VERSION
         )
 
