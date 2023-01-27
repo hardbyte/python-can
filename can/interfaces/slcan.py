@@ -5,16 +5,17 @@ Interface for slcan compatible interfaces (win32/linux).
 import io
 import logging
 import time
-from typing import Any, Optional, Tuple
+import warnings
+from typing import Any, Optional, Tuple, Union
 
-from can import BusABC, CanProtocol, Message, typechecking
-
-from ..exceptions import (
+from can import BitTiming, BitTimingFd, BusABC, CanProtocol, Message, typechecking
+from can.exceptions import (
     CanInitializationError,
     CanInterfaceNotImplementedError,
     CanOperationError,
     error_check,
 )
+from can.util import check_or_adjust_timing_clock
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +60,7 @@ class slcanBus(BusABC):
         channel: typechecking.ChannelStr,
         ttyBaudrate: int = 115200,
         bitrate: Optional[int] = None,
+        timing: Optional[Union[BitTiming, BitTimingFd]] = None,
         btr: Optional[str] = None,
         sleep_after_open: float = _SLEEP_AFTER_SERIAL_OPEN,
         rtscts: bool = False,
@@ -74,6 +76,12 @@ class slcanBus(BusABC):
             baudrate of underlying serial or usb device (Ignored if set via the ``channel`` parameter)
         :param bitrate:
             Bitrate in bit/s
+        :param timing:
+            Optional :class:`~can.BitTiming` instance to use for custom bit timing setting.
+            If this argument is set then it overrides the bitrate and btr arguments. The
+            `f_clock` value of the timing instance must be set to 8_000_000 (8MHz)
+            for standard CAN.
+            CAN FD and the :class:`~can.BitTimingFd` class are not supported.
         :param btr:
             BTR register value to set custom can speed
         :param poll_interval:
@@ -97,6 +105,14 @@ class slcanBus(BusABC):
         if serial is None:
             raise CanInterfaceNotImplementedError("The serial module is not installed")
 
+        if btr is not None:
+            warnings.warn(
+                "The 'btr' argument is deprecated since python-can v4.4.0 "
+                "and scheduled for removal in v5.0.0. "
+                "Use the 'timing' argument instead.",
+                DeprecationWarning,
+            )
+
         if not channel:  # if None or empty
             raise ValueError("Must specify a serial port.")
         if "@" in channel:
@@ -117,21 +133,23 @@ class slcanBus(BusABC):
         time.sleep(sleep_after_open)
 
         with error_check(exception_type=CanInitializationError):
-            if bitrate is not None and btr is not None:
-                raise ValueError("Bitrate and btr mutually exclusive.")
-            if bitrate is not None:
-                self.set_bitrate(bitrate)
-            if btr is not None:
-                self.set_bitrate_reg(btr)
+            if isinstance(timing, BitTiming):
+                timing = check_or_adjust_timing_clock(timing, valid_clocks=[8_000_000])
+                self.set_bitrate_reg(f"{timing.btr0:02X}{timing.btr1:02X}")
+            elif isinstance(timing, BitTimingFd):
+                raise NotImplementedError(
+                    f"CAN FD is not supported by {self.__class__.__name__}."
+                )
+            else:
+                if bitrate is not None and btr is not None:
+                    raise ValueError("Bitrate and btr mutually exclusive.")
+                if bitrate is not None:
+                    self.set_bitrate(bitrate)
+                if btr is not None:
+                    self.set_bitrate_reg(btr)
             self.open()
 
-        super().__init__(
-            channel,
-            ttyBaudrate=115200,
-            bitrate=None,
-            rtscts=False,
-            **kwargs,
-        )
+        super().__init__(channel, **kwargs)
 
     def set_bitrate(self, bitrate: int) -> None:
         """
