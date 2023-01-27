@@ -80,6 +80,8 @@ class SocketCanDaemonBus(can.BusABC):
         self.__socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.__message_buffer = deque()
         self.__receive_buffer = ""  # i know string is not the most efficient here
+        self.channel = channel
+        self.channel_info = f"socketcand on {channel}@{host}:{port}"
         connect_to_server(self.__socket, self.__host, self.__port)
         self._expect_msg("< hi >")
 
@@ -149,6 +151,7 @@ class SocketCanDaemonBus(can.BusABC):
                 if parsed_can_message is None:
                     log.warning(f"Invalid Frame: {single_message}")
                 else:
+                    parsed_can_message.channel = self.channel
                     self.__message_buffer.append(parsed_can_message)
                 buffer_view = buffer_view[end + 1 :]
 
