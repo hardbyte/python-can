@@ -1,0 +1,92 @@
+<svg width="2136" height="641" xmlns="http://www.w3.org/2000/svg"
+    xmlns:xlink="http://www.w3.org/1999/xlink" overflow="hidden">
+    <defs>
+        <clipPath id="clip0">
+            <rect x="550" y="423" width="2136" height="641" />
+        </clipPath>
+    </defs>
+    <g clip-path="url(#clip0)" transform="translate(-550 -423)">
+        <path
+            d="M578.5 735.834C578.5 725.708 586.708 717.5 596.834 717.5L820.166 717.5C830.292 717.5 838.5 725.708 838.5 735.834L838.5 809.166C838.5 819.292 830.292 827.5 820.166 827.5L596.834 827.5C586.708 827.5 578.5 819.292 578.5 809.166Z"
+            stroke="#FFFFFF" stroke-opacity="0.2" stroke-width="6.875" stroke-miterlimit="8"
+            fill="#595959"
+            fill-rule="evenodd" />
+        <text fill="#FFFFFF" font-family="Calibri,Calibri_MSFontService,sans-serif"
+            font-weight="400" font-size="46" transform="matrix(1 0 0 1 624.561 787)">sync_seg</text>
+        <path
+            d="M838.5 735.834C838.5 725.708 846.708 717.5 856.834 717.5L1600.17 717.5C1610.29 717.5 1618.5 725.708 1618.5 735.834L1618.5 809.166C1618.5 819.291 1610.29 827.5 1600.17 827.5L856.834 827.5C846.708 827.5 838.5 819.291 838.5 809.166Z"
+            stroke="#FFFFFF" stroke-opacity="0.2" stroke-width="6.875" stroke-miterlimit="8"
+            fill="#70AD47"
+            fill-rule="evenodd" />
+        <text fill="#FFFFFF" font-family="Calibri,Calibri_MSFontService,sans-serif"
+            font-weight="400" font-size="46" transform="matrix(1 0 0 1 1141.09 787)">prop_seg</text>
+        <path
+            d="M1618.5 735.833C1618.5 725.708 1626.71 717.5 1636.83 717.5L2119.17 717.5C2129.29 717.5 2137.5 725.708 2137.5 735.833L2137.5 809.166C2137.5 819.292 2129.29 827.5 2119.17 827.5L1636.83 827.5C1626.71 827.5 1618.5 819.292 1618.5 809.166Z"
+            stroke="#FFFFFF" stroke-opacity="0.2" stroke-width="6.875" stroke-miterlimit="8"
+            fill="#ED7D31"
+            fill-rule="evenodd" />
+        <text fill="#FFFFFF" font-family="Calibri,Calibri_MSFontService,sans-serif"
+            font-weight="400" font-size="46" transform="matrix(1 0 0 1 1767.78 787)">phase_seg1</text>
+        <path
+            d="M2137.5 735.834C2137.5 725.708 2145.71 717.5 2155.83 717.5L2639.17 717.5C2649.29 717.5 2657.5 725.708 2657.5 735.834L2657.5 809.166C2657.5 819.292 2649.29 827.5 2639.17 827.5L2155.83 827.5C2145.71 827.5 2137.5 819.292 2137.5 809.166Z"
+            stroke="#FFFFFF" stroke-opacity="0.2" stroke-width="6.875" stroke-miterlimit="8"
+            fill="#4472C4"
+            fill-rule="evenodd" />
+        <text fill="#FFFFFF" font-family="Calibri,Calibri_MSFontService,sans-serif"
+            font-weight="400" font-size="46" transform="matrix(1 0 0 1 2287.47 787)">phase_seg2</text>
+        <path d="M0 0 0.000360892 343.918" stroke="#000000" stroke-width="10.3125"
+            stroke-miterlimit="8" fill="none" fill-rule="evenodd"
+            transform="matrix(1 0 0 -1 578 771.918)" />
+        <path d="M0 0 0.000360892 343.918" stroke="#000000" stroke-width="10.3125"
+            stroke-miterlimit="8" fill="none" fill-rule="evenodd"
+            transform="matrix(1 0 0 -1 2657 771.918)" />
+        <text font-family="Calibri,Calibri_MSFontService,sans-serif" font-weight="400"
+            font-size="46" transform="matrix(1 0 0 1 1485.98 487)">Nominal Bit Time</text>
+        <path
+            d="M1.4341e-06-3.4375 842.134-3.43715 842.134 3.43785-1.4341e-06 3.4375ZM837.551-13.7497 865.051 0.000360892 837.551 13.7503Z"
+            transform="matrix(-1 0 0 1 1443.55 472.5)" />
+        <path
+            d="M1849.5 469.063 2634.15 469.063 2634.15 475.938 1849.5 475.938ZM2629.57 458.75 2657.07 472.501 2629.57 486.25Z" />
+        <path d="M0 0 0.000360892 215.959" stroke="#000000" stroke-width="10.3125"
+            stroke-miterlimit="8" fill="none" fill-rule="evenodd"
+            transform="matrix(1 0 0 -1 578 987.959)" />
+        <path d="M0 0 0.000360892 215.959" stroke="#000000" stroke-width="10.3125"
+            stroke-miterlimit="8" fill="none" fill-rule="evenodd"
+            transform="matrix(1 0 0 -1 838 987.959)" />
+        <path d="M0 0 0.000360892 215.959" stroke="#000000" stroke-width="10.3125"
+            stroke-miterlimit="8" fill="none" fill-rule="evenodd"
+            transform="matrix(1 0 0 -1 838 771.959)" />
+        <path d="M0 0 0.000360892 215.669" stroke="#000000" stroke-width="10.3125"
+            stroke-miterlimit="8" fill="none" fill-rule="evenodd"
+            transform="matrix(1 0 0 -1 2137 771.669)" />
+        <text font-family="Calibri,Calibri_MSFontService,sans-serif" font-weight="400"
+            font-size="46" transform="matrix(1 0 0 1 1437.03 642)">tseg1</text>
+        <path
+            d="M2.27942e-06-3.4375 521.33-3.43715 521.33 3.43785-2.27942e-06 3.4375ZM516.747-13.7497 544.247 0.000360892 516.747 13.7503Z"
+            transform="matrix(-1 0 0 1 1382.75 627.5)" />
+        <path
+            d="M1593.5 624.062 2114.83 624.063 2114.83 630.938 1593.5 630.937ZM2110.25 613.75 2137.75 627.5 2110.25 641.25Z" />
+        <text font-family="Calibri,Calibri_MSFontService,sans-serif" font-weight="400"
+            font-size="46" transform="matrix(1 0 0 1 2346.48 642)">tseg2</text>
+        <path
+            d="M8.02342e-06-3.4375 131.702-3.43719 131.702 3.43781-8.02342e-06 3.4375ZM127.118-13.7497 154.618 0.000360892 127.118 13.7503Z"
+            transform="matrix(-1 0 0 1 2292.12 627.5)" />
+        <path
+            d="M2503.5 624.062 2635.07 624.063 2635.07 630.938 2503.5 630.937ZM2630.48 613.75 2657.98 627.5 2630.48 641.25Z" />
+        <text font-family="Calibri,Calibri_MSFontService,sans-serif" font-weight="400"
+            font-size="46" transform="matrix(1 0 0 1 664.665 944)">1 TQ</text>
+        <path
+            d="M2.38056e-05-3.4375 29.1959-3.4373 29.1958 3.4377-2.38056e-05 3.4375ZM24.6126-13.7498 52.1125 0.000360892 24.6124 13.7502Z"
+            transform="matrix(-1 0 0 1 630.613 929.5)" />
+        <path
+            d="M786.5 926.062 815.696 926.063 815.696 932.938 786.5 932.938ZM811.113 915.75 838.612 929.5 811.112 943.25Z" />
+        <path
+            d="M5.15625-1.43952e-05 5.15654 103.488-5.15596 103.488-5.15625 1.43952e-05ZM15.469 98.3316 0.000360892 129.269-15.4685 98.3317Z"
+            transform="matrix(1 0 0 -1 2137 960.269)" />
+        <text font-family="Calibri,Calibri_MSFontService,sans-serif" font-weight="400"
+            font-size="46" transform="matrix(1 0 0 1 1970.05 1024)">75% Sample Point</text>
+        <path d="M0 0 0.000360892 215.959" stroke="#000000" stroke-width="10.3125"
+            stroke-miterlimit="8" fill="none" fill-rule="evenodd"
+            transform="matrix(1 0 0 -1 2657 987.959)" />
+    </g>
+</svg>

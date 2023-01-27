@@ -299,19 +299,21 @@ class VectorBus(BusABC):
         channel_configs: List["VectorChannelConfig"],
     ) -> int:
         if serial is not None:
-            hw_type: Optional[xldefine.XL_HardwareType] = None
+            serial_found = False
             for channel_config in channel_configs:
                 if channel_config.serial_number != serial:
                     continue
 
-                hw_type = xldefine.XL_HardwareType(channel_config.hw_type)
+                serial_found = True
                 if channel_config.hw_channel == channel:
                     return channel_config.channel_index
 
-            if hw_type is None:
+            if not serial_found:
                 err_msg = f"No interface with serial {serial} found."
             else:
-                err_msg = f"Channel {channel} not found on interface {hw_type.name} ({serial})."
+                err_msg = (
+                    f"Channel {channel} not found on interface with serial {serial}."
+                )
             raise CanInitializationError(
                 err_msg, error_code=xldefine.XL_Status.XL_ERR_HW_NOT_PRESENT
             )
@@ -915,7 +917,7 @@ class VectorBus(BusABC):
     @staticmethod
     def get_application_config(
         app_name: str, app_channel: int
-    ) -> Tuple[xldefine.XL_HardwareType, int, int]:
+    ) -> Tuple[Union[int, xldefine.XL_HardwareType], int, int]:
         """Retrieve information for an application in Vector Hardware Configuration.
 
         :param app_name:
@@ -955,13 +957,13 @@ class VectorBus(BusABC):
                 ),
                 function="xlGetApplConfig",
             ) from None
-        return xldefine.XL_HardwareType(hw_type.value), hw_index.value, hw_channel.value
+        return _hw_type(hw_type.value), hw_index.value, hw_channel.value
 
     @staticmethod
     def set_application_config(
         app_name: str,
         app_channel: int,
-        hw_type: xldefine.XL_HardwareType,
+        hw_type: Union[int, xldefine.XL_HardwareType],
         hw_index: int,
         hw_channel: int,
         **kwargs: Any,
@@ -1055,7 +1057,7 @@ class VectorChannelConfig(NamedTuple):
     """NamedTuple which contains the channel properties from Vector XL API."""
 
     name: str
-    hw_type: xldefine.XL_HardwareType
+    hw_type: Union[int, xldefine.XL_HardwareType]
     hw_index: int
     hw_channel: int
     channel_index: int
@@ -1128,7 +1130,7 @@ def get_channel_configs() -> List[VectorChannelConfig]:
         xlcc: xlclass.XLchannelConfig = driver_config.channel[i]
         vcc = VectorChannelConfig(
             name=xlcc.name.decode(),
-            hw_type=xldefine.XL_HardwareType(xlcc.hwType),
+            hw_type=_hw_type(xlcc.hwType),
             hw_index=xlcc.hwIndex,
             hw_channel=xlcc.hwChannel,
             channel_index=xlcc.channelIndex,
@@ -1148,3 +1150,11 @@ def get_channel_configs() -> List[VectorChannelConfig]:
         )
         channel_list.append(vcc)
     return channel_list
+
+
+def _hw_type(hw_type: int) -> Union[int, xldefine.XL_HardwareType]:
+    try:
+        return xldefine.XL_HardwareType(hw_type)
+    except ValueError:
+        LOG.warning(f'Unknown XL_HardwareType value "{hw_type}"')
+        return hw_type
