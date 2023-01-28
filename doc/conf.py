@@ -49,6 +49,7 @@ extensions = [
     "sphinx.ext.graphviz",
     "sphinxcontrib.programoutput",
     "sphinx_inline_tabs",
+    "sphinx_copybutton",
 ]
 
 # Now, you can use the alias name as a new role, e.g. :issue:`123`.
