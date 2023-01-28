@@ -15,7 +15,7 @@ from can.exceptions import (
     CanOperationError,
     error_check,
 )
-from can.util import check_or_adjust_timing_clock
+from can.util import check_or_adjust_timing_clock, deprecated_args_alias
 
 logger = logging.getLogger(__name__)
 
@@ -55,13 +55,17 @@ class slcanBus(BusABC):
 
     LINE_TERMINATOR = b"\r"
 
+    @deprecated_args_alias(
+        deprecation_start="4.5.0",
+        deprecation_end="5.0.0",
+        ttyBaudrate="tty_baudrate",
+    )
     def __init__(
         self,
         channel: typechecking.ChannelStr,
-        ttyBaudrate: int = 115200,
+        tty_baudrate: int = 115200,
         bitrate: Optional[int] = None,
         timing: Optional[Union[BitTiming, BitTimingFd]] = None,
-        btr: Optional[str] = None,
         sleep_after_open: float = _SLEEP_AFTER_SERIAL_OPEN,
         rtscts: bool = False,
         listen_only: bool = False,
@@ -72,7 +76,7 @@ class slcanBus(BusABC):
         :param str channel:
             port of underlying serial or usb device (e.g. ``/dev/ttyUSB0``, ``COM8``, ...)
             Must not be empty. Can also end with ``@115200`` (or similarly) to specify the baudrate.
-        :param int ttyBaudrate:
+        :param int tty_baudrate:
             baudrate of underlying serial or usb device (Ignored if set via the ``channel`` parameter)
         :param bitrate:
             Bitrate in bit/s
@@ -82,8 +86,6 @@ class slcanBus(BusABC):
             `f_clock` value of the timing instance must be set to 8_000_000 (8MHz)
             for standard CAN.
             CAN FD and the :class:`~can.BitTimingFd` class are not supported.
-        :param btr:
-            BTR register value to set custom can speed
         :param poll_interval:
             Poll interval in seconds when reading messages
         :param sleep_after_open:
@@ -105,24 +107,26 @@ class slcanBus(BusABC):
         if serial is None:
             raise CanInterfaceNotImplementedError("The serial module is not installed")
 
+        btr: Optional[str] = kwargs.get("btr", None)
         if btr is not None:
             warnings.warn(
-                "The 'btr' argument is deprecated since python-can v4.4.0 "
+                "The 'btr' argument is deprecated since python-can v4.5.0 "
                 "and scheduled for removal in v5.0.0. "
                 "Use the 'timing' argument instead.",
                 DeprecationWarning,
+                stacklevel=1,
             )
 
         if not channel:  # if None or empty
             raise ValueError("Must specify a serial port.")
         if "@" in channel:
             (channel, baudrate) = channel.split("@")
-            ttyBaudrate = int(baudrate)
+            tty_baudrate = int(baudrate)
 
         with error_check(exception_type=CanInitializationError):
             self.serialPortOrig = serial.serial_for_url(
                 channel,
-                baudrate=ttyBaudrate,
+                baudrate=tty_baudrate,
                 rtscts=rtscts,
                 timeout=timeout,
             )
@@ -171,7 +175,8 @@ class slcanBus(BusABC):
     def set_bitrate_reg(self, btr: str) -> None:
         """
         :param btr:
-            BTR register value to set custom can speed
+            BTR register value to set custom can speed as a string `xxyy` where
+            xx is the BTR0 value in hex and yy is the BTR1 value in hex.
         """
         self.close()
         self._write("s" + btr)
