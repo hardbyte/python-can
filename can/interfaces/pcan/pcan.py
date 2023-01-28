@@ -65,6 +65,8 @@ from .basic import (
     TPCANBaudrate,
     PCAN_ATTACHED_CHANNELS,
     TPCANChannelInformation,
+    VALID_PCAN_FD_CLOCKS,
+    VALID_PCAN_CAN_CLOCKS,
 )
 
 
@@ -264,16 +266,8 @@ class PcanBus(BusABC):
             raise ValueError("BusState must be Active or Passive")
 
         if isinstance(timing, BitTimingFd):
-            valid_fd_f_clocks = [
-                20_000_000,
-                24_000_000,
-                30_000_000,
-                40_000_000,
-                60_000_000,
-                80_000_000,
-            ]
             timing = check_or_adjust_timing_clock(
-                timing, sorted(valid_fd_f_clocks, reverse=True)
+                timing, sorted(VALID_PCAN_FD_CLOCKS, reverse=True)
             )
             self.fd_bitrate = (
                 f"f_clock={timing.f_clock},"
@@ -291,7 +285,7 @@ class PcanBus(BusABC):
             )
 
         elif isinstance(timing, BitTiming):
-            timing = check_or_adjust_timing_clock(timing, [8_000_000])
+            timing = check_or_adjust_timing_clock(timing, VALID_PCAN_CAN_CLOCKS)
             pcan_bitrate = TPCANBaudrate(timing.btr0 << 8 | timing.btr1)
             result = self.m_objPCANBasic.Initialize(
                 self.m_PcanHandle, pcan_bitrate, hwtype, ioport, interrupt
