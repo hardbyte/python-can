@@ -395,14 +395,14 @@ class BitTiming(Mapping):
 
     def __str__(self) -> str:
         segments = [
-            f"BR {self.bitrate} bit/s",
+            f"BR: {self.bitrate:_} bit/s",
             f"SP: {self.sample_point:.2f}%",
             f"BRP: {self.brp}",
             f"TSEG1: {self.tseg1}",
             f"TSEG2: {self.tseg2}",
             f"SJW: {self.sjw}",
             f"BTR: {self.btr0:02X}{self.btr1:02X}h",
-            f"f_clock: {self.f_clock / 1e6:.0f}MHz",
+            f"CLK: {self.f_clock / 1e6:.0f}MHz",
         ]
         return ", ".join(segments)
 
@@ -424,6 +424,9 @@ class BitTiming(Mapping):
             return False
 
         return self._data == other._data
+
+    def __hash__(self) -> int:
+        return tuple(self._data.values()).__hash__()
 
 
 class BitTimingFd(Mapping):
@@ -999,7 +1002,7 @@ class BitTimingFd(Mapping):
 
     def __str__(self) -> str:
         segments = [
-            f"NBR: {self.nom_bitrate} bit/s",
+            f"NBR: {self.nom_bitrate:_} bit/s",
             f"NSP: {self.nom_sample_point:.2f}%",
             f"NBRP: {self.nom_brp}",
             f"NTSEG1: {self.nom_tseg1}",
@@ -1007,11 +1010,11 @@ class BitTimingFd(Mapping):
             f"NSJW: {self.nom_sjw}",
             f"DBR: {self.data_bitrate} bit/s",
             f"DSP: {self.data_sample_point:.2f}%",
-            f"DBRP: {self.data_brp}",
+            f"DBRP: {self.data_brp:_}",
             f"DTSEG1: {self.data_tseg1}",
             f"DTSEG2: {self.data_tseg2}",
             f"DSJW: {self.data_sjw}",
-            f"f_clock: {self.f_clock / 1e6:.0f}MHz",
+            f"CLK: {self.f_clock / 1e6:.0f}MHz",
         ]
         return ", ".join(segments)
 
@@ -1033,6 +1036,9 @@ class BitTimingFd(Mapping):
             return False
 
         return self._data == other._data
+
+    def __hash__(self) -> int:
+        return tuple(self._data.values()).__hash__()
 
 
 def _oscillator_tolerance_condition_1(nom_sjw: int, nbt: int) -> float:
