@@ -201,7 +201,17 @@ xlCanSetChannelParams.argtypes = [
     ctypes.POINTER(xlclass.XLchipParams),
 ]
 xlCanSetChannelParams.restype = xlclass.XLstatus
-xlCanSetChannelParams.errcheck = check_status_operation
+xlCanSetChannelParams.errcheck = check_status_initialization
+
+xlCanSetChannelParamsC200 = _xlapi_dll.xlCanSetChannelParamsC200
+xlCanSetChannelParamsC200.argtypes = [
+    xlclass.XLportHandle,
+    xlclass.XLaccess,
+    ctypes.c_ubyte,
+    ctypes.c_ubyte,
+]
+xlCanSetChannelParams.restype = xlclass.XLstatus
+xlCanSetChannelParams.errcheck = check_status_initialization
 
 xlCanTransmit = _xlapi_dll.xlCanTransmit
 xlCanTransmit.argtypes = [
