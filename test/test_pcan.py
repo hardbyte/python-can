@@ -450,6 +450,39 @@ class TestPCANBus(unittest.TestCase):
 
         can.Bus(**params)
 
+    def test_constructor_bit_timing(self):
+        timing = can.BitTiming.from_registers(f_clock=8_000_000, btr0=0x47, btr1=0x2F)
+        can.Bus(interface="pcan", channel="PCAN_USBBUS1", timing=timing)
+
+        bitrate_arg = self.mock_pcan.Initialize.call_args[0][1]
+        self.assertEqual(bitrate_arg.value, 0x472F)
+
+    def test_constructor_bit_timing_fd(self):
+        timing = can.BitTimingFd(
+            f_clock=40_000_000,
+            nom_brp=1,
+            nom_tseg1=129,
+            nom_tseg2=30,
+            nom_sjw=1,
+            data_brp=1,
+            data_tseg1=9,
+            data_tseg2=6,
+            data_sjw=1,
+        )
+        can.Bus(interface="pcan", channel="PCAN_USBBUS1", timing=timing)
+
+        bitrate_arg = self.mock_pcan.InitializeFD.call_args[0][-1]
+
+        self.assertTrue(b"f_clock=40000000" in bitrate_arg)
+        self.assertTrue(b"nom_brp=1" in bitrate_arg)
+        self.assertTrue(b"nom_tseg1=129" in bitrate_arg)
+        self.assertTrue(b"nom_tseg2=30" in bitrate_arg)
+        self.assertTrue(b"nom_sjw=1" in bitrate_arg)
+        self.assertTrue(b"data_brp=1" in bitrate_arg)
+        self.assertTrue(b"data_tseg1=9" in bitrate_arg)
+        self.assertTrue(b"data_tseg2=6" in bitrate_arg)
+        self.assertTrue(b"data_sjw=1" in bitrate_arg)
+
 
 if __name__ == "__main__":
     unittest.main()
