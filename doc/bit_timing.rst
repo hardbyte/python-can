@@ -70,13 +70,13 @@ produce an overview of possible bit timings for your desired bit rate:
     >>> import can
     ...
     >>> timings = set()
-    >>> for sp in range(50, 100):
+    >>> for sample_point in range(50, 100):
     ...     with contextlib.suppress(ValueError):
     ...         timings.add(
     ...             can.BitTiming.from_sample_point(
     ...                 f_clock=8_000_000,
     ...                 bitrate=250_000,
-    ...                 sample_point=sp,
+    ...                 sample_point=sample_point,
     ...             )
     ...         )
     ...
