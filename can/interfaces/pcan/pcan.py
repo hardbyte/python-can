@@ -260,7 +260,7 @@ class PcanBus(BusABC):
 
         self.check_api_version()
 
-        if state is BusState.ACTIVE or state is BusState.PASSIVE:
+        if state in [BusState.ACTIVE, BusState.PASSIVE]:
             self.state = state
         else:
             raise ValueError("BusState must be Active or Passive")
@@ -292,15 +292,10 @@ class PcanBus(BusABC):
             )
 
         elif self.fd:
-            f_clock_val = kwargs.get("f_clock", None)
-            if f_clock_val is None:
-                f_clock = "{}={}".format("f_clock_mhz", kwargs.get("f_clock_mhz", None))
-            else:
-                f_clock = "{}={}".format("f_clock", kwargs.get("f_clock", None))
-
-            fd_parameters_values = [f_clock] + [
+            clock_param = "f_clock_mhz" if "f_clock_mhz" in kwargs else "f_clock"
+            fd_parameters_values = [
                 f"{key}={kwargs.get(key, None)}"
-                for key in PCAN_FD_PARAMETER_LIST
+                for key in (clock_param,) + PCAN_FD_PARAMETER_LIST
                 if kwargs.get(key, None) is not None
             ]
 
