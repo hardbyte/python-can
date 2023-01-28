@@ -151,17 +151,17 @@ class slcanBus(BusABC):
 
     def _read(self, timeout: Optional[float]) -> Optional[str]:
         _timeout = serial.Timeout(timeout)
+        self.serialPortOrig.timeout = timeout
 
         with error_check("Could not read from serial device"):
             while True:
-                new_data = self.serialPortOrig.read_all()
+                new_data = self.serialPortOrig.read()
                 if new_data:
                     self._buffer.extend(new_data)
                 else:
                     if _timeout.expired():
                         break
                     else:
-                        time.sleep(0.001)
                         continue
 
                 for terminator in (self._ERROR, self._OK):
