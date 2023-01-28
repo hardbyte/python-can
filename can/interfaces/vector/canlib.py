@@ -120,9 +120,10 @@ class VectorBus(BusABC):
         :param timing:
             An instance of :class:`~can.BitTiming` or :class:`~can.BitTimingFd`
             to specify the bit timing parameters for the VectorBus interface. The
-            `f_clock` value of the timing instance must be set to 16.000.000 (16MHz)
-            for standard CAN or 80.000.000 (80MHz) for CAN FD. If this parameter is provided,
-            it takes precedence over all other timing-related parameters.
+            `f_clock` value of the timing instance must be set to 8_000_000 (8MHz)
+            or 16_000_000 (16MHz) for CAN 2.0 or 80_000_000 (80MHz) for CAN FD.
+            If this parameter is provided, it takes precedence over all other
+            timing-related parameters.
             Otherwise, the bit timing can be specified using the following parameters:
             `bitrate` for standard CAN or `fd`, `data_bitrate`, `sjw_abr`, `tseg1_abr`,
             `tseg2_abr`, `sjw_dbr`, `tseg1_dbr`, and `tseg2_dbr` for CAN FD.
@@ -252,42 +253,34 @@ class VectorBus(BusABC):
         # set CAN settings
         for channel in self.channels:
             if isinstance(timing, BitTiming):
-                timing = check_or_adjust_timing_clock(timing, [16_000_000])
-                self._set_bitrate_can(
+                timing = check_or_adjust_timing_clock(timing, [16_000_000, 8_000_000])
+                self._set_bit_timing(
                     channel=channel,
-                    bitrate=timing.bitrate,
-                    sjw=timing.sjw,
-                    tseg1=timing.tseg1,
-                    tseg2=timing.tseg2,
-                    sam=timing.nof_samples,
+                    timing=timing,
                 )
             elif isinstance(timing, BitTimingFd):
                 timing = check_or_adjust_timing_clock(timing, [80_000_000])
-                self._set_bitrate_canfd(
+                self._set_bit_timing_fd(
                     channel=channel,
-                    bitrate=timing.nom_bitrate,
-                    data_bitrate=timing.data_bitrate,
-                    sjw_abr=timing.nom_sjw,
-                    tseg1_abr=timing.nom_tseg1,
-                    tseg2_abr=timing.nom_tseg2,
-                    sjw_dbr=timing.data_sjw,
-                    tseg1_dbr=timing.data_tseg1,
-                    tseg2_dbr=timing.data_tseg2,
+                    timing=timing,
                 )
             elif fd:
-                self._set_bitrate_canfd(
+                self._set_bit_timing_fd(
                     channel=channel,
-                    bitrate=bitrate,
-                    data_bitrate=data_bitrate,
-                    sjw_abr=sjw_abr,
-                    tseg1_abr=tseg1_abr,
-                    tseg2_abr=tseg2_abr,
-                    sjw_dbr=sjw_dbr,
-                    tseg1_dbr=tseg1_dbr,
-                    tseg2_dbr=tseg2_dbr,
+                    timing=BitTimingFd.from_bitrate_and_segments(
+                        f_clock=80_000_000,
+                        nom_bitrate=bitrate or 500_000,
+                        nom_tseg1=tseg1_abr,
+                        nom_tseg2=tseg2_abr,
+                        nom_sjw=sjw_abr,
+                        data_bitrate=data_bitrate or bitrate or 500_000,
+                        data_tseg1=tseg1_dbr,
+                        data_tseg2=tseg2_dbr,
+                        data_sjw=sjw_dbr,
+                    ),
                 )
             elif bitrate:
-                self._set_bitrate_can(channel=channel, bitrate=bitrate)
+                self._set_bitrate(channel=channel, bitrate=bitrate)
 
         # Enable/disable TX receipts
         tx_receipts = 1 if receive_own_messages else 0
@@ -404,30 +397,66 @@ class VectorBus(BusABC):
             f"Channel configuration for channel {channel} not found."
         )
 
-    def _set_bitrate_can(
-        self,
-        channel: int,
-        bitrate: int,
-        sjw: Optional[int] = None,
-        tseg1: Optional[int] = None,
-        tseg2: Optional[int] = None,
-        sam: int = 1,
-    ) -> None:
-        kwargs = [sjw, tseg1, tseg2]
-        if any(kwargs) and not all(kwargs):
-            raise ValueError(
-                f"Either all of sjw, tseg1, tseg2 must be set or none of them."
-            )
-
+    def _set_bitrate(self, channel: int, bitrate: int) -> None:
         # set parameters if channel has init access
         if self._has_init_access(channel):
-            if any(kwargs):
+            self.xldriver.xlCanSetChannelBitrate(
+                self.port_handle,
+                self.channel_masks[channel],
+                bitrate,
+            )
+            LOG.info("xlCanSetChannelBitrate: baudr.=%u", bitrate)
+
+        if self.__testing:
+            return
+
+        # Compare requested CAN settings to active settings
+        bus_params = self._read_bus_params(channel)
+        settings_acceptable = True
+
+        # check bus type
+        settings_acceptable &= (
+            bus_params.bus_type is xldefine.XL_BusTypes.XL_BUS_TYPE_CAN
+        )
+
+        # check bitrate
+        settings_acceptable &= abs(bus_params.can.bitrate - bitrate) < bitrate / 256
+
+        if not settings_acceptable:
+            active_settings = ", ".join(
+                [
+                    f"{key}: {getattr(val, 'name', val)}"  # print int or Enum/Flag name
+                    for key, val in bus_params.can._asdict().items()
+                ]
+            )
+            raise CanInitializationError(
+                f"The requested CAN settings could not be set for channel {channel}. "
+                f"Another application might have set incompatible settings. "
+                f"These are the currently active settings: {active_settings}"
+            )
+
+    def _set_bit_timing(self, channel: int, timing: BitTiming) -> None:
+        # set parameters if channel has init access
+        if self._has_init_access(channel):
+            if timing.f_clock == 8_000_000:
+                self.xldriver.xlCanSetChannelParamsC200(
+                    self.port_handle,
+                    self.channel_masks[channel],
+                    timing.btr0,
+                    timing.btr1,
+                )
+                LOG.info(
+                    "xlCanSetChannelParamsC200: BTR0=%#02x, BTR1=%#02x",
+                    timing.btr0,
+                    timing.btr1,
+                )
+            elif timing.f_clock == 16_000_000:
                 chip_params = xlclass.XLchipParams()
-                chip_params.bitRate = bitrate
-                chip_params.sjw = sjw
-                chip_params.tseg1 = tseg1
-                chip_params.tseg2 = tseg2
-                chip_params.sam = sam
+                chip_params.bitRate = timing.bitrate
+                chip_params.sjw = timing.sjw
+                chip_params.tseg1 = timing.tseg1
+                chip_params.tseg2 = timing.tseg2
+                chip_params.sam = timing.nof_samples
                 self.xldriver.xlCanSetChannelParams(
                     self.port_handle,
                     self.channel_masks[channel],
@@ -441,12 +470,9 @@ class VectorBus(BusABC):
                     chip_params.tseg2,
                 )
             else:
-                self.xldriver.xlCanSetChannelBitrate(
-                    self.port_handle,
-                    self.channel_masks[channel],
-                    bitrate,
+                raise CanInitializationError(
+                    f"timing.f_clock must be 8_000_000 or 16_000_000 (is {timing.f_clock})"
                 )
-                LOG.info("xlCanSetChannelBitrate: baudr.=%u", bitrate)
 
         if self.__testing:
             return
@@ -468,24 +494,19 @@ class VectorBus(BusABC):
             )
 
         # check bitrate
-        settings_acceptable &= abs(bus_params.can.bitrate - bitrate) < bitrate / 256
+        settings_acceptable &= (
+            abs(bus_params.can.bitrate - timing.bitrate) < timing.bitrate / 256
+        )
 
         # check sample point
-        if all(kwargs):
-            requested_sample_point = (
-                100
-                * (1 + tseg1)  # type: ignore[operator]
-                / (1 + tseg1 + tseg2)  # type: ignore[operator]
-            )
-            actual_sample_point = (
-                100
-                * (1 + bus_params.can.tseg1)
-                / (1 + bus_params.can.tseg1 + bus_params.can.tseg2)
-            )
-            settings_acceptable &= (
-                abs(actual_sample_point - requested_sample_point)
-                < 1.0  # 1 percent threshold
-            )
+        sample_point = (
+            100
+            * (1 + bus_params.can.tseg1)
+            / (1 + bus_params.can.tseg1 + bus_params.can.tseg2)
+        )
+        settings_acceptable &= (
+            abs(sample_point - timing.sample_point) < 1.0  # 1 percent threshold
+        )
 
         if not settings_acceptable:
             active_settings = ", ".join(
@@ -500,35 +521,22 @@ class VectorBus(BusABC):
                 f"These are the currently active settings: {active_settings}"
             )
 
-    def _set_bitrate_canfd(
+    def _set_bit_timing_fd(
         self,
         channel: int,
-        bitrate: Optional[int] = None,
-        data_bitrate: Optional[int] = None,
-        sjw_abr: int = 2,
-        tseg1_abr: int = 6,
-        tseg2_abr: int = 3,
-        sjw_dbr: int = 2,
-        tseg1_dbr: int = 6,
-        tseg2_dbr: int = 3,
+        timing: BitTimingFd,
     ) -> None:
         # set parameters if channel has init access
         if self._has_init_access(channel):
             canfd_conf = xlclass.XLcanFdConf()
-            if bitrate:
-                canfd_conf.arbitrationBitRate = int(bitrate)
-            else:
-                canfd_conf.arbitrationBitRate = 500_000
-            canfd_conf.sjwAbr = int(sjw_abr)
-            canfd_conf.tseg1Abr = int(tseg1_abr)
-            canfd_conf.tseg2Abr = int(tseg2_abr)
-            if data_bitrate:
-                canfd_conf.dataBitRate = int(data_bitrate)
-            else:
-                canfd_conf.dataBitRate = int(canfd_conf.arbitrationBitRate)
-            canfd_conf.sjwDbr = int(sjw_dbr)
-            canfd_conf.tseg1Dbr = int(tseg1_dbr)
-            canfd_conf.tseg2Dbr = int(tseg2_dbr)
+            canfd_conf.arbitrationBitRate = timing.nom_bitrate
+            canfd_conf.sjwAbr = timing.nom_sjw
+            canfd_conf.tseg1Abr = timing.nom_tseg1
+            canfd_conf.tseg2Abr = timing.nom_tseg2
+            canfd_conf.dataBitRate = timing.data_bitrate
+            canfd_conf.sjwDbr = timing.data_sjw
+            canfd_conf.tseg1Dbr = timing.data_tseg1
+            canfd_conf.tseg2Dbr = timing.data_tseg2
             self.xldriver.xlCanFdSetConfiguration(
                 self.port_handle, self.channel_masks[channel], canfd_conf
             )
@@ -569,42 +577,34 @@ class VectorBus(BusABC):
         )
 
         # check bitrates
-        if bitrate:
-            settings_acceptable &= (
-                abs(bus_params.canfd.bitrate - bitrate) < bitrate / 256
-            )
-        if data_bitrate:
-            settings_acceptable &= (
-                abs(bus_params.canfd.data_bitrate - data_bitrate) < data_bitrate / 256
-            )
+        settings_acceptable &= (
+            abs(bus_params.canfd.bitrate - timing.nom_bitrate)
+            < timing.nom_bitrate / 256
+        )
+        settings_acceptable &= (
+            abs(bus_params.canfd.data_bitrate - timing.data_bitrate)
+            < timing.data_bitrate / 256
+        )
 
         # check sample points
-        if bitrate:
-            requested_nom_sample_point = (
-                100 * (1 + tseg1_abr) / (1 + tseg1_abr + tseg2_abr)
-            )
-            actual_nom_sample_point = (
-                100
-                * (1 + bus_params.canfd.tseg1_abr)
-                / (1 + bus_params.canfd.tseg1_abr + bus_params.canfd.tseg2_abr)
-            )
-            settings_acceptable &= (
-                abs(actual_nom_sample_point - requested_nom_sample_point)
-                < 1.0  # 1 percent threshold
-            )
-        if data_bitrate:
-            requested_data_sample_point = (
-                100 * (1 + tseg1_dbr) / (1 + tseg1_dbr + tseg2_dbr)
-            )
-            actual_data_sample_point = (
-                100
-                * (1 + bus_params.canfd.tseg1_dbr)
-                / (1 + bus_params.canfd.tseg1_dbr + bus_params.canfd.tseg2_dbr)
-            )
-            settings_acceptable &= (
-                abs(actual_data_sample_point - requested_data_sample_point)
-                < 1.0  # 1 percent threshold
-            )
+        nom_sample_point = (
+            100
+            * (1 + bus_params.canfd.tseg1_abr)
+            / (1 + bus_params.canfd.tseg1_abr + bus_params.canfd.tseg2_abr)
+        )
+        settings_acceptable &= (
+            abs(nom_sample_point - timing.nom_sample_point) < 1.0  # 1 percent threshold
+        )
+
+        data_sample_point = (
+            100
+            * (1 + bus_params.canfd.tseg1_dbr)
+            / (1 + bus_params.canfd.tseg1_dbr + bus_params.canfd.tseg2_dbr)
+        )
+        settings_acceptable &= (
+            abs(data_sample_point - timing.data_sample_point)
+            < 1.0  # 1 percent threshold
+        )
 
         if not settings_acceptable:
             active_settings = ", ".join(
