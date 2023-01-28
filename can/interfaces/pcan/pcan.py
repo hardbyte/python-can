@@ -265,45 +265,34 @@ class PcanBus(BusABC):
         else:
             raise ValueError("BusState must be Active or Passive")
 
-        if isinstance(timing, BitTimingFd):
-            timing = check_or_adjust_timing_clock(
-                timing, sorted(VALID_PCAN_FD_CLOCKS, reverse=True)
-            )
-            self.fd_bitrate = (
-                f"f_clock={timing.f_clock},"
-                f"nom_brp={timing.nom_brp},"
-                f"nom_tseg1={timing.nom_tseg1},"
-                f"nom_tseg2={timing.nom_tseg2},"
-                f"nom_sjw={timing.nom_sjw},"
-                f"data_brp={timing.data_brp},"
-                f"data_tseg1={timing.data_tseg1},"
-                f"data_tseg2={timing.data_tseg2},"
-                f"data_sjw={timing.data_sjw}"
-            ).encode("ascii")
-            result = self.m_objPCANBasic.InitializeFD(
-                self.m_PcanHandle, self.fd_bitrate
-            )
-
-        elif isinstance(timing, BitTiming):
+        if isinstance(timing, BitTiming):
             timing = check_or_adjust_timing_clock(timing, VALID_PCAN_CAN_CLOCKS)
             pcan_bitrate = TPCANBaudrate(timing.btr0 << 8 | timing.btr1)
             result = self.m_objPCANBasic.Initialize(
                 self.m_PcanHandle, pcan_bitrate, hwtype, ioport, interrupt
             )
-
         elif self.fd:
-            clock_param = "f_clock_mhz" if "f_clock_mhz" in kwargs else "f_clock"
+            if isinstance(timing, BitTimingFd):
+                timing = check_or_adjust_timing_clock(
+                    timing, sorted(VALID_PCAN_FD_CLOCKS, reverse=True)
+                )
+                # We dump the timing parameters into the kwargs because they have equal names
+                # as the kwargs parameters and this saves us one additional code path
+                kwargs.update(timing)
+
+            clock_param = "f_clock" if "f_clock" in kwargs else "f_clock_mhz"
             fd_parameters_values = [
-                f"{key}={kwargs.get(key, None)}"
+                f"{key}={kwargs[key]}"
                 for key in (clock_param,) + PCAN_FD_PARAMETER_LIST
-                if kwargs.get(key, None) is not None
+                if key in kwargs
             ]
 
-            self.fd_bitrate = " ,".join(fd_parameters_values).encode("ascii")
+            self.fd_bitrate = ", ".join(fd_parameters_values).encode("ascii")
 
             result = self.m_objPCANBasic.InitializeFD(
                 self.m_PcanHandle, self.fd_bitrate
             )
+
         else:
             pcan_bitrate = PCAN_BITRATES.get(bitrate, PCAN_BAUD_500K)
             result = self.m_objPCANBasic.Initialize(
