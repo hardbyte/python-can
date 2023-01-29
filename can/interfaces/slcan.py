@@ -101,6 +101,8 @@ class slcanBus(BusABC):
                 channel, baudrate=ttyBaudrate, rtscts=rtscts
             )
 
+        self._buffer = bytearray()
+
         time.sleep(sleep_after_open)
 
         with error_check(exception_type=CanInitializationError):
@@ -149,27 +151,30 @@ class slcanBus(BusABC):
 
     def _read(self, timeout: Optional[float]) -> Optional[str]:
         _timeout = serial.Timeout(timeout)
-        buffer = bytearray()
         self.serialPortOrig.timeout = timeout
 
         with error_check("Could not read from serial device"):
             while True:
                 new_byte = self.serialPortOrig.read(1)
                 if new_byte:
-                    buffer.extend(new_byte)
+                    self._buffer.extend(new_byte)
                 else:
                     if _timeout.expired():
                         break
                     else:
                         continue
 
-                if new_byte in (self._ERROR, self._OK):
-                    string = buffer.decode()
-                    return string
+                for terminator in (self._ERROR, self._OK):
+                    if terminator in self._buffer:
+                        i = self._buffer.index(terminator) + 1
+                        string = self._buffer[:i].decode()
+                        del self._buffer[:i]
+                        return string
 
             return None
 
     def flush(self) -> None:
+        del self._buffer[:]
         with error_check("Could not flush"):
             while self.serialPortOrig.in_waiting:
                 self.serialPortOrig.read()
