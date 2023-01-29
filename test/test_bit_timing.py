@@ -271,8 +271,8 @@ def test_equality():
 def test_string_representation():
     timing = can.BitTiming(f_clock=8_000_000, brp=1, tseg1=5, tseg2=2, sjw=1)
     assert str(timing) == (
-        "BR 1000000 bit/s, SP: 75.00%, BRP: 1, TSEG1: 5, TSEG2: 2, SJW: 1, "
-        "BTR: 0014h, f_clock: 8MHz"
+        "BR: 1_000_000 bit/s, SP: 75.00%, BRP: 1, TSEG1: 5, TSEG2: 2, SJW: 1, "
+        "BTR: 0014h, CLK: 8MHz"
     )
 
     fd_timing = can.BitTimingFd(
@@ -287,9 +287,9 @@ def test_string_representation():
         data_sjw=10,
     )
     assert str(fd_timing) == (
-        "NBR: 500000 bit/s, NSP: 75.00%, NBRP: 1, NTSEG1: 119, NTSEG2: 40, NSJW: 40, "
-        "DBR: 2000000 bit/s, DSP: 75.00%, DBRP: 1, DTSEG1: 29, DTSEG2: 10, DSJW: 10, "
-        "f_clock: 80MHz"
+        "NBR: 500_000 bit/s, NSP: 75.00%, NBRP: 1, NTSEG1: 119, NTSEG2: 40, NSJW: 40, "
+        "DBR: 2_000_000 bit/s, DSP: 75.00%, DBRP: 1, DTSEG1: 29, DTSEG2: 10, DSJW: 10, "
+        "CLK: 80MHz"
     )
 
 
@@ -314,6 +314,23 @@ def test_repr():
         "can.BitTimingFd(f_clock=80000000, nom_brp=1, nom_tseg1=119, nom_tseg2=40, "
         "nom_sjw=40, data_brp=1, data_tseg1=29, data_tseg2=10, data_sjw=10)"
     )
+
+
+def test_hash():
+    _timings = {
+        can.BitTiming(f_clock=8_000_000, brp=1, tseg1=5, tseg2=2, sjw=1, nof_samples=1),
+        can.BitTimingFd(
+            f_clock=80_000_000,
+            nom_brp=1,
+            nom_tseg1=119,
+            nom_tseg2=40,
+            nom_sjw=40,
+            data_brp=1,
+            data_tseg1=29,
+            data_tseg2=10,
+            data_sjw=10,
+        ),
+    }
 
 
 def test_mapping():
