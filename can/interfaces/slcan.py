@@ -158,18 +158,14 @@ class slcanBus(BusABC):
                 new_byte = self.serialPortOrig.read(1)
                 if new_byte:
                     self._buffer.extend(new_byte)
-                else:
-                    if _timeout.expired():
-                        break
-                    else:
-                        continue
-
-                for terminator in (self._ERROR, self._OK):
-                    if terminator in self._buffer:
-                        i = self._buffer.index(terminator) + 1
+                    if new_byte in (self._ERROR, self._OK):
+                        i = self._buffer.index(new_byte) + 1
                         string = self._buffer[:i].decode()
                         del self._buffer[:i]
                         return string
+                else:
+                    if _timeout.expired():
+                        break
 
             return None
 
