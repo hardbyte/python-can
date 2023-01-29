@@ -155,21 +155,17 @@ class slcanBus(BusABC):
 
         with error_check("Could not read from serial device"):
             while True:
-                new_data = self.serialPortOrig.read()
-                if new_data:
-                    self._buffer.extend(new_data)
-                else:
-                    if _timeout.expired():
-                        break
-                    else:
-                        continue
+                new_byte = self.serialPortOrig.read(size=1)
+                if new_byte:
+                    self._buffer.extend(new_byte)
 
-                for terminator in (self._ERROR, self._OK):
-                    if terminator in self._buffer:
-                        i = self._buffer.index(terminator) + 1
-                        string = self._buffer[:i].decode()
-                        del self._buffer[:i]
-                        return string
+                if new_byte in (self._ERROR, self._OK):
+                    string = self._buffer.decode()
+                    del self._buffer[:]
+                    return string
+
+                if _timeout.expired():
+                    break
 
             return None
 
