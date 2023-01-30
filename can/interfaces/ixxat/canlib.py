@@ -155,6 +155,3 @@ class IXXATBus(BusABC):
         Return the current state of the hardware
         """
         return self.bus.state
-
-
-# ~class IXXATBus(BusABC): ---------------------------------------------------
