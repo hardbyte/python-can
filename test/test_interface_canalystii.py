@@ -1,11 +1,7 @@
 #!/usr/bin/env python
 
-"""
-"""
-
-import time
 import unittest
-from unittest.mock import Mock, patch, call
+from unittest.mock import patch, call
 from ctypes import c_ubyte
 
 import canalystii as driver  # low-level driver module, mock out this layer
