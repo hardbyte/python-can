@@ -287,7 +287,9 @@ class slcanBus(BusABC):
 
         string = self._read(timeout)
 
-        if len(string) == 6 and string[0] == cmd:
+        if not string:
+            pass
+        elif string[0] == cmd and len(string) == 6:
             # convert ASCII coded version
             hw_version = int(string[1:3])
             sw_version = int(string[3:5])
@@ -309,7 +311,9 @@ class slcanBus(BusABC):
 
         string = self._read(timeout)
 
-        if len(string) == 6 and string[0] == cmd:
+        if not string:
+            pass
+        elif string[0] == cmd and len(string) == 6:
             serial_number = string[1:-1]
             return serial_number
 
