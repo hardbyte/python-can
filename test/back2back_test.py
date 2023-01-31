@@ -12,6 +12,7 @@ import random
 import pytest
 
 import can
+from can import CanInterfaceNotImplementedError
 from can.interfaces.udp_multicast import UdpMulticastBus
 
 from .config import (
@@ -296,7 +297,7 @@ class BasicTestUdpMulticastBusIPv4(Back2BackTestCase):
     CHANNEL_2 = UdpMulticastBus.DEFAULT_GROUP_IPv4
 
     def test_unique_message_instances(self):
-        with self.assertRaises(NotImplementedError):
+        with self.assertRaises(CanInterfaceNotImplementedError):
             super().test_unique_message_instances()
 
 
@@ -315,7 +316,7 @@ class BasicTestUdpMulticastBusIPv6(Back2BackTestCase):
     CHANNEL_2 = HOST_LOCAL_MCAST_GROUP_IPv6
 
     def test_unique_message_instances(self):
-        with self.assertRaises(NotImplementedError):
+        with self.assertRaises(CanInterfaceNotImplementedError):
             super().test_unique_message_instances()
 
 
@@ -323,7 +324,7 @@ TEST_INTERFACE_ETAS = False
 try:
     bus_class = can.interface._get_class_for_interface("etas")
     TEST_INTERFACE_ETAS = True
-except can.exceptions.CanInterfaceNotImplementedError:
+except CanInterfaceNotImplementedError:
     pass
 
 
