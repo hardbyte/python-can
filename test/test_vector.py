@@ -270,6 +270,154 @@ def test_bus_creation_fd_bitrate_timings() -> None:
     bus.shutdown()
 
 
+def test_bus_creation_timing_mocked(mock_xldriver) -> None:
+    timing = can.BitTiming.from_bitrate_and_segments(
+        f_clock=16_000_000,
+        bitrate=125_000,
+        tseg1=13,
+        tseg2=2,
+        sjw=1,
+    )
+    bus = can.Bus(channel=0, interface="vector", timing=timing, _testing=True)
+    assert isinstance(bus, canlib.VectorBus)
+    can.interfaces.vector.canlib.xldriver.xlOpenDriver.assert_called()
+    can.interfaces.vector.canlib.xldriver.xlGetApplConfig.assert_called()
+
+    can.interfaces.vector.canlib.xldriver.xlOpenPort.assert_called()
+    xlOpenPort_args = can.interfaces.vector.canlib.xldriver.xlOpenPort.call_args[0]
+    assert xlOpenPort_args[5] == xldefine.XL_InterfaceVersion.XL_INTERFACE_VERSION.value
+    assert xlOpenPort_args[6] == xldefine.XL_BusTypes.XL_BUS_TYPE_CAN.value
+
+    can.interfaces.vector.canlib.xldriver.xlCanFdSetConfiguration.assert_not_called()
+    can.interfaces.vector.canlib.xldriver.xlCanSetChannelParams.assert_called()
+    chip_params = (
+        can.interfaces.vector.canlib.xldriver.xlCanSetChannelParams.call_args[0]
+    )[2]
+    assert chip_params.bitRate == 125_000
+    assert chip_params.sjw == 1
+    assert chip_params.tseg1 == 13
+    assert chip_params.tseg2 == 2
+    assert chip_params.sam == 1
+
+
+@pytest.mark.skipif(not XLDRIVER_FOUND, reason="Vector XL API is unavailable")
+def test_bus_creation_timing() -> None:
+    timing = can.BitTiming.from_bitrate_and_segments(
+        f_clock=16_000_000,
+        bitrate=125_000,
+        tseg1=13,
+        tseg2=2,
+        sjw=1,
+    )
+    bus = can.Bus(
+        channel=0,
+        serial=_find_virtual_can_serial(),
+        interface="vector",
+        timing=timing,
+    )
+    assert isinstance(bus, canlib.VectorBus)
+
+    xl_channel_config = _find_xl_channel_config(
+        serial=_find_virtual_can_serial(), channel=0
+    )
+    assert xl_channel_config.busParams.data.can.bitRate == 125_000
+    assert xl_channel_config.busParams.data.can.sjw == 1
+    assert xl_channel_config.busParams.data.can.tseg1 == 13
+    assert xl_channel_config.busParams.data.can.tseg2 == 2
+
+    bus.shutdown()
+
+
+def test_bus_creation_timingfd_mocked(mock_xldriver) -> None:
+    timing = can.BitTimingFd.from_bitrate_and_segments(
+        f_clock=80_000_000,
+        nom_bitrate=500_000,
+        nom_tseg1=68,
+        nom_tseg2=11,
+        nom_sjw=10,
+        data_bitrate=2_000_000,
+        data_tseg1=10,
+        data_tseg2=9,
+        data_sjw=8,
+    )
+    bus = can.Bus(
+        channel=0,
+        interface="vector",
+        timing=timing,
+        _testing=True,
+    )
+    assert isinstance(bus, canlib.VectorBus)
+    can.interfaces.vector.canlib.xldriver.xlOpenDriver.assert_called()
+    can.interfaces.vector.canlib.xldriver.xlGetApplConfig.assert_called()
+
+    can.interfaces.vector.canlib.xldriver.xlOpenPort.assert_called()
+    xlOpenPort_args = can.interfaces.vector.canlib.xldriver.xlOpenPort.call_args[0]
+    assert (
+        xlOpenPort_args[5] == xldefine.XL_InterfaceVersion.XL_INTERFACE_VERSION_V4.value
+    )
+
+    assert xlOpenPort_args[6] == xldefine.XL_BusTypes.XL_BUS_TYPE_CAN.value
+
+    can.interfaces.vector.canlib.xldriver.xlCanFdSetConfiguration.assert_called()
+    can.interfaces.vector.canlib.xldriver.xlCanSetChannelBitrate.assert_not_called()
+
+    xlCanFdSetConfiguration_args = (
+        can.interfaces.vector.canlib.xldriver.xlCanFdSetConfiguration.call_args[0]
+    )
+    canFdConf = xlCanFdSetConfiguration_args[2]
+    assert canFdConf.arbitrationBitRate == 500_000
+    assert canFdConf.dataBitRate == 2_000_000
+    assert canFdConf.sjwAbr == 10
+    assert canFdConf.tseg1Abr == 68
+    assert canFdConf.tseg2Abr == 11
+    assert canFdConf.sjwDbr == 8
+    assert canFdConf.tseg1Dbr == 10
+    assert canFdConf.tseg2Dbr == 9
+
+
+@pytest.mark.skipif(not XLDRIVER_FOUND, reason="Vector XL API is unavailable")
+def test_bus_creation_timingfd() -> None:
+    timing = can.BitTimingFd.from_bitrate_and_segments(
+        f_clock=80_000_000,
+        nom_bitrate=500_000,
+        nom_tseg1=68,
+        nom_tseg2=11,
+        nom_sjw=10,
+        data_bitrate=2_000_000,
+        data_tseg1=10,
+        data_tseg2=9,
+        data_sjw=8,
+    )
+    bus = can.Bus(
+        channel=0,
+        serial=_find_virtual_can_serial(),
+        interface="vector",
+        timing=timing,
+    )
+
+    xl_channel_config = _find_xl_channel_config(
+        serial=_find_virtual_can_serial(), channel=0
+    )
+    assert (
+        xl_channel_config.interfaceVersion
+        == xldefine.XL_InterfaceVersion.XL_INTERFACE_VERSION_V4
+    )
+    assert (
+        xl_channel_config.busParams.data.canFD.canOpMode
+        & xldefine.XL_CANFD_BusParams_CanOpMode.XL_BUS_PARAMS_CANOPMODE_CANFD
+    )
+    assert xl_channel_config.busParams.data.canFD.arbitrationBitRate == 500_000
+    assert xl_channel_config.busParams.data.canFD.sjwAbr == 10
+    assert xl_channel_config.busParams.data.canFD.tseg1Abr == 68
+    assert xl_channel_config.busParams.data.canFD.tseg2Abr == 11
+    assert xl_channel_config.busParams.data.canFD.sjwDbr == 8
+    assert xl_channel_config.busParams.data.canFD.tseg1Dbr == 10
+    assert xl_channel_config.busParams.data.canFD.tseg2Dbr == 9
+    assert xl_channel_config.busParams.data.canFD.dataBitRate == 2_000_000
+
+    bus.shutdown()
+
+
 def test_send_mocked(mock_xldriver) -> None:
     bus = can.Bus(channel=0, interface="vector", _testing=True)
     msg = can.Message(

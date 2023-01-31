@@ -37,12 +37,20 @@ except ImportError:
 
 # Import Modules
 # ==============
-from can import BusABC, Message, CanInterfaceNotImplementedError, CanInitializationError
+from can import (
+    BusABC,
+    Message,
+    CanInterfaceNotImplementedError,
+    CanInitializationError,
+    BitTiming,
+    BitTimingFd,
+)
 from can.util import (
     len2dlc,
     dlc2len,
     deprecated_args_alias,
     time_perfcounter_correlation,
+    check_or_adjust_timing_clock,
 )
 from can.typechecking import AutoDetectedConfig, CanFilters
 
@@ -86,6 +94,7 @@ class VectorBus(BusABC):
         can_filters: Optional[CanFilters] = None,
         poll_interval: float = 0.01,
         receive_own_messages: bool = False,
+        timing: Optional[Union[BitTiming, BitTimingFd]] = None,
         bitrate: Optional[int] = None,
         rx_queue_size: int = 2**14,
         app_name: Optional[str] = "CANalyzer",
@@ -108,6 +117,15 @@ class VectorBus(BusABC):
             See :class:`can.BusABC`.
         :param receive_own_messages:
             See :class:`can.BusABC`.
+        :param timing:
+            An instance of :class:`~can.BitTiming` or :class:`~can.BitTimingFd`
+            to specify the bit timing parameters for the VectorBus interface. The
+            `f_clock` value of the timing instance must be set to 16.000.000 (16MHz)
+            for standard CAN or 80.000.000 (80MHz) for CAN FD. If this parameter is provided,
+            it takes precedence over all other timing-related parameters.
+            Otherwise, the bit timing can be specified using the following parameters:
+            `bitrate` for standard CAN or `fd`, `data_bitrate`, `sjw_abr`, `tseg1_abr`,
+            `tseg2_abr`, `sjw_dbr`, `tseg1_dbr`, and `tseg2_dbr` for CAN FD.
         :param poll_interval:
             Poll interval in seconds.
         :param bitrate:
@@ -184,7 +202,7 @@ class VectorBus(BusABC):
         channel_configs = get_channel_configs()
 
         self.mask = 0
-        self.fd = fd
+        self.fd = isinstance(timing, BitTimingFd) if timing else fd
         self.channel_masks: Dict[int, int] = {}
         self.index_to_channel: Dict[int, int] = {}
 
@@ -204,12 +222,12 @@ class VectorBus(BusABC):
 
         permission_mask = xlclass.XLaccess()
         # Set mask to request channel init permission if needed
-        if bitrate or fd:
+        if bitrate or fd or timing:
             permission_mask.value = self.mask
 
         interface_version = (
             xldefine.XL_InterfaceVersion.XL_INTERFACE_VERSION_V4
-            if fd
+            if self.fd
             else xldefine.XL_InterfaceVersion.XL_INTERFACE_VERSION
         )
 
@@ -233,7 +251,30 @@ class VectorBus(BusABC):
 
         # set CAN settings
         for channel in self.channels:
-            if fd:
+            if isinstance(timing, BitTiming):
+                timing = check_or_adjust_timing_clock(timing, [16_000_000])
+                self._set_bitrate_can(
+                    channel=channel,
+                    bitrate=timing.bitrate,
+                    sjw=timing.sjw,
+                    tseg1=timing.tseg1,
+                    tseg2=timing.tseg2,
+                    sam=timing.nof_samples,
+                )
+            elif isinstance(timing, BitTimingFd):
+                timing = check_or_adjust_timing_clock(timing, [80_000_000])
+                self._set_bitrate_canfd(
+                    channel=channel,
+                    bitrate=timing.nom_bitrate,
+                    data_bitrate=timing.data_bitrate,
+                    sjw_abr=timing.nom_sjw,
+                    tseg1_abr=timing.nom_tseg1,
+                    tseg2_abr=timing.nom_tseg2,
+                    sjw_dbr=timing.data_sjw,
+                    tseg1_dbr=timing.data_tseg1,
+                    tseg2_dbr=timing.data_tseg2,
+                )
+            elif fd:
                 self._set_bitrate_canfd(
                     channel=channel,
                     bitrate=bitrate,
@@ -299,19 +340,21 @@ class VectorBus(BusABC):
         channel_configs: List["VectorChannelConfig"],
     ) -> int:
         if serial is not None:
-            hw_type: Optional[xldefine.XL_HardwareType] = None
+            serial_found = False
             for channel_config in channel_configs:
                 if channel_config.serial_number != serial:
                     continue
 
-                hw_type = xldefine.XL_HardwareType(channel_config.hw_type)
+                serial_found = True
                 if channel_config.hw_channel == channel:
                     return channel_config.channel_index
 
-            if hw_type is None:
+            if not serial_found:
                 err_msg = f"No interface with serial {serial} found."
             else:
-                err_msg = f"Channel {channel} not found on interface {hw_type.name} ({serial})."
+                err_msg = (
+                    f"Channel {channel} not found on interface with serial {serial}."
+                )
             raise CanInitializationError(
                 err_msg, error_code=xldefine.XL_Status.XL_ERR_HW_NOT_PRESENT
             )
@@ -915,7 +958,7 @@ class VectorBus(BusABC):
     @staticmethod
     def get_application_config(
         app_name: str, app_channel: int
-    ) -> Tuple[xldefine.XL_HardwareType, int, int]:
+    ) -> Tuple[Union[int, xldefine.XL_HardwareType], int, int]:
         """Retrieve information for an application in Vector Hardware Configuration.
 
         :param app_name:
@@ -955,13 +998,13 @@ class VectorBus(BusABC):
                 ),
                 function="xlGetApplConfig",
             ) from None
-        return xldefine.XL_HardwareType(hw_type.value), hw_index.value, hw_channel.value
+        return _hw_type(hw_type.value), hw_index.value, hw_channel.value
 
     @staticmethod
     def set_application_config(
         app_name: str,
         app_channel: int,
-        hw_type: xldefine.XL_HardwareType,
+        hw_type: Union[int, xldefine.XL_HardwareType],
         hw_index: int,
         hw_channel: int,
         **kwargs: Any,
@@ -1055,7 +1098,7 @@ class VectorChannelConfig(NamedTuple):
     """NamedTuple which contains the channel properties from Vector XL API."""
 
     name: str
-    hw_type: xldefine.XL_HardwareType
+    hw_type: Union[int, xldefine.XL_HardwareType]
     hw_index: int
     hw_channel: int
     channel_index: int
@@ -1128,7 +1171,7 @@ def get_channel_configs() -> List[VectorChannelConfig]:
         xlcc: xlclass.XLchannelConfig = driver_config.channel[i]
         vcc = VectorChannelConfig(
             name=xlcc.name.decode(),
-            hw_type=xldefine.XL_HardwareType(xlcc.hwType),
+            hw_type=_hw_type(xlcc.hwType),
             hw_index=xlcc.hwIndex,
             hw_channel=xlcc.hwChannel,
             channel_index=xlcc.channelIndex,
@@ -1148,3 +1191,11 @@ def get_channel_configs() -> List[VectorChannelConfig]:
         )
         channel_list.append(vcc)
     return channel_list
+
+
+def _hw_type(hw_type: int) -> Union[int, xldefine.XL_HardwareType]:
+    try:
+        return xldefine.XL_HardwareType(hw_type)
+    except ValueError:
+        LOG.warning(f'Unknown XL_HardwareType value "{hw_type}"')
+        return hw_type

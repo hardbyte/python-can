@@ -33,7 +33,7 @@ from .notifier import Notifier
 from .interfaces import VALID_INTERFACES
 from . import interface
 from .interface import Bus, detect_available_configs
-from .bit_timing import BitTiming
+from .bit_timing import BitTiming, BitTimingFd
 
 from .io import Logger, SizedRotatingLogger, Printer, LogReader, MessageSync
 from .io import ASCWriter, ASCReader

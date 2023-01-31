@@ -49,6 +49,7 @@ extensions = [
     "sphinx.ext.graphviz",
     "sphinxcontrib.programoutput",
     "sphinx_inline_tabs",
+    "sphinx_copybutton",
 ]
 
 # Now, you can use the alias name as a new role, e.g. :issue:`123`.
@@ -120,10 +121,12 @@ autodoc_typehints = "description"
 # disable specific warnings
 nitpick_ignore = [
     # Ignore warnings for type aliases. Remove once Sphinx supports PEP613
+    ("py:class", "BusConfig"),
     ("py:class", "can.typechecking.BusConfig"),
     ("py:class", "can.typechecking.CanFilter"),
     ("py:class", "can.typechecking.CanFilterExtended"),
     ("py:class", "can.typechecking.AutoDetectedConfig"),
+    ("py:class", "can.util.T"),
     # intersphinx fails to reference some builtins
     ("py:class", "asyncio.events.AbstractEventLoop"),
     ("py:class", "_thread.allocate_lock"),
