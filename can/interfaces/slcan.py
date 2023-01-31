@@ -244,15 +244,15 @@ class slcanBus(BusABC):
             self.serialPortOrig.write_timeout = timeout
         if msg.is_remote_frame:
             if msg.is_extended_id:
-                sendStr = "R%08X%d" % (msg.arbitration_id, msg.dlc)
+                sendStr = f"R{msg.arbitration_id:08X}{msg.dlc:d}"
             else:
-                sendStr = "r%03X%d" % (msg.arbitration_id, msg.dlc)
+                sendStr = f"r{msg.arbitration_id:03X}{msg.dlc:d}"
         else:
             if msg.is_extended_id:
-                sendStr = "T%08X%d" % (msg.arbitration_id, msg.dlc)
+                sendStr = f"T{msg.arbitration_id:08X}{msg.dlc:d}"
             else:
-                sendStr = "t%03X%d" % (msg.arbitration_id, msg.dlc)
-            sendStr += "".join(["%02X" % b for b in msg.data])
+                sendStr = f"t{msg.arbitration_id:03X}{msg.dlc:d}"
+            sendStr += msg.data.hex().upper()
         self._write(sendStr)
 
     def shutdown(self) -> None:
