@@ -98,7 +98,10 @@ class slcanBus(BusABC):
 
         with error_check(exception_type=CanInitializationError):
             self.serialPortOrig = serial.serial_for_url(
-                channel, baudrate=ttyBaudrate, rtscts=rtscts
+                channel,
+                baudrate=ttyBaudrate,
+                rtscts=rtscts,
+                timeout=0.001,
             )
 
         self._buffer = bytearray()
@@ -151,21 +154,26 @@ class slcanBus(BusABC):
 
     def _read(self, timeout: Optional[float]) -> Optional[str]:
         _timeout = serial.Timeout(timeout)
-        self.serialPortOrig.timeout = timeout
 
         with error_check("Could not read from serial device"):
             while True:
-                new_byte = self.serialPortOrig.read(1)
-                if new_byte:
-                    self._buffer.extend(new_byte)
-                    if new_byte in (self._ERROR, self._OK):
-                        i = self._buffer.index(new_byte) + 1
-                        string = self._buffer[:i].decode()
-                        del self._buffer[:i]
-                        return string
-                else:
-                    if _timeout.expired():
+                # Due to accessing `serialPortOrig.in_waiting` too often will reduce the performance.
+                # We read the `serialPortOrig.in_waiting` only once here.
+                in_waiting = self.serialPortOrig.in_waiting
+                for _ in range(max(1, in_waiting)):
+                    new_byte = self.serialPortOrig.read(size=1)
+                    if new_byte:
+                        self._buffer.extend(new_byte)
+                    else:
                         break
+
+                    if new_byte in (self._ERROR, self._OK):
+                        string = self._buffer.decode()
+                        del self._buffer[:]
+                        return string
+
+                if _timeout.expired():
+                    break
 
             return None
 
