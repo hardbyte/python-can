@@ -180,8 +180,7 @@ class slcanBus(BusABC):
     def flush(self) -> None:
         self._buffer.clear()
         with error_check("Could not flush"):
-            while self.serialPortOrig.in_waiting:
-                self.serialPortOrig.read()
+            self.serialPortOrig.reset_input_buffer()
 
     def open(self) -> None:
         self._write("O")
