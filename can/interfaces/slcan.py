@@ -196,7 +196,7 @@ class slcanBus(BusABC):
         canId = None
         remote = False
         extended = False
-        frame = []
+        data = None
 
         string = self._read(timeout)
 
@@ -207,14 +207,12 @@ class slcanBus(BusABC):
             canId = int(string[1:9], 16)
             dlc = int(string[9])
             extended = True
-            for i in range(0, dlc):
-                frame.append(int(string[10 + i * 2 : 12 + i * 2], 16))
+            data = bytearray.fromhex(string[10 : 10 + dlc * 2])
         elif string[0] == "t":
             # normal frame
             canId = int(string[1:4], 16)
             dlc = int(string[4])
-            for i in range(0, dlc):
-                frame.append(int(string[5 + i * 2 : 7 + i * 2], 16))
+            data = bytearray.fromhex(string[5 : 5 + dlc * 2])
         elif string[0] == "r":
             # remote frame
             canId = int(string[1:4], 16)
@@ -234,7 +232,7 @@ class slcanBus(BusABC):
                 timestamp=time.time(),  # Better than nothing...
                 is_remote_frame=remote,
                 dlc=dlc,
-                data=frame,
+                data=data,
             )
             return msg, False
         return None, False
