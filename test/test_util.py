@@ -13,6 +13,7 @@ from can.util import (
     channel2int,
     deprecated_args_alias,
     check_or_adjust_timing_clock,
+    cast_from_string,
 )
 
 
@@ -262,3 +263,27 @@ class TestCheckAdjustTimingClock(unittest.TestCase):
 
         with pytest.raises(CanInitializationError):
             check_or_adjust_timing_clock(timing, valid_clocks=[8_000, 16_000])
+
+
+class TestCastFromString(unittest.TestCase):
+    def test_cast_from_string(self) -> None:
+        self.assertEqual(1, cast_from_string("1"))
+        self.assertEqual(-1, cast_from_string("-1"))
+        self.assertEqual(0, cast_from_string("-0"))
+        self.assertEqual(1.1, cast_from_string("1.1"))
+        self.assertEqual(-1.1, cast_from_string("-1.1"))
+        self.assertEqual(0.1, cast_from_string(".1"))
+        self.assertEqual(10.0, cast_from_string(".1e2"))
+        self.assertEqual(0.001, cast_from_string(".1e-2"))
+        self.assertEqual(-0.001, cast_from_string("-.1e-2"))
+        self.assertEqual("text", cast_from_string("text"))
+        self.assertEqual("", cast_from_string(""))
+        self.assertEqual("can0", cast_from_string("can0"))
+        self.assertEqual("0can", cast_from_string("0can"))
+        self.assertEqual(False, cast_from_string("false"))
+        self.assertEqual(False, cast_from_string("False"))
+        self.assertEqual(True, cast_from_string("true"))
+        self.assertEqual(True, cast_from_string("True"))
+
+        with self.assertRaises(TypeError):
+            cast_from_string(None)

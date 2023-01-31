@@ -147,7 +147,7 @@ def load_config(
         It may set other values that are passed through.
 
     :param context:
-        Extra 'context' pass to config sources. This can be use to section
+        Extra 'context' pass to config sources. This can be used to section
         other than 'default' in the configuration file.
 
     :return:
@@ -197,9 +197,12 @@ def load_config(
                 cfg["interface"] = cfg["bustype"]
             del cfg["bustype"]
         # copy all new parameters
-        for key in cfg:
+        for key, val in cfg.items():
             if key not in config:
-                config[key] = cfg[key]
+                if isinstance(val, str):
+                    config[key] = cast_from_string(val)
+                else:
+                    config[key] = cfg[key]
 
     bus_config = _create_bus_config(config)
     can.log.debug("can config: %s", bus_config)
@@ -257,12 +260,8 @@ def _create_bus_config(config: Dict[str, Any]) -> typechecking.BusConfig:
         except (ValueError, TypeError):
             pass
 
-    if "bitrate" in config:
-        config["bitrate"] = int(config["bitrate"])
     if "fd" in config:
-        config["fd"] = config["fd"] not in ("0", "False", "false", False)
-    if "data_bitrate" in config:
-        config["data_bitrate"] = int(config["data_bitrate"])
+        config["fd"] = config["fd"] not in (0, False)
 
     return cast(typechecking.BusConfig, config)
 
@@ -476,6 +475,28 @@ def time_perfcounter_correlation() -> Tuple[float, float]:
     else:
         return time(), perf_counter()
     return t1, performance_counter
+
+
+def cast_from_string(string_val: str) -> Union[str, int, float, bool]:
+    """Perform trivial type conversion from :class:`str` values.
+
+    :param string_val:
+        the string, that shall be converted
+    """
+    if re.match(r"^[-+]?\d+$", string_val):
+        # value is integer
+        return int(string_val)
+
+    if re.match(r"^[-+]?\d*\.\d+(?:e[-+]?\d+)?$", string_val):
+        # value is float
+        return float(string_val)
+
+    if re.match(r"^(?:True|False)$", string_val, re.IGNORECASE):
+        # value is bool
+        return string_val.lower() == "true"
+
+    # value is string
+    return string_val
 
 
 if __name__ == "__main__":
