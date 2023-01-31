@@ -169,7 +169,7 @@ class slcanBus(BusABC):
 
                     if new_byte in (self._ERROR, self._OK):
                         string = self._buffer.decode()
-                        del self._buffer[:]
+                        self._buffer.clear()
                         return string
 
                 if _timeout.expired():
@@ -178,7 +178,7 @@ class slcanBus(BusABC):
             return None
 
     def flush(self) -> None:
-        del self._buffer[:]
+        self._buffer.clear()
         with error_check("Could not flush"):
             while self.serialPortOrig.in_waiting:
                 self.serialPortOrig.read()
