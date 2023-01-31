@@ -44,7 +44,12 @@ class BusABC(metaclass=ABCMeta):
     #: Log level for received messages
     RECV_LOGGING_LEVEL = 9
 
+    # Even if __init__ did not complete due to an exception, these attributes
+    # exist and won't cause weired problems in shutdown()
+    _is_initialized: bool = False
     _is_shutdown: bool = False
+    _periodic_tasks: List["_SelfRemovingCyclicTask"] = []
+    _filters: Optional[can.typechecking.CanFilters] = None
 
     @abstractmethod
     def __init__(
@@ -73,8 +78,8 @@ class BusABC(metaclass=ABCMeta):
         :raises ~can.exceptions.CanInitializationError:
             If the bus cannot be initialized
         """
-        self._periodic_tasks: List[_SelfRemovingCyclicTask] = []
-        self.set_filters(can_filters)
+        self.filters = can_filters
+        self._is_initialized = True
 
     def __str__(self) -> str:
         return self.channel_info
@@ -437,7 +442,7 @@ class BusABC(metaclass=ABCMeta):
         self.shutdown()
 
     def __del__(self) -> None:
-        if not self._is_shutdown:
+        if self._is_initialized and not self._is_shutdown:
             LOG.warning("%s was not properly shut down", self.__class__)
             # We do some best-effort cleanup if the user
             # forgot to properly close the bus instance
