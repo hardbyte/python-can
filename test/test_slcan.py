@@ -13,12 +13,14 @@ Mentioned in #1010 & #1490
 >> In addition, PyPy has to emulate reference counting for that part of the code, making it even slower.
 https://realpython.com/pypy-faster-python/
 """
-TIMEOUT = 0.5 if IS_PYPY else 0
+TIMEOUT = 0.5 if IS_PYPY else 0.001  # 0.001 is the default set in slcanBus
 
 
 class slcanTestCase(unittest.TestCase):
     def setUp(self):
-        self.bus = can.Bus("loop://", interface="slcan", sleep_after_open=0)
+        self.bus = can.Bus(
+            "loop://", interface="slcan", sleep_after_open=0, timeout=TIMEOUT
+        )
         self.serial = self.bus.serialPortOrig
         self.serial.read(self.serial.in_waiting)
 

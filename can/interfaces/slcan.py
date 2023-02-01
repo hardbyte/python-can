@@ -64,6 +64,7 @@ class slcanBus(BusABC):
         btr: Optional[str] = None,
         sleep_after_open: float = _SLEEP_AFTER_SERIAL_OPEN,
         rtscts: bool = False,
+        timeout: float = 0.001,
         **kwargs: Any,
     ) -> None:
         """
@@ -82,7 +83,8 @@ class slcanBus(BusABC):
             Time to wait in seconds after opening serial connection
         :param rtscts:
             turn hardware handshake (RTS/CTS) on and off
-
+        :param timeout:
+            Timeout for the serial or usb device in seconds (default 0.001)
         :raise ValueError: if both ``bitrate`` and ``btr`` are set or the channel is invalid
         :raise CanInterfaceNotImplementedError: if the serial module is missing
         :raise CanInitializationError: if the underlying serial connection could not be established
@@ -101,7 +103,7 @@ class slcanBus(BusABC):
                 channel,
                 baudrate=ttyBaudrate,
                 rtscts=rtscts,
-                timeout=0.001,
+                timeout=timeout,
             )
 
         self._buffer = bytearray()
