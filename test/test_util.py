@@ -245,7 +245,9 @@ class TestCheckAdjustTimingClock(unittest.TestCase):
             new_timing = check_or_adjust_timing_clock(
                 timing, valid_clocks=[8_000, 80_000_000]
             )
-            assert len(record) == 1
+            assert len(record) == 1, "; ".join(
+                [record[i].message.args[0] for i in range(len(record))]
+            )  # print all warnings, if more than one warning is present
             assert (
                 record[0].message.args[0]
                 == "Adjusted f_clock in BitTimingFd from 160000000 to 80000000"
