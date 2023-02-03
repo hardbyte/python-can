@@ -573,21 +573,22 @@ class VectorBus(BusABC):
             # The error message depends on the currently active CAN settings.
             # If the active operation mode is CAN FD, show the active CAN FD timings,
             # otherwise show CAN 2.0 timings.
-            _is_fd = bool(
+            if bool(
                 bus_params_data.can_op_mode
                 & xldefine.XL_CANFD_BusParams_CanOpMode.XL_BUS_PARAMS_CANOPMODE_CANFD
-            )
-            _bus_params_data = bus_params.canfd if _is_fd else bus_params.can
-            active_settings = ", ".join(
-                [
-                    f"{key}: {getattr(val, 'name', val)}"  # print int or Enum/Flag name
-                    for key, val in _bus_params_data._asdict().items()  # type: ignore[attr-defined]
-                ]
+            ):
+                active_settings = bus_params.canfd._asdict()
+                active_settings["can_op_mode"] = "CAN FD"
+            else:
+                active_settings = bus_params.can._asdict()
+                active_settings["can_op_mode"] = "CAN 2.0"
+            settings_string = ", ".join(
+                [f"{key}: {val}" for key, val in active_settings.items()]
             )
             raise CanInitializationError(
                 f"The requested settings could not be set for channel {channel}. "
                 f"Another application might have set incompatible settings. "
-                f"These are the currently active settings: {active_settings}."
+                f"These are the currently active settings: {settings_string}."
             )
 
     def _apply_filters(self, filters: Optional[CanFilters]) -> None:
