@@ -510,10 +510,10 @@ class VectorBus(BusABC):
         self,
         channel: int,
         bitrate: int,
-        sample_point: float | None = None,
+        sample_point: Optional[float] = None,
         fd: bool = False,
-        data_bitrate: int | None = None,
-        data_sample_point: float | None = None,
+        data_bitrate: Optional[int] = None,
+        data_sample_point: Optional[float] = None,
     ) -> None:
         """Compare requested CAN settings to active settings in driver."""
         bus_params = self._read_bus_params(channel)
