@@ -407,32 +407,10 @@ class VectorBus(BusABC):
             )
             LOG.info("xlCanSetChannelBitrate: baudr.=%u", bitrate)
 
-        if self.__testing:
-            return
-
-        # Compare requested CAN settings to active settings
-        bus_params = self._read_bus_params(channel)
-        settings_acceptable = True
-
-        # check bus type
-        settings_acceptable &= (
-            bus_params.bus_type is xldefine.XL_BusTypes.XL_BUS_TYPE_CAN
-        )
-
-        # check bitrate
-        settings_acceptable &= abs(bus_params.can.bitrate - bitrate) < bitrate / 256
-
-        if not settings_acceptable:
-            active_settings = ", ".join(
-                [
-                    f"{key}: {getattr(val, 'name', val)}"  # print int or Enum/Flag name
-                    for key, val in bus_params.can._asdict().items()
-                ]
-            )
-            raise CanInitializationError(
-                f"The requested CAN settings could not be set for channel {channel}. "
-                f"Another application might have set incompatible settings. "
-                f"These are the currently active settings: {active_settings}"
+        if not self.__testing:
+            self._check_can_settings(
+                channel=channel,
+                bitrate=bitrate,
             )
 
     def _set_bit_timing(self, channel: int, timing: BitTiming) -> None:
@@ -474,51 +452,11 @@ class VectorBus(BusABC):
                     f"timing.f_clock must be 8_000_000 or 16_000_000 (is {timing.f_clock})"
                 )
 
-        if self.__testing:
-            return
-
-        # Compare requested CAN settings to active settings
-        bus_params = self._read_bus_params(channel)
-        settings_acceptable = True
-
-        # check bus type
-        settings_acceptable &= (
-            bus_params.bus_type is xldefine.XL_BusTypes.XL_BUS_TYPE_CAN
-        )
-
-        # check CAN operation mode. For CANcaseXL can_op_mode remains 0
-        if bus_params.can.can_op_mode != 0:
-            settings_acceptable &= bool(
-                bus_params.can.can_op_mode
-                & xldefine.XL_CANFD_BusParams_CanOpMode.XL_BUS_PARAMS_CANOPMODE_CAN20
-            )
-
-        # check bitrate
-        settings_acceptable &= (
-            abs(bus_params.can.bitrate - timing.bitrate) < timing.bitrate / 256
-        )
-
-        # check sample point
-        sample_point = (
-            100
-            * (1 + bus_params.can.tseg1)
-            / (1 + bus_params.can.tseg1 + bus_params.can.tseg2)
-        )
-        settings_acceptable &= (
-            abs(sample_point - timing.sample_point) < 1.0  # 1 percent threshold
-        )
-
-        if not settings_acceptable:
-            active_settings = ", ".join(
-                [
-                    f"{key}: {getattr(val, 'name', val)}"  # print int or Enum/Flag name
-                    for key, val in bus_params.can._asdict().items()
-                ]
-            )
-            raise CanInitializationError(
-                f"The requested CAN settings could not be set for channel {channel}. "
-                f"Another application might have set incompatible settings. "
-                f"These are the currently active settings: {active_settings}"
+        if not self.__testing:
+            self._check_can_settings(
+                channel=channel,
+                bitrate=timing.bitrate,
+                sample_point=timing.sample_point,
             )
 
     def _set_bit_timing_fd(
@@ -558,11 +496,29 @@ class VectorBus(BusABC):
                 canfd_conf.tseg2Dbr,
             )
 
-        if self.__testing:
-            return
+        if not self.__testing:
+            self._check_can_settings(
+                channel=channel,
+                bitrate=timing.nom_bitrate,
+                sample_point=timing.nom_sample_point,
+                fd=True,
+                data_bitrate=timing.data_bitrate,
+                data_sample_point=timing.data_sample_point,
+            )
 
-        # Compare requested CAN settings to active settings
+    def _check_can_settings(
+        self,
+        channel: int,
+        bitrate: int,
+        sample_point: float | None = None,
+        fd: bool = False,
+        data_bitrate: int | None = None,
+        data_sample_point: float | None = None,
+    ) -> None:
+        """Compare requested CAN settings to active settings in driver."""
         bus_params = self._read_bus_params(channel)
+        # use canfd even if fd==False, bus_params.can and bus_params.canfd are a C union
+        bus_params_data = bus_params.canfd
         settings_acceptable = True
 
         # check bus type
@@ -571,50 +527,65 @@ class VectorBus(BusABC):
         )
 
         # check CAN operation mode
-        settings_acceptable &= bool(
-            bus_params.canfd.can_op_mode
-            & xldefine.XL_CANFD_BusParams_CanOpMode.XL_BUS_PARAMS_CANOPMODE_CANFD
-        )
+        if fd:
+            settings_acceptable &= bool(
+                bus_params_data.can_op_mode
+                & xldefine.XL_CANFD_BusParams_CanOpMode.XL_BUS_PARAMS_CANOPMODE_CANFD
+            )
+        elif bus_params_data.can_op_mode != 0:  # can_op_mode is always 0 for cancaseXL
+            settings_acceptable &= bool(
+                bus_params_data.can_op_mode
+                & xldefine.XL_CANFD_BusParams_CanOpMode.XL_BUS_PARAMS_CANOPMODE_CAN20
+            )
 
         # check bitrates
-        settings_acceptable &= (
-            abs(bus_params.canfd.bitrate - timing.nom_bitrate)
-            < timing.nom_bitrate / 256
-        )
-        settings_acceptable &= (
-            abs(bus_params.canfd.data_bitrate - timing.data_bitrate)
-            < timing.data_bitrate / 256
-        )
+        if bitrate:
+            settings_acceptable &= (
+                abs(bus_params_data.bitrate - bitrate) < bitrate / 256
+            )
+        if fd and data_bitrate:
+            settings_acceptable &= (
+                abs(bus_params_data.data_bitrate - data_bitrate) < data_bitrate / 256
+            )
 
         # check sample points
-        nom_sample_point = (
-            100
-            * (1 + bus_params.canfd.tseg1_abr)
-            / (1 + bus_params.canfd.tseg1_abr + bus_params.canfd.tseg2_abr)
-        )
-        settings_acceptable &= (
-            abs(nom_sample_point - timing.nom_sample_point) < 1.0  # 1 percent threshold
-        )
-
-        data_sample_point = (
-            100
-            * (1 + bus_params.canfd.tseg1_dbr)
-            / (1 + bus_params.canfd.tseg1_dbr + bus_params.canfd.tseg2_dbr)
-        )
-        settings_acceptable &= (
-            abs(data_sample_point - timing.data_sample_point)
-            < 1.0  # 1 percent threshold
-        )
+        if sample_point:
+            nom_sample_point_act = (
+                100
+                * (1 + bus_params_data.tseg1_abr)
+                / (1 + bus_params_data.tseg1_abr + bus_params_data.tseg2_abr)
+            )
+            settings_acceptable &= (
+                abs(nom_sample_point_act - sample_point) < 2.0  # 2 percent tolerance
+            )
+        if fd and data_sample_point:
+            data_sample_point_act = (
+                100
+                * (1 + bus_params_data.tseg1_dbr)
+                / (1 + bus_params_data.tseg1_dbr + bus_params_data.tseg2_dbr)
+            )
+            settings_acceptable &= (
+                abs(data_sample_point_act - data_sample_point)
+                < 2.0  # 2 percent tolerance
+            )
 
         if not settings_acceptable:
+            # The error message depends on the currently active CAN settings.
+            # If the active operation mode is CAN FD, show the active CAN FD timings,
+            # otherwise show CAN 2.0 timings.
+            _is_fd = bool(
+                bus_params_data.can_op_mode
+                & xldefine.XL_CANFD_BusParams_CanOpMode.XL_BUS_PARAMS_CANOPMODE_CANFD
+            )
+            _bus_params_data = bus_params.canfd if _is_fd else bus_params.can
             active_settings = ", ".join(
                 [
                     f"{key}: {getattr(val, 'name', val)}"  # print int or Enum/Flag name
-                    for key, val in bus_params.canfd._asdict().items()
+                    for key, val in _bus_params_data._asdict().items()  # type: ignore[attr-defined]
                 ]
             )
             raise CanInitializationError(
-                f"The requested CAN FD settings could not be set for channel {channel}. "
+                f"The requested settings could not be set for channel {channel}. "
                 f"Another application might have set incompatible settings. "
                 f"These are the currently active settings: {active_settings}."
             )
