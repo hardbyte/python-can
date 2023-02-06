@@ -8,8 +8,8 @@ import importlib
 import logging
 from typing import Any, cast, Iterable, Type, Optional, Union, List
 
+from . import util
 from .bus import BusABC
-from .util import load_config, deprecated_args_alias
 from .interfaces import BACKENDS
 from .exceptions import CanInterfaceNotImplementedError
 from .typechecking import AutoDetectedConfig, Channel
@@ -61,6 +61,13 @@ class Bus(BusABC):  # pylint: disable=abstract-method
     Instantiates a CAN Bus of the given ``interface``, falls back to reading a
     configuration file from default locations.
 
+    .. note::
+        Please note that while the arguments provided to this class take precedence
+        over any existing values from configuration, it is possible that other parameters
+        from the configuration may be added to the bus instantiation.
+        This could potentially have unintended consequences. To prevent this,
+        you may use the *ignore_config* parameter to ignore any existing configurations.
+
     :param channel:
         Channel identification. Expected type is backend dependent.
         Set to ``None`` to let it be resolved automatically from the default
@@ -71,8 +78,13 @@ class Bus(BusABC):  # pylint: disable=abstract-method
         Set to ``None`` to let it be resolved automatically from the default
         :ref:`configuration`.
 
-    :param args:
-        ``interface`` specific positional arguments.
+    :param config_context:
+        Extra 'context', that is passed to config sources.
+        This can be used to select a section other than 'default' in the configuration file.
+
+    :param ignore_config:
+        If ``True``, only the given arguments will be used for the bus instantiation. Existing
+        configuration sources will be ignored.
 
     :param kwargs:
         ``interface`` specific keyword arguments.
@@ -88,12 +100,18 @@ class Bus(BusABC):  # pylint: disable=abstract-method
     """
 
     @staticmethod
-    @deprecated_args_alias(bustype="interface")  # Deprecated since python-can 4.2
-    def __new__(  # type: ignore  # pylint: disable=keyword-arg-before-vararg
+    @util.deprecated_args_alias(
+        deprecation_start="4.2.0",
+        deprecation_end="5.0.0",
+        bustype="interface",
+        context="config_context",
+    )
+    def __new__(  # type: ignore
         cls: Any,
         channel: Optional[Channel] = None,
         interface: Optional[str] = None,
-        *args: Any,
+        config_context: Optional[str] = None,
+        ignore_config: bool = False,
         **kwargs: Any,
     ) -> BusABC:
         # figure out the rest of the configuration; this might raise an error
@@ -101,12 +119,9 @@ class Bus(BusABC):  # pylint: disable=abstract-method
             kwargs["interface"] = interface
         if channel is not None:
             kwargs["channel"] = channel
-        if "context" in kwargs:
-            context = kwargs["context"]
-            del kwargs["context"]
-        else:
-            context = None
-        kwargs = load_config(config=kwargs, context=context)
+
+        if not ignore_config:
+            kwargs = util.load_config(config=kwargs, context=config_context)
 
         # resolve the bus class to use for that interface
         cls = _get_class_for_interface(kwargs["interface"])
@@ -115,17 +130,12 @@ class Bus(BusABC):  # pylint: disable=abstract-method
         del kwargs["interface"]
 
         # make sure the bus can handle this config format
-        if "channel" not in kwargs:
-            raise ValueError("'channel' argument missing")
-        else:
-            channel = kwargs["channel"]
-            del kwargs["channel"]
-
+        channel = kwargs.pop("channel", channel)
         if channel is None:
             # Use the default channel for the backend
-            bus = cls(*args, **kwargs)
+            bus = cls(**kwargs)
         else:
-            bus = cls(channel, *args, **kwargs)
+            bus = cls(channel, **kwargs)
 
         return cast(BusABC, bus)
 

@@ -1,23 +1,35 @@
 """
 Utilities and configuration file parsing.
 """
-
+import copy
 import functools
-import warnings
-from typing import Any, Callable, cast, Dict, Iterable, Tuple, Optional, Union
-from time import time, perf_counter, get_clock_info
 import json
+import logging
 import os
 import os.path
 import platform
 import re
-import logging
+import warnings
 from configparser import ConfigParser
+from time import time, perf_counter, get_clock_info
+from typing import (
+    Any,
+    Callable,
+    cast,
+    Dict,
+    Iterable,
+    Tuple,
+    Optional,
+    Union,
+    TypeVar,
+)
 
 import can
-from .interfaces import VALID_INTERFACES
 from . import typechecking
+from .bit_timing import BitTiming, BitTimingFd
+from .exceptions import CanInitializationError
 from .exceptions import CanInterfaceNotImplementedError
+from .interfaces import VALID_INTERFACES
 
 log = logging.getLogger("can.util")
 
@@ -135,7 +147,7 @@ def load_config(
         It may set other values that are passed through.
 
     :param context:
-        Extra 'context' pass to config sources. This can be use to section
+        Extra 'context' pass to config sources. This can be used to section
         other than 'default' in the configuration file.
 
     :return:
@@ -185,9 +197,12 @@ def load_config(
                 cfg["interface"] = cfg["bustype"]
             del cfg["bustype"]
         # copy all new parameters
-        for key in cfg:
+        for key, val in cfg.items():
             if key not in config:
-                config[key] = cfg[key]
+                if isinstance(val, str):
+                    config[key] = cast_from_string(val)
+                else:
+                    config[key] = cfg[key]
 
     bus_config = _create_bus_config(config)
     can.log.debug("can config: %s", bus_config)
@@ -226,12 +241,27 @@ def _create_bus_config(config: Dict[str, Any]) -> typechecking.BusConfig:
         if not 0 < port < 65535:
             raise ValueError("Port config must be inside 0-65535 range!")
 
-    if "bitrate" in config:
-        config["bitrate"] = int(config["bitrate"])
+    if config.get("timing", None) is None:
+        try:
+            if set(typechecking.BitTimingFdDict.__annotations__).issubset(config):
+                config["timing"] = can.BitTimingFd(
+                    **{
+                        key: int(config[key])
+                        for key in typechecking.BitTimingFdDict.__annotations__
+                    }
+                )
+            elif set(typechecking.BitTimingDict.__annotations__).issubset(config):
+                config["timing"] = can.BitTiming(
+                    **{
+                        key: int(config[key])
+                        for key in typechecking.BitTimingDict.__annotations__
+                    }
+                )
+        except (ValueError, TypeError):
+            pass
+
     if "fd" in config:
-        config["fd"] = config["fd"] not in ("0", "False", "false", False)
-    if "data_bitrate" in config:
-        config["data_bitrate"] = int(config["data_bitrate"])
+        config["fd"] = config["fd"] not in (0, False)
 
     return cast(typechecking.BusConfig, config)
 
@@ -295,26 +325,47 @@ def channel2int(channel: Optional[typechecking.Channel]) -> Optional[int]:
     return None
 
 
-def deprecated_args_alias(**aliases):
+def deprecated_args_alias(  # type: ignore
+    deprecation_start: str, deprecation_end: Optional[str] = None, **aliases
+):
     """Allows to rename/deprecate a function kwarg(s) and optionally
     have the deprecated kwarg(s) set as alias(es)
 
     Example::
 
-        @deprecated_args_alias(oldArg="new_arg", anotherOldArg="another_new_arg")
+        @deprecated_args_alias("1.2.0", oldArg="new_arg", anotherOldArg="another_new_arg")
         def library_function(new_arg, another_new_arg):
             pass
 
-        @deprecated_args_alias(oldArg="new_arg", obsoleteOldArg=None)
+        @deprecated_args_alias(
+            deprecation_start="1.2.0",
+            deprecation_end="3.0.0",
+            oldArg="new_arg",
+            obsoleteOldArg=None,
+        )
         def library_function(new_arg):
             pass
+
+    :param deprecation_start:
+        The *python-can* version, that introduced the :class:`DeprecationWarning`.
+    :param deprecation_end:
+        The *python-can* version, that marks the end of the deprecation period.
+    :param aliases:
+        keyword arguments, that map the deprecated argument names
+        to the new argument names or ``None``.
 
     """
 
     def deco(f):
         @functools.wraps(f)
         def wrapper(*args, **kwargs):
-            _rename_kwargs(f.__name__, kwargs, aliases)
+            _rename_kwargs(
+                func_name=f.__name__,
+                start=deprecation_start,
+                end=deprecation_end,
+                kwargs=kwargs,
+                aliases=aliases,
+            )
             return f(*args, **kwargs)
 
         return wrapper
@@ -322,22 +373,79 @@ def deprecated_args_alias(**aliases):
     return deco
 
 
+T = TypeVar("T", BitTiming, BitTimingFd)
+
+
+def check_or_adjust_timing_clock(timing: T, valid_clocks: Iterable[int]) -> T:
+    """Adjusts the given timing instance to have an *f_clock* value that is within the
+    allowed values specified by *valid_clocks*. If the *f_clock* value of timing is
+    already within *valid_clocks*, then *timing* is returned unchanged.
+
+    :param timing:
+        The :class:`~can.BitTiming` or :class:`~can.BitTimingFd` instance to adjust.
+    :param valid_clocks:
+        An iterable of integers representing the valid *f_clock* values that the timing instance
+        can be changed to. The order of the values in *valid_clocks* determines the priority in
+        which they are tried, with earlier values being tried before later ones.
+    :return:
+        A new :class:`~can.BitTiming` or :class:`~can.BitTimingFd` instance with an
+        *f_clock* value within *valid_clocks*.
+    :raises ~can.exceptions.CanInitializationError:
+        If no compatible *f_clock* value can be found within *valid_clocks*.
+    """
+    if timing.f_clock in valid_clocks:
+        # create a copy so this function always returns a new instance
+        return copy.deepcopy(timing)
+
+    for clock in valid_clocks:
+        try:
+            # Try to use a different f_clock
+            adjusted_timing = timing.recreate_with_f_clock(clock)
+            warnings.warn(
+                f"Adjusted f_clock in {timing.__class__.__name__} from "
+                f"{timing.f_clock} to {adjusted_timing.f_clock}"
+            )
+            return adjusted_timing
+        except ValueError:
+            pass
+
+    raise CanInitializationError(
+        f"The specified timing.f_clock value {timing.f_clock} "
+        f"doesn't match any of the allowed device f_clock values: "
+        f"{', '.join([str(f) for f in valid_clocks])}"
+    ) from None
+
+
 def _rename_kwargs(
-    func_name: str, kwargs: Dict[str, str], aliases: Dict[str, str]
+    func_name: str,
+    start: str,
+    end: Optional[str],
+    kwargs: Dict[str, str],
+    aliases: Dict[str, str],
 ) -> None:
     """Helper function for `deprecated_args_alias`"""
     for alias, new in aliases.items():
         if alias in kwargs:
+            deprecation_notice = (
+                f"The '{alias}' argument is deprecated since python-can v{start}"
+            )
+            if end:
+                deprecation_notice += (
+                    f", and scheduled for removal in python-can v{end}"
+                )
+            deprecation_notice += "."
+
             value = kwargs.pop(alias)
             if new is not None:
-                warnings.warn(f"{alias} is deprecated; use {new}", DeprecationWarning)
+                deprecation_notice += f" Use '{new}' instead."
+
                 if new in kwargs:
                     raise TypeError(
-                        f"{func_name} received both {alias} (deprecated) and {new}"
+                        f"{func_name} received both '{alias}' (deprecated) and '{new}'."
                     )
                 kwargs[new] = value
-            else:
-                warnings.warn(f"{alias} is deprecated", DeprecationWarning)
+
+            warnings.warn(deprecation_notice, DeprecationWarning)
 
 
 def time_perfcounter_correlation() -> Tuple[float, float]:
@@ -367,6 +475,28 @@ def time_perfcounter_correlation() -> Tuple[float, float]:
     else:
         return time(), perf_counter()
     return t1, performance_counter
+
+
+def cast_from_string(string_val: str) -> Union[str, int, float, bool]:
+    """Perform trivial type conversion from :class:`str` values.
+
+    :param string_val:
+        the string, that shall be converted
+    """
+    if re.match(r"^[-+]?\d+$", string_val):
+        # value is integer
+        return int(string_val)
+
+    if re.match(r"^[-+]?\d*\.\d+(?:e[-+]?\d+)?$", string_val):
+        # value is float
+        return float(string_val)
+
+    if re.match(r"^(?:True|False)$", string_val, re.IGNORECASE):
+        # value is bool
+        return string_val.lower() == "true"
+
+    # value is string
+    return string_val
 
 
 if __name__ == "__main__":

@@ -29,7 +29,6 @@ class Printer(MessageWriter):
         self,
         file: Optional[Union[StringPathLike, TextIO]] = None,
         append: bool = False,
-        *args: Any,
         **kwargs: Any
     ) -> None:
         """

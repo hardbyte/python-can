@@ -8,22 +8,25 @@
 #
 #  ------------------------------------------------------------------
 #  Author : Keneth Wagner
+#  Last change: 2022-07-06
 #  ------------------------------------------------------------------
 #
-#  Copyright (C) 1999-2021  PEAK-System Technik GmbH, Darmstadt
+#  Copyright (C) 1999-2022  PEAK-System Technik GmbH, Darmstadt
 #  more Info at http://www.peak-system.com
 
 # Module Imports
 from ctypes import *
 from ctypes.util import find_library
-from string import *
 import platform
 
 import logging
 
-if platform.system() == "Windows":
-    import winreg
+PLATFORM = platform.system()
+IS_WINDOWS = PLATFORM == "Windows"
+IS_LINUX = PLATFORM == "Linux"
 
+if IS_WINDOWS:
+    import winreg
 
 logger = logging.getLogger("can.pcan")
 
@@ -282,6 +285,12 @@ PCAN_ATTACHED_CHANNELS_COUNT = TPCANParameter(
 PCAN_ATTACHED_CHANNELS = TPCANParameter(
     0x2B
 )  # Get information about PCAN channels attached to a system
+PCAN_ALLOW_ECHO_FRAMES = TPCANParameter(
+    0x2C
+)  # Echo messages reception status within a PCAN-Channel
+PCAN_DEVICE_PART_NUMBER = TPCANParameter(
+    0x2D
+)  # Get the part number associated to a device
 
 # DEPRECATED parameters
 #
@@ -354,8 +363,8 @@ MAX_LENGTH_HARDWARE_NAME = int(
     33
 )  # Maximum length of the name of a device: 32 characters + terminator
 MAX_LENGTH_VERSION_STRING = int(
-    18
-)  # Maximum length of a version string: 17 characters + terminator
+    256
+)  # Maximum length of a version string: 255 characters + terminator
 
 # PCAN message types
 #
@@ -377,6 +386,9 @@ PCAN_MESSAGE_BRS = TPCANMessageType(
 PCAN_MESSAGE_ESI = TPCANMessageType(
     0x10
 )  # The PCAN message represents a FD error state indicator(CAN FD transmitter was error active)
+PCAN_MESSAGE_ECHO = TPCANMessageType(
+    0x20
+)  # The PCAN message represents an echo CAN Frame
 PCAN_MESSAGE_ERRFRAME = TPCANMessageType(
     0x40
 )  # The PCAN message represents an error frame
@@ -654,33 +666,38 @@ class PCANBasic:
     """PCAN-Basic API class implementation"""
 
     def __init__(self):
-        # Loads the PCANBasic API
-        #
         if platform.system() == "Windows":
-            # Loads the API on Windows
-            _dll_path = find_library("PCANBasic")
-            self.__m_dllBasic = windll.LoadLibrary(_dll_path) if _dll_path else None
-            aReg = winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE)
-            try:
-                aKey = winreg.OpenKey(aReg, r"SOFTWARE\PEAK-System\PEAK-Drivers")
-                winreg.CloseKey(aKey)
-            except OSError:
-                logger.error("Exception: The PEAK-driver couldn't be found!")
-            finally:
-                winreg.CloseKey(aReg)
-        elif "CYGWIN" in platform.system():
-            self.__m_dllBasic = cdll.LoadLibrary("PCANBasic.dll")
-            # Unfortunately cygwin python has no winreg module, so we can't
-            # check for the registry key.
-        elif platform.system() == "Linux":
-            # Loads the API on Linux
-            self.__m_dllBasic = cdll.LoadLibrary("libpcanbasic.so")
-        elif platform.system() == "Darwin":
-            self.__m_dllBasic = cdll.LoadLibrary(find_library("libPCBUSB.dylib"))
+            load_library_func = windll.LoadLibrary
+
+            # look for Peak drivers in Windows registry
+            with winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE) as reg:
+                try:
+                    with winreg.OpenKey(reg, r"SOFTWARE\PEAK-System\PEAK-Drivers"):
+                        pass
+                except OSError:
+                    raise OSError("The PEAK-driver could not be found!") from None
         else:
-            self.__m_dllBasic = cdll.LoadLibrary("libpcanbasic.so")
-        if self.__m_dllBasic is None:
-            logger.error("Exception: The PCAN-Basic DLL couldn't be loaded!")
+            load_library_func = cdll.LoadLibrary
+
+        if platform.system() == "Windows" or "CYGWIN" in platform.system():
+            lib_name = "PCANBasic.dll"
+        elif platform.system() == "Darwin":
+            # PCBUSB library is a third-party software created
+            # and maintained by the MacCAN project
+            lib_name = "libPCBUSB.dylib"
+        else:
+            lib_name = "libpcanbasic.so"
+
+        lib_path = find_library(lib_name)
+        if not lib_path:
+            raise OSError(f"{lib_name} library not found.")
+
+        try:
+            self.__m_dllBasic = load_library_func(lib_path)
+        except OSError:
+            raise OSError(
+                f"The PCAN-Basic API could not be loaded. ({lib_path})"
+            ) from None
 
     # Initializes a PCAN Channel
     #
@@ -965,6 +982,7 @@ class PCANBasic:
                 or Parameter == PCAN_BITRATE_INFO_FD
                 or Parameter == PCAN_IP_ADDRESS
                 or Parameter == PCAN_FIRMWARE_VERSION
+                or Parameter == PCAN_DEVICE_PART_NUMBER
             ):
                 mybuffer = create_string_buffer(256)
 
@@ -973,6 +991,12 @@ class PCANBasic:
                 if TPCANStatus(res[0]) != PCAN_ERROR_OK:
                     return (TPCANStatus(res[0]),)
                 mybuffer = (TPCANChannelInformation * res[1])()
+
+            elif (
+                Parameter == PCAN_ACCEPTANCE_FILTER_11BIT
+                or PCAN_ACCEPTANCE_FILTER_29BIT
+            ):
+                mybuffer = c_int64(0)
 
             else:
                 mybuffer = c_int(0)
@@ -1017,6 +1041,11 @@ class PCANBasic:
                 or Parameter == PCAN_TRACE_LOCATION
             ):
                 mybuffer = create_string_buffer(256)
+            elif (
+                Parameter == PCAN_ACCEPTANCE_FILTER_11BIT
+                or PCAN_ACCEPTANCE_FILTER_29BIT
+            ):
+                mybuffer = c_int64(0)
             else:
                 mybuffer = c_int(0)
 

@@ -32,7 +32,7 @@ extras_require = {
     "cantact": ["cantact>=0.0.7"],
     "cvector": ["python-can-cvector"],
     "gs_usb": ["gs_usb>=0.2.1"],
-    "nixnet": ["nixnet>=0.3.1"],
+    "nixnet": ["nixnet>=0.3.2"],
     "pcan": ["uptime~=3.0.1"],
     "remote": ["python-can-remote"],
     "sontheim": ["python-can-sontheim>=0.1.2"],

@@ -36,7 +36,6 @@ class SqliteReader(MessageReader):
         self,
         file: StringPathLike,
         table_name: str = "messages",
-        *args: Any,
         **kwargs: Any,
     ) -> None:
         """
@@ -138,7 +137,6 @@ class SqliteWriter(MessageWriter, BufferedReader):
         self,
         file: StringPathLike,
         table_name: str = "messages",
-        *args: Any,
         **kwargs: Any,
     ) -> None:
         """
