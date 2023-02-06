@@ -655,6 +655,16 @@ PCAN_CHANNEL_NAMES = {
     "PCAN_LANBUS16": PCAN_LANBUS16,
 }
 
+VALID_PCAN_CAN_CLOCKS = [8_000_000]
+
+VALID_PCAN_FD_CLOCKS = [
+    20_000_000,
+    24_000_000,
+    30_000_000,
+    40_000_000,
+    60_000_000,
+    80_000_000,
+]
 
 # ///////////////////////////////////////////////////////////
 # PCAN-Basic API function declarations
