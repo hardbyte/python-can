@@ -247,8 +247,8 @@ class ZCanBus(BusABC):
                 try:
                     config: dict = configs[index]
                 except IndexError:
-                    LOG.warn(f'ZLG-CAN - channel:{channel} not initialized.')
-                    return
+                    LOG.warning(f'ZLG-CAN - channel:{channel} not initialized.')
+                    continue
                 init_config = {}
                 if _os.lower() == 'windows':
                     mode = config.get('mode', None)

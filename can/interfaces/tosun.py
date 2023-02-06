@@ -106,8 +106,8 @@ class TosunBus(can.BusABC):
                 try:
                     config: dict = configs[index]
                 except IndexError:
-                    LOG.warn(f'TOSUN-CAN - channel:{chl} not initialized.')
-                    return
+                    LOG.warning(f'TOSUN-CAN - channel:{chl} not initialized.')
+                    continue
 
                 bitrate = config.get('bitrate', None)
                 if bitrate is None:
