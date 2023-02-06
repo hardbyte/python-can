@@ -3,9 +3,11 @@ Test for PCAN Interface
 """
 
 import ctypes
+import platform
 import unittest
 from unittest import mock
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
+
 
 import pytest
 from parameterized import parameterized
@@ -29,7 +31,6 @@ class TestPCANBus(unittest.TestCase):
         self.mock_pcan.SetValue = Mock(return_value=PCAN_ERROR_OK)
         self.mock_pcan.GetValue = self._mockGetValue
         self.PCAN_API_VERSION_SIM = "4.2"
-
         self.bus = None
 
     def tearDown(self) -> None:
@@ -44,6 +45,8 @@ class TestPCANBus(unittest.TestCase):
         """
         if parameter == PCAN_API_VERSION:
             return PCAN_ERROR_OK, self.PCAN_API_VERSION_SIM.encode("ascii")
+        elif parameter == PCAN_RECEIVE_EVENT:
+            return PCAN_ERROR_OK, int.from_bytes(PCAN_RECEIVE_EVENT, "big")
         raise NotImplementedError(
             f"No mock return value specified for parameter {parameter}"
         )
@@ -204,7 +207,8 @@ class TestPCANBus(unittest.TestCase):
         self.assertEqual(recv_msg.timestamp, 0)
 
     @pytest.mark.timeout(3.0)
-    def test_recv_no_message(self):
+    @patch("select.select", return_value=([], [], []))
+    def test_recv_no_message(self, mock_select):
         self.mock_pcan.Read = Mock(return_value=(PCAN_ERROR_QRCVEMPTY, None, None))
         self.bus = can.Bus(interface="pcan")
         self.assertEqual(self.bus.recv(timeout=0.5), None)
@@ -330,11 +334,30 @@ class TestPCANBus(unittest.TestCase):
             )
 
     def test_detect_available_configs(self) -> None:
-        self.mock_pcan.GetValue = Mock(
-            return_value=(PCAN_ERROR_OK, PCAN_CHANNEL_AVAILABLE)
-        )
-        configs = PcanBus._detect_available_configs()
-        self.assertEqual(len(configs), 50)
+        if platform.system() == "Darwin":
+            self.mock_pcan.GetValue = Mock(
+                return_value=(PCAN_ERROR_OK, PCAN_CHANNEL_AVAILABLE)
+            )
+            configs = PcanBus._detect_available_configs()
+            self.assertEqual(len(configs), 50)
+        else:
+            value = (TPCANChannelInformation * 1).from_buffer_copy(
+                b"Q\x00\x05\x00\x01\x00\x00\x00PCAN-USB FD\x00\x00\x00\x00"
+                b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+                b'\x00\x00\x00\x00\x00\x00\x003"\x11\x00\x01\x00\x00\x00'
+            )
+            self.mock_pcan.GetValue = Mock(return_value=(PCAN_ERROR_OK, value))
+            configs = PcanBus._detect_available_configs()
+            assert len(configs) == 1
+            assert configs[0]["interface"] == "pcan"
+            assert configs[0]["channel"] == "PCAN_USBBUS1"
+            assert configs[0]["supports_fd"]
+            assert configs[0]["controller_number"] == 0
+            assert configs[0]["device_features"] == 1
+            assert configs[0]["device_id"] == 1122867
+            assert configs[0]["device_name"] == "PCAN-USB FD"
+            assert configs[0]["device_type"] == 5
+            assert configs[0]["channel_condition"] == 1
 
     @parameterized.expand([("valid", PCAN_ERROR_OK, "OK"), ("invalid", 0x00005, None)])
     def test_status_string(self, name, status, expected_result) -> None:

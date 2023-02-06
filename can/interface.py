@@ -100,8 +100,11 @@ class Bus(BusABC):  # pylint: disable=abstract-method
     """
 
     @staticmethod
-    @util.deprecated_args_alias(  # Deprecated since python-can 4.2
-        bustype="interface", context="config_context"
+    @util.deprecated_args_alias(
+        deprecation_start="4.2.0",
+        deprecation_end="5.0.0",
+        bustype="interface",
+        context="config_context",
     )
     def __new__(  # type: ignore
         cls: Any,

@@ -256,14 +256,8 @@ class CyclicSocketCan(unittest.TestCase):
         task_a = self._send_bus.send_periodic(messages_a, self.PERIOD)
         time.sleep(0.1)
 
-        # Try to start it again, task_id is not incremented in this case
-        with self.assertRaises(can.CanOperationError) as ctx:
-            task_a.start()
-        self.assertEqual(
-            "A periodic task for task ID 1 is already in progress by the SocketCAN Linux layer",
-            str(ctx.exception),
-        )
-
+        # Task restarting is permitted as of #1440
+        task_a.start()
         task_a.stop()
 
     def test_create_same_id(self):

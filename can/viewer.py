@@ -39,7 +39,7 @@ from .logger import (
 )
 
 
-logger = logging.getLogger("can.serial")
+logger = logging.getLogger("can.viewer")
 
 try:
     import curses
