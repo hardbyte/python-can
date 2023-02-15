@@ -34,7 +34,7 @@ def zlg_convert_msg(msg, **kwargs):
 def _zlg_convert_msg_linux(msg, **kwargs):
     from zlgcan.linux import ZCAN_CAN_FRAME, ZCAN_CANFD_FRAME, ZCAN_MSG_HEADER, ZCAN_MSG_INFO
     if isinstance(msg, Message):
-        trans_type = kwargs.get('trans_type', ZCANCanTransType.NORMAL)
+        trans_type = kwargs.get('trans_type', ZCANCanTransType.NORMAL if kwargs.get('resend', False) else ZCANCanTransType.SINGLE)
         if msg.is_fd:
             result = (ZCAN_CANFD_FRAME * 1)()
             result[0].data = (ctypes.c_ubyte * 64)(*msg.data)
@@ -89,7 +89,7 @@ def _zlg_convert_msg_win(msg, **kwargs):                        # channel=None, 
 
     if isinstance(msg, Message):                        # 发送报文转换
         is_merge = kwargs.get('is_merge', None)
-        trans_type = kwargs.get('trans_type', ZCANCanTransType.NORMAL)
+        trans_type = kwargs.get('trans_type', ZCANCanTransType.NORMAL if kwargs.get('resend', False) else ZCANCanTransType.SINGLE)
         assert is_merge is not None, 'is_merge required when convert to ZLG.'
         # assert trans_type is not None, 'trans_type required when convert to ZLG.'
         if not is_merge:
@@ -182,6 +182,7 @@ class ZCanBus(BusABC):
 
     def __init__(self,
                  channel: Union[int, Sequence[int], str] = None, *,
+                 resend: bool = False,
                  device_type: ZCANDeviceType,
                  device_index: int = 0,
                  rx_queue_size: Optional[int] = None,
@@ -191,6 +192,7 @@ class ZCanBus(BusABC):
         """
         Init ZLG CAN Bus device.
         :param device_type: The device type in ZCANDeviceType.
+        :param resend: Auto resend when transmit fail until success if True
         :param channel: A channel list(such as [0, 1]) or str split by ","(such as "0, 1") index cont from 0.
         :param device_index: The ZLG device index, default 0.
         :param rx_queue_size: The size of received queue.
@@ -235,7 +237,7 @@ class ZCanBus(BusABC):
             maxlen=rx_queue_size
         )  # type: Deque[Tuple[int, Any]]               # channel, raw_msg
         try:
-            self.device = ZCAN()
+            self.device = ZCAN(resend)
             self.device.OpenDevice(device_type, device_index)
             self.channels = self.device.channels
             self.available = []
@@ -362,11 +364,11 @@ class ZCanBus(BusABC):
                 raise CanOperationError(f'Channel: {channel} not in {self.available}')
             is_merge = self.device.MergeEnabled() if hasattr(self.device, 'MergeEnabled') else False
             if is_merge:
-                return self.device.TransmitData(zlg_convert_msg(msg, channel=channel, is_merge=is_merge, **kwargs), 1)
+                return self.device.TransmitData(zlg_convert_msg(msg, channel=channel, resend=self.device.resend, is_merge=is_merge, **kwargs), 1)
             else:
                 if msg.is_fd:
-                    return self.device.TransmitFD(channel, zlg_convert_msg(msg, channel=channel, is_merge=is_merge, **kwargs), 1)
-                return self.device.Transmit(channel, zlg_convert_msg(msg, channel=channel, is_merge=is_merge, **kwargs), 1)
+                    return self.device.TransmitFD(channel, zlg_convert_msg(msg, resend=self.device.resend, channel=channel, is_merge=is_merge, **kwargs), 1)
+                return self.device.Transmit(channel, zlg_convert_msg(msg, resend=self.device.resend, channel=channel, is_merge=is_merge, **kwargs), 1)
         except ZCANException as e:
             raise CanOperationError(str(e))
 
