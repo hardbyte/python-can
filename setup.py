@@ -15,7 +15,7 @@ from setuptools import setup, find_packages
 
 logging.basicConfig(level=logging.WARNING)
 
-with open("can/__init__.py", encoding="utf-8") as fd:
+with open(join("can", "__init__.py"), encoding="utf-8") as fd:
     version = re.search(
         r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]', fd.read(), re.MULTILINE
     ).group(1)
