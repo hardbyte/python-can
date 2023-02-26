@@ -1,6 +1,7 @@
 # pylint: disable=too-many-lines
 import math
 from typing import List, Mapping, Iterator, cast
+import contextlib
 
 from can.typechecking import BitTimingFdDict, BitTimingDict
 
@@ -365,7 +366,7 @@ class BitTiming(Mapping):
             if no suitable bit timings were found.
         """
         # try the most simple solution first: another bitrate prescaler
-        try:
+        with contextlib.suppress(ValueError):
             return BitTiming.from_bitrate_and_segments(
                 f_clock=f_clock,
                 bitrate=self.bitrate,
@@ -374,8 +375,6 @@ class BitTiming(Mapping):
                 sjw=self.sjw,
                 nof_samples=self.nof_samples,
             )
-        except ValueError:
-            pass
 
         # create a new timing instance with the same sample point
         bt = BitTiming.from_sample_point(
@@ -960,7 +959,7 @@ class BitTimingFd(Mapping):
             if no suitable bit timings were found.
         """
         # try the most simple solution first: another bitrate prescaler
-        try:
+        with contextlib.suppress(ValueError):
             return BitTimingFd.from_bitrate_and_segments(
                 f_clock=f_clock,
                 nom_bitrate=self.nom_bitrate,
@@ -972,8 +971,6 @@ class BitTimingFd(Mapping):
                 data_tseg2=self.data_tseg2,
                 data_sjw=self.data_sjw,
             )
-        except ValueError:
-            pass
 
         # create a new timing instance with the same sample points
         bt = BitTimingFd.from_sample_point(

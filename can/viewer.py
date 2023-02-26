@@ -23,6 +23,7 @@
 import argparse
 import errno
 import logging
+import contextlib
 import os
 import struct
 import sys
@@ -103,7 +104,7 @@ class CanViewer:  # pylint: disable=too-many-instance-attributes
             key = self.stdscr.getch()
 
             # Stop program if the user presses ESC or 'q'
-            if key == KEY_ESC or key == ord("q"):
+            if key in (KEY_ESC, ord("q")):
                 break
 
             # Clear by pressing 'c'
@@ -292,7 +293,7 @@ class CanViewer:  # pylint: disable=too-many-instance-attributes
             self.draw_line(self.ids[key]["row"], col, text, data_color)
 
         if self.data_structs:
-            try:
+            with contextlib.suppress((ValueError, struct.error)):
                 values_list = []
                 for x in self.unpack_data(
                     msg.arbitration_id, self.data_structs, msg.data
@@ -306,8 +307,6 @@ class CanViewer:  # pylint: disable=too-many-instance-attributes
                 values_string += " " * (self.x - len(values_string))
 
                 self.draw_line(self.ids[key]["row"], 77, values_string, color)
-            except (ValueError, struct.error):
-                pass
 
         return self.ids[key]
 
@@ -315,12 +314,11 @@ class CanViewer:  # pylint: disable=too-many-instance-attributes
         if row - self.scroll < 0:
             # Skip if we have scrolled past the line
             return
-        try:
+        # Suppress/ignore if we are trying to write outside the window
+        # This happens if the terminal window is too small
+        with contextlib.suppress(curses.error):
             self.stdscr.addstr(row - self.scroll, col, txt, *args)
-        except curses.error:
-            # Ignore if we are trying to write outside the window
-            # This happens if the terminal window is too small
-            pass
+
 
     def draw_header(self):
         self.stdscr.erase()
@@ -558,7 +556,5 @@ def main() -> None:
 
 if __name__ == "__main__":
     # Catch ctrl+c
-    try:
+    with contextlib.suppress(KeyboardInterrupt):
         main()
-    except KeyboardInterrupt:
-        pass

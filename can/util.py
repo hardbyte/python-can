@@ -5,6 +5,7 @@ import copy
 import functools
 import json
 import logging
+import contextlib
 import os
 import os.path
 import platform
@@ -242,7 +243,7 @@ def _create_bus_config(config: Dict[str, Any]) -> typechecking.BusConfig:
             raise ValueError("Port config must be inside 0-65535 range!")
 
     if config.get("timing", None) is None:
-        try:
+        with contextlib.suppress((ValueError, TypeError)):
             if set(typechecking.BitTimingFdDict.__annotations__).issubset(config):
                 config["timing"] = can.BitTimingFd(
                     **{
@@ -257,8 +258,6 @@ def _create_bus_config(config: Dict[str, Any]) -> typechecking.BusConfig:
                         for key in typechecking.BitTimingDict.__annotations__
                     }
                 )
-        except (ValueError, TypeError):
-            pass
 
     if "fd" in config:
         config["fd"] = config["fd"] not in (0, False)
@@ -398,7 +397,7 @@ def check_or_adjust_timing_clock(timing: T, valid_clocks: Iterable[int]) -> T:
         return copy.deepcopy(timing)
 
     for clock in valid_clocks:
-        try:
+        with contextlib.suppress(ValueError):
             # Try to use a different f_clock
             adjusted_timing = timing.recreate_with_f_clock(clock)
             warnings.warn(
@@ -406,8 +405,6 @@ def check_or_adjust_timing_clock(timing: T, valid_clocks: Iterable[int]) -> T:
                 f"{timing.f_clock} to {adjusted_timing.f_clock}"
             )
             return adjusted_timing
-        except ValueError:
-            pass
 
     raise CanInitializationError(
         f"The specified timing.f_clock value {timing.f_clock} "

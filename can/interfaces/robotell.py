@@ -155,9 +155,9 @@ class robotellBus(BusABC):
             self._writeconfig(configid, msgid_value, msgid_mask)
 
     def _getconfigsize(self, configid):
-        if configid == self._CAN_ART_ID or configid == self._CAN_ABOM_ID:
+        if configid in (self._CAN_ART_ID, self._CAN_ABOM_ID):
             return 1
-        if configid == self._CAN_BAUD_ID or configid == self._CAN_INIT_FLASH_ID:
+        if configid in (self._CAN_BAUD_ID, self._CAN_INIT_FLASH_ID):
             return 4
         if configid == self._CAN_SERIALBPS_ID:
             return 4
@@ -315,11 +315,7 @@ class robotellBus(BusABC):
         packet.append(self._PACKET_HEAD)
         packet.append(self._PACKET_HEAD)
         for msgbyte in msgbuf:
-            if (
-                msgbyte == self._PACKET_ESC
-                or msgbyte == self._PACKET_HEAD
-                or msgbyte == self._PACKET_TAIL
-            ):
+            if msgbyte in (self._PACKET_ESC, self._PACKET_HEAD, self._PACKET_TAIL):
                 packet.append(self._PACKET_ESC)
             packet.append(msgbyte)
         packet.append(self._PACKET_TAIL)

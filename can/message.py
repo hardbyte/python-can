@@ -10,6 +10,7 @@ from typing import Optional
 
 from . import typechecking
 
+import contextlib
 from copy import deepcopy
 from math import isinf, isnan
 
@@ -144,10 +145,8 @@ class Message:  # pylint: disable=too-many-instance-attributes; OK for a datacla
             field_strings.append(f"'{self.data.decode('utf-8', 'replace')}'")
 
         if self.channel is not None:
-            try:
+            with contextlib.suppress(UnicodeEncodeError):
                 field_strings.append(f"Channel: {self.channel}")
-            except UnicodeEncodeError:
-                pass
 
         return "    ".join(field_strings).strip()
 

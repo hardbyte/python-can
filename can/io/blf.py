@@ -17,6 +17,7 @@ import zlib
 import datetime
 import time
 import logging
+import contextlib
 from typing import List, BinaryIO, Generator, Union, Tuple, Optional, cast, Any
 
 from ..message import Message
@@ -199,11 +200,9 @@ class BLFReader(MessageReader):
     def _parse_container(self, data):
         if self._tail:
             data = b"".join((self._tail, data))
-        try:
+        # suppress if not enough data in the container to unpack a struct
+        with contextlib.suppress(struct.error):
             yield from self._parse_data(data)
-        except struct.error:
-            # There was not enough data in the container to unpack a struct
-            pass
         # Save the remaining data that could not be processed
         self._tail = data[self._pos :]
 

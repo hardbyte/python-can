@@ -5,6 +5,7 @@ This module contains the implementation of :class:`~can.Notifier`.
 import asyncio
 import logging
 import threading
+import contextlib
 import time
 from typing import Callable, Iterable, List, Optional, Union, Awaitable
 
@@ -65,11 +66,9 @@ class Notifier:
             CAN bus instance.
         """
         reader: int = -1
-        try:
+        # Bus doesn't support fileno, we fall back to thread based reader
+        with contextlib.suppress(NotImplementedError):
             reader = bus.fileno()
-        except NotImplementedError:
-            # Bus doesn't support fileno, we fall back to thread based reader
-            pass
 
         if self._loop is not None and reader >= 0:
             # Use bus file descriptor to watch for messages

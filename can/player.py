@@ -7,6 +7,7 @@ Similar to canplayer in the can-utils package.
 
 import sys
 import argparse
+import contextlib
 from datetime import datetime
 import errno
 from typing import cast, Iterable
@@ -97,15 +98,13 @@ def main() -> None:
 
             print(f"Can LogReader (Started on {datetime.now()})")
 
-            try:
+            with contextlib.suppress(KeyboardInterrupt):
                 for message in in_sync:
                     if message.is_error_frame and not error_frames:
                         continue
                     if verbosity >= 3:
                         print(message)
                     bus.send(message)
-            except KeyboardInterrupt:
-                pass
 
 
 if __name__ == "__main__":

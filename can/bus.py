@@ -10,6 +10,7 @@ from abc import ABC, ABCMeta, abstractmethod
 import can
 import logging
 import threading
+import contextlib
 from time import time
 from enum import Enum, auto
 
@@ -249,10 +250,8 @@ class BusABC(metaclass=ABCMeta):
         def wrapped_stop_method(remove_task: bool = True) -> None:
             nonlocal task, periodic_tasks, original_stop_method
             if remove_task:
-                try:
-                    periodic_tasks.remove(task)
-                except ValueError:
-                    pass  # allow the task to be already removed
+                with contextlib.suppress(ValueError):
+                    periodic_tasks.remove(task)  # allow the task to be already removed
             original_stop_method()
 
         task.stop = wrapped_stop_method  # type: ignore
