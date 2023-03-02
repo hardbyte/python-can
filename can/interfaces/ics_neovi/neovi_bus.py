@@ -279,11 +279,11 @@ class NeoViBus(BusABC):
         for device in devices:
             channels = []
             iface = {"interface": "neovi", "serial": NeoViBus.get_serial_number(device)}
-            if device.Name == "ValueCAN 4-1":
+            if device.DeviceType == ics.NEODEVICE_VCAN41:
                 channels = ["HSCAN"]
-            elif device.Name == "ValueCAN 4-2":
+            elif device.DeviceType == ics.NEODEVICE_VCAN42:
                 channels = ["HSCAN", "HSCAN2"]
-            elif device.Name == "ValueCAN 4-4":
+            elif device.DeviceType == ics.NEODEVICE_VCAN44:
                 channels = ["HSCAN", "HSCAN2", "HSCAN3", "HSCAN4"]
             if len(channels) > 0:
                 for channel in channels:
