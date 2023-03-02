@@ -692,10 +692,22 @@ class KvaserBus(BusABC):
         except (CANLIBError, NameError):
             pass
 
-        return [
-            {"interface": "kvaser", "channel": channel}
-            for channel in range(num_channels.value)
-        ]
+        configs = []
+        for channel in range(num_channels.value):
+            if get_channel_serial(channel) != 0:
+                configs.append({"interface": "kvaser", "channel": channel})
+        return configs
+
+
+def get_channel_serial(channel):
+    serial = ctypes.c_uint64()
+    canGetChannelData(
+        channel,
+        canstat.canCHANNELDATA_CARD_SERIAL_NO,
+        ctypes.byref(serial),
+        ctypes.sizeof(serial),
+    )
+    return serial.value
 
 
 def get_channel_info(channel):
