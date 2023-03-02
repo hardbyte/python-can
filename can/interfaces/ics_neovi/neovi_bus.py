@@ -275,10 +275,24 @@ class NeoViBus(BusABC):
             return []
 
         # TODO: add the channel(s)
-        return [
-            {"interface": "neovi", "serial": NeoViBus.get_serial_number(device)}
-            for device in devices
-        ]
+        configs = []
+        for device in devices:
+            channels = []
+            iface = {"interface": "neovi", "serial": NeoViBus.get_serial_number(device)}
+            if device.Name == "ValueCAN 4-1":
+                channels = ["HSCAN"]
+            elif device.Name == "ValueCAN 4-2":
+                channels = ["HSCAN", "HSCAN2"]
+            elif device.Name == "ValueCAN 4-4":
+                channels = ["HSCAN", "HSCAN2", "HSCAN3", "HSCAN4"]
+            if len(channels) > 0:
+                for channel in channels:
+                    _iface = iface.copy()
+                    _iface["channel"] = channel
+                    configs.append(_iface)
+            else:
+                configs.append(iface)
+        return configs
 
     def _find_device(self, type_filter=None, serial=None):
         """Returns the first matching device or raises an error.
