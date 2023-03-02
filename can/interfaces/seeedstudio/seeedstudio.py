@@ -10,9 +10,11 @@ import logging
 import struct
 import io
 from time import time
+from typing import Any, List
 
 import can
 from can import BusABC, Message
+from can.typechecking import AutoDetectedConfig
 
 logger = logging.getLogger("seeedbus")
 
@@ -24,6 +26,13 @@ except ImportError:
         "the serial module installed!"
     )
     serial = None
+
+try:
+    from serial.tools.list_ports import comports as list_comports
+except ImportError:
+    # If unavailable on some platform, just return nothing
+    def list_comports() -> List[Any]:
+        return []
 
 
 class SeeedBus(BusABC):
@@ -308,3 +317,9 @@ class SeeedBus(BusABC):
                 "fileno is not implemented using current CAN bus: %s", str(excption)
             )
             return -1
+
+    @staticmethod
+    def _detect_available_configs() -> List[AutoDetectedConfig]:
+        return [
+            {"interface": "serial", "channel": port.device} for port in list_comports()
+        ]
