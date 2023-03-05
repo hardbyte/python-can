@@ -247,7 +247,7 @@ class PcanBus(BusABC):
                 raise ValueError(err_msg)
 
         self.channel_info = str(channel)
-        self.fd = isinstance(timing, BitTimingFd) if timing else kwargs.get("fd", False)
+        is_fd = isinstance(timing, BitTimingFd) if timing else kwargs.get("fd", False)
 
         hwtype = PCAN_TYPE_ISA
         ioport = 0x02A0
@@ -271,7 +271,7 @@ class PcanBus(BusABC):
             result = self.m_objPCANBasic.Initialize(
                 self.m_PcanHandle, pcan_bitrate, hwtype, ioport, interrupt
             )
-        elif self.fd:
+        elif is_fd:
             if isinstance(timing, BitTimingFd):
                 timing = check_or_adjust_timing_clock(
                     timing, sorted(VALID_PCAN_FD_CLOCKS, reverse=True)
@@ -338,7 +338,9 @@ class PcanBus(BusABC):
             if result != PCAN_ERROR_OK:
                 raise PcanCanInitializationError(self._get_formatted_error(result))
 
-        super().__init__(channel=channel, state=state, bitrate=bitrate, **kwargs)
+        super().__init__(
+            channel=channel, is_fd=is_fd, state=state, bitrate=bitrate, **kwargs
+        )
 
     def _find_channel_by_dev_id(self, device_id):
         """
@@ -484,7 +486,7 @@ class PcanBus(BusABC):
         end_time = time.time() + timeout if timeout is not None else None
 
         while True:
-            if self.fd:
+            if self.is_fd:
                 result, pcan_msg, pcan_timestamp = self.m_objPCANBasic.ReadFD(
                     self.m_PcanHandle
                 )
@@ -546,7 +548,7 @@ class PcanBus(BusABC):
         error_state_indicator = bool(pcan_msg.MSGTYPE & PCAN_MESSAGE_ESI.value)
         is_error_frame = bool(pcan_msg.MSGTYPE & PCAN_MESSAGE_ERRFRAME.value)
 
-        if self.fd:
+        if self.is_fd:
             dlc = dlc2len(pcan_msg.DLC)
             timestamp = boottimeEpoch + (pcan_timestamp.value / (1000.0 * 1000.0))
         else:
@@ -592,7 +594,7 @@ class PcanBus(BusABC):
         if msg.error_state_indicator:
             msgType |= PCAN_MESSAGE_ESI.value
 
-        if self.fd:
+        if self.is_fd:
             # create a TPCANMsg message structure
             CANMsg = TPCANMsgFD()
 

@@ -53,8 +53,9 @@ class TestPCANBus(unittest.TestCase):
         self.bus = can.Bus(interface="pcan")
 
         self.assertIsInstance(self.bus, PcanBus)
-        self.MockPCANBasic.assert_called_once()
+        self.assertFalse(self.bus.is_fd)
 
+        self.MockPCANBasic.assert_called_once()
         self.mock_pcan.Initialize.assert_called_once()
         self.mock_pcan.InitializeFD.assert_not_called()
 
@@ -80,6 +81,8 @@ class TestPCANBus(unittest.TestCase):
         )
 
         self.assertIsInstance(self.bus, PcanBus)
+        self.assertTrue(self.bus.is_fd)
+
         self.MockPCANBasic.assert_called_once()
         self.mock_pcan.Initialize.assert_not_called()
         self.mock_pcan.InitializeFD.assert_called_once()
@@ -452,10 +455,11 @@ class TestPCANBus(unittest.TestCase):
 
     def test_constructor_bit_timing(self):
         timing = can.BitTiming.from_registers(f_clock=8_000_000, btr0=0x47, btr1=0x2F)
-        can.Bus(interface="pcan", channel="PCAN_USBBUS1", timing=timing)
+        bus = can.Bus(interface="pcan", channel="PCAN_USBBUS1", timing=timing)
 
         bitrate_arg = self.mock_pcan.Initialize.call_args[0][1]
         self.assertEqual(bitrate_arg.value, 0x472F)
+        self.assertFalse(bus.is_fd)
 
     def test_constructor_bit_timing_fd(self):
         timing = can.BitTimingFd(
@@ -469,7 +473,8 @@ class TestPCANBus(unittest.TestCase):
             data_tseg2=6,
             data_sjw=1,
         )
-        can.Bus(interface="pcan", channel="PCAN_USBBUS1", timing=timing)
+        bus = can.Bus(interface="pcan", channel="PCAN_USBBUS1", timing=timing)
+        self.assertTrue(bus.is_fd)
 
         bitrate_arg = self.mock_pcan.InitializeFD.call_args[0][-1]
 

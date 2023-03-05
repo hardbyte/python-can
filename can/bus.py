@@ -48,6 +48,7 @@ class BusABC(metaclass=ABCMeta):
     def __init__(
         self,
         channel: Any,
+        is_fd: bool = False,
         can_filters: Optional[can.typechecking.CanFilters] = None,
         **kwargs: object
     ):
@@ -58,6 +59,9 @@ class BusABC(metaclass=ABCMeta):
 
         :param channel:
             The can interface identifier. Expected type is backend dependent.
+
+        :param is_fd:
+            Indicates that this bus supports CAN-FD.
 
         :param can_filters:
             See :meth:`~can.BusABC.set_filters` for details.
@@ -71,6 +75,7 @@ class BusABC(metaclass=ABCMeta):
         :raises ~can.exceptions.CanInitializationError:
             If the bus cannot be initialized
         """
+        self._is_fd = is_fd
         self._periodic_tasks: List[_SelfRemovingCyclicTask] = []
         self.set_filters(can_filters)
 
@@ -441,6 +446,10 @@ class BusABC(metaclass=ABCMeta):
         Set the new state of the hardware
         """
         raise NotImplementedError("Property is not implemented.")
+
+    @property
+    def is_fd(self) -> bool:
+        return self._is_fd
 
     @staticmethod
     def _detect_available_configs() -> List[can.typechecking.AutoDetectedConfig]:
