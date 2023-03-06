@@ -9,7 +9,7 @@ from typing import cast, Dict, Tuple
 BACKENDS: Dict[str, Tuple[str, str]] = {
     "kvaser": ("can.interfaces.kvaser", "KvaserBus"),
     "socketcan": ("can.interfaces.socketcan", "SocketcanBus"),
-    "serial": ("can.interfaces.serial.serial_can", "SerialBus"),
+    "serial": ("can.interfaces.serial_can.serial_can", "SerialBus"),
     "pcan": ("can.interfaces.pcan", "PcanBus"),
     "usb2can": ("can.interfaces.usb2can", "Usb2canBus"),
     "ixxat": ("can.interfaces.ixxat", "IXXATBus"),
@@ -24,6 +24,7 @@ BACKENDS: Dict[str, Tuple[str, str]] = {
     "canalystii": ("can.interfaces.canalystii", "CANalystIIBus"),
     "systec": ("can.interfaces.systec", "UcanBus"),
     "seeedstudio": ("can.interfaces.seeedstudio", "SeeedBus"),
+    "usb_can_analyzer": ("can.interfaces.seeedstudio", "UsbCanAnalyzer"),
     "cantact": ("can.interfaces.cantact", "CantactBus"),
     "gs_usb": ("can.interfaces.gs_usb", "GsUsbBus"),
     "nixnet": ("can.interfaces.nixnet", "NiXNETcanBus"),

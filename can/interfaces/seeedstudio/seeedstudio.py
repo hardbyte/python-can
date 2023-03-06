@@ -9,7 +9,7 @@ SKU 114991193
 import logging
 import struct
 import io
-from time import time
+import time
 from typing import Any, List
 
 import can
@@ -33,6 +33,12 @@ except ImportError:
     # If unavailable on some platform, just return nothing
     def list_comports() -> List[Any]:
         return []
+
+
+def wait(delta):
+    now = time.perf_counter()
+    while time.perf_counter() - now < delta:
+        continue
 
 
 class SeeedBus(BusABC):
@@ -160,11 +166,13 @@ class SeeedBus(BusABC):
         logger.debug("init_frm:\t%s", byte_msg.hex())
         try:
             self.ser.write(byte_msg)
+            self.ser.flush()
         except Exception as error:
             raise can.CanInitializationError("could send init frame") from error
 
     def flush_buffer(self):
-        self.ser.flushInput()
+        self.ser.reset_input_buffer()
+        self.ser.reset_output_buffer()
 
     def status_frame(self, timeout=None):
         """
@@ -230,6 +238,8 @@ class SeeedBus(BusABC):
     def _write(self, byte_msg: bytearray) -> None:
         try:
             self.ser.write(byte_msg)
+            self.ser.flush()
+            wait(0.0002)
         except serial.PortNotOpenError as error:
             raise can.CanOperationError("writing to closed port") from error
         except serial.SerialTimeoutException as error:
@@ -320,6 +330,8 @@ class SeeedBus(BusABC):
 
     @staticmethod
     def _detect_available_configs() -> List[AutoDetectedConfig]:
-        return [
-            {"interface": "serial", "channel": port.device} for port in list_comports()
-        ]
+        configs = []
+        for port in list_comports():
+            if port.vid == 0x1A86:
+                configs.append({"interface": "seeedstudio", "channel": port.device})
+        return configs

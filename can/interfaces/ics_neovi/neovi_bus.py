@@ -268,10 +268,13 @@ class NeoViBus(BusABC):
         if ics is None:
             return []
 
-        try:
-            devices = ics.find_devices()
-        except Exception as e:
-            logger.debug("Failed to detect configs: %s", e)
+        devices = None
+        for _ in range(5):
+            try:
+                devices = ics.find_devices()
+            except Exception as e:
+                logger.debug("Failed to detect configs: %s", e)
+        if devices is None:
             return []
 
         # TODO: add the channel(s)
