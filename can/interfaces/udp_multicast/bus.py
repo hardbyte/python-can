@@ -239,7 +239,6 @@ class GeneralPurposeUdpMulticastBus:
 
         # configure the socket
         try:
-
             # set hop limit / TTL
             ttl_as_binary = struct.pack("@I", self.hop_limit)
             if self.ip_version == 4:

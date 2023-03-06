@@ -21,7 +21,6 @@ class RenameKwargsTest(unittest.TestCase):
     expected_kwargs = dict(a=1, b=2, c=3, d=4)
 
     def _test(self, start: str, end: str, kwargs, aliases):
-
         # Test that we do get the DeprecationWarning when called with deprecated kwargs
         with self.assertWarnsRegex(
             DeprecationWarning, "is deprecated.*?" + start + ".*?" + end

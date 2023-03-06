@@ -175,7 +175,6 @@ class SerialBus(BusABC):
         try:
             rx_byte = self._ser.read()
             if rx_byte and ord(rx_byte) == 0xAA:
-
                 s = self._ser.read(4)
                 timestamp = struct.unpack("<I", s)[0]
                 dlc = ord(self._ser.read())

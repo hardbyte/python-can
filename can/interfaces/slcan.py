@@ -193,7 +193,6 @@ class slcanBus(BusABC):
     def _recv_internal(
         self, timeout: Optional[float]
     ) -> Tuple[Optional[Message], bool]:
-
         canId = None
         remote = False
         extended = False

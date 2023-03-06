@@ -93,7 +93,6 @@ class BusABC(metaclass=ABCMeta):
         time_left = timeout
 
         while True:
-
             # try to get a message
             msg, already_filtered = self._recv_internal(timeout=time_left)
 
@@ -109,7 +108,6 @@ class BusABC(metaclass=ABCMeta):
             # try next one only if there still is time, and with
             # reduced timeout
             else:
-
                 time_left = timeout - (time() - start)
 
                 if time_left > 0:

@@ -74,7 +74,6 @@ class VirtualBus(BusABC):
         self._open = True
 
         with channels_lock:
-
             # Create a new channel if one does not exist
             if self.channel_id not in channels:
                 channels[self.channel_id] = []

@@ -19,7 +19,6 @@ from can.interfaces.pcan.basic import *
 
 class TestPCANBus(unittest.TestCase):
     def setUp(self) -> None:
-
         patcher = mock.patch("can.interfaces.pcan.pcan.PCANBasic", spec=True)
         self.MockPCANBasic = patcher.start()
         self.addCleanup(patcher.stop)

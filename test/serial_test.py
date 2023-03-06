@@ -44,7 +44,6 @@ class SerialDummy:
 
 
 class SimpleSerialTestBase(ComparingMessagesTestCase):
-
     MAX_TIMESTAMP = 0xFFFFFFFF / 1000
 
     def __init__(self):
