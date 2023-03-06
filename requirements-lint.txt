@@ -1,4 +1,4 @@
-pylint==2.15.9
+pylint==2.16.4
 black~=23.1.0
 mypy==1.0.1
 mypy-extensions==0.4.3
