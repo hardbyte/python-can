@@ -27,6 +27,14 @@ class BusState(Enum):
     ERROR = auto()
 
 
+class CANProtocol(Enum):
+    """The CAN protocol type supported by a :class:`can.BusABC` instance"""
+
+    CAN_20 = auto()
+    CAN_FD = auto()
+    CAN_XL = auto()
+
+
 class BusABC(metaclass=ABCMeta):
     """The CAN Bus Abstract Base Class that serves as the basis
     for all concrete interfaces.
@@ -48,7 +56,7 @@ class BusABC(metaclass=ABCMeta):
     def __init__(
         self,
         channel: Any,
-        is_fd: bool = False,
+        protocol: CANProtocol = CANProtocol.CAN_20,
         can_filters: Optional[can.typechecking.CanFilters] = None,
         **kwargs: object
     ):
@@ -60,8 +68,12 @@ class BusABC(metaclass=ABCMeta):
         :param channel:
             The can interface identifier. Expected type is backend dependent.
 
-        :param is_fd:
-            Indicates that this bus supports CAN-FD.
+        :param protocol:
+            The CAN protocol currently used by this bus instance. This value
+            is determined at initialization time (based on the initialization
+            parameters or because the bus interface only supports a specific
+            protocol) and does not change during the lifetime of a bus
+            instance.
 
         :param can_filters:
             See :meth:`~can.BusABC.set_filters` for details.
@@ -75,7 +87,7 @@ class BusABC(metaclass=ABCMeta):
         :raises ~can.exceptions.CanInitializationError:
             If the bus cannot be initialized
         """
-        self._is_fd = is_fd
+        self._can_protocol = protocol
         self._periodic_tasks: List[_SelfRemovingCyclicTask] = []
         self.set_filters(can_filters)
 
@@ -448,8 +460,13 @@ class BusABC(metaclass=ABCMeta):
         raise NotImplementedError("Property is not implemented.")
 
     @property
-    def is_fd(self) -> bool:
-        return self._is_fd
+    def protocol(self) -> CANProtocol:
+        """Return the CAN protocol used by this bus instance.
+
+        This value is set at initialization time and does not change
+        during the lifetime of a bus instance.
+        """
+        return self._can_protocol
 
     @staticmethod
     def _detect_available_configs() -> List[can.typechecking.AutoDetectedConfig]:
