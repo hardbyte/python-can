@@ -5,8 +5,6 @@ Setup script for the `can` package.
 Learn more at https://github.com/hardbyte/python-can/
 """
 
-# pylint: disable=invalid-name
-
 from os import listdir
 from os.path import isfile, join
 import re

@@ -15,7 +15,6 @@ import can.player
 
 
 class TestPlayerScriptModule(unittest.TestCase):
-
     logfile = os.path.join(os.path.dirname(__file__), "data", "test_CanMessage.asc")
 
     def setUp(self) -> None:

@@ -5,7 +5,6 @@ import can
 
 
 def main():
-
     with can.Bus(receive_own_messages=True) as bus:
         print_listener = can.Printer()
         can.Notifier(bus, [print_listener])

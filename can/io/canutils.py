@@ -48,7 +48,6 @@ class CanutilsLogReader(MessageReader):
 
     def __iter__(self) -> Generator[Message, None, None]:
         for line in self.file:
-
             # skip empty lines
             temp = line.strip()
             if not temp:

@@ -19,7 +19,6 @@ from can.interfaces.pcan.basic import *
 
 class TestPCANBus(unittest.TestCase):
     def setUp(self) -> None:
-
         patcher = mock.patch("can.interfaces.pcan.pcan.PCANBasic", spec=True)
         self.MockPCANBasic = patcher.start()
         self.addCleanup(patcher.stop)
@@ -62,7 +61,7 @@ class TestPCANBus(unittest.TestCase):
         with self.assertRaises(ValueError):
             can.Bus(interface="pcan", state=BusState.ERROR)
 
-    @parameterized.expand([("f_clock", 8_000_000), ("f_clock_mhz", 8)])
+    @parameterized.expand([("f_clock", 80_000_000), ("f_clock_mhz", 80)])
     def test_bus_creation_fd(self, clock_param: str, clock_val: int) -> None:
         self.bus = can.Bus(
             interface="pcan",

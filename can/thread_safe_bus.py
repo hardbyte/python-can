@@ -58,9 +58,7 @@ class ThreadSafeBus(ObjectProxy):  # pylint: disable=abstract-method
 
         # now, BusABC.send_periodic() does not need a lock anymore, but the
         # implementation still requires a context manager
-        # pylint: disable=protected-access
         self.__wrapped__._lock_send_periodic = nullcontext()
-        # pylint: enable=protected-access
 
         # init locks for sending and receiving separately
         self._lock_send = RLock()

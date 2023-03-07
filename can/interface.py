@@ -171,7 +171,6 @@ def detect_available_configs(
 
     result = []
     for interface in interfaces:
-
         try:
             bus_class = _get_class_for_interface(interface)
         except CanInterfaceNotImplementedError:

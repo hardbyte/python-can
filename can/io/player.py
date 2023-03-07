@@ -139,7 +139,6 @@ class MessageSync:
         t_skipped = 0.0
 
         for message in self.raw_messages:
-
             # Work out the correct wait time
             if self.timestamps:
                 if recorded_start_time is None:

@@ -275,7 +275,6 @@ class Back2BackTestCase(unittest.TestCase):
 
 @unittest.skipUnless(TEST_INTERFACE_SOCKETCAN, "skip testing of socketcan")
 class BasicTestSocketCan(Back2BackTestCase):
-
     INTERFACE_1 = "socketcan"
     CHANNEL_1 = "vcan0"
     INTERFACE_2 = "socketcan"
@@ -289,7 +288,6 @@ class BasicTestSocketCan(Back2BackTestCase):
     "only supported on Unix systems (but not on macOS at Travis CI and GitHub Actions)",
 )
 class BasicTestUdpMulticastBusIPv4(Back2BackTestCase):
-
     INTERFACE_1 = "udp_multicast"
     CHANNEL_1 = UdpMulticastBus.DEFAULT_GROUP_IPv4
     INTERFACE_2 = "udp_multicast"
@@ -329,7 +327,6 @@ except can.exceptions.CanInterfaceNotImplementedError:
 
 @unittest.skipUnless(TEST_INTERFACE_ETAS, "skip testing of etas interface")
 class BasicTestEtas(Back2BackTestCase):
-
     if TEST_INTERFACE_ETAS:
         configs = can.interface.detect_available_configs(interfaces="etas")
 

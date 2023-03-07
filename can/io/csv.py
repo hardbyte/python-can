@@ -49,7 +49,6 @@ class CSVReader(MessageReader):
             return
 
         for line in self.file:
-
             timestamp, arbitration_id, extended, remote, error, dlc, data = line.split(
                 ","
             )
