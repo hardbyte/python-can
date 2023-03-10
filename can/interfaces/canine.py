@@ -169,7 +169,6 @@ class CANineBus(BusABC):
     def _recv_internal(
         self, timeout: Optional[float]
     ) -> Tuple[Optional[Message], bool]:
-
         canId = None
         remote = False
         extended = False
@@ -211,7 +210,6 @@ class CANineBus(BusABC):
         return msg, False
 
     def send(self, msg: Message, timeout: Optional[float] = None) -> None:
-
         if msg.is_remote_frame:
             if msg.is_extended_id:
                 header = ord("R")
