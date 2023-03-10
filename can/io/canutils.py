@@ -37,7 +37,6 @@ class CanutilsLogReader(MessageReader):
     def __init__(
         self,
         file: Union[StringPathLike, TextIO],
-        *args: Any,
         **kwargs: Any,
     ) -> None:
         """
@@ -49,7 +48,6 @@ class CanutilsLogReader(MessageReader):
 
     def __iter__(self) -> Generator[Message, None, None]:
         for line in self.file:
-
             # skip empty lines
             temp = line.strip()
             if not temp:
@@ -137,7 +135,6 @@ class CanutilsLogWriter(FileIOMessageWriter):
         file: Union[StringPathLike, TextIO],
         channel: str = "vcan0",
         append: bool = False,
-        *args: Any,
         **kwargs: Any,
     ):
         """
@@ -170,14 +167,14 @@ class CanutilsLogWriter(FileIOMessageWriter):
         if isinstance(channel, int) or isinstance(channel, str) and channel.isdigit():
             channel = f"can{channel}"
 
-        framestr = "(%f) %s" % (timestamp, channel)
+        framestr = f"({timestamp:f}) {channel}"
 
         if msg.is_error_frame:
-            framestr += " %08X#" % (CAN_ERR_FLAG | CAN_ERR_BUSERROR)
+            framestr += f" {CAN_ERR_FLAG | CAN_ERR_BUSERROR:08X}#"
         elif msg.is_extended_id:
-            framestr += " %08X#" % (msg.arbitration_id)
+            framestr += f" {msg.arbitration_id:08X}#"
         else:
-            framestr += " %03X#" % (msg.arbitration_id)
+            framestr += f" {msg.arbitration_id:03X}#"
 
         if msg.is_error_frame:
             eol = "\n"
@@ -193,7 +190,7 @@ class CanutilsLogWriter(FileIOMessageWriter):
                     fd_flags |= CANFD_BRS
                 if msg.error_state_indicator:
                     fd_flags |= CANFD_ESI
-                framestr += "#%X" % fd_flags
+                framestr += f"#{fd_flags:X}"
             framestr += f"{msg.data.hex().upper()}{eol}"
 
         self.file.write(framestr)

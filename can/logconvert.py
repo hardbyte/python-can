@@ -46,7 +46,6 @@ def main():
     args = parser.parse_args()
 
     with LogReader(args.input) as reader:
-
         if args.file_size:
             logger = SizedRotatingLogger(
                 base_filename=args.output, max_bytes=args.file_size
@@ -56,7 +55,7 @@ def main():
 
         with logger:
             try:
-                for m in reader:  # pylint: disable=not-an-iterable
+                for m in reader:
                     logger(m)
             except KeyboardInterrupt:
                 sys.exit(1)

@@ -31,7 +31,6 @@ class CSVReader(MessageReader):
     def __init__(
         self,
         file: Union[StringPathLike, TextIO],
-        *args: Any,
         **kwargs: Any,
     ) -> None:
         """
@@ -50,7 +49,6 @@ class CSVReader(MessageReader):
             return
 
         for line in self.file:
-
             timestamp, arbitration_id, extended, remote, error, dlc, data = line.split(
                 ","
             )
@@ -95,7 +93,6 @@ class CSVWriter(FileIOMessageWriter):
         self,
         file: Union[StringPathLike, TextIO],
         append: bool = False,
-        *args: Any,
         **kwargs: Any,
     ) -> None:
         """

@@ -99,7 +99,6 @@ class Usb2canBus(BusABC):
         serial: Optional[str] = None,
         **kwargs,
     ):
-
         self.can = Usb2CanAbstractionLayer(dll)
 
         # get the serial number of the device
@@ -134,7 +133,6 @@ class Usb2canBus(BusABC):
             raise CanOperationError("could not send message", error_code=status)
 
     def _recv_internal(self, timeout):
-
         messagerx = CanalMsg()
 
         if timeout == 0:

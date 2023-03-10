@@ -93,7 +93,6 @@ class BusABC(metaclass=ABCMeta):
         time_left = timeout
 
         while True:
-
             # try to get a message
             msg, already_filtered = self._recv_internal(timeout=time_left)
 
@@ -109,7 +108,6 @@ class BusABC(metaclass=ABCMeta):
             # try next one only if there still is time, and with
             # reduced timeout
             else:
-
                 time_left = timeout - (time() - start)
 
                 if time_left > 0:
@@ -314,8 +312,10 @@ class BusABC(metaclass=ABCMeta):
     def __iter__(self) -> Iterator[Message]:
         """Allow iteration on messages as they are received.
 
-            >>> for msg in bus:
-            ...     print(msg)
+        .. code-block:: python
+
+            for msg in bus:
+                print(msg)
 
 
         :yields:
@@ -352,9 +352,9 @@ class BusABC(metaclass=ABCMeta):
 
         :param filters:
             A iterable of dictionaries each containing a "can_id",
-            a "can_mask", and an optional "extended" key.
+            a "can_mask", and an optional "extended" key::
 
-            >>> [{"can_id": 0x11, "can_mask": 0x21, "extended": False}]
+                [{"can_id": 0x11, "can_mask": 0x21, "extended": False}]
 
             A filter matches, when
             ``<received_can_id> & can_mask == can_id & can_mask``.
@@ -464,7 +464,5 @@ class _SelfRemovingCyclicTask(CyclicSendTaskABC, ABC):
     Only needed for typing :meth:`Bus._periodic_tasks`. Do not instantiate.
     """
 
-    def stop(  # pylint: disable=arguments-differ
-        self, remove_task: bool = True
-    ) -> None:
+    def stop(self, remove_task: bool = True) -> None:
         raise NotImplementedError()

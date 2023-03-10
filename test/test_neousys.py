@@ -33,7 +33,7 @@ class TestNeousysBus(unittest.TestCase):
         can.interfaces.neousys.neousys.NEOUSYS_CANLIB.CAN_Start = Mock(return_value=1)
         can.interfaces.neousys.neousys.NEOUSYS_CANLIB.CAN_Send = Mock(return_value=1)
         can.interfaces.neousys.neousys.NEOUSYS_CANLIB.CAN_Stop = Mock(return_value=1)
-        self.bus = can.Bus(channel=0, bustype="neousys")
+        self.bus = can.Bus(channel=0, interface="neousys")
 
     def tearDown(self) -> None:
         if self.bus:
@@ -66,7 +66,7 @@ class TestNeousysBus(unittest.TestCase):
         )
 
     def test_bus_creation_bitrate(self) -> None:
-        self.bus = can.Bus(channel=0, bustype="neousys", bitrate=200000)
+        self.bus = can.Bus(channel=0, interface="neousys", bitrate=200000)
         self.assertIsInstance(self.bus, neousys.NeousysBus)
         CAN_Start_args = (
             can.interfaces.neousys.neousys.NEOUSYS_CANLIB.CAN_Setup.call_args[0]

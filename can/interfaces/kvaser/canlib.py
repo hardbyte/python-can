@@ -410,8 +410,8 @@ class KvaserBus(BusABC):
 
         """
 
-        log.info("CAN Filters: {}".format(can_filters))
-        log.info("Got configuration of: {}".format(kwargs))
+        log.info(f"CAN Filters: {can_filters}")
+        log.info(f"Got configuration of: {kwargs}")
         bitrate = kwargs.get("bitrate", 500000)
         tseg1 = kwargs.get("tseg1", 0)
         tseg2 = kwargs.get("tseg2", 0)
@@ -662,9 +662,18 @@ class KvaserBus(BusABC):
 
         Use like so:
 
-        >>> stats = bus.get_stats()
-        >>> print(stats)
-        std_data: 0, std_remote: 0, ext_data: 0, ext_remote: 0, err_frame: 0, bus_load: 0.0%, overruns: 0
+        .. testsetup:: kvaser
+
+            from unittest.mock import Mock
+            from can.interfaces.kvaser.structures import BusStatistics
+            bus = Mock()
+            bus.get_stats = Mock(side_effect=lambda: BusStatistics())
+
+        .. doctest:: kvaser
+
+            >>> stats = bus.get_stats()
+            >>> print(stats)
+            std_data: 0, std_remote: 0, ext_data: 0, ext_remote: 0, err_frame: 0, bus_load: 0.0%, overruns: 0
 
         :returns: bus statistics.
         """

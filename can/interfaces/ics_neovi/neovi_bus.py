@@ -40,7 +40,6 @@ except ImportError as ie:
 try:
     from filelock import FileLock
 except ImportError as ie:
-
     logger.warning(
         "Using ICS neoVI can backend without the "
         "filelock module installed may cause some issues!: %s",
@@ -171,8 +170,8 @@ class NeoViBus(BusABC):
 
         super().__init__(channel=channel, can_filters=can_filters, **kwargs)
 
-        logger.info("CAN Filters: {}".format(can_filters))
-        logger.info("Got configuration of: {}".format(kwargs))
+        logger.info(f"CAN Filters: {can_filters}")
+        logger.info(f"Got configuration of: {kwargs}")
 
         if "override_library_name" in kwargs:
             ics.override_library_name(kwargs.get("override_library_name"))
@@ -215,12 +214,12 @@ class NeoViBus(BusABC):
         self._use_system_timestamp = bool(kwargs.get("use_system_timestamp", False))
         self._receive_own_messages = kwargs.get("receive_own_messages", True)
 
-        self.channel_info = "%s %s CH:%s" % (
+        self.channel_info = "{} {} CH:{}".format(
             self.dev.Name,
             self.get_serial_number(self.dev),
             self.channels,
         )
-        logger.info("Using device: {}".format(self.channel_info))
+        logger.info(f"Using device: {self.channel_info}")
 
         self.rx_buffer = deque()
         self.message_receipts = defaultdict(Event)
@@ -230,7 +229,7 @@ class NeoViBus(BusABC):
         try:
             channel = int(channel_name_or_id)
         except ValueError:
-            netid = "NETID_{}".format(channel_name_or_id.upper())
+            netid = f"NETID_{channel_name_or_id.upper()}"
             if hasattr(ics, netid):
                 channel = getattr(ics, netid)
             else:
@@ -298,9 +297,9 @@ class NeoViBus(BusABC):
             msg = ["No device"]
 
             if type_filter is not None:
-                msg.append("with type {}".format(type_filter))
+                msg.append(f"with type {type_filter}")
             if serial is not None:
-                msg.append("with serial {}".format(serial))
+                msg.append(f"with serial {serial}")
             msg.append("found.")
             raise CanInitializationError(" ".join(msg))
 
@@ -318,8 +317,9 @@ class NeoViBus(BusABC):
             if is_tx:
                 if bool(ics_msg.StatusBitField & ics.SPY_STATUS_GLOBAL_ERR):
                     continue
-                if ics_msg.DescriptionID:
-                    receipt_key = (ics_msg.ArbIDOrHeader, ics_msg.DescriptionID)
+
+                receipt_key = (ics_msg.ArbIDOrHeader, ics_msg.DescriptionID)
+                if ics_msg.DescriptionID and receipt_key in self.message_receipts:
                     self.message_receipts[receipt_key].set()
                 if not self._receive_own_messages:
                     continue
@@ -477,11 +477,10 @@ class NeoViBus(BusABC):
         else:
             raise ValueError("msg.channel must be set when using multiple channels.")
 
-        msg_desc_id = next(description_id)
-        message.DescriptionID = msg_desc_id
-        receipt_key = (msg.arbitration_id, msg_desc_id)
-
         if timeout != 0:
+            msg_desc_id = next(description_id)
+            message.DescriptionID = msg_desc_id
+            receipt_key = (msg.arbitration_id, msg_desc_id)
             self.message_receipts[receipt_key].clear()
 
         try:
@@ -492,5 +491,9 @@ class NeoViBus(BusABC):
         # If timeout is set, wait for ACK
         # This requires a notifier for the bus or
         # some other thread calling recv periodically
-        if timeout != 0 and not self.message_receipts[receipt_key].wait(timeout):
-            raise CanTimeoutError("Transmit timeout")
+        if timeout != 0:
+            got_receipt = self.message_receipts[receipt_key].wait(timeout)
+            # We no longer need this receipt, so no point keeping it in memory
+            del self.message_receipts[receipt_key]
+            if not got_receipt:
+                raise CanTimeoutError("Transmit timeout")

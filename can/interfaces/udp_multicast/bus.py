@@ -55,7 +55,7 @@ class UdpMulticastBus(BusABC):
     .. warning::
         This interface does not make guarantees on reliable delivery and message ordering, and also does not
         implement rate limiting or ID arbitration/prioritization under high loads. Please refer to the section
-        :ref:`other_virtual_interfaces` for more information on this and a comparison to alternatives.
+        :ref:`virtual_interfaces_doc` for more information on this and a comparison to alternatives.
 
     :param channel: A multicast IPv4 address (in `224.0.0.0/4`) or an IPv6 address (in `ff00::/8`).
                     This defines which version of IP is used. See
@@ -239,7 +239,6 @@ class GeneralPurposeUdpMulticastBus:
 
         # configure the socket
         try:
-
             # set hop limit / TTL
             ttl_as_binary = struct.pack("@I", self.hop_limit)
             if self.ip_version == 4:

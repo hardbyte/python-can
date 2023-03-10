@@ -2,7 +2,7 @@
 Contains handling of ASC logging files.
 
 Example .asc files:
-    - https://bitbucket.org/tobylorenz/vector_asc/src/47556e1a6d32c859224ca62d075e1efcc67fa690/src/Vector/ASC/tests/unittests/data/CAN_Log_Trigger_3_2.asc?at=master&fileviewer=file-view-default
+    - https://bitbucket.org/tobylorenz/vector_asc/src/master/src/Vector/ASC/tests/unittests/data/
     - under `test/data/logfile.asc`
 """
 import re
@@ -39,7 +39,6 @@ class ASCReader(MessageReader):
         file: Union[StringPathLike, TextIO],
         base: str = "hex",
         relative_timestamp: bool = True,
-        *args: Any,
         **kwargs: Any,
     ) -> None:
         """
@@ -93,7 +92,7 @@ class ASCReader(MessageReader):
                 )
                 continue
 
-            elif base_match:
+            if base_match:
                 base = base_match.group("base")
                 timestamp_format = base_match.group("timestamp_format")
                 self.base = base
@@ -101,15 +100,14 @@ class ASCReader(MessageReader):
                 self.timestamps_format = timestamp_format or "absolute"
                 continue
 
-            elif comment_match:
+            if comment_match:
                 continue
 
-            elif events_match:
+            if events_match:
                 self.internal_events_logged = events_match.group("no_events") is None
                 break
 
-            else:
-                break
+            break
 
     @staticmethod
     def _datetime_to_timestamp(datetime_string: str) -> float:
@@ -176,7 +174,6 @@ class ASCReader(MessageReader):
     def _process_classic_can_frame(
         self, line: str, msg_kwargs: Dict[str, Any]
     ) -> Message:
-
         # CAN error frame
         if line.strip()[0:10].lower() == "errorframe":
             # Error Frame
@@ -354,7 +351,6 @@ class ASCWriter(FileIOMessageWriter):
         self,
         file: Union[StringPathLike, TextIO],
         channel: int = 1,
-        *args: Any,
         **kwargs: Any,
     ) -> None:
         """
@@ -426,7 +422,6 @@ class ASCWriter(FileIOMessageWriter):
         self.file.write(line)
 
     def on_message_received(self, msg: Message) -> None:
-
         if msg.is_error_frame:
             self.log_event(f"{self.channel}  ErrorFrame", msg.timestamp)
             return

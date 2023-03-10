@@ -11,12 +11,14 @@ from can.bus import BusState
 def receive_all():
     """Receives all messages and prints them to the console until Ctrl+C is pressed."""
 
-    with can.Bus(interface="pcan", channel="PCAN_USBBUS1", bitrate=250000) as bus:
-        # bus = can.Bus(interface='ixxat', channel=0, bitrate=250000)
-        # bus = can.Bus(interface='vector', app_name='CANalyzer', channel=0, bitrate=250000)
-
+    # this uses the default configuration (for example from environment variables, or a
+    # config file) see https://python-can.readthedocs.io/en/stable/configuration.html
+    with can.Bus() as bus:
         # set to read-only, only supported on some interfaces
-        bus.state = BusState.PASSIVE
+        try:
+            bus.state = BusState.PASSIVE
+        except NotImplementedError:
+            pass
 
         try:
             while True:

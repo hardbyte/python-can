@@ -31,9 +31,8 @@ class SimpleCyclicSendTaskTest(unittest.TestCase, ComparingMessagesTestCase):
             is_extended_id=False, arbitration_id=0x123, data=[0, 1, 2, 3, 4, 5, 6, 7]
         )
 
-        with can.interface.Bus(bustype="virtual") as bus1:
-            with can.interface.Bus(bustype="virtual") as bus2:
-
+        with can.interface.Bus(interface="virtual") as bus1:
+            with can.interface.Bus(interface="virtual") as bus2:
                 # disabling the garbage collector makes the time readings more reliable
                 gc.disable()
 
@@ -67,7 +66,7 @@ class SimpleCyclicSendTaskTest(unittest.TestCase, ComparingMessagesTestCase):
                 self.assertMessageEqual(msg, last_msg)
 
     def test_removing_bus_tasks(self):
-        bus = can.interface.Bus(bustype="virtual")
+        bus = can.interface.Bus(interface="virtual")
         tasks = []
         for task_i in range(10):
             msg = can.Message(
@@ -90,7 +89,7 @@ class SimpleCyclicSendTaskTest(unittest.TestCase, ComparingMessagesTestCase):
         bus.shutdown()
 
     def test_managed_tasks(self):
-        bus = can.interface.Bus(bustype="virtual", receive_own_messages=True)
+        bus = can.interface.Bus(interface="virtual", receive_own_messages=True)
         tasks = []
         for task_i in range(3):
             msg = can.Message(
@@ -120,7 +119,7 @@ class SimpleCyclicSendTaskTest(unittest.TestCase, ComparingMessagesTestCase):
         bus.shutdown()
 
     def test_stopping_perodic_tasks(self):
-        bus = can.interface.Bus(bustype="virtual")
+        bus = can.interface.Bus(interface="virtual")
         tasks = []
         for task_i in range(10):
             msg = can.Message(
@@ -153,7 +152,7 @@ class SimpleCyclicSendTaskTest(unittest.TestCase, ComparingMessagesTestCase):
 
     @unittest.skipIf(IS_CI, "fails randomly when run on CI server")
     def test_thread_based_cyclic_send_task(self):
-        bus = can.ThreadSafeBus(bustype="virtual")
+        bus = can.ThreadSafeBus(interface="virtual")
         msg = can.Message(
             is_extended_id=False, arbitration_id=0x123, data=[0, 1, 2, 3, 4, 5, 6, 7]
         )

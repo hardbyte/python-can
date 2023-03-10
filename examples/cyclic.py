@@ -114,7 +114,9 @@ def main():
         arbitration_id=0x00, data=[0, 0, 0, 0, 0, 0], is_extended_id=False
     )
 
-    with can.Bus(interface="virtual") as bus:
+    # this uses the default configuration (for example from environment variables, or a
+    # config file) see https://python-can.readthedocs.io/en/stable/configuration.html
+    with can.Bus() as bus:
         bus.send(reset_msg)
 
         simple_periodic_send(bus)

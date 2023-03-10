@@ -51,7 +51,7 @@ class VirtualBus(BusABC):
     .. warning::
         This interface guarantees reliable delivery and message ordering, but does *not* implement rate
         limiting or ID arbitration/prioritization under high loads. Please refer to the section
-        :ref:`other_virtual_interfaces` for more information on this and a comparison to alternatives.
+        :ref:`virtual_interfaces_doc` for more information on this and a comparison to alternatives.
     """
 
     def __init__(
@@ -74,7 +74,6 @@ class VirtualBus(BusABC):
         self._open = True
 
         with channels_lock:
-
             # Create a new channel if one does not exist
             if self.channel_id not in channels:
                 channels[self.channel_id] = []

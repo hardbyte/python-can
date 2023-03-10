@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# coding: utf-8
 
 """
 This module tests :meth:`can.interface.virtual`.
@@ -14,8 +13,8 @@ EXAMPLE_MSG1 = Message(timestamp=1639739471.5565314, arbitration_id=0x481, data=
 
 class TestMessageFiltering(unittest.TestCase):
     def setUp(self):
-        self.node1 = Bus("test", bustype="virtual", preserve_timestamps=True)
-        self.node2 = Bus("test", bustype="virtual")
+        self.node1 = Bus("test", interface="virtual", preserve_timestamps=True)
+        self.node2 = Bus("test", interface="virtual")
 
     def tearDown(self):
         self.node1.shutdown()

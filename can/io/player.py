@@ -16,6 +16,7 @@ from .blf import BLFReader
 from .canutils import CanutilsLogReader
 from .csv import CSVReader
 from .sqlite import SqliteReader
+from .trc import TRCReader
 from ..typechecking import StringPathLike, FileLike, AcceptedIOType
 from ..message import Message
 
@@ -30,6 +31,7 @@ class LogReader(MessageReader):
       * .csv
       * .db
       * .log
+      * .trc
 
     Gzip compressed files can be used as long as the original
     files suffix is one of the above (e.g. filename.asc.gz).
@@ -56,13 +58,13 @@ class LogReader(MessageReader):
         ".csv": CSVReader,
         ".db": SqliteReader,
         ".log": CanutilsLogReader,
+        ".trc": TRCReader,
     }
 
     @staticmethod
     def __new__(  # type: ignore
         cls: typing.Any,
         filename: StringPathLike,
-        *args: typing.Any,
         **kwargs: typing.Any,
     ) -> MessageReader:
         """
@@ -84,7 +86,7 @@ class LogReader(MessageReader):
         if suffix == ".gz":
             suffix, file_or_filename = LogReader.decompress(filename)
         try:
-            return LogReader.message_readers[suffix](file_or_filename, *args, **kwargs)
+            return LogReader.message_readers[suffix](file=file_or_filename, **kwargs)
         except KeyError:
             raise ValueError(
                 f'No read support for this unknown log format "{suffix}"'
@@ -103,10 +105,10 @@ class LogReader(MessageReader):
         return real_suffix, gzip.open(filename, mode)
 
     def __iter__(self) -> typing.Generator[Message, None, None]:
-        pass
+        raise NotImplementedError()
 
 
-class MessageSync:  # pylint: disable=too-few-public-methods
+class MessageSync:
     """
     Used to iterate over some given messages in the recorded time.
     """
@@ -137,7 +139,6 @@ class MessageSync:  # pylint: disable=too-few-public-methods
         t_skipped = 0.0
 
         for message in self.raw_messages:
-
             # Work out the correct wait time
             if self.timestamps:
                 if recorded_start_time is None:

@@ -1,9 +1,9 @@
 .. _ixxatdoc:
 
-IXXAT Virtual CAN Interface
-===========================
+IXXAT Virtual Communication Interface
+=====================================
 
-Interface to `IXXAT <http://www.ixxat.com/>`__ Virtual CAN Interface V3 SDK. Works on Windows.
+Interface to `IXXAT <http://www.ixxat.com/>`__ Virtual Communication Interface V3 SDK. Works on Windows.
 
 The Linux ECI SDK is currently unsupported, however on Linux some devices are
 supported with :doc:`socketcan`.
@@ -14,33 +14,8 @@ Modifying cyclic messages is not possible. You will need to stop it, and then
 start a new periodic message.
 
 
-Bus
----
-
-.. autoclass:: can.interfaces.ixxat.IXXATBus
-    :members:
-
-Implementation based on vcinpl.dll
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autoclass:: can.interfaces.ixxat.canlib_vcinpl.IXXATBus
-    :members:
-
-.. autoclass:: can.interfaces.ixxat.canlib_vcinpl.CyclicSendTask
-    :members:
-
-Implementation based on vcinpl2.dll
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autoclass:: can.interfaces.ixxat.canlib_vcinpl2.IXXATBus
-    :members:
-
-.. autoclass:: can.interfaces.ixxat.canlib_vcinpl2.CyclicSendTask
-    :members:
-
-
-Configuration file
-------------------
+Configuration
+-------------
 The simplest configuration file would be::
 
     [default]
@@ -84,11 +59,46 @@ List available devices
 In case you have connected multiple IXXAT devices, you have to select them by using their unique hardware id.
 To get a list of all connected IXXAT you can use the function ``get_ixxat_hwids()`` as demonstrated below:
 
-    >>> from can.interfaces.ixxat import get_ixxat_hwids
-    >>> for hwid in get_ixxat_hwids():
-    ...     print("Found IXXAT with hardware id '%s'." % hwid)
-    Found IXXAT with hardware id 'HW441489'.
-    Found IXXAT with hardware id 'HW107422'.
+    .. testsetup:: ixxat
+
+        from unittest.mock import Mock
+        import can.interfaces.ixxat
+        assert hasattr(can.interfaces.ixxat, "get_ixxat_hwids")
+        can.interfaces.ixxat.get_ixxat_hwids = Mock(side_effect=lambda: ['HW441489', 'HW107422'])
+
+    .. doctest:: ixxat
+
+        >>> from can.interfaces.ixxat import get_ixxat_hwids
+        >>> for hwid in get_ixxat_hwids():
+        ...     print("Found IXXAT with hardware id '%s'." % hwid)
+        Found IXXAT with hardware id 'HW441489'.
+        Found IXXAT with hardware id 'HW107422'.
+
+
+Bus
+---
+
+.. autoclass:: can.interfaces.ixxat.IXXATBus
+    :members:
+
+Implementation based on vcinpl.dll
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: can.interfaces.ixxat.canlib_vcinpl.IXXATBus
+    :members:
+
+.. autoclass:: can.interfaces.ixxat.canlib_vcinpl.CyclicSendTask
+    :members:
+
+Implementation based on vcinpl2.dll
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: can.interfaces.ixxat.canlib_vcinpl2.IXXATBus
+    :members:
+
+.. autoclass:: can.interfaces.ixxat.canlib_vcinpl2.CyclicSendTask
+    :members:
+
 
 
 Internals

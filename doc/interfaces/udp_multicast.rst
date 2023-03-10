@@ -16,7 +16,7 @@ sufficiently reliable for this interface to function properly.
 
 .. note::
     For an overview over the different virtual buses in this library and beyond, please refer
-    to the section :ref:`other_virtual_interfaces`. It also describes important limitations
+    to the section :ref:`virtual_interfaces_doc`. It also describes important limitations
     of this interface.
 
 Please refer to the `Bus class documentation`_ below for configuration options and useful resources
@@ -40,7 +40,7 @@ from ``bus_1`` to ``bus_2``:
         from can.interfaces.udp_multicast import UdpMulticastBus
 
         # The bus can be created using the can.Bus wrapper class or using UdpMulticastBus directly
-        with can.Bus(channel=UdpMulticastBus.DEFAULT_GROUP_IPv6, bustype='udp_multicast') as bus_1, \
+        with can.Bus(channel=UdpMulticastBus.DEFAULT_GROUP_IPv6, interface='udp_multicast') as bus_1, \
                 UdpMulticastBus(channel=UdpMulticastBus.DEFAULT_GROUP_IPv6) as bus_2:
 
             # register a callback on the second bus that prints messages to the standard out

@@ -8,7 +8,7 @@ messages on a can bus.
 import logging
 from typing import Dict, Any
 
-__version__ = "4.0.0"
+__version__ = "4.1.0"
 
 log = logging.getLogger("can")
 
@@ -33,7 +33,7 @@ from .notifier import Notifier
 from .interfaces import VALID_INTERFACES
 from . import interface
 from .interface import Bus, detect_available_configs
-from .bit_timing import BitTiming
+from .bit_timing import BitTiming, BitTimingFd
 
 from .io import Logger, SizedRotatingLogger, Printer, LogReader, MessageSync
 from .io import ASCWriter, ASCReader
@@ -41,6 +41,7 @@ from .io import BLFReader, BLFWriter
 from .io import CanutilsLogReader, CanutilsLogWriter
 from .io import CSVWriter, CSVReader
 from .io import SqliteWriter, SqliteReader
+from .io import TRCReader, TRCWriter, TRCFileVersion
 
 from .broadcastmanager import (
     CyclicSendTaskABC,
