@@ -1,15 +1,15 @@
 import collections
-from ctypes import c_ubyte
 import logging
 import time
+from ctypes import c_ubyte
 from typing import Any, Dict, Optional, Deque, Sequence, Tuple, Union
 
-from can import BitTiming, BusABC, Message, BitTimingFd
-from can.exceptions import CanTimeoutError, CanInitializationError
+import canalystii as driver
+
+from can import BitTiming, BusABC, Message, BitTimingFd, CANProtocol
+from can.exceptions import CanTimeoutError
 from can.typechecking import CanFilters
 from can.util import deprecated_args_alias, check_or_adjust_timing_clock
-
-import canalystii as driver
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +50,12 @@ class CANalystIIBus(BusABC):
             If set, software received message queue can only grow to this many
             messages (for all channels) before older messages are dropped
         """
-        super().__init__(channel=channel, can_filters=can_filters, **kwargs)
+        super().__init__(
+            channel=channel,
+            can_filters=can_filters,
+            protocol=CANProtocol.CAN_20,
+            **kwargs,
+        )
 
         if not (bitrate or timing):
             raise ValueError("Either bitrate or timing argument is required")

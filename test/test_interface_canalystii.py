@@ -3,12 +3,12 @@
 """
 """
 
-import time
 import unittest
-from unittest.mock import Mock, patch, call
 from ctypes import c_ubyte
+from unittest.mock import patch, call
 
 import canalystii as driver  # low-level driver module, mock out this layer
+
 import can
 from can.interfaces.canalystii import CANalystIIBus
 
@@ -22,6 +22,9 @@ class CanalystIITest(unittest.TestCase):
         with create_mock_device() as mock_device:
             instance = mock_device.return_value
             bus = CANalystIIBus(bitrate=1000000)
+
+            self.assertEqual(bus.protocol, can.CANProtocol.CAN_20)
+
             instance.init.assert_has_calls(
                 [
                     call(0, bitrate=1000000),
@@ -34,6 +37,8 @@ class CanalystIITest(unittest.TestCase):
             with create_mock_device() as mock_device:
                 instance = mock_device.return_value
                 bus = CANalystIIBus(channel, bitrate=1000000)
+
+                self.assertEqual(bus.protocol, can.CANProtocol.CAN_20)
                 instance.init.assert_called_once_with(channel, bitrate=1000000)
 
     def test_initialize_with_timing_registers(self):
@@ -43,6 +48,8 @@ class CanalystIITest(unittest.TestCase):
                 f_clock=8_000_000, btr0=0x03, btr1=0x6F
             )
             bus = CANalystIIBus(bitrate=None, timing=timing)
+            self.assertEqual(bus.protocol, can.CANProtocol.CAN_20)
+
             instance.init.assert_has_calls(
                 [
                     call(0, timing0=0x03, timing1=0x6F),
