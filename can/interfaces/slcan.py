@@ -2,21 +2,19 @@
 Interface for slcan compatible interfaces (win32/linux).
 """
 
+import io
+import logging
+import time
 from typing import Any, Optional, Tuple
 
-import io
-import time
-import logging
-
-from can import BusABC, Message
+from can import BusABC, Message, CANProtocol
+from can import typechecking
 from ..exceptions import (
     CanInterfaceNotImplementedError,
     CanInitializationError,
     CanOperationError,
     error_check,
 )
-from can import typechecking
-
 
 logger = logging.getLogger(__name__)
 
@@ -120,7 +118,12 @@ class slcanBus(BusABC):
             self.open()
 
         super().__init__(
-            channel, ttyBaudrate=115200, bitrate=None, rtscts=False, **kwargs
+            channel,
+            ttyBaudrate=115200,
+            bitrate=None,
+            rtscts=False,
+            protocol=CANProtocol.CAN_20,
+            **kwargs,
         )
 
     def set_bitrate(self, bitrate: int) -> None:
