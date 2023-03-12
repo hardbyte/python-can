@@ -3,21 +3,20 @@ import logging
 import select
 import socket
 import struct
+from typing import List, Optional, Tuple, Union
+
+import can
+from can import BusABC, CANProtocol
+from can.typechecking import AutoDetectedConfig
+from .utils import pack_message, unpack_message, check_msgpack_installed
 
 try:
     from fcntl import ioctl
 except ModuleNotFoundError:  # Missing on Windows
     pass
 
-from typing import List, Optional, Tuple, Union
 
 log = logging.getLogger(__name__)
-
-import can
-from can import BusABC
-from can.typechecking import AutoDetectedConfig
-
-from .utils import pack_message, unpack_message, check_msgpack_installed
 
 
 # see socket.getaddrinfo()
@@ -103,7 +102,9 @@ class UdpMulticastBus(BusABC):
                 "receiving own messages is not yet implemented"
             )
 
-        super().__init__(channel, **kwargs)
+        super().__init__(
+            channel, **kwargs, protocol=CANProtocol.CAN_FD if fd else CANProtocol.CAN_20
+        )
 
         self.is_fd = fd
         self._multicast = GeneralPurposeUdpMulticastBus(channel, port, hop_limit)
