@@ -16,7 +16,7 @@ from threading import RLock
 from random import randint
 
 from can import CanOperationError
-from can.bus import BusABC, CANProtocol
+from can.bus import BusABC, CanProtocol
 from can.message import Message
 from can.typechecking import AutoDetectedConfig
 
@@ -63,7 +63,7 @@ class VirtualBus(BusABC):
         receive_own_messages: bool = False,
         rx_queue_size: int = 0,
         preserve_timestamps: bool = False,
-        protocol: CANProtocol = CANProtocol.CAN_20,
+        protocol: CanProtocol = CanProtocol.CAN_20,
         **kwargs: Any,
     ) -> None:
         """

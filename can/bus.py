@@ -27,7 +27,7 @@ class BusState(Enum):
     ERROR = auto()
 
 
-class CANProtocol(Enum):
+class CanProtocol(Enum):
     """The CAN protocol type supported by a :class:`can.BusABC` instance"""
 
     CAN_20 = auto()
@@ -56,7 +56,7 @@ class BusABC(metaclass=ABCMeta):
     def __init__(
         self,
         channel: Any,
-        protocol: CANProtocol = CANProtocol.CAN_20,
+        protocol: CanProtocol = CanProtocol.CAN_20,
         can_filters: Optional[can.typechecking.CanFilters] = None,
         **kwargs: object
     ):
@@ -460,7 +460,7 @@ class BusABC(metaclass=ABCMeta):
         raise NotImplementedError("Property is not implemented.")
 
     @property
-    def protocol(self) -> CANProtocol:
+    def protocol(self) -> CanProtocol:
         """Return the CAN protocol used by this bus instance.
 
         This value is set at initialization time and does not change

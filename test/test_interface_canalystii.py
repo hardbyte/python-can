@@ -23,7 +23,7 @@ class CanalystIITest(unittest.TestCase):
             instance = mock_device.return_value
             bus = CANalystIIBus(bitrate=1000000)
 
-            self.assertEqual(bus.protocol, can.CANProtocol.CAN_20)
+            self.assertEqual(bus.protocol, can.CanProtocol.CAN_20)
 
             instance.init.assert_has_calls(
                 [
@@ -38,7 +38,7 @@ class CanalystIITest(unittest.TestCase):
                 instance = mock_device.return_value
                 bus = CANalystIIBus(channel, bitrate=1000000)
 
-                self.assertEqual(bus.protocol, can.CANProtocol.CAN_20)
+                self.assertEqual(bus.protocol, can.CanProtocol.CAN_20)
                 instance.init.assert_called_once_with(channel, bitrate=1000000)
 
     def test_initialize_with_timing_registers(self):
@@ -48,7 +48,7 @@ class CanalystIITest(unittest.TestCase):
                 f_clock=8_000_000, btr0=0x03, btr1=0x6F
             )
             bus = CANalystIIBus(bitrate=None, timing=timing)
-            self.assertEqual(bus.protocol, can.CANProtocol.CAN_20)
+            self.assertEqual(bus.protocol, can.CanProtocol.CAN_20)
 
             instance.init.assert_has_calls(
                 [

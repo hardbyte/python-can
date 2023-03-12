@@ -7,7 +7,7 @@ import logging
 import time
 from typing import Any, Optional, Tuple
 
-from can import BusABC, Message, CANProtocol
+from can import BusABC, Message, CanProtocol
 from can import typechecking
 from ..exceptions import (
     CanInterfaceNotImplementedError,
@@ -122,7 +122,7 @@ class slcanBus(BusABC):
             ttyBaudrate=115200,
             bitrate=None,
             rtscts=False,
-            protocol=CANProtocol.CAN_20,
+            protocol=CanProtocol.CAN_20,
             **kwargs,
         )
 

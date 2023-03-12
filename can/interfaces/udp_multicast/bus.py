@@ -6,7 +6,7 @@ import struct
 from typing import List, Optional, Tuple, Union
 
 import can
-from can import BusABC, CANProtocol
+from can import BusABC, CanProtocol
 from can.typechecking import AutoDetectedConfig
 from .utils import pack_message, unpack_message, check_msgpack_installed
 
@@ -103,7 +103,7 @@ class UdpMulticastBus(BusABC):
             )
 
         super().__init__(
-            channel, **kwargs, protocol=CANProtocol.CAN_FD if fd else CANProtocol.CAN_20
+            channel, **kwargs, protocol=CanProtocol.CAN_FD if fd else CanProtocol.CAN_20
         )
 
         self.is_fd = fd

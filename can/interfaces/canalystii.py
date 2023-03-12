@@ -6,7 +6,7 @@ from typing import Any, Dict, Optional, Deque, Sequence, Tuple, Union
 
 import canalystii as driver
 
-from can import BitTiming, BusABC, Message, BitTimingFd, CANProtocol
+from can import BitTiming, BusABC, Message, BitTimingFd, CanProtocol
 from can.exceptions import CanTimeoutError
 from can.typechecking import CanFilters
 from can.util import deprecated_args_alias, check_or_adjust_timing_clock
@@ -53,7 +53,7 @@ class CANalystIIBus(BusABC):
         super().__init__(
             channel=channel,
             can_filters=can_filters,
-            protocol=CANProtocol.CAN_20,
+            protocol=CanProtocol.CAN_20,
             **kwargs,
         )
 

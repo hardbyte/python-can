@@ -12,7 +12,7 @@ from packaging import version
 from can import (
     BusABC,
     BusState,
-    CANProtocol,
+    CanProtocol,
     BitTiming,
     BitTimingFd,
     Message,
@@ -341,7 +341,7 @@ class PcanBus(BusABC):
 
         super().__init__(
             channel=channel,
-            protocol=CANProtocol.CAN_FD if is_fd else CANProtocol.CAN_20,
+            protocol=CanProtocol.CAN_FD if is_fd else CanProtocol.CAN_20,
             state=state,
             bitrate=bitrate,
             **kwargs,
@@ -491,7 +491,7 @@ class PcanBus(BusABC):
         end_time = time.time() + timeout if timeout is not None else None
 
         while True:
-            if self.protocol == CANProtocol.CAN_FD:
+            if self.protocol == CanProtocol.CAN_FD:
                 result, pcan_msg, pcan_timestamp = self.m_objPCANBasic.ReadFD(
                     self.m_PcanHandle
                 )
@@ -553,7 +553,7 @@ class PcanBus(BusABC):
         error_state_indicator = bool(pcan_msg.MSGTYPE & PCAN_MESSAGE_ESI.value)
         is_error_frame = bool(pcan_msg.MSGTYPE & PCAN_MESSAGE_ERRFRAME.value)
 
-        if self.protocol == CANProtocol.CAN_FD:
+        if self.protocol == CanProtocol.CAN_FD:
             dlc = dlc2len(pcan_msg.DLC)
             timestamp = boottimeEpoch + (pcan_timestamp.value / (1000.0 * 1000.0))
         else:
@@ -599,7 +599,7 @@ class PcanBus(BusABC):
         if msg.error_state_indicator:
             msgType |= PCAN_MESSAGE_ESI.value
 
-        if self.protocol == CANProtocol.CAN_FD:
+        if self.protocol == CanProtocol.CAN_FD:
             # create a TPCANMsg message structure
             CANMsg = TPCANMsgFD()
 
