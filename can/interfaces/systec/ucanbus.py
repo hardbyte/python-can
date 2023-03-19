@@ -1,12 +1,18 @@
 import logging
 from threading import Event
 
-from can import BusABC, BusState, Message
-from ...exceptions import CanError, CanInitializationError, CanOperationError
-
+from can import (
+    BusABC,
+    BusState,
+    Message,
+    CanProtocol,
+    CanError,
+    CanInitializationError,
+    CanOperationError,
+)
 from .constants import *
-from .structures import *
 from .exceptions import UcanException
+from .structures import *
 from .ucan import UcanServer
 
 log = logging.getLogger("can.systec")
@@ -145,7 +151,12 @@ class UcanBus(BusABC):
 
         self._is_filtered = False
 
-        super().__init__(channel=channel, can_filters=can_filters, **kwargs)
+        super().__init__(
+            channel=channel,
+            can_filters=can_filters,
+            protocol=CanProtocol.CAN_20,
+            **kwargs,
+        )
 
     def _recv_internal(self, timeout):
         try:

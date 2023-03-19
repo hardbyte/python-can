@@ -36,6 +36,8 @@ class SystecTest(unittest.TestCase):
 
     def test_bus_creation(self):
         self.assertIsInstance(self.bus, ucanbus.UcanBus)
+        self.assertEqual(self.bus.protocol, can.CanProtocol.CAN_20)
+
         self.assertTrue(ucan.UcanInitHwConnectControlEx.called)
         self.assertTrue(
             ucan.UcanInitHardwareEx.called or ucan.UcanInitHardwareEx2.called
