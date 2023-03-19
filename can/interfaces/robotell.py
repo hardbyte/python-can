@@ -3,11 +3,11 @@ Interface for Chinese Robotell compatible interfaces (win32/linux).
 """
 
 import io
-import time
 import logging
+import time
 from typing import Optional
 
-from can import BusABC, Message
+from can import BusABC, Message, CanProtocol
 from ..exceptions import CanInterfaceNotImplementedError, CanOperationError
 
 logger = logging.getLogger(__name__)
@@ -96,7 +96,7 @@ class robotellBus(BusABC):
         )
         logger.info("Using device: %s", self.channel_info)
 
-        super().__init__(channel=channel, **kwargs)
+        super().__init__(channel=channel, protocol=CanProtocol.CAN_20, **kwargs)
 
     def set_bitrate(self, bitrate):
         """

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import unittest
+
 import can
 
 
@@ -13,6 +14,9 @@ class robotellTestCase(unittest.TestCase):
 
     def tearDown(self):
         self.bus.shutdown()
+
+    def test_protocol(self):
+        self.assertEqual(self.bus.protocol, can.CanProtocol.CAN_20)
 
     def test_recv_extended(self):
         self.serial.write(
