@@ -2,9 +2,10 @@
 Enable basic CAN over a PCAN USB device.
 """
 import logging
-import time
-from datetime import datetime
 import platform
+import time
+import warnings
+from datetime import datetime
 from typing import Optional, List, Tuple, Union, Any
 
 from packaging import version
@@ -69,7 +70,6 @@ from .basic import (
     VALID_PCAN_FD_CLOCKS,
     VALID_PCAN_CAN_CLOCKS,
 )
-
 
 # Set up logging
 log = logging.getLogger("can.pcan")
@@ -657,6 +657,15 @@ class PcanBus(BusABC):
             self.m_objPCANBasic.SetValue(self.m_PcanHandle, PCAN_RECEIVE_EVENT, 0)
 
         self.m_objPCANBasic.Uninitialize(self.m_PcanHandle)
+
+    @property
+    def fd(self) -> bool:
+        warnings.warn(
+            "The PcanBus.fd property is deprecated and superseded by BusABC.protocol. "
+            "It is scheduled for removal in version 5.0.",
+            DeprecationWarning,
+        )
+        return self.protocol == CanProtocol.CAN_FD
 
     @property
     def state(self):
