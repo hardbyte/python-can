@@ -11,10 +11,8 @@ from unittest.mock import patch
 
 import can
 from can.interfaces.serial.serial_can import SerialBus
-
-from .message_helper import ComparingMessagesTestCase
 from .config import IS_PYPY
-
+from .message_helper import ComparingMessagesTestCase
 
 # Mentioned in #1010
 TIMEOUT = 0.5 if IS_PYPY else 0.1  # 0.1 is the default set in SerialBus
@@ -51,6 +49,9 @@ class SimpleSerialTestBase(ComparingMessagesTestCase):
         ComparingMessagesTestCase.__init__(
             self, allowed_timestamp_delta=None, preserves_channel=True
         )
+
+    def test_can_protocol(self):
+        self.assertEqual(self.bus.protocol, can.CanProtocol.CAN_20)
 
     def test_rx_tx_min_max_data(self):
         """

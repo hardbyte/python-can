@@ -12,8 +12,10 @@ import logging
 import struct
 from typing import Any, List, Tuple, Optional
 
-from can import BusABC, Message
 from can import (
+    BusABC,
+    Message,
+    CanProtocol,
     CanInterfaceNotImplementedError,
     CanInitializationError,
     CanOperationError,
@@ -97,7 +99,7 @@ class SerialBus(BusABC):
                 "could not create the serial device"
             ) from error
 
-        super().__init__(channel, *args, **kwargs)
+        super().__init__(channel, protocol=CanProtocol.CAN_20, *args, **kwargs)
 
     def shutdown(self) -> None:
         """
