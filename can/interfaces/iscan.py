@@ -3,12 +3,14 @@ Interface for isCAN from *Thorsis Technologies GmbH*, former *ifak system GmbH*.
 """
 
 import ctypes
-import time
 import logging
+import time
 from typing import Optional, Tuple, Union
 
-from can import BusABC, Message
 from can import (
+    BusABC,
+    Message,
+    CanProtocol,
     CanError,
     CanInterfaceNotImplementedError,
     CanInitializationError,
@@ -106,7 +108,11 @@ class IscanBus(BusABC):
         iscan.isCAN_DeviceInitEx(self.channel, self.BAUDRATES[bitrate])
 
         super().__init__(
-            channel=channel, bitrate=bitrate, poll_interval=poll_interval, **kwargs
+            channel=channel,
+            bitrate=bitrate,
+            poll_interval=poll_interval,
+            protocol=CanProtocol.CAN_20,
+            **kwargs,
         )
 
     def _recv_internal(
