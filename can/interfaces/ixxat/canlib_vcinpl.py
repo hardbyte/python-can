@@ -15,16 +15,18 @@ import logging
 import sys
 from typing import Optional, Callable, Tuple
 
-from can import BusABC, Message
-from can.bus import BusState
-from can.exceptions import CanInterfaceNotImplementedError, CanInitializationError
-from can.broadcastmanager import (
+from can import (
+    BusABC,
+    Message,
+    BusState,
+    CanProtocol,
+    CanInterfaceNotImplementedError,
+    CanInitializationError,
     LimitedDurationCyclicSendTaskABC,
     RestartableCyclicTaskABC,
 )
 from can.ctypesutil import CLibrary, HANDLE, PHANDLE, HRESULT as ctypes_HRESULT
 from can.util import deprecated_args_alias
-
 from . import constants, structures
 from .exceptions import *
 
@@ -631,7 +633,9 @@ class IXXATBus(BusABC):
             except (VCITimeout, VCIRxQueueEmptyError):
                 break
 
-        super().__init__(channel=channel, can_filters=None, **kwargs)
+        super().__init__(
+            channel=channel, can_filters=None, protocol=CanProtocol.CAN_20, **kwargs
+        )
 
     def _inWaiting(self):
         try:
