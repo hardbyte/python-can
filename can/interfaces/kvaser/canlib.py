@@ -6,17 +6,21 @@ specific to Python.
 Copyright (C) 2010 Dynamic Controls
 """
 
+import ctypes
+import logging
 import sys
 import time
-import logging
-import ctypes
 
-from can import BusABC
-from ...exceptions import CanError, CanInitializationError, CanOperationError
-from can import Message
+from can import (
+    BusABC,
+    Message,
+    CanProtocol,
+    CanError,
+    CanInitializationError,
+    CanOperationError,
+)
 from can.util import time_perfcounter_correlation
-from . import constants as canstat
-from . import structures
+from . import constants as canstat, structures
 
 log = logging.getLogger("can.kvaser")
 
@@ -520,7 +524,12 @@ class KvaserBus(BusABC):
             self._timestamp_offset = time.time() - (timer.value * TIMESTAMP_FACTOR)
 
         self._is_filtered = False
-        super().__init__(channel=channel, can_filters=can_filters, **kwargs)
+        super().__init__(
+            channel=channel,
+            can_filters=can_filters,
+            protocol=CanProtocol.CAN_FD if fd else CanProtocol.CAN_20,
+            **kwargs,
+        )
 
     def _apply_filters(self, filters):
         if filters and len(filters) == 1:
