@@ -2,12 +2,12 @@
 Interface for CANtact devices from Linklayer Labs
 """
 
-import time
 import logging
+import time
 from typing import Optional, Union, Any
 from unittest.mock import Mock
 
-from can import BusABC, Message, BitTiming, BitTimingFd
+from can import BusABC, Message, BitTiming, BitTimingFd, CanProtocol
 from ..exceptions import (
     CanInitializationError,
     CanInterfaceNotImplementedError,
@@ -113,7 +113,11 @@ class CantactBus(BusABC):
             self.interface.start()
 
         super().__init__(
-            channel=channel, bitrate=bitrate, poll_interval=poll_interval, **kwargs
+            channel=channel,
+            bitrate=bitrate,
+            poll_interval=poll_interval,
+            protocol=CanProtocol.CAN_20,
+            **kwargs,
         )
 
     def _recv_internal(self, timeout):
