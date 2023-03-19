@@ -1,14 +1,13 @@
+import logging
 from typing import Optional, Tuple
 
+import usb
+from gs_usb.constants import CAN_ERR_FLAG, CAN_RTR_FLAG, CAN_EFF_FLAG, CAN_MAX_DLC
 from gs_usb.gs_usb import GsUsb
 from gs_usb.gs_usb_frame import GsUsbFrame, GS_USB_NONE_ECHO_ID
-from gs_usb.constants import CAN_ERR_FLAG, CAN_RTR_FLAG, CAN_EFF_FLAG, CAN_MAX_DLC
+
 import can
-import usb
-import logging
-
 from ..exceptions import CanInitializationError, CanOperationError
-
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +55,12 @@ class GsUsbBus(can.BusABC):
         self.gs_usb.set_bitrate(bitrate)
         self.gs_usb.start()
 
-        super().__init__(channel=channel, can_filters=can_filters, **kwargs)
+        super().__init__(
+            channel=channel,
+            can_filters=can_filters,
+            protocol=can.CanProtocol.CAN_20,
+            **kwargs,
+        )
 
     def send(self, msg: can.Message, timeout: Optional[float] = None):
         """Transmit a message to the CAN bus.
