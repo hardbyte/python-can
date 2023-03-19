@@ -16,17 +16,18 @@ TODO: We could implement this interface such that setting other filters
 import ctypes
 import logging
 import sys
+from typing import Optional, Tuple, Type
 
-from can import BusABC, Message
 import can.typechecking
-from ..exceptions import (
+from can import (
+    BusABC,
+    Message,
+    CanProtocol,
     CanError,
     CanInterfaceNotImplementedError,
     CanOperationError,
     CanInitializationError,
 )
-from typing import Optional, Tuple, Type
-
 
 logger = logging.getLogger(__name__)
 
@@ -274,6 +275,7 @@ class NicanBus(BusABC):
             can_filters=can_filters,
             bitrate=bitrate,
             log_errors=log_errors,
+            protocol=CanProtocol.CAN_20,
             **kwargs,
         )
 
