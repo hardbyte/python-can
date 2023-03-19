@@ -87,7 +87,7 @@ Bus API
     :members:
     :undoc-members:
 
-.. autoclass:: can.bus.CANProtocol
+.. autoclass:: can.bus.CanProtocol
     :members:
     :undoc-members:
 
