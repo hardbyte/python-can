@@ -11,12 +11,13 @@ Authors: Javier Rubio Giménez <jvrr20@gmail.com>, Jose A. Escobar <joseleescoba
 import logging
 import os
 import time
+import warnings
 from queue import SimpleQueue
 from types import ModuleType
 from typing import Optional, List, Union, Tuple, Any
 
 import can.typechecking
-from can import BusABC, Message, BitTiming, BitTimingFd
+from can import BusABC, Message, BitTiming, BitTimingFd, CanProtocol
 from can.exceptions import (
     CanInitializationError,
     CanOperationError,
@@ -103,10 +104,10 @@ class NiXNETcanBus(BusABC):
 
         self.poll_interval = poll_interval
 
-        self.fd = isinstance(timing, BitTimingFd) if timing else fd
+        is_fd = isinstance(timing, BitTimingFd) if timing else fd
 
         # Set database for the initialization
-        database_name = ":can_fd_brs:" if self.fd else ":memory:"
+        database_name = ":can_fd_brs:" if is_fd else ":memory:"
 
         try:
             # We need two sessions for this application,
@@ -158,7 +159,7 @@ class NiXNETcanBus(BusABC):
                 if bitrate:
                     self._interface.baud_rate = bitrate
 
-                if self.fd:
+                if is_fd:
                     # See page 951 of NI-XNET Hardware and Software Manual
                     # to set custom can configuration
                     self._interface.can_fd_baud_rate = fd_bitrate or bitrate
@@ -185,8 +186,18 @@ class NiXNETcanBus(BusABC):
             channel=channel,
             can_filters=can_filters,
             bitrate=bitrate,
+            protocol=CanProtocol.CAN_FD if is_fd else CanProtocol.CAN_20,
             **kwargs,
         )
+
+    @property
+    def fd(self) -> bool:
+        warnings.warn(
+            "The NiXNETcanBus.fd property is deprecated and superseded by "
+            "BusABC.protocol. It is scheduled for removal in version 5.0.",
+            DeprecationWarning,
+        )
+        return self.protocol == CanProtocol.CAN_FD
 
     def _recv_internal(
         self, timeout: Optional[float]
