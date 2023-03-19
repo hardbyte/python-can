@@ -3,6 +3,7 @@ import logging
 import select
 import socket
 import struct
+import warnings
 from typing import List, Optional, Tuple, Union
 
 import can
@@ -103,11 +104,21 @@ class UdpMulticastBus(BusABC):
             )
 
         super().__init__(
-            channel, **kwargs, protocol=CanProtocol.CAN_FD if fd else CanProtocol.CAN_20
+            channel,
+            **kwargs,
+            protocol=CanProtocol.CAN_FD if fd else CanProtocol.CAN_20,
         )
 
-        self.is_fd = fd
         self._multicast = GeneralPurposeUdpMulticastBus(channel, port, hop_limit)
+
+    @property
+    def is_fd(self) -> bool:
+        warnings.warn(
+            "The UdpMulticastBus.is_fd property is deprecated and superseded by "
+            "BusABC.protocol. It is scheduled for removal in version 5.0.",
+            DeprecationWarning,
+        )
+        return self.protocol == CanProtocol.CAN_FD
 
     def _recv_internal(self, timeout: Optional[float]):
         result = self._multicast.recv(timeout)
@@ -124,13 +135,13 @@ class UdpMulticastBus(BusABC):
                 "could not unpack received message"
             ) from exception
 
-        if not self.is_fd and can_message.is_fd:
+        if self.protocol != CanProtocol.CAN_FD and can_message.is_fd:
             return None, False
 
         return can_message, False
 
     def send(self, msg: can.Message, timeout: Optional[float] = None) -> None:
-        if not self.is_fd and msg.is_fd:
+        if self.protocol != CanProtocol.CAN_FD and msg.is_fd:
             raise can.CanOperationError(
                 "cannot send FD message over bus with CAN FD disabled"
             )
