@@ -159,7 +159,7 @@ class TRCReader(MessageReader):
         msg.is_rx = cols[2] == "Rx"
         return msg
 
-    def _parse_msg_V2_x(self, cols):
+    def _parse_msg_V2_x(self, cols: List[str]) -> Optional[Message]:
         type_ = cols[self.columns["T"]]
         bus = self.columns.get("B", None)
 
@@ -201,7 +201,7 @@ class TRCReader(MessageReader):
             logger.info("TRCReader: Unsupported type '%s'", dtype)
             return None
 
-    def _parse_cols_V2_x(self, cols):
+    def _parse_cols_V2_x(self, cols: List[str]) -> Optional[Message]:
         dtype = cols[self.columns["T"]]
         if dtype in ["DT", "FD", "FB"]:
             return self._parse_msg_V2_x(cols)
