@@ -160,6 +160,8 @@ class TRCReader(MessageReader):
         return msg
 
     def _parse_msg_V2_x(self, cols: List[str]) -> Optional[Message]:
+        assert self.columns is not None
+
         type_ = cols[self.columns["T"]]
         bus = self.columns.get("B", None)
 
@@ -202,6 +204,8 @@ class TRCReader(MessageReader):
             return None
 
     def _parse_cols_V2_x(self, cols: List[str]) -> Optional[Message]:
+        assert self.columns is not None
+
         dtype = cols[self.columns["T"]]
         if dtype in ["DT", "FD", "FB"]:
             return self._parse_msg_V2_x(cols)
