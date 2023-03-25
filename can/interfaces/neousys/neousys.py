@@ -35,11 +35,13 @@ try:
 except ImportError:
     from ctypes import CDLL
 
-from can import BusABC, Message
-from ...exceptions import (
+from can import (
+    BusABC,
+    Message,
     CanInitializationError,
     CanOperationError,
     CanInterfaceNotImplementedError,
+    CanProtocol,
 )
 
 
@@ -143,7 +145,7 @@ class NeousysBus(BusABC):
         :param device: device number
         :param bitrate: bit rate.
         """
-        super().__init__(channel, **kwargs)
+        super().__init__(channel, protocol=CanProtocol.CAN_20, **kwargs)
 
         if NEOUSYS_CANLIB is None:
             raise CanInterfaceNotImplementedError("Neousys WDT_DIO Can driver missing")
