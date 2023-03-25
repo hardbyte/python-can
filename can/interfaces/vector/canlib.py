@@ -8,8 +8,9 @@ Authors: Julien Grave <grave.jul@gmail.com>, Christian Sandberg
 # ==============================
 import ctypes
 import logging
-import time
 import os
+import time
+import warnings
 from types import ModuleType
 from typing import (
     List,
@@ -44,6 +45,7 @@ from can import (
     CanInitializationError,
     BitTiming,
     BitTimingFd,
+    CanProtocol,
 )
 from can.util import (
     len2dlc,
@@ -203,7 +205,7 @@ class VectorBus(BusABC):
         channel_configs = get_channel_configs()
 
         self.mask = 0
-        self.fd = isinstance(timing, BitTimingFd) if timing else fd
+        is_fd = isinstance(timing, BitTimingFd) if timing else fd
         self.channel_masks: Dict[int, int] = {}
         self.index_to_channel: Dict[int, int] = {}
 
@@ -228,7 +230,7 @@ class VectorBus(BusABC):
 
         interface_version = (
             xldefine.XL_InterfaceVersion.XL_INTERFACE_VERSION_V4
-            if self.fd
+            if is_fd
             else xldefine.XL_InterfaceVersion.XL_INTERFACE_VERSION
         )
 
@@ -323,7 +325,21 @@ class VectorBus(BusABC):
             self._time_offset = 0.0
 
         self._is_filtered = False
-        super().__init__(channel=channel, can_filters=can_filters, **kwargs)
+        super().__init__(
+            channel=channel,
+            can_filters=can_filters,
+            protocol=CanProtocol.CAN_FD if is_fd else CanProtocol.CAN_20,
+            **kwargs,
+        )
+
+    @property
+    def fd(self) -> bool:
+        warnings.warn(
+            "The VectorBus.fd property is deprecated and superseded by "
+            "BusABC.protocol. It is scheduled for removal in version 5.0.",
+            DeprecationWarning,
+        )
+        return self.protocol == CanProtocol.CAN_FD
 
     def _find_global_channel_idx(
         self,
@@ -646,7 +662,7 @@ class VectorBus(BusABC):
 
         while True:
             try:
-                if self.fd:
+                if self.protocol == CanProtocol.CAN_FD:
                     msg = self._recv_canfd()
                 else:
                     msg = self._recv_can()
@@ -780,7 +796,7 @@ class VectorBus(BusABC):
 
     def _send_sequence(self, msgs: Sequence[Message]) -> int:
         """Send messages and return number of successful transmissions."""
-        if self.fd:
+        if self.protocol == CanProtocol.CAN_FD:
             return self._send_can_fd_msg_sequence(msgs)
         else:
             return self._send_can_msg_sequence(msgs)
