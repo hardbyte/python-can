@@ -16,7 +16,7 @@ from itertools import cycle
 from threading import Event
 from warnings import warn
 
-from can import Message, BusABC
+from can import Message, BusABC, CanProtocol
 from ...exceptions import (
     CanError,
     CanTimeoutError,
@@ -169,7 +169,14 @@ class NeoViBus(BusABC):
         if ics is None:
             raise ImportError("Please install python-ics")
 
-        super().__init__(channel=channel, can_filters=can_filters, **kwargs)
+        is_fd = kwargs.get("fd", False)
+
+        super().__init__(
+            channel=channel,
+            can_filters=can_filters,
+            protocol=CanProtocol.CAN_FD if is_fd else CanProtocol.CAN_20,
+            **kwargs,
+        )
 
         logger.info(f"CAN Filters: {can_filters}")
         logger.info(f"Got configuration of: {kwargs}")
@@ -198,7 +205,7 @@ class NeoViBus(BusABC):
                 for channel in self.channels:
                     ics.set_bit_rate(self.dev, kwargs.get("bitrate"), channel)
 
-            if kwargs.get("fd", False):
+            if is_fd:
                 if "data_bitrate" in kwargs:
                     for channel in self.channels:
                         ics.set_fd_bit_rate(
