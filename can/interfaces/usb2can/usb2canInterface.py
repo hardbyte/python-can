@@ -6,7 +6,7 @@ import logging
 from ctypes import byref
 from typing import Optional
 
-from can import BusABC, Message, CanInitializationError, CanOperationError
+from can import BusABC, Message, CanInitializationError, CanOperationError, CanProtocol
 from .usb2canabstractionlayer import Usb2CanAbstractionLayer, CanalMsg, CanalError
 from .usb2canabstractionlayer import (
     IS_ERROR_FRAME,
@@ -120,7 +120,7 @@ class Usb2canBus(BusABC):
         connector = f"{device_id}; {baudrate}"
         self.handle = self.can.open(connector, flags)
 
-        super().__init__(channel=channel, **kwargs)
+        super().__init__(channel=channel, protocol=CanProtocol.CAN_20, **kwargs)
 
     def send(self, msg, timeout=None):
         tx = message_convert_tx(msg)
