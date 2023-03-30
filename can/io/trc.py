@@ -57,7 +57,7 @@ class TRCReader(MessageReader):
         super().__init__(file, mode="r")
         self.file_version = TRCFileVersion.UNKNOWN
         self.start_time: Optional[datetime] = None
-        self.columns: Optional[Dict[str, int]] = None
+        self.columns: Dict[str, int] = {}
 
         if not self.file:
             raise ValueError("The given file cannot be None")
@@ -107,7 +107,7 @@ class TRCReader(MessageReader):
                 raise ValueError("File has no start time information")
 
         if self.file_version >= TRCFileVersion.V2_0:
-            if self.columns is None:
+            if not self.columns:
                 raise ValueError("File has no column information")
 
         if self.file_version == TRCFileVersion.UNKNOWN:
@@ -160,8 +160,6 @@ class TRCReader(MessageReader):
         return msg
 
     def _parse_msg_V2_x(self, cols: List[str]) -> Optional[Message]:
-        assert self.columns is not None
-
         type_ = cols[self.columns["T"]]
         bus = self.columns.get("B", None)
 
@@ -204,8 +202,6 @@ class TRCReader(MessageReader):
             return None
 
     def _parse_cols_V2_x(self, cols: List[str]) -> Optional[Message]:
-        assert self.columns is not None
-
         dtype = cols[self.columns["T"]]
         if dtype in ["DT", "FD", "FB"]:
             return self._parse_msg_V2_x(cols)
