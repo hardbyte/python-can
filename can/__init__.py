@@ -20,6 +20,8 @@ from . import broadcastmanager as broadcastmanager
 from . import interface as interface
 from .bit_timing import BitTiming as BitTiming
 from .bit_timing import BitTimingFd as BitTimingFd
+from .broadcastmanager import ModifiableCyclicTaskABC as ModifiableCyclicTaskABC
+from .broadcastmanager import RestartableCyclicTaskABC as RestartableCyclicTaskABC
 from .bus import BusABC as BusABC
 from .bus import BusState as BusState
 from .exceptions import CanError as CanError
