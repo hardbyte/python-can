@@ -1,6 +1,6 @@
-from collections import deque
 import logging
 import time
+from collections import deque
 from ctypes import c_ubyte
 from typing import Any, Deque, Dict, Optional, Sequence, Tuple, Union
 
