@@ -1,4 +1,6 @@
 """
 """
 
-from can.interfaces.seeedstudio.seeedstudio import SeeedBus as SeeedBus
+__all__ = ["SeeedBus"]
+
+from can.interfaces.seeedstudio.seeedstudio import SeeedBus

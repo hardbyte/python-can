@@ -439,7 +439,7 @@ known-standard-library=
 known-third-party=enchant
 
 # Allow explicit reexports by alias from a package __init__
-allow-reexport-from-package=yes
+allow-reexport-from-package=no
 
 [CLASSES]
 
