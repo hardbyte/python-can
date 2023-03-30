@@ -40,7 +40,6 @@ except ImportError as ie:
 try:
     from filelock import FileLock
 except ImportError as ie:
-
     logger.warning(
         "Using ICS neoVI can backend without the "
         "filelock module installed may cause some issues!: %s",

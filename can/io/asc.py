@@ -174,7 +174,6 @@ class ASCReader(MessageReader):
     def _process_classic_can_frame(
         self, line: str, msg_kwargs: Dict[str, Any]
     ) -> Message:
-
         # CAN error frame
         if line.strip()[0:10].lower() == "errorframe":
             # Error Frame
@@ -423,7 +422,6 @@ class ASCWriter(FileIOMessageWriter):
         self.file.write(line)
 
     def on_message_received(self, msg: Message) -> None:
-
         if msg.is_error_frame:
             self.log_event(f"{self.channel}  ErrorFrame", msg.timestamp)
             return

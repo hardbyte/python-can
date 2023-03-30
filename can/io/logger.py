@@ -237,7 +237,7 @@ class BaseRotatingLogger(Listener, BaseIOHandler, ABC):
             elif isinstance(logger, Printer) and logger.file is not None:
                 return cast(FileIOMessageWriter, logger)
 
-        raise Exception(
+        raise ValueError(
             f'The log format "{suffix}" '
             f"is not supported by {self.__class__.__name__}. "
             f"{self.__class__.__name__} supports the following formats: "

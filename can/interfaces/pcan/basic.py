@@ -655,10 +655,21 @@ PCAN_CHANNEL_NAMES = {
     "PCAN_LANBUS16": PCAN_LANBUS16,
 }
 
+VALID_PCAN_CAN_CLOCKS = [8_000_000]
+
+VALID_PCAN_FD_CLOCKS = [
+    20_000_000,
+    24_000_000,
+    30_000_000,
+    40_000_000,
+    60_000_000,
+    80_000_000,
+]
 
 # ///////////////////////////////////////////////////////////
 # PCAN-Basic API function declarations
 # ///////////////////////////////////////////////////////////
+
 
 # PCAN-Basic API class implementation
 #
@@ -709,7 +720,6 @@ class PCANBasic:
         IOPort=c_uint(0),
         Interrupt=c_ushort(0),
     ):
-
         """Initializes a PCAN Channel
 
         Parameters:
@@ -734,7 +744,6 @@ class PCANBasic:
     # Initializes a FD capable PCAN Channel
     #
     def InitializeFD(self, Channel, BitrateFD):
-
         """Initializes a FD capable PCAN Channel
 
         Parameters:
@@ -765,7 +774,6 @@ class PCANBasic:
     #  Uninitializes one or all PCAN Channels initialized by CAN_Initialize
     #
     def Uninitialize(self, Channel):
-
         """Uninitializes one or all PCAN Channels initialized by CAN_Initialize
 
         Remarks:
@@ -787,7 +795,6 @@ class PCANBasic:
     #  Resets the receive and transmit queues of the PCAN Channel
     #
     def Reset(self, Channel):
-
         """Resets the receive and transmit queues of the PCAN Channel
 
         Remarks:
@@ -809,7 +816,6 @@ class PCANBasic:
     #  Gets the current status of a PCAN Channel
     #
     def GetStatus(self, Channel):
-
         """Gets the current status of a PCAN Channel
 
         Parameters:
@@ -828,7 +834,6 @@ class PCANBasic:
     # Reads a CAN message from the receive queue of a PCAN Channel
     #
     def Read(self, Channel):
-
         """Reads a CAN message from the receive queue of a PCAN Channel
 
         Remarks:
@@ -857,7 +862,6 @@ class PCANBasic:
     # Reads a CAN message from the receive queue of a FD capable PCAN Channel
     #
     def ReadFD(self, Channel):
-
         """Reads a CAN message from the receive queue of a FD capable PCAN Channel
 
         Remarks:
@@ -886,7 +890,6 @@ class PCANBasic:
     # Transmits a CAN message
     #
     def Write(self, Channel, MessageBuffer):
-
         """Transmits a CAN message
 
         Parameters:
@@ -906,7 +909,6 @@ class PCANBasic:
     # Transmits a CAN message over a FD capable PCAN Channel
     #
     def WriteFD(self, Channel, MessageBuffer):
-
         """Transmits a CAN message over a FD capable PCAN Channel
 
         Parameters:
@@ -926,7 +928,6 @@ class PCANBasic:
     # Configures the reception filter
     #
     def FilterMessages(self, Channel, FromID, ToID, Mode):
-
         """Configures the reception filter
 
         Remarks:
@@ -953,7 +954,6 @@ class PCANBasic:
     # Retrieves a PCAN Channel value
     #
     def GetValue(self, Channel, Parameter):
-
         """Retrieves a PCAN Channel value
 
         Remarks:
@@ -1016,7 +1016,6 @@ class PCANBasic:
     # error code, in any desired language
     #
     def SetValue(self, Channel, Parameter, Buffer):
-
         """Returns a descriptive text of a given TPCANStatus error
         code, in any desired language
 
@@ -1059,7 +1058,6 @@ class PCANBasic:
             raise
 
     def GetErrorText(self, Error, Language=0):
-
         """Configures or sets a PCAN Channel value
 
         Remarks:
@@ -1088,7 +1086,6 @@ class PCANBasic:
             raise
 
     def LookUpChannel(self, Parameters):
-
         """Finds a PCAN-Basic channel that matches with the given parameters
 
         Remarks:

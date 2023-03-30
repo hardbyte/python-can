@@ -33,7 +33,6 @@ class SimpleCyclicSendTaskTest(unittest.TestCase, ComparingMessagesTestCase):
 
         with can.interface.Bus(interface="virtual") as bus1:
             with can.interface.Bus(interface="virtual") as bus2:
-
                 # disabling the garbage collector makes the time readings more reliable
                 gc.disable()
 

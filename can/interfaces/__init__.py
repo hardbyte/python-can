@@ -35,7 +35,8 @@ BACKENDS: Dict[str, Tuple[str, str]] = {
 if sys.version_info >= (3, 8):
     from importlib.metadata import entry_points
 
-    # See https://docs.python.org/3/library/importlib.metadata.html#entry-points, "Compatibility Note".
+    # See https://docs.python.org/3/library/importlib.metadata.html#entry-points,
+    # "Compatibility Note".
     if sys.version_info >= (3, 10):
         BACKENDS.update(
             {

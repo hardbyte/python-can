@@ -46,7 +46,6 @@ def main():
     args = parser.parse_args()
 
     with LogReader(args.input) as reader:
-
         if args.file_size:
             logger = SizedRotatingLogger(
                 base_filename=args.output, max_bytes=args.file_size

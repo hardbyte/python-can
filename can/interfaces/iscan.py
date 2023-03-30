@@ -157,7 +157,6 @@ class IscanBus(BusABC):
 
 
 class IscanError(CanError):
-
     ERROR_CODES = {
         0: "Success",
         1: "No access to device",
