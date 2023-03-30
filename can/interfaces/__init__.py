@@ -3,7 +3,7 @@ Interfaces contain low level implementations that interact with CAN hardware.
 """
 
 import sys
-from typing import cast, Dict, Tuple
+from typing import Dict, Tuple, cast
 
 # interface_name => (module, classname)
 BACKENDS: Dict[str, Tuple[str, str]] = {

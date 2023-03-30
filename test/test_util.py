@@ -10,10 +10,10 @@ from can.exceptions import CanInitializationError
 from can.util import (
     _create_bus_config,
     _rename_kwargs,
-    channel2int,
-    deprecated_args_alias,
-    check_or_adjust_timing_clock,
     cast_from_string,
+    channel2int,
+    check_or_adjust_timing_clock,
+    deprecated_args_alias,
 )
 
 

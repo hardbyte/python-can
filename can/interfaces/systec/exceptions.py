@@ -1,9 +1,9 @@
+from abc import ABC, abstractmethod
 from typing import Dict
 
-from abc import ABC, abstractmethod
+from can import CanError
 
 from .constants import ReturnCode
-from can import CanError
 
 
 class UcanException(CanError, ABC):

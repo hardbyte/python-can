@@ -6,4 +6,4 @@ Copyright (C) 2021  DOMOLOGIC GmbH
 http://www.domologic.de
 """
 
-from .socketcand import SocketCanDaemonBus
+from .socketcand import SocketCanDaemonBus as SocketCanDaemonBus

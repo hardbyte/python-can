@@ -4,10 +4,10 @@
 This module tests two buses attached to each other.
 """
 
-import unittest
-from time import sleep, time
-from multiprocessing.dummy import Pool as ThreadPool
 import random
+import unittest
+from multiprocessing.dummy import Pool as ThreadPool
+from time import sleep, time
 
 import pytest
 
@@ -17,12 +17,12 @@ from can.interfaces.udp_multicast import UdpMulticastBus
 
 from .config import (
     IS_CI,
-    IS_UNIX,
     IS_OSX,
-    IS_TRAVIS,
-    TEST_INTERFACE_SOCKETCAN,
-    TEST_CAN_FD,
     IS_PYPY,
+    IS_TRAVIS,
+    IS_UNIX,
+    TEST_CAN_FD,
+    TEST_INTERFACE_SOCKETCAN,
 )
 
 

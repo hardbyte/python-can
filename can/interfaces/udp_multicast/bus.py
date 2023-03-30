@@ -17,8 +17,7 @@ import can
 from can import BusABC
 from can.typechecking import AutoDetectedConfig
 
-from .utils import pack_message, unpack_message, check_msgpack_installed
-
+from .utils import check_msgpack_installed, pack_message, unpack_message
 
 # see socket.getaddrinfo()
 IPv4_ADDRESS_INFO = Tuple[str, int]  # address, port

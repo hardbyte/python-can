@@ -5,11 +5,12 @@ It is is compatible with "candump -L" from the canutils program
 """
 
 import logging
-from typing import Generator, TextIO, Union, Any
+from typing import Any, Generator, TextIO, Union
 
 from can.message import Message
-from .generic import FileIOMessageWriter, MessageReader
+
 from ..typechecking import StringPathLike
+from .generic import FileIOMessageWriter, MessageReader
 
 log = logging.getLogger("can.io.canutils")
 

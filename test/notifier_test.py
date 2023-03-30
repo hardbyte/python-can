@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-import unittest
-import time
 import asyncio
+import time
+import unittest
 
 import can
 

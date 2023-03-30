@@ -7,18 +7,17 @@ for file format description
 Version 1.1 will be implemented as it is most commonly used
 """  # noqa
 
+import io
+import logging
+import os
 from datetime import datetime, timedelta, timezone
 from enum import Enum
-import io
-import os
-import logging
-from typing import Generator, Optional, Union, TextIO, Callable, List, Dict
+from typing import Callable, Dict, Generator, List, Optional, TextIO, Union
 
 from ..message import Message
-from ..util import channel2int, len2dlc, dlc2len
-from .generic import FileIOMessageWriter, MessageReader
 from ..typechecking import StringPathLike
-
+from ..util import channel2int, dlc2len, len2dlc
+from .generic import FileIOMessageWriter, MessageReader
 
 logger = logging.getLogger("can.io.trc")
 

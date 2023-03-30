@@ -1,12 +1,20 @@
-from ctypes import Structure, POINTER, sizeof
+import os
+from ctypes import POINTER, Structure, sizeof
+from ctypes import (
+    c_long as BOOL,
+)
 from ctypes import (
     c_ubyte as BYTE,
-    c_ushort as WORD,
+)
+from ctypes import (
     c_ulong as DWORD,
-    c_long as BOOL,
+)
+from ctypes import (
+    c_ushort as WORD,
+)
+from ctypes import (
     c_void_p as LPVOID,
 )
-import os
 
 # Workaround for Unix based platforms to be able to load structures for testing, etc...
 if os.name == "nt":

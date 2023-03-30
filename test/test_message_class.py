@@ -1,22 +1,21 @@
 #!/usr/bin/env python
 
-import unittest
-import sys
-from math import isinf, isnan
-from copy import copy, deepcopy
 import pickle
+import sys
+import unittest
+from copy import copy, deepcopy
 from datetime import timedelta
+from math import isinf, isnan
 
-from hypothesis import HealthCheck, given, settings
 import hypothesis.errors
 import hypothesis.strategies as st
+import pytest
+from hypothesis import HealthCheck, given, settings
 
 from can import Message
 
+from .config import IS_GITHUB_ACTIONS, IS_PYPY, IS_WINDOWS
 from .message_helper import ComparingMessagesTestCase
-from .config import IS_GITHUB_ACTIONS, IS_WINDOWS, IS_PYPY
-
-import pytest
 
 
 class TestMessageClass(unittest.TestCase):

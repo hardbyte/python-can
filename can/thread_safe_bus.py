@@ -12,7 +12,6 @@ except ImportError as exc:
 
 from .interface import Bus
 
-
 try:
     from contextlib import nullcontext
 

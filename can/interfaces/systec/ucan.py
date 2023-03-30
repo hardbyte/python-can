@@ -1,14 +1,12 @@
 import logging
 import sys
-
 from ctypes import byref
 from ctypes import c_wchar_p as LPWSTR
 
 from ...exceptions import CanInterfaceNotImplementedError
-
 from .constants import *
-from .structures import *
 from .exceptions import *
+from .structures import *
 
 log = logging.getLogger("can.systec")
 

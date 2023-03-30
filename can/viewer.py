@@ -30,20 +30,21 @@ import time
 from typing import Dict, List, Tuple, Union
 
 from can import __version__
+
 from .logger import (
-    _create_bus,
-    _parse_filters,
     _append_filter_argument,
     _create_base_argument_parser,
+    _create_bus,
     _parse_additional_config,
+    _parse_filters,
 )
-
 
 logger = logging.getLogger("can.viewer")
 
 try:
     import curses
-    from curses.ascii import ESC as KEY_ESC, SP as KEY_SPACE
+    from curses.ascii import ESC as KEY_ESC
+    from curses.ascii import SP as KEY_SPACE
 except ImportError:
     # Probably on Windows while windows-curses is not installed (e.g. in PyPy)
     logger.warning(

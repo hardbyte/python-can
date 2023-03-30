@@ -3,13 +3,13 @@
 """
 """
 import asyncio
-import unittest
-import random
 import logging
-import tempfile
 import os
+import random
+import tempfile
+import unittest
 import warnings
-from os.path import join, dirname
+from os.path import dirname, join
 
 import can
 

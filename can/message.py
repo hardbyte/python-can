@@ -6,12 +6,11 @@ This module contains the implementation of :class:`can.Message`.
     starting with Python 3.7.
 """
 
+from copy import deepcopy
+from math import isinf, isnan
 from typing import Optional
 
 from . import typechecking
-
-from copy import deepcopy
-from math import isinf, isnan
 
 
 class Message:  # pylint: disable=too-many-instance-attributes; OK for a dataclass

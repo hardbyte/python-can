@@ -2,11 +2,11 @@ import logging
 from threading import Event
 
 from can import BusABC, BusState, Message
-from ...exceptions import CanError, CanInitializationError, CanOperationError
 
+from ...exceptions import CanError, CanInitializationError, CanOperationError
 from .constants import *
-from .structures import *
 from .exceptions import UcanException
+from .structures import *
 from .ucan import UcanServer
 
 log = logging.getLogger("can.systec")
