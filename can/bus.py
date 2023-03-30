@@ -1,7 +1,7 @@
 """
 Contains the ABC bus implementation and its documentation.
 """
-
+import contextlib
 from typing import cast, Any, Iterator, List, Optional, Sequence, Tuple, Union
 
 import can.typechecking
@@ -44,12 +44,14 @@ class BusABC(metaclass=ABCMeta):
     #: Log level for received messages
     RECV_LOGGING_LEVEL = 9
 
+    _is_shutdown: bool = False
+
     @abstractmethod
     def __init__(
         self,
         channel: Any,
         can_filters: Optional[can.typechecking.CanFilters] = None,
-        **kwargs: object
+        **kwargs: object,
     ):
         """Construct and open a CAN bus instance of the specified type.
 
@@ -301,6 +303,10 @@ class BusABC(metaclass=ABCMeta):
         :param remove_tasks:
             Stop tracking the stopped tasks.
         """
+        if not hasattr(self, "_periodic_tasks"):
+            # avoid AttributeError for partially initialized BusABC instance
+            return
+
         for task in self._periodic_tasks:
             # we cannot let `task.stop()` modify `self._periodic_tasks` while we are
             # iterating over it (#634)
@@ -415,9 +421,15 @@ class BusABC(metaclass=ABCMeta):
 
     def shutdown(self) -> None:
         """
-        Called to carry out any interface specific cleanup required
-        in shutting down a bus.
+        Called to carry out any interface specific cleanup required in shutting down a bus.
+
+        This method can be safely called multiple times.
         """
+        if self._is_shutdown:
+            LOG.debug("%s is already shut down", self.__class__)
+            return
+
+        self._is_shutdown = True
         self.stop_all_periodic_tasks()
 
     def __enter__(self):
@@ -425,6 +437,14 @@ class BusABC(metaclass=ABCMeta):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.shutdown()
+
+    def __del__(self) -> None:
+        if not self._is_shutdown:
+            LOG.warning("%s was not properly shut down", self.__class__)
+            # We do some best-effort cleanup if the user
+            # forgot to properly close the bus instance
+            with contextlib.suppress(AttributeError):
+                self.shutdown()
 
     @property
     def state(self) -> BusState:

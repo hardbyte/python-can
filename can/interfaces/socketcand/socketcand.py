@@ -183,5 +183,5 @@ class SocketCanDaemonBus(can.BusABC):
         self._tcp_send(ascii_msg)
 
     def shutdown(self):
-        self.stop_all_periodic_tasks()
+        super().shutdown()
         self.__socket.close()
