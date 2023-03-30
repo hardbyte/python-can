@@ -1,7 +1,7 @@
 """
 Contains the ABC bus implementation and its documentation.
 """
-
+import contextlib
 from typing import cast, Any, Iterator, List, Optional, Sequence, Tuple, Union
 
 import can.typechecking
@@ -305,6 +305,10 @@ class BusABC(metaclass=ABCMeta):
         :param remove_tasks:
             Stop tracking the stopped tasks.
         """
+        if not hasattr(self, "_periodic_tasks"):
+            # avoid AttributeError for partially initialized BusABC instance
+            return
+
         for task in self._periodic_tasks:
             # we cannot let `task.stop()` modify `self._periodic_tasks` while we are
             # iterating over it (#634)
@@ -441,7 +445,8 @@ class BusABC(metaclass=ABCMeta):
             LOG.warning("%s was not properly shut down", self.__class__)
             # We do some best-effort cleanup if the user
             # forgot to properly close the bus instance
-            self.shutdown()
+            with contextlib.suppress(AttributeError):
+                self.shutdown()
 
     @property
     def state(self) -> BusState:
