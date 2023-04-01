@@ -4,24 +4,25 @@
 This module tests two buses attached to each other.
 """
 
-import unittest
-from time import sleep, time
-from multiprocessing.dummy import Pool as ThreadPool
 import random
+import unittest
+from multiprocessing.dummy import Pool as ThreadPool
+from time import sleep, time
 
 import pytest
 
 import can
+from can import CanInterfaceNotImplementedError
 from can.interfaces.udp_multicast import UdpMulticastBus
 
 from .config import (
     IS_CI,
-    IS_UNIX,
     IS_OSX,
-    IS_TRAVIS,
-    TEST_INTERFACE_SOCKETCAN,
-    TEST_CAN_FD,
     IS_PYPY,
+    IS_TRAVIS,
+    IS_UNIX,
+    TEST_CAN_FD,
+    TEST_INTERFACE_SOCKETCAN,
 )
 
 
@@ -275,7 +276,6 @@ class Back2BackTestCase(unittest.TestCase):
 
 @unittest.skipUnless(TEST_INTERFACE_SOCKETCAN, "skip testing of socketcan")
 class BasicTestSocketCan(Back2BackTestCase):
-
     INTERFACE_1 = "socketcan"
     CHANNEL_1 = "vcan0"
     INTERFACE_2 = "socketcan"
@@ -289,14 +289,13 @@ class BasicTestSocketCan(Back2BackTestCase):
     "only supported on Unix systems (but not on macOS at Travis CI and GitHub Actions)",
 )
 class BasicTestUdpMulticastBusIPv4(Back2BackTestCase):
-
     INTERFACE_1 = "udp_multicast"
     CHANNEL_1 = UdpMulticastBus.DEFAULT_GROUP_IPv4
     INTERFACE_2 = "udp_multicast"
     CHANNEL_2 = UdpMulticastBus.DEFAULT_GROUP_IPv4
 
     def test_unique_message_instances(self):
-        with self.assertRaises(NotImplementedError):
+        with self.assertRaises(CanInterfaceNotImplementedError):
             super().test_unique_message_instances()
 
 
@@ -315,7 +314,7 @@ class BasicTestUdpMulticastBusIPv6(Back2BackTestCase):
     CHANNEL_2 = HOST_LOCAL_MCAST_GROUP_IPv6
 
     def test_unique_message_instances(self):
-        with self.assertRaises(NotImplementedError):
+        with self.assertRaises(CanInterfaceNotImplementedError):
             super().test_unique_message_instances()
 
 
@@ -323,13 +322,12 @@ TEST_INTERFACE_ETAS = False
 try:
     bus_class = can.interface._get_class_for_interface("etas")
     TEST_INTERFACE_ETAS = True
-except can.exceptions.CanInterfaceNotImplementedError:
+except CanInterfaceNotImplementedError:
     pass
 
 
 @unittest.skipUnless(TEST_INTERFACE_ETAS, "skip testing of etas interface")
 class BasicTestEtas(Back2BackTestCase):
-
     if TEST_INTERFACE_ETAS:
         configs = can.interface.detect_available_configs(interfaces="etas")
 

@@ -17,9 +17,7 @@ For example, validating typical arguments and parameters might result in a
 
 import sys
 from contextlib import contextmanager
-
-from typing import Optional
-from typing import Type
+from typing import Optional, Type
 
 if sys.version_info >= (3, 9):
     from collections.abc import Generator

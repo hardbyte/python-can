@@ -9,12 +9,12 @@ from typing import Optional, Tuple, Union
 
 from can import (
     BusABC,
-    Message,
-    CanProtocol,
     CanError,
-    CanInterfaceNotImplementedError,
     CanInitializationError,
+    CanInterfaceNotImplementedError,
     CanOperationError,
+    CanProtocol,
+    Message,
 )
 
 logger = logging.getLogger(__name__)
@@ -163,7 +163,6 @@ class IscanBus(BusABC):
 
 
 class IscanError(CanError):
-
     ERROR_CODES = {
         0: "Success",
         1: "No access to device",

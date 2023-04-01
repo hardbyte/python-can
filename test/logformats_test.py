@@ -12,23 +12,24 @@ comments.
 TODO: correctly set preserves_channel and adds_default_channel
 """
 import logging
-import unittest
-from parameterized import parameterized
-import tempfile
 import os
-from abc import abstractmethod, ABCMeta
-from itertools import zip_longest
+import tempfile
+import unittest
+from abc import ABCMeta, abstractmethod
 from datetime import datetime
+from itertools import zip_longest
+
+from parameterized import parameterized
 
 import can
 from can.io import blf
 
 from .data.example_data import (
-    TEST_MESSAGES_BASE,
-    TEST_MESSAGES_REMOTE_FRAMES,
-    TEST_MESSAGES_ERROR_FRAMES,
-    TEST_MESSAGES_CAN_FD,
     TEST_COMMENTS,
+    TEST_MESSAGES_BASE,
+    TEST_MESSAGES_CAN_FD,
+    TEST_MESSAGES_ERROR_FRAMES,
+    TEST_MESSAGES_REMOTE_FRAMES,
     sort_messages,
 )
 from .message_helper import ComparingMessagesTestCase
@@ -810,9 +811,10 @@ class TestTrcFileFormatGen(TestTrcFileFormatBase):
     """Generic tests for can.TRCWriter and can.TRCReader with different file versions"""
 
     def test_can_message(self):
+        start_time = 1506809173.191  # 30.09.2017 22:06:13.191.000 as timestamp
         expected_messages = [
             can.Message(
-                timestamp=2.5010,
+                timestamp=start_time + 2.5010,
                 arbitration_id=0xC8,
                 is_extended_id=False,
                 is_rx=False,
@@ -821,7 +823,7 @@ class TestTrcFileFormatGen(TestTrcFileFormatBase):
                 data=[9, 8, 7, 6, 5, 4, 3, 2],
             ),
             can.Message(
-                timestamp=17.876708,
+                timestamp=start_time + 17.876708,
                 arbitration_id=0x6F9,
                 is_extended_id=False,
                 channel=0,
@@ -841,10 +843,17 @@ class TestTrcFileFormatGen(TestTrcFileFormatBase):
     )
     def test_can_message_versions(self, name, filename, is_rx_support):
         with self.subTest(name):
+            if name == "V1_0":
+                # Version 1.0 does not support start time
+                start_time = 0
+            else:
+                start_time = (
+                    1639837687.062001  # 18.12.2021 14:28:07.062.001 as timestamp
+                )
 
             def msg_std(timestamp):
                 msg = can.Message(
-                    timestamp=timestamp,
+                    timestamp=timestamp + start_time,
                     arbitration_id=0x000,
                     is_extended_id=False,
                     channel=1,
@@ -857,7 +866,7 @@ class TestTrcFileFormatGen(TestTrcFileFormatBase):
 
             def msg_ext(timestamp):
                 msg = can.Message(
-                    timestamp=timestamp,
+                    timestamp=timestamp + start_time,
                     arbitration_id=0x100,
                     is_extended_id=True,
                     channel=1,

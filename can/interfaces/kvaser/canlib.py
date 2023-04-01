@@ -11,16 +11,12 @@ import logging
 import sys
 import time
 
-from can import (
-    BusABC,
-    Message,
-    CanProtocol,
-    CanError,
-    CanInitializationError,
-    CanOperationError,
-)
+from can import BusABC, CanProtocol, Message
 from can.util import time_perfcounter_correlation
-from . import constants as canstat, structures
+
+from ...exceptions import CanError, CanInitializationError, CanOperationError
+from . import constants as canstat
+from . import structures
 
 log = logging.getLogger("can.kvaser")
 

@@ -13,19 +13,18 @@ import ctypes
 import functools
 import logging
 import sys
-from typing import Optional, Callable, Tuple
+from typing import Callable, Optional, Tuple
 
-from can import (
-    BusABC,
-    Message,
-    CanProtocol,
-    CanInterfaceNotImplementedError,
-    CanInitializationError,
+from can import BusABC, CanProtocol, Message
+from can.broadcastmanager import (
     LimitedDurationCyclicSendTaskABC,
     RestartableCyclicTaskABC,
 )
-from can.ctypesutil import CLibrary, HANDLE, PHANDLE, HRESULT as ctypes_HRESULT
+from can.ctypesutil import HANDLE, PHANDLE, CLibrary
+from can.ctypesutil import HRESULT as ctypes_HRESULT
+from can.exceptions import CanInitializationError, CanInterfaceNotImplementedError
 from can.util import deprecated_args_alias, dlc2len, len2dlc
+
 from . import constants, structures
 from .exceptions import *
 

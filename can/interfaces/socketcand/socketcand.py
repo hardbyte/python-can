@@ -7,13 +7,14 @@ Authors: Marvin Seiler, Gerrit Telkamp
 Copyright (C) 2021  DOMOLOGIC GmbH
 http://www.domologic.de
 """
-import can
-import socket
-import select
 import logging
+import select
+import socket
 import time
 import traceback
 from collections import deque
+
+import can
 
 log = logging.getLogger(__name__)
 
@@ -183,5 +184,5 @@ class SocketCanDaemonBus(can.BusABC):
         self._tcp_send(ascii_msg)
 
     def shutdown(self):
-        self.stop_all_periodic_tasks()
+        super().shutdown()
         self.__socket.close()

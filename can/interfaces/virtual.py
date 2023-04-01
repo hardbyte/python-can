@@ -6,14 +6,13 @@ Any VirtualBus instances connecting to the same channel
 and reside in the same process will receive the same messages.
 """
 
-from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
-
-from copy import deepcopy
 import logging
-import time
 import queue
-from threading import RLock
+import time
+from copy import deepcopy
 from random import randint
+from threading import RLock
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from can import CanOperationError
 from can.bus import BusABC, CanProtocol
@@ -108,7 +107,6 @@ class VirtualBus(BusABC):
         self._open = True
 
         with channels_lock:
-
             # Create a new channel if one does not exist
             if self.channel_id not in channels:
                 channels[self.channel_id] = []

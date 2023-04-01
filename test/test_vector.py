@@ -9,22 +9,24 @@ import functools
 import pickle
 import sys
 import time
+from test.config import IS_WINDOWS
 from unittest.mock import Mock
 
 import pytest
 
 import can
 from can.interfaces.vector import (
-    canlib,
-    xldefine,
-    xlclass,
+    VectorBusParams,
+    VectorCanFdParams,
+    VectorCanParams,
+    VectorChannelConfig,
     VectorError,
     VectorInitializationError,
     VectorOperationError,
-    VectorChannelConfig,
+    canlib,
+    xlclass,
+    xldefine,
 )
-from can.interfaces.vector import VectorBusParams, VectorCanParams, VectorCanFdParams
-from test.config import IS_WINDOWS
 
 XLDRIVER_FOUND = canlib.xldriver is not None
 

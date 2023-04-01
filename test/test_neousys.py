@@ -2,11 +2,11 @@
 
 import unittest
 from ctypes import (
-    byref,
-    cast,
     POINTER,
-    sizeof,
+    byref,
     c_ubyte,
+    cast,
+    sizeof,
 )
 from unittest.mock import Mock
 

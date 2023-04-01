@@ -21,12 +21,12 @@ from typing import Optional, Tuple, Type
 import can.typechecking
 from can import (
     BusABC,
-    Message,
-    CanProtocol,
     CanError,
+    CanInitializationError,
     CanInterfaceNotImplementedError,
     CanOperationError,
-    CanInitializationError,
+    CanProtocol,
+    Message,
 )
 
 logger = logging.getLogger(__name__)

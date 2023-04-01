@@ -6,12 +6,12 @@ CyclicSendTasks.
 
 import importlib
 import logging
-from typing import Any, cast, Iterable, Type, Optional, Union, List
+from typing import Any, Iterable, List, Optional, Type, Union, cast
 
 from . import util
 from .bus import BusABC
-from .interfaces import BACKENDS
 from .exceptions import CanInterfaceNotImplementedError
+from .interfaces import BACKENDS
 from .typechecking import AutoDetectedConfig, Channel
 
 log = logging.getLogger("can.interface")
@@ -171,7 +171,6 @@ def detect_available_configs(
 
     result = []
     for interface in interfaces:
-
         try:
             bus_class = _get_class_for_interface(interface)
         except CanInterfaceNotImplementedError:

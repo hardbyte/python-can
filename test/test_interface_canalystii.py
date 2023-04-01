@@ -5,7 +5,7 @@
 
 import unittest
 from ctypes import c_ubyte
-from unittest.mock import patch, call
+from unittest.mock import call, patch
 
 import canalystii as driver  # low-level driver module, mock out this layer
 

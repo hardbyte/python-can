@@ -6,69 +6,70 @@ import platform
 import time
 import warnings
 from datetime import datetime
-from typing import Optional, List, Tuple, Union, Any
+from typing import Any, List, Optional, Tuple, Union
 
 from packaging import version
 
 from can import (
-    BusABC,
-    BusState,
-    CanProtocol,
     BitTiming,
     BitTimingFd,
-    Message,
+    BusABC,
+    BusState,
     CanError,
-    CanOperationError,
     CanInitializationError,
+    CanOperationError,
+    CanProtocol,
+    Message,
 )
 from can.util import check_or_adjust_timing_clock, dlc2len, len2dlc
+
 from .basic import (
-    PCAN_BITRATES,
-    PCAN_FD_PARAMETER_LIST,
-    PCAN_CHANNEL_NAMES,
-    PCAN_NONEBUS,
-    PCAN_BAUD_500K,
-    PCAN_TYPE_ISA,
-    PCANBasic,
-    PCAN_ERROR_OK,
-    PCAN_ALLOW_ERROR_FRAMES,
-    PCAN_PARAMETER_ON,
-    PCAN_RECEIVE_EVENT,
-    PCAN_API_VERSION,
-    PCAN_DEVICE_NUMBER,
-    PCAN_ERROR_QRCVEMPTY,
-    PCAN_ERROR_BUSLIGHT,
-    PCAN_ERROR_BUSHEAVY,
-    PCAN_MESSAGE_EXTENDED,
-    PCAN_MESSAGE_RTR,
-    PCAN_MESSAGE_FD,
-    PCAN_MESSAGE_BRS,
-    PCAN_MESSAGE_ESI,
-    PCAN_MESSAGE_ERRFRAME,
-    PCAN_MESSAGE_STANDARD,
-    TPCANMsgFD,
-    TPCANMsg,
-    PCAN_CHANNEL_IDENTIFYING,
-    PCAN_LISTEN_ONLY,
-    PCAN_PARAMETER_OFF,
-    TPCANHandle,
+    FEATURE_FD_CAPABLE,
     IS_LINUX,
     IS_WINDOWS,
-    PCAN_PCIBUS1,
-    PCAN_USBBUS1,
-    PCAN_PCCBUS1,
-    PCAN_LANBUS1,
-    PCAN_CHANNEL_CONDITION,
-    PCAN_CHANNEL_AVAILABLE,
-    PCAN_CHANNEL_FEATURES,
-    FEATURE_FD_CAPABLE,
-    PCAN_DICT_STATUS,
-    PCAN_BUSOFF_AUTORESET,
-    TPCANBaudrate,
+    PCAN_ALLOW_ERROR_FRAMES,
+    PCAN_API_VERSION,
     PCAN_ATTACHED_CHANNELS,
-    TPCANChannelInformation,
-    VALID_PCAN_FD_CLOCKS,
+    PCAN_BAUD_500K,
+    PCAN_BITRATES,
+    PCAN_BUSOFF_AUTORESET,
+    PCAN_CHANNEL_AVAILABLE,
+    PCAN_CHANNEL_CONDITION,
+    PCAN_CHANNEL_FEATURES,
+    PCAN_CHANNEL_IDENTIFYING,
+    PCAN_CHANNEL_NAMES,
+    PCAN_DEVICE_NUMBER,
+    PCAN_DICT_STATUS,
+    PCAN_ERROR_BUSHEAVY,
+    PCAN_ERROR_BUSLIGHT,
+    PCAN_ERROR_OK,
+    PCAN_ERROR_QRCVEMPTY,
+    PCAN_FD_PARAMETER_LIST,
+    PCAN_LANBUS1,
+    PCAN_LISTEN_ONLY,
+    PCAN_MESSAGE_BRS,
+    PCAN_MESSAGE_ERRFRAME,
+    PCAN_MESSAGE_ESI,
+    PCAN_MESSAGE_EXTENDED,
+    PCAN_MESSAGE_FD,
+    PCAN_MESSAGE_RTR,
+    PCAN_MESSAGE_STANDARD,
+    PCAN_NONEBUS,
+    PCAN_PARAMETER_OFF,
+    PCAN_PARAMETER_ON,
+    PCAN_PCCBUS1,
+    PCAN_PCIBUS1,
+    PCAN_RECEIVE_EVENT,
+    PCAN_TYPE_ISA,
+    PCAN_USBBUS1,
     VALID_PCAN_CAN_CLOCKS,
+    VALID_PCAN_FD_CLOCKS,
+    PCANBasic,
+    TPCANBaudrate,
+    TPCANChannelInformation,
+    TPCANHandle,
+    TPCANMsg,
+    TPCANMsgFD,
 )
 
 # Set up logging
@@ -97,7 +98,7 @@ if IS_WINDOWS:
     try:
         # Try builtin Python 3 Windows API
         from _overlapped import CreateEvent
-        from _winapi import WaitForSingleObject, WAIT_OBJECT_0, INFINITE
+        from _winapi import INFINITE, WAIT_OBJECT_0, WaitForSingleObject
 
         HAS_EVENTS = True
     except ImportError:
@@ -105,8 +106,6 @@ if IS_WINDOWS:
 
 elif IS_LINUX:
     try:
-        import errno
-        import os
         import select
 
         HAS_EVENTS = True

@@ -95,6 +95,9 @@ jobs:
     - name: mypy 3.11
       run: |
         mypy --python-version 3.11 .
+    - name: ruff
+      run: |
+        ruff check can
     - name: pylint
       run: |
         pylint --rcfile=.pylintrc \

@@ -11,6 +11,7 @@ from unittest.mock import patch
 
 import can
 from can.interfaces.serial.serial_can import SerialBus
+
 from .config import IS_PYPY
 from .message_helper import ComparingMessagesTestCase
 
@@ -42,7 +43,6 @@ class SerialDummy:
 
 
 class SimpleSerialTestBase(ComparingMessagesTestCase):
-
     MAX_TIMESTAMP = 0xFFFFFFFF / 1000
 
     def __init__(self):

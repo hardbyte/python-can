@@ -1,7 +1,9 @@
 import time
 from typing import Dict, List, Optional, Tuple
 
-import can.typechecking
+import can
+from can.exceptions import CanInitializationError
+
 from .boa import *
 
 
@@ -16,7 +18,6 @@ class EtasBus(can.BusABC):
         data_bitrate: int = 2000000,
         **kwargs: object,
     ):
-
         super().__init__(
             channel=channel,
             protocol=can.CanProtocol.CAN_FD if fd else can.CanProtocol.CAN_20,
@@ -252,6 +253,7 @@ class EtasBus(can.BusABC):
         OCI_ResetQueue(self.txQueue)
 
     def shutdown(self) -> None:
+        super().shutdown()
         # Cleanup TX
         if self.txQueue:
             OCI_DestroyCANTxQueue(self.txQueue)

@@ -7,11 +7,11 @@ import logging
 import time
 from typing import Any, Optional, Tuple
 
-from can import BusABC, Message, CanProtocol
-from can import typechecking
+from can import BusABC, CanProtocol, Message, typechecking
+
 from ..exceptions import (
-    CanInterfaceNotImplementedError,
     CanInitializationError,
+    CanInterfaceNotImplementedError,
     CanOperationError,
     error_check,
 )
@@ -196,7 +196,6 @@ class slcanBus(BusABC):
     def _recv_internal(
         self, timeout: Optional[float]
     ) -> Tuple[Optional[Message], bool]:
-
         canId = None
         remote = False
         extended = False

@@ -4,12 +4,13 @@ from threading import Event
 from can import (
     BusABC,
     BusState,
-    Message,
-    CanProtocol,
     CanError,
     CanInitializationError,
     CanOperationError,
+    CanProtocol,
+    Message,
 )
+
 from .constants import *
 from .exceptions import UcanException
 from .structures import *

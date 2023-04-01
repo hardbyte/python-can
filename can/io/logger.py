@@ -2,29 +2,28 @@
 See the :class:`Logger` class.
 """
 
+import gzip
 import os
 import pathlib
 from abc import ABC, abstractmethod
 from datetime import datetime
-import gzip
-from typing import Any, Optional, Callable, Type, Tuple, cast, Dict, Set
-
 from types import TracebackType
+from typing import Any, Callable, Dict, Optional, Set, Tuple, Type, cast
 
-from typing_extensions import Literal
 from pkg_resources import iter_entry_points
+from typing_extensions import Literal
 
-from ..message import Message
 from ..listener import Listener
-from .generic import BaseIOHandler, FileIOMessageWriter, MessageWriter
+from ..message import Message
+from ..typechecking import AcceptedIOType, FileLike, StringPathLike
 from .asc import ASCWriter
 from .blf import BLFWriter
 from .canutils import CanutilsLogWriter
 from .csv import CSVWriter
-from .sqlite import SqliteWriter
+from .generic import BaseIOHandler, FileIOMessageWriter, MessageWriter
 from .printer import Printer
+from .sqlite import SqliteWriter
 from .trc import TRCWriter
-from ..typechecking import StringPathLike, FileLike, AcceptedIOType
 
 
 class Logger(MessageWriter):
@@ -237,7 +236,7 @@ class BaseRotatingLogger(Listener, BaseIOHandler, ABC):
             elif isinstance(logger, Printer) and logger.file is not None:
                 return cast(FileIOMessageWriter, logger)
 
-        raise Exception(
+        raise ValueError(
             f'The log format "{suffix}" '
             f"is not supported by {self.__class__.__name__}. "
             f"{self.__class__.__name__} supports the following formats: "

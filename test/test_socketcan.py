@@ -8,8 +8,8 @@ import struct
 import unittest
 import warnings
 from unittest.mock import patch
-import can
 
+import can
 from can.interfaces.socketcan.constants import (
     CAN_BCM_TX_DELETE,
     CAN_BCM_TX_SETUP,
@@ -18,13 +18,14 @@ from can.interfaces.socketcan.constants import (
     TX_COUNTEVT,
 )
 from can.interfaces.socketcan.socketcan import (
+    BcmMsgHead,
     bcm_header_factory,
     build_bcm_header,
-    build_bcm_tx_delete_header,
     build_bcm_transmit_header,
+    build_bcm_tx_delete_header,
     build_bcm_update_header,
-    BcmMsgHead,
 )
+
 from .config import IS_LINUX, IS_PYPY
 
 

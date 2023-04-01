@@ -7,7 +7,8 @@ import logging
 import time
 from typing import Optional
 
-from can import BusABC, Message, CanProtocol
+from can import BusABC, CanProtocol, Message
+
 from ..exceptions import CanInterfaceNotImplementedError, CanOperationError
 
 logger = logging.getLogger(__name__)

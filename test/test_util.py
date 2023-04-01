@@ -10,10 +10,10 @@ from can.exceptions import CanInitializationError
 from can.util import (
     _create_bus_config,
     _rename_kwargs,
-    channel2int,
-    deprecated_args_alias,
-    check_or_adjust_timing_clock,
     cast_from_string,
+    channel2int,
+    check_or_adjust_timing_clock,
+    deprecated_args_alias,
 )
 
 
@@ -21,7 +21,6 @@ class RenameKwargsTest(unittest.TestCase):
     expected_kwargs = dict(a=1, b=2, c=3, d=4)
 
     def _test(self, start: str, end: str, kwargs, aliases):
-
         # Test that we do get the DeprecationWarning when called with deprecated kwargs
         with self.assertWarnsRegex(
             DeprecationWarning, "is deprecated.*?" + start + ".*?" + end

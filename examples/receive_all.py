@@ -14,7 +14,6 @@ def receive_all():
     # this uses the default configuration (for example from environment variables, or a
     # config file) see https://python-can.readthedocs.io/en/stable/configuration.html
     with can.Bus() as bus:
-
         # set to read-only, only supported on some interfaces
         try:
             bus.state = BusState.PASSIVE

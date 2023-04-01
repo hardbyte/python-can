@@ -9,7 +9,8 @@ from typing import List, Optional, Tuple, Union
 import can
 from can import BusABC, CanProtocol
 from can.typechecking import AutoDetectedConfig
-from .utils import pack_message, unpack_message, check_msgpack_installed
+
+from .utils import check_msgpack_installed, pack_message, unpack_message
 
 try:
     from fcntl import ioctl
@@ -251,7 +252,6 @@ class GeneralPurposeUdpMulticastBus:
 
         # configure the socket
         try:
-
             # set hop limit / TTL
             ttl_as_binary = struct.pack("@I", self.hop_limit)
             if self.ip_version == 4:

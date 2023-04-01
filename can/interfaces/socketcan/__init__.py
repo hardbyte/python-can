@@ -2,4 +2,10 @@
 See: https://www.kernel.org/doc/Documentation/networking/can.txt
 """
 
-from .socketcan import SocketcanBus, CyclicSendTask, MultiRateCyclicSendTask
+__all__ = [
+    "CyclicSendTask",
+    "MultiRateCyclicSendTask",
+    "SocketcanBus",
+]
+
+from .socketcan import CyclicSendTask, MultiRateCyclicSendTask, SocketcanBus

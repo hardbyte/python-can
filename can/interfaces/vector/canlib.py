@@ -13,15 +13,15 @@ import time
 import warnings
 from types import ModuleType
 from typing import (
+    Any,
+    Callable,
+    Dict,
     List,
     NamedTuple,
     Optional,
-    Tuple,
     Sequence,
+    Tuple,
     Union,
-    Any,
-    Dict,
-    Callable,
     cast,
 )
 
@@ -29,7 +29,7 @@ WaitForSingleObject: Optional[Callable[[int, int], int]]
 INFINITE: Optional[int]
 try:
     # Try builtin Python 3 Windows API
-    from _winapi import WaitForSingleObject, INFINITE  # type: ignore
+    from _winapi import INFINITE, WaitForSingleObject  # type: ignore
 
     HAS_EVENTS = True
 except ImportError:
@@ -39,22 +39,22 @@ except ImportError:
 # Import Modules
 # ==============
 from can import (
-    BusABC,
-    Message,
-    CanInterfaceNotImplementedError,
-    CanInitializationError,
     BitTiming,
     BitTimingFd,
+    BusABC,
+    CanInitializationError,
+    CanInterfaceNotImplementedError,
     CanProtocol,
-)
-from can.util import (
-    len2dlc,
-    dlc2len,
-    deprecated_args_alias,
-    time_perfcounter_correlation,
-    check_or_adjust_timing_clock,
+    Message,
 )
 from can.typechecking import AutoDetectedConfig, CanFilters
+from can.util import (
+    check_or_adjust_timing_clock,
+    deprecated_args_alias,
+    dlc2len,
+    len2dlc,
+    time_perfcounter_correlation,
+)
 
 # Define Module Logger
 # ====================
@@ -62,8 +62,8 @@ LOG = logging.getLogger(__name__)
 
 # Import Vector API modules
 # =========================
+from . import xlclass, xldefine
 from .exceptions import VectorError, VectorInitializationError, VectorOperationError
-from . import xldefine, xlclass
 
 # Import safely Vector API module for Travis tests
 xldriver: Optional[ModuleType] = None

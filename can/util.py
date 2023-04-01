@@ -11,24 +11,24 @@ import platform
 import re
 import warnings
 from configparser import ConfigParser
-from time import time, perf_counter, get_clock_info
+from time import get_clock_info, perf_counter, time
 from typing import (
     Any,
     Callable,
-    cast,
     Dict,
     Iterable,
-    Tuple,
     Optional,
-    Union,
+    Tuple,
     TypeVar,
+    Union,
+    cast,
 )
 
 import can
+
 from . import typechecking
 from .bit_timing import BitTiming, BitTimingFd
-from .exceptions import CanInitializationError
-from .exceptions import CanInterfaceNotImplementedError
+from .exceptions import CanInitializationError, CanInterfaceNotImplementedError
 from .interfaces import VALID_INTERFACES
 
 log = logging.getLogger("can.util")

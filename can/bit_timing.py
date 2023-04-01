@@ -1,8 +1,8 @@
 # pylint: disable=too-many-lines
 import math
-from typing import List, Mapping, Iterator, cast
+from typing import Iterator, List, Mapping, cast
 
-from can.typechecking import BitTimingFdDict, BitTimingDict
+from can.typechecking import BitTimingDict, BitTimingFdDict
 
 
 class BitTiming(Mapping):

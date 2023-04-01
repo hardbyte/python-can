@@ -5,29 +5,38 @@ The main entry point to these classes should be through
 :meth:`can.BusABC.send_periodic`.
 """
 
-from typing import Optional, Sequence, Tuple, Union, Callable, TYPE_CHECKING
+import abc
+import logging
+import sys
+import threading
+import time
+from typing import TYPE_CHECKING, Callable, Optional, Sequence, Tuple, Union
+
+from typing_extensions import Final
 
 from can import typechecking
+from can.message import Message
 
 if TYPE_CHECKING:
     from can.bus import BusABC
 
-from can.message import Message
-
-import abc
-import logging
-import threading
-import time
 
 # try to import win32event for event-based cyclic send task (needs the pywin32 package)
+USE_WINDOWS_EVENTS = False
 try:
     import win32event
 
-    HAS_EVENTS = True
+    # Python 3.11 provides a more precise sleep implementation on Windows, so this is not necessary.
+    # Put version check here, so mypy does not complain about `win32event` not being defined.
+    if sys.version_info < (3, 11):
+        USE_WINDOWS_EVENTS = True
 except ImportError:
-    HAS_EVENTS = False
+    pass
 
 log = logging.getLogger("can.bcm")
+
+NANOSECONDS_IN_SECOND: Final[int] = 1_000_000_000
+NANOSECONDS_IN_MILLISECOND: Final[int] = 1_000_000
 
 
 class CyclicTask(abc.ABC):
@@ -64,6 +73,7 @@ class CyclicSendTaskABC(CyclicTask):
         # Take the Arbitration ID of the first element
         self.arbitration_id = messages[0].arbitration_id
         self.period = period
+        self.period_ns = int(round(period * 1e9))
         self.messages = messages
 
     @staticmethod
@@ -246,7 +256,7 @@ class ThreadBasedCyclicSendTask(
         )
         self.on_error = on_error
 
-        if HAS_EVENTS:
+        if USE_WINDOWS_EVENTS:
             self.period_ms = int(round(period * 1000, 0))
             try:
                 self.event = win32event.CreateWaitableTimerEx(
@@ -261,7 +271,7 @@ class ThreadBasedCyclicSendTask(
         self.start()
 
     def stop(self) -> None:
-        if HAS_EVENTS:
+        if USE_WINDOWS_EVENTS:
             win32event.CancelWaitableTimer(self.event.handle)
         self.stopped = True
 
@@ -272,7 +282,7 @@ class ThreadBasedCyclicSendTask(
             self.thread = threading.Thread(target=self._run, name=name)
             self.thread.daemon = True
 
-            if HAS_EVENTS:
+            if USE_WINDOWS_EVENTS:
                 win32event.SetWaitableTimer(
                     self.event.handle, 0, self.period_ms, None, None, False
                 )
@@ -281,10 +291,11 @@ class ThreadBasedCyclicSendTask(
 
     def _run(self) -> None:
         msg_index = 0
+        msg_due_time_ns = time.perf_counter_ns()
+
         while not self.stopped:
             # Prevent calling bus.send from multiple threads
             with self.send_lock:
-                started = time.perf_counter()
                 try:
                     self.bus.send(self.messages[msg_index])
                 except Exception as exc:  # pylint: disable=broad-except
@@ -294,13 +305,19 @@ class ThreadBasedCyclicSendTask(
                             break
                     else:
                         break
+            msg_due_time_ns += self.period_ns
             if self.end_time is not None and time.perf_counter() >= self.end_time:
                 break
             msg_index = (msg_index + 1) % len(self.messages)
 
-            if HAS_EVENTS:
-                win32event.WaitForSingleObject(self.event.handle, self.period_ms)
-            else:
-                # Compensate for the time it takes to send the message
-                delay = self.period - (time.perf_counter() - started)
-                time.sleep(max(0.0, delay))
+            # Compensate for the time it takes to send the message
+            delay_ns = msg_due_time_ns - time.perf_counter_ns()
+
+            if delay_ns > 0:
+                if USE_WINDOWS_EVENTS:
+                    win32event.WaitForSingleObject(
+                        self.event.handle,
+                        int(round(delay_ns / NANOSECONDS_IN_MILLISECOND)),
+                    )
+                else:
+                    time.sleep(delay_ns / NANOSECONDS_IN_SECOND)

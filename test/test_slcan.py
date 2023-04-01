@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
 import unittest
-import can
-from .config import IS_PYPY
 
+import can
+
+from .config import IS_PYPY
 
 """
 Mentioned in #1010 & #1490

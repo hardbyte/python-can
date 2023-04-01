@@ -5,13 +5,12 @@ Setup script for the `can` package.
 Learn more at https://github.com/hardbyte/python-can/
 """
 
-# pylint: disable=invalid-name
-
+import logging
+import re
 from os import listdir
 from os.path import isfile, join
-import re
-import logging
-from setuptools import setup, find_packages
+
+from setuptools import find_packages, setup
 
 logging.basicConfig(level=logging.WARNING)
 
