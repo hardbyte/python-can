@@ -12,23 +12,24 @@ comments.
 TODO: correctly set preserves_channel and adds_default_channel
 """
 import logging
-import unittest
-from parameterized import parameterized
-import tempfile
 import os
-from abc import abstractmethod, ABCMeta
-from itertools import zip_longest
+import tempfile
+import unittest
+from abc import ABCMeta, abstractmethod
 from datetime import datetime
+from itertools import zip_longest
+
+from parameterized import parameterized
 
 import can
 from can.io import blf
 
 from .data.example_data import (
-    TEST_MESSAGES_BASE,
-    TEST_MESSAGES_REMOTE_FRAMES,
-    TEST_MESSAGES_ERROR_FRAMES,
-    TEST_MESSAGES_CAN_FD,
     TEST_COMMENTS,
+    TEST_MESSAGES_BASE,
+    TEST_MESSAGES_CAN_FD,
+    TEST_MESSAGES_ERROR_FRAMES,
+    TEST_MESSAGES_REMOTE_FRAMES,
     sort_messages,
 )
 from .message_helper import ComparingMessagesTestCase

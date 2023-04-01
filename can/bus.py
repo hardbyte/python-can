@@ -1,19 +1,18 @@
 """
 Contains the ABC bus implementation and its documentation.
 """
+
 import contextlib
-from typing import cast, Any, Iterator, List, Optional, Sequence, Tuple, Union
-
-import can.typechecking
-
-from abc import ABC, ABCMeta, abstractmethod
-import can
 import logging
 import threading
-from time import time
+from abc import ABC, ABCMeta, abstractmethod
 from enum import Enum, auto
+from time import time
+from typing import Any, Iterator, List, Optional, Sequence, Tuple, Union, cast
 
-from can.broadcastmanager import ThreadBasedCyclicSendTask, CyclicSendTaskABC
+import can
+import can.typechecking
+from can.broadcastmanager import CyclicSendTaskABC, ThreadBasedCyclicSendTask
 from can.message import Message
 
 LOG = logging.getLogger(__name__)

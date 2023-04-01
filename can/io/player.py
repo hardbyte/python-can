@@ -10,15 +10,15 @@ import typing
 
 from pkg_resources import iter_entry_points
 
-from .generic import MessageReader
+from ..message import Message
+from ..typechecking import AcceptedIOType, FileLike, StringPathLike
 from .asc import ASCReader
 from .blf import BLFReader
 from .canutils import CanutilsLogReader
 from .csv import CSVReader
+from .generic import MessageReader
 from .sqlite import SqliteReader
 from .trc import TRCReader
-from ..typechecking import StringPathLike, FileLike, AcceptedIOType
-from ..message import Message
 
 
 class LogReader(MessageReader):

@@ -10,14 +10,15 @@ See the interface documentation for the format being used.
 import io
 import logging
 import struct
-from typing import Any, List, Tuple, Optional
+from typing import Any, List, Optional, Tuple
 
-from can import BusABC, Message
 from can import (
-    CanInterfaceNotImplementedError,
+    BusABC,
     CanInitializationError,
+    CanInterfaceNotImplementedError,
     CanOperationError,
     CanTimeoutError,
+    Message,
 )
 from can.typechecking import AutoDetectedConfig
 

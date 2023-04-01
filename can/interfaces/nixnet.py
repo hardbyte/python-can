@@ -13,14 +13,14 @@ import os
 import time
 from queue import SimpleQueue
 from types import ModuleType
-from typing import Optional, List, Union, Tuple, Any
+from typing import Any, List, Optional, Tuple, Union
 
 import can.typechecking
-from can import BusABC, Message, BitTiming, BitTimingFd
+from can import BitTiming, BitTimingFd, BusABC, Message
 from can.exceptions import (
     CanInitializationError,
-    CanOperationError,
     CanInterfaceNotImplementedError,
+    CanOperationError,
 )
 from can.util import check_or_adjust_timing_clock, deprecated_args_alias
 

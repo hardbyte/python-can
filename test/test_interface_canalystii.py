@@ -1,10 +1,14 @@
 #!/usr/bin/env python
 
+"""
+"""
+
 import unittest
-from unittest.mock import patch, call
 from ctypes import c_ubyte
+from unittest.mock import call, patch
 
 import canalystii as driver  # low-level driver module, mock out this layer
+
 import can
 from can.interfaces.canalystii import CANalystIIBus
 

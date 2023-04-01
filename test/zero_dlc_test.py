@@ -3,9 +3,8 @@
 """
 """
 
-from time import sleep
-import unittest
 import logging
+import unittest
 
 import can
 

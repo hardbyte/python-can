@@ -4,12 +4,13 @@
 This module tests the functions inside of player.py
 """
 
+import io
+import os
+import sys
 import unittest
 from unittest import mock
 from unittest.mock import Mock
-import os
-import sys
-import io
+
 import can
 import can.player
 

@@ -15,11 +15,10 @@
 #  more Info at http://www.peak-system.com
 
 # Module Imports
+import logging
+import platform
 from ctypes import *
 from ctypes.util import find_library
-import platform
-
-import logging
 
 PLATFORM = platform.system()
 IS_WINDOWS = PLATFORM == "Windows"

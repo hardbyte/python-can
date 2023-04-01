@@ -3,9 +3,9 @@
 """
 This module tests multiple message cyclic send tasks.
 """
+import time
 import unittest
 
-import time
 import can
 
 from .config import TEST_INTERFACE_SOCKETCAN

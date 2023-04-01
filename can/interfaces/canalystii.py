@@ -1,15 +1,15 @@
-from collections import deque
-from ctypes import c_ubyte
 import logging
 import time
-from typing import Any, Dict, Optional, Deque, Sequence, Tuple, Union
-
-from can import BitTiming, BusABC, Message, BitTimingFd
-from can.exceptions import CanTimeoutError
-from can.typechecking import CanFilters
-from can.util import deprecated_args_alias, check_or_adjust_timing_clock
+from collections import deque
+from ctypes import c_ubyte
+from typing import Any, Deque, Dict, Optional, Sequence, Tuple, Union
 
 import canalystii as driver
+
+from can import BitTiming, BitTimingFd, BusABC, Message
+from can.exceptions import CanTimeoutError
+from can.typechecking import CanFilters
+from can.util import check_or_adjust_timing_clock, deprecated_args_alias
 
 logger = logging.getLogger(__name__)
 

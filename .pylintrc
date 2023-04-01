@@ -438,6 +438,8 @@ known-standard-library=
 # Force import order to recognize a module as part of a third party library.
 known-third-party=enchant
 
+# Allow explicit reexports by alias from a package __init__
+allow-reexport-from-package=no
 
 [CLASSES]
 
