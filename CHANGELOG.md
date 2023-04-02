@@ -1,5 +1,83 @@
+Version 4.2.0
+=============
+
+Breaking Changes
+----------------
+* The ``can.BitTiming`` class was replaced with the new 
+  ``can.BitTiming`` and `can.BitTimingFd` classes (#1468, #1515). 
+  Early adopters of ``can.BitTiming`` will need to update their code. Check the 
+  [documentation](https://python-can.readthedocs.io/en/develop/bit_timing.html)
+  for more information. Currently, the following interfaces support the new classes:
+  * canalystii (#1468)
+  * cantact (#1468)
+  * nixnet (#1520)
+  * pcan (#1514)
+  * vector (#1470, #1516)
+
+  There are open pull requests for kvaser (#1510), slcan (#1512) and usb2can (#1511).
+
+Features
+--------
+
+### IO
+* Improve support for TRC files (#1530).
+
+### Type Annotations
+* Export symbols to satisfy type checkers (#1547, #1551).
+
+### Interface Improvements
+* Add ``__del__`` method to ``can.BusABC`` to automatically release resources (#1489).
+* pcan: Update PCAN Basic to 4.6.2.753 (#1481).
+* pcan: Use select instead of polling on Linux (#1410).
+* socketcan: Use ip link JSON output in ``find_available_interfaces`` (#1478).
+* socketcan: Enable SocketCAN interface tests in GitHub CI (#1484).
+* slcan: improve receiving performance (#1490).
+* usb2can: Stop using root logger (#1483).
+* usb2can: Faster channel detection on Windows (#1480).
+* vector: Only check sample point instead of tseg & sjw (#1486).
+* vector: add VN5611 hwtype (#1501).
+
+Documentation
+-------------
+* Add new section about related tools to documentation. Add a list of
+  plugin interface packages (#1457).
+
+Bug Fixes
+---------
+* Automatic type conversion for config values (#1498, #1499).
+* pcan: Fix ``Bus.__new__`` for CAN-FD interfaces (#1458, #1460).
+* pcan: Fix Detection of Library on Windows on ARM (#1463).
+* socketcand: extended ID bug fixes (#1504, #1508).
+* vector: improve robustness against unknown HardwareType values (#1500, #1502).
+
+Deprecations
+------------
+* The ``bustype`` parameter of ``can.Bus`` is deprecated and will be 
+  removed in version 5.0, use ``interface`` instead. (#1462).
+* The ``context`` parameter of ``can.Bus`` is deprecated and will be 
+  removed in version 5.0, use ``config_context`` instead. (#1474).
+* The ``bit_timing`` parameter of ``CantactBus`` is deprecated and will be 
+  removed in version 5.0, use ``timing`` instead. (#1468).
+* The ``bit_timing`` parameter of ``CANalystIIBus`` is deprecated and will be 
+  removed in version 5.0, use ``timing`` instead. (#1468).
+* The ``brs`` and ``log_errors`` parameters of `` NiXNETcanBus`` are deprecated 
+* and will be removed in version 5.0. (#1520).
+
+Miscellaneous
+-------------
+* Use high resolution timer on Windows to improve 
+  timing precision for BroadcastManager (#1449).
+* Improve ThreadBasedCyclicSendTask timing (#1539).
+* Make code examples executable on Linux (#1452).
+* Fix CanFilter type annotation (#1456).
+* Fix ``The entry_points().get`` deprecation warning and improve
+  type annotation of ``can.interfaces.BACKENDS`` (#1465).
+* Add ``ignore_config`` parameter to ``can.Bus`` (#1474).
+* Add deprecation period to utility function ``deprecated_args_alias`` (#1477).
+
+
 Version 4.1.0
-====
+=============
 
 Breaking Changes
 ----------------
