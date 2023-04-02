@@ -14,7 +14,8 @@ Breaking Changes
   * pcan (#1514)
   * vector (#1470, #1516)
 
-  There are open pull requests for kvaser (#1510), slcan (#1512) and usb2can (#1511).
+  There are open pull requests for kvaser (#1510), slcan (#1512) and usb2can (#1511). Testing
+  and reviewing of these open PRs would be most appreciated.
 
 Features
 --------
