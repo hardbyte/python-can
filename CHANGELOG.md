@@ -21,7 +21,7 @@ Features
 --------
 
 ### IO
-* Improve support for TRC files (#1530).
+* Add support for version 2 TRC files and other TRC file enhancements (#1530).
 
 ### Type Annotations
 * Export symbols to satisfy type checkers (#1547, #1551).
