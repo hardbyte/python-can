@@ -43,6 +43,16 @@ class slcanTestCase(unittest.TestCase):
         self.assertEqual(msg.dlc, 2)
         self.assertSequenceEqual(msg.data, [0xAA, 0x55])
 
+        # Ewert Energy Systems CANDapter specific
+        elf.serial.write(b"x12ABCDEF2AA55\r")
+        msg = self.bus.recv(TIMEOUT)
+        self.assertIsNotNone(msg)
+        self.assertEqual(msg.arbitration_id, 0x12ABCDEF)
+        self.assertEqual(msg.is_extended_id, True)
+        self.assertEqual(msg.is_remote_frame, False)
+        self.assertEqual(msg.dlc, 2)
+        self.assertSequenceEqual(msg.data, [0xAA, 0x55])
+
     def test_send_extended(self):
         msg = can.Message(
             arbitration_id=0x12ABCDEF, is_extended_id=True, data=[0xAA, 0x55]
