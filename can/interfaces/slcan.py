@@ -205,7 +205,7 @@ class slcanBus(BusABC):
 
         if not string:
             pass
-        elif string[0] == "T" or string[0] == "x":
+        elif string[0] in ("T", "x"):
             # extended frame
             canId = int(string[1:9], 16)
             dlc = int(string[9])
