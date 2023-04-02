@@ -75,7 +75,7 @@ Miscellaneous
   type annotation of ``can.interfaces.BACKENDS`` (#1465).
 * Add ``ignore_config`` parameter to ``can.Bus`` (#1474).
 * Add deprecation period to utility function ``deprecated_args_alias`` (#1477).
-
+* Add `ruff` to the CI system (#1551)
 
 Version 4.1.0
 =============
