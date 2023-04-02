@@ -30,7 +30,7 @@ except ImportError:
 
 
 import can
-from can import BusABC, Message
+from can import BusABC, CanProtocol, Message
 from can.broadcastmanager import (
     LimitedDurationCyclicSendTaskABC,
     ModifiableCyclicTaskABC,
@@ -710,7 +710,12 @@ class SocketcanBus(BusABC):
                 "local_loopback": local_loopback,
             }
         )
-        super().__init__(channel=channel, can_filters=can_filters, **kwargs)
+        super().__init__(
+            channel=channel,
+            can_filters=can_filters,
+            protocol=CanProtocol.CAN_FD if fd else CanProtocol.CAN_20,
+            **kwargs,
+        )
 
     def shutdown(self) -> None:
         """Stops all active periodic tasks and closes the socket."""
