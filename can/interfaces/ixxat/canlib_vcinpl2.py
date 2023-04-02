@@ -13,17 +13,17 @@ import ctypes
 import functools
 import logging
 import sys
-from typing import Optional, Callable, Tuple
+from typing import Callable, Optional, Tuple
 
+import can.util
 from can import BusABC, Message
-from can.exceptions import CanInterfaceNotImplementedError, CanInitializationError
 from can.broadcastmanager import (
     LimitedDurationCyclicSendTaskABC,
     RestartableCyclicTaskABC,
 )
-from can.ctypesutil import CLibrary, HANDLE, PHANDLE, HRESULT as ctypes_HRESULT
-
-import can.util
+from can.ctypesutil import HANDLE, PHANDLE, CLibrary
+from can.ctypesutil import HRESULT as ctypes_HRESULT
+from can.exceptions import CanInitializationError, CanInterfaceNotImplementedError
 from can.util import deprecated_args_alias
 
 from . import constants, structures
@@ -417,6 +417,8 @@ class IXXATBus(BusABC):
     """
 
     @deprecated_args_alias(
+        deprecation_start="4.0.0",
+        deprecation_end="5.0.0",
         UniqueHardwareId="unique_hardware_id",
         rxFifoSize="rx_fifo_size",
         txFifoSize="tx_fifo_size",

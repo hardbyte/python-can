@@ -5,24 +5,28 @@ MF4 files represent Measurement Data Format (MDF) version 4 as specified by
 the ASAM MDF standard (see https://www.asam.net/standards/detail/mdf/)
 """
 
+import logging
 from datetime import datetime
+from hashlib import md5
 from io import BufferedIOBase, BytesIO
 from pathlib import Path
-import logging
-from hashlib import md5
-from typing import Any, Union, BinaryIO, Optional, Generator, cast
+from typing import Any, BinaryIO, Generator, Optional, Union, cast
 
 from ..message import Message
 from ..typechecking import StringPathLike
-from ..util import channel2int, len2dlc, dlc2len
-from .generic import MessageReader, FileIOMessageWriter
+from ..util import channel2int, dlc2len, len2dlc
+from .generic import FileIOMessageWriter, MessageReader
 
-from asammdf import Signal
-from asammdf.mdf import MDF
-from asammdf.blocks.mdf_v4 import MDF4
-from asammdf.blocks.v4_blocks import SourceInformation
-from asammdf.blocks.v4_constants import BUS_TYPE_CAN, SOURCE_BUS
-import numpy as np
+try:
+    import asammdf
+    import numpy as np
+    from asammdf import Signal
+    from asammdf.blocks.mdf_v4 import MDF4
+    from asammdf.blocks.v4_blocks import SourceInformation
+    from asammdf.blocks.v4_constants import BUS_TYPE_CAN, SOURCE_BUS
+    from asammdf.mdf import MDF
+except ImportError:
+    pass
 
 
 CAN_MSG_EXT = 0x80000000
@@ -87,7 +91,6 @@ class MF4Writer(FileIOMessageWriter):
         file: Union[StringPathLike, BinaryIO],
         database: Optional[StringPathLike] = None,
         compression_level: int = 2,
-        *args: Any,
         **kwargs: Any,
     ) -> None:
         """
@@ -103,6 +106,12 @@ class MF4Writer(FileIOMessageWriter):
             * 1 - deflate (slower, but produces smaller files)
             * 2 - transposition + deflate (slowest, but produces the smallest files)
         """
+        if asammdf is None:
+            raise NotImplementedError(
+                "The asammdf package was not found. Install python-can with "
+                "the optional dependency [mf4] to use the MF4Writer."
+            )
+
         if kwargs.get("append", False):
             raise ValueError(
                 f"{self.__class__.__name__} is currently not equipped to "
@@ -171,12 +180,12 @@ class MF4Writer(FileIOMessageWriter):
     def file_size(self) -> int:
         """Return an estimate of the current file size in bytes."""
         # TODO: find solution without accessing private attributes of asammdf
-        return cast(int, self._mdf._tempfile.tell())
+        return cast(int, self._mdf._tempfile.tell())  # pylint: disable=protected-access
 
     def stop(self) -> None:
         self._mdf.save(self.file, compression=self._compression_level)
         self._mdf.close()
-        super(MF4Writer, self).stop()
+        super().stop()
 
     def on_message_received(self, msg: Message) -> None:
         channel = channel2int(msg.channel)
@@ -270,6 +279,12 @@ class MF4Reader(MessageReader):
                         If this is a file-like object, is has to be opened in
                         binary read mode, not text read mode.
         """
+        if asammdf is None:
+            raise NotImplementedError(
+                "The asammdf package was not found. Install python-can with "
+                "the optional dependency [mf4] to use the MF4Reader."
+            )
+
         super().__init__(file, mode="rb")
 
         self._mdf: MDF4
@@ -295,7 +310,6 @@ class MF4Reader(MessageReader):
         rtr_counter = 0
 
         for timestamp, group_index in self.masters:
-
             # standard frames
             if group_index == 0:
                 sample = self._mdf.get(
@@ -362,7 +376,6 @@ class MF4Reader(MessageReader):
 
             # error frames
             elif group_index == 1:
-
                 sample = self._mdf.get(
                     "CAN_ErrorFrame",
                     group=group_index,

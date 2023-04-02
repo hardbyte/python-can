@@ -3,7 +3,8 @@ import time
 from typing import Dict, List, Optional, Tuple
 
 import can
-from ...exceptions import CanInitializationError
+from can.exceptions import CanInitializationError
+
 from .boa import *
 
 
@@ -248,6 +249,7 @@ class EtasBus(can.BusABC):
         OCI_ResetQueue(self.txQueue)
 
     def shutdown(self) -> None:
+        super().shutdown()
         # Cleanup TX
         if self.txQueue:
             OCI_DestroyCANTxQueue(self.txQueue)
@@ -289,6 +291,7 @@ class EtasBus(can.BusABC):
         #     raise CanOperationError(f"OCI_AdaptCANConfiguration failed with error 0x{ec:X}")
         raise NotImplementedError("Setting state is not implemented.")
 
+    @staticmethod
     def _detect_available_configs() -> List[can.typechecking.AutoDetectedConfig]:
         nodeRange = CSI_NodeRange(CSI_NODE_MIN, CSI_NODE_MAX)
         tree = ctypes.POINTER(CSI_Tree)()

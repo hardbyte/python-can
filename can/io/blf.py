@@ -12,18 +12,17 @@ of uncompressed data each. This data contains the actual CAN messages and other
 objects types.
 """
 
-import struct
-import zlib
 import datetime
-import time
 import logging
-from typing import List, BinaryIO, Generator, Union, Tuple, Optional, cast, Any
+import struct
+import time
+import zlib
+from typing import Any, BinaryIO, Generator, List, Optional, Tuple, Union, cast
 
 from ..message import Message
-from ..util import len2dlc, dlc2len, channel2int
 from ..typechecking import StringPathLike
+from ..util import channel2int, dlc2len, len2dlc
 from .generic import FileIOMessageWriter, MessageReader
-
 
 TSystemTime = Tuple[int, int, int, int, int, int, int, int]
 
@@ -146,7 +145,6 @@ class BLFReader(MessageReader):
     def __init__(
         self,
         file: Union[StringPathLike, BinaryIO],
-        *args: Any,
         **kwargs: Any,
     ) -> None:
         """
@@ -375,7 +373,6 @@ class BLFWriter(FileIOMessageWriter):
         append: bool = False,
         channel: int = 1,
         compression_level: int = -1,
-        *args: Any,
         **kwargs: Any,
     ) -> None:
         """

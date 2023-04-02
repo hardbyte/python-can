@@ -4,10 +4,10 @@
 This module tests that the scripts are all callable.
 """
 
-import subprocess
-import unittest
-import sys
 import errno
+import subprocess
+import sys
+import unittest
 from abc import ABCMeta, abstractmethod
 
 from .config import *

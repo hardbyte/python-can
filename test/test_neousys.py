@@ -1,20 +1,14 @@
 #!/usr/bin/env python
 
-import ctypes
-import os
-import pickle
 import unittest
-from unittest.mock import Mock
-
 from ctypes import (
-    byref,
-    cast,
     POINTER,
-    sizeof,
+    byref,
     c_ubyte,
+    cast,
+    sizeof,
 )
-
-import pytest
+from unittest.mock import Mock
 
 import can
 from can.interfaces.neousys import neousys

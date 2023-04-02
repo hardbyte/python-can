@@ -5,7 +5,6 @@ This module contains common `ctypes` utils.
 import ctypes
 import logging
 import sys
-
 from typing import Any, Callable, Optional, Tuple, Union
 
 log = logging.getLogger("can.ctypesutil")

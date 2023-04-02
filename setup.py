@@ -5,13 +5,12 @@ Setup script for the `can` package.
 Learn more at https://github.com/hardbyte/python-can/
 """
 
-# pylint: disable=invalid-name
-
+import logging
+import re
 from os import listdir
 from os.path import isfile, join
-import re
-import logging
-from setuptools import setup, find_packages
+
+from setuptools import find_packages, setup
 
 logging.basicConfig(level=logging.WARNING)
 
@@ -32,7 +31,7 @@ extras_require = {
     "cantact": ["cantact>=0.0.7"],
     "cvector": ["python-can-cvector"],
     "gs_usb": ["gs_usb>=0.2.1"],
-    "nixnet": ["nixnet>=0.3.1"],
+    "nixnet": ["nixnet>=0.3.2"],
     "pcan": ["uptime~=3.0.1"],
     "remote": ["python-can-remote"],
     "sontheim": ["python-can-sontheim>=0.1.2"],

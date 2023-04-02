@@ -5,11 +5,11 @@ to a CAN bus.
 Similar to canplayer in the can-utils package.
 """
 
-import sys
 import argparse
-from datetime import datetime
 import errno
-from typing import cast, Iterable
+import sys
+from datetime import datetime
+from typing import Iterable, cast
 
 from can import LogReader, Message, MessageSync
 
@@ -87,7 +87,6 @@ def main() -> None:
 
     with _create_bus(results, **additional_config) as bus:
         with LogReader(results.infile, **additional_config) as reader:
-
             in_sync = MessageSync(
                 cast(Iterable[Message], reader),
                 timestamps=results.timestamps,

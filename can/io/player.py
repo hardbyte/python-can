@@ -11,15 +11,15 @@ import typing
 import typing_extensions
 from pkg_resources import iter_entry_points
 
-from .generic import MessageReader
+from ..message import Message
+from ..typechecking import AcceptedIOType, FileLike, StringPathLike
 from .asc import ASCReader
 from .blf import BLFReader
 from .canutils import CanutilsLogReader
 from .csv import CSVReader
+from .generic import MessageReader
 from .sqlite import SqliteReader
 from .trc import TRCReader
-from ..typechecking import StringPathLike, FileLike, AcceptedIOType
-from ..message import Message
 
 MF4Reader: typing.Optional[typing.Type[MessageReader]]
 try:
@@ -81,7 +81,6 @@ class LogReader(MessageReader):
     def __new__(  # type: ignore
         cls: typing.Any,
         filename: StringPathLike,
-        *args: typing.Any,
         **kwargs: typing.Any,
     ) -> MessageReader:
         """
@@ -110,7 +109,7 @@ class LogReader(MessageReader):
             ) from None
         if ReaderType is None:
             raise ImportError(f"failed to import reader for extension {suffix}")
-        return ReaderType(file_or_filename, *args, **kwargs)
+        return ReaderType(file=file_or_filename, **kwargs)
 
     @staticmethod
     def decompress(
@@ -128,7 +127,7 @@ class LogReader(MessageReader):
         raise NotImplementedError()
 
 
-class MessageSync:  # pylint: disable=too-few-public-methods
+class MessageSync:
     """
     Used to iterate over some given messages in the recorded time.
     """
@@ -159,7 +158,6 @@ class MessageSync:  # pylint: disable=too-few-public-methods
         t_skipped = 0.0
 
         for message in self.raw_messages:
-
             # Work out the correct wait time
             if self.timestamps:
                 if recorded_start_time is None:

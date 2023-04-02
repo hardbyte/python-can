@@ -3,11 +3,12 @@ Interface for Chinese Robotell compatible interfaces (win32/linux).
 """
 
 import io
-import time
 import logging
+import time
 from typing import Optional
 
 from can import BusABC, Message
+
 from ..exceptions import CanInterfaceNotImplementedError, CanOperationError
 
 logger = logging.getLogger(__name__)

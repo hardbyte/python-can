@@ -4,6 +4,7 @@
 """
 import pickle
 import unittest
+
 from can.interfaces.ics_neovi import ICSApiError
 
 

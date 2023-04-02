@@ -9,6 +9,7 @@ from pathlib import Path
 from unittest.mock import Mock
 
 import can
+
 from .data.example_data import generate_message
 
 

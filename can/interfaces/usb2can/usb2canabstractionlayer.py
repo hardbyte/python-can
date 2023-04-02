@@ -3,11 +3,12 @@ This wrapper is for windows or direct access via CANAL API.
 Socket CAN is recommended under Unix/Linux systems.
 """
 
+import logging
 from ctypes import *
 from enum import IntEnum
-import logging
 
 import can
+
 from ...exceptions import error_check
 from ...typechecking import StringPathLike
 

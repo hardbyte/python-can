@@ -4,19 +4,18 @@
 This module tests :class:`can.MessageSync`.
 """
 
-from copy import copy
-import time
 import gc
-
+import time
 import unittest
+from copy import copy
+
 import pytest
 
-from can import MessageSync, Message
+from can import Message, MessageSync
 
-from .config import IS_CI, IS_TRAVIS, IS_OSX, IS_GITHUB_ACTIONS, IS_LINUX
-from .message_helper import ComparingMessagesTestCase
+from .config import IS_CI, IS_GITHUB_ACTIONS, IS_LINUX, IS_OSX, IS_TRAVIS
 from .data.example_data import TEST_MESSAGES_BASE
-
+from .message_helper import ComparingMessagesTestCase
 
 TEST_FEWER_MESSAGES = TEST_MESSAGES_BASE[::2]
 

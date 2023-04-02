@@ -3,12 +3,11 @@ This Listener simply prints to stdout / the terminal or a file.
 """
 
 import logging
-
-from typing import Optional, TextIO, Union, Any, cast
+from typing import Any, Optional, TextIO, Union, cast
 
 from ..message import Message
-from .generic import MessageWriter
 from ..typechecking import StringPathLike
+from .generic import MessageWriter
 
 log = logging.getLogger("can.io.printer")
 
@@ -29,7 +28,6 @@ class Printer(MessageWriter):
         self,
         file: Optional[Union[StringPathLike, TextIO]] = None,
         append: bool = False,
-        *args: Any,
         **kwargs: Any
     ) -> None:
         """
