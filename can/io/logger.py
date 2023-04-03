@@ -99,7 +99,7 @@ class Logger(MessageWriter):
         try:
             LoggerType = Logger.message_writers[suffix]
             if LoggerType is None:
-                raise (ValueError(f'failed to import logger for extension "{suffix}"'))
+                raise ValueError(f'failed to import logger for extension "{suffix}"')
             return LoggerType(file=file_or_filename, **kwargs)
         except KeyError:
             raise ValueError(
