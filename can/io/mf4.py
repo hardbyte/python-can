@@ -4,7 +4,6 @@ Contains handling of MF4 logging files.
 MF4 files represent Measurement Data Format (MDF) version 4 as specified by
 the ASAM MDF standard (see https://www.asam.net/standards/detail/mdf/)
 """
-
 import logging
 from datetime import datetime
 from hashlib import md5
@@ -17,6 +16,8 @@ from ..typechecking import StringPathLike
 from ..util import channel2int, dlc2len, len2dlc
 from .generic import FileIOMessageWriter, MessageReader
 
+logger = logging.getLogger("can.io.mf4")
+
 try:
     import asammdf
     import numpy as np
@@ -25,55 +26,53 @@ try:
     from asammdf.blocks.v4_blocks import SourceInformation
     from asammdf.blocks.v4_constants import BUS_TYPE_CAN, SOURCE_BUS
     from asammdf.mdf import MDF
+
+    STD_DTYPE = np.dtype(
+        [
+            ("CAN_DataFrame.BusChannel", "<u1"),
+            ("CAN_DataFrame.ID", "<u4"),
+            ("CAN_DataFrame.IDE", "<u1"),
+            ("CAN_DataFrame.DLC", "<u1"),
+            ("CAN_DataFrame.DataLength", "<u1"),
+            ("CAN_DataFrame.DataBytes", "(64,)u1"),
+            ("CAN_DataFrame.Dir", "<u1"),
+            ("CAN_DataFrame.EDL", "<u1"),
+            ("CAN_DataFrame.BRS", "<u1"),
+            ("CAN_DataFrame.ESI", "<u1"),
+        ]
+    )
+
+    ERR_DTYPE = np.dtype(
+        [
+            ("CAN_ErrorFrame.BusChannel", "<u1"),
+            ("CAN_ErrorFrame.ID", "<u4"),
+            ("CAN_ErrorFrame.IDE", "<u1"),
+            ("CAN_ErrorFrame.DLC", "<u1"),
+            ("CAN_ErrorFrame.DataLength", "<u1"),
+            ("CAN_ErrorFrame.DataBytes", "(64,)u1"),
+            ("CAN_ErrorFrame.Dir", "<u1"),
+            ("CAN_ErrorFrame.EDL", "<u1"),
+            ("CAN_ErrorFrame.BRS", "<u1"),
+            ("CAN_ErrorFrame.ESI", "<u1"),
+        ]
+    )
+
+    RTR_DTYPE = np.dtype(
+        [
+            ("CAN_RemoteFrame.BusChannel", "<u1"),
+            ("CAN_RemoteFrame.ID", "<u4"),
+            ("CAN_RemoteFrame.IDE", "<u1"),
+            ("CAN_RemoteFrame.DLC", "<u1"),
+            ("CAN_RemoteFrame.DataLength", "<u1"),
+            ("CAN_RemoteFrame.Dir", "<u1"),
+        ]
+    )
 except ImportError:
-    pass
+    asammdf = None  # type: ignore
 
 
 CAN_MSG_EXT = 0x80000000
 CAN_ID_MASK = 0x1FFFFFFF
-
-STD_DTYPE = np.dtype(
-    [
-        ("CAN_DataFrame.BusChannel", "<u1"),
-        ("CAN_DataFrame.ID", "<u4"),
-        ("CAN_DataFrame.IDE", "<u1"),
-        ("CAN_DataFrame.DLC", "<u1"),
-        ("CAN_DataFrame.DataLength", "<u1"),
-        ("CAN_DataFrame.DataBytes", "(64,)u1"),
-        ("CAN_DataFrame.Dir", "<u1"),
-        ("CAN_DataFrame.EDL", "<u1"),
-        ("CAN_DataFrame.BRS", "<u1"),
-        ("CAN_DataFrame.ESI", "<u1"),
-    ]
-)
-
-ERR_DTYPE = np.dtype(
-    [
-        ("CAN_ErrorFrame.BusChannel", "<u1"),
-        ("CAN_ErrorFrame.ID", "<u4"),
-        ("CAN_ErrorFrame.IDE", "<u1"),
-        ("CAN_ErrorFrame.DLC", "<u1"),
-        ("CAN_ErrorFrame.DataLength", "<u1"),
-        ("CAN_ErrorFrame.DataBytes", "(64,)u1"),
-        ("CAN_ErrorFrame.Dir", "<u1"),
-        ("CAN_ErrorFrame.EDL", "<u1"),
-        ("CAN_ErrorFrame.BRS", "<u1"),
-        ("CAN_ErrorFrame.ESI", "<u1"),
-    ]
-)
-
-RTR_DTYPE = np.dtype(
-    [
-        ("CAN_RemoteFrame.BusChannel", "<u1"),
-        ("CAN_RemoteFrame.ID", "<u4"),
-        ("CAN_RemoteFrame.IDE", "<u1"),
-        ("CAN_RemoteFrame.DLC", "<u1"),
-        ("CAN_RemoteFrame.DataLength", "<u1"),
-        ("CAN_RemoteFrame.Dir", "<u1"),
-    ]
-)
-
-logger = logging.getLogger("can.io.mf4")
 
 
 class MF4Writer(FileIOMessageWriter):

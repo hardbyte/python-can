@@ -86,7 +86,11 @@ class ReaderWriterExtensionTest(unittest.TestCase):
         self._test_extension(".txt")
 
     def test_extension_matching_mf4(self):
-        self._test_extension(".mf4")
+        try:
+            self._test_extension(".mf4")
+        except NotImplementedError:
+            if asammdf is not None:
+                raise
 
 
 class ReaderWriterTest(unittest.TestCase, ComparingMessagesTestCase, metaclass=ABCMeta):
