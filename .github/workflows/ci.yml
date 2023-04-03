@@ -27,6 +27,11 @@ jobs:
           "pypy-3.8",
           "pypy-3.9",
         ]
+        include:
+          # Only test on a single configuration while there are just pre-releases
+          - os: ubuntu-latest
+            experimental: true
+            python-version: "3.12.0-alpha - 3.12.0"
       fail-fast: false
     steps:
     - uses: actions/checkout@v3
