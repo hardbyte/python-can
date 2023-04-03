@@ -1,13 +1,14 @@
 """
 This module contains the generic :class:`LogReader` as
 well as :class:`MessageSync` which plays back messages
-in the recorded order an time intervals.
+in the recorded order and time intervals.
 """
 import gzip
 import pathlib
 import time
 import typing
 
+import typing_extensions
 from pkg_resources import iter_entry_points
 
 from ..message import Message
@@ -20,6 +21,19 @@ from .generic import MessageReader
 from .sqlite import SqliteReader
 from .trc import TRCReader
 
+MF4Reader: typing.Optional[typing.Type[MessageReader]]
+try:
+    from .mf4 import MF4Reader
+except ImportError:
+    MF4Reader = None
+
+
+_OPTIONAL_READERS: typing_extensions.Final[
+    typing.Dict[str, typing.Type[MessageReader]]
+] = {}
+if MF4Reader:
+    _OPTIONAL_READERS[".mf4"] = MF4Reader
+
 
 class LogReader(MessageReader):
     """
@@ -31,6 +45,7 @@ class LogReader(MessageReader):
       * .csv
       * .db
       * .log
+      * .mf4 (optional, depends on asammdf)
       * .trc
 
     Gzip compressed files can be used as long as the original
@@ -52,13 +67,14 @@ class LogReader(MessageReader):
     """
 
     fetched_plugins = False
-    message_readers: typing.Dict[str, typing.Type[MessageReader]] = {
+    message_readers: typing.Dict[str, typing.Optional[typing.Type[MessageReader]]] = {
         ".asc": ASCReader,
         ".blf": BLFReader,
         ".csv": CSVReader,
         ".db": SqliteReader,
         ".log": CanutilsLogReader,
         ".trc": TRCReader,
+        **_OPTIONAL_READERS,
     }
 
     @staticmethod
@@ -86,11 +102,14 @@ class LogReader(MessageReader):
         if suffix == ".gz":
             suffix, file_or_filename = LogReader.decompress(filename)
         try:
-            return LogReader.message_readers[suffix](file=file_or_filename, **kwargs)
+            ReaderType = LogReader.message_readers[suffix]
         except KeyError:
             raise ValueError(
                 f'No read support for this unknown log format "{suffix}"'
             ) from None
+        if ReaderType is None:
+            raise ImportError(f"failed to import reader for extension {suffix}")
+        return ReaderType(file=file_or_filename, **kwargs)
 
     @staticmethod
     def decompress(
