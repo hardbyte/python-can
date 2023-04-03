@@ -44,7 +44,7 @@ class slcanTestCase(unittest.TestCase):
         self.assertSequenceEqual(msg.data, [0xAA, 0x55])
 
         # Ewert Energy Systems CANDapter specific
-        elf.serial.write(b"x12ABCDEF2AA55\r")
+        self.serial.write(b"x12ABCDEF2AA55\r")
         msg = self.bus.recv(TIMEOUT)
         self.assertIsNotNone(msg)
         self.assertEqual(msg.arbitration_id, 0x12ABCDEF)
