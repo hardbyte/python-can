@@ -8,7 +8,6 @@ import pathlib
 import time
 import typing
 
-import typing_extensions
 from pkg_resources import iter_entry_points
 
 from ..message import Message
@@ -18,21 +17,9 @@ from .blf import BLFReader
 from .canutils import CanutilsLogReader
 from .csv import CSVReader
 from .generic import MessageReader
+from .mf4 import MF4Reader
 from .sqlite import SqliteReader
 from .trc import TRCReader
-
-MF4Reader: typing.Optional[typing.Type[MessageReader]]
-try:
-    from .mf4 import MF4Reader
-except ImportError:
-    MF4Reader = None
-
-
-_OPTIONAL_READERS: typing_extensions.Final[
-    typing.Dict[str, typing.Type[MessageReader]]
-] = {}
-if MF4Reader:
-    _OPTIONAL_READERS[".mf4"] = MF4Reader
 
 
 class LogReader(MessageReader):
@@ -73,8 +60,8 @@ class LogReader(MessageReader):
         ".csv": CSVReader,
         ".db": SqliteReader,
         ".log": CanutilsLogReader,
+        ".mf4": MF4Reader,
         ".trc": TRCReader,
-        **_OPTIONAL_READERS,
     }
 
     @staticmethod
