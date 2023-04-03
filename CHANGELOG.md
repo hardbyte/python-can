@@ -21,6 +21,7 @@ Features
 --------
 
 ### IO
+* Add support for MF4 files (#1289).
 * Add support for version 2 TRC files and other TRC file enhancements (#1530).
 
 ### Type Annotations
