@@ -65,6 +65,8 @@ The table below lists interface drivers that can be added by installing addition
 +----------------------------+-------------------------------------------------------+
 | Name                       | Description                                           |
 +============================+=======================================================+
+| `python-can-canine`_       | CAN Driver for the CANine CAN interface               |
++----------------------------+-------------------------------------------------------+
 | `python-can-cvector`_      | Cython based version of the 'VectorBus'               |
 +----------------------------+-------------------------------------------------------+
 | `python-can-remote`_       | CAN over network bridge                               |
@@ -72,6 +74,7 @@ The table below lists interface drivers that can be added by installing addition
 | `python-can-sontheim`_     | CAN Driver for Sontheim CAN interfaces (e.g. CANfox)  |
 +----------------------------+-------------------------------------------------------+
 
+.. _python-can-canine: https://github.com/tinymovr/python-can-canine
 .. _python-can-cvector: https://github.com/zariiii9003/python-can-cvector
 .. _python-can-remote: https://github.com/christiansandberg/python-can-remote
 .. _python-can-sontheim: https://github.com/MattWoodhead/python-can-sontheim
