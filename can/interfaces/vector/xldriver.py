@@ -10,7 +10,8 @@ Authors: Julien Grave <grave.jul@gmail.com>, Christian Sandberg
 import ctypes
 import logging
 import platform
-from .exceptions import VectorOperationError, VectorInitializationError
+
+from .exceptions import VectorInitializationError, VectorOperationError
 
 # Define Module Logger
 # ====================

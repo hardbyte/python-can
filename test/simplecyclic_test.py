@@ -4,10 +4,10 @@
 This module tests cyclic send tasks.
 """
 
-from time import sleep
-import unittest
-from unittest.mock import MagicMock
 import gc
+import unittest
+from time import sleep
+from unittest.mock import MagicMock
 
 import can
 

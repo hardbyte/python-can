@@ -6,9 +6,9 @@ https://www.seeedstudio.com/USB-CAN-Analyzer-p-2888.html
 SKU 114991193
 """
 
+import io
 import logging
 import struct
-import io
 from time import time
 
 import can

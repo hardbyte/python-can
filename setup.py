@@ -5,11 +5,12 @@ Setup script for the `can` package.
 Learn more at https://github.com/hardbyte/python-can/
 """
 
+import logging
+import re
 from os import listdir
 from os.path import isfile, join
-import re
-import logging
-from setuptools import setup, find_packages
+
+from setuptools import find_packages, setup
 
 logging.basicConfig(level=logging.WARNING)
 
@@ -38,6 +39,7 @@ extras_require = {
     "viewer": [
         'windows-curses;platform_system=="Windows" and platform_python_implementation=="CPython"'
     ],
+    "mf4": ["asammdf>=6.0.0"],
 }
 
 setup(

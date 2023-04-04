@@ -12,59 +12,85 @@ comments.
 TODO: correctly set preserves_channel and adds_default_channel
 """
 import logging
-import unittest
-from parameterized import parameterized
-import tempfile
 import os
-from abc import abstractmethod, ABCMeta
-from itertools import zip_longest
+import tempfile
+import unittest
+from abc import ABCMeta, abstractmethod
 from datetime import datetime
+from itertools import zip_longest
+
+from parameterized import parameterized
 
 import can
 from can.io import blf
 
 from .data.example_data import (
-    TEST_MESSAGES_BASE,
-    TEST_MESSAGES_REMOTE_FRAMES,
-    TEST_MESSAGES_ERROR_FRAMES,
-    TEST_MESSAGES_CAN_FD,
     TEST_COMMENTS,
+    TEST_MESSAGES_BASE,
+    TEST_MESSAGES_CAN_FD,
+    TEST_MESSAGES_ERROR_FRAMES,
+    TEST_MESSAGES_REMOTE_FRAMES,
     sort_messages,
 )
 from .message_helper import ComparingMessagesTestCase
 
 logging.basicConfig(level=logging.DEBUG)
 
+try:
+    import asammdf
+except ModuleNotFoundError:
+    asammdf = None
+
 
 class ReaderWriterExtensionTest(unittest.TestCase):
-    message_writers_and_readers = {}
-    for suffix, writer in can.Logger.message_writers.items():
-        message_writers_and_readers[suffix] = (
-            writer,
-            can.LogReader.message_readers.get(suffix),
-        )
+    def _get_suffix_case_variants(self, suffix):
+        return [
+            suffix.upper(),
+            suffix.lower(),
+            f"can.msg.ext{suffix}",
+            "".join([c.upper() if i % 2 else c for i, c in enumerate(suffix)]),
+        ]
 
-    def test_extension_matching(self):
-        for suffix, (writer, reader) in self.message_writers_and_readers.items():
-            suffix_variants = [
-                suffix.upper(),
-                suffix.lower(),
-                f"can.msg.ext{suffix}",
-                "".join([c.upper() if i % 2 else c for i, c in enumerate(suffix)]),
-            ]
-            for suffix_variant in suffix_variants:
-                tmp_file = tempfile.NamedTemporaryFile(
-                    suffix=suffix_variant, delete=False
-                )
-                tmp_file.close()
-                try:
+    def _test_extension(self, suffix):
+        WriterType = can.Logger.message_writers.get(suffix)
+        ReaderType = can.LogReader.message_readers.get(suffix)
+        for suffix_variant in self._get_suffix_case_variants(suffix):
+            tmp_file = tempfile.NamedTemporaryFile(suffix=suffix_variant, delete=False)
+            tmp_file.close()
+            try:
+                if WriterType:
                     with can.Logger(tmp_file.name) as logger:
-                        assert type(logger) == writer
-                    if reader is not None:
-                        with can.LogReader(tmp_file.name) as player:
-                            assert type(player) == reader
-                finally:
-                    os.remove(tmp_file.name)
+                        assert type(logger) == WriterType
+                if ReaderType:
+                    with can.LogReader(tmp_file.name) as player:
+                        assert type(player) == ReaderType
+            finally:
+                os.remove(tmp_file.name)
+
+    def test_extension_matching_asc(self):
+        self._test_extension(".asc")
+
+    def test_extension_matching_blf(self):
+        self._test_extension(".blf")
+
+    def test_extension_matching_csv(self):
+        self._test_extension(".csv")
+
+    def test_extension_matching_db(self):
+        self._test_extension(".db")
+
+    def test_extension_matching_log(self):
+        self._test_extension(".log")
+
+    def test_extension_matching_txt(self):
+        self._test_extension(".txt")
+
+    def test_extension_matching_mf4(self):
+        try:
+            self._test_extension(".mf4")
+        except NotImplementedError:
+            if asammdf is not None:
+                raise
 
 
 class ReaderWriterTest(unittest.TestCase, ComparingMessagesTestCase, metaclass=ABCMeta):
@@ -707,6 +733,22 @@ class TestCsvFileFormat(ReaderWriterTest):
         )
 
 
+@unittest.skipIf(asammdf is None, "MF4 is unavailable")
+class TestMF4FileFormat(ReaderWriterTest):
+    """Tests can.MF4Writer and can.MF4Reader"""
+
+    def _setup_instance(self):
+        super()._setup_instance_helper(
+            can.MF4Writer,
+            can.MF4Reader,
+            binary_file=True,
+            check_comments=False,
+            preserves_channel=False,
+            allowed_timestamp_delta=1e-4,
+            adds_default_channel=0,
+        )
+
+
 class TestSqliteDatabaseFormat(ReaderWriterTest):
     """Tests can.SqliteWriter and can.SqliteReader"""
 
@@ -810,9 +852,10 @@ class TestTrcFileFormatGen(TestTrcFileFormatBase):
     """Generic tests for can.TRCWriter and can.TRCReader with different file versions"""
 
     def test_can_message(self):
+        start_time = 1506809173.191  # 30.09.2017 22:06:13.191.000 as timestamp
         expected_messages = [
             can.Message(
-                timestamp=2.5010,
+                timestamp=start_time + 2.5010,
                 arbitration_id=0xC8,
                 is_extended_id=False,
                 is_rx=False,
@@ -821,7 +864,7 @@ class TestTrcFileFormatGen(TestTrcFileFormatBase):
                 data=[9, 8, 7, 6, 5, 4, 3, 2],
             ),
             can.Message(
-                timestamp=17.876708,
+                timestamp=start_time + 17.876708,
                 arbitration_id=0x6F9,
                 is_extended_id=False,
                 channel=0,
@@ -841,10 +884,17 @@ class TestTrcFileFormatGen(TestTrcFileFormatBase):
     )
     def test_can_message_versions(self, name, filename, is_rx_support):
         with self.subTest(name):
+            if name == "V1_0":
+                # Version 1.0 does not support start time
+                start_time = 0
+            else:
+                start_time = (
+                    1639837687.062001  # 18.12.2021 14:28:07.062.001 as timestamp
+                )
 
             def msg_std(timestamp):
                 msg = can.Message(
-                    timestamp=timestamp,
+                    timestamp=timestamp + start_time,
                     arbitration_id=0x000,
                     is_extended_id=False,
                     channel=1,
@@ -857,7 +907,7 @@ class TestTrcFileFormatGen(TestTrcFileFormatBase):
 
             def msg_ext(timestamp):
                 msg = can.Message(
-                    timestamp=timestamp,
+                    timestamp=timestamp + start_time,
                     arbitration_id=0x100,
                     is_extended_id=True,
                     channel=1,

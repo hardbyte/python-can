@@ -6,7 +6,6 @@ Definition of constants for vxlapi.
 # ==============================
 from enum import IntEnum, IntFlag
 
-
 MAX_MSG_LEN = 8
 XL_CAN_MAX_DATA_LEN = 64
 XL_INVALID_PORTHANDLE = -1

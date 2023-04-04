@@ -11,17 +11,18 @@ Implementation references:
 import logging
 import os
 import tempfile
-from collections import deque, defaultdict, Counter
+from collections import Counter, defaultdict, deque
 from itertools import cycle
 from threading import Event
 from warnings import warn
 
-from can import Message, BusABC
+from can import BusABC, Message
+
 from ...exceptions import (
     CanError,
-    CanTimeoutError,
-    CanOperationError,
     CanInitializationError,
+    CanOperationError,
+    CanTimeoutError,
 )
 
 logger = logging.getLogger(__name__)

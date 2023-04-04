@@ -1,14 +1,14 @@
+import logging
 from typing import Optional, Tuple
 
-from gs_usb.gs_usb import GsUsb
-from gs_usb.gs_usb_frame import GsUsbFrame, GS_USB_NONE_ECHO_ID
-from gs_usb.constants import CAN_ERR_FLAG, CAN_RTR_FLAG, CAN_EFF_FLAG, CAN_MAX_DLC
-import can
 import usb
-import logging
+from gs_usb.constants import CAN_EFF_FLAG, CAN_ERR_FLAG, CAN_MAX_DLC, CAN_RTR_FLAG
+from gs_usb.gs_usb import GsUsb
+from gs_usb.gs_usb_frame import GS_USB_NONE_ECHO_ID, GsUsbFrame
+
+import can
 
 from ..exceptions import CanInitializationError, CanOperationError
-
 
 logger = logging.getLogger(__name__)
 

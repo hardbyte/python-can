@@ -1,4 +1,6 @@
 """
 """
 
-from can.interfaces.serial.serial_can import SerialBus as Bus
+__all__ = ["SerialBus"]
+
+from can.interfaces.serial.serial_can import SerialBus

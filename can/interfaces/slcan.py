@@ -2,21 +2,19 @@
 Interface for slcan compatible interfaces (win32/linux).
 """
 
+import io
+import logging
+import time
 from typing import Any, Optional, Tuple
 
-import io
-import time
-import logging
+from can import BusABC, Message, typechecking
 
-from can import BusABC, Message
 from ..exceptions import (
-    CanInterfaceNotImplementedError,
     CanInitializationError,
+    CanInterfaceNotImplementedError,
     CanOperationError,
     error_check,
 )
-from can import typechecking
-
 
 logger = logging.getLogger(__name__)
 

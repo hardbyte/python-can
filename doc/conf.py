@@ -6,9 +6,9 @@ This file is execfile()d with the current directory set to its containing dir.
 
 # -- Imports -------------------------------------------------------------------
 
-import sys
-import os
 import ctypes
+import os
+import sys
 from unittest.mock import MagicMock
 
 # If extensions (or modules to document with autodoc) are in another directory,

@@ -1,15 +1,15 @@
-import collections
-from ctypes import c_ubyte
 import logging
 import time
-from typing import Any, Dict, Optional, Deque, Sequence, Tuple, Union
-
-from can import BitTiming, BusABC, Message, BitTimingFd
-from can.exceptions import CanTimeoutError, CanInitializationError
-from can.typechecking import CanFilters
-from can.util import deprecated_args_alias, check_or_adjust_timing_clock
+from collections import deque
+from ctypes import c_ubyte
+from typing import Any, Deque, Dict, Optional, Sequence, Tuple, Union
 
 import canalystii as driver
+
+from can import BitTiming, BitTimingFd, BusABC, Message
+from can.exceptions import CanTimeoutError
+from can.typechecking import CanFilters
+from can.util import check_or_adjust_timing_clock, deprecated_args_alias
 
 logger = logging.getLogger(__name__)
 
@@ -50,10 +50,11 @@ class CANalystIIBus(BusABC):
             If set, software received message queue can only grow to this many
             messages (for all channels) before older messages are dropped
         """
-        super().__init__(channel=channel, can_filters=can_filters, **kwargs)
-
         if not (bitrate or timing):
             raise ValueError("Either bitrate or timing argument is required")
+
+        # Do this after the error handling
+        super().__init__(channel=channel, can_filters=can_filters, **kwargs)
 
         if isinstance(channel, str):
             # Assume comma separated string of channels
@@ -63,23 +64,23 @@ class CANalystIIBus(BusABC):
         else:  # Sequence[int]
             self.channels = list(channel)
 
-        self.rx_queue = collections.deque(
-            maxlen=rx_queue_size
-        )  # type: Deque[Tuple[int, driver.Message]]
+        self.rx_queue: Deque[Tuple[int, driver.Message]] = deque(maxlen=rx_queue_size)
 
         self.channel_info = f"CANalyst-II: device {device}, channels {self.channels}"
 
         self.device = driver.CanalystDevice(device_index=device)
-        for channel in self.channels:
+        for single_channel in self.channels:
             if isinstance(timing, BitTiming):
                 timing = check_or_adjust_timing_clock(timing, valid_clocks=[8_000_000])
-                self.device.init(channel, timing0=timing.btr0, timing1=timing.btr1)
+                self.device.init(
+                    single_channel, timing0=timing.btr0, timing1=timing.btr1
+                )
             elif isinstance(timing, BitTimingFd):
                 raise NotImplementedError(
                     f"CAN FD is not supported by {self.__class__.__name__}."
                 )
             else:
-                self.device.init(channel, bitrate=bitrate)
+                self.device.init(single_channel, bitrate=bitrate)
 
     # Delay to use between each poll for new messages
     #

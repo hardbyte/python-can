@@ -4,16 +4,17 @@ Implements an SQL database writer and reader for storing CAN messages.
 .. note:: The database schema is given in the documentation of the loggers.
 """
 
-import time
-import threading
 import logging
 import sqlite3
-from typing import Generator, Any
+import threading
+import time
+from typing import Any, Generator
 
 from can.listener import BufferedReader
 from can.message import Message
-from .generic import MessageWriter, MessageReader
+
 from ..typechecking import StringPathLike
+from .generic import MessageReader, MessageWriter
 
 log = logging.getLogger("can.io.sqlite")
 

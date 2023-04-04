@@ -6,12 +6,12 @@ CyclicSendTasks.
 
 import importlib
 import logging
-from typing import Any, cast, Iterable, Type, Optional, Union, List
+from typing import Any, Iterable, List, Optional, Type, Union, cast
 
 from . import util
 from .bus import BusABC
-from .interfaces import BACKENDS
 from .exceptions import CanInterfaceNotImplementedError
+from .interfaces import BACKENDS
 from .typechecking import AutoDetectedConfig, Channel
 
 log = logging.getLogger("can.interface")

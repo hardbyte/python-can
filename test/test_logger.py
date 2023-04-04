@@ -4,12 +4,12 @@
 This module tests the functions inside of logger.py
 """
 
-import unittest
-from unittest import mock
-from unittest.mock import Mock
 import gzip
 import os
 import sys
+import unittest
+from unittest import mock
+from unittest.mock import Mock
 
 import pytest
 

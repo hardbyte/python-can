@@ -2,18 +2,19 @@
 Interface for CANtact devices from Linklayer Labs
 """
 
-import time
 import logging
-from typing import Optional, Union, Any
+import time
+from typing import Any, Optional, Union
 from unittest.mock import Mock
 
-from can import BusABC, Message, BitTiming, BitTimingFd
+from can import BitTiming, BitTimingFd, BusABC, Message
+
 from ..exceptions import (
     CanInitializationError,
     CanInterfaceNotImplementedError,
     error_check,
 )
-from ..util import deprecated_args_alias, check_or_adjust_timing_clock
+from ..util import check_or_adjust_timing_clock, deprecated_args_alias
 
 logger = logging.getLogger(__name__)
 

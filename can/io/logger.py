@@ -2,29 +2,29 @@
 See the :class:`Logger` class.
 """
 
+import gzip
 import os
 import pathlib
 from abc import ABC, abstractmethod
 from datetime import datetime
-import gzip
-from typing import Any, Optional, Callable, Type, Tuple, cast, Dict, Set
-
 from types import TracebackType
+from typing import Any, Callable, Dict, Optional, Set, Tuple, Type, cast
 
-from typing_extensions import Literal
 from pkg_resources import iter_entry_points
+from typing_extensions import Literal
 
-from ..message import Message
 from ..listener import Listener
-from .generic import BaseIOHandler, FileIOMessageWriter, MessageWriter
+from ..message import Message
+from ..typechecking import AcceptedIOType, FileLike, StringPathLike
 from .asc import ASCWriter
 from .blf import BLFWriter
 from .canutils import CanutilsLogWriter
 from .csv import CSVWriter
-from .sqlite import SqliteWriter
+from .generic import BaseIOHandler, FileIOMessageWriter, MessageWriter
+from .mf4 import MF4Writer
 from .printer import Printer
+from .sqlite import SqliteWriter
 from .trc import TRCWriter
-from ..typechecking import StringPathLike, FileLike, AcceptedIOType
 
 
 class Logger(MessageWriter):
@@ -39,6 +39,7 @@ class Logger(MessageWriter):
       * .log :class:`can.CanutilsLogWriter`
       * .trc :class:`can.TRCWriter`
       * .txt :class:`can.Printer`
+      * .mf4 :class:`can.MF4Writer` (optional, depends on asammdf)
 
     Any of these formats can be used with gzip compression by appending
     the suffix .gz (e.g. filename.asc.gz). However, third-party tools might not
@@ -60,6 +61,7 @@ class Logger(MessageWriter):
         ".csv": CSVWriter,
         ".db": SqliteWriter,
         ".log": CanutilsLogWriter,
+        ".mf4": MF4Writer,
         ".trc": TRCWriter,
         ".txt": Printer,
     }
@@ -69,10 +71,12 @@ class Logger(MessageWriter):
         cls: Any, filename: Optional[StringPathLike], **kwargs: Any
     ) -> MessageWriter:
         """
-        :param filename: the filename/path of the file to write to,
-                         may be a path-like object or None to
-                         instantiate a :class:`~can.Printer`
-        :raises ValueError: if the filename's suffix is of an unknown file type
+        :param filename:
+            the filename/path of the file to write to,
+            may be a path-like object or None to
+            instantiate a :class:`~can.Printer`
+        :raises ValueError:
+            if the filename's suffix is of an unknown file type
         """
         if filename is None:
             return Printer(**kwargs)
@@ -93,7 +97,10 @@ class Logger(MessageWriter):
             suffix, file_or_filename = Logger.compress(filename, **kwargs)
 
         try:
-            return Logger.message_writers[suffix](file=file_or_filename, **kwargs)
+            LoggerType = Logger.message_writers[suffix]
+            if LoggerType is None:
+                raise ValueError(f'failed to import logger for extension "{suffix}"')
+            return LoggerType(file=file_or_filename, **kwargs)
         except KeyError:
             raise ValueError(
                 f'No write support for this unknown log format "{suffix}"'

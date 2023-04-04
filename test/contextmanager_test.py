@@ -5,6 +5,7 @@ This module tests the context manager of Bus and Notifier classes
 """
 
 import unittest
+
 import can
 
 

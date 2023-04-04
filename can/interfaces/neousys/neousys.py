@@ -14,21 +14,20 @@
 # pylint: disable=too-many-instance-attributes
 # pylint: disable=wrong-import-position
 
-import queue
 import logging
 import platform
-from time import time
-
+import queue
 from ctypes import (
-    byref,
     CFUNCTYPE,
+    POINTER,
+    Structure,
+    byref,
     c_ubyte,
     c_uint,
     c_ushort,
-    POINTER,
     sizeof,
-    Structure,
 )
+from time import time
 
 try:
     from ctypes import WinDLL
@@ -36,12 +35,12 @@ except ImportError:
     from ctypes import CDLL
 
 from can import BusABC, Message
+
 from ...exceptions import (
     CanInitializationError,
-    CanOperationError,
     CanInterfaceNotImplementedError,
+    CanOperationError,
 )
-
 
 logger = logging.getLogger(__name__)
 
