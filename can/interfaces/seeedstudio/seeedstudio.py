@@ -12,7 +12,7 @@ import struct
 from time import time
 
 import can
-from can import BusABC, Message
+from can import BusABC, CanProtocol, Message
 
 logger = logging.getLogger("seeedbus")
 
@@ -113,7 +113,7 @@ class SeeedBus(BusABC):
                 "could not create the serial device"
             ) from error
 
-        super().__init__(channel=channel, *args, **kwargs)
+        super().__init__(channel=channel, *args, protocol=CanProtocol.CAN_20, **kwargs)
         self.init_frame()
 
     def shutdown(self):
