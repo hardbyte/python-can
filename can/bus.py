@@ -210,7 +210,7 @@ class BusABC(metaclass=ABCMeta):
             Disable to instead manage tasks manually.
         :param modifier_callback:
             Function which should be used to modify each message's data before
-            sending. The callback modifies the ``data`` :class:`bytearray` of the
+            sending. The callback modifies the :attr:`~can.Message.data` of the
             message and returns ``None``.
         :return:
             A started task instance. Note the task can be stopped (and depending on
