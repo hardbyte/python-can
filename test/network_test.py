@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
 
-import unittest
-import threading
-import random
 import logging
+import random
+import threading
+import unittest
 
 logging.getLogger(__file__).setLevel(logging.WARNING)
 

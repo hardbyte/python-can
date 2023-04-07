@@ -6,15 +6,15 @@ specific to Python.
 Copyright (C) 2010 Dynamic Controls
 """
 
+import ctypes
+import logging
 import sys
 import time
-import logging
-import ctypes
 
-from can import BusABC
-from ...exceptions import CanError, CanInitializationError, CanOperationError
-from can import Message
+from can import BusABC, Message
 from can.util import time_perfcounter_correlation
+
+from ...exceptions import CanError, CanInitializationError, CanOperationError
 from . import constants as canstat
 from . import structures
 

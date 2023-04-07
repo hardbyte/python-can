@@ -13,7 +13,6 @@ def send_one():
     # this uses the default configuration (for example from the config file)
     # see https://python-can.readthedocs.io/en/stable/configuration.html
     with can.Bus() as bus:
-
         # Using specific buses works similar:
         # bus = can.Bus(interface='socketcan', channel='vcan0', bitrate=250000)
         # bus = can.Bus(interface='pcan', channel='PCAN_USBBUS1', bitrate=250000)

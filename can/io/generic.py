@@ -1,19 +1,21 @@
 """Contains generic base classes for file IO."""
 import locale
 from abc import ABCMeta
-from typing import (
-    Optional,
-    cast,
-    Iterable,
-    Type,
-    ContextManager,
-    Any,
-)
-from typing_extensions import Literal
 from types import TracebackType
+from typing import (
+    Any,
+    ContextManager,
+    Iterable,
+    Optional,
+    Type,
+    cast,
+)
 
-import can
-import can.typechecking
+from typing_extensions import Literal
+
+from .. import typechecking
+from ..listener import Listener
+from ..message import Message
 
 
 class BaseIOHandler(ContextManager, metaclass=ABCMeta):
@@ -26,11 +28,11 @@ class BaseIOHandler(ContextManager, metaclass=ABCMeta):
         was opened
     """
 
-    file: Optional[can.typechecking.FileLike]
+    file: Optional[typechecking.FileLike]
 
     def __init__(
         self,
-        file: Optional[can.typechecking.AcceptedIOType],
+        file: Optional[typechecking.AcceptedIOType],
         mode: str = "rt",
         **kwargs: Any,
     ) -> None:
@@ -42,7 +44,7 @@ class BaseIOHandler(ContextManager, metaclass=ABCMeta):
         """
         if file is None or (hasattr(file, "read") and hasattr(file, "write")):
             # file is None or some file-like object
-            self.file = cast(Optional[can.typechecking.FileLike], file)
+            self.file = cast(Optional[typechecking.FileLike], file)
         else:
             encoding: Optional[str] = (
                 None
@@ -52,10 +54,8 @@ class BaseIOHandler(ContextManager, metaclass=ABCMeta):
             # pylint: disable=consider-using-with
             # file is some path-like object
             self.file = cast(
-                can.typechecking.FileLike,
-                open(
-                    cast(can.typechecking.StringPathLike, file), mode, encoding=encoding
-                ),
+                typechecking.FileLike,
+                open(cast(typechecking.StringPathLike, file), mode, encoding=encoding),
             )
 
         # for multiple inheritance
@@ -80,19 +80,19 @@ class BaseIOHandler(ContextManager, metaclass=ABCMeta):
             self.file.close()
 
 
-class MessageWriter(BaseIOHandler, can.Listener, metaclass=ABCMeta):
+class MessageWriter(BaseIOHandler, Listener, metaclass=ABCMeta):
     """The base class for all writers."""
 
-    file: Optional[can.typechecking.FileLike]
+    file: Optional[typechecking.FileLike]
 
 
 class FileIOMessageWriter(MessageWriter, metaclass=ABCMeta):
     """A specialized base class for all writers with file descriptors."""
 
-    file: can.typechecking.FileLike
+    file: typechecking.FileLike
 
     def __init__(
-        self, file: can.typechecking.AcceptedIOType, mode: str = "wt", **kwargs: Any
+        self, file: typechecking.AcceptedIOType, mode: str = "wt", **kwargs: Any
     ) -> None:
         # Not possible with the type signature, but be verbose for user-friendliness
         if file is None:
@@ -105,5 +105,5 @@ class FileIOMessageWriter(MessageWriter, metaclass=ABCMeta):
         return self.file.tell()
 
 
-class MessageReader(BaseIOHandler, Iterable[can.Message], metaclass=ABCMeta):
+class MessageReader(BaseIOHandler, Iterable[Message], metaclass=ABCMeta):
     """The base class for all readers."""

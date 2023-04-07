@@ -16,17 +16,17 @@ TODO: We could implement this interface such that setting other filters
 import ctypes
 import logging
 import sys
-
-from can import BusABC, Message
-import can.typechecking
-from ..exceptions import (
-    CanError,
-    CanInterfaceNotImplementedError,
-    CanOperationError,
-    CanInitializationError,
-)
 from typing import Optional, Tuple, Type
 
+import can.typechecking
+from can import BusABC, Message
+
+from ..exceptions import (
+    CanError,
+    CanInitializationError,
+    CanInterfaceNotImplementedError,
+    CanOperationError,
+)
 
 logger = logging.getLogger(__name__)
 

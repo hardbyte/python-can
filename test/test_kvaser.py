@@ -10,8 +10,7 @@ from unittest.mock import Mock
 import pytest
 
 import can
-from can.interfaces.kvaser import canlib
-from can.interfaces.kvaser import constants
+from can.interfaces.kvaser import canlib, constants
 
 
 class KvaserTest(unittest.TestCase):

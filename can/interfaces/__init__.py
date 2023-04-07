@@ -3,7 +3,7 @@ Interfaces contain low level implementations that interact with CAN hardware.
 """
 
 import sys
-from typing import cast, Dict, Tuple
+from typing import Dict, Tuple, cast
 
 # interface_name => (module, classname)
 BACKENDS: Dict[str, Tuple[str, str]] = {
@@ -35,7 +35,8 @@ BACKENDS: Dict[str, Tuple[str, str]] = {
 if sys.version_info >= (3, 8):
     from importlib.metadata import entry_points
 
-    # See https://docs.python.org/3/library/importlib.metadata.html#entry-points, "Compatibility Note".
+    # See https://docs.python.org/3/library/importlib.metadata.html#entry-points,
+    # "Compatibility Note".
     if sys.version_info >= (3, 10):
         BACKENDS.update(
             {

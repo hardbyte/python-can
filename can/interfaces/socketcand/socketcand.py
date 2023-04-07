@@ -7,13 +7,14 @@ Authors: Marvin Seiler, Gerrit Telkamp
 Copyright (C) 2021  DOMOLOGIC GmbH
 http://www.domologic.de
 """
-import can
-import socket
-import select
 import logging
+import select
+import socket
 import time
 import traceback
 from collections import deque
+
+import can
 
 log = logging.getLogger(__name__)
 
@@ -27,11 +28,17 @@ def convert_ascii_message_to_can_message(ascii_msg: str) -> can.Message:
         frame_string = ascii_msg[8:-2]
         parts = frame_string.split(" ", 3)
         can_id, timestamp = int(parts[0], 16), float(parts[1])
+        is_ext = len(parts[0]) != 3
 
         data = bytearray.fromhex(parts[2])
         can_dlc = len(data)
         can_message = can.Message(
-            timestamp=timestamp, arbitration_id=can_id, data=data, dlc=can_dlc
+            timestamp=timestamp,
+            arbitration_id=can_id,
+            data=data,
+            dlc=can_dlc,
+            is_extended_id=is_ext,
+            is_rx=True,
         )
         return can_message
 
@@ -40,11 +47,15 @@ def convert_can_message_to_ascii_message(can_message: can.Message) -> str:
     # Note: socketcan bus adds extended flag, remote_frame_flag & error_flag to id
     # not sure if that is necessary here
     can_id = can_message.arbitration_id
+    if can_message.is_extended_id:
+        can_id_string = f"{(can_id&0x1FFFFFFF):08X}"
+    else:
+        can_id_string = f"{(can_id&0x7FF):03X}"
     # Note: seems like we cannot add CANFD_BRS (bitrate_switch) and CANFD_ESI (error_state_indicator) flags
     data = can_message.data
     length = can_message.dlc
     bytes_string = " ".join(f"{x:x}" for x in data[0:length])
-    return f"< send {can_id:X} {length:X} {bytes_string} >"
+    return f"< send {can_id_string} {length:X} {bytes_string} >"
 
 
 def connect_to_server(s, host, port):
@@ -70,6 +81,8 @@ class SocketCanDaemonBus(can.BusABC):
         self.__socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.__message_buffer = deque()
         self.__receive_buffer = ""  # i know string is not the most efficient here
+        self.channel = channel
+        self.channel_info = f"socketcand on {channel}@{host}:{port}"
         connect_to_server(self.__socket, self.__host, self.__port)
         self._expect_msg("< hi >")
 
@@ -139,6 +152,7 @@ class SocketCanDaemonBus(can.BusABC):
                 if parsed_can_message is None:
                     log.warning(f"Invalid Frame: {single_message}")
                 else:
+                    parsed_can_message.channel = self.channel
                     self.__message_buffer.append(parsed_can_message)
                 buffer_view = buffer_view[end + 1 :]
 
@@ -170,5 +184,5 @@ class SocketCanDaemonBus(can.BusABC):
         self._tcp_send(ascii_msg)
 
     def shutdown(self):
-        self.stop_all_periodic_tasks()
+        super().shutdown()
         self.__socket.close()

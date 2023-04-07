@@ -1,12 +1,28 @@
 #!/usr/bin/env python
 
 import unittest
+
 import can
+
+from .config import IS_PYPY
+
+"""
+Mentioned in #1010 & #1490
+
+> PyPy works best with pure Python applications. Whenever you use a C extension module, 
+> it runs much slower than in CPython. The reason is that PyPy can't optimize C extension modules since they're not fully supported. 
+> In addition, PyPy has to emulate reference counting for that part of the code, making it even slower.
+
+https://realpython.com/pypy-faster-python/#it-doesnt-work-well-with-c-extensions
+"""
+TIMEOUT = 0.5 if IS_PYPY else 0.001  # 0.001 is the default set in slcanBus
 
 
 class slcanTestCase(unittest.TestCase):
     def setUp(self):
-        self.bus = can.Bus("loop://", interface="slcan", sleep_after_open=0)
+        self.bus = can.Bus(
+            "loop://", interface="slcan", sleep_after_open=0, timeout=TIMEOUT
+        )
         self.serial = self.bus.serialPortOrig
         self.serial.read(self.serial.in_waiting)
 
@@ -15,7 +31,7 @@ class slcanTestCase(unittest.TestCase):
 
     def test_recv_extended(self):
         self.serial.write(b"T12ABCDEF2AA55\r")
-        msg = self.bus.recv(0)
+        msg = self.bus.recv(TIMEOUT)
         self.assertIsNotNone(msg)
         self.assertEqual(msg.arbitration_id, 0x12ABCDEF)
         self.assertEqual(msg.is_extended_id, True)
@@ -33,7 +49,7 @@ class slcanTestCase(unittest.TestCase):
 
     def test_recv_standard(self):
         self.serial.write(b"t4563112233\r")
-        msg = self.bus.recv(0)
+        msg = self.bus.recv(TIMEOUT)
         self.assertIsNotNone(msg)
         self.assertEqual(msg.arbitration_id, 0x456)
         self.assertEqual(msg.is_extended_id, False)
@@ -51,7 +67,7 @@ class slcanTestCase(unittest.TestCase):
 
     def test_recv_standard_remote(self):
         self.serial.write(b"r1238\r")
-        msg = self.bus.recv(0)
+        msg = self.bus.recv(TIMEOUT)
         self.assertIsNotNone(msg)
         self.assertEqual(msg.arbitration_id, 0x123)
         self.assertEqual(msg.is_extended_id, False)
@@ -68,7 +84,7 @@ class slcanTestCase(unittest.TestCase):
 
     def test_recv_extended_remote(self):
         self.serial.write(b"R12ABCDEF6\r")
-        msg = self.bus.recv(0)
+        msg = self.bus.recv(TIMEOUT)
         self.assertIsNotNone(msg)
         self.assertEqual(msg.arbitration_id, 0x12ABCDEF)
         self.assertEqual(msg.is_extended_id, True)
@@ -85,11 +101,11 @@ class slcanTestCase(unittest.TestCase):
 
     def test_partial_recv(self):
         self.serial.write(b"T12ABCDEF")
-        msg = self.bus.recv(0)
+        msg = self.bus.recv(TIMEOUT)
         self.assertIsNone(msg)
 
         self.serial.write(b"2AA55\rT12")
-        msg = self.bus.recv(0)
+        msg = self.bus.recv(TIMEOUT)
         self.assertIsNotNone(msg)
         self.assertEqual(msg.arbitration_id, 0x12ABCDEF)
         self.assertEqual(msg.is_extended_id, True)
@@ -97,11 +113,11 @@ class slcanTestCase(unittest.TestCase):
         self.assertEqual(msg.dlc, 2)
         self.assertSequenceEqual(msg.data, [0xAA, 0x55])
 
-        msg = self.bus.recv(0)
+        msg = self.bus.recv(TIMEOUT)
         self.assertIsNone(msg)
 
         self.serial.write(b"ABCDEF2AA55\r")
-        msg = self.bus.recv(0)
+        msg = self.bus.recv(TIMEOUT)
         self.assertIsNotNone(msg)
 
     def test_version(self):

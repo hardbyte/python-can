@@ -6,7 +6,7 @@ import asyncio
 import logging
 import threading
 import time
-from typing import Callable, Iterable, List, Optional, Union, Awaitable
+from typing import Awaitable, Callable, Iterable, List, Optional, Union
 
 from can.bus import BusABC
 from can.listener import Listener

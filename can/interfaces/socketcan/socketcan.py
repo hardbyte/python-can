@@ -5,17 +5,16 @@ along some internal methods.
 At the end of the file the usage of the internal methods is shown.
 """
 
-from typing import Callable, Dict, List, Optional, Sequence, Tuple, Type, Union
-
-import logging
 import ctypes
 import ctypes.util
+import errno
+import logging
 import select
 import socket
 import struct
-import time
 import threading
-import errno
+import time
+from typing import Callable, Dict, List, Optional, Sequence, Tuple, Type, Union
 
 log = logging.getLogger(__name__)
 log_tx = log.getChild("tx")
@@ -31,15 +30,15 @@ except ImportError:
 
 
 import can
-from can import Message, BusABC
+from can import BusABC, Message
 from can.broadcastmanager import (
+    LimitedDurationCyclicSendTaskABC,
     ModifiableCyclicTaskABC,
     RestartableCyclicTaskABC,
-    LimitedDurationCyclicSendTaskABC,
 )
-from can.typechecking import CanFilters
 from can.interfaces.socketcan import constants
-from can.interfaces.socketcan.utils import pack_filters, find_available_interfaces
+from can.interfaces.socketcan.utils import find_available_interfaces, pack_filters
+from can.typechecking import CanFilters
 
 
 # Setup BCM struct

@@ -5,10 +5,14 @@ import warnings
 
 import pytest
 
+from can import BitTiming, BitTimingFd
+from can.exceptions import CanInitializationError
 from can.util import (
     _create_bus_config,
     _rename_kwargs,
+    cast_from_string,
     channel2int,
+    check_or_adjust_timing_clock,
     deprecated_args_alias,
 )
 
@@ -17,7 +21,6 @@ class RenameKwargsTest(unittest.TestCase):
     expected_kwargs = dict(a=1, b=2, c=3, d=4)
 
     def _test(self, start: str, end: str, kwargs, aliases):
-
         # Test that we do get the DeprecationWarning when called with deprecated kwargs
         with self.assertWarnsRegex(
             DeprecationWarning, "is deprecated.*?" + start + ".*?" + end
@@ -167,3 +170,121 @@ class TestChannel2Int(unittest.TestCase):
         self.assertEqual(42, channel2int("42"))
         self.assertEqual(None, channel2int("can"))
         self.assertEqual(None, channel2int("can0a"))
+
+
+class TestCheckAdjustTimingClock(unittest.TestCase):
+    def test_adjust_timing(self):
+        timing = BitTiming(f_clock=80_000_000, brp=10, tseg1=13, tseg2=2, sjw=1)
+
+        # Check identity case
+        new_timing = check_or_adjust_timing_clock(timing, valid_clocks=[80_000_000])
+        assert timing == new_timing
+
+        with pytest.warns(UserWarning) as record:
+            new_timing = check_or_adjust_timing_clock(
+                timing, valid_clocks=[8_000_000, 24_000_000]
+            )
+            assert len(record) == 1
+            assert (
+                record[0].message.args[0]
+                == "Adjusted f_clock in BitTiming from 80000000 to 8000000"
+            )
+            assert new_timing.__class__ == BitTiming
+            assert new_timing.f_clock == 8_000_000
+            assert new_timing.bitrate == timing.bitrate
+            assert new_timing.tseg1 == timing.tseg1
+            assert new_timing.tseg2 == timing.tseg2
+            assert new_timing.sjw == timing.sjw
+
+        # Check that order is preserved
+        with pytest.warns(UserWarning) as record:
+            new_timing = check_or_adjust_timing_clock(
+                timing, valid_clocks=[24_000_000, 8_000_000]
+            )
+            assert new_timing.f_clock == 24_000_000
+            assert len(record) == 1
+            assert (
+                record[0].message.args[0]
+                == "Adjusted f_clock in BitTiming from 80000000 to 24000000"
+            )
+
+        # Check that order is preserved for all valid clock rates
+        with pytest.warns(UserWarning) as record:
+            new_timing = check_or_adjust_timing_clock(
+                timing, valid_clocks=[8_000, 24_000_000, 8_000_000]
+            )
+            assert new_timing.f_clock == 24_000_000
+            assert len(record) == 1
+            assert (
+                record[0].message.args[0]
+                == "Adjusted f_clock in BitTiming from 80000000 to 24000000"
+            )
+
+        with pytest.raises(CanInitializationError):
+            check_or_adjust_timing_clock(timing, valid_clocks=[8_000, 16_000])
+
+    def test_adjust_timing_fd(self):
+        timing = BitTimingFd(
+            f_clock=160_000_000,
+            nom_brp=2,
+            nom_tseg1=119,
+            nom_tseg2=40,
+            nom_sjw=40,
+            data_brp=2,
+            data_tseg1=29,
+            data_tseg2=10,
+            data_sjw=10,
+        )
+
+        # Check identity case
+        new_timing = check_or_adjust_timing_clock(timing, valid_clocks=[160_000_000])
+        assert timing == new_timing
+
+        with pytest.warns(UserWarning) as record:
+            new_timing = check_or_adjust_timing_clock(
+                timing, valid_clocks=[8_000, 80_000_000]
+            )
+            assert len(record) == 1, "; ".join(
+                [record[i].message.args[0] for i in range(len(record))]
+            )  # print all warnings, if more than one warning is present
+            assert (
+                record[0].message.args[0]
+                == "Adjusted f_clock in BitTimingFd from 160000000 to 80000000"
+            )
+            assert new_timing.__class__ == BitTimingFd
+            assert new_timing.f_clock == 80_000_000
+            assert new_timing.nom_bitrate == 500_000
+            assert new_timing.nom_tseg1 == 119
+            assert new_timing.nom_tseg2 == 40
+            assert new_timing.nom_sjw == 40
+            assert new_timing.data_bitrate == 2_000_000
+            assert new_timing.data_tseg1 == 29
+            assert new_timing.data_tseg2 == 10
+            assert new_timing.data_sjw == 10
+
+        with pytest.raises(CanInitializationError):
+            check_or_adjust_timing_clock(timing, valid_clocks=[8_000, 16_000])
+
+
+class TestCastFromString(unittest.TestCase):
+    def test_cast_from_string(self) -> None:
+        self.assertEqual(1, cast_from_string("1"))
+        self.assertEqual(-1, cast_from_string("-1"))
+        self.assertEqual(0, cast_from_string("-0"))
+        self.assertEqual(1.1, cast_from_string("1.1"))
+        self.assertEqual(-1.1, cast_from_string("-1.1"))
+        self.assertEqual(0.1, cast_from_string(".1"))
+        self.assertEqual(10.0, cast_from_string(".1e2"))
+        self.assertEqual(0.001, cast_from_string(".1e-2"))
+        self.assertEqual(-0.001, cast_from_string("-.1e-2"))
+        self.assertEqual("text", cast_from_string("text"))
+        self.assertEqual("", cast_from_string(""))
+        self.assertEqual("can0", cast_from_string("can0"))
+        self.assertEqual("0can", cast_from_string("0can"))
+        self.assertEqual(False, cast_from_string("false"))
+        self.assertEqual(False, cast_from_string("False"))
+        self.assertEqual(True, cast_from_string("true"))
+        self.assertEqual(True, cast_from_string("True"))
+
+        with self.assertRaises(TypeError):
+            cast_from_string(None)

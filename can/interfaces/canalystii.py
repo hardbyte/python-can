@@ -1,24 +1,29 @@
-import collections
-from ctypes import c_ubyte
 import logging
-import canalystii as driver
 import time
-import warnings
-from typing import Any, Dict, Optional, Deque, Sequence, Tuple, Union
-from can import BitTiming, BusABC, Message
+from collections import deque
+from ctypes import c_ubyte
+from typing import Any, Deque, Dict, Optional, Sequence, Tuple, Union
+
+import canalystii as driver
+
+from can import BitTiming, BitTimingFd, BusABC, Message
 from can.exceptions import CanTimeoutError
 from can.typechecking import CanFilters
+from can.util import check_or_adjust_timing_clock, deprecated_args_alias
 
 logger = logging.getLogger(__name__)
 
 
 class CANalystIIBus(BusABC):
+    @deprecated_args_alias(
+        deprecation_start="4.2.0", deprecation_end="5.0.0", bit_timing="timing"
+    )
     def __init__(
         self,
         channel: Union[int, Sequence[int], str] = (0, 1),
         device: int = 0,
         bitrate: Optional[int] = None,
-        bit_timing: Optional[BitTiming] = None,
+        timing: Optional[Union[BitTiming, BitTimingFd]] = None,
         can_filters: Optional[CanFilters] = None,
         rx_queue_size: Optional[int] = None,
         **kwargs: Dict[str, Any],
@@ -33,19 +38,23 @@ class CANalystIIBus(BusABC):
             Optional USB device number. Default is 0 (first device found).
         :param bitrate:
             CAN bitrate in bits/second. Required unless the bit_timing argument is set.
-        :param bit_timing:
-            Optional BitTiming instance to use for custom bit timing setting.
-            If this argument is set then it overrides the bitrate argument.
+        :param timing:
+            Optional :class:`~can.BitTiming` instance to use for custom bit timing setting.
+            If this argument is set then it overrides the bitrate argument. The
+            `f_clock` value of the timing instance must be set to 8_000_000 (8MHz)
+            for standard CAN.
+            CAN FD and the :class:`~can.BitTimingFd` class are not supported.
         :param can_filters:
             Optional filters for received CAN messages.
         :param rx_queue_size:
             If set, software received message queue can only grow to this many
             messages (for all channels) before older messages are dropped
         """
-        super().__init__(channel=channel, can_filters=can_filters, **kwargs)
+        if not (bitrate or timing):
+            raise ValueError("Either bitrate or timing argument is required")
 
-        if not (bitrate or bit_timing):
-            raise ValueError("Either bitrate or bit_timing argument is required")
+        # Do this after the error handling
+        super().__init__(channel=channel, can_filters=can_filters, **kwargs)
 
         if isinstance(channel, str):
             # Assume comma separated string of channels
@@ -55,28 +64,23 @@ class CANalystIIBus(BusABC):
         else:  # Sequence[int]
             self.channels = list(channel)
 
-        self.rx_queue = collections.deque(
-            maxlen=rx_queue_size
-        )  # type: Deque[Tuple[int, driver.Message]]
+        self.rx_queue: Deque[Tuple[int, driver.Message]] = deque(maxlen=rx_queue_size)
 
         self.channel_info = f"CANalyst-II: device {device}, channels {self.channels}"
 
         self.device = driver.CanalystDevice(device_index=device)
-        for channel in self.channels:
-            if bit_timing:
-                try:
-                    if bit_timing.f_clock != 8_000_000:
-                        warnings.warn(
-                            f"bit_timing.f_clock value {bit_timing.f_clock} "
-                            "doesn't match expected device f_clock 8MHz."
-                        )
-                except ValueError:
-                    pass  # f_clock not specified
+        for single_channel in self.channels:
+            if isinstance(timing, BitTiming):
+                timing = check_or_adjust_timing_clock(timing, valid_clocks=[8_000_000])
                 self.device.init(
-                    channel, timing0=bit_timing.btr0, timing1=bit_timing.btr1
+                    single_channel, timing0=timing.btr0, timing1=timing.btr1
+                )
+            elif isinstance(timing, BitTimingFd):
+                raise NotImplementedError(
+                    f"CAN FD is not supported by {self.__class__.__name__}."
                 )
             else:
-                self.device.init(channel, bitrate=bitrate)
+                self.device.init(single_channel, bitrate=bitrate)
 
     # Delay to use between each poll for new messages
     #

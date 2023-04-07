@@ -6,16 +6,10 @@ Test functions in `can.interfaces.socketcan.socketcan`.
 import ctypes
 import struct
 import unittest
+import warnings
 from unittest.mock import patch
 
-from can.interfaces.socketcan.socketcan import (
-    bcm_header_factory,
-    build_bcm_header,
-    build_bcm_tx_delete_header,
-    build_bcm_transmit_header,
-    build_bcm_update_header,
-    BcmMsgHead,
-)
+import can
 from can.interfaces.socketcan.constants import (
     CAN_BCM_TX_DELETE,
     CAN_BCM_TX_SETUP,
@@ -23,6 +17,16 @@ from can.interfaces.socketcan.constants import (
     STARTTIMER,
     TX_COUNTEVT,
 )
+from can.interfaces.socketcan.socketcan import (
+    BcmMsgHead,
+    bcm_header_factory,
+    build_bcm_header,
+    build_bcm_transmit_header,
+    build_bcm_tx_delete_header,
+    build_bcm_update_header,
+)
+
+from .config import IS_LINUX, IS_PYPY
 
 
 class SocketCANTest(unittest.TestCase):
@@ -352,6 +356,24 @@ class SocketCANTest(unittest.TestCase):
         self.assertEqual(0, result.ival2_tv_usec)
         self.assertEqual(can_id, result.can_id)
         self.assertEqual(1, result.nframes)
+
+    @unittest.skipUnless(IS_LINUX and IS_PYPY, "Only test when run on Linux with PyPy")
+    def test_pypy_socketcan_support(self):
+        """Wait for PyPy raw CAN socket support
+
+        This test shall document raw CAN socket support under PyPy. Once this test fails, it is likely that PyPy
+        either implemented raw CAN socket support or at least changed the error that is thrown.
+        https://foss.heptapod.net/pypy/pypy/-/issues/3809
+        https://github.com/hardbyte/python-can/issues/1479
+        """
+        try:
+            can.Bus(interface="socketcan", channel="vcan0", bitrate=500000)
+        except OSError as e:
+            if "unknown address family" not in str(e):
+                warnings.warn(
+                    "Please check if PyPy has implemented raw CAN socket support! "
+                    "See: https://foss.heptapod.net/pypy/pypy/-/issues/3809"
+                )
 
 
 if __name__ == "__main__":

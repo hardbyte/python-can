@@ -5,18 +5,16 @@ Example .asc files:
     - https://bitbucket.org/tobylorenz/vector_asc/src/master/src/Vector/ASC/tests/unittests/data/
     - under `test/data/logfile.asc`
 """
-import re
-from typing import Any, Generator, List, Optional, Dict, Union, TextIO
-
-from datetime import datetime
-import time
 import logging
+import re
+import time
+from datetime import datetime
+from typing import Any, Dict, Generator, List, Optional, TextIO, Union
 
 from ..message import Message
-from ..util import channel2int, len2dlc, dlc2len
-from .generic import FileIOMessageWriter, MessageReader
 from ..typechecking import StringPathLike
-
+from ..util import channel2int, dlc2len, len2dlc
+from .generic import FileIOMessageWriter, MessageReader
 
 CAN_MSG_EXT = 0x80000000
 CAN_ID_MASK = 0x1FFFFFFF
@@ -174,7 +172,6 @@ class ASCReader(MessageReader):
     def _process_classic_can_frame(
         self, line: str, msg_kwargs: Dict[str, Any]
     ) -> Message:
-
         # CAN error frame
         if line.strip()[0:10].lower() == "errorframe":
             # Error Frame
@@ -423,7 +420,6 @@ class ASCWriter(FileIOMessageWriter):
         self.file.write(line)
 
     def on_message_received(self, msg: Message) -> None:
-
         if msg.is_error_frame:
             self.log_event(f"{self.channel}  ErrorFrame", msg.timestamp)
             return

@@ -2,21 +2,19 @@
 Interface for slcan compatible interfaces (win32/linux).
 """
 
+import io
+import logging
+import time
 from typing import Any, Optional, Tuple
 
-import io
-import time
-import logging
+from can import BusABC, Message, typechecking
 
-from can import BusABC, Message
 from ..exceptions import (
-    CanInterfaceNotImplementedError,
     CanInitializationError,
+    CanInterfaceNotImplementedError,
     CanOperationError,
     error_check,
 )
-from can import typechecking
-
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +62,7 @@ class slcanBus(BusABC):
         btr: Optional[str] = None,
         sleep_after_open: float = _SLEEP_AFTER_SERIAL_OPEN,
         rtscts: bool = False,
+        timeout: float = 0.001,
         **kwargs: Any,
     ) -> None:
         """
@@ -82,7 +81,8 @@ class slcanBus(BusABC):
             Time to wait in seconds after opening serial connection
         :param rtscts:
             turn hardware handshake (RTS/CTS) on and off
-
+        :param timeout:
+            Timeout for the serial or usb device in seconds (default 0.001)
         :raise ValueError: if both ``bitrate`` and ``btr`` are set or the channel is invalid
         :raise CanInterfaceNotImplementedError: if the serial module is missing
         :raise CanInitializationError: if the underlying serial connection could not be established
@@ -98,7 +98,10 @@ class slcanBus(BusABC):
 
         with error_check(exception_type=CanInitializationError):
             self.serialPortOrig = serial.serial_for_url(
-                channel, baudrate=ttyBaudrate, rtscts=rtscts
+                channel,
+                baudrate=ttyBaudrate,
+                rtscts=rtscts,
+                timeout=timeout,
             )
 
         self._buffer = bytearray()
@@ -150,46 +153,34 @@ class slcanBus(BusABC):
             self.serialPortOrig.flush()
 
     def _read(self, timeout: Optional[float]) -> Optional[str]:
+        _timeout = serial.Timeout(timeout)
 
         with error_check("Could not read from serial device"):
-            # first read what is already in receive buffer
-            while self.serialPortOrig.in_waiting:
-                self._buffer += self.serialPortOrig.read()
-            # if we still don't have a complete message, do a blocking read
-            start = time.time()
-            time_left = timeout
-            while not (
-                ord(self._OK) in self._buffer or ord(self._ERROR) in self._buffer
-            ):
-                self.serialPortOrig.timeout = time_left
-                byte = self.serialPortOrig.read()
-                if byte:
-                    self._buffer += byte
-                # if timeout is None, try indefinitely
-                if timeout is None:
-                    continue
-                # try next one only if there still is time, and with
-                # reduced timeout
-                else:
-                    time_left = timeout - (time.time() - start)
-                    if time_left > 0:
-                        continue
+            while True:
+                # Due to accessing `serialPortOrig.in_waiting` too often will reduce the performance.
+                # We read the `serialPortOrig.in_waiting` only once here.
+                in_waiting = self.serialPortOrig.in_waiting
+                for _ in range(max(1, in_waiting)):
+                    new_byte = self.serialPortOrig.read(size=1)
+                    if new_byte:
+                        self._buffer.extend(new_byte)
                     else:
-                        return None
+                        break
 
-        # return first message
-        for i in range(len(self._buffer)):
-            if self._buffer[i] == ord(self._OK) or self._buffer[i] == ord(self._ERROR):
-                string = self._buffer[: i + 1].decode()
-                del self._buffer[: i + 1]
-                break
-        return string
+                    if new_byte in (self._ERROR, self._OK):
+                        string = self._buffer.decode()
+                        self._buffer.clear()
+                        return string
+
+                if _timeout.expired():
+                    break
+
+            return None
 
     def flush(self) -> None:
-        del self._buffer[:]
+        self._buffer.clear()
         with error_check("Could not flush"):
-            while self.serialPortOrig.in_waiting:
-                self.serialPortOrig.read()
+            self.serialPortOrig.reset_input_buffer()
 
     def open(self) -> None:
         self._write("O")
@@ -200,11 +191,10 @@ class slcanBus(BusABC):
     def _recv_internal(
         self, timeout: Optional[float]
     ) -> Tuple[Optional[Message], bool]:
-
         canId = None
         remote = False
         extended = False
-        frame = []
+        data = None
 
         string = self._read(timeout)
 
@@ -215,14 +205,12 @@ class slcanBus(BusABC):
             canId = int(string[1:9], 16)
             dlc = int(string[9])
             extended = True
-            for i in range(0, dlc):
-                frame.append(int(string[10 + i * 2 : 12 + i * 2], 16))
+            data = bytearray.fromhex(string[10 : 10 + dlc * 2])
         elif string[0] == "t":
             # normal frame
             canId = int(string[1:4], 16)
             dlc = int(string[4])
-            for i in range(0, dlc):
-                frame.append(int(string[5 + i * 2 : 7 + i * 2], 16))
+            data = bytearray.fromhex(string[5 : 5 + dlc * 2])
         elif string[0] == "r":
             # remote frame
             canId = int(string[1:4], 16)
@@ -242,7 +230,7 @@ class slcanBus(BusABC):
                 timestamp=time.time(),  # Better than nothing...
                 is_remote_frame=remote,
                 dlc=dlc,
-                data=frame,
+                data=data,
             )
             return msg, False
         return None, False
@@ -252,15 +240,15 @@ class slcanBus(BusABC):
             self.serialPortOrig.write_timeout = timeout
         if msg.is_remote_frame:
             if msg.is_extended_id:
-                sendStr = "R%08X%d" % (msg.arbitration_id, msg.dlc)
+                sendStr = f"R{msg.arbitration_id:08X}{msg.dlc:d}"
             else:
-                sendStr = "r%03X%d" % (msg.arbitration_id, msg.dlc)
+                sendStr = f"r{msg.arbitration_id:03X}{msg.dlc:d}"
         else:
             if msg.is_extended_id:
-                sendStr = "T%08X%d" % (msg.arbitration_id, msg.dlc)
+                sendStr = f"T{msg.arbitration_id:08X}{msg.dlc:d}"
             else:
-                sendStr = "t%03X%d" % (msg.arbitration_id, msg.dlc)
-            sendStr += "".join(["%02X" % b for b in msg.data])
+                sendStr = f"t{msg.arbitration_id:03X}{msg.dlc:d}"
+            sendStr += msg.data.hex().upper()
         self._write(sendStr)
 
     def shutdown(self) -> None:
@@ -295,29 +283,17 @@ class slcanBus(BusABC):
         cmd = "V"
         self._write(cmd)
 
-        start = time.time()
-        time_left = timeout
-        while True:
-            string = self._read(time_left)
+        string = self._read(timeout)
 
-            if not string:
-                pass
-            elif string[0] == cmd and len(string) == 6:
-                # convert ASCII coded version
-                hw_version = int(string[1:3])
-                sw_version = int(string[3:5])
-                return hw_version, sw_version
-            # if timeout is None, try indefinitely
-            if timeout is None:
-                continue
-            # try next one only if there still is time, and with
-            # reduced timeout
-            else:
-                time_left = timeout - (time.time() - start)
-                if time_left > 0:
-                    continue
-                else:
-                    return None, None
+        if not string:
+            pass
+        elif string[0] == cmd and len(string) == 6:
+            # convert ASCII coded version
+            hw_version = int(string[1:3])
+            sw_version = int(string[3:5])
+            return hw_version, sw_version
+
+        return None, None
 
     def get_serial_number(self, timeout: Optional[float]) -> Optional[str]:
         """Get serial number of the slcan interface.
@@ -331,24 +307,12 @@ class slcanBus(BusABC):
         cmd = "N"
         self._write(cmd)
 
-        start = time.time()
-        time_left = timeout
-        while True:
-            string = self._read(time_left)
+        string = self._read(timeout)
 
-            if not string:
-                pass
-            elif string[0] == cmd and len(string) == 6:
-                serial_number = string[1:-1]
-                return serial_number
-            # if timeout is None, try indefinitely
-            if timeout is None:
-                continue
-            # try next one only if there still is time, and with
-            # reduced timeout
-            else:
-                time_left = timeout - (time.time() - start)
-                if time_left > 0:
-                    continue
-                else:
-                    return None
+        if not string:
+            pass
+        elif string[0] == cmd and len(string) == 6:
+            serial_number = string[1:-1]
+            return serial_number
+
+        return None

@@ -6,9 +6,9 @@ This file is execfile()d with the current directory set to its containing dir.
 
 # -- Imports -------------------------------------------------------------------
 
-import sys
-import os
 import ctypes
+import os
+import sys
 from unittest.mock import MagicMock
 
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -49,6 +49,7 @@ extensions = [
     "sphinx.ext.graphviz",
     "sphinxcontrib.programoutput",
     "sphinx_inline_tabs",
+    "sphinx_copybutton",
 ]
 
 # Now, you can use the alias name as a new role, e.g. :issue:`123`.
@@ -125,6 +126,7 @@ nitpick_ignore = [
     ("py:class", "can.typechecking.CanFilter"),
     ("py:class", "can.typechecking.CanFilterExtended"),
     ("py:class", "can.typechecking.AutoDetectedConfig"),
+    ("py:class", "can.util.T"),
     # intersphinx fails to reference some builtins
     ("py:class", "asyncio.events.AbstractEventLoop"),
     ("py:class", "_thread.allocate_lock"),

@@ -5,7 +5,7 @@ Test for PCAN Interface
 import ctypes
 import unittest
 from unittest import mock
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import pytest
 from parameterized import parameterized
@@ -13,13 +13,12 @@ from parameterized import parameterized
 import can
 from can.bus import BusState
 from can.exceptions import CanInitializationError
-from can.interfaces.pcan.basic import *
 from can.interfaces.pcan import PcanBus, PcanError
+from can.interfaces.pcan.basic import *
 
 
 class TestPCANBus(unittest.TestCase):
     def setUp(self) -> None:
-
         patcher = mock.patch("can.interfaces.pcan.pcan.PCANBasic", spec=True)
         self.MockPCANBasic = patcher.start()
         self.addCleanup(patcher.stop)
@@ -29,7 +28,6 @@ class TestPCANBus(unittest.TestCase):
         self.mock_pcan.SetValue = Mock(return_value=PCAN_ERROR_OK)
         self.mock_pcan.GetValue = self._mockGetValue
         self.PCAN_API_VERSION_SIM = "4.2"
-
         self.bus = None
 
     def tearDown(self) -> None:
@@ -44,14 +42,18 @@ class TestPCANBus(unittest.TestCase):
         """
         if parameter == PCAN_API_VERSION:
             return PCAN_ERROR_OK, self.PCAN_API_VERSION_SIM.encode("ascii")
+        elif parameter == PCAN_RECEIVE_EVENT:
+            return PCAN_ERROR_OK, int.from_bytes(PCAN_RECEIVE_EVENT, "big")
         raise NotImplementedError(
             f"No mock return value specified for parameter {parameter}"
         )
 
     def test_bus_creation(self) -> None:
         self.bus = can.Bus(interface="pcan")
+
         self.assertIsInstance(self.bus, PcanBus)
         self.MockPCANBasic.assert_called_once()
+
         self.mock_pcan.Initialize.assert_called_once()
         self.mock_pcan.InitializeFD.assert_not_called()
 
@@ -59,12 +61,40 @@ class TestPCANBus(unittest.TestCase):
         with self.assertRaises(ValueError):
             can.Bus(interface="pcan", state=BusState.ERROR)
 
-    def test_bus_creation_fd(self) -> None:
-        self.bus = can.Bus(interface="pcan", fd=True)
+    @parameterized.expand([("f_clock", 80_000_000), ("f_clock_mhz", 80)])
+    def test_bus_creation_fd(self, clock_param: str, clock_val: int) -> None:
+        self.bus = can.Bus(
+            interface="pcan",
+            fd=True,
+            nom_brp=1,
+            nom_tseg1=129,
+            nom_tseg2=30,
+            nom_sjw=1,
+            data_brp=1,
+            data_tseg1=9,
+            data_tseg2=6,
+            data_sjw=1,
+            channel="PCAN_USBBUS1",
+            **{clock_param: clock_val},
+        )
+
         self.assertIsInstance(self.bus, PcanBus)
         self.MockPCANBasic.assert_called_once()
         self.mock_pcan.Initialize.assert_not_called()
         self.mock_pcan.InitializeFD.assert_called_once()
+
+        # Retrieve second argument of first call
+        bitrate_arg = self.mock_pcan.InitializeFD.call_args[0][-1]
+
+        self.assertTrue(f"{clock_param}={clock_val}".encode("ascii") in bitrate_arg)
+        self.assertTrue(b"nom_brp=1" in bitrate_arg)
+        self.assertTrue(b"nom_tseg1=129" in bitrate_arg)
+        self.assertTrue(b"nom_tseg2=30" in bitrate_arg)
+        self.assertTrue(b"nom_sjw=1" in bitrate_arg)
+        self.assertTrue(b"data_brp=1" in bitrate_arg)
+        self.assertTrue(b"data_tseg1=9" in bitrate_arg)
+        self.assertTrue(b"data_tseg2=6" in bitrate_arg)
+        self.assertTrue(b"data_sjw=1" in bitrate_arg)
 
     def test_api_version_low(self) -> None:
         self.PCAN_API_VERSION_SIM = "1.0"
@@ -204,7 +234,8 @@ class TestPCANBus(unittest.TestCase):
         self.assertEqual(recv_msg.timestamp, 0)
 
     @pytest.mark.timeout(3.0)
-    def test_recv_no_message(self):
+    @patch("select.select", return_value=([], [], []))
+    def test_recv_no_message(self, mock_select):
         self.mock_pcan.Read = Mock(return_value=(PCAN_ERROR_QRCVEMPTY, None, None))
         self.bus = can.Bus(interface="pcan")
         self.assertEqual(self.bus.recv(timeout=0.5), None)
@@ -329,12 +360,36 @@ class TestPCANBus(unittest.TestCase):
                 (PCAN_USBBUS1, PCAN_LISTEN_ONLY, expected_parameter),
             )
 
+    def test_state_constructor(self):
+        for state in [BusState.ACTIVE, BusState.PASSIVE]:
+            bus = can.Bus(interface="pcan", state=state)
+            assert bus.state == state
+
     def test_detect_available_configs(self) -> None:
-        self.mock_pcan.GetValue = Mock(
-            return_value=(PCAN_ERROR_OK, PCAN_CHANNEL_AVAILABLE)
-        )
-        configs = PcanBus._detect_available_configs()
-        self.assertEqual(len(configs), 50)
+        if platform.system() == "Darwin":
+            self.mock_pcan.GetValue = Mock(
+                return_value=(PCAN_ERROR_OK, PCAN_CHANNEL_AVAILABLE)
+            )
+            configs = PcanBus._detect_available_configs()
+            self.assertEqual(len(configs), 50)
+        else:
+            value = (TPCANChannelInformation * 1).from_buffer_copy(
+                b"Q\x00\x05\x00\x01\x00\x00\x00PCAN-USB FD\x00\x00\x00\x00"
+                b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+                b'\x00\x00\x00\x00\x00\x00\x003"\x11\x00\x01\x00\x00\x00'
+            )
+            self.mock_pcan.GetValue = Mock(return_value=(PCAN_ERROR_OK, value))
+            configs = PcanBus._detect_available_configs()
+            assert len(configs) == 1
+            assert configs[0]["interface"] == "pcan"
+            assert configs[0]["channel"] == "PCAN_USBBUS1"
+            assert configs[0]["supports_fd"]
+            assert configs[0]["controller_number"] == 0
+            assert configs[0]["device_features"] == 1
+            assert configs[0]["device_id"] == 1122867
+            assert configs[0]["device_name"] == "PCAN-USB FD"
+            assert configs[0]["device_type"] == 5
+            assert configs[0]["channel_condition"] == 1
 
     @parameterized.expand([("valid", PCAN_ERROR_OK, "OK"), ("invalid", 0x00005, None)])
     def test_status_string(self, name, status, expected_result) -> None:
@@ -358,7 +413,8 @@ class TestPCANBus(unittest.TestCase):
         self.mock_pcan.GetValue = Mock(side_effect=get_value_side_effect)
 
         if expected_result == "error":
-            self.assertRaises(ValueError, can.Bus, interface="pcan", device_id=dev_id)
+            with self.assertRaises(ValueError):
+                can.Bus(interface="pcan", device_id=dev_id)
         else:
             self.bus = can.Bus(interface="pcan", device_id=dev_id)
             self.assertEqual(expected_result, self.bus.channel_info)
@@ -392,6 +448,39 @@ class TestPCANBus(unittest.TestCase):
         }
 
         can.Bus(**params)
+
+    def test_constructor_bit_timing(self):
+        timing = can.BitTiming.from_registers(f_clock=8_000_000, btr0=0x47, btr1=0x2F)
+        can.Bus(interface="pcan", channel="PCAN_USBBUS1", timing=timing)
+
+        bitrate_arg = self.mock_pcan.Initialize.call_args[0][1]
+        self.assertEqual(bitrate_arg.value, 0x472F)
+
+    def test_constructor_bit_timing_fd(self):
+        timing = can.BitTimingFd(
+            f_clock=40_000_000,
+            nom_brp=1,
+            nom_tseg1=129,
+            nom_tseg2=30,
+            nom_sjw=1,
+            data_brp=1,
+            data_tseg1=9,
+            data_tseg2=6,
+            data_sjw=1,
+        )
+        can.Bus(interface="pcan", channel="PCAN_USBBUS1", timing=timing)
+
+        bitrate_arg = self.mock_pcan.InitializeFD.call_args[0][-1]
+
+        self.assertTrue(b"f_clock=40000000" in bitrate_arg)
+        self.assertTrue(b"nom_brp=1" in bitrate_arg)
+        self.assertTrue(b"nom_tseg1=129" in bitrate_arg)
+        self.assertTrue(b"nom_tseg2=30" in bitrate_arg)
+        self.assertTrue(b"nom_sjw=1" in bitrate_arg)
+        self.assertTrue(b"data_brp=1" in bitrate_arg)
+        self.assertTrue(b"data_tseg1=9" in bitrate_arg)
+        self.assertTrue(b"data_tseg2=6" in bitrate_arg)
+        self.assertTrue(b"data_sjw=1" in bitrate_arg)
 
 
 if __name__ == "__main__":

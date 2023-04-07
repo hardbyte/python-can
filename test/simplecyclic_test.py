@@ -4,10 +4,10 @@
 This module tests cyclic send tasks.
 """
 
-from time import sleep
-import unittest
-from unittest.mock import MagicMock
 import gc
+import unittest
+from time import sleep
+from unittest.mock import MagicMock
 
 import can
 
@@ -33,7 +33,6 @@ class SimpleCyclicSendTaskTest(unittest.TestCase, ComparingMessagesTestCase):
 
         with can.interface.Bus(interface="virtual") as bus1:
             with can.interface.Bus(interface="virtual") as bus2:
-
                 # disabling the garbage collector makes the time readings more reliable
                 gc.disable()
 

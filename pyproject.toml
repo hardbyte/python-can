@@ -4,3 +4,16 @@ requires = [
     "wheel",
 ]
 build-backend = "setuptools.build_meta"
+
+[tool.ruff]
+select = [
+    "F401",  # unused-imports
+    "UP",  # pyupgrade
+    "I",  # isort
+]
+
+# Assume Python 3.7.
+target-version = "py37"
+
+[tool.ruff.isort]
+known-first-party = ["can"]

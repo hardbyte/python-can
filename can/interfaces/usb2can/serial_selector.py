@@ -4,10 +4,12 @@
 import logging
 from typing import List
 
+log = logging.getLogger("can.usb2can")
+
 try:
     import win32com.client
 except ImportError:
-    logging.warning("win32com.client module required for usb2can")
+    log.warning("win32com.client module required for usb2can")
     raise
 
 
@@ -47,11 +49,13 @@ def find_serial_devices(serial_matcher: str = "") -> List[str]:
     :param serial_matcher:
         only device IDs starting with this string are returned
     """
-    objWMIService = win32com.client.Dispatch("WbemScripting.SWbemLocator")
-    objSWbemServices = objWMIService.ConnectServer(".", "root\\cimv2")
-    query = "SELECT * FROM CIM_LogicalDevice where Name LIKE '%USB2CAN%'"
-    devices = objSWbemServices.ExecQuery(query)
-    serial_numbers = [device.DeviceID.split("\\")[-1] for device in devices]
+    serial_numbers = []
+    wmi = win32com.client.GetObject("winmgmts:")
+    for usb_controller in wmi.InstancesOf("Win32_USBControllerDevice"):
+        usb_device = wmi.Get(usb_controller.Dependent)
+        if "USB2CAN" in usb_device.Name:
+            serial_numbers.append(usb_device.DeviceID.split("\\")[-1])
+
     if serial_matcher:
         return [sn for sn in serial_numbers if serial_matcher in sn]
     return serial_numbers

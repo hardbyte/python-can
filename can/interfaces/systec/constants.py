@@ -1,4 +1,6 @@
-from ctypes import c_ubyte as BYTE, c_ushort as WORD, c_ulong as DWORD
+from ctypes import c_ubyte as BYTE
+from ctypes import c_ulong as DWORD
+from ctypes import c_ushort as WORD
 
 #: Maximum number of modules that are supported.
 MAX_MODULES = 64

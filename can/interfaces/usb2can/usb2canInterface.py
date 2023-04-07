@@ -6,14 +6,17 @@ import logging
 from ctypes import byref
 from typing import Optional
 
-from can import BusABC, Message, CanInitializationError, CanOperationError
-from .usb2canabstractionlayer import Usb2CanAbstractionLayer, CanalMsg, CanalError
+from can import BusABC, CanInitializationError, CanOperationError, Message
+
+from .serial_selector import find_serial_devices
 from .usb2canabstractionlayer import (
     IS_ERROR_FRAME,
-    IS_REMOTE_FRAME,
     IS_ID_TYPE,
+    IS_REMOTE_FRAME,
+    CanalError,
+    CanalMsg,
+    Usb2CanAbstractionLayer,
 )
-from .serial_selector import find_serial_devices
 
 # Set up logging
 log = logging.getLogger("can.usb2can")
@@ -99,7 +102,6 @@ class Usb2canBus(BusABC):
         serial: Optional[str] = None,
         **kwargs,
     ):
-
         self.can = Usb2CanAbstractionLayer(dll)
 
         # get the serial number of the device
@@ -134,7 +136,6 @@ class Usb2canBus(BusABC):
             raise CanOperationError("could not send message", error_code=status)
 
     def _recv_internal(self, timeout):
-
         messagerx = CanalMsg()
 
         if timeout == 0:

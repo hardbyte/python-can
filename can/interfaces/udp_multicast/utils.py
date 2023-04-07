@@ -2,12 +2,9 @@
 Defines common functions.
 """
 
-from typing import Any
-from typing import Dict
-from typing import Optional
+from typing import Any, Dict, Optional
 
-from can import Message
-from can import CanInterfaceNotImplementedError
+from can import CanInterfaceNotImplementedError, Message
 from can.typechecking import ReadableBytesLike
 
 try:

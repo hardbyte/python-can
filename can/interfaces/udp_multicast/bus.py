@@ -17,8 +17,7 @@ import can
 from can import BusABC
 from can.typechecking import AutoDetectedConfig
 
-from .utils import pack_message, unpack_message, check_msgpack_installed
-
+from .utils import check_msgpack_installed, pack_message, unpack_message
 
 # see socket.getaddrinfo()
 IPv4_ADDRESS_INFO = Tuple[str, int]  # address, port
@@ -239,7 +238,6 @@ class GeneralPurposeUdpMulticastBus:
 
         # configure the socket
         try:
-
             # set hop limit / TTL
             ttl_as_binary = struct.pack("@I", self.hop_limit)
             if self.ip_version == 4:

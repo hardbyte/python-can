@@ -3,12 +3,12 @@
 """
 """
 
-import time
 import unittest
-from unittest.mock import Mock, patch, call
 from ctypes import c_ubyte
+from unittest.mock import call, patch
 
 import canalystii as driver  # low-level driver module, mock out this layer
+
 import can
 from can.interfaces.canalystii import CANalystIIBus
 
@@ -39,8 +39,10 @@ class CanalystIITest(unittest.TestCase):
     def test_initialize_with_timing_registers(self):
         with create_mock_device() as mock_device:
             instance = mock_device.return_value
-            timing = can.BitTiming(btr0=0x03, btr1=0x6F)
-            bus = CANalystIIBus(bitrate=None, bit_timing=timing)
+            timing = can.BitTiming.from_registers(
+                f_clock=8_000_000, btr0=0x03, btr1=0x6F
+            )
+            bus = CANalystIIBus(bitrate=None, timing=timing)
             instance.init.assert_has_calls(
                 [
                     call(0, timing0=0x03, timing1=0x6F),
@@ -50,14 +52,8 @@ class CanalystIITest(unittest.TestCase):
 
     def test_missing_bitrate(self):
         with self.assertRaises(ValueError) as cm:
-            bus = CANalystIIBus(0, bitrate=None, bit_timing=None)
+            bus = CANalystIIBus(0, bitrate=None, timing=None)
         self.assertIn("bitrate", str(cm.exception))
-
-    def test_invalid_bit_timing(self):
-        with create_mock_device() as mock_device:
-            with self.assertRaises(ValueError) as cm:
-                invalid_timings = can.BitTiming()
-                CANalystIIBus(0, bit_timing=invalid_timings)
 
     def test_receive_message(self):
         driver_message = driver.Message(

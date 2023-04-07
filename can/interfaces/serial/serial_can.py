@@ -10,14 +10,15 @@ See the interface documentation for the format being used.
 import io
 import logging
 import struct
-from typing import Any, List, Tuple, Optional
+from typing import Any, List, Optional, Tuple
 
-from can import BusABC, Message
 from can import (
-    CanInterfaceNotImplementedError,
+    BusABC,
     CanInitializationError,
+    CanInterfaceNotImplementedError,
     CanOperationError,
     CanTimeoutError,
+    Message,
 )
 from can.typechecking import AutoDetectedConfig
 
@@ -175,7 +176,6 @@ class SerialBus(BusABC):
         try:
             rx_byte = self._ser.read()
             if rx_byte and ord(rx_byte) == 0xAA:
-
                 s = self._ser.read(4)
                 timestamp = struct.unpack("<I", s)[0]
                 dlc = ord(self._ser.read())

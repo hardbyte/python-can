@@ -1,13 +1,15 @@
+import argparse
+import errno
 import re
 import sys
-import argparse
 from datetime import datetime
-import errno
-from typing import Any, Dict, List, Union, Sequence, Tuple
+from typing import Any, Dict, List, Sequence, Tuple, Union
 
 import can
 from can.io import BaseRotatingLogger
 from can.io.generic import MessageWriter
+from can.util import cast_from_string
+
 from . import Bus, BusState, Logger, SizedRotatingLogger
 from .typechecking import CanFilter, CanFilters
 
@@ -134,18 +136,7 @@ def _parse_additional_config(
 
     args: Dict[str, Union[str, int, float, bool]] = {}
     for key, string_val in map(_split_arg, unknown_args):
-        if re.match(r"^[-+]?\d+$", string_val):
-            # value is integer
-            args[key] = int(string_val)
-        elif re.match(r"^[-+]?\d*\.\d+$", string_val):
-            # value is float
-            args[key] = float(string_val)
-        elif re.match(r"^(?:True|False)$", string_val):
-            # value is bool
-            args[key] = string_val == "True"
-        else:
-            # value is string
-            args[key] = string_val
+        args[key] = cast_from_string(string_val)
     return args
 
 

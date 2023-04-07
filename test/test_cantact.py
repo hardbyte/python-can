@@ -23,8 +23,8 @@ class CantactTest(unittest.TestCase):
     def test_bus_creation_bittiming(self):
         cantact.MockInterface.set_bitrate.reset_mock()
 
-        bt = can.BitTiming(tseg1=13, tseg2=2, brp=6, sjw=1)
-        bus = can.Bus(channel=0, interface="cantact", bit_timing=bt, _testing=True)
+        bt = can.BitTiming(f_clock=24_000_000, brp=3, tseg1=13, tseg2=2, sjw=1)
+        bus = can.Bus(channel=0, interface="cantact", timing=bt, _testing=True)
         self.assertIsInstance(bus, cantact.CantactBus)
         cantact.MockInterface.set_bitrate.assert_not_called()
         cantact.MockInterface.set_bit_timing.assert_called()

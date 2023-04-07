@@ -30,14 +30,13 @@ import struct
 import time
 import unittest
 from collections import defaultdict
-from typing import Dict, Tuple, Union
+from test.config import IS_CI
 from unittest.mock import patch
 
 import pytest
 
 import can
 from can.viewer import CanViewer, parse_args
-from test.config import IS_CI
 
 # Allow the curses module to be missing (e.g. on PyPy on Windows)
 try:

@@ -2,15 +2,15 @@
 This module contains the implementation of `can.Listener` and some readers.
 """
 
+import asyncio
 import sys
 import warnings
-import asyncio
 from abc import ABCMeta, abstractmethod
-from queue import SimpleQueue, Empty
+from queue import Empty, SimpleQueue
 from typing import Any, AsyncIterator, Optional
 
-from can.message import Message
 from can.bus import BusABC
+from can.message import Message
 
 
 class Listener(metaclass=ABCMeta):

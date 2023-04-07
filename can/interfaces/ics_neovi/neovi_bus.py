@@ -11,17 +11,18 @@ Implementation references:
 import logging
 import os
 import tempfile
-from collections import deque, defaultdict, Counter
+from collections import Counter, defaultdict, deque
 from itertools import cycle
 from threading import Event
 from warnings import warn
 
-from can import Message, BusABC
+from can import BusABC, Message
+
 from ...exceptions import (
     CanError,
-    CanTimeoutError,
-    CanOperationError,
     CanInitializationError,
+    CanOperationError,
+    CanTimeoutError,
 )
 
 logger = logging.getLogger(__name__)
@@ -40,7 +41,6 @@ except ImportError as ie:
 try:
     from filelock import FileLock
 except ImportError as ie:
-
     logger.warning(
         "Using ICS neoVI can backend without the "
         "filelock module installed may cause some issues!: %s",

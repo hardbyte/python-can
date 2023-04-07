@@ -5,13 +5,11 @@ Tests helpers in `can.interfaces.socketcan.socketcan_common`.
 """
 
 import gzip
-from base64 import b64decode
 import unittest
+from base64 import b64decode
 from unittest import mock
 
-from subprocess import CalledProcessError
-
-from can.interfaces.socketcan.utils import find_available_interfaces, error_code_to_str
+from can.interfaces.socketcan.utils import error_code_to_str, find_available_interfaces
 
 from .config import IS_LINUX, TEST_INTERFACE_SOCKETCAN
 

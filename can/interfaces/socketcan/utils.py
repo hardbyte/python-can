@@ -8,7 +8,7 @@ import logging
 import os
 import struct
 import subprocess
-from typing import cast, Optional, List
+from typing import List, Optional, cast
 
 from can import typechecking
 from can.interfaces.socketcan.constants import CAN_EFF_FLAG

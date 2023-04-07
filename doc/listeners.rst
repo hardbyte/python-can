@@ -211,6 +211,37 @@ The following class can be used to read messages from BLF file:
 .. autoclass:: can.BLFReader
     :members:
 
+
+MF4 (Measurement Data Format v4)
+--------------------------------
+
+Implements support for MF4 (Measurement Data Format v4) which is a proprietary
+format from ASAM (Association for Standardization of Automation and Measuring Systems), widely used in 
+many automotive software (Vector CANape, ETAS INCA, dSPACE ControlDesk, etc.).
+
+The data is stored in a compressed format which makes it compact.
+
+.. note:: MF4 support has to be installed as an extra with for example ``pip install python-can[mf4]``.
+
+.. note:: Channels will be converted to integers.
+
+.. note:: MF4Writer does not suppport the append mode.
+
+
+.. autoclass:: can.MF4Writer
+    :members:
+
+The MDF format is very flexible regarding the internal structure and it is used to handle data from multiple sources, not just CAN bus logging.
+MDF4Writer will always create a fixed internal file structure where there will be three channel groups (for standard, error and remote frames). 
+Using this fixed file structure allows for a simple implementation of MDF4Writer and MF4Reader classes.
+Therefor MF4Reader can only replay files created with MF4Writer. 
+
+The following class can be used to read messages from MF4 file:
+
+.. autoclass:: can.MF4Reader
+    :members:
+
+
 TRC
 ----
 
