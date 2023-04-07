@@ -14,6 +14,7 @@ import socket
 import struct
 import threading
 import time
+import warnings
 from typing import Callable, Dict, List, Optional, Sequence, Tuple, Type, Union
 
 log = logging.getLogger(__name__)
@@ -801,8 +802,8 @@ class SocketcanBus(BusABC):
         msgs: Union[Sequence[Message], Message],
         period: float,
         duration: Optional[float] = None,
-        modifier_callback: Optional[Callable[[Message], Message]] = None,
-    ) -> CyclicSendTask:
+        modifier_callback: Optional[Callable[[Message], None]] = None,
+    ) -> can.broadcastmanager.CyclicSendTaskABC:
         """Start sending messages at a given period on this bus.
 
         The Linux kernel's Broadcast Manager SocketCAN API is used to schedule
@@ -834,15 +835,29 @@ class SocketcanBus(BusABC):
             general the message will be sent at the given rate until at
             least *duration* seconds.
         """
-        msgs = LimitedDurationCyclicSendTaskABC._check_and_convert_messages(  # pylint: disable=protected-access
-            msgs
-        )
+        if modifier_callback is None:
+            msgs = LimitedDurationCyclicSendTaskABC._check_and_convert_messages(  # pylint: disable=protected-access
+                msgs
+            )
 
-        msgs_channel = str(msgs[0].channel) if msgs[0].channel else None
-        bcm_socket = self._get_bcm_socket(msgs_channel or self.channel)
-        task_id = self._get_next_task_id()
-        task = CyclicSendTask(bcm_socket, task_id, msgs, period, duration)
-        return task
+            msgs_channel = str(msgs[0].channel) if msgs[0].channel else None
+            bcm_socket = self._get_bcm_socket(msgs_channel or self.channel)
+            task_id = self._get_next_task_id()
+            task = CyclicSendTask(bcm_socket, task_id, msgs, period, duration)
+            return task
+
+        # fallback to thread based cyclic task
+        warnings.warn(
+            f"{self.__class__.__name__} falls back to a thread-based cyclic task, "
+            "when the `modifier_callback` argument is given."
+        )
+        return BusABC._send_periodic_internal(
+            self,
+            msgs=msgs,
+            period=period,
+            duration=duration,
+            modifier_callback=modifier_callback,
+        )
 
     def _get_next_task_id(self) -> int:
         with self._task_id_guard:

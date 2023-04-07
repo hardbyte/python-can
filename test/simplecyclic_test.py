@@ -5,8 +5,10 @@ This module tests cyclic send tasks.
 """
 
 import gc
+import time
 import unittest
 from time import sleep
+from typing import List
 from unittest.mock import MagicMock
 
 import can
@@ -160,33 +162,72 @@ class SimpleCyclicSendTaskTest(unittest.TestCase, ComparingMessagesTestCase):
         # good case, bus is up
         on_error_mock = MagicMock(return_value=False)
         task = can.broadcastmanager.ThreadBasedCyclicSendTask(
-            bus, bus._lock_send_periodic, msg, 0.1, 3, on_error_mock
+            bus=bus,
+            lock=bus._lock_send_periodic,
+            messages=msg,
+            period=0.1,
+            duration=3,
+            on_error=on_error_mock,
         )
-        task.start()
         sleep(1)
         on_error_mock.assert_not_called()
         task.stop()
         bus.shutdown()
 
-        # bus has been shutted down
+        # bus has been shut down
         on_error_mock = MagicMock(return_value=False)
         task = can.broadcastmanager.ThreadBasedCyclicSendTask(
-            bus, bus._lock_send_periodic, msg, 0.1, 3, on_error_mock
+            bus=bus,
+            lock=bus._lock_send_periodic,
+            messages=msg,
+            period=0.1,
+            duration=3,
+            on_error=on_error_mock,
         )
-        task.start()
         sleep(1)
-        self.assertEqual(on_error_mock.call_count, 1)
+        self.assertEqual(1, on_error_mock.call_count)
         task.stop()
 
-        # bus is still shutted down, but on_error returns True
+        # bus is still shut down, but on_error returns True
         on_error_mock = MagicMock(return_value=True)
         task = can.broadcastmanager.ThreadBasedCyclicSendTask(
-            bus, bus._lock_send_periodic, msg, 0.1, 3, on_error_mock
+            bus=bus,
+            lock=bus._lock_send_periodic,
+            messages=msg,
+            period=0.1,
+            duration=3,
+            on_error=on_error_mock,
         )
-        task.start()
         sleep(1)
         self.assertTrue(on_error_mock.call_count > 1)
         task.stop()
+
+    def test_modifier_callback(self) -> None:
+        msg_list: List[can.Message] = []
+
+        def increment_first_byte(msg: can.Message) -> None:
+            msg.data[0] += 1
+
+        original_msg = can.Message(
+            is_extended_id=False, arbitration_id=0x123, data=[0] * 8
+        )
+
+        with can.ThreadSafeBus(interface="virtual", receive_own_messages=True) as bus:
+            notifier = can.Notifier(bus=bus, listeners=[msg_list.append])
+            task = bus.send_periodic(
+                msgs=original_msg, period=0.001, modifier_callback=increment_first_byte
+            )
+            time.sleep(0.2)
+            task.stop()
+            notifier.stop()
+
+        self.assertEqual(b"\x01\x00\x00\x00\x00\x00\x00\x00", bytes(msg_list[0].data))
+        self.assertEqual(b"\x02\x00\x00\x00\x00\x00\x00\x00", bytes(msg_list[1].data))
+        self.assertEqual(b"\x03\x00\x00\x00\x00\x00\x00\x00", bytes(msg_list[2].data))
+        self.assertEqual(b"\x04\x00\x00\x00\x00\x00\x00\x00", bytes(msg_list[3].data))
+        self.assertEqual(b"\x05\x00\x00\x00\x00\x00\x00\x00", bytes(msg_list[4].data))
+        self.assertEqual(b"\x06\x00\x00\x00\x00\x00\x00\x00", bytes(msg_list[5].data))
+        self.assertEqual(b"\x07\x00\x00\x00\x00\x00\x00\x00", bytes(msg_list[6].data))
 
 
 if __name__ == "__main__":

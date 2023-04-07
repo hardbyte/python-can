@@ -53,7 +53,7 @@ class CyclicTask(abc.ABC):
         """
 
 
-class CyclicSendTaskABC(CyclicTask):
+class CyclicSendTaskABC(CyclicTask, abc.ABC):
     """
     Message send task with defined period
     """
@@ -114,7 +114,7 @@ class CyclicSendTaskABC(CyclicTask):
         return messages
 
 
-class LimitedDurationCyclicSendTaskABC(CyclicSendTaskABC):
+class LimitedDurationCyclicSendTaskABC(CyclicSendTaskABC, abc.ABC):
     def __init__(
         self,
         messages: Union[Sequence[Message], Message],
@@ -136,7 +136,7 @@ class LimitedDurationCyclicSendTaskABC(CyclicSendTaskABC):
         self.duration = duration
 
 
-class RestartableCyclicTaskABC(CyclicSendTaskABC):
+class RestartableCyclicTaskABC(CyclicSendTaskABC, abc.ABC):
     """Adds support for restarting a stopped cyclic task"""
 
     @abc.abstractmethod
@@ -144,28 +144,7 @@ class RestartableCyclicTaskABC(CyclicSendTaskABC):
         """Restart a stopped periodic task."""
 
 
-class ModifiableCyclicTaskABC(CyclicSendTaskABC):
-    def __init__(
-        self, messages: Union[Sequence[Message], Message], period: float
-    ) -> None:
-        """Adds support for modifying a periodic message"""
-        super().__init__(messages, period)
-        self.modifier_callback: Optional[Callable[[Message], Message]] = None
-
-    def _check_modifier_callback(
-        self, modifier_callback: Optional[Callable[[Message], Message]]
-    ) -> None:
-        if modifier_callback is not None:
-            modified_msg = modifier_callback(self.messages[0])
-
-            if modified_msg.arbitration_id != self.arbitration_id:
-                raise ValueError(
-                    "The modifier callback function must not modify the "
-                    "messages' arbitration ID."
-                )
-
-        self.modifier_callback = modifier_callback
-
+class ModifiableCyclicTaskABC(CyclicSendTaskABC, abc.ABC):
     def _check_modified_messages(self, messages: Tuple[Message, ...]) -> None:
         """Helper function to perform error checking when modifying the data in
         the cyclic task.
@@ -209,7 +188,7 @@ class ModifiableCyclicTaskABC(CyclicSendTaskABC):
         self.messages = messages
 
 
-class MultiRateCyclicSendTaskABC(CyclicSendTaskABC):
+class MultiRateCyclicSendTaskABC(CyclicSendTaskABC, abc.ABC):
     """A Cyclic send task that supports switches send frequency after a set time."""
 
     def __init__(
@@ -249,7 +228,7 @@ class ThreadBasedCyclicSendTask(
         period: float,
         duration: Optional[float] = None,
         on_error: Optional[Callable[[Exception], bool]] = None,
-        modifier_callback: Optional[Callable[[Message], Message]] = None,
+        modifier_callback: Optional[Callable[[Message], None]] = None,
     ) -> None:
         """Transmits `messages` with a `period` seconds for `duration` seconds on a `bus`.
 
@@ -275,7 +254,7 @@ class ThreadBasedCyclicSendTask(
             time.perf_counter() + duration if duration else None
         )
         self.on_error = on_error
-        self._check_modifier_callback(modifier_callback)
+        self.modifier_callback = modifier_callback
 
         if USE_WINDOWS_EVENTS:
             self.period_ms = int(round(period * 1000, 0))
@@ -319,16 +298,21 @@ class ThreadBasedCyclicSendTask(
             with self.send_lock:
                 try:
                     if self.modifier_callback is not None:
-                        modified_msg = self.modifier_callback(self.messages[msg_index])
-                        self.messages[msg_index].data = modified_msg.data
+                        self.modifier_callback(self.messages[msg_index])
                     self.bus.send(self.messages[msg_index])
                 except Exception as exc:  # pylint: disable=broad-except
                     log.exception(exc)
-                    if self.on_error:
-                        if not self.on_error(exc):
-                            break
-                    else:
+
+                    # stop if `on_error` callback was not given
+                    if self.on_error is None:
+                        self.stop()
+                        raise exc
+
+                    # stop if `on_error` returns False
+                    if not self.on_error(exc):
+                        self.stop()
                         break
+
             msg_due_time_ns += self.period_ns
             if self.end_time is not None and time.perf_counter() >= self.end_time:
                 break
