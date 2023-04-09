@@ -35,6 +35,7 @@ extras_require = {
     "pcan": ["uptime~=3.0.1"],
     "remote": ["python-can-remote"],
     "sontheim": ["python-can-sontheim>=0.1.2"],
+    "canine": ["python-can-canine>=0.2.2"],
     "viewer": [
         'windows-curses;platform_system=="Windows" and platform_python_implementation=="CPython"'
     ],

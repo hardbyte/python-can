@@ -5,6 +5,34 @@ Interfaces contain low level implementations that interact with CAN hardware.
 import sys
 from typing import Dict, Tuple, cast
 
+__all__ = [
+    "BACKENDS",
+    "VALID_INTERFACES",
+    "canalystii",
+    "cantact",
+    "etas",
+    "gs_usb",
+    "ics_neovi",
+    "iscan",
+    "ixxat",
+    "kvaser",
+    "neousys",
+    "nican",
+    "nixnet",
+    "pcan",
+    "robotell",
+    "seeedstudio",
+    "serial",
+    "slcan",
+    "socketcan",
+    "socketcand",
+    "systec",
+    "udp_multicast",
+    "usb2can",
+    "vector",
+    "virtual",
+]
+
 # interface_name => (module, classname)
 BACKENDS: Dict[str, Tuple[str, str]] = {
     "kvaser": ("can.interfaces.kvaser", "KvaserBus"),
