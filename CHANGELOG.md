@@ -25,7 +25,7 @@ Features
 * Add support for version 2 TRC files and other TRC file enhancements (#1530).
 
 ### Type Annotations
-* Export symbols to satisfy type checkers (#1547, #1551).
+* Export symbols to satisfy type checkers (#1547, #1551, #1558).
 
 ### Interface Improvements
 * Add ``__del__`` method to ``can.BusABC`` to automatically release resources (#1489).

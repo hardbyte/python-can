@@ -8,7 +8,7 @@ messages on a can bus.
 import logging
 from typing import Any, Dict
 
-__version__ = "4.2.0dev0"
+__version__ = "4.2.0rc0"
 __all__ = [
     "ASCReader",
     "ASCWriter",
