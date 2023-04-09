@@ -63,7 +63,7 @@ Deprecations
 * The ``bit_timing`` parameter of ``CANalystIIBus`` is deprecated and will be 
   removed in version 5.0, use ``timing`` instead. (#1468).
 * The ``brs`` and ``log_errors`` parameters of `` NiXNETcanBus`` are deprecated 
-* and will be removed in version 5.0. (#1520).
+  and will be removed in version 5.0. (#1520).
 
 Miscellaneous
 -------------
