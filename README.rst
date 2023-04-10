@@ -3,7 +3,7 @@ python-can
 
 |pypi| |conda| |python_implementation| |downloads| |downloads_monthly|
 
-|docs| |github-actions| |build_travis| |coverage| |mergify| |formatter|
+|docs| |github-actions| |coverage| |mergify| |formatter|
 
 .. |pypi| image:: https://img.shields.io/pypi/v/python-can.svg
    :target: https://pypi.python.org/pypi/python-can/
@@ -36,10 +36,6 @@ python-can
 .. |github-actions| image:: https://github.com/hardbyte/python-can/actions/workflows/ci.yml/badge.svg
    :target: https://github.com/hardbyte/python-can/actions/workflows/ci.yml
    :alt: Github Actions workflow status
-
-.. |build_travis| image:: https://img.shields.io/travis/hardbyte/python-can/develop.svg?label=Travis%20CI
-   :target: https://app.travis-ci.com/github/hardbyte/python-can
-   :alt: Travis CI Server for develop branch
 
 .. |coverage| image:: https://coveralls.io/repos/github/hardbyte/python-can/badge.svg?branch=develop
    :target: https://coveralls.io/github/hardbyte/python-can?branch=develop
