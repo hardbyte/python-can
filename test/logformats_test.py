@@ -934,10 +934,11 @@ class TestTrcFileFormatGen(TestTrcFileFormatBase):
             self.assertMessagesEqual(actual, expected_messages)
 
     def test_not_supported_version(self):
-        with self.assertRaises(NotImplementedError):
-            writer = can.TRCWriter("test.trc")
-            writer.file_version = can.TRCFileVersion.UNKNOWN
-            writer.on_message_received(can.Message())
+        with tempfile.NamedTemporaryFile(mode="w") as f:
+            with self.assertRaises(NotImplementedError):
+                writer = can.TRCWriter(f)
+                writer.file_version = can.TRCFileVersion.UNKNOWN
+                writer.on_message_received(can.Message())
 
 
 class TestTrcFileFormatV1_0(TestTrcFileFormatBase):
