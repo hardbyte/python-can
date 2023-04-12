@@ -6,6 +6,7 @@ Authors: Julien Grave <grave.jul@gmail.com>, Christian Sandberg
 
 # Import Standard Python Modules
 # ==============================
+import contextlib
 import ctypes
 import logging
 import os
@@ -869,9 +870,11 @@ class VectorBus(BusABC):
 
     def shutdown(self) -> None:
         super().shutdown()
-        self.xldriver.xlDeactivateChannel(self.port_handle, self.mask)
-        self.xldriver.xlClosePort(self.port_handle)
-        self.xldriver.xlCloseDriver()
+
+        with contextlib.suppress(VectorError):
+            self.xldriver.xlDeactivateChannel(self.port_handle, self.mask)
+            self.xldriver.xlClosePort(self.port_handle)
+            self.xldriver.xlCloseDriver()
 
     def reset(self) -> None:
         self.xldriver.xlDeactivateChannel(self.port_handle, self.mask)
