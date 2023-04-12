@@ -6,8 +6,8 @@ Authors: Julien Grave <grave.jul@gmail.com>, Christian Sandberg
 
 # Import Standard Python Modules
 # ==============================
-import ctypes
 import contextlib
+import ctypes
 import logging
 import os
 import time
