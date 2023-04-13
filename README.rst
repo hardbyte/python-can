@@ -3,7 +3,7 @@ python-can
 
 |pypi| |conda| |python_implementation| |downloads| |downloads_monthly|
 
-|docs| |github-actions| |build_travis| |coverage| |mergify| |formatter|
+|docs| |github-actions| |coverage| |mergify| |formatter|
 
 .. |pypi| image:: https://img.shields.io/pypi/v/python-can.svg
    :target: https://pypi.python.org/pypi/python-can/
@@ -36,10 +36,6 @@ python-can
 .. |github-actions| image:: https://github.com/hardbyte/python-can/actions/workflows/ci.yml/badge.svg
    :target: https://github.com/hardbyte/python-can/actions/workflows/ci.yml
    :alt: Github Actions workflow status
-
-.. |build_travis| image:: https://img.shields.io/travis/hardbyte/python-can/develop.svg?label=Travis%20CI
-   :target: https://app.travis-ci.com/github/hardbyte/python-can
-   :alt: Travis CI Server for develop branch
 
 .. |coverage| image:: https://coveralls.io/repos/github/hardbyte/python-can/badge.svg?branch=develop
    :target: https://coveralls.io/github/hardbyte/python-can?branch=develop
@@ -78,7 +74,7 @@ Features
 - receiving, sending, and periodically sending messages
 - normal and extended arbitration IDs
 - `CAN FD <https://en.wikipedia.org/wiki/CAN_FD>`__ support
-- many different loggers and readers supporting playback: ASC (CANalyzer format), BLF (Binary Logging Format by Vector), TRC, CSV, SQLite, and Canutils log
+- many different loggers and readers supporting playback: ASC (CANalyzer format), BLF (Binary Logging Format by Vector), MF4 (Measurement Data Format v4 by ASAM), TRC, CSV, SQLite, and Canutils log
 - efficient in-kernel or in-hardware filtering of messages on supported interfaces
 - bus configuration reading from a file or from environment variables
 - command line tools for working with CAN buses (see the `docs <https://python-can.readthedocs.io/en/stable/scripts.html>`__)

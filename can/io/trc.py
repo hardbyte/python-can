@@ -5,9 +5,8 @@ See https://www.peak-system.com/produktcd/Pdf/English/PEAK_CAN_TRC_File_Format.p
 for file format description
 
 Version 1.1 will be implemented as it is most commonly used
-"""  # noqa
+"""
 
-import io
 import logging
 import os
 from datetime import datetime, timedelta, timezone
@@ -274,7 +273,7 @@ class TRCWriter(FileIOMessageWriter):
         super().__init__(file, mode="w")
         self.channel = channel
 
-        if isinstance(self.file, io.TextIOWrapper):
+        if hasattr(self.file, "reconfigure"):
             self.file.reconfigure(newline="\r\n")
         else:
             raise TypeError("File must be opened in text mode.")

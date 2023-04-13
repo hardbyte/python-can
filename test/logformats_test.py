@@ -36,36 +36,61 @@ from .message_helper import ComparingMessagesTestCase
 
 logging.basicConfig(level=logging.DEBUG)
 
+try:
+    import asammdf
+except ModuleNotFoundError:
+    asammdf = None
+
 
 class ReaderWriterExtensionTest(unittest.TestCase):
-    message_writers_and_readers = {}
-    for suffix, writer in can.Logger.message_writers.items():
-        message_writers_and_readers[suffix] = (
-            writer,
-            can.LogReader.message_readers.get(suffix),
-        )
+    def _get_suffix_case_variants(self, suffix):
+        return [
+            suffix.upper(),
+            suffix.lower(),
+            f"can.msg.ext{suffix}",
+            "".join([c.upper() if i % 2 else c for i, c in enumerate(suffix)]),
+        ]
 
-    def test_extension_matching(self):
-        for suffix, (writer, reader) in self.message_writers_and_readers.items():
-            suffix_variants = [
-                suffix.upper(),
-                suffix.lower(),
-                f"can.msg.ext{suffix}",
-                "".join([c.upper() if i % 2 else c for i, c in enumerate(suffix)]),
-            ]
-            for suffix_variant in suffix_variants:
-                tmp_file = tempfile.NamedTemporaryFile(
-                    suffix=suffix_variant, delete=False
-                )
-                tmp_file.close()
-                try:
+    def _test_extension(self, suffix):
+        WriterType = can.Logger.message_writers.get(suffix)
+        ReaderType = can.LogReader.message_readers.get(suffix)
+        for suffix_variant in self._get_suffix_case_variants(suffix):
+            tmp_file = tempfile.NamedTemporaryFile(suffix=suffix_variant, delete=False)
+            tmp_file.close()
+            try:
+                if WriterType:
                     with can.Logger(tmp_file.name) as logger:
-                        assert type(logger) == writer
-                    if reader is not None:
-                        with can.LogReader(tmp_file.name) as player:
-                            assert type(player) == reader
-                finally:
-                    os.remove(tmp_file.name)
+                        assert type(logger) == WriterType
+                if ReaderType:
+                    with can.LogReader(tmp_file.name) as player:
+                        assert type(player) == ReaderType
+            finally:
+                os.remove(tmp_file.name)
+
+    def test_extension_matching_asc(self):
+        self._test_extension(".asc")
+
+    def test_extension_matching_blf(self):
+        self._test_extension(".blf")
+
+    def test_extension_matching_csv(self):
+        self._test_extension(".csv")
+
+    def test_extension_matching_db(self):
+        self._test_extension(".db")
+
+    def test_extension_matching_log(self):
+        self._test_extension(".log")
+
+    def test_extension_matching_txt(self):
+        self._test_extension(".txt")
+
+    def test_extension_matching_mf4(self):
+        try:
+            self._test_extension(".mf4")
+        except NotImplementedError:
+            if asammdf is not None:
+                raise
 
 
 class ReaderWriterTest(unittest.TestCase, ComparingMessagesTestCase, metaclass=ABCMeta):
@@ -708,6 +733,22 @@ class TestCsvFileFormat(ReaderWriterTest):
         )
 
 
+@unittest.skipIf(asammdf is None, "MF4 is unavailable")
+class TestMF4FileFormat(ReaderWriterTest):
+    """Tests can.MF4Writer and can.MF4Reader"""
+
+    def _setup_instance(self):
+        super()._setup_instance_helper(
+            can.MF4Writer,
+            can.MF4Reader,
+            binary_file=True,
+            check_comments=False,
+            preserves_channel=False,
+            allowed_timestamp_delta=1e-4,
+            adds_default_channel=0,
+        )
+
+
 class TestSqliteDatabaseFormat(ReaderWriterTest):
     """Tests can.SqliteWriter and can.SqliteReader"""
 
@@ -893,10 +934,11 @@ class TestTrcFileFormatGen(TestTrcFileFormatBase):
             self.assertMessagesEqual(actual, expected_messages)
 
     def test_not_supported_version(self):
-        with self.assertRaises(NotImplementedError):
-            writer = can.TRCWriter("test.trc")
-            writer.file_version = can.TRCFileVersion.UNKNOWN
-            writer.on_message_received(can.Message())
+        with tempfile.NamedTemporaryFile(mode="w") as f:
+            with self.assertRaises(NotImplementedError):
+                writer = can.TRCWriter(f)
+                writer.file_version = can.TRCFileVersion.UNKNOWN
+                writer.on_message_received(can.Message())
 
 
 class TestTrcFileFormatV1_0(TestTrcFileFormatBase):

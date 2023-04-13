@@ -456,7 +456,7 @@ class BusABC(metaclass=ABCMeta):
 
     def __del__(self) -> None:
         if not self._is_shutdown:
-            LOG.warning("%s was not properly shut down", self.__class__)
+            LOG.warning("%s was not properly shut down", self.__class__.__name__)
             # We do some best-effort cleanup if the user
             # forgot to properly close the bus instance
             with contextlib.suppress(AttributeError):
