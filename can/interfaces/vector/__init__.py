@@ -2,7 +2,6 @@
 """
 
 __all__ = [
-    "get_channel_configs",
     "VectorBus",
     "VectorBusParams",
     "VectorCanFdParams",
@@ -11,6 +10,12 @@ __all__ = [
     "VectorError",
     "VectorInitializationError",
     "VectorOperationError",
+    "canlib",
+    "exceptions",
+    "get_channel_configs",
+    "xlclass",
+    "xldefine",
+    "xldriver",
 ]
 
 from .canlib import (
