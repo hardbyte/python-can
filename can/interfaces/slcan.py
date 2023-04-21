@@ -153,8 +153,6 @@ class slcanBus(BusABC):
             self.serialPortOrig.flush()
 
     def _read(self, timeout: Optional[float]) -> Optional[str]:
-        _timeout = serial.Timeout(timeout)
-
         with error_check("Could not read from serial device"):
             in_waiting = self.serialPortOrig.in_waiting
             if in_waiting:
