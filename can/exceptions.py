@@ -9,7 +9,6 @@ code to react to specific scenarios related to CAN busses::
          +-- CanInitializationError
          +-- CanOperationError
          +-- CanTimeoutError
-         +-- CanBitRateError
 
 Keep in mind that some functions and methods may raise different exceptions.
 For example, validating typical arguments and parameters might result in a
@@ -109,15 +108,6 @@ class CanTimeoutError(CanError, TimeoutError):
     Example scenarios:
       - Some message could not be sent after the timeout elapsed
       - No message was read within the given time
-    """
-
-
-class CanBitRateError(CanError):
-    """Indicates the invalid / unsupported bitrate.
-
-    Example scenarios:
-      - Invalid / unsupported bitrate on bus
-      - Can't convert between bit timing and bitrate
     """
 
 

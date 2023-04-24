@@ -38,6 +38,6 @@ The following hardware interfaces are included in python-can:
    interfaces/systec
    interfaces/usb2can
    interfaces/vector
-   interfaces/zlg
+
 
 Additional interface types can be added via the :ref:`plugin interface`, or by installing a third party package that utilises the :ref:`plugin interface`.
