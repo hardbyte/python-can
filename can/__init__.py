@@ -6,47 +6,122 @@ messages on a can bus.
 """
 
 import logging
-from typing import Dict, Any
+from typing import Any, Dict
 
-__version__ = "4.0.0"
+__version__ = "4.2.0rc0"
+__all__ = [
+    "ASCReader",
+    "ASCWriter",
+    "AsyncBufferedReader",
+    "BitTiming",
+    "BitTimingFd",
+    "BLFReader",
+    "BLFWriter",
+    "BufferedReader",
+    "Bus",
+    "BusABC",
+    "BusState",
+    "CanError",
+    "CanInitializationError",
+    "CanInterfaceNotImplementedError",
+    "CanOperationError",
+    "CanTimeoutError",
+    "CanutilsLogReader",
+    "CanutilsLogWriter",
+    "CSVReader",
+    "CSVWriter",
+    "CyclicSendTaskABC",
+    "LimitedDurationCyclicSendTaskABC",
+    "Listener",
+    "Logger",
+    "LogReader",
+    "ModifiableCyclicTaskABC",
+    "Message",
+    "MessageSync",
+    "MF4Reader",
+    "MF4Writer",
+    "Notifier",
+    "Printer",
+    "RedirectReader",
+    "RestartableCyclicTaskABC",
+    "SizedRotatingLogger",
+    "SqliteReader",
+    "SqliteWriter",
+    "ThreadSafeBus",
+    "TRCFileVersion",
+    "TRCReader",
+    "TRCWriter",
+    "VALID_INTERFACES",
+    "bit_timing",
+    "broadcastmanager",
+    "bus",
+    "ctypesutil",
+    "detect_available_configs",
+    "exceptions",
+    "interface",
+    "interfaces",
+    "listener",
+    "logconvert",
+    "log",
+    "logger",
+    "message",
+    "notifier",
+    "player",
+    "set_logging_level",
+    "thread_safe_bus",
+    "typechecking",
+    "util",
+    "viewer",
+]
 
 log = logging.getLogger("can")
 
 rc: Dict[str, Any] = {}
 
-from .listener import Listener, BufferedReader, RedirectReader, AsyncBufferedReader
-
-from .exceptions import (
-    CanError,
-    CanInterfaceNotImplementedError,
-    CanInitializationError,
-    CanOperationError,
-    CanTimeoutError,
-    CanBitRateError,
-)
-
-from .util import set_logging_level
-
-from .message import Message
-from .bus import BusABC, BusState
-from .thread_safe_bus import ThreadSafeBus
-from .notifier import Notifier
-from .interfaces import VALID_INTERFACES
-from . import interface
-from .interface import Bus, detect_available_configs
-from .bit_timing import BitTiming
-
-from .io import Logger, SizedRotatingLogger, Printer, LogReader, MessageSync
-from .io import ASCWriter, ASCReader
-from .io import BLFReader, BLFWriter
-from .io import CanutilsLogReader, CanutilsLogWriter
-from .io import CSVWriter, CSVReader
-from .io import SqliteWriter, SqliteReader
-
+from . import typechecking  # isort:skip
+from . import util  # isort:skip
+from . import broadcastmanager, interface
+from .bit_timing import BitTiming, BitTimingFd
 from .broadcastmanager import (
     CyclicSendTaskABC,
     LimitedDurationCyclicSendTaskABC,
     ModifiableCyclicTaskABC,
-    MultiRateCyclicSendTaskABC,
     RestartableCyclicTaskABC,
 )
+from .bus import BusABC, BusState
+from .exceptions import (
+    CanError,
+    CanInitializationError,
+    CanInterfaceNotImplementedError,
+    CanOperationError,
+    CanTimeoutError,
+)
+from .interface import Bus, detect_available_configs
+from .interfaces import VALID_INTERFACES
+from .io import (
+    ASCReader,
+    ASCWriter,
+    BLFReader,
+    BLFWriter,
+    CanutilsLogReader,
+    CanutilsLogWriter,
+    CSVReader,
+    CSVWriter,
+    Logger,
+    LogReader,
+    MessageSync,
+    MF4Reader,
+    MF4Writer,
+    Printer,
+    SizedRotatingLogger,
+    SqliteReader,
+    SqliteWriter,
+    TRCFileVersion,
+    TRCReader,
+    TRCWriter,
+)
+from .listener import AsyncBufferedReader, BufferedReader, Listener, RedirectReader
+from .message import Message
+from .notifier import Notifier
+from .thread_safe_bus import ThreadSafeBus
+from .util import set_logging_level

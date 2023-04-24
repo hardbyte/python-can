@@ -18,9 +18,7 @@ For example, validating typical arguments and parameters might result in a
 
 import sys
 from contextlib import contextmanager
-
-from typing import Optional
-from typing import Type
+from typing import Optional, Type
 
 if sys.version_info >= (3, 9):
     from collections.abc import Generator
@@ -33,15 +31,21 @@ class CanError(Exception):
 
     If specified, the error code is automatically appended to the message:
 
-    >>> # With an error code (it also works with a specific error):
-    >>> error = CanOperationError(message="Failed to do the thing", error_code=42)
-    >>> str(error)
-    'Failed to do the thing [Error Code 42]'
-    >>>
-    >>> # Missing the error code:
-    >>> plain_error = CanError(message="Something went wrong ...")
-    >>> str(plain_error)
-    'Something went wrong ...'
+    .. testsetup:: canerror
+
+        from can import CanError, CanOperationError
+
+    .. doctest:: canerror
+
+        >>> # With an error code (it also works with a specific error):
+        >>> error = CanOperationError(message="Failed to do the thing", error_code=42)
+        >>> str(error)
+        'Failed to do the thing [Error Code 42]'
+        >>>
+        >>> # Missing the error code:
+        >>> plain_error = CanError(message="Something went wrong ...")
+        >>> str(plain_error)
+        'Something went wrong ...'
 
     :param error_code:
         An optional error code to narrow down the cause of the fault
@@ -75,7 +79,7 @@ class CanInitializationError(CanError):
     """Indicates an error the occurred while initializing a :class:`can.BusABC`.
 
     If initialization fails due to a driver or platform missing/being unsupported,
-    a :class:`can.CanInterfaceNotImplementedError` is raised instead.
+    a :exc:`~can.exceptions.CanInterfaceNotImplementedError` is raised instead.
     If initialization fails due to a value being out of range, a :class:`ValueError`
     is raised.
 
