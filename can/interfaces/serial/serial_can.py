@@ -10,14 +10,15 @@ See the interface documentation for the format being used.
 import io
 import logging
 import struct
-from typing import Any, List, Tuple, Optional
+from typing import Any, List, Optional, Tuple
 
-from can import BusABC, Message
 from can import (
-    CanInterfaceNotImplementedError,
+    BusABC,
     CanInitializationError,
+    CanInterfaceNotImplementedError,
     CanOperationError,
     CanTimeoutError,
+    Message,
 )
 from can.typechecking import AutoDetectedConfig
 
@@ -74,8 +75,10 @@ class SerialBus(BusABC):
         :param rtscts:
             turn hardware handshake (RTS/CTS) on and off
 
-        :raises can.CanInitializationError: If the given parameters are invalid.
-        :raises can.CanInterfaceNotImplementedError: If the serial module is not installed.
+        :raises ~can.exceptions.CanInitializationError:
+            If the given parameters are invalid.
+        :raises ~can.exceptions.CanInterfaceNotImplementedError:
+            If the serial module is not installed.
         """
 
         if not serial:
@@ -163,17 +166,16 @@ class SerialBus(BusABC):
                 This parameter will be ignored. The timeout value of the channel is used.
 
         :returns:
-            Received message and `False` (because no filtering as taken place).
+            Received message and :obj:`False` (because no filtering as taken place).
 
             .. warning::
-                Flags like is_extended_id, is_remote_frame and is_error_frame
+                Flags like ``is_extended_id``, ``is_remote_frame`` and ``is_error_frame``
                 will not be set over this function, the flags in the return
                 message are the default values.
         """
         try:
             rx_byte = self._ser.read()
             if rx_byte and ord(rx_byte) == 0xAA:
-
                 s = self._ser.read(4)
                 timestamp = struct.unpack("<I", s)[0]
                 dlc = ord(self._ser.read())

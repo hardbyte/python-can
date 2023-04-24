@@ -4,7 +4,7 @@ socketcand Interface
 ====================
 `Socketcand <https://github.com/linux-can/socketcand>`__ is part of the 
 `Linux-CAN <https://github.com/linux-can>`__ project, providing a 
-Network-to-CAN bridge as Linux damon. It implements a specific
+Network-to-CAN bridge as a Linux damon. It implements a specific
 `TCP/IP based communication protocol <https://github.com/linux-can/socketcand/blob/master/doc/protocol.md>`__
 to transfer CAN frames and control commands.
 
@@ -18,18 +18,18 @@ daemon running on a remote Raspberry Pi:
 
     import can
 
-    bus = can.interface.Bus(bustype='socketcand', host="10.0.16.15", port=29536, channel="can0")
+    bus = can.interface.Bus(interface='socketcand', host="10.0.16.15", port=29536, channel="can0")
 
     # loop until Ctrl-C
     try:
       while True:
         msg = bus.recv()
-        print (msg)
+        print(msg)
     except KeyboardInterrupt:
       pass
 
-The output may look like this:
-::
+The output may look like this::
+
     Timestamp: 1637791111.209224    ID: 000006fd    X Rx                DLC:  8    c4 10 e3 2d 96 ff 25 6b
     Timestamp: 1637791111.233951    ID: 000001ad    X Rx                DLC:  4    4d 47 c7 64
     Timestamp: 1637791111.409415    ID: 000005f7    X Rx                DLC:  8    86 de e6 0f 42 55 5d 39
@@ -47,8 +47,9 @@ However, it will also work with any other socketcan device.
 Install CAN Interface for a MCP2515 based interface on a Raspberry Pi
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Add the following lines to ``/boot/config.txt``. Please take care on the frequency of the crystal on your MCP2515 board:
-::
+Add the following lines to ``/boot/config.txt``.
+Please take care on the frequency of the crystal on your MCP2515 board::
+
     dtparam=spi=on
     dtoverlay=mcp2515-can0,oscillator=12000000,interrupt=25,spimaxfrequency=1000000
 
@@ -106,8 +107,8 @@ Run socketcand
 
     ./socketcand -v -i can0
 
-During start, socketcand will prompt its IP address and port it listens to:
-::
+During start, socketcand will prompt its IP address and port it listens to::
+
     Verbose output activated
 
     Using network interface 'eth0'

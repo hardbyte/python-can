@@ -3,10 +3,38 @@ Interfaces contain low level implementations that interact with CAN hardware.
 """
 
 import sys
-from typing import Dict, Tuple
+from typing import Dict, Tuple, cast
+
+__all__ = [
+    "BACKENDS",
+    "VALID_INTERFACES",
+    "canalystii",
+    "cantact",
+    "etas",
+    "gs_usb",
+    "ics_neovi",
+    "iscan",
+    "ixxat",
+    "kvaser",
+    "neousys",
+    "nican",
+    "nixnet",
+    "pcan",
+    "robotell",
+    "seeedstudio",
+    "serial",
+    "slcan",
+    "socketcan",
+    "socketcand",
+    "systec",
+    "udp_multicast",
+    "usb2can",
+    "vector",
+    "virtual",
+]
 
 # interface_name => (module, classname)
-BACKENDS: Dict[str, Tuple[str, ...]] = {
+BACKENDS: Dict[str, Tuple[str, str]] = {
     "kvaser": ("can.interfaces.kvaser", "KvaserBus"),
     "socketcan": ("can.interfaces.socketcan", "SocketcanBus"),
     "serial": ("can.interfaces.serial.serial_can", "SerialBus"),
@@ -36,18 +64,32 @@ BACKENDS: Dict[str, Tuple[str, ...]] = {
 if sys.version_info >= (3, 8):
     from importlib.metadata import entry_points
 
-    entries = entry_points().get("can.interface", ())
-    BACKENDS.update(
-        {interface.name: tuple(interface.value.split(":")) for interface in entries}
-    )
+    # See https://docs.python.org/3/library/importlib.metadata.html#entry-points,
+    # "Compatibility Note".
+    if sys.version_info >= (3, 10):
+        BACKENDS.update(
+            {
+                interface.name: (interface.module, interface.attr)
+                for interface in entry_points(group="can.interface")
+            }
+        )
+    else:
+        # The entry_points().get(...) causes a deprecation warning on Python >= 3.10.
+        BACKENDS.update(
+            {
+                interface.name: cast(
+                    Tuple[str, str], tuple(interface.value.split(":", maxsplit=1))
+                )
+                for interface in entry_points().get("can.interface", [])
+            }
+        )
 else:
     from pkg_resources import iter_entry_points
 
-    entries = iter_entry_points("can.interface")
     BACKENDS.update(
         {
             interface.name: (interface.module_name, interface.attrs[0])
-            for interface in entries
+            for interface in iter_entry_points("can.interface")
         }
     )
 

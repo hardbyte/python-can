@@ -2,18 +2,17 @@
 Contains the ABC bus implementation and its documentation.
 """
 
-from typing import cast, Any, Iterator, List, Optional, Sequence, Tuple, Union
-
-import can.typechecking
-
-from abc import ABC, ABCMeta, abstractmethod
-import can
+import contextlib
 import logging
 import threading
-from time import time
+from abc import ABC, ABCMeta, abstractmethod
 from enum import Enum, auto
+from time import time
+from typing import Any, Iterator, List, Optional, Sequence, Tuple, Union, cast
 
-from can.broadcastmanager import ThreadBasedCyclicSendTask, CyclicSendTaskABC
+import can
+import can.typechecking
+from can.broadcastmanager import CyclicSendTaskABC, ThreadBasedCyclicSendTask
 from can.message import Message
 
 LOG = logging.getLogger(__name__)
@@ -44,12 +43,14 @@ class BusABC(metaclass=ABCMeta):
     #: Log level for received messages
     RECV_LOGGING_LEVEL = 9
 
+    _is_shutdown: bool = False
+
     @abstractmethod
     def __init__(
         self,
         channel: Any,
         can_filters: Optional[can.typechecking.CanFilters] = None,
-        **kwargs: object
+        **kwargs: object,
     ):
         """Construct and open a CAN bus instance of the specified type.
 
@@ -66,8 +67,10 @@ class BusABC(metaclass=ABCMeta):
             Any backend dependent configurations are passed in this dictionary
 
         :raises ValueError: If parameters are out of range
-        :raises can.CanInterfaceNotImplementedError: If the driver cannot be accessed
-        :raises can.CanInitializationError: If the bus cannot be initialized
+        :raises ~can.exceptions.CanInterfaceNotImplementedError:
+            If the driver cannot be accessed
+        :raises ~can.exceptions.CanInitializationError:
+            If the bus cannot be initialized
         """
         self._periodic_tasks: List[_SelfRemovingCyclicTask] = []
         self.set_filters(can_filters)
@@ -81,15 +84,16 @@ class BusABC(metaclass=ABCMeta):
         :param timeout:
             seconds to wait for a message or None to wait indefinitely
 
-        :return: ``None`` on timeout or a :class:`Message` object.
+        :return:
+            :obj:`None` on timeout or a :class:`~can.Message` object.
 
-        :raises can.CanOperationError: If an error occurred while reading
+        :raises ~can.exceptions.CanOperationError:
+            If an error occurred while reading
         """
         start = time()
         time_left = timeout
 
         while True:
-
             # try to get a message
             msg, already_filtered = self._recv_internal(timeout=time_left)
 
@@ -105,7 +109,6 @@ class BusABC(metaclass=ABCMeta):
             # try next one only if there still is time, and with
             # reduced timeout
             else:
-
                 time_left = timeout - (time() - start)
 
                 if time_left > 0:
@@ -148,7 +151,8 @@ class BusABC(metaclass=ABCMeta):
             2.  a bool that is True if message filtering has already
                 been done and else False
 
-        :raises can.CanOperationError: If an error occurred while reading
+        :raises ~can.exceptions.CanOperationError:
+            If an error occurred while reading
         :raises NotImplementedError:
             if the bus provides it's own :meth:`~can.BusABC.recv`
             implementation (legacy implementation)
@@ -171,7 +175,8 @@ class BusABC(metaclass=ABCMeta):
             Might not be supported by all interfaces.
             None blocks indefinitely.
 
-        :raises can.CanOperationError: If an error occurred while sending
+        :raises ~can.exceptions.CanOperationError:
+            If an error occurred while sending
         """
         raise NotImplementedError("Trying to write to a readonly bus?")
 
@@ -189,8 +194,8 @@ class BusABC(metaclass=ABCMeta):
         - the (optional) duration expires
         - the Bus instance goes out of scope
         - the Bus instance is shutdown
-        - :meth:`BusABC.stop_all_periodic_tasks()` is called
-        - the task's :meth:`CyclicTask.stop()` method is called.
+        - :meth:`stop_all_periodic_tasks` is called
+        - the task's :meth:`~can.broadcastmanager.CyclicTask.stop` method is called.
 
         :param msgs:
             Message(s) to transmit
@@ -204,7 +209,8 @@ class BusABC(metaclass=ABCMeta):
             Disable to instead manage tasks manually.
         :return:
             A started task instance. Note the task can be stopped (and depending on
-            the backend modified) by calling the task's :meth:`stop` method.
+            the backend modified) by calling the task's
+            :meth:`~can.broadcastmanager.CyclicTask.stop` method.
 
         .. note::
 
@@ -274,8 +280,8 @@ class BusABC(metaclass=ABCMeta):
             no duration is provided, the task will continue indefinitely.
         :return:
             A started task instance. Note the task can be stopped (and
-            depending on the backend modified) by calling the :meth:`stop`
-            method.
+            depending on the backend modified) by calling the
+            :meth:`~can.broadcastmanager.CyclicTask.stop` method.
         """
         if not hasattr(self, "_lock_send_periodic"):
             # Create a send lock for this bus, but not for buses which override this method
@@ -288,7 +294,7 @@ class BusABC(metaclass=ABCMeta):
         return task
 
     def stop_all_periodic_tasks(self, remove_tasks: bool = True) -> None:
-        """Stop sending any messages that were started using **bus.send_periodic**.
+        """Stop sending any messages that were started using :meth:`send_periodic`.
 
         .. note::
             The result is undefined if a single task throws an exception while being stopped.
@@ -296,6 +302,10 @@ class BusABC(metaclass=ABCMeta):
         :param remove_tasks:
             Stop tracking the stopped tasks.
         """
+        if not hasattr(self, "_periodic_tasks"):
+            # avoid AttributeError for partially initialized BusABC instance
+            return
+
         for task in self._periodic_tasks:
             # we cannot let `task.stop()` modify `self._periodic_tasks` while we are
             # iterating over it (#634)
@@ -307,8 +317,10 @@ class BusABC(metaclass=ABCMeta):
     def __iter__(self) -> Iterator[Message]:
         """Allow iteration on messages as they are received.
 
-            >>> for msg in bus:
-            ...     print(msg)
+        .. code-block:: python
+
+            for msg in bus:
+                print(msg)
 
 
         :yields:
@@ -345,9 +357,9 @@ class BusABC(metaclass=ABCMeta):
 
         :param filters:
             A iterable of dictionaries each containing a "can_id",
-            a "can_mask", and an optional "extended" key.
+            a "can_mask", and an optional "extended" key::
 
-            >>> [{"can_id": 0x11, "can_mask": 0x21, "extended": False}]
+                [{"can_id": 0x11, "can_mask": 0x21, "extended": False}]
 
             A filter matches, when
             ``<received_can_id> & can_mask == can_id & can_mask``.
@@ -408,9 +420,15 @@ class BusABC(metaclass=ABCMeta):
 
     def shutdown(self) -> None:
         """
-        Called to carry out any interface specific cleanup required
-        in shutting down a bus.
+        Called to carry out any interface specific cleanup required in shutting down a bus.
+
+        This method can be safely called multiple times.
         """
+        if self._is_shutdown:
+            LOG.debug("%s is already shut down", self.__class__)
+            return
+
+        self._is_shutdown = True
         self.stop_all_periodic_tasks()
 
     def __enter__(self):
@@ -418,6 +436,14 @@ class BusABC(metaclass=ABCMeta):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.shutdown()
+
+    def __del__(self) -> None:
+        if not self._is_shutdown:
+            LOG.warning("%s was not properly shut down", self.__class__.__name__)
+            # We do some best-effort cleanup if the user
+            # forgot to properly close the bus instance
+            with contextlib.suppress(AttributeError):
+                self.shutdown()
 
     @property
     def state(self) -> BusState:
@@ -457,7 +483,5 @@ class _SelfRemovingCyclicTask(CyclicSendTaskABC, ABC):
     Only needed for typing :meth:`Bus._periodic_tasks`. Do not instantiate.
     """
 
-    def stop(  # pylint: disable=arguments-differ
-        self, remove_task: bool = True
-    ) -> None:
+    def stop(self, remove_task: bool = True) -> None:
         raise NotImplementedError()

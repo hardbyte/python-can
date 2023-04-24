@@ -3,12 +3,11 @@ This Listener simply prints to stdout / the terminal or a file.
 """
 
 import logging
-
-from typing import Optional, TextIO, Union, Any
+from typing import Any, Optional, TextIO, Union, cast
 
 from ..message import Message
-from .generic import MessageWriter
 from ..typechecking import StringPathLike
+from .generic import MessageWriter
 
 log = logging.getLogger("can.io.printer")
 
@@ -29,7 +28,6 @@ class Printer(MessageWriter):
         self,
         file: Optional[Union[StringPathLike, TextIO]] = None,
         append: bool = False,
-        *args: Any,
         **kwargs: Any
     ) -> None:
         """
@@ -40,11 +38,18 @@ class Printer(MessageWriter):
         :param append: If set to `True` messages, are appended to the file,
                        else the file is truncated
         """
+        self.write_to_file = file is not None
         mode = "a" if append else "w"
         super().__init__(file, mode=mode)
 
     def on_message_received(self, msg: Message) -> None:
-        if self.file is not None:
-            self.file.write(str(msg) + "\n")
+        if self.write_to_file:
+            cast(TextIO, self.file).write(str(msg) + "\n")
         else:
             print(msg)
+
+    def file_size(self) -> int:
+        """Return an estimate of the current file size in bytes."""
+        if self.file is not None:
+            return self.file.tell()
+        return 0

@@ -1,8 +1,9 @@
+from typing import Optional
+
 import can.interfaces.ixxat.canlib_vcinpl as vcinpl
 import can.interfaces.ixxat.canlib_vcinpl2 as vcinpl2
-
 from can import BusABC, Message
-from typing import Optional
+from can.bus import BusState
 
 
 class IXXATBus(BusABC):
@@ -11,7 +12,8 @@ class IXXATBus(BusABC):
     Based on the C implementation of IXXAT, two different dlls are provided by IXXAT, one to work with CAN,
     the other with CAN-FD.
 
-    This class only delegates to related implementation (in calib_vcinpl or canlib_vcinpl2) class depending on fd user option.
+    This class only delegates to related implementation (in calib_vcinpl or canlib_vcinpl2)
+    class depending on fd user option.
     """
 
     def __init__(
@@ -140,8 +142,16 @@ class IXXATBus(BusABC):
     def send(self, msg: Message, timeout: Optional[float] = None) -> None:
         return self.bus.send(msg, timeout)
 
-    def _send_periodic_internal(self, msg, period, duration=None):
-        return self.bus._send_periodic_internal(msg, period, duration)
+    def _send_periodic_internal(self, msgs, period, duration=None):
+        return self.bus._send_periodic_internal(msgs, period, duration)
 
-    def shutdown(self):
-        return self.bus.shutdown()
+    def shutdown(self) -> None:
+        super().shutdown()
+        self.bus.shutdown()
+
+    @property
+    def state(self) -> BusState:
+        """
+        Return the current state of the hardware
+        """
+        return self.bus.state

@@ -8,6 +8,7 @@ python setup.py test --addopts "--verbose -s test/test_interface_ixxat_fd.py"
 """
 
 import unittest
+
 import can
 
 

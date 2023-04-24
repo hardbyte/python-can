@@ -13,17 +13,17 @@ import ctypes
 import functools
 import logging
 import sys
-from typing import Optional, Callable, Tuple
+from typing import Callable, Optional, Tuple
 
+import can.util
 from can import BusABC, Message
-from can.exceptions import CanInterfaceNotImplementedError, CanInitializationError
 from can.broadcastmanager import (
     LimitedDurationCyclicSendTaskABC,
     RestartableCyclicTaskABC,
 )
-from can.ctypesutil import CLibrary, HANDLE, PHANDLE, HRESULT as ctypes_HRESULT
-
-import can.util
+from can.ctypesutil import HANDLE, PHANDLE, CLibrary
+from can.ctypesutil import HRESULT as ctypes_HRESULT
+from can.exceptions import CanInitializationError, CanInterfaceNotImplementedError
 from can.util import deprecated_args_alias
 
 from . import constants, structures
@@ -117,7 +117,7 @@ def __check_status(result, function, args):
             :class:VCIError
     """
     if result == constants.VCI_E_TIMEOUT:
-        raise VCITimeout("Function {} timed out".format(function._name))
+        raise VCITimeout(f"Function {function._name} timed out")
     elif result == constants.VCI_E_RXQUEUE_EMPTY:
         raise VCIRxQueueEmptyError()
     elif result == constants.VCI_E_NO_MORE_ITEMS:
@@ -411,13 +411,14 @@ class IXXATBus(BusABC):
     .. warning::
 
         This interface does implement efficient filtering of messages, but
-        the filters have to be set in :meth:`~can.interfaces.ixxat.IXXATBus.__init__`
-        using the ``can_filters`` parameter. Using :meth:`~can.interfaces.ixxat.IXXATBus.set_filters`
-        does not work.
+        the filters have to be set in ``__init__`` using the ``can_filters`` parameter.
+        Using :meth:`~can.BusABC.set_filters` does not work.
 
     """
 
     @deprecated_args_alias(
+        deprecation_start="4.0.0",
+        deprecation_end="5.0.0",
         UniqueHardwareId="unique_hardware_id",
         rxFifoSize="rx_fifo_size",
         txFifoSize="tx_fifo_size",
@@ -826,9 +827,7 @@ class IXXATBus(BusABC):
                         log.info(
                             CAN_INFO_MESSAGES.get(
                                 self._message.abData[0],
-                                "Unknown CAN info message code {}".format(
-                                    self._message.abData[0]
-                                ),
+                                f"Unknown CAN info message code {self._message.abData[0]}",
                             )
                         )
 
@@ -838,9 +837,7 @@ class IXXATBus(BusABC):
                         log.warning(
                             CAN_ERROR_MESSAGES.get(
                                 self._message.abData[0],
-                                "Unknown CAN error message code {}".format(
-                                    self._message.abData[0]
-                                ),
+                                f"Unknown CAN error message code {self._message.abData[0]}",
                             )
                         )
 
@@ -934,7 +931,7 @@ class IXXATBus(BusABC):
         else:
             _canlib.canChannelPostMessage(self._channel_handle, message)
 
-    def _send_periodic_internal(self, msg, period, duration=None):
+    def _send_periodic_internal(self, msgs, period, duration=None):
         """Send a message using built-in cyclic transmit list functionality."""
         if self._scheduler is None:
             self._scheduler = HANDLE()
@@ -946,7 +943,7 @@ class IXXATBus(BusABC):
             )  # TODO: confirm
             _canlib.canSchedulerActivate(self._scheduler, constants.TRUE)
         return CyclicSendTask(
-            self._scheduler, msg, period, duration, self._scheduler_resolution
+            self._scheduler, msgs, period, duration, self._scheduler_resolution
         )
 
     def shutdown(self):
@@ -1016,7 +1013,7 @@ def _format_can_status(status_flags: int):
             status_flags &= ~flag
 
     if status_flags:
-        states.append("unknown state 0x{:02x}".format(status_flags))
+        states.append(f"unknown state 0x{status_flags:02x}")
 
     if states:
         return "CAN status message: {}".format(", ".join(states))

@@ -1,3 +1,5 @@
-sphinx>=1.8.1
+sphinx>=5.2.3
 sphinxcontrib-programoutput
-sphinx-autodoc-typehints
+sphinx-inline-tabs
+sphinx-copybutton
+furo

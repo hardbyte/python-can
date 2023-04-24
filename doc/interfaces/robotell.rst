@@ -1,7 +1,7 @@
 .. _robotell:
 
-Chinese CAN-USB interface (mfg. Robotell etc.)
-==============================================
+Robotell CAN-USB interface
+==========================
 
 An USB to CAN adapter sold on Aliexpress, etc. with the manufacturer name Robotell printed on the case.
 There is also a USB stick version with a clear case. If the description or screenshots refer to ``EmbededDebug`` or ``EmbededConfig``
@@ -18,11 +18,6 @@ For example use ``/dev/ttyUSB0@115200`` or ``COM4@9600`` for local serial ports 
 ``socket://192.168.254.254:5000`` or ``rfc2217://192.168.254.254:5000`` for remote ports.
 
 
-Supported devices
------------------
-
-.. todo:: Document this.
-
 
 Bus
 ---
@@ -30,8 +25,3 @@ Bus
 .. autoclass:: can.interfaces.robotell.robotellBus
     :members:
 
-
-Internals
----------
-
-.. todo:: Document the internals of robotell interface.

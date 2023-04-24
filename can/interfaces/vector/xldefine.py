@@ -6,7 +6,6 @@ Definition of constants for vxlapi.
 # ==============================
 from enum import IntEnum, IntFlag
 
-
 MAX_MSG_LEN = 8
 XL_CAN_MAX_DATA_LEN = 64
 XL_INVALID_PORTHANDLE = -1
@@ -289,8 +288,11 @@ class XL_HardwareType(IntEnum):
     XL_HWTYPE_VN7570 = 67
     XL_HWTYPE_VN5650 = 68
     XL_HWTYPE_IPCLIENT = 69
+    XL_HWTYPE_VN5611 = 70
     XL_HWTYPE_IPSERVER = 71
+    XL_HWTYPE_VN5612 = 72
     XL_HWTYPE_VX1121 = 73
+    XL_HWTYPE_VN5601 = 74
     XL_HWTYPE_VX1131 = 75
     XL_HWTYPE_VT6204 = 77
     XL_HWTYPE_VN1630_LOG = 79
@@ -317,6 +319,8 @@ class XL_HardwareType(IntEnum):
     XL_HWTYPE_VN1531 = 113
     XL_HWTYPE_VX1161A = 114
     XL_HWTYPE_VX1161B = 115
+    XL_HWTYPE_VGNSS = 116
+    XL_HWTYPE_VXLAPINIC = 118
     XL_MAX_HWTYPE = 120
 
 

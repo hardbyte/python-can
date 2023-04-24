@@ -9,6 +9,7 @@ from pathlib import Path
 from unittest.mock import Mock
 
 import can
+
 from .data.example_data import generate_message
 
 
@@ -17,6 +18,8 @@ class TestBaseRotatingLogger:
     def _get_instance(path, *args, **kwargs) -> can.io.BaseRotatingLogger:
         class SubClass(can.io.BaseRotatingLogger):
             """Subclass that implements abstract methods for testing."""
+
+            _supported_formats = {".asc", ".blf", ".csv", ".log", ".txt"}
 
             def __init__(self, *args, **kwargs) -> None:
                 super().__init__(*args, **kwargs)

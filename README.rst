@@ -1,13 +1,17 @@
 python-can
 ==========
 
-|release| |python_implementation| |downloads| |downloads_monthly| |formatter|
+|pypi| |conda| |python_implementation| |downloads| |downloads_monthly|
 
-|docs| |github-actions| |build_travis| |coverage| |mergify|
+|docs| |github-actions| |coverage| |mergify| |formatter|
 
-.. |release| image:: https://img.shields.io/pypi/v/python-can.svg
+.. |pypi| image:: https://img.shields.io/pypi/v/python-can.svg
    :target: https://pypi.python.org/pypi/python-can/
    :alt: Latest Version on PyPi
+
+.. |conda| image:: https://img.shields.io/conda/v/conda-forge/python-can
+   :target: https://github.com/conda-forge/python-can-feedstock
+   :alt: Latest Version on conda-forge
 
 .. |python_implementation| image:: https://img.shields.io/pypi/implementation/python-can
    :target: https://pypi.python.org/pypi/python-can/
@@ -29,17 +33,13 @@ python-can
    :target: https://python-can.readthedocs.io/en/stable/
    :alt: Documentation
 
-.. |github-actions| image:: https://github.com/hardbyte/python-can/actions/workflows/build.yml/badge.svg?branch=develop
-   :target: https://github.com/hardbyte/python-can/actions/workflows/build.yml
+.. |github-actions| image:: https://github.com/hardbyte/python-can/actions/workflows/ci.yml/badge.svg
+   :target: https://github.com/hardbyte/python-can/actions/workflows/ci.yml
    :alt: Github Actions workflow status
 
-.. |build_travis| image:: https://img.shields.io/travis/hardbyte/python-can/develop.svg?label=Travis%20CI
-   :target: https://app.travis-ci.com/github/hardbyte/python-can
-   :alt: Travis CI Server for develop branch
-
-.. |coverage| image:: https://codecov.io/gh/hardbyte/python-can/branch/develop/graph/badge.svg
-   :target: https://codecov.io/gh/hardbyte/python-can/branch/develop
-   :alt: Test coverage reports on Codecov.io
+.. |coverage| image:: https://coveralls.io/repos/github/hardbyte/python-can/badge.svg?branch=develop
+   :target: https://coveralls.io/github/hardbyte/python-can?branch=develop
+   :alt: Test coverage reports on Coveralls.io
 
 .. |mergify| image:: https://img.shields.io/endpoint.svg?url=https://api.mergify.com/v1/badges/hardbyte/python-can&style=flat
    :target: https://mergify.io
@@ -62,7 +62,7 @@ Library Version                 Python
 ------------------------------  -----------
   2.x                           2.6+, 3.4+
   3.x                           2.7+, 3.5+
-  4.x *(currently on develop)*  3.7+
+  4.x                           3.7+
 ==============================  ===========
 
 
@@ -74,7 +74,7 @@ Features
 - receiving, sending, and periodically sending messages
 - normal and extended arbitration IDs
 - `CAN FD <https://en.wikipedia.org/wiki/CAN_FD>`__ support
-- many different loggers and readers supporting playback: ASC (CANalyzer format), BLF (Binary Logging Format by Vector), CSV, SQLite and Canutils log
+- many different loggers and readers supporting playback: ASC (CANalyzer format), BLF (Binary Logging Format by Vector), MF4 (Measurement Data Format v4 by ASAM), TRC, CSV, SQLite, and Canutils log
 - efficient in-kernel or in-hardware filtering of messages on supported interfaces
 - bus configuration reading from a file or from environment variables
 - command line tools for working with CAN buses (see the `docs <https://python-can.readthedocs.io/en/stable/scripts.html>`__)
@@ -84,28 +84,31 @@ Features
 Example usage
 -------------
 
+``pip install python-can``
+
 .. code:: python
 
     # import the library
     import can
 
-    # create a bus instance
+    # create a bus instance using 'with' statement,
+    # this will cause bus.shutdown() to be called on the block exit;
     # many other interfaces are supported as well (see documentation)
-    bus = can.Bus(interface='socketcan',
+    with can.Bus(interface='socketcan',
                   channel='vcan0',
-                  receive_own_messages=True)
+                  receive_own_messages=True) as bus:
 
-    # send a message
-    message = can.Message(arbitration_id=123, is_extended_id=True,
-                          data=[0x11, 0x22, 0x33])
-    bus.send(message, timeout=0.2)
+       # send a message
+       message = can.Message(arbitration_id=123, is_extended_id=True,
+                             data=[0x11, 0x22, 0x33])
+       bus.send(message, timeout=0.2)
 
-    # iterate over received messages
-    for msg in bus:
-        print(f"{msg.arbitration_id:X}: {msg.data}")
+       # iterate over received messages
+       for msg in bus:
+           print(f"{msg.arbitration_id:X}: {msg.data}")
 
-    # or use an asynchronous notifier
-    notifier = can.Notifier(bus, [can.Logger("recorded.log"), can.Printer()])
+       # or use an asynchronous notifier
+       notifier = can.Notifier(bus, [can.Logger("recorded.log"), can.Printer()])
 
 You can find more information in the documentation, online at
 `python-can.readthedocs.org <https://python-can.readthedocs.org/en/stable/>`__.
@@ -116,9 +119,6 @@ Discussion
 
 If you run into bugs, you can file them in our
 `issue tracker <https://github.com/hardbyte/python-can/issues>`__ on GitHub.
-
-There is also a `python-can <https://groups.google.com/forum/#!forum/python-can>`__
-mailing list for development discussion.
 
 `Stackoverflow <https://stackoverflow.com/questions/tagged/can+python>`__ has several
 questions and answers tagged with ``python+can``.

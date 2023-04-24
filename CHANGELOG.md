@@ -1,3 +1,163 @@
+Version 4.2.0
+=============
+
+Breaking Changes
+----------------
+* The ``can.BitTiming`` class was replaced with the new 
+  ``can.BitTiming`` and `can.BitTimingFd` classes (#1468, #1515). 
+  Early adopters of ``can.BitTiming`` will need to update their code. Check the 
+  [documentation](https://python-can.readthedocs.io/en/develop/bit_timing.html)
+  for more information. Currently, the following interfaces support the new classes:
+  * canalystii (#1468)
+  * cantact (#1468)
+  * nixnet (#1520)
+  * pcan (#1514)
+  * vector (#1470, #1516)
+
+  There are open pull requests for kvaser (#1510), slcan (#1512) and usb2can (#1511). Testing
+  and reviewing of these open PRs would be most appreciated.
+
+Features
+--------
+
+### IO
+* Add support for MF4 files (#1289).
+* Add support for version 2 TRC files and other TRC file enhancements (#1530).
+
+### Type Annotations
+* Export symbols to satisfy type checkers (#1547, #1551, #1558).
+
+### Interface Improvements
+* Add ``__del__`` method to ``can.BusABC`` to automatically release resources (#1489).
+* pcan: Update PCAN Basic to 4.6.2.753 (#1481).
+* pcan: Use select instead of polling on Linux (#1410).
+* socketcan: Use ip link JSON output in ``find_available_interfaces`` (#1478).
+* socketcan: Enable SocketCAN interface tests in GitHub CI (#1484).
+* slcan: improve receiving performance (#1490).
+* usb2can: Stop using root logger (#1483).
+* usb2can: Faster channel detection on Windows (#1480).
+* vector: Only check sample point instead of tseg & sjw (#1486).
+* vector: add VN5611 hwtype (#1501).
+
+Documentation
+-------------
+* Add new section about related tools to documentation. Add a list of
+  plugin interface packages (#1457).
+
+Bug Fixes
+---------
+* Automatic type conversion for config values (#1498, #1499).
+* pcan: Fix ``Bus.__new__`` for CAN-FD interfaces (#1458, #1460).
+* pcan: Fix Detection of Library on Windows on ARM (#1463).
+* socketcand: extended ID bug fixes (#1504, #1508).
+* vector: improve robustness against unknown HardwareType values (#1500, #1502).
+
+Deprecations
+------------
+* The ``bustype`` parameter of ``can.Bus`` is deprecated and will be 
+  removed in version 5.0, use ``interface`` instead. (#1462).
+* The ``context`` parameter of ``can.Bus`` is deprecated and will be 
+  removed in version 5.0, use ``config_context`` instead. (#1474).
+* The ``bit_timing`` parameter of ``CantactBus`` is deprecated and will be 
+  removed in version 5.0, use ``timing`` instead. (#1468).
+* The ``bit_timing`` parameter of ``CANalystIIBus`` is deprecated and will be 
+  removed in version 5.0, use ``timing`` instead. (#1468).
+* The ``brs`` and ``log_errors`` parameters of `` NiXNETcanBus`` are deprecated 
+  and will be removed in version 5.0. (#1520).
+
+Miscellaneous
+-------------
+* Use high resolution timer on Windows to improve 
+  timing precision for BroadcastManager (#1449).
+* Improve ThreadBasedCyclicSendTask timing (#1539).
+* Make code examples executable on Linux (#1452).
+* Fix CanFilter type annotation (#1456).
+* Fix ``The entry_points().get`` deprecation warning and improve
+  type annotation of ``can.interfaces.BACKENDS`` (#1465).
+* Add ``ignore_config`` parameter to ``can.Bus`` (#1474).
+* Add deprecation period to utility function ``deprecated_args_alias`` (#1477).
+* Add `ruff` to the CI system (#1551)
+
+Version 4.1.0
+=============
+
+Breaking Changes
+----------------
+
+* ``windows-curses`` was moved to optional dependencies (#1395). 
+  Use ``pip install python-can[viewer]`` if you are using the ``can.viewer`` 
+  script on Windows.
+* The attributes of ``can.interfaces.vector.VectorChannelConfig`` were renamed 
+  from camelCase to snake_case (#1422).
+
+
+Features
+--------
+
+### IO
+
+* The canutils logger preserves message direction (#1244) 
+  and uses common interface names (e.g. can0) instead of just 
+  channel numbers (#1271).
+* The ``can.logger`` script accepts the ``-a, --append`` option 
+  to add new data to an existing log file (#1326, #1327, #1361).
+  Currently only the blf-, canutils- and csv-formats are supported.
+* All CLI ``extra_args`` are passed to the bus, logger 
+  and player initialisation (#1366).
+* Initial support for TRC files (#1217)
+
+### Type Annotations
+* python-can now includes the ``py.typed`` marker to support type checking 
+  according to PEP 561 (#1344).
+
+### Interface Improvements
+* The gs_usb interface can be selected by device index instead 
+  of USB bus/address. Loopback frames are now correctly marked 
+  with the ``is_rx`` flag (#1270).
+* The PCAN interface can be selected by its device ID instead 
+  of just the channel name (#1346).
+* The PCAN Bus implementation supports auto bus-off reset (#1345).
+* SocketCAN: Make ``find_available_interfaces()`` find slcanX interfaces (#1369).
+* Vector: Add xlGetReceiveQueueLevel, xlGenerateSyncPulse and 
+  xlFlushReceiveQueue to xldriver (#1387).
+* Vector: Raise a CanInitializationError, if the CAN settings can not 
+  be applied according to the arguments of ``VectorBus.__init__`` (#1426).
+* Ixxat bus now implements BusState api and detects errors (#1141)
+
+Bug Fixes
+---------
+
+* Improve robustness of USB2CAN serial number detection (#1129).
+* Fix channel2int conversion (#1268, #1269).
+* Fix BLF timestamp conversion (#1266, #1273).
+* Fix timestamp handling in udp_multicast on macOS (#1275, #1278).
+* Fix failure to initiate the Neousys DLL (#1281).
+* Fix AttributeError in IscanError (#1292, #1293).
+* Add missing vector devices (#1296).
+* Fix error for DLC > 8 in ASCReader (#1299, #1301).
+* Set default mode for FileIOMessageWriter to wt instead of rt (#1303).
+* Fix conversion for port number from config file (#1309).
+* Fix fileno error on Windows (#1312, #1313, #1333).
+* Remove redundant ``writer.stop()`` call that throws error (#1316, #1317).
+* Detect and cast types of CLI ``extra_args`` (#1280, #1328).
+* Fix ASC/CANoe incompatibility due to timestamp format (#1315, #1362).
+* Fix MessageSync timings (#1372, #1374).
+* Fix file name for compressed files in SizedRotatingLogger (#1382, #1683).
+* Fix memory leak in neoVI bus where message_receipts grows with no limit (#1427).
+* Raise ValueError if gzip is used with incompatible log formats (#1429).
+* Allow restarting of transmission tasks for socketcan (#1440)
+
+Miscellaneous
+-------------
+
+* Allow ICSApiError to be pickled and un-pickled (#1341)
+* Sort interface names in CLI API to make documentation reproducible (#1342)
+* Exclude repository-configuration from git-archive (#1343)
+* Improve documentation (#1397, #1401, #1405, #1420, #1421, #1434)
+* Officially support Python 3.11 (#1423)
+* Migrate code coverage reporting from Codecov to Coveralls (#1430)
+* Migrate building docs and publishing releases to PyPi from Travis-CI to GitHub Actions (#1433)
+
 Version 4.0.0
 ====
 

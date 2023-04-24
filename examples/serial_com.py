@@ -48,9 +48,8 @@ def receive(bus, stop_event):
 
 def main():
     """Controls the sender and receiver."""
-    with can.interface.Bus(interface="serial", channel="/dev/ttyS10") as server:
-        with can.interface.Bus(interface="serial", channel="/dev/ttyS11") as client:
-
+    with can.Bus(interface="serial", channel="/dev/ttyS10") as server:
+        with can.Bus(interface="serial", channel="/dev/ttyS11") as client:
             tx_msg = can.Message(
                 arbitration_id=0x01,
                 data=[0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88],

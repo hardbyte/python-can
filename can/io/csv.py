@@ -9,12 +9,13 @@ TODO: This module could use https://docs.python.org/2/library/csv.html#module-cs
       of a CSV file.
 """
 
-from base64 import b64encode, b64decode
-from typing import TextIO, Generator, Union, Any
+from base64 import b64decode, b64encode
+from typing import Any, Generator, TextIO, Union
 
 from can.message import Message
-from .generic import FileIOMessageWriter, MessageReader
+
 from ..typechecking import StringPathLike
+from .generic import FileIOMessageWriter, MessageReader
 
 
 class CSVReader(MessageReader):
@@ -31,7 +32,6 @@ class CSVReader(MessageReader):
     def __init__(
         self,
         file: Union[StringPathLike, TextIO],
-        *args: Any,
         **kwargs: Any,
     ) -> None:
         """
@@ -50,7 +50,6 @@ class CSVReader(MessageReader):
             return
 
         for line in self.file:
-
             timestamp, arbitration_id, extended, remote, error, dlc, data = line.split(
                 ","
             )
@@ -95,7 +94,6 @@ class CSVWriter(FileIOMessageWriter):
         self,
         file: Union[StringPathLike, TextIO],
         append: bool = False,
-        *args: Any,
         **kwargs: Any,
     ) -> None:
         """

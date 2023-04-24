@@ -33,48 +33,59 @@ TEST_MESSAGES_BASE = sort_messages(
     [
         Message(
             # empty
+            timestamp=1e-4,
         ),
         Message(
             # only data
-            data=[0x00, 0x42]
+            timestamp=2e-4,
+            data=[0x00, 0x42],
         ),
         Message(
             # no data
+            timestamp=3e-4,
             arbitration_id=0xAB,
             is_extended_id=False,
         ),
         Message(
             # no data
+            timestamp=4e-4,
             arbitration_id=0x42,
             is_extended_id=True,
         ),
         Message(
             # no data
-            arbitration_id=0xABCDEF
+            timestamp=5e-4,
+            arbitration_id=0xABCDEF,
         ),
         Message(
             # empty data
-            data=[]
+            timestamp=6e-4,
+            data=[],
         ),
         Message(
             # empty data
-            data=[0xFF, 0xFE, 0xFD]
+            timestamp=7e-4,
+            data=[0xFF, 0xFE, 0xFD],
         ),
         Message(
             # with channel as integer
-            channel=0
+            timestamp=8e-4,
+            channel=0,
         ),
         Message(
             # with channel as integer
-            channel=42
+            timestamp=9e-4,
+            channel=42,
         ),
         Message(
             # with channel as string
-            channel="vcan0"
+            timestamp=10e-4,
+            channel="vcan0",
         ),
         Message(
             # with channel as string
-            channel="awesome_channel"
+            timestamp=11e-4,
+            channel="awesome_channel",
         ),
         Message(
             arbitration_id=0xABCDEF,
@@ -109,10 +120,10 @@ TEST_MESSAGES_BASE = sort_messages(
 
 TEST_MESSAGES_CAN_FD = sort_messages(
     [
-        Message(is_fd=True, data=range(64)),
-        Message(is_fd=True, data=range(8)),
-        Message(is_fd=True, data=range(8), bitrate_switch=True),
-        Message(is_fd=True, data=range(8), error_state_indicator=True),
+        Message(timestamp=12e-4, is_fd=True, data=range(64)),
+        Message(timestamp=13e-4, is_fd=True, data=range(8)),
+        Message(timestamp=14e-4, is_fd=True, data=range(8), bitrate_switch=True),
+        Message(timestamp=15e-4, is_fd=True, data=range(8), error_state_indicator=True),
     ]
 )
 

@@ -1,20 +1,14 @@
 #!/usr/bin/env python
 
-import ctypes
-import os
-import pickle
 import unittest
-from unittest.mock import Mock
-
 from ctypes import (
-    byref,
-    cast,
     POINTER,
-    sizeof,
+    byref,
     c_ubyte,
+    cast,
+    sizeof,
 )
-
-import pytest
+from unittest.mock import Mock
 
 import can
 from can.interfaces.neousys import neousys
@@ -33,7 +27,7 @@ class TestNeousysBus(unittest.TestCase):
         can.interfaces.neousys.neousys.NEOUSYS_CANLIB.CAN_Start = Mock(return_value=1)
         can.interfaces.neousys.neousys.NEOUSYS_CANLIB.CAN_Send = Mock(return_value=1)
         can.interfaces.neousys.neousys.NEOUSYS_CANLIB.CAN_Stop = Mock(return_value=1)
-        self.bus = can.Bus(channel=0, bustype="neousys")
+        self.bus = can.Bus(channel=0, interface="neousys")
 
     def tearDown(self) -> None:
         if self.bus:
@@ -42,12 +36,12 @@ class TestNeousysBus(unittest.TestCase):
 
     def test_bus_creation(self) -> None:
         self.assertIsInstance(self.bus, neousys.NeousysBus)
-        self.assertTrue(neousys.NEOUSYS_CANLIB.CAN_Setup.called)
-        self.assertTrue(neousys.NEOUSYS_CANLIB.CAN_Start.called)
-        self.assertTrue(neousys.NEOUSYS_CANLIB.CAN_RegisterReceived.called)
-        self.assertTrue(neousys.NEOUSYS_CANLIB.CAN_RegisterStatus.called)
-        self.assertTrue(neousys.NEOUSYS_CANLIB.CAN_Send.not_called)
-        self.assertTrue(neousys.NEOUSYS_CANLIB.CAN_Stop.not_called)
+        neousys.NEOUSYS_CANLIB.CAN_Setup.assert_called()
+        neousys.NEOUSYS_CANLIB.CAN_Start.assert_called()
+        neousys.NEOUSYS_CANLIB.CAN_RegisterReceived.assert_called()
+        neousys.NEOUSYS_CANLIB.CAN_RegisterStatus.assert_called()
+        neousys.NEOUSYS_CANLIB.CAN_Send.assert_not_called()
+        neousys.NEOUSYS_CANLIB.CAN_Stop.assert_not_called()
 
         CAN_Start_args = (
             can.interfaces.neousys.neousys.NEOUSYS_CANLIB.CAN_Setup.call_args[0]
@@ -66,7 +60,7 @@ class TestNeousysBus(unittest.TestCase):
         )
 
     def test_bus_creation_bitrate(self) -> None:
-        self.bus = can.Bus(channel=0, bustype="neousys", bitrate=200000)
+        self.bus = can.Bus(channel=0, interface="neousys", bitrate=200000)
         self.assertIsInstance(self.bus, neousys.NeousysBus)
         CAN_Start_args = (
             can.interfaces.neousys.neousys.NEOUSYS_CANLIB.CAN_Setup.call_args[0]
@@ -101,11 +95,11 @@ class TestNeousysBus(unittest.TestCase):
             arbitration_id=0x01, data=[1, 2, 3, 4, 5, 6, 7, 8], is_extended_id=False
         )
         self.bus.send(msg)
-        self.assertTrue(neousys.NEOUSYS_CANLIB.CAN_Send.called)
+        neousys.NEOUSYS_CANLIB.CAN_Send.assert_called()
 
     def test_shutdown(self) -> None:
         self.bus.shutdown()
-        self.assertTrue(neousys.NEOUSYS_CANLIB.CAN_Stop.called)
+        neousys.NEOUSYS_CANLIB.CAN_Stop.assert_called()
 
 
 if __name__ == "__main__":

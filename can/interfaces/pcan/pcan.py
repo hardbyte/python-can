@@ -1,70 +1,79 @@
 """
 Enable basic CAN over a PCAN USB device.
 """
-
 import logging
+import platform
 import time
 from datetime import datetime
-import platform
-
-from typing import Optional
+from typing import Any, List, Optional, Tuple, Union
 
 from packaging import version
 
-from ...message import Message
-from ...bus import BusABC, BusState
-from ...util import len2dlc, dlc2len
-from ...exceptions import CanError, CanOperationError, CanInitializationError
-
+from can import (
+    BitTiming,
+    BitTimingFd,
+    BusABC,
+    BusState,
+    CanError,
+    CanInitializationError,
+    CanOperationError,
+    Message,
+)
+from can.util import check_or_adjust_timing_clock, dlc2len, len2dlc
 
 from .basic import (
-    PCAN_BITRATES,
-    PCAN_FD_PARAMETER_LIST,
-    PCAN_CHANNEL_NAMES,
-    PCAN_NONEBUS,
-    PCAN_BAUD_500K,
-    PCAN_TYPE_ISA,
-    PCANBasic,
-    PCAN_ERROR_OK,
-    PCAN_ALLOW_ERROR_FRAMES,
-    PCAN_PARAMETER_ON,
-    PCAN_RECEIVE_EVENT,
-    PCAN_API_VERSION,
-    PCAN_DEVICE_NUMBER,
-    PCAN_ERROR_QRCVEMPTY,
-    PCAN_ERROR_BUSLIGHT,
-    PCAN_ERROR_BUSHEAVY,
-    PCAN_MESSAGE_EXTENDED,
-    PCAN_MESSAGE_RTR,
-    PCAN_MESSAGE_FD,
-    PCAN_MESSAGE_BRS,
-    PCAN_MESSAGE_ESI,
-    PCAN_MESSAGE_ERRFRAME,
-    PCAN_MESSAGE_STANDARD,
-    TPCANMsgFD,
-    TPCANMsg,
-    PCAN_CHANNEL_IDENTIFYING,
-    PCAN_LISTEN_ONLY,
-    PCAN_PARAMETER_OFF,
-    TPCANHandle,
-    PCAN_PCIBUS1,
-    PCAN_USBBUS1,
-    PCAN_PCCBUS1,
-    PCAN_LANBUS1,
-    PCAN_CHANNEL_CONDITION,
-    PCAN_CHANNEL_AVAILABLE,
-    PCAN_CHANNEL_FEATURES,
     FEATURE_FD_CAPABLE,
-    PCAN_DICT_STATUS,
+    IS_LINUX,
+    IS_WINDOWS,
+    PCAN_ALLOW_ERROR_FRAMES,
+    PCAN_API_VERSION,
+    PCAN_ATTACHED_CHANNELS,
+    PCAN_BAUD_500K,
+    PCAN_BITRATES,
     PCAN_BUSOFF_AUTORESET,
+    PCAN_CHANNEL_AVAILABLE,
+    PCAN_CHANNEL_CONDITION,
+    PCAN_CHANNEL_FEATURES,
+    PCAN_CHANNEL_IDENTIFYING,
+    PCAN_CHANNEL_NAMES,
+    PCAN_DEVICE_NUMBER,
+    PCAN_DICT_STATUS,
+    PCAN_ERROR_BUSHEAVY,
+    PCAN_ERROR_BUSLIGHT,
+    PCAN_ERROR_OK,
+    PCAN_ERROR_QRCVEMPTY,
+    PCAN_FD_PARAMETER_LIST,
+    PCAN_LANBUS1,
+    PCAN_LISTEN_ONLY,
+    PCAN_MESSAGE_BRS,
+    PCAN_MESSAGE_ERRFRAME,
+    PCAN_MESSAGE_ESI,
+    PCAN_MESSAGE_EXTENDED,
+    PCAN_MESSAGE_FD,
+    PCAN_MESSAGE_RTR,
+    PCAN_MESSAGE_STANDARD,
+    PCAN_NONEBUS,
+    PCAN_PARAMETER_OFF,
+    PCAN_PARAMETER_ON,
+    PCAN_PCCBUS1,
+    PCAN_PCIBUS1,
+    PCAN_RECEIVE_EVENT,
+    PCAN_TYPE_ISA,
+    PCAN_USBBUS1,
+    VALID_PCAN_CAN_CLOCKS,
+    VALID_PCAN_FD_CLOCKS,
+    PCANBasic,
+    TPCANBaudrate,
+    TPCANChannelInformation,
+    TPCANHandle,
+    TPCANMsg,
+    TPCANMsgFD,
 )
-
 
 # Set up logging
 log = logging.getLogger("can.pcan")
 
 MIN_PCAN_API_VERSION = version.parse("4.2.0")
-
 
 try:
     # use the "uptime" library if available
@@ -78,43 +87,45 @@ try:
 except ImportError as error:
     log.warning(
         "uptime library not available, timestamps are relative to boot time and not to Epoch UTC",
-        exc_info=True,
     )
     boottimeEpoch = 0
 
-try:
-    # Try builtin Python 3 Windows API
-    from _overlapped import CreateEvent
-    from _winapi import WaitForSingleObject, WAIT_OBJECT_0, INFINITE
+HAS_EVENTS = False
 
-    HAS_EVENTS = True
-except ImportError:
+if IS_WINDOWS:
     try:
-        # Try pywin32 package
-        from win32event import CreateEvent
-        from win32event import WaitForSingleObject, WAIT_OBJECT_0, INFINITE
+        # Try builtin Python 3 Windows API
+        from _overlapped import CreateEvent
+        from _winapi import INFINITE, WAIT_OBJECT_0, WaitForSingleObject
 
         HAS_EVENTS = True
     except ImportError:
-        # Use polling instead
-        HAS_EVENTS = False
+        pass
+
+elif IS_LINUX:
+    try:
+        import select
+
+        HAS_EVENTS = True
+    except Exception:
+        pass
 
 
 class PcanBus(BusABC):
     def __init__(
         self,
-        channel="PCAN_USBBUS1",
-        device_id=None,
-        state=BusState.ACTIVE,
-        bitrate=500000,
-        *args,
-        **kwargs,
+        channel: str = "PCAN_USBBUS1",
+        device_id: Optional[int] = None,
+        state: BusState = BusState.ACTIVE,
+        timing: Optional[Union[BitTiming, BitTimingFd]] = None,
+        bitrate: int = 500000,
+        **kwargs: Any,
     ):
         """A PCAN USB interface to CAN.
 
         On top of the usual :class:`~can.Bus` methods provided,
-        the PCAN interface includes the :meth:`~can.interface.pcan.PcanBus.flash`
-        and :meth:`~can.interface.pcan.PcanBus.status` methods.
+        the PCAN interface includes the :meth:`flash`
+        and :meth:`status` methods.
 
         :param str channel:
             The can interface name. An example would be 'PCAN_USBBUS1'.
@@ -132,6 +143,18 @@ class PcanBus(BusABC):
         :param can.bus.BusState state:
             BusState of the channel.
             Default is ACTIVE
+
+        :param timing:
+            An instance of :class:`~can.BitTiming` or :class:`~can.BitTimingFd`
+            to specify the bit timing parameters for the PCAN interface. If this parameter
+            is provided, it takes precedence over all other timing-related parameters.
+            If this parameter is not provided, the bit timing parameters can be specified
+            using the `bitrate` parameter for standard CAN or the `fd`, `f_clock`,
+            `f_clock_mhz`, `nom_brp`, `nom_tseg1`, `nom_tseg2`, `nom_sjw`, `data_brp`,
+            `data_tseg1`, `data_tseg2`, and `data_sjw` parameters for CAN FD.
+            Note that the `f_clock` value of the `timing` instance must be 8_000_000
+            for standard CAN or any of the following values for CAN FD: 20_000_000,
+            24_000_000, 30_000_000, 40_000_000, 60_000_000, 80_000_000.
 
         :param int bitrate:
             Bitrate of channel in bit/s.
@@ -218,12 +241,11 @@ class PcanBus(BusABC):
             channel = self._find_channel_by_dev_id(device_id)
 
             if channel is None:
-                err_msg = "Cannot find a channel with ID {:08x}".format(device_id)
+                err_msg = f"Cannot find a channel with ID {device_id:08x}"
                 raise ValueError(err_msg)
 
         self.channel_info = str(channel)
-        self.fd = kwargs.get("fd", False)
-        pcan_bitrate = PCAN_BITRATES.get(bitrate, PCAN_BAUD_500K)
+        self.fd = isinstance(timing, BitTimingFd) if timing else kwargs.get("fd", False)
 
         hwtype = PCAN_TYPE_ISA
         ioport = 0x02A0
@@ -236,30 +258,41 @@ class PcanBus(BusABC):
 
         self.check_api_version()
 
-        if state is BusState.ACTIVE or state is BusState.PASSIVE:
+        if state in [BusState.ACTIVE, BusState.PASSIVE]:
             self.state = state
         else:
             raise ValueError("BusState must be Active or Passive")
 
-        if self.fd:
-            f_clock_val = kwargs.get("f_clock", None)
-            if f_clock_val is None:
-                f_clock = "{}={}".format("f_clock_mhz", kwargs.get("f_clock_mhz", None))
-            else:
-                f_clock = "{}={}".format("f_clock", kwargs.get("f_clock", None))
+        if isinstance(timing, BitTiming):
+            timing = check_or_adjust_timing_clock(timing, VALID_PCAN_CAN_CLOCKS)
+            pcan_bitrate = TPCANBaudrate(timing.btr0 << 8 | timing.btr1)
+            result = self.m_objPCANBasic.Initialize(
+                self.m_PcanHandle, pcan_bitrate, hwtype, ioport, interrupt
+            )
+        elif self.fd:
+            if isinstance(timing, BitTimingFd):
+                timing = check_or_adjust_timing_clock(
+                    timing, sorted(VALID_PCAN_FD_CLOCKS, reverse=True)
+                )
+                # We dump the timing parameters into the kwargs because they have equal names
+                # as the kwargs parameters and this saves us one additional code path
+                kwargs.update(timing)
 
-            fd_parameters_values = [f_clock] + [
-                "{}={}".format(key, kwargs.get(key, None))
-                for key in PCAN_FD_PARAMETER_LIST
-                if kwargs.get(key, None) is not None
+            clock_param = "f_clock" if "f_clock" in kwargs else "f_clock_mhz"
+            fd_parameters_values = [
+                f"{key}={kwargs[key]}"
+                for key in (clock_param,) + PCAN_FD_PARAMETER_LIST
+                if key in kwargs
             ]
 
-            self.fd_bitrate = " ,".join(fd_parameters_values).encode("ascii")
+            self.fd_bitrate = ", ".join(fd_parameters_values).encode("ascii")
 
             result = self.m_objPCANBasic.InitializeFD(
                 self.m_PcanHandle, self.fd_bitrate
             )
+
         else:
+            pcan_bitrate = PCAN_BITRATES.get(bitrate, PCAN_BAUD_500K)
             result = self.m_objPCANBasic.Initialize(
                 self.m_PcanHandle, pcan_bitrate, hwtype, ioport, interrupt
             )
@@ -278,7 +311,7 @@ class PcanBus(BusABC):
                 # TODO Remove Filter when MACCan actually supports it:
                 #  https://github.com/mac-can/PCBUSB-Library/
                 log.debug(
-                    "Ignoring error. PCAN_ALLOW_ERROR_FRAMES is still unsupported by OSX Library PCANUSB v0.10"
+                    "Ignoring error. PCAN_ALLOW_ERROR_FRAMES is still unsupported by OSX Library PCANUSB v0.11.2"
                 )
 
         if kwargs.get("auto_reset", False):
@@ -290,14 +323,20 @@ class PcanBus(BusABC):
                 raise PcanCanInitializationError(self._get_formatted_error(result))
 
         if HAS_EVENTS:
-            self._recv_event = CreateEvent(None, 0, 0, None)
-            result = self.m_objPCANBasic.SetValue(
-                self.m_PcanHandle, PCAN_RECEIVE_EVENT, self._recv_event
-            )
+            if IS_WINDOWS:
+                self._recv_event = CreateEvent(None, 0, 0, None)
+                result = self.m_objPCANBasic.SetValue(
+                    self.m_PcanHandle, PCAN_RECEIVE_EVENT, self._recv_event
+                )
+            elif IS_LINUX:
+                result, self._recv_event = self.m_objPCANBasic.GetValue(
+                    self.m_PcanHandle, PCAN_RECEIVE_EVENT
+                )
+
             if result != PCAN_ERROR_OK:
                 raise PcanCanInitializationError(self._get_formatted_error(result))
 
-        super().__init__(channel=channel, state=state, bitrate=bitrate, *args, **kwargs)
+        super().__init__(channel=channel, state=state, bitrate=bitrate, **kwargs)
 
     def _find_channel_by_dev_id(self, device_id):
         """
@@ -350,7 +389,7 @@ class PcanBus(BusABC):
             for b in bits(error):
                 stsReturn = self.m_objPCANBasic.GetErrorText(b, 0x9)
                 if stsReturn[0] != PCAN_ERROR_OK:
-                    text = "An error occurred. Error-code's text ({0:X}h) couldn't be retrieved".format(
+                    text = "An error occurred. Error-code's text ({:X}h) couldn't be retrieved".format(
                         error
                     )
                 else:
@@ -437,84 +476,96 @@ class PcanBus(BusABC):
             return False
         return True
 
-    def _recv_internal(self, timeout):
+    def _recv_internal(
+        self, timeout: Optional[float]
+    ) -> Tuple[Optional[Message], bool]:
+        end_time = time.time() + timeout if timeout is not None else None
 
-        if HAS_EVENTS:
-            # We will utilize events for the timeout handling
-            timeout_ms = int(timeout * 1000) if timeout is not None else INFINITE
-        elif timeout is not None:
-            # Calculate max time
-            end_time = time.perf_counter() + timeout
-
-        # log.debug("Trying to read a msg")
-
-        result = None
-        while result is None:
+        while True:
             if self.fd:
-                result = self.m_objPCANBasic.ReadFD(self.m_PcanHandle)
+                result, pcan_msg, pcan_timestamp = self.m_objPCANBasic.ReadFD(
+                    self.m_PcanHandle
+                )
             else:
-                result = self.m_objPCANBasic.Read(self.m_PcanHandle)
-            if result[0] == PCAN_ERROR_QRCVEMPTY:
-                if HAS_EVENTS:
-                    result = None
-                    val = WaitForSingleObject(self._recv_event, timeout_ms)
-                    if val != WAIT_OBJECT_0:
-                        return None, False
-                elif timeout is not None and time.perf_counter() >= end_time:
-                    return None, False
+                result, pcan_msg, pcan_timestamp = self.m_objPCANBasic.Read(
+                    self.m_PcanHandle
+                )
+
+            if result == PCAN_ERROR_OK:
+                # message received
+                break
+
+            if result == PCAN_ERROR_QRCVEMPTY:
+                # receive queue is empty, wait or return on timeout
+
+                if end_time is None:
+                    time_left: Optional[float] = None
+                    timed_out = False
                 else:
-                    result = None
+                    time_left = max(0.0, end_time - time.time())
+                    timed_out = time_left == 0.0
+
+                if timed_out:
+                    return None, False
+
+                if not HAS_EVENTS:
+                    # polling mode
                     time.sleep(0.001)
-            elif result[0] & (PCAN_ERROR_BUSLIGHT | PCAN_ERROR_BUSHEAVY):
-                log.warning(self._get_formatted_error(result[0]))
-                return None, False
-            elif result[0] != PCAN_ERROR_OK:
-                raise PcanCanOperationError(self._get_formatted_error(result[0]))
+                    continue
 
-        theMsg = result[1]
-        itsTimeStamp = result[2]
+                if IS_WINDOWS:
+                    # Windows with event
+                    if time_left is None:
+                        time_left_ms = INFINITE
+                    else:
+                        time_left_ms = int(time_left * 1000)
+                    _ret = WaitForSingleObject(self._recv_event, time_left_ms)
+                    if _ret == WAIT_OBJECT_0:
+                        continue
 
-        # log.debug("Received a message")
+                elif IS_LINUX:
+                    # Linux with event
+                    recv, _, _ = select.select([self._recv_event], [], [], time_left)
+                    if self._recv_event in recv:
+                        continue
 
-        is_extended_id = (
-            theMsg.MSGTYPE & PCAN_MESSAGE_EXTENDED.value
-        ) == PCAN_MESSAGE_EXTENDED.value
-        is_remote_frame = (
-            theMsg.MSGTYPE & PCAN_MESSAGE_RTR.value
-        ) == PCAN_MESSAGE_RTR.value
-        is_fd = (theMsg.MSGTYPE & PCAN_MESSAGE_FD.value) == PCAN_MESSAGE_FD.value
-        bitrate_switch = (
-            theMsg.MSGTYPE & PCAN_MESSAGE_BRS.value
-        ) == PCAN_MESSAGE_BRS.value
-        error_state_indicator = (
-            theMsg.MSGTYPE & PCAN_MESSAGE_ESI.value
-        ) == PCAN_MESSAGE_ESI.value
-        is_error_frame = (
-            theMsg.MSGTYPE & PCAN_MESSAGE_ERRFRAME.value
-        ) == PCAN_MESSAGE_ERRFRAME.value
+            elif result & (PCAN_ERROR_BUSLIGHT | PCAN_ERROR_BUSHEAVY):
+                log.warning(self._get_formatted_error(result))
+
+            else:
+                raise PcanCanOperationError(self._get_formatted_error(result))
+
+            return None, False
+
+        is_extended_id = bool(pcan_msg.MSGTYPE & PCAN_MESSAGE_EXTENDED.value)
+        is_remote_frame = bool(pcan_msg.MSGTYPE & PCAN_MESSAGE_RTR.value)
+        is_fd = bool(pcan_msg.MSGTYPE & PCAN_MESSAGE_FD.value)
+        bitrate_switch = bool(pcan_msg.MSGTYPE & PCAN_MESSAGE_BRS.value)
+        error_state_indicator = bool(pcan_msg.MSGTYPE & PCAN_MESSAGE_ESI.value)
+        is_error_frame = bool(pcan_msg.MSGTYPE & PCAN_MESSAGE_ERRFRAME.value)
 
         if self.fd:
-            dlc = dlc2len(theMsg.DLC)
-            timestamp = boottimeEpoch + (itsTimeStamp.value / (1000.0 * 1000.0))
+            dlc = dlc2len(pcan_msg.DLC)
+            timestamp = boottimeEpoch + (pcan_timestamp.value / (1000.0 * 1000.0))
         else:
-            dlc = theMsg.LEN
+            dlc = pcan_msg.LEN
             timestamp = boottimeEpoch + (
                 (
-                    itsTimeStamp.micros
-                    + 1000 * itsTimeStamp.millis
-                    + 0x100000000 * 1000 * itsTimeStamp.millis_overflow
+                    pcan_timestamp.micros
+                    + 1000 * pcan_timestamp.millis
+                    + 0x100000000 * 1000 * pcan_timestamp.millis_overflow
                 )
                 / (1000.0 * 1000.0)
             )
 
         rx_msg = Message(
             timestamp=timestamp,
-            arbitration_id=theMsg.ID,
+            arbitration_id=pcan_msg.ID,
             is_extended_id=is_extended_id,
             is_remote_frame=is_remote_frame,
             is_error_frame=is_error_frame,
             dlc=dlc,
-            data=theMsg.DATA[:dlc],
+            data=pcan_msg.DATA[:dlc],
             is_fd=is_fd,
             bitrate_switch=bitrate_switch,
             error_state_indicator=error_state_indicator,
@@ -593,6 +644,9 @@ class PcanBus(BusABC):
 
     def shutdown(self):
         super().shutdown()
+        if HAS_EVENTS and IS_LINUX:
+            self.m_objPCANBasic.SetValue(self.m_PcanHandle, PCAN_RECEIVE_EVENT, 0)
+
         self.m_objPCANBasic.Uninitialize(self.m_PcanHandle)
 
     @property
@@ -624,7 +678,35 @@ class PcanBus(BusABC):
             library_handle = PCANBasic()
         except OSError:
             return channels
+
         interfaces = []
+
+        if platform.system() != "Darwin":
+            res, value = library_handle.GetValue(PCAN_NONEBUS, PCAN_ATTACHED_CHANNELS)
+            if res != PCAN_ERROR_OK:
+                return interfaces
+            channel_information: List[TPCANChannelInformation] = list(value)
+            for channel in channel_information:
+                # find channel name in PCAN_CHANNEL_NAMES by value
+                channel_name = next(
+                    _channel_name
+                    for _channel_name, channel_id in PCAN_CHANNEL_NAMES.items()
+                    if channel_id.value == channel.channel_handle
+                )
+                channel_config = {
+                    "interface": "pcan",
+                    "channel": channel_name,
+                    "supports_fd": bool(channel.device_features & FEATURE_FD_CAPABLE),
+                    "controller_number": channel.controller_number,
+                    "device_features": channel.device_features,
+                    "device_id": channel.device_id,
+                    "device_name": channel.device_name.decode("latin-1"),
+                    "device_type": channel.device_type,
+                    "channel_condition": channel.channel_condition,
+                }
+                interfaces.append(channel_config)
+            return interfaces
+
         for i in range(16):
             interfaces.append(
                 {

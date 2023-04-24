@@ -10,7 +10,6 @@ from can import Bus, Message
 
 from .data.example_data import TEST_ALL_MESSAGES
 
-
 EXAMPLE_MSG = Message(arbitration_id=0x123, is_extended_id=True)
 HIGHEST_MSG = Message(arbitration_id=0x1FFFFFFF, is_extended_id=True)
 
@@ -21,7 +20,7 @@ MATCH_ONLY_HIGHEST = [{"can_id": 0xFFFFFFFF, "can_mask": 0x1FFFFFFF, "extended":
 
 class TestMessageFiltering(unittest.TestCase):
     def setUp(self):
-        self.bus = Bus(bustype="virtual", channel="testy")
+        self.bus = Bus(interface="virtual", channel="testy")
 
     def tearDown(self):
         self.bus.shutdown()

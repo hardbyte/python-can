@@ -27,7 +27,7 @@ IS_GITHUB_ACTIONS = env("GITHUB_ACTIONS")
 IS_CI = IS_TRAVIS or IS_GITHUB_ACTIONS or env("CI") or env("CONTINUOUS_INTEGRATION")
 
 if IS_TRAVIS and IS_GITHUB_ACTIONS:
-    raise EnvironmentError(
+    raise OSError(
         f"only one of IS_TRAVIS ({IS_TRAVIS}) and IS_GITHUB_ACTIONS ({IS_GITHUB_ACTIONS}) may be True at the "
         "same time"
     )
@@ -43,7 +43,7 @@ IS_UNIX = IS_LINUX or IS_OSX
 del _sys
 
 if (IS_WINDOWS and IS_LINUX) or (IS_LINUX and IS_OSX) or (IS_WINDOWS and IS_OSX):
-    raise EnvironmentError(
+    raise OSError(
         f"only one of IS_WINDOWS ({IS_WINDOWS}), IS_LINUX ({IS_LINUX}) and IS_OSX ({IS_OSX}) "
         f'can be True at the same time (platform.system() == "{platform.system()}")'
     )

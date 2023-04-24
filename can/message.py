@@ -6,12 +6,11 @@ This module contains the implementation of :class:`can.Message`.
     starting with Python 3.7.
 """
 
+from copy import deepcopy
+from math import isinf, isnan
 from typing import Optional
 
 from . import typechecking
-
-from copy import deepcopy
-from math import isinf, isnan
 
 
 class Message:  # pylint: disable=too-many-instance-attributes; OK for a dataclass
@@ -29,7 +28,7 @@ class Message:  # pylint: disable=too-many-instance-attributes; OK for a datacla
     :func:`~copy.copy`/:func:`~copy.deepcopy` is supported as well.
 
     Messages do not support "dynamic" attributes, meaning any others than the
-    documented ones, since it uses :attr:`~object.__slots__`.
+    documented ones, since it uses :obj:`~object.__slots__`.
     """
 
     __slots__ = (
@@ -228,9 +227,7 @@ class Message:  # pylint: disable=too-many-instance-attributes; OK for a datacla
             error_state_indicator=self.error_state_indicator,
         )
 
-    def _check(
-        self,
-    ) -> None:  # pylint: disable=too-many-branches; it's still simple code
+    def _check(self) -> None:
         """Checks if the message parameters are valid.
 
         Assumes that the attribute types are already correct.

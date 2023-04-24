@@ -4,16 +4,17 @@ Implements an SQL database writer and reader for storing CAN messages.
 .. note:: The database schema is given in the documentation of the loggers.
 """
 
-import time
-import threading
 import logging
 import sqlite3
-from typing import Generator, Any
+import threading
+import time
+from typing import Any, Generator
 
 from can.listener import BufferedReader
 from can.message import Message
-from .generic import MessageWriter, MessageReader
+
 from ..typechecking import StringPathLike
+from .generic import MessageReader, MessageWriter
 
 log = logging.getLogger("can.io.sqlite")
 
@@ -25,7 +26,7 @@ class SqliteReader(MessageReader):
     This class can be iterated over or used to fetch all messages in the
     database with :meth:`~SqliteReader.read_all`.
 
-    Calling :func:`~builtin.len` on this object might not run in constant time.
+    Calling :func:`len` on this object might not run in constant time.
 
     :attr str table_name: the name of the database table used for storing the messages
 
@@ -36,7 +37,6 @@ class SqliteReader(MessageReader):
         self,
         file: StringPathLike,
         table_name: str = "messages",
-        *args: Any,
         **kwargs: Any,
     ) -> None:
         """
@@ -138,7 +138,6 @@ class SqliteWriter(MessageWriter, BufferedReader):
         self,
         file: StringPathLike,
         table_name: str = "messages",
-        *args: Any,
         **kwargs: Any,
     ) -> None:
         """

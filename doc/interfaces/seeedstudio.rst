@@ -1,9 +1,8 @@
 .. _seeeddoc:
 
 
-USB-CAN Analyzer
-================
-...by Seeed Studio
+Seeed Studio USB-CAN Analyzer
+=============================
 
 SKU: 114991193
 
@@ -13,20 +12,14 @@ Links:
 - https://github.com/SeeedDocument/USB-CAN_Analyzer
 - https://copperhilltech.com/blog/usbcan-analyzer-usb-to-can-bus-serial-protocol-definition/
 
-^^^^^^^^^^
 
 Installation
 ------------
-This interface has additional dependencies which can be installed using pip and the optional extra [seeedstudio].  That will install an additional packages if not already available:
- - pyserial
 
+This interface has additional dependencies which can be installed using pip and the optional extra ``seeedstudio``.  That will include the dependency ``pyserial``::
 
-::
+  pip install python-can[seeedstudio]
 
-  pip3 install python-can[seeedstudio]
-
-
-^^^^^^^^^^
 
 
 Interface
@@ -38,13 +31,12 @@ Interface
 
 A bus example::
 
-    bus = can.interface.Bus(bustype='seeedstudio', channel='/dev/ttyUSB0', bitrate=500000)
+    bus = can.interface.Bus(interface='seeedstudio', channel='/dev/ttyUSB0', bitrate=500000)
 
 
-^^^^^^^^^^
 
-Parameters
-----------
+Configuration
+-------------
 ::
 
  SeeedBus(channel,
@@ -54,7 +46,7 @@ Parameters
           operation_mode='normal',
           bitrate=500000)
 
-ChANNEL
+CHANNEL
  The serial port created by the USB device when connected.
 
 TIMEOUT

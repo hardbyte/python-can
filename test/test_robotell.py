@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 
 import unittest
+
 import can
 
 
 class robotellTestCase(unittest.TestCase):
     def setUp(self):
         # will log timeout messages since we are not feeding ack messages to the serial port at this stage
-        self.bus = can.Bus("loop://", bustype="robotell")
+        self.bus = can.Bus("loop://", interface="robotell")
         self.serial = self.bus.serialPortOrig
         self.serial.read(self.serial.in_waiting)
 

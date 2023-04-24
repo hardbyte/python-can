@@ -1,0 +1,191 @@
+name: Tests
+
+on:
+  release:
+    types: [ published ]
+  pull_request:
+  push:
+
+env:
+  PY_COLORS: "1"
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.experimental }} # See: https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idcontinue-on-error
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        experimental: [false]
+        python-version: [
+          "3.7",
+          "3.8",
+          "3.9",
+          "3.10",
+          "3.11",
+          "pypy-3.7",
+          "pypy-3.8",
+          "pypy-3.9",
+        ]
+        include:
+          # Only test on a single configuration while there are just pre-releases
+          - os: ubuntu-latest
+            experimental: true
+            python-version: "3.12.0-alpha - 3.12.0"
+      fail-fast: false
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install tox
+    - name: Setup SocketCAN
+      if: ${{ matrix.os == 'ubuntu-latest' }}
+      run: |
+        sudo apt-get -y install linux-modules-extra-$(uname -r)
+        sudo ./test/open_vcan.sh
+    - name: Test with pytest via tox
+      run: |
+        tox -e gh
+      env:
+        # SocketCAN tests currently fail with PyPy because it does not support raw CAN sockets
+        # See: https://foss.heptapod.net/pypy/pypy/-/issues/3809
+        TEST_SOCKETCAN: "${{ matrix.os == 'ubuntu-latest' && ! startsWith(matrix.python-version, 'pypy' ) }}"
+    - name: Coveralls Parallel
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.github_token }}
+        flag-name: Unittests-${{ matrix.os }}-${{ matrix.python-version }}
+        parallel: true
+        path-to-lcov: ./coverage.lcov
+
+  coveralls:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+    - name: Coveralls Finished
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.github_token }}
+        parallel-finished: true
+
+  static-code-analysis:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.10"
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements-lint.txt
+    - name: mypy 3.7
+      run: |
+        mypy --python-version 3.7 .
+    - name: mypy 3.8
+      run: |
+        mypy --python-version 3.8 .
+    - name: mypy 3.9
+      run: |
+        mypy --python-version 3.9 .
+    - name: mypy 3.10
+      run: |
+        mypy --python-version 3.10 .
+    - name: mypy 3.11
+      run: |
+        mypy --python-version 3.11 .
+    - name: ruff
+      run: |
+        ruff check can
+    - name: pylint
+      run: |
+        pylint --rcfile=.pylintrc \
+        can/**.py \
+        can/io \
+        setup.py \
+        doc/conf.py \
+        scripts/**.py \
+        examples/**.py \
+        can/interfaces/socketcan
+
+  format:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.10"
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements-lint.txt
+    - name: Code Format Check with Black
+      run: |
+        black --check --verbose .
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.10"
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .[canalystii,gs_usb,mf4]
+        pip install -r doc/doc-requirements.txt
+    - name: Build documentation
+      run: |
+        python -m sphinx -Wan --keep-going doc build
+    - name: Run doctest
+      run: |
+        python -m sphinx -b doctest -W --keep-going doc build
+    - uses: actions/upload-artifact@v3
+      with:
+        name: sphinx-out
+        path: ./build/
+        retention-days: 5
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+      - name: Build wheel and sdist
+        run: pipx run build
+      - name: Check build artifacts
+        run: pipx run twine check --strict dist/*
+      - name: Save artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: python-can-dist
+          path: ./dist
+
+  upload_pypi:
+    needs: [build]
+    runs-on: ubuntu-latest
+
+    # upload to PyPI only on release
+    if: github.event.release && github.event.action == 'published'
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: python-can-dist
+          path: dist
+
+      - uses: pypa/gh-action-pypi-publish@v1.4.2
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}

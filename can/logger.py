@@ -1,28 +1,15 @@
-"""
-logger.py logs CAN traffic to the terminal and to a file on disk.
-
-    logger.py can0
-
-See candump in the can-utils package for a C implementation.
-Efficient filtering has been implemented for the socketcan backend.
-For example the command
-
-    logger.py can0 F03000:FFF000
-
-Will filter for can frames with a can_id containing XXF03XXX.
-
-Dynamic Controls 2010
-"""
+import argparse
+import errno
 import re
 import sys
-import argparse
 from datetime import datetime
-import errno
-from typing import Any, Dict, List, Union, Sequence, Tuple
+from typing import Any, Dict, List, Sequence, Tuple, Union
 
 import can
 from can.io import BaseRotatingLogger
 from can.io.generic import MessageWriter
+from can.util import cast_from_string
+
 from . import Bus, BusState, Logger, SizedRotatingLogger
 from .typechecking import CanFilter, CanFilters
 
@@ -73,7 +60,7 @@ def _create_base_argument_parser(parser: argparse.ArgumentParser) -> None:
 def _append_filter_argument(
     parser: Union[
         argparse.ArgumentParser,
-        argparse._ArgumentGroup,  # pylint: disable=protected-access
+        argparse._ArgumentGroup,
     ],
     *args: str,
     **kwargs: Any,
@@ -149,18 +136,7 @@ def _parse_additional_config(
 
     args: Dict[str, Union[str, int, float, bool]] = {}
     for key, string_val in map(_split_arg, unknown_args):
-        if re.match(r"^[-+]?\d+$", string_val):
-            # value is integer
-            args[key] = int(string_val)
-        elif re.match(r"^[-+]?\d*\.\d+$", string_val):
-            # value is float
-            args[key] = float(string_val)
-        elif re.match(r"^(?:True|False)$", string_val):
-            # value is bool
-            args[key] = string_val == "True"
-        else:
-            # value is string
-            args[key] = string_val
+        args[key] = cast_from_string(string_val)
     return args
 
 
@@ -193,9 +169,10 @@ def main() -> None:
         "--file_size",
         dest="file_size",
         type=int,
-        help="Maximum file size in bytes (or for the case of blf, maximum "
-        "buffer size before compression and flush to file). Rotate log "
-        "file when size threshold is reached.",
+        help="Maximum file size in bytes. Rotate log file when size threshold "
+        "is reached. (The resulting file sizes will be consistent, but are not "
+        "guaranteed to be exactly what is specified here due to the rollover "
+        "conditions being logger implementation specific.)",
         default=None,
     )
 

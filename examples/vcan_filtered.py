@@ -11,12 +11,11 @@ import can
 
 def main():
     """Send some messages to itself and apply filtering."""
-    with can.Bus(bustype="virtual", receive_own_messages=True) as bus:
-
+    with can.Bus(interface="virtual", receive_own_messages=True) as bus:
         can_filters = [{"can_id": 1, "can_mask": 0xF, "extended": True}]
         bus.set_filters(can_filters)
 
-        # print all incoming messages, wich includes the ones sent,
+        # print all incoming messages, which includes the ones sent,
         # since we set receive_own_messages to True
         # assign to some variable so it does not garbage collected
         notifier = can.Notifier(bus, [can.Printer()])  # pylint: disable=unused-variable

@@ -2,15 +2,15 @@
 This module contains the implementation of `can.Listener` and some readers.
 """
 
+import asyncio
 import sys
 import warnings
-import asyncio
 from abc import ABCMeta, abstractmethod
-from queue import SimpleQueue, Empty
-from typing import Any, AsyncIterator, Awaitable, Optional
+from queue import Empty, SimpleQueue
+from typing import Any, AsyncIterator, Optional
 
-from can.message import Message
 from can.bus import BusABC
+from can.message import Message
 
 
 class Listener(metaclass=ABCMeta):
@@ -105,13 +105,13 @@ class BufferedReader(Listener):  # pylint: disable=abstract-method
 
     def get_message(self, timeout: float = 0.5) -> Optional[Message]:
         """
-        Attempts to retrieve the latest message received by the instance. If no message is
-        available it blocks for given timeout or until a message is received, or else
-        returns None (whichever is shorter). This method does not block after
-        :meth:`can.BufferedReader.stop` has been called.
+        Attempts to retrieve the message that has been in the queue for the longest amount
+        of time (FIFO). If no message is available, it blocks for given timeout or until a
+        message is received (whichever is shorter), or else returns None. This method does
+        not block after :meth:`can.BufferedReader.stop` has been called.
 
         :param timeout: The number of seconds to wait for a new message.
-        :return: the Message if there is one, or None if there is not.
+        :return: the received :class:`can.Message` or `None`, if the queue is empty.
         """
         try:
             if self.is_stopped:
@@ -126,7 +126,9 @@ class BufferedReader(Listener):  # pylint: disable=abstract-method
         self.is_stopped = True
 
 
-class AsyncBufferedReader(Listener):  # pylint: disable=abstract-method
+class AsyncBufferedReader(
+    Listener, AsyncIterator[Message]
+):  # pylint: disable=abstract-method
     """A message buffer for use with :mod:`asyncio`.
 
     See :ref:`asyncio` for how to use with :class:`can.Notifier`.
@@ -174,5 +176,5 @@ class AsyncBufferedReader(Listener):  # pylint: disable=abstract-method
     def __aiter__(self) -> AsyncIterator[Message]:
         return self
 
-    def __anext__(self) -> Awaitable[Message]:
-        return self.buffer.get()
+    async def __anext__(self) -> Message:
+        return await self.buffer.get()

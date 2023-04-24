@@ -1,5 +1,18 @@
-Listeners
-=========
+
+Reading and Writing Messages
+============================
+
+.. _notifier:
+
+Notifier
+--------
+
+The Notifier object is used as a message distributor for a bus. Notifier creates a thread to read messages from the bus and distributes them to listeners.
+
+.. autoclass:: can.Notifier
+    :members:
+
+.. _listeners_doc:
 
 Listener
 --------
@@ -11,6 +24,12 @@ message, or by calling the method **on_message_received**.
 
 Listeners are registered with :ref:`notifier` object(s) which ensure they are
 notified whenever a new message is received.
+
+.. literalinclude:: ../examples/print_notifier.py
+    :language: python
+    :linenos:
+    :emphasize-lines: 8,9
+
 
 Subclasses of Listener that do not override **on_message_received** will cause
 :class:`NotImplementedError` to be thrown when a message is received on
@@ -190,4 +209,52 @@ The data is stored in a compressed format which makes it very compact.
 The following class can be used to read messages from BLF file:
 
 .. autoclass:: can.BLFReader
+    :members:
+
+
+MF4 (Measurement Data Format v4)
+--------------------------------
+
+Implements support for MF4 (Measurement Data Format v4) which is a proprietary
+format from ASAM (Association for Standardization of Automation and Measuring Systems), widely used in 
+many automotive software (Vector CANape, ETAS INCA, dSPACE ControlDesk, etc.).
+
+The data is stored in a compressed format which makes it compact.
+
+.. note:: MF4 support has to be installed as an extra with for example ``pip install python-can[mf4]``.
+
+.. note:: Channels will be converted to integers.
+
+.. note:: MF4Writer does not suppport the append mode.
+
+
+.. autoclass:: can.MF4Writer
+    :members:
+
+The MDF format is very flexible regarding the internal structure and it is used to handle data from multiple sources, not just CAN bus logging.
+MDF4Writer will always create a fixed internal file structure where there will be three channel groups (for standard, error and remote frames). 
+Using this fixed file structure allows for a simple implementation of MDF4Writer and MF4Reader classes.
+Therefor MF4Reader can only replay files created with MF4Writer. 
+
+The following class can be used to read messages from MF4 file:
+
+.. autoclass:: can.MF4Reader
+    :members:
+
+
+TRC
+----
+
+Implements basic support for the TRC file format.
+
+
+.. note::
+   Comments and contributions are welcome on what file versions might be relevant.
+
+.. autoclass:: can.TRCWriter
+    :members:
+
+The following class can be used to read messages from TRC file:
+
+.. autoclass:: can.TRCReader
     :members:

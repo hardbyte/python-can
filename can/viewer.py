@@ -30,20 +30,21 @@ import time
 from typing import Dict, List, Tuple, Union
 
 from can import __version__
+
 from .logger import (
-    _create_bus,
-    _parse_filters,
     _append_filter_argument,
     _create_base_argument_parser,
+    _create_bus,
     _parse_additional_config,
+    _parse_filters,
 )
 
-
-logger = logging.getLogger("can.serial")
+logger = logging.getLogger("can.viewer")
 
 try:
     import curses
-    from curses.ascii import ESC as KEY_ESC, SP as KEY_SPACE
+    from curses.ascii import ESC as KEY_ESC
+    from curses.ascii import SP as KEY_SPACE
 except ImportError:
     # Probably on Windows while windows-curses is not installed (e.g. in PyPy)
     logger.warning(
@@ -390,7 +391,7 @@ class SmartFormatter(argparse.HelpFormatter):
             return super()._fill_text(text, width, indent)
 
 
-def parse_args(args):
+def parse_args(args: List[str]) -> Tuple:
     # Parse command line arguments
     parser = argparse.ArgumentParser(
         "python -m can.viewer",
@@ -515,7 +516,7 @@ def parse_args(args):
     ] = {}
     if parsed_args.decode:
         if os.path.isfile(parsed_args.decode[0]):
-            with open(parsed_args.decode[0], "r", encoding="utf-8") as f:
+            with open(parsed_args.decode[0], encoding="utf-8") as f:
                 structs = f.readlines()
         else:
             structs = parsed_args.decode

@@ -1,22 +1,21 @@
 #!/usr/bin/env python
 
-import unittest
-import sys
-from math import isinf, isnan
-from copy import copy, deepcopy
 import pickle
+import sys
+import unittest
+from copy import copy, deepcopy
 from datetime import timedelta
+from math import isinf, isnan
 
-from hypothesis import given, settings
 import hypothesis.errors
 import hypothesis.strategies as st
+import pytest
+from hypothesis import HealthCheck, given, settings
 
 from can import Message
 
+from .config import IS_GITHUB_ACTIONS, IS_PYPY, IS_WINDOWS
 from .message_helper import ComparingMessagesTestCase
-from .config import IS_GITHUB_ACTIONS, IS_WINDOWS, IS_PYPY
-
-import pytest
 
 
 class TestMessageClass(unittest.TestCase):
@@ -42,12 +41,13 @@ class TestMessageClass(unittest.TestCase):
     # The first run may take a second on CI runners and will hit the deadline
     @settings(
         max_examples=2000,
+        suppress_health_check=[HealthCheck.too_slow],
         deadline=None if IS_GITHUB_ACTIONS else timedelta(milliseconds=500),
     )
     @pytest.mark.xfail(
         IS_WINDOWS and IS_PYPY,
         raises=hypothesis.errors.Flaky,
-        reason="Hypothesis generates inconistent timestamp floats on Windows+PyPy-3.7",
+        reason="Hypothesis generates inconsistent timestamp floats on Windows+PyPy-3.7",
     )
     def test_methods(self, **kwargs):
         is_valid = not (
@@ -86,8 +86,8 @@ class TestMessageClass(unittest.TestCase):
         if is_valid:
             self.assertEqual(len(message), kwargs["dlc"])
         self.assertTrue(bool(message))
-        self.assertGreater(len("{}".format(message)), 0)
-        _ = "{}".format(message)
+        self.assertGreater(len(f"{message}"), 0)
+        _ = f"{message}"
         with self.assertRaises(Exception):
             _ = "{somespec}".format(
                 message

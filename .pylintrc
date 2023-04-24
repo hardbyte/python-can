@@ -81,7 +81,8 @@ disable=invalid-name,
 # either give multiple identifier separated by comma (,) or put this option
 # multiple time (only on the command line, not in the configuration file where
 # it should appear only once). See also the "--disable" option for examples.
-enable=c-extension-no-member
+enable=c-extension-no-member,
+       useless-suppression,
 
 
 [REPORTS]
@@ -395,12 +396,6 @@ max-line-length=100
 # Maximum number of lines in a module.
 max-module-lines=1000
 
-# List of optional constructs for which whitespace checking is disabled. `dict-
-# separator` is used to allow tabulation in dicts, etc.: {1  : 1,\n222: 2}.
-# `trailing-comma` allows a space between comma and closing bracket: (a, ).
-# `empty-line` allows space-only lines.
-no-space-check=trailing-comma,
-               dict-separator
 
 # Allow the body of a class to be on the same line as the declaration if body
 # contains single statement.
@@ -443,6 +438,8 @@ known-standard-library=
 # Force import order to recognize a module as part of a third party library.
 known-third-party=enchant
 
+# Allow explicit reexports by alias from a package __init__
+allow-reexport-from-package=no
 
 [CLASSES]
 
@@ -503,5 +500,5 @@ min-public-methods=2
 
 # Exceptions that will emit a warning when being caught. Defaults to
 # "BaseException, Exception".
-overgeneral-exceptions=BaseException,
-                       Exception
+overgeneral-exceptions=builtins.BaseException,
+                       builtins.Exception

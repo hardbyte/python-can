@@ -1,5 +1,5 @@
 """
-Ctypes wrapper module for IXXAT Virtual CAN Interface V3 on win32 systems
+Ctypes wrapper module for IXXAT Virtual CAN Interface V4 on win32 systems
 
 TODO: We could implement this interface such that setting other filters
       could work when the initial filters were set to zero using the
@@ -13,15 +13,17 @@ import ctypes
 import functools
 import logging
 import sys
-from typing import Optional, Callable, Tuple
+from typing import Callable, Optional, Tuple
 
 from can import BusABC, Message
-from can.exceptions import CanInterfaceNotImplementedError, CanInitializationError
 from can.broadcastmanager import (
     LimitedDurationCyclicSendTaskABC,
     RestartableCyclicTaskABC,
 )
-from can.ctypesutil import CLibrary, HANDLE, PHANDLE, HRESULT as ctypes_HRESULT
+from can.bus import BusState
+from can.ctypesutil import HANDLE, PHANDLE, CLibrary
+from can.ctypesutil import HRESULT as ctypes_HRESULT
+from can.exceptions import CanInitializationError, CanInterfaceNotImplementedError
 from can.util import deprecated_args_alias
 
 from . import constants, structures
@@ -38,7 +40,6 @@ __all__ = [
 
 log = logging.getLogger("can.ixxat")
 
-from time import perf_counter
 
 # Hack to have vciFormatError as a free function, see below
 vciFormatError = None
@@ -119,7 +120,7 @@ def __check_status(result, function, args):
         result = ctypes.c_ulong(result).value
 
     if result == constants.VCI_E_TIMEOUT:
-        raise VCITimeout("Function {} timed out".format(function._name))
+        raise VCITimeout(f"Function {function._name} timed out")
     elif result == constants.VCI_E_RXQUEUE_EMPTY:
         raise VCIRxQueueEmptyError()
     elif result == constants.VCI_E_NO_MORE_ITEMS:
@@ -223,6 +224,13 @@ try:
         "canChannelSendMessage",
         ctypes.c_long,
         (HANDLE, ctypes.c_uint32, structures.PCANMSG),
+        __check_status,
+    )
+    # HRESULT canChannelGetStatus (HANDLE hCanChn, PCANCHANSTATUS pStatus );
+    _canlib.map_symbol(
+        "canChannelGetStatus",
+        ctypes.c_long,
+        (HANDLE, structures.PCANCHANSTATUS),
         __check_status,
     )
 
@@ -372,10 +380,8 @@ class IXXATBus(BusABC):
     .. warning::
 
         This interface does implement efficient filtering of messages, but
-        the filters have to be set in :meth:`~can.interfaces.ixxat.IXXATBus.__init__`
-        using the ``can_filters`` parameter. Using :meth:`~can.interfaces.ixxat.IXXATBus.set_filters`
-        does not work.
-
+        the filters have to be set in ``__init__`` using the ``can_filters`` parameter.
+        Using :meth:`~can.BusABC.set_filters` does not work.
     """
 
     CHANNEL_BITRATES = {
@@ -412,6 +418,8 @@ class IXXATBus(BusABC):
     }
 
     @deprecated_args_alias(
+        deprecation_start="4.0.0",
+        deprecation_end="5.0.0",
         UniqueHardwareId="unique_hardware_id",
         rxFifoSize="rx_fifo_size",
         txFifoSize="tx_fifo_size",
@@ -464,7 +472,7 @@ class IXXATBus(BusABC):
         channel = int(channel)
 
         if bitrate not in self.CHANNEL_BITRATES[0]:
-            raise ValueError("Invalid bitrate {}".format(bitrate))
+            raise ValueError(f"Invalid bitrate {bitrate}")
 
         if rx_fifo_size <= 0:
             raise ValueError("rx_fifo_size must be > 0")
@@ -511,11 +519,11 @@ class IXXATBus(BusABC):
                     == bytes(unique_hardware_id, "ascii")
                 ):
                     break
-                else:
-                    log.debug(
-                        "Ignoring IXXAT with hardware id '%s'.",
-                        self._device_info.UniqueHardwareId.AsChar.decode("ascii"),
-                    )
+
+                log.debug(
+                    "Ignoring IXXAT with hardware id '%s'.",
+                    self._device_info.UniqueHardwareId.AsChar.decode("ascii"),
+                )
         _canlib.vciEnumDeviceClose(self._device_handle)
 
         try:
@@ -524,7 +532,9 @@ class IXXATBus(BusABC):
                 ctypes.byref(self._device_handle),
             )
         except Exception as exception:
-            raise CanInitializationError(f"Could not open device: {exception}")
+            raise CanInitializationError(
+                f"Could not open device: {exception}"
+            ) from exception
 
         log.info("Using unique HW ID %s", self._device_info.UniqueHardwareId.AsChar)
 
@@ -545,7 +555,7 @@ class IXXATBus(BusABC):
         except Exception as exception:
             raise CanInitializationError(
                 f"Could not open and initialize channel: {exception}"
-            )
+            ) from exception
 
         # Signal TX/RX events when at least one frame has been handled
         _canlib.canChannelInitialize(
@@ -639,85 +649,88 @@ class IXXATBus(BusABC):
 
     def _recv_internal(self, timeout):
         """Read a message from IXXAT device."""
-
-        # TODO: handling CAN error messages?
         data_received = False
 
-        if timeout == 0:
+        if self._inWaiting() or timeout == 0:
             # Peek without waiting
-            try:
-                _canlib.canChannelPeekMessage(
-                    self._channel_handle, ctypes.byref(self._message)
-                )
-            except (VCITimeout, VCIRxQueueEmptyError):
-                return None, True
-            else:
-                if self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_DATA:
-                    data_received = True
+            recv_function = functools.partial(
+                _canlib.canChannelPeekMessage,
+                self._channel_handle,
+                ctypes.byref(self._message),
+            )
         else:
             # Wait if no message available
-            if timeout is None or timeout < 0:
-                remaining_ms = constants.INFINITE
-                t0 = None
-            else:
-                timeout_ms = int(timeout * 1000)
-                remaining_ms = timeout_ms
-                t0 = perf_counter()
+            timeout = (
+                constants.INFINITE
+                if (timeout is None or timeout < 0)
+                else int(timeout * 1000)
+            )
+            recv_function = functools.partial(
+                _canlib.canChannelReadMessage,
+                self._channel_handle,
+                timeout,
+                ctypes.byref(self._message),
+            )
 
-            while True:
-                try:
-                    _canlib.canChannelReadMessage(
-                        self._channel_handle, remaining_ms, ctypes.byref(self._message)
+        try:
+            recv_function()
+        except (VCITimeout, VCIRxQueueEmptyError):
+            # Ignore the 2 errors, overall timeout is handled by BusABC.recv
+            pass
+        else:
+            # See if we got a data or info/error messages
+            if self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_DATA:
+                data_received = True
+            elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_INFO:
+                log.info(
+                    CAN_INFO_MESSAGES.get(
+                        self._message.abData[0],
+                        f"Unknown CAN info message code {self._message.abData[0]}",
                     )
-                except (VCITimeout, VCIRxQueueEmptyError):
-                    # Ignore the 2 errors, the timeout is handled manually with the perf_counter()
-                    pass
+                )
+            elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_ERROR:
+                if self._message.uMsgInfo.Bytes.bFlags & constants.CAN_MSGFLAGS_OVR:
+                    log.warning("CAN error: data overrun")
                 else:
-                    # See if we got a data or info/error messages
-                    if self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_DATA:
-                        data_received = True
-                        break
-                    elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_INFO:
-                        log.info(
-                            CAN_INFO_MESSAGES.get(
-                                self._message.abData[0],
-                                "Unknown CAN info message code {}".format(
-                                    self._message.abData[0]
-                                ),
-                            )
+                    log.warning(
+                        CAN_ERROR_MESSAGES.get(
+                            self._message.abData[0],
+                            f"Unknown CAN error message code {self._message.abData[0]}",
                         )
-
-                    elif (
-                        self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_ERROR
-                    ):
-                        log.warning(
-                            CAN_ERROR_MESSAGES.get(
-                                self._message.abData[0],
-                                "Unknown CAN error message code {}".format(
-                                    self._message.abData[0]
-                                ),
-                            )
-                        )
-
-                    elif (
-                        self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_STATUS
-                    ):
-                        log.info(_format_can_status(self._message.abData[0]))
-                        if self._message.abData[0] & constants.CAN_STATUS_BUSOFF:
-                            raise VCIBusOffError()
-
-                    elif (
-                        self._message.uMsgInfo.Bits.type
-                        == constants.CAN_MSGTYPE_TIMEOVR
-                    ):
-                        pass
-                    else:
-                        log.warning("Unexpected message info type")
-
-                if t0 is not None:
-                    remaining_ms = timeout_ms - int((perf_counter() - t0) * 1000)
-                    if remaining_ms < 0:
-                        break
+                    )
+                    log.warning(
+                        "CAN message flags bAddFlags/bFlags2 0x%02X bflags 0x%02X",
+                        self._message.uMsgInfo.Bytes.bAddFlags,
+                        self._message.uMsgInfo.Bytes.bFlags,
+                    )
+            elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_TIMEOVR:
+                pass
+            else:
+                log.warning(
+                    "Unexpected message info type 0x%X",
+                    self._message.uMsgInfo.Bits.type,
+                )
+        finally:
+            if not data_received:
+                # Check hard errors
+                status = structures.CANLINESTATUS()
+                _canlib.canControlGetStatus(self._control_handle, ctypes.byref(status))
+                error_byte_1 = status.dwStatus & 0x0F
+                error_byte_2 = status.dwStatus & 0xF0
+                if error_byte_1 > constants.CAN_STATUS_TXPEND:
+                    # CAN_STATUS_OVRRUN   = 0x02  # data overrun occurred
+                    # CAN_STATUS_ERRLIM   = 0x04  # error warning limit exceeded
+                    # CAN_STATUS_BUSOFF = 0x08  # bus off status
+                    if error_byte_1 & constants.CAN_STATUS_OVRRUN:
+                        raise VCIError("Data overrun occurred")
+                    elif error_byte_1 & constants.CAN_STATUS_ERRLIM:
+                        raise VCIError("Error warning limit exceeded")
+                    elif error_byte_1 & constants.CAN_STATUS_BUSOFF:
+                        raise VCIError("Bus off status")
+                elif error_byte_2 > constants.CAN_STATUS_ININIT:
+                    # CAN_STATUS_BUSCERR  = 0x20  # bus coupling error
+                    if error_byte_2 & constants.CAN_STATUS_BUSCERR:
+                        raise VCIError("Bus coupling error")
 
         if not data_received:
             # Timed out / can message type is not DATA
@@ -766,11 +779,12 @@ class IXXATBus(BusABC):
             _canlib.canChannelSendMessage(
                 self._channel_handle, int(timeout * 1000), message
             )
-
         else:
             _canlib.canChannelPostMessage(self._channel_handle, message)
+        # Want to log outgoing messages?
+        # log.log(self.RECV_LOGGING_LEVEL, "Sent: %s", message)
 
-    def _send_periodic_internal(self, msg, period, duration=None):
+    def _send_periodic_internal(self, msgs, period, duration=None):
         """Send a message using built-in cyclic transmit list functionality."""
         if self._scheduler is None:
             self._scheduler = HANDLE()
@@ -780,7 +794,7 @@ class IXXATBus(BusABC):
             self._scheduler_resolution = caps.dwClockFreq / caps.dwCmsDivisor
             _canlib.canSchedulerActivate(self._scheduler, constants.TRUE)
         return CyclicSendTask(
-            self._scheduler, msg, period, duration, self._scheduler_resolution
+            self._scheduler, msgs, period, duration, self._scheduler_resolution
         )
 
     def shutdown(self):
@@ -788,8 +802,34 @@ class IXXATBus(BusABC):
             _canlib.canSchedulerClose(self._scheduler)
         _canlib.canChannelClose(self._channel_handle)
         _canlib.canControlStart(self._control_handle, constants.FALSE)
+        _canlib.canControlReset(self._control_handle)
         _canlib.canControlClose(self._control_handle)
         _canlib.vciDeviceClose(self._device_handle)
+
+    @property
+    def state(self) -> BusState:
+        """
+        Return the current state of the hardware
+        """
+        status = structures.CANLINESTATUS()
+        _canlib.canControlGetStatus(self._control_handle, ctypes.byref(status))
+        if status.bOpMode == constants.CAN_OPMODE_LISTONLY:
+            return BusState.PASSIVE
+
+        error_byte_1 = status.dwStatus & 0x0F
+        # CAN_STATUS_BUSOFF = 0x08  # bus off status
+        if error_byte_1 & constants.CAN_STATUS_BUSOFF:
+            return BusState.ERROR
+
+        error_byte_2 = status.dwStatus & 0xF0
+        # CAN_STATUS_BUSCERR  = 0x20  # bus coupling error
+        if error_byte_2 & constants.CAN_STATUS_BUSCERR:
+            raise BusState.ERROR
+
+        return BusState.ACTIVE
+
+
+# ~class IXXATBus(BusABC): ---------------------------------------------------
 
 
 class CyclicSendTask(LimitedDurationCyclicSendTaskABC, RestartableCyclicTaskABC):
@@ -850,7 +890,7 @@ def _format_can_status(status_flags: int):
             status_flags &= ~flag
 
     if status_flags:
-        states.append("unknown state 0x{:02x}".format(status_flags))
+        states.append(f"unknown state 0x{status_flags:02x}")
 
     if states:
         return "CAN status message: {}".format(", ".join(states))

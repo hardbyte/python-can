@@ -3,20 +3,17 @@
 """
 """
 import asyncio
-import unittest
-import random
 import logging
-import tempfile
 import os
+import random
+import tempfile
+import unittest
 import warnings
-from os.path import join, dirname
+from os.path import dirname, join
 
 import can
 
 from .data.example_data import generate_message
-
-channel = "virtual_channel_0"
-can.rc["interface"] = "virtual"
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -55,10 +52,15 @@ class ListenerImportTest(unittest.TestCase):
 
 class BusTest(unittest.TestCase):
     def setUp(self):
+        # Save all can.rc defaults
+        self._can_rc = can.rc
+        can.rc = {"interface": "virtual"}
         self.bus = can.interface.Bus()
 
     def tearDown(self):
         self.bus.shutdown()
+        # Restore the defaults
+        can.rc = self._can_rc
 
 
 class ListenerTest(BusTest):
@@ -86,7 +88,7 @@ class ListenerTest(BusTest):
 
     def testPlayerTypeResolution(self):
         def test_filetype_to_instance(extension, klass):
-            print("testing: {}".format(extension))
+            print(f"testing: {extension}")
             try:
                 if extension == ".blf":
                     delete = False
@@ -121,7 +123,7 @@ class ListenerTest(BusTest):
 
     def testLoggerTypeResolution(self):
         def test_filetype_to_instance(extension, klass):
-            print("testing: {}".format(extension))
+            print(f"testing: {extension}")
             try:
                 with tempfile.NamedTemporaryFile(
                     suffix=extension, delete=False

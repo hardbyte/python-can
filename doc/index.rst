@@ -8,22 +8,22 @@ different hardware devices, and a suite of utilities for sending and receiving
 messages on a CAN bus.
 
 **python-can** runs any where Python runs; from high powered computers
-with commercial `CAN to usb` devices right down to low powered devices running
+with commercial `CAN to USB` devices right down to low powered devices running
 linux such as a BeagleBone or RaspberryPi.
 
 More concretely, some example uses of the library:
 
-- Passively logging what occurs on a CAN bus. For example monitoring a
-  commercial vehicle using its **OBD-II** port.
+* Passively logging what occurs on a CAN bus. For example monitoring a
+  commercial vehicle using its `OBD-II port <https://en.wikipedia.org/wiki/On-board_diagnostics#OBD-II>`__.
 
-- Testing of hardware that interacts via CAN. Modules found in
-  modern cars, motocycles, boats, and even wheelchairs have had components tested
+* Testing of hardware that interacts via CAN. Modules found in
+  modern cars, motorcycles, boats, and even wheelchairs have had components tested
   from Python using this library.
 
-- Prototyping new hardware modules or software algorithms in-the-loop. Easily
+* Prototyping new hardware modules or software algorithms in-the-loop. Easily
   interact with an existing bus.
 
-- Creating virtual modules to prototype CAN bus communication.
+* Creating virtual modules to prototype CAN bus communication.
 
 
 Brief example of the library in action: connecting to a CAN bus, creating and sending a message:
@@ -37,12 +37,15 @@ Brief example of the library in action: connecting to a CAN bus, creating and se
 Contents:
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    installation
    configuration
    api
    interfaces
+   virtual-interfaces
+   plugin-interface
+   other-tools
    scripts
    development
    history

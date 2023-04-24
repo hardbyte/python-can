@@ -2,15 +2,24 @@ Installation
 ============
 
 
-Install ``can`` with ``pip``:
-::
+Install the ``can`` package from PyPi with ``pip`` or similar::
 
     $ pip install python-can
 
 
-As most likely you will want to interface with some hardware, you may
-also have to install platform dependencies. Be sure to check any other
-specifics for your hardware in :doc:`interfaces`.
+
+
+.. warning::
+   As most likely you will want to interface with some hardware, you may
+   also have to install platform dependencies. Be sure to check any other
+   specifics for your hardware in :doc:`interfaces`.
+
+   Many interfaces can install their dependencies at the same time as ``python-can``,
+   for instance the interface ``serial`` includes the ``pyserial`` dependency which can
+   be installed with the ``serial`` extra::
+
+       $ pip install python-can[serial]
+
 
 
 GNU/Linux dependencies
@@ -99,9 +108,19 @@ To install ``python-can`` using the CANtact driver backend:
 
 If ``python-can`` is already installed, the CANtact backend can be installed separately:
 
-``python3 -m pip install cantact``
+``pip install cantact``
 
 Additional CANtact documentation is available at `cantact.io <https://cantact.io>`__.
+
+CanViewer
+~~~~~~~~~
+
+``python-can`` has support for showing a simple CAN viewer terminal application
+by running ``python -m can.viewer``. On Windows, this depends on the
+`windows-curses library <https://pypi.org/project/windows-curses/>`__ which can
+be installed with:
+
+``python -m pip install "python-can[viewer]"``
 
 Installing python-can in development mode
 -----------------------------------------
