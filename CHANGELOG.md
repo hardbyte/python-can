@@ -25,10 +25,10 @@ Features
 * Add support for version 2 TRC files and other TRC file enhancements (#1530).
 
 ### Type Annotations
-* Export symbols to satisfy type checkers (#1547, #1551, #1558).
+* Export symbols to satisfy type checkers (#1547, #1551, #1558, #1568).
 
 ### Interface Improvements
-* Add ``__del__`` method to ``can.BusABC`` to automatically release resources (#1489).
+* Add ``__del__`` method to ``can.BusABC`` to automatically release resources (#1489, #1564).
 * pcan: Update PCAN Basic to 4.6.2.753 (#1481).
 * pcan: Use select instead of polling on Linux (#1410).
 * socketcan: Use ip link JSON output in ``find_available_interfaces`` (#1478).
