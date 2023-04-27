@@ -690,13 +690,13 @@ class PCANBasic:
             load_library_func = cdll.LoadLibrary
 
         if platform.system() == "Windows" or "CYGWIN" in platform.system():
-            lib_name = "PCANBasic.dll"
+            lib_name = "PCANBasic"
         elif platform.system() == "Darwin":
             # PCBUSB library is a third-party software created
             # and maintained by the MacCAN project
-            lib_name = "libPCBUSB.dylib"
+            lib_name = "PCBUSB"
         else:
-            lib_name = "libpcanbasic.so"
+            lib_name = "pcanbasic"
 
         lib_path = find_library(lib_name)
         if not lib_path:
