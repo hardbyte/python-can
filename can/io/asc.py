@@ -420,8 +420,15 @@ class ASCWriter(FileIOMessageWriter):
         self.file.write(line)
 
     def on_message_received(self, msg: Message) -> None:
+        channel = channel2int(msg.channel)
+        if channel is None:
+            channel = self.channel
+        else:
+            # Many interfaces start channel numbering at 0 which is invalid
+            channel += 1
+
         if msg.is_error_frame:
-            self.log_event(f"{self.channel}  ErrorFrame", msg.timestamp)
+            self.log_event(f"{channel}  ErrorFrame", msg.timestamp)
             return
         if msg.is_remote_frame:
             dtype = f"r {msg.dlc:x}"  # New after v8.5
@@ -432,12 +439,6 @@ class ASCWriter(FileIOMessageWriter):
         arb_id = f"{msg.arbitration_id:X}"
         if msg.is_extended_id:
             arb_id += "x"
-        channel = channel2int(msg.channel)
-        if channel is None:
-            channel = self.channel
-        else:
-            # Many interfaces start channel numbering at 0 which is invalid
-            channel += 1
         if msg.is_fd:
             flags = 0
             flags |= 1 << 12
