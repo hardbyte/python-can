@@ -10,7 +10,7 @@ from typing import Any, Generator, TextIO, Union
 from can.message import Message
 
 from ..typechecking import StringPathLike
-from .generic import FileIOMessageWriter, MessageReader
+from .generic import TextIOMessageReader, TextIOMessageWriter
 
 log = logging.getLogger("can.io.canutils")
 
@@ -23,7 +23,7 @@ CANFD_BRS = 0x01
 CANFD_ESI = 0x02
 
 
-class CanutilsLogReader(MessageReader):
+class CanutilsLogReader(TextIOMessageReader):
     """
     Iterator over CAN messages from a .log Logging File (candump -L).
 
@@ -122,7 +122,7 @@ class CanutilsLogReader(MessageReader):
         self.stop()
 
 
-class CanutilsLogWriter(FileIOMessageWriter):
+class CanutilsLogWriter(TextIOMessageWriter):
     """Logs CAN data to an ASCII log file (.log).
     This class is is compatible with "candump -L".
 

@@ -16,7 +16,7 @@ from .asc import ASCReader
 from .blf import BLFReader
 from .canutils import CanutilsLogReader
 from .csv import CSVReader
-from .generic import MessageReader
+from .generic import BinaryIOMessageReader, MessageReader
 from .mf4 import MF4Reader
 from .sqlite import SqliteReader
 from .trc import TRCReader
@@ -87,7 +87,13 @@ class LogReader(MessageReader):
 
         file_or_filename: AcceptedIOType = filename
         if suffix == ".gz":
-            suffix, file_or_filename = LogReader.decompress(filename)
+            ReaderType, file_or_filename = LogReader.decompress(filename)
+        else:
+            ReaderType = cls._get_logger_for_suffix(suffix)
+        return ReaderType(file=file_or_filename, **kwargs)
+
+    @classmethod
+    def _get_logger_for_suffix(cls, suffix: str) -> typing.Type[MessageReader]:
         try:
             ReaderType = LogReader.message_readers[suffix]
         except KeyError:
@@ -96,19 +102,22 @@ class LogReader(MessageReader):
             ) from None
         if ReaderType is None:
             raise ImportError(f"failed to import reader for extension {suffix}")
-        return ReaderType(file=file_or_filename, **kwargs)
+        return ReaderType
 
-    @staticmethod
+    @classmethod
     def decompress(
+        cls,
         filename: StringPathLike,
-    ) -> typing.Tuple[str, typing.Union[str, FileLike]]:
+    ) -> typing.Tuple[typing.Type[MessageReader], typing.Union[str, FileLike]]:
         """
         Return the suffix and io object of the decompressed file.
         """
         real_suffix = pathlib.Path(filename).suffixes[-2].lower()
-        mode = "rb" if real_suffix == ".blf" else "rt"
+        ReaderType = cls._get_logger_for_suffix(real_suffix)
 
-        return real_suffix, gzip.open(filename, mode)
+        mode = "rb" if issubclass(ReaderType, BinaryIOMessageReader) else "rt"
+
+        return ReaderType, gzip.open(filename, mode)
 
     def __iter__(self) -> typing.Generator[Message, None, None]:
         raise NotImplementedError()

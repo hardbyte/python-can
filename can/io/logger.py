@@ -20,7 +20,12 @@ from .asc import ASCWriter
 from .blf import BLFWriter
 from .canutils import CanutilsLogWriter
 from .csv import CSVWriter
-from .generic import BaseIOHandler, FileIOMessageWriter, MessageWriter
+from .generic import (
+    BaseIOHandler,
+    BinaryIOMessageWriter,
+    FileIOMessageWriter,
+    MessageWriter,
+)
 from .mf4 import MF4Writer
 from .printer import Printer
 from .sqlite import SqliteWriter
@@ -94,20 +99,28 @@ class Logger(MessageWriter):
 
         file_or_filename: AcceptedIOType = filename
         if suffix == ".gz":
-            suffix, file_or_filename = Logger.compress(filename, **kwargs)
+            LoggerType, file_or_filename = Logger.compress(filename, **kwargs)
+        else:
+            LoggerType = cls._get_logger_for_suffix(suffix)
 
+        return LoggerType(file=file_or_filename, **kwargs)
+
+    @classmethod
+    def _get_logger_for_suffix(cls, suffix: str) -> Type[MessageWriter]:
         try:
             LoggerType = Logger.message_writers[suffix]
             if LoggerType is None:
                 raise ValueError(f'failed to import logger for extension "{suffix}"')
-            return LoggerType(file=file_or_filename, **kwargs)
+            return LoggerType
         except KeyError:
             raise ValueError(
                 f'No write support for this unknown log format "{suffix}"'
             ) from None
 
-    @staticmethod
-    def compress(filename: StringPathLike, **kwargs: Any) -> Tuple[str, FileLike]:
+    @classmethod
+    def compress(
+        cls, filename: StringPathLike, **kwargs: Any
+    ) -> Tuple[Type[MessageWriter], FileLike]:
         """
         Return the suffix and io object of the decompressed file.
         File will automatically recompress upon close.
@@ -117,12 +130,15 @@ class Logger(MessageWriter):
             raise ValueError(
                 f"The file type {real_suffix} is currently incompatible with gzip."
             )
-        if kwargs.get("append", False):
-            mode = "ab" if real_suffix == ".blf" else "at"
-        else:
-            mode = "wb" if real_suffix == ".blf" else "wt"
+        LoggerType = cls._get_logger_for_suffix(real_suffix)
+        append = kwargs.get("append", False)
 
-        return real_suffix, gzip.open(filename, mode)
+        if issubclass(LoggerType, BinaryIOMessageWriter):
+            mode = "ab" if append else "wb"
+        else:
+            mode = "at" if append else "wt"
+
+        return LoggerType, gzip.open(filename, mode)
 
     def on_message_received(self, msg: Message) -> None:
         pass

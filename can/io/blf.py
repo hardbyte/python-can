@@ -22,7 +22,7 @@ from typing import Any, BinaryIO, Generator, List, Optional, Tuple, Union, cast
 from ..message import Message
 from ..typechecking import StringPathLike
 from ..util import channel2int, dlc2len, len2dlc
-from .generic import FileIOMessageWriter, MessageReader
+from .generic import BinaryIOMessageReader, FileIOMessageWriter
 
 TSystemTime = Tuple[int, int, int, int, int, int, int, int]
 
@@ -132,7 +132,7 @@ def systemtime_to_timestamp(systemtime: TSystemTime) -> float:
         return 0
 
 
-class BLFReader(MessageReader):
+class BLFReader(BinaryIOMessageReader):
     """
     Iterator of CAN messages from a Binary Logging File.
 

@@ -1,13 +1,17 @@
 """Contains generic base classes for file IO."""
+import gzip
 import locale
 from abc import ABCMeta
 from types import TracebackType
 from typing import (
     Any,
+    BinaryIO,
     ContextManager,
     Iterable,
     Optional,
+    TextIO,
     Type,
+    Union,
     cast,
 )
 
@@ -105,5 +109,21 @@ class FileIOMessageWriter(MessageWriter, metaclass=ABCMeta):
         return self.file.tell()
 
 
+class TextIOMessageWriter(FileIOMessageWriter, metaclass=ABCMeta):
+    file: TextIO
+
+
+class BinaryIOMessageWriter(FileIOMessageWriter, metaclass=ABCMeta):
+    file: Union[BinaryIO, gzip.GzipFile]
+
+
 class MessageReader(BaseIOHandler, Iterable[Message], metaclass=ABCMeta):
     """The base class for all readers."""
+
+
+class TextIOMessageReader(MessageReader, metaclass=ABCMeta):
+    file: TextIO
+
+
+class BinaryIOMessageReader(MessageReader, metaclass=ABCMeta):
+    file: Union[BinaryIO, gzip.GzipFile]
