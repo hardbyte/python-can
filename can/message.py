@@ -291,6 +291,7 @@ class Message:  # pylint: disable=too-many-instance-attributes; OK for a datacla
         self,
         other: "Message",
         timestamp_delta: Optional[float] = 1.0e-6,
+        check_channel: bool = True,
         check_direction: bool = True,
     ) -> bool:
         """
@@ -299,6 +300,7 @@ class Message:  # pylint: disable=too-many-instance-attributes; OK for a datacla
         :param other: the message to compare with
         :param timestamp_delta: the maximum difference in seconds at which two timestamps are
                                 still considered equal or `None` to not compare timestamps
+        :param check_channel: whether to compare the message channel
         :param check_direction: whether to compare the messages' directions (Tx/Rx)
 
         :return: True if and only if the given message equals this one
@@ -322,7 +324,7 @@ class Message:  # pylint: disable=too-many-instance-attributes; OK for a datacla
                 and self.data == other.data
                 and self.is_remote_frame == other.is_remote_frame
                 and self.is_error_frame == other.is_error_frame
-                and self.channel == other.channel
+                and (self.channel == other.channel or not check_channel)
                 and self.is_fd == other.is_fd
                 and self.bitrate_switch == other.bitrate_switch
                 and self.error_state_indicator == other.error_state_indicator
