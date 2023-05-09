@@ -95,12 +95,12 @@ class VirtualBus(BusABC):
         super().__init__(
             channel=channel,
             receive_own_messages=receive_own_messages,
-            protocol=protocol,
             **kwargs,
         )
 
         # the channel identifier may be an arbitrary object
         self.channel_id = channel
+        self._can_protocol = protocol
         self.channel_info = f"Virtual bus channel {self.channel_id}"
         self.receive_own_messages = receive_own_messages
         self.preserve_timestamps = preserve_timestamps

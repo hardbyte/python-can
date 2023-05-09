@@ -118,11 +118,12 @@ class Usb2canBus(BusABC):
         baudrate = min(int(bitrate // 1000), 1000)
 
         self.channel_info = f"USB2CAN device {device_id}"
+        self._can_protocol = CanProtocol.CAN_20
 
         connector = f"{device_id}; {baudrate}"
         self.handle = self.can.open(connector, flags)
 
-        super().__init__(channel=channel, protocol=CanProtocol.CAN_20, **kwargs)
+        super().__init__(channel=channel, **kwargs)
 
     def send(self, msg, timeout=None):
         tx = message_convert_tx(msg)

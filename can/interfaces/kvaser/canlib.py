@@ -428,11 +428,12 @@ class KvaserBus(BusABC):
             channel = int(channel)
         except ValueError:
             raise ValueError("channel must be an integer")
+
         self.channel = channel
+        self.single_handle = single_handle
+        self._can_protocol = CanProtocol.CAN_FD if fd else CanProtocol.CAN_20
 
         log.debug("Initialising bus instance")
-        self.single_handle = single_handle
-
         num_channels = ctypes.c_int(0)
         canGetNumberOfChannels(ctypes.byref(num_channels))
         num_channels = int(num_channels.value)
@@ -523,7 +524,6 @@ class KvaserBus(BusABC):
         super().__init__(
             channel=channel,
             can_filters=can_filters,
-            protocol=CanProtocol.CAN_FD if fd else CanProtocol.CAN_20,
             **kwargs,
         )
 

@@ -169,12 +169,9 @@ class NeoViBus(BusABC):
         if ics is None:
             raise ImportError("Please install python-ics")
 
-        is_fd = kwargs.get("fd", False)
-
         super().__init__(
             channel=channel,
             can_filters=can_filters,
-            protocol=CanProtocol.CAN_FD if is_fd else CanProtocol.CAN_20,
             **kwargs,
         )
 
@@ -196,6 +193,9 @@ class NeoViBus(BusABC):
         type_filter = kwargs.get("type_filter")
         serial = kwargs.get("serial")
         self.dev = self._find_device(type_filter, serial)
+
+        is_fd = kwargs.get("fd", False)
+        self._can_protocol = CanProtocol.CAN_FD if is_fd else CanProtocol.CAN_20
 
         with open_lock:
             ics.open_device(self.dev)

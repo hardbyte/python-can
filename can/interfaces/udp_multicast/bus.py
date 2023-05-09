@@ -107,10 +107,10 @@ class UdpMulticastBus(BusABC):
         super().__init__(
             channel,
             **kwargs,
-            protocol=CanProtocol.CAN_FD if fd else CanProtocol.CAN_20,
         )
 
         self._multicast = GeneralPurposeUdpMulticastBus(channel, port, hop_limit)
+        self._can_protocol = CanProtocol.CAN_FD if fd else CanProtocol.CAN_20
 
     @property
     def is_fd(self) -> bool:

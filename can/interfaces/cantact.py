@@ -87,6 +87,7 @@ class CantactBus(BusABC):
 
         self.channel = int(channel)
         self.channel_info = f"CANtact: ch:{channel}"
+        self._can_protocol = CanProtocol.CAN_20
 
         # Configure the interface
         with error_check("Cannot setup the cantact.Interface", CanInitializationError):
@@ -117,7 +118,6 @@ class CantactBus(BusABC):
             channel=channel,
             bitrate=bitrate,
             poll_interval=poll_interval,
-            protocol=CanProtocol.CAN_20,
             **kwargs,
         )
 

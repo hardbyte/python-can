@@ -100,6 +100,8 @@ class SeeedBus(BusABC):
         self.op_mode = operation_mode
         self.filter_id = bytearray([0x00, 0x00, 0x00, 0x00])
         self.mask_id = bytearray([0x00, 0x00, 0x00, 0x00])
+        self._can_protocol = CanProtocol.CAN_20
+
         if not channel:
             raise can.CanInitializationError("Must specify a serial port.")
 
@@ -113,7 +115,7 @@ class SeeedBus(BusABC):
                 "could not create the serial device"
             ) from error
 
-        super().__init__(channel=channel, *args, protocol=CanProtocol.CAN_20, **kwargs)
+        super().__init__(channel=channel, *args, **kwargs)
         self.init_frame()
 
     def shutdown(self):

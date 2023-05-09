@@ -246,8 +246,9 @@ class PcanBus(BusABC):
                 err_msg = f"Cannot find a channel with ID {device_id:08x}"
                 raise ValueError(err_msg)
 
-        self.channel_info = str(channel)
         is_fd = isinstance(timing, BitTimingFd) if timing else kwargs.get("fd", False)
+        self._can_protocol = CanProtocol.CAN_FD if is_fd else CanProtocol.CAN_20
+        self.channel_info = str(channel)
 
         hwtype = PCAN_TYPE_ISA
         ioport = 0x02A0
@@ -340,7 +341,6 @@ class PcanBus(BusABC):
 
         super().__init__(
             channel=channel,
-            protocol=CanProtocol.CAN_FD if is_fd else CanProtocol.CAN_20,
             state=state,
             bitrate=bitrate,
             **kwargs,

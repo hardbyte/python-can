@@ -220,6 +220,7 @@ class NicanBus(BusABC):
 
         self.channel = channel
         self.channel_info = f"NI-CAN: {channel}"
+        self._can_protocol = CanProtocol.CAN_20
         channel_bytes = channel.encode("ascii")
 
         config = [(NC_ATTR_START_ON_OPEN, True), (NC_ATTR_LOG_COMM_ERRS, log_errors)]
@@ -275,7 +276,6 @@ class NicanBus(BusABC):
             can_filters=can_filters,
             bitrate=bitrate,
             log_errors=log_errors,
-            protocol=CanProtocol.CAN_20,
             **kwargs,
         )
 

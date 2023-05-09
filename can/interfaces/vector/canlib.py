@@ -204,11 +204,12 @@ class VectorBus(BusABC):
         )
 
         channel_configs = get_channel_configs()
+        is_fd = isinstance(timing, BitTimingFd) if timing else fd
 
         self.mask = 0
-        is_fd = isinstance(timing, BitTimingFd) if timing else fd
         self.channel_masks: Dict[int, int] = {}
         self.index_to_channel: Dict[int, int] = {}
+        self._can_protocol = CanProtocol.CAN_FD if is_fd else CanProtocol.CAN_20
 
         for channel in self.channels:
             channel_index = self._find_global_channel_idx(
@@ -329,7 +330,6 @@ class VectorBus(BusABC):
         super().__init__(
             channel=channel,
             can_filters=can_filters,
-            protocol=CanProtocol.CAN_FD if is_fd else CanProtocol.CAN_20,
             **kwargs,
         )
 

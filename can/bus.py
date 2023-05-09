@@ -52,12 +52,12 @@ class BusABC(metaclass=ABCMeta):
     RECV_LOGGING_LEVEL = 9
 
     _is_shutdown: bool = False
+    _can_protocol: CanProtocol = CanProtocol.CAN_20
 
     @abstractmethod
     def __init__(
         self,
         channel: Any,
-        protocol: CanProtocol = CanProtocol.CAN_20,
         can_filters: Optional[can.typechecking.CanFilters] = None,
         **kwargs: object,
     ):
@@ -68,13 +68,6 @@ class BusABC(metaclass=ABCMeta):
 
         :param channel:
             The can interface identifier. Expected type is backend dependent.
-
-        :param protocol:
-            The CAN protocol currently used by this bus instance. This value
-            is determined at initialization time (based on the initialization
-            parameters or because the bus interface only supports a specific
-            protocol) and does not change during the lifetime of a bus
-            instance.
 
         :param can_filters:
             See :meth:`~can.BusABC.set_filters` for details.
@@ -88,7 +81,6 @@ class BusABC(metaclass=ABCMeta):
         :raises ~can.exceptions.CanInitializationError:
             If the bus cannot be initialized
         """
-        self._can_protocol = protocol
         self._periodic_tasks: List[_SelfRemovingCyclicTask] = []
         self.set_filters(can_filters)
 

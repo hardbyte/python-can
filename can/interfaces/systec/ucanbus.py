@@ -111,6 +111,8 @@ class UcanBus(BusABC):
             ) from exception
 
         self.channel = int(channel)
+        self._can_protocol = CanProtocol.CAN_20
+
         device_number = int(kwargs.get("device_number", ANY_MODULE))
 
         # configuration options
@@ -155,7 +157,6 @@ class UcanBus(BusABC):
         super().__init__(
             channel=channel,
             can_filters=can_filters,
-            protocol=CanProtocol.CAN_20,
             **kwargs,
         )
 

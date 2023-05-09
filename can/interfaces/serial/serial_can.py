@@ -89,6 +89,7 @@ class SerialBus(BusABC):
             raise TypeError("Must specify a serial port.")
 
         self.channel_info = f"Serial interface: {channel}"
+        self._can_protocol = CanProtocol.CAN_20
 
         try:
             self._ser = serial.serial_for_url(
@@ -99,7 +100,7 @@ class SerialBus(BusABC):
                 "could not create the serial device"
             ) from error
 
-        super().__init__(channel, protocol=CanProtocol.CAN_20, *args, **kwargs)
+        super().__init__(channel, *args, **kwargs)
 
     def shutdown(self) -> None:
         """

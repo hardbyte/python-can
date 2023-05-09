@@ -105,6 +105,7 @@ class slcanBus(BusABC):
             )
 
         self._buffer = bytearray()
+        self._can_protocol = CanProtocol.CAN_20
 
         time.sleep(sleep_after_open)
 
@@ -122,7 +123,6 @@ class slcanBus(BusABC):
             ttyBaudrate=115200,
             bitrate=None,
             rtscts=False,
-            protocol=CanProtocol.CAN_20,
             **kwargs,
         )
 

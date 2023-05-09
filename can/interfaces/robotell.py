@@ -92,12 +92,13 @@ class robotellBus(BusABC):
         if bitrate is not None:
             self.set_bitrate(bitrate)
 
+        self._can_protocol = CanProtocol.CAN_20
         self.channel_info = (
             f"Robotell USB-CAN s/n {self.get_serial_number(1)} on {channel}"
         )
         logger.info("Using device: %s", self.channel_info)
 
-        super().__init__(channel=channel, protocol=CanProtocol.CAN_20, **kwargs)
+        super().__init__(channel=channel, **kwargs)
 
     def set_bitrate(self, bitrate):
         """

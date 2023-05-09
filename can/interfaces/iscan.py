@@ -100,6 +100,7 @@ class IscanBus(BusABC):
 
         self.channel = ctypes.c_ubyte(int(channel))
         self.channel_info = f"IS-CAN: {self.channel}"
+        self._can_protocol = CanProtocol.CAN_20
 
         if bitrate not in self.BAUDRATES:
             raise ValueError(f"Invalid bitrate, choose one of {set(self.BAUDRATES)}")
@@ -111,7 +112,6 @@ class IscanBus(BusABC):
             channel=channel,
             bitrate=bitrate,
             poll_interval=poll_interval,
-            protocol=CanProtocol.CAN_20,
             **kwargs,
         )
 

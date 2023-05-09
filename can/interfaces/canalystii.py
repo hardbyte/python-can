@@ -57,7 +57,6 @@ class CANalystIIBus(BusABC):
         super().__init__(
             channel=channel,
             can_filters=can_filters,
-            protocol=CanProtocol.CAN_20,
             **kwargs,
         )
         if isinstance(channel, str):
@@ -68,11 +67,11 @@ class CANalystIIBus(BusABC):
         else:  # Sequence[int]
             self.channels = list(channel)
 
-        self.rx_queue: Deque[Tuple[int, driver.Message]] = deque(maxlen=rx_queue_size)
-
         self.channel_info = f"CANalyst-II: device {device}, channels {self.channels}"
-
+        self.rx_queue: Deque[Tuple[int, driver.Message]] = deque(maxlen=rx_queue_size)
         self.device = driver.CanalystDevice(device_index=device)
+        self._can_protocol = CanProtocol.CAN_20
+
         for single_channel in self.channels:
             if isinstance(timing, BitTiming):
                 timing = check_or_adjust_timing_clock(timing, valid_clocks=[8_000_000])

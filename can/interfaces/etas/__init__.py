@@ -16,14 +16,12 @@ class EtasBus(can.BusABC):
         bitrate: int = 1000000,
         fd: bool = True,
         data_bitrate: int = 2000000,
-        **kwargs: object,
+        **kwargs: Dict[str, any],
     ):
-        super().__init__(
-            channel=channel,
-            protocol=can.CanProtocol.CAN_FD if fd else can.CanProtocol.CAN_20,
-        )
+        super().__init__(channel=channel, **kwargs)
 
         self.receive_own_messages = receive_own_messages
+        self._can_protocol = can.CanProtocol.CAN_FD if fd else can.CanProtocol.CAN_20
 
         nodeRange = CSI_NodeRange(CSI_NODE_MIN, CSI_NODE_MAX)
         self.tree = ctypes.POINTER(CSI_Tree)()

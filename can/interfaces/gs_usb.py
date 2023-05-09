@@ -52,6 +52,7 @@ class GsUsbBus(can.BusABC):
 
         self.gs_usb = gs_usb
         self.channel_info = channel
+        self._can_protocol = can.CanProtocol.CAN_20
 
         self.gs_usb.set_bitrate(bitrate)
         self.gs_usb.start()
@@ -59,7 +60,6 @@ class GsUsbBus(can.BusABC):
         super().__init__(
             channel=channel,
             can_filters=can_filters,
-            protocol=can.CanProtocol.CAN_20,
             **kwargs,
         )
 

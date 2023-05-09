@@ -105,6 +105,7 @@ class NiXNETcanBus(BusABC):
         self.poll_interval = poll_interval
 
         is_fd = isinstance(timing, BitTimingFd) if timing else fd
+        self._can_protocol = CanProtocol.CAN_FD if is_fd else CanProtocol.CAN_20
 
         # Set database for the initialization
         database_name = ":can_fd_brs:" if is_fd else ":memory:"
@@ -186,7 +187,6 @@ class NiXNETcanBus(BusABC):
             channel=channel,
             can_filters=can_filters,
             bitrate=bitrate,
-            protocol=CanProtocol.CAN_FD if is_fd else CanProtocol.CAN_20,
             **kwargs,
         )
 

@@ -656,6 +656,7 @@ class SocketcanBus(BusABC):
         self._is_filtered = False
         self._task_id = 0
         self._task_id_guard = threading.Lock()
+        self._can_protocol = CanProtocol.CAN_FD if fd else CanProtocol.CAN_20
 
         # set the local_loopback parameter
         try:
@@ -713,7 +714,6 @@ class SocketcanBus(BusABC):
         super().__init__(
             channel=channel,
             can_filters=can_filters,
-            protocol=CanProtocol.CAN_FD if fd else CanProtocol.CAN_20,
             **kwargs,
         )
 

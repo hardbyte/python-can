@@ -535,6 +535,7 @@ class IXXATBus(BusABC):
         self._channel_capabilities = structures.CANCAPABILITIES2()
         self._message = structures.CANMSG2()
         self._payload = (ctypes.c_byte * 64)()
+        self._can_protocol = CanProtocol.CAN_FD
 
         # Search for supplied device
         if unique_hardware_id is None:
@@ -741,9 +742,7 @@ class IXXATBus(BusABC):
             except (VCITimeout, VCIRxQueueEmptyError):
                 break
 
-        super().__init__(
-            channel=channel, can_filters=None, protocol=CanProtocol.CAN_FD, **kwargs
-        )
+        super().__init__(channel=channel, can_filters=None, **kwargs)
 
     @staticmethod
     def _canptb_build(defaults, bitrate, tseg1, tseg2, sjw, ssp):

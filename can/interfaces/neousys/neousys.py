@@ -143,7 +143,7 @@ class NeousysBus(BusABC):
         :param device: device number
         :param bitrate: bit rate.
         """
-        super().__init__(channel, protocol=CanProtocol.CAN_20, **kwargs)
+        super().__init__(channel, **kwargs)
 
         if NEOUSYS_CANLIB is None:
             raise CanInterfaceNotImplementedError("Neousys WDT_DIO Can driver missing")
@@ -151,6 +151,7 @@ class NeousysBus(BusABC):
         self.channel = channel
         self.device = device
         self.channel_info = f"Neousys Can: device {self.device}, channel {self.channel}"
+        self._can_protocol = CanProtocol.CAN_20
 
         self.queue = queue.Queue()
 
