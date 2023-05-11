@@ -591,6 +591,26 @@ class TestAscFileFormat(ReaderWriterTest):
     def test_can_dlc_greater_than_8(self):
         _msg_list = self._read_log_file("issue_1299.asc")
 
+    def test_error_frame_channel(self):
+        # gh-issue 1578
+        err_frame = can.Message(is_error_frame=True, channel=4)
+
+        temp_file = tempfile.NamedTemporaryFile("w", delete=False)
+        temp_file.close()
+
+        try:
+            with can.ASCWriter(temp_file.name) as writer:
+                writer.on_message_received(err_frame)
+
+            with can.ASCReader(temp_file.name) as reader:
+                msg_list = list(reader)
+                assert len(msg_list) == 1
+                assert err_frame.equals(
+                    msg_list[0], check_channel=True
+                ), f"{err_frame!r}!={msg_list[0]!r}"
+        finally:
+            os.unlink(temp_file.name)
+
 
 class TestBlfFileFormat(ReaderWriterTest):
     """Tests can.BLFWriter and can.BLFReader.
@@ -814,7 +834,7 @@ class TestPrinter(unittest.TestCase):
                 printer(message)
 
     def test_not_crashes_with_file(self):
-        with tempfile.NamedTemporaryFile("w", delete=False) as temp_file:
+        with tempfile.NamedTemporaryFile("w") as temp_file:
             with can.Printer(temp_file) as printer:
                 for message in self.messages:
                     printer(message)
