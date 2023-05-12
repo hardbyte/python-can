@@ -1,19 +1,139 @@
-[build-system]
-requires = [
-    "setuptools >= 40.8",
-    "wheel",
+[project]
+name = "python-can"
+dynamic = ["readme", "version"]
+description = "Controller Area Network interface module for Python"
+authors = [{ name = "python-can contributors" }]
+dependencies = [
+    "wrapt~=1.10",
+    "typing_extensions>=3.10.0.0",
+    "pywin32>=305; platform_system == 'Windows' and platform_python_implementation == 'CPython'",
+    "msgpack~=1.0.0; platform_system != 'Windows'",
 ]
-build-backend = "setuptools.build_meta"
+requires-python = ">=3.7, <=4.0"
+license = { text = "LGPL v3" }
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Education",
+    "Intended Audience :: Information Technology",
+    "Intended Audience :: Manufacturing",
+    "Intended Audience :: Telecommunications Industry",
+    "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
+    "Natural Language :: English",
+    "Natural Language :: English",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+    "Topic :: System :: Hardware :: Hardware Drivers",
+    "Topic :: System :: Logging",
+    "Topic :: System :: Monitoring",
+    "Topic :: System :: Networking",
+    "Topic :: Utilities",
+]
+
+[project.scripts]
+"can_logconvert.py" = "scripts.can_logconvert:main"
+"can_logger.py" = "scripts.can_logger:main"
+"can_player.py" = "scripts.can_player:main"
+"can_viewer.py" = "scripts.can_viewer:main"
+
+[project.urls]
+homepage = "https://github.com/hardbyte/python-can"
+documentation = "https://python-can.readthedocs.io"
+repository = "https://github.com/hardbyte/python-can"
+changelog = "https://github.com/hardbyte/python-can/blob/develop/CHANGELOG.md"
+
+[project.optional-dependencies]
+lint = [
+    "pylint==2.16.4",
+    "ruff==0.0.260",
+    "black~=23.1.0",
+    "mypy==1.0.1",
+    "mypy-extensions==0.4.3",
+    "types-setuptools"
+]
+seeedstudio = ["pyserial>=3.0"]
+serial = ["pyserial~=3.0"]
+neovi = ["filelock", "python-ics>=2.12"]
+canalystii = ["canalystii>=0.1.0"]
+cantact = ["cantact>=0.0.7"]
+cvector = ["python-can-cvector"]
+gs_usb = ["gs_usb>=0.2.1"]
+nixnet = ["nixnet>=0.3.2"]
+pcan = ["uptime~=3.0.1"]
+remote = ["python-can-remote"]
+sontheim = ["python-can-sontheim>=0.1.2"]
+canine = ["python-can-canine>=0.2.2"]
+viewer = [
+    "windows-curses; platform_system == 'Windows' and platform_python_implementation=='CPython'"
+]
+mf4 = ["asammdf>=6.0.0"]
+
+[tool.setuptools.dynamic]
+readme = { file = "README.rst" }
+version = { attr = "can.__version__" }
+
+[tool.setuptools.package-data]
+"*" = ["README.rst", "CONTRIBUTORS.txt", "LICENSE.txt", "CHANGELOG.md"]
+doc = ["*.*"]
+examples = ["*.py"]
+can = ["py.typed"]
+
+[tool.setuptools.packages.find]
+include = ["can*", "scripts"]
+
+[tool.mypy]
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+no_implicit_optional = true
+disallow_incomplete_defs = true
+warn_redundant_casts = true
+warn_unused_ignores = false
+exclude = [
+    "venv",
+    "^doc/conf.py$",
+    "^test",
+    "^setup.py$",
+    "^can/interfaces/__init__.py",
+    "^can/interfaces/etas",
+    "^can/interfaces/gs_usb",
+    "^can/interfaces/ics_neovi",
+    "^can/interfaces/iscan",
+    "^can/interfaces/ixxat",
+    "^can/interfaces/kvaser",
+    "^can/interfaces/nican",
+    "^can/interfaces/neousys",
+    "^can/interfaces/pcan",
+    "^can/interfaces/serial",
+    "^can/interfaces/slcan",
+    "^can/interfaces/socketcan",
+    "^can/interfaces/systec",
+    "^can/interfaces/udp_multicast",
+    "^can/interfaces/usb2can",
+    "^can/interfaces/virtual",
+]
 
 [tool.ruff]
 select = [
-    "F401",  # unused-imports
-    "UP",  # pyupgrade
-    "I",  # isort
-]
+    "F401", # unused-imports
+    "UP", # pyupgrade
+    "I", # isort
 
-# Assume Python 3.7.
-target-version = "py37"
+]
 
 [tool.ruff.isort]
 known-first-party = ["can"]
+
+[build-system]
+requires = ["packaging", "setuptools >= 40.8", "wheel"]
+build-backend = "setuptools.build_meta"
