@@ -340,7 +340,7 @@ class VectorBus(BusABC):
             "BusABC.protocol. It is scheduled for removal in version 5.0.",
             DeprecationWarning,
         )
-        return self.protocol == CanProtocol.CAN_FD
+        return self._can_protocol is CanProtocol.CAN_FD
 
     def _find_global_channel_idx(
         self,

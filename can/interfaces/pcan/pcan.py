@@ -664,7 +664,7 @@ class PcanBus(BusABC):
             "It is scheduled for removal in version 5.0.",
             DeprecationWarning,
         )
-        return self.protocol == CanProtocol.CAN_FD
+        return self._can_protocol is CanProtocol.CAN_FD
 
     @property
     def state(self):
