@@ -8,6 +8,7 @@ dependencies = [
     "typing_extensions>=3.10.0.0",
     "pywin32>=305; platform_system == 'Windows' and platform_python_implementation == 'CPython'",
     "msgpack~=1.0.0; platform_system != 'Windows'",
+    "setuptools >= 40.8",
 ]
 requires-python = ">=3.7, <=4.0"
 license = { text = "LGPL v3" }
