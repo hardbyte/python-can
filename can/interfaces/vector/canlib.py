@@ -663,7 +663,7 @@ class VectorBus(BusABC):
 
         while True:
             try:
-                if self.protocol == CanProtocol.CAN_FD:
+                if self._can_protocol is CanProtocol.CAN_FD:
                     msg = self._recv_canfd()
                 else:
                     msg = self._recv_can()
@@ -797,7 +797,7 @@ class VectorBus(BusABC):
 
     def _send_sequence(self, msgs: Sequence[Message]) -> int:
         """Send messages and return number of successful transmissions."""
-        if self.protocol == CanProtocol.CAN_FD:
+        if self._can_protocol is CanProtocol.CAN_FD:
             return self._send_can_fd_msg_sequence(msgs)
         else:
             return self._send_can_msg_sequence(msgs)

@@ -136,13 +136,13 @@ class UdpMulticastBus(BusABC):
                 "could not unpack received message"
             ) from exception
 
-        if self.protocol != CanProtocol.CAN_FD and can_message.is_fd:
+        if self._can_protocol is not CanProtocol.CAN_FD and can_message.is_fd:
             return None, False
 
         return can_message, False
 
     def send(self, msg: can.Message, timeout: Optional[float] = None) -> None:
-        if self.protocol != CanProtocol.CAN_FD and msg.is_fd:
+        if self._can_protocol is not CanProtocol.CAN_FD: and msg.is_fd:
             raise can.CanOperationError(
                 "cannot send FD message over bus with CAN FD disabled"
             )
