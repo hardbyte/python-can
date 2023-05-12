@@ -142,7 +142,7 @@ class UdpMulticastBus(BusABC):
         return can_message, False
 
     def send(self, msg: can.Message, timeout: Optional[float] = None) -> None:
-        if self._can_protocol is not CanProtocol.CAN_FD: and msg.is_fd:
+        if self._can_protocol is not CanProtocol.CAN_FD and msg.is_fd:
             raise can.CanOperationError(
                 "cannot send FD message over bus with CAN FD disabled"
             )
