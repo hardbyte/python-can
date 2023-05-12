@@ -102,6 +102,7 @@ warn_unused_ignores = false
 exclude = [
     "venv",
     "^doc/conf.py$",
+    "^build",
     "^test",
     "^setup.py$",
     "^can/interfaces/__init__.py",
