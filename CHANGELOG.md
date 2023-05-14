@@ -1,3 +1,13 @@
+Version 4.2.1
+=============
+
+Bug Fixes
+---------
+* The ASCWriter now logs the correct channel for error frames (#1578, #1583).
+* Fix PCAN library detection (#1579, #1580).
+* On Windows, the first two periodic frames were sent without delay (#1590).
+
+
 Version 4.2.0
 =============
 
