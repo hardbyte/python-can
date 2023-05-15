@@ -3,10 +3,10 @@
 Bus
 ---
 
-The :class:`~can.Bus` provides a wrapper around a physical or virtual CAN Bus.
+The :class:`~can.BusABC` class provides a wrapper around a physical or virtual CAN Bus.
 
-An interface specific instance is created by instantiating the :class:`~can.Bus`
-class with a particular ``interface``, for example::
+An interface specific instance is created by calling the :func:`~can.Bus`
+function with a particular ``interface``, for example::
 
     vector_bus = can.Bus(interface='vector', ...)
 
@@ -77,13 +77,14 @@ See :meth:`~can.BusABC.set_filters` for the implementation.
 Bus API
 '''''''
 
-.. autoclass:: can.Bus
+.. autofunction:: can.Bus
+
+.. autoclass:: can.BusABC
     :class-doc-from: class
-    :show-inheritance:
     :members:
     :inherited-members:
 
-.. autoclass:: can.bus.BusState
+.. autoclass:: can.BusState
     :members:
     :undoc-members:
 

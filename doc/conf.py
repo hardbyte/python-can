@@ -126,7 +126,9 @@ nitpick_ignore = [
     ("py:class", "can.typechecking.CanFilter"),
     ("py:class", "can.typechecking.CanFilterExtended"),
     ("py:class", "can.typechecking.AutoDetectedConfig"),
-    ("py:class", "can.util.T"),
+    ("py:class", "can.util.T1"),
+    ("py:class", "can.util.T2"),
+    ("py:class", "~P1"),
     # intersphinx fails to reference some builtins
     ("py:class", "asyncio.events.AbstractEventLoop"),
     ("py:class", "_thread.allocate_lock"),
