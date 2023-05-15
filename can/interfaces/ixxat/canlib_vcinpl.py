@@ -16,13 +16,15 @@ import sys
 import warnings
 from typing import Callable, Optional, Sequence, Tuple, Union
 
-import can
-from can import BusABC, CanProtocol, Message
-from can.broadcastmanager import (
+from can import (
+    BusABC,
+    BusState,
+    CanProtocol,
+    CyclicSendTaskABC,
     LimitedDurationCyclicSendTaskABC,
+    Message,
     RestartableCyclicTaskABC,
 )
-from can.bus import BusState
 from can.ctypesutil import HANDLE, PHANDLE, CLibrary
 from can.ctypesutil import HRESULT as ctypes_HRESULT
 from can.exceptions import CanInitializationError, CanInterfaceNotImplementedError
@@ -793,7 +795,7 @@ class IXXATBus(BusABC):
         period: float,
         duration: Optional[float] = None,
         modifier_callback: Optional[Callable[[Message], None]] = None,
-    ) -> can.broadcastmanager.CyclicSendTaskABC:
+    ) -> CyclicSendTaskABC:
         """Send a message using built-in cyclic transmit list functionality."""
         if modifier_callback is None:
             if self._scheduler is None:
