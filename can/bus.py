@@ -8,7 +8,7 @@ import threading
 from abc import ABC, ABCMeta, abstractmethod
 from enum import Enum, auto
 from time import time
-from typing import Any, Iterator, List, Optional, Sequence, Tuple, Union, cast
+from typing import Any, Callable, Iterator, List, Optional, Sequence, Tuple, Union, cast
 
 import can
 import can.typechecking
@@ -195,6 +195,7 @@ class BusABC(metaclass=ABCMeta):
         period: float,
         duration: Optional[float] = None,
         store_task: bool = True,
+        modifier_callback: Optional[Callable[[Message], None]] = None,
     ) -> can.broadcastmanager.CyclicSendTaskABC:
         """Start sending messages at a given period on this bus.
 
@@ -216,6 +217,10 @@ class BusABC(metaclass=ABCMeta):
         :param store_task:
             If True (the default) the task will be attached to this Bus instance.
             Disable to instead manage tasks manually.
+        :param modifier_callback:
+            Function which should be used to modify each message's data before
+            sending. The callback modifies the :attr:`~can.Message.data` of the
+            message and returns ``None``.
         :return:
             A started task instance. Note the task can be stopped (and depending on
             the backend modified) by calling the task's
@@ -230,7 +235,7 @@ class BusABC(metaclass=ABCMeta):
 
         .. note::
 
-            For extremely long running Bus instances with many short lived
+            For extremely long-running Bus instances with many short-lived
             tasks the default api with ``store_task==True`` may not be
             appropriate as the stopped tasks are still taking up memory as they
             are associated with the Bus instance.
@@ -247,9 +252,8 @@ class BusABC(metaclass=ABCMeta):
         # Create a backend specific task; will be patched to a _SelfRemovingCyclicTask later
         task = cast(
             _SelfRemovingCyclicTask,
-            self._send_periodic_internal(msgs, period, duration),
+            self._send_periodic_internal(msgs, period, duration, modifier_callback),
         )
-
         # we wrap the task's stop method to also remove it from the Bus's list of tasks
         periodic_tasks = self._periodic_tasks
         original_stop_method = task.stop
@@ -275,6 +279,7 @@ class BusABC(metaclass=ABCMeta):
         msgs: Union[Sequence[Message], Message],
         period: float,
         duration: Optional[float] = None,
+        modifier_callback: Optional[Callable[[Message], None]] = None,
     ) -> can.broadcastmanager.CyclicSendTaskABC:
         """Default implementation of periodic message sending using threading.
 
@@ -298,7 +303,12 @@ class BusABC(metaclass=ABCMeta):
                 threading.Lock()
             )
         task = ThreadBasedCyclicSendTask(
-            self, self._lock_send_periodic, msgs, period, duration
+            bus=self,
+            lock=self._lock_send_periodic,
+            messages=msgs,
+            period=period,
+            duration=duration,
+            modifier_callback=modifier_callback,
         )
         return task
 

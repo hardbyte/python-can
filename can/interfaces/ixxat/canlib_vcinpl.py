@@ -13,14 +13,18 @@ import ctypes
 import functools
 import logging
 import sys
-from typing import Callable, Optional, Tuple
+import warnings
+from typing import Callable, Optional, Sequence, Tuple, Union
 
-from can import BusABC, CanProtocol, Message
-from can.broadcastmanager import (
+from can import (
+    BusABC,
+    BusState,
+    CanProtocol,
+    CyclicSendTaskABC,
     LimitedDurationCyclicSendTaskABC,
+    Message,
     RestartableCyclicTaskABC,
 )
-from can.bus import BusState
 from can.ctypesutil import HANDLE, PHANDLE, CLibrary
 from can.ctypesutil import HRESULT as ctypes_HRESULT
 from can.exceptions import CanInitializationError, CanInterfaceNotImplementedError
@@ -785,17 +789,39 @@ class IXXATBus(BusABC):
         # Want to log outgoing messages?
         # log.log(self.RECV_LOGGING_LEVEL, "Sent: %s", message)
 
-    def _send_periodic_internal(self, msgs, period, duration=None):
+    def _send_periodic_internal(
+        self,
+        msgs: Union[Sequence[Message], Message],
+        period: float,
+        duration: Optional[float] = None,
+        modifier_callback: Optional[Callable[[Message], None]] = None,
+    ) -> CyclicSendTaskABC:
         """Send a message using built-in cyclic transmit list functionality."""
-        if self._scheduler is None:
-            self._scheduler = HANDLE()
-            _canlib.canSchedulerOpen(self._device_handle, self.channel, self._scheduler)
-            caps = structures.CANCAPABILITIES()
-            _canlib.canSchedulerGetCaps(self._scheduler, caps)
-            self._scheduler_resolution = caps.dwClockFreq / caps.dwCmsDivisor
-            _canlib.canSchedulerActivate(self._scheduler, constants.TRUE)
-        return CyclicSendTask(
-            self._scheduler, msgs, period, duration, self._scheduler_resolution
+        if modifier_callback is None:
+            if self._scheduler is None:
+                self._scheduler = HANDLE()
+                _canlib.canSchedulerOpen(
+                    self._device_handle, self.channel, self._scheduler
+                )
+                caps = structures.CANCAPABILITIES()
+                _canlib.canSchedulerGetCaps(self._scheduler, caps)
+                self._scheduler_resolution = caps.dwClockFreq / caps.dwCmsDivisor
+                _canlib.canSchedulerActivate(self._scheduler, constants.TRUE)
+            return CyclicSendTask(
+                self._scheduler, msgs, period, duration, self._scheduler_resolution
+            )
+
+        # fallback to thread based cyclic task
+        warnings.warn(
+            f"{self.__class__.__name__} falls back to a thread-based cyclic task, "
+            "when the `modifier_callback` argument is given."
+        )
+        return BusABC._send_periodic_internal(
+            self,
+            msgs=msgs,
+            period=period,
+            duration=duration,
+            modifier_callback=modifier_callback,
         )
 
     def shutdown(self):

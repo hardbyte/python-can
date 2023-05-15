@@ -1,9 +1,13 @@
-from typing import Optional
+from typing import Callable, Optional, Sequence, Union
 
 import can.interfaces.ixxat.canlib_vcinpl as vcinpl
 import can.interfaces.ixxat.canlib_vcinpl2 as vcinpl2
-from can import BusABC, Message
-from can.bus import BusState
+from can import (
+    BusABC,
+    BusState,
+    CyclicSendTaskABC,
+    Message,
+)
 
 
 class IXXATBus(BusABC):
@@ -145,8 +149,16 @@ class IXXATBus(BusABC):
     def send(self, msg: Message, timeout: Optional[float] = None) -> None:
         return self.bus.send(msg, timeout)
 
-    def _send_periodic_internal(self, msgs, period, duration=None):
-        return self.bus._send_periodic_internal(msgs, period, duration)
+    def _send_periodic_internal(
+        self,
+        msgs: Union[Sequence[Message], Message],
+        period: float,
+        duration: Optional[float] = None,
+        modifier_callback: Optional[Callable[[Message], None]] = None,
+    ) -> CyclicSendTaskABC:
+        return self.bus._send_periodic_internal(
+            msgs, period, duration, modifier_callback
+        )
 
     def shutdown(self) -> None:
         super().shutdown()
