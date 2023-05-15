@@ -85,7 +85,7 @@ def _append_filter_argument(
     )
 
 
-def _create_bus(parsed_args: Any, **kwargs: Any) -> can.Bus:
+def _create_bus(parsed_args: Any, **kwargs: Any) -> can.BusABC:
     logging_level_names = ["critical", "error", "warning", "info", "debug", "subdebug"]
     can.set_logging_level(logging_level_names[min(5, parsed_args.verbosity)])
 
@@ -99,7 +99,7 @@ def _create_bus(parsed_args: Any, **kwargs: Any) -> can.Bus:
     if parsed_args.data_bitrate:
         config["data_bitrate"] = parsed_args.data_bitrate
 
-    return Bus(parsed_args.channel, **config)  # type: ignore
+    return Bus(parsed_args.channel, **config)
 
 
 def _parse_filters(parsed_args: Any) -> CanFilters:

@@ -1,9 +1,16 @@
 import logging
 from threading import Event
 
-from can import BusABC, BusState, Message
+from can import (
+    BusABC,
+    BusState,
+    CanError,
+    CanInitializationError,
+    CanOperationError,
+    CanProtocol,
+    Message,
+)
 
-from ...exceptions import CanError, CanInitializationError, CanOperationError
 from .constants import *
 from .exceptions import UcanException
 from .structures import *
@@ -104,6 +111,8 @@ class UcanBus(BusABC):
             ) from exception
 
         self.channel = int(channel)
+        self._can_protocol = CanProtocol.CAN_20
+
         device_number = int(kwargs.get("device_number", ANY_MODULE))
 
         # configuration options
@@ -145,7 +154,11 @@ class UcanBus(BusABC):
 
         self._is_filtered = False
 
-        super().__init__(channel=channel, can_filters=can_filters, **kwargs)
+        super().__init__(
+            channel=channel,
+            can_filters=can_filters,
+            **kwargs,
+        )
 
     def _recv_internal(self, timeout):
         try:

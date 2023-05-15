@@ -132,6 +132,9 @@ class IXXATBus(BusABC):
                 **kwargs
             )
 
+        super().__init__(channel=channel, **kwargs)
+        self._can_protocol = self.bus.protocol
+
     def flush_tx_buffer(self):
         """Flushes the transmit buffer on the IXXAT"""
         return self.bus.flush_tx_buffer()

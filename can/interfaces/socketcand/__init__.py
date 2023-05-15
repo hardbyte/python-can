@@ -6,6 +6,9 @@ Copyright (C) 2021  DOMOLOGIC GmbH
 http://www.domologic.de
 """
 
-__all__ = ["SocketCanDaemonBus"]
+__all__ = [
+    "SocketCanDaemonBus",
+    "socketcand",
+]
 
 from .socketcand import SocketCanDaemonBus

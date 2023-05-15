@@ -3,21 +3,23 @@ import logging
 import select
 import socket
 import struct
+import warnings
+from typing import List, Optional, Tuple, Union
+
+import can
+from can import BusABC, CanProtocol
+from can.typechecking import AutoDetectedConfig
+
+from .utils import check_msgpack_installed, pack_message, unpack_message
 
 try:
     from fcntl import ioctl
 except ModuleNotFoundError:  # Missing on Windows
     pass
 
-from typing import List, Optional, Tuple, Union
 
 log = logging.getLogger(__name__)
 
-import can
-from can import BusABC
-from can.typechecking import AutoDetectedConfig
-
-from .utils import check_msgpack_installed, pack_message, unpack_message
 
 # see socket.getaddrinfo()
 IPv4_ADDRESS_INFO = Tuple[str, int]  # address, port
@@ -102,10 +104,22 @@ class UdpMulticastBus(BusABC):
                 "receiving own messages is not yet implemented"
             )
 
-        super().__init__(channel, **kwargs)
+        super().__init__(
+            channel,
+            **kwargs,
+        )
 
-        self.is_fd = fd
         self._multicast = GeneralPurposeUdpMulticastBus(channel, port, hop_limit)
+        self._can_protocol = CanProtocol.CAN_FD if fd else CanProtocol.CAN_20
+
+    @property
+    def is_fd(self) -> bool:
+        warnings.warn(
+            "The UdpMulticastBus.is_fd property is deprecated and superseded by "
+            "BusABC.protocol. It is scheduled for removal in version 5.0.",
+            DeprecationWarning,
+        )
+        return self._can_protocol is CanProtocol.CAN_FD
 
     def _recv_internal(self, timeout: Optional[float]):
         result = self._multicast.recv(timeout)
@@ -122,13 +136,13 @@ class UdpMulticastBus(BusABC):
                 "could not unpack received message"
             ) from exception
 
-        if not self.is_fd and can_message.is_fd:
+        if self._can_protocol is not CanProtocol.CAN_FD and can_message.is_fd:
             return None, False
 
         return can_message, False
 
     def send(self, msg: can.Message, timeout: Optional[float] = None) -> None:
-        if not self.is_fd and msg.is_fd:
+        if self._can_protocol is not CanProtocol.CAN_FD and msg.is_fd:
             raise can.CanOperationError(
                 "cannot send FD message over bus with CAN FD disabled"
             )

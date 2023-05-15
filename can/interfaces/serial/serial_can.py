@@ -17,6 +17,7 @@ from can import (
     CanInitializationError,
     CanInterfaceNotImplementedError,
     CanOperationError,
+    CanProtocol,
     CanTimeoutError,
     Message,
 )
@@ -88,6 +89,7 @@ class SerialBus(BusABC):
             raise TypeError("Must specify a serial port.")
 
         self.channel_info = f"Serial interface: {channel}"
+        self._can_protocol = CanProtocol.CAN_20
 
         try:
             self._ser = serial.serial_for_url(

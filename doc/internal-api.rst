@@ -57,23 +57,32 @@ They **might** implement the following:
     and thus might not provide message filtering:
 
 
-Concrete instances are usually created by :class:`can.Bus` which takes the users
+Concrete instances are usually created by :func:`can.Bus` which takes the users
 configuration into account.
 
 
 Bus Internals
 ~~~~~~~~~~~~~
 
-Several methods are not documented in the main :class:`can.Bus`
+Several methods are not documented in the main :class:`can.BusABC`
 as they are primarily useful for library developers as opposed to
-library users. This is the entire ABC bus class with all internal
-methods:
+library users.
 
-.. autoclass:: can.BusABC
-    :members:
-    :private-members:
-    :special-members:
+.. automethod:: can.BusABC.__init__
 
+.. automethod:: can.BusABC.__iter__
+
+.. automethod:: can.BusABC.__str__
+
+.. autoattribute:: can.BusABC.__weakref__
+
+.. automethod:: can.BusABC._recv_internal
+
+.. automethod:: can.BusABC._apply_filters
+
+.. automethod:: can.BusABC._send_periodic_internal
+
+.. automethod:: can.BusABC._detect_available_configs
 
 
 About the IO module

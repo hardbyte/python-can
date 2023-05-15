@@ -6,7 +6,7 @@ from typing import Any, Deque, Dict, Optional, Sequence, Tuple, Union
 
 import canalystii as driver
 
-from can import BitTiming, BitTimingFd, BusABC, Message
+from can import BitTiming, BitTimingFd, BusABC, CanProtocol, Message
 from can.exceptions import CanTimeoutError
 from can.typechecking import CanFilters
 from can.util import check_or_adjust_timing_clock, deprecated_args_alias
@@ -54,8 +54,11 @@ class CANalystIIBus(BusABC):
             raise ValueError("Either bitrate or timing argument is required")
 
         # Do this after the error handling
-        super().__init__(channel=channel, can_filters=can_filters, **kwargs)
-
+        super().__init__(
+            channel=channel,
+            can_filters=can_filters,
+            **kwargs,
+        )
         if isinstance(channel, str):
             # Assume comma separated string of channels
             self.channels = [int(ch.strip()) for ch in channel.split(",")]
@@ -64,11 +67,11 @@ class CANalystIIBus(BusABC):
         else:  # Sequence[int]
             self.channels = list(channel)
 
-        self.rx_queue: Deque[Tuple[int, driver.Message]] = deque(maxlen=rx_queue_size)
-
         self.channel_info = f"CANalyst-II: device {device}, channels {self.channels}"
-
+        self.rx_queue: Deque[Tuple[int, driver.Message]] = deque(maxlen=rx_queue_size)
         self.device = driver.CanalystDevice(device_index=device)
+        self._can_protocol = CanProtocol.CAN_20
+
         for single_channel in self.channels:
             if isinstance(timing, BitTiming):
                 timing = check_or_adjust_timing_clock(timing, valid_clocks=[8_000_000])

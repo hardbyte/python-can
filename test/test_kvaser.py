@@ -45,6 +45,7 @@ class KvaserTest(unittest.TestCase):
 
     def test_bus_creation(self):
         self.assertIsInstance(self.bus, canlib.KvaserBus)
+        self.assertEqual(self.bus.protocol, can.CanProtocol.CAN_20)
         self.assertTrue(canlib.canOpenChannel.called)
         self.assertTrue(canlib.canBusOn.called)
 
@@ -148,7 +149,8 @@ class KvaserTest(unittest.TestCase):
     def test_canfd_default_data_bitrate(self):
         canlib.canSetBusParams.reset_mock()
         canlib.canSetBusParamsFd.reset_mock()
-        can.Bus(channel=0, interface="kvaser", fd=True)
+        bus = can.Bus(channel=0, interface="kvaser", fd=True)
+        self.assertEqual(bus.protocol, can.CanProtocol.CAN_FD)
         canlib.canSetBusParams.assert_called_once_with(
             0, constants.canFD_BITRATE_500K_80P, 0, 0, 0, 0, 0
         )
@@ -160,7 +162,8 @@ class KvaserTest(unittest.TestCase):
         canlib.canSetBusParams.reset_mock()
         canlib.canSetBusParamsFd.reset_mock()
         data_bitrate = 2000000
-        can.Bus(channel=0, interface="kvaser", fd=True, data_bitrate=data_bitrate)
+        bus = can.Bus(channel=0, interface="kvaser", fd=True, data_bitrate=data_bitrate)
+        self.assertEqual(bus.protocol, can.CanProtocol.CAN_FD)
         bitrate_constant = canlib.BITRATE_FD[data_bitrate]
         canlib.canSetBusParams.assert_called_once_with(
             0, constants.canFD_BITRATE_500K_80P, 0, 0, 0, 0, 0

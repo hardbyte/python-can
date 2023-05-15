@@ -4,8 +4,6 @@
 This module contains a helper for writing test cases that need to compare messages.
 """
 
-from copy import copy
-
 
 class ComparingMessagesTestCase:
     """
@@ -28,31 +26,14 @@ class ComparingMessagesTestCase:
         Checks that two messages are equal, according to the given rules.
         """
 
-        if message_1.equals(message_2, timestamp_delta=self.allowed_timestamp_delta):
-            return
-        elif self.preserves_channel:
+        if not message_1.equals(
+            message_2,
+            check_channel=self.preserves_channel,
+            timestamp_delta=self.allowed_timestamp_delta,
+        ):
             print(f"Comparing: message 1: {message_1!r}")
             print(f"           message 2: {message_2!r}")
-            self.fail(
-                "messages are unequal with allowed timestamp delta {}".format(
-                    self.allowed_timestamp_delta
-                )
-            )
-        else:
-            message_2 = copy(message_2)  # make sure this method is pure
-            message_2.channel = message_1.channel
-            if message_1.equals(
-                message_2, timestamp_delta=self.allowed_timestamp_delta
-            ):
-                return
-            else:
-                print(f"Comparing: message 1: {message_1!r}")
-                print(f"           message 2: {message_2!r}")
-                self.fail(
-                    "messages are unequal with allowed timestamp delta {} even when ignoring channels".format(
-                        self.allowed_timestamp_delta
-                    )
-                )
+            self.fail(f"messages are unequal: \n{message_1}\n{message_2}")
 
     def assertMessagesEqual(self, messages_1, messages_2):
         """

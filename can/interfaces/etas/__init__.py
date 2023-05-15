@@ -1,4 +1,3 @@
-import ctypes
 import time
 from typing import Dict, List, Optional, Tuple
 
@@ -17,9 +16,12 @@ class EtasBus(can.BusABC):
         bitrate: int = 1000000,
         fd: bool = True,
         data_bitrate: int = 2000000,
-        **kwargs: object,
+        **kwargs: Dict[str, any],
     ):
+        super().__init__(channel=channel, **kwargs)
+
         self.receive_own_messages = receive_own_messages
+        self._can_protocol = can.CanProtocol.CAN_FD if fd else can.CanProtocol.CAN_20
 
         nodeRange = CSI_NodeRange(CSI_NODE_MIN, CSI_NODE_MAX)
         self.tree = ctypes.POINTER(CSI_Tree)()
@@ -297,7 +299,7 @@ class EtasBus(can.BusABC):
         tree = ctypes.POINTER(CSI_Tree)()
         CSI_CreateProtocolTree(ctypes.c_char_p(b""), nodeRange, ctypes.byref(tree))
 
-        nodes: Dict[str, str] = []
+        nodes: List[Dict[str, str]] = []
 
         def _findNodes(tree, prefix):
             uri = f"{prefix}/{tree.contents.item.uriName.decode()}"

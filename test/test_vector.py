@@ -81,6 +81,8 @@ def mock_xldriver() -> None:
 def test_bus_creation_mocked(mock_xldriver) -> None:
     bus = can.Bus(channel=0, interface="vector", _testing=True)
     assert isinstance(bus, canlib.VectorBus)
+    assert bus.protocol == can.CanProtocol.CAN_20
+
     can.interfaces.vector.canlib.xldriver.xlOpenDriver.assert_called()
     can.interfaces.vector.canlib.xldriver.xlGetApplConfig.assert_called()
 
@@ -97,6 +99,8 @@ def test_bus_creation_mocked(mock_xldriver) -> None:
 def test_bus_creation() -> None:
     bus = can.Bus(channel=0, serial=_find_virtual_can_serial(), interface="vector")
     assert isinstance(bus, canlib.VectorBus)
+    assert bus.protocol == can.CanProtocol.CAN_20
+
     bus.shutdown()
 
     xl_channel_config = _find_xl_channel_config(
@@ -110,12 +114,15 @@ def test_bus_creation() -> None:
 
     bus = canlib.VectorBus(channel=0, serial=_find_virtual_can_serial())
     assert isinstance(bus, canlib.VectorBus)
+    assert bus.protocol == can.CanProtocol.CAN_20
     bus.shutdown()
 
 
 def test_bus_creation_bitrate_mocked(mock_xldriver) -> None:
     bus = can.Bus(channel=0, interface="vector", bitrate=200_000, _testing=True)
     assert isinstance(bus, canlib.VectorBus)
+    assert bus.protocol == can.CanProtocol.CAN_20
+
     can.interfaces.vector.canlib.xldriver.xlOpenDriver.assert_called()
     can.interfaces.vector.canlib.xldriver.xlGetApplConfig.assert_called()
 
@@ -141,6 +148,7 @@ def test_bus_creation_bitrate() -> None:
         bitrate=200_000,
     )
     assert isinstance(bus, canlib.VectorBus)
+    assert bus.protocol == can.CanProtocol.CAN_20
 
     xl_channel_config = _find_xl_channel_config(
         serial=_find_virtual_can_serial(), channel=0
@@ -153,6 +161,8 @@ def test_bus_creation_bitrate() -> None:
 def test_bus_creation_fd_mocked(mock_xldriver) -> None:
     bus = can.Bus(channel=0, interface="vector", fd=True, _testing=True)
     assert isinstance(bus, canlib.VectorBus)
+    assert bus.protocol == can.CanProtocol.CAN_FD
+
     can.interfaces.vector.canlib.xldriver.xlOpenDriver.assert_called()
     can.interfaces.vector.canlib.xldriver.xlGetApplConfig.assert_called()
 
@@ -173,6 +183,7 @@ def test_bus_creation_fd() -> None:
         channel=0, serial=_find_virtual_can_serial(), interface="vector", fd=True
     )
     assert isinstance(bus, canlib.VectorBus)
+    assert bus.protocol == can.CanProtocol.CAN_FD
 
     xl_channel_config = _find_xl_channel_config(
         serial=_find_virtual_can_serial(), channel=0
@@ -204,6 +215,8 @@ def test_bus_creation_fd_bitrate_timings_mocked(mock_xldriver) -> None:
         _testing=True,
     )
     assert isinstance(bus, canlib.VectorBus)
+    assert bus.protocol == can.CanProtocol.CAN_FD
+
     can.interfaces.vector.canlib.xldriver.xlOpenDriver.assert_called()
     can.interfaces.vector.canlib.xldriver.xlGetApplConfig.assert_called()
 
@@ -346,6 +359,7 @@ def test_bus_creation_timing() -> None:
             timing=timing,
         )
         assert isinstance(bus, canlib.VectorBus)
+        assert bus.protocol == can.CanProtocol.CAN_20
 
         xl_channel_config = _find_xl_channel_config(
             serial=_find_virtual_can_serial(), channel=0
@@ -377,6 +391,8 @@ def test_bus_creation_timingfd_mocked(mock_xldriver) -> None:
         _testing=True,
     )
     assert isinstance(bus, canlib.VectorBus)
+    assert bus.protocol == can.CanProtocol.CAN_FD
+
     can.interfaces.vector.canlib.xldriver.xlOpenDriver.assert_called()
     can.interfaces.vector.canlib.xldriver.xlGetApplConfig.assert_called()
 
@@ -424,6 +440,8 @@ def test_bus_creation_timingfd() -> None:
         interface="vector",
         timing=timing,
     )
+
+    assert bus.protocol == can.CanProtocol.CAN_FD
 
     xl_channel_config = _find_xl_channel_config(
         serial=_find_virtual_can_serial(), channel=0

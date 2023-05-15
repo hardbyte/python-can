@@ -24,6 +24,8 @@ from typing import (
     cast,
 )
 
+from typing_extensions import ParamSpec
+
 import can
 
 from . import typechecking
@@ -325,9 +327,15 @@ def channel2int(channel: Optional[typechecking.Channel]) -> Optional[int]:
     return None
 
 
-def deprecated_args_alias(  # type: ignore
-    deprecation_start: str, deprecation_end: Optional[str] = None, **aliases
-):
+P1 = ParamSpec("P1")
+T1 = TypeVar("T1")
+
+
+def deprecated_args_alias(
+    deprecation_start: str,
+    deprecation_end: Optional[str] = None,
+    **aliases: Optional[str],
+) -> Callable[[Callable[P1, T1]], Callable[P1, T1]]:
     """Allows to rename/deprecate a function kwarg(s) and optionally
     have the deprecated kwarg(s) set as alias(es)
 
@@ -356,9 +364,9 @@ def deprecated_args_alias(  # type: ignore
 
     """
 
-    def deco(f):
+    def deco(f: Callable[P1, T1]) -> Callable[P1, T1]:
         @functools.wraps(f)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: P1.args, **kwargs: P1.kwargs) -> T1:
             _rename_kwargs(
                 func_name=f.__name__,
                 start=deprecation_start,
@@ -373,10 +381,42 @@ def deprecated_args_alias(  # type: ignore
     return deco
 
 
-T = TypeVar("T", BitTiming, BitTimingFd)
+def _rename_kwargs(
+    func_name: str,
+    start: str,
+    end: Optional[str],
+    kwargs: P1.kwargs,
+    aliases: Dict[str, Optional[str]],
+) -> None:
+    """Helper function for `deprecated_args_alias`"""
+    for alias, new in aliases.items():
+        if alias in kwargs:
+            deprecation_notice = (
+                f"The '{alias}' argument is deprecated since python-can v{start}"
+            )
+            if end:
+                deprecation_notice += (
+                    f", and scheduled for removal in python-can v{end}"
+                )
+            deprecation_notice += "."
+
+            value = kwargs.pop(alias)
+            if new is not None:
+                deprecation_notice += f" Use '{new}' instead."
+
+                if new in kwargs:
+                    raise TypeError(
+                        f"{func_name} received both '{alias}' (deprecated) and '{new}'."
+                    )
+                kwargs[new] = value
+
+            warnings.warn(deprecation_notice, DeprecationWarning)
 
 
-def check_or_adjust_timing_clock(timing: T, valid_clocks: Iterable[int]) -> T:
+T2 = TypeVar("T2", BitTiming, BitTimingFd)
+
+
+def check_or_adjust_timing_clock(timing: T2, valid_clocks: Iterable[int]) -> T2:
     """Adjusts the given timing instance to have an *f_clock* value that is within the
     allowed values specified by *valid_clocks*. If the *f_clock* value of timing is
     already within *valid_clocks*, then *timing* is returned unchanged.
@@ -414,38 +454,6 @@ def check_or_adjust_timing_clock(timing: T, valid_clocks: Iterable[int]) -> T:
         f"doesn't match any of the allowed device f_clock values: "
         f"{', '.join([str(f) for f in valid_clocks])}"
     ) from None
-
-
-def _rename_kwargs(
-    func_name: str,
-    start: str,
-    end: Optional[str],
-    kwargs: Dict[str, str],
-    aliases: Dict[str, str],
-) -> None:
-    """Helper function for `deprecated_args_alias`"""
-    for alias, new in aliases.items():
-        if alias in kwargs:
-            deprecation_notice = (
-                f"The '{alias}' argument is deprecated since python-can v{start}"
-            )
-            if end:
-                deprecation_notice += (
-                    f", and scheduled for removal in python-can v{end}"
-                )
-            deprecation_notice += "."
-
-            value = kwargs.pop(alias)
-            if new is not None:
-                deprecation_notice += f" Use '{new}' instead."
-
-                if new in kwargs:
-                    raise TypeError(
-                        f"{func_name} received both '{alias}' (deprecated) and '{new}'."
-                    )
-                kwargs[new] = value
-
-            warnings.warn(deprecation_notice, DeprecationWarning)
 
 
 def time_perfcounter_correlation() -> Tuple[float, float]:

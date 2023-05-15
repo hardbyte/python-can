@@ -19,13 +19,14 @@ import sys
 from typing import Optional, Tuple, Type
 
 import can.typechecking
-from can import BusABC, Message
-
-from ..exceptions import (
+from can import (
+    BusABC,
     CanError,
     CanInitializationError,
     CanInterfaceNotImplementedError,
     CanOperationError,
+    CanProtocol,
+    Message,
 )
 
 logger = logging.getLogger(__name__)
@@ -219,6 +220,7 @@ class NicanBus(BusABC):
 
         self.channel = channel
         self.channel_info = f"NI-CAN: {channel}"
+        self._can_protocol = CanProtocol.CAN_20
         channel_bytes = channel.encode("ascii")
 
         config = [(NC_ATTR_START_ON_OPEN, True), (NC_ATTR_LOG_COMM_ERRS, log_errors)]

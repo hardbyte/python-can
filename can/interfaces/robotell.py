@@ -7,7 +7,7 @@ import logging
 import time
 from typing import Optional
 
-from can import BusABC, Message
+from can import BusABC, CanProtocol, Message
 
 from ..exceptions import CanInterfaceNotImplementedError, CanOperationError
 
@@ -92,6 +92,7 @@ class robotellBus(BusABC):
         if bitrate is not None:
             self.set_bitrate(bitrate)
 
+        self._can_protocol = CanProtocol.CAN_20
         self.channel_info = (
             f"Robotell USB-CAN s/n {self.get_serial_number(1)} on {channel}"
         )

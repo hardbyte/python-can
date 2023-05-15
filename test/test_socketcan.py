@@ -9,6 +9,8 @@ import unittest
 import warnings
 from unittest.mock import patch
 
+from .config import TEST_INTERFACE_SOCKETCAN
+
 import can
 from can.interfaces.socketcan.constants import (
     CAN_BCM_TX_DELETE,
@@ -356,6 +358,16 @@ class SocketCANTest(unittest.TestCase):
         self.assertEqual(0, result.ival2_tv_usec)
         self.assertEqual(can_id, result.can_id)
         self.assertEqual(1, result.nframes)
+
+    @unittest.skipUnless(TEST_INTERFACE_SOCKETCAN, "Only run when vcan0 is available")
+    def test_bus_creation_can(self):
+        bus = can.Bus(interface="socketcan", channel="vcan0", fd=False)
+        self.assertEqual(bus.protocol, can.CanProtocol.CAN_20)
+
+    @unittest.skipUnless(TEST_INTERFACE_SOCKETCAN, "Only run when vcan0 is available")
+    def test_bus_creation_can_fd(self):
+        bus = can.Bus(interface="socketcan", channel="vcan0", fd=True)
+        self.assertEqual(bus.protocol, can.CanProtocol.CAN_FD)
 
     @unittest.skipUnless(IS_LINUX and IS_PYPY, "Only test when run on Linux with PyPy")
     def test_pypy_socketcan_support(self):

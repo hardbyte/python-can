@@ -26,6 +26,14 @@ class BusState(Enum):
     ERROR = auto()
 
 
+class CanProtocol(Enum):
+    """The CAN protocol type supported by a :class:`can.BusABC` instance"""
+
+    CAN_20 = auto()
+    CAN_FD = auto()
+    CAN_XL = auto()
+
+
 class BusABC(metaclass=ABCMeta):
     """The CAN Bus Abstract Base Class that serves as the basis
     for all concrete interfaces.
@@ -44,6 +52,7 @@ class BusABC(metaclass=ABCMeta):
     RECV_LOGGING_LEVEL = 9
 
     _is_shutdown: bool = False
+    _can_protocol: CanProtocol = CanProtocol.CAN_20
 
     @abstractmethod
     def __init__(
@@ -449,7 +458,7 @@ class BusABC(metaclass=ABCMeta):
 
     def __del__(self) -> None:
         if not self._is_shutdown:
-            LOG.warning("%s was not properly shut down", self.__class__)
+            LOG.warning("%s was not properly shut down", self.__class__.__name__)
             # We do some best-effort cleanup if the user
             # forgot to properly close the bus instance
             with contextlib.suppress(AttributeError):
@@ -468,6 +477,15 @@ class BusABC(metaclass=ABCMeta):
         Set the new state of the hardware
         """
         raise NotImplementedError("Property is not implemented.")
+
+    @property
+    def protocol(self) -> CanProtocol:
+        """Return the CAN protocol used by this bus instance.
+
+        This value is set at initialization time and does not change
+        during the lifetime of a bus instance.
+        """
+        return self._can_protocol
 
     @staticmethod
     def _detect_available_configs() -> List[can.typechecking.AutoDetectedConfig]:

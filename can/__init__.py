@@ -8,7 +8,7 @@ messages on a can bus.
 import logging
 from typing import Any, Dict
 
-__version__ = "4.1.0"
+__version__ = "4.2.1"
 __all__ = [
     "ASCReader",
     "ASCWriter",
@@ -17,7 +17,6 @@ __all__ = [
     "BitTimingFd",
     "BLFReader",
     "BLFWriter",
-    "broadcastmanager",
     "BufferedReader",
     "Bus",
     "BusABC",
@@ -26,14 +25,13 @@ __all__ = [
     "CanInitializationError",
     "CanInterfaceNotImplementedError",
     "CanOperationError",
+    "CanProtocol",
     "CanTimeoutError",
     "CanutilsLogReader",
     "CanutilsLogWriter",
     "CSVReader",
     "CSVWriter",
     "CyclicSendTaskABC",
-    "detect_available_configs",
-    "interface",
     "LimitedDurationCyclicSendTaskABC",
     "Listener",
     "Logger",
@@ -47,17 +45,34 @@ __all__ = [
     "Printer",
     "RedirectReader",
     "RestartableCyclicTaskABC",
-    "set_logging_level",
     "SizedRotatingLogger",
     "SqliteReader",
     "SqliteWriter",
     "ThreadSafeBus",
-    "typechecking",
     "TRCFileVersion",
     "TRCReader",
     "TRCWriter",
-    "util",
     "VALID_INTERFACES",
+    "bit_timing",
+    "broadcastmanager",
+    "bus",
+    "ctypesutil",
+    "detect_available_configs",
+    "exceptions",
+    "interface",
+    "interfaces",
+    "listener",
+    "logconvert",
+    "log",
+    "logger",
+    "message",
+    "notifier",
+    "player",
+    "set_logging_level",
+    "thread_safe_bus",
+    "typechecking",
+    "util",
+    "viewer",
 ]
 
 log = logging.getLogger("can")
@@ -74,7 +89,7 @@ from .broadcastmanager import (
     ModifiableCyclicTaskABC,
     RestartableCyclicTaskABC,
 )
-from .bus import BusABC, BusState
+from .bus import BusABC, BusState, CanProtocol
 from .exceptions import (
     CanError,
     CanInitializationError,
