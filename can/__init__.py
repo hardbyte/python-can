@@ -25,6 +25,7 @@ __all__ = [
     "CanInitializationError",
     "CanInterfaceNotImplementedError",
     "CanOperationError",
+    "CanProtocol",
     "CanTimeoutError",
     "CanutilsLogReader",
     "CanutilsLogWriter",
@@ -88,7 +89,7 @@ from .broadcastmanager import (
     ModifiableCyclicTaskABC,
     RestartableCyclicTaskABC,
 )
-from .bus import BusABC, BusState
+from .bus import BusABC, BusState, CanProtocol
 from .exceptions import (
     CanError,
     CanInitializationError,

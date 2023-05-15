@@ -4,6 +4,7 @@ Enable basic CAN over a PCAN USB device.
 import logging
 import platform
 import time
+import warnings
 from datetime import datetime
 from typing import Any, List, Optional, Tuple, Union
 
@@ -17,6 +18,7 @@ from can import (
     CanError,
     CanInitializationError,
     CanOperationError,
+    CanProtocol,
     Message,
 )
 from can.util import check_or_adjust_timing_clock, dlc2len, len2dlc
@@ -244,8 +246,9 @@ class PcanBus(BusABC):
                 err_msg = f"Cannot find a channel with ID {device_id:08x}"
                 raise ValueError(err_msg)
 
+        is_fd = isinstance(timing, BitTimingFd) if timing else kwargs.get("fd", False)
+        self._can_protocol = CanProtocol.CAN_FD if is_fd else CanProtocol.CAN_20
         self.channel_info = str(channel)
-        self.fd = isinstance(timing, BitTimingFd) if timing else kwargs.get("fd", False)
 
         hwtype = PCAN_TYPE_ISA
         ioport = 0x02A0
@@ -269,7 +272,7 @@ class PcanBus(BusABC):
             result = self.m_objPCANBasic.Initialize(
                 self.m_PcanHandle, pcan_bitrate, hwtype, ioport, interrupt
             )
-        elif self.fd:
+        elif is_fd:
             if isinstance(timing, BitTimingFd):
                 timing = check_or_adjust_timing_clock(
                     timing, sorted(VALID_PCAN_FD_CLOCKS, reverse=True)
@@ -336,7 +339,12 @@ class PcanBus(BusABC):
             if result != PCAN_ERROR_OK:
                 raise PcanCanInitializationError(self._get_formatted_error(result))
 
-        super().__init__(channel=channel, state=state, bitrate=bitrate, **kwargs)
+        super().__init__(
+            channel=channel,
+            state=state,
+            bitrate=bitrate,
+            **kwargs,
+        )
 
     def _find_channel_by_dev_id(self, device_id):
         """
@@ -482,7 +490,7 @@ class PcanBus(BusABC):
         end_time = time.time() + timeout if timeout is not None else None
 
         while True:
-            if self.fd:
+            if self._can_protocol is CanProtocol.CAN_FD:
                 result, pcan_msg, pcan_timestamp = self.m_objPCANBasic.ReadFD(
                     self.m_PcanHandle
                 )
@@ -544,7 +552,7 @@ class PcanBus(BusABC):
         error_state_indicator = bool(pcan_msg.MSGTYPE & PCAN_MESSAGE_ESI.value)
         is_error_frame = bool(pcan_msg.MSGTYPE & PCAN_MESSAGE_ERRFRAME.value)
 
-        if self.fd:
+        if self._can_protocol is CanProtocol.CAN_FD:
             dlc = dlc2len(pcan_msg.DLC)
             timestamp = boottimeEpoch + (pcan_timestamp.value / (1000.0 * 1000.0))
         else:
@@ -590,7 +598,7 @@ class PcanBus(BusABC):
         if msg.error_state_indicator:
             msgType |= PCAN_MESSAGE_ESI.value
 
-        if self.fd:
+        if self._can_protocol is CanProtocol.CAN_FD:
             # create a TPCANMsg message structure
             CANMsg = TPCANMsgFD()
 
@@ -648,6 +656,15 @@ class PcanBus(BusABC):
             self.m_objPCANBasic.SetValue(self.m_PcanHandle, PCAN_RECEIVE_EVENT, 0)
 
         self.m_objPCANBasic.Uninitialize(self.m_PcanHandle)
+
+    @property
+    def fd(self) -> bool:
+        warnings.warn(
+            "The PcanBus.fd property is deprecated and superseded by BusABC.protocol. "
+            "It is scheduled for removal in version 5.0.",
+            DeprecationWarning,
+        )
+        return self._can_protocol is CanProtocol.CAN_FD
 
     @property
     def state(self):

@@ -15,7 +15,7 @@ import logging
 import sys
 from typing import Callable, Optional, Tuple
 
-from can import BusABC, Message
+from can import BusABC, CanProtocol, Message
 from can.broadcastmanager import (
     LimitedDurationCyclicSendTaskABC,
     RestartableCyclicTaskABC,
@@ -490,6 +490,7 @@ class IXXATBus(BusABC):
         self._channel_capabilities = structures.CANCAPABILITIES()
         self._message = structures.CANMSG()
         self._payload = (ctypes.c_byte * 8)()
+        self._can_protocol = CanProtocol.CAN_20
 
         # Search for supplied device
         if unique_hardware_id is None:

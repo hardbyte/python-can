@@ -11,7 +11,7 @@ import logging
 import sys
 import time
 
-from can import BusABC, Message
+from can import BusABC, CanProtocol, Message
 from can.util import time_perfcounter_correlation
 
 from ...exceptions import CanError, CanInitializationError, CanOperationError
@@ -428,11 +428,12 @@ class KvaserBus(BusABC):
             channel = int(channel)
         except ValueError:
             raise ValueError("channel must be an integer")
+
         self.channel = channel
+        self.single_handle = single_handle
+        self._can_protocol = CanProtocol.CAN_FD if fd else CanProtocol.CAN_20
 
         log.debug("Initialising bus instance")
-        self.single_handle = single_handle
-
         num_channels = ctypes.c_int(0)
         canGetNumberOfChannels(ctypes.byref(num_channels))
         num_channels = int(num_channels.value)
@@ -520,7 +521,11 @@ class KvaserBus(BusABC):
             self._timestamp_offset = time.time() - (timer.value * TIMESTAMP_FACTOR)
 
         self._is_filtered = False
-        super().__init__(channel=channel, can_filters=can_filters, **kwargs)
+        super().__init__(
+            channel=channel,
+            can_filters=can_filters,
+            **kwargs,
+        )
 
     def _apply_filters(self, filters):
         if filters and len(filters) == 1:

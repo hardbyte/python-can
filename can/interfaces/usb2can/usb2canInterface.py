@@ -6,7 +6,7 @@ import logging
 from ctypes import byref
 from typing import Optional
 
-from can import BusABC, CanInitializationError, CanOperationError, Message
+from can import BusABC, CanInitializationError, CanOperationError, CanProtocol, Message
 
 from .serial_selector import find_serial_devices
 from .usb2canabstractionlayer import (
@@ -118,6 +118,7 @@ class Usb2canBus(BusABC):
         baudrate = min(int(bitrate // 1000), 1000)
 
         self.channel_info = f"USB2CAN device {device_id}"
+        self._can_protocol = CanProtocol.CAN_20
 
         connector = f"{device_id}; {baudrate}"
         self.handle = self.can.open(connector, flags)

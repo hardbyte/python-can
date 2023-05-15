@@ -15,8 +15,7 @@ import logging
 import sys
 from typing import Callable, Optional, Tuple
 
-import can.util
-from can import BusABC, Message
+from can import BusABC, CanProtocol, Message
 from can.broadcastmanager import (
     LimitedDurationCyclicSendTaskABC,
     RestartableCyclicTaskABC,
@@ -24,7 +23,7 @@ from can.broadcastmanager import (
 from can.ctypesutil import HANDLE, PHANDLE, CLibrary
 from can.ctypesutil import HRESULT as ctypes_HRESULT
 from can.exceptions import CanInitializationError, CanInterfaceNotImplementedError
-from can.util import deprecated_args_alias
+from can.util import deprecated_args_alias, dlc2len, len2dlc
 
 from . import constants, structures
 from .exceptions import *
@@ -536,6 +535,7 @@ class IXXATBus(BusABC):
         self._channel_capabilities = structures.CANCAPABILITIES2()
         self._message = structures.CANMSG2()
         self._payload = (ctypes.c_byte * 64)()
+        self._can_protocol = CanProtocol.CAN_FD
 
         # Search for supplied device
         if unique_hardware_id is None:
@@ -865,7 +865,7 @@ class IXXATBus(BusABC):
             # Timed out / can message type is not DATA
             return None, True
 
-        data_len = can.util.dlc2len(self._message.uMsgInfo.Bits.dlc)
+        data_len = dlc2len(self._message.uMsgInfo.Bits.dlc)
         # The _message.dwTime is a 32bit tick value and will overrun,
         # so expect to see the value restarting from 0
         rx_msg = Message(
@@ -915,7 +915,7 @@ class IXXATBus(BusABC):
         message.uMsgInfo.Bits.edl = 1 if msg.is_fd else 0
         message.dwMsgId = msg.arbitration_id
         if msg.dlc:  # this dlc means number of bytes of payload
-            message.uMsgInfo.Bits.dlc = can.util.len2dlc(msg.dlc)
+            message.uMsgInfo.Bits.dlc = len2dlc(msg.dlc)
             data_len_dif = msg.dlc - len(msg.data)
             data = msg.data + bytearray(
                 [0] * data_len_dif

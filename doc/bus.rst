@@ -88,6 +88,10 @@ Bus API
     :members:
     :undoc-members:
 
+.. autoclass:: can.bus.CanProtocol
+    :members:
+    :undoc-members:
+
 
 Thread safe bus
 '''''''''''''''
