@@ -28,7 +28,7 @@ class Printer(MessageWriter):
         self,
         file: Optional[Union[StringPathLike, TextIO]] = None,
         append: bool = False,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """
         :param file: An optional path-like object or a file-like object to "print"

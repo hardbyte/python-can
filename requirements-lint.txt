@@ -1,6 +1,0 @@
-pylint==2.16.4
-ruff==0.0.260
-black~=23.1.0
-mypy==1.0.1
-mypy-extensions==0.4.3
-types-setuptools

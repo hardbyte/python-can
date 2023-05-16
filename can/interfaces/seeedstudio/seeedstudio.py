@@ -64,7 +64,7 @@ class SeeedBus(BusABC):
         operation_mode="normal",
         bitrate=500000,
         *args,
-        **kwargs
+        **kwargs,
     ):
         """
         :param str channel:
