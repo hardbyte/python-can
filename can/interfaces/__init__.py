@@ -60,36 +60,26 @@ BACKENDS: Dict[str, Tuple[str, str]] = {
     "socketcand": ("can.interfaces.socketcand", "SocketCanDaemonBus"),
 }
 
-if sys.version_info >= (3, 8):
-    from importlib.metadata import entry_points
+from importlib.metadata import entry_points
 
-    # See https://docs.python.org/3/library/importlib.metadata.html#entry-points,
-    # "Compatibility Note".
-    if sys.version_info >= (3, 10):
-        BACKENDS.update(
-            {
-                interface.name: (interface.module, interface.attr)
-                for interface in entry_points(group="can.interface")
-            }
-        )
-    else:
-        # The entry_points().get(...) causes a deprecation warning on Python >= 3.10.
-        BACKENDS.update(
-            {
-                interface.name: cast(
-                    Tuple[str, str], tuple(interface.value.split(":", maxsplit=1))
-                )
-                for interface in entry_points().get("can.interface", [])
-            }
-        )
-else:
-    from pkg_resources import iter_entry_points
-
+# See https://docs.python.org/3/library/importlib.metadata.html#entry-points,
+# "Compatibility Note".
+if sys.version_info >= (3, 10):
     BACKENDS.update(
         {
-            interface.name: (interface.module_name, interface.attrs[0])
-            for interface in iter_entry_points("can.interface")
+            interface.name: (interface.module, interface.attr)
+            for interface in entry_points(group="can.interface")
+        }
+    )
+else:
+    # The entry_points().get(...) causes a deprecation warning on Python >= 3.10.
+    BACKENDS.update(
+        {
+            interface.name: cast(
+                Tuple[str, str], tuple(interface.value.split(":", maxsplit=1))
+            )
+            for interface in entry_points().get("can.interface", [])
         }
     )
 
-VALID_INTERFACES = frozenset(BACKENDS.keys())
+VALID_INTERFACES = frozenset(sorted(BACKENDS.keys()))

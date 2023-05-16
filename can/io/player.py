@@ -7,8 +7,7 @@ import gzip
 import pathlib
 import time
 import typing
-
-from pkg_resources import iter_entry_points
+from importlib.metadata import entry_points
 
 from ..message import Message
 from ..typechecking import AcceptedIOType, FileLike, StringPathLike
@@ -78,7 +77,7 @@ class LogReader(MessageReader):
             LogReader.message_readers.update(
                 {
                     reader.name: reader.load()
-                    for reader in iter_entry_points("can.io.message_reader")
+                    for reader in entry_points().get("can.io.message_reader", [])
                 }
             )
             LogReader.fetched_plugins = True

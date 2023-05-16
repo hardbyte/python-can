@@ -7,11 +7,11 @@ import os
 import pathlib
 from abc import ABC, abstractmethod
 from datetime import datetime
+from importlib.metadata import entry_points
 from types import TracebackType
-from typing import Any, Callable, Dict, Optional, Set, Tuple, Type, cast
+from typing import Any, Callable, Dict, Literal, Optional, Set, Tuple, Type, cast
 
-from pkg_resources import iter_entry_points
-from typing_extensions import Literal
+from typing_extensions import Self
 
 from ..listener import Listener
 from ..message import Message
@@ -90,7 +90,7 @@ class Logger(MessageWriter):
             Logger.message_writers.update(
                 {
                     writer.name: writer.load()
-                    for writer in iter_entry_points("can.io.message_writer")
+                    for writer in entry_points().get("can.io.message_writer", [])
                 }
             )
             Logger.fetched_plugins = True
@@ -275,7 +275,7 @@ class BaseRotatingLogger(Listener, BaseIOHandler, ABC):
         """
         self.writer.stop()
 
-    def __enter__(self) -> "BaseRotatingLogger":
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(

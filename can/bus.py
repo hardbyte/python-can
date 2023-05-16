@@ -8,7 +8,21 @@ import threading
 from abc import ABC, ABCMeta, abstractmethod
 from enum import Enum, auto
 from time import time
-from typing import Any, Callable, Iterator, List, Optional, Sequence, Tuple, Union, cast
+from types import TracebackType
+from typing import (
+    Any,
+    Callable,
+    Iterator,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+    Union,
+    cast,
+)
+
+from typing_extensions import Self
 
 import can
 import can.typechecking
@@ -450,10 +464,15 @@ class BusABC(metaclass=ABCMeta):
         self._is_shutdown = True
         self.stop_all_periodic_tasks()
 
-    def __enter__(self):
+    def __enter__(self) -> Self:
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_value: Optional[BaseException],
+        traceback: Optional[TracebackType],
+    ) -> None:
         self.shutdown()
 
     def __del__(self) -> None:
