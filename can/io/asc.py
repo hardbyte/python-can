@@ -14,7 +14,7 @@ from typing import Any, Dict, Generator, List, Optional, TextIO, Union
 from ..message import Message
 from ..typechecking import StringPathLike
 from ..util import channel2int, dlc2len, len2dlc
-from .generic import FileIOMessageWriter, MessageReader
+from .generic import TextIOMessageReader, TextIOMessageWriter
 
 CAN_MSG_EXT = 0x80000000
 CAN_ID_MASK = 0x1FFFFFFF
@@ -24,7 +24,7 @@ BASE_DEC = 10
 logger = logging.getLogger("can.io.asc")
 
 
-class ASCReader(MessageReader):
+class ASCReader(TextIOMessageReader):
     """
     Iterator of CAN messages from a ASC logging file. Meta data (comments,
     bus statistics, J1939 Transport Protocol messages) is ignored.
@@ -308,7 +308,7 @@ class ASCReader(MessageReader):
         self.stop()
 
 
-class ASCWriter(FileIOMessageWriter):
+class ASCWriter(TextIOMessageWriter):
     """Logs CAN data to an ASCII log file (.asc).
 
     The measurement starts with the timestamp of the first registered message.

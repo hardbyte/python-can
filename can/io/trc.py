@@ -16,7 +16,10 @@ from typing import Callable, Dict, Generator, List, Optional, TextIO, Union
 from ..message import Message
 from ..typechecking import StringPathLike
 from ..util import channel2int, dlc2len, len2dlc
-from .generic import FileIOMessageWriter, MessageReader
+from .generic import (
+    TextIOMessageReader,
+    TextIOMessageWriter,
+)
 
 logger = logging.getLogger("can.io.trc")
 
@@ -36,7 +39,7 @@ class TRCFileVersion(Enum):
         return NotImplemented
 
 
-class TRCReader(MessageReader):
+class TRCReader(TextIOMessageReader):
     """
     Iterator of CAN messages from a TRC logging file.
     """
@@ -241,7 +244,7 @@ class TRCReader(MessageReader):
         self.stop()
 
 
-class TRCWriter(FileIOMessageWriter):
+class TRCWriter(TextIOMessageWriter):
     """Logs CAN data to text file (.trc).
 
     The measurement starts with the timestamp of the first registered message.
