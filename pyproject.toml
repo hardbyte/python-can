@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools >= 67.7.2"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "python-can"
 dynamic = ["readme", "version"]
@@ -5,14 +9,15 @@ description = "Controller Area Network interface module for Python"
 authors = [{ name = "python-can contributors" }]
 dependencies = [
     "wrapt~=1.10",
+    "packaging >= 23.1",
+    "setuptools >= 67.7.2",
     "typing_extensions>=3.10.0.0",
-    "pywin32>=305; platform_system == 'Windows' and platform_python_implementation == 'CPython'",
     "msgpack~=1.0.0; platform_system != 'Windows'",
-    "setuptools >= 40.8",
+    "pywin32>=305; platform_system == 'Windows' and platform_python_implementation == 'CPython'",
 ]
-requires-python = ">=3.7, <=4.0"
+requires-python = ">=3.7"
 license = { text = "LGPL v3" }
-classifiers = [
+classifiers = [ 
     "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
     "Intended Audience :: Developers",
@@ -27,11 +32,11 @@ classifiers = [
     "Operating System :: Microsoft :: Windows",
     "Operating System :: POSIX :: Linux",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
     "Topic :: System :: Hardware :: Hardware Drivers",
@@ -135,7 +140,3 @@ select = [
 
 [tool.ruff.isort]
 known-first-party = ["can"]
-
-[build-system]
-requires = ["packaging", "setuptools >= 40.8", "wheel"]
-build-backend = "setuptools.build_meta"
