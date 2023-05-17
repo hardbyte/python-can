@@ -66,7 +66,7 @@ def find_available_interfaces() -> List[str]:
         output_json,
     )
 
-    interfaces = [i["ifname"] for i in output_json if i["link_type"] == "can"]
+    interfaces = [i["ifname"] for i in output_json if i.get("link_type") == "can"]
     return interfaces
 
 
