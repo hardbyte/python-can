@@ -76,10 +76,6 @@ __all__ = [
     "viewer",
 ]
 
-log = logging.getLogger("can")
-
-rc: Dict[str, Any] = {}
-
 from . import typechecking  # isort:skip
 from . import util  # isort:skip
 from . import broadcastmanager, interface
@@ -127,3 +123,7 @@ from .message import Message
 from .notifier import Notifier
 from .thread_safe_bus import ThreadSafeBus
 from .util import set_logging_level
+
+log = logging.getLogger("can")
+
+rc: Dict[str, Any] = {}
