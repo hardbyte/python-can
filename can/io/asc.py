@@ -273,7 +273,7 @@ class ASCReader(TextIOMessageReader):
                 continue
 
             if not re.match(
-                r"\d+\.\d+\s+(\d+\s+(\w+\s+(Tx|Rx)|ErrorFrame)|CANFD)",
+                r"[-]?\d+\.\d+\s+(\d+\s+(\w+\s+(Tx|Rx)|ErrorFrame)|CANFD)",
                 line,
                 re.ASCII | re.IGNORECASE,
             ):
