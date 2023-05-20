@@ -2,8 +2,9 @@
 Interfaces contain low level implementations that interact with CAN hardware.
 """
 
-import sys
-from typing import Dict, Tuple, cast
+from typing import Dict, Tuple
+
+from can._entry_points import read_entry_points
 
 __all__ = [
     "BACKENDS",
@@ -60,36 +61,12 @@ BACKENDS: Dict[str, Tuple[str, str]] = {
     "socketcand": ("can.interfaces.socketcand", "SocketCanDaemonBus"),
 }
 
-if sys.version_info >= (3, 8):
-    from importlib.metadata import entry_points
 
-    # See https://docs.python.org/3/library/importlib.metadata.html#entry-points,
-    # "Compatibility Note".
-    if sys.version_info >= (3, 10):
-        BACKENDS.update(
-            {
-                interface.name: (interface.module, interface.attr)
-                for interface in entry_points(group="can.interface")
-            }
-        )
-    else:
-        # The entry_points().get(...) causes a deprecation warning on Python >= 3.10.
-        BACKENDS.update(
-            {
-                interface.name: cast(
-                    Tuple[str, str], tuple(interface.value.split(":", maxsplit=1))
-                )
-                for interface in entry_points().get("can.interface", [])
-            }
-        )
-else:
-    from pkg_resources import iter_entry_points
+BACKENDS.update(
+    {
+        interface.key: (interface.module_name, interface.class_name)
+        for interface in read_entry_points(group="can.interface")
+    }
+)
 
-    BACKENDS.update(
-        {
-            interface.name: (interface.module_name, interface.attrs[0])
-            for interface in iter_entry_points("can.interface")
-        }
-    )
-
-VALID_INTERFACES = frozenset(BACKENDS.keys())
+VALID_INTERFACES = frozenset(sorted(BACKENDS.keys()))

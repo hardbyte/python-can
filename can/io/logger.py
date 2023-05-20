@@ -8,11 +8,11 @@ import pathlib
 from abc import ABC, abstractmethod
 from datetime import datetime
 from types import TracebackType
-from typing import Any, Callable, Dict, Optional, Set, Tuple, Type, cast
+from typing import Any, Callable, Dict, Literal, Optional, Set, Tuple, Type, cast
 
-from pkg_resources import iter_entry_points
-from typing_extensions import Literal
+from typing_extensions import Self
 
+from .._entry_points import read_entry_points
 from ..listener import Listener
 from ..message import Message
 from ..typechecking import AcceptedIOType, FileLike, StringPathLike
@@ -89,8 +89,8 @@ class Logger(MessageWriter):
         if not Logger.fetched_plugins:
             Logger.message_writers.update(
                 {
-                    writer.name: writer.load()
-                    for writer in iter_entry_points("can.io.message_writer")
+                    writer.key: cast(Type[MessageWriter], writer.load())
+                    for writer in read_entry_points("can.io.message_writer")
                 }
             )
             Logger.fetched_plugins = True
@@ -99,19 +99,19 @@ class Logger(MessageWriter):
 
         file_or_filename: AcceptedIOType = filename
         if suffix == ".gz":
-            LoggerType, file_or_filename = Logger.compress(filename, **kwargs)
+            logger_type, file_or_filename = Logger.compress(filename, **kwargs)
         else:
-            LoggerType = cls._get_logger_for_suffix(suffix)
+            logger_type = cls._get_logger_for_suffix(suffix)
 
-        return LoggerType(file=file_or_filename, **kwargs)
+        return logger_type(file=file_or_filename, **kwargs)
 
     @classmethod
     def _get_logger_for_suffix(cls, suffix: str) -> Type[MessageWriter]:
         try:
-            LoggerType = Logger.message_writers[suffix]
-            if LoggerType is None:
+            logger_type = Logger.message_writers[suffix]
+            if logger_type is None:
                 raise ValueError(f'failed to import logger for extension "{suffix}"')
-            return LoggerType
+            return logger_type
         except KeyError:
             raise ValueError(
                 f'No write support for this unknown log format "{suffix}"'
@@ -130,15 +130,15 @@ class Logger(MessageWriter):
             raise ValueError(
                 f"The file type {real_suffix} is currently incompatible with gzip."
             )
-        LoggerType = cls._get_logger_for_suffix(real_suffix)
+        logger_type = cls._get_logger_for_suffix(real_suffix)
         append = kwargs.get("append", False)
 
-        if issubclass(LoggerType, BinaryIOMessageWriter):
+        if issubclass(logger_type, BinaryIOMessageWriter):
             mode = "ab" if append else "wb"
         else:
             mode = "at" if append else "wt"
 
-        return LoggerType, gzip.open(filename, mode)
+        return logger_type, gzip.open(filename, mode)
 
     def on_message_received(self, msg: Message) -> None:
         pass
@@ -275,7 +275,7 @@ class BaseRotatingLogger(Listener, BaseIOHandler, ABC):
         """
         self.writer.stop()
 
-    def __enter__(self) -> "BaseRotatingLogger":
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(

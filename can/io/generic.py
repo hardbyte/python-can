@@ -8,6 +8,7 @@ from typing import (
     BinaryIO,
     ContextManager,
     Iterable,
+    Literal,
     Optional,
     TextIO,
     Type,
@@ -15,7 +16,7 @@ from typing import (
     cast,
 )
 
-from typing_extensions import Literal
+from typing_extensions import Self
 
 from .. import typechecking
 from ..listener import Listener
@@ -65,7 +66,7 @@ class BaseIOHandler(ContextManager, metaclass=ABCMeta):
         # for multiple inheritance
         super().__init__()
 
-    def __enter__(self) -> "BaseIOHandler":
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(

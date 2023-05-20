@@ -6,15 +6,13 @@ import typing
 if typing.TYPE_CHECKING:
     import os
 
-import typing_extensions
 
-
-class CanFilter(typing_extensions.TypedDict):
+class CanFilter(typing.TypedDict):
     can_id: int
     can_mask: int
 
 
-class CanFilterExtended(typing_extensions.TypedDict):
+class CanFilterExtended(typing.TypedDict):
     can_id: int
     can_mask: int
     extended: bool
@@ -42,7 +40,7 @@ AcceptedIOType = typing.Union[FileLike, StringPathLike]
 BusConfig = typing.NewType("BusConfig", typing.Dict[str, typing.Any])
 
 
-class AutoDetectedConfig(typing_extensions.TypedDict):
+class AutoDetectedConfig(typing.TypedDict):
     interface: str
     channel: Channel
 
@@ -50,7 +48,7 @@ class AutoDetectedConfig(typing_extensions.TypedDict):
 ReadableBytesLike = typing.Union[bytes, bytearray, memoryview]
 
 
-class BitTimingDict(typing_extensions.TypedDict):
+class BitTimingDict(typing.TypedDict):
     f_clock: int
     brp: int
     tseg1: int
@@ -59,7 +57,7 @@ class BitTimingDict(typing_extensions.TypedDict):
     nof_samples: int
 
 
-class BitTimingFdDict(typing_extensions.TypedDict):
+class BitTimingFdDict(typing.TypedDict):
     f_clock: int
     nom_brp: int
     nom_tseg1: int

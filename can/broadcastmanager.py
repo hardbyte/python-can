@@ -10,9 +10,7 @@ import logging
 import sys
 import threading
 import time
-from typing import TYPE_CHECKING, Callable, Optional, Sequence, Tuple, Union
-
-from typing_extensions import Final
+from typing import TYPE_CHECKING, Callable, Final, Optional, Sequence, Tuple, Union
 
 from can import typechecking
 from can.message import Message
