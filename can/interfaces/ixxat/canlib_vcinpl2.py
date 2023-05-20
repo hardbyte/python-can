@@ -13,6 +13,7 @@ import ctypes
 import functools
 import logging
 import sys
+import time
 import warnings
 from typing import Callable, Optional, Sequence, Tuple, Union
 
@@ -42,8 +43,6 @@ __all__ = [
 ]
 
 log = logging.getLogger("can.ixxat")
-
-from time import perf_counter
 
 # Hack to have vciFormatError as a free function, see below
 vciFormatError = None
@@ -144,7 +143,7 @@ try:
         _canlib.map_symbol(
             "vciFormatError", None, (ctypes_HRESULT, ctypes.c_char_p, ctypes.c_uint32)
         )
-    except:
+    except ImportError:
         _canlib.map_symbol(
             "vciFormatErrorA", None, (ctypes_HRESULT, ctypes.c_char_p, ctypes.c_uint32)
         )
@@ -812,7 +811,7 @@ class IXXATBus(BusABC):
             else:
                 timeout_ms = int(timeout * 1000)
                 remaining_ms = timeout_ms
-                t0 = perf_counter()
+                t0 = time.perf_counter()
 
             while True:
                 try:
@@ -861,7 +860,7 @@ class IXXATBus(BusABC):
                         log.warning("Unexpected message info type")
 
                 if t0 is not None:
-                    remaining_ms = timeout_ms - int((perf_counter() - t0) * 1000)
+                    remaining_ms = timeout_ms - int((time.perf_counter() - t0) * 1000)
                     if remaining_ms < 0:
                         break
 

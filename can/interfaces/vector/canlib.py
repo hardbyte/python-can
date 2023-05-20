@@ -4,8 +4,6 @@ Ctypes wrapper module for Vector CAN Interface on win32/win64 systems.
 Authors: Julien Grave <grave.jul@gmail.com>, Christian Sandberg
 """
 
-# Import Standard Python Modules
-# ==============================
 import contextlib
 import ctypes
 import logging
@@ -26,19 +24,6 @@ from typing import (
     cast,
 )
 
-WaitForSingleObject: Optional[Callable[[int, int], int]]
-INFINITE: Optional[int]
-try:
-    # Try builtin Python 3 Windows API
-    from _winapi import INFINITE, WaitForSingleObject  # type: ignore
-
-    HAS_EVENTS = True
-except ImportError:
-    WaitForSingleObject, INFINITE = None, None
-    HAS_EVENTS = False
-
-# Import Modules
-# ==============
 from can import (
     BitTiming,
     BitTimingFd,
@@ -57,14 +42,10 @@ from can.util import (
     time_perfcounter_correlation,
 )
 
-# Define Module Logger
-# ====================
-LOG = logging.getLogger(__name__)
-
-# Import Vector API modules
-# =========================
 from . import xlclass, xldefine
 from .exceptions import VectorError, VectorInitializationError, VectorOperationError
+
+LOG = logging.getLogger(__name__)
 
 # Import safely Vector API module for Travis tests
 xldriver: Optional[ModuleType] = None
@@ -72,6 +53,17 @@ try:
     from . import xldriver
 except Exception as exc:
     LOG.warning("Could not import vxlapi: %s", exc)
+
+WaitForSingleObject: Optional[Callable[[int, int], int]]
+INFINITE: Optional[int]
+try:
+    # Try builtin Python 3 Windows API
+    from _winapi import INFINITE, WaitForSingleObject  # type: ignore
+
+    HAS_EVENTS = True
+except ImportError:
+    WaitForSingleObject, INFINITE = None, None
+    HAS_EVENTS = False
 
 
 class VectorBus(BusABC):

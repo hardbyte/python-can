@@ -17,6 +17,17 @@ import time
 import warnings
 from typing import Callable, Dict, List, Optional, Sequence, Tuple, Type, Union
 
+import can
+from can import BusABC, CanProtocol, Message
+from can.broadcastmanager import (
+    LimitedDurationCyclicSendTaskABC,
+    ModifiableCyclicTaskABC,
+    RestartableCyclicTaskABC,
+)
+from can.interfaces.socketcan import constants
+from can.interfaces.socketcan.utils import find_available_interfaces, pack_filters
+from can.typechecking import CanFilters
+
 log = logging.getLogger(__name__)
 log_tx = log.getChild("tx")
 log_rx = log.getChild("rx")
@@ -28,18 +39,6 @@ try:
 except ImportError:
     CMSG_SPACE_available = False
     log.error("socket.CMSG_SPACE not available on this platform")
-
-
-import can
-from can import BusABC, CanProtocol, Message
-from can.broadcastmanager import (
-    LimitedDurationCyclicSendTaskABC,
-    ModifiableCyclicTaskABC,
-    RestartableCyclicTaskABC,
-)
-from can.interfaces.socketcan import constants
-from can.interfaces.socketcan.utils import find_available_interfaces, pack_filters
-from can.typechecking import CanFilters
 
 
 # Setup BCM struct

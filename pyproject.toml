@@ -59,7 +59,7 @@ changelog = "https://github.com/hardbyte/python-can/blob/develop/CHANGELOG.md"
 [project.optional-dependencies]
 lint = [
     "pylint==2.17.*",
-    "ruff==0.0.267",
+    "ruff==0.0.269",
     "black==23.3.*",
     "mypy==1.3.*",
 ]
@@ -131,6 +131,11 @@ select = [
     "F401", # unused-imports
     "UP", # pyupgrade
     "I", # isort
+    "E", # pycodestyle errors
+    "W", # pycodestyle warnings
+]
+ignore = [
+    "E501", # Line too long
 ]
 
 [tool.ruff.isort]
