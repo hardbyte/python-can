@@ -1,0 +1,91 @@
+[
+    {
+        "ifindex": 1,
+        "ifname": "lo",
+        "flags": [
+            "LOOPBACK",
+            "UP",
+            "LOWER_UP"
+        ],
+        "mtu": 65536,
+        "qdisc": "noqueue",
+        "operstate": "UNKNOWN",
+        "linkmode": "DEFAULT",
+        "group": "default",
+        "txqlen": 1000,
+        "link_type": "loopback",
+        "address": "00:00:00:00:00:00",
+        "broadcast": "00:00:00:00:00:00"
+    },
+    {
+        "ifindex": 2,
+        "ifname": "eth0",
+        "flags": [
+            "NO-CARRIER",
+            "BROADCAST",
+            "MULTICAST",
+            "UP"
+        ],
+        "mtu": 1500,
+        "qdisc": "fq_codel",
+        "operstate": "DOWN",
+        "linkmode": "DEFAULT",
+        "group": "default",
+        "txqlen": 1000,
+        "link_type": "ether",
+        "address": "11:22:33:44:55:66",
+        "broadcast": "ff:ff:ff:ff:ff:ff"
+    },
+    {
+        "ifindex": 3,
+        "ifname": "wlan0",
+        "flags": [
+            "BROADCAST",
+            "MULTICAST",
+            "UP",
+            "LOWER_UP"
+        ],
+        "mtu": 1500,
+        "qdisc": "noqueue",
+        "operstate": "UP",
+        "linkmode": "DORMANT",
+        "group": "default",
+        "txqlen": 1000,
+        "link_type": "ether",
+        "address": "11:22:33:44:55:66",
+        "broadcast": "ff:ff:ff:ff:ff:ff"
+    },
+    {
+        "ifindex": 48,
+        "ifname": "vcan0",
+        "flags": [
+            "NOARP",
+            "UP",
+            "LOWER_UP"
+        ],
+        "mtu": 72,
+        "qdisc": "noqueue",
+        "operstate": "UNKNOWN",
+        "linkmode": "DEFAULT",
+        "group": "default",
+        "txqlen": 1000,
+        "link_type": "can"
+    },
+    {
+        "ifindex": 50,
+        "ifname": "mycustomCan123",
+        "flags": [
+            "NOARP",
+            "UP",
+            "LOWER_UP"
+        ],
+        "mtu": 72,
+        "qdisc": "noqueue",
+        "operstate": "UNKNOWN",
+        "linkmode": "DEFAULT",
+        "group": "default",
+        "txqlen": 1000,
+        "link_type": "can"
+    },
+    {}
+]
