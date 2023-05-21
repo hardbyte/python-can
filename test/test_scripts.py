@@ -74,10 +74,8 @@ class TestLoggerScript(CanScriptTest):
     def _commands(self):
         commands = [
             "python -m can.logger --help",
-            "python scripts/can_logger.py --help",
+            "can_logger --help",
         ]
-        if IS_UNIX:
-            commands += ["can_logger.py --help"]
         return commands
 
     def _import(self):
@@ -90,10 +88,8 @@ class TestPlayerScript(CanScriptTest):
     def _commands(self):
         commands = [
             "python -m can.player --help",
-            "python scripts/can_player.py --help",
+            "can_player --help",
         ]
-        if IS_UNIX:
-            commands += ["can_player.py --help"]
         return commands
 
     def _import(self):
@@ -106,10 +102,8 @@ class TestLogconvertScript(CanScriptTest):
     def _commands(self):
         commands = [
             "python -m can.logconvert --help",
-            "python scripts/can_logconvert.py --help",
+            "can_logconvert --help",
         ]
-        if IS_UNIX:
-            commands += ["can_logconvert.py --help"]
         return commands
 
     def _import(self):

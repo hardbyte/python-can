@@ -45,10 +45,10 @@ classifiers = [
 ]
 
 [project.scripts]
-"can_logconvert.py" = "scripts.can_logconvert:main"
-"can_logger.py" = "scripts.can_logger:main"
-"can_player.py" = "scripts.can_player:main"
-"can_viewer.py" = "scripts.can_viewer:main"
+can_logconvert = "can.logconvert:main"
+can_logger = "can.logger:main"
+can_player = "can.player:main"
+can_viewer = "can.viewer:main"
 
 [project.urls]
 homepage = "https://github.com/hardbyte/python-can"
