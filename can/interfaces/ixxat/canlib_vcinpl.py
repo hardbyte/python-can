@@ -984,12 +984,12 @@ def _detect_available_configs() -> List[AutoDetectedConfig]:
                     else:
                         _canlib.canChannelClose(channel_handle)
                         config_list.append(
-                        {
-                            "interface": "ixxat",
-                            "channel": channel,
-                            "unique_hardware_id": hwid,
-                        }
-                    )
+                            {
+                                "interface": "ixxat",
+                                "channel": channel,
+                                "unique_hardware_id": hwid,
+                            }
+                        )
                 _canlib.vciDeviceClose(device_handle2)
         _canlib.vciEnumDeviceClose(device_handle)
     except AttributeError:
