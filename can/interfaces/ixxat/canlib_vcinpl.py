@@ -947,7 +947,6 @@ def get_ixxat_hwids():
 
 
 def _detect_available_configs() -> List[AutoDetectedConfig]:
-
     config_list = []  # list in wich to store the resulting bus kwargs
 
     # used to detect HWID
@@ -984,7 +983,13 @@ def _detect_available_configs() -> List[AutoDetectedConfig]:
                         break
                     else:
                         _canlib.canChannelClose(channel_handle)
-                        config_list.append({"interface": "ixxat", "channel": channel, "unique_hardware_id": hwid})
+                        config_list.append(
+                        {
+                            "interface": "ixxat",
+                            "channel": channel,
+                            "unique_hardware_id": hwid,
+                        }
+                    )
                 _canlib.vciDeviceClose(device_handle2)
         _canlib.vciEnumDeviceClose(device_handle)
     except AttributeError:
