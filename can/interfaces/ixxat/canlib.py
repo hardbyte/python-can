@@ -1,4 +1,4 @@
-from typing import Callable, Optional, Sequence, Union, List
+from typing import Callable, List, Optional, Sequence, Union
 
 import can.interfaces.ixxat.canlib_vcinpl as vcinpl
 import can.interfaces.ixxat.canlib_vcinpl2 as vcinpl2

@@ -14,7 +14,7 @@ import functools
 import logging
 import sys
 import warnings
-from typing import Callable, Optional, Sequence, Tuple, Union, List
+from typing import Callable, List, Optional, Sequence, Tuple, Union
 
 from can import (
     BusABC,
@@ -28,8 +28,8 @@ from can import (
 from can.ctypesutil import HANDLE, PHANDLE, CLibrary
 from can.ctypesutil import HRESULT as ctypes_HRESULT
 from can.exceptions import CanInitializationError, CanInterfaceNotImplementedError
-from can.util import deprecated_args_alias
 from can.typechecking import AutoDetectedConfig
+from can.util import deprecated_args_alias
 
 from . import constants, structures
 from .exceptions import *
