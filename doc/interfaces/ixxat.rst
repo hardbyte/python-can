@@ -64,15 +64,22 @@ The function :meth:`~can.detect_available_configs` can be used to generate a lis
     .. testsetup:: ixxat
 
         from unittest.mock import Mock
-        can.detect_available_configs = Mock(side_effect=lambda: [{'interface': 'ixxat', 'channel': 0, 'unique_hardware_id': 'HW441489'}, {'interface': 'ixxat', 'channel': 0, 'unique_hardware_id': 'HW107422'}, {'interface': 'ixxat', 'channel': 1, 'unique_hardware_id': 'HW107422'}])
+        import can
+        assert hasattr(can, "detect_available_configs")
+        can.detect_available_configs = Mock(
+            "interface",
+            return_value=[{'interface': 'ixxat', 'channel': 0, 'unique_hardware_id': 'HW441489'}, {'interface': 'ixxat', 'channel': 0, 'unique_hardware_id': 'HW107422'}, {'interface': 'ixxat', 'channel': 1, 'unique_hardware_id': 'HW107422'}],
+        )
 
     .. doctest:: ixxat
 
         >>> import can 
-        >>> print(can.detect_available_configs("ixxat"))
-        [{'interface': 'ixxat', 'channel': 0, 'unique_hardware_id': 'HW509182'},
-        {'interface': 'ixxat', 'channel': 0, 'unique_hardware_id': 'HW107422'},
-        {'interface': 'ixxat', 'channel': 1, 'unique_hardware_id': 'HW107422'}]
+        >>> configs = can.detect_available_configs("ixxat")
+        >>> for config in configs:
+        ...     print(config)
+        {'interface': 'ixxat', 'channel': 0, 'unique_hardware_id': 'HW441489'}
+        {'interface': 'ixxat', 'channel': 0, 'unique_hardware_id': 'HW107422'}
+        {'interface': 'ixxat', 'channel': 1, 'unique_hardware_id': 'HW107422'}
 
 
 You may also get a list of all connected IXXAT devices using the function ``get_ixxat_hwids()`` as demonstrated below:
