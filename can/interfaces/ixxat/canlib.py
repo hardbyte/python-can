@@ -156,9 +156,7 @@ class IXXATBus(BusABC):
         duration: Optional[float] = None,
         modifier_callback: Optional[Callable[[Message], None]] = None,
     ) -> CyclicSendTaskABC:
-        return self.bus._send_periodic_internal(
-            msgs, period, duration, modifier_callback
-        )
+        return self.bus._send_periodic_internal(msgs, period, duration, modifier_callback)
 
     def shutdown(self) -> None:
         super().shutdown()
@@ -170,3 +168,7 @@ class IXXATBus(BusABC):
         Return the current state of the hardware
         """
         return self.bus.state
+
+    @staticmethod
+    def _detect_available_configs():
+        return vcinpl._detect_available_configs()

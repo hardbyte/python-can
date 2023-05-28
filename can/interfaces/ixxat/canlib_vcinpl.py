@@ -943,3 +943,47 @@ def get_ixxat_hwids():
     _canlib.vciEnumDeviceClose(device_handle)
 
     return hwids
+
+
+def _detect_available_configs():
+
+    config_list = []  # list in wich to store the resulting bus kwargs
+
+    # used to detect HWID
+    device_handle = HANDLE()
+    device_info = structures.VCIDEVICEINFO()
+
+    # used to attempt to open channels
+    channel_handle = HANDLE()
+    device_handle2 = HANDLE()
+
+    _canlib.vciEnumDeviceOpen(ctypes.byref(device_handle))
+    while True:
+        try:
+            _canlib.vciEnumDeviceNext(device_handle, ctypes.byref(device_info))
+        except StopIteration:
+            break
+        else:
+            hwid = device_info.UniqueHardwareId.AsChar.decode("ascii")
+            _canlib.vciDeviceOpen(
+                ctypes.byref(device_info.VciObjectId),
+                ctypes.byref(device_handle2),
+            )
+            for channel in range(4):
+                try:
+                    _canlib.canChannelOpen(
+                        device_handle2,
+                        channel,
+                        constants.FALSE,
+                        ctypes.byref(channel_handle),
+                    )
+                except Exception:
+                    # Array outside of bounds error == accessing a channel not in the hardware
+                    break
+                else:
+                    _canlib.canChannelClose(channel_handle)
+                    config_list.append({"interface": "ixxat", "channel": channel, "unique_hardware_id": hwid})
+            _canlib.vciDeviceClose(device_handle2)
+    _canlib.vciEnumDeviceClose(device_handle)
+
+    return config_list
