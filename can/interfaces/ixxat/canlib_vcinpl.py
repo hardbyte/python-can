@@ -825,6 +825,7 @@ class IXXATBus(BusABC):
         )
 
     def shutdown(self):
+        super().shutdown()
         if self._scheduler is not None:
             _canlib.canSchedulerClose(self._scheduler)
         _canlib.canChannelClose(self._channel_handle)
