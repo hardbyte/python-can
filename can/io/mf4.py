@@ -113,7 +113,8 @@ class MF4Writer(BinaryIOMessageWriter):
 
         if kwargs.get("append", False):
             raise ValueError(
-                f"{self.__class__.__name__} is currently not equipped to " f"append messages to an existing file."
+                f"{self.__class__.__name__} is currently not equipped to "
+                f"append messages to an existing file."
             )
 
         super().__init__(file, mode="w+b")
@@ -134,7 +135,9 @@ class MF4Writer(BinaryIOMessageWriter):
         else:
             attachment = None
 
-        acquisition_source = SourceInformation(source_type=SOURCE_BUS, bus_type=BUS_TYPE_CAN)
+        acquisition_source = SourceInformation(
+            source_type=SOURCE_BUS, bus_type=BUS_TYPE_CAN
+        )
 
         # standard frames group
         self._mdf.append(
@@ -297,7 +300,10 @@ class MF4Reader(BinaryIOMessageReader):
 
         masters = [self._mdf.get_master(i) for i in range(3)]
 
-        masters = [np.core.records.fromarrays((master, np.ones(len(master)) * i)) for i, master in enumerate(masters)]
+        masters = [
+            np.core.records.fromarrays((master, np.ones(len(master)) * i))
+            for i, master in enumerate(masters)
+        ]
 
         self.masters = np.sort(np.concatenate(masters))
 
