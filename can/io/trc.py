@@ -87,9 +87,9 @@ class TRCReader(TextIOMessageReader):
             elif line.startswith(";$STARTTIME"):
                 logger.debug("TRCReader: Found start time '%s'", line)
                 try:
-                    self.start_time = datetime(1899, 12, 30, tzinfo=timezone.utc) + timedelta(
-                        days=float(line.split("=")[1])
-                    )
+                    self.start_time = datetime(
+                        1899, 12, 30, tzinfo=timezone.utc
+                    ) + timedelta(days=float(line.split("=")[1]))
                 except IndexError:
                     logger.debug("TRCReader: Failed to parse start time")
             elif line.startswith(";$COLUMNS"):
@@ -113,7 +113,9 @@ class TRCReader(TextIOMessageReader):
                 raise ValueError("File has no column information")
 
         if self.file_version == TRCFileVersion.UNKNOWN:
-            logger.info("TRCReader: No file version was found, so version 1.0 is assumed")
+            logger.info(
+                "TRCReader: No file version was found, so version 1.0 is assumed"
+            )
             self._parse_cols = self._parse_msg_V1_0
         elif self.file_version == TRCFileVersion.V1_0:
             self._parse_cols = self._parse_msg_V1_0
@@ -146,7 +148,9 @@ class TRCReader(TextIOMessageReader):
 
         msg = Message()
         if isinstance(self.start_time, datetime):
-            msg.timestamp = (self.start_time + timedelta(milliseconds=float(cols[1]))).timestamp()
+            msg.timestamp = (
+                self.start_time + timedelta(milliseconds=float(cols[1]))
+            ).timestamp()
         else:
             msg.timestamp = float(cols[1]) / 1000
         msg.arbitration_id = int(arbit_id, 16)
@@ -172,14 +176,18 @@ class TRCReader(TextIOMessageReader):
 
         msg = Message()
         if isinstance(self.start_time, datetime):
-            msg.timestamp = (self.start_time + timedelta(milliseconds=float(cols[self.columns["O"]]))).timestamp()
+            msg.timestamp = (
+                self.start_time + timedelta(milliseconds=float(cols[self.columns["O"]]))
+            ).timestamp()
         else:
             msg.timestamp = float(cols[1]) / 1000
         msg.arbitration_id = int(cols[self.columns["I"]], 16)
         msg.is_extended_id = len(cols[self.columns["I"]]) > 4
         msg.channel = int(cols[bus]) if bus is not None else 1
         msg.dlc = dlc
-        msg.data = bytearray([int(cols[i + self.columns["D"]], 16) for i in range(length)])
+        msg.data = bytearray(
+            [int(cols[i + self.columns["D"]], 16) for i in range(length)]
+        )
         msg.is_rx = cols[self.columns["d"]] == "Rx"
         msg.is_fd = type_ in ["FD", "FB", "FE", "BI"]
         msg.bitrate_switch = type_ in ["FB", " FE"]
@@ -249,7 +257,9 @@ class TRCWriter(TextIOMessageWriter):
     file: TextIO
     first_timestamp: Optional[float]
 
-    FORMAT_MESSAGE = "{msgnr:>7} {time:13.3f} DT {channel:>2} {id:>8} {dir:>2} -  {dlc:<4} {data}"
+    FORMAT_MESSAGE = (
+        "{msgnr:>7} {time:13.3f} DT {channel:>2} {id:>8} {dir:>2} -  {dlc:<4} {data}"
+    )
     FORMAT_MESSAGE_V1_0 = "{msgnr:>6}) {time:7.0f} {id:>8} {dlc:<1} {data}"
 
     def __init__(
