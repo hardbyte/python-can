@@ -272,7 +272,11 @@ class MF4Reader(MessageReader):
     The MF4Reader only supports MF4 files that were recorded with python-can.
     """
 
-    def __init__(self, file: Union[StringPathLike, BinaryIO]) -> None:
+    def __init__(
+        self,
+        file: Union[StringPathLike, BinaryIO],
+        **kwargs: Any,
+    ) -> None:
         """
         :param file: a path-like object or as file-like object to read from
                         If this is a file-like object, is has to be opened in
