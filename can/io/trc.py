@@ -11,7 +11,7 @@ import logging
 import os
 from datetime import datetime, timedelta, timezone
 from enum import Enum
-from typing import Callable, Dict, Generator, List, Optional, TextIO, Union
+from typing import Any, Callable, Dict, Generator, List, Optional, TextIO, Union
 
 from ..message import Message
 from ..typechecking import StringPathLike
@@ -49,6 +49,7 @@ class TRCReader(TextIOMessageReader):
     def __init__(
         self,
         file: Union[StringPathLike, TextIO],
+        **kwargs: Any,
     ) -> None:
         """
         :param file: a path-like object or as file-like object to read from
@@ -265,6 +266,7 @@ class TRCWriter(TextIOMessageWriter):
         self,
         file: Union[StringPathLike, TextIO],
         channel: int = 1,
+        **kwargs: Any,
     ) -> None:
         """
         :param file: a path-like object or as file-like object to write to
