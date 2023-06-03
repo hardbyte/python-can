@@ -94,46 +94,47 @@ class IXXATBus(BusABC):
             Secondary sample point (data). Only takes effect with fd and bitrate switch enabled.
 
         """
-        if fd:
-            if rx_fifo_size is None:
-                rx_fifo_size = 1024
-            if tx_fifo_size is None:
-                tx_fifo_size = 128
-            self.bus = vcinpl2.IXXATBus(
-                channel=channel,
-                can_filters=can_filters,
-                receive_own_messages=receive_own_messages,
-                unique_hardware_id=unique_hardware_id,
-                extended=extended,
-                rx_fifo_size=rx_fifo_size,
-                tx_fifo_size=tx_fifo_size,
-                bitrate=bitrate,
-                data_bitrate=data_bitrate,
-                sjw_abr=sjw_abr,
-                tseg1_abr=tseg1_abr,
-                tseg2_abr=tseg2_abr,
-                sjw_dbr=sjw_dbr,
-                tseg1_dbr=tseg1_dbr,
-                tseg2_dbr=tseg2_dbr,
-                ssp_dbr=ssp_dbr,
-                **kwargs,
-            )
-        else:
-            if rx_fifo_size is None:
-                rx_fifo_size = 16
-            if tx_fifo_size is None:
-                tx_fifo_size = 16
-            self.bus = vcinpl.IXXATBus(
-                channel=channel,
-                can_filters=can_filters,
-                receive_own_messages=receive_own_messages,
-                unique_hardware_id=unique_hardware_id,
-                extended=extended,
-                rx_fifo_size=rx_fifo_size,
-                tx_fifo_size=tx_fifo_size,
-                bitrate=bitrate,
-                **kwargs,
-            )
+        # if fd:
+        if rx_fifo_size is None:
+            rx_fifo_size = 1024
+        if tx_fifo_size is None:
+            tx_fifo_size = 128
+        self.bus = vcinpl2.IXXATBus(
+            channel=channel,
+            can_filters=can_filters,
+            receive_own_messages=receive_own_messages,
+            unique_hardware_id=unique_hardware_id,
+            extended=extended,
+            rx_fifo_size=rx_fifo_size,
+            tx_fifo_size=tx_fifo_size,
+            bitrate=bitrate,
+            data_bitrate=data_bitrate,
+            sjw_abr=sjw_abr,
+            tseg1_abr=tseg1_abr,
+            tseg2_abr=tseg2_abr,
+            sjw_dbr=sjw_dbr,
+            tseg1_dbr=tseg1_dbr,
+            tseg2_dbr=tseg2_dbr,
+            ssp_dbr=ssp_dbr,
+            fd=fd,
+            **kwargs,
+        )
+        # else:
+        #     if rx_fifo_size is None:
+        #         rx_fifo_size = 16
+        #     if tx_fifo_size is None:
+        #         tx_fifo_size = 16
+        #     self.bus = vcinpl.IXXATBus(
+        #         channel=channel,
+        #         can_filters=can_filters,
+        #         receive_own_messages=receive_own_messages,
+        #         unique_hardware_id=unique_hardware_id,
+        #         extended=extended,
+        #         rx_fifo_size=rx_fifo_size,
+        #         tx_fifo_size=tx_fifo_size,
+        #         bitrate=bitrate,
+        #         **kwargs,
+        #     )
 
         super().__init__(channel=channel, **kwargs)
         self._can_protocol = self.bus.protocol

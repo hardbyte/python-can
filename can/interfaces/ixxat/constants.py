@@ -123,10 +123,10 @@ CAN_OPMODE_LOWSPEED = 0x10  # use low speed bus interface
 CAN_OPMODE_AUTOBAUD = 0x20  # automatic bit rate detection
 
 # Extended operating modes
-CAN_EXMODE_DISABLED = 0x00
-CAN_EXMODE_EXTDATALEN = 0x01
-CAN_EXMODE_FASTDATA = 0x02
-CAN_EXMODE_NONISOCANFD = 0x04
+CAN_EXMODE_DISABLED = 0x00  # no extended operation
+CAN_EXMODE_EXTDATALEN = 0x01  # extended data length
+CAN_EXMODE_FASTDATA = 0x02  # fast data bit rate
+CAN_EXMODE_NONISOCANFD = 0x04  # non ISO conform frames
 
 # Message types
 CAN_MSGTYPE_DATA = 0
@@ -160,13 +160,19 @@ CAN_ACC_CODE_NONE = 0x80000000
 CAN_BTMODE_RAW = 0x00000001  # raw mode
 CAN_BTMODE_TSM = 0x00000002  # triple sampling mode
 
+# Filter selection
+CAN_FILTER_STD = 1  # select standard filter (11-bit)
+CAN_FILTER_EXT = 2  # select extended filter (29-bit)
 
+# Filter modw
 CAN_FILTER_VOID = 0x00  # invalid or unknown filter mode (do not use for initialization)
 CAN_FILTER_LOCK = 0x01  # lock filter (inhibit all IDs)
 CAN_FILTER_PASS = 0x02  # bypass filter (pass all IDs)
 CAN_FILTER_INCL = 0x03  # inclusive filtering (pass registered IDs)
 CAN_FILTER_EXCL = 0x04  # exclusive filtering (inhibit registered IDs)
 
+# additional filter mode flag for ICanChannel2 initialization
+CAN_FILTER_SRRA = 0x80  # pass self-rec messages from all channels
 
 # message information flags (used by <CANMSGINFO.Bytes.bFlags>)
 CAN_MSGFLAGS_DLC = 0x0F  # [bit 0] data length code
@@ -214,6 +220,12 @@ CAN_FEATURE_64BITTSC = 0x00020000  # 64-bit time stamp counter
 
 
 CAN_BITRATE_PRESETS = {
+    50000: structures.CANBTP(
+        dwMode=0, dwBPS=50000, wTS1=6400, wTS2=1600, wSJW=1600, wTDO=0
+    ),  # SP = 80,0%
+    125000: structures.CANBTP(
+        dwMode=0, dwBPS=125000, wTS1=6400, wTS2=1600, wSJW=1600, wTDO=0
+    ),  # SP = 80,0%
     250000: structures.CANBTP(
         dwMode=0, dwBPS=250000, wTS1=6400, wTS2=1600, wSJW=1600, wTDO=0
     ),  # SP = 80,0%
