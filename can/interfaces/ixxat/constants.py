@@ -269,3 +269,27 @@ CAN_DATABITRATE_PRESETS = {
         dwMode=0, dwBPS=10000000, wTS1=300, wTS2=100, wSJW=100, wTDO=200
     ),  # SP = 75,0%
 }
+
+CAN_INFO_MESSAGES = {
+    CAN_INFO_START: "CAN started",
+    CAN_INFO_STOP: "CAN stopped",
+    CAN_INFO_RESET: "CAN reset",
+}
+
+CAN_ERROR_MESSAGES = {
+    CAN_ERROR_STUFF: "CAN bit stuff error",
+    CAN_ERROR_FORM: "CAN form error",
+    CAN_ERROR_ACK: "CAN acknowledgment error",
+    CAN_ERROR_BIT: "CAN bit error",
+    CAN_ERROR_CRC: "CAN CRC error",
+    CAN_ERROR_OTHER: "Other (unknown) CAN error",
+}
+
+CAN_STATUS_FLAGS = {
+    CAN_STATUS_TXPEND: "transmission pending",
+    CAN_STATUS_OVRRUN: "data overrun occurred",
+    CAN_STATUS_ERRLIM: "error warning limit exceeded",
+    CAN_STATUS_BUSOFF: "bus off",
+    CAN_STATUS_ININIT: "init mode active",
+    CAN_STATUS_BUSCERR: "bus coupling error",
+}
