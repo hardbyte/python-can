@@ -3,7 +3,9 @@
 IXXAT Virtual Communication Interface
 =====================================
 
-Interface to `IXXAT <http://www.ixxat.com/>`__ Virtual Communication Interface V3 SDK. Works on Windows.
+Interface to `IXXAT <http://www.ixxat.com/>`__ Virtual Communication Interface V4 SDK. Works on Windows.
+Note that python-can version 4.2.1 and earlier implemented the V3 SDK for non-FD devices. Python-can 4.2.2+
+uses the V4 SDK for all devices.
 
 The Linux ECI SDK is currently unsupported, however on Linux some devices are
 supported with :doc:`socketcan`.
@@ -34,6 +36,10 @@ module, while the following parameters are optional and are interpreted by IXXAT
 * ``tx_fifo_size`` (default 16 for CAN, 128 for CAN-FD) Number of TX mailboxes.
 * ``bitrate`` (default 500000) Channel bitrate.
 * ``data_bitrate`` (defaults to 2Mbps) Channel data bitrate (only canfd, to use when message bitrate_switch is used).
+* ``timing`` (optional) BitTiming class. If this argument is provided, the bitrate and data_bitrate parameters are overridden.
+
+The following deprecated parameters will be removed in python-can version 5.0.0.
+
 * ``sjw_abr`` (optional, only canfd) Bus timing value sample jump width (arbitration).
 * ``tseg1_abr`` (optional, only canfd) Bus timing value tseg1 (arbitration).
 * ``tseg2_abr`` (optional, only canfd) Bus timing value tseg2 (arbitration).
@@ -41,6 +47,10 @@ module, while the following parameters are optional and are interpreted by IXXAT
 * ``tseg1_dbr`` (optional, only used if baudrate switch enabled) Bus timing value tseg1 (data).
 * ``tseg2_dbr`` (optional, only used if baudrate switch enabled) Bus timing value tseg2 (data).
 * ``ssp_dbr`` (optional, only used if baudrate switch enabled) Secondary sample point (data).
+
+timing
+------
+
 
 
 
@@ -56,17 +66,41 @@ VCI documentation, section "Message filters" for more info.
 
 List available devices
 ----------------------
-In case you have connected multiple IXXAT devices, you have to select them by using their unique hardware id.
-To get a list of all connected IXXAT you can use the function ``get_ixxat_hwids()`` as demonstrated below:
+In case you have connected multiple IXXAT devices, you have to select them by using their unique hardware id. 
+The function :meth:`~can.detect_available_configs` can be used to generate a list of :class:`~can.BusABC` constructors
+(including the channel number and unique hardware ID number for the connected devices).
 
     .. testsetup:: ixxat
+
+        from unittest.mock import Mock
+        import can
+        assert hasattr(can, "detect_available_configs")
+        can.detect_available_configs = Mock(
+            "interface",
+            return_value=[{'interface': 'ixxat', 'channel': 0, 'unique_hardware_id': 'HW441489'}, {'interface': 'ixxat', 'channel': 0, 'unique_hardware_id': 'HW107422'}, {'interface': 'ixxat', 'channel': 1, 'unique_hardware_id': 'HW107422'}],
+        )
+
+    .. doctest:: ixxat
+
+        >>> import can 
+        >>> configs = can.detect_available_configs("ixxat")
+        >>> for config in configs:
+        ...     print(config)
+        {'interface': 'ixxat', 'channel': 0, 'unique_hardware_id': 'HW441489'}
+        {'interface': 'ixxat', 'channel': 0, 'unique_hardware_id': 'HW107422'}
+        {'interface': 'ixxat', 'channel': 1, 'unique_hardware_id': 'HW107422'}
+
+
+You may also get a list of all connected IXXAT devices using the function ``get_ixxat_hwids()`` as demonstrated below:
+
+    .. testsetup:: ixxat2
 
         from unittest.mock import Mock
         import can.interfaces.ixxat
         assert hasattr(can.interfaces.ixxat, "get_ixxat_hwids")
         can.interfaces.ixxat.get_ixxat_hwids = Mock(side_effect=lambda: ['HW441489', 'HW107422'])
 
-    .. doctest:: ixxat
+    .. doctest:: ixxat2
 
         >>> from can.interfaces.ixxat import get_ixxat_hwids
         >>> for hwid in get_ixxat_hwids():
@@ -81,24 +115,8 @@ Bus
 .. autoclass:: can.interfaces.ixxat.IXXATBus
     :members:
 
-Implementation based on vcinpl.dll
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autoclass:: can.interfaces.ixxat.canlib_vcinpl.IXXATBus
-    :members:
-
 .. autoclass:: can.interfaces.ixxat.canlib_vcinpl.CyclicSendTask
     :members:
-
-Implementation based on vcinpl2.dll
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autoclass:: can.interfaces.ixxat.canlib_vcinpl2.IXXATBus
-    :members:
-
-.. autoclass:: can.interfaces.ixxat.canlib_vcinpl2.CyclicSendTask
-    :members:
-
 
 
 Internals
@@ -115,5 +133,6 @@ explicitly instantiated by the caller.
 - ``send()`` is not blocking but may raise a VCIError if the TX FIFO is full
 
 RX and TX FIFO sizes are configurable with ``rx_fifo_size`` and ``tx_fifo_size``
-options, defaulting to 16 for both.
+options, defaulting to 16 for both for non-FD communication. For FD communication,
+``rx_fifo_size`` defaults to 1024, and ``tx_fifo_size`` defaults to 128.
 

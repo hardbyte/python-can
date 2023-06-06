@@ -31,11 +31,10 @@ from can import (
 from can.ctypesutil import HANDLE, PHANDLE, CLibrary
 from can.ctypesutil import HRESULT as ctypes_HRESULT
 from can.exceptions import CanInitializationError, CanInterfaceNotImplementedError
+from can.interfaces.ixxat import constants, structures
+from can.interfaces.ixxat.exceptions import *
 from can.typechecking import AutoDetectedConfig, CanFilters
 from can.util import deprecated_args_alias, dlc2len, len2dlc
-
-from can.interfaces.ixxat import constants, structures
-from .exceptions import *
 
 __all__ = [
     "VCITimeout",
@@ -423,8 +422,8 @@ class IXXATBus(BusABC):
         fd: Optional[bool] = False,
         rx_fifo_size: Optional[int] = None,
         tx_fifo_size: Optional[int] = None,
-        bitrate: Optional[int] = 500000,
-        data_bitrate: Optional[int] = 500000,
+        bitrate: Optional[int] = 500_000,
+        data_bitrate: Optional[int] = 2_000_000,
         timing: Optional[Union[BitTiming, BitTimingFd]] = None,
         **kwargs,
     ):
@@ -469,9 +468,9 @@ class IXXATBus(BusABC):
         :param timing:
             Optional :class:`~can.BitTiming` or :class:`~can.BitTimingFd` instance
             to use for custom bit timing setting. The `f_clock` value of the timing
-            instance must be set to 40_000_000 (40MHz).
-            If this parameter is provided, it takes precedence over all other
-            timing-related parameters like `bitrate`, `fd_bitrate` and `fd`.
+            instance must be set to the appropriate value for the interface.
+            If this parameter is provided, it takes precedence over all other optional
+            timing-related parameters like `bitrate`, `data_bitrate` and `fd`.
 
         """
         if _canlib is None:
@@ -525,6 +524,7 @@ class IXXATBus(BusABC):
         self._channel_handle = HANDLE()
         self._channel_capabilities = structures.CANCAPABILITIES2()
         self._message = structures.CANMSG2()
+        self._bus_load_calculation = False
         if fd:
             self._payload = (ctypes.c_byte * 64)()
         else:
@@ -645,6 +645,11 @@ class IXXATBus(BusABC):
         ) != 0:
             bOpMode |= constants.CAN_OPMODE_ERRFRAME
 
+        if (  # controller supports receiving error frames:
+            self._channel_capabilities.dwFeatures & constants.CAN_FEATURE_BUSLOAD
+        ) != 0:
+            self._bus_load_calculation = True
+
         bExMode = constants.CAN_EXMODE_DISABLED
         self._can_protocol = CanProtocol.CAN_20  # default to standard CAN protocol
         if fd:
@@ -654,8 +659,8 @@ class IXXATBus(BusABC):
                 bExMode |= constants.CAN_EXMODE_EXTDATALEN
             else:
                 raise CanInitializationError(
-                    "The interface %s does not support extended data frames (FD)" %
-                    self._device_info.UniqueHardwareId.AsChar.decode("ascii"),
+                    "The interface %s does not support extended data frames (FD)"
+                    % self._device_info.UniqueHardwareId.AsChar.decode("ascii"),
                 )
             if (
                 self._channel_capabilities.dwFeatures & constants.CAN_FEATURE_FASTDATA
@@ -663,8 +668,8 @@ class IXXATBus(BusABC):
                 bExMode |= constants.CAN_EXMODE_FASTDATA
             else:
                 raise CanInitializationError(
-                    "The interface %s does not support fast data rates (FD)" %
-                    self._device_info.UniqueHardwareId.AsChar.decode("ascii"),
+                    "The interface %s does not support fast data rates (FD)"
+                    % self._device_info.UniqueHardwareId.AsChar.decode("ascii"),
                 )
             # set bus to CAN FD protocol once FD capability is verified
             self._can_protocol = CanProtocol.CAN_FD
@@ -696,7 +701,7 @@ class IXXATBus(BusABC):
             else:
                 try:
                     timing = BitTimingFd.from_sample_point(
-                        f_clock=self._channel_capabilities.dwCanClockFreq,
+                        f_clock=self._channel_capabilities.dwCanClkFreq,
                         nom_bitrate=bitrate,
                         nom_sample_point=80,
                         data_bitrate=data_bitrate,
@@ -722,10 +727,10 @@ class IXXATBus(BusABC):
 
         pBtpSDR = IXXATBus._canptb_build(
             defaults=constants.CAN_BITRATE_PRESETS,
-            bitrate=timing.bitrate,
-            tseg1=timing.tseg1,
-            tseg2=timing.tseg2,
-            sjw=timing.sjw,
+            bitrate=timing.nom_bitrate,
+            tseg1=timing.nom_tseg1,
+            tseg2=timing.nom_tseg2,
+            sjw=timing.nom_sjw,
             ssp=0,
         )
         pBtpFDR = IXXATBus._canptb_build(
@@ -943,7 +948,6 @@ class IXXATBus(BusABC):
 
         return rx_msg, True
 
-
     def send(self, msg: Message, timeout: Optional[float] = None) -> None:
         """
         Sends a message on the bus. The interface may buffer the message.
@@ -1024,7 +1028,6 @@ class IXXATBus(BusABC):
             modifier_callback=modifier_callback,
         )
 
-
     def shutdown(self):
         super().shutdown()
         if self._scheduler is not None:
@@ -1035,11 +1038,32 @@ class IXXATBus(BusABC):
         _canlib.vciDeviceClose(self._device_handle)
 
     @property
+    def clock_frequency(self) -> int:
+        """
+        :return: The can clock frequency of the attached adapter (e.g. for use in BitTiming)
+        :rtype: int
+        """
+        return self._channel_capabilities.dwCanClkFreq
+
+    @property
+    def bus_load(self) -> Union[int, None]:
+        """
+        :return: The Bus Load in % (0 - 100) if the adapter is capable of measuring it. Otherwise returns None.
+        :rtype: Union[int, None]
+        """
+        if self._bus_load_calculation:
+            status = structures.CANLINESTATUS2()
+            _canlib.canControlGetStatus(self._control_handle, ctypes.byref(status))
+            return status.bBusLoad
+        else:
+            warnings.warn("The current adapter does not support bus load measurement")
+
+    @property
     def state(self) -> BusState:
         """
         Return the current state of the hardware
         """
-        status = structures.CANLINESTATUS()
+        status = structures.CANLINESTATUS2()
         _canlib.canControlGetStatus(self._control_handle, ctypes.byref(status))
         if status.bOpMode == constants.CAN_OPMODE_LISTONLY:
             return BusState.PASSIVE
@@ -1058,7 +1082,6 @@ class IXXATBus(BusABC):
 
     @staticmethod
     def _detect_available_configs() -> List[AutoDetectedConfig]:
-
         config_list = []  # list in wich to store the resulting bus kwargs
 
         # used to detect HWID
