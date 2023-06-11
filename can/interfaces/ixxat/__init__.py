@@ -7,11 +7,15 @@ Copyright (C) 2016-2021 Giuseppe Corbelli <giuseppe.corbelli@weightpack.com>
 __all__ = [
     "canlib",
     "constants",
-    "CyclicSendTask"
+    "CyclicSendTask",
     "exceptions",
     "get_ixxat_hwids",
     "IXXATBus",
     "structures",
 ]
 
-from can.interfaces.ixxat.canlib import CyclicSendTask, get_ixxat_hwids, IXXATBus
+from can.interfaces.ixxat.canlib import (  # noqa: F401
+    CyclicSendTask,
+    IXXATBus,
+    get_ixxat_hwids,
+)

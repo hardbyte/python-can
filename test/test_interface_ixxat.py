@@ -12,6 +12,8 @@ import time
 import unittest
 
 import can
+from can.interfaces.ixxat import get_ixxat_hwids
+from can.interfaces.ixxat.canlib import _format_can_status
 
 logger = logging.getLogger("can.ixxat")
 default_test_bitrate = 250_000
@@ -36,7 +38,39 @@ class LogCaptureHandler(logging.Handler):
 
 class TestSoftwareCase(unittest.TestCase):
     """
-    Test cases that test the software only and do not rely on an existing/connected hardware.
+    Test cases that test the python-can software only
+    """
+
+    def setUp(self):
+        self.log_capture = LogCaptureHandler()
+        log = logging.getLogger("can.ixxat")
+        log.addHandler(self.log_capture)
+        log.setLevel(logging.INFO)
+
+    def tearDown(self):
+        logging.getLogger("can.ixxat").removeHandler(self.log_capture)
+
+    def test_interface_detection(self):
+        if_list = can.detect_available_configs("ixxat")
+        self.assertIsInstance(if_list, list)
+
+    def test_get_ixxat_hwids(self):
+        hwid_list = get_ixxat_hwids()
+        self.assertIsInstance(hwid_list, list)
+
+    def test_format_can_status(self):
+        self.assertIsInstance(_format_can_status(0x01), str)
+        self.assertIsInstance(_format_can_status(0x02), str)
+        self.assertIsInstance(_format_can_status(0x04), str)
+        self.assertIsInstance(_format_can_status(0x08), str)
+        self.assertIsInstance(_format_can_status(0x10), str)
+        self.assertIsInstance(_format_can_status(0x20), str)
+
+
+class TestDriverCase(unittest.TestCase):
+    """
+    Test cases that do not rely on an existing/connected hardware, but test the software and driver communication.
+    The VCI 4 driver must be installed for these tests
     """
 
     def setUp(self):
@@ -45,6 +79,7 @@ class TestSoftwareCase(unittest.TestCase):
         log.addHandler(self.log_capture)
         log.setLevel(logging.INFO)
         try:
+            # if the driver
             bus = can.Bus(interface="ixxat", channel=0, bitrate=default_test_bitrate)
             bus.shutdown()
         except can.CanInterfaceNotImplementedError as exc:

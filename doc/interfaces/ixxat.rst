@@ -36,8 +36,7 @@ module, while the following parameters are optional and are interpreted by IXXAT
 * ``tx_fifo_size`` (default 16 for CAN, 128 for CAN-FD) Number of TX mailboxes.
 * ``bitrate`` (default 500000) Channel bitrate.
 * ``data_bitrate`` (defaults to 2Mbps) Channel data bitrate (only CAN-FD, to use when message bitrate_switch is used).
-* ``timing`` (optional) a :class:`~can.BitTiming` or :class:`~can.BitTimingFd` instance. If this argument is provided,
-the bitrate and data_bitrate parameters are overridden.
+* ``timing`` (optional) a :class:`~can.BitTiming` or :class:`~can.BitTimingFd` instance. If this argument is provided, the bitrate and data_bitrate parameters are overridden.
 
 The following deprecated parameters will be removed in python-can version 5.0.0.
 
