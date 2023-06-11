@@ -727,7 +727,8 @@ def get_channel_info(channel):
         ctypes.sizeof(number),
     )
 
-    return f"{name.value.decode('ascii')}, S/N {serial.value} (#{number.value + 1})"
+    name_decoded = name.value.decode("ascii", errors="replace")
+    return f"{name_decoded}, S/N {serial.value} (#{number.value + 1})"
 
 
 init_kvaser_library()
