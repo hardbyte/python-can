@@ -189,6 +189,29 @@ class CANCAPABILITIES2(ctypes.Structure):
         ),  # maximum tick count value of the delayed message transmitter
     ]
 
+    def __str__(self):
+        cap = ", ".join(
+            (
+                "wCtrlType=%s" % self.wCtrlType,
+                "wBusCoupling=%s" % self.wBusCoupling,
+                "dwFeatures=%s" % self.dwFeatures,
+                "dwCanClkFreq=%s" % self.dwCanClkFreq,
+                "sSdrRangeMin=%s" % self.sSdrRangeMin,
+                "sSdrRangeMax=%s" % self.sSdrRangeMax,
+                "sFdrRangeMin=%s" % self.sFdrRangeMin,
+                "sFdrRangeMax=%s" % self.sFdrRangeMax,
+                "dwTscClkFreq=%s" % self.dwTscClkFreq,
+                "dwTscDivisor=%s" % self.dwTscDivisor,
+                "dwCmsClkFreq=%s" % self.dwCmsClkFreq,
+                "dwCmsDivisor=%s" % self.dwCmsDivisor,
+                "dwCmsMaxTicks=%s" % self.dwCmsMaxTicks,
+                "dwDtxClkFreq=%s" % self.dwDtxClkFreq,
+                "dwDtxDivisor=%s" % self.dwDtxDivisor,
+                "dwDtxMaxTicks=%s" % self.dwDtxMaxTicks,
+            )
+        )
+        return cap
+
 
 PCANCAPABILITIES2 = ctypes.POINTER(CANCAPABILITIES2)
 
@@ -204,6 +227,18 @@ class CANLINESTATUS2(ctypes.Structure):
         ("dwStatus", ctypes.c_uint32),  # status of the CAN controller (see CAN_STATUS_)
     ]
 
+    def __str__(self) -> str:
+        return "\n".join(
+            (
+                f"Std Operating Mode:  {self.bOpMode}",
+                f"Ext Operating Mode:  {self.bExMode}",
+                f"Bus Load (%):  {self.bBusLoad}",
+                f"Standard Bitrate Timing:  {self.sBtpSdr}",
+                f"Fast Datarate timing:  {self.sBtpFdr}",
+                f"CAN Controller Status:  {self.dwStatus}",
+            )
+        )
+
 
 PCANLINESTATUS2 = ctypes.POINTER(CANLINESTATUS2)
 
@@ -216,6 +251,17 @@ class CANCHANSTATUS2(ctypes.Structure):
         ("bRxFifoLoad", ctypes.c_uint8),  # receive FIFO load in percent (0..100)
         ("bTxFifoLoad", ctypes.c_uint8),  # transmit FIFO load in percent (0..100)
     ]
+
+    def __str__(self) -> str:
+        return "\n".join(
+            (
+                f"Status:  {self.sLineStatus}",
+                f"Activated:  {bool(self.fActivated)}",
+                f"RxOverrun:  {bool(self.fRxOverrun)}",
+                f"Rx Buffer Load (%):  {self.bRxFifoLoad}",
+                f"Tx Buffer Load (%):  {self.bTxFifoLoad}",
+            )
+        )
 
 
 PCANCHANSTATUS2 = ctypes.POINTER(CANCHANSTATUS2)

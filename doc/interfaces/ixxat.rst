@@ -29,14 +29,15 @@ Python-can will search for the first IXXAT device available and open the first c
 module, while the following parameters are optional and are interpreted by IXXAT implementation.
 
 * ``receive_own_messages`` (default False) Enable self-reception of sent messages.
-* ``unique_hardware_id`` (default first device) Unique hardware ID of the IXXAT device.
+* ``unique_hardware_id`` (default first device found) Unique hardware ID of the IXXAT device.
 * ``extended`` (default True) Allow usage of extended IDs.
 * ``fd`` (default False) Enable CAN-FD capabilities.
 * ``rx_fifo_size`` (default 16 for CAN, 1024 for CAN-FD) Number of RX mailboxes.
 * ``tx_fifo_size`` (default 16 for CAN, 128 for CAN-FD) Number of TX mailboxes.
 * ``bitrate`` (default 500000) Channel bitrate.
-* ``data_bitrate`` (defaults to 2Mbps) Channel data bitrate (only canfd, to use when message bitrate_switch is used).
-* ``timing`` (optional) BitTiming class. If this argument is provided, the bitrate and data_bitrate parameters are overridden.
+* ``data_bitrate`` (defaults to 2Mbps) Channel data bitrate (only CAN-FD, to use when message bitrate_switch is used).
+* ``timing`` (optional) a :class:`~can.BitTiming` or :class:`~can.BitTimingFd` instance. If this argument is provided,
+the bitrate and data_bitrate parameters are overridden.
 
 The following deprecated parameters will be removed in python-can version 5.0.0.
 
@@ -48,10 +49,19 @@ The following deprecated parameters will be removed in python-can version 5.0.0.
 * ``tseg2_dbr`` (optional, only used if baudrate switch enabled) Bus timing value tseg2 (data).
 * ``ssp_dbr`` (optional, only used if baudrate switch enabled) Secondary sample point (data).
 
-timing
+Timing
 ------
 
+If the IxxatBus instance is created by providing a ``bitrate`` value, the provided desired bitrate is looked up
+in a table of standard timing definitions (Note that these definitions all use a sample point of 80%). Similarly, 
+if ``fd=True`` and a ``data_bitrate`` value is provided, the fast data rate timing definitions are also looked up in 
+a table of standard definitions (Note that most of these definitions use a sample point of 80%).
 
+if a :class:`~can.BitTiming` instance is provided when the IxxatBus instance is created, it will override any other
+timing arguments that are provided. it will also set the bus to standard CAN (even if ``fd=True`` was specified).
+
+Similarly, if a :class:`~can.BitTimingFd` instance is provided, this will override any other timing arguments that are
+provided. it will also set the bus to CAN FD (even if ``fd=False`` was specified).
 
 
 Filtering
@@ -115,7 +125,7 @@ Bus
 .. autoclass:: can.interfaces.ixxat.IXXATBus
     :members:
 
-.. autoclass:: can.interfaces.ixxat.canlib_vcinpl.CyclicSendTask
+.. autoclass:: can.interfaces.ixxat.CyclicSendTask
     :members:
 
 
@@ -133,6 +143,6 @@ explicitly instantiated by the caller.
 - ``send()`` is not blocking but may raise a VCIError if the TX FIFO is full
 
 RX and TX FIFO sizes are configurable with ``rx_fifo_size`` and ``tx_fifo_size``
-options, defaulting to 16 for both for non-FD communication. For FD communication,
-``rx_fifo_size`` defaults to 1024, and ``tx_fifo_size`` defaults to 128.
+options, defaulting to 16 for both RX and TX for non-FD communication.
+For FD communication, ``rx_fifo_size`` defaults to 1024, and ``tx_fifo_size`` defaults to 128.
 

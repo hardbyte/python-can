@@ -5,14 +5,13 @@ Copyright (C) 2016-2021 Giuseppe Corbelli <giuseppe.corbelli@weightpack.com>
 """
 
 __all__ = [
-    "IXXATBus",
     "canlib",
-    "canlib_vcinpl",
-    "canlib_vcinpl2",
     "constants",
+    "CyclicSendTask"
     "exceptions",
     "get_ixxat_hwids",
+    "IXXATBus",
     "structures",
 ]
 
-from can.interfaces.ixxat.canlib import IXXATBus, get_ixxat_hwids
+from can.interfaces.ixxat.canlib import CyclicSendTask, get_ixxat_hwids, IXXATBus

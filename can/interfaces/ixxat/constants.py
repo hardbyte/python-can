@@ -220,53 +220,65 @@ CAN_FEATURE_64BITTSC = 0x00020000  # 64-bit time stamp counter
 
 
 CAN_BITRATE_PRESETS = {
-    50000: structures.CANBTP(
-        dwMode=0, dwBPS=50000, wTS1=6400, wTS2=1600, wSJW=1600, wTDO=0
+    10000: structures.CANBTP(
+        dwMode=0, dwBPS=10_000, wTS1=6400, wTS2=1600, wSJW=1600, wTDO=0
     ),  # SP = 80,0%
+    20000: structures.CANBTP(
+        dwMode=0, dwBPS=20_000, wTS1=6400, wTS2=1600, wSJW=1600, wTDO=0
+    ),  # SP = 80,0%
+    50000: structures.CANBTP(
+        dwMode=0, dwBPS=50_000, wTS1=6400, wTS2=1600, wSJW=1600, wTDO=0
+    ),  # SP = 80,0%
+    100000: structures.CANBTP(
+        dwMode=0, dwBPS=100_000, wTS1=6400, wTS2=1600, wSJW=1600, wTDO=0
+    ),  # SP = 80,0%  - Non CIA specified bitrate
     125000: structures.CANBTP(
-        dwMode=0, dwBPS=125000, wTS1=6400, wTS2=1600, wSJW=1600, wTDO=0
+        dwMode=0, dwBPS=125_000, wTS1=6400, wTS2=1600, wSJW=1600, wTDO=0
     ),  # SP = 80,0%
     250000: structures.CANBTP(
-        dwMode=0, dwBPS=250000, wTS1=6400, wTS2=1600, wSJW=1600, wTDO=0
+        dwMode=0, dwBPS=250_000, wTS1=6400, wTS2=1600, wSJW=1600, wTDO=0
     ),  # SP = 80,0%
     500000: structures.CANBTP(
-        dwMode=0, dwBPS=500000, wTS1=6400, wTS2=1600, wSJW=1600, wTDO=0
+        dwMode=0, dwBPS=500_000, wTS1=6400, wTS2=1600, wSJW=1600, wTDO=0
+    ),  # SP = 80,0%
+    800000: structures.CANBTP(
+        dwMode=0, dwBPS=800_000, wTS1=6400, wTS2=1600, wSJW=1600, wTDO=0
     ),  # SP = 80,0%
     1000000: structures.CANBTP(
-        dwMode=0, dwBPS=1000000, wTS1=6400, wTS2=1600, wSJW=1600, wTDO=0
+        dwMode=0, dwBPS=1_000_000, wTS1=6400, wTS2=1600, wSJW=1600, wTDO=0
     ),  # SP = 80,0%
 }
 
 CAN_DATABITRATE_PRESETS = {
-    500000: structures.CANBTP(
-        dwMode=0, dwBPS=500000, wTS1=6400, wTS2=1600, wSJW=1600, wTDO=6400
+    500_000: structures.CANBTP(
+        dwMode=0, dwBPS=500_000, wTS1=6400, wTS2=1600, wSJW=1600, wTDO=6400
     ),  # SP = 80,0%
-    833333: structures.CANBTP(
-        dwMode=0, dwBPS=833333, wTS1=1600, wTS2=400, wSJW=400, wTDO=1620
+    833_333: structures.CANBTP(
+        dwMode=0, dwBPS=833_333, wTS1=1600, wTS2=400, wSJW=400, wTDO=1620
     ),  # SP = 80,0%
-    1000000: structures.CANBTP(
-        dwMode=0, dwBPS=1000000, wTS1=1600, wTS2=400, wSJW=400, wTDO=1600
+    1_000_000: structures.CANBTP(
+        dwMode=0, dwBPS=1_000_000, wTS1=1600, wTS2=400, wSJW=400, wTDO=1600
     ),  # SP = 80,0%
-    1538461: structures.CANBTP(
-        dwMode=0, dwBPS=1538461, wTS1=1000, wTS2=300, wSJW=300, wTDO=1040
+    1_538_461: structures.CANBTP(
+        dwMode=0, dwBPS=1_538_461, wTS1=1000, wTS2=300, wSJW=300, wTDO=1040
     ),  # SP = 76,9%
-    2000000: structures.CANBTP(
-        dwMode=0, dwBPS=2000000, wTS1=1600, wTS2=400, wSJW=400, wTDO=1600
+    2_000_000: structures.CANBTP(
+        dwMode=0, dwBPS=2_000_000, wTS1=1600, wTS2=400, wSJW=400, wTDO=1600
     ),  # SP = 80,0%
-    4000000: structures.CANBTP(
-        dwMode=0, dwBPS=4000000, wTS1=800, wTS2=200, wSJW=200, wTDO=800
+    4_000_000: structures.CANBTP(
+        dwMode=0, dwBPS=4_000_000, wTS1=800, wTS2=200, wSJW=200, wTDO=800
     ),  # SP = 80,0%
-    5000000: structures.CANBTP(
-        dwMode=0, dwBPS=5000000, wTS1=600, wTS2=200, wSJW=200, wTDO=600
+    5_000_000: structures.CANBTP(
+        dwMode=0, dwBPS=5_000_000, wTS1=600, wTS2=200, wSJW=200, wTDO=600
     ),  # SP = 75,0%
-    6666666: structures.CANBTP(
-        dwMode=0, dwBPS=6666666, wTS1=400, wTS2=200, wSJW=200, wTDO=402
+    6_666_666: structures.CANBTP(
+        dwMode=0, dwBPS=6_666_666, wTS1=400, wTS2=200, wSJW=200, wTDO=402
     ),  # SP = 66,7%
-    8000000: structures.CANBTP(
-        dwMode=0, dwBPS=8000000, wTS1=400, wTS2=100, wSJW=100, wTDO=250
+    8_000_000: structures.CANBTP(
+        dwMode=0, dwBPS=8_000_000, wTS1=400, wTS2=100, wSJW=100, wTDO=250
     ),  # SP = 80,0%
-    10000000: structures.CANBTP(
-        dwMode=0, dwBPS=10000000, wTS1=300, wTS2=100, wSJW=100, wTDO=200
+    10_000_000: structures.CANBTP(
+        dwMode=0, dwBPS=10_000_000, wTS1=300, wTS2=100, wSJW=100, wTDO=200
     ),  # SP = 75,0%
 }
 
