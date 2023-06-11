@@ -54,14 +54,14 @@ class KvaserTest(unittest.TestCase):
         # Test if the bus constructor is able to deal with non-ASCII characters
         def canGetChannelDataMock(
             channel: ctypes.c_int,
-            dtype: ctypes.c_int,
+            param: ctypes.c_int,
             buf: ctypes.c_void_p,
             bufsize: ctypes.c_size_t,
         ):
-            if dtype == constants.canCHANNELDATA_DEVDESCR_ASCII:
-                obj = ctypes.cast(buf, ctypes.POINTER(ctypes.c_char))
+            if param == constants.canCHANNELDATA_DEVDESCR_ASCII:
+                buf_char_ptr = ctypes.cast(buf, ctypes.POINTER(ctypes.c_char))
                 for i, char in enumerate(b"hello\x7a\xcb"):
-                    obj[i] = char
+                    buf_char_ptr[i] = char
 
         canlib.canGetChannelData = canGetChannelDataMock
         bus = can.Bus(channel=0, interface="kvaser")
