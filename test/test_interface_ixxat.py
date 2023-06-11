@@ -17,7 +17,9 @@ from can.interfaces.ixxat.canlib import _format_can_status
 
 logger = logging.getLogger("can.ixxat")
 default_test_bitrate = 250_000
-default_test_msg = can.Message(arbitration_id=0xC0FFEE, dlc=6, data=[0x70, 0x79, 0x74, 0x68, 0x6F, 0x6E])
+default_test_msg = can.Message(
+    arbitration_id=0xC0FFEE, dlc=6, data=[0x70, 0x79, 0x74, 0x68, 0x6F, 0x6E]
+)
 
 
 class LogCaptureHandler(logging.Handler):
@@ -95,11 +97,21 @@ class TestDriverCase(unittest.TestCase):
 
         # rx_fifo_size must be > 0
         with self.assertRaises(ValueError):
-            can.Bus(interface="ixxat", channel=0, rx_fifo_size=0, bitrate=default_test_bitrate)
+            can.Bus(
+                interface="ixxat",
+                channel=0,
+                rx_fifo_size=0,
+                bitrate=default_test_bitrate,
+            )
 
         # tx_fifo_size must be > 0
         with self.assertRaises(ValueError):
-            can.Bus(interface="ixxat", channel=0, tx_fifo_size=0, bitrate=default_test_bitrate)
+            can.Bus(
+                interface="ixxat",
+                channel=0,
+                tx_fifo_size=0,
+                bitrate=default_test_bitrate,
+            )
 
 
 class TestHardwareCase(unittest.TestCase):
@@ -128,7 +140,13 @@ class TestHardwareCase(unittest.TestCase):
         target_bitrate = 444_444
         with can.Bus(interface="ixxat", channel=0, bitrate=target_bitrate) as bus:
             timing = bus._status().sBtpSdr
-            bus_timing = can.BitTiming(self.clock_frequency, timing.dwBPS, timing.wTS1, timing.wTS2, timing.wSJW)
+            bus_timing = can.BitTiming(
+                self.clock_frequency,
+                timing.dwBPS,
+                timing.wTS1,
+                timing.wTS2,
+                timing.wSJW,
+            )
             self.assertEqual(
                 target_bitrate,
                 bus_timing.bitrate,
@@ -158,13 +176,25 @@ class TestHardwareCase(unittest.TestCase):
 
     def test_bus_creation_deprecated_timing_args(self):
         # try:
-        bus = can.Bus(interface="ixxat", channel=0, bitrate=default_test_bitrate, sjw_abr=1, tseg1_abr=13, tseg2_abr=2)
+        bus = can.Bus(
+            interface="ixxat",
+            channel=0,
+            bitrate=default_test_bitrate,
+            sjw_abr=1,
+            tseg1_abr=13,
+            tseg2_abr=2,
+        )
         bus.shutdown()
         # except can.CanInterfaceNotImplementedError:
         #     raise unittest.SkipTest("not available on this platform")
 
     def test_send_single(self):
-        with can.Bus(interface="ixxat", channel=0, bitrate=default_test_bitrate, receive_own_messages=True) as bus:
+        with can.Bus(
+            interface="ixxat",
+            channel=0,
+            bitrate=default_test_bitrate,
+            receive_own_messages=True,
+        ) as bus:
             bus.send(default_test_msg)
             response = bus.recv(0.1)
 
@@ -184,7 +214,8 @@ class TestHardwareCase(unittest.TestCase):
             if captured_logs[-1] == "CAN bit error":
                 raise can.exceptions.CanOperationError(
                     "CAN bit error - Ensure you are connected to a "
-                    "properly terminated bus configured at %s bps" % default_test_bitrate
+                    "properly terminated bus configured at %s bps"
+                    % default_test_bitrate
                 )
 
             elif captured_logs[-1] == "CAN ack error":
@@ -205,7 +236,12 @@ class TestHardwareCase(unittest.TestCase):
                 )
 
     def test_send_periodic(self):
-        with can.Bus(interface="ixxat", channel=0, bitrate=default_test_bitrate, receive_own_messages=True) as bus:
+        with can.Bus(
+            interface="ixxat",
+            channel=0,
+            bitrate=default_test_bitrate,
+            receive_own_messages=True,
+        ) as bus:
             # setup Notifier and BufferedReader instances to receive messages
             msg_rx_buffer = can.BufferedReader()
             msg_notifier = can.Notifier(bus, [msg_rx_buffer])
@@ -225,8 +261,12 @@ class TestHardwareCase(unittest.TestCase):
             messages.append(msg)
 
         if messages:
-            self.assertGreaterEqual(len(messages), 9)  # should be 10 messages - give ±1 margin for timing issues
-            self.assertLessEqual(len(messages), 11)  # should be 10 messages - give ±1 margin for timing issues
+            self.assertGreaterEqual(
+                len(messages), 9
+            )  # should be 10 messages - give ±1 margin for timing issues
+            self.assertLessEqual(
+                len(messages), 11
+            )  # should be 10 messages - give ±1 margin for timing issues
             self.assertEqual(
                 messages[-1].arbitration_id,
                 default_test_msg.arbitration_id,
@@ -238,9 +278,7 @@ class TestHardwareCase(unittest.TestCase):
                 "The Data fields of the sent message and the received message do not match",
             )
         else:
-            raise can.exceptions.CanOperationError(
-                "No messages have been received"
-            )
+            raise can.exceptions.CanOperationError("No messages have been received")
 
     def test_bus_creation_invalid_channel(self):
         # non-existent channel -> use arbitrary high value

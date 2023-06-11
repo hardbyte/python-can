@@ -56,7 +56,6 @@ _canlib = None
 if sys.platform in ("win32", "cygwin"):
     try:
         _canlib = CLibrary("vcinpl2.dll")
-        print(type(_canlib))
     except Exception as e:
         log.warning("Cannot load IXXAT vcinpl library: %s", e)
 else:
