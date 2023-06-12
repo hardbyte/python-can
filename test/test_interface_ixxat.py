@@ -280,6 +280,24 @@ class TestHardwareCase(unittest.TestCase):
         else:
             raise can.exceptions.CanOperationError("No messages have been received")
 
+    def test_send_periodic_busabc_fallback(self):
+        with can.Bus(
+            interface="ixxat",
+            channel=0,
+            bitrate=default_test_bitrate,
+            receive_own_messages=True,
+        ) as bus:
+            # setup Notifier and BufferedReader instances to receive messages
+            bus._interface_scheduler_capable = False
+
+            # setup periodic send task
+            task = bus.send_periodic(default_test_msg, 0.2)
+            assert isinstance(task, can.CyclicSendTaskABC)
+            time.sleep(2)
+            task.stop()
+
+
+
     def test_bus_creation_invalid_channel(self):
         # non-existent channel -> use arbitrary high value
         with self.assertRaises(can.CanInitializationError):

@@ -507,7 +507,7 @@ class IXXATBus(BusABC):
         ssp_dbr = kwargs.get("ssp_dbr")
 
         # setup buffer sizes
-        if rx_fifo_size:  # if the user provided an rx fifo size
+        if rx_fifo_size is not None:  # if the user provided an rx fifo size
             if rx_fifo_size <= 0:
                 raise ValueError("rx_fifo_size must be > 0")
         else:  # otherwise use the default size (depending upon if FD or not)
@@ -515,7 +515,7 @@ class IXXATBus(BusABC):
             if fd:
                 rx_fifo_size = 1024
 
-        if tx_fifo_size:  # if the user provided a tx fifo size
+        if tx_fifo_size is not None:  # if the user provided a tx fifo size
             if tx_fifo_size <= 0:
                 raise ValueError("tx_fifo_size must be > 0")
         else:  # otherwise use the default size (depending upon if FD or not)
@@ -529,7 +529,6 @@ class IXXATBus(BusABC):
         self._channel_handle = HANDLE()
         self._channel_capabilities = structures.CANCAPABILITIES2()
         self._message = structures.CANMSG2()
-        self._bus_load_calculation = False
         if fd:
             self._payload = (ctypes.c_byte * 64)()
         else:
@@ -652,6 +651,15 @@ class IXXATBus(BusABC):
             self._channel_capabilities.dwFeatures & constants.CAN_FEATURE_BUSLOAD
         ) != 0:
             self._bus_load_calculation = True
+        else:
+            self._bus_load_calculation = False
+
+        if (  # controller supports hardware scheduling of cyclic messages
+            self._channel_capabilities.dwFeatures & constants.CAN_FEATURE_SCHEDULER
+        ) != 0:
+            self._interface_scheduler_capable = True
+        else:
+            self._interface_scheduler_capable = False
 
         bExMode = constants.CAN_EXMODE_DISABLED
         self._can_protocol = CanProtocol.CAN_20  # default to standard CAN protocol
@@ -935,26 +943,40 @@ class IXXATBus(BusABC):
     ) -> CyclicSendTaskABC:
         """Send a message using built-in cyclic transmit list functionality."""
         if modifier_callback is None:
-            if self._scheduler is None:
-                self._scheduler = HANDLE()
-                _canlib.canSchedulerOpen(
-                    self._device_handle, self.channel, self._scheduler
+            if self._interface_scheduler_capable:  # address issue #1121
+                if self._scheduler is None:
+                    self._scheduler = HANDLE()
+                    _canlib.canSchedulerOpen(
+                        self._device_handle, self.channel, self._scheduler
+                    )
+                    caps = structures.CANCAPABILITIES2()
+                    _canlib.canSchedulerGetCaps(self._scheduler, caps)
+                    self._scheduler_resolution = (
+                        caps.dwCmsClkFreq / caps.dwCmsDivisor
+                    )  # TODO: confirm
+                    _canlib.canSchedulerActivate(self._scheduler, constants.TRUE)
+                return CyclicSendTask(
+                    self._scheduler,
+                    msgs,
+                    period,
+                    duration,
+                    self._scheduler_resolution,
+                    self.receive_own_messages,
                 )
-                caps = structures.CANCAPABILITIES2()
-                _canlib.canSchedulerGetCaps(self._scheduler, caps)
-                self._scheduler_resolution = (
-                    caps.dwCmsClkFreq / caps.dwCmsDivisor
-                )  # TODO: confirm
-                _canlib.canSchedulerActivate(self._scheduler, constants.TRUE)
-            return CyclicSendTask(
-                self._scheduler, msgs, period, duration, self._scheduler_resolution
+            else:
+                # fallback to thread based cyclic task
+                warnings.warn(
+                    "Falling back to a thread-based cyclic task:\n    The CAN_FEATURE_SCHEDULER flag is false for "
+                    f"interface {self._device_info.UniqueHardwareId.AsChar.decode('ascii')}"
+                )
+        else:
+            # fallback to thread based cyclic task
+            warnings.warn(
+                f"{self.__class__.__name__} falls back to a thread-based cyclic task, "
+                "when the `modifier_callback` argument is given."
             )
 
-        # fallback to thread based cyclic task
-        warnings.warn(
-            f"{self.__class__.__name__} falls back to a thread-based cyclic task, "
-            "when the `modifier_callback` argument is given."
-        )
+        # return the BusABC periodic send task if the device is not scheduler capable or modifier_callback is used
         return BusABC._send_periodic_internal(
             self,
             msgs=msgs,
@@ -1215,7 +1237,9 @@ class IXXATBus(BusABC):
 class CyclicSendTask(LimitedDurationCyclicSendTaskABC, RestartableCyclicTaskABC):
     """A message in the cyclic transmit list."""
 
-    def __init__(self, scheduler, msgs, period, duration, resolution):
+    def __init__(
+        self, scheduler, msgs, period, duration, resolution, receive_own_messages=False
+    ):
         super().__init__(msgs, period, duration)
         if len(self.messages) != 1:
             raise ValueError(
@@ -1233,6 +1257,7 @@ class CyclicSendTask(LimitedDurationCyclicSendTaskABC, RestartableCyclicTaskABC)
         self._msg.uMsgInfo.Bits.ext = 1 if self.messages[0].is_extended_id else 0
         self._msg.uMsgInfo.Bits.rtr = 1 if self.messages[0].is_remote_frame else 0
         self._msg.uMsgInfo.Bits.dlc = self.messages[0].dlc
+        self._msg.uMsgInfo.Bits.srr = 1 if receive_own_messages else 0
         for i, b in enumerate(self.messages[0].data):
             self._msg.abData[i] = b
         self.start()
