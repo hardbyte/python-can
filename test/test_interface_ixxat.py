@@ -1,7 +1,5 @@
-#!/usr/bin/env python
-
 """
-Unittest for ixxat interface.
+Unittest for ixxat VCI4 interface.
 
 Run only this test:
 python setup.py test --addopts "--verbose -s test/test_interface_ixxat.py"
@@ -12,6 +10,7 @@ import time
 import unittest
 
 import can
+import can.interfaces.ixxat.canlib as ixxat_canlib_module
 from can.interfaces.ixxat import get_ixxat_hwids
 from can.interfaces.ixxat.canlib import _format_can_status
 
@@ -45,18 +44,23 @@ class TestSoftwareCase(unittest.TestCase):
 
     def setUp(self):
         self.log_capture = LogCaptureHandler()
+        # ensure we test as if there is no driver even if it is installed
+        self._canlib = ixxat_canlib_module._canlib
+        ixxat_canlib_module._canlib = None
         log = logging.getLogger("can.ixxat")
         log.addHandler(self.log_capture)
         log.setLevel(logging.INFO)
 
     def tearDown(self):
+        # replace the driver reference for the other tests
+        ixxat_canlib_module._canlib = self._canlib
         logging.getLogger("can.ixxat").removeHandler(self.log_capture)
 
-    def test_interface_detection(self):
+    def test_interface_detection(self):  # driver missing test
         if_list = can.detect_available_configs("ixxat")
         self.assertIsInstance(if_list, list)
 
-    def test_get_ixxat_hwids(self):
+    def test_get_ixxat_hwids(self):  # driver missing test
         hwid_list = get_ixxat_hwids()
         self.assertIsInstance(hwid_list, list)
 
@@ -90,7 +94,15 @@ class TestDriverCase(unittest.TestCase):
     def tearDown(self):
         logging.getLogger("can.ixxat").removeHandler(self.log_capture)
 
-    def test_bus_creation(self):
+    def test_interface_detection(self):  # driver present test
+        if_list = can.detect_available_configs("ixxat")
+        self.assertIsInstance(if_list, list)
+
+    def test_get_ixxat_hwids(self):  # driver present test
+        hwid_list = get_ixxat_hwids()
+        self.assertIsInstance(hwid_list, list)
+
+    def test_bus_creation_std(self):
         # channel must be >= 0
         with self.assertRaises(ValueError):
             can.Bus(interface="ixxat", channel=-1, bitrate=default_test_bitrate)
@@ -113,8 +125,33 @@ class TestDriverCase(unittest.TestCase):
                 bitrate=default_test_bitrate,
             )
 
+    def test_bus_creation_fd(self):
+        # channel must be >= 0
+        with self.assertRaises(ValueError):
+            can.Bus(interface="ixxat", fd=True, channel=-1)
 
-class TestHardwareCase(unittest.TestCase):
+        # rx_fifo_size must be > 0
+        with self.assertRaises(ValueError):
+            can.Bus(
+                interface="ixxat",
+                fd=True,
+                channel=0,
+                rx_fifo_size=0,
+                bitrate=default_test_bitrate,
+            )
+
+        # tx_fifo_size must be > 0
+        with self.assertRaises(ValueError):
+            can.Bus(
+                interface="ixxat",
+                fd=True,
+                channel=0,
+                tx_fifo_size=0,
+                bitrate=default_test_bitrate,
+            )
+
+
+class TestHardwareCaseStd(unittest.TestCase):
     """
     Test cases that rely on an existing/connected hardware.
     """
@@ -296,8 +333,6 @@ class TestHardwareCase(unittest.TestCase):
             time.sleep(2)
             task.stop()
 
-
-
     def test_bus_creation_invalid_channel(self):
         # non-existent channel -> use arbitrary high value
         with self.assertRaises(can.CanInitializationError):
@@ -308,6 +343,35 @@ class TestHardwareCase(unittest.TestCase):
         bus.shutdown()
         with self.assertRaises(can.CanOperationError):
             bus.send(default_test_msg)
+
+
+class HardwareTestCaseFd(unittest.TestCase):
+    """
+    Test cases that rely on an existing/connected hardware with CAN FD capability
+    """
+
+    def setUp(self):
+        try:
+            bus = can.Bus(interface="ixxat", fd=True, channel=0)
+            bus.shutdown()
+        except can.CanInterfaceNotImplementedError as exc:
+            raise unittest.SkipTest("not available on this platform") from exc
+        except can.CanInitializationError as exc:
+            raise unittest.SkipTest("connected hardware is not FD capable") from exc
+
+    def test_bus_creation(self):
+        # non-existent channel -> use arbitrary high value
+        with self.assertRaises(can.CanInitializationError):
+            can.Bus(
+                interface="ixxat", fd=True, channel=0xFFFF, bitrate=default_test_bitrate
+            )
+
+    def test_send_after_shutdown(self):
+        with can.Bus(
+            interface="ixxat", fd=True, channel=0, bitrate=default_test_bitrate
+        ) as bus:
+            with self.assertRaises(can.CanOperationError):
+                bus.send(can.Message(arbitration_id=0x3FF, dlc=0))
 
 
 if __name__ == "__main__":

@@ -77,11 +77,13 @@ class CLibrary(_LibBase):
 
 if sys.platform == "win32":
     HRESULT = ctypes.HRESULT
-
 elif sys.platform == "cygwin":
 
     class HRESULT(ctypes.c_long):
         pass
+
+else:
+    HRESULT = None
 
 
 # Common win32 definitions

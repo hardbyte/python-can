@@ -770,6 +770,10 @@ class IXXATBus(BusABC):
             except (VCITimeout, VCIRxQueueEmptyError):
                 break
 
+        # TODO - it should be possible to implement a query to the VCI driver to check if there is an existing
+        # open handle to the VCI comms layer (either from python-can or another program). This would be worth
+        # implementing as an open handle with an active bus will prevent the bitrate from being altered.
+
         super().__init__(channel=channel, can_filters=None, **kwargs)
 
     def _inWaiting(self):
