@@ -135,13 +135,15 @@ class CANBTP(ctypes.Structure):
     ]
 
     def __str__(self):
-        return "dwMode=%d, dwBPS=%d, wTS1=%d,  wTS2=%d, wSJW=%d, wTDO=%d" % (
-            self.dwMode,
-            self.dwBPS,
-            self.wTS1,
-            self.wTS2,
-            self.wSJW,
-            self.wTDO,
+        return ", ".join(
+            (
+                f"dwMode={self.dwMode}",
+                f"dwBPS={self.dwBPS}",
+                f"wTS1={self.wTS1}",
+                f"wTS2={self.wTS2}",
+                f"wSJW={self.wSJW}",
+                f"wTDO={self.wTDO}",
+            )
         )
 
 
@@ -192,22 +194,22 @@ class CANCAPABILITIES2(ctypes.Structure):
     def __str__(self):
         cap = ", ".join(
             (
-                "wCtrlType=%s" % self.wCtrlType,
-                "wBusCoupling=%s" % self.wBusCoupling,
-                "dwFeatures=%s" % self.dwFeatures,
-                "dwCanClkFreq=%s" % self.dwCanClkFreq,
-                "sSdrRangeMin=%s" % self.sSdrRangeMin,
-                "sSdrRangeMax=%s" % self.sSdrRangeMax,
-                "sFdrRangeMin=%s" % self.sFdrRangeMin,
-                "sFdrRangeMax=%s" % self.sFdrRangeMax,
-                "dwTscClkFreq=%s" % self.dwTscClkFreq,
-                "dwTscDivisor=%s" % self.dwTscDivisor,
-                "dwCmsClkFreq=%s" % self.dwCmsClkFreq,
-                "dwCmsDivisor=%s" % self.dwCmsDivisor,
-                "dwCmsMaxTicks=%s" % self.dwCmsMaxTicks,
-                "dwDtxClkFreq=%s" % self.dwDtxClkFreq,
-                "dwDtxDivisor=%s" % self.dwDtxDivisor,
-                "dwDtxMaxTicks=%s" % self.dwDtxMaxTicks,
+                f"wCtrlType={self.wCtrlType}",
+                f"wBusCoupling={self.wBusCoupling}",
+                f"dwFeatures={self.dwFeatures}",
+                f"dwCanClkFreq={self.dwCanClkFreq}",
+                f"sSdrRangeMin={self.sSdrRangeMin}",
+                f"sSdrRangeMax={self.sSdrRangeMax}",
+                f"sFdrRangeMin={self.sFdrRangeMin}",
+                f"sFdrRangeMax={self.sFdrRangeMax}",
+                f"dwTscClkFreq={self.dwTscClkFreq}",
+                f"dwTscDivisor={self.dwTscDivisor}",
+                f"dwCmsClkFreq={self.dwCmsClkFreq}",
+                f"dwCmsDivisor={self.dwCmsDivisor}",
+                f"dwCmsMaxTicks={self.dwCmsMaxTicks}",
+                f"dwDtxClkFreq={self.dwDtxClkFreq}",
+                f"dwDtxDivisor={self.dwDtxDivisor}",
+                f"dwDtxMaxTicks={self.dwDtxMaxTicks}",
             )
         )
         return cap
@@ -228,14 +230,15 @@ class CANLINESTATUS2(ctypes.Structure):
     ]
 
     def __str__(self) -> str:
-        return "\n".join(
+        return ", ".join(
             (
-                f"Std Operating Mode:  {self.bOpMode}",
-                f"Ext Operating Mode:  {self.bExMode}",
-                f"Bus Load (%):  {self.bBusLoad}",
-                f"Standard Bitrate Timing:  {self.sBtpSdr}",
-                f"Fast Datarate timing:  {self.sBtpFdr}",
-                f"CAN Controller Status:  {self.dwStatus}",
+                f"bOpMode={self.bOpMode}",
+                f"bExMode={self.bExMode}",
+                f"bBusLoad={self.bBusLoad}",
+                f"bReserved={self.bReserved}",
+                f"sBtpSdr={self.sBtpSdr}",
+                f"sBtpFdr={self.sBtpFdr}",
+                f"dwStatus={self.dwStatus}",
             )
         )
 
@@ -253,13 +256,13 @@ class CANCHANSTATUS2(ctypes.Structure):
     ]
 
     def __str__(self) -> str:
-        return "\n".join(
+        return ", ".join(
             (
-                f"Status:  {self.sLineStatus}",
-                f"Activated:  {bool(self.fActivated)}",
-                f"RxOverrun:  {bool(self.fRxOverrun)}",
-                f"Rx Buffer Load (%):  {self.bRxFifoLoad}",
-                f"Tx Buffer Load (%):  {self.bTxFifoLoad}",
+                f"sLineStatus={self.sLineStatus}",
+                f"fActivated={bool(self.fActivated)}",
+                f"fRxOverrun={bool(self.fRxOverrun)}",
+                f"bRxFifoLoad={self.bRxFifoLoad}",
+                f"bTxFifoLoad={self.bTxFifoLoad}",
             )
         )
 

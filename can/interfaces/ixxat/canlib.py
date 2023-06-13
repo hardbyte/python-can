@@ -99,9 +99,7 @@ def __vciFormatError(library_instance: CLibrary, function: Callable, vret: int):
     buf = ctypes.create_string_buffer(constants.VCI_MAX_ERRSTRLEN)
     ctypes.memset(buf, 0, constants.VCI_MAX_ERRSTRLEN)
     library_instance.vciFormatError(vret, buf, constants.VCI_MAX_ERRSTRLEN)
-    return "function {} failed ({})".format(
-        function._name, buf.value.decode("utf-8", "replace")
-    )
+    return f"function {function._name} failed ({buf.value.decode('utf-8', 'replace')})"
 
 
 def __check_status(result: int, function: Callable, args: Tuple):
@@ -1302,7 +1300,7 @@ def _format_can_status(status_flags: int):
         states.append(f"unknown state 0x{status_flags:02x}")
 
     if states:
-        return "CAN status message: {}".format(", ".join(states))
+        return f"CAN status message: {', '.join(states)}"
     else:
         return "Empty CAN status message"
 
