@@ -3,6 +3,7 @@
 """
 """
 
+import ctypes
 import time
 import unittest
 from unittest.mock import Mock
@@ -48,6 +49,26 @@ class KvaserTest(unittest.TestCase):
         self.assertEqual(self.bus.protocol, can.CanProtocol.CAN_20)
         self.assertTrue(canlib.canOpenChannel.called)
         self.assertTrue(canlib.canBusOn.called)
+
+    def test_bus_creation_illegal_channel_name(self):
+        # Test if the bus constructor is able to deal with non-ASCII characters
+        def canGetChannelDataMock(
+            channel: ctypes.c_int,
+            param: ctypes.c_int,
+            buf: ctypes.c_void_p,
+            bufsize: ctypes.c_size_t,
+        ):
+            if param == constants.canCHANNELDATA_DEVDESCR_ASCII:
+                buf_char_ptr = ctypes.cast(buf, ctypes.POINTER(ctypes.c_char))
+                for i, char in enumerate(b"hello\x7a\xcb"):
+                    buf_char_ptr[i] = char
+
+        canlib.canGetChannelData = canGetChannelDataMock
+        bus = can.Bus(channel=0, interface="kvaser")
+
+        self.assertTrue(bus.channel_info.startswith("hello"))
+
+        bus.shutdown()
 
     def test_bus_shutdown(self):
         self.bus.shutdown()
