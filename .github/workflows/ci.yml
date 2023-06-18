@@ -108,7 +108,9 @@ jobs:
         pylint --rcfile=.pylintrc \
         can/**.py \
         can/io \
+        setup.py \
         doc/conf.py \
+        scripts/**.py \
         examples/**.py \
         can/interfaces/socketcan
 
