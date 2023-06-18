@@ -1,3 +1,14 @@
+Version 4.2.2
+=============
+
+Bug Fixes
+---------
+* Fix socketcan KeyError (#1598, #1599).
+* Fix IXXAT not properly shutdown message (#1606).
+* Fix Mf4Reader and TRCReader incompatibility with extra CLI args (#1610).
+* Fix decoding error in Kvaser constructor for non-ASCII product name (#1613). 
+
+
 Version 4.2.1
 =============
 
