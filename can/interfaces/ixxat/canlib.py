@@ -126,7 +126,9 @@ def __check_status(result: int, function: Callable, args: Tuple):
     elif result == constants.VCI_E_NO_MORE_ITEMS:
         raise StopIteration()
     elif result == constants.VCI_E_ACCESSDENIED:
-        log.warning(f"VCI_E_ACCESSDENIED error raised when calling VCI Function {function._name}")
+        log.warning(
+            f"VCI_E_ACCESSDENIED error raised when calling VCI Function {function._name}"
+        )
         # not a real error, might happen if another program has initialized the bus
     elif result != constants.VCI_OK:
         raise VCIError(vciFormatError(function, result))

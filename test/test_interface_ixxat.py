@@ -5,6 +5,7 @@ Run only this test:
 python setup.py test --addopts "--verbose -s test/test_interface_ixxat.py"
 """
 
+from copy import copy
 import logging
 import time
 import unittest
@@ -14,11 +15,15 @@ import can.interfaces.ixxat.canlib as ixxat_canlib_module
 from can.interfaces.ixxat import get_ixxat_hwids
 from can.interfaces.ixxat.canlib import _format_can_status
 
+
 logger = logging.getLogger("can.ixxat")
 default_test_bitrate = 250_000
 default_test_msg = can.Message(
     arbitration_id=0xC0FFEE, dlc=6, data=[0x70, 0x79, 0x74, 0x68, 0x6F, 0x6E]
 )
+
+
+TESTING_DEBUG_LEVEL = logging.INFO
 
 
 class LogCaptureHandler(logging.Handler):
@@ -49,7 +54,7 @@ class TestSoftwareCase(unittest.TestCase):
         ixxat_canlib_module._canlib = None
         log = logging.getLogger("can.ixxat")
         log.addHandler(self.log_capture)
-        log.setLevel(logging.INFO)
+        log.setLevel(TESTING_DEBUG_LEVEL)
 
     def tearDown(self):
         # replace the driver reference for the other tests
@@ -83,7 +88,7 @@ class TestDriverCase(unittest.TestCase):
         self.log_capture = LogCaptureHandler()
         log = logging.getLogger("can.ixxat")
         log.addHandler(self.log_capture)
-        log.setLevel(logging.INFO)
+        log.setLevel(TESTING_DEBUG_LEVEL)
         try:
             # if the driver
             bus = can.Bus(interface="ixxat", channel=0, bitrate=default_test_bitrate)
@@ -158,6 +163,9 @@ class TestHardwareCaseStd(unittest.TestCase):
 
     def setUp(self):
         self.log_capture = LogCaptureHandler()
+        log = logging.getLogger("can.ixxat")
+        log.addHandler(self.log_capture)
+        log.setLevel(TESTING_DEBUG_LEVEL)
         logging.getLogger("can.ixxat").addHandler(self.log_capture)
         try:
             bus = can.Bus(interface="ixxat", channel=0)
@@ -332,6 +340,98 @@ class TestHardwareCaseStd(unittest.TestCase):
             assert isinstance(task, can.CyclicSendTaskABC)
             time.sleep(2)
             task.stop()
+
+    def test_multiple_bus_instances(self):
+        """This tests the access of multiple bus instances to the same adapter using the VCI 4 driver"""
+
+        with can.Bus(
+            interface="ixxat",
+            channel=0,
+            bitrate=default_test_bitrate,
+            receive_own_messages=True,
+        ) as bus1:
+            with can.Bus(
+                interface="ixxat",
+                channel=0,
+                bitrate=default_test_bitrate,
+                receive_own_messages=True,
+            ) as bus2:
+                with can.Bus(
+                    interface="ixxat",
+                    channel=0,
+                    bitrate=default_test_bitrate,
+                    receive_own_messages=True,
+                ) as bus3:
+                    bus1_msg = copy(default_test_msg)
+                    bus1_msg.arbitration_id = bus1_msg.arbitration_id | 0x1000000
+                    bus2_msg = copy(default_test_msg)
+                    bus2_msg.arbitration_id = bus2_msg.arbitration_id | 0x2000000
+                    bus3_msg = copy(default_test_msg)
+                    bus3_msg.arbitration_id = bus3_msg.arbitration_id | 0x3000000
+                    # send a message on bus 1, and try to receive it on bus 2 and bus 3
+                    bus1.send(default_test_msg)
+                    response2from1 = bus2.recv(0.1)
+                    response3from1 = bus3.recv(0.1)
+                    # send the same message on bus 2, and try to receive it on bus 1 and bus 3
+                    bus2.send(default_test_msg)
+                    response1from2 = bus1.recv(0.1)
+                    response3from2 = bus3.recv(0.1)
+                    # send the same message on bus 3, and try to receive it on bus 1 and bus 2
+                    bus2.send(default_test_msg)
+                    response1from3 = bus1.recv(0.1)
+                    response2from3 = bus2.recv(0.1)
+
+        if response2from1 and response3from1 and response1from2 and response3from2 and response1from3 and response2from3:
+            bus_checks = {
+                "sent from bus instance 1, received on bus instance 2": (response2from1, bus1_msg),
+                "sent from bus instance 1, received on bus instance 3": (response3from1, bus1_msg),
+                "sent from bus instance 2, received on bus instance 1": (response1from2, bus2_msg),
+                "sent from bus instance 2, received on bus instance 3": (response3from2, bus2_msg),
+                "sent from bus instance 3, received on bus instance 1": (response1from3, bus3_msg),
+                "sent from bus instance 3, received on bus instance 3": (response2from3, bus3_msg),
+             }
+            for case, msg_objects in bus_checks.items():
+                self.assertEqual(
+                    msg_objects[0].arbitration_id,
+                    msg_objects[1].arbitration_id,
+                    f"The Arbitration ID of the messages {case} do not match",
+                )
+                self.assertEqual(
+                    msg_objects[0].data,
+                    msg_objects[1].data,
+                    f"The Data fields of the messages {case} do not match.",
+                )
+        else:
+            captured_logs = self.log_capture.get_records()
+            if captured_logs[-1] == "CAN bit error":
+                raise can.exceptions.CanOperationError(
+                    "CAN bit error - Ensure you are connected to a properly "
+                    "terminated bus configured at {default_test_bitrate} bps"
+                )
+
+            elif captured_logs[-1] == "CAN ack error":
+                raise can.exceptions.CanOperationError(
+                    "CAN ack error - Ensure there is at least one other (silent) node to provide ack signals",
+                )
+            else:
+                raise ValueError(
+                    "\n".join(
+                        (
+                            "At least one response does not match the sent message:",
+                            f"Sent on bus instance 1: {default_test_msg}",
+                            f" - Received on bus instance 2: {response2from1}",
+                            f" - Received on bus instance 3: {response3from1}",
+                            f"Sent on bus instance 2: {default_test_msg}",
+                            f" - Received on bus instance 1: {response1from2}",
+                            f" - Received on bus instance 3: {response3from2}",
+                            f"Sent on interface 3: {default_test_msg}",
+                            f" - Received on interface 1: {response1from3}",
+                            f" - Received on interface 2: {response2from3}",
+                            f"Last Caputred Log: {captured_logs[-1]}",
+                            "Ensure hardware tests are run on a bus with no other traffic.",
+                        )
+                    )
+                )
 
     def test_bus_creation_invalid_channel(self):
         # non-existent channel -> use arbitrary high value
