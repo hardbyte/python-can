@@ -36,6 +36,7 @@ class BitTiming(Mapping):
         tseg2: int,
         sjw: int,
         nof_samples: int = 1,
+        strict: bool = False,
     ) -> None:
         """
         :param int f_clock:
@@ -56,6 +57,10 @@ class BitTiming(Mapping):
             In this case, the bit will be sampled three quanta in a row,
             with the last sample being taken in the edge between TSEG1 and TSEG2.
             Three samples should only be used for relatively slow baudrates.
+        :param strict:
+            If True, restrict bit timings to the minimum required range as defined in
+            ISO 11898. This can be used to ensure compatibility across a wide variety
+            of CAN hardware.
         :raises ValueError:
             if the arguments are invalid.
         """
@@ -68,18 +73,12 @@ class BitTiming(Mapping):
             "nof_samples": nof_samples,
         }
         self._validate()
+        if strict:
+            self._restrict_to_minimum_range()
 
     def _validate(self) -> None:
-        if not 8 <= self.nbt <= 25:
-            raise ValueError(f"nominal bit time (={self.nbt}) must be in [8...25].")
-
         if not 1 <= self.brp <= 64:
             raise ValueError(f"bitrate prescaler (={self.brp}) must be in [1...64].")
-
-        if not 5_000 <= self.bitrate <= 2_000_000:
-            raise ValueError(
-                f"bitrate (={self.bitrate}) must be in [5,000...2,000,000]."
-            )
 
         if not 1 <= self.tseg1 <= 16:
             raise ValueError(f"tseg1 (={self.tseg1}) must be in [1...16].")
@@ -103,6 +102,18 @@ class BitTiming(Mapping):
 
         if self.nof_samples not in (1, 3):
             raise ValueError("nof_samples must be 1 or 3")
+
+    def _restrict_to_minimum_range(self) -> None:
+        if not 8 <= self.nbt <= 25:
+            raise ValueError(f"nominal bit time (={self.nbt}) must be in [8...25].")
+
+        if not 1 <= self.brp <= 32:
+            raise ValueError(f"bitrate prescaler (={self.brp}) must be in [1...32].")
+
+        if not 5_000 <= self.bitrate <= 1_000_000:
+            raise ValueError(
+                f"bitrate (={self.bitrate}) must be in [5,000...1,000,000]."
+            )
 
     @classmethod
     def from_bitrate_and_segments(
@@ -175,6 +186,11 @@ class BitTiming(Mapping):
         :raises ValueError:
             if the arguments are invalid.
         """
+        if not 0 <= btr0 < 2**16:
+            raise ValueError(f"Invalid btr0 value. ({btr0})")
+        if not 0 <= btr1 < 2**16:
+            raise ValueError(f"Invalid btr1 value. ({btr1})")
+
         brp = (btr0 & 0x3F) + 1
         sjw = (btr0 >> 6) + 1
         tseg1 = (btr1 & 0xF) + 1
@@ -239,6 +255,7 @@ class BitTiming(Mapping):
                     tseg1=tseg1,
                     tseg2=tseg2,
                     sjw=sjw,
+                    strict=True,
                 )
                 possible_solutions.append(bt)
             except ValueError:
@@ -316,12 +333,12 @@ class BitTiming(Mapping):
 
     @property
     def btr0(self) -> int:
-        """Bit timing register 0."""
+        """Bit timing register 0 for SJA1000."""
         return (self.sjw - 1) << 6 | self.brp - 1
 
     @property
     def btr1(self) -> int:
-        """Bit timing register 1."""
+        """Bit timing register 1 for SJA1000."""
         sam = 1 if self.nof_samples == 3 else 0
         return sam << 7 | (self.tseg2 - 1) << 4 | self.tseg1 - 1
 

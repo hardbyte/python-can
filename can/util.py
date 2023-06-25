@@ -257,7 +257,8 @@ def _create_bus_config(config: Dict[str, Any]) -> typechecking.BusConfig:
                     **{
                         key: int(config[key])
                         for key in typechecking.BitTimingDict.__annotations__
-                    }
+                    },
+                    strict=False,
                 )
         except (ValueError, TypeError):
             pass
