@@ -250,7 +250,8 @@ def _create_bus_config(config: Dict[str, Any]) -> typechecking.BusConfig:
                     **{
                         key: int(config[key])
                         for key in typechecking.BitTimingFdDict.__annotations__
-                    }
+                    },
+                    strict=False,
                 )
             elif set(typechecking.BitTimingDict.__annotations__).issubset(config):
                 config["timing"] = can.BitTiming(
