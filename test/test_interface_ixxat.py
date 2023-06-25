@@ -369,15 +369,15 @@ class TestHardwareCaseStd(unittest.TestCase):
                     bus3_msg = copy(default_test_msg)
                     bus3_msg.arbitration_id = bus3_msg.arbitration_id | 0x3000000
                     # send a message on bus 1, and try to receive it on bus 2 and bus 3
-                    bus1.send(default_test_msg)
+                    bus1.send(bus1_msg)
                     response2from1 = bus2.recv(0.1)
                     response3from1 = bus3.recv(0.1)
                     # send the same message on bus 2, and try to receive it on bus 1 and bus 3
-                    bus2.send(default_test_msg)
+                    bus2.send(bus2_msg)
                     response1from2 = bus1.recv(0.1)
                     response3from2 = bus3.recv(0.1)
                     # send the same message on bus 3, and try to receive it on bus 1 and bus 2
-                    bus2.send(default_test_msg)
+                    bus3.send(bus3_msg)
                     response1from3 = bus1.recv(0.1)
                     response2from3 = bus2.recv(0.1)
 
@@ -418,13 +418,13 @@ class TestHardwareCaseStd(unittest.TestCase):
                     "\n".join(
                         (
                             "At least one response does not match the sent message:",
-                            f"Sent on bus instance 1: {default_test_msg}",
+                            f"Sent on bus instance 1: {bus1_msg}",
                             f" - Received on bus instance 2: {response2from1}",
                             f" - Received on bus instance 3: {response3from1}",
-                            f"Sent on bus instance 2: {default_test_msg}",
+                            f"Sent on bus instance 2: {bus2_msg}",
                             f" - Received on bus instance 1: {response1from2}",
                             f" - Received on bus instance 3: {response3from2}",
-                            f"Sent on interface 3: {default_test_msg}",
+                            f"Sent on interface 3: {bus3_msg}",
                             f" - Received on interface 1: {response1from3}",
                             f" - Received on interface 2: {response2from3}",
                             f"Last Caputred Log: {captured_logs[-1]}",

@@ -705,8 +705,13 @@ class IXXATBus(BusABC):
         )
 
         log.info(
-            "Initialising Channel %d with the following parameters:  \n%s\n%s",
+            "Initialising Channel %d with the following parameters:\n"
+            "bOpMode=%d, bExMode=%d\n"
+            "pBtpSDR=%s\n"
+            "pBtpFDR=%s",
             channel,
+            bOpMode,
+            bExMode,
             pBtpSDR,
             pBtpFDR,
         )
