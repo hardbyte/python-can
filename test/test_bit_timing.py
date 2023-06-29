@@ -175,7 +175,7 @@ def test_from_btr():
 def test_btr_persistence():
     f_clock = 8_000_000
     for btr0btr1 in PCAN_BITRATES.values():
-        btr1, btr0 = struct.unpack("BB", btr0btr1)
+        btr0, btr1 = struct.pack(">H", btr0btr1.value)
 
         t = can.BitTiming.from_registers(f_clock, btr0, btr1)
         assert t.btr0 == btr0
