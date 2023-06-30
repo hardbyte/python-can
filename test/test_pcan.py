@@ -3,6 +3,7 @@ Test for PCAN Interface
 """
 
 import ctypes
+import struct
 import unittest
 from unittest import mock
 from unittest.mock import Mock, patch
@@ -379,9 +380,7 @@ class TestPCANBus(unittest.TestCase):
             self.assertEqual(len(configs), 50)
         else:
             value = (TPCANChannelInformation * 1).from_buffer_copy(
-                b"Q\x00\x05\x00\x01\x00\x00\x00PCAN-USB FD\x00\x00\x00\x00"
-                b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-                b'\x00\x00\x00\x00\x00\x00\x003"\x11\x00\x01\x00\x00\x00'
+                struct.pack("HBBI33sII", 81, 5, 0, 1, b"PCAN-USB FD", 1122867, 1)
             )
             self.mock_pcan.GetValue = Mock(return_value=(PCAN_ERROR_OK, value))
             configs = PcanBus._detect_available_configs()
