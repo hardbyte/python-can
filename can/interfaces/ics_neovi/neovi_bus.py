@@ -12,6 +12,7 @@ import logging
 import os
 import tempfile
 from collections import Counter, defaultdict, deque
+from functools import partial
 from itertools import cycle
 from threading import Event
 from warnings import warn
@@ -317,7 +318,8 @@ class NeoViBus(BusABC):
         except ics.RuntimeError:
             return
         for ics_msg in messages:
-            if ics_msg.NetworkID not in self.channels:
+            channel = ics_msg.NetworkID | (ics_msg.NetworkID2 << 8)
+            if channel not in self.channels:
                 continue
 
             is_tx = bool(ics_msg.StatusBitField & ics.SPY_STATUS_TX_MSG)
@@ -364,50 +366,37 @@ class NeoViBus(BusABC):
     def _ics_msg_to_message(self, ics_msg):
         is_fd = ics_msg.Protocol == ics.SPY_PROTOCOL_CANFD
 
+        message_from_ics = partial(
+            Message,
+            timestamp=self._get_timestamp_for_msg(ics_msg),
+            arbitration_id=ics_msg.ArbIDOrHeader,
+            is_extended_id=bool(ics_msg.StatusBitField & ics.SPY_STATUS_XTD_FRAME),
+            is_remote_frame=bool(ics_msg.StatusBitField & ics.SPY_STATUS_REMOTE_FRAME),
+            is_error_frame=bool(ics_msg.StatusBitField2 & ics.SPY_STATUS2_ERROR_FRAME),
+            channel=ics_msg.NetworkID | (ics_msg.NetworkID2 << 8),
+            dlc=ics_msg.NumberBytesData,
+            is_fd=is_fd,
+            is_rx=not bool(ics_msg.StatusBitField & ics.SPY_STATUS_TX_MSG),
+        )
+
         if is_fd:
             if ics_msg.ExtraDataPtrEnabled:
                 data = ics_msg.ExtraDataPtr[: ics_msg.NumberBytesData]
             else:
                 data = ics_msg.Data[: ics_msg.NumberBytesData]
 
-            return Message(
-                timestamp=self._get_timestamp_for_msg(ics_msg),
-                arbitration_id=ics_msg.ArbIDOrHeader,
+            return message_from_ics(
                 data=data,
-                dlc=ics_msg.NumberBytesData,
-                is_extended_id=bool(ics_msg.StatusBitField & ics.SPY_STATUS_XTD_FRAME),
-                is_fd=is_fd,
-                is_rx=not bool(ics_msg.StatusBitField & ics.SPY_STATUS_TX_MSG),
-                is_remote_frame=bool(
-                    ics_msg.StatusBitField & ics.SPY_STATUS_REMOTE_FRAME
-                ),
-                is_error_frame=bool(
-                    ics_msg.StatusBitField2 & ics.SPY_STATUS2_ERROR_FRAME
-                ),
                 error_state_indicator=bool(
                     ics_msg.StatusBitField3 & ics.SPY_STATUS3_CANFD_ESI
                 ),
                 bitrate_switch=bool(
                     ics_msg.StatusBitField3 & ics.SPY_STATUS3_CANFD_BRS
                 ),
-                channel=ics_msg.NetworkID,
             )
         else:
-            return Message(
-                timestamp=self._get_timestamp_for_msg(ics_msg),
-                arbitration_id=ics_msg.ArbIDOrHeader,
+            return message_from_ics(
                 data=ics_msg.Data[: ics_msg.NumberBytesData],
-                dlc=ics_msg.NumberBytesData,
-                is_extended_id=bool(ics_msg.StatusBitField & ics.SPY_STATUS_XTD_FRAME),
-                is_fd=is_fd,
-                is_rx=not bool(ics_msg.StatusBitField & ics.SPY_STATUS_TX_MSG),
-                is_remote_frame=bool(
-                    ics_msg.StatusBitField & ics.SPY_STATUS_REMOTE_FRAME
-                ),
-                is_error_frame=bool(
-                    ics_msg.StatusBitField2 & ics.SPY_STATUS2_ERROR_FRAME
-                ),
-                channel=ics_msg.NetworkID,
             )
 
     def _recv_internal(self, timeout=0.1):
@@ -479,11 +468,15 @@ class NeoViBus(BusABC):
         message.StatusBitField2 = 0
         message.StatusBitField3 = flag3
         if msg.channel is not None:
-            message.NetworkID = msg.channel
+            network_id = msg.channel
         elif len(self.channels) == 1:
-            message.NetworkID = self.channels[0]
+            network_id = self.channels[0]
         else:
             raise ValueError("msg.channel must be set when using multiple channels.")
+
+        message.NetworkID, message.NetworkID2 = int(network_id & 0xFF), int(
+            (network_id >> 8) & 0xFF
+        )
 
         if timeout != 0:
             msg_desc_id = next(description_id)
