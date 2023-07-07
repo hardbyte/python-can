@@ -400,7 +400,11 @@ class VectorBus(BusABC):
         vcc_list = get_channel_configs()
         for vcc in vcc_list:
             if vcc.channel_mask == channel_mask:
-                return vcc.bus_params
+                bus_params = vcc.bus_params
+                if bus_params is None:
+                    # for CAN channels, this should never be `None`
+                    raise ValueError("Invalid bus parameters.")
+                return bus_params
 
         raise CanInitializationError(
             f"Channel configuration for channel {channel} not found."
@@ -1090,7 +1094,7 @@ class VectorChannelConfig(NamedTuple):
     channel_bus_capabilities: xldefine.XL_BusCapabilities
     is_on_bus: bool
     connected_bus_type: xldefine.XL_BusTypes
-    bus_params: VectorBusParams
+    bus_params: Optional[VectorBusParams]
     serial_number: int
     article_number: int
     transceiver_name: str
@@ -1110,9 +1114,14 @@ def _get_xl_driver_config() -> xlclass.XLdriverConfig:
     return driver_config
 
 
-def _read_bus_params_from_c_struct(bus_params: xlclass.XLbusParams) -> VectorBusParams:
+def _read_bus_params_from_c_struct(
+    bus_params: xlclass.XLbusParams,
+) -> Optional[VectorBusParams]:
+    bus_type = xldefine.XL_BusTypes(bus_params.busType)
+    if bus_type is not xldefine.XL_BusTypes.XL_BUS_TYPE_CAN:
+        return None
     return VectorBusParams(
-        bus_type=xldefine.XL_BusTypes(bus_params.busType),
+        bus_type=bus_type,
         can=VectorCanParams(
             bitrate=bus_params.data.can.bitRate,
             sjw=bus_params.data.can.sjw,
