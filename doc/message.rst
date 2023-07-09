@@ -44,7 +44,7 @@ Message
         2\ :sup:`29` - 1 for 29-bit identifiers).
 
             >>> print(Message(is_extended_id=False, arbitration_id=100))
-            Timestamp:        0.000000        ID: 0064    S Rx                DL:  0
+            Timestamp:        0.000000    ID:      064    S Rx                DL:  0
 
 
     .. attribute:: data
@@ -106,7 +106,7 @@ Message
         Previously this was exposed as `id_type`.
 
         >>> print(Message(is_extended_id=False))
-        Timestamp:        0.000000        ID: 0000    S Rx                DL:  0
+        Timestamp:        0.000000    ID:      000    S Rx                DL:  0
         >>> print(Message(is_extended_id=True))
         Timestamp:        0.000000    ID: 00000000    X Rx                DL:  0
 
