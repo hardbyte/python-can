@@ -110,10 +110,10 @@ class Message:  # pylint: disable=too-many-instance-attributes; OK for a datacla
     def __str__(self) -> str:
         field_strings = [f"Timestamp: {self.timestamp:>15.6f}"]
         if self.is_extended_id:
-            arbitration_id_string = f"ID: {self.arbitration_id:08x}"
+            arbitration_id_string = f"{self.arbitration_id:08x}"
         else:
-            arbitration_id_string = f"ID: {self.arbitration_id:04x}"
-        field_strings.append(arbitration_id_string.rjust(12, " "))
+            arbitration_id_string = f"{self.arbitration_id:03x}"
+        field_strings.append(f"ID: {arbitration_id_string:>8}")
 
         flag_string = " ".join(
             [
