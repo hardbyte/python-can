@@ -878,7 +878,29 @@ class VectorBus(BusABC):
         return xl_can_tx_event
 
     def flush_tx_buffer(self) -> None:
-        self.xldriver.xlCanFlushTransmitQueue(self.port_handle, self.mask)
+        """
+        Flush the TX buffer of the bus.
+
+        According to XL Driver Library Manual, function xlCanFlushTransmitQueue performs a no-op for
+        Vector devices other than XL family. As a workaround, dummy TX frame with overrun/highprio flag is sent, which
+        clears the TX queue.
+        """
+        if self._can_protocol is CanProtocol.CAN_FD:
+            xl_can_tx_event = xlclass.XLcanTxEvent()
+            xl_can_tx_event.tag = xldefine.XL_CANFD_TX_EventTags.XL_CAN_EV_TAG_TX_MSG
+            xl_can_tx_event.tagData.canMsg.msgFlags |= xldefine.XL_CANFD_TX_MessageFlags.XL_CAN_TXMSG_FLAG_HIGHPRIO
+
+            self.xldriver.xlCanTransmitEx(
+                self.port_handle, self.mask, ctypes.c_uint(1), ctypes.c_uint(0), xl_can_tx_event
+            )
+        else:
+            xl_event = xlclass.XLevent()
+            xl_event.tag = xldefine.XL_EventTags.XL_TRANSMIT_MSG
+            xl_event.tagData.msg.flags |= xldefine.XL_MessageFlags.XL_CAN_MSG_FLAG_OVERRUN
+
+            self.xldriver.xlCanTransmit(
+                self.port_handle, self.mask, ctypes.c_uint(1), xl_event
+            )
 
     def shutdown(self) -> None:
         super().shutdown()
