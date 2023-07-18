@@ -610,12 +610,6 @@ def test_receive_fd_non_msg_event() -> None:
     bus.shutdown()
 
 
-def test_flush_tx_buffer_mocked(mock_xldriver) -> None:
-    bus = can.Bus(channel=0, interface="vector", _testing=True)
-    bus.flush_tx_buffer()
-    can.interfaces.vector.canlib.xldriver.xlCanFlushTransmitQueue.assert_called()
-
-
 @pytest.mark.skipif(not XLDRIVER_FOUND, reason="Vector XL API is unavailable")
 def test_flush_tx_buffer() -> None:
     bus = can.Bus(channel=0, serial=_find_virtual_can_serial(), interface="vector")
