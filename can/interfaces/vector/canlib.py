@@ -881,9 +881,11 @@ class VectorBus(BusABC):
         """
         Flush the TX buffer of the bus.
 
-        According to XL Driver Library Manual, function xlCanFlushTransmitQueue performs a no-op for
-        Vector devices other than XL family. As a workaround, dummy TX frame with overrun/highprio flag is sent, which
-        clears the TX queue.
+        Implementation does not use function ``xlCanFlushTransmitQueue`` of the XL driver, as it works only
+        for XL family devices.
+
+        .. warning::
+            Using this function will flush the queue and send a high voltage message (ID = 0, DLC = 0, no data).
         """
         if self._can_protocol is CanProtocol.CAN_FD:
             xl_can_tx_event = xlclass.XLcanTxEvent()
