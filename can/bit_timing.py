@@ -57,7 +57,7 @@ class BitTiming(Mapping):
             In this case, the bit will be sampled three quanta in a row,
             with the last sample being taken in the edge between TSEG1 and TSEG2.
             Three samples should only be used for relatively slow baudrates.
-        :param strict:
+        :param bool strict:
             If True, restrict bit timings to the minimum required range as defined in
             ISO 11898. This can be used to ensure compatibility across a wide variety
             of CAN hardware.
@@ -124,6 +124,7 @@ class BitTiming(Mapping):
         tseg2: int,
         sjw: int,
         nof_samples: int = 1,
+        strict: bool = False,
     ) -> "BitTiming":
         """Create a :class:`~can.BitTiming` instance from bitrate and segment lengths.
 
@@ -145,6 +146,10 @@ class BitTiming(Mapping):
             In this case, the bit will be sampled three quanta in a row,
             with the last sample being taken in the edge between TSEG1 and TSEG2.
             Three samples should only be used for relatively slow baudrates.
+        :param bool strict:
+            If True, restrict bit timings to the minimum required range as defined in
+            ISO 11898. This can be used to ensure compatibility across a wide variety
+            of CAN hardware.
         :raises ValueError:
             if the arguments are invalid.
         """
@@ -160,6 +165,7 @@ class BitTiming(Mapping):
             tseg2=tseg2,
             sjw=sjw,
             nof_samples=nof_samples,
+            strict=strict,
         )
         if abs(bt.bitrate - bitrate) > bitrate / 256:
             raise ValueError(
@@ -390,6 +396,7 @@ class BitTiming(Mapping):
                 tseg2=self.tseg2,
                 sjw=self.sjw,
                 nof_samples=self.nof_samples,
+                strict=True,
             )
         except ValueError:
             pass
@@ -531,7 +538,7 @@ class BitTimingFd(Mapping):
         :param int data_sjw:
             The Synchronization Jump Width for the data phase. This value determines
             the maximum number of time quanta that the controller can resynchronize every bit.
-        :param strict:
+        :param bool strict:
             If True, restrict bit timings to the minimum required range as defined in
             ISO 11898. This can be used to ensure compatibility across a wide variety
             of CAN hardware.
@@ -649,6 +656,7 @@ class BitTimingFd(Mapping):
         data_tseg1: int,
         data_tseg2: int,
         data_sjw: int,
+        strict: bool = False,
     ) -> "BitTimingFd":
         """
         Create a :class:`~can.BitTimingFd` instance with the bitrates and segments lengths.
@@ -677,6 +685,10 @@ class BitTimingFd(Mapping):
         :param int data_sjw:
             The Synchronization Jump Width for the data phase. This value determines
             the maximum number of time quanta that the controller can resynchronize every bit.
+        :param bool strict:
+            If True, restrict bit timings to the minimum required range as defined in
+            ISO 11898. This can be used to ensure compatibility across a wide variety
+            of CAN hardware.
         :raises ValueError:
             if the arguments are invalid.
         """
@@ -698,6 +710,7 @@ class BitTimingFd(Mapping):
             data_tseg1=data_tseg1,
             data_tseg2=data_tseg2,
             data_sjw=data_sjw,
+            strict=strict,
         )
 
         if abs(bt.nom_bitrate - nom_bitrate) > nom_bitrate / 256:
@@ -1007,6 +1020,7 @@ class BitTimingFd(Mapping):
                 data_tseg1=self.data_tseg1,
                 data_tseg2=self.data_tseg2,
                 data_sjw=self.data_sjw,
+                strict=True,
             )
         except ValueError:
             pass
