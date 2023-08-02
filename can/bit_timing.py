@@ -645,7 +645,7 @@ class BitTimingFd(Mapping):
                 raise ValueError(f"nom_sjw (={self.nom_sjw}) must be in [1...16].")
 
     @classmethod
-    def from_bitrate_and_segments(
+    def from_bitrate_and_segments(  # pylint: disable=too-many-arguments
         cls,
         f_clock: int,
         nom_bitrate: int,
