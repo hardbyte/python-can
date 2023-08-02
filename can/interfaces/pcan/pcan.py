@@ -608,8 +608,7 @@ class PcanBus(BusABC):
             CANMsg.MSGTYPE = msgType
 
             # copy data
-            for i in range(msg.dlc):
-                CANMsg.DATA[i] = msg.data[i]
+            CANMsg.DATA[: msg.dlc] = msg.data[: msg.dlc]
 
             log.debug("Data: %s", msg.data)
             log.debug("Type: %s", type(msg.data))
@@ -628,8 +627,7 @@ class PcanBus(BusABC):
             # if a remote frame will be sent, data bytes are not important.
             if not msg.is_remote_frame:
                 # copy data
-                for i in range(CANMsg.LEN):
-                    CANMsg.DATA[i] = msg.data[i]
+                CANMsg.DATA[: CANMsg.LEN] = msg.data[: CANMsg.LEN]
 
             log.debug("Data: %s", msg.data)
             log.debug("Type: %s", type(msg.data))
