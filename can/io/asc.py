@@ -56,29 +56,50 @@ class ASCReader(TextIOMessageReader):
             raise ValueError("The given file cannot be None")
         self.base = base
         self._converted_base = self._check_base(base)
+        self.version = '0.0.0'
+        # TODO: what is relative timestamp? Seems it should be timestamps_format
         self.relative_timestamp = relative_timestamp
         self.date: Optional[str] = None
         self.start_time = 0.0
         # TODO - what is this used for? The ASC Writer only prints `absolute`
         self.timestamps_format: Optional[str] = None
         self.internal_events_logged = False
+        self._extract_header()
 
     def _extract_header(self) -> None:
         for line in self.file:
             line = line.strip()
 
+            # parse date
             datetime_match = re.match(
                 r"date\s+\w+\s+(?P<datetime_string>.+)", line, re.IGNORECASE
             )
+            
+            # parse base
             base_match = re.match(
                 r"base\s+(?P<base>hex|dec)(?:\s+timestamps\s+"
                 r"(?P<timestamp_format>absolute|relative))?",
                 line,
                 re.IGNORECASE,
             )
+
+            # parse version
+            version_match = re.match(
+                r"// version (?P<version>.+)",
+                line,
+                re.IGNORECASE
+            )
+
             comment_match = re.match(r"//.*", line)
             events_match = re.match(
                 r"(?P<no_events>no)?\s*internal\s+events\s+logged", line, re.IGNORECASE
+            )
+
+            # parse start time
+            trigger_match = re.match(
+                r"begin\s+triggerblock\s+\w+\s+(?P<datetime_string>.+)",
+                line,
+                re.IGNORECASE,
             )
 
             if datetime_match:
@@ -98,14 +119,26 @@ class ASCReader(TextIOMessageReader):
                 self.timestamps_format = timestamp_format or "absolute"
                 continue
 
+            if version_match:
+                version = version_match.group("version")
+                self.version = version
+                continue
+
             if comment_match:
                 continue
 
             if events_match:
                 self.internal_events_logged = events_match.group("no_events") is None
-                break
+                continue
 
-            break
+            if trigger_match:
+                datetime_str = trigger_match.group("datetime_string")
+                self.start_time = (
+                    0.0
+                    if self.timestamps_format == 'relative'
+                    else self._datetime_to_timestamp(datetime_str)
+                )
+                break
 
     @staticmethod
     def _datetime_to_timestamp(datetime_string: str) -> float:
@@ -252,25 +285,60 @@ class ASCReader(TextIOMessageReader):
 
         return Message(**msg_kwargs)
 
+    def _process_fd_can_frame_2(self, line: str, msg_kwargs: Dict[str, Any]) -> Message:
+        channel, direction, rest_of_message = line.split(None, 2)
+        # See ASCWriter
+        msg_kwargs["channel"] = int(channel) - 1
+        msg_kwargs["is_rx"] = direction == "Rx"
+
+        # CAN FD error frame
+        if rest_of_message.strip()[:10].lower() == "errorframe":
+            # Error Frame
+            # TODO: maybe use regex to parse BRS, ESI, etc?
+            msg_kwargs["is_error_frame"] = True
+        else:
+            can_id_str, symbolic_name, frame_name_or_brs, rest_of_message = rest_of_message.split(
+                None, 3
+            )
+
+            if frame_name_or_brs.isdigit():
+                brs = frame_name_or_brs
+                esi, dlc_str, data_length_str, data = rest_of_message.split(None, 3)
+            else:
+                brs, esi, dlc_str, data_length_str, data = rest_of_message.split(
+                    None, 4
+                )
+
+            self._extract_can_id(can_id_str, msg_kwargs)
+            msg_kwargs["bitrate_switch"] = brs == "1"
+            msg_kwargs["error_state_indicator"] = esi == "1"
+            dlc = int(dlc_str, self._converted_base)
+            data_length = int(data_length_str)
+            if data_length == 0:
+                # CAN remote Frame
+                msg_kwargs["is_remote_frame"] = True
+                msg_kwargs["dlc"] = dlc
+            else:
+                if dlc2len(dlc) != data_length:
+                    logger.warning(
+                        "DLC vs Data Length mismatch %d[%d] != %d",
+                        dlc,
+                        dlc2len(dlc),
+                        data_length,
+                    )
+                msg_kwargs["dlc"] = data_length
+
+            self._process_data_string(data, data_length, msg_kwargs)
+
+        return Message(**msg_kwargs)
+
+
     def __iter__(self) -> Generator[Message, None, None]:
-        self._extract_header()
+        # extract head in initial
+        # self._extract_header()
 
         for line in self.file:
             line = line.strip()
-
-            trigger_match = re.match(
-                r"begin\s+triggerblock\s+\w+\s+(?P<datetime_string>.+)",
-                line,
-                re.IGNORECASE,
-            )
-            if trigger_match:
-                datetime_str = trigger_match.group("datetime_string")
-                self.start_time = (
-                    0.0
-                    if self.relative_timestamp
-                    else self._datetime_to_timestamp(datetime_str)
-                )
-                continue
 
             if not re.match(
                 r"\d+\.\d+\s+(\d+\s+(\w+\s+(Tx|Rx)|ErrorFrame)|CANFD)",
@@ -300,8 +368,10 @@ class ASCReader(TextIOMessageReader):
 
             if "is_fd" not in msg_kwargs:
                 msg = self._process_classic_can_frame(rest_of_message, msg_kwargs)
-            else:
+            elif self.version < '8.1':
                 msg = self._process_fd_can_frame(rest_of_message, msg_kwargs)
+            else:
+                msg = self._process_fd_can_frame_2(rest_of_message, msg_kwargs)
             if msg is not None:
                 yield msg
 
