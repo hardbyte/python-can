@@ -56,7 +56,7 @@ class ASCReader(TextIOMessageReader):
             raise ValueError("The given file cannot be None")
         self.base = base
         self._converted_base = self._check_base(base)
-        self.version = '0.0.0'
+        self.version = "0.0.0"
         # TODO: what is relative timestamp? Seems it should be timestamps_format
         self.relative_timestamp = relative_timestamp
         self.date: Optional[str] = None
@@ -74,7 +74,7 @@ class ASCReader(TextIOMessageReader):
             datetime_match = re.match(
                 r"date\s+\w+\s+(?P<datetime_string>.+)", line, re.IGNORECASE
             )
-            
+
             # parse base
             base_match = re.match(
                 r"base\s+(?P<base>hex|dec)(?:\s+timestamps\s+"
@@ -84,11 +84,7 @@ class ASCReader(TextIOMessageReader):
             )
 
             # parse version
-            version_match = re.match(
-                r"// version (?P<version>.+)",
-                line,
-                re.IGNORECASE
-            )
+            version_match = re.match(r"// version (?P<version>.+)", line, re.IGNORECASE)
 
             comment_match = re.match(r"//.*", line)
             events_match = re.match(
@@ -135,7 +131,7 @@ class ASCReader(TextIOMessageReader):
                 datetime_str = trigger_match.group("datetime_string")
                 self.start_time = (
                     0.0
-                    if self.timestamps_format == 'relative'
+                    if self.timestamps_format == "relative"
                     else self._datetime_to_timestamp(datetime_str)
                 )
                 break
@@ -297,9 +293,12 @@ class ASCReader(TextIOMessageReader):
             # TODO: maybe use regex to parse BRS, ESI, etc?
             msg_kwargs["is_error_frame"] = True
         else:
-            can_id_str, symbolic_name, frame_name_or_brs, rest_of_message = rest_of_message.split(
-                None, 3
-            )
+            (
+                can_id_str,
+                symbolic_name,
+                frame_name_or_brs,
+                rest_of_message,
+            ) = rest_of_message.split(None, 3)
 
             if frame_name_or_brs.isdigit():
                 brs = frame_name_or_brs
@@ -331,7 +330,6 @@ class ASCReader(TextIOMessageReader):
             self._process_data_string(data, data_length, msg_kwargs)
 
         return Message(**msg_kwargs)
-
 
     def __iter__(self) -> Generator[Message, None, None]:
         # extract head in initial
@@ -368,7 +366,7 @@ class ASCReader(TextIOMessageReader):
 
             if "is_fd" not in msg_kwargs:
                 msg = self._process_classic_can_frame(rest_of_message, msg_kwargs)
-            elif self.version < '8.1':
+            elif self.version < "8.1":
                 msg = self._process_fd_can_frame(rest_of_message, msg_kwargs)
             else:
                 msg = self._process_fd_can_frame_2(rest_of_message, msg_kwargs)
