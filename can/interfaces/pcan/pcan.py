@@ -416,7 +416,10 @@ class PcanBus(BusABC):
         if error != PCAN_ERROR_OK:
             raise CanInitializationError(f"Failed to read pcan basic api version")
 
-        return version.parse(value.decode("ascii"))
+        # fix https://github.com/hardbyte/python-can/issues/1642
+        version_string = value.decode("ascii").replace(",", ".").replace(" ", "")
+
+        return version.parse(version_string)
 
     def check_api_version(self):
         apv = self.get_api_version()

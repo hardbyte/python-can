@@ -120,6 +120,19 @@ class TestPCANBus(unittest.TestCase):
         with self.assertRaises(CanInitializationError):
             self.bus = can.Bus(interface="pcan")
 
+    def test_issue1642(self) -> None:
+        self.PCAN_API_VERSION_SIM = "1, 3, 0, 50"
+        with self.assertLogs("can.pcan", level="WARNING") as cm:
+            self.bus = can.Bus(interface="pcan")
+            found_version_warning = False
+            for i in cm.output:
+                if "version" in i and "pcan" in i:
+                    found_version_warning = True
+            self.assertTrue(
+                found_version_warning,
+                f"No warning was logged for incompatible api version {cm.output}",
+            )
+
     @parameterized.expand(
         [
             ("no_error", PCAN_ERROR_OK, PCAN_ERROR_OK, "some ok text 1"),
