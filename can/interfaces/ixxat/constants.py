@@ -123,10 +123,10 @@ CAN_OPMODE_LOWSPEED = 0x10  # use low speed bus interface
 CAN_OPMODE_AUTOBAUD = 0x20  # automatic bit rate detection
 
 # Extended operating modes
-CAN_EXMODE_DISABLED = 0x00
-CAN_EXMODE_EXTDATALEN = 0x01
-CAN_EXMODE_FASTDATA = 0x02
-CAN_EXMODE_NONISOCANFD = 0x04
+CAN_EXMODE_DISABLED = 0x00  # no extended operation
+CAN_EXMODE_EXTDATALEN = 0x01  # extended data length
+CAN_EXMODE_FASTDATA = 0x02  # fast data bit rate
+CAN_EXMODE_NONISOCANFD = 0x04  # non ISO conform frames
 
 # Message types
 CAN_MSGTYPE_DATA = 0
@@ -160,13 +160,19 @@ CAN_ACC_CODE_NONE = 0x80000000
 CAN_BTMODE_RAW = 0x00000001  # raw mode
 CAN_BTMODE_TSM = 0x00000002  # triple sampling mode
 
+# Filter selection
+CAN_FILTER_STD = 1  # select standard filter (11-bit)
+CAN_FILTER_EXT = 2  # select extended filter (29-bit)
 
+# Filter modw
 CAN_FILTER_VOID = 0x00  # invalid or unknown filter mode (do not use for initialization)
 CAN_FILTER_LOCK = 0x01  # lock filter (inhibit all IDs)
 CAN_FILTER_PASS = 0x02  # bypass filter (pass all IDs)
 CAN_FILTER_INCL = 0x03  # inclusive filtering (pass registered IDs)
 CAN_FILTER_EXCL = 0x04  # exclusive filtering (inhibit registered IDs)
 
+# additional filter mode flag for ICanChannel2 initialization
+CAN_FILTER_SRRA = 0x80  # pass self-rec messages from all channels
 
 # message information flags (used by <CANMSGINFO.Bytes.bFlags>)
 CAN_MSGFLAGS_DLC = 0x0F  # [bit 0] data length code
@@ -214,46 +220,88 @@ CAN_FEATURE_64BITTSC = 0x00020000  # 64-bit time stamp counter
 
 
 CAN_BITRATE_PRESETS = {
+    10000: structures.CANBTP(
+        dwMode=0, dwBPS=10_000, wTS1=6400, wTS2=1600, wSJW=1600, wTDO=0
+    ),  # SP = 80,0%
+    20000: structures.CANBTP(
+        dwMode=0, dwBPS=20_000, wTS1=6400, wTS2=1600, wSJW=1600, wTDO=0
+    ),  # SP = 80,0%
+    50000: structures.CANBTP(
+        dwMode=0, dwBPS=50_000, wTS1=6400, wTS2=1600, wSJW=1600, wTDO=0
+    ),  # SP = 80,0%
+    100000: structures.CANBTP(
+        dwMode=0, dwBPS=100_000, wTS1=6400, wTS2=1600, wSJW=1600, wTDO=0
+    ),  # SP = 80,0%  - Non CIA specified bitrate
+    125000: structures.CANBTP(
+        dwMode=0, dwBPS=125_000, wTS1=6400, wTS2=1600, wSJW=1600, wTDO=0
+    ),  # SP = 80,0%
     250000: structures.CANBTP(
-        dwMode=0, dwBPS=250000, wTS1=6400, wTS2=1600, wSJW=1600, wTDO=0
+        dwMode=0, dwBPS=250_000, wTS1=6400, wTS2=1600, wSJW=1600, wTDO=0
     ),  # SP = 80,0%
     500000: structures.CANBTP(
-        dwMode=0, dwBPS=500000, wTS1=6400, wTS2=1600, wSJW=1600, wTDO=0
+        dwMode=0, dwBPS=500_000, wTS1=6400, wTS2=1600, wSJW=1600, wTDO=0
+    ),  # SP = 80,0%
+    800000: structures.CANBTP(
+        dwMode=0, dwBPS=800_000, wTS1=6400, wTS2=1600, wSJW=1600, wTDO=0
     ),  # SP = 80,0%
     1000000: structures.CANBTP(
-        dwMode=0, dwBPS=1000000, wTS1=6400, wTS2=1600, wSJW=1600, wTDO=0
+        dwMode=0, dwBPS=1_000_000, wTS1=6400, wTS2=1600, wSJW=1600, wTDO=0
     ),  # SP = 80,0%
 }
 
 CAN_DATABITRATE_PRESETS = {
-    500000: structures.CANBTP(
-        dwMode=0, dwBPS=500000, wTS1=6400, wTS2=1600, wSJW=1600, wTDO=6400
+    500_000: structures.CANBTP(
+        dwMode=0, dwBPS=500_000, wTS1=6400, wTS2=1600, wSJW=1600, wTDO=6400
     ),  # SP = 80,0%
-    833333: structures.CANBTP(
-        dwMode=0, dwBPS=833333, wTS1=1600, wTS2=400, wSJW=400, wTDO=1620
+    833_333: structures.CANBTP(
+        dwMode=0, dwBPS=833_333, wTS1=1600, wTS2=400, wSJW=400, wTDO=1620
     ),  # SP = 80,0%
-    1000000: structures.CANBTP(
-        dwMode=0, dwBPS=1000000, wTS1=1600, wTS2=400, wSJW=400, wTDO=1600
+    1_000_000: structures.CANBTP(
+        dwMode=0, dwBPS=1_000_000, wTS1=1600, wTS2=400, wSJW=400, wTDO=1600
     ),  # SP = 80,0%
-    1538461: structures.CANBTP(
-        dwMode=0, dwBPS=1538461, wTS1=1000, wTS2=300, wSJW=300, wTDO=1040
+    1_538_461: structures.CANBTP(
+        dwMode=0, dwBPS=1_538_461, wTS1=1000, wTS2=300, wSJW=300, wTDO=1040
     ),  # SP = 76,9%
-    2000000: structures.CANBTP(
-        dwMode=0, dwBPS=2000000, wTS1=1600, wTS2=400, wSJW=400, wTDO=1600
+    2_000_000: structures.CANBTP(
+        dwMode=0, dwBPS=2_000_000, wTS1=1600, wTS2=400, wSJW=400, wTDO=1600
     ),  # SP = 80,0%
-    4000000: structures.CANBTP(
-        dwMode=0, dwBPS=4000000, wTS1=800, wTS2=200, wSJW=200, wTDO=800
+    4_000_000: structures.CANBTP(
+        dwMode=0, dwBPS=4_000_000, wTS1=800, wTS2=200, wSJW=200, wTDO=800
     ),  # SP = 80,0%
-    5000000: structures.CANBTP(
-        dwMode=0, dwBPS=5000000, wTS1=600, wTS2=200, wSJW=200, wTDO=600
+    5_000_000: structures.CANBTP(
+        dwMode=0, dwBPS=5_000_000, wTS1=600, wTS2=200, wSJW=200, wTDO=600
     ),  # SP = 75,0%
-    6666666: structures.CANBTP(
-        dwMode=0, dwBPS=6666666, wTS1=400, wTS2=200, wSJW=200, wTDO=402
+    6_666_666: structures.CANBTP(
+        dwMode=0, dwBPS=6_666_666, wTS1=400, wTS2=200, wSJW=200, wTDO=402
     ),  # SP = 66,7%
-    8000000: structures.CANBTP(
-        dwMode=0, dwBPS=8000000, wTS1=400, wTS2=100, wSJW=100, wTDO=250
+    8_000_000: structures.CANBTP(
+        dwMode=0, dwBPS=8_000_000, wTS1=400, wTS2=100, wSJW=100, wTDO=250
     ),  # SP = 80,0%
-    10000000: structures.CANBTP(
-        dwMode=0, dwBPS=10000000, wTS1=300, wTS2=100, wSJW=100, wTDO=200
+    10_000_000: structures.CANBTP(
+        dwMode=0, dwBPS=10_000_000, wTS1=300, wTS2=100, wSJW=100, wTDO=200
     ),  # SP = 75,0%
+}
+
+CAN_INFO_MESSAGES = {
+    CAN_INFO_START: "CAN started",
+    CAN_INFO_STOP: "CAN stopped",
+    CAN_INFO_RESET: "CAN reset",
+}
+
+CAN_ERROR_MESSAGES = {
+    CAN_ERROR_STUFF: "CAN bit stuff error",
+    CAN_ERROR_FORM: "CAN form error",
+    CAN_ERROR_ACK: "CAN acknowledgment error",
+    CAN_ERROR_BIT: "CAN bit error",
+    CAN_ERROR_CRC: "CAN CRC error",
+    CAN_ERROR_OTHER: "Other (unknown) CAN error",
+}
+
+CAN_STATUS_FLAGS = {
+    CAN_STATUS_TXPEND: "transmission pending",
+    CAN_STATUS_OVRRUN: "data overrun occurred",
+    CAN_STATUS_ERRLIM: "error warning limit exceeded",
+    CAN_STATUS_BUSOFF: "bus off",
+    CAN_STATUS_ININIT: "init mode active",
+    CAN_STATUS_BUSCERR: "bus coupling error",
 }

@@ -68,51 +68,6 @@ class VCIDEVICEINFO(ctypes.Structure):
 PVCIDEVICEINFO = ctypes.POINTER(VCIDEVICEINFO)
 
 
-class CANLINESTATUS(ctypes.Structure):
-    _fields_ = [
-        # current CAN operating mode. Value is a logical combination of
-        # one or more CAN_OPMODE_xxx constants
-        ("bOpMode", ctypes.c_uint8),
-        ("bBtReg0", ctypes.c_uint8),  # current bus timing register 0 value
-        ("bBtReg1", ctypes.c_uint8),  # current bus timing register 1 value
-        ("bBusLoad", ctypes.c_uint8),  # average bus load in percent (0..100)
-        ("dwStatus", ctypes.c_uint32),  # status of the CAN controller (see CAN_STATUS_)
-    ]
-
-
-PCANLINESTATUS = ctypes.POINTER(CANLINESTATUS)
-
-
-class CANCHANSTATUS(ctypes.Structure):
-    _fields_ = [
-        ("sLineStatus", CANLINESTATUS),  # current CAN line status
-        ("fActivated", ctypes.c_uint32),  # TRUE if the channel is activated
-        ("fRxOverrun", ctypes.c_uint32),  # TRUE if receive FIFO overrun occurred
-        ("bRxFifoLoad", ctypes.c_uint8),  # receive FIFO load in percent (0..100)
-        ("bTxFifoLoad", ctypes.c_uint8),  # transmit FIFO load in percent (0..100)
-    ]
-
-
-PCANCHANSTATUS = ctypes.POINTER(CANCHANSTATUS)
-
-
-class CANCAPABILITIES(ctypes.Structure):
-    _fields_ = [
-        ("wCtrlType", ctypes.c_uint16),
-        ("wBusCoupling", ctypes.c_uint16),
-        ("dwFeatures", ctypes.c_uint32),
-        ("dwClockFreq", ctypes.c_uint32),
-        ("dwTscDivisor", ctypes.c_uint32),
-        ("dwCmsDivisor", ctypes.c_uint32),
-        ("dwCmsMaxTicks", ctypes.c_uint32),
-        ("dwDtxDivisor", ctypes.c_uint32),
-        ("dwDtxMaxTicks", ctypes.c_uint32),
-    ]
-
-
-PCANCAPABILITIES = ctypes.POINTER(CANCAPABILITIES)
-
-
 class CANMSGINFO(ctypes.Union):
     class Bytes(ctypes.Structure):
         _fields_ = [
@@ -152,27 +107,6 @@ class CANMSGINFO(ctypes.Union):
 PCANMSGINFO = ctypes.POINTER(CANMSGINFO)
 
 
-class CANMSG(ctypes.Structure):
-    _fields_ = [
-        ("dwTime", ctypes.c_uint32),
-        # CAN ID of the message in Intel format (aligned right) without RTR bit.
-        ("dwMsgId", ctypes.c_uint32),
-        ("uMsgInfo", CANMSGINFO),
-        ("abData", ctypes.c_uint8 * 8),
-    ]
-
-    def __str__(self) -> str:
-        return """ID: 0x{:04x}{} DLC: {:02d} DATA: {}""".format(
-            self.dwMsgId,
-            "[RTR]" if self.uMsgInfo.Bits.rtr else "",
-            self.uMsgInfo.Bits.dlc,
-            memoryview(self.abData)[: self.uMsgInfo.Bits.dlc].hex(sep=" "),
-        )
-
-
-PCANMSG = ctypes.POINTER(CANMSG)
-
-
 class CANCYCLICTXMSG(ctypes.Structure):
     _fields_ = [
         ("wCycleTime", ctypes.c_uint16),
@@ -201,13 +135,15 @@ class CANBTP(ctypes.Structure):
     ]
 
     def __str__(self):
-        return "dwMode=%d, dwBPS=%d, wTS1=%d,  wTS2=%d, wSJW=%d, wTDO=%d" % (
-            self.dwMode,
-            self.dwBPS,
-            self.wTS1,
-            self.wTS2,
-            self.wSJW,
-            self.wTDO,
+        return ", ".join(
+            (
+                f"dwMode={self.dwMode}",
+                f"dwBPS={self.dwBPS}",
+                f"wTS1={self.wTS1}",
+                f"wTS2={self.wTS2}",
+                f"wSJW={self.wSJW}",
+                f"wTDO={self.wTDO}",
+            )
         )
 
 
@@ -255,6 +191,29 @@ class CANCAPABILITIES2(ctypes.Structure):
         ),  # maximum tick count value of the delayed message transmitter
     ]
 
+    def __str__(self):
+        cap = ", ".join(
+            (
+                f"wCtrlType={self.wCtrlType}",
+                f"wBusCoupling={self.wBusCoupling}",
+                f"dwFeatures={self.dwFeatures}",
+                f"dwCanClkFreq={self.dwCanClkFreq}",
+                f"sSdrRangeMin={self.sSdrRangeMin}",
+                f"sSdrRangeMax={self.sSdrRangeMax}",
+                f"sFdrRangeMin={self.sFdrRangeMin}",
+                f"sFdrRangeMax={self.sFdrRangeMax}",
+                f"dwTscClkFreq={self.dwTscClkFreq}",
+                f"dwTscDivisor={self.dwTscDivisor}",
+                f"dwCmsClkFreq={self.dwCmsClkFreq}",
+                f"dwCmsDivisor={self.dwCmsDivisor}",
+                f"dwCmsMaxTicks={self.dwCmsMaxTicks}",
+                f"dwDtxClkFreq={self.dwDtxClkFreq}",
+                f"dwDtxDivisor={self.dwDtxDivisor}",
+                f"dwDtxMaxTicks={self.dwDtxMaxTicks}",
+            )
+        )
+        return cap
+
 
 PCANCAPABILITIES2 = ctypes.POINTER(CANCAPABILITIES2)
 
@@ -265,13 +224,50 @@ class CANLINESTATUS2(ctypes.Structure):
         ("bExMode", ctypes.c_uint8),  # current CAN extended operating mode
         ("bBusLoad", ctypes.c_uint8),  # average bus load in percent (0..100)
         ("bReserved", ctypes.c_uint8),  # reserved set to 0
-        ("sBtpSdr", ctypes.c_uint8),  # standard bit rate timing
-        ("sBtpFdr", ctypes.c_uint8),  # fast data bit rate timing
+        ("sBtpSdr", CANBTP),  # standard bit rate timing
+        ("sBtpFdr", CANBTP),  # fast data bit rate timing
         ("dwStatus", ctypes.c_uint32),  # status of the CAN controller (see CAN_STATUS_)
     ]
 
+    def __str__(self) -> str:
+        return ", ".join(
+            (
+                f"bOpMode={self.bOpMode}",
+                f"bExMode={self.bExMode}",
+                f"bBusLoad={self.bBusLoad}",
+                f"bReserved={self.bReserved}",
+                f"sBtpSdr={self.sBtpSdr}",
+                f"sBtpFdr={self.sBtpFdr}",
+                f"dwStatus={self.dwStatus}",
+            )
+        )
+
 
 PCANLINESTATUS2 = ctypes.POINTER(CANLINESTATUS2)
+
+
+class CANCHANSTATUS2(ctypes.Structure):
+    _fields_ = [
+        ("sLineStatus", CANLINESTATUS2),  # current CAN line status
+        ("fActivated", ctypes.c_uint8),  # TRUE if the channel is activated
+        ("fRxOverrun", ctypes.c_uint8),  # TRUE if receive FIFO overrun occurred
+        ("bRxFifoLoad", ctypes.c_uint8),  # receive FIFO load in percent (0..100)
+        ("bTxFifoLoad", ctypes.c_uint8),  # transmit FIFO load in percent (0..100)
+    ]
+
+    def __str__(self) -> str:
+        return ", ".join(
+            (
+                f"sLineStatus={self.sLineStatus}",
+                f"fActivated={bool(self.fActivated)}",
+                f"fRxOverrun={bool(self.fRxOverrun)}",
+                f"bRxFifoLoad={self.bRxFifoLoad}",
+                f"bTxFifoLoad={self.bTxFifoLoad}",
+            )
+        )
+
+
+PCANCHANSTATUS2 = ctypes.POINTER(CANCHANSTATUS2)
 
 
 class CANMSG2(ctypes.Structure):
@@ -282,6 +278,14 @@ class CANMSG2(ctypes.Structure):
         ("uMsgInfo", CANMSGINFO),  # message information (bit field)
         ("abData", ctypes.c_uint8 * 64),  # message data
     ]
+
+    def __str__(self) -> str:
+        return """ID: 0x{:04x}{} DLC: {:02d} DATA: {}""".format(
+            self.dwMsgId,
+            "[RTR]" if self.uMsgInfo.Bits.rtr else "",
+            self.uMsgInfo.Bits.dlc,
+            memoryview(self.abData)[: self.uMsgInfo.Bits.dlc].hex(sep=" "),
+        )
 
 
 PCANMSG2 = ctypes.POINTER(CANMSG2)
