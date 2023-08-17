@@ -3,10 +3,11 @@ This module contains the implementation of :class:`~can.Notifier`.
 """
 
 import asyncio
+import functools
 import logging
 import threading
 import time
-from typing import Awaitable, Callable, Iterable, List, Optional, Union
+from typing import Awaitable, Callable, Iterable, List, Optional, Union, cast
 
 from can.bus import BusABC
 from can.listener import Listener
@@ -108,28 +109,33 @@ class Notifier:
                 listener.stop()
 
     def _rx_thread(self, bus: BusABC) -> None:
-        try:
-            while self._running:
+        # determine message handling callable early, not inside while loop
+        handle_message = cast(
+            Callable[[Message], None],
+            self._on_message_received
+            if self._loop is None
+            else functools.partial(
+                self._loop.call_soon_threadsafe, self._on_message_received
+            ),
+        )
+
+        while self._running:
+            try:
                 if msg := bus.recv(self.timeout):
                     with self._lock:
-                        if self._loop is not None:
-                            self._loop.call_soon_threadsafe(
-                                self._on_message_received, msg
-                            )
-                        else:
-                            self._on_message_received(msg)
-        except Exception as exc:  # pylint: disable=broad-except
-            self.exception = exc
-            if self._loop is not None:
-                self._loop.call_soon_threadsafe(self._on_error, exc)
-                # Raise anyway
-                raise
-            elif not self._on_error(exc):
-                # If it was not handled, raise the exception here
-                raise
-            else:
-                # It was handled, so only log it
-                logger.info("suppressed exception: %s", exc)
+                        handle_message(msg)
+            except Exception as exc:  # pylint: disable=broad-except
+                self.exception = exc
+                if self._loop is not None:
+                    self._loop.call_soon_threadsafe(self._on_error, exc)
+                    # Raise anyway
+                    raise
+                elif not self._on_error(exc):
+                    # If it was not handled, raise the exception here
+                    raise
+                else:
+                    # It was handled, so only log it
+                    logger.debug("suppressed exception: %s", exc)
 
     def _on_message_available(self, bus: BusABC) -> None:
         if msg := bus.recv(0):
