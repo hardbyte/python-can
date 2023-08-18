@@ -852,7 +852,7 @@ class IXXATBus(BusABC):
         error_byte_2 = status.dwStatus & 0xF0
         # CAN_STATUS_BUSCERR  = 0x20  # bus coupling error
         if error_byte_2 & constants.CAN_STATUS_BUSCERR:
-            raise BusState.ERROR
+            return BusState.ERROR
 
         return BusState.ACTIVE
 
