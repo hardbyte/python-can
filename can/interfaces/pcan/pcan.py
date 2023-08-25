@@ -5,7 +5,6 @@ import logging
 import platform
 import time
 import warnings
-from datetime import datetime
 from typing import Any, List, Optional, Tuple, Union
 
 from packaging import version
