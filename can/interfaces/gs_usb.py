@@ -35,7 +35,7 @@ class GsUsbBus(can.BusABC):
         """
         if (index is not None) and ((bus or address) is not None):
             raise CanInitializationError(
-                f"index and bus/address cannot be used simultaneously"
+                "index and bus/address cannot be used simultaneously"
             )
 
         if index is not None:

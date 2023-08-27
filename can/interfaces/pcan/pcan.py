@@ -85,7 +85,7 @@ try:
         boottimeEpoch = 0
     else:
         boottimeEpoch = uptime.boottime().timestamp()
-except ImportError as error:
+except ImportError:
     log.warning(
         "uptime library not available, timestamps are relative to boot time and not to Epoch UTC",
     )
@@ -413,7 +413,7 @@ class PcanBus(BusABC):
     def get_api_version(self):
         error, value = self.m_objPCANBasic.GetValue(PCAN_NONEBUS, PCAN_API_VERSION)
         if error != PCAN_ERROR_OK:
-            raise CanInitializationError(f"Failed to read pcan basic api version")
+            raise CanInitializationError("Failed to read pcan basic api version")
 
         # fix https://github.com/hardbyte/python-can/issues/1642
         version_string = value.decode("ascii").replace(",", ".").replace(" ", "")
