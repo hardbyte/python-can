@@ -881,7 +881,7 @@ def _find_xl_channel_config(serial: int, channel: int) -> xlclass.XLchannelConfi
     raise LookupError("XLchannelConfig not found.")
 
 
-@functools.lru_cache()
+@functools.lru_cache
 def _find_virtual_can_serial() -> int:
     """Serial number might be 0 or 100 depending on driver version."""
     xl_driver_config = xlclass.XLdriverConfig()

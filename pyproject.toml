@@ -59,7 +59,7 @@ changelog = "https://github.com/hardbyte/python-can/blob/develop/CHANGELOG.md"
 [project.optional-dependencies]
 lint = [
     "pylint==2.17.*",
-    "ruff==0.0.269",
+    "ruff==0.0.286",
     "black==23.3.*",
     "mypy==1.3.*",
 ]

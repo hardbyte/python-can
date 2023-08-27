@@ -12,8 +12,8 @@ from .config import IS_PYPY
 """
 Mentioned in #1010 & #1490
 
-> PyPy works best with pure Python applications. Whenever you use a C extension module, 
-> it runs much slower than in CPython. The reason is that PyPy can't optimize C extension modules since they're not fully supported. 
+> PyPy works best with pure Python applications. Whenever you use a C extension module,
+> it runs much slower than in CPython. The reason is that PyPy can't optimize C extension modules since they're not fully supported.
 > In addition, PyPy has to emulate reference counting for that part of the code, making it even slower.
 
 https://realpython.com/pypy-faster-python/#it-doesnt-work-well-with-c-extensions

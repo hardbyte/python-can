@@ -297,73 +297,63 @@ PCAN_DEVICE_NUMBER = PCAN_DEVICE_ID  # DEPRECATED. Use PCAN_DEVICE_ID instead
 
 # PCAN parameter values
 #
-PCAN_PARAMETER_OFF = int(0x00)  # The PCAN parameter is not set (inactive)
-PCAN_PARAMETER_ON = int(0x01)  # The PCAN parameter is set (active)
-PCAN_FILTER_CLOSE = int(0x00)  # The PCAN filter is closed. No messages will be received
-PCAN_FILTER_OPEN = int(
-    0x01
-)  # The PCAN filter is fully opened. All messages will be received
-PCAN_FILTER_CUSTOM = int(
-    0x02
-)  # The PCAN filter is custom configured. Only registered messages will be received
-PCAN_CHANNEL_UNAVAILABLE = int(
-    0x00
-)  # The PCAN-Channel handle is illegal, or its associated hardware is not available
-PCAN_CHANNEL_AVAILABLE = int(
-    0x01
-)  # The PCAN-Channel handle is available to be connected (PnP Hardware: it means furthermore that the hardware is plugged-in)
-PCAN_CHANNEL_OCCUPIED = int(
-    0x02
-)  # The PCAN-Channel handle is valid, and is already being used
+PCAN_PARAMETER_OFF = 0x00  # The PCAN parameter is not set (inactive)
+PCAN_PARAMETER_ON = 0x01  # The PCAN parameter is set (active)
+PCAN_FILTER_CLOSE = 0x00  # The PCAN filter is closed. No messages will be received
+PCAN_FILTER_OPEN = (
+    0x01  # The PCAN filter is fully opened. All messages will be received
+)
+PCAN_FILTER_CUSTOM = 0x02  # The PCAN filter is custom configured. Only registered messages will be received
+PCAN_CHANNEL_UNAVAILABLE = 0x00  # The PCAN-Channel handle is illegal, or its associated hardware is not available
+PCAN_CHANNEL_AVAILABLE = 0x01  # The PCAN-Channel handle is available to be connected (PnP Hardware: it means furthermore that the hardware is plugged-in)
+PCAN_CHANNEL_OCCUPIED = (
+    0x02  # The PCAN-Channel handle is valid, and is already being used
+)
 PCAN_CHANNEL_PCANVIEW = (
     PCAN_CHANNEL_AVAILABLE | PCAN_CHANNEL_OCCUPIED
 )  # The PCAN-Channel handle is already being used by a PCAN-View application, but is available to connect
 
-LOG_FUNCTION_DEFAULT = int(0x00)  # Logs system exceptions / errors
-LOG_FUNCTION_ENTRY = int(0x01)  # Logs the entries to the PCAN-Basic API functions
-LOG_FUNCTION_PARAMETERS = int(
-    0x02
-)  # Logs the parameters passed to the PCAN-Basic API functions
-LOG_FUNCTION_LEAVE = int(0x04)  # Logs the exits from the PCAN-Basic API functions
-LOG_FUNCTION_WRITE = int(0x08)  # Logs the CAN messages passed to the CAN_Write function
-LOG_FUNCTION_READ = int(
-    0x10
-)  # Logs the CAN messages received within the CAN_Read function
-LOG_FUNCTION_ALL = int(
-    0xFFFF
-)  # Logs all possible information within the PCAN-Basic API functions
+LOG_FUNCTION_DEFAULT = 0x00  # Logs system exceptions / errors
+LOG_FUNCTION_ENTRY = 0x01  # Logs the entries to the PCAN-Basic API functions
+LOG_FUNCTION_PARAMETERS = (
+    0x02  # Logs the parameters passed to the PCAN-Basic API functions
+)
+LOG_FUNCTION_LEAVE = 0x04  # Logs the exits from the PCAN-Basic API functions
+LOG_FUNCTION_WRITE = 0x08  # Logs the CAN messages passed to the CAN_Write function
+LOG_FUNCTION_READ = 0x10  # Logs the CAN messages received within the CAN_Read function
+LOG_FUNCTION_ALL = (
+    0xFFFF  # Logs all possible information within the PCAN-Basic API functions
+)
 
-TRACE_FILE_SINGLE = int(
-    0x00
-)  # A single file is written until it size reaches PAN_TRACE_SIZE
-TRACE_FILE_SEGMENTED = int(
-    0x01
-)  # Traced data is distributed in several files with size PAN_TRACE_SIZE
-TRACE_FILE_DATE = int(0x02)  # Includes the date into the name of the trace file
-TRACE_FILE_TIME = int(0x04)  # Includes the start time into the name of the trace file
-TRACE_FILE_OVERWRITE = int(
-    0x80
-)  # Causes the overwriting of available traces (same name)
+TRACE_FILE_SINGLE = (
+    0x00  # A single file is written until it size reaches PAN_TRACE_SIZE
+)
+TRACE_FILE_SEGMENTED = (
+    0x01  # Traced data is distributed in several files with size PAN_TRACE_SIZE
+)
+TRACE_FILE_DATE = 0x02  # Includes the date into the name of the trace file
+TRACE_FILE_TIME = 0x04  # Includes the start time into the name of the trace file
+TRACE_FILE_OVERWRITE = 0x80  # Causes the overwriting of available traces (same name)
 
-FEATURE_FD_CAPABLE = int(0x01)  # Device supports flexible data-rate (CAN-FD)
-FEATURE_DELAY_CAPABLE = int(
-    0x02
-)  # Device supports a delay between sending frames (FPGA based USB devices)
-FEATURE_IO_CAPABLE = int(
-    0x04
-)  # Device supports I/O functionality for electronic circuits (USB-Chip devices)
+FEATURE_FD_CAPABLE = 0x01  # Device supports flexible data-rate (CAN-FD)
+FEATURE_DELAY_CAPABLE = (
+    0x02  # Device supports a delay between sending frames (FPGA based USB devices)
+)
+FEATURE_IO_CAPABLE = (
+    0x04  # Device supports I/O functionality for electronic circuits (USB-Chip devices)
+)
 
-SERVICE_STATUS_STOPPED = int(0x01)  # The service is not running
-SERVICE_STATUS_RUNNING = int(0x04)  # The service is running
+SERVICE_STATUS_STOPPED = 0x01  # The service is not running
+SERVICE_STATUS_RUNNING = 0x04  # The service is running
 
 # Other constants
 #
-MAX_LENGTH_HARDWARE_NAME = int(
-    33
-)  # Maximum length of the name of a device: 32 characters + terminator
-MAX_LENGTH_VERSION_STRING = int(
-    256
-)  # Maximum length of a version string: 255 characters + terminator
+MAX_LENGTH_HARDWARE_NAME = (
+    33  # Maximum length of the name of a device: 32 characters + terminator
+)
+MAX_LENGTH_VERSION_STRING = (
+    256  # Maximum length of a version string: 255 characters + terminator
+)
 
 # PCAN message types
 #
