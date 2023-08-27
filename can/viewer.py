@@ -537,7 +537,7 @@ def parse_args(args: List[str]) -> Tuple:
                     scaling.append(float(t))
 
             if scaling:
-                data_structs[key] = (struct.Struct(fmt),) + tuple(scaling)
+                data_structs[key] = (struct.Struct(fmt), *tuple(scaling))
             else:
                 data_structs[key] = struct.Struct(fmt)
 

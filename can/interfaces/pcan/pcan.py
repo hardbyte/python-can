@@ -283,7 +283,7 @@ class PcanBus(BusABC):
             clock_param = "f_clock" if "f_clock" in kwargs else "f_clock_mhz"
             fd_parameters_values = [
                 f"{key}={kwargs[key]}"
-                for key in (clock_param,) + PCAN_FD_PARAMETER_LIST
+                for key in (clock_param, *PCAN_FD_PARAMETER_LIST)
                 if key in kwargs
             ]
 
