@@ -133,6 +133,7 @@ select = [
     "I",  # isort
     "E",  # pycodestyle errors
     "W",  # pycodestyle warnings
+    "PL",  # pylint
     "RUF",  # ruff-specific rules
     "TCH",  # flake8-type-checking
 ]
@@ -140,6 +141,7 @@ ignore = [
     "E501",  # Line too long
     "F403",  # undefined-local-with-import-star
     "F405",  # undefined-local-with-import-star-usage
+    "PLR",  # pylint refactor
     "RUF012",  # mutable-class-default
 ]
 
