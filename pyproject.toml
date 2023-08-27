@@ -135,6 +135,7 @@ select = [
     "W",  # pycodestyle warnings
     "PL",  # pylint
     "RUF",  # ruff-specific rules
+    "C4",  # flake8-comprehensions
     "TCH",  # flake8-type-checking
 ]
 ignore = [

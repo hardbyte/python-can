@@ -69,19 +69,17 @@ except ImportError:
 class VectorBus(BusABC):
     """The CAN Bus implemented for the Vector interface."""
 
-    deprecated_args = dict(
-        sjwAbr="sjw_abr",
-        tseg1Abr="tseg1_abr",
-        tseg2Abr="tseg2_abr",
-        sjwDbr="sjw_dbr",
-        tseg1Dbr="tseg1_dbr",
-        tseg2Dbr="tseg2_dbr",
-    )
-
     @deprecated_args_alias(
         deprecation_start="4.0.0",
         deprecation_end="5.0.0",
-        **deprecated_args,
+        **{
+            "sjwAbr": "sjw_abr",
+            "tseg1Abr": "tseg1_abr",
+            "tseg2Abr": "tseg2_abr",
+            "sjwDbr": "sjw_dbr",
+            "tseg1Dbr": "tseg1_dbr",
+            "tseg2Dbr": "tseg2_dbr",
+        },
     )
     def __init__(
         self,
