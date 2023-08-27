@@ -128,14 +128,15 @@ exclude = [
 
 [tool.ruff]
 select = [
-    "F", # pyflakes
-    "UP", # pyupgrade
-    "I", # isort
-    "E", # pycodestyle errors
-    "W", # pycodestyle warnings
+    "F",  # pyflakes
+    "UP",  # pyupgrade
+    "I",  # isort
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "TCH",  # flake8-type-checking
 ]
 ignore = [
-    "E501", # Line too long
+    "E501",  # Line too long
     "F403",  # undefined-local-with-import-star
     "F405",  # undefined-local-with-import-star-usage
 ]
