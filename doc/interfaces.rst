@@ -30,11 +30,11 @@ The following hardware interfaces are included in python-can:
    interfaces/nixnet
    interfaces/pcan
    interfaces/robotell
-   interfaces/seeedstudio
    interfaces/serial
    interfaces/slcan
    interfaces/socketcan
    interfaces/socketcand
+   interfaces/seeedstudio
    interfaces/systec
    interfaces/usb2can
    interfaces/vector
