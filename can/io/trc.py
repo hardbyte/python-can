@@ -225,7 +225,6 @@ class TRCReader(TextIOMessageReader):
             return None
 
     def _parse_cols_V1_3(self, cols: List[str]) -> Optional[Message]:
-        print(cols)
         dtype = cols[3]
         if dtype in ("Tx", "Rx"):
             return self._parse_msg_V1_3(cols)
