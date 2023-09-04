@@ -76,7 +76,7 @@ class TRCReader(TextIOMessageReader):
                     file_version = line.split("=")[1]
                     if file_version == "1.1":
                         self.file_version = TRCFileVersion.V1_1
-                    if file_version == "1.3":
+                    elif file_version == "1.3":
                         self.file_version = TRCFileVersion.V1_3
                     elif file_version == "2.0":
                         self.file_version = TRCFileVersion.V2_0
