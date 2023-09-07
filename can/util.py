@@ -43,7 +43,7 @@ REQUIRED_KEYS = ["interface", "channel"]
 
 CONFIG_FILES = ["~/can.conf"]
 
-if platform.system() == "Linux":
+if platform.system() in ("Linux", "Darwin"):
     CONFIG_FILES.extend(["/etc/can.conf", "~/.can", "~/.canrc"])
 elif platform.system() == "Windows" or platform.python_implementation() == "IronPython":
     CONFIG_FILES.extend(["can.ini", os.path.join(os.getenv("APPDATA", ""), "can.ini")])
