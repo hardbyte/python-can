@@ -5,7 +5,6 @@ import logging
 import platform
 import time
 import warnings
-from datetime import datetime
 from typing import Any, List, Optional, Tuple, Union
 
 from packaging import version
@@ -85,7 +84,7 @@ try:
     if uptime.boottime() is None:
         boottimeEpoch = 0
     else:
-        boottimeEpoch = (uptime.boottime() - datetime.fromtimestamp(0)).total_seconds()
+        boottimeEpoch = uptime.boottime().timestamp()
 except ImportError as error:
     log.warning(
         "uptime library not available, timestamps are relative to boot time and not to Epoch UTC",
