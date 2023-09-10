@@ -404,6 +404,10 @@ class KvaserBus(BusABC):
             computer, set this to True or set single_handle to True.
         :param bool fd:
             If CAN-FD frames should be supported.
+        :param bool exclusive:
+            Don't allow sharing of this CANlib channel.
+        :param bool override_exclusive:
+            Open the channel even if it is opened for exclusive access already.
         :param int data_bitrate:
             Which bitrate to use for data phase in CAN FD.
             Defaults to arbitration bitrate.
@@ -420,6 +424,8 @@ class KvaserBus(BusABC):
         driver_mode = kwargs.get("driver_mode", DRIVER_MODE_NORMAL)
         single_handle = kwargs.get("single_handle", False)
         receive_own_messages = kwargs.get("receive_own_messages", False)
+        exclusive = kwargs.get("exclusive", False)
+        override_exclusive = kwargs.get("override_exclusive", False)
         accept_virtual = kwargs.get("accept_virtual", True)
         fd = kwargs.get("fd", False)
         data_bitrate = kwargs.get("data_bitrate", None)
@@ -445,6 +451,10 @@ class KvaserBus(BusABC):
                 self.channel_info = channel_info
 
         flags = 0
+        if exclusive:
+            flags |= canstat.canOPEN_EXCLUSIVE
+        if override_exclusive:
+            flags |= canstat.canOPEN_OVERRIDE_EXCLUSIVE
         if accept_virtual:
             flags |= canstat.canOPEN_ACCEPT_VIRTUAL
         if fd:
@@ -491,7 +501,10 @@ class KvaserBus(BusABC):
             self._write_handle = self._read_handle
         else:
             log.debug("Creating separate handle for TX on channel: %s", channel)
-            self._write_handle = canOpenChannel(channel, flags)
+            if exclusive:
+                flags_ = flags & ~canstat.canOPEN_EXCLUSIVE
+                flags_ |= canstat.canOPEN_OVERRIDE_EXCLUSIVE
+            self._write_handle = canOpenChannel(channel, flags_)
             canBusOn(self._read_handle)
 
         can_driver_mode = (
