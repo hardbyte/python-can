@@ -504,6 +504,8 @@ class KvaserBus(BusABC):
             if exclusive:
                 flags_ = flags & ~canstat.canOPEN_EXCLUSIVE
                 flags_ |= canstat.canOPEN_OVERRIDE_EXCLUSIVE
+            else:
+                flags_ = flags
             self._write_handle = canOpenChannel(channel, flags_)
             canBusOn(self._read_handle)
 
