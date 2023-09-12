@@ -187,8 +187,7 @@ class BLFReader(BinaryIOMessageReader):
                 if method == NO_COMPRESSION:
                     data = container_data
                 elif method == ZLIB_DEFLATE:
-                    # obj for decompressing data streams that won’t fit into memory at once.
-                    zobj = zlib.decompressobj()  
+                    zobj = zlib.decompressobj()
                     data = zobj.decompress(container_data)
                 else:
                     # Unknown compression method
