@@ -22,6 +22,7 @@ if TYPE_CHECKING:
 # try to import win32event for event-based cyclic send task (needs the pywin32 package)
 USE_WINDOWS_EVENTS = False
 try:
+    import pywintypes
     import win32event
 
     # Python 3.11 provides a more precise sleep implementation on Windows, so this is not necessary.
@@ -263,7 +264,7 @@ class ThreadBasedCyclicSendTask(
                     win32event.CREATE_WAITABLE_TIMER_HIGH_RESOLUTION,
                     win32event.TIMER_ALL_ACCESS,
                 )
-            except (AttributeError, OSError):
+            except (AttributeError, OSError, pywintypes.error):
                 self.event = win32event.CreateWaitableTimer(None, False, None)
 
         self.start()
