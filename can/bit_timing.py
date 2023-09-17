@@ -36,6 +36,7 @@ class BitTiming(Mapping):
         tseg2: int,
         sjw: int,
         nof_samples: int = 1,
+        strict: bool = False,
     ) -> None:
         """
         :param int f_clock:
@@ -56,6 +57,10 @@ class BitTiming(Mapping):
             In this case, the bit will be sampled three quanta in a row,
             with the last sample being taken in the edge between TSEG1 and TSEG2.
             Three samples should only be used for relatively slow baudrates.
+        :param bool strict:
+            If True, restrict bit timings to the minimum required range as defined in
+            ISO 11898. This can be used to ensure compatibility across a wide variety
+            of CAN hardware.
         :raises ValueError:
             if the arguments are invalid.
         """
@@ -68,18 +73,12 @@ class BitTiming(Mapping):
             "nof_samples": nof_samples,
         }
         self._validate()
+        if strict:
+            self._restrict_to_minimum_range()
 
     def _validate(self) -> None:
-        if not 8 <= self.nbt <= 25:
-            raise ValueError(f"nominal bit time (={self.nbt}) must be in [8...25].")
-
         if not 1 <= self.brp <= 64:
             raise ValueError(f"bitrate prescaler (={self.brp}) must be in [1...64].")
-
-        if not 5_000 <= self.bitrate <= 2_000_000:
-            raise ValueError(
-                f"bitrate (={self.bitrate}) must be in [5,000...2,000,000]."
-            )
 
         if not 1 <= self.tseg1 <= 16:
             raise ValueError(f"tseg1 (={self.tseg1}) must be in [1...16].")
@@ -104,6 +103,18 @@ class BitTiming(Mapping):
         if self.nof_samples not in (1, 3):
             raise ValueError("nof_samples must be 1 or 3")
 
+    def _restrict_to_minimum_range(self) -> None:
+        if not 8 <= self.nbt <= 25:
+            raise ValueError(f"nominal bit time (={self.nbt}) must be in [8...25].")
+
+        if not 1 <= self.brp <= 32:
+            raise ValueError(f"bitrate prescaler (={self.brp}) must be in [1...32].")
+
+        if not 5_000 <= self.bitrate <= 1_000_000:
+            raise ValueError(
+                f"bitrate (={self.bitrate}) must be in [5,000...1,000,000]."
+            )
+
     @classmethod
     def from_bitrate_and_segments(
         cls,
@@ -113,6 +124,7 @@ class BitTiming(Mapping):
         tseg2: int,
         sjw: int,
         nof_samples: int = 1,
+        strict: bool = False,
     ) -> "BitTiming":
         """Create a :class:`~can.BitTiming` instance from bitrate and segment lengths.
 
@@ -134,6 +146,10 @@ class BitTiming(Mapping):
             In this case, the bit will be sampled three quanta in a row,
             with the last sample being taken in the edge between TSEG1 and TSEG2.
             Three samples should only be used for relatively slow baudrates.
+        :param bool strict:
+            If True, restrict bit timings to the minimum required range as defined in
+            ISO 11898. This can be used to ensure compatibility across a wide variety
+            of CAN hardware.
         :raises ValueError:
             if the arguments are invalid.
         """
@@ -149,6 +165,7 @@ class BitTiming(Mapping):
             tseg2=tseg2,
             sjw=sjw,
             nof_samples=nof_samples,
+            strict=strict,
         )
         if abs(bt.bitrate - bitrate) > bitrate / 256:
             raise ValueError(
@@ -175,6 +192,11 @@ class BitTiming(Mapping):
         :raises ValueError:
             if the arguments are invalid.
         """
+        if not 0 <= btr0 < 2**16:
+            raise ValueError(f"Invalid btr0 value. ({btr0})")
+        if not 0 <= btr1 < 2**16:
+            raise ValueError(f"Invalid btr1 value. ({btr1})")
+
         brp = (btr0 & 0x3F) + 1
         sjw = (btr0 >> 6) + 1
         tseg1 = (btr1 & 0xF) + 1
@@ -239,6 +261,7 @@ class BitTiming(Mapping):
                     tseg1=tseg1,
                     tseg2=tseg2,
                     sjw=sjw,
+                    strict=True,
                 )
                 possible_solutions.append(bt)
             except ValueError:
@@ -316,12 +339,12 @@ class BitTiming(Mapping):
 
     @property
     def btr0(self) -> int:
-        """Bit timing register 0."""
+        """Bit timing register 0 for SJA1000."""
         return (self.sjw - 1) << 6 | self.brp - 1
 
     @property
     def btr1(self) -> int:
-        """Bit timing register 1."""
+        """Bit timing register 1 for SJA1000."""
         sam = 1 if self.nof_samples == 3 else 0
         return sam << 7 | (self.tseg2 - 1) << 4 | self.tseg1 - 1
 
@@ -373,6 +396,7 @@ class BitTiming(Mapping):
                 tseg2=self.tseg2,
                 sjw=self.sjw,
                 nof_samples=self.nof_samples,
+                strict=True,
             )
         except ValueError:
             pass
@@ -474,7 +498,7 @@ class BitTimingFd(Mapping):
         )
     """
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         f_clock: int,
         nom_brp: int,
@@ -485,6 +509,7 @@ class BitTimingFd(Mapping):
         data_tseg1: int,
         data_tseg2: int,
         data_sjw: int,
+        strict: bool = False,
     ) -> None:
         """
         Initialize a BitTimingFd instance with the specified parameters.
@@ -513,6 +538,10 @@ class BitTimingFd(Mapping):
         :param int data_sjw:
             The Synchronization Jump Width for the data phase. This value determines
             the maximum number of time quanta that the controller can resynchronize every bit.
+        :param bool strict:
+            If True, restrict bit timings to the minimum required range as defined in
+            ISO 11898. This can be used to ensure compatibility across a wide variety
+            of CAN hardware.
         :raises ValueError:
             if the arguments are invalid.
         """
@@ -528,32 +557,23 @@ class BitTimingFd(Mapping):
             "data_sjw": data_sjw,
         }
         self._validate()
+        if strict:
+            self._restrict_to_minimum_range()
 
     def _validate(self) -> None:
-        if self.nbt < 8:
-            raise ValueError(f"nominal bit time (={self.nbt}) must be at least 8.")
+        for param, value in self._data.items():
+            if value < 0:  # type: ignore[operator]
+                err_msg = f"'{param}' (={value}) must not be negative."
+                raise ValueError(err_msg)
 
-        if self.dbt < 8:
-            raise ValueError(f"data bit time (={self.dbt}) must be at least 8.")
-
-        if not 1 <= self.nom_brp <= 256:
+        if self.nom_brp < 1:
             raise ValueError(
-                f"nominal bitrate prescaler (={self.nom_brp}) must be in [1...256]."
+                f"nominal bitrate prescaler (={self.nom_brp}) must be at least 1."
             )
 
-        if not 1 <= self.data_brp <= 256:
+        if self.data_brp < 1:
             raise ValueError(
-                f"data bitrate prescaler (={self.data_brp}) must be in [1...256]."
-            )
-
-        if not 5_000 <= self.nom_bitrate <= 2_000_000:
-            raise ValueError(
-                f"nom_bitrate (={self.nom_bitrate}) must be in [5,000...2,000,000]."
-            )
-
-        if not 25_000 <= self.data_bitrate <= 8_000_000:
-            raise ValueError(
-                f"data_bitrate (={self.data_bitrate}) must be in [25,000...8,000,000]."
+                f"data bitrate prescaler (={self.data_brp}) must be at least 1."
             )
 
         if self.data_bitrate < self.nom_bitrate:
@@ -562,29 +582,11 @@ class BitTimingFd(Mapping):
                 f"equal to nom_bitrate (={self.nom_bitrate})"
             )
 
-        if not 2 <= self.nom_tseg1 <= 256:
-            raise ValueError(f"nom_tseg1 (={self.nom_tseg1}) must be in [2...256].")
-
-        if not 1 <= self.nom_tseg2 <= 128:
-            raise ValueError(f"nom_tseg2 (={self.nom_tseg2}) must be in [1...128].")
-
-        if not 1 <= self.data_tseg1 <= 32:
-            raise ValueError(f"data_tseg1 (={self.data_tseg1}) must be in [1...32].")
-
-        if not 1 <= self.data_tseg2 <= 16:
-            raise ValueError(f"data_tseg2 (={self.data_tseg2}) must be in [1...16].")
-
-        if not 1 <= self.nom_sjw <= 128:
-            raise ValueError(f"nom_sjw (={self.nom_sjw}) must be in [1...128].")
-
         if self.nom_sjw > self.nom_tseg2:
             raise ValueError(
                 f"nom_sjw (={self.nom_sjw}) must not be "
                 f"greater than nom_tseg2 (={self.nom_tseg2})."
             )
-
-        if not 1 <= self.data_sjw <= 16:
-            raise ValueError(f"data_sjw (={self.data_sjw}) must be in [1...128].")
 
         if self.data_sjw > self.data_tseg2:
             raise ValueError(
@@ -604,8 +606,46 @@ class BitTimingFd(Mapping):
                 f"(data_sample_point={self.data_sample_point:.2f}%)."
             )
 
+    def _restrict_to_minimum_range(self) -> None:
+        # restrict to minimum required range as defined in ISO 11898
+        if not 8 <= self.nbt <= 80:
+            raise ValueError(f"Nominal bit time (={self.nbt}) must be in [8...80]")
+
+        if not 5 <= self.dbt <= 25:
+            raise ValueError(f"Nominal bit time (={self.dbt}) must be in [5...25]")
+
+        if not 1 <= self.data_tseg1 <= 16:
+            raise ValueError(f"data_tseg1 (={self.data_tseg1}) must be in [1...16].")
+
+        if not 2 <= self.data_tseg2 <= 8:
+            raise ValueError(f"data_tseg2 (={self.data_tseg2}) must be in [2...8].")
+
+        if not 1 <= self.data_sjw <= 8:
+            raise ValueError(f"data_sjw (={self.data_sjw}) must be in [1...8].")
+
+        if self.nom_brp == self.data_brp:
+            # shared prescaler
+            if not 2 <= self.nom_tseg1 <= 128:
+                raise ValueError(f"nom_tseg1 (={self.nom_tseg1}) must be in [2...128].")
+
+            if not 2 <= self.nom_tseg2 <= 32:
+                raise ValueError(f"nom_tseg2 (={self.nom_tseg2}) must be in [2...32].")
+
+            if not 1 <= self.nom_sjw <= 32:
+                raise ValueError(f"nom_sjw (={self.nom_sjw}) must be in [1...32].")
+        else:
+            # separate prescaler
+            if not 2 <= self.nom_tseg1 <= 64:
+                raise ValueError(f"nom_tseg1 (={self.nom_tseg1}) must be in [2...64].")
+
+            if not 2 <= self.nom_tseg2 <= 16:
+                raise ValueError(f"nom_tseg2 (={self.nom_tseg2}) must be in [2...16].")
+
+            if not 1 <= self.nom_sjw <= 16:
+                raise ValueError(f"nom_sjw (={self.nom_sjw}) must be in [1...16].")
+
     @classmethod
-    def from_bitrate_and_segments(
+    def from_bitrate_and_segments(  # pylint: disable=too-many-arguments
         cls,
         f_clock: int,
         nom_bitrate: int,
@@ -616,6 +656,7 @@ class BitTimingFd(Mapping):
         data_tseg1: int,
         data_tseg2: int,
         data_sjw: int,
+        strict: bool = False,
     ) -> "BitTimingFd":
         """
         Create a :class:`~can.BitTimingFd` instance with the bitrates and segments lengths.
@@ -644,6 +685,10 @@ class BitTimingFd(Mapping):
         :param int data_sjw:
             The Synchronization Jump Width for the data phase. This value determines
             the maximum number of time quanta that the controller can resynchronize every bit.
+        :param bool strict:
+            If True, restrict bit timings to the minimum required range as defined in
+            ISO 11898. This can be used to ensure compatibility across a wide variety
+            of CAN hardware.
         :raises ValueError:
             if the arguments are invalid.
         """
@@ -665,6 +710,7 @@ class BitTimingFd(Mapping):
             data_tseg1=data_tseg1,
             data_tseg2=data_tseg2,
             data_sjw=data_sjw,
+            strict=strict,
         )
 
         if abs(bt.nom_bitrate - nom_bitrate) > nom_bitrate / 256:
@@ -724,9 +770,11 @@ class BitTimingFd(Mapping):
 
         possible_solutions: List[BitTimingFd] = []
 
+        sync_seg = 1
+
         for nom_brp in range(1, 257):
             nbt = round(int(f_clock / (nom_bitrate * nom_brp)))
-            if nbt < 8:
+            if nbt < 1:
                 break
 
             effective_nom_bitrate = f_clock / (nbt * nom_brp)
@@ -734,15 +782,15 @@ class BitTimingFd(Mapping):
                 continue
 
             nom_tseg1 = int(round(nom_sample_point / 100 * nbt)) - 1
-            # limit tseg1, so tseg2 is at least 1 TQ
-            nom_tseg1 = min(nom_tseg1, nbt - 2)
+            # limit tseg1, so tseg2 is at least 2 TQ
+            nom_tseg1 = min(nom_tseg1, nbt - sync_seg - 2)
             nom_tseg2 = nbt - nom_tseg1 - 1
 
             nom_sjw = min(nom_tseg2, 128)
 
             for data_brp in range(1, 257):
                 dbt = round(int(f_clock / (data_bitrate * data_brp)))
-                if dbt < 8:
+                if dbt < 1:
                     break
 
                 effective_data_bitrate = f_clock / (dbt * data_brp)
@@ -750,8 +798,8 @@ class BitTimingFd(Mapping):
                     continue
 
                 data_tseg1 = int(round(data_sample_point / 100 * dbt)) - 1
-                # limit tseg1, so tseg2 is at least 1 TQ
-                data_tseg1 = min(data_tseg1, dbt - 2)
+                # limit tseg1, so tseg2 is at least 2 TQ
+                data_tseg1 = min(data_tseg1, dbt - sync_seg - 2)
                 data_tseg2 = dbt - data_tseg1 - 1
 
                 data_sjw = min(data_tseg2, 16)
@@ -767,6 +815,7 @@ class BitTimingFd(Mapping):
                         data_tseg1=data_tseg1,
                         data_tseg2=data_tseg2,
                         data_sjw=data_sjw,
+                        strict=True,
                     )
                     possible_solutions.append(bt)
                 except ValueError:
@@ -971,6 +1020,7 @@ class BitTimingFd(Mapping):
                 data_tseg1=self.data_tseg1,
                 data_tseg2=self.data_tseg2,
                 data_sjw=self.data_sjw,
+                strict=True,
             )
         except ValueError:
             pass
