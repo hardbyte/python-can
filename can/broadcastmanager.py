@@ -324,7 +324,7 @@ class ThreadBasedCyclicSendTask(
             if USE_WINDOWS_EVENTS:
                 win32event.WaitForSingleObject(
                     self.event.handle,
-                    -1,
+                    win32event.INFINITE,
                 )
             else:
                 # Compensate for the time it takes to send the message
