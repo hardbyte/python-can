@@ -289,12 +289,11 @@ class ThreadBasedCyclicSendTask(
 
     def _run(self) -> None:
         msg_index = 0
+        msg_due_time_ns = time.perf_counter_ns()
 
         if USE_WINDOWS_EVENTS:
             # Make sure the timer is non-signaled before entering the loop
             win32event.WaitForSingleObject(self.event.handle, 0)
-        else:
-            msg_due_time_ns = time.perf_counter_ns()
 
         while not self.stopped:
             # Prevent calling bus.send from multiple threads
