@@ -35,7 +35,6 @@ except ImportError:
 log = logging.getLogger("can.bcm")
 
 NANOSECONDS_IN_SECOND: Final[int] = 1_000_000_000
-NANOSECONDS_IN_MILLISECOND: Final[int] = 1_000_000
 
 
 class CyclicTask(abc.ABC):
@@ -316,19 +315,19 @@ class ThreadBasedCyclicSendTask(
                         self.stop()
                         break
 
-            msg_due_time_ns += self.period_ns
+            if not USE_WINDOWS_EVENTS:
+                msg_due_time_ns += self.period_ns
             if self.end_time is not None and time.perf_counter() >= self.end_time:
                 break
             msg_index = (msg_index + 1) % len(self.messages)
 
-            # Compensate for the time it takes to send the message
-            delay_ns = msg_due_time_ns - time.perf_counter_ns()
-
-            if delay_ns > 0:
-                if USE_WINDOWS_EVENTS:
-                    win32event.WaitForSingleObject(
-                        self.event.handle,
-                        int(round(delay_ns / NANOSECONDS_IN_MILLISECOND)),
-                    )
-                else:
+            if USE_WINDOWS_EVENTS:
+                win32event.WaitForSingleObject(
+                    self.event.handle,
+                    win32event.INFINITE,
+                )
+            else:
+                # Compensate for the time it takes to send the message
+                delay_ns = msg_due_time_ns - time.perf_counter_ns()
+                if delay_ns > 0:
                     time.sleep(delay_ns / NANOSECONDS_IN_SECOND)
