@@ -59,7 +59,7 @@ changelog = "https://github.com/hardbyte/python-can/blob/develop/CHANGELOG.md"
 [project.optional-dependencies]
 lint = [
     "pylint==2.17.*",
-    "ruff==0.0.286",
+    "ruff==0.0.292",
     "black==23.3.*",
     "mypy==1.3.*",
 ]
@@ -91,7 +91,7 @@ examples = ["*.py"]
 can = ["py.typed"]
 
 [tool.setuptools.packages.find]
-include = ["can*", "scripts"]
+include = ["can*"]
 
 [tool.mypy]
 warn_return_any = true
