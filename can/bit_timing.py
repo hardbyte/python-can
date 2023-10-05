@@ -213,7 +213,11 @@ class BitTiming(Mapping):
 
     @classmethod
     def from_sample_point(
-        cls, f_clock: int, bitrate: int, sample_point: float = 69.0, all_solutions: bool = False,
+        cls,
+        f_clock: int,
+        bitrate: int,
+        sample_point: float = 69.0,
+        all_solutions: bool = False,
     ) -> Union["BitTiming", List["BitTiming"]]:
         """Create an instance or list of :class:`~can.BitTiming` instances for a sample point.
 
