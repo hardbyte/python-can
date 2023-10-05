@@ -1,6 +1,6 @@
 # pylint: disable=too-many-lines
 import math
-from typing import Iterator, List, Mapping, cast
+from typing import Iterator, List, Mapping, Union, cast
 
 from can.typechecking import BitTimingDict, BitTimingFdDict
 
@@ -213,9 +213,9 @@ class BitTiming(Mapping):
 
     @classmethod
     def from_sample_point(
-        cls, f_clock: int, bitrate: int, sample_point: float = 69.0
-    ) -> "BitTiming":
-        """Create a :class:`~can.BitTiming` instance for a sample point.
+        cls, f_clock: int, bitrate: int, sample_point: float = 69.0, all_solutions: bool = False,
+    ) -> Union["BitTiming", List["BitTiming"]]:
+        """Create an instance or list of :class:`~can.BitTiming` instances for a sample point.
 
         This function tries to find bit timings, which are close to the requested
         sample point. It does not take physical bus properties into account, so the
@@ -230,6 +230,8 @@ class BitTiming(Mapping):
             Bitrate in bit/s.
         :param int sample_point:
             The sample point value in percent.
+        :param bool all_solutions:
+            Return all the possible solutions instead of just the preferred solution.
         :raises ValueError:
             if the arguments are invalid.
         """
@@ -279,7 +281,10 @@ class BitTiming(Mapping):
         ):
             possible_solutions.sort(key=key, reverse=reverse)
 
-        return possible_solutions[0]
+        if all_solutions:
+            return possible_solutions
+        else:
+            return possible_solutions[0]
 
     @property
     def f_clock(self) -> int:
@@ -735,8 +740,9 @@ class BitTimingFd(Mapping):
         nom_sample_point: float,
         data_bitrate: int,
         data_sample_point: float,
-    ) -> "BitTimingFd":
-        """Create a :class:`~can.BitTimingFd` instance for a given nominal/data sample point pair.
+        all_solutions: bool = False,
+    ) -> Union["BitTimingFd", List["BitTimingFd"]]:
+        """Create an instance or list of :class:`~can.BitTimingFd` instances for a sample point.
 
         This function tries to find bit timings, which are close to the requested
         sample points. It does not take physical bus properties into account, so the
@@ -755,6 +761,8 @@ class BitTimingFd(Mapping):
             Data bitrate in bit/s.
         :param int data_sample_point:
             The sample point value of the data phase in percent.
+        :param bool all_solutions:
+            Return all the possible solutions instead of just the preferred solution.
         :raises ValueError:
             if the arguments are invalid.
         """
@@ -824,12 +832,13 @@ class BitTimingFd(Mapping):
         if not possible_solutions:
             raise ValueError("No suitable bit timings found.")
 
-        # prefer using the same prescaler for arbitration and data phase
-        same_prescaler = list(
-            filter(lambda x: x.nom_brp == x.data_brp, possible_solutions)
-        )
-        if same_prescaler:
-            possible_solutions = same_prescaler
+        if not all_solutions:
+            # prefer using the same prescaler for arbitration and data phase
+            same_prescaler = list(
+                filter(lambda x: x.nom_brp == x.data_brp, possible_solutions)
+            )
+            if same_prescaler:
+                possible_solutions = same_prescaler
 
         # sort solutions
         for key, reverse in (
@@ -848,7 +857,10 @@ class BitTimingFd(Mapping):
         ):
             possible_solutions.sort(key=key, reverse=reverse)
 
-        return possible_solutions[0]
+        if all_solutions:
+            return possible_solutions
+        else:
+            return possible_solutions[0]
 
     @property
     def f_clock(self) -> int:
