@@ -24,9 +24,6 @@ PLATFORM = platform.system()
 IS_WINDOWS = PLATFORM == "Windows"
 IS_LINUX = PLATFORM == "Linux"
 
-if IS_WINDOWS:
-    import winreg
-
 logger = logging.getLogger("can.pcan")
 
 # ///////////////////////////////////////////////////////////
@@ -668,14 +665,6 @@ class PCANBasic:
     def __init__(self):
         if platform.system() == "Windows":
             load_library_func = windll.LoadLibrary
-
-            # look for Peak drivers in Windows registry
-            with winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE) as reg:
-                try:
-                    with winreg.OpenKey(reg, r"SOFTWARE\PEAK-System\PEAK-Drivers"):
-                        pass
-                except OSError:
-                    raise OSError("The PEAK-driver could not be found!") from None
         else:
             load_library_func = cdll.LoadLibrary
 
