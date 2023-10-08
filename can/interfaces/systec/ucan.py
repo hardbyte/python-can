@@ -409,7 +409,7 @@ class UcanServer:
         Initializes the device with the corresponding serial or device number.
 
         :param int or None serial: Serial number of the USB-CANmodul.
-        :param int device_number: Device number (0 – 254, or :const:`ANY_MODULE` for the first device).
+        :param int device_number: Device number (0 - 254, or :const:`ANY_MODULE` for the first device).
         """
         if not self._hw_is_initialized:
             # initialize hardware either by device number or serial

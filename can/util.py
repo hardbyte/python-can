@@ -190,9 +190,8 @@ def load_config(
     )
 
     # Slightly complex here to only search for the file config if required
-    for cfg in config_sources:
-        if callable(cfg):
-            cfg = cfg(context)
+    for _cfg in config_sources:
+        cfg = _cfg(context) if callable(_cfg) else _cfg
         # remove legacy operator (and copy to interface if not already present)
         if "bustype" in cfg:
             if "interface" not in cfg or not cfg["interface"]:

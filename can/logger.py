@@ -3,15 +3,17 @@ import errno
 import re
 import sys
 from datetime import datetime
-from typing import Any, Dict, List, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Sequence, Tuple, Union
 
 import can
-from can.io import BaseRotatingLogger
-from can.io.generic import MessageWriter
 from can.util import cast_from_string
 
 from . import Bus, BusState, Logger, SizedRotatingLogger
 from .typechecking import CanFilter, CanFilters
+
+if TYPE_CHECKING:
+    from can.io import BaseRotatingLogger
+    from can.io.generic import MessageWriter
 
 
 def _create_base_argument_parser(parser: argparse.ArgumentParser) -> None:
