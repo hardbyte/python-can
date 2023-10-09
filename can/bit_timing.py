@@ -216,6 +216,18 @@ class BitTiming(Mapping):
     def iterate_from_sample_point(
         cls, f_clock: int, bitrate: int, sample_point: float = 69.0
     ) -> Iterator["BitTiming"]:
+        """Create a :class:`~can.BitTiming` iterator with all the solutions for a sample point.
+
+        :param int f_clock:
+            The CAN system clock frequency in Hz.
+        :param int bitrate:
+            Bitrate in bit/s.
+        :param int sample_point:
+            The sample point value in percent.
+        :raises ValueError:
+            if the arguments are invalid.
+        """
+
         if sample_point < 50.0:
             raise ValueError(f"sample_point (={sample_point}) must not be below 50%.")
 
@@ -748,6 +760,21 @@ class BitTimingFd(Mapping):
         data_bitrate: int,
         data_sample_point: float,
     ) -> Iterator["BitTimingFd"]:
+        """Create an :class:`~can.BitTimingFd` iterator with all the solutions for a sample point.
+
+        :param int f_clock:
+            The CAN system clock frequency in Hz.
+        :param int nom_bitrate:
+            Nominal bitrate in bit/s.
+        :param int nom_sample_point:
+            The sample point value of the arbitration phase in percent.
+        :param int data_bitrate:
+            Data bitrate in bit/s.
+        :param int data_sample_point:
+            The sample point value of the data phase in percent.
+        :raises ValueError:
+            if the arguments are invalid.
+        """
         if nom_sample_point < 50.0:
             raise ValueError(
                 f"nom_sample_point (={nom_sample_point}) must not be below 50%."
