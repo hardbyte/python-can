@@ -286,10 +286,9 @@ class BitTiming(Mapping):
         if sample_point < 50.0:
             raise ValueError(f"sample_point (={sample_point}) must not be below 50%.")
 
-        possible_solutions: List[BitTiming] = [
-            timing
-            for timing in cls.iterate_from_sample_point(f_clock, bitrate, sample_point)
-        ]
+        possible_solutions: List[BitTiming] = list(
+            cls.iterate_from_sample_point(f_clock, bitrate, sample_point)
+        )
 
         if not possible_solutions:
             raise ValueError("No suitable bit timings found.")
@@ -877,16 +876,15 @@ class BitTimingFd(Mapping):
                 f"data_sample_point (={data_sample_point}) must not be below 50%."
             )
 
-        possible_solutions: List[BitTimingFd] = [
-            timing
-            for timing in cls.iterate_from_sample_point(
+        possible_solutions: List[BitTimingFd] = list(
+            cls.iterate_from_sample_point(
                 f_clock,
                 nom_bitrate,
                 nom_sample_point,
                 data_bitrate,
                 data_sample_point,
             )
-        ]
+        )
 
         if not possible_solutions:
             raise ValueError("No suitable bit timings found.")
