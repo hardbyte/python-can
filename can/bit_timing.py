@@ -212,34 +212,12 @@ class BitTiming(Mapping):
         )
 
     @classmethod
-    def from_sample_point(
-        cls, f_clock: int, bitrate: int, sample_point: float = 69.0, all_solutions: bool = False,
-    ) -> Union["BitTiming", List["BitTiming"]]:
-        """Create an instance or list of :class:`~can.BitTiming` instances for a sample point.
-
-        This function tries to find bit timings, which are close to the requested
-        sample point. It does not take physical bus properties into account, so the
-        calculated bus timings might not work properly for you.
-
-        The :func:`oscillator_tolerance` function might be helpful to evaluate the
-        bus timings.
-
-        :param int f_clock:
-            The CAN system clock frequency in Hz.
-        :param int bitrate:
-            Bitrate in bit/s.
-        :param int sample_point:
-            The sample point value in percent.
-        :param bool all_solutions:
-            Return all the possible solutions instead of just the preferred solution.
-        :raises ValueError:
-            if the arguments are invalid.
-        """
-
+    def iterate_from_sample_point(
+        cls, f_clock: int, bitrate: int, sample_point: float = 69.0
+    ) -> Iterator["BitTiming"]:
         if sample_point < 50.0:
             raise ValueError(f"sample_point (={sample_point}) must not be below 50%.")
 
-        possible_solutions: List[BitTiming] = []
         for brp in range(1, 65):
             nbt = round(int(f_clock / (bitrate * brp)))
             if nbt < 8:
@@ -265,9 +243,40 @@ class BitTiming(Mapping):
                     sjw=sjw,
                     strict=True,
                 )
-                possible_solutions.append(bt)
+                yield bt
             except ValueError:
                 continue
+
+    @classmethod
+    def from_sample_point(
+        cls, f_clock: int, bitrate: int, sample_point: float = 69.0
+    ) -> "BitTiming":
+        """Create a :class:`~can.BitTiming` instance for a sample point.
+
+        This function tries to find bit timings, which are close to the requested
+        sample point. It does not take physical bus properties into account, so the
+        calculated bus timings might not work properly for you.
+
+        The :func:`oscillator_tolerance` function might be helpful to evaluate the
+        bus timings.
+
+        :param int f_clock:
+            The CAN system clock frequency in Hz.
+        :param int bitrate:
+            Bitrate in bit/s.
+        :param int sample_point:
+            The sample point value in percent.
+        :raises ValueError:
+            if the arguments are invalid.
+        """
+
+        if sample_point < 50.0:
+            raise ValueError(f"sample_point (={sample_point}) must not be below 50%.")
+
+        possible_solutions: List[BitTiming] = [
+            timing
+            for timing in cls.iterate_from_sample_point(f_clock, bitrate, sample_point)
+        ]
 
         if not possible_solutions:
             raise ValueError("No suitable bit timings found.")
@@ -281,10 +290,7 @@ class BitTiming(Mapping):
         ):
             possible_solutions.sort(key=key, reverse=reverse)
 
-        if all_solutions:
-            return possible_solutions
-        else:
-            return possible_solutions[0]
+        return possible_solutions[0]
 
     @property
     def f_clock(self) -> int:
@@ -733,39 +739,14 @@ class BitTimingFd(Mapping):
         return bt
 
     @classmethod
-    def from_sample_point(
+    def iterate_from_sample_point(
         cls,
         f_clock: int,
         nom_bitrate: int,
         nom_sample_point: float,
         data_bitrate: int,
         data_sample_point: float,
-        all_solutions: bool = False,
-    ) -> Union["BitTimingFd", List["BitTimingFd"]]:
-        """Create an instance or list of :class:`~can.BitTimingFd` instances for a sample point.
-
-        This function tries to find bit timings, which are close to the requested
-        sample points. It does not take physical bus properties into account, so the
-        calculated bus timings might not work properly for you.
-
-        The :func:`oscillator_tolerance` function might be helpful to evaluate the
-        bus timings.
-
-        :param int f_clock:
-            The CAN system clock frequency in Hz.
-        :param int nom_bitrate:
-            Nominal bitrate in bit/s.
-        :param int nom_sample_point:
-            The sample point value of the arbitration phase in percent.
-        :param int data_bitrate:
-            Data bitrate in bit/s.
-        :param int data_sample_point:
-            The sample point value of the data phase in percent.
-        :param bool all_solutions:
-            Return all the possible solutions instead of just the preferred solution.
-        :raises ValueError:
-            if the arguments are invalid.
-        """
+    ) -> Iterator["BitTimingFd"]:
         if nom_sample_point < 50.0:
             raise ValueError(
                 f"nom_sample_point (={nom_sample_point}) must not be below 50%."
@@ -775,8 +756,6 @@ class BitTimingFd(Mapping):
             raise ValueError(
                 f"data_sample_point (={data_sample_point}) must not be below 50%."
             )
-
-        possible_solutions: List[BitTimingFd] = []
 
         sync_seg = 1
 
@@ -825,20 +804,71 @@ class BitTimingFd(Mapping):
                         data_sjw=data_sjw,
                         strict=True,
                     )
-                    possible_solutions.append(bt)
+                    yield bt
                 except ValueError:
                     continue
+
+    @classmethod
+    def from_sample_point(
+        cls,
+        f_clock: int,
+        nom_bitrate: int,
+        nom_sample_point: float,
+        data_bitrate: int,
+        data_sample_point: float,
+    ) -> "BitTimingFd":
+        """Create a :class:`~can.BitTimingFd` instance for a sample point.
+
+        This function tries to find bit timings, which are close to the requested
+        sample points. It does not take physical bus properties into account, so the
+        calculated bus timings might not work properly for you.
+
+        The :func:`oscillator_tolerance` function might be helpful to evaluate the
+        bus timings.
+
+        :param int f_clock:
+            The CAN system clock frequency in Hz.
+        :param int nom_bitrate:
+            Nominal bitrate in bit/s.
+        :param int nom_sample_point:
+            The sample point value of the arbitration phase in percent.
+        :param int data_bitrate:
+            Data bitrate in bit/s.
+        :param int data_sample_point:
+            The sample point value of the data phase in percent.
+        :raises ValueError:
+            if the arguments are invalid.
+        """
+        if nom_sample_point < 50.0:
+            raise ValueError(
+                f"nom_sample_point (={nom_sample_point}) must not be below 50%."
+            )
+
+        if data_sample_point < 50.0:
+            raise ValueError(
+                f"data_sample_point (={data_sample_point}) must not be below 50%."
+            )
+
+        possible_solutions: List[BitTimingFd] = [
+            timing
+            for timing in cls.iterate_from_sample_point(
+                f_clock,
+                nom_bitrate,
+                nom_sample_point,
+                data_bitrate,
+                data_sample_point,
+            )
+        ]
 
         if not possible_solutions:
             raise ValueError("No suitable bit timings found.")
 
-        if not all_solutions:
-            # prefer using the same prescaler for arbitration and data phase
-            same_prescaler = list(
-                filter(lambda x: x.nom_brp == x.data_brp, possible_solutions)
-            )
-            if same_prescaler:
-                possible_solutions = same_prescaler
+        # prefer using the same prescaler for arbitration and data phase
+        same_prescaler = list(
+            filter(lambda x: x.nom_brp == x.data_brp, possible_solutions)
+        )
+        if same_prescaler:
+            possible_solutions = same_prescaler
 
         # sort solutions
         for key, reverse in (
@@ -857,10 +887,7 @@ class BitTimingFd(Mapping):
         ):
             possible_solutions.sort(key=key, reverse=reverse)
 
-        if all_solutions:
-            return possible_solutions
-        else:
-            return possible_solutions[0]
+        return possible_solutions[0]
 
     @property
     def f_clock(self) -> int:
