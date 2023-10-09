@@ -116,7 +116,7 @@ class Back2BackTestCase(unittest.TestCase):
         self.assertTrue(
             1.75 <= delta_time <= 2.25,
             "Time difference should have been 2s +/- 250ms."
-            "But measured {}".format(delta_time),
+            f"But measured {delta_time}",
         )
 
     def test_standard_message(self):

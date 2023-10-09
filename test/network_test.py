@@ -6,12 +6,15 @@ import random
 import threading
 import unittest
 
+import can
+
 logging.getLogger(__file__).setLevel(logging.WARNING)
 
-# make a random bool:
-rbool = lambda: bool(round(random.random()))
 
-import can
+# make a random bool:
+def rbool():
+    return bool(round(random.random()))
+
 
 channel = "vcan0"
 

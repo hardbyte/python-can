@@ -69,19 +69,17 @@ except ImportError:
 class VectorBus(BusABC):
     """The CAN Bus implemented for the Vector interface."""
 
-    deprecated_args = dict(
-        sjwAbr="sjw_abr",
-        tseg1Abr="tseg1_abr",
-        tseg2Abr="tseg2_abr",
-        sjwDbr="sjw_dbr",
-        tseg1Dbr="tseg1_dbr",
-        tseg2Dbr="tseg2_dbr",
-    )
-
     @deprecated_args_alias(
         deprecation_start="4.0.0",
         deprecation_end="5.0.0",
-        **deprecated_args,
+        **{
+            "sjwAbr": "sjw_abr",
+            "tseg1Abr": "tseg1_abr",
+            "tseg2Abr": "tseg2_abr",
+            "sjwDbr": "sjw_dbr",
+            "tseg1Dbr": "tseg1_dbr",
+            "tseg2Dbr": "tseg2_dbr",
+        },
     )
     def __init__(
         self,
@@ -878,7 +876,40 @@ class VectorBus(BusABC):
         return xl_can_tx_event
 
     def flush_tx_buffer(self) -> None:
-        self.xldriver.xlCanFlushTransmitQueue(self.port_handle, self.mask)
+        """
+        Flush the TX buffer of the bus.
+
+        Implementation does not use function ``xlCanFlushTransmitQueue`` of the XL driver, as it works only
+        for XL family devices.
+
+        .. warning::
+            Using this function will flush the queue and send a high voltage message (ID = 0, DLC = 0, no data).
+        """
+        if self._can_protocol is CanProtocol.CAN_FD:
+            xl_can_tx_event = xlclass.XLcanTxEvent()
+            xl_can_tx_event.tag = xldefine.XL_CANFD_TX_EventTags.XL_CAN_EV_TAG_TX_MSG
+            xl_can_tx_event.tagData.canMsg.msgFlags |= (
+                xldefine.XL_CANFD_TX_MessageFlags.XL_CAN_TXMSG_FLAG_HIGHPRIO
+            )
+
+            self.xldriver.xlCanTransmitEx(
+                self.port_handle,
+                self.mask,
+                ctypes.c_uint(1),
+                ctypes.c_uint(0),
+                xl_can_tx_event,
+            )
+        else:
+            xl_event = xlclass.XLevent()
+            xl_event.tag = xldefine.XL_EventTags.XL_TRANSMIT_MSG
+            xl_event.tagData.msg.flags |= (
+                xldefine.XL_MessageFlags.XL_CAN_MSG_FLAG_OVERRUN
+                | xldefine.XL_MessageFlags.XL_CAN_MSG_FLAG_WAKEUP
+            )
+
+            self.xldriver.xlCanTransmit(
+                self.port_handle, self.mask, ctypes.c_uint(1), xl_event
+            )
 
     def shutdown(self) -> None:
         super().shutdown()

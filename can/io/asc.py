@@ -64,8 +64,8 @@ class ASCReader(TextIOMessageReader):
         self.internal_events_logged = False
 
     def _extract_header(self) -> None:
-        for line in self.file:
-            line = line.strip()
+        for _line in self.file:
+            line = _line.strip()
 
             datetime_match = re.match(
                 r"date\s+\w+\s+(?P<datetime_string>.+)", line, re.IGNORECASE
@@ -255,8 +255,8 @@ class ASCReader(TextIOMessageReader):
     def __iter__(self) -> Generator[Message, None, None]:
         self._extract_header()
 
-        for line in self.file:
-            line = line.strip()
+        for _line in self.file:
+            line = _line.strip()
 
             trigger_match = re.match(
                 r"begin\s+triggerblock\s+\w+\s+(?P<datetime_string>.+)",
