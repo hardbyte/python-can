@@ -286,6 +286,28 @@ def test_from_sample_point():
             )
 
 
+def test_iterate_from_sample_point():
+    for sp in range(50, 100):
+        solutions = list(can.BitTiming.iterate_from_sample_point(
+            f_clock=16_000_000,
+            bitrate=500_000,
+            sample_point=sp,
+        ))
+        assert len(solutions) >= 2
+
+    for nsp in range(50, 100):
+        for dsp in range(50, 100):
+            solutions = list(can.BitTimingFd.iterate_from_sample_point(
+                f_clock=80_000_000,
+                nom_bitrate=500_000,
+                nom_sample_point=nsp,
+                data_bitrate=2_000_000,
+                data_sample_point=dsp,
+            ))
+
+            assert len(solutions) >= 2
+
+
 def test_equality():
     t1 = can.BitTiming.from_registers(f_clock=8_000_000, btr0=0x00, btr1=0x14)
     t2 = can.BitTiming(f_clock=8_000_000, brp=1, tseg1=5, tseg2=2, sjw=1, nof_samples=1)
