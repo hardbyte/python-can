@@ -288,22 +288,26 @@ def test_from_sample_point():
 
 def test_iterate_from_sample_point():
     for sp in range(50, 100):
-        solutions = list(can.BitTiming.iterate_from_sample_point(
-            f_clock=16_000_000,
-            bitrate=500_000,
-            sample_point=sp,
-        ))
+        solutions = list(
+            can.BitTiming.iterate_from_sample_point(
+                f_clock=16_000_000,
+                bitrate=500_000,
+                sample_point=sp,
+            )
+        )
         assert len(solutions) >= 2
 
     for nsp in range(50, 100):
         for dsp in range(50, 100):
-            solutions = list(can.BitTimingFd.iterate_from_sample_point(
-                f_clock=80_000_000,
-                nom_bitrate=500_000,
-                nom_sample_point=nsp,
-                data_bitrate=2_000_000,
-                data_sample_point=dsp,
-            ))
+            solutions = list(
+                can.BitTimingFd.iterate_from_sample_point(
+                    f_clock=80_000_000,
+                    nom_bitrate=500_000,
+                    nom_sample_point=nsp,
+                    data_bitrate=2_000_000,
+                    data_sample_point=dsp,
+                )
+            )
 
             assert len(solutions) >= 2
 
