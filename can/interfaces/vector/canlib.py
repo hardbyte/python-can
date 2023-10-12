@@ -538,16 +538,19 @@ class VectorBus(BusABC):
         )
 
         # check CAN operation mode
-        if fd:
-            settings_acceptable &= bool(
-                bus_params_data.can_op_mode
-                & xldefine.XL_CANFD_BusParams_CanOpMode.XL_BUS_PARAMS_CANOPMODE_CANFD
-            )
-        elif bus_params_data.can_op_mode != 0:  # can_op_mode is always 0 for cancaseXL
-            settings_acceptable &= bool(
-                bus_params_data.can_op_mode
-                & xldefine.XL_CANFD_BusParams_CanOpMode.XL_BUS_PARAMS_CANOPMODE_CAN20
-            )
+        # skip the check if can_op_mode is 0
+        # as it happens for cancaseXL, VN7600 and sometimes on other hardware (VN1640)
+        if bus_params_data.can_op_mode:
+            if fd:
+                settings_acceptable &= bool(
+                    bus_params_data.can_op_mode
+                    & xldefine.XL_CANFD_BusParams_CanOpMode.XL_BUS_PARAMS_CANOPMODE_CANFD
+                )
+            else:
+                settings_acceptable &= bool(
+                    bus_params_data.can_op_mode
+                    & xldefine.XL_CANFD_BusParams_CanOpMode.XL_BUS_PARAMS_CANOPMODE_CAN20
+                )
 
         # check bitrates
         if bitrate:
