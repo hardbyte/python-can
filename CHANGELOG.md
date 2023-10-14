@@ -26,7 +26,7 @@ Features
 * Add `protocol` property to BusABC to determine active CAN Protocol (#1532)
 * Add `modifier_callback` parameter to `BusABC.send_periodic` for auto-modifying cyclic tasks (#703)
 * NeoVi: Enable send and receive on network ID above 255 (#1627)
-* Optimize PCAN send performance (#1640)
+* PCAN: Optimize send performance (#1640)
 * Support version string of older PCAN basic API (#1644)
 * Kvaser: add parameter exclusive and `override_exclusive` (#1660)
 * Relax BitTiming & BitTimingFd Validation (#1618)
