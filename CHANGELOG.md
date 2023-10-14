@@ -30,7 +30,7 @@ Features
 * Support version string of older PCAN basic API (#1644)
 * Kvaser: add parameter exclusive and `override_exclusive` (#1660)
 * Relax BitTiming & BitTimingFd Validation (#1618)
-* Send HighPriority Message to flush VectorBus Tx buffer (#1636)
+* Vector: Send HighPriority Message to flush Tx buffer (#1636)
 * PCAN: remove Windows registry check (#1672)
 * Vector: Skip the `can_op_mode check` if the device reports `can_op_mode=0` (#1678)
 
