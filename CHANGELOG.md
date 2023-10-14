@@ -7,7 +7,7 @@ Breaking Changes
 
 Bug Fixes
 ---------
-* Fix Vector channel detection (#1634)
+* Vector: channel detection fails, if there is an active flexray channel  (#1634)
 * ixxat: Fix exception in 'state' property on bus coupling errors (#1647)
 * NeoVi: Fixed serial number range (#1650)
 * PCAN: Fix timestamp offset due to timezone (#1651)
