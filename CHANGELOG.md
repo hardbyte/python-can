@@ -24,7 +24,7 @@ Features
 ### Interface Improvements
 * Change Bus constructor implementation and typing (#1557)
 * Add `protocol` property to BusABC to determine active CAN Protocol (#1532)
-* Add auto-modifying cyclic tasks (#703)
+* Add `modifier_callback` parameter to `BusABC.send_periodic` for auto-modifying cyclic tasks (#703)
 * NeoVi: Enable send and receive on network ID above 255 (#1627)
 * Optimize PCAN send performance (#1640)
 * Support version string of older PCAN basic API (#1644)
