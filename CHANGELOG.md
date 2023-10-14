@@ -10,7 +10,7 @@ Bug Fixes
 * Fix Vector channel detection (#1634)
 * ixxat: Fix exception in 'state' property on bus coupling errors (#1647)
 * NeoVi: Fixed serial number range (#1650)
-* Fix PCAN timestamp (#1651)
+* PCAN: Fix timestamp offset due to timezone (#1651)
 * Fix BLFReader error for incomplete or truncated stream (#1662)
 * We do not need to account for drift when we `USE_WINDOWS_EVENTS` (#1666)
 
