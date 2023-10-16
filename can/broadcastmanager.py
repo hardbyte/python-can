@@ -269,9 +269,10 @@ class ThreadBasedCyclicSendTask(
         self.start()
 
     def stop(self) -> None:
-        if USE_WINDOWS_EVENTS:
-            win32event.CancelWaitableTimer(self.event.handle)
         self.stopped = True
+        if USE_WINDOWS_EVENTS:
+            # Reset and signal any pending wait by setting the timer to 0
+            win32event.SetWaitableTimer(self.event.handle, 0, 0, None, None, False)
 
     def start(self) -> None:
         self.stopped = False
