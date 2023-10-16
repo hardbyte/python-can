@@ -445,7 +445,7 @@ class KvaserBus(BusABC):
         tseg1 = kwargs.get("tseg1", 0)
         tseg2 = kwargs.get("tseg2", 0)
         sjw = kwargs.get("sjw", 0)
-        no_samp = kwargs.get("no_samp", 0)
+        no_samp = kwargs.get("no_samp", 1)
         driver_mode = kwargs.get("driver_mode", DRIVER_MODE_NORMAL)
         single_handle = kwargs.get("single_handle", False)
         receive_own_messages = kwargs.get("receive_own_messages", False)
