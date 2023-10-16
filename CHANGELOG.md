@@ -4,6 +4,7 @@ Version 4.3.0
 Breaking Changes
 ----------------
 * Raise Minimum Python Version to 3.8 (#1597)
+* Do not stop notifier if exception was handled (#1645)
 
 Bug Fixes
 ---------
@@ -11,7 +12,9 @@ Bug Fixes
 * ixxat: Fix exception in 'state' property on bus coupling errors (#1647)
 * NeoVi: Fixed serial number range (#1650)
 * PCAN: Fix timestamp offset due to timezone (#1651)
+* Catch `pywintypes.error` in broadcast manager (#1659)
 * Fix BLFReader error for incomplete or truncated stream (#1662)
+* PCAN: remove Windows registry check to fix 32bit compatibility (#1672)
 * Vector: Skip the `can_op_mode check` if the device reports `can_op_mode=0` (#1678)
 
 Features
@@ -21,6 +24,7 @@ Features
 * Add `modifier_callback` parameter to `BusABC.send_periodic` for auto-modifying cyclic tasks (#703)
 * Add `protocol` property to BusABC to determine active CAN Protocol (#1532)
 * Change Bus constructor implementation and typing (#1557)
+* Add optional `strict` parameter to relax BitTiming & BitTimingFd Validation (#1618)
 * Add `BitTiming.iterate_from_sample_point` static methods (#1671)
 
 ### IO
@@ -30,9 +34,8 @@ Features
 * NeoVi: Enable send and receive on network ID above 255 (#1627)
 * Vector: Send HighPriority Message to flush Tx buffer (#1636)
 * PCAN: Optimize send performance (#1640)
-* Support version string of older PCAN basic API (#1644)
+* PCAN: Support version string of older PCAN basic API (#1644)
 * Kvaser: add parameter exclusive and `override_exclusive` (#1660)
-* PCAN: remove Windows registry check to fix 32bit compatibility (#1672)
 
 ### Miscellaneous
 * Distinguish Text/Binary-IO for Reader/Writer classes. (#1585)
@@ -40,12 +43,9 @@ Features
 * activate ruff pycodestyle checks (#1602)
 * Update linter instructions in development.rst (#1603)
 * remove unnecessary script files (#1604)
-* Relax BitTiming & BitTimingFd Validation (#1618)
 * BigEndian test fixes (#1625)
 * align `ID:` in can.Message string (#1635)
-* Do not stop notifier if exception was handled (#1645)
 * Use same configuration file as Linux on macOS (#1657)
-* Catch `pywintypes.error` in broadcast manager (#1659)
 * We do not need to account for drift when we `USE_WINDOWS_EVENTS` (#1666)
 * Update linters, activate more ruff rules (#1669)
 * Add Python 3.12 Support / Test Python 3.12 (#1673)
