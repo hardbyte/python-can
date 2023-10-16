@@ -31,6 +31,7 @@ Features
 * Can Player compatibility with interfaces that use additional configuration (#1610)
 
 ### Interface Improvements
+* Kvaser: Add BitTiming/BitTimingFd support to KvaserBus (#1510)
 * NeoVi: Enable send and receive on network ID above 255 (#1627)
 * Vector: Send HighPriority Message to flush Tx buffer (#1636)
 * PCAN: Optimize send performance (#1640)
