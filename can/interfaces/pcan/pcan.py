@@ -396,9 +396,7 @@ class PcanBus(BusABC):
             for b in bits(error):
                 stsReturn = self.m_objPCANBasic.GetErrorText(b, 0x9)
                 if stsReturn[0] != PCAN_ERROR_OK:
-                    text = "An error occurred. Error-code's text ({:X}h) couldn't be retrieved".format(
-                        error
-                    )
+                    text = f"An error occurred. Error-code's text ({error:X}h) couldn't be retrieved"
                 else:
                     text = stsReturn[1].decode("utf-8", errors="replace")
 

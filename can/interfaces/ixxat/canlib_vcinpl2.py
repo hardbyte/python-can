@@ -509,17 +509,15 @@ class IXXATBus(BusABC):
             tseg1_abr is None or tseg2_abr is None or sjw_abr is None
         ):
             raise ValueError(
-                "To use bitrate {} (that has not predefined preset) is mandatory to use also parameters tseg1_abr, tseg2_abr and swj_abr".format(
-                    bitrate
-                )
+                f"To use bitrate {bitrate} (that has not predefined preset) is mandatory "
+                f"to use also parameters tseg1_abr, tseg2_abr and swj_abr"
             )
         if data_bitrate not in constants.CAN_DATABITRATE_PRESETS and (
             tseg1_dbr is None or tseg2_dbr is None or sjw_dbr is None
         ):
             raise ValueError(
-                "To use data_bitrate {} (that has not predefined preset) is mandatory to use also parameters tseg1_dbr, tseg2_dbr and swj_dbr".format(
-                    data_bitrate
-                )
+                f"To use data_bitrate {data_bitrate} (that has not predefined preset) is mandatory "
+                f"to use also parameters tseg1_dbr, tseg2_dbr and swj_dbr"
             )
 
         if rx_fifo_size <= 0:
