@@ -47,7 +47,7 @@ Features
 * BigEndian test fixes (#1625)
 * align `ID:` in can.Message string (#1635)
 * Use same configuration file as Linux on macOS (#1657)
-* We do not need to account for drift when we `USE_WINDOWS_EVENTS` (#1666)
+* We do not need to account for drift when we `USE_WINDOWS_EVENTS` (#1666, #1679)
 * Update linters, activate more ruff rules (#1669)
 * Add Python 3.12 Support / Test Python 3.12 (#1673)
 
