@@ -56,17 +56,42 @@ VCI documentation, section "Message filters" for more info.
 
 List available devices
 ----------------------
-In case you have connected multiple IXXAT devices, you have to select them by using their unique hardware id.
-To get a list of all connected IXXAT you can use the function ``get_ixxat_hwids()`` as demonstrated below:
+
+In case you have connected multiple IXXAT devices, you have to select them by using their unique hardware id. 
+The function :meth:`~can.detect_available_configs` can be used to generate a list of :class:`~can.BusABC` constructors
+(including the channel number and unique hardware ID number for the connected devices).
 
     .. testsetup:: ixxat
+
+        from unittest.mock import Mock
+        import can
+        assert hasattr(can, "detect_available_configs")
+        can.detect_available_configs = Mock(
+            "interface",
+            return_value=[{'interface': 'ixxat', 'channel': 0, 'unique_hardware_id': 'HW441489'}, {'interface': 'ixxat', 'channel': 0, 'unique_hardware_id': 'HW107422'}, {'interface': 'ixxat', 'channel': 1, 'unique_hardware_id': 'HW107422'}],
+        )
+
+    .. doctest:: ixxat
+
+        >>> import can 
+        >>> configs = can.detect_available_configs("ixxat")
+        >>> for config in configs:
+        ...     print(config)
+        {'interface': 'ixxat', 'channel': 0, 'unique_hardware_id': 'HW441489'}
+        {'interface': 'ixxat', 'channel': 0, 'unique_hardware_id': 'HW107422'}
+        {'interface': 'ixxat', 'channel': 1, 'unique_hardware_id': 'HW107422'}
+
+
+You may also get a list of all connected IXXAT devices using the function ``get_ixxat_hwids()`` as demonstrated below:
+
+    .. testsetup:: ixxat2
 
         from unittest.mock import Mock
         import can.interfaces.ixxat
         assert hasattr(can.interfaces.ixxat, "get_ixxat_hwids")
         can.interfaces.ixxat.get_ixxat_hwids = Mock(side_effect=lambda: ['HW441489', 'HW107422'])
 
-    .. doctest:: ixxat
+    .. doctest:: ixxat2
 
         >>> from can.interfaces.ixxat import get_ixxat_hwids
         >>> for hwid in get_ixxat_hwids():

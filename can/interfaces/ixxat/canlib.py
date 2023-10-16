@@ -1,4 +1,4 @@
-from typing import Callable, Optional, Sequence, Union
+from typing import Callable, List, Optional, Sequence, Union
 
 import can.interfaces.ixxat.canlib_vcinpl as vcinpl
 import can.interfaces.ixxat.canlib_vcinpl2 as vcinpl2
@@ -8,6 +8,7 @@ from can import (
     CyclicSendTaskABC,
     Message,
 )
+from can.typechecking import AutoDetectedConfig
 
 
 class IXXATBus(BusABC):
@@ -170,3 +171,7 @@ class IXXATBus(BusABC):
         Return the current state of the hardware
         """
         return self.bus.state
+
+    @staticmethod
+    def _detect_available_configs() -> List[AutoDetectedConfig]:
+        return vcinpl._detect_available_configs()
