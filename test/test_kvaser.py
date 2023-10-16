@@ -21,6 +21,7 @@ class KvaserTest(unittest.TestCase):
         canlib.canIoCtl = Mock(return_value=0)
         canlib.canIoCtlInit = Mock(return_value=0)
         canlib.kvReadTimer = Mock()
+        canlib.canSetBusParamsC200 = Mock()
         canlib.canSetBusParams = Mock()
         canlib.canSetBusParamsFd = Mock()
         canlib.canBusOn = Mock()
@@ -178,6 +179,37 @@ class KvaserTest(unittest.TestCase):
         canlib.canSetBusParamsFd.assert_called_once_with(
             0, constants.canFD_BITRATE_500K_80P, 0, 0, 0
         )
+
+    def test_can_timing(self):
+        canlib.canSetBusParams.reset_mock()
+        canlib.canSetBusParamsFd.reset_mock()
+        timing = can.BitTiming.from_bitrate_and_segments(
+            f_clock=16_000_000,
+            bitrate=125_000,
+            tseg1=13,
+            tseg2=2,
+            sjw=1,
+        )
+        can.Bus(channel=0, interface="kvaser", timing=timing)
+        canlib.canSetBusParamsC200.assert_called_once_with(0, timing.btr0, timing.btr1)
+
+    def test_canfd_timing(self):
+        canlib.canSetBusParams.reset_mock()
+        canlib.canSetBusParamsFd.reset_mock()
+        timing = can.BitTimingFd.from_bitrate_and_segments(
+            f_clock=80_000_000,
+            nom_bitrate=500_000,
+            nom_tseg1=68,
+            nom_tseg2=11,
+            nom_sjw=10,
+            data_bitrate=2_000_000,
+            data_tseg1=10,
+            data_tseg2=9,
+            data_sjw=8,
+        )
+        can.Bus(channel=0, interface="kvaser", timing=timing)
+        canlib.canSetBusParams.assert_called_once_with(0, 500_000, 68, 11, 10, 1, 0)
+        canlib.canSetBusParamsFd.assert_called_once_with(0, 2_000_000, 10, 9, 8)
 
     def test_canfd_nondefault_data_bitrate(self):
         canlib.canSetBusParams.reset_mock()
