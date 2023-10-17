@@ -1,4 +1,4 @@
-Version 4.3.0
+Version 4.3.0rc0
 ===========
 
 Breaking Changes
@@ -32,6 +32,7 @@ Features
 
 ### Interface Improvements
 * Kvaser: Add BitTiming/BitTimingFd support to KvaserBus (#1510)
+* Ixxat: Implement `detect_available_configs` for the Ixxat bus. (#1607)
 * NeoVi: Enable send and receive on network ID above 255 (#1627)
 * Vector: Send HighPriority Message to flush Tx buffer (#1636)
 * PCAN: Optimize send performance (#1640)
