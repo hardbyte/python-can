@@ -8,6 +8,7 @@ Copyright (C) 2021  DOMOLOGIC GmbH
 http://www.domologic.de
 """
 import logging
+import os
 import select
 import socket
 import time
@@ -79,6 +80,7 @@ class SocketCanDaemonBus(can.BusABC):
         self.__host = host
         self.__port = port
         self.__socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.__socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         self.__message_buffer = deque()
         self.__receive_buffer = ""  # i know string is not the most efficient here
         self.channel = channel
@@ -120,6 +122,8 @@ class SocketCanDaemonBus(can.BusABC):
             ascii_msg = self.__socket.recv(1024).decode(
                 "ascii"
             )  # may contain multiple messages
+            if os.name != "nt":
+                self.__socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_QUICKACK, 1)
             self.__receive_buffer += ascii_msg
             log.debug(f"Received Ascii Message: {ascii_msg}")
             buffer_view = self.__receive_buffer
@@ -173,9 +177,13 @@ class SocketCanDaemonBus(can.BusABC):
     def _tcp_send(self, msg: str):
         log.debug(f"Sending TCP Message: '{msg}'")
         self.__socket.sendall(msg.encode("ascii"))
+        if os.name != "nt":
+            self.__socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_QUICKACK, 1)
 
     def _expect_msg(self, msg):
         ascii_msg = self.__socket.recv(256).decode("ascii")
+        if os.name != "nt":
+            self.__socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_QUICKACK, 1)
         if not ascii_msg == msg:
             raise can.CanError(f"{msg} message expected!")
 
