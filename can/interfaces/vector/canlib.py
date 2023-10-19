@@ -202,12 +202,20 @@ class VectorBus(BusABC):
         self._can_protocol = CanProtocol.CAN_FD if is_fd else CanProtocol.CAN_20
 
         for channel in self.channels:
-            channel_index = self._find_global_channel_idx(
-                channel=channel,
-                serial=serial,
-                app_name=app_name,
-                channel_configs=channel_configs,
-            )
+            if (_channel_index := kwargs.get("channel_index", None)) is not None:
+                # VectorBus._detect_available_configs() might return multiple
+                # devices with the same serial number, e.g. if a VN8900 is connected via both USB and Ethernet
+                # at the same time. If the VectorBus is instantiated with a config, that was returned from
+                # VectorBus._detect_available_configs(), then use the contained global channel_index
+                # to avoid any ambiguities.
+                channel_index = cast(int, _channel_index)
+            else:
+                channel_index = self._find_global_channel_idx(
+                    channel=channel,
+                    serial=serial,
+                    app_name=app_name,
+                    channel_configs=channel_configs,
+                )
             LOG.debug("Channel index %d found", channel)
 
             channel_mask = 1 << channel_index
@@ -950,6 +958,7 @@ class VectorBus(BusABC):
                     "interface": "vector",
                     "channel": channel_config.hw_channel,
                     "serial": channel_config.serial_number,
+                    "channel_index": channel_config.channel_index,
                     # data for use in VectorBus.set_application_config():
                     "hw_type": channel_config.hw_type,
                     "hw_index": channel_config.hw_index,

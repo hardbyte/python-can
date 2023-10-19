@@ -118,6 +118,22 @@ def test_bus_creation() -> None:
     bus.shutdown()
 
 
+@pytest.mark.skipif(not XLDRIVER_FOUND, reason="Vector XL API is unavailable")
+def test_bus_creation_channel_index() -> None:
+    channel_index = 3
+    bus = can.Bus(
+        channel=0,
+        serial=_find_virtual_can_serial(),
+        channel_index=channel_index,
+        interface="vector",
+    )
+    assert isinstance(bus, canlib.VectorBus)
+    assert bus.protocol == can.CanProtocol.CAN_20
+    assert bus.channel_masks[0] == 1 << channel_index
+
+    bus.shutdown()
+
+
 def test_bus_creation_bitrate_mocked(mock_xldriver) -> None:
     bus = can.Bus(channel=0, interface="vector", bitrate=200_000, _testing=True)
     assert isinstance(bus, canlib.VectorBus)
@@ -829,6 +845,31 @@ def test_get_channel_configs() -> None:
 
     channel_configs = canlib.get_channel_configs()
     assert len(channel_configs) == 12
+
+    canlib._get_xl_driver_config = _original_func
+
+
+@pytest.mark.skipif(
+    sys.byteorder != "little", reason="Test relies on little endian data."
+)
+def test_detect_available_configs() -> None:
+    _original_func = canlib._get_xl_driver_config
+    canlib._get_xl_driver_config = _get_predefined_xl_driver_config
+
+    available_configs = canlib.VectorBus._detect_available_configs()
+
+    assert len(available_configs) == 5
+
+    assert available_configs[0]["interface"] == "vector"
+    assert available_configs[0]["channel"] == 2
+    assert available_configs[0]["serial"] == 1001
+    assert available_configs[0]["channel_index"] == 2
+    assert available_configs[0]["hw_type"] == xldefine.XL_HardwareType.XL_HWTYPE_VN8900
+    assert available_configs[0]["hw_index"] == 0
+    assert available_configs[0]["supports_fd"] is True
+    assert isinstance(
+        available_configs[0]["vector_channel_config"], VectorChannelConfig
+    )
 
     canlib._get_xl_driver_config = _original_func
 

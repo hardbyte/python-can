@@ -16,6 +16,7 @@ Bug Fixes
 * Fix BLFReader error for incomplete or truncated stream (#1662)
 * PCAN: remove Windows registry check to fix 32bit compatibility (#1672)
 * Vector: Skip the `can_op_mode check` if the device reports `can_op_mode=0` (#1678)
+* Vector: using the config from `detect_available_configs` might raise XL_ERR_INVALID_CHANNEL_MASK error (#1681)
 
 Features
 --------
