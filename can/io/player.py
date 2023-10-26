@@ -6,17 +6,16 @@ in the recorded order and time intervals.
 import gzip
 import pathlib
 import time
-import typing
+from typing import Any, Dict, Generator, Iterable, Optional, Tuple, Type, Union, cast
 
-from pkg_resources import iter_entry_points
-
+from .._entry_points import read_entry_points
 from ..message import Message
 from ..typechecking import AcceptedIOType, FileLike, StringPathLike
 from .asc import ASCReader
 from .blf import BLFReader
 from .canutils import CanutilsLogReader
 from .csv import CSVReader
-from .generic import MessageReader
+from .generic import BinaryIOMessageReader, MessageReader
 from .mf4 import MF4Reader
 from .sqlite import SqliteReader
 from .trc import TRCReader
@@ -54,7 +53,7 @@ class LogReader(MessageReader):
     """
 
     fetched_plugins = False
-    message_readers: typing.Dict[str, typing.Optional[typing.Type[MessageReader]]] = {
+    message_readers: Dict[str, Optional[Type[MessageReader]]] = {
         ".asc": ASCReader,
         ".blf": BLFReader,
         ".csv": CSVReader,
@@ -66,9 +65,9 @@ class LogReader(MessageReader):
 
     @staticmethod
     def __new__(  # type: ignore
-        cls: typing.Any,
+        cls: Any,
         filename: StringPathLike,
-        **kwargs: typing.Any,
+        **kwargs: Any,
     ) -> MessageReader:
         """
         :param filename: the filename/path of the file to read from
@@ -77,8 +76,8 @@ class LogReader(MessageReader):
         if not LogReader.fetched_plugins:
             LogReader.message_readers.update(
                 {
-                    reader.name: reader.load()
-                    for reader in iter_entry_points("can.io.message_reader")
+                    reader.key: cast(Type[MessageReader], reader.load())
+                    for reader in read_entry_points("can.io.message_reader")
                 }
             )
             LogReader.fetched_plugins = True
@@ -87,30 +86,39 @@ class LogReader(MessageReader):
 
         file_or_filename: AcceptedIOType = filename
         if suffix == ".gz":
-            suffix, file_or_filename = LogReader.decompress(filename)
+            reader_type, file_or_filename = LogReader.decompress(filename)
+        else:
+            reader_type = cls._get_logger_for_suffix(suffix)
+        return reader_type(file=file_or_filename, **kwargs)
+
+    @classmethod
+    def _get_logger_for_suffix(cls, suffix: str) -> Type[MessageReader]:
         try:
-            ReaderType = LogReader.message_readers[suffix]
+            reader_type = LogReader.message_readers[suffix]
         except KeyError:
             raise ValueError(
                 f'No read support for this unknown log format "{suffix}"'
             ) from None
-        if ReaderType is None:
+        if reader_type is None:
             raise ImportError(f"failed to import reader for extension {suffix}")
-        return ReaderType(file=file_or_filename, **kwargs)
+        return reader_type
 
-    @staticmethod
+    @classmethod
     def decompress(
+        cls,
         filename: StringPathLike,
-    ) -> typing.Tuple[str, typing.Union[str, FileLike]]:
+    ) -> Tuple[Type[MessageReader], Union[str, FileLike]]:
         """
         Return the suffix and io object of the decompressed file.
         """
         real_suffix = pathlib.Path(filename).suffixes[-2].lower()
-        mode = "rb" if real_suffix == ".blf" else "rt"
+        reader_type = cls._get_logger_for_suffix(real_suffix)
 
-        return real_suffix, gzip.open(filename, mode)
+        mode = "rb" if issubclass(reader_type, BinaryIOMessageReader) else "rt"
 
-    def __iter__(self) -> typing.Generator[Message, None, None]:
+        return reader_type, gzip.open(filename, mode)
+
+    def __iter__(self) -> Generator[Message, None, None]:
         raise NotImplementedError()
 
 
@@ -121,7 +129,7 @@ class MessageSync:
 
     def __init__(
         self,
-        messages: typing.Iterable[Message],
+        messages: Iterable[Message],
         timestamps: bool = True,
         gap: float = 0.0001,
         skip: float = 60.0,
@@ -139,7 +147,7 @@ class MessageSync:
         self.gap = gap
         self.skip = skip
 
-    def __iter__(self) -> typing.Generator[Message, None, None]:
+    def __iter__(self) -> Generator[Message, None, None]:
         t_wakeup = playback_start_time = time.perf_counter()
         recorded_start_time = None
         t_skipped = 0.0

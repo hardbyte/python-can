@@ -4,7 +4,7 @@ Enable basic CAN over a PCAN USB device.
 import logging
 import platform
 import time
-from datetime import datetime
+import warnings
 from typing import Any, List, Optional, Tuple, Union
 
 from packaging import version
@@ -17,6 +17,7 @@ from can import (
     CanError,
     CanInitializationError,
     CanOperationError,
+    CanProtocol,
     Message,
 )
 from can.util import check_or_adjust_timing_clock, dlc2len, len2dlc
@@ -83,8 +84,8 @@ try:
     if uptime.boottime() is None:
         boottimeEpoch = 0
     else:
-        boottimeEpoch = (uptime.boottime() - datetime.fromtimestamp(0)).total_seconds()
-except ImportError as error:
+        boottimeEpoch = uptime.boottime().timestamp()
+except ImportError:
     log.warning(
         "uptime library not available, timestamps are relative to boot time and not to Epoch UTC",
     )
@@ -244,8 +245,9 @@ class PcanBus(BusABC):
                 err_msg = f"Cannot find a channel with ID {device_id:08x}"
                 raise ValueError(err_msg)
 
+        is_fd = isinstance(timing, BitTimingFd) if timing else kwargs.get("fd", False)
+        self._can_protocol = CanProtocol.CAN_FD if is_fd else CanProtocol.CAN_20
         self.channel_info = str(channel)
-        self.fd = isinstance(timing, BitTimingFd) if timing else kwargs.get("fd", False)
 
         hwtype = PCAN_TYPE_ISA
         ioport = 0x02A0
@@ -269,7 +271,7 @@ class PcanBus(BusABC):
             result = self.m_objPCANBasic.Initialize(
                 self.m_PcanHandle, pcan_bitrate, hwtype, ioport, interrupt
             )
-        elif self.fd:
+        elif is_fd:
             if isinstance(timing, BitTimingFd):
                 timing = check_or_adjust_timing_clock(
                     timing, sorted(VALID_PCAN_FD_CLOCKS, reverse=True)
@@ -281,7 +283,7 @@ class PcanBus(BusABC):
             clock_param = "f_clock" if "f_clock" in kwargs else "f_clock_mhz"
             fd_parameters_values = [
                 f"{key}={kwargs[key]}"
-                for key in (clock_param,) + PCAN_FD_PARAMETER_LIST
+                for key in (clock_param, *PCAN_FD_PARAMETER_LIST)
                 if key in kwargs
             ]
 
@@ -336,7 +338,12 @@ class PcanBus(BusABC):
             if result != PCAN_ERROR_OK:
                 raise PcanCanInitializationError(self._get_formatted_error(result))
 
-        super().__init__(channel=channel, state=state, bitrate=bitrate, **kwargs)
+        super().__init__(
+            channel=channel,
+            state=state,
+            bitrate=bitrate,
+            **kwargs,
+        )
 
     def _find_channel_by_dev_id(self, device_id):
         """
@@ -389,9 +396,7 @@ class PcanBus(BusABC):
             for b in bits(error):
                 stsReturn = self.m_objPCANBasic.GetErrorText(b, 0x9)
                 if stsReturn[0] != PCAN_ERROR_OK:
-                    text = "An error occurred. Error-code's text ({:X}h) couldn't be retrieved".format(
-                        error
-                    )
+                    text = f"An error occurred. Error-code's text ({error:X}h) couldn't be retrieved"
                 else:
                     text = stsReturn[1].decode("utf-8", errors="replace")
 
@@ -406,9 +411,12 @@ class PcanBus(BusABC):
     def get_api_version(self):
         error, value = self.m_objPCANBasic.GetValue(PCAN_NONEBUS, PCAN_API_VERSION)
         if error != PCAN_ERROR_OK:
-            raise CanInitializationError(f"Failed to read pcan basic api version")
+            raise CanInitializationError("Failed to read pcan basic api version")
 
-        return version.parse(value.decode("ascii"))
+        # fix https://github.com/hardbyte/python-can/issues/1642
+        version_string = value.decode("ascii").replace(",", ".").replace(" ", "")
+
+        return version.parse(version_string)
 
     def check_api_version(self):
         apv = self.get_api_version()
@@ -482,7 +490,7 @@ class PcanBus(BusABC):
         end_time = time.time() + timeout if timeout is not None else None
 
         while True:
-            if self.fd:
+            if self._can_protocol is CanProtocol.CAN_FD:
                 result, pcan_msg, pcan_timestamp = self.m_objPCANBasic.ReadFD(
                     self.m_PcanHandle
                 )
@@ -544,7 +552,7 @@ class PcanBus(BusABC):
         error_state_indicator = bool(pcan_msg.MSGTYPE & PCAN_MESSAGE_ESI.value)
         is_error_frame = bool(pcan_msg.MSGTYPE & PCAN_MESSAGE_ERRFRAME.value)
 
-        if self.fd:
+        if self._can_protocol is CanProtocol.CAN_FD:
             dlc = dlc2len(pcan_msg.DLC)
             timestamp = boottimeEpoch + (pcan_timestamp.value / (1000.0 * 1000.0))
         else:
@@ -590,7 +598,7 @@ class PcanBus(BusABC):
         if msg.error_state_indicator:
             msgType |= PCAN_MESSAGE_ESI.value
 
-        if self.fd:
+        if self._can_protocol is CanProtocol.CAN_FD:
             # create a TPCANMsg message structure
             CANMsg = TPCANMsgFD()
 
@@ -600,8 +608,7 @@ class PcanBus(BusABC):
             CANMsg.MSGTYPE = msgType
 
             # copy data
-            for i in range(msg.dlc):
-                CANMsg.DATA[i] = msg.data[i]
+            CANMsg.DATA[: msg.dlc] = msg.data[: msg.dlc]
 
             log.debug("Data: %s", msg.data)
             log.debug("Type: %s", type(msg.data))
@@ -620,8 +627,7 @@ class PcanBus(BusABC):
             # if a remote frame will be sent, data bytes are not important.
             if not msg.is_remote_frame:
                 # copy data
-                for i in range(CANMsg.LEN):
-                    CANMsg.DATA[i] = msg.data[i]
+                CANMsg.DATA[: CANMsg.LEN] = msg.data[: CANMsg.LEN]
 
             log.debug("Data: %s", msg.data)
             log.debug("Type: %s", type(msg.data))
@@ -648,6 +654,15 @@ class PcanBus(BusABC):
             self.m_objPCANBasic.SetValue(self.m_PcanHandle, PCAN_RECEIVE_EVENT, 0)
 
         self.m_objPCANBasic.Uninitialize(self.m_PcanHandle)
+
+    @property
+    def fd(self) -> bool:
+        warnings.warn(
+            "The PcanBus.fd property is deprecated and superseded by BusABC.protocol. "
+            "It is scheduled for removal in version 5.0.",
+            DeprecationWarning,
+        )
+        return self._can_protocol is CanProtocol.CAN_FD
 
     @property
     def state(self):

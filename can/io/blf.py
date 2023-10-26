@@ -22,7 +22,7 @@ from typing import Any, BinaryIO, Generator, List, Optional, Tuple, Union, cast
 from ..message import Message
 from ..typechecking import StringPathLike
 from ..util import channel2int, dlc2len, len2dlc
-from .generic import FileIOMessageWriter, MessageReader
+from .generic import BinaryIOMessageReader, FileIOMessageWriter
 
 TSystemTime = Tuple[int, int, int, int, int, int, int, int]
 
@@ -132,7 +132,7 @@ def systemtime_to_timestamp(systemtime: TSystemTime) -> float:
         return 0
 
 
-class BLFReader(MessageReader):
+class BLFReader(BinaryIOMessageReader):
     """
     Iterator of CAN messages from a Binary Logging File.
 
@@ -182,12 +182,13 @@ class BLFReader(MessageReader):
             self.file.read(obj_size % 4)
 
             if obj_type == LOG_CONTAINER:
-                method, uncompressed_size = LOG_CONTAINER_STRUCT.unpack_from(obj_data)
+                method, _ = LOG_CONTAINER_STRUCT.unpack_from(obj_data)
                 container_data = obj_data[LOG_CONTAINER_STRUCT.size :]
                 if method == NO_COMPRESSION:
                     data = container_data
                 elif method == ZLIB_DEFLATE:
-                    data = zlib.decompress(container_data, 15, uncompressed_size)
+                    zobj = zlib.decompressobj()
+                    data = zobj.decompress(container_data)
                 else:
                     # Unknown compression method
                     LOG.warning("Unknown compression method (%d)", method)

@@ -13,18 +13,22 @@ import ctypes
 import functools
 import logging
 import sys
-from typing import Callable, Optional, Tuple
+import time
+import warnings
+from typing import Callable, Optional, Sequence, Tuple, Union
 
-import can.util
-from can import BusABC, Message
-from can.broadcastmanager import (
+from can import (
+    BusABC,
+    CanProtocol,
+    CyclicSendTaskABC,
     LimitedDurationCyclicSendTaskABC,
+    Message,
     RestartableCyclicTaskABC,
 )
 from can.ctypesutil import HANDLE, PHANDLE, CLibrary
 from can.ctypesutil import HRESULT as ctypes_HRESULT
 from can.exceptions import CanInitializationError, CanInterfaceNotImplementedError
-from can.util import deprecated_args_alias
+from can.util import deprecated_args_alias, dlc2len, len2dlc
 
 from . import constants, structures
 from .exceptions import *
@@ -39,8 +43,6 @@ __all__ = [
 ]
 
 log = logging.getLogger("can.ixxat")
-
-from time import perf_counter
 
 # Hack to have vciFormatError as a free function, see below
 vciFormatError = None
@@ -141,7 +143,7 @@ try:
         _canlib.map_symbol(
             "vciFormatError", None, (ctypes_HRESULT, ctypes.c_char_p, ctypes.c_uint32)
         )
-    except:
+    except ImportError:
         _canlib.map_symbol(
             "vciFormatErrorA", None, (ctypes_HRESULT, ctypes.c_char_p, ctypes.c_uint32)
         )
@@ -434,13 +436,13 @@ class IXXATBus(BusABC):
         tx_fifo_size: int = 128,
         bitrate: int = 500000,
         data_bitrate: int = 2000000,
-        sjw_abr: int = None,
-        tseg1_abr: int = None,
-        tseg2_abr: int = None,
-        sjw_dbr: int = None,
-        tseg1_dbr: int = None,
-        tseg2_dbr: int = None,
-        ssp_dbr: int = None,
+        sjw_abr: Optional[int] = None,
+        tseg1_abr: Optional[int] = None,
+        tseg2_abr: Optional[int] = None,
+        sjw_dbr: Optional[int] = None,
+        tseg1_dbr: Optional[int] = None,
+        tseg2_dbr: Optional[int] = None,
+        ssp_dbr: Optional[int] = None,
         **kwargs,
     ):
         """
@@ -507,17 +509,15 @@ class IXXATBus(BusABC):
             tseg1_abr is None or tseg2_abr is None or sjw_abr is None
         ):
             raise ValueError(
-                "To use bitrate {} (that has not predefined preset) is mandatory to use also parameters tseg1_abr, tseg2_abr and swj_abr".format(
-                    bitrate
-                )
+                f"To use bitrate {bitrate} (that has not predefined preset) is mandatory "
+                f"to use also parameters tseg1_abr, tseg2_abr and swj_abr"
             )
         if data_bitrate not in constants.CAN_DATABITRATE_PRESETS and (
             tseg1_dbr is None or tseg2_dbr is None or sjw_dbr is None
         ):
             raise ValueError(
-                "To use data_bitrate {} (that has not predefined preset) is mandatory to use also parameters tseg1_dbr, tseg2_dbr and swj_dbr".format(
-                    data_bitrate
-                )
+                f"To use data_bitrate {data_bitrate} (that has not predefined preset) is mandatory "
+                f"to use also parameters tseg1_dbr, tseg2_dbr and swj_dbr"
             )
 
         if rx_fifo_size <= 0:
@@ -536,6 +536,7 @@ class IXXATBus(BusABC):
         self._channel_capabilities = structures.CANCAPABILITIES2()
         self._message = structures.CANMSG2()
         self._payload = (ctypes.c_byte * 64)()
+        self._can_protocol = CanProtocol.CAN_FD
 
         # Search for supplied device
         if unique_hardware_id is None:
@@ -808,7 +809,7 @@ class IXXATBus(BusABC):
             else:
                 timeout_ms = int(timeout * 1000)
                 remaining_ms = timeout_ms
-                t0 = perf_counter()
+                t0 = time.perf_counter()
 
             while True:
                 try:
@@ -857,7 +858,7 @@ class IXXATBus(BusABC):
                         log.warning("Unexpected message info type")
 
                 if t0 is not None:
-                    remaining_ms = timeout_ms - int((perf_counter() - t0) * 1000)
+                    remaining_ms = timeout_ms - int((time.perf_counter() - t0) * 1000)
                     if remaining_ms < 0:
                         break
 
@@ -865,7 +866,7 @@ class IXXATBus(BusABC):
             # Timed out / can message type is not DATA
             return None, True
 
-        data_len = can.util.dlc2len(self._message.uMsgInfo.Bits.dlc)
+        data_len = dlc2len(self._message.uMsgInfo.Bits.dlc)
         # The _message.dwTime is a 32bit tick value and will overrun,
         # so expect to see the value restarting from 0
         rx_msg = Message(
@@ -915,7 +916,7 @@ class IXXATBus(BusABC):
         message.uMsgInfo.Bits.edl = 1 if msg.is_fd else 0
         message.dwMsgId = msg.arbitration_id
         if msg.dlc:  # this dlc means number of bytes of payload
-            message.uMsgInfo.Bits.dlc = can.util.len2dlc(msg.dlc)
+            message.uMsgInfo.Bits.dlc = len2dlc(msg.dlc)
             data_len_dif = msg.dlc - len(msg.data)
             data = msg.data + bytearray(
                 [0] * data_len_dif
@@ -931,22 +932,45 @@ class IXXATBus(BusABC):
         else:
             _canlib.canChannelPostMessage(self._channel_handle, message)
 
-    def _send_periodic_internal(self, msgs, period, duration=None):
+    def _send_periodic_internal(
+        self,
+        msgs: Union[Sequence[Message], Message],
+        period: float,
+        duration: Optional[float] = None,
+        modifier_callback: Optional[Callable[[Message], None]] = None,
+    ) -> CyclicSendTaskABC:
         """Send a message using built-in cyclic transmit list functionality."""
-        if self._scheduler is None:
-            self._scheduler = HANDLE()
-            _canlib.canSchedulerOpen(self._device_handle, self.channel, self._scheduler)
-            caps = structures.CANCAPABILITIES2()
-            _canlib.canSchedulerGetCaps(self._scheduler, caps)
-            self._scheduler_resolution = (
-                caps.dwCmsClkFreq / caps.dwCmsDivisor
-            )  # TODO: confirm
-            _canlib.canSchedulerActivate(self._scheduler, constants.TRUE)
-        return CyclicSendTask(
-            self._scheduler, msgs, period, duration, self._scheduler_resolution
+        if modifier_callback is None:
+            if self._scheduler is None:
+                self._scheduler = HANDLE()
+                _canlib.canSchedulerOpen(
+                    self._device_handle, self.channel, self._scheduler
+                )
+                caps = structures.CANCAPABILITIES2()
+                _canlib.canSchedulerGetCaps(self._scheduler, caps)
+                self._scheduler_resolution = (
+                    caps.dwCmsClkFreq / caps.dwCmsDivisor
+                )  # TODO: confirm
+                _canlib.canSchedulerActivate(self._scheduler, constants.TRUE)
+            return CyclicSendTask(
+                self._scheduler, msgs, period, duration, self._scheduler_resolution
+            )
+
+        # fallback to thread based cyclic task
+        warnings.warn(
+            f"{self.__class__.__name__} falls back to a thread-based cyclic task, "
+            "when the `modifier_callback` argument is given."
+        )
+        return BusABC._send_periodic_internal(
+            self,
+            msgs=msgs,
+            period=period,
+            duration=duration,
+            modifier_callback=modifier_callback,
         )
 
     def shutdown(self):
+        super().shutdown()
         if self._scheduler is not None:
             _canlib.canSchedulerClose(self._scheduler)
         _canlib.canChannelClose(self._channel_handle)

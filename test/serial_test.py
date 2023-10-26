@@ -50,6 +50,9 @@ class SimpleSerialTestBase(ComparingMessagesTestCase):
             self, allowed_timestamp_delta=None, preserves_channel=True
         )
 
+    def test_can_protocol(self):
+        self.assertEqual(self.bus.protocol, can.CanProtocol.CAN_20)
+
     def test_rx_tx_min_max_data(self):
         """
         Tests the transfer from 0x00 to 0xFF for a 1 byte payload

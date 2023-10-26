@@ -91,9 +91,9 @@ class SocketCanDaemonBus(can.BusABC):
         )
         self._tcp_send(f"< open {channel} >")
         self._expect_msg("< ok >")
-        self._tcp_send(f"< rawmode >")
+        self._tcp_send("< rawmode >")
         self._expect_msg("< ok >")
-        super().__init__(channel=channel, can_filters=can_filters)
+        super().__init__(channel=channel, can_filters=can_filters, **kwargs)
 
     def _recv_internal(self, timeout):
         if len(self.__message_buffer) != 0:

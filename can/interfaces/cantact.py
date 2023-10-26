@@ -7,7 +7,7 @@ import time
 from typing import Any, Optional, Union
 from unittest.mock import Mock
 
-from can import BitTiming, BitTimingFd, BusABC, Message
+from can import BitTiming, BitTimingFd, BusABC, CanProtocol, Message
 
 from ..exceptions import (
     CanInitializationError,
@@ -87,6 +87,7 @@ class CantactBus(BusABC):
 
         self.channel = int(channel)
         self.channel_info = f"CANtact: ch:{channel}"
+        self._can_protocol = CanProtocol.CAN_20
 
         # Configure the interface
         with error_check("Cannot setup the cantact.Interface", CanInitializationError):
@@ -114,7 +115,10 @@ class CantactBus(BusABC):
             self.interface.start()
 
         super().__init__(
-            channel=channel, bitrate=bitrate, poll_interval=poll_interval, **kwargs
+            channel=channel,
+            bitrate=bitrate,
+            poll_interval=poll_interval,
+            **kwargs,
         )
 
     def _recv_internal(self, timeout):

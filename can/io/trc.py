@@ -11,12 +11,15 @@ import logging
 import os
 from datetime import datetime, timedelta, timezone
 from enum import Enum
-from typing import Callable, Dict, Generator, List, Optional, TextIO, Union
+from typing import Any, Callable, Dict, Generator, List, Optional, TextIO, Union
 
 from ..message import Message
 from ..typechecking import StringPathLike
 from ..util import channel2int, dlc2len, len2dlc
-from .generic import FileIOMessageWriter, MessageReader
+from .generic import (
+    TextIOMessageReader,
+    TextIOMessageWriter,
+)
 
 logger = logging.getLogger("can.io.trc")
 
@@ -36,7 +39,7 @@ class TRCFileVersion(Enum):
         return NotImplemented
 
 
-class TRCReader(MessageReader):
+class TRCReader(TextIOMessageReader):
     """
     Iterator of CAN messages from a TRC logging file.
     """
@@ -46,6 +49,7 @@ class TRCReader(MessageReader):
     def __init__(
         self,
         file: Union[StringPathLike, TextIO],
+        **kwargs: Any,
     ) -> None:
         """
         :param file: a path-like object or as file-like object to read from
@@ -64,8 +68,8 @@ class TRCReader(MessageReader):
 
     def _extract_header(self):
         line = ""
-        for line in self.file:
-            line = line.strip()
+        for _line in self.file:
+            line = _line.strip()
             if line.startswith(";$FILEVERSION"):
                 logger.debug("TRCReader: Found file version '%s'", line)
                 try:
@@ -241,7 +245,7 @@ class TRCReader(MessageReader):
         self.stop()
 
 
-class TRCWriter(FileIOMessageWriter):
+class TRCWriter(TextIOMessageWriter):
     """Logs CAN data to text file (.trc).
 
     The measurement starts with the timestamp of the first registered message.
@@ -262,6 +266,7 @@ class TRCWriter(FileIOMessageWriter):
         self,
         file: Union[StringPathLike, TextIO],
         channel: int = 1,
+        **kwargs: Any,
     ) -> None:
         """
         :param file: a path-like object or as file-like object to write to

@@ -35,7 +35,7 @@ class GsUsbBus(can.BusABC):
         """
         if (index is not None) and ((bus or address) is not None):
             raise CanInitializationError(
-                f"index and bus/address cannot be used simultaneously"
+                "index and bus/address cannot be used simultaneously"
             )
 
         if index is not None:
@@ -52,11 +52,16 @@ class GsUsbBus(can.BusABC):
 
         self.gs_usb = gs_usb
         self.channel_info = channel
+        self._can_protocol = can.CanProtocol.CAN_20
 
         self.gs_usb.set_bitrate(bitrate)
         self.gs_usb.start()
 
-        super().__init__(channel=channel, can_filters=can_filters, **kwargs)
+        super().__init__(
+            channel=channel,
+            can_filters=can_filters,
+            **kwargs,
+        )
 
     def send(self, msg: can.Message, timeout: Optional[float] = None):
         """Transmit a message to the CAN bus.

@@ -3,6 +3,7 @@ Test for PCAN Interface
 """
 
 import ctypes
+import struct
 import unittest
 from unittest import mock
 from unittest.mock import Mock, patch
@@ -11,7 +12,7 @@ import pytest
 from parameterized import parameterized
 
 import can
-from can.bus import BusState
+from can import BusState, CanProtocol
 from can.exceptions import CanInitializationError
 from can.interfaces.pcan import PcanBus, PcanError
 from can.interfaces.pcan.basic import *
@@ -52,8 +53,10 @@ class TestPCANBus(unittest.TestCase):
         self.bus = can.Bus(interface="pcan")
 
         self.assertIsInstance(self.bus, PcanBus)
-        self.MockPCANBasic.assert_called_once()
+        self.assertEqual(self.bus.protocol, CanProtocol.CAN_20)
+        self.assertFalse(self.bus.fd)
 
+        self.MockPCANBasic.assert_called_once()
         self.mock_pcan.Initialize.assert_called_once()
         self.mock_pcan.InitializeFD.assert_not_called()
 
@@ -79,6 +82,9 @@ class TestPCANBus(unittest.TestCase):
         )
 
         self.assertIsInstance(self.bus, PcanBus)
+        self.assertEqual(self.bus.protocol, CanProtocol.CAN_FD)
+        self.assertTrue(self.bus.fd)
+
         self.MockPCANBasic.assert_called_once()
         self.mock_pcan.Initialize.assert_not_called()
         self.mock_pcan.InitializeFD.assert_called_once()
@@ -113,6 +119,19 @@ class TestPCANBus(unittest.TestCase):
         self.mock_pcan.GetValue = Mock(return_value=(PCAN_ERROR_ILLOPERATION, None))
         with self.assertRaises(CanInitializationError):
             self.bus = can.Bus(interface="pcan")
+
+    def test_issue1642(self) -> None:
+        self.PCAN_API_VERSION_SIM = "1, 3, 0, 50"
+        with self.assertLogs("can.pcan", level="WARNING") as cm:
+            self.bus = can.Bus(interface="pcan")
+            found_version_warning = False
+            for i in cm.output:
+                if "version" in i and "pcan" in i:
+                    found_version_warning = True
+            self.assertTrue(
+                found_version_warning,
+                f"No warning was logged for incompatible api version {cm.output}",
+            )
 
     @parameterized.expand(
         [
@@ -374,9 +393,7 @@ class TestPCANBus(unittest.TestCase):
             self.assertEqual(len(configs), 50)
         else:
             value = (TPCANChannelInformation * 1).from_buffer_copy(
-                b"Q\x00\x05\x00\x01\x00\x00\x00PCAN-USB FD\x00\x00\x00\x00"
-                b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-                b'\x00\x00\x00\x00\x00\x00\x003"\x11\x00\x01\x00\x00\x00'
+                struct.pack("HBBI33sII", 81, 5, 0, 1, b"PCAN-USB FD", 1122867, 1)
             )
             self.mock_pcan.GetValue = Mock(return_value=(PCAN_ERROR_OK, value))
             configs = PcanBus._detect_available_configs()
@@ -451,10 +468,11 @@ class TestPCANBus(unittest.TestCase):
 
     def test_constructor_bit_timing(self):
         timing = can.BitTiming.from_registers(f_clock=8_000_000, btr0=0x47, btr1=0x2F)
-        can.Bus(interface="pcan", channel="PCAN_USBBUS1", timing=timing)
+        bus = can.Bus(interface="pcan", channel="PCAN_USBBUS1", timing=timing)
 
         bitrate_arg = self.mock_pcan.Initialize.call_args[0][1]
         self.assertEqual(bitrate_arg.value, 0x472F)
+        self.assertEqual(bus.protocol, CanProtocol.CAN_20)
 
     def test_constructor_bit_timing_fd(self):
         timing = can.BitTimingFd(
@@ -468,7 +486,8 @@ class TestPCANBus(unittest.TestCase):
             data_tseg2=6,
             data_sjw=1,
         )
-        can.Bus(interface="pcan", channel="PCAN_USBBUS1", timing=timing)
+        bus = can.Bus(interface="pcan", channel="PCAN_USBBUS1", timing=timing)
+        self.assertEqual(bus.protocol, CanProtocol.CAN_FD)
 
         bitrate_arg = self.mock_pcan.InitializeFD.call_args[0][-1]
 

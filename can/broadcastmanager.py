@@ -10,9 +10,7 @@ import logging
 import sys
 import threading
 import time
-from typing import TYPE_CHECKING, Callable, Optional, Sequence, Tuple, Union
-
-from typing_extensions import Final
+from typing import TYPE_CHECKING, Callable, Final, Optional, Sequence, Tuple, Union
 
 from can import typechecking
 from can.message import Message
@@ -24,6 +22,7 @@ if TYPE_CHECKING:
 # try to import win32event for event-based cyclic send task (needs the pywin32 package)
 USE_WINDOWS_EVENTS = False
 try:
+    import pywintypes
     import win32event
 
     # Python 3.11 provides a more precise sleep implementation on Windows, so this is not necessary.
@@ -36,7 +35,6 @@ except ImportError:
 log = logging.getLogger("can.bcm")
 
 NANOSECONDS_IN_SECOND: Final[int] = 1_000_000_000
-NANOSECONDS_IN_MILLISECOND: Final[int] = 1_000_000
 
 
 class CyclicTask(abc.ABC):
@@ -53,7 +51,7 @@ class CyclicTask(abc.ABC):
         """
 
 
-class CyclicSendTaskABC(CyclicTask):
+class CyclicSendTaskABC(CyclicTask, abc.ABC):
     """
     Message send task with defined period
     """
@@ -114,7 +112,7 @@ class CyclicSendTaskABC(CyclicTask):
         return messages
 
 
-class LimitedDurationCyclicSendTaskABC(CyclicSendTaskABC):
+class LimitedDurationCyclicSendTaskABC(CyclicSendTaskABC, abc.ABC):
     def __init__(
         self,
         messages: Union[Sequence[Message], Message],
@@ -136,7 +134,7 @@ class LimitedDurationCyclicSendTaskABC(CyclicSendTaskABC):
         self.duration = duration
 
 
-class RestartableCyclicTaskABC(CyclicSendTaskABC):
+class RestartableCyclicTaskABC(CyclicSendTaskABC, abc.ABC):
     """Adds support for restarting a stopped cyclic task"""
 
     @abc.abstractmethod
@@ -144,9 +142,7 @@ class RestartableCyclicTaskABC(CyclicSendTaskABC):
         """Restart a stopped periodic task."""
 
 
-class ModifiableCyclicTaskABC(CyclicSendTaskABC):
-    """Adds support for modifying a periodic message"""
-
+class ModifiableCyclicTaskABC(CyclicSendTaskABC, abc.ABC):
     def _check_modified_messages(self, messages: Tuple[Message, ...]) -> None:
         """Helper function to perform error checking when modifying the data in
         the cyclic task.
@@ -190,7 +186,7 @@ class ModifiableCyclicTaskABC(CyclicSendTaskABC):
         self.messages = messages
 
 
-class MultiRateCyclicSendTaskABC(CyclicSendTaskABC):
+class MultiRateCyclicSendTaskABC(CyclicSendTaskABC, abc.ABC):
     """A Cyclic send task that supports switches send frequency after a set time."""
 
     def __init__(
@@ -218,7 +214,7 @@ class MultiRateCyclicSendTaskABC(CyclicSendTaskABC):
 
 
 class ThreadBasedCyclicSendTask(
-    ModifiableCyclicTaskABC, LimitedDurationCyclicSendTaskABC, RestartableCyclicTaskABC
+    LimitedDurationCyclicSendTaskABC, ModifiableCyclicTaskABC, RestartableCyclicTaskABC
 ):
     """Fallback cyclic send task using daemon thread."""
 
@@ -230,6 +226,7 @@ class ThreadBasedCyclicSendTask(
         period: float,
         duration: Optional[float] = None,
         on_error: Optional[Callable[[Exception], bool]] = None,
+        modifier_callback: Optional[Callable[[Message], None]] = None,
     ) -> None:
         """Transmits `messages` with a `period` seconds for `duration` seconds on a `bus`.
 
@@ -255,6 +252,7 @@ class ThreadBasedCyclicSendTask(
             time.perf_counter() + duration if duration else None
         )
         self.on_error = on_error
+        self.modifier_callback = modifier_callback
 
         if USE_WINDOWS_EVENTS:
             self.period_ms = int(round(period * 1000, 0))
@@ -265,15 +263,16 @@ class ThreadBasedCyclicSendTask(
                     win32event.CREATE_WAITABLE_TIMER_HIGH_RESOLUTION,
                     win32event.TIMER_ALL_ACCESS,
                 )
-            except (AttributeError, OSError):
+            except (AttributeError, OSError, pywintypes.error):
                 self.event = win32event.CreateWaitableTimer(None, False, None)
 
         self.start()
 
     def stop(self) -> None:
-        if USE_WINDOWS_EVENTS:
-            win32event.CancelWaitableTimer(self.event.handle)
         self.stopped = True
+        if USE_WINDOWS_EVENTS:
+            # Reset and signal any pending wait by setting the timer to 0
+            win32event.SetWaitableTimer(self.event.handle, 0, 0, None, None, False)
 
     def start(self) -> None:
         self.stopped = False
@@ -293,31 +292,43 @@ class ThreadBasedCyclicSendTask(
         msg_index = 0
         msg_due_time_ns = time.perf_counter_ns()
 
+        if USE_WINDOWS_EVENTS:
+            # Make sure the timer is non-signaled before entering the loop
+            win32event.WaitForSingleObject(self.event.handle, 0)
+
         while not self.stopped:
             # Prevent calling bus.send from multiple threads
             with self.send_lock:
                 try:
+                    if self.modifier_callback is not None:
+                        self.modifier_callback(self.messages[msg_index])
                     self.bus.send(self.messages[msg_index])
                 except Exception as exc:  # pylint: disable=broad-except
                     log.exception(exc)
-                    if self.on_error:
-                        if not self.on_error(exc):
-                            break
-                    else:
+
+                    # stop if `on_error` callback was not given
+                    if self.on_error is None:
+                        self.stop()
+                        raise exc
+
+                    # stop if `on_error` returns False
+                    if not self.on_error(exc):
+                        self.stop()
                         break
-            msg_due_time_ns += self.period_ns
+
+            if not USE_WINDOWS_EVENTS:
+                msg_due_time_ns += self.period_ns
             if self.end_time is not None and time.perf_counter() >= self.end_time:
                 break
             msg_index = (msg_index + 1) % len(self.messages)
 
-            # Compensate for the time it takes to send the message
-            delay_ns = msg_due_time_ns - time.perf_counter_ns()
-
-            if delay_ns > 0:
-                if USE_WINDOWS_EVENTS:
-                    win32event.WaitForSingleObject(
-                        self.event.handle,
-                        int(round(delay_ns / NANOSECONDS_IN_MILLISECOND)),
-                    )
-                else:
+            if USE_WINDOWS_EVENTS:
+                win32event.WaitForSingleObject(
+                    self.event.handle,
+                    win32event.INFINITE,
+                )
+            else:
+                # Compensate for the time it takes to send the message
+                delay_ns = msg_due_time_ns - time.perf_counter_ns()
+                if delay_ns > 0:
                     time.sleep(delay_ns / NANOSECONDS_IN_SECOND)

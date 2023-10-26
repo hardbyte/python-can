@@ -253,14 +253,10 @@ class TestCheckAdjustTimingClock(unittest.TestCase):
             )
             assert new_timing.__class__ == BitTimingFd
             assert new_timing.f_clock == 80_000_000
-            assert new_timing.nom_bitrate == 500_000
-            assert new_timing.nom_tseg1 == 119
-            assert new_timing.nom_tseg2 == 40
-            assert new_timing.nom_sjw == 40
-            assert new_timing.data_bitrate == 2_000_000
-            assert new_timing.data_tseg1 == 29
-            assert new_timing.data_tseg2 == 10
-            assert new_timing.data_sjw == 10
+            assert new_timing.nom_bitrate == timing.nom_bitrate
+            assert new_timing.nom_sample_point == timing.nom_sample_point
+            assert new_timing.data_bitrate == timing.data_bitrate
+            assert new_timing.data_sample_point == timing.data_sample_point
 
         with pytest.raises(CanInitializationError):
             check_or_adjust_timing_clock(timing, valid_clocks=[8_000, 16_000])

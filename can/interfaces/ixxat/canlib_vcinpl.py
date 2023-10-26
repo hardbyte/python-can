@@ -13,17 +13,22 @@ import ctypes
 import functools
 import logging
 import sys
-from typing import Callable, Optional, Tuple
+import warnings
+from typing import Callable, List, Optional, Sequence, Tuple, Union
 
-from can import BusABC, Message
-from can.broadcastmanager import (
+from can import (
+    BusABC,
+    BusState,
+    CanProtocol,
+    CyclicSendTaskABC,
     LimitedDurationCyclicSendTaskABC,
+    Message,
     RestartableCyclicTaskABC,
 )
-from can.bus import BusState
 from can.ctypesutil import HANDLE, PHANDLE, CLibrary
 from can.ctypesutil import HRESULT as ctypes_HRESULT
 from can.exceptions import CanInitializationError, CanInterfaceNotImplementedError
+from can.typechecking import AutoDetectedConfig
 from can.util import deprecated_args_alias
 
 from . import constants, structures
@@ -490,6 +495,7 @@ class IXXATBus(BusABC):
         self._channel_capabilities = structures.CANCAPABILITIES()
         self._message = structures.CANMSG()
         self._payload = (ctypes.c_byte * 8)()
+        self._can_protocol = CanProtocol.CAN_20
 
         # Search for supplied device
         if unique_hardware_id is None:
@@ -784,20 +790,43 @@ class IXXATBus(BusABC):
         # Want to log outgoing messages?
         # log.log(self.RECV_LOGGING_LEVEL, "Sent: %s", message)
 
-    def _send_periodic_internal(self, msgs, period, duration=None):
+    def _send_periodic_internal(
+        self,
+        msgs: Union[Sequence[Message], Message],
+        period: float,
+        duration: Optional[float] = None,
+        modifier_callback: Optional[Callable[[Message], None]] = None,
+    ) -> CyclicSendTaskABC:
         """Send a message using built-in cyclic transmit list functionality."""
-        if self._scheduler is None:
-            self._scheduler = HANDLE()
-            _canlib.canSchedulerOpen(self._device_handle, self.channel, self._scheduler)
-            caps = structures.CANCAPABILITIES()
-            _canlib.canSchedulerGetCaps(self._scheduler, caps)
-            self._scheduler_resolution = caps.dwClockFreq / caps.dwCmsDivisor
-            _canlib.canSchedulerActivate(self._scheduler, constants.TRUE)
-        return CyclicSendTask(
-            self._scheduler, msgs, period, duration, self._scheduler_resolution
+        if modifier_callback is None:
+            if self._scheduler is None:
+                self._scheduler = HANDLE()
+                _canlib.canSchedulerOpen(
+                    self._device_handle, self.channel, self._scheduler
+                )
+                caps = structures.CANCAPABILITIES()
+                _canlib.canSchedulerGetCaps(self._scheduler, caps)
+                self._scheduler_resolution = caps.dwClockFreq / caps.dwCmsDivisor
+                _canlib.canSchedulerActivate(self._scheduler, constants.TRUE)
+            return CyclicSendTask(
+                self._scheduler, msgs, period, duration, self._scheduler_resolution
+            )
+
+        # fallback to thread based cyclic task
+        warnings.warn(
+            f"{self.__class__.__name__} falls back to a thread-based cyclic task, "
+            "when the `modifier_callback` argument is given."
+        )
+        return BusABC._send_periodic_internal(
+            self,
+            msgs=msgs,
+            period=period,
+            duration=duration,
+            modifier_callback=modifier_callback,
         )
 
     def shutdown(self):
+        super().shutdown()
         if self._scheduler is not None:
             _canlib.canSchedulerClose(self._scheduler)
         _canlib.canChannelClose(self._channel_handle)
@@ -824,7 +853,7 @@ class IXXATBus(BusABC):
         error_byte_2 = status.dwStatus & 0xF0
         # CAN_STATUS_BUSCERR  = 0x20  # bus coupling error
         if error_byte_2 & constants.CAN_STATUS_BUSCERR:
-            raise BusState.ERROR
+            return BusState.ERROR
 
         return BusState.ACTIVE
 
@@ -915,3 +944,55 @@ def get_ixxat_hwids():
     _canlib.vciEnumDeviceClose(device_handle)
 
     return hwids
+
+
+def _detect_available_configs() -> List[AutoDetectedConfig]:
+    config_list = []  # list in wich to store the resulting bus kwargs
+
+    # used to detect HWID
+    device_handle = HANDLE()
+    device_info = structures.VCIDEVICEINFO()
+
+    # used to attempt to open channels
+    channel_handle = HANDLE()
+    device_handle2 = HANDLE()
+
+    try:
+        _canlib.vciEnumDeviceOpen(ctypes.byref(device_handle))
+        while True:
+            try:
+                _canlib.vciEnumDeviceNext(device_handle, ctypes.byref(device_info))
+            except StopIteration:
+                break
+            else:
+                hwid = device_info.UniqueHardwareId.AsChar.decode("ascii")
+                _canlib.vciDeviceOpen(
+                    ctypes.byref(device_info.VciObjectId),
+                    ctypes.byref(device_handle2),
+                )
+                for channel in range(4):
+                    try:
+                        _canlib.canChannelOpen(
+                            device_handle2,
+                            channel,
+                            constants.FALSE,
+                            ctypes.byref(channel_handle),
+                        )
+                    except Exception:
+                        # Array outside of bounds error == accessing a channel not in the hardware
+                        break
+                    else:
+                        _canlib.canChannelClose(channel_handle)
+                        config_list.append(
+                            {
+                                "interface": "ixxat",
+                                "channel": channel,
+                                "unique_hardware_id": hwid,
+                            }
+                        )
+                _canlib.vciDeviceClose(device_handle2)
+        _canlib.vciEnumDeviceClose(device_handle)
+    except AttributeError:
+        pass  # _canlib is None in the CI tests -> return a blank list
+
+    return config_list

@@ -17,11 +17,11 @@ python-can
    :target: https://pypi.python.org/pypi/python-can/
    :alt: Supported Python implementations
 
-.. |downloads| image:: https://pepy.tech/badge/python-can
+.. |downloads| image:: https://static.pepy.tech/badge/python-can
    :target: https://pepy.tech/project/python-can
    :alt: Downloads on PePy
 
-.. |downloads_monthly| image:: https://pepy.tech/badge/python-can/month
+.. |downloads_monthly| image:: https://static.pepy.tech/badge/python-can/month
    :target: https://pepy.tech/project/python-can
    :alt: Monthly downloads on PePy
 
@@ -62,7 +62,8 @@ Library Version                 Python
 ------------------------------  -----------
   2.x                           2.6+, 3.4+
   3.x                           2.7+, 3.5+
-  4.x                           3.7+
+  4.0+                          3.7+
+  4.3+                          3.8+
 ==============================  ===========
 
 

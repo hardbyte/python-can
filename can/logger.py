@@ -3,15 +3,17 @@ import errno
 import re
 import sys
 from datetime import datetime
-from typing import Any, Dict, List, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Sequence, Tuple, Union
 
 import can
-from can.io import BaseRotatingLogger
-from can.io.generic import MessageWriter
 from can.util import cast_from_string
 
 from . import Bus, BusState, Logger, SizedRotatingLogger
 from .typechecking import CanFilter, CanFilters
+
+if TYPE_CHECKING:
+    from can.io import BaseRotatingLogger
+    from can.io.generic import MessageWriter
 
 
 def _create_base_argument_parser(parser: argparse.ArgumentParser) -> None:
@@ -85,7 +87,7 @@ def _append_filter_argument(
     )
 
 
-def _create_bus(parsed_args: Any, **kwargs: Any) -> can.Bus:
+def _create_bus(parsed_args: Any, **kwargs: Any) -> can.BusABC:
     logging_level_names = ["critical", "error", "warning", "info", "debug", "subdebug"]
     can.set_logging_level(logging_level_names[min(5, parsed_args.verbosity)])
 
@@ -99,7 +101,7 @@ def _create_bus(parsed_args: Any, **kwargs: Any) -> can.Bus:
     if parsed_args.data_bitrate:
         config["data_bitrate"] = parsed_args.data_bitrate
 
-    return Bus(parsed_args.channel, **config)  # type: ignore
+    return Bus(parsed_args.channel, **config)
 
 
 def _parse_filters(parsed_args: Any) -> CanFilters:

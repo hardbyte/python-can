@@ -14,7 +14,7 @@ from typing import Any, Dict, Generator, List, Optional, TextIO, Union
 from ..message import Message
 from ..typechecking import StringPathLike
 from ..util import channel2int, dlc2len, len2dlc
-from .generic import FileIOMessageWriter, MessageReader
+from .generic import TextIOMessageReader, TextIOMessageWriter
 
 CAN_MSG_EXT = 0x80000000
 CAN_ID_MASK = 0x1FFFFFFF
@@ -24,7 +24,7 @@ BASE_DEC = 10
 logger = logging.getLogger("can.io.asc")
 
 
-class ASCReader(MessageReader):
+class ASCReader(TextIOMessageReader):
     """
     Iterator of CAN messages from a ASC logging file. Meta data (comments,
     bus statistics, J1939 Transport Protocol messages) is ignored.
@@ -64,8 +64,8 @@ class ASCReader(MessageReader):
         self.internal_events_logged = False
 
     def _extract_header(self) -> None:
-        for line in self.file:
-            line = line.strip()
+        for _line in self.file:
+            line = _line.strip()
 
             datetime_match = re.match(
                 r"date\s+\w+\s+(?P<datetime_string>.+)", line, re.IGNORECASE
@@ -255,8 +255,8 @@ class ASCReader(MessageReader):
     def __iter__(self) -> Generator[Message, None, None]:
         self._extract_header()
 
-        for line in self.file:
-            line = line.strip()
+        for _line in self.file:
+            line = _line.strip()
 
             trigger_match = re.match(
                 r"begin\s+triggerblock\s+\w+\s+(?P<datetime_string>.+)",
@@ -308,7 +308,7 @@ class ASCReader(MessageReader):
         self.stop()
 
 
-class ASCWriter(FileIOMessageWriter):
+class ASCWriter(TextIOMessageWriter):
     """Logs CAN data to an ASCII log file (.asc).
 
     The measurement starts with the timestamp of the first registered message.
@@ -420,8 +420,15 @@ class ASCWriter(FileIOMessageWriter):
         self.file.write(line)
 
     def on_message_received(self, msg: Message) -> None:
+        channel = channel2int(msg.channel)
+        if channel is None:
+            channel = self.channel
+        else:
+            # Many interfaces start channel numbering at 0 which is invalid
+            channel += 1
+
         if msg.is_error_frame:
-            self.log_event(f"{self.channel}  ErrorFrame", msg.timestamp)
+            self.log_event(f"{channel}  ErrorFrame", msg.timestamp)
             return
         if msg.is_remote_frame:
             dtype = f"r {msg.dlc:x}"  # New after v8.5
@@ -432,12 +439,6 @@ class ASCWriter(FileIOMessageWriter):
         arb_id = f"{msg.arbitration_id:X}"
         if msg.is_extended_id:
             arb_id += "x"
-        channel = channel2int(msg.channel)
-        if channel is None:
-            channel = self.channel
-        else:
-            # Many interfaces start channel numbering at 0 which is invalid
-            channel += 1
         if msg.is_fd:
             flags = 0
             flags |= 1 << 12

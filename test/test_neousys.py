@@ -36,6 +36,7 @@ class TestNeousysBus(unittest.TestCase):
 
     def test_bus_creation(self) -> None:
         self.assertIsInstance(self.bus, neousys.NeousysBus)
+        self.assertEqual(self.bus.protocol, can.CanProtocol.CAN_20)
         neousys.NEOUSYS_CANLIB.CAN_Setup.assert_called()
         neousys.NEOUSYS_CANLIB.CAN_Start.assert_called()
         neousys.NEOUSYS_CANLIB.CAN_RegisterReceived.assert_called()
@@ -62,6 +63,8 @@ class TestNeousysBus(unittest.TestCase):
     def test_bus_creation_bitrate(self) -> None:
         self.bus = can.Bus(channel=0, interface="neousys", bitrate=200000)
         self.assertIsInstance(self.bus, neousys.NeousysBus)
+        self.assertEqual(self.bus.protocol, can.CanProtocol.CAN_20)
+
         CAN_Start_args = (
             can.interfaces.neousys.neousys.NEOUSYS_CANLIB.CAN_Setup.call_args[0]
         )

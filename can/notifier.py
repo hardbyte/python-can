@@ -3,10 +3,11 @@ This module contains the implementation of :class:`~can.Notifier`.
 """
 
 import asyncio
+import functools
 import logging
 import threading
 import time
-from typing import Awaitable, Callable, Iterable, List, Optional, Union
+from typing import Awaitable, Callable, Iterable, List, Optional, Union, cast
 
 from can.bus import BusABC
 from can.listener import Listener
@@ -104,44 +105,46 @@ class Notifier:
                 # reader is a file descriptor
                 self._loop.remove_reader(reader)
         for listener in self.listeners:
-            # Mypy prefers this over a hasattr(...) check
-            getattr(listener, "stop", lambda: None)()
+            if hasattr(listener, "stop"):
+                listener.stop()
 
     def _rx_thread(self, bus: BusABC) -> None:
-        msg = None
-        try:
-            while self._running:
-                if msg is not None:
+        # determine message handling callable early, not inside while loop
+        handle_message = cast(
+            Callable[[Message], None],
+            self._on_message_received
+            if self._loop is None
+            else functools.partial(
+                self._loop.call_soon_threadsafe, self._on_message_received
+            ),
+        )
+
+        while self._running:
+            try:
+                if msg := bus.recv(self.timeout):
                     with self._lock:
-                        if self._loop is not None:
-                            self._loop.call_soon_threadsafe(
-                                self._on_message_received, msg
-                            )
-                        else:
-                            self._on_message_received(msg)
-                msg = bus.recv(self.timeout)
-        except Exception as exc:  # pylint: disable=broad-except
-            self.exception = exc
-            if self._loop is not None:
-                self._loop.call_soon_threadsafe(self._on_error, exc)
-                # Raise anyways
-                raise
-            elif not self._on_error(exc):
-                # If it was not handled, raise the exception here
-                raise
-            else:
-                # It was handled, so only log it
-                logger.info("suppressed exception: %s", exc)
+                        handle_message(msg)
+            except Exception as exc:  # pylint: disable=broad-except
+                self.exception = exc
+                if self._loop is not None:
+                    self._loop.call_soon_threadsafe(self._on_error, exc)
+                    # Raise anyway
+                    raise
+                elif not self._on_error(exc):
+                    # If it was not handled, raise the exception here
+                    raise
+                else:
+                    # It was handled, so only log it
+                    logger.debug("suppressed exception: %s", exc)
 
     def _on_message_available(self, bus: BusABC) -> None:
-        msg = bus.recv(0)
-        if msg is not None:
+        if msg := bus.recv(0):
             self._on_message_received(msg)
 
     def _on_message_received(self, msg: Message) -> None:
         for callback in self.listeners:
             res = callback(msg)
-            if res is not None and self._loop is not None and asyncio.iscoroutine(res):
+            if res and self._loop and asyncio.iscoroutine(res):
                 # Schedule coroutine
                 self._loop.create_task(res)
 
@@ -153,12 +156,9 @@ class Notifier:
         was_handled = False
 
         for listener in self.listeners:
-            on_error = getattr(
-                listener, "on_error", None
-            )  # Mypy prefers this over hasattr(...)
-            if on_error is not None:
+            if hasattr(listener, "on_error"):
                 try:
-                    on_error(exc)
+                    listener.on_error(exc)
                 except NotImplementedError:
                     pass
                 else:

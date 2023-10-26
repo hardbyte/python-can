@@ -53,9 +53,11 @@ The documentation can be built with::
 
 The linters can be run with::
 
-    pip install -r requirements-lint.txt
-    pylint --rcfile=.pylintrc-wip can/**.py
-    black --check --verbose can
+    pip install -e .[lint]
+    black --check can
+    mypy can
+    ruff check can
+    pylint --rcfile=.pylintrc can/**.py
 
 
 Creating a new interface/backend

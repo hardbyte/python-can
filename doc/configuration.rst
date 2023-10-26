@@ -36,7 +36,7 @@ You can also specify the interface and channel for each Bus instance::
 Configuration File
 ------------------
 
-On Linux systems the config file is searched in the following paths:
+On Linux and macOS systems the config file is searched in the following paths:
 
 #. ``~/can.conf``
 #. ``/etc/can.conf``

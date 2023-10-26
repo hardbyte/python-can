@@ -15,7 +15,7 @@ from threading import RLock
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from can import CanOperationError
-from can.bus import BusABC
+from can.bus import BusABC, CanProtocol
 from can.message import Message
 from can.typechecking import AutoDetectedConfig
 
@@ -33,7 +33,8 @@ channels_lock = RLock()
 
 class VirtualBus(BusABC):
     """
-    A virtual CAN bus using an internal message queue. It can be used for example for testing.
+    A virtual CAN bus using an internal message queue. It can be used for
+    example for testing.
 
     In this interface, a channel is an arbitrary object used as
     an identifier for connected buses.
@@ -48,9 +49,11 @@ class VirtualBus(BusABC):
         if a message is sent to 5 receivers with the timeout set to 1.0.
 
     .. warning::
-        This interface guarantees reliable delivery and message ordering, but does *not* implement rate
-        limiting or ID arbitration/prioritization under high loads. Please refer to the section
-        :ref:`virtual_interfaces_doc` for more information on this and a comparison to alternatives.
+        This interface guarantees reliable delivery and message ordering, but
+        does *not* implement rate limiting or ID arbitration/prioritization
+        under high loads. Please refer to the section
+        :ref:`virtual_interfaces_doc` for more information on this and a
+        comparison to alternatives.
     """
 
     def __init__(
@@ -59,14 +62,45 @@ class VirtualBus(BusABC):
         receive_own_messages: bool = False,
         rx_queue_size: int = 0,
         preserve_timestamps: bool = False,
+        protocol: CanProtocol = CanProtocol.CAN_20,
         **kwargs: Any,
     ) -> None:
+        """
+        The constructed instance has access to the bus identified by the
+        channel parameter. It is able to see all messages transmitted on the
+        bus by virtual instances constructed with the same channel identifier.
+
+        :param channel: The channel identifier. This parameter can be an
+            arbitrary value. The bus instance will be able to see messages
+            from other virtual bus instances that were created with the same
+            value.
+        :param receive_own_messages: If set to True, sent messages will be
+            reflected back on the input queue.
+        :param rx_queue_size: The size of the reception queue. The reception
+            queue stores messages until they are read. If the queue reaches
+            its capacity, it will start dropping the oldest messages to make
+            room for new ones. If set to 0, the queue has an infinite capacity.
+            Be aware that this can cause memory leaks if messages are read
+            with a lower frequency than they arrive on the bus.
+        :param preserve_timestamps: If set to True, messages transmitted via
+            :func:`~can.BusABC.send` will keep the timestamp set in the
+            :class:`~can.Message` instance. Otherwise, the timestamp value
+            will be replaced with the current system time.
+        :param protocol: The protocol implemented by this bus instance. The
+            value does not affect the operation of the bus instance and can
+            be set to an arbitrary value for testing purposes.
+        :param kwargs: Additional keyword arguments passed to the parent
+            constructor.
+        """
         super().__init__(
-            channel=channel, receive_own_messages=receive_own_messages, **kwargs
+            channel=channel,
+            receive_own_messages=receive_own_messages,
+            **kwargs,
         )
 
         # the channel identifier may be an arbitrary object
         self.channel_id = channel
+        self._can_protocol = protocol
         self.channel_info = f"Virtual bus channel {self.channel_id}"
         self.receive_own_messages = receive_own_messages
         self.preserve_timestamps = preserve_timestamps

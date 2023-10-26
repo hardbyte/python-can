@@ -14,7 +14,7 @@ from typing import Any, BinaryIO, Generator, Optional, Union, cast
 from ..message import Message
 from ..typechecking import StringPathLike
 from ..util import channel2int, dlc2len, len2dlc
-from .generic import FileIOMessageWriter, MessageReader
+from .generic import BinaryIOMessageReader, BinaryIOMessageWriter
 
 logger = logging.getLogger("can.io.mf4")
 
@@ -75,7 +75,7 @@ CAN_MSG_EXT = 0x80000000
 CAN_ID_MASK = 0x1FFFFFFF
 
 
-class MF4Writer(FileIOMessageWriter):
+class MF4Writer(BinaryIOMessageWriter):
     """Logs CAN data to an ASAM Measurement Data File v4 (.mf4).
 
     MF4Writer does not support append mode.
@@ -265,14 +265,18 @@ class MF4Writer(FileIOMessageWriter):
         self._rtr_buffer = np.zeros(1, dtype=RTR_DTYPE)
 
 
-class MF4Reader(MessageReader):
+class MF4Reader(BinaryIOMessageReader):
     """
     Iterator of CAN messages from a MF4 logging file.
 
     The MF4Reader only supports MF4 files that were recorded with python-can.
     """
 
-    def __init__(self, file: Union[StringPathLike, BinaryIO]) -> None:
+    def __init__(
+        self,
+        file: Union[StringPathLike, BinaryIO],
+        **kwargs: Any,
+    ) -> None:
         """
         :param file: a path-like object or as file-like object to read from
                         If this is a file-like object, is has to be opened in

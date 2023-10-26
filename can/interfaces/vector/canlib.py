@@ -4,13 +4,12 @@ Ctypes wrapper module for Vector CAN Interface on win32/win64 systems.
 Authors: Julien Grave <grave.jul@gmail.com>, Christian Sandberg
 """
 
-# Import Standard Python Modules
-# ==============================
 import contextlib
 import ctypes
 import logging
 import os
 import time
+import warnings
 from types import ModuleType
 from typing import (
     Any,
@@ -25,25 +24,13 @@ from typing import (
     cast,
 )
 
-WaitForSingleObject: Optional[Callable[[int, int], int]]
-INFINITE: Optional[int]
-try:
-    # Try builtin Python 3 Windows API
-    from _winapi import INFINITE, WaitForSingleObject  # type: ignore
-
-    HAS_EVENTS = True
-except ImportError:
-    WaitForSingleObject, INFINITE = None, None
-    HAS_EVENTS = False
-
-# Import Modules
-# ==============
 from can import (
     BitTiming,
     BitTimingFd,
     BusABC,
     CanInitializationError,
     CanInterfaceNotImplementedError,
+    CanProtocol,
     Message,
 )
 from can.typechecking import AutoDetectedConfig, CanFilters
@@ -55,14 +42,10 @@ from can.util import (
     time_perfcounter_correlation,
 )
 
-# Define Module Logger
-# ====================
-LOG = logging.getLogger(__name__)
-
-# Import Vector API modules
-# =========================
 from . import xlclass, xldefine
 from .exceptions import VectorError, VectorInitializationError, VectorOperationError
+
+LOG = logging.getLogger(__name__)
 
 # Import safely Vector API module for Travis tests
 xldriver: Optional[ModuleType] = None
@@ -71,23 +54,32 @@ try:
 except Exception as exc:
     LOG.warning("Could not import vxlapi: %s", exc)
 
+WaitForSingleObject: Optional[Callable[[int, int], int]]
+INFINITE: Optional[int]
+try:
+    # Try builtin Python 3 Windows API
+    from _winapi import INFINITE, WaitForSingleObject  # type: ignore
+
+    HAS_EVENTS = True
+except ImportError:
+    WaitForSingleObject, INFINITE = None, None
+    HAS_EVENTS = False
+
 
 class VectorBus(BusABC):
     """The CAN Bus implemented for the Vector interface."""
 
-    deprecated_args = dict(
-        sjwAbr="sjw_abr",
-        tseg1Abr="tseg1_abr",
-        tseg2Abr="tseg2_abr",
-        sjwDbr="sjw_dbr",
-        tseg1Dbr="tseg1_dbr",
-        tseg2Dbr="tseg2_dbr",
-    )
-
     @deprecated_args_alias(
         deprecation_start="4.0.0",
         deprecation_end="5.0.0",
-        **deprecated_args,
+        **{
+            "sjwAbr": "sjw_abr",
+            "tseg1Abr": "tseg1_abr",
+            "tseg2Abr": "tseg2_abr",
+            "sjwDbr": "sjw_dbr",
+            "tseg1Dbr": "tseg1_dbr",
+            "tseg2Dbr": "tseg2_dbr",
+        },
     )
     def __init__(
         self,
@@ -202,19 +194,28 @@ class VectorBus(BusABC):
         )
 
         channel_configs = get_channel_configs()
+        is_fd = isinstance(timing, BitTimingFd) if timing else fd
 
         self.mask = 0
-        self.fd = isinstance(timing, BitTimingFd) if timing else fd
         self.channel_masks: Dict[int, int] = {}
         self.index_to_channel: Dict[int, int] = {}
+        self._can_protocol = CanProtocol.CAN_FD if is_fd else CanProtocol.CAN_20
 
         for channel in self.channels:
-            channel_index = self._find_global_channel_idx(
-                channel=channel,
-                serial=serial,
-                app_name=app_name,
-                channel_configs=channel_configs,
-            )
+            if (_channel_index := kwargs.get("channel_index", None)) is not None:
+                # VectorBus._detect_available_configs() might return multiple
+                # devices with the same serial number, e.g. if a VN8900 is connected via both USB and Ethernet
+                # at the same time. If the VectorBus is instantiated with a config, that was returned from
+                # VectorBus._detect_available_configs(), then use the contained global channel_index
+                # to avoid any ambiguities.
+                channel_index = cast(int, _channel_index)
+            else:
+                channel_index = self._find_global_channel_idx(
+                    channel=channel,
+                    serial=serial,
+                    app_name=app_name,
+                    channel_configs=channel_configs,
+                )
             LOG.debug("Channel index %d found", channel)
 
             channel_mask = 1 << channel_index
@@ -229,7 +230,7 @@ class VectorBus(BusABC):
 
         interface_version = (
             xldefine.XL_InterfaceVersion.XL_INTERFACE_VERSION_V4
-            if self.fd
+            if is_fd
             else xldefine.XL_InterfaceVersion.XL_INTERFACE_VERSION
         )
 
@@ -324,7 +325,20 @@ class VectorBus(BusABC):
             self._time_offset = 0.0
 
         self._is_filtered = False
-        super().__init__(channel=channel, can_filters=can_filters, **kwargs)
+        super().__init__(
+            channel=channel,
+            can_filters=can_filters,
+            **kwargs,
+        )
+
+    @property
+    def fd(self) -> bool:
+        warnings.warn(
+            "The VectorBus.fd property is deprecated and superseded by "
+            "BusABC.protocol. It is scheduled for removal in version 5.0.",
+            DeprecationWarning,
+        )
+        return self._can_protocol is CanProtocol.CAN_FD
 
     def _find_global_channel_idx(
         self,
@@ -392,7 +406,11 @@ class VectorBus(BusABC):
         vcc_list = get_channel_configs()
         for vcc in vcc_list:
             if vcc.channel_mask == channel_mask:
-                return vcc.bus_params
+                bus_params = vcc.bus_params
+                if bus_params is None:
+                    # for CAN channels, this should never be `None`
+                    raise ValueError("Invalid bus parameters.")
+                return bus_params
 
         raise CanInitializationError(
             f"Channel configuration for channel {channel} not found."
@@ -528,16 +546,19 @@ class VectorBus(BusABC):
         )
 
         # check CAN operation mode
-        if fd:
-            settings_acceptable &= bool(
-                bus_params_data.can_op_mode
-                & xldefine.XL_CANFD_BusParams_CanOpMode.XL_BUS_PARAMS_CANOPMODE_CANFD
-            )
-        elif bus_params_data.can_op_mode != 0:  # can_op_mode is always 0 for cancaseXL
-            settings_acceptable &= bool(
-                bus_params_data.can_op_mode
-                & xldefine.XL_CANFD_BusParams_CanOpMode.XL_BUS_PARAMS_CANOPMODE_CAN20
-            )
+        # skip the check if can_op_mode is 0
+        # as it happens for cancaseXL, VN7600 and sometimes on other hardware (VN1640)
+        if bus_params_data.can_op_mode:
+            if fd:
+                settings_acceptable &= bool(
+                    bus_params_data.can_op_mode
+                    & xldefine.XL_CANFD_BusParams_CanOpMode.XL_BUS_PARAMS_CANOPMODE_CANFD
+                )
+            else:
+                settings_acceptable &= bool(
+                    bus_params_data.can_op_mode
+                    & xldefine.XL_CANFD_BusParams_CanOpMode.XL_BUS_PARAMS_CANOPMODE_CAN20
+                )
 
         # check bitrates
         if bitrate:
@@ -647,7 +668,7 @@ class VectorBus(BusABC):
 
         while True:
             try:
-                if self.fd:
+                if self._can_protocol is CanProtocol.CAN_FD:
                     msg = self._recv_canfd()
                 else:
                     msg = self._recv_can()
@@ -781,7 +802,7 @@ class VectorBus(BusABC):
 
     def _send_sequence(self, msgs: Sequence[Message]) -> int:
         """Send messages and return number of successful transmissions."""
-        if self.fd:
+        if self._can_protocol is CanProtocol.CAN_FD:
             return self._send_can_fd_msg_sequence(msgs)
         else:
             return self._send_can_msg_sequence(msgs)
@@ -866,7 +887,40 @@ class VectorBus(BusABC):
         return xl_can_tx_event
 
     def flush_tx_buffer(self) -> None:
-        self.xldriver.xlCanFlushTransmitQueue(self.port_handle, self.mask)
+        """
+        Flush the TX buffer of the bus.
+
+        Implementation does not use function ``xlCanFlushTransmitQueue`` of the XL driver, as it works only
+        for XL family devices.
+
+        .. warning::
+            Using this function will flush the queue and send a high voltage message (ID = 0, DLC = 0, no data).
+        """
+        if self._can_protocol is CanProtocol.CAN_FD:
+            xl_can_tx_event = xlclass.XLcanTxEvent()
+            xl_can_tx_event.tag = xldefine.XL_CANFD_TX_EventTags.XL_CAN_EV_TAG_TX_MSG
+            xl_can_tx_event.tagData.canMsg.msgFlags |= (
+                xldefine.XL_CANFD_TX_MessageFlags.XL_CAN_TXMSG_FLAG_HIGHPRIO
+            )
+
+            self.xldriver.xlCanTransmitEx(
+                self.port_handle,
+                self.mask,
+                ctypes.c_uint(1),
+                ctypes.c_uint(0),
+                xl_can_tx_event,
+            )
+        else:
+            xl_event = xlclass.XLevent()
+            xl_event.tag = xldefine.XL_EventTags.XL_TRANSMIT_MSG
+            xl_event.tagData.msg.flags |= (
+                xldefine.XL_MessageFlags.XL_CAN_MSG_FLAG_OVERRUN
+                | xldefine.XL_MessageFlags.XL_CAN_MSG_FLAG_WAKEUP
+            )
+
+            self.xldriver.xlCanTransmit(
+                self.port_handle, self.mask, ctypes.c_uint(1), xl_event
+            )
 
     def shutdown(self) -> None:
         super().shutdown()
@@ -904,6 +958,7 @@ class VectorBus(BusABC):
                     "interface": "vector",
                     "channel": channel_config.hw_channel,
                     "serial": channel_config.serial_number,
+                    "channel_index": channel_config.channel_index,
                     # data for use in VectorBus.set_application_config():
                     "hw_type": channel_config.hw_type,
                     "hw_index": channel_config.hw_index,
@@ -1082,7 +1137,7 @@ class VectorChannelConfig(NamedTuple):
     channel_bus_capabilities: xldefine.XL_BusCapabilities
     is_on_bus: bool
     connected_bus_type: xldefine.XL_BusTypes
-    bus_params: VectorBusParams
+    bus_params: Optional[VectorBusParams]
     serial_number: int
     article_number: int
     transceiver_name: str
@@ -1102,9 +1157,14 @@ def _get_xl_driver_config() -> xlclass.XLdriverConfig:
     return driver_config
 
 
-def _read_bus_params_from_c_struct(bus_params: xlclass.XLbusParams) -> VectorBusParams:
+def _read_bus_params_from_c_struct(
+    bus_params: xlclass.XLbusParams,
+) -> Optional[VectorBusParams]:
+    bus_type = xldefine.XL_BusTypes(bus_params.busType)
+    if bus_type is not xldefine.XL_BusTypes.XL_BUS_TYPE_CAN:
+        return None
     return VectorBusParams(
-        bus_type=xldefine.XL_BusTypes(bus_params.busType),
+        bus_type=bus_type,
         can=VectorCanParams(
             bitrate=bus_params.data.can.bitRate,
             sjw=bus_params.data.can.sjw,

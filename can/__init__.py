@@ -8,7 +8,7 @@ messages on a can bus.
 import logging
 from typing import Any, Dict
 
-__version__ = "4.2.0"
+__version__ = "4.3.0rc0"
 __all__ = [
     "ASCReader",
     "ASCWriter",
@@ -25,6 +25,7 @@ __all__ = [
     "CanInitializationError",
     "CanInterfaceNotImplementedError",
     "CanOperationError",
+    "CanProtocol",
     "CanTimeoutError",
     "CanutilsLogReader",
     "CanutilsLogWriter",
@@ -60,6 +61,7 @@ __all__ = [
     "exceptions",
     "interface",
     "interfaces",
+    "io",
     "listener",
     "logconvert",
     "log",
@@ -74,10 +76,6 @@ __all__ = [
     "viewer",
 ]
 
-log = logging.getLogger("can")
-
-rc: Dict[str, Any] = {}
-
 from . import typechecking  # isort:skip
 from . import util  # isort:skip
 from . import broadcastmanager, interface
@@ -88,7 +86,7 @@ from .broadcastmanager import (
     ModifiableCyclicTaskABC,
     RestartableCyclicTaskABC,
 )
-from .bus import BusABC, BusState
+from .bus import BusABC, BusState, CanProtocol
 from .exceptions import (
     CanError,
     CanInitializationError,
@@ -125,3 +123,7 @@ from .message import Message
 from .notifier import Notifier
 from .thread_safe_bus import ThreadSafeBus
 from .util import set_logging_level
+
+log = logging.getLogger("can")
+
+rc: Dict[str, Any] = {}

@@ -1,3 +1,80 @@
+Version 4.3.0rc0
+===========
+
+Breaking Changes
+----------------
+* Raise Minimum Python Version to 3.8 (#1597)
+* Do not stop notifier if exception was handled (#1645)
+
+Bug Fixes
+---------
+* Vector: channel detection fails, if there is an active flexray channel  (#1634)
+* ixxat: Fix exception in 'state' property on bus coupling errors (#1647)
+* NeoVi: Fixed serial number range (#1650)
+* PCAN: Fix timestamp offset due to timezone (#1651)
+* Catch `pywintypes.error` in broadcast manager (#1659)
+* Fix BLFReader error for incomplete or truncated stream (#1662)
+* PCAN: remove Windows registry check to fix 32bit compatibility (#1672)
+* Vector: Skip the `can_op_mode check` if the device reports `can_op_mode=0` (#1678)
+* Vector: using the config from `detect_available_configs` might raise XL_ERR_INVALID_CHANNEL_MASK error (#1681)
+
+Features
+--------
+
+### API
+* Add `modifier_callback` parameter to `BusABC.send_periodic` for auto-modifying cyclic tasks (#703)
+* Add `protocol` property to BusABC to determine active CAN Protocol (#1532)
+* Change Bus constructor implementation and typing (#1557)
+* Add optional `strict` parameter to relax BitTiming & BitTimingFd Validation (#1618)
+* Add `BitTiming.iterate_from_sample_point` static methods (#1671)
+
+### IO
+* Can Player compatibility with interfaces that use additional configuration (#1610)
+
+### Interface Improvements
+* Kvaser: Add BitTiming/BitTimingFd support to KvaserBus (#1510)
+* Ixxat: Implement `detect_available_configs` for the Ixxat bus. (#1607)
+* NeoVi: Enable send and receive on network ID above 255 (#1627)
+* Vector: Send HighPriority Message to flush Tx buffer (#1636)
+* PCAN: Optimize send performance (#1640)
+* PCAN: Support version string of older PCAN basic API (#1644)
+* Kvaser: add parameter exclusive and `override_exclusive` (#1660)
+
+### Miscellaneous
+* Distinguish Text/Binary-IO for Reader/Writer classes. (#1585)
+* Convert setup.py to pyproject.toml (#1592)
+* activate ruff pycodestyle checks (#1602)
+* Update linter instructions in development.rst (#1603)
+* remove unnecessary script files (#1604)
+* BigEndian test fixes (#1625)
+* align `ID:` in can.Message string (#1635)
+* Use same configuration file as Linux on macOS (#1657)
+* We do not need to account for drift when we `USE_WINDOWS_EVENTS` (#1666, #1679)
+* Update linters, activate more ruff rules (#1669)
+* Add Python 3.12 Support / Test Python 3.12 (#1673)
+
+
+Version 4.2.2
+=============
+
+Bug Fixes
+---------
+* Fix socketcan KeyError (#1598, #1599).
+* Fix IXXAT not properly shutdown message (#1606).
+* Fix Mf4Reader and TRCReader incompatibility with extra CLI args (#1610).
+* Fix decoding error in Kvaser constructor for non-ASCII product name (#1613). 
+
+
+Version 4.2.1
+=============
+
+Bug Fixes
+---------
+* The ASCWriter now logs the correct channel for error frames (#1578, #1583).
+* Fix PCAN library detection (#1579, #1580).
+* On Windows, the first two periodic frames were sent without delay (#1590).
+
+
 Version 4.2.0
 =============
 

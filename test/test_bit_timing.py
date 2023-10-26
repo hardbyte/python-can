@@ -11,7 +11,7 @@ from can.interfaces.pcan.pcan import PCAN_BITRATES
 def test_sja1000():
     """Test some values obtained using other bit timing calculators."""
     timing = can.BitTiming(
-        f_clock=8_000_000, brp=4, tseg1=11, tseg2=4, sjw=2, nof_samples=3
+        f_clock=8_000_000, brp=4, tseg1=11, tseg2=4, sjw=2, nof_samples=3, strict=True
     )
     assert timing.f_clock == 8_000_000
     assert timing.bitrate == 125_000
@@ -25,7 +25,9 @@ def test_sja1000():
     assert timing.btr0 == 0x43
     assert timing.btr1 == 0xBA
 
-    timing = can.BitTiming(f_clock=8_000_000, brp=1, tseg1=13, tseg2=2, sjw=1)
+    timing = can.BitTiming(
+        f_clock=8_000_000, brp=1, tseg1=13, tseg2=2, sjw=1, strict=True
+    )
     assert timing.f_clock == 8_000_000
     assert timing.bitrate == 500_000
     assert timing.brp == 1
@@ -38,7 +40,9 @@ def test_sja1000():
     assert timing.btr0 == 0x00
     assert timing.btr1 == 0x1C
 
-    timing = can.BitTiming(f_clock=8_000_000, brp=1, tseg1=5, tseg2=2, sjw=1)
+    timing = can.BitTiming(
+        f_clock=8_000_000, brp=1, tseg1=5, tseg2=2, sjw=1, strict=True
+    )
     assert timing.f_clock == 8_000_000
     assert timing.bitrate == 1_000_000
     assert timing.brp == 1
@@ -84,7 +88,7 @@ def test_from_bitrate_and_segments():
     assert timing.btr1 == 0x1C
 
     timing = can.BitTiming.from_bitrate_and_segments(
-        f_clock=8_000_000, bitrate=1_000_000, tseg1=5, tseg2=2, sjw=1
+        f_clock=8_000_000, bitrate=1_000_000, tseg1=5, tseg2=2, sjw=1, strict=True
     )
     assert timing.f_clock == 8_000_000
     assert timing.bitrate == 1_000_000
@@ -127,8 +131,24 @@ def test_from_bitrate_and_segments():
     assert timing.data_sjw == 10
     assert timing.data_sample_point == 75
 
+    # test strict invalid
+    with pytest.raises(ValueError):
+        can.BitTimingFd.from_bitrate_and_segments(
+            f_clock=80_000_000,
+            nom_bitrate=500_000,
+            nom_tseg1=119,
+            nom_tseg2=40,
+            nom_sjw=40,
+            data_bitrate=2_000_000,
+            data_tseg1=29,
+            data_tseg2=10,
+            data_sjw=10,
+            strict=True,
+        )
+
 
 def test_can_fd():
+    # test non-strict
     timing = can.BitTimingFd(
         f_clock=80_000_000,
         nom_brp=1,
@@ -149,13 +169,56 @@ def test_can_fd():
     assert timing.nom_tseg2 == 40
     assert timing.nom_sjw == 40
     assert timing.nom_sample_point == 75
-    assert timing.f_clock == 80_000_000
     assert timing.data_bitrate == 2_000_000
     assert timing.data_brp == 1
     assert timing.dbt == 40
     assert timing.data_tseg1 == 29
     assert timing.data_tseg2 == 10
     assert timing.data_sjw == 10
+    assert timing.data_sample_point == 75
+
+    # test strict invalid
+    with pytest.raises(ValueError):
+        can.BitTimingFd(
+            f_clock=80_000_000,
+            nom_brp=1,
+            nom_tseg1=119,
+            nom_tseg2=40,
+            nom_sjw=40,
+            data_brp=1,
+            data_tseg1=29,
+            data_tseg2=10,
+            data_sjw=10,
+            strict=True,
+        )
+
+    # test strict valid
+    timing = can.BitTimingFd(
+        f_clock=80_000_000,
+        nom_brp=2,
+        nom_tseg1=59,
+        nom_tseg2=20,
+        nom_sjw=20,
+        data_brp=2,
+        data_tseg1=14,
+        data_tseg2=5,
+        data_sjw=5,
+        strict=True,
+    )
+    assert timing.f_clock == 80_000_000
+    assert timing.nom_bitrate == 500_000
+    assert timing.nom_brp == 2
+    assert timing.nbt == 80
+    assert timing.nom_tseg1 == 59
+    assert timing.nom_tseg2 == 20
+    assert timing.nom_sjw == 20
+    assert timing.nom_sample_point == 75
+    assert timing.data_bitrate == 2_000_000
+    assert timing.data_brp == 2
+    assert timing.dbt == 20
+    assert timing.data_tseg1 == 14
+    assert timing.data_tseg2 == 5
+    assert timing.data_sjw == 5
     assert timing.data_sample_point == 75
 
 
@@ -175,7 +238,7 @@ def test_from_btr():
 def test_btr_persistence():
     f_clock = 8_000_000
     for btr0btr1 in PCAN_BITRATES.values():
-        btr1, btr0 = struct.unpack("BB", btr0btr1)
+        btr0, btr1 = struct.pack(">H", btr0btr1.value)
 
         t = can.BitTiming.from_registers(f_clock, btr0, btr1)
         assert t.btr0 == btr0
@@ -221,6 +284,32 @@ def test_from_sample_point():
                 data_bitrate=2_000_000,
                 data_sample_point=dsp,
             )
+
+
+def test_iterate_from_sample_point():
+    for sp in range(50, 100):
+        solutions = list(
+            can.BitTiming.iterate_from_sample_point(
+                f_clock=16_000_000,
+                bitrate=500_000,
+                sample_point=sp,
+            )
+        )
+        assert len(solutions) >= 2
+
+    for nsp in range(50, 100):
+        for dsp in range(50, 100):
+            solutions = list(
+                can.BitTimingFd.iterate_from_sample_point(
+                    f_clock=80_000_000,
+                    nom_bitrate=500_000,
+                    nom_sample_point=nsp,
+                    data_bitrate=2_000_000,
+                    data_sample_point=dsp,
+                )
+            )
+
+            assert len(solutions) >= 2
 
 
 def test_equality():

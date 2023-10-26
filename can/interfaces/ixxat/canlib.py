@@ -1,9 +1,14 @@
-from typing import Optional
+from typing import Callable, List, Optional, Sequence, Union
 
 import can.interfaces.ixxat.canlib_vcinpl as vcinpl
 import can.interfaces.ixxat.canlib_vcinpl2 as vcinpl2
-from can import BusABC, Message
-from can.bus import BusState
+from can import (
+    BusABC,
+    BusState,
+    CyclicSendTaskABC,
+    Message,
+)
+from can.typechecking import AutoDetectedConfig
 
 
 class IXXATBus(BusABC):
@@ -24,18 +29,18 @@ class IXXATBus(BusABC):
         unique_hardware_id: Optional[int] = None,
         extended: bool = True,
         fd: bool = False,
-        rx_fifo_size: int = None,
-        tx_fifo_size: int = None,
+        rx_fifo_size: Optional[int] = None,
+        tx_fifo_size: Optional[int] = None,
         bitrate: int = 500000,
         data_bitrate: int = 2000000,
-        sjw_abr: int = None,
-        tseg1_abr: int = None,
-        tseg2_abr: int = None,
-        sjw_dbr: int = None,
-        tseg1_dbr: int = None,
-        tseg2_dbr: int = None,
-        ssp_dbr: int = None,
-        **kwargs
+        sjw_abr: Optional[int] = None,
+        tseg1_abr: Optional[int] = None,
+        tseg2_abr: Optional[int] = None,
+        sjw_dbr: Optional[int] = None,
+        tseg1_dbr: Optional[int] = None,
+        tseg2_dbr: Optional[int] = None,
+        ssp_dbr: Optional[int] = None,
+        **kwargs,
     ):
         """
         :param channel:
@@ -112,7 +117,7 @@ class IXXATBus(BusABC):
                 tseg1_dbr=tseg1_dbr,
                 tseg2_dbr=tseg2_dbr,
                 ssp_dbr=ssp_dbr,
-                **kwargs
+                **kwargs,
             )
         else:
             if rx_fifo_size is None:
@@ -128,8 +133,11 @@ class IXXATBus(BusABC):
                 rx_fifo_size=rx_fifo_size,
                 tx_fifo_size=tx_fifo_size,
                 bitrate=bitrate,
-                **kwargs
+                **kwargs,
             )
+
+        super().__init__(channel=channel, **kwargs)
+        self._can_protocol = self.bus.protocol
 
     def flush_tx_buffer(self):
         """Flushes the transmit buffer on the IXXAT"""
@@ -142,8 +150,16 @@ class IXXATBus(BusABC):
     def send(self, msg: Message, timeout: Optional[float] = None) -> None:
         return self.bus.send(msg, timeout)
 
-    def _send_periodic_internal(self, msgs, period, duration=None):
-        return self.bus._send_periodic_internal(msgs, period, duration)
+    def _send_periodic_internal(
+        self,
+        msgs: Union[Sequence[Message], Message],
+        period: float,
+        duration: Optional[float] = None,
+        modifier_callback: Optional[Callable[[Message], None]] = None,
+    ) -> CyclicSendTaskABC:
+        return self.bus._send_periodic_internal(
+            msgs, period, duration, modifier_callback
+        )
 
     def shutdown(self) -> None:
         super().shutdown()
@@ -155,3 +171,7 @@ class IXXATBus(BusABC):
         Return the current state of the hardware
         """
         return self.bus.state
+
+    @staticmethod
+    def _detect_available_configs() -> List[AutoDetectedConfig]:
+        return vcinpl._detect_available_configs()

@@ -7,7 +7,7 @@ import logging
 import time
 from typing import Any, Optional, Tuple
 
-from can import BusABC, Message, typechecking
+from can import BusABC, CanProtocol, Message, typechecking
 
 from ..exceptions import (
     CanInitializationError,
@@ -105,6 +105,7 @@ class slcanBus(BusABC):
             )
 
         self._buffer = bytearray()
+        self._can_protocol = CanProtocol.CAN_20
 
         time.sleep(sleep_after_open)
 
@@ -118,7 +119,11 @@ class slcanBus(BusABC):
             self.open()
 
         super().__init__(
-            channel, ttyBaudrate=115200, bitrate=None, rtscts=False, **kwargs
+            channel,
+            ttyBaudrate=115200,
+            bitrate=None,
+            rtscts=False,
+            **kwargs,
         )
 
     def set_bitrate(self, bitrate: int) -> None:

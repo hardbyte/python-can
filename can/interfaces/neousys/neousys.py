@@ -34,12 +34,13 @@ try:
 except ImportError:
     from ctypes import CDLL
 
-from can import BusABC, Message
-
-from ...exceptions import (
+from can import (
+    BusABC,
     CanInitializationError,
     CanInterfaceNotImplementedError,
     CanOperationError,
+    CanProtocol,
+    Message,
 )
 
 logger = logging.getLogger(__name__)
@@ -150,6 +151,7 @@ class NeousysBus(BusABC):
         self.channel = channel
         self.device = device
         self.channel_info = f"Neousys Can: device {self.device}, channel {self.channel}"
+        self._can_protocol = CanProtocol.CAN_20
 
         self.queue = queue.Queue()
 

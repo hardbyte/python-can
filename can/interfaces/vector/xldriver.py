@@ -5,21 +5,14 @@ Ctypes wrapper module for Vector CAN Interface on win32/win64 systems.
 Authors: Julien Grave <grave.jul@gmail.com>, Christian Sandberg
 """
 
-# Import Standard Python Modules
-# ==============================
 import ctypes
 import logging
 import platform
 
+from . import xlclass
 from .exceptions import VectorInitializationError, VectorOperationError
 
-# Define Module Logger
-# ====================
 LOG = logging.getLogger(__name__)
-
-# Vector XL API Definitions
-# =========================
-from . import xlclass
 
 # Load Windows DLL
 DLL_NAME = "vxlapi64" if platform.architecture()[0] == "64bit" else "vxlapi"
