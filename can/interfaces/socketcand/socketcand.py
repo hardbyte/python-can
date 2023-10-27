@@ -77,6 +77,28 @@ def connect_to_server(s, host, port):
 
 class SocketCanDaemonBus(can.BusABC):
     def __init__(self, channel, host, port, tcp_tune=False, can_filters=None, **kwargs):
+        """Connects to a CAN bus served by socketcand.
+
+        It will attempt to connect to the server for up to 10s, after which a
+        TimeoutError exception will be thrown.
+
+        If the handshake with the socketcand server fails, a CanError exception
+        is thrown.
+
+        :param channel:
+            The can interface name served by socketcand.
+            An example channel would be 'vcan0' or 'can0'.
+        :param host:
+            The host address of the socketcand server.
+        :param port:
+            The port of the socketcand server.
+        :param tcp_tune:
+            This tunes the TCP socket for low latency (TCP_NODELAY, and
+            TCP_QUICKACK).
+            This option is not available under windows.
+        :param can_filters:
+            See :meth:`can.BusABC.set_filters`.
+        """
         self.__host = host
         self.__port = port
 
@@ -197,9 +219,15 @@ class SocketCanDaemonBus(can.BusABC):
             raise can.CanError(f"{msg} message expected!")
 
     def send(self, msg, timeout=None):
+        """Transmit a message to the CAN bus.
+
+        :param msg: A message object.
+        :param timeout: Ignored
+        """
         ascii_msg = convert_can_message_to_ascii_message(msg)
         self._tcp_send(ascii_msg)
 
     def shutdown(self):
+        """Stops all active periodic tasks and closes the socket."""
         super().shutdown()
         self.__socket.close()
