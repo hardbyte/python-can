@@ -8,6 +8,7 @@ Copyright (C) 2021  DOMOLOGIC GmbH
 http://www.domologic.de
 """
 import logging
+import os
 import select
 import socket
 import time
@@ -75,10 +76,42 @@ def connect_to_server(s, host, port):
 
 
 class SocketCanDaemonBus(can.BusABC):
-    def __init__(self, channel, host, port, can_filters=None, **kwargs):
+    def __init__(self, channel, host, port, tcp_tune=False, can_filters=None, **kwargs):
+        """Connects to a CAN bus served by socketcand.
+
+        It will attempt to connect to the server for up to 10s, after which a
+        TimeoutError exception will be thrown.
+
+        If the handshake with the socketcand server fails, a CanError exception
+        is thrown.
+
+        :param channel:
+            The can interface name served by socketcand.
+            An example channel would be 'vcan0' or 'can0'.
+        :param host:
+            The host address of the socketcand server.
+        :param port:
+            The port of the socketcand server.
+        :param tcp_tune:
+            This tunes the TCP socket for low latency (TCP_NODELAY, and
+            TCP_QUICKACK).
+            This option is not available under windows.
+        :param can_filters:
+            See :meth:`can.BusABC.set_filters`.
+        """
         self.__host = host
         self.__port = port
+
+        self.__tcp_tune = tcp_tune
         self.__socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+        if self.__tcp_tune:
+            if os.name == "nt":
+                self.__tcp_tune = False
+                log.warning("'tcp_tune' not available in Windows. Setting to False")
+            else:
+                self.__socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+
         self.__message_buffer = deque()
         self.__receive_buffer = ""  # i know string is not the most efficient here
         self.channel = channel
@@ -120,6 +153,8 @@ class SocketCanDaemonBus(can.BusABC):
             ascii_msg = self.__socket.recv(1024).decode(
                 "ascii"
             )  # may contain multiple messages
+            if self.__tcp_tune:
+                self.__socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_QUICKACK, 1)
             self.__receive_buffer += ascii_msg
             log.debug(f"Received Ascii Message: {ascii_msg}")
             buffer_view = self.__receive_buffer
@@ -173,16 +208,26 @@ class SocketCanDaemonBus(can.BusABC):
     def _tcp_send(self, msg: str):
         log.debug(f"Sending TCP Message: '{msg}'")
         self.__socket.sendall(msg.encode("ascii"))
+        if self.__tcp_tune:
+            self.__socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_QUICKACK, 1)
 
     def _expect_msg(self, msg):
         ascii_msg = self.__socket.recv(256).decode("ascii")
+        if self.__tcp_tune:
+            self.__socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_QUICKACK, 1)
         if not ascii_msg == msg:
             raise can.CanError(f"{msg} message expected!")
 
     def send(self, msg, timeout=None):
+        """Transmit a message to the CAN bus.
+
+        :param msg: A message object.
+        :param timeout: Ignored
+        """
         ascii_msg = convert_can_message_to_ascii_message(msg)
         self._tcp_send(ascii_msg)
 
     def shutdown(self):
+        """Stops all active periodic tasks and closes the socket."""
         super().shutdown()
         self.__socket.close()

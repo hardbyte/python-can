@@ -39,6 +39,7 @@ Features
 * PCAN: Optimize send performance (#1640)
 * PCAN: Support version string of older PCAN basic API (#1644)
 * Kvaser: add parameter exclusive and `override_exclusive` (#1660)
+* socketcand: Add parameter `tcp_tune` to reduce latency (#1683)
 
 ### Miscellaneous
 * Distinguish Text/Binary-IO for Reader/Writer classes. (#1585)
