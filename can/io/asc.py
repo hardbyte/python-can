@@ -10,6 +10,7 @@ import re
 import time
 from datetime import datetime
 from typing import Any, Dict, Generator, List, Optional, TextIO, Union
+from packaging.version import Version
 
 from ..message import Message
 from ..typechecking import StringPathLike
@@ -56,7 +57,8 @@ class ASCReader(TextIOMessageReader):
             raise ValueError("The given file cannot be None")
         self.base = base
         self._converted_base = self._check_base(base)
-        self.version = "0.0.0"
+        self.asc_version = Version("0.0.0") # init asc format version
+        self._new_asc_version = Version("8.1.0")
         # TODO: what is relative timestamp? Seems it should be timestamps_format
         self.relative_timestamp = relative_timestamp
         self.date: Optional[str] = None
@@ -72,7 +74,9 @@ class ASCReader(TextIOMessageReader):
 
             # parse date
             datetime_match = re.match(
-                r"date\s+\w+\s+(?P<datetime_string>.+)", line, re.IGNORECASE
+                r"date\s+\w+\s+(?P<datetime_string>.+)",
+                line,
+                re.IGNORECASE
             )
 
             # parse base
@@ -83,12 +87,29 @@ class ASCReader(TextIOMessageReader):
                 re.IGNORECASE,
             )
 
-            # parse version
-            version_match = re.match(r"// version (?P<version>.+)", line, re.IGNORECASE)
+            # parse asc format version
+            asc_version_match = re.match(
+                r"// version (?P<version>.+)",
+                line,
+                re.IGNORECASE
+            )
 
-            comment_match = re.match(r"//.*", line)
+            comment_match = re.match(
+                r"//.*",
+                line
+            )
+
             events_match = re.match(
-                r"(?P<no_events>no)?\s*internal\s+events\s+logged", line, re.IGNORECASE
+                r"(?P<no_events>no)?\s*internal\s+events\s+logged",
+                line,
+                re.IGNORECASE
+            )
+
+            # parse start time
+            trigger_match = re.match(
+                r"begin\s+triggerblock\s+\w+\s+(?P<datetime_string>.+)",
+                line,
+                re.IGNORECASE,
             )
 
             # parse start time
@@ -115,9 +136,9 @@ class ASCReader(TextIOMessageReader):
                 self.timestamps_format = timestamp_format or "absolute"
                 continue
 
-            if version_match:
-                version = version_match.group("version")
-                self.version = version
+            if asc_version_match:
+                asc_version = asc_version_match.group("version")
+                self.asc_version = Version(asc_version)
                 continue
 
             if comment_match:
@@ -366,7 +387,7 @@ class ASCReader(TextIOMessageReader):
 
             if "is_fd" not in msg_kwargs:
                 msg = self._process_classic_can_frame(rest_of_message, msg_kwargs)
-            elif self.version < "8.1":
+            elif self.asc_version < self._new_asc_version:
                 msg = self._process_fd_can_frame(rest_of_message, msg_kwargs)
             else:
                 msg = self._process_fd_can_frame_2(rest_of_message, msg_kwargs)
