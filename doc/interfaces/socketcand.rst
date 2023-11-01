@@ -37,6 +37,14 @@ The output may look like this::
     Timestamp: 1637791111.609763    ID: 0000031d    X Rx                DLC:  8    16 27 d8 3d fe d8 31 24
     Timestamp: 1637791111.634630    ID: 00000587    X Rx                DLC:  8    4e 06 85 23 6f 81 2b 65
 
+Bus
+---
+
+.. autoclass:: can.interfaces.socketcand.SocketCanDaemonBus
+   :show-inheritance:
+   :member-order: bysource
+   :members:
+
 Socketcand Quickstart
 ---------------------
 

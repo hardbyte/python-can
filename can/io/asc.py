@@ -67,8 +67,8 @@ class ASCReader(TextIOMessageReader):
         self._extract_header()
 
     def _extract_header(self) -> None:
-        for line in self.file:
-            line = line.strip()
+        for _line in self.file:
+            line = _line.strip()
 
             # parse date
             datetime_match = re.match(
@@ -335,8 +335,8 @@ class ASCReader(TextIOMessageReader):
         # extract head in initial
         # self._extract_header()
 
-        for line in self.file:
-            line = line.strip()
+        for _line in self.file:
+            line = _line.strip()
 
             if not re.match(
                 r"\d+\.\d+\s+(\d+\s+(\w+\s+(Tx|Rx)|ErrorFrame)|CANFD)",

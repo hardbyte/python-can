@@ -9,8 +9,6 @@ import unittest
 import warnings
 from unittest.mock import patch
 
-from .config import TEST_INTERFACE_SOCKETCAN
-
 import can
 from can.interfaces.socketcan.constants import (
     CAN_BCM_TX_DELETE,
@@ -28,7 +26,7 @@ from can.interfaces.socketcan.socketcan import (
     build_bcm_update_header,
 )
 
-from .config import IS_LINUX, IS_PYPY
+from .config import IS_LINUX, IS_PYPY, TEST_INTERFACE_SOCKETCAN
 
 
 class SocketCANTest(unittest.TestCase):

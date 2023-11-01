@@ -5,7 +5,6 @@ import logging
 import platform
 import time
 import warnings
-from datetime import datetime
 from typing import Any, List, Optional, Tuple, Union
 
 from packaging import version
@@ -85,8 +84,8 @@ try:
     if uptime.boottime() is None:
         boottimeEpoch = 0
     else:
-        boottimeEpoch = (uptime.boottime() - datetime.fromtimestamp(0)).total_seconds()
-except ImportError as error:
+        boottimeEpoch = uptime.boottime().timestamp()
+except ImportError:
     log.warning(
         "uptime library not available, timestamps are relative to boot time and not to Epoch UTC",
     )
@@ -284,7 +283,7 @@ class PcanBus(BusABC):
             clock_param = "f_clock" if "f_clock" in kwargs else "f_clock_mhz"
             fd_parameters_values = [
                 f"{key}={kwargs[key]}"
-                for key in (clock_param,) + PCAN_FD_PARAMETER_LIST
+                for key in (clock_param, *PCAN_FD_PARAMETER_LIST)
                 if key in kwargs
             ]
 
@@ -397,9 +396,7 @@ class PcanBus(BusABC):
             for b in bits(error):
                 stsReturn = self.m_objPCANBasic.GetErrorText(b, 0x9)
                 if stsReturn[0] != PCAN_ERROR_OK:
-                    text = "An error occurred. Error-code's text ({:X}h) couldn't be retrieved".format(
-                        error
-                    )
+                    text = f"An error occurred. Error-code's text ({error:X}h) couldn't be retrieved"
                 else:
                     text = stsReturn[1].decode("utf-8", errors="replace")
 
@@ -414,9 +411,12 @@ class PcanBus(BusABC):
     def get_api_version(self):
         error, value = self.m_objPCANBasic.GetValue(PCAN_NONEBUS, PCAN_API_VERSION)
         if error != PCAN_ERROR_OK:
-            raise CanInitializationError(f"Failed to read pcan basic api version")
+            raise CanInitializationError("Failed to read pcan basic api version")
 
-        return version.parse(value.decode("ascii"))
+        # fix https://github.com/hardbyte/python-can/issues/1642
+        version_string = value.decode("ascii").replace(",", ".").replace(" ", "")
+
+        return version.parse(version_string)
 
     def check_api_version(self):
         apv = self.get_api_version()
@@ -608,8 +608,7 @@ class PcanBus(BusABC):
             CANMsg.MSGTYPE = msgType
 
             # copy data
-            for i in range(msg.dlc):
-                CANMsg.DATA[i] = msg.data[i]
+            CANMsg.DATA[: msg.dlc] = msg.data[: msg.dlc]
 
             log.debug("Data: %s", msg.data)
             log.debug("Type: %s", type(msg.data))
@@ -628,8 +627,7 @@ class PcanBus(BusABC):
             # if a remote frame will be sent, data bytes are not important.
             if not msg.is_remote_frame:
                 # copy data
-                for i in range(CANMsg.LEN):
-                    CANMsg.DATA[i] = msg.data[i]
+                CANMsg.DATA[: CANMsg.LEN] = msg.data[: CANMsg.LEN]
 
             log.debug("Data: %s", msg.data)
             log.debug("Type: %s", type(msg.data))

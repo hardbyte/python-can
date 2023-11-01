@@ -68,8 +68,8 @@ class TRCReader(TextIOMessageReader):
 
     def _extract_header(self):
         line = ""
-        for line in self.file:
-            line = line.strip()
+        for _line in self.file:
+            line = _line.strip()
             if line.startswith(";$FILEVERSION"):
                 logger.debug("TRCReader: Found file version '%s'", line)
                 try:

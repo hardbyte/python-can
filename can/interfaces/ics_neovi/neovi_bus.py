@@ -255,7 +255,7 @@ class NeoViBus(BusABC):
         :return: ics device serial string
         :rtype: str
         """
-        if int("AA0000", 36) < device.SerialNumber < int("ZZZZZZ", 36):
+        if int("0A0000", 36) < device.SerialNumber < int("ZZZZZZ", 36):
             return ics.base36enc(device.SerialNumber)
         else:
             return str(device.SerialNumber)
@@ -302,15 +302,15 @@ class NeoViBus(BusABC):
         for device in devices:
             if serial is None or self.get_serial_number(device) == str(serial):
                 return device
-        else:
-            msg = ["No device"]
 
-            if type_filter is not None:
-                msg.append(f"with type {type_filter}")
-            if serial is not None:
-                msg.append(f"with serial {serial}")
-            msg.append("found.")
-            raise CanInitializationError(" ".join(msg))
+        msg = ["No device"]
+
+        if type_filter is not None:
+            msg.append(f"with type {type_filter}")
+        if serial is not None:
+            msg.append(f"with serial {serial}")
+        msg.append("found.")
+        raise CanInitializationError(" ".join(msg))
 
     def _process_msg_queue(self, timeout=0.1):
         try:

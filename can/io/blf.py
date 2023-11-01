@@ -182,12 +182,13 @@ class BLFReader(BinaryIOMessageReader):
             self.file.read(obj_size % 4)
 
             if obj_type == LOG_CONTAINER:
-                method, uncompressed_size = LOG_CONTAINER_STRUCT.unpack_from(obj_data)
+                method, _ = LOG_CONTAINER_STRUCT.unpack_from(obj_data)
                 container_data = obj_data[LOG_CONTAINER_STRUCT.size :]
                 if method == NO_COMPRESSION:
                     data = container_data
                 elif method == ZLIB_DEFLATE:
-                    data = zlib.decompress(container_data, 15, uncompressed_size)
+                    zobj = zlib.decompressobj()
+                    data = zobj.decompress(container_data)
                 else:
                     # Unknown compression method
                     LOG.warning("Unknown compression method (%d)", method)

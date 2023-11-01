@@ -10,11 +10,13 @@ import ctypes
 import logging
 import sys
 import time
+from typing import Optional, Union
 
-from can import BusABC, CanProtocol, Message
-from can.util import time_perfcounter_correlation
+from can import BitTiming, BitTimingFd, BusABC, CanProtocol, Message
+from can.exceptions import CanError, CanInitializationError, CanOperationError
+from can.typechecking import CanFilters
+from can.util import check_or_adjust_timing_clock, time_perfcounter_correlation
 
-from ...exceptions import CanError, CanInitializationError, CanOperationError
 from . import constants as canstat
 from . import structures
 
@@ -199,6 +201,17 @@ if __canlib is not None:
         errcheck=__check_status_initialization,
     )
 
+    canSetBusParamsC200 = __get_canlib_function(
+        "canSetBusParamsC200",
+        argtypes=[
+            c_canHandle,
+            ctypes.c_byte,
+            ctypes.c_byte,
+        ],
+        restype=canstat.c_canStatus,
+        errcheck=__check_status_initialization,
+    )
+
     canSetBusParamsFd = __get_canlib_function(
         "canSetBusParamsFd",
         argtypes=[
@@ -360,7 +373,13 @@ class KvaserBus(BusABC):
     The CAN Bus implemented for the Kvaser interface.
     """
 
-    def __init__(self, channel, can_filters=None, **kwargs):
+    def __init__(
+        self,
+        channel: int,
+        can_filters: Optional[CanFilters] = None,
+        timing: Optional[Union[BitTiming, BitTimingFd]] = None,
+        **kwargs,
+    ):
         """
         :param int channel:
             The Channel id to create this bus with.
@@ -370,6 +389,12 @@ class KvaserBus(BusABC):
 
         Backend Configuration
 
+        :param timing:
+            An instance of :class:`~can.BitTiming` or :class:`~can.BitTimingFd`
+            to specify the bit timing parameters for the Kvaser interface. If provided, it
+            takes precedence over the all other timing-related parameters.
+            Note that the `f_clock` property of the `timing` instance must be 16_000_000 (16MHz)
+            for standard CAN or 80_000_000 (80MHz) for CAN FD.
         :param int bitrate:
             Bitrate of channel in bit/s
         :param bool accept_virtual:
@@ -404,6 +429,10 @@ class KvaserBus(BusABC):
             computer, set this to True or set single_handle to True.
         :param bool fd:
             If CAN-FD frames should be supported.
+        :param bool exclusive:
+            Don't allow sharing of this CANlib channel.
+        :param bool override_exclusive:
+            Open the channel even if it is opened for exclusive access already.
         :param int data_bitrate:
             Which bitrate to use for data phase in CAN FD.
             Defaults to arbitration bitrate.
@@ -420,8 +449,10 @@ class KvaserBus(BusABC):
         driver_mode = kwargs.get("driver_mode", DRIVER_MODE_NORMAL)
         single_handle = kwargs.get("single_handle", False)
         receive_own_messages = kwargs.get("receive_own_messages", False)
+        exclusive = kwargs.get("exclusive", False)
+        override_exclusive = kwargs.get("override_exclusive", False)
         accept_virtual = kwargs.get("accept_virtual", True)
-        fd = kwargs.get("fd", False)
+        fd = isinstance(timing, BitTimingFd) if timing else kwargs.get("fd", False)
         data_bitrate = kwargs.get("data_bitrate", None)
 
         try:
@@ -445,6 +476,10 @@ class KvaserBus(BusABC):
                 self.channel_info = channel_info
 
         flags = 0
+        if exclusive:
+            flags |= canstat.canOPEN_EXCLUSIVE
+        if override_exclusive:
+            flags |= canstat.canOPEN_OVERRIDE_EXCLUSIVE
         if accept_virtual:
             flags |= canstat.canOPEN_ACCEPT_VIRTUAL
         if fd:
@@ -458,22 +493,43 @@ class KvaserBus(BusABC):
             ctypes.byref(ctypes.c_long(TIMESTAMP_RESOLUTION)),
             4,
         )
-
-        if fd:
-            if "tseg1" not in kwargs and bitrate in BITRATE_FD:
-                # Use predefined bitrate for arbitration
-                bitrate = BITRATE_FD[bitrate]
-            if data_bitrate in BITRATE_FD:
-                # Use predefined bitrate for data
-                data_bitrate = BITRATE_FD[data_bitrate]
-            elif not data_bitrate:
-                # Use same bitrate for arbitration and data phase
-                data_bitrate = bitrate
-            canSetBusParamsFd(self._read_handle, data_bitrate, tseg1, tseg2, sjw)
+        if isinstance(timing, BitTimingFd):
+            timing = check_or_adjust_timing_clock(timing, [80_000_000])
+            canSetBusParams(
+                self._read_handle,
+                timing.nom_bitrate,
+                timing.nom_tseg1,
+                timing.nom_tseg2,
+                timing.nom_sjw,
+                1,
+                0,
+            )
+            canSetBusParamsFd(
+                self._read_handle,
+                timing.data_bitrate,
+                timing.data_tseg1,
+                timing.data_tseg2,
+                timing.data_sjw,
+            )
+        elif isinstance(timing, BitTiming):
+            timing = check_or_adjust_timing_clock(timing, [16_000_000])
+            canSetBusParamsC200(self._read_handle, timing.btr0, timing.btr1)
         else:
-            if "tseg1" not in kwargs and bitrate in BITRATE_OBJS:
-                bitrate = BITRATE_OBJS[bitrate]
-        canSetBusParams(self._read_handle, bitrate, tseg1, tseg2, sjw, no_samp, 0)
+            if fd:
+                if "tseg1" not in kwargs and bitrate in BITRATE_FD:
+                    # Use predefined bitrate for arbitration
+                    bitrate = BITRATE_FD[bitrate]
+                if data_bitrate in BITRATE_FD:
+                    # Use predefined bitrate for data
+                    data_bitrate = BITRATE_FD[data_bitrate]
+                elif not data_bitrate:
+                    # Use same bitrate for arbitration and data phase
+                    data_bitrate = bitrate
+                canSetBusParamsFd(self._read_handle, data_bitrate, tseg1, tseg2, sjw)
+            else:
+                if "tseg1" not in kwargs and bitrate in BITRATE_OBJS:
+                    bitrate = BITRATE_OBJS[bitrate]
+            canSetBusParams(self._read_handle, bitrate, tseg1, tseg2, sjw, no_samp, 0)
 
         # By default, use local echo if single handle is used (see #160)
         local_echo = single_handle or receive_own_messages
@@ -491,7 +547,12 @@ class KvaserBus(BusABC):
             self._write_handle = self._read_handle
         else:
             log.debug("Creating separate handle for TX on channel: %s", channel)
-            self._write_handle = canOpenChannel(channel, flags)
+            if exclusive:
+                flags_ = flags & ~canstat.canOPEN_EXCLUSIVE
+                flags_ |= canstat.canOPEN_OVERRIDE_EXCLUSIVE
+            else:
+                flags_ = flags
+            self._write_handle = canOpenChannel(channel, flags_)
             canBusOn(self._read_handle)
 
         can_driver_mode = (

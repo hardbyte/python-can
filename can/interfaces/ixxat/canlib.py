@@ -1,4 +1,4 @@
-from typing import Callable, Optional, Sequence, Union
+from typing import Callable, List, Optional, Sequence, Union
 
 import can.interfaces.ixxat.canlib_vcinpl as vcinpl
 import can.interfaces.ixxat.canlib_vcinpl2 as vcinpl2
@@ -8,6 +8,7 @@ from can import (
     CyclicSendTaskABC,
     Message,
 )
+from can.typechecking import AutoDetectedConfig
 
 
 class IXXATBus(BusABC):
@@ -28,17 +29,17 @@ class IXXATBus(BusABC):
         unique_hardware_id: Optional[int] = None,
         extended: bool = True,
         fd: bool = False,
-        rx_fifo_size: int = None,
-        tx_fifo_size: int = None,
+        rx_fifo_size: Optional[int] = None,
+        tx_fifo_size: Optional[int] = None,
         bitrate: int = 500000,
         data_bitrate: int = 2000000,
-        sjw_abr: int = None,
-        tseg1_abr: int = None,
-        tseg2_abr: int = None,
-        sjw_dbr: int = None,
-        tseg1_dbr: int = None,
-        tseg2_dbr: int = None,
-        ssp_dbr: int = None,
+        sjw_abr: Optional[int] = None,
+        tseg1_abr: Optional[int] = None,
+        tseg2_abr: Optional[int] = None,
+        sjw_dbr: Optional[int] = None,
+        tseg1_dbr: Optional[int] = None,
+        tseg2_dbr: Optional[int] = None,
+        ssp_dbr: Optional[int] = None,
         **kwargs,
     ):
         """
@@ -170,3 +171,7 @@ class IXXATBus(BusABC):
         Return the current state of the hardware
         """
         return self.bus.state
+
+    @staticmethod
+    def _detect_available_configs() -> List[AutoDetectedConfig]:
+        return vcinpl._detect_available_configs()

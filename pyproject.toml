@@ -26,7 +26,6 @@ classifiers = [
     "Intended Audience :: Telecommunications Industry",
     "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
     "Natural Language :: English",
-    "Natural Language :: English",
     "Operating System :: MacOS",
     "Operating System :: Microsoft :: Windows",
     "Operating System :: POSIX :: Linux",
@@ -35,6 +34,7 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
     "Topic :: System :: Hardware :: Hardware Drivers",
@@ -59,9 +59,9 @@ changelog = "https://github.com/hardbyte/python-can/blob/develop/CHANGELOG.md"
 [project.optional-dependencies]
 lint = [
     "pylint==2.17.*",
-    "ruff==0.0.269",
-    "black==23.3.*",
-    "mypy==1.3.*",
+    "ruff==0.0.292",
+    "black==23.9.*",
+    "mypy==1.5.*",
 ]
 seeedstudio = ["pyserial>=3.0"]
 serial = ["pyserial~=3.0"]
@@ -91,7 +91,7 @@ examples = ["*.py"]
 can = ["py.typed"]
 
 [tool.setuptools.packages.find]
-include = ["can*", "scripts"]
+include = ["can*"]
 
 [tool.mypy]
 warn_return_any = true
@@ -128,14 +128,22 @@ exclude = [
 
 [tool.ruff]
 select = [
-    "F401", # unused-imports
-    "UP", # pyupgrade
-    "I", # isort
-    "E", # pycodestyle errors
-    "W", # pycodestyle warnings
+    "F",  # pyflakes
+    "UP",  # pyupgrade
+    "I",  # isort
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "PL",  # pylint
+    "RUF",  # ruff-specific rules
+    "C4",  # flake8-comprehensions
+    "TCH",  # flake8-type-checking
 ]
 ignore = [
-    "E501", # Line too long
+    "E501",  # Line too long
+    "F403",  # undefined-local-with-import-star
+    "F405",  # undefined-local-with-import-star-usage
+    "PLR",  # pylint refactor
+    "RUF012",  # mutable-class-default
 ]
 
 [tool.ruff.isort]

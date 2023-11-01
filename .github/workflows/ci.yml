@@ -22,14 +22,16 @@ jobs:
           "3.9",
           "3.10",
           "3.11",
+          "3.12",
           "pypy-3.8",
           "pypy-3.9",
         ]
-        include:
-          # Only test on a single configuration while there are just pre-releases
-          - os: ubuntu-latest
-            experimental: true
-            python-version: "3.12.0-alpha - 3.12.0"
+        # uncomment when python 3.13.0 alpha is available
+        #include:
+        #  # Only test on a single configuration while there are just pre-releases
+        #  - os: ubuntu-latest
+        #    experimental: true
+        #    python-version: "3.13.0-alpha - 3.13.0"
       fail-fast: false
     steps:
     - uses: actions/checkout@v3
@@ -95,6 +97,9 @@ jobs:
     - name: mypy 3.11
       run: |
         mypy --python-version 3.11 .
+    - name: mypy 3.12
+      run: |
+        mypy --python-version 3.12 .
     - name: ruff
       run: |
         ruff check can

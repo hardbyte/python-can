@@ -22,6 +22,7 @@ if TYPE_CHECKING:
 # try to import win32event for event-based cyclic send task (needs the pywin32 package)
 USE_WINDOWS_EVENTS = False
 try:
+    import pywintypes
     import win32event
 
     # Python 3.11 provides a more precise sleep implementation on Windows, so this is not necessary.
@@ -34,7 +35,6 @@ except ImportError:
 log = logging.getLogger("can.bcm")
 
 NANOSECONDS_IN_SECOND: Final[int] = 1_000_000_000
-NANOSECONDS_IN_MILLISECOND: Final[int] = 1_000_000
 
 
 class CyclicTask(abc.ABC):
@@ -263,15 +263,16 @@ class ThreadBasedCyclicSendTask(
                     win32event.CREATE_WAITABLE_TIMER_HIGH_RESOLUTION,
                     win32event.TIMER_ALL_ACCESS,
                 )
-            except (AttributeError, OSError):
+            except (AttributeError, OSError, pywintypes.error):
                 self.event = win32event.CreateWaitableTimer(None, False, None)
 
         self.start()
 
     def stop(self) -> None:
-        if USE_WINDOWS_EVENTS:
-            win32event.CancelWaitableTimer(self.event.handle)
         self.stopped = True
+        if USE_WINDOWS_EVENTS:
+            # Reset and signal any pending wait by setting the timer to 0
+            win32event.SetWaitableTimer(self.event.handle, 0, 0, None, None, False)
 
     def start(self) -> None:
         self.stopped = False
@@ -315,19 +316,19 @@ class ThreadBasedCyclicSendTask(
                         self.stop()
                         break
 
-            msg_due_time_ns += self.period_ns
+            if not USE_WINDOWS_EVENTS:
+                msg_due_time_ns += self.period_ns
             if self.end_time is not None and time.perf_counter() >= self.end_time:
                 break
             msg_index = (msg_index + 1) % len(self.messages)
 
-            # Compensate for the time it takes to send the message
-            delay_ns = msg_due_time_ns - time.perf_counter_ns()
-
-            if delay_ns > 0:
-                if USE_WINDOWS_EVENTS:
-                    win32event.WaitForSingleObject(
-                        self.event.handle,
-                        int(round(delay_ns / NANOSECONDS_IN_MILLISECOND)),
-                    )
-                else:
+            if USE_WINDOWS_EVENTS:
+                win32event.WaitForSingleObject(
+                    self.event.handle,
+                    win32event.INFINITE,
+                )
+            else:
+                # Compensate for the time it takes to send the message
+                delay_ns = msg_due_time_ns - time.perf_counter_ns()
+                if delay_ns > 0:
                     time.sleep(delay_ns / NANOSECONDS_IN_SECOND)
