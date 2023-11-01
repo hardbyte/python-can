@@ -57,7 +57,7 @@ class ASCReader(TextIOMessageReader):
             raise ValueError("The given file cannot be None")
         self.base = base
         self._converted_base = self._check_base(base)
-        self.asc_version = Version("0.0.0") # init asc format version
+        self.asc_version = Version("0.0.0")  # init asc format version
         self._new_asc_version = Version("8.1.0")
         # TODO: what is relative timestamp? Seems it should be timestamps_format
         self.relative_timestamp = relative_timestamp
@@ -74,9 +74,7 @@ class ASCReader(TextIOMessageReader):
 
             # parse date
             datetime_match = re.match(
-                r"date\s+\w+\s+(?P<datetime_string>.+)",
-                line,
-                re.IGNORECASE
+                r"date\s+\w+\s+(?P<datetime_string>.+)", line, re.IGNORECASE
             )
 
             # parse base
@@ -89,20 +87,13 @@ class ASCReader(TextIOMessageReader):
 
             # parse asc format version
             asc_version_match = re.match(
-                r"// version (?P<version>.+)",
-                line,
-                re.IGNORECASE
+                r"// version (?P<version>.+)", line, re.IGNORECASE
             )
 
-            comment_match = re.match(
-                r"//.*",
-                line
-            )
+            comment_match = re.match(r"//.*", line)
 
             events_match = re.match(
-                r"(?P<no_events>no)?\s*internal\s+events\s+logged",
-                line,
-                re.IGNORECASE
+                r"(?P<no_events>no)?\s*internal\s+events\s+logged", line, re.IGNORECASE
             )
 
             # parse start time
