@@ -6,7 +6,18 @@ in the recorded order and time intervals.
 import gzip
 import pathlib
 import time
-from typing import Any, Dict, Generator, Iterable, Optional, Tuple, Type, Union, cast
+from typing import (
+    Any,
+    ClassVar,
+    Dict,
+    Generator,
+    Iterable,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+    cast,
+)
 
 from .._entry_points import read_entry_points
 from ..message import Message
@@ -53,7 +64,7 @@ class LogReader(MessageReader):
     """
 
     fetched_plugins = False
-    message_readers: Dict[str, Optional[Type[MessageReader]]] = {
+    message_readers: ClassVar[Dict[str, Optional[Type[MessageReader]]]] = {
         ".asc": ASCReader,
         ".blf": BLFReader,
         ".csv": CSVReader,
@@ -64,7 +75,7 @@ class LogReader(MessageReader):
     }
 
     @staticmethod
-    def __new__(  # type: ignore
+    def __new__(  # type: ignore[misc]
         cls: Any,
         filename: StringPathLike,
         **kwargs: Any,

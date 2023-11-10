@@ -694,9 +694,9 @@ class PCANBasic:
         self,
         Channel,
         Btr0Btr1,
-        HwType=TPCANType(0),
-        IOPort=c_uint(0),
-        Interrupt=c_ushort(0),
+        HwType=TPCANType(0),  # noqa: B008
+        IOPort=c_uint(0),  # noqa: B008
+        Interrupt=c_ushort(0),  # noqa: B008
     ):
         """Initializes a PCAN Channel
 

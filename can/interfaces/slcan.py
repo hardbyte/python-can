@@ -268,7 +268,7 @@ class slcanBus(BusABC):
         except io.UnsupportedOperation:
             raise NotImplementedError(
                 "fileno is not implemented using current CAN bus on this platform"
-            )
+            ) from None
         except Exception as exception:
             raise CanOperationError("Cannot fetch fileno") from exception
 

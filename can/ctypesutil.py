@@ -1,4 +1,3 @@
-# type: ignore
 """
 This module contains common `ctypes` utils.
 """
@@ -11,11 +10,10 @@ log = logging.getLogger("can.ctypesutil")
 
 __all__ = ["CLibrary", "HANDLE", "PHANDLE", "HRESULT"]
 
-
-try:
+if sys.platform == "win32":
     _LibBase = ctypes.WinDLL
     _FUNCTION_TYPE = ctypes.WINFUNCTYPE
-except AttributeError:
+else:
     _LibBase = ctypes.CDLL
     _FUNCTION_TYPE = ctypes.CFUNCTYPE
 
@@ -60,7 +58,7 @@ class CLibrary(_LibBase):
                 f'Could not map function "{func_name}" from library {self._name}'
             ) from None
 
-        func._name = func_name  # pylint: disable=protected-access
+        func._name = func_name  # type: ignore[attr-defined] # pylint: disable=protected-access
         log.debug(
             'Wrapped function "%s", result type: %s, error_check %s',
             func_name,

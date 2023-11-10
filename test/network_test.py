@@ -1,6 +1,5 @@
 #!/usr/bin/env python
-
-
+import contextlib
 import logging
 import random
 import threading
@@ -117,7 +116,8 @@ class ControllerAreaNetworkTestCase(unittest.TestCase):
             i += 1
         t.join()
 
-        self.server_bus.flush_tx_buffer()
+        with contextlib.suppress(NotImplementedError):
+            self.server_bus.flush_tx_buffer()
         self.server_bus.shutdown()
 
 

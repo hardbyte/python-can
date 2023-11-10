@@ -68,7 +68,7 @@ try:
         ]
     )
 except ImportError:
-    asammdf = None  # type: ignore
+    asammdf = None
 
 
 CAN_MSG_EXT = 0x80000000

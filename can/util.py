@@ -68,7 +68,7 @@ def load_file_config(
     config = ConfigParser()
 
     # make sure to not transform the entries such that capitalization is preserved
-    config.optionxform = lambda entry: entry  # type: ignore
+    config.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
 
     if path is None:
         config.read([os.path.expanduser(path) for path in CONFIG_FILES])
@@ -411,7 +411,7 @@ def _rename_kwargs(
                     )
                 kwargs[new] = value
 
-            warnings.warn(deprecation_notice, DeprecationWarning)
+            warnings.warn(deprecation_notice, DeprecationWarning, stacklevel=3)
 
 
 T2 = TypeVar("T2", BitTiming, BitTimingFd)
@@ -444,7 +444,8 @@ def check_or_adjust_timing_clock(timing: T2, valid_clocks: Iterable[int]) -> T2:
             adjusted_timing = timing.recreate_with_f_clock(clock)
             warnings.warn(
                 f"Adjusted f_clock in {timing.__class__.__name__} from "
-                f"{timing.f_clock} to {adjusted_timing.f_clock}"
+                f"{timing.f_clock} to {adjusted_timing.f_clock}",
+                stacklevel=2,
             )
             return adjusted_timing
         except ValueError:
@@ -506,11 +507,3 @@ def cast_from_string(string_val: str) -> Union[str, int, float, bool]:
 
     # value is string
     return string_val
-
-
-if __name__ == "__main__":
-    print("Searching for configuration named:")
-    print("\n".join(CONFIG_FILES))
-    print()
-    print("Settings:")
-    print(load_config())

@@ -150,7 +150,7 @@ class Usb2CanAbstractionLayer:
             # catch any errors thrown by this call and re-raise
             raise can.CanInitializationError(
                 f'CanalOpen() failed, configuration: "{configuration}", error: {ex}'
-            )
+            ) from ex
         else:
             # any greater-than-zero return value indicates a success
             # (see https://grodansparadis.gitbooks.io/the-vscp-daemon/canal_interface_specification.html)

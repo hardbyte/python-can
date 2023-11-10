@@ -95,8 +95,8 @@ class GsUsbBus(can.BusABC):
 
         try:
             self.gs_usb.send(frame)
-        except usb.core.USBError:
-            raise CanOperationError("The message could not be sent")
+        except usb.core.USBError as exc:
+            raise CanOperationError("The message could not be sent") from exc
 
     def _recv_internal(
         self, timeout: Optional[float]

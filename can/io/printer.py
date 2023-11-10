@@ -46,7 +46,7 @@ class Printer(MessageWriter):
         if self.write_to_file:
             cast(TextIO, self.file).write(str(msg) + "\n")
         else:
-            print(msg)
+            print(msg)  # noqa: T201
 
     def file_size(self) -> int:
         """Return an estimate of the current file size in bytes."""

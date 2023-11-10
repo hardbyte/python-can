@@ -58,7 +58,10 @@ WaitForSingleObject: Optional[Callable[[int, int], int]]
 INFINITE: Optional[int]
 try:
     # Try builtin Python 3 Windows API
-    from _winapi import INFINITE, WaitForSingleObject  # type: ignore
+    from _winapi import (  # type: ignore[attr-defined,no-redef,unused-ignore]
+        INFINITE,
+        WaitForSingleObject,
+    )
 
     HAS_EVENTS = True
 except ImportError:
@@ -333,10 +336,12 @@ class VectorBus(BusABC):
 
     @property
     def fd(self) -> bool:
+        class_name = self.__class__.__name__
         warnings.warn(
-            "The VectorBus.fd property is deprecated and superseded by "
-            "BusABC.protocol. It is scheduled for removal in version 5.0.",
+            f"The {class_name}.fd property is deprecated and superseded by "
+            f"{class_name}.protocol. It is scheduled for removal in python-can version 5.0.",
             DeprecationWarning,
+            stacklevel=2,
         )
         return self._can_protocol is CanProtocol.CAN_FD
 

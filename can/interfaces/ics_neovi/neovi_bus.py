@@ -109,8 +109,10 @@ class ICSApiError(CanError):
     def error_number(self) -> int:
         """Deprecated. Renamed to :attr:`can.CanError.error_code`."""
         warn(
-            "ICSApiError::error_number has been renamed to error_code defined by CanError",
+            "ICSApiError::error_number has been replaced by ICSApiError.error_code in python-can 4.0"
+            "and will be remove in version 5.0.",
             DeprecationWarning,
+            stacklevel=2,
         )
         return self.error_code
 
@@ -223,10 +225,8 @@ class NeoViBus(BusABC):
         self._use_system_timestamp = bool(kwargs.get("use_system_timestamp", False))
         self._receive_own_messages = kwargs.get("receive_own_messages", True)
 
-        self.channel_info = "{} {} CH:{}".format(
-            self.dev.Name,
-            self.get_serial_number(self.dev),
-            self.channels,
+        self.channel_info = (
+            f"{self.dev.Name} {self.get_serial_number(self.dev)} CH:{self.channels}"
         )
         logger.info(f"Using device: {self.channel_info}")
 

@@ -29,9 +29,6 @@ class Listener(metaclass=ABCMeta):
         listener.stop()
     """
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        pass
-
     @abstractmethod
     def on_message_received(self, msg: Message) -> None:
         """This method is called to handle the given message.
@@ -49,6 +46,7 @@ class Listener(metaclass=ABCMeta):
         """
         raise NotImplementedError()
 
+    @abstractmethod
     def stop(self) -> None:
         """
         Stop handling new messages, carry out any final tasks to ensure
@@ -85,9 +83,7 @@ class BufferedReader(Listener):  # pylint: disable=abstract-method
     :attr is_stopped: ``True`` if the reader has been stopped
     """
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
-
+    def __init__(self) -> None:
         # set to "infinite" size
         self.buffer: SimpleQueue[Message] = SimpleQueue()
         self.is_stopped: bool = False
@@ -139,9 +135,7 @@ class AsyncBufferedReader(
             print(msg)
     """
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
-
+    def __init__(self, **kwargs: Any) -> None:
         self.buffer: "asyncio.Queue[Message]"
 
         if "loop" in kwargs:
@@ -149,19 +143,22 @@ class AsyncBufferedReader(
                 "The 'loop' argument is deprecated since python-can 4.0.0 "
                 "and has no effect starting with Python 3.10",
                 DeprecationWarning,
+                stacklevel=2,
             )
             if sys.version_info < (3, 10):
                 self.buffer = asyncio.Queue(loop=kwargs["loop"])
                 return
 
         self.buffer = asyncio.Queue()
+        self._is_stopped: bool = False
 
     def on_message_received(self, msg: Message) -> None:
         """Append a message to the buffer.
 
         Must only be called inside an event loop!
         """
-        self.buffer.put_nowait(msg)
+        if not self._is_stopped:
+            self.buffer.put_nowait(msg)
 
     async def get_message(self) -> Message:
         """
@@ -178,3 +175,6 @@ class AsyncBufferedReader(
 
     async def __anext__(self) -> Message:
         return await self.buffer.get()
+
+    def stop(self) -> None:
+        self._is_stopped = True
