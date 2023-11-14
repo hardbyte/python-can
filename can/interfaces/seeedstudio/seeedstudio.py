@@ -325,7 +325,5 @@ class SeeedBus(BusABC):
         configs = []
         for port in list_comports():
             if port.vid == 0x1A86 and port.pid == 0x7523:
-                configs.append(
-                    {"interface": "seeedstudio", "channel": port.device}
-                )
+                configs.append({"interface": "seeedstudio", "channel": port.device})
         return configs
