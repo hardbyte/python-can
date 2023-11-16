@@ -1,5 +1,5 @@
-Version 4.3.0rc0
-===========
+Version 4.3.0
+=============
 
 Breaking Changes
 ----------------
