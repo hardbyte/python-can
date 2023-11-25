@@ -23,7 +23,7 @@ package.
 - Install ``python-can`` with the ``neovi`` extras:
     .. code-block:: bash
 
-        pip install python-ics[neovi]
+        pip install python-can[neovi]
 
 
 Configuration
