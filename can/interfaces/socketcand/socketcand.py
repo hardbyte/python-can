@@ -321,4 +321,8 @@ class SocketCanDaemonBus(can.BusABC):
 
     @staticmethod
     def _detect_available_configs() -> List[can.typechecking.AutoDetectedConfig]:
-        return detect_beacon()
+        try:
+            return detect_beacon()
+        except Exception as e:
+            log.warning(f"Could not detect socketcand beacon: {e}")
+            return []
