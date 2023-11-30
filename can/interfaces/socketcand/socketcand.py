@@ -13,7 +13,10 @@ import select
 import socket
 import time
 import traceback
+import urllib.parse as urlparselib
+import xml.etree.ElementTree as ET
 from collections import deque
+from typing import List
 
 import can
 
