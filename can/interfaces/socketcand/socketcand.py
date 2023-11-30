@@ -191,9 +191,7 @@ class SocketCanDaemonBus(can.BusABC):
                     self.__message_buffer.append(parsed_can_message)
                 buffer_view = buffer_view[end + 1 :]
 
-            self.__receive_buffer = self.__receive_buffer[
-                chars_processed_successfully + 1 :
-            ]
+            self.__receive_buffer = self.__receive_buffer[chars_processed_successfully:]
             can_message = (
                 None
                 if len(self.__message_buffer) == 0
