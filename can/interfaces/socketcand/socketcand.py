@@ -30,7 +30,9 @@ def detect_beacon():
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind((DEFAULT_SOCKETCAND_DISCOVERY_ADDRESS, DEFAULT_SOCKETCAND_DISCOVERY_PORT))
     log.info(
-        f"Listening on for socketcand UDP advertisement on {DEFAULT_SOCKETCAND_DISCOVERY_ADDRESS}:{DEFAULT_SOCKETCAND_DISCOVERY_PORT}"
+        "Listening on for socketcand UDP advertisement on %s:%s",
+        DEFAULT_SOCKETCAND_DISCOVERY_ADDRESS,
+        DEFAULT_SOCKETCAND_DISCOVERY_PORT
     )
 
     # Time between beacons no more than 3 seconds. Allow for at least 3
