@@ -27,83 +27,87 @@ DEFAULT_SOCKETCAND_DISCOVERY_PORT = 42000
 
 
 def detect_beacon():
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.bind((DEFAULT_SOCKETCAND_DISCOVERY_ADDRESS, DEFAULT_SOCKETCAND_DISCOVERY_PORT))
-    log.info(
-        "Listening on for socketcand UDP advertisement on %s:%s",
-        DEFAULT_SOCKETCAND_DISCOVERY_ADDRESS,
-        DEFAULT_SOCKETCAND_DISCOVERY_PORT,
-    )
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+        sock.bind(
+            (DEFAULT_SOCKETCAND_DISCOVERY_ADDRESS, DEFAULT_SOCKETCAND_DISCOVERY_PORT)
+        )
+        log.info(
+            "Listening on for socketcand UDP advertisement on %s:%s",
+            DEFAULT_SOCKETCAND_DISCOVERY_ADDRESS,
+            DEFAULT_SOCKETCAND_DISCOVERY_PORT,
+        )
 
-    # Time between beacons no more than 3 seconds. Allow for at least 3
-    timeout_ms = 12000
-    now = time.time() * 1000
-    end_time = now + timeout_ms
-    while (time.time() * 1000) < end_time:
-        try:
-            # get all sockets that are ready (can be a list with a single value
-            # being self.socket or an empty list if self.socket is not ready)
-            ready_receive_sockets, _, _ = select.select([sock], [], [], 1)
+        # Time between beacons no more than 3 seconds. Allow for at least 3
+        timeout_ms = 12000
+        now = time.time() * 1000
+        end_time = now + timeout_ms
+        while (time.time() * 1000) < end_time:
+            try:
+                # get all sockets that are ready (can be a list with a single value
+                # being self.socket or an empty list if self.socket is not ready)
+                ready_receive_sockets, _, _ = select.select([sock], [], [], 1)
 
-            if not ready_receive_sockets:
-                log.debug("No advertisement received")
-                continue
+                if not ready_receive_sockets:
+                    log.debug("No advertisement received")
+                    continue
 
-            msg = sock.recv(1024).decode("utf-8")
-            root = ET.fromstring(msg)
-            if root.tag != "CANBeacon":
+                msg = sock.recv(1024).decode("utf-8")
+                root = ET.fromstring(msg)
+                if root.tag != "CANBeacon":
+                    log.debug("Unexpected message received over UDP")
+                    continue
+
+                det_devs = []
+                det_host = None
+                det_port = None
+                for child in root:
+                    if child.tag == "Bus":
+                        bus_name = child.attrib["name"]
+                        det_devs.append(bus_name)
+                    elif child.tag == "URL":
+                        url = urlparselib.urlparse(child.text)
+                        det_host = url.hostname
+                        det_port = url.port
+
+                if not det_devs:
+                    log.debug(
+                        "Got advertisement, but no SocketCAN devices advertised by socketcand"
+                    )
+                    continue
+
+                if (det_host is None) or (det_port is None):
+                    det_host = None
+                    det_port = None
+                    log.debug(
+                        "Got advertisement, but no SocketCAN URL advertised by socketcand"
+                    )
+                    continue
+
+                log.info(f"Found SocketCAN devices: {det_devs}")
+                return [
+                    {
+                        "interface": "socketcand",
+                        "host": det_host,
+                        "port": det_port,
+                        "channel": channel,
+                    }
+                    for channel in det_devs
+                ]
+
+            except ET.ParseError:
                 log.debug("Unexpected message received over UDP")
                 continue
 
-            det_devs = []
-            det_host = None
-            det_port = None
-            for child in root:
-                if child.tag == "Bus":
-                    bus_name = child.attrib["name"]
-                    det_devs.append(bus_name)
-                elif child.tag == "URL":
-                    url = urlparselib.urlparse(child.text)
-                    det_host = url.hostname
-                    det_port = url.port
-
-            if not det_devs:
-                log.debug(
-                    "Got advertisement, but no SocketCAN devices advertised by socketcand"
+            except Exception as exc:
+                # something bad happened (e.g. the interface went down)
+                log.error(f"Failed to detect beacon: {exc}  {traceback.format_exc()}")
+                raise OSError(
+                    f"Failed to detect beacon: {exc} {traceback.format_exc()}"
                 )
-                continue
 
-            if (det_host is None) or (det_port is None):
-                det_host = None
-                det_port = None
-                log.debug(
-                    "Got advertisement, but no SocketCAN URL advertised by socketcand"
-                )
-                continue
-
-            log.info(f"Found SocketCAN devices: {det_devs}")
-            return [
-                {
-                    "interface": "socketcand",
-                    "host": det_host,
-                    "port": det_port,
-                    "channel": channel,
-                }
-                for channel in det_devs
-            ]
-
-        except ET.ParseError:
-            log.debug("Unexpected message received over UDP")
-            continue
-
-        except Exception as exc:
-            # something bad happened (e.g. the interface went down)
-            log.error(f"Failed to detect beacon: {exc}  {traceback.format_exc()}")
-            raise OSError(f"Failed to detect beacon: {exc} {traceback.format_exc()}")
-
-    raise TimeoutError(
-        f"detect_beacon: Failed to detect udp beacon for {timeout_ms} ms"
-    )
+        raise TimeoutError(
+            f"detect_beacon: Failed to detect udp beacon for {timeout_ms} ms"
+        )
 
 
 def convert_ascii_message_to_can_message(ascii_msg: str) -> can.Message:
