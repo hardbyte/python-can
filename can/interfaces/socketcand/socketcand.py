@@ -26,7 +26,7 @@ DEFAULT_SOCKETCAND_DISCOVERY_ADDRESS = ""
 DEFAULT_SOCKETCAND_DISCOVERY_PORT = 42000
 
 
-def detect_beacon():
+def detect_beacon(timeout_ms):
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
         sock.bind(
             (DEFAULT_SOCKETCAND_DISCOVERY_ADDRESS, DEFAULT_SOCKETCAND_DISCOVERY_PORT)
@@ -37,8 +37,6 @@ def detect_beacon():
             DEFAULT_SOCKETCAND_DISCOVERY_PORT,
         )
 
-        # Time between beacons no more than 3 seconds. Allow for at least 3
-        timeout_ms = 12000
         now = time.time() * 1000
         end_time = now + timeout_ms
         while (time.time() * 1000) < end_time:
@@ -328,7 +326,9 @@ class SocketCanDaemonBus(can.BusABC):
     @staticmethod
     def _detect_available_configs() -> List[can.typechecking.AutoDetectedConfig]:
         try:
-            return detect_beacon()
+            # Time between beacons no more than 3 seconds. Allow for a little
+            # more than 3s
+            return detect_beacon(3.1)
         except Exception as e:
             log.warning(f"Could not detect socketcand beacon: {e}")
             return []
