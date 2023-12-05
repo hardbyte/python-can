@@ -42,7 +42,7 @@ def detect_beacon(timeout_ms) -> List[can.typechecking.AutoDetectedConfig]:
             Timeout in milliseconds to wait for socketcand beacon packets
 
         :return:
-            See :meth:`can.SocketCanDaemonBus._detect_available_configs`
+            See :meth:`can.BusABC._detect_available_configs`
     """
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
         sock.bind(
