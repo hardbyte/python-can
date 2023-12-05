@@ -120,9 +120,7 @@ def detect_beacon(timeout_ms) -> List[can.typechecking.AutoDetectedConfig]:
                     f"Failed to detect beacon: {exc} {traceback.format_exc()}"
                 )
 
-        raise TimeoutError(
-            f"detect_beacon: Failed to detect udp beacon for {timeout_ms} ms"
-        )
+        return []
 
 
 def convert_ascii_message_to_can_message(ascii_msg: str) -> can.Message:
