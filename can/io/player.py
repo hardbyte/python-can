@@ -8,11 +8,10 @@ import pathlib
 import time
 from typing import (
     Any,
-    ClassVar,
     Dict,
+    Final,
     Generator,
     Iterable,
-    Optional,
     Tuple,
     Type,
     Union,
@@ -31,8 +30,53 @@ from .mf4 import MF4Reader
 from .sqlite import SqliteReader
 from .trc import TRCReader
 
+MESSAGE_READERS: Final[Dict[str, Type[MessageReader]]] = {
+    ".asc": ASCReader,
+    ".blf": BLFReader,
+    ".csv": CSVReader,
+    ".db": SqliteReader,
+    ".log": CanutilsLogReader,
+    ".mf4": MF4Reader,
+    ".trc": TRCReader,
+}
 
-class LogReader(MessageReader):
+
+def _update_reader_plugins() -> None:
+    """Update available message reader plugins from entry points."""
+    for entry_point in read_entry_points("can.io.message_reader"):
+        if entry_point.key not in MESSAGE_READERS:
+            reader_class = cast(Type[MessageReader], entry_point.load())
+            MESSAGE_READERS[entry_point.key] = reader_class
+
+
+def _decompress(
+    filename: StringPathLike,
+) -> Tuple[Type[MessageReader], Union[str, FileLike]]:
+    """
+    Return the suffix and io object of the decompressed file.
+    """
+    real_suffix = pathlib.Path(filename).suffixes[-2].lower()
+    reader_type = _get_logger_for_suffix(real_suffix)
+
+    mode = "rb" if issubclass(reader_type, BinaryIOMessageReader) else "rt"
+
+    return reader_type, gzip.open(filename, mode)
+
+
+def _get_logger_for_suffix(suffix: str) -> Type[MessageReader]:
+    """Find MessageReader class for given suffix."""
+    try:
+        reader_type = MESSAGE_READERS[suffix]
+    except KeyError:
+        raise ValueError(
+            f'No read support for this unknown log format "{suffix}"'
+        ) from None
+    if reader_type is None:
+        raise ImportError(f"failed to import reader for extension {suffix}")
+    return reader_type
+
+
+def LogReader(filename: StringPathLike, **kwargs: Any) -> MessageReader:
     """
     Replay logged CAN messages from a file.
 
@@ -54,83 +98,29 @@ class LogReader(MessageReader):
         >>> for msg in LogReader("some/path/to/my_file.log"):
         ...     print(msg)
 
+    :param filename:
+        the filename/path of the file to read from
+    :raises ValueError:
+        if the filename's suffix is of an unknown file type
+
     .. note::
         There are no time delays, if you want to reproduce the measured
         delays between messages look at the :class:`can.MessageSync` class.
 
     .. note::
-        This class itself is just a dispatcher, and any positional an keyword
+        This function itself is just a dispatcher, and any positional and keyword
         arguments are passed on to the returned instance.
     """
 
-    fetched_plugins = False
-    message_readers: ClassVar[Dict[str, Optional[Type[MessageReader]]]] = {
-        ".asc": ASCReader,
-        ".blf": BLFReader,
-        ".csv": CSVReader,
-        ".db": SqliteReader,
-        ".log": CanutilsLogReader,
-        ".mf4": MF4Reader,
-        ".trc": TRCReader,
-    }
+    _update_reader_plugins()
 
-    @staticmethod
-    def __new__(  # type: ignore[misc]
-        cls: Any,
-        filename: StringPathLike,
-        **kwargs: Any,
-    ) -> MessageReader:
-        """
-        :param filename: the filename/path of the file to read from
-        :raises ValueError: if the filename's suffix is of an unknown file type
-        """
-        if not LogReader.fetched_plugins:
-            LogReader.message_readers.update(
-                {
-                    reader.key: cast(Type[MessageReader], reader.load())
-                    for reader in read_entry_points("can.io.message_reader")
-                }
-            )
-            LogReader.fetched_plugins = True
-
-        suffix = pathlib.PurePath(filename).suffix.lower()
-
-        file_or_filename: AcceptedIOType = filename
-        if suffix == ".gz":
-            reader_type, file_or_filename = LogReader.decompress(filename)
-        else:
-            reader_type = cls._get_logger_for_suffix(suffix)
-        return reader_type(file=file_or_filename, **kwargs)
-
-    @classmethod
-    def _get_logger_for_suffix(cls, suffix: str) -> Type[MessageReader]:
-        try:
-            reader_type = LogReader.message_readers[suffix]
-        except KeyError:
-            raise ValueError(
-                f'No read support for this unknown log format "{suffix}"'
-            ) from None
-        if reader_type is None:
-            raise ImportError(f"failed to import reader for extension {suffix}")
-        return reader_type
-
-    @classmethod
-    def decompress(
-        cls,
-        filename: StringPathLike,
-    ) -> Tuple[Type[MessageReader], Union[str, FileLike]]:
-        """
-        Return the suffix and io object of the decompressed file.
-        """
-        real_suffix = pathlib.Path(filename).suffixes[-2].lower()
-        reader_type = cls._get_logger_for_suffix(real_suffix)
-
-        mode = "rb" if issubclass(reader_type, BinaryIOMessageReader) else "rt"
-
-        return reader_type, gzip.open(filename, mode)
-
-    def __iter__(self) -> Generator[Message, None, None]:
-        raise NotImplementedError()
+    suffix = pathlib.PurePath(filename).suffix.lower()
+    file_or_filename: AcceptedIOType = filename
+    if suffix == ".gz":
+        reader_type, file_or_filename = _decompress(filename)
+    else:
+        reader_type = _get_logger_for_suffix(suffix)
+    return reader_type(file=file_or_filename, **kwargs)
 
 
 class MessageSync:

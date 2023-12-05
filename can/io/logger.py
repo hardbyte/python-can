@@ -8,23 +8,11 @@ import pathlib
 from abc import ABC, abstractmethod
 from datetime import datetime
 from types import TracebackType
-from typing import (
-    Any,
-    Callable,
-    ClassVar,
-    Dict,
-    Literal,
-    Optional,
-    Set,
-    Tuple,
-    Type,
-    cast,
-)
+from typing import Any, Callable, Dict, Final, Literal, Optional, Set, Tuple, Type, cast
 
 from typing_extensions import Self
 
 from .._entry_points import read_entry_points
-from ..listener import Listener
 from ..message import Message
 from ..typechecking import AcceptedIOType, FileLike, StringPathLike
 from .asc import ASCWriter
@@ -32,7 +20,6 @@ from .blf import BLFWriter
 from .canutils import CanutilsLogWriter
 from .csv import CSVWriter
 from .generic import (
-    BaseIOHandler,
     BinaryIOMessageWriter,
     FileIOMessageWriter,
     MessageWriter,
@@ -42,8 +29,62 @@ from .printer import Printer
 from .sqlite import SqliteWriter
 from .trc import TRCWriter
 
+MESSAGE_WRITERS: Final[Dict[str, Type[MessageWriter]]] = {
+    ".asc": ASCWriter,
+    ".blf": BLFWriter,
+    ".csv": CSVWriter,
+    ".db": SqliteWriter,
+    ".log": CanutilsLogWriter,
+    ".mf4": MF4Writer,
+    ".trc": TRCWriter,
+    ".txt": Printer,
+}
 
-class Logger(MessageWriter):
+
+def _update_writer_plugins() -> None:
+    """Update available message writer plugins from entry points."""
+    for entry_point in read_entry_points("can.io.message_writer"):
+        if entry_point.key not in MESSAGE_WRITERS:
+            writer_class = cast(Type[MessageWriter], entry_point.load())
+            MESSAGE_WRITERS[entry_point.key] = writer_class
+
+
+def _get_logger_for_suffix(suffix: str) -> Type[MessageWriter]:
+    try:
+        logger_type = MESSAGE_WRITERS[suffix]
+        if logger_type is None:
+            raise ValueError(f'failed to import logger for extension "{suffix}"')
+        return logger_type
+    except KeyError:
+        raise ValueError(
+            f'No write support for this unknown log format "{suffix}"'
+        ) from None
+
+
+def _compress(
+    filename: StringPathLike, **kwargs: Any
+) -> Tuple[Type[MessageWriter], FileLike]:
+    """
+    Return the suffix and io object of the decompressed file.
+    File will automatically recompress upon close.
+    """
+    real_suffix = pathlib.Path(filename).suffixes[-2].lower()
+    if real_suffix in (".blf", ".db"):
+        raise ValueError(
+            f"The file type {real_suffix} is currently incompatible with gzip."
+        )
+    logger_type = _get_logger_for_suffix(real_suffix)
+    append = kwargs.get("append", False)
+
+    if issubclass(logger_type, BinaryIOMessageWriter):
+        mode = "ab" if append else "wb"
+    else:
+        mode = "at" if append else "wt"
+
+    return logger_type, gzip.open(filename, mode)
+
+
+def Logger(filename: Optional[StringPathLike], **kwargs: Any) -> MessageWriter:
     """
     Logs CAN messages to a file.
 
@@ -65,97 +106,34 @@ class Logger(MessageWriter):
 
     The log files may be incomplete until `stop()` is called due to buffering.
 
+    :param filename:
+        the filename/path of the file to write to,
+        may be a path-like object or None to
+        instantiate a :class:`~can.Printer`
+    :raises ValueError:
+        if the filename's suffix is of an unknown file type
+
     .. note::
-        This class itself is just a dispatcher, and any positional and keyword
+        This function itself is just a dispatcher, and any positional and keyword
         arguments are passed on to the returned instance.
     """
 
-    fetched_plugins = False
-    message_writers: ClassVar[Dict[str, Type[MessageWriter]]] = {
-        ".asc": ASCWriter,
-        ".blf": BLFWriter,
-        ".csv": CSVWriter,
-        ".db": SqliteWriter,
-        ".log": CanutilsLogWriter,
-        ".mf4": MF4Writer,
-        ".trc": TRCWriter,
-        ".txt": Printer,
-    }
+    if filename is None:
+        return Printer(**kwargs)
 
-    @staticmethod
-    def __new__(  # type: ignore[misc]
-        cls: Any, filename: Optional[StringPathLike], **kwargs: Any
-    ) -> MessageWriter:
-        """
-        :param filename:
-            the filename/path of the file to write to,
-            may be a path-like object or None to
-            instantiate a :class:`~can.Printer`
-        :raises ValueError:
-            if the filename's suffix is of an unknown file type
-        """
-        if filename is None:
-            return Printer(**kwargs)
+    _update_writer_plugins()
 
-        if not Logger.fetched_plugins:
-            Logger.message_writers.update(
-                {
-                    writer.key: cast(Type[MessageWriter], writer.load())
-                    for writer in read_entry_points("can.io.message_writer")
-                }
-            )
-            Logger.fetched_plugins = True
+    suffix = pathlib.PurePath(filename).suffix.lower()
+    file_or_filename: AcceptedIOType = filename
+    if suffix == ".gz":
+        logger_type, file_or_filename = _compress(filename, **kwargs)
+    else:
+        logger_type = _get_logger_for_suffix(suffix)
 
-        suffix = pathlib.PurePath(filename).suffix.lower()
-
-        file_or_filename: AcceptedIOType = filename
-        if suffix == ".gz":
-            logger_type, file_or_filename = Logger.compress(filename, **kwargs)
-        else:
-            logger_type = cls._get_logger_for_suffix(suffix)
-
-        return logger_type(file=file_or_filename, **kwargs)
-
-    @classmethod
-    def _get_logger_for_suffix(cls, suffix: str) -> Type[MessageWriter]:
-        try:
-            logger_type = Logger.message_writers[suffix]
-            if logger_type is None:
-                raise ValueError(f'failed to import logger for extension "{suffix}"')
-            return logger_type
-        except KeyError:
-            raise ValueError(
-                f'No write support for this unknown log format "{suffix}"'
-            ) from None
-
-    @classmethod
-    def compress(
-        cls, filename: StringPathLike, **kwargs: Any
-    ) -> Tuple[Type[MessageWriter], FileLike]:
-        """
-        Return the suffix and io object of the decompressed file.
-        File will automatically recompress upon close.
-        """
-        real_suffix = pathlib.Path(filename).suffixes[-2].lower()
-        if real_suffix in (".blf", ".db"):
-            raise ValueError(
-                f"The file type {real_suffix} is currently incompatible with gzip."
-            )
-        logger_type = cls._get_logger_for_suffix(real_suffix)
-        append = kwargs.get("append", False)
-
-        if issubclass(logger_type, BinaryIOMessageWriter):
-            mode = "ab" if append else "wb"
-        else:
-            mode = "at" if append else "wt"
-
-        return logger_type, gzip.open(filename, mode)
-
-    def on_message_received(self, msg: Message) -> None:
-        pass
+    return logger_type(file=file_or_filename, **kwargs)
 
 
-class BaseRotatingLogger(Listener, BaseIOHandler, ABC):
+class BaseRotatingLogger(MessageWriter, ABC):
     """
     Base class for rotating CAN loggers. This class is not meant to be
     instantiated directly. Subclasses must implement the :meth:`should_rollover`
@@ -171,7 +149,7 @@ class BaseRotatingLogger(Listener, BaseIOHandler, ABC):
     Subclasses must set the `_writer` attribute upon initialization.
     """
 
-    _supported_formats: ClassVar[Set[str]] = set()
+    _supported_formats: Set[str] = set()
 
     #: If this attribute is set to a callable, the :meth:`~BaseRotatingLogger.rotation_filename`
     #: method delegates to this callable. The parameters passed to the callable are
@@ -187,20 +165,17 @@ class BaseRotatingLogger(Listener, BaseIOHandler, ABC):
     rollover_count: int = 0
 
     def __init__(self, **kwargs: Any) -> None:
-        Listener.__init__(self)
-        BaseIOHandler.__init__(self, file=None)
+        super().__init__(**kwargs, file=None)
 
         self.writer_kwargs = kwargs
 
         # Expected to be set by the subclass
-        self._writer: Optional[FileIOMessageWriter] = None
+        self._writer: FileIOMessageWriter = None  # type: ignore
 
     @property
     def writer(self) -> FileIOMessageWriter:
         """This attribute holds an instance of a writer class which manages the actual file IO."""
-        if self._writer is not None:
-            return self._writer
-        raise ValueError(f"{self.__class__.__name__}.writer is None.")
+        return self._writer
 
     def rotation_filename(self, default_name: StringPathLike) -> StringPathLike:
         """Modify the filename of a log file when rotating.
@@ -270,7 +245,7 @@ class BaseRotatingLogger(Listener, BaseIOHandler, ABC):
             logger = Logger(filename=filename, **self.writer_kwargs)
             if isinstance(logger, FileIOMessageWriter):
                 return logger
-            if isinstance(logger, Printer) and logger.file is not None:
+            elif isinstance(logger, Printer) and logger.file is not None:
                 return cast(FileIOMessageWriter, logger)
 
         raise ValueError(
@@ -297,7 +272,7 @@ class BaseRotatingLogger(Listener, BaseIOHandler, ABC):
         exc_val: Optional[BaseException],
         exc_tb: Optional[TracebackType],
     ) -> Literal[False]:
-        return self.writer.__exit__(exc_type, exc_val, exc_tb)
+        return self._writer.__exit__(exc_type, exc_val, exc_tb)
 
     @abstractmethod
     def should_rollover(self, msg: Message) -> bool:
@@ -350,7 +325,7 @@ class SizedRotatingLogger(BaseRotatingLogger):
     :meth:`~can.Listener.stop` is called.
     """
 
-    _supported_formats: ClassVar[Set[str]] = {".asc", ".blf", ".csv", ".log", ".txt"}
+    _supported_formats = {".asc", ".blf", ".csv", ".log", ".txt"}
 
     def __init__(
         self,
