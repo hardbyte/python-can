@@ -26,7 +26,24 @@ DEFAULT_SOCKETCAND_DISCOVERY_ADDRESS = ""
 DEFAULT_SOCKETCAND_DISCOVERY_PORT = 42000
 
 
-def detect_beacon(timeout_ms):
+def detect_beacon(timeout_ms) -> List[can.typechecking.AutoDetectedConfig]:
+    """
+    Detects socketcand servers
+
+        This is what :meth:`can.SocketCanDaemonBus._detect_available_configs`
+        uses to search for available socketcand servers with fixed timeout of
+        3.1 seconds (socketcand sends out a beacon packet every 3 seconds).
+
+        Using this method directly allows for adjusting the timeout. Extending
+        the timeout beyond the default time period could be useful if UDP
+        packet loss is a concern.
+
+        :param timeout_ms:
+            Timeout in milliseconds to wait for socketcand beacon packets
+
+        :return:
+            See :meth:`can.SocketCanDaemonBus._detect_available_configs`
+    """
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
         sock.bind(
             (DEFAULT_SOCKETCAND_DISCOVERY_ADDRESS, DEFAULT_SOCKETCAND_DISCOVERY_PORT)
