@@ -268,7 +268,7 @@ class TRCWriter(TextIOMessageWriter):
         self,
         file: Union[StringPathLike, TextIO],
         channel: int = 1,
-        fileversion : int = TRCFileVersion.V1_1,
+        fileversion : int = TRCFileVersion.V2_1,
         **kwargs: Any,
     ) -> None:
         """
