@@ -18,8 +18,6 @@ class EtasBus(can.BusABC):
         data_bitrate: int = 2000000,
         **kwargs: Dict[str, any],
     ):
-        super().__init__(channel=channel, **kwargs)
-
         self.receive_own_messages = receive_own_messages
         self._can_protocol = can.CanProtocol.CAN_FD if fd else can.CanProtocol.CAN_20
 
@@ -118,6 +116,9 @@ class EtasBus(can.BusABC):
         self.timeOffset = time.time() - (float(now.value) / self.tickFrequency)
 
         self.channel_info = channel
+
+        # Super call must be after child init since super calls set_filters
+        super().__init__(channel=channel, **kwargs)
 
     def _recv_internal(
         self, timeout: Optional[float]
