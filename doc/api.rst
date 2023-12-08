@@ -10,11 +10,12 @@ A form of CAN interface is also required.
 
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
    bus
    message
-   listeners
+   notifier
+   file_io
    asyncio
    bcm
    errors

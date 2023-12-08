@@ -30,6 +30,8 @@ from .mf4 import MF4Reader
 from .sqlite import SqliteReader
 from .trc import TRCReader
 
+#: A map of file suffixes to their corresponding
+#: :class:`can.io.generic.MessageReader` class
 MESSAGE_READERS: Final[Dict[str, Type[MessageReader]]] = {
     ".asc": ASCReader,
     ".blf": BLFReader,
@@ -77,8 +79,8 @@ def _get_logger_for_suffix(suffix: str) -> Type[MessageReader]:
 
 
 def LogReader(filename: StringPathLike, **kwargs: Any) -> MessageReader:
-    """
-    Replay logged CAN messages from a file.
+    """Find and return the appropriate :class:`~can.io.generic.MessageReader` instance
+    for a given file suffix.
 
     The format is determined from the file suffix which can be one of:
       * .asc
@@ -142,6 +144,16 @@ class MessageSync:
                            as the time between messages.
         :param gap: Minimum time between sent messages in seconds
         :param skip: Skip periods of inactivity greater than this (in seconds).
+
+        Example::
+
+            import can
+
+            with can.LogReader("my_logfile.asc") as reader, can.Bus(interface="virtual") as bus:
+                for msg in can.MessageSync(messages=reader):
+                    print(msg)
+                    bus.send(msg)
+
         """
         self.raw_messages = messages
         self.timestamps = timestamps

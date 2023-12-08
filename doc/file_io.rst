@@ -1,110 +1,20 @@
-
-Reading and Writing Messages
-============================
-
-.. _notifier:
-
-Notifier
---------
-
-The Notifier object is used as a message distributor for a bus. Notifier creates a thread to read messages from the bus and distributes them to listeners.
-
-.. autoclass:: can.Notifier
-    :members:
-
-.. _listeners_doc:
-
-Listener
---------
-
-The Listener class is an "abstract" base class for any objects which wish to
-register to receive notifications of new messages on the bus. A Listener can
-be used in two ways; the default is to **call** the Listener with a new
-message, or by calling the method **on_message_received**.
-
-Listeners are registered with :ref:`notifier` object(s) which ensure they are
-notified whenever a new message is received.
-
-.. literalinclude:: ../examples/print_notifier.py
-    :language: python
-    :linenos:
-    :emphasize-lines: 8,9
+File IO
+=======
 
 
-Subclasses of Listener that do not override **on_message_received** will cause
-:class:`NotImplementedError` to be thrown when a message is received on
-the CAN bus.
+Reading and Writing Files
+-------------------------
 
-.. autoclass:: can.Listener
-    :members:
-
-There are some listeners that already ship together with `python-can`
-and are listed below.
-Some of them allow messages to be written to files, and the corresponding file
-readers are also documented here.
-
-.. note ::
-
-    Please note that writing and the reading a message might not always yield a
-    completely unchanged message again, since some properties are not (yet)
-    supported by some file formats.
-
-.. note ::
-
-    Additional file formats for both reading/writing log files can be added via
-    a plugin reader/writer. An external package can register a new reader
-    by using the ``can.io.message_reader`` entry point. Similarly, a writer can
-    be added using the ``can.io.message_writer`` entry point.
-
-    The format of the entry point is ``reader_name=module:classname`` where ``classname``
-    is a :class:`can.io.generic.BaseIOHandler` concrete implementation.
-
-    ::
-
-     entry_points={
-         'can.io.message_reader': [
-            '.asc = my_package.io.asc:ASCReader'
-        ]
-     },
-
-
-BufferedReader
---------------
-
-.. autoclass:: can.BufferedReader
-    :members:
-
-.. autoclass:: can.AsyncBufferedReader
-    :members:
-
-
-RedirectReader
---------------
-
-.. autoclass:: can.RedirectReader
-    :members:
-
-
-Logger
-------
-
-The :class:`can.Logger` uses the following :class:`can.Listener` types to
-create log files with different file types of the messages received.
-
-.. autoclass:: can.Logger
-    :members:
-
-.. autoclass:: can.io.BaseRotatingLogger
-    :members:
-
-.. autoclass:: can.SizedRotatingLogger
-    :members:
-
+.. autofunction:: can.LogReader
+.. autofunction:: can.Logger
+.. autodata:: can.io.logger.MESSAGE_WRITERS
+.. autodata:: can.io.player.MESSAGE_READERS
 
 Printer
 -------
 
 .. autoclass:: can.Printer
+    :show-inheritance:
     :members:
 
 
@@ -112,9 +22,11 @@ CSVWriter
 ---------
 
 .. autoclass:: can.CSVWriter
+    :show-inheritance:
     :members:
 
 .. autoclass:: can.CSVReader
+    :show-inheritance:
     :members:
 
 
@@ -122,9 +34,11 @@ SqliteWriter
 ------------
 
 .. autoclass:: can.SqliteWriter
+    :show-inheritance:
     :members:
 
 .. autoclass:: can.SqliteReader
+    :show-inheritance:
     :members:
 
 
@@ -164,6 +78,7 @@ engineered from existing log files. One description of the format can be found `
 
 
 .. autoclass:: can.ASCWriter
+    :show-inheritance:
     :members:
 
 ASCReader reads CAN data from ASCII log files .asc,
@@ -172,6 +87,7 @@ as further references can-utils can be used:
 `log2asc <https://github.com/linux-can/can-utils/blob/master/log2asc.c>`_.
 
 .. autoclass:: can.ASCReader
+    :show-inheritance:
     :members:
 
 
@@ -185,11 +101,13 @@ As specification following references can-utils can be used:
 
 
 .. autoclass:: can.CanutilsLogWriter
+    :show-inheritance:
     :members:
 
 **CanutilsLogReader** reads CAN data from ASCII log files .log
 
 .. autoclass:: can.CanutilsLogReader
+    :show-inheritance:
     :members:
 
 
@@ -204,11 +122,13 @@ The data is stored in a compressed format which makes it very compact.
 .. note:: Channels will be converted to integers.
 
 .. autoclass:: can.BLFWriter
+    :show-inheritance:
     :members:
 
 The following class can be used to read messages from BLF file:
 
 .. autoclass:: can.BLFReader
+    :show-inheritance:
     :members:
 
 
@@ -229,6 +149,7 @@ The data is stored in a compressed format which makes it compact.
 
 
 .. autoclass:: can.MF4Writer
+    :show-inheritance:
     :members:
 
 The MDF format is very flexible regarding the internal structure and it is used to handle data from multiple sources, not just CAN bus logging.
@@ -239,6 +160,7 @@ Therefor MF4Reader can only replay files created with MF4Writer.
 The following class can be used to read messages from MF4 file:
 
 .. autoclass:: can.MF4Reader
+    :show-inheritance:
     :members:
 
 
@@ -252,9 +174,31 @@ Implements basic support for the TRC file format.
    Comments and contributions are welcome on what file versions might be relevant.
 
 .. autoclass:: can.TRCWriter
+    :show-inheritance:
     :members:
 
 The following class can be used to read messages from TRC file:
 
 .. autoclass:: can.TRCReader
+    :show-inheritance:
     :members:
+
+
+Rotating Loggers
+----------------
+
+.. autoclass:: can.io.BaseRotatingLogger
+    :show-inheritance:
+    :members:
+
+.. autoclass:: can.SizedRotatingLogger
+    :show-inheritance:
+    :members:
+
+
+Replaying Files
+---------------
+
+.. autoclass:: can.MessageSync
+    :members:
+

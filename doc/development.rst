@@ -9,7 +9,7 @@ Contribute to source code, documentation, examples and report issues:
 https://github.com/hardbyte/python-can
 
 Note that the latest released version on PyPi may be significantly behind the
-``develop`` branch. Please open any feature requests against the ``develop`` branch
+``main`` branch. Please open any feature requests against the ``main`` branch
 
 There is also a `python-can <https://groups.google.com/forum/#!forum/python-can>`__
 mailing list for development discussion.
@@ -100,7 +100,7 @@ The modules in ``python-can`` are:
 +---------------------------------+------------------------------------------------------+
 |:doc:`message <message>`         | Contains the interface independent Message object.   |
 +---------------------------------+------------------------------------------------------+
-|:doc:`io <listeners>`            | Contains a range of file readers and writers.        |
+|:doc:`io <file_io>`              | Contains a range of file readers and writers.        |
 +---------------------------------+------------------------------------------------------+
 |:doc:`broadcastmanager <bcm>`    | Contains interface independent broadcast manager     |
 |                                 | code.                                                |

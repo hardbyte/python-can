@@ -29,6 +29,8 @@ from .printer import Printer
 from .sqlite import SqliteWriter
 from .trc import TRCWriter
 
+#: A map of file suffixes to their corresponding
+#: :class:`can.io.generic.MessageWriter` class
 MESSAGE_WRITERS: Final[Dict[str, Type[MessageWriter]]] = {
     ".asc": ASCWriter,
     ".blf": BLFWriter,
@@ -85,8 +87,8 @@ def _compress(
 
 
 def Logger(filename: Optional[StringPathLike], **kwargs: Any) -> MessageWriter:
-    """
-    Logs CAN messages to a file.
+    """Find and return the appropriate :class:`~can.io.generic.MessageWriter` instance
+    for a given file suffix.
 
     The format is determined from the file suffix which can be one of:
       * .asc: :class:`can.ASCWriter`
