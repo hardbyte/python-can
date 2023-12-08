@@ -95,10 +95,10 @@ def LogReader(filename: StringPathLike, **kwargs: Any) -> MessageReader:
     files suffix is one of the above (e.g. filename.asc.gz).
 
 
-    Exposes a simple iterator interface, to use simply:
+    Exposes a simple iterator interface, to use simply::
 
-        >>> for msg in LogReader("some/path/to/my_file.log"):
-        ...     print(msg)
+        for msg in can.LogReader("some/path/to/my_file.log"):
+            print(msg)
 
     :param filename:
         the filename/path of the file to read from
