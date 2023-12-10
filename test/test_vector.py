@@ -120,7 +120,7 @@ def test_bus_creation() -> None:
 
 @pytest.mark.skipif(not XLDRIVER_FOUND, reason="Vector XL API is unavailable")
 def test_bus_creation_channel_index() -> None:
-    channel_index = 3
+    channel_index = 1
     bus = can.Bus(
         channel=0,
         serial=_find_virtual_can_serial(),
