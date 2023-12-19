@@ -46,20 +46,20 @@ MESSAGE_WRITERS: Final[Dict[str, Type[MessageWriter]]] = {
 def _update_writer_plugins() -> None:
     """Update available message writer plugins from entry points."""
     for entry_point in read_entry_points("can.io.message_writer"):
-        if entry_point.key not in MESSAGE_WRITERS:
-            writer_class = cast(Type[MessageWriter], entry_point.load())
+        if entry_point.key in MESSAGE_WRITERS:
+            continue
+
+        writer_class = entry_point.load()
+        if issubclass(writer_class, MessageWriter):
             MESSAGE_WRITERS[entry_point.key] = writer_class
 
 
 def _get_logger_for_suffix(suffix: str) -> Type[MessageWriter]:
     try:
-        logger_type = MESSAGE_WRITERS[suffix]
-        if logger_type is None:
-            raise ValueError(f'failed to import logger for extension "{suffix}"')
-        return logger_type
+        return MESSAGE_WRITERS[suffix]
     except KeyError:
         raise ValueError(
-            f'No write support for this unknown log format "{suffix}"'
+            f'No write support for unknown log format "{suffix}"'
         ) from None
 
 
@@ -70,7 +70,13 @@ def _compress(
     Return the suffix and io object of the decompressed file.
     File will automatically recompress upon close.
     """
-    real_suffix = pathlib.Path(filename).suffixes[-2].lower()
+    suffixes = pathlib.Path(filename).suffixes
+    if len(suffixes) != 2:
+        raise ValueError(
+            f"No write support for unknown log format \"{''.join(suffixes)}\""
+        ) from None
+
+    real_suffix = suffixes[-2].lower()
     if real_suffix in (".blf", ".db"):
         raise ValueError(
             f"The file type {real_suffix} is currently incompatible with gzip."
@@ -131,7 +137,6 @@ def Logger(filename: Optional[StringPathLike], **kwargs: Any) -> MessageWriter:
         logger_type, file_or_filename = _compress(filename, **kwargs)
     else:
         logger_type = _get_logger_for_suffix(suffix)
-
     return logger_type(file=file_or_filename, **kwargs)
 
 

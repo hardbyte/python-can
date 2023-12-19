@@ -15,7 +15,6 @@ from typing import (
     Tuple,
     Type,
     Union,
-    cast,
 )
 
 from .._entry_points import read_entry_points
@@ -46,9 +45,20 @@ MESSAGE_READERS: Final[Dict[str, Type[MessageReader]]] = {
 def _update_reader_plugins() -> None:
     """Update available message reader plugins from entry points."""
     for entry_point in read_entry_points("can.io.message_reader"):
-        if entry_point.key not in MESSAGE_READERS:
-            reader_class = cast(Type[MessageReader], entry_point.load())
+        if entry_point.key in MESSAGE_READERS:
+            continue
+
+        reader_class = entry_point.load()
+        if issubclass(reader_class, MessageReader):
             MESSAGE_READERS[entry_point.key] = reader_class
+
+
+def _get_logger_for_suffix(suffix: str) -> Type[MessageReader]:
+    """Find MessageReader class for given suffix."""
+    try:
+        return MESSAGE_READERS[suffix]
+    except KeyError:
+        raise ValueError(f'No read support for unknown log format "{suffix}"') from None
 
 
 def _decompress(
@@ -57,25 +67,18 @@ def _decompress(
     """
     Return the suffix and io object of the decompressed file.
     """
-    real_suffix = pathlib.Path(filename).suffixes[-2].lower()
+    suffixes = pathlib.Path(filename).suffixes
+    if len(suffixes) != 2:
+        raise ValueError(
+            f"No write support for unknown log format \"{''.join(suffixes)}\""
+        ) from None
+
+    real_suffix = suffixes[-2].lower()
     reader_type = _get_logger_for_suffix(real_suffix)
 
     mode = "rb" if issubclass(reader_type, BinaryIOMessageReader) else "rt"
 
     return reader_type, gzip.open(filename, mode)
-
-
-def _get_logger_for_suffix(suffix: str) -> Type[MessageReader]:
-    """Find MessageReader class for given suffix."""
-    try:
-        reader_type = MESSAGE_READERS[suffix]
-    except KeyError:
-        raise ValueError(
-            f'No read support for this unknown log format "{suffix}"'
-        ) from None
-    if reader_type is None:
-        raise ImportError(f"failed to import reader for extension {suffix}")
-    return reader_type
 
 
 def LogReader(filename: StringPathLike, **kwargs: Any) -> MessageReader:
