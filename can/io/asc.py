@@ -254,13 +254,14 @@ class ASCReader(TextIOMessageReader):
 
     def __iter__(self) -> Generator[Message, None, None]:
         self._extract_header()
-        trigger_match = re.compile(r"begin\s+triggerblock\s+\w+\s+(?P<datetime_string>.+)",re.IGNORECASE)
+        trigger_match_re = re.compile(r"begin\s+triggerblock\s+\w+\s+(?P<datetime_string>.+)",re.IGNORECASE)
         can_message_match = re.compile(r"\d+\.\d+\s+(\d+\s+(\w+\s+(Tx|Rx)|ErrorFrame)|CANFD)", re.ASCII | re.IGNORECASE)
         for _line in self.file:
             line = _line.strip()
 
-            if trigger_match.match(line):
-                datetime_str = trigger_match.match(line).group("datetime_string")
+            trigger_match = trigger_match_re.match(line)
+            if trigger_match:
+                datetime_str = trigger_match.group("datetime_string")
                 self.start_time = (
                     0.0
                     if self.relative_timestamp
