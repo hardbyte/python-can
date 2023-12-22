@@ -254,29 +254,21 @@ class ASCReader(TextIOMessageReader):
 
     def __iter__(self) -> Generator[Message, None, None]:
         self._extract_header()
-
+        trigger_match = re.compile(r"begin\s+triggerblock\s+\w+\s+(?P<datetime_string>.+)",re.IGNORECASE)
+        can_message_match = re.compile(r"\d+\.\d+\s+(\d+\s+(\w+\s+(Tx|Rx)|ErrorFrame)|CANFD)", re.ASCII | re.IGNORECASE)
         for _line in self.file:
             line = _line.strip()
 
-            trigger_match = re.match(
-                r"begin\s+triggerblock\s+\w+\s+(?P<datetime_string>.+)",
-                line,
-                re.IGNORECASE,
-            )
-            if trigger_match:
-                datetime_str = trigger_match.group("datetime_string")
+            if trigger_match.match(line):
+                datetime_str = trigger_match.match(line).group("datetime_string")
                 self.start_time = (
                     0.0
                     if self.relative_timestamp
                     else self._datetime_to_timestamp(datetime_str)
                 )
                 continue
-
-            if not re.match(
-                r"\d+\.\d+\s+(\d+\s+(\w+\s+(Tx|Rx)|ErrorFrame)|CANFD)",
-                line,
-                re.ASCII | re.IGNORECASE,
-            ):
+                
+            if not can_message_match.match(line):
                 # line might be a comment, chip status,
                 # J1939 message or some other unsupported event
                 continue
