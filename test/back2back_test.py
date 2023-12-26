@@ -273,6 +273,20 @@ class Back2BackTestCase(unittest.TestCase):
         self.bus2.recv(0)
         self.bus2.recv(0)
 
+    def test_perodic_tasks_do_not_exceed_duration(self):
+        duration, period = 2.0, 0.6
+        messages = []
+
+        self.bus2.send_periodic(can.Message(), period, duration)
+        while True:
+            msg = self.bus1.recv(period + 0.1)
+            if msg is None:
+                break
+            messages.append(msg)
+
+        delta_t = messages[-1].timestamp - messages[0].timestamp
+        assert delta_t <= duration
+
 
 @unittest.skipUnless(TEST_INTERFACE_SOCKETCAN, "skip testing of socketcan")
 class BasicTestSocketCan(Back2BackTestCase):
