@@ -9,7 +9,7 @@ import logging
 import re
 import time
 from datetime import datetime
-from typing import Any, Dict, Generator, List, Optional, TextIO, Union
+from typing import Any, Dict, Final, Generator, List, Optional, TextIO, Union
 
 from ..message import Message
 from ..typechecking import StringPathLike
@@ -20,6 +20,14 @@ CAN_MSG_EXT = 0x80000000
 CAN_ID_MASK = 0x1FFFFFFF
 BASE_HEX = 16
 BASE_DEC = 10
+ASC_TRIGGER_REGEX: Final = re.compile(
+    r"begin\s+triggerblock\s+\w+\s+(?P<datetime_string>.+)", re.IGNORECASE
+)
+ASC_MESSAGE_REGEX: Final = re.compile(
+    r"\d+\.\d+\s+(\d+\s+(\w+\s+(Tx|Rx)|ErrorFrame)|CANFD)",
+    re.ASCII | re.IGNORECASE,
+)
+
 
 logger = logging.getLogger("can.io.asc")
 
@@ -258,12 +266,7 @@ class ASCReader(TextIOMessageReader):
         for _line in self.file:
             line = _line.strip()
 
-            trigger_match = re.match(
-                r"begin\s+triggerblock\s+\w+\s+(?P<datetime_string>.+)",
-                line,
-                re.IGNORECASE,
-            )
-            if trigger_match:
+            if trigger_match := ASC_TRIGGER_REGEX.match(line):
                 datetime_str = trigger_match.group("datetime_string")
                 self.start_time = (
                     0.0
@@ -272,11 +275,7 @@ class ASCReader(TextIOMessageReader):
                 )
                 continue
 
-            if not re.match(
-                r"\d+\.\d+\s+(\d+\s+(\w+\s+(Tx|Rx)|ErrorFrame)|CANFD)",
-                line,
-                re.ASCII | re.IGNORECASE,
-            ):
+            if not ASC_MESSAGE_REGEX.match(line):
                 # line might be a comment, chip status,
                 # J1939 message or some other unsupported event
                 continue
