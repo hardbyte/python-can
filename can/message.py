@@ -245,7 +245,7 @@ class Message:  # pylint: disable=too-many-instance-attributes; OK for a datacla
         if self.is_remote_frame:
             if self.is_error_frame:
                 raise ValueError(
-                    "a message cannot be a remote and an error frame at the sane time"
+                    "a message cannot be a remote and an error frame at the same time"
                 )
             if self.is_fd:
                 raise ValueError("CAN FD does not support remote frames")
