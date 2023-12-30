@@ -9,7 +9,7 @@ import logging
 import re
 import time
 from datetime import datetime
-from typing import Any, Dict, Generator, List, Optional, TextIO, Union, Final
+from typing import Any, Dict, Final, Generator, List, Optional, TextIO, Union
 
 from ..message import Message
 from ..typechecking import StringPathLike
