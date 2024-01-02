@@ -38,7 +38,7 @@ The output may look like this::
     Timestamp: 1637791111.634630    ID: 00000587    X Rx                DLC:  8    4e 06 85 23 6f 81 2b 65
 
 
-This interface also supports :meth:`can.BusABC._detect_available_configs`.
+This interface also supports :meth:`~can.detect_available_configs`.
 
 .. code-block:: python
 
@@ -71,6 +71,8 @@ Bus
    :show-inheritance:
    :member-order: bysource
    :members:
+
+.. autofunction:: can.interfaces.socketcand.detect_beacon
 
 Socketcand Quickstart
 ---------------------

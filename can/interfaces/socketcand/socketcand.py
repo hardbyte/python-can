@@ -30,9 +30,9 @@ def detect_beacon(timeout_ms) -> List[can.typechecking.AutoDetectedConfig]:
     """
     Detects socketcand servers
 
-        This is what :meth:`can.SocketCanDaemonBus._detect_available_configs`
-        uses to search for available socketcand servers with fixed timeout of
-        3.1 seconds (socketcand sends out a beacon packet every 3 seconds).
+        This is what :meth:`can.detect_available_configs` ends up calling
+        search for available socketcand servers with fixed timeout of 3.1
+        seconds (socketcand sends out a beacon packet every 3 seconds).
 
         Using this method directly allows for adjusting the timeout. Extending
         the timeout beyond the default time period could be useful if UDP
@@ -42,7 +42,7 @@ def detect_beacon(timeout_ms) -> List[can.typechecking.AutoDetectedConfig]:
             Timeout in milliseconds to wait for socketcand beacon packets
 
         :return:
-            See :meth:`can.BusABC._detect_available_configs`
+            See :meth:`~can.detect_available_configs`
     """
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
         sock.bind(
