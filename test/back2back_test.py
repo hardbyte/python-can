@@ -273,6 +273,23 @@ class Back2BackTestCase(unittest.TestCase):
         self.bus2.recv(0)
         self.bus2.recv(0)
 
+    def test_send_periodic_duration(self):
+        """
+        Verify that send_periodic only transmits for the specified duration.
+
+        Regression test for #1713.
+        """
+        for params in [(0.01, 0.003), (0.1, 0.011), (1, 0.4)]:
+            duration, period = params
+            messages = []
+
+            self.bus2.send_periodic(can.Message(), period, duration)
+            while (msg := self.bus1.recv(period * 1.25)) is not None:
+                messages.append(msg)
+
+            delta_t = round(messages[-1].timestamp - messages[0].timestamp, 2)
+            assert delta_t <= duration
+
 
 @unittest.skipUnless(TEST_INTERFACE_SOCKETCAN, "skip testing of socketcan")
 class BasicTestSocketCan(Back2BackTestCase):

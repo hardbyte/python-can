@@ -297,6 +297,9 @@ class ThreadBasedCyclicSendTask(
             win32event.WaitForSingleObject(self.event.handle, 0)
 
         while not self.stopped:
+            if self.end_time is not None and time.perf_counter() >= self.end_time:
+                break
+
             # Prevent calling bus.send from multiple threads
             with self.send_lock:
                 try:
@@ -318,8 +321,7 @@ class ThreadBasedCyclicSendTask(
 
             if not USE_WINDOWS_EVENTS:
                 msg_due_time_ns += self.period_ns
-            if self.end_time is not None and time.perf_counter() >= self.end_time:
-                break
+
             msg_index = (msg_index + 1) % len(self.messages)
 
             if USE_WINDOWS_EVENTS:
