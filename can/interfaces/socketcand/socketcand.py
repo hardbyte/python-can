@@ -343,7 +343,7 @@ class SocketCanDaemonBus(can.BusABC):
         try:
             # Time between beacons no more than 3 seconds. Allow for a little
             # more than 3s
-            return detect_beacon(3.1)
+            return detect_beacon()
         except Exception as e:
             log.warning(f"Could not detect socketcand beacon: {e}")
             return []
