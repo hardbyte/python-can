@@ -26,7 +26,7 @@ DEFAULT_SOCKETCAND_DISCOVERY_ADDRESS = ""
 DEFAULT_SOCKETCAND_DISCOVERY_PORT = 42000
 
 
-def detect_beacon(timeout_ms) -> List[can.typechecking.AutoDetectedConfig]:
+def detect_beacon(timeout_ms: int = 3100) -> List[can.typechecking.AutoDetectedConfig]:
     """
     Detects socketcand servers
 
