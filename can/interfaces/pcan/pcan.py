@@ -27,6 +27,7 @@ from .basic import (
     IS_LINUX,
     IS_WINDOWS,
     PCAN_ALLOW_ERROR_FRAMES,
+    PCAN_ALLOW_ECHO_FRAMES,
     PCAN_API_VERSION,
     PCAN_ATTACHED_CHANNELS,
     PCAN_BAUD_500K,
@@ -120,6 +121,7 @@ class PcanBus(BusABC):
         state: BusState = BusState.ACTIVE,
         timing: Optional[Union[BitTiming, BitTimingFd]] = None,
         bitrate: int = 500000,
+        receive_own_messages: bool = False,
         **kwargs: Any,
     ):
         """A PCAN USB interface to CAN.
@@ -161,6 +163,9 @@ class PcanBus(BusABC):
             Bitrate of channel in bit/s.
             Default is 500 kbit/s.
             Ignored if using CanFD.
+
+        :param receive_own_messages:
+            Enable self-reception of sent messages.
 
         :param bool fd:
             Should the Bus be initialized in CAN-FD mode.
@@ -315,6 +320,14 @@ class PcanBus(BusABC):
                 log.debug(
                     "Ignoring error. PCAN_ALLOW_ERROR_FRAMES is still unsupported by OSX Library PCANUSB v0.11.2"
                 )
+
+        if receive_own_messages:
+            result = self.m_objPCANBasic.SetValue(
+                self.m_PcanHandle, PCAN_ALLOW_ECHO_FRAMES, PCAN_PARAMETER_ON
+            )
+
+            if result != PCAN_ERROR_OK:
+                raise PcanCanInitializationError(self._get_formatted_error(result))
 
         if kwargs.get("auto_reset", False):
             result = self.m_objPCANBasic.SetValue(
