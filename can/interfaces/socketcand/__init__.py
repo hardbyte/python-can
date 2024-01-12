@@ -8,7 +8,8 @@ http://www.domologic.de
 
 __all__ = [
     "SocketCanDaemonBus",
+    "detect_beacon",
     "socketcand",
 ]
 
-from .socketcand import SocketCanDaemonBus
+from .socketcand import SocketCanDaemonBus, detect_beacon

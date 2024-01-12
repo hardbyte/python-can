@@ -2,8 +2,8 @@
 
 socketcand Interface
 ====================
-`Socketcand <https://github.com/linux-can/socketcand>`__ is part of the 
-`Linux-CAN <https://github.com/linux-can>`__ project, providing a 
+`Socketcand <https://github.com/linux-can/socketcand>`__ is part of the
+`Linux-CAN <https://github.com/linux-can>`__ project, providing a
 Network-to-CAN bridge as a Linux damon. It implements a specific
 `TCP/IP based communication protocol <https://github.com/linux-can/socketcand/blob/master/doc/protocol.md>`__
 to transfer CAN frames and control commands.
@@ -11,7 +11,7 @@ to transfer CAN frames and control commands.
 The main advantage compared to UDP-based protocols (e.g. virtual interface)
 is, that TCP guarantees delivery and that the message order is kept.
 
-Here is a small example dumping all can messages received by a socketcand 
+Here is a small example dumping all can messages received by a socketcand
 daemon running on a remote Raspberry Pi:
 
 .. code-block:: python
@@ -37,6 +37,33 @@ The output may look like this::
     Timestamp: 1637791111.609763    ID: 0000031d    X Rx                DLC:  8    16 27 d8 3d fe d8 31 24
     Timestamp: 1637791111.634630    ID: 00000587    X Rx                DLC:  8    4e 06 85 23 6f 81 2b 65
 
+
+This interface also supports :meth:`~can.detect_available_configs`.
+
+.. code-block:: python
+
+    import can
+    import can.interfaces.socketcand
+
+    cfg = can.interfaces.socketcand._detect_available_configs()
+    if cfg:
+        bus = can.Bus(**cfg[0])
+
+The socketcand daemon broadcasts UDP beacons every 3 seconds. The default
+detection method waits for slightly more than 3 seconds to receive the beacon
+packet. If you want to increase the timeout, you can use
+:meth:`can.interfaces.socketcand.detect_beacon` directly. Below is an example
+which detects the beacon and uses the configuration to create a socketcand bus.
+
+.. code-block:: python
+
+    import can
+    import can.interfaces.socketcand
+
+    cfg = can.interfaces.socketcand.detect_beacon(6000)
+    if cfg:
+        bus = can.Bus(**cfg[0])
+
 Bus
 ---
 
@@ -44,6 +71,8 @@ Bus
    :show-inheritance:
    :member-order: bysource
    :members:
+
+.. autofunction:: can.interfaces.socketcand.detect_beacon
 
 Socketcand Quickstart
 ---------------------
