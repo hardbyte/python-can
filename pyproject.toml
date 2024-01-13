@@ -58,7 +58,7 @@ changelog = "https://github.com/hardbyte/python-can/blob/develop/CHANGELOG.md"
 
 [project.optional-dependencies]
 lint = [
-    "pylint==2.17.*",
+    "pylint==3.0.*",
     "ruff==0.1.13",
     "black==23.12.*",
     "mypy==1.8.*",
@@ -163,3 +163,23 @@ line-length = 100
 
 [tool.ruff.isort]
 known-first-party = ["can"]
+
+[tool.pylint]
+disable = [
+    "cyclic-import",
+    "duplicate-code",
+    "fixme",
+    "invalid-name",
+    "missing-class-docstring",
+    "missing-function-docstring",
+    "missing-module-docstring",
+    "no-else-raise",
+    "no-else-return",
+    "too-few-public-methods",
+    "too-many-arguments",
+    "too-many-branches",
+    "too-many-instance-attributes",
+    "too-many-locals",
+    "too-many-public-methods",
+    "too-many-statements",
+]

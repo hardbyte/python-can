@@ -270,7 +270,7 @@ class BaseRotatingLogger(Listener, BaseIOHandler, ABC):
             logger = Logger(filename=filename, **self.writer_kwargs)
             if isinstance(logger, FileIOMessageWriter):
                 return logger
-            elif isinstance(logger, Printer) and logger.file is not None:
+            if isinstance(logger, Printer) and logger.file is not None:
                 return cast(FileIOMessageWriter, logger)
 
         raise ValueError(

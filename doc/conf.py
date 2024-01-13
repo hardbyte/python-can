@@ -17,7 +17,7 @@ from unittest.mock import MagicMock
 sys.path.insert(0, os.path.abspath(".."))
 
 import can  # pylint: disable=wrong-import-position
-from can import ctypesutil
+from can import ctypesutil  # pylint: disable=wrong-import-position
 
 # -- General configuration -----------------------------------------------------
 

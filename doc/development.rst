@@ -57,7 +57,7 @@ The linters can be run with::
     black --check can
     mypy can
     ruff check can
-    pylint --rcfile=.pylintrc can/**.py
+    pylint can/**.py can/io doc/conf.py examples/**.py can/interfaces/socketcan
 
 
 Creating a new interface/backend

@@ -105,7 +105,7 @@ jobs:
         ruff check can
     - name: pylint
       run: |
-        pylint --rcfile=.pylintrc \
+        pylint \
         can/**.py \
         can/io \
         doc/conf.py \
