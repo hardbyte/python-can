@@ -407,7 +407,7 @@ class TRCWriter(TextIOMessageWriter):
         if msg.is_fd:
             logger.warning("TRCWriter: Logging CAN FD is not implemented")
             return
-        else:
-            serialized = self._format_message(msg, channel)
-            self.msgnr += 1
+
+        serialized = self._format_message(msg, channel)
+        self.msgnr += 1
         self.log_event(serialized, msg.timestamp)
