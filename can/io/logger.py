@@ -8,7 +8,18 @@ import pathlib
 from abc import ABC, abstractmethod
 from datetime import datetime
 from types import TracebackType
-from typing import Any, Callable, Dict, Literal, Optional, Set, Tuple, Type, cast
+from typing import (
+    Any,
+    Callable,
+    ClassVar,
+    Dict,
+    Literal,
+    Optional,
+    Set,
+    Tuple,
+    Type,
+    cast,
+)
 
 from typing_extensions import Self
 
@@ -60,7 +71,7 @@ class Logger(MessageWriter):
     """
 
     fetched_plugins = False
-    message_writers: Dict[str, Type[MessageWriter]] = {
+    message_writers: ClassVar[Dict[str, Type[MessageWriter]]] = {
         ".asc": ASCWriter,
         ".blf": BLFWriter,
         ".csv": CSVWriter,
@@ -72,7 +83,7 @@ class Logger(MessageWriter):
     }
 
     @staticmethod
-    def __new__(  # type: ignore
+    def __new__(  # type: ignore[misc]
         cls: Any, filename: Optional[StringPathLike], **kwargs: Any
     ) -> MessageWriter:
         """
@@ -160,7 +171,7 @@ class BaseRotatingLogger(Listener, BaseIOHandler, ABC):
     Subclasses must set the `_writer` attribute upon initialization.
     """
 
-    _supported_formats: Set[str] = set()
+    _supported_formats: ClassVar[Set[str]] = set()
 
     #: If this attribute is set to a callable, the :meth:`~BaseRotatingLogger.rotation_filename`
     #: method delegates to this callable. The parameters passed to the callable are
@@ -182,12 +193,14 @@ class BaseRotatingLogger(Listener, BaseIOHandler, ABC):
         self.writer_kwargs = kwargs
 
         # Expected to be set by the subclass
-        self._writer: FileIOMessageWriter = None  # type: ignore
+        self._writer: Optional[FileIOMessageWriter] = None
 
     @property
     def writer(self) -> FileIOMessageWriter:
         """This attribute holds an instance of a writer class which manages the actual file IO."""
-        return self._writer
+        if self._writer is not None:
+            return self._writer
+        raise ValueError(f"{self.__class__.__name__}.writer is None.")
 
     def rotation_filename(self, default_name: StringPathLike) -> StringPathLike:
         """Modify the filename of a log file when rotating.
@@ -284,7 +297,7 @@ class BaseRotatingLogger(Listener, BaseIOHandler, ABC):
         exc_val: Optional[BaseException],
         exc_tb: Optional[TracebackType],
     ) -> Literal[False]:
-        return self._writer.__exit__(exc_type, exc_val, exc_tb)
+        return self.writer.__exit__(exc_type, exc_val, exc_tb)
 
     @abstractmethod
     def should_rollover(self, msg: Message) -> bool:
@@ -337,7 +350,7 @@ class SizedRotatingLogger(BaseRotatingLogger):
     :meth:`~can.Listener.stop` is called.
     """
 
-    _supported_formats = {".asc", ".blf", ".csv", ".log", ".txt"}
+    _supported_formats: ClassVar[Set[str]] = {".asc", ".blf", ".csv", ".log", ".txt"}
 
     def __init__(
         self,

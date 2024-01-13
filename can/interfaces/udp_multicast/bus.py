@@ -114,10 +114,12 @@ class UdpMulticastBus(BusABC):
 
     @property
     def is_fd(self) -> bool:
+        class_name = self.__class__.__name__
         warnings.warn(
-            "The UdpMulticastBus.is_fd property is deprecated and superseded by "
-            "BusABC.protocol. It is scheduled for removal in version 5.0.",
+            f"The {class_name}.is_fd property is deprecated and superseded by "
+            f"{class_name}.protocol. It is scheduled for removal in python-can version 5.0.",
             DeprecationWarning,
+            stacklevel=2,
         )
         return self._can_protocol is CanProtocol.CAN_FD
 

@@ -63,7 +63,6 @@ class SeeedBus(BusABC):
         frame_type="STD",
         operation_mode="normal",
         bitrate=500000,
-        *args,
         **kwargs,
     ):
         """
@@ -115,7 +114,7 @@ class SeeedBus(BusABC):
                 "could not create the serial device"
             ) from error
 
-        super().__init__(channel=channel, *args, **kwargs)
+        super().__init__(channel=channel, **kwargs)
         self.init_frame()
 
     def shutdown(self):

@@ -118,7 +118,7 @@ def detect_beacon(timeout_ms: int = 3100) -> List[can.typechecking.AutoDetectedC
                 log.error(f"Failed to detect beacon: {exc}  {traceback.format_exc()}")
                 raise OSError(
                     f"Failed to detect beacon: {exc} {traceback.format_exc()}"
-                )
+                ) from exc
 
         return []
 
@@ -248,7 +248,7 @@ class SocketCanDaemonBus(can.BusABC):
         except OSError as exc:
             # something bad happened (e.g. the interface went down)
             log.error(f"Failed to receive: {exc}")
-            raise can.CanError(f"Failed to receive: {exc}")
+            raise can.CanError(f"Failed to receive: {exc}") from exc
 
         try:
             if not ready_receive_sockets:
@@ -307,7 +307,9 @@ class SocketCanDaemonBus(can.BusABC):
 
         except Exception as exc:
             log.error(f"Failed to receive: {exc}  {traceback.format_exc()}")
-            raise can.CanError(f"Failed to receive: {exc}  {traceback.format_exc()}")
+            raise can.CanError(
+                f"Failed to receive: {exc}  {traceback.format_exc()}"
+            ) from exc
 
     def _tcp_send(self, msg: str):
         log.debug(f"Sending TCP Message: '{msg}'")

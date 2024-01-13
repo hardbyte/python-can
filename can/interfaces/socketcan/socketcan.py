@@ -536,7 +536,9 @@ def capture_message(
         else:
             channel = None
     except OSError as error:
-        raise can.CanOperationError(f"Error receiving: {error.strerror}", error.errno)
+        raise can.CanOperationError(
+            f"Error receiving: {error.strerror}", error.errno
+        ) from error
 
     can_id, can_dlc, flags, data = dissect_can_frame(cf)
 
@@ -601,7 +603,7 @@ if CMSG_SPACE_available:
     RECEIVED_ANCILLARY_BUFFER_SIZE = CMSG_SPACE(RECEIVED_TIMESTAMP_STRUCT.size)
 
 
-class SocketcanBus(BusABC):
+class SocketcanBus(BusABC):  # pylint: disable=abstract-method
     """A SocketCAN interface to CAN.
 
     It implements :meth:`can.BusABC._detect_available_configs` to search for
@@ -737,7 +739,7 @@ class SocketcanBus(BusABC):
             # something bad happened (e.g. the interface went down)
             raise can.CanOperationError(
                 f"Failed to receive: {error.strerror}", error.errno
-            )
+            ) from error
 
         if ready_receive_sockets:  # not empty
             get_channel = self.channel == ""
@@ -798,7 +800,7 @@ class SocketcanBus(BusABC):
         except OSError as error:
             raise can.CanOperationError(
                 f"Failed to transmit: {error.strerror}", error.errno
-            )
+            ) from error
         return sent
 
     def _send_periodic_internal(
@@ -853,7 +855,8 @@ class SocketcanBus(BusABC):
         # fallback to thread based cyclic task
         warnings.warn(
             f"{self.__class__.__name__} falls back to a thread-based cyclic task, "
-            "when the `modifier_callback` argument is given."
+            "when the `modifier_callback` argument is given.",
+            stacklevel=3,
         )
         return BusABC._send_periodic_internal(
             self,
@@ -897,35 +900,3 @@ class SocketcanBus(BusABC):
             {"interface": "socketcan", "channel": channel}
             for channel in find_available_interfaces()
         ]
-
-
-if __name__ == "__main__":
-    # This example demonstrates how to use the internal methods of this module.
-    # It creates two sockets on vcan0 to test sending and receiving.
-    #
-    # If you want to try it out you can do the following (possibly using sudo):
-    #
-    #     modprobe vcan
-    #     ip link add dev vcan0 type vcan
-    #     ip link set vcan0 up
-    #
-    log.setLevel(logging.DEBUG)
-
-    def receiver(event: threading.Event) -> None:
-        receiver_socket = create_socket()
-        bind_socket(receiver_socket, "vcan0")
-        print("Receiver is waiting for a message...")
-        event.set()
-        print(f"Receiver got: {capture_message(receiver_socket)}")
-
-    def sender(event: threading.Event) -> None:
-        event.wait()
-        sender_socket = create_socket()
-        bind_socket(sender_socket, "vcan0")
-        msg = Message(arbitration_id=0x01, data=b"\x01\x02\x03")
-        sender_socket.send(build_can_frame(msg))
-        print("Sender sent a message.")
-
-    e = threading.Event()
-    threading.Thread(target=receiver, args=(e,)).start()
-    threading.Thread(target=sender, args=(e,)).start()

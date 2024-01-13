@@ -458,7 +458,7 @@ class KvaserBus(BusABC):
         try:
             channel = int(channel)
         except ValueError:
-            raise ValueError("channel must be an integer")
+            raise ValueError("channel must be an integer") from None
 
         self.channel = channel
         self.single_handle = single_handle

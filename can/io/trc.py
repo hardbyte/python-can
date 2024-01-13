@@ -116,19 +116,19 @@ class TRCReader(TextIOMessageReader):
             logger.info(
                 "TRCReader: No file version was found, so version 1.0 is assumed"
             )
-            self._parse_cols = self._parse_msg_V1_0
+            self._parse_cols = self._parse_msg_v1_0
         elif self.file_version == TRCFileVersion.V1_0:
-            self._parse_cols = self._parse_msg_V1_0
+            self._parse_cols = self._parse_msg_v1_0
         elif self.file_version == TRCFileVersion.V1_1:
-            self._parse_cols = self._parse_cols_V1_1
+            self._parse_cols = self._parse_cols_v1_1
         elif self.file_version in [TRCFileVersion.V2_0, TRCFileVersion.V2_1]:
-            self._parse_cols = self._parse_cols_V2_x
+            self._parse_cols = self._parse_cols_v2_x
         else:
             raise NotImplementedError("File version not fully implemented for reading")
 
         return line
 
-    def _parse_msg_V1_0(self, cols: List[str]) -> Optional[Message]:
+    def _parse_msg_v1_0(self, cols: List[str]) -> Optional[Message]:
         arbit_id = cols[2]
         if arbit_id == "FFFFFFFF":
             logger.info("TRCReader: Dropping bus info line")
@@ -143,7 +143,7 @@ class TRCReader(TextIOMessageReader):
         msg.data = bytearray([int(cols[i + 4], 16) for i in range(msg.dlc)])
         return msg
 
-    def _parse_msg_V1_1(self, cols: List[str]) -> Optional[Message]:
+    def _parse_msg_v1_1(self, cols: List[str]) -> Optional[Message]:
         arbit_id = cols[3]
 
         msg = Message()
@@ -161,7 +161,7 @@ class TRCReader(TextIOMessageReader):
         msg.is_rx = cols[2] == "Rx"
         return msg
 
-    def _parse_msg_V2_x(self, cols: List[str]) -> Optional[Message]:
+    def _parse_msg_v2_x(self, cols: List[str]) -> Optional[Message]:
         type_ = cols[self.columns["T"]]
         bus = self.columns.get("B", None)
 
@@ -195,18 +195,18 @@ class TRCReader(TextIOMessageReader):
 
         return msg
 
-    def _parse_cols_V1_1(self, cols: List[str]) -> Optional[Message]:
+    def _parse_cols_v1_1(self, cols: List[str]) -> Optional[Message]:
         dtype = cols[2]
         if dtype in ("Tx", "Rx"):
-            return self._parse_msg_V1_1(cols)
+            return self._parse_msg_v1_1(cols)
         else:
             logger.info("TRCReader: Unsupported type '%s'", dtype)
             return None
 
-    def _parse_cols_V2_x(self, cols: List[str]) -> Optional[Message]:
+    def _parse_cols_v2_x(self, cols: List[str]) -> Optional[Message]:
         dtype = cols[self.columns["T"]]
         if dtype in ["DT", "FD", "FB"]:
-            return self._parse_msg_V2_x(cols)
+            return self._parse_msg_v2_x(cols)
         else:
             logger.info("TRCReader: Unsupported type '%s'", dtype)
             return None
@@ -291,7 +291,7 @@ class TRCWriter(TextIOMessageWriter):
         self._msg_fmt_string = self.FORMAT_MESSAGE_V1_0
         self._format_message = self._format_message_init
 
-    def _write_header_V1_0(self, start_time: datetime) -> None:
+    def _write_header_v1_0(self, start_time: datetime) -> None:
         lines = [
             ";##########################################################################",
             f";   {self.filepath}",
@@ -312,7 +312,7 @@ class TRCWriter(TextIOMessageWriter):
         ]
         self.file.writelines(line + "\n" for line in lines)
 
-    def _write_header_V2_1(self, start_time: datetime) -> None:
+    def _write_header_v2_1(self, start_time: datetime) -> None:
         header_time = start_time - datetime(year=1899, month=12, day=30)
         lines = [
             ";$FILEVERSION=2.1",
@@ -372,9 +372,9 @@ class TRCWriter(TextIOMessageWriter):
         start_time = datetime.utcfromtimestamp(timestamp)
 
         if self.file_version == TRCFileVersion.V1_0:
-            self._write_header_V1_0(start_time)
+            self._write_header_v1_0(start_time)
         elif self.file_version == TRCFileVersion.V2_1:
-            self._write_header_V2_1(start_time)
+            self._write_header_v2_1(start_time)
         else:
             raise NotImplementedError("File format is not supported")
         self.header_written = True

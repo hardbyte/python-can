@@ -134,7 +134,7 @@ def _parse_additional_config(
 
     def _split_arg(_arg: str) -> Tuple[str, str]:
         left, right = _arg.split("=", 1)
-        return left.lstrip("--").replace("-", "_"), right
+        return left.lstrip("-").replace("-", "_"), right
 
     args: Dict[str, Union[str, int, float, bool]] = {}
     for key, string_val in map(_split_arg, unknown_args):

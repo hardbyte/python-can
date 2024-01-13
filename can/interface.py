@@ -61,7 +61,7 @@ def _get_class_for_interface(interface: str) -> Type[BusABC]:
     bustype="interface",
     context="config_context",
 )
-def Bus(
+def Bus(  # noqa: N802
     channel: Optional[Channel] = None,
     interface: Optional[str] = None,
     config_context: Optional[str] = None,

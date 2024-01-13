@@ -281,7 +281,7 @@ class BusABC(metaclass=ABCMeta):
                     pass  # allow the task to be already removed
             original_stop_method()
 
-        task.stop = wrapped_stop_method  # type: ignore
+        task.stop = wrapped_stop_method  # type: ignore[method-assign]
 
         if store_task:
             self._periodic_tasks.append(task)
@@ -401,7 +401,8 @@ class BusABC(metaclass=ABCMeta):
             messages based only on the arbitration ID and mask.
         """
         self._filters = filters or None
-        self._apply_filters(self._filters)
+        with contextlib.suppress(NotImplementedError):
+            self._apply_filters(self._filters)
 
     def _apply_filters(self, filters: Optional[can.typechecking.CanFilters]) -> None:
         """
@@ -411,6 +412,7 @@ class BusABC(metaclass=ABCMeta):
         :param filters:
             See :meth:`~can.BusABC.set_filters` for details.
         """
+        raise NotImplementedError
 
     def _matches_filters(self, msg: Message) -> bool:
         """Checks whether the given message matches at least one of the
@@ -450,6 +452,7 @@ class BusABC(metaclass=ABCMeta):
 
     def flush_tx_buffer(self) -> None:
         """Discard every message that may be queued in the output buffer(s)."""
+        raise NotImplementedError
 
     def shutdown(self) -> None:
         """

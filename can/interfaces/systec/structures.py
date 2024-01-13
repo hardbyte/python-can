@@ -52,9 +52,9 @@ class CanMsg(Structure):
         ),  # Receive time stamp in ms (for transmit messages no meaning)
     ]
 
-    def __init__(self, id=0, frame_format=MsgFrameFormat.MSG_FF_STD, data=None):
+    def __init__(self, id_=0, frame_format=MsgFrameFormat.MSG_FF_STD, data=None):
         data = [] if data is None else data
-        super().__init__(id, frame_format, len(data), (BYTE * 8)(*data), 0)
+        super().__init__(id_, frame_format, len(data), (BYTE * 8)(*data), 0)
 
     def __eq__(self, other):
         if not isinstance(other, CanMsg):
@@ -71,8 +71,8 @@ class CanMsg(Structure):
         return self.m_dwID
 
     @id.setter
-    def id(self, id):
-        self.m_dwID = id
+    def id(self, value):
+        self.m_dwID = value
 
     @property
     def frame_format(self):

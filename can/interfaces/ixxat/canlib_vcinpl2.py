@@ -77,8 +77,8 @@ def __vciFormatErrorExtended(
         Formatted string
     """
     # TODO: make sure we don't generate another exception
-    return "{} - arguments were {}".format(
-        __vciFormatError(library_instance, function, vret), args
+    return (
+        f"{__vciFormatError(library_instance, function, vret)} - arguments were {args}"
     )
 
 
@@ -553,13 +553,11 @@ class IXXATBus(BusABC):
                 if unique_hardware_id is None:
                     raise VCIDeviceNotFoundError(
                         "No IXXAT device(s) connected or device(s) in use by other process(es)."
-                    )
+                    ) from None
                 else:
                     raise VCIDeviceNotFoundError(
-                        "Unique HW ID {} not connected or not available.".format(
-                            unique_hardware_id
-                        )
-                    )
+                        f"Unique HW ID {unique_hardware_id} not connected or not available."
+                    ) from None
             else:
                 if (unique_hardware_id is None) or (
                     self._device_info.UniqueHardwareId.AsChar
@@ -579,7 +577,9 @@ class IXXATBus(BusABC):
                 ctypes.byref(self._device_handle),
             )
         except Exception as exception:
-            raise CanInitializationError(f"Could not open device: {exception}")
+            raise CanInitializationError(
+                f"Could not open device: {exception}"
+            ) from exception
 
         log.info("Using unique HW ID %s", self._device_info.UniqueHardwareId.AsChar)
 
@@ -600,7 +600,7 @@ class IXXATBus(BusABC):
         except Exception as exception:
             raise CanInitializationError(
                 f"Could not open and initialize channel: {exception}"
-            )
+            ) from exception
 
         # Signal TX/RX events when at least one frame has been handled
         _canlib.canChannelInitialize(
@@ -959,7 +959,8 @@ class IXXATBus(BusABC):
         # fallback to thread based cyclic task
         warnings.warn(
             f"{self.__class__.__name__} falls back to a thread-based cyclic task, "
-            "when the `modifier_callback` argument is given."
+            "when the `modifier_callback` argument is given.",
+            stacklevel=3,
         )
         return BusABC._send_periodic_internal(
             self,

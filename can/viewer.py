@@ -43,14 +43,14 @@ logger = logging.getLogger("can.viewer")
 
 try:
     import curses
-    from curses.ascii import ESC as KEY_ESC
-    from curses.ascii import SP as KEY_SPACE
+    from curses.ascii import ESC as KEY_ESC  # type: ignore[attr-defined,unused-ignore]
+    from curses.ascii import SP as KEY_SPACE  # type: ignore[attr-defined,unused-ignore]
 except ImportError:
     # Probably on Windows while windows-curses is not installed (e.g. in PyPy)
     logger.warning(
         "You won't be able to use the viewer program without curses installed!"
     )
-    curses = None  # type: ignore
+    curses = None  # type: ignore[assignment]
 
 
 class CanViewer:  # pylint: disable=too-many-instance-attributes
@@ -554,7 +554,7 @@ def main() -> None:
         additional_config.update({"can_filters": can_filters})
     bus = _create_bus(parsed_args, **additional_config)
 
-    curses.wrapper(CanViewer, bus, data_structs)
+    curses.wrapper(CanViewer, bus, data_structs)  # type: ignore[attr-defined,unused-ignore]
 
 
 if __name__ == "__main__":
