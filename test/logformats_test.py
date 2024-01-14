@@ -52,8 +52,8 @@ class ReaderWriterExtensionTest(unittest.TestCase):
         ]
 
     def _test_extension(self, suffix):
-        WriterType = can.Logger.message_writers.get(suffix)
-        ReaderType = can.LogReader.message_readers.get(suffix)
+        WriterType = can.io.MESSAGE_WRITERS.get(suffix)
+        ReaderType = can.io.MESSAGE_READERS.get(suffix)
         for suffix_variant in self._get_suffix_case_variants(suffix):
             tmp_file = tempfile.NamedTemporaryFile(suffix=suffix_variant, delete=False)
             tmp_file.close()

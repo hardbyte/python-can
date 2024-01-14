@@ -127,6 +127,7 @@ IO Utilities
 
 .. automodule:: can.io.generic
     :members:
+    :member-order: bysource
 
 
 
