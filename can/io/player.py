@@ -86,13 +86,14 @@ def LogReader(filename: StringPathLike, **kwargs: Any) -> MessageReader:  # noqa
     for a given file suffix.
 
     The format is determined from the file suffix which can be one of:
-      * .asc
-      * .blf
-      * .csv
-      * .db
-      * .log
-      * .mf4 (optional, depends on asammdf)
-      * .trc
+      * .asc :class:`can.ASCReader`
+      * .blf :class:`can.BLFReader`
+      * .csv :class:`can.CSVReader`
+      * .db :class:`can.SqliteReader`
+      * .log :class:`can.CanutilsLogReader`
+      * .mf4 :class:`can.MF4Reader`
+        (optional, depends on `asammdf <https://github.com/danielhrisca/asammdf>`_)
+      * .trc :class:`can.TRCReader`
 
     Gzip compressed files can be used as long as the original
     files suffix is one of the above (e.g. filename.asc.gz).

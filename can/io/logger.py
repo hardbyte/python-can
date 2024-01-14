@@ -111,14 +111,15 @@ def Logger(  # noqa: N802
     for a given file suffix.
 
     The format is determined from the file suffix which can be one of:
-      * .asc: :class:`can.ASCWriter`
+      * .asc :class:`can.ASCWriter`
       * .blf :class:`can.BLFWriter`
       * .csv: :class:`can.CSVWriter`
-      * .db: :class:`can.SqliteWriter`
+      * .db :class:`can.SqliteWriter`
       * .log :class:`can.CanutilsLogWriter`
+      * .mf4 :class:`can.MF4Writer`
+        (optional, depends on `asammdf <https://github.com/danielhrisca/asammdf>`_)
       * .trc :class:`can.TRCWriter`
       * .txt :class:`can.Printer`
-      * .mf4 :class:`can.MF4Writer` (optional, depends on asammdf)
 
     Any of these formats can be used with gzip compression by appending
     the suffix .gz (e.g. filename.asc.gz). However, third-party tools might not
