@@ -83,8 +83,8 @@ The configuration can also contain additional sections (or context):
 
     from can.interface import Bus
 
-    hs_bus = Bus(context='HS')
-    ms_bus = Bus(context='MS')
+    hs_bus = Bus(config_context='HS')
+    ms_bus = Bus(config_context='MS')
 
 Environment Variables
 ---------------------
