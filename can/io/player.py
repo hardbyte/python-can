@@ -81,7 +81,7 @@ def _decompress(
     return reader_type, gzip.open(filename, mode)
 
 
-def LogReader(filename: StringPathLike, **kwargs: Any) -> MessageReader:
+def LogReader(filename: StringPathLike, **kwargs: Any) -> MessageReader:  # noqa: N802
     """Find and return the appropriate :class:`~can.io.generic.MessageReader` instance
     for a given file suffix.
 

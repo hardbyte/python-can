@@ -8,7 +8,19 @@ import pathlib
 from abc import ABC, abstractmethod
 from datetime import datetime
 from types import TracebackType
-from typing import Any, Callable, Dict, Final, Literal, Optional, Set, Tuple, Type, cast
+from typing import (
+    Any,
+    Callable,
+    ClassVar,
+    Dict,
+    Final,
+    Literal,
+    Optional,
+    Set,
+    Tuple,
+    Type,
+    cast,
+)
 
 from typing_extensions import Self
 
@@ -92,7 +104,9 @@ def _compress(
     return logger_type, gzip.open(filename, mode)
 
 
-def Logger(filename: Optional[StringPathLike], **kwargs: Any) -> MessageWriter:
+def Logger(  # noqa: N802
+    filename: Optional[StringPathLike], **kwargs: Any
+) -> MessageWriter:
     """Find and return the appropriate :class:`~can.io.generic.MessageWriter` instance
     for a given file suffix.
 
@@ -156,7 +170,7 @@ class BaseRotatingLogger(MessageWriter, ABC):
     Subclasses must set the `_writer` attribute upon initialization.
     """
 
-    _supported_formats: Set[str] = set()
+    _supported_formats: ClassVar[Set[str]] = set()
 
     #: If this attribute is set to a callable, the :meth:`~BaseRotatingLogger.rotation_filename`
     #: method delegates to this callable. The parameters passed to the callable are
@@ -172,17 +186,15 @@ class BaseRotatingLogger(MessageWriter, ABC):
     rollover_count: int = 0
 
     def __init__(self, **kwargs: Any) -> None:
-        super().__init__(**kwargs, file=None)
+        super().__init__(**{**kwargs, "file": None})
 
         self.writer_kwargs = kwargs
 
-        # Expected to be set by the subclass
-        self._writer: FileIOMessageWriter = None  # type: ignore
-
     @property
+    @abstractmethod
     def writer(self) -> FileIOMessageWriter:
         """This attribute holds an instance of a writer class which manages the actual file IO."""
-        return self._writer
+        raise NotImplementedError
 
     def rotation_filename(self, default_name: StringPathLike) -> StringPathLike:
         """Modify the filename of a log file when rotating.
@@ -279,7 +291,7 @@ class BaseRotatingLogger(MessageWriter, ABC):
         exc_val: Optional[BaseException],
         exc_tb: Optional[TracebackType],
     ) -> Literal[False]:
-        return self._writer.__exit__(exc_type, exc_val, exc_tb)
+        return self.writer.__exit__(exc_type, exc_val, exc_tb)
 
     @abstractmethod
     def should_rollover(self, msg: Message) -> bool:
@@ -332,7 +344,7 @@ class SizedRotatingLogger(BaseRotatingLogger):
     :meth:`~can.Listener.stop` is called.
     """
 
-    _supported_formats = {".asc", ".blf", ".csv", ".log", ".txt"}
+    _supported_formats: ClassVar[Set[str]] = {".asc", ".blf", ".csv", ".log", ".txt"}
 
     def __init__(
         self,
@@ -354,6 +366,10 @@ class SizedRotatingLogger(BaseRotatingLogger):
         self.max_bytes = max_bytes
 
         self._writer = self._get_new_writer(self.base_filename)
+
+    @property
+    def writer(self) -> FileIOMessageWriter:
+        return self._writer
 
     def should_rollover(self, msg: Message) -> bool:
         if self.max_bytes <= 0:
