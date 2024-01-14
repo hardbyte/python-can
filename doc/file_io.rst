@@ -183,6 +183,11 @@ The following class can be used to read messages from TRC file:
     :show-inheritance:
     :members:
 
+.. autoclass:: can.TRCFileVersion
+    :show-inheritance:
+    :undoc-members:
+    :members:
+
 
 Rotating Loggers
 ----------------
