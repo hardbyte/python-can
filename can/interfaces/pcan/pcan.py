@@ -48,6 +48,7 @@ from .basic import (
     PCAN_LANBUS1,
     PCAN_LISTEN_ONLY,
     PCAN_MESSAGE_BRS,
+    PCAN_MESSAGE_ECHO,
     PCAN_MESSAGE_ERRFRAME,
     PCAN_MESSAGE_ESI,
     PCAN_MESSAGE_EXTENDED,
@@ -561,6 +562,7 @@ class PcanBus(BusABC):
         is_extended_id = bool(pcan_msg.MSGTYPE & PCAN_MESSAGE_EXTENDED.value)
         is_remote_frame = bool(pcan_msg.MSGTYPE & PCAN_MESSAGE_RTR.value)
         is_fd = bool(pcan_msg.MSGTYPE & PCAN_MESSAGE_FD.value)
+        is_rx = not bool(pcan_msg.MSGTYPE & PCAN_MESSAGE_ECHO.value)
         bitrate_switch = bool(pcan_msg.MSGTYPE & PCAN_MESSAGE_BRS.value)
         error_state_indicator = bool(pcan_msg.MSGTYPE & PCAN_MESSAGE_ESI.value)
         is_error_frame = bool(pcan_msg.MSGTYPE & PCAN_MESSAGE_ERRFRAME.value)
@@ -588,6 +590,7 @@ class PcanBus(BusABC):
             dlc=dlc,
             data=pcan_msg.DATA[:dlc],
             is_fd=is_fd,
+            is_rx=is_rx,
             bitrate_switch=bitrate_switch,
             error_state_indicator=error_state_indicator,
         )
