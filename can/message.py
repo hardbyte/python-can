@@ -38,6 +38,7 @@ class Message:  # pylint: disable=too-many-instance-attributes; OK for a datacla
         "is_remote_frame",
         "is_error_frame",
         "channel",
+        "bus",
         "dlc",
         "data",
         "is_fd",
@@ -55,6 +56,7 @@ class Message:  # pylint: disable=too-many-instance-attributes; OK for a datacla
         is_remote_frame: bool = False,
         is_error_frame: bool = False,
         channel: Optional[typechecking.Channel] = None,
+        bus: Optional[int] = None,
         dlc: Optional[int] = None,
         data: Optional[typechecking.CanData] = None,
         is_fd: bool = False,
@@ -83,6 +85,7 @@ class Message:  # pylint: disable=too-many-instance-attributes; OK for a datacla
         self.is_remote_frame = is_remote_frame
         self.is_error_frame = is_error_frame
         self.channel = channel
+        self.bus = bus
         self.is_fd = is_fd
         self.is_rx = is_rx
         self.bitrate_switch = bitrate_switch
