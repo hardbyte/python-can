@@ -67,12 +67,13 @@ class CyclicSendTaskABC(CyclicTask, abc.ABC):
         :raises ValueError: If the given messages are invalid
         """
         messages = self._check_and_convert_messages(messages)
-
-        # Take the Arbitration ID of the first element
-        self.arbitration_id = messages[0].arbitration_id
+        self.msgs_len = len(messages)
+        # Take the Arbitration ID of each message and put them into a list
+        self.arbitration_id = [self.messages[idx].arbitration_id for idx in range(self.msgs_len)]
         self.period = period
         self.period_ns = int(round(period * 1e9))
         self.messages = messages
+        self.msg_index = 0
 
     @staticmethod
     def _check_and_convert_messages(
@@ -81,8 +82,7 @@ class CyclicSendTaskABC(CyclicTask, abc.ABC):
         """Helper function to convert a Message or Sequence of messages into a
         tuple, and raises an error when the given value is invalid.
 
-        Performs error checking to ensure that all Messages have the same
-        arbitration ID and channel.
+        Performs error checking to ensure that all Messages have the same channel.
 
         Should be called when the cyclic task is initialized.
 
@@ -96,12 +96,6 @@ class CyclicSendTaskABC(CyclicTask, abc.ABC):
         if not messages:
             raise ValueError("Must be at least a list or tuple of length 1")
         messages = tuple(messages)
-
-        all_same_id = all(
-            message.arbitration_id == messages[0].arbitration_id for message in messages
-        )
-        if not all_same_id:
-            raise ValueError("All Arbitration IDs should be the same")
 
         all_same_channel = all(
             message.channel == messages[0].channel for message in messages
@@ -154,16 +148,17 @@ class ModifiableCyclicTaskABC(CyclicSendTaskABC, abc.ABC):
 
         :raises ValueError: If the given messages are invalid
         """
-        if len(self.messages) != len(messages):
+        if self.msgs_len != len(messages):
             raise ValueError(
                 "The number of new cyclic messages to be sent must be equal to "
                 "the number of messages originally specified for this task"
             )
-        if self.arbitration_id != messages[0].arbitration_id:
-            raise ValueError(
-                "The arbitration ID of new cyclic messages cannot be changed "
-                "from when the task was created"
-            )
+        for idx in range(self.msgs_len):
+            if self.arbitration_id[idx] != messages[idx].arbitration_id:
+                raise ValueError(
+                    "The arbitration ID of new cyclic messages cannot be changed "
+                    "from when the task was created"
+                )
 
     def modify_data(self, messages: Union[Sequence[Message], Message]) -> None:
         """Update the contents of the periodically sent messages, without
@@ -185,6 +180,68 @@ class ModifiableCyclicTaskABC(CyclicSendTaskABC, abc.ABC):
 
         self.messages = messages
 
+class VariableRateCyclicTaskABC(CyclicSendTaskABC, abc.ABC):
+    """A Cyclic task that supports a group period and intra-message period."""
+    def _check_and_apply_period_intra(
+        self, period_intra: Optional[float]
+    ) -> None:
+        """
+        Helper function that checks if the given period_intra is valid and applies the 
+        variable rate attributes to be used in the cyclic task.
+        
+        :param period_intra:
+            The period in seconds to send intra-message.
+            
+        :raises ValueError: If the given period_intra is invalid
+        """
+        self._is_variable_rate = False
+        self._run_cnt_msgs = None
+        self._run_cnt_max = None
+        self._run_cnt = None
+        
+        if period_intra is not None:
+            if not isinstance(period_intra, float):
+                raise ValueError("period_intra must be a float")
+            if period_intra <= 0:
+                raise ValueError("period_intra must be greater than 0")
+            if self.msgs_len <= 1:
+                raise ValueError("period_intra can only be used with multiple messages")
+            if period_intra*self.msgs_len >= self.period:
+                raise ValueError("period_intra per intra-message must be less than period")
+            period_ms = int(round(self.period * 1000, 0))
+            period_intra_ms = int(round(period_intra * 1000, 0))
+            (_run_period_ms, msg_cnts, group_cnts) = self._find_gcd(period_ms, period_intra_ms)
+            self._is_variable_rate = True
+            self._run_cnt_msgs = [i*msg_cnts for i in range(self.msgs_len)]
+            self._run_cnt_max = group_cnts
+            self._run_cnt = 0
+            # Override period, period_ms, and period_ns to be the variable period
+            self.period = _run_period_ms / 1000
+            self.period_ms = _run_period_ms
+            self.period_ns = _run_period_ms * 1000000
+    
+    @staticmethod
+    def _find_gcd(
+        period_ms: int,
+        period_intra_ms: int,
+    ) -> Tuple[int, int, int]:
+        """
+        Helper function that finds the greatest common divisor between period_ms and period_intra_ms.
+        
+        :returns: 
+            Tuple of (gcd_ms, m_steps, n_steps)
+            * gcd_ms: greatest common divisor in milliseconds
+            * m_steps: number of steps to send intra-message
+            * n_steps: number of steps to send message group
+        """
+        gcd_ms = min(period_ms, period_intra_ms)
+        while gcd_ms > 1:
+            if period_ms % gcd_ms == 0 and period_intra_ms % gcd_ms == 0:
+                break
+            gcd_ms -= 1
+        m_steps = int(period_intra_ms / gcd_ms)
+        n_steps = int(period_ms / gcd_ms)
+        return (gcd_ms, m_steps, n_steps)
 
 class MultiRateCyclicSendTaskABC(CyclicSendTaskABC, abc.ABC):
     """A Cyclic send task that supports switches send frequency after a set time."""
@@ -214,7 +271,7 @@ class MultiRateCyclicSendTaskABC(CyclicSendTaskABC, abc.ABC):
 
 
 class ThreadBasedCyclicSendTask(
-    LimitedDurationCyclicSendTaskABC, ModifiableCyclicTaskABC, RestartableCyclicTaskABC
+    LimitedDurationCyclicSendTaskABC, ModifiableCyclicTaskABC, RestartableCyclicTaskABC, VariableRateCyclicTaskABC
 ):
     """Fallback cyclic send task using daemon thread."""
 
@@ -227,6 +284,7 @@ class ThreadBasedCyclicSendTask(
         duration: Optional[float] = None,
         on_error: Optional[Callable[[Exception], bool]] = None,
         modifier_callback: Optional[Callable[[Message], None]] = None,
+        period_intra: Optional[float] = None,
     ) -> None:
         """Transmits `messages` with a `period` seconds for `duration` seconds on a `bus`.
 
@@ -253,9 +311,11 @@ class ThreadBasedCyclicSendTask(
         )
         self.on_error = on_error
         self.modifier_callback = modifier_callback
+        self._check_and_apply_period_intra(period_intra)
 
         if USE_WINDOWS_EVENTS:
-            self.period_ms = int(round(period * 1000, 0))
+            if not self._is_variable_rate:
+                self.period_ms = int(round(period * 1000, 0))
             try:
                 self.event = win32event.CreateWaitableTimerEx(
                     None,
@@ -289,7 +349,7 @@ class ThreadBasedCyclicSendTask(
             self.thread.start()
 
     def _run(self) -> None:
-        msg_index = 0
+        self.msg_index = 0
         msg_due_time_ns = time.perf_counter_ns()
 
         if USE_WINDOWS_EVENTS:
@@ -297,32 +357,32 @@ class ThreadBasedCyclicSendTask(
             win32event.WaitForSingleObject(self.event.handle, 0)
 
         while not self.stopped:
+            msg_send = (self._run_cnt in self._run_cnt_msgs) if self._is_variable_rate else True
             if self.end_time is not None and time.perf_counter() >= self.end_time:
                 break
+            if msg_send:
+                # Prevent calling bus.send from multiple threads
+                with self.send_lock:
+                    try:
+                        if self.modifier_callback is not None:
+                            self.modifier_callback(self.messages[self.msg_index])
+                        self.bus.send(self.messages[self.msg_index])
+                    except Exception as exc:  # pylint: disable=broad-except
+                        log.exception(exc)
 
-            # Prevent calling bus.send from multiple threads
-            with self.send_lock:
-                try:
-                    if self.modifier_callback is not None:
-                        self.modifier_callback(self.messages[msg_index])
-                    self.bus.send(self.messages[msg_index])
-                except Exception as exc:  # pylint: disable=broad-except
-                    log.exception(exc)
+                        # stop if `on_error` callback was not given
+                        if self.on_error is None:
+                            self.stop()
+                            raise exc
 
-                    # stop if `on_error` callback was not given
-                    if self.on_error is None:
-                        self.stop()
-                        raise exc
-
-                    # stop if `on_error` returns False
-                    if not self.on_error(exc):
-                        self.stop()
-                        break
+                        # stop if `on_error` returns False
+                        if not self.on_error(exc):
+                            self.stop()
+                            break
+                self.msg_index = (self.msg_index + 1) % self.msgs_len
 
             if not USE_WINDOWS_EVENTS:
                 msg_due_time_ns += self.period_ns
-
-            msg_index = (msg_index + 1) % len(self.messages)
 
             if USE_WINDOWS_EVENTS:
                 win32event.WaitForSingleObject(
@@ -334,3 +394,6 @@ class ThreadBasedCyclicSendTask(
                 delay_ns = msg_due_time_ns - time.perf_counter_ns()
                 if delay_ns > 0:
                     time.sleep(delay_ns / NANOSECONDS_IN_SECOND)
+            
+            if self._is_variable_rate:
+                self._run_cnt = (self._run_cnt + 1) % self._run_cnt_max
