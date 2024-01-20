@@ -11,19 +11,21 @@ comments.
 
 TODO: correctly set preserves_channel and adds_default_channel
 """
+import locale
 import logging
 import os
 import tempfile
 import unittest
 from abc import ABCMeta, abstractmethod
+from contextlib import contextmanager
 from datetime import datetime
 from itertools import zip_longest
+from unittest.mock import patch
 
 from parameterized import parameterized
 
 import can
 from can.io import blf
-
 from .data.example_data import (
     TEST_COMMENTS,
     TEST_MESSAGES_BASE,
@@ -40,6 +42,14 @@ try:
     import asammdf
 except ModuleNotFoundError:
     asammdf = None
+
+
+@contextmanager
+def override_locale(category: int, locale_str: str) -> None:
+    prev_locale = locale.getlocale(category)
+    locale.setlocale(category, locale_str)
+    yield
+    locale.setlocale(category, prev_locale)
 
 
 class ReaderWriterExtensionTest(unittest.TestCase):
@@ -403,8 +413,11 @@ class TestAscFileFormat(ReaderWriterTest):
             adds_default_channel=0,
         )
 
+    def _get_logfile_location(self, filename: str) -> str:
+        return os.path.join(os.path.dirname(__file__), "data", filename)
+
     def _read_log_file(self, filename, **kwargs):
-        logfile = os.path.join(os.path.dirname(__file__), "data", filename)
+        logfile = self._get_logfile_location(filename)
         with can.ASCReader(logfile, **kwargs) as reader:
             return list(reader)
 
@@ -610,6 +623,35 @@ class TestAscFileFormat(ReaderWriterTest):
                 ), f"{err_frame!r}!={msg_list[0]!r}"
         finally:
             os.unlink(temp_file.name)
+
+    def test_write_millisecond_handling(self):
+        now = datetime(
+            year=2017, month=9, day=30, hour=15, minute=6, second=13, microsecond=191456
+        )
+
+        # We temporarily set the locale to C to ensure test reproducibility
+        with override_locale(category=locale.LC_TIME, locale_str="C"):
+            # We mock datetime.now during ASCWriter __init__ for reproducibility
+            # Unfortunately, now() is a readonly attribute, so we mock datetime
+            with patch("can.io.asc.datetime") as mock_datetime:
+                mock_datetime.now.return_value = now
+                writer = can.ASCWriter(self.test_file_name)
+
+            msg = can.Message(
+                timestamp=now.timestamp(), arbitration_id=0x123, data=b"h"
+            )
+            writer.on_message_received(msg)
+
+            writer.stop()
+
+        with open(self.test_file_name, "r") as f:
+            actual = f.read()
+
+        expected_file = self._get_logfile_location("single_frame_us_locale.asc")
+        with open(expected_file, "r") as f:
+            expected = f.read()
+
+        self.assertEqual(expected, actual)
 
 
 class TestBlfFileFormat(ReaderWriterTest):
