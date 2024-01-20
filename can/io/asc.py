@@ -340,8 +340,8 @@ class ASCWriter(TextIOMessageWriter):
             "{bit_timing_conf_ext_data:>8}",
         ]
     )
-    FORMAT_START_OF_FILE_DATE = "%a %b %d %I:%M:%S.%f %p %Y"
-    FORMAT_DATE = "%a %b %d %I:%M:%S.{} %p %Y"
+    FORMAT_START_OF_FILE_DATE = "%a %b %d %H:%M:%S.%f %Y"
+    FORMAT_DATE = "%a %b %d %H:%M:%S.{} %Y"
     FORMAT_EVENT = "{timestamp: 9.6f} {message}\n"
 
     def __init__(
