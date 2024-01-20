@@ -10,10 +10,10 @@ import re
 from datetime import datetime
 from typing import Any, Dict, Final, Generator, List, Optional, TextIO, Union
 
-from .generic import TextIOMessageReader, TextIOMessageWriter
 from ..message import Message
 from ..typechecking import StringPathLike
 from ..util import channel2int, dlc2len, len2dlc
+from .generic import TextIOMessageReader, TextIOMessageWriter
 
 CAN_MSG_EXT = 0x80000000
 CAN_ID_MASK = 0x1FFFFFFF
