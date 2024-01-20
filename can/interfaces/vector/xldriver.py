@@ -8,6 +8,7 @@ Authors: Julien Grave <grave.jul@gmail.com>, Christian Sandberg
 import ctypes
 import logging
 import platform
+from ctypes.util import find_library
 
 from . import xlclass
 from .exceptions import VectorInitializationError, VectorOperationError
@@ -16,8 +17,10 @@ LOG = logging.getLogger(__name__)
 
 # Load Windows DLL
 DLL_NAME = "vxlapi64" if platform.architecture()[0] == "64bit" else "vxlapi"
-_xlapi_dll = ctypes.windll.LoadLibrary(DLL_NAME)
-
+if dll_path := find_library(DLL_NAME):
+    _xlapi_dll = ctypes.windll.LoadLibrary(dll_path)
+else:
+    raise FileNotFoundError(f"Vector XL library not found: {DLL_NAME}")
 
 # ctypes wrapping for API functions
 xlGetErrorString = _xlapi_dll.xlGetErrorString

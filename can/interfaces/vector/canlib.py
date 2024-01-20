@@ -51,7 +51,7 @@ LOG = logging.getLogger(__name__)
 xldriver: Optional[ModuleType] = None
 try:
     from . import xldriver
-except Exception as exc:
+except FileNotFoundError as exc:
     LOG.warning("Could not import vxlapi: %s", exc)
 
 WaitForSingleObject: Optional[Callable[[int, int], int]]
