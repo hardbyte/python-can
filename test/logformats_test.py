@@ -20,6 +20,7 @@ from abc import ABCMeta, abstractmethod
 from contextlib import contextmanager
 from datetime import datetime
 from itertools import zip_longest
+from pathlib import Path
 from unittest.mock import patch
 
 from parameterized import parameterized
@@ -413,8 +414,9 @@ class TestAscFileFormat(ReaderWriterTest):
             adds_default_channel=0,
         )
 
-    def _get_logfile_location(self, filename: str) -> str:
-        return os.path.join(os.path.dirname(__file__), "data", filename)
+    def _get_logfile_location(self, filename: str) -> Path:
+        my_dir = Path(__file__).parent
+        return my_dir / "data" / filename
 
     def _read_log_file(self, filename, **kwargs):
         logfile = self._get_logfile_location(filename)
@@ -644,14 +646,10 @@ class TestAscFileFormat(ReaderWriterTest):
 
             writer.stop()
 
-        with open(self.test_file_name, "r") as f:
-            actual = f.read()
-
+        actual_file = Path(self.test_file_name)
         expected_file = self._get_logfile_location("single_frame_us_locale.asc")
-        with open(expected_file, "r") as f:
-            expected = f.read()
 
-        self.assertEqual(expected, actual)
+        self.assertEqual(expected_file.read_text(), actual_file.read_text())
 
 
 class TestBlfFileFormat(ReaderWriterTest):
