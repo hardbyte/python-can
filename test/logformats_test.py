@@ -408,7 +408,7 @@ class TestAscFileFormat(ReaderWriterTest):
         with can.ASCReader(logfile, **kwargs) as reader:
             return list(reader)
 
-    def test_absolute_time(self):
+    def test_read_absolute_time(self):
         time_from_file = "Sat Sep 30 10:06:13.191 PM 2017"
         start_time = datetime.strptime(
             time_from_file, self.FORMAT_START_OF_FILE_DATE
@@ -436,7 +436,7 @@ class TestAscFileFormat(ReaderWriterTest):
         actual = self._read_log_file("test_CanMessage.asc", relative_timestamp=False)
         self.assertMessagesEqual(actual, expected_messages)
 
-    def test_can_message(self):
+    def test_read_can_message(self):
         expected_messages = [
             can.Message(
                 timestamp=2.5010,
@@ -459,7 +459,7 @@ class TestAscFileFormat(ReaderWriterTest):
         actual = self._read_log_file("test_CanMessage.asc")
         self.assertMessagesEqual(actual, expected_messages)
 
-    def test_can_remote_message(self):
+    def test_read_can_remote_message(self):
         expected_messages = [
             can.Message(
                 timestamp=2.510001,
@@ -488,7 +488,7 @@ class TestAscFileFormat(ReaderWriterTest):
         actual = self._read_log_file("test_CanRemoteMessage.asc")
         self.assertMessagesEqual(actual, expected_messages)
 
-    def test_can_fd_remote_message(self):
+    def test_read_can_fd_remote_message(self):
         expected_messages = [
             can.Message(
                 timestamp=30.300981,
@@ -504,7 +504,7 @@ class TestAscFileFormat(ReaderWriterTest):
         actual = self._read_log_file("test_CanFdRemoteMessage.asc")
         self.assertMessagesEqual(actual, expected_messages)
 
-    def test_can_fd_message(self):
+    def test_read_can_fd_message(self):
         expected_messages = [
             can.Message(
                 timestamp=30.005021,
@@ -541,7 +541,7 @@ class TestAscFileFormat(ReaderWriterTest):
         actual = self._read_log_file("test_CanFdMessage.asc")
         self.assertMessagesEqual(actual, expected_messages)
 
-    def test_can_fd_message_64(self):
+    def test_read_can_fd_message_64(self):
         expected_messages = [
             can.Message(
                 timestamp=30.506898,
@@ -566,7 +566,7 @@ class TestAscFileFormat(ReaderWriterTest):
         actual = self._read_log_file("test_CanFdMessage64.asc")
         self.assertMessagesEqual(actual, expected_messages)
 
-    def test_can_and_canfd_error_frames(self):
+    def test_read_can_and_canfd_error_frames(self):
         expected_messages = [
             can.Message(timestamp=2.501000, channel=0, is_error_frame=True),
             can.Message(timestamp=3.501000, channel=0, is_error_frame=True),
@@ -582,16 +582,16 @@ class TestAscFileFormat(ReaderWriterTest):
         actual = self._read_log_file("test_CanErrorFrames.asc")
         self.assertMessagesEqual(actual, expected_messages)
 
-    def test_ignore_comments(self):
+    def test_read_ignore_comments(self):
         _msg_list = self._read_log_file("logfile.asc")
 
-    def test_no_triggerblock(self):
+    def test_read_no_triggerblock(self):
         _msg_list = self._read_log_file("issue_1256.asc")
 
-    def test_can_dlc_greater_than_8(self):
+    def test_read_can_dlc_greater_than_8(self):
         _msg_list = self._read_log_file("issue_1299.asc")
 
-    def test_error_frame_channel(self):
+    def test_read_error_frame_channel(self):
         # gh-issue 1578
         err_frame = can.Message(is_error_frame=True, channel=4)
 
