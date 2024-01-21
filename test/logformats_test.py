@@ -11,19 +11,22 @@ comments.
 
 TODO: correctly set preserves_channel and adds_default_channel
 """
+import locale
 import logging
 import os
 import tempfile
 import unittest
 from abc import ABCMeta, abstractmethod
+from contextlib import contextmanager
 from datetime import datetime
 from itertools import zip_longest
+from pathlib import Path
+from unittest.mock import patch
 
 from parameterized import parameterized
 
 import can
 from can.io import blf
-
 from .data.example_data import (
     TEST_COMMENTS,
     TEST_MESSAGES_BASE,
@@ -40,6 +43,14 @@ try:
     import asammdf
 except ModuleNotFoundError:
     asammdf = None
+
+
+@contextmanager
+def override_locale(category: int, locale_str: str) -> None:
+    prev_locale = locale.getlocale(category)
+    locale.setlocale(category, locale_str)
+    yield
+    locale.setlocale(category, prev_locale)
 
 
 class ReaderWriterExtensionTest(unittest.TestCase):
@@ -403,12 +414,16 @@ class TestAscFileFormat(ReaderWriterTest):
             adds_default_channel=0,
         )
 
+    def _get_logfile_location(self, filename: str) -> Path:
+        my_dir = Path(__file__).parent
+        return my_dir / "data" / filename
+
     def _read_log_file(self, filename, **kwargs):
-        logfile = os.path.join(os.path.dirname(__file__), "data", filename)
+        logfile = self._get_logfile_location(filename)
         with can.ASCReader(logfile, **kwargs) as reader:
             return list(reader)
 
-    def test_absolute_time(self):
+    def test_read_absolute_time(self):
         time_from_file = "Sat Sep 30 10:06:13.191 PM 2017"
         start_time = datetime.strptime(
             time_from_file, self.FORMAT_START_OF_FILE_DATE
@@ -436,7 +451,7 @@ class TestAscFileFormat(ReaderWriterTest):
         actual = self._read_log_file("test_CanMessage.asc", relative_timestamp=False)
         self.assertMessagesEqual(actual, expected_messages)
 
-    def test_can_message(self):
+    def test_read_can_message(self):
         expected_messages = [
             can.Message(
                 timestamp=2.5010,
@@ -459,7 +474,7 @@ class TestAscFileFormat(ReaderWriterTest):
         actual = self._read_log_file("test_CanMessage.asc")
         self.assertMessagesEqual(actual, expected_messages)
 
-    def test_can_remote_message(self):
+    def test_read_can_remote_message(self):
         expected_messages = [
             can.Message(
                 timestamp=2.510001,
@@ -488,7 +503,7 @@ class TestAscFileFormat(ReaderWriterTest):
         actual = self._read_log_file("test_CanRemoteMessage.asc")
         self.assertMessagesEqual(actual, expected_messages)
 
-    def test_can_fd_remote_message(self):
+    def test_read_can_fd_remote_message(self):
         expected_messages = [
             can.Message(
                 timestamp=30.300981,
@@ -504,7 +519,7 @@ class TestAscFileFormat(ReaderWriterTest):
         actual = self._read_log_file("test_CanFdRemoteMessage.asc")
         self.assertMessagesEqual(actual, expected_messages)
 
-    def test_can_fd_message(self):
+    def test_read_can_fd_message(self):
         expected_messages = [
             can.Message(
                 timestamp=30.005021,
@@ -541,7 +556,7 @@ class TestAscFileFormat(ReaderWriterTest):
         actual = self._read_log_file("test_CanFdMessage.asc")
         self.assertMessagesEqual(actual, expected_messages)
 
-    def test_can_fd_message_64(self):
+    def test_read_can_fd_message_64(self):
         expected_messages = [
             can.Message(
                 timestamp=30.506898,
@@ -566,7 +581,7 @@ class TestAscFileFormat(ReaderWriterTest):
         actual = self._read_log_file("test_CanFdMessage64.asc")
         self.assertMessagesEqual(actual, expected_messages)
 
-    def test_can_and_canfd_error_frames(self):
+    def test_read_can_and_canfd_error_frames(self):
         expected_messages = [
             can.Message(timestamp=2.501000, channel=0, is_error_frame=True),
             can.Message(timestamp=3.501000, channel=0, is_error_frame=True),
@@ -582,16 +597,16 @@ class TestAscFileFormat(ReaderWriterTest):
         actual = self._read_log_file("test_CanErrorFrames.asc")
         self.assertMessagesEqual(actual, expected_messages)
 
-    def test_ignore_comments(self):
+    def test_read_ignore_comments(self):
         _msg_list = self._read_log_file("logfile.asc")
 
-    def test_no_triggerblock(self):
+    def test_read_no_triggerblock(self):
         _msg_list = self._read_log_file("issue_1256.asc")
 
-    def test_can_dlc_greater_than_8(self):
+    def test_read_can_dlc_greater_than_8(self):
         _msg_list = self._read_log_file("issue_1299.asc")
 
-    def test_error_frame_channel(self):
+    def test_read_error_frame_channel(self):
         # gh-issue 1578
         err_frame = can.Message(is_error_frame=True, channel=4)
 
@@ -610,6 +625,31 @@ class TestAscFileFormat(ReaderWriterTest):
                 ), f"{err_frame!r}!={msg_list[0]!r}"
         finally:
             os.unlink(temp_file.name)
+
+    def test_write_millisecond_handling(self):
+        now = datetime(
+            year=2017, month=9, day=30, hour=15, minute=6, second=13, microsecond=191456
+        )
+
+        # We temporarily set the locale to C to ensure test reproducibility
+        with override_locale(category=locale.LC_TIME, locale_str="C"):
+            # We mock datetime.now during ASCWriter __init__ for reproducibility
+            # Unfortunately, now() is a readonly attribute, so we mock datetime
+            with patch("can.io.asc.datetime") as mock_datetime:
+                mock_datetime.now.return_value = now
+                writer = can.ASCWriter(self.test_file_name)
+
+            msg = can.Message(
+                timestamp=now.timestamp(), arbitration_id=0x123, data=b"h"
+            )
+            writer.on_message_received(msg)
+
+            writer.stop()
+
+        actual_file = Path(self.test_file_name)
+        expected_file = self._get_logfile_location("single_frame_us_locale.asc")
+
+        self.assertEqual(expected_file.read_text(), actual_file.read_text())
 
 
 class TestBlfFileFormat(ReaderWriterTest):
