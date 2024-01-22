@@ -68,11 +68,11 @@ class CyclicSendTaskABC(CyclicTask, abc.ABC):
         """
         messages = self._check_and_convert_messages(messages)
         self.msgs_len = len(messages)
+        self.messages = messages
         # Take the Arbitration ID of each message and put them into a list
         self.arbitration_id = [self.messages[idx].arbitration_id for idx in range(self.msgs_len)]
         self.period = period
         self.period_ns = int(round(period * 1e9))
-        self.messages = messages
         self.msg_index = 0
 
     @staticmethod
