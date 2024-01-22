@@ -37,6 +37,8 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
+    "Topic :: Software Development :: Embedded Systems",
+    "Topic :: Software Development :: Embedded Systems :: Controller Area Network (CAN)",
     "Topic :: System :: Hardware :: Hardware Drivers",
     "Topic :: System :: Logging",
     "Topic :: System :: Monitoring",
