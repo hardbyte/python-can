@@ -862,6 +862,12 @@ def test_vector_subtype_error_from_generic() -> None:
             raise specific
 
 
+def test_iterate_channel_index() -> None:
+    channel_mask = 0x23  # 100011
+    channels = list(canlib._iterate_channel_index(channel_mask))
+    assert channels == [0, 1, 5]
+
+
 @pytest.mark.skipif(
     sys.byteorder != "little", reason="Test relies on little endian data."
 )
