@@ -195,9 +195,9 @@ class VariableRateCyclicTaskABC(CyclicSendTaskABC, abc.ABC):
         :raises ValueError: If the given period_intra is invalid
         """
         self._is_variable_rate = False
-        self._run_cnt_msgs = None
-        self._run_cnt_max = None
-        self._run_cnt = None
+        self._run_cnt_msgs = [0]
+        self._run_cnt_max = 1
+        self._run_cnt = 0
         
         if period_intra is not None:
             if not isinstance(period_intra, float):

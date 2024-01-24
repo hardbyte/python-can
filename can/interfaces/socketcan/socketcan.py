@@ -23,6 +23,7 @@ from can.broadcastmanager import (
     LimitedDurationCyclicSendTaskABC,
     ModifiableCyclicTaskABC,
     RestartableCyclicTaskABC,
+    VariableRateCyclicTaskABC,
 )
 from can.interfaces.socketcan import constants
 from can.interfaces.socketcan.utils import find_available_interfaces, pack_filters
@@ -303,7 +304,7 @@ def _compose_arbitration_id(message: Message) -> int:
 
 
 class CyclicSendTask(
-    LimitedDurationCyclicSendTaskABC, ModifiableCyclicTaskABC, RestartableCyclicTaskABC
+    LimitedDurationCyclicSendTaskABC, ModifiableCyclicTaskABC, RestartableCyclicTaskABC, VariableRateCyclicTaskABC
 ):
     """
     A SocketCAN cyclic send task supports:
@@ -320,6 +321,7 @@ class CyclicSendTask(
         messages: Union[Sequence[Message], Message],
         period: float,
         duration: Optional[float] = None,
+        period_intra: Optional[float] = None,
     ) -> None:
         """Construct and :meth:`~start` a task.
 
@@ -339,7 +341,6 @@ class CyclicSendTask(
         #   - self.period
         #   - self.duration
         super().__init__(messages, period, duration)
-
         self.bcm_socket = bcm_socket
         self.task_id = task_id
         self._tx_setup(self.messages)
@@ -809,6 +810,7 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
         period: float,
         duration: Optional[float] = None,
         modifier_callback: Optional[Callable[[Message], None]] = None,
+        period_intra: Optional[float] = None,
     ) -> can.broadcastmanager.CyclicSendTaskABC:
         """Start sending messages at a given period on this bus.
 
@@ -849,7 +851,7 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
             msgs_channel = str(msgs[0].channel) if msgs[0].channel else None
             bcm_socket = self._get_bcm_socket(msgs_channel or self.channel)
             task_id = self._get_next_task_id()
-            task = CyclicSendTask(bcm_socket, task_id, msgs, period, duration)
+            task = CyclicSendTask(bcm_socket, task_id, msgs, period, duration, period_intra)
             return task
 
         # fallback to thread based cyclic task
