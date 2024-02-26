@@ -54,7 +54,17 @@ class GsUsbBus(can.BusABC):
         self.channel_info = channel
         self._can_protocol = can.CanProtocol.CAN_20
 
-        self.gs_usb.set_bitrate(bitrate)
+        bit_timing = can.BitTiming.from_sample_point(
+            f_clock=self.gs_usb.device_capability.fclk_can, 
+            bitrate=bitrate, 
+            sample_point=87.5)
+        prop_seg = 1
+        phase_seg1 = bit_timing.tseg1 - prop_seg
+        phase_seg2 = bit_timing.tseg2
+        sjw = bit_timing.sjw
+        brp = bit_timing.brp
+        self.gs_usb.set_timing(prop_seg, phase_seg1, phase_seg2, sjw, brp)
+        
         self.gs_usb.start()
 
         super().__init__(
