@@ -415,6 +415,10 @@ class KvaserBus(BusABC):
             In this case, the bit will be sampled three quanta in a row,
             with the last sample being taken in the edge between TSEG1 and TSEG2.
             Three samples should only be used for relatively slow baudrates.
+        :param bool fd_non_iso:
+            Open the channel in Non-ISO (Bosch) FD mode. Only applies for FD buses.
+            This changes the handling of the stuff-bit counter and the CRC. Defaults
+            to False (ISO mode)
 
         :param bool driver_mode:
             Silent or normal.
@@ -454,6 +458,7 @@ class KvaserBus(BusABC):
         accept_virtual = kwargs.get("accept_virtual", True)
         fd = isinstance(timing, BitTimingFd) if timing else kwargs.get("fd", False)
         data_bitrate = kwargs.get("data_bitrate", None)
+        fd_non_iso = kwargs.get("fd_non_iso", False)
 
         try:
             channel = int(channel)
@@ -483,7 +488,10 @@ class KvaserBus(BusABC):
         if accept_virtual:
             flags |= canstat.canOPEN_ACCEPT_VIRTUAL
         if fd:
-            flags |= canstat.canOPEN_CAN_FD
+            if fd_non_iso:
+                flags |= canstat.canOPEN_CAN_FD_NONISO
+            else:
+                flags |= canstat.canOPEN_CAN_FD
 
         log.debug("Creating read handle to bus channel: %s", channel)
         self._read_handle = canOpenChannel(channel, flags)

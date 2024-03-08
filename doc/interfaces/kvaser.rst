@@ -39,6 +39,11 @@ in the ``recv`` method. If a message does not match any of the filters,
 ``recv()`` will return None.
 
 
+ISO/Non-ISO CAN FD Mode
+-----------------------
+
+Kvaser devices in FD mode can be configured for either ISO or Non-ISO mode in the bus initialization with the ``fd_non_iso`` option.
+
 Custom methods
 ~~~~~~~~~~~~~~
 
