@@ -211,7 +211,9 @@ class KvaserTest(unittest.TestCase):
         can.Bus(channel=0, interface="kvaser", timing=timing)
         canlib.canSetBusParams.assert_called_once_with(0, 500_000, 68, 11, 10, 1, 0)
         canlib.canSetBusParamsFd.assert_called_once_with(0, 2_000_000, 10, 9, 8)
-        canlib.canOpenChannel.assert_called_with(0, constants.canOPEN_CAN_FD | constants.canOPEN_ACCEPT_VIRTUAL)
+        canlib.canOpenChannel.assert_called_with(
+            0, constants.canOPEN_CAN_FD | constants.canOPEN_ACCEPT_VIRTUAL
+        )
 
     def test_canfd_non_iso(self):
         canlib.canSetBusParams.reset_mock()
@@ -231,7 +233,9 @@ class KvaserTest(unittest.TestCase):
         can.Bus(channel=0, interface="kvaser", timing=timing, fd_non_iso=True)
         canlib.canSetBusParams.assert_called_once_with(0, 500_000, 68, 11, 10, 1, 0)
         canlib.canSetBusParamsFd.assert_called_once_with(0, 2_000_000, 10, 9, 8)
-        canlib.canOpenChannel.assert_called_with(0, constants.canOPEN_CAN_FD_NONISO | constants.canOPEN_ACCEPT_VIRTUAL)
+        canlib.canOpenChannel.assert_called_with(
+            0, constants.canOPEN_CAN_FD_NONISO | constants.canOPEN_ACCEPT_VIRTUAL
+        )
 
     def test_canfd_nondefault_data_bitrate(self):
         canlib.canSetBusParams.reset_mock()
