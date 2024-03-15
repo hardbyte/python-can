@@ -120,6 +120,7 @@ from .io import (
 )
 from .listener import AsyncBufferedReader, BufferedReader, Listener, RedirectReader
 from .message import Message
+from .flexray_message import FlexRayVFrReceiveMsgEx
 from .notifier import Notifier
 from .thread_safe_bus import ThreadSafeBus
 from .util import set_logging_level

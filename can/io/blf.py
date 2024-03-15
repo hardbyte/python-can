@@ -20,6 +20,7 @@ import zlib
 from typing import Any, BinaryIO, Generator, List, Optional, Tuple, Union, cast
 
 from ..message import Message
+from ..flexray_message import FlexRayVFrReceiveMsgEx
 from ..typechecking import StringPathLike
 from ..util import channel2int, dlc2len, len2dlc
 from .generic import BinaryIOMessageReader, FileIOMessageWriter
@@ -76,6 +77,11 @@ CAN_ERROR_EXT_STRUCT = struct.Struct("<HHLBBBxLLH2x8s")
 # group name length, marker name length, description length
 GLOBAL_MARKER_STRUCT = struct.Struct("<LLL3xBLLL12x")
 
+# channel, version, channelMask, dir, clientIndexFlexRayVFrReceiveMsgEx,
+# clusterNo, frameId, headerCrc1, headerCrc2, byteCount, dataCount,
+# cycle, tag, data, frameFlags, appParameter, frameCrc, frameLengthNs,
+# frameId1, pduOffset, blfLogMask, reservedFlexRayVFrReceiveMsgEx1
+FR_RCVMESSAGE_EX_STRUCT = struct.Struct("<HHHHLLHHHHHHLLLLLLHHH26x32s")
 
 CAN_MESSAGE = 1
 LOG_CONTAINER = 10
@@ -84,6 +90,7 @@ CAN_MESSAGE2 = 86
 GLOBAL_MARKER = 96
 CAN_FD_MESSAGE = 100
 CAN_FD_MESSAGE_64 = 101
+FR_RCVMESSAGE_EX = 66
 
 NO_COMPRESSION = 0
 ZLIB_DEFLATE = 2
@@ -221,6 +228,7 @@ class BLFReader(BinaryIOMessageReader):
         unpack_can_fd_64_msg = CAN_FD_MSG_64_STRUCT.unpack_from
         can_fd_64_msg_size = CAN_FD_MSG_64_STRUCT.size
         unpack_can_error_ext = CAN_ERROR_EXT_STRUCT.unpack_from
+        unpack_fr_rcvmsg_ex = FR_RCVMESSAGE_EX_STRUCT.unpack_from
 
         start_timestamp = self.start_timestamp
         max_pos = len(data)
@@ -351,6 +359,22 @@ class BLFReader(BinaryIOMessageReader):
                     data=data[pos : pos + valid_bytes],
                     channel=channel - 1,
                 )
+            elif obj_type == FR_RCVMESSAGE_EX:
+                (
+                    channel, version, channelMask, _dir, clientIndexFlexRayVFrReceiveMsgEx,
+                    clusterNo, frameId, headerCrc1, headerCrc2, byteCount, dataCount,
+                    cycle, tag, _data, frameFlags, appParameter, frameCrc, frameLengthNs,
+                    frameId1, pduOffset, blfLogMask, reservedFlexRayVFrReceiveMsgEx1
+                ) = unpack_fr_rcvmsg_ex(data, pos)
+                if blfLogMask != 0:
+                    # channel add 10 to distinguish flexray channel from can/canfd
+                    yield FlexRayVFrReceiveMsgEx(
+                        timestamp, True,
+                        channel+10, version, channelMask, _dir, clientIndexFlexRayVFrReceiveMsgEx,
+                        clusterNo, frameId, headerCrc1, headerCrc2, byteCount, dataCount,
+                        cycle, tag, _data, frameFlags, appParameter, frameCrc, frameLengthNs,
+                        frameId1, pduOffset, blfLogMask, reservedFlexRayVFrReceiveMsgEx1
+                    )
 
             pos = next_pos
 
@@ -449,6 +473,35 @@ class BLFWriter(FileIOMessageWriter):
         else:
             # Many interfaces start channel numbering at 0 which is invalid
             channel += 1
+
+        if getattr(msg, "is_flexray"):
+            msg: FlexRayVFrReceiveMsgEx
+            data = FR_RCVMESSAGE_EX_STRUCT.pack(
+                msg.channel - 10,
+                msg.version,
+                msg.channelMask,
+                msg._dir,
+                msg.clientIndexFlexRayVFrReceiveMsgEx,
+                msg.clusterNo,
+                msg.frameId,
+                msg.headerCrc1,
+                msg.headerCrc2,
+                msg.byteCount,
+                msg.dataCount,
+                msg.cycle,
+                msg.tag,
+                msg._data,
+                msg.frameFlags,
+                msg.appParameter,
+                msg.frameCrc,
+                msg.frameLengthNs,
+                msg.frameId1,
+                msg.pduOffset,
+                msg.blfLogMask,
+                msg.reservedFlexRayVFrReceiveMsgEx1
+            )
+            self._add_object(FR_RCVMESSAGE_EX, data, msg.timestamp)
+            return
 
         arb_id = msg.arbitration_id
         if msg.is_extended_id:
