@@ -207,7 +207,7 @@ class UcanBus(BusABC):
                 | (MsgFrameFormat.MSG_FF_EXT if msg.is_extended_id else 0)
                 | (MsgFrameFormat.MSG_FF_RTR if msg.is_remote_frame else 0),
                 msg.data,
-                msg.dlc
+                msg.dlc,
             )
             self._ucan.write_can_msg(self.channel, [message])
         except UcanException as exception:

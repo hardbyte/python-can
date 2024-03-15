@@ -52,7 +52,9 @@ class CanMsg(Structure):
         ),  # Receive time stamp in ms (for transmit messages no meaning)
     ]
 
-    def __init__(self, id_=0, frame_format=MsgFrameFormat.MSG_FF_STD, data=None, dlc=None):
+    def __init__(
+        self, id_=0, frame_format=MsgFrameFormat.MSG_FF_STD, data=None, dlc=None
+    ):
         data = [] if data is None else data
         dlc = len(data) if dlc is None else dlc
         super().__init__(id_, frame_format, dlc, (BYTE * 8)(*data), 0)
