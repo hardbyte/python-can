@@ -239,5 +239,8 @@ class NeousysBus(BusABC):
 
     @staticmethod
     def _detect_available_configs():
-        # There is only one channel
-        return [{"interface": "neousys", "channel": 0}]
+        if NEOUSYS_CANLIB is None:
+            return []
+        else:
+            # There is only one channel
+            return [{"interface": "neousys", "channel": 0}]
