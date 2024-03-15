@@ -210,6 +210,7 @@ class BusABC(metaclass=ABCMeta):
         duration: Optional[float] = None,
         store_task: bool = True,
         modifier_callback: Optional[Callable[[Message], None]] = None,
+        period_intra: Optional[float] = None,
     ) -> can.broadcastmanager.CyclicSendTaskABC:
         """Start sending messages at a given period on this bus.
 
@@ -235,6 +236,10 @@ class BusABC(metaclass=ABCMeta):
             Function which should be used to modify each message's data before
             sending. The callback modifies the :attr:`~can.Message.data` of the
             message and returns ``None``.
+        :param period_intra:
+            Period in seconds between each message when sending multiple messages
+            in a sequence. If not provided, the period will be used for each
+            message.
         :return:
             A started task instance. Note the task can be stopped (and depending on
             the backend modified) by calling the task's
@@ -266,7 +271,7 @@ class BusABC(metaclass=ABCMeta):
         # Create a backend specific task; will be patched to a _SelfRemovingCyclicTask later
         task = cast(
             _SelfRemovingCyclicTask,
-            self._send_periodic_internal(msgs, period, duration, modifier_callback),
+            self._send_periodic_internal(msgs, period, duration, modifier_callback, period_intra),
         )
         # we wrap the task's stop method to also remove it from the Bus's list of tasks
         periodic_tasks = self._periodic_tasks
@@ -294,6 +299,7 @@ class BusABC(metaclass=ABCMeta):
         period: float,
         duration: Optional[float] = None,
         modifier_callback: Optional[Callable[[Message], None]] = None,
+        period_intra: Optional[float] = None,
     ) -> can.broadcastmanager.CyclicSendTaskABC:
         """Default implementation of periodic message sending using threading.
 
@@ -306,6 +312,14 @@ class BusABC(metaclass=ABCMeta):
         :param duration:
             The duration between sending each message at the given rate. If
             no duration is provided, the task will continue indefinitely.
+        :param modifier_callback:
+            Function which should be used to modify each message's data before
+            sending. The callback modifies the :attr:`~can.Message.data` of the
+            message and returns ``None``.
+        :param period_intra:
+            Period in seconds between each message when sending multiple messages
+            in a sequence. If not provided, the period will be used for each
+            message.
         :return:
             A started task instance. Note the task can be stopped (and
             depending on the backend modified) by calling the
@@ -323,6 +337,7 @@ class BusABC(metaclass=ABCMeta):
             period=period,
             duration=duration,
             modifier_callback=modifier_callback,
+            period_intra=period_intra,
         )
         return task
 
