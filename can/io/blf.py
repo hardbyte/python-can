@@ -474,8 +474,7 @@ class BLFWriter(FileIOMessageWriter):
             # Many interfaces start channel numbering at 0 which is invalid
             channel += 1
 
-        if getattr(msg, "is_flexray"):
-            msg: FlexRayVFrReceiveMsgEx
+        if getattr(msg, "is_flexray", False):
             data = FR_RCVMESSAGE_EX_STRUCT.pack(
                 msg.channel - 10,
                 msg.version,
