@@ -230,7 +230,8 @@ class KvaserTest(unittest.TestCase):
             data_tseg2=9,
             data_sjw=8,
         )
-        can.Bus(channel=0, interface="kvaser", timing=timing, fd_non_iso=True)
+        bus = can.Bus(channel=0, interface="kvaser", timing=timing, fd_non_iso=True)
+        self.assertEqual(bus.protocol, can.CanProtocol.CAN_FD_NON_ISO)
         canlib.canSetBusParams.assert_called_once_with(0, 500_000, 68, 11, 10, 1, 0)
         canlib.canSetBusParamsFd.assert_called_once_with(0, 2_000_000, 10, 9, 8)
         canlib.canOpenChannel.assert_called_with(

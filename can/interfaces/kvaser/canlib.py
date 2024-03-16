@@ -415,10 +415,6 @@ class KvaserBus(BusABC):
             In this case, the bit will be sampled three quanta in a row,
             with the last sample being taken in the edge between TSEG1 and TSEG2.
             Three samples should only be used for relatively slow baudrates.
-        :param bool fd_non_iso:
-            Open the channel in Non-ISO (Bosch) FD mode. Only applies for FD buses.
-            This changes the handling of the stuff-bit counter and the CRC. Defaults
-            to False (ISO mode)
 
         :param bool driver_mode:
             Silent or normal.
@@ -433,6 +429,10 @@ class KvaserBus(BusABC):
             computer, set this to True or set single_handle to True.
         :param bool fd:
             If CAN-FD frames should be supported.
+        :param bool fd_non_iso:
+            Open the channel in Non-ISO (Bosch) FD mode. Only applies for FD buses.
+            This changes the handling of the stuff-bit counter and the CRC. Defaults
+            to False (ISO mode)
         :param bool exclusive:
             Don't allow sharing of this CANlib channel.
         :param bool override_exclusive:
@@ -467,7 +467,11 @@ class KvaserBus(BusABC):
 
         self.channel = channel
         self.single_handle = single_handle
-        self._can_protocol = CanProtocol.CAN_FD if fd else CanProtocol.CAN_20
+        self._can_protocol = CanProtocol.CAN_20
+        if fd_non_iso:
+            self._can_protocol = CanProtocol.CAN_FD_NON_ISO
+        elif fd:
+            self._can_protocol = CanProtocol.CAN_FD
 
         log.debug("Initialising bus instance")
         num_channels = ctypes.c_int(0)

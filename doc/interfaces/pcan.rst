@@ -38,9 +38,9 @@ Here is an example configuration file for using `PCAN-USB <https://www.peak-syst
  Channel bitrate
 
 ISO/Non-ISO CAN FD Mode
------------------------
+~~~~~~~~~~~~~~~~~~~~~~~
 
-The PCAN basic driver doesn't presently allow toggling the ISO/Non-ISO FD modes.
+The PCAN basic driver doesn't presently allow toggling the ISO/Non-ISO FD modes directly.
 The default mode is stored on the device and can be controlled using the PCANView Windows application.
 See: https://forum.peak-system.com/viewtopic.php?t=6496
 
