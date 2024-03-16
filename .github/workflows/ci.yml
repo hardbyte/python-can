@@ -147,7 +147,7 @@ jobs:
     - name: Run doctest
       run: |
         python -m sphinx -b doctest -W --keep-going doc build
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: sphinx-out
         path: ./build/
@@ -166,9 +166,9 @@ jobs:
       - name: Check build artifacts
         run: pipx run twine check --strict dist/*
       - name: Save artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: python-can-dist
+          name: "${{ matrix.os }}-${{ matrix.python-version }}"
           path: ./dist
 
   upload_pypi:
@@ -178,12 +178,9 @@ jobs:
     # upload to PyPI only on release
     if: github.event.release && github.event.action == 'published'
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
-          name: python-can-dist
           path: dist
+          merge-multiple: true
 
-      - uses: pypa/gh-action-pypi-publish@v1.4.2
-        with:
-          user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN }}
+      - uses: pypa/gh-action-pypi-publish@release/v1
