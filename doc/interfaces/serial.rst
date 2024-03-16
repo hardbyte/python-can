@@ -30,7 +30,9 @@ six parts. The start and the stop byte for the frame, the timestamp, DLC,
 arbitration ID and the payload. The payload has a variable length of between
 0 and 8 bytes, the other parts are fixed. Both, the timestamp and the
 arbitration ID will be interpreted as 4 byte unsigned integers. The DLC is
-also an unsigned integer with a length of 1 byte.
+also an unsigned integer with a length of 1 byte. Non-extended (11-bit)
+identifiers are encoded by adding 0x20000000 to the 11-bit ID. For example, an
+11-bit CAN ID of 0x123 is encoded with an arbitration ID of 0x20000123.
 
 Serial frame format
 ^^^^^^^^^^^^^^^^^^^
@@ -101,4 +103,22 @@ Examples of serial frames
 | Start of frame | Timestamp           | DLC  | Arbitration ID      | End of frame |
 +================+=====================+======+=====================+==============+
 | 0xAA           | 0x66 0x73 0x00 0x00 | 0x00 | 0x01 0x00 0x00 0x00 | 0xBB         |
++----------------+---------------------+------+---------------------+--------------+
+
+.. rubric:: CAN message with 0 byte payload with an 11-bit CAN ID
+
++----------------+---------+
+| CAN message              |
++----------------+---------+
+| Arbitration ID | Payload |
++================+=========+
+| 0x20000001 (1) | None    |
++----------------+---------+
+
++----------------+---------------------+------+---------------------+--------------+
+| Serial frame                                                                     |
++----------------+---------------------+------+---------------------+--------------+
+| Start of frame | Timestamp           | DLC  | Arbitration ID      | End of frame |
++================+=====================+======+=====================+==============+
+| 0xAA           | 0x66 0x73 0x00 0x00 | 0x00 | 0x01 0x00 0x00 0x20 | 0xBB         |
 +----------------+---------------------+------+---------------------+--------------+
