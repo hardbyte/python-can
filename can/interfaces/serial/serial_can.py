@@ -135,7 +135,8 @@ class SerialBus(BusABC):
 
         # Pack arbitration ID
         try:
-            arbitration_id = struct.pack("<I", msg.arbitration_id)
+            arbitration_id = msg.arbitration_id + (0 if msg.is_extended_id else 0x20000000)
+            arbitration_id = struct.pack("<I", arbitration_id)
         except struct.error:
             raise ValueError(
                 f"Arbitration ID is out of range: {msg.arbitration_id}"
@@ -188,9 +189,15 @@ class SerialBus(BusABC):
 
                 s = self._ser.read(4)
                 arbitration_id = struct.unpack("<I", s)[0]
-                if arbitration_id >= 0x20000000:
+                is_extended_id = False if arbitration_id & 0x20000000 else True
+                arbitration_id -= 0 if is_extended_id else 0x20000000
+                if is_extended_id and arbitration_id >= 0x20000000:
                     raise ValueError(
-                        "received arbitration id may not exceed 2^29 (0x20000000)"
+                        "received arbitration id may not exceed or equal 2^29 (0x20000000) if extended"
+                    )
+                if not is_extended_id and arbitration_id >= 0x800:
+                    raise ValueError(
+                        "received arbitration id may not exceed or equal 2^11 (0x800) if not extended"
                     )
 
                 data = self._ser.read(dlc)
@@ -204,6 +211,7 @@ class SerialBus(BusABC):
                         arbitration_id=arbitration_id,
                         dlc=dlc,
                         data=data,
+                        is_extended_id=is_extended_id,
                     )
                     return msg, False
 
