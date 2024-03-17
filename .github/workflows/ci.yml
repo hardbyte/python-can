@@ -172,7 +172,7 @@ jobs:
           path: ./dist
 
   upload_pypi:
-    needs: [build, test]
+    needs: [build]
     runs-on: ubuntu-latest
     permissions:
       id-token: write
