@@ -172,8 +172,10 @@ jobs:
           path: ./dist
 
   upload_pypi:
-    needs: [build]
+    needs: [build, test]
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
 
     # upload to PyPI only on release
     if: github.event.release && github.event.action == 'published'
