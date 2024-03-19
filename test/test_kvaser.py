@@ -196,6 +196,7 @@ class KvaserTest(unittest.TestCase):
     def test_canfd_timing(self):
         canlib.canSetBusParams.reset_mock()
         canlib.canSetBusParamsFd.reset_mock()
+        canlib.canOpenChannel.reset_mock()
         timing = can.BitTimingFd.from_bitrate_and_segments(
             f_clock=80_000_000,
             nom_bitrate=500_000,
@@ -210,6 +211,32 @@ class KvaserTest(unittest.TestCase):
         can.Bus(channel=0, interface="kvaser", timing=timing)
         canlib.canSetBusParams.assert_called_once_with(0, 500_000, 68, 11, 10, 1, 0)
         canlib.canSetBusParamsFd.assert_called_once_with(0, 2_000_000, 10, 9, 8)
+        canlib.canOpenChannel.assert_called_with(
+            0, constants.canOPEN_CAN_FD | constants.canOPEN_ACCEPT_VIRTUAL
+        )
+
+    def test_canfd_non_iso(self):
+        canlib.canSetBusParams.reset_mock()
+        canlib.canSetBusParamsFd.reset_mock()
+        canlib.canOpenChannel.reset_mock()
+        timing = can.BitTimingFd.from_bitrate_and_segments(
+            f_clock=80_000_000,
+            nom_bitrate=500_000,
+            nom_tseg1=68,
+            nom_tseg2=11,
+            nom_sjw=10,
+            data_bitrate=2_000_000,
+            data_tseg1=10,
+            data_tseg2=9,
+            data_sjw=8,
+        )
+        bus = can.Bus(channel=0, interface="kvaser", timing=timing, fd_non_iso=True)
+        self.assertEqual(bus.protocol, can.CanProtocol.CAN_FD_NON_ISO)
+        canlib.canSetBusParams.assert_called_once_with(0, 500_000, 68, 11, 10, 1, 0)
+        canlib.canSetBusParamsFd.assert_called_once_with(0, 2_000_000, 10, 9, 8)
+        canlib.canOpenChannel.assert_called_with(
+            0, constants.canOPEN_CAN_FD_NONISO | constants.canOPEN_ACCEPT_VIRTUAL
+        )
 
     def test_canfd_nondefault_data_bitrate(self):
         canlib.canSetBusParams.reset_mock()
