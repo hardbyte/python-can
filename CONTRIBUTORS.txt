@@ -32,6 +32,7 @@ Lear Corporation
 Nick Black
 Francisco Javier Burgos Macia
 Felix Nieuwenhuizen
+Tianshu Wei
 @marcel-kanter
 @bessman
 @koberbe
@@ -82,3 +83,4 @@ Felix Nieuwenhuizen
 @pkess
 @felixn
 @Tbruno25
+@umousesonic

@@ -17,6 +17,7 @@ The following hardware interfaces are included in python-can:
 .. toctree::
    :maxdepth: 1
 
+   interfaces/usr_canet
    interfaces/canalystii
    interfaces/cantact
    interfaces/etas
