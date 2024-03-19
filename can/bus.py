@@ -120,24 +120,18 @@ class BusABC(metaclass=ABCMeta):
             # try to get a message
             msg, already_filtered = self._recv_internal(timeout=time_left)
 
+            # propagate timeouts from _recv_internal()
+            if not msg:
+                return None
+
             # return it, if it matches
-            if msg and (already_filtered or self._matches_filters(msg)):
+            if already_filtered or self._matches_filters(msg):
                 LOG.log(self.RECV_LOGGING_LEVEL, "Received: %s", msg)
                 return msg
 
-            # if not, and timeout is None, try indefinitely
-            elif timeout is None:
-                continue
-
-            # try next one only if there still is time, and with
-            # reduced timeout
-            else:
-                time_left = timeout - (time() - start)
-
-                if time_left > 0:
-                    continue
-
-                return None
+            # try again with reduced timeout
+            if timeout is not None:
+                time_left = max(0, timeout - (time() - start))
 
     def _recv_internal(
         self, timeout: Optional[float]
