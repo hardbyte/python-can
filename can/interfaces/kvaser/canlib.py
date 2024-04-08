@@ -471,7 +471,7 @@ class KvaserBus(BusABC):
         log.info("Found %d available channels", num_channels)
         for idx in range(num_channels):
             channel_info = get_channel_info(idx)
-            channel_info = f"{channel_info["name"]}, S/N {channel_info["serial"]} (#{channel_info["dongle channel"]})"
+            channel_info = f"{channel_info["device_name"]}, S/N {channel_info["serial"]} (#{channel_info["dongle channel"]})"
             log.info("%d: %s", idx, channel_info)
             if idx == channel:
                 self.channel_info = channel_info
@@ -799,7 +799,7 @@ def get_channel_info(channel):
     )
 
     return {
-        "name": name.value.decode("ascii", errors="replace"),
+        "device_name": name.value.decode("ascii", errors="replace"),
         "serial": serial.value,
         "dongle channel": number.value + 1
         }
