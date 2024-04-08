@@ -78,6 +78,28 @@ def mock_xldriver() -> None:
     canlib.HAS_EVENTS = real_has_events
 
 
+def test_silent_mode() -> None:
+    bus = can.Bus(channel=0,
+                  serial=_find_virtual_can_serial(),
+                  interface="vector",
+                  receive_own_messages=True,
+                  silent=True)
+    assert isinstance(bus, canlib.VectorBus)
+    assert bus.protocol == can.CanProtocol.CAN_20
+
+    msg = can.Message(
+        arbitration_id=0xC0FFEF, data=[1, 2, 3, 4, 5, 6, 7, 8], is_extended_id=True
+    )
+
+    bus.send(msg)
+
+    received_msg = bus.recv()
+
+    assert received_msg == msg
+
+    bus.shutdown()
+
+
 def test_bus_creation_mocked(mock_xldriver) -> None:
     bus = can.Bus(channel=0, interface="vector", _testing=True)
     assert isinstance(bus, canlib.VectorBus)
