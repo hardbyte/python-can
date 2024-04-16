@@ -130,11 +130,18 @@ class ICSOperationError(ICSApiError, CanOperationError):
 
 
 def check_if_bus_open(func):
-    """Decorator that raises :exc:`~can.exceptions.CanOperationError` if the bus is not open."""
+    """
+    Decorator that checks if the bus is open before executing the function.
 
+    If the bus is not open, it raises a CanOperationError.
+    """
     @functools.wraps(func)
     def wrapper(self, *args, **kwargs):
-        """Raises :exc:`~can.exceptions.CanOperationError` if the bus is not open, else calls the wrapped function."""
+        """
+        Wrapper function that checks if the bus is open before executing the function.
+
+        :raises CanOperationError: If the bus is not open.
+        """
         if self._is_shutdown:
             raise CanOperationError("Cannot operate on a closed bus")
         return func(self, *args, **kwargs)
