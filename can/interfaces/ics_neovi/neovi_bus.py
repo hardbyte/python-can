@@ -7,7 +7,7 @@ Systems for communicating with their neoVI range of devices.
 Implementation references:
 * https://github.com/intrepidcs/python_ics
 """
-
+import functools
 import logging
 import os
 import tempfile
@@ -127,6 +127,19 @@ class ICSInitializationError(ICSApiError, CanInitializationError):
 
 class ICSOperationError(ICSApiError, CanOperationError):
     pass
+
+
+def check_if_bus_open(func):
+    """Decorator that raises :exc:`~can.exceptions.CanOperationError` if the bus is not open."""
+
+    @functools.wraps(func)
+    def wrapper(self, *args, **kwargs):
+        """Raises :exc:`~can.exceptions.CanOperationError` if the bus is not open, else calls the wrapped function."""
+        if self._is_shutdown:
+            raise CanOperationError("Cannot operate on a closed bus")
+        return func(self, *args, **kwargs)
+
+    return wrapper
 
 
 class NeoViBus(BusABC):
@@ -312,6 +325,7 @@ class NeoViBus(BusABC):
         msg.append("found.")
         raise CanInitializationError(" ".join(msg))
 
+    @check_if_bus_open
     def _process_msg_queue(self, timeout=0.1):
         try:
             messages, errors = ics.get_messages(self.dev, False, timeout)
@@ -409,6 +423,7 @@ class NeoViBus(BusABC):
             return None, False
         return msg, False
 
+    @check_if_bus_open
     def send(self, msg, timeout=0):
         """Transmit a message to the CAN bus.
 
