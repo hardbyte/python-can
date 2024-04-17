@@ -434,56 +434,70 @@ class NeoViBus(BusABC):
 
     @check_if_bus_open
     def send(self, msg, timeout=0):
-        """
-        Sends a message over the CAN bus.
+        """Transmit a message to the CAN bus.
 
-        :param msg: The CAN message to be sent.
-        :type msg: can.Message
-        :param timeout: The maximum amount of time to wait for the message to be sent.
-        :type timeout: float
+        :param Message msg: A message object.
 
-        :raises CanOperationError: If the bus is not open.
-        :raises ValueError: If the DLC of the message is greater than the maximum allowed.
-        :raises ICSOperationError: If there is an error in transmitting the message.
-        :raises CanTimeoutError: If the message could not be sent within the specified timeout.
+        :param float timeout:
+            If > 0, wait up to this many seconds for message to be ACK'ed.
+            If timeout is exceeded, an exception will be raised.
+            None blocks indefinitely.
+
+        :raises ValueError:
+            if the message is invalid
+        :raises can.CanTimeoutError:
+            if sending timed out
+        :raises CanOperationError:
+            If the bus is closed or the message could otherwise not be sent.
+            May or may not be a :class:`~ICSOperationError`.
         """
         if not ics.validate_hobject(self.dev):
             raise CanOperationError("bus not open")
 
-        if msg.is_fd and msg.dlc > 64 or not msg.is_fd and msg.dlc > 8:
+        # Check for valid DLC to avoid passing extra long data to the driver
+        if msg.is_fd:
+            if msg.dlc > 64:
+                raise ValueError(
+                    f"DLC was {msg.dlc} but it should be <= 64 for CAN FD frames"
+                )
+        elif msg.dlc > 8:
             raise ValueError(
-                f"DLC was {msg.dlc} but it should be <= {64 if msg.is_fd else 8}"
+                f"DLC was {msg.dlc} but it should be <= 8 for normal CAN frames"
             )
 
         message = ics.SpyMessage()
-        message.ArbIDOrHeader = msg.arbitration_id
-        message.NumberBytesData = msg.dlc
-        message.Data = tuple(msg.data[:8])
-        message.StatusBitField = 0
-        message.StatusBitField2 = 0
-        message.StatusBitField3 = 0
 
+        flag0 = 0
         if msg.is_extended_id:
-            message.StatusBitField |= ics.SPY_STATUS_XTD_FRAME
+            flag0 |= ics.SPY_STATUS_XTD_FRAME
         if msg.is_remote_frame:
-            message.StatusBitField |= ics.SPY_STATUS_REMOTE_FRAME
+            flag0 |= ics.SPY_STATUS_REMOTE_FRAME
+
+        flag3 = 0
         if msg.is_fd:
             message.Protocol = ics.SPY_PROTOCOL_CANFD
             if msg.bitrate_switch:
-                message.StatusBitField3 |= ics.SPY_STATUS3_CANFD_BRS
+                flag3 |= ics.SPY_STATUS3_CANFD_BRS
             if msg.error_state_indicator:
-                message.StatusBitField3 |= ics.SPY_STATUS3_CANFD_ESI
-            if len(msg.data) > 8:
-                message.ExtraDataPtrEnabled = 1
-                message.ExtraDataPtr = tuple(msg.data)
+                flag3 |= ics.SPY_STATUS3_CANFD_ESI
 
-        network_id = (
-            msg.channel
-            if msg.channel is not None
-            else self.channels[0] if len(self.channels) == 1 else None
-        )
-        if network_id is None:
+        message.ArbIDOrHeader = msg.arbitration_id
+        msg_data = msg.data[: msg.dlc]
+        message.NumberBytesData = msg.dlc
+        message.Data = tuple(msg_data[:8])
+        if msg.is_fd and len(msg_data) > 8:
+            message.ExtraDataPtrEnabled = 1
+            message.ExtraDataPtr = tuple(msg_data)
+        message.StatusBitField = flag0
+        message.StatusBitField2 = 0
+        message.StatusBitField3 = flag3
+        if msg.channel is not None:
+            network_id = msg.channel
+        elif len(self.channels) == 1:
+            network_id = self.channels[0]
+        else:
             raise ValueError("msg.channel must be set when using multiple channels.")
+
         message.NetworkID, message.NetworkID2 = int(network_id & 0xFF), int(
             (network_id >> 8) & 0xFF
         )
@@ -491,15 +505,20 @@ class NeoViBus(BusABC):
         if timeout != 0:
             msg_desc_id = next(description_id)
             message.DescriptionID = msg_desc_id
-            self.message_receipts[(msg.arbitration_id, msg_desc_id)].clear()
+            receipt_key = (msg.arbitration_id, msg_desc_id)
+            self.message_receipts[receipt_key].clear()
 
         try:
             ics.transmit_messages(self.dev, message)
         except ics.RuntimeError:
             raise ICSOperationError(*ics.get_last_api_error(self.dev)) from None
 
-        if timeout != 0 and not self.message_receipts[
-            (msg.arbitration_id, msg_desc_id)
-        ].wait(timeout):
-            del self.message_receipts[(msg.arbitration_id, msg_desc_id)]
-            raise CanTimeoutError("Transmit timeout")
+        # If timeout is set, wait for ACK
+        # This requires a notifier for the bus or
+        # some other thread calling recv periodically
+        if timeout != 0:
+            got_receipt = self.message_receipts[receipt_key].wait(timeout)
+            # We no longer need this receipt, so no point keeping it in memory
+            del self.message_receipts[receipt_key]
+            if not got_receipt:
+                raise CanTimeoutError("Transmit timeout")
