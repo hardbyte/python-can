@@ -104,6 +104,7 @@ class VectorBus(BusABC):
         sjw_dbr: int = 2,
         tseg1_dbr: int = 6,
         tseg2_dbr: int = 3,
+        listen_only: Optional[bool] = False,
         **kwargs: Any,
     ) -> None:
         """
@@ -157,6 +158,8 @@ class VectorBus(BusABC):
             Bus timing value tseg1 (data)
         :param tseg2_dbr:
             Bus timing value tseg2 (data)
+        :param listen_only:
+            if the bus should be set to listen only mode.
 
         :raise ~can.exceptions.CanInterfaceNotImplementedError:
             If the current operating system is not supported or the driver could not be loaded.
@@ -204,8 +207,8 @@ class VectorBus(BusABC):
         self.channel_masks: Dict[int, int] = {}
         self.index_to_channel: Dict[int, int] = {}
         self._can_protocol = CanProtocol.CAN_FD if is_fd else CanProtocol.CAN_20
-        
-        self.silent_mode = kwargs.get('silent_mode', False)
+
+        self._listen_only = listen_only
 
         for channel in self.channels:
             if (
@@ -234,7 +237,7 @@ class VectorBus(BusABC):
 
         permission_mask = xlclass.XLaccess()
         # Set mask to request channel init permission if needed
-        if bitrate or fd or timing or self.silent_mode:
+        if bitrate or fd or timing or self._listen_only:
             permission_mask.value = self.mask
 
         interface_version = (
@@ -313,8 +316,8 @@ class VectorBus(BusABC):
             if assert_timing:
                 self._check_can_settings(channel_mask=self.mask, bitrate=bitrate)
 
-        if self.silent_mode:
-            self._set_mode(channel_mask=self.mask, silent=True)
+        if self._listen_only:
+            self._set_output_mode(channel_mask=self.mask, listen_only=True)
 
         # Enable/disable TX receipts
         tx_receipts = 1 if receive_own_messages else 0
@@ -450,12 +453,12 @@ class VectorBus(BusABC):
             f"Channel configuration for channel {channel} not found."
         )
 
-    def _set_mode(self, channel_mask: int, silent: bool) -> None:
+    def _set_output_mode(self, channel_mask: int, listen_only: bool) -> None:
         # set parameters for channels with init access
         channel_mask = channel_mask & self.permission_mask
 
         if channel_mask:
-            if silent:
+            if listen_only:
                 self.xldriver.xlCanSetChannelOutput(
                     self.port_handle,
                     channel_mask,
@@ -468,7 +471,9 @@ class VectorBus(BusABC):
                     xldefine.XL_OutputMode.XL_OUTPUT_MODE_NORMAL
                 )
 
-        LOG.info("xlCanSetChannelOutput: silent_mode=%u", silent)
+            LOG.info("xlCanSetChannelOutput: listen_only=%u", listen_only)
+        else:
+            LOG.warning("No channels with init access to set listen only mode")
 
     def _set_bitrate(self, channel_mask: int, bitrate: int) -> None:
         # set parameters for channels with init access
