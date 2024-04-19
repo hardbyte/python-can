@@ -80,25 +80,26 @@ def mock_xldriver() -> None:
 
 
 def test_listen_only_mocked(mock_xldriver) -> None:
-    bus = can.Bus(channel=0,
-                  interface="vector",
-                  listen_only=True,
-                  _testing=True)
+    bus = can.Bus(channel=0, interface="vector", listen_only=True, _testing=True)
     assert isinstance(bus, canlib.VectorBus)
     assert bus.protocol == can.CanProtocol.CAN_20
 
     can.interfaces.vector.canlib.xldriver.xlCanSetChannelOutput.assert_called()
-    xlCanSetChannelOutput_args = can.interfaces.vector.canlib.xldriver.xlCanSetChannelOutput.call_args[0]
+    xlCanSetChannelOutput_args = (
+        can.interfaces.vector.canlib.xldriver.xlCanSetChannelOutput.call_args[0]
+    )
     assert xlCanSetChannelOutput_args[2] == xldefine.XL_OutputMode.XL_OUTPUT_MODE_SILENT
 
 
 @pytest.mark.skipif(not XLDRIVER_FOUND, reason="Vector XL API is unavailable")
 def test_listen_only() -> None:
-    bus = can.Bus(channel=0,
-                  serial=_find_virtual_can_serial(),
-                  interface="vector",
-                  receive_own_messages=True,
-                  listen_only=True)
+    bus = can.Bus(
+        channel=0,
+        serial=_find_virtual_can_serial(),
+        interface="vector",
+        receive_own_messages=True,
+        listen_only=True,
+    )
     assert isinstance(bus, canlib.VectorBus)
     assert bus.protocol == can.CanProtocol.CAN_20
 

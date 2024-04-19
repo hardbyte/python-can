@@ -462,13 +462,13 @@ class VectorBus(BusABC):
                 self.xldriver.xlCanSetChannelOutput(
                     self.port_handle,
                     channel_mask,
-                    xldefine.XL_OutputMode.XL_OUTPUT_MODE_SILENT
+                    xldefine.XL_OutputMode.XL_OUTPUT_MODE_SILENT,
                 )
             else:
                 self.xldriver.xlCanSetChannelOutput(
                     self.port_handle,
                     channel_mask,
-                    xldefine.XL_OutputMode.XL_OUTPUT_MODE_NORMAL
+                    xldefine.XL_OutputMode.XL_OUTPUT_MODE_NORMAL,
                 )
 
             LOG.info("xlCanSetChannelOutput: listen_only=%u", listen_only)
@@ -673,9 +673,11 @@ class VectorBus(BusABC):
                             self.mask,
                             can_filter["can_id"],
                             can_filter["can_mask"],
-                            xldefine.XL_AcceptanceFilter.XL_CAN_EXT
-                            if can_filter.get("extended")
-                            else xldefine.XL_AcceptanceFilter.XL_CAN_STD,
+                            (
+                                xldefine.XL_AcceptanceFilter.XL_CAN_EXT
+                                if can_filter.get("extended")
+                                else xldefine.XL_AcceptanceFilter.XL_CAN_STD
+                            ),
                         )
                 except VectorOperationError as exception:
                     LOG.warning("Could not set filters: %s", exception)
