@@ -706,14 +706,20 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
         #     so this is always supported by the kernel
         self.socket.setsockopt(socket.SOL_SOCKET, constants.SO_TIMESTAMPNS, 1)
 
-        bind_socket(self.socket, channel)
-        kwargs.update(
-            {
-                "receive_own_messages": receive_own_messages,
-                "fd": fd,
-                "local_loopback": local_loopback,
-            }
-        )
+        try:
+            bind_socket(self.socket, channel)
+            kwargs.update(
+                {
+                    "receive_own_messages": receive_own_messages,
+                    "fd": fd,
+                    "local_loopback": local_loopback,
+                }
+            )
+        except OSError as error:
+            log.error("Could not access SocketCAN device %s (%s)", channel, error)
+            # Clean up so the parent class doesn't complain about not being shut down properly
+            self.shutdown()
+            raise
         super().__init__(
             channel=channel,
             can_filters=can_filters,
