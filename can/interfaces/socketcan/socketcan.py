@@ -716,8 +716,6 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
             )
         except OSError as error:
             log.error("Could not access SocketCAN device %s (%s)", channel, error)
-            # Clean up so the parent class doesn't complain about not being shut down properly
-            self.shutdown()
             raise
         super().__init__(
             channel=channel,
