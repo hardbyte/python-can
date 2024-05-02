@@ -53,8 +53,18 @@ SIOCGIFINDEX = 0x8933
 SIOCGSTAMP = 0x8906
 EXTFLG = 0x0004
 
-CANFD_BRS = 0x01
-CANFD_ESI = 0x02
+CANFD_BRS = 0x01  # bit rate switch (second bitrate for payload data)
+CANFD_ESI = 0x02  # error state indicator of the transmitting node
+CANFD_FDF = 0x04  # mark CAN FD for dual use of struct canfd_frame
+
+# CAN payload length and DLC definitions according to ISO 11898-1
+CAN_MAX_DLC = 8
+CAN_MAX_RAW_DLC = 15
+CAN_MAX_DLEN = 8
+
+# CAN FD payload length and DLC definitions according to ISO 11898-7
+CANFD_MAX_DLC = 15
+CANFD_MAX_DLEN = 64
 
 CANFD_MTU = 72
 
