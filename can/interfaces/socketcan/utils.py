@@ -7,6 +7,8 @@ import json
 import logging
 import os
 import struct
+import sys
+import re
 import subprocess
 from typing import List, Optional, cast
 
@@ -46,28 +48,43 @@ def find_available_interfaces() -> List[str]:
 
     :return: The list of available and active CAN interfaces or an empty list of the command failed
     """
+    if sys.platform == 'darwin':
+        try:
+            command = ["ifconfig", "-a"]
+            output_str = subprocess.check_output(command, text=True)
+        except Exception:  # pylint: disable=broad-except
+            log.exception("failed to fetch opened can devices from ifconfig")
+            return []
 
-    try:
-        command = ["ip", "-json", "link", "list", "up"]
-        output_str = subprocess.check_output(command, text=True)
-    except Exception:  # pylint: disable=broad-except
-        # subprocess.CalledProcessError is too specific
-        log.exception("failed to fetch opened can devices from ip link")
-        return []
+        try:
+            interfaces = re.findall(r'^(\w+):', output_str, re.MULTILINE)
+            can_interfaces = [iface for iface in interfaces if 'can' in iface]
+            return can_interfaces
+        except Exception:
+            log.exception("Failed to parse ifconfig output: %s", output_str)
+            return []
+    else:
+        try:
+            command = ["ip", "-json", "link", "list", "up"]
+            output_str = subprocess.check_output(command, text=True)
+        except Exception:  # pylint: disable=broad-except
+            # subprocess.CalledProcessError is too specific
+            log.exception("failed to fetch opened can devices from ip link")
+            return []
 
-    try:
-        output_json = json.loads(output_str)
-    except json.JSONDecodeError:
-        log.exception("Failed to parse ip link JSON output: %s", output_str)
-        return []
+        try:
+            output_json = json.loads(output_str)
+        except json.JSONDecodeError:
+            log.exception("Failed to parse ip link JSON output: %s", output_str)
+            return []
 
-    log.debug(
-        "find_available_interfaces(): detected these interfaces (before filtering): %s",
-        output_json,
-    )
+        log.debug(
+            "find_available_interfaces(): detected these interfaces (before filtering): %s",
+            output_json,
+        )
 
-    interfaces = [i["ifname"] for i in output_json if i.get("link_type") == "can"]
-    return interfaces
+        interfaces = [i["ifname"] for i in output_json if i.get("link_type") == "can"]
+        return interfaces
 
 
 def error_code_to_str(code: Optional[int]) -> str:
