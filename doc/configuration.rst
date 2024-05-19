@@ -158,5 +158,7 @@ Lookup table of interface names:
 +---------------------+-------------------------------------+
 | ``"virtual"``       | :doc:`interfaces/virtual`           |
 +---------------------+-------------------------------------+
+| ``"virtual"``       | :doc:`interfaces/zlgcan`           |
++---------------------+-------------------------------------+
 
 Additional interface types can be added via the :ref:`plugin interface`.
