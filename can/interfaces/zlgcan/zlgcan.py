@@ -143,23 +143,23 @@ class ZCanBus(can.BusABC):
         """
         super().__init__(channel=channel, can_filters=can_filters, **kwargs)
 
-        cfg_length = len(configs)
-        if cfg_length == 0:
-            raise CanInitializationError("ZLG-CAN - Configuration list or tuple of dict is required.")
-
-        self.rx_queue = collections.deque(
-            maxlen=rx_queue_size
-        )  # type: Deque[can.Message]               # channel, raw_msg
-        self.channels = []
-
-        factory = zlgcan_cfg_factory_can()
-        self.device = zlgcan_open(device_type, device_index, derive)
-
-        self.dev_info = zlgcan_device_info(self.device)
-        if self.dev_info is not None:
-            LOG.info(f"Device: {self.dev_info} has opened")
-
         try:
+            cfg_length = len(configs)
+            if cfg_length == 0:
+                raise CanInitializationError("ZLG-CAN - Configuration list or tuple of dict is required.")
+    
+            self.rx_queue = collections.deque(
+                maxlen=rx_queue_size
+            )  # type: Deque[can.Message]               # channel, raw_msg
+            self.channels = []
+
+            factory = zlgcan_cfg_factory_can()
+            self.device = zlgcan_open(device_type, device_index, derive)
+    
+            self.dev_info = zlgcan_device_info(self.device)
+            if self.dev_info is not None:
+                LOG.info(f"Device: {self.dev_info} has opened")
+
             cfg_list = []
             for idx, cfg in enumerate(configs):
                 bitrate = cfg.get("bitrate", None)
