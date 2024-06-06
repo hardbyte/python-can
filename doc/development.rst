@@ -117,13 +117,19 @@ Creating a new Release
 - Update ``CONTRIBUTORS.txt`` with any new contributors.
 - For larger changes update ``doc/history.rst``.
 - Sanity check that documentation has stayed inline with code.
-- Create a temporary virtual environment. Run ``python setup.py install`` and ``tox``.
-- Create and upload the distribution: ``python setup.py sdist bdist_wheel``.
-- Sign the packages with gpg ``gpg --detach-sign -a dist/python_can-X.Y.Z-py3-none-any.whl``.
-- Upload with twine ``twine upload dist/python-can-X.Y.Z*``.
 - In a new virtual env check that the package can be installed with pip: ``pip install python-can==X.Y.Z``.
 - Create a new tag in the repository.
 - Check the release on
   `PyPi <https://pypi.org/project/python-can/#history>`__,
   `Read the Docs <https://readthedocs.org/projects/python-can/versions/>`__ and
   `GitHub <https://github.com/hardbyte/python-can/releases>`__.
+
+
+Manual release steps (deprecated)
+---------------------------------
+
+- Create a temporary virtual environment.
+- Build with  ``pipx run build``
+- Create and upload the distribution: ``python setup.py sdist bdist_wheel``.
+- Sign the packages with gpg ``gpg --detach-sign -a dist/python_can-X.Y.Z-py3-none-any.whl``.
+- Upload with twine ``twine upload dist/python-can-X.Y.Z*``.
