@@ -12,21 +12,20 @@ from can.bus import LOG
 from typing import Optional, Union, Sequence, Deque, Tuple, List, Dict
 try:
     from zlgcan_driver_py import ZCanChlCfgPy, ZCanMessagePy, ZDeriveInfoPy, ZCanChlCfgFactoryWrap, ZCanDriverWrap, \
-        convert_to_python, convert_from_python, set_message_mode, zlgcan_cfg_factory_can, zlgcan_open, zlgcan_device_info, \
-        zlgcan_init_can, zlgcan_clear_can_buffer, zlgcan_send, zlgcan_recv, zlgcan_close
-except ModuleNotFoundError as e:
+        convert_to_python, convert_from_python, set_message_mode, zlgcan_cfg_factory_can, zlgcan_open, \
+        zlgcan_device_info, zlgcan_init_can, zlgcan_clear_can_buffer, zlgcan_send, zlgcan_recv, zlgcan_close
+except ModuleNotFoundError:
     import sys
     import platform
     _system_bit, _ = platform.architecture()
     _platform = sys.platform
-    not_support = f"The system {_platform}'.'{_system_bit} is not supported!"
-    require_lib = "Please install library `zlgcan-driver-py`!"
-    LOG.error({
+    not_support = CanError(f"The system {_platform}'.'{_system_bit} is not supported!")
+    require_lib = CanError("Please install library `zlgcan-driver-py`!")
+    raise {
         "win32": {"32bit": not_support}.get(_system_bit, require_lib),
         "darwin": not_support,
         "linux": {"32bit": not_support}.get(_system_bit, require_lib)
-    }.get(_platform, not_support))
-    raise CanError(str(e))
+    }.get(_platform, not_support)
 
 
 class ZCanTxMode:
@@ -147,7 +146,7 @@ class ZCanBus(can.BusABC):
             cfg_length = len(configs)
             if cfg_length == 0:
                 raise CanInitializationError("ZLG-CAN - Configuration list or tuple of dict is required.")
-    
+
             self.rx_queue = collections.deque(
                 maxlen=rx_queue_size
             )  # type: Deque[can.Message]               # channel, raw_msg
@@ -155,7 +154,7 @@ class ZCanBus(can.BusABC):
 
             factory = zlgcan_cfg_factory_can()
             self.device = zlgcan_open(device_type, device_index, derive)
-    
+
             self.dev_info = zlgcan_device_info(self.device)
             if self.dev_info is not None:
                 LOG.info(f"Device: {self.dev_info} has opened")
@@ -199,10 +198,9 @@ class ZCanBus(can.BusABC):
     def poll_received_messages(self, timeout):
         for channel in self.channels:
             raw_msgs: list[ZCanMessagePy] = zlgcan_recv(self.device, channel, timeout)
-            # print(len(raw_msgs))
-            for raw_msg in raw_msgs:
-                self.rx_queue.append(convert_to_python(raw_msg))
-            # self.rx_queue.extend(map(lambda raw_msg: convert_to_python(raw_msg), raw_msgs))
+            # for raw_msg in raw_msgs:
+            #     self.rx_queue.append(convert_to_python(raw_msg))
+            self.rx_queue.extend(map(lambda raw_msg: convert_to_python(raw_msg), raw_msgs))
 
     def _recv_from_queue(self) -> Tuple[Message, bool]:
         """Return a message from the internal receive queue"""
