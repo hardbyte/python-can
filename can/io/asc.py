@@ -381,7 +381,12 @@ class ASCReader(TextIOMessageReader):
             elif self.asc_version < self._new_asc_version:
                 msg = self._process_fd_can_frame(rest_of_message, msg_kwargs)
             else:
-                msg = self._process_fd_can_frame_2(rest_of_message, msg_kwargs)
+                if self.asc_version < self._new_asc_version:
+                    logger.warning(
+                        "ASC format is under 8.1 or unknown, process may not safe."
+                    )
+                else:
+                    msg = self._process_fd_can_frame(rest_of_message, msg_kwargs)
             if msg is not None:
                 yield msg
 
