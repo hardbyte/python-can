@@ -69,6 +69,7 @@ class ASCReader(TextIOMessageReader):
         # TODO - what is this used for? The ASC Writer only prints `absolute`
         self.timestamps_format: Optional[str] = None
         self.internal_events_logged = False
+        self._extract_header()
 
     def _extract_header(self) -> None:
         for _line in self.file:
@@ -110,9 +111,18 @@ class ASCReader(TextIOMessageReader):
 
             if events_match:
                 self.internal_events_logged = events_match.group("no_events") is None
-                break
+                continue
 
-            break
+            if trigger_match := ASC_TRIGGER_REGEX.match(line):
+                datetime_str = trigger_match.group("datetime_string")
+                self.start_time = (
+                    0.0
+                    if self.timestamps_format == "relative"
+                    else self._datetime_to_timestamp(datetime_str)
+                )
+                # attribute `start_timestamp` for unified as BLFReader
+                self.start_timestamp = self.start_time
+                break
 
     @staticmethod
     def _datetime_to_timestamp(datetime_string: str) -> float:
@@ -260,19 +270,9 @@ class ASCReader(TextIOMessageReader):
         return Message(**msg_kwargs)
 
     def __iter__(self) -> Generator[Message, None, None]:
-        self._extract_header()
 
         for _line in self.file:
             line = _line.strip()
-
-            if trigger_match := ASC_TRIGGER_REGEX.match(line):
-                datetime_str = trigger_match.group("datetime_string")
-                self.start_time = (
-                    0.0
-                    if self.relative_timestamp
-                    else self._datetime_to_timestamp(datetime_str)
-                )
-                continue
 
             if not ASC_MESSAGE_REGEX.match(line):
                 # line might be a comment, chip status,
@@ -282,7 +282,7 @@ class ASCReader(TextIOMessageReader):
             msg_kwargs: Dict[str, Union[float, bool, int]] = {}
             try:
                 _timestamp, channel, rest_of_message = line.split(None, 2)
-                timestamp = float(_timestamp) + self.start_time
+                timestamp = float(_timestamp) + self.start_timestamp
                 msg_kwargs["timestamp"] = timestamp
                 if channel == "CANFD":
                     msg_kwargs["is_fd"] = True
