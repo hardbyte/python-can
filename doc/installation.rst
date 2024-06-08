@@ -131,5 +131,7 @@ reinstall. Download or clone the source repository then:
 
 ::
 
-    python setup.py develop
+    # install in editable mode
+    cd <path-to-this-repo>
+    python3 -m pip install -e .
 
