@@ -38,6 +38,9 @@ class GsUsbBus(can.BusABC):
                 "index and bus/address cannot be used simultaneously"
             )
 
+        if index is None and address is None and bus is None:
+            index = channel
+
         self.index = None
         if index is not None:
             devs = GsUsb.scan()
