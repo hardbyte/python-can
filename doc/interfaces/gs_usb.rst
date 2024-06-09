@@ -8,13 +8,14 @@ and candleLight USB CAN interfaces.
 
 Install: ``pip install "python-can[gs_usb]"``
 
-Usage: pass device ``index`` (starting from 0) if using automatic device detection:
+Usage: pass device ``index`` or ``channel`` (starting from 0) if using automatic device detection:
 
 ::
 
     import can
 
     bus = can.Bus(interface="gs_usb", channel=dev.product, index=0, bitrate=250000)
+    bus = can.Bus(interface="gs_usb", channel=0, bitrate=250000)  # same
 
 Alternatively, pass ``bus`` and ``address`` to open a specific device. The parameters can be got by ``pyusb`` as shown below:
 
