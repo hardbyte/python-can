@@ -38,6 +38,7 @@ class GsUsbBus(can.BusABC):
                 "index and bus/address cannot be used simultaneously"
             )
 
+        self.index = None
         if index is not None:
             devs = GsUsb.scan()
             if len(devs) <= index:
@@ -45,6 +46,7 @@ class GsUsbBus(can.BusABC):
                     f"Cannot find device {index}. Devices found: {len(devs)}"
                 )
             gs_usb = devs[index]
+            self.index = index
         else:
             gs_usb = GsUsb.find(bus=bus, address=address)
             if not gs_usb:
@@ -56,6 +58,7 @@ class GsUsbBus(can.BusABC):
 
         self.gs_usb.set_bitrate(bitrate)
         self.gs_usb.start()
+        self.bitrate = bitrate
 
         super().__init__(
             channel=channel,
@@ -144,3 +147,13 @@ class GsUsbBus(can.BusABC):
     def shutdown(self):
         super().shutdown()
         self.gs_usb.stop()
+        if self.index is not None:
+            # Avoid errors on subsequent __init() by repeating the .scan() and .start() that would then fail here
+            devs = GsUsb.scan()
+            gs_usb = devs[self.index]
+            try:
+                gs_usb.set_bitrate(self.bitrate)
+                gs_usb.start()
+                gs_usb.stop()
+            except usb.core.USBError:
+                pass
