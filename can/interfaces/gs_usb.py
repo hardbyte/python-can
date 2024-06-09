@@ -17,7 +17,7 @@ class GsUsbBus(can.BusABC):
     def __init__(
         self,
         channel,
-        bitrate,
+        bitrate: int = 500_000,
         index=None,
         bus=None,
         address=None,
