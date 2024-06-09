@@ -50,7 +50,7 @@ Windows, Linux and Mac.
    ``libusb`` must be installed.
 
    On Windows a tool such as `Zadig <https://zadig.akeo.ie/>`_ can be used to set the USB device driver to
-   ``libusb-win32``.
+   ``libusbK``.
 
 
 Supplementary Info
