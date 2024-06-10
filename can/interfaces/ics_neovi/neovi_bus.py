@@ -12,8 +12,8 @@ import functools
 import logging
 import os
 import tempfile
-import time
 from collections import Counter, defaultdict, deque
+from datetime import datetime
 from functools import partial
 from itertools import cycle
 from threading import Event
@@ -69,8 +69,8 @@ except ImportError as ie:
 open_lock = FileLock(os.path.join(tempfile.gettempdir(), "neovi.lock"))
 description_id = cycle(range(1, 0x8000))
 
-ICS_EPOCH = time.strptime("1/1/2007", "%m/%d/%Y")
-ICS_EPOCH_DELTA = time.mktime(ICS_EPOCH) - time.mktime(time.gmtime(0))
+ICS_EPOCH = datetime.fromisoformat("2007-01-01")
+ICS_EPOCH_DELTA = (ICS_EPOCH - datetime.fromisoformat("1970-01-01")).total_seconds()
 
 
 class ICSApiError(CanError):
