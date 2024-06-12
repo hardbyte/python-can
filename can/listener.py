@@ -136,7 +136,7 @@ class AsyncBufferedReader(
     """
 
     def __init__(self, **kwargs: Any) -> None:
-        self.buffer: "asyncio.Queue[Message]"
+        self.buffer: asyncio.Queue[Message]
 
         if "loop" in kwargs:
             warnings.warn(

@@ -23,16 +23,13 @@ class BusStatistics(ctypes.Structure):
 
     def __str__(self):
         return (
-            "std_data: {}, std_remote: {}, ext_data: {}, ext_remote: {}, "
-            "err_frame: {}, bus_load: {:.1f}%, overruns: {}"
-        ).format(
-            self.std_data,
-            self.std_remote,
-            self.ext_data,
-            self.ext_remote,
-            self.err_frame,
-            self.bus_load / 100.0,
-            self.overruns,
+            f"std_data: {self.std_data}, "
+            f"std_remote: {self.std_remote}, "
+            f"ext_data: {self.ext_data}, "
+            f"ext_remote: {self.ext_remote}, "
+            f"err_frame: {self.err_frame}, "
+            f"bus_load: {self.bus_load / 100.0:.1f}%, "
+            f"overruns: {self.overruns}"
         )
 
     @property
