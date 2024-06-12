@@ -112,10 +112,12 @@ class Notifier:
         # determine message handling callable early, not inside while loop
         handle_message = cast(
             Callable[[Message], None],
-            self._on_message_received
-            if self._loop is None
-            else functools.partial(
-                self._loop.call_soon_threadsafe, self._on_message_received
+            (
+                self._on_message_received
+                if self._loop is None
+                else functools.partial(
+                    self._loop.call_soon_threadsafe, self._on_message_received
+                )
             ),
         )
 

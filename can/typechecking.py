@@ -1,5 +1,6 @@
 """Types for mypy type-checking
 """
+
 import gzip
 import typing
 

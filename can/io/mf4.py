@@ -4,6 +4,7 @@ Contains handling of MF4 logging files.
 MF4 files represent Measurement Data Format (MDF) version 4 as specified by
 the ASAM MDF standard (see https://www.asam.net/standards/detail/mdf/)
 """
+
 import logging
 from datetime import datetime
 from hashlib import md5

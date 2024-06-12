@@ -7,6 +7,7 @@ Authors: Marvin Seiler, Gerrit Telkamp
 Copyright (C) 2021  DOMOLOGIC GmbH
 http://www.domologic.de
 """
+
 import logging
 import os
 import select

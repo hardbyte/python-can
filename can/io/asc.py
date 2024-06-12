@@ -5,6 +5,7 @@ Example .asc files:
     - https://bitbucket.org/tobylorenz/vector_asc/src/master/src/Vector/ASC/tests/unittests/data/
     - under `test/data/logfile.asc`
 """
+
 import logging
 import re
 from datetime import datetime
