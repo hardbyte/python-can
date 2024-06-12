@@ -38,8 +38,7 @@ class TestBaseRotatingLogger:
             def should_rollover(self, msg: can.Message) -> bool:
                 return False
 
-            def do_rollover(self):
-                ...
+            def do_rollover(self): ...
 
         return SubClass(file=file)
 

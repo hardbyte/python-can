@@ -62,7 +62,7 @@ changelog = "https://github.com/hardbyte/python-can/blob/develop/CHANGELOG.md"
 lint = [
     "pylint==3.0.*",
     "ruff==0.1.13",
-    "black==23.12.*",
+    "black==24.4.*",
     "mypy==1.8.*",
 ]
 seeedstudio = ["pyserial>=3.0"]

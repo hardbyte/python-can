@@ -1,6 +1,7 @@
 """
 Enable basic CAN over a PCAN USB device.
 """
+
 import logging
 import platform
 import time
