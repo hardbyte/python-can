@@ -46,8 +46,7 @@ class Listener(metaclass=ABCMeta):
         """
         raise NotImplementedError()
 
-    @abstractmethod
-    def stop(self) -> None:
+    def stop(self) -> None:  # noqa: B027
         """
         Stop handling new messages, carry out any final tasks to ensure
         data is persisted and cleanup any open resources.
