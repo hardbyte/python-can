@@ -60,10 +60,10 @@ changelog = "https://github.com/hardbyte/python-can/blob/develop/CHANGELOG.md"
 
 [project.optional-dependencies]
 lint = [
-    "pylint==3.0.*",
-    "ruff==0.1.13",
-    "black==23.12.*",
-    "mypy==1.8.*",
+    "pylint==3.2.*",
+    "ruff==0.4.8",
+    "black==24.4.*",
+    "mypy==1.10.*",
 ]
 seeedstudio = ["pyserial>=3.0"]
 serial = ["pyserial~=3.0"]
@@ -128,6 +128,9 @@ exclude = [
 ]
 
 [tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
 select = [
     "A",  # flake8-builtins
     "B",  # flake8-bugbear
@@ -149,9 +152,8 @@ ignore = [
     "B026",  # star-arg-unpacking-after-keyword-arg
     "PLR",  # pylint refactor
 ]
-line-length = 100
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "can/interfaces/*" = [
     "E501",  # Line too long
     "F403",  # undefined-local-with-import-star
@@ -163,7 +165,7 @@ line-length = 100
 "can/logger.py" = ["T20"]  # flake8-print
 "can/player.py" = ["T20"]  # flake8-print
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 known-first-party = ["can"]
 
 [tool.pylint]

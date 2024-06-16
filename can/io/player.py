@@ -3,6 +3,7 @@ This module contains the generic :class:`LogReader` as
 well as :class:`MessageSync` which plays back messages
 in the recorded order and time intervals.
 """
+
 import gzip
 import pathlib
 import time

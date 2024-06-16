@@ -46,8 +46,7 @@ class Listener(metaclass=ABCMeta):
         """
         raise NotImplementedError()
 
-    @abstractmethod
-    def stop(self) -> None:
+    def stop(self) -> None:  # noqa: B027
         """
         Stop handling new messages, carry out any final tasks to ensure
         data is persisted and cleanup any open resources.
@@ -136,7 +135,7 @@ class AsyncBufferedReader(
     """
 
     def __init__(self, **kwargs: Any) -> None:
-        self.buffer: "asyncio.Queue[Message]"
+        self.buffer: asyncio.Queue[Message]
 
         if "loop" in kwargs:
             warnings.warn(

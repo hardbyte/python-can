@@ -65,7 +65,8 @@ class BusABC(metaclass=ABCMeta):
     #: Log level for received messages
     RECV_LOGGING_LEVEL = 9
 
-    _is_shutdown: bool = False
+    #: Assume that no cleanup is needed until something was initialized
+    _is_shutdown: bool = True
     _can_protocol: CanProtocol = CanProtocol.CAN_20
 
     @abstractmethod
@@ -97,6 +98,10 @@ class BusABC(metaclass=ABCMeta):
         """
         self._periodic_tasks: List[_SelfRemovingCyclicTask] = []
         self.set_filters(can_filters)
+        # Flip the class default value when the constructor finishes.  That
+        # usually means the derived class constructor was also successful,
+        # since it calls this parent constructor last.
+        self._is_shutdown: bool = False
 
     def __str__(self) -> str:
         return self.channel_info

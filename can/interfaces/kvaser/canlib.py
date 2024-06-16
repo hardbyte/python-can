@@ -64,7 +64,6 @@ def __get_canlib_function(func_name, argtypes=None, restype=None, errcheck=None)
 
 
 class CANLIBError(CanError):
-
     """
     Try to display errors that occur within the wrapped C library nicely.
     """
