@@ -49,8 +49,8 @@ class slcanBus(BusABC):
 
     _SLEEP_AFTER_SERIAL_OPEN = 2  # in seconds
 
-    _OK = b"\r"
-    _ERROR = b"\a"
+    _OK = ord(b"\r")
+    _ERROR = ord(b"\a")
 
     LINE_TERMINATOR = b"\r"
 
@@ -62,7 +62,7 @@ class slcanBus(BusABC):
         btr: Optional[str] = None,
         sleep_after_open: float = _SLEEP_AFTER_SERIAL_OPEN,
         rtscts: bool = False,
-        timeout: float = 0.001,
+        timeout: float = 0.00005,
         **kwargs: Any,
     ) -> None:
         """
@@ -158,27 +158,17 @@ class slcanBus(BusABC):
             self.serialPortOrig.flush()
 
     def _read(self, timeout: Optional[float]) -> Optional[str]:
-        _timeout = serial.Timeout(timeout)
-
         with error_check("Could not read from serial device"):
-            while True:
-                # Due to accessing `serialPortOrig.in_waiting` too often will reduce the performance.
-                # We read the `serialPortOrig.in_waiting` only once here.
-                in_waiting = self.serialPortOrig.in_waiting
-                for _ in range(max(1, in_waiting)):
-                    new_byte = self.serialPortOrig.read(size=1)
-                    if new_byte:
-                        self._buffer.extend(new_byte)
-                    else:
-                        break
-
-                    if new_byte in (self._ERROR, self._OK):
-                        string = self._buffer.decode()
-                        self._buffer.clear()
-                        return string
-
-                if _timeout.expired():
-                    break
+            in_waiting = self.serialPortOrig.in_waiting
+            if in_waiting:
+                self._buffer.extend(self.serialPortOrig.read(size=in_waiting))
+            for idx, new_byte in enumerate(self._buffer):
+                if new_byte in (self._ERROR, self._OK):
+                    # Only decode up to idx
+                    string = self._buffer[: idx].decode()
+                    # Delete self._buffer up to idx
+                    self._buffer = self._buffer[idx+1:]
+                    return string
 
             return None
 
