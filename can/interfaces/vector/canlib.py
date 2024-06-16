@@ -329,14 +329,6 @@ class VectorBus(BusABC):
         else:
             LOG.info("Install pywin32 to avoid polling")
 
-        try:
-            self.xldriver.xlActivateChannel(
-                self.port_handle, self.mask, xldefine.XL_BusTypes.XL_BUS_TYPE_CAN, 0
-            )
-        except VectorOperationError as error:
-            self.shutdown()
-            raise VectorInitializationError.from_generic(error) from None
-
         # Calculate time offset for absolute timestamps
         offset = xlclass.XLuint64()
         try:
@@ -365,6 +357,15 @@ class VectorBus(BusABC):
             can_filters=can_filters,
             **kwargs,
         )
+
+        # activate channels after CAN filters were applied
+        try:
+            self.xldriver.xlActivateChannel(
+                self.port_handle, self.mask, xldefine.XL_BusTypes.XL_BUS_TYPE_CAN, 0
+            )
+        except VectorOperationError as error:
+            self.shutdown()
+            raise VectorInitializationError.from_generic(error) from None
 
     @property
     def fd(self) -> bool:

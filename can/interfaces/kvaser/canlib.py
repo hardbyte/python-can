@@ -552,7 +552,6 @@ class KvaserBus(BusABC):
             else:
                 flags_ = flags
             self._write_handle = canOpenChannel(channel, flags_)
-            canBusOn(self._read_handle)
 
         can_driver_mode = (
             canstat.canDRIVER_SILENT
@@ -560,8 +559,6 @@ class KvaserBus(BusABC):
             else canstat.canDRIVER_NORMAL
         )
         canSetBusOutputControl(self._write_handle, can_driver_mode)
-        log.debug("Going bus on TX handle")
-        canBusOn(self._write_handle)
 
         timer = ctypes.c_uint(0)
         try:
@@ -587,6 +584,12 @@ class KvaserBus(BusABC):
             **kwargs,
         )
 
+        # activate channel after CAN filters were applied
+        log.debug("Go on bus")
+        if not self.single_handle:
+            canBusOn(self._read_handle)
+        canBusOn(self._write_handle)
+
     def _apply_filters(self, filters):
         if filters and len(filters) == 1:
             can_id = filters[0]["can_id"]
@@ -610,7 +613,7 @@ class KvaserBus(BusABC):
                     for extended in (0, 1):
                         canSetAcceptanceFilter(handle, 0, 0, extended)
             except (NotImplementedError, CANLIBError) as e:
-                log.error("An error occured while disabling filtering: %s", e)
+                log.error("An error occurred while disabling filtering: %s", e)
 
     def flush_tx_buffer(self):
         """Wipeout the transmit buffer on the Kvaser."""
