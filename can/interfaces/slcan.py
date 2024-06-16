@@ -84,7 +84,7 @@ class slcanBus(BusABC):
             turn hardware handshake (RTS/CTS) on and off
         :param listen_only:
             If True, open interface/channel in listen mode with ``L`` command.
-            Otherwise, the (default) ``O`` command is still used. See ``open`` methode.
+            Otherwise, the (default) ``O`` command is still used. See ``open`` method.
         :param timeout:
             Timeout for the serial or usb device in seconds (default 0.001)
 
@@ -92,7 +92,7 @@ class slcanBus(BusABC):
         :raise CanInterfaceNotImplementedError: if the serial module is missing
         :raise CanInitializationError: if the underlying serial connection could not be established
         """
-        self.listen_only = listen_only
+        self._listen_only = listen_only
 
         if serial is None:
             raise CanInterfaceNotImplementedError("The serial module is not installed")
@@ -195,7 +195,7 @@ class slcanBus(BusABC):
             self.serialPortOrig.reset_input_buffer()
 
     def open(self) -> None:
-        if self.listen_only:
+        if self._listen_only:
             self._write("L")
         else:
             self._write("O")
