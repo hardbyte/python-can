@@ -180,6 +180,14 @@ class TestBaseRotatingLogger:
             do_rollover.assert_called()
             writers_on_message_received.assert_called_with(msg)
 
+    def test_issue_1792(self, tmp_path):
+        with self._get_instance(tmp_path / "__unused.log") as logger_instance:
+            writer = logger_instance._get_new_writer(
+                tmp_path / "2017_Jeep_Grand_Cherokee_3.6L_V6.log"
+            )
+            assert isinstance(writer, can.CanutilsLogWriter)
+            writer.stop()
+
 
 class TestSizedRotatingLogger:
     def test_import(self):
