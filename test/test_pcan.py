@@ -54,7 +54,9 @@ class TestPCANBus(unittest.TestCase):
 
         self.assertIsInstance(self.bus, PcanBus)
         self.assertEqual(self.bus.protocol, CanProtocol.CAN_20)
-        self.assertFalse(self.bus.fd)
+
+        with pytest.deprecated_call():
+            self.assertFalse(self.bus.fd)
 
         self.MockPCANBasic.assert_called_once()
         self.mock_pcan.Initialize.assert_called_once()
@@ -83,7 +85,9 @@ class TestPCANBus(unittest.TestCase):
 
         self.assertIsInstance(self.bus, PcanBus)
         self.assertEqual(self.bus.protocol, CanProtocol.CAN_FD)
-        self.assertTrue(self.bus.fd)
+
+        with pytest.deprecated_call():
+            self.assertTrue(self.bus.fd)
 
         self.MockPCANBasic.assert_called_once()
         self.mock_pcan.Initialize.assert_not_called()
