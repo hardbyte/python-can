@@ -8,6 +8,7 @@ import logging
 import os
 import struct
 import subprocess
+import sys
 from typing import List, Optional, cast
 
 from can import typechecking
@@ -46,6 +47,8 @@ def find_available_interfaces() -> List[str]:
 
     :return: The list of available and active CAN interfaces or an empty list of the command failed
     """
+    if sys.platform != "linux":
+        return []
 
     try:
         command = ["ip", "-json", "link", "list", "up"]
