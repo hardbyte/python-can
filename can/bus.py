@@ -44,7 +44,8 @@ class CanProtocol(Enum):
     """The CAN protocol type supported by a :class:`can.BusABC` instance"""
 
     CAN_20 = auto()
-    CAN_FD = auto()
+    CAN_FD = auto()  # ISO Mode
+    CAN_FD_NON_ISO = auto()
     CAN_XL = auto()
 
 

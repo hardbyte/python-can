@@ -284,6 +284,11 @@ to ensure usage of SocketCAN Linux API. The most important differences are:
     :members:
     :inherited-members:
 
+ISO/Non-ISO CAN FD Mode
+-----------------------
+
+Socket CAN devices can (for supported hardware) control ISO vs Non-ISO FD during creation with the ``ip`` command using the ``fd-non-iso`` flag.
+
 .. External references
 
 .. _Linux kernel docs: https://www.kernel.org/doc/Documentation/networking/can.txt

@@ -428,6 +428,10 @@ class KvaserBus(BusABC):
             computer, set this to True or set single_handle to True.
         :param bool fd:
             If CAN-FD frames should be supported.
+        :param bool fd_non_iso:
+            Open the channel in Non-ISO (Bosch) FD mode. Only applies for FD buses.
+            This changes the handling of the stuff-bit counter and the CRC. Defaults
+            to False (ISO mode)
         :param bool exclusive:
             Don't allow sharing of this CANlib channel.
         :param bool override_exclusive:
@@ -453,6 +457,7 @@ class KvaserBus(BusABC):
         accept_virtual = kwargs.get("accept_virtual", True)
         fd = isinstance(timing, BitTimingFd) if timing else kwargs.get("fd", False)
         data_bitrate = kwargs.get("data_bitrate", None)
+        fd_non_iso = kwargs.get("fd_non_iso", False)
 
         try:
             channel = int(channel)
@@ -461,7 +466,11 @@ class KvaserBus(BusABC):
 
         self.channel = channel
         self.single_handle = single_handle
-        self._can_protocol = CanProtocol.CAN_FD if fd else CanProtocol.CAN_20
+        self._can_protocol = CanProtocol.CAN_20
+        if fd_non_iso:
+            self._can_protocol = CanProtocol.CAN_FD_NON_ISO
+        elif fd:
+            self._can_protocol = CanProtocol.CAN_FD
 
         log.debug("Initialising bus instance")
         num_channels = ctypes.c_int(0)
@@ -482,7 +491,10 @@ class KvaserBus(BusABC):
         if accept_virtual:
             flags |= canstat.canOPEN_ACCEPT_VIRTUAL
         if fd:
-            flags |= canstat.canOPEN_CAN_FD
+            if fd_non_iso:
+                flags |= canstat.canOPEN_CAN_FD_NONISO
+            else:
+                flags |= canstat.canOPEN_CAN_FD
 
         log.debug("Creating read handle to bus channel: %s", channel)
         self._read_handle = canOpenChannel(channel, flags)
