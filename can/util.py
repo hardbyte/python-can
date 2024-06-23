@@ -2,6 +2,7 @@
 Utilities and configuration file parsing.
 """
 
+import contextlib
 import copy
 import functools
 import json
@@ -243,31 +244,39 @@ def _create_bus_config(config: Dict[str, Any]) -> typechecking.BusConfig:
         if not 0 < port < 65535:
             raise ValueError("Port config must be inside 0-65535 range!")
 
-    if config.get("timing", None) is None:
-        try:
-            if set(typechecking.BitTimingFdDict.__annotations__).issubset(config):
-                config["timing"] = can.BitTimingFd(
-                    **{
-                        key: int(config[key])
-                        for key in typechecking.BitTimingFdDict.__annotations__
-                    },
-                    strict=False,
-                )
-            elif set(typechecking.BitTimingDict.__annotations__).issubset(config):
-                config["timing"] = can.BitTiming(
-                    **{
-                        key: int(config[key])
-                        for key in typechecking.BitTimingDict.__annotations__
-                    },
-                    strict=False,
-                )
-        except (ValueError, TypeError):
-            pass
+    if "timing" not in config:
+        if timing := _dict2timing(config):
+            config["timing"] = timing
 
     if "fd" in config:
         config["fd"] = config["fd"] not in (0, False)
 
     return cast(typechecking.BusConfig, config)
+
+
+def _dict2timing(data: Dict[str, Any]) -> Union[BitTiming, BitTimingFd, None]:
+    """Try to instantiate a :class:`~can.BitTiming` or :class:`~can.BitTimingFd` from
+    a dictionary. Return `None` if not possible."""
+
+    with contextlib.suppress(ValueError, TypeError):
+        if set(typechecking.BitTimingFdDict.__annotations__).issubset(data):
+            return BitTimingFd(
+                **{
+                    key: int(data[key])
+                    for key in typechecking.BitTimingFdDict.__annotations__
+                },
+                strict=False,
+            )
+        elif set(typechecking.BitTimingDict.__annotations__).issubset(data):
+            return BitTiming(
+                **{
+                    key: int(data[key])
+                    for key in typechecking.BitTimingDict.__annotations__
+                },
+                strict=False,
+            )
+
+    return None
 
 
 def set_logging_level(level_name: str) -> None:
