@@ -1,3 +1,26 @@
+Version 4.4.1
+=============
+
+Bug Fixes
+---------
+* Remove `abstractmethod` decorator from `Listener.stop()` (#1770, #1795)
+* Fix `SizedRotatingLogger` file suffix bug (#1792, #1793)
+* gs_usb: Use `BitTiming` class internally to configure bitrate (#1747, #1748)
+* pcan: Fix unpack error in `PcanBus._detect_available_configs()` (#1767)
+* socketcan: Improve error handling in `SocketcanBus.__init__()` (#1771)
+* socketcan: Do not log exception on non-linux platforms (#1800)
+* vector, kvaser: Activate channels after CAN filters were applied (#1413, #1708, #1796)
+
+Features
+--------
+
+* kvaser: Add support for non-ISO CAN FD (#1752)
+* neovi: Return timestamps relative to epoch (#1789)
+* slcan: Support CANdapter extended length arbitration ID (#1506, #1528)
+* slcan: Add support for `listen_only` mode (#1496)
+* vector: Add support for `listen_only` mode (#1764)
+
+
 Version 4.4.0
 =============
 
