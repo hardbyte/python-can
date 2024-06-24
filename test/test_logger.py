@@ -16,8 +16,6 @@ import pytest
 import can
 import can.logger
 
-from .config import *
-
 
 class TestLoggerScriptModule(unittest.TestCase):
     def setUp(self) -> None:
@@ -107,6 +105,39 @@ class TestLoggerScriptModule(unittest.TestCase):
         can.logger.main()
         self.assertSuccessfullCleanup()
         self.mock_logger_sized.assert_called_once()
+
+    def test_parse_logger_args(self):
+        args = self.baseargs + [
+            "--bitrate",
+            "250000",
+            "--fd",
+            "--data_bitrate",
+            "2000000",
+            "--receive-own-messages=True",
+        ]
+        results, additional_config = can.logger._parse_logger_args(args[1:])
+        assert results.interface == "virtual"
+        assert results.bitrate == 250_000
+        assert results.fd is True
+        assert results.data_bitrate == 2_000_000
+        assert additional_config["receive_own_messages"] is True
+
+    def test_parse_can_filters(self):
+        expected_can_filters = [{"can_id": 0x100, "can_mask": 0x7FC}]
+        results, additional_config = can.logger._parse_logger_args(
+            ["--filter", "100:7FC", "--bitrate", "250000"]
+        )
+        assert results.can_filters == expected_can_filters
+
+    def test_parse_can_filters_list(self):
+        expected_can_filters = [
+            {"can_id": 0x100, "can_mask": 0x7FC},
+            {"can_id": 0x200, "can_mask": 0x7F0},
+        ]
+        results, additional_config = can.logger._parse_logger_args(
+            ["--filter", "100:7FC", "200:7F0", "--bitrate", "250000"]
+        )
+        assert results.can_filters == expected_can_filters
 
     def test_parse_additional_config(self):
         unknown_args = [
