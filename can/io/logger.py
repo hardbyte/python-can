@@ -259,9 +259,11 @@ class BaseRotatingLogger(MessageWriter, ABC):
         :return:
             An instance of a writer class.
         """
-        suffix = "".join(pathlib.Path(filename).suffixes[-2:]).lower()
-
-        if suffix in self._supported_formats:
+        suffixes = pathlib.Path(filename).suffixes
+        for suffix_length in range(len(suffixes), 0, -1):
+            suffix = "".join(suffixes[-suffix_length:]).lower()
+            if suffix not in self._supported_formats:
+                continue
             logger = Logger(filename=filename, **self.writer_kwargs)
             if isinstance(logger, FileIOMessageWriter):
                 return logger
@@ -269,7 +271,7 @@ class BaseRotatingLogger(MessageWriter, ABC):
                 return cast(FileIOMessageWriter, logger)
 
         raise ValueError(
-            f'The log format "{suffix}" '
+            f'The log format of "{pathlib.Path(filename).name}" '
             f"is not supported by {self.__class__.__name__}. "
             f"{self.__class__.__name__} supports the following formats: "
             f"{', '.join(self._supported_formats)}"

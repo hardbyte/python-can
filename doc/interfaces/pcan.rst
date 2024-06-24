@@ -38,7 +38,6 @@ Here is an example configuration file for using `PCAN-USB <https://www.peak-syst
  Channel bitrate
 
 
-
 .. _pcandoc linux installation:
 
 Linux installation

@@ -1,4 +1,5 @@
 """Contains generic base classes for file IO."""
+
 import gzip
 import locale
 from abc import ABCMeta

@@ -64,7 +64,6 @@ def __get_canlib_function(func_name, argtypes=None, restype=None, errcheck=None)
 
 
 class CANLIBError(CanError):
-
     """
     Try to display errors that occur within the wrapped C library nicely.
     """
@@ -429,6 +428,10 @@ class KvaserBus(BusABC):
             computer, set this to True or set single_handle to True.
         :param bool fd:
             If CAN-FD frames should be supported.
+        :param bool fd_non_iso:
+            Open the channel in Non-ISO (Bosch) FD mode. Only applies for FD buses.
+            This changes the handling of the stuff-bit counter and the CRC. Defaults
+            to False (ISO mode)
         :param bool exclusive:
             Don't allow sharing of this CANlib channel.
         :param bool override_exclusive:
@@ -454,6 +457,7 @@ class KvaserBus(BusABC):
         accept_virtual = kwargs.get("accept_virtual", True)
         fd = isinstance(timing, BitTimingFd) if timing else kwargs.get("fd", False)
         data_bitrate = kwargs.get("data_bitrate", None)
+        fd_non_iso = kwargs.get("fd_non_iso", False)
 
         try:
             channel = int(channel)
@@ -462,7 +466,11 @@ class KvaserBus(BusABC):
 
         self.channel = channel
         self.single_handle = single_handle
-        self._can_protocol = CanProtocol.CAN_FD if fd else CanProtocol.CAN_20
+        self._can_protocol = CanProtocol.CAN_20
+        if fd_non_iso:
+            self._can_protocol = CanProtocol.CAN_FD_NON_ISO
+        elif fd:
+            self._can_protocol = CanProtocol.CAN_FD
 
         log.debug("Initialising bus instance")
         num_channels = ctypes.c_int(0)
@@ -483,7 +491,10 @@ class KvaserBus(BusABC):
         if accept_virtual:
             flags |= canstat.canOPEN_ACCEPT_VIRTUAL
         if fd:
-            flags |= canstat.canOPEN_CAN_FD
+            if fd_non_iso:
+                flags |= canstat.canOPEN_CAN_FD_NONISO
+            else:
+                flags |= canstat.canOPEN_CAN_FD
 
         log.debug("Creating read handle to bus channel: %s", channel)
         self._read_handle = canOpenChannel(channel, flags)
@@ -553,7 +564,6 @@ class KvaserBus(BusABC):
             else:
                 flags_ = flags
             self._write_handle = canOpenChannel(channel, flags_)
-            canBusOn(self._read_handle)
 
         can_driver_mode = (
             canstat.canDRIVER_SILENT
@@ -561,8 +571,6 @@ class KvaserBus(BusABC):
             else canstat.canDRIVER_NORMAL
         )
         canSetBusOutputControl(self._write_handle, can_driver_mode)
-        log.debug("Going bus on TX handle")
-        canBusOn(self._write_handle)
 
         timer = ctypes.c_uint(0)
         try:
@@ -588,6 +596,12 @@ class KvaserBus(BusABC):
             **kwargs,
         )
 
+        # activate channel after CAN filters were applied
+        log.debug("Go on bus")
+        if not self.single_handle:
+            canBusOn(self._read_handle)
+        canBusOn(self._write_handle)
+
     def _apply_filters(self, filters):
         if filters and len(filters) == 1:
             can_id = filters[0]["can_id"]
@@ -611,7 +625,7 @@ class KvaserBus(BusABC):
                     for extended in (0, 1):
                         canSetAcceptanceFilter(handle, 0, 0, extended)
             except (NotImplementedError, CANLIBError) as e:
-                log.error("An error occured while disabling filtering: %s", e)
+                log.error("An error occurred while disabling filtering: %s", e)
 
     def flush_tx_buffer(self):
         """Wipeout the transmit buffer on the Kvaser."""

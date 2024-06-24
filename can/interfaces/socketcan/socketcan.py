@@ -41,6 +41,13 @@ except ImportError:
     log.error("socket.CMSG_SPACE not available on this platform")
 
 
+# Constants needed for precise handling of timestamps
+RECEIVED_TIMESTAMP_STRUCT = struct.Struct("@ll")
+RECEIVED_ANCILLARY_BUFFER_SIZE = (
+    CMSG_SPACE(RECEIVED_TIMESTAMP_STRUCT.size) if CMSG_SPACE_available else 0
+)
+
+
 # Setup BCM struct
 def bcm_header_factory(
     fields: List[Tuple[str, Union[Type[ctypes.c_uint32], Type[ctypes.c_long]]]],
@@ -597,12 +604,6 @@ def capture_message(
     return msg
 
 
-# Constants needed for precise handling of timestamps
-if CMSG_SPACE_available:
-    RECEIVED_TIMESTAMP_STRUCT = struct.Struct("@ll")
-    RECEIVED_ANCILLARY_BUFFER_SIZE = CMSG_SPACE(RECEIVED_TIMESTAMP_STRUCT.size)
-
-
 class SocketcanBus(BusABC):  # pylint: disable=abstract-method
     """A SocketCAN interface to CAN.
 
@@ -705,14 +706,18 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
         #     so this is always supported by the kernel
         self.socket.setsockopt(socket.SOL_SOCKET, constants.SO_TIMESTAMPNS, 1)
 
-        bind_socket(self.socket, channel)
-        kwargs.update(
-            {
-                "receive_own_messages": receive_own_messages,
-                "fd": fd,
-                "local_loopback": local_loopback,
-            }
-        )
+        try:
+            bind_socket(self.socket, channel)
+            kwargs.update(
+                {
+                    "receive_own_messages": receive_own_messages,
+                    "fd": fd,
+                    "local_loopback": local_loopback,
+                }
+            )
+        except OSError as error:
+            log.error("Could not access SocketCAN device %s (%s)", channel, error)
+            raise
         super().__init__(
             channel=channel,
             can_filters=can_filters,

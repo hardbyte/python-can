@@ -13,6 +13,7 @@ import logging
 import os
 import tempfile
 from collections import Counter, defaultdict, deque
+from datetime import datetime
 from functools import partial
 from itertools import cycle
 from threading import Event
@@ -67,6 +68,9 @@ except ImportError as ie:
 # When neoVI server is enabled, there is an issue with concurrent device open.
 open_lock = FileLock(os.path.join(tempfile.gettempdir(), "neovi.lock"))
 description_id = cycle(range(1, 0x8000))
+
+ICS_EPOCH = datetime.fromisoformat("2007-01-01")
+ICS_EPOCH_DELTA = (ICS_EPOCH - datetime.fromisoformat("1970-01-01")).total_seconds()
 
 
 class ICSApiError(CanError):
@@ -384,7 +388,7 @@ class NeoViBus(BusABC):
             return ics_msg.TimeSystem
         else:
             # This is the hardware time stamp.
-            return ics.get_timestamp_for_msg(self.dev, ics_msg)
+            return ics.get_timestamp_for_msg(self.dev, ics_msg) + ICS_EPOCH_DELTA
 
     def _ics_msg_to_message(self, ics_msg):
         is_fd = ics_msg.Protocol == ics.SPY_PROTOCOL_CANFD
