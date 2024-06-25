@@ -1,5 +1,5 @@
-Scripts
-=======
+Command Line Tools
+==================
 
 The following modules are callable from ``python-can``.
 

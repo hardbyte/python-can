@@ -27,17 +27,16 @@ import os
 import struct
 import sys
 import time
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Tuple
 
 from can import __version__
-
-from .logger import (
+from can.logger import (
     _append_filter_argument,
     _create_base_argument_parser,
     _create_bus,
     _parse_additional_config,
-    _parse_filters,
 )
+from can.typechecking import TAdditionalCliArgs, TDataStructs
 
 logger = logging.getLogger("can.viewer")
 
@@ -391,7 +390,9 @@ class SmartFormatter(argparse.HelpFormatter):
             return super()._fill_text(text, width, indent)
 
 
-def parse_args(args: List[str]) -> Tuple:
+def _parse_viewer_args(
+    args: List[str],
+) -> Tuple[argparse.Namespace, TDataStructs, TAdditionalCliArgs]:
     # Parse command line arguments
     parser = argparse.ArgumentParser(
         "python -m can.viewer",
@@ -489,8 +490,6 @@ def parse_args(args: List[str]) -> Tuple:
 
     parsed_args, unknown_args = parser.parse_known_args(args)
 
-    can_filters = _parse_filters(parsed_args)
-
     # Dictionary used to convert between Python values and C structs represented as Python strings.
     # If the value is 'None' then the message does not contain any data package.
     #
@@ -511,9 +510,7 @@ def parse_args(args: List[str]) -> Tuple:
     # similarly the values
     # are divided by the value in order to convert from real units to raw integer values.
 
-    data_structs: Dict[
-        Union[int, Tuple[int, ...]], Union[struct.Struct, Tuple, None]
-    ] = {}
+    data_structs: TDataStructs = {}
     if parsed_args.decode:
         if os.path.isfile(parsed_args.decode[0]):
             with open(parsed_args.decode[0], encoding="utf-8") as f:
@@ -544,16 +541,12 @@ def parse_args(args: List[str]) -> Tuple:
     additional_config = _parse_additional_config(
         [*parsed_args.extra_args, *unknown_args]
     )
-    return parsed_args, can_filters, data_structs, additional_config
+    return parsed_args, data_structs, additional_config
 
 
 def main() -> None:
-    parsed_args, can_filters, data_structs, additional_config = parse_args(sys.argv[1:])
-
-    if can_filters:
-        additional_config.update({"can_filters": can_filters})
+    parsed_args, data_structs, additional_config = _parse_viewer_args(sys.argv[1:])
     bus = _create_bus(parsed_args, **additional_config)
-
     curses.wrapper(CanViewer, bus, data_structs)  # type: ignore[attr-defined,unused-ignore]
 
 
