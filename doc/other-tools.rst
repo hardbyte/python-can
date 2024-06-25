@@ -1,4 +1,4 @@
-Other CAN bus tools
+Other CAN Bus Tools
 ===================
 
 In order to keep the project maintainable, the scope of the package is limited to providing common
