@@ -1,10 +1,6 @@
 Bit Timing Configuration
 ========================
 
-.. attention::
-    This feature is experimental. The implementation might change in future
-    versions.
-
 The CAN protocol, specified in ISO 11898, allows the bitrate, sample point
 and number of samples to be optimized for a given application. These
 parameters, known as bit timings, can be adjusted to meet the requirements
