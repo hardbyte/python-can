@@ -129,7 +129,7 @@ Manual release steps (deprecated)
 ---------------------------------
 
 - Create a temporary virtual environment.
+- Create a new tag in the repository. Use `semantic versioning <http://semver.org>`__.
 - Build with  ``pipx run build``
-- Create and upload the distribution: ``python setup.py sdist bdist_wheel``.
 - Sign the packages with gpg ``gpg --detach-sign -a dist/python_can-X.Y.Z-py3-none-any.whl``.
 - Upload with twine ``twine upload dist/python-can-X.Y.Z*``.
