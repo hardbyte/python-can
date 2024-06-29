@@ -163,8 +163,20 @@ class KvaserTest(unittest.TestCase):
     def test_available_configs(self):
         configs = canlib.KvaserBus._detect_available_configs()
         expected = [
-            {"interface": "kvaser", "channel": 0, 'dongle_channel': 1, 'device_name': '', 'serial': 0},
-            {"interface": "kvaser", "channel": 1, 'dongle_channel': 1, 'device_name': '', 'serial': 0},
+            {
+                "interface": "kvaser",
+                "channel": 0,
+                "dongle_channel": 1,
+                "device_name": "",
+                "serial": 0,
+            },
+            {
+                "interface": "kvaser",
+                "channel": 1,
+                "dongle_channel": 1,
+                "device_name": "",
+                "serial": 0,
+            },
         ]
         self.assertListEqual(configs, expected)
 
