@@ -761,13 +761,7 @@ class KvaserBus(BusABC):
             for channel in range(0, int(num_channels.value)):
                 info = get_channel_info(channel)
 
-                config_list.append(
-                    {
-                        "interface": "kvaser",
-                        "channel": channel,
-                        **info
-                    }
-                )
+                config_list.append({"interface": "kvaser", "channel": channel, **info})
         except (CANLIBError, NameError):
             pass
         return config_list
@@ -800,7 +794,8 @@ def get_channel_info(channel):
     return {
         "device_name": name.value.decode("ascii", errors="replace"),
         "serial": serial.value,
-        "dongle channel": number.value + 1
-        }
+        "dongle_channel": number.value + 1,
+    }
+
 
 init_kvaser_library()
