@@ -479,6 +479,7 @@ class KvaserBus(BusABC):
         log.info("Found %d available channels", num_channels)
         for idx in range(num_channels):
             channel_info = get_channel_info(idx)
+            channel_info = f'{channel_info["device_name"]}, S/N {channel_info["serial"]} (#{channel_info["dongle_channel"]})'
             log.info("%d: %s", idx, channel_info)
             if idx == channel:
                 self.channel_info = channel_info
@@ -766,16 +767,19 @@ class KvaserBus(BusABC):
 
     @staticmethod
     def _detect_available_configs():
-        num_channels = ctypes.c_int(0)
+        config_list = []
+
         try:
+            num_channels = ctypes.c_int(0)
             canGetNumberOfChannels(ctypes.byref(num_channels))
+
+            for channel in range(0, int(num_channels.value)):
+                info = get_channel_info(channel)
+
+                config_list.append({"interface": "kvaser", "channel": channel, **info})
         except (CANLIBError, NameError):
             pass
-
-        return [
-            {"interface": "kvaser", "channel": channel}
-            for channel in range(num_channels.value)
-        ]
+        return config_list
 
 
 def get_channel_info(channel):
@@ -802,8 +806,11 @@ def get_channel_info(channel):
         ctypes.sizeof(number),
     )
 
-    name_decoded = name.value.decode("ascii", errors="replace")
-    return f"{name_decoded}, S/N {serial.value} (#{number.value + 1})"
+    return {
+        "device_name": name.value.decode("ascii", errors="replace"),
+        "serial": serial.value,
+        "dongle_channel": number.value + 1,
+    }
 
 
 init_kvaser_library()
