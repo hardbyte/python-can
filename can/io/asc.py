@@ -275,6 +275,11 @@ class ASCReader(TextIOMessageReader):
                 )
                 continue
 
+            # Handle the "Start of measurement" line
+            if line.startswith("0.000000") and "Start of measurement" in line:
+                # Skip this line as it's just an indicator
+                continue
+
             if not ASC_MESSAGE_REGEX.match(line):
                 # line might be a comment, chip status,
                 # J1939 message or some other unsupported event
