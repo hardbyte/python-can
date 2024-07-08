@@ -276,7 +276,7 @@ class ASCReader(TextIOMessageReader):
                 continue
 
             # Handle the "Start of measurement" line
-            if line.startswith("0.000000") and "Start of measurement" in line:
+            if re.match(r"^\d+\.\d+\s+Start of measurement", line):
                 # Skip this line as it's just an indicator
                 continue
 
