@@ -9,6 +9,7 @@ This file is execfile()d with the current directory set to its containing dir.
 import ctypes
 import os
 import sys
+from importlib.metadata import version as get_version
 from unittest.mock import MagicMock
 
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -16,7 +17,6 @@ from unittest.mock import MagicMock
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath(".."))
 
-import can  # pylint: disable=wrong-import-position
 from can import ctypesutil  # pylint: disable=wrong-import-position
 
 # -- General configuration -----------------------------------------------------
@@ -27,9 +27,10 @@ from can import ctypesutil  # pylint: disable=wrong-import-position
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
+# The full version, including alpha/beta/rc tags.
+release: str = get_version("python-can")
 # The short X.Y version.
-version = can.__version__.split("-", maxsplit=1)[0]
-release = can.__version__
+version = ".".join(release.split(".")[:2])
 
 # General information about the project.
 project = "python-can"
