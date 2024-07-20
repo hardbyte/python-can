@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools >= 67.7"]
+requires = ["setuptools >= 67.7", "setuptools_scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -84,8 +84,6 @@ mf4 = ["asammdf>=6.0.0"]
 
 [tool.setuptools.dynamic]
 readme = { file = "README.rst" }
-version = { attr = "can.__version__" }
-
 [tool.setuptools.package-data]
 "*" = ["README.rst", "CONTRIBUTORS.txt", "LICENSE.txt", "CHANGELOG.md"]
 doc = ["*.*"]
@@ -94,6 +92,9 @@ can = ["py.typed"]
 
 [tool.setuptools.packages.find]
 include = ["can*"]
+
+[tool.setuptools_scm]
+# can be empty if no extra settings are needed, presence enables setuptools_scm
 
 [tool.mypy]
 warn_return_any = true
